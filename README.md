@@ -10,3 +10,5 @@ _Priorizar siempre datos objetivos sobre opiniones.
 ### Estado del proyrcto
 En desarrollo.
 Fundado el 30 de julio de 2026.
+# MATRIX-LAB
+Plataforma de investigaciòn deportiva basada en datos verificables, auditorìa y mejora continua.
