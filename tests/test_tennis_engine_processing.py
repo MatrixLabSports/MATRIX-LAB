@@ -60,3 +60,13 @@ def test_tennis_engine_does_not_process_invalid_match():
         processed = False
 
     assert processed is False
+    
+def test_tennis_engine_invalid_analysis_has_zero_confidence():
+    engine = TennisEngine()
+
+    result = engine.analyze_match(None)
+
+    assert isinstance(result, TennisProcessingResult)
+    assert result.accepted is False
+    assert result.reason == "invalid_match"
+    assert result.confidence == 0.0

@@ -36,9 +36,10 @@ class TennisEngine(SportEngine):
     def analyze_match(self, match: Any) -> TennisProcessingResult:
         if not self.validate_match(match):
             return TennisProcessingResult(
-                accepted=False,
-                reason="invalid_match",
-            )
+            accepted=False,
+            reason="invalid_match",
+            confidence=0.0,
+        )
 
         return TennisProcessingResult(
             accepted=True,
