@@ -5,6 +5,7 @@ from app.sports.tennis.data_quality import TennisDataQualityEngine
 from app.sports.tennis.match_model import TennisMatchModel
 from app.sports.tennis.quality_adapter import TennisQualityAdapter
 from app.sports.tennis.processing_result import TennisProcessingResult
+from app.sports.tennis.data_coverage import TennisDataCoverage
 
 class TennisEngine(SportEngine):
     """
@@ -27,11 +28,9 @@ class TennisEngine(SportEngine):
 
         return quality_result.passed
 
-    def calculate_data_confidence(self, match: Any) -> float:
-        if not self.validate_match(match):
-            return 0.0
+    def calculate_data_confidence(self, coverage: TennisDataCoverage) -> float:
+        return coverage.score()
 
-        return 1.0
 
     def process_match(self, match: Any) -> Any:
         if not self.validate_match(match):
@@ -39,16 +38,25 @@ class TennisEngine(SportEngine):
 
         return match
 
-    def analyze_match(self, match: Any) -> TennisProcessingResult:
+    def analyze_match(
+        self,
+        match: Any,
+        coverage: TennisDataCoverage | None = None,
+    ) -> TennisProcessingResult:
         if not self.validate_match(match):
             return TennisProcessingResult(
-            accepted=False,
-            reason="invalid_match",
-            confidence=0.0,
-        )
+                accepted=False,
+                reason="invalid_match",
+                confidence=0.0,
+            )
+
+        confidence = 0.0
+
+        if coverage is not None:
+            confidence = self.calculate_data_confidence(coverage)
 
         return TennisProcessingResult(
             accepted=True,
             reason="valid_match",
-            confidence=self.calculate_data_confidence(match),
+            confidence=confidence,
         )

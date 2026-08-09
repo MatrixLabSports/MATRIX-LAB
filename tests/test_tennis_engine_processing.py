@@ -2,6 +2,7 @@ from app.sports.tennis.contract import TennisMatchContract
 from app.sports.tennis.engine import TennisEngine
 from app.sports.tennis.match_model import TennisMatchModel
 from app.sports.tennis.processing_result import TennisProcessingResult
+from app.sports.tennis.data_coverage import TennisDataCoverage
 
 def test_tennis_engine_returns_processing_result():
     engine = TennisEngine()
@@ -89,8 +90,36 @@ def test_tennis_engine_valid_analysis_uses_data_confidence():
         status="scheduled",
     )
 
-    result = engine.analyze_match(match)
+    coverage = TennisDataCoverage(
+    recent_form=True,
+    surface_history=True,
+    serve_stats=True,
+    return_stats=False,
+    fatigue_context=False,
+    market_data=False,
+)
+
+    result = engine.analyze_match(
+        match,
+        coverage=coverage,
+    )
 
     assert result.accepted is True
     assert result.reason == "valid_match"
-    assert result.confidence == engine.calculate_data_confidence(match)
+    assert result.confidence == 0.5
+    
+def test_tennis_engine_calculates_confidence_from_data_coverage():
+    engine = TennisEngine()
+
+    coverage = TennisDataCoverage(
+        recent_form=True,
+        surface_history=True,
+        serve_stats=True,
+        return_stats=False,
+        fatigue_context=False,
+        market_data=False,
+    )
+
+    confidence = engine.calculate_data_confidence(coverage)
+
+    assert confidence == 0.5
