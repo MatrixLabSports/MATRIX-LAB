@@ -60,7 +60,7 @@ def test_tennis_engine_does_not_process_invalid_match():
         processed = False
 
     assert processed is False
-    
+
 def test_tennis_engine_invalid_analysis_has_zero_confidence():
     engine = TennisEngine()
 
@@ -70,3 +70,27 @@ def test_tennis_engine_invalid_analysis_has_zero_confidence():
     assert result.accepted is False
     assert result.reason == "invalid_match"
     assert result.confidence == 0.0
+
+def test_tennis_engine_valid_analysis_uses_data_confidence():
+    engine = TennisEngine()
+
+    contract = TennisMatchContract(
+        player1="Carlos Alcaraz",
+        player2="Jannik Sinner",
+        tournament="US Open",
+        surface="Hard",
+    )
+
+    match = TennisMatchModel(
+        contract=contract,
+        tour="ATP",
+        round="R32",
+        datetime="2026-08-07T19:00:00Z",
+        status="scheduled",
+    )
+
+    result = engine.analyze_match(match)
+
+    assert result.accepted is True
+    assert result.reason == "valid_match"
+    assert result.confidence == engine.calculate_data_confidence(match)

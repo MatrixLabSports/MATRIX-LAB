@@ -27,6 +27,12 @@ class TennisEngine(SportEngine):
 
         return quality_result.passed
 
+    def calculate_data_confidence(self, match: Any) -> float:
+        if not self.validate_match(match):
+            return 0.0
+
+        return 1.0
+
     def process_match(self, match: Any) -> Any:
         if not self.validate_match(match):
             raise ValueError("El partido no es válido para MATRIX TENIS.")
@@ -44,4 +50,5 @@ class TennisEngine(SportEngine):
         return TennisProcessingResult(
             accepted=True,
             reason="valid_match",
+            confidence=self.calculate_data_confidence(match),
         )
