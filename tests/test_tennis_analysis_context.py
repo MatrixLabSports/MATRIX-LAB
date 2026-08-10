@@ -52,3 +52,10 @@ def test_tennis_analysis_context_rejects_empty_engine_version():
             engine_version="",
             policy_version="0.1.0",
         )
+
+def test_tennis_analysis_context_rejects_empty_policy_version():
+    with pytest.raises(ValueError):
+        TennisAnalysisContext.create(
+            engine_version="0.1.0",
+            policy_version="",
+        )

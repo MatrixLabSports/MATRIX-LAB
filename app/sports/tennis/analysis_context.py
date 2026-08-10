@@ -23,6 +23,8 @@ class TennisAnalysisContext:
     ) -> "TennisAnalysisContext":
         if not engine_version.strip():
             raise ValueError("engine_version must not be empty")
+        if not policy_version.strip():
+            raise ValueError("policy_version must not be empty")
     
         return cls(
             analysis_id=str(uuid4()),
