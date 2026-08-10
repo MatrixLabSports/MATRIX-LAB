@@ -99,3 +99,31 @@ def test_policy_rejects_invalid_coverage_object():
 
     with pytest.raises(TypeError):
         policy.accepts(object())
+
+def test_policy_accepts_minimum_score_zero():
+    policy = TennisCoveragePolicy(minimum_score=0.0)
+
+    coverage = make_coverage(
+        False,
+        False,
+        False,
+        False,
+        False,
+        False,
+    )
+
+    assert policy.accepts(coverage) is True
+
+def test_policy_accepts_minimum_score_one_with_complete_coverage():
+    policy = TennisCoveragePolicy(minimum_score=1.0)
+
+    coverage = make_coverage(
+        True,
+        True,
+        True,
+        True,
+        True,
+        True,
+    )
+
+    assert policy.accepts(coverage) is True
