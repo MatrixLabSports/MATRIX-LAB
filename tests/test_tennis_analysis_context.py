@@ -101,3 +101,31 @@ def test_tennis_analysis_context_rejects_invalid_direct_construction():
             engine_version=None,
             policy_version="0.1.0",
         )
+
+def test_tennis_analysis_context_rejects_invalid_analysis_id_on_direct_construction():
+    valid_context = TennisAnalysisContext.create(
+        engine_version="0.1.0",
+        policy_version="0.1.0",
+    )
+
+    with pytest.raises(ValueError):
+        TennisAnalysisContext(
+            analysis_id="not-a-uuid",
+            created_at=valid_context.created_at,
+            engine_version="0.1.0",
+            policy_version="0.1.0",
+        )
+
+def test_tennis_analysis_context_rejects_non_string_analysis_id_on_direct_construction():
+    valid_context = TennisAnalysisContext.create(
+        engine_version="0.1.0",
+        policy_version="0.1.0",
+    )
+
+    with pytest.raises(TypeError):
+        TennisAnalysisContext(
+            analysis_id=None,
+            created_at=valid_context.created_at,
+            engine_version="0.1.0",
+            policy_version="0.1.0",
+        )

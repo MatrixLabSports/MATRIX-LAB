@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 from datetime import datetime, timezone
-from uuid import uuid4
+from uuid import UUID, uuid4
 
 
 @dataclass(frozen=True)
@@ -15,6 +15,12 @@ class TennisAnalysisContext:
     engine_version: str
     policy_version: str
     def __post_init__(self) -> None:
+        if not isinstance(self.analysis_id, str):
+            raise TypeError("analysis_id must be a string")
+        try:
+            UUID(self.analysis_id)
+        except ValueError:
+            raise ValueError("analysis_id must be a valid UUID") from None
         if not isinstance(self.engine_version, str):
             raise TypeError("engine_version must be a string")
         if not isinstance(self.policy_version, str):
