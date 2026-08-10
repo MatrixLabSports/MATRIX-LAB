@@ -29,7 +29,11 @@ class TennisAnalysisContext:
             raise ValueError("engine_version must not be empty")
         if not policy_version.strip():
             raise ValueError("policy_version must not be empty")
-    
+        if engine_version != engine_version.strip():
+            raise ValueError("engine_version must not contain surrounding whitespace")
+        if policy_version != policy_version.strip():
+            raise ValueError("policy_version must not contain surrounding whitespace")
+
         return cls(
             analysis_id=str(uuid4()),
             created_at=datetime.now(timezone.utc),
