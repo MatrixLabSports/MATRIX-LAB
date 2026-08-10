@@ -21,6 +21,10 @@ class TennisAnalysisContext:
         engine_version: str,
         policy_version: str,
     ) -> "TennisAnalysisContext":
+        if not isinstance(engine_version, str):
+            raise TypeError("engine_version must be a string")
+        if not isinstance(policy_version, str):
+            raise TypeError("policy_version must be a string")
         if not engine_version.strip():
             raise ValueError("engine_version must not be empty")
         if not policy_version.strip():

@@ -59,3 +59,17 @@ def test_tennis_analysis_context_rejects_empty_policy_version():
             engine_version="0.1.0",
             policy_version="",
         )
+
+def test_tennis_analysis_context_rejects_non_string_engine_version():
+    with pytest.raises(TypeError):
+        TennisAnalysisContext.create(
+            engine_version=None,
+            policy_version="0.1.0",
+        )
+
+def test_tennis_analysis_context_rejects_non_string_policy_version():
+    with pytest.raises(TypeError):
+        TennisAnalysisContext.create(
+            engine_version="0.1.0",
+            policy_version=None,
+        )
