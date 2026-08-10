@@ -127,3 +127,17 @@ def test_policy_accepts_minimum_score_one_with_complete_coverage():
     )
 
     assert policy.accepts(coverage) is True
+
+def test_policy_rejects_minimum_score_one_with_incomplete_coverage():
+    policy = TennisCoveragePolicy(minimum_score=1.0)
+
+    coverage = make_coverage(
+        True,
+        True,
+        True,
+        True,
+        True,
+        False,
+    )
+
+    assert policy.accepts(coverage) is False
