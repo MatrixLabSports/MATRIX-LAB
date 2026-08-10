@@ -224,3 +224,31 @@ def test_tennis_engine_accepts_analysis_at_coverage_threshold():
     assert result.accepted is True
     assert result.reason == "valid_match"
     assert result.confidence == 0.5
+
+def test_tennis_engine_rejects_analysis_when_policy_requires_missing_coverage():
+    engine = TennisEngine()
+    policy = TennisCoveragePolicy(minimum_score=0.5)
+
+    contract = TennisMatchContract(
+        player1="Carlos Alcaraz",
+        player2="Jannik Sinner",
+        tournament="US Open",
+        surface="Hard",
+    )
+
+    match = TennisMatchModel(
+        contract=contract,
+        tour="ATP",
+        round="R32",
+        datetime="2026-08-07T19:00:00Z",
+        status="scheduled",
+    )
+
+    result = engine.analyze_match(
+        match,
+        policy=policy,
+    )
+
+    assert result.accepted is False
+    assert result.reason == "insufficient_data_coverage"
+    assert result.confidence == 0.0
