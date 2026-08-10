@@ -21,6 +21,12 @@ class TennisAnalysisContext:
             UUID(self.analysis_id)
         except ValueError:
             raise ValueError("analysis_id must be a valid UUID") from None
+        if not isinstance(self.created_at, datetime):
+            raise TypeError("created_at must be a datetime")
+        if self.created_at.tzinfo is None or self.created_at.utcoffset() is None:
+            raise ValueError("created_at must be timezone-aware")
+        if self.created_at.utcoffset().total_seconds() != 0:
+            raise ValueError("created_at must be UTC")
         if not isinstance(self.engine_version, str):
             raise TypeError("engine_version must be a string")
         if not isinstance(self.policy_version, str):

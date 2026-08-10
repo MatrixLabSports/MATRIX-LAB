@@ -1,3 +1,4 @@
+from datetime import timedelta, timezone
 from uuid import UUID
 from dataclasses import FrozenInstanceError
 import pytest
@@ -126,6 +127,49 @@ def test_tennis_analysis_context_rejects_non_string_analysis_id_on_direct_constr
         TennisAnalysisContext(
             analysis_id=None,
             created_at=valid_context.created_at,
+            engine_version="0.1.0",
+            policy_version="0.1.0",
+        )
+
+def test_tennis_analysis_context_rejects_non_datetime_created_at_on_direct_construction():
+    valid_context = TennisAnalysisContext.create(
+        engine_version="0.1.0",
+        policy_version="0.1.0",
+    )
+
+    with pytest.raises(TypeError):
+        TennisAnalysisContext(
+            analysis_id=valid_context.analysis_id,
+            created_at=None,
+            engine_version="0.1.0",
+            policy_version="0.1.0",
+        )
+
+def test_tennis_analysis_context_rejects_naive_created_at_on_direct_construction():
+    valid_context = TennisAnalysisContext.create(
+        engine_version="0.1.0",
+        policy_version="0.1.0",
+    )
+
+    with pytest.raises(ValueError):
+        TennisAnalysisContext(
+            analysis_id=valid_context.analysis_id,
+            created_at=valid_context.created_at.replace(tzinfo=None),
+            engine_version="0.1.0",
+            policy_version="0.1.0",
+        )
+
+def test_tennis_analysis_context_rejects_non_utc_created_at_on_direct_construction():
+    valid_context = TennisAnalysisContext.create(
+        engine_version="0.1.0",
+        policy_version="0.1.0",
+    )
+    non_utc_timezone = timezone(timedelta(hours=1))
+
+    with pytest.raises(ValueError):
+        TennisAnalysisContext(
+            analysis_id=valid_context.analysis_id,
+            created_at=valid_context.created_at.astimezone(non_utc_timezone),
             engine_version="0.1.0",
             policy_version="0.1.0",
         )
