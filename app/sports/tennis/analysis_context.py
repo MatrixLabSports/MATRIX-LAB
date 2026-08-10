@@ -21,18 +21,12 @@ class TennisAnalysisContext:
         engine_version: str,
         policy_version: str,
     ) -> "TennisAnalysisContext":
+        if not engine_version.strip():
+            raise ValueError("engine_version must not be empty")
+    
         return cls(
             analysis_id=str(uuid4()),
             created_at=datetime.now(timezone.utc),
             engine_version=engine_version,
             policy_version=policy_version,
         )
-
-    def test_tennis_analysis_context_created_at_is_utc():
-        context = TennisAnalysisContext.create(
-            engine_version="0.1.0",
-            policy_version="0.1.0",
-        )
-
-        assert context.created_at.tzinfo is not None
-        assert context.created_at.utcoffset().total_seconds() == 0

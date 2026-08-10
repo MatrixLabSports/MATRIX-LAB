@@ -45,3 +45,10 @@ def test_tennis_analysis_context_is_immutable():
 
     with pytest.raises(FrozenInstanceError):
         context.engine_version = "9.9.9"
+
+def test_tennis_analysis_context_rejects_empty_engine_version():
+    with pytest.raises(ValueError):
+        TennisAnalysisContext.create(
+            engine_version="",
+            policy_version="0.1.0",
+        )
