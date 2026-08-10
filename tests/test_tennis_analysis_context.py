@@ -87,3 +87,17 @@ def test_tennis_analysis_context_rejects_surrounding_whitespace_in_policy_versio
             engine_version="0.1.0",
             policy_version=" 0.1.0 ",
         )
+
+def test_tennis_analysis_context_rejects_invalid_direct_construction():
+    valid_context = TennisAnalysisContext.create(
+        engine_version="0.1.0",
+        policy_version="0.1.0",
+    )
+
+    with pytest.raises(TypeError):
+        TennisAnalysisContext(
+            analysis_id=valid_context.analysis_id,
+            created_at=valid_context.created_at,
+            engine_version=None,
+            policy_version="0.1.0",
+        )
