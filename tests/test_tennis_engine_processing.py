@@ -3,6 +3,7 @@ from app.sports.tennis.engine import TennisEngine
 from app.sports.tennis.match_model import TennisMatchModel
 from app.sports.tennis.processing_result import TennisProcessingResult
 from app.sports.tennis.data_coverage import TennisDataCoverage
+from app.sports.tennis.coverage_policy import TennisCoveragePolicy
 
 def test_tennis_engine_returns_processing_result():
     engine = TennisEngine()
@@ -147,3 +148,79 @@ def test_tennis_engine_valid_analysis_without_coverage_has_zero_confidence():
     assert result.accepted is True
     assert result.reason == "valid_match"
     assert result.confidence == 0.0
+
+def test_tennis_engine_rejects_analysis_below_coverage_policy():
+    engine = TennisEngine()
+    policy = TennisCoveragePolicy(minimum_score=0.5)
+
+    contract = TennisMatchContract(
+        player1="Carlos Alcaraz",
+        player2="Jannik Sinner",
+        tournament="US Open",
+        surface="Hard",
+    )
+
+    match = TennisMatchModel(
+        contract=contract,
+        tour="ATP",
+        round="R32",
+        datetime="2026-08-07T19:00:00Z",
+        status="scheduled",
+    )
+
+    coverage = TennisDataCoverage(
+        recent_form=True,
+        surface_history=True,
+        serve_stats=False,
+        return_stats=False,
+        fatigue_context=False,
+        market_data=False,
+    )
+
+    result = engine.analyze_match(
+        match,
+        coverage=coverage,
+        policy=policy,
+    )
+
+    assert result.accepted is False
+    assert result.reason == "insufficient_data_coverage"
+    assert result.confidence == 0.0
+
+def test_tennis_engine_accepts_analysis_at_coverage_threshold():
+    engine = TennisEngine()
+    policy = TennisCoveragePolicy(minimum_score=0.5)
+
+    contract = TennisMatchContract(
+        player1="Carlos Alcaraz",
+        player2="Jannik Sinner",
+        tournament="US Open",
+        surface="Hard",
+    )
+
+    match = TennisMatchModel(
+        contract=contract,
+        tour="ATP",
+        round="R32",
+        datetime="2026-08-07T19:00:00Z",
+        status="scheduled",
+    )
+
+    coverage = TennisDataCoverage(
+        recent_form=True,
+        surface_history=True,
+        serve_stats=True,
+        return_stats=False,
+        fatigue_context=False,
+        market_data=False,
+    )
+
+    result = engine.analyze_match(
+        match,
+        coverage=coverage,
+        policy=policy,
+    )
+
+    assert result.accepted is True
+    assert result.reason == "valid_match"
+    assert result.confidence == 0.5

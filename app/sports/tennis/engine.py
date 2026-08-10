@@ -6,6 +6,7 @@ from app.sports.tennis.match_model import TennisMatchModel
 from app.sports.tennis.quality_adapter import TennisQualityAdapter
 from app.sports.tennis.processing_result import TennisProcessingResult
 from app.sports.tennis.data_coverage import TennisDataCoverage
+from app.sports.tennis.coverage_policy import TennisCoveragePolicy
 
 class TennisEngine(SportEngine):
     """
@@ -42,6 +43,7 @@ class TennisEngine(SportEngine):
         self,
         match: Any,
         coverage: TennisDataCoverage | None = None,
+        policy: TennisCoveragePolicy | None = None,
     ) -> TennisProcessingResult:
         if not self.validate_match(match):
             return TennisProcessingResult(
@@ -54,6 +56,14 @@ class TennisEngine(SportEngine):
 
         if coverage is not None:
             confidence = self.calculate_data_confidence(coverage)
+
+        if policy is not None:
+            if coverage is None or not policy.accepts(coverage):
+                return TennisProcessingResult(
+                    accepted=False,
+                    reason="insufficient_data_coverage",
+                    confidence=0.0,
+                )
 
         return TennisProcessingResult(
             accepted=True,
