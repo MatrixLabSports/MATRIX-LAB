@@ -1,5 +1,4 @@
-from dataclasses import dataclass
-
+from dataclasses import dataclass, fields
 
 @dataclass(frozen=True)
 class TennisDataCoverage:
@@ -9,30 +8,15 @@ class TennisDataCoverage:
     return_stats: bool
     fatigue_context: bool
     market_data: bool
+    def _evidence_values(self) -> tuple[bool, ...]:
+        return tuple(getattr(self, field.name) for field in fields(self))
 
     def __post_init__(self):
-        values = (
-            self.recent_form,
-            self.surface_history,
-            self.serve_stats,
-            self.return_stats,
-            self.fatigue_context,
-            self.market_data,
-        )
+        values = self._evidence_values()
 
         if not all(type(value) is bool for value in values):
             raise TypeError("Todas las evidencias deben ser booleanas.")
 
     def score(self) -> float:
-        available = sum(
-            [
-                self.recent_form,
-                self.surface_history,
-                self.serve_stats,
-                self.return_stats,
-                self.fatigue_context,
-                self.market_data,
-            ]
-        )
-
-        return available / 6
+        values = self._evidence_values()
+        return sum(values) / len(values)
