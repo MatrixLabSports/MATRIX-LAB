@@ -26,10 +26,19 @@ class TennisDataQualityEngine:
         self.version = "0.1"
 
     def validate_match(self, match: dict) -> TennisDataQualityResult:
+        if not isinstance(match, dict):
+            raise TypeError("match must be a dictionary")
+
         messages = []
 
         player1 = str(match.get("player1", "")).strip()
         player2 = str(match.get("player2", "")).strip()
+
+        if not player1:
+            messages.append("player1 es obligatorio.")
+
+        if not player2:
+            messages.append("player2 es obligatorio.")
 
         if player1 and player2 and player1.casefold() == player2.casefold():
             messages.append("player1 y player2 no pueden ser iguales.")
@@ -48,5 +57,3 @@ class TennisDataQualityEngine:
             passed=not messages,
             messages=messages,
         )
-
-    
