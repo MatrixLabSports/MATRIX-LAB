@@ -45,7 +45,10 @@ def test_policy_rejects_zero_coverage():
     assert policy.accepts(coverage) is False
 
 
-@pytest.mark.parametrize("minimum_score", [-0.01, 1.01])
+@pytest.mark.parametrize(
+    "minimum_score",
+    [-0.01, 1.01, float("nan"), float("inf"), float("-inf")],
+)
 def test_policy_rejects_threshold_outside_valid_range(minimum_score):
     with pytest.raises(ValueError):
         TennisCoveragePolicy(minimum_score=minimum_score)
