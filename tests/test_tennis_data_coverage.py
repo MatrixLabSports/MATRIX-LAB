@@ -1,4 +1,4 @@
-from dataclasses import dataclass
+from dataclasses import FrozenInstanceError, dataclass
 
 import pytest
 
@@ -104,3 +104,16 @@ def test_tennis_data_coverage_score_adapts_to_new_evidence_field():
     )
 
     assert coverage.score() == 1 / 7
+
+def test_tennis_data_coverage_is_immutable():
+    coverage = TennisDataCoverage(
+        recent_form=False,
+        surface_history=False,
+        serve_stats=False,
+        return_stats=False,
+        fatigue_context=False,
+        market_data=False,
+    )
+
+    with pytest.raises(FrozenInstanceError):
+        coverage.market_data = True
