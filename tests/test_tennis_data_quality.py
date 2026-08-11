@@ -51,3 +51,15 @@ def test_tennis_rejects_missing_player(field_name):
 
     assert result.passed is False
     assert f"{field_name} es obligatorio." in result.messages
+
+@pytest.mark.parametrize("field_name", ["player1", "player2"])
+def test_tennis_rejects_non_string_player(field_name):
+    engine = TennisDataQualityEngine()
+    match = {
+        "player1": "Carlos Alcaraz",
+        "player2": "Jannik Sinner",
+    }
+    match[field_name] = 123
+
+    with pytest.raises(TypeError):
+        engine.validate_match(match)

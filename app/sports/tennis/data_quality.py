@@ -31,8 +31,17 @@ class TennisDataQualityEngine:
 
         messages = []
 
-        player1 = str(match.get("player1", "")).strip()
-        player2 = str(match.get("player2", "")).strip()
+        player1_value = match.get("player1", "")
+        player2_value = match.get("player2", "")
+
+        if not isinstance(player1_value, str):
+            raise TypeError("player1 must be a string")
+
+        if not isinstance(player2_value, str):
+            raise TypeError("player2 must be a string")
+
+        player1 = player1_value.strip()
+        player2 = player2_value.strip()
 
         if not player1:
             messages.append("player1 es obligatorio.")
@@ -46,7 +55,7 @@ class TennisDataQualityEngine:
         surface = match.get("surface")
 
         if surface is not None:
-             
+
             if (
                     not isinstance(surface, str)
                     or surface.strip().casefold() not in self.ALLOWED_SURFACES
