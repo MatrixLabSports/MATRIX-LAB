@@ -173,3 +173,17 @@ def test_tennis_analysis_context_rejects_non_utc_created_at_on_direct_constructi
             engine_version="0.1.0",
             policy_version="0.1.0",
         )
+
+def test_tennis_analysis_context_rejects_non_canonical_analysis_id():
+    valid_context = TennisAnalysisContext.create(
+        engine_version="0.1.0",
+        policy_version="0.1.0",
+    )
+
+    with pytest.raises(ValueError):
+        TennisAnalysisContext(
+            analysis_id=f"{{{valid_context.analysis_id}}}",
+            created_at=valid_context.created_at,
+            engine_version="0.1.0",
+            policy_version="0.1.0",
+        )

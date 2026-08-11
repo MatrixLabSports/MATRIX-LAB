@@ -18,9 +18,11 @@ class TennisAnalysisContext:
         if not isinstance(self.analysis_id, str):
             raise TypeError("analysis_id must be a string")
         try:
-            UUID(self.analysis_id)
+            parsed_analysis_id = UUID(self.analysis_id)
         except ValueError:
             raise ValueError("analysis_id must be a valid UUID") from None
+        if str(parsed_analysis_id) != self.analysis_id:
+            raise ValueError("analysis_id must use canonical UUID format")
         if not isinstance(self.created_at, datetime):
             raise TypeError("created_at must be a datetime")
         if self.created_at.tzinfo is None or self.created_at.utcoffset() is None:
