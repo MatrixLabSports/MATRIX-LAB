@@ -1,38 +1,22 @@
+from dataclasses import FrozenInstanceError, fields
 import pytest
 
 from app.sports.tennis.coverage_policy import TennisCoveragePolicy
 from app.sports.tennis.data_coverage import TennisDataCoverage
 
 
-def make_coverage(
-    recent_form: bool,
-    surface_history: bool,
-    serve_stats: bool,
-    return_stats: bool,
-    fatigue_context: bool,
-    market_data: bool,
-) -> TennisDataCoverage:
-    return TennisDataCoverage(
-        recent_form=recent_form,
-        surface_history=surface_history,
-        serve_stats=serve_stats,
-        return_stats=return_stats,
-        fatigue_context=fatigue_context,
-        market_data=market_data,
-    )
+def make_coverage(available_count: int) -> TennisDataCoverage:
+    evidence_fields = fields(TennisDataCoverage)
+    evidence = {
+        field.name: index < available_count
+        for index, field in enumerate(evidence_fields)
+    }
+    return TennisDataCoverage(**evidence)
 
 
 def test_policy_accepts_coverage_at_threshold():
-    policy = TennisCoveragePolicy(minimum_score=0.5)
-
-    coverage = make_coverage(
-        True,
-        True,
-        True,
-        False,
-        False,
-        False,
-    )
+    coverage = make_coverage(3)
+    policy = TennisCoveragePolicy(minimum_score=coverage.score())
 
     assert policy.accepts(coverage) is True
 
@@ -40,14 +24,7 @@ def test_policy_accepts_coverage_at_threshold():
 def test_policy_rejects_coverage_below_threshold():
     policy = TennisCoveragePolicy(minimum_score=0.5)
 
-    coverage = make_coverage(
-        True,
-        True,
-        False,
-        False,
-        False,
-        False,
-    )
+    coverage = make_coverage(2)
 
     assert policy.accepts(coverage) is False
 
@@ -55,14 +32,7 @@ def test_policy_rejects_coverage_below_threshold():
 def test_policy_accepts_complete_coverage():
     policy = TennisCoveragePolicy(minimum_score=0.5)
 
-    coverage = make_coverage(
-        True,
-        True,
-        True,
-        True,
-        True,
-        True,
-    )
+    coverage = make_coverage(len(fields(TennisDataCoverage)))
 
     assert policy.accepts(coverage) is True
 
@@ -70,14 +40,7 @@ def test_policy_accepts_complete_coverage():
 def test_policy_rejects_zero_coverage():
     policy = TennisCoveragePolicy(minimum_score=0.5)
 
-    coverage = make_coverage(
-        False,
-        False,
-        False,
-        False,
-        False,
-        False,
-    )
+    coverage = make_coverage(0)
 
     assert policy.accepts(coverage) is False
 
@@ -103,41 +66,26 @@ def test_policy_rejects_invalid_coverage_object():
 def test_policy_accepts_minimum_score_zero():
     policy = TennisCoveragePolicy(minimum_score=0.0)
 
-    coverage = make_coverage(
-        False,
-        False,
-        False,
-        False,
-        False,
-        False,
-    )
+    coverage = make_coverage(0)
 
     assert policy.accepts(coverage) is True
 
 def test_policy_accepts_minimum_score_one_with_complete_coverage():
     policy = TennisCoveragePolicy(minimum_score=1.0)
 
-    coverage = make_coverage(
-        True,
-        True,
-        True,
-        True,
-        True,
-        True,
-    )
+    coverage = make_coverage(len(fields(TennisDataCoverage)))
 
     assert policy.accepts(coverage) is True
 
 def test_policy_rejects_minimum_score_one_with_incomplete_coverage():
     policy = TennisCoveragePolicy(minimum_score=1.0)
 
-    coverage = make_coverage(
-        True,
-        True,
-        True,
-        True,
-        True,
-        False,
-    )
+    coverage = make_coverage(len(fields(TennisDataCoverage)) - 1)
 
     assert policy.accepts(coverage) is False
+
+def test_policy_is_immutable():
+    policy = TennisCoveragePolicy()
+
+    with pytest.raises(FrozenInstanceError):
+        policy.minimum_score = 0.75
