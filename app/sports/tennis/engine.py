@@ -7,6 +7,7 @@ from app.sports.tennis.quality_adapter import TennisQualityAdapter
 from app.sports.tennis.processing_result import TennisProcessingResult
 from app.sports.tennis.data_coverage import TennisDataCoverage
 from app.sports.tennis.coverage_policy import TennisCoveragePolicy
+from app.sports.tennis.match_factory import TennisMatchFactory
 
 class TennisEngine(SportEngine):
     """
@@ -34,6 +35,9 @@ class TennisEngine(SportEngine):
 
 
     def process_match(self, match: Any) -> Any:
+        if isinstance(match, dict):
+            match = TennisMatchFactory.from_dict(match)
+
         if not self.validate_match(match):
             raise ValueError("El partido no es válido para MATRIX TENIS.")
 

@@ -11,6 +11,7 @@ from dataclasses import dataclass
 from app.data.data_quality_engine import MatrixDataQualityEngine
 from app.core.contracts.sport_registry import get_sport
 from app.core.contracts.sport_contract import SportContract
+from app.core.engine_registry import EngineRegistry
 
 @dataclass
 class PipelineResult:
@@ -26,10 +27,11 @@ class MatrixPipelineEngine:
     Coordinador principal de MATRIX.
     """
 
-    def __init__(self):
+    def __init__(self, engine_registry: EngineRegistry | None = None):
         self.name = "MATRIX PIPELINE ENGINE"
         self.version = "0.1"
         self.data_quality_engine = MatrixDataQualityEngine()
+        self.engine_registry = engine_registry
 
     def process_match(self, match: dict):
         """
@@ -47,6 +49,10 @@ class MatrixPipelineEngine:
                 sport=sport,
                 data=quality_result,
             )
+
+        if self.engine_registry is not None:
+            engine = self.engine_registry.get(sport.code)
+            engine.process_match(match)
 
         return PipelineResult(
             passed=True,

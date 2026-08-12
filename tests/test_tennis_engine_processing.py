@@ -252,3 +252,30 @@ def test_tennis_engine_rejects_analysis_when_policy_requires_missing_coverage():
     assert result.accepted is False
     assert result.reason == "insufficient_data_coverage"
     assert result.confidence == 0.0
+
+def test_tennis_engine_processes_raw_dict_into_match_model():
+    engine = TennisEngine()
+
+    raw_match = {
+        "sport": "TENNIS",
+        "player1": "Carlos Alcaraz",
+        "player2": "Jannik Sinner",
+        "tournament": "US Open",
+        "tour": "ATP",
+        "surface": "Hard",
+        "round": "R32",
+        "datetime": "2026-08-06",
+        "status": "scheduled",
+    }
+
+    result = engine.process_match(raw_match)
+
+    assert isinstance(result, TennisMatchModel)
+    assert result.contract.player1 == "Carlos Alcaraz"
+    assert result.contract.player2 == "Jannik Sinner"
+    assert result.contract.tournament == "US Open"
+    assert result.contract.surface == "Hard"
+    assert result.tour == "ATP"
+    assert result.round == "R32"
+    assert result.datetime == "2026-08-06"
+    assert result.status == "scheduled"
