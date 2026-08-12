@@ -38,3 +38,26 @@ class TennisPlayerHistory:
             )
 
         return self.recent_matches(size)
+
+    def by_surface(
+        self,
+        surface: str,
+    ) -> tuple[TennisHistoricalMatch, ...]:
+        normalized_surface = surface.strip().casefold()
+
+        if not normalized_surface:
+            raise ValueError("surface no puede estar vacía.")
+
+        filtered_matches = (
+            match
+            for match in self.matches
+            if match.surface.strip().casefold() == normalized_surface
+        )
+
+        return tuple(
+            sorted(
+                filtered_matches,
+                key=lambda match: match.date,
+                reverse=True,
+            )
+        )

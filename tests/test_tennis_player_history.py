@@ -95,3 +95,59 @@ def test_player_history_rejects_unsupported_window():
 
     with pytest.raises(ValueError):
         history.window(15)
+
+def test_player_history_filters_matches_by_surface():
+    history = TennisPlayerHistory(
+        player="Carlos Alcaraz",
+        matches=(
+            TennisHistoricalMatch(
+                player="Carlos Alcaraz",
+                opponent="Player A",
+                date="2026-08-10",
+                tournament="Test Tournament",
+                surface="Hard",
+                won=True,
+                sets_won=2,
+                sets_lost=0,
+                games_won=12,
+                games_lost=6,
+            ),
+            TennisHistoricalMatch(
+                player="Carlos Alcaraz",
+                opponent="Player B",
+                date="2026-08-08",
+                tournament="Test Tournament",
+                surface="Clay",
+                won=False,
+                sets_won=1,
+                sets_lost=2,
+                games_won=14,
+                games_lost=18,
+            ),
+            TennisHistoricalMatch(
+                player="Carlos Alcaraz",
+                opponent="Player C",
+                date="2026-08-05",
+                tournament="Test Tournament",
+                surface="Hard",
+                won=True,
+                sets_won=2,
+                sets_lost=1,
+                games_won=18,
+                games_lost=14,
+            ),
+        ),
+    )
+
+    hard_matches = history.by_surface("hard")
+
+    assert len(hard_matches) == 2
+    assert all(match.surface.casefold() == "hard" for match in hard_matches)
+    assert hard_matches[0].date == "2026-08-10"
+
+
+def test_player_history_rejects_empty_surface_filter():
+    history = TennisPlayerHistory(player="Carlos Alcaraz")
+
+    with pytest.raises(ValueError):
+        history.by_surface("   ")
