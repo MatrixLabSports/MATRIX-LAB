@@ -124,6 +124,41 @@ class MatrixDataQualityEngine:
 
             return messages
 
+    def validate_core_record(self, match: dict) -> DataQualityResult:
+        """
+        Valida únicamente requisitos transversales necesarios
+        antes de delegar el registro al motor deportivo.
+        """
+        messages: list[str] = []
+
+        if not isinstance(match, dict):
+            return DataQualityResult(
+                passed=False,
+                score=0,
+                status="BLOQUEADO",
+                messages=["El registro debe ser un diccionario."],
+            )
+
+        sport = match.get("sport")
+
+        if not isinstance(sport, str) or not sport.strip():
+            messages.append("Falta un sport válido.")
+
+        if messages:
+            return DataQualityResult(
+                passed=False,
+                score=0,
+                status="BLOQUEADO",
+                messages=messages,
+            )
+
+        return DataQualityResult(
+            passed=True,
+            score=1,
+            status="APROBADO",
+            messages=["Calidad transversal aceptable."],
+        )
+
     def validate_match(self, match: dict) -> DataQualityResult:
         """
         Valida que el partido contenga los campos mínimos requeridos.

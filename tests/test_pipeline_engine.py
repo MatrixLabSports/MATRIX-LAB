@@ -118,3 +118,42 @@ def test_pipeline_with_real_tennis_engine_requires_model_conversion():
     }
 
     pipeline.process_match(match)
+
+class FakePipelineFootballEngine(SportEngine):
+    def __init__(self):
+        self.processed_match = None
+
+    @property
+    def sport_code(self) -> str:
+        return "FOOTBALL"
+
+    def validate_match(self, match) -> bool:
+        return True
+
+    def process_match(self, match):
+        self.processed_match = match
+        return match
+
+
+def test_pipeline_core_does_not_require_tennis_fields_for_football():
+    registry = EngineRegistry()
+    engine = FakePipelineFootballEngine()
+    registry.register(engine)
+
+    pipeline = MatrixPipelineEngine(engine_registry=registry)
+
+    match = {
+        "sport": "FOOTBALL",
+        "home_team": "Team A",
+        "away_team": "Team B",
+        "competition": "Test League",
+        "datetime": "2026-08-12T20:00:00Z",
+        "status": "scheduled",
+    }
+
+    result = pipeline.process_match(match)
+
+    assert result.passed is True
+    assert result.sport is not None
+    assert result.sport.code == "FOOTBALL"
+    assert engine.processed_match is match

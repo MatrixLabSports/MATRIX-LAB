@@ -38,7 +38,11 @@ class MatrixPipelineEngine:
         Ejecuta el flujo inicial de procesamiento de un partido.
         """
         sport = get_sport(match.get("sport", ""))
-        quality_result = self.data_quality_engine.validate_match(match)
+
+        if self.engine_registry is None:
+            quality_result = self.data_quality_engine.validate_match(match)
+        else:
+            quality_result = self.data_quality_engine.validate_core_record(match)
 
         if not quality_result.passed:
             return PipelineResult(
