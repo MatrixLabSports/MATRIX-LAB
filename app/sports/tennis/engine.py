@@ -30,8 +30,17 @@ class TennisEngine(SportEngine):
 
         return quality_result.passed
 
-    def calculate_data_confidence(self, coverage: TennisDataCoverage) -> float:
+    def calculate_data_coverage_score(
+        self,
+        coverage: TennisDataCoverage,
+    ) -> float:
         return coverage.score()
+
+    def calculate_data_confidence(
+        self,
+        coverage: TennisDataCoverage,
+    ) -> float:
+        return self.calculate_data_coverage_score(coverage)
 
 
     def process_match(self, match: Any) -> Any:
@@ -59,8 +68,7 @@ class TennisEngine(SportEngine):
         confidence = 0.0
 
         if coverage is not None:
-            confidence = self.calculate_data_confidence(coverage)
-
+            confidence = self.calculate_data_coverage_score(coverage)
         if policy is not None:
             if coverage is None or not policy.accepts(coverage):
                 return TennisProcessingResult(

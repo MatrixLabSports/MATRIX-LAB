@@ -71,7 +71,7 @@ def test_tennis_engine_invalid_analysis_has_zero_confidence():
     assert isinstance(result, TennisProcessingResult)
     assert result.accepted is False
     assert result.reason == "invalid_match"
-    assert result.confidence == 0.0
+    assert result.data_coverage_score == 0.0
 
 def test_tennis_engine_valid_analysis_uses_data_confidence():
     engine = TennisEngine()
@@ -107,7 +107,7 @@ def test_tennis_engine_valid_analysis_uses_data_confidence():
 
     assert result.accepted is True
     assert result.reason == "valid_match"
-    assert result.confidence == 0.5
+    assert result.data_coverage_score == 0.5
 
 def test_tennis_engine_calculates_confidence_from_data_coverage():
     engine = TennisEngine()
@@ -147,7 +147,7 @@ def test_tennis_engine_valid_analysis_without_coverage_has_zero_confidence():
 
     assert result.accepted is True
     assert result.reason == "valid_match"
-    assert result.confidence == 0.0
+    assert result.data_coverage_score == 0.0
 
 def test_tennis_engine_rejects_analysis_below_coverage_policy():
     engine = TennisEngine()
@@ -185,7 +185,7 @@ def test_tennis_engine_rejects_analysis_below_coverage_policy():
 
     assert result.accepted is False
     assert result.reason == "insufficient_data_coverage"
-    assert result.confidence == 0.0
+    assert result.data_coverage_score == 0.0
 
 def test_tennis_engine_accepts_analysis_at_coverage_threshold():
     engine = TennisEngine()
@@ -223,7 +223,7 @@ def test_tennis_engine_accepts_analysis_at_coverage_threshold():
 
     assert result.accepted is True
     assert result.reason == "valid_match"
-    assert result.confidence == 0.5
+    assert result.data_coverage_score == 0.5
 
 def test_tennis_engine_rejects_analysis_when_policy_requires_missing_coverage():
     engine = TennisEngine()
@@ -251,7 +251,7 @@ def test_tennis_engine_rejects_analysis_when_policy_requires_missing_coverage():
 
     assert result.accepted is False
     assert result.reason == "insufficient_data_coverage"
-    assert result.confidence == 0.0
+    assert result.data_coverage_score == 0.0
 
 def test_tennis_engine_processes_raw_dict_into_match_model():
     engine = TennisEngine()
@@ -279,3 +279,19 @@ def test_tennis_engine_processes_raw_dict_into_match_model():
     assert result.round == "R32"
     assert result.datetime == "2026-08-06"
     assert result.status == "scheduled"
+
+def test_tennis_engine_calculates_data_coverage_score():
+    engine = TennisEngine()
+
+    coverage = TennisDataCoverage(
+        recent_form=True,
+        surface_history=True,
+        serve_stats=True,
+        return_stats=False,
+        fatigue_context=False,
+        market_data=False,
+    )
+
+    score = engine.calculate_data_coverage_score(coverage)
+
+    assert score == 0.5
