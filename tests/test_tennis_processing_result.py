@@ -38,3 +38,12 @@ def test_tennis_processing_result_rejects_confidence_above_one():
             reason="valid_match",
             confidence=1.01,
         )
+
+def test_tennis_processing_result_exposes_data_coverage_score():
+    result = TennisProcessingResult(
+        accepted=True,
+        reason="valid_match",
+        confidence=0.85,
+    )
+
+    assert result.data_coverage_score == 0.85

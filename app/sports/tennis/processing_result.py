@@ -12,3 +12,7 @@ class TennisProcessingResult:
             raise ValueError(
                 "confidence debe estar entre 0.0 y 1.0."
             )
+
+    @property
+    def data_coverage_score(self) -> float:
+        return self.confidence
