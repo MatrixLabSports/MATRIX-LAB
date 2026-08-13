@@ -7,6 +7,10 @@ class ScoreResult:
     level: str
     confidence: str
 
+    @property
+    def score_band_label(self) -> str:
+        return self.confidence
+
 
 class MatrixScoreEngine:
     def __init__(self) -> None:
