@@ -97,7 +97,7 @@ class MatrixAnalysisEngine:
                     risk_score=risk_result.risk_score,
                     risk_level=risk_result.level,  
                     level=score_result.level,
-                    confidence=score_result.confidence,
+                    confidence=score_result.score_band_label,
                     decision=decision,
                     warnings=warnings,
                 )
@@ -111,7 +111,7 @@ class MatrixAnalysisEngine:
                 matrix_score=score_result.total_score,
                 risk_score=risk_result.risk_score,
                 risk_level=risk_result.level,
-                confidence=score_result.confidence,
+                confidence=score_result.score_band_label,
                 decision=decision,
             )
 
