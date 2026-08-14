@@ -25,6 +25,9 @@ class MatchAnalysis:
     decision: str
     warnings: list[str]
 
+    @property
+    def score_band_label(self) -> str:
+        return self.confidence
 
 class MatrixAnalysisEngine:
     """
