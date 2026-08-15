@@ -19,6 +19,10 @@ class MatrixReport:
     confidence: str
     decision: str
 
+    @property
+    def score_band_label(self) -> str:
+        return self.confidence
+
 
 class MatrixReportEngine:
     """

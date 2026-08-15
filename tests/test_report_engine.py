@@ -79,3 +79,20 @@ def test_invalid_json_is_not_overwritten(tmp_path):
     contenido_final = temp_file.read_text(encoding="utf-8")
 
     assert contenido_final == contenido_corrupto
+
+
+def test_matrix_report_exposes_score_band_label():
+    report = MatrixReport(
+        created_at="2026-08-14T12:00:00",
+        player1="Player A",
+        player2="Player B",
+        tournament="Test Tournament",
+        filter_score=7,
+        matrix_score=80.0,
+        risk_score=20.0,
+        risk_level="BAJO",
+        confidence="ALTA",
+        decision="CANDIDATO PARA REVISIÓN",
+    )
+
+    assert report.score_band_label == "ALTA"
