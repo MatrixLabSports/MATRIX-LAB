@@ -1101,17 +1101,41 @@ Los siguientes elementos permanecen abiertos y no deberán considerarse resuelto
 ### 12.1 P-001 — Semántica de confidence
 
 **Prioridad:** HIGH
-**Estado:** OPEN
+**Estado:** RESOLVED
 
-Actualmente existen conceptos diferentes denominados `confidence`.
+La ambigüedad semántica originalmente asociada al término `confidence` ha sido resuelta mediante separación explícita de conceptos y migración compatible.
 
-En `TennisProcessingResult`, `confidence` representa actualmente un valor numérico relacionado con cobertura de datos.
+Se establecen como nombres canónicos:
 
-En otros componentes analíticos existe una clasificación textual de confianza asociada a scores heurísticos.
+- `data_coverage_score` para representar cobertura de datos en el dominio de TENIS;
+- `score_band_label` para representar la clasificación cualitativa derivada del MATRIX Score.
 
-Deberá eliminarse cualquier ambigüedad capaz de provocar que cobertura, score, clasificación o probabilidad sean interpretados como conceptos equivalentes.
+Estos conceptos no deberán interpretarse como probabilidad predictiva, confianza estadística ni como equivalentes entre sí.
 
-Antes de modificar nombres o interfaces deberán analizarse dependencias, compatibilidad y pruebas.
+La migración se realizó preservando temporalmente interfaces heredadas denominadas `confidence` cuando su eliminación inmediata podía romper compatibilidad. Dichas interfaces deberán tratarse exclusivamente como aliases o contratos legacy y no como nombres canónicos para nuevo desarrollo.
+
+La implementación actual incluye:
+
+- `TennisProcessingResult.data_coverage_score`;
+- `TennisEngine.calculate_data_coverage_score()`;
+- uso interno explícito de `data_coverage_score` en TENIS;
+- `ScoreResult.score_band_label`;
+- `MatchAnalysis.score_band_label`;
+- `MatrixReport.score_band_label`;
+- consumidores internos migrados hacia `score_band_label`;
+- presentación visible actualizada para utilizar la denominación “Banda del score” en lugar de “Confianza”.
+
+La compatibilidad heredada permanece protegida mediante pruebas específicas.
+
+Evidencia de cierre:
+
+- pruebas específicas de los componentes afectados;
+- pruebas de compatibilidad de interfaces heredadas;
+- suite completa del repositorio con 154 pruebas aprobadas;
+- `git diff --check` limpio en los cambios auditados;
+- cambios realizados mediante microincrementos versionados y publicados en `main`.
+
+P-001 podrá reabrirse si una futura interfaz vuelve a utilizar `confidence` sin definición semántica explícita o si se detecta que cobertura de datos, banda de score, probabilidad o confianza estadística vuelven a mezclarse conceptualmente.
 
 ### 12.2 P-002 — Validación de minimum_score
 
