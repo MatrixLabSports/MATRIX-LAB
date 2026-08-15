@@ -41,12 +41,12 @@ class MatrixScoreEngine:
             + risk_control * weights["risk_control"]
         )
 
-        level, confidence = self._classify_score(total_score)
+        level, score_band_label = self._classify_score(total_score)
 
         return ScoreResult(
             total_score=round(total_score, 2),
             level=level,
-            confidence=confidence,
+            confidence=score_band_label,
         )
 
     def _classify_score(self, score: float) -> tuple[str, str]:
