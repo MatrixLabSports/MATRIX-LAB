@@ -190,7 +190,7 @@ class MatrixAnalysisEngine:
             )
             print(f"Nivel de riesgo: {analysis.risk_level}")
             print(f"Nivel: {analysis.level}")
-            print(f"Confianza: {analysis.confidence}")
+            print(f"Banda del score: {analysis.score_band_label}")
             print(f"Decisión: {analysis.decision}")
             print("Advertencias:")
 

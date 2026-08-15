@@ -78,4 +78,4 @@ if __name__ == "__main__":
     print("=" * 45)
     print(f"Puntuación total: {result.total_score}/100")
     print(f"Nivel: {result.level}")
-    print(f"Confianza: {result.confidence}")
+    print(f"Banda del score: {result.score_band_label}")
