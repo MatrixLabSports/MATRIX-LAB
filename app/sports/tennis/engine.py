@@ -65,10 +65,10 @@ class TennisEngine(SportEngine):
                 confidence=0.0,
             )
 
-        confidence = 0.0
+        data_coverage_score = 0.0
 
         if coverage is not None:
-            confidence = self.calculate_data_coverage_score(coverage)
+            data_coverage_score = self.calculate_data_coverage_score(coverage)
         if policy is not None:
             if coverage is None or not policy.accepts(coverage):
                 return TennisProcessingResult(
@@ -80,5 +80,5 @@ class TennisEngine(SportEngine):
         return TennisProcessingResult(
             accepted=True,
             reason="valid_match",
-            confidence=confidence,
+            confidence=data_coverage_score,
         )
