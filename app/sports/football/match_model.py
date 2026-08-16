@@ -20,6 +20,7 @@ class FootballMatchModel:
             "postponed",
             "cancelled",
             "abandoned",
+            "awarded",
         }
     )
 

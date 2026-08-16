@@ -186,3 +186,32 @@ def test_api_football_fixture_adapter_rejects_empty_datetime():
         match="datetime no puede estar vacío",
     ):
         adapt_api_football_fixture(raw_fixture)
+
+
+def test_api_football_fixture_adapter_maps_awarded_match():
+    raw_fixture = {
+        "fixture": {
+            "date": "2026-08-16T04:00:00+00:00",
+            "status": {
+                "short": "AWD",
+            },
+        },
+        "league": {
+            "name": "Victoria NPL 2",
+            "country": "Australia",
+            "season": 2026,
+            "round": "Regular Season - 24",
+        },
+        "teams": {
+            "home": {
+                "name": "Western United II",
+            },
+            "away": {
+                "name": "Langwarrin",
+            },
+        },
+    }
+
+    match = adapt_api_football_fixture(raw_fixture)
+
+    assert match.status == "awarded"

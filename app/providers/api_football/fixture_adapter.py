@@ -19,6 +19,7 @@ STATUS_MAP = {
     "PST": "postponed",
     "CANC": "cancelled",
     "ABD": "abandoned",
+    "AWD": "awarded",
 }
 
 
