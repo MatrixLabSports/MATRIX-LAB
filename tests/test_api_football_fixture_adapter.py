@@ -2,6 +2,7 @@ import pytest
 
 from app.providers.api_football.fixture_adapter import (
     adapt_api_football_fixture,
+    adapt_api_football_identity,
 )
 
 
@@ -215,3 +216,56 @@ def test_api_football_fixture_adapter_maps_awarded_match():
     match = adapt_api_football_fixture(raw_fixture)
 
     assert match.status == "awarded"
+
+
+def test_api_football_fixture_adapter_builds_external_identity():
+    raw_fixture = {
+        "fixture": {
+            "id": 1522161,
+        },
+    }
+
+    identity = adapt_api_football_identity(raw_fixture)
+
+    assert identity.provider == "api_football"
+    assert identity.external_id == "1522161"
+
+
+def test_api_football_identity_rejects_missing_fixture_id():
+    raw_fixture = {
+        "fixture": {},
+    }
+
+    with pytest.raises(
+        ValueError,
+        match="fixture de API-Football sin identidad externa",
+    ):
+        adapt_api_football_identity(raw_fixture)
+
+
+def test_api_football_identity_rejects_null_fixture_id():
+    raw_fixture = {
+        "fixture": {
+            "id": None,
+        },
+    }
+
+    with pytest.raises(
+        ValueError,
+        match="fixture de API-Football sin identidad externa",
+    ):
+        adapt_api_football_identity(raw_fixture)
+
+
+def test_api_football_identity_rejects_blank_fixture_id():
+    raw_fixture = {
+        "fixture": {
+            "id": "   ",
+        },
+    }
+
+    with pytest.raises(
+        ValueError,
+        match="external_id no puede estar vacío",
+    ):
+        adapt_api_football_identity(raw_fixture)

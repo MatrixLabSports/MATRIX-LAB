@@ -2,6 +2,7 @@ from typing import Any
 
 from app.sports.football.contract import FootballMatchContract
 from app.sports.football.match_model import FootballMatchModel
+from app.sports.football.external_identity import ExternalMatchIdentity
 
 
 STATUS_MAP = {
@@ -65,4 +66,25 @@ def adapt_api_football_fixture(
         round=round_name,
         datetime=fixture_date,
         status=normalized_status,
+    )
+
+
+def adapt_api_football_identity(
+    raw_fixture: dict[str, Any],
+) -> ExternalMatchIdentity:
+    try:
+        fixture_id = raw_fixture["fixture"]["id"]
+    except (KeyError, TypeError) as error:
+        raise ValueError(
+            "fixture de API-Football sin identidad externa"
+        ) from error
+
+    if fixture_id is None:
+        raise ValueError(
+            "fixture de API-Football sin identidad externa"
+        )
+
+    return ExternalMatchIdentity(
+        provider="api_football",
+        external_id=str(fixture_id),
     )
