@@ -96,3 +96,93 @@ def test_api_football_fixture_adapter_rejects_incomplete_fixture():
         match="fixture de API-Football incompleto",
     ):
         adapt_api_football_fixture(raw_fixture)
+
+def test_api_football_fixture_adapter_rejects_empty_team_name():
+    raw_fixture = {
+        "fixture": {
+            "date": "2026-08-16T00:00:00+00:00",
+            "status": {
+                "short": "FT",
+            },
+        },
+        "league": {
+            "name": "Serie A",
+            "country": "Brazil",
+            "season": 2026,
+            "round": "Regular Season - 23",
+        },
+        "teams": {
+            "home": {
+                "name": "   ",
+            },
+            "away": {
+                "name": "Coritiba",
+            },
+        },
+    }
+
+    with pytest.raises(
+        ValueError,
+        match="home_team y away_team no pueden estar vacíos",
+    ):
+        adapt_api_football_fixture(raw_fixture)
+
+def test_api_football_fixture_adapter_rejects_invalid_season():
+    raw_fixture = {
+        "fixture": {
+            "date": "2026-08-16T00:00:00+00:00",
+            "status": {
+                "short": "FT",
+            },
+        },
+        "league": {
+            "name": "Serie A",
+            "country": "Brazil",
+            "season": 0,
+            "round": "Regular Season - 23",
+        },
+        "teams": {
+            "home": {
+                "name": "Sao Paulo",
+            },
+            "away": {
+                "name": "Coritiba",
+            },
+        },
+    }
+
+    with pytest.raises(
+        ValueError,
+        match="season debe ser un entero positivo",
+    ):
+        adapt_api_football_fixture(raw_fixture)
+
+def test_api_football_fixture_adapter_rejects_empty_datetime():
+    raw_fixture = {
+        "fixture": {
+            "date": "   ",
+            "status": {
+                "short": "FT",
+            },
+        },
+        "league": {
+            "name": "Serie A",
+            "country": "Brazil",
+            "season": 2026,
+            "round": "Regular Season - 23",
+        },
+        "teams": {
+            "home": {
+                "name": "Sao Paulo",
+            },
+            "away": {
+                "name": "Coritiba",
+            },
+        },
+    }
+
+    with pytest.raises(
+        ValueError,
+        match="datetime no puede estar vacío",
+    ):
+        adapt_api_football_fixture(raw_fixture)
