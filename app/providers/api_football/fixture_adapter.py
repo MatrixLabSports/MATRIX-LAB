@@ -25,11 +25,25 @@ STATUS_MAP = {
 def adapt_api_football_fixture(
     raw_fixture: dict[str, Any],
 ) -> FootballMatchModel:
-    fixture = raw_fixture["fixture"]
-    league = raw_fixture["league"]
-    teams = raw_fixture["teams"]
+    try:
+        fixture = raw_fixture["fixture"]
+        league = raw_fixture["league"]
+        teams = raw_fixture["teams"]
 
-    status_short = fixture["status"]["short"]
+        status_short = fixture["status"]["short"]
+
+        home_team = teams["home"]["name"]
+        away_team = teams["away"]["name"]
+        competition = league["name"]
+        country = league["country"]
+        season = league["season"]
+        round_name = league["round"]
+        fixture_date = fixture["date"]
+    except (KeyError, TypeError) as error:
+        raise ValueError(
+            "fixture de API-Football incompleto"
+        ) from error
+
     normalized_status = STATUS_MAP.get(status_short)
 
     if normalized_status is None:
@@ -38,16 +52,16 @@ def adapt_api_football_fixture(
         )
 
     contract = FootballMatchContract(
-        home_team=teams["home"]["name"],
-        away_team=teams["away"]["name"],
-        competition=league["name"],
-        country=league["country"],
+        home_team=home_team,
+        away_team=away_team,
+        competition=competition,
+        country=country,
     )
 
     return FootballMatchModel(
         contract=contract,
-        season=league["season"],
-        round=league["round"],
-        datetime=fixture["date"],
+        season=season,
+        round=round_name,
+        datetime=fixture_date,
         status=normalized_status,
     )

@@ -69,3 +69,30 @@ def test_api_football_fixture_adapter_rejects_unknown_status():
         match="status de API-Football no soportado: XYZ",
     ):
         adapt_api_football_fixture(raw_fixture)
+
+def test_api_football_fixture_adapter_rejects_incomplete_fixture():
+    raw_fixture = {
+        "fixture": {
+            "date": "2026-08-16T00:00:00+00:00",
+            "status": {
+                "short": "FT",
+            },
+        },
+        "league": {
+            "name": "Serie A",
+            "country": "Brazil",
+            "season": 2026,
+            "round": "Regular Season - 23",
+        },
+        "teams": {
+            "home": {
+                "name": "Sao Paulo",
+            },
+        },
+    }
+
+    with pytest.raises(
+        ValueError,
+        match="fixture de API-Football incompleto",
+    ):
+        adapt_api_football_fixture(raw_fixture)
