@@ -1,7 +1,7 @@
 from typing import Any
 
 from app.providers.api_football.fixture_service import (
-    get_fixtures_by_date,
+    get_fixture_records_by_date,
 )
 
 
@@ -10,11 +10,11 @@ def sync_football_fixtures(
     repository: Any,
     date: str,
 ):
-    matches = get_fixtures_by_date(
+    records = get_fixture_records_by_date(
         client,
         date,
     )
 
-    repository.save_matches(matches)
+    repository.upsert_records(records)
 
-    return matches
+    return records

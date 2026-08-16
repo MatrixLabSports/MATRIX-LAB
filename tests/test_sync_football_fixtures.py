@@ -7,27 +7,28 @@ from app.application.football.sync_fixtures import (
 )
 
 
-def test_sync_football_fixtures_fetches_and_saves_matches():
+def test_sync_football_fixtures_fetches_and_upserts_records():
     client = Mock()
     repository = Mock()
-    matches = [Mock(), Mock()]
+    records = [Mock(), Mock()]
 
     with patch(
-        "app.application.football.sync_fixtures.get_fixtures_by_date",
-        return_value=matches,
-    ) as get_fixtures:
+        "app.application.football.sync_fixtures.get_fixture_records_by_date",
+        return_value=records,
+    ) as get_records:
         result = sync_football_fixtures(
             client=client,
             repository=repository,
             date="2026-08-16",
         )
 
-    get_fixtures.assert_called_once_with(
+    get_records.assert_called_once_with(
         client,
         "2026-08-16",
     )
-    repository.save_matches.assert_called_once_with(matches)
-    assert result == matches
+    repository.upsert_records.assert_called_once_with(records)
+    repository.save_matches.assert_not_called()
+    assert result == records
 
 
 def test_sync_football_fixtures_saves_empty_result():
@@ -35,20 +36,21 @@ def test_sync_football_fixtures_saves_empty_result():
     repository = Mock()
 
     with patch(
-        "app.application.football.sync_fixtures.get_fixtures_by_date",
+        "app.application.football.sync_fixtures.get_fixture_records_by_date",
         return_value=[],
-    ) as get_fixtures:
+    ) as get_records:
         result = sync_football_fixtures(
             client=client,
             repository=repository,
             date="2026-08-16",
         )
 
-    get_fixtures.assert_called_once_with(
+    get_records.assert_called_once_with(
         client,
         "2026-08-16",
     )
-    repository.save_matches.assert_called_once_with([])
+    repository.upsert_records.assert_called_once_with([])
+    repository.save_matches.assert_not_called()
     assert result == []
 
 
@@ -57,7 +59,7 @@ def test_sync_football_fixtures_does_not_save_when_fetch_fails():
     repository = Mock()
 
     with patch(
-        "app.application.football.sync_fixtures.get_fixtures_by_date",
+        "app.application.football.sync_fixtures.get_fixture_records_by_date",
         side_effect=ValueError("fallo del proveedor"),
     ):
         with pytest.raises(
@@ -70,4 +72,5 @@ def test_sync_football_fixtures_does_not_save_when_fetch_fails():
                 date="2026-08-16",
             )
 
+    repository.upsert_records.assert_not_called()
     repository.save_matches.assert_not_called()

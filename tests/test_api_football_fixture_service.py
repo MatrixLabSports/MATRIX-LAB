@@ -3,6 +3,7 @@ from unittest.mock import Mock
 import pytest
 
 from app.providers.api_football.fixture_service import (
+    get_fixture_records_by_date,
     get_fixtures_by_date,
 )
 
@@ -100,3 +101,43 @@ def test_fixture_service_rejects_malformed_response():
             client,
             "2026-08-16",
         )
+
+
+def test_fixture_service_builds_records_with_external_identity():
+    client = Mock()
+    client.get.return_value = {
+        "response": [
+            {
+                "fixture": {
+                    "id": 1522161,
+                    "date": "2026-08-16T04:00:00+00:00",
+                    "status": {"short": "AWD"},
+                },
+                "league": {
+                    "name": "Victoria NPL 2",
+                    "country": "Australia",
+                    "season": 2026,
+                    "round": "Regular Season - 24",
+                },
+                "teams": {
+                    "home": {"name": "Western United II"},
+                    "away": {"name": "Langwarrin"},
+                },
+            },
+        ]
+    }
+
+    records = get_fixture_records_by_date(
+        client,
+        "2026-08-16",
+    )
+
+    assert len(records) == 1
+
+    record = records[0]
+
+    assert record.identity.provider == "api_football"
+    assert record.identity.external_id == "1522161"
+    assert record.match.contract.home_team == "Western United II"
+    assert record.match.contract.away_team == "Langwarrin"
+    assert record.match.status == "awarded"
