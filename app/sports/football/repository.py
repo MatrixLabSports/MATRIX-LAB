@@ -131,6 +131,63 @@ class FootballMatchRepository:
                 indent=2,
             )
 
+    def reconcile_records(
+        self,
+        current_records: list[FootballMatchRecord],
+    ) -> None:
+        existing_records: list[FootballMatchRecord] = []
+
+        if self.file_path.exists():
+            existing_records = self.load_records()
+
+        current_by_identity = {
+            record.identity: record
+            for record in current_records
+        }
+
+        reconciled_records: list[FootballMatchRecord] = []
+
+        for existing_record in existing_records:
+            current_record = current_by_identity.pop(
+                existing_record.identity,
+                None,
+            )
+
+            if current_record is not None:
+                reconciled_records.append(
+                    FootballMatchRecord(
+                        identity=current_record.identity,
+                        match=current_record.match,
+                        sync_state=FootballSyncState(
+                            status="seen_current_sync",
+                        ),
+                    )
+                )
+            else:
+                reconciled_records.append(
+                    FootballMatchRecord(
+                        identity=existing_record.identity,
+                        match=existing_record.match,
+                        sync_state=FootballSyncState(
+                            status="temporarily_missing",
+                        ),
+                    )
+                )
+
+        for current_record in current_by_identity.values():
+            reconciled_records.append(
+                FootballMatchRecord(
+                    identity=current_record.identity,
+                    match=current_record.match,
+                    sync_state=FootballSyncState(
+                        status="seen_current_sync",
+                    ),
+                )
+            )
+
+        self.upsert_records(reconciled_records)
+
+
 
     def load_records(self) -> list[FootballMatchRecord]:
         with self.file_path.open(
