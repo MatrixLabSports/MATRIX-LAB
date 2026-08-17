@@ -611,3 +611,115 @@ def test_football_repository_confirm_removed_rejects_unknown_identity(
         match="identidad de partido no encontrada",
     ):
         repository.confirm_removed(unknown_identity)
+
+
+def test_football_repository_reconciles_only_records_for_target_date(
+    tmp_path,
+):
+    file_path = tmp_path / "football_records.json"
+
+    repository = FootballMatchRepository(
+        file_path=str(file_path),
+    )
+
+    identity_a = ExternalMatchIdentity(
+        provider="api_football",
+        external_id="1001",
+    )
+    identity_b = ExternalMatchIdentity(
+        provider="api_football",
+        external_id="1002",
+    )
+    identity_c = ExternalMatchIdentity(
+        provider="api_football",
+        external_id="2001",
+    )
+
+    contract_a = FootballMatchContract(
+        home_team="Millonarios",
+        away_team="Atlético Nacional",
+        competition="Liga BetPlay",
+        country="Colombia",
+    )
+    contract_b = FootballMatchContract(
+        home_team="Santa Fe",
+        away_team="Once Caldas",
+        competition="Liga BetPlay",
+        country="Colombia",
+    )
+    contract_c = FootballMatchContract(
+        home_team="Deportivo Cali",
+        away_team="Junior",
+        competition="Liga BetPlay",
+        country="Colombia",
+    )
+
+    match_a = FootballMatchModel(
+        contract=contract_a,
+        season=2026,
+        round="Clausura - 8",
+        datetime="2026-08-16T20:00:00-05:00",
+        status="scheduled",
+    )
+    match_b = FootballMatchModel(
+        contract=contract_b,
+        season=2026,
+        round="Clausura - 8",
+        datetime="2026-08-16T22:00:00-05:00",
+        status="scheduled",
+    )
+    match_c = FootballMatchModel(
+        contract=contract_c,
+        season=2026,
+        round="Clausura - 9",
+        datetime="2026-08-17T20:00:00-05:00",
+        status="scheduled",
+    )
+
+    repository.upsert_records(
+        [
+            FootballMatchRecord(
+                identity=identity_a,
+                match=match_a,
+            ),
+            FootballMatchRecord(
+                identity=identity_b,
+                match=match_b,
+            ),
+            FootballMatchRecord(
+                identity=identity_c,
+                match=match_c,
+            ),
+        ]
+    )
+
+    repository.reconcile_records_for_date(
+        date="2026-08-16",
+        current_records=[
+            FootballMatchRecord(
+                identity=identity_a,
+                match=match_a,
+            ),
+        ],
+    )
+
+    loaded_records = repository.load_records()
+
+    records_by_identity = {
+        record.identity: record
+        for record in loaded_records
+    }
+
+    assert (
+        records_by_identity[identity_a].sync_state.status
+        == "seen_current_sync"
+    )
+    assert (
+        records_by_identity[identity_b].sync_state.status
+        == "temporarily_missing"
+    )
+    assert (
+        records_by_identity[identity_c].sync_state.status
+        == "seen_current_sync"
+    )
+    assert records_by_identity[identity_c].consecutive_missing_count == 0

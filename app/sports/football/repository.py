@@ -195,6 +195,74 @@ class FootballMatchRepository:
 
         self.upsert_records(reconciled_records)
 
+
+    def reconcile_records_for_date(
+        self,
+        date: str,
+        current_records: list[FootballMatchRecord],
+    ) -> None:
+        existing_records: list[FootballMatchRecord] = []
+
+        if self.file_path.exists():
+            existing_records = self.load_records()
+
+        current_by_identity = {
+            record.identity: record
+            for record in current_records
+        }
+
+        reconciled_records: list[FootballMatchRecord] = []
+
+        for existing_record in existing_records:
+            if not existing_record.match.datetime.startswith(date):
+                reconciled_records.append(existing_record)
+                continue
+
+            current_record = current_by_identity.pop(
+                existing_record.identity,
+                None,
+            )
+
+            if current_record is not None:
+                reconciled_records.append(
+                    FootballMatchRecord(
+                        identity=current_record.identity,
+                        match=current_record.match,
+                        sync_state=FootballSyncState(
+                            status="seen_current_sync",
+                        ),
+                        consecutive_missing_count=0,
+                    )
+                )
+            else:
+                reconciled_records.append(
+                    FootballMatchRecord(
+                        identity=existing_record.identity,
+                        match=existing_record.match,
+                        sync_state=FootballSyncState(
+                            status="temporarily_missing",
+                        ),
+                        consecutive_missing_count=(
+                            existing_record.consecutive_missing_count + 1
+                        ),
+                    )
+                )
+
+        for current_record in current_by_identity.values():
+            reconciled_records.append(
+                FootballMatchRecord(
+                    identity=current_record.identity,
+                    match=current_record.match,
+                    sync_state=FootballSyncState(
+                        status="seen_current_sync",
+                    ),
+                    consecutive_missing_count=0,
+                )
+            )
+
+        self.upsert_records(reconciled_records)
+
+
     def confirm_removed(
         self,
         identity: ExternalMatchIdentity,
