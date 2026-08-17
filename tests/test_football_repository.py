@@ -5,6 +5,7 @@ from app.sports.football.match_model import FootballMatchModel
 from app.sports.football.repository import FootballMatchRepository
 from app.sports.football.external_identity import ExternalMatchIdentity
 from app.sports.football.match_record import FootballMatchRecord
+from app.sports.football.sync_state import FootballSyncState
 
 
 def test_football_repository_saves_and_loads_matches(tmp_path):
@@ -210,3 +211,46 @@ def test_football_repository_upsert_updates_same_identity_and_preserves_others(
 
     assert records_by_identity[identity_a].match.status == "finished"
     assert records_by_identity[identity_b].match.status == "scheduled"
+
+
+def test_football_repository_persists_record_sync_state(tmp_path):
+    file_path = tmp_path / "football_records.json"
+
+    repository = FootballMatchRepository(
+        file_path=str(file_path),
+    )
+
+    identity = ExternalMatchIdentity(
+        provider="api_football",
+        external_id="1522161",
+    )
+
+    contract = FootballMatchContract(
+        home_team="Western United II",
+        away_team="Langwarrin",
+        competition="Victoria NPL 2",
+        country="Australia",
+    )
+
+    match = FootballMatchModel(
+        contract=contract,
+        season=2026,
+        round="Regular Season - 24",
+        datetime="2026-08-16T04:00:00+00:00",
+        status="awarded",
+    )
+
+    record = FootballMatchRecord(
+        identity=identity,
+        match=match,
+        sync_state=FootballSyncState(
+            status="temporarily_missing",
+        ),
+    )
+
+    repository.upsert_records([record])
+
+    loaded_records = repository.load_records()
+
+    assert len(loaded_records) == 1
+    assert loaded_records[0].sync_state.status == "temporarily_missing"

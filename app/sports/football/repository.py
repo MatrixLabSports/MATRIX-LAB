@@ -5,6 +5,7 @@ from app.sports.football.contract import FootballMatchContract
 from app.sports.football.match_model import FootballMatchModel
 from app.sports.football.external_identity import ExternalMatchIdentity
 from app.sports.football.match_record import FootballMatchRecord
+from app.sports.football.sync_state import FootballSyncState
 
 
 class FootballMatchRepository:
@@ -114,6 +115,7 @@ class FootballMatchRepository:
                 "round": record.match.round,
                 "datetime": record.match.datetime,
                 "status": record.match.status,
+                "sync_state": record.sync_state.status,
             }
             for record in merged_records
         ]
@@ -160,10 +162,18 @@ class FootballMatchRepository:
                 status=item["status"],
             )
 
+            sync_state = FootballSyncState(
+                status=item.get(
+                    "sync_state",
+                    "seen_current_sync",
+                ),
+            )
+
             records.append(
                 FootballMatchRecord(
                     identity=identity,
                     match=match,
+                    sync_state=sync_state,
                 )
             )
 
