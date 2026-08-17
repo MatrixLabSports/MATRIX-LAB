@@ -114,8 +114,11 @@ class FootballMatchRepository:
                 "season": record.match.season,
                 "round": record.match.round,
                 "datetime": record.match.datetime,
-                "status": record.match.status,
+                               "status": record.match.status,
                 "sync_state": record.sync_state.status,
+                "consecutive_missing_count": (
+                    record.consecutive_missing_count
+                ),
             }
             for record in merged_records
         ]
@@ -161,6 +164,7 @@ class FootballMatchRepository:
                         sync_state=FootballSyncState(
                             status="seen_current_sync",
                         ),
+                        consecutive_missing_count=0,
                     )
                 )
             else:
@@ -170,6 +174,9 @@ class FootballMatchRepository:
                         match=existing_record.match,
                         sync_state=FootballSyncState(
                             status="temporarily_missing",
+                        ),
+                            consecutive_missing_count=(
+                            existing_record.consecutive_missing_count + 1
                         ),
                     )
                 )
@@ -182,6 +189,7 @@ class FootballMatchRepository:
                     sync_state=FootballSyncState(
                         status="seen_current_sync",
                     ),
+                        consecutive_missing_count=0,
                 )
             )
 
@@ -226,11 +234,19 @@ class FootballMatchRepository:
                 ),
             )
 
+            consecutive_missing_count = item.get(
+                "consecutive_missing_count",
+                0,
+            )
+
             records.append(
                 FootballMatchRecord(
                     identity=identity,
                     match=match,
                     sync_state=sync_state,
+                    consecutive_missing_count=(
+                        consecutive_missing_count
+                    ),
                 )
             )
 

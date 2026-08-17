@@ -397,3 +397,114 @@ def test_football_repository_reconciles_reappearing_record_to_seen_current_sync(
 
     assert len(loaded_records) == 1
     assert loaded_records[0].sync_state.status == "seen_current_sync"
+
+
+def test_football_repository_persists_consecutive_missing_count(tmp_path):
+    file_path = tmp_path / "football_records.json"
+
+    repository = FootballMatchRepository(
+        file_path=str(file_path),
+    )
+
+    identity = ExternalMatchIdentity(
+        provider="api_football",
+        external_id="1001",
+    )
+
+    contract = FootballMatchContract(
+        home_team="Millonarios",
+        away_team="Atlético Nacional",
+        competition="Liga BetPlay",
+        country="Colombia",
+    )
+
+    match = FootballMatchModel(
+        contract=contract,
+        season=2026,
+        round="Clausura - 8",
+        datetime="2026-08-16T20:00:00-05:00",
+        status="scheduled",
+    )
+
+    record = FootballMatchRecord(
+        identity=identity,
+        match=match,
+        sync_state=FootballSyncState(
+            status="temporarily_missing",
+        ),
+        consecutive_missing_count=2,
+    )
+
+    repository.upsert_records([record])
+
+    loaded_records = repository.load_records()
+
+    assert len(loaded_records) == 1
+    assert loaded_records[0].consecutive_missing_count == 2
+
+
+def test_football_repository_tracks_consecutive_missing_count_and_resets_on_reappearance(
+    tmp_path,
+):
+    file_path = tmp_path / "football_records.json"
+
+    repository = FootballMatchRepository(
+        file_path=str(file_path),
+    )
+
+    identity = ExternalMatchIdentity(
+        provider="api_football",
+        external_id="1001",
+    )
+
+    contract = FootballMatchContract(
+        home_team="Millonarios",
+        away_team="Atlético Nacional",
+        competition="Liga BetPlay",
+        country="Colombia",
+    )
+
+    match = FootballMatchModel(
+        contract=contract,
+        season=2026,
+        round="Clausura - 8",
+        datetime="2026-08-16T20:00:00-05:00",
+        status="scheduled",
+    )
+
+    repository.upsert_records(
+        [
+            FootballMatchRecord(
+                identity=identity,
+                match=match,
+            ),
+        ]
+    )
+
+    repository.reconcile_records([])
+
+    first_missing = repository.load_records()[0]
+
+    assert first_missing.sync_state.status == "temporarily_missing"
+    assert first_missing.consecutive_missing_count == 1
+
+    repository.reconcile_records([])
+
+    second_missing = repository.load_records()[0]
+
+    assert second_missing.sync_state.status == "temporarily_missing"
+    assert second_missing.consecutive_missing_count == 2
+
+    repository.reconcile_records(
+        [
+            FootballMatchRecord(
+                identity=identity,
+                match=match,
+            ),
+        ]
+    )
+
+    reappeared = repository.load_records()[0]
+
+    assert reappeared.sync_state.status == "seen_current_sync"
+    assert reappeared.consecutive_missing_count == 0

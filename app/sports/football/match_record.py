@@ -14,3 +14,14 @@ class FootballMatchRecord:
             status="seen_current_sync",
         )
     )
+    consecutive_missing_count: int = 0
+
+
+    def __post_init__(self):
+        if (
+            not isinstance(self.consecutive_missing_count, int)
+            or self.consecutive_missing_count < 0
+        ):
+            raise ValueError(
+                "consecutive_missing_count debe ser un entero no negativo"
+            )
