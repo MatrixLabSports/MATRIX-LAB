@@ -195,8 +195,40 @@ class FootballMatchRepository:
 
         self.upsert_records(reconciled_records)
 
+    def confirm_removed(
+        self,
+        identity: ExternalMatchIdentity,
+    ) -> None:
+        existing_records = self.load_records()
 
+        updated_records: list[FootballMatchRecord] = []
+        found = False
 
+        for record in existing_records:
+            if record.identity == identity:
+                found = True
+
+                updated_records.append(
+                    FootballMatchRecord(
+                        identity=record.identity,
+                        match=record.match,
+                        sync_state=FootballSyncState(
+                            status="confirmed_removed",
+                        ),
+                        consecutive_missing_count=(
+                            record.consecutive_missing_count
+                        ),
+                    )
+                )
+            else:
+                updated_records.append(record)
+
+        if not found:
+            raise ValueError(
+                "identidad de partido no encontrada"
+            )
+
+        self.upsert_records(updated_records)
     def load_records(self) -> list[FootballMatchRecord]:
         with self.file_path.open(
             "r",

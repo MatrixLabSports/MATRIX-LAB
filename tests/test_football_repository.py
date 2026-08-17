@@ -508,3 +508,106 @@ def test_football_repository_tracks_consecutive_missing_count_and_resets_on_reap
 
     assert reappeared.sync_state.status == "seen_current_sync"
     assert reappeared.consecutive_missing_count == 0
+
+
+def test_football_repository_confirms_removed_without_deleting_record(
+    tmp_path,
+):
+    file_path = tmp_path / "football_records.json"
+
+    repository = FootballMatchRepository(
+        file_path=str(file_path),
+    )
+
+    identity = ExternalMatchIdentity(
+        provider="api_football",
+        external_id="1001",
+    )
+
+    contract = FootballMatchContract(
+        home_team="Millonarios",
+        away_team="Atlético Nacional",
+        competition="Liga BetPlay",
+        country="Colombia",
+    )
+
+    match = FootballMatchModel(
+        contract=contract,
+        season=2026,
+        round="Clausura - 8",
+        datetime="2026-08-16T20:00:00-05:00",
+        status="scheduled",
+    )
+
+    repository.upsert_records(
+        [
+            FootballMatchRecord(
+                identity=identity,
+                match=match,
+                sync_state=FootballSyncState(
+                    status="temporarily_missing",
+                ),
+                consecutive_missing_count=3,
+            ),
+        ]
+    )
+
+    repository.confirm_removed(identity)
+
+    loaded_records = repository.load_records()
+
+    assert len(loaded_records) == 1
+    assert loaded_records[0].identity == identity
+    assert loaded_records[0].match == match
+    assert loaded_records[0].sync_state.status == "confirmed_removed"
+    assert loaded_records[0].consecutive_missing_count == 3
+
+
+def test_football_repository_confirm_removed_rejects_unknown_identity(
+    tmp_path,
+):
+    file_path = tmp_path / "football_records.json"
+
+    repository = FootballMatchRepository(
+        file_path=str(file_path),
+    )
+
+    existing_identity = ExternalMatchIdentity(
+        provider="api_football",
+        external_id="1001",
+    )
+
+    unknown_identity = ExternalMatchIdentity(
+        provider="api_football",
+        external_id="9999",
+    )
+
+    contract = FootballMatchContract(
+        home_team="Millonarios",
+        away_team="Atlético Nacional",
+        competition="Liga BetPlay",
+        country="Colombia",
+    )
+
+    match = FootballMatchModel(
+        contract=contract,
+        season=2026,
+        round="Clausura - 8",
+        datetime="2026-08-16T20:00:00-05:00",
+        status="scheduled",
+    )
+
+    repository.upsert_records(
+        [
+            FootballMatchRecord(
+                identity=existing_identity,
+                match=match,
+            ),
+        ]
+    )
+
+    with pytest.raises(
+        ValueError,
+        match="identidad de partido no encontrada",
+    ):
+        repository.confirm_removed(unknown_identity)
