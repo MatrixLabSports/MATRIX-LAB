@@ -15,6 +15,9 @@ def sync_football_fixtures(
         date,
     )
 
-    repository.upsert_records(records)
+    repository.reconcile_records_for_date(
+        date=date,
+        current_records=records,
+    )
 
     return records

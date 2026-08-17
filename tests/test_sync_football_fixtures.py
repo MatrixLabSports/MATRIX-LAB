@@ -7,7 +7,7 @@ from app.application.football.sync_fixtures import (
 )
 
 
-def test_sync_football_fixtures_fetches_and_upserts_records():
+def test_sync_football_fixtures_fetches_and_reconciles_records_by_date():
     client = Mock()
     repository = Mock()
     records = [Mock(), Mock()]
@@ -26,12 +26,16 @@ def test_sync_football_fixtures_fetches_and_upserts_records():
         client,
         "2026-08-16",
     )
-    repository.upsert_records.assert_called_once_with(records)
+    repository.reconcile_records_for_date.assert_called_once_with(
+        date="2026-08-16",
+        current_records=records,
+    )
+    repository.upsert_records.assert_not_called()
     repository.save_matches.assert_not_called()
     assert result == records
 
 
-def test_sync_football_fixtures_saves_empty_result():
+def test_sync_football_fixtures_reconciles_empty_result_by_date():
     client = Mock()
     repository = Mock()
 
@@ -49,7 +53,11 @@ def test_sync_football_fixtures_saves_empty_result():
         client,
         "2026-08-16",
     )
-    repository.upsert_records.assert_called_once_with([])
+    repository.reconcile_records_for_date.assert_called_once_with(
+        date="2026-08-16",
+        current_records=[],
+    )
+    repository.upsert_records.assert_not_called()
     repository.save_matches.assert_not_called()
     assert result == []
 
