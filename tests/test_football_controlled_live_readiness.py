@@ -33,6 +33,10 @@ def _evidence(**changes):
         compliance_review_complete=True,
         unresolved_p0_count=0,
         evidence_sha256s=("a" * 64, "b" * 64, "c" * 64, "d" * 64),
+        closing_odds_samples=500,
+        closing_odds_integrity_verified=True,
+        prospective_performance_verified=True,
+        positive_clv_confirmed=True,
     )
     payload.update(changes)
     return ControlledLiveEvidence(**payload)

@@ -56,6 +56,10 @@ class ControlledLiveEvidence:
     compliance_review_complete: bool
     unresolved_p0_count: int
     evidence_sha256s: tuple[str, ...] = ()
+    closing_odds_samples: int = 0
+    closing_odds_integrity_verified: bool = False
+    prospective_performance_verified: bool = False
+    positive_clv_confirmed: bool = False
 
     def __post_init__(self) -> None:
         market = self.market_key.strip()
@@ -78,6 +82,7 @@ class ControlledLiveEvidence:
             "settled_paper_trading_samples",
             "odds_capture_samples",
             "unresolved_p0_count",
+            "closing_odds_samples",
         ):
             _non_negative_int(name, getattr(self, name))
 
@@ -96,6 +101,9 @@ class ControlledLiveEvidence:
             "kill_switch_verified",
             "human_approval_required",
             "compliance_review_complete",
+            "closing_odds_integrity_verified",
+            "prospective_performance_verified",
+            "positive_clv_confirmed",
         ):
             if not isinstance(getattr(self, field), bool):
                 raise ValueError(f"{field} must be bool")
@@ -133,6 +141,7 @@ class ControlledLivePolicy:
     min_settled_paper_trading_samples: int = 450
     min_odds_capture_samples: int = 500
     min_evidence_artifacts: int = 4
+    min_closing_odds_samples: int = 300
 
     def __post_init__(self) -> None:
         for name in (
@@ -142,6 +151,7 @@ class ControlledLivePolicy:
             "min_settled_paper_trading_samples",
             "min_odds_capture_samples",
             "min_evidence_artifacts",
+            "min_closing_odds_samples",
         ):
             value = getattr(self, name)
             if isinstance(value, bool) or not isinstance(value, int) or value <= 0:
@@ -201,6 +211,14 @@ def assess_controlled_live_readiness(
         reasons.append("odds_source_not_authorized")
     if not evidence.odds_timestamp_integrity_verified:
         reasons.append("odds_timestamp_integrity_not_verified")
+    if evidence.closing_odds_samples < policy.min_closing_odds_samples:
+        reasons.append("insufficient_closing_odds_capture")
+    if not evidence.closing_odds_integrity_verified:
+        reasons.append("closing_odds_integrity_not_verified")
+    if not evidence.prospective_performance_verified:
+        reasons.append("prospective_performance_not_verified")
+    if not evidence.positive_clv_confirmed:
+        reasons.append("positive_clv_not_confirmed")
     if not evidence.reproducibility_verified:
         reasons.append("reproducibility_not_verified")
     if not evidence.risk_policy_approved:
