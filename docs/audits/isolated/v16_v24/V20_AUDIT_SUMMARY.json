@@ -1,0 +1,60 @@
+{
+  "audit_completed_at_utc": "2026-08-19T01:02:19Z",
+  "environment": {
+    "execution": "isolated development environment, not user Windows repository",
+    "pytest": "9.0.2",
+    "python": "3.13.5"
+  },
+  "initial_validation_issue": {
+    "finding": "Canonical release fingerprints reject float values; first V20 targeted run exposed 25 failures caused by percentage/cost floats.",
+    "remediation": "Redesigned governed percentages as integer basis points and monetary values as integer cents; no relaxation of canonical fingerprint rules.",
+    "status": "RESOLVED"
+  },
+  "notes": [
+    "V19 rights authorization remains a prerequisite; V20 operational fitness cannot override missing rights.",
+    "PASS means evidence is technically sufficient for governed review, not that a provider is contractually or legally certified.",
+    "The isolated test count must not be represented as the user repository test count until a consolidated installer is run and verified on the user machine."
+  ],
+  "safety": {
+    "automatic_model_promotion": false,
+    "automatic_provider_promotion": false,
+    "automatic_provider_switch": false,
+    "automatic_wagering": false,
+    "production_certified": false,
+    "provider_portfolio_certified": false
+  },
+  "schema": "matrix.audit-summary.v20",
+  "scope": "Provider Portfolio, SLA, Quality, Latency, Quota, Cost & Failover Governance",
+  "source_manifest_content_sha256": "2e83033858a4b447c91c6eceebe07fec3019196db469c84a774304d99787e3a2",
+  "source_manifest_file_count": 92,
+  "verification": {
+    "availability_latency_freshness_gates": "PASS",
+    "coverage_quality_stable_id_error_gates": "PASS",
+    "deterministic_canonical_fingerprints": "PASS",
+    "failover_data_loss_blocks": "PASS",
+    "failover_drill_recency": "PASS",
+    "hardcoded_secret_findings": 0,
+    "human_portfolio_approval_required": "PASS",
+    "imported_product_modules": 51,
+    "independent_failover_requirement": "PASS",
+    "isolated_v12_v20_suite": {
+      "failed": 0,
+      "passed": 450
+    },
+    "missing_operational_evidence_fails_closed": "PASS",
+    "primary_secondary_reference_role_separation": "PASS",
+    "projected_cost_policy": "PASS",
+    "provider_incident_gate": "PASS",
+    "provider_rights_revalidation_on_failover": "PASS",
+    "python_compile": "PASS",
+    "quota_reserve_and_next_window_capacity": "PASS",
+    "schema_identifier_reconciliation": "PASS",
+    "sport_boundary_violations": 0,
+    "stale_and_future_observations_fail_closed": "PASS",
+    "v20_targeted_tests": {
+      "failed": 0,
+      "passed": 67
+    }
+  },
+  "version": "V20"
+}

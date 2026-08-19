@@ -1,0 +1,49 @@
+{
+  "environment": {
+    "execution": "isolated development environment, not user Windows repository",
+    "pytest": "9.0.2",
+    "python": "3.13.5"
+  },
+  "notes": [
+    "Successful third-source tie-breaking remains WATCH rather than silently becoming PASS.",
+    "Fixture identity and required-market identity disputes are quarantined rather than majority-voted.",
+    "Score and event-state disputes cannot be overridden by a source-of-truth rule in V22.",
+    "The isolated suite count must not be represented as the user repository count until a consolidated installer is verified on the user machine."
+  ],
+  "safety": {
+    "automatic_model_promotion": false,
+    "automatic_provider_switch": false,
+    "automatic_wagering": false,
+    "production_certified": false,
+    "source_of_truth_certified": false
+  },
+  "schema": "matrix.audit-summary.v22",
+  "scope": "Cross-Provider Disagreement Resolution, Quarantine & Source-of-Truth Governance",
+  "source_manifest_content_sha256": "c92eefbb53c75e4c71e8e3046ed389f712652e5cfa1954429a488639345956b7",
+  "source_manifest_file_count": 108,
+  "verification": {
+    "authority_temporal_conflict_detection": "PASS",
+    "critical_score_state_authority_override_blocked": "PASS",
+    "field_scoped_source_of_truth": "PASS",
+    "hardcoded_secret_findings": 0,
+    "identity_market_non_tiebreakable_quarantine": "PASS",
+    "import_failures": 0,
+    "imported_product_modules": 55,
+    "independent_human_release_gate": "PASS",
+    "independent_third_source_tiebreak": "PASS",
+    "isolated_v12_v22_suite": {
+      "failed": 0,
+      "passed": 563
+    },
+    "python_compile": "PASS",
+    "quarantine_exact_fingerprint_binding": "PASS",
+    "quarantine_expiry_no_auto_release": "PASS",
+    "sport_boundary_violations": 0,
+    "third_source_independence_guard": "PASS",
+    "v22_targeted_tests": {
+      "failed": 0,
+      "passed": 51
+    }
+  },
+  "version": "V22"
+}

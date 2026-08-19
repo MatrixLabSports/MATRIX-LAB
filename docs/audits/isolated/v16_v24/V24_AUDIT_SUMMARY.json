@@ -1,0 +1,57 @@
+{
+  "environment": {
+    "execution": "isolated development environment, not user Windows repository",
+    "pytest": "9.0.2",
+    "python": "3.13.5"
+  },
+  "notes": [
+    "Decision replay reconstructs only truth known at decision time and rejects future-knowledge contamination.",
+    "A loss is not automatically classified as bad analysis; clean losses become signal-error candidates pending independent review.",
+    "A win is not automatic proof of analysis quality; PUSH/VOID produce no performance judgment.",
+    "Data-quality, coverage, timing, provider-correction, execution and settlement issues are separated from model/signal attribution.",
+    "The isolated suite count must not be represented as the user repository count until consolidated integration is verified on the user machine."
+  ],
+  "safety": {
+    "analysis_quality_automatically_determined": false,
+    "automatic_model_promotion": false,
+    "automatic_provider_switch": false,
+    "automatic_wagering": false,
+    "production_certified": false,
+    "pre_review_learning_label_allowed": false
+  },
+  "schema": "matrix.audit-summary.v24",
+  "scope": "Decision Replay, Error Attribution & Learning Integrity Governance",
+  "source_manifest_content_sha256": "8c1532259c39046d20ff1cd9badb22f40cc4a3381fb8de0cd685eea8fb514c45",
+  "source_manifest_file_count": 127,
+  "verification": {
+    "accountability_ledger_tamper_detection": "PASS",
+    "blocked_untrusted_evidence_learning_guard": "PASS",
+    "clean_loss_signal_error_candidate_only": "PASS",
+    "data_coverage_attribution_separation": "PASS",
+    "data_quality_attribution_separation": "PASS",
+    "decision_time_exact_replay": "PASS",
+    "execution_mismatch_attribution_separation": "PASS",
+    "future_context_leakage_guard": "PASS",
+    "future_truth_leakage_guard": "PASS",
+    "hardcoded_secret_findings": 0,
+    "import_failures": 0,
+    "imported_product_modules": 65,
+    "independent_learning_review_gate": "PASS",
+    "isolated_v12_v24_suite": {
+      "failed": 0,
+      "passed": 708
+    },
+    "post_decision_provider_revision_separation": "PASS",
+    "push_void_no_performance_judgment": "PASS",
+    "python_compile": "PASS",
+    "settlement_evidence_gate": "PASS",
+    "sport_boundary_violations": 0,
+    "timing_attribution_separation": "PASS",
+    "v24_targeted_tests": {
+      "failed": 0,
+      "passed": 69
+    },
+    "win_not_quality_proof_guard": "PASS"
+  },
+  "version": "V24"
+}

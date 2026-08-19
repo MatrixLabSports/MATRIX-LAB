@@ -1,0 +1,51 @@
+{
+  "environment": {
+    "execution": "isolated development environment, not user Windows repository",
+    "pytest": "9.0.2",
+    "python": "3.13.5"
+  },
+  "notes": [
+    "Point-in-time reconstruction is bitemporal: provider truth is selected using both knowledge time and event-validity time.",
+    "Later provider corrections never rewrite frozen historical decision evidence as if they had been known earlier.",
+    "A post-decision correction may require controlled re-analysis but does not, by itself, determine whether the original analysis was good or bad.",
+    "The isolated suite count must not be represented as the user repository count until a consolidated installer is verified on the user machine."
+  ],
+  "safety": {
+    "automatic_model_promotion": false,
+    "automatic_provider_switch": false,
+    "automatic_wagering": false,
+    "historical_backfill_allowed": false,
+    "production_certified": false
+  },
+  "schema": "matrix.audit-summary.v23",
+  "scope": "Provider Corrections, Revisions & Temporal Truth Governance",
+  "source_manifest_content_sha256": "df7960358e2c67a92b91a8ecd358b665660788130f111b032427ab7678c38c58",
+  "source_manifest_file_count": 117,
+  "verification": {
+    "append_only_revision_ledger": "PASS",
+    "corrupt_ledger_append_blocked": "PASS",
+    "correction_scope_binding": "PASS",
+    "critical_correction_human_review_gate": "PASS",
+    "decision_evidence_freeze": "PASS",
+    "future_knowledge_leakage_guard": "PASS",
+    "hardcoded_secret_findings": 0,
+    "identity_rewrite_blocked": "PASS",
+    "import_failures": 0,
+    "imported_product_modules": 59,
+    "isolated_v12_v23_suite": {
+      "failed": 0,
+      "passed": 639
+    },
+    "point_in_time_truth_reconstruction": "PASS",
+    "post_decision_revision_impact": "PASS",
+    "python_compile": "PASS",
+    "retroactive_correction_review": "PASS",
+    "sport_boundary_violations": 0,
+    "training_feature_cutoff_leakage_guard": "PASS",
+    "v23_targeted_tests": {
+      "failed": 0,
+      "passed": 76
+    }
+  },
+  "version": "V23"
+}

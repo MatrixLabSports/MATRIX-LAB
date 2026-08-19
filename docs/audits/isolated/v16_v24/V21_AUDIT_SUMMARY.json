@@ -1,0 +1,49 @@
+{
+  "environment": {
+    "execution": "isolated development environment, not user Windows repository",
+    "pytest": "9.0.2",
+    "python": "3.13.5"
+  },
+  "notes": [
+    "Provider odds/prices are intentionally not required to match; V21 reconciles identity/state/statistical evidence, while price differences remain market information for odds/CLV components.",
+    "PASS is technical reconciliation readiness for governed review, not provider/legal/production certification.",
+    "The isolated suite count must not be represented as the user repository count until a consolidated installer is verified on the user machine."
+  ],
+  "safety": {
+    "automatic_model_promotion": false,
+    "automatic_provider_promotion": false,
+    "automatic_provider_switch": false,
+    "automatic_wagering": false,
+    "production_certified": false
+  },
+  "schema": "matrix.audit-summary.v21",
+  "scope": "Provider Normalization, Cross-Provider Reconciliation & Failover Consistency",
+  "source_manifest_content_sha256": "abe3a4008ca6de991839243e4cc31eacfb8a0fff098e42bb804cf4c15a931fc5",
+  "source_manifest_file_count": 100,
+  "verification": {
+    "canonical_fixture_identity": "PASS",
+    "consecutive_failover_consistency_window": "PASS",
+    "exact_market_line_identity": "PASS",
+    "hardcoded_secret_findings": 0,
+    "import_failures": 0,
+    "imported_product_modules": 52,
+    "isolated_v12_v21_suite": {
+      "failed": 0,
+      "passed": 512
+    },
+    "missing_crosswalk_fails_closed": "PASS",
+    "observation_and_event_skew_guards": "PASS",
+    "provider_pair_binding": "PASS",
+    "python_compile": "PASS",
+    "required_stat_reconciliation": "PASS",
+    "score_and_terminal_state_consistency": "PASS",
+    "sport_boundary_violations": 0,
+    "stale_future_snapshot_guards": "PASS",
+    "temporal_crosswalk_conflict_detection": "PASS",
+    "v21_targeted_tests": {
+      "failed": 0,
+      "passed": 62
+    }
+  },
+  "version": "V21"
+}
