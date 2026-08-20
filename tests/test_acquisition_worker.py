@@ -240,3 +240,37 @@ def test_safety_flags_remain_false():
     assert payload["automatic_model_promotion"] is False
     assert payload["automatic_provider_switch"] is False
     assert payload["automatic_wagering"] is False
+
+def test_in_memory_worker_recovers_raw_without_refetch():
+    fetcher = FakeFetcher()
+    raw = InMemoryRawAppendOnlyLedger()
+    checkpoints = InMemoryCheckpointStore()
+    queue = manifest(
+        "tennis",
+        [item("tennis", "RECOVER", "a")],
+    )
+
+    first = execute_tennis_acquisition_queue(
+        queue_manifest=queue,
+        fetcher=fetcher,
+        raw_ledger=raw,
+        checkpoints=checkpoints,
+        limits=WorkerLimits(max_items=10, max_requests=10),
+    )
+
+    evidence_id = first.evidence_ids[0]
+    checkpoints.completed.clear()
+
+    second = execute_tennis_acquisition_queue(
+        queue_manifest=queue,
+        fetcher=fetcher,
+        raw_ledger=raw,
+        checkpoints=checkpoints,
+        limits=WorkerLimits(max_items=10, max_requests=10),
+    )
+
+    assert second.processed == 0
+    assert second.recovered_without_fetch == 1
+    assert second.requests_used == 0
+    assert second.evidence_ids == (evidence_id,)
+    assert len(fetcher.calls) == 1

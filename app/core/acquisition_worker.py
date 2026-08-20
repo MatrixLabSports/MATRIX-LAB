@@ -35,6 +35,12 @@ class RawAppendOnlyLedger(Protocol):
     def append(self, evidence_id: str, payload: Mapping[str, Any]) -> None:
         ...
 
+    def find_evidence_for_queue_item(
+        self,
+        queue_item_fingerprint: str,
+    ) -> str | None:
+        ...
+
 
 class CheckpointStore(Protocol):
     def is_completed(self, queue_item_fingerprint: str) -> bool:
@@ -61,7 +67,31 @@ class InMemoryRawAppendOnlyLedger:
     def append(self, evidence_id: str, payload: Mapping[str, Any]) -> None:
         if evidence_id in self.records:
             raise ValueError("RAW_APPEND_ONLY_VIOLATION")
+
+        queue_fingerprint = payload.get("queue_item_fingerprint")
+        existing = self.find_evidence_for_queue_item(
+            str(queue_fingerprint)
+        )
+        if existing is not None:
+            raise ValueError("RAW_QUEUE_ITEM_ALREADY_PERSISTED")
+
         self.records[evidence_id] = dict(payload)
+
+    def find_evidence_for_queue_item(
+        self,
+        queue_item_fingerprint: str,
+    ) -> str | None:
+        matches = [
+            evidence_id
+            for evidence_id, payload in self.records.items()
+            if payload.get("queue_item_fingerprint")
+            == queue_item_fingerprint
+        ]
+
+        if len(matches) > 1:
+            raise ValueError("RAW_QUEUE_ITEM_COLLISION")
+
+        return matches[0] if matches else None
 
 
 @dataclass
@@ -103,6 +133,7 @@ class WorkerLimits:
 class AcquisitionWorkerResult:
     processed: int
     skipped_completed: int
+    recovered_without_fetch: int
     failed: int
     requests_used: int
     evidence_ids: tuple[str, ...]
@@ -110,9 +141,10 @@ class AcquisitionWorkerResult:
 
     def payload(self) -> Mapping[str, Any]:
         return {
-            "schema": "matrix.acquisition-worker-result/1",
+            "schema": "matrix.acquisition-worker-result/2",
             "processed": self.processed,
             "skipped_completed": self.skipped_completed,
+            "recovered_without_fetch": self.recovered_without_fetch,
             "failed": self.failed,
             "requests_used": self.requests_used,
             "evidence_ids": list(self.evidence_ids),
@@ -190,6 +222,7 @@ def execute_acquisition_queue(
 
     processed = 0
     skipped_completed = 0
+    recovered_without_fetch = 0
     failed = 0
     requests_used = 0
     evidence_ids: list[str] = []
@@ -225,9 +258,37 @@ def execute_acquisition_queue(
             skipped_completed += 1
             continue
 
+        try:
+            persisted_evidence = raw_ledger.find_evidence_for_queue_item(
+                queue_fingerprint
+            )
+        except Exception as error:
+            failed += 1
+            failures.append((queue_fingerprint, type(error).__name__))
+            continue
+
+        if persisted_evidence is not None:
+            try:
+                checkpoints.mark_completed(
+                    queue_fingerprint,
+                    persisted_evidence,
+                )
+            except Exception as error:
+                failed += 1
+                failures.append((queue_fingerprint, type(error).__name__))
+                continue
+
+            skipped_completed += 1
+            recovered_without_fetch += 1
+            evidence_ids.append(persisted_evidence)
+            continue
+
         request_cost = int(item["estimated_request_cost"])
         if requests_used + request_cost > limits.max_requests:
-            failures.append((queue_fingerprint, "WORKER_REQUEST_LIMIT_REACHED"))
+            failures.append((
+                queue_fingerprint,
+                "WORKER_REQUEST_LIMIT_REACHED",
+            ))
             break
 
         try:
@@ -243,8 +304,13 @@ def execute_acquisition_queue(
             )
 
             if raw_ledger.contains(evidence_id):
-                checkpoints.mark_completed(queue_fingerprint, evidence_id)
+                checkpoints.mark_completed(
+                    queue_fingerprint,
+                    evidence_id,
+                )
                 skipped_completed += 1
+                recovered_without_fetch += 1
+                evidence_ids.append(evidence_id)
                 continue
 
             raw_ledger.append(evidence_id, envelope)
@@ -260,6 +326,7 @@ def execute_acquisition_queue(
     return AcquisitionWorkerResult(
         processed=processed,
         skipped_completed=skipped_completed,
+        recovered_without_fetch=recovered_without_fetch,
         failed=failed,
         requests_used=requests_used,
         evidence_ids=tuple(evidence_ids),
