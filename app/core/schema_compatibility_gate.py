@@ -52,24 +52,15 @@ def _get(record: object, name: str) -> Any:
     return getattr(record, name, None)
 
 
-def _type_matches(
-    value: object,
-    value_type: str,
-) -> bool:
+def _type_matches(value: object, value_type: str) -> bool:
     if value_type == "string":
         return isinstance(value, str)
     if value_type == "boolean":
         return isinstance(value, bool)
     if value_type == "integer":
-        return (
-            isinstance(value, int)
-            and not isinstance(value, bool)
-        )
+        return isinstance(value, int) and not isinstance(value, bool)
     if value_type == "float":
-        return (
-            isinstance(value, float)
-            and math.isfinite(value)
-        )
+        return isinstance(value, float) and math.isfinite(value)
     if value_type == "number":
         return (
             isinstance(value, (int, float))
@@ -95,6 +86,9 @@ class SchemaAdmissionDecision:
     schema_name: str
     schema_version: str
     schema_fingerprint: str | None
+    as_of: str
+    payload_fingerprint: str
+    source_record_fingerprint: str | None
     reason_codes: tuple[str, ...]
     decision_fingerprint: str
 
@@ -109,67 +103,80 @@ def evaluate_schema_compatibility(
     as_of = _aware("AS_OF", as_of)
 
     sport = _get(record, "sport")
-    schema_name = _get(
-        record,
-        "schema_name",
-    )
-    schema_version = _get(
-        record,
-        "schema_version",
-    )
+    schema_name = _get(record, "schema_name")
+    schema_version = _get(record, "schema_version")
     payload = _get(record, "payload")
+    source_record_fingerprint = _get(
+        record,
+        "record_fingerprint",
+    )
 
     reasons: list[str] = []
     schema_fingerprint: str | None = None
 
     if sport not in {"football", "tennis"}:
         reasons.append("INVALID_SPORT")
-
     if not isinstance(entity_type, str) or not entity_type:
         reasons.append("INVALID_ENTITY_TYPE")
-
     if not isinstance(schema_name, str) or not schema_name:
         reasons.append("INVALID_SCHEMA_NAME")
-
-    if (
-        not isinstance(schema_version, str)
-        or not schema_version
-    ):
+    if not isinstance(schema_version, str) or not schema_version:
         reasons.append("INVALID_SCHEMA_VERSION")
-
     if not isinstance(payload, Mapping):
         reasons.append("INVALID_PAYLOAD")
+        payload_for_hash: Mapping[str, Any] = {}
+    else:
+        payload_for_hash = payload
+
+    payload_fingerprint = _sha(
+        {
+            "schema": "matrix.schema-admission-payload/1",
+            "sport": sport,
+            "entity_type": entity_type,
+            "schema_name": schema_name,
+            "schema_version": schema_version,
+            "payload": payload_for_hash,
+        }
+    )
+
+    if source_record_fingerprint is not None:
+        if (
+            not isinstance(source_record_fingerprint, str)
+            or len(source_record_fingerprint) != 64
+        ):
+            reasons.append("INVALID_SOURCE_RECORD_FINGERPRINT")
+        else:
+            try:
+                int(source_record_fingerprint, 16)
+            except ValueError:
+                reasons.append("INVALID_SOURCE_RECORD_FINGERPRINT")
+            else:
+                source_record_fingerprint = source_record_fingerprint.lower()
 
     contract = None
     if not reasons:
-        contract = registry.get_exact(
-            sport=sport,
-            entity_type=entity_type,
-            schema_name=schema_name,
-            schema_version=schema_version,
-        )
-
-        if contract is None:
-            reasons.append(
-                "UNKNOWN_SCHEMA_VERSION"
+        try:
+            contract = registry.get_exact(
+                sport=sport,
+                entity_type=entity_type,
+                schema_name=schema_name,
+                schema_version=schema_version,
             )
+        except ValueError as error:
+            reasons.append(f"SCHEMA_REGISTRY_INTEGRITY:{error}")
+
+        if contract is None and not reasons:
+            reasons.append("UNKNOWN_SCHEMA_VERSION")
 
     if contract is not None:
         contract_available = datetime.fromisoformat(
-            contract["available_at"].replace(
-                "Z",
-                "+00:00",
-            )
+            contract["available_at"].replace("Z", "+00:00")
         ).astimezone(UTC)
 
         if contract_available > as_of:
-            reasons.append(
-                "SCHEMA_NOT_AVAILABLE_AS_OF"
-            )
+            reasons.append("SCHEMA_NOT_AVAILABLE_AS_OF")
 
-        schema_fingerprint = contract[
-            "schema_fingerprint"
-        ]
+        schema_fingerprint = contract["schema_fingerprint"]
 
         fields = {
             item["name"]: item
@@ -179,66 +186,40 @@ def evaluate_schema_compatibility(
         for name, field in fields.items():
             if name not in payload:
                 if field["required"]:
-                    reasons.append(
-                        f"MISSING_REQUIRED_FIELD:{name}"
-                    )
+                    reasons.append(f"MISSING_REQUIRED_FIELD:{name}")
                 continue
 
             value = payload[name]
-
             if value is None:
                 if not field["nullable"]:
-                    reasons.append(
-                        f"NULL_NOT_ALLOWED:{name}"
-                    )
+                    reasons.append(f"NULL_NOT_ALLOWED:{name}")
                 continue
 
-            if not _type_matches(
-                value,
-                field["value_type"],
-            ):
-                reasons.append(
-                    f"TYPE_MISMATCH:{name}"
-                )
+            if not _type_matches(value, field["value_type"]):
+                reasons.append(f"TYPE_MISMATCH:{name}")
 
-        extras = (
-            set(payload)
-            - set(fields)
-        )
-
-        if (
-            extras
-            and not contract[
-                "allow_additional_fields"
-            ]
-        ):
+        extras = set(payload) - set(fields)
+        if extras and not contract["allow_additional_fields"]:
             for name in sorted(extras):
-                reasons.append(
-                    f"UNDECLARED_FIELD:{name}"
-                )
+                reasons.append(f"UNDECLARED_FIELD:{name}")
 
     reasons = sorted(set(reasons))
-    status = (
-        "ADMIT"
-        if not reasons
-        else "QUARANTINE"
-    )
+    status = "ADMIT" if not reasons else "QUARANTINE"
     eligible = status == "ADMIT"
+    as_of_text = _iso(as_of)
 
     base = {
-        "schema": (
-            "matrix.schema-admission-decision/1"
-        ),
+        "schema": "matrix.schema-admission-decision/2",
         "status": status,
         "downstream_eligible": eligible,
         "sport": sport,
         "entity_type": entity_type,
         "schema_name": schema_name,
         "schema_version": schema_version,
-        "schema_fingerprint": (
-            schema_fingerprint
-        ),
-        "as_of": _iso(as_of),
+        "schema_fingerprint": schema_fingerprint,
+        "as_of": as_of_text,
+        "payload_fingerprint": payload_fingerprint,
+        "source_record_fingerprint": source_record_fingerprint,
         "reason_codes": reasons,
         "automatic_schema_promotion": False,
         "automatic_model_promotion": False,
@@ -251,9 +232,10 @@ def evaluate_schema_compatibility(
         entity_type=entity_type,
         schema_name=schema_name,
         schema_version=schema_version,
-        schema_fingerprint=(
-            schema_fingerprint
-        ),
+        schema_fingerprint=schema_fingerprint,
+        as_of=as_of_text,
+        payload_fingerprint=payload_fingerprint,
+        source_record_fingerprint=source_record_fingerprint,
         reason_codes=tuple(reasons),
         decision_fingerprint=_sha(base),
     )
