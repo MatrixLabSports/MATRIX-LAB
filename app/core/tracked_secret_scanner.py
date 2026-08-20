@@ -36,6 +36,8 @@ _PLACEHOLDER_TERMS = (
     "not-a-secret",
     "super-secret",
     "secret-value",
+    "synthetic",
+    "fixture",
 )
 
 _ASSIGNMENT_PATTERN = re.compile(
@@ -92,13 +94,29 @@ _PEM_BLOCK_PATTERN = re.compile(
     """
 )
 
-# High-confidence credential formats are still blocked even inside tests.
 _HIGH_CONFIDENCE_PATTERNS = (
     re.compile(r"\bAKIA[0-9A-Z]{16}\b"),
     re.compile(r"\bAIza[0-9A-Za-z_-]{35}\b"),
     re.compile(r"\bgh[pousr]_[A-Za-z0-9]{36,255}\b"),
     re.compile(r"\bxox[baprs]-[A-Za-z0-9-]{20,}\b"),
 )
+
+_TEXT_SUFFIXES = {
+    ".py",
+    ".ps1",
+    ".md",
+    ".txt",
+    ".json",
+    ".yaml",
+    ".yml",
+    ".toml",
+    ".ini",
+    ".cfg",
+    ".env",
+    ".pem",
+    ".key",
+    ".crt",
+}
 
 _MAX_SCAN_BYTES = 2 * 1024 * 1024
 
@@ -145,30 +163,6 @@ def _is_placeholder(value: str) -> bool:
     return any(
         term in lowered
         for term in _PLACEHOLDER_TERMS
-    )
-
-
-def _read_text_candidate(path: Path) -> str | None:
-    try:
-        size = path.stat().st_size
-    except OSError:
-        return None
-
-    if size > _MAX_SCAN_BYTES:
-        return None
-
-    try:
-        data = path.read_bytes()
-    except OSError:
-        return None
-
-    if _looks_binary(data):
-        return None
-
-    # Strip optional UTF-8 BOM created by Windows PowerShell.
-    return data.decode(
-        "utf-8-sig",
-        errors="ignore",
     )
 
 
@@ -295,9 +289,7 @@ def _non_python_has_hardcoded_secret(
     if _high_confidence_leak(text):
         return True
 
-    assignment = _ASSIGNMENT_PATTERN.search(
-        text
-    )
+    assignment = _ASSIGNMENT_PATTERN.search(text)
 
     if (
         assignment is not None
@@ -329,6 +321,26 @@ def _fixture_path(relative: str) -> bool:
     )
 
 
+def _forbidden_name(
+    path: Path,
+    forbidden_names: set[str],
+) -> bool:
+    name = path.name.lower()
+
+    if name in forbidden_names:
+        return True
+
+    # .env.production / .env.test / .env.local etc.
+    return name.startswith(".env.")
+
+
+def _looks_text_by_name(path: Path) -> bool:
+    return (
+        path.suffix.lower() in _TEXT_SUFFIXES
+        or path.name.lower().startswith(".env")
+    )
+
+
 def scan_tracked_repository(
     root: str | Path,
     *,
@@ -348,7 +360,10 @@ def scan_tracked_repository(
             root_path
         ).as_posix()
 
-        if path.name.lower() in forbidden:
+        if _forbidden_name(
+            path,
+            forbidden,
+        ):
             findings.append(
                 SecretScanFinding(
                     path=relative,
@@ -359,17 +374,52 @@ def scan_tracked_repository(
         if not path.is_file():
             continue
 
-        text = _read_text_candidate(path)
-
-        if text is None:
+        try:
+            size = path.stat().st_size
+        except OSError:
+            findings.append(
+                SecretScanFinding(
+                    path=relative,
+                    rule="UNREADABLE_TRACKED_FILE",
+                )
+            )
             continue
 
+        if (
+            size > _MAX_SCAN_BYTES
+            and _looks_text_by_name(path)
+        ):
+            findings.append(
+                SecretScanFinding(
+                    path=relative,
+                    rule="OVERSIZED_TEXT_NOT_SCANNED",
+                )
+            )
+            continue
+
+        if size > _MAX_SCAN_BYTES:
+            continue
+
+        try:
+            data = path.read_bytes()
+        except OSError:
+            findings.append(
+                SecretScanFinding(
+                    path=relative,
+                    rule="UNREADABLE_TRACKED_FILE",
+                )
+            )
+            continue
+
+        if _looks_binary(data):
+            continue
+
+        text = data.decode(
+            "utf-8-sig",
+            errors="ignore",
+        )
         scanned += 1
 
-        # Tests/docs legitimately contain synthetic credential literals.
-        # There we only block high-confidence real credential formats
-        # and complete PEM-like key material. Everywhere else we apply
-        # the full semantic/generic hardcoded-secret rules.
         if _fixture_path(relative):
             leaked = _high_confidence_leak(
                 text
