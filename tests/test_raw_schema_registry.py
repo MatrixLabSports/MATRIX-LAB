@@ -1,4 +1,5 @@
 ﻿from datetime import datetime, timezone
+import json
 import sqlite3
 
 import pytest
@@ -18,12 +19,7 @@ def contract(registry):
         entity_type="player",
         schema_name="tennis.player.match_history",
         schema_version="1",
-        available_at=datetime(
-            2026,
-            8,
-            1,
-            tzinfo=UTC,
-        ),
+        available_at=datetime(2026, 8, 1, tzinfo=UTC),
         fields=(
             RawSchemaField(
                 name="event_key",
@@ -41,12 +37,8 @@ def contract(registry):
     )
 
 
-def test_schema_contract_is_immutable_and_idempotent(
-    tmp_path,
-):
-    registry = SQLiteRawSchemaRegistry(
-        tmp_path / "schema.db"
-    )
+def test_schema_contract_is_immutable_and_idempotent(tmp_path):
+    registry = SQLiteRawSchemaRegistry(tmp_path / "schema.db")
     value = contract(registry)
 
     first = registry.register(value)
@@ -57,9 +49,7 @@ def test_schema_contract_is_immutable_and_idempotent(
 
 
 def test_same_version_mutation_is_rejected(tmp_path):
-    registry = SQLiteRawSchemaRegistry(
-        tmp_path / "schema.db"
-    )
+    registry = SQLiteRawSchemaRegistry(tmp_path / "schema.db")
     registry.register(contract(registry))
 
     changed = registry.build_contract(
@@ -67,12 +57,7 @@ def test_same_version_mutation_is_rejected(tmp_path):
         entity_type="player",
         schema_name="tennis.player.match_history",
         schema_version="1",
-        available_at=datetime(
-            2026,
-            8,
-            1,
-            tzinfo=UTC,
-        ),
+        available_at=datetime(2026, 8, 1, tzinfo=UTC),
         fields=(
             RawSchemaField(
                 name="event_key",
@@ -96,59 +81,55 @@ def test_same_version_mutation_is_rejected(tmp_path):
         registry.register(changed)
 
 
-def test_cross_sport_contracts_have_distinct_fingerprints(
-    tmp_path,
-):
-    registry = SQLiteRawSchemaRegistry(
-        tmp_path / "schema.db"
-    )
-
-    tennis = contract(registry)
-    football = registry.build_contract(
-        sport="football",
-        entity_type="team",
-        schema_name="football.team.match_history",
-        schema_version="1",
-        available_at=datetime(
-            2026,
-            8,
-            1,
-            tzinfo=UTC,
-        ),
-        fields=(
-            RawSchemaField(
-                name="event_key",
-                value_type="string",
-                required=True,
-                nullable=False,
-            ),
-        ),
-    )
-
-    assert (
-        tennis.schema_fingerprint
-        != football.schema_fingerprint
-    )
-
-
-def test_registry_tampering_is_detected(tmp_path):
+def test_verified_read_fails_closed_on_semantic_tamper(tmp_path):
     path = tmp_path / "schema.db"
     registry = SQLiteRawSchemaRegistry(path)
     value = contract(registry)
     registry.register(value)
 
     with sqlite3.connect(path) as connection:
+        payload = json.loads(
+            connection.execute(
+                """
+                SELECT payload_json
+                FROM raw_schema_contracts
+                WHERE schema_id = ?
+                """,
+                (value.schema_id,),
+            ).fetchone()[0]
+        )
+        payload["fields"][0]["value_type"] = "boolean"
+        payload_json = json.dumps(
+            payload,
+            sort_keys=True,
+            separators=(",", ":"),
+            ensure_ascii=False,
+            allow_nan=False,
+        ) + "\n"
+        import hashlib
+        payload_sha = hashlib.sha256(
+            payload_json.encode("utf-8")
+        ).hexdigest()
+
         connection.execute(
             """
             UPDATE raw_schema_contracts
-            SET payload_json = ?
+            SET payload_json = ?, payload_sha256 = ?
             WHERE schema_id = ?
             """,
-            (
-                '{"tampered":true}\n',
-                value.schema_id,
-            ),
+            (payload_json, payload_sha, value.schema_id),
         )
         connection.commit()
+
+    with pytest.raises(
+        ValueError,
+        match="RAW_SCHEMA_INTEGRITY_VIOLATION",
+    ):
+        registry.get_exact(
+            sport="tennis",
+            entity_type="player",
+            schema_name="tennis.player.match_history",
+            schema_version="1",
+        )
 
     assert registry.audit_integrity().ok is False

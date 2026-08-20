@@ -48,6 +48,18 @@ def _aware(name: str, value: object) -> datetime:
     return value.astimezone(UTC)
 
 
+def _parse_utc(name: str, value: object) -> datetime:
+    if not isinstance(value, str) or not value:
+        raise ValueError(f"INVALID_{name}")
+    try:
+        parsed = datetime.fromisoformat(
+            value.replace("Z", "+00:00")
+        )
+    except ValueError as error:
+        raise ValueError(f"INVALID_{name}") from error
+    return _aware(name, parsed)
+
+
 def _iso(value: datetime) -> str:
     return (
         value.astimezone(UTC)
@@ -99,16 +111,9 @@ class RawSchemaContract:
             "schema_name": self.schema_name,
             "schema_version": self.schema_version,
             "available_at": _iso(self.available_at),
-            "fields": [
-                field.payload()
-                for field in self.fields
-            ],
-            "allow_additional_fields": (
-                self.allow_additional_fields
-            ),
-            "schema_fingerprint": (
-                self.schema_fingerprint
-            ),
+            "fields": [field.payload() for field in self.fields],
+            "allow_additional_fields": self.allow_additional_fields,
+            "schema_fingerprint": self.schema_fingerprint,
             "missing_is_zero": False,
             "name_join_used": False,
             "automatic_model_promotion": False,
@@ -127,10 +132,7 @@ class RawSchemaIntegrityReport:
 class SQLiteRawSchemaRegistry:
     def __init__(self, path: str | Path) -> None:
         self.path = Path(path)
-        self.path.parent.mkdir(
-            parents=True,
-            exist_ok=True,
-        )
+        self.path.parent.mkdir(parents=True, exist_ok=True)
         self._initialize()
 
     def _connect(self) -> sqlite3.Connection:
@@ -139,12 +141,8 @@ class SQLiteRawSchemaRegistry:
             timeout=30.0,
             isolation_level=None,
         )
-        connection.execute(
-            "PRAGMA journal_mode = WAL"
-        )
-        connection.execute(
-            "PRAGMA synchronous = FULL"
-        )
+        connection.execute("PRAGMA journal_mode = WAL")
+        connection.execute("PRAGMA synchronous = FULL")
         return connection
 
     def _initialize(self) -> None:
@@ -189,83 +187,39 @@ class SQLiteRawSchemaRegistry:
         if sport not in {"football", "tennis"}:
             raise ValueError("INVALID_SPORT")
 
-        entity_type = _nonempty(
-            "ENTITY_TYPE",
-            entity_type,
-        )
-        schema_name = _nonempty(
-            "SCHEMA_NAME",
-            schema_name,
-        )
-        schema_version = _nonempty(
-            "SCHEMA_VERSION",
-            schema_version,
-        )
-        available_at = _aware(
-            "AVAILABLE_AT",
-            available_at,
-        )
+        entity_type = _nonempty("ENTITY_TYPE", entity_type)
+        schema_name = _nonempty("SCHEMA_NAME", schema_name)
+        schema_version = _nonempty("SCHEMA_VERSION", schema_version)
+        available_at = _aware("AVAILABLE_AT", available_at)
 
-        if not isinstance(
-            allow_additional_fields,
-            bool,
-        ):
-            raise ValueError(
-                "INVALID_ADDITIONAL_FIELDS_POLICY"
-            )
+        if not isinstance(allow_additional_fields, bool):
+            raise ValueError("INVALID_ADDITIONAL_FIELDS_POLICY")
 
         if (
             isinstance(fields, (str, bytes))
             or not isinstance(fields, Sequence)
             or not fields
         ):
-            raise ValueError(
-                "EMPTY_SCHEMA_FIELDS"
-            )
+            raise ValueError("EMPTY_SCHEMA_FIELDS")
 
         normalized: list[RawSchemaField] = []
         names: set[str] = set()
 
         for field in fields:
-            if not isinstance(
-                field,
-                RawSchemaField,
-            ):
-                raise ValueError(
-                    "INVALID_SCHEMA_FIELD"
-                )
+            if not isinstance(field, RawSchemaField):
+                raise ValueError("INVALID_SCHEMA_FIELD")
 
-            name = _nonempty(
-                "FIELD_NAME",
-                field.name,
-            )
-
+            name = _nonempty("FIELD_NAME", field.name)
             if name in names:
-                raise ValueError(
-                    "DUPLICATE_SCHEMA_FIELD"
-                )
+                raise ValueError("DUPLICATE_SCHEMA_FIELD")
             names.add(name)
 
             if field.value_type not in _ALLOWED_TYPES:
-                raise ValueError(
-                    "INVALID_SCHEMA_FIELD_TYPE"
-                )
-
-            if not isinstance(
-                field.required,
-                bool,
-            ):
-                raise ValueError(
-                    "INVALID_REQUIRED_FLAG"
-                )
-
-            if not isinstance(
-                field.nullable,
-                bool,
-            ):
-                raise ValueError(
-                    "INVALID_NULLABLE_FLAG"
-                )
+                raise ValueError("INVALID_SCHEMA_FIELD_TYPE")
+            if not isinstance(field.required, bool):
+                raise ValueError("INVALID_REQUIRED_FLAG")
+            if not isinstance(field.nullable, bool):
+                raise ValueError("INVALID_NULLABLE_FLAG")
 
             normalized.append(
                 RawSchemaField(
@@ -276,10 +230,7 @@ class SQLiteRawSchemaRegistry:
                 )
             )
 
-        normalized = sorted(
-            normalized,
-            key=lambda item: item.name,
-        )
+        normalized = sorted(normalized, key=lambda item: item.name)
 
         base = {
             "schema": "matrix.raw-schema-contract/1",
@@ -288,13 +239,8 @@ class SQLiteRawSchemaRegistry:
             "schema_name": schema_name,
             "schema_version": schema_version,
             "available_at": _iso(available_at),
-            "fields": [
-                field.payload()
-                for field in normalized
-            ],
-            "allow_additional_fields": (
-                allow_additional_fields
-            ),
+            "fields": [field.payload() for field in normalized],
+            "allow_additional_fields": allow_additional_fields,
             "missing_is_zero": False,
             "name_join_used": False,
             "automatic_model_promotion": False,
@@ -305,16 +251,12 @@ class SQLiteRawSchemaRegistry:
         schema_fingerprint = _sha(base)
         schema_id = _sha(
             {
-                "schema": (
-                    "matrix.raw-schema-contract-id/1"
-                ),
+                "schema": "matrix.raw-schema-contract-id/1",
                 "sport": sport,
                 "entity_type": entity_type,
                 "schema_name": schema_name,
                 "schema_version": schema_version,
-                "schema_fingerprint": (
-                    schema_fingerprint
-                ),
+                "schema_fingerprint": schema_fingerprint,
             }
         )
 
@@ -326,13 +268,91 @@ class SQLiteRawSchemaRegistry:
             schema_version=schema_version,
             available_at=available_at,
             fields=tuple(normalized),
-            allow_additional_fields=(
-                allow_additional_fields
-            ),
-            schema_fingerprint=(
-                schema_fingerprint
-            ),
+            allow_additional_fields=allow_additional_fields,
+            schema_fingerprint=schema_fingerprint,
         )
+
+    @classmethod
+    def _rederive_payload(
+        cls,
+        payload: Mapping[str, Any],
+    ) -> RawSchemaContract:
+        fields = tuple(
+            RawSchemaField(
+                name=item["name"],
+                value_type=item["value_type"],
+                required=item["required"],
+                nullable=item["nullable"],
+            )
+            for item in payload["fields"]
+        )
+
+        return cls.build_contract(
+            sport=payload["sport"],
+            entity_type=payload["entity_type"],
+            schema_name=payload["schema_name"],
+            schema_version=payload["schema_version"],
+            available_at=_parse_utc("AVAILABLE_AT", payload["available_at"]),
+            fields=fields,
+            allow_additional_fields=payload["allow_additional_fields"],
+        )
+
+    @classmethod
+    def _verify_row(
+        cls,
+        row: tuple[Any, ...],
+    ) -> tuple[bool, str | None, Mapping[str, Any] | None]:
+        (
+            schema_id,
+            sport,
+            entity_type,
+            schema_name,
+            schema_version,
+            available_at,
+            schema_fingerprint,
+            payload_json,
+            stored_sha,
+        ) = row
+
+        try:
+            payload = json.loads(payload_json)
+        except json.JSONDecodeError:
+            return False, "INVALID_JSON", None
+
+        actual_sha = sha256(
+            _canonical_json(payload).encode("utf-8")
+        ).hexdigest()
+        if actual_sha != stored_sha:
+            return False, "PAYLOAD_HASH_MISMATCH", payload
+
+        try:
+            expected = cls._rederive_payload(payload)
+        except (KeyError, TypeError, ValueError):
+            return False, "PAYLOAD_REDERIVATION_FAILED", payload
+
+        db_pairs = {
+            "schema_id": schema_id,
+            "sport": sport,
+            "entity_type": entity_type,
+            "schema_name": schema_name,
+            "schema_version": schema_version,
+            "available_at": available_at,
+            "schema_fingerprint": schema_fingerprint,
+        }
+        for key, expected_value in db_pairs.items():
+            if payload.get(key) != expected_value:
+                return False, f"{key.upper()}_MISMATCH", payload
+
+        if expected.payload() != payload:
+            return False, "SEMANTIC_PAYLOAD_MISMATCH", payload
+
+        if expected.schema_id != schema_id:
+            return False, "SCHEMA_ID_REDERIVATION_MISMATCH", payload
+
+        if expected.schema_fingerprint != schema_fingerprint:
+            return False, "SCHEMA_FINGERPRINT_REDERIVATION_MISMATCH", payload
+
+        return True, None, payload
 
     def register(
         self,
@@ -345,28 +365,17 @@ class SQLiteRawSchemaRegistry:
             schema_version=contract.schema_version,
             available_at=contract.available_at,
             fields=contract.fields,
-            allow_additional_fields=(
-                contract.allow_additional_fields
-            ),
+            allow_additional_fields=contract.allow_additional_fields,
         )
 
         if expected != contract:
-            raise ValueError(
-                "RAW_SCHEMA_DERIVATION_MISMATCH"
-            )
+            raise ValueError("RAW_SCHEMA_DERIVATION_MISMATCH")
 
-        payload_json = _canonical_json(
-            contract.payload()
-        )
-        payload_sha = sha256(
-            payload_json.encode("utf-8")
-        ).hexdigest()
+        payload_json = _canonical_json(contract.payload())
+        payload_sha = sha256(payload_json.encode("utf-8")).hexdigest()
 
         with self._connect() as connection:
-            connection.execute(
-                "BEGIN IMMEDIATE"
-            )
-
+            connection.execute("BEGIN IMMEDIATE")
             existing = connection.execute(
                 """
                 SELECT
@@ -390,20 +399,13 @@ class SQLiteRawSchemaRegistry:
 
             if existing is not None:
                 connection.execute("ROLLBACK")
-
                 if (
-                    str(existing[0])
-                    == contract.schema_id
-                    and str(existing[1])
-                    == contract.schema_fingerprint
-                    and str(existing[2])
-                    == payload_sha
+                    str(existing[0]) == contract.schema_id
+                    and str(existing[1]) == contract.schema_fingerprint
+                    and str(existing[2]) == payload_sha
                 ):
                     return contract
-
-                raise ValueError(
-                    "RAW_SCHEMA_VERSION_MUTATION_VIOLATION"
-                )
+                raise ValueError("RAW_SCHEMA_VERSION_MUTATION_VIOLATION")
 
             try:
                 connection.execute(
@@ -436,9 +438,7 @@ class SQLiteRawSchemaRegistry:
                 connection.execute("COMMIT")
             except sqlite3.IntegrityError as error:
                 connection.execute("ROLLBACK")
-                raise ValueError(
-                    "RAW_SCHEMA_APPEND_ONLY_VIOLATION"
-                ) from error
+                raise ValueError("RAW_SCHEMA_APPEND_ONLY_VIOLATION") from error
 
         return contract
 
@@ -453,7 +453,16 @@ class SQLiteRawSchemaRegistry:
         with self._connect() as connection:
             row = connection.execute(
                 """
-                SELECT payload_json
+                SELECT
+                    schema_id,
+                    sport,
+                    entity_type,
+                    schema_name,
+                    schema_version,
+                    available_at,
+                    schema_fingerprint,
+                    payload_json,
+                    payload_sha256
                 FROM raw_schema_contracts
                 WHERE
                     sport = ?
@@ -469,15 +478,16 @@ class SQLiteRawSchemaRegistry:
                 ),
             ).fetchone()
 
-        return (
-            None
-            if row is None
-            else json.loads(row[0])
-        )
+        if row is None:
+            return None
 
-    def audit_integrity(
-        self,
-    ) -> RawSchemaIntegrityReport:
+        ok, error, payload = self._verify_row(row)
+        if not ok:
+            raise ValueError(f"RAW_SCHEMA_INTEGRITY_VIOLATION:{error}")
+
+        return payload
+
+    def audit_integrity(self) -> RawSchemaIntegrityReport:
         errors: list[str] = []
 
         with self._connect() as connection:
@@ -499,59 +509,9 @@ class SQLiteRawSchemaRegistry:
             ).fetchall()
 
         for row in rows:
-            (
-                schema_id,
-                sport,
-                entity_type,
-                schema_name,
-                schema_version,
-                available_at,
-                schema_fingerprint,
-                payload_json,
-                stored_sha,
-            ) = row
-
-            try:
-                payload = json.loads(payload_json)
-            except json.JSONDecodeError:
-                errors.append(
-                    f"INVALID_JSON:{schema_id}"
-                )
-                continue
-
-            actual_sha = sha256(
-                _canonical_json(
-                    payload
-                ).encode("utf-8")
-            ).hexdigest()
-
-            if actual_sha != stored_sha:
-                errors.append(
-                    f"PAYLOAD_HASH_MISMATCH:"
-                    f"{schema_id}"
-                )
-
-            for key, expected in {
-                "schema_id": schema_id,
-                "sport": sport,
-                "entity_type": entity_type,
-                "schema_name": schema_name,
-                "schema_version": schema_version,
-                "available_at": available_at,
-                "schema_fingerprint": (
-                    schema_fingerprint
-                ),
-                "missing_is_zero": False,
-                "name_join_used": False,
-                "automatic_model_promotion": False,
-                "automatic_provider_switch": False,
-                "automatic_wagering": False,
-            }.items():
-                if payload.get(key) != expected:
-                    errors.append(
-                        f"{key.upper()}_MISMATCH:"
-                        f"{schema_id}"
-                    )
+            ok, error, _ = self._verify_row(row)
+            if not ok:
+                errors.append(f"{error}:{row[0]}")
 
         return RawSchemaIntegrityReport(
             ok=not errors,
