@@ -15,14 +15,18 @@ def test_ci_forbids_direct_legacy_http_boundary():
     assert "UNAUTHORIZED_REQUESTS_SESSION" in source
 
 
-def test_governed_client_may_construct_session_but_not_call_requests_verbs():
+def test_governed_client_requires_pinned_transport_and_has_no_requests_session():
     source = Path(
         "app/providers/api_football/governed_client.py"
     ).read_text(
         encoding="utf-8-sig"
     )
 
-    assert "requests.Session()" in source
+    assert "requests.Session()" not in source
+    assert "import requests" not in source
+    assert "pinned_transport" in source
+    assert "MatrixPinnedHttpsTransport" in source
+    assert "PINNED_HTTPS_TRANSPORT_REQUIRED" in source
 
     for forbidden in (
         "requests.get(",

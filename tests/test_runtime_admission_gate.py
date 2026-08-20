@@ -1,4 +1,4 @@
-﻿from dataclasses import replace
+from dataclasses import replace
 from datetime import datetime, timezone
 
 from app.application.football.runtime_admission_gate import (
@@ -124,6 +124,42 @@ def run(tmp_path, outcomes, *, attempts=1, char="1"):
     return result, report, audit
 
 
+
+def _production_run_mode_store(
+    tmp_path,
+    report,
+    sport,
+):
+    from datetime import (
+        datetime,
+        timezone,
+    )
+
+    from app.core.provider_run_mode_evidence import (
+        SQLiteProviderRunModeEvidenceStore,
+    )
+
+    store = SQLiteProviderRunModeEvidenceStore(
+        tmp_path / "runtime_admission_mode.db"
+    )
+
+    store.record(
+        run_id=report.run_id,
+        sport=sport,
+        provider_key=f"test_{sport}_provider",
+        mode="PRODUCTION",
+        preflight_decision_fingerprint="f" * 64,
+        authorized_at=datetime(
+            2026,
+            8,
+            20,
+            tzinfo=timezone.utc,
+        ),
+    )
+
+    return store
+
+
 def test_clean_reconciled_run_is_admitted(tmp_path):
     _, report, audit = run(
         tmp_path,
@@ -133,6 +169,7 @@ def test_clean_reconciled_run_is_admitted(tmp_path):
     decision = evaluate_tennis_runtime_admission(
         report=report,
         audit_ledger=audit,
+    run_mode_evidence_store=_production_run_mode_store(tmp_path, report, "tennis"),
     )
 
     assert decision.admission_status == "ADMIT"
@@ -155,6 +192,7 @@ def test_retry_run_can_be_admitted_when_reconciled(tmp_path):
     decision = evaluate_tennis_runtime_admission(
         report=report,
         audit_ledger=audit,
+    run_mode_evidence_store=_production_run_mode_store(tmp_path, report, "tennis"),
     )
 
     assert decision.admission_status == "ADMIT"
@@ -173,6 +211,7 @@ def test_worker_failure_is_quarantined(tmp_path):
     decision = evaluate_tennis_runtime_admission(
         report=report,
         audit_ledger=audit,
+    run_mode_evidence_store=_production_run_mode_store(tmp_path, report, "tennis"),
     )
 
     assert result.worker_result.failed == 1
@@ -197,6 +236,7 @@ def test_failed_reconciliation_is_quarantined(tmp_path):
     decision = evaluate_tennis_runtime_admission(
         report=corrupted,
         audit_ledger=audit,
+    run_mode_evidence_store=_production_run_mode_store(tmp_path, corrupted, "tennis"),
     )
 
     assert decision.admission_status == "QUARANTINE"
@@ -218,6 +258,7 @@ def test_unknown_consumption_is_quarantined(tmp_path):
     decision = evaluate_tennis_runtime_admission(
         report=unknown,
         audit_ledger=audit,
+    run_mode_evidence_store=_production_run_mode_store(tmp_path, unknown, "tennis"),
     )
 
     assert decision.admission_status == "QUARANTINE"
@@ -234,6 +275,7 @@ def test_cross_sport_adapter_quarantines_run(tmp_path):
     decision = evaluate_football_runtime_admission(
         report=report,
         audit_ledger=audit,
+    run_mode_evidence_store=_production_run_mode_store(tmp_path, report, "football"),
     )
 
     assert decision.admission_status == "QUARANTINE"
@@ -251,10 +293,12 @@ def test_decision_fingerprint_is_deterministic(tmp_path):
     first = evaluate_tennis_runtime_admission(
         report=report,
         audit_ledger=audit,
+    run_mode_evidence_store=_production_run_mode_store(tmp_path, report, "tennis"),
     )
     second = evaluate_tennis_runtime_admission(
         report=report,
         audit_ledger=audit,
+    run_mode_evidence_store=_production_run_mode_store(tmp_path, report, "tennis"),
     )
 
     assert first.decision_fingerprint == second.decision_fingerprint
@@ -271,6 +315,7 @@ def test_admission_payload_keeps_safety_flags_false(tmp_path):
     payload = evaluate_tennis_runtime_admission(
         report=report,
         audit_ledger=audit,
+    run_mode_evidence_store=_production_run_mode_store(tmp_path, report, "tennis"),
     ).payload()
 
     assert payload["automatic_model_promotion"] is False

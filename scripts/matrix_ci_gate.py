@@ -324,30 +324,34 @@ def _provider_http_boundary(
     root: Path,
 ) -> None:
     violations: list[str] = []
-    legacy = "app.providers.api_football.client"
-    allowed = "app/providers/api_football/governed_client.py"
+    legacy_client_module = "app.providers.api_football.client"
+    governed_http_module = "app.core.governed_provider_http"
+    governed_client = "app/providers/api_football/governed_client.py"
+    legacy_client = "app/providers/api_football/client.py"
 
     for path in (root / "app").rglob("*.py"):
         relative = path.relative_to(root).as_posix()
-        tree = ast.parse(
-            path.read_text(encoding="utf-8-sig"),
-            filename=str(path),
-        )
+        tree = ast.parse(path.read_text(encoding="utf-8-sig"), filename=str(path))
 
         for node in ast.walk(tree):
             if isinstance(node, ast.ImportFrom):
                 module = node.module or ""
-                if module == legacy and relative != allowed:
-                    violations.append(
-                        f"{relative}:{node.lineno}:LEGACY_PROVIDER_CLIENT_IMPORT"
-                    )
+                if module == legacy_client_module and relative != governed_client:
+                    violations.append(f"{relative}:{node.lineno}:LEGACY_PROVIDER_CLIENT_IMPORT")
+                if (
+                    module == governed_http_module
+                    and any(alias.name == "GovernedProviderHttpSession" for alias in node.names)
+                    and relative != governed_client
+                ):
+                    violations.append(f"{relative}:{node.lineno}:DIRECT_GOVERNED_HTTP_SESSION_IMPORT")
 
             elif isinstance(node, ast.Import):
                 for alias in node.names:
-                    if alias.name == legacy and relative != allowed:
-                        violations.append(
-                            f"{relative}:{node.lineno}:LEGACY_PROVIDER_CLIENT_IMPORT"
-                        )
+                    if (
+                        alias.name == "requests"
+                        and relative in {governed_client, "app/core/governed_provider_http.py"}
+                    ):
+                        violations.append(f"{relative}:{node.lineno}:REQUESTS_IMPORT_IN_GOVERNED_BOUNDARY")
 
             elif isinstance(node, ast.Call):
                 if (
@@ -355,41 +359,39 @@ def _provider_http_boundary(
                     and isinstance(node.func.value, ast.Name)
                     and node.func.value.id == "requests"
                 ):
-                    network_verbs = {
-                        "get",
-                        "post",
-                        "put",
-                        "patch",
-                        "delete",
-                        "head",
-                        "options",
-                        "request",
-                    }
+                    network_verbs = {"get", "post", "put", "patch", "delete", "head", "options", "request"}
+                    if node.func.attr in network_verbs and relative != legacy_client:
+                        violations.append(f"{relative}:{node.lineno}:DIRECT_REQUESTS_CALL")
+                    if node.func.attr == "Session" and relative != legacy_client:
+                        violations.append(f"{relative}:{node.lineno}:UNAUTHORIZED_REQUESTS_SESSION")
 
-                    if (
-                        node.func.attr in network_verbs
-                        and relative
-                        != "app/providers/api_football/client.py"
-                    ):
-                        violations.append(
-                            f"{relative}:{node.lineno}:DIRECT_REQUESTS_CALL"
-                        )
+    if violations:
+        raise SystemExit("PROVIDER_HTTP_BOUNDARY_VIOLATION\n" + "\n".join(violations))
 
-                    if (
-                        node.func.attr == "Session"
-                        and relative
-                        not in {
-                            "app/providers/api_football/client.py",
-                            "app/providers/api_football/governed_client.py",
-                        }
-                    ):
-                        violations.append(
-                            f"{relative}:{node.lineno}:UNAUTHORIZED_REQUESTS_SESSION"
-                        )
+
+def _authoritative_runtime_admission_boundary(
+    root: Path,
+) -> None:
+    violations: list[str] = []
+    base_module = "app.core.runtime_admission_gate"
+    allowed = "app/core/authoritative_runtime_admission.py"
+
+    for path in (root / "app").rglob("*.py"):
+        relative = path.relative_to(root).as_posix()
+        if relative == allowed:
+            continue
+        tree = ast.parse(path.read_text(encoding="utf-8-sig"), filename=str(path))
+        for node in ast.walk(tree):
+            if (
+                isinstance(node, ast.ImportFrom)
+                and (node.module or "") == base_module
+                and any(alias.name == "evaluate_reconciled_runtime_admission" for alias in node.names)
+            ):
+                violations.append(f"{relative}:{node.lineno}:BASE_RUNTIME_ADMISSION_IMPORT")
 
     if violations:
         raise SystemExit(
-            "PROVIDER_HTTP_BOUNDARY_VIOLATION\n"
+            "AUTHORITATIVE_RUNTIME_ADMISSION_BOUNDARY_VIOLATION\n"
             + "\n".join(violations)
         )
 
@@ -436,6 +438,7 @@ def main() -> int:
     _safety_ast(ROOT)
     _sport_boundary(ROOT)
     _provider_http_boundary(ROOT)
+    _authoritative_runtime_admission_boundary(ROOT)
     _git_diff_checks(ROOT)
 
     _run(
