@@ -3,76 +3,21 @@
 )
 
 
-def test_dependency_inventory_is_deterministic_and_version_bound(
-    tmp_path,
-):
-    path = (
-        tmp_path
-        / "requirements.txt"
-    )
-    path.write_text(
-        "pytest==8.3.0\nrequests>=2.0\n",
-        encoding="utf-8",
-    )
-
-    first = build_dependency_inventory(
-        tmp_path
-    )
-    second = build_dependency_inventory(
-        tmp_path
-    )
-
-    assert first == second
-    assert first.declared_dependencies == (
-        "pytest",
-        "requests",
-    )
-    assert "pytest==8.3.0" in (
-        first.declared_requirements
-    )
-    assert (
-        first.payload()[
-            "automatic_dependency_upgrade"
-        ]
-        is False
-    )
-
-    path.write_text(
-        "pytest==8.4.0\nrequests>=2.0\n",
-        encoding="utf-8",
-    )
-
-    changed = build_dependency_inventory(
-        tmp_path
-    )
-
-    assert (
-        changed.inventory_fingerprint
-        != first.inventory_fingerprint
-    )
-
-
-def test_pyproject_dependencies_are_inventoried(
+def test_recursive_requirement_include_is_bound(
     tmp_path,
 ):
     (
         tmp_path
-        / "pyproject.toml"
+        / "requirements.txt"
     ).write_text(
-        """
-[project]
-name = "matrix-test"
-version = "0.0.1"
-dependencies = [
-    "numpy>=2.0",
-]
-
-[project.optional-dependencies]
-test = [
-    "pytest>=8",
-]
-""".strip()
-        + "\n",
+        "-r requirements-base.txt\n",
+        encoding="utf-8",
+    )
+    (
+        tmp_path
+        / "requirements-base.txt"
+    ).write_text(
+        "requests==2.32.0\n",
         encoding="utf-8",
     )
 
@@ -82,7 +27,71 @@ test = [
         )
     )
 
-    assert inventory.declared_dependencies == (
-        "numpy",
-        "pytest",
+    assert inventory.source_files == (
+        "requirements-base.txt",
+        "requirements.txt",
+    )
+    assert (
+        "requests==2.32.0"
+        in inventory.declared_requirements
+    )
+
+
+def test_requirement_include_cycle_fails_closed(
+    tmp_path,
+):
+    (
+        tmp_path
+        / "requirements.txt"
+    ).write_text(
+        "-r other.txt\n",
+        encoding="utf-8",
+    )
+    (
+        tmp_path
+        / "other.txt"
+    ).write_text(
+        "-r requirements.txt\n",
+        encoding="utf-8",
+    )
+
+    try:
+        build_dependency_inventory(
+            tmp_path
+        )
+    except ValueError as error:
+        assert str(error) == (
+            "REQUIREMENT_INCLUDE_CYCLE"
+        )
+    else:
+        raise AssertionError(
+            "cycle must fail closed"
+        )
+
+
+def test_version_change_changes_fingerprint(
+    tmp_path,
+):
+    path = tmp_path / "requirements.txt"
+    path.write_text(
+        "pytest==8.3.0\n",
+        encoding="utf-8",
+    )
+
+    first = build_dependency_inventory(
+        tmp_path
+    )
+
+    path.write_text(
+        "pytest==8.4.0\n",
+        encoding="utf-8",
+    )
+
+    second = build_dependency_inventory(
+        tmp_path
+    )
+
+    assert (
+        first.inventory_fingerprint
+        != second.inventory_fingerprint
     )

@@ -13,6 +13,14 @@ _REQ_NAME = re.compile(
     r"^\s*([A-Za-z0-9_.-]+)"
 )
 
+_INCLUDE = re.compile(
+    r"^(?:-r|--requirement)\s+(.+)$"
+)
+
+_CONSTRAINT = re.compile(
+    r"^(?:-c|--constraint)\s+(.+)$"
+)
+
 
 def _canonical_json(value: Any) -> str:
     return json.dumps(
@@ -64,7 +72,7 @@ class DependencyInventory:
 
     def payload(self) -> Mapping[str, Any]:
         return {
-            "schema": "matrix.dependency-inventory/2",
+            "schema": "matrix.dependency-inventory/3",
             "source_files": list(
                 self.source_files
             ),
@@ -82,6 +90,7 @@ class DependencyInventory:
             "declared_dependencies": list(
                 self.declared_dependencies
             ),
+            "recursive_requirement_includes_followed": True,
             "runtime_environment_not_authoritative": True,
             "automatic_dependency_upgrade": False,
             "inventory_fingerprint": (
@@ -90,30 +99,124 @@ class DependencyInventory:
         }
 
 
-def _read_requirements_file(
+def _safe_child(
+    root: Path,
+    parent: Path,
+    raw_value: str,
+) -> Path:
+    raw = raw_value.strip().strip(
+        "\"'"
+    )
+
+    if (
+        "://" in raw
+        or raw.startswith(
+            ("git+", "http:", "https:")
+        )
+    ):
+        raise ValueError(
+            "REMOTE_REQUIREMENT_INCLUDE_NOT_ALLOWED"
+        )
+
+    child = (
+        parent.parent / raw
+    ).resolve()
+
+    try:
+        child.relative_to(root)
+    except ValueError as error:
+        raise ValueError(
+            "REQUIREMENT_INCLUDE_ESCAPES_REPOSITORY"
+        ) from error
+
+    return child
+
+
+def _walk_requirements(
+    *,
+    root: Path,
     path: Path,
-) -> list[str]:
-    result: list[str] = []
+    visiting: set[Path],
+    visited: set[Path],
+    declarations: list[str],
+    sources: dict[str, str],
+) -> None:
+    path = path.resolve()
+
+    if path in visiting:
+        raise ValueError(
+            "REQUIREMENT_INCLUDE_CYCLE"
+        )
+
+    if path in visited:
+        return
+
+    if not path.is_file():
+        raise ValueError(
+            "REQUIREMENT_INCLUDE_NOT_FOUND"
+        )
+
+    visiting.add(path)
+
+    relative = path.relative_to(
+        root
+    ).as_posix()
+    sources[relative] = sha256(
+        path.read_bytes()
+    ).hexdigest()
 
     for raw_line in path.read_text(
-        encoding="utf-8",
+        encoding="utf-8-sig",
     ).splitlines():
         line = raw_line.strip()
 
         if (
             not line
             or line.startswith("#")
-            or line.startswith("-")
         ):
             continue
 
-        result.append(
+        include = _INCLUDE.match(
+            line
+        )
+        constraint = _CONSTRAINT.match(
+            line
+        )
+
+        if include or constraint:
+            raw_child = (
+                include.group(1)
+                if include
+                else constraint.group(1)
+            )
+
+            child = _safe_child(
+                root,
+                path,
+                raw_child,
+            )
+
+            _walk_requirements(
+                root=root,
+                path=child,
+                visiting=visiting,
+                visited=visited,
+                declarations=declarations,
+                sources=sources,
+            )
+            continue
+
+        if line.startswith("-"):
+            continue
+
+        declarations.append(
             _normalize_requirement(
                 line
             )
         )
 
-    return result
+    visiting.remove(path)
+    visited.add(path)
 
 
 def _read_pyproject(
@@ -121,7 +224,7 @@ def _read_pyproject(
 ) -> list[str]:
     data = tomllib.loads(
         path.read_text(
-            encoding="utf-8",
+            encoding="utf-8-sig",
         )
     )
 
@@ -182,11 +285,9 @@ def build_dependency_inventory(
     root: str | Path,
 ) -> DependencyInventory:
     root_path = Path(root).resolve()
-    source_files: list[str] = []
-    source_hashes: list[
-        tuple[str, str]
-    ] = []
     declarations: list[str] = []
+    sources: dict[str, str] = {}
+    visited: set[Path] = set()
 
     for name in (
         "requirements.txt",
@@ -198,35 +299,24 @@ def build_dependency_inventory(
         if not path.exists():
             continue
 
-        source_files.append(name)
-        source_hashes.append(
-            (
-                name,
-                sha256(
-                    path.read_bytes()
-                ).hexdigest(),
-            )
-        )
-        declarations.extend(
-            _read_requirements_file(
-                path
-            )
+        _walk_requirements(
+            root=root_path,
+            path=path,
+            visiting=set(),
+            visited=visited,
+            declarations=declarations,
+            sources=sources,
         )
 
     pyproject = root_path / "pyproject.toml"
 
     if pyproject.exists():
-        source_files.append(
+        sources[
             "pyproject.toml"
-        )
-        source_hashes.append(
-            (
-                "pyproject.toml",
-                sha256(
-                    pyproject.read_bytes()
-                ).hexdigest(),
-            )
-        )
+        ] = sha256(
+            pyproject.read_bytes()
+        ).hexdigest()
+
         declarations.extend(
             _read_pyproject(
                 pyproject
@@ -234,10 +324,12 @@ def build_dependency_inventory(
         )
 
     source_tuple = tuple(
-        sorted(source_files)
+        sorted(sources)
     )
     hash_tuple = tuple(
-        sorted(source_hashes)
+        sorted(
+            sources.items()
+        )
     )
     requirement_tuple = tuple(
         sorted(
@@ -263,7 +355,7 @@ def build_dependency_inventory(
     )
 
     base = {
-        "schema": "matrix.dependency-inventory/2",
+        "schema": "matrix.dependency-inventory/3",
         "source_files": list(
             source_tuple
         ),
@@ -281,6 +373,7 @@ def build_dependency_inventory(
         "declared_dependencies": list(
             dependencies
         ),
+        "recursive_requirement_includes_followed": True,
         "runtime_environment_not_authoritative": True,
         "automatic_dependency_upgrade": False,
     }
