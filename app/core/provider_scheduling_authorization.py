@@ -266,3 +266,24 @@ def authorize_provider_scheduling(
         reason_codes=reason_codes,
         authorization_fingerprint=_sha256(base),
     )
+
+def compute_provider_scheduling_queue_fingerprint(
+    queue_manifest: Mapping[str, Any],
+    *,
+    expected_sport: str | None = None,
+) -> tuple[str, str]:
+    """
+    Return (sport, queue_fingerprint) using the exact queue-binding
+    algorithm used by scheduling authorization.
+    """
+    sport, _, _, queue_fingerprint = _validate_queue_manifest(
+        queue_manifest
+    )
+
+    if expected_sport is not None:
+        if expected_sport not in _ALLOWED_SPORTS:
+            raise ValueError("INVALID_EXPECTED_SPORT")
+        if sport != expected_sport:
+            raise ValueError("SPORT_BOUNDARY_VIOLATION")
+
+    return sport, queue_fingerprint
