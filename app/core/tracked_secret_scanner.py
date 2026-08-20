@@ -1,4 +1,4 @@
-﻿from __future__ import annotations
+from __future__ import annotations
 
 import ast
 from dataclasses import dataclass
@@ -330,7 +330,19 @@ def _forbidden_name(
     if name in forbidden_names:
         return True
 
-    # .env.production / .env.test / .env.local etc.
+    # Explicit documentation templates are allowed to be tracked,
+    # but they are still content-scanned for embedded secrets.
+    safe_templates = {
+        ".env.example",
+        ".env.sample",
+        ".env.template",
+    }
+
+    if name in safe_templates:
+        return False
+
+    # Operational variants remain forbidden:
+    # .env.production / .env.test / .env.staging / etc.
     return name.startswith(".env.")
 
 
