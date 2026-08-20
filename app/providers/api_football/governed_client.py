@@ -1,14 +1,10 @@
-from __future__ import annotations
-
-from typing import Any
-import requests
+﻿from __future__ import annotations
 
 from app.core.governed_provider_http import (
     GovernedProviderHttpSession,
+    MatrixPinnedHttpsTransport,
 )
-from app.providers.api_football.client import (
-    ApiFootballClient,
-)
+from app.providers.api_football.client import ApiFootballClient
 
 
 def _build_client(
@@ -18,14 +14,15 @@ def _build_client(
     network_permit_store,
     call_evidence_store,
     clock,
-    underlying_session: Any | None,
+    pinned_transport: MatrixPinnedHttpsTransport,
 ) -> ApiFootballClient:
-    session = underlying_session or requests.Session()
+    if not isinstance(pinned_transport, MatrixPinnedHttpsTransport):
+        raise ValueError("PINNED_HTTPS_TRANSPORT_REQUIRED")
     governed = GovernedProviderHttpSession(
         authority=authority,
         network_permit_store=network_permit_store,
         call_evidence_store=call_evidence_store,
-        underlying_session=session,
+        pinned_transport=pinned_transport,
         clock=clock,
     )
     return ApiFootballClient(config, session=governed)
@@ -38,7 +35,7 @@ def build_governed_api_football_client(
     network_permit_store,
     call_evidence_store,
     clock,
-    underlying_session: Any | None = None,
+    pinned_transport: MatrixPinnedHttpsTransport,
 ) -> ApiFootballClient:
     if authority.mode != "PRODUCTION":
         raise ValueError("PRODUCTION_CLIENT_REQUIRES_PRODUCTION_MODE")
@@ -48,7 +45,7 @@ def build_governed_api_football_client(
         network_permit_store=network_permit_store,
         call_evidence_store=call_evidence_store,
         clock=clock,
-        underlying_session=underlying_session,
+        pinned_transport=pinned_transport,
     )
 
 
@@ -59,7 +56,7 @@ def _build_bootstrap_api_football_client(
     network_permit_store,
     call_evidence_store,
     clock,
-    underlying_session: Any | None = None,
+    pinned_transport: MatrixPinnedHttpsTransport,
 ) -> ApiFootballClient:
     if authority.mode != "BOOTSTRAP_PROBE":
         raise ValueError("BOOTSTRAP_CLIENT_REQUIRES_BOOTSTRAP_MODE")
@@ -69,7 +66,7 @@ def _build_bootstrap_api_football_client(
         network_permit_store=network_permit_store,
         call_evidence_store=call_evidence_store,
         clock=clock,
-        underlying_session=underlying_session,
+        pinned_transport=pinned_transport,
     )
 
 
@@ -81,12 +78,10 @@ def execute_governed_api_football_bootstrap_probe(
     call_evidence_store,
     clock,
     endpoint: str,
+    pinned_transport: MatrixPinnedHttpsTransport,
     params=None,
-    underlying_session: Any | None = None,
 ):
-    from app.core.provider_bootstrap_quarantine import (
-        execute_bootstrap_probe,
-    )
+    from app.core.provider_bootstrap_quarantine import execute_bootstrap_probe
 
     client = _build_bootstrap_api_football_client(
         config=config,
@@ -94,9 +89,8 @@ def execute_governed_api_football_bootstrap_probe(
         network_permit_store=network_permit_store,
         call_evidence_store=call_evidence_store,
         clock=clock,
-        underlying_session=underlying_session,
+        pinned_transport=pinned_transport,
     )
-
     return execute_bootstrap_probe(
         authority=authority,
         client=client,
