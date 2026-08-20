@@ -35,6 +35,18 @@ def _aware_utc(name: str, value: object) -> datetime:
     return value.astimezone(UTC)
 
 
+def _parse_utc(name: str, value: object) -> datetime:
+    if not isinstance(value, str) or not value:
+        raise ValueError(f"INVALID_{name}")
+    try:
+        parsed = datetime.fromisoformat(
+            value.replace("Z", "+00:00")
+        )
+    except ValueError as error:
+        raise ValueError(f"INVALID_{name}") from error
+    return _aware_utc(name, parsed)
+
+
 def _iso(value: datetime) -> str:
     return value.astimezone(UTC).isoformat().replace("+00:00", "Z")
 
@@ -344,23 +356,26 @@ class SQLiteOpponentQualityLedger:
             item["quality_fingerprint"]
             for item in latest
         }
-        values = {
-            float(item["quality_value"])
-            for item in latest
-        }
-
-        if len(fingerprints) > 1 and len(values) > 1:
+        if len(fingerprints) > 1:
             raise ValueError("AMBIGUOUS_OPPONENT_QUALITY_AS_OF")
 
         return latest[0]
 
     def audit_integrity(self) -> OpponentQualityIntegrityReport:
         errors: list[str] = []
+
         with self._connect() as connection:
             rows = connection.execute(
                 """
                 SELECT
                     observation_id,
+                    sport,
+                    opponent_canonical_id,
+                    quality_key,
+                    quality_value,
+                    observed_at,
+                    available_at,
+                    source_record_fingerprint,
                     quality_fingerprint,
                     payload_json,
                     payload_sha256
@@ -369,7 +384,21 @@ class SQLiteOpponentQualityLedger:
                 """
             ).fetchall()
 
-        for observation_id, quality_fingerprint, payload_json, stored_sha in rows:
+        for row in rows:
+            (
+                observation_id,
+                sport,
+                opponent_canonical_id,
+                quality_key,
+                quality_value,
+                observed_at,
+                available_at,
+                source_record_fingerprint,
+                quality_fingerprint,
+                payload_json,
+                stored_sha,
+            ) = row
+
             try:
                 payload = json.loads(payload_json)
             except json.JSONDecodeError:
@@ -382,14 +411,26 @@ class SQLiteOpponentQualityLedger:
             if actual_sha != stored_sha:
                 errors.append(f"PAYLOAD_HASH_MISMATCH:{observation_id}")
 
-            if payload.get("quality_fingerprint") != quality_fingerprint:
+            try:
+                expected = self.build_observation(
+                    sport=sport,
+                    opponent_canonical_id=opponent_canonical_id,
+                    quality_key=quality_key,
+                    quality_value=quality_value,
+                    observed_at=_parse_utc("OBSERVED_AT", observed_at),
+                    available_at=_parse_utc("AVAILABLE_AT", available_at),
+                    source_record_fingerprint=source_record_fingerprint,
+                )
+            except (ValueError, TypeError):
+                errors.append(f"INVALID_FIELDS:{observation_id}")
+                continue
+
+            if expected.observation_id != observation_id:
+                errors.append(f"OBSERVATION_ID_MISMATCH:{observation_id}")
+            if expected.quality_fingerprint != quality_fingerprint:
                 errors.append(f"QUALITY_FINGERPRINT_MISMATCH:{observation_id}")
-
-            if payload.get("point_in_time_enforced") is not True:
-                errors.append(f"POINT_IN_TIME_DISABLED:{observation_id}")
-
-            if payload.get("name_join_used") is not False:
-                errors.append(f"NAME_JOIN_USED:{observation_id}")
+            if expected.payload() != payload:
+                errors.append(f"PAYLOAD_DERIVATION_MISMATCH:{observation_id}")
 
         return OpponentQualityIntegrityReport(
             ok=not errors,

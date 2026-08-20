@@ -1,4 +1,5 @@
 ﻿from datetime import datetime, timezone
+import sqlite3
 
 import pytest
 
@@ -103,6 +104,36 @@ def test_same_time_conflicting_quality_fails_closed(tmp_path):
         )
 
 
+def test_same_time_same_value_different_provenance_also_fails_closed(tmp_path):
+    ledger = SQLiteOpponentQualityLedger(tmp_path / "quality.db")
+
+    for observed_hour, char in ((8, "a"), (9, "b")):
+        ledger.append(
+            ledger.build_observation(
+                sport="tennis",
+                opponent_canonical_id="tennis:player:op4",
+                quality_key="rating",
+                quality_value=1800.0,
+                observed_at=datetime(
+                    2026, 8, 1, observed_hour, tzinfo=UTC
+                ),
+                available_at=datetime(2026, 8, 2, tzinfo=UTC),
+                source_record_fingerprint=char * 64,
+            )
+        )
+
+    with pytest.raises(
+        ValueError,
+        match="AMBIGUOUS_OPPONENT_QUALITY_AS_OF",
+    ):
+        ledger.resolve_as_of(
+            sport="tennis",
+            opponent_canonical_id="tennis:player:op4",
+            quality_key="rating",
+            as_of=datetime(2026, 8, 2, tzinfo=UTC),
+        )
+
+
 def test_nonfinite_quality_rejected(tmp_path):
     ledger = SQLiteOpponentQualityLedger(tmp_path / "quality.db")
 
@@ -119,3 +150,36 @@ def test_nonfinite_quality_rejected(tmp_path):
             available_at=datetime(2026, 8, 1, tzinfo=UTC),
             source_record_fingerprint="c" * 64,
         )
+
+
+def test_integrity_rederives_ids_and_payload(tmp_path):
+    path = tmp_path / "quality.db"
+    ledger = SQLiteOpponentQualityLedger(path)
+    obs = ledger.build_observation(
+        sport="football",
+        opponent_canonical_id="football:team:op5",
+        quality_key="rating",
+        quality_value=1700.0,
+        observed_at=datetime(2026, 8, 1, tzinfo=UTC),
+        available_at=datetime(2026, 8, 1, tzinfo=UTC),
+        source_record_fingerprint="d" * 64,
+    )
+    ledger.append(obs)
+
+    with sqlite3.connect(path) as connection:
+        connection.execute(
+            """
+            UPDATE opponent_quality_observations
+            SET observation_id = ?
+            WHERE quality_fingerprint = ?
+            """,
+            ("f" * 64, obs.quality_fingerprint),
+        )
+        connection.commit()
+
+    report = ledger.audit_integrity()
+    assert report.ok is False
+    assert any(
+        error.startswith("OBSERVATION_ID_MISMATCH:")
+        for error in report.errors
+    )
