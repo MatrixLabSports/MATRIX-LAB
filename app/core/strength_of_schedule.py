@@ -6,21 +6,28 @@ import json
 from statistics import median
 from typing import Any, Iterable, Mapping
 
-from app.core.opponent_quality_evidence import SQLiteOpponentQualityLedger
+from app.core.opponent_quality_evidence import (
+    SQLiteOpponentQualityLedger,
+)
 
 
 def _canonical_json(value: Any) -> str:
-    return json.dumps(
-        value,
-        sort_keys=True,
-        separators=(",", ":"),
-        ensure_ascii=False,
-        allow_nan=False,
-    ) + "\n"
+    return (
+        json.dumps(
+            value,
+            sort_keys=True,
+            separators=(",", ":"),
+            ensure_ascii=False,
+            allow_nan=False,
+        )
+        + "\n"
+    )
 
 
 def _sha(value: Any) -> str:
-    return sha256(_canonical_json(value).encode("utf-8")).hexdigest()
+    return sha256(
+        _canonical_json(value).encode("utf-8")
+    ).hexdigest()
 
 
 def _summary(
@@ -36,25 +43,52 @@ def _summary(
 
     for event in events:
         total += 1
+
+        # Critical anti-leakage rule:
+        # use opponent quality available before the
+        # historical event, not knowledge acquired after it.
         quality = quality_ledger.resolve_as_of(
             sport=sport,
-            opponent_canonical_id=event.opponent_canonical_id,
+            opponent_canonical_id=(
+                event.opponent_canonical_id
+            ),
             quality_key=quality_key,
-            as_of=event.source_available_at,
+            as_of=event.event_at,
         )
+
         if quality is None:
             continue
-        values.append(float(quality["quality_value"]))
-        quality_fingerprints.append(quality["quality_fingerprint"])
+
+        values.append(
+            float(quality["quality_value"])
+        )
+        quality_fingerprints.append(
+            quality["quality_fingerprint"]
+        )
 
     return {
         "sample_size": total,
         "quality_observed": len(values),
         "quality_missing": total - len(values),
-        "coverage_rate": (len(values) / total if total else None),
-        "mean_quality": (sum(values) / len(values) if values else None),
-        "median_quality": (median(values) if values else None),
-        "quality_fingerprints": sorted(set(quality_fingerprints)),
+        "coverage_rate": (
+            len(values) / total
+            if total
+            else None
+        ),
+        "mean_quality": (
+            sum(values) / len(values)
+            if values
+            else None
+        ),
+        "median_quality": (
+            median(values)
+            if values
+            else None
+        ),
+        "quality_fingerprints": sorted(
+            set(quality_fingerprints)
+        ),
+        "historical_quality_cutoff": "event_at",
         "recency_weighting_applied": False,
     }
 
@@ -65,6 +99,7 @@ class StrengthOfScheduleProfile:
     canonical_id: str
     quality_key: str
     history_fingerprint: str
+    as_of: str
     windows: Mapping[str, Any]
     season: Mapping[str, Any]
     career: Mapping[str, Any]
@@ -72,16 +107,24 @@ class StrengthOfScheduleProfile:
 
     def payload(self) -> Mapping[str, Any]:
         return {
-            "schema": "matrix.strength-of-schedule-profile/1",
+            "schema": (
+                "matrix.strength-of-schedule-profile/2"
+            ),
             "sport": self.sport,
             "canonical_id": self.canonical_id,
             "quality_key": self.quality_key,
-            "history_fingerprint": self.history_fingerprint,
+            "history_fingerprint": (
+                self.history_fingerprint
+            ),
+            "as_of": self.as_of,
             "windows": self.windows,
             "season": self.season,
             "career": self.career,
-            "profile_fingerprint": self.profile_fingerprint,
+            "profile_fingerprint": (
+                self.profile_fingerprint
+            ),
             "point_in_time_enforced": True,
+            "historical_quality_cutoff": "event_at",
             "recency_weighting_applied": False,
             "missing_is_zero": False,
             "automatic_model_promotion": False,
@@ -94,9 +137,16 @@ def build_strength_of_schedule_profile(
     quality_key: str,
     quality_ledger: SQLiteOpponentQualityLedger,
 ) -> StrengthOfScheduleProfile:
-    if history.sport not in {"football", "tennis"}:
+    if history.sport not in {
+        "football",
+        "tennis",
+    }:
         raise ValueError("INVALID_SPORT")
-    if not isinstance(quality_key, str) or not quality_key:
+
+    if (
+        not isinstance(quality_key, str)
+        or not quality_key
+    ):
         raise ValueError("INVALID_QUALITY_KEY")
 
     windows = {
@@ -108,6 +158,7 @@ def build_strength_of_schedule_profile(
         )
         for size, values in history.windows
     }
+
     season = _summary(
         history.season,
         sport=history.sport,
@@ -121,16 +172,28 @@ def build_strength_of_schedule_profile(
         quality_ledger=quality_ledger,
     )
 
+    as_of = (
+        history.as_of
+        .isoformat()
+        .replace("+00:00", "Z")
+    )
+
     base = {
-        "schema": "matrix.strength-of-schedule-profile/1",
+        "schema": (
+            "matrix.strength-of-schedule-profile/2"
+        ),
         "sport": history.sport,
         "canonical_id": history.canonical_id,
         "quality_key": quality_key,
-        "history_fingerprint": history.history_fingerprint,
+        "history_fingerprint": (
+            history.history_fingerprint
+        ),
+        "as_of": as_of,
         "windows": windows,
         "season": season,
         "career": career,
         "point_in_time_enforced": True,
+        "historical_quality_cutoff": "event_at",
         "recency_weighting_applied": False,
         "missing_is_zero": False,
         "automatic_model_promotion": False,
@@ -140,7 +203,10 @@ def build_strength_of_schedule_profile(
         sport=history.sport,
         canonical_id=history.canonical_id,
         quality_key=quality_key,
-        history_fingerprint=history.history_fingerprint,
+        history_fingerprint=(
+            history.history_fingerprint
+        ),
+        as_of=as_of,
         windows=windows,
         season=season,
         career=career,
