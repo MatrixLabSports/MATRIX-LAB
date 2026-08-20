@@ -59,6 +59,135 @@ class ProviderNetworkPermit:
     issued_at: datetime
 
 
+
+def _network_permit_id_from_payload(
+    payload: Mapping[str, Any],
+) -> str:
+    required = (
+        "run_id",
+        "sport",
+        "provider_key",
+        "mode",
+        "request_nonce",
+        "method",
+        "endpoint_manifest_id",
+        "endpoint_authorization_fingerprint",
+        "dns_resolution_fingerprint",
+        "resolved_ips",
+        "execution_authorization_fingerprint",
+        "security_decision_fingerprint",
+        "security_evidence_id",
+        "issued_at",
+    )
+
+    for key in required:
+        if key not in payload:
+            raise ValueError(
+                f"NETWORK_PERMIT_MISSING_FIELD:{key}"
+            )
+
+    resolved_ips = payload["resolved_ips"]
+
+    if (
+        not isinstance(resolved_ips, list)
+        or not resolved_ips
+        or any(
+            not isinstance(item, str) or not item
+            for item in resolved_ips
+        )
+    ):
+        raise ValueError(
+            "INVALID_NETWORK_PERMIT_RESOLVED_IPS"
+        )
+
+    if payload.get("one_use") is not True:
+        raise ValueError(
+            "NETWORK_PERMIT_ONE_USE_REQUIRED"
+        )
+
+    if payload.get("automatic_provider_switch") is not False:
+        raise ValueError(
+            "AUTOMATIC_PROVIDER_SWITCH_MUST_REMAIN_FALSE"
+        )
+
+    base = {
+        "schema": "matrix.provider-network-permit-id/1",
+        "run_id": payload["run_id"],
+        "sport": payload["sport"],
+        "provider_key": payload["provider_key"],
+        "mode": payload["mode"],
+        "request_nonce": payload["request_nonce"],
+        "method": payload["method"],
+        "endpoint_manifest_id": payload["endpoint_manifest_id"],
+        "endpoint_authorization_fingerprint": payload[
+            "endpoint_authorization_fingerprint"
+        ],
+        "dns_resolution_fingerprint": payload[
+            "dns_resolution_fingerprint"
+        ],
+        "resolved_ips": list(resolved_ips),
+        "execution_authorization_fingerprint": payload[
+            "execution_authorization_fingerprint"
+        ],
+        "security_decision_fingerprint": payload[
+            "security_decision_fingerprint"
+        ],
+        "security_evidence_id": payload[
+            "security_evidence_id"
+        ],
+        "issued_at": payload["issued_at"],
+        "one_use": True,
+    }
+
+    return _sha(base)
+
+
+def _verify_network_permit_row(
+    *,
+    expected_permit_id: str,
+    payload_json: str,
+    payload_sha256: str,
+) -> Mapping[str, Any]:
+    actual_sha = sha256(
+        payload_json.encode("utf-8")
+    ).hexdigest()
+
+    if actual_sha != payload_sha256:
+        raise ValueError(
+            "NETWORK_PERMIT_INTEGRITY_FAILURE"
+        )
+
+    try:
+        payload = json.loads(payload_json)
+    except Exception as error:
+        raise ValueError(
+            "NETWORK_PERMIT_INVALID_JSON"
+        ) from error
+
+    if (
+        payload.get("schema")
+        != "matrix.provider-network-permit/1"
+    ):
+        raise ValueError(
+            "NETWORK_PERMIT_SCHEMA_MISMATCH"
+        )
+
+    if payload.get("permit_id") != expected_permit_id:
+        raise ValueError(
+            "NETWORK_PERMIT_ID_MISMATCH"
+        )
+
+    if (
+        _network_permit_id_from_payload(payload)
+        != expected_permit_id
+    ):
+        raise ValueError(
+            "NETWORK_PERMIT_REDERIVATION_FAILURE"
+        )
+
+    return payload
+
+
 class SQLiteProviderNetworkPermitStore:
     def __init__(self, path: str | Path) -> None:
         self.path = Path(path)
@@ -156,9 +285,16 @@ class SQLiteProviderNetworkPermitStore:
             if already is not None:
                 connection.execute("ROLLBACK")
                 raise ValueError("NETWORK_PERMIT_ALREADY_CONSUMED")
-            if sha256(payload_json.encode()).hexdigest() != payload_sha:
+
+            try:
+                payload = _verify_network_permit_row(
+                    expected_permit_id=permit_id,
+                    payload_json=payload_json,
+                    payload_sha256=payload_sha,
+                )
+            except ValueError:
                 connection.execute("ROLLBACK")
-                raise ValueError("NETWORK_PERMIT_INTEGRITY_FAILURE")
+                raise
 
             connection.execute(
                 """
@@ -170,7 +306,66 @@ class SQLiteProviderNetworkPermitStore:
             )
             connection.execute("COMMIT")
 
-        return json.loads(payload_json)
+        return payload
+
+    def audit_integrity(self) -> bool:
+        with self._connect() as connection:
+            rows = connection.execute(
+                "SELECT permit_id, run_id, request_nonce, "
+                "payload_json, payload_sha256, consumed_at "
+                "FROM network_permit ORDER BY permit_id"
+            ).fetchall()
+
+        seen_run_nonce: set[
+            tuple[str, str]
+        ] = set()
+
+        for (
+            permit_id,
+            run_id,
+            request_nonce,
+            payload_json,
+            payload_sha,
+            consumed_at,
+        ) in rows:
+            try:
+                payload = _verify_network_permit_row(
+                    expected_permit_id=str(permit_id),
+                    payload_json=str(payload_json),
+                    payload_sha256=str(payload_sha),
+                )
+            except ValueError:
+                return False
+
+            if (
+                payload.get("run_id") != run_id
+                or payload.get("request_nonce")
+                != request_nonce
+            ):
+                return False
+
+            key = (
+                str(run_id),
+                str(request_nonce),
+            )
+
+            if key in seen_run_nonce:
+                return False
+
+            seen_run_nonce.add(key)
+
+            if consumed_at is not None:
+                try:
+                    consumed = datetime.fromisoformat(
+                        str(consumed_at)
+                    )
+                except Exception:
+                    return False
+
+                if consumed.tzinfo is None:
+                    return False
+
+        return True
 
 
 class ProviderNetworkAuthority:
