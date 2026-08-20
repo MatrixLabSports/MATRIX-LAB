@@ -1,4 +1,4 @@
-﻿from datetime import datetime, timedelta, timezone
+from datetime import datetime, timedelta, timezone
 
 import pytest
 
@@ -112,6 +112,8 @@ def test_successful_execution_closes_audit_run(tmp_path):
     assert [event["event_type"] for event in events] == [
         "RUN_STARTED",
         "ACQUISITION_EXECUTION_STARTED",
+        "PROVIDER_CALL_STARTED",
+        "PROVIDER_CALL_COMPLETED",
         "ACQUISITION_EXECUTION_RESULT",
         "RUN_FINISHED",
     ]

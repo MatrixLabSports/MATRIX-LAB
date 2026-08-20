@@ -14,6 +14,7 @@ from app.core.acquisition_worker import (
     WorkerLimits,
     execute_acquisition_queue,
 )
+from app.core.provider_call_audit import ProviderCallAuditFetcher
 from app.core.provider_request_budget import ExecutionRequestBudget
 from app.core.runtime_audit_ledger import SQLiteRuntimeAuditLedger
 
@@ -76,7 +77,7 @@ class AuditedAcquisitionExecutionResult:
 
     def payload(self) -> Mapping[str, Any]:
         return {
-            "schema": "matrix.audited-acquisition-execution-result/1",
+            "schema": "matrix.audited-acquisition-execution-result/2",
             "run_id": self.run_id,
             "queue_fingerprint": self.queue_fingerprint,
             "policy_fingerprint": self.policy_fingerprint,
@@ -116,14 +117,23 @@ def execute_audited_acquisition_queue(
             "max_items": limits.max_items,
             "max_requests": limits.max_requests,
             "request_budget_enabled": request_budget is not None,
+            "provider_call_audit_enabled": True,
         },
         created_at=_aware_utc(clock()),
+    )
+
+    audited_fetcher = ProviderCallAuditFetcher(
+        fetcher=fetcher,
+        audit_ledger=audit_ledger,
+        run_id=run.run_id,
+        clock=clock,
+        request_budget=request_budget,
     )
 
     try:
         worker_result = execute_acquisition_queue(
             queue_manifest=queue_manifest,
-            fetcher=fetcher,
+            fetcher=audited_fetcher,
             raw_ledger=raw_ledger,
             checkpoints=checkpoints,
             limits=limits,
