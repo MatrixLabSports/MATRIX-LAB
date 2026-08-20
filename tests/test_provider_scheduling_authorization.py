@@ -1,6 +1,4 @@
-﻿from dataclasses import replace
-
-import pytest
+﻿import pytest
 
 from app.application.football.provider_scheduling_authorization import (
     authorize_football_provider_scheduling,
@@ -76,6 +74,11 @@ def test_all_eligible_providers_authorize_execution():
     assert result.eligible_provider_keys == ("P1", "P2")
     assert result.blocked_provider_keys == ()
     assert result.missing_provider_keys == ()
+    assert len(result.queue_fingerprint) == 64
+    assert result.queue_item_fingerprints == (
+        "1" * 64,
+        "2" * 64,
+    )
 
 
 def test_ineligible_provider_blocks_entire_execution():
@@ -162,6 +165,7 @@ def test_empty_queue_is_explicitly_safe():
     assert result.authorization_status == "EMPTY_QUEUE"
     assert result.execution_eligible is True
     assert result.provider_keys == ()
+    assert len(result.queue_fingerprint) == 64
 
 
 def test_provider_decision_key_mismatch_fails_closed():
@@ -186,7 +190,62 @@ def test_authorization_fingerprint_is_deterministic():
     second = authorize_tennis_provider_scheduling(**kwargs)
 
     assert first.authorization_fingerprint == second.authorization_fingerprint
+    assert first.queue_fingerprint == second.queue_fingerprint
     assert len(first.authorization_fingerprint) == 64
+
+
+def test_exact_queue_binding_changes_when_item_changes():
+    first = authorize_tennis_provider_scheduling(
+        queue_manifest=manifest(item("P1", char="1")),
+        health_decisions={"P1": decision("P1")},
+    )
+    second = authorize_tennis_provider_scheduling(
+        queue_manifest=manifest(item("P1", char="2")),
+        health_decisions={"P1": decision("P1")},
+    )
+
+    assert first.queue_fingerprint != second.queue_fingerprint
+    assert (
+        first.authorization_fingerprint
+        != second.authorization_fingerprint
+    )
+
+
+def test_exact_queue_binding_preserves_execution_order():
+    first = authorize_tennis_provider_scheduling(
+        queue_manifest=manifest(
+            item("P1", char="1"),
+            item("P1", char="2"),
+        ),
+        health_decisions={"P1": decision("P1")},
+    )
+    second = authorize_tennis_provider_scheduling(
+        queue_manifest=manifest(
+            item("P1", char="2"),
+            item("P1", char="1"),
+        ),
+        health_decisions={"P1": decision("P1")},
+    )
+
+    assert first.queue_fingerprint != second.queue_fingerprint
+    assert (
+        first.authorization_fingerprint
+        != second.authorization_fingerprint
+    )
+
+
+def test_invalid_queue_item_fingerprint_is_rejected():
+    bad = item("P1")
+    bad["queue_item_fingerprint"] = "not-a-fingerprint"
+
+    with pytest.raises(
+        ValueError,
+        match="INVALID_QUEUE_ITEM_FINGERPRINT",
+    ):
+        authorize_tennis_provider_scheduling(
+            queue_manifest=manifest(bad),
+            health_decisions={"P1": decision("P1")},
+        )
 
 
 def test_payload_keeps_automatic_switching_disabled():
@@ -197,6 +256,7 @@ def test_payload_keeps_automatic_switching_disabled():
 
     payload = result.payload()
 
+    assert payload["queue_fingerprint"] == result.queue_fingerprint
     assert payload["automatic_model_promotion"] is False
     assert payload["automatic_provider_switch"] is False
     assert payload["automatic_wagering"] is False

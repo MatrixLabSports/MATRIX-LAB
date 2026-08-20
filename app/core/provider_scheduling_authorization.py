@@ -3,9 +3,7 @@
 from dataclasses import dataclass
 from hashlib import sha256
 import json
-from typing import Any, Mapping, Sequence
-
-from app.core.provider_health_policy import ProviderHealthDecision
+from typing import Any, Mapping
 
 
 _ALLOWED_SPORTS = {"football", "tennis"}
@@ -28,9 +26,26 @@ def _sha256(value: Any) -> str:
     return sha256(_canonical_json(value).encode("utf-8")).hexdigest()
 
 
+def _validate_hex64(name: str, value: object) -> str:
+    if not isinstance(value, str) or len(value) != 64:
+        raise ValueError(f"INVALID_{name}")
+
+    try:
+        int(value, 16)
+    except ValueError as error:
+        raise ValueError(f"INVALID_{name}") from error
+
+    return value.lower()
+
+
 def _validate_queue_manifest(
     queue_manifest: Mapping[str, Any],
-) -> tuple[str, tuple[Mapping[str, Any], ...]]:
+) -> tuple[
+    str,
+    tuple[Mapping[str, Any], ...],
+    tuple[tuple[str, str], ...],
+    str,
+]:
     if not isinstance(queue_manifest, Mapping):
         raise ValueError("INVALID_QUEUE_MANIFEST")
 
@@ -43,6 +58,7 @@ def _validate_queue_manifest(
         raise ValueError("INVALID_QUEUE_MANIFEST")
 
     validated: list[Mapping[str, Any]] = []
+    queue_bindings: list[tuple[str, str]] = []
 
     for item in queue:
         if not isinstance(item, Mapping):
@@ -55,9 +71,34 @@ def _validate_queue_manifest(
         if not isinstance(provider_key, str) or not provider_key.strip():
             raise ValueError("MISSING_PROVIDER_KEY")
 
-        validated.append(item)
+        queue_item_fingerprint = _validate_hex64(
+            "QUEUE_ITEM_FINGERPRINT",
+            item.get("queue_item_fingerprint"),
+        )
 
-    return str(sport), tuple(validated)
+        validated.append(item)
+        queue_bindings.append(
+            (provider_key, queue_item_fingerprint)
+        )
+
+    queue_binding_payload = {
+        "schema": "matrix.provider-scheduling-queue-binding/1",
+        "sport": sport,
+        "items": [
+            {
+                "provider_key": provider_key,
+                "queue_item_fingerprint": queue_item_fingerprint,
+            }
+            for provider_key, queue_item_fingerprint in queue_bindings
+        ],
+    }
+
+    return (
+        str(sport),
+        tuple(validated),
+        tuple(queue_bindings),
+        _sha256(queue_binding_payload),
+    )
 
 
 @dataclass(frozen=True)
@@ -65,6 +106,8 @@ class ProviderSchedulingAuthorization:
     sport: str
     authorization_status: str
     execution_eligible: bool
+    queue_fingerprint: str
+    queue_item_fingerprints: tuple[str, ...]
     provider_keys: tuple[str, ...]
     eligible_provider_keys: tuple[str, ...]
     blocked_provider_keys: tuple[str, ...]
@@ -75,16 +118,23 @@ class ProviderSchedulingAuthorization:
 
     def payload(self) -> Mapping[str, Any]:
         return {
-            "schema": "matrix.provider-scheduling-authorization/1",
+            "schema": "matrix.provider-scheduling-authorization/2",
             "sport": self.sport,
             "authorization_status": self.authorization_status,
             "execution_eligible": self.execution_eligible,
+            "queue_fingerprint": self.queue_fingerprint,
+            "queue_item_fingerprints": list(
+                self.queue_item_fingerprints
+            ),
             "provider_keys": list(self.provider_keys),
             "eligible_provider_keys": list(self.eligible_provider_keys),
             "blocked_provider_keys": list(self.blocked_provider_keys),
             "missing_provider_keys": list(self.missing_provider_keys),
             "decision_fingerprints": list(self.decision_fingerprints),
             "reason_codes": list(self.reason_codes),
+            "authorization_fingerprint": (
+                self.authorization_fingerprint
+            ),
             "automatic_model_promotion": False,
             "automatic_provider_switch": False,
             "automatic_wagering": False,
@@ -94,10 +144,15 @@ class ProviderSchedulingAuthorization:
 def authorize_provider_scheduling(
     *,
     queue_manifest: Mapping[str, Any],
-    health_decisions: Mapping[str, ProviderHealthDecision],
+    health_decisions: Mapping[str, Any],
     expected_sport: str | None = None,
 ) -> ProviderSchedulingAuthorization:
-    sport, queue = _validate_queue_manifest(queue_manifest)
+    (
+        sport,
+        queue,
+        queue_bindings,
+        queue_fingerprint,
+    ) = _validate_queue_manifest(queue_manifest)
 
     if expected_sport is not None:
         if expected_sport not in _ALLOWED_SPORTS:
@@ -108,8 +163,15 @@ def authorize_provider_scheduling(
     if not isinstance(health_decisions, Mapping):
         raise ValueError("INVALID_HEALTH_DECISIONS")
 
+    # Import here to avoid broad runtime coupling during module import.
+    from app.core.provider_health_policy import ProviderHealthDecision
+
     provider_keys = tuple(
-        sorted({str(item["provider_key"]) for item in queue})
+        sorted({provider_key for provider_key, _ in queue_bindings})
+    )
+    queue_item_fingerprints = tuple(
+        queue_item_fingerprint
+        for _, queue_item_fingerprint in queue_bindings
     )
 
     eligible: list[str] = []
@@ -141,7 +203,12 @@ def authorize_provider_scheduling(
             reasons.append(f"SPORT_BOUNDARY_VIOLATION:{provider_key}")
             continue
 
-        decision_fingerprints.append(decision.decision_fingerprint)
+        decision_fingerprints.append(
+            _validate_hex64(
+                "DECISION_FINGERPRINT",
+                decision.decision_fingerprint,
+            )
+        )
 
         if (
             decision.decision_status == "ELIGIBLE"
@@ -168,10 +235,12 @@ def authorize_provider_scheduling(
     reason_codes = tuple(dict.fromkeys(reasons))
 
     base = {
-        "schema": "matrix.provider-scheduling-authorization/1",
+        "schema": "matrix.provider-scheduling-authorization/2",
         "sport": sport,
         "authorization_status": authorization_status,
         "execution_eligible": execution_eligible,
+        "queue_fingerprint": queue_fingerprint,
+        "queue_item_fingerprints": list(queue_item_fingerprints),
         "provider_keys": list(provider_keys),
         "eligible_provider_keys": sorted(eligible),
         "blocked_provider_keys": sorted(set(blocked)),
@@ -187,6 +256,8 @@ def authorize_provider_scheduling(
         sport=sport,
         authorization_status=authorization_status,
         execution_eligible=execution_eligible,
+        queue_fingerprint=queue_fingerprint,
+        queue_item_fingerprints=queue_item_fingerprints,
         provider_keys=provider_keys,
         eligible_provider_keys=tuple(sorted(eligible)),
         blocked_provider_keys=tuple(sorted(set(blocked))),
