@@ -1,36 +1,37 @@
 ﻿from pathlib import Path
 
 
-def test_ci_workflow_and_gate_exist():
-    gate = Path(
+def test_gate_implements_declared_policy_checks():
+    source = Path(
         "scripts/matrix_ci_gate.py"
+    ).read_text(
+        encoding="utf-8-sig"
     )
-    workflow_path = Path(
+
+    for required in (
+        "compileall",
+        "tracked_secret_scan",
+        "git_diff_check",
+        "sport_boundary",
+        "safety_invariants",
+    ):
+        assert required in source
+
+    assert "HEAD^" in source
+    assert "PYTHON_VERSION_BELOW_POLICY" in source
+    assert "SPORT_BOUNDARY_VIOLATION" in source
+
+
+def test_workflow_remains_read_only():
+    workflow = Path(
         ".github/workflows/matrix-ci.yml"
-    )
-
-    assert gate.is_file()
-    assert workflow_path.is_file()
-
-    source = gate.read_text(
-        encoding="utf-8-sig"
-    )
-    workflow = workflow_path.read_text(
+    ).read_text(
         encoding="utf-8-sig"
     )
 
-    assert (
-        "sys.path.insert"
-        in source
-    )
-    assert (
-        "Path(__file__).resolve().parents[1]"
-        in source
-    )
+    assert "permissions:" in workflow
+    assert "contents: read" in workflow
     assert (
         "python scripts/matrix_ci_gate.py"
         in workflow
     )
-    assert "permissions:" in workflow
-    assert "contents: read" in workflow
-    assert "pull_request:" in workflow

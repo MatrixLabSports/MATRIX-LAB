@@ -3,8 +3,6 @@
 from pathlib import Path
 import sys
 
-# Direct execution uses scripts/ as sys.path[0] on Windows/Linux.
-# Add the repository root before importing the application package.
 ROOT = Path(__file__).resolve().parents[1]
 
 if str(ROOT) not in sys.path:
@@ -38,6 +36,14 @@ FORBIDDEN_TRUE = {
     "missing_is_zero",
 }
 
+IMPLEMENTED_CHECKS = {
+    "compileall",
+    "tracked_secret_scan",
+    "git_diff_check",
+    "sport_boundary",
+    "safety_invariants",
+}
+
 
 def _run(
     root: Path,
@@ -54,7 +60,28 @@ def _run(
         )
 
 
-def _ast_safety(root: Path) -> None:
+def _python_minimum(
+    minimum: str,
+) -> None:
+    parts = minimum.split(".")
+
+    if len(parts) < 2:
+        raise SystemExit(
+            "INVALID_PYTHON_MINIMUM_POLICY"
+        )
+
+    required = (
+        int(parts[0]),
+        int(parts[1]),
+    )
+
+    if sys.version_info[:2] < required:
+        raise SystemExit(
+            "PYTHON_VERSION_BELOW_POLICY"
+        )
+
+
+def _safety_ast(root: Path) -> None:
     violations: list[str] = []
 
     for path in (
@@ -69,39 +96,103 @@ def _ast_safety(root: Path) -> None:
         )
 
         for node in ast.walk(tree):
-            if not isinstance(
-                node,
-                ast.Dict,
-            ):
-                continue
+            if isinstance(node, ast.Dict):
+                for key, value in zip(
+                    node.keys,
+                    node.values,
+                ):
+                    if (
+                        isinstance(
+                            key,
+                            ast.Constant,
+                        )
+                        and isinstance(
+                            key.value,
+                            str,
+                        )
+                        and key.value
+                        in FORBIDDEN_TRUE
+                        and isinstance(
+                            value,
+                            ast.Constant,
+                        )
+                        and value.value
+                        is True
+                    ):
+                        violations.append(
+                            f"{path}:"
+                            f"{getattr(node, 'lineno', '?')}:"
+                            f"{key.value}=True"
+                        )
 
-            for key, value in zip(
-                node.keys,
-                node.values,
+            elif isinstance(
+                node,
+                ast.Assign,
             ):
                 if (
                     isinstance(
-                        key,
+                        node.value,
                         ast.Constant,
                     )
-                    and isinstance(
-                        key.value,
-                        str,
+                    and node.value.value
+                    is True
+                ):
+                    for target in node.targets:
+                        if (
+                            isinstance(
+                                target,
+                                ast.Name,
+                            )
+                            and target.id
+                            in FORBIDDEN_TRUE
+                        ):
+                            violations.append(
+                                f"{path}:"
+                                f"{node.lineno}:"
+                                f"{target.id}=True"
+                            )
+
+            elif isinstance(
+                node,
+                ast.AnnAssign,
+            ):
+                if (
+                    isinstance(
+                        node.target,
+                        ast.Name,
                     )
-                    and key.value
+                    and node.target.id
                     in FORBIDDEN_TRUE
                     and isinstance(
-                        value,
+                        node.value,
                         ast.Constant,
                     )
-                    and value.value
+                    and node.value.value
                     is True
                 ):
                     violations.append(
                         f"{path}:"
-                        f"{getattr(node, 'lineno', '?')}:"
-                        f"{key.value}=True"
+                        f"{node.lineno}:"
+                        f"{node.target.id}=True"
                     )
+
+            elif isinstance(node, ast.Call):
+                for keyword in node.keywords:
+                    if (
+                        keyword.arg
+                        in FORBIDDEN_TRUE
+                        and isinstance(
+                            keyword.value,
+                            ast.Constant,
+                        )
+                        and keyword.value.value
+                        is True
+                    ):
+                        violations.append(
+                            f"{path}:"
+                            f"{node.lineno}:"
+                            f"{keyword.arg}=True"
+                        )
 
     if violations:
         raise SystemExit(
@@ -112,9 +203,142 @@ def _ast_safety(root: Path) -> None:
         )
 
 
+def _sport_boundary(root: Path) -> None:
+    violations: list[str] = []
+
+    roots = {
+        "football": root / "app" / "sports" / "football",
+        "tennis": root / "app" / "sports" / "tennis",
+    }
+
+    for sport, sport_root in roots.items():
+        if not sport_root.exists():
+            continue
+
+        other = (
+            "tennis"
+            if sport == "football"
+            else "football"
+        )
+        forbidden_prefix = (
+            f"app.sports.{other}"
+        )
+
+        for path in sport_root.rglob(
+            "*.py"
+        ):
+            tree = ast.parse(
+                path.read_text(
+                    encoding="utf-8-sig"
+                ),
+                filename=str(path),
+            )
+
+            for node in ast.walk(tree):
+                if isinstance(
+                    node,
+                    ast.Import,
+                ):
+                    for alias in node.names:
+                        if alias.name.startswith(
+                            forbidden_prefix
+                        ):
+                            violations.append(
+                                f"{path}:"
+                                f"{node.lineno}:"
+                                f"{alias.name}"
+                            )
+
+                elif isinstance(
+                    node,
+                    ast.ImportFrom,
+                ):
+                    module = (
+                        node.module
+                        or ""
+                    )
+
+                    if module.startswith(
+                        forbidden_prefix
+                    ):
+                        violations.append(
+                            f"{path}:"
+                            f"{node.lineno}:"
+                            f"{module}"
+                        )
+
+    if violations:
+        raise SystemExit(
+            "SPORT_BOUNDARY_VIOLATION\n"
+            + "\n".join(
+                violations
+            )
+        )
+
+
+def _git_diff_checks(root: Path) -> None:
+    _run(
+        root,
+        [
+            "git",
+            "diff",
+            "--check",
+        ],
+    )
+    _run(
+        root,
+        [
+            "git",
+            "diff",
+            "--cached",
+            "--check",
+        ],
+    )
+
+    parent = subprocess.run(
+        [
+            "git",
+            "rev-parse",
+            "--verify",
+            "HEAD^",
+        ],
+        cwd=root,
+        capture_output=True,
+    )
+
+    if parent.returncode == 0:
+        _run(
+            root,
+            [
+                "git",
+                "diff",
+                "--check",
+                "HEAD^",
+                "HEAD",
+            ],
+        )
+
+
 def main() -> int:
     policy = (
         build_repository_quality_policy()
+    )
+
+    declared = set(
+        policy.required_static_checks
+    )
+    unknown = declared - IMPLEMENTED_CHECKS
+    missing = IMPLEMENTED_CHECKS - declared
+
+    if unknown or missing:
+        raise SystemExit(
+            "QUALITY_POLICY_IMPLEMENTATION_MISMATCH:"
+            f"unknown={sorted(unknown)}:"
+            f"missing={sorted(missing)}"
+        )
+
+    _python_minimum(
+        policy.python_minimum
     )
 
     report = scan_tracked_repository(
@@ -134,7 +358,9 @@ def main() -> int:
             + details
         )
 
-    _ast_safety(ROOT)
+    _safety_ast(ROOT)
+    _sport_boundary(ROOT)
+    _git_diff_checks(ROOT)
 
     _run(
         ROOT,
@@ -145,14 +371,6 @@ def main() -> int:
             "-q",
             "app",
             "tests",
-        ],
-    )
-    _run(
-        ROOT,
-        [
-            "git",
-            "diff",
-            "--check",
         ],
     )
     _run(
