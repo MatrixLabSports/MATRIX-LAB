@@ -1,4 +1,4 @@
-﻿from __future__ import annotations
+from __future__ import annotations
 
 from typing import Any
 import requests
@@ -70,4 +70,36 @@ def _build_bootstrap_api_football_client(
         call_evidence_store=call_evidence_store,
         clock=clock,
         underlying_session=underlying_session,
+    )
+
+
+def execute_governed_api_football_bootstrap_probe(
+    *,
+    config,
+    authority,
+    network_permit_store,
+    call_evidence_store,
+    clock,
+    endpoint: str,
+    params=None,
+    underlying_session: Any | None = None,
+):
+    from app.core.provider_bootstrap_quarantine import (
+        execute_bootstrap_probe,
+    )
+
+    client = _build_bootstrap_api_football_client(
+        config=config,
+        authority=authority,
+        network_permit_store=network_permit_store,
+        call_evidence_store=call_evidence_store,
+        clock=clock,
+        underlying_session=underlying_session,
+    )
+
+    return execute_bootstrap_probe(
+        authority=authority,
+        client=client,
+        endpoint=endpoint,
+        params=params,
     )
