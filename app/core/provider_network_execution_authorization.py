@@ -1,4 +1,4 @@
-﻿from __future__ import annotations
+from __future__ import annotations
 
 from dataclasses import dataclass
 from datetime import datetime, timezone
@@ -52,6 +52,7 @@ class ProviderNetworkPermit:
     endpoint_manifest_id: str
     endpoint_authorization_fingerprint: str
     dns_resolution_fingerprint: str
+    resolved_ips: tuple[str, ...]
     execution_authorization_fingerprint: str
     security_decision_fingerprint: str
     security_evidence_id: str
@@ -304,6 +305,7 @@ class ProviderNetworkAuthority:
             "endpoint_manifest_id": endpoint.manifest_id,
             "endpoint_authorization_fingerprint": endpoint.decision_fingerprint,
             "dns_resolution_fingerprint": dns.resolution_fingerprint,
+            "resolved_ips": list(dns.resolved_ips),
             "execution_authorization_fingerprint": execution_fp,
             "security_decision_fingerprint": security_fp,
             "security_evidence_id": security_evidence_id,
@@ -322,6 +324,7 @@ class ProviderNetworkAuthority:
             endpoint_manifest_id=endpoint.manifest_id,
             endpoint_authorization_fingerprint=endpoint.decision_fingerprint,
             dns_resolution_fingerprint=dns.resolution_fingerprint,
+            resolved_ips=tuple(dns.resolved_ips),
             execution_authorization_fingerprint=execution_fp,
             security_decision_fingerprint=security_fp,
             security_evidence_id=security_evidence_id,
