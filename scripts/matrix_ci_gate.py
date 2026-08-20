@@ -1,4 +1,4 @@
-﻿from __future__ import annotations
+from __future__ import annotations
 
 from pathlib import Path
 import sys
@@ -319,6 +319,81 @@ def _git_diff_checks(root: Path) -> None:
         )
 
 
+
+def _provider_http_boundary(
+    root: Path,
+) -> None:
+    violations: list[str] = []
+    legacy = "app.providers.api_football.client"
+    allowed = "app/providers/api_football/governed_client.py"
+
+    for path in (root / "app").rglob("*.py"):
+        relative = path.relative_to(root).as_posix()
+        tree = ast.parse(
+            path.read_text(encoding="utf-8-sig"),
+            filename=str(path),
+        )
+
+        for node in ast.walk(tree):
+            if isinstance(node, ast.ImportFrom):
+                module = node.module or ""
+                if module == legacy and relative != allowed:
+                    violations.append(
+                        f"{relative}:{node.lineno}:LEGACY_PROVIDER_CLIENT_IMPORT"
+                    )
+
+            elif isinstance(node, ast.Import):
+                for alias in node.names:
+                    if alias.name == legacy and relative != allowed:
+                        violations.append(
+                            f"{relative}:{node.lineno}:LEGACY_PROVIDER_CLIENT_IMPORT"
+                        )
+
+            elif isinstance(node, ast.Call):
+                if (
+                    isinstance(node.func, ast.Attribute)
+                    and isinstance(node.func.value, ast.Name)
+                    and node.func.value.id == "requests"
+                ):
+                    network_verbs = {
+                        "get",
+                        "post",
+                        "put",
+                        "patch",
+                        "delete",
+                        "head",
+                        "options",
+                        "request",
+                    }
+
+                    if (
+                        node.func.attr in network_verbs
+                        and relative
+                        != "app/providers/api_football/client.py"
+                    ):
+                        violations.append(
+                            f"{relative}:{node.lineno}:DIRECT_REQUESTS_CALL"
+                        )
+
+                    if (
+                        node.func.attr == "Session"
+                        and relative
+                        not in {
+                            "app/providers/api_football/client.py",
+                            "app/providers/api_football/governed_client.py",
+                        }
+                    ):
+                        violations.append(
+                            f"{relative}:{node.lineno}:UNAUTHORIZED_REQUESTS_SESSION"
+                        )
+
+    if violations:
+        raise SystemExit(
+            "PROVIDER_HTTP_BOUNDARY_VIOLATION\n"
+            + "\n".join(violations)
+        )
+
+
 def main() -> int:
     policy = (
         build_repository_quality_policy()
@@ -360,6 +435,7 @@ def main() -> int:
 
     _safety_ast(ROOT)
     _sport_boundary(ROOT)
+    _provider_http_boundary(ROOT)
     _git_diff_checks(ROOT)
 
     _run(
