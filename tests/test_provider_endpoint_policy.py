@@ -5,26 +5,31 @@ from app.core.provider_endpoint_policy import (
 )
 
 
-def test_https_provider_endpoint_is_allowed():
-    policy = build_provider_endpoint_policy(
+def test_endpoint_policy_binds_exact_target_not_only_origin():
+    first = build_provider_endpoint_policy(
         provider_key="provider-x",
         endpoint_url=(
             "https://api.provider.example/v1/fixtures"
+            "?date=2026-08-20&league=1"
+        ),
+    )
+    second = build_provider_endpoint_policy(
+        provider_key="provider-x",
+        endpoint_url=(
+            "https://api.provider.example/v1/results"
+            "?date=2026-08-20&league=1"
         ),
     )
 
+    assert first.endpoint_origin == second.endpoint_origin
     assert (
-        policy.endpoint_origin
-        == "https://api.provider.example"
+        first.endpoint_target_fingerprint
+        != second.endpoint_target_fingerprint
     )
-    assert policy.tls_required is True
-    assert (
-        policy.certificate_verification_required
-        is True
-    )
+    assert first.policy_fingerprint != second.policy_fingerprint
 
 
-def test_http_provider_endpoint_is_rejected():
+def test_plain_http_is_rejected():
     with pytest.raises(
         ValueError,
         match="PROVIDER_ENDPOINT_TLS_REQUIRED",
@@ -37,22 +42,18 @@ def test_http_provider_endpoint_is_rejected():
         )
 
 
-def test_credentials_in_url_are_rejected():
+def test_non_global_ip_literal_is_rejected():
     with pytest.raises(
         ValueError,
-        match=(
-            "EMBEDDED_PROVIDER_CREDENTIALS_FORBIDDEN"
-        ),
+        match="NON_GLOBAL_PROVIDER_IP_FORBIDDEN",
     ):
         build_provider_endpoint_policy(
             provider_key="provider-x",
-            endpoint_url=(
-                "https://user:pass@api.provider.example/v1"
-            ),
+            endpoint_url="https://10.0.0.1/v1",
         )
 
 
-def test_secret_query_parameter_is_rejected():
+def test_secret_query_aliases_are_rejected():
     with pytest.raises(
         ValueError,
         match="SECRET_QUERY_PARAMETER_FORBIDDEN",
@@ -61,6 +62,19 @@ def test_secret_query_parameter_is_rejected():
             provider_key="provider-x",
             endpoint_url=(
                 "https://api.provider.example/v1"
-                "?api_key=secret"
+                "?x-api-key=secret"
+            ),
+        )
+
+
+def test_fragments_are_rejected():
+    with pytest.raises(
+        ValueError,
+        match="PROVIDER_ENDPOINT_FRAGMENT_FORBIDDEN",
+    ):
+        build_provider_endpoint_policy(
+            provider_key="provider-x",
+            endpoint_url=(
+                "https://api.provider.example/v1#token"
             ),
         )
