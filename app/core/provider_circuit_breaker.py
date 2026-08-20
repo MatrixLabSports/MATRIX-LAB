@@ -1,4 +1,4 @@
-﻿from __future__ import annotations
+from __future__ import annotations
 
 from dataclasses import dataclass
 from datetime import datetime, timezone
@@ -228,6 +228,23 @@ class SQLiteProviderCircuitStore:
                 )
 
             if state == "HALF_OPEN":
+                if probe_in_flight == 0:
+                    connection.execute(
+                        "UPDATE provider_circuit_state "
+                        "SET probe_in_flight = 1 "
+                        "WHERE provider_key = ?",
+                        (policy.provider_key,),
+                    )
+                    connection.execute("COMMIT")
+                    return ProviderCircuitDecision(
+                        allowed=True,
+                        provider_key=policy.provider_key,
+                        state="HALF_OPEN",
+                        failure_count=failure_count,
+                        retry_after_seconds=0,
+                        reason_code="HALF_OPEN_PROBE",
+                    )
+
                 connection.execute("COMMIT")
                 return ProviderCircuitDecision(
                     allowed=False,
@@ -338,6 +355,28 @@ class SQLiteProviderCircuitStore:
 
             connection.execute("COMMIT")
 
+    def release_neutral_probe(
+        self,
+        *,
+        policy: ProviderCircuitPolicy,
+    ) -> None:
+        with self._connect() as connection:
+            connection.execute("BEGIN IMMEDIATE")
+            state, _, _, probe_in_flight = self._read_state(
+                connection,
+                policy.provider_key,
+            )
+
+            if state == "HALF_OPEN" and probe_in_flight == 1:
+                connection.execute(
+                    "UPDATE provider_circuit_state "
+                    "SET probe_in_flight = 0 "
+                    "WHERE provider_key = ?",
+                    (policy.provider_key,),
+                )
+
+            connection.execute("COMMIT")
+
     def snapshot(
         self,
         provider_key: str,
@@ -395,9 +434,10 @@ class CircuitBreakerFetcher:
             payload = self.fetcher.fetch(queue_item)
         except ProviderQuotaExceeded:
             # Quota refusal means no provider request was made.
-            # It must not degrade provider health.
+            # It must not degrade provider health or falsely close
+            # a HALF_OPEN circuit without an actual provider probe.
             if decision.state == "HALF_OPEN":
-                self.circuit_store.record_success(policy=policy)
+                self.circuit_store.release_neutral_probe(policy=policy)
             raise
         except Exception:
             self.circuit_store.record_failure(

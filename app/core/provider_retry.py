@@ -1,4 +1,4 @@
-﻿from __future__ import annotations
+from __future__ import annotations
 
 from dataclasses import dataclass
 from hashlib import sha256
@@ -8,6 +8,7 @@ from typing import Any, Callable, Mapping, Protocol
 
 from app.core.provider_circuit_breaker import ProviderCircuitOpen
 from app.core.provider_quota import ProviderQuotaExceeded
+from app.core.provider_request_budget import ProviderRequestBudgetExceeded
 
 
 class ProviderFetcher(Protocol):
@@ -143,6 +144,7 @@ def is_retryable_provider_error(error: BaseException) -> bool:
         (
             ProviderQuotaExceeded,
             ProviderCircuitOpen,
+            ProviderRequestBudgetExceeded,
             NonRetryableProviderError,
             ValueError,
         ),

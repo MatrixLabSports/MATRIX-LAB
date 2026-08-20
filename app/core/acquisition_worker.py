@@ -1,9 +1,14 @@
-﻿from __future__ import annotations
+from __future__ import annotations
 
 from dataclasses import dataclass
 from hashlib import sha256
 import json
 from typing import Any, Mapping, Protocol, Sequence
+
+from app.core.provider_request_budget import (
+    ExecutionRequestBudget,
+    ProviderRequestBudgetExceeded,
+)
 
 
 def _canonical_json(value: Any) -> bytes:
@@ -211,6 +216,7 @@ def execute_acquisition_queue(
     raw_ledger: RawAppendOnlyLedger,
     checkpoints: CheckpointStore,
     limits: WorkerLimits,
+    request_budget: ExecutionRequestBudget | None = None,
 ) -> AcquisitionWorkerResult:
     queue = queue_manifest.get("queue")
     if not isinstance(queue, Sequence) or isinstance(queue, (str, bytes)):
@@ -219,6 +225,12 @@ def execute_acquisition_queue(
     manifest_sport = queue_manifest.get("sport")
     if manifest_sport not in {"football", "tennis"}:
         raise ValueError("INVALID_QUEUE_SPORT")
+
+    if (
+        request_budget is not None
+        and request_budget.max_units != limits.max_requests
+    ):
+        raise ValueError("REQUEST_BUDGET_LIMIT_MISMATCH")
 
     processed = 0
     skipped_completed = 0
@@ -284,7 +296,10 @@ def execute_acquisition_queue(
             continue
 
         request_cost = int(item["estimated_request_cost"])
-        if requests_used + request_cost > limits.max_requests:
+        if (
+            request_budget is None
+            and requests_used + request_cost > limits.max_requests
+        ):
             failures.append((
                 queue_fingerprint,
                 "WORKER_REQUEST_LIMIT_REACHED",
@@ -293,7 +308,10 @@ def execute_acquisition_queue(
 
         try:
             raw_payload = fetcher.fetch(item)
-            requests_used += request_cost
+            if request_budget is None:
+                requests_used += request_cost
+            else:
+                requests_used = request_budget.used_units
 
             if not isinstance(raw_payload, Mapping):
                 raise ValueError("PROVIDER_PAYLOAD_NOT_MAPPING")
@@ -319,7 +337,18 @@ def execute_acquisition_queue(
             processed += 1
             evidence_ids.append(evidence_id)
 
+        except ProviderRequestBudgetExceeded as error:
+            requests_used = (
+                request_budget.used_units
+                if request_budget is not None
+                else requests_used
+            )
+            failed += 1
+            failures.append((queue_fingerprint, type(error).__name__))
+            break
         except Exception as error:
+            if request_budget is not None:
+                requests_used = request_budget.used_units
             failed += 1
             failures.append((queue_fingerprint, type(error).__name__))
 
