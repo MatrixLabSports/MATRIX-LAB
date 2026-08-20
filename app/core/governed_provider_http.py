@@ -1,5 +1,6 @@
 ﻿from __future__ import annotations
 
+from abc import ABC, abstractmethod
 from datetime import datetime, timezone
 from hashlib import sha256
 import json
@@ -7,26 +8,44 @@ from pathlib import Path
 import sqlite3
 from time import monotonic
 from typing import Any, Callable, Mapping
+from urllib.parse import urlsplit
 
 
 def _json(value: Any) -> str:
-    return json.dumps(
-        value,
-        sort_keys=True,
-        separators=(",", ":"),
-        ensure_ascii=False,
-        allow_nan=False,
-    ) + "\n"
+    return json.dumps(value, sort_keys=True, separators=(",", ":"), ensure_ascii=False, allow_nan=False) + "\n"
 
 
 def _sha(value: Any) -> str:
-    return sha256(_json(value).encode()).hexdigest()
+    return sha256(_json(value).encode("utf-8")).hexdigest()
 
 
 def _aware(value: datetime) -> datetime:
     if value.tzinfo is None:
         raise ValueError("NAIVE_DATETIME")
     return value.astimezone(timezone.utc)
+
+
+class MatrixPinnedHttpsTransport(ABC):
+    # Security contract only. No concrete real-network implementation is
+    # shipped in this tranche. Future implementation must pin the connection
+    # to an authorized resolved IP while preserving TLS/SNI validation.
+    matrix_dns_pinning_capable = True
+    matrix_environment_proxy_disabled = True
+    matrix_tls_verification_required = True
+    matrix_redirects_disabled = True
+
+    @abstractmethod
+    def get_pinned(
+        self,
+        *,
+        url: str,
+        original_host: str,
+        resolved_ips: tuple[str, ...],
+        allow_redirects: bool,
+        verify: bool,
+        **kwargs: Any,
+    ):
+        raise NotImplementedError
 
 
 class SQLiteProviderNetworkCallEvidenceStore:
@@ -46,11 +65,7 @@ class SQLiteProviderNetworkCallEvidenceStore:
             )
 
     def _connect(self):
-        connection = sqlite3.connect(
-            self.path,
-            timeout=30.0,
-            isolation_level=None,
-        )
+        connection = sqlite3.connect(self.path, timeout=30.0, isolation_level=None)
         connection.execute("PRAGMA journal_mode = WAL")
         connection.execute("PRAGMA synchronous = FULL")
         return connection
@@ -69,15 +84,11 @@ class SQLiteProviderNetworkCallEvidenceStore:
         elapsed_ms: int | None = None,
         exception_class: str | None = None,
     ) -> str:
-        if event_type not in {
-            "NETWORK_CALL_STARTED",
-            "NETWORK_CALL_COMPLETED",
-            "NETWORK_CALL_FAILED",
-        }:
+        if event_type not in {"NETWORK_CALL_STARTED", "NETWORK_CALL_COMPLETED", "NETWORK_CALL_FAILED"}:
             raise ValueError("INVALID_NETWORK_EVENT_TYPE")
 
         payload = {
-            "schema": "matrix.provider-network-call-event/1",
+            "schema": "matrix.provider-network-call-event/2",
             "permit_id": permit_id,
             "event_type": event_type,
             "event_at": _aware(event_at).isoformat(),
@@ -93,21 +104,16 @@ class SQLiteProviderNetworkCallEvidenceStore:
             "headers_persisted": False,
             "raw_payload_persisted": False,
             "secret_material_persisted": False,
+            "redirect_target_persisted": False,
+            "proxy_configuration_persisted": False,
         }
-
-        event_id = _sha(
-            {"schema": "matrix.provider-network-call-event-id/1", "payload": payload}
-        )
+        event_id = _sha({"schema": "matrix.provider-network-call-event-id/2", "payload": payload})
         payload_json = _json(payload)
-        payload_sha = sha256(payload_json.encode()).hexdigest()
+        payload_sha = sha256(payload_json.encode("utf-8")).hexdigest()
 
         with self._connect() as connection:
             connection.execute(
-                """
-                INSERT OR IGNORE INTO network_call_event
-                (event_id, permit_id, payload_json, payload_sha256)
-                VALUES (?, ?, ?, ?)
-                """,
+                "INSERT OR IGNORE INTO network_call_event (event_id, permit_id, payload_json, payload_sha256) VALUES (?, ?, ?, ?)",
                 (event_id, permit_id, payload_json, payload_sha),
             )
         return event_id
@@ -119,12 +125,10 @@ class SQLiteProviderNetworkCallEvidenceStore:
             ).fetchall()
 
         for event_id, payload_json, payload_sha in rows:
-            if sha256(payload_json.encode()).hexdigest() != payload_sha:
+            if sha256(payload_json.encode("utf-8")).hexdigest() != payload_sha:
                 return False
             payload = json.loads(payload_json)
-            expected = _sha(
-                {"schema": "matrix.provider-network-call-event-id/1", "payload": payload}
-            )
+            expected = _sha({"schema": "matrix.provider-network-call-event-id/2", "payload": payload})
             if expected != event_id:
                 return False
             for key in (
@@ -133,6 +137,8 @@ class SQLiteProviderNetworkCallEvidenceStore:
                 "headers_persisted",
                 "raw_payload_persisted",
                 "secret_material_persisted",
+                "redirect_target_persisted",
+                "proxy_configuration_persisted",
             ):
                 if payload.get(key) is not False:
                     return False
@@ -146,13 +152,15 @@ class GovernedProviderHttpSession:
         authority,
         network_permit_store,
         call_evidence_store: SQLiteProviderNetworkCallEvidenceStore,
-        underlying_session,
+        pinned_transport: MatrixPinnedHttpsTransport,
         clock: Callable[[], datetime],
     ) -> None:
+        if not isinstance(pinned_transport, MatrixPinnedHttpsTransport):
+            raise ValueError("PINNED_HTTPS_TRANSPORT_REQUIRED")
         self.authority = authority
         self.network_permit_store = network_permit_store
         self.call_evidence_store = call_evidence_store
-        self.underlying_session = underlying_session
+        self.pinned_transport = pinned_transport
         self.clock = clock
         self._sequence = 0
 
@@ -166,27 +174,47 @@ class GovernedProviderHttpSession:
             return ()
         if isinstance(params, Mapping):
             return tuple(sorted(str(key).lower() for key in params))
-
-        result = []
+        result: list[str] = []
         for item in list(params):
             if not isinstance(item, tuple) or len(item) < 2:
                 raise ValueError("UNSUPPORTED_QUERY_PARAMS")
             result.append(str(item[0]).lower())
         return tuple(sorted(set(result)))
 
+    @staticmethod
+    def _secure_kwargs(kwargs: dict[str, Any]) -> dict[str, Any]:
+        if "allow_redirects" in kwargs and kwargs["allow_redirects"] is not False:
+            raise ValueError("HTTP_REDIRECTS_FORBIDDEN")
+        if "verify" in kwargs and kwargs["verify"] is not True:
+            raise ValueError("TLS_VERIFICATION_MUST_REMAIN_ENABLED")
+        if "proxies" in kwargs or "proxy" in kwargs:
+            raise ValueError("EXPLICIT_PROXY_FORBIDDEN")
+
+        clean = dict(kwargs)
+        clean.pop("allow_redirects", None)
+        clean.pop("verify", None)
+        clean["allow_redirects"] = False
+        clean["verify"] = True
+        return clean
+
     def get(self, url: str, **kwargs: Any):
+        kwargs = self._secure_kwargs(dict(kwargs))
+        parsed = urlsplit(url)
+        if parsed.scheme.lower() != "https" or not parsed.hostname:
+            raise ValueError("GOVERNED_HTTPS_URL_REQUIRED")
+
         permit = self.authority.authorize(
             request_nonce=self._nonce(),
             method="GET",
             endpoint_url=url,
             query_keys=self._query_keys(kwargs.get("params")),
         )
+        resolved_ips = tuple(getattr(permit, "resolved_ips", ()))
+        if not resolved_ips:
+            raise ValueError("PINNED_RESOLUTION_REQUIRED")
 
         now = _aware(self.clock())
-        self.network_permit_store.consume(
-            permit_id=permit.permit_id,
-            consumed_at=now,
-        )
+        self.network_permit_store.consume(permit_id=permit.permit_id, consumed_at=now)
 
         common = {
             "permit_id": permit.permit_id,
@@ -195,18 +223,18 @@ class GovernedProviderHttpSession:
             "method": permit.method,
             "endpoint_manifest_id": permit.endpoint_manifest_id,
         }
-
-        self.call_evidence_store.record(
-            **common,
-            event_type="NETWORK_CALL_STARTED",
-            event_at=now,
-        )
-
+        self.call_evidence_store.record(**common, event_type="NETWORK_CALL_STARTED", event_at=now)
         started = monotonic()
+
         try:
-            response = self.underlying_session.get(url, **kwargs)
+            response = self.pinned_transport.get_pinned(
+                url=url,
+                original_host=parsed.hostname,
+                resolved_ips=resolved_ips,
+                **kwargs,
+            )
         except Exception as error:
-            elapsed_ms = int(max(0.0, (monotonic() - started) * 1000))
+            elapsed_ms = int(max(0.0, (monotonic() - started) * 1000.0))
             self.call_evidence_store.record(
                 **common,
                 event_type="NETWORK_CALL_FAILED",
@@ -216,11 +244,10 @@ class GovernedProviderHttpSession:
             )
             raise
 
-        elapsed_ms = int(max(0.0, (monotonic() - started) * 1000))
+        elapsed_ms = int(max(0.0, (monotonic() - started) * 1000.0))
         status_code = getattr(response, "status_code", None)
         if status_code is not None and not isinstance(status_code, int):
             status_code = None
-
         self.call_evidence_store.record(
             **common,
             event_type="NETWORK_CALL_COMPLETED",
