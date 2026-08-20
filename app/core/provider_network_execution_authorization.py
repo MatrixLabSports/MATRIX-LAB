@@ -193,6 +193,7 @@ class ProviderNetworkAuthority:
         secret_reference_fingerprint: str,
         secret_reference_registry,
         network_permit_store: SQLiteProviderNetworkPermitStore,
+        run_mode_evidence_store,
         clock: Callable[[], datetime],
         resolver=None,
     ) -> None:
@@ -212,6 +213,7 @@ class ProviderNetworkAuthority:
         self.secret_reference_fingerprint = secret_reference_fingerprint
         self.secret_reference_registry = secret_reference_registry
         self.network_permit_store = network_permit_store
+        self.run_mode_evidence_store = run_mode_evidence_store
         self.clock = clock
         self.resolver = resolver
 
@@ -281,6 +283,18 @@ class ProviderNetworkAuthority:
             raise ValueError("SECURITY_NOT_EXECUTABLE")
 
         security_evidence_id = self.security_evidence_store.record(security)
+
+        preflight_fp = str(getattr(self.preflight_decision, "decision_fingerprint", ""))
+        if len(preflight_fp) != 64:
+            raise ValueError("PREFLIGHT_DECISION_FINGERPRINT_REQUIRED")
+        self.run_mode_evidence_store.record(
+            run_id=self.run_id,
+            sport=self.sport,
+            provider_key=self.provider_key,
+            mode=self.mode,
+            preflight_decision_fingerprint=preflight_fp,
+            authorized_at=now,
+        )
 
         parsed = urlsplit(endpoint_url)
         dns = resolve_and_validate_provider_egress(

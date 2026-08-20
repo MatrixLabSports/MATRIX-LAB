@@ -1,9 +1,12 @@
-﻿from datetime import datetime, timezone
+from datetime import datetime, timezone
 from types import SimpleNamespace
 
 from app.core.provider_network_execution_authorization import (
     ProviderNetworkAuthority,
     SQLiteProviderNetworkPermitStore,
+)
+from app.core.provider_run_mode_evidence import (
+    SQLiteProviderRunModeEvidenceStore,
 )
 
 
@@ -72,6 +75,7 @@ def test_authority_binds_existing_governance_and_one_use_permit(
             sport="football",
             provider_key="api_football",
             mode="PRODUCTION",
+            decision_fingerprint="8" * 64,
         ),
         preflight_evidence_store=object(),
         security_evidence_store=SecurityEvidence(),
@@ -80,6 +84,7 @@ def test_authority_binds_existing_governance_and_one_use_permit(
         secret_reference_fingerprint="7" * 64,
         secret_reference_registry=object(),
         network_permit_store=store,
+        run_mode_evidence_store=SQLiteProviderRunModeEvidenceStore(tmp_path / "mode.db"),
         clock=lambda: NOW,
         resolver=lambda host, port: ("8.8.8.8",),
     )
