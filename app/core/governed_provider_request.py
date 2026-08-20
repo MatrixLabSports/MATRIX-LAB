@@ -2,11 +2,10 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from datetime import datetime
-from typing import Any, Callable, Mapping
+from typing import Any, Callable, Mapping, Protocol
 from urllib.parse import urlsplit
 
 from app.core.governed_provider_http import (
-    GovernedProviderHttpSession,
     MatrixPinnedHttpsTransport,
 )
 from app.core.provider_request_contract import (
@@ -16,6 +15,15 @@ from app.core.secret_reference import (
     SecretReference,
     resolve_secret_runtime,
 )
+
+
+class GovernedHttpSessionProtocol(Protocol):
+    def get(
+        self,
+        url: str,
+        **kwargs: Any,
+    ):
+        ...
 
 
 class JitSecretPinnedHttpsTransport(MatrixPinnedHttpsTransport):
@@ -116,7 +124,7 @@ class GovernedProviderRequestClient:
     timeout_seconds: float
     secret_reference: SecretReference
     request_contract_registry: SQLiteProviderRequestContractRegistry
-    governed_session: GovernedProviderHttpSession
+    governed_session: GovernedHttpSessionProtocol
     clock: Callable[[], datetime]
 
     def get(
