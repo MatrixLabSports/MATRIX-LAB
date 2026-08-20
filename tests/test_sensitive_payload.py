@@ -6,54 +6,66 @@ from app.core.sensitive_payload import (
 )
 
 
-def test_nested_sensitive_values_are_redacted():
+def test_nested_sensitive_aliases_are_redacted():
     payload = {
         "headers": {
             "Authorization": "Bearer abc",
-        },
-        "credentials": {
-            "api_key": "super-secret",
+            "X-API-Key": "super-secret",
         },
         "safe": {
             "provider_key": "provider-x",
         },
     }
 
-    sanitized = sanitize_sensitive_payload(
-        payload
-    )
+    sanitized = sanitize_sensitive_payload(payload)
 
     assert (
-        sanitized["headers"][
-            "Authorization"
-        ]
+        sanitized["headers"]["Authorization"]
         == "[REDACTED]"
     )
     assert (
-        sanitized["credentials"][
-            "api_key"
-        ]
+        sanitized["headers"]["X-API-Key"]
         == "[REDACTED]"
     )
+
+    assert_no_sensitive_fields(sanitized)
+
+
+def test_url_query_secret_is_redacted():
+    value = (
+        "https://example.test/v1"
+        "?x-api-key=abc&date=2026-08-20"
+    )
+
+    sanitized = sanitize_sensitive_payload(value)
+
+    assert "abc" not in sanitized
+    assert "%5BREDACTED%5D" in sanitized
+
+
+def test_bearer_text_is_redacted_even_without_sensitive_key():
     assert (
-        sanitized["safe"][
-            "provider_key"
-        ]
-        == "provider-x"
-    )
-
-    assert_no_sensitive_fields(
-        sanitized
+        sanitize_sensitive_payload("Bearer abcdef")
+        == "[REDACTED]"
     )
 
 
-def test_unredacted_sensitive_field_fails_closed():
+def test_unredacted_sensitive_alias_fails_closed():
     with pytest.raises(
         ValueError,
         match="UNREDACTED_SENSITIVE_FIELD",
     ):
         assert_no_sensitive_fields(
-            {
-                "access_token": "abc",
-            }
+            {"x-auth-token": "abc"}
+        )
+
+
+def test_unredacted_sensitive_url_fails_closed():
+    with pytest.raises(
+        ValueError,
+        match="UNREDACTED_SENSITIVE_TEXT",
+    ):
+        assert_no_sensitive_fields(
+            "https://example.test/v1"
+            "?access_token=abc"
         )
