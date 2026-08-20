@@ -1,4 +1,4 @@
-﻿from __future__ import annotations
+from __future__ import annotations
 
 from dataclasses import dataclass
 from datetime import datetime, timezone
@@ -466,20 +466,69 @@ class SQLiteProviderEndpointAuthorizationRegistry:
     def audit_integrity(self) -> bool:
         with self._connect() as connection:
             rows = connection.execute(
-                "SELECT payload_json, payload_sha256 FROM endpoint_manifest"
+                "SELECT manifest_id, payload_json, payload_sha256 "
+                "FROM endpoint_manifest ORDER BY manifest_id"
             ).fetchall()
             revocations = connection.execute(
-                """
-                SELECT manifest_id, revoked_at, reason_code, fingerprint
-                FROM endpoint_revocation
-                """
+                "SELECT manifest_id, revoked_at, reason_code, fingerprint "
+                "FROM endpoint_revocation ORDER BY manifest_id"
             ).fetchall()
 
-        for payload_json, payload_sha in rows:
-            if sha256(payload_json.encode()).hexdigest() != payload_sha:
+        known_manifest_ids: set[str] = set()
+
+        for manifest_id, payload_json, payload_sha in rows:
+            manifest_id = str(manifest_id)
+            known_manifest_ids.add(manifest_id)
+
+            if sha256(payload_json.encode("utf-8")).hexdigest() != payload_sha:
+                return False
+
+            try:
+                payload = json.loads(payload_json)
+
+                if payload.get("manifest_id") != manifest_id:
+                    return False
+                if payload.get("schema") != "matrix.provider-endpoint-manifest/1":
+                    return False
+                if payload.get("scheme") != "https":
+                    return False
+
+                valid_from = datetime.fromisoformat(payload["valid_from"])
+                valid_until = (
+                    datetime.fromisoformat(payload["valid_until"])
+                    if payload.get("valid_until")
+                    else None
+                )
+
+                rebuilt = build_provider_endpoint_manifest(
+                    provider_key=payload["provider_key"],
+                    sport=payload["sport"],
+                    method=payload["method"],
+                    endpoint_url=(
+                        "https://"
+                        f"{payload['host']}"
+                        f"{payload['path']}"
+                    ),
+                    allowed_query_keys=tuple(payload["allowed_query_keys"]),
+                    secret_reference_fingerprint=payload[
+                        "secret_reference_fingerprint"
+                    ],
+                    valid_from=valid_from,
+                    valid_until=valid_until,
+                )
+            except Exception:
+                return False
+
+            if rebuilt.manifest_id != manifest_id:
+                return False
+
+            if rebuilt.payload() != payload:
                 return False
 
         for manifest_id, revoked_at, reason_code, fp in revocations:
+            if str(manifest_id) not in known_manifest_ids:
+                return False
+
             expected = _sha(
                 {
                     "schema": "matrix.provider-endpoint-revocation/1",
@@ -488,6 +537,7 @@ class SQLiteProviderEndpointAuthorizationRegistry:
                     "reason_code": reason_code,
                 }
             )
+
             if expected != fp:
                 return False
 
