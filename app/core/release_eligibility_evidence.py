@@ -7,6 +7,10 @@ from pathlib import Path
 import sqlite3
 from typing import Any, Mapping
 
+from app.core.quality_gate_evidence import (
+    SQLiteQualityGatePassEvidenceStore,
+)
+
 
 def _canonical_json(value: Any) -> str:
     return json.dumps(
@@ -20,19 +24,24 @@ def _canonical_json(value: Any) -> str:
 
 def _sha(value: Any) -> str:
     return sha256(
-        _canonical_json(value).encode("utf-8")
+        _canonical_json(value).encode(
+            "utf-8"
+        )
     ).hexdigest()
 
 
-def _hex40_or_64(
+def _hex(
     name: str,
     value: object,
+    lengths: set[int],
 ) -> str:
     if (
         not isinstance(value, str)
-        or len(value) not in {40, 64}
+        or len(value) not in lengths
     ):
-        raise ValueError(f"INVALID_{name}")
+        raise ValueError(
+            f"INVALID_{name}"
+        )
 
     try:
         int(value, 16)
@@ -49,16 +58,16 @@ class ReleaseEligibilityDecision:
     commit_sha: str
     policy_fingerprint: str
     dependency_inventory_fingerprint: str
-    canonical_tests_passed: bool
-    static_checks_passed: bool
-    security_scan_passed: bool
+    quality_gate_evidence_id: str
     status: str
     decision_fingerprint: str
 
-    def payload(self) -> Mapping[str, Any]:
+    def payload(
+        self,
+    ) -> Mapping[str, Any]:
         return {
             "schema": (
-                "matrix.release-eligibility-decision/2"
+                "matrix.release-eligibility-decision/3"
             ),
             "commit_sha": self.commit_sha,
             "policy_fingerprint": (
@@ -67,15 +76,10 @@ class ReleaseEligibilityDecision:
             "dependency_inventory_fingerprint": (
                 self.dependency_inventory_fingerprint
             ),
-            "canonical_tests_passed": (
-                self.canonical_tests_passed
+            "quality_gate_evidence_id": (
+                self.quality_gate_evidence_id
             ),
-            "static_checks_passed": (
-                self.static_checks_passed
-            ),
-            "security_scan_passed": (
-                self.security_scan_passed
-            ),
+            "verified_quality_gate_required": True,
             "status": self.status,
             "automatic_deploy": False,
             "automatic_model_promotion": False,
@@ -93,70 +97,97 @@ class ReleaseEligibilityIntegrityReport:
     errors: tuple[str, ...]
 
 
-def build_release_eligibility_decision(
+def build_release_eligibility_from_verified_gate(
     *,
-    commit_sha: str,
-    policy_fingerprint: str,
-    dependency_inventory_fingerprint: str,
-    canonical_tests_passed: bool,
-    static_checks_passed: bool,
-    security_scan_passed: bool,
+    gate_store: SQLiteQualityGatePassEvidenceStore,
+    quality_gate_evidence_id: str,
+    expected_commit_sha: str,
+    expected_policy_fingerprint: str,
+    expected_dependency_inventory_fingerprint: str,
 ) -> ReleaseEligibilityDecision:
-    commit_sha = _hex40_or_64(
+    quality_gate_evidence_id = _hex(
+        "QUALITY_GATE_EVIDENCE_ID",
+        quality_gate_evidence_id,
+        {64},
+    )
+    expected_commit_sha = _hex(
         "COMMIT_SHA",
-        commit_sha,
+        expected_commit_sha,
+        {40, 64},
     )
-    policy_fingerprint = _hex40_or_64(
+    expected_policy_fingerprint = _hex(
         "POLICY_FINGERPRINT",
-        policy_fingerprint,
+        expected_policy_fingerprint,
+        {64},
     )
-    dependency_inventory_fingerprint = (
-        _hex40_or_64(
-            "DEPENDENCY_INVENTORY_FINGERPRINT",
-            dependency_inventory_fingerprint,
-        )
-    )
-
-    flags = (
-        canonical_tests_passed,
-        static_checks_passed,
-        security_scan_passed,
+    expected_dependency_inventory_fingerprint = _hex(
+        "DEPENDENCY_INVENTORY_FINGERPRINT",
+        expected_dependency_inventory_fingerprint,
+        {64},
     )
 
-    if any(
-        not isinstance(value, bool)
-        for value in flags
-    ):
-        raise ValueError(
-            "INVALID_RELEASE_GATE_BOOLEAN"
+    evidence = gate_store.get_verified(
+        quality_gate_evidence_id
+    )
+
+    reasons: list[str] = []
+
+    if evidence is None:
+        reasons.append(
+            "MISSING_VERIFIED_QUALITY_GATE_EVIDENCE"
         )
+    else:
+        if evidence.status != "PASS":
+            reasons.append(
+                "QUALITY_GATE_NOT_PASS"
+            )
+
+        if (
+            evidence.commit_sha
+            != expected_commit_sha
+        ):
+            reasons.append(
+                "QUALITY_GATE_COMMIT_MISMATCH"
+            )
+
+        if (
+            evidence.policy_fingerprint
+            != expected_policy_fingerprint
+        ):
+            reasons.append(
+                "QUALITY_GATE_POLICY_MISMATCH"
+            )
+
+        if (
+            evidence
+            .dependency_inventory_fingerprint
+            != expected_dependency_inventory_fingerprint
+        ):
+            reasons.append(
+                "QUALITY_GATE_DEPENDENCY_INVENTORY_MISMATCH"
+            )
 
     status = (
         "ELIGIBLE_FOR_MANUAL_RELEASE"
-        if all(flags)
+        if not reasons
         else "QUARANTINE"
     )
 
     base = {
         "schema": (
-            "matrix.release-eligibility-decision/2"
+            "matrix.release-eligibility-decision/3"
         ),
-        "commit_sha": commit_sha,
+        "commit_sha": expected_commit_sha,
         "policy_fingerprint": (
-            policy_fingerprint
+            expected_policy_fingerprint
         ),
         "dependency_inventory_fingerprint": (
-            dependency_inventory_fingerprint
+            expected_dependency_inventory_fingerprint
         ),
-        "canonical_tests_passed": (
-            canonical_tests_passed
+        "quality_gate_evidence_id": (
+            quality_gate_evidence_id
         ),
-        "static_checks_passed": (
-            static_checks_passed
-        ),
-        "security_scan_passed": (
-            security_scan_passed
-        ),
+        "verified_quality_gate_required": True,
         "status": status,
         "automatic_deploy": False,
         "automatic_model_promotion": False,
@@ -164,19 +195,15 @@ def build_release_eligibility_decision(
     }
 
     return ReleaseEligibilityDecision(
-        commit_sha=commit_sha,
-        policy_fingerprint=policy_fingerprint,
+        commit_sha=expected_commit_sha,
+        policy_fingerprint=(
+            expected_policy_fingerprint
+        ),
         dependency_inventory_fingerprint=(
-            dependency_inventory_fingerprint
+            expected_dependency_inventory_fingerprint
         ),
-        canonical_tests_passed=(
-            canonical_tests_passed
-        ),
-        static_checks_passed=(
-            static_checks_passed
-        ),
-        security_scan_passed=(
-            security_scan_passed
+        quality_gate_evidence_id=(
+            quality_gate_evidence_id
         ),
         status=status,
         decision_fingerprint=_sha(
@@ -197,7 +224,9 @@ class SQLiteReleaseEligibilityEvidenceStore:
         )
         self._initialize()
 
-    def _connect(self) -> sqlite3.Connection:
+    def _connect(
+        self,
+    ) -> sqlite3.Connection:
         connection = sqlite3.connect(
             self.path,
             timeout=30.0,
@@ -232,7 +261,7 @@ class SQLiteReleaseEligibilityEvidenceStore:
         return _sha(
             {
                 "schema": (
-                    "matrix.release-eligibility-evidence-id/2"
+                    "matrix.release-eligibility-evidence-id/3"
                 ),
                 "decision_fingerprint": (
                     decision_fingerprint
@@ -243,57 +272,50 @@ class SQLiteReleaseEligibilityEvidenceStore:
     @staticmethod
     def _rederive(
         payload: Mapping[str, Any],
-    ) -> ReleaseEligibilityDecision:
-        return build_release_eligibility_decision(
-            commit_sha=payload[
+    ) -> str:
+        base = {
+            "schema": (
+                "matrix.release-eligibility-decision/3"
+            ),
+            "commit_sha": payload[
                 "commit_sha"
             ],
-            policy_fingerprint=payload[
+            "policy_fingerprint": payload[
                 "policy_fingerprint"
             ],
-            dependency_inventory_fingerprint=payload[
+            "dependency_inventory_fingerprint": payload[
                 "dependency_inventory_fingerprint"
             ],
-            canonical_tests_passed=payload[
-                "canonical_tests_passed"
+            "quality_gate_evidence_id": payload[
+                "quality_gate_evidence_id"
             ],
-            static_checks_passed=payload[
-                "static_checks_passed"
+            "verified_quality_gate_required": True,
+            "status": payload[
+                "status"
             ],
-            security_scan_passed=payload[
-                "security_scan_passed"
-            ],
+            "automatic_deploy": False,
+            "automatic_model_promotion": False,
+            "automatic_wagering": False,
+        }
+
+        return _sha(
+            base
         )
 
     def record(
         self,
         decision: ReleaseEligibilityDecision,
     ) -> str:
-        expected = (
-            build_release_eligibility_decision(
-                commit_sha=decision.commit_sha,
-                policy_fingerprint=(
-                    decision.policy_fingerprint
-                ),
-                dependency_inventory_fingerprint=(
-                    decision
-                    .dependency_inventory_fingerprint
-                ),
-                canonical_tests_passed=(
-                    decision
-                    .canonical_tests_passed
-                ),
-                static_checks_passed=(
-                    decision.static_checks_passed
-                ),
-                security_scan_passed=(
-                    decision
-                    .security_scan_passed
-                ),
-            )
+        payload = dict(
+            decision.payload()
         )
 
-        if expected != decision:
+        if (
+            self._rederive(
+                payload
+            )
+            != decision.decision_fingerprint
+        ):
             raise ValueError(
                 "RELEASE_ELIGIBILITY_DERIVATION_MISMATCH"
             )
@@ -301,17 +323,19 @@ class SQLiteReleaseEligibilityEvidenceStore:
         evidence_id = self._evidence_id(
             decision.decision_fingerprint
         )
-
-        payload = dict(
-            decision.payload()
+        payload["evidence_id"] = (
+            evidence_id
         )
-        payload["evidence_id"] = evidence_id
 
-        payload_json = _canonical_json(
-            payload
+        payload_json = (
+            _canonical_json(
+                payload
+            )
         )
         payload_sha = sha256(
-            payload_json.encode("utf-8")
+            payload_json.encode(
+                "utf-8"
+            )
         ).hexdigest()
 
         with self._connect() as connection:
@@ -422,7 +446,7 @@ class SQLiteReleaseEligibilityEvidenceStore:
                 )
 
             try:
-                expected = self._rederive(
+                expected_fp = self._rederive(
                     payload
                 )
             except Exception:
@@ -431,10 +455,7 @@ class SQLiteReleaseEligibilityEvidenceStore:
                 )
                 continue
 
-            if (
-                expected.decision_fingerprint
-                != decision_fp
-            ):
+            if expected_fp != decision_fp:
                 errors.append(
                     "DECISION_FINGERPRINT_MISMATCH:"
                     f"{commit_sha}"
@@ -449,25 +470,6 @@ class SQLiteReleaseEligibilityEvidenceStore:
                 errors.append(
                     f"EVIDENCE_ID_MISMATCH:{commit_sha}"
                 )
-
-            for key, expected_value in {
-                "evidence_id": evidence_id,
-                "commit_sha": commit_sha,
-                "decision_fingerprint": (
-                    decision_fp
-                ),
-                "automatic_deploy": False,
-                "automatic_model_promotion": False,
-                "automatic_wagering": False,
-            }.items():
-                if (
-                    payload.get(key)
-                    != expected_value
-                ):
-                    errors.append(
-                        f"{key.upper()}_MISMATCH:"
-                        f"{commit_sha}"
-                    )
 
         return ReleaseEligibilityIntegrityReport(
             ok=not errors,
