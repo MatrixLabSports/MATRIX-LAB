@@ -26,3 +26,6 @@ def test_win_rate_calculates_percentage_of_wins():
     )
 
     assert win_rate(matches) == 75.0
+
+def test_win_rate_returns_none_when_history_is_empty():
+    assert win_rate(()) is None
