@@ -367,6 +367,39 @@ class SQLiteProviderNetworkPermitStore:
 
         return True
 
+    def get_verified(
+        self,
+        permit_id: str,
+    ) -> Mapping[str, Any] | None:
+        with self._connect() as connection:
+            row = connection.execute(
+                """
+                SELECT
+                    payload_json,
+                    payload_sha256
+                FROM network_permit
+                WHERE permit_id = ?
+                """,
+                (
+                    permit_id,
+                ),
+            ).fetchone()
+
+        if row is None:
+            return None
+
+        return _verify_network_permit_row(
+            expected_permit_id=(
+                permit_id
+            ),
+            payload_json=str(
+                row[0]
+            ),
+            payload_sha256=str(
+                row[1]
+            ),
+        )
+
 
 class ProviderNetworkAuthority:
     def __init__(

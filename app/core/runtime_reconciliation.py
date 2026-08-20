@@ -1,4 +1,4 @@
-﻿from __future__ import annotations
+from __future__ import annotations
 
 from dataclasses import dataclass
 from hashlib import sha256
@@ -77,6 +77,9 @@ def reconcile_runtime_run(
     run_id: str,
     audit_ledger: SQLiteRuntimeAuditLedger,
     acquisition_store: SQLiteAcquisitionStore,
+    network_binding_store=None,
+    network_permit_store=None,
+    network_call_evidence_store=None,
 ) -> RuntimeReconciliationReport:
     validated_run = _validate_hex64("RUN_ID", run_id)
     errors: list[str] = []
@@ -277,6 +280,53 @@ def reconcile_runtime_run(
         and requests_used != provider_consumed_units
     ):
         errors.append("REQUEST_CONSUMPTION_MISMATCH")
+
+    network_components = (
+        network_binding_store,
+        network_permit_store,
+        network_call_evidence_store,
+    )
+
+    if any(
+        component is not None
+        for component
+        in network_components
+    ):
+        if not all(
+            component is not None
+            for component
+            in network_components
+        ):
+            errors.append(
+                "NETWORK_BINDING_COMPONENTS_PARTIAL"
+            )
+        else:
+            from app.core.provider_network_binding import (
+                reconcile_provider_network_bindings,
+            )
+
+            network_report = (
+                reconcile_provider_network_bindings(
+                    run_id=validated_run,
+                    audit_ledger=audit_ledger,
+                    binding_store=(
+                        network_binding_store
+                    ),
+                    network_permit_store=(
+                        network_permit_store
+                    ),
+                    network_call_evidence_store=(
+                        network_call_evidence_store
+                    ),
+                )
+            )
+
+            if not network_report.ok:
+                errors.extend(
+                    f"NETWORK:{reason}"
+                    for reason
+                    in network_report.errors
+                )
 
     report_base = {
         "schema": "matrix.runtime-reconciliation-report/1",

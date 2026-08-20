@@ -1,4 +1,4 @@
-﻿from __future__ import annotations
+from __future__ import annotations
 
 from datetime import datetime, timezone
 from typing import Any, Callable, Mapping
@@ -38,99 +38,244 @@ class ProviderCallAuditFetcher:
         run_id: str,
         clock: Callable[[], datetime],
         request_budget: ExecutionRequestBudget | None = None,
+        network_binding_collector=None,
     ) -> None:
         self.fetcher = fetcher
         self.audit_ledger = audit_ledger
-        self.run_id = _validate_hex64("RUN_ID", run_id)
+        self.run_id = _validate_hex64(
+            "RUN_ID",
+            run_id,
+        )
         self.clock = clock
         self.request_budget = request_budget
+        self.network_binding_collector = (
+            network_binding_collector
+        )
 
-    def _budget_used(self) -> int | None:
+    def _budget_used(
+        self,
+    ) -> int | None:
         if self.request_budget is None:
             return None
         return self.request_budget.used_units
 
-    def fetch(self, queue_item: Mapping[str, Any]) -> Mapping[str, Any]:
-        if not isinstance(queue_item, Mapping):
-            raise ValueError("INVALID_QUEUE_ITEM")
+    def fetch(
+        self,
+        queue_item: Mapping[str, Any],
+    ) -> Mapping[str, Any]:
+        if not isinstance(
+            queue_item,
+            Mapping,
+        ):
+            raise ValueError(
+                "INVALID_QUEUE_ITEM"
+            )
 
-        provider_key = queue_item.get("provider_key")
-        if not isinstance(provider_key, str) or not provider_key:
-            raise ValueError("MISSING_PROVIDER_KEY")
-
-        queue_fingerprint = _validate_hex64(
-            "QUEUE_ITEM_FINGERPRINT",
-            queue_item.get("queue_item_fingerprint"),
+        provider_key = queue_item.get(
+            "provider_key"
         )
 
-        request_cost = queue_item.get("estimated_request_cost")
         if (
-            isinstance(request_cost, bool)
-            or not isinstance(request_cost, int)
+            not isinstance(
+                provider_key,
+                str,
+            )
+            or not provider_key
+        ):
+            raise ValueError(
+                "MISSING_PROVIDER_KEY"
+            )
+
+        queue_fingerprint = (
+            _validate_hex64(
+                "QUEUE_ITEM_FINGERPRINT",
+                queue_item.get(
+                    "queue_item_fingerprint"
+                ),
+            )
+        )
+
+        request_cost = queue_item.get(
+            "estimated_request_cost"
+        )
+
+        if (
+            isinstance(
+                request_cost,
+                bool,
+            )
+            or not isinstance(
+                request_cost,
+                int,
+            )
             or request_cost <= 0
         ):
-            raise ValueError("INVALID_REQUEST_COST")
+            raise ValueError(
+                "INVALID_REQUEST_COST"
+            )
 
-        budget_before = self._budget_used()
+        budget_before = (
+            self._budget_used()
+        )
 
         self.audit_ledger.append_event(
             run_id=self.run_id,
-            event_type="PROVIDER_CALL_STARTED",
+            event_type=(
+                "PROVIDER_CALL_STARTED"
+            ),
             event_payload={
-                "provider_key": provider_key,
-                "queue_item_fingerprint": queue_fingerprint,
-                "estimated_request_cost": request_cost,
-                "request_budget_used_before": budget_before,
+                "provider_key": (
+                    provider_key
+                ),
+                "queue_item_fingerprint": (
+                    queue_fingerprint
+                ),
+                "estimated_request_cost": (
+                    request_cost
+                ),
+                "request_budget_used_before": (
+                    budget_before
+                ),
             },
-            created_at=_aware_utc(self.clock()),
+            created_at=_aware_utc(
+                self.clock()
+            ),
         )
 
-        try:
-            payload = self.fetcher.fetch(queue_item)
+        if (
+            self.network_binding_collector
+            is not None
+        ):
+            self.network_binding_collector.begin(
+                queue_fingerprint
+            )
 
-            if not isinstance(payload, Mapping):
-                raise ValueError("PROVIDER_PAYLOAD_NOT_MAPPING")
+        try:
+            payload = self.fetcher.fetch(
+                queue_item
+            )
+
+            if not isinstance(
+                payload,
+                Mapping,
+            ):
+                raise ValueError(
+                    "PROVIDER_PAYLOAD_NOT_MAPPING"
+                )
 
         except Exception as error:
-            budget_after = self._budget_used()
+            budget_after = (
+                self._budget_used()
+            )
+
             consumed = (
                 None
-                if budget_before is None or budget_after is None
-                else budget_after - budget_before
+                if budget_before is None
+                or budget_after is None
+                else budget_after
+                - budget_before
             )
+
+            failed_payload = {
+                "provider_key": (
+                    provider_key
+                ),
+                "queue_item_fingerprint": (
+                    queue_fingerprint
+                ),
+                "error_type": (
+                    type(
+                        error
+                    ).__name__
+                ),
+                "reason_code": str(
+                    error
+                ),
+                "request_budget_used_after": (
+                    budget_after
+                ),
+                "consumed_request_units": (
+                    consumed
+                ),
+            }
+
+            if (
+                self.network_binding_collector
+                is not None
+            ):
+                failed_payload[
+                    "network_binding_evidence_ids"
+                ] = list(
+                    self.network_binding_collector.finish(
+                        queue_fingerprint
+                    )
+                )
 
             self.audit_ledger.append_event(
                 run_id=self.run_id,
-                event_type="PROVIDER_CALL_FAILED",
-                event_payload={
-                    "provider_key": provider_key,
-                    "queue_item_fingerprint": queue_fingerprint,
-                    "error_type": type(error).__name__,
-                    "reason_code": str(error),
-                    "request_budget_used_after": budget_after,
-                    "consumed_request_units": consumed,
-                },
-                created_at=_aware_utc(self.clock()),
+                event_type=(
+                    "PROVIDER_CALL_FAILED"
+                ),
+                event_payload=(
+                    failed_payload
+                ),
+                created_at=_aware_utc(
+                    self.clock()
+                ),
             )
+
             raise
 
-        budget_after = self._budget_used()
+        budget_after = (
+            self._budget_used()
+        )
+
         consumed = (
             None
-            if budget_before is None or budget_after is None
-            else budget_after - budget_before
+            if budget_before is None
+            or budget_after is None
+            else budget_after
+            - budget_before
         )
+
+        completed_payload = {
+            "provider_key": (
+                provider_key
+            ),
+            "queue_item_fingerprint": (
+                queue_fingerprint
+            ),
+            "request_budget_used_after": (
+                budget_after
+            ),
+            "consumed_request_units": (
+                consumed
+            ),
+        }
+
+        if (
+            self.network_binding_collector
+            is not None
+        ):
+            completed_payload[
+                "network_binding_evidence_ids"
+            ] = list(
+                self.network_binding_collector.finish(
+                    queue_fingerprint
+                )
+            )
 
         self.audit_ledger.append_event(
             run_id=self.run_id,
-            event_type="PROVIDER_CALL_COMPLETED",
-            event_payload={
-                "provider_key": provider_key,
-                "queue_item_fingerprint": queue_fingerprint,
-                "request_budget_used_after": budget_after,
-                "consumed_request_units": consumed,
-            },
-            created_at=_aware_utc(self.clock()),
+            event_type=(
+                "PROVIDER_CALL_COMPLETED"
+            ),
+            event_payload=(
+                completed_payload
+            ),
+            created_at=_aware_utc(
+                self.clock()
+            ),
         )
 
         return payload

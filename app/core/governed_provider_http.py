@@ -260,6 +260,80 @@ class SQLiteProviderNetworkCallEvidenceStore:
 
         return True
 
+    def list_verified_events_for_permit(
+        self,
+        permit_id: str,
+    ) -> tuple[Mapping[str, Any], ...]:
+        with self._connect() as connection:
+            rows = connection.execute(
+                """
+                SELECT
+                    event_id,
+                    payload_json,
+                    payload_sha256
+                FROM network_call_event
+                WHERE permit_id = ?
+                ORDER BY event_id
+                """,
+                (
+                    permit_id,
+                ),
+            ).fetchall()
+
+        result: list[
+            Mapping[str, Any]
+        ] = []
+
+        for (
+            event_id,
+            payload_json,
+            payload_sha,
+        ) in rows:
+            if (
+                sha256(
+                    payload_json.encode(
+                        "utf-8"
+                    )
+                ).hexdigest()
+                != payload_sha
+            ):
+                raise ValueError(
+                    "NETWORK_CALL_EVIDENCE_INTEGRITY_FAILURE"
+                )
+
+            payload = json.loads(
+                payload_json
+            )
+
+            expected = _sha(
+                {
+                    "schema": (
+                        "matrix.provider-network-call-event-id/2"
+                    ),
+                    "payload": payload,
+                }
+            )
+
+            if (
+                expected
+                != event_id
+                or payload.get(
+                    "permit_id"
+                )
+                != permit_id
+            ):
+                raise ValueError(
+                    "NETWORK_CALL_EVIDENCE_REDERIVATION_FAILURE"
+                )
+
+            result.append(
+                payload
+            )
+
+        return tuple(
+            result
+        )
+
 
 
 class GovernedProviderHttpSession:
@@ -348,6 +422,7 @@ class GovernedProviderHttpSession:
                 url=url,
                 original_host=parsed.hostname,
                 resolved_ips=resolved_ips,
+                matrix_permit=permit,
                 **kwargs,
             )
         except Exception as error:
