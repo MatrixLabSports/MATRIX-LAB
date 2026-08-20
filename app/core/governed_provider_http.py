@@ -1,4 +1,4 @@
-﻿from __future__ import annotations
+from __future__ import annotations
 
 from abc import ABC, abstractmethod
 from datetime import datetime, timezone
@@ -118,19 +118,54 @@ class SQLiteProviderNetworkCallEvidenceStore:
             )
         return event_id
 
-    def audit_integrity(self) -> bool:
+    def audit_integrity(
+        self,
+    ) -> bool:
         with self._connect() as connection:
             rows = connection.execute(
-                "SELECT event_id, payload_json, payload_sha256 FROM network_call_event"
+                "SELECT event_id, permit_id, payload_json, payload_sha256 "
+                "FROM network_call_event ORDER BY permit_id, event_id"
             ).fetchall()
 
-        for event_id, payload_json, payload_sha in rows:
-            if sha256(payload_json.encode("utf-8")).hexdigest() != payload_sha:
+        by_permit: dict[
+            str,
+            list[Mapping[str, Any]],
+        ] = {}
+
+        for (
+            event_id,
+            permit_id,
+            payload_json,
+            payload_sha,
+        ) in rows:
+            if (
+                sha256(
+                    payload_json.encode("utf-8")
+                ).hexdigest()
+                != payload_sha
+            ):
                 return False
-            payload = json.loads(payload_json)
-            expected = _sha({"schema": "matrix.provider-network-call-event-id/2", "payload": payload})
+
+            try:
+                payload = json.loads(payload_json)
+            except Exception:
+                return False
+
+            expected = _sha(
+                {
+                    "schema": (
+                        "matrix.provider-network-call-event-id/2"
+                    ),
+                    "payload": payload,
+                }
+            )
+
             if expected != event_id:
                 return False
+
+            if payload.get("permit_id") != permit_id:
+                return False
+
             for key in (
                 "raw_url_persisted",
                 "query_values_persisted",
@@ -142,7 +177,89 @@ class SQLiteProviderNetworkCallEvidenceStore:
             ):
                 if payload.get(key) is not False:
                     return False
+
+            event_type = payload.get("event_type")
+
+            if event_type not in {
+                "NETWORK_CALL_STARTED",
+                "NETWORK_CALL_COMPLETED",
+                "NETWORK_CALL_FAILED",
+            }:
+                return False
+
+            try:
+                event_at = datetime.fromisoformat(
+                    payload["event_at"]
+                )
+            except Exception:
+                return False
+
+            if event_at.tzinfo is None:
+                return False
+
+            by_permit.setdefault(
+                str(permit_id),
+                [],
+            ).append(payload)
+
+        for events in by_permit.values():
+            started = [
+                event
+                for event in events
+                if event["event_type"]
+                == "NETWORK_CALL_STARTED"
+            ]
+
+            terminal = [
+                event
+                for event in events
+                if event["event_type"]
+                in {
+                    "NETWORK_CALL_COMPLETED",
+                    "NETWORK_CALL_FAILED",
+                }
+            ]
+
+            if len(started) != 1:
+                return False
+
+            if len(terminal) != 1:
+                return False
+
+            start_at = datetime.fromisoformat(
+                started[0]["event_at"]
+            )
+
+            terminal_at = datetime.fromisoformat(
+                terminal[0]["event_at"]
+            )
+
+            if terminal_at < start_at:
+                return False
+
+            terminal_type = terminal[0]["event_type"]
+
+            if (
+                terminal_type
+                == "NETWORK_CALL_COMPLETED"
+                and terminal[0].get(
+                    "exception_class"
+                )
+                is not None
+            ):
+                return False
+
+            if (
+                terminal_type
+                == "NETWORK_CALL_FAILED"
+                and not terminal[0].get(
+                    "exception_class"
+                )
+            ):
+                return False
+
         return True
+
 
 
 class GovernedProviderHttpSession:
