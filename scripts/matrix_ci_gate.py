@@ -671,6 +671,128 @@ def _provider_production_readiness_boundary(
         )
 
 
+
+def _provider_network_activation_hardening_boundary(
+    root: Path,
+) -> None:
+    violations: list[str] = []
+
+    required_paths = {
+        "transport": (
+            root
+            / "app"
+            / "core"
+            / "pinned_https_transport.py"
+        ),
+        "connector_trust": (
+            root
+            / "app"
+            / "core"
+            / "provider_connector_trust.py"
+        ),
+        "activation_readiness": (
+            root
+            / "app"
+            / "core"
+            / "provider_activation_readiness.py"
+        ),
+        "activation_rehearsal": (
+            root
+            / "app"
+            / "core"
+            / "provider_activation_rehearsal.py"
+        ),
+    }
+
+    for name, candidate in required_paths.items():
+        if not candidate.exists():
+            violations.append(
+                "P127_P131_MISSING_MODULE:"
+                + name
+            )
+
+    if violations:
+        raise SystemExit(
+            "PROVIDER_NETWORK_ACTIVATION_HARDENING_VIOLATION\n"
+            + "\n".join(
+                violations
+            )
+        )
+
+    sources = {
+        name: candidate.read_text(
+            encoding="utf-8-sig"
+        )
+        for name, candidate
+        in required_paths.items()
+    }
+
+    requirements = {
+        "transport": (
+            "TLSVersion.TLSv1_2",
+            "DUPLICATE_HTTP_HEADER",
+            "NON_CANONICAL_HTTP_PATH",
+            "HTTP_RESPONSE_FRAMING_CONFLICT",
+            "CONTENT_LENGTH_MISMATCH",
+            "UNSUPPORTED_TRANSFER_ENCODING",
+            "settimeout",
+        ),
+        "connector_trust": (
+            "require_trusted_production_connector",
+            "DEFAULT_SOCKET_CONNECTOR_REQUIRED",
+            "TLS12_MINIMUM_REQUIRED",
+        ),
+        "activation_readiness": (
+            "CANONICAL_SECRET_RESOLVER_REQUIRED",
+            "NONEMPTY_REQUEST_CONTRACT_EVIDENCE_REQUIRED",
+            "TECHNICALLY_READY_RIGHTS_BLOCKED",
+            "PROVIDER_ACTIVATION_SCHEMA_NOT_ENABLED",
+        ),
+        "activation_rehearsal": (
+            "REHEARSAL_CERTIFIED_FAIL_CLOSED",
+            "SHADOW_NETWORK_CALL_DETECTED",
+            "INTERRUPTION_RECOVERY_REHEARSAL_REQUIRED",
+            "PROVIDER_ACTIVATION_REHEARSAL_SCHEMA_NOT_ENABLED",
+        ),
+    }
+
+    for name, tokens in requirements.items():
+        source_text = sources[
+            name
+        ]
+
+        for token in tokens:
+            if token not in source_text:
+                violations.append(
+                    name
+                    + ":MISSING_P127_P131_TOKEN:"
+                    + token
+                )
+
+    combined = "\n".join(
+        sources.values()
+    )
+
+    for forbidden in (
+        "real_provider_execution_authorized=True",
+        "automatic_provider_switch=True",
+        "automatic_wagering=True",
+    ):
+        if forbidden in combined:
+            violations.append(
+                "P127_P131_FORBIDDEN_TRUE:"
+                + forbidden
+            )
+
+    if violations:
+        raise SystemExit(
+            "PROVIDER_NETWORK_ACTIVATION_HARDENING_VIOLATION\n"
+            + "\n".join(
+                violations
+            )
+        )
+
+
 def main() -> int:
     policy = (
         build_repository_quality_policy()
@@ -714,6 +836,7 @@ def main() -> int:
     _sport_boundary(ROOT)
     _provider_http_boundary(ROOT)
     _provider_production_readiness_boundary(ROOT)
+    _provider_network_activation_hardening_boundary(ROOT)
     _authoritative_runtime_admission_boundary(ROOT)
     _git_diff_checks(ROOT)
 
