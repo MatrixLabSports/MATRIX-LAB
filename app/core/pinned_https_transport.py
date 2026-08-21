@@ -700,9 +700,7 @@ class StdlibPinnedHttpsTransport(
             tls_socket = (
                 context.wrap_socket(
                     raw_socket,
-                    server_hostname=(
-                        original_host
-                    ),
+                    server_hostname=original_host,
                 )
             )
             raw_socket = None
