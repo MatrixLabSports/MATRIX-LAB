@@ -1318,92 +1318,191 @@ def _provider_response_ingest_boundary(
     root,
 ) -> None:
     response_validation = (
-        root
-        / "app/providers/api_football/response_validation.py"
-    ).read_text(
-        encoding="utf-8-sig"
-    )
+        root / "app/providers/api_football/response_validation.py"
+    ).read_text(encoding="utf-8-sig")
+
     fixture_service = (
-        root
-        / "app/providers/api_football/fixture_service.py"
-    ).read_text(
-        encoding="utf-8-sig"
-    )
+        root / "app/providers/api_football/fixture_service.py"
+    ).read_text(encoding="utf-8-sig")
+
     odds_service = (
-        root
-        / "app/providers/api_football/odds_service.py"
-    ).read_text(
-        encoding="utf-8-sig"
-    )
+        root / "app/providers/api_football/odds_service.py"
+    ).read_text(encoding="utf-8-sig")
+
     replay = (
-        root
-        / "app/providers/api_football/offline_ingest_certification.py"
-    ).read_text(
-        encoding="utf-8-sig"
-    )
+        root / "app/providers/api_football/offline_ingest_certification.py"
+    ).read_text(encoding="utf-8-sig")
 
-    required_response_tokens = (
+    pinned_transport = (
+        root / "app/core/pinned_https_transport.py"
+    ).read_text(encoding="utf-8-sig")
+
+    for token in (
         "class ApiFootballProviderResponseError",
-        "class ApiFootballResponseEnvelope",
-        "def validate_api_football_response_envelope(",
-        "API_FOOTBALL_PROVIDER_ERROR_PRESENT",
-        "API_FOOTBALL_RESULTS_COUNT_MISMATCH",
-        "payload_fingerprint",
-    )
-
-    for token in required_response_tokens:
+        "def request_and_validate_api_football_response(",
+        "API_FOOTBALL_RESPONSE_ITEM_NOT_MAPPING",
+        '"SCHEMA"',
+        '"HTTP_STATUS"',
+        '"CONTENT_TYPE"',
+        '"JSON_DECODE"',
+        '"TRANSPORT"',
+    ):
         if token not in response_validation:
             raise RuntimeError(
-                "P133_RESPONSE_VALIDATION_CONTROL_MISSING:"
-                + token
+                "P133_RESPONSE_CONTROL_MISSING:" + token
             )
 
     if fixture_service.count(
-        "validate_api_football_response_envelope("
+        "request_and_validate_api_football_response("
     ) < 3:
         raise RuntimeError(
-            "P133_FIXTURE_VALIDATION_BINDING_MISSING"
+            "P133_FIXTURE_PROTOCOL_BINDING_MISSING"
         )
 
     if odds_service.count(
-        "validate_api_football_response_envelope("
+        "request_and_validate_api_football_response("
     ) < 1:
         raise RuntimeError(
-            "P133_ODDS_VALIDATION_BINDING_MISSING"
+            "P133_ODDS_PROTOCOL_BINDING_MISSING"
         )
 
-    required_replay_tokens = (
-        "class ApiFootballOfflineIngestCertification",
-        "def certify_api_football_offline_fixture_ingest(",
-        "sync_football_fixtures(",
-        "OFFLINE_REPLAY",
-        "zero_network_calls",
-        "repository_idempotent",
-        "real_provider_execution_authorized=False",
-        "automatic_provider_switch=False",
-        "automatic_wagering=False",
-    )
-
-    for token in required_replay_tokens:
-        if token not in replay:
+    for token in (
+        "class PinnedHttpProtocolError",
+        "def json_strict(",
+        "PINNED_HTTP_CONTENT_TYPE_REQUIRED",
+        "PINNED_HTTP_JSON_INVALID",
+        "strict_protocol=True",
+    ):
+        if token not in pinned_transport:
             raise RuntimeError(
-                "P136_OFFLINE_REPLAY_CONTROL_MISSING:"
-                + token
+                "P133_PINNED_PROTOCOL_CONTROL_MISSING:" + token
             )
 
-    forbidden_replay_tokens = (
-        "socket.create_connection",
-        "requests.",
-        "urllib.",
-        "get_pinned(",
-        "build_governed_api_football_client(",
+    for token in (
+        "class SQLiteApiFootballOfflineIngestEvidenceStore",
+        "verify_provider_shadow_rehearsal_attestation",
+        "hmac.compare_digest",
+        "shadow_request_evidence_id",
+        "request_contract_id",
+        "endpoint_manifest_id",
+        "authorization_fingerprint",
+        "code_fingerprint",
+        "source_revision",
+        "zero_network_topology_verified",
+    ):
+        if token not in replay:
+            raise RuntimeError(
+                "P136_HARDENING_CONTROL_MISSING:" + token
+            )
+
+    if "network_call_count" in replay:
+        raise RuntimeError(
+            "P136_SELF_REPORTED_NETWORK_COUNTER_FORBIDDEN"
+        )
+
+    replay_tree = ast.parse(
+        replay,
+        filename="offline_ingest_certification.py",
     )
 
-    for token in forbidden_replay_tokens:
-        if token in replay:
+    forbidden_roots = {
+        "socket",
+        "requests",
+        "urllib",
+        "http",
+        "httpx",
+        "aiohttp",
+    }
+
+    for node in ast.walk(replay_tree):
+        if isinstance(node, ast.Import):
+            for alias in node.names:
+                if alias.name.split(".")[0] in forbidden_roots:
+                    raise RuntimeError(
+                        "P136_NETWORK_IMPORT_FORBIDDEN"
+                    )
+
+        elif isinstance(node, ast.ImportFrom):
+            if (
+                node.module
+                and node.module.split(".")[0] in forbidden_roots
+            ):
+                raise RuntimeError(
+                    "P136_NETWORK_IMPORT_FORBIDDEN"
+                )
+
+    safety_targets = {
+        "real_provider_execution_authorized",
+        "automatic_provider_switch",
+        "automatic_wagering",
+    }
+
+    false_counts = {
+        name: 0
+        for name in safety_targets
+    }
+
+    true_bindings = []
+
+    for node in ast.walk(replay_tree):
+        if isinstance(node, ast.Dict):
+            for key, value in zip(node.keys, node.values):
+                if not (
+                    isinstance(key, ast.Constant)
+                    and isinstance(key.value, str)
+                    and key.value in safety_targets
+                ):
+                    continue
+
+                if isinstance(value, ast.Constant) and value.value is False:
+                    false_counts[key.value] += 1
+                elif isinstance(value, ast.Constant) and value.value is True:
+                    true_bindings.append(
+                        (key.value, node.lineno, "DICT")
+                    )
+
+        elif isinstance(node, ast.keyword):
+            if node.arg not in safety_targets:
+                continue
+
+            if isinstance(node.value, ast.Constant) and node.value.value is False:
+                false_counts[node.arg] += 1
+            elif isinstance(node.value, ast.Constant) and node.value.value is True:
+                true_bindings.append(
+                    (node.arg, node.lineno, "KEYWORD")
+                )
+
+        elif isinstance(node, ast.Assign):
+            if not isinstance(node.value, ast.Constant):
+                continue
+
+            for assignment_target in node.targets:
+                name = None
+
+                if isinstance(assignment_target, ast.Name):
+                    name = assignment_target.id
+                elif isinstance(assignment_target, ast.Attribute):
+                    name = assignment_target.attr
+
+                if name not in safety_targets:
+                    continue
+
+                if node.value.value is False:
+                    false_counts[name] += 1
+                elif node.value.value is True:
+                    true_bindings.append(
+                        (name, node.lineno, "ASSIGN")
+                    )
+
+    if true_bindings:
+        raise RuntimeError(
+            "P136_SAFETY_FLAG_TRUE_BINDING_FORBIDDEN"
+        )
+
+    for name in sorted(safety_targets):
+        if false_counts[name] < 1:
             raise RuntimeError(
-                "P136_OFFLINE_REPLAY_NETWORK_SURFACE_FORBIDDEN:"
-                + token
+                "P136_SAFETY_FLAG_FALSE_BINDING_REQUIRED:" + name
             )
 
 
