@@ -315,12 +315,18 @@ class SQLiteAppendOnlyTailGuard:
         state_row = self._state_row(connection)
 
         if state_row is not None:
+            if anchor_status == "MISSING":
+                self._baseline_valid = False
+                raise ValueError(
+                    APPEND_ONLY_TAIL_GUARD_EXTERNAL_ANCHOR_REQUIRED
+                )
+
             report = self._audit_core(connection, rows)
             self._baseline_valid = report.ok
+
             if not report.ok:
                 return
-            if anchor_status == "MISSING":
-                self._write_external_anchor(connection)
+
             return
 
         if anchor_status == "VALID":
