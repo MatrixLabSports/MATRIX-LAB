@@ -932,10 +932,11 @@ def _provider_network_activation_semantic_boundary(
 
     for required in (
         "shadow_evidence_store",
-        "shadow_evidence_authority",
         "shadow_readiness_evidence_id",
         "interruption_recovery_store",
         "interruption_permit_ids",
+        "attempt_intent_store",
+        "network_call_evidence_store",
     ):
         if required not in rehearsal_args:
             violations.append(
@@ -994,16 +995,22 @@ def _provider_network_activation_semantic_boundary(
         ),
         "rehearsal": (
             "shadow_evidence_store.get_verified",
-            "shadow_evidence_authority.verify",
+            "verify_provider_shadow_rehearsal_attestation",
             "interruption_recovery_store.get_by_permit",
+            "reconcile_network_attempt_with_recovery",
+            "attempt_intent_store",
+            "network_call_evidence_store",
             "SHADOW_EVIDENCE_STORE_INTEGRITY_FAILED",
+            "INTERRUPTION_ATTEMPT_PROVENANCE_NOT_CROSS_BOUND",
             "AUTHORITATIVE_REHEARSAL_EVIDENCE_REQUIRED",
             "SQLiteProviderInterruptionRecoveryStore",
+            "SQLiteProviderAttemptIntentStore",
+            "SQLiteProviderNetworkCallEvidenceStore",
         ),
         "shadow_runtime": (
             "shadow_evidence_store",
-            "_new_provider_shadow_rehearsal_authority",
-            "shadow_rehearsal_authority",
+            "_build_attested_provider_shadow_rehearsal_evidence",
+            "MATRIX_SHADOW_REHEARSAL_ATTESTATION_KEY",
         ),
         "governed_client": (
             "require_provider_activation_authorized",
@@ -1046,12 +1053,10 @@ def _provider_shadow_rehearsal_provenance_boundary(
 ) -> None:
     violations: list[str] = []
 
-    private_factory = (
-        "_new_provider_shadow_rehearsal_authority"
+    private_issuer = (
+        "_build_attested_provider_shadow_rehearsal_evidence"
     )
-    private_issue = "_issue"
-
-    allowed_factory_importer = (
+    allowed_issuer_importer = (
         "app/providers/api_football/shadow_runtime.py"
     )
     evidence_module = (
@@ -1095,35 +1100,29 @@ def _provider_shadow_rehearsal_provenance_boundary(
                 )
                 and any(
                     alias.name
-                    == private_factory
+                    == private_issuer
                     for alias
                     in node.names
                 )
                 and relative
-                != allowed_factory_importer
+                != allowed_issuer_importer
             ):
                 violations.append(
                     f"{relative}:{node.lineno}:"
-                    "PRIVATE_SHADOW_AUTHORITY_FACTORY_IMPORT"
+                    "PRIVATE_SHADOW_ATTESTED_ISSUER_IMPORT"
                 )
 
-            if (
-                isinstance(
-                    node,
-                    ast.Attribute,
-                )
-                and node.attr
-                == private_issue
-                and relative
-                not in {
-                    allowed_factory_importer,
-                    evidence_module,
-                }
+        if relative != evidence_module:
+            for forbidden in (
+                "ProviderShadowRehearsalAuthority",
+                "_new_provider_shadow_rehearsal_authority",
+                "shadow_rehearsal_authority",
             ):
-                violations.append(
-                    f"{relative}:{node.lineno}:"
-                    "PRIVATE_SHADOW_AUTHORITY_ISSUE_BYPASS"
-                )
+                if forbidden in text:
+                    violations.append(
+                        f"{relative}:LEGACY_SHADOW_AUTHORITY_SURFACE:"
+                        + forbidden
+                    )
 
     evidence_source = (
         root
@@ -1133,39 +1132,176 @@ def _provider_shadow_rehearsal_provenance_boundary(
     )
 
     for token in (
-        "ProviderShadowRehearsalAuthority",
+        "build_provider_shadow_attestation_key_reference",
+        "MATRIX_SHADOW_REHEARSAL_ATTESTATION_KEY",
+        "resolve_secret_runtime",
+        "attestation_key_reference_fingerprint",
+        "raw_attestation_key_persisted",
         "hmac.compare_digest",
-        "issuer_attestation",
-        "store_identity",
-        "SHADOW_EVIDENCE_STORE_BINDING_MISMATCH",
+        "matrix.provider-shadow-rehearsal-evidence/3",
+        "verify_provider_shadow_rehearsal_attestation",
     ):
         if token not in evidence_source:
             violations.append(
-                "SHADOW_EVIDENCE_PROVENANCE_TOKEN_MISSING:"
+                "SHADOW_DURABLE_ATTESTATION_TOKEN_MISSING:"
                 + token
             )
 
-    rehearsal_source = (
+    for forbidden in (
+        "secrets.token_bytes",
+        "_AUTHORITY_CONSTRUCTION_TOKEN",
+        "ProviderShadowRehearsalAuthority",
+        "_new_provider_shadow_rehearsal_authority",
+    ):
+        if forbidden in evidence_source:
+            violations.append(
+                "LEGACY_OR_EPHEMERAL_SHADOW_AUTHORITY_PRESENT:"
+                + forbidden
+            )
+
+    evidence_tree = ast.parse(
+        evidence_source,
+        filename=evidence_module,
+    )
+    reference_function = next(
+        (
+            node
+            for node
+            in evidence_tree.body
+            if isinstance(
+                node,
+                ast.FunctionDef,
+            )
+            and node.name
+            == "build_provider_shadow_attestation_key_reference"
+        ),
+        None,
+    )
+
+    if (
+        reference_function is None
+        or reference_function.args.args
+        or reference_function.args.kwonlyargs
+        or reference_function.args.vararg
+        is not None
+        or reference_function.args.kwarg
+        is not None
+    ):
+        violations.append(
+            "SHADOW_ATTESTATION_ROOT_MUST_NOT_BE_CALLER_PARAMETERIZED"
+        )
+
+    runtime_source = (
         root
-        / "app"
-        / "core"
-        / "provider_activation_rehearsal.py"
+        / allowed_issuer_importer
     ).read_text(
         encoding="utf-8-sig"
     )
 
+    if private_issuer not in runtime_source:
+        violations.append(
+            "OFFICIAL_SHADOW_RUNTIME_ATTESTED_ISSUER_MISSING"
+        )
+
+    for forbidden in (
+        "_shadow_rehearsal_authority",
+        "def shadow_rehearsal_authority",
+        "_new_provider_shadow_rehearsal_authority",
+    ):
+        if forbidden in runtime_source:
+            violations.append(
+                "SHADOW_RUNTIME_SIGNING_CAPABILITY_EXPOSED:"
+                + forbidden
+            )
+
+    rehearsal_path = (
+        root
+        / "app"
+        / "core"
+        / "provider_activation_rehearsal.py"
+    )
+    rehearsal_source = rehearsal_path.read_text(
+        encoding="utf-8-sig"
+    )
+    rehearsal_tree = ast.parse(
+        rehearsal_source,
+        filename=str(
+            rehearsal_path
+        ),
+    )
+
+    certify = next(
+        (
+            node
+            for node
+            in rehearsal_tree.body
+            if isinstance(
+                node,
+                ast.FunctionDef,
+            )
+            and node.name
+            == "certify_provider_activation_rehearsal"
+        ),
+        None,
+    )
+
+    if certify is None:
+        violations.append(
+            "PROVIDER_ACTIVATION_REHEARSAL_CERTIFIER_MISSING"
+        )
+    else:
+        args = {
+            argument.arg
+            for argument
+            in (
+                list(
+                    certify.args.args
+                )
+                + list(
+                    certify.args.kwonlyargs
+                )
+            )
+        }
+
+        for required in (
+            "shadow_evidence_store",
+            "interruption_recovery_store",
+            "attempt_intent_store",
+            "network_call_evidence_store",
+        ):
+            if required not in args:
+                violations.append(
+                    "REHEARSAL_AUTHORITATIVE_SOURCE_ARGUMENT_MISSING:"
+                    + required
+                )
+
+        for forbidden in (
+            "shadow_evidence_authority",
+            "shadow_attestation_key_reference",
+            "shadow_attestation_key_resolver",
+        ):
+            if forbidden in args:
+                violations.append(
+                    "CALLER_CONTROLLED_SHADOW_ATTESTATION_ROOT:"
+                    + forbidden
+                )
+
     for token in (
         "type(shadow_evidence_store)",
         "SQLiteProviderShadowRehearsalEvidenceStore",
-        "type(shadow_evidence_authority)",
-        "ProviderShadowRehearsalAuthority",
         "type(interruption_recovery_store)",
         "SQLiteProviderInterruptionRecoveryStore",
-        "shadow_evidence_authority.verify",
+        "type(attempt_intent_store)",
+        "SQLiteProviderAttemptIntentStore",
+        "type(network_call_evidence_store)",
+        "SQLiteProviderNetworkCallEvidenceStore",
+        "verify_provider_shadow_rehearsal_attestation",
+        "reconcile_network_attempt_with_recovery",
+        "INTERRUPTION_ATTEMPT_PROVENANCE_NOT_CROSS_BOUND",
     ):
         if token not in rehearsal_source:
             violations.append(
-                "SHADOW_REHEARSAL_AUTHORITATIVE_SOURCE_MISSING:"
+                "SHADOW_REHEARSAL_PROVENANCE_CONTROL_MISSING:"
                 + token
             )
 

@@ -27,7 +27,7 @@ def test_p127_p131_canonical_ci_boundary_is_present():
         assert token in ci
 
 
-def test_p127_p131_canonical_ci_enforces_shadow_provenance_boundary():
+def test_p127_p131_canonical_ci_enforces_durable_shadow_provenance_and_network_attempt_binding():
     ci = Path(
         "scripts/matrix_ci_gate.py"
     ).read_text(
@@ -44,10 +44,15 @@ def test_p127_p131_canonical_ci_enforces_shadow_provenance_boundary():
     )
 
     for token in (
-        "PRIVATE_SHADOW_AUTHORITY_FACTORY_IMPORT",
-        "PRIVATE_SHADOW_AUTHORITY_ISSUE_BYPASS",
-        "ProviderShadowRehearsalAuthority",
+        "PRIVATE_SHADOW_ATTESTED_ISSUER_IMPORT",
+        "SHADOW_ATTESTATION_ROOT_MUST_NOT_BE_CALLER_PARAMETERIZED",
+        "MATRIX_SHADOW_REHEARSAL_ATTESTATION_KEY",
+        "resolve_secret_runtime",
         "SQLiteProviderInterruptionRecoveryStore",
-        "AUTHORITATIVE_REHEARSAL_EVIDENCE_REQUIRED",
+        "SQLiteProviderAttemptIntentStore",
+        "SQLiteProviderNetworkCallEvidenceStore",
+        "reconcile_network_attempt_with_recovery",
+        "INTERRUPTION_ATTEMPT_PROVENANCE_NOT_CROSS_BOUND",
+        "CALLER_CONTROLLED_SHADOW_ATTESTATION_ROOT",
     ):
         assert token in ci
