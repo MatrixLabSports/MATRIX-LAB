@@ -270,3 +270,20 @@ def test_v4_global_supersession_acyclicity_is_ci_governed():
 
     assert token in canonical
     assert token in ci
+
+
+def test_v5_append_only_tail_guard_is_ci_governed():
+    helper = read("app/core/append_only_tail_guard.py")
+    canonical = read("app/core/canonical_identity_lifecycle.py")
+    provider = read("app/core/provider_identity_lifecycle.py")
+    ci = read("scripts/matrix_ci_gate.py")
+    for token in (
+        "SQLiteAppendOnlyTailGuard",
+        "APPEND_ONLY_TAIL_GUARD_SEQUENCE_HIGH_WATER",
+        "sqlite_sequence",
+        "AUTOINCREMENT",
+    ):
+        assert token in helper
+        assert token in ci
+    assert "canonical_identity_lifecycle_tail_guard" in canonical
+    assert "temporal_provider_identity_tail_guard" in provider

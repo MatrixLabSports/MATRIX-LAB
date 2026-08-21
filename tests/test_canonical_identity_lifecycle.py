@@ -653,3 +653,57 @@ def test_out_of_order_known_at_acyclic_supersession_is_allowed(
         )
         == third.canonical_id
     )
+
+
+def test_canonical_lifecycle_detects_tail_truncation(tmp_path):
+    _, ledger, first, _, _ = prepared(tmp_path)
+    alias = append_football_identity_alias(
+        ledger=ledger,
+        canonical_id=first.canonical_id,
+        entity_type="team",
+        alias="Alias",
+        effective_at=at(1),
+        known_at=at(1),
+        reason_code="TAIL_TEST_ALIAS",
+    )
+    rename = append_football_identity_rename(
+        ledger=ledger,
+        canonical_id=first.canonical_id,
+        entity_type="team",
+        display_name="Renamed Tail",
+        effective_at=at(2),
+        known_at=at(2),
+        reason_code="TAIL_TEST_RENAME",
+        previous_event_id=alias.event_id,
+        human_reviewed=True,
+    )
+    assert ledger.audit_integrity().ok is True
+    with sqlite3.connect(ledger.path) as connection:
+        connection.execute(
+            "DELETE FROM canonical_identity_lifecycle WHERE event_id = ?",
+            (rename.event_id,),
+        )
+        connection.commit()
+    report = ledger.audit_integrity()
+    assert report.ok is False
+    assert any("TAIL_GUARD" in item for item in report.errors)
+
+
+def test_canonical_lifecycle_detects_tail_and_guard_tail_truncation(tmp_path):
+    _, ledger, first, _, _ = prepared(tmp_path)
+    event = append_football_identity_alias(
+        ledger=ledger,
+        canonical_id=first.canonical_id,
+        entity_type="team",
+        alias="Alias",
+        effective_at=at(1),
+        known_at=at(1),
+        reason_code="TAIL_TEST",
+    )
+    with sqlite3.connect(ledger.path) as connection:
+        connection.execute("DELETE FROM canonical_identity_lifecycle WHERE event_id = ?", (event.event_id,))
+        connection.execute("DELETE FROM canonical_identity_lifecycle_tail_guard WHERE record_id = ?", (event.event_id,))
+        connection.commit()
+    report = ledger.audit_integrity()
+    assert report.ok is False
+    assert any("SEQUENCE_HIGH_WATER_MISMATCH" in item for item in report.errors)

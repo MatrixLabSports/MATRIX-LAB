@@ -979,3 +979,27 @@ def test_current_corrected_predecessor_remains_valid_for_successor(
     )
 
     assert stored.binding_id == successor.binding_id
+
+
+def test_temporal_provider_mapping_detects_tail_truncation(tmp_path):
+    _, ledger, first, _, _ = prepared(tmp_path)
+    binding = append_initial(ledger, first.canonical_id)
+    assert ledger.audit_integrity().ok is True
+    with sqlite3.connect(ledger.path) as connection:
+        connection.execute("DELETE FROM temporal_provider_identity_binding WHERE binding_id = ?", (binding.binding_id,))
+        connection.commit()
+    report = ledger.audit_integrity()
+    assert report.ok is False
+    assert any("TAIL_GUARD" in item for item in report.errors)
+
+
+def test_temporal_provider_mapping_detects_tail_and_guard_tail_truncation(tmp_path):
+    _, ledger, first, _, _ = prepared(tmp_path)
+    binding = append_initial(ledger, first.canonical_id)
+    with sqlite3.connect(ledger.path) as connection:
+        connection.execute("DELETE FROM temporal_provider_identity_binding WHERE binding_id = ?", (binding.binding_id,))
+        connection.execute("DELETE FROM temporal_provider_identity_tail_guard WHERE record_id = ?", (binding.binding_id,))
+        connection.commit()
+    report = ledger.audit_integrity()
+    assert report.ok is False
+    assert any("SEQUENCE_HIGH_WATER_MISMATCH" in item for item in report.errors)

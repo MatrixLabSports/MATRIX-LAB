@@ -1332,6 +1332,13 @@ def _p137_p141_history_identity_lifecycle_boundary(
         encoding="utf-8-sig"
     )
 
+    tail_guard = (
+        root
+        / "app/core/append_only_tail_guard.py"
+    ).read_text(
+        encoding="utf-8-sig"
+    )
+
     football_adapter = (
         root
         / "app/application/football/identity_lifecycle.py"
@@ -1377,6 +1384,7 @@ def _p137_p141_history_identity_lifecycle_boundary(
         "resolve_terminal_canonical_id_as_of",
         "IDENTITY_SUPERSESSION_GRAPH_ACYCLIC",
         "IDENTITY_SUPERSESSION_LEDGER_GLOBALLY_ACYCLIC",
+        "canonical_identity_lifecycle_tail_guard",
         "name_join_allowed",
         "automatic_model_promotion",
         "automatic_provider_switch",
@@ -1401,6 +1409,7 @@ def _p137_p141_history_identity_lifecycle_boundary(
         "TEMPORAL_PROVIDER_MAPPING_SUCCESSOR_KNOWN_BEFORE_PREDECESSOR",
         "TEMPORAL_PROVIDER_MAPPING_PREDECESSOR_WITH_SUCCESSOR_IS_FROZEN",
         "TEMPORAL_PROVIDER_MAPPING_STALE_PREDECESSOR_FORBIDDEN",
+        "temporal_provider_identity_tail_guard",
         "name_join_allowed",
     ):
         if token not in provider_lifecycle:
@@ -1417,6 +1426,10 @@ def _p137_p141_history_identity_lifecycle_boundary(
         (
             provider_lifecycle,
             "PROVIDER",
+        ),
+        (
+            tail_guard,
+            "TAIL_GUARD",
         ),
     ):
         upper = source.upper()
@@ -1443,6 +1456,21 @@ def _p137_p141_history_identity_lifecycle_boundary(
                     "P137_NAME_BASED_IDENTITY_RESOLUTION_FORBIDDEN:"
                     + forbidden_api
                 )
+
+    for token in (
+        "class SQLiteAppendOnlyTailGuard",
+        "AUTOINCREMENT",
+        "sqlite_sequence",
+        "APPEND_ONLY_TAIL_GUARD_SEQUENCE_HIGH_WATER",
+        "previous_commitment_sha256",
+        "def bootstrap_if_pristine(",
+        "def audit(",
+    ):
+        if token not in tail_guard:
+            raise RuntimeError(
+                "P139_APPEND_ONLY_TAIL_GUARD_CONTROL_MISSING:"
+                + token
+            )
 
     if (
         'sport="tennis"'

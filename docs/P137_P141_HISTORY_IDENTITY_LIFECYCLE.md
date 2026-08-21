@@ -136,3 +136,12 @@ Governed distinction:
 - Acyclicity admission and point-in-time visibility are separate concerns and must not be conflated.
 
 This prevents a future-known edge already present in durable storage from combining with an earlier-known backfilled edge to create an eventual cycle.
+
+
+## V5 adversarial hardening: append-only tail truncation evidence
+
+Independent adversarial re-audit V5 proved that per-row hashes cannot by themselves detect deletion of the final valid row. Both lifecycle ledgers now use a shared append-only tail guard. Every durable row receives an immutable hash-chained commitment. The guard uses `INTEGER PRIMARY KEY AUTOINCREMENT`, and `sqlite_sequence` acts as a durable sequence high-water mark.
+
+`audit_integrity()` cross-checks record count, IDs, payload hashes, commitment hashes, chain continuity, sequence continuity, and the sequence high-water mark. Deleting the final lifecycle row is detected because its commitment remains. Deleting both the final lifecycle row and the final guard commitment is also detected because SQLite does not move the AUTOINCREMENT high-water backward on row deletion. Exact replay remains idempotent.
+
+For databases that predate this control, an empty pristine guard is bootstrapped once from current durable row order. After that migration baseline, the guard is fail-closed rather than silently repaired. Production lifecycle and tail-guard modules remain append-only and provide no application `UPDATE` or `DELETE` path.

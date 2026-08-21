@@ -11,6 +11,9 @@ import sqlite3
 from typing import Any, Mapping
 
 from app.core.canonical_identity import SQLiteCanonicalIdentityRegistry
+from app.core.append_only_tail_guard import (
+    SQLiteAppendOnlyTailGuard,
+)
 
 
 _ALLOWED_SPORTS = {"football", "tennis"}
@@ -326,6 +329,10 @@ class SQLiteCanonicalIdentityLifecycleLedger:
             exist_ok=True,
         )
         self.identity_registry = identity_registry
+        self._tail_guard = SQLiteAppendOnlyTailGuard(
+            table_name="canonical_identity_lifecycle_tail_guard",
+            ledger_name="canonical_identity_lifecycle",
+        )
 
         with closing(
             self._connect()
@@ -347,6 +354,13 @@ class SQLiteCanonicalIdentityLifecycleLedger:
                 "idx_canonical_identity_lifecycle_lookup "
                 "ON canonical_identity_lifecycle "
                 "(canonical_id, known_at, effective_at, event_id)"
+            )
+            self._tail_guard.ensure_schema(connection)
+            self._tail_guard.bootstrap_if_pristine(
+                connection,
+                records=connection.execute(
+                    "SELECT event_id, payload_sha256 FROM canonical_identity_lifecycle ORDER BY rowid"
+                ).fetchall(),
             )
 
     def _connect(self):
@@ -692,6 +706,11 @@ class SQLiteCanonicalIdentityLifecycleLedger:
                         payload_sha,
                     ),
                 )
+                self._tail_guard.append(
+                    connection,
+                    record_id=event.event_id,
+                    record_payload_sha256=payload_sha,
+                )
                 connection.commit()
             except Exception:
                 connection.rollback()
@@ -838,6 +857,14 @@ class SQLiteCanonicalIdentityLifecycleLedger:
         with closing(
             self._connect()
         ) as connection:
+            tail_report = self._tail_guard.audit(
+                connection,
+                records=connection.execute(
+                    "SELECT event_id, payload_sha256 FROM canonical_identity_lifecycle ORDER BY rowid"
+                ).fetchall(),
+            )
+            errors.extend("TAIL_GUARD:" + item for item in tail_report.errors)
+
             ids = [
                 str(row[0])
                 for row in connection.execute(

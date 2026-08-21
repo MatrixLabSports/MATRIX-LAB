@@ -11,6 +11,9 @@ import sqlite3
 from typing import Any, Mapping
 
 from app.core.canonical_identity import SQLiteCanonicalIdentityRegistry
+from app.core.append_only_tail_guard import (
+    SQLiteAppendOnlyTailGuard,
+)
 
 
 _ALLOWED_SPORTS = {"football", "tennis"}
@@ -399,6 +402,10 @@ class SQLiteTemporalProviderIdentityLedger:
         self.identity_registry = (
             identity_registry
         )
+        self._tail_guard = SQLiteAppendOnlyTailGuard(
+            table_name="temporal_provider_identity_tail_guard",
+            ledger_name="temporal_provider_identity_binding",
+        )
 
         with closing(
             self._connect()
@@ -423,6 +430,13 @@ class SQLiteTemporalProviderIdentityLedger:
                 "ON temporal_provider_identity_binding "
                 "(sport, entity_type, provider_key, provider_entity_id, "
                 "known_at, valid_from, valid_to, binding_id)"
+            )
+            self._tail_guard.ensure_schema(connection)
+            self._tail_guard.bootstrap_if_pristine(
+                connection,
+                records=connection.execute(
+                    "SELECT binding_id, payload_sha256 FROM temporal_provider_identity_binding ORDER BY rowid"
+                ).fetchall(),
             )
 
     def _connect(self):
@@ -999,6 +1013,11 @@ class SQLiteTemporalProviderIdentityLedger:
                 payload_sha,
             ),
         )
+        self._tail_guard.append(
+            connection,
+            record_id=binding.binding_id,
+            record_payload_sha256=payload_sha,
+        )
 
     def append(
         self,
@@ -1333,6 +1352,14 @@ class SQLiteTemporalProviderIdentityLedger:
         with closing(
             self._connect()
         ) as connection:
+            tail_report = self._tail_guard.audit(
+                connection,
+                records=connection.execute(
+                    "SELECT binding_id, payload_sha256 FROM temporal_provider_identity_binding ORDER BY rowid"
+                ).fetchall(),
+            )
+            errors.extend("TAIL_GUARD:" + item for item in tail_report.errors)
+
             key_rows = connection.execute(
                 "SELECT DISTINCT sport, entity_type, provider_key, provider_entity_id "
                 "FROM temporal_provider_identity_binding "
