@@ -2,11 +2,23 @@ from datetime import datetime, timezone
 
 import pytest
 
+from app.core.provider_attempt_intent import (
+    SQLiteProviderAttemptIntentStore,
+)
+from app.core.provider_contract_endpoint_binding import (
+    SQLiteProviderContractEndpointBindingStore,
+)
+from app.core.provider_network_binding import (
+    SQLiteProviderNetworkBindingEvidenceStore,
+)
 from app.core.provider_request_contract import (
     SQLiteProviderRequestContractRegistry,
 )
 from app.core.secret_reference import (
     build_secret_reference,
+)
+from app.providers.api_football.request_contracts import (
+    build_api_football_request_contracts,
 )
 from app.providers.api_football.shadow_runtime import (
     ApiFootballShadowRuntime,
@@ -22,42 +34,85 @@ NOW = datetime(
 
 
 def runtime(tmp_path, *, mode="SHADOW"):
+    secret = build_secret_reference(
+        provider_key="api_football",
+        environment_variable="MATRIX_TEST_API_KEY",
+        secret_type="API_KEY",
+    )
+
+    contracts = build_api_football_request_contracts(
+        secret_reference_fingerprint=(
+            secret.reference_fingerprint
+        ),
+        valid_from=NOW,
+    )
+
+    endpoint_ids = {
+        name: (
+            f"{index:064x}"
+        )
+        for index, name
+        in enumerate(
+            sorted(contracts),
+            1,
+        )
+    }
+
     return ApiFootballShadowRuntime(
         mode=mode,
-        registry=SQLiteProviderRequestContractRegistry(
-            tmp_path / "contracts.db"
+        base_url=(
+            "https://api.example.test"
         ),
-        secret_reference=build_secret_reference(
-            provider_key="api_football",
-            environment_variable="MATRIX_TEST_API_KEY",
-            secret_type="API_KEY",
+        registry=(
+            SQLiteProviderRequestContractRegistry(
+                tmp_path / "contracts.db"
+            )
         ),
+        contract_endpoint_binding_store=(
+            SQLiteProviderContractEndpointBindingStore(
+                tmp_path / "endpoint-bindings.db"
+            )
+        ),
+        endpoint_manifest_ids=endpoint_ids,
+        binding_store=(
+            SQLiteProviderNetworkBindingEvidenceStore(
+                tmp_path / "network-bindings.db"
+            )
+        ),
+        attempt_intent_store=(
+            SQLiteProviderAttemptIntentStore(
+                tmp_path / "attempt-intents.db"
+            )
+        ),
+        secret_reference=secret,
         clock=lambda: NOW,
         valid_from=NOW,
         rights_decision=None,
     )
 
 
-def test_shadow_runtime_builds_full_contract_plan_without_network(
+def test_shadow_runtime_exercises_governed_request_control_plane_without_network(
     tmp_path,
 ):
-    shadow = runtime(tmp_path)
+    shadow = runtime(
+        tmp_path
+    )
 
+    assert (
+        shadow.readiness.governed_request_client_verified
+        is True
+    )
+    assert (
+        shadow.readiness.governed_transport_topology_verified
+        is True
+    )
+    assert (
+        shadow.readiness.network_authority_type_verified
+        is True
+    )
     assert (
         shadow.readiness.external_network_allowed
         is False
-    )
-    assert (
-        shadow.readiness.real_provider_execution_authorized
-        is False
-    )
-    assert (
-        "PROVIDER_RIGHTS_NOT_AUTHORIZED"
-        in shadow.readiness.blockers
-    )
-    assert (
-        "REAL_PROVIDER_EXECUTION_DISABLED"
-        in shadow.readiness.blockers
     )
 
     preview = shadow.preview(
@@ -69,19 +124,31 @@ def test_shadow_runtime_builds_full_contract_plan_without_network(
         },
     )
 
-    assert preview.path == "/fixtures"
-    assert preview.network_call_performed is False
-    assert preview.secret_resolved is False
     assert (
-        preview.real_provider_execution_authorized
+        preview.governed_request_client_used
+        is True
+    )
+    assert (
+        preview.governed_transport_topology_verified
+        is True
+    )
+    assert (
+        preview.network_call_performed
         is False
     )
+    assert (
+        preview.network_permit_issued
+        is False
+    )
+    assert preview.secret_resolved is False
 
 
-def test_shadow_preview_changes_with_request_values(
+def test_shadow_request_values_change_authorization_fingerprint(
     tmp_path,
 ):
-    shadow = runtime(tmp_path)
+    shadow = runtime(
+        tmp_path
+    )
 
     one = shadow.preview(
         contract_name="fixture_by_id",
@@ -98,7 +165,7 @@ def test_shadow_preview_changes_with_request_values(
     )
 
 
-def test_shadow_runtime_refuses_live_or_production_mode(
+def test_shadow_runtime_refuses_production_mode(
     tmp_path,
 ):
     with pytest.raises(
