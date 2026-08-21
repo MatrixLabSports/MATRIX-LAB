@@ -563,6 +563,7 @@ class SQLiteProviderRightsAuthorizationStore:
         use_case: str,
         environment: str,
         now: datetime,
+        legal_evidence_store=None,
     ) -> ProviderRightsDecision:
         now = _aware(now)
         record = self.get_verified(grant_id)
@@ -619,6 +620,57 @@ class SQLiteProviderRightsAuthorizationStore:
         ):
             blockers.append(
                 "PROVIDER_RIGHTS_EXPIRED"
+            )
+
+        if grant.status == "APPROVED":
+            if legal_evidence_store is None:
+                blockers.append(
+                    "PROVIDER_LEGAL_EVIDENCE_STORE_REQUIRED"
+                )
+            else:
+                terms = legal_evidence_store.find_verified(
+                    evidence_kind="PROVIDER_TERMS",
+                    content_fingerprint=(
+                        grant.provider_terms_fingerprint
+                    ),
+                )
+                if terms is None:
+                    blockers.append(
+                        "PROVIDER_TERMS_EVIDENCE_NOT_VERIFIED"
+                    )
+
+                if (
+                    grant.rights_holder_evidence_fingerprint
+                    is not None
+                ):
+                    rights = legal_evidence_store.find_verified(
+                        evidence_kind=(
+                            "RIGHTS_HOLDER_LICENSE"
+                        ),
+                        content_fingerprint=(
+                            grant.rights_holder_evidence_fingerprint
+                        ),
+                    )
+                    if rights is None:
+                        blockers.append(
+                            "RIGHTS_HOLDER_EVIDENCE_NOT_VERIFIED"
+                        )
+
+                if grant.approval_reference is not None:
+                    approval = legal_evidence_store.find_verified(
+                        evidence_kind="HUMAN_APPROVAL",
+                        content_fingerprint=(
+                            grant.approval_reference
+                        ),
+                    )
+                    if approval is None:
+                        blockers.append(
+                            "HUMAN_APPROVAL_EVIDENCE_NOT_VERIFIED"
+                        )
+
+        if environment == "PRODUCTION":
+            blockers.append(
+                "PRODUCTION_RIGHTS_ACTIVATION_NOT_CONFIGURED"
             )
 
         return ProviderRightsDecision(

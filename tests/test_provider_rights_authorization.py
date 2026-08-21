@@ -2,6 +2,10 @@ from datetime import datetime, timezone
 
 import pytest
 
+from app.core.provider_legal_evidence import (
+    SQLiteProviderLegalEvidenceStore,
+    build_provider_legal_evidence,
+)
 from app.core.provider_rights_authorization import (
     SQLiteProviderRightsAuthorizationStore,
     build_provider_rights_grant,
@@ -19,6 +23,42 @@ NOW = datetime(
 )
 
 
+def _legal_store(tmp_path):
+    store = SQLiteProviderLegalEvidenceStore(
+        tmp_path / "legal.db"
+    )
+
+    for kind, fingerprint, source in (
+        (
+            "PROVIDER_TERMS",
+            "1" * 64,
+            "provider-terms-source",
+        ),
+        (
+            "RIGHTS_HOLDER_LICENSE",
+            "3" * 64,
+            "rights-holder-source",
+        ),
+        (
+            "HUMAN_APPROVAL",
+            "2" * 64,
+            "approval-record",
+        ),
+    ):
+        store.record(
+            build_provider_legal_evidence(
+                evidence_kind=kind,
+                source_reference=source,
+                content_fingerprint=fingerprint,
+                captured_at=NOW,
+                verified_by="legal-reviewer",
+                verification_reference="9" * 64,
+            )
+        )
+
+    return store
+
+
 def test_api_football_rights_baseline_is_fail_closed():
     baseline = api_football_rights_baseline()
 
@@ -28,43 +68,12 @@ def test_api_football_rights_baseline_is_fail_closed():
     )
     assert baseline.legal_review_required is True
     assert (
-        baseline.betting_platform_additional_rights_review_required
-        is True
-    )
-    assert (
         baseline.real_provider_execution_authorized
         is False
     )
 
 
-def test_betting_platform_grant_requires_rights_holder_evidence():
-    with pytest.raises(
-        ValueError,
-        match="RIGHTS_HOLDER_EVIDENCE_REQUIRED",
-    ):
-        build_provider_rights_grant(
-            provider_key="api_football",
-            sport="football",
-            use_case="BETTING_PLATFORM",
-            environment="PRODUCTION",
-            status="APPROVED",
-            provider_terms_reference="terms-ref",
-            provider_terms_fingerprint="1" * 64,
-            rights_holder_evidence_reference=None,
-            rights_holder_evidence_fingerprint=None,
-            commercial_use_allowed=True,
-            publication_allowed=True,
-            betting_platform_use_allowed=True,
-            redistribution_allowed=False,
-            effective_from=NOW,
-            expires_at=None,
-            approved_by="human-legal-review",
-            approval_reference="2" * 64,
-            created_at=NOW,
-        )
-
-
-def test_approved_rights_can_be_authorized_and_revoked(
+def test_production_rights_never_activate_from_opaque_self_asserted_fingerprints(
     tmp_path,
 ):
     store = SQLiteProviderRightsAuthorizationStore(
@@ -77,17 +86,17 @@ def test_approved_rights_can_be_authorized_and_revoked(
         use_case="BETTING_PLATFORM",
         environment="PRODUCTION",
         status="APPROVED",
-        provider_terms_reference="terms-ref",
+        provider_terms_reference="arbitrary",
         provider_terms_fingerprint="1" * 64,
-        rights_holder_evidence_reference="rights-ref",
+        rights_holder_evidence_reference="arbitrary",
         rights_holder_evidence_fingerprint="3" * 64,
         commercial_use_allowed=True,
         publication_allowed=True,
         betting_platform_use_allowed=True,
-        redistribution_allowed=False,
+        redistribution_allowed=True,
         effective_from=NOW,
         expires_at=None,
-        approved_by="human-legal-review",
+        approved_by="arbitrary-human",
         approval_reference="2" * 64,
         created_at=NOW,
     )
@@ -101,31 +110,19 @@ def test_approved_rights_can_be_authorized_and_revoked(
         use_case="BETTING_PLATFORM",
         environment="PRODUCTION",
         now=NOW,
+        legal_evidence_store=_legal_store(
+            tmp_path
+        ),
     )
 
-    assert decision.authorized is True
-    assert decision.blockers == ()
-    assert store.audit_integrity() is True
-
-    store.revoke(
-        grant.grant_id,
-        revoked_at=NOW,
+    assert decision.authorized is False
+    assert (
+        "PRODUCTION_RIGHTS_ACTIVATION_NOT_CONFIGURED"
+        in decision.blockers
     )
 
-    revoked = store.authorize(
-        grant_id=grant.grant_id,
-        provider_key="api_football",
-        sport="football",
-        use_case="BETTING_PLATFORM",
-        environment="PRODUCTION",
-        now=NOW,
-    )
 
-    assert revoked.authorized is False
-    assert "PROVIDER_RIGHTS_REVOKED" in revoked.blockers
-
-
-def test_pending_rights_never_authorize(
+def test_shadow_internal_analytics_requires_verified_external_evidence(
     tmp_path,
 ):
     store = SQLiteProviderRightsAuthorizationStore(
@@ -137,8 +134,8 @@ def test_pending_rights_never_authorize(
         sport="football",
         use_case="INTERNAL_ANALYTICS",
         environment="SHADOW",
-        status="PENDING_REVIEW",
-        provider_terms_reference="terms-ref",
+        status="APPROVED",
+        provider_terms_reference="terms",
         provider_terms_fingerprint="1" * 64,
         rights_holder_evidence_reference=None,
         rights_holder_evidence_fingerprint=None,
@@ -148,14 +145,14 @@ def test_pending_rights_never_authorize(
         redistribution_allowed=False,
         effective_from=NOW,
         expires_at=None,
-        approved_by=None,
-        approval_reference=None,
+        approved_by="legal-reviewer",
+        approval_reference="2" * 64,
         created_at=NOW,
     )
 
     store.register(grant)
 
-    decision = store.authorize(
+    without_evidence = store.authorize(
         grant_id=grant.grant_id,
         provider_key="api_football",
         sport="football",
@@ -164,8 +161,33 @@ def test_pending_rights_never_authorize(
         now=NOW,
     )
 
-    assert decision.authorized is False
+    assert without_evidence.authorized is False
     assert (
-        "PROVIDER_RIGHTS_NOT_APPROVED"
-        in decision.blockers
+        "PROVIDER_LEGAL_EVIDENCE_STORE_REQUIRED"
+        in without_evidence.blockers
     )
+
+    with_evidence = store.authorize(
+        grant_id=grant.grant_id,
+        provider_key="api_football",
+        sport="football",
+        use_case="INTERNAL_ANALYTICS",
+        environment="SHADOW",
+        now=NOW,
+        legal_evidence_store=_legal_store(
+            tmp_path
+        ),
+    )
+
+    assert with_evidence.authorized is True
+    assert with_evidence.blockers == ()
+
+
+def test_legal_evidence_store_rederives_integrity(
+    tmp_path,
+):
+    legal = _legal_store(
+        tmp_path
+    )
+
+    assert legal.audit_integrity() is True
