@@ -932,6 +932,7 @@ def _provider_network_activation_semantic_boundary(
 
     for required in (
         "shadow_evidence_store",
+        "shadow_evidence_authority",
         "shadow_readiness_evidence_id",
         "interruption_recovery_store",
         "interruption_permit_ids",
@@ -986,15 +987,23 @@ def _provider_network_activation_semantic_boundary(
             "getattr(governed_transport, \"attempt_intent_store\", None)",
             "ENDPOINT_MANIFEST_SEMANTIC_AUTHORIZATION_REQUIRED",
             "NONEMPTY_LEGAL_EVIDENCE_REQUIRED",
+            "AUTHORITATIVE_ACTIVATION_STORE_TYPES_REQUIRED",
+            "SQLiteProviderEndpointAuthorizationRegistry",
+            "SQLiteProviderLegalEvidenceStore",
+            "SQLiteProviderAttemptIntentStore",
         ),
         "rehearsal": (
             "shadow_evidence_store.get_verified",
+            "shadow_evidence_authority.verify",
             "interruption_recovery_store.get_by_permit",
             "SHADOW_EVIDENCE_STORE_INTEGRITY_FAILED",
+            "AUTHORITATIVE_REHEARSAL_EVIDENCE_REQUIRED",
+            "SQLiteProviderInterruptionRecoveryStore",
         ),
         "shadow_runtime": (
             "shadow_evidence_store",
-            "build_provider_shadow_rehearsal_evidence",
+            "_new_provider_shadow_rehearsal_authority",
+            "shadow_rehearsal_authority",
         ),
         "governed_client": (
             "require_provider_activation_authorized",
@@ -1024,6 +1033,145 @@ def _provider_network_activation_semantic_boundary(
     if violations:
         raise SystemExit(
             "PROVIDER_NETWORK_ACTIVATION_SEMANTIC_BOUNDARY_VIOLATION\n"
+            + "\n".join(
+                violations
+            )
+        )
+
+
+
+
+def _provider_shadow_rehearsal_provenance_boundary(
+    root: Path,
+) -> None:
+    violations: list[str] = []
+
+    private_factory = (
+        "_new_provider_shadow_rehearsal_authority"
+    )
+    private_issue = "_issue"
+
+    allowed_factory_importer = (
+        "app/providers/api_football/shadow_runtime.py"
+    )
+    evidence_module = (
+        "app/core/provider_shadow_rehearsal_evidence.py"
+    )
+
+    for candidate in (
+        root
+        / "app"
+    ).rglob(
+        "*.py"
+    ):
+        relative = candidate.relative_to(
+            root
+        ).as_posix()
+        text = candidate.read_text(
+            encoding="utf-8-sig"
+        )
+
+        try:
+            tree = ast.parse(
+                text,
+                filename=str(
+                    candidate
+                ),
+            )
+        except SyntaxError:
+            violations.append(
+                "SHADOW_PROVENANCE_AST_FAILURE:"
+                + relative
+            )
+            continue
+
+        for node in ast.walk(
+            tree
+        ):
+            if (
+                isinstance(
+                    node,
+                    ast.ImportFrom,
+                )
+                and any(
+                    alias.name
+                    == private_factory
+                    for alias
+                    in node.names
+                )
+                and relative
+                != allowed_factory_importer
+            ):
+                violations.append(
+                    f"{relative}:{node.lineno}:"
+                    "PRIVATE_SHADOW_AUTHORITY_FACTORY_IMPORT"
+                )
+
+            if (
+                isinstance(
+                    node,
+                    ast.Attribute,
+                )
+                and node.attr
+                == private_issue
+                and relative
+                not in {
+                    allowed_factory_importer,
+                    evidence_module,
+                }
+            ):
+                violations.append(
+                    f"{relative}:{node.lineno}:"
+                    "PRIVATE_SHADOW_AUTHORITY_ISSUE_BYPASS"
+                )
+
+    evidence_source = (
+        root
+        / evidence_module
+    ).read_text(
+        encoding="utf-8-sig"
+    )
+
+    for token in (
+        "ProviderShadowRehearsalAuthority",
+        "hmac.compare_digest",
+        "issuer_attestation",
+        "store_identity",
+        "SHADOW_EVIDENCE_STORE_BINDING_MISMATCH",
+    ):
+        if token not in evidence_source:
+            violations.append(
+                "SHADOW_EVIDENCE_PROVENANCE_TOKEN_MISSING:"
+                + token
+            )
+
+    rehearsal_source = (
+        root
+        / "app"
+        / "core"
+        / "provider_activation_rehearsal.py"
+    ).read_text(
+        encoding="utf-8-sig"
+    )
+
+    for token in (
+        "type(shadow_evidence_store)",
+        "SQLiteProviderShadowRehearsalEvidenceStore",
+        "type(shadow_evidence_authority)",
+        "ProviderShadowRehearsalAuthority",
+        "type(interruption_recovery_store)",
+        "SQLiteProviderInterruptionRecoveryStore",
+        "shadow_evidence_authority.verify",
+    ):
+        if token not in rehearsal_source:
+            violations.append(
+                "SHADOW_REHEARSAL_AUTHORITATIVE_SOURCE_MISSING:"
+                + token
+            )
+
+    if violations:
+        raise SystemExit(
+            "PROVIDER_SHADOW_REHEARSAL_PROVENANCE_BOUNDARY_VIOLATION\n"
             + "\n".join(
                 violations
             )
@@ -1075,6 +1223,7 @@ def main() -> int:
     _provider_production_readiness_boundary(ROOT)
     _provider_network_activation_hardening_boundary(ROOT)
     _provider_network_activation_semantic_boundary(ROOT)
+    _provider_shadow_rehearsal_provenance_boundary(ROOT)
     _authoritative_runtime_admission_boundary(ROOT)
     _git_diff_checks(ROOT)
 

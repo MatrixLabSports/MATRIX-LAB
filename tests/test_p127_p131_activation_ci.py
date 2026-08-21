@@ -25,3 +25,29 @@ def test_p127_p131_canonical_ci_boundary_is_present():
         "REHEARSAL_CERTIFIED_FAIL_CLOSED",
     ):
         assert token in ci
+
+
+def test_p127_p131_canonical_ci_enforces_shadow_provenance_boundary():
+    ci = Path(
+        "scripts/matrix_ci_gate.py"
+    ).read_text(
+        encoding="utf-8-sig"
+    )
+
+    assert (
+        "_provider_shadow_rehearsal_provenance_boundary"
+        in ci
+    )
+    assert (
+        "_provider_shadow_rehearsal_provenance_boundary(ROOT)"
+        in ci
+    )
+
+    for token in (
+        "PRIVATE_SHADOW_AUTHORITY_FACTORY_IMPORT",
+        "PRIVATE_SHADOW_AUTHORITY_ISSUE_BYPASS",
+        "ProviderShadowRehearsalAuthority",
+        "SQLiteProviderInterruptionRecoveryStore",
+        "AUTHORITATIVE_REHEARSAL_EVIDENCE_REQUIRED",
+    ):
+        assert token in ci

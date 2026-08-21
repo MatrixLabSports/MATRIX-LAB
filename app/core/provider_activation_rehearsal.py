@@ -9,6 +9,13 @@ from app.core.provider_activation_readiness import (
     ProviderActivationReadinessCertification,
     verify_provider_activation_readiness_certification,
 )
+from app.core.provider_interruption_recovery import (
+    SQLiteProviderInterruptionRecoveryStore,
+)
+from app.core.provider_shadow_rehearsal_evidence import (
+    ProviderShadowRehearsalAuthority,
+    SQLiteProviderShadowRehearsalEvidenceStore,
+)
 
 
 def _json(value: Any) -> str:
@@ -254,6 +261,7 @@ def certify_provider_activation_rehearsal(
     *,
     activation_readiness: ProviderActivationReadinessCertification,
     shadow_evidence_store,
+    shadow_evidence_authority,
     shadow_readiness_evidence_id: str,
     interruption_recovery_store,
     interruption_permit_ids: Sequence[str],
@@ -264,8 +272,24 @@ def certify_provider_activation_rehearsal(
         )
     )
 
-    shadow_evidence_integrity = bool(
-        shadow_evidence_store.audit_integrity()
+    authoritative_sources_bound = (
+        type(shadow_evidence_store)
+        is SQLiteProviderShadowRehearsalEvidenceStore
+        and type(shadow_evidence_authority)
+        is ProviderShadowRehearsalAuthority
+        and type(interruption_recovery_store)
+        is SQLiteProviderInterruptionRecoveryStore
+        and shadow_evidence_authority.provider_key
+        == "api_football"
+        and shadow_evidence_authority.store_identity
+        == shadow_evidence_store.store_identity
+    )
+
+    shadow_evidence_integrity = (
+        authoritative_sources_bound
+        and bool(
+            shadow_evidence_store.audit_integrity()
+        )
     )
 
     try:
@@ -284,6 +308,10 @@ def certify_provider_activation_rehearsal(
         != "READINESS"
         or readiness_evidence.provider_key
         != "api_football"
+        or not authoritative_sources_bound
+        or not shadow_evidence_authority.verify(
+            readiness_evidence
+        )
     ):
         shadow_evidence_integrity = False
         readiness_payload: Mapping[str, Any] = {}
@@ -342,7 +370,8 @@ def certify_provider_activation_rehearsal(
     )
 
     valid_requests = (
-        bool(requests)
+        authoritative_sources_bound
+        and bool(requests)
         and all(
             evidence.evidence_type
             == "REQUEST"
@@ -350,6 +379,9 @@ def certify_provider_activation_rehearsal(
             == "api_football"
             and evidence.parent_readiness_evidence_id
             == shadow_readiness_evidence_id
+            and shadow_evidence_authority.verify(
+                evidence
+            )
             and evidence.payload.get(
                 "schema"
             )
@@ -403,8 +435,11 @@ def certify_provider_activation_rehearsal(
         )
     )
 
-    interruption_evidence_integrity = bool(
-        interruption_recovery_store.audit_integrity()
+    interruption_evidence_integrity = (
+        authoritative_sources_bound
+        and bool(
+            interruption_recovery_store.audit_integrity()
+        )
     )
 
     permit_ids = tuple(
@@ -458,6 +493,10 @@ def certify_provider_activation_rehearsal(
     blockers: list[str] = []
 
     checks = (
+        (
+            authoritative_sources_bound,
+            "AUTHORITATIVE_REHEARSAL_EVIDENCE_REQUIRED",
+        ),
         (
             governed_shadow_verified,
             "GOVERNED_SHADOW_NOT_VERIFIED",

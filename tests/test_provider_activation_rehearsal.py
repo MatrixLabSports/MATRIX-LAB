@@ -1,4 +1,7 @@
 from datetime import datetime, timezone
+import sqlite3
+
+import pytest
 
 from app.core.provider_activation_readiness import (
     ProviderActivationReadinessCertification,
@@ -25,6 +28,7 @@ from app.core.provider_request_contract import (
     SQLiteProviderRequestContractRegistry,
 )
 from app.core.provider_shadow_rehearsal_evidence import (
+    ProviderShadowRehearsalAuthority,
     SQLiteProviderShadowRehearsalEvidenceStore,
 )
 from app.core.secret_reference import (
@@ -284,6 +288,9 @@ def test_rehearsal_certification_uses_only_durable_verified_stores(
             shadow_evidence_store=(
                 shadow_store
             ),
+            shadow_evidence_authority=(
+                runtime.shadow_rehearsal_authority
+            ),
             shadow_readiness_evidence_id=(
                 runtime.readiness_evidence_id
             ),
@@ -312,3 +319,230 @@ def test_rehearsal_certification_uses_only_durable_verified_stores(
         certification.real_provider_execution_authorized
         is False
     )
+
+
+def test_shadow_evidence_raw_database_tampering_is_detected(
+    tmp_path,
+):
+    runtime, store = _shadow(
+        tmp_path
+    )
+
+    evidence_id = (
+        runtime.readiness_evidence_id
+    )
+
+    assert evidence_id is not None
+
+    with sqlite3.connect(
+        store.path
+    ) as connection:
+        connection.execute(
+            """
+            UPDATE provider_shadow_rehearsal_evidence
+            SET payload_json = ?
+            WHERE evidence_id = ?
+            """,
+            (
+                '{"tampered":true}\n',
+                evidence_id,
+            ),
+        )
+        connection.commit()
+
+    assert (
+        store.audit_integrity()
+        is False
+    )
+
+    with pytest.raises(
+        ValueError,
+        match="SHADOW_EVIDENCE_INTEGRITY_FAILURE",
+    ):
+        store.get_verified(
+            evidence_id
+        )
+
+
+def test_rehearsal_rejects_authority_from_another_shadow_runtime(
+    tmp_path,
+):
+    runtime, shadow_store = (
+        _shadow(
+            tmp_path
+            / "one"
+        )
+    )
+    other_runtime, _ = (
+        _shadow(
+            tmp_path
+            / "two"
+        )
+    )
+
+    runtime.preview(
+        contract_name=(
+            "fixture_by_id"
+        ),
+        params={
+            "id": 100,
+        },
+    )
+
+    recovery_store = (
+        SQLiteProviderInterruptionRecoveryStore(
+            tmp_path / "recovery.db"
+        )
+    )
+
+    permit_id = "5" * 64
+
+    recovery_store.record(
+        build_provider_interruption_evidence(
+            run_id="1" * 64,
+            provider_key="api_football",
+            queue_item_fingerprint=(
+                "2" * 64
+            ),
+            permit_id=permit_id,
+            pre_network_binding_intent_id=(
+                "3" * 64
+            ),
+            endpoint_manifest_id=(
+                "4" * 64
+            ),
+            request_contract_id=(
+                "6" * 64
+            ),
+            request_contract_fingerprint=(
+                "7" * 64
+            ),
+            reason_code=(
+                "PROCESS_INTERRUPTED"
+            ),
+            created_at=NOW,
+        )
+    )
+
+    certification = (
+        certify_provider_activation_rehearsal(
+            activation_readiness=(
+                _readiness()
+            ),
+            shadow_evidence_store=(
+                shadow_store
+            ),
+            shadow_evidence_authority=(
+                other_runtime.shadow_rehearsal_authority
+            ),
+            shadow_readiness_evidence_id=(
+                runtime.readiness_evidence_id
+            ),
+            interruption_recovery_store=(
+                recovery_store
+            ),
+            interruption_permit_ids=(
+                permit_id,
+            ),
+        )
+    )
+
+    assert (
+        certification.status
+        == "NOT_CERTIFIED"
+    )
+    assert (
+        "AUTHORITATIVE_REHEARSAL_EVIDENCE_REQUIRED"
+        in certification.blockers
+    )
+
+
+def test_rehearsal_rejects_duck_typed_interruption_store(
+    tmp_path,
+):
+    runtime, shadow_store = (
+        _shadow(
+            tmp_path
+        )
+    )
+
+    runtime.preview(
+        contract_name=(
+            "fixture_by_id"
+        ),
+        params={
+            "id": 100,
+        },
+    )
+
+    class FakeRecoveryStore:
+        def audit_integrity(
+            self,
+        ):
+            return True
+
+        def get_by_permit(
+            self,
+            permit_id,
+        ):
+            return type(
+                "FakeEvidence",
+                (),
+                {
+                    "status": (
+                        "INTERRUPTED_UNKNOWN_OUTCOME"
+                    ),
+                    "safe_to_retry": False,
+                    "request_units_refunded": False,
+                },
+            )()
+
+    certification = (
+        certify_provider_activation_rehearsal(
+            activation_readiness=(
+                _readiness()
+            ),
+            shadow_evidence_store=(
+                shadow_store
+            ),
+            shadow_evidence_authority=(
+                runtime.shadow_rehearsal_authority
+            ),
+            shadow_readiness_evidence_id=(
+                runtime.readiness_evidence_id
+            ),
+            interruption_recovery_store=(
+                FakeRecoveryStore()
+            ),
+            interruption_permit_ids=(
+                "5" * 64,
+            ),
+        )
+    )
+
+    assert (
+        certification.status
+        == "NOT_CERTIFIED"
+    )
+    assert (
+        "AUTHORITATIVE_REHEARSAL_EVIDENCE_REQUIRED"
+        in certification.blockers
+    )
+
+
+def test_shadow_rehearsal_authority_cannot_be_publicly_constructed():
+    with pytest.raises(
+        ValueError,
+        match="SHADOW_REHEARSAL_AUTHORITY_CONSTRUCTION_FORBIDDEN",
+    ):
+        ProviderShadowRehearsalAuthority(
+            _construction_token=(
+                object()
+            ),
+            provider_key=(
+                "api_football"
+            ),
+            store_identity=(
+                "1" * 64
+            ),
+        )
