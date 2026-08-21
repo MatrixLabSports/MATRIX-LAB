@@ -1,3 +1,5 @@
+from datetime import datetime, timezone
+
 from app.core.provider_activation_readiness import (
     ProviderActivationReadinessCertification,
     _base as readiness_base,
@@ -6,16 +8,45 @@ from app.core.provider_activation_readiness import (
 from app.core.provider_activation_rehearsal import (
     certify_provider_activation_rehearsal,
 )
+from app.core.provider_attempt_intent import (
+    SQLiteProviderAttemptIntentStore,
+)
+from app.core.provider_contract_endpoint_binding import (
+    SQLiteProviderContractEndpointBindingStore,
+)
 from app.core.provider_interruption_recovery import (
-    ProviderRecoveredAttemptState,
+    SQLiteProviderInterruptionRecoveryStore,
+    build_provider_interruption_evidence,
+)
+from app.core.provider_network_binding import (
+    SQLiteProviderNetworkBindingEvidenceStore,
+)
+from app.core.provider_request_contract import (
+    SQLiteProviderRequestContractRegistry,
+)
+from app.core.provider_shadow_rehearsal_evidence import (
+    SQLiteProviderShadowRehearsalEvidenceStore,
+)
+from app.core.secret_reference import (
+    build_secret_reference,
+)
+from app.providers.api_football.request_contracts import (
+    build_api_football_request_contracts,
 )
 from app.providers.api_football.shadow_runtime import (
-    ApiFootballShadowReadiness,
-    ApiFootballShadowRequest,
+    ApiFootballShadowRuntime,
 )
 
 
-def readiness():
+NOW = datetime(
+    2026,
+    8,
+    20,
+    tzinfo=timezone.utc,
+)
+
+
+def _readiness():
     blockers = (
         "PRODUCTION_RIGHTS_MUST_REMAIN_BLOCKED",
     )
@@ -30,8 +61,11 @@ def readiness():
         request_contract_evidence_nonempty=True,
         request_contract_integrity=True,
         contract_endpoint_binding_integrity=True,
+        endpoint_manifest_semantics_verified=True,
+        legal_evidence_nonempty=True,
         legal_evidence_integrity=True,
         attempt_intent_integrity=True,
+        attempt_intent_store_cross_bound=True,
         production_rights_blocked=True,
         blockers=blockers,
     )
@@ -47,8 +81,11 @@ def readiness():
             request_contract_evidence_nonempty=True,
             request_contract_integrity=True,
             contract_endpoint_binding_integrity=True,
+            endpoint_manifest_semantics_verified=True,
+            legal_evidence_nonempty=True,
             legal_evidence_integrity=True,
             attempt_intent_integrity=True,
+            attempt_intent_store_cross_bound=True,
             production_rights_blocked=True,
             real_provider_execution_authorized=False,
             blockers=blockers,
@@ -61,72 +98,200 @@ def readiness():
     )
 
 
-def test_rehearsal_certifies_governed_shadow_and_fail_closed_interruption():
-    shadow_readiness = (
-        ApiFootballShadowReadiness(
-            mode="SHADOW",
-            contract_count=1,
-            endpoint_binding_count=1,
-            rights_authorized=False,
-            governed_request_client_verified=True,
-            governed_transport_topology_verified=True,
-            network_authority_type_verified=True,
-            external_network_allowed=False,
-            real_provider_execution_authorized=False,
-            blockers=(
-                "REAL_PROVIDER_EXECUTION_DISABLED",
+def _shadow(tmp_path):
+    secret = build_secret_reference(
+        provider_key="api_football",
+        environment_variable=(
+            "MATRIX_TEST_API_KEY"
+        ),
+        secret_type="API_KEY",
+    )
+
+    contracts = (
+        build_api_football_request_contracts(
+            secret_reference_fingerprint=(
+                secret.reference_fingerprint
             ),
+            valid_from=NOW,
         )
     )
 
-    shadow_request = (
-        ApiFootballShadowRequest(
-            mode="SHADOW",
-            contract_name="fixture_by_id",
-            contract_id="1" * 64,
-            endpoint_manifest_id="2" * 64,
-            authorization_fingerprint="3" * 64,
-            path="/fixtures",
-            parameter_names=(
-                "id",
+    endpoint_ids = {
+        name: f"{index:064x}"
+        for index, name
+        in enumerate(
+            sorted(
+                contracts
             ),
-            parameter_values_fingerprint=(
+            1,
+        )
+    }
+
+    evidence_store = (
+        SQLiteProviderShadowRehearsalEvidenceStore(
+            tmp_path / "shadow-evidence.db"
+        )
+    )
+
+    runtime = ApiFootballShadowRuntime(
+        mode="SHADOW",
+        base_url=(
+            "https://api.example.test"
+        ),
+        registry=(
+            SQLiteProviderRequestContractRegistry(
+                tmp_path / "contracts.db"
+            )
+        ),
+        contract_endpoint_binding_store=(
+            SQLiteProviderContractEndpointBindingStore(
+                tmp_path / "endpoint-bindings.db"
+            )
+        ),
+        endpoint_manifest_ids=(
+            endpoint_ids
+        ),
+        binding_store=(
+            SQLiteProviderNetworkBindingEvidenceStore(
+                tmp_path / "network-bindings.db"
+            )
+        ),
+        attempt_intent_store=(
+            SQLiteProviderAttemptIntentStore(
+                tmp_path / "attempt-intents.db"
+            )
+        ),
+        secret_reference=secret,
+        clock=lambda: NOW,
+        valid_from=NOW,
+        rights_decision=None,
+        shadow_evidence_store=(
+            evidence_store
+        ),
+    )
+
+    return runtime, evidence_store
+
+
+def test_shadow_runtime_persists_verified_readiness_and_request_evidence(
+    tmp_path,
+):
+    runtime, store = _shadow(
+        tmp_path
+    )
+
+    assert (
+        runtime.readiness_evidence_id
+        is not None
+    )
+    assert (
+        store.get_verified(
+            runtime.readiness_evidence_id
+        ).evidence_type
+        == "READINESS"
+    )
+
+    runtime.preview(
+        contract_name=(
+            "fixture_by_id"
+        ),
+        params={
+            "id": 100,
+        },
+    )
+
+    assert (
+        len(
+            runtime.request_evidence_ids
+        )
+        == 1
+    )
+    requests = (
+        store.list_verified_requests(
+            runtime.readiness_evidence_id
+        )
+    )
+    assert len(requests) == 1
+    assert (
+        requests[
+            0
+        ].payload[
+            "network_call_performed"
+        ]
+        is False
+    )
+    assert store.audit_integrity()
+
+
+def test_rehearsal_certification_uses_only_durable_verified_stores(
+    tmp_path,
+):
+    runtime, shadow_store = (
+        _shadow(
+            tmp_path
+        )
+    )
+
+    runtime.preview(
+        contract_name=(
+            "fixture_by_id"
+        ),
+        params={
+            "id": 100,
+        },
+    )
+
+    recovery_store = (
+        SQLiteProviderInterruptionRecoveryStore(
+            tmp_path / "recovery.db"
+        )
+    )
+
+    permit_id = "5" * 64
+
+    recovery_store.record(
+        build_provider_interruption_evidence(
+            run_id="1" * 64,
+            provider_key="api_football",
+            queue_item_fingerprint=(
+                "2" * 64
+            ),
+            permit_id=permit_id,
+            pre_network_binding_intent_id=(
+                "3" * 64
+            ),
+            endpoint_manifest_id=(
                 "4" * 64
             ),
-            governed_request_client_used=True,
-            governed_transport_topology_verified=True,
-            network_call_performed=False,
-            network_permit_issued=False,
-            secret_resolved=False,
-            real_provider_execution_authorized=False,
-        )
-    )
-
-    interrupted = (
-        ProviderRecoveredAttemptState(
-            permit_id="5" * 64,
-            state=(
-                "INTERRUPTED_UNKNOWN_OUTCOME"
+            request_contract_id=(
+                "6" * 64
             ),
-            safe_to_retry=False,
-            recovery_id="6" * 64,
-            errors=(),
+            request_contract_fingerprint=(
+                "7" * 64
+            ),
+            reason_code=(
+                "PROCESS_INTERRUPTED"
+            ),
+            created_at=NOW,
         )
     )
 
     certification = (
         certify_provider_activation_rehearsal(
             activation_readiness=(
-                readiness()
+                _readiness()
             ),
-            shadow_readiness=(
-                shadow_readiness
+            shadow_evidence_store=(
+                shadow_store
             ),
-            shadow_requests=(
-                shadow_request,
+            shadow_readiness_evidence_id=(
+                runtime.readiness_evidence_id
             ),
-            interruption_states=(
-                interrupted,
+            interruption_recovery_store=(
+                recovery_store
+            ),
+            interruption_permit_ids=(
+                permit_id,
             ),
         )
     )
@@ -136,19 +301,11 @@ def test_rehearsal_certifies_governed_shadow_and_fail_closed_interruption():
         == "REHEARSAL_CERTIFIED_FAIL_CLOSED"
     )
     assert (
-        certification.zero_network_calls
+        certification.shadow_evidence_integrity
         is True
     )
     assert (
-        certification.zero_secret_resolution
-        is True
-    )
-    assert (
-        certification.zero_network_permits
-        is True
-    )
-    assert (
-        certification.interruption_recovery_fail_closed
+        certification.interruption_evidence_integrity
         is True
     )
     assert (

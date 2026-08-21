@@ -31,6 +31,10 @@ from app.core.provider_request_contract import (
 from app.core.provider_rights_authorization import (
     ProviderRightsDecision,
 )
+from app.core.provider_shadow_rehearsal_evidence import (
+    SQLiteProviderShadowRehearsalEvidenceStore,
+    build_provider_shadow_rehearsal_evidence,
+)
 from app.core.secret_reference import (
     SecretReference,
 )
@@ -229,6 +233,10 @@ class ApiFootballShadowRuntime:
             ProviderRightsDecision
             | None
         ) = None,
+        shadow_evidence_store: (
+            SQLiteProviderShadowRehearsalEvidenceStore
+            | None
+        ) = None,
     ) -> None:
         if mode not in _ALLOWED_MODES:
             raise ValueError(
@@ -249,6 +257,16 @@ class ApiFootballShadowRuntime:
             secret_reference
         )
         self.clock = clock
+        self.shadow_evidence_store = (
+            shadow_evidence_store
+        )
+        self.readiness_evidence_id: (
+            str
+            | None
+        ) = None
+        self.request_evidence_ids: list[
+            str
+        ] = []
 
         self.contracts = (
             register_api_football_request_contracts(
@@ -413,6 +431,29 @@ class ApiFootballShadowRuntime:
             )
         )
 
+        if (
+            self.shadow_evidence_store
+            is not None
+        ):
+            evidence = (
+                build_provider_shadow_rehearsal_evidence(
+                    provider_key="api_football",
+                    evidence_type="READINESS",
+                    payload=(
+                        self.readiness.payload()
+                    ),
+                    created_at=(
+                        self.clock()
+                    ),
+                )
+            )
+            self.shadow_evidence_store.record(
+                evidence
+            )
+            self.readiness_evidence_id = (
+                evidence.evidence_id
+            )
+
     def preview(
         self,
         *,
@@ -461,7 +502,7 @@ class ApiFootballShadowRuntime:
             "kwargs"
         ]
 
-        return ApiFootballShadowRequest(
+        request = ApiFootballShadowRequest(
             mode=self.mode,
             contract_name=(
                 contract_name
@@ -497,3 +538,39 @@ class ApiFootballShadowRuntime:
             secret_resolved=False,
             real_provider_execution_authorized=False,
         )
+
+        if (
+            self.shadow_evidence_store
+            is not None
+        ):
+            if (
+                self.readiness_evidence_id
+                is None
+            ):
+                raise ValueError(
+                    "SHADOW_READINESS_EVIDENCE_REQUIRED"
+                )
+
+            evidence = (
+                build_provider_shadow_rehearsal_evidence(
+                    provider_key="api_football",
+                    evidence_type="REQUEST",
+                    payload=(
+                        request.payload()
+                    ),
+                    parent_readiness_evidence_id=(
+                        self.readiness_evidence_id
+                    ),
+                    created_at=(
+                        self.clock()
+                    ),
+                )
+            )
+            self.shadow_evidence_store.record(
+                evidence
+            )
+            self.request_evidence_ids.append(
+                evidence.evidence_id
+            )
+
+        return request
