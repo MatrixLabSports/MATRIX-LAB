@@ -8,6 +8,7 @@ from typing import Any, Iterable
 
 _IDENTIFIER = re.compile(r"^[a-z][a-z0-9_]*$")
 APPEND_ONLY_TAIL_GUARD_SEQUENCE_HIGH_WATER = "APPEND_ONLY_TAIL_GUARD_SEQUENCE_HIGH_WATER"
+APPEND_ONLY_TAIL_GUARD_REBASELINE_FORBIDDEN = "APPEND_ONLY_TAIL_GUARD_REBASELINE_FORBIDDEN"
 
 
 def _canonical_json(value: Any) -> str:
@@ -35,6 +36,17 @@ class SQLiteAppendOnlyTailGuard:
             raise ValueError("TAIL_GUARD_LEDGER_NAME_REQUIRED")
         self.table_name = table_name
         self.ledger_name = ledger_name.strip()
+        self.state_table_name = table_name + "_state"
+        if _IDENTIFIER.fullmatch(self.state_table_name) is None:
+            raise ValueError("TAIL_GUARD_STATE_TABLE_NAME_INVALID")
+        self._baseline_valid = True
+
+    def _state_marker_sha256(self) -> str:
+        return _sha({
+            "schema": "matrix.append-only-tail-guard-state/1",
+            "ledger_name": self.ledger_name,
+            "guard_table_name": self.table_name,
+        })
 
     def ensure_schema(self, connection) -> None:
         connection.execute(
@@ -44,6 +56,28 @@ class SQLiteAppendOnlyTailGuard:
             "record_payload_sha256 TEXT NOT NULL,"
             "previous_commitment_sha256 TEXT,"
             "commitment_sha256 TEXT NOT NULL UNIQUE)"
+        )
+        connection.execute(
+            f"CREATE TABLE IF NOT EXISTS {self.state_table_name} ("
+            "ledger_name TEXT PRIMARY KEY,"
+            "guard_table_name TEXT NOT NULL UNIQUE,"
+            "initialization_marker_sha256 TEXT NOT NULL)"
+        )
+
+    def _state_row(self, connection):
+        return connection.execute(
+            f"SELECT guard_table_name, initialization_marker_sha256 "
+            f"FROM {self.state_table_name} WHERE ledger_name = ?",
+            (self.ledger_name,),
+        ).fetchone()
+
+    def _state_is_valid(self, connection) -> bool:
+        row = self._state_row(connection)
+        if row is None:
+            return False
+        return (
+            str(row[0]) == self.table_name
+            and str(row[1]) == self._state_marker_sha256()
         )
 
     def _sequence_high_water(self, connection) -> int:
@@ -90,45 +124,19 @@ class SQLiteAppendOnlyTailGuard:
             (sequence_id, record_id.strip(), record_payload_sha256, previous_hash, commitment_sha256),
         )
 
-    def append(self, connection, *, record_id: str, record_payload_sha256: str) -> None:
-        self.ensure_schema(connection)
-        existing = connection.execute(
-            f"SELECT record_payload_sha256 FROM {self.table_name} WHERE record_id = ?",
-            (record_id,),
-        ).fetchone()
-        if existing is not None:
-            if str(existing[0]) != record_payload_sha256:
-                raise ValueError("TAIL_GUARD_RECORD_MUTATION_VIOLATION")
-            return
-        self._append_unchecked(
-            connection,
-            record_id=record_id,
-            record_payload_sha256=record_payload_sha256,
-        )
-
-    def bootstrap_if_pristine(self, connection, *, records: Iterable[tuple[str, str]]) -> None:
-        self.ensure_schema(connection)
-        rows = tuple((str(record_id), str(payload_sha)) for record_id, payload_sha in records)
-        guard_count = int(connection.execute(f"SELECT COUNT(*) FROM {self.table_name}").fetchone()[0])
-        high_water = self._sequence_high_water(connection)
-        if guard_count != 0 or high_water != 0:
-            return
-        for record_id, payload_sha in rows:
-            self._append_unchecked(
-                connection,
-                record_id=record_id,
-                record_payload_sha256=payload_sha,
-            )
-
-    def audit(self, connection, *, records: Iterable[tuple[str, str]]) -> AppendOnlyTailGuardIntegrityReport:
-        self.ensure_schema(connection)
-        protected = tuple((str(record_id), str(payload_sha)) for record_id, payload_sha in records)
+    def _audit_core(self, connection, protected: tuple[tuple[str, str], ...]) -> AppendOnlyTailGuardIntegrityReport:
         guard_rows = connection.execute(
             f"SELECT sequence_id, record_id, record_payload_sha256, previous_commitment_sha256, commitment_sha256 "
             f"FROM {self.table_name} ORDER BY sequence_id"
         ).fetchall()
         errors: list[str] = []
         high_water = self._sequence_high_water(connection)
+
+        state_row = self._state_row(connection)
+        if state_row is None:
+            errors.append("TAIL_GUARD_INITIALIZATION_STATE_MISSING")
+        elif not self._state_is_valid(connection):
+            errors.append("TAIL_GUARD_INITIALIZATION_STATE_INVALID")
 
         if len(protected) != len(guard_rows):
             errors.append("TAIL_GUARD_RECORD_COUNT_MISMATCH")
@@ -169,6 +177,9 @@ class SQLiteAppendOnlyTailGuard:
         if protected_records != guarded_records:
             errors.append("TAIL_GUARD_RECORD_SET_MISMATCH")
 
+        if state_row is not None and protected and not guard_rows and high_water == 0:
+            errors.append(APPEND_ONLY_TAIL_GUARD_REBASELINE_FORBIDDEN)
+
         return AppendOnlyTailGuardIntegrityReport(
             ok=not errors,
             protected_records=len(protected),
@@ -176,3 +187,74 @@ class SQLiteAppendOnlyTailGuard:
             sequence_high_water=high_water,
             errors=tuple(errors),
         )
+
+    def append(self, connection, *, record_id: str, record_payload_sha256: str) -> None:
+        self.ensure_schema(connection)
+        if not self._baseline_valid:
+            raise ValueError(APPEND_ONLY_TAIL_GUARD_REBASELINE_FORBIDDEN)
+        if not self._state_is_valid(connection):
+            raise ValueError("TAIL_GUARD_INITIALIZATION_STATE_REQUIRED")
+        existing = connection.execute(
+            f"SELECT record_payload_sha256 FROM {self.table_name} WHERE record_id = ?",
+            (record_id,),
+        ).fetchone()
+        if existing is not None:
+            if str(existing[0]) != record_payload_sha256:
+                raise ValueError("TAIL_GUARD_RECORD_MUTATION_VIOLATION")
+            return
+        self._append_unchecked(
+            connection,
+            record_id=record_id,
+            record_payload_sha256=record_payload_sha256,
+        )
+
+    def bootstrap_if_pristine(self, connection, *, records: Iterable[tuple[str, str]]) -> None:
+        self.ensure_schema(connection)
+        rows = tuple((str(record_id), str(payload_sha)) for record_id, payload_sha in records)
+        state_row = self._state_row(connection)
+
+        if state_row is not None:
+            report = self._audit_core(connection, rows)
+            self._baseline_valid = report.ok
+            return
+
+        guard_count = int(connection.execute(f"SELECT COUNT(*) FROM {self.table_name}").fetchone()[0])
+        high_water = self._sequence_high_water(connection)
+
+        if guard_count == 0 and high_water == 0:
+            for record_id, payload_sha in rows:
+                self._append_unchecked(
+                    connection,
+                    record_id=record_id,
+                    record_payload_sha256=payload_sha,
+                )
+        else:
+            # Upgrade from the immediately preceding guard version: only adopt
+            # an existing baseline if it exactly matches the durable records.
+            temporary_state_marker = self._state_marker_sha256()
+            connection.execute(
+                f"INSERT INTO {self.state_table_name} "
+                "(ledger_name, guard_table_name, initialization_marker_sha256) "
+                "VALUES (?, ?, ?)",
+                (self.ledger_name, self.table_name, temporary_state_marker),
+            )
+            report = self._audit_core(connection, rows)
+            if not report.ok:
+                raise ValueError("TAIL_GUARD_EXISTING_BASELINE_INVALID")
+            self._baseline_valid = True
+            return
+
+        connection.execute(
+            f"INSERT INTO {self.state_table_name} "
+            "(ledger_name, guard_table_name, initialization_marker_sha256) "
+            "VALUES (?, ?, ?)",
+            (self.ledger_name, self.table_name, self._state_marker_sha256()),
+        )
+        self._baseline_valid = True
+
+    def audit(self, connection, *, records: Iterable[tuple[str, str]]) -> AppendOnlyTailGuardIntegrityReport:
+        self.ensure_schema(connection)
+        protected = tuple((str(record_id), str(payload_sha)) for record_id, payload_sha in records)
+        report = self._audit_core(connection, protected)
+        self._baseline_valid = report.ok
+        return report

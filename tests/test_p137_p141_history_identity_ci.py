@@ -287,3 +287,24 @@ def test_v5_append_only_tail_guard_is_ci_governed():
         assert token in ci
     assert "canonical_identity_lifecycle_tail_guard" in canonical
     assert "temporal_provider_identity_tail_guard" in provider
+
+
+def test_v6_rebaseline_and_provider_canonical_composition_are_ci_governed():
+    helper = read("app/core/append_only_tail_guard.py")
+    football = read("app/application/football/identity_lifecycle.py")
+    tennis = read("app/application/tennis/identity_lifecycle.py")
+    ci = read("scripts/matrix_ci_gate.py")
+
+    for token in (
+        "APPEND_ONLY_TAIL_GUARD_REBASELINE_FORBIDDEN",
+        "initialization_marker_sha256",
+    ):
+        assert token in helper
+        assert token in ci
+
+    football_token = "resolve_football_provider_terminal_canonical_as_of"
+    tennis_token = "resolve_tennis_provider_terminal_canonical_as_of"
+    assert football_token in football
+    assert football_token in ci
+    assert tennis_token in tennis
+    assert tennis_token in ci

@@ -165,3 +165,32 @@ def remap_tennis_provider_identity(
         reason_code=reason_code,
         human_reviewed=human_reviewed,
     )
+
+
+def resolve_tennis_provider_terminal_canonical_as_of(
+    *,
+    provider_ledger: SQLiteTemporalProviderIdentityLedger,
+    canonical_lifecycle_ledger: SQLiteCanonicalIdentityLifecycleLedger,
+    entity_type: str,
+    provider_key: str,
+    provider_entity_id: str,
+    as_of: datetime,
+    event_time: datetime,
+) -> str | None:
+    binding = provider_ledger.resolve_as_of(
+        sport="tennis",
+        entity_type=entity_type,
+        provider_key=provider_key,
+        provider_entity_id=provider_entity_id,
+        as_of=as_of,
+        event_time=event_time,
+    )
+
+    if binding is None:
+        return None
+
+    return canonical_lifecycle_ledger.resolve_terminal_canonical_id_as_of(
+        canonical_id=binding.canonical_id,
+        as_of=as_of,
+        event_time=event_time,
+    )

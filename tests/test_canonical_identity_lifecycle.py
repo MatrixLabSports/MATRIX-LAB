@@ -707,3 +707,44 @@ def test_canonical_lifecycle_detects_tail_and_guard_tail_truncation(tmp_path):
     report = ledger.audit_integrity()
     assert report.ok is False
     assert any("SEQUENCE_HIGH_WATER_MISMATCH" in item for item in report.errors)
+
+
+def test_canonical_guard_table_loss_does_not_rebaseline_truncated_ledger(tmp_path):
+    _, ledger, first, _, _ = prepared(tmp_path)
+    alias = append_football_identity_alias(
+        ledger=ledger,
+        canonical_id=first.canonical_id,
+        entity_type="team",
+        alias="Alias",
+        effective_at=at(1),
+        known_at=at(1),
+        reason_code="V6_REBASE_ALIAS",
+    )
+    rename = append_football_identity_rename(
+        ledger=ledger,
+        canonical_id=first.canonical_id,
+        entity_type="team",
+        display_name="Renamed",
+        effective_at=at(2),
+        known_at=at(2),
+        reason_code="V6_REBASE_RENAME",
+        previous_event_id=alias.event_id,
+        human_reviewed=True,
+    )
+    with sqlite3.connect(ledger.path) as connection:
+        connection.execute(
+            "DELETE FROM canonical_identity_lifecycle WHERE event_id = ?",
+            (rename.event_id,),
+        )
+        connection.execute("DROP TABLE canonical_identity_lifecycle_tail_guard")
+        connection.commit()
+    reopened = SQLiteCanonicalIdentityLifecycleLedger(
+        ledger.path,
+        identity_registry=ledger.identity_registry,
+    )
+    report = reopened.audit_integrity()
+    assert report.ok is False
+    assert any(
+        "APPEND_ONLY_TAIL_GUARD_REBASELINE_FORBIDDEN" in item
+        for item in report.errors
+    )

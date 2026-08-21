@@ -1462,6 +1462,9 @@ def _p137_p141_history_identity_lifecycle_boundary(
         "AUTOINCREMENT",
         "sqlite_sequence",
         "APPEND_ONLY_TAIL_GUARD_SEQUENCE_HIGH_WATER",
+        "APPEND_ONLY_TAIL_GUARD_REBASELINE_FORBIDDEN",
+        "state_table_name",
+        "initialization_marker_sha256",
         "previous_commitment_sha256",
         "def bootstrap_if_pristine(",
         "def audit(",
@@ -1469,6 +1472,26 @@ def _p137_p141_history_identity_lifecycle_boundary(
         if token not in tail_guard:
             raise RuntimeError(
                 "P139_APPEND_ONLY_TAIL_GUARD_CONTROL_MISSING:"
+                + token
+            )
+
+    for token in (
+        "def resolve_football_provider_terminal_canonical_as_of(",
+        "resolve_terminal_canonical_id_as_of",
+    ):
+        if token not in football_adapter:
+            raise RuntimeError(
+                "P138_FOOTBALL_PROVIDER_CANONICAL_COMPOSITION_MISSING:"
+                + token
+            )
+
+    for token in (
+        "def resolve_tennis_provider_terminal_canonical_as_of(",
+        "resolve_terminal_canonical_id_as_of",
+    ):
+        if token not in tennis_adapter:
+            raise RuntimeError(
+                "P138_TENNIS_PROVIDER_CANONICAL_COMPOSITION_MISSING:"
                 + token
             )
 

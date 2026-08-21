@@ -7,6 +7,10 @@ def prepared():
     connection = sqlite3.connect(":memory:", isolation_level=None)
     guard = SQLiteAppendOnlyTailGuard(table_name="test_tail_guard", ledger_name="test_ledger")
     guard.ensure_schema(connection)
+    guard.bootstrap_if_pristine(
+        connection,
+        records=(),
+    )
     return connection, guard
 
 

@@ -1003,3 +1003,37 @@ def test_temporal_provider_mapping_detects_tail_and_guard_tail_truncation(tmp_pa
     report = ledger.audit_integrity()
     assert report.ok is False
     assert any("SEQUENCE_HIGH_WATER_MISMATCH" in item for item in report.errors)
+
+
+def test_provider_guard_table_loss_does_not_rebaseline_truncated_ledger(tmp_path):
+    _, ledger, first, second, _ = prepared(tmp_path)
+    append_initial(ledger, first.canonical_id)
+    _, successor = ledger.remap(
+        sport="football",
+        entity_type="team",
+        provider_key="provider-a",
+        provider_entity_id="team-99",
+        new_canonical_id=second.canonical_id,
+        remap_at=at(10),
+        known_at=at(12),
+        resolution_method="manual_verified",
+        reason_code="V6_REMAP",
+        human_reviewed=True,
+    )
+    with sqlite3.connect(ledger.path) as connection:
+        connection.execute(
+            "DELETE FROM temporal_provider_identity_binding WHERE binding_id = ?",
+            (successor.binding_id,),
+        )
+        connection.execute("DROP TABLE temporal_provider_identity_tail_guard")
+        connection.commit()
+    reopened = SQLiteTemporalProviderIdentityLedger(
+        ledger.path,
+        identity_registry=ledger.identity_registry,
+    )
+    report = reopened.audit_integrity()
+    assert report.ok is False
+    assert any(
+        "APPEND_ONLY_TAIL_GUARD_REBASELINE_FORBIDDEN" in item
+        for item in report.errors
+    )

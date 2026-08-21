@@ -145,3 +145,25 @@ Independent adversarial re-audit V5 proved that per-row hashes cannot by themsel
 `audit_integrity()` cross-checks record count, IDs, payload hashes, commitment hashes, chain continuity, sequence continuity, and the sequence high-water mark. Deleting the final lifecycle row is detected because its commitment remains. Deleting both the final lifecycle row and the final guard commitment is also detected because SQLite does not move the AUTOINCREMENT high-water backward on row deletion. Exact replay remains idempotent.
 
 For databases that predate this control, an empty pristine guard is bootstrapped once from current durable row order. After that migration baseline, the guard is fail-closed rather than silently repaired. Production lifecycle and tail-guard modules remain append-only and provide no application `UPDATE` or `DELETE` path.
+
+## V6 adversarial hardening: anti-rebaseline state and provider→terminal-canonical composition
+
+Independent adversarial re-audit V6 exposed two different integrity boundaries.
+
+### Tail-guard loss must not create a new baseline
+
+The V5 commitment chain detected lifecycle-row truncation while the guard survived. V6 then removed the guard table itself and reopened the database. Rebuilding a guard from the remaining rows would incorrectly certify a truncated prefix as a fresh baseline.
+
+The tail guard now has a separate durable initialization-state marker. Once a ledger has been initialized, loss of the commitment table is treated as evidence loss rather than as permission to bootstrap again. The ledger may reopen for audit, but integrity is false and new appends fail closed with `APPEND_ONLY_TAIL_GUARD_REBASELINE_FORBIDDEN` until a governed recovery procedure is performed.
+
+A one-time compatibility path remains for databases that genuinely predate the initialization-state marker: an existing V5 commitment chain may be adopted only after it exactly matches the protected durable records. This is migration, not silent repair.
+
+This protection is intentionally scoped to accidental or partial database tampering. A writer capable of destroying every local evidence structure can defeat any purely local SQLite proof; stronger adversarial guarantees require an external immutable anchor and belong to later SRE/security certification.
+
+### Provider identity is raw history; terminal canonical identity is a composed view
+
+A provider mapping may legitimately preserve the canonical ID that was historically assigned even if that canonical entity is later superseded. Rewriting the raw provider ledger would destroy provenance. Therefore the correct control is explicit bitemporal composition, not silent mutation.
+
+Football and tennis now expose sport-specific `resolve_*_provider_terminal_canonical_as_of` functions. They first resolve the provider binding point-in-time and then resolve that binding's canonical ID through the canonical identity lifecycle at the same `as_of` and `event_time`. Consumers that need the current/terminal canonical identity must use this composed path rather than interpreting the raw provider binding ID as terminal.
+
+Sport separation remains strict and no name-based join is introduced.
