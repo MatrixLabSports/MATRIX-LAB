@@ -1010,7 +1010,6 @@ def _provider_network_activation_semantic_boundary(
         "shadow_runtime": (
             "shadow_evidence_store",
             "_build_attested_provider_shadow_rehearsal_evidence",
-            "MATRIX_SHADOW_REHEARSAL_ATTESTATION_KEY",
         ),
         "governed_client": (
             "require_provider_activation_authorized",
