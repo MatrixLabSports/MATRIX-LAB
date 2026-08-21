@@ -1314,6 +1314,275 @@ def _provider_shadow_rehearsal_provenance_boundary(
 
 
 
+
+def _p137_p141_history_identity_lifecycle_boundary(
+    root,
+) -> None:
+    canonical_lifecycle = (
+        root
+        / "app/core/canonical_identity_lifecycle.py"
+    ).read_text(
+        encoding="utf-8-sig"
+    )
+
+    provider_lifecycle = (
+        root
+        / "app/core/provider_identity_lifecycle.py"
+    ).read_text(
+        encoding="utf-8-sig"
+    )
+
+    football_adapter = (
+        root
+        / "app/application/football/identity_lifecycle.py"
+    ).read_text(
+        encoding="utf-8-sig"
+    )
+
+    tennis_adapter = (
+        root
+        / "app/application/tennis/identity_lifecycle.py"
+    ).read_text(
+        encoding="utf-8-sig"
+    )
+
+    canonical_observation = (
+        root
+        / "app/core/canonical_observation_store.py"
+    ).read_text(
+        encoding="utf-8-sig"
+    )
+
+    point_in_time_history = (
+        root
+        / "app/core/point_in_time_history.py"
+    ).read_text(
+        encoding="utf-8-sig"
+    )
+
+    football_repository = (
+        root
+        / "app/sports/football/repository.py"
+    ).read_text(
+        encoding="utf-8-sig"
+    )
+
+    for token in (
+        "class SQLiteCanonicalIdentityLifecycleLedger",
+        "ALIAS_ADDED",
+        "DISPLAY_NAME_CHANGED",
+        "SUPERSEDED",
+        "effective_at",
+        "known_at",
+        "resolve_terminal_canonical_id_as_of",
+        "name_join_allowed",
+        "automatic_model_promotion",
+        "automatic_provider_switch",
+        "automatic_wagering",
+    ):
+        if token not in canonical_lifecycle:
+            raise RuntimeError(
+                "P137_CANONICAL_IDENTITY_LIFECYCLE_CONTROL_MISSING:"
+                + token
+            )
+
+    for token in (
+        "class SQLiteTemporalProviderIdentityLedger",
+        "valid_from",
+        "valid_to",
+        "known_at",
+        "predecessor_binding_id",
+        "corrects_binding_id",
+        "def resolve_as_of(",
+        "def remap(",
+        "PROVIDER_REMAP_REQUIRES_HUMAN_REVIEW",
+        "name_join_allowed",
+    ):
+        if token not in provider_lifecycle:
+            raise RuntimeError(
+                "P138_TEMPORAL_PROVIDER_IDENTITY_CONTROL_MISSING:"
+                + token
+            )
+
+    for source, label in (
+        (
+            canonical_lifecycle,
+            "CANONICAL",
+        ),
+        (
+            provider_lifecycle,
+            "PROVIDER",
+        ),
+    ):
+        upper = source.upper()
+
+        for destructive in (
+            '"UPDATE ',
+            '"DELETE ',
+            "'UPDATE ",
+            "'DELETE ",
+        ):
+            if destructive in upper:
+                raise RuntimeError(
+                    "P139_APPEND_ONLY_IDENTITY_LEDGER_VIOLATION:"
+                    + label
+                )
+
+        for forbidden_api in (
+            "def resolve_by_name(",
+            "def get_by_alias(",
+            "def find_by_name(",
+        ):
+            if forbidden_api in source:
+                raise RuntimeError(
+                    "P137_NAME_BASED_IDENTITY_RESOLUTION_FORBIDDEN:"
+                    + forbidden_api
+                )
+
+    if (
+        'sport="tennis"'
+        in football_adapter
+        or "app.application.tennis"
+        in football_adapter
+    ):
+        raise RuntimeError(
+            "P140_FOOTBALL_IDENTITY_LIFECYCLE_CROSS_SPORT"
+        )
+
+    if (
+        'sport="football"'
+        in tennis_adapter
+        or "app.application.football"
+        in tennis_adapter
+    ):
+        raise RuntimeError(
+            "P140_TENNIS_IDENTITY_LIFECYCLE_CROSS_SPORT"
+        )
+
+    for token in (
+        "append_admitted_record",
+        "list_as_of",
+    ):
+        if token not in canonical_observation:
+            raise RuntimeError(
+                "P139_EXISTING_APPEND_ONLY_HISTORY_FOUNDATION_MISSING:"
+                + token
+            )
+
+    for token in (
+        "build_point_in_time_history",
+        "as_of",
+    ):
+        if token not in point_in_time_history:
+            raise RuntimeError(
+                "P139_POINT_IN_TIME_HISTORY_FOUNDATION_MISSING:"
+                + token
+            )
+
+    for token in (
+        "upsert",
+        "reconcile",
+    ):
+        if token not in football_repository:
+            raise RuntimeError(
+                "P139_FOOTBALL_CURRENT_STATE_REPOSITORY_SEMANTICS_MISSING:"
+                + token
+            )
+
+    safety_targets = {
+        "name_join_allowed",
+        "automatic_model_promotion",
+        "automatic_provider_switch",
+        "automatic_wagering",
+    }
+
+    for label, source in (
+        (
+            "CANONICAL",
+            canonical_lifecycle,
+        ),
+        (
+            "PROVIDER",
+            provider_lifecycle,
+        ),
+        (
+            "FOOTBALL",
+            football_adapter,
+        ),
+        (
+            "TENNIS",
+            tennis_adapter,
+        ),
+    ):
+        tree = ast.parse(
+            source,
+            filename=label,
+        )
+
+        for node in ast.walk(
+            tree
+        ):
+            if (
+                isinstance(
+                    node,
+                    ast.keyword,
+                )
+                and node.arg
+                in safety_targets
+                and isinstance(
+                    node.value,
+                    ast.Constant,
+                )
+                and node.value.value is True
+            ):
+                raise RuntimeError(
+                    "P141_IDENTITY_SAFETY_TRUE_BINDING_FORBIDDEN:"
+                    + label
+                    + ":"
+                    + str(
+                        node.lineno
+                    )
+                )
+
+            if isinstance(
+                node,
+                ast.Dict,
+            ):
+                for key, value in zip(
+                    node.keys,
+                    node.values,
+                ):
+                    if not (
+                        isinstance(
+                            key,
+                            ast.Constant,
+                        )
+                        and isinstance(
+                            key.value,
+                            str,
+                        )
+                        and key.value
+                        in safety_targets
+                    ):
+                        continue
+
+                    if (
+                        isinstance(
+                            value,
+                            ast.Constant,
+                        )
+                        and value.value is True
+                    ):
+                        raise RuntimeError(
+                            "P141_IDENTITY_SAFETY_TRUE_BINDING_FORBIDDEN:"
+                            + label
+                            + ":"
+                            + str(
+                                node.lineno
+                            )
+                        )
+
+
 def _provider_response_ingest_boundary(
     root,
 ) -> None:
@@ -1784,6 +2053,7 @@ def main() -> int:
     _provider_network_activation_semantic_boundary(ROOT)
     _provider_p131_real_attempt_cross_binding_boundary(ROOT)
     _provider_response_ingest_boundary(ROOT)
+    _p137_p141_history_identity_lifecycle_boundary(ROOT)
     _provider_shadow_rehearsal_provenance_boundary(ROOT)
     _authoritative_runtime_admission_boundary(ROOT)
     _git_diff_checks(ROOT)
