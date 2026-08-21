@@ -179,6 +179,26 @@ class StdlibPinnedHttpsTransport(
                 raw_key.lower()
             )
 
+            forbidden_hop_by_hop = {
+                "connection": "HOP_BY_HOP_HEADER_FORBIDDEN",
+                "keep-alive": "HOP_BY_HOP_HEADER_FORBIDDEN",
+                "proxy-authenticate": "HOP_BY_HOP_HEADER_FORBIDDEN",
+                "proxy-authorization": "HOP_BY_HOP_HEADER_FORBIDDEN",
+                "proxy-connection": "HOP_BY_HOP_HEADER_FORBIDDEN",
+                "te": "HOP_BY_HOP_HEADER_FORBIDDEN",
+                "trailer": "HOP_BY_HOP_HEADER_FORBIDDEN",
+                "upgrade": "HOP_BY_HOP_HEADER_FORBIDDEN",
+                "content-length": "CONTENT_LENGTH_HEADER_FORBIDDEN",
+                "transfer-encoding": "TRANSFER_ENCODING_HEADER_FORBIDDEN",
+            }
+
+            if lowered in forbidden_hop_by_hop:
+                raise ValueError(
+                    forbidden_hop_by_hop[
+                        lowered
+                    ]
+                )
+
             if lowered == "host":
                 raise ValueError(
                     "HOST_HEADER_OVERRIDE_FORBIDDEN"

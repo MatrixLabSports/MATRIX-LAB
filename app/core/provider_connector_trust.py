@@ -72,10 +72,20 @@ class ProviderConnectorTrustDecision:
 def assess_pinned_transport_connector_trust(
     transport,
 ) -> ProviderConnectorTrustDecision:
-    is_stdlib = isinstance(
-        transport,
-        StdlibPinnedHttpsTransport,
+    exact_transport_type = (
+        type(transport) is StdlibPinnedHttpsTransport
     )
+
+    method_override_free = (
+        exact_transport_type
+        and "get_pinned" not in getattr(
+            transport,
+            "__dict__",
+            {},
+        )
+    )
+
+    is_stdlib = exact_transport_type
 
     default_connector = (
         is_stdlib
@@ -151,8 +161,12 @@ def assess_pinned_transport_connector_trust(
 
     checks = (
         (
-            is_stdlib,
-            "STDLIB_PINNED_TRANSPORT_REQUIRED",
+            exact_transport_type,
+            "EXACT_STDLIB_PINNED_TRANSPORT_REQUIRED",
+        ),
+        (
+            method_override_free,
+            "PINNED_TRANSPORT_METHOD_OVERRIDE_FORBIDDEN",
         ),
         (
             default_connector,
