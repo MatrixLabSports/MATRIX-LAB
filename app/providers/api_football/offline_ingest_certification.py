@@ -9,6 +9,7 @@ from hashlib import sha256
 import hmac
 import inspect
 import json
+import os
 from pathlib import Path
 import sqlite3
 import subprocess
@@ -18,8 +19,12 @@ from typing import Any, Mapping
 
 from app.application.football.sync_fixtures import sync_football_fixtures
 from app.core.provider_shadow_rehearsal_evidence import (
+    SQLiteProviderShadowRehearsalEvidenceStore,
     build_provider_shadow_attestation_key_reference,
     verify_provider_shadow_rehearsal_attestation,
+)
+from app.core.provider_request_contract import (
+    request_parameter_values_fingerprint,
 )
 from app.core.secret_reference import resolve_secret_runtime
 from app.providers.api_football.fixture_adapter import (
@@ -80,6 +85,63 @@ def _source_revision() -> str:
         raise ValueError("OFFLINE_INGEST_SOURCE_REVISION_INVALID")
     return revision
 
+
+
+AUTHORITATIVE_OFFLINE_INGEST_EVIDENCE_PATH_ENV = (
+    "MATRIX_API_FOOTBALL_OFFLINE_INGEST_EVIDENCE_DB"
+)
+
+
+def _offline_ingest_store_identity(
+    path: str | Path,
+) -> str:
+    resolved = Path(path).expanduser().resolve()
+
+    return _sha(
+        {
+            "schema": (
+                "matrix.api-football-offline-ingest-store/2"
+            ),
+            "path": str(
+                resolved
+            ),
+            "provider_key": "api_football",
+            "purpose": (
+                "OFFLINE_FIXTURE_INGEST_CERTIFICATION"
+            ),
+        }
+    )
+
+
+def _authoritative_offline_ingest_store_path() -> Path:
+    raw = os.environ.get(
+        AUTHORITATIVE_OFFLINE_INGEST_EVIDENCE_PATH_ENV
+    )
+
+    if (
+        not isinstance(raw, str)
+        or not raw.strip()
+    ):
+        raise ValueError(
+            "AUTHORITATIVE_OFFLINE_INGEST_EVIDENCE_PATH_REQUIRED"
+        )
+
+    path = Path(
+        raw.strip()
+    ).expanduser()
+
+    if not path.is_absolute():
+        raise ValueError(
+            "AUTHORITATIVE_OFFLINE_INGEST_EVIDENCE_PATH_ABSOLUTE_REQUIRED"
+        )
+
+    return path.resolve()
+
+
+def build_authoritative_api_football_offline_ingest_evidence_store():
+    return SQLiteApiFootballOfflineIngestEvidenceStore(
+        _authoritative_offline_ingest_store_path()
+    )
 
 class _OfflineReplayClient:
     def __init__(self, *, payload: Mapping[str, Any], date: str) -> None:
@@ -154,24 +216,139 @@ def _offline_topology_fingerprint() -> str:
     )
 
 
-def _verified_shadow_request_provenance(evidence: Any) -> Mapping[str, Any]:
-    try:
-        valid = verify_provider_shadow_rehearsal_attestation(evidence)
-    except Exception as error:
-        raise ValueError("OFFLINE_INGEST_SHADOW_ATTESTATION_INVALID") from error
-
-    if valid is not True:
-        raise ValueError("OFFLINE_INGEST_SHADOW_ATTESTATION_INVALID")
+def _verified_shadow_request_provenance(
+    evidence_store: SQLiteProviderShadowRehearsalEvidenceStore,
+    evidence_id: str,
+    *,
+    canonical_date: str,
+) -> Mapping[str, Any]:
+    if (
+        type(evidence_store)
+        is not SQLiteProviderShadowRehearsalEvidenceStore
+    ):
+        raise ValueError(
+            "AUTHORITATIVE_SHADOW_EVIDENCE_STORE_REQUIRED"
+        )
 
     if (
-        getattr(evidence, "provider_key", None) != "api_football"
-        or getattr(evidence, "evidence_type", None) != "REQUEST"
+        not isinstance(evidence_id, str)
+        or not evidence_id.strip()
     ):
-        raise ValueError("OFFLINE_INGEST_SHADOW_REQUEST_EVIDENCE_REQUIRED")
+        raise ValueError(
+            "OFFLINE_INGEST_SHADOW_REQUEST_EVIDENCE_ID_REQUIRED"
+        )
 
-    payload = getattr(evidence, "payload", None)
-    if not isinstance(payload, Mapping):
-        raise ValueError("OFFLINE_INGEST_SHADOW_PAYLOAD_REQUIRED")
+    evidence = evidence_store.get_verified(
+        evidence_id
+    )
+
+    if evidence is None:
+        raise ValueError(
+            "OFFLINE_INGEST_SHADOW_REQUEST_EVIDENCE_NOT_FOUND"
+        )
+
+    if (
+        evidence.store_identity
+        != evidence_store.store_identity
+    ):
+        raise ValueError(
+            "OFFLINE_INGEST_SHADOW_STORE_BINDING_MISMATCH"
+        )
+
+    try:
+        attestation_valid = (
+            verify_provider_shadow_rehearsal_attestation(
+                evidence
+            )
+        )
+    except Exception as error:
+        raise ValueError(
+            "OFFLINE_INGEST_SHADOW_ATTESTATION_INVALID"
+        ) from error
+
+    if attestation_valid is not True:
+        raise ValueError(
+            "OFFLINE_INGEST_SHADOW_ATTESTATION_INVALID"
+        )
+
+    if (
+        evidence.provider_key
+        != "api_football"
+        or evidence.evidence_type
+        != "REQUEST"
+    ):
+        raise ValueError(
+            "OFFLINE_INGEST_SHADOW_REQUEST_EVIDENCE_REQUIRED"
+        )
+
+    parent_id = (
+        evidence.parent_readiness_evidence_id
+    )
+
+    if (
+        not isinstance(parent_id, str)
+        or not parent_id
+    ):
+        raise ValueError(
+            "OFFLINE_INGEST_SHADOW_PARENT_READINESS_REQUIRED"
+        )
+
+    parent = evidence_store.get_verified(
+        parent_id
+    )
+
+    if (
+        parent is None
+        or parent.provider_key
+        != "api_football"
+        or parent.evidence_type
+        != "READINESS"
+        or parent.store_identity
+        != evidence_store.store_identity
+    ):
+        raise ValueError(
+            "OFFLINE_INGEST_SHADOW_PARENT_READINESS_INVALID"
+        )
+
+    try:
+        parent_attestation_valid = (
+            verify_provider_shadow_rehearsal_attestation(
+                parent
+            )
+        )
+    except Exception as error:
+        raise ValueError(
+            "OFFLINE_INGEST_SHADOW_PARENT_ATTESTATION_INVALID"
+        ) from error
+
+    if parent_attestation_valid is not True:
+        raise ValueError(
+            "OFFLINE_INGEST_SHADOW_PARENT_ATTESTATION_INVALID"
+        )
+
+    if (
+        parent.authority_id
+        != evidence.authority_id
+        or parent.store_identity
+        != evidence.store_identity
+        or (
+            parent.attestation_key_reference_fingerprint
+            != evidence.attestation_key_reference_fingerprint
+        )
+    ):
+        raise ValueError(
+            "OFFLINE_INGEST_SHADOW_AUTHORITY_CHAIN_MISMATCH"
+        )
+
+    payload = evidence.payload
+
+    if not isinstance(
+        payload,
+        Mapping,
+    ):
+        raise ValueError(
+            "OFFLINE_INGEST_SHADOW_PAYLOAD_REQUIRED"
+        )
 
     required = {
         "contract_id",
@@ -188,40 +365,107 @@ def _verified_shadow_request_provenance(evidence: Any) -> Mapping[str, Any]:
         "real_provider_execution_authorized",
     }
 
-    if required - set(payload.keys()):
-        raise ValueError("OFFLINE_INGEST_SHADOW_PROVENANCE_INCOMPLETE")
+    missing = sorted(
+        required
+        - set(
+            payload.keys()
+        )
+    )
+
+    if missing:
+        raise ValueError(
+            "OFFLINE_INGEST_SHADOW_PROVENANCE_INCOMPLETE"
+        )
 
     if payload["path"] != "/fixtures":
-        raise ValueError("OFFLINE_INGEST_SHADOW_PATH_MISMATCH")
+        raise ValueError(
+            "OFFLINE_INGEST_SHADOW_PATH_MISMATCH"
+        )
 
     if (
-        payload["governed_request_client_used"] is not True
-        or payload["governed_transport_topology_verified"] is not True
-        or payload["network_call_performed"] is not False
-        or payload["network_permit_issued"] is not False
-        or payload["secret_resolved"] is not False
-        or payload["real_provider_execution_authorized"] is not False
+        payload["governed_request_client_used"]
+        is not True
+        or payload[
+            "governed_transport_topology_verified"
+        ]
+        is not True
+        or payload["network_call_performed"]
+        is not False
+        or payload["network_permit_issued"]
+        is not False
+        or payload["secret_resolved"]
+        is not False
+        or payload[
+            "real_provider_execution_authorized"
+        ]
+        is not False
     ):
-        raise ValueError("OFFLINE_INGEST_SHADOW_SAFETY_PROVENANCE_INVALID")
+        raise ValueError(
+            "OFFLINE_INGEST_SHADOW_SAFETY_PROVENANCE_INVALID"
+        )
 
-    parameter_names = tuple(str(value) for value in payload["parameter_names"])
-    if "date" not in parameter_names:
-        raise ValueError("OFFLINE_INGEST_DATE_CONTRACT_BINDING_REQUIRED")
+    parameter_names = tuple(
+        sorted(
+            str(value)
+            for value in payload[
+                "parameter_names"
+            ]
+        )
+    )
+
+    if parameter_names != (
+        "date",
+    ):
+        raise ValueError(
+            "OFFLINE_INGEST_DATE_CONTRACT_BINDING_REQUIRED"
+        )
+
+    expected_parameter_values_fingerprint = (
+        request_parameter_values_fingerprint(
+            {
+                "date": canonical_date,
+            }
+        )
+    )
+
+    if (
+        str(
+            payload[
+                "parameter_values_fingerprint"
+            ]
+        )
+        != expected_parameter_values_fingerprint
+    ):
+        raise ValueError(
+            "OFFLINE_INGEST_SHADOW_PARAMETER_VALUES_FINGERPRINT_MISMATCH"
+        )
 
     return {
-        "shadow_request_evidence_id": str(evidence.evidence_id),
-        "parent_readiness_evidence_id": (
-            None
-            if getattr(evidence, "parent_readiness_evidence_id", None) is None
-            else str(evidence.parent_readiness_evidence_id)
+        "shadow_request_evidence_id": (
+            evidence.evidence_id
         ),
-        "request_contract_id": str(payload["contract_id"]),
-        "endpoint_manifest_id": str(payload["endpoint_manifest_id"]),
-        "authorization_fingerprint": str(payload["authorization_fingerprint"]),
-        "request_path": str(payload["path"]),
-        "parameter_names": parameter_names,
-        "parameter_values_fingerprint": str(
-            payload["parameter_values_fingerprint"]
+        "parent_readiness_evidence_id": (
+            parent.evidence_id
+        ),
+        "request_contract_id": str(
+            payload["contract_id"]
+        ),
+        "endpoint_manifest_id": str(
+            payload["endpoint_manifest_id"]
+        ),
+        "authorization_fingerprint": str(
+            payload[
+                "authorization_fingerprint"
+            ]
+        ),
+        "request_path": str(
+            payload["path"]
+        ),
+        "parameter_names": (
+            parameter_names
+        ),
+        "parameter_values_fingerprint": (
+            expected_parameter_values_fingerprint
         ),
     }
 
@@ -264,7 +508,7 @@ class ApiFootballOfflineIngestCertification:
 
     def core_payload(self) -> Mapping[str, Any]:
         return {
-            "schema": "matrix.api-football-offline-ingest-certification/2",
+            "schema": "matrix.api-football-offline-ingest-certification/3",
             "status": self.status,
             "provider_key": self.provider_key,
             "mode": self.mode,
@@ -336,7 +580,7 @@ def verify_api_football_offline_ingest_certification(
     core = certification.core_payload()
     expected_fingerprint = _sha(
         {
-            "schema": "matrix.api-football-offline-ingest-certification-fingerprint/2",
+            "schema": "matrix.api-football-offline-ingest-certification-fingerprint/3",
             "core_payload": core,
         }
     )
@@ -371,7 +615,7 @@ def verify_api_football_offline_ingest_certification(
 
     expected_evidence_id = _sha(
         {
-            "schema": "matrix.api-football-offline-ingest-evidence-id/2",
+            "schema": "matrix.api-football-offline-ingest-evidence-id/3",
             "certification_fingerprint": certification.certification_fingerprint,
             "issuer_attestation": certification.issuer_attestation,
         }
@@ -416,11 +660,10 @@ class SQLiteApiFootballOfflineIngestEvidenceStore:
     def __init__(self, path: str | Path) -> None:
         self.path = Path(path)
         self.path.parent.mkdir(parents=True, exist_ok=True)
-        self.store_identity = _sha(
-            {
-                "schema": "matrix.api-football-offline-ingest-store/1",
-                "path": str(self.path.resolve()),
-            }
+        self.store_identity = (
+            _offline_ingest_store_identity(
+                self.path
+            )
         )
 
         with self._connect() as connection:
@@ -433,6 +676,27 @@ class SQLiteApiFootballOfflineIngestEvidenceStore:
                 )
                 '''
             )
+
+    def require_authoritative_store(
+        self,
+    ):
+        expected_path = (
+            _authoritative_offline_ingest_store_path()
+        )
+
+        if (
+            self.path.expanduser().resolve()
+            != expected_path
+            or self.store_identity
+            != _offline_ingest_store_identity(
+                expected_path
+            )
+        ):
+            raise ValueError(
+                "OFFLINE_INGEST_AUTHORITATIVE_STORE_REQUIRED"
+            )
+
+        return self
 
     def _connect(self):
         connection = sqlite3.connect(
@@ -448,7 +712,7 @@ class SQLiteApiFootballOfflineIngestEvidenceStore:
     def _rebuild(payload: Mapping[str, Any]) -> ApiFootballOfflineIngestCertification:
         if (
             payload.get("schema")
-            != "matrix.api-football-offline-ingest-certification/2"
+            != "matrix.api-football-offline-ingest-certification/3"
         ):
             raise ValueError("OFFLINE_INGEST_EVIDENCE_SCHEMA_INVALID")
 
@@ -584,82 +848,187 @@ def certify_api_football_offline_fixture_ingest(
     *,
     payload: Mapping[str, Any],
     date: str,
-    shadow_request_evidence: Any,
+    shadow_evidence_store: SQLiteProviderShadowRehearsalEvidenceStore,
+    shadow_request_evidence_id: str,
     evidence_store: SQLiteApiFootballOfflineIngestEvidenceStore,
-    source_revision: str | None = None,
     clock=lambda: datetime.now(timezone.utc),
 ) -> ApiFootballOfflineIngestCertification:
-    canonical_date = _canonical_date(date)
-    envelope = validate_api_football_response_envelope(
-        payload,
-        endpoint="/fixtures",
-    )
-    provenance = _verified_shadow_request_provenance(
-        shadow_request_evidence
-    )
-    code_fingerprint = _offline_topology_fingerprint()
-    revision = (
-        _source_revision()
-        if source_revision is None
-        else str(source_revision).lower()
+    canonical_date = _canonical_date(
+        date
     )
 
     if (
-        len(revision) < 7
-        or len(revision) > 64
-        or any(character not in "0123456789abcdef" for character in revision)
+        type(evidence_store)
+        is not SQLiteApiFootballOfflineIngestEvidenceStore
     ):
-        raise ValueError("OFFLINE_INGEST_SOURCE_REVISION_INVALID")
+        raise ValueError(
+            "AUTHORITATIVE_OFFLINE_INGEST_EVIDENCE_STORE_REQUIRED"
+        )
+
+    evidence_store.require_authoritative_store()
+
+    envelope = (
+        validate_api_football_response_envelope(
+            payload,
+            endpoint="/fixtures",
+        )
+    )
+
+    payload_parameters = payload.get(
+        "parameters"
+    )
+
+    if (
+        not isinstance(
+            payload_parameters,
+            Mapping,
+        )
+        or dict(
+            payload_parameters
+        )
+        != {
+            "date": canonical_date,
+        }
+    ):
+        raise ValueError(
+            "OFFLINE_INGEST_PAYLOAD_DATE_MISMATCH"
+        )
+
+    provenance = (
+        _verified_shadow_request_provenance(
+            shadow_evidence_store,
+            shadow_request_evidence_id,
+            canonical_date=canonical_date,
+        )
+    )
+
+    code_fingerprint = (
+        _offline_topology_fingerprint()
+    )
+
+    revision = _source_revision()
 
     replay_client = _OfflineReplayClient(
         payload=payload,
         date=canonical_date,
     )
+
     blockers: list[str] = []
 
-    with TemporaryDirectory(prefix="matrix-api-football-replay-") as directory:
-        repository_path = Path(directory) / "football-fixtures.json"
-        repository = _TrackingFootballMatchRepository(repository_path)
-
-        first_records = sync_football_fixtures(
-            replay_client,
-            repository,
-            canonical_date,
+    with TemporaryDirectory(
+        prefix="matrix-api-football-replay-"
+    ) as directory:
+        repository_path = (
+            Path(directory)
+            / "football-fixtures.json"
         )
-        first_bytes = repository_path.read_bytes() if repository_path.exists() else b""
 
-        second_records = sync_football_fixtures(
-            replay_client,
-            repository,
-            canonical_date,
+        repository = (
+            _TrackingFootballMatchRepository(
+                repository_path
+            )
         )
-        second_bytes = repository_path.read_bytes() if repository_path.exists() else b""
 
-    received_count = len(envelope.response)
-    accepted_count = len(first_records)
-    rejected_count = max(0, received_count - accepted_count)
+        first_records = (
+            sync_football_fixtures(
+                replay_client,
+                repository,
+                canonical_date,
+            )
+        )
 
-    first_identities = tuple(record.identity for record in first_records)
-    second_identities = tuple(record.identity for record in second_records)
+        first_bytes = (
+            repository_path.read_bytes()
+            if repository_path.exists()
+            else b""
+        )
+
+        second_records = (
+            sync_football_fixtures(
+                replay_client,
+                repository,
+                canonical_date,
+            )
+        )
+
+        second_bytes = (
+            repository_path.read_bytes()
+            if repository_path.exists()
+            else b""
+        )
+
+    received_count = len(
+        envelope.response
+    )
+
+    accepted_count = len(
+        first_records
+    )
+
+    rejected_count = max(
+        0,
+        received_count
+        - accepted_count,
+    )
+
+    first_identities = tuple(
+        record.identity
+        for record in first_records
+    )
+
+    second_identities = tuple(
+        record.identity
+        for record in second_records
+    )
+
     repository_idempotent = (
-        first_bytes == second_bytes
-        and first_identities == second_identities
+        first_bytes
+        == second_bytes
+        and first_identities
+        == second_identities
     )
 
     if rejected_count != 0:
-        blockers.append("OFFLINE_REPLAY_RECORD_REJECTIONS_PRESENT")
+        blockers.append(
+            "OFFLINE_REPLAY_RECORD_REJECTIONS_PRESENT"
+        )
+
     if replay_client.request_count != 2:
-        blockers.append("OFFLINE_REPLAY_REQUEST_COUNT_INVALID")
-    if repository.reconciliation_call_count != 2:
-        blockers.append("OFFLINE_REPLAY_RECONCILIATION_REQUIRED")
+        blockers.append(
+            "OFFLINE_REPLAY_REQUEST_COUNT_INVALID"
+        )
+
+    if (
+        repository.reconciliation_call_count
+        != 2
+    ):
+        blockers.append(
+            "OFFLINE_REPLAY_RECONCILIATION_REQUIRED"
+        )
+
     if not repository_idempotent:
-        blockers.append("OFFLINE_REPLAY_REPOSITORY_NOT_IDEMPOTENT")
+        blockers.append(
+            "OFFLINE_REPLAY_REPOSITORY_NOT_IDEMPOTENT"
+        )
 
     zero_network_topology_verified = True
-    zero_network_calls = zero_network_topology_verified
-    status = "CERTIFIED" if not blockers else "NOT_CERTIFIED"
-    created_at = _aware_iso(clock())
-    reference = build_provider_shadow_attestation_key_reference()
+    zero_network_calls = (
+        zero_network_topology_verified
+    )
+
+    status = (
+        "CERTIFIED"
+        if not blockers
+        else "NOT_CERTIFIED"
+    )
+
+    created_at = _aware_iso(
+        clock()
+    )
+
+    reference = (
+        build_provider_shadow_attestation_key_reference()
+    )
 
     base_values = {
         "evidence_id": "",
@@ -667,37 +1036,66 @@ def certify_api_football_offline_fixture_ingest(
         "provider_key": "api_football",
         "mode": "OFFLINE_REPLAY",
         "date": canonical_date,
-        "source_payload_fingerprint": envelope.payload_fingerprint,
+        "source_payload_fingerprint": (
+            envelope.payload_fingerprint
+        ),
         **provenance,
-        "code_fingerprint": code_fingerprint,
+        "code_fingerprint": (
+            code_fingerprint
+        ),
         "source_revision": revision,
         "received_count": received_count,
         "accepted_count": accepted_count,
         "rejected_count": rejected_count,
-        "replay_request_count": replay_client.request_count,
-        "reconciliation_call_count": repository.reconciliation_call_count,
-        "repository_idempotent": repository_idempotent,
-        "zero_network_topology_verified": zero_network_topology_verified,
-        "zero_network_calls": zero_network_calls,
+        "replay_request_count": (
+            replay_client.request_count
+        ),
+        "reconciliation_call_count": (
+            repository.reconciliation_call_count
+        ),
+        "repository_idempotent": (
+            repository_idempotent
+        ),
+        "zero_network_topology_verified": (
+            zero_network_topology_verified
+        ),
+        "zero_network_calls": (
+            zero_network_calls
+        ),
         "real_provider_execution_authorized": False,
         "automatic_provider_switch": False,
         "automatic_wagering": False,
-        "blockers": tuple(blockers),
+        "blockers": tuple(
+            blockers
+        ),
         "created_at": created_at,
-        "store_identity": evidence_store.store_identity,
-        "attestation_key_reference_fingerprint": reference.reference_fingerprint,
+        "store_identity": (
+            evidence_store.store_identity
+        ),
+        "attestation_key_reference_fingerprint": (
+            reference.reference_fingerprint
+        ),
         "certification_fingerprint": "",
         "issuer_attestation": "",
     }
 
-    draft = ApiFootballOfflineIngestCertification(**base_values)
+    draft = (
+        ApiFootballOfflineIngestCertification(
+            **base_values
+        )
+    )
+
     core = draft.core_payload()
+
     certification_fingerprint = _sha(
         {
-            "schema": "matrix.api-football-offline-ingest-certification-fingerprint/2",
+            "schema": (
+                "matrix.api-football-offline-ingest-certification-fingerprint/3"
+            ),
             "core_payload": core,
         }
     )
+
     (
         attestation_reference_fingerprint,
         issuer_attestation,
@@ -705,30 +1103,54 @@ def certify_api_football_offline_fixture_ingest(
         core,
         certification_fingerprint,
     )
+
     evidence_id = _sha(
         {
-            "schema": "matrix.api-football-offline-ingest-evidence-id/2",
-            "certification_fingerprint": certification_fingerprint,
-            "issuer_attestation": issuer_attestation,
-        }
-    )
-
-    certification = ApiFootballOfflineIngestCertification(
-        **{
-            **base_values,
-            "evidence_id": evidence_id,
-            "attestation_key_reference_fingerprint": (
-                attestation_reference_fingerprint
+            "schema": (
+                "matrix.api-football-offline-ingest-evidence-id/3"
             ),
-            "certification_fingerprint": certification_fingerprint,
-            "issuer_attestation": issuer_attestation,
+            "certification_fingerprint": (
+                certification_fingerprint
+            ),
+            "issuer_attestation": (
+                issuer_attestation
+            ),
         }
     )
 
-    evidence_store.record(certification)
-    stored = evidence_store.get_verified(evidence_id)
+    certification = (
+        ApiFootballOfflineIngestCertification(
+            **{
+                **base_values,
+                "evidence_id": (
+                    evidence_id
+                ),
+                "attestation_key_reference_fingerprint": (
+                    attestation_reference_fingerprint
+                ),
+                "certification_fingerprint": (
+                    certification_fingerprint
+                ),
+                "issuer_attestation": (
+                    issuer_attestation
+                ),
+            }
+        )
+    )
+
+    evidence_store.record(
+        certification
+    )
+
+    stored = evidence_store.get_verified(
+        evidence_id
+    )
+
     if stored is None:
-        raise ValueError("OFFLINE_INGEST_DURABLE_EVIDENCE_REQUIRED")
+        raise ValueError(
+            "OFFLINE_INGEST_DURABLE_EVIDENCE_REQUIRED"
+        )
+
     return stored
 
 
@@ -737,10 +1159,38 @@ def require_api_football_offline_ingest_certified(
     *,
     evidence_store: SQLiteApiFootballOfflineIngestEvidenceStore,
 ) -> None:
-    stored = evidence_store.get_verified(certification.evidence_id)
-    if stored is None or stored != certification:
-        raise ValueError("OFFLINE_INGEST_DURABLE_EVIDENCE_REQUIRED")
+    if (
+        type(evidence_store)
+        is not SQLiteApiFootballOfflineIngestEvidenceStore
+    ):
+        raise ValueError(
+            "AUTHORITATIVE_OFFLINE_INGEST_EVIDENCE_STORE_REQUIRED"
+        )
 
-    verified = verify_api_football_offline_ingest_certification(stored)
-    if verified.status != "CERTIFIED":
-        raise ValueError("OFFLINE_INGEST_CERTIFICATION_REQUIRED")
+    evidence_store.require_authoritative_store()
+
+    stored = evidence_store.get_verified(
+        certification.evidence_id
+    )
+
+    if (
+        stored is None
+        or stored != certification
+    ):
+        raise ValueError(
+            "OFFLINE_INGEST_DURABLE_EVIDENCE_REQUIRED"
+        )
+
+    verified = (
+        verify_api_football_offline_ingest_certification(
+            stored
+        )
+    )
+
+    if (
+        verified.status
+        != "CERTIFIED"
+    ):
+        raise ValueError(
+            "OFFLINE_INGEST_CERTIFICATION_REQUIRED"
+        )
