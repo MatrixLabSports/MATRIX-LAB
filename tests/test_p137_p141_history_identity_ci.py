@@ -198,3 +198,19 @@ def test_new_identity_modules_have_no_safety_true_binding():
                                 key.value,
                             )
                         )
+
+
+def test_provider_successor_knowledge_order_is_ci_governed():
+    provider = read(
+        "app/core/provider_identity_lifecycle.py"
+    )
+    ci = read(
+        "scripts/matrix_ci_gate.py"
+    )
+
+    token = (
+        "TEMPORAL_PROVIDER_MAPPING_SUCCESSOR_KNOWN_BEFORE_PREDECESSOR"
+    )
+
+    assert token in provider
+    assert token in ci

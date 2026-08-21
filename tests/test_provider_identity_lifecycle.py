@@ -522,3 +522,105 @@ def test_temporal_mapping_safety_flags_remain_false(
     assert payload["automatic_model_promotion"] is False
     assert payload["automatic_provider_switch"] is False
     assert payload["automatic_wagering"] is False
+
+
+def test_successor_cannot_be_known_before_predecessor(
+    tmp_path,
+):
+    (
+        _,
+        ledger,
+        first,
+        second,
+        _,
+    ) = prepared(
+        tmp_path
+    )
+
+    initial = append_initial(
+        ledger,
+        first.canonical_id,
+    )
+
+    closed = ledger.build_binding(
+        sport="football",
+        entity_type="team",
+        provider_key="provider-a",
+        provider_entity_id="team-99",
+        canonical_id=first.canonical_id,
+        valid_from=at(1),
+        valid_to=at(10),
+        known_at=at(12),
+        resolution_method="manual_verified",
+        reason_code="CLOSE_FOR_REMAP",
+        human_reviewed=True,
+        corrects_binding_id=initial.binding_id,
+    )
+
+    ledger.append(
+        closed
+    )
+
+    successor = ledger.build_binding(
+        sport="football",
+        entity_type="team",
+        provider_key="provider-a",
+        provider_entity_id="team-99",
+        canonical_id=second.canonical_id,
+        valid_from=at(10),
+        valid_to=None,
+        known_at=at(11),
+        resolution_method="manual_verified",
+        reason_code="RETROACTIVE_SUCCESSOR",
+        human_reviewed=True,
+        predecessor_binding_id=closed.binding_id,
+    )
+
+    with pytest.raises(
+        ValueError,
+        match=(
+            "TEMPORAL_PROVIDER_MAPPING_SUCCESSOR_KNOWN_BEFORE_PREDECESSOR"
+        ),
+    ):
+        ledger.append(
+            successor
+        )
+
+
+def test_successor_may_share_atomic_known_at_with_predecessor(
+    tmp_path,
+):
+    (
+        _,
+        ledger,
+        first,
+        second,
+        _,
+    ) = prepared(
+        tmp_path
+    )
+
+    append_initial(
+        ledger,
+        first.canonical_id,
+    )
+
+    closed, successor = ledger.remap(
+        sport="football",
+        entity_type="team",
+        provider_key="provider-a",
+        provider_entity_id="team-99",
+        new_canonical_id=second.canonical_id,
+        remap_at=at(10),
+        known_at=at(12),
+        resolution_method="manual_verified",
+        reason_code="ATOMIC_REMAP",
+        human_reviewed=True,
+    )
+
+    assert closed.known_at == at(12)
+    assert successor.known_at == at(12)
+    assert (
+        successor.predecessor_binding_id
+        == closed.binding_id
+    )

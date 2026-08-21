@@ -892,6 +892,14 @@ class SQLiteTemporalProviderIdentityLedger:
                     "TEMPORAL_PROVIDER_MAPPING_PREDECESSOR_SCOPE_MISMATCH"
                 )
 
+            if (
+                binding.known_at
+                < predecessor.known_at
+            ):
+                raise ValueError(
+                    "TEMPORAL_PROVIDER_MAPPING_SUCCESSOR_KNOWN_BEFORE_PREDECESSOR"
+                )
+
             if predecessor.valid_to is None:
                 raise ValueError(
                     "TEMPORAL_PROVIDER_MAPPING_PREDECESSOR_MUST_BE_CLOSED"

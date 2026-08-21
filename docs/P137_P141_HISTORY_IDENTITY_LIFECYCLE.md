@@ -66,3 +66,18 @@ Permanent invariants:
 - Existing canonical/history stores are not silently migrated or rewritten.
 
 Promotion beyond this block requires focused tests, canonical CI, full-suite non-regression, an internal 0/0/0 closure audit, and an independent adversarial re-audit before merge.
+
+
+## V1 adversarial hardening: provider mapping knowledge causality
+
+Independent adversarial re-audit V1 identified that a successor provider identity binding could reference a predecessor whose `known_at` was later than the successor's own `known_at`.
+
+This is forbidden because lineage cannot depend on knowledge that did not yet exist.
+
+Rule:
+
+- `successor.known_at < predecessor.known_at` => reject.
+- `successor.known_at == predecessor.known_at` => allowed for an atomic remap transaction.
+- `successor.known_at > predecessor.known_at` => allowed when the successor is learned later.
+
+Canonical CI must preserve this invariant.

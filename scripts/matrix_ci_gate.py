@@ -1396,6 +1396,7 @@ def _p137_p141_history_identity_lifecycle_boundary(
         "def resolve_as_of(",
         "def remap(",
         "PROVIDER_REMAP_REQUIRES_HUMAN_REVIEW",
+        "TEMPORAL_PROVIDER_MAPPING_SUCCESSOR_KNOWN_BEFORE_PREDECESSOR",
         "name_join_allowed",
     ):
         if token not in provider_lifecycle:
