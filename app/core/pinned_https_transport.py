@@ -423,6 +423,174 @@ class StdlibPinnedHttpsTransport(
             else f"{path}?{query}"
         )
 
+    @staticmethod
+    def _response_headers_and_framing(
+        raw_headers: list[
+            tuple[
+                str,
+                str,
+            ]
+        ],
+        *,
+        max_response_bytes: int,
+    ) -> tuple[
+        dict[
+            str,
+            str,
+        ],
+        int | None,
+        bool,
+    ]:
+        normalized: dict[
+            str,
+            str,
+        ] = {}
+        content_lengths: list[
+            str
+        ] = []
+        transfer_encodings: list[
+            str
+        ] = []
+
+        for raw_key, raw_value in raw_headers:
+            key = str(
+                raw_key
+            ).strip()
+            value = str(
+                raw_value
+            ).strip()
+
+            if (
+                not key
+                or any(
+                    ord(char) < 32
+                    or ord(char) == 127
+                    for char
+                    in key
+                )
+                or any(
+                    ord(char) < 32
+                    or ord(char) == 127
+                    for char
+                    in value
+                )
+            ):
+                raise ValueError(
+                    "INVALID_HTTP_RESPONSE_HEADER"
+                )
+
+            lowered = key.lower()
+
+            if (
+                lowered
+                == "content-length"
+            ):
+                content_lengths.append(
+                    value
+                )
+
+            if (
+                lowered
+                == "transfer-encoding"
+            ):
+                transfer_encodings.append(
+                    value
+                )
+
+            if lowered not in normalized:
+                normalized[
+                    lowered
+                ] = value
+
+        if (
+            len(
+                content_lengths
+            )
+            > 1
+        ):
+            raise ValueError(
+                "AMBIGUOUS_CONTENT_LENGTH"
+            )
+
+        if (
+            len(
+                transfer_encodings
+            )
+            > 1
+        ):
+            raise ValueError(
+                "AMBIGUOUS_TRANSFER_ENCODING"
+            )
+
+        if (
+            content_lengths
+            and transfer_encodings
+        ):
+            raise ValueError(
+                "HTTP_RESPONSE_FRAMING_CONFLICT"
+            )
+
+        content_length = None
+
+        if content_lengths:
+            value = (
+                content_lengths[0]
+            )
+
+            if (
+                not value.isdigit()
+            ):
+                raise ValueError(
+                    "INVALID_CONTENT_LENGTH"
+                )
+
+            content_length = int(
+                value
+            )
+
+            if (
+                content_length
+                > max_response_bytes
+            ):
+                raise ValueError(
+                    "HTTP_RESPONSE_TOO_LARGE"
+                )
+
+        chunked = False
+
+        if transfer_encodings:
+            coding = (
+                transfer_encodings[
+                    0
+                ].lower()
+            )
+
+            if coding != "chunked":
+                raise ValueError(
+                    "UNSUPPORTED_TRANSFER_ENCODING"
+                )
+
+            chunked = True
+
+        encoding = normalized.get(
+            "content-encoding"
+        )
+
+        if (
+            encoding
+            and encoding.lower()
+            != "identity"
+        ):
+            raise ValueError(
+                "UNSUPPORTED_CONTENT_ENCODING"
+            )
+
+        return (
+            normalized,
+            content_length,
+            chunked,
+        )
+
     def get_pinned(
         self,
         *,
@@ -592,6 +760,35 @@ class StdlibPinnedHttpsTransport(
             )
             response.begin()
 
+            raw_response_headers = [
+                (
+                    str(
+                        key
+                    ),
+                    str(
+                        value
+                    ),
+                )
+                for (
+                    key,
+                    value,
+                )
+                in response.getheaders()
+            ]
+
+            (
+                normalized_headers,
+                content_length,
+                chunked,
+            ) = (
+                self._response_headers_and_framing(
+                    raw_response_headers,
+                    max_response_bytes=(
+                        self.max_response_bytes
+                    ),
+                )
+            )
+
             body = response.read(
                 self.max_response_bytes
                 + 1
@@ -605,32 +802,40 @@ class StdlibPinnedHttpsTransport(
                     "HTTP_RESPONSE_TOO_LARGE"
                 )
 
+            if (
+                content_length
+                is not None
+                and len(body)
+                != content_length
+            ):
+                raise ValueError(
+                    "CONTENT_LENGTH_MISMATCH"
+                )
+
             response_headers = {
-                str(key): str(value)
+                key: value
                 for (
                     key,
                     value,
                 )
-                in response.getheaders()
+                in raw_response_headers
             }
 
-            encoding = (
-                response_headers.get(
-                    "Content-Encoding"
-                )
-                or response_headers.get(
-                    "content-encoding"
-                )
-            )
-
-            if (
-                encoding
-                and encoding.lower()
-                != "identity"
+            if chunked:
+                response_headers[
+                    "X-Matrix-Framing"
+                ] = "chunked"
+            elif (
+                content_length
+                is not None
             ):
-                raise ValueError(
-                    "UNSUPPORTED_CONTENT_ENCODING"
-                )
+                response_headers[
+                    "X-Matrix-Framing"
+                ] = "content-length"
+            else:
+                response_headers[
+                    "X-Matrix-Framing"
+                ] = "connection-close"
 
             return PinnedHttpResponse(
                 status_code=int(
