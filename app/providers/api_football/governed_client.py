@@ -1,13 +1,29 @@
-﻿from __future__ import annotations
+from __future__ import annotations
 
+from app.core.controlled_network_certification import (
+    NetworkBoundaryCertification,
+    require_real_provider_execution_authorized,
+)
 from app.core.governed_provider_http import (
     GovernedProviderHttpSession,
     MatrixPinnedHttpsTransport,
 )
-from app.providers.api_football.client import ApiFootballClient
+from app.core.governed_provider_request import (
+    GovernedProviderRequestClient,
+    JitSecretPinnedHttpsTransport,
+)
+from app.core.provider_network_binding import (
+    BindingAuditPinnedHttpsTransport,
+    ProviderNetworkBindingCollector,
+    SQLiteProviderNetworkBindingEvidenceStore,
+)
+from app.core.provider_request_contract import (
+    SQLiteProviderRequestContractRegistry,
+)
+from app.core.secret_reference import SecretReference
 
 
-def _build_client(
+def _build_controlled_request_client(
     *,
     config,
     authority,
@@ -15,17 +31,62 @@ def _build_client(
     call_evidence_store,
     clock,
     pinned_transport: MatrixPinnedHttpsTransport,
-) -> ApiFootballClient:
+    request_contract_registry: SQLiteProviderRequestContractRegistry,
+    secret_reference: SecretReference,
+    binding_store: SQLiteProviderNetworkBindingEvidenceStore,
+    binding_collector: ProviderNetworkBindingCollector,
+) -> GovernedProviderRequestClient:
     if not isinstance(pinned_transport, MatrixPinnedHttpsTransport):
         raise ValueError("PINNED_HTTPS_TRANSPORT_REQUIRED")
-    governed = GovernedProviderHttpSession(
+    if not isinstance(
+        request_contract_registry,
+        SQLiteProviderRequestContractRegistry,
+    ):
+        raise ValueError("REQUEST_CONTRACT_REGISTRY_REQUIRED")
+    if not isinstance(secret_reference, SecretReference):
+        raise ValueError("SECRET_REFERENCE_REQUIRED")
+    if secret_reference.provider_key != "api_football":
+        raise ValueError("API_FOOTBALL_SECRET_REFERENCE_REQUIRED")
+    if not isinstance(
+        binding_store,
+        SQLiteProviderNetworkBindingEvidenceStore,
+    ):
+        raise ValueError("NETWORK_BINDING_STORE_REQUIRED")
+    if not isinstance(
+        binding_collector,
+        ProviderNetworkBindingCollector,
+    ):
+        raise ValueError("NETWORK_BINDING_COLLECTOR_REQUIRED")
+
+    jit_transport = JitSecretPinnedHttpsTransport(
+        inner=pinned_transport,
+        secret_reference=secret_reference,
+        auth_header_name="x-apisports-key",
+    )
+    bound_transport = BindingAuditPinnedHttpsTransport(
+        inner=jit_transport,
+        binding_store=binding_store,
+        collector=binding_collector,
+        clock=clock,
+    )
+    governed_session = GovernedProviderHttpSession(
         authority=authority,
         network_permit_store=network_permit_store,
         call_evidence_store=call_evidence_store,
-        pinned_transport=pinned_transport,
+        pinned_transport=bound_transport,
         clock=clock,
     )
-    return ApiFootballClient(config, session=governed)
+
+    return GovernedProviderRequestClient(
+        provider_key="api_football",
+        sport="football",
+        base_url=config.base_url,
+        timeout_seconds=config.timeout_seconds,
+        secret_reference=secret_reference,
+        request_contract_registry=request_contract_registry,
+        governed_session=governed_session,
+        clock=clock,
+    )
 
 
 def build_governed_api_football_client(
@@ -36,64 +97,51 @@ def build_governed_api_football_client(
     call_evidence_store,
     clock,
     pinned_transport: MatrixPinnedHttpsTransport,
-) -> ApiFootballClient:
+    network_certification: NetworkBoundaryCertification | None = None,
+    request_contract_registry=None,
+    secret_reference=None,
+    binding_store=None,
+    binding_collector=None,
+) -> GovernedProviderRequestClient:
     if authority.mode != "PRODUCTION":
         raise ValueError("PRODUCTION_CLIENT_REQUIRES_PRODUCTION_MODE")
-    return _build_client(
+
+    require_real_provider_execution_authorized(
+        network_certification
+    )
+
+    return _build_controlled_request_client(
         config=config,
         authority=authority,
         network_permit_store=network_permit_store,
         call_evidence_store=call_evidence_store,
         clock=clock,
         pinned_transport=pinned_transport,
+        request_contract_registry=request_contract_registry,
+        secret_reference=secret_reference,
+        binding_store=binding_store,
+        binding_collector=binding_collector,
     )
 
 
 def _build_bootstrap_api_football_client(
-    *,
-    config,
-    authority,
-    network_permit_store,
-    call_evidence_store,
-    clock,
-    pinned_transport: MatrixPinnedHttpsTransport,
-) -> ApiFootballClient:
-    if authority.mode != "BOOTSTRAP_PROBE":
-        raise ValueError("BOOTSTRAP_CLIENT_REQUIRES_BOOTSTRAP_MODE")
-    return _build_client(
-        config=config,
-        authority=authority,
-        network_permit_store=network_permit_store,
-        call_evidence_store=call_evidence_store,
-        clock=clock,
-        pinned_transport=pinned_transport,
+    **kwargs,
+):
+    from app.providers.api_football.bootstrap_client import (
+        build_bootstrap_api_football_client,
+    )
+    return build_bootstrap_api_football_client(
+        **kwargs,
     )
 
 
 def execute_governed_api_football_bootstrap_probe(
-    *,
-    config,
-    authority,
-    network_permit_store,
-    call_evidence_store,
-    clock,
-    endpoint: str,
-    pinned_transport: MatrixPinnedHttpsTransport,
-    params=None,
+    **kwargs,
 ):
-    from app.core.provider_bootstrap_quarantine import execute_bootstrap_probe
-
-    client = _build_bootstrap_api_football_client(
-        config=config,
-        authority=authority,
-        network_permit_store=network_permit_store,
-        call_evidence_store=call_evidence_store,
-        clock=clock,
-        pinned_transport=pinned_transport,
+    from app.providers.api_football.bootstrap_client import (
+        execute_governed_api_football_bootstrap_probe
+        as execute_bootstrap,
     )
-    return execute_bootstrap_probe(
-        authority=authority,
-        client=client,
-        endpoint=endpoint,
-        params=params,
+    return execute_bootstrap(
+        **kwargs,
     )

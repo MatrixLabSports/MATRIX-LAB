@@ -324,49 +324,130 @@ def _provider_http_boundary(
     root: Path,
 ) -> None:
     violations: list[str] = []
-    legacy_client_module = "app.providers.api_football.client"
+    legacy_module = "app.providers.api_football.client"
+    bootstrap_module = "app.providers.api_football.bootstrap_client"
     governed_http_module = "app.core.governed_provider_http"
     governed_client = "app/providers/api_football/governed_client.py"
+    bootstrap_client = "app/providers/api_football/bootstrap_client.py"
     legacy_client = "app/providers/api_football/client.py"
 
     for path in (root / "app").rglob("*.py"):
         relative = path.relative_to(root).as_posix()
-        tree = ast.parse(path.read_text(encoding="utf-8-sig"), filename=str(path))
+        tree = ast.parse(
+            path.read_text(encoding="utf-8-sig"),
+            filename=str(path),
+        )
 
-        for node in ast.walk(tree):
-            if isinstance(node, ast.ImportFrom):
-                module = node.module or ""
-                if module == legacy_client_module and relative != governed_client:
-                    violations.append(f"{relative}:{node.lineno}:LEGACY_PROVIDER_CLIENT_IMPORT")
+        for item in ast.walk(tree):
+            if isinstance(item, ast.ImportFrom):
+                module = item.module or ""
+
+                if module == legacy_module and relative != bootstrap_client:
+                    violations.append(
+                        f"{relative}:{item.lineno}:"
+                        "OFFICIAL_PROVIDER_LEGACY_BYPASS"
+                    )
+
+                if module == bootstrap_module and relative != governed_client:
+                    violations.append(
+                        f"{relative}:{item.lineno}:"
+                        "BOOTSTRAP_PROVIDER_CLIENT_IMPORT"
+                    )
+
                 if (
                     module == governed_http_module
-                    and any(alias.name == "GovernedProviderHttpSession" for alias in node.names)
-                    and relative != governed_client
+                    and any(
+                        alias.name == "GovernedProviderHttpSession"
+                        for alias in item.names
+                    )
+                    and relative not in {
+                        governed_client,
+                        bootstrap_client,
+                    }
                 ):
-                    violations.append(f"{relative}:{node.lineno}:DIRECT_GOVERNED_HTTP_SESSION_IMPORT")
+                    violations.append(
+                        f"{relative}:{item.lineno}:"
+                        "DIRECT_GOVERNED_HTTP_SESSION_IMPORT"
+                    )
 
-            elif isinstance(node, ast.Import):
-                for alias in node.names:
+            elif isinstance(item, ast.Import):
+                for alias in item.names:
                     if (
                         alias.name == "requests"
-                        and relative in {governed_client, "app/core/governed_provider_http.py"}
+                        and relative in {
+                            governed_client,
+                            bootstrap_client,
+                            "app/core/governed_provider_http.py",
+                        }
                     ):
-                        violations.append(f"{relative}:{node.lineno}:REQUESTS_IMPORT_IN_GOVERNED_BOUNDARY")
+                        violations.append(
+                            f"{relative}:{item.lineno}:"
+                            "REQUESTS_IMPORT_IN_GOVERNED_BOUNDARY"
+                        )
 
-            elif isinstance(node, ast.Call):
+            elif isinstance(item, ast.Call):
                 if (
-                    isinstance(node.func, ast.Attribute)
-                    and isinstance(node.func.value, ast.Name)
-                    and node.func.value.id == "requests"
+                    isinstance(item.func, ast.Attribute)
+                    and isinstance(item.func.value, ast.Name)
+                    and item.func.value.id == "requests"
                 ):
-                    network_verbs = {"get", "post", "put", "patch", "delete", "head", "options", "request"}
-                    if node.func.attr in network_verbs and relative != legacy_client:
-                        violations.append(f"{relative}:{node.lineno}:DIRECT_REQUESTS_CALL")
-                    if node.func.attr == "Session" and relative != legacy_client:
-                        violations.append(f"{relative}:{node.lineno}:UNAUTHORIZED_REQUESTS_SESSION")
+                    verbs = {
+                        "get", "post", "put", "patch",
+                        "delete", "head", "options", "request",
+                    }
+                    if item.func.attr in verbs and relative != legacy_client:
+                        violations.append(
+                            f"{relative}:{item.lineno}:DIRECT_REQUESTS_CALL"
+                        )
+                    if item.func.attr == "Session" and relative != legacy_client:
+                        violations.append(
+                            f"{relative}:{item.lineno}:"
+                            "UNAUTHORIZED_REQUESTS_SESSION"
+                        )
+
+    governed_source = (root / governed_client).read_text(
+        encoding="utf-8-sig"
+    )
+    for required in (
+        "GovernedProviderRequestClient",
+        "JitSecretPinnedHttpsTransport",
+        "BindingAuditPinnedHttpsTransport",
+        "require_real_provider_execution_authorized",
+    ):
+        if required not in governed_source:
+            violations.append(
+                f"{governed_client}:"
+                f"MISSING_OFFICIAL_GOVERNED_COMPONENT:{required}"
+            )
+
+    for forbidden in (
+        "ApiFootballClient",
+        "config.api_key",
+        "app.providers.api_football.client",
+    ):
+        if forbidden in governed_source:
+            violations.append(
+                f"{governed_client}:"
+                f"OFFICIAL_PROVIDER_LEGACY_BYPASS:{forbidden}"
+            )
+
+    bootstrap_source = (root / bootstrap_client).read_text(
+        encoding="utf-8-sig"
+    )
+    if (
+        "BOOTSTRAP_PROBE" not in bootstrap_source
+        or "execute_bootstrap_probe" not in bootstrap_source
+    ):
+        violations.append(
+            f"{bootstrap_client}:BOOTSTRAP_QUARANTINE_REQUIRED"
+        )
 
     if violations:
-        raise SystemExit("PROVIDER_HTTP_BOUNDARY_VIOLATION\n" + "\n".join(violations))
+        raise SystemExit(
+            "PROVIDER_HTTP_BOUNDARY_VIOLATION\n"
+            + "\n".join(violations)
+        )
+
 
 
 def _authoritative_runtime_admission_boundary(
