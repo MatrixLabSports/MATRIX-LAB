@@ -2,6 +2,10 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from typing import Any
+from app.providers.api_football.response_validation import (
+    ApiFootballProviderResponseError,
+    validate_api_football_response_envelope,
+)
 
 
 @dataclass(frozen=True)
@@ -20,9 +24,16 @@ def get_fixture_odds_raw(
 ) -> ApiFootballOddsIngestion:
     endpoint = "/odds/live" if live else "/odds"
     payload = client.get(endpoint, {"fixture": fixture_id})
-    raw = payload.get("response", [])
-    if not isinstance(raw, list):
-        raise ValueError("respuesta de odds de API-Football inválida")
+    try:
+        envelope = validate_api_football_response_envelope(
+            payload,
+            endpoint=endpoint,
+        )
+    except ApiFootballProviderResponseError as error:
+        if error.code == "API_FOOTBALL_RESPONSE_FIELD_INVALID":
+            raise ValueError("respuesta de odds de API-Football inv\u00e1lida") from error
+        raise
+    raw = list(envelope.response)
     accepted: list[dict[str, Any]] = []
     rejected = 0
     for item in raw:

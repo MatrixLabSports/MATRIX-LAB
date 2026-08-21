@@ -7,6 +7,10 @@ from app.providers.api_football.fixture_adapter import (
 from app.sports.football.match_model import FootballMatchModel
 from app.sports.football.match_record import FootballMatchRecord
 from dataclasses import dataclass
+from app.providers.api_football.response_validation import (
+    ApiFootballProviderResponseError,
+    validate_api_football_response_envelope,
+)
 
 
 @dataclass(frozen=True)
@@ -26,12 +30,16 @@ def get_fixtures_by_date(
         {"date": date},
     )
 
-    raw_fixtures = payload.get("response", [])
-
-    if not isinstance(raw_fixtures, list):
-        raise ValueError(
-            "respuesta de fixtures de API-Football inválida"
+    try:
+        envelope = validate_api_football_response_envelope(
+            payload,
+            endpoint="/fixtures",
         )
+    except ApiFootballProviderResponseError as error:
+        if error.code == "API_FOOTBALL_RESPONSE_FIELD_INVALID":
+            raise ValueError("respuesta de fixtures de API-Football inv\u00e1lida") from error
+        raise
+    raw_fixtures = list(envelope.response)
 
     return [
         adapt_api_football_fixture(raw_fixture)
@@ -48,12 +56,16 @@ def get_fixture_records_by_date(
         {"date": date},
     )
 
-    raw_fixtures = payload.get("response", [])
-
-    if not isinstance(raw_fixtures, list):
-        raise ValueError(
-            "respuesta de fixtures de API-Football inválida"
+    try:
+        envelope = validate_api_football_response_envelope(
+            payload,
+            endpoint="/fixtures",
         )
+    except ApiFootballProviderResponseError as error:
+        if error.code == "API_FOOTBALL_RESPONSE_FIELD_INVALID":
+            raise ValueError("respuesta de fixtures de API-Football inv\u00e1lida") from error
+        raise
+    raw_fixtures = list(envelope.response)
 
     return [
         FootballMatchRecord(
@@ -73,12 +85,16 @@ def get_fixture_ingestion_by_date(
         {"date": date},
     )
 
-    raw_fixtures = payload.get("response", [])
-
-    if not isinstance(raw_fixtures, list):
-        raise ValueError(
-            "respuesta de fixtures de API-Football inválida"
+    try:
+        envelope = validate_api_football_response_envelope(
+            payload,
+            endpoint="/fixtures",
         )
+    except ApiFootballProviderResponseError as error:
+        if error.code == "API_FOOTBALL_RESPONSE_FIELD_INVALID":
+            raise ValueError("respuesta de fixtures de API-Football inv\u00e1lida") from error
+        raise
+    raw_fixtures = list(envelope.response)
 
     records: list[FootballMatchRecord] = []
     rejected_count = 0
