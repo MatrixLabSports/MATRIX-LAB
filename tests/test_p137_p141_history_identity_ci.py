@@ -214,3 +214,19 @@ def test_provider_successor_knowledge_order_is_ci_governed():
 
     assert token in provider
     assert token in ci
+
+
+def test_linked_predecessor_freeze_is_ci_governed():
+    provider = read(
+        "app/core/provider_identity_lifecycle.py"
+    )
+    ci = read(
+        "scripts/matrix_ci_gate.py"
+    )
+
+    token = (
+        "TEMPORAL_PROVIDER_MAPPING_PREDECESSOR_WITH_SUCCESSOR_IS_FROZEN"
+    )
+
+    assert token in provider
+    assert token in ci

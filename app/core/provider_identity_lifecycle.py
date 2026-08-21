@@ -863,6 +863,15 @@ class SQLiteTemporalProviderIdentityLedger:
                 )
 
             if any(
+                row.predecessor_binding_id
+                == corrected.binding_id
+                for row in rows
+            ):
+                raise ValueError(
+                    "TEMPORAL_PROVIDER_MAPPING_PREDECESSOR_WITH_SUCCESSOR_IS_FROZEN"
+                )
+
+            if any(
                 row.corrects_binding_id
                 == corrected.binding_id
                 for row in rows

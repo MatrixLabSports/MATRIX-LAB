@@ -624,3 +624,146 @@ def test_successor_may_share_atomic_known_at_with_predecessor(
         successor.predecessor_binding_id
         == closed.binding_id
     )
+
+
+def test_linked_predecessor_cannot_be_corrected_to_create_overlap(
+    tmp_path,
+):
+    (
+        _,
+        ledger,
+        first,
+        second,
+        _,
+    ) = prepared(
+        tmp_path
+    )
+
+    append_initial(
+        ledger,
+        first.canonical_id,
+    )
+
+    closed, successor = ledger.remap(
+        sport="football",
+        entity_type="team",
+        provider_key="provider-a",
+        provider_entity_id="team-99",
+        new_canonical_id=second.canonical_id,
+        remap_at=at(10),
+        known_at=at(12),
+        resolution_method="manual_verified",
+        reason_code="REMAP",
+        human_reviewed=True,
+    )
+
+    overlap = ledger.build_binding(
+        sport="football",
+        entity_type="team",
+        provider_key="provider-a",
+        provider_entity_id="team-99",
+        canonical_id=first.canonical_id,
+        valid_from=at(1),
+        valid_to=at(11),
+        known_at=at(13),
+        resolution_method="manual_verified",
+        reason_code="MOVE_BOUNDARY_FORWARD",
+        human_reviewed=True,
+        corrects_binding_id=closed.binding_id,
+    )
+
+    with pytest.raises(
+        ValueError,
+        match=(
+            "TEMPORAL_PROVIDER_MAPPING_PREDECESSOR_WITH_SUCCESSOR_IS_FROZEN"
+        ),
+    ):
+        ledger.append(
+            overlap
+        )
+
+    assert (
+        successor.predecessor_binding_id
+        == closed.binding_id
+    )
+
+
+def test_linked_predecessor_cannot_be_corrected_to_create_gap(
+    tmp_path,
+):
+    (
+        _,
+        ledger,
+        first,
+        second,
+        _,
+    ) = prepared(
+        tmp_path
+    )
+
+    append_initial(
+        ledger,
+        first.canonical_id,
+    )
+
+    closed, successor = ledger.remap(
+        sport="football",
+        entity_type="team",
+        provider_key="provider-a",
+        provider_entity_id="team-99",
+        new_canonical_id=second.canonical_id,
+        remap_at=at(10),
+        known_at=at(12),
+        resolution_method="manual_verified",
+        reason_code="REMAP",
+        human_reviewed=True,
+    )
+
+    gap = ledger.build_binding(
+        sport="football",
+        entity_type="team",
+        provider_key="provider-a",
+        provider_entity_id="team-99",
+        canonical_id=first.canonical_id,
+        valid_from=at(1),
+        valid_to=at(9),
+        known_at=at(13),
+        resolution_method="manual_verified",
+        reason_code="MOVE_BOUNDARY_BACKWARD",
+        human_reviewed=True,
+        corrects_binding_id=closed.binding_id,
+    )
+
+    with pytest.raises(
+        ValueError,
+        match=(
+            "TEMPORAL_PROVIDER_MAPPING_PREDECESSOR_WITH_SUCCESSOR_IS_FROZEN"
+        ),
+    ):
+        ledger.append(
+            gap
+        )
+
+    before = ledger.resolve_as_of(
+        sport="football",
+        entity_type="team",
+        provider_key="provider-a",
+        provider_entity_id="team-99",
+        as_of=at(13),
+        event_time=at(9),
+    )
+    after = ledger.resolve_as_of(
+        sport="football",
+        entity_type="team",
+        provider_key="provider-a",
+        provider_entity_id="team-99",
+        as_of=at(13),
+        event_time=at(10),
+    )
+
+    assert before.canonical_id == first.canonical_id
+    assert after.canonical_id == second.canonical_id
+    assert (
+        successor.predecessor_binding_id
+        == closed.binding_id
+    )

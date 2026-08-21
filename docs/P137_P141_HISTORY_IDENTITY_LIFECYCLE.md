@@ -81,3 +81,22 @@ Rule:
 - `successor.known_at > predecessor.known_at` => allowed when the successor is learned later.
 
 Canonical CI must preserve this invariant.
+
+
+## V2 adversarial hardening: linked predecessor boundary freeze
+
+Independent adversarial re-audit V2 demonstrated that correcting an already-linked predecessor after a successor existed could move the predecessor's `valid_to`.
+
+That could create either:
+
+- overlap with the successor interval, causing ambiguous point-in-time identity resolution; or
+- a gap before the successor interval, leaving historical event time without an identity mapping.
+
+Governed rule:
+
+- A binding may be corrected/closed before a successor is linked.
+- Once any binding references it through `predecessor_binding_id`, that predecessor is frozen.
+- Later direct correction of that linked predecessor is rejected.
+- Any future need to revise an already-linked historical chain requires a separately governed chain-resegmentation design; it must not be simulated by mutating one interval locally.
+
+This preserves continuous, non-overlapping temporal identity lineage.
