@@ -477,6 +477,200 @@ def _authoritative_runtime_admission_boundary(
         )
 
 
+
+def _provider_production_readiness_boundary(
+    root: Path,
+) -> None:
+    violations: list[str] = []
+
+    required_paths = {
+        "rights": (
+            root
+            / "app"
+            / "core"
+            / "provider_rights_authorization.py"
+        ),
+        "legal_evidence": (
+            root
+            / "app"
+            / "core"
+            / "provider_legal_evidence.py"
+        ),
+        "contract_endpoint": (
+            root
+            / "app"
+            / "core"
+            / "provider_contract_endpoint_binding.py"
+        ),
+        "attempt_intent": (
+            root
+            / "app"
+            / "core"
+            / "provider_attempt_intent.py"
+        ),
+        "attempt_certification": (
+            root
+            / "app"
+            / "core"
+            / "provider_attempt_certification.py"
+        ),
+        "recovery": (
+            root
+            / "app"
+            / "core"
+            / "provider_interruption_recovery.py"
+        ),
+        "runtime_reconciliation": (
+            root
+            / "app"
+            / "core"
+            / "runtime_reconciliation.py"
+        ),
+        "governed_client": (
+            root
+            / "app"
+            / "providers"
+            / "api_football"
+            / "governed_client.py"
+        ),
+        "contracts": (
+            root
+            / "app"
+            / "providers"
+            / "api_football"
+            / "request_contracts.py"
+        ),
+        "shadow": (
+            root
+            / "app"
+            / "providers"
+            / "api_football"
+            / "shadow_runtime.py"
+        ),
+    }
+
+    for name, path in required_paths.items():
+        if not path.exists():
+            violations.append(
+                f"MISSING_PROVIDER_READINESS_MODULE:{name}:{path}"
+            )
+
+    if violations:
+        raise SystemExit(
+            "PROVIDER_PRODUCTION_READINESS_BOUNDARY_VIOLATION\n"
+            + "\n".join(
+                violations
+            )
+        )
+
+    sources = {
+        name: path.read_text(
+            encoding="utf-8-sig"
+        )
+        for name, path
+        in required_paths.items()
+    }
+
+    requirements = {
+        "rights": (
+            "PRODUCTION_RIGHTS_ACTIVATION_NOT_CONFIGURED",
+            "legal_evidence_store",
+        ),
+        "legal_evidence": (
+            "HUMAN_VERIFIED",
+            "SQLiteProviderLegalEvidenceStore",
+        ),
+        "contract_endpoint": (
+            "endpoint_manifest_id",
+            "request_contract_id",
+            "CONTRACT_ENDPOINT_BINDING_MISMATCH",
+        ),
+        "attempt_intent": (
+            "ProviderAttemptIntentEvidence",
+            "permit_id TEXT NOT NULL UNIQUE",
+            "list_verified_for_run",
+        ),
+        "attempt_certification": (
+            "NO_PHYSICAL_ATTEMPTS_TO_CERTIFY",
+            "NETWORK_PERMIT_REUSED_ACROSS_ATTEMPTS",
+            "enforce_provider_attempt_certification",
+        ),
+        "recovery": (
+            "INTERRUPTED_UNKNOWN_OUTCOME",
+            "recover_all_started_only_network_attempts",
+            "scan_started_only_network_attempts",
+            "pre_network_binding_intent_id",
+            "request_contract_id",
+        ),
+        "runtime_reconciliation": (
+            "reconcile_runtime_provider_readiness",
+            "recover_started_only_network_attempt",
+            "enforce_provider_attempt_certification",
+            "PROVIDER_RIGHTS_NOT_AUTHORIZED",
+        ),
+        "governed_client": (
+            "attempt_intent_store",
+            "ATTEMPT_INTENT_STORE_REQUIRED",
+        ),
+        "contracts": (
+            "register_api_football_contract_endpoint_bindings",
+            "endpoint_manifest_ids",
+        ),
+        "shadow": (
+            "GovernedProviderRequestClient",
+            "ProviderNetworkAuthority",
+            "BindingAuditPinnedHttpsTransport",
+            "JitSecretPinnedHttpsTransport",
+            "ShadowNoNetworkSession",
+            "network_call_performed=False",
+            "secret_resolved=False",
+        ),
+    }
+
+    for name, tokens in requirements.items():
+        source = sources[name]
+        for token in tokens:
+            if token not in source:
+                violations.append(
+                    f"{name}:MISSING_PROVIDER_READINESS_TOKEN:{token}"
+                )
+
+    shadow = sources["shadow"]
+
+    for forbidden in (
+        "import requests",
+        "requests.get(",
+        "requests.post(",
+        "socket.create_connection",
+    ):
+        if forbidden in shadow:
+            violations.append(
+                f"shadow:SHADOW_NETWORK_BYPASS:{forbidden}"
+            )
+
+    combined = "\n".join(
+        sources.values()
+    )
+
+    for forbidden in (
+        "real_provider_execution_authorized=True",
+        "automatic_provider_switch=True",
+        "automatic_wagering=True",
+    ):
+        if forbidden in combined:
+            violations.append(
+                f"PROVIDER_READINESS_FORBIDDEN_TRUE:{forbidden}"
+            )
+
+    if violations:
+        raise SystemExit(
+            "PROVIDER_PRODUCTION_READINESS_BOUNDARY_VIOLATION\n"
+            + "\n".join(
+                violations
+            )
+        )
+
+
 def main() -> int:
     policy = (
         build_repository_quality_policy()
@@ -519,6 +713,7 @@ def main() -> int:
     _safety_ast(ROOT)
     _sport_boundary(ROOT)
     _provider_http_boundary(ROOT)
+    _provider_production_readiness_boundary(ROOT)
     _authoritative_runtime_admission_boundary(ROOT)
     _git_diff_checks(ROOT)
 

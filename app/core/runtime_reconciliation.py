@@ -358,3 +358,164 @@ def reconcile_runtime_run(
         errors=tuple(errors),
         report_fingerprint=fingerprint,
     )
+
+
+def recover_runtime_interrupted_attempt(
+    **kwargs,
+):
+    from app.core.provider_interruption_recovery import (
+        recover_started_only_network_attempt,
+    )
+
+    return recover_started_only_network_attempt(
+        **kwargs,
+    )
+
+
+def reconcile_runtime_provider_readiness(
+    *,
+    base_report,
+    run_id: str,
+    audit_ledger,
+    binding_store,
+    network_permit_store,
+    network_call_evidence_store,
+    attempt_intent_store,
+    interruption_recovery_store,
+    contract_endpoint_binding_store,
+    rights_decision=None,
+):
+    from app.core.provider_attempt_certification import (
+        certify_provider_physical_attempts,
+        enforce_provider_attempt_certification,
+    )
+    from app.core.provider_interruption_recovery import (
+        scan_started_only_network_attempts,
+    )
+
+    errors = list(
+        getattr(
+            base_report,
+            "errors",
+            (),
+        )
+    )
+
+    if (
+        rights_decision is None
+        or not rights_decision.authorized
+    ):
+        errors.append(
+            "PROVIDER_RIGHTS_NOT_AUTHORIZED"
+        )
+
+    certification = (
+        certify_provider_physical_attempts(
+            run_id=run_id,
+            audit_ledger=audit_ledger,
+            binding_store=binding_store,
+            network_permit_store=(
+                network_permit_store
+            ),
+            network_call_evidence_store=(
+                network_call_evidence_store
+            ),
+            attempt_intent_store=(
+                attempt_intent_store
+            ),
+        )
+    )
+
+    try:
+        enforce_provider_attempt_certification(
+            certification
+        )
+    except ValueError as error:
+        errors.append(
+            str(
+                error
+            )
+        )
+
+    interruption_states = (
+        scan_started_only_network_attempts(
+            run_id=run_id,
+            attempt_intent_store=(
+                attempt_intent_store
+            ),
+            network_call_evidence_store=(
+                network_call_evidence_store
+            ),
+            recovery_store=(
+                interruption_recovery_store
+            ),
+        )
+    )
+
+    for state in interruption_states:
+        if state.state in {
+            "STARTED_WITHOUT_TERMINAL",
+            "INTERRUPTED_UNKNOWN_OUTCOME",
+            "INVALID",
+        }:
+            errors.append(
+                "INTERRUPTION_RECOVERY_BLOCKER:"
+                + state.state
+            )
+
+    for intent in (
+        attempt_intent_store.list_verified_for_run(
+            run_id
+        )
+    ):
+        try:
+            contract_endpoint_binding_store.authorize(
+                request_contract_id=(
+                    intent.request_contract_id
+                ),
+                endpoint_manifest_id=(
+                    intent.endpoint_manifest_id
+                ),
+                path=intent.request_path,
+                now=intent.created_at,
+            )
+        except ValueError as error:
+            errors.append(
+                "CONTRACT_ENDPOINT_BINDING:"
+                + str(
+                    error
+                )
+            )
+
+    return {
+        "schema": (
+            "matrix.runtime-provider-readiness-reconciliation/1"
+        ),
+        "run_id": run_id,
+        "base_report_fingerprint": getattr(
+            base_report,
+            "report_fingerprint",
+            None,
+        ),
+        "attempt_certification": (
+            certification.payload()
+        ),
+        "interruption_states": [
+            {
+                "permit_id": state.permit_id,
+                "state": state.state,
+                "safe_to_retry": False,
+                "recovery_id": state.recovery_id,
+                "errors": list(
+                    state.errors
+                ),
+            }
+            for state
+            in interruption_states
+        ],
+        "ok": not errors,
+        "errors": errors,
+        "real_provider_execution_authorized": False,
+        "automatic_provider_switch": False,
+        "automatic_wagering": False,
+    }
