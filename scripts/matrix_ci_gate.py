@@ -1318,24 +1318,39 @@ def _provider_response_ingest_boundary(
     root,
 ) -> None:
     response_validation = (
-        root / "app/providers/api_football/response_validation.py"
-    ).read_text(encoding="utf-8-sig")
+        root
+        / "app/providers/api_football/response_validation.py"
+    ).read_text(
+        encoding="utf-8-sig"
+    )
 
     fixture_service = (
-        root / "app/providers/api_football/fixture_service.py"
-    ).read_text(encoding="utf-8-sig")
+        root
+        / "app/providers/api_football/fixture_service.py"
+    ).read_text(
+        encoding="utf-8-sig"
+    )
 
     odds_service = (
-        root / "app/providers/api_football/odds_service.py"
-    ).read_text(encoding="utf-8-sig")
+        root
+        / "app/providers/api_football/odds_service.py"
+    ).read_text(
+        encoding="utf-8-sig"
+    )
 
     replay = (
-        root / "app/providers/api_football/offline_ingest_certification.py"
-    ).read_text(encoding="utf-8-sig")
+        root
+        / "app/providers/api_football/offline_ingest_certification.py"
+    ).read_text(
+        encoding="utf-8-sig"
+    )
 
     pinned_transport = (
-        root / "app/core/pinned_https_transport.py"
-    ).read_text(encoding="utf-8-sig")
+        root
+        / "app/core/pinned_https_transport.py"
+    ).read_text(
+        encoding="utf-8-sig"
+    )
 
     for token in (
         "class ApiFootballProviderResponseError",
@@ -1349,7 +1364,8 @@ def _provider_response_ingest_boundary(
     ):
         if token not in response_validation:
             raise RuntimeError(
-                "P133_RESPONSE_CONTROL_MISSING:" + token
+                "P133_RESPONSE_CONTROL_MISSING:"
+                + token
             )
 
     if fixture_service.count(
@@ -1375,24 +1391,29 @@ def _provider_response_ingest_boundary(
     ):
         if token not in pinned_transport:
             raise RuntimeError(
-                "P133_PINNED_PROTOCOL_CONTROL_MISSING:" + token
+                "P133_PINNED_PROTOCOL_CONTROL_MISSING:"
+                + token
             )
 
     for token in (
         "class SQLiteApiFootballOfflineIngestEvidenceStore",
-        "verify_provider_shadow_rehearsal_attestation",
+        "SQLiteProviderShadowRehearsalEvidenceStore",
+        "request_parameter_values_fingerprint",
+        "evidence_store.get_verified",
+        "OFFLINE_INGEST_PAYLOAD_DATE_MISMATCH",
+        "OFFLINE_INGEST_SHADOW_PARAMETER_VALUES_FINGERPRINT_MISMATCH",
+        "OFFLINE_INGEST_SHADOW_REQUEST_EVIDENCE_NOT_FOUND",
+        "AUTHORITATIVE_OFFLINE_INGEST_EVIDENCE_PATH_ENV",
+        "require_authoritative_store",
+        "_source_revision()",
         "hmac.compare_digest",
-        "shadow_request_evidence_id",
-        "request_contract_id",
-        "endpoint_manifest_id",
-        "authorization_fingerprint",
         "code_fingerprint",
-        "source_revision",
         "zero_network_topology_verified",
     ):
         if token not in replay:
             raise RuntimeError(
-                "P136_HARDENING_CONTROL_MISSING:" + token
+                "P136_FINAL_PROVENANCE_CONTROL_MISSING:"
+                + token
             )
 
     if "network_call_count" in replay:
@@ -1402,8 +1423,58 @@ def _provider_response_ingest_boundary(
 
     replay_tree = ast.parse(
         replay,
-        filename="offline_ingest_certification.py",
+        filename=(
+            "offline_ingest_certification.py"
+        ),
     )
+
+    certifier = next(
+        (
+            node
+            for node in replay_tree.body
+            if isinstance(
+                node,
+                ast.FunctionDef,
+            )
+            and node.name
+            == "certify_api_football_offline_fixture_ingest"
+        ),
+        None,
+    )
+
+    if certifier is None:
+        raise RuntimeError(
+            "P136_CERTIFIER_NOT_FOUND"
+        )
+
+    certifier_parameters = {
+        argument.arg
+        for argument
+        in (
+            certifier.args.posonlyargs
+            + certifier.args.args
+            + certifier.args.kwonlyargs
+        )
+    }
+
+    if "source_revision" in certifier_parameters:
+        raise RuntimeError(
+            "P136_SOURCE_REVISION_CALLER_CONTROL_FORBIDDEN"
+        )
+
+    for required_parameter in (
+        "shadow_evidence_store",
+        "shadow_request_evidence_id",
+        "evidence_store",
+    ):
+        if (
+            required_parameter
+            not in certifier_parameters
+        ):
+            raise RuntimeError(
+                "P136_DURABLE_PROVENANCE_PARAMETER_REQUIRED:"
+                + required_parameter
+            )
 
     forbidden_roots = {
         "socket",
@@ -1414,18 +1485,30 @@ def _provider_response_ingest_boundary(
         "aiohttp",
     }
 
-    for node in ast.walk(replay_tree):
-        if isinstance(node, ast.Import):
+    for node in ast.walk(
+        replay_tree
+    ):
+        if isinstance(
+            node,
+            ast.Import,
+        ):
             for alias in node.names:
-                if alias.name.split(".")[0] in forbidden_roots:
+                if (
+                    alias.name.split(".")[0]
+                    in forbidden_roots
+                ):
                     raise RuntimeError(
                         "P136_NETWORK_IMPORT_FORBIDDEN"
                     )
 
-        elif isinstance(node, ast.ImportFrom):
+        elif isinstance(
+            node,
+            ast.ImportFrom,
+        ):
             if (
                 node.module
-                and node.module.split(".")[0] in forbidden_roots
+                and node.module.split(".")[0]
+                in forbidden_roots
             ):
                 raise RuntimeError(
                     "P136_NETWORK_IMPORT_FORBIDDEN"
@@ -1444,65 +1527,103 @@ def _provider_response_ingest_boundary(
 
     true_bindings = []
 
-    for node in ast.walk(replay_tree):
-        if isinstance(node, ast.Dict):
-            for key, value in zip(node.keys, node.values):
+    for node in ast.walk(
+        replay_tree
+    ):
+        if isinstance(
+            node,
+            ast.Dict,
+        ):
+            for key, value in zip(
+                node.keys,
+                node.values,
+            ):
                 if not (
-                    isinstance(key, ast.Constant)
-                    and isinstance(key.value, str)
-                    and key.value in safety_targets
+                    isinstance(
+                        key,
+                        ast.Constant,
+                    )
+                    and isinstance(
+                        key.value,
+                        str,
+                    )
+                    and key.value
+                    in safety_targets
                 ):
                     continue
 
-                if isinstance(value, ast.Constant) and value.value is False:
-                    false_counts[key.value] += 1
-                elif isinstance(value, ast.Constant) and value.value is True:
+                if (
+                    isinstance(
+                        value,
+                        ast.Constant,
+                    )
+                    and value.value is False
+                ):
+                    false_counts[
+                        key.value
+                    ] += 1
+                elif (
+                    isinstance(
+                        value,
+                        ast.Constant,
+                    )
+                    and value.value is True
+                ):
                     true_bindings.append(
-                        (key.value, node.lineno, "DICT")
+                        (
+                            key.value,
+                            node.lineno,
+                            "DICT",
+                        )
                     )
 
-        elif isinstance(node, ast.keyword):
-            if node.arg not in safety_targets:
+        elif isinstance(
+            node,
+            ast.keyword,
+        ):
+            if (
+                node.arg
+                not in safety_targets
+            ):
                 continue
 
-            if isinstance(node.value, ast.Constant) and node.value.value is False:
-                false_counts[node.arg] += 1
-            elif isinstance(node.value, ast.Constant) and node.value.value is True:
-                true_bindings.append(
-                    (node.arg, node.lineno, "KEYWORD")
+            if (
+                isinstance(
+                    node.value,
+                    ast.Constant,
                 )
-
-        elif isinstance(node, ast.Assign):
-            if not isinstance(node.value, ast.Constant):
-                continue
-
-            for assignment_target in node.targets:
-                name = None
-
-                if isinstance(assignment_target, ast.Name):
-                    name = assignment_target.id
-                elif isinstance(assignment_target, ast.Attribute):
-                    name = assignment_target.attr
-
-                if name not in safety_targets:
-                    continue
-
-                if node.value.value is False:
-                    false_counts[name] += 1
-                elif node.value.value is True:
-                    true_bindings.append(
-                        (name, node.lineno, "ASSIGN")
+                and node.value.value is False
+            ):
+                false_counts[
+                    node.arg
+                ] += 1
+            elif (
+                isinstance(
+                    node.value,
+                    ast.Constant,
+                )
+                and node.value.value is True
+            ):
+                true_bindings.append(
+                    (
+                        node.arg,
+                        node.lineno,
+                        "KEYWORD",
                     )
+                )
 
     if true_bindings:
         raise RuntimeError(
             "P136_SAFETY_FLAG_TRUE_BINDING_FORBIDDEN"
         )
 
-    for name in sorted(safety_targets):
+    for name in sorted(
+        safety_targets
+    ):
         if false_counts[name] < 1:
             raise RuntimeError(
-                "P136_SAFETY_FLAG_FALSE_BINDING_REQUIRED:" + name
+                "P136_SAFETY_FLAG_FALSE_BINDING_REQUIRED:"
+                + name
             )
 
 
