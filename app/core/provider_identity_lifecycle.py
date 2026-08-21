@@ -901,6 +901,15 @@ class SQLiteTemporalProviderIdentityLedger:
                     "TEMPORAL_PROVIDER_MAPPING_PREDECESSOR_SCOPE_MISMATCH"
                 )
 
+            if any(
+                row.corrects_binding_id
+                == predecessor.binding_id
+                for row in rows
+            ):
+                raise ValueError(
+                    "TEMPORAL_PROVIDER_MAPPING_STALE_PREDECESSOR_FORBIDDEN"
+                )
+
             if (
                 binding.known_at
                 < predecessor.known_at

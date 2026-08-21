@@ -498,3 +498,45 @@ def test_lifecycle_safety_flags_are_false(
     assert payload["automatic_model_promotion"] is False
     assert payload["automatic_provider_switch"] is False
     assert payload["automatic_wagering"] is False
+
+
+def test_staggered_effective_supersession_cycle_is_rejected_at_append(
+    tmp_path,
+):
+    (
+        _,
+        ledger,
+        first,
+        second,
+        _,
+    ) = prepared(
+        tmp_path
+    )
+
+    append_football_identity_supersession(
+        ledger=ledger,
+        canonical_id=first.canonical_id,
+        superseded_by_canonical_id=second.canonical_id,
+        entity_type="team",
+        effective_at=at(10),
+        known_at=at(12),
+        reason_code="A_TO_B",
+        previous_event_id=None,
+        human_reviewed=True,
+    )
+
+    with pytest.raises(
+        ValueError,
+        match="IDENTITY_SUPERSESSION_CYCLE",
+    ):
+        append_football_identity_supersession(
+            ledger=ledger,
+            canonical_id=second.canonical_id,
+            superseded_by_canonical_id=first.canonical_id,
+            entity_type="team",
+            effective_at=at(5),
+            known_at=at(13),
+            reason_code="B_TO_A_RETROACTIVE",
+            previous_event_id=None,
+            human_reviewed=True,
+        )

@@ -1375,6 +1375,7 @@ def _p137_p141_history_identity_lifecycle_boundary(
         "effective_at",
         "known_at",
         "resolve_terminal_canonical_id_as_of",
+        "IDENTITY_SUPERSESSION_GRAPH_ACYCLIC",
         "name_join_allowed",
         "automatic_model_promotion",
         "automatic_provider_switch",
@@ -1398,6 +1399,7 @@ def _p137_p141_history_identity_lifecycle_boundary(
         "PROVIDER_REMAP_REQUIRES_HUMAN_REVIEW",
         "TEMPORAL_PROVIDER_MAPPING_SUCCESSOR_KNOWN_BEFORE_PREDECESSOR",
         "TEMPORAL_PROVIDER_MAPPING_PREDECESSOR_WITH_SUCCESSOR_IS_FROZEN",
+        "TEMPORAL_PROVIDER_MAPPING_STALE_PREDECESSOR_FORBIDDEN",
         "name_join_allowed",
     ):
         if token not in provider_lifecycle:

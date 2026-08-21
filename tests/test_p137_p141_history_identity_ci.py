@@ -230,3 +230,27 @@ def test_linked_predecessor_freeze_is_ci_governed():
 
     assert token in provider
     assert token in ci
+
+
+def test_v3_stale_predecessor_and_supersession_graph_guards_are_ci_governed():
+    provider = read(
+        "app/core/provider_identity_lifecycle.py"
+    )
+    canonical = read(
+        "app/core/canonical_identity_lifecycle.py"
+    )
+    ci = read(
+        "scripts/matrix_ci_gate.py"
+    )
+
+    provider_token = (
+        "TEMPORAL_PROVIDER_MAPPING_STALE_PREDECESSOR_FORBIDDEN"
+    )
+    canonical_token = (
+        "IDENTITY_SUPERSESSION_GRAPH_ACYCLIC"
+    )
+
+    assert provider_token in provider
+    assert provider_token in ci
+    assert canonical_token in canonical
+    assert canonical_token in ci

@@ -767,3 +767,215 @@ def test_linked_predecessor_cannot_be_corrected_to_create_gap(
         successor.predecessor_binding_id
         == closed.binding_id
     )
+
+
+def test_stale_predecessor_cannot_be_used_after_overlap_boundary_correction(
+    tmp_path,
+):
+    (
+        _,
+        ledger,
+        first,
+        second,
+        _,
+    ) = prepared(
+        tmp_path
+    )
+
+    original = append_football_temporal_provider_binding(
+        ledger=ledger,
+        entity_type="team",
+        provider_key="provider-a",
+        provider_entity_id="team-99",
+        canonical_id=first.canonical_id,
+        valid_from=at(1),
+        valid_to=at(10),
+        known_at=at(10),
+        resolution_method="provider_stable_id",
+        reason_code="FINITE_INITIAL",
+        human_reviewed=False,
+    )
+
+    corrected = ledger.build_binding(
+        sport="football",
+        entity_type="team",
+        provider_key="provider-a",
+        provider_entity_id="team-99",
+        canonical_id=first.canonical_id,
+        valid_from=at(1),
+        valid_to=at(11),
+        known_at=at(12),
+        resolution_method="manual_verified",
+        reason_code="BOUNDARY_CORRECTION",
+        human_reviewed=True,
+        corrects_binding_id=original.binding_id,
+    )
+
+    ledger.append(
+        corrected
+    )
+
+    stale_successor = ledger.build_binding(
+        sport="football",
+        entity_type="team",
+        provider_key="provider-a",
+        provider_entity_id="team-99",
+        canonical_id=second.canonical_id,
+        valid_from=at(10),
+        valid_to=None,
+        known_at=at(13),
+        resolution_method="manual_verified",
+        reason_code="STALE_PREDECESSOR",
+        human_reviewed=True,
+        predecessor_binding_id=original.binding_id,
+    )
+
+    with pytest.raises(
+        ValueError,
+        match=(
+            "TEMPORAL_PROVIDER_MAPPING_STALE_PREDECESSOR_FORBIDDEN"
+        ),
+    ):
+        ledger.append(
+            stale_successor
+        )
+
+
+def test_stale_predecessor_cannot_be_used_after_gap_boundary_correction(
+    tmp_path,
+):
+    (
+        _,
+        ledger,
+        first,
+        second,
+        _,
+    ) = prepared(
+        tmp_path
+    )
+
+    original = append_football_temporal_provider_binding(
+        ledger=ledger,
+        entity_type="team",
+        provider_key="provider-a",
+        provider_entity_id="team-99",
+        canonical_id=first.canonical_id,
+        valid_from=at(1),
+        valid_to=at(10),
+        known_at=at(10),
+        resolution_method="provider_stable_id",
+        reason_code="FINITE_INITIAL",
+        human_reviewed=False,
+    )
+
+    corrected = ledger.build_binding(
+        sport="football",
+        entity_type="team",
+        provider_key="provider-a",
+        provider_entity_id="team-99",
+        canonical_id=first.canonical_id,
+        valid_from=at(1),
+        valid_to=at(9),
+        known_at=at(12),
+        resolution_method="manual_verified",
+        reason_code="BOUNDARY_CORRECTION",
+        human_reviewed=True,
+        corrects_binding_id=original.binding_id,
+    )
+
+    ledger.append(
+        corrected
+    )
+
+    stale_successor = ledger.build_binding(
+        sport="football",
+        entity_type="team",
+        provider_key="provider-a",
+        provider_entity_id="team-99",
+        canonical_id=second.canonical_id,
+        valid_from=at(10),
+        valid_to=None,
+        known_at=at(13),
+        resolution_method="manual_verified",
+        reason_code="STALE_PREDECESSOR",
+        human_reviewed=True,
+        predecessor_binding_id=original.binding_id,
+    )
+
+    with pytest.raises(
+        ValueError,
+        match=(
+            "TEMPORAL_PROVIDER_MAPPING_STALE_PREDECESSOR_FORBIDDEN"
+        ),
+    ):
+        ledger.append(
+            stale_successor
+        )
+
+
+def test_current_corrected_predecessor_remains_valid_for_successor(
+    tmp_path,
+):
+    (
+        _,
+        ledger,
+        first,
+        second,
+        _,
+    ) = prepared(
+        tmp_path
+    )
+
+    original = append_football_temporal_provider_binding(
+        ledger=ledger,
+        entity_type="team",
+        provider_key="provider-a",
+        provider_entity_id="team-99",
+        canonical_id=first.canonical_id,
+        valid_from=at(1),
+        valid_to=None,
+        known_at=at(1),
+        resolution_method="provider_stable_id",
+        reason_code="INITIAL",
+        human_reviewed=False,
+    )
+
+    corrected = ledger.build_binding(
+        sport="football",
+        entity_type="team",
+        provider_key="provider-a",
+        provider_entity_id="team-99",
+        canonical_id=first.canonical_id,
+        valid_from=at(1),
+        valid_to=at(10),
+        known_at=at(12),
+        resolution_method="manual_verified",
+        reason_code="CLOSE",
+        human_reviewed=True,
+        corrects_binding_id=original.binding_id,
+    )
+
+    ledger.append(
+        corrected
+    )
+
+    successor = ledger.build_binding(
+        sport="football",
+        entity_type="team",
+        provider_key="provider-a",
+        provider_entity_id="team-99",
+        canonical_id=second.canonical_id,
+        valid_from=at(10),
+        valid_to=None,
+        known_at=at(12),
+        resolution_method="manual_verified",
+        reason_code="SUCCESSOR",
+        human_reviewed=True,
+        predecessor_binding_id=corrected.binding_id,
+    )
+
+    stored = ledger.append(
+        successor
+    )
+
+    assert stored.binding_id == successor.binding_id

@@ -100,3 +100,23 @@ Governed rule:
 - Any future need to revise an already-linked historical chain requires a separately governed chain-resegmentation design; it must not be simulated by mutating one interval locally.
 
 This preserves continuous, non-overlapping temporal identity lineage.
+
+
+## V3 adversarial hardening: stale predecessor and supersession graph
+
+Independent adversarial re-audit V3 found two related lineage risks.
+
+First, a corrected provider identity binding could still be referenced later through its obsolete `binding_id` as a predecessor. This could recreate overlap or gap even though the corrected head itself was protected.
+
+Governed rule:
+
+- If any later row has `corrects_binding_id == predecessor.binding_id`, that predecessor is stale.
+- A stale predecessor is never eligible for a successor.
+- Successors must reference the current corrected head.
+
+Second, canonical supersession cycle detection must not depend only on the candidate event's `effective_at`. A retroactive edge can look acyclic at its own event time while completing a cycle that becomes active at a later event time.
+
+Governed rule:
+
+- The canonical supersession graph known as of the candidate's `known_at` must remain globally acyclic.
+- Effective-time filtering is still used for point-in-time resolution, but it is not sufficient for graph-integrity admission.

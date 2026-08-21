@@ -617,17 +617,49 @@ class SQLiteCanonicalIdentityLifecycleLedger:
                 )
 
         if event.event_type == "SUPERSEDED":
-            terminal = self.resolve_terminal_canonical_id_as_of(
-                canonical_id=(
-                    event.superseded_by_canonical_id
-                ),
-                as_of=event.known_at,
-                event_time=event.effective_at,
-            )
+            current = event.superseded_by_canonical_id
+            seen = {
+                event.canonical_id,
+            }
 
-            if terminal == event.canonical_id:
-                raise ValueError(
-                    "IDENTITY_SUPERSESSION_CYCLE"
+            while True:
+                if current in seen:
+                    raise ValueError(
+                        "IDENTITY_SUPERSESSION_CYCLE:"
+                        "IDENTITY_SUPERSESSION_GRAPH_ACYCLIC"
+                    )
+
+                seen.add(
+                    current
+                )
+
+                known_supersessions = tuple(
+                    item
+                    for item in self._events_for(
+                        current
+                    )
+                    if (
+                        item.event_type
+                        == "SUPERSEDED"
+                        and item.known_at
+                        <= event.known_at
+                    )
+                )
+
+                if not known_supersessions:
+                    break
+
+                if len(
+                    known_supersessions
+                ) != 1:
+                    raise ValueError(
+                        "IDENTITY_SUPERSESSION_GRAPH_AMBIGUOUS"
+                    )
+
+                current = (
+                    known_supersessions[
+                        0
+                    ].superseded_by_canonical_id
                 )
 
         payload_json = _canonical_json(
