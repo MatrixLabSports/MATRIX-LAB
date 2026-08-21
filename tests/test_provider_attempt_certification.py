@@ -1,7 +1,10 @@
 from types import SimpleNamespace
 
+import pytest
+
 from app.core.provider_attempt_certification import (
     certify_provider_physical_attempts,
+    enforce_provider_attempt_certification,
 )
 
 
@@ -14,6 +17,10 @@ class AuditLedger:
 
     def list_events(self, run_id):
         assert run_id == RUN_ID
+
+        if not self.binding_ids:
+            return ()
+
         return (
             {
                 "event_type": (
@@ -42,16 +49,11 @@ class BindingStore:
 
 
 class PermitStore:
-    def __init__(self, consumed=True):
-        self.consumed = consumed
-
     def get_verified(self, permit_id):
         return {
             "permit_id": permit_id,
             "consumed_at": (
                 "2026-08-20T20:00:00+00:00"
-                if self.consumed
-                else None
             ),
         }
 
@@ -75,20 +77,64 @@ class NetworkCallStore:
         )
 
 
-def test_two_physical_attempts_require_two_unique_consumed_permits():
-    binding_ids = (
+class IntentStore:
+    def __init__(self, mapping):
+        self.mapping = mapping
+
+    def audit_integrity(self):
+        return True
+
+    def get_by_permit(self, permit_id):
+        return self.mapping.get(
+            permit_id
+        )
+
+
+def _binding(permit_id):
+    return SimpleNamespace(
+        run_id=RUN_ID,
+        provider_key="api_football",
+        queue_item_fingerprint="9" * 64,
+        permit_id=permit_id,
+        endpoint_manifest_id="8" * 64,
+        request_contract_id="7" * 64,
+        request_contract_fingerprint="6" * 64,
+    )
+
+
+def _intent(permit_id):
+    return SimpleNamespace(
+        run_id=RUN_ID,
+        provider_key="api_football",
+        queue_item_fingerprint="9" * 64,
+        permit_id=permit_id,
+        endpoint_manifest_id="8" * 64,
+        request_contract_id="7" * 64,
+        request_contract_fingerprint="6" * 64,
+    )
+
+
+def test_two_attempts_require_two_unique_permits_and_intents():
+    ids = (
         "2" * 64,
         "3" * 64,
     )
 
     bindings = {
-        binding_ids[0]: SimpleNamespace(
-            run_id=RUN_ID,
-            permit_id="4" * 64,
+        ids[0]: _binding(
+            "4" * 64
         ),
-        binding_ids[1]: SimpleNamespace(
-            run_id=RUN_ID,
-            permit_id="5" * 64,
+        ids[1]: _binding(
+            "5" * 64
+        ),
+    }
+
+    intents = {
+        "4" * 64: _intent(
+            "4" * 64
+        ),
+        "5" * 64: _intent(
+            "5" * 64
         ),
     }
 
@@ -96,72 +142,122 @@ def test_two_physical_attempts_require_two_unique_consumed_permits():
         certify_provider_physical_attempts(
             run_id=RUN_ID,
             audit_ledger=AuditLedger(
-                binding_ids
+                ids
             ),
             binding_store=BindingStore(
                 bindings
             ),
-            network_permit_store=PermitStore(),
+            network_permit_store=(
+                PermitStore()
+            ),
             network_call_evidence_store=(
                 NetworkCallStore()
+            ),
+            attempt_intent_store=(
+                IntentStore(
+                    intents
+                )
             ),
         )
     )
 
     assert certification.ok is True
     assert (
-        certification.physical_attempt_count
-        == 2
-    )
-    assert (
-        certification.unique_permit_count
-        == 2
-    )
-    assert (
         certification.fresh_permit_per_attempt
         is True
     )
     assert (
-        certification.consumed_permit_per_attempt
+        certification.attempt_intent_integrity
         is True
     )
+
     assert (
-        certification.unique_network_lifecycle_per_attempt
-        is True
+        enforce_provider_attempt_certification(
+            certification
+        )
+        == certification
     )
 
 
-def test_permit_reuse_across_retry_attempts_fails_closed():
-    binding_ids = (
+def test_empty_run_fails_closed():
+    certification = (
+        certify_provider_physical_attempts(
+            run_id=RUN_ID,
+            audit_ledger=AuditLedger(
+                ()
+            ),
+            binding_store=BindingStore(
+                {}
+            ),
+            network_permit_store=(
+                PermitStore()
+            ),
+            network_call_evidence_store=(
+                NetworkCallStore()
+            ),
+            attempt_intent_store=(
+                IntentStore(
+                    {}
+                )
+            ),
+        )
+    )
+
+    assert certification.ok is False
+    assert (
+        "NO_PHYSICAL_ATTEMPTS_TO_CERTIFY"
+        in certification.errors
+    )
+
+    with pytest.raises(
+        ValueError,
+        match=(
+            "PROVIDER_ATTEMPT_CERTIFICATION_FAILED"
+        ),
+    ):
+        enforce_provider_attempt_certification(
+            certification
+        )
+
+
+def test_permit_reuse_fails_closed():
+    ids = (
         "2" * 64,
         "3" * 64,
     )
 
     reused = "4" * 64
 
-    bindings = {
-        binding_ids[0]: SimpleNamespace(
-            run_id=RUN_ID,
-            permit_id=reused,
-        ),
-        binding_ids[1]: SimpleNamespace(
-            run_id=RUN_ID,
-            permit_id=reused,
-        ),
-    }
-
     certification = (
         certify_provider_physical_attempts(
             run_id=RUN_ID,
             audit_ledger=AuditLedger(
-                binding_ids
+                ids
             ),
             binding_store=BindingStore(
-                bindings
+                {
+                    ids[0]: _binding(
+                        reused
+                    ),
+                    ids[1]: _binding(
+                        reused
+                    ),
+                }
             ),
-            network_permit_store=PermitStore(),
+            network_permit_store=(
+                PermitStore()
+            ),
             network_call_evidence_store=(
                 NetworkCallStore()
+            ),
+            attempt_intent_store=(
+                IntentStore(
+                    {
+                        reused: _intent(
+                            reused
+                        ),
+                    }
+                )
             ),
         )
     )
@@ -169,46 +265,5 @@ def test_permit_reuse_across_retry_attempts_fails_closed():
     assert certification.ok is False
     assert (
         "NETWORK_PERMIT_REUSED_ACROSS_ATTEMPTS"
-        in certification.errors
-    )
-    assert (
-        certification.fresh_permit_per_attempt
-        is False
-    )
-
-
-def test_unconsumed_permit_fails_attempt_certification():
-    binding_id = "2" * 64
-
-    certification = (
-        certify_provider_physical_attempts(
-            run_id=RUN_ID,
-            audit_ledger=AuditLedger(
-                (binding_id,)
-            ),
-            binding_store=BindingStore(
-                {
-                    binding_id: (
-                        SimpleNamespace(
-                            run_id=RUN_ID,
-                            permit_id="4" * 64,
-                        )
-                    ),
-                }
-            ),
-            network_permit_store=(
-                PermitStore(
-                    consumed=False
-                )
-            ),
-            network_call_evidence_store=(
-                NetworkCallStore()
-            ),
-        )
-    )
-
-    assert certification.ok is False
-    assert (
-        "ATTEMPT_PERMIT_NOT_CONSUMED"
         in certification.errors
     )

@@ -405,6 +405,39 @@ class GovernedProviderHttpSession:
             raise ValueError("PINNED_RESOLUTION_REQUIRED")
 
         now = _aware(self.clock())
+        attempt_intent_required = bool(
+            getattr(
+                self.pinned_transport,
+                "matrix_attempt_intent_required",
+                False,
+            )
+        )
+
+        if (
+            getattr(
+                self.authority,
+                "mode",
+                None,
+            )
+            == "PRODUCTION"
+            and attempt_intent_required
+        ):
+            persist_attempt_intent = getattr(
+                self.pinned_transport,
+                "persist_attempt_intent",
+                None,
+            )
+
+            if persist_attempt_intent is None:
+                raise ValueError(
+                    "ATTEMPT_INTENT_PERSISTENCE_REQUIRED"
+                )
+
+            persist_attempt_intent(
+                permit=permit,
+                request_context=kwargs,
+            )
+
         self.network_permit_store.consume(permit_id=permit.permit_id, consumed_at=now)
 
         common = {

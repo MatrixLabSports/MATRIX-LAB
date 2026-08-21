@@ -20,6 +20,9 @@ from app.core.provider_network_binding import (
 from app.core.provider_request_contract import (
     SQLiteProviderRequestContractRegistry,
 )
+from app.core.provider_attempt_intent import (
+    SQLiteProviderAttemptIntentStore,
+)
 from app.core.secret_reference import SecretReference
 
 
@@ -35,6 +38,7 @@ def _build_controlled_request_client(
     secret_reference: SecretReference,
     binding_store: SQLiteProviderNetworkBindingEvidenceStore,
     binding_collector: ProviderNetworkBindingCollector,
+    attempt_intent_store: SQLiteProviderAttemptIntentStore,
 ) -> GovernedProviderRequestClient:
     if not isinstance(pinned_transport, MatrixPinnedHttpsTransport):
         raise ValueError("PINNED_HTTPS_TRANSPORT_REQUIRED")
@@ -57,6 +61,11 @@ def _build_controlled_request_client(
         ProviderNetworkBindingCollector,
     ):
         raise ValueError("NETWORK_BINDING_COLLECTOR_REQUIRED")
+    if not isinstance(
+        attempt_intent_store,
+        SQLiteProviderAttemptIntentStore,
+    ):
+        raise ValueError("ATTEMPT_INTENT_STORE_REQUIRED")
 
     jit_transport = JitSecretPinnedHttpsTransport(
         inner=pinned_transport,
@@ -68,6 +77,9 @@ def _build_controlled_request_client(
         binding_store=binding_store,
         collector=binding_collector,
         clock=clock,
+        attempt_intent_store=(
+            attempt_intent_store
+        ),
     )
     governed_session = GovernedProviderHttpSession(
         authority=authority,
@@ -102,6 +114,7 @@ def build_governed_api_football_client(
     secret_reference=None,
     binding_store=None,
     binding_collector=None,
+    attempt_intent_store=None,
 ) -> GovernedProviderRequestClient:
     if authority.mode != "PRODUCTION":
         raise ValueError("PRODUCTION_CLIENT_REQUIRES_PRODUCTION_MODE")
@@ -121,6 +134,9 @@ def build_governed_api_football_client(
         secret_reference=secret_reference,
         binding_store=binding_store,
         binding_collector=binding_collector,
+        attempt_intent_store=(
+            attempt_intent_store
+        ),
     )
 
 

@@ -404,6 +404,7 @@ class BindingAuditPinnedHttpsTransport(MatrixPinnedHttpsTransport):
         binding_store: SQLiteProviderNetworkBindingEvidenceStore,
         collector: ProviderNetworkBindingCollector,
         clock: Callable[[], datetime],
+        attempt_intent_store=None,
     ) -> None:
         if not isinstance(inner, MatrixPinnedHttpsTransport):
             raise ValueError("PINNED_HTTPS_TRANSPORT_REQUIRED")
@@ -411,6 +412,182 @@ class BindingAuditPinnedHttpsTransport(MatrixPinnedHttpsTransport):
         self.binding_store = binding_store
         self.collector = collector
         self.clock = clock
+        self.attempt_intent_store = attempt_intent_store
+        self.matrix_attempt_intent_required = (
+            attempt_intent_store is not None
+        )
+
+    def persist_attempt_intent(
+        self,
+        *,
+        permit,
+        request_context: Mapping[str, Any],
+    ):
+        if self.attempt_intent_store is None:
+            return None
+
+        from app.core.provider_attempt_intent import (
+            build_provider_attempt_intent_evidence,
+        )
+
+        queue_item_fingerprint = (
+            self.collector.require_active()
+        )
+
+        request_contract_id = _hex64(
+            "REQUEST_CONTRACT_ID",
+            request_context.get(
+                "matrix_request_contract_id"
+            ),
+        )
+        request_contract_fingerprint = _hex64(
+            "REQUEST_CONTRACT_FINGERPRINT",
+            request_context.get(
+                "matrix_request_contract_fingerprint"
+            ),
+        )
+        request_path = request_context.get(
+            "matrix_request_path"
+        )
+
+        if (
+            not isinstance(
+                request_path,
+                str,
+            )
+            or not request_path.startswith(
+                "/"
+            )
+            or "?" in request_path
+            or "#" in request_path
+        ):
+            raise ValueError(
+                "REQUEST_PATH_REQUIRED"
+            )
+
+        raw_names = request_context.get(
+            "matrix_request_parameter_names"
+        )
+
+        if not isinstance(
+            raw_names,
+            tuple,
+        ):
+            raise ValueError(
+                "REQUEST_PARAMETER_NAMES_REQUIRED"
+            )
+
+        request_parameter_names = tuple(
+            sorted(
+                str(item)
+                for item
+                in raw_names
+            )
+        )
+
+        if (
+            len(
+                set(
+                    request_parameter_names
+                )
+            )
+            != len(
+                request_parameter_names
+            )
+        ):
+            raise ValueError(
+                "DUPLICATE_REQUEST_PARAMETER_NAME"
+            )
+
+        values_fp = _hex64(
+            "REQUEST_PARAMETER_VALUES_FINGERPRINT",
+            request_context.get(
+                "matrix_request_parameter_values_fingerprint"
+            ),
+        )
+        secret_fp = _hex64(
+            "SECRET_REFERENCE_FINGERPRINT",
+            request_context.get(
+                "matrix_request_secret_reference_fingerprint"
+            ),
+        )
+
+        existing = (
+            self.attempt_intent_store.get_by_permit(
+                permit.permit_id
+            )
+        )
+
+        if existing is not None:
+            expected = (
+                existing.run_id
+                == permit.run_id
+                and existing.provider_key
+                == permit.provider_key
+                and existing.queue_item_fingerprint
+                == queue_item_fingerprint
+                and existing.endpoint_manifest_id
+                == permit.endpoint_manifest_id
+                and existing.security_evidence_id
+                == permit.security_evidence_id
+                and existing.request_contract_id
+                == request_contract_id
+                and existing.request_contract_fingerprint
+                == request_contract_fingerprint
+                and existing.request_path
+                == request_path
+                and existing.request_parameter_names
+                == request_parameter_names
+                and existing.request_parameter_values_fingerprint
+                == values_fp
+                and existing.secret_reference_fingerprint
+                == secret_fp
+            )
+
+            if not expected:
+                raise ValueError(
+                    "ATTEMPT_INTENT_CONTEXT_MISMATCH"
+                )
+
+            return existing
+
+        intent = (
+            build_provider_attempt_intent_evidence(
+                run_id=permit.run_id,
+                provider_key=permit.provider_key,
+                queue_item_fingerprint=(
+                    queue_item_fingerprint
+                ),
+                permit_id=permit.permit_id,
+                endpoint_manifest_id=(
+                    permit.endpoint_manifest_id
+                ),
+                security_evidence_id=(
+                    permit.security_evidence_id
+                ),
+                request_contract_id=(
+                    request_contract_id
+                ),
+                request_contract_fingerprint=(
+                    request_contract_fingerprint
+                ),
+                request_path=request_path,
+                request_parameter_names=(
+                    request_parameter_names
+                ),
+                request_parameter_values_fingerprint=(
+                    values_fp
+                ),
+                secret_reference_fingerprint=(
+                    secret_fp
+                ),
+                created_at=self.clock(),
+            )
+        )
+
+        return self.attempt_intent_store.record(
+            intent
+        )
 
     def _persist(
         self,
@@ -505,6 +682,11 @@ class BindingAuditPinnedHttpsTransport(MatrixPinnedHttpsTransport):
             "request_parameter_values_fingerprint": values_fp,
             "secret_reference_fingerprint": secret_fp,
         }
+
+        self.persist_attempt_intent(
+            permit=permit,
+            request_context=kwargs,
+        )
 
         try:
             response = self.inner.get_pinned(

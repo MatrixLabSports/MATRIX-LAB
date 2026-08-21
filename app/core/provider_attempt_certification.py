@@ -13,12 +13,13 @@ class ProviderAttemptCertification:
     fresh_permit_per_attempt: bool
     consumed_permit_per_attempt: bool
     unique_network_lifecycle_per_attempt: bool
+    attempt_intent_integrity: bool
     errors: tuple[str, ...]
 
     def payload(self) -> Mapping[str, Any]:
         return {
             "schema": (
-                "matrix.provider-attempt-certification/1"
+                "matrix.provider-attempt-certification/2"
             ),
             "run_id": self.run_id,
             "ok": self.ok,
@@ -37,6 +38,9 @@ class ProviderAttemptCertification:
             "unique_network_lifecycle_per_attempt": (
                 self.unique_network_lifecycle_per_attempt
             ),
+            "attempt_intent_integrity": (
+                self.attempt_intent_integrity
+            ),
             "errors": list(self.errors),
             "real_provider_execution_authorized": False,
             "automatic_provider_switch": False,
@@ -51,10 +55,19 @@ def certify_provider_physical_attempts(
     binding_store,
     network_permit_store,
     network_call_evidence_store,
+    attempt_intent_store=None,
 ) -> ProviderAttemptCertification:
     errors: list[str] = []
     binding_ids: list[str] = []
     permit_ids: list[str] = []
+
+    if (
+        attempt_intent_store is not None
+        and not attempt_intent_store.audit_integrity()
+    ):
+        errors.append(
+            "ATTEMPT_INTENT_STORE_INTEGRITY_FAILED"
+        )
 
     events = tuple(
         audit_ledger.list_events(
@@ -174,6 +187,36 @@ def certify_provider_physical_attempts(
                     "ATTEMPT_PERMIT_NOT_CONSUMED"
                 )
 
+            if attempt_intent_store is not None:
+                intent = (
+                    attempt_intent_store.get_by_permit(
+                        evidence.permit_id
+                    )
+                )
+
+                if intent is None:
+                    errors.append(
+                        "ATTEMPT_INTENT_MISSING"
+                    )
+                else:
+                    if (
+                        intent.run_id
+                        != evidence.run_id
+                        or intent.provider_key
+                        != evidence.provider_key
+                        or intent.queue_item_fingerprint
+                        != evidence.queue_item_fingerprint
+                        or intent.endpoint_manifest_id
+                        != evidence.endpoint_manifest_id
+                        or intent.request_contract_id
+                        != evidence.request_contract_id
+                        or intent.request_contract_fingerprint
+                        != evidence.request_contract_fingerprint
+                    ):
+                        errors.append(
+                            "ATTEMPT_INTENT_BINDING_MISMATCH"
+                        )
+
             network_events = (
                 network_call_evidence_store.list_verified_events_for_permit(
                     evidence.permit_id
@@ -213,6 +256,11 @@ def certify_provider_physical_attempts(
                     "ATTEMPT_NETWORK_TERMINAL_COUNT"
                 )
 
+    if not binding_ids:
+        errors.append(
+            "NO_PHYSICAL_ATTEMPTS_TO_CERTIFY"
+        )
+
     if len(set(binding_ids)) != len(binding_ids):
         errors.append(
             "NETWORK_BINDING_EVIDENCE_REUSED"
@@ -234,7 +282,8 @@ def certify_provider_physical_attempts(
     )
 
     fresh_permit_per_attempt = (
-        physical_attempt_count
+        physical_attempt_count > 0
+        and physical_attempt_count
         == unique_permit_count
         and physical_attempt_count
         == len(
@@ -243,16 +292,28 @@ def certify_provider_physical_attempts(
     )
 
     consumed_permit_per_attempt = (
-        "ATTEMPT_PERMIT_NOT_CONSUMED"
+        physical_attempt_count > 0
+        and "ATTEMPT_PERMIT_NOT_CONSUMED"
         not in errors
         and "ATTEMPT_PERMIT_MISSING"
         not in errors
     )
 
     unique_network_lifecycle_per_attempt = (
-        "ATTEMPT_NETWORK_STARTED_COUNT"
+        physical_attempt_count > 0
+        and "ATTEMPT_NETWORK_STARTED_COUNT"
         not in errors
         and "ATTEMPT_NETWORK_TERMINAL_COUNT"
+        not in errors
+    )
+
+    attempt_intent_integrity = (
+        attempt_intent_store is not None
+        and "ATTEMPT_INTENT_STORE_INTEGRITY_FAILED"
+        not in errors
+        and "ATTEMPT_INTENT_MISSING"
+        not in errors
+        and "ATTEMPT_INTENT_BINDING_MISMATCH"
         not in errors
     )
 
@@ -274,7 +335,36 @@ def certify_provider_physical_attempts(
         unique_network_lifecycle_per_attempt=(
             unique_network_lifecycle_per_attempt
         ),
+        attempt_intent_integrity=(
+            attempt_intent_integrity
+        ),
         errors=tuple(
             errors
         ),
     )
+
+
+def enforce_provider_attempt_certification(
+    certification: ProviderAttemptCertification,
+) -> ProviderAttemptCertification:
+    if not certification.ok:
+        raise ValueError(
+            "PROVIDER_ATTEMPT_CERTIFICATION_FAILED:"
+            + ",".join(
+                certification.errors
+            )
+        )
+
+    if (
+        certification.physical_attempt_count
+        <= 0
+        or not certification.fresh_permit_per_attempt
+        or not certification.consumed_permit_per_attempt
+        or not certification.unique_network_lifecycle_per_attempt
+        or not certification.attempt_intent_integrity
+    ):
+        raise ValueError(
+            "PROVIDER_ATTEMPT_CERTIFICATION_INCOMPLETE"
+        )
+
+    return certification
