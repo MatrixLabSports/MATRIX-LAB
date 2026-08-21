@@ -374,31 +374,42 @@ class SQLiteProviderNetworkPermitStore:
         with self._connect() as connection:
             row = connection.execute(
                 """
-                SELECT
-                    payload_json,
-                    payload_sha256
+                SELECT payload_json, payload_sha256, consumed_at
                 FROM network_permit
                 WHERE permit_id = ?
                 """,
-                (
-                    permit_id,
-                ),
+                (permit_id,),
             ).fetchone()
 
         if row is None:
             return None
 
-        return _verify_network_permit_row(
-            expected_permit_id=(
-                permit_id
-            ),
-            payload_json=str(
-                row[0]
-            ),
-            payload_sha256=str(
-                row[1]
-            ),
+        payload_json, payload_sha256, consumed_at = row
+        payload = _verify_network_permit_row(
+            expected_permit_id=permit_id,
+            payload_json=str(payload_json),
+            payload_sha256=str(payload_sha256),
         )
+        result = dict(payload)
+
+        if consumed_at is None:
+            result["consumed_at"] = None
+            return result
+
+        try:
+            parsed = datetime.fromisoformat(str(consumed_at))
+        except Exception as error:
+            raise ValueError(
+                "NETWORK_PERMIT_CONSUMED_AT_INVALID"
+            ) from error
+
+        if parsed.tzinfo is None or parsed.utcoffset() is None:
+            raise ValueError("NETWORK_PERMIT_CONSUMED_AT_NAIVE")
+
+        result["consumed_at"] = parsed.astimezone(
+            timezone.utc
+        ).isoformat()
+        return result
 
 
 class ProviderNetworkAuthority:

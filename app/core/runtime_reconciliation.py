@@ -80,6 +80,7 @@ def reconcile_runtime_run(
     network_binding_store=None,
     network_permit_store=None,
     network_call_evidence_store=None,
+    request_contract_registry=None,
 ) -> RuntimeReconciliationReport:
     validated_run = _validate_hex64("RUN_ID", run_id)
     errors: list[str] = []
@@ -285,6 +286,7 @@ def reconcile_runtime_run(
         network_binding_store,
         network_permit_store,
         network_call_evidence_store,
+        request_contract_registry,
     )
 
     if any(
@@ -317,6 +319,9 @@ def reconcile_runtime_run(
                     ),
                     network_call_evidence_store=(
                         network_call_evidence_store
+                    ),
+                    request_contract_registry=(
+                        request_contract_registry
                     ),
                 )
             )

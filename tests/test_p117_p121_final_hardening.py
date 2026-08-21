@@ -203,3 +203,150 @@ def test_ci_explicitly_quarantines_legacy_bootstrap_path():
     assert "app.providers.api_football.client" not in governed
     assert "app.providers.api_football.client" in bootstrap
     assert "BOOTSTRAP_PROBE" in bootstrap
+
+def test_runtime_reconciliation_requires_request_contract_registry_for_network_mode():
+    import ast
+    from pathlib import Path
+
+    source = Path(
+        "app/core/runtime_reconciliation.py"
+    ).read_text(
+        encoding="utf-8-sig"
+    )
+
+    tree = ast.parse(
+        source,
+        filename=(
+            "app/core/runtime_reconciliation.py"
+        ),
+    )
+
+    target = next(
+        (
+            node
+            for node in tree.body
+            if (
+                isinstance(
+                    node,
+                    ast.FunctionDef,
+                )
+                and node.name
+                == "reconcile_runtime_run"
+            )
+        ),
+        None,
+    )
+
+    assert target is not None
+
+    argument_names = {
+        argument.arg
+        for argument
+        in target.args.kwonlyargs
+    }
+
+    assert (
+        "request_contract_registry"
+        in argument_names
+    )
+
+    reconcile_calls = [
+        node
+        for node
+        in ast.walk(
+            target
+        )
+        if (
+            isinstance(
+                node,
+                ast.Call,
+            )
+            and (
+                (
+                    isinstance(
+                        node.func,
+                        ast.Name,
+                    )
+                    and node.func.id
+                    == "reconcile_provider_network_bindings"
+                )
+                or (
+                    isinstance(
+                        node.func,
+                        ast.Attribute,
+                    )
+                    and node.func.attr
+                    == "reconcile_provider_network_bindings"
+                )
+            )
+        )
+    ]
+
+    assert len(
+        reconcile_calls
+    ) == 1
+
+    keyword_names = {
+        keyword.arg
+        for keyword
+        in reconcile_calls[
+            0
+        ].keywords
+    }
+
+    assert (
+        "request_contract_registry"
+        in keyword_names
+    )
+
+    network_components = [
+        node
+        for node
+        in ast.walk(
+            target
+        )
+        if (
+            isinstance(
+                node,
+                ast.Assign,
+            )
+            and any(
+                isinstance(
+                    item,
+                    ast.Name,
+                )
+                and item.id
+                == "network_components"
+                for item
+                in node.targets
+            )
+        )
+    ]
+
+    assert len(
+        network_components
+    ) == 1
+
+    component_names = {
+        item.id
+        for item
+        in ast.walk(
+            network_components[
+                0
+            ].value
+        )
+        if isinstance(
+            item,
+            ast.Name,
+        )
+    }
+
+    assert (
+        "request_contract_registry"
+        in component_names
+    )
+
+    assert (
+        "NETWORK_BINDING_COMPONENTS_PARTIAL"
+        in source
+    )
