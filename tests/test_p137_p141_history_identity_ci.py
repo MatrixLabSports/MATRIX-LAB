@@ -308,3 +308,25 @@ def test_v6_rebaseline_and_provider_canonical_composition_are_ci_governed():
     assert football_token in ci
     assert tennis_token in tennis
     assert tennis_token in ci
+
+
+def test_v7r_external_anchor_transactional_revalidation_and_init_state_are_ci_governed():
+    helper = read("app/core/append_only_tail_guard.py")
+    canonical = read("app/core/canonical_identity_lifecycle.py")
+    ci = read("scripts/matrix_ci_gate.py")
+
+    for token in (
+        "TAIL_GUARD_INITIALIZATION_STATE_REQUIRED",
+        "APPEND_ONLY_TAIL_GUARD_EXTERNAL_ANCHOR_REQUIRED",
+        "APPEND_ONLY_TAIL_GUARD_EXTERNAL_ANCHOR_INVALID",
+        "_external_anchor_path",
+    ):
+        assert token in helper
+        assert token in ci
+
+    for token in (
+        "def _validate_transactional_candidate(",
+        "def _events_for_connection(",
+    ):
+        assert token in canonical
+        assert token in ci

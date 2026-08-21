@@ -524,6 +524,141 @@ class SQLiteCanonicalIdentityLifecycleLedger:
 
         return event
 
+    def _events_for_connection(
+        self,
+        connection,
+        canonical_id: str,
+    ) -> tuple[CanonicalIdentityLifecycleEvent, ...]:
+        rows = connection.execute(
+            "SELECT payload_json, payload_sha256 "
+            "FROM canonical_identity_lifecycle "
+            "WHERE canonical_id = ? "
+            "ORDER BY known_at, event_id",
+            (canonical_id,),
+        ).fetchall()
+
+        return tuple(
+            self._verified_row(row)
+            for row in rows
+        )
+
+    def _validate_transactional_candidate(
+        self,
+        connection,
+        event: CanonicalIdentityLifecycleEvent,
+    ) -> None:
+        events = self._events_for_connection(
+            connection,
+            event.canonical_id,
+        )
+
+        expected_previous = (
+            events[-1].event_id
+            if events
+            else None
+        )
+
+        if event.previous_event_id != expected_previous:
+            raise ValueError(
+                "IDENTITY_LIFECYCLE_NON_LINEAR_CHAIN"
+            )
+
+        if events and event.known_at <= events[-1].known_at:
+            raise ValueError(
+                "IDENTITY_LIFECYCLE_KNOWLEDGE_TIME_REGRESSION"
+            )
+
+        if any(item.event_type == "SUPERSEDED" for item in events):
+            raise ValueError(
+                "SUPERSEDED_IDENTITY_IS_TERMINAL"
+            )
+
+        if event.event_type == "ALIAS_ADDED":
+            aliases = {
+                item.alias.casefold()
+                for item in events
+                if item.event_type == "ALIAS_ADDED"
+                and item.alias is not None
+            }
+            if event.alias.casefold() in aliases:
+                raise ValueError(
+                    "DUPLICATE_IDENTITY_ALIAS"
+                )
+
+        if event.event_type == "DISPLAY_NAME_CHANGED":
+            entity = self._canonical_entity(
+                event.canonical_id
+            )
+            display_name = str(entity["display_name"])
+
+            for item in events:
+                if (
+                    item.known_at > event.known_at
+                    or item.effective_at > event.effective_at
+                ):
+                    continue
+
+                if (
+                    item.event_type == "DISPLAY_NAME_CHANGED"
+                    and item.display_name is not None
+                ):
+                    display_name = item.display_name
+
+            if display_name.casefold() == event.display_name.casefold():
+                raise ValueError(
+                    "IDENTITY_DISPLAY_NAME_NOOP"
+                )
+
+        if event.event_type == "SUPERSEDED":
+            rows = connection.execute(
+                "SELECT payload_json, payload_sha256 "
+                "FROM canonical_identity_lifecycle "
+                "WHERE event_type = 'SUPERSEDED' "
+                "ORDER BY known_at, event_id"
+            ).fetchall()
+
+            edges: dict[str, str] = {}
+
+            for row in rows:
+                item = self._verified_row(row)
+                target = item.superseded_by_canonical_id
+                if target is None:
+                    raise ValueError(
+                        "IDENTITY_SUPERSESSION_TARGET_REQUIRED"
+                    )
+
+                existing_target = edges.get(item.canonical_id)
+                if (
+                    existing_target is not None
+                    and existing_target != target
+                ):
+                    raise ValueError(
+                        "IDENTITY_SUPERSESSION_GRAPH_AMBIGUOUS"
+                    )
+
+                edges[item.canonical_id] = target
+
+            target = event.superseded_by_canonical_id
+            if target is None:
+                raise ValueError(
+                    "IDENTITY_SUPERSESSION_TARGET_REQUIRED"
+                )
+
+            edges[event.canonical_id] = target
+
+            current = target
+            seen = {event.canonical_id}
+
+            while current in edges:
+                if current in seen:
+                    raise ValueError(
+                        "IDENTITY_SUPERSESSION_CYCLE:"
+                        "IDENTITY_SUPERSESSION_GRAPH_ACYCLIC:"
+                        "IDENTITY_SUPERSESSION_LEDGER_GLOBALLY_ACYCLIC"
+                    )
+                seen.add(current)
+                current = edges[current]
+
     def append(
         self,
         event: CanonicalIdentityLifecycleEvent,
@@ -689,6 +824,11 @@ class SQLiteCanonicalIdentityLifecycleLedger:
                 "BEGIN IMMEDIATE"
             )
             try:
+                self._validate_transactional_candidate(
+                    connection,
+                    event,
+                )
+
                 connection.execute(
                     "INSERT INTO canonical_identity_lifecycle "
                     "(event_id, canonical_id, sport, entity_type, "

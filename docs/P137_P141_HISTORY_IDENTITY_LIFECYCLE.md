@@ -167,3 +167,13 @@ A provider mapping may legitimately preserve the canonical ID that was historica
 Football and tennis now expose sport-specific `resolve_*_provider_terminal_canonical_as_of` functions. They first resolve the provider binding point-in-time and then resolve that binding's canonical ID through the canonical identity lifecycle at the same `as_of` and `event_time`. Consumers that need the current/terminal canonical identity must use this composed path rather than interpreting the raw provider binding ID as terminal.
 
 Sport separation remains strict and no name-based join is introduced.
+
+## V7R hardening: external anchor and transaction-scoped canonical revalidation
+
+Corrected independent adversarial re-audit V7R exposed two separate integrity boundaries.
+
+The commitment table and its initialization-state table lived in the same SQLite database. Destroying both could make a truncated prefix look like a never-initialized ledger. File-backed lifecycle ledgers now maintain a small external initialization anchor beside the SQLite database. A valid V6 database with intact state is migrated once by creating this anchor. A fresh empty database initializes normally. If prior initialization is proven by the external anchor while internal guard/state evidence disappears, bootstrap fails closed with `APPEND_ONLY_TAIL_GUARD_REBASELINE_FORBIDDEN`. A non-empty ledger whose guard and state were both absent before schema creation is also refused rather than silently adopted.
+
+SQLite serialized physical writes, but canonical lifecycle validation occurred before `BEGIN IMMEDIATE`. Canonical append now performs a second mutable-state validation after acquiring the write transaction and on the same connection. It rechecks predecessor linearity, knowledge-time monotonicity, terminal status, duplicate aliases, display-name no-op protection, and the complete supersession graph. This closes same-identity forks and concurrent cross-identity supersession cycles.
+
+Point-in-time read semantics and provider raw-history provenance remain unchanged. No automatic provider execution, provider switching, model promotion, or wagering is enabled.

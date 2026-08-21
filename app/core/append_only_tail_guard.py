@@ -3,12 +3,17 @@ from __future__ import annotations
 from dataclasses import dataclass
 from hashlib import sha256
 import json
+import os
+from pathlib import Path
 import re
 from typing import Any, Iterable
 
 _IDENTIFIER = re.compile(r"^[a-z][a-z0-9_]*$")
 APPEND_ONLY_TAIL_GUARD_SEQUENCE_HIGH_WATER = "APPEND_ONLY_TAIL_GUARD_SEQUENCE_HIGH_WATER"
 APPEND_ONLY_TAIL_GUARD_REBASELINE_FORBIDDEN = "APPEND_ONLY_TAIL_GUARD_REBASELINE_FORBIDDEN"
+TAIL_GUARD_INITIALIZATION_STATE_REQUIRED = "TAIL_GUARD_INITIALIZATION_STATE_REQUIRED"
+APPEND_ONLY_TAIL_GUARD_EXTERNAL_ANCHOR_REQUIRED = "APPEND_ONLY_TAIL_GUARD_EXTERNAL_ANCHOR_REQUIRED"
+APPEND_ONLY_TAIL_GUARD_EXTERNAL_ANCHOR_INVALID = "APPEND_ONLY_TAIL_GUARD_EXTERNAL_ANCHOR_INVALID"
 
 
 def _canonical_json(value: Any) -> str:
@@ -40,6 +45,9 @@ class SQLiteAppendOnlyTailGuard:
         if _IDENTIFIER.fullmatch(self.state_table_name) is None:
             raise ValueError("TAIL_GUARD_STATE_TABLE_NAME_INVALID")
         self._baseline_valid = True
+        self._schema_observed = False
+        self._guard_preexisted = False
+        self._state_preexisted = False
 
     def _state_marker_sha256(self) -> str:
         return _sha({
@@ -48,7 +56,81 @@ class SQLiteAppendOnlyTailGuard:
             "guard_table_name": self.table_name,
         })
 
+
+    def _table_exists(self, connection, table_name: str) -> bool:
+        row = connection.execute(
+            "SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = ?",
+            (table_name,),
+        ).fetchone()
+        return row is not None
+
+    def _database_path(self, connection) -> Path | None:
+        for row in connection.execute("PRAGMA database_list").fetchall():
+            if len(row) >= 3 and str(row[1]) == "main":
+                raw = str(row[2]).strip()
+                return None if not raw else Path(raw).resolve()
+        return None
+
+    def _external_anchor_path(self, connection) -> Path | None:
+        database_path = self._database_path(connection)
+        if database_path is None:
+            return None
+        return Path(
+            str(database_path)
+            + "."
+            + self.table_name
+            + ".init-anchor"
+        )
+
+    def _external_anchor_text(self) -> str:
+        return _canonical_json({
+            "schema": "matrix.append-only-tail-guard-external-anchor/1",
+            "ledger_name": self.ledger_name,
+            "guard_table_name": self.table_name,
+            "initialization_marker_sha256": self._state_marker_sha256(),
+        })
+
+    def _external_anchor_status(self, connection) -> str:
+        path = self._external_anchor_path(connection)
+        if path is None:
+            return "NOT_APPLICABLE"
+        if not path.exists():
+            return "MISSING"
+        try:
+            text = path.read_text(encoding="utf-8")
+        except OSError:
+            return "INVALID"
+        return "VALID" if text == self._external_anchor_text() else "INVALID"
+
+    def _write_external_anchor(self, connection) -> None:
+        path = self._external_anchor_path(connection)
+        if path is None:
+            return
+
+        expected = self._external_anchor_text()
+
+        if path.exists():
+            if path.read_text(encoding="utf-8") != expected:
+                raise ValueError(APPEND_ONLY_TAIL_GUARD_EXTERNAL_ANCHOR_INVALID)
+            return
+
+        path.parent.mkdir(parents=True, exist_ok=True)
+
+        try:
+            with path.open("x", encoding="utf-8", newline="\n") as handle:
+                handle.write(expected)
+                handle.flush()
+                os.fsync(handle.fileno())
+        except FileExistsError:
+            if path.read_text(encoding="utf-8") != expected:
+                raise ValueError(APPEND_ONLY_TAIL_GUARD_EXTERNAL_ANCHOR_INVALID)
+
     def ensure_schema(self, connection) -> None:
+        if not self._schema_observed:
+            self._guard_preexisted = self._table_exists(connection, self.table_name)
+            self._state_preexisted = self._table_exists(connection, self.state_table_name)
+            self._schema_observed = True
+
         connection.execute(
             f"CREATE TABLE IF NOT EXISTS {self.table_name} ("
             "sequence_id INTEGER PRIMARY KEY AUTOINCREMENT,"
@@ -138,6 +220,12 @@ class SQLiteAppendOnlyTailGuard:
         elif not self._state_is_valid(connection):
             errors.append("TAIL_GUARD_INITIALIZATION_STATE_INVALID")
 
+        anchor_status = self._external_anchor_status(connection)
+        if anchor_status == "MISSING":
+            errors.append(APPEND_ONLY_TAIL_GUARD_EXTERNAL_ANCHOR_REQUIRED)
+        elif anchor_status == "INVALID":
+            errors.append(APPEND_ONLY_TAIL_GUARD_EXTERNAL_ANCHOR_INVALID)
+
         if len(protected) != len(guard_rows):
             errors.append("TAIL_GUARD_RECORD_COUNT_MISMATCH")
 
@@ -193,7 +281,14 @@ class SQLiteAppendOnlyTailGuard:
         if not self._baseline_valid:
             raise ValueError(APPEND_ONLY_TAIL_GUARD_REBASELINE_FORBIDDEN)
         if not self._state_is_valid(connection):
-            raise ValueError("TAIL_GUARD_INITIALIZATION_STATE_REQUIRED")
+            raise ValueError(TAIL_GUARD_INITIALIZATION_STATE_REQUIRED)
+
+        anchor_status = self._external_anchor_status(connection)
+        if anchor_status == "MISSING":
+            raise ValueError(APPEND_ONLY_TAIL_GUARD_EXTERNAL_ANCHOR_REQUIRED)
+        if anchor_status == "INVALID":
+            raise ValueError(APPEND_ONLY_TAIL_GUARD_EXTERNAL_ANCHOR_INVALID)
+
         existing = connection.execute(
             f"SELECT record_payload_sha256 FROM {self.table_name} WHERE record_id = ?",
             (record_id,),
@@ -211,15 +306,33 @@ class SQLiteAppendOnlyTailGuard:
     def bootstrap_if_pristine(self, connection, *, records: Iterable[tuple[str, str]]) -> None:
         self.ensure_schema(connection)
         rows = tuple((str(record_id), str(payload_sha)) for record_id, payload_sha in records)
+        anchor_status = self._external_anchor_status(connection)
+
+        if anchor_status == "INVALID":
+            self._baseline_valid = False
+            raise ValueError(APPEND_ONLY_TAIL_GUARD_EXTERNAL_ANCHOR_INVALID)
+
         state_row = self._state_row(connection)
 
         if state_row is not None:
             report = self._audit_core(connection, rows)
             self._baseline_valid = report.ok
+            if not report.ok:
+                return
+            if anchor_status == "MISSING":
+                self._write_external_anchor(connection)
             return
+
+        if anchor_status == "VALID":
+            self._baseline_valid = False
+            raise ValueError(APPEND_ONLY_TAIL_GUARD_REBASELINE_FORBIDDEN)
 
         guard_count = int(connection.execute(f"SELECT COUNT(*) FROM {self.table_name}").fetchone()[0])
         high_water = self._sequence_high_water(connection)
+
+        if rows and not self._guard_preexisted and not self._state_preexisted:
+            self._baseline_valid = False
+            raise ValueError(APPEND_ONLY_TAIL_GUARD_REBASELINE_FORBIDDEN)
 
         if guard_count == 0 and high_water == 0:
             for record_id, payload_sha in rows:
@@ -241,6 +354,7 @@ class SQLiteAppendOnlyTailGuard:
             report = self._audit_core(connection, rows)
             if not report.ok:
                 raise ValueError("TAIL_GUARD_EXISTING_BASELINE_INVALID")
+            self._write_external_anchor(connection)
             self._baseline_valid = True
             return
 
@@ -250,6 +364,7 @@ class SQLiteAppendOnlyTailGuard:
             "VALUES (?, ?, ?)",
             (self.ledger_name, self.table_name, self._state_marker_sha256()),
         )
+        self._write_external_anchor(connection)
         self._baseline_valid = True
 
     def audit(self, connection, *, records: Iterable[tuple[str, str]]) -> AppendOnlyTailGuardIntegrityReport:
