@@ -540,3 +540,116 @@ def test_staggered_effective_supersession_cycle_is_rejected_at_append(
             previous_event_id=None,
             human_reviewed=True,
         )
+
+
+def test_out_of_order_known_at_supersession_cycle_is_rejected(
+    tmp_path,
+):
+    (
+        _,
+        ledger,
+        first,
+        second,
+        _,
+    ) = prepared(
+        tmp_path
+    )
+
+    append_football_identity_supersession(
+        ledger=ledger,
+        canonical_id=second.canonical_id,
+        superseded_by_canonical_id=first.canonical_id,
+        entity_type="team",
+        effective_at=at(20),
+        known_at=at(20),
+        reason_code="B_TO_A_FUTURE_KNOWLEDGE",
+        previous_event_id=None,
+        human_reviewed=True,
+    )
+
+    with pytest.raises(
+        ValueError,
+        match=(
+            "IDENTITY_SUPERSESSION_LEDGER_GLOBALLY_ACYCLIC"
+        ),
+    ):
+        append_football_identity_supersession(
+            ledger=ledger,
+            canonical_id=first.canonical_id,
+            superseded_by_canonical_id=second.canonical_id,
+            entity_type="team",
+            effective_at=at(10),
+            known_at=at(15),
+            reason_code="A_TO_B_BACKFILLED",
+            previous_event_id=None,
+            human_reviewed=True,
+        )
+
+
+def test_out_of_order_known_at_acyclic_supersession_is_allowed(
+    tmp_path,
+):
+    (
+        registry,
+        ledger,
+        first,
+        second,
+        _,
+    ) = prepared(
+        tmp_path
+    )
+
+    third = registry.build_entity(
+        sport="football",
+        entity_type="team",
+        canonical_key="TEAM:F:139",
+        display_name="Equipo Tercero",
+    )
+    registry.register(
+        third
+    )
+
+    later_known = append_football_identity_supersession(
+        ledger=ledger,
+        canonical_id=second.canonical_id,
+        superseded_by_canonical_id=third.canonical_id,
+        entity_type="team",
+        effective_at=at(20),
+        known_at=at(20),
+        reason_code="B_TO_C_FUTURE_KNOWLEDGE",
+        previous_event_id=None,
+        human_reviewed=True,
+    )
+
+    backfilled = append_football_identity_supersession(
+        ledger=ledger,
+        canonical_id=first.canonical_id,
+        superseded_by_canonical_id=second.canonical_id,
+        entity_type="team",
+        effective_at=at(10),
+        known_at=at(15),
+        reason_code="A_TO_B_BACKFILLED",
+        previous_event_id=None,
+        human_reviewed=True,
+    )
+
+    assert later_known.superseded_by_canonical_id == third.canonical_id
+    assert backfilled.superseded_by_canonical_id == second.canonical_id
+
+    assert (
+        ledger.resolve_terminal_canonical_id_as_of(
+            canonical_id=first.canonical_id,
+            as_of=at(15),
+            event_time=at(10),
+        )
+        == second.canonical_id
+    )
+
+    assert (
+        ledger.resolve_terminal_canonical_id_as_of(
+            canonical_id=first.canonical_id,
+            as_of=at(20),
+            event_time=at(20),
+        )
+        == third.canonical_id
+    )

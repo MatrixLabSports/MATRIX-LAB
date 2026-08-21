@@ -626,7 +626,8 @@ class SQLiteCanonicalIdentityLifecycleLedger:
                 if current in seen:
                     raise ValueError(
                         "IDENTITY_SUPERSESSION_CYCLE:"
-                        "IDENTITY_SUPERSESSION_GRAPH_ACYCLIC"
+                        "IDENTITY_SUPERSESSION_GRAPH_ACYCLIC:"
+                        "IDENTITY_SUPERSESSION_LEDGER_GLOBALLY_ACYCLIC"
                     )
 
                 seen.add(
@@ -641,8 +642,6 @@ class SQLiteCanonicalIdentityLifecycleLedger:
                     if (
                         item.event_type
                         == "SUPERSEDED"
-                        and item.known_at
-                        <= event.known_at
                     )
                 )
 

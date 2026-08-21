@@ -1376,6 +1376,7 @@ def _p137_p141_history_identity_lifecycle_boundary(
         "known_at",
         "resolve_terminal_canonical_id_as_of",
         "IDENTITY_SUPERSESSION_GRAPH_ACYCLIC",
+        "IDENTITY_SUPERSESSION_LEDGER_GLOBALLY_ACYCLIC",
         "name_join_allowed",
         "automatic_model_promotion",
         "automatic_provider_switch",

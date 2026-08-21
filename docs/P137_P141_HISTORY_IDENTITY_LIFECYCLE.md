@@ -120,3 +120,19 @@ Governed rule:
 
 - The canonical supersession graph known as of the candidate's `known_at` must remain globally acyclic.
 - Effective-time filtering is still used for point-in-time resolution, but it is not sufficient for graph-integrity admission.
+
+
+## V4 adversarial hardening: globally acyclic persisted supersession ledger
+
+Independent adversarial re-audit V4 exposed an ingestion-order edge case.
+
+A supersession edge with later `known_at` could already be persisted. A reciprocal edge arriving later as backfill with an earlier `known_at` was evaluated only against facts whose `known_at` was less than or equal to the candidate. That preserved point-in-time semantics locally but allowed the persisted ledger as a whole to become cyclic.
+
+Governed distinction:
+
+- `known_at` continues to control what MATRIX may see in a point-in-time historical reconstruction.
+- Admission integrity is stricter: the entire persisted canonical supersession graph plus the candidate must remain acyclic, regardless of ingestion order or the relative `known_at` values of already persisted edges.
+- Out-of-order backfill remains allowed when the resulting global graph is acyclic.
+- Acyclicity admission and point-in-time visibility are separate concerns and must not be conflated.
+
+This prevents a future-known edge already present in durable storage from combining with an earlier-known backfilled edge to create an eventual cycle.

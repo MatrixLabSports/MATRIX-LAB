@@ -254,3 +254,19 @@ def test_v3_stale_predecessor_and_supersession_graph_guards_are_ci_governed():
     assert provider_token in ci
     assert canonical_token in canonical
     assert canonical_token in ci
+
+
+def test_v4_global_supersession_acyclicity_is_ci_governed():
+    canonical = read(
+        "app/core/canonical_identity_lifecycle.py"
+    )
+    ci = read(
+        "scripts/matrix_ci_gate.py"
+    )
+
+    token = (
+        "IDENTITY_SUPERSESSION_LEDGER_GLOBALLY_ACYCLIC"
+    )
+
+    assert token in canonical
+    assert token in ci
