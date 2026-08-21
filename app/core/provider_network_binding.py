@@ -9,19 +9,19 @@ import sqlite3
 from typing import Any, Callable, Mapping
 
 from app.core.governed_provider_http import MatrixPinnedHttpsTransport
+from app.core.provider_request_contract import (
+    build_provider_request_authorization_fingerprint,
+)
 
 
 def _json(value: Any) -> str:
-    return (
-        json.dumps(
-            value,
-            sort_keys=True,
-            separators=(",", ":"),
-            ensure_ascii=False,
-            allow_nan=False,
-        )
-        + "\n"
-    )
+    return json.dumps(
+        value,
+        sort_keys=True,
+        separators=(",", ":"),
+        ensure_ascii=False,
+        allow_nan=False,
+    ) + "\n"
 
 
 def _sha(value: Any) -> str:
@@ -34,6 +34,16 @@ def _aware(value: datetime) -> datetime:
     return value.astimezone(timezone.utc)
 
 
+def _hex64(name: str, value: object) -> str:
+    if not isinstance(value, str) or len(value) != 64:
+        raise ValueError(f"INVALID_{name}")
+    try:
+        int(value, 16)
+    except ValueError as error:
+        raise ValueError(f"INVALID_{name}") from error
+    return value.lower()
+
+
 class ProviderNetworkBindingCollector:
     def __init__(self) -> None:
         self._active_queue_fingerprint: str | None = None
@@ -42,16 +52,32 @@ class ProviderNetworkBindingCollector:
     def begin(self, queue_item_fingerprint: str) -> None:
         if self._active_queue_fingerprint is not None:
             raise ValueError("NETWORK_BINDING_SCOPE_ALREADY_ACTIVE")
-        self._active_queue_fingerprint = queue_item_fingerprint
+        self._active_queue_fingerprint = _hex64(
+            "QUEUE_ITEM_FINGERPRINT",
+            queue_item_fingerprint,
+        )
         self._evidence_ids = []
 
-    def record(self, evidence_id: str) -> None:
+    def require_active(self) -> str:
         if self._active_queue_fingerprint is None:
             raise ValueError("NETWORK_BINDING_SCOPE_REQUIRED")
-        self._evidence_ids.append(evidence_id)
+        return self._active_queue_fingerprint
+
+    def record(self, evidence_id: str) -> None:
+        self.require_active()
+        self._evidence_ids.append(
+            _hex64(
+                "NETWORK_BINDING_EVIDENCE_ID",
+                evidence_id,
+            )
+        )
 
     def finish(self, queue_item_fingerprint: str) -> tuple[str, ...]:
-        if self._active_queue_fingerprint != queue_item_fingerprint:
+        validated = _hex64(
+            "QUEUE_ITEM_FINGERPRINT",
+            queue_item_fingerprint,
+        )
+        if self._active_queue_fingerprint != validated:
             raise ValueError("NETWORK_BINDING_SCOPE_MISMATCH")
         result = tuple(self._evidence_ids)
         self._active_queue_fingerprint = None
@@ -64,23 +90,37 @@ class ProviderNetworkBindingEvidence:
     evidence_id: str
     run_id: str
     provider_key: str
+    queue_item_fingerprint: str
     permit_id: str
     endpoint_manifest_id: str
     security_evidence_id: str
+    request_contract_id: str
     request_contract_fingerprint: str
+    request_path: str
+    request_parameter_names: tuple[str, ...]
+    request_parameter_values_fingerprint: str
+    secret_reference_fingerprint: str
     outcome: str
     created_at: datetime
 
     def payload(self) -> Mapping[str, Any]:
         return {
-            "schema": "matrix.provider-network-binding/1",
+            "schema": "matrix.provider-network-binding/2",
             "evidence_id": self.evidence_id,
             "run_id": self.run_id,
             "provider_key": self.provider_key,
+            "queue_item_fingerprint": self.queue_item_fingerprint,
             "permit_id": self.permit_id,
             "endpoint_manifest_id": self.endpoint_manifest_id,
             "security_evidence_id": self.security_evidence_id,
+            "request_contract_id": self.request_contract_id,
             "request_contract_fingerprint": self.request_contract_fingerprint,
+            "request_path": self.request_path,
+            "request_parameter_names": list(self.request_parameter_names),
+            "request_parameter_values_fingerprint": (
+                self.request_parameter_values_fingerprint
+            ),
+            "secret_reference_fingerprint": self.secret_reference_fingerprint,
             "outcome": self.outcome,
             "created_at": self.created_at.isoformat(),
             "raw_url_persisted": False,
@@ -94,24 +134,86 @@ def build_provider_network_binding_evidence(
     *,
     run_id: str,
     provider_key: str,
+    queue_item_fingerprint: str,
     permit_id: str,
     endpoint_manifest_id: str,
     security_evidence_id: str,
+    request_contract_id: str,
     request_contract_fingerprint: str,
+    request_path: str,
+    request_parameter_names: tuple[str, ...],
+    request_parameter_values_fingerprint: str,
+    secret_reference_fingerprint: str,
     outcome: str,
     created_at: datetime,
 ) -> ProviderNetworkBindingEvidence:
     if outcome not in {"COMPLETED", "FAILED"}:
         raise ValueError("INVALID_NETWORK_BINDING_OUTCOME")
+    if not provider_key:
+        raise ValueError("INVALID_PROVIDER_KEY")
+    if (
+        not isinstance(request_path, str)
+        or not request_path.startswith("/")
+        or "?" in request_path
+        or "#" in request_path
+    ):
+        raise ValueError("INVALID_REQUEST_PATH")
+
+    names = tuple(sorted(str(name) for name in request_parameter_names))
+    if len(set(names)) != len(names):
+        raise ValueError("DUPLICATE_REQUEST_PARAMETER_NAME")
+
     created_at = _aware(created_at)
+
+    values = {
+        "run_id": _hex64("RUN_ID", run_id),
+        "queue_item_fingerprint": _hex64(
+            "QUEUE_ITEM_FINGERPRINT",
+            queue_item_fingerprint,
+        ),
+        "permit_id": _hex64("PERMIT_ID", permit_id),
+        "endpoint_manifest_id": _hex64(
+            "ENDPOINT_MANIFEST_ID",
+            endpoint_manifest_id,
+        ),
+        "security_evidence_id": _hex64(
+            "SECURITY_EVIDENCE_ID",
+            security_evidence_id,
+        ),
+        "request_contract_id": _hex64(
+            "REQUEST_CONTRACT_ID",
+            request_contract_id,
+        ),
+        "request_contract_fingerprint": _hex64(
+            "REQUEST_CONTRACT_FINGERPRINT",
+            request_contract_fingerprint,
+        ),
+        "request_parameter_values_fingerprint": _hex64(
+            "REQUEST_PARAMETER_VALUES_FINGERPRINT",
+            request_parameter_values_fingerprint,
+        ),
+        "secret_reference_fingerprint": _hex64(
+            "SECRET_REFERENCE_FINGERPRINT",
+            secret_reference_fingerprint,
+        ),
+    }
+
     base = {
-        "schema": "matrix.provider-network-binding-id/1",
-        "run_id": run_id,
+        "schema": "matrix.provider-network-binding-id/2",
+        "run_id": values["run_id"],
         "provider_key": provider_key,
-        "permit_id": permit_id,
-        "endpoint_manifest_id": endpoint_manifest_id,
-        "security_evidence_id": security_evidence_id,
-        "request_contract_fingerprint": request_contract_fingerprint,
+        "queue_item_fingerprint": values["queue_item_fingerprint"],
+        "permit_id": values["permit_id"],
+        "endpoint_manifest_id": values["endpoint_manifest_id"],
+        "security_evidence_id": values["security_evidence_id"],
+        "request_contract_id": values["request_contract_id"],
+        "request_contract_fingerprint": values["request_contract_fingerprint"],
+        "request_path": request_path,
+        "request_parameter_names": list(names),
+        "request_parameter_values_fingerprint": (
+            values["request_parameter_values_fingerprint"]
+        ),
+        "secret_reference_fingerprint": values["secret_reference_fingerprint"],
         "outcome": outcome,
         "created_at": created_at.isoformat(),
         "raw_url_persisted": False,
@@ -119,14 +221,23 @@ def build_provider_network_binding_evidence(
         "headers_persisted": False,
         "secret_material_persisted": False,
     }
+
     return ProviderNetworkBindingEvidence(
         evidence_id=_sha(base),
-        run_id=run_id,
+        run_id=values["run_id"],
         provider_key=provider_key,
-        permit_id=permit_id,
-        endpoint_manifest_id=endpoint_manifest_id,
-        security_evidence_id=security_evidence_id,
-        request_contract_fingerprint=request_contract_fingerprint,
+        queue_item_fingerprint=values["queue_item_fingerprint"],
+        permit_id=values["permit_id"],
+        endpoint_manifest_id=values["endpoint_manifest_id"],
+        security_evidence_id=values["security_evidence_id"],
+        request_contract_id=values["request_contract_id"],
+        request_contract_fingerprint=values["request_contract_fingerprint"],
+        request_path=request_path,
+        request_parameter_names=names,
+        request_parameter_values_fingerprint=(
+            values["request_parameter_values_fingerprint"]
+        ),
+        secret_reference_fingerprint=values["secret_reference_fingerprint"],
         outcome=outcome,
         created_at=created_at,
     )
@@ -161,10 +272,18 @@ class SQLiteProviderNetworkBindingEvidenceStore:
         rebuilt = build_provider_network_binding_evidence(
             run_id=evidence.run_id,
             provider_key=evidence.provider_key,
+            queue_item_fingerprint=evidence.queue_item_fingerprint,
             permit_id=evidence.permit_id,
             endpoint_manifest_id=evidence.endpoint_manifest_id,
             security_evidence_id=evidence.security_evidence_id,
+            request_contract_id=evidence.request_contract_id,
             request_contract_fingerprint=evidence.request_contract_fingerprint,
+            request_path=evidence.request_path,
+            request_parameter_names=evidence.request_parameter_names,
+            request_parameter_values_fingerprint=(
+                evidence.request_parameter_values_fingerprint
+            ),
+            secret_reference_fingerprint=evidence.secret_reference_fingerprint,
             outcome=evidence.outcome,
             created_at=evidence.created_at,
         )
@@ -228,22 +347,26 @@ class SQLiteProviderNetworkBindingEvidenceStore:
         rebuilt = build_provider_network_binding_evidence(
             run_id=payload["run_id"],
             provider_key=payload["provider_key"],
+            queue_item_fingerprint=payload["queue_item_fingerprint"],
             permit_id=payload["permit_id"],
             endpoint_manifest_id=payload["endpoint_manifest_id"],
             security_evidence_id=payload["security_evidence_id"],
-            request_contract_fingerprint=payload[
-                "request_contract_fingerprint"
-            ],
+            request_contract_id=payload["request_contract_id"],
+            request_contract_fingerprint=payload["request_contract_fingerprint"],
+            request_path=payload["request_path"],
+            request_parameter_names=tuple(
+                payload["request_parameter_names"]
+            ),
+            request_parameter_values_fingerprint=(
+                payload["request_parameter_values_fingerprint"]
+            ),
+            secret_reference_fingerprint=payload["secret_reference_fingerprint"],
             outcome=payload["outcome"],
             created_at=datetime.fromisoformat(payload["created_at"]),
         )
 
-        if (
-            rebuilt.evidence_id != evidence_id
-            or rebuilt.payload() != payload
-        ):
+        if rebuilt.evidence_id != evidence_id or rebuilt.payload() != payload:
             raise ValueError("NETWORK_BINDING_REDERIVATION_FAILURE")
-
         return rebuilt
 
     def audit_integrity(self) -> bool:
@@ -293,16 +416,30 @@ class BindingAuditPinnedHttpsTransport(MatrixPinnedHttpsTransport):
         self,
         *,
         permit,
+        queue_item_fingerprint: str,
+        request_contract_id: str,
         request_contract_fingerprint: str,
+        request_path: str,
+        request_parameter_names: tuple[str, ...],
+        request_parameter_values_fingerprint: str,
+        secret_reference_fingerprint: str,
         outcome: str,
     ) -> None:
         evidence = build_provider_network_binding_evidence(
             run_id=permit.run_id,
             provider_key=permit.provider_key,
+            queue_item_fingerprint=queue_item_fingerprint,
             permit_id=permit.permit_id,
             endpoint_manifest_id=permit.endpoint_manifest_id,
             security_evidence_id=permit.security_evidence_id,
+            request_contract_id=request_contract_id,
             request_contract_fingerprint=request_contract_fingerprint,
+            request_path=request_path,
+            request_parameter_names=request_parameter_names,
+            request_parameter_values_fingerprint=(
+                request_parameter_values_fingerprint
+            ),
+            secret_reference_fingerprint=secret_reference_fingerprint,
             outcome=outcome,
             created_at=self.clock(),
         )
@@ -321,17 +458,53 @@ class BindingAuditPinnedHttpsTransport(MatrixPinnedHttpsTransport):
         **kwargs: Any,
     ):
         permit = kwargs.get("matrix_permit")
-        request_contract_fingerprint = kwargs.get(
-            "matrix_request_contract_fingerprint"
-        )
-
         if permit is None:
             raise ValueError("NETWORK_PERMIT_CONTEXT_REQUIRED")
+
+        queue_item_fingerprint = self.collector.require_active()
+        request_contract_id = _hex64(
+            "REQUEST_CONTRACT_ID",
+            kwargs.get("matrix_request_contract_id"),
+        )
+        request_contract_fingerprint = _hex64(
+            "REQUEST_CONTRACT_FINGERPRINT",
+            kwargs.get("matrix_request_contract_fingerprint"),
+        )
+        request_path = kwargs.get("matrix_request_path")
         if (
-            not isinstance(request_contract_fingerprint, str)
-            or len(request_contract_fingerprint) != 64
+            not isinstance(request_path, str)
+            or not request_path.startswith("/")
+            or "?" in request_path
+            or "#" in request_path
         ):
-            raise ValueError("REQUEST_CONTRACT_FINGERPRINT_REQUIRED")
+            raise ValueError("REQUEST_PATH_REQUIRED")
+
+        raw_names = kwargs.get("matrix_request_parameter_names")
+        if not isinstance(raw_names, tuple):
+            raise ValueError("REQUEST_PARAMETER_NAMES_REQUIRED")
+        request_parameter_names = tuple(sorted(str(item) for item in raw_names))
+        if len(set(request_parameter_names)) != len(request_parameter_names):
+            raise ValueError("DUPLICATE_REQUEST_PARAMETER_NAME")
+
+        values_fp = _hex64(
+            "REQUEST_PARAMETER_VALUES_FINGERPRINT",
+            kwargs.get("matrix_request_parameter_values_fingerprint"),
+        )
+        secret_fp = _hex64(
+            "SECRET_REFERENCE_FINGERPRINT",
+            kwargs.get("matrix_request_secret_reference_fingerprint"),
+        )
+
+        persist = {
+            "permit": permit,
+            "queue_item_fingerprint": queue_item_fingerprint,
+            "request_contract_id": request_contract_id,
+            "request_contract_fingerprint": request_contract_fingerprint,
+            "request_path": request_path,
+            "request_parameter_names": request_parameter_names,
+            "request_parameter_values_fingerprint": values_fp,
+            "secret_reference_fingerprint": secret_fp,
+        }
 
         try:
             response = self.inner.get_pinned(
@@ -344,15 +517,13 @@ class BindingAuditPinnedHttpsTransport(MatrixPinnedHttpsTransport):
             )
         except Exception:
             self._persist(
-                permit=permit,
-                request_contract_fingerprint=request_contract_fingerprint,
+                **persist,
                 outcome="FAILED",
             )
             raise
 
         self._persist(
-            permit=permit,
-            request_contract_fingerprint=request_contract_fingerprint,
+            **persist,
             outcome="COMPLETED",
         )
         return response
@@ -373,6 +544,7 @@ def reconcile_provider_network_bindings(
     binding_store: SQLiteProviderNetworkBindingEvidenceStore,
     network_permit_store,
     network_call_evidence_store,
+    request_contract_registry,
 ) -> ProviderNetworkReconciliation:
     errors: list[str] = []
 
@@ -382,6 +554,8 @@ def reconcile_provider_network_bindings(
         errors.append("NETWORK_PERMIT_STORE_INTEGRITY_FAILED")
     if not network_call_evidence_store.audit_integrity():
         errors.append("NETWORK_CALL_EVIDENCE_INTEGRITY_FAILED")
+    if not request_contract_registry.audit_integrity():
+        errors.append("REQUEST_CONTRACT_REGISTRY_INTEGRITY_FAILED")
 
     events = tuple(audit_ledger.list_events(run_id))
     terminal_events = [
@@ -399,6 +573,7 @@ def reconcile_provider_network_bindings(
             errors.append("INVALID_PROVIDER_CALL_TERMINAL_PAYLOAD")
             continue
 
+        queue_item_fingerprint = payload.get("queue_item_fingerprint")
         binding_ids = payload.get("network_binding_evidence_ids")
         if not isinstance(binding_ids, list):
             errors.append("NETWORK_BINDING_EVIDENCE_IDS_REQUIRED")
@@ -421,13 +596,12 @@ def reconcile_provider_network_bindings(
 
             if evidence.run_id != run_id:
                 errors.append("NETWORK_BINDING_RUN_MISMATCH")
-
             if evidence.provider_key != payload.get("provider_key"):
                 errors.append("NETWORK_BINDING_PROVIDER_MISMATCH")
+            if evidence.queue_item_fingerprint != queue_item_fingerprint:
+                errors.append("NETWORK_BINDING_QUEUE_ITEM_MISMATCH")
 
-            permit = network_permit_store.get_verified(
-                evidence.permit_id
-            )
+            permit = network_permit_store.get_verified(evidence.permit_id)
             if permit is None:
                 errors.append("NETWORK_BINDING_PERMIT_MISSING")
                 continue
@@ -435,12 +609,79 @@ def reconcile_provider_network_bindings(
             if (
                 permit.get("run_id") != evidence.run_id
                 or permit.get("provider_key") != evidence.provider_key
-                or permit.get("endpoint_manifest_id")
-                != evidence.endpoint_manifest_id
-                or permit.get("security_evidence_id")
-                != evidence.security_evidence_id
+                or permit.get("endpoint_manifest_id") != evidence.endpoint_manifest_id
+                or permit.get("security_evidence_id") != evidence.security_evidence_id
             ):
                 errors.append("NETWORK_BINDING_PERMIT_MISMATCH")
+
+            consumed_at = permit.get("consumed_at")
+            if not isinstance(consumed_at, str):
+                errors.append("NETWORK_PERMIT_NOT_CONSUMED")
+            else:
+                try:
+                    parsed_consumed = datetime.fromisoformat(consumed_at)
+                except Exception:
+                    errors.append("NETWORK_PERMIT_CONSUMED_AT_INVALID")
+                else:
+                    if (
+                        parsed_consumed.tzinfo is None
+                        or parsed_consumed.utcoffset() is None
+                    ):
+                        errors.append("NETWORK_PERMIT_CONSUMED_AT_NAIVE")
+
+            contract = request_contract_registry.get_verified(
+                evidence.request_contract_id
+            )
+            if contract is None:
+                errors.append("REQUEST_CONTRACT_EVIDENCE_MISSING")
+            else:
+                if (
+                    contract.provider_key != evidence.provider_key
+                    or contract.sport != permit.get("sport")
+                    or contract.method != permit.get("method")
+                    or contract.path != evidence.request_path
+                    or contract.secret_reference_fingerprint
+                    != evidence.secret_reference_fingerprint
+                ):
+                    errors.append("REQUEST_CONTRACT_NETWORK_BINDING_MISMATCH")
+
+                rule_names = {
+                    rule.name
+                    for rule in contract.parameter_rules
+                }
+                required_names = {
+                    rule.name
+                    for rule in contract.parameter_rules
+                    if rule.required
+                }
+                actual_names = set(evidence.request_parameter_names)
+
+                if not actual_names.issubset(rule_names):
+                    errors.append("REQUEST_PARAMETER_NAME_NOT_IN_CONTRACT")
+                if not required_names.issubset(actual_names):
+                    errors.append("REQUEST_REQUIRED_PARAMETER_MISSING")
+
+                expected_authorization = (
+                    build_provider_request_authorization_fingerprint(
+                        contract_id=evidence.request_contract_id,
+                        provider_key=evidence.provider_key,
+                        sport=contract.sport,
+                        method=contract.method,
+                        path=evidence.request_path,
+                        parameter_names=evidence.request_parameter_names,
+                        parameter_values_fingerprint=(
+                            evidence.request_parameter_values_fingerprint
+                        ),
+                        secret_reference_fingerprint=(
+                            evidence.secret_reference_fingerprint
+                        ),
+                    )
+                )
+                if (
+                    expected_authorization
+                    != evidence.request_contract_fingerprint
+                ):
+                    errors.append("REQUEST_AUTHORIZATION_FINGERPRINT_MISMATCH")
 
             network_events = (
                 network_call_evidence_store.list_verified_events_for_permit(
@@ -457,9 +698,19 @@ def reconcile_provider_network_bindings(
             if len(terminal_network_events) != 1:
                 errors.append("NETWORK_BINDING_NETWORK_TERMINAL_COUNT")
             else:
+                terminal_network = terminal_network_events[0]
+                if (
+                    terminal_network.get("run_id") not in {None, evidence.run_id}
+                    or terminal_network.get("provider_key")
+                    not in {None, evidence.provider_key}
+                    or terminal_network.get("endpoint_manifest_id")
+                    not in {None, evidence.endpoint_manifest_id}
+                ):
+                    errors.append("NETWORK_CALL_EVIDENCE_BINDING_MISMATCH")
+
                 expected_outcome = (
                     "COMPLETED"
-                    if terminal_network_events[0]["event_type"]
+                    if terminal_network["event_type"]
                     == "NETWORK_CALL_COMPLETED"
                     else "FAILED"
                 )

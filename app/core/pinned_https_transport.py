@@ -198,7 +198,11 @@ class StdlibPinnedHttpsTransport(MatrixPinnedHttpsTransport):
         params = kwargs.pop("params", None)
 
         kwargs.pop("matrix_permit", None)
+        kwargs.pop("matrix_request_contract_id", None)
         kwargs.pop("matrix_request_contract_fingerprint", None)
+        kwargs.pop("matrix_request_path", None)
+        kwargs.pop("matrix_request_parameter_names", None)
+        kwargs.pop("matrix_request_parameter_values_fingerprint", None)
         kwargs.pop("matrix_request_secret_reference_fingerprint", None)
 
         if kwargs:

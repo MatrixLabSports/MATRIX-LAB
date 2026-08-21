@@ -33,6 +33,84 @@ def _aware(value: datetime) -> datetime:
     return value.astimezone(timezone.utc)
 
 
+def _hex64(name: str, value: object) -> str:
+    if not isinstance(value, str) or len(value) != 64:
+        raise ValueError(f"INVALID_{name}")
+    try:
+        int(value, 16)
+    except ValueError as error:
+        raise ValueError(f"INVALID_{name}") from error
+    return value.lower()
+
+
+def request_parameter_values_fingerprint(
+    params: Mapping[str, Any] | None,
+) -> str:
+    actual = {} if params is None else dict(params)
+    normalized = {
+        str(name): actual[name]
+        for name in sorted(actual, key=lambda item: str(item))
+    }
+    return _sha(
+        {
+            "schema": "matrix.provider-request-parameter-values/1",
+            "values": normalized,
+        }
+    )
+
+
+def build_provider_request_authorization_fingerprint(
+    *,
+    contract_id: str,
+    provider_key: str,
+    sport: str,
+    method: str,
+    path: str,
+    parameter_names: Sequence[str],
+    parameter_values_fingerprint: str,
+    secret_reference_fingerprint: str,
+) -> str:
+    contract_id = _hex64("REQUEST_CONTRACT_ID", contract_id)
+    parameter_values_fingerprint = _hex64(
+        "PARAMETER_VALUES_FINGERPRINT",
+        parameter_values_fingerprint,
+    )
+    secret_reference_fingerprint = _hex64(
+        "SECRET_REFERENCE_FINGERPRINT",
+        secret_reference_fingerprint,
+    )
+
+    if not provider_key:
+        raise ValueError("INVALID_PROVIDER_KEY")
+    if sport not in {"football", "tennis"}:
+        raise ValueError("INVALID_SPORT")
+
+    method = method.upper()
+    if method != "GET":
+        raise ValueError("ONLY_GET_AUTHORIZATION_SUPPORTED")
+    if not path.startswith("/") or "?" in path or "#" in path:
+        raise ValueError("INVALID_REQUEST_AUTHORIZATION_PATH")
+
+    names = tuple(sorted(str(name) for name in parameter_names))
+    if len(set(names)) != len(names):
+        raise ValueError("DUPLICATE_PARAMETER_NAME")
+
+    return _sha(
+        {
+            "schema": "matrix.provider-request-authorization/2",
+            "contract_id": contract_id,
+            "provider_key": provider_key,
+            "sport": sport,
+            "method": method,
+            "path": path,
+            "parameter_names": list(names),
+            "parameter_values_fingerprint": parameter_values_fingerprint,
+            "secret_reference_fingerprint": secret_reference_fingerprint,
+            "automatic_provider_switch": False,
+        }
+    )
+
+
 @dataclass(frozen=True)
 class RequestParameterRule:
     name: str
@@ -95,7 +173,26 @@ class ProviderRequestAuthorization:
     auth_header_name: str
     secret_reference_fingerprint: str
     parameter_names: tuple[str, ...]
+    parameter_values_fingerprint: str
     authorization_fingerprint: str
+
+    def payload(self) -> Mapping[str, Any]:
+        return {
+            "schema": "matrix.provider-request-authorization-evidence/1",
+            "contract_id": self.contract_id,
+            "provider_key": self.provider_key,
+            "sport": self.sport,
+            "method": self.method,
+            "path": self.path,
+            "auth_header_name": self.auth_header_name,
+            "secret_reference_fingerprint": self.secret_reference_fingerprint,
+            "parameter_names": list(self.parameter_names),
+            "parameter_values_fingerprint": self.parameter_values_fingerprint,
+            "authorization_fingerprint": self.authorization_fingerprint,
+            "query_values_persisted": False,
+            "secret_material_persisted": False,
+            "automatic_provider_switch": False,
+        }
 
 
 def build_provider_request_contract(
@@ -116,23 +213,15 @@ def build_provider_request_contract(
     method = method.upper()
     if method != "GET":
         raise ValueError("ONLY_GET_CONTRACTS_SUPPORTED")
-
     if not path.startswith("/") or "?" in path or "#" in path:
         raise ValueError("INVALID_REQUEST_CONTRACT_PATH")
-
     if not auth_header_name or "\r" in auth_header_name or "\n" in auth_header_name:
         raise ValueError("INVALID_AUTH_HEADER_NAME")
 
-    if (
-        not isinstance(secret_reference_fingerprint, str)
-        or len(secret_reference_fingerprint) != 64
-    ):
-        raise ValueError("INVALID_SECRET_REFERENCE_FINGERPRINT")
-
-    try:
-        int(secret_reference_fingerprint, 16)
-    except ValueError as error:
-        raise ValueError("INVALID_SECRET_REFERENCE_FINGERPRINT") from error
+    secret_reference_fingerprint = _hex64(
+        "SECRET_REFERENCE_FINGERPRINT",
+        secret_reference_fingerprint,
+    )
 
     names: set[str] = set()
     rules: list[RequestParameterRule] = []
@@ -148,7 +237,6 @@ def build_provider_request_contract(
             and rule.minimum > rule.maximum
         ):
             raise ValueError("INVALID_PARAMETER_RANGE")
-
         names.add(rule.name)
         rules.append(rule)
 
@@ -168,7 +256,7 @@ def build_provider_request_contract(
         "path": path,
         "parameter_rules": [rule.payload() for rule in rules],
         "auth_header_name": auth_header_name,
-        "secret_reference_fingerprint": secret_reference_fingerprint.lower(),
+        "secret_reference_fingerprint": secret_reference_fingerprint,
         "valid_from": valid_from.isoformat(),
         "valid_until": valid_until.isoformat() if valid_until else None,
         "automatic_provider_switch": False,
@@ -182,7 +270,7 @@ def build_provider_request_contract(
         path=path,
         parameter_rules=tuple(rules),
         auth_header_name=auth_header_name,
-        secret_reference_fingerprint=secret_reference_fingerprint.lower(),
+        secret_reference_fingerprint=secret_reference_fingerprint,
         valid_from=valid_from,
         valid_until=valid_until,
     )
@@ -269,7 +357,6 @@ class SQLiteProviderRequestContractRegistry:
 
         if row != (payload_json, payload_sha):
             raise ValueError("REQUEST_CONTRACT_MUTATION_VIOLATION")
-
         return contract
 
     def get_verified(self, contract_id: str) -> ProviderRequestContract | None:
@@ -284,7 +371,6 @@ class SQLiteProviderRequestContractRegistry:
             return None
 
         payload_json, payload_sha = row
-
         if sha256(payload_json.encode("utf-8")).hexdigest() != payload_sha:
             raise ValueError("REQUEST_CONTRACT_INTEGRITY_FAILURE")
 
@@ -318,7 +404,6 @@ class SQLiteProviderRequestContractRegistry:
 
         if rebuilt.contract_id != contract_id or rebuilt.payload() != payload:
             raise ValueError("REQUEST_CONTRACT_REDERIVATION_FAILURE")
-
         return rebuilt
 
     def authorize(
@@ -338,20 +423,22 @@ class SQLiteProviderRequestContractRegistry:
             raise ValueError("REQUEST_CONTRACT_NOT_FOUND")
 
         now = _aware(now)
+        secret_fp = _hex64(
+            "SECRET_REFERENCE_FINGERPRINT",
+            secret_reference_fingerprint,
+        )
 
         if (
             contract.provider_key != provider_key
             or contract.sport != sport
             or contract.method != method.upper()
             or contract.path != path
-            or contract.secret_reference_fingerprint
-            != secret_reference_fingerprint.lower()
+            or contract.secret_reference_fingerprint != secret_fp
         ):
             raise ValueError("REQUEST_CONTRACT_BINDING_MISMATCH")
 
         if now < contract.valid_from:
             raise ValueError("REQUEST_CONTRACT_NOT_ACTIVE")
-
         if contract.valid_until is not None and now >= contract.valid_until:
             raise ValueError("REQUEST_CONTRACT_EXPIRED")
 
@@ -368,20 +455,18 @@ class SQLiteProviderRequestContractRegistry:
                 _validate(rule, actual[rule.name])
 
         names = tuple(sorted(actual))
-
-        fingerprint = _sha(
-            {
-                "schema": "matrix.provider-request-authorization/1",
-                "contract_id": contract.contract_id,
-                "provider_key": provider_key,
-                "sport": sport,
-                "method": method.upper(),
-                "path": path,
-                "parameter_names": list(names),
-                "secret_reference_fingerprint": secret_reference_fingerprint.lower(),
-                "authorized_at": now.isoformat(),
-                "automatic_provider_switch": False,
-            }
+        values_fingerprint = request_parameter_values_fingerprint(actual)
+        authorization_fingerprint = (
+            build_provider_request_authorization_fingerprint(
+                contract_id=contract.contract_id,
+                provider_key=provider_key,
+                sport=sport,
+                method=method,
+                path=path,
+                parameter_names=names,
+                parameter_values_fingerprint=values_fingerprint,
+                secret_reference_fingerprint=contract.secret_reference_fingerprint,
+            )
         )
 
         return ProviderRequestAuthorization(
@@ -393,7 +478,8 @@ class SQLiteProviderRequestContractRegistry:
             auth_header_name=contract.auth_header_name,
             secret_reference_fingerprint=contract.secret_reference_fingerprint,
             parameter_names=names,
-            authorization_fingerprint=fingerprint,
+            parameter_values_fingerprint=values_fingerprint,
+            authorization_fingerprint=authorization_fingerprint,
         )
 
     def audit_integrity(self) -> bool:
@@ -406,9 +492,6 @@ class SQLiteProviderRequestContractRegistry:
             ]
 
         try:
-            return all(
-                self.get_verified(contract_id) is not None
-                for contract_id in ids
-            )
+            return all(self.get_verified(contract_id) is not None for contract_id in ids)
         except ValueError:
             return False
