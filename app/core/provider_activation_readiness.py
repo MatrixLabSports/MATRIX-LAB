@@ -21,6 +21,21 @@ from app.core.provider_connector_trust import (
 from app.core.provider_network_binding import (
     BindingAuditPinnedHttpsTransport,
 )
+from app.core.provider_attempt_intent import (
+    SQLiteProviderAttemptIntentStore,
+)
+from app.core.provider_contract_endpoint_binding import (
+    SQLiteProviderContractEndpointBindingStore,
+)
+from app.core.provider_endpoint_authorization import (
+    SQLiteProviderEndpointAuthorizationRegistry,
+)
+from app.core.provider_legal_evidence import (
+    SQLiteProviderLegalEvidenceStore,
+)
+from app.core.provider_request_contract import (
+    SQLiteProviderRequestContractRegistry,
+)
 from app.core.secret_reference import (
     SecretReference,
     resolve_secret_runtime,
@@ -367,15 +382,26 @@ def certify_provider_activation_readiness(
         is False
     )
 
-    binding_wrapper = (
-        type(governed_transport)
-        is BindingAuditPinnedHttpsTransport
-    )
+    binding_wrapper = type(governed_transport) is BindingAuditPinnedHttpsTransport
 
     jit_wrapper = (
         binding_wrapper
-        and type(governed_transport.inner)
-        is JitSecretPinnedHttpsTransport
+        and type(governed_transport.inner) is JitSecretPinnedHttpsTransport
+    )
+
+    authoritative_store_types_bound = all(
+        (
+            type(request_contract_registry)
+            is SQLiteProviderRequestContractRegistry,
+            type(contract_endpoint_binding_store)
+            is SQLiteProviderContractEndpointBindingStore,
+            type(endpoint_authorization_registry)
+            is SQLiteProviderEndpointAuthorizationRegistry,
+            type(legal_evidence_store)
+            is SQLiteProviderLegalEvidenceStore,
+            type(attempt_intent_store)
+            is SQLiteProviderAttemptIntentStore,
+        )
     )
 
     base_transport = (
@@ -413,7 +439,8 @@ def certify_provider_activation_readiness(
     )
 
     attempt_intent_store_cross_bound = (
-        binding_wrapper
+        authoritative_store_types_bound
+        and binding_wrapper
         and getattr(governed_transport, "attempt_intent_store", None)
         is attempt_intent_store
         and attempt_intent_store is not None
@@ -431,16 +458,25 @@ def certify_provider_activation_readiness(
         == len(contract_ids)
     )
 
-    request_contract_integrity = bool(
-        request_contract_registry.audit_integrity()
+    request_contract_integrity = (
+        authoritative_store_types_bound
+        and bool(
+            request_contract_registry.audit_integrity()
+        )
     )
 
-    contract_endpoint_binding_integrity = bool(
-        contract_endpoint_binding_store.audit_integrity()
+    contract_endpoint_binding_integrity = (
+        authoritative_store_types_bound
+        and bool(
+            contract_endpoint_binding_store.audit_integrity()
+        )
     )
 
-    endpoint_manifest_semantics_verified = bool(
-        endpoint_authorization_registry.audit_integrity()
+    endpoint_manifest_semantics_verified = (
+        authoritative_store_types_bound
+        and bool(
+            endpoint_authorization_registry.audit_integrity()
+        )
     )
 
     parsed_base = urlsplit(
@@ -456,7 +492,7 @@ def certify_provider_activation_readiness(
     ):
         endpoint_manifest_semantics_verified = False
 
-    if request_contract_evidence_nonempty:
+    if request_contract_evidence_nonempty and authoritative_store_types_bound:
         for contract_id in contract_ids:
             contract = (
                 request_contract_registry.get_verified(
@@ -538,13 +574,16 @@ def certify_provider_activation_readiness(
         == len(legal_ids)
     )
 
-    legal_evidence_integrity = bool(
-        legal_evidence_store.audit_integrity()
+    legal_evidence_integrity = (
+        authoritative_store_types_bound
+        and bool(
+            legal_evidence_store.audit_integrity()
+        )
     )
 
     legal_kinds: set[str] = set()
 
-    if legal_evidence_nonempty:
+    if legal_evidence_nonempty and authoritative_store_types_bound:
         for evidence_id in legal_ids:
             try:
                 evidence = (
@@ -573,7 +612,8 @@ def certify_provider_activation_readiness(
         legal_evidence_integrity = False
 
     attempt_intent_integrity = (
-        attempt_intent_store is not None
+        authoritative_store_types_bound
+        and attempt_intent_store is not None
         and bool(
             attempt_intent_store.audit_integrity()
         )
@@ -594,6 +634,10 @@ def certify_provider_activation_readiness(
     blockers: list[str] = []
 
     checks = (
+        (
+            authoritative_store_types_bound,
+            "AUTHORITATIVE_ACTIVATION_STORE_TYPES_REQUIRED",
+        ),
         (
             network_boundary_certified,
             "NETWORK_BOUNDARY_NOT_CERTIFIED",

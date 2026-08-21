@@ -452,3 +452,77 @@ def test_revoked_endpoint_manifest_blocks_readiness(
         "ENDPOINT_MANIFEST_SEMANTIC_AUTHORIZATION_REQUIRED"
         in certification.blockers
     )
+
+
+def test_activation_readiness_requires_exact_authoritative_store_types(
+    tmp_path,
+):
+    state = _setup(
+        tmp_path
+    )
+
+    class EndpointRegistryProxy:
+        def __init__(
+            self,
+            inner,
+        ):
+            self.inner = inner
+
+        def audit_integrity(
+            self,
+        ):
+            return (
+                self.inner.audit_integrity()
+            )
+
+        def authorize_request(
+            self,
+            **kwargs,
+        ):
+            return (
+                self.inner.authorize_request(
+                    **kwargs
+                )
+            )
+
+    certification = _certify(
+        state,
+        endpoint_authorization_registry=(
+            EndpointRegistryProxy(
+                state[
+                    "endpoint_registry"
+                ]
+            )
+        ),
+    )
+
+    assert (
+        certification.status
+        == "NOT_READY"
+    )
+    assert (
+        "AUTHORITATIVE_ACTIVATION_STORE_TYPES_REQUIRED"
+        in certification.blockers
+    )
+
+
+def test_activation_readiness_source_uses_exact_wrapper_type_identity():
+    import inspect
+
+    from app.core import (
+        provider_activation_readiness
+        as module,
+    )
+
+    source = inspect.getsource(
+        module.certify_provider_activation_readiness
+    )
+
+    assert (
+        "type(governed_transport) is BindingAuditPinnedHttpsTransport"
+        in source
+    )
+    assert (
+        "type(governed_transport.inner) is JitSecretPinnedHttpsTransport"
+        in source
+    )
