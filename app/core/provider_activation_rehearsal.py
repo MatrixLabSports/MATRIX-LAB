@@ -9,12 +9,19 @@ from app.core.provider_activation_readiness import (
     ProviderActivationReadinessCertification,
     verify_provider_activation_readiness_certification,
 )
+from app.core.governed_provider_http import (
+    SQLiteProviderNetworkCallEvidenceStore,
+)
+from app.core.provider_attempt_intent import (
+    SQLiteProviderAttemptIntentStore,
+)
 from app.core.provider_interruption_recovery import (
     SQLiteProviderInterruptionRecoveryStore,
+    reconcile_network_attempt_with_recovery,
 )
 from app.core.provider_shadow_rehearsal_evidence import (
-    ProviderShadowRehearsalAuthority,
     SQLiteProviderShadowRehearsalEvidenceStore,
+    verify_provider_shadow_rehearsal_attestation,
 )
 
 
@@ -261,10 +268,11 @@ def certify_provider_activation_rehearsal(
     *,
     activation_readiness: ProviderActivationReadinessCertification,
     shadow_evidence_store,
-    shadow_evidence_authority,
     shadow_readiness_evidence_id: str,
     interruption_recovery_store,
     interruption_permit_ids: Sequence[str],
+    attempt_intent_store,
+    network_call_evidence_store,
 ) -> ProviderActivationRehearsalCertification:
     readiness = (
         verify_provider_activation_readiness_certification(
@@ -275,14 +283,12 @@ def certify_provider_activation_rehearsal(
     authoritative_sources_bound = (
         type(shadow_evidence_store)
         is SQLiteProviderShadowRehearsalEvidenceStore
-        and type(shadow_evidence_authority)
-        is ProviderShadowRehearsalAuthority
         and type(interruption_recovery_store)
         is SQLiteProviderInterruptionRecoveryStore
-        and shadow_evidence_authority.provider_key
-        == "api_football"
-        and shadow_evidence_authority.store_identity
-        == shadow_evidence_store.store_identity
+        and type(attempt_intent_store)
+        is SQLiteProviderAttemptIntentStore
+        and type(network_call_evidence_store)
+        is SQLiteProviderNetworkCallEvidenceStore
     )
 
     shadow_evidence_integrity = (
@@ -309,7 +315,7 @@ def certify_provider_activation_rehearsal(
         or readiness_evidence.provider_key
         != "api_football"
         or not authoritative_sources_bound
-        or not shadow_evidence_authority.verify(
+        or not verify_provider_shadow_rehearsal_attestation(
             readiness_evidence
         )
     ):
@@ -379,7 +385,7 @@ def certify_provider_activation_rehearsal(
             == "api_football"
             and evidence.parent_readiness_evidence_id
             == shadow_readiness_evidence_id
-            and shadow_evidence_authority.verify(
+            and verify_provider_shadow_rehearsal_attestation(
                 evidence
             )
             and evidence.payload.get(
@@ -440,6 +446,9 @@ def certify_provider_activation_rehearsal(
         and bool(
             interruption_recovery_store.audit_integrity()
         )
+        and bool(
+            attempt_intent_store.audit_integrity()
+        )
     )
 
     permit_ids = tuple(
@@ -449,9 +458,13 @@ def certify_provider_activation_rehearsal(
     )
 
     interruption_records = []
+    interruption_attempt_cross_bound = (
+        interruption_evidence_integrity
+    )
 
     if not permit_ids:
         interruption_evidence_integrity = False
+        interruption_attempt_cross_bound = False
     else:
         for permit_id in permit_ids:
             try:
@@ -460,16 +473,69 @@ def certify_provider_activation_rehearsal(
                         permit_id
                     )
                 )
+                intent = (
+                    attempt_intent_store.get_by_permit(
+                        permit_id
+                    )
+                )
+                recovered_state = (
+                    reconcile_network_attempt_with_recovery(
+                        permit_id=permit_id,
+                        attempt_intent_store=(
+                            attempt_intent_store
+                        ),
+                        network_call_evidence_store=(
+                            network_call_evidence_store
+                        ),
+                        recovery_store=(
+                            interruption_recovery_store
+                        ),
+                    )
+                )
             except Exception:
                 evidence = None
+                intent = None
+                recovered_state = None
 
             if evidence is None:
                 interruption_evidence_integrity = False
+                interruption_attempt_cross_bound = False
                 break
+
+            if (
+                intent is None
+                or recovered_state is None
+                or evidence.permit_id != permit_id
+                or evidence.provider_key != "api_football"
+                or evidence.provider_key != intent.provider_key
+                or evidence.run_id != intent.run_id
+                or evidence.queue_item_fingerprint
+                != intent.queue_item_fingerprint
+                or evidence.pre_network_binding_intent_id
+                != intent.intent_id
+                or evidence.endpoint_manifest_id
+                != intent.endpoint_manifest_id
+                or evidence.request_contract_id
+                != intent.request_contract_id
+                or evidence.request_contract_fingerprint
+                != intent.request_contract_fingerprint
+                or recovered_state.state
+                != "INTERRUPTED_UNKNOWN_OUTCOME"
+                or recovered_state.recovery_id
+                != evidence.recovery_id
+                or recovered_state.safe_to_retry
+                is not False
+            ):
+                interruption_attempt_cross_bound = False
 
             interruption_records.append(
                 evidence
             )
+
+    interruption_evidence_integrity = (
+        interruption_evidence_integrity
+        and interruption_attempt_cross_bound
+    )
 
     interruption_recovery_fail_closed = (
         interruption_evidence_integrity
@@ -520,6 +586,10 @@ def certify_provider_activation_rehearsal(
         (
             zero_network_permits,
             "SHADOW_NETWORK_PERMIT_DETECTED",
+        ),
+        (
+            interruption_attempt_cross_bound,
+            "INTERRUPTION_ATTEMPT_PROVENANCE_NOT_CROSS_BOUND",
         ),
         (
             interruption_evidence_integrity,

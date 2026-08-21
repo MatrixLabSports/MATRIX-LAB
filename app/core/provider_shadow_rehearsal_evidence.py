@@ -6,9 +6,14 @@ from hashlib import sha256
 import hmac
 import json
 from pathlib import Path
-import secrets
 import sqlite3
 from typing import Any, Mapping
+
+from app.core.secret_reference import (
+    SecretReference,
+    build_secret_reference,
+    resolve_secret_runtime,
+)
 
 
 _ALLOWED_TYPES = {
@@ -16,7 +21,13 @@ _ALLOWED_TYPES = {
     "REQUEST",
 }
 
-_AUTHORITY_CONSTRUCTION_TOKEN = object()
+_SHADOW_ATTESTATION_PROVIDER_KEY = (
+    "matrix_shadow_rehearsal"
+)
+_SHADOW_ATTESTATION_ENVIRONMENT_VARIABLE = (
+    "MATRIX_SHADOW_REHEARSAL_ATTESTATION_KEY"
+)
+_MINIMUM_ATTESTATION_KEY_BYTES = 32
 
 
 def _json(value: Any) -> str:
@@ -101,6 +112,67 @@ def _store_identity(
     )
 
 
+def build_provider_shadow_attestation_key_reference() -> SecretReference:
+    """Return the one canonical, durable reference for SHADOW attestation.
+
+    The raw key is resolved only at runtime and is never persisted in the
+    rehearsal evidence database. The fixed reference prevents callers from
+    supplying an arbitrary signing root to certification.
+    """
+    return build_secret_reference(
+        provider_key=(
+            _SHADOW_ATTESTATION_PROVIDER_KEY
+        ),
+        environment_variable=(
+            _SHADOW_ATTESTATION_ENVIRONMENT_VARIABLE
+        ),
+        secret_type="TOKEN",
+    )
+
+
+def _resolve_attestation_key() -> tuple[
+    SecretReference,
+    bytes,
+]:
+    reference = (
+        build_provider_shadow_attestation_key_reference()
+    )
+    value = resolve_secret_runtime(
+        reference
+    )
+    key = value.encode(
+        "utf-8"
+    )
+
+    if len(key) < _MINIMUM_ATTESTATION_KEY_BYTES:
+        raise ValueError(
+            "SHADOW_ATTESTATION_KEY_TOO_SHORT"
+        )
+
+    return reference, key
+
+
+def _authority_id(
+    *,
+    provider_key: str,
+    store_identity: str,
+    attestation_key_reference_fingerprint: str,
+) -> str:
+    return _sha(
+        {
+            "schema": (
+                "matrix.provider-shadow-rehearsal-authority-id/3"
+            ),
+            "provider_key": provider_key,
+            "store_identity": store_identity,
+            "attestation_key_reference_fingerprint": (
+                attestation_key_reference_fingerprint
+            ),
+            "raw_attestation_key_persisted": False,
+        }
+    )
+
+
 def _unsigned_base(
     *,
     provider_key: str,
@@ -110,10 +182,11 @@ def _unsigned_base(
     created_at: datetime,
     authority_id: str,
     store_identity: str,
+    attestation_key_reference_fingerprint: str,
 ) -> Mapping[str, Any]:
     return {
         "schema": (
-            "matrix.provider-shadow-rehearsal-evidence-unsigned/2"
+            "matrix.provider-shadow-rehearsal-evidence-unsigned/3"
         ),
         "provider_key": provider_key,
         "evidence_type": evidence_type,
@@ -130,6 +203,10 @@ def _unsigned_base(
         "store_identity": (
             store_identity
         ),
+        "attestation_key_reference_fingerprint": (
+            attestation_key_reference_fingerprint
+        ),
+        "raw_attestation_key_persisted": False,
         "real_provider_execution_authorized": False,
         "automatic_provider_switch": False,
         "automatic_wagering": False,
@@ -144,7 +221,7 @@ def _evidence_id(
     return _sha(
         {
             "schema": (
-                "matrix.provider-shadow-rehearsal-evidence-id/2"
+                "matrix.provider-shadow-rehearsal-evidence-id/3"
             ),
             "unsigned_base": dict(
                 unsigned_base
@@ -167,12 +244,13 @@ class ProviderShadowRehearsalEvidence:
     created_at: datetime
     authority_id: str
     store_identity: str
+    attestation_key_reference_fingerprint: str
     issuer_attestation: str
 
     def canonical_payload(self) -> Mapping[str, Any]:
         return {
             "schema": (
-                "matrix.provider-shadow-rehearsal-evidence/2"
+                "matrix.provider-shadow-rehearsal-evidence/3"
             ),
             "evidence_id": (
                 self.evidence_id
@@ -201,306 +279,263 @@ class ProviderShadowRehearsalEvidence:
             "store_identity": (
                 self.store_identity
             ),
+            "attestation_key_reference_fingerprint": (
+                self.attestation_key_reference_fingerprint
+            ),
             "issuer_attestation": (
                 self.issuer_attestation
             ),
+            "raw_attestation_key_persisted": False,
             "real_provider_execution_authorized": False,
             "automatic_provider_switch": False,
             "automatic_wagering": False,
         }
 
 
-class ProviderShadowRehearsalAuthority:
-    __slots__ = (
-        "provider_key",
-        "store_identity",
-        "authority_id",
-        "_signing_key",
+def _build_attested_provider_shadow_rehearsal_evidence(
+    *,
+    provider_key: str,
+    store_identity: str,
+    evidence_type: str,
+    payload: Mapping[str, Any],
+    created_at: datetime,
+    parent_readiness_evidence_id: str | None = None,
+) -> ProviderShadowRehearsalEvidence:
+    """Internal issuer used only by the governed SHADOW runtime.
+
+    The signing root is fixed outside caller-controlled arguments. CI forbids
+    application imports of this issuer outside the official SHADOW runtime.
+    """
+    if (
+        not isinstance(
+            provider_key,
+            str,
+        )
+        or not provider_key
+    ):
+        raise ValueError(
+            "INVALID_PROVIDER_KEY"
+        )
+
+    if evidence_type not in _ALLOWED_TYPES:
+        raise ValueError(
+            "INVALID_SHADOW_EVIDENCE_TYPE"
+        )
+
+    if not isinstance(
+        payload,
+        Mapping,
+    ):
+        raise ValueError(
+            "INVALID_SHADOW_EVIDENCE_PAYLOAD"
+        )
+
+    store_identity = _hex64(
+        "STORE_IDENTITY",
+        store_identity,
+    )
+    created_at = _aware(
+        created_at
+    )
+    payload_dict = dict(
+        payload
+    )
+    payload_fingerprint = _sha(
+        payload_dict
     )
 
-    def __init__(
-        self,
-        *,
-        _construction_token,
-        provider_key: str,
-        store_identity: str,
-    ) -> None:
+    if (
+        evidence_type == "READINESS"
+        and parent_readiness_evidence_id
+        is not None
+    ):
+        raise ValueError(
+            "READINESS_EVIDENCE_CANNOT_HAVE_PARENT"
+        )
+
+    if evidence_type == "REQUEST":
+        parent_readiness_evidence_id = (
+            _hex64(
+                "PARENT_READINESS_EVIDENCE_ID",
+                parent_readiness_evidence_id,
+            )
+        )
+
+    reference, signing_key = (
+        _resolve_attestation_key()
+    )
+    reference_fingerprint = (
+        reference.reference_fingerprint
+    )
+    authority_id = _authority_id(
+        provider_key=provider_key,
+        store_identity=store_identity,
+        attestation_key_reference_fingerprint=(
+            reference_fingerprint
+        ),
+    )
+
+    unsigned = _unsigned_base(
+        provider_key=provider_key,
+        evidence_type=evidence_type,
+        parent_readiness_evidence_id=(
+            parent_readiness_evidence_id
+        ),
+        payload_fingerprint=(
+            payload_fingerprint
+        ),
+        created_at=created_at,
+        authority_id=authority_id,
+        store_identity=store_identity,
+        attestation_key_reference_fingerprint=(
+            reference_fingerprint
+        ),
+    )
+
+    issuer_attestation = hmac.new(
+        signing_key,
+        _json(
+            {
+                "unsigned_base": dict(
+                    unsigned
+                ),
+                "payload": payload_dict,
+            }
+        ).encode(
+            "utf-8"
+        ),
+        sha256,
+    ).hexdigest()
+
+    evidence_id = _evidence_id(
+        unsigned_base=unsigned,
+        issuer_attestation=(
+            issuer_attestation
+        ),
+    )
+
+    return ProviderShadowRehearsalEvidence(
+        evidence_id=evidence_id,
+        provider_key=provider_key,
+        evidence_type=evidence_type,
+        parent_readiness_evidence_id=(
+            parent_readiness_evidence_id
+        ),
+        payload_fingerprint=(
+            payload_fingerprint
+        ),
+        payload=payload_dict,
+        created_at=created_at,
+        authority_id=authority_id,
+        store_identity=store_identity,
+        attestation_key_reference_fingerprint=(
+            reference_fingerprint
+        ),
+        issuer_attestation=(
+            issuer_attestation
+        ),
+    )
+
+
+def verify_provider_shadow_rehearsal_attestation(
+    evidence: ProviderShadowRehearsalEvidence,
+) -> bool:
+    if type(evidence) is not ProviderShadowRehearsalEvidence:
+        return False
+
+    try:
+        reference, signing_key = (
+            _resolve_attestation_key()
+        )
+
         if (
-            _construction_token
-            is not _AUTHORITY_CONSTRUCTION_TOKEN
+            evidence.attestation_key_reference_fingerprint
+            != reference.reference_fingerprint
         ):
-            raise ValueError(
-                "SHADOW_REHEARSAL_AUTHORITY_CONSTRUCTION_FORBIDDEN"
-            )
-
-        if (
-            not isinstance(
-                provider_key,
-                str,
-            )
-            or not provider_key
-        ):
-            raise ValueError(
-                "INVALID_PROVIDER_KEY"
-            )
-
-        self.provider_key = (
-            provider_key
-        )
-        self.store_identity = _hex64(
-            "STORE_IDENTITY",
-            store_identity,
-        )
-        self._signing_key = (
-            secrets.token_bytes(
-                32
-            )
-        )
-        self.authority_id = sha256(
-            self._signing_key
-            + provider_key.encode(
-                "utf-8"
-            )
-            + self.store_identity.encode(
-                "ascii"
-            )
-        ).hexdigest()
-
-    def _issue(
-        self,
-        *,
-        evidence_type: str,
-        payload: Mapping[str, Any],
-        created_at: datetime,
-        parent_readiness_evidence_id: str | None = None,
-    ) -> ProviderShadowRehearsalEvidence:
-        if (
-            evidence_type
-            not in _ALLOWED_TYPES
-        ):
-            raise ValueError(
-                "INVALID_SHADOW_EVIDENCE_TYPE"
-            )
-
-        if not isinstance(
-            payload,
-            Mapping,
-        ):
-            raise ValueError(
-                "INVALID_SHADOW_EVIDENCE_PAYLOAD"
-            )
-
-        created_at = _aware(
-            created_at
-        )
-
-        payload_dict = dict(
-            payload
-        )
+            return False
 
         payload_fingerprint = _sha(
-            payload_dict
+            dict(
+                evidence.payload
+            )
+        )
+        created_at = _aware(
+            evidence.created_at
+        )
+        authority_id = _authority_id(
+            provider_key=(
+                evidence.provider_key
+            ),
+            store_identity=(
+                evidence.store_identity
+            ),
+            attestation_key_reference_fingerprint=(
+                reference.reference_fingerprint
+            ),
         )
 
-        if (
-            evidence_type
-            == "READINESS"
-            and parent_readiness_evidence_id
-            is not None
-        ):
-            raise ValueError(
-                "READINESS_EVIDENCE_CANNOT_HAVE_PARENT"
-            )
-
-        if (
-            evidence_type
-            == "REQUEST"
-        ):
-            parent_readiness_evidence_id = (
-                _hex64(
-                    "PARENT_READINESS_EVIDENCE_ID",
-                    parent_readiness_evidence_id,
-                )
-            )
+        if authority_id != evidence.authority_id:
+            return False
 
         unsigned = _unsigned_base(
             provider_key=(
-                self.provider_key
+                evidence.provider_key
             ),
             evidence_type=(
-                evidence_type
+                evidence.evidence_type
             ),
             parent_readiness_evidence_id=(
-                parent_readiness_evidence_id
+                evidence.parent_readiness_evidence_id
             ),
             payload_fingerprint=(
                 payload_fingerprint
             ),
-            created_at=(
-                created_at
-            ),
-            authority_id=(
-                self.authority_id
-            ),
+            created_at=created_at,
+            authority_id=authority_id,
             store_identity=(
-                self.store_identity
+                evidence.store_identity
+            ),
+            attestation_key_reference_fingerprint=(
+                reference.reference_fingerprint
             ),
         )
+    except Exception:
+        return False
 
-        issuer_attestation = (
-            hmac.new(
-                self._signing_key,
-                _json(
-                    {
-                        "unsigned_base": dict(
-                            unsigned
-                        ),
-                        "payload": (
-                            payload_dict
-                        ),
-                    }
-                ).encode(
-                    "utf-8"
+    expected_attestation = hmac.new(
+        signing_key,
+        _json(
+            {
+                "unsigned_base": dict(
+                    unsigned
                 ),
-                sha256,
-            ).hexdigest()
-        )
-
-        evidence_id = _evidence_id(
-            unsigned_base=(
-                unsigned
-            ),
-            issuer_attestation=(
-                issuer_attestation
-            ),
-        )
-
-        return (
-            ProviderShadowRehearsalEvidence(
-                evidence_id=(
-                    evidence_id
-                ),
-                provider_key=(
-                    self.provider_key
-                ),
-                evidence_type=(
-                    evidence_type
-                ),
-                parent_readiness_evidence_id=(
-                    parent_readiness_evidence_id
-                ),
-                payload_fingerprint=(
-                    payload_fingerprint
-                ),
-                payload=(
-                    payload_dict
-                ),
-                created_at=(
-                    created_at
-                ),
-                authority_id=(
-                    self.authority_id
-                ),
-                store_identity=(
-                    self.store_identity
-                ),
-                issuer_attestation=(
-                    issuer_attestation
-                ),
-            )
-        )
-
-    def verify(
-        self,
-        evidence: ProviderShadowRehearsalEvidence,
-    ) -> bool:
-        if (
-            type(
-                evidence
-            )
-            is not ProviderShadowRehearsalEvidence
-            or evidence.provider_key
-            != self.provider_key
-            or evidence.authority_id
-            != self.authority_id
-            or evidence.store_identity
-            != self.store_identity
-        ):
-            return False
-
-        try:
-            payload_fingerprint = _sha(
-                dict(
+                "payload": dict(
                     evidence.payload
-                )
-            )
-            created_at = _aware(
-                evidence.created_at
-            )
-            unsigned = _unsigned_base(
-                provider_key=(
-                    evidence.provider_key
                 ),
-                evidence_type=(
-                    evidence.evidence_type
-                ),
-                parent_readiness_evidence_id=(
-                    evidence.parent_readiness_evidence_id
-                ),
-                payload_fingerprint=(
-                    payload_fingerprint
-                ),
-                created_at=(
-                    created_at
-                ),
-                authority_id=(
-                    evidence.authority_id
-                ),
-                store_identity=(
-                    evidence.store_identity
-                ),
-            )
-        except Exception:
-            return False
+            }
+        ).encode(
+            "utf-8"
+        ),
+        sha256,
+    ).hexdigest()
 
-        expected_attestation = (
-            hmac.new(
-                self._signing_key,
-                _json(
-                    {
-                        "unsigned_base": dict(
-                            unsigned
-                        ),
-                        "payload": dict(
-                            evidence.payload
-                        ),
-                    }
-                ).encode(
-                    "utf-8"
-                ),
-                sha256,
-            ).hexdigest()
-        )
+    expected_id = _evidence_id(
+        unsigned_base=unsigned,
+        issuer_attestation=(
+            expected_attestation
+        ),
+    )
 
-        expected_id = _evidence_id(
-            unsigned_base=(
-                unsigned
-            ),
-            issuer_attestation=(
-                expected_attestation
-            ),
+    return (
+        evidence.payload_fingerprint
+        == payload_fingerprint
+        and hmac.compare_digest(
+            evidence.issuer_attestation,
+            expected_attestation,
         )
-
-        return (
-            evidence.payload_fingerprint
-            == payload_fingerprint
-            and hmac.compare_digest(
-                evidence.issuer_attestation,
-                expected_attestation,
-            )
-            and evidence.evidence_id
-            == expected_id
-        )
+        and evidence.evidence_id
+        == expected_id
+    )
 
 
 class SQLiteProviderShadowRehearsalEvidenceStore:
@@ -557,7 +592,7 @@ class SQLiteProviderShadowRehearsalEvidenceStore:
             payload.get(
                 "schema"
             )
-            != "matrix.provider-shadow-rehearsal-evidence/2"
+            != "matrix.provider-shadow-rehearsal-evidence/3"
         ):
             raise ValueError(
                 "SHADOW_EVIDENCE_SCHEMA_MISMATCH"
@@ -596,6 +631,12 @@ class SQLiteProviderShadowRehearsalEvidenceStore:
                 "store_identity"
             ],
         )
+        reference_fingerprint = _hex64(
+            "ATTESTATION_KEY_REFERENCE_FINGERPRINT",
+            payload[
+                "attestation_key_reference_fingerprint"
+            ],
+        )
         issuer_attestation = _hex64(
             "ISSUER_ATTESTATION",
             payload[
@@ -604,27 +645,29 @@ class SQLiteProviderShadowRehearsalEvidenceStore:
         )
 
         if (
-            evidence_type
-            not in _ALLOWED_TYPES
+            payload.get(
+                "raw_attestation_key_persisted"
+            )
+            is not False
         ):
+            raise ValueError(
+                "RAW_SHADOW_ATTESTATION_KEY_PERSISTED"
+            )
+
+        if evidence_type not in _ALLOWED_TYPES:
             raise ValueError(
                 "INVALID_SHADOW_EVIDENCE_TYPE"
             )
 
         if (
-            evidence_type
-            == "READINESS"
-            and parent
-            is not None
+            evidence_type == "READINESS"
+            and parent is not None
         ):
             raise ValueError(
                 "READINESS_EVIDENCE_CANNOT_HAVE_PARENT"
             )
 
-        if (
-            evidence_type
-            == "REQUEST"
-        ):
+        if evidence_type == "REQUEST":
             parent = _hex64(
                 "PARENT_READINESS_EVIDENCE_ID",
                 parent,
@@ -633,79 +676,63 @@ class SQLiteProviderShadowRehearsalEvidenceStore:
         payload_fingerprint = _sha(
             payload_dict
         )
+        expected_authority_id = _authority_id(
+            provider_key=provider_key,
+            store_identity=store_identity,
+            attestation_key_reference_fingerprint=(
+                reference_fingerprint
+            ),
+        )
+
+        if authority_id != expected_authority_id:
+            raise ValueError(
+                "SHADOW_EVIDENCE_AUTHORITY_ID_MISMATCH"
+            )
 
         unsigned = _unsigned_base(
-            provider_key=(
-                provider_key
+            provider_key=provider_key,
+            evidence_type=evidence_type,
+            parent_readiness_evidence_id=parent,
+            payload_fingerprint=(
+                payload_fingerprint
             ),
-            evidence_type=(
-                evidence_type
+            created_at=created_at,
+            authority_id=authority_id,
+            store_identity=store_identity,
+            attestation_key_reference_fingerprint=(
+                reference_fingerprint
             ),
+        )
+        evidence_id = _evidence_id(
+            unsigned_base=unsigned,
+            issuer_attestation=(
+                issuer_attestation
+            ),
+        )
+
+        rebuilt = ProviderShadowRehearsalEvidence(
+            evidence_id=evidence_id,
+            provider_key=provider_key,
+            evidence_type=evidence_type,
             parent_readiness_evidence_id=(
                 parent
             ),
             payload_fingerprint=(
                 payload_fingerprint
             ),
-            created_at=(
-                created_at
-            ),
-            authority_id=(
-                authority_id
-            ),
-            store_identity=(
-                store_identity
-            ),
-        )
-
-        evidence_id = _evidence_id(
-            unsigned_base=(
-                unsigned
+            payload=payload_dict,
+            created_at=created_at,
+            authority_id=authority_id,
+            store_identity=store_identity,
+            attestation_key_reference_fingerprint=(
+                reference_fingerprint
             ),
             issuer_attestation=(
                 issuer_attestation
             ),
         )
 
-        rebuilt = (
-            ProviderShadowRehearsalEvidence(
-                evidence_id=(
-                    evidence_id
-                ),
-                provider_key=(
-                    provider_key
-                ),
-                evidence_type=(
-                    evidence_type
-                ),
-                parent_readiness_evidence_id=(
-                    parent
-                ),
-                payload_fingerprint=(
-                    payload_fingerprint
-                ),
-                payload=(
-                    payload_dict
-                ),
-                created_at=(
-                    created_at
-                ),
-                authority_id=(
-                    authority_id
-                ),
-                store_identity=(
-                    store_identity
-                ),
-                issuer_attestation=(
-                    issuer_attestation
-                ),
-            )
-        )
-
-        if (
-            rebuilt.canonical_payload()
-            != payload
-        ):
+        if rebuilt.canonical_payload() != payload:
             raise ValueError(
                 "SHADOW_EVIDENCE_REDERIVATION_FAILURE"
             )
@@ -716,28 +743,25 @@ class SQLiteProviderShadowRehearsalEvidenceStore:
         self,
         evidence: ProviderShadowRehearsalEvidence,
     ) -> ProviderShadowRehearsalEvidence:
-        if (
-            type(
-                evidence
-            )
-            is not ProviderShadowRehearsalEvidence
-        ):
+        if type(evidence) is not ProviderShadowRehearsalEvidence:
             raise ValueError(
                 "INVALID_SHADOW_EVIDENCE"
             )
 
-        if (
-            evidence.store_identity
-            != self.store_identity
-        ):
+        if evidence.store_identity != self.store_identity:
             raise ValueError(
                 "SHADOW_EVIDENCE_STORE_BINDING_MISMATCH"
             )
 
-        rebuilt = (
-            self._rebuild_structural(
-                evidence.canonical_payload()
+        if not verify_provider_shadow_rehearsal_attestation(
+            evidence
+        ):
+            raise ValueError(
+                "SHADOW_EVIDENCE_ATTESTATION_INVALID"
             )
+
+        rebuilt = self._rebuild_structural(
+            evidence.canonical_payload()
         )
 
         if rebuilt != evidence:
@@ -760,9 +784,7 @@ class SQLiteProviderShadowRehearsalEvidenceStore:
             )
             row = connection.execute(
                 """
-                SELECT
-                    payload_json,
-                    payload_sha256
+                SELECT payload_json, payload_sha256
                 FROM provider_shadow_rehearsal_evidence
                 WHERE evidence_id = ?
                 """,
@@ -786,16 +808,10 @@ class SQLiteProviderShadowRehearsalEvidenceStore:
                     "SHADOW_EVIDENCE_MUTATION_VIOLATION"
                 )
 
-            if (
-                evidence.evidence_type
-                == "REQUEST"
-            ):
+            if evidence.evidence_type == "REQUEST":
                 parent = connection.execute(
                     """
-                    SELECT
-                        evidence_type,
-                        provider_key,
-                        payload_json
+                    SELECT evidence_type, provider_key, payload_json
                     FROM provider_shadow_rehearsal_evidence
                     WHERE evidence_id = ?
                     """,
@@ -806,18 +822,8 @@ class SQLiteProviderShadowRehearsalEvidenceStore:
 
                 if (
                     parent is None
-                    or str(
-                        parent[
-                            0
-                        ]
-                    )
-                    != "READINESS"
-                    or str(
-                        parent[
-                            1
-                        ]
-                    )
-                    != evidence.provider_key
+                    or str(parent[0]) != "READINESS"
+                    or str(parent[1]) != evidence.provider_key
                 ):
                     connection.execute(
                         "ROLLBACK"
@@ -828,9 +834,7 @@ class SQLiteProviderShadowRehearsalEvidenceStore:
 
                 parent_payload = json.loads(
                     str(
-                        parent[
-                            2
-                        ]
+                        parent[2]
                     )
                 )
 
@@ -843,6 +847,10 @@ class SQLiteProviderShadowRehearsalEvidenceStore:
                         "store_identity"
                     )
                     != evidence.store_identity
+                    or parent_payload.get(
+                        "attestation_key_reference_fingerprint"
+                    )
+                    != evidence.attestation_key_reference_fingerprint
                 ):
                     connection.execute(
                         "ROLLBACK"
@@ -885,9 +893,7 @@ class SQLiteProviderShadowRehearsalEvidenceStore:
         with self._connect() as connection:
             row = connection.execute(
                 """
-                SELECT
-                    payload_json,
-                    payload_sha256
+                SELECT payload_json, payload_sha256
                 FROM provider_shadow_rehearsal_evidence
                 WHERE evidence_id = ?
                 """,
@@ -899,9 +905,7 @@ class SQLiteProviderShadowRehearsalEvidenceStore:
         if row is None:
             return None
 
-        payload_json, payload_sha = (
-            row
-        )
+        payload_json, payload_sha = row
 
         if (
             sha256(
@@ -918,18 +922,13 @@ class SQLiteProviderShadowRehearsalEvidenceStore:
         payload = json.loads(
             payload_json
         )
-
-        rebuilt = (
-            self._rebuild_structural(
-                payload
-            )
+        rebuilt = self._rebuild_structural(
+            payload
         )
 
         if (
-            rebuilt.evidence_id
-            != evidence_id
-            or rebuilt.store_identity
-            != self.store_identity
+            rebuilt.evidence_id != evidence_id
+            or rebuilt.store_identity != self.store_identity
         ):
             raise ValueError(
                 "SHADOW_EVIDENCE_REDERIVATION_FAILURE"
@@ -949,9 +948,8 @@ class SQLiteProviderShadowRehearsalEvidenceStore:
                 """
                 SELECT evidence_id
                 FROM provider_shadow_rehearsal_evidence
-                WHERE
-                    evidence_type = 'REQUEST'
-                    AND parent_readiness_evidence_id = ?
+                WHERE evidence_type = 'REQUEST'
+                  AND parent_readiness_evidence_id = ?
                 ORDER BY evidence_id
                 """,
                 (
@@ -961,32 +959,22 @@ class SQLiteProviderShadowRehearsalEvidenceStore:
 
         return tuple(
             evidence
-            for row
-            in rows
-            for evidence
-            in (
+            for row in rows
+            for evidence in (
                 self.get_verified(
                     str(
-                        row[
-                            0
-                        ]
+                        row[0]
                     )
                 ),
             )
-            if evidence
-            is not None
+            if evidence is not None
         )
 
     def audit_integrity(self) -> bool:
         with self._connect() as connection:
             evidence_ids = [
-                str(
-                    row[
-                        0
-                    ]
-                )
-                for row
-                in connection.execute(
+                str(row[0])
+                for row in connection.execute(
                     """
                     SELECT evidence_id
                     FROM provider_shadow_rehearsal_evidence
@@ -1001,8 +989,7 @@ class SQLiteProviderShadowRehearsalEvidenceStore:
                     evidence_id
                 )
                 is not None
-                for evidence_id
-                in evidence_ids
+                for evidence_id in evidence_ids
             )
         except (
             ValueError,
@@ -1011,33 +998,3 @@ class SQLiteProviderShadowRehearsalEvidenceStore:
             json.JSONDecodeError,
         ):
             return False
-
-
-def _new_provider_shadow_rehearsal_authority(
-    *,
-    provider_key: str,
-    store: SQLiteProviderShadowRehearsalEvidenceStore,
-) -> ProviderShadowRehearsalAuthority:
-    if (
-        type(
-            store
-        )
-        is not SQLiteProviderShadowRehearsalEvidenceStore
-    ):
-        raise ValueError(
-            "AUTHORITATIVE_SHADOW_EVIDENCE_STORE_REQUIRED"
-        )
-
-    return (
-        ProviderShadowRehearsalAuthority(
-            _construction_token=(
-                _AUTHORITY_CONSTRUCTION_TOKEN
-            ),
-            provider_key=(
-                provider_key
-            ),
-            store_identity=(
-                store.store_identity
-            ),
-        )
-    )

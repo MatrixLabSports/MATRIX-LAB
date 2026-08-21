@@ -32,9 +32,8 @@ from app.core.provider_rights_authorization import (
     ProviderRightsDecision,
 )
 from app.core.provider_shadow_rehearsal_evidence import (
-    ProviderShadowRehearsalAuthority,
     SQLiteProviderShadowRehearsalEvidenceStore,
-    _new_provider_shadow_rehearsal_authority,
+    _build_attested_provider_shadow_rehearsal_evidence,
 )
 from app.core.secret_reference import (
     SecretReference,
@@ -261,34 +260,17 @@ class ApiFootballShadowRuntime:
         self.shadow_evidence_store = (
             shadow_evidence_store
         )
-        self._shadow_rehearsal_authority: (
-            ProviderShadowRehearsalAuthority
-            | None
-        ) = None
 
         if (
             shadow_evidence_store
             is not None
+            and type(
+                shadow_evidence_store
+            )
+            is not SQLiteProviderShadowRehearsalEvidenceStore
         ):
-            if (
-                type(
-                    shadow_evidence_store
-                )
-                is not SQLiteProviderShadowRehearsalEvidenceStore
-            ):
-                raise ValueError(
-                    "AUTHORITATIVE_SHADOW_EVIDENCE_STORE_REQUIRED"
-                )
-
-            self._shadow_rehearsal_authority = (
-                _new_provider_shadow_rehearsal_authority(
-                    provider_key=(
-                        "api_football"
-                    ),
-                    store=(
-                        shadow_evidence_store
-                    ),
-                )
+            raise ValueError(
+                "AUTHORITATIVE_SHADOW_EVIDENCE_STORE_REQUIRED"
             )
 
         self.readiness_evidence_id: (
@@ -466,16 +448,14 @@ class ApiFootballShadowRuntime:
             self.shadow_evidence_store
             is not None
         ):
-            if (
-                self._shadow_rehearsal_authority
-                is None
-            ):
-                raise ValueError(
-                    "SHADOW_REHEARSAL_AUTHORITY_REQUIRED"
-                )
-
             evidence = (
-                self._shadow_rehearsal_authority._issue(
+                _build_attested_provider_shadow_rehearsal_evidence(
+                    provider_key=(
+                        "api_football"
+                    ),
+                    store_identity=(
+                        self.shadow_evidence_store.store_identity
+                    ),
                     evidence_type="READINESS",
                     payload=(
                         self.readiness.payload()
@@ -491,21 +471,6 @@ class ApiFootballShadowRuntime:
             self.readiness_evidence_id = (
                 evidence.evidence_id
             )
-
-    @property
-    def shadow_rehearsal_authority(
-        self,
-    ) -> ProviderShadowRehearsalAuthority:
-        authority = (
-            self._shadow_rehearsal_authority
-        )
-
-        if authority is None:
-            raise ValueError(
-                "SHADOW_REHEARSAL_AUTHORITY_NOT_CONFIGURED"
-            )
-
-        return authority
 
     def preview(
         self,
@@ -604,16 +569,14 @@ class ApiFootballShadowRuntime:
                     "SHADOW_READINESS_EVIDENCE_REQUIRED"
                 )
 
-            if (
-                self._shadow_rehearsal_authority
-                is None
-            ):
-                raise ValueError(
-                    "SHADOW_REHEARSAL_AUTHORITY_REQUIRED"
-                )
-
             evidence = (
-                self._shadow_rehearsal_authority._issue(
+                _build_attested_provider_shadow_rehearsal_evidence(
+                    provider_key=(
+                        "api_football"
+                    ),
+                    store_identity=(
+                        self.shadow_evidence_store.store_identity
+                    ),
                     evidence_type="REQUEST",
                     payload=(
                         request.payload()
