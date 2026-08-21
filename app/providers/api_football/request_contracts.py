@@ -200,3 +200,45 @@ def register_api_football_request_contracts(
         )
 
     return contracts
+
+def register_api_football_contract_endpoint_bindings(
+    *,
+    contracts: Mapping[str, ProviderRequestContract],
+    endpoint_manifest_ids: Mapping[str, str],
+    registry,
+    valid_from: datetime,
+    valid_until: datetime | None = None,
+):
+    from app.core.provider_contract_endpoint_binding import (
+        build_provider_contract_endpoint_binding,
+    )
+
+    if set(contracts) != set(endpoint_manifest_ids):
+        raise ValueError(
+            "API_FOOTBALL_ENDPOINT_MANIFEST_SET_MISMATCH"
+        )
+
+    bindings = {}
+
+    for name in sorted(contracts):
+        contract = contracts[name]
+
+        binding = build_provider_contract_endpoint_binding(
+            provider_key=contract.provider_key,
+            sport=contract.sport,
+            request_contract_id=contract.contract_id,
+            endpoint_manifest_id=(
+                endpoint_manifest_ids[name]
+            ),
+            path=contract.path,
+            valid_from=valid_from,
+            valid_until=valid_until,
+        )
+
+        registry.register(
+            binding
+        )
+
+        bindings[name] = binding
+
+    return bindings
