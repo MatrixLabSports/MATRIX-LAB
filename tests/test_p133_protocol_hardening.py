@@ -107,3 +107,60 @@ def test_provider_error_taxonomy_does_not_echo_raw_error():
         )
 
     assert secret not in str(captured.value)
+
+
+def test_fixture_mapping_is_deferred_for_partial_ingestion():
+    envelope = validate_api_football_response_envelope(
+        {
+            "response": [
+                {
+                    "fixture": {
+                        "id": 9,
+                    },
+                },
+            ],
+        },
+        endpoint="/fixtures",
+    )
+
+    assert len(envelope.response) == 1
+    assert envelope.response[0]["fixture"]["id"] == 9
+
+
+def test_fixture_primitive_still_fails_closed_at_envelope():
+    with pytest.raises(
+        ApiFootballProviderResponseError
+    ) as captured:
+        validate_api_football_response_envelope(
+            {
+                "response": [
+                    "bad",
+                ],
+            },
+            endpoint="/fixtures",
+        )
+
+    assert (
+        captured.value.code
+        == "API_FOOTBALL_RESPONSE_ITEM_NOT_MAPPING"
+    )
+    assert captured.value.category == "SCHEMA"
+
+
+def test_odds_item_filtering_is_deferred_to_odds_service():
+    envelope = validate_api_football_response_envelope(
+        {
+            "response": [
+                {
+                    "fixture": {
+                        "id": 1,
+                    },
+                },
+                "bad",
+            ],
+        },
+        endpoint="/odds",
+    )
+
+    assert len(envelope.response) == 2
+    assert envelope.response[1] == "bad"

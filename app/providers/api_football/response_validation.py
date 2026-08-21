@@ -15,7 +15,7 @@ from app.core.pinned_https_transport import (
 @dataclass(frozen=True)
 class ApiFootballResponseEnvelope:
     endpoint: str
-    response: tuple[Mapping[str, Any], ...]
+    response: tuple[Any, ...]
     request_name: str | None
     results: int | None
     paging_current: int | None
@@ -87,29 +87,44 @@ def _validate_response_item(
     item: object,
     *,
     endpoint: str,
-) -> Mapping[str, Any]:
-    if not isinstance(item, Mapping):
-        raise _provider_error(
-            "API_FOOTBALL_RESPONSE_ITEM_NOT_MAPPING",
-            "SCHEMA",
-        )
-
-    if any(
-        not isinstance(key, str)
-        for key in item.keys()
-    ):
-        raise _provider_error(
-            "API_FOOTBALL_RESPONSE_ITEM_KEY_NOT_STRING",
-            "SCHEMA",
-        )
-
+) -> Any:
+    # Envelope-level structural schema only.
+    #
+    # Fixtures must at least be JSON objects. Detailed fixture
+    # completeness belongs to the record adapter so a mixed batch can
+    # preserve P135 partial-ingestion semantics: valid records are
+    # accepted, malformed records are rejected individually, and
+    # destructive missing-record reconciliation stays disabled.
     if endpoint == "/fixtures":
-        for field in ("fixture", "league", "teams"):
-            if not isinstance(item.get(field), Mapping):
-                raise _provider_error(
-                    "API_FOOTBALL_FIXTURE_ITEM_SCHEMA_INVALID",
-                    "SCHEMA",
-                )
+        if not isinstance(item, Mapping):
+            raise _provider_error(
+                "API_FOOTBALL_RESPONSE_ITEM_NOT_MAPPING",
+                "SCHEMA",
+            )
+
+        if any(
+            not isinstance(key, str)
+            for key in item.keys()
+        ):
+            raise _provider_error(
+                "API_FOOTBALL_RESPONSE_ITEM_KEY_NOT_STRING",
+                "SCHEMA",
+            )
+
+        return item
+
+    # Odds ingestion already owns record-level filtering/counting.
+    # Preserve that partial-ingestion contract instead of turning one
+    # malformed odds item into a whole-envelope failure.
+    if isinstance(item, Mapping):
+        if any(
+            not isinstance(key, str)
+            for key in item.keys()
+        ):
+            raise _provider_error(
+                "API_FOOTBALL_RESPONSE_ITEM_KEY_NOT_STRING",
+                "SCHEMA",
+            )
 
     return item
 
