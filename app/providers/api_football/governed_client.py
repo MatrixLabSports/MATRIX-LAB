@@ -4,6 +4,14 @@ from app.core.controlled_network_certification import (
     NetworkBoundaryCertification,
     require_real_provider_execution_authorized,
 )
+from app.core.provider_activation_readiness import (
+    ProviderActivationReadinessCertification,
+    require_provider_activation_authorized,
+)
+from app.core.provider_activation_rehearsal import (
+    ProviderActivationRehearsalCertification,
+    require_activation_rehearsal_for_real_execution,
+)
 from app.core.governed_provider_http import (
     GovernedProviderHttpSession,
     MatrixPinnedHttpsTransport,
@@ -110,6 +118,14 @@ def build_governed_api_football_client(
     clock,
     pinned_transport: MatrixPinnedHttpsTransport,
     network_certification: NetworkBoundaryCertification | None = None,
+    activation_readiness_certification: (
+        ProviderActivationReadinessCertification
+        | None
+    ) = None,
+    activation_rehearsal_certification: (
+        ProviderActivationRehearsalCertification
+        | None
+    ) = None,
     request_contract_registry=None,
     secret_reference=None,
     binding_store=None,
@@ -121,6 +137,29 @@ def build_governed_api_football_client(
 
     require_real_provider_execution_authorized(
         network_certification
+    )
+
+    if (
+        activation_readiness_certification
+        is None
+    ):
+        raise ValueError(
+            "PROVIDER_ACTIVATION_READINESS_REQUIRED"
+        )
+
+    if (
+        activation_rehearsal_certification
+        is None
+    ):
+        raise ValueError(
+            "PROVIDER_ACTIVATION_REHEARSAL_REQUIRED"
+        )
+
+    require_provider_activation_authorized(
+        activation_readiness_certification
+    )
+    require_activation_rehearsal_for_real_execution(
+        activation_rehearsal_certification
     )
 
     return _build_controlled_request_client(

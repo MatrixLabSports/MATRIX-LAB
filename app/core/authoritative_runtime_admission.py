@@ -1,6 +1,14 @@
-﻿from __future__ import annotations
+from __future__ import annotations
 
 from app.core.runtime_admission_gate import evaluate_reconciled_runtime_admission
+from app.core.provider_activation_readiness import (
+    ProviderActivationReadinessCertification,
+    verify_provider_activation_readiness_certification,
+)
+from app.core.provider_activation_rehearsal import (
+    ProviderActivationRehearsalCertification,
+    verify_provider_activation_rehearsal_certification,
+)
 
 
 def evaluate_authoritative_runtime_admission(
@@ -26,4 +34,66 @@ def evaluate_authoritative_runtime_admission(
         report=report,
         audit_ledger=audit_ledger,
         expected_sport=expected_sport,
+    )
+
+
+def evaluate_authoritative_provider_runtime_admission(
+    *,
+    report,
+    audit_ledger,
+    run_mode_evidence_store,
+    activation_readiness_certification: (
+        ProviderActivationReadinessCertification
+    ),
+    activation_rehearsal_certification: (
+        ProviderActivationRehearsalCertification
+    ),
+    expected_sport: str | None = None,
+):
+    readiness = (
+        verify_provider_activation_readiness_certification(
+            activation_readiness_certification
+        )
+    )
+    rehearsal = (
+        verify_provider_activation_rehearsal_certification(
+            activation_rehearsal_certification
+        )
+    )
+
+    if (
+        readiness.status
+        != "TECHNICALLY_READY_RIGHTS_BLOCKED"
+    ):
+        raise ValueError(
+            "PROVIDER_ACTIVATION_READINESS_REQUIRED"
+        )
+
+    if (
+        rehearsal.status
+        != "REHEARSAL_CERTIFIED_FAIL_CLOSED"
+    ):
+        raise ValueError(
+            "PROVIDER_ACTIVATION_REHEARSAL_REQUIRED"
+        )
+
+    if (
+        readiness.real_provider_execution_authorized
+        is not True
+        or rehearsal.real_provider_execution_authorized
+        is not True
+    ):
+        raise ValueError(
+            "REAL_PROVIDER_EXECUTION_NOT_AUTHORIZED"
+        )
+
+    return evaluate_authoritative_runtime_admission(
+        report=report,
+        audit_ledger=audit_ledger,
+        run_mode_evidence_store=(
+            run_mode_evidence_store
+        ),
+        expected_sport=(
+            expected_sport
+        ),
     )

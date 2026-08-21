@@ -793,6 +793,243 @@ def _provider_network_activation_hardening_boundary(
         )
 
 
+
+
+def _provider_network_activation_semantic_boundary(
+    root: Path,
+) -> None:
+    violations: list[str] = []
+
+    paths = {
+        "transport": (
+            root / "app" / "core"
+            / "pinned_https_transport.py"
+        ),
+        "connector": (
+            root / "app" / "core"
+            / "provider_connector_trust.py"
+        ),
+        "readiness": (
+            root / "app" / "core"
+            / "provider_activation_readiness.py"
+        ),
+        "rehearsal": (
+            root / "app" / "core"
+            / "provider_activation_rehearsal.py"
+        ),
+        "shadow_evidence": (
+            root / "app" / "core"
+            / "provider_shadow_rehearsal_evidence.py"
+        ),
+        "shadow_runtime": (
+            root / "app" / "providers"
+            / "api_football"
+            / "shadow_runtime.py"
+        ),
+        "governed_client": (
+            root / "app" / "providers"
+            / "api_football"
+            / "governed_client.py"
+        ),
+        "authoritative_admission": (
+            root / "app" / "core"
+            / "authoritative_runtime_admission.py"
+        ),
+    }
+
+    trees: dict[str, ast.AST] = {}
+    sources: dict[str, str] = {}
+
+    for name, candidate in paths.items():
+        if not candidate.exists():
+            violations.append(
+                "P127_P131_SEMANTIC_MISSING:"
+                + name
+            )
+            continue
+
+        text = candidate.read_text(
+            encoding="utf-8-sig"
+        )
+        sources[name] = text
+
+        try:
+            trees[name] = ast.parse(
+                text,
+                filename=str(
+                    candidate
+                ),
+            )
+        except SyntaxError:
+            violations.append(
+                "P127_P131_SEMANTIC_AST_FAILURE:"
+                + name
+            )
+
+    def function_args(
+        module_name: str,
+        function_name: str,
+    ) -> set[str]:
+        tree = trees.get(
+            module_name
+        )
+
+        if tree is None:
+            return set()
+
+        for node in tree.body:
+            if (
+                isinstance(
+                    node,
+                    (
+                        ast.FunctionDef,
+                        ast.AsyncFunctionDef,
+                    ),
+                )
+                and node.name
+                == function_name
+            ):
+                return {
+                    argument.arg
+                    for argument
+                    in (
+                        list(
+                            node.args.posonlyargs
+                        )
+                        + list(
+                            node.args.args
+                        )
+                        + list(
+                            node.args.kwonlyargs
+                        )
+                    )
+                }
+
+        return set()
+
+    readiness_args = function_args(
+        "readiness",
+        "certify_provider_activation_readiness",
+    )
+
+    for required in (
+        "endpoint_authorization_registry",
+        "endpoint_base_url",
+        "as_of",
+        "legal_evidence_ids",
+        "attempt_intent_store",
+    ):
+        if required not in readiness_args:
+            violations.append(
+                "P130_MISSING_SEMANTIC_ARGUMENT:"
+                + required
+            )
+
+    rehearsal_args = function_args(
+        "rehearsal",
+        "certify_provider_activation_rehearsal",
+    )
+
+    for required in (
+        "shadow_evidence_store",
+        "shadow_readiness_evidence_id",
+        "interruption_recovery_store",
+        "interruption_permit_ids",
+    ):
+        if required not in rehearsal_args:
+            violations.append(
+                "P131_MISSING_DURABLE_ARGUMENT:"
+                + required
+            )
+
+    client_args = function_args(
+        "governed_client",
+        "build_governed_api_football_client",
+    )
+
+    for required in (
+        "activation_readiness_certification",
+        "activation_rehearsal_certification",
+    ):
+        if required not in client_args:
+            violations.append(
+                "OFFICIAL_CLIENT_MISSING_ACTIVATION_GATE:"
+                + required
+            )
+
+    authoritative_args = function_args(
+        "authoritative_admission",
+        "evaluate_authoritative_provider_runtime_admission",
+    )
+
+    for required in (
+        "activation_readiness_certification",
+        "activation_rehearsal_certification",
+    ):
+        if required not in authoritative_args:
+            violations.append(
+                "AUTHORITATIVE_ADMISSION_MISSING_ACTIVATION_GATE:"
+                + required
+            )
+
+    required_source_tokens = {
+        "transport": (
+            "CONTENT_LENGTH_HEADER_FORBIDDEN",
+            "TRANSFER_ENCODING_HEADER_FORBIDDEN",
+            "HOP_BY_HOP_HEADER_FORBIDDEN",
+        ),
+        "connector": (
+            "type(transport) is StdlibPinnedHttpsTransport",
+            "PINNED_TRANSPORT_METHOD_OVERRIDE_FORBIDDEN",
+        ),
+        "readiness": (
+            "getattr(governed_transport, \"attempt_intent_store\", None)",
+            "ENDPOINT_MANIFEST_SEMANTIC_AUTHORIZATION_REQUIRED",
+            "NONEMPTY_LEGAL_EVIDENCE_REQUIRED",
+        ),
+        "rehearsal": (
+            "shadow_evidence_store.get_verified",
+            "interruption_recovery_store.get_by_permit",
+            "SHADOW_EVIDENCE_STORE_INTEGRITY_FAILED",
+        ),
+        "shadow_runtime": (
+            "shadow_evidence_store",
+            "build_provider_shadow_rehearsal_evidence",
+        ),
+        "governed_client": (
+            "require_provider_activation_authorized",
+            "require_activation_rehearsal_for_real_execution",
+        ),
+        "authoritative_admission": (
+            "evaluate_authoritative_provider_runtime_admission",
+            "verify_provider_activation_readiness_certification",
+            "verify_provider_activation_rehearsal_certification",
+        ),
+    }
+
+    for name, tokens in required_source_tokens.items():
+        text = sources.get(
+            name,
+            "",
+        )
+
+        for token in tokens:
+            if token not in text:
+                violations.append(
+                    name
+                    + ":P127_P131_SEMANTIC_TOKEN_MISSING:"
+                    + token
+                )
+
+    if violations:
+        raise SystemExit(
+            "PROVIDER_NETWORK_ACTIVATION_SEMANTIC_BOUNDARY_VIOLATION\n"
+            + "\n".join(
+                violations
+            )
+        )
+
+
 def main() -> int:
     policy = (
         build_repository_quality_policy()
@@ -837,6 +1074,7 @@ def main() -> int:
     _provider_http_boundary(ROOT)
     _provider_production_readiness_boundary(ROOT)
     _provider_network_activation_hardening_boundary(ROOT)
+    _provider_network_activation_semantic_boundary(ROOT)
     _authoritative_runtime_admission_boundary(ROOT)
     _git_diff_checks(ROOT)
 
