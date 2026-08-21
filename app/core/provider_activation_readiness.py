@@ -1,9 +1,11 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from datetime import datetime
 from hashlib import sha256
 import json
 from typing import Any, Mapping, Sequence
+from urllib.parse import urlsplit
 
 from app.core.controlled_network_certification import (
     NetworkBoundaryCertification,
@@ -40,10 +42,57 @@ def _json(value: Any) -> str:
 
 def _sha(value: Any) -> str:
     return sha256(
-        _json(value).encode(
-            "utf-8"
-        )
+        _json(value).encode("utf-8")
     ).hexdigest()
+
+
+def _query_keys(contract) -> tuple[str, ...]:
+    keys: list[str] = []
+
+    for rule in tuple(
+        getattr(
+            contract,
+            "parameter_rules",
+            (),
+        )
+    ):
+        name = (
+            getattr(
+                rule,
+                "name",
+                None,
+            )
+            or getattr(
+                rule,
+                "parameter_name",
+                None,
+            )
+            or getattr(
+                rule,
+                "key",
+                None,
+            )
+        )
+
+        if not isinstance(
+            name,
+            str,
+        ) or not name:
+            raise ValueError(
+                "REQUEST_CONTRACT_PARAMETER_NAME_REQUIRED"
+            )
+
+        keys.append(
+            name
+        )
+
+    return tuple(
+        sorted(
+            set(
+                keys
+            )
+        )
+    )
 
 
 @dataclass(frozen=True)
@@ -55,8 +104,11 @@ class ProviderActivationReadinessCertification:
     request_contract_evidence_nonempty: bool
     request_contract_integrity: bool
     contract_endpoint_binding_integrity: bool
+    endpoint_manifest_semantics_verified: bool
+    legal_evidence_nonempty: bool
     legal_evidence_integrity: bool
     attempt_intent_integrity: bool
+    attempt_intent_store_cross_bound: bool
     production_rights_blocked: bool
     real_provider_execution_authorized: bool
     blockers: tuple[str, ...]
@@ -65,7 +117,7 @@ class ProviderActivationReadinessCertification:
     def payload(self) -> Mapping[str, Any]:
         return {
             "schema": (
-                "matrix.provider-activation-readiness-certification/1"
+                "matrix.provider-activation-readiness-certification/2"
             ),
             "status": self.status,
             "network_boundary_certified": (
@@ -86,11 +138,20 @@ class ProviderActivationReadinessCertification:
             "contract_endpoint_binding_integrity": (
                 self.contract_endpoint_binding_integrity
             ),
+            "endpoint_manifest_semantics_verified": (
+                self.endpoint_manifest_semantics_verified
+            ),
+            "legal_evidence_nonempty": (
+                self.legal_evidence_nonempty
+            ),
             "legal_evidence_integrity": (
                 self.legal_evidence_integrity
             ),
             "attempt_intent_integrity": (
                 self.attempt_intent_integrity
+            ),
+            "attempt_intent_store_cross_bound": (
+                self.attempt_intent_store_cross_bound
             ),
             "production_rights_blocked": (
                 self.production_rights_blocked
@@ -116,14 +177,17 @@ def _base(
     request_contract_evidence_nonempty: bool,
     request_contract_integrity: bool,
     contract_endpoint_binding_integrity: bool,
+    endpoint_manifest_semantics_verified: bool,
+    legal_evidence_nonempty: bool,
     legal_evidence_integrity: bool,
     attempt_intent_integrity: bool,
+    attempt_intent_store_cross_bound: bool,
     production_rights_blocked: bool,
     blockers: Sequence[str],
 ) -> Mapping[str, Any]:
     return {
         "schema": (
-            "matrix.provider-activation-readiness-certification-id/1"
+            "matrix.provider-activation-readiness-certification-id/2"
         ),
         "status": status,
         "network_boundary_certified": (
@@ -144,11 +208,20 @@ def _base(
         "contract_endpoint_binding_integrity": (
             contract_endpoint_binding_integrity
         ),
+        "endpoint_manifest_semantics_verified": (
+            endpoint_manifest_semantics_verified
+        ),
+        "legal_evidence_nonempty": (
+            legal_evidence_nonempty
+        ),
         "legal_evidence_integrity": (
             legal_evidence_integrity
         ),
         "attempt_intent_integrity": (
             attempt_intent_integrity
+        ),
+        "attempt_intent_store_cross_bound": (
+            attempt_intent_store_cross_bound
         ),
         "production_rights_blocked": (
             production_rights_blocked
@@ -181,8 +254,11 @@ def verify_provider_activation_readiness_certification(
             certification.request_contract_evidence_nonempty,
             certification.request_contract_integrity,
             certification.contract_endpoint_binding_integrity,
+            certification.endpoint_manifest_semantics_verified,
+            certification.legal_evidence_nonempty,
             certification.legal_evidence_integrity,
             certification.attempt_intent_integrity,
+            certification.attempt_intent_store_cross_bound,
         )
     )
 
@@ -229,18 +305,25 @@ def verify_provider_activation_readiness_certification(
             contract_endpoint_binding_integrity=(
                 certification.contract_endpoint_binding_integrity
             ),
+            endpoint_manifest_semantics_verified=(
+                certification.endpoint_manifest_semantics_verified
+            ),
+            legal_evidence_nonempty=(
+                certification.legal_evidence_nonempty
+            ),
             legal_evidence_integrity=(
                 certification.legal_evidence_integrity
             ),
             attempt_intent_integrity=(
                 certification.attempt_intent_integrity
             ),
+            attempt_intent_store_cross_bound=(
+                certification.attempt_intent_store_cross_bound
+            ),
             production_rights_blocked=(
                 certification.production_rights_blocked
             ),
-            blockers=(
-                certification.blockers
-            ),
+            blockers=certification.blockers,
         )
     )
 
@@ -263,7 +346,11 @@ def certify_provider_activation_readiness(
     request_contract_registry,
     request_contract_ids: Sequence[str],
     contract_endpoint_binding_store,
+    endpoint_authorization_registry,
+    endpoint_base_url: str,
+    as_of: datetime,
     legal_evidence_store,
+    legal_evidence_ids: Sequence[str],
     rights_decision,
     attempt_intent_store,
 ) -> ProviderActivationReadinessCertification:
@@ -280,17 +367,15 @@ def certify_provider_activation_readiness(
         is False
     )
 
-    binding_wrapper = isinstance(
-        governed_transport,
-        BindingAuditPinnedHttpsTransport,
+    binding_wrapper = (
+        type(governed_transport)
+        is BindingAuditPinnedHttpsTransport
     )
 
     jit_wrapper = (
         binding_wrapper
-        and isinstance(
-            governed_transport.inner,
-            JitSecretPinnedHttpsTransport,
-        )
+        and type(governed_transport.inner)
+        is JitSecretPinnedHttpsTransport
     )
 
     base_transport = (
@@ -327,39 +412,49 @@ def certify_provider_activation_readiness(
         == secret_reference
     )
 
+    attempt_intent_store_cross_bound = (
+        binding_wrapper
+        and getattr(governed_transport, "attempt_intent_store", None)
+        is attempt_intent_store
+        and attempt_intent_store is not None
+    )
+
     contract_ids = tuple(
-        str(
-            contract_id
-        )
+        str(contract_id)
         for contract_id
         in request_contract_ids
     )
 
     request_contract_evidence_nonempty = (
-        bool(
-            contract_ids
-        )
-        and len(
-            set(
-                contract_ids
-            )
-        )
-        == len(
-            contract_ids
-        )
+        bool(contract_ids)
+        and len(set(contract_ids))
+        == len(contract_ids)
     )
 
-    request_contract_integrity = (
-        bool(
-            request_contract_registry.audit_integrity()
-        )
+    request_contract_integrity = bool(
+        request_contract_registry.audit_integrity()
     )
 
-    contract_endpoint_binding_integrity = (
-        bool(
-            contract_endpoint_binding_store.audit_integrity()
-        )
+    contract_endpoint_binding_integrity = bool(
+        contract_endpoint_binding_store.audit_integrity()
     )
+
+    endpoint_manifest_semantics_verified = bool(
+        endpoint_authorization_registry.audit_integrity()
+    )
+
+    parsed_base = urlsplit(
+        endpoint_base_url
+    )
+
+    if (
+        parsed_base.scheme.lower() != "https"
+        or not parsed_base.hostname
+        or parsed_base.query
+        or parsed_base.fragment
+        or parsed_base.path not in {"", "/"}
+    ):
+        endpoint_manifest_semantics_verified = False
 
     if request_contract_evidence_nonempty:
         for contract_id in contract_ids:
@@ -368,7 +463,6 @@ def certify_provider_activation_readiness(
                     contract_id
                 )
             )
-
             binding = (
                 contract_endpoint_binding_store.get_verified_by_contract(
                     contract_id
@@ -391,17 +485,98 @@ def certify_provider_activation_readiness(
             ):
                 request_contract_integrity = False
                 contract_endpoint_binding_integrity = False
+                endpoint_manifest_semantics_verified = False
+                break
+
+            try:
+                endpoint_decision = (
+                    endpoint_authorization_registry.authorize_request(
+                        provider_key=contract.provider_key,
+                        sport=contract.sport,
+                        method=contract.method,
+                        endpoint_url=(
+                            endpoint_base_url.rstrip("/")
+                            + contract.path
+                        ),
+                        query_keys=_query_keys(
+                            contract
+                        ),
+                        secret_reference_fingerprint=(
+                            secret_reference.reference_fingerprint
+                        ),
+                        as_of=as_of,
+                    )
+                )
+            except Exception:
+                endpoint_manifest_semantics_verified = False
+                break
+
+            if (
+                endpoint_decision.executable
+                is not True
+                or endpoint_decision.status
+                != "AUTHORIZED"
+                or endpoint_decision.manifest_id
+                != binding.endpoint_manifest_id
+            ):
+                endpoint_manifest_semantics_verified = False
                 break
     else:
         request_contract_integrity = False
         contract_endpoint_binding_integrity = False
+        endpoint_manifest_semantics_verified = False
+
+    legal_ids = tuple(
+        str(evidence_id)
+        for evidence_id
+        in legal_evidence_ids
+    )
+
+    legal_evidence_nonempty = (
+        bool(legal_ids)
+        and len(set(legal_ids))
+        == len(legal_ids)
+    )
 
     legal_evidence_integrity = bool(
         legal_evidence_store.audit_integrity()
     )
 
-    attempt_intent_integrity = bool(
-        attempt_intent_store.audit_integrity()
+    legal_kinds: set[str] = set()
+
+    if legal_evidence_nonempty:
+        for evidence_id in legal_ids:
+            try:
+                evidence = (
+                    legal_evidence_store.get_verified(
+                        evidence_id
+                    )
+                )
+            except Exception:
+                evidence = None
+
+            if (
+                evidence is None
+                or evidence.verification_status
+                != "HUMAN_VERIFIED"
+            ):
+                legal_evidence_integrity = False
+                break
+
+            legal_kinds.add(
+                evidence.evidence_kind
+            )
+
+        if "PROVIDER_TERMS" not in legal_kinds:
+            legal_evidence_integrity = False
+    else:
+        legal_evidence_integrity = False
+
+    attempt_intent_integrity = (
+        attempt_intent_store is not None
+        and bool(
+            attempt_intent_store.audit_integrity()
+        )
     )
 
     production_rights_blocked = (
@@ -416,9 +591,7 @@ def certify_provider_activation_readiness(
         )
     )
 
-    blockers: list[
-        str
-    ] = []
+    blockers: list[str] = []
 
     checks = (
         (
@@ -446,12 +619,24 @@ def certify_provider_activation_readiness(
             "CONTRACT_ENDPOINT_BINDING_INTEGRITY_FAILED",
         ),
         (
+            endpoint_manifest_semantics_verified,
+            "ENDPOINT_MANIFEST_SEMANTIC_AUTHORIZATION_REQUIRED",
+        ),
+        (
+            legal_evidence_nonempty,
+            "NONEMPTY_LEGAL_EVIDENCE_REQUIRED",
+        ),
+        (
             legal_evidence_integrity,
             "LEGAL_EVIDENCE_INTEGRITY_FAILED",
         ),
         (
             attempt_intent_integrity,
             "ATTEMPT_INTENT_INTEGRITY_FAILED",
+        ),
+        (
+            attempt_intent_store_cross_bound,
+            "ATTEMPT_INTENT_STORE_CROSS_BINDING_REQUIRED",
         ),
         (
             production_rights_blocked,
@@ -467,10 +652,7 @@ def certify_provider_activation_readiness(
 
     technical_ready = all(
         ok
-        for (
-            ok,
-            _,
-        )
+        for ok, _
         in checks[:-1]
     )
 
@@ -485,77 +667,55 @@ def certify_provider_activation_readiness(
 
     base = _base(
         status=status,
-        network_boundary_certified=(
-            network_boundary_certified
-        ),
-        connector_trust_verified=(
-            connector_trust_verified
-        ),
-        canonical_secret_resolver=(
-            canonical_secret_resolver
-        ),
+        network_boundary_certified=network_boundary_certified,
+        connector_trust_verified=connector_trust_verified,
+        canonical_secret_resolver=canonical_secret_resolver,
         request_contract_evidence_nonempty=(
             request_contract_evidence_nonempty
         ),
-        request_contract_integrity=(
-            request_contract_integrity
-        ),
+        request_contract_integrity=request_contract_integrity,
         contract_endpoint_binding_integrity=(
             contract_endpoint_binding_integrity
         ),
-        legal_evidence_integrity=(
-            legal_evidence_integrity
+        endpoint_manifest_semantics_verified=(
+            endpoint_manifest_semantics_verified
         ),
-        attempt_intent_integrity=(
-            attempt_intent_integrity
+        legal_evidence_nonempty=legal_evidence_nonempty,
+        legal_evidence_integrity=legal_evidence_integrity,
+        attempt_intent_integrity=attempt_intent_integrity,
+        attempt_intent_store_cross_bound=(
+            attempt_intent_store_cross_bound
         ),
-        production_rights_blocked=(
-            production_rights_blocked
-        ),
-        blockers=tuple(
-            blockers
-        ),
+        production_rights_blocked=production_rights_blocked,
+        blockers=tuple(blockers),
     )
 
     certification = (
         ProviderActivationReadinessCertification(
             status=status,
-            network_boundary_certified=(
-                network_boundary_certified
-            ),
-            connector_trust_verified=(
-                connector_trust_verified
-            ),
-            canonical_secret_resolver=(
-                canonical_secret_resolver
-            ),
+            network_boundary_certified=network_boundary_certified,
+            connector_trust_verified=connector_trust_verified,
+            canonical_secret_resolver=canonical_secret_resolver,
             request_contract_evidence_nonempty=(
                 request_contract_evidence_nonempty
             ),
-            request_contract_integrity=(
-                request_contract_integrity
-            ),
+            request_contract_integrity=request_contract_integrity,
             contract_endpoint_binding_integrity=(
                 contract_endpoint_binding_integrity
             ),
-            legal_evidence_integrity=(
-                legal_evidence_integrity
+            endpoint_manifest_semantics_verified=(
+                endpoint_manifest_semantics_verified
             ),
-            attempt_intent_integrity=(
-                attempt_intent_integrity
+            legal_evidence_nonempty=legal_evidence_nonempty,
+            legal_evidence_integrity=legal_evidence_integrity,
+            attempt_intent_integrity=attempt_intent_integrity,
+            attempt_intent_store_cross_bound=(
+                attempt_intent_store_cross_bound
             ),
-            production_rights_blocked=(
-                production_rights_blocked
-            ),
+            production_rights_blocked=production_rights_blocked,
             real_provider_execution_authorized=False,
-            blockers=tuple(
-                blockers
-            ),
-            certification_fingerprint=(
-                _sha(
-                    base
-                )
-            ),
+            blockers=tuple(blockers),
+            certification_fingerprint=_sha(base),
         )
     )
 
