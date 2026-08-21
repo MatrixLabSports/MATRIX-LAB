@@ -1313,6 +1313,116 @@ def _provider_shadow_rehearsal_provenance_boundary(
         )
 
 
+def _provider_p131_real_attempt_cross_binding_boundary(
+    root: Path,
+) -> None:
+    path = (
+        root
+        / "app"
+        / "core"
+        / "provider_activation_rehearsal.py"
+    )
+    source = path.read_text(
+        encoding="utf-8-sig"
+    )
+    tree = ast.parse(
+        source,
+        filename=str(path),
+    )
+
+    certify = next(
+        (
+            node
+            for node in tree.body
+            if isinstance(
+                node,
+                ast.FunctionDef,
+            )
+            and node.name
+            == "certify_provider_activation_rehearsal"
+        ),
+        None,
+    )
+
+    violations: list[str] = []
+
+    if certify is None:
+        violations.append(
+            "P131_REHEARSAL_CERTIFIER_MISSING"
+        )
+    else:
+        args = {
+            argument.arg
+            for argument in (
+                list(certify.args.args)
+                + list(certify.args.kwonlyargs)
+            )
+        }
+
+        for required in (
+            "attempt_intent_store",
+            "network_call_evidence_store",
+            "network_permit_store",
+            "contract_endpoint_binding_store",
+        ):
+            if required not in args:
+                violations.append(
+                    "P131_REAL_ATTEMPT_ARGUMENT_MISSING:"
+                    + required
+                )
+
+    permit_consumed_at_get = any(
+        isinstance(node, ast.Call)
+        and isinstance(node.func, ast.Attribute)
+        and node.func.attr == "get"
+        and isinstance(node.func.value, ast.Name)
+        and node.func.value.id == "permit"
+        and len(node.args) >= 1
+        and isinstance(node.args[0], ast.Constant)
+        and node.args[0].value == "consumed_at"
+        for node in ast.walk(tree)
+    )
+
+    if not permit_consumed_at_get:
+        violations.append(
+            "P131_REAL_ATTEMPT_CONTROL_MISSING:"
+            'permit.get("consumed_at")'
+        )
+
+    for token in (
+        "type(network_permit_store)",
+        "SQLiteProviderNetworkPermitStore",
+        "type(contract_endpoint_binding_store)",
+        "SQLiteProviderContractEndpointBindingStore",
+        "network_permit_store.get_verified",
+        "network_call_evidence_store.list_verified_events_for_permit",
+        "NETWORK_CALL_STARTED",
+        "contract_endpoint_binding_store.authorize",
+        "pre_network_binding_intent_id",
+        "reconcile_network_attempt_with_recovery",
+        "INTERRUPTION_REAL_NETWORK_ATTEMPT_CROSS_BINDING_REQUIRED",
+    ):
+        if token not in source:
+            violations.append(
+                "P131_REAL_ATTEMPT_CONTROL_MISSING:"
+                + token
+            )
+
+    if (
+        "real_provider_execution_authorized=True"
+        in source
+    ):
+        violations.append(
+            "P131_REAL_PROVIDER_EXECUTION_MUST_REMAIN_DISABLED"
+        )
+
+    if violations:
+        raise SystemExit(
+            "PROVIDER_P131_REAL_ATTEMPT_CROSS_BINDING_BOUNDARY_VIOLATION\n"
+            + "\n".join(violations)
+        )
+
+
 def main() -> int:
     policy = (
         build_repository_quality_policy()
@@ -1358,6 +1468,7 @@ def main() -> int:
     _provider_production_readiness_boundary(ROOT)
     _provider_network_activation_hardening_boundary(ROOT)
     _provider_network_activation_semantic_boundary(ROOT)
+    _provider_p131_real_attempt_cross_binding_boundary(ROOT)
     _provider_shadow_rehearsal_provenance_boundary(ROOT)
     _authoritative_runtime_admission_boundary(ROOT)
     _git_diff_checks(ROOT)

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from datetime import datetime
 from hashlib import sha256
 import json
 from typing import Any, Mapping, Sequence
@@ -15,9 +16,15 @@ from app.core.governed_provider_http import (
 from app.core.provider_attempt_intent import (
     SQLiteProviderAttemptIntentStore,
 )
+from app.core.provider_contract_endpoint_binding import (
+    SQLiteProviderContractEndpointBindingStore,
+)
 from app.core.provider_interruption_recovery import (
     SQLiteProviderInterruptionRecoveryStore,
     reconcile_network_attempt_with_recovery,
+)
+from app.core.provider_network_execution_authorization import (
+    SQLiteProviderNetworkPermitStore,
 )
 from app.core.provider_shadow_rehearsal_evidence import (
     SQLiteProviderShadowRehearsalEvidenceStore,
@@ -273,6 +280,8 @@ def certify_provider_activation_rehearsal(
     interruption_permit_ids: Sequence[str],
     attempt_intent_store,
     network_call_evidence_store,
+    network_permit_store,
+    contract_endpoint_binding_store,
 ) -> ProviderActivationRehearsalCertification:
     readiness = (
         verify_provider_activation_readiness_certification(
@@ -289,6 +298,10 @@ def certify_provider_activation_rehearsal(
         is SQLiteProviderAttemptIntentStore
         and type(network_call_evidence_store)
         is SQLiteProviderNetworkCallEvidenceStore
+        and type(network_permit_store)
+        is SQLiteProviderNetworkPermitStore
+        and type(contract_endpoint_binding_store)
+        is SQLiteProviderContractEndpointBindingStore
     )
 
     shadow_evidence_integrity = (
@@ -449,6 +462,12 @@ def certify_provider_activation_rehearsal(
         and bool(
             attempt_intent_store.audit_integrity()
         )
+        and bool(
+            network_permit_store.audit_integrity()
+        )
+        and bool(
+            contract_endpoint_binding_store.audit_integrity()
+        )
     )
 
     permit_ids = tuple(
@@ -478,6 +497,85 @@ def certify_provider_activation_rehearsal(
                         permit_id
                     )
                 )
+                permit = (
+                    network_permit_store.get_verified(
+                        permit_id
+                    )
+                )
+                network_events = (
+                    network_call_evidence_store.list_verified_events_for_permit(
+                        permit_id
+                    )
+                )
+                started_events = tuple(
+                    event
+                    for event in network_events
+                    if event.get("event_type")
+                    == "NETWORK_CALL_STARTED"
+                )
+                started_event = (
+                    started_events[0]
+                    if len(started_events) == 1
+                    else None
+                )
+                started_at = (
+                    datetime.fromisoformat(
+                        str(
+                            started_event[
+                                "event_at"
+                            ]
+                        )
+                    )
+                    if started_event is not None
+                    else None
+                )
+                issued_at = (
+                    datetime.fromisoformat(
+                        str(
+                            permit[
+                                "issued_at"
+                            ]
+                        )
+                    )
+                    if permit is not None
+                    else None
+                )
+                consumed_at = (
+                    datetime.fromisoformat(
+                        str(
+                            permit[
+                                "consumed_at"
+                            ]
+                        )
+                    )
+                    if (
+                        permit is not None
+                        and permit.get(
+                            "consumed_at"
+                        )
+                        is not None
+                    )
+                    else None
+                )
+                contract_binding = (
+                    contract_endpoint_binding_store.authorize(
+                        request_contract_id=(
+                            intent.request_contract_id
+                        ),
+                        endpoint_manifest_id=(
+                            intent.endpoint_manifest_id
+                        ),
+                        path=(
+                            intent.request_path
+                        ),
+                        now=started_at,
+                    )
+                    if (
+                        intent is not None
+                        and started_at is not None
+                    )
+                    else None
+                )
                 recovered_state = (
                     reconcile_network_attempt_with_recovery(
                         permit_id=permit_id,
@@ -495,6 +593,14 @@ def certify_provider_activation_rehearsal(
             except Exception:
                 evidence = None
                 intent = None
+                permit = None
+                network_events = ()
+                started_events = ()
+                started_event = None
+                started_at = None
+                issued_at = None
+                consumed_at = None
+                contract_binding = None
                 recovered_state = None
 
             if evidence is None:
@@ -504,6 +610,12 @@ def certify_provider_activation_rehearsal(
 
             if (
                 intent is None
+                or permit is None
+                or started_event is None
+                or started_at is None
+                or issued_at is None
+                or consumed_at is None
+                or contract_binding is None
                 or recovered_state is None
                 or evidence.permit_id != permit_id
                 or evidence.provider_key != "api_football"
@@ -519,12 +631,58 @@ def certify_provider_activation_rehearsal(
                 != intent.request_contract_id
                 or evidence.request_contract_fingerprint
                 != intent.request_contract_fingerprint
+                or permit.get("permit_id")
+                != permit_id
+                or permit.get("run_id")
+                != intent.run_id
+                or permit.get("sport")
+                != "football"
+                or permit.get("provider_key")
+                != intent.provider_key
+                or permit.get("mode")
+                != "PRODUCTION"
+                or permit.get("endpoint_manifest_id")
+                != intent.endpoint_manifest_id
+                or permit.get("security_evidence_id")
+                != intent.security_evidence_id
+                or permit.get("method")
+                != started_event.get("method")
+                or started_event.get("permit_id")
+                != permit_id
+                or started_event.get("provider_key")
+                != intent.provider_key
+                or started_event.get("run_id")
+                != intent.run_id
+                or started_event.get("endpoint_manifest_id")
+                != intent.endpoint_manifest_id
+                or contract_binding.provider_key
+                != intent.provider_key
+                or contract_binding.sport
+                != "football"
+                or contract_binding.request_contract_id
+                != intent.request_contract_id
+                or contract_binding.endpoint_manifest_id
+                != intent.endpoint_manifest_id
+                or contract_binding.path
+                != intent.request_path
+                or issued_at.tzinfo is None
+                or issued_at.utcoffset() is None
+                or consumed_at.tzinfo is None
+                or consumed_at.utcoffset() is None
+                or started_at.tzinfo is None
+                or started_at.utcoffset() is None
+                or issued_at > consumed_at
+                or consumed_at > started_at
+                or evidence.created_at < started_at
                 or recovered_state.state
                 != "INTERRUPTED_UNKNOWN_OUTCOME"
                 or recovered_state.recovery_id
                 != evidence.recovery_id
                 or recovered_state.safe_to_retry
                 is not False
+                or bool(
+                    recovered_state.errors
+                )
             ):
                 interruption_attempt_cross_bound = False
 
@@ -590,6 +748,10 @@ def certify_provider_activation_rehearsal(
         (
             interruption_attempt_cross_bound,
             "INTERRUPTION_ATTEMPT_PROVENANCE_NOT_CROSS_BOUND",
+        ),
+        (
+            interruption_attempt_cross_bound,
+            "INTERRUPTION_REAL_NETWORK_ATTEMPT_CROSS_BINDING_REQUIRED",
         ),
         (
             interruption_evidence_integrity,

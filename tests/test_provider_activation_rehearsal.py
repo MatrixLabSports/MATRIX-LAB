@@ -21,6 +21,7 @@ from app.core.provider_attempt_intent import (
 )
 from app.core.provider_contract_endpoint_binding import (
     SQLiteProviderContractEndpointBindingStore,
+    build_provider_contract_endpoint_binding,
 )
 from app.core.provider_interruption_recovery import (
     SQLiteProviderInterruptionRecoveryStore,
@@ -28,6 +29,11 @@ from app.core.provider_interruption_recovery import (
 )
 from app.core.provider_network_binding import (
     SQLiteProviderNetworkBindingEvidenceStore,
+)
+from app.core.provider_network_execution_authorization import (
+    ProviderNetworkPermit,
+    SQLiteProviderNetworkPermitStore,
+    _sha as permit_sha,
 )
 from app.core.provider_request_contract import (
     SQLiteProviderRequestContractRegistry,
@@ -183,13 +189,74 @@ def _shadow(tmp_path):
     return runtime, evidence_store
 
 
-def _interruption_chain(tmp_path):
-    permit_id = "5" * 64
+def _interruption_chain(
+    tmp_path,
+    *,
+    consume_permit=True,
+    binding_path="/fixtures",
+    permit_run_id=None,
+    permit_endpoint_manifest_id=None,
+):
     run_id = "1" * 64
     queue_item_fingerprint = "2" * 64
+    security_evidence_id = "3" * 64
     endpoint_manifest_id = "4" * 64
     request_contract_id = "6" * 64
     request_contract_fingerprint = "7" * 64
+
+    effective_permit_run_id = (
+        permit_run_id
+        if permit_run_id is not None
+        else run_id
+    )
+    effective_permit_endpoint_id = (
+        permit_endpoint_manifest_id
+        if permit_endpoint_manifest_id is not None
+        else endpoint_manifest_id
+    )
+
+    request_nonce = "a" * 64
+    endpoint_authorization_fingerprint = "b" * 64
+    dns_resolution_fingerprint = "c" * 64
+    resolved_ips = ("8.8.8.8",)
+    execution_authorization_fingerprint = "d" * 64
+    security_decision_fingerprint = "e" * 64
+
+    permit_base = {
+        "schema": "matrix.provider-network-permit-id/1",
+        "run_id": effective_permit_run_id,
+        "sport": "football",
+        "provider_key": "api_football",
+        "mode": "PRODUCTION",
+        "request_nonce": request_nonce,
+        "method": "GET",
+        "endpoint_manifest_id": (
+            effective_permit_endpoint_id
+        ),
+        "endpoint_authorization_fingerprint": (
+            endpoint_authorization_fingerprint
+        ),
+        "dns_resolution_fingerprint": (
+            dns_resolution_fingerprint
+        ),
+        "resolved_ips": list(
+            resolved_ips
+        ),
+        "execution_authorization_fingerprint": (
+            execution_authorization_fingerprint
+        ),
+        "security_decision_fingerprint": (
+            security_decision_fingerprint
+        ),
+        "security_evidence_id": (
+            security_evidence_id
+        ),
+        "issued_at": NOW.isoformat(),
+        "one_use": True,
+    }
+    permit_id = permit_sha(
+        permit_base
+    )
 
     attempt_store = SQLiteProviderAttemptIntentStore(
         tmp_path / "rehearsal-attempt-intents.db"
@@ -199,6 +266,14 @@ def _interruption_chain(tmp_path):
     )
     recovery_store = SQLiteProviderInterruptionRecoveryStore(
         tmp_path / "recovery.db"
+    )
+    network_permit_store = SQLiteProviderNetworkPermitStore(
+        tmp_path / "network-permits.db"
+    )
+    contract_endpoint_binding_store = (
+        SQLiteProviderContractEndpointBindingStore(
+            tmp_path / "contract-endpoint-bindings.db"
+        )
     )
 
     intent = build_provider_attempt_intent_evidence(
@@ -212,7 +287,7 @@ def _interruption_chain(tmp_path):
             endpoint_manifest_id
         ),
         security_evidence_id=(
-            "3" * 64
+            security_evidence_id
         ),
         request_contract_id=(
             request_contract_id
@@ -234,6 +309,62 @@ def _interruption_chain(tmp_path):
     )
     attempt_store.record(
         intent
+    )
+
+    permit = ProviderNetworkPermit(
+        permit_id=permit_id,
+        run_id=effective_permit_run_id,
+        sport="football",
+        provider_key="api_football",
+        mode="PRODUCTION",
+        request_nonce=request_nonce,
+        method="GET",
+        endpoint_manifest_id=(
+            effective_permit_endpoint_id
+        ),
+        endpoint_authorization_fingerprint=(
+            endpoint_authorization_fingerprint
+        ),
+        dns_resolution_fingerprint=(
+            dns_resolution_fingerprint
+        ),
+        resolved_ips=(
+            resolved_ips
+        ),
+        execution_authorization_fingerprint=(
+            execution_authorization_fingerprint
+        ),
+        security_decision_fingerprint=(
+            security_decision_fingerprint
+        ),
+        security_evidence_id=(
+            security_evidence_id
+        ),
+        issued_at=NOW,
+    )
+    network_permit_store.issue(
+        permit
+    )
+    if consume_permit:
+        network_permit_store.consume(
+            permit_id=permit_id,
+            consumed_at=NOW,
+        )
+
+    contract_endpoint_binding_store.register(
+        build_provider_contract_endpoint_binding(
+            provider_key="api_football",
+            sport="football",
+            request_contract_id=(
+                request_contract_id
+            ),
+            endpoint_manifest_id=(
+                endpoint_manifest_id
+            ),
+            path=binding_path,
+            valid_from=NOW,
+            valid_until=None,
+        )
     )
 
     network_call_store.record(
@@ -280,7 +411,10 @@ def _interruption_chain(tmp_path):
         attempt_store,
         network_call_store,
         recovery_store,
+        network_permit_store,
+        contract_endpoint_binding_store,
     )
+
 
 
 def _certify(
@@ -291,7 +425,23 @@ def _certify(
     attempt_store,
     network_call_store,
     recovery_store,
+    network_permit_store=None,
+    contract_endpoint_binding_store=None,
 ):
+    root = recovery_store.path.parent
+
+    if network_permit_store is None:
+        network_permit_store = SQLiteProviderNetworkPermitStore(
+            root / "empty-network-permits.db"
+        )
+
+    if contract_endpoint_binding_store is None:
+        contract_endpoint_binding_store = (
+            SQLiteProviderContractEndpointBindingStore(
+                root / "empty-contract-bindings.db"
+            )
+        )
+
     return certify_provider_activation_rehearsal(
         activation_readiness=(
             _readiness()
@@ -314,7 +464,14 @@ def _certify(
         network_call_evidence_store=(
             network_call_store
         ),
+        network_permit_store=(
+            network_permit_store
+        ),
+        contract_endpoint_binding_store=(
+            contract_endpoint_binding_store
+        ),
     )
+
 
 
 def test_shadow_runtime_persists_cryptographically_attested_readiness_and_request_evidence(
@@ -425,6 +582,8 @@ def test_rehearsal_certification_cross_binds_recovery_to_attempt_and_started_net
         attempt_store,
         network_call_store,
         recovery_store,
+        network_permit_store,
+        contract_endpoint_binding_store,
     ) = _interruption_chain(
         tmp_path / "interrupt"
     )
@@ -438,6 +597,12 @@ def test_rehearsal_certification_cross_binds_recovery_to_attempt_and_started_net
             network_call_store
         ),
         recovery_store=recovery_store,
+        network_permit_store=(
+            network_permit_store
+        ),
+        contract_endpoint_binding_store=(
+            contract_endpoint_binding_store
+        ),
     )
 
     assert certification.status == (
@@ -595,10 +760,141 @@ def test_rehearsal_rejects_duck_typed_authoritative_sources(
         ),
         attempt_intent_store=FakeStore(),
         network_call_evidence_store=FakeStore(),
+        network_permit_store=FakeStore(),
+        contract_endpoint_binding_store=FakeStore(),
     )
 
     assert certification.status == "NOT_CERTIFIED"
     assert (
         "AUTHORITATIVE_REHEARSAL_EVIDENCE_REQUIRED"
+        in certification.blockers
+    )
+
+
+def test_v5_rehearsal_rejects_unconsumed_network_permit(
+    tmp_path,
+):
+    runtime, shadow_store = _shadow(
+        tmp_path / "shadow"
+    )
+    runtime.preview(
+        contract_name="fixture_by_id",
+        params={"id": 100},
+    )
+
+    (
+        permit_id,
+        attempt_store,
+        network_call_store,
+        recovery_store,
+        network_permit_store,
+        contract_endpoint_binding_store,
+    ) = _interruption_chain(
+        tmp_path / "interrupt",
+        consume_permit=False,
+    )
+
+    certification = _certify(
+        runtime=runtime,
+        shadow_store=shadow_store,
+        permit_id=permit_id,
+        attempt_store=attempt_store,
+        network_call_store=network_call_store,
+        recovery_store=recovery_store,
+        network_permit_store=network_permit_store,
+        contract_endpoint_binding_store=(
+            contract_endpoint_binding_store
+        ),
+    )
+
+    assert certification.status == "NOT_CERTIFIED"
+    assert (
+        "INTERRUPTION_REAL_NETWORK_ATTEMPT_CROSS_BINDING_REQUIRED"
+        in certification.blockers
+    )
+
+
+def test_v5_rehearsal_rejects_wrong_contract_endpoint_binding(
+    tmp_path,
+):
+    runtime, shadow_store = _shadow(
+        tmp_path / "shadow"
+    )
+    runtime.preview(
+        contract_name="fixture_by_id",
+        params={"id": 100},
+    )
+
+    (
+        permit_id,
+        attempt_store,
+        network_call_store,
+        recovery_store,
+        network_permit_store,
+        contract_endpoint_binding_store,
+    ) = _interruption_chain(
+        tmp_path / "interrupt",
+        binding_path="/odds",
+    )
+
+    certification = _certify(
+        runtime=runtime,
+        shadow_store=shadow_store,
+        permit_id=permit_id,
+        attempt_store=attempt_store,
+        network_call_store=network_call_store,
+        recovery_store=recovery_store,
+        network_permit_store=network_permit_store,
+        contract_endpoint_binding_store=(
+            contract_endpoint_binding_store
+        ),
+    )
+
+    assert certification.status == "NOT_CERTIFIED"
+    assert (
+        "INTERRUPTION_REAL_NETWORK_ATTEMPT_CROSS_BINDING_REQUIRED"
+        in certification.blockers
+    )
+
+
+def test_v5_rehearsal_rejects_network_permit_run_mismatch(
+    tmp_path,
+):
+    runtime, shadow_store = _shadow(
+        tmp_path / "shadow"
+    )
+    runtime.preview(
+        contract_name="fixture_by_id",
+        params={"id": 100},
+    )
+
+    (
+        permit_id,
+        attempt_store,
+        network_call_store,
+        recovery_store,
+        network_permit_store,
+        contract_endpoint_binding_store,
+    ) = _interruption_chain(
+        tmp_path / "interrupt",
+        permit_run_id="f" * 64,
+    )
+
+    certification = _certify(
+        runtime=runtime,
+        shadow_store=shadow_store,
+        permit_id=permit_id,
+        attempt_store=attempt_store,
+        network_call_store=network_call_store,
+        recovery_store=recovery_store,
+        network_permit_store=network_permit_store,
+        contract_endpoint_binding_store=(
+            contract_endpoint_binding_store
+        ),
+    )
+
+    assert certification.status == "NOT_CERTIFIED"
+    assert (
+        "INTERRUPTION_REAL_NETWORK_ATTEMPT_CROSS_BINDING_REQUIRED"
         in certification.blockers
     )
