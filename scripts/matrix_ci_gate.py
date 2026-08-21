@@ -1313,6 +1313,100 @@ def _provider_shadow_rehearsal_provenance_boundary(
         )
 
 
+
+def _provider_response_ingest_boundary(
+    root,
+) -> None:
+    response_validation = (
+        root
+        / "app/providers/api_football/response_validation.py"
+    ).read_text(
+        encoding="utf-8-sig"
+    )
+    fixture_service = (
+        root
+        / "app/providers/api_football/fixture_service.py"
+    ).read_text(
+        encoding="utf-8-sig"
+    )
+    odds_service = (
+        root
+        / "app/providers/api_football/odds_service.py"
+    ).read_text(
+        encoding="utf-8-sig"
+    )
+    replay = (
+        root
+        / "app/providers/api_football/offline_ingest_certification.py"
+    ).read_text(
+        encoding="utf-8-sig"
+    )
+
+    required_response_tokens = (
+        "class ApiFootballProviderResponseError",
+        "class ApiFootballResponseEnvelope",
+        "def validate_api_football_response_envelope(",
+        "API_FOOTBALL_PROVIDER_ERROR_PRESENT",
+        "API_FOOTBALL_RESULTS_COUNT_MISMATCH",
+        "payload_fingerprint",
+    )
+
+    for token in required_response_tokens:
+        if token not in response_validation:
+            raise RuntimeError(
+                "P133_RESPONSE_VALIDATION_CONTROL_MISSING:"
+                + token
+            )
+
+    if fixture_service.count(
+        "validate_api_football_response_envelope("
+    ) < 3:
+        raise RuntimeError(
+            "P133_FIXTURE_VALIDATION_BINDING_MISSING"
+        )
+
+    if odds_service.count(
+        "validate_api_football_response_envelope("
+    ) < 1:
+        raise RuntimeError(
+            "P133_ODDS_VALIDATION_BINDING_MISSING"
+        )
+
+    required_replay_tokens = (
+        "class ApiFootballOfflineIngestCertification",
+        "def certify_api_football_offline_fixture_ingest(",
+        "sync_football_fixtures(",
+        "OFFLINE_REPLAY",
+        "zero_network_calls",
+        "repository_idempotent",
+        "real_provider_execution_authorized=False",
+        "automatic_provider_switch=False",
+        "automatic_wagering=False",
+    )
+
+    for token in required_replay_tokens:
+        if token not in replay:
+            raise RuntimeError(
+                "P136_OFFLINE_REPLAY_CONTROL_MISSING:"
+                + token
+            )
+
+    forbidden_replay_tokens = (
+        "socket.create_connection",
+        "requests.",
+        "urllib.",
+        "get_pinned(",
+        "build_governed_api_football_client(",
+    )
+
+    for token in forbidden_replay_tokens:
+        if token in replay:
+            raise RuntimeError(
+                "P136_OFFLINE_REPLAY_NETWORK_SURFACE_FORBIDDEN:"
+                + token
+            )
+
+
 def _provider_p131_real_attempt_cross_binding_boundary(
     root: Path,
 ) -> None:
@@ -1469,6 +1563,7 @@ def main() -> int:
     _provider_network_activation_hardening_boundary(ROOT)
     _provider_network_activation_semantic_boundary(ROOT)
     _provider_p131_real_attempt_cross_binding_boundary(ROOT)
+    _provider_response_ingest_boundary(ROOT)
     _provider_shadow_rehearsal_provenance_boundary(ROOT)
     _authoritative_runtime_admission_boundary(ROOT)
     _git_diff_checks(ROOT)
