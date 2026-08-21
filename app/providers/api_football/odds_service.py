@@ -4,7 +4,7 @@ from dataclasses import dataclass
 from typing import Any
 from app.providers.api_football.response_validation import (
     ApiFootballProviderResponseError,
-    validate_api_football_response_envelope,
+    request_and_validate_api_football_response,
 )
 
 
@@ -23,15 +23,15 @@ def get_fixture_odds_raw(
     live: bool = False,
 ) -> ApiFootballOddsIngestion:
     endpoint = "/odds/live" if live else "/odds"
-    payload = client.get(endpoint, {"fixture": fixture_id})
     try:
-        envelope = validate_api_football_response_envelope(
-            payload,
+        envelope = request_and_validate_api_football_response(
+            client,
             endpoint=endpoint,
+            params={"fixture": fixture_id},
         )
     except ApiFootballProviderResponseError as error:
         if error.code == "API_FOOTBALL_RESPONSE_FIELD_INVALID":
-            raise ValueError("respuesta de odds de API-Football inv\u00e1lida") from error
+            raise ValueError('respuesta de odds de API-Football inv\u00e1lida') from error
         raise
     raw = list(envelope.response)
     accepted: list[dict[str, Any]] = []

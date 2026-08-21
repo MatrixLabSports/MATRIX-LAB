@@ -6,11 +6,16 @@ from hashlib import sha256
 import json
 from typing import Any
 
+from app.core.pinned_https_transport import (
+    PinnedHttpProtocolError,
+    PinnedHttpStatusError,
+)
+
 
 @dataclass(frozen=True)
 class ApiFootballResponseEnvelope:
     endpoint: str
-    response: tuple[Any, ...]
+    response: tuple[Mapping[str, Any], ...]
     request_name: str | None
     results: int | None
     paging_current: int | None
@@ -65,13 +70,10 @@ def _canonical_endpoint(endpoint: str) -> str:
 def _errors_are_empty(errors: object) -> bool:
     if errors is None:
         return True
-
     if isinstance(errors, Mapping):
         return len(errors) == 0
-
     if isinstance(errors, list):
         return len(errors) == 0
-
     if isinstance(errors, str):
         return errors.strip() == ""
 
@@ -81,14 +83,43 @@ def _errors_are_empty(errors: object) -> bool:
     )
 
 
+def _validate_response_item(
+    item: object,
+    *,
+    endpoint: str,
+) -> Mapping[str, Any]:
+    if not isinstance(item, Mapping):
+        raise _provider_error(
+            "API_FOOTBALL_RESPONSE_ITEM_NOT_MAPPING",
+            "SCHEMA",
+        )
+
+    if any(
+        not isinstance(key, str)
+        for key in item.keys()
+    ):
+        raise _provider_error(
+            "API_FOOTBALL_RESPONSE_ITEM_KEY_NOT_STRING",
+            "SCHEMA",
+        )
+
+    if endpoint == "/fixtures":
+        for field in ("fixture", "league", "teams"):
+            if not isinstance(item.get(field), Mapping):
+                raise _provider_error(
+                    "API_FOOTBALL_FIXTURE_ITEM_SCHEMA_INVALID",
+                    "SCHEMA",
+                )
+
+    return item
+
+
 def validate_api_football_response_envelope(
     payload: object,
     *,
     endpoint: str,
 ) -> ApiFootballResponseEnvelope:
-    expected_endpoint = _canonical_endpoint(
-        endpoint
-    )
+    expected_endpoint = _canonical_endpoint(endpoint)
 
     if not isinstance(payload, Mapping):
         raise _provider_error(
@@ -96,10 +127,7 @@ def validate_api_football_response_envelope(
             "MALFORMED_ENVELOPE",
         )
 
-    if any(
-        not isinstance(key, str)
-        for key in payload.keys()
-    ):
+    if any(not isinstance(key, str) for key in payload.keys()):
         raise _provider_error(
             "API_FOOTBALL_RESPONSE_KEY_NOT_STRING",
             "MALFORMED_ENVELOPE",
@@ -134,7 +162,6 @@ def validate_api_football_response_envelope(
         )
 
     errors = payload.get("errors")
-
     if not _errors_are_empty(errors):
         raise _provider_error(
             "API_FOOTBALL_PROVIDER_ERROR_PRESENT",
@@ -142,22 +169,14 @@ def validate_api_football_response_envelope(
         )
 
     request_name = payload.get("get")
-
     if request_name is not None:
-        if (
-            not isinstance(request_name, str)
-            or not request_name.strip()
-        ):
+        if not isinstance(request_name, str) or not request_name.strip():
             raise _provider_error(
                 "API_FOOTBALL_GET_FIELD_INVALID",
                 "MALFORMED_ENVELOPE",
             )
 
-        normalized_request = (
-            "/"
-            + request_name.strip().lstrip("/")
-        )
-
+        normalized_request = "/" + request_name.strip().lstrip("/")
         if normalized_request != expected_endpoint:
             raise _provider_error(
                 "API_FOOTBALL_ENDPOINT_MISMATCH",
@@ -165,32 +184,19 @@ def validate_api_football_response_envelope(
             )
 
     parameters = payload.get("parameters")
-
-    if (
-        parameters is not None
-        and not isinstance(
-            parameters,
-            Mapping,
-        )
-    ):
+    if parameters is not None and not isinstance(parameters, Mapping):
         raise _provider_error(
             "API_FOOTBALL_PARAMETERS_FIELD_INVALID",
             "MALFORMED_ENVELOPE",
         )
 
     results = payload.get("results")
-
     if results is not None:
-        if (
-            isinstance(results, bool)
-            or not isinstance(results, int)
-            or results < 0
-        ):
+        if isinstance(results, bool) or not isinstance(results, int) or results < 0:
             raise _provider_error(
                 "API_FOOTBALL_RESULTS_FIELD_INVALID",
                 "MALFORMED_ENVELOPE",
             )
-
         if results != len(response):
             raise _provider_error(
                 "API_FOOTBALL_RESULTS_COUNT_MISMATCH",
@@ -200,57 +206,84 @@ def validate_api_football_response_envelope(
     paging_current = None
     paging_total = None
     paging = payload.get("paging")
-
     if paging is not None:
         if not isinstance(paging, Mapping):
             raise _provider_error(
                 "API_FOOTBALL_PAGING_FIELD_INVALID",
                 "MALFORMED_ENVELOPE",
             )
-
-        if (
-            "current" not in paging
-            or "total" not in paging
-        ):
+        if "current" not in paging or "total" not in paging:
             raise _provider_error(
                 "API_FOOTBALL_PAGING_FIELDS_REQUIRED",
                 "MALFORMED_ENVELOPE",
             )
-
         paging_current = paging["current"]
         paging_total = paging["total"]
 
-        for value in (
-            paging_current,
-            paging_total,
-        ):
-            if (
-                isinstance(value, bool)
-                or not isinstance(value, int)
-                or value < 0
-            ):
+        for value in (paging_current, paging_total):
+            if isinstance(value, bool) or not isinstance(value, int) or value < 0:
                 raise _provider_error(
                     "API_FOOTBALL_PAGING_VALUE_INVALID",
                     "MALFORMED_ENVELOPE",
                 )
 
+    validated_items = tuple(
+        _validate_response_item(item, endpoint=expected_endpoint)
+        for item in response
+    )
+
     return ApiFootballResponseEnvelope(
         endpoint=expected_endpoint,
-        response=tuple(response),
-        request_name=(
-            request_name
-            if isinstance(request_name, str)
-            else None
-        ),
-        results=(
-            results
-            if isinstance(results, int)
-            and not isinstance(results, bool)
-            else None
-        ),
+        response=validated_items,
+        request_name=request_name if isinstance(request_name, str) else None,
+        results=results if isinstance(results, int) and not isinstance(results, bool) else None,
         paging_current=paging_current,
         paging_total=paging_total,
-        payload_fingerprint=sha256(
-            payload_json.encode("utf-8")
-        ).hexdigest(),
+        payload_fingerprint=sha256(payload_json.encode("utf-8")).hexdigest(),
+    )
+
+
+def request_and_validate_api_football_response(
+    client: Any,
+    *,
+    endpoint: str,
+    params: Mapping[str, Any],
+) -> ApiFootballResponseEnvelope:
+    try:
+        payload = client.get(endpoint, dict(params))
+    except ApiFootballProviderResponseError:
+        raise
+    except PinnedHttpStatusError as error:
+        raise _provider_error(
+            "API_FOOTBALL_HTTP_STATUS_ERROR",
+            "HTTP_STATUS",
+            retryable=True,
+        ) from error
+    except PinnedHttpProtocolError as error:
+        category = (
+            error.category
+            if error.category in {"CONTENT_TYPE", "JSON_DECODE", "PROTOCOL"}
+            else "PROTOCOL"
+        )
+        raise _provider_error(
+            "API_FOOTBALL_" + category + "_ERROR",
+            category,
+            retryable=False,
+        ) from error
+    except (json.JSONDecodeError, UnicodeDecodeError) as error:
+        raise _provider_error(
+            "API_FOOTBALL_JSON_DECODE_ERROR",
+            "JSON_DECODE",
+            retryable=False,
+        ) from error
+    except (TimeoutError, ConnectionError, OSError) as error:
+        raise _provider_error(
+            "API_FOOTBALL_TRANSPORT_ERROR",
+            "TRANSPORT",
+            retryable=True,
+        ) from error
+
+    return validate_api_football_response_envelope(
+        payload,
+        endpoint=endpoint,
     )

@@ -9,7 +9,7 @@ from app.sports.football.match_record import FootballMatchRecord
 from dataclasses import dataclass
 from app.providers.api_football.response_validation import (
     ApiFootballProviderResponseError,
-    validate_api_football_response_envelope,
+    request_and_validate_api_football_response,
 )
 
 
@@ -25,19 +25,15 @@ def get_fixtures_by_date(
     client: Any,
     date: str,
 ) -> list[FootballMatchModel]:
-    payload = client.get(
-        "/fixtures",
-        {"date": date},
-    )
-
     try:
-        envelope = validate_api_football_response_envelope(
-            payload,
+        envelope = request_and_validate_api_football_response(
+            client,
             endpoint="/fixtures",
+            params={"date": date},
         )
     except ApiFootballProviderResponseError as error:
         if error.code == "API_FOOTBALL_RESPONSE_FIELD_INVALID":
-            raise ValueError("respuesta de fixtures de API-Football inv\u00e1lida") from error
+            raise ValueError('respuesta de fixtures de API-Football inv\u00e1lida') from error
         raise
     raw_fixtures = list(envelope.response)
 
@@ -51,19 +47,15 @@ def get_fixture_records_by_date(
     client: Any,
     date: str,
 ) -> list[FootballMatchRecord]:
-    payload = client.get(
-        "/fixtures",
-        {"date": date},
-    )
-
     try:
-        envelope = validate_api_football_response_envelope(
-            payload,
+        envelope = request_and_validate_api_football_response(
+            client,
             endpoint="/fixtures",
+            params={"date": date},
         )
     except ApiFootballProviderResponseError as error:
         if error.code == "API_FOOTBALL_RESPONSE_FIELD_INVALID":
-            raise ValueError("respuesta de fixtures de API-Football inv\u00e1lida") from error
+            raise ValueError('respuesta de fixtures de API-Football inv\u00e1lida') from error
         raise
     raw_fixtures = list(envelope.response)
 
@@ -80,19 +72,15 @@ def get_fixture_ingestion_by_date(
     client: Any,
     date: str,
 ) -> FixtureIngestionResult:
-    payload = client.get(
-        "/fixtures",
-        {"date": date},
-    )
-
     try:
-        envelope = validate_api_football_response_envelope(
-            payload,
+        envelope = request_and_validate_api_football_response(
+            client,
             endpoint="/fixtures",
+            params={"date": date},
         )
     except ApiFootballProviderResponseError as error:
         if error.code == "API_FOOTBALL_RESPONSE_FIELD_INVALID":
-            raise ValueError("respuesta de fixtures de API-Football inv\u00e1lida") from error
+            raise ValueError('respuesta de fixtures de API-Football inv\u00e1lida') from error
         raise
     raw_fixtures = list(envelope.response)
 

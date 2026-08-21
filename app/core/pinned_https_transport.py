@@ -17,11 +17,23 @@ class PinnedHttpStatusError(RuntimeError):
     pass
 
 
+class PinnedHttpProtocolError(ValueError):
+    def __init__(
+        self,
+        code: str,
+        category: str,
+    ) -> None:
+        self.code = code
+        self.category = category
+        super().__init__(code)
+
+
 @dataclass(frozen=True)
 class PinnedHttpResponse:
     status_code: int
     headers: Mapping[str, str]
     body: bytes
+    strict_protocol: bool = False
 
     def raise_for_status(self) -> None:
         if self.status_code >= 300:
@@ -29,7 +41,68 @@ class PinnedHttpResponse:
                 f"HTTP_STATUS_{self.status_code}"
             )
 
+    def json_strict(self) -> Any:
+        self.raise_for_status()
+
+        content_types = [
+            str(value).strip()
+            for key, value in self.headers.items()
+            if str(key).lower() == "content-type"
+        ]
+
+        if len(content_types) != 1:
+            raise PinnedHttpProtocolError(
+                "PINNED_HTTP_CONTENT_TYPE_REQUIRED",
+                "CONTENT_TYPE",
+            )
+
+        parts = [
+            part.strip()
+            for part in content_types[0].split(";")
+        ]
+        media_type = parts[0].lower()
+
+        if media_type != "application/json":
+            raise PinnedHttpProtocolError(
+                "PINNED_HTTP_CONTENT_TYPE_INVALID",
+                "CONTENT_TYPE",
+            )
+
+        for parameter in parts[1:]:
+            if not parameter:
+                continue
+            name, separator, value = parameter.partition("=")
+            if (
+                separator
+                and name.strip().lower() == "charset"
+                and value.strip().strip('"').lower()
+                not in {"utf-8", "utf8"}
+            ):
+                raise PinnedHttpProtocolError(
+                    "PINNED_HTTP_JSON_CHARSET_INVALID",
+                    "CONTENT_TYPE",
+                )
+
+        try:
+            text = self.body.decode("utf-8")
+        except UnicodeDecodeError as error:
+            raise PinnedHttpProtocolError(
+                "PINNED_HTTP_JSON_UTF8_INVALID",
+                "JSON_DECODE",
+            ) from error
+
+        try:
+            return json.loads(text)
+        except json.JSONDecodeError as error:
+            raise PinnedHttpProtocolError(
+                "PINNED_HTTP_JSON_INVALID",
+                "JSON_DECODE",
+            ) from error
+
     def json(self) -> Any:
+        if self.strict_protocol:
+            return self.json_strict()
+
         return json.loads(
             self.body.decode("utf-8")
         )
@@ -865,6 +938,7 @@ class StdlibPinnedHttpsTransport(
                 body=bytes(
                     body
                 ),
+                strict_protocol=True,
             )
         finally:
             if (
