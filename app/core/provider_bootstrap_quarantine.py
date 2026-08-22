@@ -135,7 +135,7 @@ def execute_bootstrap_probe(
             "BOOTSTRAP_REQUEST_CONTRACT_ID_REQUIRED"
         ) from error
 
-    raw_payload = client.get(
+    raw_response = client.get(
         path=endpoint,
         request_contract_id=request_contract_id,
         params=(
@@ -144,6 +144,22 @@ def execute_bootstrap_probe(
             else None
         ),
     )
+
+    if isinstance(raw_response, Mapping):
+        raw_payload = raw_response
+    else:
+        json_strict = getattr(
+            raw_response,
+            "json_strict",
+            None,
+        )
+        if not callable(json_strict):
+            raise ValueError(
+                "BOOTSTRAP_RESPONSE_JSON_DECODER_REQUIRED"
+            )
+        raw_payload = json_strict()
+
+    del raw_response
 
     summary = summarize_bootstrap_payload(
         raw_payload
