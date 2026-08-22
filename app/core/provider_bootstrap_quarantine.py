@@ -1,4 +1,4 @@
-﻿from __future__ import annotations
+from __future__ import annotations
 
 from dataclasses import dataclass
 from hashlib import sha256
@@ -103,6 +103,7 @@ def execute_bootstrap_probe(
     authority,
     client,
     endpoint: str,
+    request_contract_id: str,
     params: Mapping[str, Any] | None = None,
 ) -> BootstrapProbeSummary:
     if authority.mode != "BOOTSTRAP_PROBE":
@@ -110,8 +111,33 @@ def execute_bootstrap_probe(
             "BOOTSTRAP_PROBE_MODE_REQUIRED"
         )
 
+    if (
+        not isinstance(endpoint, str)
+        or not endpoint.startswith("/")
+        or "?" in endpoint
+        or "#" in endpoint
+    ):
+        raise ValueError(
+            "BOOTSTRAP_CONTRACT_PATH_REQUIRED"
+        )
+
+    if (
+        not isinstance(request_contract_id, str)
+        or len(request_contract_id) != 64
+    ):
+        raise ValueError(
+            "BOOTSTRAP_REQUEST_CONTRACT_ID_REQUIRED"
+        )
+    try:
+        int(request_contract_id, 16)
+    except ValueError as error:
+        raise ValueError(
+            "BOOTSTRAP_REQUEST_CONTRACT_ID_REQUIRED"
+        ) from error
+
     raw_payload = client.get(
-        endpoint,
+        path=endpoint,
+        request_contract_id=request_contract_id,
         params=(
             dict(params)
             if params is not None

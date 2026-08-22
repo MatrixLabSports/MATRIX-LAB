@@ -342,13 +342,16 @@ def _provider_http_boundary(
             if isinstance(item, ast.ImportFrom):
                 module = item.module or ""
 
-                if module == legacy_module and relative != bootstrap_client:
+                if module == legacy_module:
                     violations.append(
                         f"{relative}:{item.lineno}:"
                         "OFFICIAL_PROVIDER_LEGACY_BYPASS"
                     )
 
-                if module == bootstrap_module and relative != governed_client:
+                if (
+                    module == bootstrap_module
+                    and relative != governed_client
+                ):
                     violations.append(
                         f"{relative}:{item.lineno}:"
                         "BOOTSTRAP_PROVIDER_CLIENT_IMPORT"
@@ -360,10 +363,7 @@ def _provider_http_boundary(
                         alias.name == "GovernedProviderHttpSession"
                         for alias in item.names
                     )
-                    and relative not in {
-                        governed_client,
-                        bootstrap_client,
-                    }
+                    and relative != governed_client
                 ):
                     violations.append(
                         f"{relative}:{item.lineno}:"
@@ -434,13 +434,37 @@ def _provider_http_boundary(
     bootstrap_source = (root / bootstrap_client).read_text(
         encoding="utf-8-sig"
     )
-    if (
-        "BOOTSTRAP_PROBE" not in bootstrap_source
-        or "execute_bootstrap_probe" not in bootstrap_source
+    for required in (
+        "BOOTSTRAP_PROBE",
+        "execute_bootstrap_probe",
+        "_build_controlled_request_client",
+        "request_contract_registry",
+        "secret_reference",
+        "binding_store",
+        "binding_collector",
+        "attempt_intent_store",
+        "request_contract_id",
+        "contract_endpoint_binding_store",
     ):
-        violations.append(
-            f"{bootstrap_client}:BOOTSTRAP_QUARANTINE_REQUIRED"
-        )
+        if required not in bootstrap_source:
+            violations.append(
+                f"{bootstrap_client}:"
+                f"MISSING_BOOTSTRAP_GOVERNED_COMPONENT:{required}"
+            )
+
+    for forbidden in (
+        "ApiFootballClient",
+        "config.api_key",
+        "app.providers.api_football.client",
+        "GovernedProviderHttpSession(",
+        "import requests",
+        "requests.Session",
+    ):
+        if forbidden in bootstrap_source:
+            violations.append(
+                f"{bootstrap_client}:"
+                f"BOOTSTRAP_PROVIDER_LEGACY_BYPASS:{forbidden}"
+            )
 
     if violations:
         raise SystemExit(

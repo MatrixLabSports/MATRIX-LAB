@@ -1,4 +1,4 @@
-﻿from types import SimpleNamespace
+from types import SimpleNamespace
 
 from app.core.provider_bootstrap_quarantine import (
     execute_bootstrap_probe,
@@ -38,9 +38,14 @@ def test_bootstrap_probe_is_mode_bound_and_quarantined():
     class Client:
         def get(
             self,
-            endpoint,
+            *,
+            path,
+            request_contract_id,
             params=None,
         ):
+            assert path == "/status"
+            assert request_contract_id == "1" * 64
+            assert params is None
             return {
                 "response": [
                     {"id": 1}
@@ -52,13 +57,17 @@ def test_bootstrap_probe_is_mode_bound_and_quarantined():
             mode="BOOTSTRAP_PROBE"
         ),
         client=Client(),
-        endpoint="status",
+        endpoint="/status",
+        request_contract_id="1" * 64,
     )
 
     assert (
         summary.status
         == "QUARANTINED_PROBE_ONLY"
     )
+    assert summary.raw_payload_retained is False
+    assert summary.production_admissible is False
+    assert summary.retroactive_promotion_allowed is False
 
     try:
         execute_bootstrap_probe(
@@ -66,7 +75,8 @@ def test_bootstrap_probe_is_mode_bound_and_quarantined():
                 mode="PRODUCTION"
             ),
             client=Client(),
-            endpoint="status",
+            endpoint="/status",
+            request_contract_id="1" * 64,
         )
     except ValueError as error:
         assert str(error) == (

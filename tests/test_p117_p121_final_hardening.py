@@ -199,10 +199,28 @@ def test_ci_explicitly_quarantines_legacy_bootstrap_path():
 
     assert "OFFICIAL_PROVIDER_LEGACY_BYPASS" in ci
     assert "BOOTSTRAP_PROVIDER_CLIENT_IMPORT" in ci
+    assert "MISSING_BOOTSTRAP_GOVERNED_COMPONENT" in ci
+    assert "BOOTSTRAP_PROVIDER_LEGACY_BYPASS" in ci
     assert "bootstrap_client.py" in ci
+
     assert "app.providers.api_football.client" not in governed
-    assert "app.providers.api_football.client" in bootstrap
-    assert "BOOTSTRAP_PROBE" in bootstrap
+    assert "app.providers.api_football.client" not in bootstrap
+    assert "ApiFootballClient" not in bootstrap
+    assert "GovernedProviderHttpSession(" not in bootstrap
+
+    for required in (
+        "BOOTSTRAP_PROBE",
+        "execute_bootstrap_probe",
+        "_build_controlled_request_client",
+        "request_contract_registry",
+        "secret_reference",
+        "binding_store",
+        "binding_collector",
+        "attempt_intent_store",
+        "request_contract_id",
+        "contract_endpoint_binding_store",
+    ):
+        assert required in bootstrap
 
 def test_runtime_reconciliation_requires_request_contract_registry_for_network_mode():
     import ast
