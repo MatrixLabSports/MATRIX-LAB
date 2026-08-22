@@ -1,5 +1,14 @@
 from __future__ import annotations
 
+from uuid import uuid4
+
+from app.core.freshness_root import (
+    FreshnessReservation,
+    FreshnessRoot,
+    FreshnessState,
+    require_production_authorized,
+)
+
 from dataclasses import dataclass
 from hashlib import sha256
 import json
@@ -14,6 +23,11 @@ APPEND_ONLY_TAIL_GUARD_REBASELINE_FORBIDDEN = "APPEND_ONLY_TAIL_GUARD_REBASELINE
 TAIL_GUARD_INITIALIZATION_STATE_REQUIRED = "TAIL_GUARD_INITIALIZATION_STATE_REQUIRED"
 APPEND_ONLY_TAIL_GUARD_EXTERNAL_ANCHOR_REQUIRED = "APPEND_ONLY_TAIL_GUARD_EXTERNAL_ANCHOR_REQUIRED"
 APPEND_ONLY_TAIL_GUARD_EXTERNAL_ANCHOR_INVALID = "APPEND_ONLY_TAIL_GUARD_EXTERNAL_ANCHOR_INVALID"
+APPEND_ONLY_TAIL_GUARD_EXTERNAL_CHECKPOINT_REQUIRED = "APPEND_ONLY_TAIL_GUARD_EXTERNAL_CHECKPOINT_REQUIRED"
+APPEND_ONLY_TAIL_GUARD_EXTERNAL_CHECKPOINT_INVALID = "APPEND_ONLY_TAIL_GUARD_EXTERNAL_CHECKPOINT_INVALID"
+APPEND_ONLY_TAIL_GUARD_EXTERNAL_CHECKPOINT_ROLLBACK = "APPEND_ONLY_TAIL_GUARD_EXTERNAL_CHECKPOINT_ROLLBACK"
+APPEND_ONLY_TAIL_GUARD_EXTERNAL_CHECKPOINT_DIVERGENCE = "APPEND_ONLY_TAIL_GUARD_EXTERNAL_CHECKPOINT_DIVERGENCE"
+APPEND_ONLY_TAIL_GUARD_EXTERNAL_CHECKPOINT_NOT_CURRENT = "APPEND_ONLY_TAIL_GUARD_EXTERNAL_CHECKPOINT_NOT_CURRENT"
 
 
 def _canonical_json(value: Any) -> str:
@@ -34,16 +48,77 @@ class AppendOnlyTailGuardIntegrityReport:
 
 
 class SQLiteAppendOnlyTailGuard:
-    def __init__(self, *, table_name: str, ledger_name: str) -> None:
+    def __init__(
+        self,
+        *,
+        table_name: str,
+        ledger_name: str,
+        freshness_root: FreshnessRoot | None = None,
+        freshness_scope_id: str | None = None,
+        require_production_freshness_root: bool = False,
+    ) -> None:
         if not isinstance(table_name, str) or _IDENTIFIER.fullmatch(table_name) is None:
             raise ValueError("TAIL_GUARD_TABLE_NAME_INVALID")
         if not isinstance(ledger_name, str) or not ledger_name.strip():
             raise ValueError("TAIL_GUARD_LEDGER_NAME_REQUIRED")
+        if (
+            freshness_root is not None
+            and (
+                not isinstance(freshness_scope_id, str)
+                or not freshness_scope_id.strip()
+            )
+        ):
+            raise ValueError(
+                "APPEND_ONLY_TAIL_GUARD_FRESHNESS_SCOPE_REQUIRED"
+            )
+        if (
+            require_production_freshness_root
+            and freshness_root is None
+        ):
+            raise ValueError(
+                "APPEND_ONLY_TAIL_GUARD_FRESHNESS_ROOT_REQUIRED"
+            )
+        if require_production_freshness_root:
+            assert freshness_root is not None
+            require_production_authorized(
+                freshness_root
+            )
+
         self.table_name = table_name
         self.ledger_name = ledger_name.strip()
         self.state_table_name = table_name + "_state"
+
         if _IDENTIFIER.fullmatch(self.state_table_name) is None:
             raise ValueError("TAIL_GUARD_STATE_TABLE_NAME_INVALID")
+
+        self.freshness_root = freshness_root
+        self.freshness_scope_id = (
+            freshness_scope_id.strip()
+            if isinstance(freshness_scope_id, str)
+            and freshness_scope_id.strip()
+            else None
+        )
+        self.require_production_freshness_root = (
+            require_production_freshness_root
+        )
+
+        if self.freshness_scope_id is None:
+            self.freshness_namespace = (
+                "matrix.append-only-tail-guard/"
+                + self.ledger_name
+                + "/"
+                + self.table_name
+            )
+        else:
+            self.freshness_namespace = (
+                "matrix.append-only-tail-guard/"
+                + self.freshness_scope_id
+                + "/"
+                + self.ledger_name
+                + "/"
+                + self.table_name
+            )
+
         self._baseline_valid = True
         self._schema_observed = False
         self._guard_preexisted = False
@@ -276,6 +351,937 @@ class SQLiteAppendOnlyTailGuard:
             errors=tuple(errors),
         )
 
+    def _external_checkpoint_path(self, connection) -> Path | None:
+        database_path = self._database_path(connection)
+
+        if database_path is None:
+            return None
+
+        return Path(
+            str(database_path)
+            + "."
+            + self.table_name
+            + ".tail-checkpoint"
+        )
+
+    def _current_tail_checkpoint(
+        self,
+        connection,
+    ) -> tuple[int, str | None]:
+        row = connection.execute(
+            f"SELECT sequence_id, commitment_sha256 "
+            f"FROM {self.table_name} "
+            f"ORDER BY sequence_id DESC LIMIT 1"
+        ).fetchone()
+
+        if row is None:
+            return (0, None)
+
+        return (
+            int(row[0]),
+            str(row[1]),
+        )
+
+    def _external_checkpoint_text(
+        self,
+        *,
+        sequence_id: int,
+        commitment_sha256: str | None,
+    ) -> str:
+        return _canonical_json({
+            "schema": (
+                "matrix.append-only-tail-guard-"
+                "external-checkpoint/1"
+            ),
+            "ledger_name": self.ledger_name,
+            "guard_table_name": self.table_name,
+            "initialization_marker_sha256": (
+                self._state_marker_sha256()
+            ),
+            "sequence_id": sequence_id,
+            "commitment_sha256": commitment_sha256,
+        })
+
+    def _external_checkpoint_status(
+        self,
+        connection,
+    ) -> tuple[
+        str,
+        tuple[int, str | None] | None,
+    ]:
+        path = self._external_checkpoint_path(connection)
+
+        if path is None:
+            return ("NOT_APPLICABLE", None)
+
+        if not path.exists():
+            return ("MISSING", None)
+
+        try:
+            text = path.read_text(
+                encoding="utf-8"
+            )
+            payload = json.loads(text)
+        except (OSError, ValueError, TypeError):
+            return ("INVALID", None)
+
+        if type(payload) is not dict:
+            return ("INVALID", None)
+
+        expected_keys = {
+            "schema",
+            "ledger_name",
+            "guard_table_name",
+            "initialization_marker_sha256",
+            "sequence_id",
+            "commitment_sha256",
+        }
+
+        if set(payload) != expected_keys:
+            return ("INVALID", None)
+
+        if payload.get("schema") != (
+            "matrix.append-only-tail-guard-"
+            "external-checkpoint/1"
+        ):
+            return ("INVALID", None)
+
+        if payload.get("ledger_name") != self.ledger_name:
+            return ("INVALID", None)
+
+        if payload.get("guard_table_name") != self.table_name:
+            return ("INVALID", None)
+
+        if payload.get(
+            "initialization_marker_sha256"
+        ) != self._state_marker_sha256():
+            return ("INVALID", None)
+
+        sequence_id = payload.get(
+            "sequence_id"
+        )
+
+        if (
+            type(sequence_id) is not int
+            or sequence_id < 0
+        ):
+            return ("INVALID", None)
+
+        commitment = payload.get(
+            "commitment_sha256"
+        )
+
+        if sequence_id == 0:
+            if commitment is not None:
+                return ("INVALID", None)
+        else:
+            if (
+                not isinstance(commitment, str)
+                or re.fullmatch(
+                    r"[0-9a-f]{64}",
+                    commitment,
+                )
+                is None
+            ):
+                return ("INVALID", None)
+
+        expected_text = self._external_checkpoint_text(
+            sequence_id=sequence_id,
+            commitment_sha256=commitment,
+        )
+
+        if text != expected_text:
+            return ("INVALID", None)
+
+        return (
+            "VALID",
+            (
+                sequence_id,
+                commitment,
+            ),
+        )
+
+    def _external_checkpoint_relation(
+        self,
+        connection,
+    ) -> str:
+        status, checkpoint = (
+            self._external_checkpoint_status(
+                connection
+            )
+        )
+
+        if status != "VALID":
+            return status
+
+        assert checkpoint is not None
+
+        external_sequence, external_commitment = (
+            checkpoint
+        )
+
+        current_sequence, current_commitment = (
+            self._current_tail_checkpoint(
+                connection
+            )
+        )
+
+        if external_sequence > current_sequence:
+            return "ROLLBACK"
+
+        if external_sequence == current_sequence:
+            if (
+                external_commitment
+                == current_commitment
+            ):
+                return "MATCH"
+
+            return "DIVERGENCE"
+
+        if external_sequence == 0:
+            if external_commitment is None:
+                return "BEHIND"
+
+            return "DIVERGENCE"
+
+        row = connection.execute(
+            f"SELECT commitment_sha256 "
+            f"FROM {self.table_name} "
+            f"WHERE sequence_id = ?",
+            (external_sequence,),
+        ).fetchone()
+
+        if row is None:
+            return "DIVERGENCE"
+
+        if (
+            str(row[0])
+            != external_commitment
+        ):
+            return "DIVERGENCE"
+
+        return "BEHIND"
+
+    def _raise_for_external_checkpoint_relation(
+        self,
+        relation: str,
+        *,
+        allow_behind: bool,
+    ) -> None:
+        if relation in {
+            "NOT_APPLICABLE",
+            "MATCH",
+        }:
+            return
+
+        if (
+            relation == "BEHIND"
+            and allow_behind
+        ):
+            return
+
+        self._baseline_valid = False
+
+        if relation == "MISSING":
+            raise ValueError(
+                APPEND_ONLY_TAIL_GUARD_EXTERNAL_CHECKPOINT_REQUIRED
+            )
+
+        if relation == "INVALID":
+            raise ValueError(
+                APPEND_ONLY_TAIL_GUARD_EXTERNAL_CHECKPOINT_INVALID
+            )
+
+        if relation == "ROLLBACK":
+            raise ValueError(
+                APPEND_ONLY_TAIL_GUARD_EXTERNAL_CHECKPOINT_ROLLBACK
+            )
+
+        if relation == "DIVERGENCE":
+            raise ValueError(
+                APPEND_ONLY_TAIL_GUARD_EXTERNAL_CHECKPOINT_DIVERGENCE
+            )
+
+        if relation == "BEHIND":
+            raise ValueError(
+                APPEND_ONLY_TAIL_GUARD_EXTERNAL_CHECKPOINT_NOT_CURRENT
+            )
+
+        raise ValueError(
+            APPEND_ONLY_TAIL_GUARD_EXTERNAL_CHECKPOINT_INVALID
+        )
+
+    def _write_external_checkpoint(
+        self,
+        connection,
+    ) -> None:
+        path = self._external_checkpoint_path(
+            connection
+        )
+
+        if path is None:
+            return
+
+        (
+            sequence_id,
+            commitment_sha256,
+        ) = self._current_tail_checkpoint(
+            connection
+        )
+
+        expected = self._external_checkpoint_text(
+            sequence_id=sequence_id,
+            commitment_sha256=commitment_sha256,
+        )
+
+        path.parent.mkdir(
+            parents=True,
+            exist_ok=True,
+        )
+
+        temporary = path.with_name(
+            path.name
+            + ".tmp-"
+            + str(os.getpid())
+        )
+
+        try:
+            if temporary.exists():
+                temporary.unlink()
+
+            with temporary.open(
+                "x",
+                encoding="utf-8",
+                newline="\n",
+            ) as handle:
+                handle.write(expected)
+                handle.flush()
+                os.fsync(
+                    handle.fileno()
+                )
+
+            os.replace(
+                temporary,
+                path,
+            )
+
+            if (
+                path.read_text(
+                    encoding="utf-8"
+                )
+                != expected
+            ):
+                raise ValueError(
+                    APPEND_ONLY_TAIL_GUARD_EXTERNAL_CHECKPOINT_INVALID
+                )
+
+        finally:
+            if temporary.exists():
+                temporary.unlink()
+
+    def _recover_external_checkpoint_if_valid_extension(
+        self,
+        connection,
+    ) -> None:
+        relation = (
+            self._external_checkpoint_relation(
+                connection
+            )
+        )
+
+        self._raise_for_external_checkpoint_relation(
+            relation,
+            allow_behind=True,
+        )
+
+        if relation == "BEHIND":
+            self._write_external_checkpoint(
+                connection
+            )
+
+    def require_current_external_checkpoint(
+        self,
+        connection,
+    ) -> None:
+        relation = (
+            self._external_checkpoint_relation(
+                connection
+            )
+        )
+
+        self._raise_for_external_checkpoint_relation(
+            relation,
+            allow_behind=False,
+        )
+
+    def synchronize_external_checkpoint(
+        self,
+        connection,
+    ) -> None:
+        if (
+            self._external_checkpoint_path(
+                connection
+            )
+            is None
+        ):
+            return
+
+        connection.execute(
+            "BEGIN IMMEDIATE"
+        )
+
+        try:
+            relation = (
+                self._external_checkpoint_relation(
+                    connection
+                )
+            )
+
+            self._raise_for_external_checkpoint_relation(
+                relation,
+                allow_behind=True,
+            )
+
+            if relation == "BEHIND":
+                self._write_external_checkpoint(
+                    connection
+                )
+
+            connection.commit()
+
+        except Exception:
+            connection.rollback()
+            self._baseline_valid = False
+            raise
+
+    def _current_freshness_state(
+        self,
+        connection,
+    ) -> FreshnessState:
+        sequence_id, commitment_sha256 = (
+            self._current_tail_checkpoint(
+                connection
+            )
+        )
+
+        return FreshnessState(
+            namespace=self.freshness_namespace,
+            sequence_id=sequence_id,
+            commitment_sha256=commitment_sha256,
+        )
+
+    def _freshness_relation(
+        self,
+        connection,
+        state: FreshnessState,
+    ) -> str:
+        current = self._current_freshness_state(
+            connection
+        )
+
+        if (
+            state.namespace
+            != self.freshness_namespace
+        ):
+            return "DIVERGENCE"
+
+        if (
+            state.sequence_id
+            > current.sequence_id
+        ):
+            return "ROLLBACK"
+
+        if (
+            state.sequence_id
+            == current.sequence_id
+        ):
+            if (
+                state.commitment_sha256
+                == current.commitment_sha256
+            ):
+                return "MATCH"
+
+            return "DIVERGENCE"
+
+        if state.sequence_id == 0:
+            if (
+                state.commitment_sha256
+                is None
+            ):
+                return "BEHIND"
+
+            return "DIVERGENCE"
+
+        row = connection.execute(
+            f"SELECT commitment_sha256 "
+            f"FROM {self.table_name} "
+            f"WHERE sequence_id = ?",
+            (
+                state.sequence_id,
+            ),
+        ).fetchone()
+
+        if row is None:
+            return "DIVERGENCE"
+
+        if (
+            str(row[0])
+            != state.commitment_sha256
+        ):
+            return "DIVERGENCE"
+
+        return "BEHIND"
+
+    def _raise_for_freshness_relation(
+        self,
+        relation: str,
+        *,
+        allow_behind: bool,
+    ) -> None:
+        if relation == "MATCH":
+            return
+
+        if (
+            relation == "BEHIND"
+            and allow_behind
+        ):
+            return
+
+        self._baseline_valid = False
+
+        if relation == "ROLLBACK":
+            raise ValueError(
+                "APPEND_ONLY_TAIL_GUARD_"
+                "FRESHNESS_ROOT_ROLLBACK"
+            )
+
+        if relation == "DIVERGENCE":
+            raise ValueError(
+                "APPEND_ONLY_TAIL_GUARD_"
+                "FRESHNESS_ROOT_DIVERGENCE"
+            )
+
+        if relation == "BEHIND":
+            raise ValueError(
+                "APPEND_ONLY_TAIL_GUARD_"
+                "FRESHNESS_ROOT_NOT_CURRENT"
+            )
+
+        raise ValueError(
+            "APPEND_ONLY_TAIL_GUARD_"
+            "FRESHNESS_ROOT_INVALID"
+        )
+
+    def initialize_or_reconcile_freshness_root(
+        self,
+        connection,
+    ) -> None:
+        root = self.freshness_root
+
+        if root is None:
+            return
+
+        namespace = self.freshness_namespace
+
+        current = self._current_freshness_state(
+            connection
+        )
+
+        observed = root.read(
+            namespace
+        )
+
+        pending = root.read_pending(
+            namespace
+        )
+
+        if observed is None:
+            if pending is not None:
+                self._baseline_valid = False
+                raise ValueError(
+                    "APPEND_ONLY_TAIL_GUARD_"
+                    "FRESHNESS_RESERVATION_INVALID"
+                )
+
+            if (
+                current.sequence_id != 0
+                or self._state_preexisted
+            ):
+                self._baseline_valid = False
+                raise ValueError(
+                    "APPEND_ONLY_TAIL_GUARD_"
+                    "FRESHNESS_ROOT_STATE_REQUIRED"
+                )
+
+            if root.initialize(
+                namespace=namespace,
+                state=current,
+            ):
+                return
+
+            latest = root.read(
+                namespace
+            )
+
+            latest_pending = root.read_pending(
+                namespace
+            )
+
+            if (
+                latest == current
+                and latest_pending is None
+            ):
+                return
+
+            self._baseline_valid = False
+            raise ValueError(
+                "APPEND_ONLY_TAIL_GUARD_"
+                "FRESHNESS_ROOT_CAS_CONFLICT"
+            )
+
+        if pending is not None:
+            if pending.namespace != namespace:
+                self._baseline_valid = False
+                raise ValueError(
+                    "APPEND_ONLY_TAIL_GUARD_"
+                    "FRESHNESS_RESERVATION_INVALID"
+                )
+
+            if current == pending.intended:
+                if observed not in {
+                    pending.expected,
+                    pending.intended,
+                }:
+                    self._baseline_valid = False
+                    raise ValueError(
+                        "APPEND_ONLY_TAIL_GUARD_"
+                        "FRESHNESS_RESERVATION_DIVERGENCE"
+                    )
+
+                if not root.finalize(
+                    namespace=namespace,
+                    transaction_id=(
+                        pending.transaction_id
+                    ),
+                    intended=pending.intended,
+                ):
+                    self._baseline_valid = False
+                    raise ValueError(
+                        "APPEND_ONLY_TAIL_GUARD_"
+                        "FRESHNESS_RESERVATION_FINALIZE_FAILED"
+                    )
+
+                latest = root.read(namespace)
+                latest_pending = (
+                    root.read_pending(
+                        namespace
+                    )
+                )
+
+                if (
+                    latest != current
+                    or latest_pending is not None
+                ):
+                    self._baseline_valid = False
+                    raise ValueError(
+                        "APPEND_ONLY_TAIL_GUARD_"
+                        "FRESHNESS_RESERVATION_FINALIZE_FAILED"
+                    )
+
+                return
+
+            if (
+                current == pending.expected
+                and observed
+                == pending.expected
+            ):
+                self._baseline_valid = False
+                raise ValueError(
+                    "APPEND_ONLY_TAIL_GUARD_"
+                    "FRESHNESS_RESERVATION_PENDING_REVIEW"
+                )
+
+            self._baseline_valid = False
+            raise ValueError(
+                "APPEND_ONLY_TAIL_GUARD_"
+                "FRESHNESS_RESERVATION_DIVERGENCE"
+            )
+
+        relation = self._freshness_relation(
+            connection,
+            observed,
+        )
+
+        if relation == "MATCH":
+            return
+
+        if relation == "BEHIND":
+            self._baseline_valid = False
+            raise ValueError(
+                "APPEND_ONLY_TAIL_GUARD_"
+                "FRESHNESS_UNPREPARED_EXTENSION"
+            )
+
+        self._raise_for_freshness_relation(
+            relation,
+            allow_behind=False,
+        )
+
+    def require_current_freshness_root(
+        self,
+        connection,
+    ) -> None:
+        root = self.freshness_root
+
+        if root is None:
+            return
+
+        namespace = self.freshness_namespace
+
+        observed = root.read(
+            namespace
+        )
+
+        if observed is None:
+            self._baseline_valid = False
+            raise ValueError(
+                "APPEND_ONLY_TAIL_GUARD_"
+                "FRESHNESS_ROOT_STATE_REQUIRED"
+            )
+
+        if root.read_pending(
+            namespace
+        ) is not None:
+            self._baseline_valid = False
+            raise ValueError(
+                "APPEND_ONLY_TAIL_GUARD_"
+                "FRESHNESS_RESERVATION_PENDING_REVIEW"
+            )
+
+        relation = self._freshness_relation(
+            connection,
+            observed,
+        )
+
+        self._raise_for_freshness_relation(
+            relation,
+            allow_behind=False,
+        )
+
+    def synchronize_freshness_root(
+        self,
+        connection,
+    ) -> None:
+        if self.freshness_root is None:
+            return
+
+        self.initialize_or_reconcile_freshness_root(
+            connection
+        )
+
+    def prepare_freshness_transition(
+        self,
+        connection,
+    ) -> FreshnessReservation | None:
+        root = self.freshness_root
+
+        if root is None:
+            return None
+
+        namespace = self.freshness_namespace
+
+        expected = root.read(
+            namespace
+        )
+
+        if expected is None:
+            self._baseline_valid = False
+            raise ValueError(
+                "APPEND_ONLY_TAIL_GUARD_"
+                "FRESHNESS_ROOT_STATE_REQUIRED"
+            )
+
+        if root.read_pending(
+            namespace
+        ) is not None:
+            self._baseline_valid = False
+            raise ValueError(
+                "APPEND_ONLY_TAIL_GUARD_"
+                "FRESHNESS_RESERVATION_PENDING_REVIEW"
+            )
+
+        relation = self._freshness_relation(
+            connection,
+            expected,
+        )
+
+        if relation != "BEHIND":
+            if relation == "MATCH":
+                self._baseline_valid = False
+                raise ValueError(
+                    "APPEND_ONLY_TAIL_GUARD_"
+                    "FRESHNESS_RESERVATION_NO_TRANSITION"
+                )
+
+            self._raise_for_freshness_relation(
+                relation,
+                allow_behind=False,
+            )
+
+        intended = (
+            self._current_freshness_state(
+                connection
+            )
+        )
+
+        transaction_id = uuid4().hex
+
+        if not root.prepare(
+            namespace=namespace,
+            expected=expected,
+            intended=intended,
+            transaction_id=transaction_id,
+        ):
+            self._baseline_valid = False
+            raise ValueError(
+                "APPEND_ONLY_TAIL_GUARD_"
+                "FRESHNESS_RESERVATION_CONFLICT"
+            )
+
+        return FreshnessReservation(
+            namespace=namespace,
+            transaction_id=transaction_id,
+            expected=expected,
+            intended=intended,
+        )
+
+    def finalize_freshness_transition(
+        self,
+        reservation: FreshnessReservation | None,
+    ) -> None:
+        root = self.freshness_root
+
+        if root is None:
+            if reservation is not None:
+                self._baseline_valid = False
+                raise ValueError(
+                    "APPEND_ONLY_TAIL_GUARD_"
+                    "FRESHNESS_RESERVATION_INVALID"
+                )
+            return
+
+        if reservation is None:
+            self._baseline_valid = False
+            raise ValueError(
+                "APPEND_ONLY_TAIL_GUARD_"
+                "FRESHNESS_RESERVATION_REQUIRED"
+            )
+
+        namespace = self.freshness_namespace
+
+        if reservation.namespace != namespace:
+            self._baseline_valid = False
+            raise ValueError(
+                "APPEND_ONLY_TAIL_GUARD_"
+                "FRESHNESS_RESERVATION_INVALID"
+            )
+
+        if not root.finalize(
+            namespace=namespace,
+            transaction_id=(
+                reservation.transaction_id
+            ),
+            intended=reservation.intended,
+        ):
+            self._baseline_valid = False
+            raise ValueError(
+                "APPEND_ONLY_TAIL_GUARD_"
+                "FRESHNESS_RESERVATION_FINALIZE_FAILED"
+            )
+
+        if (
+            root.read(namespace)
+            != reservation.intended
+            or root.read_pending(
+                namespace
+            ) is not None
+        ):
+            self._baseline_valid = False
+            raise ValueError(
+                "APPEND_ONLY_TAIL_GUARD_"
+                "FRESHNESS_RESERVATION_FINALIZE_FAILED"
+            )
+
+    def abort_freshness_transition(
+        self,
+        reservation: FreshnessReservation | None,
+    ) -> None:
+        if reservation is None:
+            return
+
+        root = self.freshness_root
+
+        if root is None:
+            self._baseline_valid = False
+            raise ValueError(
+                "APPEND_ONLY_TAIL_GUARD_"
+                "FRESHNESS_RESERVATION_INVALID"
+            )
+
+        namespace = self.freshness_namespace
+
+        if reservation.namespace != namespace:
+            self._baseline_valid = False
+            raise ValueError(
+                "APPEND_ONLY_TAIL_GUARD_"
+                "FRESHNESS_RESERVATION_INVALID"
+            )
+
+        if not root.abort(
+            namespace=namespace,
+            transaction_id=(
+                reservation.transaction_id
+            ),
+            expected=reservation.expected,
+        ):
+            self._baseline_valid = False
+            raise ValueError(
+                "APPEND_ONLY_TAIL_GUARD_"
+                "FRESHNESS_RESERVATION_ABORT_FAILED"
+            )
+
+    def resolve_failed_freshness_transition(
+        self,
+        connection,
+        reservation: FreshnessReservation | None,
+    ) -> None:
+        if connection.in_transaction:
+            connection.rollback()
+
+        if reservation is None:
+            return
+
+        current = self._current_freshness_state(
+            connection
+        )
+
+        if current == reservation.expected:
+            self.abort_freshness_transition(
+                reservation
+            )
+            return
+
+        if current == reservation.intended:
+            # Commit may have become durable before the exception
+            # was observable. Preserve PENDING for restart recovery.
+            return
+
+        self._baseline_valid = False
+        raise ValueError(
+            "APPEND_ONLY_TAIL_GUARD_"
+            "FRESHNESS_TRANSACTION_OUTCOME_DIVERGENCE"
+        )
+
     def append(self, connection, *, record_id: str, record_payload_sha256: str) -> None:
         self.ensure_schema(connection)
         if not self._baseline_valid:
@@ -288,6 +1294,16 @@ class SQLiteAppendOnlyTailGuard:
             raise ValueError(APPEND_ONLY_TAIL_GUARD_EXTERNAL_ANCHOR_REQUIRED)
         if anchor_status == "INVALID":
             raise ValueError(APPEND_ONLY_TAIL_GUARD_EXTERNAL_ANCHOR_INVALID)
+
+        checkpoint_relation = (
+            self._external_checkpoint_relation(
+                connection
+            )
+        )
+        self._raise_for_external_checkpoint_relation(
+            checkpoint_relation,
+            allow_behind=True,
+        )
 
         existing = connection.execute(
             f"SELECT record_payload_sha256 FROM {self.table_name} WHERE record_id = ?",
@@ -327,6 +1343,10 @@ class SQLiteAppendOnlyTailGuard:
             if not report.ok:
                 return
 
+            self._recover_external_checkpoint_if_valid_extension(
+                connection
+            )
+
             return
 
         if anchor_status == "VALID":
@@ -361,6 +1381,7 @@ class SQLiteAppendOnlyTailGuard:
             if not report.ok:
                 raise ValueError("TAIL_GUARD_EXISTING_BASELINE_INVALID")
             self._write_external_anchor(connection)
+            self._write_external_checkpoint(connection)
             self._baseline_valid = True
             return
 
@@ -371,6 +1392,7 @@ class SQLiteAppendOnlyTailGuard:
             (self.ledger_name, self.table_name, self._state_marker_sha256()),
         )
         self._write_external_anchor(connection)
+        self._write_external_checkpoint(connection)
         self._baseline_valid = True
 
     def audit(self, connection, *, records: Iterable[tuple[str, str]]) -> AppendOnlyTailGuardIntegrityReport:

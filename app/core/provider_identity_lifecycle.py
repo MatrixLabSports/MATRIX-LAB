@@ -1,6 +1,8 @@
 
 from __future__ import annotations
 
+from app.core.freshness_root import FreshnessRoot
+
 from contextlib import closing
 from dataclasses import dataclass
 from datetime import datetime, timezone
@@ -383,6 +385,9 @@ class SQLiteTemporalProviderIdentityLedger:
         path: str | Path,
         *,
         identity_registry: SQLiteCanonicalIdentityRegistry,
+        freshness_root: FreshnessRoot | None = None,
+        freshness_scope_id: str | None = None,
+        require_production_freshness_root: bool = False,
     ) -> None:
         if not isinstance(
             identity_registry,
@@ -405,6 +410,11 @@ class SQLiteTemporalProviderIdentityLedger:
         self._tail_guard = SQLiteAppendOnlyTailGuard(
             table_name="temporal_provider_identity_tail_guard",
             ledger_name="temporal_provider_identity_binding",
+            freshness_root=freshness_root,
+            freshness_scope_id=freshness_scope_id,
+            require_production_freshness_root=(
+                require_production_freshness_root
+            ),
         )
 
         with closing(
@@ -437,6 +447,9 @@ class SQLiteTemporalProviderIdentityLedger:
                 records=connection.execute(
                     "SELECT binding_id, payload_sha256 FROM temporal_provider_identity_binding ORDER BY rowid"
                 ).fetchall(),
+            )
+            self._tail_guard.initialize_or_reconcile_freshness_root(
+                connection
             )
 
     def _connect(self):
@@ -1076,8 +1089,15 @@ class SQLiteTemporalProviderIdentityLedger:
             connection.execute(
                 "BEGIN IMMEDIATE"
             )
-
+            reservation = None
+            committed = False
             try:
+                self._tail_guard.require_current_external_checkpoint(
+                    connection
+                )
+                self._tail_guard.require_current_freshness_root(
+                    connection
+                )
                 rows = self._rows_for_key(
                     connection,
                     sport=binding.sport,
@@ -1100,10 +1120,30 @@ class SQLiteTemporalProviderIdentityLedger:
                     connection,
                     binding,
                 )
+                reservation = (
+                    self._tail_guard.prepare_freshness_transition(
+                        connection
+                    )
+                )
+
                 connection.commit()
+                committed = True
+
+                self._tail_guard.finalize_freshness_transition(
+                    reservation
+                )
+
+                self._tail_guard.synchronize_external_checkpoint(
+                    connection
+                )
 
             except Exception:
-                connection.rollback()
+                if not committed:
+                    self._tail_guard.resolve_failed_freshness_transition(
+                        connection,
+                        reservation,
+                    )
+
                 raise
 
         stored = self.get_verified(
@@ -1180,8 +1220,15 @@ class SQLiteTemporalProviderIdentityLedger:
             connection.execute(
                 "BEGIN IMMEDIATE"
             )
-
+            reservation = None
+            committed = False
             try:
+                self._tail_guard.require_current_external_checkpoint(
+                    connection
+                )
+                self._tail_guard.require_current_freshness_root(
+                    connection
+                )
                 rows = self._rows_for_key(
                     connection,
                     sport=sport,
@@ -1295,10 +1342,30 @@ class SQLiteTemporalProviderIdentityLedger:
                     connection,
                     successor,
                 )
+                reservation = (
+                    self._tail_guard.prepare_freshness_transition(
+                        connection
+                    )
+                )
+
                 connection.commit()
+                committed = True
+
+                self._tail_guard.finalize_freshness_transition(
+                    reservation
+                )
+
+                self._tail_guard.synchronize_external_checkpoint(
+                    connection
+                )
 
             except Exception:
-                connection.rollback()
+                if not committed:
+                    self._tail_guard.resolve_failed_freshness_transition(
+                        connection,
+                        reservation,
+                    )
+
                 raise
 
         return (

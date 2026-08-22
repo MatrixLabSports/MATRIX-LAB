@@ -122,7 +122,16 @@ def test_concurrent_canonical_append_cannot_create_fork(tmp_path):
     assert all(not thread.is_alive() for thread in threads)
     assert len(accepted) == 1
     assert len(rejected) == 1
-    assert 'IDENTITY_LIFECYCLE_NON_LINEAR_CHAIN' in rejected[0]
+    # Either fail-closed layer may detect the losing writer first.
+    # The safety invariant is still exactly one accepted append
+    # and one rejection, with no fork.
+    assert any(
+        reason in rejected[0]
+        for reason in (
+            'IDENTITY_LIFECYCLE_NON_LINEAR_CHAIN',
+            'APPEND_ONLY_TAIL_GUARD_EXTERNAL_CHECKPOINT_NOT_CURRENT',
+        )
+    )
     assert SQLiteCanonicalIdentityLifecycleLedger(path, identity_registry=store).audit_integrity().ok is True
 
 def test_concurrent_supersession_cycle_is_transactionally_rejected(tmp_path):

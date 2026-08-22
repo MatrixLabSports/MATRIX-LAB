@@ -1,6 +1,8 @@
 
 from __future__ import annotations
 
+from app.core.freshness_root import FreshnessRoot
+
 from contextlib import closing
 from dataclasses import dataclass
 from datetime import datetime, timezone
@@ -316,6 +318,9 @@ class SQLiteCanonicalIdentityLifecycleLedger:
         path: str | Path,
         *,
         identity_registry: SQLiteCanonicalIdentityRegistry,
+        freshness_root: FreshnessRoot | None = None,
+        freshness_scope_id: str | None = None,
+        require_production_freshness_root: bool = False,
     ) -> None:
         if not isinstance(
             identity_registry,
@@ -332,6 +337,11 @@ class SQLiteCanonicalIdentityLifecycleLedger:
         self._tail_guard = SQLiteAppendOnlyTailGuard(
             table_name="canonical_identity_lifecycle_tail_guard",
             ledger_name="canonical_identity_lifecycle",
+            freshness_root=freshness_root,
+            freshness_scope_id=freshness_scope_id,
+            require_production_freshness_root=(
+                require_production_freshness_root
+            ),
         )
 
         with closing(
@@ -361,6 +371,9 @@ class SQLiteCanonicalIdentityLifecycleLedger:
                 records=connection.execute(
                     "SELECT event_id, payload_sha256 FROM canonical_identity_lifecycle ORDER BY rowid"
                 ).fetchall(),
+            )
+            self._tail_guard.initialize_or_reconcile_freshness_root(
+                connection
             )
 
     def _connect(self):
@@ -823,7 +836,15 @@ class SQLiteCanonicalIdentityLifecycleLedger:
             connection.execute(
                 "BEGIN IMMEDIATE"
             )
+            reservation = None
+            committed = False
             try:
+                self._tail_guard.require_current_external_checkpoint(
+                    connection
+                )
+                self._tail_guard.require_current_freshness_root(
+                    connection
+                )
                 self._validate_transactional_candidate(
                     connection,
                     event,
@@ -851,9 +872,30 @@ class SQLiteCanonicalIdentityLifecycleLedger:
                     record_id=event.event_id,
                     record_payload_sha256=payload_sha,
                 )
+                reservation = (
+                    self._tail_guard.prepare_freshness_transition(
+                        connection
+                    )
+                )
+
                 connection.commit()
+                committed = True
+
+                self._tail_guard.finalize_freshness_transition(
+                    reservation
+                )
+
+                self._tail_guard.synchronize_external_checkpoint(
+                    connection
+                )
+
             except Exception:
-                connection.rollback()
+                if not committed:
+                    self._tail_guard.resolve_failed_freshness_transition(
+                        connection,
+                        reservation,
+                    )
+
                 raise
 
         stored = self.get_verified(
