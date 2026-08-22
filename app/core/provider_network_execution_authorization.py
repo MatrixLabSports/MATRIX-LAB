@@ -480,13 +480,382 @@ class ProviderNetworkAuthority:
             if getattr(self.preflight_decision, name, None) != expected:
                 raise ValueError("PREFLIGHT_BINDING_OR_STATUS_MISMATCH")
 
-        execution = verify_provider_execution_authorization(
-            queue_manifest=self.queue_manifest,
-            authorization_fingerprint=self.scheduling_authorization_fingerprint,
-            scheduling_evidence_ledger=self.scheduling_evidence_ledger,
-            health_evidence_ledger=self.health_evidence_ledger,
-            expected_sport=self.sport,
-        )
+        if self.mode == "PRODUCTION":
+            execution = verify_provider_execution_authorization(
+                queue_manifest=self.queue_manifest,
+                authorization_fingerprint=(
+                    self.scheduling_authorization_fingerprint
+                ),
+                scheduling_evidence_ledger=(
+                    self.scheduling_evidence_ledger
+                ),
+                health_evidence_ledger=(
+                    self.health_evidence_ledger
+                ),
+                expected_sport=self.sport,
+            )
+            execution_fp = _sha(
+                execution.payload()
+            )
+        else:
+            from app.core.provider_scheduling_authorization import (
+                compute_provider_scheduling_queue_fingerprint,
+            )
+
+            scheduling_integrity = (
+                self.scheduling_evidence_ledger
+                .audit_integrity()
+            )
+            if not getattr(
+                scheduling_integrity,
+                "ok",
+                False,
+            ):
+                raise ValueError(
+                    "BOOTSTRAP_SCHEDULING_EVIDENCE_INTEGRITY_FAILED"
+                )
+
+            health_integrity = (
+                self.health_evidence_ledger
+                .audit_integrity()
+            )
+            if not getattr(
+                health_integrity,
+                "ok",
+                False,
+            ):
+                raise ValueError(
+                    "BOOTSTRAP_HEALTH_EVIDENCE_INTEGRITY_FAILED"
+                )
+
+            (
+                queue_sport,
+                actual_queue_fp,
+            ) = compute_provider_scheduling_queue_fingerprint(
+                self.queue_manifest,
+                expected_sport=self.sport,
+            )
+
+            if queue_sport != self.sport:
+                raise ValueError(
+                    "BOOTSTRAP_QUEUE_SPORT_MISMATCH"
+                )
+
+            queue = self.queue_manifest.get(
+                "queue"
+            )
+            if (
+                not isinstance(queue, list)
+                or len(queue) != 1
+                or not isinstance(queue[0], dict)
+                or queue[0].get("provider_key")
+                != self.provider_key
+            ):
+                raise ValueError(
+                    "BOOTSTRAP_SINGLE_PROVIDER_QUEUE_REQUIRED"
+                )
+
+            authorization = (
+                self.scheduling_evidence_ledger
+                .get_by_authorization_fingerprint(
+                    self.scheduling_authorization_fingerprint
+                )
+            )
+            if authorization is None:
+                raise ValueError(
+                    "BOOTSTRAP_SCHEDULING_EVIDENCE_MISSING"
+                )
+
+            if (
+                authorization.get("sport")
+                != self.sport
+                or authorization.get(
+                    "queue_fingerprint"
+                )
+                != actual_queue_fp
+                or authorization.get(
+                    "authorization_fingerprint"
+                )
+                != self.scheduling_authorization_fingerprint
+            ):
+                raise ValueError(
+                    "BOOTSTRAP_SCHEDULING_QUEUE_BINDING_MISMATCH"
+                )
+
+            for flag in (
+                "automatic_model_promotion",
+                "automatic_provider_switch",
+                "automatic_wagering",
+            ):
+                if authorization.get(flag) is not False:
+                    raise ValueError(
+                        "BOOTSTRAP_SCHEDULING_SAFETY_FLAG_MISMATCH"
+                    )
+
+            provider_keys = tuple(
+                sorted(
+                    authorization.get(
+                        "provider_keys"
+                    )
+                    or []
+                )
+            )
+            if provider_keys != (
+                self.provider_key,
+            ):
+                raise ValueError(
+                    "BOOTSTRAP_SCHEDULING_PROVIDER_SET_MISMATCH"
+                )
+
+            if authorization.get(
+                "missing_provider_keys"
+            ):
+                raise ValueError(
+                    "BOOTSTRAP_SCHEDULING_HAS_MISSING_PROVIDER"
+                )
+
+            raw_decision_fps = (
+                authorization.get(
+                    "decision_fingerprints"
+                )
+            )
+            if (
+                not isinstance(
+                    raw_decision_fps,
+                    list,
+                )
+                or len(raw_decision_fps) != 1
+            ):
+                raise ValueError(
+                    "BOOTSTRAP_SINGLE_HEALTH_DECISION_REQUIRED"
+                )
+
+            health = (
+                self.health_evidence_ledger
+                .get_by_decision_fingerprint(
+                    raw_decision_fps[0]
+                )
+            )
+            if health is None:
+                raise ValueError(
+                    "BOOTSTRAP_HEALTH_EVIDENCE_MISSING"
+                )
+
+            if (
+                health.get("sport")
+                != self.sport
+                or health.get(
+                    "provider_key"
+                )
+                != self.provider_key
+            ):
+                raise ValueError(
+                    "BOOTSTRAP_HEALTH_EVIDENCE_BINDING_MISMATCH"
+                )
+
+            health_status = health.get(
+                "decision_status"
+            )
+            if health_status not in {
+                "REVIEW_REQUIRED",
+                "ELIGIBLE",
+            }:
+                raise ValueError(
+                    "BOOTSTRAP_PROVIDER_HEALTH_NOT_ALLOWED"
+                )
+
+            if health_status == "REVIEW_REQUIRED":
+                if (
+                    health.get(
+                        "scheduling_eligible"
+                    )
+                    is not False
+                    or authorization.get(
+                        "authorization_status"
+                    )
+                    != "BLOCKED"
+                    or authorization.get(
+                        "execution_eligible"
+                    )
+                    is not False
+                    or tuple(
+                        sorted(
+                            authorization.get(
+                                "blocked_provider_keys"
+                            )
+                            or []
+                        )
+                    )
+                    != (self.provider_key,)
+                    or authorization.get(
+                        "eligible_provider_keys"
+                    )
+                ):
+                    raise ValueError(
+                        "BOOTSTRAP_REVIEW_REQUIRED_SCHEDULING_STATE_MISMATCH"
+                    )
+            else:
+                if (
+                    health.get(
+                        "scheduling_eligible"
+                    )
+                    is not True
+                    or authorization.get(
+                        "authorization_status"
+                    )
+                    != "AUTHORIZED"
+                    or authorization.get(
+                        "execution_eligible"
+                    )
+                    is not True
+                    or authorization.get(
+                        "blocked_provider_keys"
+                    )
+                    or tuple(
+                        sorted(
+                            authorization.get(
+                                "eligible_provider_keys"
+                            )
+                            or []
+                        )
+                    )
+                    != (self.provider_key,)
+                ):
+                    raise ValueError(
+                        "BOOTSTRAP_ELIGIBLE_SCHEDULING_STATE_MISMATCH"
+                    )
+
+            if (
+                getattr(
+                    self.preflight_decision,
+                    "queue_fingerprint",
+                    None,
+                )
+                != actual_queue_fp
+            ):
+                raise ValueError(
+                    "BOOTSTRAP_PREFLIGHT_QUEUE_MISMATCH"
+                )
+
+            if (
+                getattr(
+                    self.preflight_decision,
+                    "scheduling_evidence_fingerprint",
+                    None,
+                )
+                != self.scheduling_authorization_fingerprint
+            ):
+                raise ValueError(
+                    "BOOTSTRAP_SCHEDULING_EVIDENCE_MISMATCH"
+                )
+
+            if (
+                getattr(
+                    self.preflight_decision,
+                    "provider_health_status",
+                    None,
+                )
+                != health_status
+            ):
+                raise ValueError(
+                    "BOOTSTRAP_PREFLIGHT_HEALTH_STATUS_MISMATCH"
+                )
+
+            if (
+                getattr(
+                    self.preflight_decision,
+                    "downstream_quarantine_required",
+                    None,
+                )
+                is not True
+            ):
+                raise ValueError(
+                    "BOOTSTRAP_QUARANTINE_REQUIRED"
+                )
+
+            if (
+                getattr(
+                    self.preflight_decision,
+                    "max_items",
+                    None,
+                )
+                != 1
+            ):
+                raise ValueError(
+                    "BOOTSTRAP_SINGLE_ITEM_REQUIRED"
+                )
+
+            if (
+                getattr(
+                    self.preflight_decision,
+                    "max_requests",
+                    None,
+                )
+                != 1
+            ):
+                raise ValueError(
+                    "BOOTSTRAP_SINGLE_REQUEST_REQUIRED"
+                )
+
+            preflight_fp = str(
+                getattr(
+                    self.preflight_decision,
+                    "decision_fingerprint",
+                    "",
+                )
+            )
+            if len(preflight_fp) != 64:
+                raise ValueError(
+                    "PREFLIGHT_DECISION_FINGERPRINT_REQUIRED"
+                )
+            try:
+                int(preflight_fp, 16)
+            except ValueError as error:
+                raise ValueError(
+                    "PREFLIGHT_DECISION_FINGERPRINT_REQUIRED"
+                ) from error
+
+            execution_fp = _sha(
+                {
+                    "schema": (
+                        "matrix.bootstrap-network-"
+                        "execution-authorization/1"
+                    ),
+                    "run_id": self.run_id,
+                    "sport": self.sport,
+                    "provider_key": (
+                        self.provider_key
+                    ),
+                    "mode": "BOOTSTRAP_PROBE",
+                    "queue_fingerprint": (
+                        actual_queue_fp
+                    ),
+                    "scheduling_authorization_fingerprint": (
+                        self.scheduling_authorization_fingerprint
+                    ),
+                    "scheduling_authorization_status": (
+                        authorization.get(
+                            "authorization_status"
+                        )
+                    ),
+                    "health_decision_fingerprint": (
+                        raw_decision_fps[0]
+                    ),
+                    "health_decision_status": (
+                        health_status
+                    ),
+                    "preflight_decision_fingerprint": (
+                        preflight_fp
+                    ),
+                    "downstream_quarantine_required": True,
+                    "max_items": 1,
+                    "max_requests": 1,
+                    "production_health_eligibility_required": False,
+                    "automatic_provider_switch": False,
+                    "automatic_model_promotion": False,
+                    "automatic_wagering": False,
+                }
+            )
 
         endpoint = self.endpoint_registry.authorize_request(
             provider_key=self.provider_key,
@@ -544,7 +913,6 @@ class ProviderNetworkAuthority:
         if dns.status != "AUTHORIZED" or dns.executable is not True:
             raise ValueError("EGRESS_NOT_AUTHORIZED")
 
-        execution_fp = _sha(execution.payload())
         security_fp = str(getattr(security, "decision_fingerprint", ""))
 
         base = {
