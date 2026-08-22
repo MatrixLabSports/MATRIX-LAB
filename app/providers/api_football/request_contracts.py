@@ -14,7 +14,7 @@ from app.core.provider_request_contract import (
 API_FOOTBALL_PROVIDER_KEY = "api_football"
 API_FOOTBALL_SPORT = "football"
 API_FOOTBALL_AUTH_HEADER = "x-apisports-key"
-API_FOOTBALL_CONTRACT_SET_VERSION = "2026-08-20.v1"
+API_FOOTBALL_CONTRACT_SET_VERSION = "2026-08-22.v2"
 
 
 def _id_rule(
@@ -50,6 +50,10 @@ def build_api_football_request_contracts(
     valid_until: datetime | None = None,
 ) -> Mapping[str, ProviderRequestContract]:
     specifications = {
+        "status": (
+            "/status",
+            (),
+        ),
         "fixtures_by_date": (
             "/fixtures",
             (
