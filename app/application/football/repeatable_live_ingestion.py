@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import asdict, dataclass
-from datetime import datetime
+from datetime import UTC, datetime
 from hashlib import sha256
 import json
 from pathlib import Path
@@ -106,7 +106,20 @@ def _parse_observed_at(value: str) -> datetime:
     parsed = datetime.fromisoformat(value)
     if parsed.tzinfo is None or parsed.utcoffset() is None:
         raise ValueError("OBSERVED_AT_MUST_BE_TIMEZONE_AWARE")
-    return parsed
+    return parsed.astimezone(UTC)
+
+
+def _aware_utc(value: datetime, *, name: str) -> datetime:
+    if value.tzinfo is None or value.utcoffset() is None:
+        raise ValueError(f"{name.upper()}_MUST_BE_TIMEZONE_AWARE")
+    return value.astimezone(UTC)
+
+
+def _milliseconds_between(later: datetime, earlier: datetime) -> int:
+    value = int(round((later - earlier).total_seconds() * 1000))
+    if value < 0:
+        raise ValueError("NEGATIVE_DECISION_TIME_AGE")
+    return value
 
 
 def _rollback_quietly(connection: sqlite3.Connection) -> None:
@@ -150,6 +163,10 @@ class FootballLiveFreshnessPolicy:
     fixture_statistics_max_source_age_ms: int | None = None
     fixture_events_max_source_age_ms: int | None = None
     odds_max_source_age_ms: int | None = None
+    fixture_status_max_decision_age_ms: int | None = None
+    fixture_statistics_max_decision_age_ms: int | None = None
+    fixture_events_max_decision_age_ms: int | None = None
+    odds_max_decision_age_ms: int | None = None
     max_ingestion_to_normalization_ms: int | None = None
     max_normalization_to_feature_ms: int | None = None
     max_cross_modal_skew_ms: int | None = None
@@ -171,6 +188,19 @@ class FootballLiveFreshnessPolicy:
             raise ValueError("UNSUPPORTED_FOOTBALL_LIVE_MODALITY")
         return mapping[modality]
 
+    def decision_age_limit(self, modality: str) -> int | None:
+        mapping = {
+            "fixture_status": self.fixture_status_max_decision_age_ms,
+            "fixture_statistics": (
+                self.fixture_statistics_max_decision_age_ms
+            ),
+            "fixture_events": self.fixture_events_max_decision_age_ms,
+            "odds": self.odds_max_decision_age_ms,
+        }
+        if modality not in mapping:
+            raise ValueError("UNSUPPORTED_FOOTBALL_LIVE_MODALITY")
+        return mapping[modality]
+
     @property
     def thresholds_empirically_calibrated(self) -> bool:
         return False
@@ -186,6 +216,7 @@ class FootballLiveFreshnessDecision:
     status: str
     reason_codes: tuple[str, ...]
     source_age_ms: int
+    decision_age_ms: int
     ingestion_to_normalization_ms: int
     normalization_to_feature_ms: int
     production_admissible: bool = False
@@ -195,13 +226,26 @@ class FootballLiveFreshnessDecision:
 def evaluate_football_live_freshness(
     observation: LiveTemporalObservation,
     policy: FootballLiveFreshnessPolicy,
+    *,
+    evaluated_at: datetime,
 ) -> FootballLiveFreshnessDecision:
     if observation.sport != "football":
         raise ValueError("FOOTBALL_LIVE_SPORT_REQUIRED")
     if observation.modality not in FOOTBALL_LIVE_MODALITIES:
         raise ValueError("UNSUPPORTED_FOOTBALL_LIVE_MODALITY")
 
+    evaluation_time = _aware_utc(
+        evaluated_at,
+        name="evaluated_at",
+    )
+    if evaluation_time < observation.feature_ready_at.astimezone(UTC):
+        raise ValueError("DECISION_TIME_BEFORE_FEATURE_READY")
+
     latency = observation.latency()
+    decision_age_ms = _milliseconds_between(
+        evaluation_time,
+        observation.observed_at.astimezone(UTC),
+    )
     reasons: list[str] = []
     uncalibrated = False
 
@@ -211,6 +255,13 @@ def evaluate_football_live_freshness(
         uncalibrated = True
     elif latency.source_age_at_ingestion_ms > source_limit:
         reasons.append("SOURCE_AGE_EXCEEDED")
+
+    decision_limit = policy.decision_age_limit(observation.modality)
+    if decision_limit is None:
+        reasons.append("DECISION_AGE_THRESHOLD_UNCALIBRATED")
+        uncalibrated = True
+    elif decision_age_ms > decision_limit:
+        reasons.append("DECISION_AGE_EXCEEDED")
 
     ingest_limit = policy.max_ingestion_to_normalization_ms
     if ingest_limit is None:
@@ -240,6 +291,7 @@ def evaluate_football_live_freshness(
         status=status,
         reason_codes=tuple(reasons),
         source_age_ms=latency.source_age_at_ingestion_ms,
+        decision_age_ms=decision_age_ms,
         ingestion_to_normalization_ms=(
             latency.ingestion_to_normalization_ms
         ),
@@ -247,7 +299,6 @@ def evaluate_football_live_freshness(
             latency.normalization_to_feature_ms
         ),
     )
-
 
 @dataclass(frozen=True)
 class FootballCrossModalAlignment:
@@ -294,6 +345,8 @@ def evaluate_football_cross_modal_alignment(
         reasons.append("SUBJECT_IDENTITY_MISMATCH")
     if len(modalities) < 2:
         reasons.append("DISTINCT_MODALITIES_REQUIRED")
+    if len(modalities) != len(items):
+        reasons.append("DUPLICATE_MODALITY_IN_BUNDLE")
     if len(correlations) != 1:
         reasons.append("CORRELATION_ID_MISMATCH")
 
@@ -368,6 +421,8 @@ REASON_DURABLE_EVIDENCE_INVALID = "DURABLE_SEQUENCE_EVIDENCE_INVALID"
 
 
 class SQLiteFootballLiveObservationStore:
+    LEDGER_USER_VERSION = 73
+
     def __init__(self, path: str | Path) -> None:
         self.path = Path(path)
         self.path.parent.mkdir(parents=True, exist_ok=True)
@@ -383,8 +438,91 @@ class SQLiteFootballLiveObservationStore:
         connection.execute("PRAGMA synchronous = FULL")
         return connection
 
+    @staticmethod
+    def _stream_key(
+        observation: LiveTemporalObservation,
+    ) -> tuple[str, str, str]:
+        return (
+            observation.subject_key,
+            observation.provider_key,
+            observation.modality,
+        )
+
+    @staticmethod
+    def _stream_state_base(
+        *,
+        subject_key: str,
+        provider_key: str,
+        modality: str,
+        record_count: int,
+        max_sequence_id: int,
+        max_observed_at: str,
+        membership_sha256: str,
+    ) -> dict[str, Any]:
+        return {
+            "schema": "matrix.football-live-stream-state/1",
+            "subject_key": subject_key,
+            "provider_key": provider_key,
+            "modality": modality,
+            "record_count": record_count,
+            "max_sequence_id": max_sequence_id,
+            "max_observed_at": max_observed_at,
+            "membership_sha256": membership_sha256,
+        }
+
+    @staticmethod
+    def _ledger_anchor_base(
+        *,
+        total_record_count: int,
+        stream_count: int,
+        observation_membership_sha256: str,
+        stream_state_membership_sha256: str,
+    ) -> dict[str, Any]:
+        return {
+            "schema": "matrix.football-live-ledger-anchor/1",
+            "total_record_count": total_record_count,
+            "stream_count": stream_count,
+            "observation_membership_sha256": (
+                observation_membership_sha256
+            ),
+            "stream_state_membership_sha256": (
+                stream_state_membership_sha256
+            ),
+        }
+
     def _initialize(self) -> None:
         with self._connect() as connection:
+            user_version = int(
+                connection.execute("PRAGMA user_version").fetchone()[0]
+            )
+            state_table_existed = (
+                connection.execute(
+                    """
+                    SELECT 1
+                    FROM sqlite_master
+                    WHERE type = 'table'
+                      AND name = 'football_live_stream_state'
+                    """
+                ).fetchone()
+                is not None
+            )
+            anchor_table_existed = (
+                connection.execute(
+                    """
+                    SELECT 1
+                    FROM sqlite_master
+                    WHERE type = 'table'
+                      AND name = 'football_live_ledger_anchor'
+                    """
+                ).fetchone()
+                is not None
+            )
+
+            if user_version >= self.LEDGER_USER_VERSION and (
+                not state_table_existed or not anchor_table_existed
+            ):
+                raise ValueError("LIVE_LEDGER_CONTROL_TABLE_MISSING")
+
             connection.execute(
                 """
                 CREATE TABLE IF NOT EXISTS football_live_observation (
@@ -461,20 +599,81 @@ class SQLiteFootballLiveObservationStore:
                 "DROP INDEX IF EXISTS ux_football_live_source_record"
             )
             connection.execute(
+                "DROP INDEX IF EXISTS ux_football_live_source_record_v2"
+            )
+            connection.execute(
                 """
                 CREATE UNIQUE INDEX IF NOT EXISTS
-                    ux_football_live_source_record_v2
+                    ux_football_live_source_record_v3
                 ON football_live_observation (
                     subject_key,
                     provider_key,
                     modality,
-                    correlation_id,
                     source_record_fingerprint
                 )
                 WHERE provider_key IS NOT NULL
                   AND source_record_fingerprint IS NOT NULL
                 """
             )
+            connection.execute(
+                """
+                CREATE UNIQUE INDEX IF NOT EXISTS
+                    ux_football_live_stream_sequence_v3
+                ON football_live_observation (
+                    subject_key,
+                    provider_key,
+                    modality,
+                    sequence_id
+                )
+                WHERE provider_key IS NOT NULL
+                """
+            )
+
+            connection.execute(
+                """
+                CREATE TABLE IF NOT EXISTS football_live_stream_state (
+                    subject_key TEXT NOT NULL,
+                    provider_key TEXT NOT NULL,
+                    modality TEXT NOT NULL,
+                    record_count INTEGER NOT NULL,
+                    max_sequence_id INTEGER NOT NULL,
+                    max_observed_at TEXT NOT NULL,
+                    membership_sha256 TEXT NOT NULL,
+                    state_sha256 TEXT NOT NULL,
+                    updated_at TEXT NOT NULL DEFAULT (
+                        strftime('%Y-%m-%dT%H:%M:%fZ', 'now')
+                    ),
+                    PRIMARY KEY (
+                        subject_key,
+                        provider_key,
+                        modality
+                    )
+                )
+                """
+            )
+            connection.execute(
+                """
+                CREATE TABLE IF NOT EXISTS football_live_ledger_anchor (
+                    singleton_id INTEGER PRIMARY KEY CHECK (singleton_id = 1),
+                    total_record_count INTEGER NOT NULL,
+                    stream_count INTEGER NOT NULL,
+                    observation_membership_sha256 TEXT NOT NULL,
+                    stream_state_membership_sha256 TEXT NOT NULL,
+                    anchor_sha256 TEXT NOT NULL,
+                    updated_at TEXT NOT NULL DEFAULT (
+                        strftime('%Y-%m-%dT%H:%M:%fZ', 'now')
+                    )
+                )
+                """
+            )
+
+            if user_version < self.LEDGER_USER_VERSION:
+                self._bootstrap_ledger_controls(connection)
+                connection.execute(
+                    f"PRAGMA user_version = {self.LEDGER_USER_VERSION}"
+                )
+            else:
+                self._assert_ledger_integrity(connection)
 
     @staticmethod
     def _row_select_sql() -> str:
@@ -495,6 +694,25 @@ class SQLiteFootballLiveObservationStore:
                 payload_sha256
             FROM football_live_observation
         """
+
+    def _stream_rows(
+        self,
+        connection: sqlite3.Connection,
+        *,
+        subject_key: str,
+        provider_key: str,
+        modality: str,
+    ) -> list[tuple[Any, ...]]:
+        return connection.execute(
+            self._row_select_sql()
+            + """
+            WHERE subject_key = ?
+              AND provider_key = ?
+              AND modality = ?
+            ORDER BY rowid
+            """,
+            (subject_key, provider_key, modality),
+        ).fetchall()
 
     def _validate_row(
         self,
@@ -560,7 +778,6 @@ class SQLiteFootballLiveObservationStore:
             WHERE subject_key = ?
               AND provider_key = ?
               AND modality = ?
-              AND correlation_id = ?
               AND rowid < ?
             ORDER BY rowid
             """,
@@ -568,7 +785,6 @@ class SQLiteFootballLiveObservationStore:
                 subject_key,
                 provider_key,
                 modality,
-                correlation_id,
                 rowid,
             ),
         ).fetchall()
@@ -600,6 +816,364 @@ class SQLiteFootballLiveObservationStore:
             accepted_for_fusion=expected_accepted,
         )
 
+    def _derive_stream_state(
+        self,
+        connection: sqlite3.Connection,
+        *,
+        subject_key: str,
+        provider_key: str,
+        modality: str,
+    ) -> dict[str, Any] | None:
+        rows = self._stream_rows(
+            connection,
+            subject_key=subject_key,
+            provider_key=provider_key,
+            modality=modality,
+        )
+        if not rows:
+            return None
+
+        for row in rows:
+            self._validate_row(connection, row)
+
+        observed_values = [
+            _parse_observed_at(str(row[7]))
+            for row in rows
+        ]
+        fingerprints = sorted(str(row[1]) for row in rows)
+        base = self._stream_state_base(
+            subject_key=subject_key,
+            provider_key=provider_key,
+            modality=modality,
+            record_count=len(rows),
+            max_sequence_id=max(int(row[6]) for row in rows),
+            max_observed_at=max(observed_values).isoformat(),
+            membership_sha256=_sha(fingerprints),
+        )
+        return {
+            **base,
+            "state_sha256": _sha(base),
+        }
+
+    def _stored_stream_state(
+        self,
+        connection: sqlite3.Connection,
+        *,
+        subject_key: str,
+        provider_key: str,
+        modality: str,
+    ) -> dict[str, Any] | None:
+        row = connection.execute(
+            """
+            SELECT
+                record_count,
+                max_sequence_id,
+                max_observed_at,
+                membership_sha256,
+                state_sha256
+            FROM football_live_stream_state
+            WHERE subject_key = ?
+              AND provider_key = ?
+              AND modality = ?
+            """,
+            (subject_key, provider_key, modality),
+        ).fetchone()
+        if row is None:
+            return None
+        base = self._stream_state_base(
+            subject_key=subject_key,
+            provider_key=provider_key,
+            modality=modality,
+            record_count=int(row[0]),
+            max_sequence_id=int(row[1]),
+            max_observed_at=str(row[2]),
+            membership_sha256=str(row[3]),
+        )
+        if _sha(base) != str(row[4]):
+            raise ValueError("LIVE_STREAM_STATE_HASH_MISMATCH")
+        return {
+            **base,
+            "state_sha256": str(row[4]),
+        }
+
+    def _assert_stream_integrity(
+        self,
+        connection: sqlite3.Connection,
+        *,
+        subject_key: str,
+        provider_key: str,
+        modality: str,
+        allow_absent: bool = False,
+    ) -> None:
+        derived = self._derive_stream_state(
+            connection,
+            subject_key=subject_key,
+            provider_key=provider_key,
+            modality=modality,
+        )
+        stored = self._stored_stream_state(
+            connection,
+            subject_key=subject_key,
+            provider_key=provider_key,
+            modality=modality,
+        )
+
+        if derived is None and stored is None and allow_absent:
+            return
+        if derived is None or stored is None:
+            raise ValueError("LIVE_STREAM_STATE_MEMBERSHIP_MISMATCH")
+        if derived != stored:
+            raise ValueError("LIVE_STREAM_STATE_DERIVATION_MISMATCH")
+
+    def _write_stream_state(
+        self,
+        connection: sqlite3.Connection,
+        *,
+        subject_key: str,
+        provider_key: str,
+        modality: str,
+    ) -> None:
+        state = self._derive_stream_state(
+            connection,
+            subject_key=subject_key,
+            provider_key=provider_key,
+            modality=modality,
+        )
+        if state is None:
+            connection.execute(
+                """
+                DELETE FROM football_live_stream_state
+                WHERE subject_key = ?
+                  AND provider_key = ?
+                  AND modality = ?
+                """,
+                (subject_key, provider_key, modality),
+            )
+            return
+
+        connection.execute(
+            """
+            INSERT INTO football_live_stream_state (
+                subject_key,
+                provider_key,
+                modality,
+                record_count,
+                max_sequence_id,
+                max_observed_at,
+                membership_sha256,
+                state_sha256
+            )
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            ON CONFLICT(subject_key, provider_key, modality)
+            DO UPDATE SET
+                record_count = excluded.record_count,
+                max_sequence_id = excluded.max_sequence_id,
+                max_observed_at = excluded.max_observed_at,
+                membership_sha256 = excluded.membership_sha256,
+                state_sha256 = excluded.state_sha256,
+                updated_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now')
+            """,
+            (
+                state["subject_key"],
+                state["provider_key"],
+                state["modality"],
+                state["record_count"],
+                state["max_sequence_id"],
+                state["max_observed_at"],
+                state["membership_sha256"],
+                state["state_sha256"],
+            ),
+        )
+
+    def _derive_ledger_anchor(
+        self,
+        connection: sqlite3.Connection,
+    ) -> dict[str, Any]:
+        observation_rows = connection.execute(
+            """
+            SELECT observation_fingerprint
+            FROM football_live_observation
+            ORDER BY observation_fingerprint
+            """
+        ).fetchall()
+        state_rows = connection.execute(
+            """
+            SELECT
+                subject_key,
+                provider_key,
+                modality,
+                state_sha256
+            FROM football_live_stream_state
+            ORDER BY subject_key, provider_key, modality
+            """
+        ).fetchall()
+
+        observation_membership = [
+            str(row[0]) for row in observation_rows
+        ]
+        stream_state_membership = [
+            {
+                "subject_key": str(row[0]),
+                "provider_key": str(row[1]),
+                "modality": str(row[2]),
+                "state_sha256": str(row[3]),
+            }
+            for row in state_rows
+        ]
+        base = self._ledger_anchor_base(
+            total_record_count=len(observation_membership),
+            stream_count=len(stream_state_membership),
+            observation_membership_sha256=_sha(
+                observation_membership
+            ),
+            stream_state_membership_sha256=_sha(
+                stream_state_membership
+            ),
+        )
+        return {
+            **base,
+            "anchor_sha256": _sha(base),
+        }
+
+    def _stored_ledger_anchor(
+        self,
+        connection: sqlite3.Connection,
+    ) -> dict[str, Any] | None:
+        row = connection.execute(
+            """
+            SELECT
+                total_record_count,
+                stream_count,
+                observation_membership_sha256,
+                stream_state_membership_sha256,
+                anchor_sha256
+            FROM football_live_ledger_anchor
+            WHERE singleton_id = 1
+            """
+        ).fetchone()
+        if row is None:
+            return None
+        base = self._ledger_anchor_base(
+            total_record_count=int(row[0]),
+            stream_count=int(row[1]),
+            observation_membership_sha256=str(row[2]),
+            stream_state_membership_sha256=str(row[3]),
+        )
+        if _sha(base) != str(row[4]):
+            raise ValueError("LIVE_LEDGER_ANCHOR_HASH_MISMATCH")
+        return {
+            **base,
+            "anchor_sha256": str(row[4]),
+        }
+
+    def _write_ledger_anchor(
+        self,
+        connection: sqlite3.Connection,
+    ) -> None:
+        anchor = self._derive_ledger_anchor(connection)
+        connection.execute(
+            """
+            INSERT INTO football_live_ledger_anchor (
+                singleton_id,
+                total_record_count,
+                stream_count,
+                observation_membership_sha256,
+                stream_state_membership_sha256,
+                anchor_sha256
+            )
+            VALUES (1, ?, ?, ?, ?, ?)
+            ON CONFLICT(singleton_id)
+            DO UPDATE SET
+                total_record_count = excluded.total_record_count,
+                stream_count = excluded.stream_count,
+                observation_membership_sha256 = (
+                    excluded.observation_membership_sha256
+                ),
+                stream_state_membership_sha256 = (
+                    excluded.stream_state_membership_sha256
+                ),
+                anchor_sha256 = excluded.anchor_sha256,
+                updated_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now')
+            """,
+            (
+                anchor["total_record_count"],
+                anchor["stream_count"],
+                anchor["observation_membership_sha256"],
+                anchor["stream_state_membership_sha256"],
+                anchor["anchor_sha256"],
+            ),
+        )
+
+    def _stream_keys(
+        self,
+        connection: sqlite3.Connection,
+    ) -> set[tuple[str, str, str]]:
+        keys: set[tuple[str, str, str]] = set()
+        rows = connection.execute(
+            """
+            SELECT DISTINCT subject_key, provider_key, modality
+            FROM football_live_observation
+            WHERE provider_key IS NOT NULL
+            """
+        ).fetchall()
+        keys.update(
+            (str(row[0]), str(row[1]), str(row[2]))
+            for row in rows
+        )
+        states = connection.execute(
+            """
+            SELECT subject_key, provider_key, modality
+            FROM football_live_stream_state
+            """
+        ).fetchall()
+        keys.update(
+            (str(row[0]), str(row[1]), str(row[2]))
+            for row in states
+        )
+        return keys
+
+    def _assert_ledger_integrity(
+        self,
+        connection: sqlite3.Connection,
+    ) -> None:
+        for subject_key, provider_key, modality in sorted(
+            self._stream_keys(connection)
+        ):
+            self._assert_stream_integrity(
+                connection,
+                subject_key=subject_key,
+                provider_key=provider_key,
+                modality=modality,
+                allow_absent=False,
+            )
+
+        derived = self._derive_ledger_anchor(connection)
+        stored = self._stored_ledger_anchor(connection)
+        if stored is None:
+            raise ValueError("LIVE_LEDGER_ANCHOR_MISSING")
+        if derived != stored:
+            raise ValueError("LIVE_LEDGER_ANCHOR_DERIVATION_MISMATCH")
+
+    def _bootstrap_ledger_controls(
+        self,
+        connection: sqlite3.Connection,
+    ) -> None:
+        # Migration is fail-closed: every legacy row must already be
+        # self-consistent under the new global stream semantics.
+        keys = self._stream_keys(connection)
+        connection.execute("DELETE FROM football_live_stream_state")
+        for subject_key, provider_key, modality in sorted(keys):
+            if not provider_key:
+                raise ValueError("LIVE_STREAM_PROVIDER_KEY_REQUIRED")
+            self._write_stream_state(
+                connection,
+                subject_key=subject_key,
+                provider_key=provider_key,
+                modality=modality,
+            )
+        self._write_ledger_anchor(connection)
+        self._assert_ledger_integrity(connection)
+
     def record(
         self,
         observation: LiveTemporalObservation,
@@ -613,10 +1187,12 @@ class SQLiteFootballLiveObservationStore:
 
         payload_json = _canonical(observation.payload())
         payload_sha = sha256(payload_json.encode("utf-8")).hexdigest()
+        stream_key = self._stream_key(observation)
 
         with self._connect() as connection:
             try:
                 connection.execute("BEGIN IMMEDIATE")
+                self._assert_ledger_integrity(connection)
 
                 existing = connection.execute(
                     self._row_select_sql()
@@ -624,14 +1200,12 @@ class SQLiteFootballLiveObservationStore:
                     WHERE subject_key = ?
                       AND provider_key = ?
                       AND modality = ?
-                      AND correlation_id = ?
                       AND sequence_id = ?
                     """,
                     (
                         observation.subject_key,
                         observation.provider_key,
                         observation.modality,
-                        observation.correlation_id,
                         observation.sequence_id,
                     ),
                 ).fetchone()
@@ -642,7 +1216,17 @@ class SQLiteFootballLiveObservationStore:
                         decision.observation_fingerprint
                         != observation.observation_fingerprint
                     ):
-                        raise ValueError("LIVE_SEQUENCE_MUTATION_VIOLATION")
+                        existing_correlation_id = str(existing[5])
+                        if (
+                            existing_correlation_id
+                            == observation.correlation_id
+                        ):
+                            raise ValueError(
+                                "LIVE_SEQUENCE_MUTATION_VIOLATION"
+                            )
+                        raise ValueError(
+                            "LIVE_GLOBAL_SEQUENCE_ID_COLLISION"
+                        )
                     connection.execute("COMMIT")
                     return decision
 
@@ -653,14 +1237,12 @@ class SQLiteFootballLiveObservationStore:
                     WHERE subject_key = ?
                       AND provider_key = ?
                       AND modality = ?
-                      AND correlation_id = ?
                       AND source_record_fingerprint = ?
                     """,
                     (
                         observation.subject_key,
                         observation.provider_key,
                         observation.modality,
-                        observation.correlation_id,
                         source_fp,
                     ),
                 ).fetchone()
@@ -691,15 +1273,9 @@ class SQLiteFootballLiveObservationStore:
                     WHERE subject_key = ?
                       AND provider_key = ?
                       AND modality = ?
-                      AND correlation_id = ?
                     ORDER BY rowid
                     """,
-                    (
-                        observation.subject_key,
-                        observation.provider_key,
-                        observation.modality,
-                        observation.correlation_id,
-                    ),
+                    stream_key,
                 ).fetchall()
 
                 prior_sequence_ids = [int(row[0]) for row in prior_rows]
@@ -710,7 +1286,7 @@ class SQLiteFootballLiveObservationStore:
                 ]
                 status, reasons, accepted = _expected_sequence_state(
                     sequence_id=observation.sequence_id,
-                    observed_at=observation.observed_at,
+                    observed_at=observation.observed_at.astimezone(UTC),
                     prior_sequence_ids=prior_sequence_ids,
                     prior_observed_at=prior_observed_at,
                 )
@@ -748,6 +1324,14 @@ class SQLiteFootballLiveObservationStore:
                         payload_sha,
                     ),
                 )
+                self._write_stream_state(
+                    connection,
+                    subject_key=stream_key[0],
+                    provider_key=stream_key[1],
+                    modality=stream_key[2],
+                )
+                self._write_ledger_anchor(connection)
+                self._assert_ledger_integrity(connection)
                 connection.execute("COMMIT")
             except Exception:
                 _rollback_quietly(connection)
@@ -777,20 +1361,19 @@ class SQLiteFootballLiveObservationStore:
             )
 
         with self._connect() as connection:
+            self._assert_ledger_integrity(connection)
             row = connection.execute(
                 self._row_select_sql()
                 + """
                 WHERE subject_key = ?
                   AND provider_key = ?
                   AND modality = ?
-                  AND correlation_id = ?
                   AND sequence_id = ?
                 """,
                 (
                     observation.subject_key,
                     observation.provider_key,
                     observation.modality,
-                    observation.correlation_id,
                     observation.sequence_id,
                 ),
             ).fetchone()
@@ -814,43 +1397,12 @@ class SQLiteFootballLiveObservationStore:
             return decision
 
     def audit_integrity(self) -> bool:
-        with self._connect() as connection:
-            rows = connection.execute(
-                self._row_select_sql() + " ORDER BY rowid"
-            ).fetchall()
-
-            seen_sources: set[
-                tuple[str, str, str, str, str]
-            ] = set()
-            for row in rows:
-                try:
-                    decision = self._validate_row(connection, row)
-                except ValueError:
-                    return False
-
-                source_record_fp = row[8]
-                if source_record_fp is None:
-                    return False
-                source_key = (
-                    str(row[2]),
-                    str(row[3]),
-                    str(row[4]),
-                    str(row[5]),
-                    str(source_record_fp),
-                )
-                if source_key in seen_sources:
-                    return False
-                seen_sources.add(source_key)
-
-                if (
-                    decision.status not in {
-                        SEQUENCE_ACCEPTED,
-                        SEQUENCE_OUT_OF_ORDER,
-                        SEQUENCE_LATE_OBSERVATION,
-                    }
-                ):
-                    return False
+        try:
+            with self._connect() as connection:
+                self._assert_ledger_integrity(connection)
             return True
+        except (sqlite3.Error, ValueError, TypeError):
+            return False
 
 
 @dataclass(frozen=True)
@@ -873,13 +1425,18 @@ def evaluate_repeatable_football_live_admission(
     *,
     policy: FootballLiveFreshnessPolicy,
     evidence_store: SQLiteFootballLiveObservationStore,
+    evaluated_at: datetime,
 ) -> FootballRepeatableLiveAdmission:
     items = tuple(observations)
     if len(items) < 2:
         raise ValueError("REPEATABLE_LIVE_ADMISSION_REQUIRES_MULTIMODAL_INPUT")
 
     freshness = tuple(
-        evaluate_football_live_freshness(item, policy)
+        evaluate_football_live_freshness(
+            item,
+            policy,
+            evaluated_at=evaluated_at,
+        )
         for item in items
     )
     alignment = evaluate_football_cross_modal_alignment(items, policy)

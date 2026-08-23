@@ -24,6 +24,7 @@ from app.core.live_temporal_observation import (
 
 
 BASE = datetime(2026, 8, 23, 16, tzinfo=UTC)
+EVALUATED_AT = BASE + timedelta(seconds=2)
 
 
 def observation(
@@ -64,6 +65,10 @@ def calibrated_policy(**overrides):
         fixture_statistics_max_source_age_ms=500,
         fixture_events_max_source_age_ms=500,
         odds_max_source_age_ms=500,
+        fixture_status_max_decision_age_ms=5000,
+        fixture_statistics_max_decision_age_ms=5000,
+        fixture_events_max_decision_age_ms=5000,
+        odds_max_decision_age_ms=5000,
         max_ingestion_to_normalization_ms=500,
         max_normalization_to_feature_ms=500,
         max_cross_modal_skew_ms=500,
@@ -77,6 +82,7 @@ def test_default_policy_never_invents_thresholds_and_is_observe_only():
     decision = evaluate_football_live_freshness(
         observation(),
         policy,
+        evaluated_at=EVALUATED_AT,
     )
 
     assert policy.thresholds_empirically_calibrated is False
@@ -89,6 +95,7 @@ def test_explicit_policy_can_pass_without_becoming_production_policy():
     decision = evaluate_football_live_freshness(
         observation(),
         calibrated_policy(),
+        evaluated_at=EVALUATED_AT,
     )
 
     assert decision.status == FRESHNESS_PASS
@@ -101,7 +108,11 @@ def test_stale_input_fails_closed():
     policy = calibrated_policy(
         fixture_events_max_source_age_ms=50,
     )
-    decision = evaluate_football_live_freshness(item, policy)
+    decision = evaluate_football_live_freshness(
+        item,
+        policy,
+        evaluated_at=EVALUATED_AT,
+    )
 
     assert decision.status == FRESHNESS_BLOCKED
     assert "SOURCE_AGE_EXCEEDED" in decision.reason_codes
@@ -239,6 +250,7 @@ def test_repeatable_admission_is_observe_only_until_policy_is_explicit(tmp_path)
         items,
         policy=FootballLiveFreshnessPolicy(),
         evidence_store=store,
+        evaluated_at=EVALUATED_AT,
     )
 
     assert decision.status == ADMISSION_OBSERVE_ONLY
@@ -262,6 +274,7 @@ def test_repeatable_admission_blocks_stale_or_unaligned_inputs(tmp_path):
         items,
         policy=calibrated_policy(max_cross_modal_skew_ms=500),
         evidence_store=store,
+        evaluated_at=EVALUATED_AT,
     )
 
     assert decision.status == ADMISSION_BLOCKED
@@ -283,6 +296,7 @@ def test_repeatable_admission_only_reaches_human_review_not_model_execution(tmp_
         items,
         policy=calibrated_policy(),
         evidence_store=store,
+        evaluated_at=EVALUATED_AT,
     )
 
     assert decision.status == ADMISSION_ELIGIBLE_REVIEW
@@ -558,6 +572,7 @@ def test_repeatable_admission_requires_durable_accepted_sequence_evidence(tmp_pa
         (stats, event),
         policy=calibrated_policy(),
         evidence_store=store,
+        evaluated_at=EVALUATED_AT,
     )
 
     assert decision.status == ADMISSION_BLOCKED
@@ -594,6 +609,7 @@ def test_repeatable_admission_blocks_quarantined_late_observation(tmp_path):
         (stats, event_late),
         policy=calibrated_policy(),
         evidence_store=store,
+        evaluated_at=EVALUATED_AT,
     )
 
     assert decision.status == ADMISSION_BLOCKED
@@ -630,7 +646,355 @@ def test_repeatable_admission_blocks_tampered_durable_evidence(tmp_path):
         (stats, event),
         policy=calibrated_policy(),
         evidence_store=store,
+        evaluated_at=EVALUATED_AT,
     )
 
     assert decision.status == ADMISSION_BLOCKED
     assert "DURABLE_SEQUENCE_EVIDENCE_INVALID" in decision.reason_codes
+
+
+def test_decision_time_staleness_blocks_even_when_ingestion_was_fresh(tmp_path):
+    ancient = datetime(2020, 1, 1, tzinfo=UTC)
+
+    def ancient_observation(*, modality, source_char):
+        return build_live_temporal_observation(
+            sport="football",
+            provider_key="api_football",
+            subject_key="fixture:1557375",
+            modality=modality,
+            correlation_id="d" * 64,
+            sequence_id=1,
+            observed_at=ancient,
+            request_started_at=ancient + timedelta(milliseconds=1),
+            response_received_at=ancient + timedelta(milliseconds=2),
+            ingested_at=ancient + timedelta(milliseconds=3),
+            normalized_at=ancient + timedelta(milliseconds=4),
+            feature_ready_at=ancient + timedelta(milliseconds=5),
+            source_record_fingerprint=source_char * 64,
+        )
+
+    stats = ancient_observation(
+        modality="fixture_statistics",
+        source_char="d",
+    )
+    events = ancient_observation(
+        modality="fixture_events",
+        source_char="e",
+    )
+    store = SQLiteFootballLiveObservationStore(tmp_path / "live.sqlite3")
+    store.record(stats)
+    store.record(events)
+
+    decision = evaluate_repeatable_football_live_admission(
+        (stats, events),
+        policy=calibrated_policy(
+            fixture_statistics_max_decision_age_ms=500,
+            fixture_events_max_decision_age_ms=500,
+        ),
+        evidence_store=store,
+        evaluated_at=BASE,
+    )
+
+    assert decision.status == ADMISSION_BLOCKED
+    assert "DECISION_AGE_EXCEEDED" in decision.reason_codes
+
+
+def test_uncalibrated_decision_time_threshold_never_becomes_eligible(tmp_path):
+    stats = observation(
+        modality="fixture_statistics",
+        source_record_fingerprint="1" * 64,
+    )
+    events = observation(
+        modality="fixture_events",
+        observed_offset_ms=100,
+        source_record_fingerprint="2" * 64,
+    )
+    store = SQLiteFootballLiveObservationStore(tmp_path / "live.sqlite3")
+    store.record(stats)
+    store.record(events)
+
+    policy = calibrated_policy(
+        fixture_statistics_max_decision_age_ms=None,
+    )
+    decision = evaluate_repeatable_football_live_admission(
+        (stats, events),
+        policy=policy,
+        evidence_store=store,
+        evaluated_at=EVALUATED_AT,
+    )
+
+    assert decision.status == ADMISSION_OBSERVE_ONLY
+    assert "DECISION_AGE_THRESHOLD_UNCALIBRATED" in decision.reason_codes
+
+
+def test_duplicate_modality_bundle_is_blocked_even_with_two_distinct_modalities(tmp_path):
+    stats_1 = observation(
+        modality="fixture_statistics",
+        sequence_id=1,
+        source_record_fingerprint="3" * 64,
+    )
+    stats_2 = observation(
+        modality="fixture_statistics",
+        sequence_id=2,
+        observed_offset_ms=10,
+        source_record_fingerprint="4" * 64,
+    )
+    events = observation(
+        modality="fixture_events",
+        sequence_id=1,
+        observed_offset_ms=20,
+        source_record_fingerprint="5" * 64,
+    )
+    store = SQLiteFootballLiveObservationStore(tmp_path / "live.sqlite3")
+    for item in (stats_1, stats_2, events):
+        store.record(item)
+
+    decision = evaluate_repeatable_football_live_admission(
+        (stats_1, stats_2, events),
+        policy=calibrated_policy(),
+        evidence_store=store,
+        evaluated_at=EVALUATED_AT,
+    )
+
+    assert decision.status == ADMISSION_BLOCKED
+    assert "DUPLICATE_MODALITY_IN_BUNDLE" in decision.reason_codes
+
+
+def test_correlation_id_cannot_reset_global_stream_order(tmp_path):
+    store = SQLiteFootballLiveObservationStore(tmp_path / "live.sqlite3")
+    newer = observation(
+        modality="fixture_events",
+        sequence_id=2,
+        observed_offset_ms=200,
+        correlation_id="a" * 64,
+        source_record_fingerprint="6" * 64,
+    )
+    older_new_cycle = observation(
+        modality="fixture_events",
+        sequence_id=1,
+        observed_offset_ms=100,
+        correlation_id="b" * 64,
+        source_record_fingerprint="7" * 64,
+    )
+
+    assert store.record(newer).status == "ACCEPTED"
+    decision = store.record(older_new_cycle)
+
+    assert decision.status == "QUARANTINED_OUT_OF_ORDER"
+    assert decision.accepted_for_fusion is False
+    assert store.audit_integrity() is True
+
+
+def test_record_fails_closed_when_prior_stream_history_is_corrupted(tmp_path):
+    path = tmp_path / "live.sqlite3"
+    store = SQLiteFootballLiveObservationStore(path)
+    first = observation(
+        modality="fixture_events",
+        sequence_id=3,
+        observed_offset_ms=300,
+        source_record_fingerprint="8" * 64,
+    )
+    store.record(first)
+
+    with sqlite3.connect(path) as connection:
+        connection.execute(
+            """
+            UPDATE football_live_observation
+            SET sequence_id = 1
+            WHERE observation_fingerprint = ?
+            """,
+            (first.observation_fingerprint,),
+        )
+        connection.commit()
+
+    candidate = observation(
+        modality="fixture_events",
+        sequence_id=2,
+        observed_offset_ms=200,
+        source_record_fingerprint="9" * 64,
+    )
+
+    assert store.audit_integrity() is False
+    with pytest.raises(
+        ValueError,
+        match=(
+            "LIVE_EVIDENCE_SEQUENCE_COLUMN_MISMATCH"
+            "|LIVE_LEDGER_ANCHOR_DERIVATION_MISMATCH"
+            "|LIVE_STREAM_STATE_DERIVATION_MISMATCH"
+        ),
+    ):
+        store.record(candidate)
+
+
+def test_deleted_history_is_detected_by_durable_ledger_anchor(tmp_path):
+    path = tmp_path / "live.sqlite3"
+    store = SQLiteFootballLiveObservationStore(path)
+    first = observation(
+        modality="fixture_events",
+        sequence_id=3,
+        observed_offset_ms=300,
+        source_record_fingerprint="a" * 64,
+    )
+    store.record(first)
+
+    with sqlite3.connect(path) as connection:
+        connection.execute("DELETE FROM football_live_observation")
+        connection.commit()
+
+    assert store.audit_integrity() is False
+
+    candidate = observation(
+        modality="fixture_events",
+        sequence_id=2,
+        observed_offset_ms=200,
+        source_record_fingerprint="b" * 64,
+    )
+    with pytest.raises(
+        ValueError,
+        match=(
+            "LIVE_STREAM_STATE_MEMBERSHIP_MISMATCH"
+            "|LIVE_LEDGER_ANCHOR_DERIVATION_MISMATCH"
+        ),
+    ):
+        store.record(candidate)
+
+
+def test_deleting_stream_state_is_detected_before_next_write(tmp_path):
+    path = tmp_path / "live.sqlite3"
+    store = SQLiteFootballLiveObservationStore(path)
+    first = observation(
+        modality="fixture_events",
+        sequence_id=1,
+        source_record_fingerprint="c" * 64,
+    )
+    store.record(first)
+
+    with sqlite3.connect(path) as connection:
+        connection.execute("DELETE FROM football_live_stream_state")
+        connection.commit()
+
+    assert store.audit_integrity() is False
+    with pytest.raises(
+        ValueError,
+        match="LIVE_STREAM_STATE_MEMBERSHIP_MISMATCH",
+    ):
+        store.record(
+            observation(
+                modality="fixture_events",
+                sequence_id=2,
+                observed_offset_ms=100,
+                source_record_fingerprint="d" * 64,
+            )
+        )
+
+
+def test_deleting_global_anchor_is_detected_before_next_write(tmp_path):
+    path = tmp_path / "live.sqlite3"
+    store = SQLiteFootballLiveObservationStore(path)
+    first = observation(
+        modality="fixture_events",
+        sequence_id=1,
+        source_record_fingerprint="e" * 64,
+    )
+    store.record(first)
+
+    with sqlite3.connect(path) as connection:
+        connection.execute("DELETE FROM football_live_ledger_anchor")
+        connection.commit()
+
+    assert store.audit_integrity() is False
+    with pytest.raises(
+        ValueError,
+        match="LIVE_LEDGER_ANCHOR_MISSING",
+    ):
+        store.record(
+            observation(
+                modality="fixture_events",
+                sequence_id=2,
+                observed_offset_ms=100,
+                source_record_fingerprint="f" * 64,
+            )
+        )
+
+
+def test_decision_time_must_be_timezone_aware():
+    item = observation()
+    with pytest.raises(
+        ValueError,
+        match="EVALUATED_AT_MUST_BE_TIMEZONE_AWARE",
+    ):
+        evaluate_football_live_freshness(
+            item,
+            calibrated_policy(),
+            evaluated_at=datetime(2026, 8, 23, 16),
+        )
+
+
+def test_decision_time_cannot_precede_feature_ready():
+    item = observation()
+    with pytest.raises(
+        ValueError,
+        match="DECISION_TIME_BEFORE_FEATURE_READY",
+    ):
+        evaluate_football_live_freshness(
+            item,
+            calibrated_policy(),
+            evaluated_at=item.normalized_at,
+        )
+
+
+def test_deleting_rows_and_stream_state_is_still_detected_by_global_anchor(tmp_path):
+    path = tmp_path / "live.sqlite3"
+    store = SQLiteFootballLiveObservationStore(path)
+    first = observation(
+        modality="fixture_events",
+        sequence_id=1,
+        source_record_fingerprint="0" * 64,
+    )
+    store.record(first)
+
+    with sqlite3.connect(path) as connection:
+        connection.execute("DELETE FROM football_live_observation")
+        connection.execute("DELETE FROM football_live_stream_state")
+        connection.commit()
+
+    assert store.audit_integrity() is False
+    with pytest.raises(
+        ValueError,
+        match="LIVE_LEDGER_ANCHOR_DERIVATION_MISMATCH",
+    ):
+        store.record(
+            observation(
+                modality="fixture_events",
+                sequence_id=2,
+                observed_offset_ms=100,
+                source_record_fingerprint="1" * 64,
+            )
+        )
+
+
+def test_tampered_stream_state_hash_is_detected(tmp_path):
+    path = tmp_path / "live.sqlite3"
+    store = SQLiteFootballLiveObservationStore(path)
+    first = observation(
+        modality="fixture_events",
+        sequence_id=1,
+        source_record_fingerprint="2" * 64,
+    )
+    store.record(first)
+
+    with sqlite3.connect(path) as connection:
+        connection.execute(
+            """
+            UPDATE football_live_stream_state
+            SET record_count = record_count + 1
+            """
+        )
+        connection.commit()
+
+    assert store.audit_integrity() is False
+    with pytest.raises(
+        ValueError,
+        match="LIVE_STREAM_STATE_HASH_MISMATCH",
+    ):
+        store.verify_for_fusion(first)
