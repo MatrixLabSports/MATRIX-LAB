@@ -312,6 +312,25 @@ def _event_from_payload(
     )
 
 
+import threading
+
+
+_CANONICAL_WRITER_LOCKS_GUARD = threading.Lock()
+_CANONICAL_WRITER_LOCKS = {}
+
+
+def _canonical_writer_lock(path: Path):
+    # Path equality follows the host filesystem flavour:
+    # case-insensitive on Windows, case-sensitive on POSIX.
+    key = path.resolve()
+    with _CANONICAL_WRITER_LOCKS_GUARD:
+        lock = _CANONICAL_WRITER_LOCKS.get(key)
+        if lock is None:
+            lock = threading.RLock()
+            _CANONICAL_WRITER_LOCKS[key] = lock
+        return lock
+
+
 class SQLiteCanonicalIdentityLifecycleLedger:
     def __init__(
         self,
@@ -830,73 +849,74 @@ class SQLiteCanonicalIdentityLifecycleLedger:
             payload_json.encode("utf-8")
         ).hexdigest()
 
-        with closing(
-            self._connect()
-        ) as connection:
-            connection.execute(
-                "BEGIN IMMEDIATE"
-            )
-            reservation = None
-            committed = False
-            try:
-                self._tail_guard.require_current_external_checkpoint(
-                    connection
-                )
-                self._tail_guard.require_current_freshness_root(
-                    connection
-                )
-                self._validate_transactional_candidate(
-                    connection,
-                    event,
-                )
-
+        with _canonical_writer_lock(self.path):
+            with closing(
+                self._connect()
+            ) as connection:
                 connection.execute(
-                    "INSERT INTO canonical_identity_lifecycle "
-                    "(event_id, canonical_id, sport, entity_type, "
-                    "event_type, effective_at, known_at, payload_json, payload_sha256) "
-                    "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
-                    (
-                        event.event_id,
-                        event.canonical_id,
-                        event.sport,
-                        event.entity_type,
-                        event.event_type,
-                        _iso(event.effective_at),
-                        _iso(event.known_at),
-                        payload_json,
-                        payload_sha,
-                    ),
+                    "BEGIN IMMEDIATE"
                 )
-                self._tail_guard.append(
-                    connection,
-                    record_id=event.event_id,
-                    record_payload_sha256=payload_sha,
-                )
-                reservation = (
-                    self._tail_guard.prepare_freshness_transition(
+                reservation = None
+                committed = False
+                try:
+                    self._tail_guard.require_current_external_checkpoint(
                         connection
                     )
-                )
-
-                connection.commit()
-                committed = True
-
-                self._tail_guard.finalize_freshness_transition(
-                    reservation
-                )
-
-                self._tail_guard.synchronize_external_checkpoint(
-                    connection
-                )
-
-            except Exception:
-                if not committed:
-                    self._tail_guard.resolve_failed_freshness_transition(
+                    self._tail_guard.require_current_freshness_root(
+                        connection
+                    )
+                    self._validate_transactional_candidate(
                         connection,
-                        reservation,
+                        event,
                     )
 
-                raise
+                    connection.execute(
+                        "INSERT INTO canonical_identity_lifecycle "
+                        "(event_id, canonical_id, sport, entity_type, "
+                        "event_type, effective_at, known_at, payload_json, payload_sha256) "
+                        "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                        (
+                            event.event_id,
+                            event.canonical_id,
+                            event.sport,
+                            event.entity_type,
+                            event.event_type,
+                            _iso(event.effective_at),
+                            _iso(event.known_at),
+                            payload_json,
+                            payload_sha,
+                        ),
+                    )
+                    self._tail_guard.append(
+                        connection,
+                        record_id=event.event_id,
+                        record_payload_sha256=payload_sha,
+                    )
+                    reservation = (
+                        self._tail_guard.prepare_freshness_transition(
+                            connection
+                        )
+                    )
+
+                    connection.commit()
+                    committed = True
+
+                    self._tail_guard.finalize_freshness_transition(
+                        reservation
+                    )
+
+                    self._tail_guard.synchronize_external_checkpoint(
+                        connection
+                    )
+
+                except Exception:
+                    if not committed:
+                        self._tail_guard.resolve_failed_freshness_transition(
+                            connection,
+                            reservation,
+                        )
+
+                    raise
 
         stored = self.get_verified(
             event.event_id
