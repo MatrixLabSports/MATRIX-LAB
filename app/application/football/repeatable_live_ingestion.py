@@ -421,7 +421,7 @@ REASON_DURABLE_EVIDENCE_INVALID = "DURABLE_SEQUENCE_EVIDENCE_INVALID"
 
 
 class SQLiteFootballLiveObservationStore:
-    LEDGER_USER_VERSION = 73
+    LEDGER_USER_VERSION = 74
 
     def __init__(self, path: str | Path) -> None:
         self.path = Path(path)
@@ -460,7 +460,7 @@ class SQLiteFootballLiveObservationStore:
         membership_sha256: str,
     ) -> dict[str, Any]:
         return {
-            "schema": "matrix.football-live-stream-state/1",
+            "schema": "matrix.football-live-stream-state/2",
             "subject_key": subject_key,
             "provider_key": provider_key,
             "modality": modality,
@@ -490,10 +490,114 @@ class SQLiteFootballLiveObservationStore:
             ),
         }
 
+    def _rebuild_observation_table_v74(
+        self,
+        connection: sqlite3.Connection,
+    ) -> None:
+        connection.execute("SAVEPOINT matrix_r74_observation_migration")
+        try:
+            connection.execute(
+                """
+                ALTER TABLE football_live_observation
+                RENAME TO football_live_observation_r73
+                """
+            )
+            connection.execute(
+                """
+                CREATE TABLE football_live_observation (
+                    observation_fingerprint TEXT PRIMARY KEY,
+                    subject_key TEXT NOT NULL,
+                    provider_key TEXT,
+                    modality TEXT NOT NULL,
+                    correlation_id TEXT NOT NULL,
+                    sequence_id INTEGER NOT NULL,
+                    observed_at TEXT,
+                    source_record_fingerprint TEXT,
+                    status TEXT NOT NULL,
+                    reason_codes_json TEXT NOT NULL,
+                    payload_json TEXT NOT NULL,
+                    payload_sha256 TEXT NOT NULL,
+                    created_at TEXT NOT NULL DEFAULT (
+                        strftime('%Y-%m-%dT%H:%M:%fZ', 'now')
+                    ),
+                    UNIQUE(
+                        subject_key,
+                        provider_key,
+                        modality,
+                        correlation_id,
+                        sequence_id
+                    )
+                )
+                """
+            )
+            connection.execute(
+                """
+                INSERT INTO football_live_observation (
+                    observation_fingerprint,
+                    subject_key,
+                    provider_key,
+                    modality,
+                    correlation_id,
+                    sequence_id,
+                    observed_at,
+                    source_record_fingerprint,
+                    status,
+                    reason_codes_json,
+                    payload_json,
+                    payload_sha256,
+                    created_at
+                )
+                SELECT
+                    observation_fingerprint,
+                    subject_key,
+                    provider_key,
+                    modality,
+                    correlation_id,
+                    sequence_id,
+                    observed_at,
+                    source_record_fingerprint,
+                    status,
+                    reason_codes_json,
+                    payload_json,
+                    payload_sha256,
+                    created_at
+                FROM football_live_observation_r73
+                ORDER BY rowid
+                """
+            )
+            connection.execute(
+                "DROP TABLE football_live_observation_r73"
+            )
+            connection.execute(
+                "RELEASE SAVEPOINT matrix_r74_observation_migration"
+            )
+        except Exception:
+            try:
+                connection.execute(
+                    "ROLLBACK TO SAVEPOINT matrix_r74_observation_migration"
+                )
+                connection.execute(
+                    "RELEASE SAVEPOINT matrix_r74_observation_migration"
+                )
+            except sqlite3.Error:
+                pass
+            raise
+
     def _initialize(self) -> None:
         with self._connect() as connection:
             user_version = int(
                 connection.execute("PRAGMA user_version").fetchone()[0]
+            )
+            observation_table_existed = (
+                connection.execute(
+                    """
+                    SELECT 1
+                    FROM sqlite_master
+                    WHERE type = 'table'
+                      AND name = 'football_live_observation'
+                    """
+                ).fetchone()
+                is not None
             )
             state_table_existed = (
                 connection.execute(
@@ -541,7 +645,13 @@ class SQLiteFootballLiveObservationStore:
                     created_at TEXT NOT NULL DEFAULT (
                         strftime('%Y-%m-%dT%H:%M:%fZ', 'now')
                     ),
-                    UNIQUE(subject_key, modality, correlation_id, sequence_id)
+                    UNIQUE(
+                        subject_key,
+                        provider_key,
+                        modality,
+                        correlation_id,
+                        sequence_id
+                    )
                 )
                 """
             )
@@ -595,6 +705,9 @@ class SQLiteFootballLiveObservationStore:
                     ),
                 )
 
+            if observation_table_existed and user_version < 74:
+                self._rebuild_observation_table_v74(connection)
+
             connection.execute(
                 "DROP INDEX IF EXISTS ux_football_live_source_record"
             )
@@ -602,9 +715,15 @@ class SQLiteFootballLiveObservationStore:
                 "DROP INDEX IF EXISTS ux_football_live_source_record_v2"
             )
             connection.execute(
+                "DROP INDEX IF EXISTS ux_football_live_source_record_v3"
+            )
+            connection.execute(
+                "DROP INDEX IF EXISTS ux_football_live_stream_sequence_v3"
+            )
+            connection.execute(
                 """
                 CREATE UNIQUE INDEX IF NOT EXISTS
-                    ux_football_live_source_record_v3
+                    ux_football_live_source_record_v4
                 ON football_live_observation (
                     subject_key,
                     provider_key,
@@ -618,7 +737,7 @@ class SQLiteFootballLiveObservationStore:
             connection.execute(
                 """
                 CREATE UNIQUE INDEX IF NOT EXISTS
-                    ux_football_live_stream_sequence_v3
+                    ux_football_live_stream_sequence_v4
                 ON football_live_observation (
                     subject_key,
                     provider_key,
@@ -779,6 +898,7 @@ class SQLiteFootballLiveObservationStore:
               AND provider_key = ?
               AND modality = ?
               AND rowid < ?
+              AND status = 'ACCEPTED'
             ORDER BY rowid
             """,
             (
@@ -836,9 +956,17 @@ class SQLiteFootballLiveObservationStore:
         for row in rows:
             self._validate_row(connection, row)
 
-        observed_values = [
-            _parse_observed_at(str(row[7]))
+        accepted_rows = [
+            row
             for row in rows
+            if str(row[9]) == SEQUENCE_ACCEPTED
+        ]
+        if not accepted_rows:
+            raise ValueError("LIVE_STREAM_ACCEPTED_WATERMARK_MISSING")
+
+        accepted_observed_values = [
+            _parse_observed_at(str(row[7]))
+            for row in accepted_rows
         ]
         fingerprints = sorted(str(row[1]) for row in rows)
         base = self._stream_state_base(
@@ -846,8 +974,8 @@ class SQLiteFootballLiveObservationStore:
             provider_key=provider_key,
             modality=modality,
             record_count=len(rows),
-            max_sequence_id=max(int(row[6]) for row in rows),
-            max_observed_at=max(observed_values).isoformat(),
+            max_sequence_id=max(int(row[6]) for row in accepted_rows),
+            max_observed_at=max(accepted_observed_values).isoformat(),
             membership_sha256=_sha(fingerprints),
         )
         return {
@@ -1273,6 +1401,7 @@ class SQLiteFootballLiveObservationStore:
                     WHERE subject_key = ?
                       AND provider_key = ?
                       AND modality = ?
+                      AND status = 'ACCEPTED'
                     ORDER BY rowid
                     """,
                     stream_key,

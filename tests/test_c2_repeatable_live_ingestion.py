@@ -998,3 +998,291 @@ def test_tampered_stream_state_hash_is_detected(tmp_path):
         match="LIVE_STREAM_STATE_HASH_MISMATCH",
     ):
         store.verify_for_fusion(first)
+
+
+def test_quarantined_late_row_does_not_poison_sequence_watermark(tmp_path):
+    path = tmp_path / "late-watermark.sqlite3"
+    store = SQLiteFootballLiveObservationStore(path)
+
+    accepted_one = observation(
+        modality="fixture_events",
+        sequence_id=1,
+        observed_offset_ms=1000,
+        source_record_fingerprint="3" * 64,
+    )
+    quarantined_high = observation(
+        modality="fixture_events",
+        sequence_id=100,
+        observed_offset_ms=500,
+        source_record_fingerprint="4" * 64,
+    )
+    legitimate_two = observation(
+        modality="fixture_events",
+        sequence_id=2,
+        observed_offset_ms=1100,
+        source_record_fingerprint="5" * 64,
+    )
+
+    assert store.record(accepted_one).status == "ACCEPTED"
+    late_decision = store.record(quarantined_high)
+    assert late_decision.status == "QUARANTINED_LATE_OBSERVATION"
+    assert late_decision.accepted_for_fusion is False
+
+    legitimate_decision = store.record(legitimate_two)
+    assert legitimate_decision.status == "ACCEPTED"
+    assert legitimate_decision.accepted_for_fusion is True
+    assert store.audit_integrity() is True
+
+    with sqlite3.connect(path) as connection:
+        row = connection.execute(
+            """
+            SELECT record_count, max_sequence_id, max_observed_at
+            FROM football_live_stream_state
+            WHERE subject_key = ?
+              AND provider_key = ?
+              AND modality = ?
+            """,
+            (
+                accepted_one.subject_key,
+                accepted_one.provider_key,
+                accepted_one.modality,
+            ),
+        ).fetchone()
+
+    assert row is not None
+    assert row[0] == 3
+    assert row[1] == 2
+    assert row[2] == legitimate_two.observed_at.isoformat()
+
+
+def test_quarantined_out_of_order_row_does_not_poison_observed_watermark(tmp_path):
+    path = tmp_path / "observed-watermark.sqlite3"
+    store = SQLiteFootballLiveObservationStore(path)
+
+    accepted_twenty = observation(
+        modality="fixture_events",
+        sequence_id=20,
+        observed_offset_ms=2000,
+        source_record_fingerprint="6" * 64,
+    )
+    quarantined_ten = observation(
+        modality="fixture_events",
+        sequence_id=10,
+        observed_offset_ms=3000,
+        source_record_fingerprint="7" * 64,
+    )
+    legitimate_twenty_one = observation(
+        modality="fixture_events",
+        sequence_id=21,
+        observed_offset_ms=2500,
+        source_record_fingerprint="8" * 64,
+    )
+
+    assert store.record(accepted_twenty).status == "ACCEPTED"
+    old_sequence_decision = store.record(quarantined_ten)
+    assert old_sequence_decision.status == "QUARANTINED_OUT_OF_ORDER"
+    assert old_sequence_decision.accepted_for_fusion is False
+
+    legitimate_decision = store.record(legitimate_twenty_one)
+    assert legitimate_decision.status == "ACCEPTED"
+    assert legitimate_decision.accepted_for_fusion is True
+    assert store.audit_integrity() is True
+
+    with sqlite3.connect(path) as connection:
+        row = connection.execute(
+            """
+            SELECT record_count, max_sequence_id, max_observed_at
+            FROM football_live_stream_state
+            WHERE subject_key = ?
+              AND provider_key = ?
+              AND modality = ?
+            """,
+            (
+                accepted_twenty.subject_key,
+                accepted_twenty.provider_key,
+                accepted_twenty.modality,
+            ),
+        ).fetchone()
+
+    assert row is not None
+    assert row[0] == 3
+    assert row[1] == 21
+    assert row[2] == legitimate_twenty_one.observed_at.isoformat()
+
+
+def test_same_correlation_and_sequence_can_exist_for_distinct_providers(tmp_path):
+    path = tmp_path / "multi-provider.sqlite3"
+    store = SQLiteFootballLiveObservationStore(path)
+
+    first_provider = observation(
+        modality="fixture_events",
+        sequence_id=1,
+        correlation_id="9" * 64,
+        provider_key="api_football",
+        source_record_fingerprint="a" * 64,
+    )
+    second_provider = observation(
+        modality="fixture_events",
+        sequence_id=1,
+        observed_offset_ms=10,
+        correlation_id="9" * 64,
+        provider_key="other_provider",
+        source_record_fingerprint="b" * 64,
+    )
+
+    assert store.record(first_provider).status == "ACCEPTED"
+    assert store.record(second_provider).status == "ACCEPTED"
+    assert store.audit_integrity() is True
+
+    with sqlite3.connect(path) as connection:
+        count = connection.execute(
+            "SELECT COUNT(*) FROM football_live_observation"
+        ).fetchone()[0]
+        version = connection.execute("PRAGMA user_version").fetchone()[0]
+        table_sql = connection.execute(
+            """
+            SELECT sql
+            FROM sqlite_master
+            WHERE type = 'table'
+              AND name = 'football_live_observation'
+            """
+        ).fetchone()[0]
+
+    assert count == 2
+    assert version == 74
+    normalized = " ".join(table_sql.split())
+    assert (
+        "UNIQUE( subject_key, provider_key, modality, correlation_id, sequence_id )"
+        in normalized
+        or
+        "UNIQUE ( subject_key, provider_key, modality, correlation_id, sequence_id )"
+        in normalized
+    )
+
+
+def test_r73_provider_blind_table_constraint_is_rebuilt_fail_closed_to_v74(tmp_path):
+    path = tmp_path / "legacy-r73.sqlite3"
+
+    # First create a valid R7.3-compatible ledger using the current builder
+    # shape, then rewrite only the table DDL to reproduce the legacy
+    # provider-blind table-level UNIQUE contract before reopening at v73.
+    seed = observation(
+        modality="fixture_events",
+        sequence_id=1,
+        correlation_id="c" * 64,
+        provider_key="api_football",
+        source_record_fingerprint="d" * 64,
+    )
+    store = SQLiteFootballLiveObservationStore(path)
+    store.record(seed)
+
+    with sqlite3.connect(path) as connection:
+        connection.execute("PRAGMA foreign_keys = OFF")
+        connection.execute(
+            """
+            ALTER TABLE football_live_observation
+            RENAME TO football_live_observation_v74_seed
+            """
+        )
+        connection.execute(
+            """
+            CREATE TABLE football_live_observation (
+                observation_fingerprint TEXT PRIMARY KEY,
+                subject_key TEXT NOT NULL,
+                provider_key TEXT,
+                modality TEXT NOT NULL,
+                correlation_id TEXT NOT NULL,
+                sequence_id INTEGER NOT NULL,
+                observed_at TEXT,
+                source_record_fingerprint TEXT,
+                status TEXT NOT NULL,
+                reason_codes_json TEXT NOT NULL,
+                payload_json TEXT NOT NULL,
+                payload_sha256 TEXT NOT NULL,
+                created_at TEXT NOT NULL DEFAULT (
+                    strftime('%Y-%m-%dT%H:%M:%fZ', 'now')
+                ),
+                UNIQUE(subject_key, modality, correlation_id, sequence_id)
+            )
+            """
+        )
+        connection.execute(
+            """
+            INSERT INTO football_live_observation
+            SELECT * FROM football_live_observation_v74_seed
+            """
+        )
+        connection.execute("DROP TABLE football_live_observation_v74_seed")
+        connection.execute("DROP INDEX IF EXISTS ux_football_live_source_record_v4")
+        connection.execute("DROP INDEX IF EXISTS ux_football_live_stream_sequence_v4")
+        connection.execute(
+            """
+            CREATE UNIQUE INDEX ux_football_live_source_record_v3
+            ON football_live_observation (
+                subject_key,
+                provider_key,
+                modality,
+                source_record_fingerprint
+            )
+            WHERE provider_key IS NOT NULL
+              AND source_record_fingerprint IS NOT NULL
+            """
+        )
+        connection.execute(
+            """
+            CREATE UNIQUE INDEX ux_football_live_stream_sequence_v3
+            ON football_live_observation (
+                subject_key,
+                provider_key,
+                modality,
+                sequence_id
+            )
+            WHERE provider_key IS NOT NULL
+            """
+        )
+
+        # Recreate R7.3 stream state hash because v74 uses schema /2.
+        state_row = connection.execute(
+            """
+            SELECT
+                subject_key,
+                provider_key,
+                modality,
+                record_count,
+                max_sequence_id,
+                max_observed_at,
+                membership_sha256
+            FROM football_live_stream_state
+            """
+        ).fetchone()
+        assert state_row is not None
+
+        # Drop controls so the v74 opener is forced through the legacy
+        # bootstrap path. The R7.3 precondition allows controls to be rebuilt
+        # because the stored user_version is below 74.
+        connection.execute("DELETE FROM football_live_stream_state")
+        connection.execute("DELETE FROM football_live_ledger_anchor")
+        connection.execute("PRAGMA user_version = 73")
+        connection.commit()
+
+    reopened = SQLiteFootballLiveObservationStore(path)
+    assert reopened.audit_integrity() is True
+
+    second_provider = observation(
+        modality="fixture_events",
+        sequence_id=1,
+        observed_offset_ms=10,
+        correlation_id="c" * 64,
+        provider_key="other_provider",
+        source_record_fingerprint="e" * 64,
+    )
+    assert reopened.record(second_provider).status == "ACCEPTED"
+
+    with sqlite3.connect(path) as connection:
+        version = connection.execute("PRAGMA user_version").fetchone()[0]
+        count = connection.execute(
+            "SELECT COUNT(*) FROM football_live_observation"
+        ).fetchone()[0]
+
+    assert version == 74
+    assert count == 2
