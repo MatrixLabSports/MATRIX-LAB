@@ -585,214 +585,220 @@ class SQLiteFootballLiveObservationStore:
 
     def _initialize(self) -> None:
         with self._connect() as connection:
-            user_version = int(
-                connection.execute("PRAGMA user_version").fetchone()[0]
-            )
-            observation_table_existed = (
-                connection.execute(
-                    """
-                    SELECT 1
-                    FROM sqlite_master
-                    WHERE type = 'table'
-                      AND name = 'football_live_observation'
-                    """
-                ).fetchone()
-                is not None
-            )
-            state_table_existed = (
-                connection.execute(
-                    """
-                    SELECT 1
-                    FROM sqlite_master
-                    WHERE type = 'table'
-                      AND name = 'football_live_stream_state'
-                    """
-                ).fetchone()
-                is not None
-            )
-            anchor_table_existed = (
-                connection.execute(
-                    """
-                    SELECT 1
-                    FROM sqlite_master
-                    WHERE type = 'table'
-                      AND name = 'football_live_ledger_anchor'
-                    """
-                ).fetchone()
-                is not None
-            )
+            connection.execute("BEGIN IMMEDIATE")
+            try:
+                user_version = int(
+                    connection.execute("PRAGMA user_version").fetchone()[0]
+                )
+                observation_table_existed = (
+                    connection.execute(
+                        """
+                        SELECT 1
+                        FROM sqlite_master
+                        WHERE type = 'table'
+                          AND name = 'football_live_observation'
+                        """
+                    ).fetchone()
+                    is not None
+                )
+                state_table_existed = (
+                    connection.execute(
+                        """
+                        SELECT 1
+                        FROM sqlite_master
+                        WHERE type = 'table'
+                          AND name = 'football_live_stream_state'
+                        """
+                    ).fetchone()
+                    is not None
+                )
+                anchor_table_existed = (
+                    connection.execute(
+                        """
+                        SELECT 1
+                        FROM sqlite_master
+                        WHERE type = 'table'
+                          AND name = 'football_live_ledger_anchor'
+                        """
+                    ).fetchone()
+                    is not None
+                )
 
-            if user_version >= self.LEDGER_USER_VERSION and (
-                not state_table_existed or not anchor_table_existed
-            ):
-                raise ValueError("LIVE_LEDGER_CONTROL_TABLE_MISSING")
+                if user_version >= self.LEDGER_USER_VERSION and (
+                    not state_table_existed or not anchor_table_existed
+                ):
+                    raise ValueError("LIVE_LEDGER_CONTROL_TABLE_MISSING")
 
-            connection.execute(
-                """
-                CREATE TABLE IF NOT EXISTS football_live_observation (
-                    observation_fingerprint TEXT PRIMARY KEY,
-                    subject_key TEXT NOT NULL,
-                    provider_key TEXT,
-                    modality TEXT NOT NULL,
-                    correlation_id TEXT NOT NULL,
-                    sequence_id INTEGER NOT NULL,
-                    observed_at TEXT,
-                    source_record_fingerprint TEXT,
-                    status TEXT NOT NULL,
-                    reason_codes_json TEXT NOT NULL,
-                    payload_json TEXT NOT NULL,
-                    payload_sha256 TEXT NOT NULL,
-                    created_at TEXT NOT NULL DEFAULT (
-                        strftime('%Y-%m-%dT%H:%M:%fZ', 'now')
-                    ),
-                    UNIQUE(
+                connection.execute(
+                    """
+                    CREATE TABLE IF NOT EXISTS football_live_observation (
+                        observation_fingerprint TEXT PRIMARY KEY,
+                        subject_key TEXT NOT NULL,
+                        provider_key TEXT,
+                        modality TEXT NOT NULL,
+                        correlation_id TEXT NOT NULL,
+                        sequence_id INTEGER NOT NULL,
+                        observed_at TEXT,
+                        source_record_fingerprint TEXT,
+                        status TEXT NOT NULL,
+                        reason_codes_json TEXT NOT NULL,
+                        payload_json TEXT NOT NULL,
+                        payload_sha256 TEXT NOT NULL,
+                        created_at TEXT NOT NULL DEFAULT (
+                            strftime('%Y-%m-%dT%H:%M:%fZ', 'now')
+                        ),
+                        UNIQUE(
+                            subject_key,
+                            provider_key,
+                            modality,
+                            correlation_id,
+                            sequence_id
+                        )
+                    )
+                    """
+                )
+                columns = {
+                    str(row[1])
+                    for row in connection.execute(
+                        "PRAGMA table_info(football_live_observation)"
+                    ).fetchall()
+                }
+                for column, ddl in (
+                    ("provider_key", "TEXT"),
+                    ("observed_at", "TEXT"),
+                    ("source_record_fingerprint", "TEXT"),
+                ):
+                    if column not in columns:
+                        connection.execute(
+                            "ALTER TABLE football_live_observation "
+                            f"ADD COLUMN {column} {ddl}"
+                        )
+
+                rows = connection.execute(
+                    """
+                    SELECT observation_fingerprint, payload_json
+                    FROM football_live_observation
+                    WHERE provider_key IS NULL
+                       OR observed_at IS NULL
+                       OR source_record_fingerprint IS NULL
+                    """
+                ).fetchall()
+                for observation_fp, payload_json in rows:
+                    try:
+                        payload = json.loads(payload_json)
+                    except json.JSONDecodeError:
+                        continue
+                    connection.execute(
+                        """
+                        UPDATE football_live_observation
+                        SET provider_key = COALESCE(provider_key, ?),
+                            observed_at = COALESCE(observed_at, ?),
+                            source_record_fingerprint = COALESCE(
+                                source_record_fingerprint,
+                                ?
+                            )
+                        WHERE observation_fingerprint = ?
+                        """,
+                        (
+                            payload.get("provider_key"),
+                            payload.get("observed_at"),
+                            payload.get("source_record_fingerprint"),
+                            observation_fp,
+                        ),
+                    )
+
+                if observation_table_existed and user_version < 74:
+                    self._rebuild_observation_table_v74(connection)
+
+                connection.execute(
+                    "DROP INDEX IF EXISTS ux_football_live_source_record"
+                )
+                connection.execute(
+                    "DROP INDEX IF EXISTS ux_football_live_source_record_v2"
+                )
+                connection.execute(
+                    "DROP INDEX IF EXISTS ux_football_live_source_record_v3"
+                )
+                connection.execute(
+                    "DROP INDEX IF EXISTS ux_football_live_stream_sequence_v3"
+                )
+                connection.execute(
+                    """
+                    CREATE UNIQUE INDEX IF NOT EXISTS
+                        ux_football_live_source_record_v4
+                    ON football_live_observation (
                         subject_key,
                         provider_key,
                         modality,
-                        correlation_id,
-                        sequence_id
+                        source_record_fingerprint
                     )
+                    WHERE provider_key IS NOT NULL
+                      AND source_record_fingerprint IS NOT NULL
+                    """
                 )
-                """
-            )
-            columns = {
-                str(row[1])
-                for row in connection.execute(
-                    "PRAGMA table_info(football_live_observation)"
-                ).fetchall()
-            }
-            for column, ddl in (
-                ("provider_key", "TEXT"),
-                ("observed_at", "TEXT"),
-                ("source_record_fingerprint", "TEXT"),
-            ):
-                if column not in columns:
-                    connection.execute(
-                        "ALTER TABLE football_live_observation "
-                        f"ADD COLUMN {column} {ddl}"
-                    )
-
-            rows = connection.execute(
-                """
-                SELECT observation_fingerprint, payload_json
-                FROM football_live_observation
-                WHERE provider_key IS NULL
-                   OR observed_at IS NULL
-                   OR source_record_fingerprint IS NULL
-                """
-            ).fetchall()
-            for observation_fp, payload_json in rows:
-                try:
-                    payload = json.loads(payload_json)
-                except json.JSONDecodeError:
-                    continue
                 connection.execute(
                     """
-                    UPDATE football_live_observation
-                    SET provider_key = COALESCE(provider_key, ?),
-                        observed_at = COALESCE(observed_at, ?),
-                        source_record_fingerprint = COALESCE(
-                            source_record_fingerprint,
-                            ?
-                        )
-                    WHERE observation_fingerprint = ?
-                    """,
-                    (
-                        payload.get("provider_key"),
-                        payload.get("observed_at"),
-                        payload.get("source_record_fingerprint"),
-                        observation_fp,
-                    ),
-                )
-
-            if observation_table_existed and user_version < 74:
-                self._rebuild_observation_table_v74(connection)
-
-            connection.execute(
-                "DROP INDEX IF EXISTS ux_football_live_source_record"
-            )
-            connection.execute(
-                "DROP INDEX IF EXISTS ux_football_live_source_record_v2"
-            )
-            connection.execute(
-                "DROP INDEX IF EXISTS ux_football_live_source_record_v3"
-            )
-            connection.execute(
-                "DROP INDEX IF EXISTS ux_football_live_stream_sequence_v3"
-            )
-            connection.execute(
-                """
-                CREATE UNIQUE INDEX IF NOT EXISTS
-                    ux_football_live_source_record_v4
-                ON football_live_observation (
-                    subject_key,
-                    provider_key,
-                    modality,
-                    source_record_fingerprint
-                )
-                WHERE provider_key IS NOT NULL
-                  AND source_record_fingerprint IS NOT NULL
-                """
-            )
-            connection.execute(
-                """
-                CREATE UNIQUE INDEX IF NOT EXISTS
-                    ux_football_live_stream_sequence_v4
-                ON football_live_observation (
-                    subject_key,
-                    provider_key,
-                    modality,
-                    sequence_id
-                )
-                WHERE provider_key IS NOT NULL
-                """
-            )
-
-            connection.execute(
-                """
-                CREATE TABLE IF NOT EXISTS football_live_stream_state (
-                    subject_key TEXT NOT NULL,
-                    provider_key TEXT NOT NULL,
-                    modality TEXT NOT NULL,
-                    record_count INTEGER NOT NULL,
-                    max_sequence_id INTEGER NOT NULL,
-                    max_observed_at TEXT NOT NULL,
-                    membership_sha256 TEXT NOT NULL,
-                    state_sha256 TEXT NOT NULL,
-                    updated_at TEXT NOT NULL DEFAULT (
-                        strftime('%Y-%m-%dT%H:%M:%fZ', 'now')
-                    ),
-                    PRIMARY KEY (
+                    CREATE UNIQUE INDEX IF NOT EXISTS
+                        ux_football_live_stream_sequence_v4
+                    ON football_live_observation (
                         subject_key,
                         provider_key,
-                        modality
+                        modality,
+                        sequence_id
                     )
+                    WHERE provider_key IS NOT NULL
+                    """
                 )
-                """
-            )
-            connection.execute(
-                """
-                CREATE TABLE IF NOT EXISTS football_live_ledger_anchor (
-                    singleton_id INTEGER PRIMARY KEY CHECK (singleton_id = 1),
-                    total_record_count INTEGER NOT NULL,
-                    stream_count INTEGER NOT NULL,
-                    observation_membership_sha256 TEXT NOT NULL,
-                    stream_state_membership_sha256 TEXT NOT NULL,
-                    anchor_sha256 TEXT NOT NULL,
-                    updated_at TEXT NOT NULL DEFAULT (
-                        strftime('%Y-%m-%dT%H:%M:%fZ', 'now')
-                    )
-                )
-                """
-            )
 
-            if user_version < self.LEDGER_USER_VERSION:
-                self._bootstrap_ledger_controls(connection)
                 connection.execute(
-                    f"PRAGMA user_version = {self.LEDGER_USER_VERSION}"
+                    """
+                    CREATE TABLE IF NOT EXISTS football_live_stream_state (
+                        subject_key TEXT NOT NULL,
+                        provider_key TEXT NOT NULL,
+                        modality TEXT NOT NULL,
+                        record_count INTEGER NOT NULL,
+                        max_sequence_id INTEGER NOT NULL,
+                        max_observed_at TEXT NOT NULL,
+                        membership_sha256 TEXT NOT NULL,
+                        state_sha256 TEXT NOT NULL,
+                        updated_at TEXT NOT NULL DEFAULT (
+                            strftime('%Y-%m-%dT%H:%M:%fZ', 'now')
+                        ),
+                        PRIMARY KEY (
+                            subject_key,
+                            provider_key,
+                            modality
+                        )
+                    )
+                    """
                 )
-            else:
-                self._assert_ledger_integrity(connection)
+                connection.execute(
+                    """
+                    CREATE TABLE IF NOT EXISTS football_live_ledger_anchor (
+                        singleton_id INTEGER PRIMARY KEY CHECK (singleton_id = 1),
+                        total_record_count INTEGER NOT NULL,
+                        stream_count INTEGER NOT NULL,
+                        observation_membership_sha256 TEXT NOT NULL,
+                        stream_state_membership_sha256 TEXT NOT NULL,
+                        anchor_sha256 TEXT NOT NULL,
+                        updated_at TEXT NOT NULL DEFAULT (
+                            strftime('%Y-%m-%dT%H:%M:%fZ', 'now')
+                        )
+                    )
+                    """
+                )
+
+                if user_version < self.LEDGER_USER_VERSION:
+                    self._bootstrap_ledger_controls(connection)
+                    connection.execute(
+                        f"PRAGMA user_version = {self.LEDGER_USER_VERSION}"
+                    )
+                else:
+                    self._assert_ledger_integrity(connection)
+                connection.execute("COMMIT")
+            except Exception:
+                _rollback_quietly(connection)
+                raise
 
     @staticmethod
     def _row_select_sql() -> str:

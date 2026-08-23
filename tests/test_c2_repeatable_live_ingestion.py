@@ -1286,3 +1286,147 @@ def test_r73_provider_blind_table_constraint_is_rebuilt_fail_closed_to_v74(tmp_p
 
     assert version == 74
     assert count == 2
+
+
+def test_failed_r73_to_r74_bootstrap_rolls_back_schema_indexes_and_controls(tmp_path):
+    path = tmp_path / "failed-r73-migration.sqlite3"
+    store = SQLiteFootballLiveObservationStore(path)
+    seed = observation(
+        modality="fixture_events",
+        sequence_id=1,
+        source_record_fingerprint="f" * 64,
+    )
+    store.record(seed)
+
+    with sqlite3.connect(path) as connection:
+        connection.execute("PRAGMA user_version = 73")
+        connection.execute(
+            """
+            UPDATE football_live_observation
+            SET reason_codes_json = ?
+            WHERE observation_fingerprint = ?
+            """,
+            ('["FORGED"]', seed.observation_fingerprint),
+        )
+        connection.commit()
+
+        before_version = connection.execute(
+            "PRAGMA user_version"
+        ).fetchone()[0]
+        before_table_sql = connection.execute(
+            """
+            SELECT sql
+            FROM sqlite_master
+            WHERE type = 'table'
+              AND name = 'football_live_observation'
+            """
+        ).fetchone()[0]
+        before_indexes = connection.execute(
+            """
+            SELECT name, sql
+            FROM sqlite_master
+            WHERE type = 'index'
+              AND tbl_name = 'football_live_observation'
+              AND sql IS NOT NULL
+            ORDER BY name
+            """
+        ).fetchall()
+        before_state = connection.execute(
+            """
+            SELECT
+                subject_key,
+                provider_key,
+                modality,
+                record_count,
+                max_sequence_id,
+                max_observed_at,
+                membership_sha256,
+                state_sha256
+            FROM football_live_stream_state
+            ORDER BY subject_key, provider_key, modality
+            """
+        ).fetchall()
+        before_anchor = connection.execute(
+            """
+            SELECT
+                total_record_count,
+                stream_count,
+                observation_membership_sha256,
+                stream_state_membership_sha256,
+                anchor_sha256
+            FROM football_live_ledger_anchor
+            ORDER BY singleton_id
+            """
+        ).fetchall()
+
+    with pytest.raises(
+        ValueError,
+        match="LIVE_EVIDENCE_REASON_REDERIVATION_FAILED",
+    ):
+        SQLiteFootballLiveObservationStore(path)
+
+    with sqlite3.connect(path) as connection:
+        after_version = connection.execute(
+            "PRAGMA user_version"
+        ).fetchone()[0]
+        after_table_sql = connection.execute(
+            """
+            SELECT sql
+            FROM sqlite_master
+            WHERE type = 'table'
+              AND name = 'football_live_observation'
+            """
+        ).fetchone()[0]
+        after_indexes = connection.execute(
+            """
+            SELECT name, sql
+            FROM sqlite_master
+            WHERE type = 'index'
+              AND tbl_name = 'football_live_observation'
+              AND sql IS NOT NULL
+            ORDER BY name
+            """
+        ).fetchall()
+        after_state = connection.execute(
+            """
+            SELECT
+                subject_key,
+                provider_key,
+                modality,
+                record_count,
+                max_sequence_id,
+                max_observed_at,
+                membership_sha256,
+                state_sha256
+            FROM football_live_stream_state
+            ORDER BY subject_key, provider_key, modality
+            """
+        ).fetchall()
+        after_anchor = connection.execute(
+            """
+            SELECT
+                total_record_count,
+                stream_count,
+                observation_membership_sha256,
+                stream_state_membership_sha256,
+                anchor_sha256
+            FROM football_live_ledger_anchor
+            ORDER BY singleton_id
+            """
+        ).fetchall()
+        leaked_r73_table = connection.execute(
+            """
+            SELECT COUNT(*)
+            FROM sqlite_master
+            WHERE type = 'table'
+              AND name = 'football_live_observation_r73'
+            """
+        ).fetchone()[0]
+
+    assert before_version == 73
+    assert after_version == before_version
+    assert after_table_sql == before_table_sql
+    assert after_indexes == before_indexes
+    assert after_state == before_state
+    assert after_anchor == before_anchor
+    assert leaked_r73_table == 0
