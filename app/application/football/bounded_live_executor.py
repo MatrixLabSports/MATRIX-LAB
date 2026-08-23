@@ -91,6 +91,25 @@ def _nonempty(value: str, *, name: str) -> str:
     return value.strip()
 
 
+def _canonical_football_fixture_subject_key(value: str) -> str:
+    normalized = _nonempty(value, name="subject_key")
+    prefix = "fixture:"
+    if not normalized.startswith(prefix):
+        raise ValueError("FOOTBALL_FIXTURE_SUBJECT_KEY_REQUIRED")
+
+    fixture_id = normalized[len(prefix):]
+    if (
+        not fixture_id
+        or fixture_id[0] not in "123456789"
+        or any(character not in "0123456789" for character in fixture_id)
+    ):
+        raise ValueError(
+            "FOOTBALL_FIXTURE_SUBJECT_KEY_CANONICAL_GRAMMAR_REQUIRED"
+        )
+
+    return normalized
+
+
 def _sha256_hex(value: str, *, name: str) -> str:
     if not isinstance(value, str):
         raise ValueError(f"{name.upper()}_SHA256_REQUIRED")
@@ -158,12 +177,11 @@ class BoundedFootballLiveExecutorConfig:
 
     def __post_init__(self) -> None:
         provider_key = _nonempty(self.provider_key, name="provider_key")
-        subject_key = _nonempty(self.subject_key, name="subject_key")
+        subject_key = _canonical_football_fixture_subject_key(
+            self.subject_key
+        )
         object.__setattr__(self, "provider_key", provider_key)
         object.__setattr__(self, "subject_key", subject_key)
-
-        if not subject_key.startswith("fixture:"):
-            raise ValueError("FOOTBALL_FIXTURE_SUBJECT_KEY_REQUIRED")
 
         if (
             not isinstance(self.modalities, tuple)
@@ -392,9 +410,6 @@ class BoundedFootballLiveRunManifest:
             raise ValueError(
                 "RUN_MANIFEST_INDEPENDENT_AUDIT_AUTHORITY_SHA_MISMATCH"
             )
-        _nonempty(self.provider_key, name="provider_key")
-        _nonempty(self.subject_key, name="subject_key")
-
         if self.status != R8_1_RUN_STATUS:
             raise ValueError("R8_1_RUN_STATUS_MUST_REMAIN_PLANNED")
         if self.human_authorization_granted is not False:
@@ -447,6 +462,17 @@ class BoundedFootballLiveRunManifest:
             automatic_model_promotion=self.automatic_model_promotion,
             automatic_wagering=self.automatic_wagering,
             production_admissible=self.production_admissible,
+        )
+
+        object.__setattr__(
+            self,
+            "provider_key",
+            rederived_config.provider_key,
+        )
+        object.__setattr__(
+            self,
+            "subject_key",
+            rederived_config.subject_key,
         )
 
         if (

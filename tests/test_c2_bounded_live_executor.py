@@ -722,3 +722,111 @@ def test_store_detects_rehashed_nonce_tamper_without_matching_run_id(tmp_path):
         connection.commit()
 
     assert store.audit_integrity() is False
+
+
+@pytest.mark.parametrize(
+    "subject_key",
+    [
+        "fixture:",
+        "fixture:abc",
+        "fixture:-1",
+        "fixture:+1",
+        "fixture:0",
+        "fixture:001557375",
+        "fixture: 1557375",
+        "fixture:1.0",
+        "fixture:1/2",
+    ],
+)
+def test_fixture_subject_requires_canonical_positive_decimal_grammar(
+    subject_key,
+):
+    with pytest.raises(
+        ValueError,
+        match="FOOTBALL_FIXTURE_SUBJECT_KEY_CANONICAL_GRAMMAR_REQUIRED",
+    ):
+        config(subject_key=subject_key)
+
+
+@pytest.mark.parametrize(
+    "subject_key",
+    ["fixture:1", "fixture:1557375"],
+)
+def test_fixture_subject_accepts_canonical_positive_decimal_ids(
+    subject_key,
+):
+    value = config(subject_key=subject_key)
+    assert value.subject_key == subject_key
+
+
+def test_config_normalizes_outer_whitespace_before_fixture_grammar():
+    value = config(subject_key="  fixture:1557375  ")
+    assert value.subject_key == "fixture:1557375"
+
+
+def test_manifest_direct_aliases_are_canonicalized_to_rederived_config():
+    original = manifest()
+
+    provider_alias = replace(
+        original,
+        provider_key=" api_football ",
+        manifest_fingerprint="",
+    )
+    subject_alias = replace(
+        original,
+        subject_key=" fixture:1557375 ",
+        manifest_fingerprint="",
+    )
+
+    assert provider_alias.provider_key == original.provider_key
+    assert provider_alias.subject_key == original.subject_key
+    assert provider_alias.run_id == original.run_id
+    assert provider_alias.config_fingerprint == original.config_fingerprint
+    assert provider_alias.manifest_fingerprint == original.manifest_fingerprint
+    assert provider_alias == original
+
+    assert subject_alias.provider_key == original.provider_key
+    assert subject_alias.subject_key == original.subject_key
+    assert subject_alias.run_id == original.run_id
+    assert subject_alias.config_fingerprint == original.config_fingerprint
+    assert subject_alias.manifest_fingerprint == original.manifest_fingerprint
+    assert subject_alias == original
+
+
+def test_canonicalized_alias_persistence_is_exact_idempotent_replay(tmp_path):
+    path = tmp_path / "canonical-alias.sqlite3"
+    store = SQLiteBoundedFootballLiveRunManifestStore(path)
+    original = manifest()
+    alias = replace(
+        original,
+        subject_key=" fixture:1557375 ",
+        provider_key=" api_football ",
+        manifest_fingerprint="",
+    )
+
+    first = store.record(alias)
+    replay = store.record(original)
+    loaded = store.get_verified(original.run_id)
+
+    assert first.idempotent is False
+    assert replay.idempotent is True
+    assert loaded == original
+    assert store.audit_integrity() is True
+
+    with sqlite3.connect(path) as connection:
+        row = connection.execute(
+            """
+            SELECT manifest_json
+            FROM football_bounded_run_manifest
+            WHERE run_id = ?
+            """,
+            (original.run_id,),
+        ).fetchone()
+        count = connection.execute(
+            "SELECT COUNT(*) FROM football_bounded_run_manifest"
+        ).fetchone()[0]
+
+    payload = json.loads(row[0])
+    assert payload["provider_key"] == "api_football"
+    assert payload["subject_key"] == "fixture:1557375"
+    assert count == 1
