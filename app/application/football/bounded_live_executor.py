@@ -352,6 +352,47 @@ class BoundedFootballLiveRunManifest:
         if self.automatic_wagering is not False:
             raise ValueError("AUTOMATIC_WAGERING_FORBIDDEN")
 
+        # Re-derive the complete R8.1 executor configuration contract from
+        # durable manifest fields.  Direct manifest construction must not be
+        # able to bypass the config allowlist, football fixture binding,
+        # finite call budget, or single-process/no-production safeguards.
+        rederived_config = BoundedFootballLiveExecutorConfig(
+            provider_key=self.provider_key,
+            subject_key=self.subject_key,
+            modalities=self.modalities,
+            max_capture_rounds=self.max_capture_rounds,
+            max_total_provider_calls=self.max_total_provider_calls,
+            max_runtime_ms=self.max_runtime_ms,
+            max_attempts_per_slot=1,
+            capture_interval_ms=None,
+            odds_enabled=False,
+            single_process_only=self.single_process_only,
+            cross_process_execution_allowed=(
+                self.cross_process_execution_allowed
+            ),
+            automatic_retry=False,
+            automatic_provider_switch=self.automatic_provider_switch,
+            automatic_model_promotion=self.automatic_model_promotion,
+            automatic_wagering=self.automatic_wagering,
+            production_admissible=self.production_admissible,
+        )
+
+        if (
+            self.planned_provider_calls
+            != rederived_config.planned_provider_calls
+        ):
+            raise ValueError(
+                "RUN_MANIFEST_PLANNED_PROVIDER_CALLS_MISMATCH"
+            )
+
+        if (
+            self.config_fingerprint
+            != rederived_config.config_fingerprint
+        ):
+            raise ValueError(
+                "RUN_MANIFEST_CONFIG_CONTRACT_FINGERPRINT_MISMATCH"
+            )
+
         expected = _sha(self._fingerprint_payload())
         if self.manifest_fingerprint:
             if self.manifest_fingerprint != expected:
@@ -682,6 +723,10 @@ class SQLiteBoundedFootballLiveRunManifestStore:
                 raise ValueError("RUN_MANIFEST_PAYLOAD_SHA_MISMATCH")
 
             manifest = _manifest_from_payload(payload)
+            if payload != manifest.payload():
+                raise ValueError(
+                    "RUN_MANIFEST_SEMANTIC_REDERIVATION_MISMATCH"
+                )
             if manifest.run_id != str(run_id):
                 raise ValueError("RUN_MANIFEST_RUN_ID_MISMATCH")
             if (
@@ -884,9 +929,16 @@ class SQLiteBoundedFootballLiveRunManifestStore:
                 return None
 
             payload = json.loads(str(row[0]))
+            if not isinstance(payload, dict):
+                raise ValueError("RUN_MANIFEST_JSON_OBJECT_REQUIRED")
             if _sha(payload) != str(row[1]):
                 raise ValueError("RUN_MANIFEST_PAYLOAD_SHA_MISMATCH")
-            return _manifest_from_payload(payload)
+            manifest = _manifest_from_payload(payload)
+            if payload != manifest.payload():
+                raise ValueError(
+                    "RUN_MANIFEST_SEMANTIC_REDERIVATION_MISMATCH"
+                )
+            return manifest
 
     def audit_integrity(self) -> bool:
         try:

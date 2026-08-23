@@ -201,17 +201,18 @@ def test_manifest_same_run_id_cannot_mutate(tmp_path):
     original = manifest()
     store.record(original)
 
-    mutated = replace(
-        original,
-        max_runtime_ms=original.max_runtime_ms + 1,
-        manifest_fingerprint="",
-    )
-
+    # R8.1R1 closes this earlier than the store: a durable manifest whose
+    # fields no longer match its bound config fingerprint is invalid at
+    # construction time.
     with pytest.raises(
         ValueError,
-        match="RUN_MANIFEST_ID_MUTATION_VIOLATION",
+        match="RUN_MANIFEST_CONFIG_CONTRACT_FINGERPRINT_MISMATCH",
     ):
-        store.record(mutated)
+        replace(
+            original,
+            max_runtime_ms=original.max_runtime_ms + 1,
+            manifest_fingerprint="",
+        )
 
 
 def test_manifest_store_detects_payload_tampering(tmp_path):
@@ -423,3 +424,161 @@ def test_concurrent_distinct_manifests_preserve_anchor_integrity(tmp_path):
         ).fetchone()[0]
     assert count == 2
     assert left.audit_integrity() is True
+
+
+def test_manifest_direct_construction_rederives_finite_plan_contract():
+    original = manifest()
+
+    with pytest.raises(
+        ValueError,
+        match="RUN_MANIFEST_PLANNED_PROVIDER_CALLS_MISMATCH",
+    ):
+        replace(
+            original,
+            planned_provider_calls=original.max_total_provider_calls + 100,
+            manifest_fingerprint="",
+        )
+
+
+def test_manifest_direct_construction_rederives_modality_contract():
+    original = manifest()
+
+    with pytest.raises(
+        ValueError,
+        match="ODDS_NOT_AUTHORIZED_IN_R8_1",
+    ):
+        replace(
+            original,
+            modalities=("odds",),
+            planned_provider_calls=1,
+            manifest_fingerprint="",
+        )
+
+    with pytest.raises(
+        ValueError,
+        match="DUPLICATE_MODALITY_FORBIDDEN",
+    ):
+        replace(
+            original,
+            modalities=("fixture_events", "fixture_events"),
+            planned_provider_calls=6,
+            manifest_fingerprint="",
+        )
+
+
+def test_manifest_direct_construction_rederives_football_subject_contract():
+    original = manifest()
+
+    with pytest.raises(
+        ValueError,
+        match="FOOTBALL_FIXTURE_SUBJECT_KEY_REQUIRED",
+    ):
+        replace(
+            original,
+            subject_key="team:1",
+            manifest_fingerprint="",
+        )
+
+
+def test_manifest_direct_construction_rederives_config_fingerprint():
+    original = manifest()
+
+    with pytest.raises(
+        ValueError,
+        match="RUN_MANIFEST_CONFIG_CONTRACT_FINGERPRINT_MISMATCH",
+    ):
+        replace(
+            original,
+            config_fingerprint="f" * 64,
+            manifest_fingerprint="",
+        )
+
+
+def test_store_detects_rehashed_ignored_control_field_tamper(tmp_path):
+    path = tmp_path / "semantic-roundtrip.sqlite3"
+    store = SQLiteBoundedFootballLiveRunManifestStore(path)
+    value = manifest()
+    store.record(value)
+
+    with sqlite3.connect(path) as connection:
+        raw = connection.execute(
+            """
+            SELECT manifest_json
+            FROM football_bounded_run_manifest
+            WHERE run_id = ?
+            """,
+            (value.run_id,),
+        ).fetchone()[0]
+        payload = json.loads(raw)
+        payload["stop_conditions"] = ["FORGED_STOP_CONDITION"]
+        forged_json = (
+            json.dumps(
+                payload,
+                sort_keys=True,
+                separators=(",", ":"),
+                ensure_ascii=False,
+                allow_nan=False,
+            )
+            + "\n"
+        )
+        import hashlib
+
+        forged_sha = hashlib.sha256(
+            forged_json.encode("utf-8")
+        ).hexdigest()
+        connection.execute(
+            """
+            UPDATE football_bounded_run_manifest
+            SET manifest_json = ?, manifest_sha256 = ?
+            WHERE run_id = ?
+            """,
+            (forged_json, forged_sha, value.run_id),
+        )
+        connection.commit()
+
+    assert store.audit_integrity() is False
+
+
+def test_store_detects_rehashed_extra_field_tamper(tmp_path):
+    path = tmp_path / "semantic-extra.sqlite3"
+    store = SQLiteBoundedFootballLiveRunManifestStore(path)
+    value = manifest()
+    store.record(value)
+
+    with sqlite3.connect(path) as connection:
+        raw = connection.execute(
+            """
+            SELECT manifest_json
+            FROM football_bounded_run_manifest
+            WHERE run_id = ?
+            """,
+            (value.run_id,),
+        ).fetchone()[0]
+        payload = json.loads(raw)
+        payload["unexpected_field"] = "forged"
+        forged_json = (
+            json.dumps(
+                payload,
+                sort_keys=True,
+                separators=(",", ":"),
+                ensure_ascii=False,
+                allow_nan=False,
+            )
+            + "\n"
+        )
+        import hashlib
+
+        forged_sha = hashlib.sha256(
+            forged_json.encode("utf-8")
+        ).hexdigest()
+        connection.execute(
+            """
+            UPDATE football_bounded_run_manifest
+            SET manifest_json = ?, manifest_sha256 = ?
+            WHERE run_id = ?
+            """,
+            (forged_json, forged_sha, value.run_id),
+        )
+        connection.commit()
+
+    assert store.audit_integrity() is False
