@@ -273,3 +273,156 @@ def test_repeatable_admission_only_reaches_human_review_not_model_execution():
     assert decision.automatic_provider_switch is False
     assert decision.automatic_model_promotion is False
     assert decision.automatic_wagering is False
+
+
+def test_newer_sequence_with_older_observed_at_is_quarantined_as_late(tmp_path):
+    store = SQLiteFootballLiveObservationStore(tmp_path / "live.sqlite3")
+    first = observation(sequence_id=1, observed_offset_ms=100)
+    late = observation(sequence_id=2, observed_offset_ms=0)
+
+    assert store.record(first).status == "ACCEPTED"
+    decision = store.record(late)
+
+    assert decision.status == "QUARANTINED_LATE_OBSERVATION"
+    assert "OBSERVED_AT_REGRESSION" in decision.reason_codes
+    assert decision.accepted_for_fusion is False
+    assert store.audit_integrity() is True
+
+
+def test_same_source_record_across_new_sequence_is_idempotent_no_double_count(tmp_path):
+    path = tmp_path / "live.sqlite3"
+    store = SQLiteFootballLiveObservationStore(path)
+    first = observation(sequence_id=1)
+
+    duplicate = build_live_temporal_observation(
+        sport="football",
+        subject_key=first.subject_key,
+        modality=first.modality,
+        correlation_id=first.correlation_id,
+        sequence_id=2,
+        observed_at=first.observed_at + timedelta(milliseconds=50),
+        request_started_at=first.request_started_at + timedelta(milliseconds=50),
+        response_received_at=first.response_received_at + timedelta(milliseconds=50),
+        ingested_at=first.ingested_at + timedelta(milliseconds=50),
+        normalized_at=first.normalized_at + timedelta(milliseconds=50),
+        feature_ready_at=first.feature_ready_at + timedelta(milliseconds=50),
+        source_record_fingerprint=first.source_record_fingerprint,
+    )
+
+    first_decision = store.record(first)
+    duplicate_decision = store.record(duplicate)
+
+    assert first_decision.status == "ACCEPTED"
+    assert duplicate_decision.status == "IDEMPOTENT_DUPLICATE_SOURCE"
+    assert duplicate_decision.idempotent is True
+    assert duplicate_decision.accepted_for_fusion is False
+
+    with sqlite3.connect(path) as connection:
+        count = connection.execute(
+            "SELECT COUNT(*) FROM football_live_observation"
+        ).fetchone()[0]
+    assert count == 1
+    assert store.audit_integrity() is True
+
+
+def test_integrity_detects_status_tampering(tmp_path):
+    path = tmp_path / "live.sqlite3"
+    store = SQLiteFootballLiveObservationStore(path)
+    item = observation()
+    store.record(item)
+
+    with sqlite3.connect(path) as connection:
+        connection.execute(
+            """
+            UPDATE football_live_observation
+            SET status = 'QUARANTINED_OUT_OF_ORDER'
+            WHERE observation_fingerprint = ?
+            """,
+            (item.observation_fingerprint,),
+        )
+        connection.commit()
+
+    assert store.audit_integrity() is False
+
+
+def test_integrity_detects_reason_code_tampering(tmp_path):
+    path = tmp_path / "live.sqlite3"
+    store = SQLiteFootballLiveObservationStore(path)
+    item = observation()
+    store.record(item)
+
+    with sqlite3.connect(path) as connection:
+        connection.execute(
+            """
+            UPDATE football_live_observation
+            SET reason_codes_json = ?
+            WHERE observation_fingerprint = ?
+            """,
+            ('["FAKE_REASON"]\n', item.observation_fingerprint),
+        )
+        connection.commit()
+
+    assert store.audit_integrity() is False
+
+
+def test_integrity_detects_sequence_column_tampering(tmp_path):
+    path = tmp_path / "live.sqlite3"
+    store = SQLiteFootballLiveObservationStore(path)
+    item = observation(sequence_id=1)
+    store.record(item)
+
+    with sqlite3.connect(path) as connection:
+        connection.execute(
+            """
+            UPDATE football_live_observation
+            SET sequence_id = 99
+            WHERE observation_fingerprint = ?
+            """,
+            (item.observation_fingerprint,),
+        )
+        connection.commit()
+
+    assert store.audit_integrity() is False
+
+
+def test_concurrent_duplicate_source_does_not_double_count(tmp_path):
+    from concurrent.futures import ThreadPoolExecutor
+
+    path = tmp_path / "live.sqlite3"
+    store = SQLiteFootballLiveObservationStore(path)
+    first = observation(sequence_id=1)
+
+    items = []
+    for sequence_id in range(1, 9):
+        items.append(
+            build_live_temporal_observation(
+                sport="football",
+                subject_key=first.subject_key,
+                modality=first.modality,
+                correlation_id=first.correlation_id,
+                sequence_id=sequence_id,
+                observed_at=first.observed_at + timedelta(milliseconds=sequence_id),
+                request_started_at=first.request_started_at + timedelta(milliseconds=sequence_id),
+                response_received_at=first.response_received_at + timedelta(milliseconds=sequence_id),
+                ingested_at=first.ingested_at + timedelta(milliseconds=sequence_id),
+                normalized_at=first.normalized_at + timedelta(milliseconds=sequence_id),
+                feature_ready_at=first.feature_ready_at + timedelta(milliseconds=sequence_id),
+                source_record_fingerprint=first.source_record_fingerprint,
+            )
+        )
+
+    with ThreadPoolExecutor(max_workers=8) as pool:
+        decisions = list(pool.map(store.record, items))
+
+    with sqlite3.connect(path) as connection:
+        count = connection.execute(
+            "SELECT COUNT(*) FROM football_live_observation"
+        ).fetchone()[0]
+
+    assert count == 1
+    assert sum(d.status == "ACCEPTED" for d in decisions) == 1
+    assert sum(
+        d.status == "IDEMPOTENT_DUPLICATE_SOURCE"
+        for d in decisions
+    ) == 7
+    assert store.audit_integrity() is True
