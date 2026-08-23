@@ -10,6 +10,8 @@ import pytest
 
 from app.application.football.bounded_live_executor import (
     BoundedFootballLiveExecutorConfig,
+    R8_1_APPROVED_DESIGN_MANIFEST_SHA256,
+    R8_1_APPROVED_INDEPENDENT_AUDIT_SHA256,
     R8_1_LEDGER_USER_VERSION,
     R8_1_RUN_STATUS,
     SQLiteBoundedFootballLiveRunManifestStore,
@@ -19,8 +21,8 @@ from app.application.football.bounded_live_executor import (
 
 
 BASE = datetime(2026, 8, 23, 21, 10, tzinfo=UTC)
-DESIGN_SHA = "0" * 64
-AUDIT_SHA = "1" * 64
+DESIGN_SHA = R8_1_APPROVED_DESIGN_MANIFEST_SHA256
+AUDIT_SHA = R8_1_APPROVED_INDEPENDENT_AUDIT_SHA256
 NONCE_SHA = "2" * 64
 
 
@@ -47,8 +49,6 @@ def manifest(value=None, *, nonce=NONCE_SHA):
         cfg,
         created_at=BASE,
         run_nonce_sha256=nonce,
-        design_manifest_sha256=DESIGN_SHA,
-        independent_audit_sha256=AUDIT_SHA,
     )
 
 
@@ -556,6 +556,146 @@ def test_store_detects_rehashed_extra_field_tamper(tmp_path):
         ).fetchone()[0]
         payload = json.loads(raw)
         payload["unexpected_field"] = "forged"
+        forged_json = (
+            json.dumps(
+                payload,
+                sort_keys=True,
+                separators=(",", ":"),
+                ensure_ascii=False,
+                allow_nan=False,
+            )
+            + "\n"
+        )
+        import hashlib
+
+        forged_sha = hashlib.sha256(
+            forged_json.encode("utf-8")
+        ).hexdigest()
+        connection.execute(
+            """
+            UPDATE football_bounded_run_manifest
+            SET manifest_json = ?, manifest_sha256 = ?
+            WHERE run_id = ?
+            """,
+            (forged_json, forged_sha, value.run_id),
+        )
+        connection.commit()
+
+    assert store.audit_integrity() is False
+
+
+def test_manifest_recovery_requirements_are_fail_closed():
+    original = manifest()
+
+    with pytest.raises(
+        ValueError,
+        match="R8_1_CRASH_RECOVERY_REQUIRED",
+    ):
+        replace(
+            original,
+            crash_recovery_required=False,
+            manifest_fingerprint="",
+        )
+
+    with pytest.raises(
+        ValueError,
+        match="R8_1_IDEMPOTENT_RESUME_REQUIRED",
+    ):
+        replace(
+            original,
+            idempotent_resume_required=False,
+            manifest_fingerprint="",
+        )
+
+
+def test_manifest_governance_authority_is_release_bound():
+    original = manifest()
+
+    assert (
+        original.design_manifest_sha256
+        == R8_1_APPROVED_DESIGN_MANIFEST_SHA256
+    )
+    assert (
+        original.independent_audit_sha256
+        == R8_1_APPROVED_INDEPENDENT_AUDIT_SHA256
+    )
+
+    with pytest.raises(
+        ValueError,
+        match="RUN_MANIFEST_DESIGN_AUTHORITY_SHA_MISMATCH",
+    ):
+        replace(
+            original,
+            design_manifest_sha256="a" * 64,
+            manifest_fingerprint="",
+        )
+
+    with pytest.raises(
+        ValueError,
+        match="RUN_MANIFEST_INDEPENDENT_AUDIT_AUTHORITY_SHA_MISMATCH",
+    ):
+        replace(
+            original,
+            independent_audit_sha256="b" * 64,
+            manifest_fingerprint="",
+        )
+
+
+def test_run_nonce_is_durable_and_run_id_is_rederived():
+    original = manifest()
+
+    assert original.run_nonce_sha256 == NONCE_SHA
+    assert original.payload()["run_nonce_sha256"] == NONCE_SHA
+
+    with pytest.raises(
+        ValueError,
+        match="RUN_MANIFEST_RUN_ID_PROVENANCE_MISMATCH",
+    ):
+        replace(
+            original,
+            run_id="f" * 64,
+            manifest_fingerprint="",
+        )
+
+    with pytest.raises(
+        ValueError,
+        match="RUN_MANIFEST_RUN_ID_PROVENANCE_MISMATCH",
+    ):
+        replace(
+            original,
+            run_nonce_sha256="e" * 64,
+            manifest_fingerprint="",
+        )
+
+
+def test_builder_does_not_accept_caller_supplied_governance_authority():
+    with pytest.raises(TypeError):
+        build_bounded_run_manifest(
+            config(),
+            created_at=BASE,
+            run_nonce_sha256=NONCE_SHA,
+            design_manifest_sha256="a" * 64,
+            independent_audit_sha256="b" * 64,
+        )
+
+
+def test_store_detects_rehashed_nonce_tamper_without_matching_run_id(tmp_path):
+    path = tmp_path / "nonce-provenance.sqlite3"
+    store = SQLiteBoundedFootballLiveRunManifestStore(path)
+    value = manifest()
+    store.record(value)
+
+    with sqlite3.connect(path) as connection:
+        raw = connection.execute(
+            """
+            SELECT manifest_json
+            FROM football_bounded_run_manifest
+            WHERE run_id = ?
+            """,
+            (value.run_id,),
+        ).fetchone()[0]
+        payload = json.loads(raw)
+        payload["run_nonce_sha256"] = "d" * 64
         forged_json = (
             json.dumps(
                 payload,

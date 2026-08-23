@@ -19,6 +19,13 @@ R8_1_ALLOWED_MODALITIES = (
 
 R8_1_RUN_STATUS = "PLANNED_OFFLINE_ONLY"
 
+R8_1_APPROVED_DESIGN_MANIFEST_SHA256 = (
+    "02cd645bf0eccdac6ea27151ae63bbaf350a197adecc1d443359a19bb83c97fa"
+)
+R8_1_APPROVED_INDEPENDENT_AUDIT_SHA256 = (
+    "8bcad0d5064b2a52fc9580a139f285a7b2f4b9a7acc14bd078501024d94b34b6"
+)
+
 R8_1_STOP_CONDITIONS = (
     "CAPTURE_ROUND_LIMIT_REACHED",
     "TOTAL_PROVIDER_CALL_BUDGET_REACHED",
@@ -276,10 +283,31 @@ def build_bounded_capture_plan(
     return slots
 
 
+def _derive_bounded_run_id(
+    *,
+    config_fingerprint: str,
+    created_at: datetime,
+    run_nonce_sha256: str,
+    design_manifest_sha256: str,
+    independent_audit_sha256: str,
+) -> str:
+    return _sha(
+        {
+            "schema": "matrix.c2-r8-1-bounded-run-id/1",
+            "config_fingerprint": config_fingerprint,
+            "created_at": created_at.isoformat(),
+            "run_nonce_sha256": run_nonce_sha256,
+            "design_manifest_sha256": design_manifest_sha256,
+            "independent_audit_sha256": independent_audit_sha256,
+        }
+    )
+
+
 @dataclass(frozen=True)
 class BoundedFootballLiveRunManifest:
     run_id: str
     created_at: datetime
+    run_nonce_sha256: str
     config_fingerprint: str
     design_manifest_sha256: str
     independent_audit_sha256: str
@@ -306,24 +334,64 @@ class BoundedFootballLiveRunManifest:
     manifest_fingerprint: str = ""
 
     def __post_init__(self) -> None:
-        _sha256_hex(self.run_id, name="run_id")
+        normalized_run_id = _sha256_hex(self.run_id, name="run_id")
+        object.__setattr__(self, "run_id", normalized_run_id)
         object.__setattr__(
             self,
             "created_at",
             _aware_utc(self.created_at, name="created_at"),
         )
-        _sha256_hex(
+        normalized_nonce = _sha256_hex(
+            self.run_nonce_sha256,
+            name="run_nonce",
+        )
+        object.__setattr__(
+            self,
+            "run_nonce_sha256",
+            normalized_nonce,
+        )
+        normalized_config = _sha256_hex(
             self.config_fingerprint,
             name="config_fingerprint",
         )
-        _sha256_hex(
+        object.__setattr__(
+            self,
+            "config_fingerprint",
+            normalized_config,
+        )
+        normalized_design = _sha256_hex(
             self.design_manifest_sha256,
             name="design_manifest",
         )
-        _sha256_hex(
+        normalized_audit = _sha256_hex(
             self.independent_audit_sha256,
             name="independent_audit",
         )
+        object.__setattr__(
+            self,
+            "design_manifest_sha256",
+            normalized_design,
+        )
+        object.__setattr__(
+            self,
+            "independent_audit_sha256",
+            normalized_audit,
+        )
+
+        if (
+            normalized_design
+            != R8_1_APPROVED_DESIGN_MANIFEST_SHA256
+        ):
+            raise ValueError(
+                "RUN_MANIFEST_DESIGN_AUTHORITY_SHA_MISMATCH"
+            )
+        if (
+            normalized_audit
+            != R8_1_APPROVED_INDEPENDENT_AUDIT_SHA256
+        ):
+            raise ValueError(
+                "RUN_MANIFEST_INDEPENDENT_AUDIT_AUTHORITY_SHA_MISMATCH"
+            )
         _nonempty(self.provider_key, name="provider_key")
         _nonempty(self.subject_key, name="subject_key")
 
@@ -343,6 +411,10 @@ class BoundedFootballLiveRunManifest:
             raise ValueError("R8_1_SINGLE_PROCESS_SCOPE_REQUIRED")
         if self.cross_process_execution_allowed is not False:
             raise ValueError("R8_1_CROSS_PROCESS_EXECUTION_FORBIDDEN")
+        if self.crash_recovery_required is not True:
+            raise ValueError("R8_1_CRASH_RECOVERY_REQUIRED")
+        if self.idempotent_resume_required is not True:
+            raise ValueError("R8_1_IDEMPOTENT_RESUME_REQUIRED")
         if self.production_admissible is not False:
             raise ValueError("PRODUCTION_ADMISSION_FORBIDDEN")
         if self.automatic_provider_switch is not False:
@@ -393,6 +465,16 @@ class BoundedFootballLiveRunManifest:
                 "RUN_MANIFEST_CONFIG_CONTRACT_FINGERPRINT_MISMATCH"
             )
 
+        expected_run_id = _derive_bounded_run_id(
+            config_fingerprint=self.config_fingerprint,
+            created_at=self.created_at,
+            run_nonce_sha256=self.run_nonce_sha256,
+            design_manifest_sha256=self.design_manifest_sha256,
+            independent_audit_sha256=self.independent_audit_sha256,
+        )
+        if self.run_id != expected_run_id:
+            raise ValueError("RUN_MANIFEST_RUN_ID_PROVENANCE_MISMATCH")
+
         expected = _sha(self._fingerprint_payload())
         if self.manifest_fingerprint:
             if self.manifest_fingerprint != expected:
@@ -409,6 +491,7 @@ class BoundedFootballLiveRunManifest:
             "schema": "matrix.c2-r8-1-bounded-football-live-run-manifest/1",
             "run_id": self.run_id,
             "created_at": self.created_at.isoformat(),
+            "run_nonce_sha256": self.run_nonce_sha256,
             "config_fingerprint": self.config_fingerprint,
             "design_manifest_sha256": self.design_manifest_sha256,
             "independent_audit_sha256": self.independent_audit_sha256,
@@ -451,34 +534,24 @@ def build_bounded_run_manifest(
     *,
     created_at: datetime,
     run_nonce_sha256: str,
-    design_manifest_sha256: str,
-    independent_audit_sha256: str,
 ) -> BoundedFootballLiveRunManifest:
     created = _aware_utc(created_at, name="created_at")
     nonce = _sha256_hex(run_nonce_sha256, name="run_nonce")
-    design_sha = _sha256_hex(
-        design_manifest_sha256,
-        name="design_manifest",
-    )
-    audit_sha = _sha256_hex(
-        independent_audit_sha256,
-        name="independent_audit",
-    )
+    design_sha = R8_1_APPROVED_DESIGN_MANIFEST_SHA256
+    audit_sha = R8_1_APPROVED_INDEPENDENT_AUDIT_SHA256
 
-    run_id = _sha(
-        {
-            "schema": "matrix.c2-r8-1-bounded-run-id/1",
-            "config_fingerprint": config.config_fingerprint,
-            "created_at": created.isoformat(),
-            "run_nonce_sha256": nonce,
-            "design_manifest_sha256": design_sha,
-            "independent_audit_sha256": audit_sha,
-        }
+    run_id = _derive_bounded_run_id(
+        config_fingerprint=config.config_fingerprint,
+        created_at=created,
+        run_nonce_sha256=nonce,
+        design_manifest_sha256=design_sha,
+        independent_audit_sha256=audit_sha,
     )
 
     return BoundedFootballLiveRunManifest(
         run_id=run_id,
         created_at=created,
+        run_nonce_sha256=nonce,
         config_fingerprint=config.config_fingerprint,
         design_manifest_sha256=design_sha,
         independent_audit_sha256=audit_sha,
@@ -512,6 +585,10 @@ def _manifest_from_payload(
     return BoundedFootballLiveRunManifest(
         run_id=_sha256_hex(str(payload["run_id"]), name="run_id"),
         created_at=datetime.fromisoformat(str(payload["created_at"])),
+        run_nonce_sha256=_sha256_hex(
+            str(payload["run_nonce_sha256"]),
+            name="run_nonce",
+        ),
         config_fingerprint=_sha256_hex(
             str(payload["config_fingerprint"]),
             name="config_fingerprint",
