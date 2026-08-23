@@ -13,6 +13,7 @@ BASE = datetime(2026, 8, 23, 16, tzinfo=UTC)
 def make_observation(**overrides):
     values = dict(
         sport="football",
+        provider_key="api_football",
         subject_key="fixture:1557375",
         modality="fixture_events",
         correlation_id="a" * 64,
@@ -70,7 +71,14 @@ def test_observation_fingerprint_is_deterministic_and_missing_is_not_zero():
 
     assert first.observation_fingerprint == second.observation_fingerprint
     payload = first.payload()
+    assert payload["schema"] == "matrix.live-temporal-observation/2"
+    assert payload["provider_key"] == "api_football"
     assert payload["missing_is_zero"] is False
     assert payload["automatic_provider_switch"] is False
     assert payload["automatic_model_promotion"] is False
     assert payload["automatic_wagering"] is False
+
+
+def test_temporal_observation_requires_provider_key():
+    with pytest.raises(ValueError, match="PROVIDER_KEY_REQUIRED"):
+        make_observation(provider_key="   ")

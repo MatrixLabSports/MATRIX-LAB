@@ -33,10 +33,13 @@ def observation(
     observed_offset_ms=0,
     correlation_id="a" * 64,
     subject_key="fixture:1557375",
+    provider_key="api_football",
+    source_record_fingerprint=None,
 ):
     observed = BASE + timedelta(milliseconds=observed_offset_ms)
     return build_live_temporal_observation(
         sport="football",
+        provider_key=provider_key,
         subject_key=subject_key,
         modality=modality,
         correlation_id=correlation_id,
@@ -48,7 +51,9 @@ def observation(
         normalized_at=observed + timedelta(milliseconds=80),
         feature_ready_at=observed + timedelta(milliseconds=100),
         source_record_fingerprint=(
-            f"{sequence_id:064x}"[-64:]
+            source_record_fingerprint
+            if source_record_fingerprint is not None
+            else f"{sequence_id:064x}"[-64:]
         ),
     )
 
@@ -181,6 +186,7 @@ def test_same_sequence_cannot_silently_mutate(tmp_path):
 
     mutated = build_live_temporal_observation(
         sport="football",
+        provider_key=first.provider_key,
         subject_key=first.subject_key,
         modality=first.modality,
         correlation_id=first.correlation_id,
@@ -218,7 +224,7 @@ def test_store_integrity_detects_payload_tampering(tmp_path):
     assert store.audit_integrity() is False
 
 
-def test_repeatable_admission_is_observe_only_until_policy_is_explicit():
+def test_repeatable_admission_is_observe_only_until_policy_is_explicit(tmp_path):
     items = (
         observation(modality="fixture_statistics"),
         observation(
@@ -226,9 +232,13 @@ def test_repeatable_admission_is_observe_only_until_policy_is_explicit():
             observed_offset_ms=100,
         ),
     )
+    store = SQLiteFootballLiveObservationStore(tmp_path / "live.sqlite3")
+    for item in items:
+        store.record(item)
     decision = evaluate_repeatable_football_live_admission(
         items,
         policy=FootballLiveFreshnessPolicy(),
+        evidence_store=store,
     )
 
     assert decision.status == ADMISSION_OBSERVE_ONLY
@@ -237,7 +247,7 @@ def test_repeatable_admission_is_observe_only_until_policy_is_explicit():
     assert decision.automatic_wagering is False
 
 
-def test_repeatable_admission_blocks_stale_or_unaligned_inputs():
+def test_repeatable_admission_blocks_stale_or_unaligned_inputs(tmp_path):
     items = (
         observation(modality="fixture_statistics"),
         observation(
@@ -245,16 +255,20 @@ def test_repeatable_admission_blocks_stale_or_unaligned_inputs():
             observed_offset_ms=600,
         ),
     )
+    store = SQLiteFootballLiveObservationStore(tmp_path / "live.sqlite3")
+    for item in items:
+        store.record(item)
     decision = evaluate_repeatable_football_live_admission(
         items,
         policy=calibrated_policy(max_cross_modal_skew_ms=500),
+        evidence_store=store,
     )
 
     assert decision.status == ADMISSION_BLOCKED
     assert decision.retroactive_promotion_allowed is False
 
 
-def test_repeatable_admission_only_reaches_human_review_not_model_execution():
+def test_repeatable_admission_only_reaches_human_review_not_model_execution(tmp_path):
     items = (
         observation(modality="fixture_statistics"),
         observation(
@@ -262,9 +276,13 @@ def test_repeatable_admission_only_reaches_human_review_not_model_execution():
             observed_offset_ms=100,
         ),
     )
+    store = SQLiteFootballLiveObservationStore(tmp_path / "live.sqlite3")
+    for item in items:
+        store.record(item)
     decision = evaluate_repeatable_football_live_admission(
         items,
         policy=calibrated_policy(),
+        evidence_store=store,
     )
 
     assert decision.status == ADMISSION_ELIGIBLE_REVIEW
@@ -296,6 +314,7 @@ def test_same_source_record_across_new_sequence_is_idempotent_no_double_count(tm
 
     duplicate = build_live_temporal_observation(
         sport="football",
+        provider_key=first.provider_key,
         subject_key=first.subject_key,
         modality=first.modality,
         correlation_id=first.correlation_id,
@@ -397,6 +416,7 @@ def test_concurrent_duplicate_source_does_not_double_count(tmp_path):
         items.append(
             build_live_temporal_observation(
                 sport="football",
+                provider_key=first.provider_key,
                 subject_key=first.subject_key,
                 modality=first.modality,
                 correlation_id=first.correlation_id,
@@ -426,3 +446,191 @@ def test_concurrent_duplicate_source_does_not_double_count(tmp_path):
         for d in decisions
     ) == 7
     assert store.audit_integrity() is True
+
+
+def test_cross_modal_alignment_requires_distinct_modalities():
+    items = (
+        observation(
+            modality="fixture_events",
+            sequence_id=1,
+            source_record_fingerprint="1" * 64,
+        ),
+        observation(
+            modality="fixture_events",
+            sequence_id=2,
+            observed_offset_ms=100,
+            source_record_fingerprint="2" * 64,
+        ),
+    )
+    decision = evaluate_football_cross_modal_alignment(
+        items,
+        calibrated_policy(),
+    )
+    assert decision.status == ALIGNMENT_BLOCKED
+    assert "DISTINCT_MODALITIES_REQUIRED" in decision.reason_codes
+
+
+def test_cross_modal_alignment_requires_same_provider():
+    items = (
+        observation(
+            modality="fixture_statistics",
+            provider_key="api_football",
+            source_record_fingerprint="3" * 64,
+        ),
+        observation(
+            modality="fixture_events",
+            provider_key="other_provider",
+            observed_offset_ms=100,
+            source_record_fingerprint="4" * 64,
+        ),
+    )
+    decision = evaluate_football_cross_modal_alignment(
+        items,
+        calibrated_policy(),
+    )
+    assert decision.status == ALIGNMENT_BLOCKED
+    assert "PROVIDER_KEY_MISMATCH" in decision.reason_codes
+
+
+def test_repeatable_store_requires_source_record_fingerprint(tmp_path):
+    item = build_live_temporal_observation(
+        sport="football",
+        provider_key="api_football",
+        subject_key="fixture:1557375",
+        modality="fixture_events",
+        correlation_id="a" * 64,
+        sequence_id=1,
+        observed_at=BASE,
+        request_started_at=BASE + timedelta(milliseconds=20),
+        response_received_at=BASE + timedelta(milliseconds=40),
+        ingested_at=BASE + timedelta(milliseconds=60),
+        normalized_at=BASE + timedelta(milliseconds=80),
+        feature_ready_at=BASE + timedelta(milliseconds=100),
+        source_record_fingerprint=None,
+    )
+    store = SQLiteFootballLiveObservationStore(tmp_path / "live.sqlite3")
+    with pytest.raises(
+        ValueError,
+        match="SOURCE_RECORD_FINGERPRINT_REQUIRED_FOR_REPEATABLE_LIVE",
+    ):
+        store.record(item)
+
+
+def test_idempotent_replay_revalidates_persisted_status_and_reasons(tmp_path):
+    path = tmp_path / "live.sqlite3"
+    store = SQLiteFootballLiveObservationStore(path)
+    item = observation(source_record_fingerprint="5" * 64)
+    store.record(item)
+
+    with sqlite3.connect(path) as connection:
+        connection.execute(
+            """
+            UPDATE football_live_observation
+            SET status = ?, reason_codes_json = ?
+            WHERE observation_fingerprint = ?
+            """,
+            ("ACCEPTED", '["FORGED"]', item.observation_fingerprint),
+        )
+        connection.commit()
+
+    assert store.audit_integrity() is False
+    with pytest.raises(
+        ValueError,
+        match="LIVE_EVIDENCE_REASON_REDERIVATION_FAILED",
+    ):
+        store.record(item)
+
+
+def test_repeatable_admission_requires_durable_accepted_sequence_evidence(tmp_path):
+    store = SQLiteFootballLiveObservationStore(tmp_path / "live.sqlite3")
+    stats = observation(
+        modality="fixture_statistics",
+        source_record_fingerprint="6" * 64,
+    )
+    event = observation(
+        modality="fixture_events",
+        observed_offset_ms=100,
+        source_record_fingerprint="7" * 64,
+    )
+    store.record(stats)
+
+    decision = evaluate_repeatable_football_live_admission(
+        (stats, event),
+        policy=calibrated_policy(),
+        evidence_store=store,
+    )
+
+    assert decision.status == ADMISSION_BLOCKED
+    assert "DURABLE_SEQUENCE_EVIDENCE_MISSING" in decision.reason_codes
+
+
+def test_repeatable_admission_blocks_quarantined_late_observation(tmp_path):
+    store = SQLiteFootballLiveObservationStore(tmp_path / "live.sqlite3")
+    stats = observation(
+        modality="fixture_statistics",
+        sequence_id=1,
+        observed_offset_ms=100,
+        source_record_fingerprint="8" * 64,
+    )
+    event_recent = observation(
+        modality="fixture_events",
+        sequence_id=1,
+        observed_offset_ms=500,
+        source_record_fingerprint="9" * 64,
+    )
+    event_late = observation(
+        modality="fixture_events",
+        sequence_id=2,
+        observed_offset_ms=100,
+        source_record_fingerprint="a" * 64,
+    )
+
+    store.record(stats)
+    store.record(event_recent)
+    late_decision = store.record(event_late)
+    assert late_decision.accepted_for_fusion is False
+
+    decision = evaluate_repeatable_football_live_admission(
+        (stats, event_late),
+        policy=calibrated_policy(),
+        evidence_store=store,
+    )
+
+    assert decision.status == ADMISSION_BLOCKED
+    assert "OBSERVED_AT_REGRESSION" in decision.reason_codes
+
+
+def test_repeatable_admission_blocks_tampered_durable_evidence(tmp_path):
+    path = tmp_path / "live.sqlite3"
+    store = SQLiteFootballLiveObservationStore(path)
+    stats = observation(
+        modality="fixture_statistics",
+        source_record_fingerprint="b" * 64,
+    )
+    event = observation(
+        modality="fixture_events",
+        observed_offset_ms=100,
+        source_record_fingerprint="c" * 64,
+    )
+    store.record(stats)
+    store.record(event)
+
+    with sqlite3.connect(path) as connection:
+        connection.execute(
+            """
+            UPDATE football_live_observation
+            SET reason_codes_json = ?
+            WHERE observation_fingerprint = ?
+            """,
+            ('["FORGED"]', event.observation_fingerprint),
+        )
+        connection.commit()
+
+    decision = evaluate_repeatable_football_live_admission(
+        (stats, event),
+        policy=calibrated_policy(),
+        evidence_store=store,
+    )
+
+    assert decision.status == ADMISSION_BLOCKED
+    assert "DURABLE_SEQUENCE_EVIDENCE_INVALID" in decision.reason_codes

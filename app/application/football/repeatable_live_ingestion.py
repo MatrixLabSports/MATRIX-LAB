@@ -63,8 +63,9 @@ def _expected_observation_fingerprint(
     payload: Mapping[str, Any],
 ) -> str:
     base = {
-        "schema": "matrix.live-temporal-observation/1",
+        "schema": "matrix.live-temporal-observation/2",
         "sport": payload.get("sport"),
+        "provider_key": payload.get("provider_key"),
         "subject_key": payload.get("subject_key"),
         "modality": payload.get("modality"),
         "correlation_id": payload.get("correlation_id"),
@@ -252,6 +253,7 @@ def evaluate_football_live_freshness(
 class FootballCrossModalAlignment:
     status: str
     reason_codes: tuple[str, ...]
+    provider_key: str | None
     subject_key: str | None
     correlation_id: str | None
     modalities: tuple[str, ...]
@@ -274,17 +276,24 @@ def evaluate_football_cross_modal_alignment(
         return FootballCrossModalAlignment(
             status=ALIGNMENT_BLOCKED,
             reason_codes=("CROSS_SPORT_ALIGNMENT_FORBIDDEN",),
+            provider_key=None,
             subject_key=None,
             correlation_id=None,
             modalities=tuple(sorted({item.modality for item in items})),
             max_observed_at_skew_ms=None,
         )
 
+    providers = {item.provider_key for item in items}
     subjects = {item.subject_key for item in items}
     correlations = {item.correlation_id for item in items}
+    modalities = {item.modality for item in items}
 
+    if len(providers) != 1:
+        reasons.append("PROVIDER_KEY_MISMATCH")
     if len(subjects) != 1:
         reasons.append("SUBJECT_IDENTITY_MISMATCH")
+    if len(modalities) < 2:
+        reasons.append("DISTINCT_MODALITIES_REQUIRED")
     if len(correlations) != 1:
         reasons.append("CORRELATION_ID_MISMATCH")
 
@@ -292,6 +301,9 @@ def evaluate_football_cross_modal_alignment(
         return FootballCrossModalAlignment(
             status=ALIGNMENT_BLOCKED,
             reason_codes=tuple(reasons),
+            provider_key=(
+                None if len(providers) != 1 else next(iter(providers))
+            ),
             subject_key=None if len(subjects) != 1 else next(iter(subjects)),
             correlation_id=(
                 None if len(correlations) != 1 else next(iter(correlations))
@@ -310,6 +322,7 @@ def evaluate_football_cross_modal_alignment(
         return FootballCrossModalAlignment(
             status=ALIGNMENT_OBSERVE_ONLY,
             reason_codes=("ALIGNMENT_TOLERANCE_UNCALIBRATED",),
+            provider_key=next(iter(providers)),
             subject_key=next(iter(subjects)),
             correlation_id=next(iter(correlations)),
             modalities=tuple(sorted({item.modality for item in items})),
@@ -320,6 +333,7 @@ def evaluate_football_cross_modal_alignment(
         return FootballCrossModalAlignment(
             status=ALIGNMENT_BLOCKED,
             reason_codes=("CROSS_MODAL_SKEW_EXCEEDED",),
+            provider_key=next(iter(providers)),
             subject_key=next(iter(subjects)),
             correlation_id=next(iter(correlations)),
             modalities=tuple(sorted({item.modality for item in items})),
@@ -329,6 +343,7 @@ def evaluate_football_cross_modal_alignment(
     return FootballCrossModalAlignment(
         status=ALIGNMENT_PASS,
         reason_codes=("CROSS_MODAL_ALIGNMENT_WITHIN_EXPLICIT_POLICY",),
+        provider_key=next(iter(providers)),
         subject_key=next(iter(subjects)),
         correlation_id=next(iter(correlations)),
         modalities=tuple(sorted({item.modality for item in items})),
@@ -345,6 +360,11 @@ class FootballLiveSequenceDecision:
     idempotent: bool
     accepted_for_fusion: bool
     duplicate_of_fingerprint: str | None = None
+
+
+SEQUENCE_MISSING_EVIDENCE = "MISSING_DURABLE_EVIDENCE"
+REASON_DURABLE_EVIDENCE_MISSING = "DURABLE_SEQUENCE_EVIDENCE_MISSING"
+REASON_DURABLE_EVIDENCE_INVALID = "DURABLE_SEQUENCE_EVIDENCE_INVALID"
 
 
 class SQLiteFootballLiveObservationStore:
@@ -370,6 +390,7 @@ class SQLiteFootballLiveObservationStore:
                 CREATE TABLE IF NOT EXISTS football_live_observation (
                     observation_fingerprint TEXT PRIMARY KEY,
                     subject_key TEXT NOT NULL,
+                    provider_key TEXT,
                     modality TEXT NOT NULL,
                     correlation_id TEXT NOT NULL,
                     sequence_id INTEGER NOT NULL,
@@ -392,22 +413,23 @@ class SQLiteFootballLiveObservationStore:
                     "PRAGMA table_info(football_live_observation)"
                 ).fetchall()
             }
-            if "observed_at" not in columns:
-                connection.execute(
-                    "ALTER TABLE football_live_observation "
-                    "ADD COLUMN observed_at TEXT"
-                )
-            if "source_record_fingerprint" not in columns:
-                connection.execute(
-                    "ALTER TABLE football_live_observation "
-                    "ADD COLUMN source_record_fingerprint TEXT"
-                )
+            for column, ddl in (
+                ("provider_key", "TEXT"),
+                ("observed_at", "TEXT"),
+                ("source_record_fingerprint", "TEXT"),
+            ):
+                if column not in columns:
+                    connection.execute(
+                        "ALTER TABLE football_live_observation "
+                        f"ADD COLUMN {column} {ddl}"
+                    )
 
             rows = connection.execute(
                 """
                 SELECT observation_fingerprint, payload_json
                 FROM football_live_observation
-                WHERE observed_at IS NULL
+                WHERE provider_key IS NULL
+                   OR observed_at IS NULL
                    OR source_record_fingerprint IS NULL
                 """
             ).fetchall()
@@ -419,7 +441,8 @@ class SQLiteFootballLiveObservationStore:
                 connection.execute(
                     """
                     UPDATE football_live_observation
-                    SET observed_at = COALESCE(observed_at, ?),
+                    SET provider_key = COALESCE(provider_key, ?),
+                        observed_at = COALESCE(observed_at, ?),
                         source_record_fingerprint = COALESCE(
                             source_record_fingerprint,
                             ?
@@ -427,6 +450,7 @@ class SQLiteFootballLiveObservationStore:
                     WHERE observation_fingerprint = ?
                     """,
                     (
+                        payload.get("provider_key"),
                         payload.get("observed_at"),
                         payload.get("source_record_fingerprint"),
                         observation_fp,
@@ -434,18 +458,147 @@ class SQLiteFootballLiveObservationStore:
                 )
 
             connection.execute(
+                "DROP INDEX IF EXISTS ux_football_live_source_record"
+            )
+            connection.execute(
                 """
                 CREATE UNIQUE INDEX IF NOT EXISTS
-                    ux_football_live_source_record
+                    ux_football_live_source_record_v2
                 ON football_live_observation (
                     subject_key,
+                    provider_key,
                     modality,
                     correlation_id,
                     source_record_fingerprint
                 )
-                WHERE source_record_fingerprint IS NOT NULL
+                WHERE provider_key IS NOT NULL
+                  AND source_record_fingerprint IS NOT NULL
                 """
             )
+
+    @staticmethod
+    def _row_select_sql() -> str:
+        return """
+            SELECT
+                rowid,
+                observation_fingerprint,
+                subject_key,
+                provider_key,
+                modality,
+                correlation_id,
+                sequence_id,
+                observed_at,
+                source_record_fingerprint,
+                status,
+                reason_codes_json,
+                payload_json,
+                payload_sha256
+            FROM football_live_observation
+        """
+
+    def _validate_row(
+        self,
+        connection: sqlite3.Connection,
+        row: tuple[Any, ...],
+    ) -> FootballLiveSequenceDecision:
+        if len(row) != 13:
+            raise ValueError("LIVE_EVIDENCE_COLUMN_COUNT_INVALID")
+
+        (
+            rowid,
+            observation_fp,
+            subject_key,
+            provider_key,
+            modality,
+            correlation_id,
+            sequence_id,
+            observed_at_text,
+            source_record_fp,
+            status,
+            reasons_json,
+            payload_json,
+            stored_sha,
+        ) = row
+
+        if sha256(payload_json.encode("utf-8")).hexdigest() != stored_sha:
+            raise ValueError("LIVE_EVIDENCE_PAYLOAD_HASH_MISMATCH")
+
+        try:
+            payload = json.loads(payload_json)
+            reason_values = json.loads(reasons_json)
+            observed_at = _parse_observed_at(str(observed_at_text))
+        except (json.JSONDecodeError, TypeError, ValueError) as error:
+            raise ValueError("LIVE_EVIDENCE_PAYLOAD_INVALID") from error
+
+        if payload.get("observation_fingerprint") != observation_fp:
+            raise ValueError("LIVE_EVIDENCE_FINGERPRINT_COLUMN_MISMATCH")
+        if _expected_observation_fingerprint(payload) != observation_fp:
+            raise ValueError("LIVE_EVIDENCE_FINGERPRINT_REDERIVATION_FAILED")
+        if payload.get("sport") != "football":
+            raise ValueError("LIVE_EVIDENCE_SPORT_INVALID")
+        if payload.get("subject_key") != subject_key:
+            raise ValueError("LIVE_EVIDENCE_SUBJECT_COLUMN_MISMATCH")
+        if payload.get("provider_key") != provider_key:
+            raise ValueError("LIVE_EVIDENCE_PROVIDER_COLUMN_MISMATCH")
+        if payload.get("modality") != modality:
+            raise ValueError("LIVE_EVIDENCE_MODALITY_COLUMN_MISMATCH")
+        if payload.get("correlation_id") != correlation_id:
+            raise ValueError("LIVE_EVIDENCE_CORRELATION_COLUMN_MISMATCH")
+        if payload.get("sequence_id") != sequence_id:
+            raise ValueError("LIVE_EVIDENCE_SEQUENCE_COLUMN_MISMATCH")
+        if payload.get("observed_at") != observed_at_text:
+            raise ValueError("LIVE_EVIDENCE_OBSERVED_AT_COLUMN_MISMATCH")
+        if payload.get("source_record_fingerprint") != source_record_fp:
+            raise ValueError("LIVE_EVIDENCE_SOURCE_COLUMN_MISMATCH")
+        if not isinstance(reason_values, list) or not reason_values:
+            raise ValueError("LIVE_EVIDENCE_REASON_CODES_INVALID")
+
+        prior_rows = connection.execute(
+            """
+            SELECT sequence_id, observed_at
+            FROM football_live_observation
+            WHERE subject_key = ?
+              AND provider_key = ?
+              AND modality = ?
+              AND correlation_id = ?
+              AND rowid < ?
+            ORDER BY rowid
+            """,
+            (
+                subject_key,
+                provider_key,
+                modality,
+                correlation_id,
+                rowid,
+            ),
+        ).fetchall()
+        prior_sequence_ids = [int(item[0]) for item in prior_rows]
+        prior_observed_at = [
+            _parse_observed_at(str(item[1]))
+            for item in prior_rows
+            if item[1] is not None
+        ]
+        expected_status, expected_reasons, expected_accepted = (
+            _expected_sequence_state(
+                sequence_id=int(sequence_id),
+                observed_at=observed_at,
+                prior_sequence_ids=prior_sequence_ids,
+                prior_observed_at=prior_observed_at,
+            )
+        )
+        if status != expected_status:
+            raise ValueError("LIVE_EVIDENCE_STATUS_REDERIVATION_FAILED")
+        if tuple(reason_values) != expected_reasons:
+            raise ValueError("LIVE_EVIDENCE_REASON_REDERIVATION_FAILED")
+
+        return FootballLiveSequenceDecision(
+            observation_fingerprint=str(observation_fp),
+            sequence_id=int(sequence_id),
+            status=str(status),
+            reason_codes=tuple(str(item) for item in reason_values),
+            idempotent=True,
+            accepted_for_fusion=expected_accepted,
+        )
 
     def record(
         self,
@@ -453,6 +606,10 @@ class SQLiteFootballLiveObservationStore:
     ) -> FootballLiveSequenceDecision:
         if observation.sport != "football":
             raise ValueError("FOOTBALL_LIVE_SPORT_REQUIRED")
+        if observation.source_record_fingerprint is None:
+            raise ValueError(
+                "SOURCE_RECORD_FINGERPRINT_REQUIRED_FOR_REPEATABLE_LIVE"
+            )
 
         payload_json = _canonical(observation.payload())
         payload_sha = sha256(payload_json.encode("utf-8")).hexdigest()
@@ -462,20 +619,17 @@ class SQLiteFootballLiveObservationStore:
                 connection.execute("BEGIN IMMEDIATE")
 
                 existing = connection.execute(
-                    """
-                    SELECT
-                        observation_fingerprint,
-                        sequence_id,
-                        status,
-                        reason_codes_json
-                    FROM football_live_observation
+                    self._row_select_sql()
+                    + """
                     WHERE subject_key = ?
+                      AND provider_key = ?
                       AND modality = ?
                       AND correlation_id = ?
                       AND sequence_id = ?
                     """,
                     (
                         observation.subject_key,
+                        observation.provider_key,
                         observation.modality,
                         observation.correlation_id,
                         observation.sequence_id,
@@ -483,66 +637,66 @@ class SQLiteFootballLiveObservationStore:
                 ).fetchone()
 
                 if existing is not None:
-                    existing_fp, existing_sequence, status, reasons_json = (
-                        existing
-                    )
-                    if existing_fp != observation.observation_fingerprint:
+                    decision = self._validate_row(connection, existing)
+                    if (
+                        decision.observation_fingerprint
+                        != observation.observation_fingerprint
+                    ):
                         raise ValueError("LIVE_SEQUENCE_MUTATION_VIOLATION")
-                    reasons = tuple(json.loads(reasons_json))
                     connection.execute("COMMIT")
-                    return FootballLiveSequenceDecision(
-                        observation_fingerprint=existing_fp,
-                        sequence_id=int(existing_sequence),
-                        status=status,
-                        reason_codes=reasons,
-                        idempotent=True,
-                        accepted_for_fusion=status == SEQUENCE_ACCEPTED,
-                    )
+                    return decision
 
                 source_fp = observation.source_record_fingerprint
-                if source_fp is not None:
-                    duplicate = connection.execute(
-                        """
-                        SELECT observation_fingerprint, sequence_id
-                        FROM football_live_observation
-                        WHERE subject_key = ?
-                          AND modality = ?
-                          AND correlation_id = ?
-                          AND source_record_fingerprint = ?
-                        """,
-                        (
-                            observation.subject_key,
-                            observation.modality,
-                            observation.correlation_id,
-                            source_fp,
+                duplicate = connection.execute(
+                    self._row_select_sql()
+                    + """
+                    WHERE subject_key = ?
+                      AND provider_key = ?
+                      AND modality = ?
+                      AND correlation_id = ?
+                      AND source_record_fingerprint = ?
+                    """,
+                    (
+                        observation.subject_key,
+                        observation.provider_key,
+                        observation.modality,
+                        observation.correlation_id,
+                        source_fp,
+                    ),
+                ).fetchone()
+                if duplicate is not None:
+                    duplicate_decision = self._validate_row(
+                        connection,
+                        duplicate,
+                    )
+                    connection.execute("COMMIT")
+                    return FootballLiveSequenceDecision(
+                        observation_fingerprint=(
+                            observation.observation_fingerprint
                         ),
-                    ).fetchone()
-                    if duplicate is not None:
-                        duplicate_fp, duplicate_sequence = duplicate
-                        connection.execute("COMMIT")
-                        return FootballLiveSequenceDecision(
-                            observation_fingerprint=(
-                                observation.observation_fingerprint
-                            ),
-                            sequence_id=observation.sequence_id,
-                            status=SEQUENCE_DUPLICATE_SOURCE,
-                            reason_codes=(REASON_SOURCE_ALREADY_SEEN,),
-                            idempotent=True,
-                            accepted_for_fusion=False,
-                            duplicate_of_fingerprint=str(duplicate_fp),
-                        )
+                        sequence_id=observation.sequence_id,
+                        status=SEQUENCE_DUPLICATE_SOURCE,
+                        reason_codes=(REASON_SOURCE_ALREADY_SEEN,),
+                        idempotent=True,
+                        accepted_for_fusion=False,
+                        duplicate_of_fingerprint=(
+                            duplicate_decision.observation_fingerprint
+                        ),
+                    )
 
                 prior_rows = connection.execute(
                     """
                     SELECT sequence_id, observed_at
                     FROM football_live_observation
                     WHERE subject_key = ?
+                      AND provider_key = ?
                       AND modality = ?
                       AND correlation_id = ?
                     ORDER BY rowid
                     """,
                     (
                         observation.subject_key,
+                        observation.provider_key,
                         observation.modality,
                         observation.correlation_id,
                     ),
@@ -566,6 +720,7 @@ class SQLiteFootballLiveObservationStore:
                     INSERT INTO football_live_observation (
                         observation_fingerprint,
                         subject_key,
+                        provider_key,
                         modality,
                         correlation_id,
                         sequence_id,
@@ -576,11 +731,12 @@ class SQLiteFootballLiveObservationStore:
                         payload_json,
                         payload_sha256
                     )
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                     """,
                     (
                         observation.observation_fingerprint,
                         observation.subject_key,
+                        observation.provider_key,
                         observation.modality,
                         observation.correlation_id,
                         observation.sequence_id,
@@ -606,119 +762,95 @@ class SQLiteFootballLiveObservationStore:
             accepted_for_fusion=accepted,
         )
 
+    def verify_for_fusion(
+        self,
+        observation: LiveTemporalObservation,
+    ) -> FootballLiveSequenceDecision:
+        if observation.source_record_fingerprint is None:
+            return FootballLiveSequenceDecision(
+                observation_fingerprint=observation.observation_fingerprint,
+                sequence_id=observation.sequence_id,
+                status=SEQUENCE_MISSING_EVIDENCE,
+                reason_codes=(REASON_DURABLE_EVIDENCE_MISSING,),
+                idempotent=False,
+                accepted_for_fusion=False,
+            )
+
+        with self._connect() as connection:
+            row = connection.execute(
+                self._row_select_sql()
+                + """
+                WHERE subject_key = ?
+                  AND provider_key = ?
+                  AND modality = ?
+                  AND correlation_id = ?
+                  AND sequence_id = ?
+                """,
+                (
+                    observation.subject_key,
+                    observation.provider_key,
+                    observation.modality,
+                    observation.correlation_id,
+                    observation.sequence_id,
+                ),
+            ).fetchone()
+            if row is None:
+                return FootballLiveSequenceDecision(
+                    observation_fingerprint=(
+                        observation.observation_fingerprint
+                    ),
+                    sequence_id=observation.sequence_id,
+                    status=SEQUENCE_MISSING_EVIDENCE,
+                    reason_codes=(REASON_DURABLE_EVIDENCE_MISSING,),
+                    idempotent=False,
+                    accepted_for_fusion=False,
+                )
+            decision = self._validate_row(connection, row)
+            if (
+                decision.observation_fingerprint
+                != observation.observation_fingerprint
+            ):
+                raise ValueError("LIVE_SEQUENCE_MUTATION_VIOLATION")
+            return decision
+
     def audit_integrity(self) -> bool:
         with self._connect() as connection:
             rows = connection.execute(
-                """
-                SELECT
-                    rowid,
-                    observation_fingerprint,
-                    subject_key,
-                    modality,
-                    correlation_id,
-                    sequence_id,
-                    observed_at,
-                    source_record_fingerprint,
-                    status,
-                    reason_codes_json,
-                    payload_json,
-                    payload_sha256
-                FROM football_live_observation
-                ORDER BY rowid
-                """
+                self._row_select_sql() + " ORDER BY rowid"
             ).fetchall()
 
-        history: dict[
-            tuple[str, str, str],
-            tuple[list[int], list[datetime]],
-        ] = {}
-        seen_sources: set[tuple[str, str, str, str]] = set()
+            seen_sources: set[
+                tuple[str, str, str, str, str]
+            ] = set()
+            for row in rows:
+                try:
+                    decision = self._validate_row(connection, row)
+                except ValueError:
+                    return False
 
-        expected_columns = 12
-        for row in rows:
-            if len(row) != expected_columns:
-                return False
-
-            (
-                _rowid,
-                observation_fp,
-                subject_key,
-                modality,
-                correlation_id,
-                sequence_id,
-                observed_at_text,
-                source_record_fp,
-                status,
-                reasons_json,
-                payload_json,
-                stored_sha,
-            ) = row
-
-            if sha256(payload_json.encode("utf-8")).hexdigest() != stored_sha:
-                return False
-
-            try:
-                payload = json.loads(payload_json)
-                reason_values = json.loads(reasons_json)
-                observed_at = _parse_observed_at(str(observed_at_text))
-            except (json.JSONDecodeError, TypeError, ValueError):
-                return False
-
-            if payload.get("observation_fingerprint") != observation_fp:
-                return False
-            if _expected_observation_fingerprint(payload) != observation_fp:
-                return False
-            if payload.get("sport") != "football":
-                return False
-
-            if payload.get("subject_key") != subject_key:
-                return False
-            if payload.get("modality") != modality:
-                return False
-            if payload.get("correlation_id") != correlation_id:
-                return False
-            if payload.get("sequence_id") != sequence_id:
-                return False
-            if payload.get("observed_at") != observed_at_text:
-                return False
-            if payload.get("source_record_fingerprint") != source_record_fp:
-                return False
-
-            if not isinstance(reason_values, list) or not reason_values:
-                return False
-
-            identity = (subject_key, modality, correlation_id)
-            prior_sequence_ids, prior_observed_at = history.setdefault(
-                identity,
-                ([], []),
-            )
-            expected_status, expected_reasons, _ = _expected_sequence_state(
-                sequence_id=int(sequence_id),
-                observed_at=observed_at,
-                prior_sequence_ids=prior_sequence_ids,
-                prior_observed_at=prior_observed_at,
-            )
-
-            if status != expected_status:
-                return False
-            if tuple(reason_values) != expected_reasons:
-                return False
-
-            if source_record_fp is not None:
+                source_record_fp = row[8]
+                if source_record_fp is None:
+                    return False
                 source_key = (
-                    subject_key,
-                    modality,
-                    correlation_id,
-                    source_record_fp,
+                    str(row[2]),
+                    str(row[3]),
+                    str(row[4]),
+                    str(row[5]),
+                    str(source_record_fp),
                 )
                 if source_key in seen_sources:
                     return False
                 seen_sources.add(source_key)
 
-            prior_sequence_ids.append(int(sequence_id))
-            prior_observed_at.append(observed_at)
-
-        return True
+                if (
+                    decision.status not in {
+                        SEQUENCE_ACCEPTED,
+                        SEQUENCE_OUT_OF_ORDER,
+                        SEQUENCE_LATE_OBSERVATION,
+                    }
+                ):
+                    return False
+            return True
 
 
 @dataclass(frozen=True)
@@ -727,6 +859,7 @@ class FootballRepeatableLiveAdmission:
     reason_codes: tuple[str, ...]
     freshness: tuple[FootballLiveFreshnessDecision, ...]
     alignment: FootballCrossModalAlignment
+    sequence_evidence: tuple[FootballLiveSequenceDecision, ...]
     model_decision_run: bool = False
     production_admissible: bool = False
     retroactive_promotion_allowed: bool = False
@@ -739,6 +872,7 @@ def evaluate_repeatable_football_live_admission(
     observations: Iterable[LiveTemporalObservation],
     *,
     policy: FootballLiveFreshnessPolicy,
+    evidence_store: SQLiteFootballLiveObservationStore,
 ) -> FootballRepeatableLiveAdmission:
     items = tuple(observations)
     if len(items) < 2:
@@ -750,13 +884,38 @@ def evaluate_repeatable_football_live_admission(
     )
     alignment = evaluate_football_cross_modal_alignment(items, policy)
 
+    sequence_evidence: list[FootballLiveSequenceDecision] = []
+    sequence_integrity_failed = False
+    for item in items:
+        try:
+            decision = evidence_store.verify_for_fusion(item)
+        except ValueError:
+            decision = FootballLiveSequenceDecision(
+                observation_fingerprint=item.observation_fingerprint,
+                sequence_id=item.sequence_id,
+                status=SEQUENCE_MISSING_EVIDENCE,
+                reason_codes=(REASON_DURABLE_EVIDENCE_INVALID,),
+                idempotent=False,
+                accepted_for_fusion=False,
+            )
+            sequence_integrity_failed = True
+        sequence_evidence.append(decision)
+
     reasons: list[str] = []
     for decision in freshness:
         reasons.extend(decision.reason_codes)
     reasons.extend(alignment.reason_codes)
+    for decision in sequence_evidence:
+        if not decision.accepted_for_fusion:
+            reasons.extend(decision.reason_codes)
 
     if (
-        any(item.status == FRESHNESS_BLOCKED for item in freshness)
+        sequence_integrity_failed
+        or any(
+            not decision.accepted_for_fusion
+            for decision in sequence_evidence
+        )
+        or any(item.status == FRESHNESS_BLOCKED for item in freshness)
         or alignment.status == ALIGNMENT_BLOCKED
     ):
         status = ADMISSION_BLOCKED
@@ -774,4 +933,5 @@ def evaluate_repeatable_football_live_admission(
         reason_codes=tuple(dict.fromkeys(reasons)),
         freshness=freshness,
         alignment=alignment,
+        sequence_evidence=tuple(sequence_evidence),
     )

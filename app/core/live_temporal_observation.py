@@ -66,6 +66,7 @@ class LiveStageLatency:
 @dataclass(frozen=True)
 class LiveTemporalObservation:
     sport: str
+    provider_key: str
     subject_key: str
     modality: str
     correlation_id: str
@@ -138,8 +139,9 @@ class LiveTemporalObservation:
 
     def payload(self) -> dict[str, Any]:
         return {
-            "schema": "matrix.live-temporal-observation/1",
+            "schema": "matrix.live-temporal-observation/2",
             "sport": self.sport,
+            "provider_key": self.provider_key,
             "subject_key": self.subject_key,
             "modality": self.modality,
             "correlation_id": self.correlation_id,
@@ -174,6 +176,7 @@ class LiveTemporalObservation:
 def build_live_temporal_observation(
     *,
     sport: str,
+    provider_key: str,
     subject_key: str,
     modality: str,
     correlation_id: str,
@@ -189,6 +192,7 @@ def build_live_temporal_observation(
     source_record_fingerprint: str | None = None,
 ) -> LiveTemporalObservation:
     sport_value = _text(sport, name="sport").lower()
+    provider_value = _text(provider_key, name="provider_key").lower()
     subject_value = _text(subject_key, name="subject_key")
     modality_value = _text(modality, name="modality").lower()
     correlation_value = _text(correlation_id, name="correlation_id").lower()
@@ -272,8 +276,9 @@ def build_live_temporal_observation(
         )
 
     base = {
-        "schema": "matrix.live-temporal-observation/1",
+        "schema": "matrix.live-temporal-observation/2",
         "sport": sport_value,
+        "provider_key": provider_value,
         "subject_key": subject_value,
         "modality": modality_value,
         "correlation_id": correlation_value,
@@ -300,6 +305,7 @@ def build_live_temporal_observation(
 
     return LiveTemporalObservation(
         sport=sport_value,
+        provider_key=provider_value,
         subject_key=subject_value,
         modality=modality_value,
         correlation_id=correlation_value,
