@@ -21,7 +21,8 @@ from app.application.football.bounded_live_executor import (
 
 R8_2_LEGACY_CONTROL_LEDGER_USER_VERSION = 82
 R8_2_PREVIOUS_CONTROL_LEDGER_USER_VERSION = 83
-R8_2_CONTROL_LEDGER_USER_VERSION = 84
+R8_2_R8_2R2_CONTROL_LEDGER_USER_VERSION = 84
+R8_2_CONTROL_LEDGER_USER_VERSION = 85
 
 R8_2_HARD_MAX_CAPTURE_ROUNDS = 10_000
 R8_2_HARD_MAX_TOTAL_PROVIDER_CALLS = 30_000
@@ -452,6 +453,189 @@ class SQLiteBoundedFootballLiveControlStore:
             }
         )
 
+    @staticmethod
+    def _table_info_contract(
+        connection: sqlite3.Connection,
+        table: str,
+    ) -> tuple[tuple[str, str, int, int], ...]:
+        rows = connection.execute(
+            f"PRAGMA table_info({table})"
+        ).fetchall()
+        return tuple(
+            (
+                str(row[1]),
+                str(row[2]).upper(),
+                int(row[3]),
+                int(row[5]),
+            )
+            for row in rows
+        )
+
+    @staticmethod
+    def _index_contract(
+        connection: sqlite3.Connection,
+        table: str,
+    ) -> tuple[tuple[str, tuple[str, ...]], ...]:
+        indexes: list[tuple[str, tuple[str, ...]]] = []
+        for row in connection.execute(
+            f"PRAGMA index_list({table})"
+        ).fetchall():
+            if int(row[2]) != 1:
+                continue
+            origin = str(row[3])
+            columns = tuple(
+                str(item[2])
+                for item in connection.execute(
+                    f"PRAGMA index_info({row[1]})"
+                ).fetchall()
+            )
+            indexes.append((origin, columns))
+        return tuple(sorted(indexes))
+
+    @staticmethod
+    def _foreign_key_contract(
+        connection: sqlite3.Connection,
+        table: str,
+    ) -> tuple[
+        tuple[str, str, str, str, str, str],
+        ...,
+    ]:
+        rows = connection.execute(
+            f"PRAGMA foreign_key_list({table})"
+        ).fetchall()
+        return tuple(
+            sorted(
+                (
+                    str(row[2]),
+                    str(row[3]),
+                    str(row[4]),
+                    str(row[5]),
+                    str(row[6]),
+                    str(row[7]),
+                )
+                for row in rows
+            )
+        )
+
+    def _assert_schema_contract(
+        self,
+        connection: sqlite3.Connection,
+    ) -> None:
+        expected_table_info = {
+            "football_bounded_run_control": (
+                ("run_id", "TEXT", 0, 1),
+                ("manifest_fingerprint", "TEXT", 1, 0),
+                ("manifest_json", "TEXT", 1, 0),
+                ("config_fingerprint", "TEXT", 1, 0),
+                ("provider_key", "TEXT", 1, 0),
+                ("subject_key", "TEXT", 1, 0),
+                ("modalities_json", "TEXT", 1, 0),
+                ("max_capture_rounds", "INTEGER", 1, 0),
+                ("max_total_provider_calls", "INTEGER", 1, 0),
+                ("max_runtime_ms", "INTEGER", 1, 0),
+                ("state", "TEXT", 1, 0),
+                ("state_version", "INTEGER", 1, 0),
+                ("created_at", "TEXT", 1, 0),
+                ("updated_at", "TEXT", 1, 0),
+            ),
+            "football_bounded_stream_sequence": (
+                ("stream_key", "TEXT", 0, 1),
+                ("last_reserved_sequence", "INTEGER", 1, 0),
+            ),
+            "football_bounded_sequence_reservation": (
+                ("run_id", "TEXT", 1, 1),
+                ("round_index", "INTEGER", 1, 2),
+                ("modality", "TEXT", 1, 3),
+                ("stream_key", "TEXT", 1, 0),
+                ("sequence_number", "INTEGER", 1, 0),
+                ("state", "TEXT", 1, 0),
+                ("created_at", "TEXT", 1, 0),
+                ("updated_at", "TEXT", 1, 0),
+            ),
+            "football_bounded_control_anchor": (
+                ("singleton_id", "INTEGER", 0, 1),
+                ("payload_sha256", "TEXT", 1, 0),
+            ),
+        }
+
+        for table, expected in expected_table_info.items():
+            actual = self._table_info_contract(connection, table)
+            if actual != expected:
+                raise ValueError(
+                    "R8_2_CONTROL_SCHEMA_TABLE_INFO_MISMATCH:"
+                    + table
+                )
+
+        expected_indexes = {
+            "football_bounded_run_control": (
+                ("pk", ("run_id",)),
+            ),
+            "football_bounded_stream_sequence": (
+                ("pk", ("stream_key",)),
+            ),
+            "football_bounded_sequence_reservation": tuple(
+                sorted(
+                    (
+                        ("pk", ("run_id", "round_index", "modality")),
+                        ("u", ("stream_key", "sequence_number")),
+                    )
+                )
+            ),
+            "football_bounded_control_anchor": (),
+        }
+
+        for table, expected in expected_indexes.items():
+            actual = self._index_contract(connection, table)
+            if actual != expected:
+                raise ValueError(
+                    "R8_2_CONTROL_SCHEMA_INDEX_CONTRACT_MISMATCH:"
+                    + table
+                )
+
+        expected_foreign_keys = {
+            "football_bounded_run_control": (),
+            "football_bounded_stream_sequence": (),
+            "football_bounded_sequence_reservation": (
+                (
+                    "football_bounded_run_control",
+                    "run_id",
+                    "run_id",
+                    "NO ACTION",
+                    "NO ACTION",
+                    "NONE",
+                ),
+            ),
+            "football_bounded_control_anchor": (),
+        }
+
+        for table, expected in expected_foreign_keys.items():
+            actual = self._foreign_key_contract(connection, table)
+            if actual != expected:
+                raise ValueError(
+                    "R8_2_CONTROL_SCHEMA_FOREIGN_KEY_MISMATCH:"
+                    + table
+                )
+
+        anchor_sql_row = connection.execute(
+            """
+            SELECT sql
+            FROM sqlite_master
+            WHERE type = 'table'
+              AND name = 'football_bounded_control_anchor'
+            """
+        ).fetchone()
+        if anchor_sql_row is None:
+            raise ValueError(
+                "R8_2_CONTROL_SCHEMA_ANCHOR_TABLE_REQUIRED"
+            )
+        normalized_anchor_sql = " ".join(
+            str(anchor_sql_row[0]).lower().split()
+        )
+        if "check (singleton_id = 1)" not in normalized_anchor_sql:
+            raise ValueError(
+                "R8_2_CONTROL_SCHEMA_ANCHOR_CHECK_MISSING"
+            )
+
     def _anchor_payload(
         self,
         connection: sqlite3.Connection,
@@ -647,6 +831,8 @@ class SQLiteBoundedFootballLiveControlStore:
         if integrity != "ok":
             raise ValueError("R8_2_SQLITE_INTEGRITY_CHECK_FAILED")
 
+        self._assert_schema_contract(connection)
+
         anchor = connection.execute(
             """
             SELECT payload_sha256
@@ -696,6 +882,11 @@ class SQLiteBoundedFootballLiveControlStore:
                 )
 
             manifest = _manifest_from_payload(manifest_payload)
+            canonical_manifest_json = _canonical(manifest.payload())
+            if str(row[2]) != canonical_manifest_json:
+                raise ValueError(
+                    "R8_2_RUN_CONTROL_MANIFEST_CANONICAL_BYTES_MISMATCH"
+                )
             if manifest_payload != manifest.payload():
                 raise ValueError(
                     "R8_2_RUN_CONTROL_MANIFEST_SEMANTIC_REDERIVATION_MISMATCH"
@@ -806,6 +997,7 @@ class SQLiteBoundedFootballLiveControlStore:
         reservations_by_stream: dict[str, list[SequenceReservation]] = {}
         reservation_count_by_run: dict[str, int] = {}
         open_count_by_run: dict[str, int] = {}
+        exact_slots: set[tuple[str, int, str]] = set()
 
         for row in reservation_rows:
             reservation = SequenceReservation(
@@ -818,6 +1010,17 @@ class SQLiteBoundedFootballLiveControlStore:
                 created_at=datetime.fromisoformat(str(row[6])),
                 updated_at=datetime.fromisoformat(str(row[7])),
             )
+
+            exact_slot = (
+                reservation.run_id,
+                reservation.round_index,
+                reservation.modality,
+            )
+            if exact_slot in exact_slots:
+                raise ValueError(
+                    "R8_2_EXACT_RUN_ROUND_MODALITY_SLOT_DUPLICATE"
+                )
+            exact_slots.add(exact_slot)
 
             run = runs.get(reservation.run_id)
             if run is None:
@@ -929,6 +1132,112 @@ class SQLiteBoundedFootballLiveControlStore:
                     "R8_2_STREAM_SEQUENCE_WATERMARK_MISMATCH"
                 )
 
+    def _create_canonical_schema(
+        self,
+        connection: sqlite3.Connection,
+    ) -> None:
+        connection.execute(
+            """
+            CREATE TABLE IF NOT EXISTS
+            football_bounded_run_control (
+                run_id TEXT PRIMARY KEY,
+                manifest_fingerprint TEXT NOT NULL,
+                manifest_json TEXT NOT NULL,
+                config_fingerprint TEXT NOT NULL,
+                provider_key TEXT NOT NULL,
+                subject_key TEXT NOT NULL,
+                modalities_json TEXT NOT NULL,
+                max_capture_rounds INTEGER NOT NULL,
+                max_total_provider_calls INTEGER NOT NULL,
+                max_runtime_ms INTEGER NOT NULL,
+                state TEXT NOT NULL,
+                state_version INTEGER NOT NULL,
+                created_at TEXT NOT NULL,
+                updated_at TEXT NOT NULL
+            )
+            """
+        )
+        connection.execute(
+            """
+            CREATE TABLE IF NOT EXISTS
+            football_bounded_stream_sequence (
+                stream_key TEXT PRIMARY KEY,
+                last_reserved_sequence INTEGER NOT NULL
+            )
+            """
+        )
+        connection.execute(
+            """
+            CREATE TABLE IF NOT EXISTS
+            football_bounded_sequence_reservation (
+                run_id TEXT NOT NULL,
+                round_index INTEGER NOT NULL,
+                modality TEXT NOT NULL,
+                stream_key TEXT NOT NULL,
+                sequence_number INTEGER NOT NULL,
+                state TEXT NOT NULL,
+                created_at TEXT NOT NULL,
+                updated_at TEXT NOT NULL,
+                PRIMARY KEY (
+                    run_id,
+                    round_index,
+                    modality
+                ),
+                UNIQUE (
+                    stream_key,
+                    sequence_number
+                ),
+                FOREIGN KEY (run_id)
+                    REFERENCES football_bounded_run_control(run_id)
+            )
+            """
+        )
+        connection.execute(
+            """
+            CREATE TABLE IF NOT EXISTS
+            football_bounded_control_anchor (
+                singleton_id INTEGER PRIMARY KEY
+                    CHECK (singleton_id = 1),
+                payload_sha256 TEXT NOT NULL
+            )
+            """
+        )
+
+    def _rebuild_empty_control_schema(
+        self,
+        connection: sqlite3.Connection,
+    ) -> None:
+        row_count = sum(
+            int(
+                connection.execute(
+                    f"SELECT COUNT(*) FROM {table}"
+                ).fetchone()[0]
+            )
+            for table in (
+                "football_bounded_run_control",
+                "football_bounded_stream_sequence",
+                "football_bounded_sequence_reservation",
+            )
+        )
+        if row_count != 0:
+            raise ValueError(
+                "R8_2R3_EMPTY_SCHEMA_REBUILD_REQUIRES_EMPTY_CONTROL_DATA"
+            )
+
+        connection.execute(
+            "DROP TABLE football_bounded_sequence_reservation"
+        )
+        connection.execute(
+            "DROP TABLE football_bounded_stream_sequence"
+        )
+        connection.execute(
+            "DROP TABLE football_bounded_run_control"
+        )
+        connection.execute(
+            "DROP TABLE football_bounded_control_anchor"
+        )
+        self._create_canonical_schema(connection)
+
     def _migrate_v82_to_v83(
         self,
         connection: sqlite3.Connection,
@@ -1011,7 +1320,7 @@ class SQLiteBoundedFootballLiveControlStore:
             (_sha(self._anchor_payload_v83(connection)),),
         )
 
-    def _migrate_v83_to_v84(
+    def _migrate_v83_to_v85(
         self,
         connection: sqlite3.Connection,
     ) -> None:
@@ -1052,16 +1361,47 @@ class SQLiteBoundedFootballLiveControlStore:
                 "R8_2R2_NONEMPTY_V83_MANIFEST_PROVENANCE_UNAVAILABLE"
             )
 
-        connection.execute(
-            """
-            ALTER TABLE football_bounded_run_control
-            ADD COLUMN manifest_json TEXT
-            """
-        )
+        self._rebuild_empty_control_schema(connection)
         connection.execute(
             f"PRAGMA user_version = {R8_2_CONTROL_LEDGER_USER_VERSION}"
         )
         self._rewrite_anchor(connection)
+        self._assert_schema_contract(connection)
+
+    def _migrate_v84_to_v85(
+        self,
+        connection: sqlite3.Connection,
+    ) -> None:
+        integrity = str(
+            connection.execute("PRAGMA integrity_check").fetchone()[0]
+        )
+        if integrity != "ok":
+            raise ValueError("R8_2_SQLITE_INTEGRITY_CHECK_FAILED")
+
+        self._assert_schema_contract(connection)
+
+        anchor = connection.execute(
+            """
+            SELECT payload_sha256
+            FROM football_bounded_control_anchor
+            WHERE singleton_id = 1
+            """
+        ).fetchone()
+        if anchor is None:
+            raise ValueError("R8_2_CONTROL_ANCHOR_REQUIRED")
+
+        expected_anchor = _sha(self._anchor_payload(connection))
+        if str(anchor[0]) != expected_anchor:
+            raise ValueError("R8_2_CONTROL_ANCHOR_MISMATCH")
+
+        # R8.2R2 already introduced complete manifest provenance. The schema
+        # is structurally identical to v85, so promotion is a verified
+        # metadata transition; v85 adds mandatory schema/canonical-byte
+        # re-derivation on every integrity check.
+        connection.execute(
+            f"PRAGMA user_version = {R8_2_CONTROL_LEDGER_USER_VERSION}"
+        )
+        self._assert_integrity(connection)
 
     def _initialize(self) -> None:
         with self._connect() as connection:
@@ -1076,6 +1416,7 @@ class SQLiteBoundedFootballLiveControlStore:
                     0,
                     R8_2_LEGACY_CONTROL_LEDGER_USER_VERSION,
                     R8_2_PREVIOUS_CONTROL_LEDGER_USER_VERSION,
+                    R8_2_R8_2R2_CONTROL_LEDGER_USER_VERSION,
                     R8_2_CONTROL_LEDGER_USER_VERSION,
                 ):
                     raise ValueError(
@@ -1083,27 +1424,11 @@ class SQLiteBoundedFootballLiveControlStore:
                     )
 
                 if version == 0:
+                    self._create_canonical_schema(connection)
                     connection.execute(
-                        """
-                        CREATE TABLE IF NOT EXISTS
-                        football_bounded_run_control (
-                            run_id TEXT PRIMARY KEY,
-                            manifest_fingerprint TEXT NOT NULL,
-                            manifest_json TEXT NOT NULL,
-                            config_fingerprint TEXT NOT NULL,
-                            provider_key TEXT NOT NULL,
-                            subject_key TEXT NOT NULL,
-                            modalities_json TEXT NOT NULL,
-                            max_capture_rounds INTEGER NOT NULL,
-                            max_total_provider_calls INTEGER NOT NULL,
-                            max_runtime_ms INTEGER NOT NULL,
-                            state TEXT NOT NULL,
-                            state_version INTEGER NOT NULL,
-                            created_at TEXT NOT NULL,
-                            updated_at TEXT NOT NULL
-                        )
-                        """
+                        f"PRAGMA user_version = {R8_2_CONTROL_LEDGER_USER_VERSION}"
                     )
+                    version = R8_2_CONTROL_LEDGER_USER_VERSION
                 elif version == R8_2_LEGACY_CONTROL_LEDGER_USER_VERSION:
                     connection.execute(
                         """
@@ -1124,107 +1449,61 @@ class SQLiteBoundedFootballLiveControlStore:
                         )
                         """
                     )
-                elif version == R8_2_PREVIOUS_CONTROL_LEDGER_USER_VERSION:
                     connection.execute(
                         """
                         CREATE TABLE IF NOT EXISTS
-                        football_bounded_run_control (
-                            run_id TEXT PRIMARY KEY,
-                            manifest_fingerprint TEXT NOT NULL,
-                            config_fingerprint TEXT,
-                            provider_key TEXT NOT NULL,
-                            subject_key TEXT NOT NULL,
-                            modalities_json TEXT NOT NULL,
-                            max_capture_rounds INTEGER NOT NULL,
-                            max_total_provider_calls INTEGER NOT NULL,
-                            max_runtime_ms INTEGER NOT NULL,
-                            state TEXT NOT NULL,
-                            state_version INTEGER NOT NULL,
-                            created_at TEXT NOT NULL,
-                            updated_at TEXT NOT NULL
+                        football_bounded_stream_sequence (
+                            stream_key TEXT PRIMARY KEY,
+                            last_reserved_sequence INTEGER NOT NULL
                         )
                         """
                     )
-                else:
                     connection.execute(
                         """
                         CREATE TABLE IF NOT EXISTS
-                        football_bounded_run_control (
-                            run_id TEXT PRIMARY KEY,
-                            manifest_fingerprint TEXT NOT NULL,
-                            manifest_json TEXT NOT NULL,
-                            config_fingerprint TEXT NOT NULL,
-                            provider_key TEXT NOT NULL,
-                            subject_key TEXT NOT NULL,
-                            modalities_json TEXT NOT NULL,
-                            max_capture_rounds INTEGER NOT NULL,
-                            max_total_provider_calls INTEGER NOT NULL,
-                            max_runtime_ms INTEGER NOT NULL,
+                        football_bounded_sequence_reservation (
+                            run_id TEXT NOT NULL,
+                            round_index INTEGER NOT NULL,
+                            modality TEXT NOT NULL,
+                            stream_key TEXT NOT NULL,
+                            sequence_number INTEGER NOT NULL,
                             state TEXT NOT NULL,
-                            state_version INTEGER NOT NULL,
                             created_at TEXT NOT NULL,
-                            updated_at TEXT NOT NULL
+                            updated_at TEXT NOT NULL,
+                            PRIMARY KEY (
+                                run_id,
+                                round_index,
+                                modality
+                            ),
+                            UNIQUE (
+                                stream_key,
+                                sequence_number
+                            ),
+                            FOREIGN KEY (run_id)
+                                REFERENCES football_bounded_run_control(run_id)
                         )
                         """
                     )
-
-                connection.execute(
-                    """
-                    CREATE TABLE IF NOT EXISTS
-                    football_bounded_stream_sequence (
-                        stream_key TEXT PRIMARY KEY,
-                        last_reserved_sequence INTEGER NOT NULL
+                    connection.execute(
+                        """
+                        CREATE TABLE IF NOT EXISTS
+                        football_bounded_control_anchor (
+                            singleton_id INTEGER PRIMARY KEY
+                                CHECK (singleton_id = 1),
+                            payload_sha256 TEXT NOT NULL
+                        )
+                        """
                     )
-                    """
-                )
-                connection.execute(
-                    """
-                    CREATE TABLE IF NOT EXISTS
-                    football_bounded_sequence_reservation (
-                        run_id TEXT NOT NULL,
-                        round_index INTEGER NOT NULL,
-                        modality TEXT NOT NULL,
-                        stream_key TEXT NOT NULL,
-                        sequence_number INTEGER NOT NULL,
-                        state TEXT NOT NULL,
-                        created_at TEXT NOT NULL,
-                        updated_at TEXT NOT NULL,
-                        PRIMARY KEY (
-                            run_id,
-                            round_index,
-                            modality
-                        ),
-                        UNIQUE (
-                            stream_key,
-                            sequence_number
-                        ),
-                        FOREIGN KEY (run_id)
-                            REFERENCES football_bounded_run_control(run_id)
-                    )
-                    """
-                )
-                connection.execute(
-                    """
-                    CREATE TABLE IF NOT EXISTS
-                    football_bounded_control_anchor (
-                        singleton_id INTEGER PRIMARY KEY
-                            CHECK (singleton_id = 1),
-                        payload_sha256 TEXT NOT NULL
-                    )
-                    """
-                )
-
-                if version == R8_2_LEGACY_CONTROL_LEDGER_USER_VERSION:
                     self._migrate_v82_to_v83(connection)
                     version = R8_2_PREVIOUS_CONTROL_LEDGER_USER_VERSION
 
                 if version == R8_2_PREVIOUS_CONTROL_LEDGER_USER_VERSION:
-                    self._migrate_v83_to_v84(connection)
+                    # v83 never stored manifest provenance. Only empty control
+                    # data may be promoted; the schema is rebuilt canonically.
+                    self._migrate_v83_to_v85(connection)
                     version = R8_2_CONTROL_LEDGER_USER_VERSION
-                elif version == 0:
-                    connection.execute(
-                        f"PRAGMA user_version = {R8_2_CONTROL_LEDGER_USER_VERSION}"
-                    )
+                elif version == R8_2_R8_2R2_CONTROL_LEDGER_USER_VERSION:
+                    self._migrate_v84_to_v85(connection)
                     version = R8_2_CONTROL_LEDGER_USER_VERSION
 
                 anchor = connection.execute(

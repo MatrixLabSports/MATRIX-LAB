@@ -1140,7 +1140,7 @@ def test_integrity_rederives_terminal_open_reservation_invariant(tmp_path):
     guard.release(lease)
 
 
-def test_v82_empty_control_store_migrates_atomically_to_v84(tmp_path):
+def test_v82_empty_control_store_migrates_atomically_to_v85(tmp_path):
     path = tmp_path / "v82.sqlite3"
     with sqlite3.connect(path) as connection:
         connection.executescript(
@@ -1204,7 +1204,7 @@ def test_v82_empty_control_store_migrates_atomically_to_v84(tmp_path):
     with sqlite3.connect(path) as connection:
         assert connection.execute(
             "PRAGMA user_version"
-        ).fetchone()[0] == 84
+        ).fetchone()[0] == 85
         columns = {
             row[1]
             for row in connection.execute(
@@ -1523,7 +1523,7 @@ def _create_empty_v83(path):
         connection.commit()
 
 
-def test_empty_v83_control_store_migrates_atomically_to_v84(tmp_path):
+def test_empty_v83_control_store_migrates_atomically_to_v85(tmp_path):
     path = tmp_path / "v83-empty.sqlite3"
     _create_empty_v83(path)
 
@@ -1540,7 +1540,7 @@ def test_empty_v83_control_store_migrates_atomically_to_v84(tmp_path):
             ).fetchall()
         }
 
-    assert version == 84
+    assert version == 85
     assert "manifest_json" in columns
     assert store.audit_integrity() is True
 
@@ -1652,3 +1652,271 @@ def test_nonempty_v83_migration_fails_closed_and_is_atomic(tmp_path):
     assert version == 83
     assert "manifest_json" not in columns
     assert count == 1
+
+
+def _schema_contract(path):
+    with sqlite3.connect(path) as connection:
+        table_info = {
+            table: tuple(
+                (
+                    str(row[1]),
+                    str(row[2]).upper(),
+                    int(row[3]),
+                    int(row[5]),
+                )
+                for row in connection.execute(
+                    f"PRAGMA table_info({table})"
+                ).fetchall()
+            )
+            for table in (
+                "football_bounded_run_control",
+                "football_bounded_stream_sequence",
+                "football_bounded_sequence_reservation",
+                "football_bounded_control_anchor",
+            )
+        }
+
+        indexes = {}
+        for table in table_info:
+            items = []
+            for row in connection.execute(
+                f"PRAGMA index_list({table})"
+            ).fetchall():
+                if int(row[2]) != 1:
+                    continue
+                columns = tuple(
+                    str(item[2])
+                    for item in connection.execute(
+                        f"PRAGMA index_info({row[1]})"
+                    ).fetchall()
+                )
+                items.append((str(row[3]), columns))
+            indexes[table] = tuple(sorted(items))
+
+        foreign_keys = {
+            table: tuple(
+                sorted(
+                    (
+                        str(row[2]),
+                        str(row[3]),
+                        str(row[4]),
+                        str(row[5]),
+                        str(row[6]),
+                        str(row[7]),
+                    )
+                    for row in connection.execute(
+                        f"PRAGMA foreign_key_list({table})"
+                    ).fetchall()
+                )
+            )
+            for table in table_info
+        }
+    return table_info, indexes, foreign_keys
+
+
+def test_manifest_json_requires_exact_canonical_bytes_after_rehashed_tamper(tmp_path):
+    path = tmp_path / "manifest-json-bytes.sqlite3"
+    store = SQLiteBoundedFootballLiveControlStore(path)
+    value = manifest()
+    guard, lease = acquire(path)
+    store.register_run(
+        value,
+        guard=guard,
+        lease=lease,
+        registered_at=BASE,
+    )
+
+    with sqlite3.connect(path) as connection:
+        raw = str(
+            connection.execute(
+                """
+                SELECT manifest_json
+                FROM football_bounded_run_control
+                WHERE run_id = ?
+                """,
+                (value.run_id,),
+            ).fetchone()[0]
+        )
+        parsed = json.loads(raw)
+        noncanonical = json.dumps(
+            parsed,
+            ensure_ascii=False,
+            indent=2,
+            sort_keys=False,
+        )
+        assert noncanonical != raw
+        connection.execute(
+            """
+            UPDATE football_bounded_run_control
+            SET manifest_json = ?
+            WHERE run_id = ?
+            """,
+            (noncanonical, value.run_id),
+        )
+        connection.commit()
+
+    _rewrite_r8_2_anchor(path)
+    assert store.audit_integrity() is False
+    guard.release(lease)
+
+
+def test_empty_v83_migration_produces_exact_fresh_v85_schema_contract(tmp_path):
+    fresh_path = tmp_path / "fresh-v85.sqlite3"
+    SQLiteBoundedFootballLiveControlStore(fresh_path)
+
+    migrated_path = tmp_path / "migrated-v83.sqlite3"
+    _create_empty_v83(migrated_path)
+    migrated = SQLiteBoundedFootballLiveControlStore(migrated_path)
+
+    with sqlite3.connect(migrated_path) as connection:
+        assert connection.execute(
+            "PRAGMA user_version"
+        ).fetchone()[0] == 85
+
+    assert migrated.audit_integrity() is True
+    assert _schema_contract(migrated_path) == _schema_contract(fresh_path)
+
+
+def test_integrity_rederives_sqlite_schema_constraint_contract(tmp_path):
+    path = tmp_path / "schema-drift.sqlite3"
+    store = SQLiteBoundedFootballLiveControlStore(path)
+
+    with sqlite3.connect(path) as connection:
+        connection.execute("PRAGMA foreign_keys = OFF")
+        connection.execute(
+            """
+            ALTER TABLE football_bounded_sequence_reservation
+            RENAME TO old_reservation
+            """
+        )
+        connection.execute(
+            """
+            CREATE TABLE football_bounded_sequence_reservation (
+                run_id TEXT NOT NULL,
+                round_index INTEGER NOT NULL,
+                modality TEXT NOT NULL,
+                stream_key TEXT NOT NULL,
+                sequence_number INTEGER NOT NULL,
+                state TEXT NOT NULL,
+                created_at TEXT NOT NULL,
+                updated_at TEXT NOT NULL
+            )
+            """
+        )
+        connection.execute("DROP TABLE old_reservation")
+        connection.commit()
+
+    assert store.audit_integrity() is False
+
+
+def test_exact_run_round_modality_slot_uniqueness_is_semantically_rederived(tmp_path):
+    path, store, value, guard, lease = _active_store(
+        tmp_path,
+        "duplicate-slot.sqlite3",
+    )
+    reserved = store.reserve_next_sequence(
+        value.run_id,
+        round_index=1,
+        modality="fixture_events",
+        reserved_at=BASE + timedelta(seconds=2),
+        guard=guard,
+        lease=lease,
+    )
+
+    with sqlite3.connect(path) as connection:
+        connection.execute("PRAGMA foreign_keys = OFF")
+        connection.execute(
+            """
+            ALTER TABLE football_bounded_sequence_reservation
+            RENAME TO old_reservation
+            """
+        )
+        connection.execute(
+            """
+            CREATE TABLE football_bounded_sequence_reservation (
+                run_id TEXT NOT NULL,
+                round_index INTEGER NOT NULL,
+                modality TEXT NOT NULL,
+                stream_key TEXT NOT NULL,
+                sequence_number INTEGER NOT NULL,
+                state TEXT NOT NULL,
+                created_at TEXT NOT NULL,
+                updated_at TEXT NOT NULL
+            )
+            """
+        )
+        rows = connection.execute(
+            """
+            SELECT
+                run_id,
+                round_index,
+                modality,
+                stream_key,
+                sequence_number,
+                state,
+                created_at,
+                updated_at
+            FROM old_reservation
+            """
+        ).fetchall()
+        for row in rows:
+            connection.execute(
+                """
+                INSERT INTO football_bounded_sequence_reservation
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                """,
+                tuple(row),
+            )
+        duplicate = list(rows[0])
+        duplicate[4] = 2
+        duplicate[6] = (BASE + timedelta(seconds=3)).isoformat()
+        duplicate[7] = duplicate[6]
+        connection.execute(
+            """
+            INSERT INTO football_bounded_sequence_reservation
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            """,
+            tuple(duplicate),
+        )
+        connection.execute("DROP TABLE old_reservation")
+        connection.execute(
+            """
+            UPDATE football_bounded_stream_sequence
+            SET last_reserved_sequence = 2
+            WHERE stream_key = ?
+            """,
+            (reserved.stream_key,),
+        )
+        connection.commit()
+
+    _rewrite_r8_2_anchor(path)
+    assert store.audit_integrity() is False
+    guard.release(lease)
+
+
+def test_nonempty_v84_migrates_to_v85_after_verified_provenance(tmp_path):
+    path = tmp_path / "v84-nonempty.sqlite3"
+    store = SQLiteBoundedFootballLiveControlStore(path)
+    value = manifest()
+    guard, lease = acquire(path)
+    store.register_run(
+        value,
+        guard=guard,
+        lease=lease,
+        registered_at=BASE,
+    )
+    guard.release(lease)
+
+    with sqlite3.connect(path) as connection:
+        connection.execute("PRAGMA user_version = 84")
+        connection.commit()
+
+    reopened = SQLiteBoundedFootballLiveControlStore(path)
+    with sqlite3.connect(path) as connection:
+        version = connection.execute(
+            "PRAGMA user_version"
+        ).fetchone()[0]
+
+    assert version == 85
+    assert reopened.get_run(value.run_id).run_id == value.run_id
+    assert reopened.audit_integrity() is True
