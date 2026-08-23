@@ -18,7 +18,8 @@ from app.application.football.bounded_live_executor import (
 )
 
 
-R8_2_CONTROL_LEDGER_USER_VERSION = 82
+R8_2_PREVIOUS_CONTROL_LEDGER_USER_VERSION = 82
+R8_2_CONTROL_LEDGER_USER_VERSION = 83
 
 R8_2_HARD_MAX_CAPTURE_ROUNDS = 10_000
 R8_2_HARD_MAX_TOTAL_PROVIDER_CALLS = 30_000
@@ -100,15 +101,29 @@ def _sha256_hex(value: str, *, name: str) -> str:
     return normalized
 
 
+def validate_r8_2_engineering_resource_ceiling_from_config(
+    config: BoundedFootballLiveExecutorConfig,
+) -> None:
+    if config.max_capture_rounds > R8_2_HARD_MAX_CAPTURE_ROUNDS:
+        raise ValueError("R8_2_HARD_CAPTURE_ROUND_CEILING_EXCEEDED")
+    if config.max_total_provider_calls > R8_2_HARD_MAX_TOTAL_PROVIDER_CALLS:
+        raise ValueError("R8_2_HARD_PROVIDER_CALL_CEILING_EXCEEDED")
+    if config.max_runtime_ms > R8_2_HARD_MAX_RUNTIME_MS:
+        raise ValueError("R8_2_HARD_RUNTIME_CEILING_EXCEEDED")
+
+
 def validate_r8_2_engineering_resource_ceiling(
     manifest: BoundedFootballLiveRunManifest,
 ) -> None:
-    if manifest.max_capture_rounds > R8_2_HARD_MAX_CAPTURE_ROUNDS:
-        raise ValueError("R8_2_HARD_CAPTURE_ROUND_CEILING_EXCEEDED")
-    if manifest.max_total_provider_calls > R8_2_HARD_MAX_TOTAL_PROVIDER_CALLS:
-        raise ValueError("R8_2_HARD_PROVIDER_CALL_CEILING_EXCEEDED")
-    if manifest.max_runtime_ms > R8_2_HARD_MAX_RUNTIME_MS:
-        raise ValueError("R8_2_HARD_RUNTIME_CEILING_EXCEEDED")
+    rederived = BoundedFootballLiveExecutorConfig(
+        provider_key=manifest.provider_key,
+        subject_key=manifest.subject_key,
+        modalities=manifest.modalities,
+        max_capture_rounds=manifest.max_capture_rounds,
+        max_total_provider_calls=manifest.max_total_provider_calls,
+        max_runtime_ms=manifest.max_runtime_ms,
+    )
+    validate_r8_2_engineering_resource_ceiling_from_config(rederived)
 
 
 def iter_bounded_capture_slots_lazy(
@@ -294,6 +309,7 @@ class BoundedExecutorProcessScopeGuard:
 class RunControlSnapshot:
     run_id: str
     manifest_fingerprint: str
+    config_fingerprint: str
     provider_key: str
     subject_key: str
     modalities: tuple[str, ...]
@@ -313,6 +329,10 @@ class RunControlSnapshot:
             self.manifest_fingerprint,
             name="manifest_fingerprint",
         )
+        _sha256_hex(
+            self.config_fingerprint,
+            name="config_fingerprint",
+        )
         _nonempty(self.provider_key, name="provider_key")
         _nonempty(self.subject_key, name="subject_key")
         if self.state not in R8_2_RUN_STATES:
@@ -328,6 +348,8 @@ class RunControlSnapshot:
             "updated_at",
             _aware_utc(self.updated_at, name="updated_at"),
         )
+        if self.updated_at < self.created_at:
+            raise ValueError("R8_2_RUN_CONTROL_TIME_REGRESSION")
         if self.execution_authorized is not False:
             raise ValueError("R8_2_EXECUTION_AUTHORIZATION_FORBIDDEN")
         if self.production_admissible is not False:
@@ -363,6 +385,8 @@ class SequenceReservation:
             "updated_at",
             _aware_utc(self.updated_at, name="updated_at"),
         )
+        if self.updated_at < self.created_at:
+            raise ValueError("R8_2_RESERVATION_TIME_REGRESSION")
 
 
 class SQLiteBoundedFootballLiveControlStore:
@@ -407,6 +431,7 @@ class SQLiteBoundedFootballLiveControlStore:
             SELECT
                 run_id,
                 manifest_fingerprint,
+                config_fingerprint,
                 provider_key,
                 subject_key,
                 modalities_json,
@@ -444,6 +469,58 @@ class SQLiteBoundedFootballLiveControlStore:
             """
         ).fetchall()
 
+        return {
+            "schema": "matrix.c2-r8-2-control-anchor/1",
+            "runs": [list(row) for row in run_rows],
+            "streams": [list(row) for row in stream_rows],
+            "reservations": [list(row) for row in reservation_rows],
+        }
+
+    def _anchor_payload_v82(
+        self,
+        connection: sqlite3.Connection,
+    ) -> Mapping[str, Any]:
+        run_rows = connection.execute(
+            """
+            SELECT
+                run_id,
+                manifest_fingerprint,
+                provider_key,
+                subject_key,
+                modalities_json,
+                max_capture_rounds,
+                max_total_provider_calls,
+                max_runtime_ms,
+                state,
+                state_version,
+                created_at,
+                updated_at
+            FROM football_bounded_run_control
+            ORDER BY run_id
+            """
+        ).fetchall()
+        stream_rows = connection.execute(
+            """
+            SELECT stream_key, last_reserved_sequence
+            FROM football_bounded_stream_sequence
+            ORDER BY stream_key
+            """
+        ).fetchall()
+        reservation_rows = connection.execute(
+            """
+            SELECT
+                run_id,
+                round_index,
+                modality,
+                stream_key,
+                sequence_number,
+                state,
+                created_at,
+                updated_at
+            FROM football_bounded_sequence_reservation
+            ORDER BY stream_key, sequence_number
+            """
+        ).fetchall()
         return {
             "schema": "matrix.c2-r8-2-control-anchor/1",
             "runs": [list(row) for row in run_rows],
@@ -505,6 +582,7 @@ class SQLiteBoundedFootballLiveControlStore:
             SELECT
                 run_id,
                 manifest_fingerprint,
+                config_fingerprint,
                 provider_key,
                 subject_key,
                 modalities_json,
@@ -519,24 +597,59 @@ class SQLiteBoundedFootballLiveControlStore:
             """
         ).fetchall()
 
+        runs: dict[str, RunControlSnapshot] = {}
         for row in run_rows:
-            modalities = json.loads(str(row[4]))
+            modalities_raw = json.loads(str(row[5]))
+            if not isinstance(modalities_raw, list):
+                raise ValueError("R8_2_RUN_MODALITIES_LIST_REQUIRED")
+
             snapshot = RunControlSnapshot(
                 run_id=str(row[0]),
                 manifest_fingerprint=str(row[1]),
-                provider_key=str(row[2]),
-                subject_key=str(row[3]),
-                modalities=tuple(modalities),
-                max_capture_rounds=int(row[5]),
-                max_total_provider_calls=int(row[6]),
-                max_runtime_ms=int(row[7]),
-                state=str(row[8]),
-                state_version=int(row[9]),
-                created_at=datetime.fromisoformat(str(row[10])),
-                updated_at=datetime.fromisoformat(str(row[11])),
+                config_fingerprint=str(row[2]),
+                provider_key=str(row[3]),
+                subject_key=str(row[4]),
+                modalities=tuple(modalities_raw),
+                max_capture_rounds=int(row[6]),
+                max_total_provider_calls=int(row[7]),
+                max_runtime_ms=int(row[8]),
+                state=str(row[9]),
+                state_version=int(row[10]),
+                created_at=datetime.fromisoformat(str(row[11])),
+                updated_at=datetime.fromisoformat(str(row[12])),
             )
             if len(set(snapshot.modalities)) != len(snapshot.modalities):
                 raise ValueError("R8_2_DUPLICATE_RUN_MODALITY")
+
+            rederived_config = BoundedFootballLiveExecutorConfig(
+                provider_key=snapshot.provider_key,
+                subject_key=snapshot.subject_key,
+                modalities=snapshot.modalities,
+                max_capture_rounds=snapshot.max_capture_rounds,
+                max_total_provider_calls=snapshot.max_total_provider_calls,
+                max_runtime_ms=snapshot.max_runtime_ms,
+            )
+            validate_r8_2_engineering_resource_ceiling_from_config(
+                rederived_config
+            )
+
+            if (
+                rederived_config.provider_key != snapshot.provider_key
+                or rederived_config.subject_key != snapshot.subject_key
+                or rederived_config.modalities != snapshot.modalities
+            ):
+                raise ValueError(
+                    "R8_2_RUN_CONTROL_CANONICAL_CONFIG_MISMATCH"
+                )
+            if (
+                rederived_config.config_fingerprint
+                != snapshot.config_fingerprint
+            ):
+                raise ValueError(
+                    "R8_2_RUN_CONTROL_CONFIG_FINGERPRINT_MISMATCH"
+                )
+
+            runs[snapshot.run_id] = snapshot
 
         reservation_rows = connection.execute(
             """
@@ -554,6 +667,10 @@ class SQLiteBoundedFootballLiveControlStore:
         ).fetchall()
 
         max_by_stream: dict[str, int] = {}
+        sequences_by_stream: dict[str, list[int]] = {}
+        reservation_count_by_run: dict[str, int] = {}
+        open_count_by_run: dict[str, int] = {}
+
         for row in reservation_rows:
             reservation = SequenceReservation(
                 run_id=str(row[0]),
@@ -565,10 +682,78 @@ class SQLiteBoundedFootballLiveControlStore:
                 created_at=datetime.fromisoformat(str(row[6])),
                 updated_at=datetime.fromisoformat(str(row[7])),
             )
+
+            run = runs.get(reservation.run_id)
+            if run is None:
+                raise ValueError("R8_2_RESERVATION_RUN_NOT_FOUND")
+            if reservation.modality not in run.modalities:
+                raise ValueError(
+                    "R8_2_RESERVATION_MODALITY_OUTSIDE_RUN_CONTRACT"
+                )
+            if reservation.round_index > run.max_capture_rounds:
+                raise ValueError(
+                    "R8_2_RESERVATION_ROUND_OUTSIDE_RUN_CONTRACT"
+                )
+            if reservation.created_at < run.created_at:
+                raise ValueError(
+                    "R8_2_RESERVATION_PRECEDES_RUN_REGISTRATION"
+                )
+
+            expected_stream_key = self._stream_key(
+                subject_key=run.subject_key,
+                provider_key=run.provider_key,
+                modality=reservation.modality,
+            )
+            if reservation.stream_key != expected_stream_key:
+                raise ValueError(
+                    "R8_2_RESERVATION_STREAM_KEY_MISMATCH"
+                )
+
+            reservation_count_by_run[reservation.run_id] = (
+                reservation_count_by_run.get(reservation.run_id, 0) + 1
+            )
+            if (
+                reservation_count_by_run[reservation.run_id]
+                > run.max_total_provider_calls
+            ):
+                raise ValueError(
+                    "R8_2_RUN_PROVIDER_CALL_BUDGET_EXCEEDED"
+                )
+
+            if reservation.state == "RESERVED":
+                open_count_by_run[reservation.run_id] = (
+                    open_count_by_run.get(reservation.run_id, 0) + 1
+                )
+
+            sequences_by_stream.setdefault(
+                reservation.stream_key,
+                [],
+            ).append(reservation.sequence_number)
             max_by_stream[reservation.stream_key] = max(
                 max_by_stream.get(reservation.stream_key, 0),
                 reservation.sequence_number,
             )
+
+        for run_id, run in runs.items():
+            open_count = open_count_by_run.get(run_id, 0)
+            total_count = reservation_count_by_run.get(run_id, 0)
+
+            if run.state == "PLANNED" and total_count != 0:
+                raise ValueError(
+                    "R8_2_PLANNED_RUN_WITH_RESERVATIONS_FORBIDDEN"
+                )
+            if run.state in {"COMPLETED", "ABORTED"} and open_count != 0:
+                raise ValueError(
+                    "R8_2_TERMINAL_RUN_WITH_OPEN_RESERVATIONS_FORBIDDEN"
+                )
+
+        for stream_key, sequences in sequences_by_stream.items():
+            ordered = sorted(sequences)
+            expected = list(range(1, ordered[-1] + 1))
+            if ordered != expected:
+                raise ValueError(
+                    "R8_2_STREAM_SEQUENCE_CONTIGUITY_VIOLATION"
+                )
 
         stream_rows = connection.execute(
             """
@@ -585,7 +770,84 @@ class SQLiteBoundedFootballLiveControlStore:
             raise ValueError("R8_2_STREAM_SEQUENCE_MEMBERSHIP_MISMATCH")
         for stream_key, maximum in max_by_stream.items():
             if stream_state[stream_key] != maximum:
-                raise ValueError("R8_2_STREAM_SEQUENCE_WATERMARK_MISMATCH")
+                raise ValueError(
+                    "R8_2_STREAM_SEQUENCE_WATERMARK_MISMATCH"
+                )
+
+    def _migrate_v82_to_v83(
+        self,
+        connection: sqlite3.Connection,
+    ) -> None:
+        integrity = str(
+            connection.execute("PRAGMA integrity_check").fetchone()[0]
+        )
+        if integrity != "ok":
+            raise ValueError("R8_2_SQLITE_INTEGRITY_CHECK_FAILED")
+
+        anchor = connection.execute(
+            """
+            SELECT payload_sha256
+            FROM football_bounded_control_anchor
+            WHERE singleton_id = 1
+            """
+        ).fetchone()
+        if anchor is None:
+            raise ValueError("R8_2_CONTROL_ANCHOR_REQUIRED")
+
+        expected_old_anchor = _sha(self._anchor_payload_v82(connection))
+        if str(anchor[0]) != expected_old_anchor:
+            raise ValueError("R8_2_V82_CONTROL_ANCHOR_MISMATCH")
+
+        connection.execute(
+            """
+            ALTER TABLE football_bounded_run_control
+            ADD COLUMN config_fingerprint TEXT
+            """
+        )
+
+        rows = connection.execute(
+            """
+            SELECT
+                run_id,
+                provider_key,
+                subject_key,
+                modalities_json,
+                max_capture_rounds,
+                max_total_provider_calls,
+                max_runtime_ms
+            FROM football_bounded_run_control
+            """
+        ).fetchall()
+
+        for row in rows:
+            modalities = json.loads(str(row[3]))
+            rederived = BoundedFootballLiveExecutorConfig(
+                provider_key=str(row[1]),
+                subject_key=str(row[2]),
+                modalities=tuple(modalities),
+                max_capture_rounds=int(row[4]),
+                max_total_provider_calls=int(row[5]),
+                max_runtime_ms=int(row[6]),
+            )
+            validate_r8_2_engineering_resource_ceiling_from_config(
+                rederived
+            )
+            connection.execute(
+                """
+                UPDATE football_bounded_run_control
+                SET config_fingerprint = ?
+                WHERE run_id = ?
+                """,
+                (
+                    rederived.config_fingerprint,
+                    str(row[0]),
+                ),
+            )
+
+        connection.execute(
+            f"PRAGMA user_version = {R8_2_CONTROL_LEDGER_USER_VERSION}"
+        )
+        self._rewrite_anchor(connection)
 
     def _initialize(self) -> None:
         with self._connect() as connection:
@@ -596,30 +858,57 @@ class SQLiteBoundedFootballLiveControlStore:
                         "PRAGMA user_version"
                     ).fetchone()[0]
                 )
-                if version not in (0, R8_2_CONTROL_LEDGER_USER_VERSION):
+                if version not in (
+                    0,
+                    R8_2_PREVIOUS_CONTROL_LEDGER_USER_VERSION,
+                    R8_2_CONTROL_LEDGER_USER_VERSION,
+                ):
                     raise ValueError(
                         "R8_2_CONTROL_SCHEMA_VERSION_MISMATCH"
                     )
 
-                connection.execute(
-                    """
-                    CREATE TABLE IF NOT EXISTS
-                    football_bounded_run_control (
-                        run_id TEXT PRIMARY KEY,
-                        manifest_fingerprint TEXT NOT NULL,
-                        provider_key TEXT NOT NULL,
-                        subject_key TEXT NOT NULL,
-                        modalities_json TEXT NOT NULL,
-                        max_capture_rounds INTEGER NOT NULL,
-                        max_total_provider_calls INTEGER NOT NULL,
-                        max_runtime_ms INTEGER NOT NULL,
-                        state TEXT NOT NULL,
-                        state_version INTEGER NOT NULL,
-                        created_at TEXT NOT NULL,
-                        updated_at TEXT NOT NULL
+                if version == 0:
+                    connection.execute(
+                        """
+                        CREATE TABLE IF NOT EXISTS
+                        football_bounded_run_control (
+                            run_id TEXT PRIMARY KEY,
+                            manifest_fingerprint TEXT NOT NULL,
+                            config_fingerprint TEXT NOT NULL,
+                            provider_key TEXT NOT NULL,
+                            subject_key TEXT NOT NULL,
+                            modalities_json TEXT NOT NULL,
+                            max_capture_rounds INTEGER NOT NULL,
+                            max_total_provider_calls INTEGER NOT NULL,
+                            max_runtime_ms INTEGER NOT NULL,
+                            state TEXT NOT NULL,
+                            state_version INTEGER NOT NULL,
+                            created_at TEXT NOT NULL,
+                            updated_at TEXT NOT NULL
+                        )
+                        """
                     )
-                    """
-                )
+                else:
+                    connection.execute(
+                        """
+                        CREATE TABLE IF NOT EXISTS
+                        football_bounded_run_control (
+                            run_id TEXT PRIMARY KEY,
+                            manifest_fingerprint TEXT NOT NULL,
+                            provider_key TEXT NOT NULL,
+                            subject_key TEXT NOT NULL,
+                            modalities_json TEXT NOT NULL,
+                            max_capture_rounds INTEGER NOT NULL,
+                            max_total_provider_calls INTEGER NOT NULL,
+                            max_runtime_ms INTEGER NOT NULL,
+                            state TEXT NOT NULL,
+                            state_version INTEGER NOT NULL,
+                            created_at TEXT NOT NULL,
+                            updated_at TEXT NOT NULL
+                        )
+                        """
+                    )
+
                 connection.execute(
                     """
                     CREATE TABLE IF NOT EXISTS
@@ -666,10 +955,14 @@ class SQLiteBoundedFootballLiveControlStore:
                     """
                 )
 
-                if version == 0:
+                if version == R8_2_PREVIOUS_CONTROL_LEDGER_USER_VERSION:
+                    self._migrate_v82_to_v83(connection)
+                    version = R8_2_CONTROL_LEDGER_USER_VERSION
+                elif version == 0:
                     connection.execute(
                         f"PRAGMA user_version = {R8_2_CONTROL_LEDGER_USER_VERSION}"
                     )
+                    version = R8_2_CONTROL_LEDGER_USER_VERSION
 
                 anchor = connection.execute(
                     """
@@ -728,6 +1021,10 @@ class SQLiteBoundedFootballLiveControlStore:
             registered_at,
             name="registered_at",
         )
+        if registered < manifest.created_at:
+            raise ValueError(
+                "R8_2_RUN_REGISTRATION_PRECEDES_MANIFEST_CREATION"
+            )
 
         with self._connect() as connection:
             connection.execute("BEGIN IMMEDIATE")
@@ -737,6 +1034,7 @@ class SQLiteBoundedFootballLiveControlStore:
                     """
                     SELECT
                         manifest_fingerprint,
+                        config_fingerprint,
                         provider_key,
                         subject_key,
                         modalities_json,
@@ -765,6 +1063,7 @@ class SQLiteBoundedFootballLiveControlStore:
                         INSERT INTO football_bounded_run_control (
                             run_id,
                             manifest_fingerprint,
+                            config_fingerprint,
                             provider_key,
                             subject_key,
                             modalities_json,
@@ -776,11 +1075,12 @@ class SQLiteBoundedFootballLiveControlStore:
                             created_at,
                             updated_at
                         )
-                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                         """,
                         (
                             manifest.run_id,
                             manifest.manifest_fingerprint,
+                            manifest.config_fingerprint,
                             manifest.provider_key,
                             manifest.subject_key,
                             modalities_json,
@@ -799,12 +1099,14 @@ class SQLiteBoundedFootballLiveControlStore:
                         str(row[1]),
                         str(row[2]),
                         str(row[3]),
-                        int(row[4]),
+                        str(row[4]),
                         int(row[5]),
                         int(row[6]),
+                        int(row[7]),
                     )
                     expected = (
                         manifest.manifest_fingerprint,
+                        manifest.config_fingerprint,
                         manifest.provider_key,
                         manifest.subject_key,
                         modalities_json,
@@ -838,6 +1140,7 @@ class SQLiteBoundedFootballLiveControlStore:
                 SELECT
                     run_id,
                     manifest_fingerprint,
+                    config_fingerprint,
                     provider_key,
                     subject_key,
                     modalities_json,
@@ -860,16 +1163,17 @@ class SQLiteBoundedFootballLiveControlStore:
         return RunControlSnapshot(
             run_id=str(row[0]),
             manifest_fingerprint=str(row[1]),
-            provider_key=str(row[2]),
-            subject_key=str(row[3]),
-            modalities=tuple(json.loads(str(row[4]))),
-            max_capture_rounds=int(row[5]),
-            max_total_provider_calls=int(row[6]),
-            max_runtime_ms=int(row[7]),
-            state=str(row[8]),
-            state_version=int(row[9]),
-            created_at=datetime.fromisoformat(str(row[10])),
-            updated_at=datetime.fromisoformat(str(row[11])),
+            config_fingerprint=str(row[2]),
+            provider_key=str(row[3]),
+            subject_key=str(row[4]),
+            modalities=tuple(json.loads(str(row[5]))),
+            max_capture_rounds=int(row[6]),
+            max_total_provider_calls=int(row[7]),
+            max_runtime_ms=int(row[8]),
+            state=str(row[9]),
+            state_version=int(row[10]),
+            created_at=datetime.fromisoformat(str(row[11])),
+            updated_at=datetime.fromisoformat(str(row[12])),
         )
 
     def transition_run_state(
@@ -903,7 +1207,7 @@ class SQLiteBoundedFootballLiveControlStore:
                 self._assert_integrity(connection)
                 row = connection.execute(
                     """
-                    SELECT state, state_version
+                    SELECT state, state_version, created_at, updated_at
                     FROM football_bounded_run_control
                     WHERE run_id = ?
                     """,
@@ -917,6 +1221,30 @@ class SQLiteBoundedFootballLiveControlStore:
                     raise ValueError(
                         "R8_2_RUN_STATE_VERSION_COMPARE_AND_SWAP_FAILED"
                     )
+
+                current_updated_at = datetime.fromisoformat(str(row[3]))
+                if changed < current_updated_at:
+                    raise ValueError("R8_2_RUN_TIME_REGRESSION")
+
+                latest_reservation_row = connection.execute(
+                    """
+                    SELECT MAX(updated_at)
+                    FROM football_bounded_sequence_reservation
+                    WHERE run_id = ?
+                    """,
+                    (normalized,),
+                ).fetchone()
+                if (
+                    latest_reservation_row is not None
+                    and latest_reservation_row[0] is not None
+                ):
+                    latest_reservation_at = datetime.fromisoformat(
+                        str(latest_reservation_row[0])
+                    )
+                    if changed < latest_reservation_at:
+                        raise ValueError(
+                            "R8_2_RUN_TIME_PRECEDES_RESERVATION"
+                        )
 
                 if new_state == "COMPLETED":
                     open_reservations = int(
@@ -1005,7 +1333,9 @@ class SQLiteBoundedFootballLiveControlStore:
                         modalities_json,
                         max_capture_rounds,
                         max_total_provider_calls,
-                        state
+                        state,
+                        created_at,
+                        updated_at
                     FROM football_bounded_run_control
                     WHERE run_id = ?
                     """,
@@ -1016,6 +1346,12 @@ class SQLiteBoundedFootballLiveControlStore:
                 if str(run[5]) != "IN_PROGRESS":
                     raise ValueError(
                         "R8_2_SEQUENCE_RESERVATION_REQUIRES_IN_PROGRESS_RUN"
+                    )
+
+                run_updated_at = datetime.fromisoformat(str(run[7]))
+                if reserved < run_updated_at:
+                    raise ValueError(
+                        "R8_2_RESERVATION_TIME_PRECEDES_RUN_STATE"
                     )
 
                 modalities = tuple(json.loads(str(run[2])))
@@ -1202,6 +1538,32 @@ class SQLiteBoundedFootballLiveControlStore:
                 ).fetchone()
                 if row is None:
                     raise ValueError("R8_2_SEQUENCE_RESERVATION_NOT_FOUND")
+
+                run_row = connection.execute(
+                    """
+                    SELECT state, updated_at
+                    FROM football_bounded_run_control
+                    WHERE run_id = ?
+                    """,
+                    (normalized,),
+                ).fetchone()
+                if run_row is None:
+                    raise ValueError("R8_2_RUN_CONTROL_NOT_FOUND")
+                if str(run_row[0]) not in {"IN_PROGRESS", "RECOVERY_REQUIRED"}:
+                    raise ValueError(
+                        "R8_2_RESERVATION_TRANSITION_RUN_STATE_FORBIDDEN"
+                    )
+
+                current_updated_at = datetime.fromisoformat(str(row[4]))
+                run_updated_at = datetime.fromisoformat(str(run_row[1]))
+                if changed < current_updated_at:
+                    raise ValueError(
+                        "R8_2_RESERVATION_TIME_REGRESSION"
+                    )
+                if changed < run_updated_at:
+                    raise ValueError(
+                        "R8_2_RESERVATION_TIME_PRECEDES_RUN_STATE"
+                    )
 
                 current_state = str(row[2])
                 if current_state == new_state:
