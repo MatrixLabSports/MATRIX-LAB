@@ -1140,7 +1140,7 @@ def test_integrity_rederives_terminal_open_reservation_invariant(tmp_path):
     guard.release(lease)
 
 
-def test_v82_empty_control_store_migrates_atomically_to_v83(tmp_path):
+def test_v82_empty_control_store_migrates_atomically_to_v84(tmp_path):
     path = tmp_path / "v82.sqlite3"
     with sqlite3.connect(path) as connection:
         connection.executescript(
@@ -1204,7 +1204,7 @@ def test_v82_empty_control_store_migrates_atomically_to_v83(tmp_path):
     with sqlite3.connect(path) as connection:
         assert connection.execute(
             "PRAGMA user_version"
-        ).fetchone()[0] == 83
+        ).fetchone()[0] == 84
         columns = {
             row[1]
             for row in connection.execute(
@@ -1213,4 +1213,442 @@ def test_v82_empty_control_store_migrates_atomically_to_v83(tmp_path):
         }
 
     assert "config_fingerprint" in columns
+    assert "manifest_json" in columns
     assert store.audit_integrity() is True
+
+
+def _anchor_payload_v84(connection):
+    run_rows = connection.execute(
+        """
+        SELECT
+            run_id,
+            manifest_fingerprint,
+            manifest_json,
+            config_fingerprint,
+            provider_key,
+            subject_key,
+            modalities_json,
+            max_capture_rounds,
+            max_total_provider_calls,
+            max_runtime_ms,
+            state,
+            state_version,
+            created_at,
+            updated_at
+        FROM football_bounded_run_control
+        ORDER BY run_id
+        """
+    ).fetchall()
+    stream_rows = connection.execute(
+        """
+        SELECT stream_key, last_reserved_sequence
+        FROM football_bounded_stream_sequence
+        ORDER BY stream_key
+        """
+    ).fetchall()
+    reservation_rows = connection.execute(
+        """
+        SELECT
+            run_id,
+            round_index,
+            modality,
+            stream_key,
+            sequence_number,
+            state,
+            created_at,
+            updated_at
+        FROM football_bounded_sequence_reservation
+        ORDER BY stream_key, sequence_number
+        """
+    ).fetchall()
+    return {
+        "schema": "matrix.c2-r8-2-control-anchor/1",
+        "runs": [list(row) for row in run_rows],
+        "streams": [list(row) for row in stream_rows],
+        "reservations": [list(row) for row in reservation_rows],
+    }
+
+
+def _rewrite_r8_2r2_anchor(path):
+    with sqlite3.connect(path) as connection:
+        connection.execute(
+            """
+            UPDATE football_bounded_control_anchor
+            SET payload_sha256 = ?
+            WHERE singleton_id = 1
+            """,
+            (_canonical_payload(_anchor_payload_v84(connection)),),
+        )
+        connection.commit()
+
+
+def test_manifest_authority_is_rederived_after_rehashed_tamper(tmp_path):
+    path = tmp_path / "manifest-authority.sqlite3"
+    store = SQLiteBoundedFootballLiveControlStore(path)
+    value = manifest()
+    guard, lease = acquire(path)
+    store.register_run(
+        value,
+        guard=guard,
+        lease=lease,
+        registered_at=BASE,
+    )
+
+    with sqlite3.connect(path) as connection:
+        connection.execute(
+            """
+            UPDATE football_bounded_run_control
+            SET manifest_fingerprint = ?
+            WHERE run_id = ?
+            """,
+            ("f" * 64, value.run_id),
+        )
+        connection.commit()
+
+    _rewrite_r8_2r2_anchor(path)
+    assert store.audit_integrity() is False
+    guard.release(lease)
+
+
+def test_run_id_provenance_is_rederived_from_durable_manifest(tmp_path):
+    path = tmp_path / "run-id.sqlite3"
+    store = SQLiteBoundedFootballLiveControlStore(path)
+    value = manifest()
+    guard, lease = acquire(path)
+    store.register_run(
+        value,
+        guard=guard,
+        lease=lease,
+        registered_at=BASE,
+    )
+
+    with sqlite3.connect(path) as connection:
+        connection.execute("PRAGMA foreign_keys = OFF")
+        connection.execute(
+            """
+            UPDATE football_bounded_run_control
+            SET run_id = ?
+            WHERE run_id = ?
+            """,
+            ("e" * 64, value.run_id),
+        )
+        connection.commit()
+
+    _rewrite_r8_2r2_anchor(path)
+    assert store.audit_integrity() is False
+    guard.release(lease)
+
+
+def test_stream_sequence_reservation_time_is_monotonic(tmp_path):
+    path, store, value, guard, lease = _active_store(
+        tmp_path,
+        "stream-time.sqlite3",
+    )
+
+    first = store.reserve_next_sequence(
+        value.run_id,
+        round_index=1,
+        modality="fixture_events",
+        reserved_at=BASE + timedelta(seconds=10),
+        guard=guard,
+        lease=lease,
+    )
+    assert first.sequence_number == 1
+
+    with pytest.raises(
+        ValueError,
+        match="R8_2_STREAM_SEQUENCE_TIME_REGRESSION",
+    ):
+        store.reserve_next_sequence(
+            value.run_id,
+            round_index=2,
+            modality="fixture_events",
+            reserved_at=BASE + timedelta(seconds=5),
+            guard=guard,
+            lease=lease,
+        )
+
+    guard.release(lease)
+
+
+def test_integrity_rederives_stream_sequence_time_order(tmp_path):
+    path, store, value, guard, lease = _active_store(
+        tmp_path,
+        "stream-time-integrity.sqlite3",
+    )
+    store.reserve_next_sequence(
+        value.run_id,
+        round_index=1,
+        modality="fixture_events",
+        reserved_at=BASE + timedelta(seconds=2),
+        guard=guard,
+        lease=lease,
+    )
+    store.reserve_next_sequence(
+        value.run_id,
+        round_index=2,
+        modality="fixture_events",
+        reserved_at=BASE + timedelta(seconds=3),
+        guard=guard,
+        lease=lease,
+    )
+
+    with sqlite3.connect(path) as connection:
+        connection.execute(
+            """
+            UPDATE football_bounded_sequence_reservation
+            SET created_at = ?,
+                updated_at = ?
+            WHERE run_id = ?
+              AND round_index = 2
+              AND modality = 'fixture_events'
+            """,
+            (
+                (BASE + timedelta(seconds=1)).isoformat(),
+                (BASE + timedelta(seconds=1)).isoformat(),
+                value.run_id,
+            ),
+        )
+        connection.commit()
+
+    _rewrite_r8_2r2_anchor(path)
+    assert store.audit_integrity() is False
+    guard.release(lease)
+
+
+@pytest.mark.parametrize(
+    ("state", "state_version"),
+    [
+        ("PLANNED", 1),
+        ("IN_PROGRESS", 0),
+        ("IN_PROGRESS", 2),
+        ("RECOVERY_REQUIRED", 1),
+        ("RECOVERY_REQUIRED", 3),
+        ("COMPLETED", 1),
+        ("COMPLETED", 3),
+        ("ABORTED", 0),
+    ],
+)
+def test_integrity_rederives_run_state_version_semantics(
+    tmp_path,
+    state,
+    state_version,
+):
+    path = tmp_path / f"state-version-{state}-{state_version}.sqlite3"
+    store = SQLiteBoundedFootballLiveControlStore(path)
+    value = manifest()
+    guard, lease = acquire(path)
+    store.register_run(
+        value,
+        guard=guard,
+        lease=lease,
+        registered_at=BASE,
+    )
+
+    with sqlite3.connect(path) as connection:
+        connection.execute(
+            """
+            UPDATE football_bounded_run_control
+            SET state = ?,
+                state_version = ?
+            WHERE run_id = ?
+            """,
+            (state, state_version, value.run_id),
+        )
+        connection.commit()
+
+    _rewrite_r8_2r2_anchor(path)
+    assert store.audit_integrity() is False
+    guard.release(lease)
+
+
+def _create_empty_v83(path):
+    with sqlite3.connect(path) as connection:
+        connection.executescript(
+            """
+            PRAGMA user_version = 83;
+            CREATE TABLE football_bounded_run_control (
+                run_id TEXT PRIMARY KEY,
+                manifest_fingerprint TEXT NOT NULL,
+                config_fingerprint TEXT,
+                provider_key TEXT NOT NULL,
+                subject_key TEXT NOT NULL,
+                modalities_json TEXT NOT NULL,
+                max_capture_rounds INTEGER NOT NULL,
+                max_total_provider_calls INTEGER NOT NULL,
+                max_runtime_ms INTEGER NOT NULL,
+                state TEXT NOT NULL,
+                state_version INTEGER NOT NULL,
+                created_at TEXT NOT NULL,
+                updated_at TEXT NOT NULL
+            );
+            CREATE TABLE football_bounded_stream_sequence (
+                stream_key TEXT PRIMARY KEY,
+                last_reserved_sequence INTEGER NOT NULL
+            );
+            CREATE TABLE football_bounded_sequence_reservation (
+                run_id TEXT NOT NULL,
+                round_index INTEGER NOT NULL,
+                modality TEXT NOT NULL,
+                stream_key TEXT NOT NULL,
+                sequence_number INTEGER NOT NULL,
+                state TEXT NOT NULL,
+                created_at TEXT NOT NULL,
+                updated_at TEXT NOT NULL,
+                PRIMARY KEY (run_id, round_index, modality),
+                UNIQUE (stream_key, sequence_number)
+            );
+            CREATE TABLE football_bounded_control_anchor (
+                singleton_id INTEGER PRIMARY KEY CHECK (singleton_id = 1),
+                payload_sha256 TEXT NOT NULL
+            );
+            """
+        )
+        empty_payload = {
+            "schema": "matrix.c2-r8-2-control-anchor/1",
+            "runs": [],
+            "streams": [],
+            "reservations": [],
+        }
+        connection.execute(
+            """
+            INSERT INTO football_bounded_control_anchor (
+                singleton_id,
+                payload_sha256
+            )
+            VALUES (1, ?)
+            """,
+            (_canonical_payload(empty_payload),),
+        )
+        connection.commit()
+
+
+def test_empty_v83_control_store_migrates_atomically_to_v84(tmp_path):
+    path = tmp_path / "v83-empty.sqlite3"
+    _create_empty_v83(path)
+
+    store = SQLiteBoundedFootballLiveControlStore(path)
+
+    with sqlite3.connect(path) as connection:
+        version = connection.execute(
+            "PRAGMA user_version"
+        ).fetchone()[0]
+        columns = {
+            row[1]
+            for row in connection.execute(
+                "PRAGMA table_info(football_bounded_run_control)"
+            ).fetchall()
+        }
+
+    assert version == 84
+    assert "manifest_json" in columns
+    assert store.audit_integrity() is True
+
+
+def test_nonempty_v83_migration_fails_closed_and_is_atomic(tmp_path):
+    path = tmp_path / "v83-nonempty.sqlite3"
+    _create_empty_v83(path)
+    value = manifest()
+    modalities_json = json.dumps(
+        list(value.modalities),
+        separators=(",", ":"),
+        ensure_ascii=False,
+    )
+
+    with sqlite3.connect(path) as connection:
+        connection.execute(
+            """
+            INSERT INTO football_bounded_run_control (
+                run_id,
+                manifest_fingerprint,
+                config_fingerprint,
+                provider_key,
+                subject_key,
+                modalities_json,
+                max_capture_rounds,
+                max_total_provider_calls,
+                max_runtime_ms,
+                state,
+                state_version,
+                created_at,
+                updated_at
+            )
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """,
+            (
+                value.run_id,
+                value.manifest_fingerprint,
+                value.config_fingerprint,
+                value.provider_key,
+                value.subject_key,
+                modalities_json,
+                value.max_capture_rounds,
+                value.max_total_provider_calls,
+                value.max_runtime_ms,
+                "PLANNED",
+                0,
+                BASE.isoformat(),
+                BASE.isoformat(),
+            ),
+        )
+        payload = {
+            "schema": "matrix.c2-r8-2-control-anchor/1",
+            "runs": [
+                list(
+                    connection.execute(
+                        """
+                        SELECT
+                            run_id,
+                            manifest_fingerprint,
+                            config_fingerprint,
+                            provider_key,
+                            subject_key,
+                            modalities_json,
+                            max_capture_rounds,
+                            max_total_provider_calls,
+                            max_runtime_ms,
+                            state,
+                            state_version,
+                            created_at,
+                            updated_at
+                        FROM football_bounded_run_control
+                        """
+                    ).fetchone()
+                )
+            ],
+            "streams": [],
+            "reservations": [],
+        }
+        connection.execute(
+            """
+            UPDATE football_bounded_control_anchor
+            SET payload_sha256 = ?
+            WHERE singleton_id = 1
+            """,
+            (_canonical_payload(payload),),
+        )
+        connection.commit()
+
+    with pytest.raises(
+        ValueError,
+        match="R8_2R2_NONEMPTY_V83_MANIFEST_PROVENANCE_UNAVAILABLE",
+    ):
+        SQLiteBoundedFootballLiveControlStore(path)
+
+    with sqlite3.connect(path) as connection:
+        version = connection.execute(
+            "PRAGMA user_version"
+        ).fetchone()[0]
+        columns = {
+            row[1]
+            for row in connection.execute(
+                "PRAGMA table_info(football_bounded_run_control)"
+            ).fetchall()
+        }
+        count = connection.execute(
+            "SELECT COUNT(*) FROM football_bounded_run_control"
+        ).fetchone()[0]
+
+    assert version == 83
+    assert "manifest_json" not in columns
+    assert count == 1
