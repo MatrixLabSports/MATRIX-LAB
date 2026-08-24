@@ -1920,3 +1920,128 @@ def test_nonempty_v84_migrates_to_v85_after_verified_provenance(tmp_path):
     assert version == 85
     assert reopened.get_run(value.run_id).run_id == value.run_id
     assert reopened.audit_integrity() is True
+
+
+def test_schema_contract_rejects_unexpected_trigger_namespace(tmp_path):
+    path = tmp_path / "trigger-namespace.sqlite3"
+    store = SQLiteBoundedFootballLiveControlStore(path)
+
+    with sqlite3.connect(path) as connection:
+        connection.execute(
+            """
+            CREATE TRIGGER force_abort_after_start
+            AFTER UPDATE OF state
+            ON football_bounded_run_control
+            WHEN NEW.state = 'IN_PROGRESS'
+            BEGIN
+                UPDATE football_bounded_run_control
+                SET state = 'ABORTED'
+                WHERE run_id = NEW.run_id;
+            END
+            """
+        )
+        connection.commit()
+
+    assert store.audit_integrity() is False
+
+
+def test_exact_slot_replay_uses_durable_identity_after_recovery(tmp_path):
+    path = tmp_path / "recovery-idempotent-replay.sqlite3"
+    store = SQLiteBoundedFootballLiveControlStore(path)
+    value = manifest()
+    guard, lease = acquire(path)
+
+    store.register_run(
+        value,
+        guard=guard,
+        lease=lease,
+        registered_at=BASE,
+    )
+    store.transition_run_state(
+        value.run_id,
+        expected_state="PLANNED",
+        expected_state_version=0,
+        new_state="IN_PROGRESS",
+        changed_at=BASE + timedelta(seconds=1),
+        guard=guard,
+        lease=lease,
+    )
+    original = store.reserve_next_sequence(
+        value.run_id,
+        round_index=1,
+        modality="fixture_events",
+        reserved_at=BASE + timedelta(seconds=2),
+        guard=guard,
+        lease=lease,
+    )
+    store.transition_run_state(
+        value.run_id,
+        expected_state="IN_PROGRESS",
+        expected_state_version=1,
+        new_state="RECOVERY_REQUIRED",
+        changed_at=BASE + timedelta(seconds=3),
+        guard=guard,
+        lease=lease,
+    )
+    store.transition_run_state(
+        value.run_id,
+        expected_state="RECOVERY_REQUIRED",
+        expected_state_version=2,
+        new_state="IN_PROGRESS",
+        changed_at=BASE + timedelta(seconds=4),
+        guard=guard,
+        lease=lease,
+    )
+
+    replay_original_time = store.reserve_next_sequence(
+        value.run_id,
+        round_index=1,
+        modality="fixture_events",
+        reserved_at=original.created_at,
+        guard=guard,
+        lease=lease,
+    )
+    replay_fresh_time = store.reserve_next_sequence(
+        value.run_id,
+        round_index=1,
+        modality="fixture_events",
+        reserved_at=BASE + timedelta(seconds=5),
+        guard=guard,
+        lease=lease,
+    )
+
+    assert replay_original_time == original
+    assert replay_fresh_time == original
+    assert store.get_reservation(
+        value.run_id,
+        round_index=1,
+        modality="fixture_events",
+    ) == original
+
+    with sqlite3.connect(path) as connection:
+        count = int(
+            connection.execute(
+                """
+                SELECT COUNT(*)
+                FROM football_bounded_sequence_reservation
+                WHERE run_id = ?
+                  AND round_index = 1
+                  AND modality = 'fixture_events'
+                """,
+                (value.run_id,),
+            ).fetchone()[0]
+        )
+        watermark = int(
+            connection.execute(
+                """
+                SELECT last_reserved_sequence
+                FROM football_bounded_stream_sequence
+                WHERE stream_key = ?
+                """,
+                (original.stream_key,),
+            ).fetchone()[0]
+        )
+
+    assert count == 1
+    assert watermark == 1
+    guard.release(lease)

@@ -636,6 +636,35 @@ class SQLiteBoundedFootballLiveControlStore:
                 "R8_2_CONTROL_SCHEMA_ANCHOR_CHECK_MISSING"
             )
 
+        expected_namespace = tuple(
+            sorted(
+                (
+                    ("table", table, table)
+                    for table in expected_table_info
+                )
+            )
+        )
+        actual_namespace = tuple(
+            sorted(
+                (
+                    str(row[0]),
+                    str(row[1]),
+                    str(row[2]),
+                )
+                for row in connection.execute(
+                    """
+                    SELECT type, name, tbl_name
+                    FROM sqlite_master
+                    WHERE name NOT LIKE 'sqlite_%'
+                    """
+                ).fetchall()
+            )
+        )
+        if actual_namespace != expected_namespace:
+            raise ValueError(
+                "R8_2_CONTROL_SCHEMA_OBJECT_NAMESPACE_MISMATCH"
+            )
+
     def _anchor_payload(
         self,
         connection: sqlite3.Connection,
@@ -1896,12 +1925,6 @@ class SQLiteBoundedFootballLiveControlStore:
                         "R8_2_SEQUENCE_RESERVATION_REQUIRES_IN_PROGRESS_RUN"
                     )
 
-                run_updated_at = datetime.fromisoformat(str(run[7]))
-                if reserved < run_updated_at:
-                    raise ValueError(
-                        "R8_2_RESERVATION_TIME_PRECEDES_RUN_STATE"
-                    )
-
                 modalities = tuple(json.loads(str(run[2])))
                 if modality_value not in modalities:
                     raise ValueError("R8_2_RUN_MODALITY_NOT_ALLOWED")
@@ -1928,6 +1951,10 @@ class SQLiteBoundedFootballLiveControlStore:
                     ),
                 ).fetchone()
                 if existing is not None:
+                    # Exact-slot replay is a read-only idempotent resolution.
+                    # The caller-supplied reserved_at belongs to a *new*
+                    # reservation intent and must not invalidate replay of
+                    # already-durable evidence after a recovery cycle.
                     connection.execute("COMMIT")
                     return SequenceReservation(
                         run_id=normalized,
@@ -1938,6 +1965,12 @@ class SQLiteBoundedFootballLiveControlStore:
                         state=str(existing[2]),
                         created_at=datetime.fromisoformat(str(existing[3])),
                         updated_at=datetime.fromisoformat(str(existing[4])),
+                    )
+
+                run_updated_at = datetime.fromisoformat(str(run[7]))
+                if reserved < run_updated_at:
+                    raise ValueError(
+                        "R8_2_RESERVATION_TIME_PRECEDES_RUN_STATE"
                     )
 
                 reservation_count = int(
