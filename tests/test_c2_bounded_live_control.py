@@ -2045,3 +2045,260 @@ def test_exact_slot_replay_uses_durable_identity_after_recovery(tmp_path):
     assert count == 1
     assert watermark == 1
     guard.release(lease)
+
+
+def test_schema_contract_rejects_semantic_table_sql_drift(tmp_path):
+    path = tmp_path / "table-sql-semantics.sqlite3"
+    store = SQLiteBoundedFootballLiveControlStore(path)
+
+    with sqlite3.connect(path) as connection:
+        connection.execute("PRAGMA foreign_keys = OFF")
+        connection.execute(
+            """
+            CREATE TABLE replacement_run_control (
+                run_id TEXT PRIMARY KEY,
+                manifest_fingerprint TEXT NOT NULL,
+                manifest_json TEXT NOT NULL,
+                config_fingerprint TEXT NOT NULL,
+                provider_key TEXT NOT NULL,
+                subject_key TEXT NOT NULL,
+                modalities_json TEXT NOT NULL,
+                max_capture_rounds INTEGER NOT NULL,
+                max_total_provider_calls INTEGER NOT NULL,
+                max_runtime_ms INTEGER NOT NULL,
+                state TEXT NOT NULL CHECK (state <> 'IN_PROGRESS'),
+                state_version INTEGER NOT NULL,
+                created_at TEXT NOT NULL,
+                updated_at TEXT NOT NULL
+            )
+            """
+        )
+        connection.execute(
+            "DROP TABLE football_bounded_run_control"
+        )
+        connection.execute(
+            """
+            ALTER TABLE replacement_run_control
+            RENAME TO football_bounded_run_control
+            """
+        )
+        connection.commit()
+
+    assert store.audit_integrity() is False
+
+
+def test_committed_result_replay_uses_durable_state_after_recovery(tmp_path):
+    path = tmp_path / "committed-result-replay.sqlite3"
+    store = SQLiteBoundedFootballLiveControlStore(path)
+    value = manifest()
+    guard, lease = acquire(path)
+
+    store.register_run(
+        value,
+        guard=guard,
+        lease=lease,
+        registered_at=BASE,
+    )
+    store.transition_run_state(
+        value.run_id,
+        expected_state="PLANNED",
+        expected_state_version=0,
+        new_state="IN_PROGRESS",
+        changed_at=BASE + timedelta(seconds=1),
+        guard=guard,
+        lease=lease,
+    )
+    store.reserve_next_sequence(
+        value.run_id,
+        round_index=1,
+        modality="fixture_events",
+        reserved_at=BASE + timedelta(seconds=2),
+        guard=guard,
+        lease=lease,
+    )
+    committed = store.transition_reservation(
+        value.run_id,
+        round_index=1,
+        modality="fixture_events",
+        expected_state="RESERVED",
+        new_state="COMMITTED",
+        changed_at=BASE + timedelta(seconds=3),
+        guard=guard,
+        lease=lease,
+    )
+    store.transition_run_state(
+        value.run_id,
+        expected_state="IN_PROGRESS",
+        expected_state_version=1,
+        new_state="RECOVERY_REQUIRED",
+        changed_at=BASE + timedelta(seconds=4),
+        guard=guard,
+        lease=lease,
+    )
+    store.transition_run_state(
+        value.run_id,
+        expected_state="RECOVERY_REQUIRED",
+        expected_state_version=2,
+        new_state="IN_PROGRESS",
+        changed_at=BASE + timedelta(seconds=5),
+        guard=guard,
+        lease=lease,
+    )
+
+    replay_original = store.transition_reservation(
+        value.run_id,
+        round_index=1,
+        modality="fixture_events",
+        expected_state="RESERVED",
+        new_state="COMMITTED",
+        changed_at=committed.updated_at,
+        guard=guard,
+        lease=lease,
+    )
+    replay_fresh = store.transition_reservation(
+        value.run_id,
+        round_index=1,
+        modality="fixture_events",
+        expected_state="RESERVED",
+        new_state="COMMITTED",
+        changed_at=BASE + timedelta(seconds=6),
+        guard=guard,
+        lease=lease,
+    )
+
+    assert replay_original == committed
+    assert replay_fresh == committed
+    assert store.get_reservation(
+        value.run_id,
+        round_index=1,
+        modality="fixture_events",
+    ) == committed
+    assert store.audit_integrity() is True
+    guard.release(lease)
+
+
+def test_committed_result_replay_is_read_only_after_run_completion(tmp_path):
+    path = tmp_path / "committed-replay-completed-run.sqlite3"
+    store = SQLiteBoundedFootballLiveControlStore(path)
+    value = manifest()
+    guard, lease = acquire(path)
+
+    store.register_run(
+        value,
+        guard=guard,
+        lease=lease,
+        registered_at=BASE,
+    )
+    store.transition_run_state(
+        value.run_id,
+        expected_state="PLANNED",
+        expected_state_version=0,
+        new_state="IN_PROGRESS",
+        changed_at=BASE + timedelta(seconds=1),
+        guard=guard,
+        lease=lease,
+    )
+    store.reserve_next_sequence(
+        value.run_id,
+        round_index=1,
+        modality="fixture_events",
+        reserved_at=BASE + timedelta(seconds=2),
+        guard=guard,
+        lease=lease,
+    )
+    committed = store.transition_reservation(
+        value.run_id,
+        round_index=1,
+        modality="fixture_events",
+        expected_state="RESERVED",
+        new_state="COMMITTED",
+        changed_at=BASE + timedelta(seconds=3),
+        guard=guard,
+        lease=lease,
+    )
+    store.transition_run_state(
+        value.run_id,
+        expected_state="IN_PROGRESS",
+        expected_state_version=1,
+        new_state="COMPLETED",
+        changed_at=BASE + timedelta(seconds=4),
+        guard=guard,
+        lease=lease,
+    )
+
+    replay = store.transition_reservation(
+        value.run_id,
+        round_index=1,
+        modality="fixture_events",
+        expected_state="RESERVED",
+        new_state="COMMITTED",
+        changed_at=committed.updated_at,
+        guard=guard,
+        lease=lease,
+    )
+
+    assert replay == committed
+    assert store.audit_integrity() is True
+    guard.release(lease)
+
+
+def test_abandoned_result_replay_is_read_only_after_run_abort(tmp_path):
+    path = tmp_path / "abandoned-replay-aborted-run.sqlite3"
+    store = SQLiteBoundedFootballLiveControlStore(path)
+    value = manifest()
+    guard, lease = acquire(path)
+
+    store.register_run(
+        value,
+        guard=guard,
+        lease=lease,
+        registered_at=BASE,
+    )
+    store.transition_run_state(
+        value.run_id,
+        expected_state="PLANNED",
+        expected_state_version=0,
+        new_state="IN_PROGRESS",
+        changed_at=BASE + timedelta(seconds=1),
+        guard=guard,
+        lease=lease,
+    )
+    reserved = store.reserve_next_sequence(
+        value.run_id,
+        round_index=1,
+        modality="fixture_events",
+        reserved_at=BASE + timedelta(seconds=2),
+        guard=guard,
+        lease=lease,
+    )
+    store.transition_run_state(
+        value.run_id,
+        expected_state="IN_PROGRESS",
+        expected_state_version=1,
+        new_state="ABORTED",
+        changed_at=BASE + timedelta(seconds=3),
+        guard=guard,
+        lease=lease,
+    )
+    abandoned = store.get_reservation(
+        value.run_id,
+        round_index=1,
+        modality="fixture_events",
+    )
+    assert abandoned.state == "ABANDONED"
+    assert abandoned.sequence_number == reserved.sequence_number
+
+    replay = store.transition_reservation(
+        value.run_id,
+        round_index=1,
+        modality="fixture_events",
+        expected_state="RESERVED",
+        new_state="ABANDONED",
+        changed_at=reserved.created_at,
+        guard=guard,
+        lease=lease,
+    )
+
+    assert replay == abandoned
+    assert store.audit_integrity() is True
+    guard.release(lease)

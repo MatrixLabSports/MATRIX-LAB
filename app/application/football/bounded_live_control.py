@@ -51,6 +51,64 @@ _R8_2_ALLOWED_TRANSITIONS = {
 }
 
 
+_R8_2_CANONICAL_STORED_TABLE_SQL = {
+    "football_bounded_run_control": """
+        CREATE TABLE football_bounded_run_control (
+            run_id TEXT PRIMARY KEY,
+            manifest_fingerprint TEXT NOT NULL,
+            manifest_json TEXT NOT NULL,
+            config_fingerprint TEXT NOT NULL,
+            provider_key TEXT NOT NULL,
+            subject_key TEXT NOT NULL,
+            modalities_json TEXT NOT NULL,
+            max_capture_rounds INTEGER NOT NULL,
+            max_total_provider_calls INTEGER NOT NULL,
+            max_runtime_ms INTEGER NOT NULL,
+            state TEXT NOT NULL,
+            state_version INTEGER NOT NULL,
+            created_at TEXT NOT NULL,
+            updated_at TEXT NOT NULL
+        )
+    """,
+    "football_bounded_stream_sequence": """
+        CREATE TABLE football_bounded_stream_sequence (
+            stream_key TEXT PRIMARY KEY,
+            last_reserved_sequence INTEGER NOT NULL
+        )
+    """,
+    "football_bounded_sequence_reservation": """
+        CREATE TABLE football_bounded_sequence_reservation (
+            run_id TEXT NOT NULL,
+            round_index INTEGER NOT NULL,
+            modality TEXT NOT NULL,
+            stream_key TEXT NOT NULL,
+            sequence_number INTEGER NOT NULL,
+            state TEXT NOT NULL,
+            created_at TEXT NOT NULL,
+            updated_at TEXT NOT NULL,
+            PRIMARY KEY (
+                run_id,
+                round_index,
+                modality
+            ),
+            UNIQUE (
+                stream_key,
+                sequence_number
+            ),
+            FOREIGN KEY (run_id)
+                REFERENCES football_bounded_run_control(run_id)
+        )
+    """,
+    "football_bounded_control_anchor": """
+        CREATE TABLE football_bounded_control_anchor (
+            singleton_id INTEGER PRIMARY KEY
+                CHECK (singleton_id = 1),
+            payload_sha256 TEXT NOT NULL
+        )
+    """,
+}
+
+
 def _canonical(value: Any) -> str:
     return (
         json.dumps(
@@ -454,6 +512,34 @@ class SQLiteBoundedFootballLiveControlStore:
         )
 
     @staticmethod
+    def _normalize_table_sql_contract(value: str) -> str:
+        if not isinstance(value, str) or not value.strip():
+            raise ValueError("R8_2_CONTROL_SCHEMA_TABLE_SQL_REQUIRED")
+        return " ".join(value.strip().split()).lower()
+
+    @classmethod
+    def _table_sql_contract(
+        cls,
+        connection: sqlite3.Connection,
+        table: str,
+    ) -> str:
+        row = connection.execute(
+            """
+            SELECT sql
+            FROM sqlite_master
+            WHERE type = 'table'
+              AND name = ?
+            """,
+            (table,),
+        ).fetchone()
+        if row is None or row[0] is None:
+            raise ValueError(
+                "R8_2_CONTROL_SCHEMA_TABLE_SQL_REQUIRED:"
+                + table
+            )
+        return cls._normalize_table_sql_contract(str(row[0]))
+
+    @staticmethod
     def _table_info_contract(
         connection: sqlite3.Connection,
         table: str,
@@ -563,6 +649,20 @@ class SQLiteBoundedFootballLiveControlStore:
             if actual != expected:
                 raise ValueError(
                     "R8_2_CONTROL_SCHEMA_TABLE_INFO_MISMATCH:"
+                    + table
+                )
+
+        for table, expected_sql in _R8_2_CANONICAL_STORED_TABLE_SQL.items():
+            actual_sql = self._table_sql_contract(
+                connection,
+                table,
+            )
+            canonical_sql = self._normalize_table_sql_contract(
+                expected_sql
+            )
+            if actual_sql != canonical_sql:
+                raise ValueError(
+                    "R8_2_CONTROL_SCHEMA_TABLE_SQL_MISMATCH:"
                     + table
                 )
 
@@ -2139,6 +2239,25 @@ class SQLiteBoundedFootballLiveControlStore:
                 if row is None:
                     raise ValueError("R8_2_SEQUENCE_RESERVATION_NOT_FOUND")
 
+                current_state = str(row[2])
+
+                # An exact terminal-result replay is a read-only idempotent
+                # resolution. It must be decided from durable slot identity
+                # and durable state before applying temporal/run-state guards
+                # that are only relevant to a new reservation transition.
+                if current_state == new_state:
+                    connection.execute("COMMIT")
+                    return SequenceReservation(
+                        run_id=normalized,
+                        round_index=round_number,
+                        modality=modality_value,
+                        stream_key=str(row[0]),
+                        sequence_number=int(row[1]),
+                        state=current_state,
+                        created_at=datetime.fromisoformat(str(row[3])),
+                        updated_at=datetime.fromisoformat(str(row[4])),
+                    )
+
                 run_row = connection.execute(
                     """
                     SELECT state, updated_at
@@ -2165,19 +2284,6 @@ class SQLiteBoundedFootballLiveControlStore:
                         "R8_2_RESERVATION_TIME_PRECEDES_RUN_STATE"
                     )
 
-                current_state = str(row[2])
-                if current_state == new_state:
-                    connection.execute("COMMIT")
-                    return SequenceReservation(
-                        run_id=normalized,
-                        round_index=round_number,
-                        modality=modality_value,
-                        stream_key=str(row[0]),
-                        sequence_number=int(row[1]),
-                        state=current_state,
-                        created_at=datetime.fromisoformat(str(row[3])),
-                        updated_at=datetime.fromisoformat(str(row[4])),
-                    )
                 if current_state != expected_state:
                     raise ValueError(
                         "R8_2_RESERVATION_STATE_COMPARE_AND_SWAP_FAILED"
