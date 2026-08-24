@@ -71,7 +71,7 @@ R8_3_STOP_REASONS = (
     "MANUAL_STOP_REQUEST",
 )
 
-_JOURNAL_USER_VERSION = 2
+_JOURNAL_USER_VERSION = 3
 _JOURNAL_STATES = {"INTENT", "SUCCEEDED", "FAILED"}
 
 _JOURNAL_DDL = {
@@ -120,9 +120,25 @@ _JOURNAL_DDL = {
             run_id TEXT NOT NULL,
             resume_index INTEGER NOT NULL,
             resumed_at TEXT NOT NULL,
+            control_state_before TEXT NOT NULL,
+            control_state_version_before INTEGER NOT NULL,
             PRIMARY KEY (
                 run_id,
                 resume_index
+            ),
+            FOREIGN KEY (run_id)
+                REFERENCES r8_3_fake_run_meta(run_id)
+        )
+    """,
+    "r8_3_fake_stop_event": """
+        CREATE TABLE r8_3_fake_stop_event (
+            run_id TEXT NOT NULL,
+            stop_index INTEGER NOT NULL,
+            reason_code TEXT NOT NULL,
+            stopped_at TEXT NOT NULL,
+            PRIMARY KEY (
+                run_id,
+                stop_index
             ),
             FOREIGN KEY (run_id)
                 REFERENCES r8_3_fake_run_meta(run_id)
@@ -782,17 +798,32 @@ class SQLiteR83FakeExecutorJournal:
             SELECT
                 run_id,
                 resume_index,
-                resumed_at
+                resumed_at,
+                control_state_before,
+                control_state_version_before
             FROM r8_3_fake_resume_event
             ORDER BY run_id, resume_index
             """
         ).fetchall()
 
+        stop_events = connection.execute(
+            """
+            SELECT
+                run_id,
+                stop_index,
+                reason_code,
+                stopped_at
+            FROM r8_3_fake_stop_event
+            ORDER BY run_id, stop_index
+            """
+        ).fetchall()
+
         return {
-            "schema": "matrix.c2-r8-3r2-fake-executor-journal-anchor/2",
+            "schema": "matrix.c2-r8-3r3-fake-executor-journal-anchor/3",
             "run_meta": [list(row) for row in meta],
             "attempts": [list(row) for row in attempts],
             "resume_events": [list(row) for row in resume_events],
+            "stop_events": [list(row) for row in stop_events],
         }
 
     def _rewrite_anchor(self, connection: sqlite3.Connection) -> None:
@@ -826,6 +857,7 @@ class SQLiteR83FakeExecutorJournal:
             ("table", "r8_3_fake_journal_anchor"),
             ("table", "r8_3_fake_resume_event"),
             ("table", "r8_3_fake_run_meta"),
+            ("table", "r8_3_fake_stop_event"),
         ]
         if [
             (str(row[0]), str(row[1]))
@@ -980,7 +1012,9 @@ class SQLiteR83FakeExecutorJournal:
             SELECT
                 run_id,
                 resume_index,
-                resumed_at
+                resumed_at,
+                control_state_before,
+                control_state_version_before
             FROM r8_3_fake_resume_event
             ORDER BY run_id, resume_index
             """
@@ -988,11 +1022,12 @@ class SQLiteR83FakeExecutorJournal:
 
         resume_indexes_by_run: dict[str, list[int]] = {}
         resume_times_by_run: dict[str, list[datetime]] = {}
+        resume_control_versions_by_run: dict[str, list[int]] = {}
 
         for row in resume_rows:
             run_id = _sha256_hex(str(row[0]), name="run_id")
             if run_id not in meta_by_run:
-                raise ValueError("R8_3R2_JOURNAL_RESUME_EVENT_ORPHAN_RUN")
+                raise ValueError("R8_3R3_JOURNAL_RESUME_EVENT_ORPHAN_RUN")
             resume_index = _positive_int(
                 int(row[1]),
                 name="resume_index",
@@ -1004,19 +1039,51 @@ class SQLiteR83FakeExecutorJournal:
             )
             if resumed_at.isoformat() != resumed_text:
                 raise ValueError(
-                    "R8_3R2_JOURNAL_TIMESTAMP_CANONICAL_FORM_REQUIRED"
+                    "R8_3R3_JOURNAL_TIMESTAMP_CANONICAL_FORM_REQUIRED"
                 )
             created = meta_by_run[run_id][5]
             if resumed_at < created:
                 raise ValueError(
-                    "R8_3R2_JOURNAL_RESUME_TIME_PRECEDES_RUN"
+                    "R8_3R3_JOURNAL_RESUME_TIME_PRECEDES_RUN"
                 )
+
+            control_state_before = str(row[3])
+            control_version_before = _positive_int(
+                int(row[4]),
+                name="control_state_version_before",
+            )
+            if control_state_before not in {
+                "IN_PROGRESS",
+                "RECOVERY_REQUIRED",
+            }:
+                raise ValueError(
+                    "R8_3R3_JOURNAL_RESUME_CONTROL_STATE_INVALID"
+                )
+            if (
+                control_state_before == "IN_PROGRESS"
+                and control_version_before % 2 != 1
+            ):
+                raise ValueError(
+                    "R8_3R3_JOURNAL_RESUME_CONTROL_VERSION_INVALID"
+                )
+            if (
+                control_state_before == "RECOVERY_REQUIRED"
+                and control_version_before % 2 != 0
+            ):
+                raise ValueError(
+                    "R8_3R3_JOURNAL_RESUME_CONTROL_VERSION_INVALID"
+                )
+
             resume_indexes_by_run.setdefault(run_id, []).append(
                 resume_index
             )
             resume_times_by_run.setdefault(run_id, []).append(
                 resumed_at
             )
+            resume_control_versions_by_run.setdefault(
+                run_id,
+                [],
+            ).append(control_version_before)
 
         for run_id, meta in meta_by_run.items():
             resume_count = int(meta[4])
@@ -1024,25 +1091,109 @@ class SQLiteR83FakeExecutorJournal:
             updated = meta[6]
             indexes = resume_indexes_by_run.get(run_id, [])
             times = resume_times_by_run.get(run_id, [])
+            control_versions = resume_control_versions_by_run.get(
+                run_id,
+                [],
+            )
 
             if indexes != list(range(1, len(indexes) + 1)):
-                raise ValueError("R8_3R2_JOURNAL_RESUME_INDEX_GAP")
+                raise ValueError("R8_3R3_JOURNAL_RESUME_INDEX_GAP")
             if len(indexes) != resume_count:
                 raise ValueError(
-                    "R8_3R2_JOURNAL_RESUME_COUNT_NOT_EVENT_DERIVED"
+                    "R8_3R3_JOURNAL_RESUME_COUNT_NOT_EVENT_DERIVED"
                 )
             if any(
                 later < earlier
                 for earlier, later in zip(times, times[1:])
             ):
                 raise ValueError(
-                    "R8_3R2_JOURNAL_RESUME_TIME_REGRESSION"
+                    "R8_3R3_JOURNAL_RESUME_TIME_REGRESSION"
+                )
+            if any(
+                later < earlier
+                for earlier, later in zip(
+                    control_versions,
+                    control_versions[1:],
+                )
+            ):
+                raise ValueError(
+                    "R8_3R3_JOURNAL_RESUME_CONTROL_VERSION_REGRESSION"
                 )
 
             expected_updated = times[-1] if times else created
             if updated != expected_updated:
                 raise ValueError(
-                    "R8_3R2_JOURNAL_RUN_UPDATED_AT_NOT_EVENT_DERIVED"
+                    "R8_3R3_JOURNAL_RUN_UPDATED_AT_NOT_EVENT_DERIVED"
+                )
+
+        stop_rows = connection.execute(
+            """
+            SELECT
+                run_id,
+                stop_index,
+                reason_code,
+                stopped_at
+            FROM r8_3_fake_stop_event
+            ORDER BY run_id, stop_index
+            """
+        ).fetchall()
+
+        stop_indexes_by_run: dict[str, list[int]] = {}
+        stop_times_by_run: dict[str, list[datetime]] = {}
+        stop_codes_by_run: dict[str, list[str]] = {}
+
+        for row in stop_rows:
+            run_id = _sha256_hex(str(row[0]), name="run_id")
+            if run_id not in meta_by_run:
+                raise ValueError("R8_3R3_JOURNAL_STOP_EVENT_ORPHAN_RUN")
+            stop_index = _positive_int(
+                int(row[1]),
+                name="stop_index",
+            )
+            reason_code = str(row[2])
+            if reason_code not in R8_3_STOP_REASONS:
+                raise ValueError(
+                    "R8_3R3_JOURNAL_STOP_REASON_INVALID"
+                )
+            stopped_text = str(row[3])
+            stopped_at = _aware_utc(
+                datetime.fromisoformat(stopped_text),
+                name="stopped_at",
+            )
+            if stopped_at.isoformat() != stopped_text:
+                raise ValueError(
+                    "R8_3R3_JOURNAL_TIMESTAMP_CANONICAL_FORM_REQUIRED"
+                )
+            if stopped_at < meta_by_run[run_id][5]:
+                raise ValueError(
+                    "R8_3R3_JOURNAL_STOP_TIME_PRECEDES_RUN"
+                )
+            stop_indexes_by_run.setdefault(run_id, []).append(
+                stop_index
+            )
+            stop_times_by_run.setdefault(run_id, []).append(
+                stopped_at
+            )
+            stop_codes_by_run.setdefault(run_id, []).append(
+                reason_code
+            )
+
+        for run_id in meta_by_run:
+            indexes = stop_indexes_by_run.get(run_id, [])
+            times = stop_times_by_run.get(run_id, [])
+            codes = stop_codes_by_run.get(run_id, [])
+            if indexes != list(range(1, len(indexes) + 1)):
+                raise ValueError("R8_3R3_JOURNAL_STOP_INDEX_GAP")
+            if len(codes) != len(set(codes)):
+                raise ValueError(
+                    "R8_3R3_JOURNAL_STOP_REASON_DUPLICATE"
+                )
+            if any(
+                later < earlier
+                for earlier, later in zip(times, times[1:])
+            ):
+                raise ValueError(
+                    "R8_3R3_JOURNAL_STOP_TIME_REGRESSION"
                 )
 
         attempt_rows = connection.execute(
@@ -1369,8 +1520,36 @@ class SQLiteR83FakeExecutorJournal:
                 connection.execute("ROLLBACK")
                 raise
 
-    def increment_resume(self, run_id: str, *, changed_at: datetime) -> int:
+    def increment_resume(
+        self,
+        run_id: str,
+        *,
+        changed_at: datetime,
+        control_state_before: str,
+        control_state_version_before: int,
+    ) -> int:
         changed = _aware_utc(changed_at, name="changed_at")
+        control_state = str(control_state_before)
+        control_version = _positive_int(
+            control_state_version_before,
+            name="control_state_version_before",
+        )
+        if control_state not in {"IN_PROGRESS", "RECOVERY_REQUIRED"}:
+            raise ValueError(
+                "R8_3R3_RESUME_CONTROL_STATE_INVALID"
+            )
+        if control_state == "IN_PROGRESS" and control_version % 2 != 1:
+            raise ValueError(
+                "R8_3R3_RESUME_CONTROL_VERSION_INVALID"
+            )
+        if (
+            control_state == "RECOVERY_REQUIRED"
+            and control_version % 2 != 0
+        ):
+            raise ValueError(
+                "R8_3R3_RESUME_CONTROL_VERSION_INVALID"
+            )
+
         with self._connect() as connection:
             connection.execute("BEGIN IMMEDIATE")
             try:
@@ -1386,7 +1565,7 @@ class SQLiteR83FakeExecutorJournal:
                     (run_id,),
                 ).fetchone()
                 if row is None:
-                    raise ValueError("R8_3R2_JOURNAL_RUN_NOT_FOUND")
+                    raise ValueError("R8_3R3_JOURNAL_RUN_NOT_FOUND")
 
                 prior = _aware_utc(
                     datetime.fromisoformat(str(row[1])),
@@ -1394,7 +1573,7 @@ class SQLiteR83FakeExecutorJournal:
                 )
                 if changed < prior:
                     raise ValueError(
-                        "R8_3R2_JOURNAL_RUN_TIME_REGRESSION"
+                        "R8_3R3_JOURNAL_RUN_TIME_REGRESSION"
                     )
 
                 value = int(row[0]) + 1
@@ -1403,14 +1582,18 @@ class SQLiteR83FakeExecutorJournal:
                     INSERT INTO r8_3_fake_resume_event (
                         run_id,
                         resume_index,
-                        resumed_at
+                        resumed_at,
+                        control_state_before,
+                        control_state_version_before
                     )
-                    VALUES (?, ?, ?)
+                    VALUES (?, ?, ?, ?, ?)
                     """,
                     (
                         run_id,
                         value,
                         changed.isoformat(),
+                        control_state,
+                        control_version,
                     ),
                 )
                 connection.execute(
@@ -1434,6 +1617,133 @@ class SQLiteR83FakeExecutorJournal:
                 connection.execute("ROLLBACK")
                 raise
         return value
+
+    def record_stop_reason(
+        self,
+        run_id: str,
+        *,
+        reason_code: str,
+        stopped_at: datetime,
+    ) -> None:
+        code = str(reason_code)
+        if code not in R8_3_STOP_REASONS:
+            raise ValueError("R8_3R3_STOP_REASON_INVALID")
+        stopped = _aware_utc(stopped_at, name="stopped_at")
+
+        with self._connect() as connection:
+            connection.execute("BEGIN IMMEDIATE")
+            try:
+                self._assert_integrity(connection)
+                meta = connection.execute(
+                    """
+                    SELECT created_at
+                    FROM r8_3_fake_run_meta
+                    WHERE run_id = ?
+                    """,
+                    (run_id,),
+                ).fetchone()
+                if meta is None:
+                    raise ValueError("R8_3R3_JOURNAL_RUN_NOT_FOUND")
+
+                existing = connection.execute(
+                    """
+                    SELECT stopped_at
+                    FROM r8_3_fake_stop_event
+                    WHERE run_id = ? AND reason_code = ?
+                    """,
+                    (run_id, code),
+                ).fetchone()
+                if existing is not None:
+                    connection.execute("COMMIT")
+                    return
+
+                prior = connection.execute(
+                    """
+                    SELECT
+                        COALESCE(MAX(stop_index), 0),
+                        MAX(stopped_at)
+                    FROM r8_3_fake_stop_event
+                    WHERE run_id = ?
+                    """,
+                    (run_id,),
+                ).fetchone()
+                stop_index = int(prior[0]) + 1
+                if prior[1] is not None:
+                    prior_time = _aware_utc(
+                        datetime.fromisoformat(str(prior[1])),
+                        name="prior_stopped_at",
+                    )
+                    if stopped < prior_time:
+                        raise ValueError(
+                            "R8_3R3_JOURNAL_STOP_TIME_REGRESSION"
+                        )
+
+                connection.execute(
+                    """
+                    INSERT INTO r8_3_fake_stop_event(
+                        run_id,
+                        stop_index,
+                        reason_code,
+                        stopped_at
+                    )
+                    VALUES (?, ?, ?, ?)
+                    """,
+                    (
+                        run_id,
+                        stop_index,
+                        code,
+                        stopped.isoformat(),
+                    ),
+                )
+                self._rewrite_anchor(connection)
+                self._assert_integrity(connection)
+                connection.execute("COMMIT")
+            except Exception:
+                connection.execute("ROLLBACK")
+                raise
+
+    def stop_reasons(self, run_id: str) -> tuple[str, ...]:
+        with self._connect() as connection:
+            self._assert_integrity(connection)
+            rows = connection.execute(
+                """
+                SELECT reason_code
+                FROM r8_3_fake_stop_event
+                WHERE run_id = ?
+                ORDER BY stop_index
+                """,
+                (run_id,),
+            ).fetchall()
+        return tuple(str(row[0]) for row in rows)
+
+    def latest_attempt_for_slot(
+        self,
+        run_id: str,
+        *,
+        round_index: int,
+        modality: str,
+    ) -> FakeCallAttempt | None:
+        with self._connect() as connection:
+            self._assert_integrity(connection)
+            row = connection.execute(
+                """
+                SELECT MAX(attempt_index)
+                FROM r8_3_fake_call_attempt
+                WHERE
+                    run_id = ?
+                    AND round_index = ?
+                    AND modality = ?
+                """,
+                (run_id, round_index, modality),
+            ).fetchone()
+        if row is None or row[0] is None:
+            return None
+        return self.get_attempt(
+            run_id,
+            round_index=round_index,
+            modality=modality,
+            attempt_index=int(row[0]),
+        )
 
     def begin_attempt(
         self,
@@ -1719,11 +2029,11 @@ class SQLiteR83FakeExecutorJournal:
     ) -> None:
         if not control_store.audit_integrity():
             raise ValueError(
-                "R8_3R2_CONTROL_LEDGER_INTEGRITY_REQUIRED"
+                "R8_3R3_CONTROL_LEDGER_INTEGRITY_REQUIRED"
             )
         if not evidence_store.audit_integrity():
             raise ValueError(
-                "R8_3R2_EVIDENCE_LEDGER_INTEGRITY_REQUIRED"
+                "R8_3R3_EVIDENCE_LEDGER_INTEGRITY_REQUIRED"
             )
 
         with self._connect() as journal_connection:
@@ -1733,7 +2043,8 @@ class SQLiteR83FakeExecutorJournal:
                 SELECT
                     run_id,
                     provider_key,
-                    subject_key
+                    subject_key,
+                    resume_count
                 FROM r8_3_fake_run_meta
                 ORDER BY run_id
                 """
@@ -1744,6 +2055,7 @@ class SQLiteR83FakeExecutorJournal:
                     run_id,
                     round_index,
                     modality,
+                    attempt_index,
                     sequence_number,
                     correlation_id,
                     state,
@@ -1756,21 +2068,59 @@ class SQLiteR83FakeExecutorJournal:
                     attempt_index
                 """
             ).fetchall()
+            resume_events = journal_connection.execute(
+                """
+                SELECT
+                    run_id,
+                    resume_index,
+                    control_state_before,
+                    control_state_version_before
+                FROM r8_3_fake_resume_event
+                ORDER BY run_id, resume_index
+                """
+            ).fetchall()
+            stop_events = journal_connection.execute(
+                """
+                SELECT
+                    run_id,
+                    stop_index,
+                    reason_code
+                FROM r8_3_fake_stop_event
+                ORDER BY run_id, stop_index
+                """
+            ).fetchall()
 
         meta_by_run = {
             str(row[0]): (
                 str(row[1]),
                 str(row[2]),
+                int(row[3]),
             )
             for row in meta_rows
         }
+
+        attempts_by_slot: dict[
+            tuple[str, int, str],
+            list[tuple[Any, ...]],
+        ] = {}
+        for row in attempts:
+            key = (str(row[0]), int(row[1]), str(row[2]))
+            attempts_by_slot.setdefault(key, []).append(row)
+
+        resume_by_run: dict[str, list[tuple[Any, ...]]] = {}
+        for row in resume_events:
+            resume_by_run.setdefault(str(row[0]), []).append(row)
+
+        stop_by_run: dict[str, list[str]] = {}
+        for row in stop_events:
+            stop_by_run.setdefault(str(row[0]), []).append(str(row[2]))
 
         with sqlite3.connect(control_store.path) as control_connection:
             for row in attempts:
                 run_id = str(row[0])
                 round_index = int(row[1])
                 modality = str(row[2])
-                sequence_number = int(row[3])
+                sequence_number = int(row[4])
 
                 reservation = control_connection.execute(
                     """
@@ -1789,25 +2139,99 @@ class SQLiteR83FakeExecutorJournal:
                 ).fetchone()
                 if reservation is None:
                     raise ValueError(
-                        "R8_3R2_JOURNAL_ATTEMPT_WITHOUT_CONTROL_RESERVATION"
+                        "R8_3R3_JOURNAL_ATTEMPT_WITHOUT_CONTROL_RESERVATION"
                     )
                 if int(reservation[0]) != sequence_number:
                     raise ValueError(
-                        "R8_3R2_JOURNAL_SEQUENCE_NOT_BOUND_TO_CONTROL"
+                        "R8_3R3_JOURNAL_SEQUENCE_NOT_BOUND_TO_CONTROL"
                     )
+
+            for run_id in meta_by_run:
+                reservations = control_connection.execute(
+                    """
+                    SELECT
+                        round_index,
+                        modality,
+                        sequence_number,
+                        state
+                    FROM football_bounded_sequence_reservation
+                    WHERE run_id = ?
+                    ORDER BY round_index, modality
+                    """,
+                    (run_id,),
+                ).fetchall()
+
+                for reservation in reservations:
+                    round_index = int(reservation[0])
+                    modality = str(reservation[1])
+                    sequence_number = int(reservation[2])
+                    state = str(reservation[3])
+                    if state != "COMMITTED":
+                        continue
+
+                    slot_attempts = attempts_by_slot.get(
+                        (run_id, round_index, modality),
+                        [],
+                    )
+                    succeeded = [
+                        item
+                        for item in slot_attempts
+                        if str(item[6]) == "SUCCEEDED"
+                        and int(item[4]) == sequence_number
+                    ]
+                    if len(succeeded) != 1:
+                        raise ValueError(
+                            "R8_3R3_COMMITTED_RESERVATION_WITHOUT_SINGLE_SUCCESS"
+                        )
+
+                snapshot = control_store.get_run(run_id)
+                events = resume_by_run.get(run_id, [])
+                resume_count = meta_by_run[run_id][2]
+                if len(events) != resume_count:
+                    raise ValueError(
+                        "R8_3R3_RESUME_EVENT_COUNT_CROSS_LEDGER_MISMATCH"
+                    )
+
+                for event in events:
+                    state_before = str(event[2])
+                    version_before = int(event[3])
+                    if version_before > snapshot.state_version:
+                        raise ValueError(
+                            "R8_3R3_RESUME_EVENT_VERSION_EXCEEDS_CONTROL"
+                        )
+                    if snapshot.state in {"COMPLETED", "ABORTED"}:
+                        minimum_terminal_version = (
+                            version_before + 3
+                            if state_before == "IN_PROGRESS"
+                            else version_before + 2
+                        )
+                        if snapshot.state_version < minimum_terminal_version:
+                            raise ValueError(
+                                "R8_3R3_RESUME_EVENT_NOT_BOUND_TO_CONTROL_LIFECYCLE"
+                            )
+                    elif snapshot.state == "PLANNED":
+                        raise ValueError(
+                            "R8_3R3_RESUME_EVENT_ON_PLANNED_CONTROL_RUN"
+                        )
+
+                if snapshot.state in {"COMPLETED", "ABORTED"}:
+                    reasons = stop_by_run.get(run_id, [])
+                    if not reasons:
+                        raise ValueError(
+                            "R8_3R3_TERMINAL_RUN_WITHOUT_DURABLE_STOP_REASON"
+                        )
 
         with sqlite3.connect(evidence_store.path) as evidence_connection:
             for row in attempts:
-                if str(row[5]) != "SUCCEEDED":
+                if str(row[6]) != "SUCCEEDED":
                     continue
 
                 run_id = str(row[0])
-                round_index = int(row[1])
                 modality = str(row[2])
-                sequence_number = int(row[3])
-                correlation_id = str(row[4])
-                source_fp = str(row[6])
-                provider_key, subject_key = meta_by_run[run_id]
+                sequence_number = int(row[4])
+                correlation_id = str(row[5])
+                source_fp = str(row[7])
+                provider_key, subject_key, _ = meta_by_run[run_id]
 
                 evidence = evidence_connection.execute(
                     """
@@ -1835,7 +2259,7 @@ class SQLiteR83FakeExecutorJournal:
 
                 if evidence is None or int(evidence[0]) != 1:
                     raise ValueError(
-                        "R8_3R2_JOURNAL_SUCCESS_NOT_BOUND_TO_EVIDENCE"
+                        "R8_3R3_JOURNAL_SUCCESS_NOT_BOUND_TO_EVIDENCE"
                     )
 
     def audit_cross_ledger_integrity(
@@ -2003,7 +2427,7 @@ def _ensure_integrity(
         control_store=control_store,
         evidence_store=evidence_store,
     ):
-        raise ValueError("R8_3R2_CROSS_LEDGER_INTEGRITY_FAILURE")
+        raise ValueError("R8_3R3_CROSS_LEDGER_INTEGRITY_FAILURE")
 
 
 def _transition_to_in_progress(
@@ -2067,6 +2491,127 @@ def _transition_to_in_progress(
     raise ValueError("R8_3_ABORTED_RUN_NOT_RESUMABLE")
 
 
+def _durable_slot_telemetry(
+    *,
+    manifest: BoundedFootballLiveRunManifest,
+    control_store: SQLiteBoundedFootballLiveControlStore,
+) -> Mapping[str, Any]:
+    with sqlite3.connect(control_store.path) as connection:
+        rows = connection.execute(
+            """
+            SELECT
+                round_index,
+                modality,
+                sequence_number,
+                state
+            FROM football_bounded_sequence_reservation
+            WHERE run_id = ?
+            ORDER BY round_index, modality
+            """,
+            (manifest.run_id,),
+        ).fetchall()
+
+    started_rounds = sorted({int(row[0]) for row in rows})
+    state_by_slot = {
+        (int(row[0]), str(row[1])): str(row[3])
+        for row in rows
+    }
+    closed_rounds = [
+        round_index
+        for round_index in started_rounds
+        if all(
+            state_by_slot.get((round_index, modality)) == "COMMITTED"
+            for modality in manifest.modalities
+        )
+    ]
+    sequence_numbers = {
+        _slot_key(int(row[0]), str(row[1])): int(row[2])
+        for row in rows
+    }
+    correlation_ids = {
+        round_index: _round_correlation_id(
+            manifest.run_id,
+            round_index,
+        )
+        for round_index in started_rounds
+    }
+
+    return {
+        "started_rounds": len(started_rounds),
+        "closed_rounds": len(closed_rounds),
+        "reserved_slots": sum(
+            1 for row in rows if str(row[3]) == "RESERVED"
+        ),
+        "committed_slots": sum(
+            1 for row in rows if str(row[3]) == "COMMITTED"
+        ),
+        "abandoned_slots": sum(
+            1 for row in rows if str(row[3]) == "ABANDONED"
+        ),
+        "sequence_numbers_by_slot": sequence_numbers,
+        "correlation_id_by_round": correlation_ids,
+    }
+
+
+def _durable_terminal_telemetry(
+    *,
+    manifest: BoundedFootballLiveRunManifest,
+    authority: R83OfflineFakeExecutionAuthorityPlan,
+    snapshot: RunControlSnapshot,
+    control_store: SQLiteBoundedFootballLiveControlStore,
+    journal: SQLiteR83FakeExecutorJournal,
+    plan_size: int,
+    duplicate_source_count: int = 0,
+    quarantine_count: int = 0,
+    integrity_failure_count: int = 0,
+) -> FakeProviderBoundedRunTelemetry:
+    durable = _durable_slot_telemetry(
+        manifest=manifest,
+        control_store=control_store,
+    )
+    counts = journal.counts(manifest.run_id)
+    reasons = journal.stop_reasons(manifest.run_id)
+    if snapshot.state in {"COMPLETED", "ABORTED"} and not reasons:
+        raise ValueError(
+            "R8_3R3_TERMINAL_TELEMETRY_STOP_REASON_MISSING"
+        )
+
+    return FakeProviderBoundedRunTelemetry(
+        run_id=manifest.run_id,
+        plan_fingerprint=authority.plan_fingerprint,
+        run_state=snapshot.state,
+        planned_rounds=manifest.max_capture_rounds,
+        started_rounds=int(durable["started_rounds"]),
+        closed_rounds=int(durable["closed_rounds"]),
+        planned_slots=plan_size,
+        reserved_slots=int(durable["reserved_slots"]),
+        committed_slots=int(durable["committed_slots"]),
+        abandoned_slots=int(durable["abandoned_slots"]),
+        fake_calls_attempted=int(counts["attempted"]),
+        fake_calls_succeeded=int(counts["succeeded"]),
+        fake_calls_failed=int(counts["failed"]),
+        fake_calls_uncertain=int(counts["uncertain"]),
+        fake_calls_by_modality=counts["by_modality"],
+        sequence_numbers_by_slot=dict(
+            durable["sequence_numbers_by_slot"]
+        ),
+        correlation_id_by_round=dict(
+            durable["correlation_id_by_round"]
+        ),
+        duplicate_source_count=duplicate_source_count,
+        quarantine_count=quarantine_count,
+        integrity_failure_count=integrity_failure_count,
+        resume_count=int(counts["resume_count"]),
+        stop_reason_codes=tuple(reasons),
+        run_started_at=snapshot.created_at,
+        run_finished_at=snapshot.updated_at,
+        runtime_ms=_runtime_ms(
+            snapshot.updated_at,
+            snapshot.created_at,
+        ),
+    )
+
+
 def execute_offline_fake_bounded_run(
     *,
     manifest: BoundedFootballLiveRunManifest,
@@ -2098,13 +2643,30 @@ def execute_offline_fake_bounded_run(
 
     telemetry = _TelemetryBuilder()
     last_clock: datetime | None = None
+    journal_registered = False
+
+    def stop(code: str, *, at: datetime | None = None) -> None:
+        telemetry.stop(code)
+        if journal_registered:
+            timestamp = at
+            if timestamp is None:
+                timestamp = (
+                    last_clock
+                    if last_clock is not None
+                    else manifest.created_at
+                )
+            journal.record_stop_reason(
+                manifest.run_id,
+                reason_code=code,
+                stopped_at=timestamp,
+            )
 
     def now() -> datetime:
         nonlocal last_clock
         value = _checked_now(clock, last=last_clock)
         last_clock = value
         if _runtime_ms(value, manifest.created_at) > manifest.max_runtime_ms:
-            telemetry.stop("MAX_RUNTIME_REACHED")
+            stop("MAX_RUNTIME_REACHED", at=value)
             raise ValueError("R8_3_MAX_RUNTIME_REACHED")
         return value
 
@@ -2128,10 +2690,19 @@ def execute_offline_fake_bounded_run(
         authority=authority,
         registered_at=registered_at,
     )
+    journal_registered = True
     _maybe_crash(crash_point, "AFTER_RUN_REGISTERED")
 
-    if resume:
-        journal.increment_resume(manifest.run_id, changed_at=now())
+    if (
+        resume
+        and snapshot.state in {"IN_PROGRESS", "RECOVERY_REQUIRED"}
+    ):
+        journal.increment_resume(
+            manifest.run_id,
+            changed_at=now(),
+            control_state_before=snapshot.state,
+            control_state_version_before=snapshot.state_version,
+        )
 
     snapshot = _transition_to_in_progress(
         snapshot,
@@ -2143,34 +2714,18 @@ def execute_offline_fake_bounded_run(
     )
 
     if snapshot.state == "COMPLETED":
-        finished = now()
-        counts = journal.counts(manifest.run_id)
-        return FakeProviderBoundedRunTelemetry(
-            run_id=manifest.run_id,
-            plan_fingerprint=authority.plan_fingerprint,
-            run_state="COMPLETED",
-            planned_rounds=manifest.max_capture_rounds,
-            started_rounds=0,
-            closed_rounds=0,
-            planned_slots=len(plan),
-            reserved_slots=0,
-            committed_slots=0,
-            abandoned_slots=0,
-            fake_calls_attempted=int(counts["attempted"]),
-            fake_calls_succeeded=int(counts["succeeded"]),
-            fake_calls_failed=int(counts["failed"]),
-            fake_calls_uncertain=int(counts["uncertain"]),
-            fake_calls_by_modality=counts["by_modality"],
-            sequence_numbers_by_slot={},
-            correlation_id_by_round={},
-            duplicate_source_count=0,
-            quarantine_count=0,
-            integrity_failure_count=0,
-            resume_count=int(counts["resume_count"]),
-            stop_reason_codes=("CAPTURE_ROUND_LIMIT_REACHED",),
-            run_started_at=started_at,
-            run_finished_at=finished,
-            runtime_ms=_runtime_ms(finished, started_at),
+        _ensure_integrity(
+            control_store=control_store,
+            evidence_store=evidence_store,
+            journal=journal,
+        )
+        return _durable_terminal_telemetry(
+            manifest=manifest,
+            authority=authority,
+            snapshot=snapshot,
+            control_store=control_store,
+            journal=journal,
+            plan_size=len(plan),
         )
 
     _maybe_crash(crash_point, "AFTER_RUN_IN_PROGRESS")
@@ -2192,21 +2747,21 @@ def execute_offline_fake_bounded_run(
             slot.round_index,
             slot.modality,
         ):
-            telemetry.stop("MANUAL_STOP_REQUEST")
+            stop("MANUAL_STOP_REQUEST")
             abort_run = True
             break
 
         try:
             guard.assert_active(lease)
         except ValueError:
-            telemetry.stop("PROCESS_SCOPE_GUARD_NOT_HELD")
+            stop("PROCESS_SCOPE_GUARD_NOT_HELD")
             raise
 
         if authority.provider_key != manifest.provider_key:
-            telemetry.stop("PROVIDER_KEY_CHANGED")
+            stop("PROVIDER_KEY_CHANGED")
             raise ValueError("R8_3_PROVIDER_KEY_CHANGED")
         if authority.subject_key != manifest.subject_key:
-            telemetry.stop("SUBJECT_KEY_CHANGED")
+            stop("SUBJECT_KEY_CHANGED")
             raise ValueError("R8_3_SUBJECT_KEY_CHANGED")
 
         _ensure_integrity(
@@ -2234,7 +2789,7 @@ def execute_offline_fake_bounded_run(
         if reservation.state == "ABANDONED":
             telemetry.abandoned_slots += 1
             abort_run = True
-            telemetry.stop("SCRIPTED_FAKE_PROVIDER_FAILURE")
+            stop("SCRIPTED_FAKE_PROVIDER_FAILURE")
             break
 
         telemetry.reserved_slots += 1
@@ -2242,6 +2797,30 @@ def execute_offline_fake_bounded_run(
             crash_point,
             "AFTER_SLOT_RESERVED_BEFORE_FAKE_CALL",
         )
+
+        latest_attempt = journal.latest_attempt_for_slot(
+            manifest.run_id,
+            round_index=slot.round_index,
+            modality=slot.modality,
+        )
+        if (
+            latest_attempt is not None
+            and latest_attempt.state == "FAILED"
+        ):
+            control_store.transition_reservation(
+                manifest.run_id,
+                round_index=slot.round_index,
+                modality=slot.modality,
+                expected_state="RESERVED",
+                new_state="ABANDONED",
+                changed_at=now(),
+                guard=guard,
+                lease=lease,
+            )
+            telemetry.abandoned_slots += 1
+            stop("SCRIPTED_FAKE_PROVIDER_FAILURE")
+            abort_run = True
+            break
 
         expected_capture = fake_provider.peek(
             run_id=manifest.run_id,
@@ -2260,6 +2839,28 @@ def execute_offline_fake_bounded_run(
         if existing.accepted_for_fusion:
             decision = existing
             capture = expected_capture
+        elif (
+            latest_attempt is not None
+            and latest_attempt.state == "SUCCEEDED"
+        ):
+            if (
+                latest_attempt.source_record_fingerprint
+                != expected_capture.source_record_fingerprint
+            ):
+                stop("DURABLE_EVIDENCE_INTEGRITY_FAILURE")
+                raise ValueError(
+                    "R8_3R3_SUCCEEDED_ATTEMPT_SOURCE_RECONSTRUCTION_MISMATCH"
+                )
+            capture = expected_capture
+            observation = capture.observation(
+                provider_key=manifest.provider_key,
+                subject_key=manifest.subject_key,
+            )
+            decision = evidence_store.record(observation)
+            if decision.status == SEQUENCE_DUPLICATE_SOURCE:
+                telemetry.duplicate_source_count += 1
+            elif decision.status != SEQUENCE_ACCEPTED:
+                telemetry.quarantine_count += 1
         else:
             try:
                 attempt = journal.begin_attempt(
@@ -2272,7 +2873,7 @@ def execute_offline_fake_bounded_run(
                 )
             except ValueError as error:
                 if str(error) == "R8_3_TOTAL_FAKE_CALL_BUDGET_REACHED":
-                    telemetry.stop("TOTAL_FAKE_CALL_BUDGET_REACHED")
+                    stop("TOTAL_FAKE_CALL_BUDGET_REACHED")
                     abort_run = True
                     break
                 raise
@@ -2307,7 +2908,7 @@ def execute_offline_fake_bounded_run(
                     lease=lease,
                 )
                 telemetry.abandoned_slots += 1
-                telemetry.stop("SCRIPTED_FAKE_PROVIDER_FAILURE")
+                stop("SCRIPTED_FAKE_PROVIDER_FAILURE")
                 abort_run = True
                 break
 
@@ -2317,7 +2918,7 @@ def execute_offline_fake_bounded_run(
             )
 
             if capture.source_record_fingerprint != expected_capture.source_record_fingerprint:
-                telemetry.stop("UNEXPECTED_FAKE_RESPONSE_CONTRACT")
+                stop("UNEXPECTED_FAKE_RESPONSE_CONTRACT")
                 raise ValueError("R8_3_UNEXPECTED_FAKE_RESPONSE_CONTRACT")
 
             journal.resolve_attempt(
@@ -2340,7 +2941,7 @@ def execute_offline_fake_bounded_run(
                 telemetry.quarantine_count += 1
 
         if not decision.accepted_for_fusion and decision.status != SEQUENCE_DUPLICATE_SOURCE:
-            telemetry.stop("DURABLE_EVIDENCE_INTEGRITY_FAILURE")
+            stop("DURABLE_EVIDENCE_INTEGRITY_FAILURE")
             raise ValueError("R8_3_DURABLE_EVIDENCE_NOT_ACCEPTED")
 
         _maybe_crash(
@@ -2367,7 +2968,7 @@ def execute_offline_fake_bounded_run(
             and slot.modality == "fixture_status"
             and capture.fixture_terminal
         ):
-            telemetry.stop("FIXTURE_TERMINAL_STATUS_WHEN_CONFIGURED")
+            stop("FIXTURE_TERMINAL_STATUS_WHEN_CONFIGURED")
             terminal_stop = True
 
         _maybe_crash(
@@ -2398,6 +2999,8 @@ def execute_offline_fake_bounded_run(
                 lease=lease,
             )
     else:
+        if not telemetry.stop_reasons:
+            stop("CAPTURE_ROUND_LIMIT_REACHED")
         _maybe_crash(crash_point, "BEFORE_RUN_COMPLETED")
         snapshot = control_store.get_run(manifest.run_id)
         if snapshot.state == "IN_PROGRESS":
@@ -2410,8 +3013,6 @@ def execute_offline_fake_bounded_run(
                 guard=guard,
                 lease=lease,
             )
-        if not telemetry.stop_reasons:
-            telemetry.stop("CAPTURE_ROUND_LIMIT_REACHED")
 
     try:
         _ensure_integrity(
@@ -2422,37 +3023,19 @@ def execute_offline_fake_bounded_run(
     except ValueError as error:
         telemetry.integrity_failure_count += 1
         if "SEQUENCE_ALLOCATOR" in str(error):
-            telemetry.stop("SEQUENCE_ALLOCATOR_INTEGRITY_FAILURE")
+            stop("SEQUENCE_ALLOCATOR_INTEGRITY_FAILURE")
         else:
-            telemetry.stop("DURABLE_EVIDENCE_INTEGRITY_FAILURE")
+            stop("DURABLE_EVIDENCE_INTEGRITY_FAILURE")
         raise
 
-    finished_at = now()
-    counts = journal.counts(manifest.run_id)
-    return FakeProviderBoundedRunTelemetry(
-        run_id=manifest.run_id,
-        plan_fingerprint=authority.plan_fingerprint,
-        run_state=snapshot.state,
-        planned_rounds=manifest.max_capture_rounds,
-        started_rounds=len(telemetry.started_rounds),
-        closed_rounds=len(telemetry.closed_rounds),
-        planned_slots=len(plan),
-        reserved_slots=telemetry.reserved_slots,
-        committed_slots=telemetry.committed_slots,
-        abandoned_slots=telemetry.abandoned_slots,
-        fake_calls_attempted=int(counts["attempted"]),
-        fake_calls_succeeded=int(counts["succeeded"]),
-        fake_calls_failed=int(counts["failed"]),
-        fake_calls_uncertain=int(counts["uncertain"]),
-        fake_calls_by_modality=counts["by_modality"],
-        sequence_numbers_by_slot=dict(telemetry.sequence_numbers_by_slot),
-        correlation_id_by_round=dict(telemetry.correlation_id_by_round),
+    return _durable_terminal_telemetry(
+        manifest=manifest,
+        authority=authority,
+        snapshot=snapshot,
+        control_store=control_store,
+        journal=journal,
+        plan_size=len(plan),
         duplicate_source_count=telemetry.duplicate_source_count,
         quarantine_count=telemetry.quarantine_count,
         integrity_failure_count=telemetry.integrity_failure_count,
-        resume_count=int(counts["resume_count"]),
-        stop_reason_codes=tuple(telemetry.stop_reasons),
-        run_started_at=started_at,
-        run_finished_at=finished_at,
-        runtime_ms=_runtime_ms(finished_at, started_at),
     )
