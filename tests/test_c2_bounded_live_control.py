@@ -2302,3 +2302,232 @@ def test_abandoned_result_replay_is_read_only_after_run_abort(tmp_path):
     assert replay == abandoned
     assert store.audit_integrity() is True
     guard.release(lease)
+
+
+def test_run_state_exact_transition_replay_is_idempotent(tmp_path):
+    path = tmp_path / "run-state-exact-replay.sqlite3"
+    store = SQLiteBoundedFootballLiveControlStore(path)
+    value = manifest()
+    guard, lease = acquire(path)
+
+    store.register_run(
+        value,
+        guard=guard,
+        lease=lease,
+        registered_at=BASE,
+    )
+    changed = BASE + timedelta(seconds=1)
+    first = store.transition_run_state(
+        value.run_id,
+        expected_state="PLANNED",
+        expected_state_version=0,
+        new_state="IN_PROGRESS",
+        changed_at=changed,
+        guard=guard,
+        lease=lease,
+    )
+    replay = store.transition_run_state(
+        value.run_id,
+        expected_state="PLANNED",
+        expected_state_version=0,
+        new_state="IN_PROGRESS",
+        changed_at=changed,
+        guard=guard,
+        lease=lease,
+    )
+
+    assert replay == first
+    assert replay.state == "IN_PROGRESS"
+    assert replay.state_version == 1
+    assert replay.updated_at == changed
+    assert store.audit_integrity() is True
+    guard.release(lease)
+
+
+def test_run_state_replay_with_different_timestamp_remains_compare_and_swap_failure(
+    tmp_path,
+):
+    path = tmp_path / "run-state-replay-different-time.sqlite3"
+    store = SQLiteBoundedFootballLiveControlStore(path)
+    value = manifest()
+    guard, lease = acquire(path)
+
+    store.register_run(
+        value,
+        guard=guard,
+        lease=lease,
+        registered_at=BASE,
+    )
+    store.transition_run_state(
+        value.run_id,
+        expected_state="PLANNED",
+        expected_state_version=0,
+        new_state="IN_PROGRESS",
+        changed_at=BASE + timedelta(seconds=1),
+        guard=guard,
+        lease=lease,
+    )
+
+    with pytest.raises(
+        ValueError,
+        match="R8_2_RUN_STATE_COMPARE_AND_SWAP_FAILED",
+    ):
+        store.transition_run_state(
+            value.run_id,
+            expected_state="PLANNED",
+            expected_state_version=0,
+            new_state="IN_PROGRESS",
+            changed_at=BASE + timedelta(seconds=2),
+            guard=guard,
+            lease=lease,
+        )
+
+    assert store.get_run(value.run_id).state_version == 1
+    assert store.audit_integrity() is True
+    guard.release(lease)
+
+
+def test_recovery_state_transition_exact_replay_is_idempotent(tmp_path):
+    path = tmp_path / "recovery-state-exact-replay.sqlite3"
+    store = SQLiteBoundedFootballLiveControlStore(path)
+    value = manifest()
+    guard, lease = acquire(path)
+
+    store.register_run(
+        value,
+        guard=guard,
+        lease=lease,
+        registered_at=BASE,
+    )
+    store.transition_run_state(
+        value.run_id,
+        expected_state="PLANNED",
+        expected_state_version=0,
+        new_state="IN_PROGRESS",
+        changed_at=BASE + timedelta(seconds=1),
+        guard=guard,
+        lease=lease,
+    )
+    changed = BASE + timedelta(seconds=2)
+    first = store.transition_run_state(
+        value.run_id,
+        expected_state="IN_PROGRESS",
+        expected_state_version=1,
+        new_state="RECOVERY_REQUIRED",
+        changed_at=changed,
+        guard=guard,
+        lease=lease,
+    )
+    replay = store.transition_run_state(
+        value.run_id,
+        expected_state="IN_PROGRESS",
+        expected_state_version=1,
+        new_state="RECOVERY_REQUIRED",
+        changed_at=changed,
+        guard=guard,
+        lease=lease,
+    )
+
+    assert replay == first
+    assert replay.state == "RECOVERY_REQUIRED"
+    assert replay.state_version == 2
+    assert store.audit_integrity() is True
+    guard.release(lease)
+
+
+def test_integrity_rejects_noncanonical_run_timestamp_offset_after_anchor_rehash(
+    tmp_path,
+):
+    path = tmp_path / "noncanonical-run-time.sqlite3"
+    store = SQLiteBoundedFootballLiveControlStore(path)
+    value = manifest()
+    guard, lease = acquire(path)
+
+    store.register_run(
+        value,
+        guard=guard,
+        lease=lease,
+        registered_at=BASE,
+    )
+
+    equivalent = (BASE - timedelta(hours=12)).replace(
+        tzinfo=__import__("datetime").timezone(-timedelta(hours=12))
+    ).isoformat()
+    with sqlite3.connect(path) as connection:
+        connection.execute(
+            """
+            UPDATE football_bounded_run_control
+            SET updated_at = ?
+            WHERE run_id = ?
+            """,
+            (equivalent, value.run_id),
+        )
+        connection.commit()
+    _rewrite_r8_2r2_anchor(path)
+
+    assert store.audit_integrity() is False
+    guard.release(lease)
+
+
+def test_integrity_rejects_noncanonical_reservation_timestamp_offset_after_anchor_rehash(
+    tmp_path,
+):
+    path = tmp_path / "noncanonical-reservation-time.sqlite3"
+    store = SQLiteBoundedFootballLiveControlStore(path)
+    value = manifest()
+    guard, lease = acquire(path)
+
+    store.register_run(
+        value,
+        guard=guard,
+        lease=lease,
+        registered_at=BASE,
+    )
+    store.transition_run_state(
+        value.run_id,
+        expected_state="PLANNED",
+        expected_state_version=0,
+        new_state="IN_PROGRESS",
+        changed_at=BASE + timedelta(seconds=1),
+        guard=guard,
+        lease=lease,
+    )
+    store.reserve_next_sequence(
+        value.run_id,
+        round_index=1,
+        modality="fixture_events",
+        reserved_at=BASE + timedelta(seconds=2),
+        guard=guard,
+        lease=lease,
+    )
+    committed_at = BASE + timedelta(seconds=12)
+    store.transition_reservation(
+        value.run_id,
+        round_index=1,
+        modality="fixture_events",
+        expected_state="RESERVED",
+        new_state="COMMITTED",
+        changed_at=committed_at,
+        guard=guard,
+        lease=lease,
+    )
+
+    equivalent = (committed_at - timedelta(hours=12)).replace(
+        tzinfo=__import__("datetime").timezone(-timedelta(hours=12))
+    ).isoformat()
+    with sqlite3.connect(path) as connection:
+        connection.execute(
+            """
+            UPDATE football_bounded_sequence_reservation
+            SET updated_at = ?
+            WHERE run_id = ?
+              AND round_index = 1
+              AND modality = 'fixture_events'
+            """,
+            (equivalent, value.run_id),
+        )
+        connection.commit()
+    _rewrite_r8_2r2_anchor(path)
+
+    assert store.audit_integrity() is False
+    guard.release(lease)

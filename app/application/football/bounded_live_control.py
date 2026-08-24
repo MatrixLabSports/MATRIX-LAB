@@ -132,6 +132,29 @@ def _aware_utc(value: datetime, *, name: str) -> datetime:
     return value.astimezone(UTC)
 
 
+def _parse_canonical_utc_timestamp(
+    value: str,
+    *,
+    name: str,
+) -> datetime:
+    if not isinstance(value, str) or not value:
+        raise ValueError(
+            f"{name.upper()}_CANONICAL_UTC_TIMESTAMP_REQUIRED"
+        )
+    try:
+        parsed = datetime.fromisoformat(value)
+    except ValueError as error:
+        raise ValueError(
+            f"{name.upper()}_CANONICAL_UTC_TIMESTAMP_REQUIRED"
+        ) from error
+    normalized = _aware_utc(parsed, name=name)
+    if value != normalized.isoformat():
+        raise ValueError(
+            f"{name.upper()}_CANONICAL_UTC_TIMESTAMP_REQUIRED"
+        )
+    return normalized
+
+
 def _positive_int(value: int, *, name: str) -> int:
     if isinstance(value, bool) or not isinstance(value, int) or value <= 0:
         raise ValueError(f"{name.upper()}_MUST_BE_POSITIVE_INTEGER")
@@ -1037,8 +1060,14 @@ class SQLiteBoundedFootballLiveControlStore:
                 max_runtime_ms=int(row[9]),
                 state=str(row[10]),
                 state_version=int(row[11]),
-                created_at=datetime.fromisoformat(str(row[12])),
-                updated_at=datetime.fromisoformat(str(row[13])),
+                created_at=_parse_canonical_utc_timestamp(
+                    str(row[12]),
+                    name="run_created_at",
+                ),
+                updated_at=_parse_canonical_utc_timestamp(
+                    str(row[13]),
+                    name="run_updated_at",
+                ),
             )
             if len(set(snapshot.modalities)) != len(snapshot.modalities):
                 raise ValueError("R8_2_DUPLICATE_RUN_MODALITY")
@@ -1136,8 +1165,14 @@ class SQLiteBoundedFootballLiveControlStore:
                 stream_key=str(row[3]),
                 sequence_number=int(row[4]),
                 state=str(row[5]),
-                created_at=datetime.fromisoformat(str(row[6])),
-                updated_at=datetime.fromisoformat(str(row[7])),
+                created_at=_parse_canonical_utc_timestamp(
+                    str(row[6]),
+                    name="reservation_created_at",
+                ),
+                updated_at=_parse_canonical_utc_timestamp(
+                    str(row[7]),
+                    name="reservation_updated_at",
+                ),
             )
 
             exact_slot = (
@@ -1849,8 +1884,14 @@ class SQLiteBoundedFootballLiveControlStore:
             max_runtime_ms=int(row[8]),
             state=str(row[9]),
             state_version=int(row[10]),
-            created_at=datetime.fromisoformat(str(row[11])),
-            updated_at=datetime.fromisoformat(str(row[12])),
+            created_at=_parse_canonical_utc_timestamp(
+                str(row[11]),
+                name="run_created_at",
+            ),
+            updated_at=_parse_canonical_utc_timestamp(
+                str(row[12]),
+                name="run_updated_at",
+            ),
         )
 
     def transition_run_state(
@@ -1892,31 +1933,51 @@ class SQLiteBoundedFootballLiveControlStore:
                 ).fetchone()
                 if row is None:
                     raise ValueError("R8_2_RUN_CONTROL_NOT_FOUND")
-                if str(row[0]) != expected_state:
+
+                current_state = str(row[0])
+                current_version = int(row[1])
+                current_updated_at = _parse_canonical_utc_timestamp(
+                    str(row[3]),
+                    name="run_updated_at",
+                )
+
+                # Exact replay of the immediately durable run-state command is
+                # a read-only idempotent resolution. This closes the common
+                # lost-response/retry path without weakening CAS for a new
+                # transition.
+                if (
+                    current_state == new_state
+                    and current_version == version + 1
+                    and current_updated_at == changed
+                ):
+                    connection.execute("COMMIT")
+                    return self.get_run(normalized)
+
+                if current_state != expected_state:
                     raise ValueError("R8_2_RUN_STATE_COMPARE_AND_SWAP_FAILED")
-                if int(row[1]) != version:
+                if current_version != version:
                     raise ValueError(
                         "R8_2_RUN_STATE_VERSION_COMPARE_AND_SWAP_FAILED"
                     )
 
-                current_updated_at = datetime.fromisoformat(str(row[3]))
                 if changed < current_updated_at:
                     raise ValueError("R8_2_RUN_TIME_REGRESSION")
 
-                latest_reservation_row = connection.execute(
+                reservation_time_rows = connection.execute(
                     """
-                    SELECT MAX(updated_at)
+                    SELECT updated_at
                     FROM football_bounded_sequence_reservation
                     WHERE run_id = ?
                     """,
                     (normalized,),
-                ).fetchone()
-                if (
-                    latest_reservation_row is not None
-                    and latest_reservation_row[0] is not None
-                ):
-                    latest_reservation_at = datetime.fromisoformat(
-                        str(latest_reservation_row[0])
+                ).fetchall()
+                if reservation_time_rows:
+                    latest_reservation_at = max(
+                        _parse_canonical_utc_timestamp(
+                            str(item[0]),
+                            name="reservation_updated_at",
+                        )
+                        for item in reservation_time_rows
                     )
                     if changed < latest_reservation_at:
                         raise ValueError(
@@ -2063,11 +2124,20 @@ class SQLiteBoundedFootballLiveControlStore:
                         stream_key=str(existing[0]),
                         sequence_number=int(existing[1]),
                         state=str(existing[2]),
-                        created_at=datetime.fromisoformat(str(existing[3])),
-                        updated_at=datetime.fromisoformat(str(existing[4])),
+                        created_at=_parse_canonical_utc_timestamp(
+                            str(existing[3]),
+                            name="reservation_created_at",
+                        ),
+                        updated_at=_parse_canonical_utc_timestamp(
+                            str(existing[4]),
+                            name="reservation_updated_at",
+                        ),
                     )
 
-                run_updated_at = datetime.fromisoformat(str(run[7]))
+                run_updated_at = _parse_canonical_utc_timestamp(
+                    str(run[7]),
+                    name="run_updated_at",
+                )
                 if reserved < run_updated_at:
                     raise ValueError(
                         "R8_2_RESERVATION_TIME_PRECEDES_RUN_STATE"
@@ -2102,8 +2172,11 @@ class SQLiteBoundedFootballLiveControlStore:
                     (stream_key,),
                 ).fetchone()
                 if latest_stream_reservation is not None:
-                    latest_stream_created_at = datetime.fromisoformat(
-                        str(latest_stream_reservation[0])
+                    latest_stream_created_at = (
+                        _parse_canonical_utc_timestamp(
+                            str(latest_stream_reservation[0]),
+                            name="stream_reservation_created_at",
+                        )
                     )
                     if reserved < latest_stream_created_at:
                         raise ValueError(
@@ -2254,8 +2327,14 @@ class SQLiteBoundedFootballLiveControlStore:
                         stream_key=str(row[0]),
                         sequence_number=int(row[1]),
                         state=current_state,
-                        created_at=datetime.fromisoformat(str(row[3])),
-                        updated_at=datetime.fromisoformat(str(row[4])),
+                        created_at=_parse_canonical_utc_timestamp(
+                            str(row[3]),
+                            name="reservation_created_at",
+                        ),
+                        updated_at=_parse_canonical_utc_timestamp(
+                            str(row[4]),
+                            name="reservation_updated_at",
+                        ),
                     )
 
                 run_row = connection.execute(
@@ -2273,8 +2352,14 @@ class SQLiteBoundedFootballLiveControlStore:
                         "R8_2_RESERVATION_TRANSITION_RUN_STATE_FORBIDDEN"
                     )
 
-                current_updated_at = datetime.fromisoformat(str(row[4]))
-                run_updated_at = datetime.fromisoformat(str(run_row[1]))
+                current_updated_at = _parse_canonical_utc_timestamp(
+                    str(row[4]),
+                    name="reservation_updated_at",
+                )
+                run_updated_at = _parse_canonical_utc_timestamp(
+                    str(run_row[1]),
+                    name="run_updated_at",
+                )
                 if changed < current_updated_at:
                     raise ValueError(
                         "R8_2_RESERVATION_TIME_REGRESSION"
@@ -2365,8 +2450,14 @@ class SQLiteBoundedFootballLiveControlStore:
             stream_key=str(row[0]),
             sequence_number=int(row[1]),
             state=str(row[2]),
-            created_at=datetime.fromisoformat(str(row[3])),
-            updated_at=datetime.fromisoformat(str(row[4])),
+            created_at=_parse_canonical_utc_timestamp(
+                str(row[3]),
+                name="reservation_created_at",
+            ),
+            updated_at=_parse_canonical_utc_timestamp(
+                str(row[4]),
+                name="reservation_updated_at",
+            ),
         )
 
     def audit_integrity(self) -> bool:
