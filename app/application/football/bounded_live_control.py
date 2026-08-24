@@ -1950,6 +1950,18 @@ class SQLiteBoundedFootballLiveControlStore:
                     and current_version == version + 1
                     and current_updated_at == changed
                 ):
+                    # Replay provenance includes the caller's predecessor
+                    # state/version semantics, not only the durable result.
+                    # This rejects impossible aliases such as
+                    # RECOVERY_REQUIRED/v0 -> IN_PROGRESS/v1.
+                    _validate_run_state_version_semantics(
+                        state=expected_state,
+                        state_version=version,
+                    )
+                    _validate_run_state_version_semantics(
+                        state=new_state,
+                        state_version=version + 1,
+                    )
                     connection.execute("COMMIT")
                     return self.get_run(normalized)
 
@@ -2081,16 +2093,6 @@ class SQLiteBoundedFootballLiveControlStore:
                 ).fetchone()
                 if run is None:
                     raise ValueError("R8_2_RUN_CONTROL_NOT_FOUND")
-                if str(run[5]) != "IN_PROGRESS":
-                    raise ValueError(
-                        "R8_2_SEQUENCE_RESERVATION_REQUIRES_IN_PROGRESS_RUN"
-                    )
-
-                modalities = tuple(json.loads(str(run[2])))
-                if modality_value not in modalities:
-                    raise ValueError("R8_2_RUN_MODALITY_NOT_ALLOWED")
-                if round_number > int(run[3]):
-                    raise ValueError("R8_2_ROUND_INDEX_EXCEEDS_RUN_BOUND")
 
                 existing = connection.execute(
                     """
@@ -2112,10 +2114,10 @@ class SQLiteBoundedFootballLiveControlStore:
                     ),
                 ).fetchone()
                 if existing is not None:
-                    # Exact-slot replay is a read-only idempotent resolution.
-                    # The caller-supplied reserved_at belongs to a *new*
-                    # reservation intent and must not invalidate replay of
-                    # already-durable evidence after a recovery cycle.
+                    # Exact-slot replay is durable evidence resolution, not a
+                    # new reservation command. Resolve it before current-run
+                    # state checks so recovery remains possible after the run
+                    # has become COMPLETED or ABORTED.
                     connection.execute("COMMIT")
                     return SequenceReservation(
                         run_id=normalized,
@@ -2133,6 +2135,17 @@ class SQLiteBoundedFootballLiveControlStore:
                             name="reservation_updated_at",
                         ),
                     )
+
+                if str(run[5]) != "IN_PROGRESS":
+                    raise ValueError(
+                        "R8_2_SEQUENCE_RESERVATION_REQUIRES_IN_PROGRESS_RUN"
+                    )
+
+                modalities = tuple(json.loads(str(run[2])))
+                if modality_value not in modalities:
+                    raise ValueError("R8_2_RUN_MODALITY_NOT_ALLOWED")
+                if round_number > int(run[3]):
+                    raise ValueError("R8_2_ROUND_INDEX_EXCEEDS_RUN_BOUND")
 
                 run_updated_at = _parse_canonical_utc_timestamp(
                     str(run[7]),

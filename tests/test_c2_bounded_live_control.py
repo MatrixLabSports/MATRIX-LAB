@@ -2531,3 +2531,269 @@ def test_integrity_rejects_noncanonical_reservation_timestamp_offset_after_ancho
 
     assert store.audit_integrity() is False
     guard.release(lease)
+
+
+def test_run_state_replay_rejects_impossible_predecessor_semantics(tmp_path):
+    path = tmp_path / "run-state-replay-impossible-predecessor.sqlite3"
+    store = SQLiteBoundedFootballLiveControlStore(path)
+    value = manifest()
+    guard, lease = acquire(path)
+
+    store.register_run(
+        value,
+        guard=guard,
+        lease=lease,
+        registered_at=BASE,
+    )
+    changed = BASE + timedelta(seconds=1)
+    first = store.transition_run_state(
+        value.run_id,
+        expected_state="PLANNED",
+        expected_state_version=0,
+        new_state="IN_PROGRESS",
+        changed_at=changed,
+        guard=guard,
+        lease=lease,
+    )
+
+    with pytest.raises(
+        ValueError,
+        match="R8_2_RUN_STATE_VERSION_SEMANTICS_INVALID",
+    ):
+        store.transition_run_state(
+            value.run_id,
+            expected_state="RECOVERY_REQUIRED",
+            expected_state_version=0,
+            new_state="IN_PROGRESS",
+            changed_at=changed,
+            guard=guard,
+            lease=lease,
+        )
+
+    assert store.get_run(value.run_id) == first
+    assert store.audit_integrity() is True
+    guard.release(lease)
+
+
+def test_exact_slot_replay_remains_available_after_completed_run(tmp_path):
+    path = tmp_path / "terminal-completed-slot-replay.sqlite3"
+    store = SQLiteBoundedFootballLiveControlStore(path)
+    value = manifest()
+    guard, lease = acquire(path)
+
+    store.register_run(
+        value,
+        guard=guard,
+        lease=lease,
+        registered_at=BASE,
+    )
+    store.transition_run_state(
+        value.run_id,
+        expected_state="PLANNED",
+        expected_state_version=0,
+        new_state="IN_PROGRESS",
+        changed_at=BASE + timedelta(seconds=1),
+        guard=guard,
+        lease=lease,
+    )
+    original = store.reserve_next_sequence(
+        value.run_id,
+        round_index=1,
+        modality="fixture_events",
+        reserved_at=BASE + timedelta(seconds=2),
+        guard=guard,
+        lease=lease,
+    )
+    committed = store.transition_reservation(
+        value.run_id,
+        round_index=1,
+        modality="fixture_events",
+        expected_state="RESERVED",
+        new_state="COMMITTED",
+        changed_at=BASE + timedelta(seconds=3),
+        guard=guard,
+        lease=lease,
+    )
+    store.transition_run_state(
+        value.run_id,
+        expected_state="IN_PROGRESS",
+        expected_state_version=1,
+        new_state="COMPLETED",
+        changed_at=BASE + timedelta(seconds=4),
+        guard=guard,
+        lease=lease,
+    )
+
+    replay = store.reserve_next_sequence(
+        value.run_id,
+        round_index=1,
+        modality="fixture_events",
+        reserved_at=original.created_at,
+        guard=guard,
+        lease=lease,
+    )
+
+    assert replay.sequence_number == original.sequence_number == 1
+    assert replay.stream_key == original.stream_key
+    assert replay.created_at == original.created_at
+    assert replay.state == committed.state == "COMMITTED"
+    assert store.audit_integrity() is True
+    guard.release(lease)
+
+
+def test_exact_slot_replay_remains_available_after_aborted_run(tmp_path):
+    path = tmp_path / "terminal-aborted-slot-replay.sqlite3"
+    store = SQLiteBoundedFootballLiveControlStore(path)
+    value = manifest()
+    guard, lease = acquire(path)
+
+    store.register_run(
+        value,
+        guard=guard,
+        lease=lease,
+        registered_at=BASE,
+    )
+    store.transition_run_state(
+        value.run_id,
+        expected_state="PLANNED",
+        expected_state_version=0,
+        new_state="IN_PROGRESS",
+        changed_at=BASE + timedelta(seconds=1),
+        guard=guard,
+        lease=lease,
+    )
+    original = store.reserve_next_sequence(
+        value.run_id,
+        round_index=1,
+        modality="fixture_events",
+        reserved_at=BASE + timedelta(seconds=2),
+        guard=guard,
+        lease=lease,
+    )
+    store.transition_run_state(
+        value.run_id,
+        expected_state="IN_PROGRESS",
+        expected_state_version=1,
+        new_state="ABORTED",
+        changed_at=BASE + timedelta(seconds=3),
+        guard=guard,
+        lease=lease,
+    )
+
+    replay = store.reserve_next_sequence(
+        value.run_id,
+        round_index=1,
+        modality="fixture_events",
+        reserved_at=original.created_at,
+        guard=guard,
+        lease=lease,
+    )
+
+    assert replay.sequence_number == original.sequence_number == 1
+    assert replay.stream_key == original.stream_key
+    assert replay.created_at == original.created_at
+    assert replay.state == "ABANDONED"
+    assert store.audit_integrity() is True
+    guard.release(lease)
+
+
+def test_terminal_run_cannot_allocate_a_new_slot(tmp_path):
+    path = tmp_path / "terminal-new-slot-denied.sqlite3"
+    store = SQLiteBoundedFootballLiveControlStore(path)
+    value = manifest()
+    guard, lease = acquire(path)
+
+    store.register_run(
+        value,
+        guard=guard,
+        lease=lease,
+        registered_at=BASE,
+    )
+    store.transition_run_state(
+        value.run_id,
+        expected_state="PLANNED",
+        expected_state_version=0,
+        new_state="IN_PROGRESS",
+        changed_at=BASE + timedelta(seconds=1),
+        guard=guard,
+        lease=lease,
+    )
+    store.transition_run_state(
+        value.run_id,
+        expected_state="IN_PROGRESS",
+        expected_state_version=1,
+        new_state="COMPLETED",
+        changed_at=BASE + timedelta(seconds=2),
+        guard=guard,
+        lease=lease,
+    )
+
+    with pytest.raises(
+        ValueError,
+        match="R8_2_SEQUENCE_RESERVATION_REQUIRES_IN_PROGRESS_RUN",
+    ):
+        store.reserve_next_sequence(
+            value.run_id,
+            round_index=1,
+            modality="fixture_events",
+            reserved_at=BASE + timedelta(seconds=3),
+            guard=guard,
+            lease=lease,
+        )
+
+    assert store.audit_integrity() is True
+    guard.release(lease)
+
+
+def test_exact_slot_replay_remains_available_while_recovery_required(tmp_path):
+    path = tmp_path / "recovery-required-slot-replay.sqlite3"
+    store = SQLiteBoundedFootballLiveControlStore(path)
+    value = manifest()
+    guard, lease = acquire(path)
+
+    store.register_run(
+        value,
+        guard=guard,
+        lease=lease,
+        registered_at=BASE,
+    )
+    store.transition_run_state(
+        value.run_id,
+        expected_state="PLANNED",
+        expected_state_version=0,
+        new_state="IN_PROGRESS",
+        changed_at=BASE + timedelta(seconds=1),
+        guard=guard,
+        lease=lease,
+    )
+    original = store.reserve_next_sequence(
+        value.run_id,
+        round_index=1,
+        modality="fixture_events",
+        reserved_at=BASE + timedelta(seconds=2),
+        guard=guard,
+        lease=lease,
+    )
+    store.transition_run_state(
+        value.run_id,
+        expected_state="IN_PROGRESS",
+        expected_state_version=1,
+        new_state="RECOVERY_REQUIRED",
+        changed_at=BASE + timedelta(seconds=3),
+        guard=guard,
+        lease=lease,
+    )
+
+    replay = store.reserve_next_sequence(
+        value.run_id,
+        round_index=1,
+        modality="fixture_events",
+        reserved_at=original.created_at,
+        guard=guard,
+        lease=lease,
+    )
+
+    assert replay == original
+    assert store.get_run(value.run_id).state == "RECOVERY_REQUIRED"
+    assert store.audit_integrity() is True
+    guard.release(lease)
