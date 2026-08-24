@@ -1423,3 +1423,231 @@ def test_i22_terminal_run_requires_durable_stop_reason(tmp_path: Path):
         control_store=control,
         evidence_store=evidence,
     ) is False
+
+
+def test_i23_extra_resume_transition_span_overlap_rejected(tmp_path: Path):
+    manifest = make_manifest(
+        nonce="3" * 64,
+        modalities=("fixture_events",),
+        max_calls=2,
+    )
+    control, evidence, journal, guard, lease, authority = make_runtime(
+        tmp_path, manifest
+    )
+    provider = DeterministicFakeFootballLiveProvider()
+    clock = StepClock()
+
+    with pytest.raises(R83InjectedCrash, match="AFTER_RUN_IN_PROGRESS"):
+        execute_offline_fake_bounded_run(
+            manifest=manifest,
+            authority=authority,
+            control_store=control,
+            evidence_store=evidence,
+            journal=journal,
+            guard=guard,
+            lease=lease,
+            fake_provider=provider,
+            clock=clock,
+            crash_point="AFTER_RUN_IN_PROGRESS",
+        )
+    guard.release(lease)
+
+    guard2 = BoundedExecutorProcessScopeGuard(tmp_path / "control.sqlite3")
+    lease2 = guard2.acquire(acquired_at=clock())
+    result = execute_offline_fake_bounded_run(
+        manifest=manifest,
+        authority=authority,
+        control_store=control,
+        evidence_store=evidence,
+        journal=journal,
+        guard=guard2,
+        lease=lease2,
+        fake_provider=provider,
+        clock=clock,
+        resume=True,
+    )
+    guard2.release(lease2)
+    assert result.run_state == "COMPLETED"
+    assert result.resume_count == 1
+
+    with journal._connect() as connection:
+        connection.execute("BEGIN IMMEDIATE")
+        existing = connection.execute(
+            """
+            SELECT resumed_at
+            FROM r8_3_fake_resume_event
+            WHERE run_id = ? AND resume_index = 1
+            """,
+            (manifest.run_id,),
+        ).fetchone()
+        forged_time = (
+            datetime.fromisoformat(str(existing[0]))
+            + timedelta(milliseconds=10)
+        ).isoformat()
+        connection.execute(
+            """
+            INSERT INTO r8_3_fake_resume_event(
+                run_id,
+                resume_index,
+                resumed_at,
+                control_state_before,
+                control_state_version_before
+            )
+            VALUES (?, 2, ?, 'RECOVERY_REQUIRED', 2)
+            """,
+            (manifest.run_id, forged_time),
+        )
+        connection.execute(
+            """
+            UPDATE r8_3_fake_run_meta
+            SET resume_count = 2,
+                updated_at = ?
+            WHERE run_id = ?
+            """,
+            (forged_time, manifest.run_id),
+        )
+        journal._rewrite_anchor(connection)
+        connection.execute("COMMIT")
+
+    assert journal.audit_integrity() is True
+    assert journal.audit_cross_ledger_integrity(
+        control_store=control,
+        evidence_store=evidence,
+    ) is False
+
+
+def test_i23_completed_stop_reason_cannot_be_forged_to_manual(tmp_path: Path):
+    manifest = make_manifest(
+        nonce="4" * 64,
+        modalities=("fixture_events",),
+    )
+    control, evidence, journal, guard, lease, authority = make_runtime(
+        tmp_path, manifest
+    )
+    execute_offline_fake_bounded_run(
+        manifest=manifest,
+        authority=authority,
+        control_store=control,
+        evidence_store=evidence,
+        journal=journal,
+        guard=guard,
+        lease=lease,
+        fake_provider=DeterministicFakeFootballLiveProvider(),
+        clock=StepClock(),
+    )
+    guard.release(lease)
+
+    with journal._connect() as connection:
+        connection.execute("BEGIN IMMEDIATE")
+        connection.execute(
+            """
+            UPDATE r8_3_fake_stop_event
+            SET reason_code = 'MANUAL_STOP_REQUEST'
+            WHERE run_id = ? AND stop_index = 1
+            """,
+            (manifest.run_id,),
+        )
+        journal._rewrite_anchor(connection)
+        connection.execute("COMMIT")
+
+    assert journal.audit_integrity() is True
+    assert journal.audit_cross_ledger_integrity(
+        control_store=control,
+        evidence_store=evidence,
+    ) is False
+
+
+def test_i23_stop_time_after_terminal_control_rejected(tmp_path: Path):
+    manifest = make_manifest(
+        nonce="5" * 64,
+        modalities=("fixture_events",),
+    )
+    control, evidence, journal, guard, lease, authority = make_runtime(
+        tmp_path, manifest
+    )
+    execute_offline_fake_bounded_run(
+        manifest=manifest,
+        authority=authority,
+        control_store=control,
+        evidence_store=evidence,
+        journal=journal,
+        guard=guard,
+        lease=lease,
+        fake_provider=DeterministicFakeFootballLiveProvider(),
+        clock=StepClock(),
+    )
+    guard.release(lease)
+
+    snapshot = control.get_run(manifest.run_id)
+    forged = (snapshot.updated_at + timedelta(hours=1)).isoformat()
+    with journal._connect() as connection:
+        connection.execute("BEGIN IMMEDIATE")
+        connection.execute(
+            """
+            UPDATE r8_3_fake_stop_event
+            SET stopped_at = ?
+            WHERE run_id = ? AND stop_index = 1
+            """,
+            (forged, manifest.run_id),
+        )
+        journal._rewrite_anchor(connection)
+        connection.execute("COMMIT")
+
+    assert journal.audit_integrity() is True
+    assert journal.audit_cross_ledger_integrity(
+        control_store=control,
+        evidence_store=evidence,
+    ) is False
+
+
+def test_i23_abandoned_scripted_failure_requires_failed_attempt(tmp_path: Path):
+    manifest = make_manifest(
+        nonce="6" * 64,
+        modalities=("fixture_events",),
+        max_calls=2,
+    )
+    control, evidence, journal, guard, lease, authority = make_runtime(
+        tmp_path, manifest
+    )
+    result = execute_offline_fake_bounded_run(
+        manifest=manifest,
+        authority=authority,
+        control_store=control,
+        evidence_store=evidence,
+        journal=journal,
+        guard=guard,
+        lease=lease,
+        fake_provider=DeterministicFakeFootballLiveProvider(
+            failure_slots=frozenset({(1, "fixture_events")})
+        ),
+        clock=StepClock(),
+    )
+    guard.release(lease)
+    assert result.run_state == "ABORTED"
+
+    reservation = control.get_reservation(
+        manifest.run_id,
+        round_index=1,
+        modality="fixture_events",
+    )
+    assert reservation.state == "ABANDONED"
+
+    with journal._connect() as connection:
+        connection.execute("BEGIN IMMEDIATE")
+        connection.execute(
+            """
+            DELETE FROM r8_3_fake_call_attempt
+            WHERE run_id = ?
+              AND round_index = 1
+              AND modality = 'fixture_events'
+            """,
+            (manifest.run_id,),
+        )
+        journal._rewrite_anchor(connection)
+        connection.execute("COMMIT")
+
+    assert journal.audit_integrity() is True
+    assert journal.audit_cross_ledger_integrity(
+        control_store=control,
+        evidence_store=evidence,
+    ) is False

@@ -2044,7 +2044,9 @@ class SQLiteR83FakeExecutorJournal:
                     run_id,
                     provider_key,
                     subject_key,
-                    resume_count
+                    resume_count,
+                    modalities_json,
+                    max_capture_rounds
                 FROM r8_3_fake_run_meta
                 ORDER BY run_id
                 """
@@ -2059,7 +2061,8 @@ class SQLiteR83FakeExecutorJournal:
                     sequence_number,
                     correlation_id,
                     state,
-                    source_record_fingerprint
+                    source_record_fingerprint,
+                    error_code
                 FROM r8_3_fake_call_attempt
                 ORDER BY
                     run_id,
@@ -2084,7 +2087,8 @@ class SQLiteR83FakeExecutorJournal:
                 SELECT
                     run_id,
                     stop_index,
-                    reason_code
+                    reason_code,
+                    stopped_at
                 FROM r8_3_fake_stop_event
                 ORDER BY run_id, stop_index
                 """
@@ -2095,6 +2099,8 @@ class SQLiteR83FakeExecutorJournal:
                 str(row[1]),
                 str(row[2]),
                 int(row[3]),
+                tuple(json.loads(str(row[4]))),
+                int(row[5]),
             )
             for row in meta_rows
         }
@@ -2111,9 +2117,17 @@ class SQLiteR83FakeExecutorJournal:
         for row in resume_events:
             resume_by_run.setdefault(str(row[0]), []).append(row)
 
-        stop_by_run: dict[str, list[str]] = {}
+        stop_by_run: dict[str, list[tuple[str, datetime]]] = {}
         for row in stop_events:
-            stop_by_run.setdefault(str(row[0]), []).append(str(row[2]))
+            stop_by_run.setdefault(str(row[0]), []).append(
+                (
+                    str(row[2]),
+                    _aware_utc(
+                        datetime.fromisoformat(str(row[3])),
+                        name="stopped_at",
+                    ),
+                )
+            )
 
         with sqlite3.connect(control_store.path) as control_connection:
             for row in attempts:
@@ -2192,34 +2206,113 @@ class SQLiteR83FakeExecutorJournal:
                         "R8_3R3_RESUME_EVENT_COUNT_CROSS_LEDGER_MISMATCH"
                     )
 
+                prior_consumed_version = 0
                 for event in events:
                     state_before = str(event[2])
                     version_before = int(event[3])
                     if version_before > snapshot.state_version:
                         raise ValueError(
-                            "R8_3R3_RESUME_EVENT_VERSION_EXCEEDS_CONTROL"
+                            "R8_3R4_RESUME_EVENT_VERSION_EXCEEDS_CONTROL"
                         )
+                    if version_before < prior_consumed_version:
+                        raise ValueError(
+                            "R8_3R4_RESUME_TRANSITION_SPAN_OVERLAP"
+                        )
+                    consumed_version = (
+                        version_before + 2
+                        if state_before == "IN_PROGRESS"
+                        else version_before + 1
+                    )
+                    if consumed_version > snapshot.state_version:
+                        raise ValueError(
+                            "R8_3R4_RESUME_TRANSITION_SPAN_EXCEEDS_CONTROL"
+                        )
+                    prior_consumed_version = consumed_version
                     if snapshot.state in {"COMPLETED", "ABORTED"}:
-                        minimum_terminal_version = (
-                            version_before + 3
-                            if state_before == "IN_PROGRESS"
-                            else version_before + 2
-                        )
-                        if snapshot.state_version < minimum_terminal_version:
+                        if consumed_version >= snapshot.state_version:
                             raise ValueError(
-                                "R8_3R3_RESUME_EVENT_NOT_BOUND_TO_CONTROL_LIFECYCLE"
+                                "R8_3R4_RESUME_EVENT_CONSUMES_TERMINAL_TRANSITION"
                             )
                     elif snapshot.state == "PLANNED":
                         raise ValueError(
-                            "R8_3R3_RESUME_EVENT_ON_PLANNED_CONTROL_RUN"
+                            "R8_3R4_RESUME_EVENT_ON_PLANNED_CONTROL_RUN"
                         )
 
+                reasons = stop_by_run.get(run_id, [])
                 if snapshot.state in {"COMPLETED", "ABORTED"}:
-                    reasons = stop_by_run.get(run_id, [])
-                    if not reasons:
+                    if len(reasons) != 1:
                         raise ValueError(
-                            "R8_3R3_TERMINAL_RUN_WITHOUT_DURABLE_STOP_REASON"
+                            "R8_3R4_TERMINAL_RUN_REQUIRES_SINGLE_DURABLE_STOP_REASON"
                         )
+                    reason_code, stopped_at = reasons[0]
+                    if stopped_at > snapshot.updated_at:
+                        raise ValueError(
+                            "R8_3R4_STOP_TIME_POSTDATES_TERMINAL_CONTROL_STATE"
+                        )
+                    if snapshot.state == "COMPLETED":
+                        if reason_code not in {
+                            "CAPTURE_ROUND_LIMIT_REACHED",
+                            "FIXTURE_TERMINAL_STATUS_WHEN_CONFIGURED",
+                        }:
+                            raise ValueError(
+                                "R8_3R4_COMPLETED_STOP_REASON_CAUSALITY_MISMATCH"
+                            )
+                    else:
+                        if reason_code in {
+                            "CAPTURE_ROUND_LIMIT_REACHED",
+                            "FIXTURE_TERMINAL_STATUS_WHEN_CONFIGURED",
+                        }:
+                            raise ValueError(
+                                "R8_3R4_ABORTED_STOP_REASON_CAUSALITY_MISMATCH"
+                            )
+                if snapshot.state == "COMPLETED" and reasons:
+                    reason_code = reasons[0][0]
+                    modalities = meta_by_run[run_id][3]
+                    max_rounds = meta_by_run[run_id][4]
+                    if reason_code == "CAPTURE_ROUND_LIMIT_REACHED":
+                        expected_slots = max_rounds * len(modalities)
+                        committed_slots = sum(
+                            1
+                            for reservation in reservations
+                            if str(reservation[3]) == "COMMITTED"
+                        )
+                        if committed_slots != expected_slots:
+                            raise ValueError(
+                                "R8_3R4_CAPTURE_LIMIT_REASON_WITH_INCOMPLETE_PLAN"
+                            )
+
+                if snapshot.state == "ABORTED" and reasons:
+                    reason_code = reasons[0][0]
+                    if reason_code == "SCRIPTED_FAKE_PROVIDER_FAILURE":
+                        abandoned = [
+                            reservation
+                            for reservation in reservations
+                            if str(reservation[3]) == "ABANDONED"
+                        ]
+                        if not abandoned:
+                            raise ValueError(
+                                "R8_3R4_SCRIPTED_FAILURE_WITHOUT_ABANDONED_SLOT"
+                            )
+                        for reservation in abandoned:
+                            round_index = int(reservation[0])
+                            modality = str(reservation[1])
+                            sequence_number = int(reservation[2])
+                            slot_attempts = attempts_by_slot.get(
+                                (run_id, round_index, modality),
+                                [],
+                            )
+                            failed = [
+                                item
+                                for item in slot_attempts
+                                if str(item[6]) == "FAILED"
+                                and int(item[4]) == sequence_number
+                                and str(item[8])
+                                == "SCRIPTED_FAKE_PROVIDER_FAILURE"
+                            ]
+                            if len(failed) != 1:
+                                raise ValueError(
+                                    "R8_3R4_ABANDONED_FAILURE_WITHOUT_SINGLE_FAILED_ATTEMPT"
+                                )
 
         with sqlite3.connect(evidence_store.path) as evidence_connection:
             for row in attempts:
@@ -2231,7 +2324,7 @@ class SQLiteR83FakeExecutorJournal:
                 sequence_number = int(row[4])
                 correlation_id = str(row[5])
                 source_fp = str(row[7])
-                provider_key, subject_key, _ = meta_by_run[run_id]
+                provider_key, subject_key, _, _, _ = meta_by_run[run_id]
 
                 evidence = evidence_connection.execute(
                     """
