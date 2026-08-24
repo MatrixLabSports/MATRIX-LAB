@@ -2797,3 +2797,186 @@ def test_exact_slot_replay_remains_available_while_recovery_required(tmp_path):
     assert store.get_run(value.run_id).state == "RECOVERY_REQUIRED"
     assert store.audit_integrity() is True
     guard.release(lease)
+
+
+def test_modalities_json_requires_exact_canonical_bytes_after_rehashed_tamper(tmp_path):
+    path = tmp_path / "modalities-json-bytes.sqlite3"
+    store = SQLiteBoundedFootballLiveControlStore(path)
+    value = manifest()
+    guard, lease = acquire(path)
+    store.register_run(
+        value,
+        guard=guard,
+        lease=lease,
+        registered_at=BASE,
+    )
+
+    with sqlite3.connect(path) as connection:
+        raw = str(
+            connection.execute(
+                """
+                SELECT modalities_json
+                FROM football_bounded_run_control
+                WHERE run_id = ?
+                """,
+                (value.run_id,),
+            ).fetchone()[0]
+        )
+        parsed = json.loads(raw)
+        noncanonical = json.dumps(
+            parsed,
+            ensure_ascii=False,
+            indent=2,
+        )
+        assert noncanonical != raw
+        connection.execute(
+            """
+            UPDATE football_bounded_run_control
+            SET modalities_json = ?
+            WHERE run_id = ?
+            """,
+            (noncanonical, value.run_id),
+        )
+        connection.commit()
+
+    _rewrite_r8_2r2_anchor(path)
+    assert store.audit_integrity() is False
+    guard.release(lease)
+
+
+def test_process_guard_rejects_hostname_provenance_tamper(tmp_path):
+    path = tmp_path / "guard-hostname.sqlite3"
+    guard = BoundedExecutorProcessScopeGuard(path)
+    lease = guard.acquire(acquired_at=BASE)
+    lock_path = Path(lease.lock_path)
+
+    payload = json.loads(lock_path.read_text(encoding="utf-8"))
+    payload["hostname"] = "tampered-host.invalid"
+    lock_path.write_text(
+        json.dumps(
+            payload,
+            sort_keys=True,
+            separators=(",", ":"),
+            ensure_ascii=False,
+            allow_nan=False,
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+
+    with pytest.raises(
+        ValueError,
+        match="PROCESS_SCOPE_GUARD_LOCK_HOSTNAME_MISMATCH",
+    ):
+        guard.assert_active(lease)
+
+    payload["hostname"] = lease.hostname
+    lock_path.write_text(
+        json.dumps(
+            payload,
+            sort_keys=True,
+            separators=(",", ":"),
+            ensure_ascii=False,
+            allow_nan=False,
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+    guard.release(lease)
+
+
+def test_process_guard_rejects_acquired_at_provenance_tamper(tmp_path):
+    path = tmp_path / "guard-acquired-at.sqlite3"
+    guard = BoundedExecutorProcessScopeGuard(path)
+    lease = guard.acquire(acquired_at=BASE)
+    lock_path = Path(lease.lock_path)
+
+    payload = json.loads(lock_path.read_text(encoding="utf-8"))
+    payload["acquired_at"] = (BASE + timedelta(hours=6)).isoformat()
+    lock_path.write_text(
+        json.dumps(
+            payload,
+            sort_keys=True,
+            separators=(",", ":"),
+            ensure_ascii=False,
+            allow_nan=False,
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+
+    with pytest.raises(
+        ValueError,
+        match="PROCESS_SCOPE_GUARD_LOCK_ACQUIRED_AT_MISMATCH",
+    ):
+        guard.assert_active(lease)
+
+    payload["acquired_at"] = lease.acquired_at.isoformat()
+    lock_path.write_text(
+        json.dumps(
+            payload,
+            sort_keys=True,
+            separators=(",", ":"),
+            ensure_ascii=False,
+            allow_nan=False,
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+    guard.release(lease)
+
+
+def test_process_guard_requires_exact_canonical_lock_bytes_and_declared_fields(tmp_path):
+    path = tmp_path / "guard-canonical-bytes.sqlite3"
+    guard = BoundedExecutorProcessScopeGuard(path)
+    lease = guard.acquire(acquired_at=BASE)
+    lock_path = Path(lease.lock_path)
+
+    payload = json.loads(lock_path.read_text(encoding="utf-8"))
+    lock_path.write_text(
+        json.dumps(
+            payload,
+            ensure_ascii=False,
+            indent=2,
+        ),
+        encoding="utf-8",
+    )
+
+    with pytest.raises(
+        ValueError,
+        match="PROCESS_SCOPE_GUARD_LOCK_CANONICAL_BYTES_MISMATCH",
+    ):
+        guard.assert_active(lease)
+
+    payload["unexpected"] = "field"
+    lock_path.write_text(
+        json.dumps(
+            payload,
+            sort_keys=True,
+            separators=(",", ":"),
+            ensure_ascii=False,
+            allow_nan=False,
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+
+    with pytest.raises(
+        ValueError,
+        match="PROCESS_SCOPE_GUARD_LOCK_PROVENANCE_FIELDS_MISMATCH",
+    ):
+        guard.assert_active(lease)
+
+    payload.pop("unexpected")
+    lock_path.write_text(
+        json.dumps(
+            payload,
+            sort_keys=True,
+            separators=(",", ":"),
+            ensure_ascii=False,
+            allow_nan=False,
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+    guard.release(lease)

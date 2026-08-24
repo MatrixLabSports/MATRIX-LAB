@@ -126,6 +126,15 @@ def _sha(value: Any) -> str:
     return sha256(_canonical(value).encode("utf-8")).hexdigest()
 
 
+def _canonical_modalities_json(modalities: tuple[str, ...]) -> str:
+    return json.dumps(
+        list(modalities),
+        separators=(",", ":"),
+        ensure_ascii=False,
+        allow_nan=False,
+    )
+
+
 def _aware_utc(value: datetime, *, name: str) -> datetime:
     if value.tzinfo is None or value.utcoffset() is None:
         raise ValueError(f"{name.upper()}_MUST_BE_TIMEZONE_AWARE")
@@ -297,12 +306,13 @@ class BoundedExecutorProcessScopeGuard:
         acquired = _aware_utc(acquired_at, name="acquired_at")
         token = uuid4().hex
         token_sha = sha256(token.encode("utf-8")).hexdigest()
+        hostname = platform.node() or "unknown-host"
         payload = {
             "schema": "matrix.c2-r8-2-process-scope-guard/1",
             "control_path": str(self.control_path),
             "owner_token_sha256": token_sha,
             "pid": os.getpid(),
-            "hostname": platform.node() or "unknown-host",
+            "hostname": hostname,
             "acquired_at": acquired.isoformat(),
         }
 
@@ -331,7 +341,7 @@ class BoundedExecutorProcessScopeGuard:
             lock_path=str(self.lock_path),
             owner_token_sha256=token_sha,
             pid=os.getpid(),
-            hostname=platform.node() or "unknown-host",
+            hostname=hostname,
             acquired_at=acquired,
         )
         self._owner_token = token
@@ -340,7 +350,8 @@ class BoundedExecutorProcessScopeGuard:
 
     def _read_lock_payload(self) -> Mapping[str, Any]:
         try:
-            payload = json.loads(self.lock_path.read_text(encoding="utf-8"))
+            raw = self.lock_path.read_text(encoding="utf-8")
+            payload = json.loads(raw)
         except FileNotFoundError as error:
             raise ValueError("PROCESS_SCOPE_GUARD_LOCK_MISSING") from error
         except json.JSONDecodeError as error:
@@ -348,6 +359,10 @@ class BoundedExecutorProcessScopeGuard:
 
         if not isinstance(payload, dict):
             raise ValueError("PROCESS_SCOPE_GUARD_LOCK_INVALID")
+        if raw != _canonical(payload):
+            raise ValueError(
+                "PROCESS_SCOPE_GUARD_LOCK_CANONICAL_BYTES_MISMATCH"
+            )
         return payload
 
     def assert_active(
@@ -378,6 +393,26 @@ class BoundedExecutorProcessScopeGuard:
             raise ValueError("PROCESS_SCOPE_GUARD_LOCK_OWNER_MISMATCH")
         if int(payload.get("pid", -1)) != os.getpid():
             raise ValueError("PROCESS_SCOPE_GUARD_PID_MISMATCH")
+        if payload.get("hostname") != lease.hostname:
+            raise ValueError(
+                "PROCESS_SCOPE_GUARD_LOCK_HOSTNAME_MISMATCH"
+            )
+        if payload.get("acquired_at") != lease.acquired_at.isoformat():
+            raise ValueError(
+                "PROCESS_SCOPE_GUARD_LOCK_ACQUIRED_AT_MISMATCH"
+            )
+        expected_keys = {
+            "schema",
+            "control_path",
+            "owner_token_sha256",
+            "pid",
+            "hostname",
+            "acquired_at",
+        }
+        if set(payload) != expected_keys:
+            raise ValueError(
+                "PROCESS_SCOPE_GUARD_LOCK_PROVENANCE_FIELDS_MISMATCH"
+            )
 
     def release(
         self,
@@ -1044,9 +1079,17 @@ class SQLiteBoundedFootballLiveControlStore:
                     "R8_2_RUN_CONTROL_MANIFEST_SEMANTIC_REDERIVATION_MISMATCH"
                 )
 
-            modalities_raw = json.loads(str(row[6]))
+            modalities_json = str(row[6])
+            modalities_raw = json.loads(modalities_json)
             if not isinstance(modalities_raw, list):
                 raise ValueError("R8_2_RUN_MODALITIES_LIST_REQUIRED")
+            canonical_modalities_json = _canonical_modalities_json(
+                manifest.modalities
+            )
+            if modalities_json != canonical_modalities_json:
+                raise ValueError(
+                    "R8_2_RUN_MODALITIES_CANONICAL_BYTES_MISMATCH"
+                )
 
             snapshot = RunControlSnapshot(
                 run_id=str(row[0]),
@@ -1758,10 +1801,8 @@ class SQLiteBoundedFootballLiveControlStore:
                     (manifest.run_id,),
                 ).fetchone()
 
-                modalities_json = json.dumps(
-                    list(manifest.modalities),
-                    separators=(",", ":"),
-                    ensure_ascii=False,
+                modalities_json = _canonical_modalities_json(
+                    manifest.modalities
                 )
                 manifest_json = _canonical(manifest.payload())
 
