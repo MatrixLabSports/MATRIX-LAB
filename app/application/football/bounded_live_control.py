@@ -1172,6 +1172,17 @@ class SQLiteBoundedFootballLiveControlStore:
                     "R8_2_RUN_REGISTRATION_PRECEDES_MANIFEST_CREATION"
                 )
 
+            # PLANNED is a quiescent registration state. No run-state
+            # transition has occurred yet, so its durable update time must
+            # still be the registration event itself.
+            if (
+                snapshot.state == "PLANNED"
+                and snapshot.updated_at != snapshot.created_at
+            ):
+                raise ValueError(
+                    "R8_2_PLANNED_RUN_UPDATED_AT_MUST_EQUAL_CREATED_AT"
+                )
+
             rederived_config = BoundedFootballLiveExecutorConfig(
                 provider_key=snapshot.provider_key,
                 subject_key=snapshot.subject_key,
@@ -1268,6 +1279,17 @@ class SQLiteBoundedFootballLiveControlStore:
             if reservation.created_at < run.created_at:
                 raise ValueError(
                     "R8_2_RESERVATION_PRECEDES_RUN_REGISTRATION"
+                )
+
+            # RESERVED is a quiescent allocation state. Until a result
+            # transition commits or abandons the slot, updated_at must remain
+            # exactly the allocation timestamp.
+            if (
+                reservation.state == "RESERVED"
+                and reservation.updated_at != reservation.created_at
+            ):
+                raise ValueError(
+                    "R8_2_RESERVED_UPDATED_AT_MUST_EQUAL_CREATED_AT"
                 )
 
             expected_stream_key = self._stream_key(

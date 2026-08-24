@@ -3149,3 +3149,179 @@ def test_process_guard_rejects_pid_type_confusion(tmp_path, tampered_pid):
 
     lock_path.write_text(original_raw, encoding="utf-8")
     guard.release(lease)
+
+
+def test_planned_run_updated_at_must_equal_created_at_after_rehash(tmp_path):
+    path = tmp_path / "planned-run-quiescent-time.sqlite3"
+    store = SQLiteBoundedFootballLiveControlStore(path)
+    value = manifest()
+    guard, lease = acquire(path)
+
+    store.register_run(
+        value,
+        guard=guard,
+        lease=lease,
+        registered_at=BASE,
+    )
+
+    with sqlite3.connect(path) as connection:
+        connection.execute(
+            """
+            UPDATE football_bounded_run_control
+            SET updated_at = ?
+            WHERE run_id = ?
+            """,
+            (
+                (BASE + timedelta(seconds=10)).isoformat(),
+                value.run_id,
+            ),
+        )
+        connection.commit()
+
+    _rewrite_r8_2r2_anchor(path)
+    assert store.audit_integrity() is False
+    guard.release(lease)
+
+
+def test_reserved_reservation_updated_at_must_equal_created_at_after_rehash(tmp_path):
+    path = tmp_path / "reserved-quiescent-time.sqlite3"
+    store = SQLiteBoundedFootballLiveControlStore(path)
+    value = manifest()
+    guard, lease = acquire(path)
+
+    store.register_run(
+        value,
+        guard=guard,
+        lease=lease,
+        registered_at=BASE,
+    )
+    store.transition_run_state(
+        value.run_id,
+        expected_state="PLANNED",
+        expected_state_version=0,
+        new_state="IN_PROGRESS",
+        changed_at=BASE + timedelta(seconds=1),
+        guard=guard,
+        lease=lease,
+    )
+    store.reserve_next_sequence(
+        value.run_id,
+        round_index=1,
+        modality="fixture_events",
+        reserved_at=BASE + timedelta(seconds=2),
+        guard=guard,
+        lease=lease,
+    )
+
+    with sqlite3.connect(path) as connection:
+        connection.execute(
+            """
+            UPDATE football_bounded_sequence_reservation
+            SET updated_at = ?
+            WHERE run_id = ?
+              AND round_index = 1
+              AND modality = 'fixture_events'
+            """,
+            (
+                (BASE + timedelta(seconds=10)).isoformat(),
+                value.run_id,
+            ),
+        )
+        connection.commit()
+
+    _rewrite_r8_2r2_anchor(path)
+    assert store.audit_integrity() is False
+    guard.release(lease)
+
+
+def test_healthy_planned_and_reserved_quiescent_timestamps_still_audit(tmp_path):
+    planned_path = tmp_path / "healthy-planned-time.sqlite3"
+    planned_store = SQLiteBoundedFootballLiveControlStore(planned_path)
+    planned_value = manifest()
+    planned_guard, planned_lease = acquire(planned_path)
+
+    planned_store.register_run(
+        planned_value,
+        guard=planned_guard,
+        lease=planned_lease,
+        registered_at=BASE,
+    )
+    assert planned_store.audit_integrity() is True
+    planned_guard.release(planned_lease)
+
+    reserved_path = tmp_path / "healthy-reserved-time.sqlite3"
+    reserved_store = SQLiteBoundedFootballLiveControlStore(reserved_path)
+    reserved_value = manifest()
+    reserved_guard, reserved_lease = acquire(reserved_path)
+
+    reserved_store.register_run(
+        reserved_value,
+        guard=reserved_guard,
+        lease=reserved_lease,
+        registered_at=BASE,
+    )
+    reserved_store.transition_run_state(
+        reserved_value.run_id,
+        expected_state="PLANNED",
+        expected_state_version=0,
+        new_state="IN_PROGRESS",
+        changed_at=BASE + timedelta(seconds=1),
+        guard=reserved_guard,
+        lease=reserved_lease,
+    )
+    reserved = reserved_store.reserve_next_sequence(
+        reserved_value.run_id,
+        round_index=1,
+        modality="fixture_events",
+        reserved_at=BASE + timedelta(seconds=2),
+        guard=reserved_guard,
+        lease=reserved_lease,
+    )
+    assert reserved.updated_at == reserved.created_at
+    assert reserved_store.audit_integrity() is True
+    reserved_guard.release(reserved_lease)
+
+
+def test_nonquiescent_reservation_updated_at_may_advance(tmp_path):
+    path = tmp_path / "committed-result-time.sqlite3"
+    store = SQLiteBoundedFootballLiveControlStore(path)
+    value = manifest()
+    guard, lease = acquire(path)
+
+    store.register_run(
+        value,
+        guard=guard,
+        lease=lease,
+        registered_at=BASE,
+    )
+    store.transition_run_state(
+        value.run_id,
+        expected_state="PLANNED",
+        expected_state_version=0,
+        new_state="IN_PROGRESS",
+        changed_at=BASE + timedelta(seconds=1),
+        guard=guard,
+        lease=lease,
+    )
+    reserved = store.reserve_next_sequence(
+        value.run_id,
+        round_index=1,
+        modality="fixture_events",
+        reserved_at=BASE + timedelta(seconds=2),
+        guard=guard,
+        lease=lease,
+    )
+    committed = store.transition_reservation(
+        value.run_id,
+        round_index=1,
+        modality="fixture_events",
+        expected_state="RESERVED",
+        new_state="COMMITTED",
+        changed_at=BASE + timedelta(seconds=3),
+        guard=guard,
+        lease=lease,
+    )
+
+    assert committed.updated_at > reserved.updated_at
+    assert store.audit_integrity() is True
+    guard.release(lease)
