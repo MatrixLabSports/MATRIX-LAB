@@ -2980,3 +2980,172 @@ def test_process_guard_requires_exact_canonical_lock_bytes_and_declared_fields(t
         encoding="utf-8",
     )
     guard.release(lease)
+
+
+def test_completed_run_must_dominate_durable_reservation_result_time_after_rehash(tmp_path):
+    path = tmp_path / "completed-terminal-time-dominance.sqlite3"
+    store = SQLiteBoundedFootballLiveControlStore(path)
+    value = manifest()
+    guard, lease = acquire(path)
+
+    store.register_run(
+        value,
+        guard=guard,
+        lease=lease,
+        registered_at=BASE,
+    )
+    store.transition_run_state(
+        value.run_id,
+        expected_state="PLANNED",
+        expected_state_version=0,
+        new_state="IN_PROGRESS",
+        changed_at=BASE + timedelta(seconds=1),
+        guard=guard,
+        lease=lease,
+    )
+    store.reserve_next_sequence(
+        value.run_id,
+        round_index=1,
+        modality="fixture_events",
+        reserved_at=BASE + timedelta(seconds=2),
+        guard=guard,
+        lease=lease,
+    )
+    store.transition_reservation(
+        value.run_id,
+        round_index=1,
+        modality="fixture_events",
+        expected_state="RESERVED",
+        new_state="COMMITTED",
+        changed_at=BASE + timedelta(seconds=3),
+        guard=guard,
+        lease=lease,
+    )
+    store.transition_run_state(
+        value.run_id,
+        expected_state="IN_PROGRESS",
+        expected_state_version=1,
+        new_state="COMPLETED",
+        changed_at=BASE + timedelta(seconds=4),
+        guard=guard,
+        lease=lease,
+    )
+
+    with sqlite3.connect(path) as connection:
+        connection.execute(
+            """
+            UPDATE football_bounded_sequence_reservation
+            SET updated_at = ?
+            WHERE run_id = ?
+              AND round_index = 1
+              AND modality = 'fixture_events'
+            """,
+            (
+                (BASE + timedelta(seconds=10)).isoformat(),
+                value.run_id,
+            ),
+        )
+        connection.commit()
+
+    _rewrite_r8_2r2_anchor(path)
+    assert store.audit_integrity() is False
+    guard.release(lease)
+
+
+def test_aborted_run_must_dominate_auto_abandoned_reservation_time_after_rehash(tmp_path):
+    path = tmp_path / "aborted-terminal-time-dominance.sqlite3"
+    store = SQLiteBoundedFootballLiveControlStore(path)
+    value = manifest()
+    guard, lease = acquire(path)
+
+    store.register_run(
+        value,
+        guard=guard,
+        lease=lease,
+        registered_at=BASE,
+    )
+    store.transition_run_state(
+        value.run_id,
+        expected_state="PLANNED",
+        expected_state_version=0,
+        new_state="IN_PROGRESS",
+        changed_at=BASE + timedelta(seconds=1),
+        guard=guard,
+        lease=lease,
+    )
+    store.reserve_next_sequence(
+        value.run_id,
+        round_index=1,
+        modality="fixture_events",
+        reserved_at=BASE + timedelta(seconds=2),
+        guard=guard,
+        lease=lease,
+    )
+    store.transition_run_state(
+        value.run_id,
+        expected_state="IN_PROGRESS",
+        expected_state_version=1,
+        new_state="ABORTED",
+        changed_at=BASE + timedelta(seconds=3),
+        guard=guard,
+        lease=lease,
+    )
+
+    with sqlite3.connect(path) as connection:
+        connection.execute(
+            """
+            UPDATE football_bounded_sequence_reservation
+            SET updated_at = ?
+            WHERE run_id = ?
+              AND round_index = 1
+              AND modality = 'fixture_events'
+            """,
+            (
+                (BASE + timedelta(seconds=10)).isoformat(),
+                value.run_id,
+            ),
+        )
+        connection.commit()
+
+    _rewrite_r8_2r2_anchor(path)
+    assert store.audit_integrity() is False
+    guard.release(lease)
+
+
+@pytest.mark.parametrize(
+    "tampered_pid",
+    [
+        pytest.param(str(os.getpid()), id="digit-string"),
+        pytest.param(float(os.getpid()), id="float"),
+        pytest.param(True, id="bool"),
+    ],
+)
+def test_process_guard_rejects_pid_type_confusion(tmp_path, tampered_pid):
+    path = tmp_path / "guard-pid-type.sqlite3"
+    guard = BoundedExecutorProcessScopeGuard(path)
+    lease = guard.acquire(acquired_at=BASE)
+    lock_path = Path(lease.lock_path)
+    original_raw = lock_path.read_text(encoding="utf-8")
+
+    payload = json.loads(original_raw)
+    payload["pid"] = tampered_pid
+    lock_path.write_text(
+        json.dumps(
+            payload,
+            sort_keys=True,
+            separators=(",", ":"),
+            ensure_ascii=False,
+            allow_nan=False,
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+
+    with pytest.raises(
+        ValueError,
+        match="PROCESS_SCOPE_GUARD_LOCK_PID_TYPE_MISMATCH",
+    ):
+        guard.assert_active(lease)
+
+    lock_path.write_text(original_raw, encoding="utf-8")
+    guard.release(lease)

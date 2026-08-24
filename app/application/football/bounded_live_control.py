@@ -385,22 +385,6 @@ class BoundedExecutorProcessScopeGuard:
             raise ValueError("PROCESS_SCOPE_GUARD_OWNER_TOKEN_MISMATCH")
 
         payload = self._read_lock_payload()
-        if payload.get("schema") != "matrix.c2-r8-2-process-scope-guard/1":
-            raise ValueError("PROCESS_SCOPE_GUARD_LOCK_SCHEMA_MISMATCH")
-        if payload.get("control_path") != str(self.control_path):
-            raise ValueError("PROCESS_SCOPE_GUARD_LOCK_CONTROL_PATH_MISMATCH")
-        if payload.get("owner_token_sha256") != expected_sha:
-            raise ValueError("PROCESS_SCOPE_GUARD_LOCK_OWNER_MISMATCH")
-        if int(payload.get("pid", -1)) != os.getpid():
-            raise ValueError("PROCESS_SCOPE_GUARD_PID_MISMATCH")
-        if payload.get("hostname") != lease.hostname:
-            raise ValueError(
-                "PROCESS_SCOPE_GUARD_LOCK_HOSTNAME_MISMATCH"
-            )
-        if payload.get("acquired_at") != lease.acquired_at.isoformat():
-            raise ValueError(
-                "PROCESS_SCOPE_GUARD_LOCK_ACQUIRED_AT_MISMATCH"
-            )
         expected_keys = {
             "schema",
             "control_path",
@@ -412,6 +396,46 @@ class BoundedExecutorProcessScopeGuard:
         if set(payload) != expected_keys:
             raise ValueError(
                 "PROCESS_SCOPE_GUARD_LOCK_PROVENANCE_FIELDS_MISMATCH"
+            )
+
+        # Guard provenance is a typed contract, not merely a set of values
+        # that can be coerced into the expected shape. In particular, pid is
+        # emitted as a JSON integer and must remain an integer (never bool,
+        # float, or a digit string).
+        for key in (
+            "schema",
+            "control_path",
+            "owner_token_sha256",
+            "hostname",
+            "acquired_at",
+        ):
+            if not isinstance(payload[key], str):
+                raise ValueError(
+                    "PROCESS_SCOPE_GUARD_LOCK_PROVENANCE_TYPE_MISMATCH"
+                )
+        if isinstance(payload["pid"], bool) or not isinstance(
+            payload["pid"],
+            int,
+        ):
+            raise ValueError(
+                "PROCESS_SCOPE_GUARD_LOCK_PID_TYPE_MISMATCH"
+            )
+
+        if payload["schema"] != "matrix.c2-r8-2-process-scope-guard/1":
+            raise ValueError("PROCESS_SCOPE_GUARD_LOCK_SCHEMA_MISMATCH")
+        if payload["control_path"] != str(self.control_path):
+            raise ValueError("PROCESS_SCOPE_GUARD_LOCK_CONTROL_PATH_MISMATCH")
+        if payload["owner_token_sha256"] != expected_sha:
+            raise ValueError("PROCESS_SCOPE_GUARD_LOCK_OWNER_MISMATCH")
+        if payload["pid"] != os.getpid():
+            raise ValueError("PROCESS_SCOPE_GUARD_PID_MISMATCH")
+        if payload["hostname"] != lease.hostname:
+            raise ValueError(
+                "PROCESS_SCOPE_GUARD_LOCK_HOSTNAME_MISMATCH"
+            )
+        if payload["acquired_at"] != lease.acquired_at.isoformat():
+            raise ValueError(
+                "PROCESS_SCOPE_GUARD_LOCK_ACQUIRED_AT_MISMATCH"
             )
 
     def release(
@@ -1198,6 +1222,7 @@ class SQLiteBoundedFootballLiveControlStore:
         reservations_by_stream: dict[str, list[SequenceReservation]] = {}
         reservation_count_by_run: dict[str, int] = {}
         open_count_by_run: dict[str, int] = {}
+        latest_reservation_updated_at_by_run: dict[str, datetime] = {}
         exact_slots: set[tuple[str, int, str]] = set()
 
         for row in reservation_rows:
@@ -1271,6 +1296,17 @@ class SQLiteBoundedFootballLiveControlStore:
                     open_count_by_run.get(reservation.run_id, 0) + 1
                 )
 
+            previous_latest = latest_reservation_updated_at_by_run.get(
+                reservation.run_id
+            )
+            if (
+                previous_latest is None
+                or reservation.updated_at > previous_latest
+            ):
+                latest_reservation_updated_at_by_run[
+                    reservation.run_id
+                ] = reservation.updated_at
+
             sequences_by_stream.setdefault(
                 reservation.stream_key,
                 [],
@@ -1296,6 +1332,17 @@ class SQLiteBoundedFootballLiveControlStore:
                 raise ValueError(
                     "R8_2_TERMINAL_RUN_WITH_OPEN_RESERVATIONS_FORBIDDEN"
                 )
+            if run.state in {"COMPLETED", "ABORTED"}:
+                latest_result_at = latest_reservation_updated_at_by_run.get(
+                    run_id
+                )
+                if (
+                    latest_result_at is not None
+                    and latest_result_at > run.updated_at
+                ):
+                    raise ValueError(
+                        "R8_2_TERMINAL_RUN_TIME_PRECEDES_RESERVATION_RESULT"
+                    )
 
         for stream_key, sequences in sequences_by_stream.items():
             ordered = sorted(sequences)
