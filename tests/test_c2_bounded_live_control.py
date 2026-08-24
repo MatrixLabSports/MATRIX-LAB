@@ -1204,7 +1204,7 @@ def test_v82_empty_control_store_migrates_atomically_to_v85(tmp_path):
     with sqlite3.connect(path) as connection:
         assert connection.execute(
             "PRAGMA user_version"
-        ).fetchone()[0] == 85
+        ).fetchone()[0] == 86
         columns = {
             row[1]
             for row in connection.execute(
@@ -1540,7 +1540,7 @@ def test_empty_v83_control_store_migrates_atomically_to_v85(tmp_path):
             ).fetchall()
         }
 
-    assert version == 85
+    assert version == 86
     assert "manifest_json" in columns
     assert store.audit_integrity() is True
 
@@ -1771,7 +1771,7 @@ def test_empty_v83_migration_produces_exact_fresh_v85_schema_contract(tmp_path):
     with sqlite3.connect(migrated_path) as connection:
         assert connection.execute(
             "PRAGMA user_version"
-        ).fetchone()[0] == 85
+        ).fetchone()[0] == 86
 
     assert migrated.audit_integrity() is True
     assert _schema_contract(migrated_path) == _schema_contract(fresh_path)
@@ -1908,7 +1908,16 @@ def test_nonempty_v84_migrates_to_v85_after_verified_provenance(tmp_path):
     guard.release(lease)
 
     with sqlite3.connect(path) as connection:
+        connection.execute("DROP TABLE football_bounded_run_transition_event")
         connection.execute("PRAGMA user_version = 84")
+        connection.execute(
+            """
+            UPDATE football_bounded_control_anchor
+            SET payload_sha256 = ?
+            WHERE singleton_id = 1
+            """,
+            (_canonical_payload(_anchor_payload_v84(connection)),),
+        )
         connection.commit()
 
     reopened = SQLiteBoundedFootballLiveControlStore(path)
@@ -1917,7 +1926,7 @@ def test_nonempty_v84_migrates_to_v85_after_verified_provenance(tmp_path):
             "PRAGMA user_version"
         ).fetchone()[0]
 
-    assert version == 85
+    assert version == 86
     assert reopened.get_run(value.run_id).run_id == value.run_id
     assert reopened.audit_integrity() is True
 
