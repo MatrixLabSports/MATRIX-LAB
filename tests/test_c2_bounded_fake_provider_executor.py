@@ -12,6 +12,8 @@ from app.application.football.bounded_fake_provider_executor import (
     R8_3_FAKE_PROVIDER_KEY,
     R83InjectedCrash,
     SQLiteR83FakeExecutorJournal,
+    _attempt_intent_binding,
+    _attempt_result_binding,
     build_r8_3_offline_fake_execution_authority,
     execute_offline_fake_bounded_run,
 )
@@ -828,3 +830,355 @@ def test_journal_attempt_index_gap_rejected_even_after_local_rehash(tmp_path: Pa
         connection.execute("COMMIT")
     assert journal.audit_integrity() is False
     guard.release(lease)
+
+
+def _complete_r83_one_round(tmp_path: Path, *, nonce: str):
+    manifest = make_manifest(nonce=nonce)
+    control, evidence, journal, guard, lease, authority = make_runtime(
+        tmp_path,
+        manifest,
+    )
+    provider = DeterministicFakeFootballLiveProvider()
+    result = execute_offline_fake_bounded_run(
+        manifest=manifest,
+        authority=authority,
+        control_store=control,
+        evidence_store=evidence,
+        journal=journal,
+        guard=guard,
+        lease=lease,
+        fake_provider=provider,
+        clock=StepClock(),
+    )
+    assert result.run_state == "COMPLETED"
+    guard.release(lease)
+    return manifest, control, evidence, journal, authority, provider
+
+
+def test_i21_slot_sequence_tamper_rejected_after_local_rehash(tmp_path: Path):
+    manifest, _, _, journal, _, _ = _complete_r83_one_round(
+        tmp_path,
+        nonce="a" * 64,
+    )
+    with journal._connect() as connection:
+        connection.execute("BEGIN IMMEDIATE")
+        connection.execute(
+            """
+            UPDATE r8_3_fake_call_attempt
+            SET sequence_number = sequence_number + 50
+            WHERE rowid = (
+                SELECT rowid
+                FROM r8_3_fake_call_attempt
+                ORDER BY modality
+                LIMIT 1
+            )
+            """
+        )
+        journal._rewrite_anchor(connection)
+        connection.execute("COMMIT")
+
+    assert journal.audit_integrity() is False
+
+
+def test_i21_success_source_tamper_rejected_after_local_rehash(tmp_path: Path):
+    _, _, _, journal, _, _ = _complete_r83_one_round(
+        tmp_path,
+        nonce="b" * 64,
+    )
+    with journal._connect() as connection:
+        connection.execute("BEGIN IMMEDIATE")
+        row = connection.execute(
+            """
+            SELECT rowid, source_record_fingerprint
+            FROM r8_3_fake_call_attempt
+            WHERE state = 'SUCCEEDED'
+            ORDER BY modality
+            LIMIT 1
+            """
+        ).fetchone()
+        replacement = "f" * 64
+        if str(row[1]) == replacement:
+            replacement = "e" * 64
+        connection.execute(
+            """
+            UPDATE r8_3_fake_call_attempt
+            SET source_record_fingerprint = ?
+            WHERE rowid = ?
+            """,
+            (replacement, int(row[0])),
+        )
+        journal._rewrite_anchor(connection)
+        connection.execute("COMMIT")
+
+    assert journal.audit_integrity() is False
+
+
+def test_i21_call_table_ddl_semantics_rejected_after_local_rehash(tmp_path: Path):
+    _, _, _, journal, _, _ = _complete_r83_one_round(
+        tmp_path,
+        nonce="c" * 64,
+    )
+    with journal._connect() as connection:
+        connection.execute("BEGIN IMMEDIATE")
+        connection.execute(
+            "ALTER TABLE r8_3_fake_call_attempt RENAME TO old_attempt"
+        )
+        connection.execute(
+            """
+            CREATE TABLE r8_3_fake_call_attempt (
+                run_id TEXT NOT NULL,
+                round_index INTEGER NOT NULL,
+                modality TEXT NOT NULL,
+                attempt_index INTEGER NOT NULL,
+                sequence_number INTEGER NOT NULL,
+                correlation_id TEXT NOT NULL,
+                state TEXT NOT NULL,
+                attempted_at TEXT NOT NULL,
+                result_at TEXT,
+                source_record_fingerprint TEXT,
+                error_code TEXT,
+                intent_binding_sha256 TEXT NOT NULL,
+                result_binding_sha256 TEXT
+            )
+            """
+        )
+        connection.execute(
+            """
+            INSERT INTO r8_3_fake_call_attempt
+            SELECT * FROM old_attempt
+            """
+        )
+        connection.execute("DROP TABLE old_attempt")
+        journal._rewrite_anchor(connection)
+        connection.execute("COMMIT")
+
+    assert journal.audit_integrity() is False
+
+
+def test_i21_resume_count_tamper_rejected_without_resume_events(tmp_path: Path):
+    manifest = make_manifest(nonce="d" * 64)
+    _, _, journal, guard, lease, authority = make_runtime(
+        tmp_path,
+        manifest,
+    )
+    journal.register_run(
+        manifest=manifest,
+        authority=authority,
+        registered_at=BASE,
+    )
+
+    with journal._connect() as connection:
+        connection.execute("BEGIN IMMEDIATE")
+        connection.execute(
+            """
+            UPDATE r8_3_fake_run_meta
+            SET resume_count = 999,
+                updated_at = ?
+            WHERE run_id = ?
+            """,
+            (
+                (BASE + timedelta(seconds=30)).isoformat(),
+                manifest.run_id,
+            ),
+        )
+        journal._rewrite_anchor(connection)
+        connection.execute("COMMIT")
+
+    assert journal.audit_integrity() is False
+    guard.release(lease)
+
+
+def test_resume_count_is_derived_from_durable_resume_events(tmp_path: Path):
+    manifest = make_manifest(
+        nonce="e" * 64,
+        modalities=("fixture_events",),
+    )
+    control, evidence, journal, guard, lease, authority = make_runtime(
+        tmp_path,
+        manifest,
+    )
+    provider = DeterministicFakeFootballLiveProvider()
+    clock = StepClock()
+
+    with pytest.raises(R83InjectedCrash):
+        execute_offline_fake_bounded_run(
+            manifest=manifest,
+            authority=authority,
+            control_store=control,
+            evidence_store=evidence,
+            journal=journal,
+            guard=guard,
+            lease=lease,
+            fake_provider=provider,
+            clock=clock,
+            crash_point="AFTER_RUN_IN_PROGRESS",
+        )
+
+    guard.release(lease)
+    guard2 = BoundedExecutorProcessScopeGuard(tmp_path / "control.sqlite3")
+    lease2 = guard2.acquire(acquired_at=clock())
+
+    result = execute_offline_fake_bounded_run(
+        manifest=manifest,
+        authority=authority,
+        control_store=control,
+        evidence_store=evidence,
+        journal=journal,
+        guard=guard2,
+        lease=lease2,
+        fake_provider=provider,
+        clock=clock,
+        resume=True,
+    )
+
+    assert result.run_state == "COMPLETED"
+    assert result.resume_count == 1
+    with journal._connect() as connection:
+        events = connection.execute(
+            """
+            SELECT resume_index
+            FROM r8_3_fake_resume_event
+            WHERE run_id = ?
+            ORDER BY resume_index
+            """,
+            (manifest.run_id,),
+        ).fetchall()
+    assert events == [(1,)]
+    assert journal.audit_integrity() is True
+    guard2.release(lease2)
+
+
+def test_cross_ledger_sequence_binding_rejects_coordinated_local_rehash(
+    tmp_path: Path,
+):
+    _, control, evidence, journal, _, _ = _complete_r83_one_round(
+        tmp_path,
+        nonce="f" * 64,
+    )
+
+    with journal._connect() as connection:
+        connection.execute("BEGIN IMMEDIATE")
+        row = connection.execute(
+            """
+            SELECT
+                rowid,
+                run_id,
+                round_index,
+                modality,
+                attempt_index,
+                sequence_number,
+                correlation_id,
+                attempted_at,
+                state,
+                result_at,
+                source_record_fingerprint,
+                error_code
+            FROM r8_3_fake_call_attempt
+            WHERE state = 'SUCCEEDED'
+            ORDER BY modality
+            LIMIT 1
+            """
+        ).fetchone()
+
+        new_sequence = int(row[5]) + 50
+        intent_binding = _attempt_intent_binding(
+            run_id=str(row[1]),
+            round_index=int(row[2]),
+            modality=str(row[3]),
+            attempt_index=int(row[4]),
+            sequence_number=new_sequence,
+            correlation_id=str(row[6]),
+            attempted_at=str(row[7]),
+        )
+        result_binding = _attempt_result_binding(
+            intent_binding_sha256=intent_binding,
+            state=str(row[8]),
+            result_at=str(row[9]),
+            source_record_fingerprint=str(row[10]),
+            error_code=None if row[11] is None else str(row[11]),
+        )
+
+        connection.execute(
+            """
+            UPDATE r8_3_fake_call_attempt
+            SET sequence_number = ?,
+                intent_binding_sha256 = ?,
+                result_binding_sha256 = ?
+            WHERE rowid = ?
+            """,
+            (
+                new_sequence,
+                intent_binding,
+                result_binding,
+                int(row[0]),
+            ),
+        )
+        journal._rewrite_anchor(connection)
+        connection.execute("COMMIT")
+
+    assert journal.audit_integrity() is True
+    assert journal.audit_cross_ledger_integrity(
+        control_store=control,
+        evidence_store=evidence,
+    ) is False
+
+
+def test_cross_ledger_source_binding_rejects_coordinated_local_rehash(
+    tmp_path: Path,
+):
+    _, control, evidence, journal, _, _ = _complete_r83_one_round(
+        tmp_path,
+        nonce="1" * 63 + "2",
+    )
+
+    with journal._connect() as connection:
+        connection.execute("BEGIN IMMEDIATE")
+        row = connection.execute(
+            """
+            SELECT
+                rowid,
+                intent_binding_sha256,
+                state,
+                result_at,
+                source_record_fingerprint,
+                error_code
+            FROM r8_3_fake_call_attempt
+            WHERE state = 'SUCCEEDED'
+            ORDER BY modality
+            LIMIT 1
+            """
+        ).fetchone()
+
+        replacement = "f" * 64
+        if str(row[4]) == replacement:
+            replacement = "e" * 64
+
+        result_binding = _attempt_result_binding(
+            intent_binding_sha256=str(row[1]),
+            state=str(row[2]),
+            result_at=str(row[3]),
+            source_record_fingerprint=replacement,
+            error_code=None if row[5] is None else str(row[5]),
+        )
+
+        connection.execute(
+            """
+            UPDATE r8_3_fake_call_attempt
+            SET source_record_fingerprint = ?,
+                result_binding_sha256 = ?
+            WHERE rowid = ?
+            """,
+            (
+                replacement,
+                result_binding,
+                int(row[0]),
+            ),
+        )
+        journal._rewrite_anchor(connection)
+        connection.execute("COMMIT")
+
+    assert journal.audit_integrity() is True
+    assert journal.audit_cross_ledger_integrity(
+        control_store=control,
+        evidence_store=evidence,
+    ) is False

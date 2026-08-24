@@ -71,8 +71,75 @@ R8_3_STOP_REASONS = (
     "MANUAL_STOP_REQUEST",
 )
 
-_JOURNAL_USER_VERSION = 1
+_JOURNAL_USER_VERSION = 2
 _JOURNAL_STATES = {"INTENT", "SUCCEEDED", "FAILED"}
+
+_JOURNAL_DDL = {
+    "r8_3_fake_run_meta": """
+        CREATE TABLE r8_3_fake_run_meta (
+            run_id TEXT PRIMARY KEY,
+            manifest_fingerprint TEXT NOT NULL,
+            plan_fingerprint TEXT NOT NULL,
+            provider_key TEXT NOT NULL,
+            subject_key TEXT NOT NULL,
+            modalities_json TEXT NOT NULL,
+            max_capture_rounds INTEGER NOT NULL,
+            max_total_fake_calls INTEGER NOT NULL,
+            resume_count INTEGER NOT NULL,
+            created_at TEXT NOT NULL,
+            updated_at TEXT NOT NULL
+        )
+    """,
+    "r8_3_fake_call_attempt": """
+        CREATE TABLE r8_3_fake_call_attempt (
+            run_id TEXT NOT NULL,
+            round_index INTEGER NOT NULL,
+            modality TEXT NOT NULL,
+            attempt_index INTEGER NOT NULL,
+            sequence_number INTEGER NOT NULL,
+            correlation_id TEXT NOT NULL,
+            state TEXT NOT NULL,
+            attempted_at TEXT NOT NULL,
+            result_at TEXT,
+            source_record_fingerprint TEXT,
+            error_code TEXT,
+            intent_binding_sha256 TEXT NOT NULL,
+            result_binding_sha256 TEXT,
+            PRIMARY KEY (
+                run_id,
+                round_index,
+                modality,
+                attempt_index
+            ),
+            FOREIGN KEY (run_id)
+                REFERENCES r8_3_fake_run_meta(run_id)
+        )
+    """,
+    "r8_3_fake_resume_event": """
+        CREATE TABLE r8_3_fake_resume_event (
+            run_id TEXT NOT NULL,
+            resume_index INTEGER NOT NULL,
+            resumed_at TEXT NOT NULL,
+            PRIMARY KEY (
+                run_id,
+                resume_index
+            ),
+            FOREIGN KEY (run_id)
+                REFERENCES r8_3_fake_run_meta(run_id)
+        )
+    """,
+    "r8_3_fake_journal_anchor": """
+        CREATE TABLE r8_3_fake_journal_anchor (
+            singleton_id INTEGER PRIMARY KEY
+                CHECK(singleton_id = 1),
+            payload_sha256 TEXT NOT NULL
+        )
+    """,
+}
+
+
+def _normalize_sql(sql: str) -> str:
+    return "".join(str(sql).split()).lower()
 
 
 def _canonical(value: Any) -> str:
@@ -147,6 +214,50 @@ def _round_correlation_id(run_id: str, round_index: int) -> str:
             "schema": "matrix.c2-r8-3-round-correlation/1",
             "run_id": run_id,
             "round_index": round_index,
+        }
+    )
+
+
+def _attempt_intent_binding(
+    *,
+    run_id: str,
+    round_index: int,
+    modality: str,
+    attempt_index: int,
+    sequence_number: int,
+    correlation_id: str,
+    attempted_at: str,
+) -> str:
+    return _sha(
+        {
+            "schema": "matrix.c2-r8-3r2-fake-call-intent-binding/1",
+            "run_id": run_id,
+            "round_index": round_index,
+            "modality": modality,
+            "attempt_index": attempt_index,
+            "sequence_number": sequence_number,
+            "correlation_id": correlation_id,
+            "attempted_at": attempted_at,
+        }
+    )
+
+
+def _attempt_result_binding(
+    *,
+    intent_binding_sha256: str,
+    state: str,
+    result_at: str,
+    source_record_fingerprint: str | None,
+    error_code: str | None,
+) -> str:
+    return _sha(
+        {
+            "schema": "matrix.c2-r8-3r2-fake-call-result-binding/1",
+            "intent_binding_sha256": intent_binding_sha256,
+            "state": state,
+            "result_at": result_at,
+            "source_record_fingerprint": source_record_fingerprint,
+            "error_code": error_code,
         }
     )
 
@@ -372,6 +483,67 @@ class FakeProviderCapture:
         )
 
 
+
+def _expected_fake_normalized_payload(
+    *,
+    run_id: str,
+    subject_key: str,
+    round_index: int,
+    modality: str,
+    sequence_number: int,
+    terminal_status_rounds: frozenset[int] = frozenset(),
+) -> Mapping[str, Any]:
+    terminal = (
+        modality == "fixture_status"
+        and round_index in terminal_status_rounds
+    )
+    base: dict[str, Any] = {
+        "schema": "matrix.c2-r8-3-deterministic-fake-football-record/1",
+        "provider_key": R8_3_FAKE_PROVIDER_KEY,
+        "run_id": run_id,
+        "subject_key": subject_key,
+        "round_index": round_index,
+        "modality": modality,
+        "sequence_number": sequence_number,
+        "synthetic": True,
+        "raw_retained": False,
+    }
+    if modality == "fixture_status":
+        base["status"] = "FT" if terminal else "1H"
+        base["elapsed"] = min(90, round_index * 5)
+        base["fixture_terminal"] = terminal
+    elif modality == "fixture_statistics":
+        base["home_shots_on_target"] = round_index * 2
+        base["away_shots_on_target"] = round_index
+        base["home_corners"] = round_index
+        base["away_corners"] = max(0, round_index - 1)
+    elif modality == "fixture_events":
+        base["event_count"] = round_index
+        base["latest_event_type"] = "Card" if round_index % 2 else "Goal"
+    else:
+        raise ValueError("R8_3_UNEXPECTED_FAKE_RESPONSE_CONTRACT")
+    return base
+
+
+def _expected_fake_source_fingerprint(
+    *,
+    run_id: str,
+    subject_key: str,
+    round_index: int,
+    modality: str,
+    sequence_number: int,
+) -> str:
+    return _sha(
+        _expected_fake_normalized_payload(
+            run_id=run_id,
+            subject_key=subject_key,
+            round_index=round_index,
+            modality=modality,
+            sequence_number=sequence_number,
+        )
+    )
+
+
 class ScriptedFakeProviderFailure(RuntimeError):
     pass
 
@@ -404,36 +576,14 @@ class DeterministicFakeFootballLiveProvider:
         modality: str,
         sequence_number: int,
     ) -> Mapping[str, Any]:
-        terminal = (
-            modality == "fixture_status"
-            and round_index in self.terminal_status_rounds
+        return _expected_fake_normalized_payload(
+            run_id=run_id,
+            subject_key=subject_key,
+            round_index=round_index,
+            modality=modality,
+            sequence_number=sequence_number,
+            terminal_status_rounds=self.terminal_status_rounds,
         )
-        base: dict[str, Any] = {
-            "schema": "matrix.c2-r8-3-deterministic-fake-football-record/1",
-            "provider_key": R8_3_FAKE_PROVIDER_KEY,
-            "run_id": run_id,
-            "subject_key": subject_key,
-            "round_index": round_index,
-            "modality": modality,
-            "sequence_number": sequence_number,
-            "synthetic": True,
-            "raw_retained": False,
-        }
-        if modality == "fixture_status":
-            base["status"] = "FT" if terminal else "1H"
-            base["elapsed"] = min(90, round_index * 5)
-            base["fixture_terminal"] = terminal
-        elif modality == "fixture_statistics":
-            base["home_shots_on_target"] = round_index * 2
-            base["away_shots_on_target"] = round_index
-            base["home_corners"] = round_index
-            base["away_corners"] = max(0, round_index - 1)
-        elif modality == "fixture_events":
-            base["event_count"] = round_index
-            base["latest_event_type"] = "Card" if round_index % 2 else "Goal"
-        else:
-            raise ValueError("R8_3_UNEXPECTED_FAKE_RESPONSE_CONTRACT")
-        return base
 
     def peek(
         self,
@@ -537,6 +687,7 @@ class SQLiteR83FakeExecutorJournal:
             timeout=30.0,
             isolation_level=None,
         )
+        connection.execute("PRAGMA foreign_keys = ON")
         connection.execute("PRAGMA journal_mode = WAL")
         connection.execute("PRAGMA synchronous = FULL")
         return connection
@@ -549,65 +700,36 @@ class SQLiteR83FakeExecutorJournal:
                     connection.execute("PRAGMA user_version").fetchone()[0]
                 )
                 if user_version not in {0, _JOURNAL_USER_VERSION}:
-                    raise ValueError("R8_3_JOURNAL_SCHEMA_VERSION_MISMATCH")
-                connection.execute(
-                    """
-                    CREATE TABLE IF NOT EXISTS r8_3_fake_run_meta (
-                        run_id TEXT PRIMARY KEY,
-                        manifest_fingerprint TEXT NOT NULL,
-                        plan_fingerprint TEXT NOT NULL,
-                        provider_key TEXT NOT NULL,
-                        subject_key TEXT NOT NULL,
-                        modalities_json TEXT NOT NULL,
-                        max_capture_rounds INTEGER NOT NULL,
-                        max_total_fake_calls INTEGER NOT NULL,
-                        resume_count INTEGER NOT NULL,
-                        created_at TEXT NOT NULL,
-                        updated_at TEXT NOT NULL
+                    raise ValueError(
+                        "R8_3R2_JOURNAL_SCHEMA_VERSION_MISMATCH"
                     )
-                    """
-                )
-                connection.execute(
-                    """
-                    CREATE TABLE IF NOT EXISTS r8_3_fake_call_attempt (
-                        run_id TEXT NOT NULL,
-                        round_index INTEGER NOT NULL,
-                        modality TEXT NOT NULL,
-                        attempt_index INTEGER NOT NULL,
-                        sequence_number INTEGER NOT NULL,
-                        correlation_id TEXT NOT NULL,
-                        state TEXT NOT NULL,
-                        attempted_at TEXT NOT NULL,
-                        result_at TEXT,
-                        source_record_fingerprint TEXT,
-                        error_code TEXT,
-                        PRIMARY KEY (
-                            run_id,
-                            round_index,
-                            modality,
-                            attempt_index
+
+                for ddl in _JOURNAL_DDL.values():
+                    connection.execute(
+                        ddl.replace(
+                            "CREATE TABLE ",
+                            "CREATE TABLE IF NOT EXISTS ",
+                            1,
                         )
                     )
-                    """
-                )
-                connection.execute(
-                    """
-                    CREATE TABLE IF NOT EXISTS r8_3_fake_journal_anchor (
-                        singleton_id INTEGER PRIMARY KEY CHECK(singleton_id = 1),
-                        payload_sha256 TEXT NOT NULL
-                    )
-                    """
-                )
+
                 connection.execute(
                     f"PRAGMA user_version = {_JOURNAL_USER_VERSION}"
                 )
+
                 row = connection.execute(
-                    "SELECT payload_sha256 FROM r8_3_fake_journal_anchor WHERE singleton_id = 1"
+                    """
+                    SELECT payload_sha256
+                    FROM r8_3_fake_journal_anchor
+                    WHERE singleton_id = 1
+                    """
                 ).fetchone()
+
                 if row is None:
                     self._rewrite_anchor(connection)
                 else:
                     self._assert_integrity(connection)
+
                 connection.execute("COMMIT")
             except Exception:
                 connection.execute("ROLLBACK")
@@ -633,6 +755,7 @@ class SQLiteR83FakeExecutorJournal:
             ORDER BY run_id
             """
         ).fetchall()
+
         attempts = connection.execute(
             """
             SELECT
@@ -646,15 +769,30 @@ class SQLiteR83FakeExecutorJournal:
                 attempted_at,
                 result_at,
                 source_record_fingerprint,
-                error_code
+                error_code,
+                intent_binding_sha256,
+                result_binding_sha256
             FROM r8_3_fake_call_attempt
             ORDER BY run_id, round_index, modality, attempt_index
             """
         ).fetchall()
+
+        resume_events = connection.execute(
+            """
+            SELECT
+                run_id,
+                resume_index,
+                resumed_at
+            FROM r8_3_fake_resume_event
+            ORDER BY run_id, resume_index
+            """
+        ).fetchall()
+
         return {
-            "schema": "matrix.c2-r8-3-fake-executor-journal-anchor/1",
+            "schema": "matrix.c2-r8-3r2-fake-executor-journal-anchor/2",
             "run_meta": [list(row) for row in meta],
             "attempts": [list(row) for row in attempts],
+            "resume_events": [list(row) for row in resume_events],
         }
 
     def _rewrite_anchor(self, connection: sqlite3.Connection) -> None:
@@ -669,9 +807,11 @@ class SQLiteR83FakeExecutorJournal:
         )
 
     def _assert_integrity(self, connection: sqlite3.Connection) -> None:
-        user_version = int(connection.execute("PRAGMA user_version").fetchone()[0])
+        user_version = int(
+            connection.execute("PRAGMA user_version").fetchone()[0]
+        )
         if user_version != _JOURNAL_USER_VERSION:
-            raise ValueError("R8_3_JOURNAL_SCHEMA_VERSION_MISMATCH")
+            raise ValueError("R8_3R2_JOURNAL_SCHEMA_VERSION_MISMATCH")
 
         namespace = connection.execute(
             """
@@ -684,82 +824,75 @@ class SQLiteR83FakeExecutorJournal:
         expected_namespace = [
             ("table", "r8_3_fake_call_attempt"),
             ("table", "r8_3_fake_journal_anchor"),
+            ("table", "r8_3_fake_resume_event"),
             ("table", "r8_3_fake_run_meta"),
         ]
-        if [(str(row[0]), str(row[1])) for row in namespace] != expected_namespace:
-            raise ValueError("R8_3_JOURNAL_NAMESPACE_MISMATCH")
+        if [
+            (str(row[0]), str(row[1]))
+            for row in namespace
+        ] != expected_namespace:
+            raise ValueError("R8_3R2_JOURNAL_NAMESPACE_MISMATCH")
 
-        expected_columns = {
-            "r8_3_fake_run_meta": (
-                "run_id",
-                "manifest_fingerprint",
-                "plan_fingerprint",
-                "provider_key",
-                "subject_key",
-                "modalities_json",
-                "max_capture_rounds",
-                "max_total_fake_calls",
-                "resume_count",
-                "created_at",
-                "updated_at",
-            ),
-            "r8_3_fake_call_attempt": (
-                "run_id",
-                "round_index",
-                "modality",
-                "attempt_index",
-                "sequence_number",
-                "correlation_id",
-                "state",
-                "attempted_at",
-                "result_at",
-                "source_record_fingerprint",
-                "error_code",
-            ),
-            "r8_3_fake_journal_anchor": (
-                "singleton_id",
-                "payload_sha256",
-            ),
-        }
-        for table, columns in expected_columns.items():
-            actual = tuple(
-                str(row[1])
-                for row in connection.execute(
-                    f"PRAGMA table_info({table})"
-                ).fetchall()
-            )
-            if actual != columns:
-                raise ValueError("R8_3_JOURNAL_COLUMN_CONTRACT_MISMATCH")
+        for table, expected_ddl in _JOURNAL_DDL.items():
+            row = connection.execute(
+                """
+                SELECT sql
+                FROM sqlite_master
+                WHERE type = 'table' AND name = ?
+                """,
+                (table,),
+            ).fetchone()
+            if row is None or row[0] is None:
+                raise ValueError("R8_3R2_JOURNAL_DDL_MISSING")
+            if _normalize_sql(str(row[0])) != _normalize_sql(expected_ddl):
+                raise ValueError(
+                    "R8_3R2_JOURNAL_DDL_SEMANTICS_MISMATCH"
+                )
 
         stored = connection.execute(
-            "SELECT payload_sha256 FROM r8_3_fake_journal_anchor WHERE singleton_id = 1"
+            """
+            SELECT payload_sha256
+            FROM r8_3_fake_journal_anchor
+            WHERE singleton_id = 1
+            """
         ).fetchone()
         if stored is None:
-            raise ValueError("R8_3_JOURNAL_ANCHOR_MISSING")
+            raise ValueError("R8_3R2_JOURNAL_ANCHOR_MISSING")
         expected = _sha(self._anchor_payload(connection))
         if str(stored[0]) != expected:
-            raise ValueError("R8_3_JOURNAL_ANCHOR_MISMATCH")
+            raise ValueError("R8_3R2_JOURNAL_ANCHOR_MISMATCH")
 
         meta_rows = connection.execute(
             """
             SELECT
-                run_id, manifest_fingerprint, plan_fingerprint, provider_key,
-                subject_key, modalities_json, max_capture_rounds,
-                max_total_fake_calls, resume_count, created_at, updated_at
+                run_id,
+                manifest_fingerprint,
+                plan_fingerprint,
+                provider_key,
+                subject_key,
+                modalities_json,
+                max_capture_rounds,
+                max_total_fake_calls,
+                resume_count,
+                created_at,
+                updated_at
             FROM r8_3_fake_run_meta
             ORDER BY run_id
             """
         ).fetchall()
+
         meta_by_run: dict[str, tuple[Any, ...]] = {}
         for row in meta_rows:
             run_id = _sha256_hex(str(row[0]), name="run_id")
             _sha256_hex(str(row[1]), name="manifest_fingerprint")
             _sha256_hex(str(row[2]), name="plan_fingerprint")
+
             if str(row[3]) != R8_3_FAKE_PROVIDER_KEY:
-                raise ValueError("R8_3_JOURNAL_REAL_PROVIDER_FORBIDDEN")
+                raise ValueError("R8_3R2_JOURNAL_REAL_PROVIDER_FORBIDDEN")
+
             subject_key = str(row[4])
             if not subject_key.startswith("fixture:"):
-                raise ValueError("R8_3_JOURNAL_SUBJECT_INVALID")
+                raise ValueError("R8_3R2_JOURNAL_SUBJECT_INVALID")
             fixture_id = subject_key.split(":", 1)[1]
             if (
                 not fixture_id
@@ -767,19 +900,25 @@ class SQLiteR83FakeExecutorJournal:
                 or not fixture_id.isascii()
                 or not fixture_id.isdecimal()
             ):
-                raise ValueError("R8_3_JOURNAL_SUBJECT_INVALID")
+                raise ValueError("R8_3R2_JOURNAL_SUBJECT_INVALID")
+
             modalities_raw = str(row[5])
             try:
                 modalities = tuple(json.loads(modalities_raw))
             except (json.JSONDecodeError, TypeError) as error:
-                raise ValueError("R8_3_JOURNAL_MODALITIES_INVALID") from error
+                raise ValueError(
+                    "R8_3R2_JOURNAL_MODALITIES_INVALID"
+                ) from error
+
             expected_modalities_raw = json.dumps(
                 list(modalities),
                 separators=(",", ":"),
                 ensure_ascii=False,
             )
             if modalities_raw != expected_modalities_raw:
-                raise ValueError("R8_3_JOURNAL_MODALITIES_CANONICAL_BYTES_MISMATCH")
+                raise ValueError(
+                    "R8_3R2_JOURNAL_MODALITIES_CANONICAL_BYTES_MISMATCH"
+                )
             if (
                 not modalities
                 or len(set(modalities)) != len(modalities)
@@ -792,23 +931,119 @@ class SQLiteR83FakeExecutorJournal:
                     for item in modalities
                 )
             ):
-                raise ValueError("R8_3_JOURNAL_MODALITIES_INVALID")
-            max_rounds = _positive_int(int(row[6]), name="max_capture_rounds")
-            max_calls = _positive_int(int(row[7]), name="max_total_fake_calls")
+                raise ValueError("R8_3R2_JOURNAL_MODALITIES_INVALID")
+
+            max_rounds = _positive_int(
+                int(row[6]),
+                name="max_capture_rounds",
+            )
+            max_calls = _positive_int(
+                int(row[7]),
+                name="max_total_fake_calls",
+            )
             resume_count = int(row[8])
             if resume_count < 0:
-                raise ValueError("R8_3_JOURNAL_RESUME_COUNT_INVALID")
+                raise ValueError("R8_3R2_JOURNAL_RESUME_COUNT_INVALID")
+
             created_text = str(row[9])
             updated_text = str(row[10])
-            created = _aware_utc(datetime.fromisoformat(created_text), name="created_at")
-            updated = _aware_utc(datetime.fromisoformat(updated_text), name="updated_at")
-            if created.isoformat() != created_text or updated.isoformat() != updated_text:
-                raise ValueError("R8_3_JOURNAL_TIMESTAMP_CANONICAL_FORM_REQUIRED")
-            if updated < created:
-                raise ValueError("R8_3_JOURNAL_RUN_TIME_REGRESSION")
-            meta_by_run[run_id] = (
-                modalities, max_rounds, max_calls, updated
+            created = _aware_utc(
+                datetime.fromisoformat(created_text),
+                name="created_at",
             )
+            updated = _aware_utc(
+                datetime.fromisoformat(updated_text),
+                name="updated_at",
+            )
+            if (
+                created.isoformat() != created_text
+                or updated.isoformat() != updated_text
+            ):
+                raise ValueError(
+                    "R8_3R2_JOURNAL_TIMESTAMP_CANONICAL_FORM_REQUIRED"
+                )
+            if updated < created:
+                raise ValueError("R8_3R2_JOURNAL_RUN_TIME_REGRESSION")
+
+            meta_by_run[run_id] = (
+                subject_key,
+                modalities,
+                max_rounds,
+                max_calls,
+                resume_count,
+                created,
+                updated,
+            )
+
+        resume_rows = connection.execute(
+            """
+            SELECT
+                run_id,
+                resume_index,
+                resumed_at
+            FROM r8_3_fake_resume_event
+            ORDER BY run_id, resume_index
+            """
+        ).fetchall()
+
+        resume_indexes_by_run: dict[str, list[int]] = {}
+        resume_times_by_run: dict[str, list[datetime]] = {}
+
+        for row in resume_rows:
+            run_id = _sha256_hex(str(row[0]), name="run_id")
+            if run_id not in meta_by_run:
+                raise ValueError("R8_3R2_JOURNAL_RESUME_EVENT_ORPHAN_RUN")
+            resume_index = _positive_int(
+                int(row[1]),
+                name="resume_index",
+            )
+            resumed_text = str(row[2])
+            resumed_at = _aware_utc(
+                datetime.fromisoformat(resumed_text),
+                name="resumed_at",
+            )
+            if resumed_at.isoformat() != resumed_text:
+                raise ValueError(
+                    "R8_3R2_JOURNAL_TIMESTAMP_CANONICAL_FORM_REQUIRED"
+                )
+            created = meta_by_run[run_id][5]
+            if resumed_at < created:
+                raise ValueError(
+                    "R8_3R2_JOURNAL_RESUME_TIME_PRECEDES_RUN"
+                )
+            resume_indexes_by_run.setdefault(run_id, []).append(
+                resume_index
+            )
+            resume_times_by_run.setdefault(run_id, []).append(
+                resumed_at
+            )
+
+        for run_id, meta in meta_by_run.items():
+            resume_count = int(meta[4])
+            created = meta[5]
+            updated = meta[6]
+            indexes = resume_indexes_by_run.get(run_id, [])
+            times = resume_times_by_run.get(run_id, [])
+
+            if indexes != list(range(1, len(indexes) + 1)):
+                raise ValueError("R8_3R2_JOURNAL_RESUME_INDEX_GAP")
+            if len(indexes) != resume_count:
+                raise ValueError(
+                    "R8_3R2_JOURNAL_RESUME_COUNT_NOT_EVENT_DERIVED"
+                )
+            if any(
+                later < earlier
+                for earlier, later in zip(times, times[1:])
+            ):
+                raise ValueError(
+                    "R8_3R2_JOURNAL_RESUME_TIME_REGRESSION"
+                )
+
+            expected_updated = times[-1] if times else created
+            if updated != expected_updated:
+                raise ValueError(
+                    "R8_3R2_JOURNAL_RUN_UPDATED_AT_NOT_EVENT_DERIVED"
+                )
 
         attempt_rows = connection.execute(
             """
@@ -823,85 +1058,230 @@ class SQLiteR83FakeExecutorJournal:
                 attempted_at,
                 result_at,
                 source_record_fingerprint,
-                error_code
+                error_code,
+                intent_binding_sha256,
+                result_binding_sha256
             FROM r8_3_fake_call_attempt
             ORDER BY run_id, round_index, modality, attempt_index
             """
         ).fetchall()
-        slot_attempt_indexes: dict[tuple[str, int, str], list[int]] = {}
+
+        slot_attempt_indexes: dict[
+            tuple[str, int, str],
+            list[int],
+        ] = {}
         slot_sequence: dict[tuple[str, int, str], int] = {}
         slot_correlation: dict[tuple[str, int, str], str] = {}
         attempt_counts_by_run: dict[str, int] = {}
-        last_attempted_by_slot: dict[tuple[str, int, str], datetime] = {}
+        last_attempted_by_slot: dict[
+            tuple[str, int, str],
+            datetime,
+        ] = {}
 
         for row in attempt_rows:
             run_id = _sha256_hex(str(row[0]), name="run_id")
             if run_id not in meta_by_run:
-                raise ValueError("R8_3_JOURNAL_ATTEMPT_ORPHAN_RUN")
-            round_index = int(row[1])
+                raise ValueError("R8_3R2_JOURNAL_ATTEMPT_ORPHAN_RUN")
+
+            round_index = _positive_int(
+                int(row[1]),
+                name="round_index",
+            )
             modality = str(row[2])
-            attempt_index = int(row[3])
-            sequence_number = int(row[4])
-            correlation_id = str(row[5])
+            attempt_index = _positive_int(
+                int(row[3]),
+                name="attempt_index",
+            )
+            sequence_number = _positive_int(
+                int(row[4]),
+                name="sequence_number",
+            )
+            correlation_id = _sha256_hex(
+                str(row[5]),
+                name="correlation_id",
+            )
             state = str(row[6])
+            intent_binding = _sha256_hex(
+                str(row[11]),
+                name="intent_binding",
+            )
+            result_binding = (
+                None
+                if row[12] is None
+                else _sha256_hex(
+                    str(row[12]),
+                    name="result_binding",
+                )
+            )
+
             attempted_text = str(row[7])
-            attempted_at = datetime.fromisoformat(attempted_text)
+            attempted_at = _aware_utc(
+                datetime.fromisoformat(attempted_text),
+                name="attempted_at",
+            )
+            if attempted_at.isoformat() != attempted_text:
+                raise ValueError(
+                    "R8_3R2_JOURNAL_TIMESTAMP_CANONICAL_FORM_REQUIRED"
+                )
+
+            expected_intent_binding = _attempt_intent_binding(
+                run_id=run_id,
+                round_index=round_index,
+                modality=modality,
+                attempt_index=attempt_index,
+                sequence_number=sequence_number,
+                correlation_id=correlation_id,
+                attempted_at=attempted_text,
+            )
+            if intent_binding != expected_intent_binding:
+                raise ValueError(
+                    "R8_3R2_JOURNAL_INTENT_BINDING_MISMATCH"
+                )
+
             result_text = None if row[8] is None else str(row[8])
-            result_at = None if result_text is None else datetime.fromisoformat(result_text)
+            result_at = (
+                None
+                if result_text is None
+                else _aware_utc(
+                    datetime.fromisoformat(result_text),
+                    name="result_at",
+                )
+            )
+            if (
+                result_at is not None
+                and result_at.isoformat() != result_text
+            ):
+                raise ValueError(
+                    "R8_3R2_JOURNAL_TIMESTAMP_CANONICAL_FORM_REQUIRED"
+                )
+
             source_fp = None if row[9] is None else str(row[9])
             error_code = None if row[10] is None else str(row[10])
-            _positive_int(round_index, name="round_index")
-            _positive_int(attempt_index, name="attempt_index")
-            _positive_int(sequence_number, name="sequence_number")
-            _sha256_hex(correlation_id, name="correlation_id")
-            attempted_at = _aware_utc(attempted_at, name="attempted_at")
-            if attempted_at.isoformat() != attempted_text:
-                raise ValueError("R8_3_JOURNAL_TIMESTAMP_CANONICAL_FORM_REQUIRED")
-            modalities, max_rounds, max_calls, _ = meta_by_run[run_id]
+
+            subject_key, modalities, max_rounds, max_calls, _, _, _ = (
+                meta_by_run[run_id]
+            )
             if round_index > max_rounds or modality not in modalities:
-                raise ValueError("R8_3_JOURNAL_SLOT_OUTSIDE_PLAN")
-            expected_correlation = _round_correlation_id(run_id, round_index)
+                raise ValueError("R8_3R2_JOURNAL_SLOT_OUTSIDE_PLAN")
+
+            expected_correlation = _round_correlation_id(
+                run_id,
+                round_index,
+            )
             if correlation_id != expected_correlation:
-                raise ValueError("R8_3_JOURNAL_CORRELATION_PROVENANCE_MISMATCH")
+                raise ValueError(
+                    "R8_3R2_JOURNAL_CORRELATION_PROVENANCE_MISMATCH"
+                )
+
             slot_key = (run_id, round_index, modality)
-            slot_attempt_indexes.setdefault(slot_key, []).append(attempt_index)
-            if slot_key in slot_sequence and slot_sequence[slot_key] != sequence_number:
-                raise ValueError("R8_3_JOURNAL_SLOT_SEQUENCE_MUTATION")
+            slot_attempt_indexes.setdefault(
+                slot_key,
+                [],
+            ).append(attempt_index)
+
+            if (
+                slot_key in slot_sequence
+                and slot_sequence[slot_key] != sequence_number
+            ):
+                raise ValueError(
+                    "R8_3R2_JOURNAL_SLOT_SEQUENCE_MUTATION"
+                )
             slot_sequence[slot_key] = sequence_number
-            if slot_key in slot_correlation and slot_correlation[slot_key] != correlation_id:
-                raise ValueError("R8_3_JOURNAL_SLOT_CORRELATION_MUTATION")
+
+            if (
+                slot_key in slot_correlation
+                and slot_correlation[slot_key] != correlation_id
+            ):
+                raise ValueError(
+                    "R8_3R2_JOURNAL_SLOT_CORRELATION_MUTATION"
+                )
             slot_correlation[slot_key] = correlation_id
+
             prior_attempted = last_attempted_by_slot.get(slot_key)
-            if prior_attempted is not None and attempted_at < prior_attempted:
-                raise ValueError("R8_3_JOURNAL_ATTEMPT_TIME_REGRESSION")
+            if (
+                prior_attempted is not None
+                and attempted_at < prior_attempted
+            ):
+                raise ValueError(
+                    "R8_3R2_JOURNAL_ATTEMPT_TIME_REGRESSION"
+                )
             last_attempted_by_slot[slot_key] = attempted_at
-            attempt_counts_by_run[run_id] = attempt_counts_by_run.get(run_id, 0) + 1
+
+            attempt_counts_by_run[run_id] = (
+                attempt_counts_by_run.get(run_id, 0) + 1
+            )
             if state not in _JOURNAL_STATES:
-                raise ValueError("R8_3_JOURNAL_ATTEMPT_STATE_INVALID")
+                raise ValueError(
+                    "R8_3R2_JOURNAL_ATTEMPT_STATE_INVALID"
+                )
+
             if state == "INTENT":
-                if result_at is not None or source_fp is not None or error_code is not None:
-                    raise ValueError("R8_3_JOURNAL_INTENT_RESULT_FIELDS_FORBIDDEN")
+                if (
+                    result_at is not None
+                    or source_fp is not None
+                    or error_code is not None
+                    or result_binding is not None
+                ):
+                    raise ValueError(
+                        "R8_3R2_JOURNAL_INTENT_RESULT_FIELDS_FORBIDDEN"
+                    )
+
             elif state == "SUCCEEDED":
-                if result_at is None or source_fp is None or error_code is not None:
-                    raise ValueError("R8_3_JOURNAL_SUCCESS_FIELDS_INVALID")
-                _sha256_hex(source_fp, name="source_record_fingerprint")
+                if (
+                    result_at is None
+                    or source_fp is None
+                    or error_code is not None
+                    or result_binding is None
+                ):
+                    raise ValueError(
+                        "R8_3R2_JOURNAL_SUCCESS_FIELDS_INVALID"
+                    )
+                source_fp = _sha256_hex(
+                    source_fp,
+                    name="source_record_fingerprint",
+                )
+
             elif state == "FAILED":
-                if result_at is None or source_fp is not None or not error_code:
-                    raise ValueError("R8_3_JOURNAL_FAILURE_FIELDS_INVALID")
-            if result_at is not None:
-                result = _aware_utc(result_at, name="result_at")
-                if result_text is None or result.isoformat() != result_text:
-                    raise ValueError("R8_3_JOURNAL_TIMESTAMP_CANONICAL_FORM_REQUIRED")
-                if result < attempted_at:
-                    raise ValueError("R8_3_JOURNAL_RESULT_TIME_REGRESSION")
+                if (
+                    result_at is None
+                    or source_fp is not None
+                    or not error_code
+                    or result_binding is None
+                ):
+                    raise ValueError(
+                        "R8_3R2_JOURNAL_FAILURE_FIELDS_INVALID"
+                    )
+
+            if result_at is not None and result_at < attempted_at:
+                raise ValueError(
+                    "R8_3R2_JOURNAL_RESULT_TIME_REGRESSION"
+                )
+
+            if state in {"SUCCEEDED", "FAILED"}:
+                expected_result_binding = _attempt_result_binding(
+                    intent_binding_sha256=intent_binding,
+                    state=state,
+                    result_at=result_text,
+                    source_record_fingerprint=source_fp,
+                    error_code=error_code,
+                )
+                if result_binding != expected_result_binding:
+                    raise ValueError(
+                        "R8_3R2_JOURNAL_RESULT_BINDING_MISMATCH"
+                    )
 
         for slot_key, indexes in slot_attempt_indexes.items():
             if indexes != list(range(1, len(indexes) + 1)):
-                raise ValueError("R8_3_JOURNAL_ATTEMPT_INDEX_GAP")
+                raise ValueError(
+                    "R8_3R2_JOURNAL_ATTEMPT_INDEX_GAP"
+                )
+
         for run_id, count in attempt_counts_by_run.items():
-            max_calls = int(meta_by_run[run_id][2])
+            max_calls = int(meta_by_run[run_id][3])
             if count > max_calls:
-                raise ValueError("R8_3_JOURNAL_FAKE_CALL_BUDGET_EXCEEDED")
+                raise ValueError(
+                    "R8_3R2_JOURNAL_FAKE_CALL_BUDGET_EXCEEDED"
+                )
 
     def register_run(
         self,
@@ -996,19 +1376,57 @@ class SQLiteR83FakeExecutorJournal:
             try:
                 self._assert_integrity(connection)
                 row = connection.execute(
-                    "SELECT resume_count, updated_at FROM r8_3_fake_run_meta WHERE run_id = ?",
+                    """
+                    SELECT
+                        resume_count,
+                        updated_at
+                    FROM r8_3_fake_run_meta
+                    WHERE run_id = ?
+                    """,
                     (run_id,),
                 ).fetchone()
                 if row is None:
-                    raise ValueError("R8_3_JOURNAL_RUN_NOT_FOUND")
-                prior = datetime.fromisoformat(str(row[1]))
-                if changed < _aware_utc(prior, name="journal_updated_at"):
-                    raise ValueError("R8_3_JOURNAL_RUN_TIME_REGRESSION")
+                    raise ValueError("R8_3R2_JOURNAL_RUN_NOT_FOUND")
+
+                prior = _aware_utc(
+                    datetime.fromisoformat(str(row[1])),
+                    name="journal_updated_at",
+                )
+                if changed < prior:
+                    raise ValueError(
+                        "R8_3R2_JOURNAL_RUN_TIME_REGRESSION"
+                    )
+
                 value = int(row[0]) + 1
                 connection.execute(
-                    "UPDATE r8_3_fake_run_meta SET resume_count = ?, updated_at = ? WHERE run_id = ?",
-                    (value, changed.isoformat(), run_id),
+                    """
+                    INSERT INTO r8_3_fake_resume_event (
+                        run_id,
+                        resume_index,
+                        resumed_at
+                    )
+                    VALUES (?, ?, ?)
+                    """,
+                    (
+                        run_id,
+                        value,
+                        changed.isoformat(),
+                    ),
                 )
+                connection.execute(
+                    """
+                    UPDATE r8_3_fake_run_meta
+                    SET resume_count = ?,
+                        updated_at = ?
+                    WHERE run_id = ?
+                    """,
+                    (
+                        value,
+                        changed.isoformat(),
+                        run_id,
+                    ),
+                )
+
                 self._rewrite_anchor(connection)
                 self._assert_integrity(connection)
                 connection.execute("COMMIT")
@@ -1058,6 +1476,16 @@ class SQLiteR83FakeExecutorJournal:
                     (run_id, round_number, modality),
                 ).fetchone()[0]
                 attempt_index = 1 if prior is None else int(prior) + 1
+                attempted_text = attempted.isoformat()
+                intent_binding = _attempt_intent_binding(
+                    run_id=run_id,
+                    round_index=round_number,
+                    modality=modality,
+                    attempt_index=attempt_index,
+                    sequence_number=sequence,
+                    correlation_id=correlation,
+                    attempted_at=attempted_text,
+                )
                 connection.execute(
                     """
                     INSERT INTO r8_3_fake_call_attempt (
@@ -1071,9 +1499,14 @@ class SQLiteR83FakeExecutorJournal:
                         attempted_at,
                         result_at,
                         source_record_fingerprint,
-                        error_code
+                        error_code,
+                        intent_binding_sha256,
+                        result_binding_sha256
                     )
-                    VALUES (?, ?, ?, ?, ?, ?, 'INTENT', ?, NULL, NULL, NULL)
+                    VALUES (
+                        ?, ?, ?, ?, ?, ?, 'INTENT', ?,
+                        NULL, NULL, NULL, ?, NULL
+                    )
                     """,
                     (
                         run_id,
@@ -1082,7 +1515,8 @@ class SQLiteR83FakeExecutorJournal:
                         attempt_index,
                         sequence,
                         correlation,
-                        attempted.isoformat(),
+                        attempted_text,
+                        intent_binding,
                     ),
                 )
                 self._rewrite_anchor(connection)
@@ -1117,7 +1551,7 @@ class SQLiteR83FakeExecutorJournal:
                 self._assert_integrity(connection)
                 row = connection.execute(
                     """
-                    SELECT state, attempted_at
+                    SELECT state, attempted_at, intent_binding_sha256
                     FROM r8_3_fake_call_attempt
                     WHERE run_id = ? AND round_index = ? AND modality = ? AND attempt_index = ?
                     """,
@@ -1133,20 +1567,41 @@ class SQLiteR83FakeExecutorJournal:
                 )
                 if result < attempted:
                     raise ValueError("R8_3_JOURNAL_RESULT_TIME_REGRESSION")
+                intent_binding = _sha256_hex(
+                    str(row[2]),
+                    name="intent_binding",
+                )
+                result_text = result.isoformat()
                 if succeeded:
                     source_fp = _sha256_hex(
                         str(source_record_fingerprint),
                         name="source_record_fingerprint",
                     )
+                    result_binding = _attempt_result_binding(
+                        intent_binding_sha256=intent_binding,
+                        state="SUCCEEDED",
+                        result_at=result_text,
+                        source_record_fingerprint=source_fp,
+                        error_code=None,
+                    )
                     connection.execute(
                         """
                         UPDATE r8_3_fake_call_attempt
-                        SET state = 'SUCCEEDED', result_at = ?, source_record_fingerprint = ?, error_code = NULL
-                        WHERE run_id = ? AND round_index = ? AND modality = ? AND attempt_index = ?
+                        SET state = 'SUCCEEDED',
+                            result_at = ?,
+                            source_record_fingerprint = ?,
+                            error_code = NULL,
+                            result_binding_sha256 = ?
+                        WHERE
+                            run_id = ?
+                            AND round_index = ?
+                            AND modality = ?
+                            AND attempt_index = ?
                         """,
                         (
-                            result.isoformat(),
+                            result_text,
                             source_fp,
+                            result_binding,
                             run_id,
                             round_index,
                             modality,
@@ -1155,15 +1610,31 @@ class SQLiteR83FakeExecutorJournal:
                     )
                 else:
                     code = _nonempty(str(error_code), name="error_code")
+                    result_binding = _attempt_result_binding(
+                        intent_binding_sha256=intent_binding,
+                        state="FAILED",
+                        result_at=result_text,
+                        source_record_fingerprint=None,
+                        error_code=code,
+                    )
                     connection.execute(
                         """
                         UPDATE r8_3_fake_call_attempt
-                        SET state = 'FAILED', result_at = ?, source_record_fingerprint = NULL, error_code = ?
-                        WHERE run_id = ? AND round_index = ? AND modality = ? AND attempt_index = ?
+                        SET state = 'FAILED',
+                            result_at = ?,
+                            source_record_fingerprint = NULL,
+                            error_code = ?,
+                            result_binding_sha256 = ?
+                        WHERE
+                            run_id = ?
+                            AND round_index = ?
+                            AND modality = ?
+                            AND attempt_index = ?
                         """,
                         (
-                            result.isoformat(),
+                            result_text,
                             code,
+                            result_binding,
                             run_id,
                             round_index,
                             modality,
@@ -1239,6 +1710,154 @@ class SQLiteR83FakeExecutorJournal:
             ),
             error_code=None if row[10] is None else str(row[10]),
         )
+
+    def _assert_cross_ledger_integrity(
+        self,
+        *,
+        control_store: SQLiteBoundedFootballLiveControlStore,
+        evidence_store: SQLiteFootballLiveObservationStore,
+    ) -> None:
+        if not control_store.audit_integrity():
+            raise ValueError(
+                "R8_3R2_CONTROL_LEDGER_INTEGRITY_REQUIRED"
+            )
+        if not evidence_store.audit_integrity():
+            raise ValueError(
+                "R8_3R2_EVIDENCE_LEDGER_INTEGRITY_REQUIRED"
+            )
+
+        with self._connect() as journal_connection:
+            self._assert_integrity(journal_connection)
+            meta_rows = journal_connection.execute(
+                """
+                SELECT
+                    run_id,
+                    provider_key,
+                    subject_key
+                FROM r8_3_fake_run_meta
+                ORDER BY run_id
+                """
+            ).fetchall()
+            attempts = journal_connection.execute(
+                """
+                SELECT
+                    run_id,
+                    round_index,
+                    modality,
+                    sequence_number,
+                    correlation_id,
+                    state,
+                    source_record_fingerprint
+                FROM r8_3_fake_call_attempt
+                ORDER BY
+                    run_id,
+                    round_index,
+                    modality,
+                    attempt_index
+                """
+            ).fetchall()
+
+        meta_by_run = {
+            str(row[0]): (
+                str(row[1]),
+                str(row[2]),
+            )
+            for row in meta_rows
+        }
+
+        with sqlite3.connect(control_store.path) as control_connection:
+            for row in attempts:
+                run_id = str(row[0])
+                round_index = int(row[1])
+                modality = str(row[2])
+                sequence_number = int(row[3])
+
+                reservation = control_connection.execute(
+                    """
+                    SELECT sequence_number
+                    FROM football_bounded_sequence_reservation
+                    WHERE
+                        run_id = ?
+                        AND round_index = ?
+                        AND modality = ?
+                    """,
+                    (
+                        run_id,
+                        round_index,
+                        modality,
+                    ),
+                ).fetchone()
+                if reservation is None:
+                    raise ValueError(
+                        "R8_3R2_JOURNAL_ATTEMPT_WITHOUT_CONTROL_RESERVATION"
+                    )
+                if int(reservation[0]) != sequence_number:
+                    raise ValueError(
+                        "R8_3R2_JOURNAL_SEQUENCE_NOT_BOUND_TO_CONTROL"
+                    )
+
+        with sqlite3.connect(evidence_store.path) as evidence_connection:
+            for row in attempts:
+                if str(row[5]) != "SUCCEEDED":
+                    continue
+
+                run_id = str(row[0])
+                round_index = int(row[1])
+                modality = str(row[2])
+                sequence_number = int(row[3])
+                correlation_id = str(row[4])
+                source_fp = str(row[6])
+                provider_key, subject_key = meta_by_run[run_id]
+
+                evidence = evidence_connection.execute(
+                    """
+                    SELECT COUNT(*)
+                    FROM football_live_observation
+                    WHERE
+                        subject_key = ?
+                        AND provider_key = ?
+                        AND modality = ?
+                        AND correlation_id = ?
+                        AND sequence_id = ?
+                        AND source_record_fingerprint = ?
+                        AND status = ?
+                    """,
+                    (
+                        subject_key,
+                        provider_key,
+                        modality,
+                        correlation_id,
+                        sequence_number,
+                        source_fp,
+                        SEQUENCE_ACCEPTED,
+                    ),
+                ).fetchone()
+
+                if evidence is None or int(evidence[0]) != 1:
+                    raise ValueError(
+                        "R8_3R2_JOURNAL_SUCCESS_NOT_BOUND_TO_EVIDENCE"
+                    )
+
+    def audit_cross_ledger_integrity(
+        self,
+        *,
+        control_store: SQLiteBoundedFootballLiveControlStore,
+        evidence_store: SQLiteFootballLiveObservationStore,
+    ) -> bool:
+        try:
+            self._assert_cross_ledger_integrity(
+                control_store=control_store,
+                evidence_store=evidence_store,
+            )
+            return True
+        except (
+            ValueError,
+            sqlite3.Error,
+            TypeError,
+            KeyError,
+            json.JSONDecodeError,
+        ):
+            return False
 
     def counts(self, run_id: str) -> Mapping[str, Any]:
         with self._connect() as connection:
@@ -1380,6 +1999,11 @@ def _ensure_integrity(
         raise ValueError("R8_3_DURABLE_EVIDENCE_INTEGRITY_FAILURE")
     if not journal.audit_integrity():
         raise ValueError("R8_3_FAKE_JOURNAL_INTEGRITY_FAILURE")
+    if not journal.audit_cross_ledger_integrity(
+        control_store=control_store,
+        evidence_store=evidence_store,
+    ):
+        raise ValueError("R8_3R2_CROSS_LEDGER_INTEGRITY_FAILURE")
 
 
 def _transition_to_in_progress(
