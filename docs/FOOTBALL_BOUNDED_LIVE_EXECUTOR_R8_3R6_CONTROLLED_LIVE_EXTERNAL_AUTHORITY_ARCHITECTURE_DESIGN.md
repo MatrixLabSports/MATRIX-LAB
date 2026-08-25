@@ -164,14 +164,12 @@ Availability failures MUST produce fail-closed behavior, not a silent downgrade.
 
 Every authority stream is uniquely bound to:
 
-- `project_id`
+- `project_domain_id`
 - `sport = football`
 - `protocol = matrix-eir`
 - `protocol_version`
 - `root_store_id`
 - `database_instance_id`
-- `control_id`
-- optional `run_id` where applicable
 - `authority_profile`
 - `archive_account_id`
 - `archive_bucket_arn`
@@ -180,8 +178,13 @@ Every authority stream is uniquely bound to:
 - `kms_key_arn`
 - `key_epoch`
 
-No field above may be inferred from an untrusted receipt alone during admission.
-Expected identities are pinned from governed configuration/evidence.
+`control_id` and optional `run_id` are signed per-receipt bindings inside the
+single database/root-store authority stream; they MUST NOT partition the immutable
+object namespace or create independent sequence spaces.
+
+No stream-identity field above may be inferred from an untrusted receipt alone
+during admission. Expected identities are pinned from governed
+configuration/evidence.
 
 ---
 
@@ -189,12 +192,17 @@ Expected identities are pinned from governed configuration/evidence.
 
 Canonical receipt object key:
 
-`matrix-eir/v1/{project_id}/football/{root_store_id}/{database_instance_id}/{control_id}/receipts/{sequence:020d}.json`
+`matrix-eir/v1/{project_domain_id}/football/{root_store_id}/{database_instance_id}/receipts/{sequence:020d}.json`
 
 Rules:
 
-- Genesis is sequence `00000000000000000000`.
+- The sealed R8.3R6 protocol is one global authority chain per
+  `(project_domain_id, sport, root_store_id, database_instance_id)`.
+- Genesis is protocol sequence `1`, encoded as
+  `00000000000000000001.json`.
 - Every subsequent receipt is exactly predecessor sequence + 1.
+- `control_id` and `run_id` remain inside the signed receipt and do not define
+  separate S3 prefixes or sequence spaces.
 - There is exactly one canonical object key per sequence.
 - Receipt object creation MUST use `If-None-Match: *`.
 - Bucket policy MUST reject unconditioned writes to the receipt prefix.
@@ -242,6 +250,10 @@ For the AWS strong profile:
 7. authority re-reads/verifies the authoritative object before acknowledging.
 
 KMS key ARN, key epoch and algorithm are part of signed/bound receipt metadata.
+The canonical R8.3R6 `signer_key_id` remains the existing
+`ed25519:{sha256(raw_public_key)}` identity used by receipt-chain verification;
+the KMS key ARN is a separate pinned deployment/authority identity and MUST NOT
+replace or redefine that receipt-level key identifier.
 
 The normal MATRIX runtime never receives the private key.
 
