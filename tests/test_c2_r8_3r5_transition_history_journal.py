@@ -400,3 +400,183 @@ def test_a19_local_database_replacement_remains_explicitly_deferred_to_external_
     # consistent replacement of the entire local DB remains outside the local
     # trust boundary and must be closed by the next external immutable-root gate.
     assert True
+
+
+def test_r8_3r5r1_failed_transition_attempt_is_durable_without_state_advance(
+    tmp_path: Path,
+):
+    path, store, value, guard, lease = _store(tmp_path)
+    snapshot = store.record_transition_attempt_outcome(
+        value.run_id,
+        expected_state="PLANNED",
+        expected_state_version=0,
+        attempted_new_state="IN_PROGRESS",
+        outcome="STATE_TRANSITION_FAILED",
+        changed_at=BASE + timedelta(seconds=1),
+        guard=guard,
+        lease=lease,
+    )
+    assert snapshot.state == "PLANNED"
+    assert snapshot.state_version == 0
+    rows = _events(path, value.run_id)
+    assert len(rows) == 1
+    assert rows[0][10] == "STATE_TRANSITION_FAILED"
+    assert rows[0][13] == 0
+    assert rows[0][14] == 0
+    assert store.audit_integrity() is True
+    guard.release(lease)
+
+
+def test_r8_3r5r1_abandoned_transition_attempt_is_durable_without_state_advance(
+    tmp_path: Path,
+):
+    path, store, value, guard, lease = _store(tmp_path)
+    snapshot = store.record_transition_attempt_outcome(
+        value.run_id,
+        expected_state="PLANNED",
+        expected_state_version=0,
+        attempted_new_state="ABORTED",
+        outcome="STATE_TRANSITION_ABANDONED",
+        changed_at=BASE + timedelta(seconds=1),
+        guard=guard,
+        lease=lease,
+    )
+    assert snapshot.state == "PLANNED"
+    assert snapshot.state_version == 0
+    rows = _events(path, value.run_id)
+    assert len(rows) == 1
+    assert rows[0][10] == "STATE_TRANSITION_ABANDONED"
+    assert store.audit_integrity() is True
+    guard.release(lease)
+
+
+def test_r8_3r5r1_delete_noncommitted_history_before_later_commit_is_rejected(
+    tmp_path: Path,
+):
+    path, store, value, guard, lease = _store(tmp_path)
+    store.record_transition_attempt_outcome(
+        value.run_id,
+        expected_state="PLANNED",
+        expected_state_version=0,
+        attempted_new_state="IN_PROGRESS",
+        outcome="STATE_TRANSITION_FAILED",
+        changed_at=BASE + timedelta(seconds=1),
+        guard=guard,
+        lease=lease,
+    )
+    _transition(
+        store,
+        value,
+        guard,
+        lease,
+        "PLANNED",
+        0,
+        "IN_PROGRESS",
+        2,
+    )
+    rows = _events(path, value.run_id)
+    assert [row[3] for row in rows] == [1, 2]
+    assert [row[10] for row in rows] == [
+        "STATE_TRANSITION_FAILED",
+        "STATE_TRANSITION_COMMITTED",
+    ]
+
+    with sqlite3.connect(path) as connection:
+        connection.execute(
+            """
+            DELETE FROM football_bounded_run_transition_event
+            WHERE run_id = ? AND transition_sequence = 1
+            """,
+            (value.run_id,),
+        )
+        connection.commit()
+    _rehash(store)
+    assert store.audit_integrity() is False
+    guard.release(lease)
+
+
+def test_r8_3r5r1_noncommitted_outcome_mutation_is_rejected_after_local_rehash(
+    tmp_path: Path,
+):
+    path, store, value, guard, lease = _store(tmp_path)
+    store.record_transition_attempt_outcome(
+        value.run_id,
+        expected_state="PLANNED",
+        expected_state_version=0,
+        attempted_new_state="IN_PROGRESS",
+        outcome="STATE_TRANSITION_FAILED",
+        changed_at=BASE + timedelta(seconds=1),
+        guard=guard,
+        lease=lease,
+    )
+    with sqlite3.connect(path) as connection:
+        connection.execute(
+            """
+            UPDATE football_bounded_run_transition_event
+            SET outcome = 'STATE_TRANSITION_ABANDONED'
+            WHERE run_id = ? AND transition_sequence = 1
+            """,
+            (value.run_id,),
+        )
+        connection.commit()
+    _rehash(store)
+    assert store.audit_integrity() is False
+    guard.release(lease)
+
+
+def test_r8_3r5r1_committed_transition_after_failed_and_abandoned_attempts_replays(
+    tmp_path: Path,
+):
+    path, store, value, guard, lease = _store(tmp_path)
+    store.record_transition_attempt_outcome(
+        value.run_id,
+        expected_state="PLANNED",
+        expected_state_version=0,
+        attempted_new_state="IN_PROGRESS",
+        outcome="STATE_TRANSITION_FAILED",
+        changed_at=BASE + timedelta(seconds=1),
+        guard=guard,
+        lease=lease,
+    )
+    store.record_transition_attempt_outcome(
+        value.run_id,
+        expected_state="PLANNED",
+        expected_state_version=0,
+        attempted_new_state="IN_PROGRESS",
+        outcome="STATE_TRANSITION_ABANDONED",
+        changed_at=BASE + timedelta(seconds=2),
+        guard=guard,
+        lease=lease,
+    )
+    committed = _transition(
+        store,
+        value,
+        guard,
+        lease,
+        "PLANNED",
+        0,
+        "IN_PROGRESS",
+        3,
+    )
+    assert committed.state == "IN_PROGRESS"
+    assert committed.state_version == 1
+    rows = _events(path, value.run_id)
+    assert [row[3] for row in rows] == [1, 2, 3]
+    assert [row[10] for row in rows] == [
+        "STATE_TRANSITION_FAILED",
+        "STATE_TRANSITION_ABANDONED",
+        "STATE_TRANSITION_COMMITTED",
+    ]
+    replayed = _transition(
+        store,
+        value,
+        guard,
+        lease,
+        "PLANNED",
+        0,
+        "IN_PROGRESS",
+        3,
+    )
+    assert replayed == committed
+    assert store.audit_integrity() is True
+    guard.release(lease)

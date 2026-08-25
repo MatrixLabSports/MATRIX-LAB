@@ -1353,16 +1353,38 @@ class SQLiteBoundedFootballLiveControlStore:
                     "R8_2_RUN_REGISTRATION_PRECEDES_MANIFEST_CREATION"
                 )
 
-            # PLANNED is a quiescent registration state. No run-state
-            # transition has occurred yet, so its durable update time must
-            # still be the registration event itself.
+            # PLANNED normally remains at registration time. R8.3R5R1
+            # permits a later control activity timestamp only when the
+            # transition journal itself proves a failed/abandoned attempt
+            # that did not advance durable state/version.
             if (
                 snapshot.state == "PLANNED"
                 and snapshot.updated_at != snapshot.created_at
             ):
-                raise ValueError(
-                    "R8_2_PLANNED_RUN_UPDATED_AT_MUST_EQUAL_CREATED_AT"
-                )
+                latest_attempt = connection.execute(
+                    """
+                    SELECT outcome, occurred_at,
+                           state_version_before, state_version_after
+                    FROM football_bounded_run_transition_event
+                    WHERE run_id = ?
+                    ORDER BY transition_sequence DESC
+                    LIMIT 1
+                    """,
+                    (snapshot.run_id,),
+                ).fetchone()
+                if (
+                    latest_attempt is None
+                    or str(latest_attempt[0]) not in {
+                        "STATE_TRANSITION_FAILED",
+                        "STATE_TRANSITION_ABANDONED",
+                    }
+                    or str(latest_attempt[1]) != snapshot.updated_at.isoformat()
+                    or int(latest_attempt[2]) != 0
+                    or int(latest_attempt[3]) != 0
+                ):
+                    raise ValueError(
+                        "R8_2_PLANNED_RUN_UPDATED_AT_MUST_EQUAL_CREATED_AT"
+                    )
 
             rederived_config = BoundedFootballLiveExecutorConfig(
                 provider_key=snapshot.provider_key,
@@ -2266,7 +2288,28 @@ class SQLiteBoundedFootballLiveControlStore:
             ),
         )
 
-    def _append_committed_transition_event(
+
+    def _next_transition_event_sequence(
+        self,
+        connection: sqlite3.Connection,
+        *,
+        run_id: str,
+    ) -> tuple[int, str | None, str | None]:
+        previous = connection.execute(
+            """
+            SELECT transition_sequence, event_id, event_sha256
+            FROM football_bounded_run_transition_event
+            WHERE run_id = ?
+            ORDER BY transition_sequence DESC
+            LIMIT 1
+            """,
+            (run_id,),
+        ).fetchone()
+        if previous is None:
+            return 1, None, None
+        return int(previous[0]) + 1, str(previous[1]), str(previous[2])
+
+    def _append_transition_event(
         self,
         connection: sqlite3.Connection,
         *,
@@ -2275,37 +2318,36 @@ class SQLiteBoundedFootballLiveControlStore:
         prior_state: str,
         next_state: str,
         state_version_before: int,
+        state_version_after: int,
+        outcome: str,
         changed_at: datetime,
     ) -> None:
-        sequence = state_version_before + 1
-        previous = connection.execute(
-            """
-            SELECT event_id, event_sha256
-            FROM football_bounded_run_transition_event
-            WHERE run_id = ?
-            ORDER BY transition_sequence DESC
-            LIMIT 1
-            """,
-            (run_id,),
-        ).fetchone()
-        if state_version_before == 0:
-            if previous is not None:
-                raise ValueError("R8_3R5_TRANSITION_GENESIS_PREDECESSOR_FORBIDDEN")
-            previous_event_id = None
-            previous_event_sha256 = None
-        else:
-            if previous is None:
-                raise ValueError("R8_3R5_TRANSITION_PREDECESSOR_REQUIRED")
-            previous_event_id = str(previous[0])
-            previous_event_sha256 = str(previous[1])
+        if outcome not in R8_3R5_TRANSITION_OUTCOMES:
+            raise ValueError("R8_3R5_TRANSITION_OUTCOME_UNSUPPORTED")
+        if next_state not in _R8_2_ALLOWED_TRANSITIONS[prior_state]:
+            raise ValueError("R8_3R5_TRANSITION_STATE_EDGE_INVALID")
+        if outcome == "STATE_TRANSITION_COMMITTED":
+            if state_version_after != state_version_before + 1:
+                raise ValueError("R8_3R5_TRANSITION_VERSION_CONTINUITY_MISMATCH")
+        elif state_version_after != state_version_before:
+            raise ValueError("R8_3R5_TRANSITION_NONCOMMITTED_VERSION_ADVANCE_FORBIDDEN")
 
+        sequence, previous_event_id, previous_event_sha256 = (
+            self._next_transition_event_sequence(
+                connection,
+                run_id=run_id,
+            )
+        )
         action_code = _transition_action_code(prior_state, next_state)
         reason_code = _transition_reason_code(prior_state, next_state)
         control_id = _run_control_id(
-            run_id=run_id, manifest_fingerprint=manifest_fingerprint
+            run_id=run_id,
+            manifest_fingerprint=manifest_fingerprint,
         )
         correlation_id = _transition_correlation_id(
-            run_id=run_id, sequence=sequence, action_code=action_code
+            run_id=run_id,
+            sequence=sequence,
+            action_code=action_code,
         )
         occurred = changed_at.isoformat()
         payload = {
@@ -2318,11 +2360,11 @@ class SQLiteBoundedFootballLiveControlStore:
             "next_state": next_state,
             "action_code": action_code,
             "reason_code": reason_code,
-            "outcome": "STATE_TRANSITION_COMMITTED",
+            "outcome": outcome,
             "occurred_at": occurred,
             "persisted_at": occurred,
             "state_version_before": state_version_before,
-            "state_version_after": sequence,
+            "state_version_after": state_version_after,
             "correlation_id": correlation_id,
             "event_schema_version": R8_3R5_TRANSITION_EVENT_SCHEMA_VERSION,
         }
@@ -2345,16 +2387,54 @@ class SQLiteBoundedFootballLiveControlStore:
             ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """,
             (
-                event_id, run_id, control_id, sequence, previous_event_id,
-                previous_event_sha256, prior_state, next_state, action_code,
-                reason_code, "STATE_TRANSITION_COMMITTED", occurred, occurred,
-                state_version_before, sequence, correlation_id,
-                R8_3R5_TRANSITION_EVENT_SCHEMA_VERSION, event_sha256,
+                event_id,
+                run_id,
+                control_id,
+                sequence,
+                previous_event_id,
+                previous_event_sha256,
+                prior_state,
+                next_state,
+                action_code,
+                reason_code,
+                outcome,
+                occurred,
+                occurred,
+                state_version_before,
+                state_version_after,
+                correlation_id,
+                R8_3R5_TRANSITION_EVENT_SCHEMA_VERSION,
+                event_sha256,
             ),
         )
 
+    def _append_committed_transition_event(
+        self,
+        connection: sqlite3.Connection,
+        *,
+        run_id: str,
+        manifest_fingerprint: str,
+        prior_state: str,
+        next_state: str,
+        state_version_before: int,
+        changed_at: datetime,
+    ) -> None:
+        self._append_transition_event(
+            connection,
+            run_id=run_id,
+            manifest_fingerprint=manifest_fingerprint,
+            prior_state=prior_state,
+            next_state=next_state,
+            state_version_before=state_version_before,
+            state_version_after=state_version_before + 1,
+            outcome="STATE_TRANSITION_COMMITTED",
+            changed_at=changed_at,
+        )
+
     def _assert_transition_history_integrity(
-        self, connection: sqlite3.Connection, runs: Mapping[str, RunControlSnapshot]
+        self,
+        connection: sqlite3.Connection,
+        runs: Mapping[str, RunControlSnapshot],
     ) -> None:
         rows = connection.execute(
             """
@@ -2376,86 +2456,272 @@ class SQLiteBoundedFootballLiveControlStore:
 
         for run_id, run in runs.items():
             history = by_run.get(run_id, [])
-            if len(history) != run.state_version:
-                raise ValueError("R8_3R5_TRANSITION_REVERSE_COMPLETENESS_MISMATCH")
+            committed_count = sum(
+                1
+                for row in history
+                if str(row[10]) == "STATE_TRANSITION_COMMITTED"
+            )
+            if committed_count != run.state_version:
+                raise ValueError(
+                    "R8_3R5_TRANSITION_REVERSE_COMPLETENESS_MISMATCH"
+                )
+
             derived_state = "PLANNED"
             derived_version = 0
             previous_event_id = None
             previous_event_sha256 = None
             previous_time = run.created_at
+            latest_activity_time = run.created_at
             expected_control_id = _run_control_id(
-                run_id=run_id, manifest_fingerprint=run.manifest_fingerprint
+                run_id=run_id,
+                manifest_fingerprint=run.manifest_fingerprint,
             )
+
             for expected_sequence, row in enumerate(history, 1):
-                (event_id, _, control_id, sequence, prev_id, prev_sha, prior_state,
-                 next_state, action_code, reason_code, outcome, occurred_text,
-                 persisted_text, before, after, correlation_id, schema_version,
-                 event_sha256) = row
+                (
+                    event_id,
+                    _,
+                    control_id,
+                    sequence,
+                    prev_id,
+                    prev_sha,
+                    prior_state,
+                    next_state,
+                    action_code,
+                    reason_code,
+                    outcome,
+                    occurred_text,
+                    persisted_text,
+                    before,
+                    after,
+                    correlation_id,
+                    schema_version,
+                    event_sha256,
+                ) = row
+
                 if int(sequence) != expected_sequence:
                     raise ValueError("R8_3R5_TRANSITION_SEQUENCE_GAP")
                 if str(control_id) != expected_control_id:
-                    raise ValueError("R8_3R5_TRANSITION_CONTROL_BINDING_MISMATCH")
-                if (None if prev_id is None else str(prev_id)) != previous_event_id:
-                    raise ValueError("R8_3R5_TRANSITION_PREDECESSOR_ID_MISMATCH")
-                if (None if prev_sha is None else str(prev_sha)) != previous_event_sha256:
-                    raise ValueError("R8_3R5_TRANSITION_PREDECESSOR_SHA_MISMATCH")
-                if str(outcome) != "STATE_TRANSITION_COMMITTED":
+                    raise ValueError(
+                        "R8_3R5_TRANSITION_CONTROL_BINDING_MISMATCH"
+                    )
+                if (
+                    None if prev_id is None else str(prev_id)
+                ) != previous_event_id:
+                    raise ValueError(
+                        "R8_3R5_TRANSITION_PREDECESSOR_ID_MISMATCH"
+                    )
+                if (
+                    None if prev_sha is None else str(prev_sha)
+                ) != previous_event_sha256:
+                    raise ValueError(
+                        "R8_3R5_TRANSITION_PREDECESSOR_SHA_MISMATCH"
+                    )
+
+                outcome_value = str(outcome)
+                if outcome_value not in R8_3R5_TRANSITION_OUTCOMES:
                     raise ValueError("R8_3R5_TRANSITION_OUTCOME_UNSUPPORTED")
                 if str(prior_state) != derived_state or int(before) != derived_version:
-                    raise ValueError("R8_3R5_TRANSITION_STATE_CONTINUITY_MISMATCH")
+                    raise ValueError(
+                        "R8_3R5_TRANSITION_STATE_CONTINUITY_MISMATCH"
+                    )
                 if str(next_state) not in _R8_2_ALLOWED_TRANSITIONS[derived_state]:
                     raise ValueError("R8_3R5_TRANSITION_STATE_EDGE_INVALID")
-                if int(after) != derived_version + 1:
-                    raise ValueError("R8_3R5_TRANSITION_VERSION_CONTINUITY_MISMATCH")
-                expected_action = _transition_action_code(derived_state, str(next_state))
-                expected_reason = _transition_reason_code(derived_state, str(next_state))
+
+                if outcome_value == "STATE_TRANSITION_COMMITTED":
+                    expected_after = derived_version + 1
+                else:
+                    expected_after = derived_version
+                if int(after) != expected_after:
+                    raise ValueError(
+                        "R8_3R5_TRANSITION_VERSION_CONTINUITY_MISMATCH"
+                    )
+
+                expected_action = _transition_action_code(
+                    derived_state,
+                    str(next_state),
+                )
+                expected_reason = _transition_reason_code(
+                    derived_state,
+                    str(next_state),
+                )
                 if str(action_code) != expected_action:
-                    raise ValueError("R8_3R5_TRANSITION_ACTION_BINDING_MISMATCH")
+                    raise ValueError(
+                        "R8_3R5_TRANSITION_ACTION_BINDING_MISMATCH"
+                    )
                 actual_reason = None if reason_code is None else str(reason_code)
                 if actual_reason != expected_reason:
-                    raise ValueError("R8_3R5_TRANSITION_REASON_BINDING_MISMATCH")
-                occurred = _parse_canonical_utc_timestamp(str(occurred_text), name="transition_occurred_at")
-                persisted = _parse_canonical_utc_timestamp(str(persisted_text), name="transition_persisted_at")
+                    raise ValueError(
+                        "R8_3R5_TRANSITION_REASON_BINDING_MISMATCH"
+                    )
+
+                occurred = _parse_canonical_utc_timestamp(
+                    str(occurred_text),
+                    name="transition_occurred_at",
+                )
+                persisted = _parse_canonical_utc_timestamp(
+                    str(persisted_text),
+                    name="transition_persisted_at",
+                )
                 if occurred < previous_time or persisted != occurred:
                     raise ValueError("R8_3R5_TRANSITION_CHRONOLOGY_MISMATCH")
                 if int(schema_version) != R8_3R5_TRANSITION_EVENT_SCHEMA_VERSION:
-                    raise ValueError("R8_3R5_TRANSITION_EVENT_SCHEMA_VERSION_MISMATCH")
+                    raise ValueError(
+                        "R8_3R5_TRANSITION_EVENT_SCHEMA_VERSION_MISMATCH"
+                    )
+
                 expected_corr = _transition_correlation_id(
-                    run_id=run_id, sequence=expected_sequence, action_code=expected_action
+                    run_id=run_id,
+                    sequence=expected_sequence,
+                    action_code=expected_action,
                 )
                 if str(correlation_id) != expected_corr:
-                    raise ValueError("R8_3R5_TRANSITION_CORRELATION_BINDING_MISMATCH")
+                    raise ValueError(
+                        "R8_3R5_TRANSITION_CORRELATION_BINDING_MISMATCH"
+                    )
+
                 payload = {
-                    "run_id": run_id, "control_id": expected_control_id,
+                    "run_id": run_id,
+                    "control_id": expected_control_id,
                     "transition_sequence": expected_sequence,
                     "previous_event_id": previous_event_id,
                     "previous_event_sha256": previous_event_sha256,
-                    "prior_state": derived_state, "next_state": str(next_state),
-                    "action_code": expected_action, "reason_code": expected_reason,
-                    "outcome": "STATE_TRANSITION_COMMITTED",
-                    "occurred_at": str(occurred_text), "persisted_at": str(persisted_text),
+                    "prior_state": derived_state,
+                    "next_state": str(next_state),
+                    "action_code": expected_action,
+                    "reason_code": expected_reason,
+                    "outcome": outcome_value,
+                    "occurred_at": str(occurred_text),
+                    "persisted_at": str(persisted_text),
                     "state_version_before": derived_version,
-                    "state_version_after": derived_version + 1,
+                    "state_version_after": expected_after,
                     "correlation_id": expected_corr,
                     "event_schema_version": R8_3R5_TRANSITION_EVENT_SCHEMA_VERSION,
                 }
                 expected_sha = _transition_event_sha(payload)
                 expected_id = _sha({
                     "schema": "matrix.c2-r8-3r5-transition-event-id/1",
-                    "run_id": run_id, "transition_sequence": expected_sequence,
+                    "run_id": run_id,
+                    "transition_sequence": expected_sequence,
                     "event_sha256": expected_sha,
                 })
-                if str(event_sha256) != expected_sha or str(event_id) != expected_id:
-                    raise ValueError("R8_3R5_TRANSITION_EVENT_BINDING_MISMATCH")
+                if (
+                    str(event_sha256) != expected_sha
+                    or str(event_id) != expected_id
+                ):
+                    raise ValueError(
+                        "R8_3R5_TRANSITION_EVENT_BINDING_MISMATCH"
+                    )
+
                 previous_event_id = str(event_id)
                 previous_event_sha256 = str(event_sha256)
                 previous_time = occurred
-                derived_state = str(next_state)
-                derived_version += 1
+                latest_activity_time = occurred
+
+                if outcome_value == "STATE_TRANSITION_COMMITTED":
+                    derived_state = str(next_state)
+                    derived_version += 1
+
             if derived_state != run.state or derived_version != run.state_version:
-                raise ValueError("R8_3R5_TRANSITION_FORWARD_COMPLETENESS_MISMATCH")
-            if history and previous_time != run.updated_at:
-                raise ValueError("R8_3R5_TRANSITION_FINAL_TIMESTAMP_MISMATCH")
+                raise ValueError(
+                    "R8_3R5_TRANSITION_FORWARD_COMPLETENESS_MISMATCH"
+                )
+            if latest_activity_time != run.updated_at:
+                raise ValueError(
+                    "R8_3R5_TRANSITION_FINAL_TIMESTAMP_MISMATCH"
+                )
+
+    def record_transition_attempt_outcome(
+        self,
+        run_id: str,
+        *,
+        expected_state: str,
+        expected_state_version: int,
+        attempted_new_state: str,
+        outcome: str,
+        changed_at: datetime,
+        guard: BoundedExecutorProcessScopeGuard,
+        lease: ProcessScopeLease,
+    ) -> RunControlSnapshot:
+        self._assert_guard(guard, lease)
+        normalized = _sha256_hex(run_id, name="run_id")
+        if outcome not in {
+            "STATE_TRANSITION_FAILED",
+            "STATE_TRANSITION_ABANDONED",
+        }:
+            raise ValueError(
+                "R8_3R5_NONCOMMITTED_TRANSITION_OUTCOME_REQUIRED"
+            )
+        if expected_state not in R8_2_RUN_STATES:
+            raise ValueError("R8_2_EXPECTED_RUN_STATE_INVALID")
+        if attempted_new_state not in R8_2_RUN_STATES:
+            raise ValueError("R8_2_NEW_RUN_STATE_INVALID")
+        if attempted_new_state not in _R8_2_ALLOWED_TRANSITIONS[expected_state]:
+            raise ValueError("R8_2_RUN_STATE_TRANSITION_FORBIDDEN")
+
+        version = _nonnegative_int(
+            expected_state_version,
+            name="expected_state_version",
+        )
+        changed = _aware_utc(changed_at, name="changed_at")
+
+        with self._connect() as connection:
+            connection.execute("BEGIN IMMEDIATE")
+            try:
+                self._assert_integrity(connection)
+                row = connection.execute(
+                    """
+                    SELECT state, state_version, updated_at, manifest_fingerprint
+                    FROM football_bounded_run_control
+                    WHERE run_id = ?
+                    """,
+                    (normalized,),
+                ).fetchone()
+                if row is None:
+                    raise ValueError("R8_2_RUN_CONTROL_NOT_FOUND")
+
+                current_state = str(row[0])
+                current_version = int(row[1])
+                current_updated_at = _parse_canonical_utc_timestamp(
+                    str(row[2]),
+                    name="run_updated_at",
+                )
+                if current_state != expected_state:
+                    raise ValueError("R8_2_RUN_STATE_COMPARE_AND_SWAP_FAILED")
+                if current_version != version:
+                    raise ValueError(
+                        "R8_2_RUN_STATE_VERSION_COMPARE_AND_SWAP_FAILED"
+                    )
+                if changed < current_updated_at:
+                    raise ValueError("R8_2_RUN_TIME_REGRESSION")
+
+                self._append_transition_event(
+                    connection,
+                    run_id=normalized,
+                    manifest_fingerprint=str(row[3]),
+                    prior_state=expected_state,
+                    next_state=attempted_new_state,
+                    state_version_before=version,
+                    state_version_after=version,
+                    outcome=outcome,
+                    changed_at=changed,
+                )
+                connection.execute(
+                    """
+                    UPDATE football_bounded_run_control
+                    SET updated_at = ?
+                    WHERE run_id = ?
+                    """,
+                    (changed.isoformat(), normalized),
+                )
+                self._rewrite_anchor(connection)
+                self._assert_integrity(connection)
+                connection.execute("COMMIT")
+            except Exception:
+                connection.execute("ROLLBACK")
+                raise
+
+        return self.get_run(normalized)
 
     def transition_run_state(
         self,
