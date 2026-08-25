@@ -23,7 +23,14 @@ R8_2_LEGACY_CONTROL_LEDGER_USER_VERSION = 82
 R8_2_PREVIOUS_CONTROL_LEDGER_USER_VERSION = 83
 R8_2_R8_2R2_CONTROL_LEDGER_USER_VERSION = 84
 R8_2_R8_3R4_CONTROL_LEDGER_USER_VERSION = 85
-R8_2_CONTROL_LEDGER_USER_VERSION = 86
+R8_2_R8_3R5_CONTROL_LEDGER_USER_VERSION = 86
+R8_2_CONTROL_LEDGER_USER_VERSION = 87
+
+R8_3R6_EXTERNAL_ROOT_PROTOCOL_VERSION = 1
+R8_3R6_EXTERNAL_ROOT_COORDINATION_STATUSES = (
+    "LOCAL_COMMITTED",
+    "ACKNOWLEDGED",
+)
 
 R8_3R5_TRANSITION_EVENT_SCHEMA_VERSION = 1
 R8_3R5_TRANSITION_OUTCOMES = (
@@ -138,6 +145,41 @@ _R8_2_CANONICAL_STORED_TABLE_SQL = {
                 REFERENCES football_bounded_run_control(run_id)
         )
     """,
+    "football_bounded_external_root_state": """
+        CREATE TABLE football_bounded_external_root_state (
+            singleton_id INTEGER PRIMARY KEY
+                CHECK (singleton_id = 1),
+            database_instance_id TEXT NOT NULL,
+            root_protocol_version INTEGER NOT NULL,
+            root_store_id TEXT,
+            bootstrap_signer_key_id TEXT,
+            bootstrap_public_key_fingerprint TEXT,
+            genesis_receipt_id TEXT,
+            genesis_receipt_sha256 TEXT
+        )
+    """,
+    "football_bounded_external_root_coordination": """
+        CREATE TABLE football_bounded_external_root_coordination (
+            operation_id TEXT PRIMARY KEY,
+            run_id TEXT NOT NULL,
+            transition_event_id TEXT NOT NULL UNIQUE,
+            transition_event_sha256 TEXT NOT NULL,
+            outcome TEXT NOT NULL,
+            root_store_id TEXT NOT NULL,
+            signer_key_id TEXT NOT NULL,
+            prepared_receipt_id TEXT NOT NULL,
+            prepared_receipt_sha256 TEXT NOT NULL,
+            committed_receipt_id TEXT,
+            committed_receipt_sha256 TEXT,
+            status TEXT NOT NULL,
+            created_at TEXT NOT NULL,
+            updated_at TEXT NOT NULL,
+            FOREIGN KEY (run_id)
+                REFERENCES football_bounded_run_control(run_id),
+            FOREIGN KEY (transition_event_id)
+                REFERENCES football_bounded_run_transition_event(event_id)
+        )
+    """,
     "football_bounded_control_anchor": """
         CREATE TABLE football_bounded_control_anchor (
             singleton_id INTEGER PRIMARY KEY
@@ -163,6 +205,13 @@ def _canonical(value: Any) -> str:
 
 def _sha(value: Any) -> str:
     return sha256(_canonical(value).encode("utf-8")).hexdigest()
+
+
+def _new_database_instance_id() -> str:
+    return _sha({
+        "schema": "matrix.c2-r8-3r6-database-instance-id/1",
+        "nonce": uuid4().hex,
+    })
 
 
 def _canonical_modalities_json(modalities: tuple[str, ...]) -> str:
@@ -657,6 +706,169 @@ class SequenceReservation:
             raise ValueError("R8_2_RESERVATION_TIME_REGRESSION")
 
 
+@dataclass(frozen=True)
+class TransitionEventReference:
+    event_id: str
+    event_sha256: str
+    run_id: str
+    control_id: str
+    transition_sequence: int
+    prior_state: str
+    next_state: str
+    outcome: str
+    occurred_at: datetime
+    state_version_before: int
+    state_version_after: int
+
+    def __post_init__(self) -> None:
+        _sha256_hex(self.event_id, name="event_id")
+        _sha256_hex(self.event_sha256, name="event_sha256")
+        _sha256_hex(self.run_id, name="run_id")
+        _sha256_hex(self.control_id, name="control_id")
+        _positive_int(self.transition_sequence, name="transition_sequence")
+        if self.prior_state not in R8_2_RUN_STATES:
+            raise ValueError("R8_3R6_TRANSITION_REFERENCE_PRIOR_STATE_INVALID")
+        if self.next_state not in R8_2_RUN_STATES:
+            raise ValueError("R8_3R6_TRANSITION_REFERENCE_NEXT_STATE_INVALID")
+        if self.outcome not in R8_3R5_TRANSITION_OUTCOMES:
+            raise ValueError("R8_3R6_TRANSITION_REFERENCE_OUTCOME_INVALID")
+        object.__setattr__(
+            self,
+            "occurred_at",
+            _aware_utc(self.occurred_at, name="occurred_at"),
+        )
+        _nonnegative_int(self.state_version_before, name="state_version_before")
+        _nonnegative_int(self.state_version_after, name="state_version_after")
+
+
+@dataclass(frozen=True)
+class ExternalRootPreparedBinding:
+    operation_id: str
+    root_store_id: str
+    signer_key_id: str
+    prepared_receipt_id: str
+    prepared_receipt_sha256: str
+    expected_transition_event_id: str
+    expected_transition_event_sha256: str
+    expected_transition_sequence: int
+    expected_outcome: str
+
+    def __post_init__(self) -> None:
+        _sha256_hex(self.operation_id, name="operation_id")
+        _sha256_hex(self.root_store_id, name="root_store_id")
+        _nonempty(self.signer_key_id, name="signer_key_id")
+        _sha256_hex(self.prepared_receipt_id, name="prepared_receipt_id")
+        _sha256_hex(self.prepared_receipt_sha256, name="prepared_receipt_sha256")
+        _sha256_hex(
+            self.expected_transition_event_id,
+            name="expected_transition_event_id",
+        )
+        _sha256_hex(
+            self.expected_transition_event_sha256,
+            name="expected_transition_event_sha256",
+        )
+        _positive_int(
+            self.expected_transition_sequence,
+            name="expected_transition_sequence",
+        )
+        if self.expected_outcome not in R8_3R5_TRANSITION_OUTCOMES:
+            raise ValueError("R8_3R6_EXPECTED_TRANSITION_OUTCOME_INVALID")
+
+
+@dataclass(frozen=True)
+class ExternalRootStateSnapshot:
+    database_instance_id: str
+    root_protocol_version: int
+    root_store_id: str | None
+    bootstrap_signer_key_id: str | None
+    bootstrap_public_key_fingerprint: str | None
+    genesis_receipt_id: str | None
+    genesis_receipt_sha256: str | None
+
+    def __post_init__(self) -> None:
+        _sha256_hex(self.database_instance_id, name="database_instance_id")
+        if self.root_protocol_version != R8_3R6_EXTERNAL_ROOT_PROTOCOL_VERSION:
+            raise ValueError("R8_3R6_ROOT_PROTOCOL_VERSION_UNSUPPORTED")
+        optional_values = (
+            self.root_store_id,
+            self.bootstrap_signer_key_id,
+            self.bootstrap_public_key_fingerprint,
+            self.genesis_receipt_id,
+            self.genesis_receipt_sha256,
+        )
+        populated = [value is not None for value in optional_values]
+        if any(populated) and not all(populated):
+            raise ValueError("R8_3R6_ROOT_STATE_PARTIAL_BINDING_FORBIDDEN")
+        if self.root_store_id is not None:
+            _sha256_hex(self.root_store_id, name="root_store_id")
+            _nonempty(self.bootstrap_signer_key_id or "", name="bootstrap_signer_key_id")
+            _sha256_hex(
+                self.bootstrap_public_key_fingerprint or "",
+                name="bootstrap_public_key_fingerprint",
+            )
+            _sha256_hex(self.genesis_receipt_id or "", name="genesis_receipt_id")
+            _sha256_hex(
+                self.genesis_receipt_sha256 or "",
+                name="genesis_receipt_sha256",
+            )
+
+
+@dataclass(frozen=True)
+class ExternalRootCoordinationSnapshot:
+    operation_id: str
+    run_id: str
+    transition_event_id: str
+    transition_event_sha256: str
+    outcome: str
+    root_store_id: str
+    signer_key_id: str
+    prepared_receipt_id: str
+    prepared_receipt_sha256: str
+    committed_receipt_id: str | None
+    committed_receipt_sha256: str | None
+    status: str
+    created_at: datetime
+    updated_at: datetime
+
+    def __post_init__(self) -> None:
+        for name in (
+            "operation_id",
+            "run_id",
+            "transition_event_id",
+            "transition_event_sha256",
+            "root_store_id",
+            "prepared_receipt_id",
+            "prepared_receipt_sha256",
+        ):
+            _sha256_hex(str(getattr(self, name)), name=name)
+        _nonempty(self.signer_key_id, name="signer_key_id")
+        if self.outcome not in R8_3R5_TRANSITION_OUTCOMES:
+            raise ValueError("R8_3R6_COORDINATION_OUTCOME_INVALID")
+        if self.status not in R8_3R6_EXTERNAL_ROOT_COORDINATION_STATUSES:
+            raise ValueError("R8_3R6_COORDINATION_STATUS_INVALID")
+        if self.status == "LOCAL_COMMITTED":
+            if self.committed_receipt_id is not None or self.committed_receipt_sha256 is not None:
+                raise ValueError("R8_3R6_LOCAL_COMMITTED_FINAL_RECEIPT_FORBIDDEN")
+        else:
+            _sha256_hex(self.committed_receipt_id or "", name="committed_receipt_id")
+            _sha256_hex(
+                self.committed_receipt_sha256 or "",
+                name="committed_receipt_sha256",
+            )
+        object.__setattr__(
+            self,
+            "created_at",
+            _aware_utc(self.created_at, name="created_at"),
+        )
+        object.__setattr__(
+            self,
+            "updated_at",
+            _aware_utc(self.updated_at, name="updated_at"),
+        )
+        if self.updated_at < self.created_at:
+            raise ValueError("R8_3R6_COORDINATION_TIME_REGRESSION")
+
+
 class SQLiteBoundedFootballLiveControlStore:
     def __init__(self, path: str | Path) -> None:
         self.path = Path(path).resolve()
@@ -837,6 +1049,32 @@ class SQLiteBoundedFootballLiveControlStore:
                 ("event_schema_version", "INTEGER", 1, 0),
                 ("event_sha256", "TEXT", 1, 0),
             ),
+            "football_bounded_external_root_state": (
+                ("singleton_id", "INTEGER", 0, 1),
+                ("database_instance_id", "TEXT", 1, 0),
+                ("root_protocol_version", "INTEGER", 1, 0),
+                ("root_store_id", "TEXT", 0, 0),
+                ("bootstrap_signer_key_id", "TEXT", 0, 0),
+                ("bootstrap_public_key_fingerprint", "TEXT", 0, 0),
+                ("genesis_receipt_id", "TEXT", 0, 0),
+                ("genesis_receipt_sha256", "TEXT", 0, 0),
+            ),
+            "football_bounded_external_root_coordination": (
+                ("operation_id", "TEXT", 0, 1),
+                ("run_id", "TEXT", 1, 0),
+                ("transition_event_id", "TEXT", 1, 0),
+                ("transition_event_sha256", "TEXT", 1, 0),
+                ("outcome", "TEXT", 1, 0),
+                ("root_store_id", "TEXT", 1, 0),
+                ("signer_key_id", "TEXT", 1, 0),
+                ("prepared_receipt_id", "TEXT", 1, 0),
+                ("prepared_receipt_sha256", "TEXT", 1, 0),
+                ("committed_receipt_id", "TEXT", 0, 0),
+                ("committed_receipt_sha256", "TEXT", 0, 0),
+                ("status", "TEXT", 1, 0),
+                ("created_at", "TEXT", 1, 0),
+                ("updated_at", "TEXT", 1, 0),
+            ),
             "football_bounded_control_anchor": (
                 ("singleton_id", "INTEGER", 0, 1),
                 ("payload_sha256", "TEXT", 1, 0),
@@ -886,6 +1124,13 @@ class SQLiteBoundedFootballLiveControlStore:
                     ("u", ("run_id", "transition_sequence")),
                 ))
             ),
+            "football_bounded_external_root_state": (),
+            "football_bounded_external_root_coordination": tuple(
+                sorted((
+                    ("pk", ("operation_id",)),
+                    ("u", ("transition_event_id",)),
+                ))
+            ),
             "football_bounded_control_anchor": (),
         }
 
@@ -915,6 +1160,25 @@ class SQLiteBoundedFootballLiveControlStore:
                     "football_bounded_run_control",
                     "run_id",
                     "run_id",
+                    "NO ACTION",
+                    "NO ACTION",
+                    "NONE",
+                ),
+            ),
+            "football_bounded_external_root_state": (),
+            "football_bounded_external_root_coordination": (
+                (
+                    "football_bounded_run_control",
+                    "run_id",
+                    "run_id",
+                    "NO ACTION",
+                    "NO ACTION",
+                    "NONE",
+                ),
+                (
+                    "football_bounded_run_transition_event",
+                    "transition_event_id",
+                    "event_id",
                     "NO ACTION",
                     "NO ACTION",
                     "NONE",
@@ -980,7 +1244,7 @@ class SQLiteBoundedFootballLiveControlStore:
                 "R8_2_CONTROL_SCHEMA_OBJECT_NAMESPACE_MISMATCH"
             )
 
-    def _anchor_payload(
+    def _anchor_payload_v86(
         self,
         connection: sqlite3.Connection,
     ) -> Mapping[str, Any]:
@@ -1047,6 +1311,46 @@ class SQLiteBoundedFootballLiveControlStore:
             "streams": [list(row) for row in stream_rows],
             "reservations": [list(row) for row in reservation_rows],
             "transitions": [list(row) for row in transition_rows],
+        }
+
+    def _anchor_payload(
+        self,
+        connection: sqlite3.Connection,
+    ) -> Mapping[str, Any]:
+        legacy = self._anchor_payload_v86(connection)
+        root_state_rows = connection.execute(
+            """
+            SELECT
+                singleton_id, database_instance_id, root_protocol_version,
+                root_store_id, bootstrap_signer_key_id,
+                bootstrap_public_key_fingerprint, genesis_receipt_id,
+                genesis_receipt_sha256
+            FROM football_bounded_external_root_state
+            ORDER BY singleton_id
+            """
+        ).fetchall()
+        coordination_rows = connection.execute(
+            """
+            SELECT
+                operation_id, run_id, transition_event_id,
+                transition_event_sha256, outcome, root_store_id,
+                signer_key_id, prepared_receipt_id, prepared_receipt_sha256,
+                committed_receipt_id, committed_receipt_sha256, status,
+                created_at, updated_at
+            FROM football_bounded_external_root_coordination
+            ORDER BY operation_id
+            """
+        ).fetchall()
+        return {
+            "schema": "matrix.c2-r8-3r6-control-anchor/3",
+            "runs": legacy["runs"],
+            "streams": legacy["streams"],
+            "reservations": legacy["reservations"],
+            "transitions": legacy["transitions"],
+            "external_root_state": [list(row) for row in root_state_rows],
+            "external_root_coordination": [
+                list(row) for row in coordination_rows
+            ],
         }
 
     def _anchor_payload_v83(
@@ -1613,6 +1917,76 @@ class SQLiteBoundedFootballLiveControlStore:
                     "R8_2_STREAM_SEQUENCE_WATERMARK_MISMATCH"
                 )
 
+        root_state_rows = connection.execute(
+            """
+            SELECT database_instance_id, root_protocol_version, root_store_id,
+                   bootstrap_signer_key_id, bootstrap_public_key_fingerprint,
+                   genesis_receipt_id, genesis_receipt_sha256
+            FROM football_bounded_external_root_state
+            ORDER BY singleton_id
+            """
+        ).fetchall()
+        if len(root_state_rows) != 1:
+            raise ValueError("R8_3R6_EXTERNAL_ROOT_STATE_SINGLETON_REQUIRED")
+        root_state = ExternalRootStateSnapshot(
+            database_instance_id=str(root_state_rows[0][0]),
+            root_protocol_version=int(root_state_rows[0][1]),
+            root_store_id=None if root_state_rows[0][2] is None else str(root_state_rows[0][2]),
+            bootstrap_signer_key_id=None if root_state_rows[0][3] is None else str(root_state_rows[0][3]),
+            bootstrap_public_key_fingerprint=None if root_state_rows[0][4] is None else str(root_state_rows[0][4]),
+            genesis_receipt_id=None if root_state_rows[0][5] is None else str(root_state_rows[0][5]),
+            genesis_receipt_sha256=None if root_state_rows[0][6] is None else str(root_state_rows[0][6]),
+        )
+
+        coordination_rows = connection.execute(
+            """
+            SELECT operation_id, run_id, transition_event_id,
+                   transition_event_sha256, outcome, root_store_id,
+                   signer_key_id, prepared_receipt_id, prepared_receipt_sha256,
+                   committed_receipt_id, committed_receipt_sha256, status,
+                   created_at, updated_at
+            FROM football_bounded_external_root_coordination
+            ORDER BY operation_id
+            """
+        ).fetchall()
+        if coordination_rows and root_state.root_store_id is None:
+            raise ValueError("R8_3R6_COORDINATION_WITHOUT_GENESIS_BINDING")
+        for row in coordination_rows:
+            item = ExternalRootCoordinationSnapshot(
+                operation_id=str(row[0]),
+                run_id=str(row[1]),
+                transition_event_id=str(row[2]),
+                transition_event_sha256=str(row[3]),
+                outcome=str(row[4]),
+                root_store_id=str(row[5]),
+                signer_key_id=str(row[6]),
+                prepared_receipt_id=str(row[7]),
+                prepared_receipt_sha256=str(row[8]),
+                committed_receipt_id=None if row[9] is None else str(row[9]),
+                committed_receipt_sha256=None if row[10] is None else str(row[10]),
+                status=str(row[11]),
+                created_at=_parse_canonical_utc_timestamp(str(row[12]), name="root_coordination_created_at"),
+                updated_at=_parse_canonical_utc_timestamp(str(row[13]), name="root_coordination_updated_at"),
+            )
+            if item.root_store_id != root_state.root_store_id:
+                raise ValueError("R8_3R6_COORDINATION_ROOT_STORE_MISMATCH")
+            transition = connection.execute(
+                """
+                SELECT run_id, event_sha256, outcome
+                FROM football_bounded_run_transition_event
+                WHERE event_id = ?
+                """,
+                (item.transition_event_id,),
+            ).fetchone()
+            if transition is None:
+                raise ValueError("R8_3R6_COORDINATION_TRANSITION_MISSING")
+            if (
+                str(transition[0]) != item.run_id
+                or str(transition[1]) != item.transition_event_sha256
+                or str(transition[2]) != item.outcome
+            ):
+                raise ValueError("R8_3R6_COORDINATION_TRANSITION_BINDING_MISMATCH")
+
     def _create_canonical_schema(
         self,
         connection: sqlite3.Connection,
@@ -1702,6 +2076,16 @@ class SQLiteBoundedFootballLiveControlStore:
             """
         )
         connection.execute(
+            _R8_2_CANONICAL_STORED_TABLE_SQL[
+                "football_bounded_external_root_state"
+            ].replace("CREATE TABLE ", "CREATE TABLE IF NOT EXISTS ", 1)
+        )
+        connection.execute(
+            _R8_2_CANONICAL_STORED_TABLE_SQL[
+                "football_bounded_external_root_coordination"
+            ].replace("CREATE TABLE ", "CREATE TABLE IF NOT EXISTS ", 1)
+        )
+        connection.execute(
             """
             CREATE TABLE IF NOT EXISTS
             football_bounded_control_anchor (
@@ -1711,6 +2095,38 @@ class SQLiteBoundedFootballLiveControlStore:
             )
             """
         )
+        self._ensure_external_root_state_row(connection)
+
+    def _ensure_external_root_state_row(
+        self,
+        connection: sqlite3.Connection,
+    ) -> None:
+        row = connection.execute(
+            """
+            SELECT database_instance_id, root_protocol_version
+            FROM football_bounded_external_root_state
+            WHERE singleton_id = 1
+            """
+        ).fetchone()
+        if row is None:
+            connection.execute(
+                """
+                INSERT INTO football_bounded_external_root_state (
+                    singleton_id, database_instance_id, root_protocol_version,
+                    root_store_id, bootstrap_signer_key_id,
+                    bootstrap_public_key_fingerprint, genesis_receipt_id,
+                    genesis_receipt_sha256
+                ) VALUES (1, ?, ?, NULL, NULL, NULL, NULL, NULL)
+                """,
+                (
+                    _new_database_instance_id(),
+                    R8_3R6_EXTERNAL_ROOT_PROTOCOL_VERSION,
+                ),
+            )
+        else:
+            _sha256_hex(str(row[0]), name="database_instance_id")
+            if int(row[1]) != R8_3R6_EXTERNAL_ROOT_PROTOCOL_VERSION:
+                raise ValueError("R8_3R6_ROOT_PROTOCOL_VERSION_UNSUPPORTED")
 
     def _rebuild_empty_control_schema(
         self,
@@ -1733,6 +2149,12 @@ class SQLiteBoundedFootballLiveControlStore:
                 "R8_2R3_EMPTY_SCHEMA_REBUILD_REQUIRES_EMPTY_CONTROL_DATA"
             )
 
+        connection.execute(
+            "DROP TABLE IF EXISTS football_bounded_external_root_coordination"
+        )
+        connection.execute(
+            "DROP TABLE IF EXISTS football_bounded_external_root_state"
+        )
         connection.execute(
             "DROP TABLE IF EXISTS football_bounded_run_transition_event"
         )
@@ -1950,6 +2372,47 @@ class SQLiteBoundedFootballLiveControlStore:
         connection.execute(_R8_2_CANONICAL_STORED_TABLE_SQL[
             "football_bounded_run_transition_event"
         ].replace("CREATE TABLE ", "CREATE TABLE IF NOT EXISTS ", 1))
+        connection.execute(
+            f"PRAGMA user_version = {R8_2_R8_3R5_CONTROL_LEDGER_USER_VERSION}"
+        )
+        connection.execute(
+            """
+            UPDATE football_bounded_control_anchor
+            SET payload_sha256 = ?
+            WHERE singleton_id = 1
+            """,
+            (_sha(self._anchor_payload_v86(connection)),),
+        )
+
+    def _migrate_v86_to_v87(
+        self,
+        connection: sqlite3.Connection,
+    ) -> None:
+        integrity = str(connection.execute("PRAGMA integrity_check").fetchone()[0])
+        if integrity != "ok":
+            raise ValueError("R8_2_SQLITE_INTEGRITY_CHECK_FAILED")
+
+        anchor = connection.execute(
+            "SELECT payload_sha256 FROM football_bounded_control_anchor "
+            "WHERE singleton_id = 1"
+        ).fetchone()
+        if anchor is None:
+            raise ValueError("R8_2_CONTROL_ANCHOR_REQUIRED")
+        expected_old_anchor = _sha(self._anchor_payload_v86(connection))
+        if str(anchor[0]) != expected_old_anchor:
+            raise ValueError("R8_3R6_V86_CONTROL_ANCHOR_MISMATCH")
+
+        connection.execute(
+            _R8_2_CANONICAL_STORED_TABLE_SQL[
+                "football_bounded_external_root_state"
+            ].replace("CREATE TABLE ", "CREATE TABLE IF NOT EXISTS ", 1)
+        )
+        connection.execute(
+            _R8_2_CANONICAL_STORED_TABLE_SQL[
+                "football_bounded_external_root_coordination"
+            ].replace("CREATE TABLE ", "CREATE TABLE IF NOT EXISTS ", 1)
+        )
+        self._ensure_external_root_state_row(connection)
         connection.execute(f"PRAGMA user_version = {R8_2_CONTROL_LEDGER_USER_VERSION}")
         self._rewrite_anchor(connection)
         self._assert_integrity(connection)
@@ -1969,6 +2432,7 @@ class SQLiteBoundedFootballLiveControlStore:
                     R8_2_PREVIOUS_CONTROL_LEDGER_USER_VERSION,
                     R8_2_R8_2R2_CONTROL_LEDGER_USER_VERSION,
                     R8_2_R8_3R4_CONTROL_LEDGER_USER_VERSION,
+                    R8_2_R8_3R5_CONTROL_LEDGER_USER_VERSION,
                     R8_2_CONTROL_LEDGER_USER_VERSION,
                 ):
                     raise ValueError(
@@ -2063,6 +2527,10 @@ class SQLiteBoundedFootballLiveControlStore:
 
                 if version == R8_2_R8_3R4_CONTROL_LEDGER_USER_VERSION:
                     self._migrate_v85_to_v86(connection)
+                    version = R8_2_R8_3R5_CONTROL_LEDGER_USER_VERSION
+
+                if version == R8_2_R8_3R5_CONTROL_LEDGER_USER_VERSION:
+                    self._migrate_v86_to_v87(connection)
                     version = R8_2_CONTROL_LEDGER_USER_VERSION
 
                 anchor = connection.execute(
@@ -2289,6 +2757,542 @@ class SQLiteBoundedFootballLiveControlStore:
         )
 
 
+    @staticmethod
+    def _transition_reference_from_row(row: tuple[Any, ...]) -> TransitionEventReference:
+        return TransitionEventReference(
+            event_id=str(row[0]),
+            event_sha256=str(row[17]),
+            run_id=str(row[1]),
+            control_id=str(row[2]),
+            transition_sequence=int(row[3]),
+            prior_state=str(row[6]),
+            next_state=str(row[7]),
+            outcome=str(row[10]),
+            occurred_at=_parse_canonical_utc_timestamp(
+                str(row[11]),
+                name="transition_occurred_at",
+            ),
+            state_version_before=int(row[13]),
+            state_version_after=int(row[14]),
+        )
+
+    def get_transition_event(self, event_id: str) -> TransitionEventReference:
+        normalized = _sha256_hex(event_id, name="event_id")
+        value = self.find_transition_event(normalized)
+        if value is None:
+            raise ValueError("R8_3R6_TRANSITION_EVENT_NOT_FOUND")
+        return value
+
+    def find_transition_event(self, event_id: str) -> TransitionEventReference | None:
+        normalized = _sha256_hex(event_id, name="event_id")
+        with self._connect() as connection:
+            self._assert_integrity(connection)
+            row = connection.execute(
+                """
+                SELECT event_id, run_id, control_id, transition_sequence,
+                       previous_event_id, previous_event_sha256, prior_state,
+                       next_state, action_code, reason_code, outcome, occurred_at,
+                       persisted_at, state_version_before, state_version_after,
+                       correlation_id, event_schema_version, event_sha256
+                FROM football_bounded_run_transition_event
+                WHERE event_id = ?
+                """,
+                (normalized,),
+            ).fetchone()
+        if row is None:
+            return None
+        return self._transition_reference_from_row(row)
+
+    def list_transition_events(self) -> tuple[TransitionEventReference, ...]:
+        with self._connect() as connection:
+            self._assert_integrity(connection)
+            rows = connection.execute(
+                """
+                SELECT event_id, run_id, control_id, transition_sequence,
+                       previous_event_id, previous_event_sha256, prior_state,
+                       next_state, action_code, reason_code, outcome, occurred_at,
+                       persisted_at, state_version_before, state_version_after,
+                       correlation_id, event_schema_version, event_sha256
+                FROM football_bounded_run_transition_event
+                ORDER BY run_id, transition_sequence
+                """
+            ).fetchall()
+        return tuple(self._transition_reference_from_row(row) for row in rows)
+
+    def get_external_root_state(self) -> ExternalRootStateSnapshot:
+        with self._connect() as connection:
+            self._assert_integrity(connection)
+            row = connection.execute(
+                """
+                SELECT database_instance_id, root_protocol_version, root_store_id,
+                       bootstrap_signer_key_id, bootstrap_public_key_fingerprint,
+                       genesis_receipt_id, genesis_receipt_sha256
+                FROM football_bounded_external_root_state
+                WHERE singleton_id = 1
+                """
+            ).fetchone()
+        if row is None:
+            raise ValueError("R8_3R6_EXTERNAL_ROOT_STATE_SINGLETON_REQUIRED")
+        return ExternalRootStateSnapshot(
+            database_instance_id=str(row[0]),
+            root_protocol_version=int(row[1]),
+            root_store_id=None if row[2] is None else str(row[2]),
+            bootstrap_signer_key_id=None if row[3] is None else str(row[3]),
+            bootstrap_public_key_fingerprint=None if row[4] is None else str(row[4]),
+            genesis_receipt_id=None if row[5] is None else str(row[5]),
+            genesis_receipt_sha256=None if row[6] is None else str(row[6]),
+        )
+
+    def bind_external_root_genesis(
+        self,
+        *,
+        root_store_id: str,
+        bootstrap_signer_key_id: str,
+        bootstrap_public_key_fingerprint: str,
+        genesis_receipt_id: str,
+        genesis_receipt_sha256: str,
+    ) -> ExternalRootStateSnapshot:
+        store_id = _sha256_hex(root_store_id, name="root_store_id")
+        key_id = _nonempty(bootstrap_signer_key_id, name="bootstrap_signer_key_id")
+        fingerprint = _sha256_hex(
+            bootstrap_public_key_fingerprint,
+            name="bootstrap_public_key_fingerprint",
+        )
+        receipt_id = _sha256_hex(genesis_receipt_id, name="genesis_receipt_id")
+        receipt_sha = _sha256_hex(
+            genesis_receipt_sha256,
+            name="genesis_receipt_sha256",
+        )
+        with self._connect() as connection:
+            connection.execute("BEGIN IMMEDIATE")
+            try:
+                self._assert_integrity(connection)
+                row = connection.execute(
+                    """
+                    SELECT root_store_id, bootstrap_signer_key_id,
+                           bootstrap_public_key_fingerprint, genesis_receipt_id,
+                           genesis_receipt_sha256
+                    FROM football_bounded_external_root_state
+                    WHERE singleton_id = 1
+                    """
+                ).fetchone()
+                if row is None:
+                    raise ValueError("R8_3R6_EXTERNAL_ROOT_STATE_SINGLETON_REQUIRED")
+                actual = tuple(None if value is None else str(value) for value in row)
+                intended = (store_id, key_id, fingerprint, receipt_id, receipt_sha)
+                if all(value is None for value in actual):
+                    connection.execute(
+                        """
+                        UPDATE football_bounded_external_root_state
+                        SET root_store_id = ?, bootstrap_signer_key_id = ?,
+                            bootstrap_public_key_fingerprint = ?,
+                            genesis_receipt_id = ?, genesis_receipt_sha256 = ?
+                        WHERE singleton_id = 1
+                        """,
+                        intended,
+                    )
+                elif actual != intended:
+                    raise ValueError("R8_3R6_EXTERNAL_ROOT_GENESIS_BINDING_DIVERGENCE")
+                self._rewrite_anchor(connection)
+                self._assert_integrity(connection)
+                connection.execute("COMMIT")
+            except Exception:
+                connection.execute("ROLLBACK")
+                raise
+        return self.get_external_root_state()
+
+    def _coordination_from_row(
+        self,
+        row: tuple[Any, ...],
+    ) -> ExternalRootCoordinationSnapshot:
+        return ExternalRootCoordinationSnapshot(
+            operation_id=str(row[0]),
+            run_id=str(row[1]),
+            transition_event_id=str(row[2]),
+            transition_event_sha256=str(row[3]),
+            outcome=str(row[4]),
+            root_store_id=str(row[5]),
+            signer_key_id=str(row[6]),
+            prepared_receipt_id=str(row[7]),
+            prepared_receipt_sha256=str(row[8]),
+            committed_receipt_id=None if row[9] is None else str(row[9]),
+            committed_receipt_sha256=None if row[10] is None else str(row[10]),
+            status=str(row[11]),
+            created_at=_parse_canonical_utc_timestamp(
+                str(row[12]), name="root_coordination_created_at"
+            ),
+            updated_at=_parse_canonical_utc_timestamp(
+                str(row[13]), name="root_coordination_updated_at"
+            ),
+        )
+
+    def find_external_root_coordination(
+        self,
+        operation_id: str,
+    ) -> ExternalRootCoordinationSnapshot | None:
+        normalized = _sha256_hex(operation_id, name="operation_id")
+        with self._connect() as connection:
+            self._assert_integrity(connection)
+            row = connection.execute(
+                """
+                SELECT operation_id, run_id, transition_event_id,
+                       transition_event_sha256, outcome, root_store_id,
+                       signer_key_id, prepared_receipt_id,
+                       prepared_receipt_sha256, committed_receipt_id,
+                       committed_receipt_sha256, status, created_at, updated_at
+                FROM football_bounded_external_root_coordination
+                WHERE operation_id = ?
+                """,
+                (normalized,),
+            ).fetchone()
+        return None if row is None else self._coordination_from_row(row)
+
+    def list_external_root_coordination(
+        self,
+    ) -> tuple[ExternalRootCoordinationSnapshot, ...]:
+        with self._connect() as connection:
+            self._assert_integrity(connection)
+            rows = connection.execute(
+                """
+                SELECT operation_id, run_id, transition_event_id,
+                       transition_event_sha256, outcome, root_store_id,
+                       signer_key_id, prepared_receipt_id,
+                       prepared_receipt_sha256, committed_receipt_id,
+                       committed_receipt_sha256, status, created_at, updated_at
+                FROM football_bounded_external_root_coordination
+                ORDER BY operation_id
+                """
+            ).fetchall()
+        return tuple(self._coordination_from_row(row) for row in rows)
+
+    def external_root_genesis_snapshot(self) -> Mapping[str, Any]:
+        with self._connect() as connection:
+            self._assert_integrity(connection)
+            state = connection.execute(
+                """
+                SELECT database_instance_id, root_protocol_version, root_store_id,
+                       bootstrap_signer_key_id, bootstrap_public_key_fingerprint,
+                       genesis_receipt_id, genesis_receipt_sha256
+                FROM football_bounded_external_root_state
+                WHERE singleton_id = 1
+                """
+            ).fetchone()
+            if state is None:
+                raise ValueError("R8_3R6_EXTERNAL_ROOT_STATE_SINGLETON_REQUIRED")
+            if any(value is not None for value in state[2:]):
+                raise ValueError("R8_3R6_GENESIS_SNAPSHOT_REQUIRES_UNBOUND_ROOT_STATE")
+            transitions = connection.execute(
+                """
+                SELECT run_id, transition_sequence, event_id, event_sha256
+                FROM football_bounded_run_transition_event
+                ORDER BY run_id, transition_sequence
+                """
+            ).fetchall()
+            runs = connection.execute(
+                """
+                SELECT run_id, state, state_version, updated_at
+                FROM football_bounded_run_control
+                ORDER BY run_id
+                """
+            ).fetchall()
+            anchor = connection.execute(
+                """
+                SELECT payload_sha256
+                FROM football_bounded_control_anchor
+                WHERE singleton_id = 1
+                """
+            ).fetchone()
+        if anchor is None:
+            raise ValueError("R8_2_CONTROL_ANCHOR_REQUIRED")
+        return {
+            "schema": "matrix.c2-r8-3r6-genesis-local-snapshot/1",
+            "database_instance_id": str(state[0]),
+            "root_protocol_version": int(state[1]),
+            "control_user_version": R8_2_CONTROL_LEDGER_USER_VERSION,
+            "local_control_anchor_sha256": str(anchor[0]),
+            "transition_events": [
+                {
+                    "run_id": str(row[0]),
+                    "transition_sequence": int(row[1]),
+                    "event_id": str(row[2]),
+                    "event_sha256": str(row[3]),
+                }
+                for row in transitions
+            ],
+            "run_state": [
+                {
+                    "run_id": str(row[0]),
+                    "state": str(row[1]),
+                    "state_version": int(row[2]),
+                    "updated_at": str(row[3]),
+                }
+                for row in runs
+            ],
+        }
+
+    def _validate_external_root_prepare_binding(
+        self,
+        *,
+        connection: sqlite3.Connection,
+        binding: ExternalRootPreparedBinding,
+        event: TransitionEventReference,
+    ) -> None:
+        if not isinstance(binding, ExternalRootPreparedBinding):
+            raise TypeError("R8_3R6_EXTERNAL_ROOT_PREPARED_BINDING_REQUIRED")
+        state = connection.execute(
+            """
+            SELECT root_store_id
+            FROM football_bounded_external_root_state
+            WHERE singleton_id = 1
+            """
+        ).fetchone()
+        if state is None or state[0] is None:
+            raise ValueError("R8_3R6_EXTERNAL_ROOT_GENESIS_BINDING_REQUIRED")
+        if str(state[0]) != binding.root_store_id:
+            raise ValueError("R8_3R6_PREPARED_BINDING_ROOT_STORE_MISMATCH")
+        if (
+            binding.expected_transition_event_id != event.event_id
+            or binding.expected_transition_event_sha256 != event.event_sha256
+            or binding.expected_transition_sequence != event.transition_sequence
+            or binding.expected_outcome != event.outcome
+        ):
+            raise ValueError("R8_3R6_PREPARED_BINDING_TRANSITION_MISMATCH")
+
+    def _persist_external_root_coordination(
+        self,
+        connection: sqlite3.Connection,
+        *,
+        binding: ExternalRootPreparedBinding,
+        event: TransitionEventReference,
+        changed_at: datetime,
+    ) -> None:
+        self._validate_external_root_prepare_binding(
+            connection=connection,
+            binding=binding,
+            event=event,
+        )
+        existing = connection.execute(
+            """
+            SELECT run_id, transition_event_id, transition_event_sha256,
+                   outcome, root_store_id, signer_key_id, prepared_receipt_id,
+                   prepared_receipt_sha256, status
+            FROM football_bounded_external_root_coordination
+            WHERE operation_id = ?
+            """,
+            (binding.operation_id,),
+        ).fetchone()
+        expected = (
+            event.run_id,
+            event.event_id,
+            event.event_sha256,
+            event.outcome,
+            binding.root_store_id,
+            binding.signer_key_id,
+            binding.prepared_receipt_id,
+            binding.prepared_receipt_sha256,
+            "LOCAL_COMMITTED",
+        )
+        if existing is not None:
+            actual = tuple(str(value) for value in existing)
+            if actual != expected:
+                raise ValueError("R8_3R6_ROOT_COORDINATION_OPERATION_DIVERGENCE")
+            return
+        stamp = _aware_utc(changed_at, name="root_coordination_changed_at").isoformat()
+        connection.execute(
+            """
+            INSERT INTO football_bounded_external_root_coordination (
+                operation_id, run_id, transition_event_id,
+                transition_event_sha256, outcome, root_store_id,
+                signer_key_id, prepared_receipt_id, prepared_receipt_sha256,
+                committed_receipt_id, committed_receipt_sha256, status,
+                created_at, updated_at
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, NULL, NULL, 'LOCAL_COMMITTED', ?, ?)
+            """,
+            (
+                binding.operation_id,
+                event.run_id,
+                event.event_id,
+                event.event_sha256,
+                event.outcome,
+                binding.root_store_id,
+                binding.signer_key_id,
+                binding.prepared_receipt_id,
+                binding.prepared_receipt_sha256,
+                stamp,
+                stamp,
+            ),
+        )
+
+    def acknowledge_external_root_commit(
+        self,
+        *,
+        operation_id: str,
+        root_store_id: str,
+        committed_receipt_id: str,
+        committed_receipt_sha256: str,
+        acknowledged_at: datetime,
+    ) -> ExternalRootCoordinationSnapshot:
+        operation = _sha256_hex(operation_id, name="operation_id")
+        store_id = _sha256_hex(root_store_id, name="root_store_id")
+        receipt_id = _sha256_hex(committed_receipt_id, name="committed_receipt_id")
+        receipt_sha = _sha256_hex(
+            committed_receipt_sha256,
+            name="committed_receipt_sha256",
+        )
+        stamp = _aware_utc(acknowledged_at, name="acknowledged_at")
+        with self._connect() as connection:
+            connection.execute("BEGIN IMMEDIATE")
+            try:
+                self._assert_integrity(connection)
+                row = connection.execute(
+                    """
+                    SELECT root_store_id, committed_receipt_id,
+                           committed_receipt_sha256, status, created_at
+                    FROM football_bounded_external_root_coordination
+                    WHERE operation_id = ?
+                    """,
+                    (operation,),
+                ).fetchone()
+                if row is None:
+                    raise ValueError("R8_3R6_ROOT_COORDINATION_NOT_FOUND")
+                if str(row[0]) != store_id:
+                    raise ValueError("R8_3R6_ROOT_COORDINATION_STORE_MISMATCH")
+                created = _parse_canonical_utc_timestamp(
+                    str(row[4]), name="root_coordination_created_at"
+                )
+                if stamp < created:
+                    raise ValueError("R8_3R6_ROOT_ACK_TIME_REGRESSION")
+                if str(row[3]) == "ACKNOWLEDGED":
+                    if str(row[1]) != receipt_id or str(row[2]) != receipt_sha:
+                        raise ValueError("R8_3R6_ROOT_ACK_DIVERGENCE")
+                elif str(row[3]) == "LOCAL_COMMITTED":
+                    connection.execute(
+                        """
+                        UPDATE football_bounded_external_root_coordination
+                        SET committed_receipt_id = ?,
+                            committed_receipt_sha256 = ?, status = 'ACKNOWLEDGED',
+                            updated_at = ?
+                        WHERE operation_id = ?
+                        """,
+                        (receipt_id, receipt_sha, stamp.isoformat(), operation),
+                    )
+                else:
+                    raise ValueError("R8_3R6_COORDINATION_STATUS_INVALID")
+                self._rewrite_anchor(connection)
+                self._assert_integrity(connection)
+                connection.execute("COMMIT")
+            except Exception:
+                connection.execute("ROLLBACK")
+                raise
+        value = self.find_external_root_coordination(operation)
+        if value is None:
+            raise ValueError("R8_3R6_ROOT_COORDINATION_NOT_FOUND")
+        return value
+
+    def preview_transition_event(
+        self,
+        run_id: str,
+        *,
+        expected_state: str,
+        expected_state_version: int,
+        attempted_new_state: str,
+        outcome: str,
+        changed_at: datetime,
+        guard: BoundedExecutorProcessScopeGuard,
+        lease: ProcessScopeLease,
+    ) -> TransitionEventReference:
+        self._assert_guard(guard, lease)
+        normalized = _sha256_hex(run_id, name="run_id")
+        if expected_state not in R8_2_RUN_STATES:
+            raise ValueError("R8_2_EXPECTED_RUN_STATE_INVALID")
+        if attempted_new_state not in R8_2_RUN_STATES:
+            raise ValueError("R8_2_NEW_RUN_STATE_INVALID")
+        if attempted_new_state not in _R8_2_ALLOWED_TRANSITIONS[expected_state]:
+            raise ValueError("R8_2_RUN_STATE_TRANSITION_FORBIDDEN")
+        if outcome not in R8_3R5_TRANSITION_OUTCOMES:
+            raise ValueError("R8_3R5_TRANSITION_OUTCOME_UNSUPPORTED")
+        version = _nonnegative_int(
+            expected_state_version,
+            name="expected_state_version",
+        )
+        changed = _aware_utc(changed_at, name="changed_at")
+        with self._connect() as connection:
+            self._assert_integrity(connection)
+            row = connection.execute(
+                """
+                SELECT state, state_version, updated_at, manifest_fingerprint
+                FROM football_bounded_run_control
+                WHERE run_id = ?
+                """,
+                (normalized,),
+            ).fetchone()
+            if row is None:
+                raise ValueError("R8_2_RUN_CONTROL_NOT_FOUND")
+            if str(row[0]) != expected_state:
+                raise ValueError("R8_2_RUN_STATE_COMPARE_AND_SWAP_FAILED")
+            if int(row[1]) != version:
+                raise ValueError("R8_2_RUN_STATE_VERSION_COMPARE_AND_SWAP_FAILED")
+            current_updated = _parse_canonical_utc_timestamp(
+                str(row[2]), name="run_updated_at"
+            )
+            if changed < current_updated:
+                raise ValueError("R8_2_RUN_TIME_REGRESSION")
+            sequence, previous_event_id, previous_event_sha256 = (
+                self._next_transition_event_sequence(connection, run_id=normalized)
+            )
+            action_code = _transition_action_code(expected_state, attempted_new_state)
+            reason_code = _transition_reason_code(expected_state, attempted_new_state)
+            control_id = _run_control_id(
+                run_id=normalized,
+                manifest_fingerprint=str(row[3]),
+            )
+            correlation_id = _transition_correlation_id(
+                run_id=normalized,
+                sequence=sequence,
+                action_code=action_code,
+            )
+            after = version + 1 if outcome == "STATE_TRANSITION_COMMITTED" else version
+            occurred = changed.isoformat()
+            payload = {
+                "run_id": normalized,
+                "control_id": control_id,
+                "transition_sequence": sequence,
+                "previous_event_id": previous_event_id,
+                "previous_event_sha256": previous_event_sha256,
+                "prior_state": expected_state,
+                "next_state": attempted_new_state,
+                "action_code": action_code,
+                "reason_code": reason_code,
+                "outcome": outcome,
+                "occurred_at": occurred,
+                "persisted_at": occurred,
+                "state_version_before": version,
+                "state_version_after": after,
+                "correlation_id": correlation_id,
+                "event_schema_version": R8_3R5_TRANSITION_EVENT_SCHEMA_VERSION,
+            }
+            event_sha = _transition_event_sha(payload)
+            event_id = _sha({
+                "schema": "matrix.c2-r8-3r5-transition-event-id/1",
+                "run_id": normalized,
+                "transition_sequence": sequence,
+                "event_sha256": event_sha,
+            })
+        return TransitionEventReference(
+            event_id=event_id,
+            event_sha256=event_sha,
+            run_id=normalized,
+            control_id=control_id,
+            transition_sequence=sequence,
+            prior_state=expected_state,
+            next_state=attempted_new_state,
+            outcome=outcome,
+            occurred_at=changed,
+            state_version_before=version,
+            state_version_after=after,
+        )
+
+
     def _next_transition_event_sequence(
         self,
         connection: sqlite3.Connection,
@@ -2321,7 +3325,7 @@ class SQLiteBoundedFootballLiveControlStore:
         state_version_after: int,
         outcome: str,
         changed_at: datetime,
-    ) -> None:
+    ) -> TransitionEventReference:
         if outcome not in R8_3R5_TRANSITION_OUTCOMES:
             raise ValueError("R8_3R5_TRANSITION_OUTCOME_UNSUPPORTED")
         if next_state not in _R8_2_ALLOWED_TRANSITIONS[prior_state]:
@@ -2408,6 +3412,20 @@ class SQLiteBoundedFootballLiveControlStore:
             ),
         )
 
+        return TransitionEventReference(
+            event_id=event_id,
+            event_sha256=event_sha256,
+            run_id=run_id,
+            control_id=control_id,
+            transition_sequence=sequence,
+            prior_state=prior_state,
+            next_state=next_state,
+            outcome=outcome,
+            occurred_at=changed_at,
+            state_version_before=state_version_before,
+            state_version_after=state_version_after,
+        )
+
     def _append_committed_transition_event(
         self,
         connection: sqlite3.Connection,
@@ -2418,8 +3436,8 @@ class SQLiteBoundedFootballLiveControlStore:
         next_state: str,
         state_version_before: int,
         changed_at: datetime,
-    ) -> None:
-        self._append_transition_event(
+    ) -> TransitionEventReference:
+        return self._append_transition_event(
             connection,
             run_id=run_id,
             manifest_fingerprint=manifest_fingerprint,
@@ -2642,6 +3660,7 @@ class SQLiteBoundedFootballLiveControlStore:
         changed_at: datetime,
         guard: BoundedExecutorProcessScopeGuard,
         lease: ProcessScopeLease,
+        external_root_prepare: ExternalRootPreparedBinding | None = None,
     ) -> RunControlSnapshot:
         self._assert_guard(guard, lease)
         normalized = _sha256_hex(run_id, name="run_id")
@@ -2695,7 +3714,7 @@ class SQLiteBoundedFootballLiveControlStore:
                 if changed < current_updated_at:
                     raise ValueError("R8_2_RUN_TIME_REGRESSION")
 
-                self._append_transition_event(
+                event_ref = self._append_transition_event(
                     connection,
                     run_id=normalized,
                     manifest_fingerprint=str(row[3]),
@@ -2706,6 +3725,13 @@ class SQLiteBoundedFootballLiveControlStore:
                     outcome=outcome,
                     changed_at=changed,
                 )
+                if external_root_prepare is not None:
+                    self._persist_external_root_coordination(
+                        connection,
+                        binding=external_root_prepare,
+                        event=event_ref,
+                        changed_at=changed,
+                    )
                 connection.execute(
                     """
                     UPDATE football_bounded_run_control
@@ -2734,6 +3760,7 @@ class SQLiteBoundedFootballLiveControlStore:
         guard: BoundedExecutorProcessScopeGuard,
         lease: ProcessScopeLease,
         crash_point: str | None = None,
+        external_root_prepare: ExternalRootPreparedBinding | None = None,
     ) -> RunControlSnapshot:
         self._assert_guard(guard, lease)
         normalized = _sha256_hex(run_id, name="run_id")
@@ -2794,6 +3821,40 @@ class SQLiteBoundedFootballLiveControlStore:
                         state=new_state,
                         state_version=version + 1,
                     )
+                    if external_root_prepare is not None:
+                        coordination = connection.execute(
+                            """
+                            SELECT transition_event_id, transition_event_sha256,
+                                   status, prepared_receipt_id,
+                                   prepared_receipt_sha256, root_store_id
+                            FROM football_bounded_external_root_coordination
+                            WHERE operation_id = ?
+                            """,
+                            (external_root_prepare.operation_id,),
+                        ).fetchone()
+                        if coordination is None:
+                            raise ValueError(
+                                "R8_3R6_REPLAY_ROOT_COORDINATION_MISSING"
+                            )
+                        if (
+                            str(coordination[0])
+                            != external_root_prepare.expected_transition_event_id
+                            or str(coordination[1])
+                            != external_root_prepare.expected_transition_event_sha256
+                            or str(coordination[3])
+                            != external_root_prepare.prepared_receipt_id
+                            or str(coordination[4])
+                            != external_root_prepare.prepared_receipt_sha256
+                            or str(coordination[5])
+                            != external_root_prepare.root_store_id
+                            or str(coordination[2]) not in {
+                                "LOCAL_COMMITTED",
+                                "ACKNOWLEDGED",
+                            }
+                        ):
+                            raise ValueError(
+                                "R8_3R6_REPLAY_ROOT_COORDINATION_DIVERGENCE"
+                            )
                     connection.execute("COMMIT")
                     return self.get_run(normalized)
 
@@ -2861,7 +3922,7 @@ class SQLiteBoundedFootballLiveControlStore:
                     )
 
                 _maybe_transition_crash(crash_point, "BEFORE_TRANSITION_EVENT_APPEND")
-                self._append_committed_transition_event(
+                event_ref = self._append_committed_transition_event(
                     connection,
                     run_id=normalized,
                     manifest_fingerprint=str(row[4]),
@@ -2890,6 +3951,13 @@ class SQLiteBoundedFootballLiveControlStore:
                         normalized,
                     ),
                 )
+                if external_root_prepare is not None:
+                    self._persist_external_root_coordination(
+                        connection,
+                        binding=external_root_prepare,
+                        event=event_ref,
+                        changed_at=changed,
+                    )
                 _maybe_transition_crash(
                     crash_point,
                     "AFTER_STATE_UPDATE_BEFORE_COMMIT",

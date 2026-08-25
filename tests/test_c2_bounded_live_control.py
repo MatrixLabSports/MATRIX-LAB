@@ -16,6 +16,7 @@ from app.application.football.bounded_live_control import (
     R8_2_HARD_MAX_CAPTURE_ROUNDS,
     R8_2_HARD_MAX_RUNTIME_MS,
     R8_2_HARD_MAX_TOTAL_PROVIDER_CALLS,
+    R8_2_CONTROL_LEDGER_USER_VERSION,
     SQLiteBoundedFootballLiveControlStore,
     iter_bounded_capture_slots_lazy,
     validate_r8_2_engineering_resource_ceiling,
@@ -1204,7 +1205,7 @@ def test_v82_empty_control_store_migrates_atomically_to_v85(tmp_path):
     with sqlite3.connect(path) as connection:
         assert connection.execute(
             "PRAGMA user_version"
-        ).fetchone()[0] == 86
+        ).fetchone()[0] == R8_2_CONTROL_LEDGER_USER_VERSION
         columns = {
             row[1]
             for row in connection.execute(
@@ -1540,7 +1541,7 @@ def test_empty_v83_control_store_migrates_atomically_to_v85(tmp_path):
             ).fetchall()
         }
 
-    assert version == 86
+    assert version == R8_2_CONTROL_LEDGER_USER_VERSION
     assert "manifest_json" in columns
     assert store.audit_integrity() is True
 
@@ -1771,7 +1772,7 @@ def test_empty_v83_migration_produces_exact_fresh_v85_schema_contract(tmp_path):
     with sqlite3.connect(migrated_path) as connection:
         assert connection.execute(
             "PRAGMA user_version"
-        ).fetchone()[0] == 86
+        ).fetchone()[0] == R8_2_CONTROL_LEDGER_USER_VERSION
 
     assert migrated.audit_integrity() is True
     assert _schema_contract(migrated_path) == _schema_contract(fresh_path)
@@ -1926,7 +1927,7 @@ def test_nonempty_v84_migrates_to_v85_after_verified_provenance(tmp_path):
             "PRAGMA user_version"
         ).fetchone()[0]
 
-    assert version == 86
+    assert version == R8_2_CONTROL_LEDGER_USER_VERSION
     assert reopened.get_run(value.run_id).run_id == value.run_id
     assert reopened.audit_integrity() is True
 

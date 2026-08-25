@@ -374,7 +374,7 @@ def test_v85_genesis_history_migrates_without_fabricating_events(tmp_path: Path)
     _rewrite_old_v85_anchor(path)
     reopened = SQLiteBoundedFootballLiveControlStore(path)
     with sqlite3.connect(path) as connection:
-        assert connection.execute("PRAGMA user_version").fetchone()[0] == 86
+        assert connection.execute("PRAGMA user_version").fetchone()[0] == R8_2_CONTROL_LEDGER_USER_VERSION
         assert connection.execute(
             "SELECT COUNT(*) FROM football_bounded_run_transition_event"
         ).fetchone()[0] == 0
