@@ -1,0 +1,493 @@
+{
+  "AWSTemplateFormatVersion": "2010-09-09",
+  "Description": "MATRIX C2 R8.3R6 offline-designed signer/security boundary. Deployment does not imply CONTROLLED_LIVE admission.",
+  "Metadata": {
+    "MATRIX": {
+      "Architecture": "AWS_DUAL_BOUNDARY_S3_OBJECT_LOCK_COMPLIANCE_KMS_ED25519_V1",
+      "AuthorityLambdaSourceImplementedByThisTemplate": false,
+      "CommercialAwsPartitionRequiredForCurrentApplicationAdapter": true,
+      "ControlledLiveAdmissible": false,
+      "ProductionAdmissible": false,
+      "ProjectDomainId": "matrix.c2",
+      "ReceiptProtocol": "matrix-eir/v1",
+      "ResearchOnlyUntilRemoteAudit": true,
+      "SportId": "football"
+    }
+  },
+  "Outputs": {
+    "AuthorityAliasArn": {
+      "Value": {
+        "Ref": "AuthorityAlias"
+      }
+    },
+    "AuthorityCodeSha256": {
+      "Value": {
+        "Ref": "AuthorityCodeSha256"
+      }
+    },
+    "AuthorityExecutionRoleArn": {
+      "Value": {
+        "Fn::GetAtt": [
+          "AuthorityExecutionRole",
+          "Arn"
+        ]
+      }
+    },
+    "AuthorityExecutionRoleName": {
+      "Value": {
+        "Ref": "AuthorityExecutionRole"
+      }
+    },
+    "AuthorityProfile": {
+      "Value": "AWS_DUAL_BOUNDARY_S3_OBJECT_LOCK_COMPLIANCE_KMS_ED25519_V1"
+    },
+    "AwsPartitionActual": {
+      "Value": {
+        "Ref": "AWS::Partition"
+      }
+    },
+    "ControlledLiveAdmissible": {
+      "Value": "FALSE"
+    },
+    "DatabaseInstanceId": {
+      "Value": {
+        "Ref": "DatabaseInstanceId"
+      }
+    },
+    "KeyEpoch": {
+      "Value": {
+        "Ref": "KeyEpoch"
+      }
+    },
+    "ProductionAdmissible": {
+      "Value": "FALSE"
+    },
+    "ResearchSandboxOnly": {
+      "Value": "TRUE"
+    },
+    "RootStoreId": {
+      "Value": {
+        "Ref": "RootStoreId"
+      }
+    },
+    "SigningAccountIdActual": {
+      "Value": {
+        "Ref": "AWS::AccountId"
+      }
+    },
+    "SigningAccountIdExpected": {
+      "Value": {
+        "Ref": "SigningAccountId"
+      }
+    },
+    "SigningKeyArn": {
+      "Value": {
+        "Fn::GetAtt": [
+          "SigningKey",
+          "Arn"
+        ]
+      }
+    },
+    "SigningRegionActual": {
+      "Value": {
+        "Ref": "AWS::Region"
+      }
+    },
+    "SigningRegionExpected": {
+      "Value": {
+        "Ref": "SigningRegion"
+      }
+    }
+  },
+  "Parameters": {
+    "ArchiveAccountId": {
+      "AllowedPattern": "^[0-9]{12}$",
+      "Type": "String"
+    },
+    "ArchiveAppendRoleName": {
+      "AllowedPattern": "^[A-Za-z0-9+=,.@_-]{1,64}$",
+      "MaxLength": 64,
+      "MinLength": 1,
+      "Type": "String"
+    },
+    "ArchiveBucketName": {
+      "AllowedPattern": "^[a-z0-9][a-z0-9.-]{1,61}[a-z0-9]$",
+      "MaxLength": 63,
+      "MinLength": 3,
+      "Type": "String"
+    },
+    "ArchiveRegion": {
+      "AllowedPattern": "^[a-z]{2}-[a-z]+-[0-9]+$",
+      "Type": "String"
+    },
+    "AuthorityCodeBucket": {
+      "AllowedPattern": "^[a-z0-9][a-z0-9.-]{1,61}[a-z0-9]$",
+      "MaxLength": 63,
+      "MinLength": 3,
+      "Type": "String"
+    },
+    "AuthorityCodeKey": {
+      "MaxLength": 1024,
+      "MinLength": 1,
+      "Type": "String"
+    },
+    "AuthorityCodeObjectVersion": {
+      "MaxLength": 1024,
+      "MinLength": 1,
+      "Type": "String"
+    },
+    "AuthorityCodeSha256": {
+      "AllowedPattern": "^[0-9a-f]{64}$",
+      "MaxLength": 64,
+      "MinLength": 64,
+      "Type": "String"
+    },
+    "AuthorityInvokerPrincipalArn": {
+      "AllowedPattern": "^arn:aws:iam::[0-9]{12}:role/[A-Za-z0-9+=,.@_/-]+$",
+      "Type": "String"
+    },
+    "DatabaseInstanceId": {
+      "AllowedPattern": "^[0-9a-f]{64}$",
+      "MaxLength": 64,
+      "MinLength": 64,
+      "Type": "String"
+    },
+    "DeploymentId": {
+      "AllowedPattern": "^[a-z0-9][a-z0-9-]{1,30}[a-z0-9]$",
+      "MaxLength": 32,
+      "MinLength": 3,
+      "Type": "String"
+    },
+    "KeyEpoch": {
+      "MinValue": 1,
+      "Type": "Number"
+    },
+    "RootStoreId": {
+      "AllowedPattern": "^[0-9a-f]{64}$",
+      "MaxLength": 64,
+      "MinLength": 64,
+      "Type": "String"
+    },
+    "SignerAdminPrincipalArn": {
+      "AllowedPattern": "^arn:aws:iam::[0-9]{12}:(root|role/[A-Za-z0-9+=,.@_/-]+|user/[A-Za-z0-9+=,.@_/-]+)$",
+      "Type": "String"
+    },
+    "SigningAccountId": {
+      "AllowedPattern": "^[0-9]{12}$",
+      "Type": "String"
+    },
+    "SigningRegion": {
+      "AllowedPattern": "^[a-z]{2}-[a-z]+-[0-9]+$",
+      "Type": "String"
+    }
+  },
+  "Resources": {
+    "AuthorityAlias": {
+      "Properties": {
+        "Description": "Governed R8.3R6 authority alias; research-only until remote audit",
+        "FunctionName": {
+          "Ref": "AuthorityFunction"
+        },
+        "FunctionVersion": {
+          "Fn::GetAtt": [
+            "AuthorityVersion",
+            "Version"
+          ]
+        },
+        "Name": "governed"
+      },
+      "Type": "AWS::Lambda::Alias"
+    },
+    "AuthorityExecutionRole": {
+      "Properties": {
+        "AssumeRolePolicyDocument": {
+          "Statement": [
+            {
+              "Action": "sts:AssumeRole",
+              "Effect": "Allow",
+              "Principal": {
+                "Service": "lambda.amazonaws.com"
+              }
+            }
+          ],
+          "Version": "2012-10-17"
+        },
+        "Policies": [
+          {
+            "PolicyDocument": {
+              "Statement": [
+                {
+                  "Action": "sts:AssumeRole",
+                  "Effect": "Allow",
+                  "Resource": {
+                    "Fn::Sub": "arn:${AWS::Partition}:iam::${ArchiveAccountId}:role/${ArchiveAppendRoleName}"
+                  }
+                }
+              ],
+              "Version": "2012-10-17"
+            },
+            "PolicyName": "MatrixEirArchiveAssumeRole"
+          },
+          {
+            "PolicyDocument": {
+              "Statement": [
+                {
+                  "Action": [
+                    "logs:CreateLogStream",
+                    "logs:PutLogEvents"
+                  ],
+                  "Effect": "Allow",
+                  "Resource": {
+                    "Fn::Sub": "arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/matrix-c2-eir-${DeploymentId}:*"
+                  }
+                }
+              ],
+              "Version": "2012-10-17"
+            },
+            "PolicyName": "MatrixEirExactLogWrite"
+          }
+        ],
+        "RoleName": {
+          "Fn::Sub": "matrix-c2-eir-authority-${DeploymentId}"
+        },
+        "Tags": [
+          {
+            "Key": "matrix:research-only",
+            "Value": "true"
+          }
+        ]
+      },
+      "Type": "AWS::IAM::Role"
+    },
+    "AuthorityFunction": {
+      "DependsOn": [
+        "AuthorityExecutionRole",
+        "AuthorityKmsSigningPolicy",
+        "AuthorityLogGroup"
+      ],
+      "Properties": {
+        "Code": {
+          "S3Bucket": {
+            "Ref": "AuthorityCodeBucket"
+          },
+          "S3Key": {
+            "Ref": "AuthorityCodeKey"
+          },
+          "S3ObjectVersion": {
+            "Ref": "AuthorityCodeObjectVersion"
+          }
+        },
+        "Description": {
+          "Fn::Sub": "MATRIX C2 R8.3R6 authority package binding ${AuthorityCodeSha256}"
+        },
+        "Environment": {
+          "Variables": {
+            "MATRIX_ARCHIVE_ACCOUNT_ID": {
+              "Ref": "ArchiveAccountId"
+            },
+            "MATRIX_ARCHIVE_APPEND_ROLE_NAME": {
+              "Ref": "ArchiveAppendRoleName"
+            },
+            "MATRIX_ARCHIVE_BUCKET": {
+              "Ref": "ArchiveBucketName"
+            },
+            "MATRIX_ARCHIVE_REGION": {
+              "Ref": "ArchiveRegion"
+            },
+            "MATRIX_AUTHORITY_CODE_SHA256": {
+              "Ref": "AuthorityCodeSha256"
+            },
+            "MATRIX_AUTHORITY_PROFILE": "AWS_DUAL_BOUNDARY_S3_OBJECT_LOCK_COMPLIANCE_KMS_ED25519_V1",
+            "MATRIX_DATABASE_INSTANCE_ID": {
+              "Ref": "DatabaseInstanceId"
+            },
+            "MATRIX_KEY_EPOCH": {
+              "Fn::Sub": "${KeyEpoch}"
+            },
+            "MATRIX_PROJECT_DOMAIN_ID": "matrix.c2",
+            "MATRIX_RECEIPT_PROTOCOL": "matrix-eir/v1",
+            "MATRIX_RESEARCH_ONLY": "true",
+            "MATRIX_ROOT_STORE_ID": {
+              "Ref": "RootStoreId"
+            },
+            "MATRIX_SIGNING_KEY_ARN": {
+              "Fn::GetAtt": [
+                "SigningKey",
+                "Arn"
+              ]
+            },
+            "MATRIX_SPORT_ID": "football"
+          }
+        },
+        "FunctionName": {
+          "Fn::Sub": "matrix-c2-eir-${DeploymentId}"
+        },
+        "Handler": "authority_service.handler",
+        "MemorySize": 512,
+        "ReservedConcurrentExecutions": 1,
+        "Role": {
+          "Fn::GetAtt": [
+            "AuthorityExecutionRole",
+            "Arn"
+          ]
+        },
+        "Runtime": "python3.12",
+        "Tags": [
+          {
+            "Key": "matrix:deployment-id",
+            "Value": {
+              "Ref": "DeploymentId"
+            }
+          },
+          {
+            "Key": "matrix:authority-code-sha256",
+            "Value": {
+              "Ref": "AuthorityCodeSha256"
+            }
+          },
+          {
+            "Key": "matrix:research-only",
+            "Value": "true"
+          }
+        ],
+        "Timeout": 30
+      },
+      "Type": "AWS::Lambda::Function"
+    },
+    "AuthorityInvokePermission": {
+      "Properties": {
+        "Action": "lambda:InvokeFunction",
+        "FunctionName": {
+          "Ref": "AuthorityAlias"
+        },
+        "Principal": {
+          "Ref": "AuthorityInvokerPrincipalArn"
+        }
+      },
+      "Type": "AWS::Lambda::Permission"
+    },
+    "AuthorityKmsSigningPolicy": {
+      "Properties": {
+        "PolicyDocument": {
+          "Statement": [
+            {
+              "Action": [
+                "kms:Sign",
+                "kms:GetPublicKey",
+                "kms:DescribeKey"
+              ],
+              "Effect": "Allow",
+              "Resource": {
+                "Fn::GetAtt": [
+                  "SigningKey",
+                  "Arn"
+                ]
+              },
+              "Sid": "ExactSigningKeyOnly"
+            }
+          ],
+          "Version": "2012-10-17"
+        },
+        "PolicyName": {
+          "Fn::Sub": "matrix-c2-eir-kms-sign-${DeploymentId}"
+        },
+        "Roles": [
+          {
+            "Ref": "AuthorityExecutionRole"
+          }
+        ]
+      },
+      "Type": "AWS::IAM::Policy"
+    },
+    "AuthorityLogGroup": {
+      "DeletionPolicy": "Retain",
+      "Properties": {
+        "LogGroupName": {
+          "Fn::Sub": "/aws/lambda/matrix-c2-eir-${DeploymentId}"
+        },
+        "RetentionInDays": 30
+      },
+      "Type": "AWS::Logs::LogGroup",
+      "UpdateReplacePolicy": "Retain"
+    },
+    "AuthorityVersion": {
+      "Properties": {
+        "Description": {
+          "Fn::Sub": "Governed package ${AuthorityCodeSha256}"
+        },
+        "FunctionName": {
+          "Ref": "AuthorityFunction"
+        }
+      },
+      "Type": "AWS::Lambda::Version"
+    },
+    "SigningKey": {
+      "DeletionPolicy": "Retain",
+      "Properties": {
+        "Description": {
+          "Fn::Sub": "MATRIX C2 R8.3R6 Ed25519 signer ${DeploymentId} epoch ${KeyEpoch}"
+        },
+        "KeyPolicy": {
+          "Statement": [
+            {
+              "Action": "kms:*",
+              "Effect": "Allow",
+              "Principal": {
+                "AWS": {
+                  "Ref": "SignerAdminPrincipalArn"
+                }
+              },
+              "Resource": "*",
+              "Sid": "SigningBoundaryAdministration"
+            },
+            {
+              "Action": [
+                "kms:Sign",
+                "kms:GetPublicKey",
+                "kms:DescribeKey"
+              ],
+              "Effect": "Allow",
+              "Principal": {
+                "AWS": {
+                  "Fn::GetAtt": [
+                    "AuthorityExecutionRole",
+                    "Arn"
+                  ]
+                }
+              },
+              "Resource": "*",
+              "Sid": "AuthorityServiceSigningOnly"
+            }
+          ],
+          "Version": "2012-10-17"
+        },
+        "KeySpec": "ECC_NIST_EDWARDS25519",
+        "KeyUsage": "SIGN_VERIFY",
+        "Tags": [
+          {
+            "Key": "matrix:deployment-id",
+            "Value": {
+              "Ref": "DeploymentId"
+            }
+          },
+          {
+            "Key": "matrix:authority-profile",
+            "Value": "AWS_DUAL_BOUNDARY_S3_OBJECT_LOCK_COMPLIANCE_KMS_ED25519_V1"
+          },
+          {
+            "Key": "matrix:research-only",
+            "Value": "true"
+          },
+          {
+            "Key": "matrix:key-epoch",
+            "Value": {
+              "Fn::Sub": "${KeyEpoch}"
+            }
+          }
+        ]
+      },
+      "Type": "AWS::KMS::Key",
+      "UpdateReplacePolicy": "Retain"
+    }
+  }
+}

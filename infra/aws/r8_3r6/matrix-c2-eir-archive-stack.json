@@ -1,0 +1,398 @@
+{
+  "AWSTemplateFormatVersion": "2010-09-09",
+  "Description": "MATRIX C2 R8.3R6 immutable archive boundary. Object Lock Compliance retention is irreversible during the selected period.",
+  "Metadata": {
+    "MATRIX": {
+      "Architecture": "AWS_DUAL_BOUNDARY_S3_OBJECT_LOCK_COMPLIANCE_KMS_ED25519_V1",
+      "CommercialAwsPartitionRequiredForCurrentApplicationAdapter": true,
+      "ControlledLiveAdmissible": false,
+      "ProductionAdmissible": false,
+      "ProjectDomainId": "matrix.c2",
+      "ReceiptProtocol": "matrix-eir/v1",
+      "ResearchOnlyUntilRemoteAudit": true,
+      "RetentionRequiresExplicitHumanApproval": true,
+      "SportId": "football"
+    }
+  },
+  "Outputs": {
+    "ApprovedRetentionDays": {
+      "Value": {
+        "Ref": "RetentionDays"
+      }
+    },
+    "ArchiveAccountIdActual": {
+      "Value": {
+        "Ref": "AWS::AccountId"
+      }
+    },
+    "ArchiveAccountIdExpected": {
+      "Value": {
+        "Ref": "ArchiveAccountId"
+      }
+    },
+    "ArchiveAppendRoleArn": {
+      "Value": {
+        "Fn::GetAtt": [
+          "ArchiveAppendRole",
+          "Arn"
+        ]
+      }
+    },
+    "ArchiveAppendRoleName": {
+      "Value": {
+        "Ref": "ArchiveAppendRole"
+      }
+    },
+    "ArchiveRegionActual": {
+      "Value": {
+        "Ref": "AWS::Region"
+      }
+    },
+    "ArchiveRegionExpected": {
+      "Value": {
+        "Ref": "ArchiveRegion"
+      }
+    },
+    "AuthorityProfile": {
+      "Value": "AWS_DUAL_BOUNDARY_S3_OBJECT_LOCK_COMPLIANCE_KMS_ED25519_V1"
+    },
+    "AwsPartitionActual": {
+      "Value": {
+        "Ref": "AWS::Partition"
+      }
+    },
+    "CanonicalReceiptPrefix": {
+      "Value": {
+        "Fn::Sub": "matrix-eir/v1/matrix.c2/football/${RootStoreId}/${DatabaseInstanceId}/receipts/"
+      }
+    },
+    "ControlledLiveAdmissible": {
+      "Value": "FALSE"
+    },
+    "DatabaseInstanceId": {
+      "Value": {
+        "Ref": "DatabaseInstanceId"
+      }
+    },
+    "ProductionAdmissible": {
+      "Value": "FALSE"
+    },
+    "ReceiptBucketArn": {
+      "Value": {
+        "Fn::GetAtt": [
+          "ReceiptBucket",
+          "Arn"
+        ]
+      }
+    },
+    "ReceiptBucketName": {
+      "Value": {
+        "Ref": "ReceiptBucket"
+      }
+    },
+    "ResearchSandboxOnly": {
+      "Value": "TRUE"
+    },
+    "RetentionMode": {
+      "Value": "COMPLIANCE"
+    },
+    "RootStoreId": {
+      "Value": {
+        "Ref": "RootStoreId"
+      }
+    }
+  },
+  "Parameters": {
+    "ArchiveAccountId": {
+      "AllowedPattern": "^[0-9]{12}$",
+      "Type": "String"
+    },
+    "ArchiveAppendRoleName": {
+      "AllowedPattern": "^[A-Za-z0-9+=,.@_-]{1,64}$",
+      "MaxLength": 64,
+      "MinLength": 1,
+      "Type": "String"
+    },
+    "ArchiveBucketName": {
+      "AllowedPattern": "^[a-z0-9][a-z0-9.-]{1,61}[a-z0-9]$",
+      "MaxLength": 63,
+      "MinLength": 3,
+      "Type": "String"
+    },
+    "ArchiveRegion": {
+      "AllowedPattern": "^[a-z]{2}-[a-z]+-[0-9]+$",
+      "Type": "String"
+    },
+    "DatabaseInstanceId": {
+      "AllowedPattern": "^[0-9a-f]{64}$",
+      "MaxLength": 64,
+      "MinLength": 64,
+      "Type": "String"
+    },
+    "DeploymentId": {
+      "AllowedPattern": "^[a-z0-9][a-z0-9-]{1,30}[a-z0-9]$",
+      "MaxLength": 32,
+      "MinLength": 3,
+      "Type": "String"
+    },
+    "RetentionDays": {
+      "MaxValue": 36500,
+      "MinValue": 1,
+      "Type": "Number"
+    },
+    "RootStoreId": {
+      "AllowedPattern": "^[0-9a-f]{64}$",
+      "MaxLength": 64,
+      "MinLength": 64,
+      "Type": "String"
+    },
+    "SignerAccountId": {
+      "AllowedPattern": "^[0-9]{12}$",
+      "Type": "String"
+    },
+    "SignerAuthorityExecutionRoleName": {
+      "AllowedPattern": "^[A-Za-z0-9+=,.@_-]{1,64}$",
+      "MaxLength": 64,
+      "MinLength": 1,
+      "Type": "String"
+    }
+  },
+  "Resources": {
+    "ArchiveAppendRole": {
+      "Properties": {
+        "AssumeRolePolicyDocument": {
+          "Statement": [
+            {
+              "Action": "sts:AssumeRole",
+              "Effect": "Allow",
+              "Principal": {
+                "AWS": {
+                  "Fn::Sub": "arn:${AWS::Partition}:iam::${SignerAccountId}:role/${SignerAuthorityExecutionRoleName}"
+                }
+              }
+            }
+          ],
+          "Version": "2012-10-17"
+        },
+        "Policies": [
+          {
+            "PolicyDocument": {
+              "Statement": [
+                {
+                  "Action": "s3:PutObject",
+                  "Condition": {
+                    "Null": {
+                      "s3:if-none-match": "false"
+                    }
+                  },
+                  "Effect": "Allow",
+                  "Resource": {
+                    "Fn::Sub": "arn:${AWS::Partition}:s3:::${ArchiveBucketName}/matrix-eir/v1/matrix.c2/football/${RootStoreId}/${DatabaseInstanceId}/receipts/*"
+                  },
+                  "Sid": "ConditionalPutOnly"
+                },
+                {
+                  "Action": [
+                    "s3:GetObject",
+                    "s3:GetObjectVersion"
+                  ],
+                  "Effect": "Allow",
+                  "Resource": {
+                    "Fn::Sub": "arn:${AWS::Partition}:s3:::${ArchiveBucketName}/matrix-eir/v1/matrix.c2/football/${RootStoreId}/${DatabaseInstanceId}/receipts/*"
+                  },
+                  "Sid": "ReadReceiptVersions"
+                },
+                {
+                  "Action": "s3:ListBucket",
+                  "Condition": {
+                    "StringLike": {
+                      "s3:prefix": {
+                        "Fn::Sub": "matrix-eir/v1/matrix.c2/football/${RootStoreId}/${DatabaseInstanceId}/receipts/*"
+                      }
+                    }
+                  },
+                  "Effect": "Allow",
+                  "Resource": {
+                    "Fn::Sub": "arn:${AWS::Partition}:s3:::${ArchiveBucketName}"
+                  },
+                  "Sid": "ListExactReceiptPrefix"
+                },
+                {
+                  "Action": [
+                    "s3:GetBucketVersioning",
+                    "s3:GetBucketObjectLockConfiguration",
+                    "s3:GetBucketPolicy",
+                    "s3:GetBucketLocation"
+                  ],
+                  "Effect": "Allow",
+                  "Resource": {
+                    "Fn::Sub": "arn:${AWS::Partition}:s3:::${ArchiveBucketName}"
+                  },
+                  "Sid": "ReadArchiveConfiguration"
+                }
+              ],
+              "Version": "2012-10-17"
+            },
+            "PolicyName": "MatrixEirConditionalReceiptAppend"
+          }
+        ],
+        "RoleName": {
+          "Ref": "ArchiveAppendRoleName"
+        },
+        "Tags": [
+          {
+            "Key": "matrix:research-only",
+            "Value": "true"
+          }
+        ]
+      },
+      "Type": "AWS::IAM::Role"
+    },
+    "ReceiptBucket": {
+      "DeletionPolicy": "Retain",
+      "Properties": {
+        "BucketEncryption": {
+          "ServerSideEncryptionConfiguration": [
+            {
+              "ServerSideEncryptionByDefault": {
+                "SSEAlgorithm": "AES256"
+              }
+            }
+          ]
+        },
+        "BucketName": {
+          "Ref": "ArchiveBucketName"
+        },
+        "ObjectLockConfiguration": {
+          "ObjectLockEnabled": "Enabled",
+          "Rule": {
+            "DefaultRetention": {
+              "Days": {
+                "Ref": "RetentionDays"
+              },
+              "Mode": "COMPLIANCE"
+            }
+          }
+        },
+        "ObjectLockEnabled": true,
+        "OwnershipControls": {
+          "Rules": [
+            {
+              "ObjectOwnership": "BucketOwnerEnforced"
+            }
+          ]
+        },
+        "PublicAccessBlockConfiguration": {
+          "BlockPublicAcls": true,
+          "BlockPublicPolicy": true,
+          "IgnorePublicAcls": true,
+          "RestrictPublicBuckets": true
+        },
+        "Tags": [
+          {
+            "Key": "matrix:deployment-id",
+            "Value": {
+              "Ref": "DeploymentId"
+            }
+          },
+          {
+            "Key": "matrix:authority-profile",
+            "Value": "AWS_DUAL_BOUNDARY_S3_OBJECT_LOCK_COMPLIANCE_KMS_ED25519_V1"
+          },
+          {
+            "Key": "matrix:research-only",
+            "Value": "true"
+          },
+          {
+            "Key": "matrix:root-store-id",
+            "Value": {
+              "Ref": "RootStoreId"
+            }
+          },
+          {
+            "Key": "matrix:database-instance-id",
+            "Value": {
+              "Ref": "DatabaseInstanceId"
+            }
+          }
+        ],
+        "VersioningConfiguration": {
+          "Status": "Enabled"
+        }
+      },
+      "Type": "AWS::S3::Bucket",
+      "UpdateReplacePolicy": "Retain"
+    },
+    "ReceiptBucketPolicy": {
+      "Properties": {
+        "Bucket": {
+          "Ref": "ReceiptBucket"
+        },
+        "PolicyDocument": {
+          "Statement": [
+            {
+              "Action": "s3:*",
+              "Condition": {
+                "Bool": {
+                  "aws:SecureTransport": "false"
+                }
+              },
+              "Effect": "Deny",
+              "Principal": "*",
+              "Resource": [
+                {
+                  "Fn::Sub": "arn:${AWS::Partition}:s3:::${ArchiveBucketName}"
+                },
+                {
+                  "Fn::Sub": "arn:${AWS::Partition}:s3:::${ArchiveBucketName}/*"
+                }
+              ],
+              "Sid": "DenyInsecureTransport"
+            },
+            {
+              "Action": "s3:PutObject",
+              "Condition": {
+                "Null": {
+                  "s3:if-none-match": "true"
+                }
+              },
+              "Effect": "Deny",
+              "Principal": "*",
+              "Resource": {
+                "Fn::Sub": "arn:${AWS::Partition}:s3:::${ArchiveBucketName}/matrix-eir/v1/matrix.c2/football/${RootStoreId}/${DatabaseInstanceId}/receipts/*"
+              },
+              "Sid": "DenyUnconditionedReceiptPut"
+            },
+            {
+              "Action": [
+                "s3:DeleteObject",
+                "s3:DeleteObjectVersion"
+              ],
+              "Effect": "Deny",
+              "Principal": "*",
+              "Resource": {
+                "Fn::Sub": "arn:${AWS::Partition}:s3:::${ArchiveBucketName}/matrix-eir/v1/matrix.c2/football/${RootStoreId}/${DatabaseInstanceId}/receipts/*"
+              },
+              "Sid": "DenyReceiptDeletion"
+            },
+            {
+              "Action": [
+                "s3:PutObjectRetention",
+                "s3:PutObjectLegalHold",
+                "s3:BypassGovernanceRetention"
+              ],
+              "Effect": "Deny",
+              "Principal": "*",
+              "Resource": {
+                "Fn::Sub": "arn:${AWS::Partition}:s3:::${ArchiveBucketName}/matrix-eir/v1/matrix.c2/football/${RootStoreId}/${DatabaseInstanceId}/receipts/*"
+              },
+              "Sid": "DenyReceiptRetentionMutation"
+            }
+          ],
+          "Version": "2012-10-17"
+        }
+      },
+      "Type": "AWS::S3::BucketPolicy"
+    }
+  }
+}
