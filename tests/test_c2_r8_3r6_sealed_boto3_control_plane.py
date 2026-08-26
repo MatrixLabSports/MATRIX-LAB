@@ -44,6 +44,29 @@ class FakeSession:
         return self.clients[service]
 
 
+class OfflineClientView:
+    def __init__(self, boundary, service):
+        self.boundary = boundary
+        self.service = service
+
+    @property
+    def calls(self):
+        return list(self.boundary.offline_calls_for(self.service))
+
+
+class OfflineSessionView:
+    def __init__(self, boundary):
+        self.boundary = boundary
+
+    @property
+    def client_calls(self):
+        return list(self.boundary.offline_client_calls)
+
+
+class Session(FakeSession):
+    __module__ = "boto3.session"
+
+
 def binding(operation):
     if operation == "cloudformation:CreateChangeSet":
         template = '{"Resources":{}}'
@@ -87,24 +110,24 @@ def permit(*ops, provisioning=False, account="123456789012", region="us-east-1",
 
 
 def plane(*ops, provisioning=False, sts_account="123456789012", sts_arn="arn:aws:sts::123456789012:assumed-role/matrix-deployer/session", bindings=None):
-    clients = {
-        "sts": FakeClient("sts", {"get_caller_identity": {"Account": sts_account, "Arn": sts_arn}}),
-        "cloudformation": FakeClient("cloudformation"),
-        "s3": FakeClient("s3"),
-        "kms": FakeClient("kms"),
-        "lambda": FakeClient("lambda"),
-        "iam": FakeClient("iam"),
-        "logs": FakeClient("logs"),
+    scenario = {
+        "sts": {
+            "get_caller_identity": {"Account": sts_account, "Arn": sts_arn},
+        },
     }
-    session = FakeSession(clients)
     boundary = m.create_offline_test_session_boundary(
-        session,
+        scenario,
         region="us-east-1",
     )
     cp = m.SealedBoto3ControlPlane(
         session=boundary,
         permit=permit(*ops, provisioning=provisioning, bindings=bindings),
     )
+    session = OfflineSessionView(boundary)
+    clients = {
+        service: OfflineClientView(boundary, service)
+        for service in {"sts", "cloudformation", "s3", "kms", "lambda", "iam", "logs"}
+    }
     return cp, session, clients
 
 
@@ -368,7 +391,11 @@ def test_put_object_requires_bucket_and_key():
 
 def test_create_explicit_boto3_session_passes_only_explicit_temporary_credentials(monkeypatch):
     calls = []
-    fake_boto3 = types.SimpleNamespace(__version__="1.43.73", Session=lambda **kwargs: calls.append(kwargs) or FakeSession({}))
+    class CapturingSession(Session):
+        def __init__(self, **kwargs):
+            calls.append(kwargs)
+            super().__init__({})
+    fake_boto3 = types.SimpleNamespace(__version__="1.43.73", Session=CapturingSession)
     fake_botocore = types.SimpleNamespace(__version__="1.43.73")
     monkeypatch.setitem(sys.modules, "boto3", fake_boto3)
     monkeypatch.setitem(sys.modules, "botocore", fake_botocore)
@@ -388,7 +415,7 @@ def test_create_explicit_boto3_session_passes_only_explicit_temporary_credential
 
 
 def test_create_explicit_boto3_session_rejects_invalid_region(monkeypatch):
-    monkeypatch.setitem(sys.modules, "boto3", types.SimpleNamespace(__version__="1.43.73", Session=lambda **kwargs: FakeSession({})))
+    monkeypatch.setitem(sys.modules, "boto3", types.SimpleNamespace(__version__="1.43.73", Session=Session))
     monkeypatch.setitem(sys.modules, "botocore", types.SimpleNamespace(__version__="1.43.73"))
     creds = m.TemporaryAwsCredentials(
         "ASIA0000000000000000",
@@ -902,8 +929,7 @@ def test_c01_raw_test_double_cannot_enter_network_authorized_control_plane():
 
 
 def test_c01_offline_test_boundary_cannot_pair_with_network_authorized_permit():
-    raw = FakeSession({"sts": FakeClient("sts")})
-    boundary = m.create_offline_test_session_boundary(raw, region="us-east-1")
+    boundary = m.create_offline_test_session_boundary({}, region="us-east-1")
     real_permit = m.ControlPlanePermit(
         account_id="123456789012",
         region="us-east-1",
@@ -1202,4 +1228,87 @@ def test_d06_specialized_partitions_fail_closed_until_explicitly_supported(regio
             credential_mode="STS_SESSION",
             allowed_operations=frozenset({"sts:GetCallerIdentity"}),
             aws_network_authorized=True,
+        )
+
+
+# R8.3R6 post-independent-audit R5 boundary non-forgeability regressions E01-E02.
+
+def test_e01_offline_boundary_rejects_transparent_proxy_smuggling_boto_delegate():
+    boto_like = Session({"sts": FakeClient("sts")})
+
+    class TransparentProxy:
+        def __init__(self, delegate):
+            self.delegate = delegate
+
+        def client(self, service, **kwargs):
+            return self.delegate.client(service, **kwargs)
+
+    with pytest.raises(m.ConfigurationError):
+        m.create_offline_test_session_boundary(
+            TransparentProxy(boto_like),
+            region="us-east-1",
+        )
+
+
+def test_e01_offline_boundary_rejects_arbitrary_session_delegate_even_without_boto_name():
+    with pytest.raises(m.ConfigurationError):
+        m.create_offline_test_session_boundary(
+            FakeSession({"sts": FakeClient("sts")}),
+            region="us-east-1",
+        )
+
+
+def test_e01_offline_boundary_accepts_inert_exact_dict_scenario_and_records_calls():
+    boundary = m.create_offline_test_session_boundary(
+        {
+            "sts": {
+                "get_caller_identity": {
+                    "Account": "123456789012",
+                    "Arn": "arn:aws:sts::123456789012:assumed-role/matrix-deployer/session",
+                }
+            }
+        },
+        region="us-east-1",
+    )
+    cp = m.SealedBoto3ControlPlane(
+        session=boundary,
+        permit=permit("sts:GetCallerIdentity"),
+    )
+    cp.verify_identity()
+    assert boundary.offline_calls_for("sts")[-1][0] == "get_caller_identity"
+
+
+def test_e01_offline_scenario_rejects_executable_or_custom_values():
+    class Executable:
+        def __call__(self):
+            return None
+
+    with pytest.raises(m.ConfigurationError):
+        m.create_offline_test_session_boundary(
+            {"sts": {"get_caller_identity": Executable()}},
+            region="us-east-1",
+        )
+
+
+def test_e02_boundary_constructor_has_no_capability_closure():
+    init = m.SealedSessionBoundary.__init__
+    assert init.__closure__ in (None, ())
+    assert getattr(init.__code__, "co_freevars", ()) == ()
+
+
+def test_e02_direct_boundary_construction_is_always_rejected_without_token_path():
+    with pytest.raises(m.ConfigurationError):
+        m.SealedSessionBoundary(
+            FakeSession({"sts": FakeClient("sts")}),
+            region="us-east-1",
+            provenance="EXPLICIT_OFFLINE_TEST_RECORDER",
+        )
+
+
+def test_e02_forged_uninitialized_boundary_is_rejected_by_control_plane_integrity_check():
+    forged = object.__new__(m.SealedSessionBoundary)
+    with pytest.raises(m.ConfigurationError):
+        m.SealedBoto3ControlPlane(
+            session=forged,
+            permit=permit("sts:GetCallerIdentity"),
         )

@@ -277,3 +277,57 @@ The gate also requires:
 
 The next required gate after a successful hardening commit is
 `R8_3R6_SEALED_BOTO3_CONTROL_PLANE_INDEPENDENT_AUDIT_R5`.
+
+## R5 provenance-boundary hardening — E01–E02
+
+The independent R5 seal-candidate audit confirmed A01–A07, B01–B08, C01–C09, and D03–D06 remain closed, but identified two remaining provenance-boundary blockers. This hardening changes the offline path from an arbitrary caller-supplied session/delegate abstraction to a module-owned deterministic recorder driven only by inert exact-dict scenario data.
+
+### E01 — offline boundary cannot smuggle a boto delegate
+
+`create_offline_test_session_boundary(...)` no longer accepts any object exposing `client()`. It accepts only an exact built-in `dict` scenario whose service names and API method names are already governed by the sealed operation map. Scenario responses are recursively limited to inert built-in data. The module constructs its own `_OfflineRecordingSession` and `_OfflineRecordingClient` instances; the control-plane boundary revalidates that exact recorder type before every use. Therefore transparent proxies, boto3/botocore sessions, custom callables, and arbitrary executable delegates cannot become an offline execution authority.
+
+### E02 — no closure-extractable session capability
+
+`SealedSessionBoundary.__init__` is now an unconditional rejection path and has no token-bearing closure or factory capability. Approved factories allocate the boundary internally and the control plane calls `_validate_integrity()` before accepting it. The real path must retain explicit temporary STS provenance and a genuine `boto3.Session`; the offline path must retain the module-owned inert recorder and explicit offline-recorder provenance. An incomplete or manually allocated boundary fails closed.
+
+### Verification contract
+
+The hardening gate must run under the sealed dependency wheelhouse and the Python socket-deny guard.
+
+Expected focused E01–E02 regressions:
+
+`7 passed`
+
+Expected dedicated control-plane suite:
+
+`148 passed`
+
+Expected canonical MATRIX suite after replacing the prior 141-test file with the 148-test boundary-hardened file:
+
+`2566 passed, 1 skipped`
+
+The gate also requires exact R5 failed-audit evidence binding, exact three-file mutation scope, payload SHA-256 checks, baseline-aware secret scanning, `git diff --check`, exact three-file commit, a clean post-commit repository, and `git fsck --full`.
+
+## Governance after R5 hardening
+
+`REAL_AWS_IDENTITY_PROBE_AUTHORIZED=FALSE`
+
+`REAL_AWS_CREDENTIAL_READ_AUTHORIZED=FALSE`
+
+`REAL_AWS_NETWORK_AUTHORIZED=FALSE`
+
+`RESOURCE_PROVISIONING_AUTHORIZED=FALSE`
+
+`RESOURCE_PROVISIONING_PERFORMED=FALSE`
+
+`PYTHON312_ACTUAL_RUNTIME_EXECUTION_PROVEN=FALSE`
+
+`CONTROLLED_LIVE_ADMISSIBLE=FALSE`
+
+`MACROBLOCK_2_CLOSED=FALSE`
+
+`REMAINING_C2_LIVE_MACROBLOCKS=5`
+
+`PRODUCTION_ADMISSIBLE=FALSE`
+
+A successful hardening commit does not seal the control plane. The required next gate is an independent post-hardening re-audit before any audit seal may be issued.

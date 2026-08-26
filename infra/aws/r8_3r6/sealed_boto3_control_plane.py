@@ -495,127 +495,266 @@ def build_botocore_config() -> Any:
     )
 
 
-def _build_session_boundary_api():
-    real_token = object()
-    offline_token = object()
-    real_label = "EXPLICIT_TEMPORARY_STS_SESSION"
-    offline_label = "EXPLICIT_OFFLINE_TEST_DOUBLE"
-
-    class SessionBoundary:
-        __slots__ = ("_delegate", "region", "provenance", "_real")
-
-        def __init__(
-            self,
-            delegate: Any,
-            *,
-            region: str,
-            provenance: str,
-            _token: object | None = None,
-        ) -> None:
-            if _token not in (real_token, offline_token):
+def _clone_offline_value(value: Any, *, _depth: int = 0) -> Any:
+    """Clone only inert values admissible in the deterministic offline recorder."""
+    if _depth > 12:
+        raise ConfigurationError("offline test scenario nesting is too deep")
+    if value is None or type(value) in {bool, int, float, str, bytes}:
+        return value
+    if type(value) is list:
+        return [_clone_offline_value(v, _depth=_depth + 1) for v in value]
+    if type(value) is tuple:
+        return tuple(_clone_offline_value(v, _depth=_depth + 1) for v in value)
+    if type(value) is dict:
+        cloned: dict[str, Any] = {}
+        for key, nested in value.items():
+            if type(key) is not str or not key:
                 raise ConfigurationError(
-                    "session boundaries can only be minted by an approved factory"
+                    "offline test scenario mappings require nonempty string keys"
                 )
-            if delegate is None or not callable(getattr(delegate, "client", None)):
-                raise ConfigurationError("session delegate must expose callable client()")
-            if not _REGION_RE.fullmatch(region):
-                raise ConfigurationError("session boundary region is not admissible")
-            if _token is real_token:
-                if provenance != real_label:
-                    raise ConfigurationError("real session provenance mismatch")
-                real = True
-            else:
-                if provenance != offline_label:
-                    raise ConfigurationError("offline-test session provenance mismatch")
-                module_name = type(delegate).__module__
-                if module_name == "boto3.session" or module_name.startswith("botocore."):
+            cloned[key] = _clone_offline_value(nested, _depth=_depth + 1)
+        return cloned
+    raise ConfigurationError(
+        "offline test scenarios may contain inert built-in data only"
+    )
+
+
+class _OfflineRecordingClient:
+    __slots__ = ("service", "_responses", "calls")
+
+    def __init__(self, service: str, responses: Mapping[str, Any]) -> None:
+        self.service = service
+        self._responses = dict(responses)
+        self.calls: list[tuple[str, dict[str, Any]]] = []
+
+    def __getattr__(self, name: str) -> Any:
+        allowed = {
+            api
+            for service, api in _OPERATION_BINDINGS.values()
+            if service == self.service
+        }
+        if name not in allowed:
+            raise AttributeError(name)
+
+        def call(**kwargs: Any) -> Any:
+            self.calls.append((name, dict(kwargs)))
+            if name in self._responses:
+                return _clone_offline_value(self._responses[name])
+            return {
+                "service": self.service,
+                "method": name,
+                "kwargs": dict(kwargs),
+            }
+
+        return call
+
+
+class _OfflineRecordingSession:
+    __slots__ = ("_clients", "client_calls")
+
+    def __init__(self, scenario: Mapping[str, Mapping[str, Any]]) -> None:
+        clients: dict[str, _OfflineRecordingClient] = {}
+        allowed_services = {service for service, _ in _OPERATION_BINDINGS.values()}
+        for service, responses in scenario.items():
+            if type(service) is not str or service not in allowed_services:
+                raise ConfigurationError(
+                    f"offline test scenario service is not governed: {service!r}"
+                )
+            if type(responses) is not dict:
+                raise ConfigurationError(
+                    "offline test scenario service responses must be exact dict values"
+                )
+            allowed_methods = {
+                api
+                for bound_service, api in _OPERATION_BINDINGS.values()
+                if bound_service == service
+            }
+            safe_responses: dict[str, Any] = {}
+            for method, response in responses.items():
+                if type(method) is not str or method not in allowed_methods:
                     raise ConfigurationError(
-                        "boto3/botocore delegates cannot be wrapped as offline test doubles"
+                        f"offline test scenario method is not governed: {service}.{method}"
                     )
-                real = False
-            self._delegate = delegate
-            self.region = region
-            self.provenance = provenance
-            self._real = real
+                safe_responses[method] = _clone_offline_value(response)
+            clients[service] = _OfflineRecordingClient(service, safe_responses)
+        for service in allowed_services:
+            clients.setdefault(service, _OfflineRecordingClient(service, {}))
+        self._clients = clients
+        self.client_calls: list[tuple[str, dict[str, Any]]] = []
 
-        @property
-        def is_real_explicit_session(self) -> bool:
-            return self._real
+    def client(self, service: str, **kwargs: Any) -> Any:
+        if service not in self._clients:
+            raise ConfigurationError(
+                f"offline test service is not governed: {service}"
+            )
+        self.client_calls.append((service, dict(kwargs)))
+        return self._clients[service]
 
-        @property
-        def is_offline_test_session(self) -> bool:
-            return not self._real
+    def calls_for(self, service: str) -> tuple[tuple[str, dict[str, Any]], ...]:
+        if service not in self._clients:
+            raise ConfigurationError(
+                f"offline test service is not governed: {service}"
+            )
+        return tuple((name, dict(kwargs)) for name, kwargs in self._clients[service].calls)
 
-        def client(self, service: str, **kwargs: Any) -> Any:
-            if service not in {value[0] for value in _OPERATION_BINDINGS.values()}:
-                raise ConfigurationError(
-                    f"service is not bound to the sealed control plane: {service}"
-                )
-            if "endpoint_url" in kwargs:
-                raise ConfigurationError("endpoint_url override is forbidden")
-            requested_region = kwargs.get("region_name")
-            if requested_region != self.region:
-                raise ConfigurationError("client region must match sealed session boundary")
-            if "config" not in kwargs:
-                raise ConfigurationError("canonical botocore config is required")
-            return self._delegate.client(service, **kwargs)
 
-    SessionBoundary.__name__ = "SealedSessionBoundary"
-    SessionBoundary.__qualname__ = "SealedSessionBoundary"
+class SealedSessionBoundary:
+    """Factory-only boundary around either a real boto3 session or inert offline recorder.
 
-    def create_offline_test_session_boundary(
-        delegate: Any,
-        *,
-        region: str,
-    ) -> Any:
-        return SessionBoundary(
-            delegate,
-            region=region,
-            provenance=offline_label,
-            _token=offline_token,
+    Direct construction is always rejected.  There are deliberately no capability
+    tokens in this constructor or its closure; factories initialize instances via
+    object.__new__ and the control plane revalidates the delegate on every boundary
+    use.  The offline delegate is module-owned and data-only, so it cannot proxy a
+    boto3/botocore session or arbitrary caller code.
+    """
+
+    __slots__ = ("_delegate", "region", "provenance", "_real")
+
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
+        raise ConfigurationError(
+            "session boundaries can only be minted by an approved factory"
         )
 
-    def create_explicit_boto3_session(
-        *,
-        credentials: TemporaryAwsCredentials,
-        region: str,
-    ) -> Any:
-        if not isinstance(credentials, TemporaryAwsCredentials):
-            raise ConfigurationError(
-                "credentials must be a TemporaryAwsCredentials instance"
-            )
-        if not _REGION_RE.fullmatch(region):
-            raise ConfigurationError("region is not an admissible AWS region identifier")
+    def _validate_integrity(self) -> None:
+        try:
+            delegate = object.__getattribute__(self, "_delegate")
+            region = object.__getattribute__(self, "region")
+            provenance = object.__getattribute__(self, "provenance")
+            real = object.__getattribute__(self, "_real")
+        except (AttributeError, TypeError) as exc:
+            raise ConfigurationError("session boundary is incomplete") from exc
+        if type(real) is not bool:
+            raise ConfigurationError("session boundary mode is malformed")
+        if type(region) is not str or not _REGION_RE.fullmatch(region):
+            raise ConfigurationError("session boundary region is not admissible")
         _partition_for_region(region)
-        if credentials.expiration is None:
+        if real:
+            if provenance != "EXPLICIT_TEMPORARY_STS_SESSION":
+                raise ConfigurationError("real session provenance mismatch")
+            _require_runtime_versions()
+            import boto3
+
+            if not isinstance(delegate, boto3.Session):
+                raise ConfigurationError(
+                    "real session boundary delegate must be a boto3.Session"
+                )
+        else:
+            if provenance != "EXPLICIT_OFFLINE_TEST_RECORDER":
+                raise ConfigurationError("offline-test session provenance mismatch")
+            if type(delegate) is not _OfflineRecordingSession:
+                raise ConfigurationError(
+                    "offline-test boundary must use the module-owned inert recorder"
+                )
+
+    @property
+    def is_real_explicit_session(self) -> bool:
+        self._validate_integrity()
+        return bool(object.__getattribute__(self, "_real"))
+
+    @property
+    def is_offline_test_session(self) -> bool:
+        self._validate_integrity()
+        return not bool(object.__getattribute__(self, "_real"))
+
+    @property
+    def offline_client_calls(self) -> tuple[tuple[str, dict[str, Any]], ...]:
+        self._validate_integrity()
+        if self.is_real_explicit_session:
+            raise ConfigurationError("offline call evidence is unavailable for real sessions")
+        recorder = object.__getattribute__(self, "_delegate")
+        return tuple((service, dict(kwargs)) for service, kwargs in recorder.client_calls)
+
+    def offline_calls_for(
+        self, service: str
+    ) -> tuple[tuple[str, dict[str, Any]], ...]:
+        self._validate_integrity()
+        if self.is_real_explicit_session:
+            raise ConfigurationError("offline call evidence is unavailable for real sessions")
+        recorder = object.__getattribute__(self, "_delegate")
+        return recorder.calls_for(service)
+
+    def client(self, service: str, **kwargs: Any) -> Any:
+        self._validate_integrity()
+        if service not in {value[0] for value in _OPERATION_BINDINGS.values()}:
             raise ConfigurationError(
-                "explicit temporary AWS session creation requires credential expiration"
+                f"service is not bound to the sealed control plane: {service}"
             )
-        if credentials.expiration.astimezone(timezone.utc) <= _utc_now():
-            raise ConfigurationError("temporary AWS credentials are expired")
-        _require_runtime_versions()
-        import boto3
+        if "endpoint_url" in kwargs:
+            raise ConfigurationError("endpoint_url override is forbidden")
+        requested_region = kwargs.get("region_name")
+        if requested_region != self.region:
+            raise ConfigurationError("client region must match sealed session boundary")
+        if "config" not in kwargs:
+            raise ConfigurationError("canonical botocore config is required")
+        return self._delegate.client(service, **kwargs)
 
-        raw = boto3.Session(
-            aws_access_key_id=credentials.access_key_id,
-            aws_secret_access_key=credentials.secret_access_key,
-            aws_session_token=credentials.session_token,
-            region_name=region,
+
+def _mint_session_boundary(
+    *, delegate: Any, region: str, provenance: str, real: bool
+) -> SealedSessionBoundary:
+    boundary = object.__new__(SealedSessionBoundary)
+    object.__setattr__(boundary, "_delegate", delegate)
+    object.__setattr__(boundary, "region", region)
+    object.__setattr__(boundary, "provenance", provenance)
+    object.__setattr__(boundary, "_real", real)
+    boundary._validate_integrity()
+    return boundary
+
+
+def create_offline_test_session_boundary(
+    scenario: Any,
+    *,
+    region: str,
+) -> SealedSessionBoundary:
+    if type(scenario) is not dict:
+        raise ConfigurationError(
+            "offline test boundary accepts an exact dict scenario only; arbitrary session/delegate objects are forbidden"
         )
-        return SessionBoundary(
-            raw,
-            region=region,
-            provenance=real_label,
-            _token=real_token,
+    if not _REGION_RE.fullmatch(region):
+        raise ConfigurationError("session boundary region is not admissible")
+    _partition_for_region(region)
+    recorder = _OfflineRecordingSession(scenario)
+    return _mint_session_boundary(
+        delegate=recorder,
+        region=region,
+        provenance="EXPLICIT_OFFLINE_TEST_RECORDER",
+        real=False,
+    )
+
+
+def create_explicit_boto3_session(
+    *,
+    credentials: TemporaryAwsCredentials,
+    region: str,
+) -> SealedSessionBoundary:
+    if not isinstance(credentials, TemporaryAwsCredentials):
+        raise ConfigurationError(
+            "credentials must be a TemporaryAwsCredentials instance"
         )
+    if not _REGION_RE.fullmatch(region):
+        raise ConfigurationError("region is not an admissible AWS region identifier")
+    _partition_for_region(region)
+    if credentials.expiration is None:
+        raise ConfigurationError(
+            "explicit temporary AWS session creation requires credential expiration"
+        )
+    if credentials.expiration.astimezone(timezone.utc) <= _utc_now():
+        raise ConfigurationError("temporary AWS credentials are expired")
+    _require_runtime_versions()
+    import boto3
 
-    return SessionBoundary, create_offline_test_session_boundary, create_explicit_boto3_session
-
-
-SealedSessionBoundary, create_offline_test_session_boundary, create_explicit_boto3_session = (
-    _build_session_boundary_api()
-)
-del _build_session_boundary_api
+    raw = boto3.Session(
+        aws_access_key_id=credentials.access_key_id,
+        aws_secret_access_key=credentials.secret_access_key,
+        aws_session_token=credentials.session_token,
+        region_name=region,
+    )
+    return _mint_session_boundary(
+        delegate=raw,
+        region=region,
+        provenance="EXPLICIT_TEMPORARY_STS_SESSION",
+        real=True,
+    )
 
 
 class SealedBoto3ControlPlane:
@@ -631,6 +770,7 @@ class SealedBoto3ControlPlane:
             raise ConfigurationError(
                 "raw session injection is forbidden; use an approved session-boundary factory"
             )
+        session._validate_integrity()
         if session.region != permit.region:
             raise ConfigurationError("session boundary region does not match permit region")
         if session.is_real_explicit_session:
