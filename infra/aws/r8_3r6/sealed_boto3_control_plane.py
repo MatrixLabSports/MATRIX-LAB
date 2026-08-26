@@ -106,8 +106,28 @@ def _sha256_bytes(value: Any) -> str:
     return sha256(data).hexdigest()
 
 
-def _canonical_expected_principal(account_id: str) -> str:
-    return f"arn:aws:sts::{account_id}:assumed-role/matrix-deployer/*"
+def _partition_for_region(region: str) -> str:
+    if not isinstance(region, str) or not _REGION_RE.fullmatch(region):
+        raise ConfigurationError("region is not an admissible AWS region identifier")
+    if region.startswith("us-gov-"):
+        return "aws-us-gov"
+    if region.startswith("cn-"):
+        return "aws-cn"
+    # MATRIX R8.3R6 intentionally supports the standard commercial, GovCloud,
+    # and China partitions only. Specialized ISO/ISOB/ISOE partitions must be
+    # introduced explicitly rather than silently inheriting commercial ARN rules.
+    if (
+        region.startswith("us-iso-")
+        or region.startswith("us-isob-")
+        or region.startswith("eu-isoe-")
+        or region.startswith("us-isof-")
+    ):
+        raise ConfigurationError("AWS region partition is not admitted by this control plane")
+    return "aws"
+
+
+def _canonical_expected_principal(account_id: str, partition: str) -> str:
+    return f"arn:{partition}:sts::{account_id}:assumed-role/matrix-deployer/*"
 
 
 def _principal_matches(expected: str, actual: str) -> bool:
@@ -119,16 +139,24 @@ def _principal_matches(expected: str, actual: str) -> bool:
     return actual == expected
 
 
-def _expected_principal_is_valid(account_id: str, value: str) -> bool:
+def _expected_principal_is_valid(
+    account_id: str,
+    partition: str,
+    value: str,
+) -> bool:
     if value.endswith("/*"):
         prefix = value[:-2]
-        marker = f"arn:aws:sts::{account_id}:assumed-role/"
+        marker = f"arn:{partition}:sts::{account_id}:assumed-role/"
         if not prefix.startswith(marker):
             return False
         role = prefix[len(marker):]
         return bool(role) and not role.endswith("/") and "//" not in role
     match = _ASSUMED_ROLE_ARN_RE.fullmatch(value)
-    return bool(match and match.group("account") == account_id)
+    return bool(
+        match
+        and match.group("account") == account_id
+        and match.group("partition") == partition
+    )
 
 
 @dataclass(frozen=True)
@@ -310,17 +338,22 @@ class ControlPlanePermit:
             raise ConfigurationError("account_id must be exactly 12 digits")
         if not _REGION_RE.fullmatch(self.region):
             raise ConfigurationError("region is not an admissible AWS region identifier")
+        partition = _partition_for_region(self.region)
         if self.credential_mode != "STS_SESSION":
             raise ConfigurationError("only STS_SESSION credential mode is admissible")
 
         expected_principal = self.expected_principal_arn
         if expected_principal is None:
-            expected_principal = _canonical_expected_principal(self.account_id)
+            expected_principal = _canonical_expected_principal(self.account_id, partition)
         if not isinstance(expected_principal, str) or not expected_principal:
             raise ConfigurationError("expected_principal_arn must be a non-empty string")
-        if not _expected_principal_is_valid(self.account_id, expected_principal):
+        if not _expected_principal_is_valid(
+            self.account_id,
+            partition,
+            expected_principal,
+        ):
             raise ConfigurationError(
-                "expected_principal_arn must bind an STS assumed-role principal with a non-empty session in the permit account"
+                "expected_principal_arn must bind an STS assumed-role principal with a non-empty session in the permit account and AWS partition"
             )
         object.__setattr__(self, "expected_principal_arn", expected_principal)
 
@@ -396,15 +429,20 @@ class ControlPlanePermit:
                 if match is not None and (
                     match.group("account") != self.account_id
                     or match.group("region") != self.region
+                    or match.group("partition") != partition
                 ):
                     raise ConfigurationError(
-                        "ExecuteChangeSet full ARN must match permit account and region"
+                        "ExecuteChangeSet full ARN must match permit account, region, and AWS partition"
                     )
             elif binding.operation == "cloudformation:CreateChangeSet" and binding.role_arn is not None:
                 role_match = _ROLE_ARN_RE.fullmatch(binding.role_arn)
-                if role_match is None or role_match.group("account") != self.account_id:
+                if (
+                    role_match is None
+                    or role_match.group("account") != self.account_id
+                    or role_match.group("partition") != partition
+                ):
                     raise ConfigurationError(
-                        "CreateChangeSet RoleARN must match permit account"
+                        "CreateChangeSet RoleARN must match permit account and AWS partition"
                     )
             elif binding.operation == "s3:PutObject" and binding.s3_ssekms_key_id is not None:
                 kms_match = _KMS_KEY_ARN_RE.fullmatch(binding.s3_ssekms_key_id)
@@ -415,9 +453,10 @@ class ControlPlanePermit:
                 if (
                     kms_match.group("account") != self.account_id
                     or kms_match.group("region") != self.region
+                    or kms_match.group("partition") != partition
                 ):
                     raise ConfigurationError(
-                        "SSE-KMS key ARN must match permit account and region"
+                        "SSE-KMS key ARN must match permit account, region, and AWS partition"
                     )
 
     def resource_binding_for(self, operation: str) -> MutationResourceBinding:
@@ -547,6 +586,7 @@ def _build_session_boundary_api():
             )
         if not _REGION_RE.fullmatch(region):
             raise ConfigurationError("region is not an admissible AWS region identifier")
+        _partition_for_region(region)
         if credentials.expiration is None:
             raise ConfigurationError(
                 "explicit temporary AWS session creation requires credential expiration"

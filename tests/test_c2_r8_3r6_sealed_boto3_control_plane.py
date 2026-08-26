@@ -1037,3 +1037,169 @@ def test_c09_temporary_credential_secret_and_token_types_are_strict(field, value
     kwargs[field] = value
     with pytest.raises(m.ConfigurationError):
         m.TemporaryAwsCredentials(**kwargs)
+
+
+# R8.3R6 post-independent-audit R4 AWS partition hardening regressions D03-D06.
+
+def test_d03_execute_change_set_arn_partition_is_bound_to_permit_region_partition():
+    b = m.MutationResourceBinding(
+        operation="cloudformation:ExecuteChangeSet",
+        change_set_name="arn:aws-us-gov:cloudformation:us-east-1:123456789012:changeSet/c/abc123",
+    )
+    with pytest.raises(m.ConfigurationError):
+        m.ControlPlanePermit(
+            account_id="123456789012",
+            region="us-east-1",
+            credential_mode="STS_SESSION",
+            allowed_operations=frozenset({"sts:GetCallerIdentity", "cloudformation:ExecuteChangeSet"}),
+            aws_network_authorized=True,
+            resource_provisioning_authorized=True,
+            resource_bindings=(b,),
+        )
+
+
+def test_d03_matching_govcloud_execute_change_set_arn_partition_is_accepted():
+    b = m.MutationResourceBinding(
+        operation="cloudformation:ExecuteChangeSet",
+        change_set_name="arn:aws-us-gov:cloudformation:us-gov-west-1:123456789012:changeSet/c/abc123",
+    )
+    p = m.ControlPlanePermit(
+        account_id="123456789012",
+        region="us-gov-west-1",
+        credential_mode="STS_SESSION",
+        allowed_operations=frozenset({"sts:GetCallerIdentity", "cloudformation:ExecuteChangeSet"}),
+        aws_network_authorized=True,
+        resource_provisioning_authorized=True,
+        resource_bindings=(b,),
+    )
+    assert p.expected_principal_arn.startswith("arn:aws-us-gov:sts::")
+
+
+def test_d04_create_change_set_role_arn_partition_is_bound():
+    b = m.MutationResourceBinding(
+        operation="cloudformation:CreateChangeSet",
+        stack_name="s",
+        change_set_name="c",
+        change_set_type="UPDATE",
+        role_arn="arn:aws-us-gov:iam::123456789012:role/matrix",
+        template_sha256=sha256(b"{}").hexdigest(),
+    )
+    with pytest.raises(m.ConfigurationError):
+        m.ControlPlanePermit(
+            account_id="123456789012",
+            region="us-east-1",
+            credential_mode="STS_SESSION",
+            allowed_operations=frozenset({"sts:GetCallerIdentity", "cloudformation:CreateChangeSet"}),
+            aws_network_authorized=True,
+            resource_provisioning_authorized=True,
+            resource_bindings=(b,),
+        )
+
+
+def test_d04_matching_china_create_change_set_role_partition_is_accepted():
+    b = m.MutationResourceBinding(
+        operation="cloudformation:CreateChangeSet",
+        stack_name="s",
+        change_set_name="c",
+        change_set_type="UPDATE",
+        role_arn="arn:aws-cn:iam::123456789012:role/matrix",
+        template_sha256=sha256(b"{}").hexdigest(),
+    )
+    p = m.ControlPlanePermit(
+        account_id="123456789012",
+        region="cn-north-1",
+        credential_mode="STS_SESSION",
+        allowed_operations=frozenset({"sts:GetCallerIdentity", "cloudformation:CreateChangeSet"}),
+        aws_network_authorized=True,
+        resource_provisioning_authorized=True,
+        resource_bindings=(b,),
+    )
+    assert p.expected_principal_arn.startswith("arn:aws-cn:sts::")
+
+
+def test_d05_ssekms_key_arn_partition_is_bound():
+    b = m.MutationResourceBinding(
+        operation="s3:PutObject",
+        bucket="b",
+        key="k",
+        body_sha256=sha256(b"x").hexdigest(),
+        s3_server_side_encryption="aws:kms",
+        s3_ssekms_key_id="arn:aws-us-gov:kms:us-east-1:123456789012:key/abc",
+    )
+    with pytest.raises(m.ConfigurationError):
+        m.ControlPlanePermit(
+            account_id="123456789012",
+            region="us-east-1",
+            credential_mode="STS_SESSION",
+            allowed_operations=frozenset({"sts:GetCallerIdentity", "s3:PutObject"}),
+            aws_network_authorized=True,
+            resource_provisioning_authorized=True,
+            resource_bindings=(b,),
+        )
+
+
+def test_d05_matching_china_ssekms_partition_is_accepted():
+    b = m.MutationResourceBinding(
+        operation="s3:PutObject",
+        bucket="b",
+        key="k",
+        body_sha256=sha256(b"x").hexdigest(),
+        s3_server_side_encryption="aws:kms",
+        s3_ssekms_key_id="arn:aws-cn:kms:cn-north-1:123456789012:key/abc",
+    )
+    p = m.ControlPlanePermit(
+        account_id="123456789012",
+        region="cn-north-1",
+        credential_mode="STS_SESSION",
+        allowed_operations=frozenset({"sts:GetCallerIdentity", "s3:PutObject"}),
+        aws_network_authorized=True,
+        resource_provisioning_authorized=True,
+        resource_bindings=(b,),
+    )
+    assert p.expected_principal_arn.startswith("arn:aws-cn:sts::")
+
+
+@pytest.mark.parametrize(
+    "region,prefix",
+    [
+        ("us-east-1", "arn:aws:sts::"),
+        ("us-gov-west-1", "arn:aws-us-gov:sts::"),
+        ("cn-north-1", "arn:aws-cn:sts::"),
+    ],
+)
+def test_d06_default_sts_principal_partition_matches_region(region, prefix):
+    p = m.ControlPlanePermit(
+        account_id="123456789012",
+        region=region,
+        credential_mode="STS_SESSION",
+        allowed_operations=frozenset({"sts:GetCallerIdentity"}),
+        aws_network_authorized=True,
+    )
+    assert p.expected_principal_arn.startswith(prefix)
+
+
+def test_d06_explicit_cross_partition_sts_principal_is_rejected():
+    with pytest.raises(m.ConfigurationError):
+        m.ControlPlanePermit(
+            account_id="123456789012",
+            region="us-gov-west-1",
+            credential_mode="STS_SESSION",
+            allowed_operations=frozenset({"sts:GetCallerIdentity"}),
+            aws_network_authorized=True,
+            expected_principal_arn="arn:aws:sts::123456789012:assumed-role/matrix-deployer/*",
+        )
+
+
+@pytest.mark.parametrize(
+    "region",
+    ["us-iso-east-1", "us-isob-east-1", "eu-isoe-west-1", "us-isof-south-1"],
+)
+def test_d06_specialized_partitions_fail_closed_until_explicitly_supported(region):
+    with pytest.raises(m.ConfigurationError):
+        m.ControlPlanePermit(
+            account_id="123456789012",
+            region=region,
+            credential_mode="STS_SESSION",
+            allowed_operations=frozenset({"sts:GetCallerIdentity"}),
+            aws_network_authorized=True,
+        )

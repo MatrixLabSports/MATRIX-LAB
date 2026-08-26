@@ -177,23 +177,70 @@ rejected.
 `TemporaryAwsCredentials` requires `access_key_id`, `secret_access_key`, and
 `session_token` to be non-empty strings. Truthy non-string values are rejected.
 
+## R4 partition hardening — D03–D06
+
+The independent R4 audit confirmed A01–A07, B01–B08, and C01–C09 remained
+closed but identified four AWS-partition findings. The D03–D06 hardening makes
+the permit region the authoritative source for the ARN partition.
+
+The admitted partition mapping is:
+
+- standard commercial regions → `aws`;
+- `us-gov-*` → `aws-us-gov`;
+- `cn-*` → `aws-cn`.
+
+Specialized ISO/ISOB/ISOE/ISOF partitions are not silently treated as
+commercial. They fail closed until explicitly governed by a future reviewed
+extension.
+
+### D03 — ExecuteChangeSet ARN partition scope
+
+A full CloudFormation change-set ARN must match the permit account, region, and
+AWS partition. A GovCloud or China ARN cannot be used with a commercial-region
+permit even if its account and textual region fields otherwise satisfy the
+existing checks.
+
+### D04 — CreateChangeSet RoleARN partition scope
+
+A bound CloudFormation `RoleARN` must match both the permit account and the AWS
+partition implied by the permit region. Commercial, GovCloud, and China IAM
+role ARNs cannot be interchanged.
+
+### D05 — SSE-KMS key ARN partition scope
+
+A bound `SSEKMSKeyId` must match the permit account, region, and AWS partition.
+This prevents cross-partition KMS widening even when account and region strings
+are otherwise valid.
+
+### D06 — STS principal partition follows the permit region
+
+The canonical default expected STS principal now uses the region-derived
+partition:
+
+- `arn:aws:sts::...` for commercial regions;
+- `arn:aws-us-gov:sts::...` for GovCloud;
+- `arn:aws-cn:sts::...` for China.
+
+Caller-supplied expected principals are validated against the same partition,
+so a cross-partition STS principal cannot be bound to a permit.
+
 ## Verification contract
 
 The hardening gate must run under the already sealed dependency wheelhouse and
 a Python socket-deny guard.
 
-Expected focused C01–C09 regressions:
+Expected focused D03–D06 partition regressions:
 
-`12 passed`
+`14 passed`
 
 Expected dedicated control-plane suite:
 
-`127 passed`
+`141 passed`
 
 Expected canonical MATRIX suite after replacing the prior 114-test file with
-the 127-test composition-hardened file:
+the 141-test partition-hardened file:
 
-`2545 passed, 1 skipped`
+`2559 passed, 1 skipped`
 
 The gate also requires:
 
@@ -229,4 +276,4 @@ The gate also requires:
 `PRODUCTION_ADMISSIBLE=FALSE`
 
 The next required gate after a successful hardening commit is
-`R8_3R6_SEALED_BOTO3_CONTROL_PLANE_INDEPENDENT_AUDIT_R4`.
+`R8_3R6_SEALED_BOTO3_CONTROL_PLANE_INDEPENDENT_AUDIT_R5`.
