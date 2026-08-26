@@ -1,125 +1,130 @@
-# MATRIX C2 R8.3R6 — Sealed boto3 Control Plane Implementation
+# MATRIX C2 R8.3R6 — Sealed boto3 Control Plane Hardening R1
 
-Status: **OFFLINE IMPLEMENTATION ONLY**
+Status: **OFFLINE HARDENING ONLY**
 
-This component implements the provider-control client boundary needed for the
-R8.3R6 strong external authority path without installing AWS CLI and without
-using the host default AWS credential chain.
+This hardening closes the seven findings produced by the independent
+adversarial audit R1 of commit
+`8f1d5b195c0d1e1635523a3b9630bd297861bd65`.
 
-## Authorization boundary
+The audit result was `FAIL` with five BLOCKER findings and two MAJOR findings.
+No real AWS identity, credentials, network calls, provisioning, CONTROLLED_LIVE,
+or production admission are authorized by this hardening.
 
-This implementation does **not** authorize:
+## A01 — immutable operation allowlist
 
-- real AWS identity probes;
-- reading real AWS credentials;
-- AWS network execution;
-- CloudFormation change-set creation or execution;
-- S3 mutation;
-- resource provisioning;
-- Python 3.12/Linux runtime proof;
-- CONTROLLED_LIVE;
-- production use.
+`ControlPlanePermit.allowed_operations` is normalized to `frozenset` inside the
+frozen dataclass. A mutable caller-owned list can no longer expand the permit
+after construction.
 
-The implementation is repository code/tests/docs only.
+Mutation resource bindings are likewise normalized into an immutable tuple of
+frozen `MutationResourceBinding` values.
 
-## Dependency contract
+## A02 — canonical SDK configuration
 
-The approved control-plane dependency source remains the sealed wheelhouse:
+`SealedBoto3ControlPlane` no longer accepts a caller-supplied `config`
+parameter. It constructs its own configuration through
+`build_botocore_config()`.
 
-`C2_R8_3R6_SEALED_DEPENDENCY_WHEELHOUSE.zip`
+The canonical configuration fixes:
 
-Required pins:
+- connect timeout: 3 seconds;
+- read timeout: 8 seconds;
+- total maximum attempts: 1;
+- retry mode: `standard`;
+- configured endpoint URL overrides ignored.
+
+## A03 — endpoint override protection
+
+The botocore configuration sets:
+
+`ignore_configured_endpoint_urls=True`
+
+This prevents configured AWS endpoint URL overrides from silently redirecting
+the governed client boundary.
+
+## A04 — runtime dependency version pinning
+
+Before configuration or session creation, the implementation verifies:
+
+- boto3 == 1.43.73
+- botocore == 1.43.73
+
+Missing or mismatched runtime versions fail closed with `ConfigurationError`.
+
+## A05 — mutation target resource binding
+
+Each allowlisted mutation must have exactly one immutable
+`MutationResourceBinding`.
+
+The current exact target semantics are:
+
+- `cloudformation:CreateChangeSet` → exact `StackName` + `ChangeSetName`;
+- `cloudformation:ExecuteChangeSet` → exact `ChangeSetName`;
+- `s3:CreateBucket` → exact bucket;
+- `s3:PutObject` → exact bucket + exact object key.
+
+Missing, duplicate, extra, or mismatching bindings fail closed. A single permit
+therefore cannot silently widen itself to a different stack, bucket, change
+set, or object key.
+
+## A06 — identity operation dependency
+
+Any permit containing a non-STS operation must also contain
+`sts:GetCallerIdentity`.
+
+Non-STS execution still requires successful identity verification against the
+same exact 12-digit account id before the operation can run.
+
+## A07 — test credential sentinel separation
+
+`TemporaryAwsCredentials` no longer accepts `MATRIX_TEST_ONLY`.
+Only access-key identifiers beginning with `ASIA` are accepted by this
+production-facing credential value object.
+
+Test-only sentinels must remain outside the real credential path.
+
+## Dependency source
+
+No dependency is installed into the Windows host. Hardening verification
+materializes the seven sealed pure-Python control-plane wheels ephemerally from
+the already sealed wheelhouse and runs with network denied.
+
+The approved pins remain:
 
 - boto3 1.43.73
 - botocore 1.43.73
 
-The runtime configuration fixes:
+## Verification target
 
-- connect timeout: 3 seconds;
-- read timeout: 8 seconds;
-- total maximum SDK attempts: 1;
-- no automatic retry expansion.
+The hardening regression file contains 92 tests in total, including 31 focused
+A01–A07 hardening regressions.
 
-## Credential contract
+The expected canonical suite after this replacement is:
 
-Only explicit temporary/session credentials are admissible. The code requires
-an access key id, secret access key, and session token, and rejects ordinary
-long-lived `AKIA...` access keys. The default boto3 credential chain is never
-used by the session constructor supplied here.
+`2510 passed, 1 skipped`
 
-Real credential acquisition remains outside this implementation and requires a
-separate explicit gate.
-
-## Network and identity contract
-
-A `ControlPlanePermit` binds:
-
-- exact 12-digit AWS account id;
-- exact AWS region;
-- credential mode `STS_SESSION`;
-- exact operation allowlist;
-- explicit AWS-network authorization;
-- separate resource-provisioning authorization for mutation operations.
-
-The first real AWS operation permitted by a future gate is
-`sts:GetCallerIdentity`. All other operations require successful account
-identity verification for the same permit.
-
-Sports-provider network authorization is deliberately non-inheritable.
-
-## Read-only / validation operations
-
-The code recognizes only the following read-only or validation operations:
-
-- `sts:GetCallerIdentity`
-- `cloudformation:ValidateTemplate`
-- `cloudformation:DescribeStacks`
-- `s3:GetBucketVersioning`
-- `s3:HeadObject`
-- `kms:DescribeKey`
-- `kms:GetPublicKey`
-- `lambda:GetFunction`
-- `iam:GetRole`
-- `logs:DescribeLogGroups`
-
-## Mutation operations
-
-The following are recognized as governed mutations and require both the exact
-operation allowlist and explicit `resource_provisioning_authorized=True`:
-
-- `cloudformation:CreateChangeSet`
-- `cloudformation:ExecuteChangeSet`
-- `s3:CreateBucket`
-- `s3:PutObject`
-
-No mutation is authorized by the current R8.3R6 state.
-
-## Fail-closed properties
-
-- no top-level boto3/botocore import;
-- explicit temporary credentials only;
-- no long-lived access keys;
-- exact account/region/operation permit;
-- account mismatch resets identity verification and fails;
-- non-STS operations require prior identity verification;
-- SDK client construction is region-bound;
-- mutation and read-only paths are distinct;
-- unknown operations are rejected;
-- production and CONTROLLED_LIVE constants remain false.
-
-## Verification
-
-The implementation gate must run the dedicated test file and the canonical
-repository CI while an external Python socket-deny guard is active. The gate
-must leave the repository clean after committing exactly the module, dedicated
-tests, and this document.
+The hardening gate also performs a baseline-aware secret scan and requires the
+repository to be clean after the exact hardening commit.
 
 ## Governance
+
+`REAL_AWS_IDENTITY_PROBE_AUTHORIZED=FALSE`
+
+`REAL_AWS_CREDENTIAL_READ_AUTHORIZED=FALSE`
+
+`REAL_AWS_NETWORK_AUTHORIZED=FALSE`
+
+`RESOURCE_PROVISIONING_AUTHORIZED=FALSE`
+
+`PYTHON312_ACTUAL_RUNTIME_EXECUTION_PROVEN=FALSE`
+
+`CONTROLLED_LIVE_ADMISSIBLE=FALSE`
 
 `MACROBLOCK_2_CLOSED=FALSE`
 
 `REMAINING_C2_LIVE_MACROBLOCKS=5`
 
-The next stage after successful implementation is an independent adversarial
-audit of this control-plane implementation. Real AWS identity/network access
-remains unauthorized until a later explicit human authorization gate.
+`PRODUCTION_ADMISSIBLE=FALSE`
+
+The next required gate is a new independent adversarial audit R2. No audit seal
+and no real AWS authorization may occur until that audit closes the findings.

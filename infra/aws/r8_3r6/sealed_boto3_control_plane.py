@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import Any, Callable, Iterable, Mapping
+from typing import Any, Iterable, Mapping
 import re
 
 BOTO3_VERSION_PIN = "1.43.73"
@@ -85,8 +85,52 @@ class TemporaryAwsCredentials:
     def __post_init__(self) -> None:
         if not self.access_key_id or not self.secret_access_key or not self.session_token:
             raise ConfigurationError("temporary AWS credentials require access key, secret, and session token")
-        if not (self.access_key_id.startswith("ASIA") or self.access_key_id == "MATRIX_TEST_ONLY"):
-            raise ConfigurationError("only temporary/session credentials are accepted")
+        if not self.access_key_id.startswith("ASIA"):
+            raise ConfigurationError("only real temporary/session access-key identifiers are accepted")
+
+
+@dataclass(frozen=True)
+class MutationResourceBinding:
+    operation: str
+    stack_name: str | None = None
+    change_set_name: str | None = None
+    bucket: str | None = None
+    key: str | None = None
+
+    def __post_init__(self) -> None:
+        if self.operation not in MUTATION_OPERATIONS:
+            raise ConfigurationError("resource binding operation must be a governed mutation")
+
+        supplied = {
+            "stack_name": self.stack_name,
+            "change_set_name": self.change_set_name,
+            "bucket": self.bucket,
+            "key": self.key,
+        }
+        for name, value in supplied.items():
+            if value is not None and (not isinstance(value, str) or not value):
+                raise ConfigurationError(f"{name} must be a non-empty string when supplied")
+
+        required: dict[str, tuple[str, ...]] = {
+            "cloudformation:CreateChangeSet": ("stack_name", "change_set_name"),
+            "cloudformation:ExecuteChangeSet": ("change_set_name",),
+            "s3:CreateBucket": ("bucket",),
+            "s3:PutObject": ("bucket", "key"),
+        }
+        allowed: dict[str, frozenset[str]] = {
+            "cloudformation:CreateChangeSet": frozenset({"stack_name", "change_set_name"}),
+            "cloudformation:ExecuteChangeSet": frozenset({"change_set_name"}),
+            "s3:CreateBucket": frozenset({"bucket"}),
+            "s3:PutObject": frozenset({"bucket", "key"}),
+        }
+        for name in required[self.operation]:
+            if not supplied[name]:
+                raise ConfigurationError(f"{self.operation} resource binding requires {name}")
+        unexpected = [name for name, value in supplied.items() if value is not None and name not in allowed[self.operation]]
+        if unexpected:
+            raise ConfigurationError(
+                f"{self.operation} resource binding has unexpected fields: {sorted(unexpected)!r}"
+            )
 
 
 @dataclass(frozen=True)
@@ -94,9 +138,10 @@ class ControlPlanePermit:
     account_id: str
     region: str
     credential_mode: str
-    allowed_operations: frozenset[str]
+    allowed_operations: frozenset[str] | Iterable[str]
     aws_network_authorized: bool
     resource_provisioning_authorized: bool = False
+    resource_bindings: tuple[MutationResourceBinding, ...] | Iterable[MutationResourceBinding] = ()
     sports_provider_network_authorization_inherited: bool = False
 
     def __post_init__(self) -> None:
@@ -106,18 +151,76 @@ class ControlPlanePermit:
             raise ConfigurationError("region is not an admissible AWS region identifier")
         if self.credential_mode != "STS_SESSION":
             raise ConfigurationError("only STS_SESSION credential mode is admissible")
-        unknown = set(self.allowed_operations) - set(ALL_OPERATIONS)
+
+        try:
+            operations = frozenset(self.allowed_operations)
+        except TypeError as exc:
+            raise ConfigurationError("allowed_operations must be an iterable of operation names") from exc
+        if any(not isinstance(op, str) for op in operations):
+            raise ConfigurationError("allowed_operations must contain strings only")
+        object.__setattr__(self, "allowed_operations", operations)
+
+        try:
+            bindings = tuple(self.resource_bindings)
+        except TypeError as exc:
+            raise ConfigurationError("resource_bindings must be an iterable of MutationResourceBinding") from exc
+        if any(not isinstance(binding, MutationResourceBinding) for binding in bindings):
+            raise ConfigurationError("resource_bindings must contain MutationResourceBinding values only")
+        object.__setattr__(self, "resource_bindings", bindings)
+
+        unknown = operations - ALL_OPERATIONS
         if unknown:
             raise ConfigurationError(f"unknown operations: {sorted(unknown)!r}")
         if self.sports_provider_network_authorization_inherited:
             raise ConfigurationError("sports-provider network authorization cannot be inherited")
-        if not self.aws_network_authorized and self.allowed_operations:
+        if not self.aws_network_authorized and operations:
             raise ConfigurationError("allowed AWS operations require explicit AWS network authorization")
-        if not self.resource_provisioning_authorized and (set(self.allowed_operations) & set(MUTATION_OPERATIONS)):
+
+        non_sts = operations - {"sts:GetCallerIdentity"}
+        if non_sts and "sts:GetCallerIdentity" not in operations:
+            raise ConfigurationError("non-STS operations require sts:GetCallerIdentity in the same permit")
+
+        mutations = operations & MUTATION_OPERATIONS
+        if mutations and not self.resource_provisioning_authorized:
             raise ConfigurationError("mutation operations require explicit resource provisioning authorization")
+        if self.resource_provisioning_authorized and not mutations and bindings:
+            raise ConfigurationError("resource bindings are only valid for allowlisted mutation operations")
+
+        bound_operations = [binding.operation for binding in bindings]
+        if len(bound_operations) != len(set(bound_operations)):
+            raise ConfigurationError("exactly one resource binding is allowed per mutation operation")
+        if set(bound_operations) != set(mutations):
+            missing = sorted(set(mutations) - set(bound_operations))
+            extra = sorted(set(bound_operations) - set(mutations))
+            raise ConfigurationError(
+                f"resource bindings must exactly cover allowlisted mutations; missing={missing!r} extra={extra!r}"
+            )
+
+    def resource_binding_for(self, operation: str) -> MutationResourceBinding:
+        for binding in self.resource_bindings:
+            if binding.operation == operation:
+                return binding
+        raise AuthorizationDenied(f"no resource binding for mutation operation: {operation}")
+
+
+def _require_runtime_versions() -> None:
+    import boto3
+    import botocore
+
+    if getattr(boto3, "__version__", None) != BOTO3_VERSION_PIN:
+        raise ConfigurationError(
+            f"boto3 version mismatch: expected {BOTO3_VERSION_PIN}, "
+            f"received {getattr(boto3, '__version__', '<missing>')}"
+        )
+    if getattr(botocore, "__version__", None) != BOTOCORE_VERSION_PIN:
+        raise ConfigurationError(
+            f"botocore version mismatch: expected {BOTOCORE_VERSION_PIN}, "
+            f"received {getattr(botocore, '__version__', '<missing>')}"
+        )
 
 
 def build_botocore_config() -> Any:
+    _require_runtime_versions()
     from botocore.config import Config
 
     return Config(
@@ -125,6 +228,7 @@ def build_botocore_config() -> Any:
         read_timeout=READ_TIMEOUT_SECONDS,
         retries={"total_max_attempts": TOTAL_MAX_ATTEMPTS, "mode": "standard"},
         user_agent_extra="MATRIX-R8.3R6-SEALED-BOTO3-CONTROL-PLANE",
+        ignore_configured_endpoint_urls=True,
     )
 
 
@@ -135,6 +239,7 @@ def create_explicit_boto3_session(
 ) -> Any:
     if not _REGION_RE.fullmatch(region):
         raise ConfigurationError("region is not an admissible AWS region identifier")
+    _require_runtime_versions()
     import boto3
 
     return boto3.Session(
@@ -151,11 +256,12 @@ class SealedBoto3ControlPlane:
         *,
         session: Any,
         permit: ControlPlanePermit,
-        config: Any,
     ) -> None:
+        if session is None:
+            raise ConfigurationError("an explicitly constructed boto3 session is required")
         self._session = session
         self._permit = permit
-        self._config = config
+        self._config = build_botocore_config()
         self._clients: dict[str, Any] = {}
         self._identity_verified = False
         self._verified_account_id: str | None = None
@@ -178,6 +284,7 @@ class SealedBoto3ControlPlane:
                 raise AuthorizationDenied("operation is not a governed mutation")
             if not self._permit.resource_provisioning_authorized:
                 raise AuthorizationDenied("resource provisioning authorization is false")
+            self._permit.resource_binding_for(operation)
         elif operation in MUTATION_OPERATIONS:
             raise AuthorizationDenied("mutation operation requires mutation path")
 
@@ -209,6 +316,23 @@ class SealedBoto3ControlPlane:
         if not self._identity_verified or self._verified_account_id != self._permit.account_id:
             raise AuthorizationDenied("AWS identity has not been verified for this permit")
 
+    def _require_mutation_target(self, operation: str, kwargs: Mapping[str, Any]) -> None:
+        binding = self._permit.resource_binding_for(operation)
+        if operation == "cloudformation:CreateChangeSet":
+            if kwargs.get("StackName") != binding.stack_name or kwargs.get("ChangeSetName") != binding.change_set_name:
+                raise AuthorizationDenied("CloudFormation change-set target does not match permit resource binding")
+        elif operation == "cloudformation:ExecuteChangeSet":
+            if kwargs.get("ChangeSetName") != binding.change_set_name:
+                raise AuthorizationDenied("CloudFormation execute target does not match permit resource binding")
+        elif operation == "s3:CreateBucket":
+            if kwargs.get("Bucket") != binding.bucket:
+                raise AuthorizationDenied("S3 create-bucket target does not match permit resource binding")
+        elif operation == "s3:PutObject":
+            if kwargs.get("Bucket") != binding.bucket or kwargs.get("Key") != binding.key:
+                raise AuthorizationDenied("S3 put-object target does not match permit resource binding")
+        else:
+            raise AuthorizationDenied(f"unsupported mutation target binding: {operation}")
+
     def _invoke(
         self,
         operation: str,
@@ -219,8 +343,11 @@ class SealedBoto3ControlPlane:
         self._authorize(operation, mutation=mutation)
         if operation != "sts:GetCallerIdentity":
             self._require_identity()
+        payload = dict(kwargs or {})
+        if mutation:
+            self._require_mutation_target(operation, payload)
         service, method = _OPERATION_BINDINGS[operation]
-        return getattr(self._client(service), method)(**dict(kwargs or {}))
+        return getattr(self._client(service), method)(**payload)
 
     def validate_template(self, *, template_body: str) -> Any:
         if not isinstance(template_body, str) or not template_body.strip():
@@ -286,6 +413,8 @@ class SealedBoto3ControlPlane:
     def create_change_set(self, **kwargs: Any) -> Any:
         if not kwargs:
             raise ConfigurationError("create_change_set requires explicit parameters")
+        if not kwargs.get("StackName") or not kwargs.get("ChangeSetName"):
+            raise ConfigurationError("StackName and ChangeSetName are required")
         return self._invoke(
             "cloudformation:CreateChangeSet",
             kwargs=kwargs,
