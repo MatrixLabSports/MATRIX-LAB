@@ -151,6 +151,37 @@ stream.
 
 ---
 
+## 4.1 Critical bucket-policy lifecycle hardening
+
+The immutable receipt bucket and its deny policy are one security unit.
+
+S3 Object Lock protects a specific object version. It does not prevent a simple
+`DeleteObject` request from creating a delete marker, and it does not prevent new
+object versions from being created above an older protected version. Because the
+runtime reads the current canonical key, the explicit `DenyReceiptDeletion` policy
+is therefore a required part of the fail-closed authority boundary rather than an
+optional convenience.
+
+CloudFormation removes an `AWS::S3::BucketPolicy` during stack deletion unless the
+resource itself is retained. Retaining the bucket while allowing CloudFormation to
+remove its deny policy would leave the WORM versions present but would weaken the
+current-key/delete-marker protection.
+
+The archive template therefore binds `ReceiptBucketPolicy` to:
+
+- `DeletionPolicy: Retain`
+- `UpdateReplacePolicy: Retain`
+
+This ensures stack deletion or policy-resource replacement cannot silently discard
+the deny policy while the receipt bucket is deliberately retained.
+
+Future real provisioning must additionally use stack-level termination protection
+and independently verify that the retained bucket policy is still attached and
+effective. Template lifecycle retention is necessary but does not substitute for
+remote policy evidence or the independent archive-administration trust boundary.
+
+---
+
 ## 5. Conditional-write semantics
 
 The application-side offline adapter already constructs receipt writes with:
@@ -256,6 +287,7 @@ additional checks for:
 - actual-versus-expected account/region evidence outputs;
 - current commercial-partition activation restriction;
 - deny-only bucket resource policy;
+- retained bucket-policy lifecycle on stack deletion/replacement;
 - no wildcard authority actions;
 - manual key-rotation semantics;
 - human approval gates;

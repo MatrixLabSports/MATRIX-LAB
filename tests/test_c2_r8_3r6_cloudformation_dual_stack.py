@@ -606,3 +606,23 @@ def test_66_implementation_doc_keeps_authorizations_closed():
         "PRODUCTION_ADMISSIBLE=FALSE",
     ):
         assert token in text
+# 67
+def test_67_archive_bucket_policy_deletion_policy_retain(archive):
+    policy = archive["Resources"]["ReceiptBucketPolicy"]
+    assert policy["DeletionPolicy"] == "Retain"
+
+
+# 68
+def test_68_archive_bucket_policy_update_replace_policy_retain(archive):
+    policy = archive["Resources"]["ReceiptBucketPolicy"]
+    assert policy["UpdateReplacePolicy"] == "Retain"
+
+
+# 69
+def test_69_implementation_doc_records_delete_marker_policy_lifecycle_threat():
+    text = IMPLEMENTATION_DOC_PATH.read_text(encoding="utf-8")
+    assert "delete marker" in text
+    assert "DenyReceiptDeletion" in text
+    assert "DeletionPolicy: Retain" in text
+    assert "UpdateReplacePolicy: Retain" in text
+    assert "stack-level termination protection" in text
