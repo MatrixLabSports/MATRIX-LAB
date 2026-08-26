@@ -1312,3 +1312,59 @@ def test_e02_forged_uninitialized_boundary_is_rejected_by_control_plane_integrit
             session=forged,
             permit=permit("sts:GetCallerIdentity"),
         )
+
+# R8.3R6 post-independent-audit R6 session-boundary issuance regressions F01-F02.
+
+def test_f01_internal_mint_helper_is_not_exposed():
+    assert not hasattr(m, "_mint_session_boundary")
+
+
+def test_f02_object_new_cannot_forge_real_boundary_even_with_well_formed_slots():
+    forged = object.__new__(m.SealedSessionBoundary)
+    object.__setattr__(forged, "_delegate", object())
+    object.__setattr__(forged, "region", "us-east-1")
+    object.__setattr__(forged, "provenance", "EXPLICIT_TEMPORARY_STS_SESSION")
+    object.__setattr__(forged, "_real", True)
+    with pytest.raises(m.ConfigurationError):
+        forged._validate_integrity()
+
+
+def test_f02_object_new_cannot_clone_legitimate_offline_boundary_issuance():
+    issued = m.create_offline_test_session_boundary(
+        {"sts": {"get_caller_identity": {"Account": "123456789012", "Arn": "arn:aws:sts::123456789012:assumed-role/matrix-deployer/session"}}},
+        region="us-east-1",
+    )
+    delegate = object.__getattribute__(issued, "_delegate")
+    forged = object.__new__(m.SealedSessionBoundary)
+    object.__setattr__(forged, "_delegate", delegate)
+    object.__setattr__(forged, "region", "us-east-1")
+    object.__setattr__(forged, "provenance", "EXPLICIT_OFFLINE_TEST_RECORDER")
+    object.__setattr__(forged, "_real", False)
+    with pytest.raises(m.ConfigurationError):
+        forged._validate_integrity()
+
+
+def test_f02_factory_issued_boundary_detects_post_issuance_delegate_swap():
+    first = m.create_offline_test_session_boundary(
+        {"sts": {"get_caller_identity": {"Account": "123456789012", "Arn": "arn:aws:sts::123456789012:assumed-role/matrix-deployer/one"}}},
+        region="us-east-1",
+    )
+    second = m.create_offline_test_session_boundary(
+        {"sts": {"get_caller_identity": {"Account": "123456789012", "Arn": "arn:aws:sts::123456789012:assumed-role/matrix-deployer/two"}}},
+        region="us-east-1",
+    )
+    object.__setattr__(first, "_delegate", object.__getattribute__(second, "_delegate"))
+    with pytest.raises(m.ConfigurationError):
+        first._validate_integrity()
+
+
+def test_f02_normal_session_boundary_state_assignment_is_immutable():
+    issued = m.create_offline_test_session_boundary({}, region="us-east-1")
+    with pytest.raises(m.ConfigurationError):
+        issued.region = "us-west-2"
+
+
+def test_f02_session_boundary_cannot_be_subclassed():
+    with pytest.raises(TypeError):
+        class EvilBoundary(m.SealedSessionBoundary):
+            pass

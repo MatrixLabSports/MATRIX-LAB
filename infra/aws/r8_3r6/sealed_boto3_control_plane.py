@@ -4,6 +4,7 @@ from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from hashlib import sha256
 from typing import Any, Iterable, Mapping
+from weakref import WeakKeyDictionary
 import re
 
 BOTO3_VERSION_PIN = "1.43.73"
@@ -598,24 +599,44 @@ class _OfflineRecordingSession:
         return tuple((name, dict(kwargs)) for name, kwargs in self._clients[service].calls)
 
 
-class SealedSessionBoundary:
-    """Factory-only boundary around either a real boto3 session or inert offline recorder.
+_ISSUED_SESSION_BOUNDARIES = WeakKeyDictionary()
 
-    Direct construction is always rejected.  There are deliberately no capability
-    tokens in this constructor or its closure; factories initialize instances via
-    object.__new__ and the control plane revalidates the delegate on every boundary
-    use.  The offline delegate is module-owned and data-only, so it cannot proxy a
-    boto3/botocore session or arbitrary caller code.
+
+class SealedSessionBoundary:
+    """Factory-issued boundary around a real boto3 session or inert offline recorder.
+
+    Direct construction and subclassing are forbidden.  Factory issuance is recorded
+    in a weak identity registry that binds the exact delegate identity, region,
+    provenance, and real/offline mode.  Revalidation therefore rejects objects
+    fabricated with ``object.__new__`` as well as post-issuance slot replacement.
+
+    Python same-process introspection is not claimed to be a cryptographic security
+    boundary; this object is a fail-closed control-plane contract against unsupported
+    construction/injection paths inside the governed application runtime.
     """
 
-    __slots__ = ("_delegate", "region", "provenance", "_real")
+    __slots__ = ("_delegate", "region", "provenance", "_real", "__weakref__")
 
     def __init__(self, *args: Any, **kwargs: Any) -> None:
         raise ConfigurationError(
-            "session boundaries can only be minted by an approved factory"
+            "session boundaries can only be issued by an approved factory"
         )
 
+    def __init_subclass__(cls, **kwargs: Any) -> None:
+        raise TypeError("SealedSessionBoundary cannot be subclassed")
+
+    def __setattr__(self, name: str, value: Any) -> None:
+        raise ConfigurationError("session boundary state is immutable after issuance")
+
     def _validate_integrity(self) -> None:
+        try:
+            issuance = _ISSUED_SESSION_BOUNDARIES.get(self)
+        except Exception as exc:
+            raise ConfigurationError("session boundary issuance cannot be verified") from exc
+        if issuance is None:
+            raise ConfigurationError(
+                "session boundary was not issued by an approved factory"
+            )
         try:
             delegate = object.__getattribute__(self, "_delegate")
             region = object.__getattribute__(self, "region")
@@ -623,6 +644,11 @@ class SealedSessionBoundary:
             real = object.__getattribute__(self, "_real")
         except (AttributeError, TypeError) as exc:
             raise ConfigurationError("session boundary is incomplete") from exc
+        expected = (id(delegate), region, provenance, real)
+        if issuance != expected:
+            raise ConfigurationError(
+                "session boundary state no longer matches its factory issuance record"
+            )
         if type(real) is not bool:
             raise ConfigurationError("session boundary mode is malformed")
         if type(region) is not str or not _REGION_RE.fullmatch(region):
@@ -689,18 +715,6 @@ class SealedSessionBoundary:
         return self._delegate.client(service, **kwargs)
 
 
-def _mint_session_boundary(
-    *, delegate: Any, region: str, provenance: str, real: bool
-) -> SealedSessionBoundary:
-    boundary = object.__new__(SealedSessionBoundary)
-    object.__setattr__(boundary, "_delegate", delegate)
-    object.__setattr__(boundary, "region", region)
-    object.__setattr__(boundary, "provenance", provenance)
-    object.__setattr__(boundary, "_real", real)
-    boundary._validate_integrity()
-    return boundary
-
-
 def create_offline_test_session_boundary(
     scenario: Any,
     *,
@@ -714,12 +728,24 @@ def create_offline_test_session_boundary(
         raise ConfigurationError("session boundary region is not admissible")
     _partition_for_region(region)
     recorder = _OfflineRecordingSession(scenario)
-    return _mint_session_boundary(
-        delegate=recorder,
-        region=region,
-        provenance="EXPLICIT_OFFLINE_TEST_RECORDER",
-        real=False,
+    boundary = object.__new__(SealedSessionBoundary)
+    object.__setattr__(boundary, "_delegate", recorder)
+    object.__setattr__(boundary, "region", region)
+    object.__setattr__(boundary, "provenance", "EXPLICIT_OFFLINE_TEST_RECORDER")
+    object.__setattr__(boundary, "_real", False)
+    record = (
+        id(recorder),
+        region,
+        "EXPLICIT_OFFLINE_TEST_RECORDER",
+        False,
     )
+    _ISSUED_SESSION_BOUNDARIES[boundary] = record
+    try:
+        boundary._validate_integrity()
+    except Exception:
+        _ISSUED_SESSION_BOUNDARIES.pop(boundary, None)
+        raise
+    return boundary
 
 
 def create_explicit_boto3_session(
@@ -749,12 +775,28 @@ def create_explicit_boto3_session(
         aws_session_token=credentials.session_token,
         region_name=region,
     )
-    return _mint_session_boundary(
-        delegate=raw,
-        region=region,
-        provenance="EXPLICIT_TEMPORARY_STS_SESSION",
-        real=True,
+    if not isinstance(raw, boto3.Session):
+        raise ConfigurationError(
+            "boto3 session factory did not return a boto3.Session instance"
+        )
+    boundary = object.__new__(SealedSessionBoundary)
+    object.__setattr__(boundary, "_delegate", raw)
+    object.__setattr__(boundary, "region", region)
+    object.__setattr__(boundary, "provenance", "EXPLICIT_TEMPORARY_STS_SESSION")
+    object.__setattr__(boundary, "_real", True)
+    record = (
+        id(raw),
+        region,
+        "EXPLICIT_TEMPORARY_STS_SESSION",
+        True,
     )
+    _ISSUED_SESSION_BOUNDARIES[boundary] = record
+    try:
+        boundary._validate_integrity()
+    except Exception:
+        _ISSUED_SESSION_BOUNDARIES.pop(boundary, None)
+        raise
+    return boundary
 
 
 class SealedBoto3ControlPlane:
@@ -766,7 +808,7 @@ class SealedBoto3ControlPlane:
     ) -> None:
         if session is None:
             raise ConfigurationError("an explicitly minted sealed session boundary is required")
-        if not isinstance(session, SealedSessionBoundary):
+        if type(session) is not SealedSessionBoundary:
             raise ConfigurationError(
                 "raw session injection is forbidden; use an approved session-boundary factory"
             )

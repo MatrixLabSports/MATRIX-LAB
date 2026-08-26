@@ -331,3 +331,70 @@ The gate also requires exact R5 failed-audit evidence binding, exact three-file 
 `PRODUCTION_ADMISSIBLE=FALSE`
 
 A successful hardening commit does not seal the control plane. The required next gate is an independent post-hardening re-audit before any audit seal may be issued.
+
+## R6 issuance-boundary hardening — F01–F02
+
+The independent R6 seal-candidate audit confirmed A01–A07, B01–B08, C01–C09, D03–D06, and E01–E02 remain closed, but reproduced two final session-boundary issuance blockers. The remediation removes the reusable internal mint helper and adds a factory-issuance integrity record so a manually allocated Python object cannot masquerade as a real-session authority.
+
+### F01 — reusable internal mint helper removed
+
+`_mint_session_boundary` no longer exists. The approved offline and real factories perform their issuance steps directly. There is therefore no module helper that accepts a caller-supplied delegate, provenance string, and real/offline flag and converts those inputs into an admitted boundary.
+
+The real factory still requires `TemporaryAwsCredentials`, a governed region, non-expired timezone-aware temporary credentials, the pinned boto3/botocore runtime, and a genuine `boto3.Session` result. The offline factory still accepts only inert exact-dict scenario data and creates the module-owned recorder itself.
+
+### F02 — object.__new__ and post-issuance slot replacement fail closed
+
+Each approved boundary issuance is recorded in a weak identity registry that binds:
+
+- the exact delegate object identity;
+- region;
+- provenance label;
+- real/offline mode.
+
+`SealedSessionBoundary._validate_integrity()` first requires a matching factory-issuance record and then verifies that the current slots still equal that record. A boundary fabricated with `object.__new__` has no issuance record and is rejected even if all slots are populated with syntactically valid values. A legitimate issued boundary whose delegate or other bound state is later replaced with `object.__setattr__` also fails closed.
+
+Normal attribute assignment is rejected after issuance, subclassing `SealedSessionBoundary` is forbidden, and `SealedBoto3ControlPlane` requires the exact boundary type rather than accepting subclasses that could override integrity behavior.
+
+This is an application-runtime integrity contract, not a claim that arbitrary malicious code executing in the same Python interpreter is cryptographically isolated from all module state. Same-process arbitrary introspection and monkeypatching remain outside the capability-isolation claim and must be governed by the repository/runtime trust boundary.
+
+### Verification contract
+
+The hardening gate must run under the sealed dependency wheelhouse and Python socket-deny guard.
+
+Expected focused F01–F02 regressions:
+
+`6 passed`
+
+Expected dedicated control-plane suite:
+
+`154 passed`
+
+Expected canonical MATRIX suite after replacing the prior 148-test file with the 154-test issuance-hardened file:
+
+`2572 passed, 1 skipped`
+
+The gate also requires exact R6 failed-audit evidence binding, exact three-file mutation scope, payload SHA-256 checks, baseline-aware secret scanning, `git diff --check`, exact three-file commit, a clean post-commit repository, and `git fsck --full`.
+
+## Governance after R6 hardening
+
+`REAL_AWS_IDENTITY_PROBE_AUTHORIZED=FALSE`
+
+`REAL_AWS_CREDENTIAL_READ_AUTHORIZED=FALSE`
+
+`REAL_AWS_NETWORK_AUTHORIZED=FALSE`
+
+`RESOURCE_PROVISIONING_AUTHORIZED=FALSE`
+
+`RESOURCE_PROVISIONING_PERFORMED=FALSE`
+
+`PYTHON312_ACTUAL_RUNTIME_EXECUTION_PROVEN=FALSE`
+
+`CONTROLLED_LIVE_ADMISSIBLE=FALSE`
+
+`MACROBLOCK_2_CLOSED=FALSE`
+
+`REMAINING_C2_LIVE_MACROBLOCKS=5`
+
+`PRODUCTION_ADMISSIBLE=FALSE`
+
+A successful hardening commit does not itself seal the control plane. The required next gate is an independent post-hardening re-audit (`R8_3R6_SEALED_BOTO3_CONTROL_PLANE_INDEPENDENT_AUDIT_R7`) before any audit seal may be issued.
