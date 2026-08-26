@@ -73,19 +73,18 @@ The permit binding can independently bind:
 - `role_arn`;
 - `template_sha256`.
 
-When a value is bound, caller input must match the binding exactly. A real
-explicit session additionally requires a bound change-set type and exact
-TemplateBody SHA-256 before dispatch.
+When a value is bound, caller input must match the binding exactly. After the
+R3 composition hardening, every execution mode (real or explicitly offline test)
+requires a bound change-set type and exact TemplateBody SHA-256 before dispatch.
 
 ## B05 — S3 PutObject content digest binding
 
 `MutationResourceBinding` now exposes `body_sha256`.
 
-When a digest is bound, the exact bytes/string payload are hashed before
-dispatch and a mismatch fails closed. The real explicit-session path requires a
-content digest binding for non-empty `PutObject` writes. Offline injected test
-doubles may omit it only to support deterministic adversarial harnesses; that
-provenance is not an admissible real boto3 session path.
+The exact bytes/string payload are hashed before dispatch and a mismatch fails
+closed. After the R3 composition hardening, every `PutObject` execution mode
+requires a content digest binding and an explicit Body. Offline test doubles no
+longer receive a weaker mutation contract.
 
 ## B06 — exact temporary access-key shape
 
@@ -118,23 +117,83 @@ A caller request such as `ACL="public-read"` cannot widen the permit. If the
 permit has no ACL binding, the ACL is omitted; if the permit binds `private`,
 that exact value is dispatched.
 
+## R3 composition hardening — C01–C09
+
+The independent R3 audit confirmed A01–A07 and B01–B08 remained closed but
+identified nine composition findings. The C01–C09 hardening changes the
+boundary model rather than adding special-case bypasses.
+
+### C01 — real versus offline-test session authority separation
+
+Raw session injection is rejected. `SealedBoto3ControlPlane` accepts only a
+sealed boundary minted by an approved factory. A real boundary can pair only
+with `aws_network_authorized=True`; an offline-test boundary can pair only with
+`offline_test_authorized=True` and `aws_network_authorized=False`. The two
+authority modes are mutually exclusive.
+
+### C02 — no digest bypass through test doubles
+
+`S3 PutObject` requires `body_sha256` and an explicit Body in both real and
+offline-test execution modes. Test-double provenance cannot weaken the content
+integrity contract.
+
+### C03 — immutable CreateChangeSet contract in every mode
+
+`CreateChangeSet` requires a permit-bound `ChangeSetType` and exact
+`TemplateBody` SHA-256 for both real and offline-test execution. A test double
+cannot dispatch a minimally bound change set.
+
+### C04 — caller-forgeable real-provenance globals removed
+
+The legacy module-level `_SESSION_SEAL` and `_REAL_SESSION_PROVENANCE` tokens
+are removed. Session-boundary minting uses closure-held capabilities, and direct
+construction without the capability fails closed. Real session creation remains
+available only through `create_explicit_boto3_session`.
+
+### C05 — STS principal session name is non-empty
+
+Verified STS assumed-role ARNs must match a strict assumed-role grammar with a
+non-empty role-session-name. Prefix matching no longer accepts an ARN ending in
+`assumed-role/<role>/`.
+
+### C06 — ExecuteChangeSet ARN scope
+
+A full CloudFormation change-set ARN is validated against the permit account and
+region. Cross-account or cross-region full ARNs fail at permit construction.
+
+### C07 — CreateChangeSet RoleARN account scope
+
+A bound CloudFormation `RoleARN` must be a syntactically valid IAM role ARN in
+the same account as the permit. Cross-account pass-role expansion is rejected.
+
+### C08 — SSE-KMS key account and region scope
+
+A bound `SSEKMSKeyId` must be a full KMS key ARN and must match the permit
+account and region. Cross-account or cross-region encryption-key widening is
+rejected.
+
+### C09 — strict secret/token types
+
+`TemporaryAwsCredentials` requires `access_key_id`, `secret_access_key`, and
+`session_token` to be non-empty strings. Truthy non-string values are rejected.
+
 ## Verification contract
 
 The hardening gate must run under the already sealed dependency wheelhouse and
 a Python socket-deny guard.
 
-Expected focused B01–B08 regressions:
+Expected focused C01–C09 regressions:
 
-`22 passed`
+`12 passed`
 
 Expected dedicated control-plane suite:
 
-`114 passed`
+`127 passed`
 
-Expected canonical MATRIX suite after replacing the prior 92-test file with the
-114-test hardened file:
+Expected canonical MATRIX suite after replacing the prior 114-test file with
+the 127-test composition-hardened file:
 
-`2532 passed, 1 skipped`
+`2545 passed, 1 skipped`
 
 The gate also requires:
 
@@ -170,4 +229,4 @@ The gate also requires:
 `PRODUCTION_ADMISSIBLE=FALSE`
 
 The next required gate after a successful hardening commit is
-`R8_3R6_SEALED_BOTO3_CONTROL_PLANE_INDEPENDENT_AUDIT_R3`.
+`R8_3R6_SEALED_BOTO3_CONTROL_PLANE_INDEPENDENT_AUDIT_R4`.

@@ -63,12 +63,17 @@ _REGION_RE = re.compile(r"^[a-z]{2}(?:-gov)?-[a-z]+-\d+$")
 _TEMP_ACCESS_KEY_RE = re.compile(r"^ASIA[0-9A-Z]{16}$")
 _SHA256_RE = re.compile(r"^[0-9a-f]{64}$")
 _CHANGE_SET_ARN_RE = re.compile(
-    r"^arn:aws(?:-[a-z0-9-]+)?:cloudformation:[a-z0-9-]+:\d{12}:changeSet/[^/]+/[A-Za-z0-9-]+$"
+    r"^arn:(?P<partition>aws(?:-[a-z0-9-]+)?):cloudformation:(?P<region>[a-z0-9-]+):(?P<account>\d{12}):changeSet/(?P<name>[^/]+)/(?P<identifier>[A-Za-z0-9-]+)$"
 )
-_ROLE_ARN_RE = re.compile(r"^arn:aws(?:-[a-z0-9-]+)?:iam::\d{12}:role/[A-Za-z0-9+=,.@_/-]+$")
-_SESSION_SEAL = object()
-_REAL_SESSION_PROVENANCE = "EXPLICIT_TEMPORARY_STS_SESSION"
-_TEST_SESSION_PROVENANCE = "INJECTED_OFFLINE_TEST_DOUBLE"
+_ROLE_ARN_RE = re.compile(
+    r"^arn:(?P<partition>aws(?:-[a-z0-9-]+)?):iam::(?P<account>\d{12}):role/(?P<role>[A-Za-z0-9+=,.@_/-]+)$"
+)
+_KMS_KEY_ARN_RE = re.compile(
+    r"^arn:(?P<partition>aws(?:-[a-z0-9-]+)?):kms:(?P<region>[a-z0-9-]+):(?P<account>\d{12}):key/(?P<key>[A-Za-z0-9-]+)$"
+)
+_ASSUMED_ROLE_ARN_RE = re.compile(
+    r"^arn:(?P<partition>aws(?:-[a-z0-9-]+)?):sts::(?P<account>\d{12}):assumed-role/(?P<role>[^/]+(?:/[^/]+)*)/(?P<session>[^/]+)$"
+)
 
 
 class ControlPlaneError(RuntimeError):
@@ -106,9 +111,24 @@ def _canonical_expected_principal(account_id: str) -> str:
 
 
 def _principal_matches(expected: str, actual: str) -> bool:
+    if not isinstance(actual, str) or not _ASSUMED_ROLE_ARN_RE.fullmatch(actual):
+        return False
     if expected.endswith("/*"):
-        return actual.startswith(expected[:-1])
+        prefix = expected[:-1]
+        return actual.startswith(prefix) and len(actual) > len(prefix)
     return actual == expected
+
+
+def _expected_principal_is_valid(account_id: str, value: str) -> bool:
+    if value.endswith("/*"):
+        prefix = value[:-2]
+        marker = f"arn:aws:sts::{account_id}:assumed-role/"
+        if not prefix.startswith(marker):
+            return False
+        role = prefix[len(marker):]
+        return bool(role) and not role.endswith("/") and "//" not in role
+    match = _ASSUMED_ROLE_ARN_RE.fullmatch(value)
+    return bool(match and match.group("account") == account_id)
 
 
 @dataclass(frozen=True)
@@ -119,10 +139,13 @@ class TemporaryAwsCredentials:
     expiration: datetime | None = field(default=None, repr=False)
 
     def __post_init__(self) -> None:
-        if not self.access_key_id or not self.secret_access_key or not self.session_token:
-            raise ConfigurationError(
-                "temporary AWS credentials require access key, secret, and session token"
-            )
+        for name, value in (
+            ("access_key_id", self.access_key_id),
+            ("secret_access_key", self.secret_access_key),
+            ("session_token", self.session_token),
+        ):
+            if not isinstance(value, str) or not value:
+                raise ConfigurationError(f"{name} must be a non-empty string")
         if not _TEMP_ACCESS_KEY_RE.fullmatch(self.access_key_id):
             raise ConfigurationError(
                 "temporary access_key_id must match exact ASIA + 16 uppercase alphanumeric shape"
@@ -259,6 +282,12 @@ class MutationResourceBinding:
                 raise ConfigurationError(
                     "s3_ssekms_key_id requires aws:kms server-side encryption binding"
                 )
+            if self.s3_ssekms_key_id is not None and not _KMS_KEY_ARN_RE.fullmatch(
+                self.s3_ssekms_key_id
+            ):
+                raise ConfigurationError(
+                    "s3_ssekms_key_id must be a full KMS key ARN"
+                )
 
 
 @dataclass(frozen=True)
@@ -268,6 +297,7 @@ class ControlPlanePermit:
     credential_mode: str
     allowed_operations: frozenset[str] | Iterable[str]
     aws_network_authorized: bool
+    offline_test_authorized: bool = False
     resource_provisioning_authorized: bool = False
     resource_bindings: tuple[MutationResourceBinding, ...] | Iterable[
         MutationResourceBinding
@@ -288,12 +318,9 @@ class ControlPlanePermit:
             expected_principal = _canonical_expected_principal(self.account_id)
         if not isinstance(expected_principal, str) or not expected_principal:
             raise ConfigurationError("expected_principal_arn must be a non-empty string")
-        if not (
-            expected_principal.startswith(f"arn:aws:sts::{self.account_id}:assumed-role/")
-            and (expected_principal.endswith("/*") or expected_principal.count("/") >= 2)
-        ):
+        if not _expected_principal_is_valid(self.account_id, expected_principal):
             raise ConfigurationError(
-                "expected_principal_arn must bind an STS assumed-role principal in the permit account"
+                "expected_principal_arn must bind an STS assumed-role principal with a non-empty session in the permit account"
             )
         object.__setattr__(self, "expected_principal_arn", expected_principal)
 
@@ -326,9 +353,13 @@ class ControlPlanePermit:
             raise ConfigurationError(
                 "sports-provider network authorization cannot be inherited"
             )
-        if not self.aws_network_authorized and operations:
+        if self.aws_network_authorized and self.offline_test_authorized:
             raise ConfigurationError(
-                "allowed AWS operations require explicit AWS network authorization"
+                "AWS network authorization and offline-test authorization are mutually exclusive"
+            )
+        if operations and not (self.aws_network_authorized or self.offline_test_authorized):
+            raise ConfigurationError(
+                "allowed operations require explicit AWS network authorization or explicit offline-test authorization"
             )
 
         non_sts = operations - {"sts:GetCallerIdentity"}
@@ -359,62 +390,41 @@ class ControlPlanePermit:
                 f"resource bindings must exactly cover allowlisted mutations; missing={missing!r} extra={extra!r}"
             )
 
+        for binding in bindings:
+            if binding.operation == "cloudformation:ExecuteChangeSet":
+                match = _CHANGE_SET_ARN_RE.fullmatch(binding.change_set_name or "")
+                if match is not None and (
+                    match.group("account") != self.account_id
+                    or match.group("region") != self.region
+                ):
+                    raise ConfigurationError(
+                        "ExecuteChangeSet full ARN must match permit account and region"
+                    )
+            elif binding.operation == "cloudformation:CreateChangeSet" and binding.role_arn is not None:
+                role_match = _ROLE_ARN_RE.fullmatch(binding.role_arn)
+                if role_match is None or role_match.group("account") != self.account_id:
+                    raise ConfigurationError(
+                        "CreateChangeSet RoleARN must match permit account"
+                    )
+            elif binding.operation == "s3:PutObject" and binding.s3_ssekms_key_id is not None:
+                kms_match = _KMS_KEY_ARN_RE.fullmatch(binding.s3_ssekms_key_id)
+                if kms_match is None:
+                    raise ConfigurationError(
+                        "SSE-KMS key id must be a full KMS key ARN"
+                    )
+                if (
+                    kms_match.group("account") != self.account_id
+                    or kms_match.group("region") != self.region
+                ):
+                    raise ConfigurationError(
+                        "SSE-KMS key ARN must match permit account and region"
+                    )
+
     def resource_binding_for(self, operation: str) -> MutationResourceBinding:
         for binding in self.resource_bindings:
             if binding.operation == operation:
                 return binding
         raise AuthorizationDenied(f"no resource binding for mutation operation: {operation}")
-
-
-class SealedSessionBoundary:
-    __slots__ = ("_delegate", "region", "provenance")
-
-    def __init__(
-        self,
-        delegate: Any,
-        *,
-        region: str,
-        provenance: str,
-        _seal: object | None = None,
-    ) -> None:
-        if delegate is None or not callable(getattr(delegate, "client", None)):
-            raise ConfigurationError("session delegate must expose callable client()")
-        if not _REGION_RE.fullmatch(region):
-            raise ConfigurationError("session boundary region is not admissible")
-        if provenance == _REAL_SESSION_PROVENANCE:
-            if _seal is not _SESSION_SEAL:
-                raise ConfigurationError("real session provenance can only be minted by the factory")
-        elif provenance != _TEST_SESSION_PROVENANCE:
-            raise ConfigurationError("unknown session provenance")
-
-        module_name = type(delegate).__module__
-        if provenance == _TEST_SESSION_PROVENANCE and (
-            module_name == "boto3.session"
-            or module_name.startswith("botocore.")
-        ):
-            raise ConfigurationError(
-                "direct boto3/botocore session injection is forbidden; use create_explicit_boto3_session"
-            )
-
-        self._delegate = delegate
-        self.region = region
-        self.provenance = provenance
-
-    @property
-    def is_real_explicit_session(self) -> bool:
-        return self.provenance == _REAL_SESSION_PROVENANCE
-
-    def client(self, service: str, **kwargs: Any) -> Any:
-        if service not in {value[0] for value in _OPERATION_BINDINGS.values()}:
-            raise ConfigurationError(f"service is not bound to the sealed control plane: {service}")
-        if "endpoint_url" in kwargs:
-            raise ConfigurationError("endpoint_url override is forbidden")
-        requested_region = kwargs.get("region_name")
-        if requested_region != self.region:
-            raise ConfigurationError("client region must match sealed session boundary")
-        if "config" not in kwargs:
-            raise ConfigurationError("canonical botocore config is required")
-        return self._delegate.client(service, **kwargs)
 
 
 def _require_runtime_versions() -> None:
@@ -446,34 +456,126 @@ def build_botocore_config() -> Any:
     )
 
 
-def create_explicit_boto3_session(
-    *,
-    credentials: TemporaryAwsCredentials,
-    region: str,
-) -> SealedSessionBoundary:
-    if not _REGION_RE.fullmatch(region):
-        raise ConfigurationError("region is not an admissible AWS region identifier")
-    if credentials.expiration is None:
-        raise ConfigurationError(
-            "explicit temporary AWS session creation requires credential expiration"
-        )
-    if credentials.expiration.astimezone(timezone.utc) <= _utc_now():
-        raise ConfigurationError("temporary AWS credentials are expired")
-    _require_runtime_versions()
-    import boto3
+def _build_session_boundary_api():
+    real_token = object()
+    offline_token = object()
+    real_label = "EXPLICIT_TEMPORARY_STS_SESSION"
+    offline_label = "EXPLICIT_OFFLINE_TEST_DOUBLE"
 
-    raw = boto3.Session(
-        aws_access_key_id=credentials.access_key_id,
-        aws_secret_access_key=credentials.secret_access_key,
-        aws_session_token=credentials.session_token,
-        region_name=region,
-    )
-    return SealedSessionBoundary(
-        raw,
-        region=region,
-        provenance=_REAL_SESSION_PROVENANCE,
-        _seal=_SESSION_SEAL,
-    )
+    class SessionBoundary:
+        __slots__ = ("_delegate", "region", "provenance", "_real")
+
+        def __init__(
+            self,
+            delegate: Any,
+            *,
+            region: str,
+            provenance: str,
+            _token: object | None = None,
+        ) -> None:
+            if _token not in (real_token, offline_token):
+                raise ConfigurationError(
+                    "session boundaries can only be minted by an approved factory"
+                )
+            if delegate is None or not callable(getattr(delegate, "client", None)):
+                raise ConfigurationError("session delegate must expose callable client()")
+            if not _REGION_RE.fullmatch(region):
+                raise ConfigurationError("session boundary region is not admissible")
+            if _token is real_token:
+                if provenance != real_label:
+                    raise ConfigurationError("real session provenance mismatch")
+                real = True
+            else:
+                if provenance != offline_label:
+                    raise ConfigurationError("offline-test session provenance mismatch")
+                module_name = type(delegate).__module__
+                if module_name == "boto3.session" or module_name.startswith("botocore."):
+                    raise ConfigurationError(
+                        "boto3/botocore delegates cannot be wrapped as offline test doubles"
+                    )
+                real = False
+            self._delegate = delegate
+            self.region = region
+            self.provenance = provenance
+            self._real = real
+
+        @property
+        def is_real_explicit_session(self) -> bool:
+            return self._real
+
+        @property
+        def is_offline_test_session(self) -> bool:
+            return not self._real
+
+        def client(self, service: str, **kwargs: Any) -> Any:
+            if service not in {value[0] for value in _OPERATION_BINDINGS.values()}:
+                raise ConfigurationError(
+                    f"service is not bound to the sealed control plane: {service}"
+                )
+            if "endpoint_url" in kwargs:
+                raise ConfigurationError("endpoint_url override is forbidden")
+            requested_region = kwargs.get("region_name")
+            if requested_region != self.region:
+                raise ConfigurationError("client region must match sealed session boundary")
+            if "config" not in kwargs:
+                raise ConfigurationError("canonical botocore config is required")
+            return self._delegate.client(service, **kwargs)
+
+    SessionBoundary.__name__ = "SealedSessionBoundary"
+    SessionBoundary.__qualname__ = "SealedSessionBoundary"
+
+    def create_offline_test_session_boundary(
+        delegate: Any,
+        *,
+        region: str,
+    ) -> Any:
+        return SessionBoundary(
+            delegate,
+            region=region,
+            provenance=offline_label,
+            _token=offline_token,
+        )
+
+    def create_explicit_boto3_session(
+        *,
+        credentials: TemporaryAwsCredentials,
+        region: str,
+    ) -> Any:
+        if not isinstance(credentials, TemporaryAwsCredentials):
+            raise ConfigurationError(
+                "credentials must be a TemporaryAwsCredentials instance"
+            )
+        if not _REGION_RE.fullmatch(region):
+            raise ConfigurationError("region is not an admissible AWS region identifier")
+        if credentials.expiration is None:
+            raise ConfigurationError(
+                "explicit temporary AWS session creation requires credential expiration"
+            )
+        if credentials.expiration.astimezone(timezone.utc) <= _utc_now():
+            raise ConfigurationError("temporary AWS credentials are expired")
+        _require_runtime_versions()
+        import boto3
+
+        raw = boto3.Session(
+            aws_access_key_id=credentials.access_key_id,
+            aws_secret_access_key=credentials.secret_access_key,
+            aws_session_token=credentials.session_token,
+            region_name=region,
+        )
+        return SessionBoundary(
+            raw,
+            region=region,
+            provenance=real_label,
+            _token=real_token,
+        )
+
+    return SessionBoundary, create_offline_test_session_boundary, create_explicit_boto3_session
+
+
+SealedSessionBoundary, create_offline_test_session_boundary, create_explicit_boto3_session = (
+    _build_session_boundary_api()
+)
+del _build_session_boundary_api
 
 
 class SealedBoto3ControlPlane:
@@ -484,17 +586,24 @@ class SealedBoto3ControlPlane:
         permit: ControlPlanePermit,
     ) -> None:
         if session is None:
-            raise ConfigurationError("an explicitly constructed boto3 session is required")
-        if isinstance(session, SealedSessionBoundary):
-            if session.region != permit.region:
-                raise ConfigurationError("session boundary region does not match permit region")
-            boundary = session
-        else:
-            boundary = SealedSessionBoundary(
-                session,
-                region=permit.region,
-                provenance=_TEST_SESSION_PROVENANCE,
+            raise ConfigurationError("an explicitly minted sealed session boundary is required")
+        if not isinstance(session, SealedSessionBoundary):
+            raise ConfigurationError(
+                "raw session injection is forbidden; use an approved session-boundary factory"
             )
+        if session.region != permit.region:
+            raise ConfigurationError("session boundary region does not match permit region")
+        if session.is_real_explicit_session:
+            if not permit.aws_network_authorized or permit.offline_test_authorized:
+                raise ConfigurationError(
+                    "real session boundary requires AWS network authorization only"
+                )
+        else:
+            if permit.aws_network_authorized or not permit.offline_test_authorized:
+                raise ConfigurationError(
+                    "offline test boundary requires offline_test_authorized with AWS network authorization false"
+                )
+        boundary = session
         self._session = boundary
         self._permit = permit
         self._config = build_botocore_config()
@@ -516,8 +625,12 @@ class SealedBoto3ControlPlane:
         return self._verified_principal_arn
 
     def _authorize(self, operation: str, *, mutation: bool = False) -> None:
-        if not self._permit.aws_network_authorized:
-            raise AuthorizationDenied("AWS network authorization is false")
+        if self._session.is_real_explicit_session:
+            if not self._permit.aws_network_authorized or self._permit.offline_test_authorized:
+                raise AuthorizationDenied("real AWS execution is not authorized by this permit")
+        else:
+            if self._permit.aws_network_authorized or not self._permit.offline_test_authorized:
+                raise AuthorizationDenied("offline test execution is not explicitly authorized")
         if operation not in self._permit.allowed_operations:
             raise AuthorizationDenied(f"operation not allowlisted: {operation}")
         if mutation:
@@ -727,11 +840,10 @@ class SealedBoto3ControlPlane:
                 raise AuthorizationDenied("TemplateBody SHA256 does not match permit binding")
             payload["TemplateBody"] = template_body
 
-        if self._session.is_real_explicit_session:
-            if binding.change_set_type is None or binding.template_sha256 is None:
-                raise AuthorizationDenied(
-                    "real CreateChangeSet requires bound ChangeSetType and TemplateBody SHA256"
-                )
+        if binding.change_set_type is None or binding.template_sha256 is None:
+            raise AuthorizationDenied(
+                "CreateChangeSet requires bound ChangeSetType and TemplateBody SHA256 in every execution mode"
+            )
 
         return self._invoke(
             "cloudformation:CreateChangeSet",
@@ -785,13 +897,13 @@ class SealedBoto3ControlPlane:
             if binding.body_sha256 is not None:
                 if _sha256_bytes(body) != binding.body_sha256:
                     raise AuthorizationDenied("S3 Body SHA256 does not match permit binding")
-            elif self._session.is_real_explicit_session:
+            else:
                 raise AuthorizationDenied(
-                    "real S3 PutObject requires body_sha256 in permit binding"
+                    "S3 PutObject requires body_sha256 in permit binding in every execution mode"
                 )
             payload["Body"] = body
-        elif self._session.is_real_explicit_session:
-            raise AuthorizationDenied("real S3 PutObject requires explicit Body")
+        else:
+            raise AuthorizationDenied("S3 PutObject requires explicit Body")
 
         # Caller-controlled security-sensitive headers are never forwarded.
         if binding.s3_acl is not None:

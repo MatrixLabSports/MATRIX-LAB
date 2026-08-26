@@ -46,13 +46,25 @@ class FakeSession:
 
 def binding(operation):
     if operation == "cloudformation:CreateChangeSet":
-        return m.MutationResourceBinding(operation=operation, stack_name="s", change_set_name="c")
+        template = '{"Resources":{}}'
+        return m.MutationResourceBinding(
+            operation=operation,
+            stack_name="s",
+            change_set_name="c",
+            change_set_type="UPDATE",
+            template_sha256=sha256(template.encode("utf-8")).hexdigest(),
+        )
     if operation == "cloudformation:ExecuteChangeSet":
         return m.MutationResourceBinding(operation=operation, stack_name="s", change_set_name="c")
     if operation == "s3:CreateBucket":
         return m.MutationResourceBinding(operation=operation, bucket="b")
     if operation == "s3:PutObject":
-        return m.MutationResourceBinding(operation=operation, bucket="b", key="k")
+        return m.MutationResourceBinding(
+            operation=operation,
+            bucket="b",
+            key="k",
+            body_sha256=sha256(b"x").hexdigest(),
+        )
     raise AssertionError(operation)
 
 
@@ -67,7 +79,8 @@ def permit(*ops, provisioning=False, account="123456789012", region="us-east-1",
         region=region,
         credential_mode="STS_SESSION",
         allowed_operations=frozenset(ops),
-        aws_network_authorized=True,
+        aws_network_authorized=False,
+        offline_test_authorized=True,
         resource_provisioning_authorized=provisioning,
         resource_bindings=bindings,
     )
@@ -84,8 +97,12 @@ def plane(*ops, provisioning=False, sts_account="123456789012", sts_arn="arn:aws
         "logs": FakeClient("logs"),
     }
     session = FakeSession(clients)
+    boundary = m.create_offline_test_session_boundary(
+        session,
+        region="us-east-1",
+    )
     cp = m.SealedBoto3ControlPlane(
-        session=session,
+        session=boundary,
         permit=permit(*ops, provisioning=provisioning, bindings=bindings),
     )
     return cp, session, clients
@@ -309,7 +326,7 @@ def test_mutation_is_blocked_without_provisioning_at_permit_construction():
 
 
 @pytest.mark.parametrize("method,args,operation,service,api", [
-    ("create_change_set", {"StackName": "s", "ChangeSetName": "c"}, "cloudformation:CreateChangeSet", "cloudformation", "create_change_set"),
+    ("create_change_set", {"StackName": "s", "ChangeSetName": "c", "ChangeSetType": "UPDATE", "TemplateBody": '{"Resources":{}}'}, "cloudformation:CreateChangeSet", "cloudformation", "create_change_set"),
     ("execute_change_set", {"change_set_name": "c"}, "cloudformation:ExecuteChangeSet", "cloudformation", "execute_change_set"),
     ("create_bucket", {"Bucket": "b"}, "s3:CreateBucket", "s3", "create_bucket"),
     ("put_object", {"Bucket": "b", "Key": "k", "Body": b"x"}, "s3:PutObject", "s3", "put_object"),
@@ -609,11 +626,22 @@ def test_create_change_set_requires_both_bound_target_fields():
 
 # R8.3R6 post-independent-audit R2 hardening regressions B01-B08.
 
-def test_b01_generic_injected_session_is_never_stored_directly():
-    cp, session, _ = plane("sts:GetCallerIdentity")
-    assert cp._session is not session
+def test_b01_generic_injected_session_is_rejected():
+    raw = FakeSession({"sts": FakeClient("sts")})
+    with pytest.raises(m.ConfigurationError):
+        m.SealedBoto3ControlPlane(
+            session=raw,
+            permit=permit("sts:GetCallerIdentity"),
+        )
+
+
+def test_b01_explicit_offline_test_boundary_is_sealed_and_network_false():
+    cp, _, _ = plane("sts:GetCallerIdentity")
     assert isinstance(cp._session, m.SealedSessionBoundary)
-    assert cp._session.provenance == m._TEST_SESSION_PROVENANCE
+    assert cp._session.is_offline_test_session is True
+    assert cp._session.is_real_explicit_session is False
+    assert cp._permit.aws_network_authorized is False
+    assert cp._permit.offline_test_authorized is True
 
 
 def test_b01_direct_boto3_session_injection_is_forbidden(monkeypatch):
@@ -672,22 +700,22 @@ def test_b03_execute_change_set_full_arn_is_accepted_without_stack():
     assert b.change_set_name == arn
 
 
-def test_b04_unbound_create_change_set_fields_are_not_dispatched():
+def test_b04_unbound_or_mismatched_create_change_set_fields_are_rejected():
     cp, _, clients = plane(
         "sts:GetCallerIdentity",
         "cloudformation:CreateChangeSet",
         provisioning=True,
     )
     cp.verify_identity()
-    cp.create_change_set(
-        StackName="s",
-        ChangeSetName="c",
-        ChangeSetType="UPDATE",
-        TemplateBody='{"Resources":{"Unexpected":{"Type":"AWS::S3::Bucket"}}}',
-        RoleARN="arn:aws:iam::123456789012:role/unexpected-pass-role",
-    )
-    sent = clients["cloudformation"].calls[-1][1]
-    assert sent == {"StackName": "s", "ChangeSetName": "c"}
+    with pytest.raises(m.AuthorizationDenied):
+        cp.create_change_set(
+            StackName="s",
+            ChangeSetName="c",
+            ChangeSetType="UPDATE",
+            TemplateBody='{"Resources":{"Unexpected":{"Type":"AWS::S3::Bucket"}}}',
+            RoleARN="arn:aws:iam::123456789012:role/unexpected-pass-role",
+        )
+    assert clients["cloudformation"].calls == []
 
 
 def test_b04_bound_create_change_set_contract_is_exactly_dispatched():
@@ -829,6 +857,7 @@ def test_b08_only_bound_private_acl_is_forwarded():
         operation="s3:PutObject",
         bucket="b",
         key="k",
+        body_sha256=sha256(b"x").hexdigest(),
         s3_acl="private",
     )
     cp, _, clients = plane(
@@ -855,3 +884,156 @@ def test_b08_public_acl_cannot_be_bound():
             key="k",
             s3_acl="public-read",
         )
+
+
+# R8.3R6 post-independent-audit R3 composition hardening regressions C01-C09.
+
+def test_c01_raw_test_double_cannot_enter_network_authorized_control_plane():
+    raw = FakeSession({"sts": FakeClient("sts"), "s3": FakeClient("s3")})
+    real_permit = m.ControlPlanePermit(
+        account_id="123456789012",
+        region="us-east-1",
+        credential_mode="STS_SESSION",
+        allowed_operations=frozenset({"sts:GetCallerIdentity", "s3:GetBucketVersioning"}),
+        aws_network_authorized=True,
+    )
+    with pytest.raises(m.ConfigurationError):
+        m.SealedBoto3ControlPlane(session=raw, permit=real_permit)
+
+
+def test_c01_offline_test_boundary_cannot_pair_with_network_authorized_permit():
+    raw = FakeSession({"sts": FakeClient("sts")})
+    boundary = m.create_offline_test_session_boundary(raw, region="us-east-1")
+    real_permit = m.ControlPlanePermit(
+        account_id="123456789012",
+        region="us-east-1",
+        credential_mode="STS_SESSION",
+        allowed_operations=frozenset({"sts:GetCallerIdentity"}),
+        aws_network_authorized=True,
+    )
+    with pytest.raises(m.ConfigurationError):
+        m.SealedBoto3ControlPlane(session=boundary, permit=real_permit)
+
+
+def test_c02_put_object_requires_digest_even_for_offline_test_boundary():
+    b = m.MutationResourceBinding(operation="s3:PutObject", bucket="b", key="k")
+    cp, _, clients = plane(
+        "sts:GetCallerIdentity", "s3:PutObject", provisioning=True, bindings=(b,)
+    )
+    cp.verify_identity()
+    with pytest.raises(m.AuthorizationDenied):
+        cp.put_object(Bucket="b", Key="k", Body=b"unbound")
+    assert clients["s3"].calls == []
+
+
+def test_c03_create_change_set_requires_type_and_template_digest_even_offline():
+    b = m.MutationResourceBinding(
+        operation="cloudformation:CreateChangeSet",
+        stack_name="s",
+        change_set_name="c",
+    )
+    cp, _, clients = plane(
+        "sts:GetCallerIdentity",
+        "cloudformation:CreateChangeSet",
+        provisioning=True,
+        bindings=(b,),
+    )
+    cp.verify_identity()
+    with pytest.raises(m.AuthorizationDenied):
+        cp.create_change_set(StackName="s", ChangeSetName="c")
+    assert clients["cloudformation"].calls == []
+
+
+def test_c04_legacy_real_session_seal_globals_are_not_exposed():
+    assert not hasattr(m, "_SESSION_SEAL")
+    assert not hasattr(m, "_REAL_SESSION_PROVENANCE")
+
+
+def test_c04_direct_boundary_construction_cannot_mint_real_provenance():
+    raw = FakeSession({"sts": FakeClient("sts")})
+    with pytest.raises(m.ConfigurationError):
+        m.SealedSessionBoundary(
+            raw,
+            region="us-east-1",
+            provenance="EXPLICIT_TEMPORARY_STS_SESSION",
+        )
+
+
+def test_c05_empty_assumed_role_session_name_is_rejected():
+    cp, _, _ = plane(
+        "sts:GetCallerIdentity",
+        sts_arn="arn:aws:sts::123456789012:assumed-role/matrix-deployer/",
+    )
+    with pytest.raises(m.IdentityMismatch):
+        cp.verify_identity()
+
+
+def test_c06_execute_change_set_full_arn_is_bound_to_permit_account_region():
+    bad = m.MutationResourceBinding(
+        operation="cloudformation:ExecuteChangeSet",
+        change_set_name="arn:aws:cloudformation:us-west-2:999999999999:changeSet/c/abc123",
+    )
+    with pytest.raises(m.ConfigurationError):
+        m.ControlPlanePermit(
+            account_id="123456789012",
+            region="us-east-1",
+            credential_mode="STS_SESSION",
+            allowed_operations=frozenset({"sts:GetCallerIdentity", "cloudformation:ExecuteChangeSet"}),
+            aws_network_authorized=True,
+            resource_provisioning_authorized=True,
+            resource_bindings=(bad,),
+        )
+
+
+def test_c07_create_change_set_role_arn_is_bound_to_permit_account():
+    b = m.MutationResourceBinding(
+        operation="cloudformation:CreateChangeSet",
+        stack_name="s",
+        change_set_name="c",
+        change_set_type="UPDATE",
+        role_arn="arn:aws:iam::999999999999:role/cross-account-role",
+        template_sha256=sha256(b"{}").hexdigest(),
+    )
+    with pytest.raises(m.ConfigurationError):
+        m.ControlPlanePermit(
+            account_id="123456789012",
+            region="us-east-1",
+            credential_mode="STS_SESSION",
+            allowed_operations=frozenset({"sts:GetCallerIdentity", "cloudformation:CreateChangeSet"}),
+            aws_network_authorized=True,
+            resource_provisioning_authorized=True,
+            resource_bindings=(b,),
+        )
+
+
+def test_c08_ssekms_key_arn_is_bound_to_permit_account_region():
+    b = m.MutationResourceBinding(
+        operation="s3:PutObject",
+        bucket="b",
+        key="k",
+        body_sha256=sha256(b"x").hexdigest(),
+        s3_server_side_encryption="aws:kms",
+        s3_ssekms_key_id="arn:aws:kms:us-west-2:999999999999:key/00000000-0000-0000-0000-000000000000",
+    )
+    with pytest.raises(m.ConfigurationError):
+        m.ControlPlanePermit(
+            account_id="123456789012",
+            region="us-east-1",
+            credential_mode="STS_SESSION",
+            allowed_operations=frozenset({"sts:GetCallerIdentity", "s3:PutObject"}),
+            aws_network_authorized=True,
+            resource_provisioning_authorized=True,
+            resource_bindings=(b,),
+        )
+
+
+@pytest.mark.parametrize("field,value", [("secret_access_key", 123), ("session_token", 456)])
+def test_c09_temporary_credential_secret_and_token_types_are_strict(field, value):
+    kwargs = {
+        "access_key_id": "ASIA0000000000000000",
+        "secret_access_key": "secret",
+        "session_token": "token",
+    }
+    kwargs[field] = value
+    with pytest.raises(m.ConfigurationError):
+        m.TemporaryAwsCredentials(**kwargs)
