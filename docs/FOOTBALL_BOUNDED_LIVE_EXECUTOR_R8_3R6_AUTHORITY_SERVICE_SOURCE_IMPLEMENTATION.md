@@ -48,6 +48,7 @@ The source:
 - re-reads successful writes;
 - reconciles 412/409/timeout/5xx ambiguity conservatively;
 - uses application-owned bounded retries while real botocore clients are configured with `total_max_attempts=1`;
+- re-checks the 5-second mutation/reconciliation reserve before **every** S3 `put_object` retry so a retry cannot begin after the Lambda time budget has fallen below the fail-closed reconciliation floor;
 - reconstructs the head from a complete paginated immutable listing or fails closed;
 - bounds receipt bodies and request/metadata JSON;
 - derives genesis authority profile, `controlled_live_admissible=False`, and bootstrap public-key fields internally;
@@ -64,8 +65,10 @@ Authority networking remains a separate future authority permit domain from all 
 
 The dedicated offline suite contains:
 - 84 direct ASD-marker tests;
-- 36 additional adversarial/hardening tests;
-- total minimum dedicated tests: 120.
+- 40 additional adversarial/hardening tests;
+- total dedicated tests after independent-audit hardening: 124.
+
+Independent Audit R1 exposed one real source defect: the mutation reconciliation reserve was checked before `_put_receipt()` entered its retry loop but was not re-checked before each subsequent mutating S3 attempt. Hardening moves a `mutation=True` time-budget guard inside every retry iteration and adds permanent regression tests for the structural placement plus 409, 5xx, and timeout retry paths. The R1 audit also contained three auditor-only defects (test-name counting plus two mutation-detector multiplicity errors); those belong to the corrected independent audit and are not source defects.
 
 The implementation gate must also preserve:
 - CloudFormation regression: 69 PASS;

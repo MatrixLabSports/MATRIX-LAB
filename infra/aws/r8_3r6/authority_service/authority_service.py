@@ -1935,6 +1935,9 @@ class AuthorityService:
         }
         ambiguous = False
         for attempt in range(1, self.max_attempts + 1):
+            # Every potentially mutating retry must still preserve enough
+            # Lambda time to reconcile an ambiguous write outcome safely.
+            self._remaining_guard(invocation, mutation=True)
             self._count(attempts, "s3_put")
             try:
                 response = s3.put_object(**params)

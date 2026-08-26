@@ -1211,6 +1211,53 @@ def _assert_adv(case):
         assert len([x for x in s3.calls if x[0] == "put_object"]) == put_before
         assert len([x for x in kms.calls if x[0] == "describe_key"]) >= 2
         assert len(sts.calls) >= 2
+    elif case == 37:
+        module = ast.parse(source_text())
+        authority_class = next(
+            node
+            for node in module.body
+            if isinstance(node, ast.ClassDef) and node.name == "AuthorityService"
+        )
+        put_receipt = next(
+            node
+            for node in authority_class.body
+            if isinstance(node, ast.FunctionDef) and node.name == "_put_receipt"
+        )
+        retry_loop = next(node for node in ast.walk(put_receipt) if isinstance(node, ast.For))
+        statements = [ast.dump(node, include_attributes=False) for node in retry_loop.body]
+        guard_index = next(
+            index
+            for index, statement in enumerate(statements)
+            if "_remaining_guard" in statement and "mutation" in statement
+        )
+        put_index = next(
+            index for index, statement in enumerate(statements) if "put_object" in statement
+        )
+        assert guard_index < put_index
+    elif case in {38, 39, 40}:
+        runtime, genesis = append_genesis()
+        service, private, kms, sts, s3, order = runtime
+        baseline_puts = len([x for x in s3.calls if x[0] == "put_object"])
+        if case == 38:
+            s3.put_faults.append(FakeAwsError(409, "OperationAborted"))
+        elif case == 39:
+            s3.put_faults.append(FakeAwsError(500, "InternalError"))
+        else:
+            s3.put_faults.append("timeout_before_write")
+
+        def remaining():
+            puts = len([x for x in s3.calls if x[0] == "put_object"])
+            return 1000 if puts > baseline_puts else 6000
+
+        dynamic_invocation = auth.InvocationMetadata(INVOKED_ARN, remaining)
+        expect_code(
+            "INSUFFICIENT_RECONCILIATION_BUDGET",
+            lambda: service.handle(
+                prepared_request(genesis["head"]),
+                invocation=dynamic_invocation,
+            ),
+        )
+        assert len([x for x in s3.calls if x[0] == "put_object"]) == baseline_puts + 1
     else:
         raise AssertionError(case)
 
@@ -1573,3 +1620,16 @@ def test_hardening_35_adversarial():
 
 def test_hardening_36_adversarial():
     _assert_adv(36)
+
+def test_hardening_37_mutating_retry_guard_inside_loop():
+    _assert_adv(37)
+
+def test_hardening_38_retry_reserve_after_409():
+    _assert_adv(38)
+
+def test_hardening_39_retry_reserve_after_5xx():
+    _assert_adv(39)
+
+def test_hardening_40_retry_reserve_after_timeout():
+    _assert_adv(40)
+
