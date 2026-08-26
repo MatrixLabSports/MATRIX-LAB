@@ -1,110 +1,151 @@
-# MATRIX C2 R8.3R6 — Sealed boto3 Control Plane Hardening R1
+# MATRIX C2 R8.3R6 — Sealed boto3 Control Plane Post-Audit R2 Hardening B01–B08
 
-Status: **OFFLINE HARDENING ONLY**
+Status: **OFFLINE HARDENING ONLY — NO REAL AWS AUTHORIZATION**
 
-This hardening closes the seven findings produced by the independent
-adversarial audit R1 of commit
-`8f1d5b195c0d1e1635523a3b9630bd297861bd65`.
+Baseline: `f201b42faf521c089fe06f98db346969c3ecf249`
 
-The audit result was `FAIL` with five BLOCKER findings and two MAJOR findings.
-No real AWS identity, credentials, network calls, provisioning, CONTROLLED_LIVE,
-or production admission are authorized by this hardening.
+This hardening responds to independent adversarial audit R2, which returned
+`FAIL` with five BLOCKER findings and three MAJOR findings. The prior A01–A07
+findings remain closed. No real AWS identity probe, credential read, network
+execution, resource provisioning, CONTROLLED_LIVE admission, or production
+admission is authorized by this hardening.
 
-## A01 — immutable operation allowlist
+## Preserved A01–A07 controls
 
-`ControlPlanePermit.allowed_operations` is normalized to `frozenset` inside the
-frozen dataclass. A mutable caller-owned list can no longer expand the permit
-after construction.
+The implementation retains the previously hardened invariants:
 
-Mutation resource bindings are likewise normalized into an immutable tuple of
-frozen `MutationResourceBinding` values.
+- immutable `frozenset` operation allowlists and immutable resource bindings;
+- canonical botocore configuration owned by the control-plane boundary;
+- configured endpoint URL overrides disabled;
+- exact boto3/botocore runtime pins (`1.43.73`);
+- explicit mutation target bindings;
+- mandatory `sts:GetCallerIdentity` dependency for non-STS operations;
+- rejection of the `MATRIX_TEST_ONLY` credential sentinel.
 
-## A02 — canonical SDK configuration
+## B01 — sealed session provenance boundary
 
-`SealedBoto3ControlPlane` no longer accepts a caller-supplied `config`
-parameter. It constructs its own configuration through
-`build_botocore_config()`.
+`SealedBoto3ControlPlane` no longer stores an arbitrary injected session object
+directly. All sessions are mediated by `SealedSessionBoundary`.
 
-The canonical configuration fixes:
+Two provenance modes are distinguished:
 
-- connect timeout: 3 seconds;
-- read timeout: 8 seconds;
-- total maximum attempts: 1;
-- retry mode: `standard`;
-- configured endpoint URL overrides ignored.
+- `EXPLICIT_TEMPORARY_STS_SESSION`, minted only by
+  `create_explicit_boto3_session()` through a private module seal; and
+- `INJECTED_OFFLINE_TEST_DOUBLE`, retained only so deterministic offline tests
+  can exercise dispatch without contacting AWS.
 
-## A03 — endpoint override protection
+Direct boto3/botocore session injection is rejected; the real runtime path must
+use the explicit temporary-session factory. The boundary also enforces the
+permit region, canonical botocore configuration, service allowlist, and no
+caller endpoint override.
 
-The botocore configuration sets:
+## B02 — expected STS principal binding
 
-`ignore_configured_endpoint_urls=True`
+`ControlPlanePermit` now contains `expected_principal_arn`.
 
-This prevents configured AWS endpoint URL overrides from silently redirecting
-the governed client boundary.
+When the caller does not provide a narrower value, the canonical default is the
+MATRIX deployer assumed-role family for the permit account:
 
-## A04 — runtime dependency version pinning
+`arn:aws:sts::<account-id>:assumed-role/matrix-deployer/*`
 
-Before configuration or session creation, the implementation verifies:
+`verify_identity()` now validates both the exact 12-digit account and the STS
+principal ARN. A same-account but unexpected IAM user or role session fails
+closed and clears the sticky identity state.
 
-- boto3 == 1.43.73
-- botocore == 1.43.73
+## B03 — ExecuteChangeSet stack scope
 
-Missing or mismatched runtime versions fail closed with `ConfigurationError`.
+An `ExecuteChangeSet` mutation binding must contain either:
 
-## A05 — mutation target resource binding
+- `stack_name` plus `change_set_name`; or
+- a full CloudFormation change-set ARN.
 
-Each allowlisted mutation must have exactly one immutable
-`MutationResourceBinding`.
+A bare change-set name without stack scope is rejected. Dispatch includes the
+bound stack name when name-based addressing is used.
 
-The current exact target semantics are:
+## B04 — immutable CreateChangeSet request contract
 
-- `cloudformation:CreateChangeSet` → exact `StackName` + `ChangeSetName`;
-- `cloudformation:ExecuteChangeSet` → exact `ChangeSetName`;
-- `s3:CreateBucket` → exact bucket;
-- `s3:PutObject` → exact bucket + exact object key.
+Caller-supplied security-sensitive `CreateChangeSet` fields are never forwarded
+merely because they were present in `**kwargs`.
 
-Missing, duplicate, extra, or mismatching bindings fail closed. A single permit
-therefore cannot silently widen itself to a different stack, bucket, change
-set, or object key.
+The permit binding can independently bind:
 
-## A06 — identity operation dependency
+- `change_set_type`;
+- `role_arn`;
+- `template_sha256`.
 
-Any permit containing a non-STS operation must also contain
-`sts:GetCallerIdentity`.
+When a value is bound, caller input must match the binding exactly. A real
+explicit session additionally requires a bound change-set type and exact
+TemplateBody SHA-256 before dispatch.
 
-Non-STS execution still requires successful identity verification against the
-same exact 12-digit account id before the operation can run.
+## B05 — S3 PutObject content digest binding
 
-## A07 — test credential sentinel separation
+`MutationResourceBinding` now exposes `body_sha256`.
 
-`TemporaryAwsCredentials` no longer accepts `MATRIX_TEST_ONLY`.
-Only access-key identifiers beginning with `ASIA` are accepted by this
-production-facing credential value object.
+When a digest is bound, the exact bytes/string payload are hashed before
+dispatch and a mismatch fails closed. The real explicit-session path requires a
+content digest binding for non-empty `PutObject` writes. Offline injected test
+doubles may omit it only to support deterministic adversarial harnesses; that
+provenance is not an admissible real boto3 session path.
 
-Test-only sentinels must remain outside the real credential path.
+## B06 — exact temporary access-key shape
 
-## Dependency source
+Temporary access-key identifiers must match:
 
-No dependency is installed into the Windows host. Hardening verification
-materializes the seven sealed pure-Python control-plane wheels ephemerally from
-the already sealed wheelhouse and runs with network denied.
+`ASIA[0-9A-Z]{16}`
 
-The approved pins remain:
+Short, long, lowercase, malformed, `AKIA`, and test-sentinel identifiers are
+rejected.
 
-- boto3 1.43.73
-- botocore 1.43.73
+## B07 — temporary credential expiration
 
-## Verification target
+`TemporaryAwsCredentials` now contains a non-repr `expiration` field.
 
-The hardening regression file contains 92 tests in total, including 31 focused
-A01–A07 hardening regressions.
+When supplied, expiration must be timezone-aware and in the future. The real
+boto3 session factory requires expiration to be present and unexpired before it
+can mint a sealed real-session boundary.
 
-The expected canonical suite after this replacement is:
+## B08 — S3 security-sensitive header binding
 
-`2510 passed, 1 skipped`
+Caller-controlled S3 security-sensitive headers are not forwarded directly.
 
-The hardening gate also performs a baseline-aware secret scan and requires the
-repository to be clean after the exact hardening commit.
+The permit may bind:
+
+- `ACL`, restricted to `private`;
+- server-side encryption, restricted to `aws:kms`;
+- an SSE-KMS key id only when KMS encryption is bound.
+
+A caller request such as `ACL="public-read"` cannot widen the permit. If the
+permit has no ACL binding, the ACL is omitted; if the permit binds `private`,
+that exact value is dispatched.
+
+## Verification contract
+
+The hardening gate must run under the already sealed dependency wheelhouse and
+a Python socket-deny guard.
+
+Expected focused B01–B08 regressions:
+
+`22 passed`
+
+Expected dedicated control-plane suite:
+
+`114 passed`
+
+Expected canonical MATRIX suite after replacing the prior 92-test file with the
+114-test hardened file:
+
+`2532 passed, 1 skipped`
+
+The gate also requires:
+
+- exact baseline and audit-evidence SHA-256 checks;
+- exact three-file mutation scope;
+- payload SHA-256 checks before testing;
+- baseline-aware secret scanning;
+- `git diff --check`;
+- exact three-file commit;
+- clean post-commit repository;
+- `git fsck --full`.
 
 ## Governance
 
@@ -116,6 +157,8 @@ repository to be clean after the exact hardening commit.
 
 `RESOURCE_PROVISIONING_AUTHORIZED=FALSE`
 
+`RESOURCE_PROVISIONING_PERFORMED=FALSE`
+
 `PYTHON312_ACTUAL_RUNTIME_EXECUTION_PROVEN=FALSE`
 
 `CONTROLLED_LIVE_ADMISSIBLE=FALSE`
@@ -126,5 +169,5 @@ repository to be clean after the exact hardening commit.
 
 `PRODUCTION_ADMISSIBLE=FALSE`
 
-The next required gate is a new independent adversarial audit R2. No audit seal
-and no real AWS authorization may occur until that audit closes the findings.
+The next required gate after a successful hardening commit is
+`R8_3R6_SEALED_BOTO3_CONTROL_PLANE_INDEPENDENT_AUDIT_R3`.

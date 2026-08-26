@@ -1,6 +1,9 @@
 from __future__ import annotations
 
 import ast
+import dataclasses
+from datetime import datetime, timedelta, timezone
+from hashlib import sha256
 import importlib.util
 from pathlib import Path
 import sys
@@ -45,7 +48,7 @@ def binding(operation):
     if operation == "cloudformation:CreateChangeSet":
         return m.MutationResourceBinding(operation=operation, stack_name="s", change_set_name="c")
     if operation == "cloudformation:ExecuteChangeSet":
-        return m.MutationResourceBinding(operation=operation, change_set_name="c")
+        return m.MutationResourceBinding(operation=operation, stack_name="s", change_set_name="c")
     if operation == "s3:CreateBucket":
         return m.MutationResourceBinding(operation=operation, bucket="b")
     if operation == "s3:PutObject":
@@ -70,9 +73,9 @@ def permit(*ops, provisioning=False, account="123456789012", region="us-east-1",
     )
 
 
-def plane(*ops, provisioning=False, sts_account="123456789012", bindings=None):
+def plane(*ops, provisioning=False, sts_account="123456789012", sts_arn="arn:aws:sts::123456789012:assumed-role/matrix-deployer/session", bindings=None):
     clients = {
-        "sts": FakeClient("sts", {"get_caller_identity": {"Account": sts_account, "Arn": "arn:test"}}),
+        "sts": FakeClient("sts", {"get_caller_identity": {"Account": sts_account, "Arn": sts_arn}}),
         "cloudformation": FakeClient("cloudformation"),
         "s3": FakeClient("s3"),
         "kms": FakeClient("kms"),
@@ -126,11 +129,11 @@ def test_temporary_credentials_reject_missing_long_lived_or_test_sentinel(args):
 
 
 def test_temporary_credentials_repr_hides_secret_and_token():
-    c = m.TemporaryAwsCredentials("ASIA1234", "SUPERSECRET", "SESSIONTOKEN")
+    c = m.TemporaryAwsCredentials("ASIA0000000000000000", "SUPERSECRET", "SESSIONTOKEN")
     r = repr(c)
     assert "SUPERSECRET" not in r
     assert "SESSIONTOKEN" not in r
-    assert "ASIA1234" in r
+    assert "ASIA0000000000000000" in r
 
 
 @pytest.mark.parametrize("account", ["", "123", "abcdefghijkl", "1234567890123"])
@@ -348,14 +351,19 @@ def test_put_object_requires_bucket_and_key():
 
 def test_create_explicit_boto3_session_passes_only_explicit_temporary_credentials(monkeypatch):
     calls = []
-    fake_boto3 = types.SimpleNamespace(__version__="1.43.73", Session=lambda **kwargs: calls.append(kwargs) or object())
+    fake_boto3 = types.SimpleNamespace(__version__="1.43.73", Session=lambda **kwargs: calls.append(kwargs) or FakeSession({}))
     fake_botocore = types.SimpleNamespace(__version__="1.43.73")
     monkeypatch.setitem(sys.modules, "boto3", fake_boto3)
     monkeypatch.setitem(sys.modules, "botocore", fake_botocore)
-    creds = m.TemporaryAwsCredentials("ASIA1234", "secret", "token")
+    creds = m.TemporaryAwsCredentials(
+        "ASIA0000000000000000",
+        "secret",
+        "token",
+        expiration=datetime.now(timezone.utc) + timedelta(minutes=15),
+    )
     m.create_explicit_boto3_session(credentials=creds, region="us-east-1")
     assert calls == [{
-        "aws_access_key_id": "ASIA1234",
+        "aws_access_key_id": "ASIA0000000000000000",
         "aws_secret_access_key": "secret",
         "aws_session_token": "token",
         "region_name": "us-east-1",
@@ -363,9 +371,14 @@ def test_create_explicit_boto3_session_passes_only_explicit_temporary_credential
 
 
 def test_create_explicit_boto3_session_rejects_invalid_region(monkeypatch):
-    monkeypatch.setitem(sys.modules, "boto3", types.SimpleNamespace(__version__="1.43.73", Session=lambda **kwargs: object()))
+    monkeypatch.setitem(sys.modules, "boto3", types.SimpleNamespace(__version__="1.43.73", Session=lambda **kwargs: FakeSession({})))
     monkeypatch.setitem(sys.modules, "botocore", types.SimpleNamespace(__version__="1.43.73"))
-    creds = m.TemporaryAwsCredentials("ASIA1234", "secret", "token")
+    creds = m.TemporaryAwsCredentials(
+        "ASIA0000000000000000",
+        "secret",
+        "token",
+        expiration=datetime.now(timezone.utc) + timedelta(minutes=15),
+    )
     with pytest.raises(m.ConfigurationError):
         m.create_explicit_boto3_session(credentials=creds, region="bad")
 
@@ -451,14 +464,19 @@ def test_a04_runtime_version_drift_is_rejected(monkeypatch, boto3_version, botoc
         fake_botocore.__version__ = botocore_version
     monkeypatch.setitem(sys.modules, "boto3", fake_boto3)
     monkeypatch.setitem(sys.modules, "botocore", fake_botocore)
-    creds = m.TemporaryAwsCredentials("ASIA1234", "secret", "token")
+    creds = m.TemporaryAwsCredentials(
+        "ASIA0000000000000000",
+        "secret",
+        "token",
+        expiration=datetime.now(timezone.utc) + timedelta(minutes=15),
+    )
     with pytest.raises(m.ConfigurationError):
         m.create_explicit_boto3_session(credentials=creds, region="us-east-1")
 
 
 @pytest.mark.parametrize("kwargs", [
     {"operation": "cloudformation:CreateChangeSet", "stack_name": "s", "change_set_name": "c"},
-    {"operation": "cloudformation:ExecuteChangeSet", "change_set_name": "c"},
+    {"operation": "cloudformation:ExecuteChangeSet", "stack_name": "s", "change_set_name": "c"},
     {"operation": "s3:CreateBucket", "bucket": "b"},
     {"operation": "s3:PutObject", "bucket": "b", "key": "k"},
 ])
@@ -525,7 +543,7 @@ def test_a05_duplicate_resource_binding_rejected():
     ("create_change_set", {"StackName": "s", "ChangeSetName": "other"}, "cloudformation:CreateChangeSet",
      (m.MutationResourceBinding(operation="cloudformation:CreateChangeSet", stack_name="s", change_set_name="c"),)),
     ("execute_change_set", {"change_set_name": "other"}, "cloudformation:ExecuteChangeSet",
-     (m.MutationResourceBinding(operation="cloudformation:ExecuteChangeSet", change_set_name="c"),)),
+     (m.MutationResourceBinding(operation="cloudformation:ExecuteChangeSet", stack_name="s", change_set_name="c"),)),
     ("create_bucket", {"Bucket": "other"}, "s3:CreateBucket",
      (m.MutationResourceBinding(operation="s3:CreateBucket", bucket="b"),)),
     ("put_object", {"Bucket": "other", "Key": "k", "Body": b"x"}, "s3:PutObject",
@@ -587,3 +605,253 @@ def test_create_change_set_requires_both_bound_target_fields():
     cp.verify_identity()
     with pytest.raises(m.ConfigurationError):
         cp.create_change_set(StackName="s")
+
+
+# R8.3R6 post-independent-audit R2 hardening regressions B01-B08.
+
+def test_b01_generic_injected_session_is_never_stored_directly():
+    cp, session, _ = plane("sts:GetCallerIdentity")
+    assert cp._session is not session
+    assert isinstance(cp._session, m.SealedSessionBoundary)
+    assert cp._session.provenance == m._TEST_SESSION_PROVENANCE
+
+
+def test_b01_direct_boto3_session_injection_is_forbidden(monkeypatch):
+    DirectBotoSession = type(
+        "Session",
+        (),
+        {
+            "__module__": "boto3.session",
+            "client": lambda self, service, **kwargs: object(),
+        },
+    )
+    with pytest.raises(m.ConfigurationError):
+        m.SealedBoto3ControlPlane(
+            session=DirectBotoSession(),
+            permit=permit("sts:GetCallerIdentity"),
+        )
+
+
+def test_b02_default_principal_is_bound_to_matrix_deployer_role():
+    p = permit("sts:GetCallerIdentity")
+    assert (
+        p.expected_principal_arn
+        == "arn:aws:sts::123456789012:assumed-role/matrix-deployer/*"
+    )
+
+
+def test_b02_same_account_unexpected_principal_is_rejected():
+    cp, _, _ = plane(
+        "sts:GetCallerIdentity",
+        sts_arn="arn:aws:iam::123456789012:user/unexpected-admin",
+    )
+    with pytest.raises(m.IdentityMismatch):
+        cp.verify_identity()
+    assert cp.identity_verified is False
+    assert cp.verified_principal_arn is None
+
+
+def test_b03_execute_change_set_name_without_stack_or_arn_is_rejected():
+    with pytest.raises(m.ConfigurationError):
+        m.MutationResourceBinding(
+            operation="cloudformation:ExecuteChangeSet",
+            change_set_name="matrix-change",
+        )
+
+
+def test_b03_execute_change_set_full_arn_is_accepted_without_stack():
+    arn = (
+        "arn:aws:cloudformation:us-east-1:123456789012:"
+        "changeSet/matrix-change/01234567-89ab-cdef-0123-456789abcdef"
+    )
+    b = m.MutationResourceBinding(
+        operation="cloudformation:ExecuteChangeSet",
+        change_set_name=arn,
+    )
+    assert b.stack_name is None
+    assert b.change_set_name == arn
+
+
+def test_b04_unbound_create_change_set_fields_are_not_dispatched():
+    cp, _, clients = plane(
+        "sts:GetCallerIdentity",
+        "cloudformation:CreateChangeSet",
+        provisioning=True,
+    )
+    cp.verify_identity()
+    cp.create_change_set(
+        StackName="s",
+        ChangeSetName="c",
+        ChangeSetType="UPDATE",
+        TemplateBody='{"Resources":{"Unexpected":{"Type":"AWS::S3::Bucket"}}}',
+        RoleARN="arn:aws:iam::123456789012:role/unexpected-pass-role",
+    )
+    sent = clients["cloudformation"].calls[-1][1]
+    assert sent == {"StackName": "s", "ChangeSetName": "c"}
+
+
+def test_b04_bound_create_change_set_contract_is_exactly_dispatched():
+    template = '{"Resources":{}}'
+    digest = sha256(template.encode("utf-8")).hexdigest()
+    b = m.MutationResourceBinding(
+        operation="cloudformation:CreateChangeSet",
+        stack_name="s",
+        change_set_name="c",
+        change_set_type="UPDATE",
+        role_arn="arn:aws:iam::123456789012:role/matrix-deployer",
+        template_sha256=digest,
+    )
+    cp, _, clients = plane(
+        "sts:GetCallerIdentity",
+        "cloudformation:CreateChangeSet",
+        provisioning=True,
+        bindings=(b,),
+    )
+    cp.verify_identity()
+    cp.create_change_set(
+        StackName="s",
+        ChangeSetName="c",
+        ChangeSetType="UPDATE",
+        RoleARN="arn:aws:iam::123456789012:role/matrix-deployer",
+        TemplateBody=template,
+    )
+    assert clients["cloudformation"].calls[-1][1] == {
+        "StackName": "s",
+        "ChangeSetName": "c",
+        "ChangeSetType": "UPDATE",
+        "RoleARN": "arn:aws:iam::123456789012:role/matrix-deployer",
+        "TemplateBody": template,
+    }
+
+
+def test_b05_put_object_binding_exposes_body_sha256():
+    assert "body_sha256" in {f.name for f in dataclasses.fields(m.MutationResourceBinding)}
+
+
+def test_b05_bound_body_digest_mismatch_is_rejected():
+    b = m.MutationResourceBinding(
+        operation="s3:PutObject",
+        bucket="b",
+        key="k",
+        body_sha256=sha256(b"expected").hexdigest(),
+    )
+    cp, _, _ = plane(
+        "sts:GetCallerIdentity",
+        "s3:PutObject",
+        provisioning=True,
+        bindings=(b,),
+    )
+    cp.verify_identity()
+    with pytest.raises(m.AuthorizationDenied):
+        cp.put_object(Bucket="b", Key="k", Body=b"unexpected")
+
+
+@pytest.mark.parametrize(
+    "access_key_id",
+    [
+        "ASIA1234",
+        "ASIA123456789012345",
+        "ASIA00000000000000007",
+        "asia1234567890123456",
+        "ASIA12345678901234$6",
+    ],
+)
+def test_b06_temporary_access_key_exact_shape(access_key_id):
+    with pytest.raises(m.ConfigurationError):
+        m.TemporaryAwsCredentials(access_key_id, "secret", "token")
+
+
+def test_b07_credentials_expose_expiration_field():
+    assert "expiration" in {
+        f.name for f in __import__("dataclasses").fields(m.TemporaryAwsCredentials)
+    }
+
+
+def test_b07_naive_expiration_is_rejected():
+    with pytest.raises(m.ConfigurationError):
+        m.TemporaryAwsCredentials(
+            "ASIA0000000000000000",
+            "secret",
+            "token",
+            expiration=datetime.now(),
+        )
+
+
+def test_b07_expired_credentials_are_rejected():
+    with pytest.raises(m.ConfigurationError):
+        m.TemporaryAwsCredentials(
+            "ASIA0000000000000000",
+            "secret",
+            "token",
+            expiration=datetime.now(timezone.utc) - timedelta(seconds=1),
+        )
+
+
+def test_b07_real_session_factory_requires_expiration(monkeypatch):
+    import boto3
+
+    monkeypatch.setattr(
+        boto3,
+        "Session",
+        lambda **kwargs: FakeSession({}),
+    )
+    creds = m.TemporaryAwsCredentials(
+        "ASIA0000000000000000",
+        "secret",
+        "token",
+    )
+    with pytest.raises(m.ConfigurationError):
+        m.create_explicit_boto3_session(
+            credentials=creds,
+            region="us-east-1",
+        )
+
+
+def test_b08_caller_acl_is_not_forwarded():
+    cp, _, clients = plane(
+        "sts:GetCallerIdentity",
+        "s3:PutObject",
+        provisioning=True,
+    )
+    cp.verify_identity()
+    cp.put_object(
+        Bucket="b",
+        Key="k",
+        Body=b"x",
+        ACL="public-read",
+    )
+    sent = clients["s3"].calls[-1][1]
+    assert "ACL" not in sent
+
+
+def test_b08_only_bound_private_acl_is_forwarded():
+    b = m.MutationResourceBinding(
+        operation="s3:PutObject",
+        bucket="b",
+        key="k",
+        s3_acl="private",
+    )
+    cp, _, clients = plane(
+        "sts:GetCallerIdentity",
+        "s3:PutObject",
+        provisioning=True,
+        bindings=(b,),
+    )
+    cp.verify_identity()
+    cp.put_object(
+        Bucket="b",
+        Key="k",
+        Body=b"x",
+        ACL="public-read",
+    )
+    assert clients["s3"].calls[-1][1]["ACL"] == "private"
+
+
+def test_b08_public_acl_cannot_be_bound():
+    with pytest.raises(m.ConfigurationError):
+        m.MutationResourceBinding(
+            operation="s3:PutObject",
+            bucket="b",
+            key="k",
+            s3_acl="public-read",
+        )
