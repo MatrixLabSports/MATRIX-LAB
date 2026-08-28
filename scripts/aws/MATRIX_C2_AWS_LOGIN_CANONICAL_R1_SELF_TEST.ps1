@@ -147,14 +147,34 @@ try {
     Push-Location $Repo
     try {
         $Status = @(& git status --porcelain=v1 --untracked-files=all 2>$null | Where-Object { $_ -and $_.Trim() })
+        $TrackedAtHead = @(& git ls-tree -r --name-only HEAD -- `
+            "scripts/aws/MATRIX_C2_AWS_LOGIN_CANONICAL_R1.ps1" `
+            "scripts/aws/MATRIX_C2_AWS_LOGIN_CANONICAL_R1_SELF_TEST.ps1" 2>$null |
+            Where-Object { $_ -and $_.Trim() })
     } finally { Pop-Location }
 
     $Expected1 = "?? scripts/aws/MATRIX_C2_AWS_LOGIN_CANONICAL_R1.ps1"
     $Expected2 = "?? scripts/aws/MATRIX_C2_AWS_LOGIN_CANONICAL_R1_SELF_TEST.ps1"
 
-    Assert-True ($Status.Count -eq 2) "FAIL: repository has unexpected changes during self-test"
-    Assert-True ($Status -contains $Expected1) "FAIL: canonical wrapper is not the expected untracked file"
-    Assert-True ($Status -contains $Expected2) "FAIL: self-test is not the expected untracked file"
+    $PreCommitState =
+        ($Status.Count -eq 2) -and
+        ($Status -contains $Expected1) -and
+        ($Status -contains $Expected2)
+
+    $PostCommitState =
+        ($Status.Count -eq 0) -and
+        ($TrackedAtHead.Count -eq 2) -and
+        ($TrackedAtHead -contains "scripts/aws/MATRIX_C2_AWS_LOGIN_CANONICAL_R1.ps1") -and
+        ($TrackedAtHead -contains "scripts/aws/MATRIX_C2_AWS_LOGIN_CANONICAL_R1_SELF_TEST.ps1")
+
+    Assert-True ($PreCommitState -or $PostCommitState) "FAIL: repository is neither exact precommit nor exact postcommit canonical lifecycle state"
+
+    $LifecycleState =
+        if ($PreCommitState) { "PRECOMMIT_EXACT_TWO_UNTRACKED" }
+        else { "POSTCOMMIT_CLEAN_TRACKED_AT_HEAD" }
+
+    Write-Host "REPOSITORY_LIFECYCLE_STATE=$LifecycleState"
+    Write-Host "REPOSITORY_DUAL_LIFECYCLE_GUARD=PASS"
 
     Write-Host "STATIC_GUARD_AUDIT=PASS"
     Write-Host "EXIT_CODE_CAPTURE_SUCCESS_0=PASS"
