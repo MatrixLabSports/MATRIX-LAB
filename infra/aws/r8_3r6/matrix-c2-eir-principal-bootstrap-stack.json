@@ -1,0 +1,120 @@
+{
+  "AWSTemplateFormatVersion": "2010-09-09",
+  "Description": "MATRIX C2 dedicated principal bootstrap candidate contract; offline design artifact only.",
+  "Outputs": {
+    "AuthorityInvokerPrincipalArn": {
+      "Value": {
+        "Fn::GetAtt": [
+          "AuthorityInvokerRole",
+          "Arn"
+        ]
+      }
+    },
+    "SignerAdminPrincipalArn": {
+      "Value": {
+        "Fn::GetAtt": [
+          "SignerAdminRole",
+          "Arn"
+        ]
+      }
+    }
+  },
+  "Parameters": {
+    "AuthorityInvokerRoleName": {
+      "AllowedPattern": "^[A-Za-z0-9+=,.@_-]{1,64}$",
+      "Default": "matrix-c2-eir-authority-invoker-r8-3r6",
+      "Type": "String"
+    },
+    "BootstrapAssumerPrincipalArn": {
+      "AllowedPattern": "^arn:aws:iam::[0-9]{12}:(?:user|role)/[A-Za-z0-9+=,.@_/-]{1,512}$",
+      "Description": "Existing same-account IAM user or role allowed to assume both bootstrap roles. Human selection required.",
+      "Type": "String"
+    },
+    "DeploymentId": {
+      "AllowedPattern": "^[a-z0-9][a-z0-9-]{1,30}[a-z0-9]$",
+      "Default": "matrix-c2-r8-3r6",
+      "MaxLength": 32,
+      "MinLength": 3,
+      "Type": "String"
+    },
+    "SignerAdminRoleName": {
+      "AllowedPattern": "^[A-Za-z0-9+=,.@_-]{1,64}$",
+      "Default": "matrix-c2-eir-signer-admin-r8-3r6",
+      "Type": "String"
+    }
+  },
+  "Resources": {
+    "AuthorityInvokerRole": {
+      "Properties": {
+        "AssumeRolePolicyDocument": {
+          "Statement": [
+            {
+              "Action": "sts:AssumeRole",
+              "Effect": "Allow",
+              "Principal": {
+                "AWS": {
+                  "Ref": "BootstrapAssumerPrincipalArn"
+                }
+              },
+              "Sid": "AllowExplicitBootstrapAssumer"
+            }
+          ],
+          "Version": "2012-10-17"
+        },
+        "Description": "MATRIX C2 principal identity for invoking the sealed signer authority; no identity permissions.",
+        "RoleName": {
+          "Ref": "AuthorityInvokerRoleName"
+        },
+        "Tags": [
+          {
+            "Key": "matrix:deployment-id",
+            "Value": {
+              "Ref": "DeploymentId"
+            }
+          },
+          {
+            "Key": "matrix:principal-purpose",
+            "Value": "authority-invoker"
+          }
+        ]
+      },
+      "Type": "AWS::IAM::Role"
+    },
+    "SignerAdminRole": {
+      "Properties": {
+        "AssumeRolePolicyDocument": {
+          "Statement": [
+            {
+              "Action": "sts:AssumeRole",
+              "Effect": "Allow",
+              "Principal": {
+                "AWS": {
+                  "Ref": "BootstrapAssumerPrincipalArn"
+                }
+              },
+              "Sid": "AllowExplicitBootstrapAssumer"
+            }
+          ],
+          "Version": "2012-10-17"
+        },
+        "Description": "MATRIX C2 KMS signer administration principal identity; effective key permissions come from signer-stack key policy.",
+        "RoleName": {
+          "Ref": "SignerAdminRoleName"
+        },
+        "Tags": [
+          {
+            "Key": "matrix:deployment-id",
+            "Value": {
+              "Ref": "DeploymentId"
+            }
+          },
+          {
+            "Key": "matrix:principal-purpose",
+            "Value": "signer-admin"
+          }
+        ]
+      },
+      "Type": "AWS::IAM::Role"
+    }
+  }
+}
