@@ -1,0 +1,77 @@
+{
+  "AWSTemplateFormatVersion": "2010-09-09",
+  "Description": "MATRIX C2 R8.3R6 private authority-code artifact bootstrap bucket. Versioned, private, retained, no IAM resources.",
+  "Outputs": {
+    "AuthorityCodeBucket": {
+      "Description": "Versioned S3 bucket containing the exact authority Lambda deployment ZIP.",
+      "Value": {
+        "Ref": "AuthorityCodeArtifactBucket"
+      }
+    },
+    "AuthorityCodeBucketArn": {
+      "Description": "ARN of the authority-code artifact bucket.",
+      "Value": {
+        "Fn::GetAtt": [
+          "AuthorityCodeArtifactBucket",
+          "Arn"
+        ]
+      }
+    }
+  },
+  "Parameters": {
+    "DeploymentId": {
+      "AllowedPattern": "^[a-z0-9][a-z0-9-]{2,63}$",
+      "Description": "MATRIX deployment identifier used only for tagging.",
+      "Type": "String"
+    }
+  },
+  "Resources": {
+    "AuthorityCodeArtifactBucket": {
+      "DeletionPolicy": "Retain",
+      "Properties": {
+        "BucketEncryption": {
+          "ServerSideEncryptionConfiguration": [
+            {
+              "ServerSideEncryptionByDefault": {
+                "SSEAlgorithm": "AES256"
+              }
+            }
+          ]
+        },
+        "BucketName": {
+          "Fn::Sub": "matrix-c2-authority-code-${AWS::AccountId}-${AWS::Region}"
+        },
+        "OwnershipControls": {
+          "Rules": [
+            {
+              "ObjectOwnership": "BucketOwnerEnforced"
+            }
+          ]
+        },
+        "PublicAccessBlockConfiguration": {
+          "BlockPublicAcls": true,
+          "BlockPublicPolicy": true,
+          "IgnorePublicAcls": true,
+          "RestrictPublicBuckets": true
+        },
+        "Tags": [
+          {
+            "Key": "DeploymentId",
+            "Value": {
+              "Ref": "DeploymentId"
+            }
+          },
+          {
+            "Key": "Purpose",
+            "Value": "authority-code-artifact-bootstrap"
+          }
+        ],
+        "VersioningConfiguration": {
+          "Status": "Enabled"
+        }
+      },
+      "Type": "AWS::S3::Bucket",
+      "UpdateReplacePolicy": "Retain"
+    }
+  }
+}
