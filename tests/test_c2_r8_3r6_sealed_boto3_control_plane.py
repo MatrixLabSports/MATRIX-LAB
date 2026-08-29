@@ -1368,3 +1368,283 @@ def test_f02_session_boundary_cannot_be_subclassed():
     with pytest.raises(TypeError):
         class EvilBoundary(m.SealedSessionBoundary):
             pass
+
+# ---------------------------------------------------------------------------
+# R8.3R6 lifecycle-control candidate tests (offline candidate workspace only)
+# ---------------------------------------------------------------------------
+
+def _r836_cs_response(
+    *,
+    stack_name="s",
+    change_set_name="c",
+    change_set_id="arn:aws:cloudformation:us-east-2:123456789012:changeSet/c/id",
+    change_set_type="CREATE",
+    status="CREATE_COMPLETE",
+    execution_status="AVAILABLE",
+    logical_ids=("A",),
+    action="Add",
+):
+    return {
+        "StackName": stack_name,
+        "ChangeSetName": change_set_name,
+        "ChangeSetId": change_set_id,
+        "ChangeSetType": change_set_type,
+        "Status": status,
+        "ExecutionStatus": execution_status,
+        "Changes": [
+            {
+                "Type": "Resource",
+                "ResourceChange": {
+                    "Action": action,
+                    "LogicalResourceId": logical_id,
+                },
+            }
+            for logical_id in logical_ids
+        ],
+    }
+
+def _r836_dummy_change_set_plane(responses):
+    class Dummy:
+        wait_create_change_set_ready = m.SealedBoto3ControlPlane.wait_create_change_set_ready
+    d = Dummy()
+    calls = []
+    iterator = iter(responses)
+    def describe_change_set(*, stack_name, change_set_name):
+        calls.append((stack_name, change_set_name))
+        return next(iterator)
+    d.describe_change_set = describe_change_set
+    return d, calls
+
+def _r836_dummy_stack_plane(responses):
+    class Dummy:
+        wait_stack_create_complete = m.SealedBoto3ControlPlane.wait_stack_create_complete
+    d = Dummy()
+    calls = []
+    iterator = iter(responses)
+    def describe_stack(*, stack_name):
+        calls.append(stack_name)
+        return next(iterator)
+    d.describe_stack = describe_stack
+    return d, calls
+
+def test_r8_3r6_lifecycle_describe_change_set_dispatches_exact_api():
+    cp, _, clients = plane("sts:GetCallerIdentity", "cloudformation:DescribeChangeSet")
+    cp.verify_identity()
+    cp.describe_change_set(stack_name="s", change_set_name="c")
+    calls = clients["cloudformation"].calls
+    assert calls[-1][0] == "describe_change_set"
+    assert calls[-1][1] == {"StackName": "s", "ChangeSetName": "c"}
+
+def test_r8_3r6_lifecycle_describe_change_set_requires_stack_name():
+    cp, _, _ = plane("sts:GetCallerIdentity", "cloudformation:DescribeChangeSet")
+    with pytest.raises(Exception):
+        cp.describe_change_set(stack_name="", change_set_name="c")
+
+def test_r8_3r6_lifecycle_describe_change_set_requires_change_set_name():
+    cp, _, _ = plane("sts:GetCallerIdentity", "cloudformation:DescribeChangeSet")
+    with pytest.raises(Exception):
+        cp.describe_change_set(stack_name="s", change_set_name="")
+
+def test_r8_3r6_lifecycle_describe_change_set_requires_permit():
+    cp, _, _ = plane("sts:GetCallerIdentity")
+    with pytest.raises(Exception):
+        cp.describe_change_set(stack_name="s", change_set_name="c")
+
+def test_r8_3r6_lifecycle_validator_accepts_exact_create_complete_available_add_set():
+    response = _r836_cs_response(logical_ids=("A", "B"))
+    assert m.validate_create_change_set_ready_for_execution(
+        response, expected_stack_name="s", expected_change_set_name="c",
+        expected_logical_resource_ids=("B", "A"),
+    ) is response
+
+def test_r8_3r6_lifecycle_validator_accepts_expected_change_set_id_identity():
+    response = _r836_cs_response(change_set_name="generated")
+    assert m.validate_create_change_set_ready_for_execution(
+        response, expected_stack_name="s", expected_change_set_name=response["ChangeSetId"],
+        expected_logical_resource_ids=("A",),
+    ) is response
+
+def test_r8_3r6_lifecycle_validator_rejects_wrong_stack_name():
+    with pytest.raises(Exception):
+        m.validate_create_change_set_ready_for_execution(
+            _r836_cs_response(stack_name="other"), expected_stack_name="s",
+            expected_change_set_name="c", expected_logical_resource_ids=("A",),
+        )
+
+def test_r8_3r6_lifecycle_validator_rejects_wrong_change_set_identity():
+    response = _r836_cs_response(change_set_name="other", change_set_id="other-id")
+    with pytest.raises(Exception):
+        m.validate_create_change_set_ready_for_execution(
+            response, expected_stack_name="s", expected_change_set_name="c",
+            expected_logical_resource_ids=("A",),
+        )
+
+def test_r8_3r6_lifecycle_validator_rejects_non_create_type():
+    with pytest.raises(Exception):
+        m.validate_create_change_set_ready_for_execution(
+            _r836_cs_response(change_set_type="UPDATE"), expected_stack_name="s",
+            expected_change_set_name="c", expected_logical_resource_ids=("A",),
+        )
+
+def test_r8_3r6_lifecycle_validator_rejects_non_create_complete_status():
+    with pytest.raises(Exception):
+        m.validate_create_change_set_ready_for_execution(
+            _r836_cs_response(status="CREATE_IN_PROGRESS"), expected_stack_name="s",
+            expected_change_set_name="c", expected_logical_resource_ids=("A",),
+        )
+
+def test_r8_3r6_lifecycle_validator_rejects_non_available_execution_status():
+    with pytest.raises(Exception):
+        m.validate_create_change_set_ready_for_execution(
+            _r836_cs_response(execution_status="UNAVAILABLE"), expected_stack_name="s",
+            expected_change_set_name="c", expected_logical_resource_ids=("A",),
+        )
+
+def test_r8_3r6_lifecycle_validator_rejects_empty_changes():
+    response = _r836_cs_response(); response["Changes"] = []
+    with pytest.raises(Exception):
+        m.validate_create_change_set_ready_for_execution(
+            response, expected_stack_name="s", expected_change_set_name="c",
+            expected_logical_resource_ids=("A",),
+        )
+
+def test_r8_3r6_lifecycle_validator_rejects_non_resource_change():
+    response = _r836_cs_response(); response["Changes"][0]["Type"] = "Parameter"
+    with pytest.raises(Exception):
+        m.validate_create_change_set_ready_for_execution(
+            response, expected_stack_name="s", expected_change_set_name="c",
+            expected_logical_resource_ids=("A",),
+        )
+
+def test_r8_3r6_lifecycle_validator_rejects_modify_action():
+    with pytest.raises(Exception):
+        m.validate_create_change_set_ready_for_execution(
+            _r836_cs_response(action="Modify"), expected_stack_name="s",
+            expected_change_set_name="c", expected_logical_resource_ids=("A",),
+        )
+
+def test_r8_3r6_lifecycle_validator_rejects_remove_action():
+    with pytest.raises(Exception):
+        m.validate_create_change_set_ready_for_execution(
+            _r836_cs_response(action="Remove"), expected_stack_name="s",
+            expected_change_set_name="c", expected_logical_resource_ids=("A",),
+        )
+
+def test_r8_3r6_lifecycle_validator_rejects_duplicate_logical_resource_id():
+    with pytest.raises(Exception):
+        m.validate_create_change_set_ready_for_execution(
+            _r836_cs_response(logical_ids=("A", "A")), expected_stack_name="s",
+            expected_change_set_name="c", expected_logical_resource_ids=("A",),
+        )
+
+def test_r8_3r6_lifecycle_validator_rejects_missing_expected_logical_resource_id():
+    with pytest.raises(Exception):
+        m.validate_create_change_set_ready_for_execution(
+            _r836_cs_response(logical_ids=("A",)), expected_stack_name="s",
+            expected_change_set_name="c", expected_logical_resource_ids=("A", "B"),
+        )
+
+def test_r8_3r6_lifecycle_validator_rejects_unexpected_logical_resource_id():
+    with pytest.raises(Exception):
+        m.validate_create_change_set_ready_for_execution(
+            _r836_cs_response(logical_ids=("A", "B")), expected_stack_name="s",
+            expected_change_set_name="c", expected_logical_resource_ids=("A",),
+        )
+
+def test_r8_3r6_lifecycle_change_set_wait_succeeds_after_pending_sequence():
+    pending = _r836_cs_response(status="CREATE_IN_PROGRESS", execution_status="UNAVAILABLE")
+    ready = _r836_cs_response(logical_ids=("A",))
+    d, calls = _r836_dummy_change_set_plane([pending, ready]); sleeps = []
+    result = d.wait_create_change_set_ready(
+        stack_name="s", change_set_name="c", expected_logical_resource_ids=("A",),
+        max_attempts=2, poll_interval_seconds=0, sleep_fn=sleeps.append,
+    )
+    assert result is ready
+    assert calls == [("s", "c"), ("s", "c")]
+    assert sleeps == [0.0]
+
+def test_r8_3r6_lifecycle_change_set_wait_fails_on_failed_status():
+    d, _ = _r836_dummy_change_set_plane([_r836_cs_response(status="FAILED", execution_status="UNAVAILABLE")])
+    with pytest.raises(Exception):
+        d.wait_create_change_set_ready(
+            stack_name="s", change_set_name="c", expected_logical_resource_ids=("A",),
+            max_attempts=1, poll_interval_seconds=0, sleep_fn=lambda _: None,
+        )
+
+def test_r8_3r6_lifecycle_change_set_wait_fails_on_timeout():
+    pending = _r836_cs_response(status="CREATE_IN_PROGRESS", execution_status="UNAVAILABLE")
+    d, _ = _r836_dummy_change_set_plane([pending, pending])
+    with pytest.raises(Exception):
+        d.wait_create_change_set_ready(
+            stack_name="s", change_set_name="c", expected_logical_resource_ids=("A",),
+            max_attempts=2, poll_interval_seconds=0, sleep_fn=lambda _: None,
+        )
+
+def test_r8_3r6_lifecycle_change_set_wait_rejects_invalid_bounds():
+    d, _ = _r836_dummy_change_set_plane([])
+    for attempts, interval in ((0, 0), (121, 0), (1, -1), (1, 10.1)):
+        with pytest.raises(Exception):
+            d.wait_create_change_set_ready(
+                stack_name="s", change_set_name="c", expected_logical_resource_ids=("A",),
+                max_attempts=attempts, poll_interval_seconds=interval, sleep_fn=lambda _: None,
+            )
+
+def test_r8_3r6_lifecycle_stack_wait_succeeds_after_create_in_progress():
+    d, calls = _r836_dummy_stack_plane([
+        {"Stacks": [{"StackName": "s", "StackStatus": "CREATE_IN_PROGRESS"}]},
+        {"Stacks": [{"StackName": "s", "StackStatus": "CREATE_COMPLETE"}]},
+    ])
+    sleeps = []
+    result = d.wait_stack_create_complete(
+        stack_name="s", max_attempts=2, poll_interval_seconds=0, sleep_fn=sleeps.append,
+    )
+    assert result["Stacks"][0]["StackStatus"] == "CREATE_COMPLETE"
+    assert calls == ["s", "s"]; assert sleeps == [0.0]
+
+def test_r8_3r6_lifecycle_stack_wait_fails_on_create_failed():
+    d, _ = _r836_dummy_stack_plane([{"Stacks": [{"StackName": "s", "StackStatus": "CREATE_FAILED"}]}])
+    with pytest.raises(Exception):
+        d.wait_stack_create_complete(stack_name="s", max_attempts=1, poll_interval_seconds=0, sleep_fn=lambda _: None)
+
+def test_r8_3r6_lifecycle_stack_wait_fails_on_rollback_status():
+    d, _ = _r836_dummy_stack_plane([{"Stacks": [{"StackName": "s", "StackStatus": "ROLLBACK_COMPLETE"}]}])
+    with pytest.raises(Exception):
+        d.wait_stack_create_complete(stack_name="s", max_attempts=1, poll_interval_seconds=0, sleep_fn=lambda _: None)
+
+def test_r8_3r6_lifecycle_stack_wait_fails_on_timeout():
+    d, _ = _r836_dummy_stack_plane([{"Stacks": [{"StackName": "s", "StackStatus": "CREATE_IN_PROGRESS"}]}])
+    with pytest.raises(Exception):
+        d.wait_stack_create_complete(stack_name="s", max_attempts=1, poll_interval_seconds=0, sleep_fn=lambda _: None)
+
+def test_r8_3r6_lifecycle_stack_wait_rejects_invalid_bounds():
+    d, _ = _r836_dummy_stack_plane([])
+    for attempts, interval in ((0, 0), (301, 0), (1, -1), (1, 10.1)):
+        with pytest.raises(Exception):
+            d.wait_stack_create_complete(
+                stack_name="s", max_attempts=attempts, poll_interval_seconds=interval, sleep_fn=lambda _: None,
+            )
+
+def test_r8_3r6_lifecycle_wait_helpers_never_execute_change_set():
+    names = set(m.SealedBoto3ControlPlane.wait_create_change_set_ready.__code__.co_names)
+    names.update(m.SealedBoto3ControlPlane.wait_stack_create_complete.__code__.co_names)
+    assert "execute_change_set" not in names
+
+def test_r8_3r6_lifecycle_pure_validator_performs_zero_session_client_calls():
+    names = set(m.validate_create_change_set_ready_for_execution.__code__.co_names)
+    assert "client" not in names
+    assert "_invoke" not in names
+    assert "boto3" not in names
+
+def test_r8_3r6_lifecycle_principal_bootstrap_exact_logical_ids_are_accepted():
+    response = _r836_cs_response(logical_ids=("AuthorityInvokerRole", "SignerAdminRole"))
+    assert m.validate_create_change_set_ready_for_execution(
+        response, expected_stack_name="s", expected_change_set_name="c",
+        expected_logical_resource_ids=("AuthorityInvokerRole", "SignerAdminRole"),
+    ) is response
+
+def test_r8_3r6_lifecycle_artifact_bootstrap_exact_logical_ids_are_accepted():
+    response = _r836_cs_response(logical_ids=("AuthorityCodeArtifactBucket",))
+    assert m.validate_create_change_set_ready_for_execution(
+        response, expected_stack_name="s", expected_change_set_name="c",
+        expected_logical_resource_ids=("AuthorityCodeArtifactBucket",),
+    ) is response

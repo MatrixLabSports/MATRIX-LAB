@@ -21,6 +21,7 @@ READ_ONLY_OPERATIONS = frozenset(
         "sts:GetCallerIdentity",
         "cloudformation:ValidateTemplate",
         "cloudformation:DescribeStacks",
+        "cloudformation:DescribeChangeSet",
         "s3:GetBucketVersioning",
         "s3:HeadObject",
         "kms:DescribeKey",
@@ -46,6 +47,7 @@ _OPERATION_BINDINGS = {
     "sts:GetCallerIdentity": ("sts", "get_caller_identity"),
     "cloudformation:ValidateTemplate": ("cloudformation", "validate_template"),
     "cloudformation:DescribeStacks": ("cloudformation", "describe_stacks"),
+    "cloudformation:DescribeChangeSet": ("cloudformation", "describe_change_set"),
     "cloudformation:CreateChangeSet": ("cloudformation", "create_change_set"),
     "cloudformation:ExecuteChangeSet": ("cloudformation", "execute_change_set"),
     "s3:GetBucketVersioning": ("s3", "get_bucket_versioning"),
@@ -1030,6 +1032,102 @@ class SealedBoto3ControlPlane:
             kwargs["logGroupNamePrefix"] = prefix
         return self._invoke("logs:DescribeLogGroups", kwargs=kwargs)
 
+
+    def describe_change_set(self, *, stack_name: str, change_set_name) -> Any:
+        if not isinstance(change_set_name, str) or not change_set_name.strip():
+            raise ControlPlaneError('change_set_name must be a non-empty string')
+        if not stack_name:
+            raise ConfigurationError('stack_name is required')
+        return self._invoke('cloudformation:DescribeChangeSet', kwargs={'StackName': stack_name, 'ChangeSetName': change_set_name})
+
+    def wait_create_change_set_ready(
+        self,
+        *,
+        stack_name,
+        change_set_name,
+        expected_logical_resource_ids,
+        max_attempts=60,
+        poll_interval_seconds=2.0,
+        sleep_fn=None,
+    ):
+        max_attempts, poll_interval_seconds = _validate_lifecycle_wait_bounds(
+            max_attempts=max_attempts,
+            poll_interval_seconds=poll_interval_seconds,
+            max_attempts_limit=120,
+        )
+        if sleep_fn is None:
+            import time
+            sleep_fn = time.sleep
+        if not callable(sleep_fn):
+            raise ControlPlaneError("sleep_fn must be callable")
+
+        for attempt in range(max_attempts):
+            response = self.describe_change_set(
+                stack_name=stack_name,
+                change_set_name=change_set_name,
+            )
+            status = response.get("Status") if isinstance(response, dict) else None
+            if status in {"CREATE_PENDING", "CREATE_IN_PROGRESS"}:
+                if attempt + 1 >= max_attempts:
+                    break
+                sleep_fn(poll_interval_seconds)
+                continue
+            return validate_create_change_set_ready_for_execution(
+                response,
+                expected_stack_name=stack_name,
+                expected_change_set_name=change_set_name,
+                expected_logical_resource_ids=expected_logical_resource_ids,
+            )
+
+        raise ControlPlaneError(
+            "change set did not become CREATE_COMPLETE/AVAILABLE within max_attempts"
+        )
+
+    def wait_stack_create_complete(
+        self,
+        *,
+        stack_name,
+        max_attempts=180,
+        poll_interval_seconds=2.0,
+        sleep_fn=None,
+    ):
+        max_attempts, poll_interval_seconds = _validate_lifecycle_wait_bounds(
+            max_attempts=max_attempts,
+            poll_interval_seconds=poll_interval_seconds,
+            max_attempts_limit=300,
+        )
+        if sleep_fn is None:
+            import time
+            sleep_fn = time.sleep
+        if not callable(sleep_fn):
+            raise ControlPlaneError("sleep_fn must be callable")
+
+        for attempt in range(max_attempts):
+            response = self.describe_stack(stack_name=stack_name)
+            if not isinstance(response, dict):
+                raise ControlPlaneError("describe_stack response must be a dict")
+            stacks = response.get("Stacks")
+            if not isinstance(stacks, list) or len(stacks) != 1:
+                raise ControlPlaneError("describe_stack must return exactly one stack")
+            stack = stacks[0]
+            if not isinstance(stack, dict):
+                raise ControlPlaneError("stack record must be a dict")
+            if stack.get("StackName") != stack_name:
+                raise ControlPlaneError("stack identity mismatch")
+            status = stack.get("StackStatus")
+            if status == "CREATE_COMPLETE":
+                return response
+            if status in {"REVIEW_IN_PROGRESS", "CREATE_IN_PROGRESS"}:
+                if attempt + 1 >= max_attempts:
+                    break
+                sleep_fn(poll_interval_seconds)
+                continue
+            raise ControlPlaneError(f"stack entered non-success status: {status!r}")
+
+        raise ControlPlaneError(
+            "stack did not become CREATE_COMPLETE within max_attempts"
+        )
+
     def create_change_set(self, **kwargs: Any) -> Any:
         if not kwargs:
             raise ConfigurationError("create_change_set requires explicit parameters")
@@ -1140,3 +1238,94 @@ class SealedBoto3ControlPlane:
             kwargs=payload,
             mutation=True,
         )
+
+def _validate_lifecycle_wait_bounds(
+    *,
+    max_attempts,
+    poll_interval_seconds,
+    max_attempts_limit,
+):
+    if isinstance(max_attempts, bool) or not isinstance(max_attempts, int):
+        raise ControlPlaneError("max_attempts must be an integer")
+    if max_attempts < 1 or max_attempts > max_attempts_limit:
+        raise ControlPlaneError("max_attempts is outside the permitted bound")
+    if isinstance(poll_interval_seconds, bool) or not isinstance(
+        poll_interval_seconds, (int, float)
+    ):
+        raise ControlPlaneError("poll_interval_seconds must be numeric")
+    poll_interval_seconds = float(poll_interval_seconds)
+    if poll_interval_seconds < 0.0 or poll_interval_seconds > 10.0:
+        raise ControlPlaneError("poll_interval_seconds is outside the permitted bound")
+    return max_attempts, poll_interval_seconds
+
+
+def validate_create_change_set_ready_for_execution(
+    response,
+    *,
+    expected_stack_name,
+    expected_change_set_name,
+    expected_logical_resource_ids,
+):
+    if not isinstance(response, dict):
+        raise ControlPlaneError("describe_change_set response must be a dict")
+    if not isinstance(expected_stack_name, str) or not expected_stack_name.strip():
+        raise ControlPlaneError("expected_stack_name must be a non-empty string")
+    if not isinstance(expected_change_set_name, str) or not expected_change_set_name.strip():
+        raise ControlPlaneError("expected_change_set_name must be a non-empty string")
+
+    try:
+        expected_ids = tuple(expected_logical_resource_ids)
+    except TypeError as exc:
+        raise ControlPlaneError(
+            "expected_logical_resource_ids must be an iterable of identifiers"
+        ) from exc
+
+    if not expected_ids:
+        raise ControlPlaneError("expected_logical_resource_ids must not be empty")
+    if any(not isinstance(x, str) or not x.strip() for x in expected_ids):
+        raise ControlPlaneError("expected logical resource identifiers must be non-empty strings")
+    if len(set(expected_ids)) != len(expected_ids):
+        raise ControlPlaneError("expected logical resource identifiers contain duplicates")
+
+    if response.get("StackName") != expected_stack_name:
+        raise ControlPlaneError("change-set stack identity mismatch")
+
+    observed_change_set_name = response.get("ChangeSetName")
+    observed_change_set_id = response.get("ChangeSetId")
+    if (
+        observed_change_set_name != expected_change_set_name
+        and observed_change_set_id != expected_change_set_name
+    ):
+        raise ControlPlaneError("change-set identity mismatch")
+
+    if response.get("ChangeSetType") != "CREATE":
+        raise ControlPlaneError("change-set type must be CREATE")
+    if response.get("Status") != "CREATE_COMPLETE":
+        raise ControlPlaneError("change-set status must be CREATE_COMPLETE")
+    if response.get("ExecutionStatus") != "AVAILABLE":
+        raise ControlPlaneError("change-set execution status must be AVAILABLE")
+
+    changes = response.get("Changes")
+    if not isinstance(changes, list) or not changes:
+        raise ControlPlaneError("change set must contain at least one resource change")
+
+    observed_ids = []
+    for change in changes:
+        if not isinstance(change, dict) or change.get("Type") != "Resource":
+            raise ControlPlaneError("every change must be a Resource change")
+        resource_change = change.get("ResourceChange")
+        if not isinstance(resource_change, dict):
+            raise ControlPlaneError("ResourceChange must be a dict")
+        if resource_change.get("Action") != "Add":
+            raise ControlPlaneError("first-tranche resource changes must all be Add")
+        logical_id = resource_change.get("LogicalResourceId")
+        if not isinstance(logical_id, str) or not logical_id.strip():
+            raise ControlPlaneError("LogicalResourceId must be a non-empty string")
+        observed_ids.append(logical_id)
+
+    if len(set(observed_ids)) != len(observed_ids):
+        raise ControlPlaneError("observed logical resource identifiers contain duplicates")
+    if set(observed_ids) != set(expected_ids):
+        raise ControlPlaneError("logical resource identifier set mismatch")
+
+    return response
