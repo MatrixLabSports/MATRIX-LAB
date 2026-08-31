@@ -1,0 +1,111 @@
+{
+  "all_findings_accounted_for": [
+    "C-01",
+    "C-02",
+    "C-03",
+    "C-04",
+    "C-05",
+    "C-06",
+    "C-07",
+    "H-01",
+    "H-02",
+    "H-03",
+    "H-04",
+    "H-05",
+    "O-01"
+  ],
+  "closed_findings": [],
+  "controlled_live_admissible": false,
+  "finding_count": 13,
+  "policy": "EVERY_AUDIT_FINDING_REMAINS_OPEN_UNTIL ITS DOD HAS REAL REPOSITORY/RUNTIME/EMPIRICAL EVIDENCE",
+  "production_admissible": false,
+  "schema": "MATRIX_ELITE_REMEDIATION_EXECUTION_MAP_R9",
+  "workstreams": [
+    {
+      "findings": [
+        "C-07",
+        "O-01"
+      ],
+      "name": "C2 runtime control plane",
+      "next_evidence": "Execute exact Entry R7 from active C2 manifest when user is ready; if PASS, freeze/archive active control plane; any FAIL_CLOSED stops downstream work",
+      "priority": "P0",
+      "status": "BLOCKED_ON_EXACT_ENTRY_R7_REAL_WINDOWS_RUNTIME"
+    },
+    {
+      "findings": [
+        "C-03",
+        "C-04",
+        "H-04"
+      ],
+      "name": "Canonical Data + Identity",
+      "next_evidence": "Integrate PIT + temporal identity + temporal rights gate into real repository; populate multiyear real data/crosswalks/rights profiles; run independent closure audit",
+      "priority": "P1",
+      "status": "TECHNICAL_CANDIDATE_R2_PREPARED_REAL_EVIDENCE_PENDING"
+    },
+    {
+      "findings": [
+        "C-01"
+      ],
+      "name": "Probabilistic baselines by market",
+      "next_evidence": "Use admitted PIT datasets and fair market probabilities to produce per-sport/per-market empirical+market baseline evidence; then P3 walk-forward/calibration",
+      "priority": "P2",
+      "status": "BASELINE_CANDIDATE_R1_PREPARED_REAL_DATA_PENDING"
+    },
+    {
+      "findings": [
+        "C-01"
+      ],
+      "name": "Walk-forward + calibration",
+      "next_evidence": "Execute purged chronological folds + untouched final holdout + calibration table + moving-block bootstrap versus market on real PIT data",
+      "priority": "P3",
+      "status": "OOS_CALIBRATION_CANDIDATE_R1_PREPARED_REAL_EVIDENCE_PENDING"
+    },
+    {
+      "findings": [
+        "C-05"
+      ],
+      "name": "Odds / Devig / CLV",
+      "next_evidence": "Capture real complete timestamped markets, enforce stale thresholds, bind decision quotes, collect prematch closing lines and CLV distributions",
+      "priority": "P4",
+      "status": "ODDS_LINE_HISTORY_CLV_CANDIDATE_R1_PREPARED_REAL_DATA_PENDING"
+    },
+    {
+      "findings": [
+        "C-02"
+      ],
+      "name": "Prospective paper trading",
+      "next_evidence": "Record real prospective PAPER_BET + NO_BET decisions before events; attach closing lines, CLV, settlements and postmortems without rewriting decisions",
+      "priority": "P5",
+      "status": "PROSPECTIVE_PAPER_LEDGER_CANDIDATE_R1_PREPARED_REAL_SAMPLE_PENDING"
+    },
+    {
+      "findings": [
+        "C-06"
+      ],
+      "name": "LIVE replay + shadow + SLO",
+      "next_evidence": "Replay historical LIVE streams and run shadow LIVE; measure per-stage/e2e percentiles, windows, stale, FP/FN, too-late by sport/market",
+      "priority": "P6",
+      "status": "LIVE_REPLAY_SHADOW_SLO_CANDIDATE_R1_PREPARED_REAL_TELEMETRY_PENDING"
+    },
+    {
+      "findings": [
+        "H-01",
+        "H-02"
+      ],
+      "name": "Portfolio risk + failover",
+      "next_evidence": "Calibrate risk on real paper outcomes; run correlated stress and kill-switch drills; execute human-governed provider outage/reconciliation drill",
+      "priority": "P7",
+      "status": "RISK_FAILOVER_CANDIDATE_R1_PREPARED_REAL_DRILLS_PENDING"
+    },
+    {
+      "findings": [
+        "H-03",
+        "H-05"
+      ],
+      "name": "SRE / security / CI-CD / continuity",
+      "next_evidence": "Run protected CI and real restore/load/chaos/alert drills; capture SLO/error budgets and signed build evidence",
+      "priority": "P8",
+      "status": "SRE_CI_CONTINUITY_CANDIDATE_R1_PREPARED_REAL_ENVIRONMENT_EVIDENCE_PENDING"
+    }
+  ]
+}

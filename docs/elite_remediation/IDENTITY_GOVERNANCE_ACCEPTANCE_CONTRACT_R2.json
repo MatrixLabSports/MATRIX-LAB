@@ -1,0 +1,25 @@
+{
+  "conflicting_rebind": "AUTO_QUARANTINE_AND_FAIL_CLOSED",
+  "merge": "EXPLICIT_GOVERNANCE_EVENT_REQUIRED",
+  "minimum_default_resolution_confidence": 0.95,
+  "required_evidence": [
+    "point-in-time binding availability (available_at) and historical resolve(as_of)",
+    "provider crosswalk coverage",
+    "quarantine/review inventory",
+    "merge/split lineage",
+    "deterministic registry manifest hash",
+    "real provider crosswalk evidence before C-04 can close"
+  ],
+  "rules": [
+    "provider ID -> canonical ID resolution only; silent name joins forbidden",
+    "binding availability is point-in-time and cannot be backfilled into an earlier decision cutoff",
+    "conflicting provider-key rebind quarantines and fails closed",
+    "canonical entity type conflicts fail closed",
+    "merge/split require exact governance event targets and evidence",
+    "merge/split append crosswalk versions rather than silently rewriting historical mappings"
+  ],
+  "schema": "MATRIX_IDENTITY_GOVERNANCE_ACCEPTANCE_CONTRACT_R2",
+  "silent_name_join": "FORBIDDEN",
+  "split": "EXPLICIT_GOVERNANCE_EVENT_AND_COMPLETE_ASSIGNMENT_REQUIRED",
+  "status": "CANDIDATE_NOT_INTEGRATED"
+}

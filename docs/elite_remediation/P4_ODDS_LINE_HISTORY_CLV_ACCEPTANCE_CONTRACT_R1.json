@@ -1,0 +1,19 @@
+{
+  "schema": "MATRIX_P4_ODDS_LINE_HISTORY_CLV_ACCEPTANCE_CONTRACT_R1",
+  "status": "CANDIDATE_NOT_INTEGRATED",
+  "required_controls": [
+    "canonical event + market + selection + provider + captured_at binding",
+    "complete market snapshot before devig",
+    "deterministic snapshot hash",
+    "conflicting same-provider/same-timestamp snapshots fail closed",
+    "decision selects only quotes captured at or before decision_at",
+    "stale quotes rejected",
+    "best valid price compared across providers",
+    "prematch close uses latest non-live snapshot at or before event start",
+    "closing-line provider age bounded",
+    "CLV computed against devigged fair closing probability",
+    "real line-history evidence required before C-05 closes"
+  ],
+  "post_event_quote_as_prematch_close": "FORBIDDEN",
+  "stale_quote_execution": "FORBIDDEN"
+}

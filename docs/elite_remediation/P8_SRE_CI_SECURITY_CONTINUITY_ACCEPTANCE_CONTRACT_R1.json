@@ -1,0 +1,28 @@
+{
+  "schema": "MATRIX_P8_SRE_CI_SECURITY_CONTINUITY_ACCEPTANCE_CONTRACT_R1",
+  "status": "CANDIDATE_NOT_INTEGRATED",
+  "sre_required": [
+    "structured SLO/error-budget evidence",
+    "backup manifest",
+    "real restore drill",
+    "measured RTO and RPO",
+    "load-test evidence",
+    "chaos-test evidence",
+    "real alert-delivery verification",
+    "telemetry schema evidence"
+  ],
+  "ci_required": [
+    "exact commit binding",
+    "lint/unit/integration/data/security/secret/dependency/coverage/schema/sport-boundary/model-validation/build gates",
+    "SBOM",
+    "artifact signing evidence",
+    "dependency lock hash",
+    "human production-release approval"
+  ],
+  "automatic_model_promotion": false,
+  "automatic_provider_switch": false,
+  "automatic_wagering": false,
+  "artifact_resolution": "ROLE_PLUS_EXACT_SHA_FROM_ACTIVE_MANIFEST_ONLY",
+  "version_name_based_execution_selection": "FORBIDDEN",
+  "closure_forbidden_without_real_ci_and_continuity_drills": true
+}

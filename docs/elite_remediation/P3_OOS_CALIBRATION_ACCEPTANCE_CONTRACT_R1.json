@@ -1,0 +1,20 @@
+{
+  "schema": "MATRIX_P3_OOS_CALIBRATION_ACCEPTANCE_CONTRACT_R1",
+  "status": "CANDIDATE_NOT_INTEGRATED",
+  "required_controls": [
+    "chronological expanding walk-forward",
+    "purge training samples whose targets were unavailable at validation start",
+    "configurable temporal embargo",
+    "final chronological holdout isolated from all tuning",
+    "Brier + log-loss + calibration evaluation",
+    "calibration bins report Wilson uncertainty and underpowered bins",
+    "paired moving-block bootstrap versus market baseline",
+    "bootstrap CI lower bounds above zero for promotion",
+    "segment stability gate",
+    "PIT snapshot + identity manifest hashes bound to OOS evidence",
+    "leakage audit PASS",
+    "market and empirical baselines both present"
+  ],
+  "iid_bootstrap_as_only_uncertainty_method": "FORBIDDEN",
+  "closure_forbidden_without_real_oos_holdout_evidence": true
+}

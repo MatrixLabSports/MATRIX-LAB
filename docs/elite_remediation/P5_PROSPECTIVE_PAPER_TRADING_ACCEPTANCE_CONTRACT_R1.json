@@ -1,0 +1,18 @@
+{
+  "schema": "MATRIX_P5_PROSPECTIVE_PAPER_TRADING_ACCEPTANCE_CONTRACT_R1",
+  "status": "CANDIDATE_NOT_INTEGRATED",
+  "required_controls": [
+    "decision frozen before event start",
+    "immutable decision hash chain",
+    "PAPER_BET and NO_BET both captured",
+    "PAPER_BET binds data snapshot, identity manifest, model/features, thesis, provider, quote hash, model probability, fair market probability, EV and stake",
+    "PAPER_BET requires data-quality, calibration and risk gates",
+    "post-event review is a separate immutable record and cannot modify frozen decision",
+    "review binds exact decision hash, settlement evidence and closing-line evidence",
+    "all NO_BET decisions are reviewed for opportunity tracking",
+    "duplicate reviews forbidden",
+    "variance label requires evidence",
+    "paper yield and CLV reported only from settled frozen decisions"
+  ],
+  "closure_forbidden_without_real_prospective_sample": true
+}

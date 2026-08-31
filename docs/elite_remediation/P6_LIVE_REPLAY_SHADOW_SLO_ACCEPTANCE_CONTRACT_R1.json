@@ -1,0 +1,22 @@
+{
+  "schema": "MATRIX_P6_LIVE_REPLAY_SHADOW_SLO_ACCEPTANCE_CONTRACT_R1",
+  "status": "CANDIDATE_NOT_INTEGRATED",
+  "required_metrics": [
+    "end_to_end_p50_ms",
+    "end_to_end_p95_ms",
+    "end_to_end_p99_ms",
+    "per_stage_p95_ms",
+    "per_stage_p99_ms",
+    "window_closed_on_arrival_rate",
+    "processing_missed_window_rate",
+    "missed_window_rate",
+    "stale_signal_rate",
+    "decision_too_late_rate",
+    "false_positive_rate",
+    "false_negative_rate"
+  ],
+  "required_modes_before_controlled_live": ["REPLAY", "SHADOW"],
+  "grouping": "SEPARATE_BY_SPORT_AND_MARKET",
+  "average_latency_only": "INSUFFICIENT",
+  "closure_forbidden_without_real_replay_and_shadow_samples": true
+}

@@ -1,0 +1,50 @@
+{
+  "BACKTESTED": {
+    "requires": [
+      "PIT_PASS",
+      "TEMPORAL_HOLDOUT",
+      "STRONG_BASELINE",
+      "MARKET_BASELINE",
+      "BRIER",
+      "LOG_LOSS",
+      "CALIBRATION",
+      "CI",
+      "SEGMENT_STABILITY",
+      "LEAKAGE_AUDIT_PASS"
+    ]
+  },
+  "CONTROLLED_LIVE": {
+    "requires": [
+      "PAPER_TRADING",
+      "LIVE_SLO_PASS",
+      "RISK_GATE_PASS",
+      "KILL_SWITCH_TESTED",
+      "INCIDENT_RUNBOOK",
+      "HUMAN_APPROVAL"
+    ]
+  },
+  "PAPER_TRADING": {
+    "requires": [
+      "BACKTESTED",
+      "PROSPECTIVE_FROZEN_LEDGER",
+      "TIMESTAMPED_ODDS",
+      "NO_BET_CAPTURED",
+      "CLOSING_LINE",
+      "CLV",
+      "SETTLEMENT",
+      "POSTMORTEM"
+    ]
+  },
+  "PRODUCTION": {
+    "requires": [
+      "CONTROLLED_LIVE",
+      "REDUNDANCY_FAILOVER",
+      "SRE_CONTINUITY",
+      "SECURITY",
+      "RIGHTS",
+      "BACKUP_RESTORE",
+      "EXTERNAL_REPRODUCIBILITY"
+    ]
+  },
+  "schema": "MATRIX_MODEL_PROMOTION_EVIDENCE_CONTRACT_R1"
+}

@@ -1,0 +1,15 @@
+{
+  "schema": "MATRIX_PIT_WAREHOUSE_ACCEPTANCE_CONTRACT_R2",
+  "status": "CANDIDATE_NOT_INTEGRATED",
+  "required_invariants": [
+    "all timestamps timezone-aware",
+    "available_at >= observed_at",
+    "training/prediction snapshots select only revisions available at as_of",
+    "late revisions cannot rewrite historical snapshots",
+    "revision graph has unique ids, monotonic numbering, same-key supersession, no cycles",
+    "coverage reported by sport + competition + market + calendar year",
+    "snapshot manifest hash is deterministic and binds exact admitted rows",
+    "real multiyear backfill evidence required before C-03 can close"
+  ],
+  "closure_forbidden_without_real_backfill": true
+}

@@ -1,0 +1,22 @@
+{
+  "schema": "MATRIX_P7_PORTFOLIO_RISK_FAILOVER_ACCEPTANCE_CONTRACT_R1",
+  "status": "CANDIDATE_NOT_INTEGRATED",
+  "risk_controls": [
+    "per-bet cap",
+    "per-event cap",
+    "daily exposure cap",
+    "correlation-group cap",
+    "correlated Monte Carlo tail-loss stress",
+    "drawdown kill-switch",
+    "daily realized-loss kill-switch",
+    "data/model/execution/provider incident kill-switch"
+  ],
+  "failover_controls": [
+    "automatic provider switch forbidden",
+    "secondary rights/schema/freshness/coverage required",
+    "provider overlap and disagreement reconciliation required",
+    "human approval required",
+    "approval evidence SHA required"
+  ],
+  "closure_forbidden_without_empirical_risk_calibration_and_outage_drill": true
+}
