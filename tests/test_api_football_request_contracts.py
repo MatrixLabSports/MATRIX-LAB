@@ -30,6 +30,7 @@ def test_api_football_canonical_contract_set_is_explicit():
     assert set(contracts) == {
         "status",
         "fixtures_by_date",
+        "fixtures_by_team_last",
         "fixture_by_id",
         "fixture_events",
         "fixture_lineups",

@@ -14,7 +14,7 @@ from app.core.provider_request_contract import (
 API_FOOTBALL_PROVIDER_KEY = "api_football"
 API_FOOTBALL_SPORT = "football"
 API_FOOTBALL_AUTH_HEADER = "x-apisports-key"
-API_FOOTBALL_CONTRACT_SET_VERSION = "2026-08-22.v2"
+API_FOOTBALL_CONTRACT_SET_VERSION = "2026-09-01.v3"
 
 
 def _id_rule(
@@ -72,6 +72,19 @@ def build_api_football_request_contracts(
                 _id_rule(
                     "team",
                     required=False,
+                ),
+            ),
+        ),
+        "fixtures_by_team_last": (
+            "/fixtures",
+            (
+                _id_rule("team"),
+                RequestParameterRule(
+                    name="last",
+                    value_type="POSITIVE_INT",
+                    required=True,
+                    minimum=1,
+                    maximum=30,
                 ),
             ),
         ),
