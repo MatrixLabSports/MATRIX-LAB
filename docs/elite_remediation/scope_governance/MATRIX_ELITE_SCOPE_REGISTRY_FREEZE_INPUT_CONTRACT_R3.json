@@ -1,0 +1,45 @@
+{
+  "accepted_anchor_types": [
+    "RFC3161_TSA",
+    "WORM_OBJECT_VERSION",
+    "EXTERNAL_AUDIT_LEDGER",
+    "SIGNED_TRANSPARENCY_LOG"
+  ],
+  "automatic_model_promotion": false,
+  "automatic_provider_switch": false,
+  "automatic_wagering_authorized": false,
+  "canonical_roots": {
+    "builder_contract_sha256": "688b6379aaee061db8894b66f3e8f4e785213792748dfdfee6aa571f276583c9",
+    "builder_sha256": "c94939601fe495f623781ceb1ed95861e3fbf751c8d3bdb8af662759a9031f34",
+    "builder_static_audit_sha256": "011ac3c7b9799ff146558ef59f8ea2e8a3472483cbba8c722c9f184f4318de6c",
+    "eligibility_rubric_sha256": "88cb406880575c943ffee466ed774e109de55a39d58e353af3a1c098eaa51d27",
+    "registry_auditor_sha256": "6869b989d06adca4867a1109507b1a216fc3e51f280c04cb4b7bbb6bab8467a6",
+    "registry_contract_sha256": "c8c5beab640339fbb48775568ac77b255e2b492b4ccd60855b43ad8e82fd7648",
+    "registry_static_audit_sha256": "1975e8dc099b9a8a7387a8ab1a704416e5e0419ef23c7e6638363a1e2998bf97"
+  },
+  "controlled_live_admissible": false,
+  "forbidden": [
+    "manual registry edits",
+    "performance-based selection or retirement",
+    "silent scope removal",
+    "deletion of adverse historical evidence",
+    "empirical evidence starting before freeze PASS"
+  ],
+  "production_admissible": false,
+  "purpose": "Freeze Registry R3 only after exact Selection R2 -> Builder R2 -> Registry Auditor R3 provenance, independent builder/registry regeneration, independent review of supportability roots, and two independent timestamp anchors.",
+  "required_independent_reruns": [
+    "Builder R2 exact build input -> identical build evidence and registry JSON",
+    "Registry Auditor R3 exact audit input -> identical registry evidence"
+  ],
+  "required_input_schema": "MATRIX_ELITE_SCOPE_REGISTRY_FREEZE_INPUT_R3",
+  "review_must_bind": [
+    "exact registry SHA256 and canonical payload SHA256",
+    "exact Registry R3 evidence SHA256",
+    "exact Builder R2 evidence SHA256",
+    "exact Selection R2 evidence SHA256",
+    "exact candidate inventory SHA256",
+    "exact supportability_roots_fingerprint",
+    "eligibility rubric SHA256"
+  ],
+  "schema": "MATRIX_ELITE_SCOPE_REGISTRY_FREEZE_INPUT_CONTRACT_R3"
+}

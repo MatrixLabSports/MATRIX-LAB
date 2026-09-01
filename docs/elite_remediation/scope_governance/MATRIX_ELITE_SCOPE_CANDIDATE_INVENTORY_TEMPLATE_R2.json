@@ -1,0 +1,84 @@
+{
+  "campaign_id": "<campaign id>",
+  "created_at": "<timezone-aware ISO-8601>",
+  "failover_candidates": [
+    {
+      "candidate_id": "<stable id>",
+      "environment": "STAGING|SHADOW",
+      "failover_scope_id": "<stable failover id>",
+      "human_approval_policy_version": "<version>",
+      "identity_reconciliation_contract_version": "<version>",
+      "primary_provider": "<provider>",
+      "primary_rights_profile_version": "<version>",
+      "rollback_plan_version": "<version>",
+      "schema_compatibility_contract_version": "<version>",
+      "secondary_provider": "<different provider>",
+      "secondary_rights_profile_version": "<version>",
+      "selection_decision": "INCLUDE|EXCLUDE",
+      "selection_reason_code": "<governed code>",
+      "selection_reason_text": "<non-performance rationale>",
+      "supportability_pack_evidence": {
+        "path": "<required for INCLUDE>",
+        "sha256": "<required exact hash>"
+      }
+    }
+  ],
+  "live_candidates": [
+    {
+      "candidate_id": "<stable id>",
+      "event_time_contract_version": "<version>",
+      "feature_version": "<version>",
+      "live_scope_id": "<stable live id>",
+      "live_window_policy_version": "<version>",
+      "market": "<canonical market>",
+      "model_version": "<version>",
+      "replay_protocol_version": "<version>",
+      "selection_decision": "INCLUDE|EXCLUDE",
+      "selection_reason_code": "<governed code>",
+      "selection_reason_text": "<non-performance rationale>",
+      "shadow_live_protocol_version": "<version>",
+      "sport": "football|tennis",
+      "staleness_policy_version": "<version>",
+      "supportability_pack_evidence": {
+        "path": "<required for INCLUDE>",
+        "sha256": "<required exact hash>"
+      }
+    }
+  ],
+  "performance_results_available_to_selector": false,
+  "performance_results_used_for_selection": false,
+  "predictive_candidates": [
+    {
+      "candidate_id": "<stable id>",
+      "capacity_policy_ref": null,
+      "competition": "<canonical competition/tour segment>",
+      "data_contract_version": "<version>",
+      "evaluation_protocol_version": "<version>",
+      "feature_version": "<immutable version>",
+      "identity_contract_version": "<version>",
+      "live_required": false,
+      "live_scope_id": null,
+      "market": "<canonical market>",
+      "market_semantics_version": "<version>",
+      "model_version": "<immutable version>",
+      "odds_contract_version": "<version>",
+      "rights_profile_version": "<version>",
+      "risk_class": "<governed class>",
+      "sample_requirement_policy_version": "<version>",
+      "scope_id": "<stable scope id>",
+      "selection_decision": "INCLUDE|EXCLUDE",
+      "selection_rank": null,
+      "selection_reason_code": "<governed non-performance code>",
+      "selection_reason_text": "<non-performance rationale>",
+      "settlement_rules_version": "<version>",
+      "sport": "football|tennis",
+      "supportability_pack_evidence": {
+        "path": "<required for INCLUDE>",
+        "sha256": "<required exact hash>"
+      }
+    }
+  ],
+  "schema": "MATRIX_ELITE_SCOPE_CANDIDATE_INVENTORY_R2",
+  "status": "TEMPLATE_NOT_VALID_PREREGISTRATION",
+  "support_declared_by_this_inventory": false
+}

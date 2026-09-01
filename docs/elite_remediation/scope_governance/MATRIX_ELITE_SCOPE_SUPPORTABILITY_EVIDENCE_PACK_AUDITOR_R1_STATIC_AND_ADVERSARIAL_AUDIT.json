@@ -1,0 +1,180 @@
+{
+  "adversarial_tests_passed": 18,
+  "adversarial_tests_total": 18,
+  "auditor_sha256": "3095f957f80383f47778ad7b433f0cd0267112a7baff39c432beea81c86a17ab",
+  "automatic_wagering_authorized": false,
+  "cases": [
+    {
+      "blocking_codes": [],
+      "case": "valid_predictive",
+      "pass": true,
+      "result": "PASS",
+      "return_code": 0
+    },
+    {
+      "blocking_codes": [],
+      "case": "valid_live",
+      "pass": true,
+      "result": "PASS",
+      "return_code": 0
+    },
+    {
+      "blocking_codes": [],
+      "case": "valid_failover",
+      "pass": true,
+      "result": "PASS",
+      "return_code": 0
+    },
+    {
+      "blocking_codes": [
+        "CONTROL_SET_MISMATCH"
+      ],
+      "case": "missing_control",
+      "pass": true,
+      "result": "FAIL_CLOSED",
+      "return_code": 2
+    },
+    {
+      "blocking_codes": [
+        "CONTROL_SET_MISMATCH"
+      ],
+      "case": "extra_control",
+      "pass": true,
+      "result": "FAIL_CLOSED",
+      "return_code": 2
+    },
+    {
+      "blocking_codes": [
+        "DUPLICATE_CONTROL_ID"
+      ],
+      "case": "duplicate_control",
+      "pass": true,
+      "result": "FAIL_CLOSED",
+      "return_code": 2
+    },
+    {
+      "blocking_codes": [
+        "CONTROL_0_VERDICT_NOT_PASS"
+      ],
+      "case": "failed_control",
+      "pass": true,
+      "result": "FAIL_CLOSED",
+      "return_code": 2
+    },
+    {
+      "blocking_codes": [
+        "CONTROL_0_REF_0_SHA_MISMATCH"
+      ],
+      "case": "evidence_sha_mismatch",
+      "pass": true,
+      "result": "FAIL_CLOSED",
+      "return_code": 2
+    },
+    {
+      "blocking_codes": [
+        "FORBIDDEN_PERFORMANCE_KEY:pack/roi"
+      ],
+      "case": "forbidden_roi_key",
+      "pass": true,
+      "result": "FAIL_CLOSED",
+      "return_code": 2
+    },
+    {
+      "blocking_codes": [
+        "CONTROL_0_PERFORMANCE_RATIONALE_FORBIDDEN"
+      ],
+      "case": "forbidden_clv_rationale",
+      "pass": true,
+      "result": "FAIL_CLOSED",
+      "return_code": 2
+    },
+    {
+      "blocking_codes": [
+        "PERFORMANCE_INFORMATION_MUST_NOT_BE_AVAILABLE"
+      ],
+      "case": "performance_info_available",
+      "pass": true,
+      "result": "FAIL_CLOSED",
+      "return_code": 2
+    },
+    {
+      "blocking_codes": [
+        "PACK_MUST_NOT_DECLARE_SUPPORT"
+      ],
+      "case": "pack_declares_support",
+      "pass": true,
+      "result": "FAIL_CLOSED",
+      "return_code": 2
+    },
+    {
+      "blocking_codes": [
+        "REVIEWED_AT_MUST_BE_TIMEZONE_AWARE"
+      ],
+      "case": "naive_review_time",
+      "pass": true,
+      "result": "FAIL_CLOSED",
+      "return_code": 2
+    },
+    {
+      "blocking_codes": [
+        "PLACEHOLDER_TEXT_DETECTED"
+      ],
+      "case": "placeholder_rejected",
+      "pass": true,
+      "result": "FAIL_CLOSED",
+      "return_code": 2
+    },
+    {
+      "blocking_codes": [
+        "PREDICTIVE_MARKET_SEMANTICS_VERSION_REQUIRED"
+      ],
+      "case": "missing_predictive_version",
+      "pass": true,
+      "result": "FAIL_CLOSED",
+      "return_code": 2
+    },
+    {
+      "blocking_codes": [
+        "FAILOVER_PROVIDERS_MUST_DIFFER"
+      ],
+      "case": "failover_same_provider",
+      "pass": true,
+      "result": "FAIL_CLOSED",
+      "return_code": 2
+    },
+    {
+      "blocking_codes": [
+        "FAILOVER_ENVIRONMENT_INVALID"
+      ],
+      "case": "failover_bad_environment",
+      "pass": true,
+      "result": "FAIL_CLOSED",
+      "return_code": 2
+    },
+    {
+      "blocking_codes": [
+        "EVIDENCE_PACK_SHA_MISMATCH"
+      ],
+      "case": "pack_hash_tamper",
+      "pass": true,
+      "result": "FAIL_CLOSED",
+      "return_code": 2
+    }
+  ],
+  "controlled_live_admissible": false,
+  "eligibility_rubric_sha256": "88cb406880575c943ffee466ed774e109de55a39d58e353af3a1c098eaa51d27",
+  "failover_pair_and_environment_validated": true,
+  "input_contract_sha256": "dc4b94a9bfa72bcc37d360778fa7669afc359a6168a959d0e6ceec53d6a0d153",
+  "network_client_imports_detected": [],
+  "production_admissible": false,
+  "real_evidence_processed": false,
+  "result": "PASS",
+  "rich_identity_versions_preserved": true,
+  "schema": "MATRIX_ELITE_SCOPE_SUPPORTABILITY_EVIDENCE_PACK_AUDITOR_R1_STATIC_AND_ADVERSARIAL_AUDIT",
+  "support_declared": false,
+  "typed_control_sets": {
+    "FAILOVER": 6,
+    "LIVE": 5,
+    "PREDICTIVE": 10
+  }
+}

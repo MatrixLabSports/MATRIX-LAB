@@ -1,0 +1,131 @@
+{
+  "adversarial_tests_passed": 13,
+  "adversarial_tests_total": 13,
+  "auditor_sha256": "6869b989d06adca4867a1109507b1a216fc3e51f280c04cb4b7bbb6bab8467a6",
+  "automatic_wagering_authorized": false,
+  "builder_independent_regeneration_required": true,
+  "builder_sha256": "c94939601fe495f623781ceb1ed95861e3fbf751c8d3bdb8af662759a9031f34",
+  "builder_static_audit_sha256": "011ac3c7b9799ff146558ef59f8ea2e8a3472483cbba8c722c9f184f4318de6c",
+  "cases": [
+    {
+      "blocking_codes": [],
+      "case": "valid",
+      "pass": true,
+      "result": "PASS"
+    },
+    {
+      "blocking_codes": [
+        "INPUT_SCHEMA_MISMATCH"
+      ],
+      "case": "bad_schema",
+      "pass": true,
+      "result": "FAIL_CLOSED"
+    },
+    {
+      "blocking_codes": [
+        "BUILD_EVIDENCE_SHA_MISMATCH"
+      ],
+      "case": "build_hash_mismatch",
+      "pass": true,
+      "result": "FAIL_CLOSED"
+    },
+    {
+      "blocking_codes": [
+        "SCOPE_REGISTRY_SHA_MISMATCH"
+      ],
+      "case": "registry_hash_mismatch",
+      "pass": true,
+      "result": "FAIL_CLOSED"
+    },
+    {
+      "blocking_codes": [
+        "BUILD_TO_REGISTRY_PAYLOAD_MISMATCH",
+        "BUILD_TO_REGISTRY_SUPPORTABILITY_FINGERPRINT_MISMATCH",
+        "REGISTRY_SUPPORTABILITY_FINGERPRINT_MISMATCH"
+      ],
+      "case": "fingerprint_mismatch",
+      "pass": true,
+      "result": "FAIL_CLOSED"
+    },
+    {
+      "blocking_codes": [
+        "BUILD_TO_REGISTRY_PAYLOAD_MISMATCH",
+        "REGISTRY_PREDICTIVE_PROJECTION_MISMATCH"
+      ],
+      "case": "projection_mismatch",
+      "pass": true,
+      "result": "FAIL_CLOSED"
+    },
+    {
+      "blocking_codes": [
+        "BUILD_TO_REGISTRY_PAYLOAD_MISMATCH",
+        "DUPLICATE_PREDICTIVE_SCOPE_ID",
+        "DUPLICATE_PREDICTIVE_SPORT_COMPETITION_MARKET",
+        "REGISTRY_PREDICTIVE_PROJECTION_MISMATCH"
+      ],
+      "case": "duplicate_scope",
+      "pass": true,
+      "result": "FAIL_CLOSED"
+    },
+    {
+      "blocking_codes": [
+        "REGISTRY_ANCHOR_NOT_BEFORE_EVIDENCE_POPULATION"
+      ],
+      "case": "anchor_late",
+      "pass": true,
+      "result": "FAIL_CLOSED"
+    },
+    {
+      "blocking_codes": [
+        "BUILD_EVIDENCE_INVALID"
+      ],
+      "case": "builder_root_mismatch",
+      "pass": true,
+      "result": "FAIL_CLOSED"
+    },
+    {
+      "blocking_codes": [
+        "BUILDER_INDEPENDENT_RERUN_EVIDENCE_NOT_IDENTICAL"
+      ],
+      "case": "builder_rerun_nonidentical",
+      "pass": true,
+      "result": "FAIL_CLOSED"
+    },
+    {
+      "blocking_codes": [
+        "BUILD_TO_REGISTRY_PAYLOAD_MISMATCH"
+      ],
+      "case": "build_payload_mismatch",
+      "pass": true,
+      "result": "FAIL_CLOSED"
+    },
+    {
+      "blocking_codes": [
+        "BUILD_INVENTORY_BINDING_MISMATCH",
+        "REGISTRY_INVENTORY_BINDING_MISMATCH",
+        "SELECTION_INVENTORY_SHA_MISMATCH"
+      ],
+      "case": "inventory_lineage_tamper",
+      "pass": true,
+      "result": "FAIL_CLOSED"
+    },
+    {
+      "blocking_codes": [
+        "BUILD_TO_REGISTRY_PAYLOAD_MISMATCH",
+        "REGISTRY_PLACEHOLDER_TEXT_DETECTED"
+      ],
+      "case": "placeholder",
+      "pass": true,
+      "result": "FAIL_CLOSED"
+    }
+  ],
+  "controlled_live_admissible": false,
+  "input_contract_sha256": "c8c5beab640339fbb48775568ac77b255e2b492b4ccd60855b43ad8e82fd7648",
+  "network_client_imports_detected": [],
+  "production_admissible": false,
+  "real_registry_processed": false,
+  "registration_anchor_required": true,
+  "result": "PASS",
+  "schema": "MATRIX_ELITE_CLOSURE_SCOPE_REGISTRY_AUDITOR_R3_STATIC_AND_ADVERSARIAL_AUDIT",
+  "supportability_roots_preserved": true
+}

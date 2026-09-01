@@ -1,0 +1,42 @@
+{
+  "at_least_one_included_failover_scope_required": true,
+  "automatic_model_promotion": false,
+  "automatic_provider_switch": false,
+  "automatic_wagering_authorized": false,
+  "both_sports_required_in_included_predictive_scopes": true,
+  "canonical_roots": {
+    "eligibility_rubric_sha256": "88cb406880575c943ffee466ed774e109de55a39d58e353af3a1c098eaa51d27",
+    "supportability_pack_auditor_sha256": "3095f957f80383f47778ad7b433f0cd0267112a7baff39c432beea81c86a17ab",
+    "supportability_pack_contract_sha256": "dc4b94a9bfa72bcc37d360778fa7669afc359a6168a959d0e6ceec53d6a0d153",
+    "supportability_pack_static_audit_sha256": "2c7cb66a71155d616e67e0f801addb90878883f1bb5f21301ec6997695abb908"
+  },
+  "controlled_live_admissible": false,
+  "exclude_reason_codes": [
+    "DATA_CONTRACT_NOT_READY",
+    "PIT_AVAILABILITY_NOT_SUPPORTABLE",
+    "IDENTITY_CONTRACT_NOT_READY",
+    "RIGHTS_NOT_ADMISSIBLE",
+    "MARKET_SEMANTICS_NOT_CANONICAL",
+    "SETTLEMENT_RULES_NOT_CANONICAL",
+    "ODDS_HISTORY_OR_BINDING_NOT_SUPPORTABLE",
+    "BASELINE_NOT_DEFINED",
+    "EVALUATION_PROTOCOL_NOT_DEFINED",
+    "SAMPLE_REQUIREMENT_POLICY_NOT_DEFINED",
+    "RISK_CLASS_NOT_DEFINED",
+    "LIVE_OBSERVABILITY_NOT_SUPPORTABLE",
+    "LIVE_LATENCY_BUDGET_NOT_DEFINED",
+    "FAILOVER_SECONDARY_NOT_SUPPORTABLE",
+    "FAILOVER_RIGHTS_OR_SCHEMA_NOT_SUPPORTABLE",
+    "OUT_OF_PROJECT_SPORT_BOUNDARY",
+    "DEFERRED_BY_CAPACITY_WITHOUT_PERFORMANCE_INFORMATION"
+  ],
+  "include_reason_code": "ELIGIBLE_SUPPORTABILITY_PACK_PASS",
+  "included_live_scopes_must_be_exactly_referenced_by_included_live_required_predictive_scopes": true,
+  "inventory_schema": "MATRIX_ELITE_SCOPE_CANDIDATE_INVENTORY_R2",
+  "performance_selection_forbidden": true,
+  "production_admissible": false,
+  "required_include_rule": "Every INCLUDE candidate must bind an exact PASS supportability evidence report produced by canonical Pack Auditor R1; Selection R2 independently reruns that pack audit and requires identical JSON.",
+  "required_input_schema": "MATRIX_ELITE_SCOPE_SELECTION_AUDIT_INPUT_R2",
+  "schema": "MATRIX_ELITE_SCOPE_SELECTION_AUDIT_INPUT_CONTRACT_R2",
+  "support_declared_by_selection": false
+}

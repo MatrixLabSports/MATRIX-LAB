@@ -1,0 +1,119 @@
+{
+  "absolute_supportability_paths_in_registry": false,
+  "adversarial_tests_passed": 12,
+  "adversarial_tests_total": 12,
+  "automatic_wagering_authorized": false,
+  "builder_makes_selection_decisions": false,
+  "builder_sha256": "c94939601fe495f623781ceb1ed95861e3fbf751c8d3bdb8af662759a9031f34",
+  "cases": [
+    {
+      "blocking_codes": [],
+      "case": "valid",
+      "pass": true,
+      "result": "PASS"
+    },
+    {
+      "blocking_codes": [
+        "INPUT_SCHEMA_MISMATCH"
+      ],
+      "case": "bad_input_schema",
+      "pass": true,
+      "result": "FAIL_CLOSED"
+    },
+    {
+      "blocking_codes": [
+        "SELECTION_EVIDENCE_SHA_MISMATCH"
+      ],
+      "case": "selection_hash_mismatch",
+      "pass": true,
+      "result": "FAIL_CLOSED"
+    },
+    {
+      "blocking_codes": [
+        "BUILDER_FAILOVER_SET_MISMATCH",
+        "BUILDER_LIVE_SET_MISMATCH",
+        "BUILDER_PREDICTIVE_SET_MISMATCH",
+        "CANDIDATE_INVENTORY_SHA_MISMATCH",
+        "SELECTION_SUPPORTABILITY_RERUN_SUMMARY_MISMATCH"
+      ],
+      "case": "inventory_hash_mismatch",
+      "pass": true,
+      "result": "FAIL_CLOSED"
+    },
+    {
+      "blocking_codes": [
+        "SUPPORTABILITY_PACK_EVIDENCE_SHA_MISMATCH:PREDICTIVE:fb_btts"
+      ],
+      "case": "supportability_root_mismatch",
+      "pass": true,
+      "result": "FAIL_CLOSED"
+    },
+    {
+      "blocking_codes": [
+        "BUILDER_PREDICTIVE_SET_MISMATCH"
+      ],
+      "case": "selection_set_mismatch",
+      "pass": true,
+      "result": "FAIL_CLOSED"
+    },
+    {
+      "blocking_codes": [
+        "SELECTION_SUPPORTABILITY_RERUN_SUMMARY_MISMATCH"
+      ],
+      "case": "supportability_summary_mismatch",
+      "pass": true,
+      "result": "FAIL_CLOSED"
+    },
+    {
+      "blocking_codes": [
+        "REGISTERED_AT_MUST_PRECEDE_EVIDENCE_POPULATION"
+      ],
+      "case": "time_order_invalid",
+      "pass": true,
+      "result": "FAIL_CLOSED"
+    },
+    {
+      "blocking_codes": [
+        "INVENTORY_CREATED_AFTER_REGISTERED_AT"
+      ],
+      "case": "inventory_after_registered",
+      "pass": true,
+      "result": "FAIL_CLOSED"
+    },
+    {
+      "blocking_codes": [
+        "SELECTION_INDEPENDENT_RERUN_NOT_IDENTICAL"
+      ],
+      "case": "nonidentical_selection_rerun",
+      "pass": true,
+      "result": "FAIL_CLOSED"
+    },
+    {
+      "blocking_codes": [
+        "SELECTION_SAFETY_MISMATCH"
+      ],
+      "case": "selection_safety_violation",
+      "pass": true,
+      "result": "FAIL_CLOSED"
+    },
+    {
+      "blocking_codes": [
+        "INVENTORY_MUST_NOT_DECLARE_SUPPORT"
+      ],
+      "case": "inventory_declares_support",
+      "pass": true,
+      "result": "FAIL_CLOSED"
+    }
+  ],
+  "controlled_live_admissible": false,
+  "input_contract_sha256": "688b6379aaee061db8894b66f3e8f4e785213792748dfdfee6aa571f276583c9",
+  "network_client_imports_detected": [],
+  "production_admissible": false,
+  "real_inventory_processed": false,
+  "result": "PASS",
+  "schema": "MATRIX_ELITE_SCOPE_REGISTRY_BUILDER_R2_STATIC_AND_ADVERSARIAL_AUDIT",
+  "selection_auditor_sha256": "27a6962b3d1ddd6f78d55fe4e2ff7654319dbb53a709dbb0800e166c56d0f425",
+  "selection_independent_rerun_required": true,
+  "selection_static_audit_sha256": "3c6e3ed07e955e7ab8ed228ff9332b47020b697c5ebad6a57a71bf4f36c04729",
+  "supportability_roots_preserved": true
+}

@@ -1,0 +1,30 @@
+{
+  "automatic_model_promotion": false,
+  "automatic_provider_switch": false,
+  "automatic_wagering_authorized": false,
+  "canonical_roots": {
+    "eligibility_rubric_sha256": "88cb406880575c943ffee466ed774e109de55a39d58e353af3a1c098eaa51d27",
+    "selection_auditor_sha256": "27a6962b3d1ddd6f78d55fe4e2ff7654319dbb53a709dbb0800e166c56d0f425",
+    "selection_contract_sha256": "03aba764a943225f39d8c25fb074afd0c239ad5d933b2bc409a99125975b424c",
+    "selection_static_audit_sha256": "3c6e3ed07e955e7ab8ed228ff9332b47020b697c5ebad6a57a71bf4f36c04729"
+  },
+  "controlled_live_admissible": false,
+  "output_registry_schema": "MATRIX_ELITE_CLOSURE_SCOPE_REGISTRY_R3",
+  "production_admissible": false,
+  "purpose": "Deterministically project only Selection R2 INCLUDE decisions into Registry R3 while preserving exact rich contract versions and supportability audit roots. Builder may not make support decisions.",
+  "required_input_schema": "MATRIX_ELITE_SCOPE_REGISTRY_BUILDER_INPUT_R2",
+  "required_rules": [
+    "Selection R2 evidence PASS and exact producer/contract",
+    "Selection R2 exact original input independently reruns to identical JSON",
+    "candidate inventory exact SHA equals Selection R2 evidence inventory SHA",
+    "only INCLUDE candidates are projected",
+    "included predictive/live/failover ID sets exactly equal Selection R2 PASS sets",
+    "all rich identity/version fields are preserved exactly",
+    "each included scope preserves exact supportability audit evidence SHA256",
+    "registry contains deterministic supportability_roots_fingerprint",
+    "absolute supportability evidence paths are not copied into registry",
+    "registered_at < evidence_population_start_at",
+    "builder makes zero selection decisions"
+  ],
+  "schema": "MATRIX_ELITE_SCOPE_REGISTRY_BUILDER_INPUT_CONTRACT_R2"
+}

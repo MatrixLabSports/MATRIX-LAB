@@ -1,0 +1,149 @@
+{
+  "adversarial_tests_passed": 14,
+  "adversarial_tests_total": 14,
+  "auditor_sha256": "27a6962b3d1ddd6f78d55fe4e2ff7654319dbb53a709dbb0800e166c56d0f425",
+  "automatic_wagering_authorized": false,
+  "cases": [
+    {
+      "blocking_codes": [],
+      "case": "valid",
+      "pass": true,
+      "result": "PASS"
+    },
+    {
+      "blocking_codes": [
+        "ALL_INCLUDED_SUPPORTABILITY_RERUNS_NOT_IDENTICAL",
+        "SUPPORTABILITY_PACK_REF_REQUIRED:PREDICTIVE_0"
+      ],
+      "case": "missing_pack_ref",
+      "pass": true,
+      "result": "FAIL_CLOSED"
+    },
+    {
+      "blocking_codes": [
+        "FORBIDDEN_PERFORMANCE_KEY:inventory/roi"
+      ],
+      "case": "performance_key",
+      "pass": true,
+      "result": "FAIL_CLOSED"
+    },
+    {
+      "blocking_codes": [
+        "INCLUDED_PREDICTIVE_SCOPES_MUST_COVER_BOTH_SPORTS"
+      ],
+      "case": "both_sports_missing",
+      "pass": true,
+      "result": "FAIL_CLOSED"
+    },
+    {
+      "blocking_codes": [
+        "INCLUDED_PREDICTIVE_LIVE_SCOPE_NOT_INCLUDED:fb_btts",
+        "UNREFERENCED_INCLUDED_LIVE_SCOPE"
+      ],
+      "case": "live_missing",
+      "pass": true,
+      "result": "FAIL_CLOSED"
+    },
+    {
+      "blocking_codes": [
+        "ALL_INCLUDED_SUPPORTABILITY_RERUNS_NOT_IDENTICAL",
+        "AT_LEAST_ONE_INCLUDED_FAILOVER_SCOPE_REQUIRED",
+        "FAILOVER_0_PROVIDERS_MUST_DIFFER"
+      ],
+      "case": "failover_same_provider",
+      "pass": true,
+      "result": "FAIL_CLOSED"
+    },
+    {
+      "blocking_codes": [
+        "DUPLICATE_GLOBAL_CANDIDATE_ID",
+        "SUPPORTABILITY_PACK_IDENTITY_MISMATCH:LIVE_0"
+      ],
+      "case": "duplicate_global_candidate",
+      "pass": true,
+      "result": "FAIL_CLOSED"
+    },
+    {
+      "blocking_codes": [
+        "ALL_INCLUDED_SUPPORTABILITY_RERUNS_NOT_IDENTICAL",
+        "SUPPORTABILITY_PACK_RERUN_NOT_IDENTICAL:PREDICTIVE_0",
+        "SUPPORTABILITY_SOURCE_IDENTITY_MISMATCH:PREDICTIVE_0:market"
+      ],
+      "case": "source_pack_identity_mismatch",
+      "pass": true,
+      "result": "FAIL_CLOSED"
+    },
+    {
+      "blocking_codes": [
+        "ALL_INCLUDED_SUPPORTABILITY_RERUNS_NOT_IDENTICAL",
+        "SUPPORTABILITY_PACK_RERUN_NOT_IDENTICAL:PREDICTIVE_0"
+      ],
+      "case": "nonidentical_rerun",
+      "pass": true,
+      "result": "FAIL_CLOSED"
+    },
+    {
+      "blocking_codes": [
+        "ALL_INCLUDED_SUPPORTABILITY_RERUNS_NOT_IDENTICAL",
+        "SUPPORTABILITY_PACK_PRODUCER_OR_CONTRACT_MISMATCH:PREDICTIVE_0",
+        "SUPPORTABILITY_PACK_RERUN_NOT_IDENTICAL:PREDICTIVE_0"
+      ],
+      "case": "producer_mismatch",
+      "pass": true,
+      "result": "FAIL_CLOSED"
+    },
+    {
+      "blocking_codes": [
+        "ALL_INCLUDED_SUPPORTABILITY_RERUNS_NOT_IDENTICAL",
+        "SUPPORTABILITY_PACK_NOT_PASS:PREDICTIVE_0",
+        "SUPPORTABILITY_PACK_RERUN_NOT_IDENTICAL:PREDICTIVE_0"
+      ],
+      "case": "pack_not_pass",
+      "pass": true,
+      "result": "FAIL_CLOSED"
+    },
+    {
+      "blocking_codes": [
+        "INCLUDED_PREDICTIVE_SCOPES_MUST_COVER_BOTH_SPORTS",
+        "PREDICTIVE_1_CAPACITY_POLICY_MISSING",
+        "PREDICTIVE_1_CAPACITY_RANK_INVALID"
+      ],
+      "case": "capacity_missing_policy",
+      "pass": true,
+      "result": "FAIL_CLOSED"
+    },
+    {
+      "blocking_codes": [
+        "INVENTORY_MUST_NOT_DECLARE_SUPPORT"
+      ],
+      "case": "inventory_declares_support",
+      "pass": true,
+      "result": "FAIL_CLOSED"
+    },
+    {
+      "blocking_codes": [
+        "AT_LEAST_ONE_INCLUDED_FAILOVER_SCOPE_REQUIRED",
+        "CANDIDATE_INVENTORY_SHA_MISMATCH",
+        "INCLUDED_PREDICTIVE_SCOPES_MUST_COVER_BOTH_SPORTS",
+        "PREDICTIVE_CANDIDATES_REQUIRED"
+      ],
+      "case": "inventory_hash_tamper",
+      "pass": true,
+      "result": "FAIL_CLOSED"
+    }
+  ],
+  "controlled_live_admissible": false,
+  "eligibility_rubric_sha256": "88cb406880575c943ffee466ed774e109de55a39d58e353af3a1c098eaa51d27",
+  "included_pack_independent_rerun_required": true,
+  "input_contract_sha256": "03aba764a943225f39d8c25fb074afd0c239ad5d933b2bc409a99125975b424c",
+  "network_client_imports_detected": [],
+  "performance_selection_forbidden": true,
+  "production_admissible": false,
+  "real_candidate_inventory_processed": false,
+  "result": "PASS",
+  "rich_pack_identity_match_required": true,
+  "schema": "MATRIX_ELITE_SCOPE_SELECTION_AUDITOR_R2_STATIC_AND_ADVERSARIAL_AUDIT",
+  "support_declared": false,
+  "supportability_pack_auditor_sha256": "3095f957f80383f47778ad7b433f0cd0267112a7baff39c432beea81c86a17ab",
+  "supportability_pack_static_audit_sha256": "2c7cb66a71155d616e67e0f801addb90878883f1bb5f21301ec6997695abb908"
+}

@@ -1,0 +1,282 @@
+{
+  "candidate_family_count": 12,
+  "controlled_live_admissible": false,
+  "failover_scope_global_requirements": [
+    "primary_provider",
+    "secondary_provider_different",
+    "schema_compatibility_contract",
+    "identity_reconciliation_contract",
+    "rights_valid_for_both",
+    "human_approval_policy",
+    "rollback_plan",
+    "reconciliation_after_switch",
+    "automatic_provider_switch_false"
+  ],
+  "global_required_controls": [
+    "canonical_market_definition",
+    "settlement_rules",
+    "pit_data_contract",
+    "identity_contract",
+    "rights_profile",
+    "odds_binding_contract",
+    "baseline_definition",
+    "evaluation_protocol",
+    "sample_requirement_policy",
+    "risk_policy"
+  ],
+  "live_scope_global_requirements": [
+    "observed_at_and_available_at_separate",
+    "event_time_contract",
+    "live_window_policy",
+    "staleness_policy",
+    "decision_too_late_semantics",
+    "replay_protocol",
+    "shadow_live_protocol",
+    "end_to_end_latency_measurement",
+    "false_positive_false_negative_tracking",
+    "missed_window_tracking",
+    "zero_orders_and_zero_wagers_during_validation"
+  ],
+  "performance_metrics_admissible_for_selection": false,
+  "production_admissible": false,
+  "rows": [
+    {
+      "candidate_market_family": "BOTH_TEAMS_TO_SCORE",
+      "live_eligible_only_if": [
+        "score_clock_state_available",
+        "quote_freshness_measurable",
+        "window_closed_semantics_defined"
+      ],
+      "real_evidence_processed": false,
+      "required_data_capabilities": [
+        "canonical_fixture_identity",
+        "goal_event_timeline",
+        "point_in_time_pre_match_features",
+        "market_quote_history",
+        "btts_settlement"
+      ],
+      "sport": "football",
+      "support_declared": false,
+      "support_status": "NOT_EVALUATED"
+    },
+    {
+      "candidate_market_family": "CARDS",
+      "live_eligible_only_if": [
+        "card_state_available_at_decision_time",
+        "referee_or_context_features_only_if_pit",
+        "staleness_budget_defined"
+      ],
+      "real_evidence_processed": false,
+      "required_data_capabilities": [
+        "canonical_fixture_identity",
+        "card_event_timeline",
+        "card_type_and_counting_semantics",
+        "market_line_and_price_history",
+        "bookmaker_specific_card_settlement_rules"
+      ],
+      "sport": "football",
+      "support_declared": false,
+      "support_status": "NOT_EVALUATED"
+    },
+    {
+      "candidate_market_family": "CORNERS",
+      "live_eligible_only_if": [
+        "corner_state_available_at_decision_time",
+        "score_clock_state_available",
+        "staleness_budget_defined"
+      ],
+      "real_evidence_processed": false,
+      "required_data_capabilities": [
+        "canonical_fixture_identity",
+        "corner_event_timeline_or_verified_totals",
+        "period_segmentation_when_market_requires_it",
+        "market_line_and_price_history",
+        "corner_settlement_rules"
+      ],
+      "sport": "football",
+      "support_declared": false,
+      "support_status": "NOT_EVALUATED"
+    },
+    {
+      "candidate_market_family": "GOAL_TOTALS_OR_TEAM_TOTALS",
+      "live_eligible_only_if": [
+        "score_clock_state_available",
+        "market_line_version_captured",
+        "quote_freshness_measurable"
+      ],
+      "real_evidence_processed": false,
+      "required_data_capabilities": [
+        "canonical_fixture_identity",
+        "goal_event_timeline",
+        "point_in_time_pre_match_features",
+        "market_line_and_price_history",
+        "line_specific_settlement"
+      ],
+      "sport": "football",
+      "support_declared": false,
+      "support_status": "NOT_EVALUATED"
+    },
+    {
+      "candidate_market_family": "PLAYER_ASSISTS_OR_PASSES",
+      "live_eligible_only_if": [
+        "player_on_pitch_state_available",
+        "metric_feed_latency_measurable",
+        "quote_freshness_measurable"
+      ],
+      "real_evidence_processed": false,
+      "required_data_capabilities": [
+        "canonical_player_identity",
+        "fixture_player_crosswalk",
+        "lineup_or_expected_minutes_as_of",
+        "provider_definition_of_assist_or_pass_metric",
+        "market_quote_history",
+        "bookmaker_specific_prop_settlement_rules"
+      ],
+      "sport": "football",
+      "support_declared": false,
+      "support_status": "NOT_EVALUATED"
+    },
+    {
+      "candidate_market_family": "PLAYER_SHOTS_OR_SHOTS_ON_TARGET",
+      "live_eligible_only_if": [
+        "player_on_pitch_state_available",
+        "substitution_state_available",
+        "shot_event_timeline_available",
+        "quote_freshness_measurable"
+      ],
+      "real_evidence_processed": false,
+      "required_data_capabilities": [
+        "canonical_player_identity",
+        "fixture_player_crosswalk",
+        "lineup_or_expected_minutes_as_of",
+        "player_event_stats",
+        "market_quote_history",
+        "player_prop_settlement_rules"
+      ],
+      "sport": "football",
+      "support_declared": false,
+      "support_status": "NOT_EVALUATED"
+    },
+    {
+      "candidate_market_family": "RESULT_OR_DOUBLE_CHANCE",
+      "live_eligible_only_if": [
+        "live_event_state_available",
+        "quote_freshness_measurable",
+        "decision_latency_budget_defined"
+      ],
+      "real_evidence_processed": false,
+      "required_data_capabilities": [
+        "canonical_fixture_identity",
+        "team_identity",
+        "point_in_time_pre_match_features",
+        "market_quote_history",
+        "event_result_settlement"
+      ],
+      "sport": "football",
+      "support_declared": false,
+      "support_status": "NOT_EVALUATED"
+    },
+    {
+      "candidate_market_family": "GAME_HANDICAP",
+      "live_eligible_only_if": [
+        "current_score_state_available",
+        "line_version_captured",
+        "retirement_rules_canonical"
+      ],
+      "real_evidence_processed": false,
+      "required_data_capabilities": [
+        "canonical_player_identity",
+        "match_identity",
+        "game_set_score_timeline",
+        "market_line_and_price_history",
+        "handicap_settlement_rules"
+      ],
+      "sport": "tennis",
+      "support_declared": false,
+      "support_status": "NOT_EVALUATED"
+    },
+    {
+      "candidate_market_family": "GAME_OR_SET_TOTALS",
+      "live_eligible_only_if": [
+        "current_score_state_available",
+        "line_version_captured",
+        "quote_freshness_measurable"
+      ],
+      "real_evidence_processed": false,
+      "required_data_capabilities": [
+        "canonical_player_identity",
+        "match_identity",
+        "game_set_score_timeline",
+        "surface_context_pit",
+        "market_line_and_price_history",
+        "line_specific_settlement_rules"
+      ],
+      "sport": "tennis",
+      "support_declared": false,
+      "support_status": "NOT_EVALUATED"
+    },
+    {
+      "candidate_market_family": "MATCH_WINNER",
+      "live_eligible_only_if": [
+        "current_set_game_point_state_available",
+        "server_identity_available",
+        "quote_freshness_measurable"
+      ],
+      "real_evidence_processed": false,
+      "required_data_capabilities": [
+        "canonical_player_identity",
+        "match_identity",
+        "surface_and_context_as_of",
+        "service_return_history_pit",
+        "market_quote_history",
+        "match_settlement_rules"
+      ],
+      "sport": "tennis",
+      "support_declared": false,
+      "support_status": "NOT_EVALUATED"
+    },
+    {
+      "candidate_market_family": "PLAYER_PROPS",
+      "live_eligible_only_if": [
+        "underlying_metric_state_available",
+        "metric_feed_latency_measurable",
+        "quote_freshness_measurable"
+      ],
+      "real_evidence_processed": false,
+      "required_data_capabilities": [
+        "canonical_player_identity",
+        "provider_metric_definition",
+        "surface_context_pit",
+        "market_quote_history",
+        "bookmaker_specific_prop_settlement_rules"
+      ],
+      "sport": "tennis",
+      "support_declared": false,
+      "support_status": "NOT_EVALUATED"
+    },
+    {
+      "candidate_market_family": "SET_WINNER",
+      "live_eligible_only_if": [
+        "current_set_state_available",
+        "server_identity_available",
+        "retirement_void_rules_canonical"
+      ],
+      "real_evidence_processed": false,
+      "required_data_capabilities": [
+        "canonical_player_identity",
+        "match_identity",
+        "set_number_semantics",
+        "service_return_history_pit",
+        "market_quote_history",
+        "set_settlement_rules"
+      ],
+      "sport": "tennis",
+      "support_declared": false,
+      "support_status": "NOT_EVALUATED"
+    }
+  ],
+  "rubric_sha256": "88cb406880575c943ffee466ed774e109de55a39d58e353af3a1c098eaa51d27",
+  "schema": "MATRIX_ELITE_SCOPE_SUPPORTABILITY_COVERAGE_MATRIX_R1",
+  "status": "PRE_EVIDENCE_CANDIDATE_COVERAGE_ONLY",
+  "support_scopes_declared": 0
+}
