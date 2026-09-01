@@ -1,0 +1,28 @@
+{
+  "schema": "MATRIX_ELITE_H01_REAL_PROVIDER_FAILOVER_INPUT_CONTRACT_R1",
+  "purpose": "Fail-closed real staging/shadow outage-drill gate for governed provider failover.",
+  "required_inputs": [
+    "preregistered failover plan + exact SHA256 + independent pre-drill timestamp anchor",
+    "secondary rights/schema/freshness PASS evidence available before switch",
+    "real outage-drill evidence",
+    "human approval evidence after primary failure detection and before switch",
+    "primary and secondary reconciliation snapshots",
+    "post-switch comparison and rollback verification"
+  ],
+  "mandatory_controls": [
+    "automatic provider switch forbidden",
+    "secondary coverage threshold",
+    "overlap threshold",
+    "maximum disagreement threshold",
+    "human approval for one staging/shadow drill",
+    "switch only after outage is observed",
+    "zero orders and zero wagers",
+    "recovery-time and data-loss limits",
+    "post-switch semantic reconciliation",
+    "rollback and primary-health re-verification"
+  ],
+  "automatic_provider_switch_authorized": false,
+  "controlled_live_admissible": false,
+  "production_admissible": false,
+  "closure_rule": "Synthetic PASS validates the auditor only. H-01 remains OPEN until a real staging/shadow outage drill passes with independent evidence and human approval."
+}

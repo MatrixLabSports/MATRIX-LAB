@@ -1,0 +1,110 @@
+{
+  "evaluation_modes": {
+    "HISTORICAL_REPLAY": [
+      "historical decision_at is replayed using only feature/market information available by that historical decision time",
+      "prediction computation may occur later, but evaluation plan must be registered before evaluation_started_at_utc and before final holdout unblinding",
+      "prediction_generated_at must be >= evaluation_started_at_utc and is recorded as replay-computation time"
+    ],
+    "PROSPECTIVE": [
+      "plan must predate first decision_at",
+      "prediction_generated_at <= decision_at",
+      "feature snapshot and market quote must be available by decision_at"
+    ]
+  },
+  "forbidden": [
+    "iid bootstrap as only uncertainty method",
+    "holdout reuse",
+    "post-hoc threshold changes",
+    "future feature snapshot",
+    "stale market quote beyond plan",
+    "cross-sport evaluation",
+    "missing market baseline",
+    "automatic model promotion",
+    "historical replay presented as prospective evidence",
+    "holdout unblinding before plan registration"
+  ],
+  "network_required": false,
+  "prediction_row_required_fields": [
+    "record_id",
+    "decision_at",
+    "target_available_at",
+    "prediction_generated_at",
+    "feature_snapshot_as_of_utc",
+    "feature_snapshot_sha256",
+    "market_quote_observed_at",
+    "outcome",
+    "model_probability",
+    "market_probability",
+    "segment",
+    "replay_computation_id"
+  ],
+  "preregistered_plan_required_fields": [
+    "schema",
+    "plan_id",
+    "created_at_utc",
+    "sport",
+    "competition",
+    "market",
+    "problem_type",
+    "model_version",
+    "feature_version",
+    "minimum_train",
+    "validation_size",
+    "final_holdout_size",
+    "embargo_seconds",
+    "bootstrap_samples",
+    "block_length",
+    "calibration_bins",
+    "minimum_calibration_bin_n",
+    "max_ece",
+    "max_calibration_gap",
+    "minimum_segment_n",
+    "minimum_segment_positive_fraction",
+    "minimum_fold_positive_fraction",
+    "max_market_quote_age_seconds",
+    "evaluation_mode"
+  ],
+  "preregistration_rules": [
+    "plan registration binds exact plan SHA256",
+    "plan registered_at_utc must be <= evaluation_started_at_utc",
+    "HISTORICAL_REPLAY plan need not predate historical event decisions; it must predate evaluation/holdout unblinding",
+    "PROSPECTIVE plan must predate first decision_at",
+    "thresholds and bootstrap configuration are read only from registered plan",
+    "final holdout is last chronological block and may not intersect tuning_record_ids",
+    "bootstrap_samples >= 1000",
+    "block_length >= 1 and <= final holdout size"
+  ],
+  "problem_types": [
+    "BINARY",
+    "MULTICLASS"
+  ],
+  "purpose": "Offline fail-closed real OOS/baseline/calibration evidence generation after admitted PIT+identity+rights data evidence.",
+  "required_controls": [
+    "upstream C03/C04/H04 evidence admitted=true and exact file hash bound",
+    "sport+competition+market scope equal upstream evidence and preregistered plan",
+    "all timestamps timezone-aware and chronological",
+    "prediction_generated_at <= decision_at",
+    "feature_snapshot_as_of_utc <= decision_at",
+    "market quote age <= preregistered max_market_quote_age_seconds",
+    "purged expanding walk-forward with embargo",
+    "final chronological holdout untouched by tuning",
+    "empirical and market baselines present",
+    "Brier + log-loss improvement over market",
+    "paired moving-block bootstrap CI95 lower bounds > 0",
+    "calibration ECE and maximum calibration gap within preregistered limits",
+    "segment stability and fold stability above preregistered fractions",
+    "multiclass 1X2 evaluated as multiclass, never flattened to silent binary score"
+  ],
+  "required_inputs": [
+    "upstream_data_evidence_path",
+    "preregistered_plan_path",
+    "plan_registration_path",
+    "evaluation_started_at_utc",
+    "prediction_rows"
+  ],
+  "result_semantics": {
+    "FAIL_CLOSED": "at least one required control failed",
+    "PASS": "real evidence satisfies the preregistered OOS gate; this does not itself authorize model promotion, wagering, CONTROLLED_LIVE, or production"
+  },
+  "schema": "MATRIX_ELITE_C01_REAL_OOS_EVIDENCE_INPUT_CONTRACT_R2"
+}

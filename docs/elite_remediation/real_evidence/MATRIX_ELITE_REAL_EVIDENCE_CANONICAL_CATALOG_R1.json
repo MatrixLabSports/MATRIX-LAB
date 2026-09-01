@@ -1,0 +1,207 @@
+{
+  "automatic_wagering_authorized": false,
+  "c07_runtime_gate": {
+    "entry_file": "MATRIX_C2_R8_3R6_R13_TO_R15_FROZEN_MIGRATION_ENTRY_GATE_R7.ps1",
+    "entry_sha256": "1f9497c2a160fd13fdf17ed7ed31a6c28e586aa0e346f829111a1041b4b95f49",
+    "expected_evidence_schema": "MATRIX_C2_R8_3R6_R13_TO_R15_FROZEN_MIGRATION_ENTRY_GATE_R7",
+    "finding": "C-07",
+    "required_fields": {
+      "authorization_status": "NOT_GRANTED",
+      "aws_api_calls_performed": 0,
+      "aws_login_performed": false,
+      "canonical_status_ambiguity_absent": "TRUE",
+      "controlled_live_admissible": false,
+      "entry_boundary_evidence_binding": "PASS",
+      "network_calls_performed": false,
+      "one_shot_migration_state_guard": "PASS",
+      "production_admissible": false,
+      "recursive_windows_parser": "19/19 PASS",
+      "stop_boundary": "BEFORE_ANY_AWS_AUTHORIZATION"
+    },
+    "required_result": "PASS"
+  },
+  "catalog_design": "DETACHED_NO_SELF_HASH_NO_ADDENDUM_HASH_REFERENCE",
+  "controlled_live_admissible": false,
+  "network_calls_performed": false,
+  "o01_excluded_from_technical_self_closure": true,
+  "production_admissible": false,
+  "real_evidence_gates": [
+    {
+      "auditor_file": "MATRIX_ELITE_C03_C04_H04_REAL_DATA_EVIDENCE_AUDITOR_R1_PRODUCER_BOUND_R1.py",
+      "auditor_sha256": "fe502e6c804263d1468435744338fe74592097adef696581587fd3499689b3ab",
+      "contract_file": "MATRIX_ELITE_C03_C04_H04_REAL_DATA_EVIDENCE_INPUT_CONTRACT_R1.json",
+      "contract_sha256": "9c9957edf267682ecc98d73e59fed8ce75738be5da87c380e491ff6f9e5580db",
+      "expected_evidence_schema": "MATRIX_ELITE_C03_C04_H04_REAL_DATA_EVIDENCE_R1",
+      "findings_covered": [
+        "C-03",
+        "C-04",
+        "H-04"
+      ],
+      "gate_id": "C03_C04_H04",
+      "required_pass_flag": "admitted",
+      "required_result": "PASS",
+      "requires_input_contract_sha_match": true,
+      "requires_running_auditor_sha_match": true
+    },
+    {
+      "auditor_file": "MATRIX_ELITE_C01_REAL_OOS_EVIDENCE_AUDITOR_R2_PRODUCER_BOUND_R1.py",
+      "auditor_sha256": "ce516410520f14f5e439eecc0c8ef46050c0494bfbe00f4e017d3e47919f99ba",
+      "contract_file": "MATRIX_ELITE_C01_REAL_OOS_EVIDENCE_INPUT_CONTRACT_R2.json",
+      "contract_sha256": "8a1cc44511e3f0348a2a0c63a7b1b6ddf17eedc08a1a8abe956077b69c840657",
+      "expected_evidence_schema": "MATRIX_ELITE_C01_REAL_OOS_EVIDENCE_R2",
+      "findings_covered": [
+        "C-01"
+      ],
+      "gate_id": "C01",
+      "required_pass_flag": "oos_edge_evidence_passed",
+      "required_result": "PASS",
+      "requires_input_contract_sha_match": true,
+      "requires_running_auditor_sha_match": true
+    },
+    {
+      "auditor_file": "MATRIX_ELITE_C05_REAL_LINE_HISTORY_CLV_EVIDENCE_AUDITOR_R1_PRODUCER_BOUND_R1.py",
+      "auditor_sha256": "638fe470cccaabb9f6bc290cbda36b714ecfd5c695623a73fba3ba9482e031cf",
+      "contract_file": "MATRIX_ELITE_C05_REAL_LINE_HISTORY_CLV_INPUT_CONTRACT_R1.json",
+      "contract_sha256": "e20c8bc074264603b0f3dc444079fa2f8e5d97122a3248c3fa589999ad1a0e29",
+      "expected_evidence_schema": "MATRIX_ELITE_C05_REAL_LINE_HISTORY_CLV_EVIDENCE_R1",
+      "findings_covered": [
+        "C-05"
+      ],
+      "gate_id": "C05",
+      "required_pass_flag": "market_line_history_clv_evidence_passed",
+      "required_result": "PASS",
+      "requires_input_contract_sha_match": true,
+      "requires_running_auditor_sha_match": true
+    },
+    {
+      "auditor_file": "MATRIX_ELITE_C02_REAL_PROSPECTIVE_PAPER_TRADING_EVIDENCE_AUDITOR_R3_PRODUCER_BOUND_R1.py",
+      "auditor_sha256": "54c644fdc56d9a9c08bde9a5a0b08fe3fb83dac1ee8f7890fa85b0096fcd4b52",
+      "contract_file": "MATRIX_ELITE_C02_REAL_PROSPECTIVE_PAPER_TRADING_INPUT_CONTRACT_R3.json",
+      "contract_sha256": "aabdad0f70ec4637af1a5fda1e0465a7cc6d81dbc6d0bdea289b82833075f3ce",
+      "expected_evidence_schema": "MATRIX_ELITE_C02_REAL_PROSPECTIVE_PAPER_TRADING_EVIDENCE_R3",
+      "findings_covered": [
+        "C-02"
+      ],
+      "gate_id": "C02",
+      "required_pass_flag": "paper_trading_evidence_passed",
+      "required_result": "PASS",
+      "requires_input_contract_sha_match": true,
+      "requires_running_auditor_sha_match": true
+    },
+    {
+      "auditor_file": "MATRIX_ELITE_C06_REAL_LIVE_REPLAY_SHADOW_EVIDENCE_AUDITOR_R1_PRODUCER_BOUND_R1.py",
+      "auditor_sha256": "ccb3afc1b7715716dfdd95c8f7b7f5a9f6882cf981016232894947600ad9f7c9",
+      "contract_file": "MATRIX_ELITE_C06_REAL_LIVE_REPLAY_SHADOW_INPUT_CONTRACT_R1.json",
+      "contract_sha256": "91f1679e7e1308f2790298d6d0d21a5033b5c1ce915d02a99f9571d8bfb6c602",
+      "expected_evidence_schema": "MATRIX_ELITE_C06_REAL_LIVE_REPLAY_SHADOW_EVIDENCE_R1",
+      "findings_covered": [
+        "C-06"
+      ],
+      "gate_id": "C06",
+      "required_pass_flag": "c06_live_evidence_passed",
+      "required_result": "PASS",
+      "requires_input_contract_sha_match": true,
+      "requires_running_auditor_sha_match": true
+    },
+    {
+      "auditor_file": "MATRIX_ELITE_H01_REAL_PROVIDER_FAILOVER_EVIDENCE_AUDITOR_R1_PRODUCER_BOUND_R1.py",
+      "auditor_sha256": "639d72b663f8a6ee7a5da1d02b37203e9247346961721eee8b890e6a68d4facb",
+      "contract_file": "MATRIX_ELITE_H01_REAL_PROVIDER_FAILOVER_INPUT_CONTRACT_R1.json",
+      "contract_sha256": "86d04540166c7d3820d554c1f799dfcfe17c417d4ba374093b09c7ae6a9c4bd8",
+      "expected_evidence_schema": "MATRIX_ELITE_H01_REAL_PROVIDER_FAILOVER_EVIDENCE_R1",
+      "findings_covered": [
+        "H-01"
+      ],
+      "gate_id": "H01",
+      "required_pass_flag": "h01_real_provider_failover_evidence_passed",
+      "required_result": "PASS",
+      "requires_input_contract_sha_match": true,
+      "requires_running_auditor_sha_match": true
+    },
+    {
+      "auditor_file": "MATRIX_ELITE_H02_REAL_PORTFOLIO_RISK_EVIDENCE_AUDITOR_R1_PRODUCER_BOUND_R1.py",
+      "auditor_sha256": "8335fdb88b43a186323292862bf905950130235594670be73adb183ee6c80da9",
+      "contract_file": "MATRIX_ELITE_H02_REAL_PORTFOLIO_RISK_INPUT_CONTRACT_R1.json",
+      "contract_sha256": "220f4af5a2317e5542f70058e1b694441207dc0f5c12cbed9650e98ac057f558",
+      "expected_evidence_schema": "MATRIX_ELITE_H02_REAL_PORTFOLIO_RISK_EVIDENCE_R1",
+      "findings_covered": [
+        "H-02"
+      ],
+      "gate_id": "H02",
+      "required_pass_flag": "h02_real_portfolio_risk_evidence_passed",
+      "required_result": "PASS",
+      "requires_input_contract_sha_match": true,
+      "requires_running_auditor_sha_match": true
+    },
+    {
+      "auditor_file": "MATRIX_ELITE_H03_REAL_SRE_CONTINUITY_EVIDENCE_AUDITOR_R1_PRODUCER_BOUND_R1.py",
+      "auditor_sha256": "fb2efa55cba6060d4769d3580b1d756f6f6d82113045f80d7c7668a2d4dcc7f4",
+      "contract_file": "MATRIX_ELITE_H03_REAL_SRE_CONTINUITY_INPUT_CONTRACT_R1.json",
+      "contract_sha256": "486048fbfb4f43284cd699f7db8dd0273355e5a17fde190737a40f94498b7664",
+      "expected_evidence_schema": "MATRIX_ELITE_H03_REAL_SRE_CONTINUITY_EVIDENCE_R1",
+      "findings_covered": [
+        "H-03"
+      ],
+      "gate_id": "H03",
+      "required_pass_flag": "h03_real_sre_continuity_evidence_passed",
+      "required_result": "PASS",
+      "requires_input_contract_sha_match": true,
+      "requires_running_auditor_sha_match": true
+    },
+    {
+      "auditor_file": "MATRIX_ELITE_H05_REAL_CI_CD_SUPPLY_CHAIN_EVIDENCE_AUDITOR_R1_PRODUCER_BOUND_R1.py",
+      "auditor_sha256": "820c575f6fa5883e620bf3ab3a401bb180edbc1b81fc0cfc2ec523be0acbb892",
+      "contract_file": "MATRIX_ELITE_H05_REAL_CI_CD_SUPPLY_CHAIN_INPUT_CONTRACT_R1.json",
+      "contract_sha256": "289af7b1aa702c9da90eb5cb4c5781e430c4d142f932c7acb82304b6b3fef024",
+      "expected_evidence_schema": "MATRIX_ELITE_H05_REAL_CI_CD_SUPPLY_CHAIN_EVIDENCE_R1",
+      "findings_covered": [
+        "H-05"
+      ],
+      "gate_id": "H05",
+      "required_pass_flag": "h05_real_ci_cd_supply_chain_evidence_passed",
+      "required_result": "PASS",
+      "requires_input_contract_sha_match": true,
+      "requires_running_auditor_sha_match": true
+    }
+  ],
+  "repository_mutation_performed": false,
+  "schema": "MATRIX_ELITE_REAL_EVIDENCE_CANONICAL_CATALOG_R1",
+  "status": "CANONICAL_OFFLINE_PREPARED_NOT_RUNTIME_EVIDENCE",
+  "technical_findings_covered_by_real_evidence_auditors": [
+    "C-01",
+    "C-02",
+    "C-03",
+    "C-04",
+    "C-05",
+    "C-06",
+    "H-01",
+    "H-02",
+    "H-03",
+    "H-04",
+    "H-05"
+  ],
+  "technical_findings_covered_count": 11,
+  "templates": [
+    {
+      "file": "MATRIX_ELITE_C02_PROSPECTIVE_PAPER_TRADING_PLAN_TEMPLATE_R1.json",
+      "sha256": "722e97bfd30cfd52ea858fd722bcc9babc73c44055c35897fd69d0f89466ab3c",
+      "status": "TEMPLATE_NOT_REAL_EVIDENCE"
+    },
+    {
+      "file": "MATRIX_ELITE_C02_SAMPLE_SIZE_JUSTIFICATION_TEMPLATE_R1.json",
+      "sha256": "0778884fc7604f586cf003100dce295ae5fd112518c729bbcf72de8bcbed32f1",
+      "status": "TEMPLATE_NOT_REAL_EVIDENCE"
+    },
+    {
+      "file": "MATRIX_ELITE_C06_LIVE_EVALUATION_PLAN_TEMPLATE_R1.json",
+      "sha256": "0a1bc185f920090580bcc46bcc76b8bc4620b9dbe97390956028d9f4d5a9d4f3",
+      "status": "TEMPLATE_NOT_REAL_EVIDENCE"
+    },
+    {
+      "file": "MATRIX_ELITE_C06_SAMPLE_SIZE_JUSTIFICATION_TEMPLATE_R1.json",
+      "sha256": "44e3af3f2cc5ebd7d766fe66c5d5ca0b4e2e5bdee4d8bfdc77655caa64c80104",
+      "status": "TEMPLATE_NOT_REAL_EVIDENCE"
+    }
+  ],
+  "total_technical_findings": 12
+}

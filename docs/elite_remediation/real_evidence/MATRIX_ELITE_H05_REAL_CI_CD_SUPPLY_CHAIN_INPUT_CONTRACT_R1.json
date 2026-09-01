@@ -1,0 +1,21 @@
+{
+  "schema": "MATRIX_ELITE_H05_REAL_CI_CD_SUPPLY_CHAIN_INPUT_CONTRACT_R1",
+  "purpose": "Fail-closed CI/CD and software-supply-chain evidence gate bound to one exact commit.",
+  "required_gates": ["lint", "unit", "integration", "data", "security", "secret_scan", "dependency_scan", "coverage", "schema", "sport_boundary", "model_validation", "build", "sbom", "artifact_signing"],
+  "required_controls": [
+    "each gate has its own exact-SHA evidence bound to the same commit",
+    "coverage threshold",
+    "zero critical security/secret/dependency findings",
+    "exact dependency lock file + independent verification",
+    "exact SBOM + independent verification",
+    "exact build artifact + signature verification",
+    "build provenance binds commit, lock, SBOM and artifact",
+    "optional policy-enforced reproducible-build hash",
+    "main branch protection evidence",
+    "human approval if auditing a production release candidate",
+    "automatic model promotion/provider switch/wagering forbidden"
+  ],
+  "controlled_live_admissible": false,
+  "production_admissible": false,
+  "closure_rule": "Synthetic PASS validates the auditor only. H-05 remains OPEN until a real CI run on the exact repository commit passes all gates and supply-chain verification."
+}

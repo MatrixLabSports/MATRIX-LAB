@@ -1,0 +1,19 @@
+{
+  "schema": "MATRIX_ELITE_H03_REAL_SRE_CONTINUITY_INPUT_CONTRACT_R1",
+  "purpose": "Fail-closed staging SRE/continuity evidence gate proving backup, real restore, measured RTO/RPO, load, chaos, alert delivery, telemetry and error budgets.",
+  "required_evidence": [
+    "preregistered SRE policy + independent pre-drill timestamp anchor",
+    "immutable/encrypted backup manifest",
+    "real restore drill from that exact backup",
+    "restored repository/data hashes equal backup hashes",
+    "load test with p95/p99/error-rate/throughput/request-count gates",
+    "chaos scenarios with safe-state preservation and zero wagering",
+    "external alert delivery + acknowledgement",
+    "telemetry schema and field-coverage validation",
+    "error budgets for every required SLO"
+  ],
+  "environment": "STAGING",
+  "controlled_live_admissible": false,
+  "production_admissible": false,
+  "closure_rule": "Synthetic PASS validates the auditor only. H-03 remains OPEN until real staging drills pass with exact evidence."
+}

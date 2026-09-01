@@ -1,0 +1,48 @@
+{
+  "automatic_model_promotion": false,
+  "automatic_wagering_authorized": false,
+  "closure_rule": "Synthetic PASS validates the auditor only. C-02 remains OPEN until a real independently timestamped prospective sample, with justified sample size, passes this gate and independent audit.",
+  "controlled_live_admissible": false,
+  "matrix_policies": {
+    "NO_BET_first_class": true,
+    "default_min_decimal_odds_at_least": 1.7,
+    "legitimate_variance_requires_evidence": true,
+    "lower_odds_require_documented_exception": true,
+    "maximum_combo_fraction": 0.1
+  },
+  "network_required": false,
+  "performance_policy": "REPORT_ONLY_FOR_C02_PROCESS_GATE",
+  "production_admissible": false,
+  "prospective_integrity": {
+    "decision_binds_exact_opportunity_record_sha256": true,
+    "decision_chain_independently_timestamped_before_event": true,
+    "opportunity_universe_independently_timestamped_before_decision": true,
+    "plan_independently_timestamped_before_sample": true,
+    "post_event_fields_forbidden_in_decision": true,
+    "review_chain_independently_timestamped_after_review": true
+  },
+  "purpose": "Fail-closed single-scope real prospective paper-trading evidence gate with independently timestamped preregistration, opportunity-universe completeness, frozen decisions, C05 price/CLV binding, settlement/postmortem, and preregistered sample-size justification.",
+  "required_inputs": [
+    "upstream_oos_evidence_path + exact SHA256",
+    "prospective_market_evidence_path + exact SHA256",
+    "paper_trading_plan_path + exact SHA256",
+    "plan.sample_size_justification_path + exact SHA256",
+    "plan_registration_anchor",
+    "opportunity_records + opportunity_timestamp_anchors",
+    "decision_records + decision_timestamp_anchors",
+    "review_records + review_timestamp_anchors"
+  ],
+  "sample_sufficiency": {
+    "accepted_justification_methods": [
+      "POWER_ANALYSIS",
+      "PRECISION_TARGET",
+      "PREREGISTERED_SEQUENTIAL_DESIGN"
+    ],
+    "auditor_hard_floor_total_decisions": 20,
+    "hard_floor_is_not_formal_sample_sufficiency": true,
+    "justification_hash_is_committed_inside_independently_timestamped_plan": true,
+    "plan_minimums_must_be_at_least_justified_recommendations": true
+  },
+  "schema": "MATRIX_ELITE_C02_REAL_PROSPECTIVE_PAPER_TRADING_INPUT_CONTRACT_R3",
+  "scope_rule": "Exactly one sport + competition + market + model_version + feature_version per audit run."
+}

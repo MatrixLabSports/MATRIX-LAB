@@ -1,0 +1,75 @@
+{
+  "coverage_requirement_required_fields": [
+    "sport",
+    "competition",
+    "market",
+    "year",
+    "minimum"
+  ],
+  "default_required_rights": [
+    "research",
+    "retention",
+    "derivatives",
+    "model_training"
+  ],
+  "forbidden": [
+    "silent_name_join",
+    "future_identity_binding_at_as_of",
+    "inactive_or_forbidden_rights",
+    "invalid_revision_graph",
+    "mixed_sport_training_snapshot"
+  ],
+  "identity_binding_required_fields": [
+    "provider",
+    "provider_entity_id",
+    "canonical_entity_id",
+    "confidence",
+    "evidence_sha256",
+    "status",
+    "entity_type",
+    "available_at"
+  ],
+  "identity_key_required_fields": [
+    "provider",
+    "provider_entity_id"
+  ],
+  "minimum_identity_confidence_default": 0.95,
+  "network_required": false,
+  "pit_record_required_fields": [
+    "record_key",
+    "provider",
+    "sport",
+    "competition",
+    "market",
+    "observed_at",
+    "available_at",
+    "event_start_at",
+    "revision_id",
+    "revision_number",
+    "payload_sha256"
+  ],
+  "purpose": "Offline fail-closed PIT + canonical identity + temporal rights evidence generation before any model training.",
+  "rights_profile_required_fields": [
+    "provider",
+    "research",
+    "retention",
+    "derivatives",
+    "model_training",
+    "display",
+    "redistribution",
+    "commercial_use",
+    "expires_at",
+    "evidence_sha256",
+    "effective_from"
+  ],
+  "schema": "MATRIX_ELITE_C03_C04_H04_REAL_DATA_EVIDENCE_INPUT_CONTRACT_R1",
+  "scope": {
+    "required": [
+      "sport",
+      "competition",
+      "market",
+      "as_of_utc"
+    ],
+    "single_sport_required": true
+  }
+}

@@ -1,0 +1,44 @@
+{
+  "critical_semantics": {
+    "controlled_live_authorized_by_this_gate": false,
+    "replay_can_claim_runtime_latency": false,
+    "shadow_live_can_claim_runtime_latency_after_pass": true
+  },
+  "network_required_for_auditor": false,
+  "purpose": "Fail-closed evidence gate separating historical REPLAY functional validation from real SHADOW_LIVE runtime SLO evidence.",
+  "required_controls": [
+    "single sport+market+model+feature scope",
+    "evaluation plan preregistered and independently timestamped before sample",
+    "sample-size justification exact SHA bound",
+    "ALL_ELIGIBLE_SIGNAL_EVALUATIONS sampling policy",
+    "run manifests prove zero dropped evaluations and zero sequence gaps",
+    "REPLAY timing trace marked reconstructed and not runtime-SLO-claimable",
+    "SHADOW_LIVE timing trace uses observed timestamps and valid clock-sync evidence",
+    "eight stage latencies derived from timestamps, not trusted scalar input",
+    "P50/P95/P99 end-to-end and per-stage P95/P99",
+    "window-closed-on-arrival, processing-missed-window, stale and decision-too-late rates",
+    "false-positive and false-negative rates",
+    "shadow signal chain independently timestamped before entry-window close",
+    "oracle generated only after entry-window close",
+    "zero order submissions and zero wagers"
+  ],
+  "required_modes": [
+    "REPLAY",
+    "SHADOW_LIVE"
+  ],
+  "result_semantics": {
+    "FAIL_CLOSED": "Any scope, sample, clock, timing, completeness, latency, FP/FN, window or no-wager control fails.",
+    "PASS": "Both replay functional evidence and real shadow runtime SLO evidence pass the preregistered policy. CONTROLLED_LIVE remains false."
+  },
+  "schema": "MATRIX_ELITE_C06_REAL_LIVE_REPLAY_SHADOW_INPUT_CONTRACT_R1",
+  "stage_order": [
+    "event_to_provider",
+    "provider_to_ingest",
+    "ingest_to_normalize",
+    "normalize_to_feature",
+    "feature_to_inference",
+    "inference_to_market",
+    "market_to_signal",
+    "signal_to_visible"
+  ]
+}

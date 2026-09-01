@@ -1,0 +1,42 @@
+{
+  "forbidden": [
+    "post-event quote as close",
+    "incomplete market devig",
+    "silent quote replacement",
+    "stale quote execution",
+    "CLV from raw overround probability",
+    "automatic wagering"
+  ],
+  "network_required": false,
+  "price_modes": [
+    "SIMULATED_BEST_AVAILABLE",
+    "ACTUAL_TAKEN"
+  ],
+  "purpose": "Offline fail-closed line-history/devig/price-binding/closing-line/CLV evidence after C-01 OOS evidence.",
+  "required_controls": [
+    "upstream C-01 OOS evidence PASS exact SHA bound",
+    "complete market snapshots before devig",
+    "canonical event+market+selection+provider+captured_at binding",
+    "decision quotes captured at or before decision time",
+    "stale quotes rejected",
+    "best valid price computed across providers",
+    "ACTUAL_TAKEN quote exact hash bound",
+    "prematch closing line only from snapshots at or before event start",
+    "closing provider age bounded",
+    "minimum closing providers enforced",
+    "CLV computed versus devigged fair closing consensus",
+    "block-bootstrap mean CLV uncertainty",
+    "price disadvantage versus best valid price bounded by preregistered plan"
+  ],
+  "required_inputs": [
+    "upstream_oos_evidence_path",
+    "market_evidence_plan_path",
+    "market_snapshots",
+    "decisions"
+  ],
+  "result_semantics": {
+    "FAIL_CLOSED": "one or more controls failed",
+    "PASS": "market evidence satisfies preregistered integrity/execution-quality/CLV gates; does not authorize wagering or CONTROLLED_LIVE"
+  },
+  "schema": "MATRIX_ELITE_C05_REAL_LINE_HISTORY_CLV_INPUT_CONTRACT_R1"
+}

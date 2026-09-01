@@ -1,0 +1,31 @@
+{
+  "schema": "MATRIX_ELITE_H02_REAL_PORTFOLIO_RISK_INPUT_CONTRACT_R1",
+  "purpose": "Fail-closed real portfolio-risk evidence gate using real prospective paper evidence, ex-ante exposure decisions, conservative correlation calibration, tail stress, bankroll trace, and kill-switch drills.",
+  "required_inputs": [
+    "risk_policy_path + exact SHA256",
+    "one or more real C02 R3 PASS evidence references covering every risk-decision sport/market",
+    "correlation_calibration_evidence_path + exact SHA256",
+    "risk_decision_records hash chain",
+    "real bankroll_ledger",
+    "kill_switch_drills for drawdown, daily loss, data, model, execution and provider incidents"
+  ],
+  "risk_policy_requirements": {
+    "stake_sizing": "FRACTIONAL_KELLY_CAPPED",
+    "kelly_fraction_maximum": 0.25,
+    "loss_chasing_allowed": false,
+    "per_bet_event_day_and_correlation_group_caps": true,
+    "correlated_tail_stress": true,
+    "stress_correlation_must_not_be_below_empirical_upper_ci": true,
+    "worst_group_and_top2_group_shocks": true
+  },
+  "kill_switch_requirements": {
+    "triggers": ["DRAWDOWN", "DAILY_LOSS", "DATA_INCIDENT", "MODEL_INCIDENT", "EXECUTION_INCIDENT", "PROVIDER_INCIDENT"],
+    "positions_opened_after_trigger": 0,
+    "orders_submitted_after_trigger": 0,
+    "maximum_block_latency_preregistered": true
+  },
+  "automatic_wagering_authorized": false,
+  "controlled_live_admissible": false,
+  "production_admissible": false,
+  "closure_rule": "Synthetic PASS validates the auditor only. H-02 remains OPEN until real paper-derived portfolio decisions, real bankroll trace, calibrated correlations, stress results and all kill-switch drills pass independently."
+}
