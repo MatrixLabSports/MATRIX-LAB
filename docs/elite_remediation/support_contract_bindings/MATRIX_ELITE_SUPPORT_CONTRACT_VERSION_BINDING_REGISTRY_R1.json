@@ -1,0 +1,514 @@
+{
+  "binding_layer_version": "MATRIX-SCB-R1",
+  "bindings": [
+    {
+      "binding_version": "MATRIX-SCB-R1/human_approval_policy",
+      "control_id": "human_approval_policy",
+      "fingerprint": "7dc397ed8b54fffc96aaad5f455ecb9de580f4e3e3d81ca057390f5317e3e8d9",
+      "implementation_evidence": {
+        "path": "app/security/dual_control.py",
+        "sha256": "324c87bc8ec1df876572a8e5eb0016815b5bfbb838325988067d67e67d48d485"
+      },
+      "required_identity_version_field": "human_approval_policy_version",
+      "scope_kind": "FAILOVER",
+      "semantic_review_status": "PENDING_INDEPENDENT_SUBSTANTIVE_AUDIT",
+      "source_head": "34b36afbd8dcbc21ab0cfffa1d40b3b8d3be7036",
+      "support_declared": false,
+      "support_status": "NOT_EVALUATED",
+      "test_evidence": {
+        "path": "tests/test_football_real_money_risk.py",
+        "sha256": "6cb7957da20d6562d855fbaf0832590fea80d48d8b0b8d89f2823c30a4294a1c"
+      }
+    },
+    {
+      "binding_version": "MATRIX-SCB-R1/identity_reconciliation_contract",
+      "control_id": "identity_reconciliation_contract",
+      "fingerprint": "0032f8cce7fc76b2155153b80307bec8e5dd659e82ba2abdac99d47f1eee673b",
+      "implementation_evidence": {
+        "path": "app/security/provider_reconciliation.py",
+        "sha256": "265a1d2ac610b1bc0b7ffc944cc7177fb9f418d11344c3234f97da5220ce4f5b"
+      },
+      "required_identity_version_field": "identity_reconciliation_contract_version",
+      "scope_kind": "FAILOVER",
+      "semantic_review_status": "PENDING_INDEPENDENT_SUBSTANTIVE_AUDIT",
+      "source_head": "34b36afbd8dcbc21ab0cfffa1d40b3b8d3be7036",
+      "support_declared": false,
+      "support_status": "NOT_EVALUATED",
+      "test_evidence": {
+        "path": "tests/security/test_security_v21_provider_reconciliation.py",
+        "sha256": "17bcc43162af5f9e4924e7f9c5c5519cb3ec84324e1e48267f78a4168b93399b"
+      }
+    },
+    {
+      "binding_version": "MATRIX-SCB-R1/primary_rights_profile",
+      "control_id": "primary_rights_profile",
+      "fingerprint": "19568a661763e0e19c23477cae75db50acdc52fab961177cd8f4bab8ad06c860",
+      "implementation_evidence": {
+        "path": "app/security/provider_rights.py",
+        "sha256": "03ff78f082603e82e0eb926ac44414329b7e38736cd791546d2a7e45c89c9549"
+      },
+      "required_identity_version_field": "primary_rights_profile_version",
+      "scope_kind": "FAILOVER",
+      "semantic_review_status": "PENDING_INDEPENDENT_SUBSTANTIVE_AUDIT",
+      "source_head": "34b36afbd8dcbc21ab0cfffa1d40b3b8d3be7036",
+      "support_declared": false,
+      "support_status": "NOT_EVALUATED",
+      "test_evidence": {
+        "path": "tests/security/test_security_v19_provider_rights.py",
+        "sha256": "14822ae3fa9b9e9c2b4e4ad3b0b14d30237da184d0920938df99b874b1e93cbd"
+      }
+    },
+    {
+      "binding_version": "MATRIX-SCB-R1/rollback_plan",
+      "control_id": "rollback_plan",
+      "fingerprint": "b4b27349165fa828f6cc937d728b03a44d15075536f159ab481399e1eb0e6248",
+      "implementation_evidence": {
+        "path": "app/release/provenance.py",
+        "sha256": "dfa463bc828b174bc70d864e98e648b51c0ddaa88b698212c58d17bfff0418d6"
+      },
+      "required_identity_version_field": "rollback_plan_version",
+      "scope_kind": "FAILOVER",
+      "semantic_review_status": "PENDING_INDEPENDENT_SUBSTANTIVE_AUDIT",
+      "source_head": "34b36afbd8dcbc21ab0cfffa1d40b3b8d3be7036",
+      "support_declared": false,
+      "support_status": "NOT_EVALUATED",
+      "test_evidence": {
+        "path": "tests/test_p137_p141_v8_snapshot_rollback.py",
+        "sha256": "a143d01c2f5fa59dd37d6f876931404b5aff96a19a8fedd909a8f9b9cd07d9db"
+      }
+    },
+    {
+      "binding_version": "MATRIX-SCB-R1/schema_compatibility_contract",
+      "control_id": "schema_compatibility_contract",
+      "fingerprint": "b750bcbc4557394b46e8c7e6a8e39ac6ca873395897ecca967c8042e38ba20dc",
+      "implementation_evidence": {
+        "path": "app/core/schema_compatibility_gate.py",
+        "sha256": "b3869f24e2cb8b426cd11dd53868e33ca1f9696955cd20b0177d58cba455e2f1"
+      },
+      "required_identity_version_field": "schema_compatibility_contract_version",
+      "scope_kind": "FAILOVER",
+      "semantic_review_status": "PENDING_INDEPENDENT_SUBSTANTIVE_AUDIT",
+      "source_head": "34b36afbd8dcbc21ab0cfffa1d40b3b8d3be7036",
+      "support_declared": false,
+      "support_status": "NOT_EVALUATED",
+      "test_evidence": {
+        "path": "tests/test_schema_compatibility_gate.py",
+        "sha256": "19d81789bb25ef7d711f8c4cc2a9807e95f1d8a596776bed4e3a1fa76cffd198"
+      }
+    },
+    {
+      "binding_version": "MATRIX-SCB-R1/secondary_rights_profile",
+      "control_id": "secondary_rights_profile",
+      "fingerprint": "2b4f88030c579422212299ad1ff828c81b367334ba20b073a7358d6ec518027a",
+      "implementation_evidence": {
+        "path": "app/security/provider_portfolio.py",
+        "sha256": "2b13713addb30f8503cc8965dd43f77f8874d48080e302d9a41b308f95681f0e"
+      },
+      "required_identity_version_field": "secondary_rights_profile_version",
+      "scope_kind": "FAILOVER",
+      "semantic_review_status": "PENDING_INDEPENDENT_SUBSTANTIVE_AUDIT",
+      "source_head": "34b36afbd8dcbc21ab0cfffa1d40b3b8d3be7036",
+      "support_declared": false,
+      "support_status": "NOT_EVALUATED",
+      "test_evidence": {
+        "path": "tests/security/test_security_v20_provider_portfolio.py",
+        "sha256": "9329d99b966be86d5a9dd63fef40def41149dcba12c0088cddc58cca44973728"
+      }
+    },
+    {
+      "binding_version": "MATRIX-SCB-R1/event_time_contract",
+      "control_id": "event_time_contract",
+      "fingerprint": "c587d4065f22e64e5c82224d12e61dfdf5ec4f305119fa54633a3ddf2fd89f0b",
+      "implementation_evidence": {
+        "path": "app/core/canonical_observation_store.py",
+        "sha256": "6b912ea5b7c63f8f5a15d777d9d1147dd0ae2823c6d6bab24aa47e80f702b5b7"
+      },
+      "required_identity_version_field": "event_time_contract_version",
+      "scope_kind": "LIVE",
+      "semantic_review_status": "PENDING_INDEPENDENT_SUBSTANTIVE_AUDIT",
+      "source_head": "34b36afbd8dcbc21ab0cfffa1d40b3b8d3be7036",
+      "support_declared": false,
+      "support_status": "NOT_EVALUATED",
+      "test_evidence": {
+        "path": "tests/test_canonical_observation_store.py",
+        "sha256": "93212dcf99328910620e772762a2c7d67b9b63f2afa3721b86b46b2a19feb0bc"
+      }
+    },
+    {
+      "binding_version": "MATRIX-SCB-R1/live_window_policy",
+      "control_id": "live_window_policy",
+      "fingerprint": "e6149c4e56aebb7e89c9d68093d0a87ceb44591abbf29bd2ccb6fa42ba2c4c4a",
+      "implementation_evidence": {
+        "path": "app/application/football/live_decision_timing.py",
+        "sha256": "b95feef186d9c44ef4d60ef985953d905ad506acdcb85721d67e4e4004820407"
+      },
+      "required_identity_version_field": "live_window_policy_version",
+      "scope_kind": "LIVE",
+      "semantic_review_status": "PENDING_INDEPENDENT_SUBSTANTIVE_AUDIT",
+      "source_head": "34b36afbd8dcbc21ab0cfffa1d40b3b8d3be7036",
+      "support_declared": false,
+      "support_status": "NOT_EVALUATED",
+      "test_evidence": {
+        "path": "tests/elite_remediation/test_p6_live_slo.py",
+        "sha256": "d709a9cec45e12a2accede724646b118f36bec45fcdee41968183f73f39fb1f0"
+      }
+    },
+    {
+      "binding_version": "MATRIX-SCB-R1/replay_protocol",
+      "control_id": "replay_protocol",
+      "fingerprint": "75c3f5ca2493630f0c6ffff8ac32ee92c41256f47a0e05ad71170c6a6430cc2c",
+      "implementation_evidence": {
+        "path": "app/application/football/bounded_live_control.py",
+        "sha256": "070ab4be8c7e9565636210b26216123d2832e95620459d3dccb3cd403ae74bf8"
+      },
+      "required_identity_version_field": "replay_protocol_version",
+      "scope_kind": "LIVE",
+      "semantic_review_status": "PENDING_INDEPENDENT_SUBSTANTIVE_AUDIT",
+      "source_head": "34b36afbd8dcbc21ab0cfffa1d40b3b8d3be7036",
+      "support_declared": false,
+      "support_status": "NOT_EVALUATED",
+      "test_evidence": {
+        "path": "tests/test_c2_bounded_live_control.py",
+        "sha256": "73ed829337225495b6474c03901621b8cab4c431023ec547372d41f4e6d6bd68"
+      }
+    },
+    {
+      "binding_version": "MATRIX-SCB-R1/shadow_live_protocol",
+      "control_id": "shadow_live_protocol",
+      "fingerprint": "0d3a32c45ca1c878081a6177f0af6b3a5dd1b1be87f78781d1b95449a78ab22f",
+      "implementation_evidence": {
+        "path": "app/core/provider_shadow_rehearsal_evidence.py",
+        "sha256": "bf39981a807d7fd5524a480568bdc119650e88acc237a9d835b306e17c770e5c"
+      },
+      "required_identity_version_field": "shadow_live_protocol_version",
+      "scope_kind": "LIVE",
+      "semantic_review_status": "PENDING_INDEPENDENT_SUBSTANTIVE_AUDIT",
+      "source_head": "34b36afbd8dcbc21ab0cfffa1d40b3b8d3be7036",
+      "support_declared": false,
+      "support_status": "NOT_EVALUATED",
+      "test_evidence": {
+        "path": "tests/test_api_football_shadow_runtime.py",
+        "sha256": "bf402da147e05bf08343f9230b664e190d7d2dc3abd4cefd5b00ae0afdcfb98f"
+      }
+    },
+    {
+      "binding_version": "MATRIX-SCB-R1/staleness_policy",
+      "control_id": "staleness_policy",
+      "fingerprint": "c334bad37c45a0251ed25f05ee32f5c8ee4ee1477fc62fa57cbb700e58dab7ed",
+      "implementation_evidence": {
+        "path": "app/core/freshness_root.py",
+        "sha256": "1d65f8da525fc4d47f801e438ce22655485eccc315cee67c7006941f34cc7b56"
+      },
+      "required_identity_version_field": "staleness_policy_version",
+      "scope_kind": "LIVE",
+      "semantic_review_status": "PENDING_INDEPENDENT_SUBSTANTIVE_AUDIT",
+      "source_head": "34b36afbd8dcbc21ab0cfffa1d40b3b8d3be7036",
+      "support_declared": false,
+      "support_status": "NOT_EVALUATED",
+      "test_evidence": {
+        "path": "tests/test_freshness_root.py",
+        "sha256": "4c9c1d5e038e8daef4ffcab97e29a969a002c13cf1b0a1ac7d2fc4b155774517"
+      }
+    },
+    {
+      "binding_version": "MATRIX-SCB-R1/baseline_definition",
+      "control_id": "baseline_definition",
+      "fingerprint": "809ee07f9100137f82a3da1723894205613412afdbf310bcbe586c1fb7f70dd0",
+      "implementation_evidence": {
+        "path": "matrix_elite/baselines.py",
+        "sha256": "f526f1541b8aeafd9a3a3f9d2323117ff2f4fe181db427a690ed0f1185b1a414"
+      },
+      "required_identity_version_field": null,
+      "scope_kind": "PREDICTIVE",
+      "semantic_review_status": "PENDING_INDEPENDENT_SUBSTANTIVE_AUDIT",
+      "source_head": "34b36afbd8dcbc21ab0cfffa1d40b3b8d3be7036",
+      "support_declared": false,
+      "support_status": "NOT_EVALUATED",
+      "test_evidence": {
+        "path": "tests/elite_remediation/test_p2_baselines.py",
+        "sha256": "4bef460bdbe6c7f0f3f80c9bec7c2aba31499316afb940c88b21eff338a9aeb8"
+      }
+    },
+    {
+      "binding_version": "MATRIX-SCB-R1/canonical_market_definition",
+      "control_id": "canonical_market_definition",
+      "fingerprint": "b290c7bd5c077e98d37d41e19a7a4cdf29bd2b6215d1a3e6d0db5fc120e38df7",
+      "implementation_evidence": {
+        "path": "matrix_elite/baselines.py",
+        "sha256": "f526f1541b8aeafd9a3a3f9d2323117ff2f4fe181db427a690ed0f1185b1a414"
+      },
+      "required_identity_version_field": "market_semantics_version",
+      "scope_kind": "PREDICTIVE",
+      "semantic_review_status": "PENDING_INDEPENDENT_SUBSTANTIVE_AUDIT",
+      "source_head": "34b36afbd8dcbc21ab0cfffa1d40b3b8d3be7036",
+      "support_declared": false,
+      "support_status": "NOT_EVALUATED",
+      "test_evidence": {
+        "path": "tests/elite_remediation/test_p2_baselines.py",
+        "sha256": "4bef460bdbe6c7f0f3f80c9bec7c2aba31499316afb940c88b21eff338a9aeb8"
+      }
+    },
+    {
+      "binding_version": "MATRIX-SCB-R1/evaluation_protocol",
+      "control_id": "evaluation_protocol",
+      "fingerprint": "dea4534ad5306f8cffc7eef453ffdba021b24a58003d363ffd700b8c327736dd",
+      "implementation_evidence": {
+        "path": "app/research/football/walk_forward.py",
+        "sha256": "87ab734334d6052ab4dce73c7cd306eddec23ef701579f458f38242346011066"
+      },
+      "required_identity_version_field": "evaluation_protocol_version",
+      "scope_kind": "PREDICTIVE",
+      "semantic_review_status": "PENDING_INDEPENDENT_SUBSTANTIVE_AUDIT",
+      "source_head": "34b36afbd8dcbc21ab0cfffa1d40b3b8d3be7036",
+      "support_declared": false,
+      "support_status": "NOT_EVALUATED",
+      "test_evidence": {
+        "path": "tests/test_football_walk_forward.py",
+        "sha256": "d1a6fbc6243aa66fd1c730379b6a49d57f4f207c7c1995f31318e805e9088519"
+      }
+    },
+    {
+      "binding_version": "MATRIX-SCB-R1/identity_contract",
+      "control_id": "identity_contract",
+      "fingerprint": "1bb60deafaead71f93de0f1f495f7e9e0c244a2b64af7fe6d03b2056537c9373",
+      "implementation_evidence": {
+        "path": "app/core/provider_identity_mapping.py",
+        "sha256": "f4d359c3790ae092a8fc137127ff172ef97b5ee2e4488697eac8c9271ded35a0"
+      },
+      "required_identity_version_field": "identity_contract_version",
+      "scope_kind": "PREDICTIVE",
+      "semantic_review_status": "PENDING_INDEPENDENT_SUBSTANTIVE_AUDIT",
+      "source_head": "34b36afbd8dcbc21ab0cfffa1d40b3b8d3be7036",
+      "support_declared": false,
+      "support_status": "NOT_EVALUATED",
+      "test_evidence": {
+        "path": "tests/test_provider_identity_mapping.py",
+        "sha256": "266e3671a92f93dd81bc8bdde00a2136929cbc242f722b4c7c3e1a99864171fb"
+      }
+    },
+    {
+      "binding_version": "MATRIX-SCB-R1/odds_binding_contract",
+      "control_id": "odds_binding_contract",
+      "fingerprint": "fa28cfffd73a277744a8e6c612c3a8c2a208e94cc972999f191d08987ee11eb3",
+      "implementation_evidence": {
+        "path": "matrix_elite/odds.py",
+        "sha256": "a41e9400dd2ce7e75b0abe4ea39b00a59dd10dee6a68adfda53c21d8679ae226"
+      },
+      "required_identity_version_field": "odds_contract_version",
+      "scope_kind": "PREDICTIVE",
+      "semantic_review_status": "PENDING_INDEPENDENT_SUBSTANTIVE_AUDIT",
+      "source_head": "34b36afbd8dcbc21ab0cfffa1d40b3b8d3be7036",
+      "support_declared": false,
+      "support_status": "NOT_EVALUATED",
+      "test_evidence": {
+        "path": "tests/elite_remediation/test_p4_market_history.py",
+        "sha256": "a8dd45d76248231a59b3b2468a75eae82f8e3c612faed498e9cf6102d4f665df"
+      }
+    },
+    {
+      "binding_version": "MATRIX-SCB-R1/pit_data_contract",
+      "control_id": "pit_data_contract",
+      "fingerprint": "0bb583803ad8e104758ccae09b0118fa72187f58b2d5187a0bb0cd6a54a52e79",
+      "implementation_evidence": {
+        "path": "app/core/point_in_time_data_contract.py",
+        "sha256": "9289abc7193be047f1ff8420ea0c0f3baaba2408d44ebe4a9d012d744b9eb09a"
+      },
+      "required_identity_version_field": "data_contract_version",
+      "scope_kind": "PREDICTIVE",
+      "semantic_review_status": "PENDING_INDEPENDENT_SUBSTANTIVE_AUDIT",
+      "source_head": "34b36afbd8dcbc21ab0cfffa1d40b3b8d3be7036",
+      "support_declared": false,
+      "support_status": "NOT_EVALUATED",
+      "test_evidence": {
+        "path": "tests/test_point_in_time_data_contract.py",
+        "sha256": "0d1c00264c44dfba0c789067d3492d767e3004a6907a7c40a68c5d909472e188"
+      }
+    },
+    {
+      "binding_version": "MATRIX-SCB-R1/rights_profile",
+      "control_id": "rights_profile",
+      "fingerprint": "5a7b8494da5eab68c974fef2c11206304a0c970b1c940c7c6cf9c936e28595e9",
+      "implementation_evidence": {
+        "path": "app/security/provider_rights.py",
+        "sha256": "03ff78f082603e82e0eb926ac44414329b7e38736cd791546d2a7e45c89c9549"
+      },
+      "required_identity_version_field": "rights_profile_version",
+      "scope_kind": "PREDICTIVE",
+      "semantic_review_status": "PENDING_INDEPENDENT_SUBSTANTIVE_AUDIT",
+      "source_head": "34b36afbd8dcbc21ab0cfffa1d40b3b8d3be7036",
+      "support_declared": false,
+      "support_status": "NOT_EVALUATED",
+      "test_evidence": {
+        "path": "tests/security/test_security_v19_provider_rights.py",
+        "sha256": "14822ae3fa9b9e9c2b4e4ad3b0b14d30237da184d0920938df99b874b1e93cbd"
+      }
+    },
+    {
+      "binding_version": "MATRIX-SCB-R1/risk_policy",
+      "control_id": "risk_policy",
+      "fingerprint": "493aaf9d3b176b1e094c5a263a3109bad52cd6a193d811e239e4d808810e32a3",
+      "implementation_evidence": {
+        "path": "matrix_elite/portfolio_risk.py",
+        "sha256": "4bb63cb9eae44b5902277e6c71e2f697ca4426c94bbe0ae13ac6bddfdd878018"
+      },
+      "required_identity_version_field": null,
+      "scope_kind": "PREDICTIVE",
+      "semantic_review_status": "PENDING_INDEPENDENT_SUBSTANTIVE_AUDIT",
+      "source_head": "34b36afbd8dcbc21ab0cfffa1d40b3b8d3be7036",
+      "support_declared": false,
+      "support_status": "NOT_EVALUATED",
+      "test_evidence": {
+        "path": "tests/test_football_real_money_risk.py",
+        "sha256": "6cb7957da20d6562d855fbaf0832590fea80d48d8b0b8d89f2823c30a4294a1c"
+      }
+    },
+    {
+      "binding_version": "MATRIX-SCB-R1/sample_requirement_policy",
+      "control_id": "sample_requirement_policy",
+      "fingerprint": "a1fc353922a0a6535125dc02e4c10154b7553051a0d84d53326902a823428f5c",
+      "implementation_evidence": {
+        "path": "matrix_elite/baseline_governance.py",
+        "sha256": "1ada65580cefb65ee3ec1407b3cadbcd78630a4bd3b5eb3f515750182635c22c"
+      },
+      "required_identity_version_field": "sample_requirement_policy_version",
+      "scope_kind": "PREDICTIVE",
+      "semantic_review_status": "PENDING_INDEPENDENT_SUBSTANTIVE_AUDIT",
+      "source_head": "34b36afbd8dcbc21ab0cfffa1d40b3b8d3be7036",
+      "support_declared": false,
+      "support_status": "NOT_EVALUATED",
+      "test_evidence": {
+        "path": "tests/elite_remediation/test_p2_baselines.py",
+        "sha256": "4bef460bdbe6c7f0f3f80c9bec7c2aba31499316afb940c88b21eff338a9aeb8"
+      }
+    },
+    {
+      "binding_version": "MATRIX-SCB-R1/settlement_rules",
+      "control_id": "settlement_rules",
+      "fingerprint": "2347180e4ed159657a595649142b95143f466a0d57da91910e0d963ba622bea9",
+      "implementation_evidence": {
+        "path": "app/research/football/prospective_ledger.py",
+        "sha256": "afd20e670e87c98c632d0f72465cc68ccf83703caadc27003b3a88545233a861"
+      },
+      "required_identity_version_field": "settlement_rules_version",
+      "scope_kind": "PREDICTIVE",
+      "semantic_review_status": "PENDING_INDEPENDENT_SUBSTANTIVE_AUDIT",
+      "source_head": "34b36afbd8dcbc21ab0cfffa1d40b3b8d3be7036",
+      "support_declared": false,
+      "support_status": "NOT_EVALUATED",
+      "test_evidence": {
+        "path": "tests/test_football_prospective_ledger.py",
+        "sha256": "6a34e6104ca07f37ba72bbb712a895adcc9ea890b1d07389a0740961dc151542"
+      }
+    }
+  ],
+  "builder_r2_executed": false,
+  "candidate_inventory_generated": false,
+  "controlled_live_admissible": false,
+  "failover_required_control_ids": [
+    "identity_reconciliation_contract",
+    "schema_compatibility_contract",
+    "secondary_rights_profile",
+    "rollback_plan",
+    "human_approval_policy",
+    "primary_rights_profile"
+  ],
+  "freeze_r3_executed": false,
+  "live_required_control_ids": [
+    "event_time_contract",
+    "live_window_policy",
+    "staleness_policy",
+    "replay_protocol",
+    "shadow_live_protocol"
+  ],
+  "performance_information_used": false,
+  "predictive_required_control_ids": [
+    "canonical_market_definition",
+    "settlement_rules",
+    "pit_data_contract",
+    "identity_contract",
+    "rights_profile",
+    "odds_binding_contract",
+    "baseline_definition",
+    "evaluation_protocol",
+    "sample_requirement_policy",
+    "risk_policy"
+  ],
+  "production_admissible": false,
+  "registry_fingerprint": "83a262ba0ba14e3f8df0051343e827f3d96a46d2d5195274cd5482be90f55856",
+  "registry_r3_executed": false,
+  "required_control_count": 21,
+  "required_control_ids": [
+    "canonical_market_definition",
+    "settlement_rules",
+    "pit_data_contract",
+    "identity_contract",
+    "rights_profile",
+    "odds_binding_contract",
+    "baseline_definition",
+    "evaluation_protocol",
+    "sample_requirement_policy",
+    "risk_policy",
+    "event_time_contract",
+    "live_window_policy",
+    "staleness_policy",
+    "replay_protocol",
+    "shadow_live_protocol",
+    "identity_reconciliation_contract",
+    "schema_compatibility_contract",
+    "secondary_rights_profile",
+    "rollback_plan",
+    "human_approval_policy",
+    "primary_rights_profile"
+  ],
+  "required_exact_version_field_count": 19,
+  "required_version_fields": [
+    "data_contract_version",
+    "evaluation_protocol_version",
+    "event_time_contract_version",
+    "human_approval_policy_version",
+    "identity_contract_version",
+    "identity_reconciliation_contract_version",
+    "live_window_policy_version",
+    "market_semantics_version",
+    "odds_contract_version",
+    "primary_rights_profile_version",
+    "replay_protocol_version",
+    "rights_profile_version",
+    "rollback_plan_version",
+    "sample_requirement_policy_version",
+    "schema_compatibility_contract_version",
+    "secondary_rights_profile_version",
+    "settlement_rules_version",
+    "shadow_live_protocol_version",
+    "staleness_policy_version"
+  ],
+  "schema": "MATRIX_ELITE_SUPPORT_CONTRACT_VERSION_BINDING_REGISTRY_R1",
+  "selection_r2_executed": false,
+  "semantic_review_status": "PENDING_INDEPENDENT_SUBSTANTIVE_AUDIT",
+  "source_head": "34b36afbd8dcbc21ab0cfffa1d40b3b8d3be7036",
+  "source_r48_dossier_sha256": "ff6546ad6208a4f2aee144570fe3a4f17ed95d58ccacc7fdb941c75e3b26c61c",
+  "support_declared": false,
+  "support_status": "NOT_EVALUATED",
+  "supportability_pack_generated": false,
+  "version_field_bindings": {
+    "data_contract_version": "MATRIX-SCB-R1/pit_data_contract",
+    "evaluation_protocol_version": "MATRIX-SCB-R1/evaluation_protocol",
+    "event_time_contract_version": "MATRIX-SCB-R1/event_time_contract",
+    "human_approval_policy_version": "MATRIX-SCB-R1/human_approval_policy",
+    "identity_contract_version": "MATRIX-SCB-R1/identity_contract",
+    "identity_reconciliation_contract_version": "MATRIX-SCB-R1/identity_reconciliation_contract",
+    "live_window_policy_version": "MATRIX-SCB-R1/live_window_policy",
+    "market_semantics_version": "MATRIX-SCB-R1/canonical_market_definition",
+    "odds_contract_version": "MATRIX-SCB-R1/odds_binding_contract",
+    "primary_rights_profile_version": "MATRIX-SCB-R1/primary_rights_profile",
+    "replay_protocol_version": "MATRIX-SCB-R1/replay_protocol",
+    "rights_profile_version": "MATRIX-SCB-R1/rights_profile",
+    "rollback_plan_version": "MATRIX-SCB-R1/rollback_plan",
+    "sample_requirement_policy_version": "MATRIX-SCB-R1/sample_requirement_policy",
+    "schema_compatibility_contract_version": "MATRIX-SCB-R1/schema_compatibility_contract",
+    "secondary_rights_profile_version": "MATRIX-SCB-R1/secondary_rights_profile",
+    "settlement_rules_version": "MATRIX-SCB-R1/settlement_rules",
+    "shadow_live_protocol_version": "MATRIX-SCB-R1/shadow_live_protocol",
+    "staleness_policy_version": "MATRIX-SCB-R1/staleness_policy"
+  }
+}
