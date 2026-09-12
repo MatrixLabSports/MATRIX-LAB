@@ -31,24 +31,32 @@ jobs:
         run: |
           set -euo pipefail
           check_blob() {
-            local f="$1" expected="$2"
+            local f="$1" expected="$2" expected_size="$3"
             actual="$(git hash-object "$f")"
-            echo "$f blob=$actual bytes=$(stat -c%s "$f")"
+            size="$(stat -c%s "$f")"
+            echo "$f blob=$actual bytes=$size"
             test "$actual" = "$expected"
+            test "$size" = "$expected_size"
           }
-          check_blob capture/tml/2022_challenger.csv afaf801773250898e38945a945334194406325c0
-          check_blob capture/tml/2023_challenger.csv b3899402a57ce2469a14058d6a6521bf55c062b2
-          check_blob capture/tml/2024_challenger.csv dd4bedf5509548981e695101f763d99c946f2533
-          check_blob capture/tml/2025_challenger.csv 1fde930268f9714a5e747fc0f78de517cc53ed00
-          check_blob capture/tml/2026_challenger.csv 48428c4a6fa952426811b00d605e7978fa3626e1
+          check_blob capture/tml/2022_challenger.csv afaf801773250898e38945a945334194406325c0 1094100
+          check_blob capture/tml/2023_challenger.csv b3899402a57ce2469a14058d6a6521bf55c062b2 1154154
+          check_blob capture/tml/2024_challenger.csv dd4bedf5509548981e695101f763d99c946f2533 1228360
+          check_blob capture/tml/2025_challenger.csv 1fde930268f9714a5e747fc0f78de517cc53ed00 1414046
+          check_blob capture/tml/2026_challenger.csv 48428c4a6fa952426811b00d605e7978fa3626e1 1097414
 
-      - name: Download pinned June 2026 combined Challenger reference
+      - name: Download and verify pinned June 2026 combined Challenger reference
         shell: bash
         run: |
           set -euo pipefail
           COMMIT='83733587353df8a41f2fd4f516147d5aa83f5a8d'
-          URL="https://raw.githubusercontent.com/Aneeshers/tennis-sackmann-archive/${COMMIT}/atp_matches_qual_chall_2026.csv"
-          curl -fL --retry 4 --retry-delay 2 "$URL" -o capture/reference/atp_matches_qual_chall_2026.csv
+          URL="https://raw.githubusercontent.com/Aneeshers/tennis-sackmann-archive/${COMMIT}/atp/atp_matches_qual_chall_2026.csv"
+          FILE='capture/reference/atp_matches_qual_chall_2026.csv'
+          curl -fL --retry 4 --retry-delay 2 "$URL" -o "$FILE"
+          BLOB="$(git hash-object "$FILE")"
+          SIZE="$(stat -c%s "$FILE")"
+          echo "$FILE blob=$BLOB bytes=$SIZE"
+          test "$BLOB" = '44816ed0175384de008d81c1734066aa821e855b'
+          test "$SIZE" = '1189359'
 
       - name: Build source manifest and checksums
         shell: bash
