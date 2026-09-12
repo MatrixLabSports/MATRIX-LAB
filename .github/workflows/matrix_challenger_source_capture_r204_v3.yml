@@ -58,7 +58,19 @@ jobs:
           test "$BLOB" = '44816ed0175384de008d81c1734066aa821e855b'
           test "$SIZE" = '1189359'
 
-      - name: Build source manifest and checksums
+      - name: Download and verify same-family June 2026 TML Challenger snapshot
+        shell: bash
+        run: |
+          set -euo pipefail
+          COMMIT='a4ba1dd78e3b48d9415e80adba5420766bebc5b9'
+          URL="https://raw.githubusercontent.com/gmalbert/tennis-predictions/${COMMIT}/tml-data/2026_challenger.csv"
+          FILE='capture/reference/2026_challenger_same_family_20260609.csv'
+          curl -fL --retry 4 --retry-delay 2 "$URL" -o "$FILE"
+          BLOB="$(git hash-object "$FILE")"
+          echo "$FILE blob=$BLOB bytes=$(stat -c%s "$FILE")"
+          test "$BLOB" = 'df54fb4987935fffe410c08dff37a4d6a4f46820'
+
+      - name: Build source manifest, same-family continuity audit and checksums
         shell: bash
         run: |
           set -euo pipefail
@@ -66,23 +78,33 @@ jobs:
           import csv, hashlib, json, subprocess
           from pathlib import Path
           root=Path('capture')
-          files=[*(root/'tml').glob('*_challenger.csv'),root/'reference'/'atp_matches_qual_chall_2026.csv']
-          m={'schema':'MATRIX_CHALLENGER_SOURCE_CAPTURE_R204_V3','tml_repo':'gmalbert/tennis-predictions','tml_commit':'17370954eb9b689e8c85e12ebb7cdfed00f25c43','reference_repo':'Aneeshers/tennis-sackmann-archive','reference_commit':'83733587353df8a41f2fd4f516147d5aa83f5a8d','files':[]}
+          files=[*(root/'tml').glob('*_challenger.csv'),*(root/'reference').glob('*.csv')]
+          m={'schema':'MATRIX_CHALLENGER_SOURCE_CAPTURE_R204_V4','tml_repo':'gmalbert/tennis-predictions','tml_commit':'17370954eb9b689e8c85e12ebb7cdfed00f25c43','same_family_reference_commit':'a4ba1dd78e3b48d9415e80adba5420766bebc5b9','cross_family_reference_repo':'Aneeshers/tennis-sackmann-archive','cross_family_reference_commit':'83733587353df8a41f2fd4f516147d5aa83f5a8d','files':[]}
+          def rows(p):
+              with p.open('r',encoding='utf-8-sig',newline='') as fh: return list(csv.DictReader(fh))
           for p in sorted(files):
-              data=p.read_bytes()
-              with p.open('r',encoding='utf-8-sig',newline='') as fh: rows=list(csv.DictReader(fh))
+              data=p.read_bytes(); rs=rows(p)
               dates=[]; levels=set(); surfaces=set()
-              for r in rows:
+              for r in rs:
                   d=(r.get('tourney_date') or '').strip()
                   if d.isdigit(): dates.append(int(d))
-                  if (r.get('tourney_level') or '').strip(): levels.add(r['tourney_level'].strip())
-                  if (r.get('surface') or '').strip(): surfaces.add(r['surface'].strip())
+                  lv=(r.get('tourney_level') or '').strip(); sf=(r.get('surface') or '').strip()
+                  if lv: levels.add(lv)
+                  if sf: surfaces.add(sf)
               blob=subprocess.check_output(['git','hash-object',str(p)],text=True).strip()
-              m['files'].append({'path':str(p),'bytes':len(data),'git_blob_sha1':blob,'sha256':hashlib.sha256(data).hexdigest(),'rows':len(rows),'min_tourney_date':min(dates) if dates else None,'max_tourney_date':max(dates) if dates else None,'tourney_levels':sorted(levels),'surfaces':sorted(surfaces)})
-          (root/'MATRIX_CHALLENGER_SOURCE_CAPTURE_R204_V3_MANIFEST.json').write_text(json.dumps(m,indent=2,sort_keys=True)+'\n',encoding='utf-8')
+              m['files'].append({'path':str(p),'bytes':len(data),'git_blob_sha1':blob,'sha256':hashlib.sha256(data).hexdigest(),'rows':len(rs),'min_tourney_date':min(dates) if dates else None,'max_tourney_date':max(dates) if dates else None,'tourney_levels':sorted(levels),'surfaces':sorted(surfaces)})
+          current=rows(root/'tml'/'2026_challenger.csv')
+          historical=rows(root/'reference'/'2026_challenger_same_family_20260609.csv')
+          cutoff=max(int(r['tourney_date']) for r in historical if str(r.get('tourney_date','')).isdigit())
+          def ident(r):
+              return ((r.get('tourney_id') or '').strip().lower(),(r.get('tourney_date') or '').strip(),(r.get('winner_name') or '').strip().lower(),(r.get('loser_name') or '').strip().lower(),(r.get('round') or '').strip())
+          h={ident(r) for r in historical if str(r.get('tourney_date','')).isdigit() and int(r['tourney_date'])<=cutoff}
+          c={ident(r) for r in current if str(r.get('tourney_date','')).isdigit() and int(r['tourney_date'])<=cutoff}
+          m['same_family_continuity']={'historical_cutoff':cutoff,'historical_unique_ids':len(h),'current_unique_ids_through_cutoff':len(c),'matched_historical_ids':len(h & c),'missing_historical_ids':len(h-c),'extra_current_ids':len(c-h),'pass_exact_subset':len(h-c)==0,'missing_sample':sorted(h-c)[:20],'extra_sample':sorted(c-h)[:20]}
+          (root/'MATRIX_CHALLENGER_SOURCE_CAPTURE_R204_V4_MANIFEST.json').write_text(json.dumps(m,indent=2,sort_keys=True)+'\n',encoding='utf-8')
           PY
           (cd capture && sha256sum tml/*.csv reference/*.csv > SHA256SUMS.txt)
-          cat capture/MATRIX_CHALLENGER_SOURCE_CAPTURE_R204_V3_MANIFEST.json
+          cat capture/MATRIX_CHALLENGER_SOURCE_CAPTURE_R204_V4_MANIFEST.json
 
       - name: Upload source capture artifact
         uses: actions/upload-artifact@v4
