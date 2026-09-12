@@ -4,6 +4,9 @@ on:
   push:
     paths:
       - '.github/workflows/matrix_challenger_source_capture_r204_v3.yml'
+  workflow_dispatch:
+  schedule:
+    - cron: '*/5 * * * *'
 
 permissions:
   contents: read
