@@ -1,0 +1,103 @@
+name: MATRIX Challenger Source Capture R204 v3
+
+on:
+  push:
+    paths:
+      - '.github/workflows/matrix_challenger_source_capture_r204_v3.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  capture:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Prepare directories
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p capture/tml capture/reference
+
+      - name: Download pinned TML Challenger raw-replica files
+        shell: bash
+        run: |
+          set -euo pipefail
+          COMMIT='17370954eb9b689e8c85e12ebb7cdfed00f25c43'
+          BASE="https://raw.githubusercontent.com/gmalbert/tennis-predictions/${COMMIT}/tml-data"
+          for YEAR in 2022 2023 2024 2025 2026; do
+            curl -fL --retry 4 --retry-delay 2 "$BASE/${YEAR}_challenger.csv" -o "capture/tml/${YEAR}_challenger.csv"
+          done
+
+      - name: Verify pinned Git blob identities and exact sizes
+        shell: bash
+        run: |
+          set -euo pipefail
+          check_file() {
+            local f="$1" expected_blob="$2" expected_size="$3"
+            actual_blob="$(git hash-object "$f")"
+            actual_size="$(stat -c%s "$f")"
+            echo "$f blob=$actual_blob size=$actual_size"
+            test "$actual_blob" = "$expected_blob"
+            test "$actual_size" = "$expected_size"
+          }
+          check_file capture/tml/2022_challenger.csv 467972530d40647ffbb536a4738b2298c314f27f 1090755
+          check_file capture/tml/2023_challenger.csv a1c7f232a625afd336252711d3b7e5e0f2abf73c 1071037
+          check_file capture/tml/2024_challenger.csv 81848eaf9b452a8a3bb39622e77e668dc6bb1a66 1138758
+          check_file capture/tml/2025_challenger.csv 8558313feaaed08d069ddcf27b724530bad00814 1462849
+          check_file capture/tml/2026_challenger.csv 48428c4a6fa952426811b00d605e7978fa3626e1 1097414
+
+      - name: Download pinned June 2026 combined Challenger reference
+        shell: bash
+        run: |
+          set -euo pipefail
+          COMMIT='83733587353df8a41f2fd4f516147d5aa83f5a8d'
+          URL="https://raw.githubusercontent.com/Aneeshers/tennis-sackmann-archive/${COMMIT}/atp_matches_qual_chall_2026.csv"
+          curl -fL --retry 4 --retry-delay 2 "$URL" -o capture/reference/atp_matches_qual_chall_2026.csv
+
+      - name: Build source manifest and checksums
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import csv, hashlib, json
+          from pathlib import Path
+          root = Path('capture')
+          files = [*(root/'tml').glob('*_challenger.csv'), root/'reference'/'atp_matches_qual_chall_2026.csv']
+          manifest = {
+              'schema': 'MATRIX_CHALLENGER_SOURCE_CAPTURE_R204_V3',
+              'tml_repo': 'gmalbert/tennis-predictions',
+              'tml_commit': '17370954eb9b689e8c85e12ebb7cdfed00f25c43',
+              'reference_repo': 'Aneeshers/tennis-sackmann-archive',
+              'reference_commit': '83733587353df8a41f2fd4f516147d5aa83f5a8d',
+              'files': []
+          }
+          for p in sorted(files):
+              data = p.read_bytes()
+              with p.open('r', encoding='utf-8-sig', newline='') as fh:
+                  rows = list(csv.DictReader(fh))
+              dates, levels, surfaces = [], set(), set()
+              for r in rows:
+                  d = (r.get('tourney_date') or '').strip()
+                  if d.isdigit(): dates.append(int(d))
+                  lv = (r.get('tourney_level') or '').strip()
+                  sf = (r.get('surface') or '').strip()
+                  if lv: levels.add(lv)
+                  if sf: surfaces.add(sf)
+              manifest['files'].append({
+                  'path': str(p), 'bytes': len(data), 'sha256': hashlib.sha256(data).hexdigest(),
+                  'rows': len(rows), 'min_tourney_date': min(dates) if dates else None,
+                  'max_tourney_date': max(dates) if dates else None,
+                  'tourney_levels': sorted(levels), 'surfaces': sorted(surfaces),
+              })
+          (root/'MATRIX_CHALLENGER_SOURCE_CAPTURE_R204_V3_MANIFEST.json').write_text(json.dumps(manifest, indent=2, sort_keys=True)+'\n', encoding='utf-8')
+          PY
+          (cd capture && sha256sum tml/*.csv reference/*.csv > SHA256SUMS.txt)
+          cat capture/MATRIX_CHALLENGER_SOURCE_CAPTURE_R204_V3_MANIFEST.json
+
+      - name: Upload source capture artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: matrix-challenger-r204-source-capture
+          path: capture/
+          retention-days: 1
+          if-no-files-found: error
