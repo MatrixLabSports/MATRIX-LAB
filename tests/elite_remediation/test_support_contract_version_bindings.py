@@ -111,7 +111,7 @@ def test_static_registry_json_matches_python_canonical_payload() -> None:
 
 def test_candidate_evidence_refs_are_exact_and_present() -> None:
     audit = repository_evidence_audit(ROOT)
-    assert audit["result"] == "PASS", json.dumps(audit, sort_keys=True)
+    assert audit["result"] == "PASS", audit["reasons"]
     assert audit["checked_evidence_ref_count"] == 42
     assert audit["support_declared"] is False
     assert audit["supportability_pack_ready"] is False
