@@ -98,3 +98,10 @@ def test_duplicate_event_does_not_trigger_second_feature_acquisition(tmp_path):
     assert calls == ["evt-1"]
     assert result["blocked"] == 1
     assert result["rows"][1]["blockers"] == ("DUPLICATE_EVENT_ID",)
+
+
+def test_indoor_hard_is_inside_r251_domain(tmp_path):
+    ledger = TennisProspectiveEvidenceLedger(tmp_path / "indoor.jsonl")
+    result = run_r251_world_pipeline(events=[world_event(environment="Indoor")], ledger=ledger, registered_at_utc="2026-09-24T10:00:00+00:00", feature_loader=lambda event: base12())
+    assert result["domain"] == "ATP_CHALLENGER_HARD"
+    assert result["base12_ready"] == 1
