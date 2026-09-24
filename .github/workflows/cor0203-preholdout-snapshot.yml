@@ -25,6 +25,13 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+          for Y in 2022 2023 2024 2025; do
+            curl -fL --retry 3 --retry-delay 2 "https://stats.tennismylife.org/data/${Y}_challenger.csv" -o "/tmp/${Y}_challenger.csv"
+          done
+          echo "hist_2022_sha=$(sha256sum /tmp/2022_challenger.csv | awk '{print $1}')" >> "$GITHUB_ENV"
+          echo "hist_2023_sha=$(sha256sum /tmp/2023_challenger.csv | awk '{print $1}')" >> "$GITHUB_ENV"
+          echo "hist_2024_sha=$(sha256sum /tmp/2024_challenger.csv | awk '{print $1}')" >> "$GITHUB_ENV"
+          echo "hist_2025_sha=$(sha256sum /tmp/2025_challenger.csv | awk '{print $1}')" >> "$GITHUB_ENV"
           URL='https://stats.tennismylife.org/data/2026_challenger.csv'
           ONGOING_URL='https://stats.tennismylife.org/data/challenger_ongoing_tourneys.csv'
           curl -fL --retry 3 --retry-delay 2 "$URL" -o /tmp/2026_challenger.csv
@@ -68,7 +75,9 @@ jobs:
           latest=[r for r in rows if int(float((r.get('tourney_date') or '0').strip() or 0))==maximum]
           latest_tournaments=sorted({(r.get('tourney_name') or '').strip() for r in latest if (r.get('tourney_name') or '').strip()})
           manifest={
-              'schema':'MATRIX_COR0203_PREHOLDOUT_2026_CHALLENGER_SNAPSHOT_V1',
+              'schema':'MATRIX_COR0203_PREHOLDOUT_2026_CHALLENGER_SNAPSHOT_V2',
+              'historical_live_sha256':{'2022':'\${{ env.hist_2022_sha }}','2023':'\${{ env.hist_2023_sha }}','2024':'\${{ env.hist_2024_sha }}','2025':'\${{ env.hist_2025_sha }}'},
+              'historical_expected_sha256':{'2022':'b26f75ebf933d7f831ec003294c7ab16331a7a57e2b64a8073a74d9083603041','2023':'94ac9f07aee60f682f325a513ca086092e35c78be6f4ae24f40fb6b868959f17','2024':'ac78dada2dc5698015f1ff79963f7837a1ed14aebf2ef21095477854ac8a6af9','2025':'ec1e2479d26e367f59af7337ecd300d5a8525e6f360694c1a0821570b50163d2'},
               'source_archive':'ARJUNVARMA2000/tennis-elo release data-archive',
               'archive_sha256':'${{ env.archive_sha256 }}',
               'archive_asset_updated_at_utc':'2026-09-21T01:09:35Z',
