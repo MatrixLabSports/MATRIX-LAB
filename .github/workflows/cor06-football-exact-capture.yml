@@ -1,0 +1,72 @@
+name: COR06 Football Exact Capture
+
+on:
+  push:
+    branches:
+      - repair/cor09-world-pipeline
+    paths:
+      - .github/workflows/cor06-football-exact-capture.yml
+
+permissions:
+  contents: write
+
+jobs:
+  capture:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: repair/cor09-world-pipeline
+          fetch-depth: 1
+
+      - name: Capture exact UEFA HTTP response
+        shell: bash
+        run: |
+          set -euo pipefail
+          OUT="evidence/cor06/football_uefa"
+          mkdir -p "$OUT"
+          URL="https://www.uefa.com/womenschampionsleague/news/02a9-219f09ccbb1c-89d70c4e2ad8-1000--uefa-women-s-champions-league-matchday-1-preview-bayern-/"
+          printf '%s\n' "$URL" > "$OUT/request_url.txt"
+          date -u +'%Y-%m-%dT%H:%M:%SZ' > "$OUT/captured_at_utc.txt"
+          curl --fail --location --silent --show-error \
+            --user-agent 'MATRIX-COR06-AUDIT/1.0' \
+            --dump-header "$OUT/response_headers.txt" \
+            --output "$OUT/response_body.bin" \
+            "$URL"
+          sha256sum "$OUT/response_headers.txt" > "$OUT/response_headers.sha256"
+          sha256sum "$OUT/response_body.bin" > "$OUT/response_body.sha256"
+          wc -c "$OUT/response_headers.txt" "$OUT/response_body.bin" > "$OUT/byte_counts.txt"
+          python - <<'PY'
+          from pathlib import Path
+          import hashlib, json
+          p=Path("evidence/cor06/football_uefa")
+          body=p.joinpath("response_body.bin").read_bytes()
+          headers=p.joinpath("response_headers.txt").read_bytes()
+          meta={
+            "schema":"MATRIX_COR06_FOOTBALL_EXACT_HTTP_CAPTURE_V1",
+            "source":"UEFA official",
+            "request_url":p.joinpath("request_url.txt").read_text().strip(),
+            "captured_at_utc":p.joinpath("captured_at_utc.txt").read_text().strip(),
+            "headers_bytes":len(headers),
+            "body_bytes":len(body),
+            "headers_sha256":hashlib.sha256(headers).hexdigest(),
+            "body_sha256":hashlib.sha256(body).hexdigest(),
+            "raw_http_headers_preserved":True,
+            "raw_response_body_preserved":True,
+            "transport":"curl browser-independent HTTP client; redirects followed; dump-header preserves response header blocks",
+            "real_money":"BLOCKED"
+          }
+          p.joinpath("capture_manifest.json").write_text(json.dumps(meta,indent=2,sort_keys=True)+"\n")
+          print(json.dumps(meta,indent=2))
+          PY
+
+      - name: Persist evidence to branch
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "matrix-cor06-bot"
+          git config user.email "matrix-cor06-bot@users.noreply.github.com"
+          git add evidence/cor06/football_uefa
+          git commit -m "evidence(cor06): preserve exact UEFA football HTTP capture"
+          git push origin HEAD:repair/cor09-world-pipeline
