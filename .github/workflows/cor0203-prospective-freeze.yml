@@ -1,0 +1,76 @@
+name: COR02-03 prospective holdout freeze
+
+on:
+  push:
+    branches:
+      - repair/cor09-world-pipeline
+    paths:
+      - .github/workflows/cor0203-prospective-freeze.yml
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  freeze:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: repair/cor09-world-pipeline
+          fetch-depth: 0
+
+      - name: Verify sealed runtime inputs
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -s evidence/cor0203/runtime/MATRIX_COR0203_PRE2026_STATE_R706.json.gz.b64
+          test -s evidence/cor0203/runtime/MATRIX_COR0203_ELO_GLICKO_PROSPECTIVE_BUNDLE_R706.json
+          test -s evidence/cor0203/runtime/MATRIX_COR0203_PROSPECTIVE_EVENTS_R706.json
+          test -s evidence/cor0203/preholdout/2026_challenger_live_snapshot.csv
+          test "$(sha256sum evidence/cor0203/runtime/MATRIX_COR0203_PRE2026_STATE_R706.json.gz.b64 | awk '{print $1}')" = "b322a9431967b98f27ee5b573e2f688b2d1edfb20048cf09662c6a7451a4e4c2"
+          test "$(sha256sum evidence/cor0203/runtime/MATRIX_COR0203_ELO_GLICKO_PROSPECTIVE_BUNDLE_R706.json | awk '{print $1}')" = "b821dc49cc11d02cf4cc48cfeff6c6442da0927625769f5935872d754bc2b11d"
+          test "$(sha256sum evidence/cor0203/preholdout/2026_challenger_live_snapshot.csv | awk '{print $1}')" = "d3f0e7edca273d0e1fcd4700581cf00398e46719f0aaadb62a1c97ec0ffa6ab5"
+
+      - name: Freeze first ELO Glicko holdout batch
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p evidence/cor0203/holdout
+          FREEZE_AT="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+          python tools/cor0203_prospective_producer.py             --state-b64 evidence/cor0203/runtime/MATRIX_COR0203_PRE2026_STATE_R706.json.gz.b64             --bundle evidence/cor0203/runtime/MATRIX_COR0203_ELO_GLICKO_PROSPECTIVE_BUNDLE_R706.json             --annual-2026 evidence/cor0203/preholdout/2026_challenger_live_snapshot.csv             --events evidence/cor0203/runtime/MATRIX_COR0203_PROSPECTIVE_EVENTS_R706.json             --freeze-at "$FREEZE_AT"             --out evidence/cor0203/holdout/MATRIX_COR0203_HOLDOUT_BATCH_R706.json
+
+      - name: Assert metrics remain sealed
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          p=Path('evidence/cor0203/holdout/MATRIX_COR0203_HOLDOUT_BATCH_R706.json')
+          x=json.loads(p.read_text())
+          assert x['starting_observation_count']==0
+          assert x['added_observations']==3
+          assert x['ending_observation_count']==3
+          assert x['window1_count']==3
+          assert x['metrics']=='SEALED_UNTIL_600'
+          assert x['outcomes_read']==0
+          assert all(o['outcome'] is None and o['metrics_opened'] is False for o in x['observations'])
+          assert all(o['freeze_at_utc'] < o['event_start_utc'] for o in x['observations'])
+          print('COR0203_BATCH_R706_VALIDATION=PASS')
+          PY
+
+      - name: Commit sealed holdout batch
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'matrix-ci'
+          git config user.email 'matrix-ci@users.noreply.github.com'
+          git add evidence/cor0203/holdout/MATRIX_COR0203_HOLDOUT_BATCH_R706.json
+          if git diff --cached --quiet; then
+            echo 'No holdout batch changes'
+            exit 0
+          fi
+          git commit -m 'evidence(cor02-03): freeze first prospective ELO Glicko holdout batch'
+          git push origin HEAD:repair/cor09-world-pipeline
