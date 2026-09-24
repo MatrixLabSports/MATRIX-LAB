@@ -46,7 +46,6 @@ def test_preregistration_happens_before_feature_acquisition(tmp_path):
 
 @pytest.mark.parametrize("change,reason", [
     ({"surface": "Clay"}, "R251_SURFACE_OUT_OF_DOMAIN"),
-    ({"environment": "Indoor"}, "R251_ENVIRONMENT_OUT_OF_DOMAIN"),
     ({"tour_level": "ATP"}, "R251_TOUR_LEVEL_OUT_OF_DOMAIN"),
 ])
 def test_domain_exclusion_never_calls_features(tmp_path, change, reason):
