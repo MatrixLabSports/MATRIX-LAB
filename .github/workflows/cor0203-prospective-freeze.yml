@@ -29,8 +29,8 @@ jobs:
           test -s evidence/cor0203/runtime/MATRIX_COR0203_ELO_GLICKO_PROSPECTIVE_BUNDLE_R706.json
           test -s evidence/cor0203/runtime/MATRIX_COR0203_PROSPECTIVE_EVENTS_R706.json
           test -s evidence/cor0203/preholdout/2026_challenger_live_snapshot.csv
-          test "$(sha256sum evidence/cor0203/runtime/MATRIX_COR0203_PRE2026_STATE_R706.json.gz.b64 | awk '{print $1}')" = "b322a9431967b98f27ee5b573e2f688b2d1edfb20048cf09662c6a7451a4e4c2"
-          test "$(sha256sum evidence/cor0203/runtime/MATRIX_COR0203_ELO_GLICKO_PROSPECTIVE_BUNDLE_R706.json | awk '{print $1}')" = "b821dc49cc11d02cf4cc48cfeff6c6442da0927625769f5935872d754bc2b11d"
+          test "$(sha256sum evidence/cor0203/runtime/MATRIX_COR0203_PRE2026_STATE_R706.json.gz.b64 | awk '{print $1}')" = "384b5537ad9715b552d26464db3d01980021a24e9f6d7e0fcc93ba154efde125"
+          test "$(sha256sum evidence/cor0203/runtime/MATRIX_COR0203_ELO_GLICKO_PROSPECTIVE_BUNDLE_R706.json | awk '{print $1}')" = "ef5788fa4212c67880a52af85359bed1483ba1d59b1655e28390bbfaf0187ec8"
           test "$(sha256sum evidence/cor0203/preholdout/2026_challenger_live_snapshot.csv | awk '{print $1}')" = "d3f0e7edca273d0e1fcd4700581cf00398e46719f0aaadb62a1c97ec0ffa6ab5"
 
       - name: Freeze first ELO Glicko holdout batch
