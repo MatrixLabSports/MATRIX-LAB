@@ -1,0 +1,93 @@
+name: COR02-03 preholdout challenger snapshot
+
+on:
+  push:
+    branches:
+      - repair/cor09-world-pipeline
+    paths:
+      - .github/workflows/cor0203-preholdout-snapshot.yml
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  snapshot:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: repair/cor09-world-pipeline
+          fetch-depth: 0
+
+      - name: Download sealed pre-holdout archive
+        shell: bash
+        run: |
+          set -euo pipefail
+          URL='https://github.com/ARJUNVARMA2000/tennis-elo/releases/download/data-archive/raw-archive.tar.gz'
+          EXPECTED='b4707291a45487058362778420cf56f3666ed34eb5406510bf7b92e82364a7f6'
+          curl -fL --retry 3 --retry-delay 2 "$URL" -o /tmp/raw-archive.tar.gz
+          ACTUAL="$(sha256sum /tmp/raw-archive.tar.gz | awk '{print $1}')"
+          test "$ACTUAL" = "$EXPECTED"
+          echo "archive_sha256=$ACTUAL" >> "$GITHUB_ENV"
+
+      - name: Extract exact Challenger 2026 member
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p evidence/cor0203/preholdout
+          MEMBER='raw/atp/lower/2026_challenger.csv'
+          tar -tzf /tmp/raw-archive.tar.gz | grep -Fx "$MEMBER"
+          tar -xOzf /tmp/raw-archive.tar.gz "$MEMBER" > evidence/cor0203/preholdout/2026_challenger_preholdout.csv
+          test -s evidence/cor0203/preholdout/2026_challenger_preholdout.csv
+
+      - name: Build manifest and validate temporal horizon
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import csv, hashlib, json
+          from pathlib import Path
+          p=Path('evidence/cor0203/preholdout/2026_challenger_preholdout.csv')
+          raw=p.read_bytes()
+          rows=list(csv.DictReader(p.open(encoding='utf-8-sig', newline='')))
+          dates=[]
+          for r in rows:
+              v=(r.get('tourney_date') or '').strip()
+              if v:
+                  try: dates.append(int(float(v)))
+                  except ValueError: pass
+          maximum=max(dates) if dates else None
+          if maximum is None or maximum < 20260914:
+              raise SystemExit(f'PREHOLDOUT_HORIZON_TOO_OLD:{maximum}')
+          manifest={
+              'schema':'MATRIX_COR0203_PREHOLDOUT_2026_CHALLENGER_SNAPSHOT_V1',
+              'source_archive':'ARJUNVARMA2000/tennis-elo release data-archive',
+              'archive_sha256':'${{ env.archive_sha256 }}',
+              'archive_asset_updated_at_utc':'2026-09-21T01:09:35Z',
+              'member':'raw/atp/lower/2026_challenger.csv',
+              'member_bytes':len(raw),
+              'member_sha256':hashlib.sha256(raw).hexdigest(),
+              'rows':len(rows),
+              'max_tourney_date':maximum,
+              'holdout_contract_created_at_utc':'2026-09-22T01:10:26.018561+00:00',
+              'preholdout': True,
+          }
+          Path('evidence/cor0203/preholdout/MANIFEST.json').write_text(json.dumps(manifest,indent=2,sort_keys=True)+'\n')
+          print(json.dumps(manifest,indent=2,sort_keys=True))
+          PY
+
+      - name: Commit exact snapshot
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'matrix-ci'
+          git config user.email 'matrix-ci@users.noreply.github.com'
+          git add evidence/cor0203/preholdout/2026_challenger_preholdout.csv evidence/cor0203/preholdout/MANIFEST.json
+          if git diff --cached --quiet; then
+            echo 'No snapshot changes'
+            exit 0
+          fi
+          git commit -m 'evidence(cor02-03): seal preholdout challenger 2026 snapshot'
+          git push origin HEAD:repair/cor09-world-pipeline
