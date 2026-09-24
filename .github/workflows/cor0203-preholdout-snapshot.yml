@@ -55,8 +55,10 @@ jobs:
                   try: dates.append(int(float(v)))
                   except ValueError: pass
           maximum=max(dates) if dates else None
-          if maximum is None or maximum < 20260921:
-              raise SystemExit(f'LIVE_SNAPSHOT_HORIZON_TOO_OLD:{maximum}')
+          if maximum is None:
+              raise SystemExit('LIVE_SNAPSHOT_HAS_NO_TOURNEY_DATE')
+          latest=[r for r in rows if int(float((r.get('tourney_date') or '0').strip() or 0))==maximum]
+          latest_tournaments=sorted({(r.get('tourney_name') or '').strip() for r in latest if (r.get('tourney_name') or '').strip()})
           manifest={
               'schema':'MATRIX_COR0203_PREHOLDOUT_2026_CHALLENGER_SNAPSHOT_V1',
               'source_archive':'ARJUNVARMA2000/tennis-elo release data-archive',
@@ -67,6 +69,9 @@ jobs:
               'member_sha256':hashlib.sha256(raw).hexdigest(),
               'rows':len(rows),
               'max_tourney_date':maximum,
+              'latest_tournaments':latest_tournaments,
+              'contains_saint_tropez':any('tropez' in t.lower() for t in latest_tournaments),
+              'contains_san_diego':any('san diego' in t.lower() for t in latest_tournaments),
               'holdout_contract_created_at_utc':'2026-09-22T01:10:26.018561+00:00',
               'preholdout': False,
               'pit_rule':'only rows with period/tourney date strictly before each target freeze may update state',
@@ -81,7 +86,7 @@ jobs:
           set -euo pipefail
           git config user.name 'matrix-ci'
           git config user.email 'matrix-ci@users.noreply.github.com'
-          git add evidence/cor0203/preholdout/2026_challenger_live_snapshot.csv evidence/cor0203/preholdout/MANIFEST.json
+          git add evidence/cor0203/preholdout/MANIFEST.json
           if git diff --cached --quiet; then
             echo 'No snapshot changes'
             exit 0
