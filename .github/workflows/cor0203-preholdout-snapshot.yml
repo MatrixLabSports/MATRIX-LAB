@@ -32,6 +32,11 @@ jobs:
           echo "hist_2023_sha=$(sha256sum /tmp/2023_challenger.csv | awk '{print $1}')" >> "$GITHUB_ENV"
           echo "hist_2024_sha=$(sha256sum /tmp/2024_challenger.csv | awk '{print $1}')" >> "$GITHUB_ENV"
           echo "hist_2025_sha=$(sha256sum /tmp/2025_challenger.csv | awk '{print $1}')" >> "$GITHUB_ENV"
+          test "$(sha256sum /tmp/2022_challenger.csv | awk '{print $1}')" = "b26f75ebf933d7f831ec003294c7ab16331a7a57e2b64a8073a74d9083603041"
+          test "$(sha256sum /tmp/2023_challenger.csv | awk '{print $1}')" = "94ac9f07aee60f682f325a513ca086092e35c78be6f4ae24f40fb6b868959f17"
+          test "$(sha256sum /tmp/2024_challenger.csv | awk '{print $1}')" = "ac78dada2dc5698015f1ff79963f7837a1ed14aebf2ef21095477854ac8a6af9"
+          test "$(sha256sum /tmp/2025_challenger.csv | awk '{print $1}')" = "ec1e2479d26e367f59af7337ecd300d5a8525e6f360694c1a0821570b50163d2"
+          echo "HISTORICAL_CANONICAL_SHA_MATCH=PASS"
           URL='https://stats.tennismylife.org/data/2026_challenger.csv'
           ONGOING_URL='https://stats.tennismylife.org/data/challenger_ongoing_tourneys.csv'
           curl -fL --retry 3 --retry-delay 2 "$URL" -o /tmp/2026_challenger.csv
