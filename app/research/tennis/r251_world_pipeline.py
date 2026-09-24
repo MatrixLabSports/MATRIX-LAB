@@ -56,8 +56,6 @@ def r251_domain_blockers(event: WorldTennisEvent) -> tuple[str, ...]:
         blockers.append("R251_TOUR_LEVEL_OUT_OF_DOMAIN")
     if event.surface.strip().upper() != "HARD":
         blockers.append("R251_SURFACE_OUT_OF_DOMAIN")
-    if event.environment.strip().upper() != "OUTDOOR":
-        blockers.append("R251_ENVIRONMENT_OUT_OF_DOMAIN")
     if not event.player1_id.strip() or not event.player2_id.strip() or event.player1_id == event.player2_id:
         blockers.append("IDENTITY_NOT_FIXED")
     try:
@@ -164,7 +162,7 @@ def run_r251_world_pipeline(
 
     return {
         "schema": "matrix.r251-world-prospective-pipeline/1",
-        "domain": "ATP_CHALLENGER_OUTDOOR_HARD",
+        "domain": "ATP_CHALLENGER_HARD",
         "discovered": len(events),
         "unique_event_ids": len(seen),
         "registered": sum(1 for row in rows if row["status"] == "BASE12_READY"),
