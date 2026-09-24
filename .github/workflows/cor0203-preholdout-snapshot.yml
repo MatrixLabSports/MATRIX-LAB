@@ -26,9 +26,13 @@ jobs:
         run: |
           set -euo pipefail
           URL='https://stats.tennismylife.org/data/2026_challenger.csv'
+          ONGOING_URL='https://stats.tennismylife.org/data/challenger_ongoing_tourneys.csv'
           curl -fL --retry 3 --retry-delay 2 "$URL" -o /tmp/2026_challenger.csv
+          curl -fL --retry 3 --retry-delay 2 "$ONGOING_URL" -o /tmp/challenger_ongoing_tourneys.csv
           ACTUAL="$(sha256sum /tmp/2026_challenger.csv | awk '{print $1}')"
+          ONGOING_SHA="$(sha256sum /tmp/challenger_ongoing_tourneys.csv | awk '{print $1}')"
           echo "official_csv_sha256=$ACTUAL" >> "$GITHUB_ENV"
+          echo "ongoing_csv_sha256=$ONGOING_SHA" >> "$GITHUB_ENV"
 
       - name: Extract exact Challenger 2026 member
         shell: bash
@@ -36,7 +40,9 @@ jobs:
           set -euo pipefail
           mkdir -p evidence/cor0203/preholdout
           cp /tmp/2026_challenger.csv evidence/cor0203/preholdout/2026_challenger_live_snapshot.csv
+          cp /tmp/challenger_ongoing_tourneys.csv evidence/cor0203/preholdout/challenger_ongoing_tourneys_live_snapshot.csv
           test -s evidence/cor0203/preholdout/2026_challenger_live_snapshot.csv
+          test -s evidence/cor0203/preholdout/challenger_ongoing_tourneys_live_snapshot.csv
 
       - name: Build manifest and validate temporal horizon
         shell: bash
@@ -46,8 +52,10 @@ jobs:
           import csv, hashlib, json
           from pathlib import Path
           p=Path('evidence/cor0203/preholdout/2026_challenger_live_snapshot.csv')
-          raw=p.read_bytes()
+          op=Path('evidence/cor0203/preholdout/challenger_ongoing_tourneys_live_snapshot.csv')
+          raw=p.read_bytes(); oraw=op.read_bytes()
           rows=list(csv.DictReader(p.open(encoding='utf-8-sig', newline='')))
+          orows=list(csv.DictReader(op.open(encoding='utf-8-sig', newline='')))
           dates=[]
           for r in rows:
               v=(r.get('tourney_date') or '').strip()
@@ -86,7 +94,7 @@ jobs:
           set -euo pipefail
           git config user.name 'matrix-ci'
           git config user.email 'matrix-ci@users.noreply.github.com'
-          git add evidence/cor0203/preholdout/MANIFEST.json
+          git add evidence/cor0203/preholdout/MANIFEST.json evidence/cor0203/preholdout/challenger_ongoing_tourneys_live_snapshot.csv
           if git diff --cached --quiet; then
             echo 'No snapshot changes'
             exit 0
