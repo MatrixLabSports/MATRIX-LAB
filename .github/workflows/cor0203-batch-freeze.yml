@@ -95,6 +95,7 @@ jobs:
           test "$(sha256sum evidence/cor0203/preholdout/2026_challenger_live_snapshot.csv | awk '{print $1}')" = "d3f0e7edca273d0e1fcd4700581cf00398e46719f0aaadb62a1c97ec0ffa6ab5"
 
           FREEZE_AT="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+          export FREEZE_AT
           echo "FREEZE_AT=$FREEZE_AT" >> "$GITHUB_ENV"
 
           python - <<'PY'
