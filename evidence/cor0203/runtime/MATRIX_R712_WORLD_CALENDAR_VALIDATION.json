@@ -1,0 +1,45 @@
+{
+  "schema": "MATRIX_R712_WORLD_CALENDAR_VALIDATION_V1",
+  "revision": "R712",
+  "targets": [
+    "COR02",
+    "COR03"
+  ],
+  "world_calendar": {
+    "artifact": "evidence/world_calendar/MATRIX_WORLD_TENNIS_CALENDAR_R712.json",
+    "git_blob_sha": "1d3cbc630f19dbdee3439e49f707ded4a0da650d",
+    "tournament_count": 16
+  },
+  "cor0203_eligible_calendar": {
+    "artifact": "evidence/cor0203/runtime/MATRIX_COR0203_ELIGIBLE_CALENDAR_R712.json",
+    "git_blob_sha": "aadd38445716e0b26ff7e923661458a0a49ed4e0",
+    "eligible_tournament_count": 6,
+    "existing_valid_holdout_observations": 7,
+    "new_identity_fixed_candidates": 1,
+    "new_preregistrations": 0,
+    "new_freezes": 0
+  },
+  "assertions": {
+    "world_calendar_preserves_non_cor0203_events": true,
+    "cor0203_is_derived_subset": true,
+    "denominators_are_distinct": true,
+    "no_entry_list_inflation": true,
+    "no_placeholder_inflation": true,
+    "no_holdout_increment_without_valid_freeze": true,
+    "metrics_opened": false,
+    "outcomes_read_for_performance": 0
+  },
+  "candidate_review": {
+    "event": "Nishesh Basavareddy vs Andres Andrade",
+    "status": "IDENTITY_FIXED_START_AUTHORITY_PENDING",
+    "features_loaded": false,
+    "preregistered": false,
+    "holdout_increment": 0
+  },
+  "holdout_after": {
+    "window1": 7,
+    "total": 7,
+    "metrics": "SEALED_UNTIL_600"
+  },
+  "real_money": "BLOCKED"
+}
