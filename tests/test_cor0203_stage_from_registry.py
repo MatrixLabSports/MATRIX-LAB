@@ -219,3 +219,72 @@ def test_existing_event_manifest_without_static4_is_not_rewritten(tmp_path):
     blocker = json.loads((runtime / "MATRIX_COR0203_STAGE_BLOCKERS_R722.json").read_text())
     assert blocker["result"] == "INCOMPLETE_EXISTING_STAGE"
     assert "EVENT_MANIFEST_EXISTS_STATIC4_MISSING" in blocker["blocked"][0]["blockers"]
+
+
+def test_provider_discovery_event_cannot_stage_without_identity_crosswalk(tmp_path):
+    runtime = tmp_path / "runtime"
+    holdout = tmp_path / "holdout"
+    setup_frozen_source(runtime, holdout)
+
+    p = prereg()
+    p["schema"] = "MATRIX_COR0203_API_TENNIS_PREFEATURE_REGISTRY_R722_V1"
+    p["events"][0]["identity_crosswalk_required"] = True
+    p["events"][0]["historical_identity_crosswalk_status"] = "PENDING"
+    p["events"][0]["player_identities"] = [
+        {"display_name": "T. Droguet", "provider_player_id": "api-tennis:player:11", "provider": "api_tennis"},
+        {"display_name": "D. Prizmic", "provider_player_id": "api-tennis:player:22", "provider": "api_tennis"},
+    ]
+    p["events"][0]["players"] = ["T. Droguet", "D. Prizmic"]
+    write(runtime / "MATRIX_COR0203_PREFEATURE_REGISTRY_R722.json", p)
+
+    result = stage_all_pending(runtime_dir=runtime, holdout_dir=holdout)
+
+    staged = next(row for row in result["revisions"] if row["revision"] == 722)
+    assert staged["status"] == "ALL_BLOCKED"
+    blockers = json.loads((runtime / "MATRIX_COR0203_STAGE_BLOCKERS_R722.json").read_text())
+    assert "HISTORICAL_IDENTITY_CROSSWALK_REQUIRED" in blockers["blocked"][0]["blockers"]
+    assert not (runtime / "MATRIX_COR0203_STATIC4_R722.json").exists()
+    assert not (runtime / "MATRIX_COR0203_PROSPECTIVE_EVENTS_R722.json").exists()
+
+
+def test_crosswalk_pass_uses_canonical_history_identity_not_provider_display_name(tmp_path):
+    runtime = tmp_path / "runtime"
+    holdout = tmp_path / "holdout"
+    setup_frozen_source(runtime, holdout)
+
+    p = prereg()
+    p["schema"] = "MATRIX_COR0203_API_TENNIS_PREFEATURE_REGISTRY_R722_V1"
+    p["events"][0]["identity_crosswalk_required"] = True
+    p["events"][0]["historical_identity_crosswalk_status"] = "PENDING"
+    p["events"][0]["player_identities"] = [
+        {"display_name": "T. Droguet", "provider_player_id": "api-tennis:player:11", "provider": "api_tennis"},
+        {"display_name": "D. Prizmic", "provider_player_id": "api-tennis:player:22", "provider": "api_tennis"},
+    ]
+    p["events"][0]["players"] = ["T. Droguet", "D. Prizmic"]
+    write(runtime / "MATRIX_COR0203_PREFEATURE_REGISTRY_R722.json", p)
+    write(
+        runtime / "MATRIX_COR0203_IDENTITY_CROSSWALK_R722.json",
+        {
+            "status": "PASS",
+            "mappings": [
+                {
+                    "provider_player_id": "api-tennis:player:11",
+                    "canonical_name": "Titouan Droguet",
+                    "status": "PASS",
+                },
+                {
+                    "provider_player_id": "api-tennis:player:22",
+                    "canonical_name": "Dino Prizmic",
+                    "status": "PASS",
+                },
+            ],
+        },
+    )
+
+    result = stage_all_pending(runtime_dir=runtime, holdout_dir=holdout)
+
+    staged = next(row for row in result["revisions"] if row["revision"] == 722)
+    assert staged["status"] == "PASS"
+    events = json.loads((runtime / "MATRIX_COR0203_PROSPECTIVE_EVENTS_R722.json").read_text())
+    names = [row["name"] for row in events["events"][0]["players"]]
+    assert names == ["Titouan Droguet", "Dino Prizmic"]
