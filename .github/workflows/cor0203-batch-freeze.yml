@@ -6,6 +6,7 @@ on:
       - repair/cor09-world-pipeline
     paths:
       - .github/workflows/cor0203-batch-freeze.yml
+      - scripts/cor0203_production_cycle.sh
       - tools/cor0203_api_tennis_discovery.py
       - tools/cor0203_preregister_discovery.py
       - tools/cor0203_build_static_cut_index.py
@@ -47,148 +48,13 @@ jobs:
           echo "CHECKOUT_SHA=$CHECKOUT_SHA" >> "$GITHUB_ENV"
           echo "Exact trigger checkout: $CHECKOUT_SHA"
 
-      - name: Verify sealed model inputs
-        shell: bash
-        run: |
-          set -euo pipefail
-          test -s evidence/cor0203/runtime/MATRIX_COR0203_PRE2026_STATE_R706.json.gz.b64
-          test -s evidence/cor0203/runtime/MATRIX_COR0203_ELO_GLICKO_PROSPECTIVE_BUNDLE_R706.json
-          test -s evidence/cor0203/preholdout/2026_challenger_live_snapshot.csv
-          test "$(sha256sum evidence/cor0203/runtime/MATRIX_COR0203_PRE2026_STATE_R706.json.gz.b64 | awk '{print $1}')" = "384b5537ad9715b552d26464db3d01980021a24e9f6d7e0fcc93ba154efde125"
-          test "$(sha256sum evidence/cor0203/runtime/MATRIX_COR0203_ELO_GLICKO_PROSPECTIVE_BUNDLE_R706.json | awk '{print $1}')" = "ef5788fa4212c67880a52af85359bed1483ba1d59b1655e28390bbfaf0187ec8"
-          test "$(sha256sum evidence/cor0203/preholdout/2026_challenger_live_snapshot.csv | awk '{print $1}')" = "d3f0e7edca273d0e1fcd4700581cf00398e46719f0aaadb62a1c97ec0ffa6ab5"
-
-      - name: Build exact 21SEP sealed STATIC4 player index
-        shell: bash
-        run: |
-          set -euo pipefail
-          python -m tools.cor0203_build_static_cut_index \
-            --csv evidence/cor0203/preholdout/challenger_ongoing_tourneys_live_snapshot.csv \
-            --cut 20260921 \
-            --out evidence/cor0203/runtime/MATRIX_COR0203_STATIC_CUT_20260921.json
-
-      - name: Discover future Challenger fixtures with strong provider IDs
+      - name: Run shared governed production cycle
         shell: bash
         env:
           API_TENNIS_KEY: ${{ secrets.API_TENNIS_KEY }}
+          MATRIX_TARGET_BRANCH: repair/cor09-world-pipeline
+          MATRIX_GIT_USER_NAME: matrix-ci
+          MATRIX_GIT_USER_EMAIL: matrix-ci@users.noreply.github.com
         run: |
           set -euo pipefail
-          python -m tools.cor0203_api_tennis_discovery \
-            --out /tmp/MATRIX_COR0203_API_TENNIS_DISCOVERY.json \
-            --days 2
-
-      - name: Preregister newly discovered eligible events before features
-        shell: bash
-        run: |
-          set -euo pipefail
-          python -m tools.cor0203_preregister_discovery \
-            --discovery /tmp/MATRIX_COR0203_API_TENNIS_DISCOVERY.json \
-            --result-out evidence/cor0203/runtime/MATRIX_COR0203_DISCOVERY_PREREG_LAST.json
-
-      - name: Build strong provider-to-canonical identity crosswalks
-        shell: bash
-        run: |
-          set -euo pipefail
-          python -m tools.cor0203_build_identity_crosswalk \
-            --static-cut evidence/cor0203/runtime/MATRIX_COR0203_STATIC_CUT_20260921.json \
-            --summary-out evidence/cor0203/runtime/MATRIX_COR0203_IDENTITY_CROSSWALK_LAST.json
-
-      - name: Auto-stage preregistered events from sealed player registry
-        shell: bash
-        run: |
-          set -euo pipefail
-          python -m tools.cor0203_stage_from_registry \
-            --summary-out evidence/cor0203/runtime/MATRIX_COR0203_AUTO_STAGE_LAST.json
-
-      - name: Reconcile every pending prospective batch
-        shell: bash
-        run: |
-          set -euo pipefail
-          python -m tools.cor0203_batch_runner \
-            --state-b64 evidence/cor0203/runtime/MATRIX_COR0203_PRE2026_STATE_R706.json.gz.b64 \
-            --bundle evidence/cor0203/runtime/MATRIX_COR0203_ELO_GLICKO_PROSPECTIVE_BUNDLE_R706.json \
-            --annual-2026 evidence/cor0203/preholdout/2026_challenger_live_snapshot.csv \
-            --trigger-sha "$CHECKOUT_SHA" \
-            --summary-out evidence/cor0203/runtime/MATRIX_COR0203_BATCH_RUNNER_LAST.json
-
-      - name: Validate discovery, staging and holdout seals
-        shell: bash
-        run: |
-          set -euo pipefail
-          python - <<'PY'
-          import json
-          import re
-          from pathlib import Path
-
-          prereg = json.loads(
-              Path("evidence/cor0203/runtime/MATRIX_COR0203_DISCOVERY_PREREG_LAST.json").read_text()
-          )
-          crosswalk = json.loads(
-              Path("evidence/cor0203/runtime/MATRIX_COR0203_IDENTITY_CROSSWALK_LAST.json").read_text()
-          )
-          stage = json.loads(
-              Path("evidence/cor0203/runtime/MATRIX_COR0203_AUTO_STAGE_LAST.json").read_text()
-          )
-          summary = json.loads(
-              Path("evidence/cor0203/runtime/MATRIX_COR0203_BATCH_RUNNER_LAST.json").read_text()
-          )
-
-          assert prereg["status"] in {
-              "NO_DISCOVERY_INPUT",
-              "NO_NEW_EVENTS",
-              "PREREGISTERED",
-          }
-          assert crosswalk["real_money"] == "BLOCKED"
-          assert stage["real_money"] == "BLOCKED"
-          assert summary["ending_physical_count"] >= summary["starting_physical_count"]
-
-          exact_batch = re.compile(r"^MATRIX_COR0203_HOLDOUT_BATCH_R\d+\.json$")
-          for path in Path("evidence/cor0203/holdout").glob("MATRIX_COR0203_HOLDOUT_BATCH_R*.json"):
-              if not exact_batch.match(path.name):
-                  continue
-              payload = json.loads(path.read_text())
-              assert payload.get("metrics") == "SEALED_UNTIL_600"
-              assert payload.get("outcomes_read") == 0
-              for observation in payload.get("observations", []):
-                  assert observation.get("outcome") is None
-                  assert observation.get("metrics_opened") is False
-                  assert observation["freeze_at_utc"] < observation["event_start_utc"]
-
-          print(json.dumps({
-              "prereg": prereg,
-              "crosswalk": crosswalk,
-              "stage": stage,
-              "runner": summary,
-          }, sort_keys=True))
-          PY
-
-      - name: Commit discovery, staging, freezes and blockers
-        shell: bash
-        run: |
-          set -euo pipefail
-          git config user.name "matrix-ci"
-          git config user.email "matrix-ci@users.noreply.github.com"
-
-          git add evidence/cor0203/runtime/MATRIX_COR0203_STATIC_CUT_20260921.json
-          git add evidence/cor0203/runtime/MATRIX_COR0203_DISCOVERY_PREREG_LAST.json
-          git add evidence/cor0203/runtime/MATRIX_COR0203_IDENTITY_CROSSWALK_LAST.json
-          git add evidence/cor0203/runtime/MATRIX_COR0203_AUTO_STAGE_LAST.json
-          git add evidence/cor0203/runtime/MATRIX_COR0203_BATCH_RUNNER_LAST.json
-          git add 'evidence/cor0203/runtime/MATRIX_COR0203_PREFEATURE_REGISTRY_R'*.json 2>/dev/null || true
-          git add 'evidence/cor0203/runtime/MATRIX_COR0203_IDENTITY_CROSSWALK_R'*.json 2>/dev/null || true
-          git add 'evidence/cor0203/runtime/MATRIX_COR0203_STAGE_BLOCKERS_R'*.json 2>/dev/null || true
-          git add 'evidence/cor0203/runtime/MATRIX_COR0203_STATIC4_R'*.json 2>/dev/null || true
-          git add 'evidence/cor0203/runtime/MATRIX_COR0203_PROSPECTIVE_EVENTS_R'*.json 2>/dev/null || true
-          git add 'evidence/cor0203/runtime/MATRIX_COR0203_BATCH_PREFLIGHT_R'*.json 2>/dev/null || true
-          git add 'evidence/cor0203/runtime/MATRIX_COR0203_HISTORY_GATE_R'*.json 2>/dev/null || true
-          git add 'evidence/cor0203/holdout/MATRIX_COR0203_HOLDOUT_BATCH_R'*.json 2>/dev/null || true
-
-          if git diff --cached --quiet; then
-            echo "No discovery, staged or reconciled COR02/COR03 changes"
-            exit 0
-          fi
-
-          git commit -m "evidence(cor02-03): discover preregister and reconcile governed batches"
-          git fetch origin repair/cor09-world-pipeline
-          git rebase origin/repair/cor09-world-pipeline
-          git push origin HEAD:repair/cor09-world-pipeline
+          bash scripts/cor0203_production_cycle.sh --trigger-sha "$CHECKOUT_SHA"
