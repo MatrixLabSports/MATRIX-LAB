@@ -225,3 +225,42 @@ def test_post_start_event_is_blocked_without_poisoning_other_event():
     assert result["valid_event_ids"] == ["e11"]
     first = next(row for row in result["blocked"] if row["event_id"] == "e10")
     assert "POST_START_FREEZE_FORBIDDEN" in first["blockers"]
+
+
+def test_stale_preregistration_count_is_rebased_at_freeze():
+    pre = _prefeature()
+    events = _events()
+    pre["starting_observation_count"] = 9
+    events["starting_observation_count"] = 9
+
+    result = partition_batch(
+        prefeature=pre,
+        static4=_static4(),
+        events=events,
+        state=_state(),
+        freeze_at_utc=FREEZE,
+        expected_starting_count=11,
+    )
+
+    assert result["declared_starting_observation_count"] == 9
+    assert result["starting_observation_count"] == 11
+    assert result["count_rebased_at_freeze"] is True
+    assert result["filtered_manifest"]["starting_observation_count"] == 11
+
+
+def test_declared_count_cannot_be_ahead_of_physical_holdout():
+    pre = _prefeature()
+    events = _events()
+    pre["starting_observation_count"] = 12
+    events["starting_observation_count"] = 12
+
+    import pytest
+    with pytest.raises(ValueError, match="DECLARED_START_COUNT_AHEAD_OF_PHYSICAL"):
+        partition_batch(
+            prefeature=pre,
+            static4=_static4(),
+            events=events,
+            state=_state(),
+            freeze_at_utc=FREEZE,
+            expected_starting_count=11,
+        )
