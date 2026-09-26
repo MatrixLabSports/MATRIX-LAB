@@ -156,6 +156,7 @@ def preregister_discovery(
                     "display_name": str(p.get("name") or "").strip(),
                     "provider_player_id": str(p.get("provider_player_id") or ""),
                     "provider": "api_tennis",
+                    "provider_ranking": p.get("provider_ranking"),
                 }
                 for p in players
             ],
