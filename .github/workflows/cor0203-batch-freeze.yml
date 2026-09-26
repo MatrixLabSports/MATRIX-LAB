@@ -53,7 +53,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          python tools/cor0203_batch_runner.py \
+          python -m tools.cor0203_batch_runner \
             --state-b64 evidence/cor0203/runtime/MATRIX_COR0203_PRE2026_STATE_R706.json.gz.b64 \
             --bundle evidence/cor0203/runtime/MATRIX_COR0203_ELO_GLICKO_PROSPECTIVE_BUNDLE_R706.json \
             --annual-2026 evidence/cor0203/preholdout/2026_challenger_live_snapshot.csv \
