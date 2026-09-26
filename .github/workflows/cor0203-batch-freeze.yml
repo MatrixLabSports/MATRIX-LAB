@@ -53,12 +53,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          python -m tools.cor0203_batch_runner \
-            --state-b64 evidence/cor0203/runtime/MATRIX_COR0203_PRE2026_STATE_R706.json.gz.b64 \
-            --bundle evidence/cor0203/runtime/MATRIX_COR0203_ELO_GLICKO_PROSPECTIVE_BUNDLE_R706.json \
-            --annual-2026 evidence/cor0203/preholdout/2026_challenger_live_snapshot.csv \
-            --trigger-sha "$CHECKOUT_SHA" \
-            --summary-out evidence/cor0203/runtime/MATRIX_COR0203_BATCH_RUNNER_LAST.json
+          python -m tools.cor0203_batch_runner             --state-b64 evidence/cor0203/runtime/MATRIX_COR0203_PRE2026_STATE_R706.json.gz.b64             --bundle evidence/cor0203/runtime/MATRIX_COR0203_ELO_GLICKO_PROSPECTIVE_BUNDLE_R706.json             --annual-2026 evidence/cor0203/preholdout/2026_challenger_live_snapshot.csv             --trigger-sha "$CHECKOUT_SHA"             --summary-out evidence/cor0203/runtime/MATRIX_COR0203_BATCH_RUNNER_LAST.json
 
       - name: Validate runner outputs remain sealed
         shell: bash
@@ -69,57 +64,32 @@ jobs:
           import re
           from pathlib import Path
 
-          summary=json.loads(Path('evidence/cor0203/runtime/MATRIX_COR0203_BATCH_RUNNER_LAST.json').read_text())
-          assert summary['ending_physical_count'] >= summary['starting_physical_count']
+          summary = json.loads(
+              Path("evidence/cor0203/runtime/MATRIX_COR0203_BATCH_RUNNER_LAST.json").read_text()
+          )
+          assert summary["ending_physical_count"] >= summary["starting_physical_count"]
 
-          exact_batch = re.compile(r'^MATRIX_COR0203_HOLDOUT_BATCH_R\\d+\\.json          PY
-
-      - name: Commit reconciled freezes and blockers
-        shell: bash
-        run: |
-          set -euo pipefail
-          git config user.name 'matrix-ci'
-          git config user.email 'matrix-ci@users.noreply.github.com'
-
-          git add evidence/cor0203/runtime/MATRIX_COR0203_BATCH_RUNNER_LAST.json
-          git add 'evidence/cor0203/runtime/MATRIX_COR0203_BATCH_PREFLIGHT_R'*.json 2>/dev/null || true
-          git add 'evidence/cor0203/runtime/MATRIX_COR0203_HISTORY_GATE_R'*.json 2>/dev/null || true
-          git add 'evidence/cor0203/holdout/MATRIX_COR0203_HOLDOUT_BATCH_R'*.json 2>/dev/null || true
-
-          if git diff --cached --quiet; then
-            echo 'No reconciled COR02/COR03 changes'
-            exit 0
-          fi
-
-          git commit -m 'evidence(cor02-03): reconcile pending governed batches'
-
-          # A staging commit may have arrived while this serialized run was executing.
-          # Rebase the generated evidence onto the newest branch state. The next
-          # serialized run scans all still-unfrozen manifests, so no intermediate
-          # staging revision is lost.
-          git fetch origin repair/cor09-world-pipeline
-          git rebase origin/repair/cor09-world-pipeline
-          git push origin HEAD:repair/cor09-world-pipeline
-)
-          for p in Path('evidence/cor0203/holdout').glob('MATRIX_COR0203_HOLDOUT_BATCH_R*.json'):
-              if not exact_batch.match(p.name):
+          exact_batch = re.compile(r"^MATRIX_COR0203_HOLDOUT_BATCH_R\d+\.json$")
+          for path in Path("evidence/cor0203/holdout").glob("MATRIX_COR0203_HOLDOUT_BATCH_R*.json"):
+              if not exact_batch.match(path.name):
                   continue
-              x=json.loads(p.read_text())
-              assert x.get('metrics') == 'SEALED_UNTIL_600'
-              assert x.get('outcomes_read') == 0
-              for obs in x.get('observations', []):
-                  assert obs.get('outcome') is None
-                  assert obs.get('metrics_opened') is False
-                  assert obs['freeze_at_utc'] < obs['event_start_utc']
-          print(json.dumps(summary,sort_keys=True))
+              payload = json.loads(path.read_text())
+              assert payload.get("metrics") == "SEALED_UNTIL_600"
+              assert payload.get("outcomes_read") == 0
+              for observation in payload.get("observations", []):
+                  assert observation.get("outcome") is None
+                  assert observation.get("metrics_opened") is False
+                  assert observation["freeze_at_utc"] < observation["event_start_utc"]
+
+          print(json.dumps(summary, sort_keys=True))
           PY
 
       - name: Commit reconciled freezes and blockers
         shell: bash
         run: |
           set -euo pipefail
-          git config user.name 'matrix-ci'
-          git config user.email 'matrix-ci@users.noreply.github.com'
+          git config user.name "matrix-ci"
+          git config user.email "matrix-ci@users.noreply.github.com"
 
           git add evidence/cor0203/runtime/MATRIX_COR0203_BATCH_RUNNER_LAST.json
           git add 'evidence/cor0203/runtime/MATRIX_COR0203_BATCH_PREFLIGHT_R'*.json 2>/dev/null || true
@@ -127,16 +97,11 @@ jobs:
           git add 'evidence/cor0203/holdout/MATRIX_COR0203_HOLDOUT_BATCH_R'*.json 2>/dev/null || true
 
           if git diff --cached --quiet; then
-            echo 'No reconciled COR02/COR03 changes'
+            echo "No reconciled COR02/COR03 changes"
             exit 0
           fi
 
-          git commit -m 'evidence(cor02-03): reconcile pending governed batches'
-
-          # A staging commit may have arrived while this serialized run was executing.
-          # Rebase the generated evidence onto the newest branch state. The next
-          # serialized run scans all still-unfrozen manifests, so no intermediate
-          # staging revision is lost.
+          git commit -m "evidence(cor02-03): reconcile pending governed batches"
           git fetch origin repair/cor09-world-pipeline
           git rebase origin/repair/cor09-world-pipeline
           git push origin HEAD:repair/cor09-world-pipeline
