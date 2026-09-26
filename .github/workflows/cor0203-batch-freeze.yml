@@ -8,6 +8,7 @@ on:
       - .github/workflows/cor0203-batch-freeze.yml
       - tools/cor0203_api_tennis_discovery.py
       - tools/cor0203_preregister_discovery.py
+      - tools/cor0203_build_static_cut_index.py
       - tools/cor0203_stage_from_registry.py
       - tools/cor0203_batch_runner.py
       - tools/cor0203_batch_preflight.py
@@ -52,6 +53,15 @@ jobs:
           test "$(sha256sum evidence/cor0203/runtime/MATRIX_COR0203_PRE2026_STATE_R706.json.gz.b64 | awk '{print $1}')" = "384b5537ad9715b552d26464db3d01980021a24e9f6d7e0fcc93ba154efde125"
           test "$(sha256sum evidence/cor0203/runtime/MATRIX_COR0203_ELO_GLICKO_PROSPECTIVE_BUNDLE_R706.json | awk '{print $1}')" = "ef5788fa4212c67880a52af85359bed1483ba1d59b1655e28390bbfaf0187ec8"
           test "$(sha256sum evidence/cor0203/preholdout/2026_challenger_live_snapshot.csv | awk '{print $1}')" = "d3f0e7edca273d0e1fcd4700581cf00398e46719f0aaadb62a1c97ec0ffa6ab5"
+
+      - name: Build exact 21SEP sealed STATIC4 player index
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m tools.cor0203_build_static_cut_index \
+            --csv evidence/cor0203/preholdout/2026_challenger_live_snapshot.csv \
+            --cut 20260921 \
+            --out evidence/cor0203/runtime/MATRIX_COR0203_STATIC_CUT_20260921.json
 
       - name: Discover future Challenger fixtures with strong provider IDs
         shell: bash
@@ -142,6 +152,7 @@ jobs:
           git config user.name "matrix-ci"
           git config user.email "matrix-ci@users.noreply.github.com"
 
+          git add evidence/cor0203/runtime/MATRIX_COR0203_STATIC_CUT_20260921.json
           git add evidence/cor0203/runtime/MATRIX_COR0203_DISCOVERY_PREREG_LAST.json
           git add evidence/cor0203/runtime/MATRIX_COR0203_AUTO_STAGE_LAST.json
           git add evidence/cor0203/runtime/MATRIX_COR0203_BATCH_RUNNER_LAST.json
