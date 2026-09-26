@@ -39,6 +39,8 @@ STAGE_LAST="evidence/cor0203/runtime/MATRIX_COR0203_AUTO_STAGE_LAST.json"
 RUNNER_LAST="evidence/cor0203/runtime/MATRIX_COR0203_BATCH_RUNNER_LAST.json"
 INTEGRITY_LAST="evidence/cor0203/runtime/MATRIX_COR0203_HOLDOUT_INTEGRITY_LAST.json"
 OBSERVABILITY_LAST="evidence/cor0203/runtime/MATRIX_COR0203_PRODUCTION_OBSERVABILITY_LAST.json"
+SETTLEMENT_QUEUE_LAST="evidence/cor0203/runtime/MATRIX_COR0203_SETTLEMENT_QUEUE_LAST.json"
+SETTLEMENT_LEDGER="evidence/cor0203/settlement/MATRIX_COR0203_SETTLEMENT_LEDGER.jsonl"
 HEARTBEAT="evidence/cor0203/runtime/MATRIX_COR0203_SCHEDULER_HEARTBEAT.json"
 
 test -s "$STATE"
@@ -90,6 +92,13 @@ python -m tools.cor0203_holdout_integrity_audit \
   --binding evidence/cor0203/runtime/MATRIX_COR0203_MODEL_BINDING_R707.json \
   --out "$INTEGRITY_LAST"
 
+python -m tools.cor0203_settlement_queue \
+  --runtime-dir evidence/cor0203/runtime \
+  --holdout-dir evidence/cor0203/holdout \
+  --integrity "$INTEGRITY_LAST" \
+  --ledger "$SETTLEMENT_LEDGER" \
+  --out "$SETTLEMENT_QUEUE_LAST"
+
 python -m tools.cor0203_production_observability \
   --source-readiness "$SOURCE_READINESS_CURRENT" \
   --prereg "$PREREG_LAST" \
@@ -114,6 +123,7 @@ runner = json.loads((runtime / "MATRIX_COR0203_BATCH_RUNNER_LAST.json").read_tex
 integrity = json.loads((runtime / "MATRIX_COR0203_HOLDOUT_INTEGRITY_LAST.json").read_text())
 source_readiness = json.loads(Path("/tmp/MATRIX_COR0203_SOURCE_READINESS_CURRENT.json").read_text())
 observability = json.loads((runtime / "MATRIX_COR0203_PRODUCTION_OBSERVABILITY_LAST.json").read_text())
+settlement_queue = json.loads((runtime / "MATRIX_COR0203_SETTLEMENT_QUEUE_LAST.json").read_text())
 
 assert source_readiness["provider"] == "api_tennis"
 assert source_readiness["real_money"] == "BLOCKED"
@@ -130,6 +140,10 @@ assert integrity["metrics_opened"] is False
 assert integrity["median_or_neutral_fallback_admissible"] is False
 assert observability["holdout"]["total_count"] == runner["ending_physical_count"]
 assert observability["integrity"]["result"] == "PASS"
+assert settlement_queue["admissible_observations"] == runner["ending_physical_count"]
+assert settlement_queue["metrics"] == "SEALED_UNTIL_600"
+assert settlement_queue["outcomes_used_for_metrics"] == 0
+assert settlement_queue["ledger"]["outcomes_used_for_metrics"] == 0
 if not source_readiness["ready"]:
     assert observability["operational_state"] == "SOURCE_BLOCKED"
     assert observability["bottleneck"]["stage"] == "SOURCE"
@@ -170,6 +184,7 @@ git config user.email "${MATRIX_GIT_USER_EMAIL:-matrix-production@users.noreply.
 # creating commits or racing with code changes.
 git add evidence/cor0203/source_readiness/MATRIX_COR0203_SOURCE_READINESS_*.json 2>/dev/null || true
 git add "$OBSERVABILITY_LAST"
+git add "$SETTLEMENT_QUEUE_LAST"
 git add evidence/cor0203/runtime/MATRIX_COR0203_PREFEATURE_REGISTRY_R*.json 2>/dev/null || true
 git add evidence/cor0203/runtime/MATRIX_COR0203_IDENTITY_CROSSWALK_R*.json 2>/dev/null || true
 git add evidence/cor0203/runtime/MATRIX_COR0203_STAGE_BLOCKERS_R*.json 2>/dev/null || true
