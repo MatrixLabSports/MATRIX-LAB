@@ -6,87 +6,42 @@ on:
       - repair/cor09-world-pipeline
     paths:
       - .github/workflows/cor0203-batch-freeze.yml
+      - tools/cor0203_batch_runner.py
+      - tools/cor0203_batch_preflight.py
+      - tools/cor0203_prospective_producer.py
+      - evidence/cor0203/runtime/MATRIX_COR0203_PREFEATURE_REGISTRY_R*.json
+      - evidence/cor0203/runtime/MATRIX_COR0203_STATIC4_R*.json
       - evidence/cor0203/runtime/MATRIX_COR0203_PROSPECTIVE_EVENTS_R*.json
+  workflow_dispatch:
 
 permissions:
   contents: write
+
+concurrency:
+  group: cor0203-holdout-repair-cor09-world-pipeline
+  cancel-in-progress: false
 
 jobs:
   batch-freeze:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout
+      - name: Checkout serialized latest branch state
         uses: actions/checkout@v4
         with:
           ref: repair/cor09-world-pipeline
           fetch-depth: 0
 
-      - name: Resolve newest staged batch
-        id: resolve
+      - name: Record physical checkout
         shell: bash
         run: |
           set -euo pipefail
-          python - <<'PY'
-          import json, re
-          from pathlib import Path
+          echo "CHECKOUT_SHA=$(git rev-parse HEAD)" >> "$GITHUB_ENV"
+          echo "Physical checkout: $(git rev-parse HEAD)"
 
-          files=list(Path('evidence/cor0203/runtime').glob('MATRIX_COR0203_PROSPECTIVE_EVENTS_R*.json'))
-          if not files:
-              raise SystemExit('NO_PROSPECTIVE_EVENT_MANIFEST')
-
-          def rev(path):
-              m=re.search(r'_R(\d+)\.json$', path.name)
-              return int(m.group(1)) if m else -1
-
-          event_path=max(files,key=rev)
-          revision=rev(event_path)
-          out=Path(f'evidence/cor0203/holdout/MATRIX_COR0203_HOLDOUT_BATCH_R{revision}.json')
-          pre=Path(f'evidence/cor0203/runtime/MATRIX_COR0203_PREFEATURE_REGISTRY_R{revision}.json')
-          static4=Path(f'evidence/cor0203/runtime/MATRIX_COR0203_STATIC4_R{revision}.json')
-
-          data=json.loads(event_path.read_text())
-          print(f'REVISION={revision}')
-          print(f'EVENT_PATH={event_path}')
-          print(f'PREFEATURE_PATH={pre}')
-          print(f'STATIC4_PATH={static4}')
-          print(f'OUT_PATH={out}')
-          print(f'START_COUNT={data["starting_observation_count"]}')
-          print(f'BATCH_SIZE={len(data["events"])}')
-
-          with open('/tmp/r714_env','w') as f:
-              for k,v in {
-                  'REVISION':revision,
-                  'EVENT_PATH':event_path,
-                  'PREFEATURE_PATH':pre,
-                  'STATIC4_PATH':static4,
-                  'OUT_PATH':out,
-                  'START_COUNT':data['starting_observation_count'],
-                  'BATCH_SIZE':len(data['events']),
-              }.items():
-                  f.write(f'{k}={v}\n')
-          PY
-          cat /tmp/r714_env >> "$GITHUB_ENV"
-
-      - name: Stop if batch already frozen
-        id: dedupe
+      - name: Verify sealed model inputs
         shell: bash
         run: |
           set -euo pipefail
-          if test -s "$OUT_PATH"; then
-            echo "already_frozen=true" >> "$GITHUB_OUTPUT"
-            echo "Batch R$REVISION already frozen; no duplicate processing."
-          else
-            echo "already_frozen=false" >> "$GITHUB_OUTPUT"
-          fi
-
-      - name: Verify sealed inputs and batch linkage
-        if: steps.dedupe.outputs.already_frozen != 'true'
-        shell: bash
-        run: |
-          set -euo pipefail
-          test -s "$EVENT_PATH"
-          test -s "$PREFEATURE_PATH"
-          test -s "$STATIC4_PATH"
           test -s evidence/cor0203/runtime/MATRIX_COR0203_PRE2026_STATE_R706.json.gz.b64
           test -s evidence/cor0203/runtime/MATRIX_COR0203_ELO_GLICKO_PROSPECTIVE_BUNDLE_R706.json
           test -s evidence/cor0203/preholdout/2026_challenger_live_snapshot.csv
@@ -94,140 +49,62 @@ jobs:
           test "$(sha256sum evidence/cor0203/runtime/MATRIX_COR0203_ELO_GLICKO_PROSPECTIVE_BUNDLE_R706.json | awk '{print $1}')" = "ef5788fa4212c67880a52af85359bed1483ba1d59b1655e28390bbfaf0187ec8"
           test "$(sha256sum evidence/cor0203/preholdout/2026_challenger_live_snapshot.csv | awk '{print $1}')" = "d3f0e7edca273d0e1fcd4700581cf00398e46719f0aaadb62a1c97ec0ffa6ab5"
 
-          FREEZE_AT="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
-          export FREEZE_AT
-          echo "FREEZE_AT=$FREEZE_AT" >> "$GITHUB_ENV"
+      - name: Reconcile every pending prospective batch
+        shell: bash
+        run: |
+          set -euo pipefail
+          python tools/cor0203_batch_runner.py \
+            --state-b64 evidence/cor0203/runtime/MATRIX_COR0203_PRE2026_STATE_R706.json.gz.b64 \
+            --bundle evidence/cor0203/runtime/MATRIX_COR0203_ELO_GLICKO_PROSPECTIVE_BUNDLE_R706.json \
+            --annual-2026 evidence/cor0203/preholdout/2026_challenger_live_snapshot.csv \
+            --trigger-sha "$CHECKOUT_SHA" \
+            --summary-out evidence/cor0203/runtime/MATRIX_COR0203_BATCH_RUNNER_LAST.json
 
-          python - <<'PY'
-          import json, re, os
-          from pathlib import Path
-          from tools.cor0203_batch_linkage_gate import validate_batch_linkage
-
-          events=json.loads(Path(os.environ['EVENT_PATH']).read_text())
-          pre=json.loads(Path(os.environ['PREFEATURE_PATH']).read_text())
-
-          batches=list(Path('evidence/cor0203/holdout').glob('MATRIX_COR0203_HOLDOUT_BATCH_R*.json'))
-          prior=[]
-          for p in batches:
-              m=re.search(r'_R(\d+)\.json$',p.name)
-              if m and int(m.group(1)) < int(os.environ['REVISION']):
-                  prior.append((int(m.group(1)),json.loads(p.read_text())))
-          current_count=max((x[1]['ending_observation_count'] for x in prior),default=0)
-
-          expected=int(os.environ['START_COUNT'])
-          if current_count != expected:
-              raise ValueError(f'HOLDOUT_COUNT_DRIFT:physical={current_count}:manifest={expected}')
-
-          result=validate_batch_linkage(
-              prefeature=pre,
-              events=events,
-              freeze_at_utc=os.environ['FREEZE_AT'],
-              expected_starting_count=expected,
-          )
-          print(json.dumps(result,sort_keys=True))
-          PY
-
-      - name: Verify authorized pre-period history for every player
-        if: steps.dedupe.outputs.already_frozen != 'true'
+      - name: Validate runner outputs remain sealed
         shell: bash
         run: |
           set -euo pipefail
           python - <<'PY'
-          import csv, json, os
+          import json
           from pathlib import Path
-          from tools.cor0203_prospective_producer import load_state, extend_state
 
-          events=json.loads(Path(os.environ['EVENT_PATH']).read_text())
-          periods={int(e['target_period']) for e in events['events']}
-          if len(periods)!=1:
-              raise ValueError('ONE_TARGET_PERIOD_PER_BATCH_REQUIRED')
-          target_period=next(iter(periods))
+          summary=json.loads(Path('evidence/cor0203/runtime/MATRIX_COR0203_BATCH_RUNNER_LAST.json').read_text())
+          assert summary['ending_physical_count'] >= summary['starting_physical_count']
 
-          state,_=load_state(Path('evidence/cor0203/runtime/MATRIX_COR0203_PRE2026_STATE_R706.json.gz.b64'))
-          annual_rows=list(csv.DictReader(Path('evidence/cor0203/preholdout/2026_challenger_live_snapshot.csv').open(encoding='utf-8-sig',newline='')))
-          state,used_rows,period_count=extend_state(state,annual_rows,target_period)
-
-          players={}
-          for event in events['events']:
-              for p in event['players']:
-                  name=str(p['name'])
-                  if name in players:
-                      continue
-                  overall=state['history']['overall'].get(name,[0.0,0.0])
-                  matches=state['history']['matches'].get(name,[])
-                  n_history=max(int(overall[1]) if len(overall)>1 else 0,len(matches))
-                  row={
-                      'n_history':n_history,
-                      'elo_present':name in state['elo_overall'],
-                      'glicko_present':name in state['glicko_overall'],
-                  }
-                  if n_history<=0:
-                      raise ValueError('AUTHORIZED_PREPERIOD_HISTORY_MISSING:'+name)
-                  if not row['elo_present']:
-                      raise ValueError('ELO_STATE_MISSING:'+name)
-                  if not row['glicko_present']:
-                      raise ValueError('GLICKO_STATE_MISSING:'+name)
-                  players[name]=row
-
-          out=Path(f'evidence/cor0203/runtime/MATRIX_COR0203_HISTORY_GATE_R{os.environ["REVISION"]}.json')
-          out.write_text(json.dumps({
-              'schema':'MATRIX_COR0203_BATCH_HISTORY_GATE_V1',
-              'revision':'R'+os.environ['REVISION'],
-              'target_period':target_period,
-              'annual_rows_used_preperiod':used_rows,
-              'annual_periods_used_preperiod':period_count,
-              'players':players,
-              'result':'PASS',
-              'same_period_results_used':False,
-              'silent_imputation':False,
-          },indent=2,sort_keys=True)+'\n')
-          print(json.dumps(players,sort_keys=True))
+          for p in Path('evidence/cor0203/holdout').glob('MATRIX_COR0203_HOLDOUT_BATCH_R*.json'):
+              x=json.loads(p.read_text())
+              assert x.get('metrics') == 'SEALED_UNTIL_600'
+              assert x.get('outcomes_read') == 0
+              for obs in x.get('observations', []):
+                  assert obs.get('outcome') is None
+                  assert obs.get('metrics_opened') is False
+                  assert obs['freeze_at_utc'] < obs['event_start_utc']
+          print(json.dumps(summary,sort_keys=True))
           PY
 
-      - name: Freeze governed batch
-        if: steps.dedupe.outputs.already_frozen != 'true'
-        shell: bash
-        run: |
-          set -euo pipefail
-          python tools/cor0203_prospective_producer.py             --state-b64 evidence/cor0203/runtime/MATRIX_COR0203_PRE2026_STATE_R706.json.gz.b64             --bundle evidence/cor0203/runtime/MATRIX_COR0203_ELO_GLICKO_PROSPECTIVE_BUNDLE_R706.json             --annual-2026 evidence/cor0203/preholdout/2026_challenger_live_snapshot.csv             --events "$EVENT_PATH"             --freeze-at "$FREEZE_AT"             --out "$OUT_PATH"
-
-      - name: Assert sealed batch
-        if: steps.dedupe.outputs.already_frozen != 'true'
-        shell: bash
-        run: |
-          set -euo pipefail
-          python - <<'PY'
-          import json, os
-          from pathlib import Path
-          x=json.loads(Path(os.environ['OUT_PATH']).read_text())
-          start=int(os.environ['START_COUNT'])
-          size=int(os.environ['BATCH_SIZE'])
-          assert x['starting_observation_count']==start
-          assert x['added_observations']==size
-          assert x['ending_observation_count']==start+size
-          assert x['window1_count']==start+size
-          assert x['metrics']=='SEALED_UNTIL_600'
-          assert x['outcomes_read']==0
-          assert len(x['observations'])==size
-          assert all(o['outcome'] is None and o['metrics_opened'] is False for o in x['observations'])
-          assert all(o['freeze_at_utc'] < o['event_start_utc'] for o in x['observations'])
-          assert all(o['elo']['model_id']=='R218_ELO_BOTH' for o in x['observations'])
-          assert all(o['glicko']['model_id']=='R223_BATCH_GLICKO_RATING_BOTH' for o in x['observations'])
-          print(f'COR0203_BATCH_R{os.environ["REVISION"]}_VALIDATION=PASS')
-          PY
-
-      - name: Commit sealed batch
-        if: steps.dedupe.outputs.already_frozen != 'true'
+      - name: Commit reconciled freezes and blockers
         shell: bash
         run: |
           set -euo pipefail
           git config user.name 'matrix-ci'
           git config user.email 'matrix-ci@users.noreply.github.com'
-          git add "evidence/cor0203/runtime/MATRIX_COR0203_HISTORY_GATE_R$REVISION.json"
-          git add "$OUT_PATH"
+
+          git add evidence/cor0203/runtime/MATRIX_COR0203_BATCH_RUNNER_LAST.json
+          git add 'evidence/cor0203/runtime/MATRIX_COR0203_BATCH_PREFLIGHT_R'*.json 2>/dev/null || true
+          git add 'evidence/cor0203/runtime/MATRIX_COR0203_HISTORY_GATE_R'*.json 2>/dev/null || true
+          git add 'evidence/cor0203/holdout/MATRIX_COR0203_HOLDOUT_BATCH_R'*.json 2>/dev/null || true
+
           if git diff --cached --quiet; then
-            echo 'No governed batch changes'
+            echo 'No reconciled COR02/COR03 changes'
             exit 0
           fi
-          git commit -m "evidence(cor02-03): freeze governed prospective batch R$REVISION"
+
+          git commit -m 'evidence(cor02-03): reconcile pending governed batches'
+
+          # A staging commit may have arrived while this serialized run was executing.
+          # Rebase the generated evidence onto the newest branch state. The next
+          # serialized run scans all still-unfrozen manifests, so no intermediate
+          # staging revision is lost.
+          git fetch origin repair/cor09-world-pipeline
+          git rebase origin/repair/cor09-world-pipeline
           git push origin HEAD:repair/cor09-world-pipeline
