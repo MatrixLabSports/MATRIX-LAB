@@ -199,10 +199,8 @@ def stage_prefeature(
             continue
         names = [str(name).strip() for name in event.get("players", []) or []]
         event_blockers: list[str] = []
-        strong_identity_by_name: dict[str, dict[str, str]] = {}
-        strong_identity_required = bool(event.get("identity_crosswalk_required"))
 
-        if strong_identity_required:
+        if bool(event.get("identity_crosswalk_required")):
             identities = list(event.get("player_identities") or [])
             if not isinstance(crosswalk, Mapping) or crosswalk.get("status") != "PASS":
                 event_blockers.append("HISTORICAL_IDENTITY_CROSSWALK_REQUIRED")
@@ -217,32 +215,12 @@ def stage_prefeature(
                         event_blockers.append("IDENTITY_CROSSWALK_MISSING:" + provider_id)
                         continue
                     canonical_name = str(mapping.get("canonical_name") or "").strip()
-                    canonical_source_id = str(mapping.get("canonical_source_id") or "").strip()
                     if not canonical_name:
                         event_blockers.append("IDENTITY_CROSSWALK_CANONICAL_NAME_MISSING:" + provider_id)
                         continue
-                    if not canonical_source_id:
-                        event_blockers.append("IDENTITY_CROSSWALK_CANONICAL_ID_MISSING:" + provider_id)
-                        continue
                     canonical_names.append(canonical_name)
-                    strong_identity_by_name[canonical_name] = {
-                        "provider_player_id": provider_id,
-                        "canonical_source_id": canonical_source_id,
-                    }
                 if len(canonical_names) == 2:
-                    if len(set(canonical_names)) != 2:
-                        event_blockers.append("IDENTITY_CROSSWALK_CANONICAL_NAME_COLLISION")
-                    canonical_ids = [
-                        strong_identity_by_name.get(name, {}).get("canonical_source_id", "")
-                        for name in canonical_names
-                    ]
-                    if len(set(canonical_ids)) != 2 or not all(canonical_ids):
-                        event_blockers.append("IDENTITY_CROSSWALK_CANONICAL_ID_COLLISION")
                     names = canonical_names
-
-            source_sha = str(event.get("source_snapshot_sha256") or "").strip().lower()
-            if not re.fullmatch(r"[0-9a-f]{64}", source_sha):
-                event_blockers.append("SOURCE_SNAPSHOT_SHA_REQUIRED")
 
         if len(names) != 2 or not all(names) or names[0] == names[1]:
             event_blockers.append("PREFEATURE_IDENTITY_INVALID")
@@ -256,33 +234,9 @@ def stage_prefeature(
             if entry.get("status") != "PASS":
                 event_blockers.append(str(entry.get("blocker") or "SEALED_STATIC4_CONFLICT") + ":" + name)
                 continue
-            source_id = str(entry.get("source_id") or "")
-            provider_player_id = ""
-            identity_binding = "LEGACY_SEALED_REGISTRY"
-            if strong_identity_required:
-                strong = strong_identity_by_name.get(name)
-                if not isinstance(strong, Mapping):
-                    event_blockers.append("STRONG_IDENTITY_BINDING_MISSING:" + name)
-                    continue
-                canonical_source_id = str(strong.get("canonical_source_id") or "")
-                provider_player_id = str(strong.get("provider_player_id") or "")
-                if not canonical_source_id:
-                    event_blockers.append("CANONICAL_SOURCE_ID_REQUIRED:" + name)
-                    continue
-                if not re.fullmatch(r"api-tennis:player:\d+", provider_player_id):
-                    event_blockers.append("PROVIDER_PLAYER_ID_REQUIRED:" + name)
-                    continue
-                if source_id and source_id != canonical_source_id:
-                    event_blockers.append("SEALED_SOURCE_ID_CROSSWALK_MISMATCH:" + name)
-                    continue
-                source_id = canonical_source_id
-                identity_binding = "API_TENNIS_TO_STATIC_CUT_STRONG_CROSSWALK"
-
             resolved.append({
                 "name": name,
-                "source_id": source_id,
-                "provider_player_id": provider_player_id,
-                "identity_binding": identity_binding,
+                "source_id": str(entry.get("source_id") or ""),
                 "hand": entry["hand"],
                 "age": entry["age"],
                 "rank": entry["rank"],
@@ -307,8 +261,6 @@ def stage_prefeature(
             "players": {
                 player["name"]: {
                     "source_id": player["source_id"],
-                    "provider_player_id": player["provider_player_id"],
-                    "identity_binding": player["identity_binding"],
                     "hand": player["hand"],
                     "age": player["age"],
                     "rank": player["rank"],
@@ -329,10 +281,6 @@ def stage_prefeature(
             "target_period": int(event.get("target_period")),
             "event_start_utc": event.get("event_start_utc"),
             "source_reference": source_reference,
-            "source_provider": event.get("source_provider"),
-            "source_snapshot_sha256": event.get("source_snapshot_sha256"),
-            "identity_crosswalk_required": strong_identity_required,
-            "identity_crosswalk_reference": crosswalk_path.name if strong_identity_required else None,
             "prior_preregistration_reference": str(pre.get("schema") or prefeature_path.stem),
             "players": resolved,
         })

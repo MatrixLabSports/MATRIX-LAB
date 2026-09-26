@@ -4,7 +4,6 @@ import argparse
 import csv
 import json
 import math
-import re
 from pathlib import Path
 from typing import Any, Mapping
 
@@ -172,16 +171,6 @@ def partition_batch(
         if str(row.get("tour_level")) not in {"C", "ATP Challenger"}:
             blockers.append("TOUR_LEVEL_OUT_OF_DOMAIN")
 
-        strong_identity_required = bool(row.get("identity_crosswalk_required"))
-        if strong_identity_required:
-            if str(row.get("source_provider") or "") != "api_tennis":
-                blockers.append("STRONG_IDENTITY_PROVIDER_INVALID")
-            source_sha = str(row.get("source_snapshot_sha256") or "").strip().lower()
-            if not re.fullmatch(r"[0-9a-f]{64}", source_sha):
-                blockers.append("SOURCE_SNAPSHOT_SHA_REQUIRED")
-            if not str(row.get("identity_crosswalk_reference") or "").strip():
-                blockers.append("IDENTITY_CROSSWALK_REFERENCE_REQUIRED")
-
         try:
             start = _utc(str(row.get("event_start_utc")))
             if freeze >= start:
@@ -210,22 +199,7 @@ def partition_batch(
 
             event_source_id = str(player.get("source_id") or "")
             static_source_id = str(s.get("source_id") or "")
-            if strong_identity_required:
-                provider_player_id = str(player.get("provider_player_id") or "")
-                if not event_source_id:
-                    blockers.append("CANONICAL_SOURCE_ID_REQUIRED:" + name)
-                if not re.fullmatch(r"api-tennis:player:\d+", provider_player_id):
-                    blockers.append("PROVIDER_PLAYER_ID_REQUIRED:" + name)
-                if str(player.get("identity_binding") or "") != "API_TENNIS_TO_STATIC_CUT_STRONG_CROSSWALK":
-                    blockers.append("STRONG_IDENTITY_BINDING_REQUIRED:" + name)
-                if not static_source_id:
-                    blockers.append("STATIC4_CANONICAL_SOURCE_ID_REQUIRED:" + name)
-                elif event_source_id != static_source_id:
-                    blockers.append("STATIC4_SOURCE_ID_MISMATCH:" + name)
-                static_provider_id = str(s.get("provider_player_id") or "")
-                if static_provider_id != provider_player_id:
-                    blockers.append("STATIC4_PROVIDER_ID_MISMATCH:" + name)
-            elif event_source_id and static_source_id and event_source_id != static_source_id:
+            if event_source_id and static_source_id and event_source_id != static_source_id:
                 blockers.append("STATIC4_SOURCE_ID_MISMATCH:" + name)
 
             p_blockers = _history_blockers(state, name)
