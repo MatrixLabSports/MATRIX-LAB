@@ -6,6 +6,7 @@ on:
       - repair/cor09-world-pipeline
     paths:
       - .github/workflows/cor0203-batch-freeze.yml
+      - tools/cor0203_stage_from_registry.py
       - tools/cor0203_batch_runner.py
       - tools/cor0203_batch_preflight.py
       - tools/cor0203_prospective_producer.py
@@ -49,13 +50,25 @@ jobs:
           test "$(sha256sum evidence/cor0203/runtime/MATRIX_COR0203_ELO_GLICKO_PROSPECTIVE_BUNDLE_R706.json | awk '{print $1}')" = "ef5788fa4212c67880a52af85359bed1483ba1d59b1655e28390bbfaf0187ec8"
           test "$(sha256sum evidence/cor0203/preholdout/2026_challenger_live_snapshot.csv | awk '{print $1}')" = "d3f0e7edca273d0e1fcd4700581cf00398e46719f0aaadb62a1c97ec0ffa6ab5"
 
+      - name: Auto-stage preregistered events from sealed player registry
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m tools.cor0203_stage_from_registry \
+            --summary-out evidence/cor0203/runtime/MATRIX_COR0203_AUTO_STAGE_LAST.json
+
       - name: Reconcile every pending prospective batch
         shell: bash
         run: |
           set -euo pipefail
-          python -m tools.cor0203_batch_runner             --state-b64 evidence/cor0203/runtime/MATRIX_COR0203_PRE2026_STATE_R706.json.gz.b64             --bundle evidence/cor0203/runtime/MATRIX_COR0203_ELO_GLICKO_PROSPECTIVE_BUNDLE_R706.json             --annual-2026 evidence/cor0203/preholdout/2026_challenger_live_snapshot.csv             --trigger-sha "$CHECKOUT_SHA"             --summary-out evidence/cor0203/runtime/MATRIX_COR0203_BATCH_RUNNER_LAST.json
+          python -m tools.cor0203_batch_runner \
+            --state-b64 evidence/cor0203/runtime/MATRIX_COR0203_PRE2026_STATE_R706.json.gz.b64 \
+            --bundle evidence/cor0203/runtime/MATRIX_COR0203_ELO_GLICKO_PROSPECTIVE_BUNDLE_R706.json \
+            --annual-2026 evidence/cor0203/preholdout/2026_challenger_live_snapshot.csv \
+            --trigger-sha "$CHECKOUT_SHA" \
+            --summary-out evidence/cor0203/runtime/MATRIX_COR0203_BATCH_RUNNER_LAST.json
 
-      - name: Validate runner outputs remain sealed
+      - name: Validate staged and runner outputs remain sealed
         shell: bash
         run: |
           set -euo pipefail
@@ -64,9 +77,13 @@ jobs:
           import re
           from pathlib import Path
 
+          stage = json.loads(
+              Path("evidence/cor0203/runtime/MATRIX_COR0203_AUTO_STAGE_LAST.json").read_text()
+          )
           summary = json.loads(
               Path("evidence/cor0203/runtime/MATRIX_COR0203_BATCH_RUNNER_LAST.json").read_text()
           )
+          assert stage["real_money"] == "BLOCKED"
           assert summary["ending_physical_count"] >= summary["starting_physical_count"]
 
           exact_batch = re.compile(r"^MATRIX_COR0203_HOLDOUT_BATCH_R\d+\.json$")
@@ -81,27 +98,31 @@ jobs:
                   assert observation.get("metrics_opened") is False
                   assert observation["freeze_at_utc"] < observation["event_start_utc"]
 
-          print(json.dumps(summary, sort_keys=True))
+          print(json.dumps({"stage": stage, "runner": summary}, sort_keys=True))
           PY
 
-      - name: Commit reconciled freezes and blockers
+      - name: Commit staged events, freezes and blockers
         shell: bash
         run: |
           set -euo pipefail
           git config user.name "matrix-ci"
           git config user.email "matrix-ci@users.noreply.github.com"
 
+          git add evidence/cor0203/runtime/MATRIX_COR0203_AUTO_STAGE_LAST.json
           git add evidence/cor0203/runtime/MATRIX_COR0203_BATCH_RUNNER_LAST.json
+          git add 'evidence/cor0203/runtime/MATRIX_COR0203_STAGE_BLOCKERS_R'*.json 2>/dev/null || true
+          git add 'evidence/cor0203/runtime/MATRIX_COR0203_STATIC4_R'*.json 2>/dev/null || true
+          git add 'evidence/cor0203/runtime/MATRIX_COR0203_PROSPECTIVE_EVENTS_R'*.json 2>/dev/null || true
           git add 'evidence/cor0203/runtime/MATRIX_COR0203_BATCH_PREFLIGHT_R'*.json 2>/dev/null || true
           git add 'evidence/cor0203/runtime/MATRIX_COR0203_HISTORY_GATE_R'*.json 2>/dev/null || true
           git add 'evidence/cor0203/holdout/MATRIX_COR0203_HOLDOUT_BATCH_R'*.json 2>/dev/null || true
 
           if git diff --cached --quiet; then
-            echo "No reconciled COR02/COR03 changes"
+            echo "No staged or reconciled COR02/COR03 changes"
             exit 0
           fi
 
-          git commit -m "evidence(cor02-03): reconcile pending governed batches"
+          git commit -m "evidence(cor02-03): auto-stage and reconcile pending governed batches"
           git fetch origin repair/cor09-world-pipeline
           git rebase origin/repair/cor09-world-pipeline
           git push origin HEAD:repair/cor09-world-pipeline
