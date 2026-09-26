@@ -36,6 +36,7 @@ PREREG_LAST="evidence/cor0203/runtime/MATRIX_COR0203_DISCOVERY_PREREG_LAST.json"
 CROSSWALK_LAST="evidence/cor0203/runtime/MATRIX_COR0203_IDENTITY_CROSSWALK_LAST.json"
 STAGE_LAST="evidence/cor0203/runtime/MATRIX_COR0203_AUTO_STAGE_LAST.json"
 RUNNER_LAST="evidence/cor0203/runtime/MATRIX_COR0203_BATCH_RUNNER_LAST.json"
+INTEGRITY_LAST="evidence/cor0203/runtime/MATRIX_COR0203_HOLDOUT_INTEGRITY_LAST.json"
 HEARTBEAT="evidence/cor0203/runtime/MATRIX_COR0203_SCHEDULER_HEARTBEAT.json"
 
 test -s "$STATE"
@@ -73,6 +74,15 @@ python -m tools.cor0203_batch_runner \
   --trigger-sha "$TRIGGER_SHA" \
   --summary-out "$RUNNER_LAST"
 
+python -m tools.cor0203_holdout_integrity_audit \
+  --runtime-dir evidence/cor0203/runtime \
+  --holdout-dir evidence/cor0203/holdout \
+  --state-b64 "$STATE" \
+  --bundle "$BUNDLE" \
+  --annual-2026 "$ANNUAL" \
+  --binding evidence/cor0203/runtime/MATRIX_COR0203_MODEL_BINDING_R707.json \
+  --out "$INTEGRITY_LAST"
+
 python - <<'PY'
 import json
 import re
@@ -85,11 +95,19 @@ prereg = json.loads((runtime / "MATRIX_COR0203_DISCOVERY_PREREG_LAST.json").read
 crosswalk = json.loads((runtime / "MATRIX_COR0203_IDENTITY_CROSSWALK_LAST.json").read_text())
 stage = json.loads((runtime / "MATRIX_COR0203_AUTO_STAGE_LAST.json").read_text())
 runner = json.loads((runtime / "MATRIX_COR0203_BATCH_RUNNER_LAST.json").read_text())
+integrity = json.loads((runtime / "MATRIX_COR0203_HOLDOUT_INTEGRITY_LAST.json").read_text())
 
 assert prereg["status"] in {"NO_DISCOVERY_INPUT", "NO_NEW_EVENTS", "PREREGISTERED"}
 assert crosswalk["real_money"] == "BLOCKED"
 assert stage["real_money"] == "BLOCKED"
 assert runner["ending_physical_count"] >= runner["starting_physical_count"]
+assert integrity["result"] == "PASS"
+assert integrity["admissible_observations"] == runner["ending_physical_count"]
+assert integrity["audited_observations"] == integrity["passed_observations"]
+assert integrity["failed_observations"] == 0
+assert integrity["outcomes_read"] == 0
+assert integrity["metrics_opened"] is False
+assert integrity["median_or_neutral_fallback_admissible"] is False
 
 exact_batch = re.compile(r"^MATRIX_COR0203_HOLDOUT_BATCH_R\d+\.json$")
 for path in holdout.glob("MATRIX_COR0203_HOLDOUT_BATCH_R*.json"):
@@ -109,6 +127,8 @@ print(json.dumps({
     "ending_physical_count": runner["ending_physical_count"],
     "new_freezes": runner["new_freezes"],
     "new_blocked": runner["new_blocked"],
+    "holdout_integrity": integrity["result"],
+    "audited_observations": integrity["audited_observations"],
 }, sort_keys=True))
 PY
 
@@ -120,6 +140,7 @@ git add "$PREREG_LAST"
 git add "$CROSSWALK_LAST"
 git add "$STAGE_LAST"
 git add "$RUNNER_LAST"
+git add "$INTEGRITY_LAST"
 if [[ -f "$HEARTBEAT" ]]; then
   git add "$HEARTBEAT"
 fi
