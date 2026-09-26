@@ -22,7 +22,7 @@ API_URL = "https://api.api-tennis.com/tennis/"
 CHALLENGER_MEN_SINGLES_KEY = "281"
 CHALLENGER_MEN_SINGLES_NAME = "Challenger Men Singles"
 MAX_RESPONSE_BYTES = 5_000_000
-MAX_DRAW_REQUESTS = 12
+MAX_DRAW_REQUESTS = 4
 TERMINAL_STATUSES = {
     "FINISHED", "CANCELLED", "CANCELED", "ABANDONED", "RETIRED", "WALKOVER", "WO",
 }
@@ -142,6 +142,10 @@ class ApiTennisDiscoveryClient:
                 "timezone": "UTC",
             },
         )
+
+
+    def standings(self) -> Mapping[str, Any]:
+        return self._post("get_standings", {"event_type": "ATP"})
 
 
 def _result_list(payload: Mapping[str, Any]) -> list[Mapping[str, Any]]:
@@ -324,6 +328,20 @@ def fetch_discovery(
     as_of_utc: str,
 ) -> dict[str, Any]:
     fixtures = client.fixtures(start, stop)
+    standings = client.standings()
+    standing_rows = _result_list(standings)
+    standings_by_key = {
+        str(row.get("player_key") or "").strip(): {
+            "place": str(row.get("place") or "").strip(),
+            "points": str(row.get("points") or "").strip(),
+            "player": str(row.get("player") or "").strip(),
+            "country": str(row.get("country") or "").strip(),
+            "league": str(row.get("league") or "").strip(),
+        }
+        for row in standing_rows
+        if str(row.get("player_key") or "").strip()
+    }
+
     rows = _result_list(fixtures)
     tournaments: dict[str, str] = {}
     for row in rows:
@@ -343,6 +361,12 @@ def fetch_discovery(
         draw_payloads=draw_payloads,
         as_of_utc=as_of_utc,
     )
+    for candidate in result.get("eligible_candidates", []):
+        for player in candidate.get("players", []):
+            provider_id = str(player.get("provider_player_id") or "")
+            player_key = provider_id.rsplit(":", 1)[-1] if provider_id else ""
+            player["provider_ranking"] = standings_by_key.get(player_key)
+    result["standings_rows"] = len(standing_rows)
     result["request_count"] = client.request_count
     result["draw_requests"] = len(draw_payloads)
     result["draw_request_limit"] = MAX_DRAW_REQUESTS
