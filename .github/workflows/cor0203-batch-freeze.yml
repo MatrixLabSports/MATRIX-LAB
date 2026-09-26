@@ -9,6 +9,7 @@ on:
       - tools/cor0203_api_tennis_discovery.py
       - tools/cor0203_preregister_discovery.py
       - tools/cor0203_build_static_cut_index.py
+      - tools/cor0203_build_identity_crosswalk.py
       - tools/cor0203_stage_from_registry.py
       - tools/cor0203_batch_runner.py
       - tools/cor0203_batch_preflight.py
@@ -83,6 +84,14 @@ jobs:
             --discovery /tmp/MATRIX_COR0203_API_TENNIS_DISCOVERY.json \
             --result-out evidence/cor0203/runtime/MATRIX_COR0203_DISCOVERY_PREREG_LAST.json
 
+      - name: Build strong provider-to-canonical identity crosswalks
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m tools.cor0203_build_identity_crosswalk \
+            --static-cut evidence/cor0203/runtime/MATRIX_COR0203_STATIC_CUT_20260921.json \
+            --summary-out evidence/cor0203/runtime/MATRIX_COR0203_IDENTITY_CROSSWALK_LAST.json
+
       - name: Auto-stage preregistered events from sealed player registry
         shell: bash
         run: |
@@ -113,6 +122,9 @@ jobs:
           prereg = json.loads(
               Path("evidence/cor0203/runtime/MATRIX_COR0203_DISCOVERY_PREREG_LAST.json").read_text()
           )
+          crosswalk = json.loads(
+              Path("evidence/cor0203/runtime/MATRIX_COR0203_IDENTITY_CROSSWALK_LAST.json").read_text()
+          )
           stage = json.loads(
               Path("evidence/cor0203/runtime/MATRIX_COR0203_AUTO_STAGE_LAST.json").read_text()
           )
@@ -125,6 +137,7 @@ jobs:
               "NO_NEW_EVENTS",
               "PREREGISTERED",
           }
+          assert crosswalk["real_money"] == "BLOCKED"
           assert stage["real_money"] == "BLOCKED"
           assert summary["ending_physical_count"] >= summary["starting_physical_count"]
 
@@ -142,6 +155,7 @@ jobs:
 
           print(json.dumps({
               "prereg": prereg,
+              "crosswalk": crosswalk,
               "stage": stage,
               "runner": summary,
           }, sort_keys=True))
@@ -156,9 +170,11 @@ jobs:
 
           git add evidence/cor0203/runtime/MATRIX_COR0203_STATIC_CUT_20260921.json
           git add evidence/cor0203/runtime/MATRIX_COR0203_DISCOVERY_PREREG_LAST.json
+          git add evidence/cor0203/runtime/MATRIX_COR0203_IDENTITY_CROSSWALK_LAST.json
           git add evidence/cor0203/runtime/MATRIX_COR0203_AUTO_STAGE_LAST.json
           git add evidence/cor0203/runtime/MATRIX_COR0203_BATCH_RUNNER_LAST.json
           git add 'evidence/cor0203/runtime/MATRIX_COR0203_PREFEATURE_REGISTRY_R'*.json 2>/dev/null || true
+          git add 'evidence/cor0203/runtime/MATRIX_COR0203_IDENTITY_CROSSWALK_R'*.json 2>/dev/null || true
           git add 'evidence/cor0203/runtime/MATRIX_COR0203_STAGE_BLOCKERS_R'*.json 2>/dev/null || true
           git add 'evidence/cor0203/runtime/MATRIX_COR0203_STATIC4_R'*.json 2>/dev/null || true
           git add 'evidence/cor0203/runtime/MATRIX_COR0203_PROSPECTIVE_EVENTS_R'*.json 2>/dev/null || true
