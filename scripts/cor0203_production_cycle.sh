@@ -32,6 +32,7 @@ ANNUAL="evidence/cor0203/preholdout/2026_challenger_live_snapshot.csv"
 ONGOING="evidence/cor0203/preholdout/challenger_ongoing_tourneys_live_snapshot.csv"
 STATIC_CUT="evidence/cor0203/runtime/MATRIX_COR0203_STATIC_CUT_20260921.json"
 DISCOVERY="/tmp/MATRIX_COR0203_API_TENNIS_DISCOVERY.json"
+SOURCE_READINESS_CURRENT="/tmp/MATRIX_COR0203_SOURCE_READINESS_CURRENT.json"
 PREREG_LAST="evidence/cor0203/runtime/MATRIX_COR0203_DISCOVERY_PREREG_LAST.json"
 CROSSWALK_LAST="evidence/cor0203/runtime/MATRIX_COR0203_IDENTITY_CROSSWALK_LAST.json"
 STAGE_LAST="evidence/cor0203/runtime/MATRIX_COR0203_AUTO_STAGE_LAST.json"
@@ -55,6 +56,11 @@ python -m tools.cor0203_build_static_cut_index \
 python -m tools.cor0203_api_tennis_discovery \
   --out "$DISCOVERY" \
   --days 2
+
+python -m tools.cor0203_source_readiness \
+  --discovery "$DISCOVERY" \
+  --evidence-dir evidence/cor0203/source_readiness \
+  --summary-out "$SOURCE_READINESS_CURRENT"
 
 python -m tools.cor0203_preregister_discovery \
   --discovery "$DISCOVERY" \
@@ -96,7 +102,10 @@ crosswalk = json.loads((runtime / "MATRIX_COR0203_IDENTITY_CROSSWALK_LAST.json")
 stage = json.loads((runtime / "MATRIX_COR0203_AUTO_STAGE_LAST.json").read_text())
 runner = json.loads((runtime / "MATRIX_COR0203_BATCH_RUNNER_LAST.json").read_text())
 integrity = json.loads((runtime / "MATRIX_COR0203_HOLDOUT_INTEGRITY_LAST.json").read_text())
+source_readiness = json.loads(Path("/tmp/MATRIX_COR0203_SOURCE_READINESS_CURRENT.json").read_text())
 
+assert source_readiness["provider"] == "api_tennis"
+assert source_readiness["real_money"] == "BLOCKED"
 assert prereg["status"] in {"NO_DISCOVERY_INPUT", "NO_NEW_EVENTS", "PREREGISTERED"}
 assert crosswalk["real_money"] == "BLOCKED"
 assert stage["real_money"] == "BLOCKED"
@@ -129,6 +138,9 @@ print(json.dumps({
     "new_blocked": runner["new_blocked"],
     "holdout_integrity": integrity["result"],
     "audited_observations": integrity["audited_observations"],
+    "source_ready": source_readiness["ready"],
+    "source_status": source_readiness["status"],
+    "source_cause": source_readiness["cause"],
 }, sort_keys=True))
 PY
 
@@ -138,6 +150,7 @@ git config user.email "${MATRIX_GIT_USER_EMAIL:-matrix-production@users.noreply.
 # Stage append-only/revision evidence first. Mutable *_LAST/heartbeat files do
 # not define whether a cycle is material; this prevents empty cycles from
 # creating commits or racing with code changes.
+git add evidence/cor0203/source_readiness/MATRIX_COR0203_SOURCE_READINESS_*.json 2>/dev/null || true
 git add evidence/cor0203/runtime/MATRIX_COR0203_PREFEATURE_REGISTRY_R*.json 2>/dev/null || true
 git add evidence/cor0203/runtime/MATRIX_COR0203_IDENTITY_CROSSWALK_R*.json 2>/dev/null || true
 git add evidence/cor0203/runtime/MATRIX_COR0203_STAGE_BLOCKERS_R*.json 2>/dev/null || true
@@ -149,6 +162,13 @@ git add evidence/cor0203/holdout/MATRIX_COR0203_HOLDOUT_BATCH_R*.json 2>/dev/nul
 
 if git diff --cached --quiet; then
   echo "COR0203_CYCLE_NO_MATERIAL_CHANGE"
+  python - <<'PY'
+import json
+from pathlib import Path
+x=json.loads(Path("/tmp/MATRIX_COR0203_SOURCE_READINESS_CURRENT.json").read_text())
+if not x["ready"]:
+    raise SystemExit("SOURCE_NOT_READY:" + str(x["cause"]) + ":" + str(x["status"]))
+PY
   exit 0
 fi
 
@@ -167,3 +187,11 @@ git commit -m "evidence(cor02-03): governed autonomous production cycle"
 git fetch origin "$TARGET_BRANCH"
 git rebase "origin/$TARGET_BRANCH"
 git push origin "HEAD:$TARGET_BRANCH"
+
+python - <<'PY'
+import json
+from pathlib import Path
+x=json.loads(Path("/tmp/MATRIX_COR0203_SOURCE_READINESS_CURRENT.json").read_text())
+if not x["ready"]:
+    raise SystemExit("SOURCE_NOT_READY:" + str(x["cause"]) + ":" + str(x["status"]))
+PY
