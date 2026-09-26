@@ -30,18 +30,20 @@ jobs:
   batch-freeze:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout serialized latest branch state
+      - name: Checkout exact trigger state
         uses: actions/checkout@v4
         with:
-          ref: repair/cor09-world-pipeline
+          ref: ${{ github.sha }}
           fetch-depth: 0
 
       - name: Record physical checkout
         shell: bash
         run: |
           set -euo pipefail
-          echo "CHECKOUT_SHA=$(git rev-parse HEAD)" >> "$GITHUB_ENV"
-          echo "Physical checkout: $(git rev-parse HEAD)"
+          CHECKOUT_SHA="$(git rev-parse HEAD)"
+          test "$CHECKOUT_SHA" = "$GITHUB_SHA"
+          echo "CHECKOUT_SHA=$CHECKOUT_SHA" >> "$GITHUB_ENV"
+          echo "Exact trigger checkout: $CHECKOUT_SHA"
 
       - name: Verify sealed model inputs
         shell: bash
