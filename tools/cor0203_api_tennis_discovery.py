@@ -5,6 +5,7 @@ import hashlib
 import json
 import os
 import re
+import time
 from dataclasses import asdict
 from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
@@ -13,6 +14,7 @@ from urllib.error import HTTPError, URLError
 from urllib.parse import urlencode, quote, quote_plus
 from urllib.request import Request, urlopen
 
+from app.core.provider_retry import ProviderRetryPolicy, retry_delay_seconds
 from app.research.tennis.world_calendar_registry import (
     WorldCalendarEvent,
     build_world_calendar_registry,
@@ -68,50 +70,86 @@ class ApiTennisDiscoveryClient:
         *,
         opener: Callable[..., Any] = urlopen,
         timeout_seconds: float = 20.0,
+        retry_attempts: int = 2,
+        retry_base_delay_seconds: float = 0.25,
+        sleeper: Callable[[float], None] = time.sleep,
     ) -> None:
         if not isinstance(api_key, str) or not api_key.strip():
             raise ValueError("API_TENNIS_KEY_REQUIRED")
         self._api_key = api_key.strip()
         self._opener = opener
         self._timeout = float(timeout_seconds)
+        self._retry_policy = ProviderRetryPolicy(
+            provider_key="api_tennis",
+            max_attempts=retry_attempts,
+            base_delay_seconds=float(retry_base_delay_seconds),
+            max_delay_seconds=max(float(retry_base_delay_seconds), 1.0),
+            jitter_ratio=0.0,
+        )
+        self._sleeper = sleeper
         self.request_count = 0
 
     def _post(self, method: str, params: Mapping[str, Any]) -> Mapping[str, Any]:
         public = {str(k): str(v) for k, v in params.items() if v is not None}
-        form = {"method": method, **public, "APIkey": self._api_key}
-        data = urlencode(form).encode("utf-8")
-        request = Request(
-            API_URL,
-            data=data,
-            headers={
-                "Content-Type": "application/x-www-form-urlencoded",
-                "User-Agent": "MATRIX-COR0203-DISCOVERY/1.0",
-                "Accept": "application/json",
-            },
-            method="POST",
-        )
-        self.request_count += 1
-        try:
-            with self._opener(request, timeout=self._timeout) as response:
-                body = _read_bounded(response)
-        except (HTTPError, URLError, TimeoutError, OSError) as error:
-            raise ApiTennisDiscoveryError(
-                "API_TENNIS_NETWORK_ERROR:" + _safe_error(error, self._api_key)
-            ) from None
+        request_fingerprint = _sha({"method": method, "params": public})
+        last_transient: BaseException | None = None
 
-        secret_bytes = self._api_key.encode("utf-8")
-        if secret_bytes and secret_bytes in body:
-            raise ApiTennisDiscoveryError("API_TENNIS_SECRET_ECHO_DETECTED")
+        for attempt in range(1, self._retry_policy.max_attempts + 1):
+            form = {"method": method, **public, "APIkey": self._api_key}
+            data = urlencode(form).encode("utf-8")
+            request = Request(
+                API_URL,
+                data=data,
+                headers={
+                    "Content-Type": "application/x-www-form-urlencoded",
+                    "User-Agent": "MATRIX-COR0203-DISCOVERY/1.0",
+                    "Accept": "application/json",
+                },
+                method="POST",
+            )
+            self.request_count += 1
+            try:
+                with self._opener(request, timeout=self._timeout) as response:
+                    body = _read_bounded(response)
+            except HTTPError as error:
+                if error.code == 429 or 500 <= int(error.code) <= 599:
+                    last_transient = error
+                else:
+                    raise ApiTennisDiscoveryError(
+                        "API_TENNIS_HTTP_ERROR:" + _safe_error(error, self._api_key)
+                    ) from None
+            except (URLError, TimeoutError, OSError) as error:
+                last_transient = error
+            else:
+                secret_bytes = self._api_key.encode("utf-8")
+                if secret_bytes and secret_bytes in body:
+                    raise ApiTennisDiscoveryError("API_TENNIS_SECRET_ECHO_DETECTED")
 
-        try:
-            payload = json.loads(body.decode("utf-8"))
-        except (UnicodeDecodeError, json.JSONDecodeError) as error:
-            raise ApiTennisDiscoveryError("API_TENNIS_INVALID_JSON") from error
-        if not isinstance(payload, Mapping):
-            raise ApiTennisDiscoveryError("API_TENNIS_RESPONSE_NOT_MAPPING")
-        if int(payload.get("success", 0) or 0) != 1:
-            raise ApiTennisDiscoveryError("API_TENNIS_PROVIDER_FAILURE")
-        return dict(payload)
+                try:
+                    payload = json.loads(body.decode("utf-8"))
+                except (UnicodeDecodeError, json.JSONDecodeError) as error:
+                    raise ApiTennisDiscoveryError("API_TENNIS_INVALID_JSON") from error
+                if not isinstance(payload, Mapping):
+                    raise ApiTennisDiscoveryError("API_TENNIS_RESPONSE_NOT_MAPPING")
+                if int(payload.get("success", 0) or 0) != 1:
+                    raise ApiTennisDiscoveryError("API_TENNIS_PROVIDER_FAILURE")
+                return dict(payload)
+
+            if attempt < self._retry_policy.max_attempts:
+                delay = retry_delay_seconds(
+                    policy=self._retry_policy,
+                    queue_item_fingerprint=request_fingerprint,
+                    retry_number=attempt,
+                )
+                self._sleeper(delay)
+
+        assert last_transient is not None
+        raise ApiTennisDiscoveryError(
+            "API_TENNIS_RETRY_EXHAUSTED:"
+            + type(last_transient).__name__
+            + ":"
+            + _safe_error(last_transient, self._api_key)
+        ) from None
 
     def fixtures(self, start: date, stop: date) -> Mapping[str, Any]:
         if stop < start:
