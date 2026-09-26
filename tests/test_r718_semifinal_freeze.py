@@ -3,20 +3,25 @@ import json
 
 ROOT = Path(__file__).resolve().parents[1]
 WORKFLOW = ROOT / ".github/workflows/cor0203-batch-freeze.yml"
+RUNNER = ROOT / "tools/cor0203_batch_runner.py"
 BATCH = ROOT / "evidence/cor0203/holdout/MATRIX_COR0203_HOLDOUT_BATCH_R718.json"
 HISTORY = ROOT / "evidence/cor0203/runtime/MATRIX_COR0203_HISTORY_GATE_R718.json"
 PREFEATURE = ROOT / "evidence/cor0203/runtime/MATRIX_COR0203_PREFEATURE_REGISTRY_R718.json"
 
 
-def test_r718_freeze_timestamp_is_exported_for_same_step_python():
-    text = WORKFLOW.read_text(encoding="utf-8")
-    freeze_assign = 'FREEZE_AT="$(date -u +%Y-%m-%dT%H:%M:%SZ)"'
-    export = "export FREEZE_AT"
-    python_env_read = "os.environ['FREEZE_AT']"
-    assert freeze_assign in text
-    assert export in text
-    assert python_env_read in text
-    assert text.index(freeze_assign) < text.index(export) < text.index(python_env_read)
+def test_freeze_timestamp_is_generated_once_and_shared_by_new_runner():
+    workflow = WORKFLOW.read_text(encoding="utf-8")
+    runner = RUNNER.read_text(encoding="utf-8")
+
+    assert "python -m tools.cor0203_batch_runner" in workflow
+    assert "freeze_at = _now_utc()" in runner
+    assert "freeze_at_utc=freeze_at" in runner
+    assert '"--freeze-at", freeze_at' in runner
+
+    generated = runner.index("freeze_at = _now_utc()")
+    preflight_use = runner.index("freeze_at_utc=freeze_at")
+    producer_use = runner.index('"--freeze-at", freeze_at')
+    assert generated < preflight_use < producer_use
 
 
 def test_r718_is_observation_9_and_stays_sealed():
