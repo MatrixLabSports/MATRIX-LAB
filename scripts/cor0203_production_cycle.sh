@@ -32,6 +32,8 @@ ANNUAL="evidence/cor0203/preholdout/2026_challenger_live_snapshot.csv"
 ONGOING="evidence/cor0203/preholdout/challenger_ongoing_tourneys_live_snapshot.csv"
 STATIC_CUT="evidence/cor0203/runtime/MATRIX_COR0203_STATIC_CUT_20260921.json"
 DISCOVERY="/tmp/MATRIX_COR0203_API_TENNIS_DISCOVERY.json"
+DURABLE_DISCOVERY_LAST="evidence/cor0203/runtime/MATRIX_COR0203_DURABLE_DISCOVERY_LAST.json"
+ACQUISITION_STORE="evidence/cor0203/acquisition/MATRIX_COR0203_ACQUISITION.sqlite3"
 SOURCE_READINESS_CURRENT="/tmp/MATRIX_COR0203_SOURCE_READINESS_CURRENT.json"
 PREREG_LAST="evidence/cor0203/runtime/MATRIX_COR0203_DISCOVERY_PREREG_LAST.json"
 CROSSWALK_LAST="evidence/cor0203/runtime/MATRIX_COR0203_IDENTITY_CROSSWALK_LAST.json"
@@ -58,8 +60,10 @@ python -m tools.cor0203_build_static_cut_index \
   --cut 20260921 \
   --out "$STATIC_CUT"
 
-python -m tools.cor0203_api_tennis_discovery \
+python -m tools.cor0203_durable_discovery \
   --out "$DISCOVERY" \
+  --summary-out "$DURABLE_DISCOVERY_LAST" \
+  --store "$ACQUISITION_STORE" \
   --days 2
 
 python -m tools.cor0203_source_readiness \
@@ -151,12 +155,18 @@ stage = json.loads((runtime / "MATRIX_COR0203_AUTO_STAGE_LAST.json").read_text()
 runner = json.loads((runtime / "MATRIX_COR0203_BATCH_RUNNER_LAST.json").read_text())
 integrity = json.loads((runtime / "MATRIX_COR0203_HOLDOUT_INTEGRITY_LAST.json").read_text())
 source_readiness = json.loads(Path("/tmp/MATRIX_COR0203_SOURCE_READINESS_CURRENT.json").read_text())
+durable_discovery = json.loads((runtime / "MATRIX_COR0203_DURABLE_DISCOVERY_LAST.json").read_text())
 observability = json.loads((runtime / "MATRIX_COR0203_PRODUCTION_OBSERVABILITY_LAST.json").read_text())
 settlement_queue = json.loads((runtime / "MATRIX_COR0203_SETTLEMENT_QUEUE_LAST.json").read_text())
 historical_identity = json.loads((runtime / "MATRIX_COR0203_HISTORICAL_IDENTITY_LAST.json").read_text())
 settlement_sync = json.loads((runtime / "MATRIX_COR0203_SETTLEMENT_SYNC_LAST.json").read_text())
 
 assert source_readiness["provider"] == "api_tennis"
+assert durable_discovery["real_money"] == "BLOCKED"
+assert durable_discovery["automatic_wagering"] is False
+if source_readiness["ready"]:
+    assert durable_discovery["status"] == "PASS"
+    assert durable_discovery["store_integrity_ok"] is True
 assert source_readiness["real_money"] == "BLOCKED"
 assert prereg["status"] in {"NO_DISCOVERY_INPUT", "NO_NEW_EVENTS", "PREREGISTERED"}
 assert crosswalk["real_money"] == "BLOCKED"
@@ -220,6 +230,10 @@ git config user.email "${MATRIX_GIT_USER_EMAIL:-matrix-production@users.noreply.
 # creating commits or racing with code changes.
 git add evidence/cor0203/source_readiness/MATRIX_COR0203_SOURCE_READINESS_*.json 2>/dev/null || true
 git add "$OBSERVABILITY_LAST"
+git add "$DURABLE_DISCOVERY_LAST"
+if [[ -f "$ACQUISITION_STORE" ]]; then
+  git add "$ACQUISITION_STORE"
+fi
 git add "$SETTLEMENT_QUEUE_LAST"
 git add "$HISTORICAL_IDENTITY_LAST"
 git add "$SETTLEMENT_SYNC_LAST"
