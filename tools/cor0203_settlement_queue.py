@@ -22,16 +22,26 @@ def main() -> None:
         "--ledger",
         default="evidence/cor0203/settlement/MATRIX_COR0203_SETTLEMENT_LEDGER.jsonl",
     )
+    parser.add_argument("--identity-overlay")
     parser.add_argument("--out", required=True)
     args = parser.parse_args()
 
     integrity = json.loads(Path(args.integrity).read_text(encoding="utf-8"))
+    overlay = {}
+    if args.identity_overlay:
+        overlay_payload = json.loads(Path(args.identity_overlay).read_text(encoding="utf-8"))
+        overlay = {
+            str(row.get("event_id") or ""): row
+            for row in overlay_payload.get("reconciled", []) or []
+            if row.get("event_id")
+        }
     ledger = Cor0203SettlementLedger(Path(args.ledger))
     queue = build_settlement_queue(
         runtime_dir=Path(args.runtime_dir),
         holdout_dir=Path(args.holdout_dir),
         integrity=integrity,
         ledger_records=ledger.load(),
+        identity_overlay=overlay,
     )
     audit = ledger.audit()
     queue["ledger"] = {
