@@ -177,3 +177,45 @@ def test_existing_static_and_event_manifests_are_never_rewritten(tmp_path):
     assert staged["status"] == "ALREADY_STAGED"
     assert json.loads((runtime / "MATRIX_COR0203_STATIC4_R722.json").read_text()) == {"sentinel": "static"}
     assert json.loads((runtime / "MATRIX_COR0203_PROSPECTIVE_EVENTS_R722.json").read_text()) == {"sentinel": "events"}
+
+
+def test_already_frozen_prefeature_is_immutable_even_if_static4_missing(tmp_path):
+    runtime = tmp_path / "runtime"
+    holdout = tmp_path / "holdout"
+    setup_frozen_source(runtime, holdout)
+
+    p = prereg()
+    event_id = p["events"][0]["event_id"]
+    write(runtime / "MATRIX_COR0203_PREFEATURE_REGISTRY_R722.json", p)
+    write(
+        holdout / "MATRIX_COR0203_HOLDOUT_BATCH_R722.json",
+        {"ending_observation_count": 10, "observations": [{"event_id": event_id}]},
+    )
+
+    result = stage_all_pending(runtime_dir=runtime, holdout_dir=holdout)
+
+    staged = next(row for row in result["revisions"] if row["revision"] == 722)
+    assert staged["status"] == "ALREADY_FROZEN"
+    assert not (runtime / "MATRIX_COR0203_STATIC4_R722.json").exists()
+    assert not (runtime / "MATRIX_COR0203_PROSPECTIVE_EVENTS_R722.json").exists()
+
+
+def test_existing_event_manifest_without_static4_is_not_rewritten(tmp_path):
+    runtime = tmp_path / "runtime"
+    holdout = tmp_path / "holdout"
+    setup_frozen_source(runtime, holdout)
+    write(runtime / "MATRIX_COR0203_PREFEATURE_REGISTRY_R722.json", prereg())
+
+    original = {"sentinel": "immutable-existing-manifest"}
+    write(runtime / "MATRIX_COR0203_PROSPECTIVE_EVENTS_R722.json", original)
+
+    result = stage_all_pending(runtime_dir=runtime, holdout_dir=holdout)
+
+    staged = next(row for row in result["revisions"] if row["revision"] == 722)
+    assert staged["status"] == "INCOMPLETE_EXISTING_STAGE"
+    assert json.loads((runtime / "MATRIX_COR0203_PROSPECTIVE_EVENTS_R722.json").read_text()) == original
+    assert not (runtime / "MATRIX_COR0203_STATIC4_R722.json").exists()
+
+    blocker = json.loads((runtime / "MATRIX_COR0203_STAGE_BLOCKERS_R722.json").read_text())
+    assert blocker["result"] == "INCOMPLETE_EXISTING_STAGE"
+    assert "EVENT_MANIFEST_EXISTS_STATIC4_MISSING" in blocker["blocked"][0]["blockers"]
