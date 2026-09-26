@@ -40,6 +40,7 @@ RUNNER_LAST="evidence/cor0203/runtime/MATRIX_COR0203_BATCH_RUNNER_LAST.json"
 INTEGRITY_LAST="evidence/cor0203/runtime/MATRIX_COR0203_HOLDOUT_INTEGRITY_LAST.json"
 OBSERVABILITY_LAST="evidence/cor0203/runtime/MATRIX_COR0203_PRODUCTION_OBSERVABILITY_LAST.json"
 SETTLEMENT_QUEUE_LAST="evidence/cor0203/runtime/MATRIX_COR0203_SETTLEMENT_QUEUE_LAST.json"
+HISTORICAL_IDENTITY_LAST="evidence/cor0203/runtime/MATRIX_COR0203_HISTORICAL_IDENTITY_LAST.json"
 SETTLEMENT_SYNC_LAST="evidence/cor0203/runtime/MATRIX_COR0203_SETTLEMENT_SYNC_LAST.json"
 SETTLEMENT_LEDGER="evidence/cor0203/settlement/MATRIX_COR0203_SETTLEMENT_LEDGER.jsonl"
 HEARTBEAT="evidence/cor0203/runtime/MATRIX_COR0203_SCHEDULER_HEARTBEAT.json"
@@ -100,6 +101,19 @@ python -m tools.cor0203_settlement_queue \
   --ledger "$SETTLEMENT_LEDGER" \
   --out "$SETTLEMENT_QUEUE_LAST"
 
+python -m tools.cor0203_historical_identity_reconcile \
+  --queue "$SETTLEMENT_QUEUE_LAST" \
+  --out "$HISTORICAL_IDENTITY_LAST" \
+  --max-date-requests 10
+
+python -m tools.cor0203_settlement_queue \
+  --runtime-dir evidence/cor0203/runtime \
+  --holdout-dir evidence/cor0203/holdout \
+  --integrity "$INTEGRITY_LAST" \
+  --ledger "$SETTLEMENT_LEDGER" \
+  --identity-overlay "$HISTORICAL_IDENTITY_LAST" \
+  --out "$SETTLEMENT_QUEUE_LAST"
+
 python -m tools.cor0203_settlement_sync \
   --queue "$SETTLEMENT_QUEUE_LAST" \
   --ledger "$SETTLEMENT_LEDGER" \
@@ -111,6 +125,7 @@ python -m tools.cor0203_settlement_queue \
   --holdout-dir evidence/cor0203/holdout \
   --integrity "$INTEGRITY_LAST" \
   --ledger "$SETTLEMENT_LEDGER" \
+  --identity-overlay "$HISTORICAL_IDENTITY_LAST" \
   --out "$SETTLEMENT_QUEUE_LAST"
 
 python -m tools.cor0203_production_observability \
@@ -138,6 +153,7 @@ integrity = json.loads((runtime / "MATRIX_COR0203_HOLDOUT_INTEGRITY_LAST.json").
 source_readiness = json.loads(Path("/tmp/MATRIX_COR0203_SOURCE_READINESS_CURRENT.json").read_text())
 observability = json.loads((runtime / "MATRIX_COR0203_PRODUCTION_OBSERVABILITY_LAST.json").read_text())
 settlement_queue = json.loads((runtime / "MATRIX_COR0203_SETTLEMENT_QUEUE_LAST.json").read_text())
+historical_identity = json.loads((runtime / "MATRIX_COR0203_HISTORICAL_IDENTITY_LAST.json").read_text())
 settlement_sync = json.loads((runtime / "MATRIX_COR0203_SETTLEMENT_SYNC_LAST.json").read_text())
 
 assert source_readiness["provider"] == "api_tennis"
@@ -159,6 +175,9 @@ assert settlement_queue["admissible_observations"] == runner["ending_physical_co
 assert settlement_queue["metrics"] == "SEALED_UNTIL_600"
 assert settlement_queue["outcomes_used_for_metrics"] == 0
 assert settlement_queue["ledger"]["outcomes_used_for_metrics"] == 0
+assert historical_identity["automatic_fuzzy_matching"] is False
+assert historical_identity["freeze_mutation"] is False
+assert historical_identity["metrics_opened"] is False
 assert settlement_sync["outcomes_used_for_metrics"] == 0
 assert settlement_sync["metrics"] == "SEALED_UNTIL_600"
 if not source_readiness["ready"]:
@@ -202,6 +221,7 @@ git config user.email "${MATRIX_GIT_USER_EMAIL:-matrix-production@users.noreply.
 git add evidence/cor0203/source_readiness/MATRIX_COR0203_SOURCE_READINESS_*.json 2>/dev/null || true
 git add "$OBSERVABILITY_LAST"
 git add "$SETTLEMENT_QUEUE_LAST"
+git add "$HISTORICAL_IDENTITY_LAST"
 git add "$SETTLEMENT_SYNC_LAST"
 if [[ -f "$SETTLEMENT_LEDGER" ]]; then
   git add "$SETTLEMENT_LEDGER"
