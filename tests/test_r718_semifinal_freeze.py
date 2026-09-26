@@ -3,6 +3,7 @@ import json
 
 ROOT = Path(__file__).resolve().parents[1]
 WORKFLOW = ROOT / ".github/workflows/cor0203-batch-freeze.yml"
+CYCLE = ROOT / "scripts/cor0203_production_cycle.sh"
 RUNNER = ROOT / "tools/cor0203_batch_runner.py"
 BATCH = ROOT / "evidence/cor0203/holdout/MATRIX_COR0203_HOLDOUT_BATCH_R718.json"
 HISTORY = ROOT / "evidence/cor0203/runtime/MATRIX_COR0203_HISTORY_GATE_R718.json"
@@ -11,9 +12,11 @@ PREFEATURE = ROOT / "evidence/cor0203/runtime/MATRIX_COR0203_PREFEATURE_REGISTRY
 
 def test_freeze_timestamp_is_generated_once_and_shared_by_new_runner():
     workflow = WORKFLOW.read_text(encoding="utf-8")
+    cycle = CYCLE.read_text(encoding="utf-8")
     runner = RUNNER.read_text(encoding="utf-8")
 
-    assert "python -m tools.cor0203_batch_runner" in workflow
+    assert "bash scripts/cor0203_production_cycle.sh" in workflow
+    assert "python -m tools.cor0203_batch_runner" in cycle
     assert "freeze_at = _now_utc()" in runner
     assert "freeze_at_utc=freeze_at" in runner
     assert '"--freeze-at", freeze_at' in runner
