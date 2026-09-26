@@ -135,15 +135,9 @@ PY
 git config user.name "${MATRIX_GIT_USER_NAME:-matrix-production}"
 git config user.email "${MATRIX_GIT_USER_EMAIL:-matrix-production@users.noreply.github.com}"
 
-git add "$STATIC_CUT"
-git add "$PREREG_LAST"
-git add "$CROSSWALK_LAST"
-git add "$STAGE_LAST"
-git add "$RUNNER_LAST"
-git add "$INTEGRITY_LAST"
-if [[ -f "$HEARTBEAT" ]]; then
-  git add "$HEARTBEAT"
-fi
+# Stage append-only/revision evidence first. Mutable *_LAST/heartbeat files do
+# not define whether a cycle is material; this prevents empty cycles from
+# creating commits or racing with code changes.
 git add evidence/cor0203/runtime/MATRIX_COR0203_PREFEATURE_REGISTRY_R*.json 2>/dev/null || true
 git add evidence/cor0203/runtime/MATRIX_COR0203_IDENTITY_CROSSWALK_R*.json 2>/dev/null || true
 git add evidence/cor0203/runtime/MATRIX_COR0203_STAGE_BLOCKERS_R*.json 2>/dev/null || true
@@ -156,6 +150,17 @@ git add evidence/cor0203/holdout/MATRIX_COR0203_HOLDOUT_BATCH_R*.json 2>/dev/nul
 if git diff --cached --quiet; then
   echo "COR0203_CYCLE_NO_MATERIAL_CHANGE"
   exit 0
+fi
+
+# Only a material append-only change is allowed to carry mutable summaries.
+git add "$STATIC_CUT"
+git add "$PREREG_LAST"
+git add "$CROSSWALK_LAST"
+git add "$STAGE_LAST"
+git add "$RUNNER_LAST"
+git add "$INTEGRITY_LAST"
+if [[ -f "$HEARTBEAT" ]]; then
+  git add "$HEARTBEAT"
 fi
 
 git commit -m "evidence(cor02-03): governed autonomous production cycle"
