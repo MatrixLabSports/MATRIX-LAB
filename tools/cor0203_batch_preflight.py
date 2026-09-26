@@ -96,8 +96,10 @@ def partition_batch(
     state: Mapping[str, Any],
     freeze_at_utc: str,
     expected_starting_count: int,
+    existing_event_ids: set[str] | None = None,
 ) -> dict[str, Any]:
     freeze = _utc(freeze_at_utc)
+    existing_event_ids = set(existing_event_ids or set())
 
     if prefeature.get("created_before_feature_acquisition") is not True:
         raise ValueError("PREFEATURE_ORDERING_NOT_PROVEN")
@@ -140,6 +142,8 @@ def partition_batch(
         blockers: list[str] = []
         if not event_id or event_id in seen:
             blockers.append("EVENT_BATCH_DUPLICATE_OR_MISSING_EVENT_ID")
+        if event_id in existing_event_ids:
+            blockers.append("EVENT_ALREADY_FROZEN")
         seen.add(event_id)
 
         pre = pre_by_id.get(event_id)
