@@ -1,6 +1,7 @@
 from datetime import date
 
 from tools.cor0203_historical_identity_reconcile import reconcile_historical_identity
+from tools.cor0203_api_tennis_discovery import CHALLENGER_MEN_SINGLES_NAME
 
 
 class FakeClient:
@@ -30,7 +31,7 @@ def fixture(event_key="55", p1="Harold Mayot", p2="Murphy Cassone"):
     return {
         "event_key": event_key,
         "event_date": "2026-09-26",
-        "event_type_type": "Atp Challenger Men Singles",
+        "event_type_type": CHALLENGER_MEN_SINGLES_NAME,
         "event_first_player": p1,
         "event_second_player": p2,
         "first_player_key": "10",
@@ -81,7 +82,7 @@ def test_one_provider_call_per_date_for_multiple_events():
         {
             "event_key": "57",
             "event_date": "2026-09-26",
-            "event_type_type": "Atp Challenger Men Singles",
+            "event_type_type": CHALLENGER_MEN_SINGLES_NAME,
             "event_first_player": "Beta",
             "event_second_player": "Alpha",
             "first_player_key": "30",
