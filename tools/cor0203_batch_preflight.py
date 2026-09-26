@@ -101,10 +101,12 @@ def partition_batch(
 
     if prefeature.get("created_before_feature_acquisition") is not True:
         raise ValueError("PREFEATURE_ORDERING_NOT_PROVEN")
-    if int(prefeature.get("starting_observation_count", -1)) != int(expected_starting_count):
-        raise ValueError("PREFEATURE_START_COUNT_MISMATCH")
-    if int(events.get("starting_observation_count", -1)) != int(expected_starting_count):
-        raise ValueError("EVENT_BATCH_START_COUNT_MISMATCH")
+    declared_pre_start = int(prefeature.get("starting_observation_count", -1))
+    declared_event_start = int(events.get("starting_observation_count", -1))
+    if declared_pre_start != declared_event_start:
+        raise ValueError("PREREGISTRATION_EVENT_START_COUNT_MISMATCH")
+    if declared_event_start > int(expected_starting_count):
+        raise ValueError("DECLARED_START_COUNT_AHEAD_OF_PHYSICAL")
     if prefeature.get("holdout_id") != events.get("holdout_id"):
         raise ValueError("HOLDOUT_ID_MISMATCH")
     if static4.get("holdout_id") not in (None, events.get("holdout_id")):
@@ -247,7 +249,9 @@ def partition_batch(
         "schema": "MATRIX_COR0203_BATCH_PREFLIGHT_V1",
         "holdout_id": events.get("holdout_id"),
         "freeze_at_utc": freeze.isoformat(),
+        "declared_starting_observation_count": declared_event_start,
         "starting_observation_count": int(expected_starting_count),
+        "count_rebased_at_freeze": declared_event_start != int(expected_starting_count),
         "input_events": len(event_rows),
         "valid_events": len(valid_rows),
         "blocked_events": len(blocked_rows),
