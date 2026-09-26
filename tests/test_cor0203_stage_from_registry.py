@@ -230,6 +230,8 @@ def test_provider_discovery_event_cannot_stage_without_identity_crosswalk(tmp_pa
     p["schema"] = "MATRIX_COR0203_API_TENNIS_PREFEATURE_REGISTRY_R722_V1"
     p["events"][0]["identity_crosswalk_required"] = True
     p["events"][0]["historical_identity_crosswalk_status"] = "PENDING"
+    p["events"][0]["source_provider"] = "api_tennis"
+    p["events"][0]["source_snapshot_sha256"] = "a" * 64
     p["events"][0]["player_identities"] = [
         {"display_name": "T. Droguet", "provider_player_id": "api-tennis:player:11", "provider": "api_tennis"},
         {"display_name": "D. Prizmic", "provider_player_id": "api-tennis:player:22", "provider": "api_tennis"},
@@ -270,11 +272,13 @@ def test_crosswalk_pass_uses_canonical_history_identity_not_provider_display_nam
                 {
                     "provider_player_id": "api-tennis:player:11",
                     "canonical_name": "Titouan Droguet",
+                    "canonical_source_id": "D0DW",
                     "status": "PASS",
                 },
                 {
                     "provider_player_id": "api-tennis:player:22",
                     "canonical_name": "Dino Prizmic",
+                    "canonical_source_id": "P0HW",
                     "status": "PASS",
                 },
             ],
@@ -286,5 +290,19 @@ def test_crosswalk_pass_uses_canonical_history_identity_not_provider_display_nam
     staged = next(row for row in result["revisions"] if row["revision"] == 722)
     assert staged["status"] == "PASS"
     events = json.loads((runtime / "MATRIX_COR0203_PROSPECTIVE_EVENTS_R722.json").read_text())
-    names = [row["name"] for row in events["events"][0]["players"]]
+    row = events["events"][0]
+    names = [player["name"] for player in row["players"]]
     assert names == ["Titouan Droguet", "Dino Prizmic"]
+    assert [player["source_id"] for player in row["players"]] == ["D0DW", "P0HW"]
+    assert [player["provider_player_id"] for player in row["players"]] == [
+        "api-tennis:player:11",
+        "api-tennis:player:22",
+    ]
+    assert all(
+        player["identity_binding"] == "API_TENNIS_TO_STATIC_CUT_STRONG_CROSSWALK"
+        for player in row["players"]
+    )
+    assert row["source_provider"] == "api_tennis"
+    assert row["source_snapshot_sha256"] == "a" * 64
+    assert row["identity_crosswalk_required"] is True
+    assert row["identity_crosswalk_reference"] == "MATRIX_COR0203_IDENTITY_CROSSWALK_R722.json"
