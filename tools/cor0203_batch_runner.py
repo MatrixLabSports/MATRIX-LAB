@@ -184,7 +184,8 @@ def run_pending_batches(
 
         command = [
             sys.executable,
-            "tools/cor0203_prospective_producer.py",
+            "-m",
+            "tools.cor0203_prospective_producer",
             "--state-b64", str(state_b64),
             "--bundle", str(bundle),
             "--annual-2026", str(annual_2026),
