@@ -128,6 +128,18 @@ class ApiTennisDiscoveryClient:
             },
         )
 
+    def fixture_by_match_key(self, match_key: str) -> Mapping[str, Any]:
+        token = str(match_key).strip()
+        if not token.isdigit() or int(token) <= 0:
+            raise ValueError("MATCH_KEY_INVALID")
+        return self._post(
+            "get_fixtures",
+            {
+                "match_key": token,
+                "timezone": "UTC",
+            },
+        )
+
     def draw(self, tournament_key: str, tournament_season: str) -> Mapping[str, Any]:
         if not str(tournament_key).strip():
             raise ValueError("TOURNAMENT_KEY_REQUIRED")
