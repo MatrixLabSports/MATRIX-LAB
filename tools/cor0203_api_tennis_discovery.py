@@ -383,14 +383,27 @@ def main() -> None:
     else:
         days = max(1, min(int(args.days), 4))
         client = ApiTennisDiscoveryClient(key)
-        payload = fetch_discovery(
-            client=client,
-            start=now.date(),
-            stop=now.date() + timedelta(days=days - 1),
-            as_of_utc=now.isoformat(),
-        )
-        payload["status"] = "DISCOVERY_COMPLETED"
-        payload["network_calls"] = client.request_count
+        try:
+            payload = fetch_discovery(
+                client=client,
+                start=now.date(),
+                stop=now.date() + timedelta(days=days - 1),
+                as_of_utc=now.isoformat(),
+            )
+            payload["status"] = "DISCOVERY_COMPLETED"
+            payload["network_calls"] = client.request_count
+        except ApiTennisDiscoveryError as error:
+            payload = {
+                "schema": "MATRIX_COR0203_API_TENNIS_DISCOVERY_V1",
+                "provider": "api_tennis",
+                "as_of_utc": now.isoformat(),
+                "status": "PROVIDER_DISCOVERY_BLOCKED",
+                "blocker": _safe_error(error, key),
+                "network_calls": client.request_count,
+                "automatic_model_promotion": False,
+                "automatic_wagering": False,
+                "real_money": "BLOCKED",
+            }
 
     out.parent.mkdir(parents=True, exist_ok=True)
     out.write_text(json.dumps(payload, indent=2, sort_keys=True, ensure_ascii=False) + "\n", encoding="utf-8")
