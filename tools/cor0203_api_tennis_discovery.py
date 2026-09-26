@@ -194,6 +194,7 @@ def build_discovery_registry(
 ) -> dict[str, Any]:
     as_of = datetime.fromisoformat(as_of_utc.replace("Z", "+00:00")).astimezone(timezone.utc)
     events: list[WorldCalendarEvent] = []
+    candidates: list[dict[str, Any]] = []
     rejected: list[dict[str, Any]] = []
 
     for row in _result_list(fixture_payload):
@@ -270,6 +271,35 @@ def build_discovery_registry(
             source_snapshot_sha256=source_snapshot_sha,
         ))
 
+        candidates.append({
+            "event_id": f"api-tennis:event:{event_key}",
+            "canonical_source_event_id": f"api-tennis:event:{event_key}",
+            "competition_id": f"api-tennis:tournament:{tournament_key}",
+            "competition": tournament_name,
+            "round": round_name,
+            "surface": "Hard",
+            "tour_level": "C",
+            "event_start_utc": start.isoformat(),
+            "target_period": 20260921,
+            "source_provider": "api_tennis",
+            "source_reference": (
+                f"get_fixtures:event_key={event_key};"
+                f"get_draw:tournament_key={tournament_key};season={season};source={draw_source or 'UNKNOWN'}"
+            ),
+            "source_snapshot_sha256": source_snapshot_sha,
+            "players": [
+                {
+                    "name": str(row.get("event_first_player") or "").strip(),
+                    "provider_player_id": f"api-tennis:player:{p1_key}",
+                },
+                {
+                    "name": str(row.get("event_second_player") or "").strip(),
+                    "provider_player_id": f"api-tennis:player:{p2_key}",
+                },
+            ],
+            "historical_identity_crosswalk_status": "PENDING",
+        })
+
     registry = build_world_calendar_registry(events=events, as_of_utc=as_of_utc)
     return {
         "schema": "MATRIX_COR0203_API_TENNIS_DISCOVERY_V1",
@@ -277,6 +307,7 @@ def build_discovery_registry(
         "as_of_utc": as_of.isoformat(),
         "fixture_rows": len(_result_list(fixture_payload)),
         "eligible_input_events": len(events),
+        "eligible_candidates": candidates,
         "provider_rejected": rejected,
         "world_registry": registry,
         "automatic_model_promotion": False,
