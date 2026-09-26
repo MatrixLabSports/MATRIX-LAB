@@ -131,8 +131,10 @@ def build_settlement_queue(
     holdout_dir: Path,
     integrity: Mapping[str, Any],
     ledger_records: Sequence[Mapping[str, Any]],
+    identity_overlay: Mapping[str, Mapping[str, Any]] | None = None,
 ) -> dict[str, Any]:
     settled_ids = {str(row.get("event_id") or "") for row in ledger_records}
+    overlay = dict(identity_overlay or {})
     admissible = _admissible_revisions(integrity)
     items: list[dict[str, Any]] = []
 
@@ -169,6 +171,15 @@ def build_settlement_queue(
                 raise ValueError("SETTLEMENT_EVENT_ROW_MISSING:" + event_id)
             canonical_source = str(event.get("canonical_source_event_id") or "")
             match_key = _provider_match_key(canonical_source)
+            overlay_row = overlay.get(event_id, {})
+            if match_key is None and isinstance(overlay_row, Mapping):
+                overlay_match_key = str(overlay_row.get("provider_match_key") or "")
+                if overlay_match_key.isdigit() and int(overlay_match_key) > 0:
+                    match_key = overlay_match_key
+                    canonical_source = str(
+                        overlay_row.get("canonical_source_event_id")
+                        or ("api-tennis:event:" + overlay_match_key)
+                    )
             pre_event = pre_events.get(event_id, {})
             provider_identities = list(pre_event.get("player_identities") or []) if isinstance(pre_event, Mapping) else []
             provider_map = {
@@ -179,6 +190,11 @@ def build_settlement_queue(
                 for row in provider_identities
                 if row.get("provider_player_id")
             }
+            if isinstance(overlay_row, Mapping) and overlay_row.get("provider_player_map"):
+                provider_map = {
+                    str(key): str(value)
+                    for key, value in dict(overlay_row["provider_player_map"]).items()
+                }
             if event_id in settled_ids:
                 status = "SETTLED"
                 blocker = None
@@ -202,6 +218,7 @@ def build_settlement_queue(
                 "event_start_utc": obs.get("event_start_utc"),
                 "canonical_source_event_id": canonical_source,
                 "provider": "api_tennis" if match_key else None,
+                "identity_overlay_applied": bool(match_key and overlay_row),
                 "provider_match_key": match_key,
                 "provider_player_map": provider_map,
                 "status": status,
