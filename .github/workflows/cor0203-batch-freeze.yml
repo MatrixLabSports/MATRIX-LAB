@@ -1,0 +1,68 @@
+name: COR02-03 governed batch freeze
+
+on:
+  push:
+    branches:
+      - repair/cor09-world-pipeline
+    paths:
+      - .github/workflows/cor0203-batch-freeze.yml
+      - scripts/cor0203_production_cycle.sh
+      - tools/cor0203_api_tennis_discovery.py
+      - tools/cor0203_durable_discovery.py
+      - tools/cor0203_preregister_discovery.py
+      - tools/cor0203_build_static_cut_index.py
+      - tools/cor0203_build_identity_crosswalk.py
+      - tools/cor0203_stage_from_registry.py
+      - tools/cor0203_batch_runner.py
+      - tools/cor0203_batch_preflight.py
+      - tools/cor0203_source_readiness.py
+      - tools/cor0203_holdout_integrity_audit.py
+      - tools/cor0203_prospective_producer.py
+      - tools/cor0203_production_observability.py
+      - tools/cor0203_settlement_ledger.py
+      - tools/cor0203_settlement_queue.py
+      - tools/cor0203_settlement_sync.py
+      - tools/cor0203_historical_identity_reconcile.py
+      - evidence/cor0203/runtime/MATRIX_COR0203_PREFEATURE_REGISTRY_R*.json
+      - evidence/cor0203/runtime/MATRIX_COR0203_IDENTITY_CROSSWALK_R*.json
+      - evidence/cor0203/runtime/MATRIX_COR0203_STATIC4_R*.json
+      - evidence/cor0203/runtime/MATRIX_COR0203_PROSPECTIVE_EVENTS_R*.json
+      - evidence/cor0203/runtime/MATRIX_COR0203_SCHEDULER_HEARTBEAT.json
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: cor0203-holdout-repair-cor09-world-pipeline
+  cancel-in-progress: false
+
+jobs:
+  batch-freeze:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout exact trigger state
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+
+      - name: Record physical checkout
+        shell: bash
+        run: |
+          set -euo pipefail
+          CHECKOUT_SHA="$(git rev-parse HEAD)"
+          test "$CHECKOUT_SHA" = "$GITHUB_SHA"
+          echo "CHECKOUT_SHA=$CHECKOUT_SHA" >> "$GITHUB_ENV"
+          echo "Exact trigger checkout: $CHECKOUT_SHA"
+
+      - name: Run shared governed production cycle
+        shell: bash
+        env:
+          API_TENNIS_KEY: ${{ secrets.API_TENNIS_KEY }}
+          MATRIX_TARGET_BRANCH: repair/cor09-world-pipeline
+          MATRIX_GIT_USER_NAME: matrix-ci
+          MATRIX_GIT_USER_EMAIL: matrix-ci@users.noreply.github.com
+        run: |
+          set -euo pipefail
+          bash scripts/cor0203_production_cycle.sh --trigger-sha "$CHECKOUT_SHA"
