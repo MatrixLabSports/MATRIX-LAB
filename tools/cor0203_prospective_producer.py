@@ -72,6 +72,29 @@ def rate(pair, default=0.5):
     return float(pair[0]) / float(pair[1]) if pair and pair[1] else default
 
 
+def required_rate(pair, *, field: str, player: str) -> float:
+    if not isinstance(pair, (list, tuple)) or len(pair) < 2:
+        raise ValueError(f"OBSERVED_FEATURE_MISSING:{field}:{player}")
+    numerator = num(pair[0])
+    denominator = num(pair[1])
+    if not math.isfinite(numerator) or not math.isfinite(denominator) or denominator <= 0:
+        raise ValueError(f"OBSERVED_FEATURE_MISSING:{field}:{player}")
+    return numerator / denominator
+
+
+def required_form(state, player: str, n: int) -> float:
+    xs = state["history"]["matches"].get(player, [])[-n:]
+    if not xs:
+        raise ValueError(f"OBSERVED_FEATURE_MISSING:form{n}:{player}")
+    return sum(xs) / len(xs)
+
+
+def required_scalar_mapping(mapping, key: str, *, field: str, player: str):
+    if key not in mapping:
+        raise ValueError(f"OBSERVED_FEATURE_MISSING:{field}:{player}")
+    return mapping[key]
+
+
 def hist_pair(state, section, player, default=None):
     d = state["history"][section]
     if player not in d:
@@ -215,37 +238,113 @@ def static_orientation(event):
 def feature_snapshot(state, event):
     a, b = static_orientation(event)
     an, bn, surf = str(a["name"]), str(b["name"]), "Hard"
+
+    for player in (a, b):
+        name = str(player["name"])
+        for field in ("rank", "rank_points", "age"):
+            value = num(player.get(field))
+            if not math.isfinite(value):
+                raise ValueError(f"OBSERVED_FEATURE_MISSING:{field}:{name}")
+        hand = str(player.get("hand") or "").strip().upper()
+        if not hand or hand == "U":
+            raise ValueError(f"OBSERVED_FEATURE_MISSING:hand:{name}")
+
     base = {
         "rank_diff": float(b["rank"]) - float(a["rank"]),
         "rank_points_diff": float(a["rank_points"]) - float(b["rank_points"]),
         "age_diff": float(b["age"]) - float(a["age"]),
-        "hand_same": float(str(a["hand"]).upper() == str(b["hand"]).upper() and str(a["hand"]).upper() != "U"),
-        "form5_diff": history_form(state, an, 5) - history_form(state, bn, 5),
-        "form10_diff": history_form(state, an, 10) - history_form(state, bn, 10),
-        "form20_diff": history_form(state, an, 20) - history_form(state, bn, 20),
-        "surface_wr_diff": rate(state["history"]["surface"].get(an, {}).get(surf, [0,0])) - rate(state["history"]["surface"].get(bn, {}).get(surf, [0,0])),
-        "overall_wr_diff": rate(state["history"]["overall"].get(an, [0,0])) - rate(state["history"]["overall"].get(bn, [0,0])),
-        "serve_pts_won_diff": rate(state["history"]["serve"].get(an, [0,0])) - rate(state["history"]["serve"].get(bn, [0,0])),
-        "return_pts_won_diff": rate(state["history"]["ret"].get(an, [0,0])) - rate(state["history"]["ret"].get(bn, [0,0])),
-        "prior_opponent_strength_diff": rate(state["history"]["opp_strength"].get(an, [0,0])) - rate(state["history"]["opp_strength"].get(bn, [0,0])),
+        "hand_same": float(str(a["hand"]).upper() == str(b["hand"]).upper()),
+        "form5_diff": required_form(state, an, 5) - required_form(state, bn, 5),
+        "form10_diff": required_form(state, an, 10) - required_form(state, bn, 10),
+        "form20_diff": required_form(state, an, 20) - required_form(state, bn, 20),
+        "surface_wr_diff": required_rate(
+            state["history"]["surface"].get(an, {}).get(surf),
+            field="surface_wr",
+            player=an,
+        ) - required_rate(
+            state["history"]["surface"].get(bn, {}).get(surf),
+            field="surface_wr",
+            player=bn,
+        ),
+        "overall_wr_diff": required_rate(
+            state["history"]["overall"].get(an),
+            field="overall_wr",
+            player=an,
+        ) - required_rate(
+            state["history"]["overall"].get(bn),
+            field="overall_wr",
+            player=bn,
+        ),
+        "serve_pts_won_diff": required_rate(
+            state["history"]["serve"].get(an),
+            field="serve_pts_won",
+            player=an,
+        ) - required_rate(
+            state["history"]["serve"].get(bn),
+            field="serve_pts_won",
+            player=bn,
+        ),
+        "return_pts_won_diff": required_rate(
+            state["history"]["ret"].get(an),
+            field="return_pts_won",
+            player=an,
+        ) - required_rate(
+            state["history"]["ret"].get(bn),
+            field="return_pts_won",
+            player=bn,
+        ),
+        "prior_opponent_strength_diff": required_rate(
+            state["history"]["opp_strength"].get(an),
+            field="prior_opponent_strength",
+            player=an,
+        ) - required_rate(
+            state["history"]["opp_strength"].get(bn),
+            field="prior_opponent_strength",
+            player=bn,
+        ),
     }
-    eo = float(state["elo_overall"].get(an,1500.0)) - float(state["elo_overall"].get(bn,1500.0))
-    es = float(state["elo_surface"].get(surf,{}).get(an,1500.0)) - float(state["elo_surface"].get(surf,{}).get(bn,1500.0))
-    ga = state["glicko_overall"].get(an,{"r":1500.0,"rd":350.0}); gb = state["glicko_overall"].get(bn,{"r":1500.0,"rd":350.0})
-    gsa = state["glicko_surface"].get(surf,{}).get(an,{"r":1500.0,"rd":350.0}); gsb = state["glicko_surface"].get(surf,{}).get(bn,{"r":1500.0,"rd":350.0})
-    return a, b, base, eo, es, float(ga["r"])-float(gb["r"]), float(gsa["r"])-float(gsb["r"])
+
+    elo_overall = state["elo_overall"]
+    elo_surface = state["elo_surface"].get(surf, {})
+    glicko_overall = state["glicko_overall"]
+    glicko_surface = state["glicko_surface"].get(surf, {})
+
+    eo = float(required_scalar_mapping(elo_overall, an, field="elo_overall", player=an)) - float(
+        required_scalar_mapping(elo_overall, bn, field="elo_overall", player=bn)
+    )
+    es = float(required_scalar_mapping(elo_surface, an, field="elo_surface", player=an)) - float(
+        required_scalar_mapping(elo_surface, bn, field="elo_surface", player=bn)
+    )
+
+    ga = required_scalar_mapping(glicko_overall, an, field="glicko_overall", player=an)
+    gb = required_scalar_mapping(glicko_overall, bn, field="glicko_overall", player=bn)
+    gsa = required_scalar_mapping(glicko_surface, an, field="glicko_surface", player=an)
+    gsb = required_scalar_mapping(glicko_surface, bn, field="glicko_surface", player=bn)
+
+    go = float(ga["r"]) - float(gb["r"])
+    gs = float(gsa["r"]) - float(gsb["r"])
+    if not all(math.isfinite(v) for v in [eo, es, go, gs, *base.values()]):
+        raise ValueError("NON_FINITE_OBSERVED_FEATURE")
+    return a, b, base, eo, es, go, gs
 
 
 def score_spec(spec, values):
     xs=[]
-    for f, med in zip(spec["features"], spec["median"]):
-        v = values.get(f, med)
-        try: v=float(v)
-        except Exception: v=float(med)
-        if not math.isfinite(v): v=float(med)
+    for f in spec["features"]:
+        if f not in values:
+            raise ValueError("MODEL_FEATURE_MISSING:"+str(f))
+        try:
+            v=float(values[f])
+        except Exception as error:
+            raise ValueError("MODEL_FEATURE_NON_NUMERIC:"+str(f)) from error
+        if not math.isfinite(v):
+            raise ValueError("MODEL_FEATURE_NON_FINITE:"+str(f))
         xs.append(v)
-    z=[(v-float(m))/float(s) if float(s)!=0 else 0.0 for v,m,s in zip(xs,spec["median"],spec["scale"])]
-    eta=float(spec["intercept"])+sum(float(c)*x for c,x in zip(spec["coef"],z))
+    z=[
+        (v-float(m))/float(s) if float(s)!=0 else 0.0
+        for v,m,s in zip(xs,spec["median"],spec["scale"])
+    ]
+    eta=float(spec["intercept"])+sum(float(coef)*x for coef,x in zip(spec["coef"],z))
     return 1.0/(1.0+math.exp(-eta))
 
 
