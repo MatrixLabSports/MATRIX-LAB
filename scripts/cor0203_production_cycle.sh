@@ -38,6 +38,7 @@ CROSSWALK_LAST="evidence/cor0203/runtime/MATRIX_COR0203_IDENTITY_CROSSWALK_LAST.
 STAGE_LAST="evidence/cor0203/runtime/MATRIX_COR0203_AUTO_STAGE_LAST.json"
 RUNNER_LAST="evidence/cor0203/runtime/MATRIX_COR0203_BATCH_RUNNER_LAST.json"
 INTEGRITY_LAST="evidence/cor0203/runtime/MATRIX_COR0203_HOLDOUT_INTEGRITY_LAST.json"
+OBSERVABILITY_LAST="evidence/cor0203/runtime/MATRIX_COR0203_PRODUCTION_OBSERVABILITY_LAST.json"
 HEARTBEAT="evidence/cor0203/runtime/MATRIX_COR0203_SCHEDULER_HEARTBEAT.json"
 
 test -s "$STATE"
@@ -89,6 +90,15 @@ python -m tools.cor0203_holdout_integrity_audit \
   --binding evidence/cor0203/runtime/MATRIX_COR0203_MODEL_BINDING_R707.json \
   --out "$INTEGRITY_LAST"
 
+python -m tools.cor0203_production_observability \
+  --source-readiness "$SOURCE_READINESS_CURRENT" \
+  --prereg "$PREREG_LAST" \
+  --crosswalk "$CROSSWALK_LAST" \
+  --stage "$STAGE_LAST" \
+  --runner "$RUNNER_LAST" \
+  --integrity "$INTEGRITY_LAST" \
+  --out "$OBSERVABILITY_LAST"
+
 python - <<'PY'
 import json
 import re
@@ -103,6 +113,7 @@ stage = json.loads((runtime / "MATRIX_COR0203_AUTO_STAGE_LAST.json").read_text()
 runner = json.loads((runtime / "MATRIX_COR0203_BATCH_RUNNER_LAST.json").read_text())
 integrity = json.loads((runtime / "MATRIX_COR0203_HOLDOUT_INTEGRITY_LAST.json").read_text())
 source_readiness = json.loads(Path("/tmp/MATRIX_COR0203_SOURCE_READINESS_CURRENT.json").read_text())
+observability = json.loads((runtime / "MATRIX_COR0203_PRODUCTION_OBSERVABILITY_LAST.json").read_text())
 
 assert source_readiness["provider"] == "api_tennis"
 assert source_readiness["real_money"] == "BLOCKED"
@@ -117,6 +128,11 @@ assert integrity["failed_observations"] == 0
 assert integrity["outcomes_read"] == 0
 assert integrity["metrics_opened"] is False
 assert integrity["median_or_neutral_fallback_admissible"] is False
+assert observability["holdout"]["total_count"] == runner["ending_physical_count"]
+assert observability["integrity"]["result"] == "PASS"
+if not source_readiness["ready"]:
+    assert observability["operational_state"] == "SOURCE_BLOCKED"
+    assert observability["bottleneck"]["stage"] == "SOURCE"
 
 exact_batch = re.compile(r"^MATRIX_COR0203_HOLDOUT_BATCH_R\d+\.json$")
 for path in holdout.glob("MATRIX_COR0203_HOLDOUT_BATCH_R*.json"):
@@ -141,6 +157,8 @@ print(json.dumps({
     "source_ready": source_readiness["ready"],
     "source_status": source_readiness["status"],
     "source_cause": source_readiness["cause"],
+    "operational_state": observability["operational_state"],
+    "bottleneck": observability["bottleneck"],
 }, sort_keys=True))
 PY
 
@@ -179,6 +197,7 @@ git add "$CROSSWALK_LAST"
 git add "$STAGE_LAST"
 git add "$RUNNER_LAST"
 git add "$INTEGRITY_LAST"
+git add "$OBSERVABILITY_LAST"
 if [[ -f "$HEARTBEAT" ]]; then
   git add "$HEARTBEAT"
 fi
