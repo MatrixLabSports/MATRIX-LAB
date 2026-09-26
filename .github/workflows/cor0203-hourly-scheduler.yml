@@ -1,0 +1,66 @@
+name: COR02-03 repo-native hourly scheduler
+
+on:
+  schedule:
+    - cron: "17 * * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: cor0203-scheduler-main
+  cancel-in-progress: false
+
+jobs:
+  trigger-production:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout operational branch
+        uses: actions/checkout@v4
+        with:
+          ref: repair/cor09-world-pipeline
+          fetch-depth: 0
+
+      - name: Write governed scheduler heartbeat
+        shell: bash
+        run: |
+          set -euo pipefail
+          TARGET_HEAD="$(git rev-parse HEAD)"
+          export TARGET_HEAD
+          mkdir -p evidence/cor0203/runtime
+          python - <<'PY'
+          import json
+          import os
+          from datetime import datetime, timezone
+          from pathlib import Path
+
+          payload = {
+              "schema": "MATRIX_COR0203_SCHEDULER_HEARTBEAT_V1",
+              "emitted_at_utc": datetime.now(timezone.utc).replace(microsecond=0).isoformat(),
+              "scheduler": "GITHUB_ACTIONS_DEFAULT_BRANCH_CRON",
+              "target_branch": "repair/cor09-world-pipeline",
+              "target_head_before": os.environ["TARGET_HEAD"],
+              "scheduler_run_id": os.environ.get("GITHUB_RUN_ID"),
+              "scheduler_run_attempt": os.environ.get("GITHUB_RUN_ATTEMPT"),
+              "scheduler_event": os.environ.get("GITHUB_EVENT_NAME"),
+              "purpose": "Trigger the governed COR02/COR03 production workflow without chat or browser dependency.",
+              "real_money": "BLOCKED",
+          }
+          Path("evidence/cor0203/runtime/MATRIX_COR0203_SCHEDULER_HEARTBEAT.json").write_text(
+              json.dumps(payload, indent=2, sort_keys=True) + "\n",
+              encoding="utf-8",
+          )
+          PY
+
+      - name: Commit heartbeat to operational branch
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "matrix-scheduler"
+          git config user.email "matrix-scheduler@users.noreply.github.com"
+          git add evidence/cor0203/runtime/MATRIX_COR0203_SCHEDULER_HEARTBEAT.json
+          git commit -m "chore(cor02-03): scheduled production heartbeat"
+          git fetch origin repair/cor09-world-pipeline
+          git rebase origin/repair/cor09-world-pipeline
+          git push origin HEAD:repair/cor09-world-pipeline
