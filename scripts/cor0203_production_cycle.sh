@@ -169,6 +169,7 @@ git config user.email "${MATRIX_GIT_USER_EMAIL:-matrix-production@users.noreply.
 # not define whether a cycle is material; this prevents empty cycles from
 # creating commits or racing with code changes.
 git add evidence/cor0203/source_readiness/MATRIX_COR0203_SOURCE_READINESS_*.json 2>/dev/null || true
+git add "$OBSERVABILITY_LAST"
 git add evidence/cor0203/runtime/MATRIX_COR0203_PREFEATURE_REGISTRY_R*.json 2>/dev/null || true
 git add evidence/cor0203/runtime/MATRIX_COR0203_IDENTITY_CROSSWALK_R*.json 2>/dev/null || true
 git add evidence/cor0203/runtime/MATRIX_COR0203_STAGE_BLOCKERS_R*.json 2>/dev/null || true
@@ -197,7 +198,6 @@ git add "$CROSSWALK_LAST"
 git add "$STAGE_LAST"
 git add "$RUNNER_LAST"
 git add "$INTEGRITY_LAST"
-git add "$OBSERVABILITY_LAST"
 if [[ -f "$HEARTBEAT" ]]; then
   git add "$HEARTBEAT"
 fi
