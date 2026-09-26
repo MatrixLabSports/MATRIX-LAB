@@ -33,6 +33,7 @@ jobs:
           set -euo pipefail
           TARGET_HEAD="$(git rev-parse HEAD)"
           export TARGET_HEAD
+          echo "TARGET_HEAD=$TARGET_HEAD" >> "$GITHUB_ENV"
           mkdir -p evidence/cor0203/runtime
           python - <<'PY'
           import json
@@ -58,14 +59,13 @@ jobs:
           )
           PY
 
-      - name: Commit heartbeat to operational branch
+      - name: Run governed autonomous production cycle
         shell: bash
+        env:
+          API_TENNIS_KEY: ${{ secrets.API_TENNIS_KEY }}
+          MATRIX_TARGET_BRANCH: repair/cor09-world-pipeline
+          MATRIX_GIT_USER_NAME: matrix-scheduler
+          MATRIX_GIT_USER_EMAIL: matrix-scheduler@users.noreply.github.com
         run: |
           set -euo pipefail
-          git config user.name "matrix-scheduler"
-          git config user.email "matrix-scheduler@users.noreply.github.com"
-          git add evidence/cor0203/runtime/MATRIX_COR0203_SCHEDULER_HEARTBEAT.json
-          git commit -m "chore(cor02-03): scheduled production heartbeat"
-          git fetch origin repair/cor09-world-pipeline
-          git rebase origin/repair/cor09-world-pipeline
-          git push origin HEAD:repair/cor09-world-pipeline
+          bash scripts/cor0203_production_cycle.sh --trigger-sha "$TARGET_HEAD"
