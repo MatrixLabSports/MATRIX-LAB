@@ -122,6 +122,7 @@ def stage_prefeature(
     prefeature_path: Path,
     runtime_dir: Path,
     player_registry: Mapping[str, Mapping[str, Any]],
+    frozen_event_ids: set[str],
 ) -> dict[str, Any]:
     revision = _rev(prefeature_path)
     if revision < 0:
@@ -132,6 +133,18 @@ def stage_prefeature(
     events_path = runtime_dir / f"MATRIX_COR0203_PROSPECTIVE_EVENTS_R{revision}.json"
     blocker_path = runtime_dir / f"MATRIX_COR0203_STAGE_BLOCKERS_R{revision}.json"
 
+    pre_rows = list(pre.get("events", []) or [])
+    pre_event_ids = {str(row.get("event_id") or "") for row in pre_rows}
+    real_pre_event_ids = {event_id for event_id in pre_event_ids if event_id}
+
+    if real_pre_event_ids and real_pre_event_ids.issubset(frozen_event_ids):
+        return {
+            "revision": revision,
+            "status": "ALREADY_FROZEN",
+            "staged_events": 0,
+            "blocked_events": 0,
+        }
+
     if static_path.exists() and events_path.exists():
         return {
             "revision": revision,
@@ -140,12 +153,39 @@ def stage_prefeature(
             "blocked_events": 0,
         }
 
+    if static_path.exists() != events_path.exists():
+        reason = (
+            "STATIC4_EXISTS_EVENT_MANIFEST_MISSING"
+            if static_path.exists()
+            else "EVENT_MANIFEST_EXISTS_STATIC4_MISSING"
+        )
+        payload = {
+            "schema": "MATRIX_COR0203_STAGE_BLOCKERS_V1",
+            "revision": f"R{revision}",
+            "prefeature": prefeature_path.name,
+            "staged_event_ids": [],
+            "blocked": [{"event_id": event_id, "blockers": [reason]} for event_id in sorted(real_pre_event_ids)],
+            "staged_events": 0,
+            "blocked_events": len(real_pre_event_ids),
+            "result": "INCOMPLETE_EXISTING_STAGE",
+            "real_money": "BLOCKED",
+        }
+        _write(blocker_path, payload)
+        return {
+            "revision": revision,
+            "status": "INCOMPLETE_EXISTING_STAGE",
+            "staged_events": 0,
+            "blocked_events": len(real_pre_event_ids),
+        }
+
     staged_events: list[dict[str, Any]] = []
     static_events: list[dict[str, Any]] = []
     blockers: list[dict[str, Any]] = []
 
-    for event in pre.get("events", []) or []:
+    for event in pre_rows:
         event_id = str(event.get("event_id") or "")
+        if event_id in frozen_event_ids:
+            continue
         names = [str(name).strip() for name in event.get("players", []) or []]
         event_blockers: list[str] = []
 
@@ -278,6 +318,7 @@ def stage_all_pending(
     runtime_dir: Path,
     holdout_dir: Path,
 ) -> dict[str, Any]:
+    frozen_event_ids = _frozen_event_ids(holdout_dir)
     registry = build_sealed_player_registry(runtime_dir=runtime_dir, holdout_dir=holdout_dir)
     results = []
     for prefeature in sorted(runtime_dir.glob("MATRIX_COR0203_PREFEATURE_REGISTRY_R*.json"), key=_rev):
@@ -286,6 +327,7 @@ def stage_all_pending(
                 prefeature_path=prefeature,
                 runtime_dir=runtime_dir,
                 player_registry=registry,
+                frozen_event_ids=frozen_event_ids,
             )
         )
     return {
