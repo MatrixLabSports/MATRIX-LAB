@@ -182,12 +182,45 @@ def stage_prefeature(
     static_events: list[dict[str, Any]] = []
     blockers: list[dict[str, Any]] = []
 
+    crosswalk_path = runtime_dir / f"MATRIX_COR0203_IDENTITY_CROSSWALK_R{revision}.json"
+    crosswalk = _load(crosswalk_path) if crosswalk_path.exists() else None
+    crosswalk_map: dict[str, Mapping[str, Any]] = {}
+    if isinstance(crosswalk, Mapping):
+        for mapping in crosswalk.get("mappings", []) or []:
+            if not isinstance(mapping, Mapping):
+                continue
+            provider_id = str(mapping.get("provider_player_id") or "")
+            if provider_id:
+                crosswalk_map[provider_id] = mapping
+
     for event in pre_rows:
         event_id = str(event.get("event_id") or "")
         if event_id in frozen_event_ids:
             continue
         names = [str(name).strip() for name in event.get("players", []) or []]
         event_blockers: list[str] = []
+
+        if bool(event.get("identity_crosswalk_required")):
+            identities = list(event.get("player_identities") or [])
+            if not isinstance(crosswalk, Mapping) or crosswalk.get("status") != "PASS":
+                event_blockers.append("HISTORICAL_IDENTITY_CROSSWALK_REQUIRED")
+            elif len(identities) != 2:
+                event_blockers.append("PROVIDER_IDENTITIES_REQUIRED")
+            else:
+                canonical_names: list[str] = []
+                for identity in identities:
+                    provider_id = str(identity.get("provider_player_id") or "")
+                    mapping = crosswalk_map.get(provider_id)
+                    if not isinstance(mapping, Mapping) or mapping.get("status") != "PASS":
+                        event_blockers.append("IDENTITY_CROSSWALK_MISSING:" + provider_id)
+                        continue
+                    canonical_name = str(mapping.get("canonical_name") or "").strip()
+                    if not canonical_name:
+                        event_blockers.append("IDENTITY_CROSSWALK_CANONICAL_NAME_MISSING:" + provider_id)
+                        continue
+                    canonical_names.append(canonical_name)
+                if len(canonical_names) == 2:
+                    names = canonical_names
 
         if len(names) != 2 or not all(names) or names[0] == names[1]:
             event_blockers.append("PREFEATURE_IDENTITY_INVALID")
