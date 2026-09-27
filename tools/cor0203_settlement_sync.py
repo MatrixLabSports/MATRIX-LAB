@@ -14,6 +14,11 @@ from tools.cor0203_api_tennis_discovery import (
 from tools.cor0203_settlement_ledger import (
     Cor0203SettlementLedger,
     settlement_from_api_tennis,
+    settlement_from_rapidapi_tennis,
+)
+from tools.cor0203_rapidapi_tennis_discovery import (
+    RapidApiTennisClient,
+    RapidApiTennisDiscoveryError,
 )
 
 
@@ -166,6 +171,264 @@ def sync_settlements(
     }
 
 
+
+def _rapidapi_rows(payload: Mapping[str, Any]) -> list[Mapping[str, Any]]:
+    rows = payload.get("data")
+    if not isinstance(rows, list):
+        raise ValueError("RAPIDAPI_SETTLEMENT_RESULT_NOT_LIST")
+    return [row for row in rows if isinstance(row, Mapping)]
+
+
+def sync_mixed_settlements(
+    *,
+    queue: Mapping[str, Any],
+    ledger: Cor0203SettlementLedger,
+    api_tennis_client: MatchLookupClient | None,
+    rapidapi_client: RapidApiTennisClient | None,
+    now_utc: str,
+    max_requests: int = 50,
+) -> dict[str, Any]:
+    now = _utc(now_utc)
+    if max_requests <= 0:
+        raise ValueError("MAX_REQUESTS_MUST_BE_POSITIVE")
+
+    existing = {str(row.get("event_id") or "") for row in ledger.load()}
+    settled: list[str] = []
+    pending: list[dict[str, Any]] = []
+    blocked: list[dict[str, Any]] = []
+    skipped_already_settled: list[str] = []
+    api_before = (
+        int(getattr(api_tennis_client, "request_count", 0))
+        if api_tennis_client is not None
+        else 0
+    )
+    rapid_before = (
+        int(getattr(rapidapi_client, "request_count", 0))
+        if rapidapi_client is not None
+        else 0
+    )
+
+    for item in queue.get("items", []) or []:
+        if str(item.get("status") or "") != "READY_RESULT_LOOKUP":
+            continue
+
+        event_id = str(item.get("event_id") or "")
+        if event_id in existing:
+            skipped_already_settled.append(event_id)
+            continue
+
+        start = _utc(str(item.get("event_start_utc") or ""))
+        if now <= start:
+            pending.append({
+                "event_id": event_id,
+                "reason": "WAITING_EVENT_START",
+            })
+            continue
+
+        used = 0
+        if api_tennis_client is not None:
+            used += (
+                int(getattr(api_tennis_client, "request_count", 0))
+                - api_before
+            )
+        if rapidapi_client is not None:
+            used += (
+                int(getattr(rapidapi_client, "request_count", 0))
+                - rapid_before
+            )
+        if used >= max_requests:
+            blocked.append({
+                "event_id": event_id,
+                "reason": "SETTLEMENT_REQUEST_BUDGET_REACHED",
+            })
+            continue
+
+        provider = str(item.get("provider") or "")
+        match_key = str(item.get("provider_match_key") or "")
+
+        if provider == "api_tennis":
+            if api_tennis_client is None:
+                blocked.append({
+                    "event_id": event_id,
+                    "reason": "API_TENNIS_KEY_NOT_CONFIGURED",
+                })
+                continue
+            try:
+                payload = api_tennis_client.fixture_by_match_key(match_key)
+                rows = _fixture_rows(payload)
+            except (ApiTennisDiscoveryError, ValueError) as error:
+                blocked.append({
+                    "event_id": event_id,
+                    "reason": type(error).__name__ + ":" + str(error),
+                })
+                continue
+            exact = [
+                row
+                for row in rows
+                if str(row.get("event_key") or "") == match_key
+            ]
+            if len(exact) != 1:
+                blocked.append({
+                    "event_id": event_id,
+                    "reason": "SETTLEMENT_EXACT_MATCH_ROW_REQUIRED",
+                    "rows": len(exact),
+                })
+                continue
+            fixture = exact[0]
+            status = str(
+                fixture.get("event_status") or ""
+            ).strip().upper()
+            if status in NONSTANDARD_TERMINAL:
+                blocked.append({
+                    "event_id": event_id,
+                    "reason": (
+                        "NONSTANDARD_TERMINAL_REQUIRES_ADJUDICATION:"
+                        + status
+                    ),
+                })
+                continue
+            if status != "FINISHED":
+                pending.append({
+                    "event_id": event_id,
+                    "reason": "RESULT_NOT_FINAL",
+                    "provider_status": status,
+                })
+                continue
+            try:
+                record = settlement_from_api_tennis(
+                    queue_item=item,
+                    fixture=fixture,
+                    settled_at_utc=now.isoformat(),
+                    source_reference=(
+                        "get_fixtures:match_key=" + match_key
+                    ),
+                )
+                ledger.append(record)
+            except ValueError as error:
+                blocked.append({
+                    "event_id": event_id,
+                    "reason": type(error).__name__ + ":" + str(error),
+                })
+                continue
+
+        elif provider == "rapidapi_tennis":
+            if rapidapi_client is None:
+                blocked.append({
+                    "event_id": event_id,
+                    "reason": "RAPIDAPI_TENNIS_KEY_NOT_CONFIGURED",
+                })
+                continue
+            try:
+                payload = rapidapi_client.results_for_date(start.date())
+                rows = _rapidapi_rows(payload)
+            except (RapidApiTennisDiscoveryError, ValueError) as error:
+                blocked.append({
+                    "event_id": event_id,
+                    "reason": type(error).__name__ + ":" + str(error),
+                })
+                continue
+            exact = [
+                row
+                for row in rows
+                if str(
+                    row.get("matchId")
+                    or row.get("id")
+                    or ""
+                )
+                == match_key
+            ]
+            if len(exact) != 1:
+                pending.append({
+                    "event_id": event_id,
+                    "reason": "RESULT_NOT_FINAL_OR_NOT_PUBLISHED",
+                    "rows": len(exact),
+                })
+                continue
+            result_row = exact[0]
+            result_type = str(
+                result_row.get("result_type")
+                or result_row.get("resultType")
+                or ""
+            ).strip().casefold()
+            if result_type != "completed":
+                if result_type in {
+                    "retired",
+                    "walkover",
+                    "cancelled",
+                    "canceled",
+                    "abandoned",
+                }:
+                    blocked.append({
+                        "event_id": event_id,
+                        "reason": (
+                            "NONSTANDARD_TERMINAL_REQUIRES_ADJUDICATION:"
+                            + result_type.upper()
+                        ),
+                    })
+                else:
+                    pending.append({
+                        "event_id": event_id,
+                        "reason": "RESULT_NOT_FINAL",
+                        "provider_status": result_type,
+                    })
+                continue
+            try:
+                record = settlement_from_rapidapi_tennis(
+                    queue_item=item,
+                    result_row=result_row,
+                    settled_at_utc=now.isoformat(),
+                    source_reference=(
+                        "results:"
+                        + start.date().isoformat()
+                        + ":matchId="
+                        + match_key
+                    ),
+                )
+                ledger.append(record)
+            except ValueError as error:
+                blocked.append({
+                    "event_id": event_id,
+                    "reason": type(error).__name__ + ":" + str(error),
+                })
+                continue
+        else:
+            blocked.append({
+                "event_id": event_id,
+                "reason": "SETTLEMENT_PROVIDER_UNSUPPORTED:" + provider,
+            })
+            continue
+
+        existing.add(event_id)
+        settled.append(event_id)
+
+    audit = ledger.audit()
+    network_calls = 0
+    if api_tennis_client is not None:
+        network_calls += (
+            int(getattr(api_tennis_client, "request_count", 0))
+            - api_before
+        )
+    if rapidapi_client is not None:
+        network_calls += (
+            int(getattr(rapidapi_client, "request_count", 0))
+            - rapid_before
+        )
+    return {
+        "schema": "MATRIX_COR0203_SETTLEMENT_SYNC_V2",
+        "status": "PASS",
+        "settled_event_ids": settled,
+        "new_settlements": len(settled),
+        "pending": pending,
+        "blocked": blocked,
+        "skipped_already_settled": skipped_already_settled,
+        "network_calls": network_calls,
+        "ledger_records": audit.records,
+        "ledger_hash_chain_verified": audit.hash_chain_verified,
+        "outcomes_used_for_metrics": audit.outcomes_used_for_metrics,
+        "metrics": "SEALED_UNTIL_600",
+        "real_money": "BLOCKED",
+    }
+
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--queue", required=True)
@@ -179,36 +442,28 @@ def main() -> None:
 
     queue = json.loads(Path(args.queue).read_text(encoding="utf-8"))
     ledger = Cor0203SettlementLedger(Path(args.ledger))
-    key = os.environ.get("API_TENNIS_KEY", "").strip()
+    api_key = os.environ.get("API_TENNIS_KEY", "").strip()
+    rapid_key = os.environ.get("RAPIDAPI_TENNIS_KEY", "").strip()
 
-    if not key:
-        result = {
-            "schema": "MATRIX_COR0203_SETTLEMENT_SYNC_V1",
-            "status": "SOURCE_NOT_CONFIGURED",
-            "new_settlements": 0,
-            "pending": [],
-            "blocked": [{
-                "event_id": None,
-                "reason": "API_TENNIS_KEY_NOT_CONFIGURED",
-            }],
-            "skipped_already_settled": [],
-            "network_calls": 0,
-            "ledger_records": ledger.audit().records,
-            "ledger_hash_chain_verified": True,
-            "outcomes_used_for_metrics": 0,
-            "metrics": "SEALED_UNTIL_600",
-            "real_money": "BLOCKED",
-        }
-    else:
-        client = ApiTennisDiscoveryClient(key)
-        now = datetime.now(timezone.utc).replace(microsecond=0).isoformat()
-        result = sync_settlements(
-            queue=queue,
-            ledger=ledger,
-            client=client,
-            now_utc=now,
-            max_requests=args.max_requests,
-        )
+    api_client = (
+        ApiTennisDiscoveryClient(api_key)
+        if api_key
+        else None
+    )
+    rapid_client = (
+        RapidApiTennisClient(rapid_key)
+        if rapid_key
+        else None
+    )
+    now = datetime.now(timezone.utc).replace(microsecond=0).isoformat()
+    result = sync_mixed_settlements(
+        queue=queue,
+        ledger=ledger,
+        api_tennis_client=api_client,
+        rapidapi_client=rapid_client,
+        now_utc=now,
+        max_requests=args.max_requests,
+    )
 
     out = Path(args.summary_out)
     out.parent.mkdir(parents=True, exist_ok=True)
