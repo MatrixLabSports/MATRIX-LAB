@@ -88,7 +88,9 @@ def preregister_discovery(
     holdout_dir: Path,
 ) -> dict[str, Any]:
     status = str(discovery.get("status") or "")
-    if status != "DISCOVERY_COMPLETED":
+    provider = str(discovery.get("provider") or "")
+    spec = PROVIDER_SPECS.get(provider)
+    if status != "DISCOVERY_COMPLETED" or spec is None:
         return {
             "schema": "MATRIX_COR0203_DISCOVERY_PREREGISTRATION_RESULT_V1",
             "status": "NO_DISCOVERY_INPUT",
@@ -105,8 +107,9 @@ def preregister_discovery(
     for candidate in candidates:
         source_event_id = str(candidate.get("canonical_source_event_id") or candidate.get("event_id") or "")
         raw_event_id = str(candidate.get("event_id") or "")
-        provider_event_key = raw_event_id.rsplit(":", 1)[-1] if raw_event_id else ""
-        event_id = f"COR0203-API-TENNIS-{provider_event_key}" if provider_event_key.isdigit() else ""
+        event_match = spec["event_pattern"].fullmatch(raw_event_id)
+        provider_event_key = event_match.group(1) if event_match else ""
+        event_id = spec["event_prefix"] + provider_event_key if provider_event_key else ""
 
         blockers: list[str] = []
         if not event_id or not source_event_id:
@@ -148,14 +151,14 @@ def preregister_discovery(
             "event_start_utc": candidate.get("event_start_utc"),
             "identity_source": candidate.get("source_reference"),
             "schedule_source": candidate.get("source_reference"),
-            "source_provider": "api_tennis",
+            "source_provider": provider,
             "source_snapshot_sha256": source_sha,
             "players": [str(p.get("name") or "").strip() for p in players],
             "player_identities": [
                 {
                     "display_name": str(p.get("name") or "").strip(),
                     "provider_player_id": str(p.get("provider_player_id") or ""),
-                    "provider": "api_tennis",
+                    "provider": provider,
                     "provider_ranking": p.get("provider_ranking"),
                 }
                 for p in players
@@ -181,13 +184,13 @@ def preregister_discovery(
     count = _physical_holdout_count(holdout_dir)
     out = runtime_dir / f"MATRIX_COR0203_PREFEATURE_REGISTRY_R{revision}.json"
     payload = {
-        "schema": f"MATRIX_COR0203_API_TENNIS_PREFEATURE_REGISTRY_R{revision}_V1",
+        "schema": f"MATRIX_COR0203_{provider.upper()}_PREFEATURE_REGISTRY_R{revision}_V1",
         "revision": f"R{revision}",
         "holdout_id": "A22_POST_AUDIT_VIRGIN_HOLDOUT_V1",
         "created_before_feature_acquisition": True,
         "registration_timestamp_authority": "GIT_COMMIT_TIMESTAMP",
         "starting_observation_count": count,
-        "discovery_provider": "api_tennis",
+        "discovery_provider": provider,
         "events": selected,
         "protections": {
             "outcome_read_for_performance": False,
