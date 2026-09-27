@@ -1,0 +1,188 @@
+from __future__ import annotations
+
+import json
+from datetime import date
+
+import pytest
+
+from tools.cor0203_rapidapi_tennis_discovery import (
+    RAPIDAPI_HOST,
+    RapidApiTennisClient,
+    build_discovery_registry,
+)
+
+
+class FakeResponse:
+    def __init__(self, payload):
+        self.body = json.dumps(payload).encode("utf-8")
+
+    def read(self, n=-1):
+        return self.body if n < 0 else self.body[:n]
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *args):
+        return False
+
+
+class RecordingOpener:
+    def __init__(self, payloads):
+        self.payloads = list(payloads)
+        self.requests = []
+
+    def __call__(self, request, timeout=20.0):
+        self.requests.append(request)
+        return FakeResponse(self.payloads.pop(0))
+
+
+def fixture(
+    *,
+    match_id=1001,
+    tournament_id=500,
+    p1=11,
+    p2=22,
+    start="2026-09-27T12:00:00.000Z",
+):
+    return {
+        "id": match_id,
+        "matchId": match_id,
+        "date": start,
+        "startTime": start,
+        "player1Id": p1,
+        "player2Id": p2,
+        "player1": {"id": p1, "name": "Player A", "countryAcr": "USA"},
+        "player2": {"id": p2, "name": "Player B", "countryAcr": "FRA"},
+        "tournamentId": tournament_id,
+        "roundId": 4,
+        "round": {"name": "Quarter-Final"},
+    }
+
+
+def tournament(*, tier="Challenger 75", surface="Hard", rank_id=1):
+    return {
+        "id": 500,
+        "name": "Test Challenger",
+        "tier": tier,
+        "rankId": rank_id,
+        "court": {"id": 1, "name": surface},
+    }
+
+
+def rankings():
+    return {
+        "11": {
+            "place": "100",
+            "points": "600",
+            "player": "Player A",
+            "country": "USA",
+            "snapshot_date": "2026-09-21",
+        },
+        "22": {
+            "place": "120",
+            "points": "500",
+            "player": "Player B",
+            "country": "FRA",
+            "snapshot_date": "2026-09-21",
+        },
+    }
+
+
+def test_client_keeps_secret_in_header_not_url():
+    opener = RecordingOpener([
+        {"data": [], "pageNo": 1, "pageSize": 0, "hasNextPage": False}
+    ])
+    client = RapidApiTennisClient("secret-rapid-key", opener=opener)
+
+    client.fixtures(date(2026, 9, 27), date(2026, 9, 27))
+
+    request = opener.requests[0]
+    assert "secret-rapid-key" not in request.full_url
+    headers = {k.lower(): v for k, v in request.header_items()}
+    assert headers["x-rapidapi-key"] == "secret-rapid-key"
+    assert headers["x-rapidapi-host"] == RAPIDAPI_HOST
+    assert "PlayerGroup%3Asingles%3BTourRank%3A1" in request.full_url
+
+
+def test_hard_challenger_future_match_with_dated_ranking_is_eligible():
+    result = build_discovery_registry(
+        fixture_payload={"data": [fixture()]},
+        tournament_info={"500": tournament()},
+        ranking_by_player=rankings(),
+        as_of_utc="2026-09-27T00:00:00+00:00",
+    )
+
+    assert result["world_registry"]["cor0203_eligible_events"] == 1
+    row = result["world_registry"]["rows"][0]
+    assert row["event_id"] == "rapidapi-tennis:match:1001"
+    assert row["player1_id"] == "rapidapi-tennis:player:11"
+    assert row["player2_id"] == "rapidapi-tennis:player:22"
+    assert row["surface"] == "Hard"
+    assert row["cor0203_eligible"] is True
+    assert len(row["source_snapshot_sha256"]) == 64
+    candidate = result["eligible_candidates"][0]
+    assert candidate["players"][0]["provider_ranking"]["place"] == "100"
+
+
+def test_rank_one_itf_is_not_silently_treated_as_challenger():
+    result = build_discovery_registry(
+        fixture_payload={"data": [fixture()]},
+        tournament_info={"500": tournament(tier="ITF M25")},
+        ranking_by_player=rankings(),
+        as_of_utc="2026-09-27T00:00:00+00:00",
+    )
+
+    assert result["world_registry"]["cor0203_eligible_events"] == 0
+    assert (
+        "TOURNAMENT_NOT_PROVEN_CHALLENGER"
+        in result["provider_rejected"][0]["blockers"]
+    )
+
+
+def test_non_hard_challenger_is_rejected():
+    result = build_discovery_registry(
+        fixture_payload={"data": [fixture()]},
+        tournament_info={"500": tournament(surface="Clay")},
+        ranking_by_player=rankings(),
+        as_of_utc="2026-09-27T00:00:00+00:00",
+    )
+
+    assert result["world_registry"]["cor0203_eligible_events"] == 0
+    assert "SURFACE_OUT_OF_DOMAIN" in result["provider_rejected"][0]["blockers"]
+
+
+def test_missing_ranking_cut_blocks_event():
+    values = rankings()
+    del values["22"]
+    result = build_discovery_registry(
+        fixture_payload={"data": [fixture()]},
+        tournament_info={"500": tournament()},
+        ranking_by_player=values,
+        as_of_utc="2026-09-27T00:00:00+00:00",
+    )
+
+    assert result["world_registry"]["cor0203_eligible_events"] == 0
+    assert (
+        "RANKING_CUT_MISSING_PLAYER2"
+        in result["provider_rejected"][0]["blockers"]
+    )
+
+
+def test_started_event_is_rejected():
+    result = build_discovery_registry(
+        fixture_payload={
+            "data": [fixture(start="2026-09-26T12:00:00.000Z")]
+        },
+        tournament_info={"500": tournament()},
+        ranking_by_player=rankings(),
+        as_of_utc="2026-09-27T00:00:00+00:00",
+    )
+
+    assert result["world_registry"]["cor0203_eligible_events"] == 0
+    assert "EVENT_NOT_FUTURE" in result["provider_rejected"][0]["blockers"]
+
+
+def test_fixture_range_is_bounded():
+    client = RapidApiTennisClient("k", opener=RecordingOpener([]))
+    with pytest.raises(ValueError, match="DISCOVERY_RANGE_EXCEEDS_4_DAYS"):
+        client.fixtures(date(2026, 9, 1), date(2026, 9, 6))
