@@ -13,6 +13,7 @@ def _write(path: Path, payload) -> None:
 
 def _discovery():
     return {
+        "provider": "api_tennis",
         "status": "DISCOVERY_COMPLETED",
         "eligible_candidates": [
             {
@@ -139,3 +140,70 @@ def test_missing_provider_key_status_does_not_create_prefeature(tmp_path):
     assert result["status"] == "NO_DISCOVERY_INPUT"
     assert result["created"] is False
     assert list(runtime.iterdir()) == []
+
+
+def test_rapidapi_discovery_uses_separate_governed_identity_namespace(tmp_path):
+    discovery = {
+        "provider": "rapidapi_tennis",
+        "status": "DISCOVERY_COMPLETED",
+        "eligible_candidates": [
+            {
+                "event_id": "rapidapi-tennis:match:9001",
+                "canonical_source_event_id": "rapidapi-tennis:match:9001",
+                "competition_id": "rapidapi-tennis:tournament:77",
+                "competition": "Example Challenger",
+                "round": "Quarter-Final",
+                "surface": "Hard",
+                "tour_level": "C",
+                "event_start_utc": "2026-09-27T16:00:00+00:00",
+                "target_period": 20260921,
+                "source_reference": "fixtures+ranking+tournament",
+                "source_snapshot_sha256": "b" * 64,
+                "players": [
+                    {
+                        "name": "Player A",
+                        "provider_player_id": "rapidapi-tennis:player:101",
+                        "provider_ranking": {
+                            "place": "100",
+                            "points": "600",
+                            "player": "Player A",
+                        },
+                    },
+                    {
+                        "name": "Player B",
+                        "provider_player_id": "rapidapi-tennis:player:202",
+                        "provider_ranking": {
+                            "place": "120",
+                            "points": "500",
+                            "player": "Player B",
+                        },
+                    },
+                ],
+            }
+        ],
+    }
+    cor = tmp_path / "cor0203"
+    runtime = cor / "runtime"
+    holdout = cor / "holdout"
+    runtime.mkdir(parents=True)
+    holdout.mkdir(parents=True)
+
+    result = preregister_discovery(
+        discovery=discovery,
+        cor_root=cor,
+        runtime_dir=runtime,
+        holdout_dir=holdout,
+    )
+
+    assert result["status"] == "PREREGISTERED"
+    path = runtime / f"MATRIX_COR0203_PREFEATURE_REGISTRY_R{result['revision']}.json"
+    payload = json.loads(path.read_text())
+    assert payload["discovery_provider"] == "rapidapi_tennis"
+    event = payload["events"][0]
+    assert event["event_id"] == "COR0203-RAPIDAPI-TENNIS-9001"
+    assert event["source_provider"] == "rapidapi_tennis"
+    assert event["player_identities"][0]["provider"] == "rapidapi_tennis"
+    assert (
+        event["player_identities"][0]["provider_player_id"]
+        == "rapidapi-tennis:player:101"
+    )
