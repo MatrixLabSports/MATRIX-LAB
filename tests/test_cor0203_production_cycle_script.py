@@ -28,3 +28,13 @@ def test_cycle_keeps_holdout_sealed_and_persists_all_outputs():
     assert "MATRIX_COR0203_IDENTITY_CROSSWALK_R*.json" in text
     assert "MATRIX_COR0203_HOLDOUT_BATCH_R*.json" in text
     assert 'git rebase "origin/$TARGET_BRANCH"' in text
+
+
+def test_cycle_requires_explicit_supported_provider_and_never_auto_switches():
+    text = _text()
+    assert 'TENNIS_PROVIDER="${MATRIX_TENNIS_PROVIDER:-api_tennis}"' in text
+    assert "case \"$TENNIS_PROVIDER\" in" in text
+    assert "api_tennis)" in text
+    assert "rapidapi_tennis)" in text
+    assert "UNSUPPORTED_MATRIX_TENNIS_PROVIDER" in text
+    assert "automatic_provider_switch" not in text
