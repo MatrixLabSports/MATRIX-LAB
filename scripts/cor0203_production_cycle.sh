@@ -3,6 +3,8 @@ set -euo pipefail
 
 TRIGGER_SHA=""
 TARGET_BRANCH="${MATRIX_TARGET_BRANCH:-repair/cor09-world-pipeline}"
+TENNIS_PROVIDER="${MATRIX_TENNIS_PROVIDER:-api_tennis}"
+export MATRIX_TENNIS_PROVIDER="$TENNIS_PROVIDER"
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
@@ -60,11 +62,26 @@ python -m tools.cor0203_build_static_cut_index \
   --cut 20260921 \
   --out "$STATIC_CUT"
 
-python -m tools.cor0203_durable_discovery \
-  --out "$DISCOVERY" \
-  --summary-out "$DURABLE_DISCOVERY_LAST" \
-  --store "$ACQUISITION_STORE" \
-  --days 2
+case "$TENNIS_PROVIDER" in
+  api_tennis)
+    python -m tools.cor0203_durable_discovery \
+      --out "$DISCOVERY" \
+      --summary-out "$DURABLE_DISCOVERY_LAST" \
+      --store "$ACQUISITION_STORE" \
+      --days 2
+    ;;
+  rapidapi_tennis)
+    python -m tools.cor0203_rapidapi_durable_discovery \
+      --out "$DISCOVERY" \
+      --summary-out "$DURABLE_DISCOVERY_LAST" \
+      --store "$ACQUISITION_STORE" \
+      --days 2
+    ;;
+  *)
+    echo "UNSUPPORTED_MATRIX_TENNIS_PROVIDER:$TENNIS_PROVIDER" >&2
+    exit 2
+    ;;
+esac
 
 python -m tools.cor0203_source_readiness \
   --discovery "$DISCOVERY" \
@@ -161,7 +178,7 @@ settlement_queue = json.loads((runtime / "MATRIX_COR0203_SETTLEMENT_QUEUE_LAST.j
 historical_identity = json.loads((runtime / "MATRIX_COR0203_HISTORICAL_IDENTITY_LAST.json").read_text())
 settlement_sync = json.loads((runtime / "MATRIX_COR0203_SETTLEMENT_SYNC_LAST.json").read_text())
 
-assert source_readiness["provider"] == "api_tennis"
+assert source_readiness["provider"] == __import__("os").environ["MATRIX_TENNIS_PROVIDER"]
 assert durable_discovery["real_money"] == "BLOCKED"
 assert durable_discovery["automatic_wagering"] is False
 if source_readiness["ready"]:
