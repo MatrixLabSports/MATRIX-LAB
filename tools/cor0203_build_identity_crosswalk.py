@@ -39,6 +39,15 @@ def _norm_name(value: object) -> str:
     return "".join(ch for ch in text if ch.isalnum())
 
 
+def _provider_from_player_id(value: object) -> str:
+    token = str(value or "")
+    if token.startswith("api-tennis:player:"):
+        return "api_tennis"
+    if token.startswith("rapidapi-tennis:player:"):
+        return "rapidapi_tennis"
+    return ""
+
+
 def _int(value: object) -> int | None:
     try:
         text = str(value).strip()
@@ -91,8 +100,13 @@ def build_crosswalk(
             event_blockers.append("PROVIDER_IDENTITIES_REQUIRED")
 
         for identity in identities:
-            provider = str(identity.get("provider") or prefeature.get("discovery_provider") or "")
             provider_id = str(identity.get("provider_player_id") or "")
+            provider = str(
+                identity.get("provider")
+                or prefeature.get("discovery_provider")
+                or _provider_from_player_id(provider_id)
+                or ""
+            )
             event_provider_ids.append(provider_id)
             provider_pattern = PROVIDER_PLAYER_PATTERNS.get(provider)
             if provider_pattern is None or not provider_pattern.fullmatch(provider_id):
