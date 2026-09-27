@@ -1,7 +1,7 @@
 from pathlib import Path
 
 from tools.cor0203_settlement_ledger import Cor0203SettlementLedger
-from tools.cor0203_settlement_sync import sync_settlements
+from tools.cor0203_settlement_sync import sync_settlements, sync_mixed_settlements
 
 
 class FakeClient:
@@ -123,3 +123,81 @@ def test_request_budget_is_bounded(tmp_path):
     )
     assert result["network_calls"] == 1
     assert result["new_settlements"] == 1
+
+
+class FakeRapidClient:
+    def __init__(self, payload):
+        self.payload = payload
+        self.request_count = 0
+
+    def results_for_date(self, target_date):
+        self.request_count += 1
+        return self.payload
+
+
+def rapid_item(start="2026-09-27T10:00:00+00:00"):
+    return {
+        "status": "READY_RESULT_LOOKUP",
+        "provider": "rapidapi_tennis",
+        "event_id": "COR0203-RAPIDAPI-TENNIS-9001",
+        "observation_index": 12,
+        "observation_sha256": "b" * 64,
+        "alphabetical_player_a": "Alpha",
+        "alphabetical_player_b": "Beta",
+        "event_start_utc": start,
+        "provider_match_key": "9001",
+        "provider_player_map": {
+            "rapidapi-tennis:player:10": "Alpha",
+            "rapidapi-tennis:player:20": "Beta",
+        },
+    }
+
+
+def rapid_payload(result_type="completed"):
+    return {
+        "data": [
+            {
+                "id": 9001,
+                "matchId": 9001,
+                "result_type": result_type,
+                "player1": {"id": 20, "name": "Beta"},
+                "player2": {"id": 10, "name": "Alpha"},
+                "result": "6-4 6-3",
+            }
+        ]
+    }
+
+
+def test_mixed_sync_can_settle_rapidapi_without_api_tennis_key(tmp_path):
+    rapid = FakeRapidClient(rapid_payload())
+    ledger = Cor0203SettlementLedger(tmp_path / "ledger.jsonl")
+    result = sync_mixed_settlements(
+        queue=queue(rapid_item()),
+        ledger=ledger,
+        api_tennis_client=None,
+        rapidapi_client=rapid,
+        now_utc="2026-09-27T12:00:00+00:00",
+    )
+    assert result["new_settlements"] == 1
+    assert result["network_calls"] == 1
+    assert result["outcomes_used_for_metrics"] == 0
+    record = ledger.load()[0]
+    assert record["result_source_provider"] == "rapidapi_tennis"
+    assert record["winner_canonical_name"] == "Beta"
+
+
+def test_mixed_sync_blocks_nonstandard_rapidapi_terminal(tmp_path):
+    rapid = FakeRapidClient(rapid_payload("retired"))
+    ledger = Cor0203SettlementLedger(tmp_path / "ledger.jsonl")
+    result = sync_mixed_settlements(
+        queue=queue(rapid_item()),
+        ledger=ledger,
+        api_tennis_client=None,
+        rapidapi_client=rapid,
+        now_utc="2026-09-27T12:00:00+00:00",
+    )
+    assert result["new_settlements"] == 0
+    assert result["blocked"][0]["reason"].startswith(
+        "NONSTANDARD_TERMINAL_REQUIRES_ADJUDICATION"
+    )
+    assert ledger.audit().records == 0
