@@ -37,3 +37,14 @@ def test_status_transition_is_append_only_and_deduplicated(tmp_path):
     assert created_first is True
     assert created_second is False
     assert json.loads(first.read_text())["ready"] is False
+
+
+def test_missing_rapidapi_key_is_explicit_credential_blocker():
+    report = classify_source_readiness({
+        "provider": "rapidapi_tennis",
+        "status": "RAPIDAPI_TENNIS_KEY_NOT_CONFIGURED",
+        "network_calls": 0,
+    })
+    assert report["ready"] is False
+    assert report["cause"] == "PROVIDER_CREDENTIAL_NOT_CONFIGURED"
+    assert report["production_discovery_ready"] is False
