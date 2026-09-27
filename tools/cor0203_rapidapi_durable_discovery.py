@@ -94,7 +94,7 @@ def build_hourly_discovery_queue(
         priority_score=100.0,
         expected_rows=EXPECTED_ROWS_BUDGET,
         estimated_request_cost=MAX_REQUESTS_PER_BUCKET,
-        rights_status="SUBSCRIPTION_AUTHORIZED_RESEARCH_ONLY",
+        rights_status="RESEARCH_ONLY",
         identity_status="PASS",
         chronology_status="PASS",
         provider_status="PASS",
