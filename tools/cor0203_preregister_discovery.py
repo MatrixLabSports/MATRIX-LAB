@@ -136,7 +136,7 @@ def preregister_discovery(
         else:
             provider_ids = [str(p.get("provider_player_id") or "") for p in players]
             names = [str(p.get("name") or "").strip() for p in players]
-            if not all(re.fullmatch(r"api-tennis:player:\d+", value) for value in provider_ids):
+            if not all(spec["player_pattern"].fullmatch(value) for value in provider_ids):
                 blockers.append("PROVIDER_PLAYER_ID_INVALID")
             if not all(names) or names[0] == names[1] or provider_ids[0] == provider_ids[1]:
                 blockers.append("PROVIDER_PLAYER_IDENTITY_NOT_FIXED")
