@@ -18,7 +18,7 @@ def test_rapidapi_hourly_queue_is_singleton_bounded_and_provider_specific():
         q["provider_usage"]["rapidapi_tennis"]["requests_max"]
         == MAX_REQUESTS_PER_BUCKET
     )
-    assert item["rights_status"] == "SUBSCRIPTION_AUTHORIZED_RESEARCH_ONLY"
+    assert item["rights_status"] == "RESEARCH_ONLY"
 
 
 def test_rapidapi_same_hour_is_idempotent_but_next_hour_is_fresh():
