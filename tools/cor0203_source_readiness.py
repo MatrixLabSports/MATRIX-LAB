@@ -23,7 +23,10 @@ def classify_source_readiness(discovery: Mapping[str, Any]) -> dict[str, Any]:
     ready = status == READY_STATUS and network_calls > 0
     if ready:
         cause = "READY"
-    elif status == "API_TENNIS_KEY_NOT_CONFIGURED":
+    elif status in {
+        "API_TENNIS_KEY_NOT_CONFIGURED",
+        "RAPIDAPI_TENNIS_KEY_NOT_CONFIGURED",
+    }:
         cause = "PROVIDER_CREDENTIAL_NOT_CONFIGURED"
     elif status == "PROVIDER_DISCOVERY_BLOCKED":
         cause = "PROVIDER_DISCOVERY_BLOCKED"
