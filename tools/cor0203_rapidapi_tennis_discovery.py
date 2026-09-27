@@ -209,7 +209,7 @@ class RapidApiTennisClient:
             payload = self._get(
                 path,
                 {
-                    "include": "round,tournament,tournament.court,tournament.rank",
+                    "include": "round,tournament,tournament.court",
                     "filter": "PlayerGroup:singles;TourRank:1",
                     "pageNo": page,
                     "pageSize": PAGE_SIZE,
@@ -294,19 +294,35 @@ class RapidApiTennisClient:
         return found
 
     def results_for_date(self, target_date: date) -> Mapping[str, Any]:
-        payload = self._get(
-            f"/tennis/v2/atp/results/{target_date.isoformat()}",
-            {
-                "pageNo": 1,
-                "pageSize": PAGE_SIZE,
-                "filter": "PlayerGroup:singles",
-            },
-        )
-        if not isinstance(payload, Mapping):
-            raise RapidApiTennisDiscoveryError(
-                "RAPIDAPI_TENNIS_RESULTS_ENVELOPE_INVALID"
+        rows: list[Mapping[str, Any]] = []
+        page = 1
+        for _ in range(MAX_FIXTURE_PAGES):
+            payload = self._get(
+                f"/tennis/v2/atp/results/{target_date.isoformat()}",
+                {
+                    "pageNo": page,
+                    "pageSize": PAGE_SIZE,
+                    "filter": "PlayerGroup:singles",
+                },
             )
-        return dict(payload)
+            if not isinstance(payload, Mapping):
+                raise RapidApiTennisDiscoveryError(
+                    "RAPIDAPI_TENNIS_RESULTS_ENVELOPE_INVALID"
+                )
+            rows.extend(_data_rows(payload))
+            if not bool(payload.get("hasNextPage")):
+                break
+            page += 1
+        else:
+            raise RapidApiTennisDiscoveryError(
+                "RAPIDAPI_TENNIS_RESULTS_PAGE_LIMIT_REACHED"
+            )
+        return {
+            "data": rows,
+            "pageNo": 1,
+            "pageSize": len(rows),
+            "hasNextPage": False,
+        }
 
 
 def _parse_start(row: Mapping[str, Any]) -> datetime:
