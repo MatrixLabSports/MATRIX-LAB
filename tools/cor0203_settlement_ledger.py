@@ -9,6 +9,7 @@ from typing import Any, Mapping, Sequence
 
 
 API_EVENT = re.compile(r"^api-tennis:event:(\d+)$")
+RAPIDAPI_EVENT = re.compile(r"^rapidapi-tennis:match:(\d+)$")
 SHA64 = re.compile(r"^[0-9a-f]{64}$")
 FINISHED = "FINISHED"
 
@@ -30,9 +31,17 @@ def _event_revision(path: Path) -> int:
     return int(match.group(1)) if match else -1
 
 
-def _provider_match_key(canonical_source_event_id: object) -> str | None:
-    match = API_EVENT.fullmatch(str(canonical_source_event_id or ""))
-    return match.group(1) if match else None
+def _provider_identity(
+    canonical_source_event_id: object,
+) -> tuple[str | None, str | None]:
+    token = str(canonical_source_event_id or "")
+    match = API_EVENT.fullmatch(token)
+    if match:
+        return "api_tennis", match.group(1)
+    match = RAPIDAPI_EVENT.fullmatch(token)
+    if match:
+        return "rapidapi_tennis", match.group(1)
+    return None, None
 
 
 def _settlement_id(payload: Mapping[str, Any]) -> str:
@@ -170,7 +179,7 @@ def build_settlement_queue(
             if not isinstance(event, Mapping):
                 raise ValueError("SETTLEMENT_EVENT_ROW_MISSING:" + event_id)
             canonical_source = str(event.get("canonical_source_event_id") or "")
-            match_key = _provider_match_key(canonical_source)
+            provider, match_key = _provider_identity(canonical_source)
             overlay_row = overlay.get(event_id, {})
             if match_key is None and isinstance(overlay_row, Mapping):
                 overlay_match_key = str(overlay_row.get("provider_match_key") or "")
@@ -179,6 +188,10 @@ def build_settlement_queue(
                     canonical_source = str(
                         overlay_row.get("canonical_source_event_id")
                         or ("api-tennis:event:" + overlay_match_key)
+                    )
+                    provider = str(
+                        overlay_row.get("provider")
+                        or "api_tennis"
                     )
             pre_event = pre_events.get(event_id, {})
             provider_identities = list(pre_event.get("player_identities") or []) if isinstance(pre_event, Mapping) else []
@@ -217,7 +230,7 @@ def build_settlement_queue(
                 "alphabetical_player_b": obs.get("alphabetical_player_b"),
                 "event_start_utc": obs.get("event_start_utc"),
                 "canonical_source_event_id": canonical_source,
-                "provider": "api_tennis" if match_key else None,
+                "provider": provider if match_key else None,
                 "identity_overlay_applied": bool(match_key and overlay_row),
                 "provider_match_key": match_key,
                 "provider_player_map": provider_map,
@@ -297,5 +310,99 @@ def settlement_from_api_tennis(
         "real_money": "BLOCKED",
     }
     if not isinstance(payload["observation_sha256"], str) or not SHA64.fullmatch(payload["observation_sha256"]):
+        raise ValueError("SETTLEMENT_OBSERVATION_SHA_INVALID")
+    return payload
+
+
+
+def settlement_from_rapidapi_tennis(
+    *,
+    queue_item: Mapping[str, Any],
+    result_row: Mapping[str, Any],
+    settled_at_utc: str,
+    source_reference: str,
+) -> dict[str, Any]:
+    if queue_item.get("status") != "READY_RESULT_LOOKUP":
+        raise ValueError("SETTLEMENT_ITEM_NOT_READY")
+    if queue_item.get("provider") != "rapidapi_tennis":
+        raise ValueError("SETTLEMENT_PROVIDER_MISMATCH")
+
+    match_key = str(queue_item.get("provider_match_key") or "")
+    row_match_key = str(
+        result_row.get("matchId")
+        or result_row.get("id")
+        or ""
+    )
+    if row_match_key != match_key:
+        raise ValueError("SETTLEMENT_PROVIDER_EVENT_MISMATCH")
+
+    result_type = str(
+        result_row.get("result_type")
+        or result_row.get("resultType")
+        or ""
+    ).strip().casefold()
+    if result_type != "completed":
+        raise ValueError(
+            "SETTLEMENT_NOT_STANDARD_FINAL:" + result_type.upper()
+        )
+
+    player1 = result_row.get("player1")
+    player2 = result_row.get("player2")
+    if not isinstance(player1, Mapping) or not isinstance(player2, Mapping):
+        raise ValueError("SETTLEMENT_PROVIDER_PLAYERS_MISSING")
+
+    first_id = "rapidapi-tennis:player:" + str(
+        player1.get("id")
+        or result_row.get("player1Id")
+        or ""
+    )
+    second_id = "rapidapi-tennis:player:" + str(
+        player2.get("id")
+        or result_row.get("player2Id")
+        or ""
+    )
+    provider_map = dict(queue_item.get("provider_player_map") or {})
+    if first_id not in provider_map or second_id not in provider_map:
+        raise ValueError("SETTLEMENT_PROVIDER_PLAYER_MAPPING_MISSING")
+
+    # The provider's completed-results route documents player1 as the winner.
+    winner_name = provider_map[first_id]
+    player_a = str(queue_item.get("alphabetical_player_a") or "")
+    player_b = str(queue_item.get("alphabetical_player_b") or "")
+    if winner_name == player_a:
+        outcome_a = True
+    elif winner_name == player_b:
+        outcome_a = False
+    else:
+        raise ValueError("SETTLEMENT_CANONICAL_WINNER_MISMATCH")
+
+    source_payload_sha = _sha(dict(result_row))
+    payload = {
+        "schema": "MATRIX_COR0203_SETTLEMENT_RECORD_V1",
+        "event_id": queue_item["event_id"],
+        "observation_index": int(queue_item["observation_index"]),
+        "observation_sha256": queue_item["observation_sha256"],
+        "event_start_utc": queue_item["event_start_utc"],
+        "settled_at_utc": settled_at_utc,
+        "terminal_status": FINISHED,
+        "winner_canonical_name": winner_name,
+        "outcome_player_a": outcome_a,
+        "result_source_provider": "rapidapi_tennis",
+        "result_source_reference": source_reference,
+        "result_payload_sha256": source_payload_sha,
+        "provider_match_key": match_key,
+        "event_final_result": (
+            result_row.get("result")
+            or result_row.get("score")
+            or result_row.get("sets")
+        ),
+        "metrics_opened": False,
+        "used_for_metrics": False,
+        "real_money": "BLOCKED",
+    }
+    if (
+        not isinstance(payload["observation_sha256"], str)
+        or not SHA64.fullmatch(payload["observation_sha256"])
+    ):
         raise ValueError("SETTLEMENT_OBSERVATION_SHA_INVALID")
     return payload
