@@ -6,6 +6,7 @@ from tools.cor0203_settlement_ledger import (
     Cor0203SettlementLedger,
     build_settlement_queue,
     settlement_from_api_tennis,
+    settlement_from_rapidapi_tennis,
 )
 
 
@@ -99,3 +100,60 @@ def test_append_only_settlement_ledger_hash_chain_and_metrics_seal(tmp_path):
     assert audit.outcomes_used_for_metrics == 0
     with pytest.raises(ValueError, match="DUPLICATE_SETTLEMENT_EVENT"):
         ledger.append(record)
+
+
+def rapid_ready_item():
+    return {
+        "status": "READY_RESULT_LOOKUP",
+        "provider": "rapidapi_tennis",
+        "event_id": "COR0203-RAPIDAPI-TENNIS-9001",
+        "observation_index": 12,
+        "observation_sha256": "b" * 64,
+        "alphabetical_player_a": "Alpha",
+        "alphabetical_player_b": "Beta",
+        "event_start_utc": "2026-09-27T10:00:00+00:00",
+        "provider_match_key": "9001",
+        "provider_player_map": {
+            "rapidapi-tennis:player:10": "Alpha",
+            "rapidapi-tennis:player:20": "Beta",
+        },
+    }
+
+
+def rapid_final_result(result_type="completed"):
+    return {
+        "id": 9001,
+        "matchId": 9001,
+        "result_type": result_type,
+        "player1": {"id": 20, "name": "Beta"},
+        "player2": {"id": 10, "name": "Alpha"},
+        "result": "6-4 6-3",
+    }
+
+
+def test_rapidapi_completed_result_maps_documented_winner_without_opening_metrics():
+    record = settlement_from_rapidapi_tennis(
+        queue_item=rapid_ready_item(),
+        result_row=rapid_final_result(),
+        settled_at_utc="2026-09-27T12:00:00+00:00",
+        source_reference="results:2026-09-27:matchId=9001",
+    )
+    assert record["winner_canonical_name"] == "Beta"
+    assert record["outcome_player_a"] is False
+    assert record["result_source_provider"] == "rapidapi_tennis"
+    assert record["metrics_opened"] is False
+    assert record["used_for_metrics"] is False
+
+
+@pytest.mark.parametrize(
+    "result_type",
+    ["retired", "walkover", "cancelled", "", "live"],
+)
+def test_rapidapi_nonstandard_result_never_auto_settles(result_type):
+    with pytest.raises(ValueError, match="SETTLEMENT_NOT_STANDARD_FINAL"):
+        settlement_from_rapidapi_tennis(
+            queue_item=rapid_ready_item(),
+            result_row=rapid_final_result(result_type=result_type),
+            settled_at_utc="2026-09-27T12:00:00+00:00",
+            source_reference="results:2026-09-27:matchId=9001",
+        )
