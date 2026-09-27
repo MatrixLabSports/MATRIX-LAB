@@ -9,6 +9,19 @@ from typing import Any, Mapping
 REV_RE = re.compile(r"_R(\d+)(?:_|\.)")
 EXACT_HOLDOUT_RE = re.compile(r"^MATRIX_COR0203_HOLDOUT_BATCH_R(\d+)\.json$")
 
+PROVIDER_SPECS = {
+    "api_tennis": {
+        "event_prefix": "COR0203-API-TENNIS-",
+        "event_pattern": re.compile(r"^api-tennis:event:(\d+)$"),
+        "player_pattern": re.compile(r"^api-tennis:player:\d+$"),
+    },
+    "rapidapi_tennis": {
+        "event_prefix": "COR0203-RAPIDAPI-TENNIS-",
+        "event_pattern": re.compile(r"^rapidapi-tennis:match:(\d+)$"),
+        "player_pattern": re.compile(r"^rapidapi-tennis:player:\d+$"),
+    },
+}
+
 
 def _load(path: Path) -> dict[str, Any]:
     return json.loads(path.read_text(encoding="utf-8"))
