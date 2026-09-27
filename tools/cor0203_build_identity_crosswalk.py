@@ -9,6 +9,11 @@ from typing import Any, Mapping
 
 REV_RE = re.compile(r"_R(\d+)\.json$")
 
+PROVIDER_PLAYER_PATTERNS = {
+    "api_tennis": re.compile(r"^api-tennis:player:\d+$"),
+    "rapidapi_tennis": re.compile(r"^rapidapi-tennis:player:\d+$"),
+}
+
 
 def _load(path: Path) -> dict[str, Any]:
     return json.loads(path.read_text(encoding="utf-8"))
@@ -86,9 +91,11 @@ def build_crosswalk(
             event_blockers.append("PROVIDER_IDENTITIES_REQUIRED")
 
         for identity in identities:
+            provider = str(identity.get("provider") or prefeature.get("discovery_provider") or "")
             provider_id = str(identity.get("provider_player_id") or "")
             event_provider_ids.append(provider_id)
-            if not re.fullmatch(r"api-tennis:player:\d+", provider_id):
+            provider_pattern = PROVIDER_PLAYER_PATTERNS.get(provider)
+            if provider_pattern is None or not provider_pattern.fullmatch(provider_id):
                 event_blockers.append("PROVIDER_PLAYER_ID_INVALID:" + provider_id)
                 continue
 
@@ -127,7 +134,7 @@ def build_crosswalk(
                 continue
 
             mapping = {
-                "provider": "api_tennis",
+                "provider": provider,
                 "provider_player_id": provider_id,
                 "provider_display_name": display_name,
                 "provider_ranking_name": provider_name,
