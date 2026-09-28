@@ -26,7 +26,9 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.11"
-      - run: python -m pip install -r requirements.txt
+      - run: |
+          python -m pip install -r requirements.txt
+          python -m pip install -r infra/aws/r8_3r6/authority_service/requirements.txt
       - name: Migrate oversized JSON into scan-safe chunks
         run: python -m tools.migrate_api_football_retrospective_predictions
       - name: Stage migration so secret scanner sees new chunks
