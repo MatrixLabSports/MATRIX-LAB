@@ -287,3 +287,21 @@ def test_governed_authority_fails_closed_when_biographical_dob_is_missing():
     assert result["status"] == "ALL_BLOCKED"
     blockers = result["events"][0]["blockers"]
     assert "IDENTITY_AUTHORITY_DOB_INVALID:rapidapi-tennis:player:26925" in blockers
+
+
+def test_r730_expanded_authority_releases_only_evidenced_events():
+    pre=_load(Path("evidence/cor0203/runtime/MATRIX_COR0203_PREFEATURE_REGISTRY_R730.json"))
+    static=_load(Path("evidence/cor0203/runtime/MATRIX_COR0203_STATIC_CUT_20260921.json"))
+    authority=_load(Path("evidence/cor0203/identity/MATRIX_COR0203_ATP_BIOGRAPHICAL_SUBSET_R731.json"))
+    out=build_crosswalk(prefeature=pre,static_cut=static,identity_authority=authority)
+    assert out["passed_events"] == 12
+    assert out["blocked_events"] == 5
+    assert out["status"] == "PASS_WITH_BLOCKERS"
+    blocked={row["event_id"]:row["blockers"] for row in out["events"] if row["status"]=="BLOCKED"}
+    assert set(blocked) == {
+        "COR0203-RAPIDAPI-TENNIS-1415",
+        "COR0203-RAPIDAPI-TENNIS-1469",
+        "COR0203-RAPIDAPI-TENNIS-1471",
+        "COR0203-RAPIDAPI-TENNIS-1466",
+        "COR0203-RAPIDAPI-TENNIS-1475",
+    }
