@@ -1,0 +1,52 @@
+name: API-Football Pro team-last fallback
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  capture:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: repair/cor09-world-pipeline
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: python -m pip install requests
+      - name: Capture deficient teams
+        env:
+          API_FOOTBALL_KEY: ${{ secrets.API_FOOTBALL_KEY }}
+          MATRIX_API_FOOTBALL_TEAM_LAST_MAX_REQUESTS: "120"
+          MATRIX_API_FOOTBALL_DAILY_RESERVE: "7000"
+        run: |
+          rm -rf evidence/api_football/team_last_fallback
+          python -m tools.api_football_team_last_fallback
+      - name: Validate and persist
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          p = Path("evidence/api_football/team_last_fallback/manifest.json")
+          m = json.loads(p.read_text())
+          assert m["status"] == "PASS"
+          assert m["provider_error_team_count"] == 0
+          assert m["real_money"] == "BLOCKED"
+          print("API_FOOTBALL_PRO_TEAM_LAST_FALLBACK_GATE: PASS")
+          print("deficient_unique_teams=", m["deficient_unique_team_count"])
+          print("captured_teams=", m["captured_team_count"])
+          print("network_calls=", m["network_calls_performed"])
+          print("ready_minimum_history=", m["ready_minimum_history_count"])
+          print("blocked_minimum_history=", m["blocked_minimum_history_count"])
+          print("daily_remaining=", m["last_rate_limit"]["daily_remaining"])
+          PY
+          git config user.name "matrix-api-football-team-last"
+          git config user.email "matrix-api-football-team-last@users.noreply.github.com"
+          git add evidence/api_football/team_last_fallback
+          git commit -m "evidence(api-football): persist Pro team-last history fallback"
+          git pull --rebase origin repair/cor09-world-pipeline
+          git push origin HEAD:repair/cor09-world-pipeline
