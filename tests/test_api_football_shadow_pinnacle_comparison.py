@@ -106,6 +106,8 @@ def test_pinnacle_reference_is_joined_diagnostically_without_changing_shadow_pro
     assert result["odds_used_to_generate_shadow_probability"] is False
     assert result["model_promotion"] is False
     assert result["real_money"] == "BLOCKED"
+    assert result["rejection_reason_counts"] == {}
+    assert result["capture_delay_seconds_summary"]["median"] == 30
 
     rows = {row["shadow_market"]: row for row in comparison["rows"]}
     assert set(rows) == {"home_win", "draw", "away_win", "over_2_5"}
@@ -142,4 +144,7 @@ def test_quote_after_freeze_is_rejected(tmp_path):
     assert result["matched_fixture_count"] == 0
     assert result["comparison_row_count"] == 0
     assert result["rejected_pinnacle_quote_observations"] == 1
+    assert result["rejection_reason_counts"]["quoted_after_shadow_freeze"] == 1
+    assert result["rejection_reason_counts"]["captured_after_shadow_freeze"] == 1
+    assert result["capture_delay_seconds_summary"]["count"] == 1
     assert comparison["rows"] == []
