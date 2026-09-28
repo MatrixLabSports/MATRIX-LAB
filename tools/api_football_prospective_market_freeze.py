@@ -372,6 +372,11 @@ def persist_incremental_freeze(
     candidate=build_freeze(root,freeze_at)
     merged,summary=merge_incremental_freeze(existing=existing,candidate=candidate)
 
+    sync_path=out/"incremental_sync_last.json"
+    sync_path.write_text(
+        json.dumps(summary,ensure_ascii=False,indent=2,sort_keys=True)+"\n",
+        encoding="utf-8",
+    )
     if summary["new_event_count"]==0 and existing is not None:
         return summary
     if merged["frozen_event_count"]<=0:
