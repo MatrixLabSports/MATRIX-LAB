@@ -1,0 +1,148 @@
+name: MATRIX Telegram bot activation
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+    paths:
+      - .github/workflows/matrix-telegram-activation.yml
+
+permissions:
+  contents: write
+
+concurrency:
+  group: matrix-telegram-activation
+  cancel-in-progress: false
+
+jobs:
+  activate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout operational branch
+        uses: actions/checkout@v4
+        with:
+          ref: repair/cor09-world-pipeline
+          fetch-depth: 0
+
+      - name: Credential preflight
+        id: credential
+        shell: bash
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+        run: |
+          set -euo pipefail
+          if [[ -z "${TELEGRAM_BOT_TOKEN:-}" ]]; then
+            echo "configured=false" >> "$GITHUB_OUTPUT"
+            echo "TELEGRAM_BOT_TOKEN: REQUIRED_NOT_CONFIGURED"
+            exit 0
+          fi
+          TELEGRAM_BOT_TOKEN="$TELEGRAM_BOT_TOKEN" python - <<'PY'
+          import os
+          os.environ["TELEGRAM_BOT_TOKEN"].encode("ascii")
+          print("TELEGRAM_BOT_TOKEN: CONFIGURED")
+          PY
+          echo "configured=true" >> "$GITHUB_OUTPUT"
+
+      - name: Set up Python
+        if: steps.credential.outputs.configured == 'true'
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install governed dependencies
+        if: steps.credential.outputs.configured == 'true'
+        run: python -m pip install pytest requests cryptography
+
+      - name: Run Telegram governance tests
+        if: steps.credential.outputs.configured == 'true'
+        run: |
+          python -m pytest -q \
+            tests/test_telegram_pick_notifier.py \
+            tests/test_telegram_bot_probe.py \
+            tests/test_telegram_destination_seal.py
+
+      - name: Discover exactly one private destination and seal it
+        if: steps.credential.outputs.configured == 'true'
+        shell: bash
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json, os
+          from pathlib import Path
+          from tools.telegram_bot_probe import discover_chats, probe_bot, send_connection_test
+          from tools.telegram_destination_seal import seal_destination, write_destination, open_destination
+
+          token=os.environ["TELEGRAM_BOT_TOKEN"]
+          bot=probe_bot(token)
+          chats=discover_chats(token)
+          private=[row for row in chats if row.get("type")=="private"]
+
+          if len(private)!=1:
+              raise SystemExit(
+                  "TELEGRAM_PRIVATE_DESTINATION_REQUIRED:"
+                  + str(len(private))
+                  + " — write /start to the intended bot from exactly one private chat and rerun."
+              )
+
+          chosen=private[0]
+          payload=seal_destination(
+              bot_token=token,
+              chat_id=chosen["chat_id"],
+              chat_type=chosen["type"],
+              bot_id=bot["bot_id"],
+          )
+          path=Path("evidence/notifications/telegram/destination.json")
+          write_destination(path,payload)
+
+          # Prove decryptability without printing or persisting the plaintext ID.
+          recovered=open_destination(payload,bot_token=token)
+          assert recovered==chosen["chat_id"]
+
+          result=send_connection_test(token,recovered)
+          activation={
+              "schema":"MATRIX_TELEGRAM_ACTIVATION_V1",
+              "activated_at_utc":payload["sealed_at_utc"],
+              "bot_id":str(bot["bot_id"]),
+              "bot_username":bot.get("username"),
+              "chat_type":chosen["type"],
+              "chat_id_plaintext_persisted":False,
+              "destination_ciphertext_sha256":__import__("hashlib").sha256(
+                  payload["chat_id_ciphertext"].encode("ascii")
+              ).hexdigest(),
+              "test_message_id":result["message_id"],
+              "test_message_mode":"SHADOW_NO_APOSTAR",
+              "automatic_wagering":False,
+              "real_money":"BLOCKED",
+              "status":"PASS",
+          }
+          Path("evidence/notifications/telegram/activation.json").write_text(
+              json.dumps(activation,ensure_ascii=False,indent=2,sort_keys=True)+"\n",
+              encoding="utf-8",
+          )
+          print("MATRIX_TELEGRAM_ACTIVATION: PASS")
+          print("bot_username=",activation["bot_username"])
+          print("chat_type=",activation["chat_type"])
+          print("chat_id_plaintext_persisted=false")
+          print("test_message_id=",activation["test_message_id"])
+          print("real_money=BLOCKED")
+          PY
+
+      - name: Persist encrypted destination and activation evidence
+        if: steps.credential.outputs.configured == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "matrix-telegram-activation"
+          git config user.email "matrix-telegram-activation@users.noreply.github.com"
+          git add evidence/notifications/telegram/destination.json
+          git add evidence/notifications/telegram/activation.json
+          if git diff --cached --quiet; then
+            echo "NO_TELEGRAM_ACTIVATION_CHANGE"
+            exit 0
+          fi
+          git commit -m "evidence(telegram): activate encrypted MATRIX destination"
+          git pull --rebase origin repair/cor09-world-pipeline
+          git push origin HEAD:repair/cor09-world-pipeline
