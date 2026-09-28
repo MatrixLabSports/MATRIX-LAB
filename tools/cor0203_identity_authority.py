@@ -143,6 +143,6 @@ def resolve_authority_mapping(
             "EXACT_PROVIDER_ID_PLUS_NAME_IOC_UNIQUE_PRECUT_SOURCE_ID_"
             "PLUS_FIXED_BIOGRAPHY_DOB_AND_DATED_PROVIDER_RANKING"
         ),
-        "identity_authority": "MATRIX_COR0203_ATP_BIOGRAPHICAL_SUBSET_R725",
+        "identity_authority": "MATRIX_COR0203_ATP_BIOGRAPHICAL_SUBSET_R733",
         "status": "PASS",
     }, None
