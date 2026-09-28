@@ -1,0 +1,58 @@
+name: API-Football retrospective walk-forward validation
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+    paths:
+      - .github/workflows/api-football-retrospective-validation.yml
+
+permissions:
+  contents: write
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout operational branch
+        uses: actions/checkout@v4
+        with:
+          ref: repair/cor09-world-pipeline
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: python -m pip install pytest
+      - name: Run retrospective validation tests
+        run: python -m pytest -q tests/test_api_football_retrospective_validation.py
+      - name: Build retrospective walk-forward evidence
+        run: python -m tools.api_football_retrospective_validation
+      - name: Enforce truth labels and no silent promotion
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          d=json.loads(Path("evidence/api_football/model_validation/retrospective_validation.json").read_text())
+          assert d["evaluation_kind"]=="RETROSPECTIVE_TEMPORAL_WALK_FORWARD_NOT_PROSPECTIVE"
+          assert d["promotion_screen"]["governed_engine_promoted"] is False
+          assert d["promotion_screen"]["p_matrix_generated"] is False
+          assert d["automatic_wagering"] is False
+          assert d["real_money"]=="BLOCKED"
+          print("MATRIX_FOOTBALL_RETROSPECTIVE_VALIDATION_GATE: PASS")
+          print("eligible_prediction_count=",d["eligible_prediction_count"])
+          print("promotion_screen=",d["promotion_screen"])
+          print("metrics=",d["metrics"])
+          PY
+      - name: Persist validation evidence
+        run: |
+          git config user.name "matrix-football-model-validator"
+          git config user.email "matrix-football-model-validator@users.noreply.github.com"
+          git add evidence/api_football/model_validation
+          if git diff --cached --quiet; then
+            echo NO_VALIDATION_EVIDENCE_CHANGE
+            exit 0
+          fi
+          git commit -m "evidence(football): persist retrospective walk-forward validation"
+          git pull --rebase origin repair/cor09-world-pipeline
+          git push origin HEAD:repair/cor09-world-pipeline
