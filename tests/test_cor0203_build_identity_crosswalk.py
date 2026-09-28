@@ -289,7 +289,7 @@ def test_governed_authority_fails_closed_when_biographical_dob_is_missing():
     assert "IDENTITY_AUTHORITY_DOB_INVALID:rapidapi-tennis:player:26925" in blockers
 
 
-def test_r730_expanded_authority_releases_only_evidenced_events():
+def test_r730_r731_authority_releases_only_evidenced_events():
     pre=_load(Path("evidence/cor0203/runtime/MATRIX_COR0203_PREFEATURE_REGISTRY_R730.json"))
     static=_load(Path("evidence/cor0203/runtime/MATRIX_COR0203_STATIC_CUT_20260921.json"))
     authority=_load(Path("evidence/cor0203/identity/MATRIX_COR0203_ATP_BIOGRAPHICAL_SUBSET_R731.json"))
@@ -305,3 +305,22 @@ def test_r730_expanded_authority_releases_only_evidenced_events():
         "COR0203-RAPIDAPI-TENNIS-1466",
         "COR0203-RAPIDAPI-TENNIS-1475",
     }
+
+
+def test_r730_r733_authority_releases_ultra_evidenced_profiles_only():
+    pre=_load(Path("evidence/cor0203/runtime/MATRIX_COR0203_PREFEATURE_REGISTRY_R730.json"))
+    static=_load(Path("evidence/cor0203/runtime/MATRIX_COR0203_STATIC_CUT_20260921.json"))
+    authority=_load(Path("evidence/cor0203/identity/MATRIX_COR0203_ATP_BIOGRAPHICAL_SUBSET_R733.json"))
+    out=build_crosswalk(prefeature=pre,static_cut=static,identity_authority=authority)
+    assert out["passed_events"] == 15
+    assert out["blocked_events"] == 2
+    blocked={row["event_id"] for row in out["events"] if row["status"]=="BLOCKED"}
+    assert blocked == {
+        "COR0203-RAPIDAPI-TENNIS-1471",
+        "COR0203-RAPIDAPI-TENNIS-1466",
+    }
+    assert all(
+        row.get("identity_authority")=="MATRIX_COR0203_ATP_BIOGRAPHICAL_SUBSET_R733"
+        for row in out["mappings"]
+        if row.get("identity_authority")
+    )
