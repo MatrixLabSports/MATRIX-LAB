@@ -44,3 +44,13 @@ def test_rapidapi_discovery_uses_verified_ultra_four_day_horizon():
     script = Path("scripts/cor0203_production_cycle.sh").read_text(encoding="utf-8")
     block = script.split("rapidapi_tennis)",1)[1].split(";;",1)[0]
     assert "--days 4" in block
+
+
+def test_cycle_runs_identity_restage_delta_before_staging():
+    script = Path("scripts/cor0203_production_cycle.sh").read_text(encoding="utf-8")
+    first_crosswalk = script.index("python -m tools.cor0203_build_identity_crosswalk")
+    delta = script.index("python -m tools.cor0203_identity_restage_delta")
+    second_crosswalk = script.index("python -m tools.cor0203_build_identity_crosswalk", first_crosswalk + 1)
+    stage = script.index("python -m tools.cor0203_stage_from_registry")
+    assert first_crosswalk < delta < second_crosswalk < stage
+    assert "MATRIX_COR0203_IDENTITY_RESTAGE_DELTA_LAST.json" in script
