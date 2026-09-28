@@ -44,6 +44,9 @@ jobs:
       - name: Run shadow-freeze adversarial tests
         run: python -m pytest -q tests/test_api_football_experimental_shadow_freeze.py
 
+      - name: Run Pinnacle diagnostic comparison tests
+        run: python -m pytest -q tests/test_api_football_shadow_pinnacle_comparison.py
+
       - name: Build canonical analysis inputs at true runtime UTC
         run: python -m tools.api_football_canonicalize_analysis_inputs
 
@@ -158,13 +161,55 @@ jobs:
           print("frozen_prediction_count=", shadow["frozen_prediction_count"])
           PY
 
-      - name: Persist canonical PIT and synchronized shadow evidence
+      - name: Compare synchronized shadow to Pinnacle reference diagnostically
+        run: python -m tools.api_football_compare_shadow_to_pinnacle
+
+      - name: Enforce Pinnacle diagnostic isolation
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          manifest = json.loads(
+              Path("evidence/api_football/pinnacle_shadow_comparison/manifest.json").read_text(encoding="utf-8")
+          )
+          comparison = json.loads(
+              Path("evidence/api_football/pinnacle_shadow_comparison/comparison.json").read_text(encoding="utf-8")
+          )
+
+          assert manifest["status"] == "PASS"
+          assert manifest["comparison_role"] == "DIAGNOSTIC_REFERENCE_ONLY"
+          assert manifest["p_matrix_status"] == "NOT_GENERATED"
+          assert manifest["odds_used_to_generate_shadow_probability"] is False
+          assert manifest["model_promotion"] is False
+          assert manifest["automatic_wagering"] is False
+          assert manifest["real_money"] == "BLOCKED"
+          assert comparison["protections"]["odds_used_to_generate_shadow_probability"] is False
+          assert comparison["protections"]["outcomes_used_to_generate_shadow_probability"] is False
+          assert comparison["protections"]["reference_is_diagnostic_only"] is True
+          assert comparison["protections"]["reference_does_not_promote_model"] is True
+          assert comparison["protections"]["real_money"] == "BLOCKED"
+          assert len(comparison["rows"]) == manifest["comparison_row_count"]
+          assert len({row["fixture_id"] for row in comparison["rows"]}) == manifest["matched_fixture_count"]
+          assert all(row["decision"] == "NO_BET" for row in comparison["rows"])
+
+          print("API_FOOTBALL_PINNACLE_DIAGNOSTIC_ISOLATION_GATE: PASS")
+          print("matched_fixture_count=", manifest["matched_fixture_count"])
+          print("comparison_row_count=", manifest["comparison_row_count"])
+          print("accepted_pinnacle_quote_observations_scanned=", manifest["accepted_pinnacle_quote_observations_scanned"])
+          print("rejected_pinnacle_quote_observations=", manifest["rejected_pinnacle_quote_observations"])
+          print("real_money=", manifest["real_money"])
+          PY
+
+      - name: Persist canonical PIT, synchronized shadow and Pinnacle diagnostic evidence
         shell: bash
         run: |
           set -euo pipefail
           git config user.name "matrix-api-football-canonical"
           git config user.email "matrix-api-football-canonical@users.noreply.github.com"
-          git add evidence/api_football/canonical_analysis evidence/api_football/experimental_shadow
+          git add evidence/api_football/canonical_analysis evidence/api_football/experimental_shadow evidence/api_football/pinnacle_shadow_comparison
           if git diff --cached --quiet; then
             echo "NO_CANONICAL_ANALYSIS_EVIDENCE_CHANGE"
             exit 0
