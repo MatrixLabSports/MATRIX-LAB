@@ -41,6 +41,9 @@ jobs:
       - name: Run temporal canonicalization tests
         run: python -m pytest -q tests/test_api_football_canonical_analysis_inputs.py
 
+      - name: Run shadow-freeze adversarial tests
+        run: python -m pytest -q tests/test_api_football_experimental_shadow_freeze.py
+
       - name: Build canonical analysis inputs at true runtime UTC
         run: python -m tools.api_football_canonicalize_analysis_inputs
 
@@ -106,13 +109,62 @@ jobs:
           print("real_money=", manifest["real_money"])
           PY
 
-      - name: Persist canonical PIT evidence
+      - name: Freeze synchronized experimental research baseline
+        run: python -m tools.api_football_freeze_experimental_shadow
+
+      - name: Enforce canonical-to-shadow synchronization
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          from datetime import datetime
+          import json
+          from pathlib import Path
+
+          canonical = json.loads(
+              Path("evidence/api_football/canonical_analysis/manifest.json").read_text(encoding="utf-8")
+          )
+          shadow = json.loads(
+              Path("evidence/api_football/experimental_shadow/shadow_freeze.json").read_text(encoding="utf-8")
+          )
+          adjudication = json.loads(
+              Path("evidence/api_football/experimental_shadow/engine_adjudication.json").read_text(encoding="utf-8")
+          )
+
+          assert shadow["source_canonical_bundle_sha256"] == canonical["bundle_sha256"]
+          assert shadow["source_canonical_analysis_as_of_utc"] == canonical["analysis_as_of_utc"]
+          assert datetime.fromisoformat(shadow["freeze_at_utc"]) >= datetime.fromisoformat(canonical["analysis_as_of_utc"])
+          assert shadow["frozen_prediction_count"] <= canonical["ready_input_count"]
+          assert shadow["p_matrix_status"] == "NOT_GENERATED"
+          assert shadow["model_status"] == "EXPERIMENTAL_NOT_PROMOTED"
+          assert shadow["protections"]["odds_used_to_generate_probability"] is False
+          assert shadow["protections"]["outcomes_used_to_generate_probability"] is False
+          assert shadow["protections"]["real_money"] == "BLOCKED"
+          assert adjudication["frozen_shadow_input_count"] == shadow["frozen_prediction_count"]
+          assert adjudication["governed_p_matrix_engine_available"] is False
+          assert adjudication["real_money"] == "BLOCKED"
+
+          freeze = datetime.fromisoformat(shadow["freeze_at_utc"])
+          for row in shadow["rows"]:
+              assert freeze < datetime.fromisoformat(row["kickoff_utc"])
+              assert row["market_count"] >= 3
+              assert row["decision"] == "NO_BET"
+              assert row["p_matrix"] is None
+
+          print("API_FOOTBALL_CANONICAL_SHADOW_SYNC_GATE: PASS")
+          print("canonical_bundle_sha256=", canonical["bundle_sha256"])
+          print("analysis_as_of_utc=", canonical["analysis_as_of_utc"])
+          print("freeze_at_utc=", shadow["freeze_at_utc"])
+          print("frozen_prediction_count=", shadow["frozen_prediction_count"])
+          PY
+
+      - name: Persist canonical PIT and synchronized shadow evidence
         shell: bash
         run: |
           set -euo pipefail
           git config user.name "matrix-api-football-canonical"
           git config user.email "matrix-api-football-canonical@users.noreply.github.com"
-          git add evidence/api_football/canonical_analysis
+          git add evidence/api_football/canonical_analysis evidence/api_football/experimental_shadow
           if git diff --cached --quiet; then
             echo "NO_CANONICAL_ANALYSIS_EVIDENCE_CHANGE"
             exit 0
