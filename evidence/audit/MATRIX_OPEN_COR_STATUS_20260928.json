@@ -1,0 +1,58 @@
+{
+  "schema": "MATRIX_OPEN_COR_STATUS_V1",
+  "as_of_date_bogota": "2026-09-28",
+  "external_audit_closed": false,
+  "real_money": "BLOCKED",
+  "corrections": {
+    "COR02": {
+      "status": "IN_PROGRESS",
+      "criterion": "Temporal stability AND rank-band stability PASS in >=3 consecutive non-overlapping windows; total holdout n=600.",
+      "holdout_id": "A22_POST_AUDIT_VIRGIN_HOLDOUT_V1",
+      "current_observations": 32,
+      "target_observations": 600,
+      "window1_count": 32,
+      "window1_target": 200,
+      "metrics": "SEALED_UNTIL_600",
+      "outcomes_read_for_performance": 0,
+      "integrity": "PASS",
+      "closure_allowed_now": false
+    },
+    "COR03": {
+      "status": "IN_PROGRESS",
+      "criterion": "BSS >=3% sustained in repeated validation under the predeclared holdout contract.",
+      "current_observations": 32,
+      "target_observations": 600,
+      "metrics": "SEALED_UNTIL_600",
+      "outcomes_read_for_performance": 0,
+      "closure_allowed_now": false
+    },
+    "COR11": {
+      "status": "IN_PROGRESS",
+      "criterion": "Cadence documented and respected for >=14 consecutive real Bogota calendar days.",
+      "real_consecutive_days": 8,
+      "target_days": 14,
+      "dates": [
+        "2026-09-21",
+        "2026-09-22",
+        "2026-09-23",
+        "2026-09-24",
+        "2026-09-25",
+        "2026-09-26",
+        "2026-09-27",
+        "2026-09-28"
+      ],
+      "synthetic_days": false,
+      "backfill": false,
+      "closure_allowed_now": false
+    }
+  },
+  "technical_state": {
+    "cor0203_provider": "rapidapi_tennis",
+    "cor0203_provider_ready_last_success": true,
+    "cor0203_last_successful_freeze_count_increment": 2,
+    "cor0203_last_verified_count_after_success": 32,
+    "cor0203_discovery_horizon_days": 2,
+    "cor0203_four_day_experiment": "REJECTED_AFTER_HTTP_429_AND_REVERTED",
+    "cor11_scheduler": "ENABLED_FAIL_CLOSED_REAL_DAY_ONLY"
+  }
+}
