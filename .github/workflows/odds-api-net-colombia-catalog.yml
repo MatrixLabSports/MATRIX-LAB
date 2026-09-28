@@ -1,0 +1,76 @@
+name: Odds API Colombia bookmaker catalog audit
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: odds-api-net-colombia-catalog-audit
+  cancel-in-progress: false
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout operational branch
+        uses: actions/checkout@v4
+        with:
+          ref: repair/cor09-world-pipeline
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependency
+        run: python -m pip install requests
+
+      - name: Probe Colombia bookmaker catalog
+        env:
+          ODDS_API_NET_KEY: ${{ secrets.ODDS_API_NET_KEY }}
+        run: |
+          set -euo pipefail
+          rm -rf evidence/odds_api_net/colombia_catalog
+          python -m tools.odds_api_net_colombia_catalog_probe
+
+      - name: Enforce catalog gate
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          p = json.loads(Path("evidence/odds_api_net/colombia_catalog/manifest.json").read_text(encoding="utf-8"))
+          assert p["status"] == "PASS"
+          assert p["network_calls_performed"] == 1
+          assert p["required_presence"]["rushbet"] is True
+          assert p["required_presence"]["betplay"] is True
+          assert p["required_presence"]["betano"] is True
+          assert p["required_presence"]["bwin"] is True
+          assert p["odds_used_to_generate_model_probability"] is False
+          assert p["real_money"] == "BLOCKED"
+          print("ODDS_API_NET_COLOMBIA_CATALOG_GATE: PASS")
+          print("provider_rows=", p["provider_rows"])
+          print("rushbet_present=", p["required_presence"]["rushbet"])
+          print("betplay_present=", p["required_presence"]["betplay"])
+          print("betano_present=", p["required_presence"]["betano"])
+          print("bwin_present=", p["required_presence"]["bwin"])
+          print("rate_remaining=", p["rate_limit"]["remaining"])
+          PY
+
+      - name: Persist evidence
+        run: |
+          set -euo pipefail
+          git config user.name "matrix-odds-api-net-audit"
+          git config user.email "matrix-odds-api-net-audit@users.noreply.github.com"
+          git add evidence/odds_api_net/colombia_catalog
+          if git diff --cached --quiet; then
+            echo "NO_COLOMBIA_CATALOG_EVIDENCE"
+            exit 3
+          fi
+          git commit -m "evidence(odds): persist Colombia bookmaker catalog audit"
+          git pull --rebase origin repair/cor09-world-pipeline
+          git push origin HEAD:repair/cor09-world-pipeline
