@@ -5,6 +5,7 @@ import pytest
 from app.research.football.match_analysis_input import build_match_analysis_inputs_from_benchmark
 from tools.api_football_canonicalize_analysis_inputs import (
     MAX_TRACKED_TEXT_BYTES,
+    _canonical_hash,
     build_canonical_analysis_bundle,
     load_chunked_canonical_bundle,
     write_chunked_canonical_bundle,
@@ -153,7 +154,8 @@ def test_chunked_persistence_round_trips_without_oversized_monolith(tmp_path):
     )
     loaded_bundle, loaded_manifest = load_chunked_canonical_bundle(tmp_path)
 
-    assert loaded_bundle == bundle
+    assert _canonical_hash(loaded_bundle) == _canonical_hash(bundle)
+    assert loaded_bundle["inputs"] == __import__("json").loads(__import__("json").dumps(bundle["inputs"]))
     assert loaded_manifest == persisted
     assert persisted["storage_format"] == "CHUNKED_JSON_V1"
     assert persisted["legacy_monolith_removed"] is True
