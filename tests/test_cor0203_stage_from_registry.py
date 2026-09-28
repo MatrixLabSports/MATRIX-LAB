@@ -417,3 +417,25 @@ def test_crosswalk_static_fallback_fails_closed_when_required_static_field_missi
     assert staged["status"] == "ALL_BLOCKED"
     blockers = json.loads((runtime / "MATRIX_COR0203_STAGE_BLOCKERS_R722.json").read_text())
     assert "SEALED_STATIC4_CROSSWALK_INCOMPLETE:Hugo Grenier" in blockers["blocked"][0]["blockers"]
+
+
+
+def test_recovery_projection_preserves_original_preregistration_reference(tmp_path):
+    runtime = tmp_path / "runtime"
+    holdout = tmp_path / "holdout"
+    setup_frozen_source(runtime, holdout)
+
+    p = prereg()
+    p["schema"] = "MATRIX_COR0203_RECOVERY_PREFEATURE_PROJECTION_R725_V1"
+    p["source_preregistration_reference"] = "MATRIX_COR0203_RAPIDAPI_TENNIS_PREFEATURE_REGISTRY_R723_V1"
+    write(runtime / "MATRIX_COR0203_PREFEATURE_REGISTRY_R725.json", p)
+
+    result = stage_all_pending(runtime_dir=runtime, holdout_dir=holdout)
+
+    staged = next(row for row in result["revisions"] if row["revision"] == 725)
+    assert staged["status"] == "PASS"
+    events = json.loads((runtime / "MATRIX_COR0203_PROSPECTIVE_EVENTS_R725.json").read_text())
+    assert (
+        events["events"][0]["prior_preregistration_reference"]
+        == "MATRIX_COR0203_RAPIDAPI_TENNIS_PREFEATURE_REGISTRY_R723_V1"
+    )
