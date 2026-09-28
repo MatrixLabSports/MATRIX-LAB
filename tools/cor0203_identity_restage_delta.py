@@ -40,6 +40,19 @@ def _frozen_event_ids(holdout_dir: Path) -> set[str]:
     return out
 
 
+def _physical_observation_count(holdout_dir: Path) -> int:
+    count = 0
+    for p in holdout_dir.glob("MATRIX_COR0203_HOLDOUT_BATCH_R*.json"):
+        if not EXACT_HOLDOUT_RE.match(p.name):
+            continue
+        try:
+            d = _load(p)
+            count = max(count, int(d.get("ending_observation_count", 0)))
+        except (TypeError, ValueError, json.JSONDecodeError):
+            continue
+    return count
+
+
 def _staged_event_ids(runtime_dir: Path) -> set[str]:
     out: set[str] = set()
     for p in runtime_dir.glob("MATRIX_COR0203_PROSPECTIVE_EVENTS_R*.json"):
@@ -70,6 +83,7 @@ def build_identity_restage_delta(
         }
 
     frozen = _frozen_event_ids(holdout_dir)
+    physical_count = _physical_observation_count(holdout_dir)
     staged = _staged_event_ids(runtime_dir)
     candidates: list[tuple[int, str, dict[str, Any]]] = []
 
@@ -126,7 +140,7 @@ def build_identity_restage_delta(
         "schema": f"MATRIX_COR0203_IDENTITY_RESTAGE_DELTA_R{next_rev}_V1",
         "revision": f"R{next_rev}",
         "holdout_id": "A22_POST_AUDIT_VIRGIN_HOLDOUT_V1",
-        "starting_observation_count": len(frozen),
+        "starting_observation_count": physical_count,
         "created_before_feature_acquisition": True,
         "selection_unchanged_from_original_preregistration": True,
         "new_event_selection": False,
