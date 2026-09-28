@@ -6,6 +6,7 @@ import json
 from typing import Any, Mapping
 
 from app.market.price_execution import CanonicalOddsQuote
+from app.market.odds_api_net_market_mapping import resolve_odds_api_net_market_version
 
 
 def _canonical_json(value: object) -> str:
@@ -119,7 +120,12 @@ def adapt_odds_api_net_snapshot(
 
         market_version = str(raw.get("matrix_market_version") or "").strip()
         if not market_version:
-            market_version = f"UNMAPPED/odds_api_net/{sport}/{market_key}"
+            market_version = resolve_odds_api_net_market_version(
+                sport=sport,
+                bet_type=bet_type,
+                metric=metric,
+                period=period,
+            ) or f"UNMAPPED/odds_api_net/{sport}/{market_key}"
 
         quote = CanonicalOddsQuote(
             provider="odds_api_net",
