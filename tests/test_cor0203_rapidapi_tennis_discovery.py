@@ -186,3 +186,23 @@ def test_fixture_range_is_bounded():
     client = RapidApiTennisClient("k", opener=RecordingOpener([]))
     with pytest.raises(ValueError, match="DISCOVERY_RANGE_EXCEEDS_4_DAYS"):
         client.fixtures(date(2026, 9, 1), date(2026, 9, 6))
+
+
+def test_client_rejects_non_ascii_masked_secret_before_network():
+    with pytest.raises(
+        RapidApiTennisDiscoveryError,
+        match="RAPIDAPI_TENNIS_KEY_MUST_BE_ASCII",
+    ):
+        RapidApiTennisClient("•" * 50, opener=RecordingOpener([]))
+
+
+def test_successful_provider_response_counts_verified_response():
+    opener = RecordingOpener([
+        {"data": [], "pageNo": 1, "pageSize": 0, "hasNextPage": False}
+    ])
+    client = RapidApiTennisClient("ascii-key", opener=opener)
+
+    client.fixtures(date(2026, 9, 27), date(2026, 9, 27))
+
+    assert client.request_attempt_count == 1
+    assert client.request_count == 1
