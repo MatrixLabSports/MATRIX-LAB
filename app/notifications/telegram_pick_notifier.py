@@ -7,11 +7,9 @@ import json
 from pathlib import Path
 from typing import Any
 
-import requests
 
 from app.market.colombia_bookmakers import classify_bookmaker
 
-TELEGRAM_API_BASE = "https://api.telegram.org"
 MIN_DECIMAL_ODDS_EXCLUSIVE = 1.50
 ALLOWED_SPORTS = {"football", "tennis"}
 ALLOWED_MODES = {"SHADOW", "CONTROLLED_LIVE"}
@@ -163,46 +161,6 @@ def format_pick_message(card: TelegramPickCard) -> str:
         f"Modelo: {card.model_binding}",
         f"Pick ID: {card.pick_id}",
     ])
-
-
-def send_pick(
-    card: TelegramPickCard,
-    *,
-    bot_token: str,
-    chat_id: str,
-    session: Any | None = None,
-    timeout_seconds: float = 15.0,
-) -> TelegramDispatchResult:
-    token = _text(bot_token, "TELEGRAM_BOT_TOKEN")
-    chat = _text(chat_id, "TELEGRAM_CHAT_ID")
-    token.encode("ascii")
-
-    message = format_pick_message(card)
-    client = session or requests.Session()
-    response = client.post(
-        f"{TELEGRAM_API_BASE}/bot{token}/sendMessage",
-        json={
-            "chat_id": chat,
-            "text": message,
-            "disable_web_page_preview": True,
-            "protect_content": True,
-        },
-        timeout=timeout_seconds,
-    )
-    response.raise_for_status()
-    payload = response.json()
-    if not isinstance(payload, dict) or payload.get("ok") is not True:
-        raise ValueError("TELEGRAM_SEND_FAILED")
-    result = payload.get("result")
-    if not isinstance(result, dict) or not isinstance(result.get("message_id"), int):
-        raise ValueError("TELEGRAM_MESSAGE_ID_MISSING")
-
-    return TelegramDispatchResult(
-        message_id=int(result["message_id"]),
-        chat_id=chat,
-        pick_id=card.pick_id,
-        message_sha256=_sha(message),
-    )
 
 
 class TelegramDispatchLedger:
