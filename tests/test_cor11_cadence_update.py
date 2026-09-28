@@ -43,6 +43,7 @@ def test_cor11_advances_only_next_real_calendar_day():
     assert result["rules"]["backfill"] is False
     assert result["rules"]["synthetic_days"] is False
     assert result["rules"]["real_money"] == "BLOCKED"
+    assert "cor10" not in result
 
 
 def test_cor11_rejects_gap():
