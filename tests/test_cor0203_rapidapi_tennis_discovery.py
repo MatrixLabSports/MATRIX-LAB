@@ -10,6 +10,7 @@ from tools.cor0203_rapidapi_tennis_discovery import (
     RapidApiTennisClient,
     RapidApiTennisDiscoveryError,
     build_discovery_registry,
+    fetch_discovery,
 )
 
 
@@ -207,3 +208,108 @@ def test_successful_provider_response_counts_verified_response():
 
     assert client.request_attempt_count == 1
     assert client.request_count == 1
+
+
+
+def test_fetch_discovery_reuses_embedded_tournament_metadata_beyond_fallback_cap():
+    class EmbeddedClient:
+        def __init__(self):
+            self.request_count = 0
+            self.tournament_info_calls = []
+
+        def fixtures(self, start, stop):
+            rows = []
+            for i in range(15):
+                tid = 700 + i
+                p1 = 1000 + i * 2
+                p2 = p1 + 1
+                row = fixture(
+                    match_id=2000 + i,
+                    tournament_id=tid,
+                    p1=p1,
+                    p2=p2,
+                    start="2026-09-28T12:00:00.000Z",
+                )
+                row["player1"]["name"] = f"Player {p1}"
+                row["player2"]["name"] = f"Player {p2}"
+                row["tournament"] = {
+                    "id": tid,
+                    "name": f"Embedded Challenger {i}",
+                    "tier": "Challenger 75",
+                    "rankId": 1,
+                    "court": {"id": 1, "name": "Hard"},
+                }
+                rows.append(row)
+            return {
+                "data": rows,
+                "pageNo": 1,
+                "pageSize": len(rows),
+                "hasNextPage": False,
+            }
+
+        def tournament_info(self, tournament_id):
+            self.tournament_info_calls.append(tournament_id)
+            raise AssertionError("embedded tournament metadata should avoid fallback")
+
+        def ranking_snapshot(self, *, ranking_date, wanted_player_ids):
+            return {
+                str(pid): {
+                    "place": str(100 + n),
+                    "points": str(1000 - n),
+                    "player": f"Player {pid}",
+                    "country": "USA",
+                    "snapshot_date": ranking_date.isoformat(),
+                }
+                for n, pid in enumerate(sorted(wanted_player_ids))
+            }
+
+    client = EmbeddedClient()
+    result = fetch_discovery(
+        client=client,
+        start=date(2026, 9, 28),
+        stop=date(2026, 9, 29),
+        as_of_utc="2026-09-28T03:00:00+00:00",
+    )
+
+    assert result["eligible_input_events"] == 15
+    assert result["tournaments_queried"] == 15
+    assert result["tournaments_embedded"] == 15
+    assert result["tournaments_network_queried"] == 0
+    assert result["tournaments_unresolved"] == 0
+    assert client.tournament_info_calls == []
+
+
+def test_fetch_discovery_uses_bounded_fallback_when_fixture_lacks_tournament_metadata():
+    class FallbackClient:
+        def __init__(self):
+            self.request_count = 0
+            self.tournament_info_calls = []
+
+        def fixtures(self, start, stop):
+            return {
+                "data": [fixture()],
+                "pageNo": 1,
+                "pageSize": 1,
+                "hasNextPage": False,
+            }
+
+        def tournament_info(self, tournament_id):
+            self.tournament_info_calls.append(tournament_id)
+            return tournament()
+
+        def ranking_snapshot(self, *, ranking_date, wanted_player_ids):
+            return rankings()
+
+    client = FallbackClient()
+    result = fetch_discovery(
+        client=client,
+        start=date(2026, 9, 28),
+        stop=date(2026, 9, 29),
+        as_of_utc="2026-09-28T03:00:00+00:00",
+    )
+
+    assert result["eligible_input_events"] == 1
+    assert result["tournaments_embedded"] == 0
+    assert result["tournaments_network_queried"] == 1
+    assert result["tournaments_unresolved"] == 0
+    assert client.tournament_info_calls == ["500"]
