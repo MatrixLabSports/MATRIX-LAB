@@ -94,3 +94,16 @@ def test_freeze_and_truthfulness_invariants_remain_permanent():
     assert inv["duplicate_freeze_rejected"] is True
     assert inv["architecture_ready_not_provider_active"] is True
     assert inv["provider_visible_not_regulator_authorized"] is True
+
+
+def test_permanent_mandate_is_indexed_for_future_continuity():
+    index = json.loads(
+        Path("evidence/audit/MATRIX_PERMANENT_MANDATE_INDEX_V1.json").read_text(encoding="utf-8")
+    )
+    rows = {row["id"]: row for row in index["mandates"]}
+    assert "COLOMBIA_BOOKMAKER_PERMANENT_MANDATE_V1" in rows
+    assert rows["COLOMBIA_BOOKMAKER_PERMANENT_MANDATE_V1"]["status"] == "PERMANENT_ACTIVE"
+    assert rows["COLOMBIA_BOOKMAKER_PERMANENT_MANDATE_V1"]["path"] == (
+        "docs/providers/MATRIX_COLOMBIA_BOOKMAKER_PERMANENT_MANDATE_V1.md"
+    )
+    assert index["continuity_requirement"].startswith("Future prompts, handoffs, audits")
