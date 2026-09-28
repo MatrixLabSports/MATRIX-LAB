@@ -19,19 +19,7 @@ def test_empty_cycle_exits_before_mutable_last_files_are_staged():
         "SETTLEMENT_SYNC_LAST",
         "HEARTBEAT",
     ):
-        token = 'git add "
-
-def test_append_only_artifacts_define_material_cycle():
-    text = CYCLE.read_text(encoding="utf-8-sig")
-    material_check = text.index('if git diff --cached --quiet; then')
-    for token in (
-        "MATRIX_COR0203_PREFEATURE_REGISTRY_R*.json",
-        "MATRIX_COR0203_IDENTITY_CROSSWALK_R*.json",
-        "MATRIX_COR0203_BATCH_PREFLIGHT_R*.json",
-        "MATRIX_COR0203_HOLDOUT_BATCH_R*.json",
-    ):
-        assert text.index(token) < material_check
- + variable + '"'
+        token = 'git add "$' + variable + '"'
         assert text.index(token) > material_check
 
 
