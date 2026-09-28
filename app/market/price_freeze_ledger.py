@@ -40,6 +40,7 @@ class PriceFreeze:
     provider: str
     provider_event_id: str
     market_key: str
+    market_version: str
     bet_type: str
     metric: str | None
     period: str
@@ -124,6 +125,7 @@ def build_price_freeze(
         provider=quote.provider,
         provider_event_id=quote.provider_event_id,
         market_key=quote.market_key,
+        market_version=quote.market_version,
         bet_type=quote.bet_type,
         metric=quote.metric,
         period=quote.period,
