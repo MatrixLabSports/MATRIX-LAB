@@ -75,7 +75,7 @@ case "$TENNIS_PROVIDER" in
       --out "$DISCOVERY" \
       --summary-out "$DURABLE_DISCOVERY_LAST" \
       --store "$ACQUISITION_STORE" \
-      --days 4
+      --days 2
     ;;
   *)
     echo "UNSUPPORTED_MATRIX_TENNIS_PROVIDER:$TENNIS_PROVIDER" >&2
