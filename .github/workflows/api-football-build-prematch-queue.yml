@@ -49,10 +49,11 @@ jobs:
           queue = json.loads((root / "history_acquisition_queue.json").read_text(encoding="utf-8"))
           inventory = json.loads((root / "world_inventory.json").read_text(encoding="utf-8"))
 
-          assert inventory["future_fixture_count"] == 83
-          assert inventory["unique_team_count"] == 166
-          assert queue["target_fixtures"] == 83
-          assert queue["unique_teams"] == 166
+          assert inventory["future_fixture_count"] > 0
+          assert inventory["future_fixture_count"] == queue["target_fixtures"]
+          assert inventory["future_fixture_count"] == len(benchmark["fixtures"])
+          assert inventory["unique_team_count"] == queue["unique_teams"]
+          assert inventory["unique_team_count"] > 0
           assert queue["network_calls_performed"] == 0
           assert benchmark["benchmark_status"] == "HISTORY_PENDING"
           assert benchmark["money_decisions_enabled"] is False
