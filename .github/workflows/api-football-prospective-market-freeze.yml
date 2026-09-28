@@ -11,6 +11,10 @@ on:
 permissions:
   contents: write
 
+concurrency:
+  group: api-football-prospective-freeze-mutation
+  cancel-in-progress: false
+
 jobs:
   freeze:
     runs-on: ubuntu-latest
