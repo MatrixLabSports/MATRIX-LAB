@@ -314,7 +314,11 @@ def stage_prefeature(
             "target_period": int(event.get("target_period")),
             "event_start_utc": event.get("event_start_utc"),
             "source_reference": source_reference,
-            "prior_preregistration_reference": str(pre.get("schema") or prefeature_path.stem),
+            "prior_preregistration_reference": str(
+                pre.get("source_preregistration_reference")
+                or pre.get("schema")
+                or prefeature_path.stem
+            ),
             "players": resolved,
         })
 
