@@ -86,14 +86,14 @@ def build(root:Path)->dict[str,Any]:
     baseline=_metrics(val,[float(r["baseline"]["btts"]) for r in val])
 
     trials=[]
-    for lr in (0.01,0.03,0.05):
-        for l2 in (0.0,0.001,0.01,0.05):
-            for epochs in (150,300,600):
+    for lr in (0.01,0.03):
+        for l2 in (0.001,0.01):
+            for epochs in (100,200):
                 w=_fit(dev,lr,l2,epochs)
                 dm=_metrics(dev,[_predict(w,r) for r in dev])
                 trials.append((dm["log_loss"],dm["brier_score"],lr,l2,epochs,w))
     trials.sort(key=lambda x:(x[0],x[1]))
-    shortlist=trials[:8]
+    shortlist=trials[:4]
     selected=None
     for _,_,lr,l2,epochs,w in shortlist:
         vm=_metrics(val,[_predict(w,r) for r in val])
