@@ -6,6 +6,8 @@ from hashlib import sha256
 import json
 from math import exp, factorial, log
 from pathlib import Path
+
+from tools.api_football_prediction_store import write_chunked_json
 from typing import Any, Iterable, Mapping
 
 FINAL_STATUSES = {"FT", "AET", "PEN"}
@@ -304,10 +306,14 @@ def main() -> None:
     out.mkdir(parents=True,exist_ok=True)
     predictions=result.pop("predictions")
     pred_payload={"schema":"MATRIX_FOOTBALL_RETROSPECTIVE_WALK_FORWARD_PREDICTIONS_V1","rows":predictions}
-    pred_path=out/"retrospective_predictions.json"
-    pred_path.write_text(json.dumps(pred_payload,ensure_ascii=False,indent=2,sort_keys=True)+"\n",encoding="utf-8")
+    pred_manifest=write_chunked_json(
+        payload=pred_payload,
+        out_dir=out,
+        base_name="retrospective_predictions",
+    )
     result["predictions_sha256"]=_canonical_hash(pred_payload)
-    result["predictions_path"]=pred_path.as_posix()
+    result["predictions_path"]=(out/"retrospective_predictions_manifest.json").as_posix()
+    result["predictions_chunk_count"]=pred_manifest["chunk_count"]
     result["generated_at_utc"]=datetime.now(timezone.utc).replace(microsecond=0).isoformat()
     manifest=out/"retrospective_validation.json"
     manifest.write_text(json.dumps(result,ensure_ascii=False,indent=2,sort_keys=True)+"\n",encoding="utf-8")
