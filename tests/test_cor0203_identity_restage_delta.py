@@ -54,3 +54,23 @@ def test_does_not_duplicate_frozen_or_already_staged_events(tmp_path):
     result=build_identity_restage_delta(runtime_dir=runtime,holdout_dir=holdout)
     assert result["created"] is False
     assert result["events"]==0
+
+
+def test_delta_start_count_uses_physical_ending_count_not_raw_event_count(tmp_path):
+    runtime=tmp_path/"runtime"
+    holdout=tmp_path/"holdout"
+    runtime.mkdir(); holdout.mkdir()
+    _write(runtime/"MATRIX_COR0203_PREFEATURE_REGISTRY_R10.json",{
+        "events":[{"event_id":"E3","outcome":None,"metrics_opened":False,"features_loaded":False}]
+    })
+    _write(runtime/"MATRIX_COR0203_IDENTITY_CROSSWALK_R10.json",{
+        "events":[{"event_id":"E3","status":"PASS"}]
+    })
+    _write(holdout/"MATRIX_COR0203_HOLDOUT_BATCH_R1.json",{
+        "ending_observation_count":44,
+        "observations":[{"event_id":"OLD1"},{"event_id":"OLD2"}]
+    })
+    result=build_identity_restage_delta(runtime_dir=runtime,holdout_dir=holdout)
+    delta=json.loads((runtime/"MATRIX_COR0203_PREFEATURE_REGISTRY_R11.json").read_text())
+    assert result["created"] is True
+    assert delta["starting_observation_count"]==44
