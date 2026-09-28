@@ -7,6 +7,11 @@ import unicodedata
 from pathlib import Path
 from typing import Any, Mapping
 
+from tools.cor0203_identity_authority import (
+    build_provider_authority_index,
+    resolve_authority_mapping,
+)
+
 REV_RE = re.compile(r"_R(\d+)\.json$")
 
 PROVIDER_PLAYER_PATTERNS = {
@@ -61,6 +66,7 @@ def build_crosswalk(
     *,
     prefeature: Mapping[str, Any],
     static_cut: Mapping[str, Any],
+    identity_authority: Mapping[str, Any] | None = None,
 ) -> dict[str, Any]:
     if str(static_cut.get("ranking_cut")) != "20260921":
         raise ValueError("STATIC_CUT_AUTHORITY_MISMATCH")
@@ -85,6 +91,7 @@ def build_crosswalk(
         payload["canonical_source_id"] = str(source_id)
         by_rank_points.setdefault((rank, points), []).append(payload)
 
+    authority_index = build_provider_authority_index(identity_authority)
     mappings_by_provider: dict[str, dict[str, Any]] = {}
     events: list[dict[str, Any]] = []
 
@@ -125,46 +132,68 @@ def build_crosswalk(
                 continue
 
             candidates = by_rank_points.get((rank, points), [])
-            if len(candidates) != 1:
-                event_blockers.append(
-                    ("STATIC_IDENTITY_NO_MATCH:" if not candidates else "STATIC_IDENTITY_NONUNIQUE:")
-                    + provider_id
+            mapping: dict[str, Any] | None = None
+            if len(candidates) == 1:
+                candidate = candidates[0]
+                provider_name = str(
+                    ranking.get("player")
+                    or identity.get("display_name")
+                    or ""
+                ).strip()
+                display_name = str(identity.get("display_name") or "").strip()
+                canonical_name = str(candidate.get("canonical_name") or "").strip()
+                canonical_norm = _norm_name(canonical_name)
+                provider_norm = _norm_name(provider_name)
+                display_norm = _norm_name(display_name)
+
+                if not canonical_norm:
+                    event_blockers.append("CANONICAL_NAME_MISSING:" + provider_id)
+                    continue
+                if canonical_norm not in {provider_norm, display_norm}:
+                    event_blockers.append("IDENTITY_NAME_CONFIRMATION_FAIL:" + provider_id)
+                    continue
+
+                mapping = {
+                    "provider": provider,
+                    "provider_player_id": provider_id,
+                    "provider_display_name": display_name,
+                    "provider_ranking_name": provider_name,
+                    "provider_rank": rank,
+                    "provider_rank_points": points,
+                    "canonical_source_id": str(candidate["canonical_source_id"]),
+                    "canonical_name": canonical_name,
+                    "canonical_rank": int(candidate["rank"]),
+                    "canonical_rank_points": int(candidate["rank_points"]),
+                    "canonical_hand": candidate.get("hand"),
+                    "canonical_age": candidate.get("age"),
+                    "canonical_ioc": candidate.get("ioc"),
+                    "ranking_cut": "20260921",
+                    "match_basis": "EXACT_RANK_AND_POINTS_PLUS_NAME_CONFIRMATION",
+                    "status": "PASS",
+                }
+            else:
+                static_blocker = (
+                    "STATIC_IDENTITY_NO_MATCH:"
+                    if not candidates
+                    else "STATIC_IDENTITY_NONUNIQUE:"
+                ) + provider_id
+                authority_mapping, authority_blocker = resolve_authority_mapping(
+                    identity=identity,
+                    provider=provider,
+                    provider_id=provider_id,
+                    ranking=ranking,
+                    rank=rank,
+                    points=points,
+                    authority_index=authority_index,
                 )
-                continue
+                if authority_mapping is None:
+                    event_blockers.append(static_blocker)
+                    if authority_index and authority_blocker:
+                        event_blockers.append(authority_blocker)
+                    continue
+                mapping = authority_mapping
 
-            candidate = candidates[0]
-            provider_name = str(ranking.get("player") or identity.get("display_name") or "").strip()
-            display_name = str(identity.get("display_name") or "").strip()
-            canonical_name = str(candidate.get("canonical_name") or "").strip()
-            canonical_norm = _norm_name(canonical_name)
-            provider_norm = _norm_name(provider_name)
-            display_norm = _norm_name(display_name)
-
-            if not canonical_norm:
-                event_blockers.append("CANONICAL_NAME_MISSING:" + provider_id)
-                continue
-            if canonical_norm not in {provider_norm, display_norm}:
-                event_blockers.append("IDENTITY_NAME_CONFIRMATION_FAIL:" + provider_id)
-                continue
-
-            mapping = {
-                "provider": provider,
-                "provider_player_id": provider_id,
-                "provider_display_name": display_name,
-                "provider_ranking_name": provider_name,
-                "provider_rank": rank,
-                "provider_rank_points": points,
-                "canonical_source_id": str(candidate["canonical_source_id"]),
-                "canonical_name": canonical_name,
-                "canonical_rank": int(candidate["rank"]),
-                "canonical_rank_points": int(candidate["rank_points"]),
-                "canonical_hand": candidate.get("hand"),
-                "canonical_age": candidate.get("age"),
-                "canonical_ioc": candidate.get("ioc"),
-                "ranking_cut": "20260921",
-                "match_basis": "EXACT_RANK_AND_POINTS_PLUS_NAME_CONFIRMATION",
-                "status": "PASS",
-            }
+            assert mapping is not None
 
             existing = mappings_by_provider.get(provider_id)
             if existing is not None and existing["canonical_source_id"] != mapping["canonical_source_id"]:
@@ -219,8 +248,18 @@ def build_crosswalk(
     }
 
 
-def build_all_crosswalks(*, runtime_dir: Path, static_cut_path: Path) -> dict[str, Any]:
+def build_all_crosswalks(
+    *,
+    runtime_dir: Path,
+    static_cut_path: Path,
+    identity_authority_path: Path | None = None,
+) -> dict[str, Any]:
     static_cut = _load(static_cut_path)
+    identity_authority = (
+        _load(identity_authority_path)
+        if identity_authority_path is not None and identity_authority_path.exists()
+        else None
+    )
     results: list[dict[str, Any]] = []
 
     for pre_path in sorted(runtime_dir.glob("MATRIX_COR0203_PREFEATURE_REGISTRY_R*.json"), key=_rev):
@@ -234,7 +273,11 @@ def build_all_crosswalks(*, runtime_dir: Path, static_cut_path: Path) -> dict[st
 
         revision = _rev(pre_path)
         out = runtime_dir / f"MATRIX_COR0203_IDENTITY_CROSSWALK_R{revision}.json"
-        result = build_crosswalk(prefeature=pre, static_cut=static_cut)
+        result = build_crosswalk(
+            prefeature=pre,
+            static_cut=static_cut,
+            identity_authority=identity_authority,
+        )
         result["revision"] = f"R{revision}"
         _write(out, result)
         results.append({
@@ -249,6 +292,7 @@ def build_all_crosswalks(*, runtime_dir: Path, static_cut_path: Path) -> dict[st
         "schema": "MATRIX_COR0203_IDENTITY_CROSSWALK_SUMMARY_V1",
         "ranking_cut": "20260921",
         "static_cut_source_sha256": static_cut.get("source_sha256"),
+        "identity_authority_loaded": identity_authority is not None,
         "crosswalk_revisions": results,
         "real_money": "BLOCKED",
     }
@@ -261,12 +305,20 @@ def main() -> None:
         default="evidence/cor0203/runtime/MATRIX_COR0203_STATIC_CUT_20260921.json",
     )
     parser.add_argument("--runtime-dir", default="evidence/cor0203/runtime")
+    parser.add_argument(
+        "--identity-authority",
+        default=(
+            "evidence/cor0203/identity/"
+            "MATRIX_COR0203_ATP_BIOGRAPHICAL_SUBSET_R725.json"
+        ),
+    )
     parser.add_argument("--summary-out", required=True)
     args = parser.parse_args()
 
     result = build_all_crosswalks(
         runtime_dir=Path(args.runtime_dir),
         static_cut_path=Path(args.static_cut),
+        identity_authority_path=Path(args.identity_authority),
     )
     _write(Path(args.summary_out), result)
     print(json.dumps(result, sort_keys=True))
