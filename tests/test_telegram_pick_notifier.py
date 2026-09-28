@@ -9,8 +9,8 @@ from app.notifications.telegram_pick_notifier import (
     TelegramDispatchLedger,
     TelegramPickCard,
     format_pick_message,
-    send_pick,
 )
+from tools.telegram_pick_transport import send_pick
 
 UTC = timezone.utc
 FREEZE = datetime(2026, 9, 28, 20, 0, tzinfo=UTC)
