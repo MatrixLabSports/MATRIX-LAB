@@ -3,7 +3,12 @@ from datetime import datetime, timezone
 import pytest
 
 from app.research.football.match_analysis_input import build_match_analysis_inputs_from_benchmark
-from tools.api_football_canonicalize_analysis_inputs import build_canonical_analysis_bundle
+from tools.api_football_canonicalize_analysis_inputs import (
+    MAX_TRACKED_TEXT_BYTES,
+    build_canonical_analysis_bundle,
+    load_chunked_canonical_bundle,
+    write_chunked_canonical_bundle,
+)
 
 
 def _history(fid: int, when: str, focal: str, opponent: str, focal_home: bool) -> dict:
@@ -132,3 +137,27 @@ def test_canonical_bundle_fail_closed_excludes_fixture_at_or_after_kickoff():
     assert manifest["not_future_at_analysis_count"] == 1
     assert manifest["rejected_target_count"] == 1
     assert bundle["not_future_targets"] == ["api_football:fixture:900"]
+
+
+def test_chunked_persistence_round_trips_without_oversized_monolith(tmp_path):
+    bundle, manifest = build_canonical_analysis_bundle(
+        benchmark=_benchmark(),
+        analysis_as_of=datetime(2026, 9, 28, 6, 0, tzinfo=timezone.utc),
+    )
+
+    persisted = write_chunked_canonical_bundle(
+        out=tmp_path,
+        bundle=bundle,
+        manifest=manifest,
+        chunk_size=1,
+    )
+    loaded_bundle, loaded_manifest = load_chunked_canonical_bundle(tmp_path)
+
+    assert loaded_bundle == bundle
+    assert loaded_manifest == persisted
+    assert persisted["storage_format"] == "CHUNKED_JSON_V1"
+    assert persisted["legacy_monolith_removed"] is True
+    assert not (tmp_path / "canonical_inputs.json").exists()
+    chunks = list((tmp_path / "chunks").glob("part_*.json"))
+    assert len(chunks) == 1
+    assert all(path.stat().st_size <= MAX_TRACKED_TEXT_BYTES for path in chunks)
