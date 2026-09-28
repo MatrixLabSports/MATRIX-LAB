@@ -117,6 +117,10 @@ def adapt_odds_api_net_snapshot(
         metric_raw = raw.get("metric")
         metric = str(metric_raw).strip() if metric_raw not in (None, "") else None
 
+        market_version = str(raw.get("matrix_market_version") or "").strip()
+        if not market_version:
+            market_version = f"UNMAPPED/odds_api_net/{sport}/{market_key}"
+
         quote = CanonicalOddsQuote(
             provider="odds_api_net",
             provider_event_id=provider_event_id,
@@ -124,6 +128,7 @@ def adapt_odds_api_net_snapshot(
             event_id=matrix_event_id,
             bookmaker=bookmaker,
             market_key=market_key,
+            market_version=market_version,
             bet_type=bet_type,
             period=period,
             metric=metric,
