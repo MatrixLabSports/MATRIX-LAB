@@ -55,6 +55,13 @@ jobs:
           import json
           from pathlib import Path
 
+          entitlement_path = Path("evidence/api_football/pro_entitlement_probe/manifest.json")
+          if entitlement_path.is_file():
+              entitlement = json.loads(entitlement_path.read_text(encoding="utf-8"))
+              if entitlement.get("pro_entitlement_verified") is True:
+                  print("API_FOOTBALL_PRO_ENTITLEMENT_VERIFIED: history capture allowed")
+                  raise SystemExit(0)
+
           path = Path("evidence/api_football/history/history_capture_manifest.json")
           if not path.is_file():
               raise SystemExit(0)
