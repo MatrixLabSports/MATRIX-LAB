@@ -61,8 +61,24 @@ def persist_transition(*, report: Mapping[str, Any], evidence_dir: Path) -> tupl
     path = evidence_dir / f"MATRIX_COR0203_SOURCE_READINESS_{fingerprint[:16]}.json"
     if path.exists():
         existing = json.loads(path.read_text(encoding="utf-8"))
-        if existing != dict(report):
+        invariant_fields = (
+            "schema",
+            "provider",
+            "status",
+            "ready",
+            "cause",
+            "blocker",
+            "status_fingerprint",
+            "production_discovery_ready",
+            "automatic_provider_switch",
+            "automatic_wagering",
+            "real_money",
+        )
+        if any(existing.get(k) != dict(report).get(k) for k in invariant_fields):
             raise ValueError("SOURCE_READINESS_FINGERPRINT_COLLISION")
+        # network_calls is run-level evidence, not part of the readiness-state
+        # identity. Keep the first immutable transition artifact and expose the
+        # current count only in the mutable summary.
         return path, False
     path.write_text(
         json.dumps(dict(report), indent=2, sort_keys=True, ensure_ascii=False) + "\n",
