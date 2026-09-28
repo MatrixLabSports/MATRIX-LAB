@@ -108,7 +108,7 @@ def _fit_1x2(dev: list[dict[str,Any]], val: list[dict[str,Any]]) -> dict[str,Any
             dev_m=_multiclass_metrics(dev,dev_probs)
             candidates.append((dev_m["brier_score"],dev_m["log_loss"],a,c))
     candidates.sort()
-    shortlist=candidates[:40]
+    shortlist=candidates[:25]
     chosen=None
     for _,_,a,c in shortlist:
         val_probs=[_multiclass_log_pool(r,a,c) for r in val]
@@ -124,7 +124,7 @@ def _fit_1x2(dev: list[dict[str,Any]], val: list[dict[str,Any]]) -> dict[str,Any
         "selected":chosen,
         "validation_superiority":chosen is not None,
         "search_family":"log_probability_pool_poisson_plus_baseline",
-        "search_grid":{"a":"0.0..3.0 step 0.1","c":"0.0..3.0 step 0.1","shortlist_by_dev_brier":40},
+        "search_grid":{"a":"0.0..2.0 step 0.2","c":"0.0..2.0 step 0.2","shortlist_by_dev_brier":25},
     }
 
 
@@ -144,7 +144,7 @@ def _fit_binary(dev: list[dict[str,Any]], val: list[dict[str,Any]], market: str)
                 m=_binary_metrics(dev,probs,market)
                 candidates.append((m["brier_score"],m["log_loss"],a,c,b))
     candidates.sort()
-    shortlist=candidates[:80]
+    shortlist=candidates[:40]
     chosen=None
     for _,_,a,c,b in shortlist:
         probs=[_binary_log_pool(r,market,a,c,b) for r in val]
@@ -160,7 +160,7 @@ def _fit_binary(dev: list[dict[str,Any]], val: list[dict[str,Any]], market: str)
         "selected":chosen,
         "validation_superiority":chosen is not None,
         "search_family":"logit_pool_poisson_plus_baseline",
-        "search_grid":{"a":"0.0..2.0 step 0.1","c":"0.0..2.0 step 0.1","b":"-1.0..1.0 step 0.1","shortlist_by_dev_brier":80},
+        "search_grid":{"a":"0.0..2.0 step 0.2","c":"0.0..2.0 step 0.2","b":"-1.0..1.0 step 0.2","shortlist_by_dev_brier":40},
     }
 
 
