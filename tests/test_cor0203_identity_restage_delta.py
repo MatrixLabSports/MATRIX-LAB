@@ -74,3 +74,69 @@ def test_delta_start_count_uses_physical_ending_count_not_raw_event_count(tmp_pa
     delta=json.loads((runtime/"MATRIX_COR0203_PREFEATURE_REGISTRY_R11.json").read_text())
     assert result["created"] is True
     assert delta["starting_observation_count"]==44
+
+
+def test_restage_when_canonical_identity_changes_after_prior_stage(tmp_path):
+    runtime=tmp_path/"runtime"
+    holdout=tmp_path/"holdout"
+    runtime.mkdir(); holdout.mkdir()
+    _write(runtime/"MATRIX_COR0203_PREFEATURE_REGISTRY_R10.json",{
+        "events":[{
+            "event_id":"E3",
+            "outcome":None,
+            "metrics_opened":False,
+            "features_loaded":False,
+            "player_identities":[
+                {"provider_player_id":"rapidapi-tennis:player:1"},
+                {"provider_player_id":"rapidapi-tennis:player:2"},
+            ],
+        }]
+    })
+    _write(runtime/"MATRIX_COR0203_IDENTITY_CROSSWALK_R10.json",{
+        "events":[{"event_id":"E3","status":"PASS"}],
+        "mappings":[
+            {"provider_player_id":"rapidapi-tennis:player:1","canonical_name":"Player A"},
+            {"provider_player_id":"rapidapi-tennis:player:2","canonical_name":"Canonical B"},
+        ],
+    })
+    _write(runtime/"MATRIX_COR0203_PROSPECTIVE_EVENTS_R10.json",{
+        "events":[{
+            "event_id":"E3",
+            "players":[{"name":"Player A"},{"name":"Provider B"}],
+        }]
+    })
+    result=build_identity_restage_delta(runtime_dir=runtime,holdout_dir=holdout)
+    assert result["created"] is True
+    delta=json.loads((runtime/"MATRIX_COR0203_PREFEATURE_REGISTRY_R11.json").read_text())
+    assert delta["events"][0]["event_id"]=="E3"
+    assert delta["events"][0]["restage_reason"]=="CANONICAL_IDENTITY_MAPPING_CHANGED"
+
+
+def test_does_not_restage_when_staged_canonical_names_unchanged(tmp_path):
+    runtime=tmp_path/"runtime"
+    holdout=tmp_path/"holdout"
+    runtime.mkdir(); holdout.mkdir()
+    _write(runtime/"MATRIX_COR0203_PREFEATURE_REGISTRY_R10.json",{
+        "events":[{
+            "event_id":"E3",
+            "outcome":None,
+            "metrics_opened":False,
+            "features_loaded":False,
+            "player_identities":[
+                {"provider_player_id":"rapidapi-tennis:player:1"},
+                {"provider_player_id":"rapidapi-tennis:player:2"},
+            ],
+        }]
+    })
+    _write(runtime/"MATRIX_COR0203_IDENTITY_CROSSWALK_R10.json",{
+        "events":[{"event_id":"E3","status":"PASS"}],
+        "mappings":[
+            {"provider_player_id":"rapidapi-tennis:player:1","canonical_name":"Player A"},
+            {"provider_player_id":"rapidapi-tennis:player:2","canonical_name":"Player B"},
+        ],
+    })
+    _write(runtime/"MATRIX_COR0203_PROSPECTIVE_EVENTS_R10.json",{
+        "events":[{"event_id":"E3","players":[{"name":"Player A"},{"name":"Player B"}]}]
+    })
+    result=build_identity_restage_delta(runtime_dir=runtime,holdout_dir=holdout)
+    assert result["created"] is False
