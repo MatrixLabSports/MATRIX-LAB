@@ -8,6 +8,7 @@ import pytest
 from tools.cor0203_rapidapi_tennis_discovery import (
     RAPIDAPI_HOST,
     RapidApiTennisClient,
+    RapidApiTennisDiscoveryError,
     build_discovery_registry,
 )
 
