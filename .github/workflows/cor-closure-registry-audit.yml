@@ -1,0 +1,40 @@
+name: MATRIX nine-COR closure registry audit
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+    paths:
+      - .github/workflows/cor-closure-registry-audit.yml
+
+permissions:
+  contents: read
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: repair/cor09-world-pipeline
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: python -m pip install pytest
+      - name: Verify nine COR closure packages and anti-regression invariants
+        run: python -m pytest -q tests/test_cor_closure_registry.py
+      - name: Print canonical closure state
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          r=json.loads(Path("evidence/audit/MATRIX_COR_CLOSURE_REGISTRY.json").read_text())
+          print("MATRIX_COR_CLOSURE_REGISTRY_GATE: PASS")
+          print("resolved=",r["resolved"])
+          print("resolved_count=",r["resolved_count"])
+          print("in_progress=",r["in_progress"])
+          print("external_audit_closed=",r["invariants"]["external_audit_closed"])
+          print("real_money=",r["invariants"]["real_money"])
+          PY
