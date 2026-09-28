@@ -1,0 +1,95 @@
+name: Odds API Colombia bookmaker portfolio probe
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - .github/workflows/odds-api-net-colombia-portfolio.yml
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  verify-colombia-bookmakers:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout operational branch
+        uses: actions/checkout@v4
+        with:
+          ref: repair/cor09-world-pipeline
+          fetch-depth: 0
+
+      - name: Credential preflight
+        id: credential
+        shell: bash
+        env:
+          ODDS_API_NET_KEY: ${{ secrets.ODDS_API_NET_KEY }}
+        run: |
+          set -euo pipefail
+          if [ -n "${ODDS_API_NET_KEY:-}" ]; then
+            echo "ready=true" >> "$GITHUB_OUTPUT"
+            echo "ODDS_API_NET_CREDENTIAL: CONFIGURED"
+          else
+            echo "ready=false" >> "$GITHUB_OUTPUT"
+            echo "ODDS_API_NET_CREDENTIAL: REQUIRED_NOT_CONFIGURED"
+          fi
+
+      - name: Set up Python
+        if: steps.credential.outputs.ready == 'true'
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install probe dependencies
+        if: steps.credential.outputs.ready == 'true'
+        run: python -m pip install --disable-pip-version-check requests pytest
+
+      - name: Run portfolio tests
+        if: steps.credential.outputs.ready == 'true'
+        run: python -m pytest -q tests/test_odds_api_net_colombia_catalog_probe.py
+
+      - name: Run one-call governed Colombia catalog probe
+        if: steps.credential.outputs.ready == 'true'
+        env:
+          ODDS_API_NET_KEY: ${{ secrets.ODDS_API_NET_KEY }}
+        run: |
+          set -euo pipefail
+          python tools/odds_api_net_colombia_catalog_probe.py
+
+      - name: Validate physical manifest
+        if: steps.credential.outputs.ready == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          path = Path("evidence/odds_api_net/colombia_catalog/manifest.json")
+          payload = json.loads(path.read_text(encoding="utf-8"))
+          assert payload["network_calls_performed"] == 1
+          assert payload["real_money"] == "BLOCKED"
+          assert payload["odds_used_to_generate_model_probability"] is False
+          assert payload["status"] == "PASS"
+          assert payload["portfolio_target_count"] == 14
+          print("ODDS_API_NET_COLOMBIA_PHYSICAL_PROBE:", payload["status"])
+          print("portfolio_status=", payload["portfolio_status"])
+          print("portfolio_covered=", f"{payload['portfolio_covered_count']}/{payload['portfolio_target_count']}")
+          PY
+
+      - name: Persist verified provider evidence
+        if: steps.credential.outputs.ready == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "matrix-odds-auditor"
+          git config user.email "matrix-odds-auditor@users.noreply.github.com"
+          git add evidence/odds_api_net/colombia_catalog/
+          if git diff --cached --quiet; then
+            echo "No evidence changes to commit."
+            exit 0
+          fi
+          git commit -m "evidence(odds): verify Colombia bookmaker catalog via odds-api.net"
+          git push origin HEAD:repair/cor09-world-pipeline
