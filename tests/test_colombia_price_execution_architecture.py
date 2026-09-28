@@ -290,3 +290,24 @@ def test_controlled_live_freeze_fails_closed_when_money_gate_is_blocked():
             mode="CONTROLLED_LIVE",
             real_money_gate_open=False,
         )
+
+
+def test_stake_is_shrunk_by_calibration_reliability_and_risk():
+    price = select_best_price(probability(probability=0.60), [quote("rushbet", 2.00)], now=NOW)
+    stake = calculate_stake(
+        price,
+        bankroll=100000,
+        calibration_gate_pass=True,
+        real_money_gate_open=True,
+        calibration_reliability=0.50,
+        risk_multiplier=0.50,
+        policy=StakePolicy(
+            fractional_kelly=0.25,
+            max_bankroll_fraction=0.02,
+            min_bankroll_fraction=0.0025,
+        ),
+    )
+    # Full Kelly 20%; quarter Kelly 5%; calibration/risk shrink => 1.25%.
+    assert stake.status == "BET_CANDIDATE"
+    assert stake.bankroll_fraction == pytest.approx(0.0125)
+    assert stake.amount == pytest.approx(1250)
