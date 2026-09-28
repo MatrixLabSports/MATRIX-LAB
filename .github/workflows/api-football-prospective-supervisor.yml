@@ -1,0 +1,210 @@
+name: API-Football prospective settlement-calibration supervisor
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+    paths:
+      - .github/workflows/api-football-prospective-supervisor.yml
+  schedule:
+    - cron: "7,22,37,52 * * * *"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: api-football-prospective-settlement-calibration
+  cancel-in-progress: false
+
+jobs:
+  supervise:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - name: Checkout operational branch
+        uses: actions/checkout@v4
+        with:
+          ref: repair/cor09-world-pipeline
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install governed dependencies
+        run: python -m pip install pytest requests
+
+      - name: Verify supervisor and settlement-calibration regressions
+        run: |
+          python -m pytest -q \
+            tests/test_api_football_prospective_supervisor.py \
+            tests/test_api_football_prospective_api_settlement.py \
+            tests/test_api_football_prospective_calibration.py
+
+      - name: Decide whether a provider poll is due
+        id: due
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m tools.api_football_prospective_supervisor \
+            --minimum-age-minutes 45 \
+            --out /tmp/football_supervisor_decision.json
+          cat /tmp/football_supervisor_decision.json
+          python - <<'PY' >> "$GITHUB_OUTPUT"
+          import json
+          d=json.load(open("/tmp/football_supervisor_decision.json",encoding="utf-8"))
+          print("due="+("true" if d["due"] else "false"))
+          print("reason="+d["reason"])
+          print("eligible="+str(d["eligible_unresolved_count"]))
+          print("settled="+str(d["settled_event_count"]))
+          PY
+
+      - name: Credential preflight
+        if: steps.due.outputs.due == 'true'
+        shell: bash
+        env:
+          API_FOOTBALL_KEY: ${{ secrets.API_FOOTBALL_KEY }}
+        run: |
+          set -euo pipefail
+          if [[ -z "${API_FOOTBALL_KEY:-}" ]]; then
+            echo "API_FOOTBALL_KEY_NOT_CONFIGURED"
+            exit 2
+          fi
+          API_FOOTBALL_KEY="$API_FOOTBALL_KEY" python - <<'PY'
+          import os
+          os.environ["API_FOOTBALL_KEY"].encode("ascii")
+          print("API_FOOTBALL_CREDENTIAL: CONFIGURED")
+          PY
+
+      - name: Settle eligible standard FINAL results
+        if: steps.due.outputs.due == 'true'
+        env:
+          API_FOOTBALL_KEY: ${{ secrets.API_FOOTBALL_KEY }}
+        run: python -m tools.api_football_prospective_api_settlement
+
+      - name: Sync calibration immediately after settlement
+        if: steps.due.outputs.due == 'true'
+        run: python -m tools.api_football_prospective_calibration
+
+      - name: Enforce transactional settlement-calibration invariants
+        if: steps.due.outputs.due == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json
+          from datetime import datetime, timezone
+          from pathlib import Path
+
+          root=Path("evidence/api_football")
+          settlement=json.loads(
+              (root/"prospective_market_freeze/settlement_sync_last.json").read_text()
+          )
+          sync=json.loads(
+              (root/"prospective_calibration/sync_last.json").read_text()
+          )
+          gates=json.loads(
+              (root/"prospective_calibration/gates.json").read_text()
+          )
+          decision=json.load(open("/tmp/football_supervisor_decision.json",encoding="utf-8"))
+
+          assert decision["due"] is True
+          assert settlement["status"]=="PASS"
+          assert settlement["settlement_final_only"] is True
+          assert settlement["metrics_opened"] is False
+          assert settlement["outcomes_used_for_metrics"]==0
+          assert settlement["p_matrix_status"]=="NOT_GENERATED"
+          assert settlement["automatic_wagering"] is False
+          assert settlement["real_money"]=="BLOCKED"
+
+          assert sync["ledger_hash_chain_verified"] is True
+          assert sync["parameters_mutated"] is False
+          assert sync["metrics_policy"]=="SEALED_UNTIL_EACH_THRESHOLD_30_50_100"
+          assert sync["real_money"]=="BLOCKED"
+          assert sync["calibration_observation_count"]==settlement["ledger_final_count"]
+
+          n=gates["calibration_observation_count"]
+          assert n==settlement["ledger_final_count"]
+          for threshold in (30,50,100):
+              gate=gates["gates"][str(threshold)]
+              if n < threshold:
+                  assert gate["status"]=="SEALED"
+                  assert gate["metrics_opened"] is False
+                  assert gate["metrics"] is None
+              else:
+                  assert gate["status"]=="OPENED_AT_THRESHOLD"
+                  assert gate["metrics_opened"] is True
+                  assert gate["observations_used"]==threshold
+                  assert isinstance(gate["metrics"],dict)
+
+          assert gates["parameter_tuning_allowed"] is False
+          assert gates["original_357_holdout_reuse_allowed"] is False
+          assert gates["p_matrix_status"]=="NOT_GENERATED"
+          assert gates["automatic_wagering"] is False
+          assert gates["real_money"]=="BLOCKED"
+
+          out=root/"prospective_supervisor"/"last_run.json"
+          out.parent.mkdir(parents=True,exist_ok=True)
+          payload={
+              "schema":"MATRIX_FOOTBALL_PROSPECTIVE_SUPERVISOR_RUN_V1",
+              "completed_at_utc":datetime.now(timezone.utc).replace(microsecond=0).isoformat(),
+              "decision":decision,
+              "settlement":{
+                  "run_at_utc":settlement["run_at_utc"],
+                  "new_settlement_count":settlement["new_settlement_count"],
+                  "ledger_final_count":settlement["ledger_final_count"],
+                  "pending_count":settlement["pending_count"],
+                  "blocked_count":settlement["blocked_count"],
+                  "network_calls":settlement["network_calls"],
+              },
+              "calibration":{
+                  "synced_at_utc":sync["synced_at_utc"],
+                  "calibration_observation_count":sync["calibration_observation_count"],
+                  "ledger_hash_chain_verified":sync["ledger_hash_chain_verified"],
+              },
+              "gates":{
+                  "30":gates["gates"]["30"]["status"],
+                  "50":gates["gates"]["50"]["status"],
+                  "100":gates["gates"]["100"]["status"],
+              },
+              "real_money":"BLOCKED",
+              "automatic_wagering":False,
+              "status":"PASS",
+          }
+          out.write_text(json.dumps(payload,indent=2,sort_keys=True)+"\n",encoding="utf-8")
+
+          print("MATRIX_FOOTBALL_PROSPECTIVE_SUPERVISOR_GATE: PASS")
+          print("new_settlements=",settlement["new_settlement_count"])
+          print("calibration_observations=",n)
+          print("gate_30=",gates["gates"]["30"]["status"])
+          print("gate_50=",gates["gates"]["50"]["status"])
+          print("gate_100=",gates["gates"]["100"]["status"])
+          PY
+
+      - name: Persist transactional supervisor state
+        if: steps.due.outputs.due == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "matrix-football-supervisor"
+          git config user.email "matrix-football-supervisor@users.noreply.github.com"
+          git add evidence/api_football/prospective_market_freeze
+          git add evidence/api_football/prospective_calibration
+          git add evidence/api_football/prospective_supervisor
+          if git diff --cached --quiet; then
+            echo "NO_SUPERVISOR_MATERIAL_CHANGE"
+            exit 0
+          fi
+          git commit -m "evidence(football): supervisor settlement-calibration sync"
+          git pull --rebase origin repair/cor09-world-pipeline
+          git push origin HEAD:repair/cor09-world-pipeline
+
+      - name: Report healthy skip
+        if: steps.due.outputs.due != 'true'
+        run: |
+          echo "MATRIX_FOOTBALL_PROSPECTIVE_SUPERVISOR: HEALTHY_SKIP"
+          echo "reason=${{ steps.due.outputs.reason }}"
+          echo "eligible_unresolved=${{ steps.due.outputs.eligible }}"
+          echo "settled=${{ steps.due.outputs.settled }}"
