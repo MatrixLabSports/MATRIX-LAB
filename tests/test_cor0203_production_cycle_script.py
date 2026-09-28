@@ -40,7 +40,8 @@ def test_cycle_requires_explicit_supported_provider_and_never_auto_switches():
     assert "automatic_provider_switch" not in text
 
 
-def test_rapidapi_discovery_uses_max_governed_four_day_horizon():
+def test_rapidapi_discovery_uses_proven_two_day_horizon():
     script = Path("scripts/cor0203_production_cycle.sh").read_text(encoding="utf-8")
     block = script.split("rapidapi_tennis)",1)[1].split(";;",1)[0]
-    assert "--days 4" in block
+    assert "--days 2" in block
+    assert "--days 4" not in block
