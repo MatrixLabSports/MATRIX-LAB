@@ -56,6 +56,7 @@ class ModelProbability:
     sport: str
     event_id: str
     market_key: str
+    market_version: str
     bet_type: str
     period: str
     selection_key: str
@@ -75,6 +76,7 @@ class ModelProbability:
             raise ValueError("SPORT_INVALID")
         object.__setattr__(self, "event_id", _text(self.event_id, "EVENT_ID"))
         object.__setattr__(self, "market_key", _text(self.market_key, "MARKET_KEY"))
+        object.__setattr__(self, "market_version", _text(self.market_version, "MARKET_VERSION"))
         object.__setattr__(self, "bet_type", _text(self.bet_type, "BET_TYPE"))
         object.__setattr__(self, "period", _text(self.period, "PERIOD"))
         object.__setattr__(self, "selection_key", _text(self.selection_key, "SELECTION_KEY"))
@@ -95,6 +97,7 @@ class ModelProbability:
             self.sport,
             self.event_id,
             self.market_key,
+            self.market_version,
             self.bet_type,
             self.metric,
             self.period,
@@ -114,6 +117,7 @@ class CanonicalOddsQuote:
     event_id: str
     bookmaker: str
     market_key: str
+    market_version: str
     bet_type: str
     period: str
     metric: str | None
@@ -136,7 +140,7 @@ class CanonicalOddsQuote:
             raise ValueError("SPORT_INVALID")
         for name in (
             "provider", "provider_event_id", "event_id", "bookmaker", "market_key",
-            "bet_type", "period", "side", "selection_key", "source_reference",
+            "market_version", "bet_type", "period", "side", "selection_key", "source_reference",
         ):
             object.__setattr__(self, name, _text(getattr(self, name), name.upper()))
         object.__setattr__(self, "bookmaker", self.bookmaker.casefold())
@@ -157,6 +161,7 @@ class CanonicalOddsQuote:
             self.sport,
             self.event_id,
             self.market_key,
+            self.market_version,
             self.bet_type,
             self.metric,
             self.period,
@@ -241,6 +246,8 @@ def assess_quote(
     book = classify_bookmaker(quote.bookmaker)
     if require_execution_bookmaker and not book.execution_eligible:
         reasons.append("BOOKMAKER_NOT_EXECUTION_ELIGIBLE")
+    if not quote.market_version.startswith("MATRIX-MARKET-R2/"):
+        reasons.append("MARKET_NOT_CANONICALLY_MAPPED")
     if not quote.is_available:
         reasons.append("SELECTION_UNAVAILABLE")
     if quote.quoted_at >= quote.event_start_at or quote.captured_at >= quote.event_start_at:
@@ -365,6 +372,7 @@ def decision_fingerprint(
             "sport": probability.sport,
             "event_id": probability.event_id,
             "market_key": probability.market_key,
+            "market_version": probability.market_version,
             "bet_type": probability.bet_type,
             "metric": probability.metric,
             "period": probability.period,
