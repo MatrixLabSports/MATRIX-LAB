@@ -38,8 +38,12 @@ def test_permanent_execution_portfolio_cannot_silently_shrink():
     assert set(mandate["execution_candidates"]) == EXPECTED_EXECUTION_KEYS
     assert set(EXECUTION_BOOKMAKERS) == EXPECTED_EXECUTION_KEYS
     assert len(EXECUTION_BOOKMAKERS) == 14
-    for key in EXPECTED_EXECUTION_KEYS:
-        assert classify_bookmaker(key).execution_eligible is True
+    for matrix_key, provider_aliases in EXECUTION_BOOKMAKERS.items():
+        assert provider_aliases
+        for provider_key in provider_aliases:
+            classification = classify_bookmaker(provider_key)
+            assert classification.execution_eligible is True
+            assert classification.matrix_key == matrix_key
 
 
 def test_reference_and_quarantine_books_cannot_silently_become_execution():
