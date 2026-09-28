@@ -200,9 +200,10 @@ def stage_prefeature(
         names = [str(name).strip() for name in event.get("players", []) or []]
         event_blockers: list[str] = []
 
+        event_crosswalk_static: dict[str, Mapping[str, Any]] = {}
         if bool(event.get("identity_crosswalk_required")):
             identities = list(event.get("player_identities") or [])
-            if not isinstance(crosswalk, Mapping) or crosswalk.get("status") != "PASS":
+            if not isinstance(crosswalk, Mapping):
                 event_blockers.append("HISTORICAL_IDENTITY_CROSSWALK_REQUIRED")
             elif len(identities) != 2:
                 event_blockers.append("PROVIDER_IDENTITIES_REQUIRED")
@@ -219,6 +220,7 @@ def stage_prefeature(
                         event_blockers.append("IDENTITY_CROSSWALK_CANONICAL_NAME_MISSING:" + provider_id)
                         continue
                     canonical_names.append(canonical_name)
+                    event_crosswalk_static[canonical_name] = mapping
                 if len(canonical_names) == 2:
                     names = canonical_names
 
@@ -228,20 +230,50 @@ def stage_prefeature(
         resolved: list[dict[str, Any]] = []
         for name in names:
             entry = player_registry.get(name)
-            if entry is None:
-                event_blockers.append("SEALED_STATIC4_PLAYER_NOT_FOUND:" + name)
+            if entry is not None:
+                if entry.get("status") != "PASS":
+                    event_blockers.append(str(entry.get("blocker") or "SEALED_STATIC4_CONFLICT") + ":" + name)
+                    continue
+                resolved.append({
+                    "name": name,
+                    "source_id": str(entry.get("source_id") or ""),
+                    "hand": entry["hand"],
+                    "age": entry["age"],
+                    "rank": entry["rank"],
+                    "rank_points": entry["rank_points"],
+                    "inherited_from": entry.get("inherited_from"),
+                    "static_origin": "FROZEN_SEALED_PLAYER_REGISTRY",
+                })
                 continue
-            if entry.get("status") != "PASS":
-                event_blockers.append(str(entry.get("blocker") or "SEALED_STATIC4_CONFLICT") + ":" + name)
+
+            mapping = event_crosswalk_static.get(name)
+            if isinstance(mapping, Mapping):
+                static_fields = {
+                    "source_id": str(mapping.get("canonical_source_id") or ""),
+                    "hand": mapping.get("canonical_hand"),
+                    "age": mapping.get("canonical_age"),
+                    "rank": mapping.get("canonical_rank"),
+                    "rank_points": mapping.get("canonical_rank_points"),
+                }
+                if (
+                    str(mapping.get("ranking_cut") or "") == "20260921"
+                    and static_fields["source_id"]
+                    and static_fields["hand"] in {"R", "L"}
+                    and static_fields["age"] is not None
+                    and static_fields["rank"] is not None
+                    and static_fields["rank_points"] is not None
+                ):
+                    resolved.append({
+                        "name": name,
+                        **static_fields,
+                        "inherited_from": ["MATRIX_COR0203_STATIC_CUT_20260921.json"],
+                        "static_origin": "SEALED_STATIC_CUT_IDENTITY_CROSSWALK",
+                    })
+                    continue
+                event_blockers.append("SEALED_STATIC4_CROSSWALK_INCOMPLETE:" + name)
                 continue
-            resolved.append({
-                "name": name,
-                "source_id": str(entry.get("source_id") or ""),
-                "hand": entry["hand"],
-                "age": entry["age"],
-                "rank": entry["rank"],
-                "rank_points": entry["rank_points"],
-            })
+
+            event_blockers.append("SEALED_STATIC4_PLAYER_NOT_FOUND:" + name)
 
         if event_blockers:
             blockers.append({"event_id": event_id, "blockers": sorted(set(event_blockers))})
@@ -265,7 +297,8 @@ def stage_prefeature(
                     "age": player["age"],
                     "rank": player["rank"],
                     "rank_points": player["rank_points"],
-                    "inherited_from": player_registry[player["name"]]["inherited_from"],
+                    "inherited_from": player["inherited_from"],
+                    "static_origin": player["static_origin"],
                 }
                 for player in resolved
             },
@@ -286,12 +319,22 @@ def stage_prefeature(
         })
 
     if staged_events:
+        crosswalk_static_used = any(
+            player.get("static_origin") == "SEALED_STATIC_CUT_IDENTITY_CROSSWALK"
+            for event_row in static_events
+            for player in event_row.get("players", {}).values()
+        )
         static_payload: dict[str, Any] = {
             "schema": f"MATRIX_COR0203_STATIC4_R{revision}_AUTO_V1",
             "revision": f"R{revision}",
             "holdout_id": pre.get("holdout_id"),
             "as_of_date": "2026-09-21",
-            "source_authority": "Reused unchanged from physically frozen prospective manifests in the same 21-SEP sealed player registry",
+            "source_authority": (
+                "Exact 21-SEP sealed static cut via provider identity crosswalk; "
+                "physically frozen prospective manifests reused unchanged when available"
+                if crosswalk_static_used
+                else "Reused unchanged from physically frozen prospective manifests in the same 21-SEP sealed player registry"
+            ),
             "events": static_events,
             "provenance": {
                 "ranking_cut": "2026-09-21",
@@ -299,7 +342,8 @@ def stage_prefeature(
                 "missing_as_zero": False,
                 "odds_used": False,
                 "post_prereg_feature_acquisition": True,
-                "registry_source_only_frozen_events": True,
+                "registry_source_only_frozen_events": not crosswalk_static_used,
+                "static_cut_crosswalk_used": crosswalk_static_used,
             },
             "real_money": "BLOCKED",
         }
