@@ -5,6 +5,8 @@ from hashlib import sha256
 import json
 from math import exp, log
 from pathlib import Path
+
+from tools.api_football_prediction_store import load_chunked_json
 from typing import Any, Mapping
 
 EPS=1e-12
@@ -91,7 +93,7 @@ def _sealed_projection(row: Mapping[str,Any])->dict[str,Any]:
 def adjudicate(root:Path)->dict[str,Any]:
     manifest=_load(root/"evidence/api_football/challenger/challenger_manifest.json")
     seal=_load(root/"evidence/api_football/challenger/final_holdout_seal.json")
-    source=_load(root/"evidence/api_football/model_validation/retrospective_predictions.json")
+    source=load_chunked_json(root/"evidence/api_football/model_validation/retrospective_predictions_manifest.json")
 
     if manifest.get("candidate_status")!="FROZEN_CHALLENGER_AWAITING_FINAL_HOLDOUT":
         raise ValueError("CHALLENGER_NOT_FROZEN_FOR_HOLDOUT")
