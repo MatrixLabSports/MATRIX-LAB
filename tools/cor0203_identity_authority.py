@@ -84,6 +84,7 @@ def resolve_authority_mapping(
     display_name = str(identity.get("display_name") or "").strip()
     provider_name = str(ranking.get("player") or display_name).strip()
     authority_name = str(row.get("provider_display_name") or "").strip()
+    canonical_name = str(row.get("canonical_name") or authority_name).strip()
     if (
         not authority_name
         or _norm_name(authority_name) not in {_norm_name(display_name), _norm_name(provider_name)}
@@ -103,6 +104,17 @@ def resolve_authority_mapping(
     hands = [str(x).strip().upper() for x in history.get("observed_hands", []) or [] if str(x).strip()]
     if len(set(source_ids)) != 1:
         return None, "IDENTITY_AUTHORITY_SOURCE_ID_NOT_UNIQUE:" + provider_id
+
+    if canonical_name != authority_name:
+        canonical_source = row.get("canonical_name_source")
+        if not isinstance(canonical_source, Mapping):
+            return None, "IDENTITY_AUTHORITY_CANONICAL_NAME_SOURCE_MISSING:" + provider_id
+        if str(canonical_source.get("canonical_source_id") or "") != source_ids[0]:
+            return None, "IDENTITY_AUTHORITY_CANONICAL_NAME_SOURCE_ID_MISMATCH:" + provider_id
+        if int(canonical_source.get("strict_before_period") or 0) != 20260921:
+            return None, "IDENTITY_AUTHORITY_CANONICAL_NAME_CUT_MISMATCH:" + provider_id
+        if int(canonical_source.get("rows") or 0) <= 0:
+            return None, "IDENTITY_AUTHORITY_CANONICAL_NAME_ROWS_MISSING:" + provider_id
     if len(set(history_iocs)) != 1 or history_iocs[0] != provider_ioc:
         return None, "IDENTITY_AUTHORITY_HISTORY_IOC_MISMATCH:" + provider_id
     if len(set(hands)) != 1 or hands[0] not in {"R", "L"}:
@@ -131,7 +143,7 @@ def resolve_authority_mapping(
         "provider_rank": rank,
         "provider_rank_points": points,
         "canonical_source_id": source_ids[0],
-        "canonical_name": authority_name,
+        "canonical_name": canonical_name,
         "canonical_rank": rank,
         "canonical_rank_points": points,
         "canonical_hand": hands[0],
@@ -143,6 +155,6 @@ def resolve_authority_mapping(
             "EXACT_PROVIDER_ID_PLUS_NAME_IOC_UNIQUE_PRECUT_SOURCE_ID_"
             "PLUS_FIXED_BIOGRAPHY_DOB_AND_DATED_PROVIDER_RANKING"
         ),
-        "identity_authority": "MATRIX_COR0203_ATP_BIOGRAPHICAL_SUBSET_R733",
+        "identity_authority": "MATRIX_COR0203_ATP_BIOGRAPHICAL_SUBSET_R734",
         "status": "PASS",
     }, None
