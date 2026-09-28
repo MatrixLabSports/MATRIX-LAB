@@ -1,0 +1,114 @@
+name: API-Football canonical PIT analysis inputs
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - repair/cor09-world-pipeline
+    paths:
+      - app/research/football/match_analysis_input.py
+      - tools/api_football_canonicalize_analysis_inputs.py
+      - tests/test_api_football_canonical_analysis_inputs.py
+      - evidence/api_football/team_last_fallback/benchmark_after_team_last.json
+      - evidence/api_football/team_last_fallback/history_readiness_after_team_last.json
+      - .github/workflows/api-football-canonical-analysis-inputs.yml
+
+permissions:
+  contents: write
+
+concurrency:
+  group: api-football-canonical-pit-analysis-inputs
+  cancel-in-progress: false
+
+jobs:
+  canonicalize:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout operational branch
+        uses: actions/checkout@v4
+        with:
+          ref: repair/cor09-world-pipeline
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install targeted test dependency
+        run: python -m pip install pytest
+
+      - name: Run temporal canonicalization tests
+        run: python -m pytest -q tests/test_api_football_canonical_analysis_inputs.py
+
+      - name: Build canonical analysis inputs at true runtime UTC
+        run: python -m tools.api_football_canonicalize_analysis_inputs
+
+      - name: Enforce PIT and governance invariants
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          from datetime import datetime
+          import hashlib
+          import json
+          from pathlib import Path
+
+          root = Path("evidence/api_football/canonical_analysis")
+          bundle = json.loads((root / "canonical_inputs.json").read_text(encoding="utf-8"))
+          manifest = json.loads((root / "manifest.json").read_text(encoding="utf-8"))
+
+          assert manifest["status"] == "PASS"
+          assert manifest["analysis_as_of_source"] == "RUNTIME_UTC_NOW"
+          assert manifest["real_money"] == "BLOCKED"
+          assert manifest["automatic_wagering"] is False
+          assert manifest["model_probability_generated"] is False
+          assert manifest["p_matrix_status"] == "NOT_GENERATED"
+          assert manifest["baseline_poisson_status"] == "EXPERIMENTAL_NOT_PROMOTED"
+          assert manifest["odds_used_to_generate_model_probability"] is False
+
+          assert bundle["analysis_as_of_utc"] == manifest["analysis_as_of_utc"]
+          assert len(bundle["inputs"]) == manifest["ready_input_count"]
+          assert len(bundle["blocked_future_inputs"]) == manifest["blocked_future_input_count"]
+          assert len(bundle["not_future_targets"]) == manifest["not_future_at_analysis_count"]
+
+          encoded = json.dumps(bundle, ensure_ascii=False, sort_keys=True, separators=(",", ":")).encode("utf-8")
+          assert hashlib.sha256(encoded).hexdigest() == manifest["bundle_sha256"]
+
+          as_of = datetime.fromisoformat(manifest["analysis_as_of_utc"])
+          for row in bundle["inputs"]:
+              kickoff = datetime.fromisoformat(row["kickoff_utc"])
+              assert as_of < kickoff
+              assert row["as_of_utc"] == manifest["analysis_as_of_utc"]
+              assert row["readiness"]["status"] == "READY_FOR_EXPERIMENTAL_EVALUATION"
+              for history in list(row["home_history"]) + list(row["away_history"]):
+                  observed = datetime.fromisoformat(history["observed_at_utc"])
+                  history_kickoff = datetime.fromisoformat(history["kickoff_utc"])
+                  assert history_kickoff < kickoff
+                  assert observed <= as_of
+                  assert observed < kickoff
+
+          print("API_FOOTBALL_CANONICAL_PIT_INPUT_GATE: PASS")
+          print("analysis_as_of_utc=", manifest["analysis_as_of_utc"])
+          print("total_fixture_count=", manifest["total_fixture_count"])
+          print("ready_input_count=", manifest["ready_input_count"])
+          print("blocked_future_input_count=", manifest["blocked_future_input_count"])
+          print("not_future_at_analysis_count=", manifest["not_future_at_analysis_count"])
+          print("p_matrix_status=", manifest["p_matrix_status"])
+          print("real_money=", manifest["real_money"])
+          PY
+
+      - name: Persist canonical PIT evidence
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "matrix-api-football-canonical"
+          git config user.email "matrix-api-football-canonical@users.noreply.github.com"
+          git add evidence/api_football/canonical_analysis
+          if git diff --cached --quiet; then
+            echo "NO_CANONICAL_ANALYSIS_EVIDENCE_CHANGE"
+            exit 0
+          fi
+          git commit -m "evidence(api-football): persist canonical PIT analysis inputs"
+          git pull --rebase origin repair/cor09-world-pipeline
+          git push origin HEAD:repair/cor09-world-pipeline
