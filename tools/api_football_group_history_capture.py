@@ -254,13 +254,14 @@ def capture_group_history(
         parsed = response.json()
         errors = parsed.get("errors") if isinstance(parsed, Mapping) else None
         rows = parsed.get("response") if isinstance(parsed, Mapping) else None
-        if errors not in ({}, [], None):
-            raise ValueError(f"API_FOOTBALL_HISTORY_PROVIDER_ERRORS:{league_id}:{season}")
+        provider_error = errors not in ({}, [], None)
+        if rows is None and provider_error:
+            rows = []
         if not isinstance(rows, list):
             raise ValueError(f"API_FOOTBALL_HISTORY_RESPONSE_INVALID:{league_id}:{season}")
 
         source_reference = f"api_football:/fixtures?league={league_id}&season={season}"
-        finals = [
+        finals = [] if provider_error else [
             item
             for raw in rows
             for item in [_final_history_row(raw, source_sha256=sha, source_reference=source_reference)]
@@ -282,6 +283,9 @@ def capture_group_history(
                 "response_bytes": len(body),
                 "provider_rows": len(rows),
                 "final_history_rows": len(finals),
+                "provider_error": provider_error,
+                "provider_errors": errors if provider_error else None,
+                "group_status": "PROVIDER_ERROR_BLOCKED" if provider_error else "CAPTURED",
                 "rate_limit": last_rate,
             }
         )
@@ -294,6 +298,7 @@ def capture_group_history(
     capture_by_group = {
         (row["league_id"], int(row["season"])): row for row in captures
     }
+    provider_error_groups = sum(1 for row in captures if row.get("provider_error") is True)
     for target_key, target in sorted(fixtures.items()):
         league = target["league"]
         group_key = (str(league["id"]), int(league["season"]))
@@ -312,7 +317,10 @@ def capture_group_history(
             available_rows: list[dict[str, Any]] = []
         else:
             observed_at = _parse_aware(capture["response_observed_at_utc"])
-            if observed_at is None or observed_at >= kickoff:
+            if capture.get("provider_error") is True:
+                blockers.append("HISTORY_PROVIDER_ERROR")
+                available_rows = []
+            elif observed_at is None or observed_at >= kickoff:
                 blockers.append("HISTORY_CAPTURE_NOT_PREMATCH")
                 available_rows = []
             else:
@@ -393,6 +401,7 @@ def capture_group_history(
         "requested_group_count": len(groups),
         "captured_group_count": len(captures),
         "network_calls_performed": total_calls,
+        "provider_error_group_count": provider_error_groups,
         "max_requests_policy": max_requests,
         "daily_remaining_reserve_policy": min_daily_remaining_reserve,
         "stopped_reason": stopped_reason,
@@ -441,6 +450,7 @@ def main() -> None:
     print(json.dumps({
         "requested_group_count": result["requested_group_count"],
         "captured_group_count": result["captured_group_count"],
+        "provider_error_group_count": result["provider_error_group_count"],
         "network_calls_performed": result["network_calls_performed"],
         "ready_minimum_history_count": result["ready_minimum_history_count"],
         "blocked_minimum_history_count": result["blocked_minimum_history_count"],
