@@ -212,3 +212,30 @@ def test_team_last_fallback_respects_daily_reserve(tmp_path):
 
     assert result["network_calls_performed"] == 1
     assert result["stopped_reason"] == "DAILY_RESERVE_REACHED"
+
+
+def test_team_last_fallback_no_deficient_teams_is_idempotent_passthrough(tmp_path):
+    benchmark=_benchmark()
+    readiness={
+        "rows":[{
+            "target_key":"api_football:fixture:900",
+            "ready_minimum_history":True,
+            "blockers":[],
+        }]
+    }
+    session=Mock()
+    result=run_capture(
+        api_key="test-key",
+        benchmark=benchmark,
+        readiness=readiness,
+        out_dir=tmp_path,
+        session=session,
+    )
+    assert result["status"]=="PASS"
+    assert result["deficient_unique_team_count"]==0
+    assert result["network_calls_performed"]==0
+    assert result["stopped_reason"]=="NO_DEFICIENT_TEAMS"
+    session.get.assert_not_called()
+    enriched=__import__("json").loads((tmp_path/"benchmark_after_team_last.json").read_text())
+    assert enriched["benchmark_status"]=="READY_MINIMUM_HISTORY"
+    assert enriched["real_money"]=="BLOCKED"
