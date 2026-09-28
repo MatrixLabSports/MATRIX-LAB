@@ -53,14 +53,16 @@ def _physical_observation_count(holdout_dir: Path) -> int:
     return count
 
 
-def _staged_event_ids(runtime_dir: Path) -> set[str]:
-    out: set[str] = set()
-    for p in runtime_dir.glob("MATRIX_COR0203_PROSPECTIVE_EVENTS_R*.json"):
+def _staged_event_names(runtime_dir: Path) -> dict[str, tuple[str, ...]]:
+    out: dict[str, tuple[str, ...]] = {}
+    for p in sorted(runtime_dir.glob("MATRIX_COR0203_PROSPECTIVE_EVENTS_R*.json"), key=_rev):
         d = _load(p)
         for row in d.get("events", []) or []:
             event_id = str(row.get("event_id") or "")
-            if event_id:
-                out.add(event_id)
+            if not event_id:
+                continue
+            names = tuple(str(x.get("name") or "").strip() for x in (row.get("players") or []))
+            out[event_id] = names
     return out
 
 
@@ -84,8 +86,8 @@ def build_identity_restage_delta(
 
     frozen = _frozen_event_ids(holdout_dir)
     physical_count = _physical_observation_count(holdout_dir)
-    staged = _staged_event_ids(runtime_dir)
-    candidates: list[tuple[int, str, dict[str, Any]]] = []
+    staged_names = _staged_event_names(runtime_dir)
+    candidates: list[tuple[int, str, dict[str, Any], str]] = []
 
     for pre_path in pref_paths:
         revision = _rev(pre_path)
@@ -99,21 +101,43 @@ def build_identity_restage_delta(
             for row in crosswalk.get("events", []) or []
             if isinstance(row, Mapping)
         }
+        mapping_by_provider = {
+            str(m.get("provider_player_id") or ""): m
+            for m in crosswalk.get("mappings", []) or []
+            if isinstance(m, Mapping) and str(m.get("provider_player_id") or "")
+        }
         for row in pre.get("events", []) or []:
             if not isinstance(row, Mapping):
                 continue
             event_id = str(row.get("event_id") or "")
-            if not event_id or event_id in frozen or event_id in staged:
+            if not event_id or event_id in frozen:
                 continue
             if event_status.get(event_id) != "PASS":
                 continue
+
+            identities = list(row.get("player_identities") or [])
+            current_canonical_names: tuple[str, ...] = tuple(
+                str(mapping_by_provider.get(str(identity.get("provider_player_id") or ""), {}).get("canonical_name") or "").strip()
+                for identity in identities
+            )
+            prior_staged_names = staged_names.get(event_id)
+            restage_reason = "NEWLY_UNBLOCKED_IDENTITY"
+            if prior_staged_names is not None:
+                if (
+                    len(current_canonical_names) == 2
+                    and all(current_canonical_names)
+                    and current_canonical_names != prior_staged_names
+                ):
+                    restage_reason = "CANONICAL_IDENTITY_MAPPING_CHANGED"
+                else:
+                    continue
             if row.get("outcome") is not None:
                 raise ValueError("RESTAGE_DELTA_OUTCOME_ALREADY_PRESENT:" + event_id)
             if row.get("metrics_opened") is not False:
                 raise ValueError("RESTAGE_DELTA_METRICS_NOT_SEALED:" + event_id)
             if row.get("features_loaded") is not False:
                 raise ValueError("RESTAGE_DELTA_FEATURES_ALREADY_LOADED:" + event_id)
-            candidates.append((revision, pre_path.name, dict(row)))
+            candidates.append((revision, pre_path.name, dict(row), restage_reason))
 
     if not candidates:
         return {
@@ -130,7 +154,7 @@ def build_identity_restage_delta(
         next_rev += 1
 
     # Preserve original preregistration order and never re-select by model/output.
-    unique: dict[str, tuple[int, str, dict[str, Any]]] = {}
+    unique: dict[str, tuple[int, str, dict[str, Any], str]] = {}
     for item in candidates:
         event_id = str(item[2]["event_id"])
         unique.setdefault(event_id, item)
@@ -145,15 +169,16 @@ def build_identity_restage_delta(
         "selection_unchanged_from_original_preregistration": True,
         "new_event_selection": False,
         "delta_reason": "IDENTITY_EVIDENCE_IMPROVED_AFTER_ORIGINAL_PREREGISTRATION",
-        "source_preregistrations": sorted({name for _, name, _ in selected}),
-        "source_revisions": sorted({rev for rev, _, _ in selected}),
+        "source_preregistrations": sorted({name for _, name, _, _ in selected}),
+        "source_revisions": sorted({rev for rev, _, _, _ in selected}),
         "events": [
             {
                 **row,
                 "restage_original_revision": f"R{rev}",
                 "restage_original_prefeature": name,
+                "restage_reason": reason,
             }
-            for rev, name, row in selected
+            for rev, name, row, reason in selected
         ],
         "protections": {
             "original_preregistration_preserved": True,
