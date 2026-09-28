@@ -1,0 +1,149 @@
+name: API-Football shadow settlement hourly scheduler
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - .github/workflows/api-football-shadow-settlement-hourly.yml
+  schedule:
+    - cron: "43 * * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: api-football-shadow-final-only-settlement-hourly
+  cancel-in-progress: false
+
+jobs:
+  settle:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout operational branch
+        uses: actions/checkout@v4
+        with:
+          ref: repair/cor09-world-pipeline
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install runtime dependency
+        run: python -m pip install requests
+
+      - name: Record scheduler heartbeat
+        shell: bash
+        run: |
+          set -euo pipefail
+          TARGET_HEAD="$(git rev-parse HEAD)"
+          export TARGET_HEAD
+          mkdir -p evidence/api_football/shadow_settlement
+          python - <<'PY'
+          import json
+          import os
+          from datetime import datetime, timezone
+          from pathlib import Path
+
+          payload = {
+              "schema": "MATRIX_API_FOOTBALL_SHADOW_SETTLEMENT_SCHEDULER_HEARTBEAT_V1",
+              "emitted_at_utc": datetime.now(timezone.utc).replace(microsecond=0).isoformat(),
+              "scheduler": "GITHUB_ACTIONS_DEFAULT_BRANCH_CRON",
+              "cron": "43 * * * *",
+              "target_branch": "repair/cor09-world-pipeline",
+              "target_head_before": os.environ["TARGET_HEAD"],
+              "scheduler_run_id": os.environ.get("GITHUB_RUN_ID"),
+              "scheduler_run_attempt": os.environ.get("GITHUB_RUN_ATTEMPT"),
+              "scheduler_event": os.environ.get("GITHUB_EVENT_NAME"),
+              "purpose": "FINAL-only settlement of frozen API-Football research shadow predictions.",
+              "minimum_result_lookup_delay_minutes": 120,
+              "metrics_opened": False,
+              "p_matrix_status": "NOT_GENERATED",
+              "automatic_wagering": False,
+              "real_money": "BLOCKED",
+          }
+          Path(
+              "evidence/api_football/shadow_settlement/scheduler_heartbeat.json"
+          ).write_text(
+              json.dumps(payload, indent=2, sort_keys=True) + "\n",
+              encoding="utf-8",
+          )
+          PY
+
+      - name: Run FINAL-only settlement cycle
+        env:
+          API_FOOTBALL_KEY: ${{ secrets.API_FOOTBALL_KEY }}
+        run: python -m tools.api_football_shadow_settlement
+
+      - name: Enforce scheduler settlement invariants
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          root = Path("evidence/api_football/shadow_settlement")
+          heartbeat = json.loads((root / "scheduler_heartbeat.json").read_text(encoding="utf-8"))
+          queue = json.loads((root / "queue.json").read_text(encoding="utf-8"))
+          sync = json.loads((root / "sync_last.json").read_text(encoding="utf-8"))
+
+          assert heartbeat["target_branch"] == "repair/cor09-world-pipeline"
+          assert heartbeat["minimum_result_lookup_delay_minutes"] == 120
+          assert heartbeat["metrics_opened"] is False
+          assert heartbeat["p_matrix_status"] == "NOT_GENERATED"
+          assert heartbeat["real_money"] == "BLOCKED"
+
+          assert queue["final_lookup_delay_minutes"] == 120
+          assert queue["model_status"] == "EXPERIMENTAL_NOT_PROMOTED"
+          assert queue["p_matrix_status"] == "NOT_GENERATED"
+          assert queue["metrics_opened"] is False
+          assert queue["outcomes_used_for_metrics"] == 0
+          assert queue["real_money"] == "BLOCKED"
+
+          assert sync["status"] == "PASS"
+          assert sync["ledger_hash_chain_verified"] is True
+          assert sync["outcomes_used_for_metrics"] == 0
+          assert sync["metrics_opened"] is False
+          assert sync["p_matrix_status"] == "NOT_GENERATED"
+          assert sync["model_status"] == "EXPERIMENTAL_NOT_PROMOTED"
+          assert sync["real_money"] == "BLOCKED"
+
+          ledger_path = root / "ledger.jsonl"
+          if ledger_path.exists():
+              for raw in ledger_path.read_text(encoding="utf-8").splitlines():
+                  if not raw.strip():
+                      continue
+                  row = json.loads(raw)
+                  assert row["terminal_status"] == "FT"
+                  assert row["metrics_opened"] is False
+                  assert row["used_for_metrics"] is False
+                  assert row["p_matrix_status"] == "NOT_GENERATED"
+                  assert row["real_money"] == "BLOCKED"
+
+          print("API_FOOTBALL_SHADOW_SETTLEMENT_SCHEDULER_GATE: PASS")
+          print("queue_counts=", queue["counts"])
+          print("new_settlement_count=", sync["new_settlement_count"])
+          print("network_calls=", sync["network_calls"])
+          print("ledger_records=", sync["ledger_records"])
+          print("real_money=", sync["real_money"])
+          PY
+
+      - name: Persist scheduler and settlement evidence
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "matrix-football-settlement-scheduler"
+          git config user.email "matrix-football-settlement-scheduler@users.noreply.github.com"
+          git add evidence/api_football/shadow_settlement
+          if git diff --cached --quiet; then
+            echo "NO_SHADOW_SETTLEMENT_SCHEDULER_CHANGE"
+            exit 0
+          fi
+          git commit -m "evidence(api-football): update hourly shadow settlement state"
+          git pull --rebase origin repair/cor09-world-pipeline
+          git push origin HEAD:repair/cor09-world-pipeline
