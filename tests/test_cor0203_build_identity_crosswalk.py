@@ -161,3 +161,129 @@ def test_events_are_isolated_when_one_crosswalk_fails():
     by_event = {row["event_id"]: row for row in result["events"]}
     assert by_event["e1"]["status"] == "PASS"
     assert by_event["e2"]["status"] == "BLOCKED"
+
+
+
+def governed_identity_authority():
+    return {
+        "post_cut_competitive_data_used": False,
+        "outcomes_used": False,
+        "odds_used": False,
+        "records": [
+            {
+                "provider_player_id": "rapidapi-tennis:player:26925",
+                "provider_display_name": "Michael Mmoh",
+                "provider_ioc_raw": "USA",
+                "provider_ioc_canonical": "USA",
+                "ranking_cut": "2026-09-21",
+                "provider_rank": "148",
+                "provider_rank_points": "379",
+                "pre_cut_history": {
+                    "canonical_source_ids": ["MP01"],
+                    "canonical_iocs": ["USA"],
+                    "observed_hands": ["R"],
+                    "rows": 39,
+                    "latest_row_date": 20260914,
+                },
+                "biographical_candidates": [
+                    {
+                        "master_id": "111581",
+                        "name": "Michael Mmoh",
+                        "hand": "R",
+                        "dob": "19980110",
+                        "ioc": "USA",
+                    }
+                ],
+            }
+        ],
+    }
+
+
+def rapidapi_prefeature_for_authority():
+    return {
+        "revision": "R900",
+        "holdout_id": "H",
+        "discovery_provider": "rapidapi_tennis",
+        "events": [
+            {
+                "event_id": "rapid-e1",
+                "identity_crosswalk_required": True,
+                "player_identities": [
+                    {
+                        "display_name": "Michael Mmoh",
+                        "provider": "rapidapi_tennis",
+                        "provider_player_id": "rapidapi-tennis:player:26925",
+                        "provider_ranking": {
+                            "place": "148",
+                            "points": "379",
+                            "player": "Michael Mmoh",
+                            "country": "USA",
+                            "snapshot_date": "2026-09-21",
+                        },
+                    },
+                    {
+                        "display_name": "Dino Prizmic",
+                        "provider": "api_tennis",
+                        "provider_player_id": "api-tennis:player:22",
+                        "provider_ranking": {
+                            "place": "101",
+                            "points": "603",
+                            "player": "Dino Prizmic",
+                            "country": "CRO",
+                        },
+                    },
+                ],
+            }
+        ],
+    }
+
+
+def test_governed_authority_can_resolve_player_absent_from_exact_static_cut():
+    result = build_crosswalk(
+        prefeature=rapidapi_prefeature_for_authority(),
+        static_cut=static_cut(),
+        identity_authority=governed_identity_authority(),
+    )
+
+    assert result["status"] == "PASS"
+    mappings = {m["provider_player_id"]: m for m in result["mappings"]}
+    mmoh = mappings["rapidapi-tennis:player:26925"]
+    assert mmoh["canonical_source_id"] == "MP01"
+    assert mmoh["canonical_name"] == "Michael Mmoh"
+    assert mmoh["canonical_hand"] == "R"
+    assert mmoh["canonical_age"] == 28.695
+    assert mmoh["canonical_rank"] == 148
+    assert mmoh["canonical_rank_points"] == 379
+    assert mmoh["ranking_cut"] == "20260921"
+    assert "EXACT_PROVIDER_ID_PLUS_NAME_IOC" in mmoh["match_basis"]
+
+
+def test_governed_authority_fails_closed_on_country_mismatch():
+    authority = governed_identity_authority()
+    authority["records"][0]["provider_ioc_canonical"] = "CAN"
+
+    result = build_crosswalk(
+        prefeature=rapidapi_prefeature_for_authority(),
+        static_cut=static_cut(),
+        identity_authority=authority,
+    )
+
+    assert result["status"] == "ALL_BLOCKED"
+    blockers = result["events"][0]["blockers"]
+    assert "STATIC_IDENTITY_NO_MATCH:rapidapi-tennis:player:26925" in blockers
+    assert "IDENTITY_AUTHORITY_IOC_MISMATCH:rapidapi-tennis:player:26925" in blockers
+
+
+def test_governed_authority_fails_closed_when_biographical_dob_is_missing():
+    authority = governed_identity_authority()
+    authority["records"][0]["biographical_candidates"][0]["dob"] = None
+
+    result = build_crosswalk(
+        prefeature=rapidapi_prefeature_for_authority(),
+        static_cut=static_cut(),
+        identity_authority=authority,
+    )
+
+    assert result["status"] == "ALL_BLOCKED"
+    blockers = result["events"][0]["blockers"]
+    assert "IDENTITY_AUTHORITY_DOB_INVALID:rapidapi-tennis:player:26925" in blockers
