@@ -66,7 +66,7 @@ def _fit(dev:list[dict[str,Any]], lr:float, l2:float, epochs:int)->list[float]:
 def build(root:Path)->dict[str,Any]:
     source=_load(root/"evidence/api_football/model_validation/retrospective_predictions.json")
     seal=_load(root/"evidence/api_football/challenger/final_holdout_seal.json")
-    gov=_load(root/"evidence/api_football/market_governance/market_governance.json")
+    gov_path=root/"evidence/api_football/market_governance/market_governance.json"\n    if gov_path.exists():\n        gov=_load(gov_path)\n    else:\n        from tools.api_football_market_governance import build as build_market_governance\n        gov=build_market_governance(root)
     rows=sorted(source["rows"],key=lambda r:(r["kickoff_utc"],int(r["fixture_id"])))
     if len(rows)!=2379: raise ValueError("SOURCE_ROW_COUNT_CHANGED")
     dev=rows[:1665]; val=rows[1665:2022]
