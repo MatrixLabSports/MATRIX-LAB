@@ -18,12 +18,7 @@ def run(
     if bookmaker != {"id": 4, "name": "Pinnacle"}:
         raise ValueError("PINNACLE_BOOKMAKER_IDENTITY_MISMATCH")
 
-    captured_at_utc = str(coverage.get("captured_at_utc") or "")
-    if not captured_at_utc:
-        raise ValueError("PINNACLE_CAPTURE_TIMESTAMP_MISSING")
-
     from datetime import datetime
-    captured_at = datetime.fromisoformat(captured_at_utc.replace("Z", "+00:00"))
 
     quotes = []
     parsed_raw_count = 0
@@ -35,6 +30,15 @@ def run(
         raw_path = Path(str(row.get("raw_path") or ""))
         if not raw_path.is_file():
             raise FileNotFoundError(f"PINNACLE_RAW_MISSING:{raw_path}")
+        captured_at_utc = str(
+            row.get("captured_at_utc")
+            or coverage.get("captured_at_utc")
+            or coverage.get("completed_at_utc")
+            or ""
+        )
+        if not captured_at_utc:
+            raise ValueError(f"PINNACLE_CAPTURE_TIMESTAMP_MISSING:{raw_path}")
+        captured_at = datetime.fromisoformat(captured_at_utc.replace("Z", "+00:00"))
         raw = raw_path.read_bytes()
         parsed = parse_pinnacle_reference_quotes(
             raw,
@@ -68,6 +72,7 @@ def run(
         "direct_pinnacle_api_connection": False,
         "coverage_manifest": str(coverage_manifest_path),
         "raw_payloads_parsed": parsed_raw_count,
+        "capture_timestamp_scope": coverage.get("capture_timestamp_scope", "LEGACY_BATCH"),
         "reference_quote_count": len(entries),
         "fixture_count": len(fixture_ids),
         "market_count": len(market_keys),
