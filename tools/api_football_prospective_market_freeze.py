@@ -5,6 +5,8 @@ from hashlib import sha256
 import json
 from math import exp, log
 from pathlib import Path
+
+from tools.api_football_prediction_store import load_chunked_json
 from typing import Any, Mapping
 
 from app.research.football.experimental_evaluator import evaluate_transparent_poisson_baseline
@@ -127,7 +129,7 @@ def build_freeze(root:Path, freeze_at:datetime)->dict[str,Any]:
     canonical,manifest=load_chunked_canonical_bundle(root/"evidence/api_football/canonical_analysis")
     gov=_load(root/"evidence/api_football/market_governance/market_governance.json")
     btts=_load(root/"evidence/api_football/btts_challenger_v2/manifest.json")
-    retrospective=_load(root/"evidence/api_football/model_validation/retrospective_predictions.json")
+    retrospective=load_chunked_json(root/"evidence/api_football/model_validation/retrospective_predictions_manifest.json")
     excluded_original=_load(root/"evidence/api_football/btts_challenger_v2/exclusion_registry.json")
 
     if set(gov["approved_markets"])!={"1x2","over_2_5"}:
