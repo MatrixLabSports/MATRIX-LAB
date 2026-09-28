@@ -61,13 +61,13 @@ class ModelProbability:
     selection_key: str
     side: str
     probability: float
+    generated_at: datetime
+    model_binding: str
+    source_sha256: str
     metric: str | None = None
     line: str | float | int | None = None
     market_contract: str | None = None
     selection_parameters: str | None = None
-    generated_at: datetime
-    model_binding: str
-    source_sha256: str
     odds_used_as_input: bool = False
 
     def __post_init__(self) -> None:
