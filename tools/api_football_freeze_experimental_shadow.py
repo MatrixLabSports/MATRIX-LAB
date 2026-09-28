@@ -12,6 +12,7 @@ from app.research.football.match_analysis_input import (
     FootballHistoryObservation,
     FootballMatchAnalysisInput,
 )
+from tools.api_football_canonicalize_analysis_inputs import load_chunked_canonical_bundle
 
 
 MODEL_NAME = "transparent_poisson_baseline_v1"
@@ -206,9 +207,10 @@ def main() -> None:
     source = Path("evidence/api_football/canonical_analysis")
     out = Path("evidence/api_football/experimental_shadow")
     freeze_at = datetime.now(timezone.utc).replace(microsecond=0)
+    canonical_bundle, canonical_manifest = load_chunked_canonical_bundle(source)
     ledger, adjudication = freeze_experimental_shadow(
-        canonical_bundle=_load(source / "canonical_inputs.json"),
-        canonical_manifest=_load(source / "manifest.json"),
+        canonical_bundle=canonical_bundle,
+        canonical_manifest=canonical_manifest,
         freeze_at=freeze_at,
     )
     _write(out / "shadow_freeze.json", ledger)
