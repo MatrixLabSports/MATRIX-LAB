@@ -316,10 +316,16 @@ def calculate_stake(
     bankroll: float,
     calibration_gate_pass: bool,
     real_money_gate_open: bool,
+    calibration_reliability: float = 1.0,
+    risk_multiplier: float = 1.0,
     policy: StakePolicy = StakePolicy(),
 ) -> StakeDecision:
     if isinstance(bankroll, bool) or not isinstance(bankroll, (int, float)) or bankroll <= 0:
         raise ValueError("BANKROLL_INVALID")
+    if isinstance(calibration_reliability, bool) or not isinstance(calibration_reliability, (int, float)) or not 0.0 <= float(calibration_reliability) <= 1.0:
+        raise ValueError("CALIBRATION_RELIABILITY_INVALID")
+    if isinstance(risk_multiplier, bool) or not isinstance(risk_multiplier, (int, float)) or not 0.0 <= float(risk_multiplier) <= 1.0:
+        raise ValueError("RISK_MULTIPLIER_INVALID")
     reasons: list[str] = []
     if not calibration_gate_pass:
         reasons.append("CALIBRATION_GATE_NOT_PASS")
@@ -338,7 +344,8 @@ def calculate_stake(
     q = 1.0 - p
     full_kelly = max(0.0, (b * p - q) / b)
     fractional = full_kelly * policy.fractional_kelly
-    capped = min(fractional, policy.max_bankroll_fraction)
+    risk_adjusted = fractional * float(calibration_reliability) * float(risk_multiplier)
+    capped = min(risk_adjusted, policy.max_bankroll_fraction)
     if capped < policy.min_bankroll_fraction:
         return StakeDecision(
             "NO_BET", 0.0, 0.0, full_kelly, fractional,
