@@ -1,0 +1,57 @@
+name: COR02-03 Ultra four-day capacity probe
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+    paths:
+      - .github/workflows/cor0203-ultra-four-day-probe.yml
+
+permissions:
+  contents: read
+
+concurrency:
+  group: cor0203-ultra-four-day-capacity-probe
+  cancel-in-progress: false
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: repair/cor09-world-pipeline
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: python -m pip install -r requirements.txt
+      - name: Probe RapidAPI Tennis Ultra with four-day horizon
+        env:
+          RAPIDAPI_TENNIS_KEY: ${{ secrets.RAPIDAPI_TENNIS_KEY }}
+        run: |
+          set -euo pipefail
+          python -m tools.cor0203_rapidapi_durable_discovery \
+            --out /tmp/COR0203_ULTRA_4DAY_DISCOVERY.json \
+            --summary-out /tmp/COR0203_ULTRA_4DAY_SUMMARY.json \
+            --store /tmp/COR0203_ULTRA_4DAY.sqlite3 \
+            --days 4
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          s=json.loads(Path("/tmp/COR0203_ULTRA_4DAY_SUMMARY.json").read_text())
+          assert s["status"]=="PASS", s
+          assert s["provider"]=="rapidapi_tennis", s
+          assert s["store_integrity_ok"] is True, s
+          assert s["automatic_wagering"] is False
+          assert s["real_money"]=="BLOCKED"
+          print("COR0203_ULTRA_4DAY_PROBE: PASS")
+          print(json.dumps({
+              "provider_network_calls":s.get("provider_network_calls"),
+              "processed":s.get("processed"),
+              "failed":s.get("failed"),
+              "store_raw_records":s.get("store_raw_records"),
+              "worker_request_budget_used":s.get("worker_request_budget_used"),
+          },sort_keys=True))
+          PY
