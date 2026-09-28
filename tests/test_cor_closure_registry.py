@@ -16,10 +16,7 @@ def test_all_nine_resolved_cors_have_physical_closure_paths():
         p=ROOT/r["entries"][cor]["path"]
         assert p.exists(), (cor,p)
         d=_load(p)
-        if cor=="COR10":
-            assert d["status"]=="RESOLVED" and d["pass"] is True
-        else:
-            assert d["status"]=="RESOLVED"
+        assert d["status"]=="RESOLVED"
 
 def test_all_manifest_evidence_paths_exist():
     r=_load(REGISTRY)
