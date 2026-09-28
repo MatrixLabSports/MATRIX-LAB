@@ -1,6 +1,6 @@
 {
   "automatic_wagering": false,
-  "calibration_observation_count": 27,
+  "calibration_observation_count": 41,
   "gate_100_role": "STRONG_PROSPECTIVE_GATE",
   "gate_30_role": "INFORMATIVE_CHECKPOINT",
   "gate_50_role": "FIRST_FORMAL_EVALUATION",
@@ -8,32 +8,121 @@
     "100": {
       "metrics": null,
       "metrics_opened": false,
-      "observations_available": 27,
+      "observations_available": 41,
       "observations_required": 100,
-      "remaining": 73,
+      "remaining": 59,
       "status": "SEALED",
       "threshold": 100
     },
     "30": {
-      "metrics": null,
-      "metrics_opened": false,
-      "observations_available": 27,
+      "metrics": {
+        "1x2": {
+          "beats_poisson_brier": true,
+          "beats_poisson_log_loss": true,
+          "challenger": {
+            "accuracy": 0.6333333333333333,
+            "brier_score": 0.5360404162976025,
+            "log_loss": 0.915580889265959,
+            "sample_size": 30
+          },
+          "delta_brier_challenger_minus_poisson": -0.02654595567887852,
+          "delta_log_loss_challenger_minus_poisson": -0.036989597355298054,
+          "gate_passed": true,
+          "poisson": {
+            "accuracy": 0.6,
+            "brier_score": 0.562586371976481,
+            "log_loss": 0.9525704866212571,
+            "sample_size": 30
+          }
+        },
+        "all_three_markets_pass": false,
+        "btts_v2": {
+          "beats_poisson_brier": false,
+          "beats_poisson_log_loss": false,
+          "challenger": {
+            "brier_score": 0.24404676735412154,
+            "log_loss": 0.681192895683765,
+            "sample_size": 30
+          },
+          "delta_brier_challenger_minus_poisson": 0.012177701365642335,
+          "delta_log_loss_challenger_minus_poisson": 0.02379487930313451,
+          "gate_passed": false,
+          "poisson": {
+            "brier_score": 0.2318690659884792,
+            "log_loss": 0.6573980163806304,
+            "sample_size": 30
+          }
+        },
+        "over_2_5": {
+          "beats_poisson_brier": false,
+          "beats_poisson_log_loss": false,
+          "challenger": {
+            "brier_score": 0.24513642754399254,
+            "log_loss": 0.6861899400195374,
+            "sample_size": 30
+          },
+          "delta_brier_challenger_minus_poisson": 0.006517328612117679,
+          "delta_log_loss_challenger_minus_poisson": 0.013598621778701858,
+          "gate_passed": false,
+          "poisson": {
+            "brier_score": 0.23861909893187486,
+            "log_loss": 0.6725913182408355,
+            "sample_size": 30
+          }
+        }
+      },
+      "metrics_opened": true,
+      "observations_available": 41,
       "observations_required": 30,
-      "remaining": 3,
-      "status": "SEALED",
+      "observations_used": 30,
+      "remaining": 0,
+      "sample_fixture_ids": [
+        "1629000",
+        "1628999",
+        "1638596",
+        "1554171",
+        "1636926",
+        "1636929",
+        "1638593",
+        "1561148",
+        "1598637",
+        "1640068",
+        "1497433",
+        "1528902",
+        "1528903",
+        "1545605",
+        "1545843",
+        "1545846",
+        "1545861",
+        "1554170",
+        "1554173",
+        "1554319",
+        "1555156",
+        "1555157",
+        "1555160",
+        "1350168",
+        "1555161",
+        "1497067",
+        "1558948",
+        "1499656",
+        "1500127",
+        "1500132"
+      ],
+      "sample_prefix_sha256": "b111a7be1dc67bfd28b3b25917cca9a595c41bae00bc41a1cccfeb8462fe5d76",
+      "status": "OPENED_AT_THRESHOLD",
       "threshold": 30
     },
     "50": {
       "metrics": null,
       "metrics_opened": false,
-      "observations_available": 27,
+      "observations_available": 41,
       "observations_required": 50,
-      "remaining": 23,
+      "remaining": 9,
       "status": "SEALED",
       "threshold": 50
     }
   },
-  "generated_at_utc": "2026-09-28T19:34:53+00:00",
+  "generated_at_utc": "2026-09-28T21:05:04+00:00",
   "original_357_holdout_reuse_allowed": false,
   "p_matrix_status": "NOT_GENERATED",
   "parameter_tuning_allowed": false,
