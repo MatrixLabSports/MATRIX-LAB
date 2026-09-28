@@ -309,7 +309,7 @@ def main() -> None:
         "--identity-authority",
         default=(
             "evidence/cor0203/identity/"
-            "MATRIX_COR0203_ATP_BIOGRAPHICAL_SUBSET_R738.json"
+            "MATRIX_COR0203_ATP_BIOGRAPHICAL_SUBSET_R743.json"
         ),
     )
     parser.add_argument("--summary-out", required=True)
