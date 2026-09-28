@@ -1,0 +1,174 @@
+name: API-Football daily prospective production
+
+on:
+  workflow_dispatch:
+    inputs:
+      target_date:
+        description: Optional YYYY-MM-DD in America/Bogota; blank means next Bogota calendar day
+        required: false
+        default: ""
+  push:
+    branches:
+      - main
+    paths:
+      - .github/workflows/api-football-prospective-daily-production.yml
+  schedule:
+    - cron: "17 5 * * *"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: api-football-daily-prospective-production
+  cancel-in-progress: false
+
+jobs:
+  produce:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout operational branch
+        uses: actions/checkout@v4
+        with:
+          ref: repair/cor09-world-pipeline
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install governed dependencies
+        run: python -m pip install pytest requests
+
+      - name: Verify paid API entitlement and secret
+        shell: bash
+        env:
+          API_FOOTBALL_KEY: ${{ secrets.API_FOOTBALL_KEY }}
+        run: |
+          set -euo pipefail
+          if [[ -z "${API_FOOTBALL_KEY:-}" ]]; then
+            echo "API_FOOTBALL_KEY_NOT_CONFIGURED"
+            exit 2
+          fi
+          python - <<'PY'
+          import json, os
+          from pathlib import Path
+          os.environ["API_FOOTBALL_KEY"].encode("ascii")
+          p=Path("evidence/api_football/pro_entitlement_probe/manifest.json")
+          d=json.loads(p.read_text())
+          assert d["pro_entitlement_verified"] is True
+          assert d["status"]=="PASS"
+          assert d["real_money"]=="BLOCKED"
+          print("API_FOOTBALL_PRO_ENTITLEMENT: VERIFIED")
+          PY
+
+      - name: Run incremental production regression tests
+        run: |
+          python -m pytest -q \
+            tests/test_api_football_future_fixture_capture.py \
+            tests/test_api_football_build_prematch_queue.py \
+            tests/test_api_football_group_history_capture.py \
+            tests/test_api_football_team_last_fallback.py \
+            tests/test_api_football_canonical_analysis_inputs.py \
+            tests/test_api_football_prospective_market_pipeline.py
+
+      - name: Record pre-cycle cumulative freeze count
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY' >> "$GITHUB_ENV"
+          import json
+          from pathlib import Path
+          p=Path("evidence/api_football/prospective_market_freeze/freeze.json")
+          d=json.loads(p.read_text()) if p.exists() else {"rows":[]}
+          print("PRE_FREEZE_COUNT="+str(len(d.get("rows",[]))))
+          PY
+
+      - name: Run immutable next-day prospective cycle
+        shell: bash
+        env:
+          API_FOOTBALL_KEY: ${{ secrets.API_FOOTBALL_KEY }}
+          MATRIX_TARGET_DATE: ${{ inputs.target_date }}
+        run: |
+          set -euo pipefail
+          if [[ -n "${MATRIX_TARGET_DATE:-}" ]]; then
+            python -m tools.api_football_prospective_daily_cycle --target-date "$MATRIX_TARGET_DATE"
+          else
+            python -m tools.api_football_prospective_daily_cycle
+          fi
+
+      - name: Enforce cumulative freeze and PIT invariants
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json, os
+          from datetime import datetime
+          from pathlib import Path
+
+          root=Path("evidence/api_football")
+          freeze=json.loads((root/"prospective_market_freeze/freeze.json").read_text())
+          sync=json.loads((root/"prospective_market_freeze/incremental_sync_last.json").read_text())
+          pre=int(os.environ["PRE_FREEZE_COUNT"])
+
+          assert sync["existing_rows_unchanged"] is True
+          assert sync["cumulative_event_count"] >= pre
+          assert len(freeze["rows"]) == sync["cumulative_event_count"]
+          assert len({str(r["fixture_id"]) for r in freeze["rows"]}) == len(freeze["rows"])
+          assert freeze["protections"]["future_only"] is True
+          assert freeze["protections"]["unseen_events_only"] is True
+          assert freeze["protections"]["outcomes_read_at_freeze"] is False
+          assert freeze["protections"]["odds_used_to_generate_probability"] is False
+          assert freeze["protections"]["p_matrix_generated"] is False
+          assert freeze["protections"]["automatic_wagering"] is False
+          assert freeze["protections"]["real_money"]=="BLOCKED"
+
+          new_ids=set(sync.get("new_fixture_ids") or [])
+          by_id={str(r["fixture_id"]):r for r in freeze["rows"]}
+          for fid in new_ids:
+              row=by_id[fid]
+              assert datetime.fromisoformat(row["freeze_at_utc"]) < datetime.fromisoformat(row["kickoff_utc"])
+              assert row["outcome"] is None
+              assert row["p_matrix"] is None
+              source=Path(row["historical_baseline_source"])
+              assert source.is_file(), (fid, source)
+
+          daily_root=root/"prospective_daily"
+          summaries=sorted(daily_root.glob("*/*/cycle_summary.json"))
+          assert summaries
+          cycle=json.loads(summaries[-1].read_text())
+          assert cycle["status"]=="PASS"
+          assert cycle["real_money"]=="BLOCKED"
+          assert cycle["automatic_wagering"] is False
+          assert cycle["odds_used_to_generate_probability"] is False
+          assert cycle["outcomes_used_to_generate_probability"] is False
+          assert cycle["p_matrix_status"]=="NOT_GENERATED"
+          assert cycle["canonical"]["p_matrix_status"]=="NOT_GENERATED"
+          assert cycle["freeze"]["cumulative_event_count"]==len(freeze["rows"])
+          assert cycle["network_calls_performed"] <= 161
+
+          print("MATRIX_FOOTBALL_DAILY_PROSPECTIVE_GATE: PASS")
+          print("pre_freeze_count=",pre)
+          print("new_freezes=",sync["new_event_count"])
+          print("cumulative_freezes=",sync["cumulative_event_count"])
+          print("cycle_network_calls=",cycle["network_calls_performed"])
+          print("target_date_bogota=",cycle["target_date_bogota"])
+          PY
+
+      - name: Persist immutable daily evidence and cumulative freeze
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "matrix-football-daily-production"
+          git config user.email "matrix-football-daily-production@users.noreply.github.com"
+          git add evidence/api_football/prospective_daily
+          git add evidence/api_football/prospective_market_freeze/freeze.json
+          git add evidence/api_football/prospective_market_freeze/manifest.json 2>/dev/null || true
+          git add evidence/api_football/prospective_market_freeze/incremental_sync_last.json
+          if git diff --cached --quiet; then
+            echo "NO_DAILY_PROSPECTIVE_MATERIAL_CHANGE"
+            exit 0
+          fi
+          git commit -m "evidence(football): daily incremental prospective production"
+          git pull --rebase origin repair/cor09-world-pipeline
+          git push origin HEAD:repair/cor09-world-pipeline
