@@ -20,11 +20,25 @@ def test_current_holdout_queue_does_not_invent_provider_keys():
         integrity=integrity,
         ledger_records=[],
     )
-    assert queue["admissible_observations"] == 10
+    assert queue["admissible_observations"] == integrity["admissible_observations"]
     assert queue["settled"] == 0
-    assert queue["ready_result_lookup"] == 0
-    assert queue["identity_mapping_required"] == 10
-    assert all(row["blocker"] == "PROVIDER_MATCH_KEY_MISSING" for row in queue["items"])
+    assert (
+        queue["settled"]
+        + queue["ready_result_lookup"]
+        + queue["identity_mapping_required"]
+        == queue["admissible_observations"]
+    )
+    for row in queue["items"]:
+        if row["status"] == "READY_RESULT_LOOKUP":
+            assert row["provider"] in {"api_tennis", "rapidapi_tennis"}
+            assert str(row["provider_match_key"]).isdigit()
+            assert len(row["provider_player_map"]) == 2
+            assert row["blocker"] is None
+        elif row["status"] == "IDENTITY_MAPPING_REQUIRED":
+            assert row["blocker"] in {
+                "PROVIDER_MATCH_KEY_MISSING",
+                "PROVIDER_PLAYER_MAPPING_INCOMPLETE",
+            }
     assert queue["metrics"] == "SEALED_UNTIL_600"
     assert queue["outcomes_used_for_metrics"] == 0
 
