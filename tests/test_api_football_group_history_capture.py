@@ -288,3 +288,64 @@ def test_group_capture_quarantines_provider_error_and_continues(tmp_path):
     assert "HISTORY_PROVIDER_ERROR" in first["blockers"]
     assert (tmp_path / "raw" / "league_39_season_2026.bin").exists()
     assert (tmp_path / "raw" / "league_40_season_2026.bin").exists()
+
+
+
+def test_free_plan_season_gate_stops_group_fanout_and_probes_team_last(tmp_path):
+    error_response = Mock()
+    error_payload = {
+        "get": "fixtures",
+        "parameters": {"league": "39", "season": "2026"},
+        "errors": {"plan": "Free plans do not have access to this season, try from 2022 to 2024."},
+        "results": 0,
+        "paging": {"current": 1, "total": 1},
+        "response": [],
+    }
+    error_response.status_code = 200
+    error_response.content = __import__("json").dumps(error_payload).encode()
+    error_response.json.return_value = error_payload
+    error_response.headers = {}
+
+    team_rows = [
+        _fixture(
+            300 + i,
+            f"2026-09-{10+i:02d}T12:00:00+00:00",
+            40,
+            "Home FC",
+            3000 + i,
+            f"Opp {i}",
+            2,
+            1,
+        )
+        for i in range(6)
+    ]
+    team_response = _response(team_rows, remaining="60")
+    session = Mock()
+    session.get.side_effect = [error_response, team_response]
+    ticks = iter([
+        datetime(2026, 9, 28, 4, 50, 0, tzinfo=timezone.utc),
+        datetime(2026, 9, 28, 4, 50, 1, tzinfo=timezone.utc),
+        datetime(2026, 9, 28, 4, 50, 2, tzinfo=timezone.utc),
+        datetime(2026, 9, 28, 4, 50, 3, tzinfo=timezone.utc),
+    ])
+
+    result = capture_group_history(
+        api_key="test-key",
+        benchmark=_benchmark(),
+        out_dir=tmp_path,
+        session=session,
+        max_requests=40,
+        min_daily_remaining_reserve=40,
+        now_fn=lambda: next(ticks),
+    )
+
+    assert result["free_plan_season_range_blocked"] is True
+    assert result["stopped_reason"] == "FREE_PLAN_SEASON_RANGE_BLOCKED"
+    assert result["captured_group_count"] == 1
+    assert result["provider_error_group_count"] == 1
+    assert result["network_calls_performed"] == 2
+    assert result["team_last_probe"]["provider_team_id"] == "40"
+    assert result["team_last_probe"]["probe_status"] == "CAPTURED"
+    assert result["team_last_probe"]["final_history_rows"] == 6
+    assert result["team_last_probe"]["rate_limit"]["daily_remaining"] == "60"
+    assert (tmp_path / "raw" / "team_40_last_20.bin").exists()
