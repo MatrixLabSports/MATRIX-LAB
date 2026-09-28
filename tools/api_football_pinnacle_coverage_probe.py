@@ -5,7 +5,7 @@ import json
 import os
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any, Mapping
+from typing import Any, Callable, Mapping
 
 import requests
 
@@ -66,12 +66,14 @@ def run(
     *,
     session: Any | None = None,
     now: datetime | None = None,
+    capture_clock: Callable[[], datetime] | None = None,
 ) -> dict[str, Any]:
     key = str(api_key or "").strip()
     if not key:
         raise ValueError("API_FOOTBALL_KEY_NOT_CONFIGURED")
     key.encode("ascii")
     reference = (now or datetime.now(timezone.utc)).astimezone(timezone.utc)
+    clock = capture_clock or (lambda: datetime.now(timezone.utc))
 
     document = json.loads(registry_path.read_text(encoding="utf-8"))
     events = document.get("events")
@@ -113,6 +115,9 @@ def run(
             timeout=TIMEOUT_SECONDS,
         )
         calls += 1
+        captured_at = clock().astimezone(timezone.utc)
+        if captured_at.tzinfo is None or captured_at.utcoffset() is None:
+            raise ValueError("CAPTURE_CLOCK_MUST_BE_TIMEZONE_AWARE")
         body = bytes(response.content)
         raw_path = raw_dir / f"fixture_{fixture_id}_pinnacle.bin"
         raw_path.write_bytes(body)
@@ -140,6 +145,7 @@ def run(
             "markets": sorted(markets),
             "http_status": int(response.status_code),
             "provider_error": provider_error,
+            "captured_at_utc": captured_at.replace(microsecond=0).isoformat(),
             "raw_path": str(raw_path),
             "raw_sha256": hashlib.sha256(body).hexdigest(),
         })
@@ -148,7 +154,9 @@ def run(
     status = "PASS" if provider_errors == 0 else "BLOCKED"
     manifest = {
         "schema": "MATRIX_API_FOOTBALL_PINNACLE_COVERAGE_AUDIT_V1",
-        "captured_at_utc": reference.replace(microsecond=0).isoformat(),
+        "started_at_utc": reference.replace(microsecond=0).isoformat(),
+        "completed_at_utc": clock().astimezone(timezone.utc).replace(microsecond=0).isoformat(),
+        "capture_timestamp_scope": "PER_FIXTURE_RESPONSE",
         "bookmaker": {"id": BOOKMAKER_ID, "name": BOOKMAKER_NAME},
         "target_fixture_count": len(targets),
         "network_calls_performed": calls,
