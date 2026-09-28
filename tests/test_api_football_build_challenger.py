@@ -2,10 +2,11 @@ from pathlib import Path
 import json
 
 from tools.api_football_build_challenger import build_challenger
+from tools.api_football_prediction_store import load_chunked_json
 
 
 def test_challenger_truth_gates_and_holdout_isolation():
-    source=json.loads(Path("evidence/api_football/model_validation/retrospective_predictions.json").read_text(encoding="utf-8"))
+    source=load_chunked_json(Path("evidence/api_football/model_validation/retrospective_predictions_manifest.json"))
     manifest,seal=build_challenger(source)
 
     assert manifest["development_count"]>0
