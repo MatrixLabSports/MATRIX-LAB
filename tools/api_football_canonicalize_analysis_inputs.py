@@ -5,12 +5,16 @@ from datetime import datetime, timezone
 import hashlib
 import json
 from pathlib import Path
+import shutil
 from typing import Any, Mapping
 
 from app.research.football.match_analysis_input import (
     assess_match_analysis_readiness,
     build_match_analysis_inputs_from_benchmark,
 )
+
+CANONICAL_CHUNK_SIZE = 8
+MAX_TRACKED_TEXT_BYTES = 2 * 1024 * 1024
 
 
 def _aware_utc(value: datetime) -> datetime:
@@ -165,6 +169,126 @@ def _write(path: Path, payload: Mapping[str, Any]) -> None:
         json.dumps(dict(payload), ensure_ascii=False, indent=2, sort_keys=True) + "\n",
         encoding="utf-8",
     )
+    if path.stat().st_size > MAX_TRACKED_TEXT_BYTES:
+        raise ValueError(f"TRACKED_TEXT_EXCEEDS_SECRET_SCAN_LIMIT:{path}")
+
+
+def write_chunked_canonical_bundle(
+    *,
+    out: Path,
+    bundle: Mapping[str, Any],
+    manifest: Mapping[str, Any],
+    chunk_size: int = CANONICAL_CHUNK_SIZE,
+) -> dict[str, Any]:
+    if chunk_size <= 0:
+        raise ValueError("CHUNK_SIZE_MUST_BE_POSITIVE")
+    inputs = bundle.get("inputs")
+    if not isinstance(inputs, list):
+        raise ValueError("BUNDLE_INPUTS_MUST_BE_LIST")
+
+    out.mkdir(parents=True, exist_ok=True)
+    legacy = out / "canonical_inputs.json"
+    if legacy.exists():
+        legacy.unlink()
+
+    chunks_dir = out / "chunks"
+    if chunks_dir.exists():
+        shutil.rmtree(chunks_dir)
+    chunks_dir.mkdir(parents=True, exist_ok=True)
+
+    bundle_metadata = dict(bundle)
+    bundle_metadata.pop("inputs", None)
+    chunk_entries: list[dict[str, Any]] = []
+
+    for offset in range(0, len(inputs), chunk_size):
+        number = (offset // chunk_size) + 1
+        rows = inputs[offset : offset + chunk_size]
+        payload = {
+            "schema": "MATRIX_API_FOOTBALL_CANONICAL_ANALYSIS_INPUT_CHUNK_V1",
+            "chunk_index": number,
+            "input_count": len(rows),
+            "inputs": rows,
+        }
+        relative = f"chunks/part_{number:04d}.json"
+        path = out / relative
+        _write(path, payload)
+        chunk_entries.append({
+            "chunk_index": number,
+            "path": relative,
+            "input_count": len(rows),
+            "sha256": _canonical_hash(payload),
+            "bytes": path.stat().st_size,
+        })
+
+    index = {
+        "schema": "MATRIX_API_FOOTBALL_CANONICAL_ANALYSIS_INDEX_V1",
+        "storage_format": "CHUNKED_JSON_V1",
+        "bundle_metadata": bundle_metadata,
+        "chunks": chunk_entries,
+        "chunk_count": len(chunk_entries),
+        "input_count": len(inputs),
+        "logical_bundle_sha256": manifest.get("bundle_sha256"),
+    }
+    _write(out / "index.json", index)
+
+    persisted_manifest = dict(manifest)
+    persisted_manifest.update({
+        "storage_format": "CHUNKED_JSON_V1",
+        "chunk_size": chunk_size,
+        "chunk_count": len(chunk_entries),
+        "chunk_input_count": len(inputs),
+        "index_sha256": _canonical_hash(index),
+        "legacy_monolith_removed": True,
+    })
+    _write(out / "manifest.json", persisted_manifest)
+    return persisted_manifest
+
+
+def load_chunked_canonical_bundle(root: Path) -> tuple[dict[str, Any], dict[str, Any]]:
+    manifest = _load(root / "manifest.json")
+    index = _load(root / "index.json")
+    if manifest.get("storage_format") != "CHUNKED_JSON_V1":
+        raise ValueError("CANONICAL_STORAGE_NOT_CHUNKED")
+    if manifest.get("index_sha256") != _canonical_hash(index):
+        raise ValueError("CANONICAL_INDEX_SHA_MISMATCH")
+    if index.get("logical_bundle_sha256") != manifest.get("bundle_sha256"):
+        raise ValueError("CANONICAL_LOGICAL_SHA_LINK_MISMATCH")
+
+    entries = index.get("chunks")
+    metadata = index.get("bundle_metadata")
+    if not isinstance(entries, list) or not isinstance(metadata, Mapping):
+        raise ValueError("CANONICAL_INDEX_INVALID")
+
+    inputs: list[dict[str, Any]] = []
+    seen_indexes: set[int] = set()
+    for entry in entries:
+        if not isinstance(entry, Mapping):
+            raise ValueError("CANONICAL_CHUNK_ENTRY_INVALID")
+        number = int(entry.get("chunk_index"))
+        if number in seen_indexes:
+            raise ValueError("CANONICAL_CHUNK_INDEX_DUPLICATE")
+        seen_indexes.add(number)
+        relative = str(entry.get("path") or "")
+        if not relative.startswith("chunks/") or ".." in relative:
+            raise ValueError("CANONICAL_CHUNK_PATH_INVALID")
+        payload = _load(root / relative)
+        if payload.get("chunk_index") != number:
+            raise ValueError("CANONICAL_CHUNK_INDEX_MISMATCH")
+        if _canonical_hash(payload) != entry.get("sha256"):
+            raise ValueError("CANONICAL_CHUNK_SHA_MISMATCH")
+        rows = payload.get("inputs")
+        if not isinstance(rows, list) or len(rows) != entry.get("input_count"):
+            raise ValueError("CANONICAL_CHUNK_COUNT_MISMATCH")
+        inputs.extend(rows)
+
+    if len(inputs) != index.get("input_count") or len(inputs) != manifest.get("chunk_input_count"):
+        raise ValueError("CANONICAL_TOTAL_INPUT_COUNT_MISMATCH")
+
+    bundle = dict(metadata)
+    bundle["inputs"] = inputs
+    if _canonical_hash(bundle) != manifest.get("bundle_sha256"):
+        raise ValueError("CANONICAL_LOGICAL_BUNDLE_SHA_MISMATCH")
+    return bundle, manifest
 
 
 def main() -> None:
@@ -175,17 +299,22 @@ def main() -> None:
         benchmark=_load(source),
         analysis_as_of=analysis_as_of,
     )
-    _write(out / "canonical_inputs.json", bundle)
-    _write(out / "manifest.json", manifest)
+    persisted = write_chunked_canonical_bundle(
+        out=out,
+        bundle=bundle,
+        manifest=manifest,
+    )
     print(json.dumps({
-        "analysis_as_of_utc": manifest["analysis_as_of_utc"],
-        "total_fixture_count": manifest["total_fixture_count"],
-        "ready_input_count": manifest["ready_input_count"],
-        "blocked_future_input_count": manifest["blocked_future_input_count"],
-        "not_future_at_analysis_count": manifest["not_future_at_analysis_count"],
-        "p_matrix_status": manifest["p_matrix_status"],
-        "real_money": manifest["real_money"],
-        "status": manifest["status"],
+        "analysis_as_of_utc": persisted["analysis_as_of_utc"],
+        "total_fixture_count": persisted["total_fixture_count"],
+        "ready_input_count": persisted["ready_input_count"],
+        "blocked_future_input_count": persisted["blocked_future_input_count"],
+        "not_future_at_analysis_count": persisted["not_future_at_analysis_count"],
+        "storage_format": persisted["storage_format"],
+        "chunk_count": persisted["chunk_count"],
+        "p_matrix_status": persisted["p_matrix_status"],
+        "real_money": persisted["real_money"],
+        "status": persisted["status"],
     }, sort_keys=True))
 
 
