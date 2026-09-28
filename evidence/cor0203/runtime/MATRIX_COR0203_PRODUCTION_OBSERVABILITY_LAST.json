@@ -1,7 +1,7 @@
 {
   "bottleneck": {
-    "cause": "PROVIDER_DISCOVERY_BLOCKED",
-    "stage": "SOURCE"
+    "cause": "SOURCE_READY_NO_NEW_ELIGIBLE_EVENTS",
+    "stage": "INVENTORY"
   },
   "cycle": {
     "ending_physical_count": 32,
@@ -14,8 +14,8 @@
     "crosswalk_blocked_events": 22,
     "crosswalk_passed_events": 34,
     "preregistered_events": 0,
-    "preregistration_skipped": 0,
-    "preregistration_status": "NO_DISCOVERY_INPUT",
+    "preregistration_skipped": 5,
+    "preregistration_status": "NO_NEW_EVENTS",
     "stage_blocked_events": 1,
     "staged_events": 0
   },
@@ -40,13 +40,13 @@
     "result": "PASS",
     "silent_imputation_detected": false
   },
-  "operational_state": "SOURCE_BLOCKED",
+  "operational_state": "IDLE_VALID",
   "schema": "MATRIX_COR0203_PRODUCTION_OBSERVABILITY_V1",
   "source": {
-    "cause": "PROVIDER_DISCOVERY_BLOCKED",
-    "network_calls": 7,
+    "cause": "READY",
+    "network_calls": 8,
     "provider": "rapidapi_tennis",
-    "ready": false,
-    "status": "PROVIDER_DISCOVERY_BLOCKED"
+    "ready": true,
+    "status": "DISCOVERY_COMPLETED"
   }
 }
