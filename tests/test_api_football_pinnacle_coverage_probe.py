@@ -74,12 +74,15 @@ def test_future_only_and_pinnacle_markets(tmp_path: Path):
         tmp_path / "out",
         session=session,
         now=datetime(2026, 9, 28, 7, 0, tzinfo=timezone.utc),
+        capture_clock=lambda: datetime(2026, 9, 28, 7, 0, 5, tzinfo=timezone.utc),
     )
     assert result["target_fixture_count"] == 1
     assert result["network_calls_performed"] == 1
     assert result["fixtures_with_pinnacle_odds"] == 1
     assert result["coverage_rate"] == 1.0
     assert result["unique_markets"] == ["Match Winner"]
+    assert result["capture_timestamp_scope"] == "PER_FIXTURE_RESPONSE"
+    assert result["fixtures"][0]["captured_at_utc"] == "2026-09-28T07:00:05+00:00"
     assert result["real_money"] == "BLOCKED"
 
 
