@@ -1,6 +1,8 @@
+import argparse
+
 import pytest
 
-from tools.cor0203_rapidapi_profile_identity import _sanitize_profile
+from tools.cor0203_rapidapi_profile_identity import _parse_target_spec, _sanitize_profile
 
 
 def test_profile_identity_keeps_biography_and_discards_competitive_fields():
@@ -28,3 +30,20 @@ def test_profile_identity_keeps_biography_and_discards_competitive_fields():
 def test_profile_identity_rejects_wrong_numeric_id():
     with pytest.raises(ValueError,match="PROFILE_ID_MISMATCH"):
         _sanitize_profile("92649","Tiago Pereira",{"data":{"id":123,"name":"Tiago Pereira"}})
+
+
+def test_profile_identity_parses_repeatable_governed_target():
+    assert _parse_target_spec("18094=Mackenzie Mcdonald")==("18094","Mackenzie Mcdonald")
+
+
+@pytest.mark.parametrize(
+    "value",
+    [
+        "18094",
+        "abc=Toby Samuel",
+        "79068=",
+    ],
+)
+def test_profile_identity_rejects_invalid_target_spec(value):
+    with pytest.raises(argparse.ArgumentTypeError):
+        _parse_target_spec(value)
