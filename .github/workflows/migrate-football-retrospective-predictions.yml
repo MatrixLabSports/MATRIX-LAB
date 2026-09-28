@@ -1,0 +1,66 @@
+name: Migrate football retrospective predictions to scan-safe chunks
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+    paths:
+      - .github/workflows/migrate-football-retrospective-predictions.yml
+
+permissions:
+  contents: write
+
+concurrency:
+  group: migrate-football-retrospective-predictions
+  cancel-in-progress: false
+
+jobs:
+  migrate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: repair/cor09-world-pipeline
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: python -m pip install -r requirements.txt
+      - name: Migrate oversized JSON into scan-safe chunks
+        run: python -m tools.migrate_api_football_retrospective_predictions
+      - name: Stage migration so secret scanner sees new chunks
+        run: git add -A evidence/api_football/model_validation
+      - name: Verify no active Python reader still depends on monolithic JSON
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          bad=[]
+          for root in (Path("tools"),Path("tests"),Path("app")):
+              for p in root.rglob("*.py"):
+                  if p.name=="migrate_api_football_retrospective_predictions.py":
+                      continue
+                  if "retrospective_predictions.json" in p.read_text(encoding="utf-8-sig"):
+                      bad.append(str(p))
+          assert not bad, bad
+          print("MONOLITHIC_READER_REFERENCES: 0")
+          PY
+      - name: Run focused prediction-store and challenger tests
+        run: |
+          python -m pytest -q \
+            tests/test_api_football_prediction_store.py \
+            tests/test_api_football_build_challenger.py \
+            tests/test_api_football_final_holdout_adjudication.py
+      - name: Run MATRIX canonical quality gate with chunks staged
+        run: python scripts/matrix_ci_gate.py
+      - name: Persist scan-safe store
+        run: |
+          git config user.name "matrix-football-store-migration"
+          git config user.email "matrix-football-store-migration@users.noreply.github.com"
+          if git diff --cached --quiet; then
+            echo NO_MIGRATION_CHANGE
+            exit 0
+          fi
+          git commit -m "evidence(football): migrate retrospective predictions to scan-safe chunks"
+          git pull --rebase origin repair/cor09-world-pipeline
+          git push origin HEAD:repair/cor09-world-pipeline
