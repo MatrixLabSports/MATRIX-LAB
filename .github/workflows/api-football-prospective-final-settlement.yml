@@ -7,14 +7,12 @@ on:
       - main
     paths:
       - .github/workflows/api-football-prospective-final-settlement.yml
-  schedule:
-    - cron: "37 * * * *"
 
 permissions:
   contents: write
 
 concurrency:
-  group: api-football-prospective-final-only-settlement
+  group: api-football-prospective-settlement-calibration
   cancel-in-progress: false
 
 jobs:
