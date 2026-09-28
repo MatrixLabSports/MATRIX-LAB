@@ -288,3 +288,132 @@ def test_crosswalk_pass_uses_canonical_history_identity_not_provider_display_nam
     events = json.loads((runtime / "MATRIX_COR0203_PROSPECTIVE_EVENTS_R722.json").read_text())
     names = [row["name"] for row in events["events"][0]["players"]]
     assert names == ["Titouan Droguet", "Dino Prizmic"]
+
+
+
+def test_pass_with_blockers_crosswalk_stages_only_event_with_complete_event_level_mapping(tmp_path):
+    runtime = tmp_path / "runtime"
+    holdout = tmp_path / "holdout"
+    setup_frozen_source(runtime, holdout)
+
+    p = prereg()
+    p["schema"] = "MATRIX_COR0203_RAPIDAPI_TENNIS_PREFEATURE_REGISTRY_R723_V1"
+    p["events"][0]["identity_crosswalk_required"] = True
+    p["events"][0]["historical_identity_crosswalk_status"] = "PENDING"
+    p["events"][0]["player_identities"] = [
+        {
+            "display_name": "H. Grenier",
+            "provider_player_id": "rapidapi-tennis:player:28932",
+            "provider": "rapidapi_tennis",
+        },
+        {
+            "display_name": "G. Dimitrov",
+            "provider_player_id": "rapidapi-tennis:player:11953",
+            "provider": "rapidapi_tennis",
+        },
+    ]
+    p["events"][0]["players"] = ["H. Grenier", "G. Dimitrov"]
+    write(runtime / "MATRIX_COR0203_PREFEATURE_REGISTRY_R722.json", p)
+    write(
+        runtime / "MATRIX_COR0203_IDENTITY_CROSSWALK_R722.json",
+        {
+            "status": "PASS_WITH_BLOCKERS",
+            "mappings": [
+                {
+                    "provider_player_id": "rapidapi-tennis:player:28932",
+                    "canonical_name": "Hugo Grenier",
+                    "canonical_source_id": "GF95",
+                    "canonical_hand": "R",
+                    "canonical_age": 30.497,
+                    "canonical_rank": 289,
+                    "canonical_rank_points": 191,
+                    "ranking_cut": "20260921",
+                    "status": "PASS",
+                },
+                {
+                    "provider_player_id": "rapidapi-tennis:player:11953",
+                    "canonical_name": "Grigor Dimitrov",
+                    "canonical_source_id": "D875",
+                    "canonical_hand": "R",
+                    "canonical_age": 35.351,
+                    "canonical_rank": 127,
+                    "canonical_rank_points": 472,
+                    "ranking_cut": "20260921",
+                    "status": "PASS",
+                },
+            ],
+        },
+    )
+
+    result = stage_all_pending(runtime_dir=runtime, holdout_dir=holdout)
+
+    staged = next(row for row in result["revisions"] if row["revision"] == 722)
+    assert staged["status"] == "PASS"
+    assert staged["staged_events"] == 1
+
+    static4 = json.loads((runtime / "MATRIX_COR0203_STATIC4_R722.json").read_text())
+    assert static4["provenance"]["registry_source_only_frozen_events"] is False
+    assert static4["provenance"]["static_cut_crosswalk_used"] is True
+    assert static4["players"]["Hugo Grenier"]["source_id"] == "GF95"
+    assert static4["players"]["Grigor Dimitrov"]["source_id"] == "D875"
+    assert static4["players"]["Hugo Grenier"]["static_origin"] == "SEALED_STATIC_CUT_IDENTITY_CROSSWALK"
+
+
+def test_crosswalk_static_fallback_fails_closed_when_required_static_field_missing(tmp_path):
+    runtime = tmp_path / "runtime"
+    holdout = tmp_path / "holdout"
+    setup_frozen_source(runtime, holdout)
+
+    p = prereg()
+    p["events"][0]["identity_crosswalk_required"] = True
+    p["events"][0]["player_identities"] = [
+        {
+            "display_name": "H. Grenier",
+            "provider_player_id": "rapidapi-tennis:player:28932",
+            "provider": "rapidapi_tennis",
+        },
+        {
+            "display_name": "G. Dimitrov",
+            "provider_player_id": "rapidapi-tennis:player:11953",
+            "provider": "rapidapi_tennis",
+        },
+    ]
+    p["events"][0]["players"] = ["H. Grenier", "G. Dimitrov"]
+    write(runtime / "MATRIX_COR0203_PREFEATURE_REGISTRY_R722.json", p)
+    write(
+        runtime / "MATRIX_COR0203_IDENTITY_CROSSWALK_R722.json",
+        {
+            "status": "PASS_WITH_BLOCKERS",
+            "mappings": [
+                {
+                    "provider_player_id": "rapidapi-tennis:player:28932",
+                    "canonical_name": "Hugo Grenier",
+                    "canonical_source_id": "GF95",
+                    "canonical_hand": "R",
+                    "canonical_age": 30.497,
+                    "canonical_rank": 289,
+                    "canonical_rank_points": None,
+                    "ranking_cut": "20260921",
+                    "status": "PASS",
+                },
+                {
+                    "provider_player_id": "rapidapi-tennis:player:11953",
+                    "canonical_name": "Grigor Dimitrov",
+                    "canonical_source_id": "D875",
+                    "canonical_hand": "R",
+                    "canonical_age": 35.351,
+                    "canonical_rank": 127,
+                    "canonical_rank_points": 472,
+                    "ranking_cut": "20260921",
+                    "status": "PASS",
+                },
+            ],
+        },
+    )
+
+    result = stage_all_pending(runtime_dir=runtime, holdout_dir=holdout)
+
+    staged = next(row for row in result["revisions"] if row["revision"] == 722)
+    assert staged["status"] == "ALL_BLOCKED"
+    blockers = json.loads((runtime / "MATRIX_COR0203_STAGE_BLOCKERS_R722.json").read_text())
+    assert "SEALED_STATIC4_CROSSWALK_INCOMPLETE:Hugo Grenier" in blockers["blocked"][0]["blockers"]
