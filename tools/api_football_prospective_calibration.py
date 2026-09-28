@@ -274,6 +274,7 @@ def main()->None:
     root=Path("evidence/api_football")
     sync=sync_calibration_ledger(root)
     out=root/"prospective_calibration"
+    out.mkdir(parents=True,exist_ok=True)
     rows=_load_jsonl(out/"ledger.jsonl")
     gates=build_gate_state(rows)
     (out/"sync_last.json").write_text(json.dumps(sync,ensure_ascii=False,indent=2,sort_keys=True)+"\n",encoding="utf-8")
