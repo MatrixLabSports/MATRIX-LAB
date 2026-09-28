@@ -8,9 +8,9 @@
       "status": "IN_PROGRESS",
       "criterion": "Temporal stability AND rank-band stability PASS in >=3 consecutive non-overlapping windows; total holdout n=600.",
       "holdout_id": "A22_POST_AUDIT_VIRGIN_HOLDOUT_V1",
-      "current_observations": 32,
+      "current_observations": 47,
       "target_observations": 600,
-      "window1_count": 32,
+      "window1_count": 47,
       "window1_target": 200,
       "metrics": "SEALED_UNTIL_600",
       "outcomes_read_for_performance": 0,
@@ -20,7 +20,7 @@
     "COR03": {
       "status": "IN_PROGRESS",
       "criterion": "BSS >=3% sustained in repeated validation under the predeclared holdout contract.",
-      "current_observations": 32,
+      "current_observations": 47,
       "target_observations": 600,
       "metrics": "SEALED_UNTIL_600",
       "outcomes_read_for_performance": 0,
@@ -48,11 +48,21 @@
   },
   "technical_state": {
     "cor0203_provider": "rapidapi_tennis",
+    "cor0203_paid_plan": "Ultra",
     "cor0203_provider_ready_last_success": true,
-    "cor0203_last_successful_freeze_count_increment": 2,
-    "cor0203_last_verified_count_after_success": 32,
-    "cor0203_discovery_horizon_days": 2,
-    "cor0203_four_day_experiment": "REJECTED_AFTER_HTTP_429_AND_REVERTED",
+    "cor0203_last_successful_freeze_count_increment": 1,
+    "cor0203_last_verified_count_after_success": 47,
+    "cor0203_discovery_horizon_days": 4,
+    "cor0203_four_day_capacity_probe": "PASS_NO_HTTP_429",
+    "cor0203_identity_authority": "MATRIX_COR0203_ATP_BIOGRAPHICAL_SUBSET_R734",
+    "cor0203_r730_identity_passed_events": 15,
+    "cor0203_r730_identity_blocked_events": 2,
+    "cor0203_unresolved_identity_player_ids": [
+      "rapidapi-tennis:player:76126",
+      "rapidapi-tennis:player:73055"
+    ],
+    "cor0203_identity_restage_latest_revision": 732,
+    "cor0203_metrics": "SEALED_UNTIL_600",
     "cor11_scheduler": "ENABLED_FAIL_CLOSED_REAL_DAY_ONLY"
   }
 }
