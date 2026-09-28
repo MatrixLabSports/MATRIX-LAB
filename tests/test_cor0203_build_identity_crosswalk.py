@@ -376,3 +376,30 @@ def test_r735_r738_authority_releases_new_exact_id_profiles_only():
     assert samuel["canonical_hand"]=="R"
     assert samuel["identity_authority"]=="MATRIX_COR0203_ATP_BIOGRAPHICAL_SUBSET_R738"
 
+
+
+def test_r741_r743_authority_releases_mccabe_cina_exact_ids():
+    pre=_load(Path("evidence/cor0203/runtime/MATRIX_COR0203_PREFEATURE_REGISTRY_R741.json"))
+    static=_load(Path("evidence/cor0203/runtime/MATRIX_COR0203_STATIC_CUT_20260921.json"))
+    authority=_load(Path("evidence/cor0203/identity/MATRIX_COR0203_ATP_BIOGRAPHICAL_SUBSET_R743.json"))
+    out=build_crosswalk(prefeature=pre,static_cut=static,identity_authority=authority)
+
+    assert out["passed_events"] == 1
+    assert out["blocked_events"] == 0
+    assert out["status"] == "PASS"
+
+    mappings={row["provider_player_id"]:row for row in out["mappings"]}
+    mccabe=mappings["rapidapi-tennis:player:83315"]
+    cina=mappings["rapidapi-tennis:player:95698"]
+
+    assert mccabe["canonical_source_id"]=="M0OQ"
+    assert mccabe["canonical_name"]=="James McCabe"
+    assert mccabe["canonical_ioc"]=="AUS"
+    assert mccabe["canonical_hand"]=="R"
+    assert mccabe["identity_authority"]=="MATRIX_COR0203_ATP_BIOGRAPHICAL_SUBSET_R743"
+
+    assert cina["canonical_source_id"]=="C0NB"
+    assert cina["canonical_name"]=="Federico Cina"
+    assert cina["canonical_ioc"]=="ITA"
+    assert cina["canonical_hand"]=="R"
+    assert cina["identity_authority"]=="MATRIX_COR0203_ATP_BIOGRAPHICAL_SUBSET_R743"
