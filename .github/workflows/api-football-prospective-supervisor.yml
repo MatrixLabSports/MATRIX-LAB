@@ -9,6 +9,12 @@ on:
       - .github/workflows/api-football-prospective-supervisor.yml
   schedule:
     - cron: "7,22,37,52 * * * *"
+  workflow_run:
+    workflows:
+      - "COR02-03 repo-native hourly scheduler"
+      - "API-Football daily prospective production"
+    types:
+      - completed
 
 permissions:
   contents: write
