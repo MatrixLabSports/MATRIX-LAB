@@ -100,7 +100,18 @@ class RapidApiTennisClient:
     ) -> None:
         if not isinstance(api_key, str) or not api_key.strip():
             raise ValueError("RAPIDAPI_TENNIS_KEY_REQUIRED")
-        self._api_key = api_key.strip()
+        normalized_key = api_key.strip()
+        try:
+            normalized_key.encode("ascii")
+        except UnicodeEncodeError as error:
+            raise RapidApiTennisDiscoveryError(
+                "RAPIDAPI_TENNIS_KEY_MUST_BE_ASCII"
+            ) from error
+        if any(ord(ch) < 33 or ord(ch) > 126 for ch in normalized_key):
+            raise RapidApiTennisDiscoveryError(
+                "RAPIDAPI_TENNIS_KEY_CONTAINS_INVALID_CHARACTERS"
+            )
+        self._api_key = normalized_key
         self._opener = opener
         self._timeout = float(timeout_seconds)
         self._retry_policy = ProviderRetryPolicy(
@@ -111,6 +122,7 @@ class RapidApiTennisClient:
             jitter_ratio=0.0,
         )
         self._sleeper = sleeper
+        self.request_attempt_count = 0
         self.request_count = 0
 
     def _get(self, path: str, params: Mapping[str, Any] | None = None) -> Any:
@@ -135,7 +147,7 @@ class RapidApiTennisClient:
                 },
                 method="GET",
             )
-            self.request_count += 1
+            self.request_attempt_count += 1
             try:
                 with self._opener(request, timeout=self._timeout) as response:
                     body = _read_bounded(response)
@@ -171,6 +183,7 @@ class RapidApiTennisClient:
                     raise RapidApiTennisDiscoveryError(
                         "RAPIDAPI_TENNIS_RESPONSE_INVALID"
                     )
+                self.request_count += 1
                 return payload
 
             if attempt < self._retry_policy.max_attempts:
