@@ -113,6 +113,7 @@ def advance(
         raise ValueError("COR11_EVIDENCE_DATE_MISMATCH")
 
     output = dict(ledger)
+    output.pop("cor10", None)
     output["revision"] = f"CALENDAR_{target.strftime('%Y%m%d')}"
     output["correction"] = "COR11"
     output["timezone"] = "America/Bogota"
