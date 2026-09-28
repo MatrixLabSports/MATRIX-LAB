@@ -56,8 +56,15 @@ class ModelProbability:
     sport: str
     event_id: str
     market_key: str
+    bet_type: str
+    period: str
     selection_key: str
+    side: str
     probability: float
+    metric: str | None = None
+    line: str | float | int | None = None
+    market_contract: str | None = None
+    selection_parameters: str | None = None
     generated_at: datetime
     model_binding: str
     source_sha256: str
@@ -68,7 +75,10 @@ class ModelProbability:
             raise ValueError("SPORT_INVALID")
         object.__setattr__(self, "event_id", _text(self.event_id, "EVENT_ID"))
         object.__setattr__(self, "market_key", _text(self.market_key, "MARKET_KEY"))
+        object.__setattr__(self, "bet_type", _text(self.bet_type, "BET_TYPE"))
+        object.__setattr__(self, "period", _text(self.period, "PERIOD"))
         object.__setattr__(self, "selection_key", _text(self.selection_key, "SELECTION_KEY"))
+        object.__setattr__(self, "side", _text(self.side, "SIDE"))
         object.__setattr__(self, "probability", _probability(self.probability))
         object.__setattr__(self, "generated_at", _utc(self.generated_at, "GENERATED_AT"))
         object.__setattr__(self, "model_binding", _text(self.model_binding, "MODEL_BINDING"))
@@ -78,6 +88,22 @@ class ModelProbability:
         object.__setattr__(self, "source_sha256", digest)
         if self.odds_used_as_input:
             raise ValueError("ODDS_TO_P_MATRIX_FORBIDDEN")
+
+    @property
+    def comparison_key(self) -> tuple[object, ...]:
+        return (
+            self.sport,
+            self.event_id,
+            self.market_key,
+            self.bet_type,
+            self.metric,
+            self.period,
+            self.line,
+            self.side,
+            self.selection_key,
+            self.market_contract,
+            self.selection_parameters,
+        )
 
 
 @dataclass(frozen=True)
@@ -245,20 +271,14 @@ def select_best_price(
     if any(row.sport != probability.sport or row.event_id != probability.event_id for row in rows):
         raise ValueError("PROBABILITY_QUOTE_EVENT_MISMATCH")
 
-    matching = [
-        row for row in rows
-        if row.market_key == probability.market_key and row.selection_key == probability.selection_key
-    ]
+    matching = [row for row in rows if row.comparison_key == probability.comparison_key]
     if not matching:
         return BestPriceDecision(
             "NO_BET", None, probability.probability, None, None, None, len(rows), 0,
             ("NO_MARKET_SELECTION_MATCH",),
         )
 
-    canonical_key = matching[0].comparison_key
-    exact = [row for row in matching if row.comparison_key == canonical_key]
-    if len(exact) != len(matching):
-        raise ValueError("NON_EQUIVALENT_LINES_OR_CONTRACTS_MIXED")
+    exact = matching
 
     accepted: list[CanonicalOddsQuote] = []
     rejected: list[str] = []
@@ -338,7 +358,14 @@ def decision_fingerprint(
             "sport": probability.sport,
             "event_id": probability.event_id,
             "market_key": probability.market_key,
+            "bet_type": probability.bet_type,
+            "metric": probability.metric,
+            "period": probability.period,
+            "line": probability.line,
+            "side": probability.side,
             "selection_key": probability.selection_key,
+            "market_contract": probability.market_contract,
+            "selection_parameters": probability.selection_parameters,
             "probability": probability.probability,
             "generated_at": probability.generated_at.isoformat(),
             "model_binding": probability.model_binding,
