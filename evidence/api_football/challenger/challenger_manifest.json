@@ -1,0 +1,155 @@
+{
+  "all_three_markets_validation_superiority": true,
+  "automatic_wagering": false,
+  "candidate_status": "FROZEN_CHALLENGER_AWAITING_FINAL_HOLDOUT",
+  "challenger_name": "calibrated_log_pool_v1",
+  "created_at_utc": "2026-09-28T09:40:11+00:00",
+  "development_count": 1665,
+  "final_holdout_count": 357,
+  "frozen_parameters": {
+    "1x2": {
+      "a": 1.0,
+      "c": 0.8,
+      "gain": 0.03734937950450812,
+      "validation": {
+        "accuracy": 0.5098039215686274,
+        "brier_score": 0.5976429416829475,
+        "log_loss": 0.993482349773384,
+        "sample_size": 357
+      }
+    },
+    "btts": {
+      "a": 0.3,
+      "b": -0.1,
+      "c": 0.6,
+      "gain": 0.009567034597784768,
+      "validation": {
+        "brier_score": 0.2407596633088744,
+        "log_loss": 0.6745548343958756,
+        "sample_size": 357
+      }
+    },
+    "over_2_5": {
+      "a": 0.6,
+      "b": 0.0,
+      "c": 0.4,
+      "gain": 0.002734572092116916,
+      "validation": {
+        "brier_score": 0.22670917061240814,
+        "log_loss": 0.6440767948683447,
+        "sample_size": 357
+      }
+    }
+  },
+  "governed_engine_promoted": false,
+  "holdout_metrics_computed": false,
+  "holdout_outcomes_read": false,
+  "holdout_seal_path": "evidence/api_football/challenger/final_holdout_seal.json",
+  "holdout_seal_sha256": "b9a84e388c0cf2eec0b74705d04a0a8ba7321867754257bc5465ba436543eccf",
+  "holdout_status": "SEALED",
+  "market_reports": [
+    {
+      "baseline_validation": {
+        "accuracy": 0.44537815126050423,
+        "brier_score": 0.6352292060377981,
+        "log_loss": 1.0456048327136631,
+        "sample_size": 357
+      },
+      "market": "1x2",
+      "poisson_validation": {
+        "accuracy": 0.49299719887955185,
+        "brier_score": 0.6107236001786444,
+        "log_loss": 1.0177510707821953,
+        "sample_size": 357
+      },
+      "search_family": "log_probability_pool_poisson_plus_baseline",
+      "search_grid": {
+        "a": "0.0..3.0 step 0.1",
+        "c": "0.0..3.0 step 0.1",
+        "shortlist_by_dev_brier": 40
+      },
+      "selected": {
+        "a": 1.0,
+        "c": 0.8,
+        "gain": 0.03734937950450812,
+        "validation": {
+          "accuracy": 0.5098039215686274,
+          "brier_score": 0.5976429416829475,
+          "log_loss": 0.993482349773384,
+          "sample_size": 357
+        }
+      },
+      "validation_superiority": true
+    },
+    {
+      "baseline_validation": {
+        "brier_score": 0.22924787092995202,
+        "log_loss": 0.6500401319745194,
+        "sample_size": 357
+      },
+      "market": "over_2_5",
+      "poisson_validation": {
+        "brier_score": 0.22756723724912775,
+        "log_loss": 0.645953300323742,
+        "sample_size": 357
+      },
+      "search_family": "logit_pool_poisson_plus_baseline",
+      "search_grid": {
+        "a": "0.0..2.0 step 0.1",
+        "b": "-1.0..1.0 step 0.1",
+        "c": "0.0..2.0 step 0.1",
+        "shortlist_by_dev_brier": 80
+      },
+      "selected": {
+        "a": 0.6,
+        "b": 0.0,
+        "c": 0.4,
+        "gain": 0.002734572092116916,
+        "validation": {
+          "brier_score": 0.22670917061240814,
+          "log_loss": 0.6440767948683447,
+          "sample_size": 357
+        }
+      },
+      "validation_superiority": true
+    },
+    {
+      "baseline_validation": {
+        "brier_score": 0.24296288917286676,
+        "log_loss": 0.6793697739983672,
+        "sample_size": 357
+      },
+      "market": "btts",
+      "poisson_validation": {
+        "brier_score": 0.24374956213603283,
+        "log_loss": 0.681131970166502,
+        "sample_size": 357
+      },
+      "search_family": "logit_pool_poisson_plus_baseline",
+      "search_grid": {
+        "a": "0.0..2.0 step 0.1",
+        "b": "-1.0..1.0 step 0.1",
+        "c": "0.0..2.0 step 0.1",
+        "shortlist_by_dev_brier": 80
+      },
+      "selected": {
+        "a": 0.3,
+        "b": -0.1,
+        "c": 0.6,
+        "gain": 0.009567034597784768,
+        "validation": {
+          "brier_score": 0.2407596633088744,
+          "log_loss": 0.6745548343958756,
+          "sample_size": 357
+        }
+      },
+      "validation_superiority": true
+    }
+  ],
+  "p_matrix_generated": false,
+  "real_money": "BLOCKED",
+  "schema": "MATRIX_FOOTBALL_CHALLENGER_V1",
+  "source_row_count": 2379,
+  "split_policy": "CHRONOLOGICAL_70_DEV_15_VALIDATION_15_FINAL_HOLDOUT",
+  "validation_count": 357
+}
