@@ -98,9 +98,9 @@ def _fit_1x2(dev: list[dict[str,Any]], val: list[dict[str,Any]]) -> dict[str,Any
     poisson_val = _multiclass_metrics(val,[r["poisson"]["1x2"] for r in val])
     baseline_val = _multiclass_metrics(val,[r["baseline"]["1x2"] for r in val])
     candidates=[]
-    for ai in range(0,31):
+    for ai in range(0,21,2):
         a=ai/10
-        for ci in range(0,31):
+        for ci in range(0,21,2):
             c=ci/10
             if a==0 and c==0:
                 continue
@@ -132,11 +132,11 @@ def _fit_binary(dev: list[dict[str,Any]], val: list[dict[str,Any]], market: str)
     poisson_val=_binary_metrics(val,[float(r["poisson"][market]) for r in val],market)
     baseline_val=_binary_metrics(val,[float(r["baseline"][market]) for r in val],market)
     candidates=[]
-    for ai in range(0,21):
+    for ai in range(0,21,2):
         a=ai/10
-        for ci in range(0,21):
+        for ci in range(0,21,2):
             c=ci/10
-            for bi in range(-10,11):
+            for bi in range(-10,11,2):
                 b=bi/10
                 if a==0 and c==0:
                     continue
