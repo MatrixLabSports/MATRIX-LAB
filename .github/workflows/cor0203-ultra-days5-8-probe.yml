@@ -1,0 +1,52 @@
+name: COR02-03 Ultra days5-8 inventory probe
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+    paths:
+      - .github/workflows/cor0203-ultra-days5-8-probe.yml
+
+permissions:
+  contents: read
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: repair/cor09-world-pipeline
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: python -m pip install -r requirements.txt
+      - name: Probe days 5 through 8 without persistence
+        env:
+          RAPIDAPI_TENNIS_KEY: ${{ secrets.RAPIDAPI_TENNIS_KEY }}
+        run: |
+          python - <<'PY'
+          import json, os
+          from datetime import datetime, timedelta, timezone
+          from tools.cor0203_rapidapi_tennis_discovery import RapidApiTennisClient, fetch_discovery
+
+          now=datetime.now(timezone.utc).replace(microsecond=0)
+          start=now.date()+timedelta(days=4)
+          stop=start+timedelta(days=3)
+          client=RapidApiTennisClient(os.environ["RAPIDAPI_TENNIS_KEY"])
+          result=fetch_discovery(client=client,start=start,stop=stop,as_of_utc=now.isoformat())
+          assert result["real_money"]=="BLOCKED"
+          assert result["automatic_wagering"] is False
+          print("COR0203_ULTRA_DAYS5_8_PROBE: PASS")
+          print(json.dumps({
+              "start":start.isoformat(),
+              "stop":stop.isoformat(),
+              "network_calls":result.get("network_calls"),
+              "fixture_rows":result.get("fixture_rows"),
+              "eligible_input_events":result.get("eligible_input_events"),
+              "ranking_players_found":result.get("ranking_players_found"),
+              "provider_rejected_count":len(result.get("provider_rejected") or []),
+          },sort_keys=True))
+          PY
