@@ -55,6 +55,7 @@ Required flow:
    - sport
    - event_id
    - market_key
+   - canonical MATRIX market version
    - bet_type
    - metric
    - period
@@ -87,10 +88,14 @@ Default policy is deliberately conservative and configurable:
 - minimum bankroll fraction: 0.0025
 - minimum expected value: 0.0
 - minimum decimal odds: strictly greater than 1.50
+- calibration reliability multiplier: 0..1
+- independent risk multiplier: 0..1
 
 No stake may be emitted as BET_CANDIDATE while:
 - calibration gate is not PASS; or
 - REAL_MONEY is BLOCKED.
+
+The fractional-Kelly amount is shrunk by calibration reliability and risk multipliers before the hard bankroll cap is applied.
 
 The policy is an execution component, not a model-training input. It can be changed only through explicit governed change control after calibration evidence exists.
 
@@ -132,6 +137,8 @@ SNAPSHOT_AS_OF_FALLBACK.
 When the provider selection_key is missing, a local exact-snapshot identity may be derived, but it is marked:
 DERIVED_LOCAL_EXACT_SNAPSHOT_ONLY
 and is not treated as provider-history eligible.
+
+A raw provider market is labeled UNMAPPED until it is explicitly bound to a MATRIX-MARKET-R2 canonical version. UNMAPPED markets may be stored for research but are rejected by the execution quote gate.
 
 ## Activation procedure after payment
 
