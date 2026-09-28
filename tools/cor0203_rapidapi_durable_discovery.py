@@ -119,16 +119,26 @@ class RapidApiTennisDiscoveryFetcher:
     start: date
     stop: date
     as_of_utc: str
+    last_error: str | None = None
 
     def fetch(self, queue_item: Mapping[str, Any]) -> Mapping[str, Any]:
         if queue_item.get("provider_key") != PROVIDER_KEY:
             raise ValueError("DURABLE_DISCOVERY_PROVIDER_MISMATCH")
-        payload = fetch_discovery(
-            client=self.client,
-            start=self.start,
-            stop=self.stop,
-            as_of_utc=self.as_of_utc,
-        )
+        try:
+            payload = fetch_discovery(
+                client=self.client,
+                start=self.start,
+                stop=self.stop,
+                as_of_utc=self.as_of_utc,
+            )
+        except RapidApiTennisDiscoveryError as error:
+            self.last_error = str(error)[:500]
+            raise
+        except Exception as error:
+            self.last_error = (
+                type(error).__name__ + ":" + str(error)[:400]
+            )
+            raise
         payload["status"] = "DISCOVERY_COMPLETED"
         payload["network_calls"] = self.client.request_count
         payload["durable_acquisition"] = True
@@ -177,6 +187,19 @@ def execute_durable_discovery(
     queue_fp = str(item["queue_item_fingerprint"])
     evidence_id = store.find_evidence_for_queue_item(queue_fp)
     if evidence_id is None:
+        if fetcher.last_error:
+            error = RapidApiTennisDiscoveryError(
+                "DURABLE_DISCOVERY_FETCH_FAILED:" + fetcher.last_error
+            )
+            error.network_calls = client.request_count
+            raise error
+        if result.failures:
+            error = RapidApiTennisDiscoveryError(
+                "DURABLE_DISCOVERY_WORKER_FAILED:"
+                + str(result.failures[0][1])
+            )
+            error.network_calls = client.request_count
+            raise error
         raise ValueError("DURABLE_DISCOVERY_EVIDENCE_MISSING")
     envelope = store.get_raw(evidence_id)
     if not isinstance(envelope, Mapping):
@@ -283,13 +306,15 @@ def main() -> None:
             )
             summary["status"] = "PASS"
         except RapidApiTennisDiscoveryError as error:
+            network_calls = int(getattr(error, "network_calls", 0) or 0)
+            blocker = type(error).__name__ + ":" + str(error)
             payload = {
                 "schema": "MATRIX_COR0203_RAPIDAPI_TENNIS_DISCOVERY_V1",
                 "provider": PROVIDER_KEY,
                 "as_of_utc": _parse_utc(as_of).isoformat(),
                 "status": "PROVIDER_DISCOVERY_BLOCKED",
-                "blocker": type(error).__name__ + ":" + str(error),
-                "network_calls": 0,
+                "blocker": blocker,
+                "network_calls": network_calls,
                 "durable_acquisition": True,
                 "automatic_provider_switch": False,
                 "automatic_model_promotion": False,
@@ -300,12 +325,13 @@ def main() -> None:
                 "schema": "MATRIX_COR0203_DURABLE_DISCOVERY_SUMMARY_V1",
                 "provider": PROVIDER_KEY,
                 "status": "PROVIDER_DISCOVERY_BLOCKED",
+                "blocker": blocker,
                 "processed": 0,
                 "skipped_completed": 0,
                 "recovered_without_fetch": 0,
                 "failed": 1,
                 "worker_request_budget_used": 0,
-                "provider_network_calls": 0,
+                "provider_network_calls": network_calls,
                 "store_integrity_ok": True,
                 "automatic_provider_switch": False,
                 "automatic_wagering": False,
@@ -343,6 +369,7 @@ def main() -> None:
                     "provider_network_calls",
                     0,
                 ),
+                "blocker": summary.get("blocker"),
             },
             sort_keys=True,
         )
