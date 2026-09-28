@@ -555,13 +555,35 @@ def fetch_discovery(
             if token is not None
         }
     )
-    if len(tournament_ids) > MAX_TOURNAMENT_INFO_REQUESTS:
-        tournament_ids = tournament_ids[:MAX_TOURNAMENT_INFO_REQUESTS]
 
-    info = {
-        tournament_id: client.tournament_info(tournament_id)
+    # The fixtures request explicitly asks the provider to include tournament
+    # and tournament.court. Reuse that governed response first instead of
+    # spending one extra API request per tournament. Only unresolved
+    # tournaments consume the bounded tournament-info fallback budget.
+    embedded_info: dict[str, Mapping[str, Any]] = {}
+    for row in rows:
+        tournament_id = _positive_id(row.get("tournamentId"))
+        embedded = _mapping(row.get("tournament"))
+        if tournament_id is None or not embedded:
+            continue
+        if (
+            _tournament_tier(embedded)
+            and _rank_id(embedded) is not None
+            and _court_name(embedded)
+        ):
+            embedded_info.setdefault(tournament_id, dict(embedded))
+
+    unresolved_ids = [
+        tournament_id
         for tournament_id in tournament_ids
+        if tournament_id not in embedded_info
+    ]
+    fallback_ids = unresolved_ids[:MAX_TOURNAMENT_INFO_REQUESTS]
+    network_info = {
+        tournament_id: client.tournament_info(tournament_id)
+        for tournament_id in fallback_ids
     }
+    info = {**embedded_info, **network_info}
     wanted_player_ids = {
         token
         for row in rows
@@ -584,5 +606,11 @@ def fetch_discovery(
     result["request_count"] = client.request_count
     result["network_calls"] = client.request_count
     result["tournaments_queried"] = len(info)
+    result["tournaments_embedded"] = len(embedded_info)
+    result["tournaments_network_queried"] = len(network_info)
+    result["tournaments_unresolved"] = max(
+        0,
+        len(unresolved_ids) - len(fallback_ids),
+    )
     result["ranking_players_found"] = len(rankings)
     return result
