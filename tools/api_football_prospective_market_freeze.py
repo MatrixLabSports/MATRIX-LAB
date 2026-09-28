@@ -257,30 +257,143 @@ def build_freeze(root:Path, freeze_at:datetime)->dict[str,Any]:
     }
 
 
-def main()->None:
-    root=Path(".")
+def _row_identity(row:Mapping[str,Any])->tuple[str,str]:
+    return str(row.get("fixture_id") or ""), _sha(row)
+
+
+def merge_incremental_freeze(
+    *,
+    existing:Mapping[str,Any]|None,
+    candidate:Mapping[str,Any],
+)->tuple[dict[str,Any],dict[str,Any]]:
+    candidate_rows=candidate.get("rows")
+    if not isinstance(candidate_rows,list):
+        raise ValueError("CANDIDATE_FREEZE_ROWS_INVALID")
+
+    if existing is None:
+        merged=dict(candidate)
+        merged["incremental_mode"]=True
+        merged["freeze_cycle_count"]=1
+        merged["last_cycle_new_event_count"]=len(candidate_rows)
+        merged["last_cycle_candidate_event_count"]=len(candidate_rows)
+        merged["last_cycle_excluded_event_count"]=int(candidate.get("excluded_event_count") or 0)
+        return merged,{
+            "status":"INITIAL_FREEZE",
+            "previous_event_count":0,
+            "candidate_event_count":len(candidate_rows),
+            "new_event_count":len(candidate_rows),
+            "cumulative_event_count":len(candidate_rows),
+            "existing_rows_unchanged":True,
+        }
+
+    old_rows=existing.get("rows")
+    if not isinstance(old_rows,list):
+        raise ValueError("EXISTING_FREEZE_ROWS_INVALID")
+    old_protections=existing.get("protections")
+    if old_protections!=candidate.get("protections"):
+        raise ValueError("FREEZE_PROTECTIONS_CHANGED")
+
+    existing_by_id:dict[str,dict[str,Any]]={}
+    old_hashes:dict[str,str]={}
+    for row in old_rows:
+        if not isinstance(row,Mapping):
+            raise ValueError("EXISTING_FREEZE_ROW_INVALID")
+        fid,row_hash=_row_identity(row)
+        if not fid or fid in existing_by_id:
+            raise ValueError("EXISTING_FREEZE_DUPLICATE_OR_MISSING_FIXTURE")
+        existing_by_id[fid]=dict(row)
+        old_hashes[fid]=row_hash
+
+    new_rows=[]
+    skipped_existing=[]
+    for row in candidate_rows:
+        if not isinstance(row,Mapping):
+            raise ValueError("CANDIDATE_FREEZE_ROW_INVALID")
+        fid=str(row.get("fixture_id") or "")
+        if not fid:
+            raise ValueError("CANDIDATE_FREEZE_FIXTURE_ID_MISSING")
+        if fid in existing_by_id:
+            skipped_existing.append(fid)
+            continue
+        freeze_at=_utc(row.get("freeze_at_utc"))
+        kickoff=_utc(row.get("kickoff_utc"))
+        if freeze_at>=kickoff:
+            raise ValueError("INCREMENTAL_FREEZE_NOT_PREMATCH:"+fid)
+        new_rows.append(dict(row))
+
+    merged_rows=[dict(row) for row in old_rows]+new_rows
+    merged_rows.sort(key=lambda r:(r["kickoff_utc"],int(r["fixture_id"])))
+
+    # Existing rows are immutable: adding a new cycle cannot change any old row.
+    for row in merged_rows:
+        fid=str(row["fixture_id"])
+        if fid in old_hashes and _sha(row)!=old_hashes[fid]:
+            raise ValueError("EXISTING_FREEZE_ROW_MUTATED:"+fid)
+
+    merged=dict(existing)
+    merged["rows"]=merged_rows
+    merged["frozen_event_count"]=len(merged_rows)
+    merged["updated_at_utc"]=candidate["created_at_utc"]
+    merged["source_canonical_bundle_sha256"]=candidate["source_canonical_bundle_sha256"]
+    merged["incremental_mode"]=True
+    merged["freeze_cycle_count"]=int(existing.get("freeze_cycle_count") or 1)+(1 if new_rows else 0)
+    merged["last_cycle_new_event_count"]=len(new_rows)
+    merged["last_cycle_candidate_event_count"]=len(candidate_rows)
+    merged["last_cycle_excluded_event_count"]=int(candidate.get("excluded_event_count") or 0)
+    merged["last_cycle_skipped_existing_fixture_ids"]=sorted(skipped_existing,key=int)
+    merged["exclusions"]=candidate.get("exclusions",[])
+    merged["excluded_event_count"]=int(candidate.get("excluded_event_count") or 0)
+
+    summary={
+        "status":"APPENDED" if new_rows else "NO_NEW_ELIGIBLE_EVENTS",
+        "previous_event_count":len(old_rows),
+        "candidate_event_count":len(candidate_rows),
+        "new_event_count":len(new_rows),
+        "new_fixture_ids":[str(r["fixture_id"]) for r in new_rows],
+        "skipped_existing_count":len(skipped_existing),
+        "cumulative_event_count":len(merged_rows),
+        "existing_rows_unchanged":True,
+        "previous_freeze_sha256":_sha(existing),
+        "merged_freeze_sha256":_sha(merged),
+        "real_money":"BLOCKED",
+        "automatic_wagering":False,
+    }
+    return merged,summary
+
+
+def persist_incremental_freeze(
+    root:Path,
+    freeze_at:datetime,
+)->dict[str,Any]:
     out=root/"evidence/api_football/prospective_market_freeze"
     out.mkdir(parents=True,exist_ok=True)
-    existing=out/"freeze.json"
-    if existing.exists():
-        old=_load(existing)
-        if old.get("rows"):
-            raise ValueError("PROSPECTIVE_FREEZE_ALREADY_EXISTS_REFUSE_OVERWRITE")
-    data=build_freeze(root,datetime.now(timezone.utc))
-    if data["frozen_event_count"]<=0:
+    freeze_path=out/"freeze.json"
+    existing=_load(freeze_path) if freeze_path.exists() else None
+    candidate=build_freeze(root,freeze_at)
+    merged,summary=merge_incremental_freeze(existing=existing,candidate=candidate)
+
+    if summary["new_event_count"]==0 and existing is not None:
+        return summary
+    if merged["frozen_event_count"]<=0:
         raise ValueError("NO_ELIGIBLE_FUTURE_EVENTS_FOR_PROSPECTIVE_FREEZE")
-    existing.write_text(json.dumps(data,ensure_ascii=False,indent=2,sort_keys=True)+"\n",encoding="utf-8")
-    manifest={k:v for k,v in data.items() if k not in {"rows","exclusions"}}
-    manifest["freeze_sha256"]=_sha(data)
-    (out/"manifest.json").write_text(json.dumps(manifest,ensure_ascii=False,indent=2,sort_keys=True)+"\n",encoding="utf-8")
-    print(json.dumps({
-        "created_at_utc":data["created_at_utc"],
-        "frozen_event_count":data["frozen_event_count"],
-        "excluded_event_count":data["excluded_event_count"],
-        "first_kickoff":data["rows"][0]["kickoff_utc"] if data["rows"] else None,
-        "last_kickoff":data["rows"][-1]["kickoff_utc"] if data["rows"] else None,
-        "protections":data["protections"],
-    },sort_keys=True))
+
+    freeze_path.write_text(
+        json.dumps(merged,ensure_ascii=False,indent=2,sort_keys=True)+"\n",
+        encoding="utf-8",
+    )
+    manifest={k:v for k,v in merged.items() if k not in {"rows","exclusions"}}
+    manifest["freeze_sha256"]=_sha(merged)
+    manifest["incremental_summary"]=summary
+    (out/"manifest.json").write_text(
+        json.dumps(manifest,ensure_ascii=False,indent=2,sort_keys=True)+"\n",
+        encoding="utf-8",
+    )
+    return summary
+
+
+def main()->None:
+    result=persist_incremental_freeze(Path("."),datetime.now(timezone.utc))
+    print(json.dumps(result,sort_keys=True))
 
 
 if __name__=="__main__":
