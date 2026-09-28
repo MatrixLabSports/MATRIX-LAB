@@ -25,6 +25,7 @@ def probability(**overrides):
         sport="tennis",
         event_id="mx-1",
         market_key="games_total",
+        market_version="MATRIX-MARKET-R2/tennis/GAME_OR_SET_TOTALS/game-or-set-total",
         bet_type="total",
         period="match",
         selection_key="games_total:over:22.5",
@@ -48,6 +49,7 @@ def quote(bookmaker="betplay", odds=1.90, **overrides):
         event_id="mx-1",
         bookmaker=bookmaker,
         market_key="games_total",
+        market_version="MATRIX-MARKET-R2/tennis/GAME_OR_SET_TOTALS/game-or-set-total",
         bet_type="total",
         period="match",
         metric="games",
@@ -210,6 +212,9 @@ def test_odds_api_net_adapter_preserves_exact_line_and_bookmaker_freshness():
     )
     assert len(quotes) == 2
     assert quotes[0].comparison_key == quotes[1].comparison_key
+    assert quotes[0].market_version.startswith("UNMAPPED/")
+    assert assess_quote(quotes[0], now=NOW).accepted is False
+    assert "MARKET_NOT_CANONICALLY_MAPPED" in assess_quote(quotes[0], now=NOW).reasons
     assert quotes[0].freshness_basis == "BOOKMAKER_AS_OF"
     assert meta["adapted_quotes"] == 2
     assert meta["provider_selection_keys"] == 2
@@ -311,3 +316,33 @@ def test_stake_is_shrunk_by_calibration_reliability_and_risk():
     assert stake.status == "BET_CANDIDATE"
     assert stake.bankroll_fraction == pytest.approx(0.0125)
     assert stake.amount == pytest.approx(1250)
+
+
+def test_mapped_provider_market_becomes_execution_eligible_only_with_canonical_version():
+    snapshot = {
+        "event_id": "provider-1",
+        "as_of_ts_ms": int((NOW - timedelta(seconds=10)).timestamp() * 1000),
+        "bookmaker_as_of_ts_ms": {"betplay": int((NOW - timedelta(seconds=8)).timestamp() * 1000)},
+        "items": [{
+            "bookmaker": "betplay",
+            "market_key": "games_total",
+            "matrix_market_version": "MATRIX-MARKET-R2/tennis/GAME_OR_SET_TOTALS/game-or-set-total",
+            "bet_type": "total",
+            "metric": "games",
+            "period": "match",
+            "line": 22.5,
+            "side": "over",
+            "selection_key": "games_total:over:22.5",
+            "odds": 1.91,
+            "is_available": True,
+        }],
+    }
+    quotes, _ = adapt_odds_api_net_snapshot(
+        snapshot,
+        sport="tennis",
+        matrix_event_id="mx-1",
+        event_start_at=START,
+        captured_at=NOW,
+    )
+    gate = assess_quote(quotes[0], now=NOW)
+    assert gate.accepted is True
