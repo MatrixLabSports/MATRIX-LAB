@@ -48,3 +48,24 @@ def test_missing_rapidapi_key_is_explicit_credential_blocker():
     assert report["ready"] is False
     assert report["cause"] == "PROVIDER_CREDENTIAL_NOT_CONFIGURED"
     assert report["production_discovery_ready"] is False
+
+
+def test_ready_transition_deduplicates_when_only_network_call_count_changes(tmp_path):
+    first_report = classify_source_readiness({
+        "provider": "rapidapi_tennis",
+        "status": "DISCOVERY_COMPLETED",
+        "network_calls": 9,
+    })
+    second_report = classify_source_readiness({
+        "provider": "rapidapi_tennis",
+        "status": "DISCOVERY_COMPLETED",
+        "network_calls": 8,
+    })
+    assert first_report["status_fingerprint"] == second_report["status_fingerprint"]
+    first, created_first = persist_transition(report=first_report, evidence_dir=tmp_path)
+    second, created_second = persist_transition(report=second_report, evidence_dir=tmp_path)
+    assert first == second
+    assert created_first is True
+    assert created_second is False
+    immutable = json.loads(first.read_text())
+    assert immutable["network_calls"] == 9
