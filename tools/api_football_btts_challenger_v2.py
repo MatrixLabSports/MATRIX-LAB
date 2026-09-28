@@ -4,6 +4,8 @@ from hashlib import sha256
 import json
 from math import exp, log
 from pathlib import Path
+
+from tools.api_football_prediction_store import load_chunked_json
 from typing import Any
 
 EPS=1e-12
@@ -64,7 +66,7 @@ def _fit(dev:list[dict[str,Any]], lr:float, l2:float, epochs:int)->list[float]:
     return w
 
 def build(root:Path)->dict[str,Any]:
-    source=_load(root/"evidence/api_football/model_validation/retrospective_predictions.json")
+    source=load_chunked_json(root/"evidence/api_football/model_validation/retrospective_predictions_manifest.json")
     seal=_load(root/"evidence/api_football/challenger/final_holdout_seal.json")
     gov_path=root/"evidence/api_football/market_governance/market_governance.json"
     if gov_path.exists():
