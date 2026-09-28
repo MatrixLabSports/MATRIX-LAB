@@ -50,5 +50,9 @@ def test_no_overlay_preserves_historical_blocker():
         integrity=integrity,
         ledger_records=[],
     )
-    assert queue["identity_mapping_required"] == 10
-    assert queue["ready_result_lookup"] == 0
+    target_event = "COR0203-R718-STT-MAYOT-CASSONE"
+    row = next(item for item in queue["items"] if item["event_id"] == target_event)
+    assert row["status"] == "IDENTITY_MAPPING_REQUIRED"
+    assert row["blocker"] == "PROVIDER_MATCH_KEY_MISSING"
+    assert row["provider_match_key"] is None
+    assert row["identity_overlay_applied"] is False
