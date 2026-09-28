@@ -47,6 +47,28 @@ jobs:
           print("DAILY_REMAINING_RESERVE=40")
           PY
 
+      - name: Stop repeated free-plan history calls already proven blocked
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          path = Path("evidence/api_football/history/history_capture_manifest.json")
+          if not path.is_file():
+              raise SystemExit(0)
+          payload = json.loads(path.read_text(encoding="utf-8"))
+          team_probe = payload.get("team_last_probe") or {}
+          team_errors = team_probe.get("provider_errors") or {}
+          season_blocked = payload.get("free_plan_season_range_blocked") is True
+          last_blocked = "Free plans do not have access to the Last parameter." in str(team_errors.get("plan") or "")
+          if season_blocked and last_blocked:
+              print("API_FOOTBALL_FREE_PLAN_HISTORY_ROUTE_ALREADY_PROVEN_BLOCKED")
+              print("No provider request was sent by this run.")
+              raise SystemExit(3)
+          PY
+
       - name: Capture league-season history with fail-closed reserve
         shell: bash
         env:
