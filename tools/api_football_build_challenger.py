@@ -6,6 +6,8 @@ from hashlib import sha256
 import json
 from math import exp, log
 from pathlib import Path
+
+from tools.api_football_prediction_store import load_chunked_json
 from typing import Any, Mapping
 
 EPS = 1e-12
@@ -235,7 +237,7 @@ def build_challenger(source: Mapping[str,Any]) -> tuple[dict[str,Any],dict[str,A
 
 def main() -> None:
     root=Path(".")
-    source=_load(root/"evidence/api_football/model_validation/retrospective_predictions.json")
+    source=load_chunked_json(root/"evidence/api_football/model_validation/retrospective_predictions_manifest.json")
     manifest,seal=build_challenger(source)
     out=root/"evidence/api_football/challenger"
     out.mkdir(parents=True,exist_ok=True)
