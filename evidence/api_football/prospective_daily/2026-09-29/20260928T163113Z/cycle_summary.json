@@ -1,12 +1,24 @@
 {
-  "created_at_utc": "2026-09-28T10:02:50+00:00",
-  "excluded_event_count": 0,
-  "freeze_cycle_count": 2,
-  "freeze_sha256": "88dfec4044dd752245c806403c82171b18ec53db57d3ba8c1a695c5c01f7bc3e",
-  "frozen_event_count": 132,
-  "historical_seen_fixture_count": 2379,
-  "incremental_mode": true,
-  "incremental_summary": {
+  "automatic_wagering": false,
+  "canonical": {
+    "analysis_as_of_utc": "2026-09-28T16:31:18+00:00",
+    "blocked_future_input_count": 107,
+    "bundle_sha256": "647279a7bb33adbacd570923ea166d19927a9e96149392066a5991549d157dbf",
+    "not_future_at_analysis_count": 0,
+    "p_matrix_status": "NOT_GENERATED",
+    "ready_input_count": 65,
+    "total_fixture_count": 172
+  },
+  "cycle_id": "20260928T163113Z",
+  "cycle_root": "evidence/api_football/prospective_daily/2026-09-29/20260928T163113Z",
+  "finished_at_utc": "2026-09-28T16:31:19+00:00",
+  "fixture_capture": {
+    "eligible_future_fixtures": 172,
+    "fixtures_received": 172,
+    "network_calls": 1,
+    "response_sha256": "8f1e8393ac6565b9ce1d8609f4747e25956b6b95a5144f943acd345891442812"
+  },
+  "freeze": {
     "automatic_wagering": false,
     "candidate_event_count": 65,
     "cumulative_event_count": 132,
@@ -86,27 +98,29 @@
     "skipped_existing_count": 0,
     "status": "APPENDED"
   },
-  "last_cycle_candidate_event_count": 65,
-  "last_cycle_excluded_event_count": 0,
-  "last_cycle_new_event_count": 65,
-  "last_cycle_skipped_existing_fixture_ids": [],
-  "permanently_forbidden_original_holdout_count": 357,
-  "protections": {
-    "automatic_wagering": false,
-    "freeze_strictly_before_kickoff": true,
-    "future_only": true,
-    "missing_feature_imputation": false,
-    "odds_used_to_generate_probability": false,
-    "original_357_holdout_excluded": true,
-    "outcomes_read_at_freeze": false,
-    "p_matrix_generated": false,
-    "real_money": "BLOCKED",
-    "settlement_final_only": true,
-    "unseen_events_only": true
+  "history": {
+    "group_blocked_minimum_history_count": 107,
+    "group_network_calls": 30,
+    "group_ready_minimum_history_count": 65,
+    "team_last_blocked_minimum_history_count": 107,
+    "team_last_network_calls": 1,
+    "team_last_ready_minimum_history_count": 65
   },
-  "schema": "MATRIX_FOOTBALL_PROSPECTIVE_MARKET_FREEZE_V1",
-  "source_btts_v2_exclusion_registry_sha256": "31cc03ec1f293c39e2970d8ae19faba746d222c02f518b0714a3a417f7931dad",
-  "source_canonical_bundle_sha256": "647279a7bb33adbacd570923ea166d19927a9e96149392066a5991549d157dbf",
-  "source_market_governance_holdout_sha256": "b9a84e388c0cf2eec0b74705d04a0a8ba7321867754257bc5465ba436543eccf",
-  "updated_at_utc": "2026-09-28T16:31:19+00:00"
+  "network_calls_performed": 32,
+  "odds_used_to_generate_probability": false,
+  "outcomes_used_to_generate_probability": false,
+  "p_matrix_status": "NOT_GENERATED",
+  "prematch": {
+    "competition_count": 50,
+    "country_count": 26,
+    "future_fixture_count": 172,
+    "unique_team_count": 344
+  },
+  "provider": "api_football",
+  "provider_entitlement_required": "PRO_OR_COMPATIBLE",
+  "real_money": "BLOCKED",
+  "schema": "MATRIX_FOOTBALL_PROSPECTIVE_DAILY_CYCLE_V1",
+  "started_at_utc": "2026-09-28T16:31:13+00:00",
+  "status": "PASS",
+  "target_date_bogota": "2026-09-29"
 }
