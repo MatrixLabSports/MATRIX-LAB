@@ -3,6 +3,7 @@ from pathlib import Path
 
 from tools.api_football_prospective_market_freeze import build_freeze
 from tools.api_football_prospective_market_settlement import settle
+from tools.api_football_prediction_store import load_chunked_json
 
 
 def test_prospective_freeze_is_future_unseen_and_holdout_safe():
@@ -16,7 +17,7 @@ def test_prospective_freeze_is_future_unseen_and_holdout_safe():
     assert d["protections"]["p_matrix_generated"] is False
     assert d["protections"]["real_money"]=="BLOCKED"
     forbidden=set(__import__("json").loads(Path("evidence/api_football/btts_challenger_v2/exclusion_registry.json").read_text())["forbidden_fixture_ids"])
-    seen=set(str(r["fixture_id"]) for r in __import__("json").loads(Path("evidence/api_football/model_validation/retrospective_predictions.json").read_text())["rows"])
+    seen=set(str(r["fixture_id"]) for r in load_chunked_json(Path("evidence/api_football/model_validation/retrospective_predictions_manifest.json"))["rows"])
     for row in d["rows"]:
         assert str(row["fixture_id"]) not in forbidden
         assert str(row["fixture_id"]) not in seen
