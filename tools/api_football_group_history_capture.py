@@ -205,6 +205,8 @@ def capture_group_history(
     history_by_group: dict[tuple[str, int], list[dict[str, Any]]] = {}
     total_calls = 0
     stopped_reason: str | None = None
+    free_plan_season_range_blocked = False
+    team_last_probe: dict[str, Any] | None = None
     last_rate: dict[str, str | None] = {
         "daily_limit": None,
         "daily_remaining": None,
@@ -289,6 +291,87 @@ def capture_group_history(
                 "rate_limit": last_rate,
             }
         )
+
+        plan_error = ""
+        if provider_error and isinstance(errors, Mapping):
+            plan_error = str(errors.get("plan") or "")
+        if "free plans do not have access to this season" in plan_error.casefold():
+            free_plan_season_range_blocked = True
+            stopped_reason = "FREE_PLAN_SEASON_RANGE_BLOCKED"
+            break
+
+    if free_plan_season_range_blocked and total_calls < max_requests:
+        preferred_team_id = "1"
+        team_candidates: list[tuple[str, str]] = []
+        for target in fixtures.values():
+            if not isinstance(target, Mapping):
+                continue
+            for side in ("home", "away"):
+                team = target.get(side)
+                if isinstance(team, Mapping):
+                    team_id = str(team.get("id") or "").strip()
+                    team_name = str(team.get("name") or "").strip()
+                    if team_id and team_name:
+                        team_candidates.append((team_id, team_name))
+        unique_candidates = list(dict.fromkeys(team_candidates))
+        selected = next(
+            ((team_id, team_name) for team_id, team_name in unique_candidates if team_id == preferred_team_id),
+            unique_candidates[0] if unique_candidates else None,
+        )
+        if selected is not None:
+            team_id, team_name = selected
+            params = {"team": team_id, "last": 20, "timezone": "UTC"}
+            started = now()
+            response = client.get(
+                BASE_URL + ENDPOINT,
+                headers={"x-apisports-key": key},
+                params=params,
+                timeout=TIMEOUT_SECONDS,
+            )
+            observed = now()
+            total_calls += 1
+            body = bytes(response.content)
+            raw_name = f"team_{team_id}_last_20.bin"
+            raw_path = raw_dir / raw_name
+            raw_path.write_bytes(body)
+            sha = hashlib.sha256(body).hexdigest()
+            public_headers = {
+                name.lower(): value
+                for name, value in response.headers.items()
+                if name.lower() in PUBLIC_HEADER_ALLOWLIST
+            }
+            last_rate = _read_rate(public_headers)
+            parsed = response.json()
+            errors = parsed.get("errors") if isinstance(parsed, Mapping) else None
+            rows = parsed.get("response") if isinstance(parsed, Mapping) else None
+            provider_error = errors not in ({}, [], None)
+            if rows is None and provider_error:
+                rows = []
+            if not isinstance(rows, list):
+                raise ValueError(f"API_FOOTBALL_TEAM_LAST_RESPONSE_INVALID:{team_id}")
+            source_reference = f"api_football:/fixtures?team={team_id}&last=20"
+            finals = [] if provider_error else [
+                item
+                for raw in rows
+                for item in [_final_history_row(raw, source_sha256=sha, source_reference=source_reference)]
+                if item is not None
+            ]
+            team_last_probe = {
+                "provider_team_id": team_id,
+                "team_name": team_name,
+                "request_started_at_utc": started.isoformat(),
+                "response_observed_at_utc": observed.isoformat(),
+                "http_status": int(response.status_code),
+                "raw_path": str(raw_path),
+                "raw_sha256": sha,
+                "response_bytes": len(body),
+                "provider_rows": len(rows),
+                "final_history_rows": len(finals),
+                "provider_error": provider_error,
+                "provider_errors": errors if provider_error else None,
+                "probe_status": "PROVIDER_ERROR_BLOCKED" if provider_error else "CAPTURED",
+                "rate_limit": last_rate,
+            }
 
     histories: dict[str, Any] = {}
     readiness_rows: list[dict[str, Any]] = []
@@ -402,6 +485,8 @@ def capture_group_history(
         "captured_group_count": len(captures),
         "network_calls_performed": total_calls,
         "provider_error_group_count": provider_error_groups,
+        "free_plan_season_range_blocked": free_plan_season_range_blocked,
+        "team_last_probe": team_last_probe,
         "max_requests_policy": max_requests,
         "daily_remaining_reserve_policy": min_daily_remaining_reserve,
         "stopped_reason": stopped_reason,
@@ -451,6 +536,10 @@ def main() -> None:
         "requested_group_count": result["requested_group_count"],
         "captured_group_count": result["captured_group_count"],
         "provider_error_group_count": result["provider_error_group_count"],
+        "free_plan_season_range_blocked": result["free_plan_season_range_blocked"],
+        "team_last_probe_status": (
+            None if result["team_last_probe"] is None else result["team_last_probe"]["probe_status"]
+        ),
         "network_calls_performed": result["network_calls_performed"],
         "ready_minimum_history_count": result["ready_minimum_history_count"],
         "blocked_minimum_history_count": result["blocked_minimum_history_count"],
