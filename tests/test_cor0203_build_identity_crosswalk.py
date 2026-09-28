@@ -1,6 +1,13 @@
 from __future__ import annotations
 
+import json
+from pathlib import Path
+
 from tools.cor0203_build_identity_crosswalk import build_crosswalk
+
+
+def _load(path: Path):
+    return json.loads(path.read_text(encoding="utf-8"))
 
 
 def static_cut():
