@@ -119,10 +119,67 @@ def run_capture(
         raise ValueError("REAL_MONEY_MUST_BE_BLOCKED")
 
     needed = _deficient_team_ids(benchmark=benchmark, readiness=readiness)
-    if not needed:
-        raise ValueError("NO_DEFICIENT_TEAMS")
 
     out_dir.mkdir(parents=True, exist_ok=True)
+    if not needed:
+        rows = readiness.get("rows")
+        if not isinstance(rows, list):
+            raise ValueError("READINESS_ROWS_MISSING")
+        ready_count = sum(
+            1 for row in rows
+            if isinstance(row, Mapping) and row.get("ready_minimum_history") is True
+        )
+        blocked_count = sum(
+            1 for row in rows
+            if isinstance(row, Mapping) and row.get("ready_minimum_history") is not True
+        )
+        enriched = json.loads(json.dumps(benchmark))
+        enriched["benchmark_status"] = (
+            "READY_MINIMUM_HISTORY" if blocked_count == 0 else "PARTIAL_HISTORY"
+        )
+        enriched["team_last_fallback_network_calls"] = 0
+        enriched["money_decisions_enabled"] = False
+        enriched["analysis_mode"] = "PREMATCH_RESEARCH_ONLY"
+        enriched["real_money"] = "BLOCKED"
+        manifest = {
+            "schema": "MATRIX_API_FOOTBALL_TEAM_LAST_FALLBACK_V1",
+            "provider": "api_football",
+            "deficient_unique_team_count": 0,
+            "captured_team_count": 0,
+            "network_calls_performed": 0,
+            "max_requests_policy": max_requests,
+            "daily_remaining_reserve_policy": min_daily_remaining_reserve,
+            "stopped_reason": "NO_DEFICIENT_TEAMS",
+            "provider_error_team_count": 0,
+            "target_fixture_count": len(fixtures),
+            "ready_minimum_history_count": ready_count,
+            "blocked_minimum_history_count": blocked_count,
+            "last_rate_limit": {
+                "daily_limit": None,
+                "daily_remaining": None,
+                "minute_limit": None,
+                "minute_remaining": None,
+            },
+            "captures": [],
+            "automatic_wagering": False,
+            "odds_used": False,
+            "real_money": "BLOCKED",
+            "status": "PASS",
+        }
+        _write_json(out_dir / "manifest.json", manifest)
+        _write_json(out_dir / "benchmark_after_team_last.json", enriched)
+        _write_json(
+            out_dir / "history_readiness_after_team_last.json",
+            {
+                "schema": "MATRIX_API_FOOTBALL_HISTORY_READINESS_AFTER_TEAM_LAST_V1",
+                "ready_minimum_history_count": ready_count,
+                "blocked_minimum_history_count": blocked_count,
+                "rows": rows,
+                "real_money": "BLOCKED",
+            },
+        )
+        return manifest
+
     raw_dir = out_dir / "raw"
     raw_dir.mkdir(parents=True, exist_ok=True)
     client = session or requests.Session()
