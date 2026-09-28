@@ -1,0 +1,72 @@
+name: API-Football Pinnacle coverage audit
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: api-football-pinnacle-coverage-audit
+  cancel-in-progress: false
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout operational branch
+        uses: actions/checkout@v4
+        with:
+          ref: repair/cor09-world-pipeline
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependency
+        run: python -m pip install requests
+
+      - name: Probe Pinnacle coverage for future inventory
+        env:
+          API_FOOTBALL_KEY: ${{ secrets.API_FOOTBALL_KEY }}
+        run: |
+          set -euo pipefail
+          rm -rf evidence/api_football/pinnacle_coverage
+          python -m tools.api_football_pinnacle_coverage_probe
+
+      - name: Enforce coverage audit gate
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          p = json.loads(Path("evidence/api_football/pinnacle_coverage/manifest.json").read_text(encoding="utf-8"))
+          assert p["status"] == "PASS"
+          assert p["provider_error_count"] == 0
+          assert p["real_money"] == "BLOCKED"
+          print("API_FOOTBALL_PINNACLE_COVERAGE_GATE: PASS")
+          print("target_fixture_count=", p["target_fixture_count"])
+          print("fixtures_with_pinnacle_odds=", p["fixtures_with_pinnacle_odds"])
+          print("fixtures_without_pinnacle_odds=", p["fixtures_without_pinnacle_odds"])
+          print("coverage_rate=", p["coverage_rate"])
+          print("unique_market_count=", p["unique_market_count"])
+          print("network_calls=", p["network_calls_performed"])
+          print("daily_remaining=", p["last_rate_limit"].get("daily_remaining"))
+          PY
+
+      - name: Persist evidence
+        run: |
+          set -euo pipefail
+          git config user.name "matrix-api-football-pinnacle-audit"
+          git config user.email "matrix-api-football-pinnacle-audit@users.noreply.github.com"
+          git add evidence/api_football/pinnacle_coverage
+          if git diff --cached --quiet; then
+            echo "NO_PINNACLE_EVIDENCE_TO_PERSIST"
+            exit 3
+          fi
+          git commit -m "evidence(api-football): persist Pinnacle coverage audit"
+          git pull --rebase origin repair/cor09-world-pipeline
+          git push origin HEAD:repair/cor09-world-pipeline
