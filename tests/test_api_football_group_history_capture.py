@@ -225,3 +225,66 @@ def test_group_capture_rejects_request_budget_above_policy(tmp_path):
             out_dir=tmp_path,
             max_requests=41,
         )
+
+
+
+def test_group_capture_quarantines_provider_error_and_continues(tmp_path):
+    benchmark = _benchmark()
+    benchmark["fixtures"]["api_football:fixture:901"] = {
+        **benchmark["fixtures"]["api_football:fixture:900"],
+        "fixture_id": "901",
+        "kickoff_utc": "2026-09-28T19:00:00+00:00",
+        "league": {"id": "40", "name": "Second League", "season": 2026, "round": "R1"},
+        "home": {"id": "50", "name": "Second Home"},
+        "away": {"id": "51", "name": "Second Away"},
+    }
+
+    error_response = Mock()
+    error_payload = {
+        "get": "fixtures",
+        "parameters": {"league": "39", "season": "2026"},
+        "errors": {"plan": "season unavailable"},
+        "results": 0,
+        "paging": {"current": 1, "total": 1},
+        "response": [],
+    }
+    error_response.status_code = 200
+    error_response.content = __import__("json").dumps(error_payload).encode()
+    error_response.json.return_value = error_payload
+    error_response.headers = {
+        "x-ratelimit-requests-limit": "100",
+        "x-ratelimit-requests-remaining": "79",
+        "X-RateLimit-Limit": "10",
+        "X-RateLimit-Remaining": "9",
+    }
+
+    ok_response = _response([], remaining="78")
+    session = Mock()
+    session.get.side_effect = [error_response, ok_response]
+    ticks = iter([
+        datetime(2026, 9, 28, 4, 50, 0, tzinfo=timezone.utc),
+        datetime(2026, 9, 28, 4, 50, 1, tzinfo=timezone.utc),
+        datetime(2026, 9, 28, 4, 50, 2, tzinfo=timezone.utc),
+        datetime(2026, 9, 28, 4, 50, 3, tzinfo=timezone.utc),
+    ])
+
+    result = capture_group_history(
+        api_key="test-key",
+        benchmark=benchmark,
+        out_dir=tmp_path,
+        session=session,
+        max_requests=2,
+        min_daily_remaining_reserve=40,
+        now_fn=lambda: next(ticks),
+    )
+
+    assert result["status"] == "PASS"
+    assert result["network_calls_performed"] == 2
+    assert result["provider_error_group_count"] == 1
+    assert result["captures"][0]["group_status"] == "PROVIDER_ERROR_BLOCKED"
+    assert result["captures"][0]["provider_errors"] == {"plan": "season unavailable"}
+    assert result["captures"][1]["group_status"] == "CAPTURED"
+    first = next(row for row in result["readiness"] if row["target_key"] == "api_football:fixture:900")
+    assert "HISTORY_PROVIDER_ERROR" in first["blockers"]
+    assert (tmp_path / "raw" / "league_39_season_2026.bin").exists()
+    assert (tmp_path / "raw" / "league_40_season_2026.bin").exists()
