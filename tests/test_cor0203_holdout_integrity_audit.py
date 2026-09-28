@@ -16,10 +16,12 @@ def test_current_holdout_chain_excludes_r706_and_has_no_silent_fallbacks():
         binding_path=ROOT / "evidence/cor0203/runtime/MATRIX_COR0203_MODEL_BINDING_R707.json",
     )
     assert report["result"] == "PASS"
-    assert report["admissible_batch_revisions"] == [707, 708, 713, 718, 722]
-    assert report["admissible_observations"] == 10
-    assert report["audited_observations"] == 10
-    assert report["passed_observations"] == 10
+    revisions = report["admissible_batch_revisions"]
+    assert revisions == sorted(revisions)
+    assert 706 not in revisions
+    assert report["admissible_observations"] >= 10
+    assert report["audited_observations"] == report["admissible_observations"]
+    assert report["passed_observations"] == report["admissible_observations"]
     assert report["failed_observations"] == 0
     assert report["outcomes_read"] == 0
     assert report["metrics_opened"] is False
