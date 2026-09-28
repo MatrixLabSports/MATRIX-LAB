@@ -50,6 +50,8 @@ def build_provider_authority_index(
     if authority.get("odds_used") is not False:
         raise ValueError("IDENTITY_AUTHORITY_ODDS_FLAG_INVALID")
 
+    schema = str(authority.get("schema") or "")
+    authority_name = schema[:-3] if schema.endswith("_V1") else schema
     index: dict[str, Mapping[str, Any]] = {}
     for row in authority.get("records", []) or []:
         if not isinstance(row, Mapping):
@@ -59,7 +61,9 @@ def build_provider_authority_index(
             continue
         if provider_id in index:
             raise ValueError("IDENTITY_AUTHORITY_PROVIDER_ID_DUPLICATE:" + provider_id)
-        index[provider_id] = row
+        indexed_row = dict(row)
+        indexed_row["_identity_authority"] = authority_name
+        index[provider_id] = indexed_row
     return index
 
 
@@ -155,6 +159,6 @@ def resolve_authority_mapping(
             "EXACT_PROVIDER_ID_PLUS_NAME_IOC_UNIQUE_PRECUT_SOURCE_ID_"
             "PLUS_FIXED_BIOGRAPHY_DOB_AND_DATED_PROVIDER_RANKING"
         ),
-        "identity_authority": "MATRIX_COR0203_ATP_BIOGRAPHICAL_SUBSET_R734",
+        "identity_authority": str(row.get("_identity_authority") or ""),
         "status": "PASS",
     }, None
