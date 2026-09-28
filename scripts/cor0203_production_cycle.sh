@@ -39,6 +39,7 @@ ACQUISITION_STORE="evidence/cor0203/acquisition/MATRIX_COR0203_ACQUISITION.sqlit
 SOURCE_READINESS_CURRENT="/tmp/MATRIX_COR0203_SOURCE_READINESS_CURRENT.json"
 PREREG_LAST="evidence/cor0203/runtime/MATRIX_COR0203_DISCOVERY_PREREG_LAST.json"
 CROSSWALK_LAST="evidence/cor0203/runtime/MATRIX_COR0203_IDENTITY_CROSSWALK_LAST.json"
+IDENTITY_RESTAGE_LAST="evidence/cor0203/runtime/MATRIX_COR0203_IDENTITY_RESTAGE_DELTA_LAST.json"
 STAGE_LAST="evidence/cor0203/runtime/MATRIX_COR0203_AUTO_STAGE_LAST.json"
 RUNNER_LAST="evidence/cor0203/runtime/MATRIX_COR0203_BATCH_RUNNER_LAST.json"
 INTEGRITY_LAST="evidence/cor0203/runtime/MATRIX_COR0203_HOLDOUT_INTEGRITY_LAST.json"
@@ -92,6 +93,14 @@ python -m tools.cor0203_preregister_discovery \
   --discovery "$DISCOVERY" \
   --result-out "$PREREG_LAST"
 
+python -m tools.cor0203_build_identity_crosswalk \
+  --static-cut "$STATIC_CUT" \
+  --summary-out "$CROSSWALK_LAST"
+
+python -m tools.cor0203_identity_restage_delta \
+  --summary-out "$IDENTITY_RESTAGE_LAST"
+
+# A delta can create a new prefeature revision; build its crosswalk before staging.
 python -m tools.cor0203_build_identity_crosswalk \
   --static-cut "$STATIC_CUT" \
   --summary-out "$CROSSWALK_LAST"
@@ -168,6 +177,7 @@ holdout = Path("evidence/cor0203/holdout")
 
 prereg = json.loads((runtime / "MATRIX_COR0203_DISCOVERY_PREREG_LAST.json").read_text())
 crosswalk = json.loads((runtime / "MATRIX_COR0203_IDENTITY_CROSSWALK_LAST.json").read_text())
+identity_restage = json.loads((runtime / "MATRIX_COR0203_IDENTITY_RESTAGE_DELTA_LAST.json").read_text())
 stage = json.loads((runtime / "MATRIX_COR0203_AUTO_STAGE_LAST.json").read_text())
 runner = json.loads((runtime / "MATRIX_COR0203_BATCH_RUNNER_LAST.json").read_text())
 integrity = json.loads((runtime / "MATRIX_COR0203_HOLDOUT_INTEGRITY_LAST.json").read_text())
@@ -187,6 +197,8 @@ if source_readiness["ready"]:
 assert source_readiness["real_money"] == "BLOCKED"
 assert prereg["status"] in {"NO_DISCOVERY_INPUT", "NO_NEW_EVENTS", "PREREGISTERED"}
 assert crosswalk["real_money"] == "BLOCKED"
+assert identity_restage["real_money"] == "BLOCKED"
+assert identity_restage["status"] in {"CREATED", "NO_NEWLY_UNBLOCKED_EVENTS", "NO_PREFEATURE_REGISTRIES"}
 assert stage["real_money"] == "BLOCKED"
 assert runner["ending_physical_count"] >= runner["starting_physical_count"]
 assert integrity["result"] == "PASS"
@@ -277,6 +289,7 @@ fi
 git add "$STATIC_CUT"
 git add "$PREREG_LAST"
 git add "$CROSSWALK_LAST"
+git add "$IDENTITY_RESTAGE_LAST"
 git add "$STAGE_LAST"
 git add "$RUNNER_LAST"
 git add "$INTEGRITY_LAST"
