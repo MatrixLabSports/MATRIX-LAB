@@ -2,6 +2,11 @@ name: API-Football prospective FINAL-only settlement
 
 on:
   workflow_dispatch:
+  push:
+    branches:
+      - main
+    paths:
+      - .github/workflows/api-football-prospective-final-settlement.yml
   schedule:
     - cron: "37 * * * *"
 
