@@ -1,0 +1,57 @@
+name: COR02-03 Ultra profile identity R732
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+    paths:
+      - .github/workflows/cor0203-ultra-profile-identity.yml
+
+permissions:
+  contents: write
+
+jobs:
+  collect:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: repair/cor09-world-pipeline
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: python -m pip install -r requirements.txt
+      - name: Verify biography-only collector tests
+        run: python -m pytest -q tests/test_cor0203_rapidapi_profile_identity.py
+      - name: Collect six exact numeric-ID profiles
+        env:
+          RAPIDAPI_TENNIS_KEY: ${{ secrets.RAPIDAPI_TENNIS_KEY }}
+        run: python -m tools.cor0203_rapidapi_profile_identity
+      - name: Enforce identity-only evidence
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          p=Path("evidence/cor0203/identity/MATRIX_COR0203_RAPIDAPI_PROFILE_IDENTITY_R732.json")
+          d=json.loads(p.read_text())
+          assert len(d["records"])==6
+          assert d["post_cut_competitive_data_used"] is False
+          assert d["outcomes_used"] is False
+          assert d["odds_used"] is False
+          assert d["current_ranking_fields_used"] is False
+          assert d["real_money"]=="BLOCKED"
+          for r in d["records"]:
+              assert "currentRank" not in r
+              assert "points" not in r
+          print("COR0203_ULTRA_PROFILE_IDENTITY_R732: PASS")
+          PY
+      - name: Persist R732 identity evidence
+        run: |
+          git config user.name "matrix-cor0203-identity"
+          git config user.email "matrix-cor0203-identity@users.noreply.github.com"
+          git add evidence/cor0203/identity/MATRIX_COR0203_RAPIDAPI_PROFILE_IDENTITY_R732.json
+          git commit -m "evidence(cor02-03): persist Ultra profile identity R732"
+          git pull --rebase origin repair/cor09-world-pipeline
+          git push origin HEAD:repair/cor09-world-pipeline
