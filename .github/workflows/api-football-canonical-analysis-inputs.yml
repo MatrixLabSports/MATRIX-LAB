@@ -50,13 +50,15 @@ jobs:
           set -euo pipefail
           python - <<'PY'
           from datetime import datetime
-          import hashlib
-          import json
           from pathlib import Path
 
+          from tools.api_football_canonicalize_analysis_inputs import (
+              MAX_TRACKED_TEXT_BYTES,
+              load_chunked_canonical_bundle,
+          )
+
           root = Path("evidence/api_football/canonical_analysis")
-          bundle = json.loads((root / "canonical_inputs.json").read_text(encoding="utf-8"))
-          manifest = json.loads((root / "manifest.json").read_text(encoding="utf-8"))
+          bundle, manifest = load_chunked_canonical_bundle(root)
 
           assert manifest["status"] == "PASS"
           assert manifest["analysis_as_of_source"] == "RUNTIME_UTC_NOW"
@@ -72,8 +74,12 @@ jobs:
           assert len(bundle["blocked_future_inputs"]) == manifest["blocked_future_input_count"]
           assert len(bundle["not_future_targets"]) == manifest["not_future_at_analysis_count"]
 
-          encoded = json.dumps(bundle, ensure_ascii=False, sort_keys=True, separators=(",", ":")).encode("utf-8")
-          assert hashlib.sha256(encoded).hexdigest() == manifest["bundle_sha256"]
+          assert manifest["storage_format"] == "CHUNKED_JSON_V1"
+          assert manifest["legacy_monolith_removed"] is True
+          assert not (root / "canonical_inputs.json").exists()
+          chunk_paths = sorted((root / "chunks").glob("part_*.json"))
+          assert len(chunk_paths) == manifest["chunk_count"]
+          assert all(path.stat().st_size <= MAX_TRACKED_TEXT_BYTES for path in chunk_paths)
 
           as_of = datetime.fromisoformat(manifest["analysis_as_of_utc"])
           for row in bundle["inputs"]:
@@ -94,6 +100,8 @@ jobs:
           print("ready_input_count=", manifest["ready_input_count"])
           print("blocked_future_input_count=", manifest["blocked_future_input_count"])
           print("not_future_at_analysis_count=", manifest["not_future_at_analysis_count"])
+          print("storage_format=", manifest["storage_format"])
+          print("chunk_count=", manifest["chunk_count"])
           print("p_matrix_status=", manifest["p_matrix_status"])
           print("real_money=", manifest["real_money"])
           PY
