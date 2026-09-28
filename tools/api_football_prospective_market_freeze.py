@@ -124,9 +124,17 @@ def _btts_v2_probability(*,poisson_p:float,baseline_p:float,ehg:float,eag:float,
     return _sigmoid(sum(w*v for w,v in zip(weights,x)))
 
 
-def build_freeze(root:Path, freeze_at:datetime)->dict[str,Any]:
+def build_freeze(
+    root:Path,
+    freeze_at:datetime,
+    *,
+    canonical_root:Path|None=None,
+    history_root:Path|None=None,
+)->dict[str,Any]:
     freeze=freeze_at.astimezone(timezone.utc).replace(microsecond=0)
-    canonical,manifest=load_chunked_canonical_bundle(root/"evidence/api_football/canonical_analysis")
+    canonical_dir=canonical_root or (root/"evidence/api_football/canonical_analysis")
+    history_dir=history_root or (root/"evidence/api_football/history")
+    canonical,manifest=load_chunked_canonical_bundle(canonical_dir)
     gov=_load(root/"evidence/api_football/market_governance/market_governance.json")
     btts=_load(root/"evidence/api_football/btts_challenger_v2/manifest.json")
     retrospective=load_chunked_json(root/"evidence/api_football/model_validation/retrospective_predictions_manifest.json")
@@ -162,7 +170,7 @@ def build_freeze(root:Path, freeze_at:datetime)->dict[str,Any]:
             exclusions.append({"fixture_id":fid,"target_key":value.target_key,"reason":"NOT_UNSEEN_EVENT"})
             continue
 
-        raw_path=root/f"evidence/api_football/history/raw/league_{value.competition_id}_season_{value.season}.bin"
+        raw_path=history_dir/f"raw/league_{value.competition_id}_season_{value.season}.bin"
         baseline=_historical_group_baseline(raw_path,freeze)
         if baseline is None:
             exclusions.append({
@@ -204,7 +212,11 @@ def build_freeze(root:Path, freeze_at:datetime)->dict[str,Any]:
             "kickoff_utc":value.kickoff_utc,
             "freeze_at_utc":freeze.isoformat(),
             "input_sha256":value.canonical_sha256(),
-            "historical_baseline_source":raw_path.as_posix(),
+            "historical_baseline_source":(
+                raw_path.relative_to(root).as_posix()
+                if raw_path.is_relative_to(root)
+                else raw_path.as_posix()
+            ),
             "historical_baseline_sample_size":baseline["sample_size"],
             "poisson_reference":{
                 "1x2":{"H":ev.probabilities["home_win"],"D":ev.probabilities["draw"],"A":ev.probabilities["away_win"]},
@@ -364,12 +376,20 @@ def merge_incremental_freeze(
 def persist_incremental_freeze(
     root:Path,
     freeze_at:datetime,
+    *,
+    canonical_root:Path|None=None,
+    history_root:Path|None=None,
 )->dict[str,Any]:
     out=root/"evidence/api_football/prospective_market_freeze"
     out.mkdir(parents=True,exist_ok=True)
     freeze_path=out/"freeze.json"
     existing=_load(freeze_path) if freeze_path.exists() else None
-    candidate=build_freeze(root,freeze_at)
+    candidate=build_freeze(
+        root,
+        freeze_at,
+        canonical_root=canonical_root,
+        history_root=history_root,
+    )
     merged,summary=merge_incremental_freeze(existing=existing,candidate=candidate)
 
     sync_path=out/"incremental_sync_last.json"
