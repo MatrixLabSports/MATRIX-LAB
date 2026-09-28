@@ -5,6 +5,7 @@ import json
 import math
 import re
 from pathlib import Path
+from statistics import median
 from typing import Any, Mapping
 
 from app.application.football.odds_runtime import assess_odds_quote
@@ -46,21 +47,39 @@ def _match_winner_side(selection: str, *, home_name: str, away_name: str) -> str
     return None
 
 
+def _quote_rejection_reasons(
+    quote: FootballOddsQuote,
+    *,
+    freeze: datetime,
+    kickoff: datetime,
+) -> tuple[str, ...]:
+    reasons: list[str] = []
+    if quote.bookmaker.casefold() != "pinnacle":
+        reasons.append("not_pinnacle")
+    if quote.quote_role != "REFERENCE":
+        reasons.append("not_reference")
+    if quote.phase != "PREMATCH":
+        reasons.append("not_prematch")
+    if quote.quoted_at > freeze:
+        reasons.append("quoted_after_shadow_freeze")
+    if quote.captured_at > freeze:
+        reasons.append("captured_after_shadow_freeze")
+    if quote.quoted_at >= kickoff:
+        reasons.append("quoted_at_or_after_kickoff")
+    if quote.captured_at >= kickoff:
+        reasons.append("captured_at_or_after_kickoff")
+    if not reasons:
+        reasons.extend(assess_odds_quote(quote).blocked_reasons)
+    return tuple(dict.fromkeys(reasons))
+
+
 def _quote_before_freeze(
     quote: FootballOddsQuote,
     *,
     freeze: datetime,
     kickoff: datetime,
 ) -> bool:
-    if quote.bookmaker.casefold() != "pinnacle":
-        return False
-    if quote.quote_role != "REFERENCE" or quote.phase != "PREMATCH":
-        return False
-    if quote.quoted_at > freeze or quote.captured_at > freeze:
-        return False
-    if quote.quoted_at >= kickoff or quote.captured_at >= kickoff:
-        return False
-    return assess_odds_quote(quote).accepted
+    return not _quote_rejection_reasons(quote, freeze=freeze, kickoff=kickoff)
 
 
 def _latest_by_key(
@@ -123,6 +142,8 @@ def compare_shadow_to_pinnacle(
     accepted_quote_count = 0
     mappable_quote_count = 0
     rejected_freshness_count = 0
+    rejection_reason_counts: dict[str, int] = {}
+    relevant_capture_delays: list[int] = []
 
     for shadow_row in shadow.get("rows", []):
         if not isinstance(shadow_row, Mapping):
@@ -144,15 +165,21 @@ def compare_shadow_to_pinnacle(
             quote = item[2]
             if quote.fixture_id != fixture_id:
                 continue
-            if _quote_before_freeze(quote, freeze=freeze, kickoff=kickoff):
-                fixture_items.append(item)
-                accepted_quote_count += 1
-            elif (
+            if not (
                 quote.bookmaker.casefold() == "pinnacle"
                 and quote.quote_role == "REFERENCE"
                 and quote.phase == "PREMATCH"
             ):
+                continue
+            relevant_capture_delays.append(int((quote.captured_at - quote.quoted_at).total_seconds()))
+            rejection_reasons = _quote_rejection_reasons(quote, freeze=freeze, kickoff=kickoff)
+            if not rejection_reasons:
+                fixture_items.append(item)
+                accepted_quote_count += 1
+            else:
                 rejected_freshness_count += 1
+                for reason in rejection_reasons:
+                    rejection_reason_counts[reason] = rejection_reason_counts.get(reason, 0) + 1
 
         match_latest = _latest_by_key(
             [item for item in fixture_items if item[2].market_key == "match_winner"],
@@ -246,6 +273,14 @@ def compare_shadow_to_pinnacle(
         "accepted_pinnacle_quote_observations_scanned": accepted_quote_count,
         "mappable_latest_reference_count": mappable_quote_count,
         "rejected_pinnacle_quote_observations": rejected_freshness_count,
+        "rejection_reason_counts": dict(sorted(rejection_reason_counts.items())),
+        "capture_delay_seconds_summary": {
+            "count": len(relevant_capture_delays),
+            "min": min(relevant_capture_delays) if relevant_capture_delays else None,
+            "median": median(relevant_capture_delays) if relevant_capture_delays else None,
+            "max": max(relevant_capture_delays) if relevant_capture_delays else None,
+            "policy_max_prematch": 120,
+        },
         "rows": rows,
         "protections": {
             "odds_used_to_generate_shadow_probability": False,
@@ -268,6 +303,8 @@ def compare_shadow_to_pinnacle(
         "accepted_pinnacle_quote_observations_scanned": accepted_quote_count,
         "mappable_latest_reference_count": mappable_quote_count,
         "rejected_pinnacle_quote_observations": rejected_freshness_count,
+        "rejection_reason_counts": comparison["rejection_reason_counts"],
+        "capture_delay_seconds_summary": comparison["capture_delay_seconds_summary"],
         "p_matrix_status": "NOT_GENERATED",
         "odds_used_to_generate_shadow_probability": False,
         "model_promotion": False,
