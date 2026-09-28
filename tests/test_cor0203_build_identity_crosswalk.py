@@ -346,3 +346,33 @@ def test_r734_maps_provider_marat_display_to_precut_canonical_name():
     assert marat["canonical_name"]=="Marat Sharipov"
     assert marat["canonical_source_id"]=="S0MN"
     assert marat["identity_authority"]=="MATRIX_COR0203_ATP_BIOGRAPHICAL_SUBSET_R734"
+
+def test_r735_r738_authority_releases_new_exact_id_profiles_only():
+    pre=_load(Path("evidence/cor0203/runtime/MATRIX_COR0203_PREFEATURE_REGISTRY_R735.json"))
+    static=_load(Path("evidence/cor0203/runtime/MATRIX_COR0203_STATIC_CUT_20260921.json"))
+    authority=_load(Path("evidence/cor0203/identity/MATRIX_COR0203_ATP_BIOGRAPHICAL_SUBSET_R738.json"))
+    out=build_crosswalk(prefeature=pre,static_cut=static,identity_authority=authority)
+
+    assert out["passed_events"] == 10
+    assert out["blocked_events"] == 1
+    assert out["status"] == "PASS_WITH_BLOCKERS"
+
+    blocked={row["event_id"] for row in out["events"] if row["status"]=="BLOCKED"}
+    assert blocked == {"COR0203-RAPIDAPI-TENNIS-1472"}
+
+    mappings={row["provider_player_id"]:row for row in out["mappings"]}
+    mcdonald=mappings["rapidapi-tennis:player:18094"]
+    samuel=mappings["rapidapi-tennis:player:79068"]
+
+    assert mcdonald["canonical_source_id"]=="MK66"
+    assert mcdonald["canonical_name"]=="Mackenzie McDonald"
+    assert mcdonald["canonical_ioc"]=="USA"
+    assert mcdonald["canonical_hand"]=="R"
+    assert mcdonald["identity_authority"]=="MATRIX_COR0203_ATP_BIOGRAPHICAL_SUBSET_R738"
+
+    assert samuel["canonical_source_id"]=="S0TM"
+    assert samuel["canonical_name"]=="Toby Samuel"
+    assert samuel["canonical_ioc"]=="GBR"
+    assert samuel["canonical_hand"]=="R"
+    assert samuel["identity_authority"]=="MATRIX_COR0203_ATP_BIOGRAPHICAL_SUBSET_R738"
+
