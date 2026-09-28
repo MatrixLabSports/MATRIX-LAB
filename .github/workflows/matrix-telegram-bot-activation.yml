@@ -1,0 +1,94 @@
+name: MATRIX Telegram bot activation
+
+on:
+  workflow_dispatch:
+    inputs:
+      action:
+        description: Telegram activation action
+        required: true
+        default: probe
+        type: choice
+        options:
+          - probe
+          - discover
+          - send_test
+  push:
+    branches:
+      - main
+    paths:
+      - .github/workflows/matrix-telegram-bot-activation.yml
+
+permissions:
+  contents: read
+
+jobs:
+  telegram:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout operational branch
+        uses: actions/checkout@v4
+        with:
+          ref: repair/cor09-world-pipeline
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: python -m pip install pytest requests
+
+      - name: Run Telegram governance tests
+        run: |
+          python -m pytest -q \
+            tests/test_telegram_bot_probe.py \
+            tests/test_telegram_pick_notifier.py
+
+      - name: Credential preflight
+        id: credential
+        shell: bash
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+        run: |
+          set -euo pipefail
+          if [[ -n "${TELEGRAM_BOT_TOKEN:-}" ]]; then
+            echo "token_ready=true" >> "$GITHUB_OUTPUT"
+            echo "TELEGRAM_BOT_TOKEN: CONFIGURED"
+          else
+            echo "token_ready=false" >> "$GITHUB_OUTPUT"
+            echo "TELEGRAM_BOT_TOKEN: REQUIRED_NOT_CONFIGURED"
+          fi
+          if [[ -n "${TELEGRAM_CHAT_ID:-}" ]]; then
+            echo "chat_ready=true" >> "$GITHUB_OUTPUT"
+            echo "TELEGRAM_CHAT_ID: CONFIGURED"
+          else
+            echo "chat_ready=false" >> "$GITHUB_OUTPUT"
+            echo "TELEGRAM_CHAT_ID: REQUIRED_NOT_CONFIGURED"
+          fi
+
+      - name: Verify Telegram bot identity
+        if: github.event_name == 'workflow_dispatch' && inputs.action == 'probe' && steps.credential.outputs.token_ready == 'true'
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+        run: python -m tools.telegram_bot_probe
+
+      - name: Discover Telegram chats
+        if: github.event_name == 'workflow_dispatch' && inputs.action == 'discover' && steps.credential.outputs.token_ready == 'true'
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+        run: python -m tools.telegram_bot_probe --discover
+
+      - name: Send governed shadow connection test
+        if: github.event_name == 'workflow_dispatch' && inputs.action == 'send_test' && steps.credential.outputs.token_ready == 'true' && steps.credential.outputs.chat_ready == 'true'
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+        run: python -m tools.telegram_bot_probe --send-test
+
+      - name: Report pending user setup
+        if: github.event_name == 'workflow_dispatch' && (steps.credential.outputs.token_ready != 'true' || (inputs.action == 'send_test' && steps.credential.outputs.chat_ready != 'true'))
+        run: |
+          echo "MATRIX_TELEGRAM_ACTIVATION: PENDING_USER_SETUP"
+          echo "Store TELEGRAM_BOT_TOKEN and, for send_test, TELEGRAM_CHAT_ID as GitHub Actions secrets."
