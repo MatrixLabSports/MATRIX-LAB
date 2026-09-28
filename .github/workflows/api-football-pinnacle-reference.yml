@@ -1,0 +1,76 @@
+name: API-Football Pinnacle reference integration
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - .github/workflows/api-football-pinnacle-reference.yml
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: api-football-pinnacle-reference-integration
+  cancel-in-progress: false
+
+jobs:
+  integrate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout operational branch
+        uses: actions/checkout@v4
+        with:
+          ref: repair/cor09-world-pipeline
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Materialize Pinnacle reference ledger
+        run: |
+          set -euo pipefail
+          rm -rf evidence/api_football/pinnacle_reference
+          python -m tools.api_football_pinnacle_reference_integrate
+
+      - name: Enforce integration gate
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          p = json.loads(Path("evidence/api_football/pinnacle_reference/manifest.json").read_text(encoding="utf-8"))
+          assert p["status"] == "PASS"
+          assert p["bookmaker"] == "Pinnacle"
+          assert p["bookmaker_id"] == 4
+          assert p["quote_role"] == "REFERENCE"
+          assert p["reference_quote_count"] > 0
+          assert p["ledger_entry_count_verified"] == p["reference_quote_count"]
+          assert p["odds_used_to_generate_model_probability"] is False
+          assert p["probability_source"] == "MODEL_ONLY"
+          assert p["real_money"] == "BLOCKED"
+          print("PINNACLE_REFERENCE_INTEGRATION_GATE: PASS")
+          print("reference_quote_count=", p["reference_quote_count"])
+          print("fixture_count=", p["fixture_count"])
+          print("market_count=", p["market_count"])
+          print("odds_used_to_generate_model_probability=", p["odds_used_to_generate_model_probability"])
+          print("real_money=", p["real_money"])
+          PY
+
+      - name: Persist reference integration
+        run: |
+          set -euo pipefail
+          git config user.name "matrix-pinnacle-reference"
+          git config user.email "matrix-pinnacle-reference@users.noreply.github.com"
+          git add evidence/api_football/pinnacle_reference
+          if git diff --cached --quiet; then
+            echo "NO_PINNACLE_REFERENCE_CHANGE"
+            exit 0
+          fi
+          git commit -m "evidence(football): integrate Pinnacle reference odds"
+          git pull --rebase origin repair/cor09-world-pipeline
+          git push origin HEAD:repair/cor09-world-pipeline
