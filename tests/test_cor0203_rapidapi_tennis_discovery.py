@@ -287,7 +287,7 @@ def test_fetch_discovery_uses_bounded_fallback_when_fixture_lacks_tournament_met
 
         def fixtures(self, start, stop):
             return {
-                "data": [fixture()],
+                "data": [fixture(start="2026-09-28T12:00:00.000Z")],
                 "pageNo": 1,
                 "pageSize": 1,
                 "hasNextPage": False,
