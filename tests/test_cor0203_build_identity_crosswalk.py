@@ -324,3 +324,18 @@ def test_r730_r733_authority_releases_ultra_evidenced_profiles_only():
         for row in out["mappings"]
         if row.get("identity_authority")
     )
+
+
+def test_r734_maps_provider_marat_display_to_precut_canonical_name():
+    pre=_load(Path("evidence/cor0203/runtime/MATRIX_COR0203_PREFEATURE_REGISTRY_R730.json"))
+    static=_load(Path("evidence/cor0203/runtime/MATRIX_COR0203_STATIC_CUT_20260921.json"))
+    authority=_load(Path("evidence/cor0203/identity/MATRIX_COR0203_ATP_BIOGRAPHICAL_SUBSET_R734.json"))
+    out=build_crosswalk(prefeature=pre,static_cut=static,identity_authority=authority)
+    marat=next(
+        row for row in out["mappings"]
+        if row["provider_player_id"]=="rapidapi-tennis:player:80183"
+    )
+    assert marat["provider_display_name"]=="Marat Sharipov (RUS)"
+    assert marat["canonical_name"]=="Marat Sharipov"
+    assert marat["canonical_source_id"]=="S0MN"
+    assert marat["identity_authority"]=="MATRIX_COR0203_ATP_BIOGRAPHICAL_SUBSET_R734"
