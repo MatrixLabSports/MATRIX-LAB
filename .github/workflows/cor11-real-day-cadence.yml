@@ -1,0 +1,60 @@
+name: COR11 real-day cadence
+
+on:
+  schedule:
+    - cron: "10 5 * * *"
+  workflow_dispatch:
+    inputs:
+      target_date:
+        description: "Optional completed Bogota calendar date YYYY-MM-DD"
+        required: false
+        type: string
+
+permissions:
+  contents: write
+
+concurrency:
+  group: cor11-real-day-cadence
+  cancel-in-progress: false
+
+jobs:
+  advance:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout operational branch
+        uses: actions/checkout@v4
+        with:
+          ref: repair/cor09-world-pipeline
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Advance only with real qualifying evidence
+        shell: bash
+        env:
+          TARGET_DATE: ${{ inputs.target_date }}
+        run: |
+          set -euo pipefail
+          if [ -n "${TARGET_DATE:-}" ]; then
+            python -m tools.cor11_cadence_update --target-date "$TARGET_DATE"
+          else
+            python -m tools.cor11_cadence_update
+          fi
+
+      - name: Persist real-day evidence
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "matrix-cor11-cadence"
+          git config user.email "matrix-cor11-cadence@users.noreply.github.com"
+          git add evidence/cor11
+          if git diff --cached --quiet; then
+            echo "COR11_NO_MATERIAL_CHANGE"
+            exit 0
+          fi
+          git commit -m "audit(cor11): persist real compliant calendar day"
+          git pull --rebase origin repair/cor09-world-pipeline
+          git push origin HEAD:repair/cor09-world-pipeline
