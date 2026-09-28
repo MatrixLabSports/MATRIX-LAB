@@ -44,3 +44,5 @@ def test_legacy_engine_identifiers_cannot_be_treated_as_executable_without_adjud
     assert set(legacy) == {"R315", "R442", "R316", "R318", "R320", "R322"}
     assert all(row["classification"] == "NOT_PHYSICALLY_ADJUDICATED" for row in legacy.values())
     assert all(row["engine_executable"] is False for row in legacy.values())
+
+# Workflow trigger marker: physical engine adjudication must execute in CI.
