@@ -48,6 +48,7 @@ OBSERVABILITY_LAST="evidence/cor0203/runtime/MATRIX_COR0203_PRODUCTION_OBSERVABI
 SETTLEMENT_QUEUE_LAST="evidence/cor0203/runtime/MATRIX_COR0203_SETTLEMENT_QUEUE_LAST.json"
 HISTORICAL_IDENTITY_LAST="evidence/cor0203/runtime/MATRIX_COR0203_HISTORICAL_IDENTITY_LAST.json"
 SETTLEMENT_SYNC_LAST="evidence/cor0203/runtime/MATRIX_COR0203_SETTLEMENT_SYNC_LAST.json"
+SETTLEMENT_UNIQUENESS_LAST="evidence/cor0203/runtime/MATRIX_COR0203_SETTLEMENT_UNIQUENESS_LAST.json"
 SETTLEMENT_LEDGER="evidence/cor0203/settlement/MATRIX_COR0203_SETTLEMENT_LEDGER.jsonl"
 HEARTBEAT="evidence/cor0203/runtime/MATRIX_COR0203_SCHEDULER_HEARTBEAT.json"
 
@@ -153,6 +154,11 @@ python -m tools.cor0203_settlement_queue \
   --identity-overlay "$HISTORICAL_IDENTITY_LAST" \
   --out "$SETTLEMENT_QUEUE_LAST"
 
+python -m tools.cor0203_settlement_uniqueness_reconcile \
+  --uniqueness "$UNIQUENESS_LAST" \
+  --ledger "$SETTLEMENT_LEDGER" \
+  --out "$SETTLEMENT_UNIQUENESS_LAST"
+
 python -m tools.cor0203_settlement_sync \
   --queue "$SETTLEMENT_QUEUE_LAST" \
   --ledger "$SETTLEMENT_LEDGER" \
@@ -199,6 +205,7 @@ observability = json.loads((runtime / "MATRIX_COR0203_PRODUCTION_OBSERVABILITY_L
 settlement_queue = json.loads((runtime / "MATRIX_COR0203_SETTLEMENT_QUEUE_LAST.json").read_text())
 historical_identity = json.loads((runtime / "MATRIX_COR0203_HISTORICAL_IDENTITY_LAST.json").read_text())
 settlement_sync = json.loads((runtime / "MATRIX_COR0203_SETTLEMENT_SYNC_LAST.json").read_text())
+settlement_uniqueness = json.loads((runtime / "MATRIX_COR0203_SETTLEMENT_UNIQUENESS_LAST.json").read_text())
 
 assert source_readiness["provider"] == __import__("os").environ["MATRIX_TENNIS_PROVIDER"]
 assert durable_discovery["real_money"] == "BLOCKED"
@@ -235,6 +242,9 @@ assert historical_identity["automatic_fuzzy_matching"] is False
 assert historical_identity["freeze_mutation"] is False
 assert historical_identity["metrics_opened"] is False
 assert settlement_sync["outcomes_used_for_metrics"] == 0
+assert settlement_uniqueness["result"] == "PASS"
+assert settlement_uniqueness["duplicate_aliases_used_for_metrics"] == 0
+assert settlement_uniqueness["metrics_opened"] is False
 assert settlement_sync["metrics"] == "SEALED_UNTIL_600"
 if not source_readiness["ready"]:
     assert observability["operational_state"] == "SOURCE_BLOCKED"
@@ -316,6 +326,7 @@ git add "$DURABLE_DISCOVERY_LAST"
 git add "$SETTLEMENT_QUEUE_LAST"
 git add "$HISTORICAL_IDENTITY_LAST"
 git add "$SETTLEMENT_SYNC_LAST"
+git add "$SETTLEMENT_UNIQUENESS_LAST"
 if [[ -f "$HEARTBEAT" ]]; then
   git add "$HEARTBEAT"
 fi
