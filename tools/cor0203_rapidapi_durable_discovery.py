@@ -6,6 +6,7 @@ import json
 import os
 from dataclasses import dataclass
 from datetime import date, datetime, timedelta, timezone
+from zoneinfo import ZoneInfo
 from pathlib import Path
 from typing import Any, Mapping
 
@@ -32,6 +33,7 @@ MAX_REQUESTS_PER_BUCKET = (
     + MAX_TOURNAMENT_INFO_REQUESTS
 )
 EXPECTED_ROWS_BUDGET = 5000
+OPERATIONAL_TIMEZONE = ZoneInfo("America/Bogota")
 
 
 def _canonical(value: Mapping[str, Any]) -> str:
@@ -62,7 +64,8 @@ def build_hourly_discovery_queue(
     now = _parse_utc(as_of_utc)
     days = max(1, min(int(days), 4))
     bucket = now.replace(minute=0, second=0, microsecond=0)
-    start = now.date()
+    local_now = now.astimezone(OPERATIONAL_TIMEZONE)
+    start = local_now.date()
     stop = start + timedelta(days=days - 1)
     identity = {
         "schema": "MATRIX_COR0203_DURABLE_DISCOVERY_SOURCE_V1",
@@ -72,6 +75,8 @@ def build_hourly_discovery_queue(
         "start_date": start.isoformat(),
         "stop_date": stop.isoformat(),
         "ranking_cut": RANKING_CUT.isoformat(),
+        "operational_timezone": "America/Bogota",
+        "calendar_day_rule": "00:00:00-23:59:59_LOCAL_FULL_DAY",
     }
     fingerprint = _sha(identity)
     subject_key = (
@@ -167,10 +172,11 @@ def execute_durable_discovery(
 
     client = RapidApiTennisClient(api_key)
     store = SQLiteAcquisitionStore(store_path)
+    local_start = now.astimezone(OPERATIONAL_TIMEZONE).date()
     fetcher = RapidApiTennisDiscoveryFetcher(
         client=client,
-        start=now.date(),
-        stop=now.date() + timedelta(days=days - 1),
+        start=local_start,
+        stop=local_start + timedelta(days=days - 1),
         as_of_utc=now.isoformat(),
     )
     result = execute_tennis_acquisition_queue(
@@ -233,6 +239,8 @@ def execute_durable_discovery(
             result.skipped_completed
             or result.recovered_without_fetch
         ),
+        "operational_timezone": "America/Bogota",
+        "calendar_day_rule": "00:00:00-23:59:59_LOCAL_FULL_DAY",
         "automatic_provider_switch": False,
         "automatic_wagering": False,
         "real_money": "BLOCKED",
