@@ -14,6 +14,7 @@ from app.research.tennis.world_calendar_registry import (
     WorldCalendarEvent,
     build_world_calendar_registry,
 )
+from tools.cor0203_physical_identity import physical_event_key
 
 RAPIDAPI_HOST = "tennis-api-atp-wta-itf.p.rapidapi.com"
 RAPIDAPI_BASE_URL = "https://" + RAPIDAPI_HOST
@@ -515,35 +516,47 @@ def build_discovery_registry(
                 source_snapshot_sha256=source_sha,
             )
         )
-        candidates.append(
-            {
-                "event_id": event_id,
-                "canonical_source_event_id": event_id,
-                "competition_id": f"rapidapi-tennis:tournament:{tournament_id}",
-                "competition": tournament_name,
-                "round": round_name,
-                "surface": "Hard",
-                "tour_level": "C",
-                "event_start_utc": start.isoformat(),
-                "target_period": 20260921,
-                "source_provider": PROVIDER_KEY,
-                "source_reference": source_reference,
-                "source_snapshot_sha256": source_sha,
-                "players": [
-                    {
-                        "name": p1_name,
-                        "provider_player_id": f"rapidapi-tennis:player:{p1_id}",
-                        "provider_ranking": dict(p1_ranking),
-                    },
-                    {
-                        "name": p2_name,
-                        "provider_player_id": f"rapidapi-tennis:player:{p2_id}",
-                        "provider_ranking": dict(p2_ranking),
-                    },
-                ],
-                "historical_identity_crosswalk_status": "PENDING",
-            }
-        )
+        candidate = {
+            "event_id": event_id,
+            "canonical_source_event_id": event_id,
+            "competition_id": f"rapidapi-tennis:tournament:{tournament_id}",
+            "competition": tournament_name,
+            "round": round_name,
+            "surface": "Hard",
+            "tour_level": "C",
+            "event_start_utc": start.isoformat(),
+            "target_period": 20260921,
+            "source_provider": PROVIDER_KEY,
+            "source_reference": source_reference,
+            "source_snapshot_sha256": source_sha,
+            "player_identities": [
+                {
+                    "display_name": p1_name,
+                    "provider_player_id": f"rapidapi-tennis:player:{p1_id}",
+                    "provider": PROVIDER_KEY,
+                },
+                {
+                    "display_name": p2_name,
+                    "provider_player_id": f"rapidapi-tennis:player:{p2_id}",
+                    "provider": PROVIDER_KEY,
+                },
+            ],
+            "players": [
+                {
+                    "name": p1_name,
+                    "provider_player_id": f"rapidapi-tennis:player:{p1_id}",
+                    "provider_ranking": dict(p1_ranking),
+                },
+                {
+                    "name": p2_name,
+                    "provider_player_id": f"rapidapi-tennis:player:{p2_id}",
+                    "provider_ranking": dict(p2_ranking),
+                },
+            ],
+            "historical_identity_crosswalk_status": "PENDING",
+        }
+        candidate["physical_event_key"] = physical_event_key(candidate)
+        candidates.append(candidate)
 
     registry = build_world_calendar_registry(events=events, as_of_utc=as_of_utc)
     return {
