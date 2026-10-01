@@ -1,0 +1,88 @@
+{
+  "schema": "MATRIX_COR0203_SETTLEMENT_ADJUDICATIONS_20261001_V1",
+  "created_at_utc": "2026-10-01T22:35:00+00:00",
+  "policy": {
+    "completed_match": "append canonical binary settlement",
+    "retired_match": "append official-winner settlement; preserve RETIRED terminal status; metrics remain sealed",
+    "cancelled_match": "append terminal closure with no binary outcome; exclude from calibration metric denominator when metrics open",
+    "suspended_or_rescheduled": "do not invent an outcome; keep waiting for FINAL result",
+    "fuzzy_matching": false,
+    "metrics_opened": false,
+    "real_money": "BLOCKED"
+  },
+  "entries": [
+    {
+      "event_id": "COR0203-R707-SD2-GOMEZ-MARCONDES",
+      "action": "APPEND_SETTLEMENT",
+      "terminal_status": "FINISHED",
+      "event_final_result": "4-6 6-4 6-1",
+      "winner_canonical_name": "Igor Marcondes",
+      "outcome_player_a": false,
+      "metric_eligibility_at_open": "ELIGIBLE_STANDARD_FINAL",
+      "source_provider": "external_multi_source_adjudication",
+      "sources": [
+        "https://www.tennisabstract.com/cgi-bin/tourney.cgi?t=2026-3175%2FSan-Diego-2-CH",
+        "https://www.tennisexplorer.com/player/gomez-e101b/",
+        "https://www.sofascore.com/es-la/tennis/match/federico-agustin-gomez-igor-marcondes/hTHsPvib"
+      ]
+    },
+    {
+      "event_id": "COR0203-R718-STT-MAYOT-CASSONE",
+      "action": "APPEND_SETTLEMENT",
+      "terminal_status": "RETIRED",
+      "event_final_result": "5-7 6-2 4-2 RET",
+      "winner_canonical_name": "Harold Mayot",
+      "outcome_player_a": true,
+      "metric_eligibility_at_open": "ELIGIBLE_OFFICIAL_WINNER_NONSTANDARD_TERMINAL",
+      "source_provider": "external_multi_source_adjudication",
+      "sources": [
+        "https://www.tennisabstract.com/cgi-bin/tourney.cgi?t=2026-9552%2FSaint-Tropez-CH",
+        "https://www.365scores.com/en-us/tennis/match/saint-tropez-7750/harold-mayot-murphy-cassone-57208-69959-7750"
+      ]
+    },
+    {
+      "event_id": "COR0203-RAPIDAPI-TENNIS-1499",
+      "action": "APPEND_SETTLEMENT",
+      "terminal_status": "CANCELLED",
+      "event_final_result": null,
+      "winner_canonical_name": null,
+      "outcome_player_a": null,
+      "metric_eligibility_at_open": "EXCLUDED_CANCELLED_NO_SPORTING_OUTCOME",
+      "source_provider": "external_multi_source_adjudication",
+      "sources": [
+        "https://www.sofascore.com/tennis/match/dino-prizmic-daniel-rincon/QXxcsOGOc",
+        "https://www.forebet.com/en/tennis/matches/challenger-men/porto/d-prizmic-d-rincon/359833"
+      ]
+    },
+    {
+      "event_id": "COR0203-RAPIDAPI-TENNIS-1459",
+      "action": "APPEND_SETTLEMENT",
+      "terminal_status": "RETIRED",
+      "event_final_result": "3-6 2-4 RET",
+      "winner_canonical_name": "Evan Zhu",
+      "outcome_player_a": false,
+      "metric_eligibility_at_open": "ELIGIBLE_OFFICIAL_WINNER_NONSTANDARD_TERMINAL",
+      "source_provider": "external_multi_source_adjudication",
+      "sources": [
+        "https://www.tennislive.net/atp/match/evan-zhu-VS-aleksandar-vukic/jingshan-challenger-2026/",
+        "https://www.365scores.com/tennis/match/jingshan-8855/aleksandar-vukic-evan-zhu-28903-54698-8855"
+      ]
+    },
+    {
+      "event_id": "COR0203-RAPIDAPI-TENNIS-1362",
+      "action": "WAIT_FINAL_RESCHEDULED",
+      "terminal_status": "NOT_FINAL",
+      "resumed_start_utc": "2026-10-02T03:00:00+00:00",
+      "observed_partial_score": "Yuta Shimizu 7-5, second set 0-1 at interruption",
+      "metric_eligibility_at_open": "UNRESOLVED_UNTIL_FINAL",
+      "source_provider": "external_multi_source_adjudication",
+      "sources": [
+        "https://www.sofascore.com/tennis/match/yuta-shimizu-bernard-tomic/FQgsLRLb",
+        "https://www.tennisergebnisse.net/atp/spiel/yuta-shimizu-VS-bernard-tomic/jingshan-challenger-2026/"
+      ]
+    }
+  ],
+  "metrics_opened": false,
+  "outcomes_used_for_metrics": 0,
+  "real_money": "BLOCKED"
+}
