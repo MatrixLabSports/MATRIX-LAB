@@ -29,6 +29,12 @@ jobs:
           ref: repair/cor09-world-pipeline
           fetch-depth: 0
 
+      - name: Verify permanent full-day tennis calendar rule
+        run: |
+          python -m pytest -q \
+            tests/test_cor0203_bogota_full_day_calendar.py \
+            tests/test_cor0203_rapidapi_durable_discovery.py
+
       - name: Write governed scheduler heartbeat
         shell: bash
         run: |
