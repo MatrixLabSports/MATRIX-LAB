@@ -396,6 +396,8 @@ def main():
             "event_id":event["event_id"],
             "canonical_source_event_id":event.get("canonical_source_event_id"),
             "competition":event["competition"],
+            "competition_id":event.get("competition_id"),
+            "physical_event_key":event.get("physical_event_key"),
             "round":event["round"],
             "surface":"Hard",
             "tour_level":"ATP Challenger",
