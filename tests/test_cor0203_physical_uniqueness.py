@@ -98,6 +98,12 @@ def test_same_players_different_round_has_different_physical_identity(tmp_path):
     )
 
 
+def test_round_aliases_share_one_physical_identity():
+    assert physical_event_key(_candidate(9001, "Quarter-Final")) == physical_event_key(
+        _candidate(9002, "1/4")
+    )
+
+
 def test_uniqueness_audit_quarantines_later_alias_without_reading_outcome(tmp_path):
     runtime = tmp_path / "runtime"
     holdout = tmp_path / "holdout"
