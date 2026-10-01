@@ -102,6 +102,7 @@ jobs:
             python -m tools.api_football_prospective_horizon --days 3
           fi
 
+      # Permanent defense against provider fixture-id aliasing.
       - name: Audit physical fixture uniqueness
         shell: bash
         run: |
