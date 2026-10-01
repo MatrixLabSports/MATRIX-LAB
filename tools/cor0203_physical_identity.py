@@ -10,6 +10,43 @@ def _norm(value: object) -> str:
     return " ".join(str(value or "").strip().casefold().split())
 
 
+def _round_token(value: object) -> str:
+    token = _norm(value).replace("_", " ").replace("-", " ")
+    token = " ".join(token.split())
+    aliases = {
+        "1/4": "QF",
+        "quarter final": "QF",
+        "quarter finals": "QF",
+        "quarterfinal": "QF",
+        "quarterfinals": "QF",
+        "qf": "QF",
+        "1/2": "SF",
+        "semi final": "SF",
+        "semi finals": "SF",
+        "semifinal": "SF",
+        "semifinals": "SF",
+        "sf": "SF",
+        "final": "F",
+        "finals": "F",
+        "f": "F",
+        "first": "R1",
+        "first round": "R1",
+        "round 1": "R1",
+        "r1": "R1",
+        "second": "R2",
+        "second round": "R2",
+        "round 2": "R2",
+        "r2": "R2",
+        "q1": "Q1",
+        "qualifying 1": "Q1",
+        "q2": "Q2",
+        "qualifying 2": "Q2",
+        "q3": "Q3",
+        "qualifying 3": "Q3",
+    }
+    return aliases.get(token, token.upper())
+
+
 def _provider_player_ids(row: Mapping[str, Any]) -> list[str]:
     values: list[str] = []
     for item in row.get("player_identities", []) or []:
@@ -43,7 +80,7 @@ def _plain_player_names(row: Mapping[str, Any]) -> list[str]:
 def physical_identity(row: Mapping[str, Any]) -> dict[str, Any]:
     competition_id = str(row.get("competition_id") or "").strip()
     competition = _norm(row.get("competition"))
-    round_name = _norm(row.get("round"))
+    round_name = _round_token(row.get("round"))
 
     provider_ids = _provider_player_ids(row)
     if len(provider_ids) == 2 and competition_id:
