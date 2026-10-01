@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
     inputs:
       target_date:
-        description: Optional YYYY-MM-DD in America/Bogota; blank means next Bogota calendar day
+        description: Optional YYYY-MM-DD in America/Bogota; blank uses governed automatic target selection
         required: false
         default: ""
   push:
@@ -13,7 +13,9 @@ on:
     paths:
       - .github/workflows/api-football-prospective-daily-production.yml
   schedule:
-    - cron: "17 5 * * *"
+    # Multiple retry windows. Idempotence below prevents duplicate paid-API cycles
+    # once the target date has one successful capture on the current Bogota day.
+    - cron: "17 5,11,17,23 * * *"
 
 permissions:
   contents: write
@@ -84,21 +86,76 @@ jobs:
           print("PRE_FREEZE_COUNT="+str(len(d.get("rows",[]))))
           PY
 
-      - name: Run immutable next-day prospective cycle
+      - name: Resolve governed calendar target and retry state
+        id: target
+        shell: bash
+        env:
+          MATRIX_TARGET_DATE_INPUT: ${{ inputs.target_date }}
+        run: |
+          set -euo pipefail
+          python - <<'PY' >> "$GITHUB_OUTPUT"
+          import json, os
+          from datetime import datetime, timedelta, timezone
+          from pathlib import Path
+          from zoneinfo import ZoneInfo
+
+          bogota=ZoneInfo("America/Bogota")
+          now=datetime.now(timezone.utc).astimezone(bogota)
+          manual=(os.environ.get("MATRIX_TARGET_DATE_INPUT") or "").strip()
+          event=(os.environ.get("GITHUB_EVENT_NAME") or "").strip()
+
+          if manual:
+              target=manual
+          elif event=="push":
+              # A workflow repair pushed to main must immediately recover the
+              # still-future portion of today's Bogota calendar.
+              target=now.date().isoformat()
+          else:
+              # Scheduled production freezes the next Bogota day in advance.
+              target=(now.date()+timedelta(days=1)).isoformat()
+
+          root=Path("evidence/api_football/prospective_daily")/target
+          completed=False
+          if root.exists():
+              for p in sorted(root.glob("*/cycle_summary.json")):
+                  try:
+                      d=json.loads(p.read_text(encoding="utf-8"))
+                  except Exception:
+                      continue
+                  started=datetime.fromisoformat(d["started_at_utc"]).astimezone(bogota)
+                  if (
+                      d.get("status")=="PASS"
+                      and d.get("target_date_bogota")==target
+                      and started.date()==now.date()
+                  ):
+                      completed=True
+                      break
+
+          print("target_date="+target)
+          print("skip="+("true" if completed else "false"))
+          print("local_date="+now.date().isoformat())
+          PY
+
+      - name: Run governed prospective calendar cycle
+        if: steps.target.outputs.skip != 'true'
         shell: bash
         env:
           API_FOOTBALL_KEY: ${{ secrets.API_FOOTBALL_KEY }}
-          MATRIX_TARGET_DATE: ${{ inputs.target_date }}
+          MATRIX_TARGET_DATE: ${{ steps.target.outputs.target_date }}
         run: |
           set -euo pipefail
-          if [[ -n "${MATRIX_TARGET_DATE:-}" ]]; then
-            python -m tools.api_football_prospective_daily_cycle --target-date "$MATRIX_TARGET_DATE"
-          else
-            python -m tools.api_football_prospective_daily_cycle
-          fi
+          python -m tools.api_football_prospective_daily_cycle --target-date "$MATRIX_TARGET_DATE"
+
+      - name: Report idempotent healthy skip
+        if: steps.target.outputs.skip == 'true'
+        run: |
+          echo "API_FOOTBALL_DAILY_PRODUCTION: HEALTHY_SKIP_ALREADY_COMPLETED"
+          echo "target_date_bogota=${{ steps.target.outputs.target_date }}"
 
       - name: Enforce cumulative freeze and PIT invariants
         shell: bash
+        env:
+          TARGET_DATE_RESOLVED: ${{ steps.target.outputs.target_date }}
         run: |
           set -euo pipefail
           python - <<'PY'
@@ -134,8 +191,9 @@ jobs:
               assert source.is_file(), (fid, source)
 
           daily_root=root/"prospective_daily"
-          summaries=sorted(daily_root.glob("*/*/cycle_summary.json"))
-          assert summaries
+          target=os.environ.get("TARGET_DATE_RESOLVED")
+          summaries=sorted((daily_root/target).glob("*/cycle_summary.json"))
+          assert summaries, target
           cycle=json.loads(summaries[-1].read_text())
           assert cycle["status"]=="PASS"
           assert cycle["real_money"]=="BLOCKED"
