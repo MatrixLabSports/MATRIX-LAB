@@ -129,9 +129,15 @@ class FakeRapidClient:
     def __init__(self, payload):
         self.payload = payload
         self.request_count = 0
+        self.ranges = []
 
     def results_for_date(self, target_date):
         self.request_count += 1
+        return self.payload
+
+    def results_for_range(self, start, stop):
+        self.request_count += 1
+        self.ranges.append((start, stop))
         return self.payload
 
 
@@ -146,6 +152,7 @@ def rapid_item(start="2026-09-27T10:00:00+00:00"):
         "alphabetical_player_b": "Beta",
         "event_start_utc": start,
         "provider_match_key": "9001",
+        "provider_tournament_id": "22037",
         "provider_player_map": {
             "rapidapi-tennis:player:10": "Alpha",
             "rapidapi-tennis:player:20": "Beta",
@@ -160,6 +167,8 @@ def rapid_payload(result_type="completed"):
                 "id": 9001,
                 "matchId": 9001,
                 "result_type": result_type,
+                "date": "2026-09-27T10:15:00Z",
+                "tournamentId": 22037,
                 "player1": {"id": 20, "name": "Beta"},
                 "player2": {"id": 10, "name": "Alpha"},
                 "result": "6-4 6-3",
@@ -200,4 +209,85 @@ def test_mixed_sync_blocks_nonstandard_rapidapi_terminal(tmp_path):
     assert result["blocked"][0]["reason"].startswith(
         "NONSTANDARD_TERMINAL_REQUIRES_ADJUDICATION"
     )
+    assert ledger.audit().records == 0
+
+
+def test_mixed_sync_bulk_fetches_once_for_many_rapidapi_items(tmp_path):
+    rows = rapid_payload()["data"]
+    payload = {"data": rows}
+    rapid = FakeRapidClient(payload)
+    ledger = Cor0203SettlementLedger(tmp_path / "ledger.jsonl")
+    first = rapid_item()
+    second = dict(rapid_item())
+    second["event_id"] = "COR0203-RAPIDAPI-TENNIS-9002"
+    second["observation_index"] = 13
+    second["observation_sha256"] = "c" * 64
+    second["provider_match_key"] = "9002"
+    second["provider_player_map"] = {
+        "rapidapi-tennis:player:30": "Gamma",
+        "rapidapi-tennis:player:40": "Delta",
+    }
+    payload["data"].append({
+        "id": 9002,
+        "matchId": 9002,
+        "result_type": "completed",
+        "date": "2026-09-27T11:15:00Z",
+        "tournamentId": 22037,
+        "player1": {"id": 30, "name": "Gamma"},
+        "player2": {"id": 40, "name": "Delta"},
+        "result": "6-2 6-2",
+    })
+    second["alphabetical_player_a"] = "Delta"
+    second["alphabetical_player_b"] = "Gamma"
+    result = sync_mixed_settlements(
+        queue={"items": [first, second]},
+        ledger=ledger,
+        api_tennis_client=None,
+        rapidapi_client=rapid,
+        now_utc="2026-09-27T14:00:00+00:00",
+    )
+    assert result["new_settlements"] == 2
+    assert result["network_calls"] == 1
+    assert len(rapid.ranges) == 1
+
+
+def test_mixed_sync_resolves_changed_archive_id_by_exact_pair_and_tournament(tmp_path):
+    payload = rapid_payload()
+    payload["data"][0]["id"] = 99001
+    payload["data"][0]["matchId"] = 99001
+    rapid = FakeRapidClient(payload)
+    ledger = Cor0203SettlementLedger(tmp_path / "ledger.jsonl")
+    result = sync_mixed_settlements(
+        queue=queue(rapid_item()),
+        ledger=ledger,
+        api_tennis_client=None,
+        rapidapi_client=rapid,
+        now_utc="2026-09-27T12:00:00+00:00",
+    )
+    assert result["new_settlements"] == 1
+    record = ledger.load()[0]
+    assert record["provider_match_key"] == "9001"
+    assert record["provider_result_match_key"] == "99001"
+    assert record["settlement_resolution"] == "EXACT_TOURNAMENT_UNORDERED_PLAYER_PAIR_UNIQUE"
+
+
+def test_mixed_sync_blocks_ambiguous_pair_fallback(tmp_path):
+    payload = rapid_payload()
+    payload["data"][0]["id"] = 99001
+    payload["data"][0]["matchId"] = 99001
+    duplicate = dict(payload["data"][0])
+    duplicate["id"] = 99002
+    duplicate["matchId"] = 99002
+    payload["data"].append(duplicate)
+    rapid = FakeRapidClient(payload)
+    ledger = Cor0203SettlementLedger(tmp_path / "ledger.jsonl")
+    result = sync_mixed_settlements(
+        queue=queue(rapid_item()),
+        ledger=ledger,
+        api_tennis_client=None,
+        rapidapi_client=rapid,
+        now_utc="2026-09-27T12:00:00+00:00",
+    )
+    assert result["new_settlements"] == 0
+    assert result["blocked"][0]["reason"] == "AMBIGUOUS_EXACT_PLAYER_PAIR"
     assert ledger.audit().records == 0
