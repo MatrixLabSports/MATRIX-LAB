@@ -49,6 +49,8 @@ SETTLEMENT_QUEUE_LAST="evidence/cor0203/runtime/MATRIX_COR0203_SETTLEMENT_QUEUE_
 HISTORICAL_IDENTITY_LAST="evidence/cor0203/runtime/MATRIX_COR0203_HISTORICAL_IDENTITY_LAST.json"
 SETTLEMENT_SYNC_LAST="evidence/cor0203/runtime/MATRIX_COR0203_SETTLEMENT_SYNC_LAST.json"
 SETTLEMENT_UNIQUENESS_LAST="evidence/cor0203/runtime/MATRIX_COR0203_SETTLEMENT_UNIQUENESS_LAST.json"
+SETTLEMENT_ADJUDICATION_LAST="evidence/cor0203/runtime/MATRIX_COR0203_SETTLEMENT_ADJUDICATION_LAST.json"
+SETTLEMENT_ADJUDICATIONS="evidence/cor0203/adjudication/MATRIX_COR0203_SETTLEMENT_ADJUDICATIONS_20261001.json"
 SETTLEMENT_LEDGER="evidence/cor0203/settlement/MATRIX_COR0203_SETTLEMENT_LEDGER.jsonl"
 HEARTBEAT="evidence/cor0203/runtime/MATRIX_COR0203_SCHEDULER_HEARTBEAT.json"
 
@@ -154,6 +156,14 @@ python -m tools.cor0203_settlement_queue \
   --identity-overlay "$HISTORICAL_IDENTITY_LAST" \
   --out "$SETTLEMENT_QUEUE_LAST"
 
+if [[ -f "$SETTLEMENT_ADJUDICATIONS" ]]; then
+  python -m tools.cor0203_apply_adjudications \
+    --adjudications "$SETTLEMENT_ADJUDICATIONS" \
+    --queue "$SETTLEMENT_QUEUE_LAST" \
+    --ledger "$SETTLEMENT_LEDGER" \
+    --out "$SETTLEMENT_ADJUDICATION_LAST"
+fi
+
 python -m tools.cor0203_settlement_sync \
   --queue "$SETTLEMENT_QUEUE_LAST" \
   --ledger "$SETTLEMENT_LEDGER" \
@@ -206,6 +216,7 @@ settlement_queue = json.loads((runtime / "MATRIX_COR0203_SETTLEMENT_QUEUE_LAST.j
 historical_identity = json.loads((runtime / "MATRIX_COR0203_HISTORICAL_IDENTITY_LAST.json").read_text())
 settlement_sync = json.loads((runtime / "MATRIX_COR0203_SETTLEMENT_SYNC_LAST.json").read_text())
 settlement_uniqueness = json.loads((runtime / "MATRIX_COR0203_SETTLEMENT_UNIQUENESS_LAST.json").read_text())
+settlement_adjudication = json.loads((runtime / "MATRIX_COR0203_SETTLEMENT_ADJUDICATION_LAST.json").read_text())
 
 assert source_readiness["provider"] == __import__("os").environ["MATRIX_TENNIS_PROVIDER"]
 assert durable_discovery["real_money"] == "BLOCKED"
@@ -241,6 +252,9 @@ assert settlement_queue["ledger"]["outcomes_used_for_metrics"] == 0
 assert historical_identity["automatic_fuzzy_matching"] is False
 assert historical_identity["freeze_mutation"] is False
 assert historical_identity["metrics_opened"] is False
+assert settlement_adjudication["status"] in {"PASS", "PASS_WITH_BLOCKERS"}
+assert settlement_adjudication["outcomes_used_for_metrics"] == 0
+assert settlement_adjudication["metrics_opened"] is False
 assert settlement_sync["outcomes_used_for_metrics"] == 0
 assert settlement_uniqueness["result"] == "PASS"
 assert settlement_uniqueness["duplicate_aliases_used_for_metrics"] == 0
@@ -297,6 +311,7 @@ git add evidence/cor0203/runtime/MATRIX_COR0203_STAGE_BLOCKERS_R*.json 2>/dev/nu
 git add evidence/cor0203/runtime/MATRIX_COR0203_STATIC4_R*.json 2>/dev/null || true
 git add evidence/cor0203/runtime/MATRIX_COR0203_PROSPECTIVE_EVENTS_R*.json 2>/dev/null || true
 git add evidence/cor0203/runtime/MATRIX_COR0203_BATCH_PREFLIGHT_R*.json 2>/dev/null || true
+git add evidence/cor0203/adjudication/*.json 2>/dev/null || true
 git add evidence/cor0203/runtime/MATRIX_COR0203_HISTORY_GATE_R*.json 2>/dev/null || true
 git add evidence/cor0203/holdout/MATRIX_COR0203_HOLDOUT_BATCH_R*.json 2>/dev/null || true
 
@@ -327,6 +342,7 @@ git add "$SETTLEMENT_QUEUE_LAST"
 git add "$HISTORICAL_IDENTITY_LAST"
 git add "$SETTLEMENT_SYNC_LAST"
 git add "$SETTLEMENT_UNIQUENESS_LAST"
+git add "$SETTLEMENT_ADJUDICATION_LAST"
 if [[ -f "$HEARTBEAT" ]]; then
   git add "$HEARTBEAT"
 fi
