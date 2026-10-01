@@ -33,6 +33,7 @@ def build_observability_snapshot(
     stage: Mapping[str, Any],
     runner: Mapping[str, Any],
     integrity: Mapping[str, Any],
+    uniqueness: Mapping[str, Any] | None = None,
 ) -> dict[str, Any]:
     source_ready = bool(source_readiness.get("ready"))
     source_cause = str(source_readiness.get("cause") or "UNKNOWN")
@@ -91,11 +92,21 @@ def build_observability_snapshot(
         bottleneck_cause = "NO_MATERIAL_CHANGE"
         operational_state = "READY"
 
-    remaining_window1 = max(0, 200 - physical)
-    remaining_total = max(0, 600 - physical)
+    unique_count = (
+        _int(uniqueness.get("unique_calibration_observations"))
+        if uniqueness is not None
+        else physical
+    )
+    duplicate_quarantined = (
+        _int(uniqueness.get("duplicate_observations_quarantined"))
+        if uniqueness is not None
+        else 0
+    )
+    remaining_window1 = max(0, 200 - unique_count)
+    remaining_total = max(0, 600 - unique_count)
 
     return {
-        "schema": "MATRIX_COR0203_PRODUCTION_OBSERVABILITY_V1",
+        "schema": "MATRIX_COR0203_PRODUCTION_OBSERVABILITY_V2",
         "operational_state": operational_state,
         "bottleneck": {
             "stage": bottleneck_stage,
@@ -125,13 +136,16 @@ def build_observability_snapshot(
             "stage_blocked_events": stage_blocked,
         },
         "holdout": {
-            "window1_count": physical,
+            "physical_frozen_rows": physical,
+            "unique_calibration_count": unique_count,
+            "duplicate_observations_quarantined": duplicate_quarantined,
+            "window1_count": min(unique_count, 200),
             "window1_target": 200,
             "window1_remaining": remaining_window1,
-            "total_count": physical,
+            "total_count": unique_count,
             "total_target": 600,
             "total_remaining": remaining_total,
-            "metrics": "SEALED_UNTIL_600",
+            "metrics": "SEALED_UNTIL_600_UNIQUE",
         },
         "integrity": {
             "result": integrity_result,
@@ -156,6 +170,7 @@ def main() -> None:
     parser.add_argument("--stage", required=True)
     parser.add_argument("--runner", required=True)
     parser.add_argument("--integrity", required=True)
+    parser.add_argument("--uniqueness")
     parser.add_argument("--out", required=True)
     args = parser.parse_args()
 
@@ -166,6 +181,11 @@ def main() -> None:
         stage=_load(Path(args.stage)),
         runner=_load(Path(args.runner)),
         integrity=_load(Path(args.integrity)),
+        uniqueness=(
+            _load(Path(args.uniqueness))
+            if args.uniqueness
+            else None
+        ),
     )
     out = Path(args.out)
     out.parent.mkdir(parents=True, exist_ok=True)
