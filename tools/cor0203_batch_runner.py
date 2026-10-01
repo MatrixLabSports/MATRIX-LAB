@@ -12,6 +12,7 @@ from typing import Any
 
 from tools.cor0203_batch_preflight import partition_batch
 from tools.cor0203_prospective_producer import extend_state, load_state
+from tools.cor0203_physical_identity import physical_event_key
 
 
 REV_RE = re.compile(r"_R(\d+)\.json$")
@@ -30,14 +31,31 @@ def _load_json(path: Path) -> dict[str, Any]:
     return json.loads(path.read_text(encoding="utf-8"))
 
 
-def _existing_holdout_state(holdout_dir: Path) -> tuple[int, set[str]]:
+def _existing_holdout_state(
+    runtime_dir: Path,
+    holdout_dir: Path,
+) -> tuple[int, set[str], set[str]]:
     count = 0
     event_ids: set[str] = set()
+    physical_keys: set[str] = set()
     for path in sorted(holdout_dir.glob("MATRIX_COR0203_HOLDOUT_BATCH_R*.json"), key=_rev):
         try:
             payload = _load_json(path)
         except Exception:
             continue
+        revision = _rev(path)
+        pre_path = runtime_dir / f"MATRIX_COR0203_PREFEATURE_REGISTRY_R{revision}.json"
+        pre_map: dict[str, dict[str, Any]] = {}
+        if pre_path.exists():
+            try:
+                pre = _load_json(pre_path)
+                pre_map = {
+                    str(row.get("event_id") or ""): row
+                    for row in pre.get("events", []) or []
+                    if row.get("event_id")
+                }
+            except Exception:
+                pre_map = {}
         try:
             count = max(count, int(payload.get("ending_observation_count", 0)))
         except (TypeError, ValueError):
@@ -46,7 +64,10 @@ def _existing_holdout_state(holdout_dir: Path) -> tuple[int, set[str]]:
             event_id = str(obs.get("event_id") or "")
             if event_id:
                 event_ids.add(event_id)
-    return count, event_ids
+            pkey = physical_event_key(pre_map.get(event_id, obs))
+            if pkey:
+                physical_keys.add(pkey)
+    return count, event_ids, physical_keys
 
 
 def _write_json(path: Path, payload: Any) -> None:
@@ -69,7 +90,10 @@ def run_pending_batches(
     annual_2026: Path,
     trigger_sha: str,
 ) -> dict[str, Any]:
-    current_count, frozen_event_ids = _existing_holdout_state(holdout_dir)
+    current_count, frozen_event_ids, frozen_physical_keys = _existing_holdout_state(
+        runtime_dir,
+        holdout_dir,
+    )
     annual_rows = list(csv.DictReader(annual_2026.open(encoding="utf-8-sig", newline="")))
     manifests = sorted(runtime_dir.glob("MATRIX_COR0203_PROSPECTIVE_EVENTS_R*.json"), key=_rev)
 
@@ -133,6 +157,7 @@ def run_pending_batches(
             freeze_at_utc=freeze_at,
             expected_starting_count=current_count,
             existing_event_ids=frozen_event_ids,
+            existing_physical_keys=frozen_physical_keys,
         )
         filtered = result.pop("filtered_manifest")
 
@@ -209,6 +234,10 @@ def run_pending_batches(
         if "" in new_ids or frozen_event_ids.intersection(new_ids):
             raise ValueError(f"DUPLICATE_FROZEN_EVENT:R{revision}")
         frozen_event_ids.update(new_ids)
+        for event in filtered.get("events", []) or []:
+            pkey = physical_event_key(event)
+            if pkey:
+                frozen_physical_keys.add(pkey)
 
         current_count += valid_count
         summary["new_freezes"] += valid_count
