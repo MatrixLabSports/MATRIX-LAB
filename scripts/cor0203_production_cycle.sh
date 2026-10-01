@@ -43,6 +43,7 @@ IDENTITY_RESTAGE_LAST="evidence/cor0203/runtime/MATRIX_COR0203_IDENTITY_RESTAGE_
 STAGE_LAST="evidence/cor0203/runtime/MATRIX_COR0203_AUTO_STAGE_LAST.json"
 RUNNER_LAST="evidence/cor0203/runtime/MATRIX_COR0203_BATCH_RUNNER_LAST.json"
 INTEGRITY_LAST="evidence/cor0203/runtime/MATRIX_COR0203_HOLDOUT_INTEGRITY_LAST.json"
+UNIQUENESS_LAST="evidence/cor0203/runtime/MATRIX_COR0203_PHYSICAL_UNIQUENESS_LAST.json"
 OBSERVABILITY_LAST="evidence/cor0203/runtime/MATRIX_COR0203_PRODUCTION_OBSERVABILITY_LAST.json"
 SETTLEMENT_QUEUE_LAST="evidence/cor0203/runtime/MATRIX_COR0203_SETTLEMENT_QUEUE_LAST.json"
 HISTORICAL_IDENTITY_LAST="evidence/cor0203/runtime/MATRIX_COR0203_HISTORICAL_IDENTITY_LAST.json"
@@ -124,6 +125,12 @@ python -m tools.cor0203_holdout_integrity_audit \
   --binding evidence/cor0203/runtime/MATRIX_COR0203_MODEL_BINDING_R707.json \
   --out "$INTEGRITY_LAST"
 
+python -m tools.cor0203_physical_uniqueness_audit \
+  --runtime-dir evidence/cor0203/runtime \
+  --holdout-dir evidence/cor0203/holdout \
+  --integrity "$INTEGRITY_LAST" \
+  --out "$UNIQUENESS_LAST"
+
 python -m tools.cor0203_settlement_queue \
   --runtime-dir evidence/cor0203/runtime \
   --holdout-dir evidence/cor0203/holdout \
@@ -165,6 +172,7 @@ python -m tools.cor0203_production_observability \
   --stage "$STAGE_LAST" \
   --runner "$RUNNER_LAST" \
   --integrity "$INTEGRITY_LAST" \
+  --uniqueness "$UNIQUENESS_LAST" \
   --out "$OBSERVABILITY_LAST"
 
 python - <<'PY'
@@ -181,6 +189,7 @@ identity_restage = json.loads((runtime / "MATRIX_COR0203_IDENTITY_RESTAGE_DELTA_
 stage = json.loads((runtime / "MATRIX_COR0203_AUTO_STAGE_LAST.json").read_text())
 runner = json.loads((runtime / "MATRIX_COR0203_BATCH_RUNNER_LAST.json").read_text())
 integrity = json.loads((runtime / "MATRIX_COR0203_HOLDOUT_INTEGRITY_LAST.json").read_text())
+uniqueness = json.loads((runtime / "MATRIX_COR0203_PHYSICAL_UNIQUENESS_LAST.json").read_text())
 source_readiness = json.loads(Path("/tmp/MATRIX_COR0203_SOURCE_READINESS_CURRENT.json").read_text())
 durable_discovery = json.loads((runtime / "MATRIX_COR0203_DURABLE_DISCOVERY_LAST.json").read_text())
 observability = json.loads((runtime / "MATRIX_COR0203_PRODUCTION_OBSERVABILITY_LAST.json").read_text())
@@ -208,7 +217,12 @@ assert integrity["failed_observations"] == 0
 assert integrity["outcomes_read"] == 0
 assert integrity["metrics_opened"] is False
 assert integrity["median_or_neutral_fallback_admissible"] is False
-assert observability["holdout"]["total_count"] == runner["ending_physical_count"]
+assert uniqueness["result"] == "PASS"
+assert uniqueness["outcomes_read"] == 0
+assert uniqueness["metrics_opened"] is False
+assert uniqueness["physical_frozen_rows"] == runner["ending_physical_count"]
+assert observability["holdout"]["physical_frozen_rows"] == runner["ending_physical_count"]
+assert observability["holdout"]["total_count"] == uniqueness["unique_calibration_observations"]
 assert observability["integrity"]["result"] == "PASS"
 assert settlement_queue["admissible_observations"] == runner["ending_physical_count"]
 assert settlement_queue["metrics"] == "SEALED_UNTIL_600"
@@ -293,6 +307,7 @@ git add "$IDENTITY_RESTAGE_LAST"
 git add "$STAGE_LAST"
 git add "$RUNNER_LAST"
 git add "$INTEGRITY_LAST"
+git add "$UNIQUENESS_LAST"
 git add "$OBSERVABILITY_LAST"
 git add "$DURABLE_DISCOVERY_LAST"
 git add "$SETTLEMENT_QUEUE_LAST"
