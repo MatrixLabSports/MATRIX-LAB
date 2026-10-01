@@ -145,7 +145,8 @@ def build_observability_snapshot(
             "total_count": unique_count,
             "total_target": 600,
             "total_remaining": remaining_total,
-            "metrics": "SEALED_UNTIL_600_UNIQUE",
+            "metrics": "SEALED_UNTIL_600",
+            "metrics_denominator": "UNIQUE_PHYSICAL_MATCHES",
         },
         "integrity": {
             "result": integrity_result,
