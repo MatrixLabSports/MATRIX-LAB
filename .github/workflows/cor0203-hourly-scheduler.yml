@@ -29,6 +29,14 @@ jobs:
           ref: repair/cor09-world-pipeline
           fetch-depth: 0
 
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install scheduler test dependency
+        run: python -m pip install pytest
+
       - name: Verify permanent full-day tennis calendar rule
         run: |
           python -m pytest -q \
