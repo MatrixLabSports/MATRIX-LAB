@@ -308,6 +308,8 @@ def stage_prefeature(
             "event_id": event_id,
             "canonical_source_event_id": event.get("canonical_source_event_id"),
             "competition": event.get("competition"),
+            "competition_id": event.get("competition_id"),
+            "physical_event_key": event.get("physical_event_key"),
             "round": event.get("round"),
             "surface": event.get("surface"),
             "tour_level": event.get("tour_level"),
