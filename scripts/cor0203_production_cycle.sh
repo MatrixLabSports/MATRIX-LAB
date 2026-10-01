@@ -154,11 +154,6 @@ python -m tools.cor0203_settlement_queue \
   --identity-overlay "$HISTORICAL_IDENTITY_LAST" \
   --out "$SETTLEMENT_QUEUE_LAST"
 
-python -m tools.cor0203_settlement_uniqueness_reconcile \
-  --uniqueness "$UNIQUENESS_LAST" \
-  --ledger "$SETTLEMENT_LEDGER" \
-  --out "$SETTLEMENT_UNIQUENESS_LAST"
-
 python -m tools.cor0203_settlement_sync \
   --queue "$SETTLEMENT_QUEUE_LAST" \
   --ledger "$SETTLEMENT_LEDGER" \
@@ -173,6 +168,11 @@ python -m tools.cor0203_settlement_queue \
   --ledger "$SETTLEMENT_LEDGER" \
   --identity-overlay "$HISTORICAL_IDENTITY_LAST" \
   --out "$SETTLEMENT_QUEUE_LAST"
+
+python -m tools.cor0203_settlement_uniqueness_reconcile \
+  --uniqueness "$UNIQUENESS_LAST" \
+  --ledger "$SETTLEMENT_LEDGER" \
+  --out "$SETTLEMENT_UNIQUENESS_LAST"
 
 python -m tools.cor0203_production_observability \
   --source-readiness "$SOURCE_READINESS_CURRENT" \
