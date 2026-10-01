@@ -6,6 +6,8 @@ import re
 from pathlib import Path
 from typing import Any, Mapping
 
+from tools.cor0203_physical_identity import physical_event_key
+
 REV_RE = re.compile(r"_R(\d+)(?:_|\.)")
 EXACT_HOLDOUT_RE = re.compile(r"^MATRIX_COR0203_HOLDOUT_BATCH_R(\d+)\.json$")
 
@@ -61,9 +63,13 @@ def _physical_holdout_count(holdout_dir: Path) -> int:
     return count
 
 
-def _existing_ids(runtime_dir: Path, holdout_dir: Path) -> tuple[set[str], set[str]]:
+def _existing_ids(
+    runtime_dir: Path,
+    holdout_dir: Path,
+) -> tuple[set[str], set[str], set[str]]:
     event_ids: set[str] = set()
     source_ids: set[str] = set()
+    physical_keys: set[str] = set()
 
     for path in runtime_dir.glob("MATRIX_COR0203_PREFEATURE_REGISTRY_R*.json"):
         try:
@@ -77,6 +83,9 @@ def _existing_ids(runtime_dir: Path, holdout_dir: Path) -> tuple[set[str], set[s
                 event_ids.add(event_id)
             if source_id:
                 source_ids.add(source_id)
+            pkey = physical_event_key(row)
+            if pkey:
+                physical_keys.add(pkey)
 
     for path in holdout_dir.glob("MATRIX_COR0203_HOLDOUT_BATCH_R*.json"):
         if not EXACT_HOLDOUT_RE.match(path.name):
@@ -89,8 +98,11 @@ def _existing_ids(runtime_dir: Path, holdout_dir: Path) -> tuple[set[str], set[s
                 event_ids.add(event_id)
             if source_id:
                 source_ids.add(source_id)
+            pkey = physical_event_key(row)
+            if pkey:
+                physical_keys.add(pkey)
 
-    return event_ids, source_ids
+    return event_ids, source_ids, physical_keys
 
 
 def preregister_discovery(
@@ -113,7 +125,10 @@ def preregister_discovery(
         }
 
     candidates = list(discovery.get("eligible_candidates") or [])
-    existing_event_ids, existing_source_ids = _existing_ids(runtime_dir, holdout_dir)
+    existing_event_ids, existing_source_ids, existing_physical_keys = _existing_ids(
+        runtime_dir,
+        holdout_dir,
+    )
     selected: list[dict[str, Any]] = []
     skipped: list[dict[str, Any]] = []
 
@@ -129,6 +144,12 @@ def preregister_discovery(
             blockers.append("DISCOVERY_EVENT_ID_INVALID")
         if event_id in existing_event_ids or source_event_id in existing_source_ids:
             blockers.append("ALREADY_PREREGISTERED_OR_FROZEN")
+
+        candidate_physical_key = physical_event_key(candidate)
+        if candidate_physical_key is None:
+            blockers.append("PHYSICAL_EVENT_IDENTITY_MISSING")
+        elif candidate_physical_key in existing_physical_keys:
+            blockers.append("ALREADY_PREREGISTERED_OR_FROZEN_PHYSICAL_EVENT")
 
         players = list(candidate.get("players") or [])
         if len(players) != 2:
@@ -166,6 +187,7 @@ def preregister_discovery(
             "schedule_source": candidate.get("source_reference"),
             "source_provider": provider,
             "source_snapshot_sha256": source_sha,
+            "physical_event_key": candidate_physical_key,
             "players": [str(p.get("name") or "").strip() for p in players],
             "player_identities": [
                 {
