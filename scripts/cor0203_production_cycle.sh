@@ -135,6 +135,7 @@ python -m tools.cor0203_settlement_queue \
   --runtime-dir evidence/cor0203/runtime \
   --holdout-dir evidence/cor0203/holdout \
   --integrity "$INTEGRITY_LAST" \
+  --uniqueness "$UNIQUENESS_LAST" \
   --ledger "$SETTLEMENT_LEDGER" \
   --out "$SETTLEMENT_QUEUE_LAST"
 
@@ -147,6 +148,7 @@ python -m tools.cor0203_settlement_queue \
   --runtime-dir evidence/cor0203/runtime \
   --holdout-dir evidence/cor0203/holdout \
   --integrity "$INTEGRITY_LAST" \
+  --uniqueness "$UNIQUENESS_LAST" \
   --ledger "$SETTLEMENT_LEDGER" \
   --identity-overlay "$HISTORICAL_IDENTITY_LAST" \
   --out "$SETTLEMENT_QUEUE_LAST"
@@ -161,6 +163,7 @@ python -m tools.cor0203_settlement_queue \
   --runtime-dir evidence/cor0203/runtime \
   --holdout-dir evidence/cor0203/holdout \
   --integrity "$INTEGRITY_LAST" \
+  --uniqueness "$UNIQUENESS_LAST" \
   --ledger "$SETTLEMENT_LEDGER" \
   --identity-overlay "$HISTORICAL_IDENTITY_LAST" \
   --out "$SETTLEMENT_QUEUE_LAST"
