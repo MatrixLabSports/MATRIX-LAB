@@ -1,3 +1,4 @@
+import pytest
 from tools.api_football_calibration_diagnostics_v2 import (
     _brier_skill,
     _bin_rows,
@@ -37,7 +38,7 @@ def test_bin_rows_tracks_high_confidence_band():
 
 
 def test_brier_skill_positive_when_challenger_lower():
-    assert _brier_skill(0.20, 0.25) == 0.2
+    assert _brier_skill(0.20, 0.25) == pytest.approx(0.2)
 
 
 def test_diagnostics_uses_gate100_only_and_never_allows_tuning():
