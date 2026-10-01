@@ -4,7 +4,7 @@ import argparse
 import json
 import os
 from collections import defaultdict
-from datetime import date
+from datetime import date, timedelta
 from pathlib import Path
 from typing import Any, Mapping, Protocol, Sequence
 
@@ -12,6 +12,10 @@ from tools.cor0203_api_tennis_discovery import (
     ApiTennisDiscoveryClient,
     ApiTennisDiscoveryError,
     CHALLENGER_MEN_SINGLES_NAME,
+)
+from tools.cor0203_rapidapi_tennis_discovery import (
+    RapidApiTennisClient,
+    RapidApiTennisDiscoveryError,
 )
 
 
@@ -161,6 +165,162 @@ def reconcile_historical_identity(
     }
 
 
+def _rapid_rows(payload: Mapping[str, Any]) -> list[Mapping[str, Any]]:
+    rows = payload.get("data")
+    if not isinstance(rows, list):
+        raise ValueError("RAPIDAPI_HISTORICAL_IDENTITY_RESULT_NOT_LIST")
+    return [row for row in rows if isinstance(row, Mapping)]
+
+
+def _rapid_player(row: Mapping[str, Any], n: int) -> tuple[str | None, str]:
+    nested = row.get(f"player{n}")
+    obj = nested if isinstance(nested, Mapping) else {}
+    raw_id = obj.get("id") or row.get(f"player{n}Id")
+    token = _positive_numeric(raw_id)
+    name = str(obj.get("name") or "").strip()
+    return token, name
+
+
+def reconcile_historical_identity_rapidapi(
+    *,
+    queue: Mapping[str, Any],
+    client: RapidApiTennisClient,
+    max_date_requests: int = 10,
+) -> dict[str, Any]:
+    pending = [
+        row for row in queue.get("items", []) or []
+        if str(row.get("status") or "") == "IDENTITY_MAPPING_REQUIRED"
+    ]
+    if not pending:
+        return {
+            "schema": "MATRIX_COR0203_HISTORICAL_IDENTITY_RECONCILIATION_V2",
+            "status": "PASS",
+            "input_pending": 0,
+            "reconciled": [],
+            "reconciled_count": 0,
+            "blocked": [],
+            "blocked_count": 0,
+            "network_calls": 0,
+            "provider": "rapidapi_tennis",
+            "automatic_fuzzy_matching": False,
+            "freeze_mutation": False,
+            "metrics_opened": False,
+            "real_money": "BLOCKED",
+        }
+
+    dates = sorted({_event_date_from_start(row.get("event_start_utc")) for row in pending})
+    range_start = dates[0] - timedelta(days=1)
+    range_stop = dates[-1] + timedelta(days=1)
+    requests_before = client.request_count
+    try:
+        payload = client.results_for_range(range_start, range_stop)
+        rows = _rapid_rows(payload)
+    except (RapidApiTennisDiscoveryError, ValueError) as error:
+        return {
+            "schema": "MATRIX_COR0203_HISTORICAL_IDENTITY_RECONCILIATION_V2",
+            "status": "PROVIDER_DISCOVERY_BLOCKED",
+            "input_pending": len(pending),
+            "reconciled": [],
+            "reconciled_count": 0,
+            "blocked": [{
+                "event_id": None,
+                "reason": type(error).__name__ + ":" + str(error),
+            }],
+            "blocked_count": 1,
+            "network_calls": client.request_count - requests_before,
+            "provider": "rapidapi_tennis",
+            "automatic_fuzzy_matching": False,
+            "freeze_mutation": False,
+            "metrics_opened": False,
+            "real_money": "BLOCKED",
+        }
+
+    if client.request_count - requests_before > max_date_requests:
+        raise ValueError("HISTORICAL_IDENTITY_REQUEST_BUDGET_EXCEEDED")
+
+    reconciled: list[dict[str, Any]] = []
+    blocked: list[dict[str, Any]] = []
+    for item in pending:
+        event_date = _event_date_from_start(item.get("event_start_utc"))
+        expected_pair = frozenset({
+            _norm_name(item.get("alphabetical_player_a")),
+            _norm_name(item.get("alphabetical_player_b")),
+        })
+        candidates: list[Mapping[str, Any]] = []
+        for row in rows:
+            p1_id, p1_name = _rapid_player(row, 1)
+            p2_id, p2_name = _rapid_player(row, 2)
+            if p1_id is None or p2_id is None or p1_id == p2_id:
+                continue
+            pair = frozenset({_norm_name(p1_name), _norm_name(p2_name)})
+            if pair != expected_pair:
+                continue
+            raw_date = str(row.get("date") or "")
+            try:
+                row_date = date.fromisoformat(raw_date[:10])
+            except ValueError:
+                continue
+            if abs((row_date - event_date).days) > 1:
+                continue
+            result_type = str(row.get("result_type") or row.get("resultType") or "").strip().casefold()
+            if result_type not in {"completed", "retired", "walkover", "default"}:
+                continue
+            candidates.append(row)
+
+        if len(candidates) != 1:
+            blocked.append({
+                "event_id": item.get("event_id"),
+                "reason": (
+                    "HISTORICAL_IDENTITY_NO_EXACT_UNIQUE_MATCH"
+                    if len(candidates) == 0
+                    else "HISTORICAL_IDENTITY_AMBIGUOUS_EXACT_MATCH"
+                ),
+                "event_date": event_date.isoformat(),
+                "exact_candidate_count": len(candidates),
+            })
+            continue
+
+        row = candidates[0]
+        p1_id, p1_name = _rapid_player(row, 1)
+        p2_id, p2_name = _rapid_player(row, 2)
+        match_key = _positive_numeric(row.get("matchId") or row.get("id"))
+        if match_key is None or p1_id is None or p2_id is None:
+            blocked.append({
+                "event_id": item.get("event_id"),
+                "reason": "HISTORICAL_IDENTITY_PROVIDER_IDS_INVALID",
+                "event_date": event_date.isoformat(),
+            })
+            continue
+        reconciled.append({
+            "event_id": str(item.get("event_id") or ""),
+            "provider": "rapidapi_tennis",
+            "provider_match_key": match_key,
+            "canonical_source_event_id": "rapidapi-tennis:match:" + match_key,
+            "provider_player_map": {
+                "rapidapi-tennis:player:" + p1_id: p1_name,
+                "rapidapi-tennis:player:" + p2_id: p2_name,
+            },
+            "match_rule": "EXACT_DATE_WINDOW_EXACT_UNORDERED_PLAYER_NAMES_UNIQUE",
+            "event_date": event_date.isoformat(),
+        })
+
+    return {
+        "schema": "MATRIX_COR0203_HISTORICAL_IDENTITY_RECONCILIATION_V2",
+        "status": "PASS",
+        "input_pending": len(pending),
+        "reconciled": reconciled,
+        "reconciled_count": len(reconciled),
+        "blocked": blocked,
+        "blocked_count": len(blocked),
+        "network_calls": client.request_count - requests_before,
+        "provider": "rapidapi_tennis",
+        "automatic_fuzzy_matching": False,
+        "freeze_mutation": False,
+        "metrics_opened": False,
+        "real_money": "BLOCKED",
+    }
+
+
 def overlay_by_event(result: Mapping[str, Any]) -> dict[str, Mapping[str, Any]]:
     return {
         str(row.get("event_id") or ""): row
@@ -177,10 +337,23 @@ def main() -> None:
     args = parser.parse_args()
 
     queue = json.loads(Path(args.queue).read_text(encoding="utf-8"))
-    key = os.environ.get("API_TENNIS_KEY", "").strip()
-    if not key:
+    rapid_key = os.environ.get("RAPIDAPI_TENNIS_KEY", "").strip()
+    api_key = os.environ.get("API_TENNIS_KEY", "").strip()
+    if rapid_key:
+        result = reconcile_historical_identity_rapidapi(
+            queue=queue,
+            client=RapidApiTennisClient(rapid_key),
+            max_date_requests=args.max_date_requests,
+        )
+    elif api_key:
+        result = reconcile_historical_identity(
+            queue=queue,
+            client=ApiTennisDiscoveryClient(api_key),
+            max_date_requests=args.max_date_requests,
+        )
+    else:
         result = {
-            "schema": "MATRIX_COR0203_HISTORICAL_IDENTITY_RECONCILIATION_V1",
+            "schema": "MATRIX_COR0203_HISTORICAL_IDENTITY_RECONCILIATION_V2",
             "status": "SOURCE_NOT_CONFIGURED",
             "input_pending": sum(
                 1 for row in queue.get("items", []) or []
@@ -190,21 +363,16 @@ def main() -> None:
             "reconciled_count": 0,
             "blocked": [{
                 "event_id": None,
-                "reason": "API_TENNIS_KEY_NOT_CONFIGURED",
+                "reason": "NO_TENNIS_RESULT_PROVIDER_CONFIGURED",
             }],
             "blocked_count": 1,
             "network_calls": 0,
+            "provider": None,
             "automatic_fuzzy_matching": False,
             "freeze_mutation": False,
             "metrics_opened": False,
             "real_money": "BLOCKED",
         }
-    else:
-        result = reconcile_historical_identity(
-            queue=queue,
-            client=ApiTennisDiscoveryClient(key),
-            max_date_requests=args.max_date_requests,
-        )
 
     Path(args.out).write_text(
         json.dumps(result, indent=2, sort_keys=True, ensure_ascii=False) + "\n",
