@@ -1,0 +1,129 @@
+{
+  "schema": "MATRIX_TENNIS_CALIBRATION_V2_FROZEN_MODEL_BUNDLE_V1",
+  "candidate_id": "TENNIS_BASE12_ELO_REG_C0P01_20261001",
+  "status": "RESEARCH_SHADOW_ONLY_KNOWN_HISTORICAL_STABILITY_FAILURE",
+  "domain": "ATP Challenger Hard match-winner",
+  "orientation": "alphabetical canonical player name; stable source-id tie-break if equal; outcome-independent",
+  "training_scope": "sanitized 2022-2025 only; 2026 active holdout not read",
+  "training_hard_rows": 10706,
+  "source_hashes": {
+    "2022_challenger.csv": "b26f75ebf933d7f831ec003294c7ab16331a7a57e2b64a8073a74d9083603041",
+    "2023_challenger.csv": "94ac9f07aee60f682f325a513ca086092e35c78be6f4ae24f40fb6b868959f17",
+    "2024_challenger.csv": "ac78dada2dc5698015f1ff79963f7837a1ed14aebf2ef21095477854ac8a6af9",
+    "2025_challenger.csv": "ec1e2479d26e367f59af7337ecd300d5a8525e6f360694c1a0821570b50163d2"
+  },
+  "model": {
+    "family": "SimpleImputer(median)+StandardScaler+LogisticRegression",
+    "solver": "lbfgs",
+    "C": 0.01,
+    "max_iter": 2000,
+    "random_state": 0,
+    "features": [
+      "rank_diff",
+      "rank_points_diff",
+      "age_diff",
+      "hand_same",
+      "form5_diff",
+      "form10_diff",
+      "form20_diff",
+      "surface_wr_diff",
+      "overall_wr_diff",
+      "serve_pts_won_diff",
+      "return_pts_won_diff",
+      "prior_opponent_strength_diff",
+      "elo_overall_diff",
+      "elo_surface_diff"
+    ],
+    "imputer_statistics": [
+      1,
+      1,
+      0,
+      1,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0.0006473882566815914,
+      -0.00021756520874804952,
+      0,
+      0,
+      0
+    ],
+    "scaler_mean": [
+      3.4611432841397347,
+      -1.0925649168690454,
+      0.058474126657948794,
+      0.762096020922847,
+      -0.0029017996139236567,
+      -0.00222142160307675,
+      -0.00018243231675964283,
+      0.0061062639681796,
+      0.00382689664400414,
+      0.00021045230476326494,
+      0.000025744497673637343,
+      0.000580591715090355,
+      -2.084024825266812,
+      -0.6047286632044376
+    ],
+    "scaler_scale": [
+      290.3304600705856,
+      219.88255939911772,
+      5.730578173502896,
+      0.4258000420577839,
+      0.3375419852177674,
+      0.27027551392131766,
+      0.236790572556756,
+      0.23967570725129947,
+      0.21430429989835162,
+      0.04449008110775221,
+      0.04149176088007464,
+      0.08450134658352038,
+      101.21759775899888,
+      90.62544981791034
+    ],
+    "coef": [
+      0.33365105689181257,
+      0.151002132989156,
+      0.11308724441333343,
+      -0.010243627366254974,
+      0.03651018839386376,
+      -0.021820507408531635,
+      -0.12278203327749668,
+      0.08472903770110977,
+      -0.052131614903776845,
+      0.2020937240299434,
+      0.12488134208376751,
+      0.025779232310964014,
+      0.14354593132627344,
+      0.08879404476182895
+    ],
+    "intercept": -0.014955653484500061,
+    "classes": [
+      0,
+      1
+    ]
+  },
+  "inference_contract": {
+    "observed_features_required": true,
+    "prospective_imputation": "FORBIDDEN",
+    "active_holdout_probability_rewrite": false,
+    "candidate_future_cutoff_utc": "2026-10-02T00:00:00+00:00",
+    "only_batches_frozen_strictly_after_cutoff": true
+  },
+  "evaluation_contract": {
+    "active_A22_holdout_outcomes_read_for_candidate": 0,
+    "active_A22_metrics_must_remain_sealed_until_600": true,
+    "historical_metrics_role": "DEVELOPMENT_SELECTED_NOT_CONFIRMATORY",
+    "known_historical_failures": [
+      "2024 max calibration error >0.08",
+      "2024 close-rank calibration instability"
+    ],
+    "promotion": "FORBIDDEN_WITHOUT_FRESH_PROSPECTIVE_EVIDENCE"
+  },
+  "governance": {
+    "p_matrix_generated": false,
+    "automatic_wagering": false,
+    "real_money": "BLOCKED"
+  }
+}

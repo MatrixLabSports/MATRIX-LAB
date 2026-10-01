@@ -1,0 +1,131 @@
+{
+  "schema": "MATRIX_TENNIS_CALIBRATION_V2_HISTORICAL_RESEARCH_20261001_V1",
+  "status": "DEVELOPMENT_LEAD_FROZEN_FOR_FUTURE_SHADOW_NO_PROMOTION",
+  "scope": "ATP Challenger Hard historical development only; active A22 102/600 outcomes not read",
+  "source_hashes": {
+    "2022_challenger.csv": "b26f75ebf933d7f831ec003294c7ab16331a7a57e2b64a8073a74d9083603041",
+    "2023_challenger.csv": "94ac9f07aee60f682f325a513ca086092e35c78be6f4ae24f40fb6b868959f17",
+    "2024_challenger.csv": "ac78dada2dc5698015f1ff79963f7837a1ed14aebf2ef21095477854ac8a6af9",
+    "2025_challenger.csv": "ec1e2479d26e367f59af7337ecd300d5a8525e6f360694c1a0821570b50163d2"
+  },
+  "clean_history": {
+    "all_hard_clay_rows": 22373,
+    "hard_rows": 10706,
+    "orientation": "alphabetical canonical player name with stable-id tie-break; outcome-independent",
+    "period_freeze": "tourney_date bucket; features frozen before period updates",
+    "historical_training_imputation": "median inside development pipeline only",
+    "prospective_inference_imputation": "FORBIDDEN"
+  },
+  "bounded_development_search": {
+    "family": "BASE12 plus R218-style overall/surface ELO features",
+    "model": "median imputer + standard scaler + logistic regression",
+    "solver": "lbfgs",
+    "random_state": 0,
+    "C_grid": [
+      0.0003,
+      0.0005,
+      0.001,
+      0.0015,
+      0.002,
+      0.003,
+      0.005,
+      0.007,
+      0.01,
+      0.02,
+      0.03,
+      0.05,
+      0.1,
+      0.3,
+      1
+    ],
+    "selected_C": 0.01,
+    "selection_note": "Development-selected balance of rolling BSS, overall ECE and high-confidence population. Not independent confirmation."
+  },
+  "rolling_development_metrics": [
+    {
+      "year": 2023,
+      "n_train": 2204,
+      "n_test": 2605,
+      "bss": 0.0980550404,
+      "brier": 0.2255959831,
+      "log_loss": 0.6416487043,
+      "ece": 0.0135416065,
+      "max_cal_error": 0.0547577946
+    },
+    {
+      "year": 2024,
+      "n_train": 4809,
+      "n_test": 2705,
+      "bss": 0.0968521488,
+      "brier": 0.2258242642,
+      "log_loss": 0.642660176,
+      "ece": 0.0235696067,
+      "max_cal_error": 0.1097590872
+    },
+    {
+      "year": 2025,
+      "n_train": 7514,
+      "n_test": 3192,
+      "bss": 0.0955747668,
+      "brier": 0.2261187753,
+      "log_loss": 0.6431179792,
+      "ece": 0.0269211319,
+      "max_cal_error": 0.0457450111
+    }
+  ],
+  "pooled_high_confidence_development": [
+    {
+      "band": "0.75_0.80",
+      "n": 528,
+      "mean_probability": 0.7736323978063122,
+      "observed_accuracy": 0.7821969696969697
+    },
+    {
+      "band": "0.80_0.85",
+      "n": 275,
+      "mean_probability": 0.8225243411126477,
+      "observed_accuracy": 0.8181818181818182
+    },
+    {
+      "band": "0.85_0.90",
+      "n": 117,
+      "mean_probability": 0.87176067230075,
+      "observed_accuracy": 0.8376068376068376
+    },
+    {
+      "band": "0.90_0.95",
+      "n": 44,
+      "mean_probability": 0.9170787291633065,
+      "observed_accuracy": 0.9090909090909091
+    },
+    {
+      "band": "0.95_1.00",
+      "n": 4,
+      "mean_probability": 0.9555728967451775,
+      "observed_accuracy": 1
+    }
+  ],
+  "known_failures": [
+    "2024 overall max calibration error exceeds 0.08 in this development replay.",
+    "2024 abs-rank-diff 0_25 calibration remains unstable; no subgroup rescue or gate relaxation allowed.",
+    "Historical development metrics are selection evidence, not prospective promotion evidence."
+  ],
+  "orientation_audit": {
+    "old_r238_r251_issue": "Historical R238/R251 research used sha256(tourney_id|match_num|winner_name|loser_name) parity. Winner/loser-labelled ordering is unavailable before the match, so that orientation is not a prospectively reproducible contract.",
+    "action": "Do not promote or resurrect R238/R251 evidence without re-expression under an outcome-independent orientation. Active R707 alphabetical orientation remains untouched."
+  },
+  "active_holdout_protection": {
+    "holdout_id": "A22_POST_AUDIT_VIRGIN_HOLDOUT_V1",
+    "active_count_at_research_start": 102,
+    "active_outcomes_read_for_candidate": 0,
+    "active_metrics_opened": false,
+    "candidate_future_cutoff_utc": "2026-10-02T00:00:00+00:00",
+    "candidate_metrics_policy": "NO_EVALUATION_USING_ACTIVE_HOLDOUT_OUTCOMES_BEFORE_A22_REACHES_600",
+    "active_model_binding_unchanged": true
+  },
+  "governance": {
+    "p_matrix_status": "NOT_GENERATED",
+    "automatic_wagering": false,
+    "real_money": "BLOCKED"
+  }
+}
