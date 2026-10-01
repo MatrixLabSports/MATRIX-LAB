@@ -150,10 +150,16 @@ def build_settlement_queue(
     integrity: Mapping[str, Any],
     ledger_records: Sequence[Mapping[str, Any]],
     identity_overlay: Mapping[str, Mapping[str, Any]] | None = None,
+    uniqueness: Mapping[str, Any] | None = None,
 ) -> dict[str, Any]:
     settled_ids = {str(row.get("event_id") or "") for row in ledger_records}
     overlay = dict(identity_overlay or {})
     admissible = _admissible_revisions(integrity)
+    quarantined_duplicate_ids = {
+        str(row.get("event_id") or "")
+        for row in (uniqueness or {}).get("quarantined_duplicates", []) or []
+        if row.get("event_id")
+    }
     items: list[dict[str, Any]] = []
 
     for batch_path in sorted(holdout_dir.glob("MATRIX_COR0203_HOLDOUT_BATCH_R*.json"), key=_event_revision):
@@ -217,7 +223,10 @@ def build_settlement_queue(
                     str(key): str(value)
                     for key, value in dict(overlay_row["provider_player_map"]).items()
                 }
-            if event_id in settled_ids:
+            if event_id in quarantined_duplicate_ids:
+                status = "DUPLICATE_PHYSICAL_MATCH_QUARANTINED"
+                blocker = "DUPLICATE_PHYSICAL_MATCH"
+            elif event_id in settled_ids:
                 status = "SETTLED"
                 blocker = None
             elif match_key is None:
@@ -265,6 +274,11 @@ def build_settlement_queue(
         "settled": sum(1 for row in items if row["status"] == "SETTLED"),
         "ready_result_lookup": sum(1 for row in items if row["status"] == "READY_RESULT_LOOKUP"),
         "identity_mapping_required": sum(1 for row in items if row["status"] == "IDENTITY_MAPPING_REQUIRED"),
+        "duplicate_physical_matches_quarantined": sum(
+            1
+            for row in items
+            if row["status"] == "DUPLICATE_PHYSICAL_MATCH_QUARANTINED"
+        ),
         "items": items,
         "metrics": "SEALED_UNTIL_600",
         "outcomes_used_for_metrics": 0,
