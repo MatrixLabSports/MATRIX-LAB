@@ -1,0 +1,120 @@
+{
+  "schema": "MATRIX_FOOTBALL_CALIBRATION_V2_DEVELOPMENT_ADJUDICATION_20261001_V1",
+  "status": "REJECT_SIMPLE_CALIBRATION_V2_CANDIDATES_KEEP_CURRENT_CHALLENGER",
+  "source": {
+    "retrospective_rows": 2379,
+    "chronological_pool_excluding_original_final_357": 2022,
+    "development_train_rows": 1600,
+    "internal_validation_rows": 422,
+    "original_final_holdout_rows": 357,
+    "original_final_holdout_used": false
+  },
+  "protections": {
+    "prospective_gate100_used_for_tuning": false,
+    "prospective_observations_129_used_for_tuning": false,
+    "original_final_357_used": false,
+    "parameter_mutation_of_current_challenger": false
+  },
+  "trials": [
+    {
+      "market": "1x2",
+      "candidate": "standardized_softmax_v2",
+      "features": "log Poisson H/D/A + log empirical baseline H/D/A + expected home/away goals + total/difference/min goals + normalized history counts + log prior-group count",
+      "training": {
+        "l2": 0.01,
+        "learning_rate": 0.03,
+        "epochs": 1200
+      },
+      "validation": {
+        "poisson": {
+          "brier": 0.6078144947379549,
+          "log_loss": 1.0142086734558584,
+          "accuracy": 0.5023696682464455
+        },
+        "current_challenger": {
+          "brier": 0.5934122687221962,
+          "log_loss": 0.9894285417668077,
+          "accuracy": 0.523696682464455
+        },
+        "candidate": {
+          "brier": 0.5985813827414226,
+          "log_loss": 1.001158823167155,
+          "accuracy": 0.5260663507109005
+        }
+      },
+      "adjudication": "REJECT_CANDIDATE_WORSE_THAN_CURRENT_CHALLENGER_ON_BRIER_AND_LOG_LOSS"
+    },
+    {
+      "market": "over_2_5",
+      "candidate": "standardized_logistic_v2",
+      "features": "logit Poisson + logit empirical baseline + expected home/away goals + total/difference/min goals + normalized history counts + log prior-group count",
+      "training": {
+        "l2": 0.01,
+        "learning_rate": 0.05,
+        "epochs": 1000
+      },
+      "validation": {
+        "poisson": {
+          "brier": 0.23009372365193947,
+          "log_loss": 0.6515530244942669
+        },
+        "current_challenger": {
+          "brier": 0.22890501504839308,
+          "log_loss": 0.6488588676263666
+        },
+        "candidate": {
+          "brier": 0.22931025581420114,
+          "log_loss": 0.6493567220615178
+        }
+      },
+      "adjudication": "REJECT_CANDIDATE_WORSE_THAN_CURRENT_CHALLENGER_ON_BRIER_AND_LOG_LOSS"
+    },
+    {
+      "market": "1x2",
+      "candidate": "temperature_scaling_current_challenger",
+      "fitting": "temperature selected strictly on 1600-row development train from fixed grid 0.70..1.50; selected T=1.30",
+      "validation": {
+        "current_challenger": {
+          "brier": 0.5934122687221962,
+          "log_loss": 0.9894285417668077,
+          "accuracy": 0.523696682464455
+        },
+        "calibrated": {
+          "brier": 0.5986748451254422,
+          "log_loss": 0.9978998076126533,
+          "accuracy": 0.523696682464455
+        }
+      },
+      "adjudication": "REJECT_CALIBRATION_LAYER_WORSENS_BRIER_AND_LOG_LOSS"
+    },
+    {
+      "market": "over_2_5",
+      "candidate": "platt_on_current_challenger_logit",
+      "fitting": {
+        "intercept": -0.028164151259393092,
+        "slope": 0.8860014977706869
+      },
+      "validation": {
+        "current_challenger": {
+          "brier": 0.22890501504839308,
+          "log_loss": 0.6488588676263666
+        },
+        "calibrated": {
+          "brier": 0.22904667624091196,
+          "log_loss": 0.6493325486316393
+        }
+      },
+      "adjudication": "REJECT_CALIBRATION_LAYER_WORSENS_BRIER_AND_LOG_LOSS"
+    }
+  ],
+  "conclusion": {
+    "current_challenger_status": "UNCHANGED",
+    "reason": "Simple richer-feature and post-hoc calibration candidates failed independent internal validation. Do not degrade the current model just to force higher probabilities.",
+    "next_research": "Seek a genuinely new information source or architecture on development data; preserve future prospective observations as unseen confirmation."
+  },
+  "governance": {
+    "p_matrix_status": "NOT_GENERATED",
+    "automatic_wagering": false,
+    "real_money": "BLOCKED"
+  }
+}
