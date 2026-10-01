@@ -273,6 +273,29 @@ def _row_identity(row:Mapping[str,Any])->tuple[str,str]:
     return str(row.get("fixture_id") or ""), _sha(row)
 
 
+def _physical_key(row:Mapping[str,Any])->tuple[str,str,str,str,str]:
+    return (
+        str(row.get("competition_id") or ""),
+        str(row.get("season") or ""),
+        str(row.get("home_team_id") or ""),
+        str(row.get("away_team_id") or ""),
+        str(row.get("kickoff_utc") or ""),
+    )
+
+
+def _pair_key(row:Mapping[str,Any])->tuple[str,str,str,str]:
+    return (
+        str(row.get("competition_id") or ""),
+        str(row.get("season") or ""),
+        str(row.get("home_team_id") or ""),
+        str(row.get("away_team_id") or ""),
+    )
+
+
+def _hours_apart(left:Mapping[str,Any],right:Mapping[str,Any])->float:
+    return abs((_utc(left.get("kickoff_utc"))-_utc(right.get("kickoff_utc"))).total_seconds())/3600.0
+
+
 def merge_incremental_freeze(
     *,
     existing:Mapping[str,Any]|None,
@@ -283,19 +306,56 @@ def merge_incremental_freeze(
         raise ValueError("CANDIDATE_FREEZE_ROWS_INVALID")
 
     if existing is None:
+        physical_seen:set[tuple[str,str,str,str,str]]=set()
+        pair_seen:dict[tuple[str,str,str,str],list[Mapping[str,Any]]]={}
+        accepted=[]
+        physical_collisions=[]
+        suspicious_collisions=[]
+        for row in candidate_rows:
+            if not isinstance(row,Mapping):
+                raise ValueError("CANDIDATE_FREEZE_ROW_INVALID")
+            pkey=_physical_key(row)
+            if pkey in physical_seen:
+                physical_collisions.append({
+                    "fixture_id":str(row.get("fixture_id") or ""),
+                    "reason":"DUPLICATE_PHYSICAL_EVENT_DIFFERENT_FIXTURE_ID",
+                })
+                continue
+            pair=_pair_key(row)
+            near=[
+                prior for prior in pair_seen.get(pair,[])
+                if str(prior.get("fixture_id"))!=str(row.get("fixture_id"))
+                and _hours_apart(prior,row)<=36.0
+            ]
+            if near:
+                suspicious_collisions.append({
+                    "fixture_id":str(row.get("fixture_id") or ""),
+                    "reason":"SUSPECT_SAME_TEAMS_WITHIN_36H",
+                    "conflicts_with":[str(x.get("fixture_id") or "") for x in near],
+                })
+                continue
+            accepted.append(dict(row))
+            physical_seen.add(pkey)
+            pair_seen.setdefault(pair,[]).append(row)
+
         merged=dict(candidate)
+        merged["rows"]=accepted
+        merged["frozen_event_count"]=len(accepted)
         merged["incremental_mode"]=True
         merged["freeze_cycle_count"]=1
-        merged["last_cycle_new_event_count"]=len(candidate_rows)
+        merged["last_cycle_new_event_count"]=len(accepted)
         merged["last_cycle_candidate_event_count"]=len(candidate_rows)
         merged["last_cycle_excluded_event_count"]=int(candidate.get("excluded_event_count") or 0)
         return merged,{
             "status":"INITIAL_FREEZE",
             "previous_event_count":0,
             "candidate_event_count":len(candidate_rows),
-            "new_event_count":len(candidate_rows),
-            "cumulative_event_count":len(candidate_rows),
+            "new_event_count":len(accepted),
+            "cumulative_event_count":len(accepted),
             "existing_rows_unchanged":True,
+            "physical_collision_blocked_count":len(physical_collisions)+len(suspicious_collisions),
+            "physical_duplicate_collisions":physical_collisions,
+            "suspicious_physical_collisions":suspicious_collisions,
         }
 
     old_rows=existing.get("rows")
@@ -307,17 +367,26 @@ def merge_incremental_freeze(
 
     existing_by_id:dict[str,dict[str,Any]]={}
     old_hashes:dict[str,str]={}
+    existing_physical:dict[tuple[str,str,str,str,str],str]={}
+    existing_pairs:dict[tuple[str,str,str,str],list[Mapping[str,Any]]]={}
     for row in old_rows:
         if not isinstance(row,Mapping):
             raise ValueError("EXISTING_FREEZE_ROW_INVALID")
         fid,row_hash=_row_identity(row)
         if not fid or fid in existing_by_id:
             raise ValueError("EXISTING_FREEZE_DUPLICATE_OR_MISSING_FIXTURE")
+        pkey=_physical_key(row)
+        if pkey in existing_physical and existing_physical[pkey]!=fid:
+            raise ValueError("EXISTING_FREEZE_PHYSICAL_DUPLICATE:"+fid)
         existing_by_id[fid]=dict(row)
         old_hashes[fid]=row_hash
+        existing_physical[pkey]=fid
+        existing_pairs.setdefault(_pair_key(row),[]).append(row)
 
     new_rows=[]
     skipped_existing=[]
+    physical_collisions=[]
+    suspicious_collisions=[]
     for row in candidate_rows:
         if not isinstance(row,Mapping):
             raise ValueError("CANDIDATE_FREEZE_ROW_INVALID")
@@ -331,7 +400,34 @@ def merge_incremental_freeze(
         kickoff=_utc(row.get("kickoff_utc"))
         if freeze_at>=kickoff:
             raise ValueError("INCREMENTAL_FREEZE_NOT_PREMATCH:"+fid)
+
+        pkey=_physical_key(row)
+        prior_fid=existing_physical.get(pkey)
+        if prior_fid is not None and prior_fid!=fid:
+            physical_collisions.append({
+                "fixture_id":fid,
+                "reason":"DUPLICATE_PHYSICAL_EVENT_DIFFERENT_FIXTURE_ID",
+                "conflicts_with":[prior_fid],
+            })
+            continue
+
+        pair=_pair_key(row)
+        near=[
+            prior for prior in existing_pairs.get(pair,[])
+            if str(prior.get("fixture_id"))!=fid
+            and _hours_apart(prior,row)<=36.0
+        ]
+        if near:
+            suspicious_collisions.append({
+                "fixture_id":fid,
+                "reason":"SUSPECT_SAME_TEAMS_WITHIN_36H",
+                "conflicts_with":[str(x.get("fixture_id") or "") for x in near],
+            })
+            continue
+
         new_rows.append(dict(row))
+        existing_physical[pkey]=fid
+        existing_pairs.setdefault(pair,[]).append(row)
 
     merged_rows=[dict(row) for row in old_rows]+new_rows
     merged_rows.sort(key=lambda r:(r["kickoff_utc"],int(r["fixture_id"])))
@@ -363,6 +459,9 @@ def merge_incremental_freeze(
         "new_event_count":len(new_rows),
         "new_fixture_ids":[str(r["fixture_id"]) for r in new_rows],
         "skipped_existing_count":len(skipped_existing),
+        "physical_collision_blocked_count":len(physical_collisions)+len(suspicious_collisions),
+        "physical_duplicate_collisions":physical_collisions,
+        "suspicious_physical_collisions":suspicious_collisions,
         "cumulative_event_count":len(merged_rows),
         "existing_rows_unchanged":True,
         "previous_freeze_sha256":_sha(existing),
