@@ -74,7 +74,8 @@ jobs:
             tests/test_api_football_canonical_analysis_inputs.py \
             tests/test_api_football_prospective_market_pipeline.py \
             tests/test_api_football_prospective_horizon.py \
-            tests/test_api_football_bogota_full_day_calendar.py
+            tests/test_api_football_bogota_full_day_calendar.py \
+            tests/test_api_football_physical_uniqueness.py
 
       - name: Record pre-cycle cumulative freeze count
         shell: bash
@@ -101,6 +102,15 @@ jobs:
             python -m tools.api_football_prospective_horizon --days 3
           fi
 
+      - name: Audit physical fixture uniqueness
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m tools.api_football_physical_uniqueness_audit \
+            --freeze evidence/api_football/prospective_market_freeze/freeze.json \
+            --calibration-ledger evidence/api_football/prospective_calibration/ledger.jsonl \
+            --out evidence/api_football/physical_uniqueness/audit_last.json
+
       - name: Enforce cumulative horizon and PIT invariants
         shell: bash
         run: |
@@ -114,6 +124,7 @@ jobs:
           freeze=json.loads((root/"prospective_market_freeze/freeze.json").read_text())
           sync=json.loads((root/"prospective_market_freeze/incremental_sync_last.json").read_text())
           horizon=json.loads((root/"prospective_horizon/last_run.json").read_text())
+          physical_uniqueness=json.loads((root/"physical_uniqueness/audit_last.json").read_text())
           pre=int(os.environ["PRE_FREEZE_COUNT"])
 
           assert horizon["status"]=="PASS"
@@ -121,6 +132,15 @@ jobs:
           assert horizon["real_money"]=="BLOCKED"
           assert horizon["automatic_wagering"] is False
           assert horizon["p_matrix_status"]=="NOT_GENERATED"
+
+          assert physical_uniqueness["result"]=="PASS"
+          assert physical_uniqueness["freeze_rows"]==physical_uniqueness["unique_fixture_ids"]
+          assert physical_uniqueness["duplicate_fixture_id_groups"]==0
+          assert physical_uniqueness["exact_physical_duplicate_groups"]==0
+          assert physical_uniqueness["suspicious_same_pair_within_36h"]==0
+          assert physical_uniqueness["calibration_duplicate_fixture_ids"]==[]
+          assert physical_uniqueness["calibration_outside_freeze"]==[]
+          assert physical_uniqueness["real_money"]=="BLOCKED"
 
           assert sync["existing_rows_unchanged"] is True
           assert sync["cumulative_event_count"] >= pre
@@ -176,6 +196,7 @@ jobs:
           git add evidence/api_football/prospective_market_freeze/freeze.json
           git add evidence/api_football/prospective_market_freeze/manifest.json 2>/dev/null || true
           git add evidence/api_football/prospective_market_freeze/incremental_sync_last.json
+          git add evidence/api_football/physical_uniqueness/audit_last.json
           if git diff --cached --quiet; then
             echo "NO_DAILY_PROSPECTIVE_MATERIAL_CHANGE"
             exit 0
