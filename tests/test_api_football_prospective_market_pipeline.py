@@ -137,3 +137,31 @@ def test_incremental_freeze_rejects_post_start_new_row():
         assert "INCREMENTAL_FREEZE_NOT_PREMATCH" in str(exc)
     else:
         raise AssertionError("post-start incremental freeze must fail")
+
+
+def test_incremental_freeze_blocks_same_physical_match_with_new_fixture_id():
+    old=_freeze_row("100","2026-09-28T10:00:00+00:00","2026-09-29T10:00:00+00:00")
+    existing=_freeze_doc([old])
+    alias=_freeze_row("999","2026-09-28T12:00:00+00:00","2026-09-29T10:00:00+00:00")
+    candidate=_freeze_doc([alias],created="2026-09-28T12:00:00+00:00")
+
+    merged,summary=merge_incremental_freeze(existing=existing,candidate=candidate)
+
+    assert summary["new_event_count"]==0
+    assert summary["physical_collision_blocked_count"]==1
+    assert summary["physical_duplicate_collisions"][0]["fixture_id"]=="999"
+    assert merged["frozen_event_count"]==1
+
+
+def test_incremental_freeze_blocks_suspicious_same_pair_within_36h():
+    old=_freeze_row("100","2026-09-28T10:00:00+00:00","2026-09-29T10:00:00+00:00")
+    existing=_freeze_doc([old])
+    alias=_freeze_row("999","2026-09-28T12:00:00+00:00","2026-09-30T20:00:00+00:00")
+    candidate=_freeze_doc([alias],created="2026-09-28T12:00:00+00:00")
+
+    merged,summary=merge_incremental_freeze(existing=existing,candidate=candidate)
+
+    assert summary["new_event_count"]==0
+    assert summary["physical_collision_blocked_count"]==1
+    assert summary["suspicious_physical_collisions"][0]["fixture_id"]=="999"
+    assert merged["frozen_event_count"]==1
