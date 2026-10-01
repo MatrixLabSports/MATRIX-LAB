@@ -7,7 +7,9 @@ on:
     paths:
       - .github/workflows/cor0203-hourly-scheduler.yml
   schedule:
-    - cron: "17 * * * *"
+    # Two retry opportunities per hour. Durable discovery is bucket-idempotent,
+    # so a successful fetch is not billed twice inside the same UTC hour.
+    - cron: "7,37 * * * *"
   workflow_dispatch:
 
 permissions:
@@ -59,12 +61,25 @@ jobs:
           )
           PY
 
+      - name: Verify paid tennis API secret
+        shell: bash
+        env:
+          RAPIDAPI_TENNIS_KEY: ${{ secrets.RAPIDAPI_TENNIS_KEY }}
+        run: |
+          set -euo pipefail
+          if [[ -z "${RAPIDAPI_TENNIS_KEY:-}" ]]; then
+            echo "RAPIDAPI_TENNIS_KEY_NOT_CONFIGURED"
+            exit 2
+          fi
+          echo "RAPIDAPI_TENNIS_PAID_SOURCE: CONFIGURED"
+
       - name: Run governed autonomous production cycle
         shell: bash
         env:
           API_TENNIS_KEY: ${{ secrets.API_TENNIS_KEY }}
           RAPIDAPI_TENNIS_KEY: ${{ secrets.RAPIDAPI_TENNIS_KEY }}
-          MATRIX_TENNIS_PROVIDER: ${{ vars.MATRIX_TENNIS_PROVIDER }}
+          # Permanent production source: paid RapidAPI Tennis Ultra.
+          MATRIX_TENNIS_PROVIDER: rapidapi_tennis
           MATRIX_TARGET_BRANCH: repair/cor09-world-pipeline
           MATRIX_GIT_USER_NAME: matrix-scheduler
           MATRIX_GIT_USER_EMAIL: matrix-scheduler@users.noreply.github.com
