@@ -63,7 +63,8 @@ jobs:
         env:
           API_TENNIS_KEY: ${{ secrets.API_TENNIS_KEY }}
           RAPIDAPI_TENNIS_KEY: ${{ secrets.RAPIDAPI_TENNIS_KEY }}
-          MATRIX_TENNIS_PROVIDER: ${{ vars.MATRIX_TENNIS_PROVIDER }}
+          # Paid source is mandatory for MATRIX tennis production.
+          MATRIX_TENNIS_PROVIDER: rapidapi_tennis
           MATRIX_TARGET_BRANCH: repair/cor09-world-pipeline
           MATRIX_GIT_USER_NAME: matrix-ci
           MATRIX_GIT_USER_EMAIL: matrix-ci@users.noreply.github.com
