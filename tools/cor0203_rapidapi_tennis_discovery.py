@@ -21,6 +21,7 @@ PROVIDER_KEY = "rapidapi_tennis"
 RANKING_CUT = date(2026, 9, 21)
 MAX_RESPONSE_BYTES = 5_000_000
 MAX_FIXTURE_PAGES = 4
+MAX_RESULT_PAGES = 12
 MAX_RANKING_PAGES = 4
 MAX_TOURNAMENT_INFO_REQUESTS = 12
 PAGE_SIZE = 500
@@ -306,16 +307,19 @@ class RapidApiTennisClient:
             page += 1
         return found
 
-    def results_for_date(self, target_date: date) -> Mapping[str, Any]:
+    def _results_path(
+        self,
+        path: str,
+    ) -> Mapping[str, Any]:
         rows: list[Mapping[str, Any]] = []
         page = 1
-        for _ in range(MAX_FIXTURE_PAGES):
+        for _ in range(MAX_RESULT_PAGES):
             payload = self._get(
-                f"/tennis/v2/atp/results/{target_date.isoformat()}",
+                path,
                 {
                     "pageNo": page,
                     "pageSize": PAGE_SIZE,
-                    "filter": "PlayerGroup:singles",
+                    "filter": "PlayerGroup:singles;TourRank:1",
                 },
             )
             if not isinstance(payload, Mapping):
@@ -336,6 +340,26 @@ class RapidApiTennisClient:
             "pageSize": len(rows),
             "hasNextPage": False,
         }
+
+    def results_for_date(self, target_date: date) -> Mapping[str, Any]:
+        return self._results_path(
+            f"/tennis/v2/atp/results/{target_date.isoformat()}"
+        )
+
+    def results_for_range(
+        self,
+        start: date,
+        stop: date,
+    ) -> Mapping[str, Any]:
+        if stop < start:
+            raise ValueError("INVALID_RESULTS_DATE_RANGE")
+        if (stop - start).days > 13:
+            raise ValueError("RESULTS_RANGE_EXCEEDS_14_DAYS")
+        if start == stop:
+            return self.results_for_date(start)
+        return self._results_path(
+            f"/tennis/v2/atp/results/{start.isoformat()}/{stop.isoformat()}"
+        )
 
 
 def _parse_start(row: Mapping[str, Any]) -> datetime:
