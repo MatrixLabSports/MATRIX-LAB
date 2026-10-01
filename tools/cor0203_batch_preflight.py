@@ -9,6 +9,7 @@ from typing import Any, Mapping
 
 from tools.cor0203_batch_linkage_gate import _real_name, _utc
 from tools.cor0203_prospective_producer import extend_state, load_state
+from tools.cor0203_physical_identity import physical_event_key
 
 STATIC_FIELDS = ("hand", "age", "rank", "rank_points")
 SURFACE = "Hard"
@@ -97,9 +98,11 @@ def partition_batch(
     freeze_at_utc: str,
     expected_starting_count: int,
     existing_event_ids: set[str] | None = None,
+    existing_physical_keys: set[str] | None = None,
 ) -> dict[str, Any]:
     freeze = _utc(freeze_at_utc)
     existing_event_ids = set(existing_event_ids or set())
+    existing_physical_keys = set(existing_physical_keys or set())
 
     if prefeature.get("created_before_feature_acquisition") is not True:
         raise ValueError("PREFEATURE_ORDERING_NOT_PROVEN")
@@ -144,6 +147,11 @@ def partition_batch(
             blockers.append("EVENT_BATCH_DUPLICATE_OR_MISSING_EVENT_ID")
         if event_id in existing_event_ids:
             blockers.append("EVENT_ALREADY_FROZEN")
+        pkey = physical_event_key(row)
+        if pkey is None:
+            blockers.append("PHYSICAL_EVENT_IDENTITY_MISSING")
+        elif pkey in existing_physical_keys:
+            blockers.append("PHYSICAL_EVENT_ALREADY_FROZEN")
         seen.add(event_id)
 
         pre = pre_by_id.get(event_id)
