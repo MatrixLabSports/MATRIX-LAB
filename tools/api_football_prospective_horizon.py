@@ -14,6 +14,18 @@ BOGOTA = ZoneInfo("America/Bogota")
 MAX_DAYS = 3
 
 
+def _day_window(target_date: str) -> dict[str, str]:
+    local_date = datetime.strptime(target_date, "%Y-%m-%d").date()
+    start_local = datetime.combine(local_date, datetime.min.time(), tzinfo=BOGOTA)
+    end_local = start_local + timedelta(days=1) - timedelta(seconds=1)
+    return {
+        "calendar_day_start_local": start_local.isoformat(),
+        "calendar_day_end_local": end_local.isoformat(),
+        "calendar_day_start_utc": start_local.astimezone(timezone.utc).isoformat(),
+        "calendar_day_end_utc": end_local.astimezone(timezone.utc).isoformat(),
+    }
+
+
 def _parse_utc(value: str | None) -> datetime:
     if not value:
         return datetime.now(timezone.utc)
@@ -69,6 +81,7 @@ def run_horizon(
             summary = done["summary"]
             entries.append({
                 "target_date_bogota": target,
+                **_day_window(target),
                 "status": "ALREADY_COMPLETED_TODAY",
                 "cycle_summary_path": done["path"],
                 "new_freezes": int(summary.get("freeze", {}).get("new_event_count", 0) or 0),
@@ -86,6 +99,7 @@ def run_horizon(
             if str(exc) == "NO_ELIGIBLE_FUTURE_FIXTURES":
                 entries.append({
                     "target_date_bogota": target,
+                    **_day_window(target),
                     "status": "HEALTHY_SKIP_NO_ELIGIBLE_FUTURE_FIXTURES",
                     "new_freezes": 0,
                     "network_calls": 1,
@@ -100,6 +114,7 @@ def run_horizon(
         total_network_calls += calls
         entries.append({
             "target_date_bogota": target,
+            **_day_window(target),
             "status": "PASS",
             "cycle_summary_path": (
                 root / summary["cycle_root"] / "cycle_summary.json"
@@ -115,6 +130,8 @@ def run_horizon(
         "schema": "MATRIX_FOOTBALL_PROSPECTIVE_HORIZON_V1",
         "generated_at_utc": datetime.now(timezone.utc).replace(microsecond=0).isoformat(),
         "local_date_bogota": local_today.isoformat(),
+        "operational_timezone": "America/Bogota",
+        "calendar_day_rule": "00:00:00-23:59:59_LOCAL_FULL_DAY",
         "days_requested": len(targets),
         "targets": entries,
         "new_freezes_total": total_new_freezes,
