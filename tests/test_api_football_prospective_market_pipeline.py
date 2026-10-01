@@ -96,7 +96,7 @@ def _freeze_doc(rows, created="2026-09-28T10:00:00+00:00"):
 def test_incremental_freeze_appends_new_fixture_without_mutating_existing():
     old_row=_freeze_row("100","2026-09-28T10:00:00+00:00","2026-09-29T10:00:00+00:00")
     existing=_freeze_doc([old_row])
-    new_row=_freeze_row("101","2026-09-28T12:00:00+00:00","2026-09-30T10:00:00+00:00")
+    new_row=_freeze_row("101","2026-09-28T12:00:00+00:00","2026-10-02T10:00:00+00:00")
     new_row["home_team_id"]="50"
     new_row["home_team_name"]="Home Two"
     new_row["away_team_id"]="51"
