@@ -10,6 +10,7 @@ from typing import Any, Mapping, Sequence
 
 API_EVENT = re.compile(r"^api-tennis:event:(\d+)$")
 RAPIDAPI_EVENT = re.compile(r"^rapidapi-tennis:match:(\d+)$")
+TOURNAMENT_INFO = re.compile(r"(?:^|[;| ])tournament_info=(\d+)")
 SHA64 = re.compile(r"^[0-9a-f]{64}$")
 FINISHED = "FINISHED"
 
@@ -42,6 +43,14 @@ def _provider_identity(
     if match:
         return "rapidapi_tennis", match.group(1)
     return None, None
+
+
+def _provider_tournament_id(source_reference: object) -> str | None:
+    token = str(source_reference or "")
+    match = TOURNAMENT_INFO.search(token)
+    if not match:
+        return None
+    return match.group(1)
 
 
 def _settlement_id(payload: Mapping[str, Any]) -> str:
@@ -221,6 +230,14 @@ def build_settlement_queue(
                 status = "READY_RESULT_LOOKUP"
                 blocker = None
 
+            source_reference = (
+                obs.get("source_reference")
+                or event.get("source_reference")
+                or pre_event.get("identity_source")
+                or ""
+            )
+            provider_tournament_id = _provider_tournament_id(source_reference)
+
             items.append({
                 "revision": revision,
                 "event_id": event_id,
@@ -228,11 +245,14 @@ def build_settlement_queue(
                 "observation_sha256": obs.get("observation_sha256"),
                 "alphabetical_player_a": obs.get("alphabetical_player_a"),
                 "alphabetical_player_b": obs.get("alphabetical_player_b"),
+                "competition": obs.get("competition") or event.get("competition"),
                 "event_start_utc": obs.get("event_start_utc"),
+                "source_reference": source_reference,
                 "canonical_source_event_id": canonical_source,
                 "provider": provider if match_key else None,
                 "identity_overlay_applied": bool(match_key and overlay_row),
                 "provider_match_key": match_key,
+                "provider_tournament_id": provider_tournament_id,
                 "provider_player_map": provider_map,
                 "status": status,
                 "blocker": blocker,
