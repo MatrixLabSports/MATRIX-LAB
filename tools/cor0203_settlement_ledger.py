@@ -353,7 +353,11 @@ def settlement_from_rapidapi_tennis(
         or result_row.get("id")
         or ""
     )
-    if row_match_key != match_key:
+    resolution = str(queue_item.get("settlement_resolution") or "EXACT_MATCH_ID")
+    if row_match_key != match_key and resolution not in {
+        "EXACT_TOURNAMENT_UNORDERED_PLAYER_PAIR_UNIQUE",
+        "EXACT_DATE_UNORDERED_PLAYER_PAIR_UNIQUE",
+    }:
         raise ValueError("SETTLEMENT_PROVIDER_EVENT_MISMATCH")
 
     result_type = str(
@@ -411,6 +415,8 @@ def settlement_from_rapidapi_tennis(
         "result_source_reference": source_reference,
         "result_payload_sha256": source_payload_sha,
         "provider_match_key": match_key,
+        "provider_result_match_key": row_match_key,
+        "settlement_resolution": resolution,
         "event_final_result": (
             result_row.get("result")
             or result_row.get("score")
