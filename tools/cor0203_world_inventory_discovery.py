@@ -173,14 +173,17 @@ def derive_world_cor_discovery(
         if row.get(key)
     }
     ranking_error = None
-    try:
-        rankings = client.ranking_snapshot(
-            ranking_date=RANKING_CUT,
-            wanted_player_ids=wanted_player_ids,
-        )
-    except (RapidApiTennisDiscoveryError, ValueError) as error:
+    if wanted_player_ids:
+        try:
+            rankings = client.ranking_snapshot(
+                ranking_date=RANKING_CUT,
+                wanted_player_ids=wanted_player_ids,
+            )
+        except (RapidApiTennisDiscoveryError, ValueError) as error:
+            rankings = {}
+            ranking_error = type(error).__name__ + ":" + str(error)[:400]
+    else:
         rankings = {}
-        ranking_error = type(error).__name__ + ":" + str(error)[:400]
 
     result = build_discovery_registry(
         fixture_payload={
