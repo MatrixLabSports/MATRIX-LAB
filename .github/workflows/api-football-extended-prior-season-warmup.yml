@@ -1,0 +1,96 @@
+name: API-Football extended prior-season warmup
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - .github/workflows/api-football-extended-prior-season-warmup.yml
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: api-football-extended-prior-season-warmup
+  cancel-in-progress: false
+
+jobs:
+  warmup:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout operational branch
+        uses: actions/checkout@v4
+        with:
+          ref: repair/cor09-world-pipeline
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: python -m pip install requests pytest
+
+      - name: Run selection test
+        run: python -m pytest -q tests/test_api_football_extended_prior_season_warmup.py
+
+      - name: Require API-Football credential
+        shell: bash
+        env:
+          API_FOOTBALL_KEY: ${{ secrets.API_FOOTBALL_KEY }}
+        run: |
+          set -euo pipefail
+          if [[ -z "${API_FOOTBALL_KEY:-}" ]]; then
+            echo "API_FOOTBALL_KEY_NOT_CONFIGURED"
+            exit 2
+          fi
+
+      - name: Capture prior-season warmup
+        env:
+          API_FOOTBALL_KEY: ${{ secrets.API_FOOTBALL_KEY }}
+          MATRIX_EXTENDED_PRIOR_SEASON_MAX_FIXTURES: "45"
+          MATRIX_API_FOOTBALL_DAILY_RESERVE: "5000"
+        run: python -m tools.api_football_extended_prior_season_warmup
+
+      - name: Enforce prior-season governance
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          p=json.loads(Path("evidence/api_football/market_expansion/historical_prior_season/manifest.json").read_text())
+          assert p["status"]=="PASS"
+          assert p["source_season"]==2025
+          assert p["all_rows_strictly_before_2026"] is True
+          assert p["protected_holdout_intersection_count"]==0
+          assert p["prospective_intersection_count"]==0
+          assert p["feature_usage_policy"]=="STRICTLY_PRIOR_MATCHES_ONLY"
+          assert p["odds_used_to_generate_probability"] is False
+          assert p["metrics_opened"] is False
+          assert p["automatic_wagering"] is False
+          assert p["real_money"]=="BLOCKED"
+          assert p["last_daily_remaining"] is None or int(p["last_daily_remaining"])>=5000
+          print("MATRIX_EXTENDED_PRIOR_SEASON_GATE: PASS")
+          PY
+
+      - name: Persist prior-season evidence
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "matrix-football-prior-season"
+          git config user.email "matrix-football-prior-season@users.noreply.github.com"
+          git add evidence/api_football/market_expansion/historical_prior_season
+          if git diff --cached --quiet; then
+            echo "NO_PRIOR_SEASON_EVIDENCE_TO_PERSIST"
+            exit 3
+          fi
+          git commit -m "evidence(football): persist prior-season extended warmup"
+          git status --porcelain
+          git reset --hard HEAD
+          git clean -fd
+          git pull --rebase origin repair/cor09-world-pipeline
+          git push origin HEAD:repair/cor09-world-pipeline
