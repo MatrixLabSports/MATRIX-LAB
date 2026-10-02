@@ -53,6 +53,9 @@ SETTLEMENT_ADJUDICATION_LAST="evidence/cor0203/runtime/MATRIX_COR0203_SETTLEMENT
 SETTLEMENT_ADJUDICATIONS="evidence/cor0203/adjudication/MATRIX_COR0203_SETTLEMENT_ADJUDICATIONS_20261001.json"
 SETTLEMENT_LEDGER="evidence/cor0203/settlement/MATRIX_COR0203_SETTLEMENT_LEDGER.jsonl"
 HEARTBEAT="evidence/cor0203/runtime/MATRIX_COR0203_SCHEDULER_HEARTBEAT.json"
+WORLD_DATE="$(TZ=America/Bogota date +%F)"
+WORLD_INVENTORY_LAST="evidence/tennis/world_inventory/MATRIX_TENNIS_WORLD_INVENTORY_LAST.json"
+WORLD_INVENTORY_DAILY="evidence/tennis/world_inventory/${WORLD_DATE}/MATRIX_TENNIS_WORLD_INVENTORY.json"
 
 test -s "$STATE"
 test -s "$BUNDLE"
@@ -76,6 +79,12 @@ case "$TENNIS_PROVIDER" in
       --days 2
     ;;
   rapidapi_tennis)
+    mkdir -p "$(dirname "$WORLD_INVENTORY_LAST")" "$(dirname "$WORLD_INVENTORY_DAILY")"
+    python -m tools.tennis_world_inventory_rapidapi \
+      --out "$WORLD_INVENTORY_LAST" \
+      --target-date-bogota "$WORLD_DATE"
+    cp "$WORLD_INVENTORY_LAST" "$WORLD_INVENTORY_DAILY"
+
     python -m tools.cor0203_rapidapi_durable_discovery \
       --out "$DISCOVERY" \
       --summary-out "$DURABLE_DISCOVERY_LAST" \
@@ -217,6 +226,12 @@ historical_identity = json.loads((runtime / "MATRIX_COR0203_HISTORICAL_IDENTITY_
 settlement_sync = json.loads((runtime / "MATRIX_COR0203_SETTLEMENT_SYNC_LAST.json").read_text())
 settlement_uniqueness = json.loads((runtime / "MATRIX_COR0203_SETTLEMENT_UNIQUENESS_LAST.json").read_text())
 settlement_adjudication = json.loads((runtime / "MATRIX_COR0203_SETTLEMENT_ADJUDICATION_LAST.json").read_text())
+world_inventory_path = Path("evidence/tennis/world_inventory/MATRIX_TENNIS_WORLD_INVENTORY_LAST.json")
+world_inventory = (
+    json.loads(world_inventory_path.read_text())
+    if world_inventory_path.exists()
+    else None
+)
 
 assert source_readiness["provider"] == __import__("os").environ["MATRIX_TENNIS_PROVIDER"]
 assert durable_discovery["real_money"] == "BLOCKED"
@@ -258,6 +273,18 @@ assert settlement_adjudication["metrics_opened"] is False
 assert settlement_sync["outcomes_used_for_metrics"] == 0
 assert settlement_uniqueness["result"] == "PASS"
 assert settlement_uniqueness["duplicate_aliases_used_for_metrics"] == 0
+assert settlement_uniqueness["metrics_opened"] is False
+assert settlement_sync["metrics"] == "SEALED_UNTIL_600"
+if world_inventory is not None:
+    assert world_inventory["status"] in {"PASS", "PARTIAL"}
+    assert world_inventory["operational_timezone"] == "America/Bogota"
+    assert world_inventory["calendar_day_rule"] == "00:00:00-23:59:59_LOCAL_FULL_DAY"
+    assert world_inventory["tours_required"] == ["ATP", "WTA", "ITF"]
+    assert world_inventory["p_matrix"] == "NOT_GENERATED"
+    assert world_inventory["metrics_opened"] is False
+    assert world_inventory["automatic_wagering"] is False
+    assert world_inventory["real_money"] == "BLOCKED"
+    assert world_inventory["derived_lanes"]["COR02_COR03_ATP_CHALLENGER_HARD"]["feeds_model_automatically"] is False
 assert settlement_uniqueness["metrics_opened"] is False
 assert settlement_sync["metrics"] == "SEALED_UNTIL_600"
 if not source_readiness["ready"]:
@@ -312,6 +339,8 @@ git add evidence/cor0203/runtime/MATRIX_COR0203_STATIC4_R*.json 2>/dev/null || t
 git add evidence/cor0203/runtime/MATRIX_COR0203_PROSPECTIVE_EVENTS_R*.json 2>/dev/null || true
 git add evidence/cor0203/runtime/MATRIX_COR0203_BATCH_PREFLIGHT_R*.json 2>/dev/null || true
 git add evidence/cor0203/adjudication/*.json 2>/dev/null || true
+git add evidence/tennis/world_inventory/MATRIX_TENNIS_WORLD_INVENTORY_LAST.json 2>/dev/null || true
+git add evidence/tennis/world_inventory/*/MATRIX_TENNIS_WORLD_INVENTORY.json 2>/dev/null || true
 git add evidence/cor0203/runtime/MATRIX_COR0203_HISTORY_GATE_R*.json 2>/dev/null || true
 git add evidence/cor0203/holdout/MATRIX_COR0203_HOLDOUT_BATCH_R*.json 2>/dev/null || true
 
