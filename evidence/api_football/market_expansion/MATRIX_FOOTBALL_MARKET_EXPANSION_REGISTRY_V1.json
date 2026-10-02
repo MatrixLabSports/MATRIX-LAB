@@ -1,0 +1,155 @@
+{
+  "schema": "MATRIX_FOOTBALL_MARKET_EXPANSION_REGISTRY_V1",
+  "as_of_date": "2026-10-02",
+  "governance": {
+    "market_specific_models_required": true,
+    "shared_cross_market_model_forbidden": true,
+    "odds_used_to_generate_probability": false,
+    "prospective_freeze_required": true,
+    "final_only_settlement": true,
+    "automatic_wagering": false,
+    "real_money": "BLOCKED"
+  },
+  "prospectively_supported_now": {
+    "1X2": {
+      "status": "SUPPORTED_AT_N200",
+      "source": "checkpoint_200"
+    },
+    "GOAL_TOTALS_OVER_2_5": {
+      "status": "SUPPORTED_AT_N200",
+      "source": "checkpoint_200"
+    },
+    "GOAL_TOTALS_UNDER_2_5": {
+      "status": "SUPPORTED_AT_N200_DERIVED_COMPLEMENT",
+      "source": "derived_markets_checkpoint_200"
+    },
+    "DOUBLE_CHANCE_1X": {
+      "status": "SUPPORTED_AT_N200_DERIVED_FROM_FROZEN_1X2",
+      "source": "derived_markets_checkpoint_200"
+    },
+    "DOUBLE_CHANCE_X2": {
+      "status": "SUPPORTED_AT_N200_DERIVED_FROM_FROZEN_1X2",
+      "source": "derived_markets_checkpoint_200"
+    }
+  },
+  "not_supported_now": {
+    "BTTS_V2": "REJECTED_AT_N200_NOT_SUPERIOR_TO_POISSON",
+    "DOUBLE_CHANCE_12": "NOT_SUPERIOR_TO_POISSON_AT_N200"
+  },
+  "build_lane_architecture_ready": {
+    "CORNERS_OVER_UNDER": {
+      "canonical_market": "MATRIX-MARKET-R2/football/CORNERS/total-corners",
+      "odds_mapping": true,
+      "api_football_source_contracts": [
+        "/fixtures/statistics"
+      ],
+      "physical_source_coverage_certified": false,
+      "predictive_model_built": false,
+      "prospective_calibration_started": false
+    },
+    "CARDS_OVER_UNDER": {
+      "canonical_market": "MATRIX-MARKET-R2/football/CARDS/total-cards",
+      "odds_mapping": true,
+      "api_football_source_contracts": [
+        "/fixtures/statistics"
+      ],
+      "physical_source_coverage_certified": false,
+      "predictive_model_built": false,
+      "prospective_calibration_started": false
+    },
+    "PLAYER_SHOTS": {
+      "canonical_market": "MATRIX-MARKET-R2/football/PLAYER_SHOTS_OR_SHOTS_ON_TARGET/player-threshold",
+      "odds_mapping": true,
+      "api_football_source_contracts": [
+        "/fixtures/players"
+      ],
+      "physical_source_coverage_certified": false,
+      "predictive_model_built": false,
+      "prospective_calibration_started": false
+    },
+    "PLAYER_SHOTS_ON_TARGET": {
+      "canonical_market": "MATRIX-MARKET-R2/football/PLAYER_SHOTS_OR_SHOTS_ON_TARGET/player-threshold",
+      "odds_mapping": true,
+      "api_football_source_contracts": [
+        "/fixtures/players"
+      ],
+      "physical_source_coverage_certified": false,
+      "predictive_model_built": false,
+      "prospective_calibration_started": false
+    },
+    "PLAYER_ASSISTS": {
+      "canonical_market": "MATRIX-MARKET-R2/football/PLAYER_ASSISTS_OR_PASSES/player-threshold",
+      "odds_mapping": true,
+      "api_football_source_contracts": [
+        "/fixtures/players"
+      ],
+      "physical_source_coverage_certified": false,
+      "predictive_model_built": false,
+      "prospective_calibration_started": false
+    },
+    "PLAYER_PASSES": {
+      "canonical_market": "MATRIX-MARKET-R2/football/PLAYER_ASSISTS_OR_PASSES/player-threshold",
+      "odds_mapping": true,
+      "api_football_source_contracts": [
+        "/fixtures/players"
+      ],
+      "physical_source_coverage_certified": false,
+      "predictive_model_built": false,
+      "prospective_calibration_started": false
+    }
+  },
+  "definition_required_before_modeling": {
+    "GOALKEEPER_SAVES": {
+      "intended": true,
+      "api_football_source_contracts": [
+        "/fixtures/players"
+      ],
+      "canonical_r2_definition": false,
+      "odds_mapping": false,
+      "required_action": "CREATE_SEPARATE_CANONICAL_MARKET_AND_PROVIDER_MAPPING"
+    },
+    "PLAYER_TACKLES": {
+      "intended": true,
+      "api_football_source_contracts": [
+        "/fixtures/players"
+      ],
+      "canonical_r2_definition": false,
+      "odds_mapping": false,
+      "required_action": "CREATE_SEPARATE_CANONICAL_MARKET_AND_PROVIDER_MAPPING"
+    },
+    "PLAYER_FOULS": {
+      "intended": true,
+      "api_football_source_contracts": [
+        "/fixtures/players"
+      ],
+      "canonical_r2_definition": false,
+      "odds_mapping": false,
+      "required_action": "CREATE_SEPARATE_CANONICAL_MARKET_AND_PROVIDER_MAPPING"
+    },
+    "TEAM_SHOTS_ON_TARGET": {
+      "intended": true,
+      "api_football_source_contracts": [
+        "/fixtures/statistics"
+      ],
+      "canonical_r2_definition": false,
+      "odds_mapping": false,
+      "required_action": "CREATE_TEAM_SCOPE_CANONICAL_MARKET_AND_PROVIDER_MAPPING"
+    }
+  },
+  "execution_order_by_readiness": [
+    "PHYSICAL_SOURCE_COVERAGE_PROBE",
+    "CORNERS_OVER_UNDER",
+    "PLAYER_SHOTS_ON_TARGET",
+    "CARDS_OVER_UNDER",
+    "PLAYER_SHOTS",
+    "PLAYER_ASSISTS",
+    "PLAYER_PASSES",
+    "CANONICALIZE_GOALKEEPER_SAVES",
+    "CANONICALIZE_PLAYER_TACKLES",
+    "CANONICALIZE_PLAYER_FOULS",
+    "CANONICALIZE_TEAM_SHOTS_ON_TARGET",
+    "HISTORICAL_PIT_DATASETS_PER_MARKET",
+    "BASELINES_AND_CHALLENGERS_PER_MARKET",
+    "PROSPECTIVE_FREEZE_AND_CALIBRATION_PER_MARKET"
+  ]
+}
