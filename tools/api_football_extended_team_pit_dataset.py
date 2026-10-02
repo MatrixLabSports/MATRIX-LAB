@@ -24,6 +24,7 @@ METRICS={
 
 DATASET_PATHS=(
     Path("evidence/api_football/market_expansion/historical_bootstrap/normalized_dataset.jsonl"),
+    Path("evidence/api_football/market_expansion/historical_warmup/normalized_dataset.jsonl"),
     Path("evidence/api_football/market_expansion/historical_statsrich/normalized_dataset.jsonl"),
     Path("evidence/api_football/market_expansion/historical_statsrich_3/normalized_dataset.jsonl"),
 )
