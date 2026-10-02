@@ -57,6 +57,8 @@ WORLD_DATE="$(TZ=America/Bogota date +%F)"
 WORLD_INVENTORY_LAST="evidence/tennis/world_inventory/MATRIX_TENNIS_WORLD_INVENTORY_LAST.json"
 WORLD_INVENTORY_DAILY="evidence/tennis/world_inventory/${WORLD_DATE}/MATRIX_TENNIS_WORLD_INVENTORY.json"
 WORLD_BRIDGE_LAST="evidence/cor0203/runtime/MATRIX_COR0203_WORLD_INVENTORY_BRIDGE_LAST.json"
+WORLD_DERIVED_DISCOVERY_LAST="evidence/cor0203/runtime/MATRIX_COR0203_WORLD_DERIVED_DISCOVERY_LAST.json"
+WORLD_PREREG_LAST="evidence/cor0203/runtime/MATRIX_COR0203_WORLD_PREREG_LAST.json"
 
 test -s "$STATE"
 test -s "$BUNDLE"
@@ -86,6 +88,14 @@ case "$TENNIS_PROVIDER" in
       --target-date-bogota "$WORLD_DATE"
     cp "$WORLD_INVENTORY_LAST" "$WORLD_INVENTORY_DAILY"
 
+    python -m tools.cor0203_world_inventory_discovery \
+      --world-inventory "$WORLD_INVENTORY_LAST" \
+      --out "$WORLD_DERIVED_DISCOVERY_LAST"
+
+    python -m tools.cor0203_preregister_discovery \
+      --discovery "$WORLD_DERIVED_DISCOVERY_LAST" \
+      --result-out "$WORLD_PREREG_LAST"
+
     python -m tools.cor0203_rapidapi_durable_discovery \
       --out "$DISCOVERY" \
       --summary-out "$DURABLE_DISCOVERY_LAST" \
@@ -107,11 +117,11 @@ python -m tools.cor0203_preregister_discovery \
   --discovery "$DISCOVERY" \
   --result-out "$PREREG_LAST"
 
-if [[ -f "$WORLD_INVENTORY_LAST" ]]; then
+if [[ -f "$WORLD_INVENTORY_LAST" && -f "$WORLD_DERIVED_DISCOVERY_LAST" && -f "$WORLD_PREREG_LAST" ]]; then
   python -m tools.cor0203_world_inventory_bridge \
     --world-inventory "$WORLD_INVENTORY_LAST" \
-    --cor-discovery "$DISCOVERY" \
-    --prereg "$PREREG_LAST" \
+    --cor-discovery "$WORLD_DERIVED_DISCOVERY_LAST" \
+    --prereg "$WORLD_PREREG_LAST" \
     --out "$WORLD_BRIDGE_LAST"
 fi
 
@@ -247,6 +257,18 @@ world_bridge = (
     if world_bridge_path.exists()
     else None
 )
+world_derived_path = runtime / "MATRIX_COR0203_WORLD_DERIVED_DISCOVERY_LAST.json"
+world_derived = (
+    json.loads(world_derived_path.read_text())
+    if world_derived_path.exists()
+    else None
+)
+world_prereg_path = runtime / "MATRIX_COR0203_WORLD_PREREG_LAST.json"
+world_prereg = (
+    json.loads(world_prereg_path.read_text())
+    if world_prereg_path.exists()
+    else None
+)
 
 assert source_readiness["provider"] == __import__("os").environ["MATRIX_TENNIS_PROVIDER"]
 assert durable_discovery["real_money"] == "BLOCKED"
@@ -291,7 +313,8 @@ assert settlement_uniqueness["duplicate_aliases_used_for_metrics"] == 0
 assert settlement_uniqueness["metrics_opened"] is False
 assert settlement_sync["metrics"] == "SEALED_UNTIL_600"
 if world_inventory is not None:
-    assert world_inventory["status"] in {"PASS", "PARTIAL"}
+    assert world_inventory["status"] == "PASS"
+    assert world_inventory["world_inventory_complete"] is True
     assert world_inventory["operational_timezone"] == "America/Bogota"
     assert world_inventory["calendar_day_rule"] == "00:00:00-23:59:59_LOCAL_FULL_DAY"
     assert world_inventory["coverage_families_required"] == ["ATP", "WTA", "ITF"]
@@ -301,6 +324,16 @@ if world_inventory is not None:
     assert world_inventory["automatic_wagering"] is False
     assert world_inventory["real_money"] == "BLOCKED"
     assert world_inventory["derived_lanes"]["COR02_COR03_ATP_CHALLENGER_HARD"]["feeds_model_automatically"] is False
+if world_derived is not None:
+    assert world_derived["status"] == "DISCOVERY_COMPLETED"
+    assert world_derived["source_mode"] == "WORLD_INVENTORY_DERIVED"
+    assert world_derived["automatic_model_feed"] is False
+    assert world_derived["governed_preregistration_required"] is True
+    assert world_derived["metrics_opened"] is False
+    assert world_derived["outcomes_read"] == 0
+    assert world_derived["real_money"] == "BLOCKED"
+if world_prereg is not None:
+    assert world_prereg["status"] in {"NO_NEW_EVENTS", "PREREGISTERED"}
 if world_bridge is not None:
     assert world_bridge["automatic_model_feed"] is False
     assert world_bridge["governed_preregistration_authoritative"] is True
@@ -363,6 +396,8 @@ git add evidence/cor0203/runtime/MATRIX_COR0203_BATCH_PREFLIGHT_R*.json 2>/dev/n
 git add evidence/cor0203/adjudication/*.json 2>/dev/null || true
 git add evidence/tennis/world_inventory/MATRIX_TENNIS_WORLD_INVENTORY_LAST.json 2>/dev/null || true
 git add evidence/tennis/world_inventory/*/MATRIX_TENNIS_WORLD_INVENTORY.json 2>/dev/null || true
+git add "$WORLD_DERIVED_DISCOVERY_LAST" 2>/dev/null || true
+git add "$WORLD_PREREG_LAST" 2>/dev/null || true
 git add "$WORLD_BRIDGE_LAST" 2>/dev/null || true
 git add evidence/cor0203/runtime/MATRIX_COR0203_HISTORY_GATE_R*.json 2>/dev/null || true
 git add evidence/cor0203/holdout/MATRIX_COR0203_HOLDOUT_BATCH_R*.json 2>/dev/null || true
@@ -390,6 +425,12 @@ git add "$INTEGRITY_LAST"
 git add "$UNIQUENESS_LAST"
 git add "$OBSERVABILITY_LAST"
 git add "$DURABLE_DISCOVERY_LAST"
+if [[ -f "$WORLD_DERIVED_DISCOVERY_LAST" ]]; then
+  git add "$WORLD_DERIVED_DISCOVERY_LAST"
+fi
+if [[ -f "$WORLD_PREREG_LAST" ]]; then
+  git add "$WORLD_PREREG_LAST"
+fi
 if [[ -f "$WORLD_BRIDGE_LAST" ]]; then
   git add "$WORLD_BRIDGE_LAST"
 fi
