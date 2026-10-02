@@ -29,6 +29,7 @@ def _world():
         "events": [
             {
                 "source_event_id": "rapidapi-tennis:atp:match:100",
+                "provider_channel": "ATP",
                 "tournament_name": "Porto Challenger",
                 "round": "1/4",
                 "event_start_bogota": "2026-10-02T05:00:00-05:00",
@@ -37,6 +38,7 @@ def _world():
             },
             {
                 "source_event_id": "rapidapi-tennis:atp:match:200",
+                "provider_channel": "ATP",
                 "tournament_name": "Columbus Challenger",
                 "round": "1/4",
                 "event_start_bogota": "2026-10-02T10:00:00-05:00",
@@ -45,6 +47,7 @@ def _world():
             },
             {
                 "source_event_id": "rapidapi-tennis:atp:match:300",
+                "provider_channel": "ATP",
                 "tournament_name": "Jingshan Challenger",
                 "round": "1/4",
                 "event_start_bogota": "2026-10-02T02:00:00-05:00",
@@ -138,3 +141,42 @@ def test_world_funnel_distinguishes_frozen_blocked_and_rejected(tmp_path):
     assert report["metrics_opened"] is False
     assert report["outcomes_read"] == 0
     assert report["real_money"] == "BLOCKED"
+
+
+def test_world_funnel_keeps_atp_row_when_wta_reuses_same_numeric_match_id(tmp_path):
+    world = _world()
+    world["world_calendar_inventory_count"] = 11
+    world["events"].append({
+        "source_event_id": "rapidapi-tennis:wta:match:100",
+        "provider_channel": "WTA",
+        "tournament_name": "W35 Collision",
+        "round": "1/4",
+        "event_start_bogota": "2026-10-02T06:00:00-05:00",
+        "player1": {"name": "WTA A"},
+        "player2": {"name": "WTA B"},
+    })
+    runtime = tmp_path / "runtime"
+    runtime.mkdir()
+
+    report = build_world_funnel(
+        world_inventory=world,
+        world_discovery={
+            "eligible_candidates": [{
+                "event_id": "rapidapi-tennis:atp:match:100",
+                "canonical_source_event_id": "rapidapi-tennis:atp:match:100",
+                "physical_event_key": "p100",
+            }],
+            "provider_rejected": [],
+        },
+        uniqueness={
+            "unique_calibration_observations": 50,
+            "canonical_observations": [],
+        },
+        runtime_dir=runtime,
+    )
+
+    row = next(x for x in report["rows"] if x["match_id"] == "100")
+    assert row["provider_channel"] == "ATP"
+    assert row["competition"] == "Porto Challenger"
+    assert row["players"] == ["A", "B"]
+    assert row["world_source_event_id"] == "rapidapi-tennis:atp:match:100"
