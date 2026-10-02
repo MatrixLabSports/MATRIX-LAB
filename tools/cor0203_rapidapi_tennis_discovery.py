@@ -27,6 +27,7 @@ MAX_RESULT_PAGES = 12
 MAX_RANKING_PAGES = 4
 MAX_TOURNAMENT_INFO_REQUESTS = 12
 PAGE_SIZE = 500
+MODEL_HARD_SURFACES = {"hard", "i.hard", "indoor hard", "indoor_hard"}
 
 
 class RapidApiTennisDiscoveryError(RuntimeError):
@@ -492,7 +493,7 @@ def build_discovery_registry(
             blockers.append("TOURNAMENT_RANK_NOT_CHALLENGER_ITF")
         if "challenger" not in tier.casefold():
             blockers.append("TOURNAMENT_NOT_PROVEN_CHALLENGER")
-        if court.casefold() != "hard":
+        if court.casefold() not in MODEL_HARD_SURFACES:
             blockers.append("SURFACE_OUT_OF_DOMAIN")
 
         p1_ranking = ranking_by_player.get(p1_id or "")
