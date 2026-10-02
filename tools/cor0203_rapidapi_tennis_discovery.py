@@ -22,6 +22,7 @@ PROVIDER_KEY = "rapidapi_tennis"
 RANKING_CUT = date(2026, 9, 21)
 MAX_RESPONSE_BYTES = 5_000_000
 MAX_FIXTURE_PAGES = 4
+MAX_WORLD_FIXTURE_PAGES = 12
 MAX_RESULT_PAGES = 12
 MAX_RANKING_PAGES = 4
 MAX_TOURNAMENT_INFO_REQUESTS = 12
@@ -205,31 +206,45 @@ class RapidApiTennisClient:
             + _safe_error(last_transient, self._api_key)
         ) from None
 
-    def fixtures(self, start: date, stop: date) -> Mapping[str, Any]:
+    def fixtures_for_tour(
+        self,
+        tour: str,
+        start: date,
+        stop: date,
+        *,
+        filter_value: str | None = None,
+        max_pages: int = MAX_WORLD_FIXTURE_PAGES,
+    ) -> Mapping[str, Any]:
+        normalized_tour = str(tour or "").strip().casefold()
+        if normalized_tour not in {"atp", "wta", "itf"}:
+            raise ValueError("RAPIDAPI_TENNIS_TOUR_UNSUPPORTED")
         if stop < start:
             raise ValueError("INVALID_DISCOVERY_DATE_RANGE")
         if (stop - start).days > 3:
             raise ValueError("DISCOVERY_RANGE_EXCEEDS_4_DAYS")
         if start == stop:
-            path = f"/tennis/v2/atp/fixtures/{start.isoformat()}"
+            path = (
+                f"/tennis/v2/{normalized_tour}/fixtures/"
+                f"{start.isoformat()}"
+            )
         else:
             path = (
-                f"/tennis/v2/atp/fixtures/{start.isoformat()}/"
-                f"{stop.isoformat()}"
+                f"/tennis/v2/{normalized_tour}/fixtures/"
+                f"{start.isoformat()}/{stop.isoformat()}"
             )
 
         rows: list[Mapping[str, Any]] = []
         page = 1
-        for _ in range(MAX_FIXTURE_PAGES):
-            payload = self._get(
-                path,
-                {
-                    "include": "round,tournament,tournament.court",
-                    "filter": "PlayerGroup:singles;TourRank:1",
-                    "pageNo": page,
-                    "pageSize": PAGE_SIZE,
-                },
-            )
+        page_limit = max(1, int(max_pages))
+        for _ in range(page_limit):
+            params: dict[str, Any] = {
+                "include": "round,tournament,tournament.court",
+                "pageNo": page,
+                "pageSize": PAGE_SIZE,
+            }
+            if filter_value:
+                params["filter"] = filter_value
+            payload = self._get(path, params)
             if not isinstance(payload, Mapping):
                 raise RapidApiTennisDiscoveryError(
                     "RAPIDAPI_TENNIS_FIXTURE_ENVELOPE_INVALID"
@@ -240,10 +255,25 @@ class RapidApiTennisClient:
             page += 1
         else:
             raise RapidApiTennisDiscoveryError(
-                "RAPIDAPI_TENNIS_FIXTURE_PAGE_LIMIT_REACHED"
+                "RAPIDAPI_TENNIS_FIXTURE_PAGE_LIMIT_REACHED:"
+                + normalized_tour.upper()
             )
 
-        return {"data": rows, "pageNo": 1, "pageSize": len(rows), "hasNextPage": False}
+        return {
+            "data": rows,
+            "pageNo": 1,
+            "pageSize": len(rows),
+            "hasNextPage": False,
+        }
+
+    def fixtures(self, start: date, stop: date) -> Mapping[str, Any]:
+        return self.fixtures_for_tour(
+            "atp",
+            start,
+            stop,
+            filter_value="PlayerGroup:singles;TourRank:1",
+            max_pages=MAX_FIXTURE_PAGES,
+        )
 
     def tournament_info(self, tournament_id: str) -> Mapping[str, Any]:
         token = _positive_id(tournament_id)
