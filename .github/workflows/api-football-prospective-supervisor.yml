@@ -47,7 +47,8 @@ jobs:
           python -m pytest -q \
             tests/test_api_football_prospective_supervisor.py \
             tests/test_api_football_prospective_api_settlement.py \
-            tests/test_api_football_prospective_calibration.py
+            tests/test_api_football_prospective_calibration.py \
+            tests/test_api_football_checkpoint_200.py
 
       - name: Decide whether a provider poll is due
         id: due
@@ -94,6 +95,10 @@ jobs:
         if: steps.due.outputs.due == 'true'
         run: python -m tools.api_football_prospective_calibration
 
+      - name: Build governed informative checkpoint 200
+        if: steps.due.outputs.due == 'true'
+        run: python -m tools.api_football_checkpoint_200
+
       - name: Enforce transactional settlement-calibration invariants
         if: steps.due.outputs.due == 'true'
         shell: bash
@@ -113,6 +118,9 @@ jobs:
           )
           gates=json.loads(
               (root/"prospective_calibration/gates.json").read_text()
+          )
+          checkpoint200=json.loads(
+              (root/"prospective_calibration/checkpoint_200.json").read_text()
           )
           decision=json.load(open("/tmp/football_supervisor_decision.json",encoding="utf-8"))
 
@@ -151,6 +159,23 @@ jobs:
           assert gates["automatic_wagering"] is False
           assert gates["real_money"]=="BLOCKED"
 
+          assert checkpoint200["threshold"]==200
+          assert checkpoint200["role"]=="INFORMATIVE_STABILITY_CHECKPOINT_NOT_PROMOTION_GATE"
+          assert checkpoint200["parameter_tuning_allowed"] is False
+          assert checkpoint200["original_357_holdout_reuse_allowed"] is False
+          assert checkpoint200["p_matrix_status"]=="NOT_GENERATED"
+          assert checkpoint200["automatic_wagering"] is False
+          assert checkpoint200["real_money"]=="BLOCKED"
+          if n < 200:
+              assert checkpoint200["status"]=="SEALED_UNTIL_200"
+              assert checkpoint200["metrics_opened"] is False
+              assert checkpoint200["metrics"] is None
+              assert checkpoint200["remaining"]==200-n
+          else:
+              assert checkpoint200["status"]=="OPENED_AT_200"
+              assert checkpoint200["metrics_opened"] is True
+              assert checkpoint200["observations_used"]==200
+
           out=root/"prospective_supervisor"/"last_run.json"
           out.parent.mkdir(parents=True,exist_ok=True)
           payload={
@@ -175,6 +200,7 @@ jobs:
                   "50":gates["gates"]["50"]["status"],
                   "100":gates["gates"]["100"]["status"],
               },
+              "checkpoint_200":checkpoint200["status"],
               "real_money":"BLOCKED",
               "automatic_wagering":False,
               "status":"PASS",
@@ -187,6 +213,7 @@ jobs:
           print("gate_30=",gates["gates"]["30"]["status"])
           print("gate_50=",gates["gates"]["50"]["status"])
           print("gate_100=",gates["gates"]["100"]["status"])
+          print("checkpoint_200=",checkpoint200["status"])
           PY
 
       - name: Persist transactional supervisor state
@@ -214,3 +241,5 @@ jobs:
           echo "reason=${{ steps.due.outputs.reason }}"
           echo "eligible_unresolved=${{ steps.due.outputs.eligible }}"
           echo "settled=${{ steps.due.outputs.settled }}"
+
+# Governed checkpoint-200 integration 02OCT2026.
