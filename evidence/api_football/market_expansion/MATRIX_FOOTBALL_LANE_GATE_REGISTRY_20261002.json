@@ -1,0 +1,254 @@
+{
+  "schema": "MATRIX_FOOTBALL_LANE_GATE_REGISTRY_V1",
+  "as_of_utc": "2026-10-02T23:31:30+00:00",
+  "gate_policy": {
+    "thresholds": [
+      30,
+      50,
+      100,
+      200
+    ],
+    "metrics_sealed_until_threshold": true,
+    "market_specific_denominators_required": true,
+    "parameter_tuning_after_prospective_freeze": false,
+    "final_only_settlement": true,
+    "odds_used_to_generate_probability": false,
+    "automatic_wagering": false,
+    "real_money": "BLOCKED"
+  },
+  "evidence": {
+    "checkpoint200": {
+      "path": "evidence/api_football/prospective_calibration/MATRIX_FOOTBALL_CHECKPOINT_200_CERTIFICATION_20261002.json",
+      "blob_sha": "210eb2f9e3b507ab01a0723c6a90429614cd07d2"
+    },
+    "derived200": {
+      "path": "evidence/api_football/market_expansion/MATRIX_FOOTBALL_DERIVED_MARKETS_CHECKPOINT_200_20261002.json",
+      "blob_sha": "c522e85abe99dfad6046fa510b43c9869546d116"
+    },
+    "btts_v3": {
+      "path": "evidence/api_football/btts_challenger_v3/manifest.json",
+      "blob_sha": "e76b2b616bf686462ec75bfdebda212857960a93",
+      "workflow_run_id": 37076161536
+    },
+    "team_pit": {
+      "path": "evidence/api_football/market_expansion/team_pit/manifest.json",
+      "blob_sha": "c0632151ff9a37d756af293f8fc68fd6593cb1ed",
+      "workflow_run_id": 37076948074
+    },
+    "team_models_v1": {
+      "path": "evidence/api_football/market_expansion/team_models/summary.json",
+      "blob_sha": "ca896cae4c51ec7dad5db4d4a04dbda6d071c34c",
+      "workflow_run_id": 37077116185
+    },
+    "team_models_v2": {
+      "path": "evidence/api_football/market_expansion/team_models_v2/summary.json",
+      "blob_sha": "d6795d3c204a9f0edaf595dfa79ed932b931983c",
+      "workflow_run_id": 37077320417
+    },
+    "team_sot_v3": {
+      "path": "evidence/api_football/market_expansion/team_sot_v3/manifest.json",
+      "blob_sha": "8f44593e826fd81df4ce7d7b0a41dc679a858b83",
+      "workflow_run_id": 37077943514
+    },
+    "player_pit": {
+      "path": "evidence/api_football/market_expansion/player_pit/manifest.json",
+      "blob_sha": "7f7d66d4f48aaa336ba757aa401d251aede32e7a",
+      "workflow_run_id": 37077538699
+    },
+    "player_models": {
+      "path": "evidence/api_football/market_expansion/player_models/summary.json",
+      "blob_sha": "c028dfa5f587100fa16ade9efec342506bd55db4",
+      "workflow_run_id": 37077798214
+    }
+  },
+  "lanes": {
+    "1X2": {
+      "historical_status": "GOVERNED_CHALLENGER",
+      "prospective_status": "SUPPORTED_AT_N200_CONTINUE_MONITORING",
+      "observations_available": 265,
+      "gate_30": "OPENED",
+      "gate_50": "OPENED",
+      "gate_100": "OPENED",
+      "gate_200": "OPENED",
+      "execution_status": "RESEARCH_ONLY_REAL_MONEY_BLOCKED"
+    },
+    "GOAL_TOTALS_OVER_2_5": {
+      "historical_status": "GOVERNED_CHALLENGER",
+      "prospective_status": "SUPPORTED_AT_N200_CONTINUE_MONITORING",
+      "observations_available": 265,
+      "gate_30": "OPENED",
+      "gate_50": "OPENED",
+      "gate_100": "OPENED",
+      "gate_200": "OPENED",
+      "execution_status": "RESEARCH_ONLY_REAL_MONEY_BLOCKED"
+    },
+    "GOAL_TOTALS_UNDER_2_5": {
+      "historical_status": "DERIVED_COMPLEMENT_OF_FROZEN_OVER_2_5",
+      "prospective_status": "SUPPORTED_AT_N200_DERIVED",
+      "gate_basis": "SAME_200_EVENT_PREFIX_AS_OVER_2_5",
+      "execution_status": "RESEARCH_ONLY_REAL_MONEY_BLOCKED"
+    },
+    "DOUBLE_CHANCE_1X": {
+      "historical_status": "DERIVED_FROM_FROZEN_1X2",
+      "prospective_status": "SUPPORTED_AT_N200_DERIVED",
+      "gate_basis": "SAME_200_EVENT_PREFIX_AS_1X2",
+      "execution_status": "RESEARCH_ONLY_REAL_MONEY_BLOCKED"
+    },
+    "DOUBLE_CHANCE_X2": {
+      "historical_status": "DERIVED_FROM_FROZEN_1X2",
+      "prospective_status": "SUPPORTED_AT_N200_DERIVED",
+      "gate_basis": "SAME_200_EVENT_PREFIX_AS_1X2",
+      "execution_status": "RESEARCH_ONLY_REAL_MONEY_BLOCKED"
+    },
+    "DOUBLE_CHANCE_12": {
+      "historical_status": "DERIVED_FROM_FROZEN_1X2",
+      "prospective_status": "NOT_SUPERIOR_TO_POISSON_AT_N200",
+      "gates": "CLOSED_NO_PROMOTION"
+    },
+    "BTTS": {
+      "v2": "REJECTED_AT_PROSPECTIVE_N200",
+      "v3": "REJECTED_INTERNAL_TEMPORAL_OOS",
+      "prospective_status": "BLOCKED_NO_APPROVED_CHALLENGER",
+      "gates": "NOT_STARTED",
+      "next_model": "MUST_BE_MATERIALLY_NEW_BTTS_V4_IF_DEVELOPED"
+    },
+    "CORNERS_OVER_UNDER": {
+      "pit_rows": 272,
+      "train": 222,
+      "validation": 50,
+      "model_v1": "REJECTED_HISTORICAL_OOS",
+      "model_v2": "REJECTED_HISTORICAL_OOS_V2",
+      "prospective_status": "BLOCKED_MODEL_NOT_VALIDATED",
+      "gates": {
+        "30": "SEALED_NOT_STARTED",
+        "50": "SEALED_NOT_STARTED",
+        "100": "SEALED_NOT_STARTED",
+        "200": "SEALED_NOT_STARTED"
+      }
+    },
+    "TEAM_SHOTS_ON_TARGET": {
+      "pit_rows": 275,
+      "train": 225,
+      "validation": 50,
+      "model_v1": "REJECTED_HISTORICAL_OOS_CALIBRATION",
+      "model_v2": "REJECTED_HISTORICAL_OOS_CALIBRATION",
+      "model_v3": "REJECTED_HISTORICAL_OOS_V3_CALIBRATION",
+      "prospective_status": "BLOCKED_MODEL_NOT_VALIDATED",
+      "gates": {
+        "30": "SEALED_NOT_STARTED",
+        "50": "SEALED_NOT_STARTED",
+        "100": "SEALED_NOT_STARTED",
+        "200": "SEALED_NOT_STARTED"
+      }
+    },
+    "TEAM_TOTAL_SHOTS": {
+      "pit_rows": 274,
+      "train": 224,
+      "validation": 50,
+      "model_v1": "HISTORICAL_OOS_PASS",
+      "prospective_status": "BLOCKED_PENDING_CANONICAL_BOOKMAKER_SCOPE_BINDING",
+      "gates": {
+        "30": "PREPARED_BUT_NOT_STARTED",
+        "50": "PREPARED_BUT_NOT_STARTED",
+        "100": "PREPARED_BUT_NOT_STARTED",
+        "200": "PREPARED_BUT_NOT_STARTED"
+      }
+    },
+    "TEAM_FOULS": {
+      "pit_rows": 274,
+      "train": 224,
+      "validation": 50,
+      "model_v1": "REJECTED_HISTORICAL_OOS",
+      "model_v2": "REJECTED_HISTORICAL_OOS_V2",
+      "prospective_status": "BLOCKED_MODEL_NOT_VALIDATED"
+    },
+    "TEAM_GOALKEEPER_SAVES": {
+      "pit_rows": 268,
+      "train": 218,
+      "validation": 50,
+      "model_v1": "REJECTED_HISTORICAL_OOS",
+      "model_v2": "REJECTED_HISTORICAL_OOS_V2",
+      "semantic_scope": "TEAM_AGGREGATE_FOUNDATION_NOT_INDIVIDUAL_GOALKEEPER_PROP",
+      "prospective_status": "BLOCKED_MODEL_NOT_VALIDATED"
+    },
+    "TEAM_YELLOW_CARDS": {
+      "pit_rows": 271,
+      "train": 221,
+      "validation": 50,
+      "model_v1": "REJECTED_HISTORICAL_OOS_CALIBRATION",
+      "model_v2": "REJECTED_HISTORICAL_OOS_V2",
+      "semantic_scope": "YELLOW_CARDS_ONLY_NOT_FULL_CARD_MARKET",
+      "prospective_status": "BLOCKED_MODEL_NOT_VALIDATED"
+    },
+    "PLAYER_SHOTS": {
+      "pit_rows": 2130,
+      "train": 2080,
+      "validation": 50,
+      "historical_model": "HISTORICAL_OOS_PASS",
+      "prospective_status": "BLOCKED_PIT_LINEUP_AND_EXPECTED_MINUTES_NOT_CERTIFIED",
+      "live_price_status": "VERIFIED_PRESENT",
+      "gates": {
+        "30": "PREPARED_BUT_BLOCKED",
+        "50": "PREPARED_BUT_BLOCKED",
+        "100": "PREPARED_BUT_BLOCKED",
+        "200": "PREPARED_BUT_BLOCKED"
+      }
+    },
+    "PLAYER_SHOTS_ON_TARGET": {
+      "pit_rows": 938,
+      "train": 888,
+      "validation": 50,
+      "historical_model": "REJECTED_HISTORICAL_OOS",
+      "prospective_status": "BLOCKED_MODEL_AND_LINEUP_GATE",
+      "live_price_status": "VERIFIED_PRESENT"
+    },
+    "GOALKEEPER_SAVES_PLAYER": {
+      "pit_rows": 483,
+      "train": 433,
+      "validation": 50,
+      "historical_model": "REJECTED_HISTORICAL_OOS_CALIBRATION",
+      "prospective_status": "BLOCKED_MODEL_AND_LINEUP_GATE",
+      "live_price_status": "VERIFIED_PRESENT"
+    },
+    "PLAYER_ASSISTS": {
+      "pit_rows": 5255,
+      "train": 5205,
+      "validation": 50,
+      "historical_model": "REJECTED_HISTORICAL_OOS",
+      "prospective_status": "BLOCKED_MODEL_AND_LINEUP_GATE",
+      "live_price_status": "VERIFIED_PRESENT"
+    },
+    "PLAYER_PASSES": {
+      "pit_rows": 6579,
+      "train": 6529,
+      "validation": 50,
+      "historical_model": "REJECTED_HISTORICAL_OOS",
+      "prospective_status": "BLOCKED_MODEL_LINEUP_AND_LIVE_PRICE_GATE",
+      "live_price_status": "CATALOG_VERIFIED_BUT_NOT_LIVE_OBSERVED"
+    },
+    "PLAYER_TACKLES": {
+      "pit_rows": 2875,
+      "train": 2825,
+      "validation": 50,
+      "historical_model": "REJECTED_HISTORICAL_OOS",
+      "prospective_status": "BLOCKED_MODEL_LINEUP_AND_LIVE_PRICE_GATE",
+      "live_price_status": "CATALOG_VERIFIED_BUT_NOT_LIVE_OBSERVED"
+    },
+    "PLAYER_FOULS": {
+      "pit_rows": 2978,
+      "train": 2928,
+      "validation": 50,
+      "historical_model": "REJECTED_HISTORICAL_OOS_CALIBRATION",
+      "prospective_status": "BLOCKED_MODEL_AND_LINEUP_GATE",
+      "live_price_status": "VERIFIED_PRESENT"
+    }
+  },
+  "invariants": {
+    "no_market_promoted_only_because_catalog_exists": true,
+    "no_market_promoted_only_because_historical_sample_exists": true,
+    "no_rejected_market_enters_prospective_freeze": true,
+    "player_props_require_lineup_and_expected_minutes_pit_certification": true,
+    "missing_live_price_means_no_execution": true
+  },
+  "overall_status": "GATES_PREPARED_AND_EACH_LANE_TRUTHFULLY_CLASSIFIED"
+}
