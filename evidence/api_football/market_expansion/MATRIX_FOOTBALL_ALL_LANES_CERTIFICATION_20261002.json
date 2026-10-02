@@ -27,6 +27,19 @@
     "derived_markets_200": {
       "path": "evidence/api_football/market_expansion/MATRIX_FOOTBALL_DERIVED_MARKETS_CHECKPOINT_200_20261002.json",
       "blob_sha": "c522e85abe99dfad6046fa510b43c9869546d116"
+    },
+    "live_prematch_fixture_odds": {
+      "path": "evidence/api_football/market_expansion/fixture_odds_probe/manifest.json",
+      "blob_sha": "d1496734b395375a2804012cd13b5a367616061e",
+      "workflow_run_id": 37066385100,
+      "conclusion": "success"
+    },
+    "odds_gap_scan": {
+      "path": "evidence/api_football/market_expansion/odds_gap_scan/manifest.json",
+      "blob_sha": "c20556753762d6854fa2fd1d8b274000bb4fd2fc",
+      "workflow_run_id": 37066555880,
+      "conclusion": "success",
+      "network_calls": 30
     }
   },
   "predictive_validation_complete": {
@@ -166,5 +179,112 @@
   ],
   "automatic_wagering": false,
   "real_money": "BLOCKED",
-  "overall_status": "ALL_LANES_TRUTHFULLY_CLASSIFIED_AND_SOURCE_PRICE_CANONICAL_VERIFICATION_COMPLETED"
+  "overall_status": "ALL_LANES_PHYSICALLY_VERIFIED_TO_THE_MAXIMUM_SUPPORTED_STAGE_WITH_EXPLICIT_BLOCKERS",
+  "live_prematch_price_verification": {
+    "CORNERS_OVER_UNDER": {
+      "status": "VERIFIED_PRESENT",
+      "bookmakers": [
+        "1xBet",
+        "Bet365",
+        "Betano",
+        "Marathonbet",
+        "Pinnacle"
+      ],
+      "sample_fixtures": [
+        "1520905",
+        "1603384",
+        "1493728"
+      ]
+    },
+    "CARDS_OVER_UNDER": {
+      "status": "VERIFIED_PRESENT",
+      "bookmakers": [
+        "1xBet",
+        "Bet365",
+        "Betano"
+      ],
+      "sample_fixtures": [
+        "1520905"
+      ]
+    },
+    "PLAYER_SHOTS": {
+      "status": "VERIFIED_PRESENT",
+      "bookmakers": [
+        "1xBet",
+        "Bet365",
+        "Betano"
+      ],
+      "sample_fixtures": [
+        "1520905"
+      ]
+    },
+    "PLAYER_SHOTS_ON_TARGET": {
+      "status": "VERIFIED_PRESENT",
+      "bookmakers": [
+        "Bet365",
+        "Betano"
+      ],
+      "sample_fixtures": [
+        "1520905"
+      ]
+    },
+    "GOALKEEPER_SAVES": {
+      "status": "VERIFIED_PRESENT",
+      "bookmakers": [
+        "Bet365",
+        "Betano"
+      ],
+      "sample_fixtures": [
+        "1520905"
+      ]
+    },
+    "PLAYER_ASSISTS": {
+      "status": "VERIFIED_PRESENT",
+      "bookmakers": [
+        "Betano"
+      ],
+      "sample_fixtures": [
+        "1520905"
+      ]
+    },
+    "PLAYER_FOULS": {
+      "status": "VERIFIED_PRESENT",
+      "bookmakers": [
+        "Bet365"
+      ],
+      "sample_fixtures": [
+        "1528933",
+        "1528936"
+      ]
+    },
+    "TEAM_SHOTS_ON_TARGET": {
+      "status": "VERIFIED_PRESENT",
+      "bookmakers": [
+        "Bet365",
+        "Betano"
+      ],
+      "sample_fixtures": [
+        "1520905"
+      ]
+    },
+    "PLAYER_PASSES": {
+      "status": "CATALOG_VERIFIED_BUT_NOT_LIVE_OBSERVED",
+      "scanned_future_fixtures": 30,
+      "operational_gate": "NO_LIVE_PRICE_NO_EXECUTION"
+    },
+    "PLAYER_TACKLES": {
+      "status": "CATALOG_VERIFIED_BUT_NOT_LIVE_OBSERVED",
+      "scanned_future_fixtures": 30,
+      "operational_gate": "NO_LIVE_PRICE_NO_EXECUTION"
+    }
+  },
+  "operational_market_gate": {
+    "source_field_required": true,
+    "canonical_market_required": true,
+    "model_validation_required_before_matrix_signal": true,
+    "live_price_required_before_shadow_or_execution": true,
+    "missing_source_action": "BLOCK_MARKET_FOR_FIXTURE",
+    "missing_live_price_action": "NO_BET_NO_SHADOW_EXECUTION",
+    "odds_minimum_rule": "DECIMAL_ODDS_STRICTLY_GREATER_THAN_1.50"
+  }
 }
