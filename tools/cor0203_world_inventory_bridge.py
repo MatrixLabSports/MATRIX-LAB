@@ -16,8 +16,17 @@ def _load(path: Path) -> dict[str, Any]:
 
 def _match_id(value: object) -> str:
     token = str(value or "").strip()
-    match = re.search(r"(\d+)$", token)
-    return match.group(1) if match else token
+    internal = re.fullmatch(
+        r"COR0203-RAPIDAPI-TENNIS-(\d+)(?:-[0-9a-f]{12})?",
+        token,
+    )
+    if internal:
+        return internal.group(1)
+    provider = re.search(r"(?:match:|:)(\d+)$", token)
+    if provider:
+        return provider.group(1)
+    plain = re.fullmatch(r"(\d+)", token)
+    return plain.group(1) if plain else token
 
 
 def build_bridge(
