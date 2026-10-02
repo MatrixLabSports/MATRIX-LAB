@@ -70,6 +70,7 @@ jobs:
         shell: bash
         env:
           API_FOOTBALL_KEY: ${{ secrets.API_FOOTBALL_KEY }}
+          MATRIX_API_FOOTBALL_EXTENDED_FIXTURE_IDS: "1490463,1637268,1549712,1549719,1520890,1520900,1520908,1528904"
         run: |
           set -euo pipefail
           rm -rf evidence/api_football/market_expansion/coverage_probe
