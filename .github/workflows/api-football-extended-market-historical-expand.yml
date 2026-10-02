@@ -51,10 +51,10 @@ jobs:
       - name: Expand stats-rich historical development dataset
         env:
           API_FOOTBALL_KEY: ${{ secrets.API_FOOTBALL_KEY }}
-          MATRIX_EXTENDED_BOOTSTRAP_OUTPUT_DIR: evidence/api_football/market_expansion/historical_statsrich
-          MATRIX_EXTENDED_BOOTSTRAP_MAX_FIXTURES: "200"
+          MATRIX_EXTENDED_BOOTSTRAP_OUTPUT_DIR: evidence/api_football/market_expansion/historical_statsrich_2
+          MATRIX_EXTENDED_BOOTSTRAP_MAX_FIXTURES: "100"
           MATRIX_EXTENDED_BOOTSTRAP_ALLOWED_LEAGUES: "72,252"
-          MATRIX_EXTENDED_BOOTSTRAP_EXCLUDE_DATASETS: evidence/api_football/market_expansion/historical_bootstrap/normalized_dataset.jsonl
+          MATRIX_EXTENDED_BOOTSTRAP_EXCLUDE_DATASETS: evidence/api_football/market_expansion/historical_bootstrap/normalized_dataset.jsonl;evidence/api_football/market_expansion/historical_statsrich/normalized_dataset.jsonl
           MATRIX_API_FOOTBALL_DAILY_RESERVE: "5000"
         run: |
           set -euo pipefail
@@ -68,7 +68,7 @@ jobs:
           python - <<'PY'
           import json
           from pathlib import Path
-          p=json.loads(Path("evidence/api_football/market_expansion/historical_statsrich/manifest.json").read_text())
+          p=json.loads(Path("evidence/api_football/market_expansion/historical_statsrich_2/manifest.json").read_text())
           assert p["status"]=="PASS"
           assert p["protected_final_holdout_count"]==357
           assert p["protected_holdout_intersection_count"]==0
@@ -87,7 +87,7 @@ jobs:
           set -euo pipefail
           git config user.name "matrix-football-market-bootstrap"
           git config user.email "matrix-football-market-bootstrap@users.noreply.github.com"
-          git add evidence/api_football/market_expansion/historical_statsrich
+          git add evidence/api_football/market_expansion/historical_statsrich_2
           if git diff --cached --quiet; then
             echo "NO_STATSRICH_EVIDENCE_TO_PERSIST"
             exit 3
@@ -95,3 +95,5 @@ jobs:
           git commit -m "evidence(football): persist stats-rich extended market history"
           git pull --rebase origin repair/cor09-world-pipeline
           git push origin HEAD:repair/cor09-world-pipeline
+
+# Stats-rich expansion pass 2 after 200/200 coverage.
