@@ -6,7 +6,7 @@
     "sample_size": 357
   },
   "candidate_name": "btts_logistic_challenger_v2",
-  "candidate_status": "FROZEN_BTTS_V2_AWAITING_NEW_PROSPECTIVE_HOLDOUT",
+  "candidate_status": "PROSPECTIVE_CHECKPOINT_200_REJECTED_NOT_SUPERIOR_TO_POISSON",
   "created_at_utc": "2026-09-28T09:53:15+00:00",
   "development_count": 1665,
   "exclusion_registry_sha256": "31cc03ec1f293c39e2970d8ae19faba746d222c02f518b0714a3a417f7931dad",
@@ -47,5 +47,17 @@
     ]
   },
   "validation_count": 357,
-  "validation_superiority": true
+  "validation_superiority": true,
+  "prospective_adjudication": {
+    "checkpoint": 200,
+    "source_checkpoint_sha256": "96b9293c4ee5e86fe4fe932f9725e494458348c166aaaa1339e89fcd68b790e6",
+    "brier_challenger": 0.24084550502841437,
+    "brier_poisson": 0.23364243419213437,
+    "log_loss_challenger": 0.6747326292415559,
+    "log_loss_poisson": 0.6597718707994109,
+    "beats_poisson_brier": false,
+    "beats_poisson_log_loss": false,
+    "promotion_eligible": false
+  },
+  "next_action": "BUILD_BTTS_V3_INDEPENDENTLY; DO_NOT_TUNE_ON_ORIGINAL_357_OR_PROSPECTIVE_CHECKPOINT_200"
 }
