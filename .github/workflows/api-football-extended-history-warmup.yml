@@ -51,7 +51,8 @@ jobs:
       - name: Capture protected warmup history
         env:
           API_FOOTBALL_KEY: ${{ secrets.API_FOOTBALL_KEY }}
-          MATRIX_EXTENDED_WARMUP_MAX_FIXTURES: "80"
+          MATRIX_EXTENDED_WARMUP_OUTPUT_DIR: evidence/api_football/market_expansion/historical_warmup_2
+          MATRIX_EXTENDED_WARMUP_MAX_FIXTURES: "60"
           MATRIX_API_FOOTBALL_DAILY_RESERVE: "5000"
         run: |
           set -euo pipefail
@@ -64,7 +65,7 @@ jobs:
           python - <<'PY'
           import json
           from pathlib import Path
-          p=json.loads(Path("evidence/api_football/market_expansion/historical_warmup/manifest.json").read_text())
+          p=json.loads(Path("evidence/api_football/market_expansion/historical_warmup_2/manifest.json").read_text())
           assert p["status"]=="PASS"
           assert p["protected_final_holdout_count"]==357
           assert p["protected_holdout_intersection_count"]==0
@@ -84,7 +85,7 @@ jobs:
           set -euo pipefail
           git config user.name "matrix-football-history-warmup"
           git config user.email "matrix-football-history-warmup@users.noreply.github.com"
-          git add evidence/api_football/market_expansion/historical_warmup
+          git add evidence/api_football/market_expansion/historical_warmup_2
           if git diff --cached --quiet; then
             echo "NO_WARMUP_EVIDENCE_TO_PERSIST"
             exit 3
@@ -95,3 +96,5 @@ jobs:
           git clean -fd
           git pull --rebase origin repair/cor09-world-pipeline
           git push origin HEAD:repair/cor09-world-pipeline
+
+# Append-only second warmup pass after PIT remained below 250.
