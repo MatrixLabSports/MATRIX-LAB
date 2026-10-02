@@ -41,7 +41,7 @@ def test_bridge_traces_world_candidates_to_prereg_and_rejections():
             ],
         },
         prereg={
-            "event_ids": ["COR0203-RAPIDAPI-TENNIS-100"],
+            "event_ids": ["COR0203-RAPIDAPI-TENNIS-100-abcdef123456"],
             "skipped": [],
         },
     )
