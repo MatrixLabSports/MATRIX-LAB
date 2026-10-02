@@ -4,6 +4,7 @@ import argparse
 import hashlib
 import json
 import os
+import re
 from collections import Counter
 from datetime import date, datetime, time, timedelta, timezone
 from pathlib import Path
@@ -18,7 +19,9 @@ from tools.cor0203_rapidapi_tennis_discovery import (
 )
 
 BOGOTA = ZoneInfo("America/Bogota")
-TOURS = ("atp", "wta", "itf")
+PROVIDER_CHANNELS = ("atp", "wta")
+ITF_NAME = re.compile(r"^(?:M|W)(?:15|25|35|50|75|100)\b", re.IGNORECASE)
+HARD_SURFACES = {"hard", "i.hard", "indoor hard", "indoor_hard"}
 
 
 def _canonical(value: Any) -> bytes:
@@ -145,22 +148,55 @@ def _status(row: Mapping[str, Any]) -> str:
     return str(value).strip()
 
 
+def _event_format(
+    player_group: str,
+    p1_name: str,
+    p2_name: str,
+) -> tuple[str, str]:
+    group = player_group.casefold()
+    if "single" in group:
+        return "SINGLES", "PROVIDER_PLAYER_GROUP"
+    if "double" in group:
+        return "DOUBLES", "PROVIDER_PLAYER_GROUP"
+    p1_pair = "/" in p1_name
+    p2_pair = "/" in p2_name
+    if p1_pair and p2_pair:
+        return "DOUBLES", "PROVIDER_PAIR_NAME_STRUCTURE"
+    if p1_name and p2_name and not p1_pair and not p2_pair:
+        return "SINGLES", "TWO_INDIVIDUAL_PROVIDER_NAMES"
+    return "UNKNOWN", "UNPROVEN"
+
+
+def _circuit(
+    provider_channel: str,
+    tournament_name: str,
+    tier: str,
+) -> tuple[str, str]:
+    combined = (tier + " " + tournament_name).strip()
+    if "itf" in combined.casefold() or ITF_NAME.search(tournament_name.strip()):
+        return (
+            "ITF",
+            "ITF_MEN" if provider_channel == "atp" else "ITF_WOMEN",
+        )
+    if provider_channel == "atp" and "challenger" in combined.casefold():
+        return "ATP", "ATP_CHALLENGER"
+    if provider_channel == "atp":
+        return "ATP", "ATP_MAIN_OR_OTHER"
+    return "WTA", "WTA_MAIN_OR_OTHER"
+
+
 def _model_lane(
     *,
-    tour: str,
-    player_group: str,
-    tier: str,
+    circuit_detail: str,
+    event_format: str,
     surface: str,
 ) -> dict[str, Any]:
     blockers: list[str] = []
-    if tour != "atp":
-        blockers.append("TOUR_OUTSIDE_COR0203_ATP")
-    group = player_group.casefold()
-    if group not in {"singles", "single"}:
-        blockers.append("PLAYER_GROUP_NOT_PROVEN_SINGLES")
-    if "challenger" not in tier.casefold():
-        blockers.append("TOURNAMENT_NOT_PROVEN_CHALLENGER")
-    if surface.casefold() not in {"hard", "indoor hard"}:
+    if circuit_detail != "ATP_CHALLENGER":
+        blockers.append("CIRCUIT_OUTSIDE_COR0203_ATP_CHALLENGER")
+    if event_format != "SINGLES":
+        blockers.append("EVENT_FORMAT_NOT_PROVEN_SINGLES")
+    if surface.casefold() not in HARD_SURFACES:
         blockers.append("SURFACE_OUTSIDE_COR0203_HARD")
     return {
         "lane": "COR02_COR03_ATP_CHALLENGER_HARD",
@@ -174,7 +210,10 @@ def _model_lane(
     }
 
 
-def _normalize_event(tour: str, row: Mapping[str, Any]) -> dict[str, Any]:
+def _normalize_event(
+    provider_channel: str,
+    row: Mapping[str, Any],
+) -> dict[str, Any]:
     start_utc = _parse_start(row)
     start_local = start_utc.astimezone(BOGOTA)
     match_id = _positive_id(row.get("matchId") or row.get("id"))
@@ -188,8 +227,24 @@ def _normalize_event(tour: str, row: Mapping[str, Any]) -> dict[str, Any]:
     surface = _court_name(row)
     player_group = _player_group(row)
     round_name = _round(row)
+    tournament_name = str(
+        tournament.get("name")
+        or row.get("tournamentName")
+        or ""
+    ).strip()
+    event_format, format_authority = _event_format(
+        player_group,
+        p1["name"],
+        p2["name"],
+    )
+    circuit_family, circuit_detail = _circuit(
+        provider_channel,
+        tournament_name,
+        tier,
+    )
     physical_components = {
-        "tour": tour,
+        "provider_channel": provider_channel,
+        "circuit_family": circuit_family,
         "tournament_id": tournament_id,
         "round": round_name.casefold(),
         "player_ids": sorted(
@@ -199,23 +254,23 @@ def _normalize_event(tour: str, row: Mapping[str, Any]) -> dict[str, Any]:
     }
     return {
         "source_provider": PROVIDER_KEY,
-        "tour": tour.upper(),
+        "provider_channel": provider_channel.upper(),
+        "circuit_family": circuit_family,
+        "circuit_detail": circuit_detail,
         "match_id": match_id,
         "source_event_id": (
-            f"rapidapi-tennis:{tour}:match:{match_id}"
+            f"rapidapi-tennis:{provider_channel}:match:{match_id}"
             if match_id
             else None
         ),
         "tournament_id": tournament_id,
-        "tournament_name": str(
-            tournament.get("name")
-            or row.get("tournamentName")
-            or ""
-        ).strip(),
+        "tournament_name": tournament_name,
         "tier": tier,
         "surface": surface,
         "round": round_name,
         "player_group": player_group,
+        "event_format": event_format,
+        "event_format_authority": format_authority,
         "player1": p1,
         "player2": p2,
         "event_start_utc": start_utc.isoformat(),
@@ -224,9 +279,8 @@ def _normalize_event(tour: str, row: Mapping[str, Any]) -> dict[str, Any]:
         "physical_event_key": _sha(physical_components),
         "source_snapshot_sha256": _sha(row),
         "model_derivation": _model_lane(
-            tour=tour,
-            player_group=player_group,
-            tier=tier,
+            circuit_detail=circuit_detail,
+            event_format=event_format,
             surface=surface,
         ),
     }
@@ -252,14 +306,14 @@ def build_world_inventory(
 
     events: list[dict[str, Any]] = []
     unplaced: list[dict[str, Any]] = []
-    tour_summaries: dict[str, Any] = {}
-    tour_errors: dict[str, str] = {}
+    channel_summaries: dict[str, Any] = {}
+    channel_errors: dict[str, str] = {}
 
-    for tour in TOURS:
+    for channel in PROVIDER_CHANNELS:
         before = client.request_count
         try:
             payload = client.fixtures_for_tour(
-                tour,
+                channel,
                 query_start,
                 query_stop,
                 filter_value=None,
@@ -267,10 +321,10 @@ def build_world_inventory(
             )
             provider_rows = _rows(payload)
         except (RapidApiTennisDiscoveryError, ValueError) as error:
-            tour_errors[tour.upper()] = (
+            channel_errors[channel.upper()] = (
                 type(error).__name__ + ":" + str(error)[:400]
             )
-            tour_summaries[tour.upper()] = {
+            channel_summaries[channel.upper()] = {
                 "status": "BLOCKED",
                 "provider_rows_in_query_window": 0,
                 "events_in_bogota_day": 0,
@@ -282,14 +336,14 @@ def build_world_inventory(
         malformed = 0
         for row in provider_rows:
             try:
-                normalized = _normalize_event(tour, row)
+                normalized = _normalize_event(channel, row)
                 event_local = datetime.fromisoformat(
                     normalized["event_start_bogota"]
                 )
             except (TypeError, ValueError) as error:
                 malformed += 1
                 unplaced.append({
-                    "tour": tour.upper(),
+                    "provider_channel": channel.upper(),
                     "source_snapshot_sha256": _sha(row),
                     "reason": type(error).__name__ + ":" + str(error),
                 })
@@ -299,7 +353,7 @@ def build_world_inventory(
             events.append(normalized)
             selected += 1
 
-        tour_summaries[tour.upper()] = {
+        channel_summaries[channel.upper()] = {
             "status": "PASS",
             "provider_rows_in_query_window": len(provider_rows),
             "events_in_bogota_day": selected,
@@ -310,7 +364,7 @@ def build_world_inventory(
     events.sort(
         key=lambda row: (
             row["event_start_utc"],
-            row["tour"],
+            row["provider_channel"],
             row.get("match_id") or "",
             row["physical_event_key"],
         )
@@ -320,10 +374,13 @@ def build_world_inventory(
     duplicate_source_rows: list[dict[str, Any]] = []
     unique_events: list[dict[str, Any]] = []
     for row in events:
-        source_key = (row["tour"], str(row.get("match_id") or ""))
+        source_key = (
+            row["provider_channel"],
+            str(row.get("match_id") or ""),
+        )
         if source_key[1] and source_key in seen_source:
             duplicate_source_rows.append({
-                "tour": row["tour"],
+                "provider_channel": row["provider_channel"],
                 "match_id": row.get("match_id"),
                 "physical_event_key": row["physical_event_key"],
             })
@@ -332,21 +389,31 @@ def build_world_inventory(
             seen_source.add(source_key)
         unique_events.append(row)
 
-    by_tour = Counter(row["tour"] for row in unique_events)
+    by_family = Counter(row["circuit_family"] for row in unique_events)
+    by_detail = Counter(row["circuit_detail"] for row in unique_events)
+    by_format = Counter(row["event_format"] for row in unique_events)
     domain_candidates = [
         row["source_event_id"]
         for row in unique_events
         if row["model_derivation"]["domain_candidate"]
     ]
-    complete = not tour_errors and all(
-        tour_summaries.get(tour.upper(), {}).get("status") == "PASS"
-        for tour in TOURS
+    complete = not channel_errors and all(
+        channel_summaries.get(channel.upper(), {}).get("status") == "PASS"
+        for channel in PROVIDER_CHANNELS
     )
     return {
-        "schema": "MATRIX_TENNIS_WORLD_INVENTORY_V1",
+        "schema": "MATRIX_TENNIS_WORLD_INVENTORY_V2",
         "status": "PASS" if complete else "PARTIAL",
         "world_inventory_complete": complete,
         "provider": PROVIDER_KEY,
+        "provider_architecture": {
+            "channels_queried": ["ATP", "WTA"],
+            "itf_transport": (
+                "Provider exposes men's ITF M-series through ATP fixtures "
+                "and women's ITF W-series through WTA fixtures."
+            ),
+            "independent_itf_endpoint_required": False,
+        },
         "operational_timezone": "America/Bogota",
         "calendar_day_rule": "00:00:00-23:59:59_LOCAL_FULL_DAY",
         "target_date_bogota": target_date_bogota.isoformat(),
@@ -356,15 +423,17 @@ def build_world_inventory(
         "calendar_day_end_utc": local_end.astimezone(timezone.utc).isoformat(),
         "provider_query_date_start": query_start.isoformat(),
         "provider_query_date_stop": query_stop.isoformat(),
-        "tours_required": ["ATP", "WTA", "ITF"],
-        "tour_summaries": tour_summaries,
-        "tour_errors": tour_errors,
+        "coverage_families_required": ["ATP", "WTA", "ITF"],
+        "provider_channel_summaries": channel_summaries,
+        "provider_channel_errors": channel_errors,
         "world_calendar_inventory_count": len(unique_events),
-        "events_by_tour": {
-            "ATP": by_tour.get("ATP", 0),
-            "WTA": by_tour.get("WTA", 0),
-            "ITF": by_tour.get("ITF", 0),
+        "events_by_family": {
+            "ATP": by_family.get("ATP", 0),
+            "WTA": by_family.get("WTA", 0),
+            "ITF": by_family.get("ITF", 0),
         },
+        "events_by_detail": dict(sorted(by_detail.items())),
+        "events_by_format": dict(sorted(by_format.items())),
         "duplicate_source_rows_quarantined": len(duplicate_source_rows),
         "duplicate_source_rows": duplicate_source_rows,
         "unplaced_rows": unplaced,
@@ -376,12 +445,12 @@ def build_world_inventory(
                 "governed_pipeline_remains_authoritative": True,
             },
             "WTA": {
-                "inventory_count": by_tour.get("WTA", 0),
+                "inventory_count": by_family.get("WTA", 0),
                 "current_governed_model": None,
                 "feeds_COR02_COR03": False,
             },
             "ITF": {
-                "inventory_count": by_tour.get("ITF", 0),
+                "inventory_count": by_family.get("ITF", 0),
                 "current_governed_model": None,
                 "feeds_COR02_COR03": False,
             },
@@ -411,12 +480,12 @@ def main() -> None:
     target = _target_date(args.target_date_bogota)
     if not key:
         report = {
-            "schema": "MATRIX_TENNIS_WORLD_INVENTORY_V1",
+            "schema": "MATRIX_TENNIS_WORLD_INVENTORY_V2",
             "status": "SOURCE_NOT_CONFIGURED",
             "world_inventory_complete": False,
             "provider": PROVIDER_KEY,
             "target_date_bogota": target.isoformat(),
-            "tours_required": ["ATP", "WTA", "ITF"],
+            "coverage_families_required": ["ATP", "WTA", "ITF"],
             "world_calendar_inventory_count": 0,
             "p_matrix": "NOT_GENERATED",
             "metrics_opened": False,
@@ -444,8 +513,9 @@ def main() -> None:
         "world_calendar_inventory_count": report.get(
             "world_calendar_inventory_count", 0
         ),
-        "events_by_tour": report.get("events_by_tour"),
-        "tour_errors": report.get("tour_errors"),
+        "events_by_family": report.get("events_by_family"),
+        "events_by_detail": report.get("events_by_detail"),
+        "provider_channel_errors": report.get("provider_channel_errors"),
         "provider_network_calls": report.get("provider_network_calls", 0),
         "real_money": report.get("real_money"),
     }, sort_keys=True))
