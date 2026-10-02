@@ -1,0 +1,77 @@
+name: API-Football extended player PIT dataset
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - .github/workflows/api-football-extended-player-pit.yml
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: api-football-extended-player-pit
+  cancel-in-progress: false
+
+jobs:
+  pit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout operational branch
+        uses: actions/checkout@v4
+        with:
+          ref: repair/cor09-world-pipeline
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Build strict player PIT datasets
+        run: python -m tools.api_football_extended_player_pit_dataset
+
+      - name: Enforce player PIT anti-leakage
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          p=json.loads(Path("evidence/api_football/market_expansion/player_pit/manifest.json").read_text())
+          assert p["status"]=="PASS"
+          assert p["feature_policy"]=="STRICTLY_PRIOR_PLAYER_APPEARANCES_ONLY"
+          assert p["same_match_target_used_in_features"] is False
+          assert p["current_match_minutes_used_as_feature"] is False
+          assert p["sample_scope"]=="CONDITIONAL_ON_APPEARANCE_RESEARCH_ONLY"
+          assert p["prospective_freeze_allowed"] is False
+          assert p["prospective_blocker"]=="PIT_LINEUP_AND_EXPECTED_MINUTES_SOURCE_NOT_YET_CERTIFIED"
+          assert p["missing_is_zero"] is False
+          assert p["silent_imputation"] is False
+          assert p["protected_final_holdout_used"] is False
+          assert p["prospective_calibration_used"] is False
+          assert p["odds_used_to_generate_probability"] is False
+          assert p["real_money"]=="BLOCKED"
+          print("MATRIX_EXTENDED_PLAYER_PIT_GATE: PASS")
+          PY
+
+      - name: Persist player PIT evidence
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "matrix-football-player-pit"
+          git config user.email "matrix-football-player-pit@users.noreply.github.com"
+          git add evidence/api_football/market_expansion/player_pit
+          if git diff --cached --quiet; then
+            echo "NO_PLAYER_PIT_EVIDENCE_TO_PERSIST"
+            exit 3
+          fi
+          git commit -m "evidence(football): persist strict player PIT datasets"
+          git status --porcelain
+          git reset --hard HEAD
+          git clean -fd
+          git pull --rebase origin repair/cor09-world-pipeline
+          git push origin HEAD:repair/cor09-world-pipeline
