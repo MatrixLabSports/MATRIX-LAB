@@ -59,6 +59,7 @@ WORLD_INVENTORY_DAILY="evidence/tennis/world_inventory/${WORLD_DATE}/MATRIX_TENN
 WORLD_BRIDGE_LAST="evidence/cor0203/runtime/MATRIX_COR0203_WORLD_INVENTORY_BRIDGE_LAST.json"
 WORLD_DERIVED_DISCOVERY_LAST="evidence/cor0203/runtime/MATRIX_COR0203_WORLD_DERIVED_DISCOVERY_LAST.json"
 WORLD_PREREG_LAST="evidence/cor0203/runtime/MATRIX_COR0203_WORLD_PREREG_LAST.json"
+WORLD_FUNNEL_LAST="evidence/cor0203/runtime/MATRIX_COR0203_WORLD_FUNNEL_LAST.json"
 
 test -s "$STATE"
 test -s "$BUNDLE"
@@ -161,6 +162,15 @@ python -m tools.cor0203_physical_uniqueness_audit \
   --holdout-dir evidence/cor0203/holdout \
   --integrity "$INTEGRITY_LAST" \
   --out "$UNIQUENESS_LAST"
+
+if [[ -f "$WORLD_INVENTORY_LAST" && -f "$WORLD_DERIVED_DISCOVERY_LAST" ]]; then
+  python -m tools.cor0203_world_funnel_audit \
+    --world-inventory "$WORLD_INVENTORY_LAST" \
+    --world-discovery "$WORLD_DERIVED_DISCOVERY_LAST" \
+    --uniqueness "$UNIQUENESS_LAST" \
+    --runtime-dir evidence/cor0203/runtime \
+    --out "$WORLD_FUNNEL_LAST"
+fi
 
 python -m tools.cor0203_settlement_queue \
   --runtime-dir evidence/cor0203/runtime \
@@ -269,6 +279,12 @@ world_prereg = (
     if world_prereg_path.exists()
     else None
 )
+world_funnel_path = runtime / "MATRIX_COR0203_WORLD_FUNNEL_LAST.json"
+world_funnel = (
+    json.loads(world_funnel_path.read_text())
+    if world_funnel_path.exists()
+    else None
+)
 
 assert source_readiness["provider"] == __import__("os").environ["MATRIX_TENNIS_PROVIDER"]
 assert durable_discovery["real_money"] == "BLOCKED"
@@ -334,6 +350,16 @@ if world_derived is not None:
     assert world_derived["real_money"] == "BLOCKED"
 if world_prereg is not None:
     assert world_prereg["status"] in {"NO_NEW_EVENTS", "PREREGISTERED"}
+if world_funnel is not None:
+    assert world_funnel["world_inventory_status"] == "PASS"
+    assert world_funnel["world_inventory_complete"] is True
+    assert sum(world_funnel["status_counts"].values()) == world_funnel["world_domain_candidates"]
+    assert world_funnel["unique_holdout_count"] == uniqueness["unique_calibration_observations"]
+    assert world_funnel["metrics"] == "SEALED_UNTIL_600"
+    assert world_funnel["metrics_opened"] is False
+    assert world_funnel["outcomes_read"] == 0
+    assert world_funnel["automatic_model_feed"] is False
+    assert world_funnel["real_money"] == "BLOCKED"
 if world_bridge is not None:
     assert world_bridge["automatic_model_feed"] is False
     assert world_bridge["governed_preregistration_authoritative"] is True
@@ -399,6 +425,7 @@ git add evidence/tennis/world_inventory/*/MATRIX_TENNIS_WORLD_INVENTORY.json 2>/
 git add "$WORLD_DERIVED_DISCOVERY_LAST" 2>/dev/null || true
 git add "$WORLD_PREREG_LAST" 2>/dev/null || true
 git add "$WORLD_BRIDGE_LAST" 2>/dev/null || true
+git add "$WORLD_FUNNEL_LAST" 2>/dev/null || true
 git add evidence/cor0203/runtime/MATRIX_COR0203_HISTORY_GATE_R*.json 2>/dev/null || true
 git add evidence/cor0203/holdout/MATRIX_COR0203_HOLDOUT_BATCH_R*.json 2>/dev/null || true
 
@@ -433,6 +460,9 @@ if [[ -f "$WORLD_PREREG_LAST" ]]; then
 fi
 if [[ -f "$WORLD_BRIDGE_LAST" ]]; then
   git add "$WORLD_BRIDGE_LAST"
+fi
+if [[ -f "$WORLD_FUNNEL_LAST" ]]; then
+  git add "$WORLD_FUNNEL_LAST"
 fi
 git add "$SETTLEMENT_QUEUE_LAST"
 git add "$HISTORICAL_IDENTITY_LAST"
