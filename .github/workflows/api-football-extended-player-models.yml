@@ -1,0 +1,84 @@
+name: API-Football extended player models
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - .github/workflows/api-football-extended-player-models.yml
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: api-football-extended-player-models
+  cancel-in-progress: false
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - name: Checkout operational branch
+        uses: actions/checkout@v4
+        with:
+          ref: repair/cor09-world-pipeline
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install test dependency
+        run: python -m pip install pytest
+
+      - name: Verify player model protections
+        run: python -m pytest -q tests/test_api_football_extended_player_models.py
+
+      - name: Build appearance-conditioned player models
+        run: python -m tools.api_football_extended_player_models
+
+      - name: Enforce player-model governance
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          p=json.loads(Path("evidence/api_football/market_expansion/player_models/summary.json").read_text())
+          assert p["policy"]["minimum_train"]==200
+          assert p["policy"]["minimum_validation"]==50
+          assert p["policy"]["conditional_on_appearance_only"] is True
+          assert p["policy"]["current_match_minutes_feature"] is False
+          assert p["policy"]["validation_tuning"] is False
+          assert p["policy"]["odds_to_probability"] is False
+          assert p["prospective_freeze_allowed"] is False
+          assert p["global_prospective_blocker"]=="PIT_LINEUP_AND_EXPECTED_MINUTES_SOURCE_NOT_YET_CERTIFIED"
+          assert p["automatic_wagering"] is False
+          assert p["real_money"]=="BLOCKED"
+          for lane,row in p["lanes"].items():
+              assert row["train_count"]>=200
+              assert row["validation_count"]==50
+              assert row["prospective_freeze_allowed"] is False
+          print("MATRIX_EXTENDED_PLAYER_MODELS_GATE: PASS")
+          PY
+
+      - name: Persist player-model evidence
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "matrix-football-player-models"
+          git config user.email "matrix-football-player-models@users.noreply.github.com"
+          git add evidence/api_football/market_expansion/player_models
+          if git diff --cached --quiet; then
+            echo "NO_PLAYER_MODEL_EVIDENCE_TO_PERSIST"
+            exit 3
+          fi
+          git commit -m "evidence(football): persist player prop historical OOS models"
+          git status --porcelain
+          git reset --hard HEAD
+          git clean -fd
+          git pull --rebase origin repair/cor09-world-pipeline
+          git push origin HEAD:repair/cor09-world-pipeline
