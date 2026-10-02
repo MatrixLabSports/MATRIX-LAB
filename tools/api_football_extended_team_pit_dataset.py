@@ -24,6 +24,7 @@ METRICS={
 
 DATASET_PATHS=(
     Path("evidence/api_football/market_expansion/historical_bootstrap/normalized_dataset.jsonl"),
+    Path("evidence/api_football/market_expansion/historical_prior_season/normalized_dataset.jsonl"),
     Path("evidence/api_football/market_expansion/historical_warmup/normalized_dataset.jsonl"),
     Path("evidence/api_football/market_expansion/historical_statsrich/normalized_dataset.jsonl"),
     Path("evidence/api_football/market_expansion/historical_statsrich_3/normalized_dataset.jsonl"),
@@ -132,8 +133,18 @@ def build(out_dir:Path,raw_dir:Path=Path("evidence/api_football/history/raw"))->
         fid=str(row["fixture_id"])
         ident=identities.get(fid)
         if ident is None:
-            identity_missing+=1
-            continue
+            home_id=str(row.get("home_team_id") or "")
+            away_id=str(row.get("away_team_id") or "")
+            if home_id and away_id:
+                ident={
+                    "home_team_id":home_id,
+                    "away_team_id":away_id,
+                    "home_team_name":str(row.get("home_team_name") or ""),
+                    "away_team_name":str(row.get("away_team_name") or ""),
+                }
+            else:
+                identity_missing+=1
+                continue
         home=ident["home_team_id"]; away=ident["away_team_id"]
         team_stats=row.get("team_statistics") or {}
         if home not in team_stats or away not in team_stats:
