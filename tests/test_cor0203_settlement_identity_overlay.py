@@ -1,7 +1,7 @@
 import json
 from pathlib import Path
 
-from tools.cor0203_settlement_ledger import build_settlement_queue
+from tools.cor0203_settlement_ledger import build_settlement_queue, _provider_identity
 
 
 def test_identity_overlay_unlocks_result_lookup_without_mutating_manifest():
@@ -56,3 +56,18 @@ def test_no_overlay_preserves_historical_blocker():
     assert row["blocker"] == "PROVIDER_MATCH_KEY_MISSING"
     assert row["provider_match_key"] is None
     assert row["identity_overlay_applied"] is False
+
+
+def test_channel_qualified_atp_source_id_resolves_same_provider_match_key():
+    assert _provider_identity("rapidapi-tennis:match:9001") == (
+        "rapidapi_tennis",
+        "9001",
+    )
+    assert _provider_identity("rapidapi-tennis:atp:match:9001") == (
+        "rapidapi_tennis",
+        "9001",
+    )
+    assert _provider_identity("rapidapi-tennis:wta:match:9001") == (
+        None,
+        None,
+    )
