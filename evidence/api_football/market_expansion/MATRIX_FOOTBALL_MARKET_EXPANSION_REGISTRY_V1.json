@@ -43,9 +43,12 @@
       "api_football_source_contracts": [
         "/fixtures/statistics"
       ],
-      "physical_source_coverage_certified": false,
+      "physical_source_coverage_certified": true,
       "predictive_model_built": false,
-      "prospective_calibration_started": false
+      "prospective_calibration_started": false,
+      "price_catalog_verified": true,
+      "per_fixture_source_availability_gate_required": true,
+      "verification_status": "SOURCE_PRICE_CANONICAL_VERIFIED_MODEL_PENDING"
     },
     "CARDS_OVER_UNDER": {
       "canonical_market": "MATRIX-MARKET-R2/football/CARDS/total-cards",
@@ -53,9 +56,12 @@
       "api_football_source_contracts": [
         "/fixtures/statistics"
       ],
-      "physical_source_coverage_certified": false,
+      "physical_source_coverage_certified": true,
       "predictive_model_built": false,
-      "prospective_calibration_started": false
+      "prospective_calibration_started": false,
+      "price_catalog_verified": true,
+      "per_fixture_source_availability_gate_required": true,
+      "verification_status": "SOURCE_PRICE_CANONICAL_VERIFIED_MODEL_PENDING"
     },
     "PLAYER_SHOTS": {
       "canonical_market": "MATRIX-MARKET-R2/football/PLAYER_SHOTS_OR_SHOTS_ON_TARGET/player-threshold",
@@ -63,9 +69,12 @@
       "api_football_source_contracts": [
         "/fixtures/players"
       ],
-      "physical_source_coverage_certified": false,
+      "physical_source_coverage_certified": true,
       "predictive_model_built": false,
-      "prospective_calibration_started": false
+      "prospective_calibration_started": false,
+      "price_catalog_verified": true,
+      "per_fixture_source_availability_gate_required": true,
+      "verification_status": "SOURCE_PRICE_CANONICAL_VERIFIED_MODEL_PENDING"
     },
     "PLAYER_SHOTS_ON_TARGET": {
       "canonical_market": "MATRIX-MARKET-R2/football/PLAYER_SHOTS_OR_SHOTS_ON_TARGET/player-threshold",
@@ -73,9 +82,12 @@
       "api_football_source_contracts": [
         "/fixtures/players"
       ],
-      "physical_source_coverage_certified": false,
+      "physical_source_coverage_certified": true,
       "predictive_model_built": false,
-      "prospective_calibration_started": false
+      "prospective_calibration_started": false,
+      "price_catalog_verified": true,
+      "per_fixture_source_availability_gate_required": true,
+      "verification_status": "SOURCE_PRICE_CANONICAL_VERIFIED_MODEL_PENDING"
     },
     "PLAYER_ASSISTS": {
       "canonical_market": "MATRIX-MARKET-R2/football/PLAYER_ASSISTS_OR_PASSES/player-threshold",
@@ -83,9 +95,12 @@
       "api_football_source_contracts": [
         "/fixtures/players"
       ],
-      "physical_source_coverage_certified": false,
+      "physical_source_coverage_certified": true,
       "predictive_model_built": false,
-      "prospective_calibration_started": false
+      "prospective_calibration_started": false,
+      "price_catalog_verified": true,
+      "per_fixture_source_availability_gate_required": true,
+      "verification_status": "SOURCE_PRICE_CANONICAL_VERIFIED_MODEL_PENDING"
     },
     "PLAYER_PASSES": {
       "canonical_market": "MATRIX-MARKET-R2/football/PLAYER_ASSISTS_OR_PASSES/player-threshold",
@@ -93,9 +108,12 @@
       "api_football_source_contracts": [
         "/fixtures/players"
       ],
-      "physical_source_coverage_certified": false,
+      "physical_source_coverage_certified": true,
       "predictive_model_built": false,
-      "prospective_calibration_started": false
+      "prospective_calibration_started": false,
+      "price_catalog_verified": true,
+      "per_fixture_source_availability_gate_required": true,
+      "verification_status": "SOURCE_PRICE_CANONICAL_VERIFIED_MODEL_PENDING"
     }
   },
   "definition_required_before_modeling": {
@@ -104,52 +122,75 @@
       "api_football_source_contracts": [
         "/fixtures/players"
       ],
-      "canonical_r2_definition": false,
-      "odds_mapping": false,
-      "required_action": "CREATE_SEPARATE_CANONICAL_MARKET_AND_PROVIDER_MAPPING"
+      "canonical_market": "MATRIX-MARKET-R2/football/GOALKEEPER_SAVES/player-threshold",
+      "canonical_r2_definition": true,
+      "price_catalog_verified": true,
+      "verification_status": "SOURCE_PRICE_CANONICAL_VERIFIED_MODEL_PENDING"
     },
     "PLAYER_TACKLES": {
       "intended": true,
       "api_football_source_contracts": [
         "/fixtures/players"
       ],
-      "canonical_r2_definition": false,
-      "odds_mapping": false,
-      "required_action": "CREATE_SEPARATE_CANONICAL_MARKET_AND_PROVIDER_MAPPING"
+      "canonical_market": "MATRIX-MARKET-R2/football/PLAYER_TACKLES/player-threshold",
+      "canonical_r2_definition": true,
+      "price_catalog_verified": true,
+      "verification_status": "SOURCE_PRICE_CANONICAL_VERIFIED_MODEL_PENDING"
     },
     "PLAYER_FOULS": {
       "intended": true,
       "api_football_source_contracts": [
         "/fixtures/players"
       ],
-      "canonical_r2_definition": false,
-      "odds_mapping": false,
-      "required_action": "CREATE_SEPARATE_CANONICAL_MARKET_AND_PROVIDER_MAPPING"
+      "canonical_market": "MATRIX-MARKET-R2/football/PLAYER_FOULS/player-threshold",
+      "canonical_r2_definition": true,
+      "price_catalog_verified": true,
+      "verification_status": "SOURCE_PRICE_CANONICAL_VERIFIED_MODEL_PENDING"
     },
     "TEAM_SHOTS_ON_TARGET": {
       "intended": true,
       "api_football_source_contracts": [
         "/fixtures/statistics"
       ],
-      "canonical_r2_definition": false,
-      "odds_mapping": false,
-      "required_action": "CREATE_TEAM_SCOPE_CANONICAL_MARKET_AND_PROVIDER_MAPPING"
+      "canonical_market": "MATRIX-MARKET-R2/football/TEAM_SHOTS_ON_TARGET/team-threshold",
+      "canonical_r2_definition": true,
+      "price_catalog_verified": true,
+      "verification_status": "SOURCE_PRICE_CANONICAL_VERIFIED_MODEL_PENDING"
     }
   },
   "execution_order_by_readiness": [
-    "PHYSICAL_SOURCE_COVERAGE_PROBE",
-    "CORNERS_OVER_UNDER",
-    "PLAYER_SHOTS_ON_TARGET",
-    "CARDS_OVER_UNDER",
-    "PLAYER_SHOTS",
-    "PLAYER_ASSISTS",
-    "PLAYER_PASSES",
-    "CANONICALIZE_GOALKEEPER_SAVES",
-    "CANONICALIZE_PLAYER_TACKLES",
-    "CANONICALIZE_PLAYER_FOULS",
-    "CANONICALIZE_TEAM_SHOTS_ON_TARGET",
     "HISTORICAL_PIT_DATASETS_PER_MARKET",
-    "BASELINES_AND_CHALLENGERS_PER_MARKET",
-    "PROSPECTIVE_FREEZE_AND_CALIBRATION_PER_MARKET"
-  ]
+    "EMPIRICAL_BASELINES_PER_MARKET",
+    "CHALLENGERS_PER_MARKET",
+    "OOS_VALIDATION_PER_MARKET",
+    "PROSPECTIVE_FREEZE_PER_MARKET",
+    "FINAL_ONLY_SETTLEMENT_PER_MARKET",
+    "CALIBRATION_GATES_PER_MARKET"
+  ],
+  "verification_evidence": {
+    "source_coverage_manifest": {
+      "path": "evidence/api_football/market_expansion/coverage_probe/manifest.json",
+      "blob_sha": "e874b192b988536a8c44795b0b1fe0df523fec3c",
+      "status": "PASS",
+      "sample_size": 8,
+      "covered_stats_rich_fixtures": 7
+    },
+    "bet_catalog_manifest": {
+      "path": "evidence/api_football/market_expansion/bet_catalog/manifest.json",
+      "blob_sha": "d92059ff9b84500948f627a79d4123be6afe23ca",
+      "status": "PASS",
+      "provider_rows": 338
+    },
+    "canonical_registry_ci": {
+      "workflow_run_id": 37066013722,
+      "conclusion": "success"
+    }
+  },
+  "coverage_gap": {
+    "fixture_id": "1637268",
+    "event": "Platense vs Estudiantes L.P.",
+    "competition": "Copa Argentina",
+    "result": "NO_EXTENDED_STAT_FIELDS_RETURNED",
+    "policy": "BLOCK_EXTENDED_MARKETS_FOR_FIXTURE_WHEN_SOURCE_FIELDS_ABSENT"
+  }
 }
