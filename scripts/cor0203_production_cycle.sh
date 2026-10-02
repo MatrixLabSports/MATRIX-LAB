@@ -279,7 +279,8 @@ if world_inventory is not None:
     assert world_inventory["status"] in {"PASS", "PARTIAL"}
     assert world_inventory["operational_timezone"] == "America/Bogota"
     assert world_inventory["calendar_day_rule"] == "00:00:00-23:59:59_LOCAL_FULL_DAY"
-    assert world_inventory["tours_required"] == ["ATP", "WTA", "ITF"]
+    assert world_inventory["coverage_families_required"] == ["ATP", "WTA", "ITF"]
+    assert world_inventory["provider_architecture"]["independent_itf_endpoint_required"] is False
     assert world_inventory["p_matrix"] == "NOT_GENERATED"
     assert world_inventory["metrics_opened"] is False
     assert world_inventory["automatic_wagering"] is False
