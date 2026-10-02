@@ -1,0 +1,77 @@
+name: API-Football extended league coverage scout
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - .github/workflows/api-football-extended-league-coverage-scout.yml
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  scout:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout operational branch
+        uses: actions/checkout@v4
+        with:
+          ref: repair/cor09-world-pipeline
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Require API-Football credential
+        shell: bash
+        env:
+          API_FOOTBALL_KEY: ${{ secrets.API_FOOTBALL_KEY }}
+        run: |
+          set -euo pipefail
+          if [[ -z "${API_FOOTBALL_KEY:-}" ]]; then
+            echo "API_FOOTBALL_KEY_NOT_CONFIGURED"
+            exit 2
+          fi
+
+      - name: Scout additional stats-rich leagues
+        env:
+          API_FOOTBALL_KEY: ${{ secrets.API_FOOTBALL_KEY }}
+          MATRIX_EXTENDED_SCOUT_PER_LEAGUE: "3"
+        run: |
+          set -euo pipefail
+          python -m tools.api_football_extended_league_coverage_scout
+
+      - name: Enforce research-only scout governance
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          p=json.loads(Path("evidence/api_football/market_expansion/league_coverage_scout/manifest.json").read_text())
+          assert p["status"]=="PASS"
+          assert p["metrics_opened"] is False
+          assert p["odds_used_to_generate_probability"] is False
+          assert p["automatic_wagering"] is False
+          assert p["real_money"]=="BLOCKED"
+          print("MATRIX_EXTENDED_LEAGUE_SCOUT_GATE: PASS")
+          PY
+
+      - name: Persist scout evidence
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "matrix-football-market-scout"
+          git config user.email "matrix-football-market-scout@users.noreply.github.com"
+          git add evidence/api_football/market_expansion/league_coverage_scout
+          git commit -m "evidence(football): persist extended league coverage scout" || exit 0
+          git status --porcelain
+          git reset --hard HEAD
+          git clean -fd
+          git pull --rebase origin repair/cor09-world-pipeline
+          git push origin HEAD:repair/cor09-world-pipeline
