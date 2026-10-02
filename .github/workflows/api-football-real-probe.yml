@@ -30,8 +30,8 @@ jobs:
         with:
           python-version: "3.11"
 
-      - name: Install minimal probe dependency
-        run: python -m pip install requests
+      - name: Install probe dependencies
+        run: python -m pip install requests python-dotenv pytest
 
       - name: Require configured API-Football secret
         shell: bash
