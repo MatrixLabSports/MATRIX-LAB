@@ -55,12 +55,33 @@ def build_world_funnel(
         for row in world_inventory.get("events", []) or []
         if isinstance(row, Mapping) and row.get("source_event_id")
     }
-    eligible = {
-        _match_id(row.get("canonical_source_event_id") or row.get("event_id")): row
+    eligible_by_source = {
+        str(
+            row.get("canonical_source_event_id")
+            or row.get("event_id")
+            or ""
+        ): row
+        for row in world_discovery.get("eligible_candidates", []) or []
+        if isinstance(row, Mapping)
+        and (
+            row.get("canonical_source_event_id")
+            or row.get("event_id")
+        )
+    }
+    eligible_by_match = {
+        _match_id(
+            row.get("canonical_source_event_id")
+            or row.get("event_id")
+        ): row
         for row in world_discovery.get("eligible_candidates", []) or []
         if isinstance(row, Mapping)
     }
-    rejected = {
+    rejected_by_source = {
+        str(row.get("world_source_event_id") or ""): row
+        for row in world_discovery.get("provider_rejected", []) or []
+        if isinstance(row, Mapping) and row.get("world_source_event_id")
+    }
+    rejected_by_match = {
         _match_id(row.get("match_id")): row
         for row in world_discovery.get("provider_rejected", []) or []
         if isinstance(row, Mapping)
@@ -129,8 +150,14 @@ def build_world_funnel(
     for source_id in world_source_ids:
         mid = _match_id(source_id)
         world_row = world_events.get(source_id, {})
-        discovery_row = eligible.get(mid)
-        rejection = rejected.get(mid)
+        discovery_row = (
+            eligible_by_source.get(source_id)
+            or eligible_by_match.get(mid)
+        )
+        rejection = (
+            rejected_by_source.get(source_id)
+            or rejected_by_match.get(mid)
+        )
         blockers: set[str] = set()
         internal_event_ids: list[str] = []
         physical_key = None
@@ -179,6 +206,7 @@ def build_world_funnel(
         rows.append({
             "world_source_event_id": source_id,
             "match_id": mid,
+            "provider_channel": world_row.get("provider_channel"),
             "competition": world_row.get("tournament_name"),
             "round": world_row.get("round"),
             "event_start_bogota": world_row.get("event_start_bogota"),
