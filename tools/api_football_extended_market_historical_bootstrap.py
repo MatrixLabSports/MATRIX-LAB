@@ -59,12 +59,18 @@ def select_development_candidates(
     prospective_ids:set[str],
     cutoff:datetime,
     limit:int,
+    allowed_leagues:set[str]|None=None,
+    extra_excluded_ids:set[str]|None=None,
 )->list[dict[str,Any]]:
     eligible=[]
+    extra_excluded_ids=extra_excluded_ids or set()
     for r in rows:
         fid=str(r.get("fixture_id") or "").strip()
         kickoff=r.get("kickoff_utc")
-        if not fid or not kickoff or fid in protected_ids or fid in prospective_ids:
+        league=str(r.get("league_id") or "")
+        if not fid or not kickoff or fid in protected_ids or fid in prospective_ids or fid in extra_excluded_ids:
+            continue
+        if allowed_leagues is not None and league not in allowed_leagues:
             continue
         if _utc(kickoff) >= cutoff:
             continue
@@ -150,7 +156,7 @@ def _request(client:Any,key:str,endpoint:str,fid:str):
     remaining=response.headers.get("x-ratelimit-requests-remaining")
     return payload,body,ok,remaining,int(response.status_code)
 
-def run(api_key:str,out_dir:Path,max_fixtures:int=DEFAULT_MAX_FIXTURES,daily_reserve:int=DEFAULT_DAILY_RESERVE,session:Any|None=None)->dict[str,Any]:
+def run(api_key:str,out_dir:Path,max_fixtures:int=DEFAULT_MAX_FIXTURES,daily_reserve:int=DEFAULT_DAILY_RESERVE,session:Any|None=None,allowed_leagues:set[str]|None=None,exclude_dataset_paths:tuple[Path,...]=())->dict[str,Any]:
     key=str(api_key or "").strip()
     if not key: raise ValueError("API_FOOTBALL_KEY_NOT_CONFIGURED")
     key.encode("ascii")
@@ -160,7 +166,20 @@ def run(api_key:str,out_dir:Path,max_fixtures:int=DEFAULT_MAX_FIXTURES,daily_res
     rows=_prediction_rows(Path("evidence/api_football/model_validation/retrospective_predictions_chunks/chunk_0001.json"))
     protected,cutoff=_protected_ids(Path("evidence/api_football/challenger/final_holdout_seal.json"))
     prospective=_prospective_ids(Path("evidence/api_football/prospective_calibration/ledger.jsonl"))
-    selected=select_development_candidates(rows,protected,prospective,cutoff,max_fixtures)
+    prior_ids=set()
+    for prev_path in exclude_dataset_paths:
+        if not prev_path.exists():
+            continue
+        for raw in prev_path.read_text(encoding="utf-8").splitlines():
+            if raw.strip():
+                row=json.loads(raw)
+                if row.get("fixture_id") is not None:
+                    prior_ids.add(str(row["fixture_id"]))
+    selected=select_development_candidates(
+        rows,protected,prospective,cutoff,max_fixtures,
+        allowed_leagues=allowed_leagues,
+        extra_excluded_ids=prior_ids,
+    )
 
     out_dir.mkdir(parents=True,exist_ok=True)
     raw_dir=out_dir/"raw"; raw_dir.mkdir(parents=True,exist_ok=True)
@@ -236,6 +255,8 @@ def run(api_key:str,out_dir:Path,max_fixtures:int=DEFAULT_MAX_FIXTURES,daily_res
         "retrospective_source_rows":len(rows),
         "protected_final_holdout_count":len(protected),
         "prospective_exclusion_count":len(prospective),
+        "prior_dataset_exclusion_count":len(prior_ids),
+        "allowed_leagues":sorted(allowed_leagues) if allowed_leagues is not None else None,
         "development_cutoff_utc":cutoff.isoformat(),
         "selected_fixture_count":len(selected),
         "captured_fixture_count":len(normalized),
@@ -261,11 +282,17 @@ def run(api_key:str,out_dir:Path,max_fixtures:int=DEFAULT_MAX_FIXTURES,daily_res
     return manifest
 
 def main()->None:
+    raw_leagues=os.environ.get("MATRIX_EXTENDED_BOOTSTRAP_ALLOWED_LEAGUES","").strip()
+    allowed_leagues={x.strip() for x in raw_leagues.split(",") if x.strip()} or None
+    raw_excludes=os.environ.get("MATRIX_EXTENDED_BOOTSTRAP_EXCLUDE_DATASETS","").strip()
+    exclude_paths=tuple(Path(x.strip()) for x in raw_excludes.split(";") if x.strip())
     r=run(
         os.environ.get("API_FOOTBALL_KEY",""),
-        Path("evidence/api_football/market_expansion/historical_bootstrap"),
+        Path(os.environ.get("MATRIX_EXTENDED_BOOTSTRAP_OUTPUT_DIR","evidence/api_football/market_expansion/historical_bootstrap")),
         max_fixtures=int(os.environ.get("MATRIX_EXTENDED_BOOTSTRAP_MAX_FIXTURES","100")),
         daily_reserve=int(os.environ.get("MATRIX_API_FOOTBALL_DAILY_RESERVE","5000")),
+        allowed_leagues=allowed_leagues,
+        exclude_dataset_paths=exclude_paths,
     )
     print(json.dumps({
         "status":r["status"],
