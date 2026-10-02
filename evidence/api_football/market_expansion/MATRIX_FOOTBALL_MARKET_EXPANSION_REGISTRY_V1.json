@@ -192,5 +192,43 @@
     "competition": "Copa Argentina",
     "result": "NO_EXTENDED_STAT_FIELDS_RETURNED",
     "policy": "BLOCK_EXTENDED_MARKETS_FOR_FIXTURE_WHEN_SOURCE_FIELDS_ABSENT"
-  }
+  },
+  "live_prematch_price_evidence": {
+    "fixture_odds_probe": {
+      "path": "evidence/api_football/market_expansion/fixture_odds_probe/manifest.json",
+      "blob_sha": "d1496734b395375a2804012cd13b5a367616061e",
+      "workflow_run_id": 37066385100,
+      "conclusion": "success"
+    },
+    "bounded_gap_scan": {
+      "path": "evidence/api_football/market_expansion/odds_gap_scan/manifest.json",
+      "blob_sha": "c20556753762d6854fa2fd1d8b274000bb4fd2fc",
+      "workflow_run_id": 37066555880,
+      "conclusion": "success",
+      "network_calls": 30
+    }
+  },
+  "live_prematch_price_status": {
+    "CORNERS_OVER_UNDER": "VERIFIED_PRESENT",
+    "CARDS_OVER_UNDER": "VERIFIED_PRESENT",
+    "PLAYER_SHOTS": "VERIFIED_PRESENT",
+    "PLAYER_SHOTS_ON_TARGET": "VERIFIED_PRESENT",
+    "GOALKEEPER_SAVES": "VERIFIED_PRESENT",
+    "PLAYER_ASSISTS": "VERIFIED_PRESENT",
+    "PLAYER_PASSES": "CATALOG_VERIFIED_BUT_NOT_LIVE_OBSERVED",
+    "PLAYER_TACKLES": "CATALOG_VERIFIED_BUT_NOT_LIVE_OBSERVED",
+    "PLAYER_FOULS": "VERIFIED_PRESENT",
+    "TEAM_SHOTS_ON_TARGET": "VERIFIED_PRESENT"
+  },
+  "per_fixture_operational_gate": {
+    "require_source_field": true,
+    "require_canonical_market": true,
+    "require_predictively_validated_model_before_matrix_signal": true,
+    "require_live_price_before_shadow_or_execution": true,
+    "missing_source": "BLOCK_MARKET_FOR_FIXTURE",
+    "missing_model": "RESEARCH_ONLY_NO_MATRIX_SIGNAL",
+    "missing_price": "NO_BET_NO_SHADOW_EXECUTION",
+    "minimum_decimal_odds": "STRICTLY_GREATER_THAN_1.50"
+  },
+  "registry_status": "SOURCE_PRICE_CANONICAL_VERIFICATION_RECONCILED_MODEL_BUILD_PENDING"
 }
