@@ -84,9 +84,14 @@ case "$TENNIS_PROVIDER" in
     ;;
   rapidapi_tennis)
     mkdir -p "$(dirname "$WORLD_INVENTORY_LAST")" "$(dirname "$WORLD_INVENTORY_DAILY")"
+    WORLD_INVENTORY_CURRENT="/tmp/MATRIX_TENNIS_WORLD_INVENTORY_CURRENT.json"
     python -m tools.tennis_world_inventory_rapidapi \
-      --out "$WORLD_INVENTORY_LAST" \
+      --out "$WORLD_INVENTORY_CURRENT" \
       --target-date-bogota "$WORLD_DATE"
+    python -m tools.tennis_world_inventory_accumulate \
+      --current "$WORLD_INVENTORY_CURRENT" \
+      --existing "$WORLD_INVENTORY_DAILY" \
+      --out "$WORLD_INVENTORY_LAST"
     cp "$WORLD_INVENTORY_LAST" "$WORLD_INVENTORY_DAILY"
 
     python -m tools.cor0203_world_inventory_discovery \
