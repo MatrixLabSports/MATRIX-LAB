@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import re
 from pathlib import Path
 from typing import Any, Mapping
 
@@ -14,8 +15,9 @@ def _load(path: Path) -> dict[str, Any]:
 
 
 def _match_id(value: object) -> str:
-    token = str(value or "")
-    return token.rsplit(":", 1)[-1] if ":" in token else token
+    token = str(value or "").strip()
+    match = re.search(r"(\d+)$", token)
+    return match.group(1) if match else token
 
 
 def build_bridge(
