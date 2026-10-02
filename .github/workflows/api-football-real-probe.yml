@@ -2,6 +2,11 @@ name: API-Football governed real connectivity probe
 
 on:
   workflow_dispatch:
+  push:
+    branches:
+      - main
+    paths:
+      - .github/workflows/api-football-real-probe.yml
 
 permissions:
   contents: write
@@ -58,13 +63,44 @@ jobs:
           rm -rf "$MATRIX_API_FOOTBALL_PROBE_DIR"
           python -m tools.api_football_real_probe
 
+      - name: Verify extended market coverage probe regression
+        run: python -m pytest -q tests/test_api_football_extended_market_coverage_probe.py
+
+      - name: Execute extended market physical coverage probe
+        shell: bash
+        env:
+          API_FOOTBALL_KEY: ${{ secrets.API_FOOTBALL_KEY }}
+        run: |
+          set -euo pipefail
+          rm -rf evidence/api_football/market_expansion/coverage_probe
+          python -m tools.api_football_extended_market_coverage_probe
+
+      - name: Enforce extended market source evidence
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          p=json.loads(Path("evidence/api_football/market_expansion/coverage_probe/manifest.json").read_text())
+          assert p["status"]=="PASS"
+          assert p["sampled_fixture_count"]>0
+          assert p["network_calls"]==p["sampled_fixture_count"]*2
+          assert p["outcomes_used_for_model_tuning"] is False
+          assert p["odds_used_to_generate_probability"] is False
+          assert p["p_matrix_status"]=="NOT_GENERATED_FOR_EXTENDED_MARKETS"
+          assert p["automatic_wagering"] is False
+          assert p["real_money"]=="BLOCKED"
+          print("MATRIX_EXTENDED_MARKET_SOURCE_COVERAGE_GATE: PASS")
+          PY
+
       - name: Persist physical probe evidence
         shell: bash
         run: |
           set -euo pipefail
           git config user.name "matrix-api-football-probe"
           git config user.email "matrix-api-football-probe@users.noreply.github.com"
-          git add evidence/api_football/real_probe
+          git add evidence/api_football/real_probe evidence/api_football/market_expansion/coverage_probe
           if git diff --cached --quiet; then
             echo "NO_PROBE_EVIDENCE_TO_PERSIST"
             exit 3
