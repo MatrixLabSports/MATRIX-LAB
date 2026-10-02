@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-import hashlib, json
+import hashlib, json, os
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Mapping
@@ -106,7 +106,9 @@ def run(out_dir:Path, client:ApiFootballClient|None=None, fixture_ids:list[str]|
     return manifest
 
 def main():
-    r=run(Path("evidence/api_football/market_expansion/coverage_probe"))
+    raw_ids=os.environ.get("MATRIX_API_FOOTBALL_EXTENDED_FIXTURE_IDS","").strip()
+    fixture_ids=[x.strip() for x in raw_ids.split(",") if x.strip()] or None
+    r=run(Path("evidence/api_football/market_expansion/coverage_probe"),fixture_ids=fixture_ids)
     print(json.dumps({"status":r["status"],"network_calls":r["network_calls"],"field_coverage_counts":r["field_coverage_counts"],"real_money":r["real_money"]},sort_keys=True))
 
 if __name__=="__main__":
