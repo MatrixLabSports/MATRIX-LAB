@@ -135,8 +135,8 @@ def test_world_derived_discovery_enriches_only_cor_domain_candidates():
     assert result["world_domain_candidates_input"] == 3
     assert result["eligible_input_events"] == 2
     assert {x["event_id"] for x in result["eligible_candidates"]} == {
-        "rapidapi-tennis:match:1001",
-        "rapidapi-tennis:match:1003",
+        "rapidapi-tennis:atp:match:1001",
+        "rapidapi-tennis:atp:match:1003",
     }
     rejected = {str(x["match_id"]): x for x in result["provider_rejected"]}
     assert "EVENT_NOT_FUTURE" in rejected["1002"]["blockers"]
@@ -160,7 +160,7 @@ def test_world_derived_discovery_accepts_indoor_hard_as_hard_model_surface():
     indoor = next(
         row
         for row in result["eligible_candidates"]
-        if row["event_id"] == "rapidapi-tennis:match:1003"
+        if row["event_id"] == "rapidapi-tennis:atp:match:1003"
     )
     assert indoor["surface"] == "Hard"
 
@@ -187,7 +187,54 @@ def test_world_derived_discovery_does_not_promote_wta_or_itf():
         as_of_utc="2026-10-02T07:00:00+00:00",
     )
     assert all(
-        row["event_id"].startswith("rapidapi-tennis:match:")
+        row["event_id"].startswith("rapidapi-tennis:atp:match:")
         for row in result["eligible_candidates"]
     )
     assert result["world_domain_candidates_input"] == 3
+
+
+def test_world_derived_identity_is_not_ambiguous_when_wta_reuses_numeric_match_id():
+    world = _world()
+    world["events"].append({
+        "source_event_id": "rapidapi-tennis:wta:match:1001",
+        "provider_channel": "WTA",
+        "circuit_family": "ITF",
+        "circuit_detail": "ITF_WOMEN",
+        "match_id": "1001",
+        "tournament_id": "999",
+        "tournament_name": "W35 Collision Test",
+        "surface": "Hard",
+        "round": "Quarter-Final",
+        "event_format": "SINGLES",
+        "player1": {"id": "901", "name": "Woman A", "country": "ESP"},
+        "player2": {"id": "902", "name": "Woman B", "country": "ARG"},
+        "event_start_utc": "2026-10-02T16:00:00+00:00",
+        "model_derivation": {
+            "lane": "COR02_COR03_ATP_CHALLENGER_HARD",
+            "domain_candidate": False,
+            "blockers": ["CIRCUIT_OUTSIDE_COR0203_ATP_CHALLENGER"],
+        },
+    })
+    world["world_calendar_inventory_count"] += 1
+
+    result = derive_world_cor_discovery(
+        world_inventory=world,
+        client=FakeClient(),
+        as_of_utc="2026-10-02T07:00:00+00:00",
+    )
+
+    candidate = next(
+        row
+        for row in result["eligible_candidates"]
+        if row["event_id"] == "rapidapi-tennis:atp:match:1001"
+    )
+    assert candidate["canonical_source_event_id"] == (
+        "rapidapi-tennis:atp:match:1001"
+    )
+    assert candidate["provider_channel"] == "ATP"
+    assert candidate["players"][0]["name"] == "P11"
+    assert candidate["players"][1]["name"] == "P22"
+    assert all(
+        not row["event_id"].startswith("rapidapi-tennis:wta:")
+        for row in result["eligible_candidates"]
+    )
