@@ -10,6 +10,10 @@ on:
       - tools/cor0203_api_tennis_discovery.py
       - tools/cor0203_rapidapi_tennis_discovery.py
       - tools/cor0203_rapidapi_durable_discovery.py
+      - tools/cor0203_world_funnel_audit.py
+      - tools/cor0203_world_inventory_bridge.py
+      - tools/cor0203_world_inventory_discovery.py
+      - tools/tennis_world_inventory_rapidapi.py
       - tools/cor0203_durable_discovery.py
       - tools/cor0203_preregister_discovery.py
       - tools/cor0203_build_static_cut_index.py
@@ -63,10 +67,17 @@ jobs:
       - name: Run tennis integrity regression suite
         run: |
           python -m pytest -q \
+            tests/test_cor0203_bogota_full_day_calendar.py \
+            tests/test_tennis_world_inventory_rapidapi.py \
+            tests/test_cor0203_world_inventory_discovery.py \
+            tests/test_cor0203_world_inventory_bridge.py \
+            tests/test_cor0203_world_funnel_audit.py \
+            tests/test_cor0203_rapidapi_durable_discovery.py \
             tests/test_cor0203_preregister_discovery.py \
             tests/test_cor0203_batch_preflight.py \
             tests/test_cor0203_physical_uniqueness.py \
             tests/test_cor0203_settlement_sync.py \
+            tests/test_cor0203_settlement_identity_overlay.py \
             tests/test_cor0203_historical_identity_reconcile.py \
             tests/test_cor0203_production_observability.py
 
