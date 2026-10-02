@@ -25,7 +25,32 @@ def build_bridge(
     prereg: Mapping[str, Any],
 ) -> dict[str, Any]:
     if world_inventory.get("status") != "PASS":
-        raise ValueError("WORLD_INVENTORY_MUST_BE_COMPLETE_PASS")
+        return {
+            "schema": "MATRIX_COR0203_WORLD_INVENTORY_BRIDGE_V1",
+            "target_date_bogota": world_inventory.get("target_date_bogota"),
+            "world_inventory_status": world_inventory.get("status"),
+            "world_inventory_complete": False,
+            "world_inventory_total": world_inventory.get(
+                "world_calendar_inventory_count", 0
+            ),
+            "world_domain_candidates": 0,
+            "status_counts": {
+                "WORLD_INVENTORY_NOT_COMPLETE": 1,
+            },
+            "rows": [],
+            "cor_discovery_eligible_total": len(
+                cor_discovery.get("eligible_candidates", []) or []
+            ),
+            "cor_discovery_rejected_total": len(
+                cor_discovery.get("provider_rejected", []) or []
+            ),
+            "cor_candidates_outside_today_world_lane": [],
+            "automatic_model_feed": False,
+            "governed_preregistration_authoritative": True,
+            "metrics_opened": False,
+            "outcomes_read": 0,
+            "real_money": "BLOCKED",
+        }
     lane = (
         world_inventory.get("derived_lanes", {})
         .get("COR02_COR03_ATP_CHALLENGER_HARD", {})
