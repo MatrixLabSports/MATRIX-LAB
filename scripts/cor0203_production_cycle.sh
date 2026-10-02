@@ -131,8 +131,16 @@ if [[ -f "$WORLD_INVENTORY_LAST" && -f "$WORLD_DERIVED_DISCOVERY_LAST" && -f "$W
     --out "$WORLD_BRIDGE_LAST"
 fi
 
+python -m tools.cor0203_expand_identity_authority \
+  --runtime-dir evidence/cor0203/runtime \
+  --history-csv "$ANNUAL" \
+  --static-cut "$STATIC_CUT" \
+  --out "$IDENTITY_AUTHORITY_LAST" \
+  --audit-out "$IDENTITY_AUTHORITY_AUDIT_LAST"
+
 python -m tools.cor0203_build_identity_crosswalk \
   --static-cut "$STATIC_CUT" \
+  --identity-authority "$IDENTITY_AUTHORITY_LAST" \
   --summary-out "$CROSSWALK_LAST"
 
 python -m tools.cor0203_identity_restage_delta \
@@ -141,6 +149,7 @@ python -m tools.cor0203_identity_restage_delta \
 # A delta can create a new prefeature revision; build its crosswalk before staging.
 python -m tools.cor0203_build_identity_crosswalk \
   --static-cut "$STATIC_CUT" \
+  --identity-authority "$IDENTITY_AUTHORITY_LAST" \
   --summary-out "$CROSSWALK_LAST"
 
 python -m tools.cor0203_stage_from_registry \
