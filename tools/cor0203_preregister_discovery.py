@@ -19,7 +19,7 @@ PROVIDER_SPECS = {
     },
     "rapidapi_tennis": {
         "event_prefix": "COR0203-RAPIDAPI-TENNIS-",
-        "event_pattern": re.compile(r"^rapidapi-tennis:match:(\d+)$"),
+        "event_pattern": re.compile(r"^rapidapi-tennis:(?:(atp):)?match:(\d+)$"),
         "player_pattern": re.compile(r"^rapidapi-tennis:player:\d+$"),
     },
 }
@@ -140,7 +140,11 @@ def preregister_discovery(
         )
         raw_event_id = str(candidate.get("event_id") or "")
         event_match = spec["event_pattern"].fullmatch(raw_event_id)
-        provider_event_key = event_match.group(1) if event_match else ""
+        provider_event_key = (
+            event_match.groups()[-1]
+            if event_match
+            else ""
+        )
         candidate_physical_key = physical_event_key(candidate)
 
         if provider == "rapidapi_tennis" and provider_event_key and candidate_physical_key:
