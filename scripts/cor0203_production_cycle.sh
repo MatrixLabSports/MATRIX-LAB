@@ -100,10 +100,6 @@ case "$TENNIS_PROVIDER" in
       --world-inventory "$WORLD_INVENTORY_LAST" \
       --out "$WORLD_DERIVED_DISCOVERY_LAST"
 
-    python -m tools.cor0203_preregister_discovery \
-      --discovery "$WORLD_DERIVED_DISCOVERY_LAST" \
-      --result-out "$WORLD_PREREG_LAST"
-
     python -m tools.cor0203_rapidapi_durable_discovery \
       --out "$DISCOVERY" \
       --summary-out "$DURABLE_DISCOVERY_LAST" \
@@ -124,6 +120,12 @@ python -m tools.cor0203_source_readiness \
 python -m tools.cor0203_preregister_discovery \
   --discovery "$DISCOVERY" \
   --result-out "$PREREG_LAST"
+
+if [[ -f "$WORLD_DERIVED_DISCOVERY_LAST" ]]; then
+  python -m tools.cor0203_preregister_discovery \
+    --discovery "$WORLD_DERIVED_DISCOVERY_LAST" \
+    --result-out "$WORLD_PREREG_LAST"
+fi
 
 if [[ -f "$WORLD_INVENTORY_LAST" && -f "$WORLD_DERIVED_DISCOVERY_LAST" && -f "$WORLD_PREREG_LAST" ]]; then
   python -m tools.cor0203_world_inventory_bridge \
