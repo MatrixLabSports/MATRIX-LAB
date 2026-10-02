@@ -153,6 +153,18 @@ def test_non_hard_challenger_is_rejected():
     assert "SURFACE_OUT_OF_DOMAIN" in result["provider_rejected"][0]["blockers"]
 
 
+def test_indoor_hard_challenger_is_normalized_into_hard_model_domain():
+    result = build_discovery_registry(
+        fixture_payload={"data": [fixture()]},
+        tournament_info={"500": tournament(surface="I.hard")},
+        ranking_by_player=rankings(),
+        as_of_utc="2026-09-27T00:00:00+00:00",
+    )
+
+    assert result["world_registry"]["cor0203_eligible_events"] == 1
+    assert result["eligible_candidates"][0]["surface"] == "Hard"
+
+
 def test_missing_ranking_cut_blocks_event():
     values = rankings()
     del values["22"]
