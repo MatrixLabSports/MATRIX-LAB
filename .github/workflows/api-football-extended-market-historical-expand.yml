@@ -93,7 +93,12 @@ jobs:
             exit 3
           fi
           git commit -m "evidence(football): persist stats-rich extended market history"
+          git status --porcelain
+          git reset --hard HEAD
+          git clean -fd
           git pull --rebase origin repair/cor09-world-pipeline
           git push origin HEAD:repair/cor09-world-pipeline
 
 # Stats-rich expansion pass 2 after 200/200 coverage.
+
+# Persistence hardening after transient working-tree conflict.
