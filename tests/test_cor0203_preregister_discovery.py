@@ -294,3 +294,62 @@ def test_rapidapi_reused_match_id_with_new_physical_match_is_allowed(tmp_path):
     assert event["provider_source_id_reused"] is True
     assert event["canonical_source_event_id"] == "rapidapi-tennis:match:9001"
     assert event["event_id"].startswith("COR0203-RAPIDAPI-TENNIS-9001-")
+
+
+def test_rapidapi_channel_qualified_atp_event_preserves_canonical_source(tmp_path):
+    discovery = {
+        "provider": "rapidapi_tennis",
+        "status": "DISCOVERY_COMPLETED",
+        "eligible_candidates": [
+            {
+                "event_id": "rapidapi-tennis:atp:match:9001",
+                "canonical_source_event_id": "rapidapi-tennis:atp:match:9001",
+                "competition_id": "rapidapi-tennis:tournament:77",
+                "competition": "Example Challenger",
+                "round": "Quarter-Final",
+                "surface": "Hard",
+                "tour_level": "C",
+                "event_start_utc": "2026-10-02T16:00:00+00:00",
+                "target_period": 20260921,
+                "source_reference": "world-inventory-derived;provider_channel=ATP",
+                "source_snapshot_sha256": "d" * 64,
+                "players": [
+                    {
+                        "name": "Player A",
+                        "provider_player_id": "rapidapi-tennis:player:101",
+                        "provider_ranking": {"place": "100", "points": "600"},
+                    },
+                    {
+                        "name": "Player B",
+                        "provider_player_id": "rapidapi-tennis:player:202",
+                        "provider_ranking": {"place": "120", "points": "500"},
+                    },
+                ],
+            }
+        ],
+    }
+    cor = tmp_path / "cor0203"
+    runtime = cor / "runtime"
+    holdout = cor / "holdout"
+    runtime.mkdir(parents=True)
+    holdout.mkdir(parents=True)
+
+    result = preregister_discovery(
+        discovery=discovery,
+        cor_root=cor,
+        runtime_dir=runtime,
+        holdout_dir=holdout,
+    )
+
+    assert result["status"] == "PREREGISTERED"
+    payload = json.loads(
+        (
+            runtime
+            / f"MATRIX_COR0203_PREFEATURE_REGISTRY_R{result['revision']}.json"
+        ).read_text()
+    )
+    event = payload["events"][0]
+    assert event["canonical_source_event_id"] == (
+        "rapidapi-tennis:atp:match:9001"
+    )
+    assert event["event_id"].startswith("COR0203-RAPIDAPI-TENNIS-9001-")
