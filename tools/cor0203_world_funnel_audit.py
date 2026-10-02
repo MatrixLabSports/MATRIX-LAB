@@ -51,9 +51,9 @@ def build_world_funnel(
         for value in lane.get("source_event_ids", []) or []
     ]
     world_events = {
-        _match_id(row.get("source_event_id")): row
+        str(row.get("source_event_id") or ""): row
         for row in world_inventory.get("events", []) or []
-        if isinstance(row, Mapping)
+        if isinstance(row, Mapping) and row.get("source_event_id")
     }
     eligible = {
         _match_id(row.get("canonical_source_event_id") or row.get("event_id")): row
@@ -128,7 +128,7 @@ def build_world_funnel(
     counts: dict[str, int] = defaultdict(int)
     for source_id in world_source_ids:
         mid = _match_id(source_id)
-        world_row = world_events.get(mid, {})
+        world_row = world_events.get(source_id, {})
         discovery_row = eligible.get(mid)
         rejection = rejected.get(mid)
         blockers: set[str] = set()
