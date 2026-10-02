@@ -25,6 +25,7 @@ EXISTING_DATASETS=(
     Path("evidence/api_football/market_expansion/historical_bootstrap/normalized_dataset.jsonl"),
     Path("evidence/api_football/market_expansion/historical_statsrich/normalized_dataset.jsonl"),
     Path("evidence/api_football/market_expansion/historical_statsrich_3/normalized_dataset.jsonl"),
+    Path("evidence/api_football/market_expansion/historical_warmup/normalized_dataset.jsonl"),
 )
 TIMEOUT_SLEEP=0.20
 
@@ -239,7 +240,10 @@ def run(api_key:str,out_dir:Path,max_fixtures:int=80,daily_reserve:int=5000,sess
 def main()->None:
     result=run(
         os.environ.get("API_FOOTBALL_KEY",""),
-        Path("evidence/api_football/market_expansion/historical_warmup"),
+        Path(os.environ.get(
+            "MATRIX_EXTENDED_WARMUP_OUTPUT_DIR",
+            "evidence/api_football/market_expansion/historical_warmup",
+        )),
         max_fixtures=int(os.environ.get("MATRIX_EXTENDED_WARMUP_MAX_FIXTURES","80")),
         daily_reserve=int(os.environ.get("MATRIX_API_FOOTBALL_DAILY_RESERVE","5000")),
     )
