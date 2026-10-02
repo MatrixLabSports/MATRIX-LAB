@@ -1,0 +1,80 @@
+name: API-Football team SOT v3
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - .github/workflows/api-football-team-sot-v3.yml
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: api-football-team-sot-v3
+  cancel-in-progress: false
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout operational branch
+        uses: actions/checkout@v4
+        with:
+          ref: repair/cor09-world-pipeline
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install test dependency
+        run: python -m pip install pytest
+
+      - name: Verify calibration tests
+        run: python -m pytest -q tests/test_api_football_team_sot_challenger_v3.py
+
+      - name: Build train-only calibrated challenger
+        run: python -m tools.api_football_team_sot_challenger_v3
+
+      - name: Enforce v3 governance
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          p=json.loads(Path("evidence/api_football/market_expansion/team_sot_v3/manifest.json").read_text())
+          assert p["train_count"]>=200
+          assert p["validation_count"]==50
+          assert p["selection"]["raw_model_selected_on_train_oof_only"] is True
+          assert p["selection"]["calibrator_selected_on_train_oof_only"] is True
+          assert p["selection"]["final_validation_used_for_selection"] is False
+          assert p["parameter_tuning_after_freeze"] is False
+          assert p["odds_used_to_generate_probability"] is False
+          assert p["p_matrix_generated"] is False
+          assert p["automatic_wagering"] is False
+          assert p["real_money"]=="BLOCKED"
+          print("MATRIX_TEAM_SOT_V3_GATE: PASS")
+          PY
+
+      - name: Persist SOT v3 evidence
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "matrix-football-team-sot-v3"
+          git config user.email "matrix-football-team-sot-v3@users.noreply.github.com"
+          git add evidence/api_football/market_expansion/team_sot_v3
+          if git diff --cached --quiet; then
+            echo "NO_SOT_V3_EVIDENCE_TO_PERSIST"
+            exit 3
+          fi
+          git commit -m "evidence(football): persist train-only calibrated team SOT v3"
+          git status --porcelain
+          git reset --hard HEAD
+          git clean -fd
+          git pull --rebase origin repair/cor09-world-pipeline
+          git push origin HEAD:repair/cor09-world-pipeline
