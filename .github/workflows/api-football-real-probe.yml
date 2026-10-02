@@ -123,13 +123,39 @@ jobs:
           print("MATRIX_API_FOOTBALL_BET_CATALOG_GATE: PASS")
           PY
 
+      - name: Probe live prematch extended fixture odds
+        shell: bash
+        env:
+          API_FOOTBALL_KEY: ${{ secrets.API_FOOTBALL_KEY }}
+          MATRIX_API_FOOTBALL_ODDS_FIXTURE_IDS: "1520905,1603384,1493728"
+        run: |
+          set -euo pipefail
+          rm -rf evidence/api_football/market_expansion/fixture_odds_probe
+          python -m tools.api_football_fixture_odds_extended_probe
+
+      - name: Enforce live prematch odds evidence
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          p=json.loads(Path("evidence/api_football/market_expansion/fixture_odds_probe/manifest.json").read_text())
+          assert p["status"]=="PASS"
+          assert p["network_calls"]==3
+          assert p["odds_used_to_generate_model_probability"] is False
+          assert p["automatic_wagering"] is False
+          assert p["real_money"]=="BLOCKED"
+          print("MATRIX_EXTENDED_LIVE_ODDS_PROBE: PASS")
+          PY
+
       - name: Persist physical probe evidence
         shell: bash
         run: |
           set -euo pipefail
           git config user.name "matrix-api-football-probe"
           git config user.email "matrix-api-football-probe@users.noreply.github.com"
-          git add evidence/api_football/real_probe evidence/api_football/market_expansion/coverage_probe evidence/api_football/market_expansion/bet_catalog
+          git add evidence/api_football/real_probe evidence/api_football/market_expansion/coverage_probe evidence/api_football/market_expansion/bet_catalog evidence/api_football/market_expansion/fixture_odds_probe
           if git diff --cached --quiet; then
             echo "NO_PROBE_EVIDENCE_TO_PERSIST"
             exit 3
@@ -163,3 +189,5 @@ jobs:
 # Bet catalog probe 2026-10-02.
 
 # Canonical market registry verification 2026-10-02.
+
+# Live prematch extended odds verification 2026-10-02.
