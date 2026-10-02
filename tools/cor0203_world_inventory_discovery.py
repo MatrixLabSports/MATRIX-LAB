@@ -196,6 +196,53 @@ def derive_world_cor_discovery(
         ranking_by_player=rankings,
         as_of_utc=as_of.isoformat(),
     )
+
+    # Preserve the channel-qualified world identity all the way into the
+    # governed lane. RapidAPI can reuse the same numeric matchId across ATP
+    # and WTA/ITF transports, so the numeric id alone is not globally unique.
+    world_by_match_id = {
+        str(row.get("match_id") or ""): row
+        for row in world_rows
+        if row.get("match_id")
+    }
+    for candidate in result.get("eligible_candidates", []) or []:
+        legacy_event_id = str(
+            candidate.get("canonical_source_event_id")
+            or candidate.get("event_id")
+            or ""
+        )
+        match_id = legacy_event_id.rsplit(":", 1)[-1]
+        world_row = world_by_match_id.get(match_id)
+        if not isinstance(world_row, Mapping):
+            continue
+        world_source_id = str(world_row.get("source_event_id") or "")
+        if not world_source_id:
+            continue
+        candidate["legacy_provider_event_id"] = legacy_event_id
+        candidate["event_id"] = world_source_id
+        candidate["canonical_source_event_id"] = world_source_id
+        candidate["provider_channel"] = str(
+            world_row.get("provider_channel") or "ATP"
+        )
+        candidate["world_source_snapshot_sha256"] = str(
+            world_row.get("source_snapshot_sha256") or ""
+        )
+        candidate["source_reference"] = (
+            str(candidate.get("source_reference") or "")
+            + ";provider_channel="
+            + candidate["provider_channel"]
+        )
+
+    for rejected_row in result.get("provider_rejected", []) or []:
+        match_id = str(rejected_row.get("match_id") or "")
+        world_row = world_by_match_id.get(match_id)
+        if isinstance(world_row, Mapping):
+            rejected_row["world_source_event_id"] = str(
+                world_row.get("source_event_id") or ""
+            )
+            rejected_row["provider_channel"] = str(
+                world_row.get("provider_channel") or "ATP"
+            )
     result["schema"] = "MATRIX_COR0203_WORLD_DERIVED_DISCOVERY_V1"
     result["status"] = (
         "PROVIDER_ENRICHMENT_BLOCKED"
