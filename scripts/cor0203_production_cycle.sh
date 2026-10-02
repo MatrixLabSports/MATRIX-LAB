@@ -56,6 +56,7 @@ HEARTBEAT="evidence/cor0203/runtime/MATRIX_COR0203_SCHEDULER_HEARTBEAT.json"
 WORLD_DATE="$(TZ=America/Bogota date +%F)"
 WORLD_INVENTORY_LAST="evidence/tennis/world_inventory/MATRIX_TENNIS_WORLD_INVENTORY_LAST.json"
 WORLD_INVENTORY_DAILY="evidence/tennis/world_inventory/${WORLD_DATE}/MATRIX_TENNIS_WORLD_INVENTORY.json"
+WORLD_BRIDGE_LAST="evidence/cor0203/runtime/MATRIX_COR0203_WORLD_INVENTORY_BRIDGE_LAST.json"
 
 test -s "$STATE"
 test -s "$BUNDLE"
@@ -105,6 +106,14 @@ python -m tools.cor0203_source_readiness \
 python -m tools.cor0203_preregister_discovery \
   --discovery "$DISCOVERY" \
   --result-out "$PREREG_LAST"
+
+if [[ -f "$WORLD_INVENTORY_LAST" ]]; then
+  python -m tools.cor0203_world_inventory_bridge \
+    --world-inventory "$WORLD_INVENTORY_LAST" \
+    --cor-discovery "$DISCOVERY" \
+    --prereg "$PREREG_LAST" \
+    --out "$WORLD_BRIDGE_LAST"
+fi
 
 python -m tools.cor0203_build_identity_crosswalk \
   --static-cut "$STATIC_CUT" \
@@ -232,6 +241,12 @@ world_inventory = (
     if world_inventory_path.exists()
     else None
 )
+world_bridge_path = runtime / "MATRIX_COR0203_WORLD_INVENTORY_BRIDGE_LAST.json"
+world_bridge = (
+    json.loads(world_bridge_path.read_text())
+    if world_bridge_path.exists()
+    else None
+)
 
 assert source_readiness["provider"] == __import__("os").environ["MATRIX_TENNIS_PROVIDER"]
 assert durable_discovery["real_money"] == "BLOCKED"
@@ -286,6 +301,12 @@ if world_inventory is not None:
     assert world_inventory["automatic_wagering"] is False
     assert world_inventory["real_money"] == "BLOCKED"
     assert world_inventory["derived_lanes"]["COR02_COR03_ATP_CHALLENGER_HARD"]["feeds_model_automatically"] is False
+if world_bridge is not None:
+    assert world_bridge["automatic_model_feed"] is False
+    assert world_bridge["governed_preregistration_authoritative"] is True
+    assert world_bridge["metrics_opened"] is False
+    assert world_bridge["outcomes_read"] == 0
+    assert world_bridge["real_money"] == "BLOCKED"
 assert settlement_uniqueness["metrics_opened"] is False
 assert settlement_sync["metrics"] == "SEALED_UNTIL_600"
 if not source_readiness["ready"]:
@@ -342,6 +363,7 @@ git add evidence/cor0203/runtime/MATRIX_COR0203_BATCH_PREFLIGHT_R*.json 2>/dev/n
 git add evidence/cor0203/adjudication/*.json 2>/dev/null || true
 git add evidence/tennis/world_inventory/MATRIX_TENNIS_WORLD_INVENTORY_LAST.json 2>/dev/null || true
 git add evidence/tennis/world_inventory/*/MATRIX_TENNIS_WORLD_INVENTORY.json 2>/dev/null || true
+git add "$WORLD_BRIDGE_LAST" 2>/dev/null || true
 git add evidence/cor0203/runtime/MATRIX_COR0203_HISTORY_GATE_R*.json 2>/dev/null || true
 git add evidence/cor0203/holdout/MATRIX_COR0203_HOLDOUT_BATCH_R*.json 2>/dev/null || true
 
@@ -368,6 +390,9 @@ git add "$INTEGRITY_LAST"
 git add "$UNIQUENESS_LAST"
 git add "$OBSERVABILITY_LAST"
 git add "$DURABLE_DISCOVERY_LAST"
+if [[ -f "$WORLD_BRIDGE_LAST" ]]; then
+  git add "$WORLD_BRIDGE_LAST"
+fi
 git add "$SETTLEMENT_QUEUE_LAST"
 git add "$HISTORICAL_IDENTITY_LAST"
 git add "$SETTLEMENT_SYNC_LAST"
