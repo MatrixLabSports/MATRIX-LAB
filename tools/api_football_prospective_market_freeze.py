@@ -136,15 +136,18 @@ def build_freeze(
     history_dir=history_root or (root/"evidence/api_football/history")
     canonical,manifest=load_chunked_canonical_bundle(canonical_dir)
     gov=_load(root/"evidence/api_football/market_governance/market_governance.json")
-    btts=_load(root/"evidence/api_football/btts_challenger_v2/manifest.json")
+    btts_v2=_load(root/"evidence/api_football/btts_challenger_v2/manifest.json")
+    btts_v3=_load(root/"evidence/api_football/btts_challenger_v3/manifest.json")
     retrospective=load_chunked_json(root/"evidence/api_football/model_validation/retrospective_predictions_manifest.json")
     excluded_original=_load(root/"evidence/api_football/btts_challenger_v2/exclusion_registry.json")
 
     if set(gov["approved_markets"])!={"1x2","over_2_5"}:
         raise ValueError("MARKET_GOVERNANCE_NOT_EXPECTED")
-    if btts["candidate_status"]!="FROZEN_BTTS_V2_AWAITING_NEW_PROSPECTIVE_HOLDOUT":
-        raise ValueError("BTTS_V2_NOT_FROZEN")
-    if btts["forbidden_final_holdout_outcomes_read"] is not False:
+    if btts_v2["candidate_status"]!="PROSPECTIVE_CHECKPOINT_200_REJECTED_NOT_SUPERIOR_TO_POISSON":
+        raise ValueError("BTTS_V2_ADJUDICATION_NOT_EXPECTED")
+    if btts_v3["candidate_status"]!="REJECTED_INTERNAL_TEMPORAL_OOS":
+        raise ValueError("BTTS_V3_ADJUDICATION_NOT_EXPECTED")
+    if btts_v2["forbidden_final_holdout_outcomes_read"] is not False:
         raise ValueError("ORIGINAL_HOLDOUT_CONTAMINATED")
 
     historical_seen={str(r["fixture_id"]) for r in retrospective.get("rows",[]) if isinstance(r,Mapping)}
@@ -155,8 +158,6 @@ def build_freeze(
     gov_by_market={r["market"]:r for r in gov["markets"]}
     p1=gov_by_market["1x2"]["frozen_parameters"]
     po=gov_by_market["over_2_5"]["frozen_parameters"]
-    weights=list(btts["selected"]["weights"])
-
     frozen=[]
     exclusions=[]
     for raw in canonical.get("inputs",[]):
@@ -190,15 +191,6 @@ def build_freeze(
 
         p_1x2=_mc_pool(ev.probabilities,baseline,float(p1["a"]),float(p1["c"]))
         p_over=_bin_pool(float(ev.probabilities["over_2_5"]),float(baseline["over_2_5"]),float(po["a"]),float(po["c"]),float(po["b"]))
-        p_btts=_btts_v2_probability(
-            poisson_p=float(ev.probabilities["btts"]),
-            baseline_p=float(baseline["btts"]),
-            ehg=float(ev.expected_home_goals),
-            eag=float(ev.expected_away_goals),
-            home_count=home_count,
-            away_count=away_count,
-            weights=weights,
-        )
         frozen.append({
             "fixture_id":fid,
             "target_key":value.target_key,
@@ -226,12 +218,11 @@ def build_freeze(
             "frozen_research_probabilities":{
                 "1x2":p_1x2,
                 "over_2_5":p_over,
-                "btts_v2":p_btts,
             },
             "market_status":{
                 "1x2":"APPROVED_CHALLENGER_PROSPECTIVE_SHADOW",
                 "over_2_5":"APPROVED_CHALLENGER_PROSPECTIVE_SHADOW",
-                "btts_v2":"NEW_PROSPECTIVE_HOLDOUT",
+                "btts":"BLOCKED_BTTS_V2_AND_V3_REJECTED",
             },
             "outcome":None,
             "settlement_status":"PENDING_FINAL",
@@ -246,7 +237,9 @@ def build_freeze(
         "created_at_utc":freeze.isoformat(),
         "source_canonical_bundle_sha256":manifest["bundle_sha256"],
         "source_market_governance_holdout_sha256":gov["holdout_seal_sha256"],
-        "source_btts_v2_exclusion_registry_sha256":btts["exclusion_registry_sha256"],
+        "source_btts_v2_exclusion_registry_sha256":btts_v2["exclusion_registry_sha256"],
+        "source_btts_v3_manifest_sha256":_sha(btts_v3),
+        "btts_lane_status":"BLOCKED_BTTS_V2_AND_V3_REJECTED",
         "historical_seen_fixture_count":len(historical_seen),
         "permanently_forbidden_original_holdout_count":len(forbidden),
         "frozen_event_count":len(frozen),
