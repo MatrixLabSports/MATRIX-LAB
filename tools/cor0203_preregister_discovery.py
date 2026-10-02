@@ -133,23 +133,51 @@ def preregister_discovery(
     skipped: list[dict[str, Any]] = []
 
     for candidate in candidates:
-        source_event_id = str(candidate.get("canonical_source_event_id") or candidate.get("event_id") or "")
+        source_event_id = str(
+            candidate.get("canonical_source_event_id")
+            or candidate.get("event_id")
+            or ""
+        )
         raw_event_id = str(candidate.get("event_id") or "")
         event_match = spec["event_pattern"].fullmatch(raw_event_id)
         provider_event_key = event_match.group(1) if event_match else ""
-        event_id = spec["event_prefix"] + provider_event_key if provider_event_key else ""
+        candidate_physical_key = physical_event_key(candidate)
+
+        if provider == "rapidapi_tennis" and provider_event_key and candidate_physical_key:
+            event_id = (
+                spec["event_prefix"]
+                + provider_event_key
+                + "-"
+                + candidate_physical_key[:12]
+            )
+        else:
+            event_id = (
+                spec["event_prefix"] + provider_event_key
+                if provider_event_key
+                else ""
+            )
 
         blockers: list[str] = []
         if not event_id or not source_event_id:
             blockers.append("DISCOVERY_EVENT_ID_INVALID")
-        if event_id in existing_event_ids or source_event_id in existing_source_ids:
+        if event_id in existing_event_ids:
+            blockers.append("ALREADY_PREREGISTERED_OR_FROZEN")
+        if (
+            provider != "rapidapi_tennis"
+            and source_event_id in existing_source_ids
+        ):
             blockers.append("ALREADY_PREREGISTERED_OR_FROZEN")
 
-        candidate_physical_key = physical_event_key(candidate)
         if candidate_physical_key is None:
             blockers.append("PHYSICAL_EVENT_IDENTITY_MISSING")
         elif candidate_physical_key in existing_physical_keys:
             blockers.append("ALREADY_PREREGISTERED_OR_FROZEN_PHYSICAL_EVENT")
+
+        provider_source_id_reused = (
+            provider == "rapidapi_tennis"
+            and source_event_id in existing_source_ids
+            and candidate_physical_key not in existing_physical_keys
+        )
 
         players = list(candidate.get("players") or [])
         if len(players) != 2:
@@ -188,6 +216,7 @@ def preregister_discovery(
             "source_provider": provider,
             "source_snapshot_sha256": source_sha,
             "physical_event_key": candidate_physical_key,
+            "provider_source_id_reused": provider_source_id_reused,
             "players": [str(p.get("name") or "").strip() for p in players],
             "player_identities": [
                 {
