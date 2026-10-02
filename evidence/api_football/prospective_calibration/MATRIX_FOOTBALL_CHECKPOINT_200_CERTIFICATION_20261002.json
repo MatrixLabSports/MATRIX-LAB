@@ -1,0 +1,71 @@
+{
+  "schema": "MATRIX_FOOTBALL_CHECKPOINT_200_CERTIFICATION_V1",
+  "certified_at_utc": "2026-10-02T20:00:00+00:00",
+  "source_checkpoint": {
+    "path": "evidence/api_football/prospective_calibration/checkpoint_200.json",
+    "blob_sha": "bb1da1cedbd93d923db362ca39f83d958b628230",
+    "sample_prefix_sha256": "96b9293c4ee5e86fe4fe932f9725e494458348c166aaaa1339e89fcd68b790e6",
+    "observations_available": 240,
+    "observations_used": 200
+  },
+  "result": "CERTIFIED_MARKET_SPLIT",
+  "market_adjudication": {
+    "1x2": {
+      "status": "PROSPECTIVE_SUPPORT_CONFIRMED_AT_200",
+      "challenger_brier": 0.5635155368092774,
+      "poisson_brier": 0.5788521469759893,
+      "delta_brier": -0.01533661016671195,
+      "challenger_log_loss": 0.9629078345841339,
+      "poisson_log_loss": 0.9747479245030892,
+      "delta_log_loss": -0.011840089918955354,
+      "gate_passed": true,
+      "note": "Accuracy alone is not the governing metric; challenger accuracy 0.57 vs Poisson 0.58, while both proper scoring rules favor the challenger."
+    },
+    "over_2_5": {
+      "status": "PROSPECTIVE_SUPPORT_CONFIRMED_AT_200",
+      "challenger_brier": 0.2325431292199755,
+      "poisson_brier": 0.23771435153253923,
+      "delta_brier": -0.005171222312563728,
+      "challenger_log_loss": 0.6571291950840414,
+      "poisson_log_loss": 0.6679786106157043,
+      "delta_log_loss": -0.010849415531662854,
+      "gate_passed": true
+    },
+    "btts_v2": {
+      "candidate_name": "btts_logistic_challenger_v2",
+      "status": "PROSPECTIVE_CHECKPOINT_200_REJECTED_NOT_SUPERIOR_TO_POISSON",
+      "challenger_brier": 0.24084550502841437,
+      "poisson_brier": 0.23364243419213437,
+      "delta_brier": 0.007203070836279996,
+      "challenger_log_loss": 0.6747326292415559,
+      "poisson_log_loss": 0.6597718707994109,
+      "delta_log_loss": 0.01496075844214495,
+      "gate_passed": false,
+      "promotion_eligible": false
+    }
+  },
+  "stability_100_to_200": {
+    "all_three_markets_pass_at_100": true,
+    "all_three_markets_pass_at_200": false,
+    "one_x_two_still_passes": true,
+    "over_2_5_still_passes": true,
+    "btts_v2_lost_superiority": true
+  },
+  "governance": {
+    "checkpoint_role": "INFORMATIVE_STABILITY_CHECKPOINT_NOT_PROMOTION_GATE",
+    "parameter_tuning_allowed": false,
+    "original_357_holdout_reuse_allowed": false,
+    "current_200_prefix_reuse_for_btts_v3_tuning": false,
+    "btts_v3_development_must_use_separate_development_data": true,
+    "btts_v3_validation_must_use_new_unseen_prospective_events_after_model_freeze": true,
+    "p_matrix_status": "NOT_GENERATED",
+    "automatic_wagering": false,
+    "real_money": "BLOCKED"
+  },
+  "next_action": {
+    "one_x_two": "KEEP_FROZEN_AND_CONTINUE_PROSPECTIVE_MONITORING",
+    "over_2_5": "KEEP_FROZEN_AND_CONTINUE_PROSPECTIVE_MONITORING",
+    "btts_v2": "DO_NOT_PROMOTE",
+    "btts_v3": "BUILD_INDEPENDENT_CHALLENGER_WITHOUT_USING_ORIGINAL_357_OR_CHECKPOINT_200_OUTCOMES_FOR_TUNING"
+  }
+}
