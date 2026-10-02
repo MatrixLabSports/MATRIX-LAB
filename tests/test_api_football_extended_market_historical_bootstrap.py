@@ -68,3 +68,18 @@ def test_player_rows_extracts_extended_props():
     assert r["passes_total"]==33
     assert r["tackles_total"]==3
     assert r["fouls_committed"]==2
+
+
+def test_select_can_limit_leagues_and_exclude_prior_dataset_ids():
+    rows=[
+        {"fixture_id":"1","kickoff_utc":"2026-09-01T00:00:00+00:00","league_id":"72"},
+        {"fixture_id":"2","kickoff_utc":"2026-09-02T00:00:00+00:00","league_id":"72"},
+        {"fixture_id":"3","kickoff_utc":"2026-09-03T00:00:00+00:00","league_id":"252"},
+        {"fixture_id":"4","kickoff_utc":"2026-09-04T00:00:00+00:00","league_id":"10"},
+    ]
+    out=select_development_candidates(
+        rows,set(),set(),datetime(2026,9,13,tzinfo=timezone.utc),limit=10,
+        allowed_leagues={"72","252"},
+        extra_excluded_ids={"2"},
+    )
+    assert {r["fixture_id"] for r in out}=={"1","3"}
