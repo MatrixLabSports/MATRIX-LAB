@@ -9,7 +9,7 @@ from typing import Any, Mapping, Sequence
 
 
 API_EVENT = re.compile(r"^api-tennis:event:(\d+)$")
-RAPIDAPI_EVENT = re.compile(r"^rapidapi-tennis:match:(\d+)$")
+RAPIDAPI_EVENT = re.compile(r"^rapidapi-tennis:(?:atp:)?match:(\d+)$")
 TOURNAMENT_INFO = re.compile(r"(?:^|[;| ])tournament_info=(\d+)")
 SHA64 = re.compile(r"^[0-9a-f]{64}$")
 FINISHED = "FINISHED"
