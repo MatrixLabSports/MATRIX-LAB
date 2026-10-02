@@ -18,6 +18,7 @@ def test_prospective_freeze_is_future_unseen_and_holdout_safe():
     assert d["protections"]["missing_feature_imputation"] is False
     assert d["protections"]["p_matrix_generated"] is False
     assert d["protections"]["real_money"]=="BLOCKED"
+    assert d["btts_lane_status"]=="BLOCKED_BTTS_V2_AND_V3_REJECTED"
     forbidden=set(__import__("json").loads(Path("evidence/api_football/btts_challenger_v2/exclusion_registry.json").read_text())["forbidden_fixture_ids"])
     seen=set(str(r["fixture_id"]) for r in load_chunked_json(Path("evidence/api_football/model_validation/retrospective_predictions_manifest.json"))["rows"])
     for row in d["rows"]:
@@ -25,6 +26,8 @@ def test_prospective_freeze_is_future_unseen_and_holdout_safe():
         assert str(row["fixture_id"]) not in seen
         assert row["outcome"] is None
         assert row["settlement_status"]=="PENDING_FINAL"
+        assert "btts_v2" not in row["frozen_research_probabilities"]
+        assert row["market_status"]["btts"]=="BLOCKED_BTTS_V2_AND_V3_REJECTED"
         assert datetime.fromisoformat(row["freeze_at_utc"]) < datetime.fromisoformat(row["kickoff_utc"])
 
 
