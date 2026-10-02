@@ -403,9 +403,26 @@ if [[ -f "$HEARTBEAT" ]]; then
 fi
 
 git commit -m "evidence(cor02-03): governed autonomous production cycle"
-git fetch origin "$TARGET_BRANCH"
-git rebase "origin/$TARGET_BRANCH"
-git push origin "HEAD:$TARGET_BRANCH"
+
+PUSHED=0
+for attempt in 1 2 3 4; do
+  git fetch origin "$TARGET_BRANCH"
+  if ! git rebase "origin/$TARGET_BRANCH"; then
+    git rebase --abort || true
+    echo "COR0203_REBASE_CONFLICT_ATTEMPT_${attempt}" >&2
+    exit 1
+  fi
+  if git push origin "HEAD:$TARGET_BRANCH"; then
+    PUSHED=1
+    break
+  fi
+  echo "COR0203_PUSH_RACE_RETRY_${attempt}" >&2
+  sleep $((attempt * 2))
+done
+if [[ "$PUSHED" != "1" ]]; then
+  echo "COR0203_PUSH_RETRY_EXHAUSTED" >&2
+  exit 1
+fi
 
 python - <<'PY'
 import json
