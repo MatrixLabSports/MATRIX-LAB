@@ -96,6 +96,56 @@ def merge_discovery_payloads(
     return out
 
 
+def fetch_api_tennis_extension(
+    *,
+    client: ApiTennisDiscoveryClient,
+    start,
+    stop,
+    as_of_utc: str,
+) -> dict[str,Any]:
+    """Fetch the +4..+7 block while treating only explicit empty provider results as zero inventory."""
+    fixture_probe=client.fixtures(start,stop)
+    raw_result=fixture_probe.get("result")
+    if isinstance(raw_result,list):
+        payload=api_fetch_discovery(
+            client=client,
+            start=start,
+            stop=stop,
+            as_of_utc=as_of_utc,
+        )
+        payload["status"]="DISCOVERY_COMPLETED"
+        payload["extension_fixture_probe_nonempty"]=True
+        return payload
+    if raw_result in (None,False,"") or (isinstance(raw_result,Mapping) and not raw_result):
+        return {
+            "schema":"MATRIX_COR0203_API_TENNIS_DISCOVERY_V1",
+            "provider":"api_tennis",
+            "as_of_utc":as_of_utc,
+            "status":"DISCOVERY_COMPLETED",
+            "fixture_rows":0,
+            "eligible_input_events":0,
+            "eligible_candidates":[],
+            "provider_rejected":[],
+            "world_registry":{
+                "schema":"matrix.world-calendar-registry/1",
+                "as_of_utc":as_of_utc,
+                "rows":[],
+                "world_calendar_input_rows":0,
+                "world_calendar_unique_events":0,
+                "cor0203_eligible_events":0,
+                "cor0203_eligible_event_ids":[],
+            },
+            "extension_fixture_probe_nonempty":False,
+            "extension_empty_result_shape":type(raw_result).__name__,
+            "automatic_model_promotion":False,
+            "automatic_wagering":False,
+            "real_money":"BLOCKED",
+        }
+    raise ApiTennisDiscoveryError(
+        "API_TENNIS_EXTENSION_UNEXPECTED_RESULT_TYPE:"+type(raw_result).__name__
+    )
+
+
 def run(
     *,
     rapid_current_path: Path,
@@ -127,14 +177,14 @@ def run(
     rapid_ext["network_calls"]=rapid_client.request_count
 
     api_client=ApiTennisDiscoveryClient(api_key)
-    api_ext=api_fetch_discovery(
+    api_ext=fetch_api_tennis_extension(
         client=api_client,
         start=extension_start,
         stop=extension_stop,
         as_of_utc=now.isoformat(),
     )
-    api_ext["status"]="DISCOVERY_COMPLETED"
     api_ext["network_calls"]=api_client.request_count
+    api_ext["request_count"]=api_client.request_count
 
     rapid_base=_load(rapid_current_path)
     api_base=_load(api_current_path)
