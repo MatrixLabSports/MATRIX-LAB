@@ -65,6 +65,41 @@ def _eligible(row: Mapping[str, Any]) -> bool:
     return True
 
 
+
+def _embedded_stats(row: Mapping[str, Any]) -> dict[str, Any]:
+    p1=row.get("player1") if isinstance(row.get("player1"), Mapping) else {}
+    p2=row.get("player2") if isinstance(row.get("player2"), Mapping) else {}
+    p1s=p1.get("stats") if isinstance(p1.get("stats"), Mapping) else {}
+    p2s=p2.get("stats") if isinstance(p2.get("stats"), Mapping) else {}
+    stat=row.get("stat") if isinstance(row.get("stat"), Mapping) else {}
+    if not p1s and isinstance(stat.get("player1Stats"), Mapping):
+        p1s=stat["player1Stats"]
+    if not p2s and isinstance(stat.get("player2Stats"), Mapping):
+        p2s=stat["player2Stats"]
+    def keep(raw: Mapping[str, Any]) -> dict[str, Any]:
+        return {
+            k: raw.get(k)
+            for k in (
+                "player1Id","player2Id","id","aces","doubleFaults","firstServe",
+                "firstServeOf","winningOnFirstServe","winningOnFirstServeOf",
+                "winningOnSecondServe","winningOnSecondServeOf",
+                "breakPointFacedGm","breakPointSavedGm"
+            )
+            if k in raw
+        }
+    return {"player1Stats":keep(p1s),"player2Stats":keep(p2s)}
+
+
+def _has_model_required_stats(summary: Mapping[str, Any]) -> bool:
+    for side in ("player1Stats","player2Stats"):
+        raw=summary.get(side)
+        if not isinstance(raw, Mapping):
+            return False
+        for key in ("winningOnFirstServe","winningOnFirstServeOf","winningOnSecondServe","winningOnSecondServeOf"):
+            if raw.get(key) is None:
+                return False
+    return True
+
 def _stat_summary(payload: object) -> dict[str, Any]:
     root=payload if isinstance(payload, Mapping) else {}
     data=root.get("data") if isinstance(root.get("data"), Mapping) else root
@@ -92,8 +127,13 @@ def main() -> None:
     targets=[]
     for pid, expected in TARGETS.items():
         payload=client._get(
-            f"/tennis/v2/atp/results/player/{pid}",
-            {"pageNo":1,"pageSize":500},
+            f"/tennis/v2/atp/player/past-matches/{pid}",
+            {
+                "pageNo":1,
+                "pageSize":500,
+                "include":"round,tournament.court,tournament.rank,stat",
+                "filter":"GameYear:2026",
+            },
         )
         rows=_rows(payload)
         eligible=[r for r in rows if _eligible(r)]
@@ -113,32 +153,19 @@ def main() -> None:
         stats_attempts=0
         stats_hits=0
         stats_unavailable=[]
-        for row in eligible[:12]:
+        for row in eligible:
             mid=str(row.get("matchId") or row.get("id") or "")
             if not mid:
                 continue
             stats_attempts += 1
-            try:
-                stats=client._get(f"/tennis/v2/ms-api/matches/{mid}/stats")
-            except RapidApiTennisDiscoveryError as error:
+            summary=_embedded_stats(row)
+            if not _has_model_required_stats(summary):
                 stats_unavailable.append({
                     "match_id":mid,
-                    "reason":str(error)[:160],
+                    "reason":"INLINE_STAT_REQUIRED_SERVICE_COUNTS_MISSING",
                 })
-                continue
-            summary=_stat_summary(stats)
-            has_required=any(
-                isinstance(summary.get(side), Mapping)
-                and summary[side].get("firstServeOf") is not None
-                and summary[side].get("winningOnFirstServe") is not None
-                and summary[side].get("winningOnSecondServe") is not None
-                for side in ("player1Stats","player2Stats")
-            )
-            if not has_required:
-                stats_unavailable.append({
-                    "match_id":mid,
-                    "reason":"REQUIRED_SERVICE_COUNTS_MISSING",
-                })
+                if len(stats_unavailable) > 30:
+                    stats_unavailable=stats_unavailable[-30:]
                 continue
             stats_hits += 1
             p1=row.get("player1") if isinstance(row.get("player1"), Mapping) else {}
@@ -162,7 +189,7 @@ def main() -> None:
                 },
                 "stats":summary,
             })
-            if len(samples) >= 3:
+            if len(samples) >= 5:
                 break
 
         item={
