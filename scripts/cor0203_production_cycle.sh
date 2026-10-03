@@ -68,6 +68,9 @@ DUAL_RAPIDAPI_DISCOVERY="/tmp/MATRIX_COR0203_DUAL_RAPIDAPI_DISCOVERY.json"
 DUAL_API_TENNIS_DISCOVERY="/tmp/MATRIX_COR0203_DUAL_API_TENNIS_DISCOVERY.json"
 DUAL_RECONCILIATION_LAST="evidence/cor0203/runtime/MATRIX_COR0203_DUAL_PROVIDER_RECONCILIATION_LAST.json"
 DUAL_IDENTITY_ALIASES_LAST="evidence/cor0203/identity/MATRIX_COR0203_DUAL_PROVIDER_IDENTITY_ALIASES_LAST.json"
+API_TENNIS_RANK_BRIDGE_LAST="evidence/cor0203/runtime/MATRIX_COR0203_API_TENNIS_RAPIDAPI_CUT_IDENTITY_BRIDGE_LAST.json"
+API_TENNIS_RANK_BRIDGE_ALIASES="evidence/cor0203/identity/MATRIX_COR0203_API_TENNIS_RANK_BRIDGE_ALIASES_LAST.json"
+API_TENNIS_RANK_BRIDGE_AUTHORITY="/tmp/MATRIX_COR0203_IDENTITY_AUTHORITY_AFTER_API_TENNIS_BRIDGE.json"
 RAPIDAPI_PREREG_CURRENT="/tmp/MATRIX_COR0203_RAPIDAPI_PREREG_CURRENT.json"
 API_TENNIS_PREREG_CURRENT="/tmp/MATRIX_COR0203_API_TENNIS_PREREG_CURRENT.json"
 
@@ -118,12 +121,23 @@ case "$TENNIS_PROVIDER" in
       --out "$API_TENNIS_DISCOVERY_CURRENT" \
       --days 4
 
+    python -m tools.cor0203_api_tennis_rank_bridge \
+      --discovery "$API_TENNIS_DISCOVERY_CURRENT" \
+      --history-csv "$ANNUAL" \
+      --authority "$IDENTITY_AUTHORITY_LAST" \
+      --base-aliases "$IDENTITY_ALIAS_CERT" \
+      --aliases-out "$API_TENNIS_RANK_BRIDGE_ALIASES" \
+      --authority-out "$API_TENNIS_RANK_BRIDGE_AUTHORITY" \
+      --audit-out "$API_TENNIS_RANK_BRIDGE_LAST" \
+      --max-profiles 12
+    cp "$API_TENNIS_RANK_BRIDGE_AUTHORITY" "$IDENTITY_AUTHORITY_LAST"
+
     python -m tools.cor0203_dual_provider_reconcile \
       --rapidapi "$DISCOVERY" \
       --api-tennis "$API_TENNIS_DISCOVERY_CURRENT" \
       --static-cut "$STATIC_CUT" \
       --runtime-dir evidence/cor0203/runtime \
-      --certified-aliases "$IDENTITY_ALIAS_CERT" \
+      --certified-aliases "$API_TENNIS_RANK_BRIDGE_ALIASES" \
       --identity-authority "$IDENTITY_AUTHORITY_LAST" \
       --identity-alias-out "$DUAL_IDENTITY_ALIASES_LAST" \
       --out-rapidapi "$DUAL_RAPIDAPI_DISCOVERY" \
@@ -476,6 +490,12 @@ if [[ -f "$IDENTITY_ALIAS_CERT" ]]; then
 fi
 if [[ -f "$DUAL_IDENTITY_ALIASES_LAST" ]]; then
   git add "$DUAL_IDENTITY_ALIASES_LAST"
+fi
+if [[ -f "$API_TENNIS_RANK_BRIDGE_ALIASES" ]]; then
+  git add "$API_TENNIS_RANK_BRIDGE_ALIASES"
+fi
+if [[ -f "$API_TENNIS_RANK_BRIDGE_LAST" ]]; then
+  git add "$API_TENNIS_RANK_BRIDGE_LAST"
 fi
 git add evidence/cor0203/runtime/MATRIX_COR0203_PREFEATURE_REGISTRY_R*.json 2>/dev/null || true
 git add evidence/cor0203/runtime/MATRIX_COR0203_IDENTITY_CROSSWALK_R*.json 2>/dev/null || true
