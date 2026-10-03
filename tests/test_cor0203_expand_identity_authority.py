@@ -314,3 +314,66 @@ def test_r706_provider_history_cannot_authorize_history_missing_player(tmp_path)
     assert audit["new_records"]==0
     assert audit["blocked"][0]["reason"]=="R706_MODEL_HISTORY_NOT_READY"
     assert out["records"]==[]
+
+
+def test_r706_history_uses_governed_biography_supplement_when_profile_hand_missing(tmp_path):
+    runtime=tmp_path/"runtime"; runtime.mkdir()
+    _pref(runtime,pid="94367",name="Timofei Derepasko",country="RUS",rank="649",points="55")
+    hist=tmp_path/"h.csv"; _history(hist,[])
+    static=tmp_path/"s.json"; _static(static)
+    provider_history={
+        "cutoff_exclusive_utc":"2026-09-21T00:00:00+00:00",
+        "metrics_opened":False,
+        "outcomes_used_for_metrics":0,
+        "targets":[{
+            "provider_player_id":"rapidapi-tennis:player:94367",
+            "eligible_pre_cut_matches":13,
+            "observed_names":["Timofei Derepasko"],
+        }],
+    }
+    required={
+        "form_history":True,"overall_history":True,"hard_history":True,
+        "serve_history":True,"return_history":True,
+        "opponent_strength_history":True,"elo_overall":True,"elo_hard":True,
+        "glicko_overall":True,"glicko_hard":True,
+    }
+    r706={
+        "state_mutated":False,"metrics_opened":False,"outcomes_read":0,
+        "state_sha256":"a"*64,
+        "targets":[{
+            "name":"Timofei Derepasko","fully_history_ready":True,
+            "required_components":required,"counts":{},"ratings":{},
+        }],
+    }
+    supplement={
+        "competitive_fields_used":False,
+        "outcomes_used":False,
+        "odds_used":False,
+        "records":[{
+            "provider_player_id":"rapidapi-tennis:player:94367",
+            "canonical_name":"Timofei Derepasko",
+            "hand":"R",
+        }],
+    }
+    def profile(pid):
+        return {"data":{
+            "id":pid,
+            "name":"Timofei Derepasko",
+            "birthday":"2007-04-10T00:00:00.000Z",
+            "countryAcr":"RUS",
+            "information":{},
+        }}
+    out,audit=expand_authority(
+        runtime_dir=runtime,
+        history_csv=hist,
+        static_cut_path=static,
+        authority=_authority(),
+        profile_fetcher=profile,
+        provider_history=provider_history,
+        r706_readiness=r706,
+        biography_supplement=supplement,
+    )
+    assert audit["new_records"]==1
+    row=out["records"][0]
+    assert row["hand_source"]=="BIOGRAPHY_SUPPLEMENT"
+    assert row["biographical_candidates"][0]["hand"]=="R"

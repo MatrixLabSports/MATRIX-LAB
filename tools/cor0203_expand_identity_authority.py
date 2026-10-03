@@ -360,6 +360,33 @@ def _sealed_r706_provider_history_match(
     }, None
 
 
+def _biography_supplement_hand(
+    candidate: Mapping[str, Any],
+    supplement: Mapping[str, Any] | None,
+) -> str | None:
+    if not isinstance(supplement, Mapping):
+        return None
+    if supplement.get("competitive_fields_used") is not False:
+        return None
+    if supplement.get("outcomes_used") is not False:
+        return None
+    if supplement.get("odds_used") is not False:
+        return None
+    provider_id = str(candidate.get("provider_player_id") or "")
+    display_name = str(candidate.get("display_name") or "").strip()
+    rows = [
+        row
+        for row in supplement.get("records", []) or []
+        if isinstance(row, Mapping)
+        and str(row.get("provider_player_id") or "") == provider_id
+        and _norm_name(row.get("canonical_name")) == _norm_name(display_name)
+    ]
+    if len(rows) != 1:
+        return None
+    hand = str(rows[0].get("hand") or "").strip().upper()
+    return hand if hand in {"R", "L"} else None
+
+
 def expand_authority(
     *,
     runtime_dir: Path,
@@ -371,6 +398,7 @@ def expand_authority(
     sealed_player_registry: Mapping[str, Mapping[str, Any]] | None = None,
     provider_history: Mapping[str, Any] | None = None,
     r706_readiness: Mapping[str, Any] | None = None,
+    biography_supplement: Mapping[str, Any] | None = None,
 ) -> tuple[dict[str, Any], dict[str, Any]]:
     aliases = dict(authority.get("country_code_aliases") or {})
     static_cut = _load(static_cut_path)
@@ -439,6 +467,14 @@ def expand_authority(
                 profile_ioc = _canonical_ioc(data.get("countryAcr"), aliases)
                 info = data.get("information") if isinstance(data.get("information"), Mapping) else {}
                 profile_hand = _hand_from_profile(info.get("plays") or info.get("hand"))
+                hand_source = "RAPIDAPI_PROFILE"
+                if profile_hand not in {"R", "L"}:
+                    profile_hand = _biography_supplement_hand(
+                        candidate,
+                        biography_supplement,
+                    )
+                    if profile_hand in {"R", "L"}:
+                        hand_source = "BIOGRAPHY_SUPPLEMENT"
                 dob = _dob_token(data.get("birthday"))
                 if profile_id != candidate["numeric_player_id"]:
                     blocked.append({"provider_player_id": provider_id, "reason": "PROFILE_ID_MISMATCH"})
@@ -500,6 +536,7 @@ def expand_authority(
                         "provider_profile_sha256": _sha(profile),
                     }],
                     "biography_source": "RAPIDAPI_ULTRA_PROFILE_NUMERIC_ID_AUTOEXPAND",
+                    "hand_source": hand_source,
                     "profile_competitive_fields_discarded": competitive_fields,
                 }
                 records.append(record)
@@ -725,6 +762,13 @@ def main() -> None:
             "MATRIX_COR0203_R706_TARGET_HISTORY_READINESS_LAST.json"
         ),
     )
+    parser.add_argument(
+        "--biography-supplement",
+        default=(
+            "evidence/cor0203/identity/"
+            "MATRIX_COR0203_BIOGRAPHY_SUPPLEMENT_20261003.json"
+        ),
+    )
     args = parser.parse_args()
 
     key = os.environ.get("RAPIDAPI_TENNIS_KEY", "").strip()
@@ -757,6 +801,12 @@ def main() -> None:
         if r706_readiness_path.exists()
         else None
     )
+    biography_supplement_path = Path(args.biography_supplement)
+    biography_supplement = (
+        _load(biography_supplement_path)
+        if biography_supplement_path.exists()
+        else None
+    )
     output, audit = expand_authority(
         runtime_dir=Path(args.runtime_dir),
         history_csv=Path(args.history_csv),
@@ -767,6 +817,7 @@ def main() -> None:
         sealed_player_registry=sealed_player_registry,
         provider_history=provider_history,
         r706_readiness=r706_readiness,
+        biography_supplement=biography_supplement,
     )
     audit["sealed_frozen_registry_players"] = len(sealed_player_registry)
     audit["sealed_frozen_promotions"] = [
