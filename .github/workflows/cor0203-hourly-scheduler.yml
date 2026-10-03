@@ -206,7 +206,7 @@ jobs:
               "real_money":obs["governance"]["real_money"],
           }
           with Path(os.environ["AUDIT_JSONL"]).open("a",encoding="utf-8") as f:
-              f.write(json.dumps(row,sort_keys=True)+"\\n")
+              f.write(json.dumps(row,sort_keys=True)+"\n")
           PY
             if [[ "$cycle" -lt "$CYCLES" ]]; then
               sleep "$INTERVAL_SECONDS"
@@ -247,7 +247,7 @@ jobs:
               "real_money":"BLOCKED",
           }
           p=Path("evidence/cor0203/runtime/MATRIX_COR0203_SCHEDULER_CONTINUITY_LAST.json")
-          p.write_text(json.dumps(out,indent=2,sort_keys=True)+"\\n",encoding="utf-8")
+          p.write_text(json.dumps(out,indent=2,sort_keys=True)+"\n",encoding="utf-8")
           print(json.dumps({
               "cycles_completed":len(rows),
               "first_unique":rows[0]["unique_calibration_count"],
