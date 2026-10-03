@@ -63,7 +63,8 @@ def build_hourly_discovery_queue(
 ) -> Mapping[str, Any]:
     now = _parse_utc(as_of_utc)
     days = max(1, min(int(days), 4))
-    bucket = now.replace(minute=0, second=0, microsecond=0)
+    bucket_minute = 0 if now.minute < 30 else 30
+    bucket = now.replace(minute=bucket_minute, second=0, microsecond=0)
     local_now = now.astimezone(OPERATIONAL_TIMEZONE)
     start = local_now.date()
     stop = start + timedelta(days=days - 1)
@@ -77,13 +78,14 @@ def build_hourly_discovery_queue(
         "ranking_cut": RANKING_CUT.isoformat(),
         "operational_timezone": "America/Bogota",
         "calendar_day_rule": "00:00:00-23:59:59_LOCAL_FULL_DAY",
+        "discovery_bucket_minutes": 30,
     }
     fingerprint = _sha(identity)
     subject_key = (
         "cor0203-discovery:"
         + PROVIDER_KEY
         + ":"
-        + bucket.strftime("%Y%m%dT%H")
+        + bucket.strftime("%Y%m%dT%H%M")
         + ":"
         + start.isoformat()
         + ":"

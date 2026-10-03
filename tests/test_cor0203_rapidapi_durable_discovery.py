@@ -28,17 +28,21 @@ def test_rapidapi_hourly_queue_is_singleton_bounded_and_provider_specific():
     assert item["rights_status"] == "RESEARCH_ONLY"
 
 
-def test_rapidapi_same_hour_is_idempotent_but_next_hour_is_fresh():
+def test_rapidapi_same_half_hour_is_idempotent_but_next_half_hour_is_fresh():
     a = build_hourly_discovery_queue(
         as_of_utc="2026-09-27T00:01:00+00:00",
         days=2,
     )
     b = build_hourly_discovery_queue(
-        as_of_utc="2026-09-27T00:59:59+00:00",
+        as_of_utc="2026-09-27T00:29:59+00:00",
         days=2,
     )
     c = build_hourly_discovery_queue(
-        as_of_utc="2026-09-27T01:00:00+00:00",
+        as_of_utc="2026-09-27T00:30:00+00:00",
+        days=2,
+    )
+    d = build_hourly_discovery_queue(
+        as_of_utc="2026-09-27T00:59:59+00:00",
         days=2,
     )
     assert (
@@ -46,9 +50,15 @@ def test_rapidapi_same_hour_is_idempotent_but_next_hour_is_fresh():
         == b["queue"][0]["queue_item_fingerprint"]
     )
     assert (
+        c["queue"][0]["queue_item_fingerprint"]
+        == d["queue"][0]["queue_item_fingerprint"]
+    )
+    assert (
         a["queue"][0]["queue_item_fingerprint"]
         != c["queue"][0]["queue_item_fingerprint"]
     )
+    assert ":20260927T0000:" in a["queue"][0]["subject_key"]
+    assert ":20260927T0030:" in c["queue"][0]["subject_key"]
 
 
 def test_fetcher_retains_safe_provider_failure_for_durable_diagnosis(monkeypatch):
