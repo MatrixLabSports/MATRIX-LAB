@@ -7,10 +7,10 @@ on:
     paths:
       - .github/workflows/cor0203-hourly-scheduler.yml
   schedule:
-    # Three retry opportunities inside each 30-minute acquisition bucket.
-    # Durable discovery is bucket-idempotent, so successful retries reuse the
-    # same evidence while the next half-hour can capture schedule changes.
-    - cron: "7,17,27,37,47,57 * * * *"
+    # Two outer triggers per hour. Each scheduled run performs three governed
+    # subcycles at 0/10/20 minutes, covering six acquisition opportunities per
+    # hour without depending on six separate GitHub cron deliveries.
+    - cron: "7,37 * * * *"
   workflow_run:
     workflows:
       - API-Football prospective settlement-calibration supervisor
@@ -53,6 +53,8 @@ jobs:
             tests/test_cor0203_world_inventory_bridge.py \
             tests/test_cor0203_world_funnel_audit.py \
             tests/test_cor0203_rapidapi_durable_discovery.py \
+            tests/test_cor0203_rapidapi_stats_rich_history_probe.py \
+            tests/test_cor0203_shelbayh_alias_cert.py \
             tests/test_cor0203_preregister_discovery.py \
             tests/test_cor0203_expand_identity_authority.py \
             tests/test_cor0203_batch_preflight.py \
@@ -141,19 +143,128 @@ jobs:
           print(d["source_compliance_status"])
           PY
 
-      - name: Run governed autonomous production cycle
+      - name: Run governed autonomous production subcycles
         shell: bash
         env:
           API_TENNIS_KEY: ${{ secrets.API_TENNIS_KEY }}
           RAPIDAPI_TENNIS_KEY: ${{ secrets.RAPIDAPI_TENNIS_KEY }}
-          # Permanent production source: paid RapidAPI Tennis Ultra.
           MATRIX_TENNIS_PROVIDER: rapidapi_tennis
           MATRIX_TARGET_BRANCH: repair/cor09-world-pipeline
           MATRIX_GIT_USER_NAME: matrix-scheduler
           MATRIX_GIT_USER_EMAIL: matrix-scheduler@users.noreply.github.com
         run: |
           set -euo pipefail
-          bash scripts/cor0203_production_cycle.sh --trigger-sha "$TARGET_HEAD"
+          case "${GITHUB_EVENT_NAME}" in
+            schedule)
+              CYCLES=3
+              INTERVAL_SECONDS=600
+              ;;
+            push)
+              # Fast physical validation of the multi-cycle scheduler.
+              CYCLES=2
+              INTERVAL_SECONDS=60
+              ;;
+            workflow_run|workflow_dispatch)
+              CYCLES=1
+              INTERVAL_SECONDS=0
+              ;;
+            *)
+              CYCLES=1
+              INTERVAL_SECONDS=0
+              ;;
+          esac
+          export CYCLES INTERVAL_SECONDS
+          AUDIT_JSONL="/tmp/cor0203_scheduler_cycles.jsonl"
+          : > "$AUDIT_JSONL"
+
+          for cycle in $(seq 1 "$CYCLES"); do
+            STARTED_AT="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+            HEAD_BEFORE="$(git rev-parse HEAD)"
+            CURRENT_TRIGGER_SHA="$HEAD_BEFORE"
+            bash scripts/cor0203_production_cycle.sh --trigger-sha "$CURRENT_TRIGGER_SHA"
+            HEAD_AFTER="$(git rev-parse HEAD)"
+            ENDED_AT="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+            export cycle STARTED_AT ENDED_AT HEAD_BEFORE HEAD_AFTER AUDIT_JSONL
+            python - <<'PY'
+          import json
+          import os
+          from pathlib import Path
+          runtime=Path("evidence/cor0203/runtime")
+          obs=json.loads((runtime/"MATRIX_COR0203_PRODUCTION_OBSERVABILITY_LAST.json").read_text())
+          row={
+              "cycle_index":int(os.environ["cycle"]),
+              "started_at_utc":os.environ["STARTED_AT"],
+              "ended_at_utc":os.environ["ENDED_AT"],
+              "head_before":os.environ["HEAD_BEFORE"],
+              "head_after":os.environ["HEAD_AFTER"],
+              "physical_frozen_rows":obs["holdout"]["physical_frozen_rows"],
+              "unique_calibration_count":obs["holdout"]["unique_calibration_count"],
+              "new_freezes":obs["cycle"]["new_freezes"],
+              "integrity_result":obs["integrity"]["result"],
+              "metrics_opened":obs["integrity"]["metrics_opened"],
+              "outcomes_read":obs["integrity"]["outcomes_read"],
+              "real_money":obs["governance"]["real_money"],
+          }
+          with Path(os.environ["AUDIT_JSONL"]).open("a",encoding="utf-8") as f:
+              f.write(json.dumps(row,sort_keys=True)+"\\n")
+          PY
+            if [[ "$cycle" -lt "$CYCLES" ]]; then
+              sleep "$INTERVAL_SECONDS"
+            fi
+          done
+
+          python - <<'PY'
+          import json
+          import os
+          from pathlib import Path
+          rows=[
+              json.loads(line)
+              for line in Path("/tmp/cor0203_scheduler_cycles.jsonl").read_text().splitlines()
+              if line.strip()
+          ]
+          assert len(rows)==int(os.environ["CYCLES"])
+          assert all(row["integrity_result"]=="PASS" for row in rows)
+          assert all(row["metrics_opened"] is False for row in rows)
+          assert all(row["outcomes_read"]==0 for row in rows)
+          assert all(row["real_money"]=="BLOCKED" for row in rows)
+          out={
+              "schema":"MATRIX_COR0203_SCHEDULER_CONTINUITY_AUDIT_V1",
+              "scheduler_event":os.environ.get("GITHUB_EVENT_NAME"),
+              "scheduler_run_id":os.environ.get("GITHUB_RUN_ID"),
+              "scheduler_run_attempt":os.environ.get("GITHUB_RUN_ATTEMPT"),
+              "configured_outer_schedule":["7,37 * * * *"],
+              "scheduled_subcycles_per_outer_run":3,
+              "scheduled_interval_seconds":600,
+              "validation_subcycles_on_push":2,
+              "validation_interval_seconds":60,
+              "cycles_expected":int(os.environ["CYCLES"]),
+              "cycles_completed":len(rows),
+              "cycles":rows,
+              "all_cycles_integrity_pass":True,
+              "metrics_opened":False,
+              "outcomes_read":0,
+              "automatic_wagering":False,
+              "real_money":"BLOCKED",
+          }
+          p=Path("evidence/cor0203/runtime/MATRIX_COR0203_SCHEDULER_CONTINUITY_LAST.json")
+          p.write_text(json.dumps(out,indent=2,sort_keys=True)+"\\n",encoding="utf-8")
+          print(json.dumps({
+              "cycles_completed":len(rows),
+              "first_unique":rows[0]["unique_calibration_count"],
+              "last_unique":rows[-1]["unique_calibration_count"],
+              "result":"PASS",
+          },sort_keys=True))
+          PY
+
+          git config user.name "matrix-scheduler"
+          git config user.email "matrix-scheduler@users.noreply.github.com"
+          git add evidence/cor0203/runtime/MATRIX_COR0203_SCHEDULER_CONTINUITY_LAST.json
+          git add evidence/cor0203/runtime/MATRIX_COR0203_SCHEDULER_HEARTBEAT.json 2>/dev/null || true
+          if ! git diff --cached --quiet; then
+            git commit -m "evidence(cor02-03): persist scheduler continuity audit"
+            git pull --rebase origin repair/cor09-world-pipeline
+            git push origin HEAD:repair/cor09-world-pipeline
+          fi
 
 # Manual governed production trigger after nine-COR closure hardening.
 
