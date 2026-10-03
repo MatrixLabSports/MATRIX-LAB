@@ -139,7 +139,7 @@ case "$TENNIS_PROVIDER" in
       --aliases-out "$API_TENNIS_RANK_BRIDGE_ALIASES" \
       --authority-out "$API_TENNIS_RANK_BRIDGE_AUTHORITY" \
       --audit-out "$API_TENNIS_RANK_BRIDGE_LAST" \
-      --max-profiles 12
+      --max-profiles 24
     cp "$API_TENNIS_RANK_BRIDGE_AUTHORITY" "$IDENTITY_AUTHORITY_LAST"
 
     python -m tools.cor0203_api_tennis_rank_history_recovery \
@@ -150,7 +150,7 @@ case "$TENNIS_PROVIDER" in
       --aliases-out "$API_TENNIS_RANK_BRIDGE_ALIASES" \
       --authority-out "$API_TENNIS_RANK_BRIDGE_AUTHORITY" \
       --audit-out "$API_TENNIS_RANK_HISTORY_RECOVERY_LAST" \
-      --max-recoveries 20
+      --max-recoveries 32
 
     python -m tools.cor0203_dual_provider_reconcile \
       --rapidapi "$DISCOVERY" \
