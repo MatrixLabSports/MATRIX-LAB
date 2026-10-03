@@ -93,7 +93,7 @@ jobs:
           )
           PY
 
-      - name: Verify both paid tennis API secrets
+      - name: Verify paid tennis API source state
         shell: bash
         env:
           API_TENNIS_KEY: ${{ secrets.API_TENNIS_KEY }}
@@ -104,12 +104,42 @@ jobs:
             echo "RAPIDAPI_TENNIS_KEY_NOT_CONFIGURED"
             exit 2
           fi
-          if [[ -z "${API_TENNIS_KEY:-}" ]]; then
-            echo "API_TENNIS_KEY_NOT_CONFIGURED"
-            exit 2
-          fi
+          echo "RAPIDAPI_TENNIS_CONFIGURED=true" >> "$GITHUB_ENV"
           echo "RAPIDAPI_TENNIS_PAID_SOURCE: CONFIGURED"
-          echo "API_TENNIS_PAID_SOURCE: CONFIGURED"
+          if [[ -z "${API_TENNIS_KEY:-}" ]]; then
+            echo "API_TENNIS_CONFIGURED=false" >> "$GITHUB_ENV"
+            echo "::warning::API_TENNIS_KEY_NOT_CONFIGURED_SECOND_PAID_SOURCE_BLOCKED"
+          else
+            echo "API_TENNIS_CONFIGURED=true" >> "$GITHUB_ENV"
+            echo "API_TENNIS_PAID_SOURCE: CONFIGURED"
+          fi
+
+      - name: Record two-paid-source status in heartbeat
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json
+          import os
+          from pathlib import Path
+          p=Path("evidence/cor0203/runtime/MATRIX_COR0203_SCHEDULER_HEARTBEAT.json")
+          d=json.loads(p.read_text())
+          rapid=os.environ.get("RAPIDAPI_TENNIS_CONFIGURED")=="true"
+          api=os.environ.get("API_TENNIS_CONFIGURED")=="true"
+          d["paid_sources"]={
+              "rapidapi_tennis":{"configured":rapid,"role":"PRIMARY_DISCOVERY_AND_HISTORY"},
+              "api_tennis":{"configured":api,"role":"SECONDARY_DISCOVERY_AND_STATS_RICH_VALIDATION"},
+          }
+          d["two_paid_sources_ready"]=bool(rapid and api)
+          d["source_compliance_status"]=(
+              "PASS_TWO_PAID_SOURCES"
+              if rapid and api
+              else "DEGRADED_SECOND_PAID_SOURCE_SECRET_MISSING"
+          )
+          d["real_money"]="BLOCKED"
+          p.write_text(json.dumps(d,indent=2,sort_keys=True)+"\n")
+          print(d["source_compliance_status"])
+          PY
 
       - name: Run governed autonomous production cycle
         shell: bash
