@@ -98,7 +98,7 @@ def test_unresolved_api_identity_fails_closed(tmp_path):
     )
     assert a["eligible_candidates"]==[]
     assert audit["api_tennis_identity_blocked_count"]==1
-    assert "PIT_STATIC_IDENTITY_NOT_RESOLVED" in audit["api_tennis_identity_blocked"][0]["blockers"][0]
+    assert "PIT_IDENTITY_NOT_RESOLVED" in audit["api_tennis_identity_blocked"][0]["blockers"][0]
 
 
 def test_existing_prefeature_is_not_reintroduced_by_second_provider(tmp_path):
