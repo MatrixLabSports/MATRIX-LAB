@@ -1,0 +1,85 @@
+name: COR02-03 API-Tennis stats-rich probe
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - .github/workflows/cor0203-api-tennis-stats-rich-probe.yml
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: cor0203-holdout-repair-cor09-world-pipeline
+  cancel-in-progress: false
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout operational branch
+        uses: actions/checkout@v4
+        with:
+          ref: repair/cor09-world-pipeline
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install test dependency
+        run: python -m pip install pytest
+
+      - name: Verify probe parser
+        run: python -m pytest -q tests/test_cor0203_api_tennis_stats_probe.py
+
+      - name: Verify paid API-Tennis key
+        shell: bash
+        env:
+          API_TENNIS_KEY: ${{ secrets.API_TENNIS_KEY }}
+        run: |
+          set -euo pipefail
+          test -n "${API_TENNIS_KEY:-}" || { echo "API_TENNIS_KEY_NOT_CONFIGURED"; exit 2; }
+          echo "API_TENNIS_PAID_SOURCE: CONFIGURED"
+
+      - name: Run stats-rich provider probe
+        env:
+          API_TENNIS_KEY: ${{ secrets.API_TENNIS_KEY }}
+        run: python -m tools.cor0203_api_tennis_stats_probe
+
+      - name: Enforce stats-rich evidence gate
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          p=Path("evidence/cor0203/api_tennis_stats_rich/MATRIX_COR0203_API_TENNIS_STATS_RICH_PROBE_LAST.json")
+          d=json.loads(p.read_text())
+          assert d["historical_pre_cut"]["challenger_rows"] > 0
+          assert d["historical_pre_cut"]["rows_with_statistics"] > 0
+          assert d["provider_network_calls"] == 2
+          assert d["post_cut_competitive_data_used_for_model"] is False
+          assert d["outcomes_used_for_metrics"] is False
+          assert d["metrics_opened"] is False
+          assert d["real_money"] == "BLOCKED"
+          print("MATRIX_COR0203_API_TENNIS_STATS_RICH_PROBE: PASS")
+          PY
+
+      - name: Persist probe evidence
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "matrix-cor0203-api-tennis"
+          git config user.email "matrix-cor0203-api-tennis@users.noreply.github.com"
+          git add evidence/cor0203/api_tennis_stats_rich/MATRIX_COR0203_API_TENNIS_STATS_RICH_PROBE_LAST.json
+          if git diff --cached --quiet; then
+            echo "NO_PROBE_EVIDENCE_CHANGE"
+            exit 0
+          fi
+          git commit -m "evidence(cor02-03): verify API-Tennis stats-rich payload"
+          git pull --rebase origin repair/cor09-world-pipeline
+          git push origin HEAD:repair/cor09-world-pipeline
