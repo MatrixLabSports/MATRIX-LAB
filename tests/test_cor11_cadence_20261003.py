@@ -18,3 +18,15 @@ def test_cor11_real_day_sequence_20261003():
     assert d['rules']['real_money'] == 'BLOCKED'
     assert d['rules']['settlement'] == 'FINAL_ONLY'
     assert d['status'] == 'IN_PROGRESS'
+
+
+def test_cor11_last_matches_20261003_snapshot():
+    snapshot = json.loads(
+        Path('evidence/cor11/MATRIX_COR11_CADENCE_LEDGER_20261003.json').read_text(encoding='utf-8')
+    )
+    last = json.loads(
+        Path('evidence/cor11/MATRIX_COR11_CADENCE_LEDGER_LAST.json').read_text(encoding='utf-8')
+    )
+    assert last == snapshot
+    assert last['real_consecutive_days'] == 13
+    assert last['status'] == 'IN_PROGRESS'
