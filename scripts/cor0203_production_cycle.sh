@@ -541,6 +541,16 @@ git add "$DUAL_RECONCILIATION_LAST" 2>/dev/null || true
 git add evidence/cor0203/runtime/MATRIX_COR0203_HISTORY_GATE_R*.json 2>/dev/null || true
 git add evidence/cor0203/holdout/MATRIX_COR0203_HOLDOUT_BATCH_R*.json 2>/dev/null || true
 
+# Persist the new governed audit files on first activation even when the cycle
+# produces no new physical match. On later cycles they remain mutable summaries
+# and are carried only with a material production change.
+if ! git cat-file -e "HEAD:$HORIZON_AUDIT_LAST" 2>/dev/null; then
+  git add "$HORIZON_AUDIT_LAST"
+fi
+if ! git cat-file -e "HEAD:$MILESTONES_LAST" 2>/dev/null; then
+  git add "$MILESTONES_LAST"
+fi
+
 if git diff --cached --quiet; then
   echo "COR0203_CYCLE_NO_MATERIAL_CHANGE"
   python - <<'PY'
@@ -564,6 +574,8 @@ git add "$STAGE_LAST"
 git add "$RUNNER_LAST"
 git add "$INTEGRITY_LAST"
 git add "$UNIQUENESS_LAST"
+git add "$HORIZON_AUDIT_LAST"
+git add "$MILESTONES_LAST"
 git add "$OBSERVABILITY_LAST"
 git add "$DURABLE_DISCOVERY_LAST"
 if [[ -f "$WORLD_DERIVED_DISCOVERY_LAST" ]]; then
