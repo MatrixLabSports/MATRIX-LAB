@@ -1,0 +1,90 @@
+name: COR02-03 RapidAPI pre-cut stats-rich history probe
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - .github/workflows/cor0203-rapidapi-stats-rich-history-probe.yml
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: cor0203-holdout-repair-cor09-world-pipeline
+  cancel-in-progress: false
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout operational branch
+        uses: actions/checkout@v4
+        with:
+          ref: repair/cor09-world-pipeline
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install test dependency
+        run: python -m pip install pytest
+
+      - name: Verify strict pre-cut probe
+        run: python -m pytest -q tests/test_cor0203_rapidapi_stats_rich_history_probe.py
+
+      - name: Verify paid RapidAPI Tennis key
+        shell: bash
+        env:
+          RAPIDAPI_TENNIS_KEY: ${{ secrets.RAPIDAPI_TENNIS_KEY }}
+        run: |
+          set -euo pipefail
+          test -n "${RAPIDAPI_TENNIS_KEY:-}" || { echo "RAPIDAPI_TENNIS_KEY_NOT_CONFIGURED"; exit 2; }
+          echo "RAPIDAPI_TENNIS_PAID_SOURCE: CONFIGURED"
+
+      - name: Probe blocked players against pre-cut stats-rich history
+        env:
+          RAPIDAPI_TENNIS_KEY: ${{ secrets.RAPIDAPI_TENNIS_KEY }}
+        run: python -m tools.cor0203_rapidapi_stats_rich_history_probe
+
+      - name: Enforce governance invariants
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          p=Path("evidence/cor0203/rapidapi_stats_rich/MATRIX_COR0203_RAPIDAPI_PRECUT_STATS_RICH_PROBE_LAST.json")
+          d=json.loads(p.read_text())
+          assert d["cutoff_exclusive_utc"]=="2026-09-21T00:00:00+00:00"
+          assert len(d["targets"])==2
+          assert d["provider_network_calls"] >= 2
+          assert d["metrics_opened"] is False
+          assert d["outcomes_used_for_metrics"] == 0
+          assert d["automatic_wagering"] is False
+          assert d["real_money"]=="BLOCKED"
+          for row in d["targets"]:
+              sample=row.get("sample")
+              if sample is None:
+                  continue
+              assert sample["date"] < "2026-09-21"
+          print("MATRIX_COR0203_RAPIDAPI_PRECUT_STATS_RICH_PROBE: PASS")
+          PY
+
+      - name: Persist probe evidence
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "matrix-cor0203-rapidapi-history"
+          git config user.email "matrix-cor0203-rapidapi-history@users.noreply.github.com"
+          git add evidence/cor0203/rapidapi_stats_rich/MATRIX_COR0203_RAPIDAPI_PRECUT_STATS_RICH_PROBE_LAST.json
+          if git diff --cached --quiet; then
+            echo "NO_PROBE_EVIDENCE_CHANGE"
+            exit 0
+          fi
+          git commit -m "evidence(cor02-03): probe blocked-player pre-cut stats-rich history"
+          git pull --rebase origin repair/cor09-world-pipeline
+          git push origin HEAD:repair/cor09-world-pipeline
