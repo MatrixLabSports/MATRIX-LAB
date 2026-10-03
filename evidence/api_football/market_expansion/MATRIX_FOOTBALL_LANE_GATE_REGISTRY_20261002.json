@@ -59,6 +59,10 @@
       "path": "evidence/api_football/market_expansion/player_models/summary.json",
       "blob_sha": "c028dfa5f587100fa16ade9efec342506bd55db4",
       "workflow_run_id": 37077798214
+    },
+    "team_total_shots_binding": {
+      "path": "evidence/api_football/market_expansion/MATRIX_TEAM_TOTAL_SHOTS_CANONICAL_BINDING_20261002.json",
+      "blob_sha": "819d8ab62413588ae64893fe1ee48a5c1f8be498"
     }
   },
   "lanes": {
@@ -146,13 +150,26 @@
       "train": 224,
       "validation": 50,
       "model_v1": "HISTORICAL_OOS_PASS",
-      "prospective_status": "BLOCKED_PENDING_CANONICAL_BOOKMAKER_SCOPE_BINDING",
+      "prospective_status": "BLOCKED_PENDING_LIVE_PREMATCH_PRICE_OBSERVATION_FOR_CANONICAL_TEAM_TOTAL_SHOTS",
       "gates": {
         "30": "PREPARED_BUT_NOT_STARTED",
         "50": "PREPARED_BUT_NOT_STARTED",
         "100": "PREPARED_BUT_NOT_STARTED",
         "200": "PREPARED_BUT_NOT_STARTED"
-      }
+      },
+      "canonical_market": "MATRIX-MARKET-R2/football/TEAM_TOTAL_SHOTS/team-threshold",
+      "source_endpoint": "/fixtures/statistics",
+      "source_field": "Total Shots",
+      "price_catalog_ids": [
+        221,
+        220
+      ],
+      "price_catalog_names": [
+        "Shots. Home Total",
+        "Shots. Away Total"
+      ],
+      "catalog_binding_status": "RESOLVED",
+      "live_prematch_price_status": "NOT_OBSERVED_IN_EXISTING_3_FIXTURE_PROBE"
     },
     "TEAM_FOULS": {
       "pit_rows": 274,

@@ -6,9 +6,9 @@ from app.core.canonical_market_semantics import (
 )
 
 
-def test_all_16_candidate_families_have_explicit_executable_identity():
+def test_all_17_candidate_families_have_explicit_executable_identity():
     rows = canonical_candidate_market_definitions()
-    assert len(rows) == 16
+    assert len(rows) == 17
     assert len({row.key for row in rows}) == 16
     assert all(row.market_variant and row.period and row.subject_scope for row in rows)
     assert all(len(row.fingerprint) == 64 for row in rows)
@@ -58,3 +58,14 @@ def test_metric_key_is_required_even_for_non_provider_defined_markets():
     row = canonical_candidate_market_definitions()[0]
     with pytest.raises(ValueError, match="METRIC_KEY_REQUIRED"):
         replace(row, metric_key=None)
+
+
+def test_team_total_shots_has_distinct_canonical_identity_from_shots_on_target():
+    rows = canonical_candidate_market_definitions()
+    by_family = {row.market_family: row for row in rows if row.sport == "football"}
+    total = by_family["TEAM_TOTAL_SHOTS"]
+    sot = by_family["TEAM_SHOTS_ON_TARGET"]
+    assert total.version == "MATRIX-MARKET-R2/football/TEAM_TOTAL_SHOTS/team-threshold"
+    assert total.metric_key == "TEAM_TOTAL_SHOTS"
+    assert total.line_unit == "SHOT_COUNT"
+    assert total.key != sot.key
