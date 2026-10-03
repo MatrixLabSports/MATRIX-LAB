@@ -105,7 +105,7 @@ def main() -> None:
         if eligible:
             row=eligible[0]
             mid=str(row.get("matchId") or row.get("id") or "")
-            stats=client._get(f"/tennis/v2/matches/{mid}/stats")
+            stats=client._get(f"/tennis/v2/ms-api/matches/{mid}/stats")
             p1=row.get("player1") if isinstance(row.get("player1"), Mapping) else {}
             p2=row.get("player2") if isinstance(row.get("player2"), Mapping) else {}
             t=row.get("tournament") if isinstance(row.get("tournament"), Mapping) else {}
