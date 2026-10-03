@@ -63,6 +63,16 @@
     "team_total_shots_binding": {
       "path": "evidence/api_football/market_expansion/MATRIX_TEAM_TOTAL_SHOTS_CANONICAL_BINDING_20261002.json",
       "blob_sha": "819d8ab62413588ae64893fe1ee48a5c1f8be498"
+    },
+    "player_shots_expected_minutes_v2": {
+      "summary_path": "evidence/api_football/market_expansion/player_shots_expected_minutes_v2/summary.json",
+      "summary_blob_sha": "b47f3e46eff1c2a5993b4a1e63077a1edf3ae849",
+      "model_path": "evidence/api_football/market_expansion/player_shots_expected_minutes_v2/model.json",
+      "model_blob_sha": "5f3b80ee83b9c56afff083381b8f66210a2d895c"
+    },
+    "player_lineup_probe": {
+      "path": "evidence/api_football/market_expansion/player_lineup_probe/last_run.json",
+      "blob_sha": "b734cf48cc387ec25430df4d6d030be4c211dcb8"
     }
   },
   "lanes": {
@@ -202,14 +212,26 @@
       "train": 2080,
       "validation": 50,
       "historical_model": "HISTORICAL_OOS_PASS",
-      "prospective_status": "BLOCKED_PIT_LINEUP_AND_EXPECTED_MINUTES_NOT_CERTIFIED",
+      "prospective_status": "BLOCKED_PENDING_PREMATCH_LINEUP_ROLE_SOURCE_CERTIFICATION",
       "live_price_status": "VERIFIED_PRESENT",
       "gates": {
         "30": "PREPARED_BUT_BLOCKED",
         "50": "PREPARED_BUT_BLOCKED",
         "100": "PREPARED_BUT_BLOCKED",
         "200": "PREPARED_BUT_BLOCKED"
-      }
+      },
+      "historical_model_v1": "HISTORICAL_OOS_PASS",
+      "historical_model_v2": "HISTORICAL_OOS_PASS_ROLE_AWARE_EXPECTED_MINUTES",
+      "role_aware_dataset_rows": 1965,
+      "role_aware_train": 1915,
+      "role_aware_validation": 50,
+      "expected_minutes_historical_oos_validated": true,
+      "v2_same_rows_delta_brier": -0.004185158996746263,
+      "v2_same_rows_delta_log_loss": -0.005893147545037003,
+      "prematch_lineup_probe_status": "PASS_NO_PREMATCH_LINEUP_OBSERVED",
+      "prematch_lineup_observed_count": 0,
+      "cross_source_role_equivalence_certified": false,
+      "expected_minutes_pit_prospective_certified": false
     },
     "PLAYER_SHOTS_ON_TARGET": {
       "pit_rows": 938,
