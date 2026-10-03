@@ -61,6 +61,13 @@ jobs:
           d=json.loads(p.read_text())
           assert d["cutoff_exclusive_utc"]=="2026-09-21T00:00:00+00:00"
           assert len(d["targets"])==2
+          shelbayh=next(
+              row for row in d["targets"]
+              if row["provider_player_id"]=="rapidapi-tennis:player:76009"
+          )
+          assert shelbayh["eligible_pre_cut_matches"] > 0
+          assert shelbayh["stats_hits"] > 0
+          assert len(shelbayh["samples"]) > 0
           assert d["provider_network_calls"] >= 2
           assert d["metrics_opened"] is False
           assert d["outcomes_used_for_metrics"] == 0
