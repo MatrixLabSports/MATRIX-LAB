@@ -7,9 +7,15 @@ on:
     paths:
       - .github/workflows/cor0203-hourly-scheduler.yml
   schedule:
-    # Two retry opportunities per hour. Durable discovery is bucket-idempotent,
-    # so a successful fetch is not billed twice inside the same UTC hour.
-    - cron: "7,37 * * * *"
+    # Three retry opportunities inside each 30-minute acquisition bucket.
+    # Durable discovery is bucket-idempotent, so successful retries reuse the
+    # same evidence while the next half-hour can capture schedule changes.
+    - cron: "7,17,27,37,47,57 * * * *"
+  workflow_run:
+    workflows:
+      - API-Football prospective settlement-calibration supervisor
+    types:
+      - completed
   workflow_dispatch:
 
 permissions:
@@ -87,9 +93,10 @@ jobs:
           )
           PY
 
-      - name: Verify paid tennis API secret
+      - name: Verify both paid tennis API secrets
         shell: bash
         env:
+          API_TENNIS_KEY: ${{ secrets.API_TENNIS_KEY }}
           RAPIDAPI_TENNIS_KEY: ${{ secrets.RAPIDAPI_TENNIS_KEY }}
         run: |
           set -euo pipefail
@@ -97,7 +104,12 @@ jobs:
             echo "RAPIDAPI_TENNIS_KEY_NOT_CONFIGURED"
             exit 2
           fi
+          if [[ -z "${API_TENNIS_KEY:-}" ]]; then
+            echo "API_TENNIS_KEY_NOT_CONFIGURED"
+            exit 2
+          fi
           echo "RAPIDAPI_TENNIS_PAID_SOURCE: CONFIGURED"
+          echo "API_TENNIS_PAID_SOURCE: CONFIGURED"
 
       - name: Run governed autonomous production cycle
         shell: bash
