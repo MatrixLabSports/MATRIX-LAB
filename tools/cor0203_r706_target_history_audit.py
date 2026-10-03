@@ -5,7 +5,7 @@ from pathlib import Path
 
 from tools.cor0203_prospective_producer import load_state
 
-TARGETS = ["Abedallah Shelbayh", "Timofei Derepasko"]
+TARGETS = ["Abedallah Shelbayh", "Abdullah Shelbayh", "Timofei Derepasko"]
 
 
 def audit_player(state, name: str) -> dict:

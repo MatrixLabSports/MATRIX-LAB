@@ -22,3 +22,24 @@ def test_audit_requires_every_model_history_component():
     row=audit_player(state,"P")
     assert row["fully_history_ready"] is False
     assert row["required_components"]["serve_history"] is False
+
+
+def test_alias_names_are_audited_independently():
+    state={
+        "history":{
+            "matches":{"Abdullah Shelbayh":[1,0]},
+            "overall":{"Abdullah Shelbayh":[1,2]},
+            "surface":{"Abdullah Shelbayh":{"Hard":[1,2]}},
+            "serve":{"Abdullah Shelbayh":[50,100]},
+            "ret":{"Abdullah Shelbayh":[40,100]},
+            "opp_strength":{"Abdullah Shelbayh":[1.0,2]},
+        },
+        "elo_overall":{"Abdullah Shelbayh":1500},
+        "elo_surface":{"Hard":{"Abdullah Shelbayh":1500}},
+        "glicko_overall":{"Abdullah Shelbayh":{"r":1500,"rd":200}},
+        "glicko_surface":{"Hard":{"Abdullah Shelbayh":{"r":1500,"rd":200}}},
+    }
+    canonical=audit_player(state,"Abdullah Shelbayh")
+    provider_alias=audit_player(state,"Abedallah Shelbayh")
+    assert canonical["fully_history_ready"] is True
+    assert provider_alias["fully_history_ready"] is False
