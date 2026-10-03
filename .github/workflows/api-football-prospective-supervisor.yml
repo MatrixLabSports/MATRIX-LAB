@@ -20,7 +20,9 @@ permissions:
   contents: write
 
 concurrency:
-  group: api-football-prospective-settlement-calibration
+  # Serialize all prospective state mutations with the daily producer.
+  # This prevents freeze/calibration/audit races on the operational branch.
+  group: api-football-prospective-freeze-mutation
   cancel-in-progress: false
 
 jobs:
@@ -48,7 +50,8 @@ jobs:
             tests/test_api_football_prospective_supervisor.py \
             tests/test_api_football_prospective_api_settlement.py \
             tests/test_api_football_prospective_calibration.py \
-            tests/test_api_football_checkpoint_200.py
+            tests/test_api_football_checkpoint_200.py \
+            tests/test_api_football_physical_uniqueness.py
 
       - name: Decide whether a provider poll is due
         id: due
@@ -99,6 +102,43 @@ jobs:
         if: steps.due.outputs.due == 'true'
         run: python -m tools.api_football_checkpoint_200
 
+      - name: Reconcile physical uniqueness against current calibration ledger
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m tools.api_football_physical_uniqueness_audit \
+            --freeze evidence/api_football/prospective_market_freeze/freeze.json \
+            --calibration-ledger evidence/api_football/prospective_calibration/ledger.jsonl \
+            --out evidence/api_football/physical_uniqueness/audit_last.json
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          root=Path("evidence/api_football")
+          audit=json.loads((root/"physical_uniqueness/audit_last.json").read_text())
+          ledger=[
+              json.loads(line)
+              for line in (root/"prospective_calibration/ledger.jsonl").read_text().splitlines()
+              if line.strip()
+          ]
+          sync=json.loads((root/"prospective_calibration/sync_last.json").read_text())
+
+          assert audit["result"]=="PASS"
+          assert audit["calibration_rows"]==len(ledger)
+          assert audit["calibration_unique_fixture_ids"]==len(ledger)
+          assert audit["calibration_rows"]==sync["calibration_observation_count"]
+          assert audit["freeze_rows"]==audit["unique_fixture_ids"]
+          assert audit["duplicate_fixture_id_groups"]==0
+          assert audit["exact_physical_duplicate_groups"]==0
+          assert audit["suspicious_same_pair_within_36h"]==0
+          assert audit["calibration_duplicate_fixture_ids"]==[]
+          assert audit["calibration_outside_freeze"]==[]
+          assert audit["real_money"]=="BLOCKED"
+          print("MATRIX_FOOTBALL_PHYSICAL_UNIQUENESS_RECONCILIATION: PASS")
+          print("calibration_rows=",audit["calibration_rows"])
+          print("freeze_rows=",audit["freeze_rows"])
+          PY
+
       - name: Enforce transactional settlement-calibration invariants
         if: steps.due.outputs.due == 'true'
         shell: bash
@@ -122,6 +162,9 @@ jobs:
           checkpoint200=json.loads(
               (root/"prospective_calibration/checkpoint_200.json").read_text()
           )
+          physical_uniqueness=json.loads(
+              (root/"physical_uniqueness/audit_last.json").read_text()
+          )
           decision=json.load(open("/tmp/football_supervisor_decision.json",encoding="utf-8"))
 
           assert decision["due"] is True
@@ -140,6 +183,16 @@ jobs:
           assert sync["calibration_observation_count"]==settlement["ledger_final_count"]
 
           n=gates["calibration_observation_count"]
+          assert physical_uniqueness["result"]=="PASS"
+          assert physical_uniqueness["calibration_rows"]==n
+          assert physical_uniqueness["calibration_unique_fixture_ids"]==n
+          assert physical_uniqueness["freeze_rows"]==physical_uniqueness["unique_fixture_ids"]
+          assert physical_uniqueness["duplicate_fixture_id_groups"]==0
+          assert physical_uniqueness["exact_physical_duplicate_groups"]==0
+          assert physical_uniqueness["suspicious_same_pair_within_36h"]==0
+          assert physical_uniqueness["calibration_duplicate_fixture_ids"]==[]
+          assert physical_uniqueness["calibration_outside_freeze"]==[]
+          assert physical_uniqueness["real_money"]=="BLOCKED"
           assert n==settlement["ledger_final_count"]
           for threshold in (30,50,100):
               gate=gates["gates"][str(threshold)]
@@ -216,8 +269,7 @@ jobs:
           print("checkpoint_200=",checkpoint200["status"])
           PY
 
-      - name: Persist transactional supervisor state
-        if: steps.due.outputs.due == 'true'
+      - name: Persist transactional supervisor state and physical uniqueness audit
         shell: bash
         run: |
           set -euo pipefail
@@ -226,11 +278,12 @@ jobs:
           git add evidence/api_football/prospective_market_freeze
           git add evidence/api_football/prospective_calibration
           git add evidence/api_football/prospective_supervisor
+          git add evidence/api_football/physical_uniqueness/audit_last.json
           if git diff --cached --quiet; then
             echo "NO_SUPERVISOR_MATERIAL_CHANGE"
             exit 0
           fi
-          git commit -m "evidence(football): supervisor settlement-calibration sync"
+          git commit -m "evidence(football): supervisor sync with physical uniqueness"
           git pull --rebase origin repair/cor09-world-pipeline
           git push origin HEAD:repair/cor09-world-pipeline
 
