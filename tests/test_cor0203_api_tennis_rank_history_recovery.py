@@ -77,3 +77,34 @@ def test_no_exact_cut_rank_fails_closed(tmp_path):
     assert a["recovered_count"]==0
     assert out["records"]==[]
     assert a["blocked"][0]["reason"]=="EXACT_20260921_RANKING_NOT_FOUND"
+
+
+def test_core_directory_fallback_recovers_numeric_id(tmp_path):
+    h=tmp_path/"h.csv"; _history(h)
+    audit={"ranking_cut":"20260921","blocked":[{
+        "provider_player_id":"api-tennis:player:2225","player":"Aoran Wang",
+        "reason":"RAPIDAPI_CUT_RANKING_NAME_NOT_FOUND",
+    }]}
+    aliases={"strict_before_period":20260921,"records":[],
+        "post_cut_competitive_data_used":False,"outcomes_used":False,
+        "odds_used":False,"metrics_opened":False,"real_money":"BLOCKED"}
+    authority={"records":[],"post_cut_competitive_data_used":False,
+        "outcomes_used":False,"odds_used":False}
+    name_profile=lambda name:{"name":"Aoran Wang"}
+    directory=lambda ioc,page:{
+        "data":[{"id":9991,"name":"Aoran Wang","countryAcr":"CHN"}],
+        "hasNextPage":False,
+    }
+    id_profile=lambda pid:{"data":{"id":9991,"name":"Aoran Wang","countryAcr":"CHN",
+        "birthday":"1997-02-02","information":{"plays":"Right-Handed"}}}
+    ranking=lambda pid:{"history":[
+        {"date":"2026-09-21T00:00:00Z","position":941,"pts":20}
+    ]}
+    _,out,a=recover_rank_history_aliases(
+        bridge_audit=audit,aliases=aliases,authority=authority,history_csv=h,
+        profile_fetcher=name_profile,ranking_history_fetcher=ranking,
+        player_directory_fetcher=directory,profile_by_id_fetcher=id_profile,
+    )
+    assert a["recovered_count"]==1
+    assert a["directory_calls"]==1
+    assert out["records"][0]["rapidapi_cut_identity"]["provider_player_id"]=="rapidapi-tennis:player:9991"

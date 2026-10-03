@@ -16,6 +16,7 @@ from tools.cor0203_expand_identity_authority import merge_certified_aliases
 from tools.cor0203_rapidapi_tennis_discovery import (
     RapidApiTennisClient,
     RapidApiTennisDiscoveryError,
+    _data_rows,
 )
 
 CUT_DATE=date(2026,9,21)
@@ -128,6 +129,34 @@ def _exact_cut_rank(payload: Mapping[str,Any]) -> tuple[str,str] | None:
     return matches[0] if len(set(matches))==1 and matches else None
 
 
+def _directory_exact_player(
+    *,
+    name: str,
+    ioc: str,
+    page_fetcher: Callable[[str,int],Mapping[str,Any]],
+    max_pages: int=10,
+) -> tuple[str | None, int]:
+    matches=[]
+    calls=0
+    for page in range(1,max_pages+1):
+        payload=page_fetcher(ioc,page)
+        calls+=1
+        rows=_data_rows(payload)
+        for row in rows:
+            if not isinstance(row,Mapping):
+                continue
+            pid=str(row.get("id") or "").strip()
+            pname=str(row.get("name") or "").strip()
+            pioc=_ioc(row.get("countryAcr"))
+            if pid.isdigit() and _norm(pname)==_norm(name) and pioc==ioc:
+                matches.append(pid)
+        has_next=payload.get("hasNextPage")
+        if matches or has_next is False or not rows:
+            break
+    unique=sorted(set(matches))
+    return (unique[0] if len(unique)==1 else None),calls
+
+
 def recover_rank_history_aliases(
     *,
     bridge_audit: Mapping[str,Any],
@@ -136,6 +165,8 @@ def recover_rank_history_aliases(
     history_csv: Path,
     profile_fetcher: Callable[[str],Mapping[str,Any]],
     ranking_history_fetcher: Callable[[str],Mapping[str,Any]],
+    player_directory_fetcher: Callable[[str,int],Mapping[str,Any]] | None=None,
+    profile_by_id_fetcher: Callable[[str],Mapping[str,Any]] | None=None,
     max_recoveries: int=20,
 ) -> tuple[dict[str,Any],dict[str,Any],dict[str,Any]]:
     if bridge_audit.get("ranking_cut")!="20260921":
@@ -151,6 +182,7 @@ def recover_rank_history_aliases(
     recovered=[]
     blocked=[]
     profile_calls=0
+    directory_calls=0
     ranking_history_calls=0
 
     for row in bridge_audit.get("blocked",[]) or []:
@@ -175,18 +207,42 @@ def recover_rank_history_aliases(
         try:
             profile=profile_fetcher(display)
             profile_calls+=1
-        except Exception as error:
-            blocked.append({"provider_player_id":provider_id,"player":display,"reason":"NAME_PROFILE_LOOKUP_FAILED:"+type(error).__name__})
-            continue
-        data=_profile_data(profile)
+        except Exception:
+            profile={}
+        data=_profile_data(profile) if isinstance(profile,Mapping) else {}
         pid=str(data.get("id") or data.get("playerId") or "").strip()
         pname=str(data.get("name") or "").strip()
         pioc=_ioc(data.get("countryAcr"))
+
+        if not pid.isdigit():
+            possible_iocs=sorted({key[1] for key,_ in possible})
+            if player_directory_fetcher is None or profile_by_id_fetcher is None or len(possible_iocs)!=1:
+                blocked.append({"provider_player_id":provider_id,"player":display,"reason":"NAME_PROFILE_IDENTITY_INCOMPLETE"})
+                continue
+            pid,used_calls=_directory_exact_player(
+                name=display,
+                ioc=possible_iocs[0],
+                page_fetcher=player_directory_fetcher,
+            )
+            directory_calls+=used_calls
+            if pid is None:
+                blocked.append({"provider_player_id":provider_id,"player":display,"reason":"CORE_DIRECTORY_EXACT_ID_NOT_FOUND"})
+                continue
+            try:
+                profile=profile_by_id_fetcher(pid)
+                profile_calls+=1
+            except Exception as error:
+                blocked.append({"provider_player_id":provider_id,"player":display,"reason":"CORE_PROFILE_LOOKUP_FAILED:"+type(error).__name__})
+                continue
+            data=_profile_data(profile)
+            pname=str(data.get("name") or "").strip()
+            pioc=_ioc(data.get("countryAcr"))
+
         info=data.get("information") if isinstance(data.get("information"),Mapping) else {}
         phand=_hand(info.get("plays") or info.get("hand"))
         pdob=_dob(data.get("birthday"))
         if not pid.isdigit() or _norm(pname)!=_norm(display) or not pioc or pdob is None:
-            blocked.append({"provider_player_id":provider_id,"player":display,"reason":"NAME_PROFILE_IDENTITY_INCOMPLETE"})
+            blocked.append({"provider_player_id":provider_id,"player":display,"reason":"PROFILE_IDENTITY_INCOMPLETE_AFTER_DIRECTORY"})
             continue
 
         h=hist.get((_norm(pname),pioc))
@@ -276,6 +332,7 @@ def recover_rank_history_aliases(
         "blocked_count":len(blocked),
         "blocked":blocked,
         "profile_calls":profile_calls,
+        "directory_calls":directory_calls,
         "ranking_history_calls":ranking_history_calls,
         "post_cut_competitive_data_used":False,
         "current_rank_used":False,
@@ -313,6 +370,21 @@ def main() -> None:
         payload=client._get(f"/tennis/v2/ranking/atp/player/{pid}/history",{"months":3})
         return payload if isinstance(payload,Mapping) else {}
 
+    def player_directory(ioc: str,page: int) -> Mapping[str,Any]:
+        payload=client._get(
+            "/tennis/v2/atp/player",
+            {
+                "filter":f"PlayerGroup:singles;PlayerCountry:{ioc}",
+                "pageSize":500,
+                "pageNo":page,
+            },
+        )
+        return payload if isinstance(payload,Mapping) else {}
+
+    def profile_by_id(pid: str) -> Mapping[str,Any]:
+        payload=client._get(f"/tennis/v2/atp/player/profile/{pid}")
+        return payload if isinstance(payload,Mapping) else {}
+
     authority,aliases,audit=recover_rank_history_aliases(
         bridge_audit=_load(Path(args.bridge_audit)),
         aliases=_load(Path(args.aliases)),
@@ -320,6 +392,8 @@ def main() -> None:
         history_csv=Path(args.history_csv),
         profile_fetcher=profile_by_name,
         ranking_history_fetcher=ranking_history,
+        player_directory_fetcher=player_directory,
+        profile_by_id_fetcher=profile_by_id,
         max_recoveries=max(0,int(args.max_recoveries)),
     )
     audit["provider_network_calls"]=client.request_count
