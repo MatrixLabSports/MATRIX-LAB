@@ -172,6 +172,88 @@ def resolve_authority_mapping(
             "status": "PASS",
         }, None
 
+    if str(row.get("authority_basis") or "") == (
+        "SEALED_R706_STATE_PLUS_PRECUT_PROVIDER_HISTORY_AND_PROFILE"
+    ):
+        sealed = row.get("sealed_r706_history")
+        provider_history = row.get("pre_cut_provider_history")
+        if not isinstance(sealed, Mapping) or sealed.get("fully_history_ready") is not True:
+            return None, "IDENTITY_AUTHORITY_R706_HISTORY_NOT_READY:" + provider_id
+        if not isinstance(provider_history, Mapping):
+            return None, "IDENTITY_AUTHORITY_PROVIDER_HISTORY_MISSING:" + provider_id
+        if str(provider_history.get("cutoff_exclusive_utc") or "") != "2026-09-21T00:00:00+00:00":
+            return None, "IDENTITY_AUTHORITY_PROVIDER_HISTORY_CUT_MISMATCH:" + provider_id
+        try:
+            eligible_pre_cut = int(provider_history.get("eligible_pre_cut_matches") or 0)
+        except (TypeError, ValueError):
+            eligible_pre_cut = 0
+        if eligible_pre_cut <= 0:
+            return None, "IDENTITY_AUTHORITY_PROVIDER_PRECUT_HISTORY_EMPTY:" + provider_id
+        observed_names = [
+            str(x).strip()
+            for x in provider_history.get("observed_names", []) or []
+            if str(x).strip()
+        ]
+        if not observed_names or any(
+            _norm_name(x) != _norm_name(canonical_name)
+            for x in observed_names
+        ):
+            return None, "IDENTITY_AUTHORITY_PROVIDER_HISTORY_NAME_MISMATCH:" + provider_id
+        sealed_name = str(sealed.get("name") or "").strip()
+        if not sealed_name or _norm_name(sealed_name) != _norm_name(canonical_name):
+            return None, "IDENTITY_AUTHORITY_R706_NAME_MISMATCH:" + provider_id
+        required = sealed.get("required_components")
+        if not isinstance(required, Mapping) or not required or not all(
+            value is True for value in required.values()
+        ):
+            return None, "IDENTITY_AUTHORITY_R706_COMPONENT_MISSING:" + provider_id
+        state_sha = str(sealed.get("state_sha256") or "").strip()
+        if len(state_sha) != 64:
+            return None, "IDENTITY_AUTHORITY_R706_STATE_SHA_INVALID:" + provider_id
+        canonical_source_id = str(row.get("canonical_source_id") or "").strip()
+        if not canonical_source_id:
+            return None, "IDENTITY_AUTHORITY_R706_SOURCE_ID_MISSING:" + provider_id
+
+        bios = row.get("biographical_candidates")
+        if not isinstance(bios, list) or len(bios) != 1 or not isinstance(bios[0], Mapping):
+            return None, "IDENTITY_AUTHORITY_BIOGRAPHY_NOT_UNIQUE:" + provider_id
+        bio = bios[0]
+        if _norm_name(bio.get("name")) != _norm_name(authority_name):
+            return None, "IDENTITY_AUTHORITY_BIOGRAPHY_NAME_MISMATCH:" + provider_id
+        if _canonical_ioc(bio.get("ioc")) != provider_ioc:
+            return None, "IDENTITY_AUTHORITY_BIOGRAPHY_IOC_MISMATCH:" + provider_id
+        bio_hand = str(bio.get("hand") or "").strip().upper()
+        if bio_hand not in {"R", "L"}:
+            return None, "IDENTITY_AUTHORITY_BIOGRAPHY_HAND_INVALID:" + provider_id
+        dob = _parse_dob(bio.get("dob"))
+        if dob is None or dob >= CUT_DATE:
+            return None, "IDENTITY_AUTHORITY_DOB_INVALID:" + provider_id
+
+        return {
+            "provider": provider,
+            "provider_player_id": provider_id,
+            "provider_display_name": display_name,
+            "provider_ranking_name": provider_name,
+            "provider_rank": rank,
+            "provider_rank_points": points,
+            "canonical_source_id": canonical_source_id,
+            "canonical_name": canonical_name,
+            "canonical_rank": rank,
+            "canonical_rank_points": points,
+            "canonical_hand": bio_hand,
+            "canonical_age": _age_at_cut(dob),
+            "canonical_ioc": provider_ioc,
+            "canonical_dob": dob.isoformat(),
+            "ranking_cut": CUT_TOKEN,
+            "match_basis": (
+                "EXACT_PROVIDER_ID_PLUS_NAME_IOC_DATED_RANKING_"
+                "PLUS_PRECUT_PROVIDER_RESULTS_PLUS_SEALED_R706_HISTORY_"
+                "PLUS_PROFILE_DOB_HAND"
+            ),
+            "identity_authority": str(row.get("_identity_authority") or ""),
+            "status": "PASS",
+        }, None
+
     history = row.get("pre_cut_history")
     if not isinstance(history, Mapping):
         return None, "IDENTITY_AUTHORITY_HISTORY_MISSING:" + provider_id

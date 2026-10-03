@@ -274,6 +274,92 @@ def _sealed_frozen_match(
     }, None
 
 
+def _sealed_r706_provider_history_match(
+    candidate: Mapping[str, Any],
+    provider_history: Mapping[str, Any] | None,
+    r706_readiness: Mapping[str, Any] | None,
+) -> tuple[dict[str, Any] | None, str | None]:
+    if not isinstance(provider_history, Mapping) or not isinstance(r706_readiness, Mapping):
+        return None, None
+    if str(provider_history.get("cutoff_exclusive_utc") or "") != "2026-09-21T00:00:00+00:00":
+        return None, "PROVIDER_HISTORY_CUT_MISMATCH"
+    if provider_history.get("metrics_opened") is not False:
+        return None, "PROVIDER_HISTORY_METRICS_FLAG_INVALID"
+    if int(provider_history.get("outcomes_used_for_metrics") or 0) != 0:
+        return None, "PROVIDER_HISTORY_OUTCOMES_FLAG_INVALID"
+    if r706_readiness.get("state_mutated") is not False:
+        return None, "R706_STATE_MUTATION_FLAG_INVALID"
+    if r706_readiness.get("metrics_opened") is not False:
+        return None, "R706_METRICS_FLAG_INVALID"
+    if int(r706_readiness.get("outcomes_read") or 0) != 0:
+        return None, "R706_OUTCOMES_FLAG_INVALID"
+
+    provider_id = str(candidate.get("provider_player_id") or "")
+    target_rows = [
+        row
+        for row in provider_history.get("targets", []) or []
+        if isinstance(row, Mapping)
+        and str(row.get("provider_player_id") or "") == provider_id
+    ]
+    if not target_rows:
+        return None, None
+    if len(target_rows) != 1:
+        return None, "PROVIDER_HISTORY_TARGET_NONUNIQUE"
+    provider_row = target_rows[0]
+    try:
+        eligible = int(provider_row.get("eligible_pre_cut_matches") or 0)
+    except (TypeError, ValueError):
+        eligible = 0
+    if eligible <= 0:
+        return None, "PROVIDER_PRECUT_HISTORY_EMPTY"
+    display_name = str(candidate.get("display_name") or "").strip()
+    observed_names = [
+        str(x).strip()
+        for x in provider_row.get("observed_names", []) or []
+        if str(x).strip()
+    ]
+    if not observed_names or any(
+        _norm_name(x) != _norm_name(display_name)
+        for x in observed_names
+    ):
+        return None, "PROVIDER_HISTORY_NAME_MISMATCH"
+
+    state_rows = [
+        row
+        for row in r706_readiness.get("targets", []) or []
+        if isinstance(row, Mapping)
+        and _norm_name(row.get("name")) == _norm_name(display_name)
+    ]
+    if not state_rows:
+        return None, "R706_HISTORY_TARGET_MISSING"
+    if len(state_rows) != 1:
+        return None, "R706_HISTORY_TARGET_NONUNIQUE"
+    state_row = state_rows[0]
+    if state_row.get("fully_history_ready") is not True:
+        return None, "R706_MODEL_HISTORY_NOT_READY"
+    required = state_row.get("required_components")
+    if not isinstance(required, Mapping) or not required or not all(
+        value is True for value in required.values()
+    ):
+        return None, "R706_MODEL_HISTORY_COMPONENT_MISSING"
+    state_sha = str(r706_readiness.get("state_sha256") or "").strip()
+    if len(state_sha) != 64:
+        return None, "R706_STATE_SHA_INVALID"
+
+    return {
+        "name": str(state_row.get("name") or display_name),
+        "fully_history_ready": True,
+        "required_components": dict(required),
+        "counts": dict(state_row.get("counts") or {}),
+        "ratings": dict(state_row.get("ratings") or {}),
+        "state_sha256": state_sha,
+        "provider_player_id": provider_id,
+        "eligible_pre_cut_matches": eligible,
+        "observed_names": observed_names,
+        "cutoff_exclusive_utc": "2026-09-21T00:00:00+00:00",
+    }, None
+
+
 def expand_authority(
     *,
     runtime_dir: Path,
@@ -283,6 +369,8 @@ def expand_authority(
     profile_fetcher: Callable[[str], Mapping[str, Any]],
     max_profiles: int = 12,
     sealed_player_registry: Mapping[str, Mapping[str, Any]] | None = None,
+    provider_history: Mapping[str, Any] | None = None,
+    r706_readiness: Mapping[str, Any] | None = None,
 ) -> tuple[dict[str, Any], dict[str, Any]]:
     aliases = dict(authority.get("country_code_aliases") or {})
     static_cut = _load(static_cut_path)
@@ -322,10 +410,101 @@ def expand_authority(
                 })
                 continue
             if sealed is None:
-                blocked.append({
+                r706_evidence, r706_reason = _sealed_r706_provider_history_match(
+                    candidate,
+                    provider_history,
+                    r706_readiness,
+                )
+                if r706_reason is not None:
+                    blocked.append({
+                        "provider_player_id": provider_id,
+                        "reason": r706_reason,
+                    })
+                    continue
+                if r706_evidence is None:
+                    blocked.append({
+                        "provider_player_id": provider_id,
+                        "reason": "NO_PRE_CUT_CHALLENGER_HISTORY",
+                    })
+                    continue
+
+                profile = profile_fetcher(candidate["numeric_player_id"])
+                requests += 1
+                data = profile.get("data") if isinstance(profile.get("data"), Mapping) else profile
+                if not isinstance(data, Mapping):
+                    blocked.append({"provider_player_id": provider_id, "reason": "PROFILE_PAYLOAD_INVALID"})
+                    continue
+                profile_id = str(data.get("id") or candidate["numeric_player_id"]).strip()
+                profile_name = str(data.get("name") or "").strip()
+                profile_ioc = _canonical_ioc(data.get("countryAcr"), aliases)
+                info = data.get("information") if isinstance(data.get("information"), Mapping) else {}
+                profile_hand = _hand_from_profile(info.get("plays") or info.get("hand"))
+                dob = _dob_token(data.get("birthday"))
+                if profile_id != candidate["numeric_player_id"]:
+                    blocked.append({"provider_player_id": provider_id, "reason": "PROFILE_ID_MISMATCH"})
+                    continue
+                if _norm_name(profile_name) != _norm_name(candidate["display_name"]):
+                    blocked.append({"provider_player_id": provider_id, "reason": "PROFILE_NAME_MISMATCH"})
+                    continue
+                if profile_ioc != ioc:
+                    blocked.append({"provider_player_id": provider_id, "reason": "PROFILE_IOC_MISMATCH"})
+                    continue
+                if profile_hand not in {"R", "L"}:
+                    blocked.append({"provider_player_id": provider_id, "reason": "PROFILE_HAND_INVALID"})
+                    continue
+                if dob is None:
+                    blocked.append({"provider_player_id": provider_id, "reason": "PROFILE_DOB_INVALID"})
+                    continue
+
+                competitive_fields = [
+                    key for key in ("currentRank", "points", "progress", "careerMoney") if key in data
+                ]
+                canonical_source_id = (
+                    "R706_STATE_RAPIDAPI_PLAYER_" + candidate["numeric_player_id"]
+                )
+                record = {
                     "provider_player_id": provider_id,
-                    "reason": "NO_PRE_CUT_CHALLENGER_HISTORY",
-                })
+                    "provider_display_name": candidate["display_name"],
+                    "canonical_name": r706_evidence["name"],
+                    "canonical_source_id": canonical_source_id,
+                    "provider_ioc_raw": candidate["provider_ioc_raw"],
+                    "provider_ioc_canonical": ioc,
+                    "ranking_cut": "2026-09-21",
+                    "provider_rank": candidate["provider_rank"],
+                    "provider_rank_points": candidate["provider_rank_points"],
+                    "authority_basis": (
+                        "SEALED_R706_STATE_PLUS_PRECUT_PROVIDER_HISTORY_AND_PROFILE"
+                    ),
+                    "sealed_r706_history": {
+                        "name": r706_evidence["name"],
+                        "fully_history_ready": True,
+                        "required_components": r706_evidence["required_components"],
+                        "counts": r706_evidence["counts"],
+                        "ratings": r706_evidence["ratings"],
+                        "state_sha256": r706_evidence["state_sha256"],
+                    },
+                    "pre_cut_provider_history": {
+                        "provider_player_id": provider_id,
+                        "eligible_pre_cut_matches": r706_evidence["eligible_pre_cut_matches"],
+                        "observed_names": r706_evidence["observed_names"],
+                        "cutoff_exclusive_utc": r706_evidence["cutoff_exclusive_utc"],
+                    },
+                    "biographical_candidates": [{
+                        "master_id": "RAPIDAPI_PROFILE_" + candidate["numeric_player_id"],
+                        "name": profile_name,
+                        "hand": profile_hand,
+                        "dob": dob,
+                        "ioc": profile_ioc,
+                        "height_cm": None,
+                        "wikidata_id": None,
+                        "provider_profile_sha256": _sha(profile),
+                    }],
+                    "biography_source": "RAPIDAPI_ULTRA_PROFILE_NUMERIC_ID_AUTOEXPAND",
+                    "profile_competitive_fields_discarded": competitive_fields,
+                }
+                records.append(record)
+                known_ids.add(provider_id)
+                added.append(record)
                 continue
 
             profile = profile_fetcher(candidate["numeric_player_id"])
@@ -532,6 +711,20 @@ def main() -> None:
     parser.add_argument("--out", default="evidence/cor0203/identity/MATRIX_COR0203_IDENTITY_AUTHORITY_LAST.json")
     parser.add_argument("--audit-out", default="evidence/cor0203/runtime/MATRIX_COR0203_IDENTITY_AUTHORITY_EXPANSION_LAST.json")
     parser.add_argument("--max-profiles", type=int, default=12)
+    parser.add_argument(
+        "--provider-history",
+        default=(
+            "evidence/cor0203/rapidapi_stats_rich/"
+            "MATRIX_COR0203_RAPIDAPI_PRECUT_STATS_RICH_PROBE_LAST.json"
+        ),
+    )
+    parser.add_argument(
+        "--r706-readiness",
+        default=(
+            "evidence/cor0203/runtime/"
+            "MATRIX_COR0203_R706_TARGET_HISTORY_READINESS_LAST.json"
+        ),
+    )
     args = parser.parse_args()
 
     key = os.environ.get("RAPIDAPI_TENNIS_KEY", "").strip()
@@ -552,6 +745,18 @@ def main() -> None:
         runtime_dir=Path(args.runtime_dir),
         holdout_dir=Path(args.holdout_dir),
     )
+    provider_history_path = Path(args.provider_history)
+    r706_readiness_path = Path(args.r706_readiness)
+    provider_history = (
+        _load(provider_history_path)
+        if provider_history_path.exists()
+        else None
+    )
+    r706_readiness = (
+        _load(r706_readiness_path)
+        if r706_readiness_path.exists()
+        else None
+    )
     output, audit = expand_authority(
         runtime_dir=Path(args.runtime_dir),
         history_csv=Path(args.history_csv),
@@ -560,12 +765,20 @@ def main() -> None:
         profile_fetcher=fetch_profile,
         max_profiles=args.max_profiles,
         sealed_player_registry=sealed_player_registry,
+        provider_history=provider_history,
+        r706_readiness=r706_readiness,
     )
     audit["sealed_frozen_registry_players"] = len(sealed_player_registry)
     audit["sealed_frozen_promotions"] = [
         row["provider_player_id"]
         for row in output.get("records", [])
         if row.get("authority_basis") == "SEALED_FROZEN_STATIC4_PLUS_PROFILE"
+    ]
+    audit["sealed_r706_history_promotions"] = [
+        row["provider_player_id"]
+        for row in output.get("records", [])
+        if row.get("authority_basis")
+        == "SEALED_R706_STATE_PLUS_PRECUT_PROVIDER_HISTORY_AND_PROFILE"
     ]
     audit["provider_network_calls"] = client.request_count
     _write(out_path, output)

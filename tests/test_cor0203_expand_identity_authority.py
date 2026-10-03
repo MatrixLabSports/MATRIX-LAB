@@ -203,3 +203,114 @@ def test_sealed_frozen_fallback_rejects_rank_points_mismatch(tmp_path):
     assert audit["new_records"]==0
     assert audit["blocked"][0]["reason"]=="SEALED_FROZEN_RANK_POINTS_MISMATCH"
     assert out["records"]==[]
+
+
+def test_r706_provider_history_can_authorize_history_ready_player(tmp_path):
+    runtime=tmp_path/"runtime"; runtime.mkdir()
+    _pref(runtime,pid="94367",name="Timofei Derepasko",country="RUS",rank="649",points="55")
+    hist=tmp_path/"h.csv"; _history(hist,[])
+    static=tmp_path/"s.json"; _static(static)
+    provider_history={
+        "cutoff_exclusive_utc":"2026-09-21T00:00:00+00:00",
+        "metrics_opened":False,
+        "outcomes_used_for_metrics":0,
+        "targets":[{
+            "provider_player_id":"rapidapi-tennis:player:94367",
+            "eligible_pre_cut_matches":13,
+            "observed_names":["Timofei Derepasko"],
+        }],
+    }
+    r706={
+        "state_mutated":False,
+        "metrics_opened":False,
+        "outcomes_read":0,
+        "state_sha256":"a"*64,
+        "targets":[{
+            "name":"Timofei Derepasko",
+            "fully_history_ready":True,
+            "required_components":{
+                "form_history":True,
+                "overall_history":True,
+                "hard_history":True,
+                "serve_history":True,
+                "return_history":True,
+                "opponent_strength_history":True,
+                "elo_overall":True,
+                "elo_hard":True,
+                "glicko_overall":True,
+                "glicko_hard":True,
+            },
+            "counts":{"form_matches":2,"serve_n":92,"return_n":106},
+            "ratings":{"elo_overall_present":True,"glicko_overall_present":True},
+        }],
+    }
+    calls=[]
+    def profile(pid):
+        calls.append(pid)
+        return {"data":{
+            "id":pid,
+            "name":"Timofei Derepasko",
+            "birthday":"2007-04-10T00:00:00.000Z",
+            "countryAcr":"RUS",
+            "currentRank":999,
+            "information":{"plays":"Right-Handed, Two-Handed Backhand"},
+        }}
+    out,audit=expand_authority(
+        runtime_dir=runtime,
+        history_csv=hist,
+        static_cut_path=static,
+        authority=_authority(),
+        profile_fetcher=profile,
+        provider_history=provider_history,
+        r706_readiness=r706,
+    )
+    assert audit["new_records"]==1
+    assert calls==["94367"]
+    row=out["records"][0]
+    assert row["authority_basis"]=="SEALED_R706_STATE_PLUS_PRECUT_PROVIDER_HISTORY_AND_PROFILE"
+    assert row["canonical_source_id"]=="R706_STATE_RAPIDAPI_PLAYER_94367"
+    assert row["sealed_r706_history"]["fully_history_ready"] is True
+    assert row["pre_cut_provider_history"]["eligible_pre_cut_matches"]==13
+    assert row["profile_competitive_fields_discarded"]==["currentRank"]
+
+
+def test_r706_provider_history_cannot_authorize_history_missing_player(tmp_path):
+    runtime=tmp_path/"runtime"; runtime.mkdir()
+    _pref(runtime,pid="76009",name="Abedallah Shelbayh",country="JOR",rank="250",points="224")
+    hist=tmp_path/"h.csv"; _history(hist,[])
+    static=tmp_path/"s.json"; _static(static)
+    provider_history={
+        "cutoff_exclusive_utc":"2026-09-21T00:00:00+00:00",
+        "metrics_opened":False,
+        "outcomes_used_for_metrics":0,
+        "targets":[{
+            "provider_player_id":"rapidapi-tennis:player:76009",
+            "eligible_pre_cut_matches":184,
+            "observed_names":["Abedallah Shelbayh"],
+        }],
+    }
+    r706={
+        "state_mutated":False,
+        "metrics_opened":False,
+        "outcomes_read":0,
+        "state_sha256":"b"*64,
+        "targets":[{
+            "name":"Abedallah Shelbayh",
+            "fully_history_ready":False,
+            "required_components":{"form_history":False},
+            "counts":{},
+            "ratings":{},
+        }],
+    }
+    out,audit=expand_authority(
+        runtime_dir=runtime,
+        history_csv=hist,
+        static_cut_path=static,
+        authority=_authority(),
+        profile_fetcher=lambda pid: (_ for _ in ()).throw(AssertionError("profile must not be called")),
+        provider_history=provider_history,
+        r706_readiness=r706,
+    )
+    assert audit["new_records"]==0
+    assert audit["blocked"][0]["reason"]=="R706_MODEL_HISTORY_NOT_READY"
+    assert out["records"]==[]

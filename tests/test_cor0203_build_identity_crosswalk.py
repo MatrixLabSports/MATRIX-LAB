@@ -482,3 +482,86 @@ def test_sealed_frozen_authority_can_resolve_provider_id_without_name_only_join(
     assert row["canonical_source_id"]=="COR0203-R700-PLAYER-ONE"
     assert "SEALED_FROZEN_STATIC4" in row["match_basis"]
     assert result["join_by_name_only"] is False
+
+
+def test_r706_provider_history_authority_resolves_without_state_mutation():
+    pre={
+        "revision":"R902","holdout_id":"H","discovery_provider":"rapidapi_tennis",
+        "events":[{
+            "event_id":"derepasko-e1","identity_crosswalk_required":True,
+            "player_identities":[
+                {
+                    "display_name":"Timofei Derepasko",
+                    "provider":"rapidapi_tennis",
+                    "provider_player_id":"rapidapi-tennis:player:94367",
+                    "provider_ranking":{
+                        "place":"649","points":"55","player":"Timofei Derepasko",
+                        "country":"RUS","snapshot_date":"2026-09-21",
+                    },
+                },
+                {
+                    "display_name":"Dino Prizmic",
+                    "provider":"api_tennis",
+                    "provider_player_id":"api-tennis:player:22",
+                    "provider_ranking":{
+                        "place":"101","points":"603","player":"Dino Prizmic",
+                        "country":"CRO","snapshot_date":"2026-09-21",
+                    },
+                },
+            ],
+        }],
+    }
+    authority={
+        "schema":"MATRIX_COR0203_IDENTITY_AUTHORITY_AUTOEXPAND_V1",
+        "post_cut_competitive_data_used":False,
+        "outcomes_used":False,
+        "odds_used":False,
+        "records":[{
+            "provider_player_id":"rapidapi-tennis:player:94367",
+            "provider_display_name":"Timofei Derepasko",
+            "canonical_name":"Timofei Derepasko",
+            "canonical_source_id":"R706_STATE_RAPIDAPI_PLAYER_94367",
+            "provider_ioc_raw":"RUS",
+            "provider_ioc_canonical":"RUS",
+            "ranking_cut":"2026-09-21",
+            "provider_rank":"649",
+            "provider_rank_points":"55",
+            "authority_basis":"SEALED_R706_STATE_PLUS_PRECUT_PROVIDER_HISTORY_AND_PROFILE",
+            "sealed_r706_history":{
+                "name":"Timofei Derepasko",
+                "fully_history_ready":True,
+                "required_components":{
+                    "form_history":True,"overall_history":True,"hard_history":True,
+                    "serve_history":True,"return_history":True,
+                    "opponent_strength_history":True,"elo_overall":True,"elo_hard":True,
+                    "glicko_overall":True,"glicko_hard":True,
+                },
+                "state_sha256":"a"*64,
+            },
+            "pre_cut_provider_history":{
+                "provider_player_id":"rapidapi-tennis:player:94367",
+                "eligible_pre_cut_matches":13,
+                "observed_names":["Timofei Derepasko"],
+                "cutoff_exclusive_utc":"2026-09-21T00:00:00+00:00",
+            },
+            "biographical_candidates":[{
+                "master_id":"RAPIDAPI_PROFILE_94367",
+                "name":"Timofei Derepasko",
+                "hand":"R",
+                "dob":"20070410",
+                "ioc":"RUS",
+            }],
+        }],
+    }
+    result=build_crosswalk(
+        prefeature=pre,
+        static_cut=static_cut(),
+        identity_authority=authority,
+    )
+    assert result["status"]=="PASS"
+    mappings={m["provider_player_id"]:m for m in result["mappings"]}
+    row=mappings["rapidapi-tennis:player:94367"]
+    assert row["canonical_name"]=="Timofei Derepasko"
+    assert row["canonical_source_id"]=="R706_STATE_RAPIDAPI_PLAYER_94367"
+    assert "SEALED_R706_HISTORY" in row["match_basis"]
+    assert result["join_by_name_only"] is False
