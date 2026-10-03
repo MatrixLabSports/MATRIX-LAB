@@ -2,7 +2,7 @@ import csv
 import json
 from pathlib import Path
 
-from tools.cor0203_expand_identity_authority import expand_authority
+from tools.cor0203_expand_identity_authority import expand_authority, merge_certified_aliases
 
 
 def _write_json(path: Path, value):
@@ -377,3 +377,40 @@ def test_r706_history_uses_governed_biography_supplement_when_profile_hand_missi
     row=out["records"][0]
     assert row["hand_source"]=="BIOGRAPHY_SUPPLEMENT"
     assert row["biographical_candidates"][0]["hand"]=="R"
+
+
+def test_certified_alias_is_merged_without_name_only_join():
+    authority=_authority()
+    aliases={
+        "strict_before_period":20260921,
+        "post_cut_competitive_data_used":False,
+        "outcomes_used":False,
+        "odds_used":False,
+        "metrics_opened":False,
+        "real_money":"BLOCKED",
+        "schema":"MATRIX_COR0203_CERTIFIED_IDENTITY_ALIASES_V1",
+        "records":[{
+            "provider_player_id":"rapidapi-tennis:player:76009",
+            "provider_display_name":"Abedallah Shelbayh",
+            "canonical_name":"Abdullah Shelbayh",
+            "ranking_cut":"2026-09-21",
+            "pre_cut_history":{
+                "canonical_source_ids":["S0NV"],
+                "canonical_iocs":["JOR"],
+                "observed_hands":["L"],
+                "rows":23,
+            },
+            "biographical_candidates":[{
+                "name":"Abedallah Shelbayh",
+                "dob":"20031116",
+                "hand":"L",
+                "ioc":"JOR",
+            }],
+        }],
+    }
+    out,added=merge_certified_aliases(authority,aliases)
+    assert added==["rapidapi-tennis:player:76009"]
+    assert out["records"][0]["canonical_name"]=="Abdullah Shelbayh"
+    out2,added2=merge_certified_aliases(out,aliases)
+    assert added2==[]
+    assert len(out2["records"])==1

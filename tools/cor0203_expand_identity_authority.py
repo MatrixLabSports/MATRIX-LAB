@@ -738,6 +738,77 @@ def expand_authority(
     return output, audit
 
 
+
+def merge_certified_aliases(
+    authority: Mapping[str, Any],
+    aliases: Mapping[str, Any] | None,
+) -> tuple[dict[str, Any], list[str]]:
+    if not isinstance(aliases, Mapping):
+        return dict(authority), []
+    if int(aliases.get("strict_before_period") or 0) != 20260921:
+        raise ValueError("CERTIFIED_ALIAS_CUT_MISMATCH")
+    if aliases.get("post_cut_competitive_data_used") is not False:
+        raise ValueError("CERTIFIED_ALIAS_POSTCUT_FLAG_INVALID")
+    if aliases.get("outcomes_used") is not False:
+        raise ValueError("CERTIFIED_ALIAS_OUTCOME_FLAG_INVALID")
+    if aliases.get("odds_used") is not False:
+        raise ValueError("CERTIFIED_ALIAS_ODDS_FLAG_INVALID")
+    if aliases.get("metrics_opened") is not False:
+        raise ValueError("CERTIFIED_ALIAS_METRICS_FLAG_INVALID")
+    if aliases.get("real_money") != "BLOCKED":
+        raise ValueError("CERTIFIED_ALIAS_REAL_MONEY_FLAG_INVALID")
+
+    out=dict(authority)
+    records=[
+        dict(row)
+        for row in out.get("records", []) or []
+        if isinstance(row, Mapping)
+    ]
+    by_id={
+        str(row.get("provider_player_id") or ""): row
+        for row in records
+        if str(row.get("provider_player_id") or "")
+    }
+    added=[]
+    for raw in aliases.get("records", []) or []:
+        if not isinstance(raw, Mapping):
+            raise ValueError("CERTIFIED_ALIAS_RECORD_INVALID")
+        row=dict(raw)
+        provider_id=str(row.get("provider_player_id") or "")
+        canonical_name=str(row.get("canonical_name") or "")
+        history=row.get("pre_cut_history")
+        bios=row.get("biographical_candidates")
+        if not provider_id or not canonical_name:
+            raise ValueError("CERTIFIED_ALIAS_IDENTITY_MISSING")
+        if str(row.get("ranking_cut") or "").replace("-", "") != "20260921":
+            raise ValueError("CERTIFIED_ALIAS_RANKING_CUT_INVALID:" + provider_id)
+        if not isinstance(history, Mapping):
+            raise ValueError("CERTIFIED_ALIAS_HISTORY_MISSING:" + provider_id)
+        source_ids=[str(x) for x in history.get("canonical_source_ids", []) or [] if str(x)]
+        if len(set(source_ids)) != 1:
+            raise ValueError("CERTIFIED_ALIAS_SOURCE_ID_NOT_UNIQUE:" + provider_id)
+        if not isinstance(bios, list) or len(bios) != 1 or not isinstance(bios[0], Mapping):
+            raise ValueError("CERTIFIED_ALIAS_BIOGRAPHY_NOT_UNIQUE:" + provider_id)
+        existing=by_id.get(provider_id)
+        if existing is not None:
+            if (
+                str(existing.get("canonical_name") or existing.get("provider_display_name") or "")
+                != canonical_name
+                or str((existing.get("pre_cut_history") or {}).get("canonical_source_ids", [""])[0])
+                != source_ids[0]
+            ):
+                raise ValueError("CERTIFIED_ALIAS_PROVIDER_ID_COLLISION:" + provider_id)
+            continue
+        records.append(row)
+        by_id[provider_id]=row
+        added.append(provider_id)
+    out["records"]=records
+    out["certified_alias_source"]=str(
+        aliases.get("schema") or "MATRIX_COR0203_CERTIFIED_IDENTITY_ALIASES_V1"
+    )
+    return out, added
+
+
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--runtime-dir", default="evidence/cor0203/runtime")
@@ -769,6 +840,13 @@ def main() -> None:
             "MATRIX_COR0203_BIOGRAPHY_SUPPLEMENT_20261003.json"
         ),
     )
+    parser.add_argument(
+        "--certified-aliases",
+        default=(
+            "evidence/cor0203/identity/"
+            "MATRIX_COR0203_CERTIFIED_IDENTITY_ALIASES_20261003.json"
+        ),
+    )
     args = parser.parse_args()
 
     key = os.environ.get("RAPIDAPI_TENNIS_KEY", "").strip()
@@ -777,6 +855,16 @@ def main() -> None:
     out_path = Path(args.out)
     base_path = out_path if out_path.exists() else Path(args.base_authority)
     authority = _load(base_path)
+    certified_alias_path = Path(args.certified_aliases)
+    certified_aliases = (
+        _load(certified_alias_path)
+        if certified_alias_path.exists()
+        else None
+    )
+    authority, certified_aliases_added = merge_certified_aliases(
+        authority,
+        certified_aliases,
+    )
     client = RapidApiTennisClient(key)
 
     def fetch_profile(numeric_id: str) -> Mapping[str, Any]:
@@ -831,6 +919,12 @@ def main() -> None:
         if row.get("authority_basis")
         == "SEALED_R706_STATE_PLUS_PRECUT_PROVIDER_HISTORY_AND_PROFILE"
     ]
+    audit["certified_aliases_loaded"] = (
+        len(certified_aliases.get("records", []))
+        if isinstance(certified_aliases, Mapping)
+        else 0
+    )
+    audit["certified_aliases_added_to_authority"] = certified_aliases_added
     audit["provider_network_calls"] = client.request_count
     _write(out_path, output)
     _write(Path(args.audit_out), audit)
