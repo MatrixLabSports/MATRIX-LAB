@@ -641,6 +641,15 @@ def reconcile_dual_discovery(
         "status":"PASS",
         "rapidapi_provider_status":rapidapi.get("status"),
         "api_tennis_provider_status":api_tennis.get("status"),
+        "api_tennis_tournaments_seen":int(api_tennis.get("tournaments_seen") or 0),
+        "api_tennis_draw_requests":int(api_tennis.get("draw_requests") or 0),
+        "api_tennis_draw_request_limit":int(api_tennis.get("draw_request_limit") or 0),
+        "api_tennis_unqueried_tournaments":sum(
+            int(row.get("unqueried_tournaments") or 0)
+            for row in api_tennis.get("provider_rejected",[]) or []
+            if isinstance(row,Mapping)
+            and "DRAW_REQUEST_LIMIT_REACHED" in (row.get("blockers") or [])
+        ),
         "rapidapi_candidates_input":len(rapidapi.get("eligible_candidates",[]) or []),
         "api_tennis_candidates_input":len(api_tennis.get("eligible_candidates",[]) or []),
         "rapidapi_candidates_output":len(rapid_out),

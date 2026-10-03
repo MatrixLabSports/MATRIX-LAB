@@ -165,3 +165,19 @@ def test_api_identity_can_use_existing_precut_authority(tmp_path):
     payload=audit["_identity_alias_payload"]
     ids={row["provider_player_id"] for row in payload["records"]}
     assert "api-tennis:player:33" in ids
+
+
+def test_dual_audit_carries_second_provider_draw_coverage(tmp_path):
+    api_payload=api(False)
+    api_payload["tournaments_seen"]=7
+    api_payload["draw_requests"]=7
+    api_payload["draw_request_limit"]=12
+    api_payload["provider_rejected"]=[]
+    _,_,audit=reconcile_dual_discovery(
+        rapidapi=rapid(),api_tennis=api_payload,static_cut=static_cut(),
+        runtime_dir=tmp_path,certified_aliases=None,
+    )
+    assert audit["api_tennis_tournaments_seen"]==7
+    assert audit["api_tennis_draw_requests"]==7
+    assert audit["api_tennis_draw_request_limit"]==12
+    assert audit["api_tennis_unqueried_tournaments"]==0

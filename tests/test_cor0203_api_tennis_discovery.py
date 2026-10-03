@@ -189,3 +189,8 @@ def test_fixture_range_is_bounded():
     client = ApiTennisDiscoveryClient("k", opener=RecordingOpener([]))
     with pytest.raises(ValueError, match="DISCOVERY_RANGE_EXCEEDS_4_DAYS"):
         client.fixtures(date(2026, 9, 1), date(2026, 9, 6))
+
+
+def test_draw_budget_is_world_inventory_scale():
+    from tools.cor0203_api_tennis_discovery import MAX_DRAW_REQUESTS
+    assert MAX_DRAW_REQUESTS >= 12
