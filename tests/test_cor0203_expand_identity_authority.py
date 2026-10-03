@@ -128,3 +128,78 @@ def test_static_cut_resolvable_identity_does_not_request_profile(tmp_path):
         profile_fetcher=lambda pid: (_ for _ in ()).throw(AssertionError("profile should not be called")))
     assert audit["candidate_count"]==0
     assert audit["new_records"]==0
+
+
+def test_sealed_frozen_static4_can_authorize_existing_player_without_annual_history(tmp_path):
+    runtime=tmp_path/"runtime"; runtime.mkdir(); _pref(runtime)
+    hist=tmp_path/"h.csv"; _history(hist,[])
+    static=tmp_path/"s.json"; _static(static)
+    sealed={
+        "Player One":{
+            "status":"PASS",
+            "rank":200,
+            "rank_points":300,
+            "hand":"R",
+            "age":26.72,
+            "source_event_ids":["COR0203-R700-PLAYER-ONE"],
+            "inherited_from":["MATRIX_COR0203_PROSPECTIVE_EVENTS_R700.json"],
+        }
+    }
+    calls=[]
+    def profile(pid):
+        calls.append(pid)
+        return {"data":{
+            "id":pid,
+            "name":"Player One",
+            "birthday":"2000-01-02T00:00:00.000Z",
+            "countryAcr":"USA",
+            "currentRank":999,
+            "information":{"plays":"Right-Handed, Two-Handed Backhand"},
+        }}
+    out,audit=expand_authority(
+        runtime_dir=runtime,
+        history_csv=hist,
+        static_cut_path=static,
+        authority=_authority(),
+        profile_fetcher=profile,
+        sealed_player_registry=sealed,
+    )
+    assert audit["new_records"]==1
+    assert calls==["111"]
+    row=out["records"][0]
+    assert row["authority_basis"]=="SEALED_FROZEN_STATIC4_PLUS_PROFILE"
+    assert row["canonical_name"]=="Player One"
+    assert row["sealed_frozen_identity"]["physically_frozen"] is True
+    assert row["sealed_frozen_identity"]["canonical_rank"]==200
+    assert row["sealed_frozen_identity"]["canonical_rank_points"]==300
+    assert row["sealed_frozen_identity"]["canonical_source_id"]=="COR0203-R700-PLAYER-ONE"
+    assert row["profile_competitive_fields_discarded"]==["currentRank"]
+    assert out["post_cut_competitive_data_used"] is False
+
+
+def test_sealed_frozen_fallback_rejects_rank_points_mismatch(tmp_path):
+    runtime=tmp_path/"runtime"; runtime.mkdir(); _pref(runtime)
+    hist=tmp_path/"h.csv"; _history(hist,[])
+    static=tmp_path/"s.json"; _static(static)
+    sealed={
+        "Player One":{
+            "status":"PASS",
+            "rank":201,
+            "rank_points":300,
+            "hand":"R",
+            "age":26.72,
+            "source_event_ids":["COR0203-R700-PLAYER-ONE"],
+            "inherited_from":["MATRIX_COR0203_PROSPECTIVE_EVENTS_R700.json"],
+        }
+    }
+    out,audit=expand_authority(
+        runtime_dir=runtime,
+        history_csv=hist,
+        static_cut_path=static,
+        authority=_authority(),
+        profile_fetcher=lambda pid: (_ for _ in ()).throw(AssertionError("profile should not be called")),
+        sealed_player_registry=sealed,
+    )
+    assert audit["new_records"]==0
+    assert audit["blocked"][0]["reason"]=="SEALED_FROZEN_RANK_POINTS_MISMATCH"
+    assert out["records"]==[]

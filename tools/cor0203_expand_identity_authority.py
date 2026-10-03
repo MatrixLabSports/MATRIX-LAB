@@ -222,6 +222,58 @@ def _history_index(
     return grouped
 
 
+def _sealed_frozen_match(
+    candidate: Mapping[str, Any],
+    sealed_player_registry: Mapping[str, Mapping[str, Any]] | None,
+) -> tuple[dict[str, Any] | None, str | None]:
+    if not isinstance(sealed_player_registry, Mapping):
+        return None, None
+    matches = [
+        (str(name), row)
+        for name, row in sealed_player_registry.items()
+        if isinstance(row, Mapping)
+        and row.get("status") == "PASS"
+        and _norm_name(name) == _norm_name(candidate.get("display_name"))
+    ]
+    if not matches:
+        return None, None
+    if len(matches) != 1:
+        return None, "SEALED_FROZEN_IDENTITY_NONUNIQUE"
+    canonical_name, row = matches[0]
+    try:
+        sealed_rank = int(row.get("rank"))
+        sealed_points = int(row.get("rank_points"))
+        candidate_rank = int(str(candidate.get("provider_rank") or "").strip())
+        candidate_points = int(str(candidate.get("provider_rank_points") or "").strip())
+        sealed_age = float(row.get("age"))
+    except (TypeError, ValueError):
+        return None, "SEALED_FROZEN_STATIC_INVALID"
+    if (sealed_rank, sealed_points) != (candidate_rank, candidate_points):
+        return None, "SEALED_FROZEN_RANK_POINTS_MISMATCH"
+    sealed_hand = str(row.get("hand") or "").strip().upper()
+    if sealed_hand not in {"R", "L"}:
+        return None, "SEALED_FROZEN_HAND_INVALID"
+    evidence_event_ids = sorted({
+        str(x) for x in row.get("source_event_ids", []) or [] if str(x)
+    })
+    inherited_from = sorted({
+        str(x) for x in row.get("inherited_from", []) or [] if str(x)
+    })
+    if not evidence_event_ids or not inherited_from:
+        return None, "SEALED_FROZEN_PROVENANCE_MISSING"
+    return {
+        "canonical_name": canonical_name,
+        "canonical_rank": sealed_rank,
+        "canonical_rank_points": sealed_points,
+        "canonical_hand": sealed_hand,
+        "canonical_age": sealed_age,
+        "canonical_source_id": evidence_event_ids[0],
+        "evidence_event_ids": evidence_event_ids,
+        "inherited_from": inherited_from,
+        "physically_frozen": True,
+    }, None
+
+
 def expand_authority(
     *,
     runtime_dir: Path,
@@ -230,6 +282,7 @@ def expand_authority(
     authority: Mapping[str, Any],
     profile_fetcher: Callable[[str], Mapping[str, Any]],
     max_profiles: int = 12,
+    sealed_player_registry: Mapping[str, Mapping[str, Any]] | None = None,
 ) -> tuple[dict[str, Any], dict[str, Any]]:
     aliases = dict(authority.get("country_code_aliases") or {})
     static_cut = _load(static_cut_path)
@@ -258,7 +311,89 @@ def expand_authority(
         ioc = _canonical_ioc(candidate["provider_ioc_raw"], aliases)
         hist = history.get((_norm_name(candidate["display_name"]), ioc))
         if not hist:
-            blocked.append({"provider_player_id": provider_id, "reason": "NO_PRE_CUT_CHALLENGER_HISTORY"})
+            sealed, sealed_reason = _sealed_frozen_match(
+                candidate,
+                sealed_player_registry,
+            )
+            if sealed_reason is not None:
+                blocked.append({
+                    "provider_player_id": provider_id,
+                    "reason": sealed_reason,
+                })
+                continue
+            if sealed is None:
+                blocked.append({
+                    "provider_player_id": provider_id,
+                    "reason": "NO_PRE_CUT_CHALLENGER_HISTORY",
+                })
+                continue
+
+            profile = profile_fetcher(candidate["numeric_player_id"])
+            requests += 1
+            data = profile.get("data") if isinstance(profile.get("data"), Mapping) else profile
+            if not isinstance(data, Mapping):
+                blocked.append({"provider_player_id": provider_id, "reason": "PROFILE_PAYLOAD_INVALID"})
+                continue
+            profile_id = str(data.get("id") or candidate["numeric_player_id"]).strip()
+            profile_name = str(data.get("name") or "").strip()
+            profile_ioc = _canonical_ioc(data.get("countryAcr"), aliases)
+            info = data.get("information") if isinstance(data.get("information"), Mapping) else {}
+            profile_hand = _hand_from_profile(info.get("plays") or info.get("hand"))
+            dob = _dob_token(data.get("birthday"))
+            if profile_id != candidate["numeric_player_id"]:
+                blocked.append({"provider_player_id": provider_id, "reason": "PROFILE_ID_MISMATCH"})
+                continue
+            if _norm_name(profile_name) != _norm_name(candidate["display_name"]):
+                blocked.append({"provider_player_id": provider_id, "reason": "PROFILE_NAME_MISMATCH"})
+                continue
+            if profile_ioc != ioc:
+                blocked.append({"provider_player_id": provider_id, "reason": "PROFILE_IOC_MISMATCH"})
+                continue
+            if profile_hand is not None and profile_hand != sealed["canonical_hand"]:
+                blocked.append({"provider_player_id": provider_id, "reason": "PROFILE_HAND_CONFLICT"})
+                continue
+            if dob is None:
+                blocked.append({"provider_player_id": provider_id, "reason": "PROFILE_DOB_INVALID"})
+                continue
+            parsed_dob = date(int(dob[:4]), int(dob[4:6]), int(dob[6:8]))
+            profile_age = (CUT_DATE - parsed_dob).days / 365.25
+            if abs(profile_age - float(sealed["canonical_age"])) > 0.02:
+                blocked.append({
+                    "provider_player_id": provider_id,
+                    "reason": "PROFILE_SEALED_AGE_CONFLICT",
+                })
+                continue
+
+            competitive_fields = [
+                key for key in ("currentRank", "points", "progress", "careerMoney") if key in data
+            ]
+            record = {
+                "provider_player_id": provider_id,
+                "provider_display_name": candidate["display_name"],
+                "canonical_name": sealed["canonical_name"],
+                "provider_ioc_raw": candidate["provider_ioc_raw"],
+                "provider_ioc_canonical": ioc,
+                "ranking_cut": "2026-09-21",
+                "provider_rank": candidate["provider_rank"],
+                "provider_rank_points": candidate["provider_rank_points"],
+                "authority_basis": "SEALED_FROZEN_STATIC4_PLUS_PROFILE",
+                "sealed_frozen_identity": sealed,
+                "biographical_candidates": [{
+                    "master_id": "RAPIDAPI_PROFILE_" + candidate["numeric_player_id"],
+                    "name": profile_name,
+                    "hand": profile_hand or sealed["canonical_hand"],
+                    "dob": dob,
+                    "ioc": profile_ioc,
+                    "height_cm": None,
+                    "wikidata_id": None,
+                    "provider_profile_sha256": _sha(profile),
+                }],
+                "biography_source": "RAPIDAPI_ULTRA_PROFILE_NUMERIC_ID_AUTOEXPAND",
+                "profile_competitive_fields_discarded": competitive_fields,
+            }
+            records.append(record)
+            known_ids.add(provider_id)
+            added.append(record)
             continue
         source_ids = sorted(hist["canonical_source_ids"])
         history_iocs = sorted(hist["canonical_iocs"])
@@ -391,6 +526,7 @@ def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--runtime-dir", default="evidence/cor0203/runtime")
     parser.add_argument("--history-csv", default="evidence/cor0203/preholdout/2026_challenger_live_snapshot.csv")
+    parser.add_argument("--holdout-dir", default="evidence/cor0203/holdout")
     parser.add_argument("--static-cut", default="evidence/cor0203/runtime/MATRIX_COR0203_STATIC_CUT_20260921.json")
     parser.add_argument("--base-authority", default="evidence/cor0203/identity/MATRIX_COR0203_ATP_BIOGRAPHICAL_SUBSET_R743.json")
     parser.add_argument("--out", default="evidence/cor0203/identity/MATRIX_COR0203_IDENTITY_AUTHORITY_LAST.json")
@@ -410,6 +546,12 @@ def main() -> None:
         payload = client._get(f"/tennis/v2/atp/player/profile/{numeric_id}")
         return payload if isinstance(payload, Mapping) else {}
 
+    from tools.cor0203_stage_from_registry import build_sealed_player_registry
+
+    sealed_player_registry = build_sealed_player_registry(
+        runtime_dir=Path(args.runtime_dir),
+        holdout_dir=Path(args.holdout_dir),
+    )
     output, audit = expand_authority(
         runtime_dir=Path(args.runtime_dir),
         history_csv=Path(args.history_csv),
@@ -417,7 +559,14 @@ def main() -> None:
         authority=authority,
         profile_fetcher=fetch_profile,
         max_profiles=args.max_profiles,
+        sealed_player_registry=sealed_player_registry,
     )
+    audit["sealed_frozen_registry_players"] = len(sealed_player_registry)
+    audit["sealed_frozen_promotions"] = [
+        row["provider_player_id"]
+        for row in output.get("records", [])
+        if row.get("authority_basis") == "SEALED_FROZEN_STATIC4_PLUS_PROFILE"
+    ]
     audit["provider_network_calls"] = client.request_count
     _write(out_path, output)
     _write(Path(args.audit_out), audit)

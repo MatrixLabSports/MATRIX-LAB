@@ -100,6 +100,78 @@ def resolve_authority_mapping(
     if not provider_ioc or provider_ioc != authority_ioc:
         return None, "IDENTITY_AUTHORITY_IOC_MISMATCH:" + provider_id
 
+    if str(row.get("authority_basis") or "") == "SEALED_FROZEN_STATIC4_PLUS_PROFILE":
+        sealed = row.get("sealed_frozen_identity")
+        if not isinstance(sealed, Mapping):
+            return None, "IDENTITY_AUTHORITY_SEALED_FROZEN_MISSING:" + provider_id
+        if sealed.get("physically_frozen") is not True:
+            return None, "IDENTITY_AUTHORITY_SEALED_FROZEN_NOT_PROVEN:" + provider_id
+        sealed_name = str(sealed.get("canonical_name") or "").strip()
+        if not sealed_name or _norm_name(sealed_name) != _norm_name(canonical_name):
+            return None, "IDENTITY_AUTHORITY_SEALED_NAME_MISMATCH:" + provider_id
+        try:
+            sealed_rank = int(sealed.get("canonical_rank"))
+            sealed_points = int(sealed.get("canonical_rank_points"))
+            sealed_age = float(sealed.get("canonical_age"))
+        except (TypeError, ValueError):
+            return None, "IDENTITY_AUTHORITY_SEALED_STATIC_INVALID:" + provider_id
+        if (sealed_rank, sealed_points) != (rank, points):
+            return None, "IDENTITY_AUTHORITY_SEALED_RANK_POINTS_MISMATCH:" + provider_id
+        sealed_hand = str(sealed.get("canonical_hand") or "").strip().upper()
+        if sealed_hand not in {"R", "L"}:
+            return None, "IDENTITY_AUTHORITY_SEALED_HAND_INVALID:" + provider_id
+        evidence_event_ids = [
+            str(x) for x in sealed.get("evidence_event_ids", []) or [] if str(x)
+        ]
+        inherited_from = [
+            str(x) for x in sealed.get("inherited_from", []) or [] if str(x)
+        ]
+        canonical_source_id = str(sealed.get("canonical_source_id") or "").strip()
+        if not evidence_event_ids or not inherited_from or not canonical_source_id:
+            return None, "IDENTITY_AUTHORITY_SEALED_PROVENANCE_MISSING:" + provider_id
+
+        bios = row.get("biographical_candidates")
+        if not isinstance(bios, list) or len(bios) != 1 or not isinstance(bios[0], Mapping):
+            return None, "IDENTITY_AUTHORITY_BIOGRAPHY_NOT_UNIQUE:" + provider_id
+        bio = bios[0]
+        if _norm_name(bio.get("name")) != _norm_name(authority_name):
+            return None, "IDENTITY_AUTHORITY_BIOGRAPHY_NAME_MISMATCH:" + provider_id
+        if _canonical_ioc(bio.get("ioc")) != provider_ioc:
+            return None, "IDENTITY_AUTHORITY_BIOGRAPHY_IOC_MISMATCH:" + provider_id
+        bio_hand = str(bio.get("hand") or "").strip().upper()
+        if bio_hand in {"R", "L"} and bio_hand != sealed_hand:
+            return None, "IDENTITY_AUTHORITY_BIOGRAPHY_HAND_CONFLICT:" + provider_id
+        dob = _parse_dob(bio.get("dob"))
+        if dob is None or dob >= CUT_DATE:
+            return None, "IDENTITY_AUTHORITY_DOB_INVALID:" + provider_id
+        canonical_age = _age_at_cut(dob)
+        if abs(canonical_age - sealed_age) > 0.02:
+            return None, "IDENTITY_AUTHORITY_SEALED_AGE_CONFLICT:" + provider_id
+
+        return {
+            "provider": provider,
+            "provider_player_id": provider_id,
+            "provider_display_name": display_name,
+            "provider_ranking_name": provider_name,
+            "provider_rank": rank,
+            "provider_rank_points": points,
+            "canonical_source_id": canonical_source_id,
+            "canonical_name": canonical_name,
+            "canonical_rank": sealed_rank,
+            "canonical_rank_points": sealed_points,
+            "canonical_hand": sealed_hand,
+            "canonical_age": canonical_age,
+            "canonical_ioc": provider_ioc,
+            "canonical_dob": dob.isoformat(),
+            "ranking_cut": CUT_TOKEN,
+            "match_basis": (
+                "EXACT_PROVIDER_ID_PLUS_NAME_IOC_RANK_POINTS_"
+                "PLUS_SEALED_FROZEN_STATIC4_AND_PROFILE_DOB"
+            ),
+            "identity_authority": str(row.get("_identity_authority") or ""),
+            "status": "PASS",
+        }, None
+
     history = row.get("pre_cut_history")
     if not isinstance(history, Mapping):
         return None, "IDENTITY_AUTHORITY_HISTORY_MISSING:" + provider_id

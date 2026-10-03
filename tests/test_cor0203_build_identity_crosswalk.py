@@ -403,3 +403,82 @@ def test_r741_r743_authority_releases_mccabe_cina_exact_ids():
     assert cina["canonical_ioc"]=="ITA"
     assert cina["canonical_hand"]=="R"
     assert cina["identity_authority"]=="MATRIX_COR0203_ATP_BIOGRAPHICAL_SUBSET_R743"
+
+
+def test_sealed_frozen_authority_can_resolve_provider_id_without_name_only_join():
+    pre={
+        "revision":"R901",
+        "holdout_id":"H",
+        "discovery_provider":"rapidapi_tennis",
+        "events":[{
+            "event_id":"rapid-sealed",
+            "identity_crosswalk_required":True,
+            "player_identities":[
+                {
+                    "display_name":"Player One",
+                    "provider":"rapidapi_tennis",
+                    "provider_player_id":"rapidapi-tennis:player:111",
+                    "provider_ranking":{
+                        "place":"200","points":"300","player":"Player One",
+                        "country":"USA","snapshot_date":"2026-09-21",
+                    },
+                },
+                {
+                    "display_name":"Dino Prizmic",
+                    "provider":"api_tennis",
+                    "provider_player_id":"api-tennis:player:22",
+                    "provider_ranking":{
+                        "place":"101","points":"603","player":"Dino Prizmic",
+                        "country":"CRO","snapshot_date":"2026-09-21",
+                    },
+                },
+            ],
+        }],
+    }
+    authority={
+        "schema":"MATRIX_COR0203_IDENTITY_AUTHORITY_AUTOEXPAND_V1",
+        "post_cut_competitive_data_used":False,
+        "outcomes_used":False,
+        "odds_used":False,
+        "records":[{
+            "provider_player_id":"rapidapi-tennis:player:111",
+            "provider_display_name":"Player One",
+            "canonical_name":"Player One",
+            "provider_ioc_raw":"USA",
+            "provider_ioc_canonical":"USA",
+            "ranking_cut":"2026-09-21",
+            "provider_rank":"200",
+            "provider_rank_points":"300",
+            "authority_basis":"SEALED_FROZEN_STATIC4_PLUS_PROFILE",
+            "sealed_frozen_identity":{
+                "canonical_name":"Player One",
+                "canonical_rank":200,
+                "canonical_rank_points":300,
+                "canonical_hand":"R",
+                "canonical_age":26.72,
+                "canonical_source_id":"COR0203-R700-PLAYER-ONE",
+                "evidence_event_ids":["COR0203-R700-PLAYER-ONE"],
+                "inherited_from":["MATRIX_COR0203_PROSPECTIVE_EVENTS_R700.json"],
+                "physically_frozen":True,
+            },
+            "biographical_candidates":[{
+                "master_id":"RAPIDAPI_PROFILE_111",
+                "name":"Player One",
+                "hand":"R",
+                "dob":"20000102",
+                "ioc":"USA",
+            }],
+        }],
+    }
+    result=build_crosswalk(
+        prefeature=pre,
+        static_cut=static_cut(),
+        identity_authority=authority,
+    )
+    assert result["status"]=="PASS"
+    mappings={m["provider_player_id"]:m for m in result["mappings"]}
+    row=mappings["rapidapi-tennis:player:111"]
+    assert row["canonical_name"]=="Player One"
+    assert row["canonical_source_id"]=="COR0203-R700-PLAYER-ONE"
+    assert "SEALED_FROZEN_STATIC4" in row["match_basis"]
+    assert result["join_by_name_only"] is False
