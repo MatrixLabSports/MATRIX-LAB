@@ -63,6 +63,12 @@ WORLD_BRIDGE_LAST="evidence/cor0203/runtime/MATRIX_COR0203_WORLD_INVENTORY_BRIDG
 WORLD_DERIVED_DISCOVERY_LAST="evidence/cor0203/runtime/MATRIX_COR0203_WORLD_DERIVED_DISCOVERY_LAST.json"
 WORLD_PREREG_LAST="evidence/cor0203/runtime/MATRIX_COR0203_WORLD_PREREG_LAST.json"
 WORLD_FUNNEL_LAST="evidence/cor0203/runtime/MATRIX_COR0203_WORLD_FUNNEL_LAST.json"
+API_TENNIS_DISCOVERY_CURRENT="/tmp/MATRIX_COR0203_API_TENNIS_SECONDARY_DISCOVERY.json"
+DUAL_RAPIDAPI_DISCOVERY="/tmp/MATRIX_COR0203_DUAL_RAPIDAPI_DISCOVERY.json"
+DUAL_API_TENNIS_DISCOVERY="/tmp/MATRIX_COR0203_DUAL_API_TENNIS_DISCOVERY.json"
+DUAL_RECONCILIATION_LAST="evidence/cor0203/runtime/MATRIX_COR0203_DUAL_PROVIDER_RECONCILIATION_LAST.json"
+RAPIDAPI_PREREG_CURRENT="/tmp/MATRIX_COR0203_RAPIDAPI_PREREG_CURRENT.json"
+API_TENNIS_PREREG_CURRENT="/tmp/MATRIX_COR0203_API_TENNIS_PREREG_CURRENT.json"
 
 test -s "$STATE"
 test -s "$BUNDLE"
@@ -106,6 +112,20 @@ case "$TENNIS_PROVIDER" in
       --summary-out "$DURABLE_DISCOVERY_LAST" \
       --store "$ACQUISITION_STORE" \
       --days 4
+
+    python -m tools.cor0203_api_tennis_discovery \
+      --out "$API_TENNIS_DISCOVERY_CURRENT" \
+      --days 4
+
+    python -m tools.cor0203_dual_provider_reconcile \
+      --rapidapi "$DISCOVERY" \
+      --api-tennis "$API_TENNIS_DISCOVERY_CURRENT" \
+      --static-cut "$STATIC_CUT" \
+      --runtime-dir evidence/cor0203/runtime \
+      --certified-aliases "$IDENTITY_ALIAS_CERT" \
+      --out-rapidapi "$DUAL_RAPIDAPI_DISCOVERY" \
+      --out-api-tennis "$DUAL_API_TENNIS_DISCOVERY" \
+      --audit-out "$DUAL_RECONCILIATION_LAST"
     ;;
   *)
     echo "UNSUPPORTED_MATRIX_TENNIS_PROVIDER:$TENNIS_PROVIDER" >&2
@@ -118,9 +138,24 @@ python -m tools.cor0203_source_readiness \
   --evidence-dir evidence/cor0203/source_readiness \
   --summary-out "$SOURCE_READINESS_CURRENT"
 
-python -m tools.cor0203_preregister_discovery \
-  --discovery "$DISCOVERY" \
-  --result-out "$PREREG_LAST"
+if [[ "$TENNIS_PROVIDER" == "rapidapi_tennis" && -f "$DUAL_RAPIDAPI_DISCOVERY" && -f "$DUAL_API_TENNIS_DISCOVERY" ]]; then
+  python -m tools.cor0203_preregister_discovery \
+    --discovery "$DUAL_RAPIDAPI_DISCOVERY" \
+    --result-out "$RAPIDAPI_PREREG_CURRENT"
+
+  python -m tools.cor0203_preregister_discovery \
+    --discovery "$DUAL_API_TENNIS_DISCOVERY" \
+    --result-out "$API_TENNIS_PREREG_CURRENT"
+
+  python -m tools.cor0203_merge_prereg_results \
+    --rapidapi "$RAPIDAPI_PREREG_CURRENT" \
+    --api-tennis "$API_TENNIS_PREREG_CURRENT" \
+    --out "$PREREG_LAST"
+else
+  python -m tools.cor0203_preregister_discovery \
+    --discovery "$DISCOVERY" \
+    --result-out "$PREREG_LAST"
+fi
 
 if [[ -f "$WORLD_DERIVED_DISCOVERY_LAST" ]]; then
   python -m tools.cor0203_preregister_discovery \
@@ -448,6 +483,7 @@ git add "$WORLD_DERIVED_DISCOVERY_LAST" 2>/dev/null || true
 git add "$WORLD_PREREG_LAST" 2>/dev/null || true
 git add "$WORLD_BRIDGE_LAST" 2>/dev/null || true
 git add "$WORLD_FUNNEL_LAST" 2>/dev/null || true
+git add "$DUAL_RECONCILIATION_LAST" 2>/dev/null || true
 git add evidence/cor0203/runtime/MATRIX_COR0203_HISTORY_GATE_R*.json 2>/dev/null || true
 git add evidence/cor0203/holdout/MATRIX_COR0203_HOLDOUT_BATCH_R*.json 2>/dev/null || true
 
@@ -487,6 +523,9 @@ if [[ -f "$WORLD_BRIDGE_LAST" ]]; then
 fi
 if [[ -f "$WORLD_FUNNEL_LAST" ]]; then
   git add "$WORLD_FUNNEL_LAST"
+fi
+if [[ -f "$DUAL_RECONCILIATION_LAST" ]]; then
+  git add "$DUAL_RECONCILIATION_LAST"
 fi
 git add "$SETTLEMENT_QUEUE_LAST"
 git add "$HISTORICAL_IDENTITY_LAST"
