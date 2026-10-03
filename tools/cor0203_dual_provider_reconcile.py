@@ -47,9 +47,16 @@ def _round(value: object) -> str:
         "q1":"Q1","qualifying 1":"Q1","q2":"Q2","qualifying 2":"Q2",
         "q3":"Q3","qualifying 3":"Q3",
     }
-    match=re.search(r"(?:^|\s)-?\s*(1/16|1/8|1/4|1/2)-?finals?$",token)
+    match=re.search(r"(?:^|\s)(1/16|1/8|1/4|1/2)\s*finals?$",token)
     if match:
-        token=match.group(1)
+        fraction=match.group(1)
+        fraction_aliases={
+            "1/16":"R32",
+            "1/8":"R16",
+            "1/4":"QF",
+            "1/2":"SF",
+        }
+        return fraction_aliases[fraction]
     return aliases.get(token,token.upper())
 
 
