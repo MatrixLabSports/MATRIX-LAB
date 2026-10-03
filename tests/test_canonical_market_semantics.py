@@ -9,7 +9,7 @@ from app.core.canonical_market_semantics import (
 def test_all_17_candidate_families_have_explicit_executable_identity():
     rows = canonical_candidate_market_definitions()
     assert len(rows) == 17
-    assert len({row.key for row in rows}) == 16
+    assert len({row.key for row in rows}) == 17
     assert all(row.market_variant and row.period and row.subject_scope for row in rows)
     assert all(len(row.fingerprint) == 64 for row in rows)
 
