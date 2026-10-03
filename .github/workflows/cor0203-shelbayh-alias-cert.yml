@@ -1,0 +1,99 @@
+name: COR02-03 Shelbayh alias certification and production
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - .github/workflows/cor0203-shelbayh-alias-cert.yml
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: cor0203-holdout-repair-cor09-world-pipeline
+  cancel-in-progress: false
+
+jobs:
+  certify-and-produce:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout operational branch
+        uses: actions/checkout@v4
+        with:
+          ref: repair/cor09-world-pipeline
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install test dependency
+        run: python -m pip install pytest
+
+      - name: Verify alias and authority protections
+        run: |
+          python -m pytest -q \
+            tests/test_cor0203_shelbayh_alias_cert.py \
+            tests/test_cor0203_expand_identity_authority.py \
+            tests/test_cor0203_build_identity_crosswalk.py \
+            tests/test_cor0203_batch_preflight.py \
+            tests/test_cor0203_physical_uniqueness.py
+
+      - name: Verify paid RapidAPI Tennis key
+        shell: bash
+        env:
+          RAPIDAPI_TENNIS_KEY: ${{ secrets.RAPIDAPI_TENNIS_KEY }}
+        run: |
+          set -euo pipefail
+          test -n "${RAPIDAPI_TENNIS_KEY:-}" || { echo "RAPIDAPI_TENNIS_KEY_NOT_CONFIGURED"; exit 2; }
+          echo "RAPIDAPI_TENNIS_PAID_SOURCE: CONFIGURED"
+
+      - name: Build certified Shelbayh alias evidence
+        env:
+          RAPIDAPI_TENNIS_KEY: ${{ secrets.RAPIDAPI_TENNIS_KEY }}
+        run: python -m tools.cor0203_shelbayh_alias_cert
+
+      - name: Enforce certified alias evidence
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          p=Path("evidence/cor0203/identity/MATRIX_COR0203_CERTIFIED_IDENTITY_ALIASES_20261003.json")
+          d=json.loads(p.read_text())
+          assert d["strict_before_period"]==20260921
+          assert d["post_cut_competitive_data_used"] is False
+          assert d["outcomes_used"] is False
+          assert d["odds_used"] is False
+          assert d["metrics_opened"] is False
+          assert d["real_money"]=="BLOCKED"
+          assert len(d["records"])==1
+          r=d["records"][0]
+          assert r["provider_player_id"]=="rapidapi-tennis:player:76009"
+          assert r["provider_display_name"]=="Abedallah Shelbayh"
+          assert r["canonical_name"]=="Abdullah Shelbayh"
+          assert r["pre_cut_history"]["canonical_source_ids"]==["S0NV"]
+          assert r["stats_rich_pre_cut_history"]["rows"] >= 23
+          assert r["stats_rich_pre_cut_history"]["stats_rich_rows"] > 0
+          assert r["sealed_r706_history"]["fully_history_ready"] is True
+          assert all(r["sealed_r706_history"]["required_components"].values())
+          print("MATRIX_COR0203_SHELBAYH_ALIAS_CERT: PASS")
+          PY
+
+      - name: Run governed production immediately after certification
+        shell: bash
+        env:
+          API_TENNIS_KEY: ${{ secrets.API_TENNIS_KEY }}
+          RAPIDAPI_TENNIS_KEY: ${{ secrets.RAPIDAPI_TENNIS_KEY }}
+          MATRIX_TENNIS_PROVIDER: rapidapi_tennis
+          MATRIX_TARGET_BRANCH: repair/cor09-world-pipeline
+          MATRIX_GIT_USER_NAME: matrix-shelbayh-cert
+          MATRIX_GIT_USER_EMAIL: matrix-shelbayh-cert@users.noreply.github.com
+        run: |
+          set -euo pipefail
+          TARGET_HEAD="$(git rev-parse HEAD)"
+          bash scripts/cor0203_production_cycle.sh --trigger-sha "$TARGET_HEAD"
