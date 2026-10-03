@@ -74,6 +74,8 @@ API_TENNIS_RANK_BRIDGE_ALIASES="evidence/cor0203/identity/MATRIX_COR0203_API_TEN
 API_TENNIS_RANK_BRIDGE_AUTHORITY="/tmp/MATRIX_COR0203_IDENTITY_AUTHORITY_AFTER_API_TENNIS_BRIDGE.json"
 RAPIDAPI_PREREG_CURRENT="/tmp/MATRIX_COR0203_RAPIDAPI_PREREG_CURRENT.json"
 API_TENNIS_PREREG_CURRENT="/tmp/MATRIX_COR0203_API_TENNIS_PREREG_CURRENT.json"
+HORIZON_AUDIT_LAST="evidence/cor0203/runtime/MATRIX_COR0203_DUAL_8DAY_HORIZON_LAST.json"
+MILESTONES_LAST="evidence/cor0203/runtime/MATRIX_COR0203_MILESTONES_LAST.json"
 
 test -s "$STATE"
 test -s "$BUNDLE"
@@ -121,6 +123,13 @@ case "$TENNIS_PROVIDER" in
     python -m tools.cor0203_api_tennis_discovery \
       --out "$API_TENNIS_DISCOVERY_CURRENT" \
       --days 4
+
+    python -m tools.cor0203_eight_day_dual_discovery \
+      --rapid-current "$DISCOVERY" \
+      --api-current "$API_TENNIS_DISCOVERY_CURRENT" \
+      --rapid-out "$DISCOVERY" \
+      --api-out "$API_TENNIS_DISCOVERY_CURRENT" \
+      --audit-out "$HORIZON_AUDIT_LAST"
 
     python -m tools.cor0203_api_tennis_rank_bridge \
       --discovery "$API_TENNIS_DISCOVERY_CURRENT" \
@@ -245,6 +254,10 @@ python -m tools.cor0203_physical_uniqueness_audit \
   --holdout-dir evidence/cor0203/holdout \
   --integrity "$INTEGRITY_LAST" \
   --out "$UNIQUENESS_LAST"
+
+python -m tools.cor0203_milestone_status \
+  --uniqueness "$UNIQUENESS_LAST" \
+  --out "$MILESTONES_LAST"
 
 if [[ -f "$WORLD_INVENTORY_LAST" && -f "$WORLD_DERIVED_DISCOVERY_LAST" ]]; then
   python -m tools.cor0203_world_funnel_audit \
