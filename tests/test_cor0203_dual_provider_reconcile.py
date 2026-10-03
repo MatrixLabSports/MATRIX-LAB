@@ -122,3 +122,46 @@ def test_existing_prefeature_is_not_reintroduced_by_second_provider(tmp_path):
     assert r["eligible_candidates"]==[]
     assert a["eligible_candidates"]==[]
     assert audit["existing_provider_neutral_keys"]==1
+
+
+def test_api_identity_can_use_existing_precut_authority(tmp_path):
+    cut=static_cut()
+    cut["players"].pop("C")
+    authority={
+        "records":[{
+            "provider_player_id":"rapidapi-tennis:player:303",
+            "provider_display_name":"Player Gamma",
+            "provider_ioc_canonical":"FRA",
+            "provider_ioc_raw":"FRA",
+            "provider_rank":"140",
+            "provider_rank_points":"400",
+            "ranking_cut":"2026-09-21",
+            "pre_cut_history":{
+                "canonical_source_ids":["C"],
+                "canonical_iocs":["FRA"],
+                "observed_hands":["R"],
+                "rows":12,
+            },
+            "biographical_candidates":[{
+                "name":"Player Gamma",
+                "dob":"20000101",
+                "hand":"R",
+                "ioc":"FRA",
+            }],
+            "biography_source":"TEST_PRECUT_AUTHORITY",
+        }]
+    }
+    r,a,audit=reconcile_dual_discovery(
+        rapidapi=rapid(),api_tennis=api(False),static_cut=cut,
+        runtime_dir=tmp_path,certified_aliases=None,
+        identity_authority=authority,
+    )
+    assert len(a["eligible_candidates"])==1
+    p=a["eligible_candidates"][0]["players"][1]
+    assert p["provider_ranking"]["place"]=="140"
+    assert p["provider_ranking"]["points"]=="400"
+    assert p["provider_ranking"]["authority"]=="IDENTITY_AUTHORITY_PRECUT_20260921"
+    assert audit["cross_provider_identity_aliases_generated"]==1
+    payload=audit["_identity_alias_payload"]
+    ids={row["provider_player_id"] for row in payload["records"]}
+    assert "api-tennis:player:33" in ids

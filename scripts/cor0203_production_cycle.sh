@@ -67,6 +67,7 @@ API_TENNIS_DISCOVERY_CURRENT="/tmp/MATRIX_COR0203_API_TENNIS_SECONDARY_DISCOVERY
 DUAL_RAPIDAPI_DISCOVERY="/tmp/MATRIX_COR0203_DUAL_RAPIDAPI_DISCOVERY.json"
 DUAL_API_TENNIS_DISCOVERY="/tmp/MATRIX_COR0203_DUAL_API_TENNIS_DISCOVERY.json"
 DUAL_RECONCILIATION_LAST="evidence/cor0203/runtime/MATRIX_COR0203_DUAL_PROVIDER_RECONCILIATION_LAST.json"
+DUAL_IDENTITY_ALIASES_LAST="evidence/cor0203/identity/MATRIX_COR0203_DUAL_PROVIDER_IDENTITY_ALIASES_LAST.json"
 RAPIDAPI_PREREG_CURRENT="/tmp/MATRIX_COR0203_RAPIDAPI_PREREG_CURRENT.json"
 API_TENNIS_PREREG_CURRENT="/tmp/MATRIX_COR0203_API_TENNIS_PREREG_CURRENT.json"
 
@@ -123,6 +124,8 @@ case "$TENNIS_PROVIDER" in
       --static-cut "$STATIC_CUT" \
       --runtime-dir evidence/cor0203/runtime \
       --certified-aliases "$IDENTITY_ALIAS_CERT" \
+      --identity-authority "$IDENTITY_AUTHORITY_LAST" \
+      --identity-alias-out "$DUAL_IDENTITY_ALIASES_LAST" \
       --out-rapidapi "$DUAL_RAPIDAPI_DISCOVERY" \
       --out-api-tennis "$DUAL_API_TENNIS_DISCOVERY" \
       --audit-out "$DUAL_RECONCILIATION_LAST"
@@ -175,6 +178,7 @@ python -m tools.cor0203_expand_identity_authority \
   --runtime-dir evidence/cor0203/runtime \
   --history-csv "$ANNUAL" \
   --static-cut "$STATIC_CUT" \
+  --certified-aliases "$DUAL_IDENTITY_ALIASES_LAST" \
   --out "$IDENTITY_AUTHORITY_LAST" \
   --audit-out "$IDENTITY_AUTHORITY_AUDIT_LAST"
 
@@ -469,6 +473,9 @@ if [[ -f "$SETTLEMENT_LEDGER" ]]; then
 fi
 if [[ -f "$IDENTITY_ALIAS_CERT" ]]; then
   git add "$IDENTITY_ALIAS_CERT"
+fi
+if [[ -f "$DUAL_IDENTITY_ALIASES_LAST" ]]; then
+  git add "$DUAL_IDENTITY_ALIASES_LAST"
 fi
 git add evidence/cor0203/runtime/MATRIX_COR0203_PREFEATURE_REGISTRY_R*.json 2>/dev/null || true
 git add evidence/cor0203/runtime/MATRIX_COR0203_IDENTITY_CROSSWALK_R*.json 2>/dev/null || true

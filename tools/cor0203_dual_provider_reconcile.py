@@ -123,6 +123,137 @@ def _certified_aliases(payload: Mapping[str, Any] | None) -> dict[str,str]:
     return out
 
 
+
+def _authority_index(
+    authority: Mapping[str, Any] | None,
+    aliases: Mapping[str,str],
+) -> dict[str, Mapping[str,Any]]:
+    if not isinstance(authority,Mapping):
+        return {}
+    raw: dict[str, list[Mapping[str,Any]]] = {}
+    for row in authority.get("records",[]) or []:
+        if not isinstance(row,Mapping):
+            continue
+        rank=str(row.get("provider_rank") or "").strip()
+        points=str(row.get("provider_rank_points") or "").strip()
+        history=row.get("pre_cut_history")
+        bios=row.get("biographical_candidates")
+        if not rank.isdigit() or not points.isdigit():
+            continue
+        if not isinstance(history,Mapping):
+            continue
+        source_ids=sorted({
+            str(x) for x in history.get("canonical_source_ids",[]) or [] if str(x)
+        })
+        if len(source_ids)!=1:
+            continue
+        if not isinstance(bios,list) or len(bios)!=1 or not isinstance(bios[0],Mapping):
+            continue
+        canonical=(
+            str(row.get("canonical_name") or "").strip()
+            or aliases.get(_norm(row.get("provider_display_name")),"")
+            or str(bios[0].get("name") or "").strip()
+            or str(row.get("provider_display_name") or "").strip()
+        )
+        if not canonical:
+            continue
+        names={
+            canonical,
+            str(row.get("provider_display_name") or "").strip(),
+            str(bios[0].get("name") or "").strip(),
+        }
+        for name in list(names):
+            alias=aliases.get(_norm(name))
+            if alias:
+                names.add(alias)
+        enriched=dict(row)
+        enriched["_dual_canonical_name"]=canonical
+        enriched["_dual_canonical_source_id"]=source_ids[0]
+        for name in names:
+            key=_norm(name)
+            if key:
+                raw.setdefault(key,[]).append(enriched)
+
+    out={}
+    for key,rows in raw.items():
+        signatures={
+            (
+                str(row.get("_dual_canonical_source_id") or ""),
+                str(row.get("provider_rank") or ""),
+                str(row.get("provider_rank_points") or ""),
+                _norm(row.get("_dual_canonical_name")),
+            )
+            for row in rows
+        }
+        if len(signatures)==1:
+            out[key]=rows[0]
+    return out
+
+
+def _canonical_from_authority(
+    player: Mapping[str,Any],
+    *,
+    authority_by_name: Mapping[str,Mapping[str,Any]],
+    aliases: Mapping[str,str],
+) -> tuple[Mapping[str,Any] | None,str]:
+    ranking=player.get("provider_ranking")
+    ranking_name=(
+        str(ranking.get("player") or "").strip()
+        if isinstance(ranking,Mapping)
+        else ""
+    )
+    for raw in (ranking_name,str(player.get("name") or "").strip()):
+        key=_norm(raw)
+        if not key:
+            continue
+        alias=aliases.get(key)
+        if alias:
+            key=_norm(alias)
+        row=authority_by_name.get(key)
+        if row is not None:
+            return row,"EXACT_UNIQUE_PRECUT_AUTHORITY_NAME"
+    return None,"AUTHORITY_NAME_NOT_RESOLVED"
+
+
+def _authority_alias_record(
+    *,
+    player: Mapping[str,Any],
+    authority_row: Mapping[str,Any],
+    canonical_name: str,
+) -> dict[str,Any]:
+    ranking=player.get("provider_ranking")
+    provider_name=(
+        str(ranking.get("player") or "").strip()
+        if isinstance(ranking,Mapping)
+        else ""
+    ) or str(player.get("name") or "").strip()
+    return {
+        "provider_player_id":str(player.get("provider_player_id") or ""),
+        "provider_display_name":provider_name,
+        "canonical_name":canonical_name,
+        "provider_ioc_raw":(
+            str(ranking.get("country") or "").strip()
+            if isinstance(ranking,Mapping)
+            else ""
+        ),
+        "provider_ioc_canonical":str(
+            authority_row.get("provider_ioc_canonical")
+            or authority_row.get("provider_ioc_raw")
+            or ""
+        ),
+        "provider_rank":str(authority_row.get("provider_rank") or ""),
+        "provider_rank_points":str(authority_row.get("provider_rank_points") or ""),
+        "ranking_cut":"2026-09-21",
+        "pre_cut_history":json.loads(json.dumps(authority_row.get("pre_cut_history") or {})),
+        "biographical_candidates":json.loads(json.dumps(authority_row.get("biographical_candidates") or [])),
+        "biography_source":str(authority_row.get("biography_source") or "PRECUT_IDENTITY_AUTHORITY"),
+        "authority_basis":"CROSS_PROVIDER_EXACT_UNIQUE_PRECUT_AUTHORITY_NAME",
+        "profile_competitive_fields_discarded":[
+            "API_TENNIS_CURRENT_STANDINGS_RANK",
+            "API_TENNIS_CURRENT_STANDINGS_POINTS",
+        ],
+    }
+
 def _canonical_from_static(
     player: Mapping[str, Any],
     *,
@@ -267,14 +398,16 @@ def _enrich_api_candidate(
     candidate: Mapping[str,Any],
     *,
     static_by_name: Mapping[str,Mapping[str,Any]],
+    authority_by_name: Mapping[str,Mapping[str,Any]],
     aliases: Mapping[str,str],
-) -> tuple[dict[str,Any] | None,list[str]]:
+) -> tuple[dict[str,Any] | None,list[str],list[dict[str,Any]]]:
     copy=json.loads(json.dumps(candidate))
     players=copy.get("players",[]) or []
     blockers=[]
     canonical_names=[]
+    generated_aliases=[]
     if len(players)!=2:
-        return None,["TWO_PROVIDER_IDENTITIES_REQUIRED"]
+        return None,["TWO_PROVIDER_IDENTITIES_REQUIRED"],[]
     for player in players:
         if not isinstance(player,dict):
             blockers.append("PLAYER_OBJECT_INVALID")
@@ -284,18 +417,52 @@ def _enrich_api_candidate(
             static_by_name=static_by_name,
             aliases=aliases,
         )
-        if static_row is None:
+        authority_row=None
+        if static_row is not None:
+            canonical=str(static_row.get("canonical_name") or "").strip()
+            rank=static_row.get("rank")
+            points=static_row.get("rank_points")
+            ioc=str(static_row.get("ioc") or "")
+            source_id=str(static_row.get("canonical_source_id") or "")
+            ranking_authority="SEALED_STATIC_CUT_20260921"
+        else:
+            authority_row,basis=_canonical_from_authority(
+                player,
+                authority_by_name=authority_by_name,
+                aliases=aliases,
+            )
+            if authority_row is None:
+                blockers.append(
+                    "PIT_IDENTITY_NOT_RESOLVED:"
+                    + str(player.get("provider_player_id") or "")
+                )
+                continue
+            canonical=str(authority_row.get("_dual_canonical_name") or "").strip()
+            rank=authority_row.get("provider_rank")
+            points=authority_row.get("provider_rank_points")
+            ioc=str(
+                authority_row.get("provider_ioc_canonical")
+                or authority_row.get("provider_ioc_raw")
+                or ""
+            )
+            source_id=str(authority_row.get("_dual_canonical_source_id") or "")
+            ranking_authority="IDENTITY_AUTHORITY_PRECUT_20260921"
+            generated_aliases.append(
+                _authority_alias_record(
+                    player=player,
+                    authority_row=authority_row,
+                    canonical_name=canonical,
+                )
+            )
+        if not canonical or rank is None or points is None:
             blockers.append(
-                "PIT_STATIC_IDENTITY_NOT_RESOLVED:"
+                "PIT_RANKING_INCOMPLETE:"
                 + str(player.get("provider_player_id") or "")
             )
             continue
-        canonical=str(static_row.get("canonical_name") or "").strip()
-        rank=static_row.get("rank")
-        points=static_row.get("rank_points")
-        if not canonical or rank is None or points is None:
+        if not str(rank).isdigit() or not str(points).isdigit():
             blockers.append(
-                "PIT_STATIC_RANKING_INCOMPLETE:"
+                "PIT_RANKING_INVALID:"
                 + str(player.get("provider_player_id") or "")
             )
             continue
@@ -311,25 +478,23 @@ def _enrich_api_candidate(
             "place":str(rank),
             "points":str(points),
             "player":canonical,
-            "country":str(static_row.get("ioc") or ""),
+            "country":ioc,
             "snapshot_date":"2026-09-21",
-            "authority":"SEALED_STATIC_CUT_20260921",
+            "authority":ranking_authority,
             "current_provider_rank_used":False,
         }
         player["pit_identity_basis"]=basis
-        player["canonical_source_id_hint"]=str(
-            static_row.get("canonical_source_id") or ""
-        )
+        player["canonical_source_id_hint"]=source_id
         canonical_names.append(canonical)
     if blockers:
-        return None,sorted(set(blockers))
+        return None,sorted(set(blockers)),generated_aliases
     key=_neutral_key(
         names=canonical_names,
         round_name=copy.get("round"),
         start_utc=copy.get("event_start_utc"),
     )
     if key is None:
-        return None,["PROVIDER_NEUTRAL_PHYSICAL_KEY_MISSING"]
+        return None,["PROVIDER_NEUTRAL_PHYSICAL_KEY_MISSING"],generated_aliases
     copy["physical_event_key"]=key
     copy["provider_neutral_identity"]={
         "schema":"MATRIX_COR0203_PROVIDER_NEUTRAL_PHYSICAL_ID_V1",
@@ -337,12 +502,10 @@ def _enrich_api_candidate(
         "event_date_utc":_date(copy.get("event_start_utc")),
         "round":_round(copy.get("round")),
         "surface":"Hard",
-        "ranking_authority":"SEALED_STATIC_CUT_20260921",
+        "ranking_authority":"STATIC_OR_PRECUT_IDENTITY_AUTHORITY_20260921",
         "current_api_tennis_rank_used":False,
     }
-    return copy,[]
-
-
+    return copy,[],generated_aliases
 def _enrich_rapid_candidate(
     candidate: Mapping[str,Any],
 ) -> tuple[dict[str,Any],str | None]:
@@ -373,6 +536,7 @@ def reconcile_dual_discovery(
     static_cut: Mapping[str,Any],
     runtime_dir: Path,
     certified_aliases: Mapping[str,Any] | None=None,
+    identity_authority: Mapping[str,Any] | None=None,
 ) -> tuple[dict[str,Any],dict[str,Any],dict[str,Any]]:
     if rapidapi.get("status")!="DISCOVERY_COMPLETED":
         raise ValueError("RAPIDAPI_DISCOVERY_NOT_READY")
@@ -381,6 +545,7 @@ def reconcile_dual_discovery(
 
     static_by_name=_static_index(static_cut)
     aliases=_certified_aliases(certified_aliases)
+    authority_by_name=_authority_index(identity_authority,aliases)
     existing=_existing_neutral_keys(runtime_dir)
 
     rapid_out=[]
@@ -404,17 +569,31 @@ def reconcile_dual_discovery(
     api_cross_provider_aliases=[]
     api_existing_aliases=[]
     api_seen=set()
+    generated_identity_aliases={}
     for raw in api_tennis.get("eligible_candidates",[]) or []:
         if not isinstance(raw,Mapping):
             continue
-        row,blockers=_enrich_api_candidate(
+        row,blockers,new_aliases=_enrich_api_candidate(
             raw,
             static_by_name=static_by_name,
+            authority_by_name=authority_by_name,
             aliases=aliases,
         )
+        for alias_row in new_aliases:
+            pid=str(alias_row.get("provider_player_id") or "")
+            if pid:
+                generated_identity_aliases[pid]=alias_row
         source_id=str(raw.get("canonical_source_event_id") or raw.get("event_id") or "")
         if row is None:
-            api_blocked.append({"source_event_id":source_id,"blockers":blockers})
+            api_blocked.append({
+                "source_event_id":source_id,
+                "players":[
+                    str((p.get("provider_ranking") or {}).get("player") or p.get("name") or "")
+                    for p in raw.get("players",[]) or []
+                    if isinstance(p,Mapping)
+                ],
+                "blockers":blockers,
+            })
             continue
         key=str(row["physical_event_key"])
         if key in rapid_by_key:
@@ -472,6 +651,11 @@ def reconcile_dual_discovery(
         "api_tennis_existing_physical_aliases":api_existing_aliases,
         "api_tennis_identity_blocked_count":len(api_blocked),
         "api_tennis_identity_blocked":api_blocked,
+        "identity_authority_records_input":len(
+            identity_authority.get("records",[]) or []
+        ) if isinstance(identity_authority,Mapping) else 0,
+        "cross_provider_identity_aliases_generated":len(generated_identity_aliases),
+        "cross_provider_identity_alias_provider_ids":sorted(generated_identity_aliases),
         "rapidapi_candidates_without_neutral_key":rapid_no_neutral,
         "existing_provider_neutral_keys":len(existing),
         "ranking_cut":"20260921",
@@ -481,6 +665,29 @@ def reconcile_dual_discovery(
         "odds_to_probability":False,
         "metrics_opened":False,
         "outcomes_read":0,
+        "automatic_wagering":False,
+        "real_money":"BLOCKED",
+    }
+    original_alias_records=[
+        dict(row)
+        for row in (certified_aliases.get("records",[]) if isinstance(certified_aliases,Mapping) else [])
+        if isinstance(row,Mapping)
+    ]
+    alias_by_id={
+        str(row.get("provider_player_id") or ""):row
+        for row in original_alias_records
+        if str(row.get("provider_player_id") or "")
+    }
+    alias_by_id.update(generated_identity_aliases)
+    audit["_identity_alias_payload"]={
+        "schema":"MATRIX_COR0203_CERTIFIED_IDENTITY_ALIASES_V1",
+        "purpose":"Certified cross-provider identity aliases for API-Tennis discovery, joined only to sealed pre-cut authority.",
+        "strict_before_period":20260921,
+        "records":[alias_by_id[key] for key in sorted(alias_by_id)],
+        "post_cut_competitive_data_used":False,
+        "outcomes_used":False,
+        "odds_used":False,
+        "metrics_opened":False,
         "automatic_wagering":False,
         "real_money":"BLOCKED",
     }
@@ -494,6 +701,8 @@ def main() -> None:
     parser.add_argument("--static-cut",required=True)
     parser.add_argument("--runtime-dir",default="evidence/cor0203/runtime")
     parser.add_argument("--certified-aliases")
+    parser.add_argument("--identity-authority")
+    parser.add_argument("--identity-alias-out")
     parser.add_argument("--out-rapidapi",required=True)
     parser.add_argument("--out-api-tennis",required=True)
     parser.add_argument("--audit-out",required=True)
@@ -504,15 +713,24 @@ def main() -> None:
         if args.certified_aliases and Path(args.certified_aliases).exists()
         else None
     )
+    identity_authority=(
+        _load(Path(args.identity_authority))
+        if args.identity_authority and Path(args.identity_authority).exists()
+        else None
+    )
     rapid_out,api_out,audit=reconcile_dual_discovery(
         rapidapi=_load(Path(args.rapidapi)),
         api_tennis=_load(Path(args.api_tennis)),
         static_cut=_load(Path(args.static_cut)),
         runtime_dir=Path(args.runtime_dir),
         certified_aliases=aliases,
+        identity_authority=identity_authority,
     )
+    alias_payload=audit.pop("_identity_alias_payload")
     _write(Path(args.out_rapidapi),rapid_out)
     _write(Path(args.out_api_tennis),api_out)
+    if args.identity_alias_out:
+        _write(Path(args.identity_alias_out),alias_payload)
     _write(Path(args.audit_out),audit)
     print(json.dumps({
         "status":audit["status"],
@@ -522,6 +740,7 @@ def main() -> None:
         "api_tennis_unique_candidates_output":audit["api_tennis_unique_candidates_output"],
         "cross_provider_alias_count":audit["cross_provider_alias_count"],
         "api_tennis_identity_blocked_count":audit["api_tennis_identity_blocked_count"],
+        "cross_provider_identity_aliases_generated":audit["cross_provider_identity_aliases_generated"],
         "real_money":audit["real_money"],
     },sort_keys=True))
 
