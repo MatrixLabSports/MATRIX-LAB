@@ -47,7 +47,10 @@
     "real_money_model_status": "BLOCKED",
     "settlement_policy": "FINAL_ONLY",
     "count_as_matrix_authorized_wager": false,
-    "count_as_model_calibration_observation": false
+    "count_as_model_calibration_observation": false,
+    "fixture_in_prospective_calibration_ledger": false,
+    "fixture_in_prospective_settlement_ledger": false,
+    "shadow_market_outcomes_do_not_increment_governed_calibration_count": true
   },
   "settlement": {
     "status": "FINAL_BOOKMAKER_SETTLED",
@@ -55,11 +58,35 @@
     "bookmaker_display_status": "Ganada",
     "settled_return_cop": 14000,
     "net_profit_cop": 4000,
-    "final_score": null,
-    "final_score_evidence_status": "NOT_VISIBLE_IN_SETTLEMENT_SCREENSHOT",
+    "final_score": "Santos Laguna (F) 1-0 Club Puebla (F)",
+    "final_score_evidence_status": "USER_REPORTED_NOT_PROVIDER_VERIFIED_IN_THIS_ARTIFACT",
     "evidence_source": "conversation_upload",
     "evidence_sha256": "6224126130741a5c339e9dae665eb25cf6031a62318ad675f14f5060008c54fe",
     "evidence_dimensions_px": "1536x1033",
-    "recorded_at_utc": "2026-10-03T01:02:00+00:00"
+    "recorded_at_utc": "2026-10-03T01:02:00+00:00",
+    "final_score_source": "user_report"
+  },
+  "matrix_shadow_market_outcomes": {
+    "1x2_home": {
+      "frozen_probability": 0.7069039543513596,
+      "outcome": true,
+      "result": "WIN",
+      "executed_ticket_market": true
+    },
+    "over_2_5": {
+      "frozen_probability": 0.7799862518415859,
+      "outcome": false,
+      "actual_total_goals": 1,
+      "result": "LOSS",
+      "executed_ticket_market": false,
+      "note": "Shadow model reading was incorrect; no Over 2.5 wager was executed on this ticket."
+    },
+    "btts_yes": {
+      "frozen_probability": 0.5867289374218136,
+      "outcome": false,
+      "result": "OUTCOME_FALSE",
+      "executed_ticket_market": false,
+      "note": "Recorded as realized outcome only; BTTS v2 is not a supported market at checkpoint 200."
+    }
   }
 }
