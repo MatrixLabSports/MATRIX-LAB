@@ -7,6 +7,8 @@ on:
     paths:
       - .github/workflows/api-football-over25-league-audit-screenshots.yml
   workflow_dispatch:
+  schedule:
+    - cron: "15 5 * * *"
 
 permissions:
   contents: write
