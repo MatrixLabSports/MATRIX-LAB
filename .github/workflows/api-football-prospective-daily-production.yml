@@ -75,7 +75,8 @@ jobs:
             tests/test_api_football_prospective_market_pipeline.py \
             tests/test_api_football_prospective_horizon.py \
             tests/test_api_football_bogota_full_day_calendar.py \
-            tests/test_api_football_physical_uniqueness.py
+            tests/test_api_football_physical_uniqueness.py \
+            tests/test_api_football_over25_high_scoring_league_radar.py
 
       - name: Record pre-cycle cumulative freeze count
         shell: bash
@@ -177,6 +178,9 @@ jobs:
               assert cycle["outcomes_used_to_generate_probability"] is False
               assert cycle["p_matrix_status"]=="NOT_GENERATED"
               assert cycle["canonical"]["p_matrix_status"]=="NOT_GENERATED"
+              radar=cycle["over25_high_scoring_league_radar"]
+              assert radar["matrix_mutation_performed"] is False
+              assert radar["role"]=="DISCOVERY_SIDECAR_ONLY"
               assert cycle["network_calls_performed"] <= 161
 
           print("MATRIX_FOOTBALL_WORLD_HORIZON_GATE: PASS")
