@@ -27,18 +27,26 @@ def _utc(value:object)->datetime:
     if dt.tzinfo is None: raise ValueError("TIMESTAMP_MUST_BE_AWARE")
     return dt.astimezone(timezone.utc)
 
-def _roles(payload:Mapping[str,Any])->dict[str,str]:
+def _roles_with_conflicts(payload:Mapping[str,Any])->tuple[dict[str,str],list[str]]:
     out={}
+    conflicts=set()
     for tr in payload.get("response") or []:
         if not isinstance(tr,Mapping): continue
         for key,role in (("startXI","STARTER"),("substitutes","SUBSTITUTE")):
             for item in tr.get(key) or []:
                 p=item.get("player") if isinstance(item,Mapping) and isinstance(item.get("player"),Mapping) else {}
                 pid=str(p.get("id") or "")
-                if not pid: continue
-                if pid in out and out[pid]!=role: raise ValueError("LINEUP_ROLE_CONFLICT:"+pid)
+                if not pid or pid in conflicts: continue
+                if pid in out and out[pid]!=role:
+                    conflicts.add(pid)
+                    out.pop(pid,None)
+                    continue
                 out[pid]=role
-    return out
+    return out,sorted(conflicts)
+
+def _roles(payload:Mapping[str,Any])->dict[str,str]:
+    roles,_=_roles_with_conflicts(payload)
+    return roles
 
 def _stats(path:Path)->list[dict[str,Any]]:
     try: payload=json.loads(path.read_text(encoding="utf-8"))
@@ -113,7 +121,7 @@ def _internal_folds(rows:list[dict[str,Any]]):
 def _fetch_lineups(fixtures:list[dict[str,Any]],key:str,out_dir:Path)->tuple[dict[str,dict[str,str]],dict[str,Any]]:
     cache=out_dir/"raw_lineups"; cache.mkdir(parents=True,exist_ok=True)
     session=requests.Session(); mappings={}; calls=0; missing=0
-    records=[]
+    records=[]; role_conflict_player_rows=0; conflict_fixture_count=0
     for f in fixtures:
         fid=str(f["fixture_id"]); p=cache/f"fixture_{fid}_lineups.json"
         if p.exists():
@@ -124,11 +132,29 @@ def _fetch_lineups(fixtures:list[dict[str,Any]],key:str,out_dir:Path)->tuple[dic
             try: payload=resp.json()
             except ValueError: payload={}
             p.write_bytes(raw)
-        rolemap=_roles(payload) if isinstance(payload,Mapping) else {}
+        if isinstance(payload,Mapping):
+            rolemap,conflicts=_roles_with_conflicts(payload)
+        else:
+            rolemap,conflicts={},[]
         if not rolemap: missing+=1
+        if conflicts:
+            conflict_fixture_count+=1
+            role_conflict_player_rows+=len(conflicts)
         mappings[fid]=rolemap
-        records.append({"fixture_id":fid,"role_count":len(rolemap),"raw_sha256":hashlib.sha256(p.read_bytes()).hexdigest()})
-    return mappings,{"provider_network_calls":calls,"fixture_count":len(fixtures),"fixtures_without_lineup":missing,"records":records}
+        records.append({
+            "fixture_id":fid,"role_count":len(rolemap),
+            "role_conflict_player_ids_quarantined":conflicts,
+            "role_conflict_count":len(conflicts),
+            "raw_sha256":hashlib.sha256(p.read_bytes()).hexdigest()
+        })
+    return mappings,{
+        "provider_network_calls":calls,"fixture_count":len(fixtures),
+        "fixtures_without_lineup":missing,
+        "lineup_role_conflict_fixture_count":conflict_fixture_count,
+        "lineup_role_conflict_player_rows_quarantined":role_conflict_player_rows,
+        "conflict_policy":"QUARANTINE_AMBIGUOUS_PLAYER_ROLE_MISSING_NOT_ZERO",
+        "records":records
+    }
 
 def build_dataset(api_key:str,out_dir:Path)->dict[str,Any]:
     fixtures,dupes=_load_fixture_sources()
