@@ -57,10 +57,6 @@ jobs:
           API_FOOTBALL_KEY: ${{ secrets.API_FOOTBALL_KEY }}
         run: python -m tools.api_football_market_expansion_live_probe
 
-      - name: One-shot audit screenshot leagues for Over 2.5
-        env:
-          API_FOOTBALL_KEY: ${{ secrets.API_FOOTBALL_KEY }}
-        run: python -m tools.api_football_over25_league_audit_screenshots
 
       - name: Enforce no-promotion protections
         shell: bash
@@ -85,7 +81,6 @@ jobs:
           git config user.name "matrix-football-market-expansion"
           git config user.email "matrix-football-market-expansion@users.noreply.github.com"
           git add evidence/api_football/market_expansion/live_probe
-          git add evidence/api_football/league_over25_audit
           if git diff --cached --quiet; then
             echo "NO_MARKET_EXPANSION_MATERIAL_CHANGE"
             exit 0
@@ -97,5 +92,3 @@ jobs:
 # Retrigger promoted market bindings 173/220/221 on 2026-10-04.
 
 # Retrigger Player Shots 240/241/265 structure probe 2026-10-04T00:39Z
-
-# One-shot screenshot league Over 2.5 audit 2026-10-04T02:12Z.
