@@ -11,6 +11,7 @@ from tools.cor0203_rapidapi_tennis_discovery import (
     RapidApiTennisDiscoveryError,
     build_discovery_registry,
     fetch_discovery,
+    recover_exact_rankings_via_profile_alias,
 )
 
 
@@ -221,6 +222,105 @@ def test_successful_provider_response_counts_verified_response():
     assert client.request_attempt_count == 1
     assert client.request_count == 1
 
+
+
+def test_profile_verified_alias_can_recover_exact_cut_ranking_for_changed_provider_id():
+    class AliasClient:
+        def __init__(self):
+            self.request_count = 0
+
+        def ranking_snapshot_rows(self, *, ranking_date):
+            self.request_count += 1
+            return [{
+                "position": 120,
+                "pts": 500,
+                "player": {
+                    "id": 999,
+                    "name": "Player B",
+                    "countryAcr": "FRA",
+                },
+            }]
+
+        def player_profile(self, *, player_id):
+            self.request_count += 1
+            if str(player_id) == "22":
+                return {"data": {
+                    "id": 22,
+                    "name": "Player B",
+                    "birthday": "2001-02-03T00:00:00Z",
+                    "countryAcr": "FRA",
+                    "information": {"plays": "Right-Handed"},
+                    "currentRank": 111,
+                }}
+            return {"data": {
+                "id": 999,
+                "name": "Player B",
+                "birthday": "2001-02-03T00:00:00Z",
+                "countryAcr": "FRA",
+                "information": {"plays": "Right-Handed"},
+                "currentRank": 120,
+            }}
+
+    merged, audit = recover_exact_rankings_via_profile_alias(
+        client=AliasClient(),
+        ranking_date=date(2026, 9, 21),
+        wanted_player_ids={"22"},
+        existing_rankings={},
+        fixture_identity_by_player={
+            "22": {"name": "Player B", "country": "FRA"},
+        },
+    )
+
+    assert audit["recovered_count"] == 1
+    assert audit["join_by_name_only"] is False
+    assert audit["current_rank_used"] is False
+    row = merged["22"]
+    assert row["place"] == "120"
+    assert row["points"] == "500"
+    assert row["snapshot_date"] == "2026-09-21"
+    assert row["ranking_source"] == "EXACT_CUT_RANKING_PROFILE_ALIAS"
+    assert row["ranking_identity_alias"]["ranking_player_id"] == "999"
+
+
+def test_profile_alias_fails_closed_when_dob_does_not_match():
+    class AliasClient:
+        def ranking_snapshot_rows(self, *, ranking_date):
+            return [{
+                "position": 120,
+                "pts": 500,
+                "player": {
+                    "id": 999,
+                    "name": "Player B",
+                    "countryAcr": "FRA",
+                },
+            }]
+
+        def player_profile(self, *, player_id):
+            if str(player_id) == "22":
+                birthday = "2001-02-03T00:00:00Z"
+            else:
+                birthday = "2002-02-03T00:00:00Z"
+            return {"data": {
+                "id": int(player_id),
+                "name": "Player B",
+                "birthday": birthday,
+                "countryAcr": "FRA",
+                "information": {"plays": "Right-Handed"},
+            }}
+
+    merged, audit = recover_exact_rankings_via_profile_alias(
+        client=AliasClient(),
+        ranking_date=date(2026, 9, 21),
+        wanted_player_ids={"22"},
+        existing_rankings={},
+        fixture_identity_by_player={
+            "22": {"name": "Player B", "country": "FRA"},
+        },
+    )
+
+    assert "22" not in merged
+    assert audit["recovered_count"] == 0
+    assert audit["blocked"][0]["reason"] == "RANKING_PROFILE_ALIAS_NOT_FOUND"
 
 
 def test_fetch_discovery_recovers_missing_snapshot_rank_from_exact_player_history():
