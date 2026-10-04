@@ -24,6 +24,7 @@ def discover_targets(
     world_discovery_path: Path,
     authority_path: Path,
     max_targets: int,
+    extra_discovery_path: Path | None = None,
 ) -> dict[str, str]:
     authority_ids = set()
     if authority_path.exists():
@@ -35,8 +36,13 @@ def discover_targets(
         }
 
     selected: dict[str, str] = {}
-    if world_discovery_path.exists():
-        discovery = json.loads(world_discovery_path.read_text(encoding="utf-8"))
+    discovery_paths = [world_discovery_path]
+    if extra_discovery_path is not None:
+        discovery_paths.append(extra_discovery_path)
+    for discovery_path in discovery_paths:
+        if not discovery_path.exists():
+            continue
+        discovery = json.loads(discovery_path.read_text(encoding="utf-8"))
         for event in discovery.get("eligible_candidates", []) or []:
             for identity in event.get("player_identities", []) or []:
                 if not isinstance(identity, Mapping):
@@ -180,6 +186,7 @@ def main() -> None:
         "--world-discovery",
         default="evidence/cor0203/runtime/MATRIX_COR0203_WORLD_DERIVED_DISCOVERY_LAST.json",
     )
+    parser.add_argument("--rapidapi-discovery")
     parser.add_argument(
         "--authority",
         default="evidence/cor0203/identity/MATRIX_COR0203_IDENTITY_AUTHORITY_LAST.json",
@@ -199,6 +206,11 @@ def main() -> None:
         world_discovery_path=Path(args.world_discovery),
         authority_path=Path(args.authority),
         max_targets=args.max_targets,
+        extra_discovery_path=(
+            Path(args.rapidapi_discovery)
+            if args.rapidapi_discovery
+            else None
+        ),
     )
     targets=[]
     for pid, expected in target_map.items():
