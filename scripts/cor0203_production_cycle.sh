@@ -76,6 +76,8 @@ RAPIDAPI_PREREG_CURRENT="/tmp/MATRIX_COR0203_RAPIDAPI_PREREG_CURRENT.json"
 API_TENNIS_PREREG_CURRENT="/tmp/MATRIX_COR0203_API_TENNIS_PREREG_CURRENT.json"
 HORIZON_AUDIT_LAST="evidence/cor0203/runtime/MATRIX_COR0203_DUAL_8DAY_HORIZON_LAST.json"
 MILESTONES_LAST="evidence/cor0203/runtime/MATRIX_COR0203_MILESTONES_LAST.json"
+R706_TARGET_HISTORY_LAST="evidence/cor0203/runtime/MATRIX_COR0203_R706_TARGET_HISTORY_READINESS_LAST.json"
+RAPIDAPI_PRECUT_STATS_RICH_LAST="evidence/cor0203/rapidapi_stats_rich/MATRIX_COR0203_RAPIDAPI_PRECUT_STATS_RICH_PROBE_LAST.json"
 
 test -s "$STATE"
 test -s "$BUNDLE"
@@ -113,6 +115,17 @@ case "$TENNIS_PROVIDER" in
     python -m tools.cor0203_world_inventory_discovery \
       --world-inventory "$WORLD_INVENTORY_LAST" \
       --out "$WORLD_DERIVED_DISCOVERY_LAST"
+
+    python -m tools.cor0203_r706_target_history_audit \
+      --world-discovery "$WORLD_DERIVED_DISCOVERY_LAST" \
+      --authority "$IDENTITY_AUTHORITY_LAST" \
+      --out "$R706_TARGET_HISTORY_LAST"
+
+    python -m tools.cor0203_rapidapi_stats_rich_history_probe \
+      --world-discovery "$WORLD_DERIVED_DISCOVERY_LAST" \
+      --authority "$IDENTITY_AUTHORITY_LAST" \
+      --out "$RAPIDAPI_PRECUT_STATS_RICH_LAST" \
+      --max-targets 32
 
     python -m tools.cor0203_rapidapi_durable_discovery \
       --out "$DISCOVERY" \
@@ -214,7 +227,8 @@ python -m tools.cor0203_expand_identity_authority \
   --static-cut "$STATIC_CUT" \
   --certified-aliases "$DUAL_IDENTITY_ALIASES_LAST" \
   --out "$IDENTITY_AUTHORITY_LAST" \
-  --audit-out "$IDENTITY_AUTHORITY_AUDIT_LAST"
+  --audit-out "$IDENTITY_AUTHORITY_AUDIT_LAST" \
+  --max-profiles 32
 
 python -m tools.cor0203_build_identity_crosswalk \
   --static-cut "$STATIC_CUT" \
@@ -523,6 +537,12 @@ if [[ -f "$API_TENNIS_RANK_BRIDGE_LAST" ]]; then
 fi
 if [[ -f "$API_TENNIS_RANK_HISTORY_RECOVERY_LAST" ]]; then
   git add "$API_TENNIS_RANK_HISTORY_RECOVERY_LAST"
+fi
+if [[ -f "$R706_TARGET_HISTORY_LAST" ]]; then
+  git add "$R706_TARGET_HISTORY_LAST"
+fi
+if [[ -f "$RAPIDAPI_PRECUT_STATS_RICH_LAST" ]]; then
+  git add "$RAPIDAPI_PRECUT_STATS_RICH_LAST"
 fi
 git add evidence/cor0203/runtime/MATRIX_COR0203_PREFEATURE_REGISTRY_R*.json 2>/dev/null || true
 git add evidence/cor0203/runtime/MATRIX_COR0203_IDENTITY_CROSSWALK_R*.json 2>/dev/null || true
