@@ -59,7 +59,7 @@ jobs:
         run: |
           set -euo pipefail
           python -m tools.api_football_prospective_supervisor \
-            --minimum-age-minutes 45 \
+            --minimum-age-minutes 0 \
             --out /tmp/football_supervisor_decision.json
           cat /tmp/football_supervisor_decision.json
           python - <<'PY' >> "$GITHUB_OUTPUT"
@@ -298,3 +298,5 @@ jobs:
 # Governed checkpoint-200 integration 02OCT2026.
 
 # Governed due-window trigger 02OCT2026 17:26Z for checkpoint 200.
+
+# One-shot forced poll for user-supplied finals 2026-10-04T02:05Z; restore to 45 after run.
