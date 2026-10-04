@@ -1,0 +1,117 @@
+name: API-Football settlement now 2026-10-03
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - .github/workflows/api-football-settlement-now-20261003.yml
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: api-football-prospective-freeze-mutation
+  cancel-in-progress: false
+
+jobs:
+  settle-now:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout operational branch
+        uses: actions/checkout@v4
+        with:
+          ref: repair/cor09-world-pipeline
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: python -m pip install pytest requests
+
+      - name: Verify settlement calibration protections
+        run: |
+          python -m pytest -q \
+            tests/test_api_football_prospective_api_settlement.py \
+            tests/test_api_football_prospective_calibration.py \
+            tests/test_api_football_physical_uniqueness.py
+
+      - name: Credential preflight
+        env:
+          API_FOOTBALL_KEY: ${{ secrets.API_FOOTBALL_KEY }}
+        run: |
+          python - <<'PY'
+          import os
+          key=os.environ.get("API_FOOTBALL_KEY","").strip()
+          assert key, "API_FOOTBALL_KEY_NOT_CONFIGURED"
+          key.encode("ascii")
+          print("API_FOOTBALL_CREDENTIAL: CONFIGURED")
+          PY
+
+      - name: Settle every eligible standard FT result now
+        env:
+          API_FOOTBALL_KEY: ${{ secrets.API_FOOTBALL_KEY }}
+        run: python -m tools.api_football_prospective_api_settlement
+
+      - name: Sync calibration ledger
+        run: python -m tools.api_football_prospective_calibration
+
+      - name: Rebuild checkpoint 200
+        run: python -m tools.api_football_checkpoint_200
+
+      - name: Reconcile physical uniqueness
+        run: |
+          python -m tools.api_football_physical_uniqueness_audit \
+            --freeze evidence/api_football/prospective_market_freeze/freeze.json \
+            --calibration-ledger evidence/api_football/prospective_calibration/ledger.jsonl \
+            --out evidence/api_football/physical_uniqueness/audit_last.json
+
+      - name: Verify target fixtures and invariants
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          root=Path("evidence/api_football")
+          settlements=[json.loads(x) for x in (root/"prospective_market_freeze/settlement_ledger.jsonl").read_text().splitlines() if x.strip()]
+          by={str(r["fixture_id"]):r for r in settlements}
+          sync=json.loads((root/"prospective_calibration/sync_last.json").read_text())
+          audit=json.loads((root/"physical_uniqueness/audit_last.json").read_text())
+          for fid in ("1494021","1494023"):
+              assert fid in by, f"EXPECTED_FINAL_NOT_SETTLED:{fid}"
+              assert by[fid]["terminal_status"]=="FT"
+          assert by["1494021"]["outcomes"]["over_2_5"] is False
+          assert by["1494023"]["outcomes"]["over_2_5"] is True
+          if "1494024" in by:
+              assert by["1494024"]["terminal_status"]=="FT"
+          assert sync["ledger_hash_chain_verified"] is True
+          assert sync["parameters_mutated"] is False
+          assert audit["result"]=="PASS"
+          assert audit["calibration_rows"]==sync["calibration_observation_count"]
+          print("TARGET_USL_SETTLEMENT_VERIFICATION: PASS")
+          print("calibration_observations=",sync["calibration_observation_count"])
+          print("new_fixture_ids=",sync["new_fixture_ids"])
+          PY
+
+      - name: Persist settlement and calibration evidence
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "matrix-football-settlement-now"
+          git config user.email "matrix-football-settlement-now@users.noreply.github.com"
+          git add evidence/api_football/prospective_market_freeze
+          git add evidence/api_football/prospective_calibration
+          git add evidence/api_football/physical_uniqueness/audit_last.json
+          if git diff --cached --quiet; then
+            echo "NO_SETTLEMENT_CHANGE"
+            exit 0
+          fi
+          git commit -m "evidence(football): settle current final results and sync calibration"
+          git pull --rebase origin repair/cor09-world-pipeline
+          git push origin HEAD:repair/cor09-world-pipeline
