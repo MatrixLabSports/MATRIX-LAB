@@ -23,7 +23,9 @@ def _event(mid, p1, p2, *, family="ATP", detail="ATP_CHALLENGER", start="2026-10
 def _report(events, status="PASS"):
     return {
         "status": status,
-        "world_inventory_complete": status == "PASS",
+        "provider_inventory_complete": status == "PASS",
+        "world_inventory_complete": False,
+        "world_complete_gate": "REQUIRES_MULTI_SOURCE_RECONCILIATION",
         "target_date_bogota": "2026-10-02",
         "events": events,
         "derived_lanes": {},
@@ -39,6 +41,9 @@ def test_accumulator_never_shrinks_when_provider_drops_prior_rows():
     assert out["accumulation"]["current_fetch_count"] == 2
     assert out["accumulation"]["retained_prior_only_count"] == 2
     assert out["accumulation"]["never_decrease_within_day"] is True
+    assert out["provider_inventory_complete"] is True
+    assert out["world_inventory_complete"] is False
+    assert out["world_complete_gate"] == "REQUIRES_MULTI_SOURCE_RECONCILIATION"
 
 
 def test_mutable_match_id_is_one_physical_event_and_preserves_aliases():

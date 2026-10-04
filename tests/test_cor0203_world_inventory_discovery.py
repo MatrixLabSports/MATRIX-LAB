@@ -74,7 +74,9 @@ def _world():
     return {
         "schema": "MATRIX_TENNIS_WORLD_INVENTORY_V2",
         "status": "PASS",
-        "world_inventory_complete": True,
+        "provider_inventory_complete": True,
+        "world_inventory_complete": False,
+        "world_complete_gate": "REQUIRES_MULTI_SOURCE_RECONCILIATION",
         "target_date_bogota": "2026-10-02",
         "world_calendar_inventory_count": 5,
         "events": [

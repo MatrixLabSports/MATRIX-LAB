@@ -14,7 +14,9 @@ def _write(path: Path, payload) -> None:
 def _world():
     return {
         "status": "PASS",
-        "world_inventory_complete": True,
+        "provider_inventory_complete": True,
+        "world_inventory_complete": False,
+        "world_complete_gate": "REQUIRES_MULTI_SOURCE_RECONCILIATION",
         "target_date_bogota": "2026-10-02",
         "world_calendar_inventory_count": 10,
         "derived_lanes": {
@@ -138,6 +140,9 @@ def test_world_funnel_distinguishes_frozen_blocked_and_rejected(tmp_path):
         "FROZEN_UNIQUE": 1,
         "PREREGISTERED_BLOCKED": 1,
     }
+    assert report["provider_inventory_complete"] is True
+    assert report["world_inventory_complete"] is False
+    assert report["world_complete_gate"] == "REQUIRES_MULTI_SOURCE_RECONCILIATION"
     assert report["metrics_opened"] is False
     assert report["outcomes_read"] == 0
     assert report["real_money"] == "BLOCKED"

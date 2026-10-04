@@ -442,7 +442,9 @@ assert settlement_uniqueness["metrics_opened"] is False
 assert settlement_sync["metrics"] == "SEALED_UNTIL_600"
 if world_inventory is not None:
     assert world_inventory["status"] == "PASS"
-    assert world_inventory["world_inventory_complete"] is True
+    assert world_inventory["provider_inventory_complete"] is True
+    assert world_inventory["world_inventory_complete"] is False
+    assert world_inventory["world_complete_gate"] == "REQUIRES_MULTI_SOURCE_RECONCILIATION"
     assert world_inventory["operational_timezone"] == "America/Bogota"
     assert world_inventory["calendar_day_rule"] == "00:00:00-23:59:59_LOCAL_FULL_DAY"
     assert world_inventory["coverage_families_required"] == ["ATP", "WTA", "ITF"]
@@ -464,7 +466,9 @@ if world_prereg is not None:
     assert world_prereg["status"] in {"NO_NEW_EVENTS", "PREREGISTERED"}
 if world_funnel is not None:
     assert world_funnel["world_inventory_status"] == "PASS"
-    assert world_funnel["world_inventory_complete"] is True
+    assert world_funnel["provider_inventory_complete"] is True
+    assert world_funnel["world_inventory_complete"] is False
+    assert world_funnel["world_complete_gate"] == "REQUIRES_MULTI_SOURCE_RECONCILIATION"
     assert sum(world_funnel["status_counts"].values()) == world_funnel["world_domain_candidates"]
     assert world_funnel["unique_holdout_count"] == uniqueness["unique_calibration_observations"]
     assert world_funnel["metrics"] == "SEALED_UNTIL_600"

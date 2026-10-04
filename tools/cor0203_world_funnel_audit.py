@@ -229,9 +229,13 @@ def build_world_funnel(
         "schema": "MATRIX_COR0203_WORLD_FUNNEL_AUDIT_V1",
         "target_date_bogota": world_inventory.get("target_date_bogota"),
         "world_inventory_status": world_inventory.get("status"),
+        "provider_inventory_complete": world_inventory.get(
+            "provider_inventory_complete"
+        ),
         "world_inventory_complete": world_inventory.get(
             "world_inventory_complete"
         ),
+        "world_complete_gate": world_inventory.get("world_complete_gate"),
         "world_inventory_total": world_inventory.get(
             "world_calendar_inventory_count"
         ),

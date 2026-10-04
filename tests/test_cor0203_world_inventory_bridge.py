@@ -4,7 +4,9 @@ from tools.cor0203_world_inventory_bridge import build_bridge
 def _world():
     return {
         "status": "PASS",
-        "world_inventory_complete": True,
+        "provider_inventory_complete": True,
+        "world_inventory_complete": False,
+        "world_complete_gate": "REQUIRES_MULTI_SOURCE_RECONCILIATION",
         "target_date_bogota": "2026-10-02",
         "world_calendar_inventory_count": 100,
         "derived_lanes": {
@@ -52,6 +54,9 @@ def test_bridge_traces_world_candidates_to_prereg_and_rejections():
     assert by_id["200"]["blockers"] == ["EVENT_NOT_FUTURE"]
     assert by_id["300"]["status"] == "NOT_PRESENT_IN_CURRENT_COR_DISCOVERY"
     assert report["cor_candidates_outside_today_world_lane"][0]["match_id"] == "400"
+    assert report["provider_inventory_complete"] is True
+    assert report["world_inventory_complete"] is False
+    assert report["world_complete_gate"] == "REQUIRES_MULTI_SOURCE_RECONCILIATION"
     assert report["automatic_model_feed"] is False
     assert report["metrics_opened"] is False
     assert report["outcomes_read"] == 0
