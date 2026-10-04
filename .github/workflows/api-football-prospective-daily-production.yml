@@ -95,7 +95,7 @@ jobs:
         shell: bash
         env:
           API_FOOTBALL_KEY: ${{ secrets.API_FOOTBALL_KEY }}
-          MATRIX_TARGET_DATE_INPUT: ${{ github.event_name == 'push' && '2026-10-07' || inputs.target_date }}
+          MATRIX_TARGET_DATE_INPUT: ${{ inputs.target_date }}
         run: |
           set -euo pipefail
           if [[ -n "${MATRIX_TARGET_DATE_INPUT:-}" ]]; then
@@ -217,3 +217,5 @@ jobs:
 # retrigger 2026-10-04T20:28Z after daily-reserve policy correction; push still targets 2026-10-07.
 
 # retrigger 2026-10-04T20:32Z after horizon retry fix; validate reserve regression and recapture 07-OCT.
+
+# restored normal governed target selection after successful virgin 07-OCT V2 capture.
