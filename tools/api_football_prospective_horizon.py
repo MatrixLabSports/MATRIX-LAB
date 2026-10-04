@@ -35,6 +35,32 @@ def _parse_utc(value: str | None) -> datetime:
     return parsed.astimezone(timezone.utc)
 
 
+def _retriable_budget_block(path: Path, summary: dict[str, Any]) -> bool:
+    canonical = summary.get("canonical")
+    freeze = summary.get("freeze")
+    if not isinstance(canonical, dict) or not isinstance(freeze, dict):
+        return False
+    if int(canonical.get("ready_input_count", 0) or 0) != 0:
+        return False
+    if int(freeze.get("new_event_count", 0) or 0) != 0:
+        return False
+
+    for relative in (
+        Path("history/history_capture_manifest.json"),
+        Path("team_last_fallback/manifest.json"),
+    ):
+        manifest = path.parent / relative
+        if not manifest.exists():
+            continue
+        try:
+            payload = json.loads(manifest.read_text(encoding="utf-8"))
+        except Exception:
+            continue
+        if payload.get("stopped_reason") == "DAILY_RESERVE_REACHED":
+            return True
+    return False
+
+
 def _completed_today(root: Path, target_date: str, local_today) -> dict[str, Any] | None:
     base = root / "evidence/api_football/prospective_daily" / target_date
     if not base.exists():
@@ -50,6 +76,8 @@ def _completed_today(root: Path, target_date: str, local_today) -> dict[str, Any
             and d.get("target_date_bogota") == target_date
             and started.date() == local_today
         ):
+            if _retriable_budget_block(path, d):
+                continue
             return {"path": path.as_posix(), "summary": d}
     return None
 
