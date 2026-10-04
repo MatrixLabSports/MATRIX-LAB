@@ -225,21 +225,36 @@ def run(key:str,root:Path)->dict[str,Any]:
     lane_models={lane:_load_json(Path(cfg["model_path"])) for lane,cfg in LANES.items()}
     lane_leagues={lane:_trained_leagues(Path(cfg["source_dataset"])) for lane,cfg in LANES.items()}
     frozen_new=[]; blockers=[]
+    offer_counts={lane:0 for lane in LANES}
+    events_with_any_canonical_offer=0
+    events_without_target_offer=0
+    detail_not_prematch_count=0
+    already_frozen_count=0
     for e in events:
         if len(frozen_new)>=MAX_NEW_FREEZES_PER_RUN: break
         fid=str(e["provider_fixture_id"])
         op=_api(session,key,"/odds",{"fixture":fid},raw,f"fixture_{fid}_odds",counter)
         hits=_extract_odds(op)
         offers={lane:_canonical_offer(hits,cfg["bet_id"]) for lane,cfg in LANES.items()}
-        if not any(offers.values()): continue
+        offered_lanes=[lane for lane,offer in offers.items() if offer is not None]
+        if not offered_lanes:
+            events_without_target_offer+=1
+            continue
+        events_with_any_canonical_offer+=1
+        for lane in offered_lanes:
+            offer_counts[lane]+=1
         detail=_fixture_detail(session,key,fid,raw,counter)
-        if not detail or detail["status"] not in {"NS","TBD"} or _utc(detail["kickoff_utc"])<=now: continue
+        if not detail or detail["status"] not in {"NS","TBD"} or _utc(detail["kickoff_utc"])<=now:
+            detail_not_prematch_count+=1
+            continue
         for lane,cfg in LANES.items():
             offer=offers[lane]
             if offer is None: continue
             ledger=root/lane.casefold()/"freeze_ledger.jsonl"
             existing=_load_jsonl(ledger)
-            if any(str(x["fixture_id"])==fid for x in existing): continue
+            if any(str(x["fixture_id"])==fid for x in existing):
+                already_frozen_count+=1
+                continue
             if detail["league_id"] not in lane_leagues[lane]:
                 blockers.append({"lane":lane,"fixture_id":fid,"reason":"OUTSIDE_TRAINED_LEAGUE_DOMAIN","league_id":detail["league_id"]}); continue
             feat=_features(session,key,detail,cfg["metric"],raw,counter,stats_cache)
@@ -274,7 +289,34 @@ def run(key:str,root:Path)->dict[str,Any]:
             else: gates[str(g)]={"threshold":g,"status":"OPENED_AT_THRESHOLD","observations_available":len(cal),"observations_used":g,"remaining":0,"metrics_opened":True,"metrics":_gate_metrics(cal[:g])}
         state.update({"freeze_observation_count":len(_load_jsonl(lane_dir/"freeze_ledger.jsonl")),"calibration_observation_count":len(cal),"gates":gates,"last_supervisor_run_utc":now.isoformat(),"prospective_lane_ready":True,"status":"ACTIVE","automatic_wagering":False,"real_money":"BLOCKED"})
         (lane_dir/"state.json").write_text(json.dumps(state,indent=2,sort_keys=True)+"\n",encoding="utf-8")
-    summary={"schema":"MATRIX_PROMOTED_TEAM_MARKETS_SUPERVISOR_RUN_V1","run_id":run_id,"observed_at_utc":now.isoformat(),"network_calls":counter[0],"future_events_checked":len(events),"new_freezes":frozen_new,"new_settlements":settled_new,"blockers":blockers,"odds_used_to_generate_probability":False,"automatic_wagering":False,"real_money":"BLOCKED","status":"PASS"}
+    if frozen_new:
+        zero_freeze_reason=None
+    elif events_with_any_canonical_offer==0:
+        zero_freeze_reason="NO_CANONICAL_TARGET_MARKET_OFFERS_IN_CHECKED_EVENTS"
+    elif blockers:
+        zero_freeze_reason="CANONICAL_OFFERS_FOUND_BUT_BLOCKED_BY_DOMAIN_OR_PIT_GATES"
+    elif already_frozen_count:
+        zero_freeze_reason="CANONICAL_OFFERS_ALREADY_FROZEN"
+    elif detail_not_prematch_count:
+        zero_freeze_reason="CANONICAL_OFFERS_NOT_VALID_PREMATCH"
+    else:
+        zero_freeze_reason="NO_ELIGIBLE_FREEZE_AFTER_GOVERNED_GATES"
+    summary={
+      "schema":"MATRIX_PROMOTED_TEAM_MARKETS_SUPERVISOR_RUN_V2",
+      "run_id":run_id,"observed_at_utc":now.isoformat(),"network_calls":counter[0],
+      "future_events_checked":len(events),"new_freezes":frozen_new,"new_settlements":settled_new,
+      "blockers":blockers,
+      "offer_audit":{
+        "events_with_any_canonical_offer":events_with_any_canonical_offer,
+        "events_without_target_offer":events_without_target_offer,
+        "canonical_offer_fixture_count_by_lane":offer_counts,
+        "detail_not_prematch_count":detail_not_prematch_count,
+        "already_frozen_count":already_frozen_count,
+        "zero_freeze_reason":zero_freeze_reason,
+      },
+      "odds_used_to_generate_probability":False,"automatic_wagering":False,
+      "real_money":"BLOCKED","status":"PASS"
+    }
     run_dir=root/"runs"/run_id; run_dir.mkdir(parents=True,exist_ok=True)
     (run_dir/"manifest.json").write_text(json.dumps(summary,indent=2,sort_keys=True)+"\n",encoding="utf-8")
     (root/"last_run.json").write_text(json.dumps({**summary,"manifest_path":str(run_dir/"manifest.json")},indent=2,sort_keys=True)+"\n",encoding="utf-8")
