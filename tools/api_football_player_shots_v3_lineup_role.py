@@ -478,7 +478,27 @@ def initialize_prospective(out_dir:Path,model:dict[str,Any])->dict[str,Any]:
     return state
 
 
+def _canonical_v3_already_resolved()->bool:
+    p=Path("evidence/api_football/market_expansion/player_shots_lineup_role_v3/model.json")
+    if not p.exists():
+        return False
+    try:
+        m=json.loads(p.read_text(encoding="utf-8"))
+    except (OSError,json.JSONDecodeError):
+        return False
+    return (
+        m.get("status")=="FROZEN_FOR_NEW_PROSPECTIVE_VALIDATION_V3"
+        and m.get("historical_role_source")=="/fixtures/lineups"
+        and m.get("prospective_role_source")=="/fixtures/lineups"
+        and m.get("prospective_freeze_allowed") is True
+        and bool(m.get("validation",{}).get("gate_passed"))
+    )
+
+
 def main()->None:
+    if _canonical_v3_already_resolved():
+        print(json.dumps({"status":"SUPERSEDED_BY_CANONICAL_PLAYER_SHOTS_LINEUP_ROLE_V3","writes_performed":False,"real_money":"BLOCKED"},sort_keys=True))
+        return
     parser=argparse.ArgumentParser()
     parser.add_argument("--collect-lineups",action="store_true")
     args=parser.parse_args()
