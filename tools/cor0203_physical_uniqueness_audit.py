@@ -7,7 +7,7 @@ from collections import defaultdict
 from pathlib import Path
 from typing import Any, Mapping
 
-from tools.cor0203_physical_identity import physical_identity, physical_event_key
+from tools.cor0203_physical_identity import _norm, physical_identity, physical_event_key
 
 REV_RE = re.compile(r"_R(\d+)\.json$")
 
