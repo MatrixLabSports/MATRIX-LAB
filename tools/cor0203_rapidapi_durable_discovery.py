@@ -18,6 +18,7 @@ from app.core.governed_acquisition_queue import AcquisitionCandidate, ProviderBu
 from tools.cor0203_rapidapi_tennis_discovery import (
     MAX_FIXTURE_PAGES,
     MAX_RANKING_PAGES,
+    MAX_RANK_HISTORY_FALLBACK_REQUESTS,
     MAX_TOURNAMENT_INFO_REQUESTS,
     PROVIDER_KEY,
     RAPIDAPI_BASE_URL,
@@ -30,6 +31,7 @@ from tools.cor0203_rapidapi_tennis_discovery import (
 MAX_REQUESTS_PER_BUCKET = (
     MAX_FIXTURE_PAGES
     + MAX_RANKING_PAGES
+    + MAX_RANK_HISTORY_FALLBACK_REQUESTS
     + MAX_TOURNAMENT_INFO_REQUESTS
 )
 EXPECTED_ROWS_BUDGET = 5000
