@@ -17,6 +17,7 @@ from tools.api_football_future_fixture_capture import (
     run_capture as capture_future_fixtures,
 )
 from tools.api_football_group_history_capture import capture_group_history
+from tools.api_football_over25_high_scoring_league_radar import write_outputs as write_over25_league_radar
 from tools.api_football_prospective_market_freeze import persist_incremental_freeze
 from tools.api_football_team_last_fallback import run_capture as capture_team_last
 
@@ -64,6 +65,7 @@ def run_daily_cycle(
     history_dir = cycle_root / "history"
     team_last_dir = cycle_root / "team_last_fallback"
     canonical_dir = cycle_root / "canonical_analysis"
+    radar_dir = cycle_root / "radar_over25_high_scoring_leagues"
 
     fixture_manifest = capture_future_fixtures(
         api_key=key,
@@ -82,6 +84,23 @@ def run_daily_cycle(
     _write(prematch_dir / "benchmark.json", benchmark)
     _write(prematch_dir / "history_acquisition_queue.json", queue)
     _write(prematch_dir / "world_inventory.json", inventory)
+
+    radar_audit_path = root / "evidence/api_football/league_over25_audit/audit_last.json"
+    if radar_audit_path.exists():
+        radar_manifest = write_over25_league_radar(
+            audit_path=radar_audit_path,
+            registry_path=fixtures_dir / "future_fixture_registry.json",
+            out_dir=radar_dir,
+        )
+    else:
+        radar_manifest = {
+            "status":"AUDIT_NOT_AVAILABLE",
+            "selected_league_count":0,
+            "priority_radar_fixture_count":0,
+            "matrix_mutation_performed":False,
+            "automatic_wagering":False,
+            "real_money":"BLOCKED",
+        }
 
     history_summary = capture_group_history(
         api_key=key,
@@ -143,6 +162,13 @@ def run_daily_cycle(
             "unique_team_count": inventory["unique_team_count"],
             "competition_count": inventory["competition_count"],
             "country_count": inventory["country_count"],
+        },
+        "over25_high_scoring_league_radar": {
+            "status": radar_manifest.get("status"),
+            "selected_league_count": int(radar_manifest.get("selected_league_count", 0)),
+            "priority_radar_fixture_count": int(radar_manifest.get("priority_radar_fixture_count", 0)),
+            "matrix_mutation_performed": bool(radar_manifest.get("matrix_mutation_performed", False)),
+            "role": "DISCOVERY_SIDECAR_ONLY",
         },
         "history": {
             "group_network_calls": history_summary["network_calls_performed"],
