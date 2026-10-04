@@ -402,9 +402,11 @@ def build_world_inventory(
         for channel in PROVIDER_CHANNELS
     )
     return {
-        "schema": "MATRIX_TENNIS_WORLD_INVENTORY_V2",
+        "schema": "MATRIX_TENNIS_WORLD_INVENTORY_V3",
         "status": "PASS" if complete else "PARTIAL",
-        "world_inventory_complete": complete,
+        "provider_inventory_complete": complete,
+        "world_inventory_complete": False,
+        "world_complete_gate": "REQUIRES_MULTI_SOURCE_RECONCILIATION",
         "provider": PROVIDER_KEY,
         "provider_architecture": {
             "channels_queried": ["ATP", "WTA"],
@@ -480,9 +482,11 @@ def main() -> None:
     target = _target_date(args.target_date_bogota)
     if not key:
         report = {
-            "schema": "MATRIX_TENNIS_WORLD_INVENTORY_V2",
+            "schema": "MATRIX_TENNIS_WORLD_INVENTORY_V3",
             "status": "SOURCE_NOT_CONFIGURED",
+            "provider_inventory_complete": False,
             "world_inventory_complete": False,
+            "world_complete_gate": "REQUIRES_MULTI_SOURCE_RECONCILIATION",
             "provider": PROVIDER_KEY,
             "target_date_bogota": target.isoformat(),
             "coverage_families_required": ["ATP", "WTA", "ITF"],
@@ -509,6 +513,7 @@ def main() -> None:
     print(json.dumps({
         "status": report.get("status"),
         "target_date_bogota": report.get("target_date_bogota"),
+        "provider_inventory_complete": report.get("provider_inventory_complete"),
         "world_inventory_complete": report.get("world_inventory_complete"),
         "world_calendar_inventory_count": report.get(
             "world_calendar_inventory_count", 0
