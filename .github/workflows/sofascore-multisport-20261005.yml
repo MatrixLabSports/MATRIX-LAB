@@ -6,6 +6,8 @@ on:
       - repair/cor09-world-pipeline
     paths:
       - .github/workflows/sofascore-multisport-20261005.yml
+      - tools/sofascore_multisport_discovery.py
+      - tests/test_sofascore_multisport_discovery.py
   workflow_dispatch:
 
 permissions:
@@ -51,6 +53,7 @@ jobs:
             --out evidence/sofascore/2026-10-05/multisport_discovery.json
 
       - name: Persist physical evidence
+        if: always()
         shell: bash
         run: |
           set -euo pipefail
@@ -71,3 +74,19 @@ jobs:
             sleep $((attempt * 2))
           done
           exit 1
+
+      - name: Require physically verified SofaScore PASS
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          p=Path("evidence/sofascore/2026-10-05/multisport_discovery.json")
+          if not p.exists():
+              raise SystemExit("SOFASCORE_EVIDENCE_MISSING")
+          data=json.loads(p.read_text(encoding="utf-8"))
+          if data.get("status") != "PASS":
+              raise SystemExit("SOFASCORE_DISCOVERY_NOT_PASS:"+str(data.get("error")))
+          print("SOFASCORE_PHYSICAL_VERIFICATION_PASS")
+          PY
