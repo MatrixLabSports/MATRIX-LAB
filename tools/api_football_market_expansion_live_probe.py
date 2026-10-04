@@ -10,7 +10,7 @@ from typing import Any, Mapping
 import requests
 
 BASE_URL="https://v3.football.api-sports.io"
-TARGET_BETS={173:"Fouls. Total",220:"Shots. Away Total",221:"Shots. Home Total"}
+TARGET_BETS={173:"Fouls. Total",220:"Shots. Away Total",221:"Shots. Home Total",240:"Home Player Shots",241:"Away Player Shots",265:"Player Shots Total",270:"Home Player Shots Total",276:"Away Player Shots Total"}
 POLICY_BOOKS={"betano","betplay","bwin","rushbet","pinnacle"}
 TIMEOUT=20.0
 
