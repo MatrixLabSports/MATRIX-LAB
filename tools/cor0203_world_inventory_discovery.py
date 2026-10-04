@@ -14,6 +14,7 @@ from tools.cor0203_rapidapi_tennis_discovery import (
     RapidApiTennisClient,
     RapidApiTennisDiscoveryError,
     build_discovery_registry,
+    recover_exact_rankings_from_history,
 )
 
 
@@ -185,6 +186,42 @@ def derive_world_cor_discovery(
     else:
         rankings = {}
 
+    fixture_identity_by_player = {}
+    for row in fixture_rows:
+        for side in (1, 2):
+            player_id = str(row.get(f"player{side}Id") or "").strip()
+            player = row.get(f"player{side}")
+            if not player_id or not isinstance(player, Mapping):
+                continue
+            fixture_identity_by_player[player_id] = {
+                "name": str(player.get("name") or "").strip(),
+                "country": str(player.get("countryAcr") or "").strip(),
+            }
+
+    ranking_history_recovery = {
+        "schema": "MATRIX_COR0203_EXACT_CUT_RANK_HISTORY_RECOVERY_V1",
+        "ranking_cut": RANKING_CUT.isoformat(),
+        "requested_missing_player_ids": [],
+        "history_requests": 0,
+        "recovered_count": 0,
+        "recovered": [],
+        "blocked_count": 0,
+        "blocked": [],
+        "current_rank_used": False,
+        "post_cut_competitive_data_used": False,
+        "outcomes_used": False,
+        "odds_used": False,
+        "real_money": "BLOCKED",
+    }
+    if wanted_player_ids and ranking_error is None:
+        rankings, ranking_history_recovery = recover_exact_rankings_from_history(
+            client=client,
+            ranking_date=RANKING_CUT,
+            wanted_player_ids=wanted_player_ids,
+            existing_rankings=rankings,
+            fixture_identity_by_player=fixture_identity_by_player,
+        )
+
     result = build_discovery_registry(
         fixture_payload={
             "data": fixture_rows,
@@ -278,6 +315,10 @@ def derive_world_cor_discovery(
     result["tournament_enrichment_errors"] = tournament_errors
     result["ranking_players_requested"] = len(wanted_player_ids)
     result["ranking_players_found"] = len(rankings)
+    result["ranking_history_recovery"] = ranking_history_recovery
+    result["ranking_history_recovered_count"] = int(
+        ranking_history_recovery.get("recovered_count", 0)
+    )
     result["ranking_enrichment_error"] = ranking_error
     result["network_calls"] = client.request_count
     result["automatic_model_feed"] = False
