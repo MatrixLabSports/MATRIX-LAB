@@ -1,0 +1,91 @@
+{
+  "schema": "MATRIX_FOOTBALL_DERIVED_MARKETS_CHECKPOINT_200_V1",
+  "created_at_utc": "2026-10-02T20:35:00+00:00",
+  "source": {
+    "calibration_ledger": "evidence/api_football/prospective_calibration/ledger.jsonl",
+    "checkpoint_200": "evidence/api_football/prospective_calibration/checkpoint_200.json",
+    "observations_used": 200,
+    "sample_prefix_sha256": "96b9293c4ee5e86fe4fe932f9725e494458348c166aaaa1339e89fcd68b790e6"
+  },
+  "derivation_policy": {
+    "parameter_tuning": false,
+    "new_model_training": false,
+    "probabilities_derived_only_from_preexisting_frozen_probabilities": true,
+    "double_chance": {
+      "12": "P(H)+P(A)",
+      "1X": "P(H)+P(D)",
+      "X2": "P(A)+P(D)"
+    },
+    "under_2_5": "1-P(Over2.5)"
+  },
+  "metrics": {
+    "double_chance_1X": {
+      "challenger": {
+        "sample_size": 200,
+        "brier_score": 0.1892363754378053,
+        "log_loss": 0.5591893260072709
+      },
+      "poisson": {
+        "sample_size": 200,
+        "brier_score": 0.19400221311931742,
+        "log_loss": 0.5720737462881861
+      },
+      "delta_brier": -0.0047658376815121195,
+      "delta_log_loss": -0.012884420280915188,
+      "status": "PROSPECTIVE_SUPPORT_CONFIRMED_AT_200"
+    },
+    "double_chance_X2": {
+      "challenger": {
+        "sample_size": 200,
+        "brier_score": 0.21787363071574942,
+        "log_loss": 0.6274071140428795
+      },
+      "poisson": {
+        "sample_size": 200,
+        "brier_score": 0.22975706234213736,
+        "log_loss": 0.6511694931978325
+      },
+      "delta_brier": -0.011883431626387941,
+      "delta_log_loss": -0.02376237915495294,
+      "status": "PROSPECTIVE_SUPPORT_CONFIRMED_AT_200"
+    },
+    "double_chance_12": {
+      "challenger": {
+        "sample_size": 200,
+        "brier_score": 0.1564055306557227,
+        "log_loss": 0.49844614337869453
+      },
+      "poisson": {
+        "sample_size": 200,
+        "brier_score": 0.1550928715145344,
+        "log_loss": 0.4898296805582506
+      },
+      "delta_brier": 0.0013126591411883048,
+      "delta_log_loss": 0.008616462820443926,
+      "status": "NOT_SUPERIOR_TO_POISSON_AT_200"
+    },
+    "under_2_5": {
+      "challenger": {
+        "sample_size": 200,
+        "brier_score": 0.2325431292199755,
+        "log_loss": 0.6571291950840414
+      },
+      "poisson": {
+        "sample_size": 200,
+        "brier_score": 0.23771435153253923,
+        "log_loss": 0.6679786106157043
+      },
+      "delta_brier": -0.005171222312563728,
+      "delta_log_loss": -0.010849415531662854,
+      "status": "PROSPECTIVE_SUPPORT_CONFIRMED_AT_200"
+    }
+  },
+  "governance": {
+    "market_specific_evaluation": true,
+    "original_357_holdout_reused": false,
+    "odds_used_to_generate_probability": false,
+    "p_matrix_status": "NOT_GENERATED",
+    "automatic_wagering": false,
+    "real_money": "BLOCKED"
+  }
+}

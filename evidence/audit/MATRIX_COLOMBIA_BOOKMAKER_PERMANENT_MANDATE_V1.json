@@ -1,0 +1,82 @@
+{
+  "schema": "MATRIX_COLOMBIA_BOOKMAKER_PERMANENT_MANDATE_V1",
+  "effective_date_bogota": "2026-09-28",
+  "status": "ACTIVE",
+  "mode": "PERMANENT_ADDITIVE",
+  "change_control": "USER_EXPLICIT_REPLACE_MODIFY_SUSPEND_REVOKE_ONLY",
+  "scope": [
+    "football",
+    "tennis",
+    "price_comparison",
+    "ev",
+    "stake",
+    "prematch_freeze"
+  ],
+  "execution_candidates": [
+    "betano",
+    "betplay",
+    "betsson",
+    "bwin",
+    "codere",
+    "luckia",
+    "mryoker",
+    "rivalo",
+    "rushbet",
+    "sportium",
+    "stake",
+    "wplay",
+    "yajuego",
+    "zamba"
+  ],
+  "non_execution": {
+    "pinnacle": "REFERENCE_ONLY_NOT_COLOMBIA_EXECUTION",
+    "unibet": "QUARANTINED_PENDING_COLOMBIA_REGULATORY_RECONCILIATION",
+    "bingo_casino": "QUARANTINED_PENDING_REGULATOR_PROVIDER_RECONCILIATION"
+  },
+  "hard_invariants": {
+    "odds_to_p_matrix": false,
+    "p_matrix_before_price_selection": true,
+    "exact_market_contract_required": true,
+    "different_lines_never_equivalent": true,
+    "minimum_decimal_odds_exclusive": 1.5,
+    "stale_quotes_rejected": true,
+    "unavailable_quotes_rejected": true,
+    "post_start_quotes_rejected": true,
+    "unmapped_markets_fail_closed": true,
+    "expected_value_after_p_matrix_only": true,
+    "non_positive_ev_no_bet": true,
+    "stake_requires_calibration_gate": true,
+    "stake_requires_real_money_gate": true,
+    "stake_is_risk_and_calibration_adjusted": true,
+    "prematch_freeze_required": true,
+    "freeze_ledger_append_only": true,
+    "freeze_ledger_hash_chained": true,
+    "duplicate_freeze_rejected": true,
+    "automatic_wagering": false,
+    "architecture_ready_not_provider_active": true,
+    "provider_visible_not_regulator_authorized": true,
+    "provider_used_requires_physical_network_evidence": true
+  },
+  "activation": {
+    "provider_candidate": "odds_api_net",
+    "secret_name": "ODDS_API_NET_KEY",
+    "purchase_required_now": false,
+    "status": "DEFERRED_UNTIL_OPERATIONALLY_USEFUL",
+    "physical_activation_required": true,
+    "real_money": "BLOCKED"
+  },
+  "regression_protection": {
+    "ci_required": true,
+    "fail_if_portfolio_silently_reduced": true,
+    "fail_if_pinnacle_promoted_to_execution": true,
+    "fail_if_quarantine_silently_promoted": true,
+    "fail_if_odds_to_p_matrix_enabled": true,
+    "fail_if_minimum_odds_rule_weakened": true,
+    "fail_if_stake_gates_removed": true
+  },
+  "source_artifacts": [
+    "evidence/audit/MATRIX_COLOMBIA_BOOKMAKER_PORTFOLIO_20260928.json",
+    "evidence/audit/MATRIX_COLOMBIA_ODDS_ARCHITECTURE_READINESS_20260928.json",
+    "docs/providers/MATRIX_COLOMBIA_ODDS_EXECUTION_ARCHITECTURE_V1.md"
+  ]
+}

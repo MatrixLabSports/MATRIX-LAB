@@ -29,6 +29,7 @@ jobs:
             python -m pip install -r requirements.txt
           fi
           python -m pip install pytest
+          python -m pip install -r infra/aws/r8_3r6/authority_service/requirements.txt
 
       - name: Run MATRIX canonical quality gate
         run: python scripts/matrix_ci_gate.py

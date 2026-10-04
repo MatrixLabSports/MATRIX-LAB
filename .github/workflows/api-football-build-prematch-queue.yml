@@ -1,0 +1,86 @@
+name: API-Football build prematch queue
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - repair/cor09-world-pipeline
+    paths:
+      - tools/api_football_build_prematch_queue.py
+      - evidence/api_football/fixtures/capture_manifest.json
+      - evidence/api_football/fixtures/future_fixture_registry.json
+      - .github/workflows/api-football-build-prematch-queue.yml
+
+permissions:
+  contents: write
+
+concurrency:
+  group: api-football-build-prematch-queue
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout operational branch
+        uses: actions/checkout@v4
+        with:
+          ref: repair/cor09-world-pipeline
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Build prematch inventory and history queue
+        run: python -m tools.api_football_build_prematch_queue
+
+      - name: Validate queue invariants
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          root = Path("evidence/api_football/prematch")
+          benchmark = json.loads((root / "benchmark.json").read_text(encoding="utf-8"))
+          queue = json.loads((root / "history_acquisition_queue.json").read_text(encoding="utf-8"))
+          inventory = json.loads((root / "world_inventory.json").read_text(encoding="utf-8"))
+
+          assert inventory["future_fixture_count"] > 0
+          assert inventory["future_fixture_count"] == queue["target_fixtures"]
+          assert inventory["future_fixture_count"] == len(benchmark["fixtures"])
+          assert inventory["unique_team_count"] == queue["unique_teams"]
+          assert inventory["unique_team_count"] > 0
+          assert queue["network_calls_performed"] == 0
+          assert benchmark["benchmark_status"] == "HISTORY_PENDING"
+          assert benchmark["money_decisions_enabled"] is False
+          assert benchmark["real_money"] == "BLOCKED"
+          assert queue["protections"]["history_must_precede_target"] is True
+          assert queue["protections"]["same_or_future_target_outcomes_forbidden"] is True
+          assert queue["protections"]["odds_used"] is False
+          assert queue["protections"]["real_money"] == "BLOCKED"
+          print("API_FOOTBALL_PREMATCH_QUEUE_GATE: PASS")
+          print("future_fixtures=", inventory["future_fixture_count"])
+          print("unique_teams=", inventory["unique_team_count"])
+          print("competitions=", inventory["competition_count"])
+          print("countries=", inventory["country_count"])
+          print("network_calls_performed=", queue["network_calls_performed"])
+          PY
+
+      - name: Persist prematch evidence
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "matrix-api-football-prematch"
+          git config user.email "matrix-api-football-prematch@users.noreply.github.com"
+          git add evidence/api_football/prematch
+          if git diff --cached --quiet; then
+            echo "NO_PREMATCH_EVIDENCE_CHANGE"
+            exit 0
+          fi
+          git commit -m "evidence(api-football): persist prematch world inventory and history queue"
+          git pull --rebase origin repair/cor09-world-pipeline
+          git push origin HEAD:repair/cor09-world-pipeline

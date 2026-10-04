@@ -1,0 +1,290 @@
+{
+  "schema": "MATRIX_FOOTBALL_ALL_LANES_CERTIFICATION_V1",
+  "certified_at_utc": "2026-10-02T21:20:00+00:00",
+  "certification_scope": "TRUTHFUL_PER_LANE_STATUS",
+  "evidence": {
+    "canonical_registry_ci_run": {
+      "id": 37066013722,
+      "conclusion": "success"
+    },
+    "source_coverage_manifest": {
+      "path": "evidence/api_football/market_expansion/coverage_probe/manifest.json",
+      "blob_sha": "e874b192b988536a8c44795b0b1fe0df523fec3c",
+      "status": "PASS",
+      "stats_rich_sampled_fixtures": 8,
+      "fixtures_with_all_extended_fields": 7
+    },
+    "bet_catalog_manifest": {
+      "path": "evidence/api_football/market_expansion/bet_catalog/manifest.json",
+      "blob_sha": "d92059ff9b84500948f627a79d4123be6afe23ca",
+      "status": "PASS",
+      "provider_bet_types": 338
+    },
+    "checkpoint_200": {
+      "path": "evidence/api_football/prospective_calibration/MATRIX_FOOTBALL_CHECKPOINT_200_CERTIFICATION_20261002.json",
+      "blob_sha": "210eb2f9e3b507ab01a0723c6a90429614cd07d2"
+    },
+    "derived_markets_200": {
+      "path": "evidence/api_football/market_expansion/MATRIX_FOOTBALL_DERIVED_MARKETS_CHECKPOINT_200_20261002.json",
+      "blob_sha": "c522e85abe99dfad6046fa510b43c9869546d116"
+    },
+    "live_prematch_fixture_odds": {
+      "path": "evidence/api_football/market_expansion/fixture_odds_probe/manifest.json",
+      "blob_sha": "d1496734b395375a2804012cd13b5a367616061e",
+      "workflow_run_id": 37066385100,
+      "conclusion": "success"
+    },
+    "odds_gap_scan": {
+      "path": "evidence/api_football/market_expansion/odds_gap_scan/manifest.json",
+      "blob_sha": "c20556753762d6854fa2fd1d8b274000bb4fd2fc",
+      "workflow_run_id": 37066555880,
+      "conclusion": "success",
+      "network_calls": 30
+    }
+  },
+  "predictive_validation_complete": {
+    "1X2": "SUPPORTED_AT_N200",
+    "GOAL_TOTALS_OVER_2_5": "SUPPORTED_AT_N200",
+    "GOAL_TOTALS_UNDER_2_5": "SUPPORTED_AT_N200_DERIVED_COMPLEMENT",
+    "DOUBLE_CHANCE_1X": "SUPPORTED_AT_N200_DERIVED_FROM_FROZEN_1X2",
+    "DOUBLE_CHANCE_X2": "SUPPORTED_AT_N200_DERIVED_FROM_FROZEN_1X2"
+  },
+  "predictively_rejected_or_not_supported": {
+    "BTTS_V2": "REJECTED_AT_N200_NOT_SUPERIOR_TO_POISSON",
+    "DOUBLE_CHANCE_12": "NOT_SUPERIOR_TO_POISSON_AT_N200"
+  },
+  "source_price_canonical_verified_model_pending": {
+    "CORNERS_OVER_UNDER": {
+      "source_coverage": "7/8 stats-rich fixtures",
+      "price_catalog": [
+        "Corners Over Under",
+        "Home Corners Over/Under",
+        "Away Corners Over/Under"
+      ],
+      "canonical_version": "MATRIX-MARKET-R2/football/CORNERS/total-corners"
+    },
+    "CARDS_OVER_UNDER": {
+      "source_coverage": "7/8 stats-rich fixtures",
+      "price_catalog": [
+        "Cards Over/Under",
+        "Home Team Total Cards",
+        "Away Team Total Cards"
+      ],
+      "canonical_version": "MATRIX-MARKET-R2/football/CARDS/total-cards"
+    },
+    "PLAYER_SHOTS": {
+      "source_coverage": "7/8 stats-rich fixtures",
+      "price_catalog": [
+        "Player Shots Total",
+        "Home Player Shots Total",
+        "Away Player Shots Total"
+      ],
+      "canonical_version": "MATRIX-MARKET-R2/football/PLAYER_SHOTS_OR_SHOTS_ON_TARGET/player-threshold"
+    },
+    "PLAYER_SHOTS_ON_TARGET": {
+      "source_coverage": "7/8 stats-rich fixtures",
+      "price_catalog": [
+        "Player Shots On Target",
+        "Player Shots On Target Total"
+      ],
+      "canonical_version": "MATRIX-MARKET-R2/football/PLAYER_SHOTS_OR_SHOTS_ON_TARGET/player-threshold"
+    },
+    "GOALKEEPER_SAVES": {
+      "source_coverage": "7/8 stats-rich fixtures",
+      "price_catalog": [
+        "Goalkeeper Saves",
+        "Home Goalkeeper Saves",
+        "Away Goalkeeper Saves",
+        "Saves Total"
+      ],
+      "canonical_version": "MATRIX-MARKET-R2/football/GOALKEEPER_SAVES/player-threshold"
+    },
+    "PLAYER_ASSISTS": {
+      "source_coverage": "7/8 stats-rich fixtures",
+      "price_catalog": [
+        "Player Assists",
+        "Home Player Assists",
+        "Away Player Assists"
+      ],
+      "canonical_version": "MATRIX-MARKET-R2/football/PLAYER_ASSISTS_OR_PASSES/player-threshold"
+    },
+    "PLAYER_PASSES": {
+      "source_coverage": "7/8 stats-rich fixtures",
+      "price_catalog": [
+        "Home Player Passes",
+        "Away Player Passes"
+      ],
+      "canonical_version": "MATRIX-MARKET-R2/football/PLAYER_ASSISTS_OR_PASSES/player-threshold"
+    },
+    "PLAYER_TACKLES": {
+      "source_coverage": "7/8 stats-rich fixtures",
+      "price_catalog": [
+        "Home Player Tackles",
+        "Away Player Tackles"
+      ],
+      "canonical_version": "MATRIX-MARKET-R2/football/PLAYER_TACKLES/player-threshold"
+    },
+    "PLAYER_FOULS": {
+      "source_coverage": "7/8 stats-rich fixtures",
+      "price_catalog": [
+        "Player Fouls Committed",
+        "Home Player Fouls Committed",
+        "Away Player Fouls Committed"
+      ],
+      "canonical_version": "MATRIX-MARKET-R2/football/PLAYER_FOULS/player-threshold"
+    },
+    "TEAM_SHOTS_ON_TARGET": {
+      "source_coverage": "7/8 stats-rich fixtures",
+      "price_catalog": [
+        "Total ShotOnGoal",
+        "Home Total ShotOnGoal",
+        "Away Total ShotOnGoal",
+        "Home Shots On Target",
+        "Away Shots On Target"
+      ],
+      "canonical_version": "MATRIX-MARKET-R2/football/TEAM_SHOTS_ON_TARGET/team-threshold"
+    }
+  },
+  "explicit_coverage_gap": {
+    "fixture_id": "1637268",
+    "event": "Platense vs Estudiantes L.P.",
+    "competition": "Copa Argentina",
+    "extended_fields_returned": false,
+    "consequence": "EXTENDED_MARKETS_BLOCKED_FOR_THIS_FIXTURE"
+  },
+  "provider_truth": {
+    "api_football_paid_source": "VERIFIED_ACTIVE",
+    "api_football_extended_statistics": "VERIFIED_WITH_PER_FIXTURE_COVERAGE_GAPS",
+    "api_football_bet_catalog": "VERIFIED_338_BET_TYPES",
+    "odds_api_net_credential": "REQUIRED_NOT_CONFIGURED",
+    "colombia_execution_bookmaker_prices": "NOT_VERIFIED_THROUGH_ODDS_API_NET"
+  },
+  "next_required_work": {
+    "extended_lanes": [
+      "HISTORICAL_PIT_DATASET_PER_LANE",
+      "EMPIRICAL_BASELINE_PER_LANE",
+      "CHALLENGER_PER_LANE",
+      "OOS_VALIDATION_PER_LANE",
+      "PROSPECTIVE_FREEZE_PER_LANE",
+      "FINAL_ONLY_SETTLEMENT_PER_LANE",
+      "CALIBRATION_GATES_PER_LANE"
+    ],
+    "btts": "BUILD_BTTS_V3_INDEPENDENTLY"
+  },
+  "claims_not_allowed": [
+    "DO_NOT_CALL_EXTENDED_LANES_PREDICTIVELY_VALIDATED_YET",
+    "DO_NOT_ASSUME_SOURCE_COVERAGE_FOR_EVERY_FIXTURE",
+    "DO_NOT_USE_ODDS_TO_GENERATE_P_MATRIX",
+    "DO_NOT_USE_REAL_MONEY_AS_MODEL_VALIDATION"
+  ],
+  "automatic_wagering": false,
+  "real_money": "BLOCKED",
+  "overall_status": "ALL_LANES_PHYSICALLY_VERIFIED_TO_THE_MAXIMUM_SUPPORTED_STAGE_WITH_EXPLICIT_BLOCKERS",
+  "live_prematch_price_verification": {
+    "CORNERS_OVER_UNDER": {
+      "status": "VERIFIED_PRESENT",
+      "bookmakers": [
+        "1xBet",
+        "Bet365",
+        "Betano",
+        "Marathonbet",
+        "Pinnacle"
+      ],
+      "sample_fixtures": [
+        "1520905",
+        "1603384",
+        "1493728"
+      ]
+    },
+    "CARDS_OVER_UNDER": {
+      "status": "VERIFIED_PRESENT",
+      "bookmakers": [
+        "1xBet",
+        "Bet365",
+        "Betano"
+      ],
+      "sample_fixtures": [
+        "1520905"
+      ]
+    },
+    "PLAYER_SHOTS": {
+      "status": "VERIFIED_PRESENT",
+      "bookmakers": [
+        "1xBet",
+        "Bet365",
+        "Betano"
+      ],
+      "sample_fixtures": [
+        "1520905"
+      ]
+    },
+    "PLAYER_SHOTS_ON_TARGET": {
+      "status": "VERIFIED_PRESENT",
+      "bookmakers": [
+        "Bet365",
+        "Betano"
+      ],
+      "sample_fixtures": [
+        "1520905"
+      ]
+    },
+    "GOALKEEPER_SAVES": {
+      "status": "VERIFIED_PRESENT",
+      "bookmakers": [
+        "Bet365",
+        "Betano"
+      ],
+      "sample_fixtures": [
+        "1520905"
+      ]
+    },
+    "PLAYER_ASSISTS": {
+      "status": "VERIFIED_PRESENT",
+      "bookmakers": [
+        "Betano"
+      ],
+      "sample_fixtures": [
+        "1520905"
+      ]
+    },
+    "PLAYER_FOULS": {
+      "status": "VERIFIED_PRESENT",
+      "bookmakers": [
+        "Bet365"
+      ],
+      "sample_fixtures": [
+        "1528933",
+        "1528936"
+      ]
+    },
+    "TEAM_SHOTS_ON_TARGET": {
+      "status": "VERIFIED_PRESENT",
+      "bookmakers": [
+        "Bet365",
+        "Betano"
+      ],
+      "sample_fixtures": [
+        "1520905"
+      ]
+    },
+    "PLAYER_PASSES": {
+      "status": "CATALOG_VERIFIED_BUT_NOT_LIVE_OBSERVED",
+      "scanned_future_fixtures": 30,
+      "operational_gate": "NO_LIVE_PRICE_NO_EXECUTION"
+    },
+    "PLAYER_TACKLES": {
+      "status": "CATALOG_VERIFIED_BUT_NOT_LIVE_OBSERVED",
+      "scanned_future_fixtures": 30,
+      "operational_gate": "NO_LIVE_PRICE_NO_EXECUTION"
+    }
+  },
+  "operational_market_gate": {
+    "source_field_required": true,
+    "canonical_market_required": true,
+    "model_validation_required_before_matrix_signal": true,
+    "live_price_required_before_shadow_or_execution": true,
+    "missing_source_action": "BLOCK_MARKET_FOR_FIXTURE",
+    "missing_live_price_action": "NO_BET_NO_SHADOW_EXECUTION",
+    "odds_minimum_rule": "DECIMAL_ODDS_STRICTLY_GREATER_THAN_1.50"
+  }
+}
