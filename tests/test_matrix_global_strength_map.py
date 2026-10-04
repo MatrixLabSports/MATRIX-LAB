@@ -71,7 +71,10 @@ def test_current_build_is_read_only_and_tennis_metrics_remain_sealed():
         ).read_text(encoding="utf-8")
     )
     assert domain[0]["prospective_n"]==uniqueness["unique_calibration_observations"]
-    assert domain[0]["remaining_to_600"]==507
+    assert domain[0]["remaining_to_600"] == max(
+        0,
+        600 - uniqueness["unique_calibration_observations"],
+    )
 
 
 def test_current_football_global_markets_include_primary_lanes():
