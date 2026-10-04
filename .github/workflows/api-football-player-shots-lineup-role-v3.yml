@@ -44,6 +44,9 @@ jobs:
           API_FOOTBALL_KEY: ${{ secrets.API_FOOTBALL_KEY }}
         run: python -m tools.api_football_player_shots_lineup_role_v3_batch
 
+      - name: Finalize prospective state
+        run: python -m tools.api_football_player_shots_v3_finalize
+
       - name: Enforce governance
         shell: bash
         run: |
@@ -77,6 +80,7 @@ jobs:
           git config user.name "matrix-football-player-shots-v3"
           git config user.email "matrix-football-player-shots-v3@users.noreply.github.com"
           git add evidence/api_football/market_expansion/player_shots_lineup_role_v3
+          git add evidence/api_football/player_shots_v3_prospective
           if git diff --cached --quiet; then
             echo "NO_PLAYER_SHOTS_V3_PROGRESS"
             exit 0
