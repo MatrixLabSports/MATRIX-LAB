@@ -127,7 +127,9 @@ def test_world_inventory_covers_exact_bogota_day_and_atp_wta_itf_families():
     )
 
     assert report["status"] == "PASS"
-    assert report["world_inventory_complete"] is True
+    assert report["provider_inventory_complete"] is True
+    assert report["world_inventory_complete"] is False
+    assert report["world_complete_gate"] == "REQUIRES_MULTI_SOURCE_RECONCILIATION"
     assert report["calendar_day_start_local"] == "2026-10-02T00:00:00-05:00"
     assert report["calendar_day_end_local"] == "2026-10-02T23:59:59-05:00"
     assert report["calendar_day_start_utc"] == "2026-10-02T05:00:00+00:00"
