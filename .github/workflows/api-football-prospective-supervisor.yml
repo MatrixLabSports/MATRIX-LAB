@@ -51,7 +51,8 @@ jobs:
             tests/test_api_football_prospective_api_settlement.py \
             tests/test_api_football_prospective_calibration.py \
             tests/test_api_football_checkpoint_200.py \
-            tests/test_api_football_physical_uniqueness.py
+            tests/test_api_football_physical_uniqueness.py \
+            tests/test_api_football_market_calibration_v2.py
 
       - name: Decide whether a provider poll is due
         id: due
@@ -101,6 +102,12 @@ jobs:
       - name: Build governed informative checkpoint 200
         if: steps.due.outputs.due == 'true'
         run: python -m tools.api_football_checkpoint_200
+
+      - name: Sync separated V2 market ledgers
+        shell: bash
+        run: |
+          set -euo pipefail
+          python tools/api_football_market_calibration_v2_sync.py
 
       - name: Reconcile physical uniqueness against current calibration ledger
         shell: bash
@@ -279,6 +286,7 @@ jobs:
           git add evidence/api_football/prospective_calibration
           git add evidence/api_football/prospective_supervisor
           git add evidence/api_football/physical_uniqueness/audit_last.json
+          git add evidence/api_football/calibration_v2/lanes
           if git diff --cached --quiet; then
             echo "NO_SUPERVISOR_MATERIAL_CHANGE"
             exit 0
@@ -306,3 +314,5 @@ jobs:
 # explicit parallel production retrigger 2026-10-04T04:00Z
 
 # trigger tennis exact-day inventory chain 2026-10-04
+
+# Permanent V2 in-transaction sync 2026-10-04: supervisor owns settlement -> separated market calibration persistence.
