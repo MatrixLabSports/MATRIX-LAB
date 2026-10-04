@@ -24,7 +24,7 @@ from tools.api_football_team_last_fallback import run_capture as capture_team_la
 
 GROUP_HISTORY_MAX_REQUESTS = 40
 TEAM_LAST_MAX_REQUESTS = 120
-DAILY_REMAINING_RESERVE = 7000
+DAILY_REMAINING_RESERVE = 1500
 
 
 def _load(path: Path) -> dict[str, Any]:
