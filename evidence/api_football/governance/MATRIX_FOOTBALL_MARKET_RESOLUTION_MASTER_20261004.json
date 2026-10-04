@@ -1,0 +1,201 @@
+{
+  "schema": "MATRIX_FOOTBALL_MARKET_RESOLUTION_MASTER_V1",
+  "verified_at_utc": "2026-10-04T01:57:00Z",
+  "overall_status": "TECHNICAL_RESOLUTION_COMPLETE",
+  "markets": {
+    "BTTS": {
+      "status": "NO_GO_CURRENT_V2_V3",
+      "technical_resolution": "CLOSED",
+      "evidence_path": "evidence/api_football/governance/BTTS_V2_V3_NO_GO_20261003.json",
+      "evidence_blob_sha": "d553dc14cf23ec357b0cd9f499725c3d799895ab",
+      "mutation_of_existing_589": false,
+      "backfill_forbidden": true
+    },
+    "OVER_2_5": {
+      "status": "PRIMARY_PROSPECTIVE_MARKET",
+      "technical_resolution": "ACTIVE",
+      "calibration_observations": 589,
+      "checkpoint_589_pass": true,
+      "evidence_path": "evidence/api_football/prospective_calibration/MATRIX_FOOTBALL_EXTENDED_CHECKPOINTS_20261003_589.json",
+      "evidence_blob_sha": "42f63cff22d0354dc0fe7efabb7731d10c73718a"
+    },
+    "ONE_X_TWO": {
+      "status": "PROSPECTIVE_CHALLENGER_ACTIVE",
+      "technical_resolution": "ACTIVE_WITH_UNCERTAINTY",
+      "calibration_observations": 589,
+      "checkpoint_589_pass": true,
+      "confidence_note": "Point estimates beat Poisson in Brier and log loss at 589, but paired 95% intervals still include zero.",
+      "evidence_path": "evidence/api_football/prospective_calibration/MATRIX_FOOTBALL_EXTENDED_CHECKPOINTS_20261003_589.json",
+      "evidence_blob_sha": "42f63cff22d0354dc0fe7efabb7731d10c73718a"
+    },
+    "TEAM_TOTAL_SHOTS_HOME": {
+      "status": "ACTIVE_WAITING_CANONICAL_PREMATCH_LINE_AND_CURRENT_PIT_FEATURES",
+      "technical_resolution": "COMPLETE",
+      "historical_oos_passed": true,
+      "prospective_lane_ready": true,
+      "market_binding": {
+        "bet_id": 221,
+        "name": "Shots. Home Total"
+      },
+      "freeze_observation_count": 0,
+      "gates": [
+        30,
+        50,
+        100,
+        200
+      ],
+      "state_path": "evidence/api_football/promoted_team_markets/team_total_shots_home/state.json",
+      "state_blob_sha": "94a0564ea966be815b77c20fa0530d7c0045e32f"
+    },
+    "TEAM_TOTAL_SHOTS_AWAY": {
+      "status": "ACTIVE_WAITING_CANONICAL_PREMATCH_LINE_AND_CURRENT_PIT_FEATURES",
+      "technical_resolution": "COMPLETE",
+      "historical_oos_passed": true,
+      "prospective_lane_ready": true,
+      "market_binding": {
+        "bet_id": 220,
+        "name": "Shots. Away Total"
+      },
+      "freeze_observation_count": 0,
+      "gates": [
+        30,
+        50,
+        100,
+        200
+      ],
+      "state_path": "evidence/api_football/promoted_team_markets/team_total_shots_away/state.json",
+      "state_blob_sha": "6866dc84477a27b3fba9f2b6c584dcfce0d1feb9"
+    },
+    "TEAM_FOULS_TOTAL": {
+      "status": "ACTIVE_WAITING_CANONICAL_PREMATCH_LINE_AND_CURRENT_PIT_FEATURES",
+      "technical_resolution": "COMPLETE",
+      "historical_oos_passed": true,
+      "prospective_lane_ready": true,
+      "market_binding": {
+        "bet_id": 173,
+        "name": "Fouls. Total"
+      },
+      "freeze_observation_count": 0,
+      "gates": [
+        30,
+        50,
+        100,
+        200
+      ],
+      "state_path": "evidence/api_football/promoted_team_markets/team_fouls_total/state.json",
+      "state_blob_sha": "447571f5b08108afaa50fdf018b5524d8500cd8a"
+    },
+    "PLAYER_SHOTS_V3": {
+      "status": "ACTIVE",
+      "technical_resolution": "COMPLETE",
+      "historical_role_source": "/fixtures/lineups",
+      "prospective_role_source": "/fixtures/lineups",
+      "games_substitute_used": false,
+      "fixture_target_count": 463,
+      "cached_lineup_count": 463,
+      "remaining_lineup_acquisition_count": 0,
+      "fixtures_without_usable_lineup": 46,
+      "missing_policy": "MISSING_NOT_ZERO_NO_IMPUTATION",
+      "role_conflict_fixture_count": 2,
+      "role_conflict_player_rows_quarantined": 2,
+      "pit_rows": 1823,
+      "train_rows": 1773,
+      "validation_rows": 50,
+      "all_role_appearance_history_rows": 5629,
+      "selected_alpha_recent_rate": 0.25,
+      "evaluation_line": 1.5,
+      "oos": {
+        "challenger_brier": 0.18550428710005143,
+        "reference_brier": 0.19018317151460198,
+        "delta_brier": -0.004678884414550555,
+        "challenger_log_loss": 0.54984743327156,
+        "reference_log_loss": 0.5645600903113771,
+        "delta_log_loss": -0.014712657039817056,
+        "ece": 0.03991103433258372,
+        "max_calibration_error": 0.14580088930047547,
+        "gate_passed": true
+      },
+      "model_status": "FROZEN_FOR_NEW_PROSPECTIVE_VALIDATION_V3",
+      "prospective_lane_ready": true,
+      "freeze_observation_count": 0,
+      "calibration_observation_count": 0,
+      "gates": [
+        30,
+        50,
+        100,
+        200
+      ],
+      "acquisition_path": "evidence/api_football/market_expansion/player_shots_lineup_role_v3/acquisition_progress.json",
+      "acquisition_blob_sha": "0152120c0ca680cd782868689c6facf7d9114e98",
+      "dataset_path": "evidence/api_football/market_expansion/player_shots_lineup_role_v3/dataset_manifest.json",
+      "dataset_blob_sha": "d1833aa24d5af7984812a51c957b50c51ea93d41",
+      "model_path": "evidence/api_football/market_expansion/player_shots_lineup_role_v3/model.json",
+      "model_blob_sha": "feb24e4375850ee37683e8fdb88b252f3e1b7dde",
+      "summary_path": "evidence/api_football/market_expansion/player_shots_lineup_role_v3/summary.json",
+      "summary_blob_sha": "ddcaeb49ee038742ec77d924ce01fb8bbbb727f0",
+      "prospective_state_path": "evidence/api_football/player_shots_v3_prospective/state.json",
+      "prospective_state_blob_sha": "02a8d26baf1011ad38cd67c606eb102464c8a66f",
+      "supervisor_last_run_path": "evidence/api_football/player_shots_v3_prospective/last_run.json",
+      "supervisor_last_run_blob_sha": "301e7be2bebd0365059f5412484b1acd307767c8",
+      "supervisor_last_run_status": "PASS",
+      "last_external_blocker": "PREMATCH_LINEUP_NOT_AVAILABLE",
+      "external_dependency_note": "No technical work is pending. New freezes require actual prematch lineups plus a parseable canonical player-shots line."
+    },
+    "CORNERS_V3": {
+      "status": "NO_GO_HISTORICAL_OOS_V3",
+      "technical_resolution": "CLOSED",
+      "evidence_path": "evidence/api_football/market_expansion/failed_team_markets_v3/summary.json",
+      "evidence_blob_sha": "3bc59c7b2c11f5581d1bbd579a3f871f2ca2ad11"
+    },
+    "TEAM_SHOTS_ON_TARGET_V3": {
+      "status": "NO_GO_HISTORICAL_OOS_V3",
+      "technical_resolution": "CLOSED",
+      "evidence_path": "evidence/api_football/market_expansion/failed_team_markets_v3/summary.json",
+      "evidence_blob_sha": "3bc59c7b2c11f5581d1bbd579a3f871f2ca2ad11"
+    },
+    "TEAM_GOALKEEPER_SAVES_V3": {
+      "status": "NO_GO_HISTORICAL_OOS_V3",
+      "technical_resolution": "CLOSED",
+      "evidence_path": "evidence/api_football/market_expansion/failed_team_markets_v3/summary.json",
+      "evidence_blob_sha": "3bc59c7b2c11f5581d1bbd579a3f871f2ca2ad11"
+    },
+    "TEAM_YELLOW_CARDS_V3": {
+      "status": "NO_GO_HISTORICAL_OOS_V3",
+      "technical_resolution": "CLOSED",
+      "evidence_path": "evidence/api_football/market_expansion/failed_team_markets_v3/summary.json",
+      "evidence_blob_sha": "3bc59c7b2c11f5581d1bbd579a3f871f2ca2ad11"
+    }
+  },
+  "supervisors": {
+    "promoted_team_markets": {
+      "status": "PASS",
+      "future_events_checked": 24,
+      "network_calls": 24,
+      "new_freezes": 0,
+      "last_run_path": "evidence/api_football/promoted_team_markets/last_run.json",
+      "last_run_blob_sha": "171d8d27064975a0d092ebb434ba1ea2ac1da3f5"
+    },
+    "player_shots_v3": {
+      "status": "PASS",
+      "future_events_checked": 20,
+      "network_calls": 21,
+      "new_freezes": 0,
+      "reason": "PREMATCH_LINEUP_NOT_AVAILABLE for checked future fixtures",
+      "last_run_path": "evidence/api_football/player_shots_v3_prospective/last_run.json",
+      "last_run_blob_sha": "301e7be2bebd0365059f5412484b1acd307767c8"
+    }
+  },
+  "canonicalization": {
+    "player_shots_canonical_implementation": "evidence/api_football/market_expansion/player_shots_lineup_role_v3",
+    "duplicate_writer_guard_commit": "27d47074eeacb4ad14f0ce22abea2a73f7e3ab77",
+    "duplicate_workflow_deprecated_main_commit": "3c8ec6facae2bed5b4d87cd447aca687c5c8e465",
+    "canonical_supervisor_trigger_main_commit": "69408c394e4b57c69936175f75359ec4a123c38f"
+  },
+  "governance": {
+    "odds_used_to_generate_probability": false,
+    "parameter_tuning_on_prospective_rows": false,
+    "silent_imputation": false,
+    "automatic_wagering": false,
+    "real_money": "BLOCKED"
+  }
+}
