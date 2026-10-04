@@ -1,0 +1,40 @@
+name: API-Football Market Binding Catalog
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - .github/workflows/api-football-market-binding-catalog.yml
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  catalog:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: repair/cor09-world-pipeline
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: python -m pip install requests
+      - name: Discover official market bindings
+        env:
+          API_FOOTBALL_KEY: ${{ secrets.API_FOOTBALL_KEY }}
+        run: python -m tools.api_football_market_binding_catalog
+      - name: Persist catalog
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "matrix-football-market-bindings"
+          git config user.email "matrix-football-market-bindings@users.noreply.github.com"
+          git add evidence/api_football/market_expansion/market_binding_catalog.json
+          git commit -m "evidence(football): persist official market binding catalog"
+          git pull --rebase origin repair/cor09-world-pipeline
+          git push origin HEAD:repair/cor09-world-pipeline
