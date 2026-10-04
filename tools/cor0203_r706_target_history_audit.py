@@ -1,11 +1,49 @@
 from __future__ import annotations
 
+import argparse
 import json
 from pathlib import Path
 
 from tools.cor0203_prospective_producer import load_state
 
-TARGETS = ["Abedallah Shelbayh", "Abdullah Shelbayh", "Timofei Derepasko"]
+BASE_TARGETS = ["Abedallah Shelbayh", "Abdullah Shelbayh", "Timofei Derepasko"]
+
+
+def discover_target_names(
+    *,
+    world_discovery_path: Path,
+    authority_path: Path,
+) -> list[str]:
+    names = set(BASE_TARGETS)
+    authority_ids = set()
+    if authority_path.exists():
+        authority = json.loads(authority_path.read_text(encoding="utf-8"))
+        authority_ids = {
+            str(row.get("provider_player_id") or "")
+            for row in authority.get("records", []) or []
+            if isinstance(row, dict)
+        }
+    if not world_discovery_path.exists():
+        return sorted(names)
+
+    discovery = json.loads(world_discovery_path.read_text(encoding="utf-8"))
+    for event in discovery.get("eligible_candidates", []) or []:
+        for identity in event.get("player_identities", []) or []:
+            if not isinstance(identity, dict):
+                continue
+            provider_id = str(identity.get("provider_player_id") or "")
+            display_name = str(identity.get("display_name") or "").strip()
+            if display_name and provider_id not in authority_ids:
+                names.add(display_name)
+    for event in discovery.get("provider_rejected", []) or []:
+        for player in event.get("players", []) or []:
+            if not isinstance(player, dict):
+                continue
+            provider_id = str(player.get("provider_player_id") or "")
+            display_name = str(player.get("name") or "").strip()
+            if display_name and provider_id not in authority_ids:
+                names.add(display_name)
+    return sorted(names)
 
 
 def audit_player(state, name: str) -> dict:
@@ -54,20 +92,41 @@ def audit_player(state, name: str) -> dict:
 
 
 def main():
+    parser=argparse.ArgumentParser()
+    parser.add_argument(
+        "--world-discovery",
+        default="evidence/cor0203/runtime/MATRIX_COR0203_WORLD_DERIVED_DISCOVERY_LAST.json",
+    )
+    parser.add_argument(
+        "--authority",
+        default="evidence/cor0203/identity/MATRIX_COR0203_IDENTITY_AUTHORITY_LAST.json",
+    )
+    parser.add_argument(
+        "--out",
+        default="evidence/cor0203/runtime/MATRIX_COR0203_R706_TARGET_HISTORY_READINESS_LAST.json",
+    )
+    args=parser.parse_args()
+
     path=Path("evidence/cor0203/runtime/MATRIX_COR0203_PRE2026_STATE_R706.json.gz.b64")
     state, sha=load_state(path)
+    target_names=discover_target_names(
+        world_discovery_path=Path(args.world_discovery),
+        authority_path=Path(args.authority),
+    )
     report={
-        "schema":"MATRIX_COR0203_R706_TARGET_HISTORY_READINESS_AUDIT_V1",
+        "schema":"MATRIX_COR0203_R706_TARGET_HISTORY_READINESS_AUDIT_V2",
         "state_path":str(path),
         "state_sha256":sha,
-        "targets":[audit_player(state,name) for name in TARGETS],
+        "target_selection":"BASE_TARGETS_PLUS_CURRENT_WORLD_PLAYERS_WITHOUT_AUTHORITY",
+        "target_count":len(target_names),
+        "targets":[audit_player(state,name) for name in target_names],
         "state_mutated":False,
         "metrics_opened":False,
         "outcomes_read":0,
         "automatic_wagering":False,
         "real_money":"BLOCKED",
     }
-    out=Path("evidence/cor0203/runtime/MATRIX_COR0203_R706_TARGET_HISTORY_READINESS_LAST.json")
+    out=Path(args.out)
     out.write_text(json.dumps(report,indent=2,sort_keys=True)+"\n",encoding="utf-8")
     print(json.dumps({
         "targets":[{"name":x["name"],"ready":x["fully_history_ready"],"counts":x["counts"]} for x in report["targets"]],
