@@ -10,8 +10,8 @@ from typing import Any, Mapping
 import requests
 
 BASE_URL="https://v3.football.api-sports.io"
-TARGET_BETS={220:"Shots. Away Total",221:"Shots. Home Total"}
-POLICY_BOOKS={"betano","bwin","pinnacle"}
+TARGET_BETS={173:"Fouls. Total",220:"Shots. Away Total",221:"Shots. Home Total"}
+POLICY_BOOKS={"betano","betplay","bwin","rushbet","pinnacle"}
 TIMEOUT=20.0
 
 def _utc(v: object) -> datetime:
@@ -142,32 +142,86 @@ def run(api_key: str, out_root: Path) -> dict[str,Any]:
     policy_hits=[h for h in odds_hits if h["policy_reference_bookmaker"]]
     lineup_observed=[r for r in lineup_rows if r["lineup"]["team_count"]>=2 and r["lineup"]["player_count"]>0]
 
+    def _model(path: str) -> dict[str,Any]:
+        p=Path(path)
+        return json.loads(p.read_text(encoding="utf-8")) if p.exists() else {}
+
+    shots_home=_model("evidence/api_football/market_expansion/team_total_shots_side_models/home_model.json")
+    shots_away=_model("evidence/api_football/market_expansion/team_total_shots_side_models/away_model.json")
+    fouls=_model("evidence/api_football/market_expansion/failed_team_markets_v3/team_fouls_model_v3.json")
+    player_v3=_model("evidence/api_football/market_expansion/player_shots_lineup_role_v3/model.json")
+
+    lane_bindings={
+        "TEAM_TOTAL_SHOTS_HOME":(221,shots_home),
+        "TEAM_TOTAL_SHOTS_AWAY":(220,shots_away),
+        "TEAM_FOULS_TOTAL":(173,fouls),
+    }
+    promoted_team_lanes={}
+    for lane,(bet_id,model) in lane_bindings.items():
+        lane_hits=[h for h in odds_hits if h["bet_id"]==bet_id]
+        lane_policy=[h for h in lane_hits if h["policy_reference_bookmaker"]]
+        model_ready=bool(model.get("prospective_eligible"))
+        promoted_team_lanes[lane]={
+            "bet_id":bet_id,
+            "model_ready":model_ready,
+            "model_status":model.get("status"),
+            "model_parameters_sha256":model.get("model_parameters_sha256"),
+            "live_hit_count":len(lane_hits),
+            "policy_reference_live_hit_count":len(lane_policy),
+            "canonical_line_observed":bool(lane_policy),
+            "current_pit_feature_builder_required":True,
+            "prospective_lane_ready":model_ready,
+            "prospective_freeze_allowed":False,
+            "blocker":(
+                "MODEL_NOT_OOS_APPROVED" if not model_ready
+                else "WAITING_CANONICAL_PREMATCH_LINE_AND_CURRENT_PIT_FEATURES"
+                if not lane_policy
+                else "CURRENT_PIT_FEATURE_BUILDER_NOT_INTEGRATED"
+            ),
+        }
+
     payload={
         "schema":"MATRIX_FOOTBALL_MARKET_EXPANSION_LIVE_PROBE_V1",
         "run_id":run_id,"observed_at_utc":now.isoformat(),
         "provider":"api_football",
         "network_calls":len(odds_rows)+len(lineup_rows),
         "team_total_shots":{
-            "target_bets":TARGET_BETS,
+            "target_bets":{220:"Shots. Away Total",221:"Shots. Home Total"},
             "candidate_count":len(odds_rows),
-            "canonical_live_hit_count":len(odds_hits),
-            "policy_reference_live_hit_count":len(policy_hits),
-            "bookmaker_scope":"HOME_OR_AWAY_TEAM_TOTAL_SHOTS",
-            "current_historical_model_scope":"COMBINED_MATCH_TOTAL_SHOTS",
-            "scope_alignment_certified":False,
+            "canonical_live_hit_count":sum(1 for h in odds_hits if h["bet_id"] in {220,221}),
+            "policy_reference_live_hit_count":sum(1 for h in policy_hits if h["bet_id"] in {220,221}),
+            "bookmaker_scope":"HOME_AND_AWAY_TEAM_TOTAL_SHOTS",
+            "current_historical_model_scope":"HOME_AND_AWAY_SIDE_ALIGNED",
+            "scope_alignment_certified":bool(shots_home.get("prospective_eligible") and shots_away.get("prospective_eligible")),
+            "prospective_lane_ready":bool(shots_home.get("prospective_eligible") and shots_away.get("prospective_eligible")),
             "prospective_freeze_allowed":False,
-            "blocker":"CURRENT_COMBINED_MODEL_SCOPE_DOES_NOT_MATCH_HOME_AWAY_BOOKMAKER_TARGETS",
+            "blocker":"WAITING_CANONICAL_PREMATCH_LINE_AND_CURRENT_PIT_FEATURES",
             "rows":odds_rows
         },
+        "team_fouls":{
+            "target_bet":{173:"Fouls. Total"},
+            "model_status":fouls.get("status"),
+            "prospective_lane_ready":bool(fouls.get("prospective_eligible")),
+            "canonical_live_hit_count":sum(1 for h in odds_hits if h["bet_id"]==173),
+            "policy_reference_live_hit_count":sum(1 for h in policy_hits if h["bet_id"]==173),
+            "prospective_freeze_allowed":False,
+            "blocker":"WAITING_CANONICAL_PREMATCH_LINE_AND_CURRENT_PIT_FEATURES",
+        },
+        "promoted_team_lanes":promoted_team_lanes,
         "player_shots":{
             "candidate_count":len(lineup_rows),
             "prematch_lineup_observed_count":len(lineup_observed),
             "prematch_lineup_structure_observed":bool(lineup_observed),
             "provider_role_mapping":{"startXI":"STARTER","substitutes":"SUBSTITUTE"},
-            "cross_source_role_equivalence_certified":False,
-            "expected_minutes_pit_prospective_certified":False,
+            "cross_source_role_equivalence_certified":bool(player_v3.get("historical_and_prospective_role_source_identical")),
+            "expected_minutes_pit_prospective_certified":bool(player_v3.get("expected_minutes_pit_prospective_certified")),
             "prospective_freeze_allowed":False,
-            "blocker":"REQUIRES_CROSS_SOURCE_ROLE_EQUIVALENCE_AND_EXPECTED_MINUTES_PROSPECTIVE_CERTIFICATION",
+            "model_status":player_v3.get("status") or "V3_REBUILD_PENDING",
+            "blocker":(
+                "WAITING_PREMATCH_LINEUP_AND_PROSPECTIVE_FREEZE_PRODUCER"
+                if player_v3.get("prospective_freeze_allowed")
+                else "V2_ROLE_SOURCE_INVALID_V3_NOT_OOS_APPROVED"
+            ),
             "rows":lineup_rows
         },
         "odds_used_to_generate_probability":False,
@@ -184,8 +238,12 @@ def run(api_key: str, out_root: Path) -> dict[str,Any]:
         "manifest_path":str(manifest),
         "manifest_sha256":hashlib.sha256(manifest.read_bytes()).hexdigest(),
         "network_calls":payload["network_calls"],
-        "team_total_shots_live_hit_count":len(odds_hits),
+        "team_total_shots_live_hit_count":sum(1 for h in odds_hits if h["bet_id"] in {220,221}),
+        "team_fouls_live_hit_count":sum(1 for h in odds_hits if h["bet_id"]==173),
         "player_shots_lineup_observed_count":len(lineup_observed),
+        "team_total_shots_scope_alignment_certified":payload["team_total_shots"]["scope_alignment_certified"],
+        "team_total_shots_prospective_lane_ready":payload["team_total_shots"]["prospective_lane_ready"],
+        "team_fouls_prospective_lane_ready":payload["team_fouls"]["prospective_lane_ready"],
         "team_total_shots_prospective_freeze_allowed":False,
         "player_shots_prospective_freeze_allowed":False,
         "automatic_wagering":False,
