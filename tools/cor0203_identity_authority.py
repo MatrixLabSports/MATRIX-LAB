@@ -273,8 +273,9 @@ def resolve_authority_mapping(
             return None, "IDENTITY_AUTHORITY_CANONICAL_NAME_CUT_MISMATCH:" + provider_id
         if int(canonical_source.get("rows") or 0) <= 0:
             return None, "IDENTITY_AUTHORITY_CANONICAL_NAME_ROWS_MISSING:" + provider_id
-    if len(set(history_iocs)) != 1 or history_iocs[0] != provider_ioc:
-        return None, "IDENTITY_AUTHORITY_HISTORY_IOC_MISMATCH:" + provider_id
+    if len(set(history_iocs)) != 1:
+        return None, "IDENTITY_AUTHORITY_HISTORY_IOC_NOT_UNIQUE:" + provider_id
+    historical_ioc = history_iocs[0]
     if len(set(hands)) != 1 or hands[0] not in {"R", "L"}:
         return None, "IDENTITY_AUTHORITY_HAND_NOT_FIXED:" + provider_id
 
@@ -293,7 +294,8 @@ def resolve_authority_mapping(
     if dob is None or dob >= CUT_DATE:
         return None, "IDENTITY_AUTHORITY_DOB_INVALID:" + provider_id
 
-    return {
+    ioc_transition = historical_ioc != provider_ioc
+    mapping = {
         "provider": provider,
         "provider_player_id": provider_id,
         "provider_display_name": display_name,
@@ -310,9 +312,20 @@ def resolve_authority_mapping(
         "canonical_dob": dob.isoformat(),
         "ranking_cut": CUT_TOKEN,
         "match_basis": (
-            "EXACT_PROVIDER_ID_PLUS_NAME_IOC_UNIQUE_PRECUT_SOURCE_ID_"
-            "PLUS_FIXED_BIOGRAPHY_DOB_AND_DATED_PROVIDER_RANKING"
+            "EXACT_PROVIDER_ID_PLUS_NAME_UNIQUE_PRECUT_SOURCE_ID_"
+            "PLUS_FIXED_BIOGRAPHY_DOB_HAND_AND_DATED_PROVIDER_RANKING"
+            + ("_PLUS_PROVEN_IOC_TRANSITION" if ioc_transition else "_PLUS_IOC_MATCH")
         ),
         "identity_authority": str(row.get("_identity_authority") or ""),
         "status": "PASS",
-    }, None
+    }
+    if ioc_transition:
+        mapping["ioc_transition"] = {
+            "historical_ioc": historical_ioc,
+            "ranking_cut_ioc": provider_ioc,
+            "basis": (
+                "EXACT_PROVIDER_ID_NAME_DOB_HAND_RANKING_CUT_"
+                "AND_UNIQUE_PRECUT_SOURCE_ID"
+            ),
+        }
+    return mapping, None
