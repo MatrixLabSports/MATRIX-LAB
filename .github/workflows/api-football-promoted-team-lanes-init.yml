@@ -1,0 +1,52 @@
+name: API-Football Promoted Team Lanes Init
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - .github/workflows/api-football-promoted-team-lanes-init.yml
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  init:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: repair/cor09-world-pipeline
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Initialize promoted team lanes
+        run: python -m tools.api_football_promoted_team_lanes_init
+      - name: Enforce sealed gates
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          s=json.loads(Path("evidence/api_football/promoted_team_markets/summary.json").read_text())
+          assert s["real_money"]=="BLOCKED"
+          for lane,row in s["lanes"].items():
+              assert row["prospective_lane_ready"] is True
+              assert row["freeze_observation_count"]==0
+              assert row["gate_30"]=="SEALED"
+          print("PROMOTED_TEAM_LANES_INIT: PASS")
+          PY
+      - name: Persist lane state
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "matrix-football-promoted-team-lanes"
+          git config user.email "matrix-football-promoted-team-lanes@users.noreply.github.com"
+          git add evidence/api_football/promoted_team_markets
+          git commit -m "evidence(football): initialize promoted team-market prospective lanes"
+          git pull --rebase origin repair/cor09-world-pipeline
+          git push origin HEAD:repair/cor09-world-pipeline
