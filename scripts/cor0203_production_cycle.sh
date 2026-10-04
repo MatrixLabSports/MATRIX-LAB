@@ -116,17 +116,6 @@ case "$TENNIS_PROVIDER" in
       --world-inventory "$WORLD_INVENTORY_LAST" \
       --out "$WORLD_DERIVED_DISCOVERY_LAST"
 
-    python -m tools.cor0203_r706_target_history_audit \
-      --world-discovery "$WORLD_DERIVED_DISCOVERY_LAST" \
-      --authority "$IDENTITY_AUTHORITY_LAST" \
-      --out "$R706_TARGET_HISTORY_LAST"
-
-    python -m tools.cor0203_rapidapi_stats_rich_history_probe \
-      --world-discovery "$WORLD_DERIVED_DISCOVERY_LAST" \
-      --authority "$IDENTITY_AUTHORITY_LAST" \
-      --out "$RAPIDAPI_PRECUT_STATS_RICH_LAST" \
-      --max-targets 32
-
     python -m tools.cor0203_rapidapi_durable_discovery \
       --out "$DISCOVERY" \
       --summary-out "$DURABLE_DISCOVERY_LAST" \
@@ -143,6 +132,19 @@ case "$TENNIS_PROVIDER" in
       --rapid-out "$DISCOVERY" \
       --api-out "$API_TENNIS_DISCOVERY_CURRENT" \
       --audit-out "$HORIZON_AUDIT_LAST"
+
+    python -m tools.cor0203_r706_target_history_audit \
+      --world-discovery "$WORLD_DERIVED_DISCOVERY_LAST" \
+      --rapidapi-discovery "$DISCOVERY" \
+      --authority "$IDENTITY_AUTHORITY_LAST" \
+      --out "$R706_TARGET_HISTORY_LAST"
+
+    python -m tools.cor0203_rapidapi_stats_rich_history_probe \
+      --world-discovery "$WORLD_DERIVED_DISCOVERY_LAST" \
+      --rapidapi-discovery "$DISCOVERY" \
+      --authority "$IDENTITY_AUTHORITY_LAST" \
+      --out "$RAPIDAPI_PRECUT_STATS_RICH_LAST" \
+      --max-targets 32
 
     python -m tools.cor0203_api_tennis_rank_bridge \
       --discovery "$API_TENNIS_DISCOVERY_CURRENT" \
