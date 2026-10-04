@@ -1,6 +1,6 @@
 {
-  "admissible_observations": 152,
-  "duplicate_physical_matches_quarantined": 58,
+  "admissible_observations": 153,
+  "duplicate_physical_matches_quarantined": 59,
   "holdout_id": "A22_POST_AUDIT_VIRGIN_HOLDOUT_V1",
   "identity_mapping_required": 0,
   "items": [
@@ -2502,7 +2502,7 @@
       "provider_tournament_id": "22038",
       "revision": 777,
       "source_reference": "fixtures:matchId=1409;tournament_info=22038;ranking_cut=2026-09-21 | fixtures:matchId=1409;tournament_info=22038;ranking_cut=2026-09-21",
-      "status": "READY_RESULT_LOOKUP"
+      "status": "SETTLED"
     },
     {
       "alphabetical_player_a": "Henrique Rocha",
@@ -3140,7 +3140,7 @@
       "provider_tournament_id": null,
       "revision": 797,
       "source_reference": "get_fixtures:event_key=12167951;get_draw:tournament_key=13259;season=2026;source=draw_feed | get_fixtures:event_key=12167951;get_draw:tournament_key=13259;season=2026;source=draw_feed",
-      "status": "READY_RESULT_LOOKUP"
+      "status": "SETTLED"
     },
     {
       "alphabetical_player_a": "Akira Santillan",
@@ -3317,18 +3317,40 @@
       "revision": 805,
       "source_reference": "get_fixtures:event_key=12168107;get_draw:tournament_key=14335;season=2026;source=draw_feed | get_fixtures:event_key=12168107;get_draw:tournament_key=14335;season=2026;source=draw_feed",
       "status": "READY_RESULT_LOOKUP"
+    },
+    {
+      "alphabetical_player_a": "Abdullah Shelbayh",
+      "alphabetical_player_b": "Dylan Dietrich",
+      "blocker": "DUPLICATE_PHYSICAL_MATCH",
+      "canonical_source_event_id": "rapidapi-tennis:atp:match:1475",
+      "competition": "Columbus Challenger",
+      "event_id": "COR0203-RAPIDAPI-TENNIS-1475-207bcb074721",
+      "event_start_utc": "2026-10-04T15:00:00+00:00",
+      "identity_overlay_applied": false,
+      "observation_index": 153,
+      "observation_sha256": "a59c67ca6fb6c32eba6d36811c2119448fe184d0247424e9f59b79efbb2c5f08",
+      "provider": "rapidapi_tennis",
+      "provider_match_key": "1475",
+      "provider_player_map": {
+        "rapidapi-tennis:player:76009": "Abdullah Shelbayh",
+        "rapidapi-tennis:player:85859": "Dylan Dietrich"
+      },
+      "provider_tournament_id": "22039",
+      "revision": 807,
+      "source_reference": "fixtures:matchId=1475;tournament_info=22039;ranking_cut=2026-09-21;provider_channel=ATP | fixtures:matchId=1475;tournament_info=22039;ranking_cut=2026-09-21;provider_channel=ATP",
+      "status": "DUPLICATE_PHYSICAL_MATCH_QUARANTINED"
     }
   ],
   "ledger": {
     "hash_chain_verified": true,
     "outcomes_used_for_metrics": 0,
-    "records": 107,
-    "unique_events": 107
+    "records": 109,
+    "unique_events": 109
   },
   "metrics": "SEALED_UNTIL_600",
   "outcomes_used_for_metrics": 0,
-  "ready_result_lookup": 35,
+  "ready_result_lookup": 33,
   "real_money": "BLOCKED",
   "schema": "MATRIX_COR0203_SETTLEMENT_QUEUE_V1",
-  "settled": 59
+  "settled": 61
 }
