@@ -465,6 +465,7 @@ def main() -> None:
     parser.add_argument("--target-date-bogota", required=True)
     parser.add_argument("--out", required=True)
     parser.add_argument("--verify-entity-enrichment", action="store_true")
+    parser.add_argument("--fail-on-blocked", action="store_true")
     args = parser.parse_args()
 
     target = date.fromisoformat(args.target_date_bogota)
@@ -510,7 +511,7 @@ def main() -> None:
         "provider_network_calls": report.get("provider_network_calls"),
         "real_money": _mapping(report.get("protections")).get("real_money"),
     }, sort_keys=True))
-    if report.get("status") != "PASS" and "--fail-on-blocked" in __import__("sys").argv:
+    if report.get("status") != "PASS" and args.fail_on_blocked:
         raise SystemExit("SOFASCORE_MULTISPORT_DISCOVERY_BLOCKED")
 
 
