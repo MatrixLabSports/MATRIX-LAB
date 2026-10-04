@@ -1,3 +1,4 @@
+import json
 from pathlib import Path
 
 from tools.matrix_global_strength_map import (
@@ -63,7 +64,13 @@ def test_current_build_is_read_only_and_tennis_metrics_remain_sealed():
 
     domain=[r for r in tennis if r["scope"]=="DOMAIN"]
     assert len(domain)==1
-    assert domain[0]["prospective_n"]==93
+    uniqueness=json.loads(
+        Path(
+            "evidence/cor0203/runtime/"
+            "MATRIX_COR0203_PHYSICAL_UNIQUENESS_LAST.json"
+        ).read_text(encoding="utf-8")
+    )
+    assert domain[0]["prospective_n"]==uniqueness["unique_calibration_observations"]
     assert domain[0]["remaining_to_600"]==507
 
 
