@@ -149,6 +149,15 @@ jobs:
           print(d["source_compliance_status"])
           PY
 
+      - name: One-shot exact world tennis inventory for 2026-10-04
+        env:
+          RAPIDAPI_TENNIS_KEY: ${{ secrets.RAPIDAPI_TENNIS_KEY }}
+          API_TENNIS_KEY: ${{ secrets.API_TENNIS_KEY }}
+        run: |
+          python -m tools.tennis_world_exact_day_dual_audit \
+            --target-date-bogota 2026-10-04 \
+            --out evidence/tennis_world_inventory/2026-10-04/world_exact_day_dual_audit.json
+
       - name: Run governed autonomous production subcycles
         shell: bash
         env:
@@ -266,6 +275,7 @@ jobs:
           git config user.email "matrix-scheduler@users.noreply.github.com"
           git add evidence/cor0203/runtime/MATRIX_COR0203_SCHEDULER_CONTINUITY_LAST.json
           git add evidence/cor0203/runtime/MATRIX_COR0203_SCHEDULER_HEARTBEAT.json 2>/dev/null || true
+          git add evidence/tennis_world_inventory/2026-10-04 2>/dev/null || true
           if ! git diff --cached --quiet; then
             git commit -m "evidence(cor02-03): persist scheduler continuity audit"
             git pull --rebase origin repair/cor09-world-pipeline
@@ -326,3 +336,5 @@ jobs:
 # Governed 8-day dual-source tennis horizon activation 03OCT2026.
 
 # explicit parallel production retrigger 2026-10-04T04:00Z
+
+# One-shot exact world inventory for 04-OCT-2026.
