@@ -76,3 +76,42 @@ Todas estas fuentes pueden ampliar discovery e identidad. Ninguna puede:
 - alterar automáticamente R218/R223 o modelos de fútbol.
 
 REAL_MONEY=BLOCKED.
+
+## Fuentes auxiliares PIT de features
+
+SofaScore y Flashscore quedan autorizados también como `AUXILIARY_PIT_FEATURE_SOURCE` bajo la política física:
+
+`docs/providers/MATRIX_AUXILIARY_PIT_FEATURE_SOURCES_V1.json`
+
+Esto permite usar, cuando estén visibles y físicamente capturados antes del cutoff/freeze:
+
+### Tenis
+- ranking/posición visible;
+- historial de ranking únicamente cuando la fecha histórica sea explícita;
+- superficie;
+- torneo;
+- identidad de jugador;
+- historial reciente y récord por superficie/temporada;
+- metadata de jugador y evento.
+
+### Fútbol
+- standings;
+- plantillas;
+- alineaciones;
+- minutos/titularidades;
+- goles/tarjetas;
+- xG;
+- posesión;
+- remates/tiros;
+- corners y otras estadísticas de partido cuando estén visibles;
+- estadísticas de jugadores;
+- resultados recientes y metadata de equipo/jugador.
+
+### Gate temporal obligatorio
+
+- Toda observación debe conservar fuente + URL/referencia + `captured_at` timezone-aware.
+- Un ranking o estadística visible hoy NO puede rellenar retroactivamente un freeze anterior.
+- Si existe el mismo dato en una API paga y hay desacuerdo, se conserva la discrepancia y se aplica reconciliación; queda prohibido sobrescribir silenciosamente.
+- Missing != 0 y no se permite imputación silenciosa.
+- SofaScore/Flashscore no generan automáticamente P_MATRIX ni promueven modelos.
+
