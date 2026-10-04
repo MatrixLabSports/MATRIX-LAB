@@ -1,0 +1,257 @@
+{
+  "schema": "MATRIX_MULTI_SOURCE_REGISTRY_V1",
+  "version": "1.0.0",
+  "effective_date": "2026-10-04",
+  "timezone": "America/Bogota",
+  "permanent_rule": true,
+  "sports_scope": [
+    "tennis",
+    "football"
+  ],
+  "global_policy": {
+    "all_managed_sources_must_be_considered": true,
+    "all_accessible_sources_should_be_queried_for_discovery_and_crosscheck": true,
+    "source_failure_or_unavailability_must_be_persisted": true,
+    "silent_source_omission_forbidden": true,
+    "silent_overwrite_forbidden": true,
+    "no_single_source_can_declare_world_complete": true,
+    "source_specific_counts_must_remain_source_specific_until_reconciliation": true,
+    "canonical_identity_before_cross_provider_merge": true,
+    "physical_dedupe_before_counter_increment": true,
+    "discrepancies_must_be_persisted_and_adjudicated": true,
+    "pit_cutoff_required_for_model_features": true,
+    "missing_not_zero": true,
+    "silent_imputation_forbidden": true,
+    "odds_to_p_matrix_forbidden": true,
+    "model_feed_requires_explicit_governed_authorization": true,
+    "real_money": "BLOCKED",
+    "automatic_wagering": false
+  },
+  "tennis": {
+    "primary_paid_structured": [
+      {
+        "id": "rapidapi_tennis",
+        "display_name": "RapidAPI Tennis",
+        "payment_class": "paid",
+        "roles": [
+          "discovery",
+          "provider_ids",
+          "timestamps",
+          "history",
+          "stats",
+          "ranking_bridge",
+          "prospective_pipeline"
+        ]
+      },
+      {
+        "id": "api_tennis",
+        "display_name": "API-Tennis",
+        "payment_class": "paid",
+        "roles": [
+          "discovery",
+          "provider_ids",
+          "timestamps",
+          "stats_rich",
+          "ranking_history_recovery",
+          "cross_provider_validation"
+        ]
+      }
+    ],
+    "public_free_browser_and_official": [
+      {
+        "id": "sofascore",
+        "display_name": "SofaScore",
+        "payment_class": "free_public",
+        "roles": [
+          "world_discovery",
+          "calendar",
+          "identity_crosscheck",
+          "rankings",
+          "surface",
+          "stats",
+          "browser_verification"
+        ]
+      },
+      {
+        "id": "flashscore",
+        "display_name": "Flashscore",
+        "payment_class": "free_public",
+        "roles": [
+          "world_discovery",
+          "calendar",
+          "identity_crosscheck",
+          "rankings",
+          "surface",
+          "browser_verification"
+        ]
+      },
+      {
+        "id": "atp_official",
+        "display_name": "ATP official",
+        "payment_class": "free_public_official",
+        "roles": [
+          "competition_authority",
+          "surface",
+          "draw",
+          "ranking",
+          "identity_crosscheck"
+        ]
+      },
+      {
+        "id": "wta_official",
+        "display_name": "WTA official",
+        "payment_class": "free_public_official",
+        "roles": [
+          "competition_authority",
+          "surface",
+          "draw",
+          "ranking",
+          "identity_crosscheck"
+        ]
+      },
+      {
+        "id": "itf_official",
+        "display_name": "ITF official",
+        "payment_class": "free_public_official",
+        "roles": [
+          "world_tennis_tour_calendar",
+          "competition_authority",
+          "surface",
+          "draw",
+          "identity_crosscheck"
+        ]
+      }
+    ],
+    "historical_public_datasets": [
+      {
+        "id": "jeff_sackmann",
+        "display_name": "Jeff Sackmann",
+        "payment_class": "free_public_dataset",
+        "roles": [
+          "historical_results",
+          "biographical_crosscheck"
+        ]
+      },
+      {
+        "id": "tennis_data",
+        "display_name": "Tennis-Data",
+        "payment_class": "free_public_dataset",
+        "roles": [
+          "historical_results"
+        ]
+      }
+    ],
+    "protected_cor0203_domain": "ATP Challenger + Hard + Singles + Match Winner",
+    "paid_api_dual_use_required": true
+  },
+  "football": {
+    "primary_paid_structured": [
+      {
+        "id": "api_football",
+        "display_name": "API-Football",
+        "payment_class": "paid",
+        "roles": [
+          "fixtures",
+          "teams",
+          "players",
+          "lineups",
+          "events",
+          "statistics",
+          "odds",
+          "history",
+          "prospective_pipeline"
+        ]
+      }
+    ],
+    "public_free_browser_and_official": [
+      {
+        "id": "sofascore",
+        "display_name": "SofaScore",
+        "payment_class": "free_public",
+        "roles": [
+          "world_discovery",
+          "calendar",
+          "teams",
+          "players",
+          "lineups",
+          "xg",
+          "shots",
+          "possession",
+          "stats",
+          "browser_verification"
+        ]
+      },
+      {
+        "id": "flashscore",
+        "display_name": "Flashscore",
+        "payment_class": "free_public",
+        "roles": [
+          "world_discovery",
+          "calendar",
+          "teams",
+          "players",
+          "lineups",
+          "stats",
+          "browser_verification"
+        ]
+      },
+      {
+        "id": "official_competition_team_sources",
+        "display_name": "Official competition/team sources",
+        "payment_class": "free_public_official",
+        "roles": [
+          "fixture_authority",
+          "lineup_authority",
+          "competition_metadata",
+          "disciplinary_crosscheck"
+        ]
+      }
+    ],
+    "reference_price_sources": [
+      {
+        "id": "pinnacle_reference",
+        "display_name": "Pinnacle reference",
+        "payment_class": "reference",
+        "roles": [
+          "market_reference",
+          "price_crosscheck"
+        ],
+        "execution_authorized": false
+      }
+    ],
+    "execution_price_sources": [
+      "BetPlay",
+      "bwin",
+      "Betano",
+      "RushBet",
+      "Betsson",
+      "Codere",
+      "Luckia",
+      "MrYoker",
+      "Rivalo",
+      "Sportium",
+      "Stake Colombia",
+      "Wplay",
+      "YaJuego",
+      "Zamba"
+    ]
+  },
+  "reconciliation_contract": {
+    "discovery_fanout_before_world_inventory_close": true,
+    "exact_source_status_required": [
+      "QUERIED",
+      "PASS",
+      "NO_COVERAGE",
+      "BLOCKED",
+      "UNAVAILABLE",
+      "RATE_LIMITED",
+      "AUTH_FAILED"
+    ],
+    "source_counts_are_never_summed_without_deduplication": true,
+    "entity_identity_reconciliation_required": true,
+    "provider_aliases_must_be_persisted": true,
+    "timestamp_and_timezone_provenance_required": true,
+    "every_model_feature_requires_pit_provenance": true,
+    "browser_sources_may_expand_discovery_but_not_bypass_model_gates": true
+  }
+}
