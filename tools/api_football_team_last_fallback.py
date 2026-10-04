@@ -20,7 +20,7 @@ from tools.api_football_group_history_capture import (
 )
 
 MAX_REQUESTS = 120
-MIN_DAILY_REMAINING_RESERVE = 7000
+MIN_DAILY_REMAINING_RESERVE = 1500
 
 
 def _load(path: Path) -> dict[str, Any]:
