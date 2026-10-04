@@ -528,9 +528,34 @@ def recover_exact_rankings_via_profile_alias(
             "real_money": "BLOCKED",
         }
 
+    ranking_rows_fetcher = getattr(client, "ranking_snapshot_rows", None)
+    if not callable(ranking_rows_fetcher):
+        return merged, {
+            "schema": "MATRIX_COR0203_EXACT_CUT_RANK_PROFILE_ALIAS_V1",
+            "ranking_cut": ranking_date.isoformat(),
+            "missing_player_ids": missing,
+            "ranking_snapshot_rows_scanned": 0,
+            "profile_requests": 0,
+            "recovered_count": 0,
+            "recovered": [],
+            "blocked_count": len(missing),
+            "blocked": [
+                {
+                    "player_id": player_id,
+                    "reason": "RANKING_PROFILE_ALIAS_CAPABILITY_UNAVAILABLE",
+                }
+                for player_id in missing
+            ],
+            "join_by_name_only": False,
+            "current_rank_used": False,
+            "post_cut_competitive_data_used": False,
+            "outcomes_used": False,
+            "odds_used": False,
+            "real_money": "BLOCKED",
+        }
     try:
-        ranking_rows = client.ranking_snapshot_rows(ranking_date=ranking_date)
-    except (RapidApiTennisDiscoveryError, ValueError) as error:
+        ranking_rows = ranking_rows_fetcher(ranking_date=ranking_date)
+    except (RapidApiTennisDiscoveryError, ValueError, AttributeError) as error:
         return merged, {
             "schema": "MATRIX_COR0203_EXACT_CUT_RANK_PROFILE_ALIAS_V1",
             "ranking_cut": ranking_date.isoformat(),
