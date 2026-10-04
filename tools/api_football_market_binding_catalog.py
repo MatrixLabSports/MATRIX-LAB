@@ -12,6 +12,7 @@ KEYWORDS={
  "TEAM_YELLOW_CARDS":["card","booking"],
  "TEAM_SHOTS_ON_TARGET":["shots on target","shot on target"],
  "TEAM_GOALKEEPER_SAVES":["save"],
+ "PLAYER_SHOTS":["player shots","shots by player"],
  "TEAM_TOTAL_SHOTS":["shots. home total","shots. away total","shots home total","shots away total"],
 }
 
