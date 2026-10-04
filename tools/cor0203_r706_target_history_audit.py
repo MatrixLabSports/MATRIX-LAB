@@ -13,6 +13,7 @@ def discover_target_names(
     *,
     world_discovery_path: Path,
     authority_path: Path,
+    extra_discovery_path: Path | None = None,
 ) -> list[str]:
     names = set(BASE_TARGETS)
     authority_ids = set()
@@ -23,26 +24,30 @@ def discover_target_names(
             for row in authority.get("records", []) or []
             if isinstance(row, dict)
         }
-    if not world_discovery_path.exists():
-        return sorted(names)
+    discovery_paths = [world_discovery_path]
+    if extra_discovery_path is not None:
+        discovery_paths.append(extra_discovery_path)
 
-    discovery = json.loads(world_discovery_path.read_text(encoding="utf-8"))
-    for event in discovery.get("eligible_candidates", []) or []:
-        for identity in event.get("player_identities", []) or []:
-            if not isinstance(identity, dict):
-                continue
-            provider_id = str(identity.get("provider_player_id") or "")
-            display_name = str(identity.get("display_name") or "").strip()
-            if display_name and provider_id not in authority_ids:
-                names.add(display_name)
-    for event in discovery.get("provider_rejected", []) or []:
-        for player in event.get("players", []) or []:
-            if not isinstance(player, dict):
-                continue
-            provider_id = str(player.get("provider_player_id") or "")
-            display_name = str(player.get("name") or "").strip()
-            if display_name and provider_id not in authority_ids:
-                names.add(display_name)
+    for discovery_path in discovery_paths:
+        if not discovery_path.exists():
+            continue
+        discovery = json.loads(discovery_path.read_text(encoding="utf-8"))
+        for event in discovery.get("eligible_candidates", []) or []:
+            for identity in event.get("player_identities", []) or []:
+                if not isinstance(identity, dict):
+                    continue
+                provider_id = str(identity.get("provider_player_id") or "")
+                display_name = str(identity.get("display_name") or "").strip()
+                if display_name and provider_id not in authority_ids:
+                    names.add(display_name)
+        for event in discovery.get("provider_rejected", []) or []:
+            for player in event.get("players", []) or []:
+                if not isinstance(player, dict):
+                    continue
+                provider_id = str(player.get("provider_player_id") or "")
+                display_name = str(player.get("name") or "").strip()
+                if display_name and provider_id not in authority_ids:
+                    names.add(display_name)
     return sorted(names)
 
 
@@ -97,6 +102,7 @@ def main():
         "--world-discovery",
         default="evidence/cor0203/runtime/MATRIX_COR0203_WORLD_DERIVED_DISCOVERY_LAST.json",
     )
+    parser.add_argument("--rapidapi-discovery")
     parser.add_argument(
         "--authority",
         default="evidence/cor0203/identity/MATRIX_COR0203_IDENTITY_AUTHORITY_LAST.json",
@@ -112,6 +118,11 @@ def main():
     target_names=discover_target_names(
         world_discovery_path=Path(args.world_discovery),
         authority_path=Path(args.authority),
+        extra_discovery_path=(
+            Path(args.rapidapi_discovery)
+            if args.rapidapi_discovery
+            else None
+        ),
     )
     report={
         "schema":"MATRIX_COR0203_R706_TARGET_HISTORY_READINESS_AUDIT_V2",
