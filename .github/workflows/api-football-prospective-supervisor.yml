@@ -292,8 +292,22 @@ jobs:
             exit 0
           fi
           git commit -m "evidence(football): supervisor sync with physical uniqueness"
-          git pull --rebase origin repair/cor09-world-pipeline
-          git push origin HEAD:repair/cor09-world-pipeline
+          for attempt in 1 2 3 4; do
+            git fetch origin repair/cor09-world-pipeline
+            if ! git rebase origin/repair/cor09-world-pipeline; then
+              echo "REBASE_CONFLICT_ABORTING"
+              git rebase --abort || true
+              exit 1
+            fi
+            if git push origin HEAD:repair/cor09-world-pipeline; then
+              echo "PUSH_SUCCEEDED_ATTEMPT=${attempt}"
+              exit 0
+            fi
+            echo "PUSH_RACE_RETRY_ATTEMPT=${attempt}"
+            sleep $((attempt * 2))
+          done
+          echo "PUSH_RETRY_BUDGET_EXHAUSTED"
+          exit 1
 
       - name: Report healthy skip
         if: steps.due.outputs.due != 'true'
@@ -316,3 +330,5 @@ jobs:
 # trigger tennis exact-day inventory chain 2026-10-04
 
 # Permanent V2 in-transaction sync 2026-10-04: supervisor owns settlement -> separated market calibration persistence.
+
+# concurrency hardening 2026-10-04: retry supervisor push after branch advancement.
