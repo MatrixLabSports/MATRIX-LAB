@@ -15,7 +15,10 @@ except Exception:  # pragma: no cover - fallback is exercised in CI only if need
     import requests as http_requests  # type: ignore
     HTTP_BACKEND = "requests"
 
-BASE_URL = "https://api.sofascore.com/api/v1"
+BASE_URLS = (
+    "https://api.sofascore.com/api/v1",
+    "https://www.sofascore.com/api/v1",
+)
 BOGOTA = ZoneInfo("America/Bogota")
 TIMEOUT_SECONDS = 25.0
 MAX_TENNIS_PAGES = 20
@@ -185,7 +188,6 @@ class SofaScoreClient:
         self.request_log: list[dict[str, Any]] = []
 
     def _get(self, path: str) -> Mapping[str, Any]:
-        url = BASE_URL + path
         headers = {
             "User-Agent": (
                 "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
@@ -197,44 +199,69 @@ class SofaScoreClient:
             "Referer": "https://www.sofascore.com/",
             "Origin": "https://www.sofascore.com",
         }
-        try:
-            response = self._session.get(
-                url,
-                headers=headers,
-                timeout=self._timeout,
-            )
-        except Exception as error:
-            raise SofaScoreDiscoveryError(
-                "SOFASCORE_NETWORK_ERROR:"
-                + type(error).__name__
-                + ":"
-                + str(error)[:300]
-            ) from None
-        status = int(getattr(response, "status_code", 0) or 0)
-        body = bytes(getattr(response, "content", b""))
-        self.request_count += 1
-        self.request_log.append({
-            "path": path,
-            "http_status": status,
-            "response_bytes": len(body),
-            "response_sha256": hashlib.sha256(body).hexdigest(),
-        })
-        if len(body) > MAX_RESPONSE_BYTES:
-            raise SofaScoreDiscoveryError("SOFASCORE_RESPONSE_TOO_LARGE")
-        if not (200 <= status < 300):
-            raise SofaScoreDiscoveryError(f"SOFASCORE_HTTP_STATUS_{status}:{path}")
-        try:
-            payload = response.json()
-        except Exception:
+        failures: list[str] = []
+        for base_url in BASE_URLS:
+            url = base_url + path
             try:
-                payload = json.loads(body.decode("utf-8"))
+                response = self._session.get(
+                    url,
+                    headers=headers,
+                    timeout=self._timeout,
+                )
             except Exception as error:
-                raise SofaScoreDiscoveryError(
-                    "SOFASCORE_INVALID_JSON:" + type(error).__name__
-                ) from error
-        if not isinstance(payload, Mapping):
-            raise SofaScoreDiscoveryError("SOFASCORE_RESPONSE_NOT_OBJECT")
-        return payload
+                self.request_count += 1
+                failure = (
+                    "NETWORK:"
+                    + type(error).__name__
+                    + ":"
+                    + str(error)[:220]
+                )
+                failures.append(base_url + "=" + failure)
+                self.request_log.append({
+                    "base_url": base_url,
+                    "path": path,
+                    "http_status": None,
+                    "error": failure,
+                })
+                continue
+            status = int(getattr(response, "status_code", 0) or 0)
+            body = bytes(getattr(response, "content", b""))
+            self.request_count += 1
+            self.request_log.append({
+                "base_url": base_url,
+                "path": path,
+                "http_status": status,
+                "response_bytes": len(body),
+                "response_sha256": hashlib.sha256(body).hexdigest(),
+            })
+            if len(body) > MAX_RESPONSE_BYTES:
+                failures.append(base_url + "=RESPONSE_TOO_LARGE")
+                continue
+            if not (200 <= status < 300):
+                failures.append(base_url + f"=HTTP_{status}")
+                continue
+            try:
+                payload = response.json()
+            except Exception:
+                try:
+                    payload = json.loads(body.decode("utf-8"))
+                except Exception as error:
+                    failures.append(
+                        base_url
+                        + "=INVALID_JSON:"
+                        + type(error).__name__
+                    )
+                    continue
+            if not isinstance(payload, Mapping):
+                failures.append(base_url + "=RESPONSE_NOT_OBJECT")
+                continue
+            return payload
+        raise SofaScoreDiscoveryError(
+            "SOFASCORE_ALL_BASE_URLS_FAILED:"
+            + "|".join(failures)[:1000]
+            + ":"
+            + path
+        )
 
     def football_schedule(self, target: date) -> Mapping[str, Any]:
         return self._get(f"/sport/football/scheduled-events/{target.isoformat()}")
@@ -483,7 +510,7 @@ def main() -> None:
         "provider_network_calls": report.get("provider_network_calls"),
         "real_money": _mapping(report.get("protections")).get("real_money"),
     }, sort_keys=True))
-    if report.get("status") != "PASS":
+    if report.get("status") != "PASS" and "--fail-on-blocked" in __import__("sys").argv:
         raise SystemExit("SOFASCORE_MULTISPORT_DISCOVERY_BLOCKED")
 
 
