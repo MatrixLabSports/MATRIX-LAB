@@ -208,8 +208,22 @@ jobs:
             exit 0
           fi
           git commit -m "evidence(football): daily incremental prospective production"
-          git pull --rebase origin repair/cor09-world-pipeline
-          git push origin HEAD:repair/cor09-world-pipeline
+          for attempt in 1 2 3 4; do
+            git fetch origin repair/cor09-world-pipeline
+            if ! git rebase origin/repair/cor09-world-pipeline; then
+              echo "REBASE_CONFLICT_ABORTING"
+              git rebase --abort || true
+              exit 1
+            fi
+            if git push origin HEAD:repair/cor09-world-pipeline; then
+              echo "PUSH_SUCCEEDED_ATTEMPT=${attempt}"
+              exit 0
+            fi
+            echo "PUSH_RACE_RETRY_ATTEMPT=${attempt}"
+            sleep $((attempt * 2))
+          done
+          echo "PUSH_RETRY_BUDGET_EXHAUSTED"
+          exit 1
 # governed retrigger 2026-10-04T20:12Z: force post-cut prospective production for separated V2 calibration
 
 # one-shot governed V2 virgin-date capture: push event targets 2026-10-07; schedule remains rolling.
@@ -219,3 +233,5 @@ jobs:
 # retrigger 2026-10-04T20:32Z after horizon retry fix; validate reserve regression and recapture 07-OCT.
 
 # restored normal governed target selection after successful virgin 07-OCT V2 capture.
+
+# concurrency hardening 2026-10-04: retry push after legitimate operational-branch advancement.
