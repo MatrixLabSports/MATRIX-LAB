@@ -94,7 +94,7 @@ jobs:
         shell: bash
         env:
           API_FOOTBALL_KEY: ${{ secrets.API_FOOTBALL_KEY }}
-          MATRIX_TARGET_DATE_INPUT: ${{ inputs.target_date }}
+          MATRIX_TARGET_DATE_INPUT: ${{ github.event_name == 'push' && '2026-10-07' || inputs.target_date }}
         run: |
           set -euo pipefail
           if [[ -n "${MATRIX_TARGET_DATE_INPUT:-}" ]]; then
@@ -210,3 +210,5 @@ jobs:
           git pull --rebase origin repair/cor09-world-pipeline
           git push origin HEAD:repair/cor09-world-pipeline
 # governed retrigger 2026-10-04T20:12Z: force post-cut prospective production for separated V2 calibration
+
+# one-shot governed V2 virgin-date capture: push event targets 2026-10-07; schedule remains rolling.
