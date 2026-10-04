@@ -71,6 +71,7 @@ jobs:
             tests/test_api_football_build_prematch_queue.py \
             tests/test_api_football_group_history_capture.py \
             tests/test_api_football_team_last_fallback.py \
+            tests/test_api_football_daily_reserve_policy.py \
             tests/test_api_football_canonical_analysis_inputs.py \
             tests/test_api_football_prospective_market_pipeline.py \
             tests/test_api_football_prospective_horizon.py \
@@ -214,3 +215,5 @@ jobs:
 # one-shot governed V2 virgin-date capture: push event targets 2026-10-07; schedule remains rolling.
 
 # retrigger 2026-10-04T20:28Z after daily-reserve policy correction; push still targets 2026-10-07.
+
+# retrigger 2026-10-04T20:32Z after horizon retry fix; validate reserve regression and recapture 07-OCT.
