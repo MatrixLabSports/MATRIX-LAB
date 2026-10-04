@@ -1,0 +1,191 @@
+{
+  "schema": "MATRIX_FOOTBALL_V2_POSTCUT_PHYSICAL_CERTIFICATION_V1",
+  "certification_basis_utc": "2026-10-04T20:37:46Z",
+  "cohort_id": "FOOTBALL_ALL_MARKETS_V2_20261004",
+  "cohort_start_utc": "2026-10-04T18:51:32Z",
+  "production_workflow": {
+    "name": "API-Football daily prospective production",
+    "run_id": 37232444046,
+    "conclusion": "success",
+    "target_date_bogota": "2026-10-07"
+  },
+  "v2_sync_workflow": {
+    "name": "API Football Market Calibration V2",
+    "run_id": 37232813867,
+    "conclusion": "success"
+  },
+  "root_cause_resolution": {
+    "prior_zero_ready_cause": "DAILY_API_RESERVE_7000_BLOCKED_HISTORY_ACQUISITION_WITH_3772_REQUESTS_REMAINING",
+    "fixes": [
+      "DAILY_REMAINING_RESERVE_REDUCED_TO_1500_WITH_REGRESSION_TEST",
+      "BUDGET_BLOCKED_ZERO_READY_SAME_DAY_CYCLES_MADE_RETRIABLE",
+      "SUPERVISOR_CHAINS_V2_SYNC_IN_SAME_TRANSACTION"
+    ],
+    "minimum_history_requirement_relaxed": false,
+    "model_parameters_changed": false,
+    "backfill_used": false
+  },
+  "oct7_capture": {
+    "fixtures_received": 232,
+    "eligible_future_fixtures": 228,
+    "group_history_ready": 82,
+    "team_last_ready": 113,
+    "canonical_ready_inputs": 113,
+    "freeze_candidates": 96,
+    "new_unique_freezes": 91,
+    "skipped_existing": 5,
+    "network_calls": 161
+  },
+  "physical_uniqueness": {
+    "total_freeze_rows": 919,
+    "unique_fixture_ids": 919,
+    "duplicate_fixture_id_groups": 0,
+    "exact_physical_duplicate_groups": 0,
+    "suspicious_same_pair_within_36h": 0,
+    "result": "PASS"
+  },
+  "separated_v2_lanes": {
+    "1X2": {
+      "path": "evidence/api_football/calibration_v2/lanes/1x2/state.json",
+      "blob_sha": "28b5d99c6f10c1aa32bf4194ed7feaddabd482f5",
+      "freeze_observation_count": 91,
+      "pending_settlement_count": 91,
+      "settlement_count": 0,
+      "metrics_opened": false,
+      "frozen_thresholds": {
+        "30": "SECURED_PENDING_FINAL",
+        "50": "SECURED_PENDING_FINAL",
+        "100": "NOT_YET_SECURED_9",
+        "200": "NOT_YET_SECURED_109"
+      },
+      "settled_thresholds": {
+        "30": "SEALED_PENDING_30",
+        "50": "SEALED_PENDING_50",
+        "100": "SEALED_PENDING_100",
+        "200": "SEALED_PENDING_200"
+      }
+    },
+    "OVER_2_5": {
+      "path": "evidence/api_football/calibration_v2/lanes/over_2_5/state.json",
+      "blob_sha": "b08a14a5a4ce98b51057d8fbfd88b2bfe390e61b",
+      "freeze_observation_count": 91,
+      "pending_settlement_count": 91,
+      "settlement_count": 0,
+      "metrics_opened": false,
+      "frozen_thresholds": {
+        "30": "SECURED_PENDING_FINAL",
+        "50": "SECURED_PENDING_FINAL",
+        "100": "NOT_YET_SECURED_9",
+        "200": "NOT_YET_SECURED_109"
+      },
+      "settled_thresholds": {
+        "30": "SEALED_PENDING_30",
+        "50": "SEALED_PENDING_50",
+        "100": "SEALED_PENDING_100",
+        "200": "SEALED_PENDING_200"
+      }
+    },
+    "UNDER_2_5": {
+      "path": "evidence/api_football/calibration_v2/lanes/under_2_5/state.json",
+      "blob_sha": "fe0d512f86390a3a62d9cca3c42e861304d4f6d1",
+      "freeze_observation_count": 91,
+      "pending_settlement_count": 91,
+      "settlement_count": 0,
+      "metrics_opened": false,
+      "frozen_thresholds": {
+        "30": "SECURED_PENDING_FINAL",
+        "50": "SECURED_PENDING_FINAL",
+        "100": "NOT_YET_SECURED_9",
+        "200": "NOT_YET_SECURED_109"
+      },
+      "settled_thresholds": {
+        "30": "SEALED_PENDING_30",
+        "50": "SEALED_PENDING_50",
+        "100": "SEALED_PENDING_100",
+        "200": "SEALED_PENDING_200"
+      }
+    },
+    "DOUBLE_CHANCE_1X": {
+      "path": "evidence/api_football/calibration_v2/lanes/double_chance_1x/state.json",
+      "blob_sha": "90f90c9722d51ff812eefd469ceb701358840c0d",
+      "freeze_observation_count": 91,
+      "pending_settlement_count": 91,
+      "settlement_count": 0,
+      "metrics_opened": false,
+      "frozen_thresholds": {
+        "30": "SECURED_PENDING_FINAL",
+        "50": "SECURED_PENDING_FINAL",
+        "100": "NOT_YET_SECURED_9",
+        "200": "NOT_YET_SECURED_109"
+      },
+      "settled_thresholds": {
+        "30": "SEALED_PENDING_30",
+        "50": "SEALED_PENDING_50",
+        "100": "SEALED_PENDING_100",
+        "200": "SEALED_PENDING_200"
+      }
+    },
+    "DOUBLE_CHANCE_X2": {
+      "path": "evidence/api_football/calibration_v2/lanes/double_chance_x2/state.json",
+      "blob_sha": "905b509bfbb2fc486647270742c364e22bb6dd9d",
+      "freeze_observation_count": 91,
+      "pending_settlement_count": 91,
+      "settlement_count": 0,
+      "metrics_opened": false,
+      "frozen_thresholds": {
+        "30": "SECURED_PENDING_FINAL",
+        "50": "SECURED_PENDING_FINAL",
+        "100": "NOT_YET_SECURED_9",
+        "200": "NOT_YET_SECURED_109"
+      },
+      "settled_thresholds": {
+        "30": "SEALED_PENDING_30",
+        "50": "SEALED_PENDING_50",
+        "100": "SEALED_PENDING_100",
+        "200": "SEALED_PENDING_200"
+      }
+    }
+  },
+  "interpretation": {
+    "frozen_observations_are_not_settlements": true,
+    "threshold_30_frozen_secured_all_active_lanes": true,
+    "threshold_50_frozen_secured_all_active_lanes": true,
+    "threshold_100_frozen_secured_all_active_lanes": false,
+    "evaluations_may_open_only_after_final_settlement_threshold": true,
+    "current_settled_v2_observations_per_active_lane": 0,
+    "metrics_opened": false
+  },
+  "extended_lane_truth": {
+    "TEAM_TOTAL_SHOTS_HOME": {
+      "status": "ACTIVE_WAITING_CANONICAL_PREMATCH_LINE_AND_CURRENT_PIT_FEATURES",
+      "last_future_events_checked": 24,
+      "canonical_offer_fixture_count": 0,
+      "freeze_observation_count": 0,
+      "blocker": "NO_CANONICAL_TARGET_MARKET_OFFERS_IN_CHECKED_EVENTS"
+    },
+    "TEAM_TOTAL_SHOTS_AWAY": {
+      "status": "ACTIVE_WAITING_CANONICAL_PREMATCH_LINE_AND_CURRENT_PIT_FEATURES",
+      "last_future_events_checked": 24,
+      "canonical_offer_fixture_count": 0,
+      "freeze_observation_count": 0,
+      "blocker": "NO_CANONICAL_TARGET_MARKET_OFFERS_IN_CHECKED_EVENTS"
+    },
+    "PLAYER_SHOTS_V3": {
+      "status": "ACTIVE",
+      "model_status": "FROZEN_FOR_NEW_PROSPECTIVE_VALIDATION_V3",
+      "last_future_events_checked": 20,
+      "freeze_observation_count": 0,
+      "blocker": "PREMATCH_LINEUP_NOT_AVAILABLE_FOR_ALL_20_CHECKED_EVENTS"
+    }
+  },
+  "governance": {
+    "pit_required": true,
+    "final_only_settlement": true,
+    "no_backfill": true,
+    "odds_used_to_generate_probability": false,
+    "p_matrix_status": "NOT_GENERATED",
+    "real_money": "BLOCKED",
+    "automatic_wagering": false
+  },
+  "result": "PASS_91_UNIQUE_POSTCUT_FREEZES_SEPARATED_ACROSS_5_V2_LANES_PENDING_FINAL"
+}
