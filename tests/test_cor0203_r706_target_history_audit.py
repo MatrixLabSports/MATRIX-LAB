@@ -1,4 +1,6 @@
-from tools.cor0203_r706_target_history_audit import audit_player
+import json
+
+from tools.cor0203_r706_target_history_audit import audit_player, discover_target_names
 
 
 def test_audit_requires_every_model_history_component():
@@ -43,3 +45,36 @@ def test_alias_names_are_audited_independently():
     provider_alias=audit_player(state,"Abedallah Shelbayh")
     assert canonical["fully_history_ready"] is True
     assert provider_alias["fully_history_ready"] is False
+
+
+def test_dynamic_target_selection_adds_current_world_player_without_authority(tmp_path):
+    world=tmp_path/"world.json"
+    authority=tmp_path/"authority.json"
+    world.write_text(json.dumps({
+        "eligible_candidates":[{
+            "player_identities":[
+                {"provider_player_id":"rapidapi-tennis:player:103054","display_name":"Thijs Boogaard"},
+                {"provider_player_id":"rapidapi-tennis:player:111","display_name":"Known Player"},
+            ]
+        }],
+        "provider_rejected":[{
+            "players":[{
+                "provider_player_id":"rapidapi-tennis:player:92242",
+                "name":"Charles Chen",
+            }]
+        }],
+    }),encoding="utf-8")
+    authority.write_text(json.dumps({
+        "records":[{
+            "provider_player_id":"rapidapi-tennis:player:111",
+        }]
+    }),encoding="utf-8")
+
+    names=discover_target_names(
+        world_discovery_path=world,
+        authority_path=authority,
+    )
+
+    assert "Thijs Boogaard" in names
+    assert "Charles Chen" in names
+    assert "Known Player" not in names
