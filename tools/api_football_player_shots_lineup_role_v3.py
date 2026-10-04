@@ -160,7 +160,7 @@ def build_dataset(api_key:str,out_dir:Path)->dict[str,Any]:
     fixtures,dupes=_load_fixture_sources()
     if not fixtures: raise ValueError("NO_FIXTURE_SOURCES")
     rolemaps,source_audit=_fetch_lineups(fixtures,api_key,out_dir)
-    history=defaultdict(list); rows=[]; missing_roles=0; insufficient_overall=0; insufficient_role=0
+    history=defaultdict(list); rows=[]; all_role_appearances=[]; missing_roles=0; insufficient_overall=0; insufficient_role=0
     for fixture in fixtures:
         fid=str(fixture["fixture_id"]); roles=rolemaps.get(fid,{})
         apps=_stats(Path(fixture["raw_players_path"]))
@@ -197,15 +197,21 @@ def build_dataset(api_key:str,out_dir:Path)->dict[str,Any]:
                     })
             pending.append({**app,"role":role})
         for app in pending:
+            hist_row={"fixture_id":fid,"kickoff_utc":fixture["kickoff_utc"],"league_id":fixture["league_id"],"season":fixture["season"],"player_id":app["player_id"],"player_name":app["player_name"],"team_id":app["team_id"],"team_name":app["team_name"],"role":app["role"],"minutes":app["minutes"],"shots":app["shots"]}
+            all_role_appearances.append(hist_row)
             history[app["player_id"]].append({"fixture_id":fid,"kickoff_utc":fixture["kickoff_utc"],"role":app["role"],"minutes":app["minutes"],"shots":app["shots"]})
     rows.sort(key=lambda r:(_utc(r["kickoff_utc"]),int(r["fixture_id"]),int(r["player_id"])))
     split=len(rows)-MIN_VALIDATION if len(rows)>=MIN_TRAIN+MIN_VALIDATION else 0
     for i,r in enumerate(rows): r["split"]="TRAIN" if i<split else "VALIDATION"
     dataset=out_dir/"player_shots_lineup_role_pit.jsonl"
     dataset.write_text("".join(json.dumps(r,sort_keys=True,ensure_ascii=False)+"\n" for r in rows),encoding="utf-8")
+    history_store=out_dir/"all_role_appearances_history.jsonl"
+    all_role_appearances.sort(key=lambda r:(_utc(r["kickoff_utc"]),int(r["fixture_id"]),int(r["player_id"])))
+    history_store.write_text("".join(json.dumps(r,sort_keys=True,ensure_ascii=False)+"\n" for r in all_role_appearances),encoding="utf-8")
     manifest={
         "schema":"MATRIX_PLAYER_SHOTS_LINEUP_ROLE_PIT_V3","generated_at_utc":datetime.now(timezone.utc).replace(microsecond=0).isoformat(),
         "fixture_count":len(fixtures),"duplicate_fixture_ids_quarantined":dupes,"row_count":len(rows),"train_count":split,"validation_count":len(rows)-split,
+        "all_role_appearance_count":len(all_role_appearances),"all_role_appearances_history_path":str(history_store),"all_role_appearances_history_sha256":hashlib.sha256(history_store.read_bytes()).hexdigest(),
         "historical_role_source":"/fixtures/lineups","prospective_role_source":"/fixtures/lineups","same_role_semantics_by_construction":True,
         "source_audit":source_audit,"missing_role_for_player_stat_rows":missing_roles,"insufficient_overall_history_count":insufficient_overall,"insufficient_same_role_history_count":insufficient_role,
         "current_match_minutes_used_as_feature":False,"same_match_target_used_in_features":False,"odds_used_to_generate_probability":False,"real_money":"BLOCKED"
