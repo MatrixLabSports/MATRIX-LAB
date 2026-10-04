@@ -15,6 +15,7 @@ from tools.cor0203_rapidapi_tennis_discovery import (
     RapidApiTennisDiscoveryError,
     build_discovery_registry,
     recover_exact_rankings_from_history,
+    recover_exact_rankings_via_profile_alias,
 )
 
 
@@ -213,8 +214,32 @@ def derive_world_cor_discovery(
         "odds_used": False,
         "real_money": "BLOCKED",
     }
+    ranking_profile_alias_recovery = {
+        "schema": "MATRIX_COR0203_EXACT_CUT_RANK_PROFILE_ALIAS_V1",
+        "ranking_cut": RANKING_CUT.isoformat(),
+        "missing_player_ids": [],
+        "ranking_snapshot_rows_scanned": 0,
+        "profile_requests": 0,
+        "recovered_count": 0,
+        "recovered": [],
+        "blocked_count": 0,
+        "blocked": [],
+        "join_by_name_only": False,
+        "current_rank_used": False,
+        "post_cut_competitive_data_used": False,
+        "outcomes_used": False,
+        "odds_used": False,
+        "real_money": "BLOCKED",
+    }
     if wanted_player_ids and ranking_error is None:
         rankings, ranking_history_recovery = recover_exact_rankings_from_history(
+            client=client,
+            ranking_date=RANKING_CUT,
+            wanted_player_ids=wanted_player_ids,
+            existing_rankings=rankings,
+            fixture_identity_by_player=fixture_identity_by_player,
+        )
+        rankings, ranking_profile_alias_recovery = recover_exact_rankings_via_profile_alias(
             client=client,
             ranking_date=RANKING_CUT,
             wanted_player_ids=wanted_player_ids,
@@ -318,6 +343,10 @@ def derive_world_cor_discovery(
     result["ranking_history_recovery"] = ranking_history_recovery
     result["ranking_history_recovered_count"] = int(
         ranking_history_recovery.get("recovered_count", 0)
+    )
+    result["ranking_profile_alias_recovery"] = ranking_profile_alias_recovery
+    result["ranking_profile_alias_recovered_count"] = int(
+        ranking_profile_alias_recovery.get("recovered_count", 0)
     )
     result["ranking_enrichment_error"] = ranking_error
     result["network_calls"] = client.request_count
