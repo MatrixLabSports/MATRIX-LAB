@@ -1,37 +1,37 @@
 {
-  "authoritative_count_policy": "RAPIDAPI_WORLD_INVENTORY_COMPLETE_PRIMARY; API_TENNIS_SECONDARY_CROSSCHECK_ONLY",
+  "authoritative_count_policy": "MULTI_SOURCE_RECONCILIATION_REQUIRED; PROVIDER_COUNTS_ARE_NOT_WORLD_TRUTH",
   "automatic_model_feed": false,
   "automatic_wagering": false,
   "cross_provider_reconciliation": {
-    "api_tennis_only_neutral_count": 160,
-    "exact_union_count": 307,
+    "api_tennis_only_neutral_count": 140,
+    "exact_union_count": 263,
     "neutral_exact_overlap_count": 0,
-    "note": "Exact-neutral reconciliation uses Bogota date + normalized player pair + singles/doubles format. Provider-specific aliases can remain unmatched; the primary worldwide denominator is RapidAPI when world_inventory_complete=true.",
-    "rapidapi_only_neutral_count": 147
+    "note": "Exact-neutral reconciliation uses Bogota date + normalized player pair + singles/doubles format. Provider-specific aliases can remain unmatched. No single provider is authorized to define the worldwide denominator.",
+    "rapidapi_only_neutral_count": 123
   },
   "metrics_opened": false,
   "odds_used": false,
   "primary_world_inventory": {
     "events_by_detail": {
-      "ATP_CHALLENGER": 57,
-      "ATP_MAIN_OR_OTHER": 6,
+      "ATP_CHALLENGER": 50,
+      "ATP_MAIN_OR_OTHER": 3,
       "ITF_MEN": 19,
-      "ITF_WOMEN": 43,
-      "WTA_MAIN_OR_OTHER": 22
+      "ITF_WOMEN": 40,
+      "WTA_MAIN_OR_OTHER": 11
     },
     "events_by_family": {
-      "ATP": 63,
-      "ITF": 62,
-      "WTA": 22
+      "ATP": 53,
+      "ITF": 59,
+      "WTA": 11
     },
     "events_by_format": {
-      "DOUBLES": 5,
-      "SINGLES": 142
+      "SINGLES": 123
     },
     "network_calls": 2,
     "provider": "rapidapi_tennis",
+    "provider_inventory_complete": true,
     "status": "PASS",
-    "tournament_count": 39,
+    "tournament_count": 38,
     "tournaments": [
       {
         "circuit_detail": "ATP_CHALLENGER",
@@ -55,8 +55,8 @@
         "circuit_detail": "ATP_CHALLENGER",
         "circuit_family": "ATP",
         "doubles": 0,
-        "match_count": 11,
-        "singles": 11,
+        "match_count": 10,
+        "singles": 10,
         "tournament_name": "Braga Challenger",
         "unknown_format": 0
       },
@@ -91,8 +91,8 @@
         "circuit_detail": "ATP_CHALLENGER",
         "circuit_family": "ATP",
         "doubles": 0,
-        "match_count": 12,
-        "singles": 12,
+        "match_count": 10,
+        "singles": 10,
         "tournament_name": "Palermo Challenger",
         "unknown_format": 0
       },
@@ -118,18 +118,9 @@
         "circuit_detail": "ATP_CHALLENGER",
         "circuit_family": "ATP",
         "doubles": 0,
-        "match_count": 5,
-        "singles": 5,
+        "match_count": 1,
+        "singles": 1,
         "tournament_name": "Wuning 3 Challenger",
-        "unknown_format": 0
-      },
-      {
-        "circuit_detail": "ATP_MAIN_OR_OTHER",
-        "circuit_family": "ATP",
-        "doubles": 1,
-        "match_count": 4,
-        "singles": 3,
-        "tournament_name": "China Open - Beijing",
         "unknown_format": 0
       },
       {
@@ -138,6 +129,15 @@
         "doubles": 0,
         "match_count": 2,
         "singles": 2,
+        "tournament_name": "China Open - Beijing",
+        "unknown_format": 0
+      },
+      {
+        "circuit_detail": "ATP_MAIN_OR_OTHER",
+        "circuit_family": "ATP",
+        "doubles": 0,
+        "match_count": 1,
+        "singles": 1,
         "tournament_name": "Japan Open Tennis Championships - Tokyo",
         "unknown_format": 0
       },
@@ -307,8 +307,8 @@
         "circuit_detail": "ITF_WOMEN",
         "circuit_family": "ITF",
         "doubles": 0,
-        "match_count": 13,
-        "singles": 13,
+        "match_count": 11,
+        "singles": 11,
         "tournament_name": "W35 Villeneuve d'Ascq",
         "unknown_format": 0
       },
@@ -325,8 +325,8 @@
         "circuit_detail": "ITF_WOMEN",
         "circuit_family": "ITF",
         "doubles": 0,
-        "match_count": 7,
-        "singles": 7,
+        "match_count": 6,
+        "singles": 6,
         "tournament_name": "W50 Heraklion",
         "unknown_format": 0
       },
@@ -351,19 +351,10 @@
       {
         "circuit_detail": "WTA_MAIN_OR_OTHER",
         "circuit_family": "WTA",
-        "doubles": 4,
-        "match_count": 8,
-        "singles": 4,
-        "tournament_name": "China Open - Beijing",
-        "unknown_format": 0
-      },
-      {
-        "circuit_detail": "WTA_MAIN_OR_OTHER",
-        "circuit_family": "WTA",
         "doubles": 0,
-        "match_count": 1,
-        "singles": 1,
-        "tournament_name": "Jingshan Tennis Open - Jingshan",
+        "match_count": 2,
+        "singles": 2,
+        "tournament_name": "China Open - Beijing",
         "unknown_format": 0
       },
       {
@@ -379,16 +370,16 @@
         "circuit_detail": "WTA_MAIN_OR_OTHER",
         "circuit_family": "WTA",
         "doubles": 0,
-        "match_count": 5,
-        "singles": 5,
+        "match_count": 1,
+        "singles": 1,
         "tournament_name": "Suzhou WTA 125 - Suzhou",
         "unknown_format": 0
       }
     ],
-    "unique_match_count": 147,
-    "world_inventory_complete": true
+    "unique_match_count": 123,
+    "world_inventory_complete": false
   },
-  "primary_worldwide_registered_match_count": 147,
+  "primary_worldwide_registered_match_count": 123,
   "real_money": "BLOCKED",
   "schema": "MATRIX_TENNIS_WORLD_EXACT_DAY_DUAL_AUDIT_V1",
   "secondary_crosscheck": {
@@ -396,7 +387,7 @@
     "network_calls": 1,
     "provider": "api_tennis",
     "status": "PASS",
-    "tournament_count": 39,
+    "tournament_count": 40,
     "tournaments": [
       {
         "event_type": "Atp Doubles",
@@ -412,6 +403,11 @@
         "event_type": "Atp Singles",
         "match_count": 4,
         "tournament_name": "Beijing"
+      },
+      {
+        "event_type": "Atp Singles",
+        "match_count": 6,
+        "tournament_name": "Shanghai"
       },
       {
         "event_type": "Atp Singles",
@@ -465,7 +461,7 @@
       },
       {
         "event_type": "Challenger Men Singles",
-        "match_count": 20,
+        "match_count": 12,
         "tournament_name": "Wuning 3 (China) - Qualification"
       },
       {
@@ -480,12 +476,12 @@
       },
       {
         "event_type": "Challenger Women Singles",
-        "match_count": 8,
+        "match_count": 9,
         "tournament_name": "Samsun"
       },
       {
         "event_type": "Challenger Women Singles",
-        "match_count": 18,
+        "match_count": 10,
         "tournament_name": "Suzhou"
       },
       {
@@ -585,21 +581,23 @@
       },
       {
         "event_type": "Wta Doubles",
-        "match_count": 16,
+        "match_count": 10,
         "tournament_name": "Beijing"
       },
       {
         "event_type": "Wta Singles",
-        "match_count": 14,
+        "match_count": 9,
         "tournament_name": "Beijing"
       }
     ],
-    "unique_match_count": 160
+    "unique_match_count": 140
   },
-  "status": "PASS",
+  "status": "PASS_PROVIDER_CAPTURE_WORLD_UNSEALED",
   "target_date_bogota": "2026-10-04",
   "window_bogota": {
     "end": "2026-10-04T23:59:59-05:00",
     "start": "2026-10-04T00:00:00-05:00"
-  }
+  },
+  "world_complete_gate": "REQUIRES_MULTI_SOURCE_RECONCILIATION",
+  "world_inventory_complete": false
 }
