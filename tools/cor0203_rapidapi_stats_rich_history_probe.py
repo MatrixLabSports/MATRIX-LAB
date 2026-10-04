@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import argparse
 import json
 import os
 from datetime import datetime, timezone
@@ -12,10 +13,64 @@ from tools.cor0203_rapidapi_tennis_discovery import (
 )
 
 CUT = datetime(2026, 9, 21, tzinfo=timezone.utc)
-TARGETS = {
+BASE_TARGETS = {
     "76009": "Abedallah Shelbayh",
-    "94367": "UNKNOWN_BLOCKED_94367",
+    "94367": "Timofei Derepasko",
 }
+
+
+def discover_targets(
+    *,
+    world_discovery_path: Path,
+    authority_path: Path,
+    max_targets: int,
+) -> dict[str, str]:
+    authority_ids = set()
+    if authority_path.exists():
+        authority = json.loads(authority_path.read_text(encoding="utf-8"))
+        authority_ids = {
+            str(row.get("provider_player_id") or "")
+            for row in authority.get("records", []) or []
+            if isinstance(row, Mapping)
+        }
+
+    selected: dict[str, str] = {}
+    if world_discovery_path.exists():
+        discovery = json.loads(world_discovery_path.read_text(encoding="utf-8"))
+        for event in discovery.get("eligible_candidates", []) or []:
+            for identity in event.get("player_identities", []) or []:
+                if not isinstance(identity, Mapping):
+                    continue
+                provider_id = str(identity.get("provider_player_id") or "")
+                display = str(identity.get("display_name") or "").strip()
+                prefix = "rapidapi-tennis:player:"
+                if (
+                    provider_id.startswith(prefix)
+                    and provider_id not in authority_ids
+                    and display
+                ):
+                    numeric = provider_id[len(prefix):]
+                    if numeric.isdigit():
+                        selected.setdefault(numeric, display)
+        for event in discovery.get("provider_rejected", []) or []:
+            for player in event.get("players", []) or []:
+                if not isinstance(player, Mapping):
+                    continue
+                provider_id = str(player.get("provider_player_id") or "")
+                display = str(player.get("name") or "").strip()
+                prefix = "rapidapi-tennis:player:"
+                if (
+                    provider_id.startswith(prefix)
+                    and provider_id not in authority_ids
+                    and display
+                ):
+                    numeric = provider_id[len(prefix):]
+                    if numeric.isdigit():
+                        selected.setdefault(numeric, display)
+
+    if not selected:
+        selected.update(BASE_TARGETS)
+    return dict(list(sorted(selected.items()))[:max(0, int(max_targets))])
 
 
 def _rows(payload: object) -> list[Mapping[str, Any]]:
@@ -120,12 +175,33 @@ def _stat_summary(payload: object) -> dict[str, Any]:
 
 
 def main() -> None:
+    parser=argparse.ArgumentParser()
+    parser.add_argument(
+        "--world-discovery",
+        default="evidence/cor0203/runtime/MATRIX_COR0203_WORLD_DERIVED_DISCOVERY_LAST.json",
+    )
+    parser.add_argument(
+        "--authority",
+        default="evidence/cor0203/identity/MATRIX_COR0203_IDENTITY_AUTHORITY_LAST.json",
+    )
+    parser.add_argument(
+        "--out",
+        default="evidence/cor0203/rapidapi_stats_rich/MATRIX_COR0203_RAPIDAPI_PRECUT_STATS_RICH_PROBE_LAST.json",
+    )
+    parser.add_argument("--max-targets",type=int,default=32)
+    args=parser.parse_args()
+
     key=os.environ.get("RAPIDAPI_TENNIS_KEY","").strip()
     if not key:
         raise SystemExit("RAPIDAPI_TENNIS_KEY_REQUIRED")
     client=RapidApiTennisClient(key)
+    target_map=discover_targets(
+        world_discovery_path=Path(args.world_discovery),
+        authority_path=Path(args.authority),
+        max_targets=args.max_targets,
+    )
     targets=[]
-    for pid, expected in TARGETS.items():
+    for pid, expected in target_map.items():
         payload=client._get(
             f"/tennis/v2/atp/player/past-matches/{pid}",
             {
@@ -214,7 +290,9 @@ def main() -> None:
         "automatic_wagering":False,
         "real_money":"BLOCKED",
     }
-    out=Path("evidence/cor0203/rapidapi_stats_rich/MATRIX_COR0203_RAPIDAPI_PRECUT_STATS_RICH_PROBE_LAST.json")
+    report["target_selection"]="CURRENT_WORLD_PLAYERS_WITHOUT_AUTHORITY"
+    report["target_count"]=len(target_map)
+    out=Path(args.out)
     out.parent.mkdir(parents=True,exist_ok=True)
     out.write_text(json.dumps(report,indent=2,sort_keys=True,ensure_ascii=False)+"\n",encoding="utf-8")
     print(json.dumps({
