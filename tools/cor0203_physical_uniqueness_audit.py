@@ -36,6 +36,65 @@ def _prefeature_by_revision(runtime_dir: Path) -> dict[int, dict[str, Mapping[st
     return result
 
 
+
+
+def _provider_family(row: Mapping[str, Any]) -> str:
+    explicit = _norm(row.get("source_provider"))
+    if explicit:
+        return explicit
+    for key in ("canonical_source_event_id", "event_id"):
+        value = str(row.get(key) or "").strip()
+        if ":" in value:
+            return value.split(":", 1)[0].casefold()
+    return ""
+
+
+def _competition_signature(value: object) -> str:
+    token = _norm(value)
+    token = re.sub(r"\([^)]*\)", " ", token)
+    token = re.sub(r"[^a-z0-9]+", " ", token)
+    noise = {
+        "atp",
+        "challenger",
+        "men",
+        "singles",
+        "qualification",
+        "qualifying",
+    }
+    parts = [part for part in token.split() if part not in noise]
+    return " ".join(parts)
+
+
+def _secondary_cross_provider_key(row: Mapping[str, Any]) -> tuple[str, str, str] | None:
+    players = sorted(
+        {
+            _norm(row.get("alphabetical_player_a")),
+            _norm(row.get("alphabetical_player_b")),
+        }
+    )
+    if len(players) != 2 or not all(players):
+        return None
+    start = str(row.get("event_start_utc") or "").strip()
+    competition = _competition_signature(row.get("competition"))
+    if not start or not competition:
+        return None
+    return ("|".join(players), start, competition)
+
+
+def _round_identity_token(row: Mapping[str, Any]) -> str:
+    components = row.get("physical_identity_components")
+    if isinstance(components, Mapping):
+        return str(components.get("round") or "").strip().upper()
+    return str(row.get("round") or "").strip().upper().replace("_", " ")
+
+
+def _rounds_compatible(left: Mapping[str, Any], right: Mapping[str, Any]) -> bool:
+    unknown = {"", "UNKNOWN", "UNKNOWN ROUND", "N/A", "NA", "NONE"}
+    a = _round_identity_token(left)
+    b = _round_identity_token(right)
+    return a == b or a in unknown or b in unknown
+
+
 def audit_physical_uniqueness(
     *,
     runtime_dir: Path,
@@ -95,12 +154,66 @@ def audit_physical_uniqueness(
                 "physical_event_key": str(key),
                 "physical_identity_authority": identity.get("authority"),
                 "physical_identity_components": identity.get("components"),
+                "source_provider": source.get("source_provider"),
             })
 
     rows.sort(key=lambda row: (row["observation_index"], row["revision"], row["event_id"]))
-    grouped: dict[str, list[dict[str, Any]]] = defaultdict(list)
-    for row in rows:
-        grouped[row["physical_event_key"]].append(row)
+
+    # Primary identity remains the provider-aware physical_event_key. A second,
+    # conservative cross-provider gate prevents the same physical match from
+    # counting twice when providers use different tournament/player IDs.
+    parent = list(range(len(rows)))
+
+    def find(index: int) -> int:
+        while parent[index] != index:
+            parent[index] = parent[parent[index]]
+            index = parent[index]
+        return index
+
+    def union(left: int, right: int) -> None:
+        a = find(left)
+        b = find(right)
+        if a != b:
+            parent[b] = a
+
+    strict_groups: dict[str, list[int]] = defaultdict(list)
+    for index, row in enumerate(rows):
+        strict_groups[row["physical_event_key"]].append(index)
+    for members in strict_groups.values():
+        for index in members[1:]:
+            union(members[0], index)
+
+    secondary_groups: dict[tuple[str, str, str], list[int]] = defaultdict(list)
+    for index, row in enumerate(rows):
+        key = _secondary_cross_provider_key(row)
+        if key is not None:
+            secondary_groups[key].append(index)
+
+    for members in secondary_groups.values():
+        for left_pos, left_index in enumerate(members):
+            left = rows[left_index]
+            left_provider = _provider_family(left)
+            if not left_provider:
+                continue
+            for right_index in members[left_pos + 1 :]:
+                right = rows[right_index]
+                right_provider = _provider_family(right)
+                if not right_provider or left_provider == right_provider:
+                    continue
+                if _rounds_compatible(left, right):
+                    union(left_index, right_index)
+
+    grouped_indexes: dict[int, list[int]] = defaultdict(list)
+    for index in range(len(rows)):
+        grouped_indexes[find(index)].append(index)
+
+    grouped: dict[str, list[dict[str, Any]]] = {}
+    for members in grouped_indexes.values():
+        materialized = [rows[index] for index in members]
+        materialized.sort(
+            key=lambda row: (row["observation_index"], row["revision"], row["event_id"])
+        )
+        grouped[materialized[0]["physical_event_key"]] = materialized
 
     canonical: list[dict[str, Any]] = []
     duplicates: list[dict[str, Any]] = []
@@ -113,9 +226,16 @@ def audit_physical_uniqueness(
             "duplicate_alias_count": max(0, len(members) - 1),
         })
         for duplicate in members[1:]:
+            cross_provider = (
+                duplicate["physical_event_key"] != first["physical_event_key"]
+            )
             duplicates.append({
                 **duplicate,
-                "quarantine_reason": "DUPLICATE_PHYSICAL_MATCH",
+                "quarantine_reason": (
+                    "DUPLICATE_PHYSICAL_MATCH_CROSS_PROVIDER"
+                    if cross_provider
+                    else "DUPLICATE_PHYSICAL_MATCH"
+                ),
                 "canonical_event_id": first["event_id"],
                 "canonical_observation_index": first["observation_index"],
                 "canonical_physical_event_key": key,
