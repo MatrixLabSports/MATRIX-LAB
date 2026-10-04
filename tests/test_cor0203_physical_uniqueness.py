@@ -178,3 +178,95 @@ def test_uniqueness_audit_quarantines_later_alias_without_reading_outcome(tmp_pa
     assert report["quarantined_duplicates"][0]["event_id"] == "E2"
     assert report["outcomes_read"] == 0
     assert report["metrics_opened"] is False
+
+
+
+def test_uniqueness_audit_reconciles_same_match_across_providers_without_name_only_join(tmp_path):
+    runtime = tmp_path / "runtime"
+    holdout = tmp_path / "holdout"
+    runtime.mkdir()
+    holdout.mkdir()
+
+    rapid = {
+        "event_id": "RAPID",
+        "canonical_source_event_id": "rapidapi-tennis:match:3129",
+        "competition_id": "rapidapi-tennis:tournament:22097",
+        "competition": "Wuning 3 Challenger",
+        "round": "Q3",
+        "event_start_utc": "2026-10-05T03:30:00+00:00",
+        "source_provider": "rapidapi_tennis",
+        "player_identities": [
+            {"display_name": "Maxim Zhukov", "provider_player_id": "rapidapi-tennis:player:56577"},
+            {"display_name": "Ryan Seggerman", "provider_player_id": "rapidapi-tennis:player:90178"},
+        ],
+        "players": ["Maxim Zhukov", "Ryan Seggerman"],
+    }
+    api_tennis = {
+        "event_id": "API",
+        "canonical_source_event_id": "api-tennis:event:12168175",
+        "competition_id": "api-tennis:tournament:14335",
+        "competition": "Wuning 3 (China) - Qualification",
+        "round": "UNKNOWN_ROUND",
+        "event_start_utc": "2026-10-05T03:30:00+00:00",
+        "source_provider": "api_tennis",
+        "player_identities": [
+            {"display_name": "Maxim Zhukov", "provider_player_id": "api-tennis:player:2209"},
+            {"display_name": "Ryan Seggerman", "provider_player_id": "api-tennis:player:37911"},
+        ],
+        "players": ["Maxim Zhukov", "Ryan Seggerman"],
+    }
+    _write(
+        runtime / "MATRIX_COR0203_PREFEATURE_REGISTRY_R1.json",
+        {"events": [rapid, api_tennis]},
+    )
+    _write(
+        holdout / "MATRIX_COR0203_HOLDOUT_BATCH_R1.json",
+        {
+            "observations": [
+                {
+                    "event_id": "RAPID",
+                    "canonical_source_event_id": "rapidapi-tennis:match:3129",
+                    "observation_index": 1,
+                    "freeze_at_utc": "2026-10-04T11:11:42+00:00",
+                    "event_start_utc": "2026-10-05T03:30:00+00:00",
+                    "competition": "Wuning 3 Challenger",
+                    "round": "Q3",
+                    "alphabetical_player_a": "Maxim Zhukov",
+                    "alphabetical_player_b": "Ryan Seggerman",
+                    "outcome": None,
+                },
+                {
+                    "event_id": "API",
+                    "canonical_source_event_id": "api-tennis:event:12168175",
+                    "observation_index": 2,
+                    "freeze_at_utc": "2026-10-04T11:11:43+00:00",
+                    "event_start_utc": "2026-10-05T03:30:00+00:00",
+                    "competition": "Wuning 3 (China) - Qualification",
+                    "round": "UNKNOWN_ROUND",
+                    "alphabetical_player_a": "Maxim Zhukov",
+                    "alphabetical_player_b": "Ryan Seggerman",
+                    "outcome": None,
+                },
+            ]
+        },
+    )
+
+    report = audit_physical_uniqueness(
+        runtime_dir=runtime,
+        holdout_dir=holdout,
+        integrity={
+            "holdout_id": "A22_POST_AUDIT_VIRGIN_HOLDOUT_V1",
+            "result": "PASS",
+            "admissible_batch_revisions": [1],
+            "admissible_observations": 2,
+        },
+    )
+    assert report["result"] == "PASS"
+    assert report["physical_frozen_rows"] == 2
+    assert report["unique_calibration_observations"] == 1
+    assert report["duplicate_observations_quarantined"] == 1
+    assert report["quarantined_duplicates"][0]["quarantine_reason"] == (
+        "DUPLICATE_PHYSICAL_MATCH_CROSS_PROVIDER"
+    )
+    assert report["outcomes_read"] == 0
+    assert report["metrics_opened"] is False
