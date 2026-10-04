@@ -1,41 +1,53 @@
 {
-  "cell_count": 245,
+  "cell_count": 264,
   "cells": [
     {
       "cell_used_to_generate_probability": false,
       "classification_reason": "BOTH_PROPER_SCORES_BETTER_AND_95CI_FAVORABLE",
       "competition_id": "ALL",
       "competition_name": "ALL_COMPETITIONS",
-      "market": "OVER_2_5",
+      "market": "1X2",
       "metrics": {
-        "challenger_brier": 0.23869908888600422,
-        "challenger_log_loss": 0.6704495210027739,
-        "delta_brier": -0.0032709822696918855,
-        "delta_log_loss": -0.007836915915277576,
-        "n": 641,
+        "challenger_accuracy": 0.5201072386058981,
+        "challenger_brier": 0.5973733699064954,
+        "challenger_log_loss": 1.0032663066078025,
+        "delta_accuracy": 0.014745308310991967,
+        "delta_brier": -0.015648982743236006,
+        "delta_log_loss": -0.02046149673229536,
+        "n": 746,
+        "paired_accuracy": {
+          "ci95": [
+            -0.008892966015490993,
+            0.038383582637474906
+          ],
+          "mean": 0.014745308310991957,
+          "n": 746,
+          "se": 0.012060344044123953
+        },
         "paired_brier": {
           "ci95": [
-            -0.00626252128873694,
-            -0.00027944325064676364
+            -0.026692581043134208,
+            -0.0046053844433374715
           ],
-          "mean": -0.0032709822696918517,
-          "n": 641,
-          "se": 0.001526295417880147
+          "mean": -0.01564898274323584,
+          "n": 746,
+          "se": 0.0056344889285195755
         },
         "paired_log_loss": {
           "ci95": [
-            -0.014695380533736244,
-            -0.0009784512968182063
+            -0.03975237724222187,
+            -0.0011706162223706525
           ],
-          "mean": -0.007836915915277225,
-          "n": 641,
-          "se": 0.003499216642070928
+          "mean": -0.020461496732296264,
+          "n": 746,
+          "se": 0.009842285974451843
         },
-        "reference_brier": 0.2419700711556961,
-        "reference_log_loss": 0.6782864369180515
+        "reference_accuracy": 0.5053619302949062,
+        "reference_brier": 0.6130223526497314,
+        "reference_log_loss": 1.0237278033400978
       },
       "model_mutation_allowed": false,
-      "prospective_n": 641,
+      "prospective_n": 746,
       "scope": "GLOBAL_MARKET",
       "season": "MIXED",
       "sport": "FOOTBALL",
@@ -43,55 +55,43 @@
     },
     {
       "cell_used_to_generate_probability": false,
-      "classification_reason": "TRACKING_SAMPLE_WITHOUT_DECISIVE_STRONG_OR_NO_GO_EVIDENCE",
+      "classification_reason": "BOTH_PROPER_SCORES_BETTER_AND_95CI_FAVORABLE",
       "competition_id": "ALL",
       "competition_name": "ALL_COMPETITIONS",
-      "market": "1X2",
+      "market": "OVER_2_5",
       "metrics": {
-        "challenger_accuracy": 0.5257410296411856,
-        "challenger_brier": 0.5943302707556894,
-        "challenger_log_loss": 0.9982575834093517,
-        "delta_accuracy": 0.010920436817472678,
-        "delta_brier": -0.011452167128065405,
-        "delta_log_loss": -0.01335261511427177,
-        "n": 641,
-        "paired_accuracy": {
-          "ci95": [
-            -0.012964807896542547,
-            0.03480568153148794
-          ],
-          "mean": 0.0109204368174727,
-          "n": 641,
-          "se": 0.01218634934388533
-        },
+        "challenger_brier": 0.24235331538127128,
+        "challenger_log_loss": 0.6783338826258943,
+        "delta_brier": -0.0034338611857357426,
+        "delta_log_loss": -0.00837942319800089,
+        "n": 746,
         "paired_brier": {
           "ci95": [
-            -0.022739893281401607,
-            -0.00016444097472917765
+            -0.006334049230674234,
+            -0.0005336731407976116
           ],
-          "mean": -0.011452167128065393,
-          "n": 641,
-          "se": 0.005759043955783783
+          "mean": -0.0034338611857359226,
+          "n": 746,
+          "se": 0.0014796877780297506
         },
         "paired_log_loss": {
           "ci95": [
-            -0.033889021123628835,
-            0.007183790895085321
+            -0.015008535546330935,
+            -0.0017503108496693615
           ],
-          "mean": -0.013352615114271757,
-          "n": 641,
-          "se": 0.010477758168039326
+          "mean": -0.008379423198000148,
+          "n": 746,
+          "se": 0.003382200177719789
         },
-        "reference_accuracy": 0.514820592823713,
-        "reference_brier": 0.6057824378837549,
-        "reference_log_loss": 1.0116101985236234
+        "reference_brier": 0.24578717656700702,
+        "reference_log_loss": 0.6867133058238952
       },
       "model_mutation_allowed": false,
-      "prospective_n": 641,
+      "prospective_n": 746,
       "scope": "GLOBAL_MARKET",
       "season": "MIXED",
       "sport": "FOOTBALL",
-      "strength_class": "DEVELOPING"
+      "strength_class": "STRONG"
     },
     {
       "cell_used_to_generate_probability": false,
@@ -264,51 +264,145 @@
     {
       "cell_used_to_generate_probability": false,
       "classification_reason": "TRACKING_SAMPLE_WITHOUT_DECISIVE_STRONG_OR_NO_GO_EVIDENCE",
+      "competition_id": "10",
+      "competition_name": "Friendlies",
+      "league_radar_context": null,
+      "market": "1X2",
+      "metrics": {
+        "challenger_accuracy": 0.4375,
+        "challenger_brier": 0.6486395485044274,
+        "challenger_log_loss": 1.0554639012140685,
+        "delta_accuracy": -0.0625,
+        "delta_brier": 0.02485692938187789,
+        "delta_log_loss": 0.01879529730871199,
+        "n": 16,
+        "paired_accuracy": {
+          "ci95": [
+            -0.185,
+            0.06
+          ],
+          "mean": -0.0625,
+          "n": 16,
+          "se": 0.0625
+        },
+        "paired_brier": {
+          "ci95": [
+            -0.05738703655690879,
+            0.10710089532066458
+          ],
+          "mean": 0.024856929381877897,
+          "n": 16,
+          "se": 0.04196120711162586
+        },
+        "paired_log_loss": {
+          "ci95": [
+            -0.10530566173111994,
+            0.14289625634854392
+          ],
+          "mean": 0.018795297308711982,
+          "n": 16,
+          "se": 0.06331681583664894
+        },
+        "reference_accuracy": 0.5,
+        "reference_brier": 0.6237826191225495,
+        "reference_log_loss": 1.0366686039053565
+      },
+      "model_mutation_allowed": false,
+      "prospective_n": 16,
+      "scope": "COMPETITION",
+      "season": 2026,
+      "sport": "FOOTBALL",
+      "strength_class": "DEVELOPING"
+    },
+    {
+      "cell_used_to_generate_probability": false,
+      "classification_reason": "TRACKING_SAMPLE_WITHOUT_DECISIVE_STRONG_OR_NO_GO_EVIDENCE",
+      "competition_id": "10",
+      "competition_name": "Friendlies",
+      "league_radar_context": null,
+      "market": "OVER_2_5",
+      "metrics": {
+        "challenger_brier": 0.24536338704933303,
+        "challenger_log_loss": 0.6833467233383166,
+        "delta_brier": -0.0003129790795361742,
+        "delta_log_loss": 0.0005003443217059811,
+        "n": 16,
+        "paired_brier": {
+          "ci95": [
+            -0.014635975939771777,
+            0.014010017780699404
+          ],
+          "mean": -0.00031297907953618635,
+          "n": 16,
+          "se": 0.007307651459303873
+        },
+        "paired_log_loss": {
+          "ci95": [
+            -0.0294187492407938,
+            0.030419437884205733
+          ],
+          "mean": 0.0005003443217059672,
+          "n": 16,
+          "se": 0.015264843654336616
+        },
+        "reference_brier": 0.2456763661288692,
+        "reference_log_loss": 0.6828463790166106
+      },
+      "model_mutation_allowed": false,
+      "prospective_n": 16,
+      "scope": "COMPETITION",
+      "season": 2026,
+      "sport": "FOOTBALL",
+      "strength_class": "DEVELOPING"
+    },
+    {
+      "cell_used_to_generate_probability": false,
+      "classification_reason": "TRACKING_SAMPLE_WITHOUT_DECISIVE_STRONG_OR_NO_GO_EVIDENCE",
       "competition_id": "667",
       "competition_name": "Friendlies Clubs",
       "league_radar_context": null,
       "market": "1X2",
       "metrics": {
-        "challenger_accuracy": 0.49514563106796117,
-        "challenger_brier": 0.611020994600226,
-        "challenger_log_loss": 1.0327484597822418,
-        "delta_accuracy": -0.03883495145631066,
-        "delta_brier": -0.00301578063375485,
-        "delta_log_loss": 0.008812686785488522,
-        "n": 103,
+        "challenger_accuracy": 0.5185185185185185,
+        "challenger_brier": 0.5988642129887237,
+        "challenger_log_loss": 1.0141470707067735,
+        "delta_accuracy": -0.02777777777777779,
+        "delta_brier": -0.00974792535095892,
+        "delta_log_loss": -0.0014654480813878212,
+        "n": 108,
         "paired_accuracy": {
           "ci95": [
-            -0.10464597966322606,
-            0.026976076750604705
+            -0.09330587101002243,
+            0.03775031545446687
           ],
-          "mean": -0.038834951456310676,
-          "n": 103,
-          "se": 0.03357705520760989
+          "mean": -0.027777777777777776,
+          "n": 108,
+          "se": 0.03343270062869625
         },
         "paired_brier": {
           "ci95": [
-            -0.02984006068586592,
-            0.02380849941835609
+            -0.03598033429237347,
+            0.0164844835904557
           ],
-          "mean": -0.003015780633754917,
-          "n": 103,
-          "se": 0.01368585716944439
+          "mean": -0.009747925350958883,
+          "n": 108,
+          "se": 0.013383882112966625
         },
         "paired_log_loss": {
           "ci95": [
-            -0.0389497038810957,
-            0.05657507745207123
+            -0.04786653029451472,
+            0.04493563413173807
           ],
-          "mean": 0.008812686785487764,
-          "n": 103,
-          "se": 0.024368566666624215
+          "mean": -0.0014654480813883276,
+          "n": 108,
+          "se": 0.023674021537309384
         },
-        "reference_accuracy": 0.5339805825242718,
-        "reference_brier": 0.6140367752339808,
-        "reference_log_loss": 1.0239357729967533
+        "reference_accuracy": 0.5462962962962963,
+        "reference_brier": 0.6086121383396826,
+        "reference_log_loss": 1.0156125187881613
       },
       "model_mutation_allowed": false,
-      "prospective_n": 103,
+      "prospective_n": 108,
       "scope": "COMPETITION",
       "season": 2026,
       "sport": "FOOTBALL",
@@ -322,34 +416,34 @@
       "league_radar_context": null,
       "market": "OVER_2_5",
       "metrics": {
-        "challenger_brier": 0.21609960167792522,
-        "challenger_log_loss": 0.6227625444087345,
-        "delta_brier": -0.00855164251045129,
-        "delta_log_loss": -0.017713486263149836,
-        "n": 103,
+        "challenger_brier": 0.21754717691493727,
+        "challenger_log_loss": 0.6261229888873489,
+        "delta_brier": -0.008684994565765325,
+        "delta_log_loss": -0.018458426610347356,
+        "n": 108,
         "paired_brier": {
           "ci95": [
-            -0.017117664468044195,
-            1.4379447141468077e-05
+            -0.017238930493687014,
+            -0.00013105863784383665
           ],
-          "mean": -0.008551642510451363,
-          "n": 103,
-          "se": 0.004370419366118792
+          "mean": -0.008684994565765426,
+          "n": 108,
+          "se": 0.0043642530244497905
         },
         "paired_log_loss": {
           "ci95": [
-            -0.03811679381531595,
-            0.002689821289016202
+            -0.038773927457934815,
+            0.0018570742372402797
           ],
-          "mean": -0.017713486263149874,
-          "n": 103,
-          "se": 0.010409850791921468
+          "mean": -0.01845842661034727,
+          "n": 108,
+          "se": 0.01036505145285079
         },
-        "reference_brier": 0.2246512441883765,
-        "reference_log_loss": 0.6404760306718843
+        "reference_brier": 0.2262321714807026,
+        "reference_log_loss": 0.6445814154976962
       },
       "model_mutation_allowed": false,
-      "prospective_n": 103,
+      "prospective_n": 108,
       "scope": "COMPETITION",
       "season": 2026,
       "sport": "FOOTBALL",
@@ -551,46 +645,46 @@
       "league_radar_context": null,
       "market": "1X2",
       "metrics": {
-        "challenger_accuracy": 0.45454545454545453,
-        "challenger_brier": 0.6289743369007287,
-        "challenger_log_loss": 1.0592984804675663,
-        "delta_accuracy": 0.0,
-        "delta_brier": 0.014284989729444808,
-        "delta_log_loss": 0.03150799144441496,
-        "n": 22,
+        "challenger_accuracy": 0.4,
+        "challenger_brier": 0.6508348770126977,
+        "challenger_log_loss": 1.088547508639173,
+        "delta_accuracy": -0.03999999999999998,
+        "delta_brier": 0.021551596326440436,
+        "delta_log_loss": 0.03980703880538017,
+        "n": 25,
         "paired_accuracy": {
           "ci95": [
-            -0.12895853221211473,
-            0.12895853221211473
+            -0.17766587570394238,
+            0.09766587570394236
           ],
-          "mean": 0.0,
-          "n": 22,
-          "se": 0.0657951694959769
+          "mean": -0.04,
+          "n": 25,
+          "se": 0.07023769168568489
         },
         "paired_brier": {
           "ci95": [
-            -0.04035809999695631,
-            0.06892807945584614
+            -0.027044255169994747,
+            0.07014744782287581
           ],
-          "mean": 0.014284989729444919,
-          "n": 22,
-          "se": 0.0278791274114292
+          "mean": 0.02155159632644053,
+          "n": 25,
+          "se": 0.02479380178389555
         },
         "paired_log_loss": {
           "ci95": [
-            -0.056415326427264455,
-            0.11943130931609508
+            -0.037878961797945754,
+            0.11749303940870698
           ],
-          "mean": 0.031507991444415316,
-          "n": 22,
-          "se": 0.04485883564881621
+          "mean": 0.03980703880538061,
+          "n": 25,
+          "se": 0.03963571459353386
         },
-        "reference_accuracy": 0.45454545454545453,
-        "reference_brier": 0.6146893471712839,
-        "reference_log_loss": 1.0277904890231513
+        "reference_accuracy": 0.44,
+        "reference_brier": 0.6292832806862573,
+        "reference_log_loss": 1.0487404698337928
       },
       "model_mutation_allowed": false,
-      "prospective_n": 22,
+      "prospective_n": 25,
       "scope": "COMPETITION",
       "season": 2026,
       "sport": "FOOTBALL",
@@ -604,34 +698,34 @@
       "league_radar_context": null,
       "market": "OVER_2_5",
       "metrics": {
-        "challenger_brier": 0.24786497139646882,
-        "challenger_log_loss": 0.6889608240732938,
-        "delta_brier": -0.0005292899695804043,
-        "delta_log_loss": -0.0019737966251990313,
-        "n": 22,
+        "challenger_brier": 0.24658472269845716,
+        "challenger_log_loss": 0.6863791555511538,
+        "delta_brier": -0.0019108088422877534,
+        "delta_log_loss": -0.004697650030571543,
+        "n": 25,
         "paired_brier": {
           "ci95": [
-            -0.023505548157231188,
-            0.022446968218070303
+            -0.02259168127879271,
+            0.018770063594217113
           ],
-          "mean": -0.0005292899695804415,
-          "n": 22,
-          "se": 0.011722580707985075
+          "mean": -0.0019108088422877983,
+          "n": 25,
+          "se": 0.010551465528829037
         },
         "paired_log_loss": {
           "ci95": [
-            -0.05073670780620731,
-            0.04678911455580937
+            -0.048500384997734,
+            0.03910508493659126
           ],
-          "mean": -0.0019737966251989684,
-          "n": 22,
-          "se": 0.02487903631684099
+          "mean": -0.004697650030571368,
+          "n": 25,
+          "se": 0.022348334166919708
         },
-        "reference_brier": 0.24839426136604922,
-        "reference_log_loss": 0.6909346206984929
+        "reference_brier": 0.2484955315407449,
+        "reference_log_loss": 0.6910768055817254
       },
       "model_mutation_allowed": false,
-      "prospective_n": 22,
+      "prospective_n": 25,
       "scope": "COMPETITION",
       "season": 2026,
       "sport": "FOOTBALL",
@@ -1337,46 +1431,46 @@
       "league_radar_context": null,
       "market": "1X2",
       "metrics": {
-        "challenger_accuracy": 0.5,
-        "challenger_brier": 0.6089195668550983,
-        "challenger_log_loss": 0.979786385362428,
+        "challenger_accuracy": 0.3333333333333333,
+        "challenger_brier": 0.8377574716914852,
+        "challenger_log_loss": 1.357053168936645,
         "delta_accuracy": 0.0,
-        "delta_brier": -0.008361321944144517,
-        "delta_log_loss": -0.042964118894388115,
-        "n": 2,
+        "delta_brier": 0.053303200727475075,
+        "delta_log_loss": 0.10577088119337263,
+        "n": 6,
         "paired_accuracy": {
           "ci95": [
             0.0,
             0.0
           ],
           "mean": 0.0,
-          "n": 2,
+          "n": 6,
           "se": 0.0
         },
         "paired_brier": {
           "ci95": [
-            -0.06327112937185073,
-            0.046548485483561795
+            -0.017610948601340985,
+            0.12421735005629089
           ],
-          "mean": -0.008361321944144462,
-          "n": 2,
-          "se": 0.028015207871278702
+          "mean": 0.05330320072747496,
+          "n": 6,
+          "se": 0.03618068843306936
         },
         "paired_log_loss": {
           "ci95": [
-            -0.0599227184944713,
-            -0.026005519294304877
+            -0.03633020551597972,
+            0.2478719679027247
           ],
-          "mean": -0.04296411889438809,
-          "n": 2,
-          "se": 0.008652346734736333
+          "mean": 0.10577088119337248,
+          "n": 6,
+          "se": 0.07250055444354704
         },
-        "reference_accuracy": 0.5,
-        "reference_brier": 0.6172808887992428,
-        "reference_log_loss": 1.0227505042568161
+        "reference_accuracy": 0.3333333333333333,
+        "reference_brier": 0.7844542709640101,
+        "reference_log_loss": 1.2512822877432723
       },
       "model_mutation_allowed": false,
-      "prospective_n": 2,
+      "prospective_n": 6,
       "scope": "COMPETITION",
       "season": 2026,
       "sport": "FOOTBALL",
@@ -1390,34 +1484,34 @@
       "league_radar_context": null,
       "market": "OVER_2_5",
       "metrics": {
-        "challenger_brier": 0.36973397909324657,
-        "challenger_log_loss": 0.9374307923342226,
-        "delta_brier": -0.006788684307106219,
-        "delta_log_loss": -0.01580922340222002,
-        "n": 2,
+        "challenger_brier": 0.3267915680000934,
+        "challenger_log_loss": 0.851958842803402,
+        "delta_brier": -0.02328692450065506,
+        "delta_log_loss": -0.05102430628161514,
+        "n": 6,
         "paired_brier": {
           "ci95": [
-            -0.04844590761785248,
-            0.034868539003640155
+            -0.04211470212382297,
+            -0.004459146877487125
           ],
-          "mean": -0.006788684307106163,
-          "n": 2,
-          "se": 0.021253685362625674
+          "mean": -0.02328692450065505,
+          "n": 6,
+          "se": 0.009606008991412207
         },
         "paired_log_loss": {
           "ci95": [
-            -0.10480918774727793,
-            0.0731907409428379
+            -0.09209565024848315,
+            -0.009952962314747169
           ],
-          "mean": -0.01580922340222002,
-          "n": 2,
-          "se": 0.04540814507400914
+          "mean": -0.05102430628161516,
+          "n": 6,
+          "se": 0.02095476733003469
         },
-        "reference_brier": 0.3765226634003528,
-        "reference_log_loss": 0.9532400157364426
+        "reference_brier": 0.35007849250074846,
+        "reference_log_loss": 0.9029831490850171
       },
       "model_mutation_allowed": false,
-      "prospective_n": 2,
+      "prospective_n": 6,
       "scope": "COMPETITION",
       "season": 2026,
       "sport": "FOOTBALL",
@@ -2708,100 +2802,6 @@
       "market": "OVER_2_5",
       "model_mutation_allowed": false,
       "prospective_n": 0,
-      "scope": "COMPETITION",
-      "season": 2026,
-      "sport": "FOOTBALL",
-      "strength_class": "INSUFFICIENT_DATA"
-    },
-    {
-      "cell_used_to_generate_probability": false,
-      "classification_reason": "N_BELOW_15",
-      "competition_id": "10",
-      "competition_name": "Friendlies",
-      "league_radar_context": null,
-      "market": "1X2",
-      "metrics": {
-        "challenger_accuracy": 0.42857142857142855,
-        "challenger_brier": 0.6491021909810216,
-        "challenger_log_loss": 1.0571252617138704,
-        "delta_accuracy": -0.07142857142857145,
-        "delta_brier": 0.03759626572689678,
-        "delta_log_loss": 0.04459149624947978,
-        "n": 14,
-        "paired_accuracy": {
-          "ci95": [
-            -0.2114285714285714,
-            0.06857142857142856
-          ],
-          "mean": -0.07142857142857142,
-          "n": 14,
-          "se": 0.07142857142857142
-        },
-        "paired_brier": {
-          "ci95": [
-            -0.051417142969027205,
-            0.12660967442282106
-          ],
-          "mean": 0.037596265726896935,
-          "n": 14,
-          "se": 0.045415004436695994
-        },
-        "paired_log_loss": {
-          "ci95": [
-            -0.08408884148427233,
-            0.17327183398323198
-          ],
-          "mean": 0.04459149624947982,
-          "n": 14,
-          "se": 0.06565323353762866
-        },
-        "reference_accuracy": 0.5,
-        "reference_brier": 0.6115059252541248,
-        "reference_log_loss": 1.0125337654643907
-      },
-      "model_mutation_allowed": false,
-      "prospective_n": 14,
-      "scope": "COMPETITION",
-      "season": 2026,
-      "sport": "FOOTBALL",
-      "strength_class": "INSUFFICIENT_DATA"
-    },
-    {
-      "cell_used_to_generate_probability": false,
-      "classification_reason": "N_BELOW_15",
-      "competition_id": "10",
-      "competition_name": "Friendlies",
-      "league_radar_context": null,
-      "market": "OVER_2_5",
-      "metrics": {
-        "challenger_brier": 0.24113424994771004,
-        "challenger_log_loss": 0.6748073508985152,
-        "delta_brier": 0.0017475122936106147,
-        "delta_log_loss": 0.004808666994567057,
-        "n": 14,
-        "paired_brier": {
-          "ci95": [
-            -0.01413782793817932,
-            0.017632852525400505
-          ],
-          "mean": 0.0017475122936105928,
-          "n": 14,
-          "se": 0.008104765424382609
-        },
-        "paired_log_loss": {
-          "ci95": [
-            -0.028410845879909934,
-            0.03802817986904405
-          ],
-          "mean": 0.004808666994567057,
-          "n": 14,
-          "se": 0.01694873105840663
-        },
-        "reference_brier": 0.23938673765409943,
-        "reference_log_loss": 0.6699986839039481
-      },
-      "model_mutation_allowed": false,
-      "prospective_n": 14,
       "scope": "COMPETITION",
       "season": 2026,
       "sport": "FOOTBALL",
@@ -5491,6 +5491,100 @@
     {
       "cell_used_to_generate_probability": false,
       "classification_reason": "N_BELOW_15",
+      "competition_id": "399",
+      "competition_name": "NPFL",
+      "league_radar_context": null,
+      "market": "1X2",
+      "metrics": {
+        "challenger_accuracy": 0.75,
+        "challenger_brier": 0.4166852992309047,
+        "challenger_log_loss": 0.7333752705375001,
+        "delta_accuracy": 0.25,
+        "delta_brier": -0.2350055195853541,
+        "delta_log_loss": -0.3466118824831015,
+        "n": 8,
+        "paired_accuracy": {
+          "ci95": [
+            -0.07078029864690877,
+            0.5707802986469088
+          ],
+          "mean": 0.25,
+          "n": 8,
+          "se": 0.16366341767699427
+        },
+        "paired_brier": {
+          "ci95": [
+            -0.4005413052192399,
+            -0.06946973395146841
+          ],
+          "mean": -0.23500551958535415,
+          "n": 8,
+          "se": 0.0844570334866764
+        },
+        "paired_log_loss": {
+          "ci95": [
+            -0.5540177050940238,
+            -0.1392060598721794
+          ],
+          "mean": -0.3466118824831016,
+          "n": 8,
+          "se": 0.10581929725047051
+        },
+        "reference_accuracy": 0.5,
+        "reference_brier": 0.6516908188162588,
+        "reference_log_loss": 1.0799871530206016
+      },
+      "model_mutation_allowed": false,
+      "prospective_n": 8,
+      "scope": "COMPETITION",
+      "season": 2027,
+      "sport": "FOOTBALL",
+      "strength_class": "INSUFFICIENT_DATA"
+    },
+    {
+      "cell_used_to_generate_probability": false,
+      "classification_reason": "N_BELOW_15",
+      "competition_id": "399",
+      "competition_name": "NPFL",
+      "league_radar_context": null,
+      "market": "OVER_2_5",
+      "metrics": {
+        "challenger_brier": 0.21551591762814892,
+        "challenger_log_loss": 0.6230127497063359,
+        "delta_brier": 0.0033858568173668335,
+        "delta_log_loss": 0.008144740037504317,
+        "n": 8,
+        "paired_brier": {
+          "ci95": [
+            -0.012595647776853323,
+            0.019367361411587018
+          ],
+          "mean": 0.0033858568173668474,
+          "n": 8,
+          "se": 0.008153828874602127
+        },
+        "paired_log_loss": {
+          "ci95": [
+            -0.024919527690020662,
+            0.041209007765029365
+          ],
+          "mean": 0.008144740037504351,
+          "n": 8,
+          "se": 0.01686952435077807
+        },
+        "reference_brier": 0.2121300608107821,
+        "reference_log_loss": 0.6148680096688316
+      },
+      "model_mutation_allowed": false,
+      "prospective_n": 8,
+      "scope": "COMPETITION",
+      "season": 2027,
+      "sport": "FOOTBALL",
+      "strength_class": "INSUFFICIENT_DATA"
+    },
+    {
+      "cell_used_to_generate_probability": false,
+      "classification_reason": "N_BELOW_15",
       "competition_id": "67",
       "competition_name": "National 2 - Group A",
       "league_radar_context": null,
@@ -6395,6 +6489,100 @@
     {
       "cell_used_to_generate_probability": false,
       "classification_reason": "N_BELOW_15",
+      "competition_id": "746",
+      "competition_name": "Oberliga - Mittelrhein",
+      "league_radar_context": null,
+      "market": "1X2",
+      "metrics": {
+        "challenger_accuracy": 0.6666666666666666,
+        "challenger_brier": 0.5457418842088076,
+        "challenger_log_loss": 0.9023593382812103,
+        "delta_accuracy": 0.16666666666666663,
+        "delta_brier": -0.04552669870514792,
+        "delta_log_loss": -0.05760931374317446,
+        "n": 6,
+        "paired_accuracy": {
+          "ci95": [
+            -0.6200508458144302,
+            0.9533841791477634
+          ],
+          "mean": 0.16666666666666666,
+          "n": 6,
+          "se": 0.40138648595974324
+        },
+        "paired_brier": {
+          "ci95": [
+            -0.41492657773239594,
+            0.3238731803221002
+          ],
+          "mean": -0.04552669870514784,
+          "n": 6,
+          "se": 0.18846932603431024
+        },
+        "paired_log_loss": {
+          "ci95": [
+            -0.5373766202521599,
+            0.42215799276581095
+          ],
+          "mean": -0.05760931374317446,
+          "n": 6,
+          "se": 0.24477923801478849
+        },
+        "reference_accuracy": 0.5,
+        "reference_brier": 0.5912685829139556,
+        "reference_log_loss": 0.9599686520243847
+      },
+      "model_mutation_allowed": false,
+      "prospective_n": 6,
+      "scope": "COMPETITION",
+      "season": 2026,
+      "sport": "FOOTBALL",
+      "strength_class": "INSUFFICIENT_DATA"
+    },
+    {
+      "cell_used_to_generate_probability": false,
+      "classification_reason": "N_BELOW_15",
+      "competition_id": "746",
+      "competition_name": "Oberliga - Mittelrhein",
+      "league_radar_context": null,
+      "market": "OVER_2_5",
+      "metrics": {
+        "challenger_brier": 0.40083125075957526,
+        "challenger_log_loss": 1.0515161954998085,
+        "delta_brier": 0.04439229204922923,
+        "delta_log_loss": 0.09478423819625925,
+        "n": 6,
+        "paired_brier": {
+          "ci95": [
+            -0.01411853159646198,
+            0.10290311569492035
+          ],
+          "mean": 0.04439229204922918,
+          "n": 6,
+          "se": 0.029852461043719983
+        },
+        "paired_log_loss": {
+          "ci95": [
+            -0.04021698902644116,
+            0.22978546541895978
+          ],
+          "mean": 0.09478423819625931,
+          "n": 6,
+          "se": 0.06887817715443902
+        },
+        "reference_brier": 0.35643895871034603,
+        "reference_log_loss": 0.9567319573035492
+      },
+      "model_mutation_allowed": false,
+      "prospective_n": 6,
+      "scope": "COMPETITION",
+      "season": 2026,
+      "sport": "FOOTBALL",
+      "strength_class": "INSUFFICIENT_DATA"
+    },
+    {
+      "cell_used_to_generate_probability": false,
+      "classification_reason": "N_BELOW_15",
       "competition_id": "751",
       "competition_name": "Oberliga - Niederrhein",
       "league_radar_context": null,
@@ -6630,7 +6818,65 @@
     },
     {
       "cell_used_to_generate_probability": false,
-      "classification_reason": "RADAR_PRIORITY_WITHOUT_15_PROSPECTIVE_SETTLED_OBSERVATIONS",
+      "classification_reason": "N_BELOW_15",
+      "competition_id": "747",
+      "competition_name": "Oberliga - Westfalen",
+      "league_radar_context": {
+        "league_over_2_5_pct": 65.75342465753425,
+        "league_sample_n": 73,
+        "p_matrix_adjustment": 0.0,
+        "radar_bucket": "PRIORITY_A_PLUS"
+      },
+      "market": "1X2",
+      "metrics": {
+        "challenger_accuracy": 0.5714285714285714,
+        "challenger_brier": 0.5357007909596323,
+        "challenger_log_loss": 0.8984093965381837,
+        "delta_accuracy": -0.1428571428571429,
+        "delta_brier": 0.05116694989057413,
+        "delta_log_loss": 0.057066161382011926,
+        "n": 7,
+        "paired_accuracy": {
+          "ci95": [
+            -0.6540648631952979,
+            0.36835057748101213
+          ],
+          "mean": -0.14285714285714285,
+          "n": 7,
+          "se": 0.2608202654786505
+        },
+        "paired_brier": {
+          "ci95": [
+            -0.07731658148743617,
+            0.17965048126858432
+          ],
+          "mean": 0.051166949890574076,
+          "n": 7,
+          "se": 0.06555282213163788
+        },
+        "paired_log_loss": {
+          "ci95": [
+            -0.11812810136589712,
+            0.23226042412992065
+          ],
+          "mean": 0.057066161382011774,
+          "n": 7,
+          "se": 0.08938482793260658
+        },
+        "reference_accuracy": 0.7142857142857143,
+        "reference_brier": 0.48453384106905817,
+        "reference_log_loss": 0.8413432351561718
+      },
+      "model_mutation_allowed": false,
+      "prospective_n": 7,
+      "scope": "COMPETITION",
+      "season": 2026,
+      "sport": "FOOTBALL",
+      "strength_class": "INSUFFICIENT_DATA"
+    },
+    {
+      "cell_used_to_generate_probability": false,
+      "classification_reason": "N_BELOW_15",
       "competition_id": "747",
       "competition_name": "Oberliga - Westfalen",
       "league_radar_context": {
@@ -6640,8 +6886,35 @@
         "radar_bucket": "PRIORITY_A_PLUS"
       },
       "market": "OVER_2_5",
+      "metrics": {
+        "challenger_brier": 0.13711691342438528,
+        "challenger_log_loss": 0.45484407465880317,
+        "delta_brier": 0.014446213030139071,
+        "delta_log_loss": 0.03579953091558613,
+        "n": 7,
+        "paired_brier": {
+          "ci95": [
+            -0.0011847090109283077,
+            0.03007713507120647
+          ],
+          "mean": 0.01444621303013908,
+          "n": 7,
+          "se": 0.007974960225034381
+        },
+        "paired_log_loss": {
+          "ci95": [
+            0.0010918441993568173,
+            0.07050721763181556
+          ],
+          "mean": 0.035799530915586186,
+          "n": 7,
+          "se": 0.017708003426647637
+        },
+        "reference_brier": 0.12267070039424621,
+        "reference_log_loss": 0.41904454374321704
+      },
       "model_mutation_allowed": false,
-      "prospective_n": 0,
+      "prospective_n": 7,
       "scope": "COMPETITION",
       "season": 2026,
       "sport": "FOOTBALL",
@@ -8540,46 +8813,46 @@
       "league_radar_context": null,
       "market": "1X2",
       "metrics": {
-        "challenger_accuracy": 0.6,
-        "challenger_brier": 0.5555304985193017,
-        "challenger_log_loss": 0.9109240232363958,
+        "challenger_accuracy": 0.6666666666666666,
+        "challenger_brier": 0.525915807426342,
+        "challenger_log_loss": 0.8732228515708834,
         "delta_accuracy": 0.0,
-        "delta_brier": 0.00458212665958091,
-        "delta_log_loss": -0.017539130443310014,
-        "n": 5,
+        "delta_brier": -0.026780865544212218,
+        "delta_log_loss": -0.056885201961239584,
+        "n": 6,
         "paired_accuracy": {
           "ci95": [
             0.0,
             0.0
           ],
           "mean": 0.0,
-          "n": 5,
+          "n": 6,
           "se": 0.0
         },
         "paired_brier": {
           "ci95": [
-            -0.1341288481854954,
-            0.1432931015046571
+            -0.15564473688292485,
+            0.1020830057945003
           ],
-          "mean": 0.004582126659580849,
-          "n": 5,
-          "se": 0.07077090553320217
+          "mean": -0.026780865544212277,
+          "n": 6,
+          "se": 0.06574687313199622
         },
         "paired_log_loss": {
           "ci95": [
-            -0.18787050656228207,
-            0.15279224567566177
+            -0.21591062136211747,
+            0.10214021743963808
           ],
-          "mean": -0.017539130443310146,
-          "n": 5,
-          "se": 0.08690376332600608
+          "mean": -0.056885201961239695,
+          "n": 6,
+          "se": 0.08113541806167233
         },
-        "reference_accuracy": 0.6,
-        "reference_brier": 0.5509483718597208,
-        "reference_log_loss": 0.9284631536797058
+        "reference_accuracy": 0.6666666666666666,
+        "reference_brier": 0.5526966729705542,
+        "reference_log_loss": 0.930108053532123
       },
       "model_mutation_allowed": false,
-      "prospective_n": 5,
+      "prospective_n": 6,
       "scope": "COMPETITION",
       "season": 2026,
       "sport": "FOOTBALL",
@@ -8593,34 +8866,34 @@
       "league_radar_context": null,
       "market": "OVER_2_5",
       "metrics": {
-        "challenger_brier": 0.24628136101546189,
-        "challenger_log_loss": 0.6868020738253505,
-        "delta_brier": -0.005644770163244939,
-        "delta_log_loss": -0.012982477817900073,
-        "n": 5,
+        "challenger_brier": 0.25733715916992295,
+        "challenger_log_loss": 0.7088324828805113,
+        "delta_brier": -0.0005704674315594738,
+        "delta_log_loss": -0.0024737131161366444,
+        "n": 6,
         "paired_brier": {
           "ci95": [
-            -0.03383881734775794,
-            0.022549277021268004
+            -0.025647385515246583,
+            0.024506450652127573
           ],
-          "mean": -0.0056447701632449665,
-          "n": 5,
-          "se": 0.014384717951282128
+          "mean": -0.0005704674315595062,
+          "n": 6,
+          "se": 0.012794345961064836
         },
         "paired_log_loss": {
           "ci95": [
-            -0.07147163309294936,
-            0.04550667745714876
+            -0.054482346678412674,
+            0.049534920446139066
           ],
-          "mean": -0.012982477817900306,
-          "n": 5,
-          "se": 0.02984140575257605
+          "mean": -0.0024737131161368018,
+          "n": 6,
+          "se": 0.026535017123610137
         },
-        "reference_brier": 0.2519261311787068,
-        "reference_log_loss": 0.6997845516432506
+        "reference_brier": 0.2579076266014824,
+        "reference_log_loss": 0.7113061959966479
       },
       "model_mutation_allowed": false,
-      "prospective_n": 5,
+      "prospective_n": 6,
       "scope": "COMPETITION",
       "season": 2026,
       "sport": "FOOTBALL",
@@ -8975,121 +9248,615 @@
     {
       "cell_used_to_generate_probability": false,
       "classification_reason": "N_BELOW_15",
-      "competition_id": "428",
-      "competition_name": "Serie D - Girone C",
+      "competition_id": "426",
+      "competition_name": "Serie D - Girone A",
       "league_radar_context": null,
       "market": "1X2",
       "metrics": {
-        "challenger_accuracy": 1.0,
-        "challenger_brier": 0.5773181480780324,
-        "challenger_log_loss": 0.9568875707541283,
-        "delta_accuracy": 1.0,
-        "delta_brier": -0.06950678604388749,
-        "delta_log_loss": -0.09848372193833288,
-        "n": 1,
-        "paired_accuracy": {
-          "ci95": null,
-          "mean": 1.0,
-          "n": 1,
-          "se": null
-        },
-        "paired_brier": {
-          "ci95": null,
-          "mean": -0.06950678604388749,
-          "n": 1,
-          "se": null
-        },
-        "paired_log_loss": {
-          "ci95": null,
-          "mean": -0.09848372193833288,
-          "n": 1,
-          "se": null
-        },
-        "reference_accuracy": 0.0,
-        "reference_brier": 0.6468249341219199,
-        "reference_log_loss": 1.0553712926924612
-      },
-      "model_mutation_allowed": false,
-      "prospective_n": 1,
-      "scope": "COMPETITION",
-      "season": 2026,
-      "sport": "FOOTBALL",
-      "strength_class": "INSUFFICIENT_DATA"
-    },
-    {
-      "cell_used_to_generate_probability": false,
-      "classification_reason": "N_BELOW_15",
-      "competition_id": "428",
-      "competition_name": "Serie D - Girone C",
-      "league_radar_context": null,
-      "market": "OVER_2_5",
-      "metrics": {
-        "challenger_brier": 0.22324438958941567,
-        "challenger_log_loss": 0.639582620804591,
-        "delta_brier": -0.0331715548606743,
-        "delta_log_loss": -0.06639714631971427,
-        "n": 1,
-        "paired_brier": {
-          "ci95": null,
-          "mean": -0.0331715548606743,
-          "n": 1,
-          "se": null
-        },
-        "paired_log_loss": {
-          "ci95": null,
-          "mean": -0.06639714631971427,
-          "n": 1,
-          "se": null
-        },
-        "reference_brier": 0.25641594445008997,
-        "reference_log_loss": 0.7059797671243053
-      },
-      "model_mutation_allowed": false,
-      "prospective_n": 1,
-      "scope": "COMPETITION",
-      "season": 2026,
-      "sport": "FOOTBALL",
-      "strength_class": "INSUFFICIENT_DATA"
-    },
-    {
-      "cell_used_to_generate_probability": false,
-      "classification_reason": "N_BELOW_15",
-      "competition_id": "432",
-      "competition_name": "Serie D - Girone G",
-      "league_radar_context": null,
-      "market": "1X2",
-      "metrics": {
-        "challenger_accuracy": 1.0,
-        "challenger_brier": 0.5337744323626037,
-        "challenger_log_loss": 0.9033344584236472,
+        "challenger_accuracy": 0.14285714285714285,
+        "challenger_brier": 0.7176043427558013,
+        "challenger_log_loss": 1.155965049003541,
         "delta_accuracy": 0.0,
-        "delta_brier": 0.0035951993264186077,
-        "delta_log_loss": 0.0008228568003018077,
-        "n": 1,
+        "delta_brier": -0.001336216250678035,
+        "delta_log_loss": -0.008588218621726096,
+        "n": 7,
         "paired_accuracy": {
-          "ci95": null,
+          "ci95": [
+            0.0,
+            0.0
+          ],
           "mean": 0.0,
-          "n": 1,
-          "se": null
+          "n": 7,
+          "se": 0.0
         },
         "paired_brier": {
-          "ci95": null,
-          "mean": 0.0035951993264186077,
-          "n": 1,
-          "se": null
+          "ci95": [
+            -0.08000601698102829,
+            0.07733358447967216
+          ],
+          "mean": -0.0013362162506780667,
+          "n": 7,
+          "se": 0.04013765343385216
         },
         "paired_log_loss": {
-          "ci95": null,
-          "mean": 0.0008228568003018077,
-          "n": 1,
-          "se": null
+          "ci95": [
+            -0.12059637115584629,
+            0.1034199339123944
+          ],
+          "mean": -0.008588218621725938,
+          "n": 7,
+          "se": 0.05714701659904099
         },
-        "reference_accuracy": 1.0,
-        "reference_brier": 0.5301792330361851,
-        "reference_log_loss": 0.9025116016233454
+        "reference_accuracy": 0.14285714285714285,
+        "reference_brier": 0.7189405590064794,
+        "reference_log_loss": 1.164553267625267
       },
       "model_mutation_allowed": false,
-      "prospective_n": 1,
+      "prospective_n": 7,
+      "scope": "COMPETITION",
+      "season": 2026,
+      "sport": "FOOTBALL",
+      "strength_class": "INSUFFICIENT_DATA"
+    },
+    {
+      "cell_used_to_generate_probability": false,
+      "classification_reason": "N_BELOW_15",
+      "competition_id": "426",
+      "competition_name": "Serie D - Girone A",
+      "league_radar_context": null,
+      "market": "OVER_2_5",
+      "metrics": {
+        "challenger_brier": 0.25308955944133654,
+        "challenger_log_loss": 0.699145113745365,
+        "delta_brier": 0.007664415528854246,
+        "delta_log_loss": 0.015391117277464783,
+        "n": 7,
+        "paired_brier": {
+          "ci95": [
+            -0.021244283065464713,
+            0.03657311412317325
+          ],
+          "mean": 0.0076644155288542685,
+          "n": 7,
+          "se": 0.014749336017509685
+        },
+        "paired_log_loss": {
+          "ci95": [
+            -0.04814543560820963,
+            0.0789276701631394
+          ],
+          "mean": 0.015391117277464885,
+          "n": 7,
+          "se": 0.032416608615140056
+        },
+        "reference_brier": 0.2454251439124823,
+        "reference_log_loss": 0.6837539964679002
+      },
+      "model_mutation_allowed": false,
+      "prospective_n": 7,
+      "scope": "COMPETITION",
+      "season": 2026,
+      "sport": "FOOTBALL",
+      "strength_class": "INSUFFICIENT_DATA"
+    },
+    {
+      "cell_used_to_generate_probability": false,
+      "classification_reason": "N_BELOW_15",
+      "competition_id": "427",
+      "competition_name": "Serie D - Girone B",
+      "league_radar_context": null,
+      "market": "1X2",
+      "metrics": {
+        "challenger_accuracy": 0.625,
+        "challenger_brier": 0.5999082868031533,
+        "challenger_log_loss": 0.9905116298857479,
+        "delta_accuracy": 0.0,
+        "delta_brier": -0.004147505778314353,
+        "delta_log_loss": -0.01310495257993094,
+        "n": 8,
+        "paired_accuracy": {
+          "ci95": [
+            0.0,
+            0.0
+          ],
+          "mean": 0.0,
+          "n": 8,
+          "se": 0.0
+        },
+        "paired_brier": {
+          "ci95": [
+            -0.05861442600315775,
+            0.05031941444652904
+          ],
+          "mean": -0.004147505778314353,
+          "n": 8,
+          "se": 0.027789245012675202
+        },
+        "paired_log_loss": {
+          "ci95": [
+            -0.08828570984824548,
+            0.06207580468838313
+          ],
+          "mean": -0.013104952579931176,
+          "n": 8,
+          "se": 0.038357529218527704
+        },
+        "reference_accuracy": 0.625,
+        "reference_brier": 0.6040557925814677,
+        "reference_log_loss": 1.0036165824656789
+      },
+      "model_mutation_allowed": false,
+      "prospective_n": 8,
+      "scope": "COMPETITION",
+      "season": 2026,
+      "sport": "FOOTBALL",
+      "strength_class": "INSUFFICIENT_DATA"
+    },
+    {
+      "cell_used_to_generate_probability": false,
+      "classification_reason": "N_BELOW_15",
+      "competition_id": "427",
+      "competition_name": "Serie D - Girone B",
+      "league_radar_context": null,
+      "market": "OVER_2_5",
+      "metrics": {
+        "challenger_brier": 0.2885362400142727,
+        "challenger_log_loss": 0.7735747049304058,
+        "delta_brier": -0.026399149347713202,
+        "delta_log_loss": -0.062032299741805796,
+        "n": 8,
+        "paired_brier": {
+          "ci95": [
+            -0.0738820146215214,
+            0.021083715926094853
+          ],
+          "mean": -0.026399149347713275,
+          "n": 8,
+          "se": 0.024225951670310268
+        },
+        "paired_log_loss": {
+          "ci95": [
+            -0.16915810460917424,
+            0.04509350512556265
+          ],
+          "mean": -0.062032299741805796,
+          "n": 8,
+          "se": 0.054656022891514514
+        },
+        "reference_brier": 0.3149353893619859,
+        "reference_log_loss": 0.8356070046722116
+      },
+      "model_mutation_allowed": false,
+      "prospective_n": 8,
+      "scope": "COMPETITION",
+      "season": 2026,
+      "sport": "FOOTBALL",
+      "strength_class": "INSUFFICIENT_DATA"
+    },
+    {
+      "cell_used_to_generate_probability": false,
+      "classification_reason": "N_BELOW_15",
+      "competition_id": "428",
+      "competition_name": "Serie D - Girone C",
+      "league_radar_context": null,
+      "market": "1X2",
+      "metrics": {
+        "challenger_accuracy": 0.7142857142857143,
+        "challenger_brier": 0.5312230048331229,
+        "challenger_log_loss": 0.9098285534835908,
+        "delta_accuracy": 0.28571428571428575,
+        "delta_brier": 0.002627030080715187,
+        "delta_log_loss": 0.004590085860752047,
+        "n": 7,
+        "paired_accuracy": {
+          "ci95": [
+            -0.0757641599317399,
+            0.6471927313603113
+          ],
+          "mean": 0.2857142857142857,
+          "n": 7,
+          "se": 0.18442777839082938
+        },
+        "paired_brier": {
+          "ci95": [
+            -0.034823926412562274,
+            0.04007798657399298
+          ],
+          "mean": 0.0026270300807153535,
+          "n": 7,
+          "se": 0.019107630863917157
+        },
+        "paired_log_loss": {
+          "ci95": [
+            -0.0481124897198522,
+            0.05729266144135636
+          ],
+          "mean": 0.004590085860752079,
+          "n": 7,
+          "se": 0.026889069173777695
+        },
+        "reference_accuracy": 0.42857142857142855,
+        "reference_brier": 0.5285959747524077,
+        "reference_log_loss": 0.9052384676228388
+      },
+      "model_mutation_allowed": false,
+      "prospective_n": 7,
+      "scope": "COMPETITION",
+      "season": 2026,
+      "sport": "FOOTBALL",
+      "strength_class": "INSUFFICIENT_DATA"
+    },
+    {
+      "cell_used_to_generate_probability": false,
+      "classification_reason": "N_BELOW_15",
+      "competition_id": "428",
+      "competition_name": "Serie D - Girone C",
+      "league_radar_context": null,
+      "market": "OVER_2_5",
+      "metrics": {
+        "challenger_brier": 0.2725005555714069,
+        "challenger_log_loss": 0.7468682136197572,
+        "delta_brier": -0.019723161325971406,
+        "delta_log_loss": -0.05899858442255268,
+        "n": 7,
+        "paired_brier": {
+          "ci95": [
+            -0.06626461563399647,
+            0.0268182929820536
+          ],
+          "mean": -0.019723161325971433,
+          "n": 7,
+          "se": 0.023745639953073997
+        },
+        "paired_log_loss": {
+          "ci95": [
+            -0.18719490939067582,
+            0.06919774054557024
+          ],
+          "mean": -0.058998584422552784,
+          "n": 7,
+          "se": 0.06540628824904236
+        },
+        "reference_brier": 0.2922237168973783,
+        "reference_log_loss": 0.8058667980423099
+      },
+      "model_mutation_allowed": false,
+      "prospective_n": 7,
+      "scope": "COMPETITION",
+      "season": 2026,
+      "sport": "FOOTBALL",
+      "strength_class": "INSUFFICIENT_DATA"
+    },
+    {
+      "cell_used_to_generate_probability": false,
+      "classification_reason": "N_BELOW_15",
+      "competition_id": "429",
+      "competition_name": "Serie D - Girone D",
+      "league_radar_context": null,
+      "market": "1X2",
+      "metrics": {
+        "challenger_accuracy": 0.5,
+        "challenger_brier": 0.7869841037988815,
+        "challenger_log_loss": 1.323149086053188,
+        "delta_accuracy": 0.0,
+        "delta_brier": 0.018398975615254942,
+        "delta_log_loss": 0.050225792867014896,
+        "n": 6,
+        "paired_accuracy": {
+          "ci95": [
+            0.0,
+            0.0
+          ],
+          "mean": 0.0,
+          "n": 6,
+          "se": 0.0
+        },
+        "paired_brier": {
+          "ci95": [
+            -0.06234613234843378,
+            0.09914408357894414
+          ],
+          "mean": 0.018398975615255175,
+          "n": 6,
+          "se": 0.04119648365494335
+        },
+        "paired_log_loss": {
+          "ci95": [
+            -0.09901698477921106,
+            0.19946857051324057
+          ],
+          "mean": 0.05022579286701475,
+          "n": 6,
+          "se": 0.07614427430929889
+        },
+        "reference_accuracy": 0.5,
+        "reference_brier": 0.7685851281836266,
+        "reference_log_loss": 1.2729232931861731
+      },
+      "model_mutation_allowed": false,
+      "prospective_n": 6,
+      "scope": "COMPETITION",
+      "season": 2026,
+      "sport": "FOOTBALL",
+      "strength_class": "INSUFFICIENT_DATA"
+    },
+    {
+      "cell_used_to_generate_probability": false,
+      "classification_reason": "N_BELOW_15",
+      "competition_id": "429",
+      "competition_name": "Serie D - Girone D",
+      "league_radar_context": null,
+      "market": "OVER_2_5",
+      "metrics": {
+        "challenger_brier": 0.3068443604305325,
+        "challenger_log_loss": 0.8081455522329088,
+        "delta_brier": -0.03940939732377957,
+        "delta_log_loss": -0.08386853355409318,
+        "n": 6,
+        "paired_brier": {
+          "ci95": [
+            -0.07569195397602513,
+            -0.003126840671533855
+          ],
+          "mean": -0.039409397323779495,
+          "n": 6,
+          "se": 0.018511508496043695
+        },
+        "paired_log_loss": {
+          "ci95": [
+            -0.16122144724934545,
+            -0.006515619858840596
+          ],
+          "mean": -0.08386853355409303,
+          "n": 6,
+          "se": 0.03946577229349614
+        },
+        "reference_brier": 0.34625375775431205,
+        "reference_log_loss": 0.892014085787002
+      },
+      "model_mutation_allowed": false,
+      "prospective_n": 6,
+      "scope": "COMPETITION",
+      "season": 2026,
+      "sport": "FOOTBALL",
+      "strength_class": "INSUFFICIENT_DATA"
+    },
+    {
+      "cell_used_to_generate_probability": false,
+      "classification_reason": "N_BELOW_15",
+      "competition_id": "430",
+      "competition_name": "Serie D - Girone E",
+      "league_radar_context": null,
+      "market": "1X2",
+      "metrics": {
+        "challenger_accuracy": 0.3333333333333333,
+        "challenger_brier": 0.6480273270403107,
+        "challenger_log_loss": 1.069212636234656,
+        "delta_accuracy": -0.22222222222222227,
+        "delta_brier": 0.029503249390314457,
+        "delta_log_loss": 0.040412780594065056,
+        "n": 9,
+        "paired_accuracy": {
+          "ci95": [
+            -0.6577777777777778,
+            0.21333333333333337
+          ],
+          "mean": -0.2222222222222222,
+          "n": 9,
+          "se": 0.22222222222222224
+        },
+        "paired_brier": {
+          "ci95": [
+            -0.14204838843823359,
+            0.2010548872188625
+          ],
+          "mean": 0.02950324939031447,
+          "n": 9,
+          "se": 0.08752634583089186
+        },
+        "paired_log_loss": {
+          "ci95": [
+            -0.18661513784674963,
+            0.26744069903488005
+          ],
+          "mean": 0.040412780594065216,
+          "n": 9,
+          "se": 0.1158305706330688
+        },
+        "reference_accuracy": 0.5555555555555556,
+        "reference_brier": 0.6185240776499963,
+        "reference_log_loss": 1.0287998556405908
+      },
+      "model_mutation_allowed": false,
+      "prospective_n": 9,
+      "scope": "COMPETITION",
+      "season": 2026,
+      "sport": "FOOTBALL",
+      "strength_class": "INSUFFICIENT_DATA"
+    },
+    {
+      "cell_used_to_generate_probability": false,
+      "classification_reason": "N_BELOW_15",
+      "competition_id": "430",
+      "competition_name": "Serie D - Girone E",
+      "league_radar_context": null,
+      "market": "OVER_2_5",
+      "metrics": {
+        "challenger_brier": 0.255568970294323,
+        "challenger_log_loss": 0.7044419786906925,
+        "delta_brier": 0.005147859903431418,
+        "delta_log_loss": 0.010699827973827625,
+        "n": 9,
+        "paired_brier": {
+          "ci95": [
+            -0.024361775187519346,
+            0.034657494994382226
+          ],
+          "mean": 0.005147859903431439,
+          "n": 9,
+          "se": 0.015055936270893258
+        },
+        "paired_log_loss": {
+          "ci95": [
+            -0.04928341086349821,
+            0.07068306681115336
+          ],
+          "mean": 0.010699827973827576,
+          "n": 9,
+          "se": 0.030603693284349892
+        },
+        "reference_brier": 0.2504211103908916,
+        "reference_log_loss": 0.6937421507168648
+      },
+      "model_mutation_allowed": false,
+      "prospective_n": 9,
+      "scope": "COMPETITION",
+      "season": 2026,
+      "sport": "FOOTBALL",
+      "strength_class": "INSUFFICIENT_DATA"
+    },
+    {
+      "cell_used_to_generate_probability": false,
+      "classification_reason": "N_BELOW_15",
+      "competition_id": "431",
+      "competition_name": "Serie D - Girone F",
+      "league_radar_context": null,
+      "market": "1X2",
+      "metrics": {
+        "challenger_accuracy": 0.2857142857142857,
+        "challenger_brier": 0.620149478024241,
+        "challenger_log_loss": 1.017904733814611,
+        "delta_accuracy": 0.0,
+        "delta_brier": -0.01769713171579468,
+        "delta_log_loss": -0.03640032645190239,
+        "n": 7,
+        "paired_accuracy": {
+          "ci95": [
+            0.0,
+            0.0
+          ],
+          "mean": 0.0,
+          "n": 7,
+          "se": 0.0
+        },
+        "paired_brier": {
+          "ci95": [
+            -0.04621495551609853,
+            0.01082069208450941
+          ],
+          "mean": -0.01769713171579456,
+          "n": 7,
+          "se": 0.014549910102195904
+        },
+        "paired_log_loss": {
+          "ci95": [
+            -0.07625943751845762,
+            0.0034587846146524118
+          ],
+          "mean": -0.0364003264519026,
+          "n": 7,
+          "se": 0.02033628115640562
+        },
+        "reference_accuracy": 0.2857142857142857,
+        "reference_brier": 0.6378466097400357,
+        "reference_log_loss": 1.0543050602665134
+      },
+      "model_mutation_allowed": false,
+      "prospective_n": 7,
+      "scope": "COMPETITION",
+      "season": 2026,
+      "sport": "FOOTBALL",
+      "strength_class": "INSUFFICIENT_DATA"
+    },
+    {
+      "cell_used_to_generate_probability": false,
+      "classification_reason": "N_BELOW_15",
+      "competition_id": "431",
+      "competition_name": "Serie D - Girone F",
+      "league_radar_context": null,
+      "market": "OVER_2_5",
+      "metrics": {
+        "challenger_brier": 0.2378654371085566,
+        "challenger_log_loss": 0.6696692073766136,
+        "delta_brier": 0.0009002989166379538,
+        "delta_log_loss": 0.0004432061974815049,
+        "n": 7,
+        "paired_brier": {
+          "ci95": [
+            -0.029316062762426792,
+            0.03111666059570265
+          ],
+          "mean": 0.0009002989166379301,
+          "n": 7,
+          "se": 0.015416511060747307
+        },
+        "paired_log_loss": {
+          "ci95": [
+            -0.0652675994663788,
+            0.06615401186134173
+          ],
+          "mean": 0.0004432061974814653,
+          "n": 7,
+          "se": 0.033525921257071566
+        },
+        "reference_brier": 0.23696513819191864,
+        "reference_log_loss": 0.6692260011791321
+      },
+      "model_mutation_allowed": false,
+      "prospective_n": 7,
+      "scope": "COMPETITION",
+      "season": 2026,
+      "sport": "FOOTBALL",
+      "strength_class": "INSUFFICIENT_DATA"
+    },
+    {
+      "cell_used_to_generate_probability": false,
+      "classification_reason": "N_BELOW_15",
+      "competition_id": "432",
+      "competition_name": "Serie D - Girone G",
+      "league_radar_context": null,
+      "market": "1X2",
+      "metrics": {
+        "challenger_accuracy": 0.4444444444444444,
+        "challenger_brier": 0.6060698834818706,
+        "challenger_log_loss": 1.0075057135411103,
+        "delta_accuracy": 0.0,
+        "delta_brier": -0.007461515818713349,
+        "delta_log_loss": -0.01474856713978423,
+        "n": 9,
+        "paired_accuracy": {
+          "ci95": [
+            0.0,
+            0.0
+          ],
+          "mean": 0.0,
+          "n": 9,
+          "se": 0.0
+        },
+        "paired_brier": {
+          "ci95": [
+            -0.03871937249431698,
+            0.023796340856890086
+          ],
+          "mean": -0.007461515818713448,
+          "n": 9,
+          "se": 0.015947886058981394
+        },
+        "paired_log_loss": {
+          "ci95": [
+            -0.06295007010834781,
+            0.03345293582877976
+          ],
+          "mean": -0.014748567139784027,
+          "n": 9,
+          "se": 0.02459260355538969
+        },
+        "reference_accuracy": 0.4444444444444444,
+        "reference_brier": 0.613531399300584,
+        "reference_log_loss": 1.0222542806808945
+      },
+      "model_mutation_allowed": false,
+      "prospective_n": 9,
       "scope": "COMPETITION",
       "season": 2026,
       "sport": "FOOTBALL",
@@ -9103,28 +9870,222 @@
       "league_radar_context": null,
       "market": "OVER_2_5",
       "metrics": {
-        "challenger_brier": 0.21663370886767921,
-        "challenger_log_loss": 0.6263099243347808,
-        "delta_brier": 0.07428883215723919,
-        "delta_log_loss": 0.15264166854000705,
-        "n": 1,
+        "challenger_brier": 0.2482401542099473,
+        "challenger_log_loss": 0.6886738750666556,
+        "delta_brier": 0.008430990912708602,
+        "delta_log_loss": 0.01687239215488867,
+        "n": 9,
         "paired_brier": {
-          "ci95": null,
-          "mean": 0.07428883215723919,
-          "n": 1,
-          "se": null
+          "ci95": [
+            -0.028324441406359285,
+            0.045186423231776435
+          ],
+          "mean": 0.008430990912708573,
+          "n": 9,
+          "se": 0.018752771591361152
         },
         "paired_log_loss": {
-          "ci95": null,
-          "mean": 0.15264166854000705,
-          "n": 1,
-          "se": null
+          "ci95": [
+            -0.06017517905691393,
+            0.09391996336669108
+          ],
+          "mean": 0.016872392154888578,
+          "n": 9,
+          "se": 0.039309985312144136
         },
-        "reference_brier": 0.14234487671044002,
-        "reference_log_loss": 0.4736682557947738
+        "reference_brier": 0.2398091632972387,
+        "reference_log_loss": 0.6718014829117669
       },
       "model_mutation_allowed": false,
-      "prospective_n": 1,
+      "prospective_n": 9,
+      "scope": "COMPETITION",
+      "season": 2026,
+      "sport": "FOOTBALL",
+      "strength_class": "INSUFFICIENT_DATA"
+    },
+    {
+      "cell_used_to_generate_probability": false,
+      "classification_reason": "N_BELOW_15",
+      "competition_id": "433",
+      "competition_name": "Serie D - Girone H",
+      "league_radar_context": null,
+      "market": "1X2",
+      "metrics": {
+        "challenger_accuracy": 0.5555555555555556,
+        "challenger_brier": 0.5820822369658261,
+        "challenger_log_loss": 0.9977828764423483,
+        "delta_accuracy": 0.33333333333333337,
+        "delta_brier": -0.1263001421395864,
+        "delta_log_loss": -0.15461522362066427,
+        "n": 9,
+        "paired_accuracy": {
+          "ci95": [
+            0.006666666666666599,
+            0.66
+          ],
+          "mean": 0.3333333333333333,
+          "n": 9,
+          "se": 0.16666666666666669
+        },
+        "paired_brier": {
+          "ci95": [
+            -0.2734307742604074,
+            0.020830489981234573
+          ],
+          "mean": -0.12630014213958643,
+          "n": 9,
+          "se": 0.07506664904123521
+        },
+        "paired_log_loss": {
+          "ci95": [
+            -0.41472012764721305,
+            0.10548968040588441
+          ],
+          "mean": -0.15461522362066432,
+          "n": 9,
+          "se": 0.13270658368701466
+        },
+        "reference_accuracy": 0.2222222222222222,
+        "reference_brier": 0.7083823791054125,
+        "reference_log_loss": 1.1523981000630126
+      },
+      "model_mutation_allowed": false,
+      "prospective_n": 9,
+      "scope": "COMPETITION",
+      "season": 2026,
+      "sport": "FOOTBALL",
+      "strength_class": "INSUFFICIENT_DATA"
+    },
+    {
+      "cell_used_to_generate_probability": false,
+      "classification_reason": "N_BELOW_15",
+      "competition_id": "433",
+      "competition_name": "Serie D - Girone H",
+      "league_radar_context": null,
+      "market": "OVER_2_5",
+      "metrics": {
+        "challenger_brier": 0.26945944617670514,
+        "challenger_log_loss": 0.7326484101300775,
+        "delta_brier": 0.006568725830427891,
+        "delta_log_loss": 0.013525471137070588,
+        "n": 9,
+        "paired_brier": {
+          "ci95": [
+            -0.026806410959371096,
+            0.03994386262022688
+          ],
+          "mean": 0.006568725830427894,
+          "n": 9,
+          "se": 0.017028131015203566
+        },
+        "paired_log_loss": {
+          "ci95": [
+            -0.05380458383275905,
+            0.08085552610690026
+          ],
+          "mean": 0.013525471137070607,
+          "n": 9,
+          "se": 0.03435206886215799
+        },
+        "reference_brier": 0.26289072034627725,
+        "reference_log_loss": 0.7191229389930069
+      },
+      "model_mutation_allowed": false,
+      "prospective_n": 9,
+      "scope": "COMPETITION",
+      "season": 2026,
+      "sport": "FOOTBALL",
+      "strength_class": "INSUFFICIENT_DATA"
+    },
+    {
+      "cell_used_to_generate_probability": false,
+      "classification_reason": "N_BELOW_15",
+      "competition_id": "434",
+      "competition_name": "Serie D - Girone I",
+      "league_radar_context": null,
+      "market": "1X2",
+      "metrics": {
+        "challenger_accuracy": 0.3333333333333333,
+        "challenger_brier": 0.7383889770413207,
+        "challenger_log_loss": 1.3005910513272698,
+        "delta_accuracy": 0.0,
+        "delta_brier": -0.12610006251827932,
+        "delta_log_loss": -0.24626632873501264,
+        "n": 9,
+        "paired_accuracy": {
+          "ci95": [
+            0.0,
+            0.0
+          ],
+          "mean": 0.0,
+          "n": 9,
+          "se": 0.0
+        },
+        "paired_brier": {
+          "ci95": [
+            -0.2543443448764644,
+            0.0021442198399060086
+          ],
+          "mean": -0.1261000625182792,
+          "n": 9,
+          "se": 0.06543075630519654
+        },
+        "paired_log_loss": {
+          "ci95": [
+            -0.4794975881883736,
+            -0.013035069281651879
+          ],
+          "mean": -0.24626632873501275,
+          "n": 9,
+          "se": 0.11899554053742901
+        },
+        "reference_accuracy": 0.3333333333333333,
+        "reference_brier": 0.8644890395596,
+        "reference_log_loss": 1.5468573800622825
+      },
+      "model_mutation_allowed": false,
+      "prospective_n": 9,
+      "scope": "COMPETITION",
+      "season": 2026,
+      "sport": "FOOTBALL",
+      "strength_class": "INSUFFICIENT_DATA"
+    },
+    {
+      "cell_used_to_generate_probability": false,
+      "classification_reason": "N_BELOW_15",
+      "competition_id": "434",
+      "competition_name": "Serie D - Girone I",
+      "league_radar_context": null,
+      "market": "OVER_2_5",
+      "metrics": {
+        "challenger_brier": 0.2950203277471538,
+        "challenger_log_loss": 0.7852654567727845,
+        "delta_brier": -0.027763896396448384,
+        "delta_log_loss": -0.06302779112105028,
+        "n": 9,
+        "paired_brier": {
+          "ci95": [
+            -0.05926720700093756,
+            0.003739414208040817
+          ],
+          "mean": -0.02776389639644837,
+          "n": 9,
+          "se": 0.016073117655351625
+        },
+        "paired_log_loss": {
+          "ci95": [
+            -0.13604459465112367,
+            0.009989012409023237
+          ],
+          "mean": -0.06302779112105021,
+          "n": 9,
+          "se": 0.03725347118881298
+        },
+        "reference_brier": 0.3227842241436022,
+        "reference_log_loss": 0.8482932478938348
+      },
+      "model_mutation_allowed": false,
+      "prospective_n": 9,
       "scope": "COMPETITION",
       "season": 2026,
       "sport": "FOOTBALL",
@@ -10073,8 +11034,8 @@
         "glicko": "R223_BATCH_GLICKO_RATING_BOTH"
       },
       "outcomes_read": 0,
-      "prospective_n": 96,
-      "remaining_to_600": 504,
+      "prospective_n": 99,
+      "remaining_to_600": 501,
       "scope": "DOMAIN",
       "season": 2026,
       "sport": "TENNIS",
@@ -10255,7 +11216,7 @@
         "glicko": "R223_BATCH_GLICKO_RATING_BOTH"
       },
       "outcomes_read": 0,
-      "prospective_n": 12,
+      "prospective_n": 15,
       "scope": "COMPETITION",
       "season": 2026,
       "sport": "TENNIS",
@@ -10303,10 +11264,10 @@
     }
   ],
   "class_counts": {
-    "DEVELOPING": 15,
-    "INSUFFICIENT_DATA": 224,
+    "DEVELOPING": 16,
+    "INSUFFICIENT_DATA": 241,
     "NO_GO": 5,
-    "STRONG": 1
+    "STRONG": 2
   },
   "classes": {
     "DEVELOPING": "At least 15 prospective observations or historical OOS pass, but decisive STRONG evidence not yet established.",
@@ -10315,7 +11276,7 @@
     "STRONG": "Prospective sample >=30, challenger better in Brier and Log Loss, and paired 95% CIs fully favorable."
   },
   "definition": "Evidence-only map of SPORT x COMPETITION x MARKET. Never a probability generator.",
-  "generated_at_utc": "2026-10-04T15:31:11+00:00",
+  "generated_at_utc": "2026-10-04T18:50:00+00:00",
   "protections": {
     "automatic_wagering": false,
     "changes_bet_decision": false,
@@ -10342,8 +11303,8 @@
     },
     "football_ledger": {
       "path": "evidence/api_football/prospective_calibration/ledger.jsonl",
-      "rows": 641,
-      "sha256": "a94f94a2995b8e2e34188ec7d94e4f3e86ef8286927a957f0b2bc855c3a800fe"
+      "rows": 746,
+      "sha256": "f74befcdd266ee407f3b1407c22b2b24f5af951cf9845ba21c4f6563a74b84de"
     },
     "football_market_master": {
       "path": "evidence/api_football/governance/MATRIX_FOOTBALL_MARKET_RESOLUTION_MASTER_20261004.json",
@@ -10351,7 +11312,7 @@
     },
     "tennis_dual_horizon": {
       "path": "evidence/cor0203/runtime/MATRIX_COR0203_DUAL_8DAY_HORIZON_LAST.json",
-      "sha256": "88d31bd7c77761e9fb104405b7c890277be41cc7d51e80c3bf17a62b4f9eaad8"
+      "sha256": "67cae62ee44b2c37994fd5fb5ed331542d024317d12b41a509be090371121493"
     },
     "tennis_model_binding": {
       "path": "evidence/cor0203/runtime/MATRIX_COR0203_MODEL_BINDING_R707.json",
@@ -10359,12 +11320,12 @@
     },
     "tennis_uniqueness": {
       "path": "evidence/cor0203/runtime/MATRIX_COR0203_PHYSICAL_UNIQUENESS_LAST.json",
-      "sha256": "eb46d9bf9f567b959bbf480f9869f22c1634bf941d7a3c6e2f5c3bf427350733",
-      "unique_observations": 96
+      "sha256": "572cb347c921c37ed0f467d6395cf9405f655672d75b9bf8382e44512ec76074",
+      "unique_observations": 99
     },
     "tennis_world_discovery": {
       "path": "evidence/cor0203/runtime/MATRIX_COR0203_WORLD_DERIVED_DISCOVERY_LAST.json",
-      "sha256": "00fe7d5771b702dd1b852bb516a9dbab1f20b55eeb2f924b5f654c93bbadc503"
+      "sha256": "fb3010bf6428f6eaaf0a0e540c2116066ca134b65c7bf0e30c0c8da811034463"
     }
   },
   "status": "PASS",
@@ -10380,10 +11341,10 @@
     "TENNIS": {
       "api_tennis_base_candidates": 16,
       "dual_source_logical_horizon_days": 8,
-      "eligible_current_world_candidates": 1,
+      "eligible_current_world_candidates": 0,
       "evaluation_policy": "WORLD_EVENTS_PRESERVED_BEFORE_DOMAIN_FILTER; EACH_DOMAIN_REQUIRES_INDEPENDENT_MODEL_AND_CALIBRATION",
       "mode": "WORLD_INVENTORY_THEN_GOVERNED_DOMAIN_FILTER",
-      "rapidapi_base_candidates": 22,
+      "rapidapi_base_candidates": 24,
       "world_domain_candidates_input": 20,
       "world_inventory_target_date": "2026-10-04",
       "world_inventory_total": 154
