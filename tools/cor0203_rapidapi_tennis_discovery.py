@@ -25,6 +25,7 @@ MAX_FIXTURE_PAGES = 4
 MAX_WORLD_FIXTURE_PAGES = 12
 MAX_RESULT_PAGES = 12
 MAX_RANKING_PAGES = 4
+MAX_RANK_HISTORY_FALLBACK_REQUESTS = 32
 MAX_TOURNAMENT_INFO_REQUESTS = 12
 PAGE_SIZE = 500
 MODEL_HARD_SURFACES = {"hard", "i.hard", "indoor hard", "indoor_hard"}
@@ -339,6 +340,25 @@ class RapidApiTennisClient:
             page += 1
         return found
 
+    def ranking_history(
+        self,
+        *,
+        player_id: str,
+        months: int = 3,
+    ) -> Mapping[str, Any]:
+        token = _positive_id(player_id)
+        if token is None:
+            raise ValueError("RAPIDAPI_TENNIS_PLAYER_ID_INVALID")
+        payload = self._get(
+            f"/tennis/v2/ranking/atp/player/{token}/history",
+            {"months": max(1, min(int(months), 12))},
+        )
+        if not isinstance(payload, Mapping):
+            raise RapidApiTennisDiscoveryError(
+                "RAPIDAPI_TENNIS_RANKING_HISTORY_INVALID"
+            )
+        return payload
+
     def _results_path(
         self,
         path: str,
@@ -392,6 +412,143 @@ class RapidApiTennisClient:
         return self._results_path(
             f"/tennis/v2/atp/results/{start.isoformat()}/{stop.isoformat()}"
         )
+
+
+def _ranking_history_rows(
+    payload: Mapping[str, Any],
+) -> list[Mapping[str, Any]]:
+    rows = payload.get("history")
+    if isinstance(rows, list):
+        return [row for row in rows if isinstance(row, Mapping)]
+    data = payload.get("data")
+    if isinstance(data, Mapping):
+        rows = data.get("history")
+        if isinstance(rows, list):
+            return [row for row in rows if isinstance(row, Mapping)]
+    return []
+
+
+def recover_exact_rankings_from_history(
+    *,
+    client: RapidApiTennisClient,
+    ranking_date: date,
+    wanted_player_ids: Iterable[str],
+    existing_rankings: Mapping[str, Mapping[str, Any]],
+    fixture_identity_by_player: Mapping[str, Mapping[str, Any]],
+    max_requests: int = MAX_RANK_HISTORY_FALLBACK_REQUESTS,
+) -> tuple[dict[str, Mapping[str, Any]], dict[str, Any]]:
+    merged = {
+        str(player_id): dict(row)
+        for player_id, row in existing_rankings.items()
+        if isinstance(row, Mapping)
+    }
+    missing = sorted({
+        str(player_id)
+        for player_id in wanted_player_ids
+        if _positive_id(player_id) and str(player_id) not in merged
+    })
+    recovered: list[dict[str, Any]] = []
+    blocked: list[dict[str, Any]] = []
+    requests = 0
+
+    for player_id in missing:
+        if requests >= max(0, int(max_requests)):
+            blocked.append({
+                "player_id": player_id,
+                "reason": "RANK_HISTORY_FALLBACK_BUDGET_REACHED",
+            })
+            continue
+        try:
+            payload = client.ranking_history(
+                player_id=player_id,
+                months=3,
+            )
+            requests += 1
+        except (RapidApiTennisDiscoveryError, ValueError) as error:
+            blocked.append({
+                "player_id": player_id,
+                "reason": (
+                    "RANK_HISTORY_LOOKUP_FAILED:"
+                    + type(error).__name__
+                    + ":"
+                    + str(error)[:250]
+                ),
+            })
+            continue
+
+        matches: list[tuple[str, str]] = []
+        for row in _ranking_history_rows(payload):
+            day = str(row.get("date") or "").strip()[:10]
+            if day != ranking_date.isoformat():
+                continue
+            position = str(row.get("position") or "").strip()
+            points = str(
+                row.get("pts")
+                if row.get("pts") is not None
+                else row.get("point")
+                if row.get("point") is not None
+                else row.get("points")
+                if row.get("points") is not None
+                else ""
+            ).strip()
+            if (
+                position.isdigit()
+                and int(position) > 0
+                and points.isdigit()
+                and int(points) >= 0
+            ):
+                matches.append((position, points))
+
+        unique = sorted(set(matches))
+        if len(unique) != 1:
+            blocked.append({
+                "player_id": player_id,
+                "reason": (
+                    "EXACT_RANKING_CUT_NOT_UNIQUE"
+                    if unique
+                    else "EXACT_RANKING_CUT_NOT_FOUND"
+                ),
+                "matches": [
+                    {"place": place, "points": points}
+                    for place, points in unique
+                ],
+            })
+            continue
+
+        identity = fixture_identity_by_player.get(player_id, {})
+        place, points = unique[0]
+        ranking = {
+            "place": place,
+            "points": points,
+            "player": str(identity.get("name") or "").strip(),
+            "country": str(identity.get("country") or "").strip(),
+            "snapshot_date": ranking_date.isoformat(),
+            "ranking_source": "PLAYER_RANKING_HISTORY_EXACT_CUT",
+        }
+        merged[player_id] = ranking
+        recovered.append({
+            "player_id": player_id,
+            "player": ranking["player"],
+            "place": place,
+            "points": points,
+            "ranking_date": ranking_date.isoformat(),
+        })
+
+    return merged, {
+        "schema": "MATRIX_COR0203_EXACT_CUT_RANK_HISTORY_RECOVERY_V1",
+        "ranking_cut": ranking_date.isoformat(),
+        "requested_missing_player_ids": missing,
+        "history_requests": requests,
+        "recovered_count": len(recovered),
+        "recovered": recovered,
+        "blocked_count": len(blocked),
+        "blocked": blocked,
+        "current_rank_used": False,
+        "post_cut_competitive_data_used": False,
+        "outcomes_used": False,
+        "odds_used": False,
+        "real_money": "BLOCKED",
+    }
 
 
 def _parse_start(row: Mapping[str, Any]) -> datetime:
@@ -509,6 +666,26 @@ def build_discovery_registry(
                     "match_id": match_id,
                     "tournament_id": tournament_id,
                     "blockers": sorted(set(blockers)),
+                    "players": [
+                        {
+                            "provider_player_id": (
+                                f"rapidapi-tennis:player:{p1_id}"
+                                if p1_id is not None
+                                else None
+                            ),
+                            "name": p1_name,
+                            "ranking_found": isinstance(p1_ranking, Mapping),
+                        },
+                        {
+                            "provider_player_id": (
+                                f"rapidapi-tennis:player:{p2_id}"
+                                if p2_id is not None
+                                else None
+                            ),
+                            "name": p2_name,
+                            "ranking_found": isinstance(p2_ranking, Mapping),
+                        },
+                    ],
                 }
             )
             continue
@@ -665,6 +842,28 @@ def fetch_discovery(
         ranking_date=RANKING_CUT,
         wanted_player_ids=wanted_player_ids,
     )
+    fixture_identity_by_player = {}
+    for row in rows:
+        for side in (1, 2):
+            player_id, player_name = _player(row, side)
+            if player_id is None:
+                continue
+            player_obj = _mapping(row.get(f"player{side}"))
+            fixture_identity_by_player[player_id] = {
+                "name": player_name,
+                "country": str(
+                    player_obj.get("countryAcr")
+                    or row.get(f"player{side}Country")
+                    or ""
+                ).strip(),
+            }
+    rankings, ranking_history_recovery = recover_exact_rankings_from_history(
+        client=client,
+        ranking_date=RANKING_CUT,
+        wanted_player_ids=wanted_player_ids,
+        existing_rankings=rankings,
+        fixture_identity_by_player=fixture_identity_by_player,
+    )
     result = build_discovery_registry(
         fixture_payload=fixtures,
         tournament_info=info,
@@ -681,4 +880,8 @@ def fetch_discovery(
         len(unresolved_ids) - len(fallback_ids),
     )
     result["ranking_players_found"] = len(rankings)
+    result["ranking_history_recovery"] = ranking_history_recovery
+    result["ranking_history_recovered_count"] = int(
+        ranking_history_recovery.get("recovered_count", 0)
+    )
     return result
