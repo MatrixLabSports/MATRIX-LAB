@@ -533,6 +533,7 @@ git add evidence/cor0203/runtime/MATRIX_COR0203_BATCH_PREFLIGHT_R*.json 2>/dev/n
 git add evidence/cor0203/adjudication/*.json 2>/dev/null || true
 git add evidence/tennis/world_inventory/MATRIX_TENNIS_WORLD_INVENTORY_LAST.json 2>/dev/null || true
 git add evidence/tennis/world_inventory/*/MATRIX_TENNIS_WORLD_INVENTORY.json 2>/dev/null || true
+git add evidence/tennis_world_inventory/*/world_exact_day_dual_audit.json 2>/dev/null || true
 git add "$WORLD_DERIVED_DISCOVERY_LAST" 2>/dev/null || true
 git add "$WORLD_PREREG_LAST" 2>/dev/null || true
 git add "$WORLD_BRIDGE_LAST" 2>/dev/null || true
