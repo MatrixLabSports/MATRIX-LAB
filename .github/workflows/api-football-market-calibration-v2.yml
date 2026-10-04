@@ -54,4 +54,19 @@ jobs:
             exit 0
           fi
           git commit -m "evidence(football): sync separated market calibration v2"
-          git push origin HEAD:repair/cor09-world-pipeline
+          for attempt in 1 2 3 4; do
+            git fetch origin repair/cor09-world-pipeline
+            if ! git rebase origin/repair/cor09-world-pipeline; then
+              echo "REBASE_CONFLICT_ABORTING"
+              git rebase --abort || true
+              exit 1
+            fi
+            if git push origin HEAD:repair/cor09-world-pipeline; then
+              echo "PUSH_SUCCEEDED_ATTEMPT=${attempt}"
+              exit 0
+            fi
+            echo "PUSH_RACE_RETRY_ATTEMPT=${attempt}"
+            sleep $((attempt * 2))
+          done
+          echo "PUSH_RETRY_BUDGET_EXHAUSTED"
+          exit 1
