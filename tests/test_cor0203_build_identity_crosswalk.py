@@ -265,6 +265,76 @@ def test_governed_authority_can_resolve_player_absent_from_exact_static_cut():
     assert "EXACT_PROVIDER_ID_PLUS_NAME_IOC" in mmoh["match_basis"]
 
 
+def test_governed_authority_allows_proven_ioc_transition():
+    pre = rapidapi_prefeature_for_authority()
+    pre["events"][0]["player_identities"][0] = {
+        "display_name": "Marko Topo",
+        "provider": "rapidapi_tennis",
+        "provider_player_id": "rapidapi-tennis:player:84561",
+        "provider_ranking": {
+            "place": "362",
+            "points": "139",
+            "player": "Marko Topo",
+            "country": "SRB",
+            "snapshot_date": "2026-09-21",
+        },
+    }
+    authority = {
+        "schema": "MATRIX_COR0203_IDENTITY_AUTHORITY_AUTOEXPAND_V1",
+        "post_cut_competitive_data_used": False,
+        "outcomes_used": False,
+        "odds_used": False,
+        "records": [
+            {
+                "provider_player_id": "rapidapi-tennis:player:84561",
+                "provider_display_name": "Marko Topo",
+                "provider_ioc_raw": "SRB",
+                "provider_ioc_canonical": "SRB",
+                "ranking_cut": "2026-09-21",
+                "provider_rank": "362",
+                "provider_rank_points": "139",
+                "pre_cut_history": {
+                    "canonical_source_ids": ["T0FI"],
+                    "canonical_iocs": ["GER"],
+                    "observed_hands": ["R"],
+                    "rows": 18,
+                    "latest_row_date": 20260907,
+                },
+                "biographical_candidates": [
+                    {
+                        "master_id": "209916",
+                        "name": "Marko Topo",
+                        "hand": "R",
+                        "dob": "20030913",
+                        "ioc": "SRB",
+                    }
+                ],
+            }
+        ],
+    }
+
+    result = build_crosswalk(
+        prefeature=pre,
+        static_cut=static_cut(),
+        identity_authority=authority,
+    )
+
+    assert result["status"] == "PASS"
+    mappings = {m["provider_player_id"]: m for m in result["mappings"]}
+    topo = mappings["rapidapi-tennis:player:84561"]
+    assert topo["canonical_source_id"] == "T0FI"
+    assert topo["canonical_name"] == "Marko Topo"
+    assert topo["canonical_ioc"] == "SRB"
+    assert topo["canonical_hand"] == "R"
+    assert topo["ioc_transition"] == {
+        "historical_ioc": "GER",
+        "ranking_cut_ioc": "SRB",
+        "basis": "EXACT_PROVIDER_ID_NAME_DOB_HAND_RANKING_CUT_AND_UNIQUE_PRECUT_SOURCE_ID",
+    }
+    assert "PROVEN_IOC_TRANSITION" in topo["match_basis"]
+    assert result["join_by_name_only"] is False
+
+
 def test_governed_authority_fails_closed_on_country_mismatch():
     authority = governed_identity_authority()
     authority["records"][0]["provider_ioc_canonical"] = "CAN"
