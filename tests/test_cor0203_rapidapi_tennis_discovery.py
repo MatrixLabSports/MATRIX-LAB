@@ -223,6 +223,104 @@ def test_successful_provider_response_counts_verified_response():
 
 
 
+def test_fetch_discovery_recovers_missing_snapshot_rank_from_exact_player_history():
+    class HistoryFallbackClient:
+        def __init__(self):
+            self.request_count = 0
+            self.history_calls = []
+
+        def fixtures(self, start, stop):
+            return {
+                "data": [fixture(start="2026-09-28T12:00:00.000Z")],
+                "pageNo": 1,
+                "pageSize": 1,
+                "hasNextPage": False,
+            }
+
+        def tournament_info(self, tournament_id):
+            return tournament()
+
+        def ranking_snapshot(self, *, ranking_date, wanted_player_ids):
+            values = rankings()
+            del values["22"]
+            return values
+
+        def ranking_history(self, *, player_id, months=3):
+            self.request_count += 1
+            self.history_calls.append((str(player_id), int(months)))
+            return {
+                "history": [
+                    {"date": "2026-09-14", "position": 130, "pts": 450},
+                    {"date": "2026-09-21", "position": 120, "pts": 500},
+                ]
+            }
+
+    client = HistoryFallbackClient()
+    result = fetch_discovery(
+        client=client,
+        start=date(2026, 9, 28),
+        stop=date(2026, 9, 28),
+        as_of_utc="2026-09-28T03:00:00+00:00",
+    )
+
+    assert result["eligible_input_events"] == 1
+    assert result["ranking_history_recovered_count"] == 1
+    assert result["ranking_history_recovery"]["current_rank_used"] is False
+    assert result["ranking_history_recovery"]["post_cut_competitive_data_used"] is False
+    assert client.history_calls == [("22", 3)]
+    recovered = result["eligible_candidates"][0]["players"][1]["provider_ranking"]
+    assert recovered["place"] == "120"
+    assert recovered["points"] == "500"
+    assert recovered["snapshot_date"] == "2026-09-21"
+    assert recovered["ranking_source"] == "PLAYER_RANKING_HISTORY_EXACT_CUT"
+
+
+def test_fetch_discovery_does_not_use_non_cut_ranking_history():
+    class WrongDateHistoryClient:
+        def __init__(self):
+            self.request_count = 0
+
+        def fixtures(self, start, stop):
+            return {
+                "data": [fixture(start="2026-09-28T12:00:00.000Z")],
+                "pageNo": 1,
+                "pageSize": 1,
+                "hasNextPage": False,
+            }
+
+        def tournament_info(self, tournament_id):
+            return tournament()
+
+        def ranking_snapshot(self, *, ranking_date, wanted_player_ids):
+            values = rankings()
+            del values["22"]
+            return values
+
+        def ranking_history(self, *, player_id, months=3):
+            self.request_count += 1
+            return {
+                "history": [
+                    {"date": "2026-09-28", "position": 110, "pts": 550},
+                ]
+            }
+
+    result = fetch_discovery(
+        client=WrongDateHistoryClient(),
+        start=date(2026, 9, 28),
+        stop=date(2026, 9, 28),
+        as_of_utc="2026-09-28T03:00:00+00:00",
+    )
+
+    assert result["eligible_input_events"] == 0
+    assert result["ranking_history_recovered_count"] == 0
+    assert result["ranking_history_recovery"]["blocked"][0]["reason"] == (
+        "EXACT_RANKING_CUT_NOT_FOUND"
+    )
+    assert "RANKING_CUT_MISSING_PLAYER2" in (
+        result["provider_rejected"][0]["blockers"]
+    )
+
+
 def test_fetch_discovery_reuses_embedded_tournament_metadata_beyond_fallback_cap():
     class EmbeddedClient:
         def __init__(self):
