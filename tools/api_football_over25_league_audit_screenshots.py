@@ -20,7 +20,7 @@ TARGETS=[
   {"label":"Regionalliga Südwest","country":"Germany","queries":["Regionalliga SudWest","Regionalliga Südwest","Regionalliga - SudWest"]},
   {"label":"Regionalliga Bayern","country":"Germany","queries":["Regionalliga Bayern","Regionalliga - Bayern"]},
   {"label":"Oberliga Schleswig-Holstein","country":"Germany","queries":["Oberliga Schleswig-Holstein","Schleswig-Holstein"]},
-  {"label":"Oberliga Hamburg","country":"Germany","queries":["Oberliga Hamburg","Hamburg Oberliga"]},
+  {"label":"Oberliga Hamburg","country":"Germany","queries":["Oberliga - Hamburg","Oberliga Hamburg","Hamburg Oberliga"]},
   {"label":"Oberliga Niedersachsen","country":"Germany","queries":["Oberliga Niedersachsen","Niedersachsen"]},
   {"label":"Oberliga Westfalen","country":"Germany","queries":["Oberliga Westfalen","Westfalen"]},
   {"label":"Oberliga Hessen","country":"Germany","queries":["Oberliga Hessen","Hessenliga","Hessen"]},
@@ -48,7 +48,7 @@ TARGETS=[
   {"label":"Copa Paulista","country":"Brazil","queries":["Copa Paulista"]},
   {"label":"Brasileirão Femenino","country":"Brazil","queries":["Brasileiro Women","Brasileirão Women","Serie A Women"]},
   {"label":"First PFL","country":"Bulgaria","queries":["First League","First PFL"]},
-  {"label":"Premier League","country":"Burkina-Faso","queries":["Premier League"]},
+  {"label":"Premier League","country":"Burkina-Faso","queries":["Ligue 1","Premier League"]},
   {"label":"Elite One","country":"Cameroon","queries":["Elite One"]},
 ]
 
