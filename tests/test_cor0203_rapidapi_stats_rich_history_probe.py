@@ -1,4 +1,12 @@
-from tools.cor0203_rapidapi_stats_rich_history_probe import _eligible, _stat_summary, _embedded_stats, _has_model_required_stats
+import json
+
+from tools.cor0203_rapidapi_stats_rich_history_probe import (
+    _eligible,
+    _stat_summary,
+    _embedded_stats,
+    _has_model_required_stats,
+    discover_targets,
+)
 
 
 def test_eligible_requires_strict_pre_cut_and_nonterminal():
@@ -47,3 +55,37 @@ def test_inline_stats_fail_closed_when_one_side_missing():
         "winningOnSecondServe":14,"winningOnSecondServeOf":25,
     }},"player2":{"stats":{}}}
     assert _has_model_required_stats(_embedded_stats(row)) is False
+
+
+def test_dynamic_probe_targets_only_current_players_without_authority(tmp_path):
+    world=tmp_path/"world.json"
+    authority=tmp_path/"authority.json"
+    world.write_text(json.dumps({
+        "eligible_candidates":[{
+            "player_identities":[
+                {"provider_player_id":"rapidapi-tennis:player:103054","display_name":"Thijs Boogaard"},
+                {"provider_player_id":"rapidapi-tennis:player:111","display_name":"Known Player"},
+            ]
+        }],
+        "provider_rejected":[{
+            "players":[{
+                "provider_player_id":"rapidapi-tennis:player:92242",
+                "name":"Charles Chen",
+            }]
+        }],
+    }),encoding="utf-8")
+    authority.write_text(json.dumps({
+        "records":[{
+            "provider_player_id":"rapidapi-tennis:player:111",
+        }]
+    }),encoding="utf-8")
+
+    targets=discover_targets(
+        world_discovery_path=world,
+        authority_path=authority,
+        max_targets=32,
+    )
+
+    assert targets["103054"]=="Thijs Boogaard"
+    assert targets["92242"]=="Charles Chen"
+    assert "111" not in targets
