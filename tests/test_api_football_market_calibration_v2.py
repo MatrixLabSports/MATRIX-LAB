@@ -84,3 +84,71 @@ def test_non_prematch_source_freeze_is_rejected():
     row = _row("2026-10-05T20:00:00Z")
     with pytest.raises(RuntimeError, match="NON_PREMATCH_SOURCE_FREEZE"):
         MOD.build_lane_records([row])
+
+
+def _freeze_row(
+    freeze: str,
+    *,
+    fixture_id: str = "999101",
+    kickoff: str = "2026-10-07T20:00:00+00:00",
+    outcome=None,
+):
+    return {
+        "fixture_id": fixture_id,
+        "freeze_at_utc": freeze,
+        "kickoff_utc": kickoff,
+        "frozen_research_probabilities": {
+            "1x2": {"H": 0.50, "D": 0.30, "A": 0.20},
+            "over_2_5": 0.60,
+        },
+        "input_sha256": "source-input-sha",
+        "target_key": f"api_football:fixture:{fixture_id}",
+        "outcome": outcome,
+        "settlement_status": "PENDING_FINAL",
+    }
+
+
+def test_post_cut_freeze_is_separated_into_five_pending_lanes():
+    lanes = MOD.build_lane_freeze_records([
+        _freeze_row("2026-10-04T19:00:00+00:00")
+    ])
+    assert set(lanes) == {
+        "1x2", "over_2_5", "under_2_5", "double_chance_1x", "double_chance_x2"
+    }
+    assert all(len(rows) == 1 for rows in lanes.values())
+    assert all(rows[0]["outcome"] is None for rows in lanes.values())
+    assert lanes["1x2"][0]["frozen_probability"] == {
+        "H": 0.50, "D": 0.30, "A": 0.20
+    }
+    assert lanes["over_2_5"][0]["frozen_probability"] == pytest.approx(0.60)
+    assert lanes["under_2_5"][0]["frozen_probability"] == pytest.approx(0.40)
+    assert lanes["double_chance_1x"][0]["frozen_probability"] == pytest.approx(0.80)
+    assert lanes["double_chance_x2"][0]["frozen_probability"] == pytest.approx(0.50)
+
+
+def test_pre_cut_freezes_do_not_enter_v2():
+    lanes = MOD.build_lane_freeze_records([
+        _freeze_row("2026-10-04T18:51:31Z")
+    ])
+    assert all(rows == [] for rows in lanes.values())
+
+
+def test_freeze_source_rejects_duplicate_fixture_identity():
+    row1 = _freeze_row("2026-10-04T19:00:00Z", fixture_id="999102")
+    row2 = _freeze_row("2026-10-04T19:01:00Z", fixture_id="999102")
+    with pytest.raises(RuntimeError, match="FREEZE_SOURCE_DUPLICATE_FIXTURE"):
+        MOD.build_lane_freeze_records([row1, row2])
+
+
+def test_freeze_source_rejects_non_prematch_or_outcome_contamination():
+    with pytest.raises(RuntimeError, match="NON_PREMATCH_FREEZE_SOURCE_ROW"):
+        MOD.build_lane_freeze_records([
+            _freeze_row(
+                "2026-10-07T20:00:00Z",
+                kickoff="2026-10-07T20:00:00+00:00",
+            )
+        ])
+    with pytest.raises(RuntimeError, match="FREEZE_SOURCE_OUTCOME_NOT_NULL"):
+        MOD.build_lane_freeze_records([
+            _freeze_row("2026-10-04T19:00:00Z", outcome="H")
+        ])
