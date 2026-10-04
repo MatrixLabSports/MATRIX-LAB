@@ -1,0 +1,78 @@
+name: Tennis World Exact Day 2026-10-05
+
+on:
+  push:
+    branches:
+      - repair/cor09-world-pipeline
+    paths:
+      - .github/workflows/tennis-world-exact-day-20261005.yml
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: cor0203-holdout-repair-cor09-world-pipeline
+  cancel-in-progress: false
+
+jobs:
+  exact-day-and-calibration:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout latest operational branch
+        uses: actions/checkout@v4
+        with:
+          ref: repair/cor09-world-pipeline
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install test dependency
+        run: python -m pip install pytest
+
+      - name: Verify exact-day and governed discovery protections
+        run: |
+          python -m pytest -q \
+            tests/test_tennis_world_inventory_rapidapi.py \
+            tests/test_cor0203_world_inventory_discovery.py \
+            tests/test_cor0203_preregister_discovery.py \
+            tests/test_cor0203_physical_uniqueness.py
+
+      - name: Record latest physical checkout
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch origin repair/cor09-world-pipeline
+          git checkout repair/cor09-world-pipeline
+          git reset --hard origin/repair/cor09-world-pipeline
+          CHECKOUT_SHA="$(git rev-parse HEAD)"
+          echo "CHECKOUT_SHA=$CHECKOUT_SHA" >> "$GITHUB_ENV"
+          echo "Latest physical operational SHA: $CHECKOUT_SHA"
+
+      - name: Build dual paid-source exact-day inventory for 2026-10-05
+        shell: bash
+        env:
+          API_TENNIS_KEY: ${{ secrets.API_TENNIS_KEY }}
+          RAPIDAPI_TENNIS_KEY: ${{ secrets.RAPIDAPI_TENNIS_KEY }}
+        run: |
+          set -euo pipefail
+          python -m tools.tennis_world_exact_day_dual_audit \
+            --target-date-bogota 2026-10-05 \
+            --out evidence/tennis_world_inventory/2026-10-05/world_exact_day_dual_audit.json
+
+      - name: Run governed 2026-10-05 calibration production
+        shell: bash
+        env:
+          API_TENNIS_KEY: ${{ secrets.API_TENNIS_KEY }}
+          RAPIDAPI_TENNIS_KEY: ${{ secrets.RAPIDAPI_TENNIS_KEY }}
+          MATRIX_TENNIS_PROVIDER: rapidapi_tennis
+          MATRIX_WORLD_DATE_BOGOTA: "2026-10-05"
+          MATRIX_TARGET_BRANCH: repair/cor09-world-pipeline
+          MATRIX_GIT_USER_NAME: matrix-ci
+          MATRIX_GIT_USER_EMAIL: matrix-ci@users.noreply.github.com
+        run: |
+          set -euo pipefail
+          bash scripts/cor0203_production_cycle.sh --trigger-sha "$CHECKOUT_SHA"
