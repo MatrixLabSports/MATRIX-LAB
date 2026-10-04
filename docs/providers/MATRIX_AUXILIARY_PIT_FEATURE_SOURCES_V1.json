@@ -1,0 +1,145 @@
+{
+  "schema": "MATRIX_AUXILIARY_PIT_FEATURE_SOURCES_V1",
+  "effective_date": "2026-10-04",
+  "timezone": "America/Bogota",
+  "status": "ACTIVE_PERMANENT_ADDITIVE",
+  "principle": "SOFASCORE_AND_FLASHSCORE_MAY_SUPPORT_DISCOVERY_IDENTITY_AND_PROSPECTIVE_FEATURES_ONLY_WITH_POINT_IN_TIME_PROVENANCE",
+  "sources": {
+    "sofascore": {
+      "browser_web_verified": true,
+      "ci_api_automation": "BLOCKED_WAF_HTTP_403",
+      "tennis": {
+        "allowed": [
+          "calendar",
+          "tournament",
+          "surface",
+          "player_identity",
+          "current_rank_visible_at_capture",
+          "historical_rank_only_when_explicitly_dated_and_captured",
+          "head_to_head",
+          "recent_matches",
+          "event_statistics",
+          "player_metadata"
+        ],
+        "browser_evidence_examples": [
+          "2026-10-05 tennis calendar page exposes competition, surface, player identities and event times",
+          "tennis cards visibly expose ATP/WTA ranking positions for players"
+        ]
+      },
+      "football": {
+        "allowed": [
+          "calendar",
+          "competition",
+          "team_identity",
+          "standings",
+          "roster",
+          "player_identity",
+          "player_position",
+          "minutes",
+          "starts",
+          "goals",
+          "cards",
+          "lineups",
+          "substitutions",
+          "match_statistics",
+          "recent_matches",
+          "team_metadata",
+          "player_metadata"
+        ],
+        "browser_evidence_examples": [
+          "Juventus team page exposes fixtures, standings, roster and player statistics",
+          "SofaScore states player totals include matches played, starts, minutes, goals and cards"
+        ]
+      }
+    },
+    "flashscore": {
+      "browser_web_verified": true,
+      "tennis": {
+        "allowed": [
+          "calendar",
+          "tournament",
+          "surface",
+          "player_identity",
+          "current_rank_visible_at_capture",
+          "ranking_history_when_explicitly dated",
+          "match_record_by_season",
+          "match_record_by_surface",
+          "recent_matches",
+          "injury_updates",
+          "player_metadata"
+        ],
+        "browser_evidence_examples": [
+          "Sascha Gueymard Wayenburg profile exposes RANKING links",
+          "Flashscore profile text states current ATP/WTA ranking and ranking history are available"
+        ]
+      },
+      "football": {
+        "allowed": [
+          "calendar",
+          "competition",
+          "team_identity",
+          "lineups",
+          "player_statistics",
+          "expected_goals_xg",
+          "possession",
+          "shots",
+          "match_statistics",
+          "team_recent_results",
+          "cards",
+          "corners_when_visible",
+          "player_metadata"
+        ],
+        "browser_evidence_examples": [
+          "Pereira vs Santa Fe match page exposes ESTADÍSTICAS, ALINEACIONES and ESTADÍSTICAS DE JUGADORES",
+          "same page exposes Goles esperados (xG), Posesión de balón and Remates"
+        ]
+      }
+    }
+  },
+  "admission_rules": {
+    "point_in_time_required": true,
+    "captured_at_required": true,
+    "source_url_or_entity_reference_required": true,
+    "source_name_required": true,
+    "raw_snapshot_or_physical_evidence_required": true,
+    "canonical_identity_required": true,
+    "timezone_aware": true,
+    "missing_not_zero": true,
+    "silent_imputation": false,
+    "name_only_identity_join": false,
+    "future_knowledge_used": false,
+    "historical_backfill_allowed": false,
+    "odds_to_p_matrix": false,
+    "automatic_model_feed": false,
+    "automatic_model_promotion": false,
+    "automatic_wagering": false,
+    "real_money": "BLOCKED"
+  },
+  "ranking_rule": {
+    "current_rank": "May be used only for a prospective event when captured before freeze and the model/domain explicitly permits that timestamp.",
+    "historical_rank": "May be used only when the source exposes an explicit historical date and the captured value can be tied to that date.",
+    "retroactive_use": "PROHIBITED. A rank visible today may not be injected into a freeze or historical feature cutoff from an earlier date."
+  },
+  "football_statistics_rule": {
+    "prospective_use": "Allowed only when the statistic existed and was captured before the governed feature cutoff/freeze.",
+    "examples": [
+      "team form",
+      "shots",
+      "shots on target",
+      "xG",
+      "possession",
+      "corners",
+      "cards",
+      "lineups",
+      "player minutes",
+      "player starts",
+      "player goals"
+    ],
+    "reconciliation": "If a paid API provides the same statistic, disagreement must be persisted and adjudicated under provider reconciliation; no silent overwrite."
+  },
+  "provider_priority_rule": {
+    "statement": "Paid APIs remain mandatory structured acquisition sources, while SofaScore/Flashscore are independent discovery, validation and auxiliary PIT feature sources.",
+    "no_single_source_world_truth": true,
+    "no_single_source_feature_override": true
+  }
+}
