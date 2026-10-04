@@ -207,6 +207,7 @@ def run(target:date,out:Path)->dict[str,Any]:
         "primary_world_inventory":{
             "provider":"rapidapi_tennis",
             "status":rapid.get("status"),
+            "provider_inventory_complete":rapid.get("provider_inventory_complete"),
             "world_inventory_complete":rapid.get("world_inventory_complete"),
             "unique_match_count":len(rapid_events),
             "network_calls":rapid_client.request_count,
@@ -233,16 +234,18 @@ def run(target:date,out:Path)->dict[str,Any]:
             "rapidapi_only_neutral_count":len(rapid_only_keys),
             "api_tennis_only_neutral_count":len(api_only_keys),
             "exact_union_count":len(set(rapid_by)|set(api_by)),
-            "note":"Exact-neutral reconciliation uses Bogota date + normalized player pair + singles/doubles format. Provider-specific aliases can remain unmatched; the primary worldwide denominator is RapidAPI when world_inventory_complete=true.",
+            "note":"Exact-neutral reconciliation uses Bogota date + normalized player pair + singles/doubles format. Provider-specific aliases can remain unmatched. No single provider is authorized to define the worldwide denominator.",
         },
         "primary_worldwide_registered_match_count":len(rapid_events),
-        "authoritative_count_policy":"RAPIDAPI_WORLD_INVENTORY_COMPLETE_PRIMARY; API_TENNIS_SECONDARY_CROSSCHECK_ONLY",
+        "authoritative_count_policy":"MULTI_SOURCE_RECONCILIATION_REQUIRED; PROVIDER_COUNTS_ARE_NOT_WORLD_TRUTH",
         "automatic_model_feed":False,
         "metrics_opened":False,
         "odds_used":False,
         "automatic_wagering":False,
         "real_money":"BLOCKED",
-        "status":"PASS" if rapid.get("world_inventory_complete") else "PARTIAL",
+        "world_inventory_complete":False,
+        "world_complete_gate":"REQUIRES_MULTI_SOURCE_RECONCILIATION",
+        "status":"PASS_PROVIDER_CAPTURE_WORLD_UNSEALED" if rapid.get("provider_inventory_complete") else "PARTIAL",
     }
     out.parent.mkdir(parents=True,exist_ok=True)
     out.write_text(json.dumps(result,indent=2,sort_keys=True,ensure_ascii=False)+"\n",encoding="utf-8")
