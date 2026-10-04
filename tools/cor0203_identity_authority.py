@@ -312,9 +312,16 @@ def resolve_authority_mapping(
         "canonical_dob": dob.isoformat(),
         "ranking_cut": CUT_TOKEN,
         "match_basis": (
-            "EXACT_PROVIDER_ID_PLUS_NAME_UNIQUE_PRECUT_SOURCE_ID_"
-            "PLUS_FIXED_BIOGRAPHY_DOB_HAND_AND_DATED_PROVIDER_RANKING"
-            + ("_PLUS_PROVEN_IOC_TRANSITION" if ioc_transition else "_PLUS_IOC_MATCH")
+            (
+                "EXACT_PROVIDER_ID_PLUS_NAME_UNIQUE_PRECUT_SOURCE_ID_"
+                "PLUS_FIXED_BIOGRAPHY_DOB_HAND_AND_DATED_PROVIDER_RANKING_"
+                "PLUS_PROVEN_IOC_TRANSITION"
+            )
+            if ioc_transition
+            else (
+                "EXACT_PROVIDER_ID_PLUS_NAME_IOC_UNIQUE_PRECUT_SOURCE_ID_"
+                "PLUS_FIXED_BIOGRAPHY_DOB_AND_DATED_PROVIDER_RANKING"
+            )
         ),
         "identity_authority": str(row.get("_identity_authority") or ""),
         "status": "PASS",
