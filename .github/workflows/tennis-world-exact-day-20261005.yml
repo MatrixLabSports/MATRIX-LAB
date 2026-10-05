@@ -99,6 +99,7 @@ jobs:
 
           python -m tools.cor0203_sofascore_browser_bridge \
             --source-snapshot "$SOURCE" \
+            --ranking-override evidence/cor0203/source_readiness/public_rankings/2026-09-21/MATRIX_AORAN_WANG_EXACT_CUT_RANKING_20260921.json \
             --out-discovery "$DISCOVERY" \
             --out-authority "$OVERLAY" \
             --out-verification "$VERIFY"
@@ -190,3 +191,5 @@ jobs:
 # governed retrigger: list-envelope ranking pagination fix
 
 # governed retrigger: exact-cut player-history fallback for Aoran Wang
+
+# governed retrigger: Aoran corroborated public exact-cut fallback after dual paid failure
