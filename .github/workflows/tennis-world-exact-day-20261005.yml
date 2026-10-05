@@ -200,7 +200,7 @@ jobs:
           UNIQUE="evidence/cor0203/runtime/MATRIX_COR0203_PHYSICAL_UNIQUENESS_LAST.json"
           MILESTONE="evidence/cor0203/runtime/MATRIX_COR0203_MILESTONES_LAST.json"
 
-          python -m tools.cor0203_sofascore_browser_bridge             --source-snapshot "$SOURCE"             --out-discovery "$DISCOVERY"             --out-authority "$OVERLAY"             --out-verification "$VERIFY"
+          python -m tools.cor0203_sofascore_browser_bridge             --source-snapshot "$SOURCE"             --static-cut "$STATIC"             --out-discovery "$DISCOVERY"             --out-authority "$OVERLAY"             --out-verification "$VERIFY"
 
           python -m tools.cor0203_preregister_discovery             --discovery "$DISCOVERY"             --result-out "$PREREG"
 
