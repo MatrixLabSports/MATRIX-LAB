@@ -17,6 +17,7 @@ REV_RE = re.compile(r"_R(\d+)\.json$")
 PROVIDER_PLAYER_PATTERNS = {
     "api_tennis": re.compile(r"^api-tennis:player:\d+$"),
     "rapidapi_tennis": re.compile(r"^rapidapi-tennis:player:\d+$"),
+    "sofascore_browser": re.compile(r"^sofascore:player:\d+$"),
 }
 
 
@@ -50,6 +51,8 @@ def _provider_from_player_id(value: object) -> str:
         return "api_tennis"
     if token.startswith("rapidapi-tennis:player:"):
         return "rapidapi_tennis"
+    if token.startswith("sofascore:player:"):
+        return "sofascore_browser"
     return ""
 
 
