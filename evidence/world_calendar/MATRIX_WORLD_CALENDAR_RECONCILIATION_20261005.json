@@ -332,6 +332,44 @@
       "remaining_to_600": 498,
       "metrics": "SEALED_UNTIL_600_UNIQUE",
       "explanation": "Latest 19 eligible events were already preregistered/frozen or duplicate-resolved, so the legitimate unique counter did not increase."
+    },
+    "sofascore_calibration_domain": {
+      "target_date_bogota": "2026-10-05",
+      "protected_domain": "ATP Challenger + Hard + Singles + Match Winner",
+      "counting_method": "Selected-date SofaScore tournament-card counters filtered by Challenger + hard + singles; doubles excluded.",
+      "raw_candidate_matches": 21,
+      "breakdown": [
+        {
+          "tournament": "Alicante, Spain",
+          "surface": "Outdoor hard",
+          "category": "Challenger 100",
+          "matches": 11
+        },
+        {
+          "tournament": "Wuning 3, China",
+          "surface": "Outdoor hard",
+          "category": "Challenger",
+          "matches": 10
+        }
+      ],
+      "excluded_examples": [
+        "Antofagasta Challenger: clay",
+        "Braga Challenger: clay",
+        "Palermo Challenger: red clay",
+        "Wuning 3 Doubles: doubles",
+        "Samsun/Suzhou: WTA 125, outside protected ATP Challenger domain"
+      ],
+      "latest_governed_pipeline_crosscheck": {
+        "domain_candidates_input": 20,
+        "eligible_input_events": 19,
+        "new_unique_added_latest_refresh": 0,
+        "current_unique_calibration_observations": 102,
+        "note": "SofaScore raw source candidates are not automatically calibration observations. Identity, PIT, history, preregistration, dedupe and freeze gates remain mandatory."
+      },
+      "source": "SofaScore Opera active calendar",
+      "source_url": "https://www.sofascore.com/tennis/2026-10-05",
+      "verified_at_bogota": "2026-10-04T21:58:00-05:00",
+      "status": "PHYSICALLY_VERIFIED_SOURCE_LEVEL_CANDIDATE_COUNT"
     }
   },
   "football": {
