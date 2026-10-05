@@ -1,6 +1,6 @@
 {
   "schema": "MATRIX_MULTI_SOURCE_REGISTRY_V1",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "effective_date": "2026-10-04",
   "timezone": "America/Bogota",
   "permanent_rule": true,
@@ -25,7 +25,13 @@
     "odds_to_p_matrix_forbidden": true,
     "model_feed_requires_explicit_governed_authorization": true,
     "real_money": "BLOCKED",
-    "automatic_wagering": false
+    "automatic_wagering": false,
+    "native_source_counting_method_must_be_verified_before_reporting_total": true,
+    "loaded_links_or_partial_dom_counts_cannot_be_reported_as_source_total": true,
+    "paid_api_coverage_must_not_be_assumed_complete": true,
+    "public_browser_source_coverage_must_not_be_assumed_complete": true,
+    "source_total_claim_requires_method_and_scope_provenance": true,
+    "material_count_discrepancy_requires_recount_before_user_report": true
   },
   "tennis": {
     "primary_paid_structured": [
@@ -252,6 +258,10 @@
     "provider_aliases_must_be_persisted": true,
     "timestamp_and_timezone_provenance_required": true,
     "every_model_feature_requires_pit_provenance": true,
-    "browser_sources_may_expand_discovery_but_not_bypass_model_gates": true
+    "browser_sources_may_expand_discovery_but_not_bypass_model_gates": true,
+    "source_native_counters_preferred_over_partial_loaded_link_counts": true,
+    "partial_page_or_lazy_load_counts_must_be_labeled_lower_bound": true,
+    "world_total_requires_cross_source_reconciliation": true,
+    "every_reported_source_total_requires_physical_evidence_path": true
   }
 }
