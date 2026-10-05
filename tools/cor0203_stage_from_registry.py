@@ -263,11 +263,18 @@ def stage_prefeature(
                     and static_fields["rank"] is not None
                     and static_fields["rank_points"] is not None
                 ):
+                    identity_authority = str(mapping.get("identity_authority") or "").strip()
+                    if identity_authority:
+                        inherited_from = [identity_authority]
+                        static_origin = "GOVERNED_IDENTITY_AUTHORITY_EXACT_CUT_CROSSWALK"
+                    else:
+                        inherited_from = ["MATRIX_COR0203_STATIC_CUT_20260921.json"]
+                        static_origin = "SEALED_STATIC_CUT_IDENTITY_CROSSWALK"
                     resolved.append({
                         "name": name,
                         **static_fields,
-                        "inherited_from": ["MATRIX_COR0203_STATIC_CUT_20260921.json"],
-                        "static_origin": "SEALED_STATIC_CUT_IDENTITY_CROSSWALK",
+                        "inherited_from": inherited_from,
+                        "static_origin": static_origin,
                     })
                     continue
                 event_blockers.append("SEALED_STATIC4_CROSSWALK_INCOMPLETE:" + name)
