@@ -307,6 +307,93 @@ def _public_exact_cut_override(
         },
     }
 
+
+def _static_cut_exact_record(
+    static_cut: Mapping[str, Any] | None,
+    *,
+    target_name: str,
+) -> tuple[str, dict[str, Any], dict[str, Any]]:
+    if not isinstance(static_cut, Mapping):
+        raise ValueError("STATIC_CUT_FALLBACK_MISSING:" + target_name)
+    players = static_cut.get("players")
+    if not isinstance(players, Mapping):
+        raise ValueError("STATIC_CUT_FALLBACK_PLAYERS_INVALID:" + target_name)
+    matches: list[tuple[str, Mapping[str, Any]]] = []
+    for source_id, row in players.items():
+        if not isinstance(row, Mapping):
+            continue
+        if _norm(row.get("canonical_name")) == _norm(target_name):
+            matches.append((str(source_id), row))
+    if len(matches) != 1:
+        raise ValueError(
+            "STATIC_CUT_EXACT_NAME_NOT_UNIQUE_OR_MISSING:"
+            + target_name
+            + ":"
+            + str(len(matches))
+        )
+    source_id, row = matches[0]
+    if row.get("observed_exact_cut") is not True:
+        raise ValueError("STATIC_CUT_NOT_EXACT_OBSERVED:" + target_name)
+    if str(row.get("ranking_cut") or "").replace("-", "") != "20260921":
+        raise ValueError("STATIC_CUT_DATE_MISMATCH:" + target_name)
+    rank = _positive_int(row.get("rank"), field="STATIC_CUT_RANK")
+    points = _positive_int(row.get("rank_points"), field="STATIC_CUT_RANK_POINTS")
+    hand = str(row.get("hand") or "").strip().upper()
+    ioc = str(row.get("ioc") or "").strip().upper()
+    age = row.get("age")
+    if hand not in {"R", "L"} or not ioc or not isinstance(age, (int, float)):
+        raise ValueError("STATIC_CUT_IDENTITY_FIELDS_MISSING:" + target_name)
+    ranking = {
+        "place": str(rank),
+        "points": str(points),
+        "player": target_name,
+        "country": ioc,
+        "snapshot_date": CUT_TOKEN,
+        "ranking_source": "SEALED_STATIC_CUT_EXACT_2026_09_21",
+        "static_cut_source_id": source_id,
+    }
+    return source_id, dict(row), ranking
+
+
+def _native_sofascore_profile(
+    spec: Mapping[str, Any],
+    *,
+    target_name: str,
+    static_row: Mapping[str, Any],
+) -> tuple[dict[str, str], dict[str, Any]]:
+    bio = _mapping(spec.get("immutable_biography"))
+    dob = str(bio.get("birth_date") or "").strip()
+    hand = str(bio.get("hand") or "").strip().upper()
+    ioc = str(bio.get("country") or "").strip().upper()
+    if len(dob) != 10 or hand not in {"R", "L"} or not ioc:
+        raise ValueError("SOFASCORE_NATIVE_BIOGRAPHY_MISSING:" + target_name)
+    if hand != str(static_row.get("hand") or "").strip().upper():
+        raise ValueError("SOFASCORE_STATIC_HAND_MISMATCH:" + target_name)
+    if ioc != str(static_row.get("ioc") or "").strip().upper():
+        raise ValueError("SOFASCORE_STATIC_IOC_MISMATCH:" + target_name)
+    born = date.fromisoformat(dob)
+    age_at_cut = (CUT_DATE - born).days / 365.25
+    static_age = float(static_row.get("age"))
+    if abs(age_at_cut - static_age) > 0.02:
+        raise ValueError("SOFASCORE_STATIC_AGE_MISMATCH:" + target_name)
+    profile = {
+        "id": "",
+        "name": target_name,
+        "ioc": ioc,
+        "dob": dob,
+        "hand": hand,
+    }
+    payload = {
+        "provider": "sofascore_native_event_api",
+        "name": target_name,
+        "ioc": ioc,
+        "dob": dob,
+        "hand": hand,
+        "competitive_fields_used": False,
+    }
+    return profile, payload
+
+
 def build_bridge(
     *,
     source_snapshot: Mapping[str, Any],
@@ -314,6 +401,7 @@ def build_bridge(
     state_path: Path,
     as_of_utc: str,
     ranking_override: Mapping[str, Any] | None = None,
+    static_cut: Mapping[str, Any] | None = None,
 ) -> tuple[dict[str, Any], dict[str, Any], dict[str, Any]]:
     if source_snapshot.get("integrity_result") != "PASS_SOURCE_SCHEDULE_IDENTITY":
         raise ValueError("SOFASCORE_SOURCE_INTEGRITY_NOT_PASS")
@@ -360,45 +448,67 @@ def build_bridge(
         if not sofa_id.isdigit() or int(sofa_id) <= 0:
             raise ValueError("SOFASCORE_PLAYER_ID_INVALID:" + name)
 
+        static_fallback = False
+        static_source_id = ""
+        static_row: dict[str, Any] = {}
+        rapid_id = ""
         try:
             rapid_id, ranking = _ranking_record(ranking_rows, target_name=name)
         except ValueError as ranking_error:
             if not str(ranking_error).startswith("EXACT_CUT_RANKING_NOT_UNIQUE_OR_MISSING:"):
                 raise
-            rapid_id = _rapid_player_id_from_results(
-                result_rows,
-                target_name=name,
-            )
-            profile_probe = _profile_identity(client.player_profile(player_id=rapid_id))
             try:
-                ranking = _exact_ranking_from_history(
-                    client,
-                    rapid_player_id=rapid_id,
+                rapid_id = _rapid_player_id_from_results(
+                    result_rows,
                     target_name=name,
-                    country_hint=profile_probe["ioc"],
                 )
-            except ValueError as history_rank_error:
-                if not str(history_rank_error).startswith(
-                    "PLAYER_RANKING_HISTORY_EXACT_CUT_NOT_UNIQUE_OR_MISSING:"
+            except ValueError as result_id_error:
+                if not str(result_id_error).startswith(
+                    "PRECUT_RESULT_PLAYER_ID_NOT_UNIQUE_OR_MISSING:"
                 ):
                     raise
-                ranking = _public_exact_cut_override(
-                    ranking_override,
+                static_source_id, static_row, ranking = _static_cut_exact_record(
+                    static_cut,
                     target_name=name,
-                    country_hint=profile_probe["ioc"],
                 )
-        profile_payload = client.player_profile(player_id=rapid_id)
-        profile = _profile_identity(profile_payload)
-        if profile["id"] and profile["id"] != rapid_id:
-            raise ValueError("RAPIDAPI_PROFILE_ID_MISMATCH:" + name)
-        if _norm(profile["name"]) != _norm(name):
-            raise ValueError("RAPIDAPI_PROFILE_NAME_MISMATCH:" + name)
-        if profile["hand"] not in {"R", "L"}:
-            raise ValueError("RAPIDAPI_PROFILE_HAND_MISSING:" + name)
-        if len(profile["dob"]) != 10:
-            raise ValueError("RAPIDAPI_PROFILE_DOB_MISSING:" + name)
-        if ranking["country"] and profile["ioc"] and ranking["country"] != profile["ioc"]:
-            raise ValueError("RAPIDAPI_PROFILE_IOC_MISMATCH:" + name)
+                profile, profile_payload = _native_sofascore_profile(
+                    spec,
+                    target_name=name,
+                    static_row=static_row,
+                )
+                static_fallback = True
+            if not static_fallback:
+                profile_probe = _profile_identity(client.player_profile(player_id=rapid_id))
+                try:
+                    ranking = _exact_ranking_from_history(
+                        client,
+                        rapid_player_id=rapid_id,
+                        target_name=name,
+                        country_hint=profile_probe["ioc"],
+                    )
+                except ValueError as history_rank_error:
+                    if not str(history_rank_error).startswith(
+                        "PLAYER_RANKING_HISTORY_EXACT_CUT_NOT_UNIQUE_OR_MISSING:"
+                    ):
+                        raise
+                    ranking = _public_exact_cut_override(
+                        ranking_override,
+                        target_name=name,
+                        country_hint=profile_probe["ioc"],
+                    )
+        if not static_fallback:
+            profile_payload = client.player_profile(player_id=rapid_id)
+            profile = _profile_identity(profile_payload)
+            if profile["id"] and profile["id"] != rapid_id:
+                raise ValueError("RAPIDAPI_PROFILE_ID_MISMATCH:" + name)
+            if _norm(profile["name"]) != _norm(name):
+                raise ValueError("RAPIDAPI_PROFILE_NAME_MISMATCH:" + name)
+            if profile["hand"] not in {"R", "L"}:
+                raise ValueError("RAPIDAPI_PROFILE_HAND_MISSING:" + name)
+            if len(profile["dob"]) != 10:
+                raise ValueError("RAPIDAPI_PROFILE_DOB_MISSING:" + name)
+            if ranking["country"] and profile["ioc"] and ranking["country"] != profile["ioc"]:
+                raise ValueError("RAPIDAPI_PROFILE_IOC_MISMATCH:" + name)
 
         history_ready = audit_player(state, name)
         if history_ready.get("fully_history_ready") is not True:
@@ -409,11 +519,23 @@ def build_bridge(
         ):
             raise ValueError("R706_REQUIRED_COMPONENT_MISSING:" + name)
 
-        provider_history = _precut_identity_history(
-            result_rows,
-            rapid_player_id=rapid_id,
-            canonical_name=name,
-        )
+        if static_fallback:
+            provider_history = {
+                "authority": "SEALED_STATIC_CUT_EXACT_DATE",
+                "ranking_cut": CUT_TOKEN,
+                "canonical_source_id": static_source_id,
+                "observed_exact_cut": True,
+                "eligible_pre_cut_matches": 0,
+                "identity_only_source_row_sha256": [],
+                "outcomes_used_for_metrics": 0,
+                "metrics_opened": False,
+            }
+        else:
+            provider_history = _precut_identity_history(
+                result_rows,
+                rapid_player_id=rapid_id,
+                canonical_name=name,
+            )
 
         sofa_provider_id = "sofascore:player:" + sofa_id
         bio = {
@@ -421,7 +543,11 @@ def build_bridge(
             "ioc": profile["ioc"] or ranking["country"],
             "dob": profile["dob"].replace("-", ""),
             "hand": profile["hand"],
-            "master_id": "RAPIDAPI_PROFILE_" + rapid_id,
+            "master_id": (
+                "SEALED_STATIC_CUT_" + static_source_id
+                if static_fallback
+                else "RAPIDAPI_PROFILE_" + rapid_id
+            ),
             "provider_profile_sha256": _sha(profile_payload),
         }
         authority_records.append(
@@ -435,7 +561,11 @@ def build_bridge(
                 "ranking_cut": CUT_TOKEN,
                 "canonical_name": name,
                 "canonical_source_id": "R706_STATE_SOFASCORE_PLAYER_" + sofa_id,
-                "authority_basis": "SEALED_R706_STATE_PLUS_PRECUT_PROVIDER_HISTORY_AND_PROFILE",
+                "authority_basis": (
+                    "SEALED_R706_STATE_PLUS_STATIC_CUT_AND_SOFASCORE_NATIVE_PROFILE"
+                    if static_fallback
+                    else "SEALED_R706_STATE_PLUS_PRECUT_PROVIDER_HISTORY_AND_PROFILE"
+                ),
                 "sealed_r706_history": {
                     **history_ready,
                     "state_sha256": state_sha,
@@ -445,10 +575,20 @@ def build_bridge(
                     "provider_player_id": sofa_provider_id,
                 },
                 "biographical_candidates": [bio],
-                "biography_source": "RAPIDAPI_PROFILE_IMMUTABLE_DOB_HAND",
-                "competitive_source": "RAPIDAPI_TENNIS_EXACT_2026_09_21_RANKING",
+                "biography_source": (
+                    "SOFASCORE_NATIVE_EVENT_API_IMMUTABLE_DOB_HAND"
+                    if static_fallback
+                    else "RAPIDAPI_PROFILE_IMMUTABLE_DOB_HAND"
+                ),
+                "competitive_source": (
+                    "SEALED_STATIC_CUT_EXACT_2026_09_21"
+                    if static_fallback
+                    else "RAPIDAPI_TENNIS_EXACT_2026_09_21_RANKING"
+                ),
                 "schedule_identity_source": "SOFASCORE_BROWSER_OPERA",
-                "rapidapi_player_id": "rapidapi-tennis:player:" + rapid_id,
+                "rapidapi_player_id": (
+                    "rapidapi-tennis:player:" + rapid_id if rapid_id else None
+                ),
                 "profile_competitive_fields_discarded": [
                     "currentRank",
                     "points",
@@ -462,8 +602,15 @@ def build_bridge(
                 "provider_player_id": sofa_provider_id,
                 "provider_ranking": ranking,
                 "ranking_provenance": {
-                    "source_provider": "rapidapi_tennis",
-                    "rapidapi_player_id": "rapidapi-tennis:player:" + rapid_id,
+                    "source_provider": (
+                        "sealed_static_cut" if static_fallback else "rapidapi_tennis"
+                    ),
+                    "rapidapi_player_id": (
+                        "rapidapi-tennis:player:" + rapid_id if rapid_id else None
+                    ),
+                    "static_cut_source_id": (
+                        static_source_id if static_fallback else None
+                    ),
                     "snapshot_date": CUT_TOKEN,
                 },
             }
@@ -472,7 +619,9 @@ def build_bridge(
             {
                 "name": name,
                 "sofascore_player_id": sofa_id,
-                "rapidapi_player_id": rapid_id,
+                "rapidapi_player_id": rapid_id or None,
+                "static_cut_source_id": static_source_id or None,
+                "static_cut_fallback_used": static_fallback,
                 "rank": int(ranking["place"]),
                 "rank_points": int(ranking["points"]),
                 "dob": profile["dob"],
@@ -614,6 +763,7 @@ def main() -> None:
     parser.add_argument("--out-authority", required=True)
     parser.add_argument("--out-verification", required=True)
     parser.add_argument("--ranking-override")
+    parser.add_argument("--static-cut")
     parser.add_argument("--as-of-utc")
     args = parser.parse_args()
 
@@ -629,6 +779,11 @@ def main() -> None:
         ranking_override=(
             _load(Path(args.ranking_override))
             if args.ranking_override
+            else None
+        ),
+        static_cut=(
+            _load(Path(args.static_cut))
+            if args.static_cut
             else None
         ),
     )
