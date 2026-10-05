@@ -25,7 +25,7 @@ MAX_RESPONSE_BYTES = 5_000_000
 MAX_FIXTURE_PAGES = 4
 MAX_WORLD_FIXTURE_PAGES = 12
 MAX_RESULT_PAGES = 12
-MAX_RANKING_PAGES = 4
+MAX_RANKING_PAGES = 20
 MAX_RANK_HISTORY_FALLBACK_REQUESTS = 32
 MAX_RANK_ALIAS_PROFILE_REQUESTS = 32
 MAX_TOURNAMENT_INFO_REQUESTS = 12
@@ -306,6 +306,7 @@ class RapidApiTennisClient:
         wanted = {str(x) for x in wanted_player_ids if _positive_id(x)}
         found: dict[str, Mapping[str, Any]] = {}
         page = 1
+        seen_page_player_ids: set[str] = set()
         for _ in range(MAX_RANKING_PAGES):
             payload = self._get(
                 "/tennis/v2/ranking/atp",
@@ -317,11 +318,15 @@ class RapidApiTennisClient:
                 },
             )
             rows = _data_rows(payload)
+            if not rows:
+                break
+            page_ids: set[str] = set()
             for row in rows:
                 player = _mapping(row.get("player"))
                 player_id = _positive_id(player.get("id"))
                 if player_id is None:
                     continue
+                page_ids.add(player_id)
                 if wanted and player_id not in wanted:
                     continue
                 position = row.get("position")
@@ -337,7 +342,13 @@ class RapidApiTennisClient:
                 }
             if wanted and wanted.issubset(found):
                 break
-            if not rows or len(rows) < PAGE_SIZE:
+            # Some provider responses cap rows below the requested limit.
+            # Do not treat len(rows) < PAGE_SIZE as end-of-pagination.
+            new_ids = page_ids - seen_page_player_ids
+            if not new_ids:
+                break
+            seen_page_player_ids.update(page_ids)
+            if payload.get("hasNextPage") is False:
                 break
             page += 1
         return found
@@ -349,6 +360,7 @@ class RapidApiTennisClient:
     ) -> list[Mapping[str, Any]]:
         rows_out: list[Mapping[str, Any]] = []
         page = 1
+        seen_player_ids: set[str] = set()
         for _ in range(MAX_RANKING_PAGES):
             payload = self._get(
                 "/tennis/v2/ranking/atp",
@@ -360,8 +372,24 @@ class RapidApiTennisClient:
                 },
             )
             rows = _data_rows(payload)
-            rows_out.extend(rows)
-            if not rows or len(rows) < PAGE_SIZE:
+            if not rows:
+                break
+            page_ids = {
+                player_id
+                for row in rows
+                for player_id in [_positive_id(_mapping(row.get("player")).get("id"))]
+                if player_id is not None
+            }
+            new_ids = page_ids - seen_player_ids
+            if not new_ids:
+                break
+            rows_out.extend(
+                row
+                for row in rows
+                if _positive_id(_mapping(row.get("player")).get("id")) in new_ids
+            )
+            seen_player_ids.update(page_ids)
+            if payload.get("hasNextPage") is False:
                 break
             page += 1
         return rows_out
