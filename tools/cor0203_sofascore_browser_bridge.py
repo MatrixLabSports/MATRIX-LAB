@@ -520,7 +520,11 @@ def build_bridge(
         "source_provider": "sofascore_browser",
         "source_reference": (
             str(source_snapshot.get("source_url") or "")
-            + ";physical_snapshot=MATRIX_SOFASCORE_WUNING3_FAJING_SUN_AORAN_WANG_20261005.json"
+            + ";physical_snapshot="
+            + str(
+                source_snapshot.get("artifact_name")
+                or "MATRIX_SOFASCORE_WUNING3_FAJING_SUN_AORAN_WANG_20261005.json"
+            )
             + ";ranking_cut=2026-09-21;ranking_provider=rapidapi_tennis"
         ),
         "source_snapshot_sha256": source_sha,
