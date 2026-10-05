@@ -28,7 +28,8 @@ jobs:
         run: |
           set -euo pipefail
           python - <<'PY'
-          import json, os, hashlib
+          import csv, json, os, hashlib, re
+          from datetime import date
           from pathlib import Path
           from tools.cor0203_rapidapi_tennis_discovery import RapidApiTennisClient
 
@@ -56,8 +57,66 @@ jobs:
                   "biography":safe,
                   "raw_profile_sha256":hashlib.sha256(json.dumps(payload,sort_keys=True,separators=(",",":")).encode()).hexdigest()
               }
+          # Recover Aoran Wang from the exact 21-SEP ATP ranking snapshot.
+          ranking_rows=client.ranking_snapshot_rows(ranking_date=date(2026,9,21))
+          def norm(s):
+              return re.sub(r"[^a-z0-9]+"," ",str(s).lower()).strip()
+          aoran_rows=[]
+          for row in ranking_rows:
+              player=row.get("player") or {}
+              if norm(player.get("name")) in {"aoran wang","wang aoran"}:
+                  aoran_rows.append(row)
+          if len(aoran_rows)!=1:
+              raise SystemExit("AORAN_EXACT_CUT_RANK_NONUNIQUE_OR_MISSING:"+str(len(aoran_rows)))
+          ar=aoran_rows[0]
+          ap=ar.get("player") or {}
+          aid=str(ap.get("id") or "")
+          apayload=client.player_profile(player_id=aid)
+          adata=apayload.get("data") if isinstance(apayload,dict) and isinstance(apayload.get("data"),dict) else apayload
+          ainfo=adata.get("info") if isinstance(adata,dict) and isinstance(adata.get("info"),dict) else {}
+          precut=[]
+          with Path("evidence/cor0203/preholdout/2026_challenger_live_snapshot.csv").open(encoding="utf-8-sig",newline="") as fh:
+              for row in csv.DictReader(fh):
+                  try:
+                      rd=int(str(row.get("tourney_date") or row.get("date") or "0")[:8])
+                  except Exception:
+                      rd=0
+                  if rd>=20260921:
+                      continue
+                  for side in ("winner","loser"):
+                      if norm(row.get(side+"_name")) in {"aoran wang","wang aoran"}:
+                          precut.append({
+                              "name":str(row.get(side+"_name") or ""),
+                              "source_id":str(row.get(side+"_id") or ""),
+                              "hand":str(row.get(side+"_hand") or ""),
+                              "ioc":str(row.get(side+"_ioc") or ""),
+                              "date":rd
+                          })
+          out["Aoran Wang"]={
+              "provider_player_id":"rapidapi-tennis:player:"+aid,
+              "exact_cut_ranking":{
+                  "place":str(ar.get("position") or ""),
+                  "points":str(ar.get("pts") or ""),
+                  "snapshot_date":"2026-09-21"
+              },
+              "biography":{
+                  "id":str(adata.get("id") or ""),
+                  "name":str(adata.get("name") or ""),
+                  "countryAcr":str(adata.get("countryAcr") or ""),
+                  "birthday":str(adata.get("birthday") or ""),
+                  "plays":str(ainfo.get("plays") or ainfo.get("hand") or "")
+              },
+              "precut_identity":{
+                  "rows":len(precut),
+                  "source_ids":sorted({x["source_id"] for x in precut if x["source_id"]}),
+                  "hands":sorted({x["hand"] for x in precut if x["hand"] and x["hand"]!="U"}),
+                  "iocs":sorted({x["ioc"] for x in precut if x["ioc"]})
+              },
+              "raw_profile_sha256":hashlib.sha256(json.dumps(apayload,sort_keys=True,separators=(",",":")).encode()).hexdigest()
+          }
+
           artifact={
-              "schema":"MATRIX_COR0203_SOFASCORE_PROFILE_PROBE_20261005_V1",
+              "schema":"MATRIX_COR0203_SOFASCORE_PROFILE_PROBE_20261005_V2",
               "provider":"rapidapi_tennis",
               "provider_network_calls":client.request_count,
               "competitive_fields_used":False,
