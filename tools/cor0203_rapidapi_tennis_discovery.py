@@ -348,7 +348,7 @@ class RapidApiTennisClient:
             if not new_ids:
                 break
             seen_page_player_ids.update(page_ids)
-            if payload.get("hasNextPage") is False:
+            if isinstance(payload, Mapping) and payload.get("hasNextPage") is False:
                 break
             page += 1
         return found
@@ -389,7 +389,7 @@ class RapidApiTennisClient:
                 if _positive_id(_mapping(row.get("player")).get("id")) in new_ids
             )
             seen_player_ids.update(page_ids)
-            if payload.get("hasNextPage") is False:
+            if isinstance(payload, Mapping) and payload.get("hasNextPage") is False:
                 break
             page += 1
         return rows_out
