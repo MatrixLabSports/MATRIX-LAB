@@ -1,0 +1,205 @@
+{
+  "schema": "MATRIX_WORLD_CALENDAR_RECONCILIATION_V1",
+  "target_date_bogota": "2026-10-05",
+  "observed_from_bogota": "2026-10-04T21:43:39-05:00",
+  "operational_timezone": "America/Bogota",
+  "source_registry": "config/matrix_multisource_registry.json",
+  "policy": {
+    "all_managed_sources_considered": true,
+    "source_specific_counts_not_summed_without_dedupe": true,
+    "no_single_source_world_truth": true,
+    "canonical_identity_before_merge": true,
+    "physical_dedupe_before_counter_increment": true,
+    "browser_sources_expand_discovery_only": true,
+    "pit_required": true,
+    "no_backfill": true,
+    "missing_not_zero": true,
+    "silent_imputation_forbidden": true,
+    "odds_to_p_matrix_forbidden": true,
+    "real_money": "BLOCKED"
+  },
+  "tennis": {
+    "structured_paid": [
+      {
+        "source": "RapidAPI Tennis",
+        "status": "PASS",
+        "role": "exact-day discovery + governed prospective pipeline",
+        "exact_day_unique_matches": 137,
+        "tournament_count": 20,
+        "circuit_counts": {
+          "ATP": 66,
+          "ITF": 57,
+          "WTA": 14
+        },
+        "detail_counts": {
+          "ATP_CHALLENGER": 43,
+          "ATP_MAIN_OR_OTHER": 23,
+          "ITF_MEN": 15,
+          "ITF_WOMEN": 42,
+          "WTA_MAIN_OR_OTHER": 14
+        },
+        "artifact": "evidence/tennis_world_inventory/2026-10-05/world_exact_day_dual_audit.json"
+      },
+      {
+        "source": "API-Tennis",
+        "status": "PASS",
+        "role": "exact-day discovery + cross-provider validation/stats-rich",
+        "exact_day_unique_matches": 134,
+        "tournament_count": 20,
+        "artifact": "evidence/tennis_world_inventory/2026-10-05/world_exact_day_dual_audit.json"
+      }
+    ],
+    "public_free": [
+      {
+        "source": "Flashscore",
+        "status": "PASS_BROWSER",
+        "role": "world calendar/discovery/identity crosscheck",
+        "exact_date_event_links_visible": 99,
+        "url": "https://www.flashscore.co/tenis/manana/?d=2026-10-05",
+        "caveat": "Browser-visible event-link count; not a reconciled worldwide denominator."
+      },
+      {
+        "source": "SofaScore",
+        "status": "PASS_BROWSER_DIRECT_API_BLOCKED",
+        "role": "calendar/discovery/identity/ranking/surface crosscheck",
+        "loaded_match_links_visible": 72,
+        "url": "https://www.sofascore.com/tennis?date=2026-10-05",
+        "direct_api_status": "BLOCKED_HTTP_403",
+        "direct_api_artifact": "evidence/sofascore/2026-10-05/multisport_discovery.json",
+        "caveat": "Loaded accessibility-tree count is a lower bound, not a worldwide denominator."
+      },
+      {
+        "source": "ITF official",
+        "status": "PASS_BROWSER_TOURNAMENT_CORROBORATION",
+        "role": "World Tennis Tour calendar/competition authority",
+        "visible_tournament_labels_sample_count": 22,
+        "url": "https://www.itftennis.com/en/world-tennis-tour-live/",
+        "caveat": "Used here for tournament corroboration; exact Oct-5 worldwide match denominator not established from this page."
+      },
+      {
+        "source": "ATP official",
+        "status": "REGISTERED_AUTHORITY_NOT_USED_AS_EXACT_DAY_DENOMINATOR_IN_THIS_PASS",
+        "role": "competition/surface/draw/ranking/identity authority"
+      },
+      {
+        "source": "WTA official",
+        "status": "REGISTERED_AUTHORITY_NOT_USED_AS_EXACT_DAY_DENOMINATOR_IN_THIS_PASS",
+        "role": "competition/surface/draw/ranking/identity authority"
+      },
+      {
+        "source": "Jeff Sackmann",
+        "status": "HISTORICAL_ROLE_ONLY",
+        "role": "historical results/biographical crosscheck"
+      },
+      {
+        "source": "Tennis-Data",
+        "status": "HISTORICAL_ROLE_ONLY",
+        "role": "historical results"
+      }
+    ],
+    "cross_provider": {
+      "unreconciled_exact_union_paid_sources": 271,
+      "neutral_exact_overlap": 0,
+      "world_inventory_complete": false,
+      "interpretation": "Provider aliases/timestamps remain unresolved; 271 must not be called the unique worldwide total."
+    },
+    "protected_calibration": {
+      "domain": "ATP Challenger + Hard + Singles + Match Winner",
+      "unique_calibration_observations": 102,
+      "physical_frozen_rows": 177,
+      "duplicate_observations_quarantined": 75,
+      "latest_domain_candidates_input": 20,
+      "latest_eligible_input_events": 19,
+      "latest_provider_rejected": 1,
+      "new_unique_added_by_latest_refresh": 0,
+      "remaining_to_200": 98,
+      "remaining_to_600": 498,
+      "metrics": "SEALED_UNTIL_600_UNIQUE",
+      "explanation": "Latest 19 eligible events were already preregistered/frozen or duplicate-resolved, so the legitimate unique counter did not increase."
+    }
+  },
+  "football": {
+    "structured_paid": [
+      {
+        "source": "API-Football",
+        "status": "PASS",
+        "role": "fixtures/history/stats/lineups/odds/prospective pipeline",
+        "fixtures_received": 99,
+        "competitions": 42,
+        "countries": 25,
+        "canonical_ready_inputs": 1,
+        "canonical_blocked_inputs": 98,
+        "new_freezes": 0,
+        "p_matrix_status": "NOT_GENERATED",
+        "artifact": "evidence/api_football/prospective_daily/2026-10-05/20261004T110939Z/cycle_summary.json"
+      }
+    ],
+    "public_free": [
+      {
+        "source": "Flashscore",
+        "status": "PASS_BROWSER",
+        "role": "world calendar/discovery/identity/stats crosscheck",
+        "exact_date_event_links_with_mid_visible": 296,
+        "url": "https://www.flashscore.co/?d=2026-10-05",
+        "caveat": "Browser-visible event-link count; not a reconciled worldwide denominator."
+      },
+      {
+        "source": "SofaScore",
+        "status": "PASS_BROWSER_DIRECT_API_BLOCKED",
+        "role": "world calendar/discovery/team/player/stat crosscheck",
+        "loaded_match_links_visible": 49,
+        "url": "https://www.sofascore.com/football?date=2026-10-05",
+        "direct_api_status": "BLOCKED_HTTP_403",
+        "direct_api_artifact": "evidence/sofascore/2026-10-05/multisport_discovery.json",
+        "caveat": "Loaded accessibility-tree count is a lower bound due dynamic/lazy page loading."
+      },
+      {
+        "source": "Official competition/team sources",
+        "status": "ON_DEMAND_AUTHORITY",
+        "role": "fixture/lineup/competition/disciplinary authority",
+        "caveat": "Not a single worldwide calendar endpoint; queried when candidate identity/authority needs adjudication."
+      }
+    ],
+    "reference_and_execution_sources": {
+      "pinnacle_reference": {
+        "status": "REFERENCE_ONLY_NOT_CALENDAR_DENOMINATOR",
+        "execution_authorized": false
+      },
+      "bookmaker_sources": [
+        "BetPlay",
+        "bwin",
+        "Betano",
+        "RushBet",
+        "Betsson",
+        "Codere",
+        "Luckia",
+        "MrYoker",
+        "Rivalo",
+        "Sportium",
+        "Stake Colombia",
+        "Wplay",
+        "YaJuego",
+        "Zamba"
+      ],
+      "role": "price/execution verification after governed candidate selection; not used to define world calendar"
+    },
+    "calibration": {
+      "current_discovery_pool_api_football": 99,
+      "current_public_flashscore_visible_pool": 296,
+      "ready_for_experimental_evaluation": 1,
+      "blocked_for_history_or_source_resolution": 98,
+      "new_freezes": 0,
+      "rule": "Public-source discoveries may enter calibration only after canonical identity, PIT history/features, governed model/freeze and physical dedupe pass."
+    }
+  },
+  "overall": {
+    "status": "PASS_WORLD_DISCOVERY_UNSEALED",
+    "world_complete": false,
+    "key_result": "Public calendars materially expand discovery beyond structured paid feeds, but no source-specific counts are summed or promoted directly into calibration.",
+    "next_actions": [
+      "Reconcile public football events against API-Football canonical identities and acquire PIT history where available.",
+      "Continue tennis dual-API discovery and physical dedupe; only new ATP Challenger Hard singles that pass all gates may increment 102/600.",
+      "Persist every accepted freeze and every blocked candidate with exact cause."
+    ]
+  }
+}
