@@ -60,13 +60,35 @@
       },
       {
         "source": "SofaScore",
-        "status": "PASS_BROWSER_DIRECT_API_BLOCKED",
+        "status": "PASS_BROWSER_ACTIVE_TAB",
         "role": "calendar/discovery/identity/ranking/surface crosscheck",
-        "loaded_match_links_visible": 72,
+        "loaded_match_links_visible": 77,
         "url": "https://www.sofascore.com/tennis?date=2026-10-05",
         "direct_api_status": "BLOCKED_HTTP_403",
         "direct_api_artifact": "evidence/sofascore/2026-10-05/multisport_discovery.json",
-        "caveat": "Loaded accessibility-tree count is a lower bound, not a worldwide denominator."
+        "caveat": "77 loaded tennis match links were visible in the active SofaScore tab; 70 were explicitly labeled 05/10/26. Browser-loaded counts are not authorized as a complete worldwide denominator.",
+        "explicitly_dated_2026_10_05_match_links": 70,
+        "active_opera_tab_id": 2017698895,
+        "active_opera_url": "https://www.sofascore.com/tennis/2026-10-05",
+        "browser_verified_at_bogota": "2026-10-04T21:58:00-05:00",
+        "verified_competition_families": [
+          "ATP",
+          "WTA",
+          "ATP Challenger",
+          "ITF Men",
+          "ITF Women"
+        ],
+        "verified_examples": [
+          "Villena/Alicante Challenger",
+          "Wuning 3 Challenger",
+          "Antofagasta Challenger",
+          "Braga Challenger",
+          "Palermo Challenger",
+          "Shanghai ATP",
+          "Beijing WTA",
+          "Samsun",
+          "Suzhou"
+        ]
       },
       {
         "source": "ITF official",
@@ -200,6 +222,15 @@
       "Reconcile public football events against API-Football canonical identities and acquire PIT history where available.",
       "Continue tennis dual-API discovery and physical dedupe; only new ATP Challenger Hard singles that pass all gates may increment 102/600.",
       "Persist every accepted freeze and every blocked candidate with exact cause."
-    ]
+    ],
+    "last_browser_verification": {
+      "source": "SofaScore",
+      "sport": "tennis",
+      "active_tab": true,
+      "target_date": "2026-10-05",
+      "loaded_match_links": 77,
+      "explicitly_dated_match_links": 70,
+      "verified_at_bogota": "2026-10-04T21:58:00-05:00"
+    }
   }
 }
