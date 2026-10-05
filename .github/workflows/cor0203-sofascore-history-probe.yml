@@ -1,0 +1,128 @@
+name: COR02-03 SofaScore history probe
+
+on:
+  push:
+    branches:
+      - repair/cor09-world-pipeline
+    paths:
+      - .github/workflows/cor0203-sofascore-history-probe.yml
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout operational branch
+        uses: actions/checkout@v4
+        with:
+          ref: repair/cor09-world-pipeline
+          fetch-depth: 0
+
+      - name: Probe sealed PIT history for SofaScore-only candidates
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -s evidence/cor0203/runtime/MATRIX_COR0203_PRE2026_STATE_R706.json.gz.b64
+          test -s evidence/cor0203/preholdout/2026_challenger_live_snapshot.csv
+          test "$(sha256sum evidence/cor0203/runtime/MATRIX_COR0203_PRE2026_STATE_R706.json.gz.b64 | awk '{print $1}')" = "384b5537ad9715b552d26464db3d01980021a24e9f6d7e0fcc93ba154efde125"
+          test "$(sha256sum evidence/cor0203/preholdout/2026_challenger_live_snapshot.csv | awk '{print $1}')" = "d3f0e7edca273d0e1fcd4700581cf00398e46719f0aaadb62a1c97ec0ffa6ab5"
+          python - <<'PY'
+          import csv, json
+          from pathlib import Path
+          from tools.cor0203_prospective_producer import load_state, extend_state
+
+          names = [
+              "Daniel Rincon",
+              "Alejo Sanchez Quilez",
+              "Maxi Carrascosa Diaz",
+              "Borna Gojo",
+              "Evan Zhu",
+              "Koki Matsuda",
+              "Fajing Sun",
+              "Aoran Wang",
+          ]
+          aliases = {
+              "Alejo Sanchez Quilez": ["Alejo Sanchez Quilez","Alejo Sanchez-Quilez"],
+              "Maxi Carrascosa Diaz": ["Maxi Carrascosa Diaz","Maxi Carrascosa-Diaz"],
+              "Koki Matsuda": ["Koki Matsuda"],
+              "Fajing Sun": ["Fajing Sun","Sun Fajing"],
+              "Aoran Wang": ["Aoran Wang","Wang Aoran"],
+          }
+
+          state,_ = load_state(Path("evidence/cor0203/runtime/MATRIX_COR0203_PRE2026_STATE_R706.json.gz.b64"))
+          annual_rows = list(csv.DictReader(Path("evidence/cor0203/preholdout/2026_challenger_live_snapshot.csv").open(encoding="utf-8-sig",newline="")))
+          state, used_rows, period_count = extend_state(state, annual_rows, 20260921)
+
+          def first_key(name, mapping):
+              for cand in aliases.get(name,[name]):
+                  if cand in mapping:
+                      return cand
+              return None
+
+          out = {}
+          for name in names:
+              ko = first_key(name,state["history"]["overall"])
+              km = first_key(name,state["history"]["matches"])
+              keo = first_key(name,state["elo_overall"])
+              keh = first_key(name,state["elo_surface"].get("Hard",{}))
+              kgo = first_key(name,state["glicko_overall"])
+              kgh = first_key(name,state["glicko_surface"].get("Hard",{}))
+              overall = state["history"]["overall"].get(ko,[0.0,0.0]) if ko else [0.0,0.0]
+              hard = state["history"]["surface"].get("Hard",{}).get(first_key(name,state["history"]["surface"].get("Hard",{})),[0.0,0.0])
+              matches = state["history"]["matches"].get(km,[]) if km else []
+              rec = {
+                  "resolved_history_name": ko or km or keo or kgo,
+                  "overall_n": int(overall[1]) if len(overall)>1 else 0,
+                  "hard_n": int(hard[1]) if len(hard)>1 else 0,
+                  "matches_n": len(matches),
+                  "elo_overall_present": keo is not None,
+                  "elo_hard_present": keh is not None,
+                  "glicko_overall_present": kgo is not None,
+                  "glicko_hard_present": kgh is not None,
+              }
+              rec["fully_history_ready"] = bool(
+                  rec["overall_n"] > 0 and
+                  rec["hard_n"] > 0 and
+                  rec["elo_overall_present"] and
+                  rec["elo_hard_present"] and
+                  rec["glicko_overall_present"] and
+                  rec["glicko_hard_present"]
+              )
+              out[name]=rec
+
+          artifact = {
+              "schema":"MATRIX_COR0203_SOFASCORE_HISTORY_PROBE_20261005_V1",
+              "target_period":20260921,
+              "state_sha256":"384b5537ad9715b552d26464db3d01980021a24e9f6d7e0fcc93ba154efde125",
+              "annual_snapshot_sha256":"d3f0e7edca273d0e1fcd4700581cf00398e46719f0aaadb62a1c97ec0ffa6ab5",
+              "annual_rows_used_preperiod":used_rows,
+              "annual_periods_used_preperiod":period_count,
+              "players":out,
+              "same_period_results_used":False,
+              "outcomes_read":0,
+              "metrics_opened":False,
+              "silent_imputation":False,
+              "real_money":"BLOCKED",
+              "integrity_result":"PASS"
+          }
+          p=Path("evidence/cor0203/runtime/MATRIX_COR0203_SOFASCORE_HISTORY_PROBE_20261005.json")
+          p.write_text(json.dumps(artifact,indent=2,sort_keys=True)+"\n",encoding="utf-8")
+          print(json.dumps(artifact,sort_keys=True))
+          PY
+
+      - name: Commit probe evidence
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'matrix-ci'
+          git config user.email 'matrix-ci@users.noreply.github.com'
+          git add evidence/cor0203/runtime/MATRIX_COR0203_SOFASCORE_HISTORY_PROBE_20261005.json
+          if git diff --cached --quiet; then
+            echo 'No changes'
+            exit 0
+          fi
+          git commit -m 'evidence(cor02-03): probe sealed history for SofaScore candidates'
+          git push origin HEAD:repair/cor09-world-pipeline
