@@ -20,13 +20,17 @@ def test_cor11_real_day_sequence_20261003():
     assert d['status'] == 'IN_PROGRESS'
 
 
-def test_cor11_last_matches_20261003_snapshot():
+def test_cor11_last_extends_20261003_snapshot():
     snapshot = json.loads(
         Path('evidence/cor11/MATRIX_COR11_CADENCE_LEDGER_20261003.json').read_text(encoding='utf-8')
     )
     last = json.loads(
         Path('evidence/cor11/MATRIX_COR11_CADENCE_LEDGER_LAST.json').read_text(encoding='utf-8')
     )
-    assert last == snapshot
-    assert last['real_consecutive_days'] == 13
-    assert last['status'] == 'IN_PROGRESS'
+    assert last['dates'][:13] == snapshot['dates']
+    assert last['real_consecutive_days'] >= snapshot['real_consecutive_days']
+    assert last['target_days'] == 14
+    assert last['rules']['utc_rollover_used'] is False
+    assert last['rules']['backfill'] is False
+    assert last['rules']['synthetic_days'] is False
+    assert last['rules']['real_money'] == 'BLOCKED'
