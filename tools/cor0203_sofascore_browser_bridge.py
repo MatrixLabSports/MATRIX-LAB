@@ -267,12 +267,53 @@ def _precut_identity_history(
     }
 
 
+
+def _public_exact_cut_override(
+    override: Mapping[str, Any] | None,
+    *,
+    target_name: str,
+    country_hint: str,
+) -> dict[str, Any]:
+    if not isinstance(override, Mapping):
+        raise ValueError("PUBLIC_EXACT_CUT_OVERRIDE_MISSING:" + target_name)
+    if override.get("integrity_result") != "PASS_PUBLIC_EXACT_CUT_FALLBACK":
+        raise ValueError("PUBLIC_EXACT_CUT_OVERRIDE_NOT_PASS:" + target_name)
+    if _norm(override.get("player")) != _norm(target_name):
+        raise ValueError("PUBLIC_EXACT_CUT_OVERRIDE_NAME_MISMATCH:" + target_name)
+    if str(override.get("ranking_date") or "") != CUT_TOKEN:
+        raise ValueError("PUBLIC_EXACT_CUT_OVERRIDE_DATE_MISMATCH:" + target_name)
+    country = str(override.get("country") or "").strip().upper()
+    if country_hint and country and country != country_hint:
+        raise ValueError("PUBLIC_EXACT_CUT_OVERRIDE_COUNTRY_MISMATCH:" + target_name)
+    paid = _mapping(override.get("paid_provider_attempts"))
+    if (
+        paid.get("rapidapi_snapshot_exact_cut") != "NOT_FOUND"
+        or paid.get("rapidapi_player_ranking_history_exact_cut") != "NOT_FOUND"
+    ):
+        raise ValueError("PUBLIC_OVERRIDE_PAID_FALLBACK_ORDER_INVALID:" + target_name)
+    rank = _positive_int(override.get("singles_rank"), field="PUBLIC_RANK")
+    points = _positive_int(override.get("singles_points"), field="PUBLIC_RANK_POINTS")
+    return {
+        "place": str(rank),
+        "points": str(points),
+        "player": target_name,
+        "country": country or country_hint,
+        "snapshot_date": CUT_TOKEN,
+        "ranking_source": "PUBLIC_HISTORICAL_EXACT_CUT_CORROBORATED_AFTER_PAID_FAILURE",
+        "public_evidence": {
+            "schema": str(override.get("schema") or ""),
+            "primary_exact_date_source": dict(_mapping(override.get("primary_exact_date_source"))),
+            "independent_rank_corroboration": dict(_mapping(override.get("independent_rank_corroboration"))),
+        },
+    }
+
 def build_bridge(
     *,
     source_snapshot: Mapping[str, Any],
     client: RapidApiTennisClient,
     state_path: Path,
     as_of_utc: str,
+    ranking_override: Mapping[str, Any] | None = None,
 ) -> tuple[dict[str, Any], dict[str, Any], dict[str, Any]]:
     if source_snapshot.get("integrity_result") != "PASS_SOURCE_SCHEDULE_IDENTITY":
         raise ValueError("SOFASCORE_SOURCE_INTEGRITY_NOT_PASS")
@@ -329,12 +370,23 @@ def build_bridge(
                 target_name=name,
             )
             profile_probe = _profile_identity(client.player_profile(player_id=rapid_id))
-            ranking = _exact_ranking_from_history(
-                client,
-                rapid_player_id=rapid_id,
-                target_name=name,
-                country_hint=profile_probe["ioc"],
-            )
+            try:
+                ranking = _exact_ranking_from_history(
+                    client,
+                    rapid_player_id=rapid_id,
+                    target_name=name,
+                    country_hint=profile_probe["ioc"],
+                )
+            except ValueError as history_rank_error:
+                if not str(history_rank_error).startswith(
+                    "PLAYER_RANKING_HISTORY_EXACT_CUT_NOT_UNIQUE_OR_MISSING:"
+                ):
+                    raise
+                ranking = _public_exact_cut_override(
+                    ranking_override,
+                    target_name=name,
+                    country_hint=profile_probe["ioc"],
+                )
         profile_payload = client.player_profile(player_id=rapid_id)
         profile = _profile_identity(profile_payload)
         if profile["id"] and profile["id"] != rapid_id:
@@ -557,6 +609,7 @@ def main() -> None:
     parser.add_argument("--out-discovery", required=True)
     parser.add_argument("--out-authority", required=True)
     parser.add_argument("--out-verification", required=True)
+    parser.add_argument("--ranking-override")
     parser.add_argument("--as-of-utc")
     args = parser.parse_args()
 
@@ -569,6 +622,11 @@ def main() -> None:
         client=RapidApiTennisClient(key),
         state_path=Path(args.state_b64),
         as_of_utc=as_of,
+        ranking_override=(
+            _load(Path(args.ranking_override))
+            if args.ranking_override
+            else None
+        ),
     )
     _write(Path(args.out_discovery), discovery)
     _write(Path(args.out_authority), authority)
