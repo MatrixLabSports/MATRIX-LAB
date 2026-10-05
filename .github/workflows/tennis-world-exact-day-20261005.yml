@@ -77,6 +77,110 @@ jobs:
           set -euo pipefail
           bash scripts/cor0203_production_cycle.sh --trigger-sha "$CHECKOUT_SHA"
 
+      - name: Reconcile SofaScore Fajing Sun Aoran Wang through governed cut
+        shell: bash
+        env:
+          RAPIDAPI_TENNIS_KEY: ${{ secrets.RAPIDAPI_TENNIS_KEY }}
+        run: |
+          set -euo pipefail
+          SOURCE="evidence/cor0203/source_readiness/sofascore/2026-10-05/MATRIX_SOFASCORE_WUNING3_FAJING_SUN_AORAN_WANG_20261005.json"
+          DISCOVERY="evidence/cor0203/runtime/MATRIX_COR0203_SOFASCORE_DISCOVERY_20261005.json"
+          OVERLAY="evidence/cor0203/identity/MATRIX_COR0203_SOFASCORE_IDENTITY_AUTHORITY_20261005.json"
+          VERIFY="evidence/cor0203/runtime/MATRIX_COR0203_SOFASCORE_BRIDGE_VERIFICATION_20261005.json"
+          PREREG="evidence/cor0203/runtime/MATRIX_COR0203_SOFASCORE_PREREG_LAST.json"
+          BASE_AUTH="evidence/cor0203/identity/MATRIX_COR0203_IDENTITY_AUTHORITY_LAST.json"
+          STATIC="evidence/cor0203/runtime/MATRIX_COR0203_STATIC_CUT_20260921.json"
+          CROSSWALK="evidence/cor0203/runtime/MATRIX_COR0203_IDENTITY_CROSSWALK_LAST.json"
+          STAGE="evidence/cor0203/runtime/MATRIX_COR0203_AUTO_STAGE_LAST.json"
+          RUNNER="evidence/cor0203/runtime/MATRIX_COR0203_BATCH_RUNNER_LAST.json"
+          INTEGRITY="evidence/cor0203/runtime/MATRIX_COR0203_HOLDOUT_INTEGRITY_LAST.json"
+          UNIQUE="evidence/cor0203/runtime/MATRIX_COR0203_PHYSICAL_UNIQUENESS_LAST.json"
+          MILESTONE="evidence/cor0203/runtime/MATRIX_COR0203_MILESTONES_LAST.json"
+
+          python -m tools.cor0203_sofascore_browser_bridge \
+            --source-snapshot "$SOURCE" \
+            --out-discovery "$DISCOVERY" \
+            --out-authority "$OVERLAY" \
+            --out-verification "$VERIFY"
+
+          python -m tools.cor0203_preregister_discovery \
+            --discovery "$DISCOVERY" \
+            --result-out "$PREREG"
+
+          python -m tools.cor0203_merge_identity_authority \
+            --base "$BASE_AUTH" \
+            --overlay "$OVERLAY" \
+            --out /tmp/MATRIX_COR0203_IDENTITY_AUTHORITY_MERGED.json
+          cp /tmp/MATRIX_COR0203_IDENTITY_AUTHORITY_MERGED.json "$BASE_AUTH"
+
+          python -m tools.cor0203_build_identity_crosswalk \
+            --static-cut "$STATIC" \
+            --identity-authority "$BASE_AUTH" \
+            --summary-out "$CROSSWALK"
+
+          python -m tools.cor0203_stage_from_registry \
+            --summary-out "$STAGE"
+
+          RECOVERY_TRIGGER_SHA="$(git rev-parse HEAD)"
+          python -m tools.cor0203_batch_runner \
+            --state-b64 evidence/cor0203/runtime/MATRIX_COR0203_PRE2026_STATE_R706.json.gz.b64 \
+            --bundle evidence/cor0203/runtime/MATRIX_COR0203_ELO_GLICKO_PROSPECTIVE_BUNDLE_R706.json \
+            --annual-2026 evidence/cor0203/preholdout/2026_challenger_live_snapshot.csv \
+            --trigger-sha "$RECOVERY_TRIGGER_SHA" \
+            --summary-out "$RUNNER"
+
+          python -m tools.cor0203_holdout_integrity_audit \
+            --out "$INTEGRITY"
+
+          python -m tools.cor0203_physical_uniqueness_audit \
+            --integrity "$INTEGRITY" \
+            --out "$UNIQUE"
+
+          python -m tools.cor0203_milestone_status \
+            --uniqueness "$UNIQUE" \
+            --out "$MILESTONE"
+
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          u=json.loads(Path("evidence/cor0203/runtime/MATRIX_COR0203_PHYSICAL_UNIQUENESS_LAST.json").read_text())
+          v=json.loads(Path("evidence/cor0203/runtime/MATRIX_COR0203_SOFASCORE_BRIDGE_VERIFICATION_20261005.json").read_text())
+          assert v["integrity_result"]=="PASS"
+          assert u["result"]=="PASS"
+          assert u["metrics_opened"] is False
+          assert u["outcomes_read"]==0
+          print(json.dumps({
+              "unique_calibration_observations":u["unique_calibration_observations"],
+              "remaining_to_200":u["unique_remaining_to_200"],
+              "remaining_to_600":u["unique_remaining_to_600"],
+              "sofascore_bridge":v["integrity_result"],
+              "real_money":"BLOCKED"
+          },sort_keys=True))
+          PY
+
+          git config user.name 'matrix-ci'
+          git config user.email 'matrix-ci@users.noreply.github.com'
+          git add evidence/cor0203/runtime/MATRIX_COR0203_SOFASCORE_*.json
+          git add evidence/cor0203/identity/MATRIX_COR0203_SOFASCORE_IDENTITY_AUTHORITY_20261005.json
+          git add evidence/cor0203/identity/MATRIX_COR0203_IDENTITY_AUTHORITY_LAST.json
+          git add evidence/cor0203/runtime/MATRIX_COR0203_IDENTITY_CROSSWALK*.json
+          git add evidence/cor0203/runtime/MATRIX_COR0203_STATIC4_R*.json
+          git add evidence/cor0203/runtime/MATRIX_COR0203_PROSPECTIVE_EVENTS_R*.json
+          git add evidence/cor0203/runtime/MATRIX_COR0203_STAGE_BLOCKERS_R*.json
+          git add evidence/cor0203/runtime/MATRIX_COR0203_AUTO_STAGE_LAST.json
+          git add evidence/cor0203/runtime/MATRIX_COR0203_BATCH_RUNNER_LAST.json
+          git add evidence/cor0203/runtime/MATRIX_COR0203_HOLDOUT_INTEGRITY_LAST.json
+          git add evidence/cor0203/runtime/MATRIX_COR0203_PHYSICAL_UNIQUENESS_LAST.json
+          git add evidence/cor0203/runtime/MATRIX_COR0203_MILESTONES_LAST.json
+          git add evidence/cor0203/runtime/MATRIX_COR0203_PREFEATURE_REGISTRY_R*.json
+          git add evidence/cor0203/holdout/MATRIX_COR0203_HOLDOUT_BATCH_R*.json
+          if ! git diff --cached --quiet; then
+            git commit -m 'evidence(cor02-03): govern SofaScore Fajing Aoran candidate'
+            git push origin HEAD:repair/cor09-world-pipeline
+          fi
+
 # Governed retrigger 04OCT2026: post multi-source contract fix, reconcile 05-OCT physical calendar.
 # governed retrigger 2026-10-04T20:12Z: force dual-paid-source exact-day reconciliation and COR02/03 cycle
 # governed retrigger: 2026-10-04T23:01-05:00 exact-day 05-OCT + SofaScore reconciliation
+
+# governed retrigger: SofaScore Fajing-Aoran exact-cut bridge
