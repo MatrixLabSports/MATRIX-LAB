@@ -1,0 +1,36 @@
+{
+  "schema": "MATRIX_SOURCE_COUNT_VERIFICATION_INCIDENT_V1",
+  "incident_id": "SOFASCORE_TENNIS_COUNT_20261005_70_TO_413",
+  "detected_bogota_date": "2026-10-04",
+  "target_calendar_date_bogota": "2026-10-05",
+  "sport": "tennis",
+  "source": "SofaScore",
+  "status": "CORRECTED_AND_GOVERNED",
+  "incorrect_claim": {
+    "value": 70,
+    "method": "count of explicitly dated match links loaded in Opera accessibility tree",
+    "defect": "Partial/lazy-loaded link count was incorrectly presented as the SofaScore source total."
+  },
+  "corrected_claim": {
+    "value": 413,
+    "method": "sum of per-tournament match counters shown on SofaScore's selected-date calendar",
+    "tournament_sections_counted": 47,
+    "evidence_artifact": "evidence/world_calendar/MATRIX_WORLD_CALENDAR_RECONCILIATION_20261005.json",
+    "evidence_commit": "82c271aee892c1d563440932976da45e9f0317b5"
+  },
+  "root_cause": [
+    "Used partial loaded-link count as if it were a full source denominator.",
+    "Did not validate the source-native tournament counters before reporting the total."
+  ],
+  "permanent_controls": [
+    "Verify source-native counting method before reporting any calendar total.",
+    "Do not report loaded links, partial DOM trees or lazy-loaded subsets as a full source total.",
+    "Keep source-specific totals separate until cross-provider deduplication and reconciliation.",
+    "Treat paid APIs as non-exhaustive unless physical coverage evidence proves otherwise.",
+    "Persist source failures, partial coverage and count discrepancies.",
+    "Recount materially discrepant sources before reporting to the user."
+  ],
+  "governance_registry": "config/matrix_multisource_registry.json",
+  "real_money": "BLOCKED",
+  "integrity_result": "PASS"
+}
