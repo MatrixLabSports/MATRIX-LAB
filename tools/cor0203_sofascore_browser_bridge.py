@@ -142,6 +142,79 @@ def _result_players(row: Mapping[str, Any]) -> list[tuple[str, str]]:
     return values
 
 
+
+
+def _rapid_player_id_from_results(
+    result_rows: list[Mapping[str, Any]],
+    *,
+    target_name: str,
+) -> str:
+    ids: set[str] = set()
+    for row in result_rows:
+        for pid, name in _result_players(row):
+            if _norm(name) == _norm(target_name) and pid.isdigit() and int(pid) > 0:
+                ids.add(pid)
+    if len(ids) != 1:
+        raise ValueError(
+            "PRECUT_RESULT_PLAYER_ID_NOT_UNIQUE_OR_MISSING:"
+            + target_name
+            + ":"
+            + str(sorted(ids))
+        )
+    return next(iter(ids))
+
+
+def _exact_ranking_from_history(
+    client: RapidApiTennisClient,
+    *,
+    rapid_player_id: str,
+    target_name: str,
+    country_hint: str = "",
+) -> dict[str, Any]:
+    payload = client.ranking_history(player_id=rapid_player_id, months=3)
+    rows = payload.get("history") if isinstance(payload, Mapping) else None
+    if not isinstance(rows, list) and isinstance(payload, Mapping):
+        data = payload.get("data")
+        if isinstance(data, Mapping):
+            rows = data.get("history")
+    if not isinstance(rows, list):
+        rows = []
+    matches: set[tuple[str, str]] = set()
+    for row in rows:
+        if not isinstance(row, Mapping):
+            continue
+        day = str(row.get("date") or "").strip()[:10]
+        if day != CUT_TOKEN:
+            continue
+        position = str(row.get("position") or "").strip()
+        points = str(
+            row.get("pts")
+            if row.get("pts") is not None
+            else row.get("point")
+            if row.get("point") is not None
+            else row.get("points")
+            if row.get("points") is not None
+            else ""
+        ).strip()
+        if position.isdigit() and int(position) > 0 and points.isdigit() and int(points) >= 0:
+            matches.add((position, points))
+    if len(matches) != 1:
+        raise ValueError(
+            "PLAYER_RANKING_HISTORY_EXACT_CUT_NOT_UNIQUE_OR_MISSING:"
+            + target_name
+            + ":"
+            + str(sorted(matches))
+        )
+    place, points = next(iter(matches))
+    return {
+        "place": place,
+        "points": points,
+        "player": target_name,
+        "country": country_hint,
+        "snapshot_date": CUT_TOKEN,
+        "ranking_source": "RAPIDAPI_TENNIS_PLAYER_RANKING_HISTORY_EXACT_CUT",
+    }
+
 def _precut_identity_history(
     result_rows: list[Mapping[str, Any]],
     *,
@@ -246,7 +319,22 @@ def build_bridge(
         if not sofa_id.isdigit() or int(sofa_id) <= 0:
             raise ValueError("SOFASCORE_PLAYER_ID_INVALID:" + name)
 
-        rapid_id, ranking = _ranking_record(ranking_rows, target_name=name)
+        try:
+            rapid_id, ranking = _ranking_record(ranking_rows, target_name=name)
+        except ValueError as ranking_error:
+            if not str(ranking_error).startswith("EXACT_CUT_RANKING_NOT_UNIQUE_OR_MISSING:"):
+                raise
+            rapid_id = _rapid_player_id_from_results(
+                result_rows,
+                target_name=name,
+            )
+            profile_probe = _profile_identity(client.player_profile(player_id=rapid_id))
+            ranking = _exact_ranking_from_history(
+                client,
+                rapid_player_id=rapid_id,
+                target_name=name,
+                country_hint=profile_probe["ioc"],
+            )
         profile_payload = client.player_profile(player_id=rapid_id)
         profile = _profile_identity(profile_payload)
         if profile["id"] and profile["id"] != rapid_id:
