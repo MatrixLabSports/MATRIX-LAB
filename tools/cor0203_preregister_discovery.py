@@ -22,6 +22,11 @@ PROVIDER_SPECS = {
         "event_pattern": re.compile(r"^rapidapi-tennis:(?:(atp):)?match:(\d+)$"),
         "player_pattern": re.compile(r"^rapidapi-tennis:player:\d+$"),
     },
+    "sofascore_browser": {
+        "event_prefix": "COR0203-SOFASCORE-",
+        "event_pattern": re.compile(r"^sofascore-browser:match:([0-9a-f]{64})$"),
+        "player_pattern": re.compile(r"^sofascore:player:\d+$"),
+    },
 }
 
 
