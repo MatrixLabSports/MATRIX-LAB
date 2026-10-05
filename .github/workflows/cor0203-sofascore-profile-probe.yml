@@ -1,0 +1,85 @@
+name: COR02-03 SofaScore profile probe
+
+on:
+  push:
+    branches:
+      - repair/cor09-world-pipeline
+    paths:
+      - .github/workflows/cor0203-sofascore-profile-probe.yml
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: repair/cor09-world-pipeline
+          fetch-depth: 0
+
+      - name: Query RapidAPI immutable biography fields
+        env:
+          RAPIDAPI_TENNIS_KEY: ${{ secrets.RAPIDAPI_TENNIS_KEY }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json, os, hashlib
+          from pathlib import Path
+          from tools.cor0203_rapidapi_tennis_discovery import RapidApiTennisClient
+
+          targets = {
+              "Alejo Sanchez Quilez":"98265",
+              "Koki Matsuda":"97989",
+              "Evan Zhu":"36897",
+              "Fajing Sun":"34537",
+          }
+          client=RapidApiTennisClient(os.environ["RAPIDAPI_TENNIS_KEY"])
+          out={}
+          for name,pid in targets.items():
+              payload=client.player_profile(player_id=pid)
+              data=payload.get("data") if isinstance(payload,dict) and isinstance(payload.get("data"),dict) else payload
+              info=data.get("info") if isinstance(data,dict) and isinstance(data.get("info"),dict) else {}
+              safe={
+                  "id":str(data.get("id") or ""),
+                  "name":str(data.get("name") or ""),
+                  "countryAcr":str(data.get("countryAcr") or ""),
+                  "birthday":str(data.get("birthday") or ""),
+                  "plays":str(info.get("plays") or info.get("hand") or ""),
+              }
+              out[name]={
+                  "provider_player_id":"rapidapi-tennis:player:"+pid,
+                  "biography":safe,
+                  "raw_profile_sha256":hashlib.sha256(json.dumps(payload,sort_keys=True,separators=(",",":")).encode()).hexdigest()
+              }
+          artifact={
+              "schema":"MATRIX_COR0203_SOFASCORE_PROFILE_PROBE_20261005_V1",
+              "provider":"rapidapi_tennis",
+              "provider_network_calls":client.request_count,
+              "competitive_fields_used":False,
+              "allowed_fields":["id","name","countryAcr","birthday","plays"],
+              "profiles":out,
+              "metrics_opened":False,
+              "outcomes_read":0,
+              "real_money":"BLOCKED",
+              "integrity_result":"PASS"
+          }
+          p=Path("evidence/cor0203/runtime/MATRIX_COR0203_SOFASCORE_PROFILE_PROBE_20261005.json")
+          p.write_text(json.dumps(artifact,indent=2,sort_keys=True)+"\n",encoding="utf-8")
+          print(json.dumps(artifact,sort_keys=True))
+          PY
+
+      - name: Commit evidence
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name matrix-ci
+          git config user.email matrix-ci@users.noreply.github.com
+          git add evidence/cor0203/runtime/MATRIX_COR0203_SOFASCORE_PROFILE_PROBE_20261005.json
+          if git diff --cached --quiet; then exit 0; fi
+          git commit -m 'evidence(cor02-03): probe RapidAPI biographies for SofaScore candidates'
+          git push origin HEAD:repair/cor09-world-pipeline
