@@ -9,12 +9,25 @@ on:
       - evidence/live_tennis_lab/**/MATRIX_LIVE_TENNIS_STATE_LEDGER_V0_1.json
       - tools/live_tennis_readiness_audit.py
       - .github/workflows/live-tennis-readiness-audit.yml
+  workflow_run:
+    workflows:
+      - "MATRIX Live Tennis Bulk Seed"
+      - "MATRIX Live Tennis FINAL Settlement"
+    types:
+      - completed
 
 permissions:
   contents: write
 
+concurrency:
+  group: live-tennis-readiness-audit
+  cancel-in-progress: false
+
 jobs:
   audit:
+    if: >
+      github.event_name != 'workflow_run' ||
+      github.event.workflow_run.conclusion == 'success'
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
@@ -23,56 +36,67 @@ jobs:
           ref: repair/cor09-world-pipeline
           fetch-depth: 0
 
-      - name: Resolve Bogota date
-        id: date
-        shell: bash
-        run: echo "d=$(TZ=America/Bogota date +%F)" >> "$GITHUB_OUTPUT"
-
-      - name: Build readiness audit
+      - name: Resolve Bogota dates
+        id: dates
         shell: bash
         run: |
-          D="${{ steps.date.outputs.d }}"
-          LEDGER="evidence/live_tennis_lab/$D/MATRIX_LIVE_TENNIS_STATE_LEDGER_V0_1.json"
-          OUT="evidence/live_tennis_lab/$D/MATRIX_LIVE_TENNIS_READINESS_AUDIT_V0_1.json"
-          if [ ! -f "$LEDGER" ]; then
-            echo "NO_LEDGER_FOR_$D"
-            exit 0
-          fi
-          python -m tools.live_tennis_readiness_audit --ledger "$LEDGER" --out "$OUT"
+          echo "d0=$(TZ=America/Bogota date +%F)" >> "$GITHUB_OUTPUT"
+          echo "d1=$(TZ=America/Bogota date -d 'yesterday' +%F)" >> "$GITHUB_OUTPUT"
+
+      - name: Build readiness audits
+        env:
+          D0: ${{ steps.dates.outputs.d0 }}
+          D1: ${{ steps.dates.outputs.d1 }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          count=0
+          for D in "$D0" "$D1"; do
+            LEDGER="evidence/live_tennis_lab/$D/MATRIX_LIVE_TENNIS_STATE_LEDGER_V0_1.json"
+            OUT="evidence/live_tennis_lab/$D/MATRIX_LIVE_TENNIS_READINESS_AUDIT_V0_1.json"
+            if [ ! -f "$LEDGER" ]; then
+              echo "NO_LEDGER_FOR_$D"
+              continue
+            fi
+            python -m tools.live_tennis_readiness_audit --ledger "$LEDGER" --out "$OUT"
+            count=$((count+1))
+          done
+          test "$count" -ge 1
 
       - name: Validate sealed metrics
+        env:
+          D0: ${{ steps.dates.outputs.d0 }}
+          D1: ${{ steps.dates.outputs.d1 }}
         shell: bash
         run: |
-          D="${{ steps.date.outputs.d }}"
-          P="evidence/live_tennis_lab/$D/MATRIX_LIVE_TENNIS_READINESS_AUDIT_V0_1.json"
-          if [ ! -f "$P" ]; then
-            exit 0
-          fi
-          python - "$P" <<'PY'
-          import json,sys
+          set -euo pipefail
+          python - <<'PY'
+          import json, os
           from pathlib import Path
-          j=json.loads(Path(sys.argv[1]).read_text())
-          assert j["rules"]["gate_unit"]=="UNIQUE_SETTLED_MATCHES_PER_LANE"
-          assert j["rules"]["states_do_not_substitute_for_matches"] is True
-          assert j["rules"]["same_match_train_test_forbidden"] is True
-          assert j["protections"]["real_money"]=="BLOCKED"
-          if j["global_counts"]["settled_standard_unique_match_count"] < 30:
-              assert j["metrics_status"]=="SEALED"
-              assert j["probability_output_status"]=="SEALED"
-          print(json.dumps(j["global_counts"],sort_keys=True))
+          checked=0
+          for d in [os.environ["D0"],os.environ["D1"]]:
+              p=Path(f"evidence/live_tennis_lab/{d}/MATRIX_LIVE_TENNIS_READINESS_AUDIT_V0_1.json")
+              if not p.exists():
+                  continue
+              j=json.loads(p.read_text())
+              assert j["rules"]["gate_unit"]=="UNIQUE_SETTLED_MATCHES_PER_LANE"
+              assert j["rules"]["states_do_not_substitute_for_matches"] is True
+              assert j["rules"]["same_match_train_test_forbidden"] is True
+              assert j["protections"]["real_money"]=="BLOCKED"
+              if j["global_counts"]["settled_standard_unique_match_count"] < 30:
+                  assert j["metrics_status"]=="SEALED"
+                  assert j["probability_output_status"]=="SEALED"
+              checked+=1
+              print(json.dumps({"date":d,**j["global_counts"]},sort_keys=True))
+          assert checked>=1
           PY
 
       - name: Persist readiness evidence
         shell: bash
         run: |
-          D="${{ steps.date.outputs.d }}"
-          P="evidence/live_tennis_lab/$D/MATRIX_LIVE_TENNIS_READINESS_AUDIT_V0_1.json"
-          if [ ! -f "$P" ]; then
-            exit 0
-          fi
           git config user.name "matrix-live-tennis-readiness"
           git config user.email "matrix-live-tennis-readiness@users.noreply.github.com"
-          git add "$P"
+          git add evidence/live_tennis_lab/*/MATRIX_LIVE_TENNIS_READINESS_AUDIT_V0_1.json
           if git diff --cached --quiet; then
             echo "NO_READINESS_CHANGE"
             exit 0
