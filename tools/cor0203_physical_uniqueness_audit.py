@@ -3,6 +3,7 @@ from __future__ import annotations
 import argparse
 import json
 import re
+from datetime import datetime, timezone
 from collections import defaultdict
 from pathlib import Path
 from typing import Any, Mapping
@@ -65,7 +66,7 @@ def _competition_signature(value: object) -> str:
     return " ".join(parts)
 
 
-def _secondary_cross_provider_key(row: Mapping[str, Any]) -> tuple[str, str, str] | None:
+def _secondary_cross_provider_key(row: Mapping[str, Any]) -> tuple[str, str] | None:
     players = sorted(
         {
             _norm(row.get("alphabetical_player_a")),
@@ -74,11 +75,13 @@ def _secondary_cross_provider_key(row: Mapping[str, Any]) -> tuple[str, str, str
     )
     if len(players) != 2 or not all(players):
         return None
-    start = str(row.get("event_start_utc") or "").strip()
     competition = _competition_signature(row.get("competition"))
-    if not start or not competition:
+    if not competition:
         return None
-    return ("|".join(players), start, competition)
+    # Deliberately exclude start time from this coarse key. Providers can
+    # publish the same match with a stale or subsequently revised scheduled
+    # time. Exact temporal compatibility is checked pairwise below.
+    return ("|".join(players), competition)
 
 
 def _round_identity_token(row: Mapping[str, Any]) -> str:
@@ -88,34 +91,75 @@ def _round_identity_token(row: Mapping[str, Any]) -> str:
     return str(row.get("round") or "").strip().upper().replace("_", " ")
 
 
-def _rounds_compatible(left: Mapping[str, Any], right: Mapping[str, Any]) -> bool:
+def _round_stage(row: Mapping[str, Any]) -> str | None:
+    raw = _round_identity_token(row)
+    normalized = re.sub(r"[^A-Z0-9/]+", " ", raw.upper())
+    normalized = re.sub(r"\s+", " ", normalized).strip()
     unknown = {"", "UNKNOWN", "UNKNOWN ROUND", "N/A", "NA", "NONE"}
-    a = _round_identity_token(left)
-    b = _round_identity_token(right)
-    if a == b or a in unknown or b in unknown:
-        return True
+    if normalized in unknown:
+        return None
 
-    # Cross-provider round vocabularies can describe the same physical stage
-    # differently. In a 32-player Challenger main draw, provider "R2/Second"
-    # is the same stage that another provider may label "1/8-finals/Round of 16".
-    # This gate is only evaluated after exact player pair + exact start UTC +
-    # normalized competition already match, so it remains conservative.
-    second_round_aliases = {"R2", "SECOND", "SECOND ROUND", "ROUND 2"}
-    round_of_16_aliases = {"R16", "ROUND OF 16", "1/8", "1/8 FINAL", "1/8 FINALS"}
+    # Protected COR02/COR03 domain is ATP Challenger singles. Providers use
+    # both ordinal round names and bracket-fraction labels for the same stage.
+    if (
+        normalized in {"R1", "FIRST", "FIRST ROUND", "ROUND 1", "R32", "ROUND OF 32"}
+        or "1/16 FINAL" in normalized
+        or "ROUND OF 32" in normalized
+    ):
+        return "R32"
+    if (
+        normalized in {"R2", "SECOND", "SECOND ROUND", "ROUND 2", "R16", "ROUND OF 16"}
+        or "1/8 FINAL" in normalized
+        or "ROUND OF 16" in normalized
+    ):
+        return "R16"
+    if (
+        normalized in {"QF", "QUARTER FINAL", "QUARTER FINALS", "R8", "ROUND OF 8"}
+        or "1/4 FINAL" in normalized
+        or "QUARTER" in normalized
+    ):
+        return "QF"
+    if (
+        normalized in {"SF", "SEMI FINAL", "SEMI FINALS", "R4", "ROUND OF 4"}
+        or "1/2 FINAL" in normalized
+        or "SEMI" in normalized
+    ):
+        return "SF"
+    if normalized in {"F", "FINAL"} or normalized.endswith(" FINAL") or normalized.endswith(" FINALS"):
+        return "F"
+    return normalized
 
-    def is_round_of_16(token: str) -> bool:
-        normalized = re.sub(r"[^A-Z0-9/]+", " ", token.upper())
-        normalized = re.sub(r"\\s+", " ", normalized).strip()
-        return (
-            normalized in round_of_16_aliases
-            or "1/8 FINAL" in normalized
-            or "ROUND OF 16" in normalized
-        )
 
-    return (
-        (a in second_round_aliases and is_round_of_16(b))
-        or (b in second_round_aliases and is_round_of_16(a))
-    )
+def _rounds_compatible(left: Mapping[str, Any], right: Mapping[str, Any]) -> bool:
+    a = _round_stage(left)
+    b = _round_stage(right)
+    return a is None or b is None or a == b
+
+
+def _event_start(row: Mapping[str, Any]) -> datetime | None:
+    raw = str(row.get("event_start_utc") or "").strip()
+    if not raw:
+        return None
+    try:
+        value = datetime.fromisoformat(raw.replace("Z", "+00:00"))
+    except ValueError:
+        return None
+    if value.tzinfo is None or value.utcoffset() is None:
+        return None
+    return value.astimezone(timezone.utc)
+
+
+def _starts_compatible(
+    left: Mapping[str, Any],
+    right: Mapping[str, Any],
+    *,
+    max_delta_minutes: int = 120,
+) -> bool:
+    a = _event_start(left)
+    b = _event_start(right)
+    if a is None or b is None:
+        return False
+    return abs((a - b).total_seconds()) <= max_delta_minutes * 60
 
 
 def audit_physical_uniqueness(
@@ -206,7 +250,7 @@ def audit_physical_uniqueness(
         for index in members[1:]:
             union(members[0], index)
 
-    secondary_groups: dict[tuple[str, str, str], list[int]] = defaultdict(list)
+    secondary_groups: dict[tuple[str, str], list[int]] = defaultdict(list)
     for index, row in enumerate(rows):
         key = _secondary_cross_provider_key(row)
         if key is not None:
@@ -223,7 +267,7 @@ def audit_physical_uniqueness(
                 right_provider = _provider_family(right)
                 if not right_provider or left_provider == right_provider:
                     continue
-                if _rounds_compatible(left, right):
+                if _rounds_compatible(left, right) and _starts_compatible(left, right):
                     union(left_index, right_index)
 
     grouped_indexes: dict[int, list[int]] = defaultdict(list)
