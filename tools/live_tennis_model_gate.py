@@ -34,7 +34,8 @@ def main() -> int:
     any_open=False
     for lane,data in sorted(lanes.items()):
         settled=int(data.get("settled_unique_match_count") or 0)
-        promotable=not lane.startswith("unknown|")
+        parts=[x.strip().lower() for x in lane.split("|")]
+        promotable=len(parts)==3 and all(x not in {"", "unknown", "none"} for x in parts)
         gate_open=settled>=MIN_SETTLED_MATCHES_PER_LANE and promotable
         any_open=any_open or gate_open
         lane_results[lane]={
