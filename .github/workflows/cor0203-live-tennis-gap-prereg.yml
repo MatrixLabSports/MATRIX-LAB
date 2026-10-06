@@ -1,0 +1,87 @@
+name: COR0203 Live Tennis Gap Preregistration
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - repair/cor09-world-pipeline
+    paths:
+      - tools/cor0203_live_tennis_discovery.py
+      - tools/cor0203_preregister_discovery.py
+      - evidence/cor0203/runtime/MATRIX_COR0203_LIVE_TENNIS_GAP_RECONCILIATION_20261006.json
+      - .github/workflows/cor0203-live-tennis-gap-prereg.yml
+
+permissions:
+  contents: write
+
+concurrency:
+  group: cor0203-live-tennis-gap-prereg
+  cancel-in-progress: false
+
+jobs:
+  prereg:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: repair/cor09-world-pipeline
+          fetch-depth: 0
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Build governed Live Tennis discovery
+        run: |
+          python -m tools.cor0203_live_tennis_discovery \
+            --coverage evidence/free_providers/2026-10-06/MATRIX_FREE_PROVIDER_COVERAGE_SNAPSHOT.json \
+            --reconciliation evidence/cor0203/runtime/MATRIX_COR0203_LIVE_TENNIS_GAP_RECONCILIATION_20261006.json \
+            --out evidence/cor0203/runtime/MATRIX_COR0203_LIVE_TENNIS_DISCOVERY_LAST.json
+
+      - name: Preregister before feature acquisition
+        run: |
+          python -m tools.cor0203_preregister_discovery \
+            --discovery evidence/cor0203/runtime/MATRIX_COR0203_LIVE_TENNIS_DISCOVERY_LAST.json \
+            --result-out evidence/cor0203/runtime/MATRIX_COR0203_LIVE_TENNIS_PREREG_RESULT_LAST.json
+
+      - name: Validate fail-closed preregistration
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          d=json.loads(Path("evidence/cor0203/runtime/MATRIX_COR0203_LIVE_TENNIS_DISCOVERY_LAST.json").read_text())
+          p=json.loads(Path("evidence/cor0203/runtime/MATRIX_COR0203_LIVE_TENNIS_PREREG_RESULT_LAST.json").read_text())
+          assert d["status"]=="DISCOVERY_COMPLETED"
+          assert len(d["eligible_candidates"])==2
+          assert d["metrics_opened"] is False
+          assert d["real_money"]=="BLOCKED"
+          assert p["status"] in {"PREREGISTERED","NO_NEW_EVENTS"}
+          if p["status"]=="PREREGISTERED":
+              assert p["events_registered"]==2
+          print(json.dumps({
+              "discovery_eligible":len(d["eligible_candidates"]),
+              "prereg_status":p["status"],
+              "events_registered":p.get("events_registered",0),
+              "revision":p.get("revision")
+          },sort_keys=True))
+          PY
+
+      - name: Persist preregistration evidence before any features
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "matrix-live-tennis-prereg"
+          git config user.email "matrix-live-tennis-prereg@users.noreply.github.com"
+          git add evidence/cor0203/runtime/MATRIX_COR0203_LIVE_TENNIS_DISCOVERY_LAST.json
+          git add evidence/cor0203/runtime/MATRIX_COR0203_LIVE_TENNIS_PREREG_RESULT_LAST.json
+          git add evidence/cor0203/runtime/MATRIX_COR0203_PREFEATURE_REGISTRY_R*.json
+          if git diff --cached --quiet; then
+            echo "NO_PREREG_CHANGE"
+            exit 0
+          fi
+          git commit -m "evidence(tennis): preregister verified Live Tennis API gaps"
+          git pull --rebase origin repair/cor09-world-pipeline
+          git push origin HEAD:repair/cor09-world-pipeline
