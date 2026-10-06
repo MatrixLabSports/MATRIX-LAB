@@ -3,26 +3,33 @@
   "blocked": [
     {
       "event_date": "2026-10-06",
-      "event_id": "COR0203-SOFASCORE-eea19bb214f290ab6ec299b2141a863cd35923e447e5b635c4fe222fe1962995",
-      "exact_candidate_count": 0,
-      "reason": "HISTORICAL_IDENTITY_NO_EXACT_UNIQUE_MATCH"
-    },
-    {
-      "event_date": "2026-10-06",
       "event_id": "COR0203-SOFASCORE-3e334e1ea5e9bca56dc55ad3d88461b1d850a3b7c8db8e0e36d1c8daaccbbd79",
       "exact_candidate_count": 0,
       "reason": "HISTORICAL_IDENTITY_NO_EXACT_UNIQUE_MATCH"
     }
   ],
-  "blocked_count": 2,
+  "blocked_count": 1,
   "freeze_mutation": false,
   "input_pending": 2,
   "metrics_opened": false,
   "network_calls": 1,
   "provider": "rapidapi_tennis",
   "real_money": "BLOCKED",
-  "reconciled": [],
-  "reconciled_count": 0,
+  "reconciled": [
+    {
+      "canonical_source_event_id": "rapidapi-tennis:match:138673281",
+      "event_date": "2026-10-06",
+      "event_id": "COR0203-SOFASCORE-eea19bb214f290ab6ec299b2141a863cd35923e447e5b635c4fe222fe1962995",
+      "match_rule": "EXACT_DATE_WINDOW_EXACT_UNORDERED_PLAYER_NAMES_UNIQUE",
+      "provider": "rapidapi_tennis",
+      "provider_match_key": "138673281",
+      "provider_player_map": {
+        "rapidapi-tennis:player:29463": "Aoran Wang",
+        "rapidapi-tennis:player:34537": "Fajing Sun"
+      }
+    }
+  ],
+  "reconciled_count": 1,
   "schema": "MATRIX_COR0203_HISTORICAL_IDENTITY_RECONCILIATION_V2",
   "status": "PASS"
 }
