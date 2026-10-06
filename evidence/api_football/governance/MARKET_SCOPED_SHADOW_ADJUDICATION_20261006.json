@@ -1,0 +1,48 @@
+{
+  "schema": "MATRIX_FOOTBALL_MARKET_SCOPED_SHADOW_ADJUDICATION_V1",
+  "adjudication_date": "2026-10-06",
+  "source_holdout": {
+    "row_count": 357,
+    "seal_sha256": "b9a84e388c0cf2eec0b74705d04a0a8ba7321867754257bc5465ba436543eccf",
+    "parameter_refit_performed": false,
+    "parameter_search_performed": false
+  },
+  "policy": "MARKET_SCOPED_SHADOW_ONLY_NO_REAL_MONEY_PROMOTION",
+  "markets": {
+    "1x2": {
+      "shadow_lane": "APPROVED_FOR_PROSPECTIVE_PAPER_TRADING",
+      "final_holdout_market_superiority": true,
+      "challenger_brier": 0.5878488885946341,
+      "poisson_brier": 0.6017882680849763,
+      "challenger_log_loss": 0.9968518479375956,
+      "poisson_log_loss": 1.0084049846093615,
+      "frozen_parameters": {"a": 1.0, "c": 0.8},
+      "p_matrix_role": "SHADOW_PROBABILITY_ONLY"
+    },
+    "over_2_5": {
+      "shadow_lane": "APPROVED_FOR_PROSPECTIVE_PAPER_TRADING",
+      "final_holdout_market_superiority": true,
+      "challenger_brier": 0.24452925114130833,
+      "poisson_brier": 0.24702601886198647,
+      "challenger_log_loss": 0.6821533519226923,
+      "poisson_log_loss": 0.6889960982231681,
+      "frozen_parameters": {"a": 0.6, "b": 0.0, "c": 0.4},
+      "p_matrix_role": "SHADOW_PROBABILITY_ONLY"
+    },
+    "btts": {
+      "shadow_lane": "BLOCKED",
+      "final_holdout_market_superiority": false,
+      "reason": "CHALLENGER_FAILED_TO_BEAT_POISSON_ON_FINAL_HOLDOUT"
+    }
+  },
+  "protections": {
+    "real_money": "BLOCKED",
+    "automatic_wagering": false,
+    "telegram_mode": "SHADOW",
+    "odds_to_p_matrix": false,
+    "paper_trading_required_before_any_future_real_money_review": true,
+    "odds_ev_validation_required_before_any_future_real_money_review": true,
+    "external_audit_still_required": true
+  },
+  "important_scope": "This adjudication does not declare the challenger a real-money governed engine. It authorizes only prospective SHADOW/paper-trading generation for 1X2 and Over 2.5 with frozen parameters."
+}
