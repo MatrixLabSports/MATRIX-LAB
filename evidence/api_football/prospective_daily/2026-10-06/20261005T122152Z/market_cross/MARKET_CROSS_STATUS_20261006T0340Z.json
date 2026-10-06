@@ -1,5 +1,5 @@
 {
-  "schema": "MATRIX_FOOTBALL_SHADOW_MARKET_CROSS_STATUS_V1",
+  "schema": "MATRIX_FOOTBALL_SHADOW_MARKET_CROSS_STATUS_V2",
   "target_date": "2026-10-06",
   "source_p_matrix_sha256": "380f71107794fdde7dc066282147efd8180f1042bc2481dc9a4d6c8ae39b0e90",
   "source_p_matrix_blob_sha": "f59d2e865c8477d3b33562e25130160bc6289f74",
@@ -8,43 +8,58 @@
   "blocked_count": 55,
   "markets_modelled": ["1x2", "over_2_5"],
   "btts_status": "BLOCKED_FINAL_HOLDOUT_NOT_SUPERIOR",
+  "correction_note": "Previous wording that bookmaker tabs had no accessibility content was too broad. BetPlay, bwin and Betano were physically re-read in Opera and do expose sportsbook content/quotes. The unresolved condition is fixture-level binding between a modelled row and a pre-match quote, not general bookmaker access.",
   "physical_market_checks": {
+    "betplay": {
+      "status": "SESSION_OPEN_ACCESSIBILITY_READABLE",
+      "verified_capability": "EVENT_NAMES_1X2_AND_OVER_UNDER_QUOTES_VISIBLE",
+      "examples_seen_not_model_bound": ["Bielorrusia-Finlandia", "Kazajistan-Islas Faroe"],
+      "candidate_quote_extraction": "NO_MODELLED_FIXTURE_BOUND_YET"
+    },
+    "bwin": {
+      "status": "SESSION_OPEN_ACCESSIBILITY_READABLE",
+      "verified_capability": "SPORTSBOOK_NAVIGATION_AND_EVENT_CONTENT_READABLE",
+      "candidate_quote_extraction": "NO_MODELLED_FIXTURE_BOUND_YET"
+    },
+    "betano": {
+      "status": "SESSION_OPEN_ACCESSIBILITY_READABLE",
+      "verified_capability": "EVENT_NAMES_AND_DECIMAL_1X2_QUOTES_VISIBLE",
+      "candidate_quote_extraction": "NO_MODELLED_FIXTURE_BOUND_YET"
+    },
+    "rushbet": {
+      "status": "OPEN_IN_OPERA",
+      "candidate_quote_extraction": "NOT_YET_BOUND_TO_MODELLED_FIXTURE"
+    },
     "sofascore_football_2026_10_06": {
       "status": "READABLE_IN_OPERA",
-      "odds_visibility": "PARTIAL_BY_EVENT",
-      "note": "Schedule page physically opened and searched; it does not expose a complete bookmaker quote set for all 93 model rows in the accessibility tree."
-    },
-    "sofascore_api_scheduled_events": {
-      "status": "HTTP_403_IN_OPERA",
-      "consequence": "NOT_USED_AS_ODDS_SOURCE"
+      "role": "IDENTITY_AND_SCHEDULE_RECONCILIATION"
     },
     "flashscore_football_2026_10_06": {
       "status": "OPENED_IN_OPERA",
-      "candidate_name_match": "INSUFFICIENT_FOR_COMPLETE_93_ROW_ODDS_CROSS",
-      "consequence": "NOT_USED_TO_INVENT_QUOTES"
-    },
-    "betplay": {
-      "status": "OPENED_IN_OPERA",
-      "candidate_quote_extraction": "NO_VERIFIED_MATCH_FOR_MODELLED_ROWS",
-      "consequence": "NO_QUOTE_RECORDED"
-    },
-    "rushbet": {
-      "status": "OPEN_TAB_NO_ACCESSIBILITY_CONTENT_FOR_TARGET_QUOTES",
-      "consequence": "NO_QUOTE_RECORDED"
-    },
-    "bwin": {
-      "status": "OPEN_TAB_NO_ACCESSIBILITY_CONTENT_FOR_TARGET_QUOTES",
-      "consequence": "NO_QUOTE_RECORDED"
-    },
-    "betano": {
-      "status": "OPEN_TAB_NO_ACCESSIBILITY_CONTENT_FOR_TARGET_QUOTES",
-      "consequence": "NO_QUOTE_RECORDED"
+      "role": "IDENTITY_AND_SCHEDULE_RECONCILIATION"
     }
   },
-  "verified_quote_count": 0,
+  "modelled_rows_physically_checked_against_bookmaker_visible_names": [
+    "Russia-Nigeria",
+    "Azerbaijan U21-Gibraltar U21",
+    "Moldova U21-Kazakhstan U21",
+    "Northern Ireland U21-Greece U21",
+    "Latvia U21-Malta U21",
+    "Germany U21-Georgia U21",
+    "Portugal U21-Czech Republic U21",
+    "Werder Bremen II-Hannover 96 II",
+    "Bristol City U21-Charlton Athletic U21",
+    "Queens Park Rangers U21-Coventry City U21",
+    "Colchester United U21-Swansea City U21",
+    "Central Ballester-Deportivo Muniz",
+    "Claypole-Deportivo Espanol",
+    "Feniz-Atletico Atlas",
+    "Leandro N Alem-Centro Espanol"
+  ],
+  "verified_model_bound_quote_count": 0,
   "ev_rows_generated": 0,
   "telegram_bridge_eligible_count": 0,
-  "adjudication": "NO_VERIFIED_BOOKMAKER_QUOTES_NO_EV_NO_TELEGRAM_SIGNAL",
+  "adjudication": "BOOKMAKERS_ACCESSIBLE_BUT_NO_MODEL_BOUND_PREMATCH_QUOTE_YET",
   "protections": {
     "odds_used_to_generate_probability": false,
     "invented_odds": false,
@@ -53,5 +68,5 @@
     "real_money": "BLOCKED",
     "telegram_mode": "SHADOW"
   },
-  "next_action": "Repeat bookmaker cross only when a physical pre-match decimal quote can be bound to a modelled fixture and market; then compute EV=p_matrix*odds-1 and pass only positive-EV rows through the SHADOW bridge."
+  "next_action": "Continue fixture-by-fixture market binding in the open bookmaker sessions. A quote only becomes admissible after exact event+market identity is verified; then compute EV=p_matrix*decimal_odds-1 and apply odds>1.50 plus positive-EV gates."
 }
