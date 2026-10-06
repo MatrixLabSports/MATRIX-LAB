@@ -58,7 +58,7 @@ def test_same_hour_second_run_uses_checkpoint_without_refetch(tmp_path):
 
     assert first.processed == 1
     assert first.failed == 0
-    assert calls_after_first == 2
+    assert calls_after_first == 3
     assert second.processed == 0
     assert second.skipped_completed == 1
     assert client.request_count == calls_after_first
