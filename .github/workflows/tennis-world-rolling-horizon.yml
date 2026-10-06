@@ -20,7 +20,7 @@ permissions:
   contents: write
 
 concurrency:
-  group: tennis-world-rolling-horizon-repair-cor09
+  group: cor0203-holdout-repair-cor09-world-pipeline
   cancel-in-progress: false
 
 jobs:
@@ -48,6 +48,8 @@ jobs:
             tests/test_cor0203_bogota_full_day_calendar.py \
             tests/test_tennis_world_inventory_rapidapi.py \
             tests/test_cor0203_world_inventory_discovery.py \
+            tests/test_cor0203_api_tennis_discovery.py \
+            tests/test_cor0203_durable_discovery_recovery.py \
             tests/test_cor0203_preregister_discovery.py \
             tests/test_cor0203_physical_uniqueness.py
 
