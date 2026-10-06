@@ -26,6 +26,17 @@ def test_valid_shadow_candidate_is_eligible():
     assert r["automatic_wagering"] is False
 
 
+def test_generated_shadow_candidate_is_eligible_but_stays_shadow():
+    p = base_payload(); p["model_status"]["daily_p_matrix"] = "GENERATED_SHADOW"
+    r = adjudicate(p, NOW)
+    assert r["status"] == "ELIGIBLE"
+    assert r["eligible_count"] == 1
+    assert r["source_p_matrix_status"] == "GENERATED_SHADOW"
+    assert r["mode"] == "SHADOW"
+    assert r["real_money"] == "BLOCKED"
+    assert r["automatic_wagering"] is False
+
+
 def test_missing_daily_p_matrix_fails_closed():
     p = base_payload(); p["model_status"]["daily_p_matrix"] = "NOT_GENERATED"
     r = adjudicate(p, NOW)
@@ -51,3 +62,13 @@ def test_post_start_is_blocked():
 def test_nonpositive_ev_is_blocked():
     p = base_payload(); p["candidates"][0]["p_matrix"] = 0.51; p["candidates"][0]["observed_decimal_odds"] = 1.80
     assert adjudicate(p, NOW)["eligible_count"] == 0
+
+
+def test_generated_shadow_cannot_bypass_real_money_block():
+    p = base_payload()
+    p["model_status"]["daily_p_matrix"] = "GENERATED_SHADOW"
+    p["model_status"]["real_money"] = "ENABLED"
+    r = adjudicate(p, NOW)
+    assert r["status"] == "BLOCKED"
+    assert r["eligible_count"] == 0
+    assert "REAL_MONEY_NOT_BLOCKED" in r["global_block_reasons"]
