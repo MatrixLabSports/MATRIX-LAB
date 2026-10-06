@@ -3,28 +3,44 @@
   "automatic_model_feed": false,
   "automatic_wagering": false,
   "cross_provider_reconciliation": {
-    "api_tennis_only_neutral_count": 8,
-    "exact_union_count": 8,
+    "api_tennis_only_neutral_count": 17,
+    "exact_union_count": 19,
     "neutral_exact_overlap_count": 0,
     "note": "Exact-neutral reconciliation uses Bogota date + normalized player pair + singles/doubles format. Provider-specific aliases can remain unmatched. No single provider is authorized to define the worldwide denominator.",
-    "rapidapi_only_neutral_count": 0
+    "rapidapi_only_neutral_count": 2
   },
   "metrics_opened": false,
   "odds_used": false,
   "primary_world_inventory": {
-    "events_by_detail": {},
-    "events_by_family": {},
-    "events_by_format": {},
+    "events_by_detail": {
+      "ATP_CHALLENGER": 2
+    },
+    "events_by_family": {
+      "ATP": 2
+    },
+    "events_by_format": {
+      "SINGLES": 2
+    },
     "network_calls": 2,
     "provider": "rapidapi_tennis",
     "provider_inventory_complete": true,
     "status": "PASS",
-    "tournament_count": 0,
-    "tournaments": [],
-    "unique_match_count": 0,
+    "tournament_count": 1,
+    "tournaments": [
+      {
+        "circuit_detail": "ATP_CHALLENGER",
+        "circuit_family": "ATP",
+        "doubles": 0,
+        "match_count": 2,
+        "singles": 2,
+        "tournament_name": "Braga Challenger",
+        "unknown_format": 0
+      }
+    ],
+    "unique_match_count": 2,
     "world_inventory_complete": false
   },
-  "primary_worldwide_registered_match_count": 0,
+  "primary_worldwide_registered_match_count": 2,
   "real_money": "BLOCKED",
   "schema": "MATRIX_TENNIS_WORLD_EXACT_DAY_DUAL_AUDIT_V1",
   "secondary_crosscheck": {
@@ -32,22 +48,37 @@
     "network_calls": 2,
     "provider": "api_tennis",
     "status": "PASS",
-    "tournament_count": 4,
+    "tournament_count": 7,
     "tournaments": [
       {
         "event_type": "Challenger Men Doubles",
-        "match_count": 1,
+        "match_count": 4,
+        "tournament_name": "Braga"
+      },
+      {
+        "event_type": "Challenger Men Singles",
+        "match_count": 2,
         "tournament_name": "Braga"
       },
       {
         "event_type": "Itf Men Singles",
-        "match_count": 1,
+        "match_count": 2,
         "tournament_name": "M25 Kigali 2"
       },
       {
+        "event_type": "Itf Men Singles",
+        "match_count": 1,
+        "tournament_name": "M25 Santa Margherita di Pula 9"
+      },
+      {
         "event_type": "Itf Women Singles",
-        "match_count": 5,
+        "match_count": 6,
         "tournament_name": "W35 Seville"
+      },
+      {
+        "event_type": "Itf Women Singles",
+        "match_count": 1,
+        "tournament_name": "W35 Villeneuve d'Ascq"
       },
       {
         "event_type": "Itf Women Singles",
@@ -55,7 +86,7 @@
         "tournament_name": "W50 Burgas (Bulgaria)"
       }
     ],
-    "unique_match_count": 8
+    "unique_match_count": 17
   },
   "status": "PASS_PROVIDER_CAPTURE_WORLD_UNSEALED",
   "target_date_bogota": "2026-10-08",

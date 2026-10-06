@@ -1,9 +1,9 @@
 {
   "accumulation": {
-    "cumulative_count": 0,
-    "current_fetch_count": 0,
+    "cumulative_count": 2,
+    "current_fetch_count": 2,
     "never_decrease_within_day": true,
-    "newly_discovered_count": 0,
+    "newly_discovered_count": 2,
     "policy": "MONOTONIC_UNION_BY_STABLE_PHYSICAL_IDENTITY",
     "prior_count": 0,
     "retained_prior_only_count": 0
@@ -39,14 +39,99 @@
   },
   "duplicate_source_rows": [],
   "duplicate_source_rows_quarantined": 0,
-  "events": [],
-  "events_by_detail": {},
+  "events": [
+    {
+      "circuit_detail": "ATP_CHALLENGER",
+      "circuit_family": "ATP",
+      "event_format": "SINGLES",
+      "event_format_authority": "TWO_INDIVIDUAL_PROVIDER_NAMES",
+      "event_start_bogota": "2026-10-08T04:00:00-05:00",
+      "event_start_utc": "2026-10-08T09:00:00+00:00",
+      "match_id": "1521",
+      "model_derivation": {
+        "blockers": [
+          "SURFACE_OUTSIDE_COR0203_HARD"
+        ],
+        "domain_candidate": false,
+        "lane": "COR02_COR03_ATP_CHALLENGER_HARD",
+        "note": "Domain candidate only. Governed COR02/COR03 still requires identity, PIT history, ranking/features, unique physical event, future prematch freeze and all existing gates."
+      },
+      "physical_event_key": "576cd3b1ecf7608c5ea71e77307b4e47b59c3a9dcdb4a46fca9c4a6c0494518e",
+      "player1": {
+        "country": "HUN",
+        "id": "47021",
+        "name": "Zsombor Piros"
+      },
+      "player2": {
+        "country": "DEN",
+        "id": "81189",
+        "name": "Elmer Moller"
+      },
+      "player_group": "",
+      "provider_channel": "ATP",
+      "provider_status": "",
+      "round": "Second",
+      "source_event_id": "rapidapi-tennis:atp:match:1521",
+      "source_provider": "rapidapi_tennis",
+      "source_snapshot_sha256": "422b8ed3019d9add195c7d883db93e39c94dd67752f01421e1935748c0e3724b",
+      "stable_physical_identity_key": "9deecb32f7ee56668c6b8ca4ad6aa73934bf4fc5ea36c6e88a5090268f1a4f06",
+      "surface": "Clay",
+      "tier": "",
+      "tournament_id": "22095",
+      "tournament_name": "Braga Challenger"
+    },
+    {
+      "circuit_detail": "ATP_CHALLENGER",
+      "circuit_family": "ATP",
+      "event_format": "SINGLES",
+      "event_format_authority": "TWO_INDIVIDUAL_PROVIDER_NAMES",
+      "event_start_bogota": "2026-10-08T04:00:00-05:00",
+      "event_start_utc": "2026-10-08T09:00:00+00:00",
+      "match_id": "1532",
+      "model_derivation": {
+        "blockers": [
+          "SURFACE_OUTSIDE_COR0203_HARD"
+        ],
+        "domain_candidate": false,
+        "lane": "COR02_COR03_ATP_CHALLENGER_HARD",
+        "note": "Domain candidate only. Governed COR02/COR03 still requires identity, PIT history, ranking/features, unique physical event, future prematch freeze and all existing gates."
+      },
+      "physical_event_key": "6ee4808e1c0d8f5a28ce0ac61faa5ca9248a949467e3d7ca221f3f019e6b050f",
+      "player1": {
+        "country": "LTU",
+        "id": "79088",
+        "name": "Vilius Gaubas"
+      },
+      "player2": {
+        "country": "CRO",
+        "id": "47543",
+        "name": "Duje Ajdukovic"
+      },
+      "player_group": "",
+      "provider_channel": "ATP",
+      "provider_status": "",
+      "round": "Second",
+      "source_event_id": "rapidapi-tennis:atp:match:1532",
+      "source_provider": "rapidapi_tennis",
+      "source_snapshot_sha256": "b2ab62504757a185513b6ed35bef3d6527931ac866a4aa3a4221f74948e2481d",
+      "stable_physical_identity_key": "12c67183b3d4149db0074afc12ca76c973eda1e5095f3a714140d776472686d7",
+      "surface": "Clay",
+      "tier": "",
+      "tournament_id": "22095",
+      "tournament_name": "Braga Challenger"
+    }
+  ],
+  "events_by_detail": {
+    "ATP_CHALLENGER": 2
+  },
   "events_by_family": {
-    "ATP": 0,
+    "ATP": 2,
     "ITF": 0,
     "WTA": 0
   },
-  "events_by_format": {},
+  "events_by_format": {
+    "SINGLES": 2
+  },
   "metrics_opened": false,
   "operational_timezone": "America/Bogota",
   "p_matrix": "NOT_GENERATED",
@@ -62,17 +147,17 @@
   "provider_channel_errors": {},
   "provider_channel_summaries": {
     "ATP": {
-      "events_in_bogota_day": 0,
+      "events_in_bogota_day": 2,
       "malformed_unplaced_rows": 0,
       "network_calls": 1,
-      "provider_rows_in_query_window": 33,
+      "provider_rows_in_query_window": 53,
       "status": "PASS"
     },
     "WTA": {
       "events_in_bogota_day": 0,
       "malformed_unplaced_rows": 0,
       "network_calls": 1,
-      "provider_rows_in_query_window": 20,
+      "provider_rows_in_query_window": 24,
       "status": "PASS"
     }
   },
@@ -85,7 +170,7 @@
   "status": "PASS",
   "target_date_bogota": "2026-10-08",
   "unplaced_rows": [],
-  "world_calendar_inventory_count": 0,
+  "world_calendar_inventory_count": 2,
   "world_complete_gate": "REQUIRES_MULTI_SOURCE_RECONCILIATION",
   "world_inventory_complete": false
 }
