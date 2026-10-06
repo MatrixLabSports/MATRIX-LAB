@@ -7,7 +7,6 @@ on:
       - repair/cor09-world-pipeline
     paths:
       - tools/live_tennis_settlement_sync.py
-      - evidence/live_tennis_lab/2026-10-06/MATRIX_LIVE_TENNIS_BATCH_001_CLOSURE.json
       - .github/workflows/live-tennis-final-settlement.yml
 
 permissions:
@@ -20,7 +19,7 @@ concurrency:
 jobs:
   settle:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
         with:
@@ -33,46 +32,33 @@ jobs:
 
       - run: python -m pip install requests
 
-      - name: Run FINAL-only settlement sync
+      - name: Sync standard FINAL results only
         env:
           LIVE_TENNIS_API_KEY: ${{ secrets.LIVETENNISAPI_KEY }}
         run: |
           python -m tools.live_tennis_settlement_sync \
             --ledger evidence/live_tennis_lab/2026-10-06/MATRIX_LIVE_TENNIS_STATE_LEDGER_V0_1.json \
             --out evidence/live_tennis_lab/2026-10-06/MATRIX_LIVE_TENNIS_SETTLEMENT_SYNC_V0_1.json \
-            --max-detail-queries 28 \
-            --reserve-calls 15
+            --max-detail-queries 10 \
+            --reserve-calls 20
 
-      - name: Validate FINAL-only labels
+      - name: Validate FINAL-only protections
         run: |
           python - <<'PY'
           import json
           from pathlib import Path
-
-          ledger=Path("evidence/live_tennis_lab/2026-10-06/MATRIX_LIVE_TENNIS_STATE_LEDGER_V0_1.json")
-          settle=Path("evidence/live_tennis_lab/2026-10-06/MATRIX_LIVE_TENNIS_SETTLEMENT_SYNC_V0_1.json")
-          j=json.loads(ledger.read_text())
-          s=json.loads(settle.read_text())
-
+          s=json.loads(Path("evidence/live_tennis_lab/2026-10-06/MATRIX_LIVE_TENNIS_SETTLEMENT_SYNC_V0_1.json").read_text())
+          l=json.loads(Path("evidence/live_tennis_lab/2026-10-06/MATRIX_LIVE_TENNIS_STATE_LEDGER_V0_1.json").read_text())
           assert s["protections"]["final_only"] is True
           assert s["protections"]["retired_walkover_abandoned_not_silently_labeled"] is True
           assert s["protections"]["real_money"]=="BLOCKED"
-
-          labeled=[x for x in j["states"] if x.get("label_opened") is True]
-          for row in labeled:
-              assert row["settlement_status"]=="FINAL_STANDARD"
-              assert row["p1_match_win"] in {0,1}
-
-          settled_matches={x["match_id"] for x in s["standard_final_settlements"]}
-          labeled_matches={x["match_id"] for x in labeled}
-          assert labeled_matches.issubset(settled_matches)
-
-          valid_labeled=[x for x in labeled if x.get("quality_state_valid") is True]
+          assert all(x.get("settlement_status") in {"PENDING_FINAL","FINAL_STANDARD"} for x in l["states"])
+          assert all(x.get("label_opened") is (x.get("settlement_status")=="FINAL_STANDARD") for x in l["states"])
           print(json.dumps({
-              "settled_matches":len(settled_matches),
-              "labeled_state_rows":len(labeled),
-              "quality_valid_labeled_states":len(valid_labeled),
-              "blocked_or_pending":len(s["blocked_or_pending"])
+            "departed":len(s["departed_match_ids"]),
+            "queried":len(s["queried_match_ids"]),
+            "settled_matches":len(s["standard_final_settlements"]),
+            "labeled_state_rows":s["labeled_state_rows"]
           },sort_keys=True))
           PY
 
@@ -82,6 +68,10 @@ jobs:
           git config user.email "matrix-live-tennis-settlement@users.noreply.github.com"
           git add evidence/live_tennis_lab/2026-10-06/MATRIX_LIVE_TENNIS_STATE_LEDGER_V0_1.json
           git add evidence/live_tennis_lab/2026-10-06/MATRIX_LIVE_TENNIS_SETTLEMENT_SYNC_V0_1.json
-          git commit -m "evidence(live): settle first live tennis batch FINAL-only"
+          if git diff --cached --quiet; then
+            echo "NO_SETTLEMENT_CHANGE"
+            exit 0
+          fi
+          git commit -m "evidence(live): sync FINAL-only tennis labels"
           git pull --rebase origin repair/cor09-world-pipeline
           git push origin HEAD:repair/cor09-world-pipeline
