@@ -1,5 +1,5 @@
 {
-  "schema": "MATRIX_DAILY_WORLD_CALENDAR_SOURCE_COUNTS_V1",
+  "schema": "MATRIX_DAILY_WORLD_CALENDAR_SOURCE_COUNTS_V2",
   "target_date_bogota": "2026-10-06",
   "timezone": "America/Bogota",
   "captured_at_utc": "2026-10-06T15:18:00Z",
@@ -16,24 +16,30 @@
       "url": "https://www.sofascore.com/es/tennis/2026-10-06",
       "opera_read_status": "PASS",
       "machine_accessibility_unique_match_links_observed_partial": 67,
-      "note": "Accessibility tree is lazy/partial; partial machine count is not the daily worldwide denominator."
+      "note": "Accessibility tree is lazy/partial; partial machine count is not the daily worldwide denominator.",
+      "operator_manual_intervention_required": false,
+      "captured_at_utc": "2026-10-06T15:18:00Z"
     },
     "flashscore": {
       "count": 410,
       "count_type": "USER_VISIBLE_UI_REPORT_NOT_MACHINE_RECOUNTED",
       "url": "https://www.flashscore.co/tenis/?d=2026-10-06",
       "opera_read_status": "PASS",
-      "note": "Exact 410 is retained as user-visible UI evidence; accessibility tree is lazy/paginated and is not used to manufacture a recount."
+      "note": "Exact 410 is retained as user-visible UI evidence; accessibility tree is lazy/paginated and is not used to manufacture a recount.",
+      "operator_manual_intervention_required": false,
+      "captured_at_utc": "2026-10-06T15:18:00Z"
     },
     "rapidapi_tennis": {
       "count": 250,
       "count_type": "MACHINE_VERIFIED_PROVIDER_INVENTORY",
-      "evidence_path": "evidence/tennis_world_inventory/2026-10-06/world_exact_day_dual_audit.json"
+      "evidence_path": "evidence/tennis_world_inventory/2026-10-06/world_exact_day_dual_audit.json",
+      "capture_started_at_utc": null
     },
     "api_tennis": {
       "count": 407,
       "count_type": "MACHINE_VERIFIED_PROVIDER_INVENTORY",
-      "evidence_path": "evidence/tennis_world_inventory/2026-10-06/world_exact_day_dual_audit.json"
+      "evidence_path": "evidence/tennis_world_inventory/2026-10-06/world_exact_day_dual_audit.json",
+      "capture_started_at_utc": null
     },
     "raw_paid_provider_union": {
       "count": 657,
@@ -55,7 +61,9 @@
         "exact_daily_total_not_yet_machine_verified": true
       },
       "user_observation": "User reports the open SofaScore page visibly contains many more football matches than the prior partial count.",
-      "note": "Do not use 75 as SofaScore's daily football total. Exact total must be captured from the visible UI/count when Opera connector is readable; until then mark unknown rather than invent."
+      "note": "Do not use 75 as SofaScore's daily football total. Exact total must be captured from the visible UI/count when Opera connector is readable; until then mark unknown rather than invent.",
+      "operator_manual_intervention_required": false,
+      "captured_at_utc": "2026-10-06T15:18:00Z"
     },
     "flashscore": {
       "count": 209,
@@ -69,7 +77,9 @@
         "live_count_visible": 13,
         "total_count_visible": 209
       },
-      "note": "209 is the physically visible Flashscore football total in the user-provided screenshot. The prior accessibility-tree value 117 was only a lazy/partial machine floor and is superseded as the daily UI count."
+      "note": "209 is the physically visible Flashscore football total in the user-provided screenshot. The prior accessibility-tree value 117 was only a lazy/partial machine floor and is superseded as the daily UI count.",
+      "operator_manual_intervention_required": false,
+      "captured_at_utc": "2026-10-06T15:18:00Z"
     },
     "api_football": {
       "count": 200,
@@ -78,7 +88,8 @@
       "ready_input_count": 138,
       "new_freezes": 14,
       "network_calls_for_3day_horizon": 480,
-      "evidence_path": "evidence/api_football/prospective_horizon/last_run.json"
+      "evidence_path": "evidence/api_football/prospective_horizon/last_run.json",
+      "capture_started_at_utc": null
     },
     "raw_flashscore_vs_api_football_difference": 9,
     "raw_difference_warning": "209 Flashscore UI vs 200 API-Football fixtures_received is a raw source-count gap only. It does not prove exactly 9 missing physical matches until identity/timezone/competition reconciliation and deduplication are performed."
@@ -97,5 +108,10 @@
     "metrics_opened": false,
     "odds_to_p_matrix": false,
     "real_money": "BLOCKED"
-  }
+  },
+  "calendar_baseline_complete": false,
+  "operator_manual_intervention_required": false,
+  "automation_retry_required": true,
+  "browser_baseline_completed_at_utc": null,
+  "block_reason": "SOFASCORE_EXACT_FOOTBALL_TOTAL_AND_AUTOMATED_EXACT_BROWSER_COUNTS_NOT_YET_CAPTURED"
 }
