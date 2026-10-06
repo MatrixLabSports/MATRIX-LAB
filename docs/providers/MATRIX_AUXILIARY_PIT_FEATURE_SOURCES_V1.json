@@ -94,6 +94,51 @@
           "same page exposes Goles esperados (xG), Posesión de balón and Remates"
         ]
       }
+    },
+    "football_data_org": {
+      "authenticated_verified": true,
+      "verification_evidence": "evidence/governance/MATRIX_FREE_API_AUTHENTICATED_PROBE_20261006.json",
+      "role": "AUXILIARY_STRUCTURED_COVERAGE_IDENTITY_AND_SCHEDULE_CROSSCHECK",
+      "football": {
+        "allowed": [
+          "competition_identity",
+          "match_identity",
+          "team_identity",
+          "scheduled_time",
+          "match_status",
+          "accessible_competition_calendar",
+          "standings_when_available",
+          "historical_matches_when_plan_allows"
+        ]
+      },
+      "world_complete": false,
+      "automatic_model_feed": false,
+      "note": "Free-plan coverage is limited. It supplements API-Football and browser discovery; it never replaces SofaScore/Flashscore or API-Football."
+    },
+    "live_tennis_api": {
+      "authenticated_verified": true,
+      "verification_evidence": "evidence/governance/MATRIX_FREE_API_AUTHENTICATED_PROBE_20261006.json",
+      "role": "AUXILIARY_TENNIS_DISCOVERY_IDENTITY_AND_GAP_CROSSCHECK",
+      "tennis": {
+        "allowed": [
+          "upcoming_fixtures",
+          "stable_match_id",
+          "event_date",
+          "scheduled_start_time",
+          "tour",
+          "tournament",
+          "round",
+          "round_code",
+          "surface",
+          "player_identity",
+          "qualifying_flag",
+          "gender",
+          "draw"
+        ]
+      },
+      "world_complete": false,
+      "automatic_model_feed": false,
+      "note": "Especially useful as an independent Challenger singles discovery/gap source. Every candidate still requires canonical reconciliation, PIT history gates and physical dedup before MATRIX admission."
     }
   },
   "admission_rules": {
@@ -138,9 +183,13 @@
     "reconciliation": "If a paid API provides the same statistic, disagreement must be persisted and adjudicated under provider reconciliation; no silent overwrite."
   },
   "provider_priority_rule": {
-    "statement": "Paid APIs remain mandatory structured acquisition sources; SofaScore and Flashscore are mandatory daily independent discovery/validation sources for BOTH football and tennis. Neither side substitutes for the other.",
+    "statement": "SofaScore and Flashscore remain the mandatory first daily world-calendar baseline for BOTH football and tennis. Paid APIs remain mandatory primary structured acquisition sources. Verified free APIs football-data.org and Live Tennis API are mandatory auxiliary post-baseline crosschecks when available, used to detect omissions and add independent structured identity without replacing either browser sources or paid APIs.",
     "no_single_source_world_truth": true,
-    "no_single_source_feature_override": true
+    "no_single_source_feature_override": true,
+    "free_auxiliary_sources": [
+      "football_data_org",
+      "live_tennis_api"
+    ]
   },
   "daily_crosscheck_rule": {
     "required": true,
@@ -151,12 +200,14 @@
     "tennis_required_sources": [
       "rapidapi_tennis",
       "api_tennis",
+      "live_tennis_api",
       "sofascore",
       "flashscore",
       "official_atp_wta_itf_as_applicable"
     ],
     "football_required_sources": [
       "api_football",
+      "football_data_org",
       "sofascore",
       "flashscore",
       "official_competition_or_team_sources_as_applicable"
@@ -165,7 +216,8 @@
     "paid_api_role": "Structured acquisition, IDs, timestamps, history, reproducible features, automation and SHA/provenance.",
     "browser_role": "Worldwide discovery, omission detection, calendar/identity validation and auxiliary PIT features.",
     "fail_closed_if_browser_crosscheck_missing": true,
-    "no_single_source_world_truth": true
+    "no_single_source_world_truth": true,
+    "free_api_role": "Independent structured coverage/gap detection after the SofaScore/Flashscore baseline and alongside paid-API reconciliation. No free API is world truth."
   },
   "calendar_first_operating_order": {
     "required": true,
@@ -175,10 +227,11 @@
     ],
     "order": [
       "1_SOFASCORE_AND_FLASHSCORE_WORLD_CALENDAR_BASELINE",
-      "2_PAID_APIS_STRUCTURED_ACQUISITION_AND_ENRICHMENT",
-      "3_SOURCE_BY_SOURCE_COUNT_REPORT_AND_COVERAGE_GAP_ANALYSIS",
-      "4_CANONICAL_IDENTITY_RECONCILIATION_AND_PHYSICAL_DEDUP",
-      "5_GOVERNED_CANDIDATE_ADMISSION_FREEZE_AND_SETTLEMENT"
+      "2_PAID_APIS_PRIMARY_STRUCTURED_ACQUISITION_AND_ENRICHMENT",
+      "3_VERIFIED_FREE_APIS_AUXILIARY_COVERAGE_AND_GAP_CROSSCHECK",
+      "4_SOURCE_BY_SOURCE_COUNT_REPORT_AND_COVERAGE_GAP_ANALYSIS",
+      "5_CANONICAL_IDENTITY_RECONCILIATION_AND_PHYSICAL_DEDUP",
+      "6_GOVERNED_CANDIDATE_ADMISSION_FREEZE_AND_SETTLEMENT"
     ],
     "daily_count_report_required": true,
     "daily_count_report_path_template": "evidence/daily_source_counts/YYYY-MM-DD/MATRIX_WORLD_CALENDAR_SOURCE_COUNTS.json",
@@ -207,5 +260,23 @@
       "url",
       "operator_manual_intervention_required"
     ]
+  },
+  "free_provider_promotion_rule": {
+    "status": "AUTHENTICATED_VERIFIED_AUXILIARY_ONLY",
+    "authenticated_probe_evidence": "evidence/governance/MATRIX_FREE_API_AUTHENTICATED_PROBE_20261006.json",
+    "daily_coverage_evidence_template": "evidence/free_providers/YYYY-MM-DD/MATRIX_FREE_PROVIDER_COVERAGE_SNAPSHOT.json",
+    "football_data_org": {
+      "promotion": "AUXILIARY_ONLY",
+      "reason": "Free plan has limited competition coverage and is not world complete."
+    },
+    "live_tennis_api": {
+      "promotion": "AUXILIARY_ONLY",
+      "reason": "Useful independent fixture/identity source; must prove incremental coverage and pass reconciliation before any model feature role."
+    },
+    "automatic_model_feed": false,
+    "automatic_counter_increment": false,
+    "physical_reconciliation_required": true,
+    "pit_required": true,
+    "dedup_required": true
   }
 }
