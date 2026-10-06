@@ -2,7 +2,7 @@
   "schema": "MATRIX_FOOTBALL_DAILY_MULTISOURCE_BROWSER_CROSSCHECK_V1",
   "target_date_bogota": "2026-10-06",
   "timezone": "America/Bogota",
-  "captured_at_utc": "2026-10-06T14:55:00Z",
+  "captured_at_utc": "2026-10-06T15:13:00Z",
   "status": "PASS_WITH_LAZY_ENUMERATION_LIMITS",
   "governance_basis": {
     "permanent_source_policy": "docs/providers/MATRIX_AUXILIARY_PIT_FEATURE_SOURCES_V1.json",
@@ -31,7 +31,11 @@
         "team identity",
         "event time"
       ],
-      "limitation": "Accessibility tree is paginated/lazy; exact worldwide denominator must come from reconciled physical source rows, not node count."
+      "limitation": "The exact UI total 209 is physically visible in the user-provided screenshot. Accessibility enumeration remains lazy/partial and must not replace the UI total.",
+      "ui_total_count": 209,
+      "ui_live_count": 13,
+      "count_type": "USER_VISIBLE_UI_SCREENSHOT_VERIFIED",
+      "screenshot_observed_local_time": "2026-10-06T10:13:00-05:00"
     },
     "api_football": {
       "role": "MANDATORY_STRUCTURED_ACQUISITION_IDS_TIMESTAMPS_HISTORY_FEATURES",
@@ -49,7 +53,9 @@
     "browser_discovery_can_surface_api_omissions": true,
     "reconciliation_and_canonical_identity_required_before_merge": true,
     "physical_dedup_before_counter_increment": true,
-    "api_enrichment_after_discovery": true
+    "api_enrichment_after_discovery": true,
+    "raw_flashscore_vs_api_football_count_gap": 9,
+    "raw_gap_requires_reconciliation": true
   },
   "protections": {
     "point_in_time_required": true,
