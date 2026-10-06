@@ -2,7 +2,7 @@
   "schema": "MATRIX_DAILY_WORLD_CALENDAR_SOURCE_COUNTS_V2",
   "target_date_bogota": "2026-10-06",
   "timezone": "America/Bogota",
-  "captured_at_utc": "2026-10-06T17:32:50Z",
+  "captured_at_utc": "2026-10-06T20:28:15Z",
   "task_order": [
     "CALENDAR_BASELINE_SOFASCORE_FLASHSCORE_FIRST",
     "PAID_APIS_SECOND",
@@ -14,19 +14,22 @@
       "count": null,
       "count_type": "PENDING_AUTOMATED_EXACT_BROWSER_UI_TOTAL",
       "url": "https://www.sofascore.com/es/tennis/2026-10-06",
-      "opera_read_status": "TAB_READINESS_TIMEOUT",
+      "opera_read_status": "PARTIAL_LAZY_ACCESSIBILITY_ONLY",
       "note": "Exact visible daily total could not be autonomously captured in this retry; no partial/lazy value promoted.",
       "operator_manual_intervention_required": false,
-      "captured_at_utc": "2026-10-06T17:32:50Z"
+      "captured_at_utc": "2026-10-06T20:28:15Z",
+      "partial_visible_unique_match_links": 60
     },
     "flashscore": {
-      "count": 398,
+      "count": 392,
       "count_type": "AUTOMATED_BROWSER_UI_EXACT_UNIQUE_MATCH_LINK_RECOUNT",
       "url": "https://www.flashscore.co/tenis/?d=2026-10-06",
       "opera_read_status": "PASS",
       "provenance": "Opera accessibility tree jq recount of unique /partido/tenis/ match-detail links for selected date",
       "operator_manual_intervention_required": false,
-      "captured_at_utc": "2026-10-06T17:32:50Z"
+      "captured_at_utc": "2026-10-06T20:28:15Z",
+      "prior_exact_count": 398,
+      "material_change_from_prior_exact": -6
     },
     "rapidapi_tennis": {
       "count": 250,
@@ -44,10 +47,11 @@
       "count": null,
       "count_type": "PENDING_AUTOMATED_EXACT_BROWSER_UI_TOTAL",
       "url": "https://www.sofascore.com/es/football/2026-10-06",
-      "opera_read_status": "TAB_READINESS_TIMEOUT",
+      "opera_read_status": "PARTIAL_LAZY_ACCESSIBILITY_ONLY",
       "note": "Exact visible daily total could not be autonomously captured in this retry; prior partial accessibility values remain invalid as daily total.",
       "operator_manual_intervention_required": false,
-      "captured_at_utc": "2026-10-06T17:32:50Z"
+      "captured_at_utc": "2026-10-06T20:28:15Z",
+      "partial_visible_unique_match_links": 68
     },
     "flashscore": {
       "count": 90,
@@ -56,7 +60,7 @@
       "opera_read_status": "PASS",
       "provenance": "Opera accessibility tree jq recount of unique /partido/futbol/ match-detail links for selected date",
       "operator_manual_intervention_required": false,
-      "captured_at_utc": "2026-10-06T17:32:50Z"
+      "captured_at_utc": "2026-10-06T20:28:15Z"
     },
     "api_football": {
       "count": 200,
@@ -86,5 +90,5 @@
   "operator_manual_intervention_required": false,
   "automation_retry_required": true,
   "browser_baseline_completed_at_utc": null,
-  "block_reason": "SOFASCORE_EXACT_FOOTBALL_AND_TENNIS_BROWSER_TOTALS_NOT_AUTONOMOUSLY_CAPTURED"
+  "block_reason": "SOFASCORE_EXACT_TOTALS_REMAIN_LAZY_PARTIAL"
 }
