@@ -48,9 +48,11 @@ def test_auxiliary_feature_sources_are_pit_governed_and_fail_closed():
     assert "flashscore" in daily["tennis_required_sources"]
     assert "rapidapi_tennis" in daily["tennis_required_sources"]
     assert "api_tennis" in daily["tennis_required_sources"]
+    assert "live_tennis_api" in daily["tennis_required_sources"]
     assert "sofascore" in daily["football_required_sources"]
     assert "flashscore" in daily["football_required_sources"]
     assert "api_football" in daily["football_required_sources"]
+    assert "football_data_org" in daily["football_required_sources"]
     assert daily["fail_closed_if_browser_crosscheck_missing"] is True
     assert daily["no_single_source_world_truth"] is True
 
@@ -58,7 +60,8 @@ def test_auxiliary_feature_sources_are_pit_governed_and_fail_closed():
     assert order["required"] is True
     assert set(order["applies_to"]) == {"tennis", "football"}
     assert order["order"][0] == "1_SOFASCORE_AND_FLASHSCORE_WORLD_CALENDAR_BASELINE"
-    assert order["order"][1] == "2_PAID_APIS_STRUCTURED_ACQUISITION_AND_ENRICHMENT"
+    assert order["order"][1] == "2_PAID_APIS_PRIMARY_STRUCTURED_ACQUISITION_AND_ENRICHMENT"
+    assert order["order"][2] == "3_VERIFIED_FREE_APIS_AUXILIARY_COVERAGE_AND_GAP_CROSSCHECK"
     assert order["daily_count_report_required"] is True
     assert order["invented_counts_prohibited"] is True
     assert order["api_must_not_run_as_world_truth_before_browser_baseline"] is True
@@ -72,6 +75,21 @@ def test_auxiliary_feature_sources_are_pit_governed_and_fail_closed():
     assert auto["do_not_ask_user_to_count_matches"] is True
     assert auto["do_not_present_accessibility_floor_as_daily_total"] is True
     assert auto["production_must_fail_closed_until_calendar_baseline_complete"] is True
+
+    assert policy["sources"]["football_data_org"]["authenticated_verified"] is True
+    assert policy["sources"]["football_data_org"]["world_complete"] is False
+    assert policy["sources"]["football_data_org"]["automatic_model_feed"] is False
+    assert policy["sources"]["live_tennis_api"]["authenticated_verified"] is True
+    assert policy["sources"]["live_tennis_api"]["world_complete"] is False
+    assert policy["sources"]["live_tennis_api"]["automatic_model_feed"] is False
+
+    free_rule = policy["free_provider_promotion_rule"]
+    assert free_rule["status"] == "AUTHENTICATED_VERIFIED_AUXILIARY_ONLY"
+    assert free_rule["automatic_model_feed"] is False
+    assert free_rule["automatic_counter_increment"] is False
+    assert free_rule["physical_reconciliation_required"] is True
+    assert free_rule["pit_required"] is True
+    assert free_rule["dedup_required"] is True
 
 
 def test_browser_verification_physically_confirms_requested_capabilities():
