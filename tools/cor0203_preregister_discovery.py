@@ -27,6 +27,11 @@ PROVIDER_SPECS = {
         "event_pattern": re.compile(r"^sofascore-browser:match:([0-9a-f]{64})$"),
         "player_pattern": re.compile(r"^sofascore:player:\d+$"),
     },
+    "live_tennis_api": {
+        "event_prefix": "COR0203-LIVE-TENNIS-",
+        "event_pattern": re.compile(r"^live-tennis-api:match:(\d+)$"),
+        "player_pattern": re.compile(r"^live-tennis-api:player:\d+$"),
+    },
 }
 
 
