@@ -2,6 +2,8 @@ name: MATRIX Live Tennis Bulk Seed
 
 on:
   workflow_dispatch:
+  schedule:
+    - cron: "5 */4 * * *"
   push:
     branches:
       - repair/cor09-world-pipeline
@@ -29,16 +31,23 @@ jobs:
         with:
           python-version: "3.11"
       - run: python -m pip install requests
+      - name: Resolve Bogota date
+        id: date
+        run: echo "d=$(TZ=America/Bogota date +%F)" >> "$GITHUB_OUTPUT"
+
       - name: Capture six world live snapshots
         env:
           LIVE_TENNIS_API_KEY: ${{ secrets.LIVETENNISAPI_KEY }}
-        run: python -m tools.live_tennis_bulk_collector --cycles 6 --interval-seconds 20 --reserve-calls 20
+        run: python -m tools.live_tennis_bulk_collector --date "${{ steps.date.outputs.d }}" --cycles 6 --interval-seconds 20 --reserve-calls 20
       - name: Validate append-only live-state ledger
+        env:
+          TARGET_DATE: ${{ steps.date.outputs.d }}
         run: |
           python - <<'PY'
           import json
           from pathlib import Path
-          p=Path("evidence/live_tennis_lab/2026-10-06/MATRIX_LIVE_TENNIS_STATE_LEDGER_V0_1.json")
+          import os
+          p=Path(f"evidence/live_tennis_lab/{os.environ['TARGET_DATE']}/MATRIX_LIVE_TENNIS_STATE_LEDGER_V0_1.json")
           j=json.loads(p.read_text())
           assert j["model_status"]=="RESEARCH_ONLY"
           assert j["observation_unit"]=="UNIQUE_MATCH_SEQUENCE_STATE"
@@ -61,7 +70,7 @@ jobs:
         run: |
           git config user.name "matrix-live-tennis-bulk"
           git config user.email "matrix-live-tennis-bulk@users.noreply.github.com"
-          git add evidence/live_tennis_lab/2026-10-06/MATRIX_LIVE_TENNIS_STATE_LEDGER_V0_1.json
+          git add "evidence/live_tennis_lab/${{ steps.date.outputs.d }}/MATRIX_LIVE_TENNIS_STATE_LEDGER_V0_1.json"
           git commit -m "evidence(live): persist bulk live tennis state seed"
           git pull --rebase origin repair/cor09-world-pipeline
           git push origin HEAD:repair/cor09-world-pipeline
