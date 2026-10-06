@@ -2,7 +2,7 @@
   "schema": "MATRIX_DAILY_WORLD_CALENDAR_SOURCE_COUNTS_V2",
   "target_date_bogota": "2026-10-06",
   "timezone": "America/Bogota",
-  "captured_at_utc": "2026-10-06T15:18:00Z",
+  "captured_at_utc": "2026-10-06T17:32:50Z",
   "task_order": [
     "CALENDAR_BASELINE_SOFASCORE_FLASHSCORE_FIRST",
     "PAID_APIS_SECOND",
@@ -11,75 +11,52 @@
   ],
   "tennis": {
     "sofascore": {
-      "count": ">400",
-      "count_type": "USER_VISIBLE_UI_REPORT_NOT_MACHINE_RECOUNTED",
+      "count": null,
+      "count_type": "PENDING_AUTOMATED_EXACT_BROWSER_UI_TOTAL",
       "url": "https://www.sofascore.com/es/tennis/2026-10-06",
-      "opera_read_status": "PASS",
-      "machine_accessibility_unique_match_links_observed_partial": 67,
-      "note": "Accessibility tree is lazy/partial; partial machine count is not the daily worldwide denominator.",
+      "opera_read_status": "TAB_READINESS_TIMEOUT",
+      "note": "Exact visible daily total could not be autonomously captured in this retry; no partial/lazy value promoted.",
       "operator_manual_intervention_required": false,
-      "captured_at_utc": "2026-10-06T15:18:00Z"
+      "captured_at_utc": "2026-10-06T17:32:50Z"
     },
     "flashscore": {
-      "count": 410,
-      "count_type": "USER_VISIBLE_UI_REPORT_NOT_MACHINE_RECOUNTED",
+      "count": 398,
+      "count_type": "AUTOMATED_BROWSER_UI_EXACT_UNIQUE_MATCH_LINK_RECOUNT",
       "url": "https://www.flashscore.co/tenis/?d=2026-10-06",
       "opera_read_status": "PASS",
-      "note": "Exact 410 is retained as user-visible UI evidence; accessibility tree is lazy/paginated and is not used to manufacture a recount.",
+      "provenance": "Opera accessibility tree jq recount of unique /partido/tenis/ match-detail links for selected date",
       "operator_manual_intervention_required": false,
-      "captured_at_utc": "2026-10-06T15:18:00Z"
+      "captured_at_utc": "2026-10-06T17:32:50Z"
     },
     "rapidapi_tennis": {
       "count": 250,
       "count_type": "MACHINE_VERIFIED_PROVIDER_INVENTORY",
-      "evidence_path": "evidence/tennis_world_inventory/2026-10-06/world_exact_day_dual_audit.json",
-      "capture_started_at_utc": null
+      "evidence_path": "evidence/tennis_world_inventory/2026-10-06/world_exact_day_dual_audit.json"
     },
     "api_tennis": {
       "count": 407,
       "count_type": "MACHINE_VERIFIED_PROVIDER_INVENTORY",
-      "evidence_path": "evidence/tennis_world_inventory/2026-10-06/world_exact_day_dual_audit.json",
-      "capture_started_at_utc": null
-    },
-    "raw_paid_provider_union": {
-      "count": 657,
-      "count_type": "RAW_NEUTRAL_UNION_NOT_DEDUPED_WORLD_TOTAL",
-      "warning": "ZERO/LOW EXACT OVERLAP OR NORMALIZATION GAPS MEAN THIS MUST NOT BE CALLED WORLD_COMPLETE"
+      "evidence_path": "evidence/tennis_world_inventory/2026-10-06/world_exact_day_dual_audit.json"
     }
   },
   "football": {
     "sofascore": {
       "count": null,
-      "count_type": "PENDING_EXACT_UI_TOTAL",
-      "url": "https://www.sofascore.com/es",
-      "opera_read_status": "PARTIAL_PASS_THEN_CONNECTOR_UNAVAILABLE",
-      "previously_reported_partial_accessibility_links": 75,
-      "previous_75_status": "INVALID_AS_DAILY_TOTAL_SUPERSEDED",
-      "current_partial_ui_evidence": {
-        "live_count_observed": 46,
-        "label": "En Vivo (46)",
-        "exact_daily_total_not_yet_machine_verified": true
-      },
-      "user_observation": "User reports the open SofaScore page visibly contains many more football matches than the prior partial count.",
-      "note": "Do not use 75 as SofaScore's daily football total. Exact total must be captured from the visible UI/count when Opera connector is readable; until then mark unknown rather than invent.",
+      "count_type": "PENDING_AUTOMATED_EXACT_BROWSER_UI_TOTAL",
+      "url": "https://www.sofascore.com/es/football/2026-10-06",
+      "opera_read_status": "TAB_READINESS_TIMEOUT",
+      "note": "Exact visible daily total could not be autonomously captured in this retry; prior partial accessibility values remain invalid as daily total.",
       "operator_manual_intervention_required": false,
-      "captured_at_utc": "2026-10-06T15:18:00Z"
+      "captured_at_utc": "2026-10-06T17:32:50Z"
     },
     "flashscore": {
-      "count": 209,
-      "count_type": "USER_VISIBLE_UI_SCREENSHOT_VERIFIED",
+      "count": 90,
+      "count_type": "AUTOMATED_BROWSER_UI_EXACT_UNIQUE_MATCH_LINK_RECOUNT",
       "url": "https://www.flashscore.co/?d=2026-10-06",
       "opera_read_status": "PASS",
-      "screenshot_observed_local_time": "2026-10-06T10:13:00-05:00",
-      "screenshot_visible_labels": {
-        "date": "HOY 06.10.",
-        "section": "Todos los partidos",
-        "live_count_visible": 13,
-        "total_count_visible": 209
-      },
-      "note": "209 is the physically visible Flashscore football total in the user-provided screenshot. The prior accessibility-tree value 117 was only a lazy/partial machine floor and is superseded as the daily UI count.",
+      "provenance": "Opera accessibility tree jq recount of unique /partido/futbol/ match-detail links for selected date",
       "operator_manual_intervention_required": false,
-      "captured_at_utc": "2026-10-06T15:18:00Z"
+      "captured_at_utc": "2026-10-06T17:32:50Z"
     },
     "api_football": {
       "count": 200,
@@ -88,15 +65,11 @@
       "ready_input_count": 138,
       "new_freezes": 14,
       "network_calls_for_3day_horizon": 480,
-      "evidence_path": "evidence/api_football/prospective_horizon/last_run.json",
-      "capture_started_at_utc": null
-    },
-    "raw_flashscore_vs_api_football_difference": 9,
-    "raw_difference_warning": "209 Flashscore UI vs 200 API-Football fixtures_received is a raw source-count gap only. It does not prove exactly 9 missing physical matches until identity/timezone/competition reconciliation and deduplication are performed."
+      "evidence_path": "evidence/api_football/prospective_horizon/last_run.json"
+    }
   },
   "truth_rules": {
     "exact_count_requires_physical_source_evidence": true,
-    "user_visible_count_is_labeled_as_user_report": true,
     "partial_accessibility_count_is_never_promoted_to_world_total": true,
     "missing_not_zero": true,
     "no_silent_imputation": true,
@@ -113,5 +86,5 @@
   "operator_manual_intervention_required": false,
   "automation_retry_required": true,
   "browser_baseline_completed_at_utc": null,
-  "block_reason": "SOFASCORE_EXACT_FOOTBALL_TOTAL_AND_AUTOMATED_EXACT_BROWSER_COUNTS_NOT_YET_CAPTURED"
+  "block_reason": "SOFASCORE_EXACT_FOOTBALL_AND_TENNIS_BROWSER_TOTALS_NOT_AUTONOMOUSLY_CAPTURED"
 }
