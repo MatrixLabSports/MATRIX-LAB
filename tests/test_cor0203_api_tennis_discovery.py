@@ -11,6 +11,7 @@ from tools.cor0203_api_tennis_discovery import (
     ApiTennisDiscoveryClient,
     ApiTennisDiscoveryError,
     build_discovery_registry,
+    fetch_discovery,
 )
 
 
@@ -194,3 +195,39 @@ def test_fixture_range_is_bounded():
 def test_draw_budget_is_world_inventory_scale():
     from tools.cor0203_api_tennis_discovery import MAX_DRAW_REQUESTS
     assert MAX_DRAW_REQUESTS >= 12
+
+def test_fetch_discovery_chunks_fixture_window_by_day_to_avoid_oversized_payloads():
+    class ChunkingClient:
+        def __init__(self):
+            self.fixture_calls = []
+            self.request_count = 0
+
+        def fixtures(self, start, stop):
+            assert start == stop
+            self.fixture_calls.append((start, stop))
+            self.request_count += 1
+            return {"success": 1, "result": []}
+
+        def standings(self):
+            self.request_count += 1
+            return {"success": 1, "result": []}
+
+        def draw(self, tournament_key, season):
+            raise AssertionError("draw should not be called for empty fixtures")
+
+    client = ChunkingClient()
+    result = fetch_discovery(
+        client=client,
+        start=date(2026, 10, 6),
+        stop=date(2026, 10, 8),
+        as_of_utc="2026-10-06T12:00:00+00:00",
+    )
+
+    assert client.fixture_calls == [
+        (date(2026, 10, 6), date(2026, 10, 6)),
+        (date(2026, 10, 7), date(2026, 10, 7)),
+        (date(2026, 10, 8), date(2026, 10, 8)),
+    ]
+    assert result["fixture_rows"] == 0
+    assert result["request_count"] == 4
+
