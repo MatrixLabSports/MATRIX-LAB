@@ -1,0 +1,59 @@
+{
+  "schema": "MATRIX_CALIBRATION_CAPACITY_POST_CALENDAR_CORRECTION_V1",
+  "generated_at_utc": "2026-10-06T15:40:00Z",
+  "timezone": "America/Bogota",
+  "status": "PHYSICALLY_RECONCILED_CURRENT_STATE",
+  "tennis": {
+    "domain": "COR02_COR03_ATP_CHALLENGER_HARD_SINGLES",
+    "physical_frozen_rows": 208,
+    "unique_calibration_observations": 115,
+    "duplicate_observations_quarantined": 93,
+    "settled_unique": 91,
+    "pending_final_unique": 24,
+    "remaining_to_150": 35,
+    "remaining_to_200": 85,
+    "remaining_to_600": 485,
+    "note": "Only 115 unique physical matches count toward the tennis denominator. Duplicate physical rows do not increment calibration."
+  },
+  "football": {
+    "cohort": "FOOTBALL_ALL_MARKETS_V2_20261004",
+    "unique_frozen_fixtures": 425,
+    "settled_observations": 125,
+    "pending_final": 300,
+    "remaining_settlements_to_200": 75,
+    "active_markets": [
+      "1X2",
+      "OVER_2_5",
+      "UNDER_2_5",
+      "DOUBLE_CHANCE_1X",
+      "DOUBLE_CHANCE_X2"
+    ],
+    "note": "The same 425 physical fixtures are mirrored across five market lanes and must not be multiplied by five."
+  },
+  "combined_event_level_headline": {
+    "unique_frozen_physical_events_across_sports": 540,
+    "warning": "This is only a cross-sport event count. Tennis and football have independent calibration denominators and models."
+  },
+  "calendar_correction_effect": {
+    "daily_calendar_baseline_complete": false,
+    "new_events_admitted_after_strict_calendar_first_gate": 0,
+    "reason": "Exact autonomous SofaScore/Flashscore daily baseline is not yet complete.",
+    "existing_freezes_preserved": true,
+    "coverage_completeness_of_pre_correction_api_only_horizon": "NOT_CLAIMED_WORLD_COMPLETE",
+    "rule": "Existing immutable freezes remain evidence, but broader SofaScore/Flashscore discovery must be reconciled before claiming world coverage or admitting additional future events."
+  },
+  "evidence_paths": {
+    "tennis_uniqueness": "evidence/cor0203/runtime/MATRIX_COR0203_PHYSICAL_UNIQUENESS_LAST.json",
+    "tennis_milestones": "evidence/cor0203/runtime/MATRIX_COR0203_MILESTONES_LAST.json",
+    "tennis_settlement_uniqueness": "evidence/cor0203/runtime/MATRIX_COR0203_SETTLEMENT_UNIQUENESS_LAST.json",
+    "football_1x2_state": "evidence/api_football/calibration_v2/lanes/1x2/state.json",
+    "football_horizon": "evidence/api_football/prospective_horizon/last_run.json",
+    "daily_calendar_baseline": "evidence/daily_source_counts/2026-10-06/MATRIX_WORLD_CALENDAR_SOURCE_COUNTS.json"
+  },
+  "protections": {
+    "metrics_opened": false,
+    "parameter_tuning": false,
+    "odds_to_probability": false,
+    "real_money": "BLOCKED"
+  }
+}
