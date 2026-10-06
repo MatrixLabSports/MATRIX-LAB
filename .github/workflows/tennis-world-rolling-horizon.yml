@@ -3,7 +3,7 @@ name: Tennis World Rolling Horizon
 on:
   workflow_dispatch:
   schedule:
-    - cron: "17 */6 * * *"
+    - cron: "17 14,20 * * *"
   push:
     branches:
       - repair/cor09-world-pipeline
@@ -61,6 +61,31 @@ jobs:
           git checkout repair/cor09-world-pipeline
           git reset --hard origin/repair/cor09-world-pipeline
           echo "CHECKOUT_SHA=$(git rev-parse HEAD)" >> "$GITHUB_ENV"
+
+      - name: Require daily SofaScore and Flashscore browser crosscheck
+        shell: bash
+        run: |
+          set -euo pipefail
+          TODAY="$(TZ=America/Bogota date +%F)"
+          EVIDENCE="evidence/tennis_world_inventory/${TODAY}/MATRIX_DAILY_MULTISOURCE_BROWSER_CROSSCHECK.json"
+          test -f "${EVIDENCE}" || {
+            echo "DAILY_SOFASCORE_FLASHSCORE_CROSSCHECK_MISSING: ${EVIDENCE}"
+            exit 1
+          }
+          python - "${EVIDENCE}" <<'PY'
+          import json, sys
+          from pathlib import Path
+          p=Path(sys.argv[1])
+          j=json.loads(p.read_text(encoding="utf-8"))
+          assert j["target_date_bogota"] == p.parent.name
+          assert j["sources"]["sofascore"]["opera_read_status"] == "PASS"
+          assert j["sources"]["flashscore"]["opera_read_status"] == "PASS"
+          assert j["governance_basis"]["sofascore_flashscore_daily_crosscheck_required"] is True
+          assert j["adjudication"]["paid_api_counts_are_not_world_complete"] is True
+          assert j["protections"]["metrics_opened"] is False
+          assert j["protections"]["real_money"] == "BLOCKED"
+          print("DAILY_MULTISOURCE_BROWSER_CROSSCHECK: PASS")
+          PY
 
       - name: Build and process D0 D1 D2 Bogotá horizon with both paid providers
         shell: bash
