@@ -3,7 +3,7 @@
   "effective_date": "2026-10-04",
   "timezone": "America/Bogota",
   "status": "ACTIVE_PERMANENT_ADDITIVE",
-  "principle": "SOFASCORE_AND_FLASHSCORE_MAY_SUPPORT_DISCOVERY_IDENTITY_AND_PROSPECTIVE_FEATURES_ONLY_WITH_POINT_IN_TIME_PROVENANCE",
+  "principle": "SOFASCORE_AND_FLASHSCORE_ARE_MANDATORY_DAILY_DISCOVERY_AND_CROSSCHECK_SOURCES_FOR_FOOTBALL_AND_TENNIS_WITH_POINT_IN_TIME_PROVENANCE",
   "sources": {
     "sofascore": {
       "browser_web_verified": true,
@@ -138,8 +138,33 @@
     "reconciliation": "If a paid API provides the same statistic, disagreement must be persisted and adjudicated under provider reconciliation; no silent overwrite."
   },
   "provider_priority_rule": {
-    "statement": "Paid APIs remain mandatory structured acquisition sources, while SofaScore/Flashscore are independent discovery, validation and auxiliary PIT feature sources.",
+    "statement": "Paid APIs remain mandatory structured acquisition sources; SofaScore and Flashscore are mandatory daily independent discovery/validation sources for BOTH football and tennis. Neither side substitutes for the other.",
     "no_single_source_world_truth": true,
     "no_single_source_feature_override": true
+  },
+  "daily_crosscheck_rule": {
+    "required": true,
+    "sports": [
+      "tennis",
+      "football"
+    ],
+    "tennis_required_sources": [
+      "rapidapi_tennis",
+      "api_tennis",
+      "sofascore",
+      "flashscore",
+      "official_atp_wta_itf_as_applicable"
+    ],
+    "football_required_sources": [
+      "api_football",
+      "sofascore",
+      "flashscore",
+      "official_competition_or_team_sources_as_applicable"
+    ],
+    "rule": "Every operational Bogota date must have physical SofaScore and Flashscore query evidence for both football and tennis before a source set may be treated as daily world discovery complete enough to feed governed candidate selection.",
+    "paid_api_role": "Structured acquisition, IDs, timestamps, history, reproducible features, automation and SHA/provenance.",
+    "browser_role": "Worldwide discovery, omission detection, calendar/identity validation and auxiliary PIT features.",
+    "fail_closed_if_browser_crosscheck_missing": true,
+    "no_single_source_world_truth": true
   }
 }
