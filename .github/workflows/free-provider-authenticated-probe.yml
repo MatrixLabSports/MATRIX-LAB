@@ -35,8 +35,8 @@ jobs:
       - name: Validate secrets are configured
         shell: bash
         env:
-          FOOTBALL_DATA_ORG_KEY: ${{ secrets.FOOTBALL_DATA_ORG_KEY }}
-          LIVE_TENNIS_API_KEY: ${{ secrets.LIVE_TENNIS_API_KEY }}
+          FOOTBALL_DATA_ORG_KEY: ${{ secrets.FOOTBALL_DATA_ORG_TOKEN }}
+          LIVE_TENNIS_API_KEY: ${{ secrets.LIVETENNISAPI_KEY }}
         run: |
           set -euo pipefail
           test -n "$FOOTBALL_DATA_ORG_KEY" || { echo "FOOTBALL_DATA_ORG_KEY_NOT_CONFIGURED"; exit 2; }
@@ -45,8 +45,8 @@ jobs:
 
       - name: Run authenticated probes
         env:
-          FOOTBALL_DATA_ORG_KEY: ${{ secrets.FOOTBALL_DATA_ORG_KEY }}
-          LIVE_TENNIS_API_KEY: ${{ secrets.LIVE_TENNIS_API_KEY }}
+          FOOTBALL_DATA_ORG_KEY: ${{ secrets.FOOTBALL_DATA_ORG_TOKEN }}
+          LIVE_TENNIS_API_KEY: ${{ secrets.LIVETENNISAPI_KEY }}
         run: python -m tools.free_provider_authenticated_probe
 
       - name: Validate redacted evidence
