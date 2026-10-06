@@ -185,5 +185,27 @@
     "exact_count_rule": "A numeric total may be labeled exact only when physically observed or machine-verified from that source. User-visible reports and lazy/partial accessibility enumerations must retain their provenance and may not be silently promoted to exact world totals.",
     "invented_counts_prohibited": true,
     "api_must_not_run_as_world_truth_before_browser_baseline": true
+  },
+  "autonomous_calendar_analysis_rule": {
+    "required": true,
+    "applies_to": [
+      "tennis",
+      "football"
+    ],
+    "user_manual_counting_prohibited": true,
+    "user_manual_source_enumeration_prohibited": true,
+    "exact_browser_totals_must_be_captured_by_automation": true,
+    "if_browser_connector_unavailable": "BLOCK_AND_RETRY_AUTOMATICALLY_DO_NOT_PROMOTE_PARTIAL_COUNTS",
+    "if_exact_total_unavailable": "COUNT_NULL_STATUS_PENDING_EXACT_UI_TOTAL",
+    "do_not_ask_user_to_count_matches": true,
+    "do_not_present_accessibility_floor_as_daily_total": true,
+    "production_must_fail_closed_until_calendar_baseline_complete": true,
+    "report_fields_required": [
+      "count",
+      "count_type",
+      "captured_at_utc",
+      "url",
+      "operator_manual_intervention_required"
+    ]
   }
 }
