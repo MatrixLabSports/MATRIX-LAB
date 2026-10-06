@@ -495,6 +495,7 @@ def main() -> None:
         "status": payload.get("status"),
         "network_calls": payload.get("network_calls", 0),
         "eligible": payload.get("world_registry", {}).get("cor0203_eligible_events", 0),
+        "blocker": payload.get("blocker"),
     }, sort_keys=True))
 
 
