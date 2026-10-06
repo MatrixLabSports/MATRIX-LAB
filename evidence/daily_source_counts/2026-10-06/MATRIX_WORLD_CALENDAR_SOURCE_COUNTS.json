@@ -1,0 +1,84 @@
+{
+  "schema": "MATRIX_DAILY_WORLD_CALENDAR_SOURCE_COUNTS_V1",
+  "target_date_bogota": "2026-10-06",
+  "timezone": "America/Bogota",
+  "captured_at_utc": "2026-10-06T15:02:00Z",
+  "task_order": [
+    "CALENDAR_BASELINE_SOFASCORE_FLASHSCORE_FIRST",
+    "PAID_APIS_SECOND",
+    "COVERAGE_COMPARE_AND_GAP_DETECTION_THIRD",
+    "CANONICAL_RECONCILIATION_DEDUP_AND_GOVERNED_PIPELINE_FOURTH"
+  ],
+  "tennis": {
+    "sofascore": {
+      "count": ">400",
+      "count_type": "USER_VISIBLE_UI_REPORT_NOT_MACHINE_RECOUNTED",
+      "url": "https://www.sofascore.com/es/tennis/2026-10-06",
+      "opera_read_status": "PASS",
+      "machine_accessibility_unique_match_links_observed_partial": 67,
+      "note": "Accessibility tree is lazy/partial; partial machine count is not the daily worldwide denominator."
+    },
+    "flashscore": {
+      "count": 410,
+      "count_type": "USER_VISIBLE_UI_REPORT_NOT_MACHINE_RECOUNTED",
+      "url": "https://www.flashscore.co/tenis/?d=2026-10-06",
+      "opera_read_status": "PASS",
+      "note": "Exact 410 is retained as user-visible UI evidence; accessibility tree is lazy/paginated and is not used to manufacture a recount."
+    },
+    "rapidapi_tennis": {
+      "count": 250,
+      "count_type": "MACHINE_VERIFIED_PROVIDER_INVENTORY",
+      "evidence_path": "evidence/tennis_world_inventory/2026-10-06/world_exact_day_dual_audit.json"
+    },
+    "api_tennis": {
+      "count": 407,
+      "count_type": "MACHINE_VERIFIED_PROVIDER_INVENTORY",
+      "evidence_path": "evidence/tennis_world_inventory/2026-10-06/world_exact_day_dual_audit.json"
+    },
+    "raw_paid_provider_union": {
+      "count": 657,
+      "count_type": "RAW_NEUTRAL_UNION_NOT_DEDUPED_WORLD_TOTAL",
+      "warning": "ZERO/LOW EXACT OVERLAP OR NORMALIZATION GAPS MEAN THIS MUST NOT BE CALLED WORLD_COMPLETE"
+    }
+  },
+  "football": {
+    "sofascore": {
+      "count": 75,
+      "count_type": "MACHINE_OBSERVED_PARTIAL_ACCESSIBILITY_UNIQUE_MATCH_LINKS",
+      "url": "https://www.sofascore.com/es/football/2026-10-06",
+      "opera_read_status": "PASS",
+      "warning": "PARTIAL_LAZY_TREE_NOT_WORLD_TOTAL"
+    },
+    "flashscore": {
+      "count": 117,
+      "count_type": "MACHINE_OBSERVED_PARTIAL_ACCESSIBILITY_UNIQUE_MATCH_LINKS",
+      "url": "https://www.flashscore.co/?d=2026-10-06",
+      "opera_read_status": "PASS",
+      "warning": "PARTIAL_LAZY_TREE_NOT_WORLD_TOTAL"
+    },
+    "api_football": {
+      "count": 200,
+      "count_type": "MACHINE_VERIFIED_FIXTURES_RECEIVED",
+      "eligible_future_fixtures": 146,
+      "ready_input_count": 138,
+      "new_freezes": 14,
+      "network_calls_for_3day_horizon": 480,
+      "evidence_path": "evidence/api_football/prospective_horizon/last_run.json"
+    }
+  },
+  "truth_rules": {
+    "exact_count_requires_physical_source_evidence": true,
+    "user_visible_count_is_labeled_as_user_report": true,
+    "partial_accessibility_count_is_never_promoted_to_world_total": true,
+    "missing_not_zero": true,
+    "no_silent_imputation": true,
+    "no_single_source_world_truth": true,
+    "physical_dedup_before_counter_increment": true,
+    "invented_counts_prohibited": true
+  },
+  "protections": {
+    "metrics_opened": false,
+    "odds_to_p_matrix": false,
+    "real_money": "BLOCKED"
+  }
+}
