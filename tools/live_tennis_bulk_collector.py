@@ -144,6 +144,9 @@ def main():
     if not key:
         raise SystemExit("LIVE_TENNIS_API_KEY_NOT_CONFIGURED")
 
+    operational_date=args.date or datetime.now(BOGOTA).date().isoformat()
+    out=Path(f"evidence/live_tennis_lab/{operational_date}/MATRIX_LIVE_TENNIS_STATE_LEDGER_V0_1.json")
+
     usage,umeta=get_json("/usage",key)
     today=usage.get("today") if isinstance(usage,dict) and isinstance(usage.get("today"),dict) else {}
     remaining=today.get("remaining_day")
@@ -188,6 +191,8 @@ def main():
     match_ids=sorted({x["match_id"] for x in states})
     payload={
       "schema":"MATRIX_LIVE_TENNIS_STATE_LEDGER_V0_1",
+      "operational_date_bogota":operational_date,
+      "timezone":"America/Bogota",
       "generated_at_utc":datetime.now(timezone.utc).replace(microsecond=0).isoformat(),
       "model_status":"RESEARCH_ONLY",
       "observation_unit":"UNIQUE_MATCH_SEQUENCE_STATE",
