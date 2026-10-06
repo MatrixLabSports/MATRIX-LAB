@@ -270,3 +270,96 @@ def test_uniqueness_audit_reconciles_same_match_across_providers_without_name_on
     )
     assert report["outcomes_read"] == 0
     assert report["metrics_opened"] is False
+
+def test_uniqueness_audit_reconciles_r2_with_round_of_16_across_providers(tmp_path):
+    runtime = tmp_path / "runtime"
+    holdout = tmp_path / "holdout"
+    runtime.mkdir()
+    holdout.mkdir()
+
+    rapid = {
+        "event_id": "RAPID-R2",
+        "canonical_source_event_id": "rapidapi-tennis:match:1684",
+        "competition_id": "rapidapi-tennis:tournament:22097",
+        "competition": "Wuning 3 Challenger",
+        "round": "R2",
+        "event_start_utc": "2026-10-07T02:00:00+00:00",
+        "source_provider": "rapidapi_tennis",
+        "player_identities": [
+            {"display_name": "Akira Santillan", "provider_player_id": "rapidapi-tennis:player:27531"},
+            {"display_name": "Yaroslav Demin", "provider_player_id": "rapidapi-tennis:player:85075"},
+        ],
+        "players": ["Akira Santillan", "Yaroslav Demin"],
+    }
+    api_tennis = {
+        "event_id": "API-R16",
+        "canonical_source_event_id": "api-tennis:event:12168331",
+        "competition_id": "api-tennis:tournament:14335",
+        "competition": "Wuning 3 (China) - Qualification",
+        "round": "WUNING 3 1/8 FINALS",
+        "event_start_utc": "2026-10-07T02:00:00+00:00",
+        "source_provider": "api_tennis",
+        "player_identities": [
+            {"display_name": "Akira Santillan", "provider_player_id": "api-tennis:player:7395"},
+            {"display_name": "Yaroslav Demin", "provider_player_id": "api-tennis:player:868"},
+        ],
+        "players": ["Akira Santillan", "Yaroslav Demin"],
+    }
+    _write(
+        runtime / "MATRIX_COR0203_PREFEATURE_REGISTRY_R1.json",
+        {"events": [rapid, api_tennis]},
+    )
+    _write(
+        holdout / "MATRIX_COR0203_HOLDOUT_BATCH_R1.json",
+        {
+            "observations": [
+                {
+                    "event_id": "RAPID-R2",
+                    "canonical_source_event_id": "rapidapi-tennis:match:1684",
+                    "observation_index": 1,
+                    "freeze_at_utc": "2026-10-05T14:03:41+00:00",
+                    "event_start_utc": "2026-10-07T02:00:00+00:00",
+                    "competition": "Wuning 3 Challenger",
+                    "round": "Second",
+                    "alphabetical_player_a": "Akira Santillan",
+                    "alphabetical_player_b": "Yaroslav Demin",
+                    "outcome": None,
+                },
+                {
+                    "event_id": "API-R16",
+                    "canonical_source_event_id": "api-tennis:event:12168331",
+                    "observation_index": 2,
+                    "freeze_at_utc": "2026-10-05T14:03:42+00:00",
+                    "event_start_utc": "2026-10-07T02:00:00+00:00",
+                    "competition": "Wuning 3 (China) - Qualification",
+                    "round": "Wuning 3 - 1/8-finals",
+                    "alphabetical_player_a": "Akira Santillan",
+                    "alphabetical_player_b": "Yaroslav Demin",
+                    "outcome": None,
+                },
+            ]
+        },
+    )
+
+    report = audit_physical_uniqueness(
+        runtime_dir=runtime,
+        holdout_dir=holdout,
+        integrity={
+            "holdout_id": "A22_POST_AUDIT_VIRGIN_HOLDOUT_V1",
+            "result": "PASS",
+            "admissible_batch_revisions": [1],
+            "admissible_observations": 2,
+        },
+    )
+    assert report["result"] == "PASS"
+    assert report["physical_frozen_rows"] == 2
+    assert report["unique_calibration_observations"] == 1
+    assert report["duplicate_observations_quarantined"] == 1
+    assert report["canonical_observations"][0]["event_id"] == "RAPID-R2"
+    assert report["quarantined_duplicates"][0]["event_id"] == "API-R16"
+    assert report["quarantined_duplicates"][0]["quarantine_reason"] == (
+        "DUPLICATE_PHYSICAL_MATCH_CROSS_PROVIDER"
+    )
+    assert report["outcomes_read"] == 0
+    assert report["metrics_opened"] is False
+
