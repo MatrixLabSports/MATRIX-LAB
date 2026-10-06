@@ -278,5 +278,27 @@
     "physical_reconciliation_required": true,
     "pit_required": true,
     "dedup_required": true
+  },
+  "operational_day_rule": {
+    "timezone": "America/Bogota",
+    "local_start_inclusive": "00:00:00.000",
+    "local_end_inclusive": "23:59:59.999",
+    "utc_offset_standard": "-05:00",
+    "dst_observed": false,
+    "canonical_membership_rule": "An event belongs to the operational date determined by converting its authoritative scheduled start timestamp to America/Bogota. Provider calendar_date/event_date fields do not override the Bogota-local date.",
+    "utc_window_formula": "For Bogota date D, include event_start_utc >= D 05:00:00Z and < (D+1) 05:00:00Z.",
+    "example_2026_10_06": {
+      "bogota_window": "2026-10-06T00:00:00-05:00 <= start < 2026-10-07T00:00:00-05:00",
+      "utc_window": "2026-10-06T05:00:00Z <= start < 2026-10-07T05:00:00Z",
+      "example_event": "2026-10-07T03:00:00Z",
+      "example_event_bogota": "2026-10-06T22:00:00-05:00",
+      "canonical_operational_date": "2026-10-06"
+    },
+    "requirements": {
+      "timezone_aware_timestamp_required": true,
+      "naive_provider_date_not_authoritative": true,
+      "no_midnight_double_count": true,
+      "physical_dedup_after_timezone_normalization": true
+    }
   }
 }
