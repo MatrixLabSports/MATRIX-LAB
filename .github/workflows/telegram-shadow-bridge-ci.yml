@@ -1,0 +1,39 @@
+name: Telegram SHADOW Bridge CI
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'tools/telegram_shadow_bridge.py'
+      - 'tests/test_telegram_shadow_bridge.py'
+      - '.github/workflows/telegram-shadow-bridge-ci.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  telegram-shadow-bridge:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install pytest
+        run: python -m pip install pytest
+      - name: Run fail-closed Telegram bridge tests
+        run: python -m pytest -q tests/test_telegram_shadow_bridge.py
+      - name: Verify physical governance constants
+        run: |
+          python - <<'PY'
+          from tools.telegram_shadow_bridge import ALLOWED_SHADOW_P_MATRIX_STATUSES, MIN_ODDS_EXCLUSIVE
+          assert 'GENERATED_SHADOW' in ALLOWED_SHADOW_P_MATRIX_STATUSES
+          assert MIN_ODDS_EXCLUSIVE == 1.50
+          print('GENERATED_SHADOW=ACCEPTED_FOR_SHADOW_ONLY')
+          print('MIN_ODDS_EXCLUSIVE=1.50')
+          print('REAL_MONEY_POLICY=BLOCKED_BY_TESTS')
+          print('AUTO_BETTING_POLICY=DISABLED_BY_TESTS')
+          PY
