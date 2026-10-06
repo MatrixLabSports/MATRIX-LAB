@@ -41,6 +41,19 @@ def test_auxiliary_feature_sources_are_pit_governed_and_fail_closed():
         is True
     )
 
+    daily = policy["daily_crosscheck_rule"]
+    assert daily["required"] is True
+    assert set(daily["sports"]) == {"tennis", "football"}
+    assert "sofascore" in daily["tennis_required_sources"]
+    assert "flashscore" in daily["tennis_required_sources"]
+    assert "rapidapi_tennis" in daily["tennis_required_sources"]
+    assert "api_tennis" in daily["tennis_required_sources"]
+    assert "sofascore" in daily["football_required_sources"]
+    assert "flashscore" in daily["football_required_sources"]
+    assert "api_football" in daily["football_required_sources"]
+    assert daily["fail_closed_if_browser_crosscheck_missing"] is True
+    assert daily["no_single_source_world_truth"] is True
+
 
 def test_browser_verification_physically_confirms_requested_capabilities():
     evidence = json.loads(EVIDENCE.read_text(encoding="utf-8"))
