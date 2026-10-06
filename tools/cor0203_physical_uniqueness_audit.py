@@ -92,7 +92,30 @@ def _rounds_compatible(left: Mapping[str, Any], right: Mapping[str, Any]) -> boo
     unknown = {"", "UNKNOWN", "UNKNOWN ROUND", "N/A", "NA", "NONE"}
     a = _round_identity_token(left)
     b = _round_identity_token(right)
-    return a == b or a in unknown or b in unknown
+    if a == b or a in unknown or b in unknown:
+        return True
+
+    # Cross-provider round vocabularies can describe the same physical stage
+    # differently. In a 32-player Challenger main draw, provider "R2/Second"
+    # is the same stage that another provider may label "1/8-finals/Round of 16".
+    # This gate is only evaluated after exact player pair + exact start UTC +
+    # normalized competition already match, so it remains conservative.
+    second_round_aliases = {"R2", "SECOND", "SECOND ROUND", "ROUND 2"}
+    round_of_16_aliases = {"R16", "ROUND OF 16", "1/8", "1/8 FINAL", "1/8 FINALS"}
+
+    def is_round_of_16(token: str) -> bool:
+        normalized = re.sub(r"[^A-Z0-9/]+", " ", token.upper())
+        normalized = re.sub(r"\\s+", " ", normalized).strip()
+        return (
+            normalized in round_of_16_aliases
+            or "1/8 FINAL" in normalized
+            or "ROUND OF 16" in normalized
+        )
+
+    return (
+        (a in second_round_aliases and is_round_of_16(b))
+        or (b in second_round_aliases and is_round_of_16(a))
+    )
 
 
 def audit_physical_uniqueness(
