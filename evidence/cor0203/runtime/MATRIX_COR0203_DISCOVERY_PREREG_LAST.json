@@ -1,37 +1,15 @@
 {
   "automatic_wagering": false,
-  "created": true,
-  "event_ids": [
-    "COR0203-RAPIDAPI-TENNIS-1612-252aa37b9bbe",
-    "COR0203-RAPIDAPI-TENNIS-1616-fc429bff5256",
-    "COR0203-RAPIDAPI-TENNIS-1623-d8fd585f293c",
-    "COR0203-RAPIDAPI-TENNIS-1624-7547f9c3780c",
-    "COR0203-RAPIDAPI-TENNIS-1632-76e7a1f3504d",
-    "COR0203-RAPIDAPI-TENNIS-1650-ac9edaaac11b",
-    "COR0203-RAPIDAPI-TENNIS-1652-8a35149f2aa4",
-    "COR0203-API-TENNIS-12168809",
-    "COR0203-API-TENNIS-12168816",
-    "COR0203-API-TENNIS-12168845"
-  ],
-  "events_registered": 10,
+  "created": false,
+  "event_ids": [],
+  "events_registered": 0,
   "provider_status": "DUAL_RECONCILED",
   "provider_statuses": {
-    "api_tennis": "PREREGISTERED",
-    "rapidapi_tennis": "PREREGISTERED"
+    "api_tennis": "NO_NEW_EVENTS",
+    "rapidapi_tennis": "NO_NEW_EVENTS"
   },
   "real_money": "BLOCKED",
-  "revisions": [
-    {
-      "path": "evidence/cor0203/runtime/MATRIX_COR0203_PREFEATURE_REGISTRY_R832.json",
-      "provider": "rapidapi_tennis",
-      "revision": 832
-    },
-    {
-      "path": "evidence/cor0203/runtime/MATRIX_COR0203_PREFEATURE_REGISTRY_R833.json",
-      "provider": "api_tennis",
-      "revision": 833
-    }
-  ],
+  "revisions": [],
   "schema": "MATRIX_COR0203_DUAL_DISCOVERY_PREREGISTRATION_RESULT_V1",
   "skipped": [
     {
@@ -40,8 +18,16 @@
       ],
       "provider": "rapidapi_tennis",
       "source_event_id": "rapidapi-tennis:match:1422"
+    },
+    {
+      "blockers": [
+        "ALREADY_PREREGISTERED_OR_FROZEN",
+        "ALREADY_PREREGISTERED_OR_FROZEN_PHYSICAL_EVENT"
+      ],
+      "provider": "rapidapi_tennis",
+      "source_event_id": "rapidapi-tennis:match:1616"
     }
   ],
-  "starting_observation_count": 196,
-  "status": "PREREGISTERED"
+  "starting_observation_count": null,
+  "status": "NO_NEW_EVENTS"
 }
