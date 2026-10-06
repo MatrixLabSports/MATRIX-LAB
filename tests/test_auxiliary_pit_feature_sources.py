@@ -54,6 +54,15 @@ def test_auxiliary_feature_sources_are_pit_governed_and_fail_closed():
     assert daily["fail_closed_if_browser_crosscheck_missing"] is True
     assert daily["no_single_source_world_truth"] is True
 
+    order = policy["calendar_first_operating_order"]
+    assert order["required"] is True
+    assert set(order["applies_to"]) == {"tennis", "football"}
+    assert order["order"][0] == "1_SOFASCORE_AND_FLASHSCORE_WORLD_CALENDAR_BASELINE"
+    assert order["order"][1] == "2_PAID_APIS_STRUCTURED_ACQUISITION_AND_ENRICHMENT"
+    assert order["daily_count_report_required"] is True
+    assert order["invented_counts_prohibited"] is True
+    assert order["api_must_not_run_as_world_truth_before_browser_baseline"] is True
+
 
 def test_browser_verification_physically_confirms_requested_capabilities():
     evidence = json.loads(EVIDENCE.read_text(encoding="utf-8"))
