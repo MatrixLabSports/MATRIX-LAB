@@ -23,7 +23,7 @@ from app.research.tennis.world_calendar_registry import (
 API_URL = "https://api.api-tennis.com/tennis/"
 CHALLENGER_MEN_SINGLES_KEY = "281"
 CHALLENGER_MEN_SINGLES_NAME = "Challenger Men Singles"
-MAX_RESPONSE_BYTES = 5_000_000
+MAX_RESPONSE_BYTES = 32_000_000
 MAX_DRAW_REQUESTS = 12
 TERMINAL_STATUSES = {
     "FINISHED", "CANCELLED", "CANCELED", "ABANDONED", "RETIRED", "WALKOVER", "WO",
