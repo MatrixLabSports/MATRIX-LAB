@@ -15,6 +15,8 @@ on:
       - tools/cor0203_api_tennis_discovery.py
       - tools/cor0203_rapidapi_tennis_discovery.py
       - tools/cor0203_eight_day_dual_discovery.py
+      - tools/matrix_daily_calendar_baseline_gate.py
+      - tests/test_matrix_daily_calendar_baseline_gate.py
 
 permissions:
   contents: write
@@ -87,7 +89,7 @@ jobs:
           print("DAILY_MULTISOURCE_BROWSER_CROSSCHECK: PASS")
           PY
 
-      - name: Require daily unified source-count report
+      - name: Require autonomous exact calendar-first source-count report
         shell: bash
         run: |
           set -euo pipefail
@@ -97,20 +99,7 @@ jobs:
             echo "DAILY_WORLD_CALENDAR_SOURCE_COUNTS_MISSING: ${REPORT}"
             exit 1
           }
-          python - "${REPORT}" <<'PY'
-          import json, sys
-          from pathlib import Path
-          p=Path(sys.argv[1])
-          j=json.loads(p.read_text(encoding="utf-8"))
-          assert j["target_date_bogota"] == p.parent.name
-          assert j["task_order"][0] == "CALENDAR_BASELINE_SOFASCORE_FLASHSCORE_FIRST"
-          assert j["task_order"][1] == "PAID_APIS_SECOND"
-          assert j["truth_rules"]["invented_counts_prohibited"] is True
-          assert j["truth_rules"]["no_single_source_world_truth"] is True
-          assert j["protections"]["metrics_opened"] is False
-          assert j["protections"]["real_money"] == "BLOCKED"
-          print("DAILY_WORLD_CALENDAR_SOURCE_COUNTS: PASS")
-          PY
+          python -m tools.matrix_daily_calendar_baseline_gate --report "${REPORT}"
 
       - name: Build and process D0 D1 D2 Bogotá horizon with both paid providers
         shell: bash
