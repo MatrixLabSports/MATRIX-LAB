@@ -1,121 +1,10 @@
 {
-  "as_of_utc": "2026-10-05T14:02:47+00:00",
+  "as_of_utc": "2026-10-06T04:21:50+00:00",
   "automatic_model_feed": false,
   "automatic_model_promotion": false,
   "automatic_wagering": false,
-  "eligible_candidates": [
-    {
-      "canonical_source_event_id": "rapidapi-tennis:atp:match:1462",
-      "competition": "Villena Challenger",
-      "competition_id": "rapidapi-tennis:tournament:22093",
-      "event_id": "rapidapi-tennis:atp:match:1462",
-      "event_start_utc": "2026-10-05T15:00:00+00:00",
-      "historical_identity_crosswalk_status": "PENDING",
-      "legacy_provider_event_id": "rapidapi-tennis:match:1462",
-      "physical_event_key": "2e3942c64c6aebf348626e7d73b40d9de27efd433cd3ed8f3064d02f376891fb",
-      "player_identities": [
-        {
-          "display_name": "Moez Echargui",
-          "provider": "rapidapi_tennis",
-          "provider_player_id": "rapidapi-tennis:player:36114"
-        },
-        {
-          "display_name": "Raul Brancaccio",
-          "provider": "rapidapi_tennis",
-          "provider_player_id": "rapidapi-tennis:player:33904"
-        }
-      ],
-      "players": [
-        {
-          "name": "Moez Echargui",
-          "provider_player_id": "rapidapi-tennis:player:36114",
-          "provider_ranking": {
-            "country": "TUN",
-            "place": "378",
-            "player": "Moez Echargui",
-            "points": "134",
-            "snapshot_date": "2026-09-21"
-          }
-        },
-        {
-          "name": "Raul Brancaccio",
-          "provider_player_id": "rapidapi-tennis:player:33904",
-          "provider_ranking": {
-            "country": "ITA",
-            "place": "229",
-            "player": "Raul Brancaccio",
-            "points": "247",
-            "snapshot_date": "2026-09-21"
-          }
-        }
-      ],
-      "provider_channel": "ATP",
-      "round": "First",
-      "source_provider": "rapidapi_tennis",
-      "source_reference": "fixtures:matchId=1462;tournament_info=22093;ranking_cut=2026-09-21;provider_channel=ATP",
-      "source_snapshot_sha256": "0d197e203a267adc6dad10851e9a65c414890591fc322505b2f2071497b827e8",
-      "surface": "Hard",
-      "target_period": 20260921,
-      "tour_level": "C",
-      "world_source_snapshot_sha256": "759c18c3c033d0ccf90ee55b37061307e58419d77d7463020ec3a4d5e0e62806"
-    },
-    {
-      "canonical_source_event_id": "rapidapi-tennis:atp:match:1471",
-      "competition": "Villena Challenger",
-      "competition_id": "rapidapi-tennis:tournament:22093",
-      "event_id": "rapidapi-tennis:atp:match:1471",
-      "event_start_utc": "2026-10-05T15:30:00+00:00",
-      "historical_identity_crosswalk_status": "PENDING",
-      "legacy_provider_event_id": "rapidapi-tennis:match:1471",
-      "physical_event_key": "573446cf0e16e543f7cbca23dd876dc6721a52ca0a0b6d27ec21323c8b0f604e",
-      "player_identities": [
-        {
-          "display_name": "Pablo Llamas Ruiz",
-          "provider": "rapidapi_tennis",
-          "provider_player_id": "rapidapi-tennis:player:64896"
-        },
-        {
-          "display_name": "Luca Nardi",
-          "provider": "rapidapi_tennis",
-          "provider_player_id": "rapidapi-tennis:player:71221"
-        }
-      ],
-      "players": [
-        {
-          "name": "Pablo Llamas Ruiz",
-          "provider_player_id": "rapidapi-tennis:player:64896",
-          "provider_ranking": {
-            "country": "ESP",
-            "place": "140",
-            "player": "Pablo Llamas Ruiz",
-            "points": "409",
-            "snapshot_date": "2026-09-21"
-          }
-        },
-        {
-          "name": "Luca Nardi",
-          "provider_player_id": "rapidapi-tennis:player:71221",
-          "provider_ranking": {
-            "country": "ITA",
-            "place": "244",
-            "player": "Luca Nardi",
-            "points": "226",
-            "snapshot_date": "2026-09-21"
-          }
-        }
-      ],
-      "provider_channel": "ATP",
-      "round": "First",
-      "source_provider": "rapidapi_tennis",
-      "source_reference": "fixtures:matchId=1471;tournament_info=22093;ranking_cut=2026-09-21;provider_channel=ATP",
-      "source_snapshot_sha256": "158bbfcbc1027b6b43ed8c216cb11e02ec548895b61cfb263e79c066df6485cd",
-      "surface": "Hard",
-      "target_period": 20260921,
-      "tour_level": "C",
-      "world_source_snapshot_sha256": "71da90e909cf9eec5819b8da64a11a9efb976e9cb5978849995deee257b54610"
-    }
-  ],
-  "eligible_input_events": 2,
+  "eligible_candidates": [],
+  "eligible_input_events": 0,
   "fixture_rows": 20,
   "governed_preregistration_required": true,
   "metrics_opened": false,
@@ -482,6 +371,7 @@
     },
     {
       "blockers": [
+        "EVENT_NOT_FUTURE",
         "RANKING_CUT_MISSING_PLAYER1"
       ],
       "match_id": "1492",
@@ -500,6 +390,48 @@
       "provider_channel": "ATP",
       "tournament_id": "22093",
       "world_source_event_id": "rapidapi-tennis:atp:match:1492"
+    },
+    {
+      "blockers": [
+        "EVENT_NOT_FUTURE"
+      ],
+      "match_id": "1462",
+      "players": [
+        {
+          "name": "Moez Echargui",
+          "provider_player_id": "rapidapi-tennis:player:36114",
+          "ranking_found": true
+        },
+        {
+          "name": "Raul Brancaccio",
+          "provider_player_id": "rapidapi-tennis:player:33904",
+          "ranking_found": true
+        }
+      ],
+      "provider_channel": "ATP",
+      "tournament_id": "22093",
+      "world_source_event_id": "rapidapi-tennis:atp:match:1462"
+    },
+    {
+      "blockers": [
+        "EVENT_NOT_FUTURE"
+      ],
+      "match_id": "1471",
+      "players": [
+        {
+          "name": "Pablo Llamas Ruiz",
+          "provider_player_id": "rapidapi-tennis:player:64896",
+          "ranking_found": true
+        },
+        {
+          "name": "Luca Nardi",
+          "provider_player_id": "rapidapi-tennis:player:71221",
+          "ranking_found": true
+        }
+      ],
+      "provider_channel": "ATP",
+      "tournament_id": "22093",
+      "world_source_event_id": "rapidapi-tennis:atp:match:1471"
     }
   ],
   "ranking_cut": "2026-09-21",
@@ -587,62 +519,20 @@
     "rapidapi-tennis:atp:match:1471"
   ],
   "world_domain_candidates_input": 20,
-  "world_inventory_sha256": "ac74bb34138a2ebad06b77bf1c51f6ec853788deb4bc92082f7d966f5a4ae9f3",
+  "world_inventory_sha256": "feb8e68a43fc544f19572b80ae4c8fab7473cddbbf6956964281946133bed592",
   "world_inventory_target_date": "2026-10-05",
-  "world_inventory_total": 222,
+  "world_inventory_total": 224,
   "world_registry": {
-    "as_of_utc": "2026-10-05T14:02:47+00:00",
+    "as_of_utc": "2026-10-06T04:21:50+00:00",
     "cor0203_denominator_definition": "derived subset: future ATP Challenger Hard events with two real fixed identities and valid source provenance",
-    "cor0203_eligible_event_ids": [
-      "rapidapi-tennis:match:1462",
-      "rapidapi-tennis:match:1471"
-    ],
-    "cor0203_eligible_events": 2,
+    "cor0203_eligible_event_ids": [],
+    "cor0203_eligible_events": 0,
     "duplicate_rows": 0,
-    "rows": [
-      {
-        "competition_id": "rapidapi-tennis:tournament:22093",
-        "competition_name": "Villena Challenger",
-        "cor0203_blockers": [],
-        "cor0203_eligible": true,
-        "environment": "UNKNOWN",
-        "event_id": "rapidapi-tennis:match:1462",
-        "event_start_utc": "2026-10-05T15:00:00+00:00",
-        "player1_id": "rapidapi-tennis:player:36114",
-        "player2_id": "rapidapi-tennis:player:33904",
-        "round": "First",
-        "source_provider": "rapidapi_tennis",
-        "source_reference": "fixtures:matchId=1462;tournament_info=22093;ranking_cut=2026-09-21",
-        "source_snapshot_sha256": "0d197e203a267adc6dad10851e9a65c414890591fc322505b2f2071497b827e8",
-        "sport": "TENNIS",
-        "surface": "Hard",
-        "tour_level": "ATP_CHALLENGER",
-        "world_calendar_status": "PRESERVED"
-      },
-      {
-        "competition_id": "rapidapi-tennis:tournament:22093",
-        "competition_name": "Villena Challenger",
-        "cor0203_blockers": [],
-        "cor0203_eligible": true,
-        "environment": "UNKNOWN",
-        "event_id": "rapidapi-tennis:match:1471",
-        "event_start_utc": "2026-10-05T15:30:00+00:00",
-        "player1_id": "rapidapi-tennis:player:64896",
-        "player2_id": "rapidapi-tennis:player:71221",
-        "round": "First",
-        "source_provider": "rapidapi_tennis",
-        "source_reference": "fixtures:matchId=1471;tournament_info=22093;ranking_cut=2026-09-21",
-        "source_snapshot_sha256": "158bbfcbc1027b6b43ed8c216cb11e02ec548895b61cfb263e79c066df6485cd",
-        "sport": "TENNIS",
-        "surface": "Hard",
-        "tour_level": "ATP_CHALLENGER",
-        "world_calendar_status": "PRESERVED"
-      }
-    ],
+    "rows": [],
     "schema": "matrix.world-calendar-registry/1",
     "world_calendar_denominator_definition": "all unique discovered scheduled events preserved before model-domain filtering",
-    "world_calendar_input_rows": 2,
-    "world_calendar_unique_events": 2
+    "world_calendar_input_rows": 0,
+    "world_calendar_unique_events": 0
   },
   "world_rows_malformed": [],
   "world_rows_synthesized": 20
