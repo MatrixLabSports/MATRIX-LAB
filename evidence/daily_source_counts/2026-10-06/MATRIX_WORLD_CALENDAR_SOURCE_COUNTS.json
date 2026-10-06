@@ -2,7 +2,7 @@
   "schema": "MATRIX_DAILY_WORLD_CALENDAR_SOURCE_COUNTS_V1",
   "target_date_bogota": "2026-10-06",
   "timezone": "America/Bogota",
-  "captured_at_utc": "2026-10-06T15:13:00Z",
+  "captured_at_utc": "2026-10-06T15:18:00Z",
   "task_order": [
     "CALENDAR_BASELINE_SOFASCORE_FLASHSCORE_FIRST",
     "PAID_APIS_SECOND",
@@ -43,11 +43,19 @@
   },
   "football": {
     "sofascore": {
-      "count": 75,
-      "count_type": "MACHINE_OBSERVED_PARTIAL_ACCESSIBILITY_UNIQUE_MATCH_LINKS",
-      "url": "https://www.sofascore.com/es/football/2026-10-06",
-      "opera_read_status": "PASS",
-      "warning": "PARTIAL_LAZY_TREE_NOT_WORLD_TOTAL"
+      "count": null,
+      "count_type": "PENDING_EXACT_UI_TOTAL",
+      "url": "https://www.sofascore.com/es",
+      "opera_read_status": "PARTIAL_PASS_THEN_CONNECTOR_UNAVAILABLE",
+      "previously_reported_partial_accessibility_links": 75,
+      "previous_75_status": "INVALID_AS_DAILY_TOTAL_SUPERSEDED",
+      "current_partial_ui_evidence": {
+        "live_count_observed": 46,
+        "label": "En Vivo (46)",
+        "exact_daily_total_not_yet_machine_verified": true
+      },
+      "user_observation": "User reports the open SofaScore page visibly contains many more football matches than the prior partial count.",
+      "note": "Do not use 75 as SofaScore's daily football total. Exact total must be captured from the visible UI/count when Opera connector is readable; until then mark unknown rather than invent."
     },
     "flashscore": {
       "count": 209,
