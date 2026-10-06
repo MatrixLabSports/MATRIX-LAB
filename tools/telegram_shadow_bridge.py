@@ -9,6 +9,7 @@ from typing import Any
 
 MIN_ODDS_EXCLUSIVE = 1.50
 BLOCKING_ADJUDICATION_PREFIXES = ("NO_BET", "WATCHLIST", "RESEARCH_SIGNAL")
+ALLOWED_SHADOW_P_MATRIX_STATUSES = ("GENERATED", "GENERATED_SHADOW")
 
 
 def _utc(value: str) -> datetime:
@@ -21,7 +22,8 @@ def adjudicate(payload: dict[str, Any], now: datetime | None = None) -> dict[str
     model = payload.get("model_status", {})
     protections = payload.get("protections", {})
 
-    if model.get("daily_p_matrix") != "GENERATED":
+    p_matrix_status = model.get("daily_p_matrix")
+    if p_matrix_status not in ALLOWED_SHADOW_P_MATRIX_STATUSES:
         reasons.append("P_MATRIX_NOT_GENERATED")
     if model.get("real_money") != "BLOCKED":
         reasons.append("REAL_MONEY_NOT_BLOCKED")
@@ -72,6 +74,7 @@ def adjudicate(payload: dict[str, Any], now: datetime | None = None) -> dict[str
         "mode": "SHADOW",
         "real_money": "BLOCKED",
         "automatic_wagering": False,
+        "source_p_matrix_status": p_matrix_status,
         "source_target_date_bogota": payload.get("target_date_bogota"),
         "global_block_reasons": reasons,
         "eligible_count": len(eligible),
