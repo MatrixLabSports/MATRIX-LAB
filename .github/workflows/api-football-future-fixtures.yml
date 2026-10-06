@@ -54,6 +54,31 @@ jobs:
           print("REQUEST_BUDGET_FOR_THIS_WORKFLOW=1")
           PY
 
+      - name: Require daily SofaScore and Flashscore football crosscheck
+        shell: bash
+        run: |
+          set -euo pipefail
+          TODAY="$(TZ=America/Bogota date +%F)"
+          EVIDENCE="evidence/football_world_inventory/${TODAY}/MATRIX_DAILY_MULTISOURCE_BROWSER_CROSSCHECK.json"
+          test -f "${EVIDENCE}" || {
+            echo "DAILY_FOOTBALL_SOFASCORE_FLASHSCORE_CROSSCHECK_MISSING: ${EVIDENCE}"
+            exit 1
+          }
+          python - "${EVIDENCE}" <<'PY'
+          import json, sys
+          from pathlib import Path
+          p=Path(sys.argv[1])
+          j=json.loads(p.read_text(encoding="utf-8"))
+          assert j["target_date_bogota"] == p.parent.name
+          assert j["sources"]["sofascore"]["opera_read_status"] == "PASS"
+          assert j["sources"]["flashscore"]["opera_read_status"] == "PASS"
+          assert j["governance_basis"]["sofascore_flashscore_daily_crosscheck_required"] is True
+          assert j["adjudication"]["api_football_counts_are_not_world_complete"] is True
+          assert j["protections"]["metrics_opened"] is False
+          assert j["protections"]["real_money"] == "BLOCKED"
+          print("DAILY_FOOTBALL_MULTISOURCE_BROWSER_CROSSCHECK: PASS")
+          PY
+
       - name: Execute exactly one future fixture request
         shell: bash
         env:
