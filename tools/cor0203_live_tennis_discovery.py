@@ -25,16 +25,36 @@ def parse_utc(value: str) -> datetime:
 def main() -> int:
     parser=argparse.ArgumentParser()
     parser.add_argument("--coverage", required=True)
+    parser.add_argument("--reconciliation", required=True)
     parser.add_argument("--out", required=True)
     parser.add_argument("--as-of-utc")
     args=parser.parse_args()
 
     coverage=json.loads(Path(args.coverage).read_text(encoding="utf-8"))
-    as_of=parse_utc(args.as_of_utc or coverage.get("generated_at_utc") or datetime.now(timezone.utc).isoformat())
+    reconciliation=json.loads(Path(args.reconciliation).read_text(encoding="utf-8"))
+    as_of=parse_utc(args.as_of_utc or reconciliation.get("generated_at_utc") or coverage.get("generated_at_utc") or datetime.now(timezone.utc).isoformat())
     source_sha=canonical_sha(coverage)
 
     provider=(coverage.get("providers") or {}).get("live_tennis_api") or {}
-    rows=list(provider.get("d0_d2_hard_candidates") or [])
+    provider_rows={int(x.get("provider_match_id")):x for x in (provider.get("d0_d2_hard_candidates") or []) if isinstance(x,dict) and isinstance(x.get("provider_match_id"),int)}
+    rows=[]
+    for rec in reconciliation.get("records",[]) or []:
+        if not isinstance(rec,dict) or rec.get("status")!="NEW_FUTURE_GAP_VERIFIED":
+            continue
+        mid=rec.get("provider_match_id")
+        raw=provider_rows.get(int(mid)) if isinstance(mid,int) else None
+        if not isinstance(raw,dict):
+            continue
+        merged=dict(raw)
+        names=list(rec.get("canonical_names") or [])
+        if len(names)==2:
+            merged["player1_name"]=names[0]
+            merged["player2_name"]=names[1]
+        merged["competition_override"]=rec.get("competition")
+        merged["round_override"]=rec.get("round")
+        merged["reconciliation_status"]=rec.get("status")
+        merged["independent_validation"]=rec.get("independent_validation")
+        rows.append(merged)
 
     eligible=[]
     rejected=[]
@@ -73,15 +93,15 @@ def main() -> int:
         event={
             "event_id":f"live-tennis-api:match:{mid}",
             "canonical_source_event_id":f"live-tennis-api:match:{mid}",
-            "competition":"Wuning 3 Challenger" if "Wuning 3" in str(row.get("tournament") or "") else str(row.get("tournament") or ""),
+            "competition":str(row.get("competition_override") or ("Wuning 3 Challenger" if "Wuning 3" in str(row.get("tournament") or "") else row.get("tournament") or "")),
             "competition_id":None,
-            "round":str(row.get("round_code") or row.get("round") or ""),
+            "round":str(row.get("round_override") or row.get("round_code") or row.get("round") or ""),
             "surface":"Hard",
             "tour_level":"C",
             "target_period":20260921,
             "event_start_utc":start.isoformat(),
             "source_provider":"live_tennis_api",
-            "source_reference":f"{args.coverage};match_id={mid};raw_tournament={row.get('tournament')};round={row.get('round')}",
+            "source_reference":f"{args.coverage};reconciliation={args.reconciliation};match_id={mid};raw_tournament={row.get('tournament')};round={row.get('round')};independent_validation={row.get('independent_validation')}",
             "source_snapshot_sha256":source_sha,
             "players":[
                 {
@@ -111,7 +131,8 @@ def main() -> int:
         "as_of_utc":as_of.isoformat(),
         "source_coverage_path":args.coverage,
         "source_coverage_sha256":source_sha,
-        "input_hard_candidates":len(rows),
+        "reconciliation_path":args.reconciliation,
+        "input_verified_future_gaps":len(rows),
         "eligible_candidates":eligible,
         "provider_rejected":rejected,
         "automatic_model_feed":False,
