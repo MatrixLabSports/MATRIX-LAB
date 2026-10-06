@@ -63,6 +63,16 @@ def test_auxiliary_feature_sources_are_pit_governed_and_fail_closed():
     assert order["invented_counts_prohibited"] is True
     assert order["api_must_not_run_as_world_truth_before_browser_baseline"] is True
 
+    auto = policy["autonomous_calendar_analysis_rule"]
+    assert auto["required"] is True
+    assert set(auto["applies_to"]) == {"tennis", "football"}
+    assert auto["user_manual_counting_prohibited"] is True
+    assert auto["user_manual_source_enumeration_prohibited"] is True
+    assert auto["exact_browser_totals_must_be_captured_by_automation"] is True
+    assert auto["do_not_ask_user_to_count_matches"] is True
+    assert auto["do_not_present_accessibility_floor_as_daily_total"] is True
+    assert auto["production_must_fail_closed_until_calendar_baseline_complete"] is True
+
 
 def test_browser_verification_physically_confirms_requested_capabilities():
     evidence = json.loads(EVIDENCE.read_text(encoding="utf-8"))
