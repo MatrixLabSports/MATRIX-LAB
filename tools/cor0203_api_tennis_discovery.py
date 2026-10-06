@@ -377,7 +377,17 @@ def fetch_discovery(
     stop: date,
     as_of_utc: str,
 ) -> dict[str, Any]:
-    fixtures = client.fixtures(start, stop)
+    # API-Tennis can return multi-megabyte payloads for multi-day fixture
+    # windows. Query one UTC date at a time and merge locally so a large
+    # 2-4 day response cannot abort the governed discovery cycle.
+    fixture_rows: list[Mapping[str, Any]] = []
+    cursor = start
+    while cursor <= stop:
+        daily = client.fixtures(cursor, cursor)
+        fixture_rows.extend(_result_list(daily))
+        cursor += timedelta(days=1)
+    fixtures: Mapping[str, Any] = {"success": 1, "result": fixture_rows}
+
     standings = client.standings()
     standing_rows = _result_list(standings)
     standings_by_key = {
