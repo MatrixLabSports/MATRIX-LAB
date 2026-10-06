@@ -2,7 +2,7 @@
   "schema": "MATRIX_DAILY_WORLD_CALENDAR_SOURCE_COUNTS_V1",
   "target_date_bogota": "2026-10-06",
   "timezone": "America/Bogota",
-  "captured_at_utc": "2026-10-06T15:02:00Z",
+  "captured_at_utc": "2026-10-06T15:13:00Z",
   "task_order": [
     "CALENDAR_BASELINE_SOFASCORE_FLASHSCORE_FIRST",
     "PAID_APIS_SECOND",
@@ -50,11 +50,18 @@
       "warning": "PARTIAL_LAZY_TREE_NOT_WORLD_TOTAL"
     },
     "flashscore": {
-      "count": 117,
-      "count_type": "MACHINE_OBSERVED_PARTIAL_ACCESSIBILITY_UNIQUE_MATCH_LINKS",
+      "count": 209,
+      "count_type": "USER_VISIBLE_UI_SCREENSHOT_VERIFIED",
       "url": "https://www.flashscore.co/?d=2026-10-06",
       "opera_read_status": "PASS",
-      "warning": "PARTIAL_LAZY_TREE_NOT_WORLD_TOTAL"
+      "screenshot_observed_local_time": "2026-10-06T10:13:00-05:00",
+      "screenshot_visible_labels": {
+        "date": "HOY 06.10.",
+        "section": "Todos los partidos",
+        "live_count_visible": 13,
+        "total_count_visible": 209
+      },
+      "note": "209 is the physically visible Flashscore football total in the user-provided screenshot. The prior accessibility-tree value 117 was only a lazy/partial machine floor and is superseded as the daily UI count."
     },
     "api_football": {
       "count": 200,
@@ -64,7 +71,9 @@
       "new_freezes": 14,
       "network_calls_for_3day_horizon": 480,
       "evidence_path": "evidence/api_football/prospective_horizon/last_run.json"
-    }
+    },
+    "raw_flashscore_vs_api_football_difference": 9,
+    "raw_difference_warning": "209 Flashscore UI vs 200 API-Football fixtures_received is a raw source-count gap only. It does not prove exactly 9 missing physical matches until identity/timezone/competition reconciliation and deduplication are performed."
   },
   "truth_rules": {
     "exact_count_requires_physical_source_evidence": true,
