@@ -12,6 +12,7 @@ from tools.cor0203_api_tennis_discovery import (
     ApiTennisDiscoveryError,
     build_discovery_registry,
     fetch_discovery,
+    _result_list,
 )
 
 
@@ -230,4 +231,13 @@ def test_fetch_discovery_chunks_fixture_window_by_day_to_avoid_oversized_payload
     ]
     assert result["fixture_rows"] == 0
     assert result["request_count"] == 4
+
+def test_result_list_accepts_singleton_fixture_mapping():
+    row = fixture()
+    assert _result_list({"success": 1, "result": row}) == [row]
+
+
+def test_result_list_accepts_successful_empty_provider_shapes():
+    assert _result_list({"success": 1, "result": {}}) == []
+    assert _result_list({"success": 1, "result": "No event found"}) == []
 
