@@ -117,6 +117,26 @@ def _api_tournament_key(e:Mapping[str,Any])->tuple[str,str]:
     return (str(e.get("event_type") or "UNKNOWN"),str(e.get("tournament_name") or "UNKNOWN"))
 
 
+def _fetch_api_rows_for_bogota_day(
+    api_client: ApiTennisDiscoveryClient,
+    target: date,
+) -> list[Mapping[str, Any]]:
+    rows: list[Mapping[str, Any]] = []
+    # A Bogotá calendar day spans portions of two UTC dates. Query each UTC
+    # date separately so API-Tennis cannot return one oversized two-day blob.
+    for query_day in (target, target + timedelta(days=1)):
+        payload = api_client._post(
+            "get_fixtures",
+            {
+                "date_start": query_day.isoformat(),
+                "date_stop": query_day.isoformat(),
+                "timezone": "UTC",
+            },
+        )
+        rows.extend(_api_rows(payload))
+    return rows
+
+
 def run(target:date,out:Path)->dict[str,Any]:
     rapid_key=os.environ.get("RAPIDAPI_TENNIS_KEY","").strip()
     api_key=os.environ.get("API_TENNIS_KEY","").strip()
@@ -131,15 +151,8 @@ def run(target:date,out:Path)->dict[str,Any]:
     rapid_events=list(rapid.get("events") or [])
 
     api_client=ApiTennisDiscoveryClient(api_key)
-    # Query UTC dates spanning the full Bogota day.
-    query_start=target
-    query_stop=target+timedelta(days=1)
-    payload=api_client._post("get_fixtures",{
-        "date_start":query_start.isoformat(),
-        "date_stop":query_stop.isoformat(),
-        "timezone":"UTC",
-    })
-    api_all=_api_rows(payload)
+    # Query the two UTC dates spanning the full Bogotá day in bounded chunks.
+    api_all=_fetch_api_rows_for_bogota_day(api_client,target)
     api_events=[]
     seen_api=set()
     malformed=0
