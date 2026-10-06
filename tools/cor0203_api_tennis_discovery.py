@@ -200,13 +200,53 @@ class ApiTennisDiscoveryClient:
 
 def _result_list(payload: Mapping[str, Any]) -> list[Mapping[str, Any]]:
     result = payload.get("result")
-    if not isinstance(result, list):
-        raise ApiTennisDiscoveryError("API_TENNIS_FIXTURE_RESULT_NOT_LIST")
-    rows: list[Mapping[str, Any]] = []
-    for row in result:
-        if isinstance(row, Mapping):
-            rows.append(row)
-    return rows
+
+    if isinstance(result, list):
+        return [row for row in result if isinstance(row, Mapping)]
+
+    # API-Tennis is not fully shape-stable: low-volume dates/endpoints can
+    # return a single object instead of a one-element list, while dates with
+    # no scheduled rows can return an empty object/string despite success=1.
+    if isinstance(result, Mapping):
+        if not result:
+            return []
+        if any(
+            key in result
+            for key in (
+                "event_key",
+                "player_key",
+                "tournament_key",
+                "event_date",
+                "event_first_player",
+            )
+        ):
+            return [result]
+        for key in ("data", "events", "fixtures", "rows"):
+            nested = result.get(key)
+            if isinstance(nested, list):
+                return [row for row in nested if isinstance(row, Mapping)]
+        message = " ".join(
+            str(result.get(key) or "")
+            for key in ("message", "msg", "error", "status")
+        ).strip().casefold()
+        if message and any(
+            token in message
+            for token in ("no event", "no fixture", "no data", "not found", "empty")
+        ):
+            return []
+        raise ApiTennisDiscoveryError("API_TENNIS_FIXTURE_RESULT_MAPPING_UNRECOGNIZED")
+
+    if result is None:
+        return []
+    if isinstance(result, str):
+        message = result.strip().casefold()
+        if not message or any(
+            token in message
+            for token in ("no event", "no fixture", "no data", "not found", "empty")
+        ):
+            return []
+
+    raise ApiTennisDiscoveryError("API_TENNIS_FIXTURE_RESULT_NOT_LIST")
 
 
 def _draw_surface(payload: Mapping[str, Any]) -> tuple[str | None, str | None]:
