@@ -23,12 +23,20 @@ def get(path, key, params=None):
     except Exception: j={"_non_json":True}
     return j,meta
 
+def player_names(row):
+    players=row.get("players") if isinstance(row.get("players"),dict) else {}
+    p1=players.get("p1") if isinstance(players.get("p1"),dict) else {}
+    p2=players.get("p2") if isinstance(players.get("p2"),dict) else {}
+    return str(p1.get("name") or row.get("p1_name") or "").strip(), str(p2.get("name") or row.get("p2_name") or "").strip()
+
 def is_singles(row):
+    if row.get("is_doubles") is True:
+        return False
+    p1,p2=player_names(row)
+    if not p1 or not p2:
+        return False
     blob=" ".join(str(row.get(k) or "") for k in ("draw","event_type","match_type","tournament","round")).lower()
-    p1=str(row.get("player1_name") or "").strip()
-    p2=str(row.get("player2_name") or "").strip()
-    if not p1 or not p2: return False
-    return "double" not in blob and "/" not in p1 and "/" not in p2
+    return "double" not in blob
 
 def main():
     key=os.environ.get("LIVE_TENNIS_API_KEY","").strip()
@@ -41,8 +49,25 @@ def main():
         mid=row.get("id")
         if mid is None: continue
         score,smeta=get(f"/matches/{mid}/score",key)
+        p1,p2=player_names(row)
         enriched.append({
-          "match":row,
+          "match":{
+            "id":mid,
+            "status":row.get("status"),
+            "event_status":row.get("event_status"),
+            "tour":row.get("tour"),
+            "tournament":row.get("tournament"),
+            "round":row.get("round"),
+            "round_code":row.get("round_code"),
+            "surface":row.get("surface"),
+            "best_of":row.get("best_of"),
+            "is_doubles":row.get("is_doubles"),
+            "p1_name":p1,
+            "p2_name":p2,
+            "p1_ranking":((row.get("players") or {}).get("p1") or {}).get("ranking") if isinstance(row.get("players"),dict) else row.get("p1_ranking"),
+            "p2_ranking":((row.get("players") or {}).get("p2") or {}).get("ranking") if isinstance(row.get("players"),dict) else row.get("p2_ranking"),
+            "embedded_score":row.get("score")
+          },
           "score":score,
           "score_request":smeta
         })
@@ -73,8 +98,8 @@ def main():
       "live_singles_candidates":len(singles),
       "selected_id": (selected or {}).get("match",{}).get("id"),
       "selected_players":[
-         (selected or {}).get("match",{}).get("player1_name"),
-         (selected or {}).get("match",{}).get("player2_name")
+         (selected or {}).get("match",{}).get("p1_name"),
+         (selected or {}).get("match",{}).get("p2_name")
       ] if selected else []
     },sort_keys=True))
 if __name__=="__main__": main()
