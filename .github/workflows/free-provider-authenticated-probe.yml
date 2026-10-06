@@ -1,0 +1,70 @@
+name: Free Provider Authenticated Probe
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: free-provider-authenticated-probe
+  cancel-in-progress: false
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: repair/cor09-world-pipeline
+          fetch-depth: 0
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - run: python -m pip install requests
+
+      - name: Validate secrets are configured
+        shell: bash
+        env:
+          FOOTBALL_DATA_ORG_KEY: ${{ secrets.FOOTBALL_DATA_ORG_KEY }}
+          LIVE_TENNIS_API_KEY: ${{ secrets.LIVE_TENNIS_API_KEY }}
+        run: |
+          set -euo pipefail
+          test -n "$FOOTBALL_DATA_ORG_KEY" || { echo "FOOTBALL_DATA_ORG_KEY_NOT_CONFIGURED"; exit 2; }
+          test -n "$LIVE_TENNIS_API_KEY" || { echo "LIVE_TENNIS_API_KEY_NOT_CONFIGURED"; exit 2; }
+          echo "FREE_PROVIDER_SECRETS_PRESENT"
+
+      - name: Run authenticated probes
+        env:
+          FOOTBALL_DATA_ORG_KEY: ${{ secrets.FOOTBALL_DATA_ORG_KEY }}
+          LIVE_TENNIS_API_KEY: ${{ secrets.LIVE_TENNIS_API_KEY }}
+        run: python -m tools.free_provider_authenticated_probe
+
+      - name: Validate redacted evidence
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          p=Path("evidence/governance/MATRIX_FREE_API_AUTHENTICATED_PROBE_20261006.json")
+          j=json.loads(p.read_text())
+          assert j["status"] == "PASS"
+          assert j["promotion_gate"]["both_pass"] is True
+          assert j["providers"]["football_data_org"]["token_redacted"] is True
+          assert j["providers"]["live_tennis_api"]["token_redacted"] is True
+          assert j["protections"]["secrets_persisted"] is False
+          assert j["protections"]["secrets_echoed"] is False
+          assert j["protections"]["real_money"] == "BLOCKED"
+          print("FREE_PROVIDER_AUTHENTICATED_PROBE_GATE: PASS")
+          PY
+
+      - name: Persist evidence
+        run: |
+          git config user.name "matrix-free-provider-probe"
+          git config user.email "matrix-free-provider-probe@users.noreply.github.com"
+          git add evidence/governance/MATRIX_FREE_API_AUTHENTICATED_PROBE_20261006.json
+          git commit -m "evidence(providers): persist authenticated free API probes"
+          git pull --rebase origin repair/cor09-world-pipeline
+          git push origin HEAD:repair/cor09-world-pipeline
