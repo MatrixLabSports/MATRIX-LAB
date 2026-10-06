@@ -6,13 +6,14 @@ import json
 import os
 import time
 from datetime import datetime, timezone
+from zoneinfo import ZoneInfo
 from pathlib import Path
 from typing import Any
 
 import requests
 
 BASE="https://api.livetennisapi.com/api/public/v1"
-OUT=Path("evidence/live_tennis_lab/2026-10-06/MATRIX_LIVE_TENNIS_STATE_LEDGER_V0_1.json")
+BOGOTA=ZoneInfo("America/Bogota")
 POINT_CODE={"0":0,"15":1,"30":2,"40":3,"AD":4,"A":4}
 
 
@@ -120,11 +121,11 @@ def state_from_row(row:dict[str,Any],captured_at:str,response_sha:str)->dict[str
     }
 
 
-def load_existing():
-    if not OUT.exists():
+def load_existing(out:Path):
+    if not out.exists():
         return {}
     try:
-        j=json.loads(OUT.read_text(encoding="utf-8"))
+        j=json.loads(out.read_text(encoding="utf-8"))
     except Exception:
         return {}
     return {x["state_key"]:x for x in j.get("states",[]) if isinstance(x,dict) and x.get("state_key")}
@@ -133,9 +134,12 @@ def load_existing():
 def main():
     ap=argparse.ArgumentParser()
     ap.add_argument("--cycles",type=int,default=6)
+    ap.add_argument("--date",help="Bogota operational date YYYY-MM-DD; defaults to current Bogota date")
     ap.add_argument("--interval-seconds",type=int,default=20)
     ap.add_argument("--reserve-calls",type=int,default=20)
     args=ap.parse_args()
+    target_date=args.date or datetime.now(BOGOTA).date().isoformat()
+    out=Path(f"evidence/live_tennis_lab/{target_date}/MATRIX_LIVE_TENNIS_STATE_LEDGER_V0_1.json")
     key=os.environ.get("LIVE_TENNIS_API_KEY","").strip()
     if not key:
         raise SystemExit("LIVE_TENNIS_API_KEY_NOT_CONFIGURED")
@@ -150,7 +154,7 @@ def main():
     if cycles<=0:
         raise SystemExit("DAILY_QUOTA_RESERVE_GATE_BLOCKED")
 
-    existing=load_existing()
+    existing=load_existing(out)
     initial=len(existing)
     call_meta=[]
     capture_summaries=[]
@@ -205,8 +209,9 @@ def main():
         "automatic_wagering":False,"real_money":"BLOCKED","secrets_persisted":False
       }
     }
-    OUT.parent.mkdir(parents=True,exist_ok=True)
-    OUT.write_text(json.dumps(payload,indent=2,sort_keys=True,ensure_ascii=False)+"\n",encoding="utf-8")
+    payload["target_date_bogota"]=target_date
+    out.parent.mkdir(parents=True,exist_ok=True)
+    out.write_text(json.dumps(payload,indent=2,sort_keys=True,ensure_ascii=False)+"\n",encoding="utf-8")
     print(json.dumps({
       "status":"PASS","executed_cycles":cycles,
       "unique_match_count":len(match_ids),"unique_state_count":len(states),
