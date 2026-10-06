@@ -31,9 +31,46 @@ def _sha(v:Any)->str:
 
 def _api_rows(payload:Mapping[str,Any])->list[Mapping[str,Any]]:
     r=payload.get("result")
-    if not isinstance(r,list):
-        raise ValueError("API_TENNIS_RESULT_NOT_LIST")
-    return [x for x in r if isinstance(x,Mapping)]
+    if isinstance(r,list):
+        return [x for x in r if isinstance(x,Mapping)]
+    if isinstance(r,Mapping):
+        if not r:
+            return []
+        if any(
+            key in r
+            for key in (
+                "event_key",
+                "player_key",
+                "tournament_key",
+                "event_date",
+                "event_first_player",
+            )
+        ):
+            return [r]
+        for key in ("data","events","fixtures","rows"):
+            nested=r.get(key)
+            if isinstance(nested,list):
+                return [x for x in nested if isinstance(x,Mapping)]
+        message=" ".join(
+            str(r.get(key) or "")
+            for key in ("message","msg","error","status")
+        ).strip().casefold()
+        if message and any(
+            token in message
+            for token in ("no event","no fixture","no data","not found","empty")
+        ):
+            return []
+        raise ValueError("API_TENNIS_RESULT_MAPPING_UNRECOGNIZED")
+    if r is None:
+        return []
+    if isinstance(r,str):
+        message=r.strip().casefold()
+        if not message or any(
+            token in message
+            for token in ("no event","no fixture","no data","not found","empty")
+        ):
+            return []
+    raise ValueError("API_TENNIS_RESULT_NOT_LIST")
 
 
 def _api_start_utc(row:Mapping[str,Any])->datetime:
