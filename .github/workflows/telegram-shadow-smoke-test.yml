@@ -1,4 +1,4 @@
-name: Telegram SHADOW Smoke Test
+name: Telegram SHADOW End-to-End Test
 
 on:
   workflow_dispatch:
@@ -7,7 +7,7 @@ permissions:
   contents: read
 
 jobs:
-  telegram-shadow-smoke-test:
+  telegram-shadow-e2e:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     env:
@@ -16,6 +16,9 @@ jobs:
       AUTO_BETTING: DISABLED
 
     steps:
+      - name: Checkout MATRIX-LAB
+        uses: actions/checkout@v4
+
       - name: Enforce SHADOW safety gates
         shell: bash
         run: |
@@ -24,7 +27,18 @@ jobs:
           test "$REAL_MONEY" = "BLOCKED"
           test "$AUTO_BETTING" = "DISABLED"
 
-      - name: Validate Telegram secrets are present
+      - name: Install Python dependencies
+        shell: bash
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install requests pytest
+
+      - name: Run governed Telegram tests
+        shell: bash
+        run: |
+          python -m pytest -q tests/test_telegram_pick_notifier_main.py
+
+      - name: Validate Telegram secrets
         shell: bash
         env:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
@@ -34,16 +48,96 @@ jobs:
           test -n "$TELEGRAM_BOT_TOKEN"
           test -n "$TELEGRAM_CHAT_ID"
 
-      - name: Send governed SHADOW test message
+      - name: Execute governed TEST SHADOW dispatch
         shell: bash
         env:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
         run: |
-          set -euo pipefail
-          response="$(curl --fail-with-body --silent --show-error \
-            --request POST \
-            "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage" \
-            --data-urlencode "chat_id=${TELEGRAM_CHAT_ID}" \
-            --data-urlencode $'text=MATRIX-LAB Telegram SHADOW activo.\nModo: SHADOW\nREAL_MONEY: BLOCKED\nAUTO_BETTING: DISABLED\nPrueba de notificacion solamente.')"
-          python -c 'import json,sys; d=json.load(sys.stdin); assert d.get("ok") is True; print("TELEGRAM_SHADOW_SEND_OK")' <<< "$response"
+          python - <<'PY'
+          import hashlib
+          import os
+          from datetime import datetime, timedelta, timezone
+
+          from app.notifications.telegram_pick_notifier import (
+              TelegramDispatchLedger,
+              TelegramDispatchResult,
+              TelegramPickCard,
+              format_pick_message,
+          )
+          from tools.telegram_pick_transport import send_telegram_message
+
+          now = datetime.now(timezone.utc)
+          odds = 2.00
+          p_matrix = 0.60
+          implied = 1.0 / odds
+          ev = p_matrix * odds - 1.0
+
+          freeze_payload = (
+              "TEST_SHADOW_ONLY|"
+              + now.isoformat()
+              + "|odds=2.00|bookmaker=betano"
+          )
+          freeze_sha = hashlib.sha256(
+              freeze_payload.encode("utf-8")
+          ).hexdigest()
+
+          card = TelegramPickCard(
+              pick_id="TEST-SHADOW-E2E-" + now.strftime("%Y%m%dT%H%M%SZ"),
+              mode="SHADOW",
+              sport="football",
+              event_id="TEST-EVENT-NOT-REAL",
+              event_name="TEST SHADOW — EVENTO NO REAL",
+              market="TEST MARKET",
+              selection="TEST SELECTION — NO APOSTAR",
+              bookmaker="betano",
+              decimal_odds=odds,
+              p_matrix=p_matrix,
+              implied_probability=implied,
+              expected_value=ev,
+              stake_amount=0.0,
+              stake_currency="COP",
+              freeze_at_utc=now,
+              event_start_at_utc=now + timedelta(hours=2),
+              calibration_gate_pass=False,
+              real_money_gate_open=False,
+              automatic_wagering=False,
+              odds_used_as_model_input=False,
+              model_binding="TEST_SHADOW_E2E_V1",
+              price_freeze_sha256=freeze_sha,
+          )
+
+          text = format_pick_message(card)
+          receipt = send_telegram_message(
+              bot_token=os.environ["TELEGRAM_BOT_TOKEN"],
+              chat_id=os.environ["TELEGRAM_CHAT_ID"],
+              text=text,
+          )
+
+          result = TelegramDispatchResult(
+              message_id=receipt.message_id,
+              chat_id=receipt.chat_id,
+              pick_id=card.pick_id,
+              message_sha256=receipt.message_sha256,
+          )
+
+          ledger = TelegramDispatchLedger(
+              "evidence/telegram/telegram_shadow_test_dispatch.jsonl"
+          )
+          row = ledger.append(card, result)
+
+          print("MATRIX_TELEGRAM_E2E_OK")
+          print("PICK_ID=" + card.pick_id)
+          print("MESSAGE_ID=" + str(receipt.message_id))
+          print("MESSAGE_SHA256=" + receipt.message_sha256)
+          print("RECORD_SHA256=" + row["record_sha256"])
+          print("REAL_MONEY=BLOCKED")
+          print("AUTO_BETTING=DISABLED")
+          PY
+
+      - name: Upload governed SHADOW evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: telegram-shadow-e2e-evidence
+          path: evidence/telegram/telegram_shadow_test_dispatch.jsonl
+          if-no-files-found: error
