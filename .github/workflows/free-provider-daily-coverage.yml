@@ -1,0 +1,98 @@
+name: Free Provider Daily Coverage
+
+on:
+  workflow_dispatch:
+    inputs:
+      target_date:
+        description: Bogota operational date YYYY-MM-DD
+        required: false
+        type: string
+  push:
+    branches:
+      - repair/cor09-world-pipeline
+    paths:
+      - tools/free_provider_daily_coverage.py
+      - .github/workflows/free-provider-daily-coverage.yml
+
+permissions:
+  contents: write
+
+concurrency:
+  group: free-provider-daily-coverage
+  cancel-in-progress: false
+
+jobs:
+  coverage:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: repair/cor09-world-pipeline
+          fetch-depth: 0
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - run: python -m pip install requests
+
+      - name: Resolve target date
+        id: date
+        shell: bash
+        run: |
+          set -euo pipefail
+          D="${{ inputs.target_date }}"
+          if [ -z "$D" ]; then
+            D="$(TZ=America/Bogota date +%F)"
+          fi
+          echo "target_date=$D" >> "$GITHUB_OUTPUT"
+
+      - name: Capture free-provider coverage
+        env:
+          FOOTBALL_DATA_ORG_KEY: ${{ secrets.FOOTBALL_DATA_ORG_TOKEN }}
+          LIVE_TENNIS_API_KEY: ${{ secrets.LIVETENNISAPI_KEY }}
+        run: python -m tools.free_provider_daily_coverage --date "${{ steps.date.outputs.target_date }}"
+
+      - name: Validate governance protections
+        shell: bash
+        run: |
+          set -euo pipefail
+          D="${{ steps.date.outputs.target_date }}"
+          P="evidence/free_providers/$D/MATRIX_FREE_PROVIDER_COVERAGE_SNAPSHOT.json"
+          python - "$P" <<'PY'
+          import json,sys
+          from pathlib import Path
+          j=json.loads(Path(sys.argv[1]).read_text())
+          assert j["status"]=="PASS"
+          assert j["providers"]["football_data_org"]["world_complete"] is False
+          assert j["providers"]["live_tennis_api"]["world_complete"] is False
+          assert j["promotion"]["automatic_model_feed"] is False
+          assert j["promotion"]["automatic_counter_increment"] is False
+          assert j["promotion"]["canonical_identity_and_physical_dedup_required"] is True
+          assert j["protections"]["secrets_persisted"] is False
+          assert j["protections"]["metrics_opened"] is False
+          assert j["protections"]["real_money"]=="BLOCKED"
+          print(json.dumps({
+            "football_matches":j["providers"]["football_data_org"]["accessible_matches_on_target_date"],
+            "tennis_d0_d2_hard":j["providers"]["live_tennis_api"]["d0_d2_hard_rows"],
+            "tennis_d0_hard":j["providers"]["live_tennis_api"]["d0_hard_rows"],
+            "status":j["status"]
+          },sort_keys=True))
+          PY
+
+      - name: Persist physical evidence
+        shell: bash
+        run: |
+          set -euo pipefail
+          D="${{ steps.date.outputs.target_date }}"
+          git config user.name "matrix-free-provider-coverage"
+          git config user.email "matrix-free-provider-coverage@users.noreply.github.com"
+          git add "evidence/free_providers/$D/MATRIX_FREE_PROVIDER_COVERAGE_SNAPSHOT.json"
+          if git diff --cached --quiet; then
+            echo "NO_COVERAGE_CHANGE"
+            exit 0
+          fi
+          git commit -m "evidence(providers): persist free provider daily coverage"
+          git pull --rebase origin repair/cor09-world-pipeline
+          git push origin HEAD:repair/cor09-world-pipeline
