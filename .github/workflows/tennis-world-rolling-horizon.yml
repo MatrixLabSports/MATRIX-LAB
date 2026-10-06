@@ -87,6 +87,31 @@ jobs:
           print("DAILY_MULTISOURCE_BROWSER_CROSSCHECK: PASS")
           PY
 
+      - name: Require daily unified source-count report
+        shell: bash
+        run: |
+          set -euo pipefail
+          TODAY="$(TZ=America/Bogota date +%F)"
+          REPORT="evidence/daily_source_counts/${TODAY}/MATRIX_WORLD_CALENDAR_SOURCE_COUNTS.json"
+          test -f "${REPORT}" || {
+            echo "DAILY_WORLD_CALENDAR_SOURCE_COUNTS_MISSING: ${REPORT}"
+            exit 1
+          }
+          python - "${REPORT}" <<'PY'
+          import json, sys
+          from pathlib import Path
+          p=Path(sys.argv[1])
+          j=json.loads(p.read_text(encoding="utf-8"))
+          assert j["target_date_bogota"] == p.parent.name
+          assert j["task_order"][0] == "CALENDAR_BASELINE_SOFASCORE_FLASHSCORE_FIRST"
+          assert j["task_order"][1] == "PAID_APIS_SECOND"
+          assert j["truth_rules"]["invented_counts_prohibited"] is True
+          assert j["truth_rules"]["no_single_source_world_truth"] is True
+          assert j["protections"]["metrics_opened"] is False
+          assert j["protections"]["real_money"] == "BLOCKED"
+          print("DAILY_WORLD_CALENDAR_SOURCE_COUNTS: PASS")
+          PY
+
       - name: Build and process D0 D1 D2 Bogotá horizon with both paid providers
         shell: bash
         env:
