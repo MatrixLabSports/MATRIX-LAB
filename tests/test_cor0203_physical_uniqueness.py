@@ -363,3 +363,248 @@ def test_uniqueness_audit_reconciles_r2_with_round_of_16_across_providers(tmp_pa
     assert report["outcomes_read"] == 0
     assert report["metrics_opened"] is False
 
+def test_uniqueness_audit_reconciles_first_round_with_round_of_32_after_schedule_drift(tmp_path):
+    runtime = tmp_path / "runtime"
+    holdout = tmp_path / "holdout"
+    runtime.mkdir()
+    holdout.mkdir()
+
+    rapid = {
+        "event_id": "RAPID-FIRST",
+        "canonical_source_event_id": "rapidapi-tennis:match:1686",
+        "competition_id": "rapidapi-tennis:tournament:22097",
+        "competition": "Wuning 3 Challenger",
+        "round": "R1",
+        "event_start_utc": "2026-10-06T06:00:00+00:00",
+        "source_provider": "rapidapi_tennis",
+        "player_identities": [
+            {"display_name": "Hikaru Shiraishi", "provider_player_id": "rapidapi-tennis:player:53207"},
+            {"display_name": "Ryan Seggerman", "provider_player_id": "rapidapi-tennis:player:56577"},
+        ],
+        "players": ["Hikaru Shiraishi", "Ryan Seggerman"],
+    }
+    api_tennis = {
+        "event_id": "API-R32",
+        "canonical_source_event_id": "api-tennis:event:12168338",
+        "competition_id": "api-tennis:tournament:14335",
+        "competition": "Wuning 3 (China) - Qualification",
+        "round": "WUNING 3 1/16 FINALS",
+        "event_start_utc": "2026-10-06T05:00:00+00:00",
+        "source_provider": "api_tennis",
+        "player_identities": [
+            {"display_name": "Hikaru Shiraishi", "provider_player_id": "api-tennis:player:10276"},
+            {"display_name": "Ryan Seggerman", "provider_player_id": "api-tennis:player:37911"},
+        ],
+        "players": ["Hikaru Shiraishi", "Ryan Seggerman"],
+    }
+    _write(runtime / "MATRIX_COR0203_PREFEATURE_REGISTRY_R1.json", {"events": [rapid, api_tennis]})
+    _write(
+        holdout / "MATRIX_COR0203_HOLDOUT_BATCH_R1.json",
+        {
+            "observations": [
+                {
+                    "event_id": "RAPID-FIRST",
+                    "canonical_source_event_id": "rapidapi-tennis:match:1686",
+                    "observation_index": 1,
+                    "freeze_at_utc": "2026-10-06T04:22:42+00:00",
+                    "event_start_utc": "2026-10-06T06:00:00+00:00",
+                    "competition": "Wuning 3 Challenger",
+                    "round": "First",
+                    "alphabetical_player_a": "Hikaru Shiraishi",
+                    "alphabetical_player_b": "Ryan Seggerman",
+                    "outcome": None,
+                },
+                {
+                    "event_id": "API-R32",
+                    "canonical_source_event_id": "api-tennis:event:12168338",
+                    "observation_index": 2,
+                    "freeze_at_utc": "2026-10-05T14:03:42+00:00",
+                    "event_start_utc": "2026-10-06T05:00:00+00:00",
+                    "competition": "Wuning 3 (China) - Qualification",
+                    "round": "Wuning 3 - 1/16-finals",
+                    "alphabetical_player_a": "Hikaru Shiraishi",
+                    "alphabetical_player_b": "Ryan Seggerman",
+                    "outcome": None,
+                },
+            ]
+        },
+    )
+
+    report = audit_physical_uniqueness(
+        runtime_dir=runtime,
+        holdout_dir=holdout,
+        integrity={
+            "holdout_id": "A22_POST_AUDIT_VIRGIN_HOLDOUT_V1",
+            "result": "PASS",
+            "admissible_batch_revisions": [1],
+            "admissible_observations": 2,
+        },
+    )
+    assert report["unique_calibration_observations"] == 1
+    assert report["duplicate_observations_quarantined"] == 1
+    assert report["quarantined_duplicates"][0]["quarantine_reason"] == (
+        "DUPLICATE_PHYSICAL_MATCH_CROSS_PROVIDER"
+    )
+
+
+def test_uniqueness_audit_reconciles_prefixed_final_label_across_providers(tmp_path):
+    runtime = tmp_path / "runtime"
+    holdout = tmp_path / "holdout"
+    runtime.mkdir()
+    holdout.mkdir()
+
+    rapid = {
+        "event_id": "RAPID-FINAL",
+        "canonical_source_event_id": "rapidapi-tennis:match:1348",
+        "competition_id": "rapidapi-tennis:tournament:22037",
+        "competition": "Porto Challenger",
+        "round": "Final",
+        "event_start_utc": "2026-10-04T10:00:00+00:00",
+        "source_provider": "rapidapi_tennis",
+        "player_identities": [
+            {"display_name": "Henrique Rocha", "provider_player_id": "rapidapi-tennis:player:1"},
+            {"display_name": "Inaki Montes-De La Torre", "provider_player_id": "rapidapi-tennis:player:2"},
+        ],
+        "players": ["Henrique Rocha", "Inaki Montes-De La Torre"],
+    }
+    api_tennis = {
+        "event_id": "API-FINAL",
+        "canonical_source_event_id": "api-tennis:event:12167961",
+        "competition_id": "api-tennis:tournament:999",
+        "competition": "Porto",
+        "round": "PORTO FINAL",
+        "event_start_utc": "2026-10-04T10:00:00+00:00",
+        "source_provider": "api_tennis",
+        "player_identities": [
+            {"display_name": "Henrique Rocha", "provider_player_id": "api-tennis:player:3"},
+            {"display_name": "Inaki Montes-De La Torre", "provider_player_id": "api-tennis:player:4"},
+        ],
+        "players": ["Henrique Rocha", "Inaki Montes-De La Torre"],
+    }
+    _write(runtime / "MATRIX_COR0203_PREFEATURE_REGISTRY_R1.json", {"events": [rapid, api_tennis]})
+    _write(
+        holdout / "MATRIX_COR0203_HOLDOUT_BATCH_R1.json",
+        {
+            "observations": [
+                {
+                    "event_id": "RAPID-FINAL",
+                    "canonical_source_event_id": "rapidapi-tennis:match:1348",
+                    "observation_index": 1,
+                    "freeze_at_utc": "2026-10-03T12:00:00+00:00",
+                    "event_start_utc": "2026-10-04T10:00:00+00:00",
+                    "competition": "Porto Challenger",
+                    "round": "Final",
+                    "alphabetical_player_a": "Henrique Rocha",
+                    "alphabetical_player_b": "Inaki Montes-De La Torre",
+                    "outcome": None,
+                },
+                {
+                    "event_id": "API-FINAL",
+                    "canonical_source_event_id": "api-tennis:event:12167961",
+                    "observation_index": 2,
+                    "freeze_at_utc": "2026-10-03T12:00:01+00:00",
+                    "event_start_utc": "2026-10-04T10:00:00+00:00",
+                    "competition": "Porto",
+                    "round": "Porto - Final",
+                    "alphabetical_player_a": "Henrique Rocha",
+                    "alphabetical_player_b": "Inaki Montes-De La Torre",
+                    "outcome": None,
+                },
+            ]
+        },
+    )
+
+    report = audit_physical_uniqueness(
+        runtime_dir=runtime,
+        holdout_dir=holdout,
+        integrity={
+            "holdout_id": "A22_POST_AUDIT_VIRGIN_HOLDOUT_V1",
+            "result": "PASS",
+            "admissible_batch_revisions": [1],
+            "admissible_observations": 2,
+        },
+    )
+    assert report["unique_calibration_observations"] == 1
+    assert report["duplicate_observations_quarantined"] == 1
+
+
+def test_uniqueness_audit_does_not_merge_cross_provider_rows_beyond_time_tolerance(tmp_path):
+    runtime = tmp_path / "runtime"
+    holdout = tmp_path / "holdout"
+    runtime.mkdir()
+    holdout.mkdir()
+
+    rapid = {
+        "event_id": "RAPID-LATE",
+        "canonical_source_event_id": "rapidapi-tennis:match:1",
+        "competition_id": "rapidapi-tennis:tournament:22097",
+        "competition": "Wuning 3 Challenger",
+        "round": "R1",
+        "event_start_utc": "2026-10-06T09:30:00+00:00",
+        "source_provider": "rapidapi_tennis",
+        "player_identities": [
+            {"display_name": "Alpha", "provider_player_id": "rapidapi-tennis:player:1"},
+            {"display_name": "Beta", "provider_player_id": "rapidapi-tennis:player:2"},
+        ],
+        "players": ["Alpha", "Beta"],
+    }
+    api_tennis = {
+        "event_id": "API-EARLY",
+        "canonical_source_event_id": "api-tennis:event:2",
+        "competition_id": "api-tennis:tournament:14335",
+        "competition": "Wuning 3 (China) - Qualification",
+        "round": "WUNING 3 1/16 FINALS",
+        "event_start_utc": "2026-10-06T06:00:00+00:00",
+        "source_provider": "api_tennis",
+        "player_identities": [
+            {"display_name": "Alpha", "provider_player_id": "api-tennis:player:3"},
+            {"display_name": "Beta", "provider_player_id": "api-tennis:player:4"},
+        ],
+        "players": ["Alpha", "Beta"],
+    }
+    _write(runtime / "MATRIX_COR0203_PREFEATURE_REGISTRY_R1.json", {"events": [rapid, api_tennis]})
+    _write(
+        holdout / "MATRIX_COR0203_HOLDOUT_BATCH_R1.json",
+        {
+            "observations": [
+                {
+                    "event_id": "RAPID-LATE",
+                    "canonical_source_event_id": "rapidapi-tennis:match:1",
+                    "observation_index": 1,
+                    "freeze_at_utc": "2026-10-05T00:00:00+00:00",
+                    "event_start_utc": "2026-10-06T09:30:00+00:00",
+                    "competition": "Wuning 3 Challenger",
+                    "round": "First",
+                    "alphabetical_player_a": "Alpha",
+                    "alphabetical_player_b": "Beta",
+                    "outcome": None,
+                },
+                {
+                    "event_id": "API-EARLY",
+                    "canonical_source_event_id": "api-tennis:event:2",
+                    "observation_index": 2,
+                    "freeze_at_utc": "2026-10-05T00:00:01+00:00",
+                    "event_start_utc": "2026-10-06T06:00:00+00:00",
+                    "competition": "Wuning 3 (China) - Qualification",
+                    "round": "Wuning 3 - 1/16-finals",
+                    "alphabetical_player_a": "Alpha",
+                    "alphabetical_player_b": "Beta",
+                    "outcome": None,
+                },
+            ]
+        },
+    )
+
+    report = audit_physical_uniqueness(
+        runtime_dir=runtime,
+        holdout_dir=holdout,
+        integrity={
+            "holdout_id": "A22_POST_AUDIT_VIRGIN_HOLDOUT_V1",
+            "result": "PASS",
+            "admissible_batch_revisions": [1],
+            "admissible_observations": 2,
+        },
+    )
+    assert report["unique_calibration_observations"] == 2
+    assert report["duplicate_observations_quarantined"] == 0
+
