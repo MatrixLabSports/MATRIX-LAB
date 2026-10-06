@@ -166,5 +166,24 @@
     "browser_role": "Worldwide discovery, omission detection, calendar/identity validation and auxiliary PIT features.",
     "fail_closed_if_browser_crosscheck_missing": true,
     "no_single_source_world_truth": true
+  },
+  "calendar_first_operating_order": {
+    "required": true,
+    "applies_to": [
+      "tennis",
+      "football"
+    ],
+    "order": [
+      "1_SOFASCORE_AND_FLASHSCORE_WORLD_CALENDAR_BASELINE",
+      "2_PAID_APIS_STRUCTURED_ACQUISITION_AND_ENRICHMENT",
+      "3_SOURCE_BY_SOURCE_COUNT_REPORT_AND_COVERAGE_GAP_ANALYSIS",
+      "4_CANONICAL_IDENTITY_RECONCILIATION_AND_PHYSICAL_DEDUP",
+      "5_GOVERNED_CANDIDATE_ADMISSION_FREEZE_AND_SETTLEMENT"
+    ],
+    "daily_count_report_required": true,
+    "daily_count_report_path_template": "evidence/daily_source_counts/YYYY-MM-DD/MATRIX_WORLD_CALENDAR_SOURCE_COUNTS.json",
+    "exact_count_rule": "A numeric total may be labeled exact only when physically observed or machine-verified from that source. User-visible reports and lazy/partial accessibility enumerations must retain their provenance and may not be silently promoted to exact world totals.",
+    "invented_counts_prohibited": true,
+    "api_must_not_run_as_world_truth_before_browser_baseline": true
   }
 }
