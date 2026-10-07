@@ -353,3 +353,85 @@ def test_rapidapi_channel_qualified_atp_event_preserves_canonical_source(tmp_pat
         "rapidapi-tennis:atp:match:9001"
     )
     assert event["event_id"].startswith("COR0203-RAPIDAPI-TENNIS-9001-")
+
+
+def test_preregister_blocks_canonical_physical_key_from_uniqueness_audit(tmp_path):
+    discovery = {
+        "provider": "rapidapi_tennis",
+        "status": "DISCOVERY_COMPLETED",
+        "eligible_candidates": [
+            {
+                "event_id": "rapidapi-tennis:atp:match:1366",
+                "canonical_source_event_id": "rapidapi-tennis:atp:match:1366",
+                "competition_id": "rapidapi-tennis:tournament:22093",
+                "competition": "Villena Challenger",
+                "round": "Second",
+                "surface": "Hard",
+                "tour_level": "C",
+                "event_start_utc": "2026-10-08T09:00:00+00:00",
+                "target_period": 20260921,
+                "source_reference": "fixtures+ranking+tournament",
+                "source_snapshot_sha256": "e" * 64,
+                "physical_event_key": "a" * 64,
+                "players": [
+                    {
+                        "name": "Moez Echargui",
+                        "provider_player_id": "rapidapi-tennis:player:36114",
+                        "provider_ranking": {"place": "378", "points": "134"},
+                    },
+                    {
+                        "name": "Daniil Glinka",
+                        "provider_player_id": "rapidapi-tennis:player:48825",
+                        "provider_ranking": {"place": "173", "points": "333"},
+                    },
+                ],
+            }
+        ],
+    }
+    cor = tmp_path / "cor0203"
+    runtime = cor / "runtime"
+    holdout = cor / "holdout"
+    runtime.mkdir(parents=True)
+    holdout.mkdir(parents=True)
+
+    # Historical append-only batch has an older provider-derived key.
+    _write(
+        holdout / "MATRIX_COR0203_HOLDOUT_BATCH_R843.json",
+        {
+            "ending_observation_count": 212,
+            "observations": [
+                {
+                    "event_id": "COR0203-RAPIDAPI-TENNIS-1346-old",
+                    "canonical_source_event_id": "rapidapi-tennis:match:1346",
+                    "physical_event_key": "b" * 64,
+                }
+            ],
+        },
+    )
+    # The uniqueness audit has already canonicalized the same physical match.
+    _write(
+        runtime / "MATRIX_COR0203_PHYSICAL_UNIQUENESS_LAST.json",
+        {
+            "canonical_observations": [
+                {
+                    "event_id": "COR0203-RAPIDAPI-TENNIS-1346-old",
+                    "canonical_source_event_id": "rapidapi-tennis:match:1346",
+                    "physical_event_key": "a" * 64,
+                }
+            ],
+            "quarantined_duplicates": [],
+        },
+    )
+
+    result = preregister_discovery(
+        discovery=discovery,
+        cor_root=cor,
+        runtime_dir=runtime,
+        holdout_dir=holdout,
+    )
+
+    assert result["status"] == "NO_NEW_EVENTS"
+    assert result["events_registered"] == 0
+    assert "ALREADY_PREREGISTERED_OR_FROZEN_PHYSICAL_EVENT" in (
+        result["skipped"][0]["blockers"]
+    )
