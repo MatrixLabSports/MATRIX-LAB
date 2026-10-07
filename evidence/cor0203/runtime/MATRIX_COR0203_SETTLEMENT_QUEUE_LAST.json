@@ -1,6 +1,6 @@
 {
-  "admissible_observations": 217,
-  "duplicate_physical_matches_quarantined": 99,
+  "admissible_observations": 219,
+  "duplicate_physical_matches_quarantined": 101,
   "holdout_id": "A22_POST_AUDIT_VIRGIN_HOLDOUT_V1",
   "identity_mapping_required": 1,
   "items": [
@@ -3976,7 +3976,7 @@
       "provider_tournament_id": "22097",
       "revision": 827,
       "source_reference": "fixtures:matchId=1684;tournament_info=22097;ranking_cut=2026-09-21 | fixtures:matchId=1684;tournament_info=22097;ranking_cut=2026-09-21",
-      "status": "READY_RESULT_LOOKUP"
+      "status": "SETTLED"
     },
     {
       "alphabetical_player_a": "Akira Santillan",
@@ -4394,7 +4394,7 @@
       "provider_tournament_id": "22097",
       "revision": 832,
       "source_reference": "fixtures:matchId=1652;tournament_info=22097;ranking_cut=2026-09-21 | fixtures:matchId=1652;tournament_info=22097;ranking_cut=2026-09-21",
-      "status": "READY_RESULT_LOOKUP"
+      "status": "SETTLED"
     },
     {
       "alphabetical_player_a": "Fajing Sun",
@@ -4747,18 +4747,62 @@
       "revision": 848,
       "source_reference": "fixtures:matchId=1357;tournament_info=22093;ranking_cut=2026-09-21 | fixtures:matchId=1357;tournament_info=22093;ranking_cut=2026-09-21",
       "status": "READY_RESULT_LOOKUP"
+    },
+    {
+      "alphabetical_player_a": "Pablo Llamas Ruiz",
+      "alphabetical_player_b": "Petr Nesterov",
+      "blocker": "DUPLICATE_PHYSICAL_MATCH",
+      "canonical_source_event_id": "rapidapi-tennis:match:1357",
+      "competition": "Villena Challenger",
+      "event_id": "COR0203-RAPIDAPI-TENNIS-1357-1a41496000b9",
+      "event_start_utc": "2026-10-08T09:00:00+00:00",
+      "identity_overlay_applied": false,
+      "observation_index": 218,
+      "observation_sha256": "910bbdbe99528f23ad1f72a312999f1229e7f601dd1934ac4a27490a9cf62e1d",
+      "provider": "rapidapi_tennis",
+      "provider_match_key": "1357",
+      "provider_player_map": {
+        "rapidapi-tennis:player:64896": "Pablo Llamas Ruiz",
+        "rapidapi-tennis:player:81784": "Petr Nesterov"
+      },
+      "provider_tournament_id": "22093",
+      "revision": 850,
+      "source_reference": "fixtures:matchId=1357;tournament_info=22093;ranking_cut=2026-09-21 | fixtures:matchId=1357;tournament_info=22093;ranking_cut=2026-09-21",
+      "status": "DUPLICATE_PHYSICAL_MATCH_QUARANTINED"
+    },
+    {
+      "alphabetical_player_a": "Hynek Barton",
+      "alphabetical_player_b": "Toby Samuel",
+      "blocker": "DUPLICATE_PHYSICAL_MATCH",
+      "canonical_source_event_id": "rapidapi-tennis:atp:match:1374",
+      "competition": "Villena Challenger",
+      "event_id": "COR0203-RAPIDAPI-TENNIS-1374-06dd096f6c17",
+      "event_start_utc": "2026-10-07T09:00:00+00:00",
+      "identity_overlay_applied": false,
+      "observation_index": 219,
+      "observation_sha256": "0c7f47b866771686db15dbd9cf9adddd52cb786e0136ff31535cfb1cd4ebbbb4",
+      "provider": "rapidapi_tennis",
+      "provider_match_key": "1374",
+      "provider_player_map": {
+        "rapidapi-tennis:player:79068": "Toby Samuel",
+        "rapidapi-tennis:player:86156": "Hynek Barton"
+      },
+      "provider_tournament_id": "22093",
+      "revision": 851,
+      "source_reference": "fixtures:matchId=1374;tournament_info=22093;ranking_cut=2026-09-21;provider_channel=ATP | fixtures:matchId=1374;tournament_info=22093;ranking_cut=2026-09-21;provider_channel=ATP",
+      "status": "DUPLICATE_PHYSICAL_MATCH_QUARANTINED"
     }
   ],
   "ledger": {
     "hash_chain_verified": true,
     "outcomes_used_for_metrics": 0,
-    "records": 147,
-    "unique_events": 147
+    "records": 149,
+    "unique_events": 149
   },
   "metrics": "SEALED_UNTIL_600",
   "outcomes_used_for_metrics": 0,
-  "ready_result_lookup": 23,
+  "ready_result_lookup": 21,
   "real_money": "BLOCKED",
   "schema": "MATRIX_COR0203_SETTLEMENT_QUEUE_V1",
-  "settled": 94
+  "settled": 96
 }
