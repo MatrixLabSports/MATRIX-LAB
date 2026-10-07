@@ -3,6 +3,7 @@ from __future__ import annotations
 import hashlib
 import json
 import os
+import time
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Mapping
@@ -21,6 +22,8 @@ from tools.api_football_group_history_capture import (
 
 MAX_REQUESTS = 120
 MIN_DAILY_REMAINING_RESERVE = 1500
+RATE_LIMIT_MAX_RETRIES = 1
+RATE_LIMIT_BACKOFF_SECONDS = 65.0
 
 
 def _load(path: Path) -> dict[str, Any]:
@@ -99,6 +102,9 @@ def run_capture(
     max_requests: int = MAX_REQUESTS,
     min_daily_remaining_reserve: int = MIN_DAILY_REMAINING_RESERVE,
     now_fn: Any | None = None,
+    sleep_fn: Any | None = None,
+    max_rate_limit_retries: int = RATE_LIMIT_MAX_RETRIES,
+    rate_limit_backoff_seconds: float = RATE_LIMIT_BACKOFF_SECONDS,
 ) -> dict[str, Any]:
     key = str(api_key or "").strip()
     if not key:
@@ -108,6 +114,10 @@ def run_capture(
         raise ValueError("MAX_REQUESTS_OUT_OF_POLICY")
     if min_daily_remaining_reserve < 0:
         raise ValueError("MIN_DAILY_REMAINING_RESERVE_INVALID")
+    if max_rate_limit_retries < 0 or max_rate_limit_retries > 3:
+        raise ValueError("MAX_RATE_LIMIT_RETRIES_OUT_OF_POLICY")
+    if rate_limit_backoff_seconds < 0 or rate_limit_backoff_seconds > 120:
+        raise ValueError("RATE_LIMIT_BACKOFF_SECONDS_OUT_OF_POLICY")
 
     fixtures = benchmark.get("fixtures")
     histories = benchmark.get("histories")
@@ -184,10 +194,12 @@ def run_capture(
     raw_dir.mkdir(parents=True, exist_ok=True)
     client = session or requests.Session()
     now = now_fn or (lambda: datetime.now(timezone.utc).replace(microsecond=0))
+    sleeper = sleep_fn or time.sleep
 
     team_history: dict[str, list[dict[str, Any]]] = {}
     team_observed: dict[str, str] = {}
     captures: list[dict[str, Any]] = []
+    rate_limit_events: list[dict[str, Any]] = []
     total_calls = 0
     stopped_reason: str | None = None
     last_rate = {
@@ -210,27 +222,94 @@ def run_capture(
                 stopped_reason = "DAILY_RESERVE_REACHED"
                 break
 
-        started = now()
-        response = client.get(
-            BASE_URL + ENDPOINT,
-            headers={"x-apisports-key": key},
-            params={"team": team_id, "last": 20, "timezone": "UTC"},
-            timeout=TIMEOUT_SECONDS,
-        )
-        observed = now()
-        total_calls += 1
-        body = bytes(response.content)
-        raw_path = raw_dir / f"team_{team_id}_last_20.bin"
-        raw_path.write_bytes(body)
-        sha = hashlib.sha256(body).hexdigest()
+        retry_count = 0
+        while True:
+            started = now()
+            response = client.get(
+                BASE_URL + ENDPOINT,
+                headers={"x-apisports-key": key},
+                params={"team": team_id, "last": 20, "timezone": "UTC"},
+                timeout=TIMEOUT_SECONDS,
+            )
+            observed = now()
+            total_calls += 1
+            body = bytes(response.content)
+            raw_suffix = "" if retry_count == 0 else f"_retry_{retry_count}"
+            raw_path = raw_dir / f"team_{team_id}_last_20{raw_suffix}.bin"
+            raw_path.write_bytes(body)
+            sha = hashlib.sha256(body).hexdigest()
 
-        public_headers = {
-            name.lower(): value
-            for name, value in response.headers.items()
-            if name.lower() in PUBLIC_HEADER_ALLOWLIST
-        }
-        last_rate = _read_rate(public_headers)
-        if not (200 <= int(response.status_code) < 300):
+            public_headers = {
+                name.lower(): value
+                for name, value in response.headers.items()
+                if name.lower() in PUBLIC_HEADER_ALLOWLIST
+            }
+            last_rate = _read_rate(public_headers)
+            status_code = int(response.status_code)
+            if status_code != 429:
+                break
+
+            rate_limit_events.append({
+                "provider_team_id": team_id,
+                "team_name": team_name,
+                "attempt": retry_count + 1,
+                "request_started_at_utc": started.isoformat(),
+                "response_observed_at_utc": observed.isoformat(),
+                "http_status": status_code,
+                "raw_path": str(raw_path),
+                "raw_sha256": sha,
+                "response_bytes": len(body),
+                "rate_limit": last_rate,
+            })
+
+            daily_remaining = None
+            if last_rate["daily_remaining"] is not None:
+                try:
+                    daily_remaining = int(last_rate["daily_remaining"])
+                except ValueError:
+                    daily_remaining = None
+            if daily_remaining is not None and daily_remaining <= min_daily_remaining_reserve:
+                stopped_reason = "DAILY_RESERVE_REACHED"
+                break
+            if retry_count >= max_rate_limit_retries or total_calls >= max_requests:
+                stopped_reason = "RATE_LIMIT_RETRY_EXHAUSTED"
+                break
+
+            retry_after_raw = (
+                response.headers.get("retry-after")
+                or response.headers.get("Retry-After")
+            )
+            try:
+                wait_seconds = float(retry_after_raw)
+            except (TypeError, ValueError):
+                wait_seconds = rate_limit_backoff_seconds
+            wait_seconds = max(0.0, min(wait_seconds, 120.0))
+            sleeper(wait_seconds)
+            retry_count += 1
+
+        if status_code == 429:
+            team_history[team_id] = []
+            team_observed[team_id] = observed.isoformat()
+            captures.append({
+                "provider_team_id": team_id,
+                "team_name": team_name,
+                "request_started_at_utc": started.isoformat(),
+                "response_observed_at_utc": observed.isoformat(),
+                "http_status": status_code,
+                "raw_path": str(raw_path),
+                "raw_sha256": sha,
+                "response_bytes": len(body),
+                "provider_rows": 0,
+                "final_history_rows": 0,
+                "provider_error": True,
+                "provider_errors": {"rate_limit": "HTTP_429"},
+                "rate_limit": last_rate,
+                "retry_count": retry_count,
+                "status": "RATE_LIMIT_BLOCKED",
+            })
+            break
+
+        if not (200 <= status_code < 300):
             raise ValueError(f"API_FOOTBALL_TEAM_LAST_HTTP_STATUS_{response.status_code}:{team_id}")
 
         parsed = response.json()
@@ -365,6 +444,8 @@ def run_capture(
         "daily_remaining_reserve_policy": min_daily_remaining_reserve,
         "stopped_reason": stopped_reason,
         "provider_error_team_count": sum(1 for row in captures if row["provider_error"]),
+        "rate_limit_event_count": len(rate_limit_events),
+        "rate_limit_events": rate_limit_events,
         "target_fixture_count": len(fixtures),
         "ready_minimum_history_count": len(ready_targets),
         "blocked_minimum_history_count": len(blocked_targets),
