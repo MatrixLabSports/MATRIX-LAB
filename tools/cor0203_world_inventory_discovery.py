@@ -259,14 +259,109 @@ def derive_world_cor_discovery(
         as_of_utc=as_of.isoformat(),
     )
 
-    # Preserve the channel-qualified world identity all the way into the
-    # governed lane. RapidAPI can reuse the same numeric matchId across ATP
-    # and WTA/ITF transports, so the numeric id alone is not globally unique.
-    world_by_match_id = {
-        str(row.get("match_id") or ""): row
-        for row in world_rows
-        if row.get("match_id")
-    }
+    # Preserve the physical world identity all the way into the governed
+    # lane. A numeric RapidAPI matchId is NOT treated as globally unique:
+    # provider snapshots can recycle/rebind the same numeric id to different
+    # physical matches during the same operational day.
+    world_by_match_id: dict[str, list[Mapping[str, Any]]] = {}
+    source_id_counts: dict[str, int] = {}
+    for row in world_rows:
+        match_id = str(row.get("match_id") or "")
+        if match_id:
+            world_by_match_id.setdefault(match_id, []).append(row)
+        source_id = str(row.get("source_event_id") or "")
+        if source_id:
+            source_id_counts[source_id] = source_id_counts.get(source_id, 0) + 1
+
+    def _world_player_ids(row: Mapping[str, Any]) -> list[str]:
+        out = []
+        for key in ("player1", "player2"):
+            player = row.get(key)
+            if isinstance(player, Mapping):
+                token = str(player.get("id") or "").strip()
+                if token:
+                    out.append(token)
+        return sorted(out)
+
+    def _candidate_player_ids(candidate: Mapping[str, Any]) -> list[str]:
+        out = []
+        for player in candidate.get("player_identities", []) or []:
+            if not isinstance(player, Mapping):
+                continue
+            token = str(player.get("provider_player_id") or "").strip()
+            if token:
+                out.append(token.rsplit(":", 1)[-1])
+        return sorted(out)
+
+    def _rejected_player_ids(rejected: Mapping[str, Any]) -> list[str]:
+        out = []
+        for player in rejected.get("players", []) or []:
+            if not isinstance(player, Mapping):
+                continue
+            token = str(player.get("provider_player_id") or "").strip()
+            if token:
+                out.append(token.rsplit(":", 1)[-1])
+        return sorted(out)
+
+    def _competition_tournament_id(candidate: Mapping[str, Any]) -> str:
+        token = str(candidate.get("competition_id") or "")
+        return token.rsplit(":", 1)[-1] if token else ""
+
+    def _select_world_row_for_candidate(
+        candidate: Mapping[str, Any],
+        match_id: str,
+    ) -> Mapping[str, Any] | None:
+        options = world_by_match_id.get(match_id, [])
+        if len(options) == 1:
+            return options[0]
+        tournament_id = _competition_tournament_id(candidate)
+        player_ids = _candidate_player_ids(candidate)
+        start = str(candidate.get("event_start_utc") or "")
+        exact = [
+            row for row in options
+            if str(row.get("tournament_id") or "") == tournament_id
+            and _world_player_ids(row) == player_ids
+            and str(row.get("event_start_utc") or "") == start
+        ]
+        return exact[0] if len(exact) == 1 else None
+
+    def _select_world_row_for_rejected(
+        rejected: Mapping[str, Any],
+        match_id: str,
+    ) -> Mapping[str, Any] | None:
+        options = world_by_match_id.get(match_id, [])
+        if len(options) == 1:
+            return options[0]
+        tournament_id = str(rejected.get("tournament_id") or "")
+        player_ids = _rejected_player_ids(rejected)
+        exact = [
+            row for row in options
+            if str(row.get("tournament_id") or "") == tournament_id
+            and _world_player_ids(row) == player_ids
+        ]
+        return exact[0] if len(exact) == 1 else None
+
+    def _collision_safe_world_id(row: Mapping[str, Any]) -> tuple[str, str]:
+        provider_source_id = str(row.get("source_event_id") or "")
+        if provider_source_id and source_id_counts.get(provider_source_id, 0) == 1:
+            return provider_source_id, provider_source_id
+        stable = str(
+            row.get("stable_physical_identity_key")
+            or row.get("physical_event_key")
+            or ""
+        )
+        if not stable:
+            stable = _sha({
+                "provider_channel": row.get("provider_channel"),
+                "tournament_id": row.get("tournament_id"),
+                "round": row.get("round"),
+                "players": _world_player_ids(row),
+                "event_start_utc": row.get("event_start_utc"),
+            })
+        return "rapidapi-tennis:physical:" + stable, provider_source_id
+
+    rebound_candidates = []
+    identity_binding_rejections = []
     for candidate in result.get("eligible_candidates", []) or []:
         legacy_event_id = str(
             candidate.get("canonical_source_event_id")
@@ -274,13 +369,19 @@ def derive_world_cor_discovery(
             or ""
         )
         match_id = legacy_event_id.rsplit(":", 1)[-1]
-        world_row = world_by_match_id.get(match_id)
+        world_row = _select_world_row_for_candidate(candidate, match_id)
         if not isinstance(world_row, Mapping):
+            identity_binding_rejections.append({
+                "match_id": match_id,
+                "tournament_id": _competition_tournament_id(candidate),
+                "blockers": ["WORLD_IDENTITY_BINDING_AMBIGUOUS_OR_MISSING"],
+                "legacy_provider_event_id": legacy_event_id,
+                "players": candidate.get("player_identities") or [],
+            })
             continue
-        world_source_id = str(world_row.get("source_event_id") or "")
-        if not world_source_id:
-            continue
+        world_source_id, provider_source_id = _collision_safe_world_id(world_row)
         candidate["legacy_provider_event_id"] = legacy_event_id
+        candidate["provider_source_event_id"] = provider_source_id
         candidate["event_id"] = world_source_id
         candidate["canonical_source_event_id"] = world_source_id
         candidate["provider_channel"] = str(
@@ -289,22 +390,51 @@ def derive_world_cor_discovery(
         candidate["world_source_snapshot_sha256"] = str(
             world_row.get("source_snapshot_sha256") or ""
         )
+        candidate["world_stable_physical_identity_key"] = str(
+            world_row.get("stable_physical_identity_key")
+            or world_row.get("physical_event_key")
+            or ""
+        )
+        candidate["source_id_collision_resolved"] = (
+            bool(provider_source_id)
+            and source_id_counts.get(provider_source_id, 0) > 1
+        )
         candidate["source_reference"] = (
             str(candidate.get("source_reference") or "")
             + ";provider_channel="
             + candidate["provider_channel"]
         )
+        rebound_candidates.append(candidate)
+
+    result["eligible_candidates"] = rebound_candidates
+    result["eligible_input_events"] = len(rebound_candidates)
+    result.setdefault("provider_rejected", []).extend(identity_binding_rejections)
 
     for rejected_row in result.get("provider_rejected", []) or []:
+        if "WORLD_IDENTITY_BINDING_AMBIGUOUS_OR_MISSING" in (
+            rejected_row.get("blockers") or []
+        ):
+            continue
         match_id = str(rejected_row.get("match_id") or "")
-        world_row = world_by_match_id.get(match_id)
+        world_row = _select_world_row_for_rejected(rejected_row, match_id)
         if isinstance(world_row, Mapping):
-            rejected_row["world_source_event_id"] = str(
-                world_row.get("source_event_id") or ""
-            )
+            world_source_id, provider_source_id = _collision_safe_world_id(world_row)
+            rejected_row["world_source_event_id"] = world_source_id
+            rejected_row["provider_source_event_id"] = provider_source_id
             rejected_row["provider_channel"] = str(
                 world_row.get("provider_channel") or "ATP"
             )
+            rejected_row["source_id_collision_resolved"] = (
+                bool(provider_source_id)
+                and source_id_counts.get(provider_source_id, 0) > 1
+            )
+
+    result["world_source_event_id_collision_count"] = sum(
+        1 for count in source_id_counts.values() if count > 1
+    )
+    result["world_identity_binding_rejection_count"] = len(
+        identity_binding_rejections
+    )
     result["schema"] = "MATRIX_COR0203_WORLD_DERIVED_DISCOVERY_V1"
     result["status"] = (
         "PROVIDER_ENRICHMENT_BLOCKED"
