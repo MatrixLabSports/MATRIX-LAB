@@ -240,3 +240,49 @@ def test_world_derived_identity_is_not_ambiguous_when_wta_reuses_numeric_match_i
         not row["event_id"].startswith("rapidapi-tennis:wta:")
         for row in result["eligible_candidates"]
     )
+
+
+def test_world_derived_discovery_resolves_same_atp_match_id_by_physical_identity():
+    world = _world()
+    first = _world_event(
+        7777,
+        tournament_id=500,
+        start="2026-10-02T18:00:00+00:00",
+        p1=101,
+        p2=102,
+    )
+    second = _world_event(
+        7777,
+        tournament_id=500,
+        start="2026-10-02T20:00:00+00:00",
+        p1=103,
+        p2=104,
+    )
+    first["stable_physical_identity_key"] = "a" * 64
+    second["stable_physical_identity_key"] = "b" * 64
+    world["events"].extend([first, second])
+    world["world_calendar_inventory_count"] += 2
+
+    result = derive_world_cor_discovery(
+        world_inventory=world,
+        client=FakeClient(),
+        as_of_utc="2026-10-02T07:00:00+00:00",
+    )
+
+    collision_rows = [
+        row for row in result["eligible_candidates"]
+        if str(row.get("provider_source_event_id") or "").endswith(":7777")
+    ]
+    assert len(collision_rows) == 2
+    assert len({row["event_id"] for row in collision_rows}) == 2
+    assert all(
+        row["event_id"].startswith("rapidapi-tennis:physical:")
+        for row in collision_rows
+    )
+    assert {row["world_stable_physical_identity_key"] for row in collision_rows} == {
+        "a" * 64,
+        "b" * 64,
+    }
+    assert all(row["source_id_collision_resolved"] is True for row in collision_rows)
+    assert result["world_source_event_id_collision_count"] >= 1
+    assert result["world_identity_binding_rejection_count"] == 0
