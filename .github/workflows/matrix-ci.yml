@@ -1,0 +1,50 @@
+name: MATRIX CI
+
+on:
+  workflow_dispatch:
+    inputs:
+      expected_sha:
+        description: "Exact operational commit SHA to validate"
+        required: false
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  quality-gate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.expected_sha || github.sha }}
+
+      - name: Verify requested SHA
+        if: ${{ inputs.expected_sha != '' }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          ACTUAL_SHA="$(git rev-parse HEAD)"
+          test "$ACTUAL_SHA" = "${{ inputs.expected_sha }}"
+          echo "MATRIX_CI_EXACT_SHA: PASS $ACTUAL_SHA"
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install project test dependencies
+        shell: bash
+        run: |
+          python -m pip install --upgrade pip
+          if [ -f requirements.txt ]; then
+            python -m pip install -r requirements.txt
+          fi
+          python -m pip install pytest
+          python -m pip install -r infra/aws/r8_3r6/authority_service/requirements.txt
+
+      - name: Run MATRIX canonical quality gate
+        run: python scripts/matrix_ci_gate.py
