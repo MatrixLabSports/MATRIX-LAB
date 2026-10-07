@@ -126,6 +126,10 @@ def test_recovery_reuses_only_certified_r706_ready_authority():
         "API_TENNIS_TO_CERTIFIED_R706_RAPIDAPI_AUTHORITY_PROFILE_EXACT_CUT"
     )
     assert row["sealed_r706_history"]["fully_history_ready"] is True
+    assert row["pre_cut_history"]["rows"]==13
+    assert row["pre_cut_history"]["canonical_source_ids"]==[
+        "rapidapi-tennis:player:94367"
+    ]
     assert aliases["post_cut_competitive_data_used"] is False
     assert any(
         x["provider_player_id"]=="api-tennis:player:52054"
