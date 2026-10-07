@@ -70,6 +70,7 @@ DUAL_RECONCILIATION_LAST="evidence/cor0203/runtime/MATRIX_COR0203_DUAL_PROVIDER_
 DUAL_IDENTITY_ALIASES_LAST="evidence/cor0203/identity/MATRIX_COR0203_DUAL_PROVIDER_IDENTITY_ALIASES_LAST.json"
 API_TENNIS_RANK_BRIDGE_LAST="evidence/cor0203/runtime/MATRIX_COR0203_API_TENNIS_RAPIDAPI_CUT_IDENTITY_BRIDGE_LAST.json"
 API_TENNIS_RANK_HISTORY_RECOVERY_LAST="evidence/cor0203/runtime/MATRIX_COR0203_API_TENNIS_RANK_HISTORY_RECOVERY_LAST.json"
+API_TENNIS_CERTIFIED_AUTHORITY_RECOVERY_LAST="evidence/cor0203/runtime/MATRIX_COR0203_API_TENNIS_CERTIFIED_AUTHORITY_RECOVERY_LAST.json"
 API_TENNIS_RANK_BRIDGE_ALIASES="evidence/cor0203/identity/MATRIX_COR0203_API_TENNIS_RANK_BRIDGE_ALIASES_LAST.json"
 API_TENNIS_RANK_BRIDGE_AUTHORITY="/tmp/MATRIX_COR0203_IDENTITY_AUTHORITY_AFTER_API_TENNIS_BRIDGE.json"
 RAPIDAPI_PREREG_CURRENT="/tmp/MATRIX_COR0203_RAPIDAPI_PREREG_CURRENT.json"
@@ -155,8 +156,6 @@ case "$TENNIS_PROVIDER" in
       --authority-out "$API_TENNIS_RANK_BRIDGE_AUTHORITY" \
       --audit-out "$API_TENNIS_RANK_BRIDGE_LAST" \
       --max-profiles 24
-    cp "$API_TENNIS_RANK_BRIDGE_AUTHORITY" "$IDENTITY_AUTHORITY_LAST"
-
     python -m tools.cor0203_api_tennis_rank_history_recovery \
       --bridge-audit "$API_TENNIS_RANK_BRIDGE_LAST" \
       --aliases "$API_TENNIS_RANK_BRIDGE_ALIASES" \
@@ -166,6 +165,19 @@ case "$TENNIS_PROVIDER" in
       --authority-out "$API_TENNIS_RANK_BRIDGE_AUTHORITY" \
       --audit-out "$API_TENNIS_RANK_HISTORY_RECOVERY_LAST" \
       --max-recoveries 32
+
+    python -m tools.cor0203_api_tennis_certified_authority_recovery \
+      --discovery "$API_TENNIS_DISCOVERY_CURRENT" \
+      --authority "$API_TENNIS_RANK_BRIDGE_AUTHORITY" \
+      --aliases "$API_TENNIS_RANK_BRIDGE_ALIASES" \
+      --authority-out "$API_TENNIS_RANK_BRIDGE_AUTHORITY" \
+      --aliases-out "$API_TENNIS_RANK_BRIDGE_ALIASES" \
+      --audit-out "$API_TENNIS_CERTIFIED_AUTHORITY_RECOVERY_LAST"
+
+    # Every recovery must be visible to dual reconciliation. The previous
+    # ordering copied authority before rank-history recovery, which could
+    # leave certified aliases invisible to the current cycle.
+    cp "$API_TENNIS_RANK_BRIDGE_AUTHORITY" "$IDENTITY_AUTHORITY_LAST"
 
     python -m tools.cor0203_dual_provider_reconcile \
       --rapidapi "$DISCOVERY" \
@@ -543,6 +555,9 @@ if [[ -f "$API_TENNIS_RANK_BRIDGE_LAST" ]]; then
 fi
 if [[ -f "$API_TENNIS_RANK_HISTORY_RECOVERY_LAST" ]]; then
   git add "$API_TENNIS_RANK_HISTORY_RECOVERY_LAST"
+fi
+if [[ -f "$API_TENNIS_CERTIFIED_AUTHORITY_RECOVERY_LAST" ]]; then
+  git add "$API_TENNIS_CERTIFIED_AUTHORITY_RECOVERY_LAST"
 fi
 if [[ -f "$R706_TARGET_HISTORY_LAST" ]]; then
   git add "$R706_TARGET_HISTORY_LAST"
