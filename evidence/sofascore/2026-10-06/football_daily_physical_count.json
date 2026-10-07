@@ -1,196 +1,26 @@
 {
-  "schema": "MATRIX_SOFASCORE_FOOTBALL_DAILY_PHYSICAL_COUNT_V1",
+  "schema": "MATRIX_SOFASCORE_FOOTBALL_DAILY_PHYSICAL_COUNT_V2",
   "operational_date_bogota": "2026-10-06",
   "timezone": "America/Bogota",
-  "source": "SofaScore browser UI via Opera Browser Connector accessibility tree",
   "source_url": "https://www.sofascore.com/es/football/2026-10-06",
-  "method": {
-    "calendar_surface": "left competition column",
-    "individual_match_links_rendered_unique": 60,
-    "individual_match_links_role": "VIRTUALIZED_RENDER_SAMPLE_NOT_TOTAL",
-    "authoritative_count_method": "SUM_VISIBLE_COMPETITION_MATCH_COUNTERS",
-    "competition_blocks_counted": 35,
-    "validation_examples": [
-      {
-        "competition": "FA Cup",
-        "declared_count": 5,
-        "rendered_matches_observed": 5,
-        "result": "MATCH"
-      },
-      {
-        "competition": "UEFA Nations League",
-        "declared_count": 10,
-        "rendered_matches_observed": 10,
-        "result": "MATCH"
-      },
-      {
-        "competition": "Football League Trophy",
-        "declared_count": 19,
-        "rendered_matches_observed": 19,
-        "result": "MATCH"
-      }
-    ]
-  },
-  "competitions": [
-    {
-      "competition": "FA Cup",
-      "count": 5
-    },
-    {
-      "competition": "UEFA Nations League",
-      "count": 10
-    },
-    {
-      "competition": "Africa Cup of Nations Qual.",
-      "count": 1
-    },
-    {
-      "competition": "Türkiye Kupası",
-      "count": 4
-    },
-    {
-      "competition": "MLS",
-      "count": 1
-    },
-    {
-      "competition": "Brasileirão Série B",
-      "count": 1
-    },
-    {
-      "competition": "Primera División",
-      "count": 2
-    },
-    {
-      "competition": "CONCACAF Nations League",
-      "count": 5
-    },
-    {
-      "competition": "International Friendly Games",
-      "count": 2
-    },
-    {
-      "competition": "Football League Trophy",
-      "count": 19
-    },
-    {
-      "competition": "Club Friendly Games",
-      "count": 2
-    },
-    {
-      "competition": "Afghanistan Champions League",
-      "count": 2
-    },
-    {
-      "competition": "Shafaq Shahid Premier League",
-      "count": 1
-    },
-    {
-      "competition": "U23 Africa Cup of Nations Qualification",
-      "count": 11
-    },
-    {
-      "competition": "Kupa e Shqiperise",
-      "count": 3
-    },
-    {
-      "competition": "U13 Second Category of Fier",
-      "count": 1
-    },
-    {
-      "competition": "Algerian Ligue 1",
-      "count": 2
-    },
-    {
-      "competition": "Ligue Inter Régions",
-      "count": 1
-    },
-    {
-      "competition": "Primera C Metropolitana",
-      "count": 4
-    },
-    {
-      "competition": "Campeonato de Reserva de Primera División",
-      "count": 6
-    },
-    {
-      "competition": "Liga Regional Colón, Quinta",
-      "count": 2
-    },
-    {
-      "competition": "Liga Regional Colón, Sexta",
-      "count": 2
-    },
-    {
-      "competition": "Newell's Cup U16",
-      "count": 4
-    },
-    {
-      "competition": "Gulf Cup",
-      "count": 1
-    },
-    {
-      "competition": "Extracup",
-      "count": 1
-    },
-    {
-      "competition": "U14 Sumgayit Autumn Cup",
-      "count": 1
-    },
-    {
-      "competition": "Bangladesh Federation Cup",
-      "count": 3
-    },
-    {
-      "competition": "Khailkur Football League",
-      "count": 1
-    },
-    {
-      "competition": "U15 Shohor Alir Moor",
-      "count": 1
-    },
-    {
-      "competition": "Thakurgaon District, 1st Division",
-      "count": 1
-    },
-    {
-      "competition": "Copa Bolivia",
-      "count": 1
-    },
-    {
-      "competition": "Primera de Ascenso Cochabamba",
-      "count": 1
-    },
-    {
-      "competition": "Tercera de Ascenso Cochabamba",
-      "count": 1
-    },
-    {
-      "competition": "2. Liga FBIH - Centar",
-      "count": 1
-    },
-    {
-      "competition": "Kantonalna liga Sarajevo",
-      "count": 1
-    }
+  "status": "SUPERSEDED_EXACT_TOTAL_NOT_PROVEN",
+  "correction_reason": [
+    "The prior V1 value 105 was an arithmetic/coverage overclaim and must not remain canonical.",
+    "A fresh accessibility-tree extraction exposed 35 competition counters summing to 104, but the UI is virtualized/lazy and this cannot be promoted to the full daily world total.",
+    "Individual match links are only partially materialized in the accessibility tree.",
+    "Therefore exact_daily_total is intentionally null until a full identity-complete snapshot is captured."
   ],
-  "exact_total": 105,
-  "exact_total_status": "PHYSICALLY_CONFIRMED_FROM_VISIBLE_COMPETITION_COUNTERS",
-  "excluded_non_calendar_block": {
-    "tournament_links": [
-      "LaLiga",
-      "Premier League",
-      "Ligue 1",
-      "Serie A",
-      "Bundesliga",
-      "UEFA Champions League"
-    ],
-    "numeric_text": "2026",
-    "reason": "FOOTER_OR_PROMOTIONAL_SECTION_WITH_FUTURE_HIGHLIGHTED_MATCH_LINKS_NOT_A_DAILY_COMPETITION_COUNTER"
-  },
+  "prior_v1_claimed_exact_total": 105,
+  "current_accessibility_observed_competition_blocks": 35,
+  "current_accessibility_observed_counter_sum": 104,
+  "current_accessibility_counter_sum_role": "PARTIAL_VISIBLE_COVERAGE_FLOOR_NOT_WORLD_TOTAL",
+  "exact_daily_total": null,
+  "exact_daily_total_status": "NOT_PROVEN",
   "protections": {
+    "invented_counts_prohibited": true,
+    "partial_accessibility_count_never_promoted": true,
     "feeds_model_automatically": false,
     "odds_used_to_generate_probability": false,
-    "outcomes_used_to_generate_probability": false,
     "automatic_wagering": false,
     "real_money": "BLOCKED"
   }
