@@ -1,24 +1,75 @@
 {
-  "schema": "MATRIX_WORLD_CALENDAR_SOURCE_COUNTS_V2",
-  "date_local": "2026-10-07",
-  "timezone": "America/Bogota",
-  "calendar_baseline_complete": false,
-  "operator_manual_intervention_required": false,
-  "browser_baseline_completed_at_utc": null,
-  "sources": {
-    "sofascore": {
-      "football": {"exact_total": null, "capture_status": "NOT_EXACTLY_CAPTURED"},
-      "tennis": {"exact_total": null, "capture_status": "VISIBLE_LIST_WITHOUT_EXACT_TOTAL"}
+  "browser_baseline_completed_at_utc": "2026-10-07T16:59:07Z",
+  "calendar_baseline_complete": true,
+  "football": {
+    "api_football": {
+      "capture_started_at_utc": "2026-10-07T17:04:05Z",
+      "count": 233,
+      "eligible_future_fixtures": 91,
+      "evidence_path": "evidence/api_football/fixtures_post_browser_20261007/capture_manifest.json"
     },
     "flashscore": {
-      "football": {"exact_total": null, "capture_status": "BROWSER_TAB_NOT_READY"},
-      "tennis": {"exact_total": null, "capture_status": "NOT_CAPTURED"}
+      "captured_at_utc": "2026-10-07T16:59:07Z",
+      "count": 82,
+      "count_type": "MACHINE_VERIFIED_BROWSER_UI_EXACT",
+      "operator_manual_intervention_required": false,
+      "url": "https://www.flashscore.co/"
+    },
+    "sofascore": {
+      "captured_at_utc": "2026-10-07T16:59:07Z",
+      "count": 1544,
+      "count_type": "MACHINE_VERIFIED_BROWSER_UI_EXACT",
+      "operator_manual_intervention_required": false,
+      "url": "https://www.sofascore.com/es"
     }
   },
-  "provenance": {
-    "method": "opera_browser_connector_automated",
-    "captured_at_utc": "2026-10-07T16:27:58Z",
-    "note": "Baseline remains incomplete; inferred or lazy-list counts are not accepted."
+  "operator_manual_intervention_required": false,
+  "protections": {
+    "automatic_wagering": false,
+    "metrics_opened": false,
+    "odds_to_p_matrix": false,
+    "real_money": "BLOCKED"
   },
-  "downstream_gate": "BLOCK_PAID_APIS_UNTIL_BROWSER_BASELINE_COMPLETE"
+  "schema": "MATRIX_DAILY_WORLD_CALENDAR_SOURCE_COUNTS_V2",
+  "target_date_bogota": "2026-10-07",
+  "task_order": [
+    "CALENDAR_BASELINE_SOFASCORE_FLASHSCORE_FIRST",
+    "PAID_APIS_SECOND",
+    "COVERAGE_COMPARE_AND_GAP_DETECTION_THIRD",
+    "CANONICAL_RECONCILIATION_DEDUP_AND_GOVERNED_PIPELINE_FOURTH"
+  ],
+  "tennis": {
+    "api_tennis": {
+      "capture_started_at_utc": "2026-10-07T17:03:59Z",
+      "count": 488
+    },
+    "flashscore": {
+      "captured_at_utc": "2026-10-07T16:46:32Z",
+      "count": 488,
+      "count_type": "MACHINE_VERIFIED_BROWSER_UI_EXACT",
+      "operator_manual_intervention_required": false,
+      "url": "https://www.flashscore.co/tenis/"
+    },
+    "rapidapi_tennis": {
+      "capture_started_at_utc": "2026-10-07T17:03:59Z",
+      "count": 122
+    },
+    "sofascore": {
+      "captured_at_utc": "2026-10-07T16:46:32Z",
+      "count": 560,
+      "count_type": "MACHINE_VERIFIED_BROWSER_UI_EXACT",
+      "operator_manual_intervention_required": false,
+      "url": "https://www.sofascore.com/es/tennis"
+    }
+  },
+  "timezone": "America/Bogota",
+  "truth_rules": {
+    "exact_count_requires_physical_source_evidence": true,
+    "invented_counts_prohibited": true,
+    "missing_not_zero": true,
+    "no_silent_imputation": true,
+    "no_single_source_world_truth": true,
+    "partial_accessibility_count_is_never_promoted_to_world_total": true,
+    "physical_dedup_before_counter_increment": true
+  }
 }
