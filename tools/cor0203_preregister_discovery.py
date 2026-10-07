@@ -112,6 +112,32 @@ def _existing_ids(
             if pkey:
                 physical_keys.add(pkey)
 
+    # Holdout batches preserve their original append-only physical keys. Those
+    # historical keys can predate later canonical identity reconciliation.
+    # The physical-uniqueness audit is the authoritative map of normalized
+    # physical matches, so preregistration must also block every canonical and
+    # quarantined key already known there. This prevents provider match-id
+    # rotation from creating another freeze for the same physical match.
+    uniqueness_path = runtime_dir / "MATRIX_COR0203_PHYSICAL_UNIQUENESS_LAST.json"
+    if uniqueness_path.exists():
+        try:
+            uniqueness = _load(uniqueness_path)
+        except Exception:
+            uniqueness = {}
+        for bucket in ("canonical_observations", "quarantined_duplicates"):
+            for row in uniqueness.get(bucket, []) or []:
+                if not isinstance(row, Mapping):
+                    continue
+                pkey = str(row.get("physical_event_key") or "").strip().lower()
+                if re.fullmatch(r"[0-9a-f]{64}", pkey):
+                    physical_keys.add(pkey)
+                event_id = str(row.get("event_id") or "")
+                source_id = str(row.get("canonical_source_event_id") or "")
+                if event_id:
+                    event_ids.add(event_id)
+                if source_id:
+                    source_ids.add(source_id)
+
     return event_ids, source_ids, physical_keys
 
 
