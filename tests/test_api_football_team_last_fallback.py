@@ -89,9 +89,9 @@ def _fixture(fid, when, home_id, away_id):
     }
 
 
-def _response(rows, remaining="7400"):
+def _response(rows, remaining="7400", status_code=200, minute_remaining="299", retry_after=None):
     response = Mock()
-    response.status_code = 200
+    response.status_code = status_code
     payload = {"errors": [], "response": rows}
     response.content = __import__("json").dumps(payload).encode()
     response.json.return_value = payload
@@ -99,8 +99,10 @@ def _response(rows, remaining="7400"):
         "x-ratelimit-requests-limit": "7500",
         "x-ratelimit-requests-remaining": remaining,
         "x-ratelimit-limit": "300",
-        "x-ratelimit-remaining": "299",
+        "x-ratelimit-remaining": minute_remaining,
     }
+    if retry_after is not None:
+        response.headers["Retry-After"] = str(retry_after)
     return response
 
 
@@ -239,3 +241,78 @@ def test_team_last_fallback_no_deficient_teams_is_idempotent_passthrough(tmp_pat
     enriched=__import__("json").loads((tmp_path/"benchmark_after_team_last.json").read_text())
     assert enriched["benchmark_status"]=="READY_MINIMUM_HISTORY"
     assert enriched["real_money"]=="BLOCKED"
+
+
+def test_team_last_fallback_retries_429_then_succeeds(tmp_path):
+    rows = [
+        _fixture(20 + i, f"2026-09-{15+i:02d}T15:00:00+00:00", 3000 + i, 41)
+        for i in range(6)
+    ]
+    session = Mock()
+    session.get.side_effect = [
+        _response([], status_code=429, minute_remaining="0", retry_after="1"),
+        _response(rows, minute_remaining="299"),
+    ]
+    ticks = iter([
+        datetime(2026, 9, 28, 6, 5, 0, tzinfo=timezone.utc),
+        datetime(2026, 9, 28, 6, 5, 1, tzinfo=timezone.utc),
+        datetime(2026, 9, 28, 6, 5, 2, tzinfo=timezone.utc),
+        datetime(2026, 9, 28, 6, 5, 3, tzinfo=timezone.utc),
+    ])
+    sleeps = []
+
+    result = run_capture(
+        api_key="test-key",
+        benchmark=_benchmark(),
+        readiness=_readiness(),
+        out_dir=tmp_path,
+        session=session,
+        now_fn=lambda: next(ticks),
+        sleep_fn=lambda seconds: sleeps.append(seconds),
+    )
+
+    assert result["status"] == "PASS"
+    assert result["network_calls_performed"] == 2
+    assert result["rate_limit_event_count"] == 1
+    assert result["provider_error_team_count"] == 0
+    assert result["ready_minimum_history_count"] == 1
+    assert result["stopped_reason"] is None
+    assert sleeps == [1.0]
+
+
+def test_team_last_fallback_persistent_429_blocks_missing_without_crashing(tmp_path):
+    session = Mock()
+    session.get.side_effect = [
+        _response([], status_code=429, minute_remaining="0", retry_after="0"),
+        _response([], status_code=429, minute_remaining="0", retry_after="0"),
+    ]
+    ticks = iter([
+        datetime(2026, 9, 28, 6, 5, 0, tzinfo=timezone.utc),
+        datetime(2026, 9, 28, 6, 5, 1, tzinfo=timezone.utc),
+        datetime(2026, 9, 28, 6, 5, 2, tzinfo=timezone.utc),
+        datetime(2026, 9, 28, 6, 5, 3, tzinfo=timezone.utc),
+    ])
+
+    result = run_capture(
+        api_key="test-key",
+        benchmark=_benchmark(),
+        readiness=_readiness(),
+        out_dir=tmp_path,
+        session=session,
+        now_fn=lambda: next(ticks),
+        sleep_fn=lambda seconds: None,
+    )
+
+    assert result["status"] == "PASS"
+    assert result["network_calls_performed"] == 2
+    assert result["rate_limit_event_count"] == 2
+    assert result["provider_error_team_count"] == 1
+    assert result["stopped_reason"] == "RATE_LIMIT_RETRY_EXHAUSTED"
+    assert result["ready_minimum_history_count"] == 0
+    assert result["blocked_minimum_history_count"] == 1
+    assert result["captures"][0]["status"] == "RATE_LIMIT_BLOCKED"
+
+    readiness = __import__("json").loads(
+        (tmp_path / "history_readiness_after_team_last.json").read_text()
+    )
+    assert "AWAY_HISTORY_BELOW_MINIMUM" in readiness["rows"][0]["blockers"]
