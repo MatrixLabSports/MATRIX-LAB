@@ -97,7 +97,7 @@ def build_market_scoped_promotion(
     checkpoint = _load(
         root / "evidence/api_football/calibration_v2/checkpoint_200_1x2_over_2_5_20261006.json"
     )
-    cp = checkpoint["over_2_5"]
+    cp = checkpoint["market_adjudication"]["over_2_5"]
     if cp.get("gate_passed") is not True:
         raise ValueError("OVER25_PROSPECTIVE_CHECKPOINT_200_FAILED")
     if cp.get("beats_poisson_brier") is not True or cp.get("beats_poisson_log_loss") is not True:
