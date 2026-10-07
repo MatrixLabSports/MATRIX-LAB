@@ -208,6 +208,29 @@ def recover_certified_authority_aliases(
             continue
 
         record=json.loads(json.dumps(certified))
+        canonical_source_id=str(
+            certified.get("canonical_source_id")
+            or certified.get("provider_player_id")
+            or ""
+        ).strip()
+        if not canonical_source_id:
+            blocked.append({
+                "provider_player_id":provider_id,
+                "player":player["full_name"],
+                "reason":"CERTIFIED_CANONICAL_SOURCE_ID_MISSING",
+            })
+            continue
+        record["pre_cut_history"]={
+            "canonical_source_ids":[canonical_source_id],
+            "canonical_iocs":[certified_ioc],
+            "observed_hands":[expected_hand],
+            "rows":int(
+                (certified.get("pre_cut_provider_history") or {}).get(
+                    "eligible_pre_cut_matches"
+                ) or 0
+            ),
+            "authority":"CERTIFIED_R706_STATE_PLUS_PRECUT_PROVIDER_HISTORY",
+        }
         record["provider_player_id"]=provider_id
         record["provider_display_name"]=rank_row["name"]
         record["canonical_name"]=canonical_name
