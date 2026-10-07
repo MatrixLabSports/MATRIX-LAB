@@ -1,0 +1,64 @@
+name: MATRIX CI Auto Dispatch
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - .github/workflows/matrix-ci-auto-dispatch.yml
+  workflow_dispatch:
+  workflow_run:
+    workflows:
+      - "API-Football market expansion live probe"
+      - "API-Football prospective settlement-calibration supervisor"
+      - "COR02-03 repo-native hourly scheduler"
+      - "API-Football Player Shots v3 Supervisor"
+    types:
+      - completed
+
+permissions:
+  contents: read
+  actions: write
+
+concurrency:
+  group: matrix-ci-auto-dispatch
+  cancel-in-progress: false
+
+jobs:
+  dispatch:
+    if: ${{ github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - name: Checkout operational branch
+        uses: actions/checkout@v4
+        with:
+          ref: repair/cor09-world-pipeline
+          fetch-depth: 1
+
+      - name: Resolve operational HEAD
+        id: head
+        shell: bash
+        run: |
+          set -euo pipefail
+          SHA="$(git rev-parse HEAD)"
+          echo "sha=$SHA" >> "$GITHUB_OUTPUT"
+          echo "MATRIX_OPERATIONAL_HEAD=$SHA"
+
+      - name: Dispatch MATRIX CI on exact operational SHA
+        env:
+          GH_TOKEN: ${{ github.token }}
+          EXPECTED_SHA: ${{ steps.head.outputs.sha }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          PAYLOAD="{\"ref\":\"repair/cor09-world-pipeline\",\"inputs\":{\"expected_sha\":\"${EXPECTED_SHA}\"}}"
+          curl --fail-with-body --silent --show-error --location \
+            --request POST \
+            --header "Accept: application/vnd.github+json" \
+            --header "Authorization: Bearer ${GH_TOKEN}" \
+            --header "X-GitHub-Api-Version: 2022-11-28" \
+            "https://api.github.com/repos/${GITHUB_REPOSITORY}/actions/workflows/matrix-ci.yml/dispatches" \
+            --data "${PAYLOAD}"
+          echo "MATRIX_CI_DISPATCHED_EXPECTED_SHA=${EXPECTED_SHA}"
