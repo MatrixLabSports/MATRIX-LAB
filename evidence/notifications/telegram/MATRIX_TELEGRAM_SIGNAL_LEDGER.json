@@ -1,34 +1,139 @@
 {
+  "corrections": [
+    {
+      "fixture_id": "1492394",
+      "offer": {
+        "break_even_probability": 0.5617977528089888,
+        "ev": -0.01037468053200008,
+        "house": "Betano",
+        "odds": 1.78
+      },
+      "sent_at_utc": "2026-10-08T19:29:15+00:00",
+      "signal_key": "a7722011282d0fdc99da351cd89d1be0aecc759f3a804746a710f30f93c4cc4a",
+      "status": "NO_APOSTAR_ENVIADO",
+      "telegram_message_id": 9
+    }
+  ],
   "created_at_utc": "2026-10-08T14:13:02+00:00",
   "protections": {
     "automatic_wagering": false,
     "duplicate_signal_suppression": true,
+    "final_only_settlement": true,
     "notification_only": true,
-    "real_money": "BLOQUEADO"
+    "odds_used_to_generate_probability": false,
+    "real_money": "BLOQUEADO",
+    "tennis_fail_closed_until_validated_lane": true
   },
-  "schema": "MATRIX_TELEGRAM_SIGNAL_LEDGER_V1",
+  "quote_state": {
+    "a7722011282d0fdc99da351cd89d1be0aecc759f3a804746a710f30f93c4cc4a": {
+      "checked_at_utc": "2026-10-08T19:29:15+00:00",
+      "fixture_id": "1492394",
+      "offer": {
+        "break_even_probability": 0.5617977528089888,
+        "ev": -0.01037468053200008,
+        "house": "Betano",
+        "odds": 1.78
+      },
+      "state": "NO_APOSTAR"
+    }
+  },
+  "run_history": [
+    {
+      "bogota_date": "2026-10-08",
+      "corrections_now": 1,
+      "dates_scanned": [
+        "2026-10-08",
+        "2026-10-07"
+      ],
+      "duplicate_green_messages_suppressed": 2,
+      "football_candidates": 2,
+      "quote_checks": 1,
+      "real_money": "BLOQUEADO",
+      "run_at_utc": "2026-10-08T19:29:15+00:00",
+      "sent_now": 0,
+      "settlements_now": 1,
+      "tennis_candidates": 0,
+      "total_green_messages": 2,
+      "total_settlements": 1
+    }
+  ],
+  "schema": "MATRIX_TELEGRAM_SIGNAL_LEDGER_V2",
   "sent": [
     {
+      "ev": 0.07858040436399993,
+      "execution": {
+        "bet_type": "Sencilla",
+        "decimal_odds": 1.94,
+        "early_cashout_visible_cop": 2641,
+        "event": "Fluminense-RJ - Coritiba-PR",
+        "event_time_bogota": "2026-10-08T19:30:00-05:00",
+        "image_dimensions_px": [
+          1536,
+          1214
+        ],
+        "image_sha256": "9f12b6ad94660ebcfc8d43c4d5c7b84ac704d8d85c33fda0030a30ab97f014b9",
+        "market": "Total de goles: Más de 2.5",
+        "matrix_automatic_execution": false,
+        "potential_payout_cop": 5693,
+        "screenshot_observed_local_time": "2026-10-07T23:33:00-05:00",
+        "source": "user_provided_screenshot",
+        "stake_cop": 2935,
+        "status": "PENDING",
+        "user_execution": true
+      },
       "fixture_id": "1492394",
+      "house": "BetPlay",
+      "kickoff": "2026-10-08T19:30:00-05:00",
       "market": "Más de 2.5 goles",
       "match": "Fluminense RJ vs Coritiba PR",
       "matrix_real_money": "BLOQUEADO",
+      "odds": 1.94,
+      "p_matrix": 0.5559692806,
       "sent_at_utc": "2026-10-08T14:13:03+00:00",
       "signal_key": "a7722011282d0fdc99da351cd89d1be0aecc759f3a804746a710f30f93c4cc4a",
+      "source": "evidence/api_football/daily_prematch_reports/2026-10-08/browser_physical_verification/MATRIX_FOOTBALL_08OCT_BROWSER_PHYSICAL_QUOTES.json",
+      "sport": "football",
       "status": "ENVIADO_OK",
       "telegram_message_id": 7
     },
     {
+      "ev": 0.06330828606799987,
+      "execution": null,
       "fixture_id": "1621358",
+      "house": "Betano",
+      "kickoff": "2026-10-08T17:00:00+00:00",
       "market": "Más de 2.5 goles",
       "match": "Tira vs Ironi Nesher",
       "matrix_real_money": "BLOQUEADO",
+      "odds": 1.72,
+      "p_matrix": 0.6182024919,
       "sent_at_utc": "2026-10-08T14:13:04+00:00",
       "signal_key": "f3ecc279f7ba9aefc18a029fbe71a085b8e1d6555d6b3b89699ff02365b57418",
+      "source": "evidence/api_football/daily_prematch_reports/2026-10-08/shadow_quote_freeze/MATRIX_FOOTBALL_08OCT_TWO_SHADOW_FINAL_QUOTE_FREEZE.json",
+      "sport": "football",
       "status": "ENVIADO_OK",
       "telegram_message_id": 8
     }
   ],
+  "settlements": [
+    {
+      "actual_profit_cop": null,
+      "actual_stake_cop": null,
+      "away_goals": 1,
+      "final_status": "FT",
+      "fixture_id": "1621358",
+      "home_goals": 2,
+      "market": "Más de 2.5 goles",
+      "match": "Tira vs Ironi Nesher",
+      "odds": 1.72,
+      "settled_at_utc": "2026-10-08T19:29:15+00:00",
+      "shadow_profit_units": 0.72,
+      "signal_key": "f3ecc279f7ba9aefc18a029fbe71a085b8e1d6555d6b3b89699ff02365b57418",
+      "status": "FINAL_ENVIADO_OK",
+      "telegram_message_id": 10,
+      "won": true
+    }
+  ],
   "source": "evidence/api_football/daily_prematch_reports/2026-10-08/browser_physical_verification/MATRIX_FOOTBALL_08OCT_BROWSER_PHYSICAL_QUOTES.json",
-  "updated_at_utc": "2026-10-08T18:53:30+00:00"
+  "updated_at_utc": "2026-10-08T19:29:15+00:00"
 }
