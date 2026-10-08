@@ -8,9 +8,11 @@
         "house": "Betano",
         "odds": 1.78
       },
+      "rectification_message_id": 11,
+      "rectified_at_utc": "2026-10-08T19:31:57+00:00",
       "sent_at_utc": "2026-10-08T19:29:15+00:00",
       "signal_key": "a7722011282d0fdc99da351cd89d1be0aecc759f3a804746a710f30f93c4cc4a",
-      "status": "NO_APOSTAR_ENVIADO",
+      "status": "RECTIFICADA_CASA_DISTINTA",
       "telegram_message_id": 9
     }
   ],
@@ -26,15 +28,11 @@
   },
   "quote_state": {
     "a7722011282d0fdc99da351cd89d1be0aecc759f3a804746a710f30f93c4cc4a": {
-      "checked_at_utc": "2026-10-08T19:29:47+00:00",
+      "checked_at_utc": "2026-10-08T19:31:57+00:00",
       "fixture_id": "1492394",
-      "offer": {
-        "break_even_probability": 0.5617977528089888,
-        "ev": -0.01037468053200008,
-        "house": "Betano",
-        "odds": 1.78
-      },
-      "state": "NO_APOSTAR"
+      "offer": null,
+      "required_house_key": "betplay",
+      "state": "CASA_ORIGINAL_NO_DISPONIBLE_EN_FEED"
     }
   },
   "run_history": [
@@ -68,6 +66,26 @@
       "quote_checks": 1,
       "real_money": "BLOQUEADO",
       "run_at_utc": "2026-10-08T19:29:47+00:00",
+      "sent_now": 0,
+      "settlements_now": 0,
+      "tennis_candidates": 0,
+      "total_green_messages": 2,
+      "total_settlements": 1
+    },
+    {
+      "bogota_date": "2026-10-08",
+      "corrections_now": 0,
+      "dates_scanned": [
+        "2026-10-08",
+        "2026-10-07"
+      ],
+      "duplicate_green_messages_suppressed": 2,
+      "economic_updates_now": 1,
+      "football_candidates": 2,
+      "quote_checks": 1,
+      "real_money": "BLOQUEADO",
+      "rectifications_now": 1,
+      "run_at_utc": "2026-10-08T19:31:57+00:00",
       "sent_now": 0,
       "settlements_now": 0,
       "tennis_candidates": 0,
@@ -116,7 +134,45 @@
     },
     {
       "ev": 0.06330828606799987,
-      "execution": null,
+      "execution": {
+        "bet_type": "Simple",
+        "bookmaker": "Betano Colombia (linked to prior physically verified market screen in same conversation)",
+        "current_cashout_visible_cop": 2000,
+        "decimal_odds": 1.72,
+        "event": "MS Tira - Ironi Nesher",
+        "event_time_bogota": "2026-10-08T12:00:00-05:00",
+        "final_return_cop": 3440,
+        "image_dimensions_px": [
+          1536,
+          1201
+        ],
+        "image_sha256": "ba4a3ed0c3e8e2e90fd6e189014aa76e3c6befb89427c6228e12ff520b86b2da",
+        "market": "Goles totales Más/Menos",
+        "matrix_automatic_execution": false,
+        "net_profit_cop": 1440,
+        "potential_payout_cop": 3440,
+        "roi": 0.72,
+        "selection": "Más de 2.5",
+        "settled_at_bogota": "2026-10-08T13:52:00-05:00",
+        "settlement_evidence": {
+          "image_dimensions_px": [
+            1536,
+            964
+          ],
+          "image_sha256": "0be48bde20dfeb9ef6619bd03a89b2079985440ceab2ed31f3ac9405cb1fec80",
+          "physically_visible_event": "MS Tira - Ironi Nesher",
+          "physically_visible_market": "Más 2.5",
+          "physically_visible_odds": 1.72,
+          "physically_visible_return_cop": 3440,
+          "physically_visible_stake_cop": 2000,
+          "physically_visible_status": "Ganada",
+          "source": "user_provided_screenshot"
+        },
+        "source": "user_provided_screenshot",
+        "stake_cop": 2000,
+        "status": "GANADA",
+        "user_execution": true
+      },
       "fixture_id": "1621358",
       "house": "Betano",
       "kickoff": "2026-10-08T17:00:00+00:00",
@@ -135,9 +191,12 @@
   ],
   "settlements": [
     {
-      "actual_profit_cop": null,
-      "actual_stake_cop": null,
+      "actual_profit_cop": 1440.0,
+      "actual_stake_cop": 2000.0,
       "away_goals": 1,
+      "economic_update_message_id": 12,
+      "economic_update_sent_at_utc": "2026-10-08T19:31:57+00:00",
+      "execution_evidence_source": "user_provided_screenshot",
       "final_status": "FT",
       "fixture_id": "1621358",
       "home_goals": 2,
@@ -153,5 +212,5 @@
     }
   ],
   "source": "evidence/api_football/daily_prematch_reports/2026-10-08/browser_physical_verification/MATRIX_FOOTBALL_08OCT_BROWSER_PHYSICAL_QUOTES.json",
-  "updated_at_utc": "2026-10-08T19:29:47+00:00"
+  "updated_at_utc": "2026-10-08T19:31:57+00:00"
 }
