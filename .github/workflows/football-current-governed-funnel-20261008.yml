@@ -45,14 +45,23 @@ jobs:
           p=Path("evidence/football_world_inventory/2026-10-08/MATRIX_DAILY_MULTISOURCE_BROWSER_CROSSCHECK.json")
           j=json.loads(p.read_text())
           assert j["target_date_bogota"]=="2026-10-08"
-          assert j["sources"]["sofascore"]["exact_unique_match_count"]==702
-          assert j["sources"]["flashscore"]["exact_unique_match_count"]==109
-          assert j["sources"]["sofascore"]["opera_read_status"]=="PASS"
-          assert j["sources"]["flashscore"]["opera_read_status"]=="PASS"
+          sofa=j["sources"]["sofascore"]
+          flash=j["sources"]["flashscore"]
+          assert sofa["opera_read_status"]=="PASS"
+          assert sofa["user_visible_total_count"]==1519
+          assert sofa["user_visible_screenshot_verified"] is True
+          assert sofa["loaded_tree_unique_match_link_count"]==702
+          assert j["adjudication"]["sofascore_visible_total_supersedes_lazy_tree_count"] is True
+          assert flash["opera_read_status"]=="PASS"
+          assert flash["loaded_tree_unique_match_link_count"]==109
+          assert flash["exact_unique_match_count"] is None
+          assert flash["exact_visible_day_total_status"]=="PENDING_PHYSICAL_VISIBLE_TOTAL"
+          assert j["adjudication"]["lazy_tree_counts_must_not_be_labeled_exact_calendar_total"] is True
           assert j["adjudication"]["exact_browser_counts_are_not_additive"] is True
+          assert j["protections"]["missing_not_zero"] is True
           assert j["protections"]["metrics_opened"] is False
           assert j["protections"]["real_money"]=="BLOCKED"
-          print("BROWSER_FIRST_BASELINE_PASS football=702/109")
+          print("BROWSER_FIRST_BASELINE_PASS sofascore_visible=1519 flashscore_exact=PENDING loaded_tree=109")
           PY
 
       - name: Run current 08-OCT governed API-Football cycle
