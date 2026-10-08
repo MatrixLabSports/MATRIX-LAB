@@ -18,12 +18,13 @@ def _registry() -> dict:
     )
 
 
-def test_registry_has_one_protected_active_lane_and_35_research_lanes():
+def test_registry_has_one_protected_active_lane_and_35_parallel_lanes():
     result = validate_registry(_registry())
     assert result["status"] == "PASS"
     assert result["lane_count"] == 36
     assert result["active_governed_lane_count"] == 1
-    assert result["research_only_lane_count"] == 35
+    assert result["parallel_lane_count"] == 35
+    assert result["research_only_lane_count"] + result["active_prospective_lane_count"] == 35
     assert result["legacy_lane_id"] == "ATP_CHALLENGER_MEN_SINGLES_HARD"
     assert result["legacy_holdout_id"] == "A22_POST_AUDIT_VIRGIN_HOLDOUT_V1"
 
@@ -42,7 +43,7 @@ def test_current_cor0203_domain_routes_only_to_existing_active_lane():
     assert lane["feeds_cor0203"] is True
 
 
-def test_new_domains_route_to_isolated_research_lanes():
+def test_parallel_domains_never_feed_cor0203():
     cases = [
         ("ATP_CHALLENGER", "MEN", "SINGLES", "Clay", "ATP_CHALLENGER_MEN_SINGLES_CLAY"),
         ("ATP_MAIN_OR_OTHER", "MEN", "SINGLES", "Hard", "ATP_MAIN_MEN_SINGLES_HARD"),
@@ -62,11 +63,14 @@ def test_new_domains_route_to_isolated_research_lanes():
         )
         assert lane is not None
         assert lane["lane_id"] == expected
-        assert lane["status"] == "RESEARCH_ONLY_NOT_TRAINED"
+        assert lane["status"] in {"RESEARCH_ONLY_NOT_TRAINED", "ACTIVE_PROSPECTIVE_RESEARCH"}
         assert lane["feeds_cor0203"] is False
         assert lane["can_reuse_cor0203_holdout"] is False
         assert lane["can_reuse_cor0203_observations"] is False
         assert not lane["evidence_root"].startswith("evidence/cor0203")
+        if lane["status"] == "ACTIVE_PROSPECTIVE_RESEARCH":
+            assert lane["holdout"]["holdout_id"] != "A22_POST_AUDIT_VIRGIN_HOLDOUT_V1"
+            assert lane["model_binding"] is not None
 
 
 def test_unknown_surface_does_not_silently_route():
@@ -80,20 +84,24 @@ def test_unknown_surface_does_not_silently_route():
     assert lane is None
 
 
-def test_parallel_lane_initialization_creates_no_fake_models_or_holdouts(tmp_path):
+def test_parallel_lane_initialization_only_initializes_untrained_lanes(tmp_path):
     reg = _registry()
+    expected = sum(
+        1 for lane in reg["lanes"]
+        if lane["status"] == "RESEARCH_ONLY_NOT_TRAINED"
+    )
     result = initialize_lane_states(
         registry=reg,
         out_root=tmp_path / "parallel",
     )
-    assert result["initialized_research_lane_count"] == 35
+    assert result["initialized_research_lane_count"] == expected
     assert result["existing_cor0203_modified"] is False
     assert result["model_training_performed"] is False
     assert result["holdout_creation_performed"] is False
     assert result["metrics_opened"] is False
 
     states = list((tmp_path / "parallel").glob("*/state.json"))
-    assert len(states) == 35
+    assert len(states) == expected
     for path in states:
         state = json.loads(path.read_text(encoding="utf-8"))
         assert state["status"] == "RESEARCH_ONLY_NOT_TRAINED"
