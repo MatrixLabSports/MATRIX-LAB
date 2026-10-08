@@ -1,0 +1,69 @@
+{
+  "schema": "MATRIX_DAILY_MULTISOURCE_BROWSER_CROSSCHECK_V1",
+  "target_date_bogota": "2026-10-08",
+  "timezone": "America/Bogota",
+  "status": "PASS_EXACT_AUTOMATED_BROWSER_COUNTS",
+  "governance_basis": {
+    "permanent_source_policy": "SOFASCORE_AND_FLASHSCORE_FIRST_THEN_PAID_APIS",
+    "paid_apis_mandatory": true,
+    "sofascore_flashscore_daily_crosscheck_required": true,
+    "no_single_source_world_truth": true
+  },
+  "sources": {
+    "sofascore": {
+      "url": "https://www.sofascore.com/es/tennis/2026-10-08",
+      "opera_read_status": "PASS",
+      "exact_unique_match_count": 444,
+      "count_type": "MACHINE_VERIFIED_BROWSER_UI_EXACT",
+      "provenance": "Opera Browser Connector accessibility-tree jq count of unique /tennis/match/ URLs on the loaded 2026-10-08 tennis page; user screenshot also visibly showed selector Mañana.",
+      "machine_verified_exact": true,
+      "circuit_breakdown_from_loaded_tree": {
+        "ATP": 42,
+        "WTA": 4,
+        "CHALLENGER": 50,
+        "WTA_125": 12,
+        "ITF_MEN": 124,
+        "ITF_WOMEN": 207,
+        "UNKNOWN": 5
+      },
+      "limitation": "Provider-specific loaded calendar count; not a world denominator and not additive with other providers."
+    },
+    "flashscore": {
+      "url": "https://www.flashscore.co/tenis/?d=2026-10-08",
+      "opera_read_status": "PASS",
+      "exact_unique_match_count": 501,
+      "count_type": "MACHINE_VERIFIED_BROWSER_UI_EXACT",
+      "provenance": "Opera Browser Connector accessibility-tree jq count of unique /partido/tenis/ links on the loaded 2026-10-08 tennis page.",
+      "machine_verified_exact": true,
+      "limitation": "Provider-specific loaded calendar count; not a world denominator and not additive with other providers."
+    },
+    "rapidapi_tennis": {
+      "role": "MANDATORY_STRUCTURED_ACQUISITION_HISTORY_IDS_TIMESTAMPS",
+      "status": "PENDING_POST_BROWSER_RECAPTURE"
+    },
+    "api_tennis": {
+      "role": "MANDATORY_SECONDARY_STRUCTURED_DISCOVERY_STATS_RICH_VALIDATION",
+      "status": "PENDING_POST_BROWSER_RECAPTURE"
+    }
+  },
+  "adjudication": {
+    "paid_api_counts_are_not_world_complete": true,
+    "browser_sources_must_be_checked_daily": true,
+    "discovery_union_requires_physical_dedup": true,
+    "api_enrichment_after_browser_discovery": true,
+    "exact_browser_counts_are_not_additive": true,
+    "prematch_lanes": {
+      "ATP_CHALLENGER_MEN_SINGLES_HARD": "EXISTING_HARD_HOLDOUT_SEPARATE",
+      "ATP_CHALLENGER_MEN_SINGLES_CLAY": "NEW_CLAY_HOLDOUT_SEPARATE"
+    },
+    "non_domain_events": "WORLD_DISCOVERY_ONLY_OR_SEPARATE_GOVERNED_LANES"
+  },
+  "protections": {
+    "missing_not_zero": true,
+    "silent_imputation": false,
+    "odds_to_p_matrix": false,
+    "metrics_opened": false,
+    "automatic_wagering": false,
+    "real_money": "BLOCKED"
+  }
+}
