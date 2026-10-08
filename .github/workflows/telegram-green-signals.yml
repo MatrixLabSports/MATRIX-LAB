@@ -7,7 +7,8 @@ on:
     paths:
       - .github/workflows/telegram-green-signals.yml
       - tools/telegram_green_signal_alerts.py
-      - evidence/api_football/daily_prematch_reports/2026-10-08/browser_physical_verification/MATRIX_FOOTBALL_08OCT_BROWSER_PHYSICAL_QUOTES.json
+      - evidence/api_football/daily_prematch_reports/**
+      - evidence/tennis_signals/**
   workflow_dispatch:
 
 permissions:
@@ -20,13 +21,13 @@ concurrency:
 jobs:
   notify:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 15
     env:
       MATRIX_MODE: SHADOW
       REAL_MONEY: BLOCKED
       AUTO_BETTING: DISABLED
     steps:
-      - name: Checkout
+      - name: Checkout rama de trabajo
         uses: actions/checkout@v4
         with:
           ref: repair/cor09-world-pipeline
@@ -48,24 +49,27 @@ jobs:
           test "$REAL_MONEY" = "BLOCKED"
           test "$AUTO_BETTING" = "DISABLED"
 
-      - name: Validate Telegram secrets
+      - name: Validate secrets
         env:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          API_FOOTBALL_KEY: ${{ secrets.API_FOOTBALL_KEY }}
         shell: bash
         run: |
           set -euo pipefail
           test -n "$TELEGRAM_BOT_TOKEN"
           test -n "$TELEGRAM_CHAT_ID"
-          echo "SECRETOS_TELEGRAM_PRESENTES"
+          test -n "$API_FOOTBALL_KEY"
+          echo "SECRETOS_TELEGRAM_Y_API_FOOTBALL_PRESENTES"
 
-      - name: Enviar señales verdes en español
+      - name: Supervisor Telegram — señales, cuotas y FINAL
         env:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          API_FOOTBALL_KEY: ${{ secrets.API_FOOTBALL_KEY }}
         run: python -m tools.telegram_green_signal_alerts
 
-      - name: Persistir ledger anti-duplicados
+      - name: Persistir ledger gobernado
         shell: bash
         run: |
           set -euo pipefail
@@ -76,7 +80,7 @@ jobs:
             echo "SIN_CAMBIOS_LEDGER"
             exit 0
           fi
-          git commit -m "evidence(telegram): persist green-signal notification ledger"
+          git commit -m "evidence(telegram): persist autonomous supervisor ledger"
           for attempt in 1 2 3 4; do
             git fetch origin repair/cor09-world-pipeline
             if ! git rebase origin/repair/cor09-world-pipeline; then
