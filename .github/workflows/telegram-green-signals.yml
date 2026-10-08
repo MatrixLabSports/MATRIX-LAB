@@ -1,8 +1,11 @@
 name: Telegram Señales Verdes MATRIX
 
 on:
+  schedule:
+    - cron: "*/15 * * * *"
   push:
     branches:
+      - main
       - repair/cor09-world-pipeline
     paths:
       - .github/workflows/telegram-green-signals.yml
