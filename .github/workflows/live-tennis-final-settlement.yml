@@ -2,6 +2,12 @@ name: MATRIX Live Tennis FINAL Settlement
 
 on:
   workflow_dispatch:
+  push:
+    branches:
+      - repair/cor09-world-pipeline
+    paths:
+      - tools/live_tennis_settlement_sync.py
+      - .github/workflows/live-tennis-final-settlement.yml
   schedule:
     - cron: "50 */8 * * *"
 
