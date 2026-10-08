@@ -1,0 +1,315 @@
+name: Tennis Prematch 08OCT Browser First Dual Paid Lanes
+
+on:
+  push:
+    branches:
+      - repair/cor09-world-pipeline
+    paths:
+      - .github/workflows/tennis-prematch-20261008-browser-first-dual-lanes.yml
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: tennis-prematch-20261008-browser-first-dual-lanes
+  cancel-in-progress: false
+
+jobs:
+  calendar-and-lanes:
+    runs-on: ubuntu-latest
+    timeout-minutes: 50
+    steps:
+      - name: Checkout operational branch
+        uses: actions/checkout@v4
+        with:
+          ref: repair/cor09-world-pipeline
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: python -m pip install requests pytest
+
+      - name: Verify browser-first 08OCT baseline
+        shell: bash
+        run: |
+          set -euo pipefail
+          P="evidence/tennis_world_inventory/2026-10-08/MATRIX_DAILY_MULTISOURCE_BROWSER_CROSSCHECK.json"
+          test -f "$P"
+          python - "$P" <<'PY'
+          import json,sys
+          from pathlib import Path
+          j=json.loads(Path(sys.argv[1]).read_text())
+          assert j["target_date_bogota"]=="2026-10-08"
+          assert j["sources"]["sofascore"]["opera_read_status"]=="PASS"
+          assert j["sources"]["flashscore"]["opera_read_status"]=="PASS"
+          assert j["sources"]["sofascore"]["exact_unique_match_count"]==444
+          assert j["sources"]["flashscore"]["exact_unique_match_count"]==501
+          assert sum(j["sources"]["sofascore"]["circuit_breakdown_from_loaded_tree"].values())==444
+          assert j["sources"]["sofascore"]["machine_verified_exact"] is True
+          assert j["sources"]["flashscore"]["machine_verified_exact"] is True
+          assert j["adjudication"]["exact_browser_counts_are_not_additive"] is True
+          assert j["protections"]["metrics_opened"] is False
+          assert j["protections"]["real_money"]=="BLOCKED"
+          print("BROWSER_FIRST_08OCT_PASS sofascore=444 flashscore=501")
+          PY
+
+      - name: Capture prematch lane baseline
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/tennis-08oct
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          h=json.loads(Path("evidence/cor0203/runtime/MATRIX_COR0203_PHYSICAL_UNIQUENESS_LAST.json").read_text())
+          c=json.loads(Path("evidence/tennis_parallel_lanes/ATP_CHALLENGER_MEN_SINGLES_CLAY/prospective/state.json").read_text())
+          out={
+            "hard_unique_before":h["unique_calibration_observations"],
+            "hard_physical_before":h["physical_frozen_rows"],
+            "hard_metrics_opened_before":h["metrics_opened"],
+            "hard_outcomes_read_before":h["outcomes_read"],
+            "clay_observations_before":c["observation_count"],
+            "clay_metrics_opened_before":c["metrics_opened"],
+            "clay_outcomes_read_before":c["outcomes_read"],
+            "clay_model":c["frozen_model_identity"],
+          }
+          Path("/tmp/tennis-08oct/before.json").write_text(json.dumps(out,sort_keys=True))
+          print(json.dumps(out,sort_keys=True))
+          PY
+
+      - name: Capture both paid providers exact day
+        env:
+          API_TENNIS_KEY: ${{ secrets.API_TENNIS_KEY }}
+          RAPIDAPI_TENNIS_KEY: ${{ secrets.RAPIDAPI_TENNIS_KEY }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p evidence/tennis_world_inventory/2026-10-08
+          mkdir -p evidence/tennis/world_inventory/2026-10-08
+
+          python -m tools.tennis_world_exact_day_dual_audit             --target-date-bogota 2026-10-08             --out evidence/tennis_world_inventory/2026-10-08/world_exact_day_dual_audit.json
+
+          python -m tools.tennis_world_inventory_rapidapi             --target-date-bogota 2026-10-08             --out evidence/tennis/world_inventory/2026-10-08/MATRIX_TENNIS_WORLD_INVENTORY.json             --fail-on-partial
+
+          python -m tools.tennis_api_tennis_dual_lane_exact_day             --target-date-bogota 2026-10-08             --out evidence/tennis_world_inventory/2026-10-08/api_tennis_challenger_men_singles_exact_day.json
+
+      - name: Reconcile Hard and Clay event identities
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m tools.tennis_dual_lane_event_reconcile             --rapid evidence/tennis/world_inventory/2026-10-08/MATRIX_TENNIS_WORLD_INVENTORY.json             --api-tennis evidence/tennis_world_inventory/2026-10-08/api_tennis_challenger_men_singles_exact_day.json             --clay-holdout evidence/tennis_parallel_lanes/ATP_CHALLENGER_MEN_SINGLES_CLAY/prospective/holdout_contract.json             --clay-bootstrap evidence/tennis_parallel_lanes/ATP_CHALLENGER_MEN_SINGLES_CLAY/bootstrap/bootstrap_manifest.json             --out evidence/tennis_world_inventory/2026-10-08/hard_clay_event_reconciliation.json
+
+      - name: Build Clay preregister fail closed
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p evidence/tennis_parallel_lanes/ATP_CHALLENGER_MEN_SINGLES_CLAY/prospective
+          python - <<'PY'
+          import hashlib,json
+          from datetime import datetime,timezone
+          from pathlib import Path
+          r=json.loads(Path("evidence/tennis_world_inventory/2026-10-08/hard_clay_event_reconciliation.json").read_text())
+          rows=[x for x in r["bindings"] if x["surface_family"]=="CLAY"]
+          p={
+            "schema":"MATRIX_TENNIS_CLAY_PROSPECTIVE_PREREG_V1",
+            "target_date_bogota":"2026-10-08",
+            "generated_at_utc":datetime.now(timezone.utc).replace(microsecond=0).isoformat(),
+            "lane_id":"ATP_CHALLENGER_MEN_SINGLES_CLAY",
+            "holdout_id":"ATP_CHALLENGER_CLAY_PROSPECTIVE_V1",
+            "candidate_count":len(rows),
+            "freeze_ready_count":sum(x["prospective_counter_increment_allowed"] is True for x in rows),
+            "blocked_count":sum(bool(x["blockers"]) for x in rows),
+            "candidates":rows,
+            "counter_before":0,
+            "counter_after":0,
+            "metrics_opened":False,
+            "outcomes_read":0,
+            "historical_backfill":False,
+            "automatic_wagering":False,
+            "real_money":"BLOCKED"
+          }
+          raw=json.dumps(p,sort_keys=True,separators=(",",":"),ensure_ascii=False).encode()
+          p["sha256_without_self"]=hashlib.sha256(raw).hexdigest()
+          Path("evidence/tennis_parallel_lanes/ATP_CHALLENGER_MEN_SINGLES_CLAY/prospective/preregister_2026-10-08.json").write_text(
+            json.dumps(p,indent=2,sort_keys=True,ensure_ascii=False)+"\n"
+          )
+          print(json.dumps({"clay_candidates":p["candidate_count"],"freeze_ready":p["freeze_ready_count"],"blocked":p["blocked_count"]},sort_keys=True))
+          PY
+
+      - name: Write 08OCT source count report
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p evidence/daily_source_counts/2026-10-08
+          python - <<'PY'
+          import json
+          from datetime import datetime,timezone
+          from pathlib import Path
+          d=json.loads(Path("evidence/tennis_world_inventory/2026-10-08/world_exact_day_dual_audit.json").read_text())
+          b=json.loads(Path("evidence/tennis_world_inventory/2026-10-08/MATRIX_DAILY_MULTISOURCE_BROWSER_CROSSCHECK.json").read_text())
+          r=json.loads(Path("evidence/tennis_world_inventory/2026-10-08/hard_clay_event_reconciliation.json").read_text())
+          out={
+            "schema":"MATRIX_TENNIS_08OCT_SOURCE_COUNTS_V1",
+            "generated_at_utc":datetime.now(timezone.utc).replace(microsecond=0).isoformat(),
+            "target_date_bogota":"2026-10-08",
+            "timezone":"America/Bogota",
+            "browser_first":True,
+            "sources":{
+              "sofascore":{"count":b["sources"]["sofascore"]["exact_unique_match_count"],"count_type":"BROWSER_UI_EXACT"},
+              "flashscore":{"count":b["sources"]["flashscore"]["exact_unique_match_count"],"count_type":"BROWSER_UI_EXACT"},
+              "rapidapi_tennis":{"count":d["primary_world_inventory"]["unique_match_count"],"count_type":"PROVIDER_STRUCTURED"},
+              "api_tennis":{"count":d["secondary_crosscheck"]["unique_match_count"],"count_type":"PROVIDER_STRUCTURED"},
+            },
+            "cross_provider_exact_union":d["cross_provider_reconciliation"]["exact_union_count"],
+            "hard_bound_count":r["hard_bound_count"],
+            "clay_bound_count":r["clay_bound_count"],
+            "clay_freeze_ready_count":r["clay_freeze_ready_count"],
+            "truth_rules":{
+              "counts_not_additive":True,
+              "no_single_source_world_truth":True,
+              "physical_dedup_before_counter_increment":True,
+              "missing_not_zero":True,
+              "invented_counts_prohibited":True
+            },
+            "metrics_opened":False,
+            "automatic_wagering":False,
+            "real_money":"BLOCKED"
+          }
+          Path("evidence/daily_source_counts/2026-10-08/MATRIX_TENNIS_SOURCE_COUNTS.json").write_text(
+            json.dumps(out,indent=2,sort_keys=True)+"\n"
+          )
+          print(json.dumps(out,sort_keys=True))
+          PY
+
+      - name: Persist browser and paid-provider evidence before model funnel
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name matrix-tennis-08oct
+          git config user.email matrix-tennis-08oct@users.noreply.github.com
+          git add evidence/tennis_world_inventory/2026-10-08
+          git add evidence/tennis/world_inventory/2026-10-08
+          git add evidence/daily_source_counts/2026-10-08
+          git add evidence/tennis_parallel_lanes/ATP_CHALLENGER_MEN_SINGLES_CLAY/prospective/preregister_2026-10-08.json
+          git commit -m "evidence(tennis): close 08OCT browser-first dual-provider calendar" || true
+          for attempt in 1 2 3 4; do
+            git fetch origin repair/cor09-world-pipeline
+            if ! git rebase origin/repair/cor09-world-pipeline; then git rebase --abort || true; exit 1; fi
+            if git push origin HEAD:repair/cor09-world-pipeline; then break; fi
+            sleep $((attempt*2))
+          done
+
+      - name: Run governed Hard COR02 COR03 funnel for 08OCT
+        env:
+          API_TENNIS_KEY: ${{ secrets.API_TENNIS_KEY }}
+          RAPIDAPI_TENNIS_KEY: ${{ secrets.RAPIDAPI_TENNIS_KEY }}
+          MATRIX_TENNIS_PROVIDER: rapidapi_tennis
+          MATRIX_WORLD_DATE_BOGOTA: "2026-10-08"
+          MATRIX_TARGET_BRANCH: repair/cor09-world-pipeline
+          MATRIX_GIT_USER_NAME: matrix-ci
+          MATRIX_GIT_USER_EMAIL: matrix-ci@users.noreply.github.com
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch origin repair/cor09-world-pipeline
+          git reset --hard origin/repair/cor09-world-pipeline
+          bash scripts/cor0203_production_cycle.sh --trigger-sha "$(git rev-parse HEAD)"
+
+      - name: Refresh branch after governed Hard production
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch origin repair/cor09-world-pipeline
+          git reset --hard origin/repair/cor09-world-pipeline
+
+      - name: Verify separated counters and build final funnel report
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json,hashlib
+          from datetime import datetime,timezone
+          from pathlib import Path
+          before=json.loads(Path("/tmp/tennis-08oct/before.json").read_text())
+          hard=json.loads(Path("evidence/cor0203/runtime/MATRIX_COR0203_PHYSICAL_UNIQUENESS_LAST.json").read_text())
+          clay=json.loads(Path("evidence/tennis_parallel_lanes/ATP_CHALLENGER_MEN_SINGLES_CLAY/prospective/state.json").read_text())
+          rec=json.loads(Path("evidence/tennis_world_inventory/2026-10-08/hard_clay_event_reconciliation.json").read_text())
+          src=json.loads(Path("evidence/daily_source_counts/2026-10-08/MATRIX_TENNIS_SOURCE_COUNTS.json").read_text())
+          pre=json.loads(Path("evidence/tennis_parallel_lanes/ATP_CHALLENGER_MEN_SINGLES_CLAY/prospective/preregister_2026-10-08.json").read_text())
+
+          assert hard["unique_calibration_observations"] >= before["hard_unique_before"]
+          assert hard["metrics_opened"] is False
+          assert hard["outcomes_read"]==0
+          assert clay["holdout_id"]=="ATP_CHALLENGER_CLAY_PROSPECTIVE_V1"
+          assert clay["observation_count"]==0
+          assert clay["metrics_opened"] is False
+          assert clay["outcomes_read"]==0
+          assert pre["counter_after"]==0
+          assert src["truth_rules"]["counts_not_additive"] is True
+
+          report={
+            "schema":"MATRIX_TENNIS_08OCT_PREMATCH_FUNNEL_STATUS_V1",
+            "generated_at_utc":datetime.now(timezone.utc).replace(microsecond=0).isoformat(),
+            "target_date_bogota":"2026-10-08",
+            "browser_baseline":{"sofascore":444,"flashscore":501},
+            "paid_provider_counts":src["sources"],
+            "hard":{
+              "lane_id":"ATP_CHALLENGER_MEN_SINGLES_HARD",
+              "unique_before":before["hard_unique_before"],
+              "unique_after":hard["unique_calibration_observations"],
+              "new_unique_observations":hard["unique_calibration_observations"]-before["hard_unique_before"],
+              "physical_rows":hard["physical_frozen_rows"],
+              "duplicates_quarantined":hard["duplicate_observations_quarantined"],
+              "remaining_to_200":hard["unique_remaining_to_200"],
+              "remaining_to_600":hard["unique_remaining_to_600"],
+              "metrics_opened":False,
+              "outcomes_read":0
+            },
+            "clay":{
+              "lane_id":"ATP_CHALLENGER_MEN_SINGLES_CLAY",
+              "holdout_id":clay["holdout_id"],
+              "counter_before":before["clay_observations_before"],
+              "counter_after":clay["observation_count"],
+              "bound_candidates":rec["clay_bound_count"],
+              "freeze_ready":rec["clay_freeze_ready_count"],
+              "blocked_candidates":pre["blocked_count"],
+              "metrics_opened":False,
+              "outcomes_read":0
+            },
+            "separation":{
+              "hard_holdout":"A22_POST_AUDIT_VIRGIN_HOLDOUT_V1",
+              "clay_holdout":"ATP_CHALLENGER_CLAY_PROSPECTIVE_V1",
+              "cross_lane_observation_reuse":False,
+              "cross_lane_holdout_reuse":False
+            },
+            "automatic_wagering":False,
+            "real_money":"BLOCKED"
+          }
+          raw=json.dumps(report,sort_keys=True,separators=(",",":")).encode()
+          report["sha256_without_self"]=hashlib.sha256(raw).hexdigest()
+          p=Path("evidence/tennis_world_inventory/2026-10-08/MATRIX_TENNIS_08OCT_PREMATCH_FUNNEL_STATUS.json")
+          p.write_text(json.dumps(report,indent=2,sort_keys=True)+"\n")
+          print(json.dumps(report,sort_keys=True))
+          PY
+
+      - name: Persist final funnel report
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name matrix-tennis-08oct
+          git config user.email matrix-tennis-08oct@users.noreply.github.com
+          git add evidence/tennis_world_inventory/2026-10-08/MATRIX_TENNIS_08OCT_PREMATCH_FUNNEL_STATUS.json
+          if git diff --cached --quiet; then exit 0; fi
+          git commit -m "evidence(tennis): certify separated Hard Clay 08OCT funnel"
+          for attempt in 1 2 3 4; do
+            git fetch origin repair/cor09-world-pipeline
+            if ! git rebase origin/repair/cor09-world-pipeline; then git rebase --abort || true; exit 1; fi
+            if git push origin HEAD:repair/cor09-world-pipeline; then exit 0; fi
+            sleep $((attempt*2))
+          done
+          exit 1
