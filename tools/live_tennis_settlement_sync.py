@@ -34,6 +34,14 @@ def main():
     ledger=json.loads(ledger_path.read_text(encoding="utf-8"))
     states=ledger.get("states",[]) or []
     match_ids=sorted({x.get("match_id") for x in states if isinstance(x,dict) and isinstance(x.get("match_id"),int)})
+    already_settled_ids={
+        x.get("match_id") for x in states
+        if isinstance(x,dict)
+        and isinstance(x.get("match_id"),int)
+        and x.get("label_opened") is True
+        and x.get("settlement_status")=="FINAL_STANDARD"
+        and x.get("p1_match_win") in {0,1}
+    }
 
     usage,code=get_json("/usage",key)
     if code!=200:
@@ -47,7 +55,7 @@ def main():
         raise SystemExit(f"LIVE_HTTP_{code}")
     live_rows=live.get("data") if isinstance(live,dict) and isinstance(live.get("data"),list) else []
     live_ids={x.get("id") for x in live_rows if isinstance(x,dict) and isinstance(x.get("id"),int)}
-    departed=[mid for mid in match_ids if mid not in live_ids]
+    departed=[mid for mid in match_ids if mid not in live_ids and mid not in already_settled_ids]
 
     budget=max(0,remaining-args.reserve_calls-1)
     query_ids=departed[:min(args.max_detail_queries,budget)]
@@ -100,6 +108,7 @@ def main():
       "source_ledger":args.ledger,
       "match_ids_seen":len(match_ids),
       "currently_live_match_ids":sorted(live_ids),
+      "already_settled_match_ids":sorted(already_settled_ids),
       "departed_match_ids":departed,
       "queried_match_ids":query_ids,
       "standard_final_settlements":settlements,
