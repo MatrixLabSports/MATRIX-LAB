@@ -3,13 +3,17 @@ from __future__ import annotations
 import hashlib
 import json
 import os
-from datetime import datetime, timezone
+import re
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any
+from zoneinfo import ZoneInfo
 
 import requests
 
-SOURCE = Path("evidence/api_football/daily_prematch_reports/2026-10-08/browser_physical_verification/MATRIX_FOOTBALL_08OCT_BROWSER_PHYSICAL_QUOTES.json")
+BOGOTA = ZoneInfo("America/Bogota")
+FOOTBALL_ROOT = Path("evidence/api_football/daily_prematch_reports")
+TENNIS_ROOT = Path("evidence/tennis_signals")
 LEDGER = Path("evidence/notifications/telegram/MATRIX_TELEGRAM_SIGNAL_LEDGER.json")
 
 GREEN_STATUSES = {
@@ -17,136 +21,623 @@ GREEN_STATUSES = {
     "BET_SHADOW_PHYSICAL",
     "SEÑAL_VERDE_SIMULADA",
 }
+FINAL_STATUSES = {"FT", "AET", "PEN"}
+POLICY_BOOKS = {
+    "betano": ("betano",),
+    "betplay": ("betplay",),
+    "bwin": ("bwin",),
+    "rushbet": ("rushbet", "rush bet"),
+}
+MARKET_KEY = "Goles totales Más/Menos"
+SELECTION_KEY = "Más de 2.5"
+
 
 def load_json(path: Path, default: Any) -> Any:
     if not path.exists():
         return default
     return json.loads(path.read_text(encoding="utf-8"))
 
-def signal_key(row: dict[str, Any]) -> str:
-    market = row.get("physical_market_label") or row.get("user_real_money_execution", {}).get("market") or "Goles totales Más/Menos"
-    selection = row.get("physical_selection") or row.get("user_real_money_execution", {}).get("selection") or "Más de 2.5"
-    raw = f'{row.get("fixture_id")}|{market}|{selection}'
+
+def now_utc() -> datetime:
+    return datetime.now(timezone.utc).replace(microsecond=0)
+
+
+def parse_dt(value: Any) -> datetime | None:
+    if not value:
+        return None
+    try:
+        dt = datetime.fromisoformat(str(value).replace("Z", "+00:00"))
+    except Exception:
+        return None
+    if dt.tzinfo is None or dt.utcoffset() is None:
+        return None
+    return dt.astimezone(timezone.utc)
+
+
+def fmt_bogota(value: Any) -> str:
+    dt = parse_dt(value)
+    if dt is None:
+        return "Sin hora"
+    return dt.astimezone(BOGOTA).strftime("%d/%m/%Y %I:%M %p")
+
+
+def signal_key(fixture_id: Any, market: str = MARKET_KEY, selection: str = SELECTION_KEY) -> str:
+    raw = f"{fixture_id}|{market}|{selection}"
     return hashlib.sha256(raw.encode("utf-8")).hexdigest()
 
-def best_quote(row: dict[str, Any]) -> tuple[str, float | None, float | None]:
+
+def norm(value: Any) -> str:
+    return re.sub(r"[^a-z0-9]+", "", str(value or "").casefold())
+
+
+def bookmaker_key(name: Any) -> str | None:
+    n = norm(name)
+    for key, tokens in POLICY_BOOKS.items():
+        if any(norm(t) in n for t in tokens):
+            return key
+    return None
+
+
+def odd(value: Any) -> float | None:
+    try:
+        x = float(value)
+    except Exception:
+        return None
+    return x if x > 1.0 else None
+
+
+def send_telegram(session: requests.Session, token: str, chat_id: str, text: str) -> int:
+    response = session.post(
+        f"https://api.telegram.org/bot{token}/sendMessage",
+        data={"chat_id": chat_id, "text": text},
+        timeout=20,
+    )
+    try:
+        payload = response.json()
+    except Exception:
+        payload = {}
+    if response.status_code >= 300 or payload.get("ok") is not True:
+        raise RuntimeError(f"TELEGRAM_SEND_FAILED:{response.status_code}:{payload}")
+    result = payload.get("result") or {}
+    return int(result["message_id"])
+
+
+def execution_from_row(row: dict[str, Any]) -> dict[str, Any] | None:
+    obj = row.get("betplay_physical_execution") or row.get("user_real_money_execution")
+    return dict(obj) if isinstance(obj, dict) else None
+
+
+def browser_candidate(row: dict[str, Any], path: Path) -> dict[str, Any] | None:
+    status = str(row.get("final_shadow_status") or "")
+    if status not in GREEN_STATUSES:
+        return None
+    try:
+        p = float(row.get("p_matrix_over_2_5"))
+    except Exception:
+        return None
+    execution = execution_from_row(row)
     house = (
         row.get("best_physically_verified_house")
-        or row.get("user_real_money_execution", {}).get("bookmaker")
+        or (execution or {}).get("bookmaker")
         or row.get("house")
+        or (row.get("api_feed_quote") or {}).get("bookmaker_name")
         or "Casa físicamente verificada"
     )
-    odds = (
+    dec = odd(
         row.get("best_physically_verified_decimal_odds")
         or row.get("physical_decimal_odds")
-        or row.get("user_real_money_execution", {}).get("decimal_odds")
+        or (execution or {}).get("decimal_odds")
+        or (row.get("api_feed_quote") or {}).get("decimal_odds")
     )
+    if dec is None:
+        return None
     ev = row.get("best_physically_verified_ev")
     if ev is None:
         ev = row.get("ev")
-    return str(house), float(odds) if odds is not None else None, float(ev) if ev is not None else None
-
-def format_bogota(kickoff: str | None) -> str:
-    if not kickoff:
-        return "Sin hora"
     try:
-        dt = datetime.fromisoformat(kickoff.replace("Z", "+00:00"))
-        return dt.strftime("%d/%m/%Y %I:%M %p")
+        ev = float(ev)
     except Exception:
-        return kickoff
+        ev = p * dec - 1.0
+    return {
+        "sport": "football",
+        "fixture_id": str(row.get("fixture_id") or ""),
+        "match": row.get("match"),
+        "market": "Más de 2.5 goles",
+        "market_key": MARKET_KEY,
+        "selection_key": SELECTION_KEY,
+        "p_matrix": p,
+        "house": str(house),
+        "odds": dec,
+        "ev": ev,
+        "kickoff": row.get("kickoff_bogota") or row.get("kickoff_utc"),
+        "source": str(path),
+        "source_priority": 30,
+        "physical_quote_verified": True,
+        "execution": execution,
+    }
 
-def build_message(row: dict[str, Any]) -> str:
-    house, odds, ev = best_quote(row)
-    p = row.get("p_matrix_over_2_5")
-    executed = bool(row.get("betplay_physical_execution") or row.get("user_real_money_execution"))
-    lines = [
+
+def quote_freeze_candidate(row: dict[str, Any], path: Path) -> dict[str, Any] | None:
+    if str(row.get("decision") or "") != "BET_SHADOW":
+        return None
+    offer = row.get("best_policy_offer")
+    if not isinstance(offer, dict):
+        return None
+    try:
+        p = float(row.get("p_matrix") if row.get("p_matrix") is not None else row.get("p_over_2_5"))
+    except Exception:
+        return None
+    dec = odd(offer.get("decimal_odds"))
+    if dec is None:
+        return None
+    ev = float(offer.get("ev") if offer.get("ev") is not None else p * dec - 1.0)
+    return {
+        "sport": "football",
+        "fixture_id": str(row.get("fixture_id") or ""),
+        "match": row.get("match"),
+        "market": "Más de 2.5 goles",
+        "market_key": MARKET_KEY,
+        "selection_key": SELECTION_KEY,
+        "p_matrix": p,
+        "house": str(offer.get("bookmaker_name") or "Casa de política"),
+        "odds": dec,
+        "ev": ev,
+        "kickoff": row.get("kickoff_utc"),
+        "source": str(path),
+        "source_priority": 20,
+        "physical_quote_verified": True,
+        "execution": None,
+    }
+
+
+def shadow_ev_candidate(row: dict[str, Any], path: Path) -> dict[str, Any] | None:
+    if str(row.get("decision") or "") != "BET_SHADOW":
+        return None
+    offer = row.get("best_policy_offer")
+    if not isinstance(offer, dict):
+        return None
+    try:
+        p = float(row.get("p_over_2_5"))
+    except Exception:
+        return None
+    dec = odd(offer.get("decimal_odds"))
+    if dec is None:
+        return None
+    ev = float(offer.get("ev") if offer.get("ev") is not None else p * dec - 1.0)
+    return {
+        "sport": "football",
+        "fixture_id": str(row.get("fixture_id") or ""),
+        "match": row.get("match"),
+        "market": "Más de 2.5 goles",
+        "market_key": MARKET_KEY,
+        "selection_key": SELECTION_KEY,
+        "p_matrix": p,
+        "house": str(offer.get("bookmaker_name") or "Casa de política"),
+        "odds": dec,
+        "ev": ev,
+        "kickoff": row.get("kickoff_utc"),
+        "source": str(path),
+        "source_priority": 10,
+        "physical_quote_verified": True,
+        "execution": None,
+    }
+
+
+def discover_football(dates: list[str]) -> dict[str, dict[str, Any]]:
+    found: dict[str, dict[str, Any]] = {}
+    for date in dates:
+        root = FOOTBALL_ROOT / date
+        if not root.exists():
+            continue
+        patterns = [
+            ("browser_physical_verification/*.json", "browser"),
+            ("shadow_quote_freeze/*.json", "freeze"),
+            ("over25_shadow_ev/*.json", "shadow"),
+        ]
+        for pattern, kind in patterns:
+            for path in sorted(root.glob(pattern)):
+                try:
+                    payload = load_json(path, {})
+                except Exception:
+                    continue
+                if kind == "browser":
+                    rows = payload.get("rows", [])
+                    parser = browser_candidate
+                elif kind == "freeze":
+                    rows = payload.get("rows", [])
+                    parser = quote_freeze_candidate
+                else:
+                    rows = payload.get("bet_shadow", [])
+                    parser = shadow_ev_candidate
+                if not isinstance(rows, list):
+                    continue
+                for row in rows:
+                    if not isinstance(row, dict):
+                        continue
+                    candidate = parser(row, path)
+                    if candidate is None or not candidate["fixture_id"]:
+                        continue
+                    key = signal_key(candidate["fixture_id"], candidate["market_key"], candidate["selection_key"])
+                    candidate["signal_key"] = key
+                    previous = found.get(key)
+                    if previous is None or int(candidate["source_priority"]) > int(previous["source_priority"]):
+                        found[key] = candidate
+    return found
+
+
+def discover_tennis(dates: list[str]) -> dict[str, dict[str, Any]]:
+    # Fail closed: no canonical file, no validated lane, no physical quote or no positive EV => no alert.
+    found: dict[str, dict[str, Any]] = {}
+    valid_governance = {"VALIDATED", "STRONG", "PROMOTED"}
+    for date in dates:
+        root = TENNIS_ROOT / date
+        if not root.exists():
+            continue
+        for path in sorted(root.glob("*.json")):
+            try:
+                payload = load_json(path, {})
+            except Exception:
+                continue
+            rows = payload.get("rows", [])
+            if not isinstance(rows, list):
+                continue
+            for row in rows:
+                if not isinstance(row, dict):
+                    continue
+                if str(row.get("governance_status") or "").upper() not in valid_governance:
+                    continue
+                if row.get("physical_quote_verified") is not True:
+                    continue
+                try:
+                    p = float(row["p_matrix"])
+                    dec = float(row["decimal_odds"])
+                    ev = float(row["ev"])
+                except Exception:
+                    continue
+                if dec <= 1.50 or ev <= 0:
+                    continue
+                event_id = str(row.get("event_id") or row.get("fixture_id") or "")
+                market = str(row.get("market") or "")
+                selection = str(row.get("selection") or "")
+                if not event_id or not market or not selection:
+                    continue
+                key = hashlib.sha256(f"tennis|{event_id}|{market}|{selection}".encode("utf-8")).hexdigest()
+                found[key] = {
+                    "sport": "tennis",
+                    "fixture_id": event_id,
+                    "match": row.get("match"),
+                    "market": market,
+                    "market_key": market,
+                    "selection_key": selection,
+                    "p_matrix": p,
+                    "house": str(row.get("house") or "Casa físicamente verificada"),
+                    "odds": dec,
+                    "ev": ev,
+                    "kickoff": row.get("kickoff_bogota") or row.get("kickoff_utc"),
+                    "source": str(path),
+                    "source_priority": 30,
+                    "physical_quote_verified": True,
+                    "execution": None,
+                    "signal_key": key,
+                }
+    return found
+
+
+def exact_over25_offer(session: requests.Session, api_key: str, fixture_id: str, p: float) -> dict[str, Any] | None:
+    response = session.get(
+        "https://v3.football.api-sports.io/odds",
+        headers={"x-apisports-key": api_key},
+        params={"fixture": fixture_id},
+        timeout=20,
+    )
+    try:
+        payload = response.json()
+    except Exception:
+        payload = {}
+    if response.status_code >= 300 or (isinstance(payload, dict) and payload.get("errors") not in ({}, [], None)):
+        return None
+    offers: list[dict[str, Any]] = []
+    for fr in payload.get("response", []) or []:
+        if not isinstance(fr, dict):
+            continue
+        for book in fr.get("bookmakers", []) or []:
+            if not isinstance(book, dict) or bookmaker_key(book.get("name")) is None:
+                continue
+            for bet in book.get("bets", []) or []:
+                if not isinstance(bet, dict):
+                    continue
+                try:
+                    bid = int(bet.get("id"))
+                except Exception:
+                    continue
+                if bid != 5 or str(bet.get("name") or "").strip().casefold() != "goals over/under":
+                    continue
+                for value in bet.get("values", []) or []:
+                    if not isinstance(value, dict) or str(value.get("value") or "").strip().casefold() != "over 2.5":
+                        continue
+                    dec = odd(value.get("odd"))
+                    if dec is None or dec <= 1.50:
+                        continue
+                    offers.append({
+                        "house": str(book.get("name") or ""),
+                        "odds": dec,
+                        "ev": p * dec - 1.0,
+                        "break_even_probability": 1.0 / dec,
+                    })
+    return max(offers, key=lambda x: x["ev"]) if offers else None
+
+
+def fixture_final(session: requests.Session, api_key: str, fixture_id: str) -> dict[str, Any] | None:
+    response = session.get(
+        "https://v3.football.api-sports.io/fixtures",
+        headers={"x-apisports-key": api_key},
+        params={"id": fixture_id},
+        timeout=20,
+    )
+    try:
+        payload = response.json()
+    except Exception:
+        return None
+    if response.status_code >= 300 or payload.get("errors") not in ({}, [], None):
+        return None
+    rows = payload.get("response", []) or []
+    if not rows:
+        return None
+    row = rows[0]
+    status = str(((row.get("fixture") or {}).get("status") or {}).get("short") or "").upper()
+    if status not in FINAL_STATUSES:
+        return {"final": False, "status": status}
+    goals = row.get("goals") or {}
+    hg, ag = goals.get("home"), goals.get("away")
+    if not isinstance(hg, int) or not isinstance(ag, int):
+        return None
+    return {
+        "final": True,
+        "status": status,
+        "home_goals": hg,
+        "away_goals": ag,
+    }
+
+
+def green_message(c: dict[str, Any]) -> str:
+    executed = c.get("execution") is not None
+    return "\n".join([
         "🟢 SEÑAL VERDE SIMULADA",
         "",
-        f'Partido: {row.get("match")}',
-        "Mercado: Más de 2.5 goles",
-        f'P_MATRIX: {float(p)*100:.2f}%' if p is not None else "P_MATRIX: no disponible",
-        f'Casa: {house}',
-        f'Cuota física: {float(odds):.2f}' if odds is not None else "Cuota física: no disponible",
-        f'EV: {float(ev)*100:+.2f}%' if ev is not None else "EV: no disponible",
-        f'Hora Bogotá: {format_bogota(row.get("kickoff_bogota"))}',
+        f'Partido: {c.get("match")}',
+        f'Mercado: {c.get("market")}',
+        f'P_MATRIX: {float(c["p_matrix"])*100:.2f}%',
+        f'Casa: {c.get("house")}',
+        f'Cuota física: {float(c["odds"]):.2f}',
+        f'EV: {float(c["ev"])*100:+.2f}%',
+        f'Hora Bogotá: {fmt_bogota(c.get("kickoff"))}',
         "Estado: PENDIENTE DE RESULTADO FINAL",
         f'Apuesta ejecutada por el usuario: {"SÍ" if executed else "NO"}',
         "DINERO REAL MATRIX: BLOQUEADO",
+    ])
+
+
+def no_bet_message(c: dict[str, Any], offer: dict[str, Any]) -> str:
+    return "\n".join([
+        "🟡 NO APOSTAR — CORRECCIÓN DE CUOTA",
+        "",
+        f'Partido: {c.get("match")}',
+        f'Mercado: {c.get("market")}',
+        f'P_MATRIX congelada: {float(c["p_matrix"])*100:.2f}%',
+        f'Casa observada: {offer.get("house")}',
+        f'Cuota revalidada: {float(offer["odds"]):.2f}',
+        f'EV actualizado: {float(offer["ev"])*100:+.2f}%',
+        "Motivo: el EV dejó de ser positivo.",
+        "DINERO REAL MATRIX: BLOQUEADO",
+    ])
+
+
+def settlement_message(c: dict[str, Any], settlement: dict[str, Any], accum_u: float, accum_cop: float) -> str:
+    title = "✅ GANADA" if settlement["won"] else "❌ PERDIDA"
+    lines = [
+        title,
+        "",
+        f'Partido: {c.get("match")}',
+        f'Resultado final: {settlement["home_goals"]}-{settlement["away_goals"]}',
+        f'Mercado: {c.get("market")}',
+        f'Cuota congelada: {float(settlement["odds"]):.2f}',
+        f'Rendimiento simulado: {float(settlement["shadow_profit_units"]):+.2f} unidades',
+        f'Acumulado simulado: {accum_u:+.2f} unidades',
     ]
+    if settlement.get("actual_stake_cop") is not None:
+        stake_txt = f'{int(settlement["actual_stake_cop"]):,}'.replace(",", ".")
+        profit_txt = f'{int(round(settlement["actual_profit_cop"])):,}'.replace(",", ".")
+        accum_txt = f'{int(round(accum_cop)):,}'.replace(",", ".")
+        lines += [
+            f'Apuesta ejecutada por el usuario: COP {stake_txt}',
+            f'Resultado económico: COP {profit_txt}',
+            f'Acumulado apuestas registradas: COP {accum_txt}',
+        ]
+    lines.append("DINERO REAL MATRIX: BLOQUEADO PARA EJECUCIÓN AUTOMÁTICA")
     return "\n".join(lines)
+
 
 def main() -> None:
     token = os.environ.get("TELEGRAM_BOT_TOKEN", "").strip()
     chat_id = os.environ.get("TELEGRAM_CHAT_ID", "").strip()
+    api_key = os.environ.get("API_FOOTBALL_KEY", "").strip()
     if not token:
         raise SystemExit("TELEGRAM_BOT_TOKEN_NOT_CONFIGURED")
     if not chat_id:
         raise SystemExit("TELEGRAM_CHAT_ID_NOT_CONFIGURED")
-    if not SOURCE.exists():
-        raise SystemExit(f"SOURCE_NOT_FOUND:{SOURCE}")
+    if not api_key:
+        raise SystemExit("API_FOOTBALL_KEY_NOT_CONFIGURED")
 
-    src = load_json(SOURCE, {})
+    now = now_utc()
+    today = now.astimezone(BOGOTA).date()
+    dates = [str(today), str(today - timedelta(days=1))]
+    football = discover_football(dates)
+    tennis = discover_tennis(dates)
+    candidates = {**football, **tennis}
+
     ledger = load_json(LEDGER, {
-        "schema": "MATRIX_TELEGRAM_SIGNAL_LEDGER_V1",
-        "created_at_utc": datetime.now(timezone.utc).replace(microsecond=0).isoformat(),
-        "sent": []
+        "schema": "MATRIX_TELEGRAM_SIGNAL_LEDGER_V2",
+        "created_at_utc": now.isoformat(),
+        "sent": [],
+        "quote_state": {},
+        "corrections": [],
+        "settlements": [],
+        "run_history": [],
     })
-    sent_keys = {str(x.get("signal_key")) for x in ledger.get("sent", [])}
-    candidates = [
-        r for r in src.get("rows", [])
-        if str(r.get("final_shadow_status")) in GREEN_STATUSES
-    ]
+    ledger["schema"] = "MATRIX_TELEGRAM_SIGNAL_LEDGER_V2"
+    ledger.setdefault("sent", [])
+    ledger.setdefault("quote_state", {})
+    ledger.setdefault("corrections", [])
+    ledger.setdefault("settlements", [])
+    ledger.setdefault("run_history", [])
 
-    sent_now = []
-    for row in candidates:
-        key = signal_key(row)
-        if key in sent_keys:
+    session = requests.Session()
+    sent_by_key = {str(x.get("signal_key")): x for x in ledger["sent"]}
+    settled_keys = {str(x.get("signal_key")) for x in ledger["settlements"]}
+    sent_now = corrections_now = settlements_now = quote_checks = 0
+
+    for key, c in sorted(candidates.items(), key=lambda kv: (str(kv[1].get("kickoff")), kv[0])):
+        if not c.get("physical_quote_verified") or float(c["odds"]) <= 1.50 or float(c["ev"]) <= 0:
             continue
-        text = build_message(row)
-        response = requests.post(
-            f"https://api.telegram.org/bot{token}/sendMessage",
-            data={"chat_id": chat_id, "text": text},
-            timeout=20,
-        )
-        try:
-            payload = response.json()
-        except Exception:
-            payload = {}
-        if response.status_code >= 300 or payload.get("ok") is not True:
-            raise SystemExit(f"TELEGRAM_SEND_FAILED:{response.status_code}:{payload}")
-        result = payload.get("result") or {}
-        record = {
-            "signal_key": key,
-            "fixture_id": str(row.get("fixture_id")),
-            "match": row.get("match"),
-            "market": "Más de 2.5 goles",
-            "sent_at_utc": datetime.now(timezone.utc).replace(microsecond=0).isoformat(),
-            "telegram_message_id": result.get("message_id"),
-            "status": "ENVIADO_OK",
-            "matrix_real_money": "BLOQUEADO",
-        }
-        ledger.setdefault("sent", []).append(record)
-        sent_keys.add(key)
-        sent_now.append(record)
+        if key not in sent_by_key:
+            mid = send_telegram(session, token, chat_id, green_message(c))
+            record = {
+                "signal_key": key,
+                "sport": c["sport"],
+                "fixture_id": c["fixture_id"],
+                "match": c["match"],
+                "market": c["market"],
+                "p_matrix": c["p_matrix"],
+                "house": c["house"],
+                "odds": c["odds"],
+                "ev": c["ev"],
+                "kickoff": c["kickoff"],
+                "source": c["source"],
+                "execution": c.get("execution"),
+                "sent_at_utc": now.isoformat(),
+                "telegram_message_id": mid,
+                "status": "ENVIADO_OK",
+                "matrix_real_money": "BLOQUEADO",
+            }
+            ledger["sent"].append(record)
+            sent_by_key[key] = record
+            sent_now += 1
+        else:
+            record = sent_by_key[key]
+            for field in ("sport", "fixture_id", "match", "market", "p_matrix", "house", "odds", "ev", "kickoff", "source", "execution"):
+                if record.get(field) is None:
+                    record[field] = c.get(field)
 
-    ledger["updated_at_utc"] = datetime.now(timezone.utc).replace(microsecond=0).isoformat()
-    ledger["source"] = str(SOURCE)
+    for key, record in list(sent_by_key.items()):
+        c = candidates.get(key)
+        if c is None or c.get("sport") != "football" or key in settled_keys:
+            continue
+        kickoff = parse_dt(c.get("kickoff"))
+        if kickoff is None or kickoff <= now:
+            continue
+        offer = exact_over25_offer(session, api_key, c["fixture_id"], float(c["p_matrix"]))
+        quote_checks += 1
+        previous = ledger["quote_state"].get(key) or {}
+        state = "SIN_CUOTA_EXACTA"
+        if offer is not None:
+            state = "VERDE" if float(offer["ev"]) > 0 else "NO_APOSTAR"
+        ledger["quote_state"][key] = {
+            "checked_at_utc": now.isoformat(),
+            "fixture_id": c["fixture_id"],
+            "state": state,
+            "offer": offer,
+        }
+        if offer is not None and float(offer["ev"]) <= 0 and previous.get("state") != "NO_APOSTAR":
+            mid = send_telegram(session, token, chat_id, no_bet_message(c, offer))
+            ledger["corrections"].append({
+                "signal_key": key,
+                "fixture_id": c["fixture_id"],
+                "sent_at_utc": now.isoformat(),
+                "telegram_message_id": mid,
+                "status": "NO_APOSTAR_ENVIADO",
+                "offer": offer,
+            })
+            corrections_now += 1
+
+    for key, record in list(sent_by_key.items()):
+        if key in settled_keys or str(record.get("sport") or "football") != "football":
+            continue
+        c = candidates.get(key)
+        if c is None:
+            continue
+        kickoff = parse_dt(c.get("kickoff"))
+        if kickoff is not None and kickoff > now:
+            continue
+        final = fixture_final(session, api_key, c["fixture_id"])
+        if not final or final.get("final") is not True:
+            continue
+        total = int(final["home_goals"]) + int(final["away_goals"])
+        won = total >= 3
+        frozen_odds = float(record.get("odds") or c["odds"])
+        shadow_profit = frozen_odds - 1.0 if won else -1.0
+        execution = record.get("execution") or c.get("execution")
+        actual_stake = actual_profit = None
+        if isinstance(execution, dict) and execution.get("stake_cop") is not None:
+            actual_stake = float(execution["stake_cop"])
+            exec_odds = float(execution.get("decimal_odds") or frozen_odds)
+            actual_profit = actual_stake * (exec_odds - 1.0) if won else -actual_stake
+        settlement = {
+            "signal_key": key,
+            "fixture_id": c["fixture_id"],
+            "match": c["match"],
+            "market": c["market"],
+            "final_status": final["status"],
+            "home_goals": final["home_goals"],
+            "away_goals": final["away_goals"],
+            "won": won,
+            "odds": frozen_odds,
+            "shadow_profit_units": shadow_profit,
+            "actual_stake_cop": actual_stake,
+            "actual_profit_cop": actual_profit,
+            "settled_at_utc": now.isoformat(),
+        }
+        projected = ledger["settlements"] + [settlement]
+        accum_u = sum(float(x.get("shadow_profit_units") or 0.0) for x in projected)
+        accum_cop = sum(float(x.get("actual_profit_cop") or 0.0) for x in projected if x.get("actual_profit_cop") is not None)
+        mid = send_telegram(session, token, chat_id, settlement_message(c, settlement, accum_u, accum_cop))
+        settlement["telegram_message_id"] = mid
+        settlement["status"] = "FINAL_ENVIADO_OK"
+        ledger["settlements"].append(settlement)
+        settled_keys.add(key)
+        settlements_now += 1
+
+    run_record = {
+        "run_at_utc": now.isoformat(),
+        "bogota_date": str(today),
+        "dates_scanned": dates,
+        "football_candidates": len(football),
+        "tennis_candidates": len(tennis),
+        "sent_now": sent_now,
+        "quote_checks": quote_checks,
+        "corrections_now": corrections_now,
+        "settlements_now": settlements_now,
+        "total_green_messages": len(ledger["sent"]),
+        "total_settlements": len(ledger["settlements"]),
+        "duplicate_green_messages_suppressed": max(0, len(candidates) - sent_now),
+        "real_money": "BLOQUEADO",
+    }
+    ledger["run_history"].append(run_record)
+    ledger["run_history"] = ledger["run_history"][-200:]
+    ledger["updated_at_utc"] = now.isoformat()
     ledger["protections"] = {
         "automatic_wagering": False,
         "real_money": "BLOQUEADO",
         "notification_only": True,
         "duplicate_signal_suppression": True,
+        "final_only_settlement": True,
+        "odds_used_to_generate_probability": False,
+        "tennis_fail_closed_until_validated_lane": True,
     }
+
     LEDGER.parent.mkdir(parents=True, exist_ok=True)
     LEDGER.write_text(json.dumps(ledger, indent=2, sort_keys=True, ensure_ascii=False) + "\n", encoding="utf-8")
-    print(json.dumps({
-        "status": "PASS",
-        "candidate_green_signals": len(candidates),
-        "sent_now": len(sent_now),
-        "already_sent": len(candidates) - len(sent_now),
-        "sent_records": sent_now,
-        "real_money": "BLOQUEADO",
-    }, ensure_ascii=False, sort_keys=True))
+    print(json.dumps(run_record, ensure_ascii=False, sort_keys=True))
+
 
 if __name__ == "__main__":
     main()
