@@ -1,7 +1,7 @@
 {
   "schema": "MATRIX_FOOTBALL_08OCT_BROWSER_PHYSICAL_QUOTES_V1",
-  "observed_at_bogota": "2026-10-08T07:27:00-05:00",
-  "observed_at_utc": "2026-10-08T12:27:00Z",
+  "observed_at_bogota": "2026-10-08T13:52:00-05:00",
+  "observed_at_utc": "2026-10-08T18:52:00Z",
   "target_date_bogota": "2026-10-08",
   "source_shadow_freeze": "evidence/api_football/daily_prematch_reports/2026-10-08/shadow_quote_freeze/MATRIX_FOOTBALL_08OCT_TWO_SHADOW_FINAL_QUOTE_FREEZE.json",
   "browser_source": "Opera Browser Connector",
@@ -97,8 +97,8 @@
         }
       },
       "browser_evidence_status": "PHYSICALLY_VERIFIED_BY_USER_SCREENSHOT",
-      "final_shadow_status": "SEÑAL_VERDE_SIMULADA_Y_APUESTA_USUARIO_EJECUTADA",
-      "note": "User screenshot proves execution of the same Over 2.5 selection at 1.72 with COP 2,000 stake. This is user-executed real money, recorded separately from MATRIX authorization; automatic wagering remains blocked.",
+      "final_shadow_status": "GANADA",
+      "note": "User-provided screenshot physically verifies the executed Betano Over 2.5 wager as GANADA. Stake COP 2,000, return COP 3,440, net profit COP 1,440, ROI +72.0%. MATRIX automatic wagering remains blocked.",
       "user_screenshot_evidence": {
         "source": "user_provided_screenshot",
         "image_sha256": "d80183d7d79326e64fec7bb5163a1f9d162302072a6ccb2496eee039f8f94e5a",
@@ -130,7 +130,7 @@
           1536,
           1201
         ],
-        "status": "PENDING",
+        "status": "GANADA",
         "bet_type": "Simple",
         "market": "Goles totales Más/Menos",
         "selection": "Más de 2.5",
@@ -142,8 +142,27 @@
         "current_cashout_visible_cop": 2000,
         "user_execution": true,
         "matrix_automatic_execution": false,
-        "bookmaker": "Betano Colombia (linked to prior physically verified market screen in same conversation)"
-      }
+        "bookmaker": "Betano Colombia (linked to prior physically verified market screen in same conversation)",
+        "final_return_cop": 3440,
+        "net_profit_cop": 1440,
+        "roi": 0.72,
+        "settled_at_bogota": "2026-10-08T13:52:00-05:00",
+        "settlement_evidence": {
+          "source": "user_provided_screenshot",
+          "image_sha256": "0be48bde20dfeb9ef6619bd03a89b2079985440ceab2ed31f3ac9405cb1fec80",
+          "image_dimensions_px": [
+            1536,
+            964
+          ],
+          "physically_visible_status": "Ganada",
+          "physically_visible_stake_cop": 2000,
+          "physically_visible_return_cop": 3440,
+          "physically_visible_odds": 1.72,
+          "physically_visible_market": "Más 2.5",
+          "physically_visible_event": "MS Tira - Ironi Nesher"
+        }
+      },
+      "settlement_status": "FINAL_USER_EVIDENCE"
     }
   ],
   "decision_counts": {
