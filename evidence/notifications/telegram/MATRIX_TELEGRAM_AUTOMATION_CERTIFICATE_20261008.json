@@ -1,0 +1,116 @@
+{
+  "schema": "MATRIX_TELEGRAM_AUTOMATION_CERTIFICATE_V1",
+  "generated_at_utc": "2026-10-08T19:33:21.854Z",
+  "repository": "MatrixLabSports/MATRIX-LAB",
+  "operational_branch": "repair/cor09-world-pipeline",
+  "default_branch": "main",
+  "checks": {
+    "dynamic_bogota_date": {
+      "status": "PASS",
+      "evidence": {
+        "bogota_date": "2026-10-08",
+        "corrections_now": 0,
+        "dates_scanned": [
+          "2026-10-08",
+          "2026-10-07"
+        ],
+        "duplicate_green_messages_suppressed": 2,
+        "economic_updates_now": 1,
+        "football_candidates": 2,
+        "quote_checks": 1,
+        "real_money": "BLOQUEADO",
+        "rectifications_now": 1,
+        "run_at_utc": "2026-10-08T19:31:57+00:00",
+        "sent_now": 0,
+        "settlements_now": 0,
+        "tennis_candidates": 0,
+        "total_green_messages": 2,
+        "total_settlements": 1
+      }
+    },
+    "anti_duplicate": {
+      "status": "PASS",
+      "expected_existing_green_messages": 2,
+      "observed_sent_now": 0,
+      "observed_duplicate_suppressed": 2,
+      "telegram_message_ids": [
+        7,
+        8
+      ]
+    },
+    "quote_revalidation_same_house": {
+      "status": "PASS",
+      "fluminense_quote_state": {
+        "checked_at_utc": "2026-10-08T19:31:57+00:00",
+        "fixture_id": "1492394",
+        "offer": null,
+        "required_house_key": "betplay",
+        "state": "CASA_ORIGINAL_NO_DISPONIBLE_EN_FEED"
+      },
+      "wrong_house_correction_rectified": {
+        "fixture_id": "1492394",
+        "offer": {
+          "break_even_probability": 0.5617977528089888,
+          "ev": -0.01037468053200008,
+          "house": "Betano",
+          "odds": 1.78
+        },
+        "rectification_message_id": 11,
+        "rectified_at_utc": "2026-10-08T19:31:57+00:00",
+        "sent_at_utc": "2026-10-08T19:29:15+00:00",
+        "signal_key": "a7722011282d0fdc99da351cd89d1be0aecc759f3a804746a710f30f93c4cc4a",
+        "status": "RECTIFICADA_CASA_DISTINTA",
+        "telegram_message_id": 9
+      }
+    },
+    "final_only_settlement": {
+      "status": "PASS",
+      "settlements": [
+        {
+          "actual_profit_cop": 1440,
+          "actual_stake_cop": 2000,
+          "away_goals": 1,
+          "economic_update_message_id": 12,
+          "economic_update_sent_at_utc": "2026-10-08T19:31:57+00:00",
+          "execution_evidence_source": "user_provided_screenshot",
+          "final_status": "FT",
+          "fixture_id": "1621358",
+          "home_goals": 2,
+          "market": "Más de 2.5 goles",
+          "match": "Tira vs Ironi Nesher",
+          "odds": 1.72,
+          "settled_at_utc": "2026-10-08T19:29:15+00:00",
+          "shadow_profit_units": 0.72,
+          "signal_key": "f3ecc279f7ba9aefc18a029fbe71a085b8e1d6555d6b3b89699ff02365b57418",
+          "status": "FINAL_ENVIADO_OK",
+          "telegram_message_id": 10,
+          "won": true
+        }
+      ],
+      "final_only_protection": true
+    },
+    "tennis_fail_closed": {
+      "status": "PASS",
+      "observed_tennis_candidates": 0,
+      "protection": true,
+      "canonical_adapter_root": "evidence/tennis_signals/YYYY-MM-DD/"
+    },
+    "scheduled_15m": {
+      "status": "CONFIGURED_AND_PUSH_RUNTIME_PASS; FIRST_EVENT_SCHEDULE_NOT_YET_OBSERVED",
+      "default_branch_workflow": ".github/workflows/telegram-matrix-supervisor-15m.yml",
+      "cron": "*/15 * * * *",
+      "main_workflow_blob_sha": "9ef75049652e2bbeec47ee0375d84e0053a14de6",
+      "successful_runtime_run_id": 37832338979,
+      "successful_runtime_event": "push"
+    }
+  },
+  "protections": {
+    "automatic_wagering": false,
+    "duplicate_signal_suppression": true,
+    "final_only_settlement": true,
+    "notification_only": true,
+    "odds_used_to_generate_probability": false,
+    "real_money": "BLOQUEADO",
+    "tennis_fail_closed_until_validated_lane": true
+  }
+}
