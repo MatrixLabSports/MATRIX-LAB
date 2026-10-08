@@ -143,8 +143,11 @@ def fetch(target: date, out: Path) -> dict[str,Any]:
         "selected_exact_bogota_day":len(events),
         "tournaments_seen":len(tournaments),
         "surface_counts":{
-            k:sum(1 for e in events if e["surface_family"]==k)
-            for k in ("HARD","CLAY","GRASS","OTHER",None)
+            "HARD":sum(1 for e in events if e["surface_family"]=="HARD"),
+            "CLAY":sum(1 for e in events if e["surface_family"]=="CLAY"),
+            "GRASS":sum(1 for e in events if e["surface_family"]=="GRASS"),
+            "OTHER":sum(1 for e in events if e["surface_family"]=="OTHER"),
+            "UNRESOLVED":sum(1 for e in events if e["surface_family"] is None),
         },
         "events":events,
         "malformed":malformed,
