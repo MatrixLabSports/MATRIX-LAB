@@ -2,7 +2,7 @@
   "schema": "MATRIX_DAILY_MULTISOURCE_BROWSER_CROSSCHECK_V1",
   "target_date_bogota": "2026-10-08",
   "timezone": "America/Bogota",
-  "status": "PASS_EXACT_AUTOMATED_BROWSER_COUNTS",
+  "status": "PASS_USER_VISIBLE_TOTAL_CORRECTED_LAZY_TREE_RETAINED",
   "governance_basis": {
     "permanent_source_policy": "SOFASCORE_AND_FLASHSCORE_FIRST_THEN_PAID_APIS",
     "sofascore_flashscore_daily_crosscheck_required": true,
@@ -12,12 +12,16 @@
     "sofascore": {
       "url": "https://www.sofascore.com/es/football/2026-10-08",
       "opera_read_status": "PASS",
-      "exact_unique_match_count": 702,
+      "exact_unique_match_count": 1519,
       "tournament_link_count": 253,
-      "count_type": "MACHINE_VERIFIED_BROWSER_UI_EXACT",
-      "provenance": "Opera Browser Connector accessibility-tree jq count of unique /football/match/ URLs on the loaded 2026-10-08 football page.",
-      "machine_verified_exact": true,
-      "limitation": "Loaded provider calendar count only; includes youth/amateur/cancelled rows and is not by itself a model-eligible total."
+      "count_type": "USER_VISIBLE_SOFASCORE_DAY_TOTAL",
+      "provenance": "User-provided SofaScore screenshot for 2026-10-08 visibly shows Fútbol 32 / 1519; denominator 1519 is the selected-day total. Opera accessibility-tree unique /football/match/ links=702 is retained only as a partial lazy-loaded DOM count.",
+      "machine_verified_exact": false,
+      "limitation": "1519 is the visible SofaScore selected-day total; 702 was a partial accessibility-tree/lazy-load count and must not be used as the calendar total.",
+      "user_visible_total_count": 1519,
+      "loaded_tree_unique_match_link_count": 702,
+      "user_visible_screenshot_verified": true,
+      "screenshot_sha256": "158e5247a7c171c69710147b80a54c70937bff471bf3fd711c7b23ee0c7cfd82"
     },
     "flashscore": {
       "url": "https://www.flashscore.co/?d=2026-10-08",
@@ -34,7 +38,9 @@
     "browser_sources_must_be_checked_daily": true,
     "discovery_union_requires_physical_dedup": true,
     "api_enrichment_after_browser_discovery": true,
-    "exact_browser_counts_are_not_additive": true
+    "exact_browser_counts_are_not_additive": true,
+    "sofascore_visible_total_supersedes_lazy_tree_count": true,
+    "lazy_tree_counts_must_not_be_labeled_exact_calendar_total": true
   },
   "protections": {
     "missing_not_zero": true,
