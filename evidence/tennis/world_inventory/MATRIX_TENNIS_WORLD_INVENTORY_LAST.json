@@ -1,9 +1,9 @@
 {
   "accumulation": {
-    "cumulative_count": 332,
-    "current_fetch_count": 29,
+    "cumulative_count": 333,
+    "current_fetch_count": 30,
     "never_decrease_within_day": true,
-    "newly_discovered_count": 0,
+    "newly_discovered_count": 1,
     "policy": "MONOTONIC_UNION_BY_STABLE_PHYSICAL_IDENTITY",
     "prior_count": 332,
     "retained_prior_only_count": 303
@@ -35,7 +35,7 @@
     "ITF": {
       "current_governed_model": null,
       "feeds_COR02_COR03": false,
-      "inventory_count": 256
+      "inventory_count": 257
     },
     "WTA": {
       "current_governed_model": null,
@@ -15605,6 +15605,47 @@
       "event_format_authority": "TWO_INDIVIDUAL_PROVIDER_NAMES",
       "event_start_bogota": "2026-10-07T19:00:00-05:00",
       "event_start_utc": "2026-10-08T00:00:00+00:00",
+      "match_id": "1982",
+      "model_derivation": {
+        "blockers": [
+          "CIRCUIT_OUTSIDE_COR0203_ATP_CHALLENGER",
+          "SURFACE_OUTSIDE_COR0203_HARD"
+        ],
+        "domain_candidate": false,
+        "lane": "COR02_COR03_ATP_CHALLENGER_HARD",
+        "note": "Domain candidate only. Governed COR02/COR03 still requires identity, PIT history, ranking/features, unique physical event, future prematch freeze and all existing gates."
+      },
+      "physical_event_key": "7d7e02980563e8fdb9a5b63d33dcf4040cd34f558773e3b7f0354627ba2b8906",
+      "player1": {
+        "country": "FRA",
+        "id": "54812",
+        "name": "Maxence Bertimon"
+      },
+      "player2": {
+        "country": "BUL",
+        "id": "129436",
+        "name": "Aleksandar Tolev"
+      },
+      "player_group": "",
+      "provider_channel": "ATP",
+      "provider_status": "",
+      "round": "Second",
+      "source_event_id": "rapidapi-tennis:atp:match:1982",
+      "source_provider": "rapidapi_tennis",
+      "source_snapshot_sha256": "23ede39c34bde060864a8a13005972cd831b9d3baf31beea102872276b02301d",
+      "stable_physical_identity_key": "9ef478479306c88ec3b1a1f1d05f1e80fa6f38d09161f43ceb69d29942f859d7",
+      "surface": "Clay",
+      "tier": "",
+      "tournament_id": "22138",
+      "tournament_name": "M15 Burgas"
+    },
+    {
+      "circuit_detail": "ITF_MEN",
+      "circuit_family": "ITF",
+      "event_format": "SINGLES",
+      "event_format_authority": "TWO_INDIVIDUAL_PROVIDER_NAMES",
+      "event_start_bogota": "2026-10-07T19:00:00-05:00",
+      "event_start_utc": "2026-10-08T00:00:00+00:00",
       "match_id": "2200",
       "model_derivation": {
         "blockers": [
@@ -15688,18 +15729,18 @@
   "events_by_detail": {
     "ATP_CHALLENGER": 45,
     "ATP_MAIN_OR_OTHER": 11,
-    "ITF_MEN": 115,
+    "ITF_MEN": 116,
     "ITF_WOMEN": 141,
     "WTA_MAIN_OR_OTHER": 20
   },
   "events_by_family": {
     "ATP": 56,
-    "ITF": 256,
+    "ITF": 257,
     "WTA": 20
   },
   "events_by_format": {
     "DOUBLES": 28,
-    "SINGLES": 304
+    "SINGLES": 305
   },
   "metrics_opened": false,
   "operational_timezone": "America/Bogota",
@@ -15716,10 +15757,10 @@
   "provider_channel_errors": {},
   "provider_channel_summaries": {
     "ATP": {
-      "events_in_bogota_day": 6,
+      "events_in_bogota_day": 7,
       "malformed_unplaced_rows": 0,
       "network_calls": 1,
-      "provider_rows_in_query_window": 6,
+      "provider_rows_in_query_window": 7,
       "status": "PASS"
     },
     "WTA": {
@@ -15739,7 +15780,7 @@
   "status": "PASS",
   "target_date_bogota": "2026-10-07",
   "unplaced_rows": [],
-  "world_calendar_inventory_count": 332,
+  "world_calendar_inventory_count": 333,
   "world_complete_gate": "REQUIRES_MULTI_SOURCE_RECONCILIATION",
   "world_inventory_complete": false
 }
