@@ -6,7 +6,14 @@ on:
       - repair/cor09-world-pipeline
     paths:
       - .github/workflows/live-tennis-cumulative-gate-reconcile.yml
+      - tools/live_tennis_cumulative_gate.py
   workflow_dispatch:
+  workflow_run:
+    workflows:
+      - "MATRIX Live Tennis Bulk Seed"
+      - "MATRIX Live Tennis FINAL Settlement"
+    types:
+      - completed
 
 permissions:
   contents: write
@@ -17,6 +24,9 @@ concurrency:
 
 jobs:
   reconcile:
+    if: >
+      github.event_name != 'workflow_run' ||
+      github.event.workflow_run.conclusion == 'success'
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
