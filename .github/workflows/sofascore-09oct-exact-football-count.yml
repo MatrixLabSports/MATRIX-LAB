@@ -1,0 +1,100 @@
+name: SofaScore 09OCT Exact Football Count
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - repair/cor09-world-pipeline
+    paths:
+      - .github/workflows/sofascore-09oct-exact-football-count.yml
+
+permissions:
+  contents: write
+
+jobs:
+  exact-count:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: repair/cor09-world-pipeline
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: python -m pip install requests
+      - name: Fetch complete SofaScore calendar
+        run: |
+          python - <<'PY'
+          import json, hashlib, requests
+          from pathlib import Path
+          from datetime import datetime, timezone
+
+          date = "2026-10-09"
+          base = f"https://api.sofascore.com/api/v1/sport/football/scheduled-events/{date}"
+          inverse = base + "/inverse"
+          s = requests.Session()
+          headers = {
+              "User-Agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 Chrome/140.0 Safari/537.36",
+              "Accept": "application/json, text/plain, */*",
+              "Referer": f"https://www.sofascore.com/es/football/{date}",
+              "Origin": "https://www.sofascore.com",
+              "Accept-Language": "es-CO,es;q=0.9,en;q=0.8",
+          }
+          warm = s.get("https://www.sofascore.com/", headers=headers, timeout=30)
+          normal = s.get(base, headers=headers, timeout=30)
+          full = s.get(inverse, headers=headers, timeout=60)
+          out = {
+              "schema": "MATRIX_SOFASCORE_EXACT_DAY_COUNT_V1",
+              "target_date": date,
+              "source": "SOFASCORE",
+              "warm_status": warm.status_code,
+              "normal_status": normal.status_code,
+              "inverse_status": full.status_code,
+              "endpoint_mode": "inverse",
+              "real_money": "BLOCKED",
+              "automatic_wagering": False,
+          }
+          if full.status_code == 200:
+              data = full.json()
+              events = data.get("events", [])
+              ids = [e.get("id") for e in events if e.get("id") is not None]
+              unique_ids = sorted(set(ids))
+              out.update({
+                  "status": "PASS",
+                  "raw_event_count": len(events),
+                  "unique_event_count": len(unique_ids),
+                  "duplicate_event_rows": len(ids) - len(unique_ids),
+                  "event_ids_sha256": hashlib.sha256(
+                      "\n".join(map(str, unique_ids)).encode()
+                  ).hexdigest(),
+                  "fetched_at_utc": datetime.now(timezone.utc).isoformat(),
+              })
+          else:
+              out.update({
+                  "status": "BLOCKED",
+                  "reason": f"SOFASCORE_INVERSE_HTTP_{full.status_code}",
+                  "response_prefix": full.text[:500],
+                  "fetched_at_utc": datetime.now(timezone.utc).isoformat(),
+              })
+          p = Path("evidence/football_world_inventory/2026-10-09/MATRIX_SOFASCORE_EXACT_DAY_COUNT.json")
+          p.parent.mkdir(parents=True, exist_ok=True)
+          p.write_text(json.dumps(out, ensure_ascii=False, indent=2, sort_keys=True)+"\n", encoding="utf-8")
+          print(json.dumps(out, ensure_ascii=False, sort_keys=True))
+          if out["status"] != "PASS":
+              raise SystemExit(2)
+          PY
+      - name: Persist physical evidence
+        if: always()
+        run: |
+          git config user.name "matrix-sofascore-count"
+          git config user.email "matrix-sofascore-count@users.noreply.github.com"
+          git add evidence/football_world_inventory/2026-10-09/MATRIX_SOFASCORE_EXACT_DAY_COUNT.json || true
+          if git diff --cached --quiet; then
+            echo "NO_EVIDENCE_CHANGE"
+            exit 0
+          fi
+          git commit -m "evidence(sofascore): persist exact 09OCT football count"
+          git pull --rebase origin repair/cor09-world-pipeline
+          git push origin HEAD:repair/cor09-world-pipeline
