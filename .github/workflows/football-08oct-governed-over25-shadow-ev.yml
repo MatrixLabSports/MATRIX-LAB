@@ -1,0 +1,359 @@
+name: Football 08OCT Governed Over25 Shadow EV
+
+on:
+  push:
+    branches:
+      - repair/cor09-world-pipeline
+    paths:
+      - .github/workflows/football-08oct-governed-over25-shadow-ev.yml
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: football-08oct-governed-over25-shadow-ev
+  cancel-in-progress: false
+
+jobs:
+  shadow-ev:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: repair/cor09-world-pipeline
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: python -m pip install requests
+
+      - name: Build fresh 08OCT shadow probabilities from frozen governed inputs
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json
+          from datetime import datetime, timezone
+          from pathlib import Path
+          from tools.api_football_canonicalize_analysis_inputs import load_chunked_canonical_bundle
+          from tools.api_football_market_shadow_p_matrix import build_shadow_p_matrix
+
+          report=Path("evidence/api_football/daily_prematch_reports/2026-10-08/MATRIX_FOOTBALL_PREMATCH_REPORT_20261008.json")
+          j=json.loads(report.read_text())
+          cycle=Path(j["sources"]["api_football_cycle_summary"]).parent
+          canonical, manifest=load_chunked_canonical_bundle(cycle/"canonical_analysis")
+          payload=build_shadow_p_matrix(
+              canonical_bundle=canonical,
+              canonical_manifest=manifest,
+              raw_dir=cycle/"history/raw",
+              generated_at=datetime.now(timezone.utc),
+          )
+          out=Path("evidence/api_football/daily_prematch_reports/2026-10-08/p_matrix_shadow_current.json")
+          out.write_text(json.dumps(payload,indent=2,sort_keys=True,ensure_ascii=False)+"\n")
+          print(json.dumps({
+              "cycle_root":str(cycle),
+              "ready_inputs":payload["source_ready_input_count"],
+              "scored_count":payload["scored_count"],
+              "blocked_count":payload["blocked_count"],
+              "status":payload["p_matrix_status"],
+              "real_money":payload["protections"]["real_money"]
+          },sort_keys=True))
+          PY
+
+      - name: Query exact physical Over 2.5 odds and classify
+        env:
+          API_FOOTBALL_KEY: ${{ secrets.API_FOOTBALL_KEY }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import hashlib,json,os,re
+          from datetime import datetime,timezone
+          from pathlib import Path
+          import requests
+
+          src=Path("evidence/api_football/daily_prematch_reports/2026-10-08/p_matrix_shadow_current.json")
+          pm=json.loads(src.read_text())
+          key=os.environ.get("API_FOOTBALL_KEY","").strip()
+          if not key:
+              raise SystemExit("API_FOOTBALL_KEY_NOT_CONFIGURED")
+
+          now=datetime.now(timezone.utc).replace(microsecond=0)
+          root=Path("evidence/api_football/daily_prematch_reports/2026-10-08/over25_shadow_ev")
+          raw=root/"raw"; raw.mkdir(parents=True,exist_ok=True)
+
+          def norm(v):
+              return re.sub(r"[^a-z0-9]+","",str(v or "").casefold())
+
+          policy={
+              "betano":["betano"],
+              "betplay":["betplay"],
+              "bwin":["bwin"],
+              "rushbet":["rushbet","rush bet"],
+          }
+          diagnostic={"pinnacle":["pinnacle"]}
+
+          def match_book(name, mapping):
+              n=norm(name)
+              for k,toks in mapping.items():
+                  if any(norm(t) in n for t in toks):
+                      return k
+              return None
+
+          def odd(v):
+              try:
+                  x=float(v)
+                  return x if x>1 else None
+              except Exception:
+                  return None
+
+          rows=[]
+          client=requests.Session()
+          calls=0
+
+          for row in pm["rows"]:
+              ko=datetime.fromisoformat(str(row["kickoff_utc"]).replace("Z","+00:00")).astimezone(timezone.utc)
+              if ko<=now:
+                  rows.append({
+                      "fixture_id":str(row["fixture_id"]),
+                      "match":f'{row.get("home_team")} vs {row.get("away_team")}',
+                      "kickoff_utc":row["kickoff_utc"],
+                      "p_over_2_5":float(row["p_matrix_shadow"]["over_2_5"]),
+                      "decision":"BLOCKED",
+                      "reason":"EVENT_NOT_FUTURE_AT_ODDS_QUERY",
+                      "policy_offers":[],
+                      "diagnostic_offers":[]
+                  })
+                  continue
+
+              fid=str(row["fixture_id"])
+              resp=client.get(
+                  "https://v3.football.api-sports.io/odds",
+                  headers={"x-apisports-key":key},
+                  params={"fixture":fid},
+                  timeout=20
+              )
+              calls+=1
+              body=bytes(resp.content)
+              (raw/f"fixture_{fid}.bin").write_bytes(body)
+              try: payload=resp.json()
+              except Exception: payload={}
+              errors=payload.get("errors") if isinstance(payload,dict) else None
+
+              policy_offers=[]
+              diagnostic_offers=[]
+              if 200 <= resp.status_code < 300 and errors in ({},[],None):
+                  for fr in payload.get("response",[]) or []:
+                      if not isinstance(fr,dict): continue
+                      for book in fr.get("bookmakers",[]) or []:
+                          if not isinstance(book,dict): continue
+                          bname=str(book.get("name") or "")
+                          pkey=match_book(bname,policy)
+                          dkey=match_book(bname,diagnostic)
+                          if not pkey and not dkey:
+                              continue
+                          for bet in book.get("bets",[]) or []:
+                              if not isinstance(bet,dict): continue
+                              try: bid=int(bet.get("id"))
+                              except Exception: continue
+                              btitle=str(bet.get("name") or "").strip()
+                              # Fail closed: only exact full-match Goals Over/Under bet_id 5.
+                              if bid!=5 or btitle.casefold()!="goals over/under":
+                                  continue
+                              for val in bet.get("values",[]) or []:
+                                  if not isinstance(val,dict): continue
+                                  label=str(val.get("value") or "").strip()
+                                  if label.casefold()!="over 2.5":
+                                      continue
+                                  dec=odd(val.get("odd"))
+                                  if dec is None:
+                                      continue
+                                  p=float(row["p_matrix_shadow"]["over_2_5"])
+                                  offer={
+                                      "house_key":pkey or dkey,
+                                      "bookmaker_id":book.get("id"),
+                                      "bookmaker_name":bname,
+                                      "bet_id":bid,
+                                      "bet_name":btitle,
+                                      "label":label,
+                                      "decimal_odds":dec,
+                                      "break_even_probability":1.0/dec,
+                                      "p_matrix":p,
+                                      "ev":p*dec-1.0,
+                                      "odds_used_to_generate_probability":False
+                                  }
+                                  (policy_offers if pkey else diagnostic_offers).append(offer)
+
+              # Deduplicate exact house+odd.
+              def dedupe(xs):
+                  seen=set(); out=[]
+                  for x in xs:
+                      k=(x["house_key"],x["decimal_odds"])
+                      if k in seen: continue
+                      seen.add(k); out.append(x)
+                  return out
+              policy_offers=dedupe(policy_offers)
+              diagnostic_offers=dedupe(diagnostic_offers)
+              eligible=[x for x in policy_offers if x["decimal_odds"]>1.50]
+              best=max(eligible,key=lambda x:x["ev"]) if eligible else None
+
+              if best is None:
+                  decision="BLOCKED"
+                  reason="NO_EXACT_POLICY_HOUSE_OVER25_ODDS_ABOVE_1_50"
+              elif best["ev"]>0:
+                  decision="BET_SHADOW"
+                  reason="EXACT_POLICY_HOUSE_ODDS_AND_POSITIVE_EV"
+              else:
+                  decision="NO_BET"
+                  reason="EXACT_POLICY_HOUSE_ODDS_BUT_EV_NOT_POSITIVE"
+
+              rows.append({
+                  "fixture_id":fid,
+                  "match":f'{row.get("home_team")} vs {row.get("away_team")}',
+                  "league_id":row.get("league_id"),
+                  "kickoff_utc":row["kickoff_utc"],
+                  "p_over_2_5":float(row["p_matrix_shadow"]["over_2_5"]),
+                  "fair_decimal_odds":1.0/float(row["p_matrix_shadow"]["over_2_5"]),
+                  "policy_offers":policy_offers,
+                  "diagnostic_offers":diagnostic_offers,
+                  "best_policy_offer":best,
+                  "decision":decision,
+                  "reason":reason,
+                  "raw_sha256":hashlib.sha256(body).hexdigest(),
+                  "provider_http_status":int(resp.status_code),
+                  "provider_errors":errors
+              })
+
+          # Include probability-blocked current ready inputs from p-matrix artifact.
+          for b in pm.get("blocked",[]):
+              rows.append({
+                  "fixture_id":str(b.get("fixture_id") or ""),
+                  "match":None,
+                  "kickoff_utc":None,
+                  "p_over_2_5":None,
+                  "policy_offers":[],
+                  "diagnostic_offers":[],
+                  "best_policy_offer":None,
+                  "decision":"BLOCKED",
+                  "reason":"P_MATRIX_BLOCKED:"+str(b.get("reason"))
+              })
+
+          order={"BET_SHADOW":0,"NO_BET":1,"BLOCKED":2}
+          rows.sort(key=lambda x:(order.get(x["decision"],9),-(x.get("best_policy_offer") or {}).get("ev",-999),str(x.get("kickoff_utc") or ""),str(x.get("fixture_id") or "")))
+
+          bets=[x for x in rows if x["decision"]=="BET_SHADOW"]
+          nobets=[x for x in rows if x["decision"]=="NO_BET"]
+          blocked=[x for x in rows if x["decision"]=="BLOCKED"]
+
+          out={
+              "schema":"MATRIX_FOOTBALL_08OCT_OVER25_GOVERNED_SHADOW_EV_V1",
+              "generated_at_utc":now.isoformat(),
+              "target_date_bogota":"2026-10-08",
+              "market":"OVER_2_5",
+              "probability_engine":"calibrated_log_pool_v1",
+              "probability_status":"FROZEN_SHADOW_RESEARCH",
+              "market_governance_status":"STRONG_PROMOTED_SIGNAL_ENGINE",
+              "exact_market_binding":{
+                  "bet_id":5,
+                  "bet_name":"Goals Over/Under",
+                  "value":"Over 2.5"
+              },
+              "policy_houses":["Betano","BetPlay","bwin","RushBet"],
+              "diagnostic_only":["Pinnacle"],
+              "minimum_decimal_odds_exclusive":1.50,
+              "ev_formula":"P_MATRIX * DECIMAL_ODDS - 1",
+              "bet_shadow_requires_positive_ev":True,
+              "network_calls":calls,
+              "p_matrix_scored_count":pm["scored_count"],
+              "p_matrix_blocked_count":pm["blocked_count"],
+              "decision_counts":{
+                  "BET_SHADOW":len(bets),
+                  "NO_BET":len(nobets),
+                  "BLOCKED":len(blocked)
+              },
+              "bet_shadow":bets,
+              "no_bet":nobets,
+              "blocked":blocked,
+              "all_rows":rows,
+              "protections":{
+                  "probability_frozen_before_odds_query":True,
+                  "odds_used_to_generate_probability":False,
+                  "target_outcomes_used":False,
+                  "broad_market_matching_forbidden":True,
+                  "pinnacle_not_executable_house":True,
+                  "automatic_wagering":False,
+                  "real_money":"BLOCKED"
+              }
+          }
+          blob=json.dumps(out,sort_keys=True,separators=(",",":"),ensure_ascii=False).encode()
+          out["sha256_without_self"]=hashlib.sha256(blob).hexdigest()
+          path=root/"MATRIX_FOOTBALL_08OCT_OVER25_GOVERNED_SHADOW_EV.json"
+          path.write_text(json.dumps(out,indent=2,sort_keys=True,ensure_ascii=False)+"\n")
+          print(json.dumps({
+              "p_matrix_scored":out["p_matrix_scored_count"],
+              "p_matrix_blocked":out["p_matrix_blocked_count"],
+              "network_calls":out["network_calls"],
+              "decision_counts":out["decision_counts"],
+              "top_shadow":[
+                  {
+                      "fixture_id":x["fixture_id"],
+                      "match":x["match"],
+                      "p":x["p_over_2_5"],
+                      "house":x["best_policy_offer"]["bookmaker_name"],
+                      "odds":x["best_policy_offer"]["decimal_odds"],
+                      "ev":x["best_policy_offer"]["ev"]
+                  } for x in bets[:15]
+              ],
+              "real_money":"BLOCKED"
+          },sort_keys=True))
+          PY
+
+      - name: Validate governed shadow rules
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          p=Path("evidence/api_football/daily_prematch_reports/2026-10-08/over25_shadow_ev/MATRIX_FOOTBALL_08OCT_OVER25_GOVERNED_SHADOW_EV.json")
+          j=json.loads(p.read_text())
+          assert j["exact_market_binding"]=={"bet_id":5,"bet_name":"Goals Over/Under","value":"Over 2.5"}
+          assert j["protections"]["probability_frozen_before_odds_query"] is True
+          assert j["protections"]["odds_used_to_generate_probability"] is False
+          assert j["protections"]["broad_market_matching_forbidden"] is True
+          assert j["protections"]["automatic_wagering"] is False
+          assert j["protections"]["real_money"]=="BLOCKED"
+          for x in j["bet_shadow"]:
+              b=x["best_policy_offer"]
+              assert b["decimal_odds"]>1.50
+              assert b["ev"]>0
+              assert b["bet_id"]==5
+              assert b["bet_name"]=="Goals Over/Under"
+              assert b["label"]=="Over 2.5"
+              assert b["house_key"] in {"betano","betplay","bwin","rushbet"}
+          print("GOVERNED_OVER25_SHADOW_GATE: PASS")
+          PY
+
+      - name: Persist evidence
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name matrix-football-shadow-ev
+          git config user.email matrix-football-shadow-ev@users.noreply.github.com
+          git add evidence/api_football/daily_prematch_reports/2026-10-08/p_matrix_shadow_current.json
+          git add evidence/api_football/daily_prematch_reports/2026-10-08/over25_shadow_ev
+          git commit -m "evidence(football): 08OCT governed Over25 BET-SHADOW EV"
+          for attempt in 1 2 3 4; do
+            git fetch origin repair/cor09-world-pipeline
+            if ! git rebase origin/repair/cor09-world-pipeline; then git rebase --abort || true; exit 1; fi
+            if git push origin HEAD:repair/cor09-world-pipeline; then exit 0; fi
+            sleep $((attempt*2))
+          done
+          exit 1
