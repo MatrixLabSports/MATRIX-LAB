@@ -1,0 +1,146 @@
+{
+  "schema": "MATRIX_PRODUCTIVE_CONTINUATION_08OCT2026_V1",
+  "cutoff_bogota": "2026-10-08T18:16:37-05:00",
+  "repo": "MatrixLabSports/MATRIX-LAB",
+  "branch": "repair/cor09-world-pipeline",
+  "governance": {
+    "real_money": "BLOCKED",
+    "automatic_wagering": false,
+    "missing_not_zero": true,
+    "final_only_settlement": true,
+    "odds_to_p_matrix": false
+  },
+  "tennis_hard": {
+    "holdout": "A22_POST_AUDIT_VIRGIN_HOLDOUT_V1",
+    "run_158": {
+      "run_id": 37858055783,
+      "trigger_commit": "5a42feab2fc4e07614d5942abb355e99ae731513",
+      "conclusion": "success"
+    },
+    "run_159": {
+      "run_id": 37858334963,
+      "trigger_commit": "a13b6ab6604ccfa311b658d631562ad979d82a44",
+      "conclusion": "success"
+    },
+    "physical_frozen_rows": 237,
+    "duplicate_observations_quarantined": 109,
+    "unique_calibration_observations": 128,
+    "remaining_to_200": 72,
+    "remaining_to_600": 472,
+    "metrics_opened": false,
+    "outcomes_read": 0,
+    "operational_state": "IDLE_VALID",
+    "bottleneck": {
+      "stage": "INVENTORY",
+      "cause": "SOURCE_READY_NO_NEW_ELIGIBLE_EVENTS"
+    },
+    "r870": {
+      "event_id": "COR0203-RAPIDAPI-TENNIS-1375-d47f2bdf03ec",
+      "match": "Pablo Llamas Ruiz vs Pedro Martinez Portero",
+      "tournament": "Villena Challenger",
+      "surface": "Hard",
+      "round": "1/4",
+      "kickoff_bogota": "2026-10-09T10:30:00-05:00",
+      "result": "ALL_BLOCKED",
+      "blockers": [
+        "IDENTITY_CROSSWALK_MISSING:rapidapi-tennis:player:27358",
+        "SEALED_STATIC4_PLAYER_NOT_FOUND:Pedro Martinez Portero",
+        "R706_MODEL_HISTORY_NOT_READY"
+      ],
+      "staged_events": 0
+    }
+  },
+  "football": {
+    "stale_baseline_failed_run": 37858059058,
+    "baseline_fix_commit": "429de3c6b0dd0dcb6fdab02898aaf86f9544e0ec",
+    "governed_funnel_run": {
+      "run_id": 37858143622,
+      "conclusion": "success",
+      "current_future_frozen_count": 8,
+      "physical_uniqueness_result": "PASS"
+    },
+    "market_governance": {
+      "OVER_2_5": {
+        "strength": "STRONG",
+        "signal_scope": "GOVERNED_P_MATRIX_SIGNAL_ONLY"
+      },
+      "1X2": {
+        "strength": "STRONG",
+        "signal_scope": "SHADOW_FROZEN_RESEARCH_PROBABILITY",
+        "executable_signal_status": "NOT_SEPARATELY_PROMOTED_P_MATRIX"
+      },
+      "BTTS": {
+        "strength": "NO_GO"
+      }
+    },
+    "settlement": {
+      "run_id": 37858169605,
+      "conclusion": "success",
+      "new_settlement_count": 4,
+      "ledger_final_count": 1225,
+      "calibration_observation_count": 1225,
+      "new_fixture_ids": [
+        "1549505",
+        "1549599",
+        "1636705",
+        "1640287"
+      ],
+      "ledger_hash_chain_verified": true,
+      "parameters_mutated": false,
+      "settlement_final_only": true
+    },
+    "over25_physical_odds_ev": {
+      "run_id": 37858213073,
+      "conclusion": "success",
+      "generated_at_utc": "2026-10-08T23:13:45+00:00",
+      "p_matrix_scored_count": 77,
+      "p_matrix_blocked_count": 60,
+      "decision_counts": {
+        "BET_SHADOW": 0,
+        "NO_BET": 2,
+        "BLOCKED": 135
+      },
+      "no_bet": [
+        {
+          "fixture_id": "1492394",
+          "match": "Fluminense vs Coritiba",
+          "house": "Betano",
+          "odds": 1.75,
+          "p_matrix": 0.5559692806,
+          "ev": -0.02705375895,
+          "note": "Different house from the already registered BetPlay @1.94 execution; do not silently substitute."
+        },
+        {
+          "fixture_id": "1492396",
+          "match": "Palmeiras vs Bahia",
+          "house": "Betano",
+          "odds": 1.6,
+          "p_matrix": 0.487664489,
+          "ev": -0.2197368176
+        }
+      ]
+    }
+  },
+  "telegram": {
+    "cron_definition": "*/15 * * * *",
+    "active_definition_branch": "main",
+    "main_schedule_commit": "53fcfaa62e73307318c9e0f419ef9a69e74ccc73",
+    "operational_mirror_commit": "bf2bc2811fef5f8b9ca42279c643549a8269a2ae",
+    "prior_validation_runs": [
+      37857224888,
+      37857236280
+    ],
+    "anti_duplicate": true,
+    "final_only": true,
+    "same_house_revalidation": true,
+    "scheduled_event_observed_at_cutoff": false,
+    "scheduled_event_note": "No event=schedule run was yet visible in GitHub Actions by 2026-10-08T18:16:37-05:00; GitHub scheduled workflows may start after the nominal minute. Configuration remains active on default branch main."
+  },
+  "adjudication": {
+    "tennis_hard": "NO_NEW_VALID_FREEZE_128_OF_600",
+    "football_settlement": "PASS_PLUS_4_FINAL",
+    "football_over25_new_signal": "NO_NEW_BET_SHADOW",
+    "football_1x2": "SHADOW_ONLY_NOT_EXECUTABLE_SIGNAL",
+    "real_money": "BLOCKED"
+  }
+}
