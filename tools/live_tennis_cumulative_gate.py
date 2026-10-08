@@ -72,17 +72,24 @@ def build(root: Path, out: Path) -> dict[str,Any]:
 
     lanes={}
     for lane,matches in sorted(lane_matches.items()):
-        settled=sum(1 for x in matches.values() if x["settled_final_standard"])
+        settled_total=sum(1 for x in matches.values() if x["settled_final_standard"])
         valid=sum(1 for x in matches.values() if x["quality_valid"])
+        settled_usable=sum(
+            1 for x in matches.values()
+            if x["settled_final_standard"] and x["quality_valid"]
+        )
         lanes[lane]={
             "unique_match_count":len(matches),
             "quality_valid_unique_match_count":valid,
-            "settled_unique_match_count":settled,
+            "settled_final_standard_unique_match_count":settled_total,
+            "settled_unique_match_count":settled_usable,
+            "settled_quality_valid_unique_match_count":settled_usable,
+            "excluded_settled_without_quality_valid_state":settled_total-settled_usable,
             "gates":{
                 str(g):{
                     "threshold":g,
-                    "status":"OPEN" if settled>=g else "SEALED",
-                    "remaining":max(0,g-settled),
+                    "status":"OPEN" if settled_usable>=g else "SEALED",
+                    "remaining":max(0,g-settled_usable),
                 } for g in GATES
             },
             "match_keys_sha256":hashlib.sha256(
@@ -91,6 +98,7 @@ def build(root: Path, out: Path) -> dict[str,Any]:
         }
 
     total_settled=sum(x["settled_unique_match_count"] for x in lanes.values())
+    total_final_standard=sum(x["settled_final_standard_unique_match_count"] for x in lanes.values())
     payload={
         "schema":"MATRIX_LIVE_TENNIS_CUMULATIVE_GATE_V1",
         "generated_at_utc":datetime.now(timezone.utc).replace(microsecond=0).isoformat(),
@@ -98,8 +106,9 @@ def build(root: Path, out: Path) -> dict[str,Any]:
         "ledger_dates_count":len(source_rows),
         "global_unique_match_count":len(global_matches),
         "sum_lane_settled_unique_matches":total_settled,
+        "sum_lane_final_standard_unique_matches_before_quality_gate":total_final_standard,
         "lanes":lanes,
-        "gate_unit":"UNIQUE_FINAL_STANDARD_MATCHES_PER_LANE_ACROSS_DAYS",
+        "gate_unit":"UNIQUE_FINAL_STANDARD_MATCHES_WITH_AT_LEAST_ONE_QUALITY_VALID_LIVE_STATE_PER_LANE_ACROSS_DAYS",
         "dedupe_key":"provider+match_id",
         "states_do_not_substitute_for_matches":True,
         "same_match_train_test_forbidden":True,
