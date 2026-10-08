@@ -94,8 +94,17 @@ def validate_registry(registry: Mapping[str, Any]) -> dict[str, Any]:
     if legacy.get("model_binding", {}).get("glicko_sha256") != "7701aaa009de782ab4485806606d304805c0bee923239ab3ffd511ca82c41ef6":
         raise ValueError("TENNIS_LEGACY_GLICKO_BINDING_CHANGED")
 
-    research = [x for x in lanes if x.get("status") != "ACTIVE_GOVERNED_COR0203"]
-    for lane in research:
+    parallel = [x for x in lanes if x.get("status") != "ACTIVE_GOVERNED_COR0203"]
+    active_prospective = [x for x in parallel if x.get("status") == "ACTIVE_PROSPECTIVE_RESEARCH"]
+    research_only = [x for x in parallel if x.get("status") == "RESEARCH_ONLY_NOT_TRAINED"]
+    unsupported = [
+        x for x in parallel
+        if x.get("status") not in {"RESEARCH_ONLY_NOT_TRAINED", "ACTIVE_PROSPECTIVE_RESEARCH"}
+    ]
+    if unsupported:
+        raise ValueError("TENNIS_PARALLEL_LANE_STATUS_UNSUPPORTED")
+
+    for lane in parallel:
         if lane.get("feeds_cor0203") is not False:
             raise ValueError("TENNIS_RESEARCH_LANE_FEEDS_COR0203:" + lane["lane_id"])
         if lane.get("can_reuse_cor0203_holdout") is not False:
@@ -104,19 +113,32 @@ def validate_registry(registry: Mapping[str, Any]) -> dict[str, Any]:
             raise ValueError("TENNIS_RESEARCH_LANE_REUSES_COR0203_OBSERVATIONS:" + lane["lane_id"])
         if str(lane.get("evidence_root") or "").startswith(PROTECTED_COR_ROOT):
             raise ValueError("TENNIS_RESEARCH_LANE_WRITES_PROTECTED_COR_ROOT:" + lane["lane_id"])
-        holdout = lane.get("holdout") or {}
-        if holdout.get("holdout_id") is not None:
-            raise ValueError("TENNIS_RESEARCH_LANE_PRETENDS_HOLDOUT_EXISTS:" + lane["lane_id"])
         if lane.get("automatic_model_promotion") is not False:
             raise ValueError("TENNIS_RESEARCH_LANE_AUTO_PROMOTION_ENABLED:" + lane["lane_id"])
         if lane.get("real_money") != "BLOCKED":
             raise ValueError("TENNIS_RESEARCH_LANE_REAL_MONEY_NOT_BLOCKED:" + lane["lane_id"])
 
+        holdout = lane.get("holdout") or {}
+        if lane.get("status") == "RESEARCH_ONLY_NOT_TRAINED":
+            if holdout.get("holdout_id") is not None:
+                raise ValueError("TENNIS_RESEARCH_LANE_PRETENDS_HOLDOUT_EXISTS:" + lane["lane_id"])
+            if lane.get("model_binding") is not None:
+                raise ValueError("TENNIS_RESEARCH_LANE_PRETENDS_MODEL_EXISTS:" + lane["lane_id"])
+        else:
+            if not holdout.get("holdout_id"):
+                raise ValueError("TENNIS_ACTIVE_PROSPECTIVE_HOLDOUT_MISSING:" + lane["lane_id"])
+            if holdout.get("holdout_id") == "A22_POST_AUDIT_VIRGIN_HOLDOUT_V1":
+                raise ValueError("TENNIS_ACTIVE_PROSPECTIVE_REUSES_LEGACY_HOLDOUT:" + lane["lane_id"])
+            if not isinstance(lane.get("model_binding"), Mapping):
+                raise ValueError("TENNIS_ACTIVE_PROSPECTIVE_MODEL_BINDING_MISSING:" + lane["lane_id"])
+
     return {
         "status": "PASS",
         "lane_count": len(lanes),
         "active_governed_lane_count": len(active),
-        "research_only_lane_count": len(research),
+        "parallel_lane_count": len(parallel),
+        "research_only_lane_count": len(research_only),
+        "active_prospective_lane_count": len(active_prospective),
         "legacy_lane_id": legacy["lane_id"],
         "legacy_holdout_id": legacy["holdout"]["holdout_id"],
         "protected_cor_root": PROTECTED_COR_ROOT,
@@ -132,7 +154,7 @@ def initialize_lane_states(
     created = []
     for lane in registry["lanes"]:
         lane_id = lane["lane_id"]
-        if lane["status"] == "ACTIVE_GOVERNED_COR0203":
+        if lane["status"] != "RESEARCH_ONLY_NOT_TRAINED":
             continue
         state_dir = out_root / lane_id
         state_dir.mkdir(parents=True, exist_ok=True)
