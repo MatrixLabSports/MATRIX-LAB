@@ -109,8 +109,7 @@ def execution_from_row(row: dict[str, Any]) -> dict[str, Any] | None:
 
 def browser_candidate(row: dict[str, Any], path: Path) -> dict[str, Any] | None:
     status = str(row.get("final_shadow_status") or "")
-    if status not in GREEN_STATUSES:
-        return None
+    eligible_green = status in GREEN_STATUSES
     try:
         p = float(row.get("p_matrix_over_2_5"))
     except Exception:
@@ -153,6 +152,8 @@ def browser_candidate(row: dict[str, Any], path: Path) -> dict[str, Any] | None:
         "source": str(path),
         "source_priority": 30,
         "physical_quote_verified": True,
+        "eligible_green": eligible_green,
+        "source_status": status,
         "execution": execution,
     }
 
@@ -186,6 +187,7 @@ def quote_freeze_candidate(row: dict[str, Any], path: Path) -> dict[str, Any] | 
         "source": str(path),
         "source_priority": 20,
         "physical_quote_verified": True,
+        "eligible_green": True,
         "execution": None,
     }
 
@@ -219,6 +221,7 @@ def shadow_ev_candidate(row: dict[str, Any], path: Path) -> dict[str, Any] | Non
         "source": str(path),
         "source_priority": 10,
         "physical_quote_verified": True,
+        "eligible_green": True,
         "execution": None,
     }
 
@@ -317,13 +320,14 @@ def discover_tennis(dates: list[str]) -> dict[str, dict[str, Any]]:
                     "source": str(path),
                     "source_priority": 30,
                     "physical_quote_verified": True,
+                    "eligible_green": True,
                     "execution": None,
                     "signal_key": key,
                 }
     return found
 
 
-def exact_over25_offer(session: requests.Session, api_key: str, fixture_id: str, p: float) -> dict[str, Any] | None:
+def exact_over25_offer(session: requests.Session, api_key: str, fixture_id: str, p: float, required_house_key: str | None = None) -> dict[str, Any] | None:
     response = session.get(
         "https://v3.football.api-sports.io/odds",
         headers={"x-apisports-key": api_key},
@@ -341,7 +345,12 @@ def exact_over25_offer(session: requests.Session, api_key: str, fixture_id: str,
         if not isinstance(fr, dict):
             continue
         for book in fr.get("bookmakers", []) or []:
-            if not isinstance(book, dict) or bookmaker_key(book.get("name")) is None:
+            if not isinstance(book, dict):
+                continue
+            bk = bookmaker_key(book.get("name"))
+            if bk is None:
+                continue
+            if required_house_key is not None and bk != required_house_key:
                 continue
             for bet in book.get("bets", []) or []:
                 if not isinstance(bet, dict):
@@ -495,8 +504,16 @@ def main() -> None:
     sent_by_key = {str(x.get("signal_key")): x for x in ledger["sent"]}
     settled_keys = {str(x.get("signal_key")) for x in ledger["settlements"]}
     sent_now = corrections_now = settlements_now = quote_checks = 0
+    rectifications_now = economic_updates_now = 0
 
     for key, c in sorted(candidates.items(), key=lambda kv: (str(kv[1].get("kickoff")), kv[0])):
+        if key in sent_by_key:
+            record = sent_by_key[key]
+            for field in ("sport", "fixture_id", "match", "market", "p_matrix", "house", "odds", "ev", "kickoff", "source", "execution"):
+                if record.get(field) is None:
+                    record[field] = c.get(field)
+        if c.get("eligible_green") is not True:
+            continue
         if not c.get("physical_quote_verified") or float(c["odds"]) <= 1.50 or float(c["ev"]) <= 0:
             continue
         if key not in sent_by_key:
@@ -522,11 +539,33 @@ def main() -> None:
             ledger["sent"].append(record)
             sent_by_key[key] = record
             sent_now += 1
-        else:
-            record = sent_by_key[key]
-            for field in ("sport", "fixture_id", "match", "market", "p_matrix", "house", "odds", "ev", "kickoff", "source", "execution"):
-                if record.get(field) is None:
-                    record[field] = c.get(field)
+
+    # Rectify legacy quote corrections that compared a different house than the original signal.
+    for correction in ledger["corrections"]:
+        if correction.get("status") != "NO_APOSTAR_ENVIADO" or correction.get("rectification_message_id") is not None:
+            continue
+        key = str(correction.get("signal_key") or "")
+        record = sent_by_key.get(key)
+        c = candidates.get(key)
+        if record is None or c is None:
+            continue
+        original_house_key = bookmaker_key(record.get("house") or c.get("house"))
+        correction_house_key = bookmaker_key((correction.get("offer") or {}).get("house"))
+        if original_house_key and correction_house_key and original_house_key != correction_house_key:
+            text = "\n".join([
+                "🔵 RECTIFICACIÓN DE CUOTA",
+                "",
+                f'Partido: {c.get("match")}',
+                f'La alerta NO APOSTAR anterior correspondía a {(correction.get("offer") or {}).get("house")} y no a la casa original {record.get("house")}.',
+                f'La cuota congelada de la apuesta ya registrada sigue siendo {float(record.get("odds") or c.get("odds")):.2f}.',
+                "Para una nueva apuesta se exige revalidar la misma casa.",
+                "DINERO REAL MATRIX: BLOQUEADO PARA EJECUCIÓN AUTOMÁTICA",
+            ])
+            mid = send_telegram(session, token, chat_id, text)
+            correction["status"] = "RECTIFICADA_CASA_DISTINTA"
+            correction["rectification_message_id"] = mid
+            correction["rectified_at_utc"] = now.isoformat()
+            rectifications_now += 1
 
     for key, record in list(sent_by_key.items()):
         c = candidates.get(key)
@@ -535,15 +574,17 @@ def main() -> None:
         kickoff = parse_dt(c.get("kickoff"))
         if kickoff is None or kickoff <= now:
             continue
-        offer = exact_over25_offer(session, api_key, c["fixture_id"], float(c["p_matrix"]))
+        required_house_key = bookmaker_key(record.get("house") or c.get("house"))
+        offer = exact_over25_offer(session, api_key, c["fixture_id"], float(c["p_matrix"]), required_house_key)
         quote_checks += 1
         previous = ledger["quote_state"].get(key) or {}
-        state = "SIN_CUOTA_EXACTA"
+        state = "CASA_ORIGINAL_NO_DISPONIBLE_EN_FEED" if required_house_key else "SIN_CUOTA_EXACTA"
         if offer is not None:
             state = "VERDE" if float(offer["ev"]) > 0 else "NO_APOSTAR"
         ledger["quote_state"][key] = {
             "checked_at_utc": now.isoformat(),
             "fixture_id": c["fixture_id"],
+            "required_house_key": required_house_key,
             "state": state,
             "offer": offer,
         }
@@ -558,6 +599,41 @@ def main() -> None:
                 "offer": offer,
             })
             corrections_now += 1
+
+    # Enrich already-sent FINAL settlements with any user execution that arrived later in physical evidence.
+    for settlement in ledger["settlements"]:
+        key = str(settlement.get("signal_key") or "")
+        c = candidates.get(key)
+        if c is None or settlement.get("actual_stake_cop") is not None:
+            continue
+        execution = c.get("execution")
+        if not isinstance(execution, dict) or execution.get("stake_cop") is None:
+            continue
+        stake = float(execution["stake_cop"])
+        exec_odds = float(execution.get("decimal_odds") or settlement.get("odds") or c.get("odds"))
+        actual_profit = stake * (exec_odds - 1.0) if settlement.get("won") else -stake
+        settlement["actual_stake_cop"] = stake
+        settlement["actual_profit_cop"] = actual_profit
+        settlement["execution_evidence_source"] = execution.get("source")
+        if settlement.get("economic_update_message_id") is None:
+            accum_cop = sum(float(x.get("actual_profit_cop") or 0.0) for x in ledger["settlements"] if x.get("actual_profit_cop") is not None)
+            stake_txt = f'{int(stake):,}'.replace(",", ".")
+            profit_txt = f'{int(round(actual_profit)):,}'.replace(",", ".")
+            accum_txt = f'{int(round(accum_cop)):,}'.replace(",", ".")
+            text = "\n".join([
+                "💰 ACTUALIZACIÓN ECONÓMICA FINAL",
+                "",
+                f'Partido: {c.get("match")}',
+                f'Estado: {"✅ GANADA" if settlement.get("won") else "❌ PERDIDA"}',
+                f'Cuota ejecutada: {exec_odds:.2f}',
+                f'Stake registrado: COP {stake_txt}',
+                f'Resultado económico: COP {profit_txt}',
+                f'Acumulado apuestas registradas: COP {accum_txt}',
+                "DINERO REAL MATRIX: BLOQUEADO PARA EJECUCIÓN AUTOMÁTICA",
+            ])
+            settlement["economic_update_message_id"] = send_telegram(session, token, chat_id, text)
+            settlement["economic_update_sent_at_utc"] = now.isoformat()
+            economic_updates_now += 1
 
     for key, record in list(sent_by_key.items()):
         if key in settled_keys or str(record.get("sport") or "football") != "football":
@@ -615,6 +691,8 @@ def main() -> None:
         "sent_now": sent_now,
         "quote_checks": quote_checks,
         "corrections_now": corrections_now,
+        "rectifications_now": rectifications_now,
+        "economic_updates_now": economic_updates_now,
         "settlements_now": settlements_now,
         "total_green_messages": len(ledger["sent"]),
         "total_settlements": len(ledger["settlements"]),
