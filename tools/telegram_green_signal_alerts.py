@@ -38,6 +38,25 @@ def load_json(path: Path, default: Any) -> Any:
     return json.loads(path.read_text(encoding="utf-8"))
 
 
+def over25_signal_governance_authorized() -> tuple[bool, dict[str, Any]]:
+    path = Path("evidence/api_football/governance/over_2_5_p_matrix_promotion.json")
+    promotion = load_json(path, {})
+    checks = {
+        "market": promotion.get("market") == "OVER_2_5",
+        "promotion_status": promotion.get("promotion_status") == "PASS_PROMOTED_GOVERNED_P_MATRIX_SIGNAL_ONLY",
+        "engine_executable": promotion.get("engine_executable_for_p_matrix") is True,
+        "scope_signal_only": promotion.get("promotion_scope") == "MARKET_SCOPED_SIGNAL_GENERATION_NOT_REAL_MONEY",
+        "real_money_blocked": (promotion.get("protections") or {}).get("real_money") == "BLOCKED",
+        "automatic_wagering_false": (promotion.get("protections") or {}).get("automatic_wagering") is False,
+    }
+    return all(checks.values()), {
+        "promotion_artifact": str(path),
+        "promotion_status": promotion.get("promotion_status"),
+        "checks": checks,
+        "real_money": "BLOCKED",
+    }
+
+
 def now_utc() -> datetime:
     return datetime.now(timezone.utc).replace(microsecond=0)
 
@@ -228,6 +247,9 @@ def shadow_ev_candidate(row: dict[str, Any], path: Path) -> dict[str, Any] | Non
 
 def discover_football(dates: list[str]) -> dict[str, dict[str, Any]]:
     found: dict[str, dict[str, Any]] = {}
+    governance_ok, governance = over25_signal_governance_authorized()
+    if not governance_ok:
+        return found
     for date in dates:
         root = FOOTBALL_ROOT / date
         if not root.exists():
@@ -250,6 +272,14 @@ def discover_football(dates: list[str]) -> dict[str, dict[str, Any]]:
                     rows = payload.get("rows", [])
                     parser = quote_freeze_candidate
                 else:
+                    # Forward-only fail-closed rule: shadow EV rows are eligible for Telegram
+                    # only when the market-scoped Over 2.5 promotion is still authoritative.
+                    if payload.get("signal_generation_authorized") is not True:
+                        continue
+                    if payload.get("market_governance_status") != "PASS_PROMOTED_GOVERNED_P_MATRIX_SIGNAL_ONLY":
+                        continue
+                    if payload.get("probability_status") != "FROZEN_GOVERNED_MARKET_SCOPED_SIGNAL_ONLY":
+                        continue
                     rows = payload.get("bet_shadow", [])
                     parser = shadow_ev_candidate
                 if not isinstance(rows, list):
