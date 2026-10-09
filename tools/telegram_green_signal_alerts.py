@@ -25,7 +25,6 @@ FINAL_STATUSES = {"FT", "AET", "PEN"}
 POLICY_BOOKS = {
     "betano": ("betano",),
     "betplay": ("betplay",),
-    "bwin": ("bwin",),
     "rushbet": ("rushbet", "rush bet"),
 }
 MARKET_KEY = "Goles totales Más/Menos"
