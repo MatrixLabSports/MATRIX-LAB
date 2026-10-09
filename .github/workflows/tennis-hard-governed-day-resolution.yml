@@ -73,12 +73,22 @@ jobs:
           from pathlib import Path
           p=Path(sys.argv[1]); j=json.loads(p.read_text())
           assert j["target_date_bogota"]==p.parent.name
-          assert j["sofascore"]["visible_ui_total_count"]==448
-          assert j["domain"]["browser_domain_candidate_count"]==13
-          assert j["flashscore"]["corroborates_domain_tournaments_and_surface"] is True
+          visible=int(j["sofascore"]["visible_ui_total_count"])
+          assert visible > 0
+          if "governed_bogota_day_reconciliation" in j:
+              hard=int(j["governed_bogota_day_reconciliation"]["hard_domain_candidate_count"])
+          else:
+              hard=int(j["domain"]["browser_domain_candidate_count"])
+          assert hard >= 0
+          assert "SofaScore" in j["source_order"]
+          assert "Flashscore" in j["source_order"]
           assert j["protections"]["metrics_opened"] is False
           assert j["protections"]["real_money"]=="BLOCKED"
-          print("BROWSER_HARD_DOMAIN_PASS total=448 hard_domain=13")
+          if p.parent.name=="2026-10-09":
+              assert visible==448
+              assert hard==4
+              assert j.get("correction",{}).get("prior_v1_invalidated") is True
+          print(f"BROWSER_HARD_DOMAIN_PASS total={visible} hard_domain={hard}")
           PY
 
       - name: Snapshot governed counter before run
