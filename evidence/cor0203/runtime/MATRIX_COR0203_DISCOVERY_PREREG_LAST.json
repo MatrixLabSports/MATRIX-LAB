@@ -1,17 +1,33 @@
 {
   "automatic_wagering": false,
-  "created": false,
-  "event_ids": [],
-  "events_registered": 0,
+  "created": true,
+  "event_ids": [
+    "COR0203-RAPIDAPI-TENNIS-1399-fd2da6ff7496"
+  ],
+  "events_registered": 1,
   "provider_status": "DUAL_RECONCILED",
   "provider_statuses": {
     "api_tennis": "NO_NEW_EVENTS",
-    "rapidapi_tennis": "NO_NEW_EVENTS"
+    "rapidapi_tennis": "PREREGISTERED"
   },
   "real_money": "BLOCKED",
-  "revisions": [],
+  "revisions": [
+    {
+      "path": "evidence/cor0203/runtime/MATRIX_COR0203_PREFEATURE_REGISTRY_R875.json",
+      "provider": "rapidapi_tennis",
+      "revision": 875
+    }
+  ],
   "schema": "MATRIX_COR0203_DUAL_DISCOVERY_PREREGISTRATION_RESULT_V1",
-  "skipped": [],
-  "starting_observation_count": null,
-  "status": "NO_NEW_EVENTS"
+  "skipped": [
+    {
+      "blockers": [
+        "ALREADY_PREREGISTERED_OR_FROZEN"
+      ],
+      "provider": "api_tennis",
+      "source_event_id": "api-tennis:event:12169693"
+    }
+  ],
+  "starting_observation_count": 239,
+  "status": "PREREGISTERED"
 }
