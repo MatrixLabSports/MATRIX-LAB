@@ -4,6 +4,11 @@ on:
   workflow_dispatch:
   schedule:
     - cron: "11 */2 * * *"
+  workflow_run:
+    workflows:
+      - "COR02-03 repo-native hourly scheduler"
+    types:
+      - completed
 
 permissions:
   contents: write
@@ -29,11 +34,39 @@ jobs:
         id: date
         run: echo "d=$(TZ=America/Bogota date +%F)" >> "$GITHUB_OUTPUT"
 
+      - name: Guard quota by physical freshness
+        id: freshness
+        shell: bash
+        run: |
+          python - <<'PY' >> "$GITHUB_OUTPUT"
+          import json, os
+          from datetime import datetime, timezone
+          from pathlib import Path
+          if os.environ.get("GITHUB_EVENT_NAME") == "workflow_dispatch":
+              print("run_capture=true")
+              print("reason=MANUAL_DISPATCH")
+              raise SystemExit
+          p=Path(f"evidence/live_tennis_lab/{os.popen('TZ=America/Bogota date +%F').read().strip()}/MATRIX_LIVE_TENNIS_STATE_LEDGER_V0_1.json")
+          if not p.exists():
+              print("run_capture=true")
+              print("reason=NO_DAILY_LEDGER")
+              raise SystemExit
+          j=json.loads(p.read_text())
+          ts=datetime.fromisoformat(j["generated_at_utc"].replace("Z","+00:00"))
+          age=(datetime.now(timezone.utc)-ts).total_seconds()
+          run=age >= 6000
+          print(f"run_capture={'true' if run else 'false'}")
+          print(f"reason={'STALE_GE_100_MIN' if run else 'FRESH_LT_100_MIN'}")
+          print(f"age_seconds={int(age)}")
+          PY
+
       - name: Capture six world live snapshots
+        if: steps.freshness.outputs.run_capture == 'true'
         env:
           LIVE_TENNIS_API_KEY: ${{ secrets.LIVETENNISAPI_KEY }}
         run: python -m tools.live_tennis_bulk_collector --date "${{ steps.date.outputs.d }}" --cycles 6 --interval-seconds 20 --reserve-calls 20
       - name: Validate append-only live-state ledger
+        if: steps.freshness.outputs.run_capture == 'true'
         env:
           TARGET_DATE: ${{ steps.date.outputs.d }}
         run: |
@@ -63,6 +96,7 @@ jobs:
           },sort_keys=True))
           PY
       - name: Persist bulk live seed
+        if: steps.freshness.outputs.run_capture == 'true'
         run: |
           git config user.name "matrix-live-tennis-bulk"
           git config user.email "matrix-live-tennis-bulk@users.noreply.github.com"
