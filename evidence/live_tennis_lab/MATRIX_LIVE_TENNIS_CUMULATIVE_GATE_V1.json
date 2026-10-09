@@ -1,8 +1,8 @@
 {
   "dedupe_key": "provider+match_id",
   "gate_unit": "UNIQUE_FINAL_STANDARD_MATCHES_WITH_AT_LEAST_ONE_QUALITY_VALID_LIVE_STATE_PER_LANE_ACROSS_DAYS",
-  "generated_at_utc": "2026-10-09T02:06:31+00:00",
-  "global_unique_match_count": 34,
+  "generated_at_utc": "2026-10-09T02:07:30+00:00",
+  "global_unique_match_count": 40,
   "lanes": {
     "challenger|men|clay": {
       "excluded_settled_without_quality_valid_state": 2,
@@ -141,12 +141,12 @@
           "threshold": 50
         }
       },
-      "match_keys_sha256": "87e74b1032c70d378e5fad1c3295fb6f2de6eea06d99f9c8b0ad8d7b709bd9b3",
-      "quality_valid_unique_match_count": 0,
+      "match_keys_sha256": "aa1bfd2dbf58694323f7f9aaf251615f0489352199787a97622cf7fc788920cb",
+      "quality_valid_unique_match_count": 1,
       "settled_final_standard_unique_match_count": 1,
       "settled_quality_valid_unique_match_count": 0,
       "settled_unique_match_count": 0,
-      "unique_match_count": 1
+      "unique_match_count": 2
     },
     "itf|women|hard": {
       "excluded_settled_without_quality_valid_state": 0,
@@ -177,12 +177,48 @@
           "threshold": 50
         }
       },
-      "match_keys_sha256": "196e90d7411c830de81db7a9f39b351d0fa63bddb700195b888d2682af5a8d5a",
-      "quality_valid_unique_match_count": 12,
+      "match_keys_sha256": "9fab020bcb8bad027db631d7d28df824d2b29d7bd212a12f8851aa5f8cedc9a8",
+      "quality_valid_unique_match_count": 15,
       "settled_final_standard_unique_match_count": 11,
       "settled_quality_valid_unique_match_count": 11,
       "settled_unique_match_count": 11,
-      "unique_match_count": 12
+      "unique_match_count": 16
+    },
+    "unknown|unknown|unknown": {
+      "excluded_settled_without_quality_valid_state": 0,
+      "gates": {
+        "1": {
+          "remaining": 1,
+          "status": "SEALED",
+          "threshold": 1
+        },
+        "100": {
+          "remaining": 100,
+          "status": "SEALED",
+          "threshold": 100
+        },
+        "200": {
+          "remaining": 200,
+          "status": "SEALED",
+          "threshold": 200
+        },
+        "30": {
+          "remaining": 30,
+          "status": "SEALED",
+          "threshold": 30
+        },
+        "50": {
+          "remaining": 50,
+          "status": "SEALED",
+          "threshold": 50
+        }
+      },
+      "match_keys_sha256": "29d7dd54261ecedef488c5004cb477ba277f47bead39fa21550a2df18ba2da6b",
+      "quality_valid_unique_match_count": 1,
+      "settled_final_standard_unique_match_count": 0,
+      "settled_quality_valid_unique_match_count": 0,
+      "settled_unique_match_count": 0,
+      "unique_match_count": 1
     },
     "utr|men|clay": {
       "excluded_settled_without_quality_valid_state": 1,
@@ -293,7 +329,7 @@
       "unique_match_count": 4
     }
   },
-  "ledger_dates_count": 2,
+  "ledger_dates_count": 3,
   "metrics_status": "SEALED",
   "model_status": "RESEARCH_ONLY",
   "probability_output_status": "SEALED",
@@ -308,7 +344,7 @@
   },
   "same_match_train_test_forbidden": true,
   "schema": "MATRIX_LIVE_TENNIS_CUMULATIVE_GATE_V1",
-  "sha256_without_self": "54cd3cf39d91c1fe6251908103a1adf7845f2ec3bbad4eeae8689565d237a240",
+  "sha256_without_self": "bcf123a7ce3fafae156d36848afe7b72c9384a0c3e60a1af3d6e378e9f7a4355",
   "source_ledgers": [
     {
       "operational_date_bogota": null,
@@ -323,6 +359,13 @@
       "sha256": "3f71a71545b6b5434db3a91b01a1603e2b51fa30f6d418e50afc524f4b0de7c6",
       "unique_match_count": 6,
       "unique_state_count": 14
+    },
+    {
+      "operational_date_bogota": "2026-10-08",
+      "path": "evidence/live_tennis_lab/2026-10-08/MATRIX_LIVE_TENNIS_STATE_LEDGER_V0_1.json",
+      "sha256": "43d398c19a0d98c77f160fa7daf678431aed8abde585ddd0117bdfa5c08dab3e",
+      "unique_match_count": 6,
+      "unique_state_count": 13
     }
   ],
   "states_do_not_substitute_for_matches": true,
