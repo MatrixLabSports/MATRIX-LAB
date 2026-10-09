@@ -12,7 +12,7 @@ from typing import Any
 import requests
 
 from tools.api_football_canonicalize_analysis_inputs import load_chunked_canonical_bundle
-from tools.api_football_market_shadow_p_matrix import build_shadow_p_matrix
+from tools.api_football_market_shadow_p_matrix import PARAMS_OVER25, build_shadow_p_matrix
 
 POLICY = {
     "betano": ["betano"],
@@ -45,6 +45,87 @@ def odd(value: Any) -> float | None:
 
 def parse_utc(value: str) -> datetime:
     return datetime.fromisoformat(str(value).replace("Z", "+00:00")).astimezone(timezone.utc)
+
+
+def resolve_over25_signal_governance(root: Path) -> dict[str, Any]:
+    """Resolve market-scoped signal authority without silently promoting sport-wide/real-money scope."""
+    promotion_path = root / "evidence/api_football/governance/over_2_5_p_matrix_promotion.json"
+    legacy_path = root / "evidence/api_football/market_governance/market_governance.json"
+    reasons: list[str] = []
+    try:
+        promotion = json.loads(promotion_path.read_text(encoding="utf-8"))
+    except Exception:
+        promotion = {}
+        reasons.append("PROMOTION_ARTIFACT_MISSING_OR_INVALID")
+    try:
+        legacy = json.loads(legacy_path.read_text(encoding="utf-8"))
+    except Exception:
+        legacy = {}
+        reasons.append("LEGACY_MARKET_GOVERNANCE_MISSING_OR_INVALID")
+
+    market_rows = legacy.get("markets") if isinstance(legacy, dict) else None
+    over_row = None
+    if isinstance(market_rows, list):
+        over_row = next(
+            (x for x in market_rows if isinstance(x, dict) and x.get("market") == "over_2_5"),
+            None,
+        )
+    if not isinstance(over_row, dict):
+        reasons.append("LEGACY_OVER25_ROW_MISSING")
+        over_row = {}
+
+    expected_params = {
+        "a": float(PARAMS_OVER25["a"]),
+        "b": float(PARAMS_OVER25["b"]),
+        "c": float(PARAMS_OVER25["c"]),
+    }
+    frozen = promotion.get("frozen_parameters")
+    actual_params = None
+    if isinstance(frozen, dict) and all(k in frozen for k in ("a", "b", "c")):
+        actual_params = {k: float(frozen[k]) for k in ("a", "b", "c")}
+    else:
+        reasons.append("PROMOTION_FROZEN_PARAMETERS_MISSING")
+
+    checks = {
+        "promotion_market_over25": promotion.get("market") == "OVER_2_5",
+        "promotion_status_pass": promotion.get("promotion_status") == "PASS_PROMOTED_GOVERNED_P_MATRIX_SIGNAL_ONLY",
+        "engine_executable_for_p_matrix": promotion.get("engine_executable_for_p_matrix") is True,
+        "governed_p_matrix_engine_available": promotion.get("governed_p_matrix_engine_available") is True,
+        "promotion_scope_signal_only": promotion.get("promotion_scope") == "MARKET_SCOPED_SIGNAL_GENERATION_NOT_REAL_MONEY",
+        "promotion_real_money_blocked": (promotion.get("protections") or {}).get("real_money") == "BLOCKED",
+        "promotion_automatic_wagering_false": (promotion.get("protections") or {}).get("automatic_wagering") is False,
+        "legacy_over25_holdout_gate_passed": over_row.get("market_holdout_gate_passed") is True,
+        "legacy_challenger_identity_matches": over_row.get("challenger_name") == "calibrated_log_pool_v1",
+        "frozen_parameters_match_runtime": actual_params == expected_params,
+    }
+    for key, passed in checks.items():
+        if not passed:
+            reasons.append(f"FAILED:{key}")
+
+    authorized = not reasons
+    return {
+        "schema": "MATRIX_FOOTBALL_OVER25_SIGNAL_GOVERNANCE_RESOLUTION_V1",
+        "market": "OVER_2_5",
+        "signal_generation_authorized": authorized,
+        "authoritative_market_scoped_status": (
+            promotion.get("promotion_status") if authorized else "BLOCKED_GOVERNANCE"
+        ),
+        "promotion_artifact": promotion_path.as_posix(),
+        "legacy_market_governance_artifact": legacy_path.as_posix(),
+        "legacy_sport_wide_engine_promoted": legacy.get("governed_engine_promoted"),
+        "legacy_sport_wide_gate_scope": "SPORT_WIDE_OR_REAL_MONEY",
+        "market_scoped_scope": "SIGNAL_GENERATION_ONLY",
+        "precedence_rule": (
+            "MARKET_SCOPED_PROMOTION_GOVERNS_OVER25_SIGNAL_GENERATION; "
+            "LEGACY_SPORT_WIDE_GATE_CONTINUES_TO_GOVERN_SPORT_WIDE_OR_REAL_MONEY"
+        ),
+        "runtime_parameters": expected_params,
+        "promotion_parameters": actual_params,
+        "checks": checks,
+        "blockers": reasons,
+        "automatic_wagering": False,
+        "real_money": "BLOCKED",
+    }
 
 
 def latest_cycle(root: Path, target_date: str) -> Path:
@@ -83,6 +164,7 @@ def build(target_date: str, api_key: str, root: Path = Path(".")) -> dict[str, A
         raise SystemExit("API_FOOTBALL_KEY_NOT_CONFIGURED")
     api_key.encode("ascii")
 
+    governance = resolve_over25_signal_governance(root)
     cycle = latest_cycle(root, target_date)
     canonical, manifest = load_chunked_canonical_bundle(cycle / "canonical_analysis")
     generated_at = datetime.now(timezone.utc).replace(microsecond=0)
@@ -196,7 +278,10 @@ def build(target_date: str, api_key: str, root: Path = Path(".")) -> dict[str, A
         eligible = [x for x in policy_offers if float(x["decimal_odds"]) > 1.50]
         best = max(eligible, key=lambda x: float(x["ev"])) if eligible else None
 
-        if best is None:
+        if governance["signal_generation_authorized"] is not True:
+            decision = "BLOCKED"
+            reason = "OVER25_SIGNAL_GOVERNANCE_NOT_AUTHORIZED"
+        elif best is None:
             decision = "BLOCKED"
             reason = "NO_EXACT_POLICY_HOUSE_OVER25_ODDS_ABOVE_1_50"
         elif float(best["ev"]) > 0:
@@ -256,8 +341,14 @@ def build(target_date: str, api_key: str, root: Path = Path(".")) -> dict[str, A
         "source_cycle": cycle.as_posix(),
         "market": "OVER_2_5",
         "probability_engine": "calibrated_log_pool_v1",
-        "probability_status": "FROZEN_SHADOW_RESEARCH",
-        "market_governance_status": "STRONG_PROMOTED_SIGNAL_ENGINE",
+        "probability_status": (
+            "FROZEN_GOVERNED_MARKET_SCOPED_SIGNAL_ONLY"
+            if governance["signal_generation_authorized"]
+            else "BLOCKED_GOVERNANCE"
+        ),
+        "market_governance_status": governance["authoritative_market_scoped_status"],
+        "signal_generation_authorized": governance["signal_generation_authorized"],
+        "governance_resolution": governance,
         "exact_market_binding": {"bet_id": 5, "bet_name": "Goals Over/Under", "value": "Over 2.5"},
         "policy_houses": ["Betano", "BetPlay", "bwin", "RushBet"],
         "diagnostic_only": ["Pinnacle"],
