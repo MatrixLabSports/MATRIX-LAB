@@ -1,0 +1,76 @@
+name: MATRIX Live Tennis Bulk Seed
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "11 */2 * * *"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: live-tennis-bulk-seed
+  cancel-in-progress: false
+
+jobs:
+  collect:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: repair/cor09-world-pipeline
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: python -m pip install requests
+      - name: Resolve Bogota date
+        id: date
+        run: echo "d=$(TZ=America/Bogota date +%F)" >> "$GITHUB_OUTPUT"
+
+      - name: Capture six world live snapshots
+        env:
+          LIVE_TENNIS_API_KEY: ${{ secrets.LIVETENNISAPI_KEY }}
+        run: python -m tools.live_tennis_bulk_collector --date "${{ steps.date.outputs.d }}" --cycles 6 --interval-seconds 20 --reserve-calls 20
+      - name: Validate append-only live-state ledger
+        env:
+          TARGET_DATE: ${{ steps.date.outputs.d }}
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          import os
+          p=Path(f"evidence/live_tennis_lab/{os.environ['TARGET_DATE']}/MATRIX_LIVE_TENNIS_STATE_LEDGER_V0_1.json")
+          j=json.loads(p.read_text())
+          assert j["model_status"]=="RESEARCH_ONLY"
+          assert j["observation_unit"]=="UNIQUE_MATCH_SEQUENCE_STATE"
+          assert j["quota_guard"]["executed_cycles"]>=1
+          assert j["unique_state_count"]>=1
+          keys=[x["state_key"] for x in j["states"]]
+          assert len(keys)==len(set(keys))
+          labeled=[x for x in j["states"] if x.get("label_opened") is True]
+          pending=[x for x in j["states"] if x.get("label_opened") is not True]
+          assert all(x.get("settlement_status")=="FINAL_STANDARD" and x.get("p1_match_win") in {0,1} for x in labeled)
+          assert all(x.get("p1_match_win") is None and x.get("settlement_status")=="PENDING_FINAL" for x in pending)
+          assert j["protections"]["outcomes_read_during_live_capture"]==0
+          assert j["protections"]["real_money"]=="BLOCKED"
+          print(json.dumps({
+            "matches":j["unique_match_count"],
+            "states":j["unique_state_count"],
+            "new_states":j["new_states_this_run"],
+            "cycles":j["quota_guard"]["executed_cycles"]
+          },sort_keys=True))
+          PY
+      - name: Persist bulk live seed
+        run: |
+          git config user.name "matrix-live-tennis-bulk"
+          git config user.email "matrix-live-tennis-bulk@users.noreply.github.com"
+          git add "evidence/live_tennis_lab/${{ steps.date.outputs.d }}/MATRIX_LIVE_TENNIS_STATE_LEDGER_V0_1.json"
+          if git diff --cached --quiet; then
+            echo "NO_LIVE_STATE_CHANGE"
+            exit 0
+          fi
+          git commit -m "evidence(live): persist bulk live tennis state seed"
+          git pull --rebase origin repair/cor09-world-pipeline
+          git push origin HEAD:repair/cor09-world-pipeline
