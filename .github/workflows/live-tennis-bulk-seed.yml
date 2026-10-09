@@ -4,6 +4,11 @@ on:
   workflow_dispatch:
   schedule:
     - cron: "11 */2 * * *"
+  push:
+    branches:
+      - repair/cor09-world-pipeline
+    paths:
+      - .github/workflows/live-tennis-bulk-seed.yml
 
 permissions:
   contents: write
