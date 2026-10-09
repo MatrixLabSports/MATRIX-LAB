@@ -160,13 +160,17 @@ jobs:
           dual=json.loads(Path(f"evidence/tennis_world_inventory/{d}/world_exact_day_dual_audit.json").read_text())
           after=int(hard["unique_calibration_observations"])
           increment=after-int(before["unique"])
+          reconciled=browser.get("governed_bogota_day_reconciliation") or {}
+          legacy_domain=browser.get("domain") or {}
+          browser_hard=int(reconciled.get("hard_domain_candidate_count",legacy_domain.get("browser_domain_candidate_count",0)))
+          hard_tournaments=(browser["sofascore"].get("fresh_09oct_hard_challenger_men_singles") or browser["sofascore"].get("hard_challenger_men_singles") or [])
           out={
-            "schema":"MATRIX_TENNIS_HARD_DAILY_RESOLUTION_V1",
+            "schema":"MATRIX_TENNIS_HARD_DAILY_RESOLUTION_V2",
             "target_date_bogota":d,
             "sofascore_visible_total":int(browser["sofascore"]["visible_ui_total_count"]),
-            "flashscore_loaded_unique_match_links":int(browser["flashscore"]["loaded_tree_unique_tennis_match_links"]),
-            "browser_hard_domain_candidate_count":int(browser["domain"]["browser_domain_candidate_count"]),
-            "hard_domain_tournaments":browser["sofascore"]["hard_challenger_men_singles"],
+            "flashscore_loaded_unique_match_links":int(browser["flashscore"].get("loaded_tree_unique_tennis_match_links",0)),
+            "browser_hard_domain_candidate_count":browser_hard,
+            "hard_domain_tournaments":hard_tournaments,
             "paid_provider_capture":{
               "rapidapi_unique_match_count":int(dual["primary_world_inventory"]["unique_match_count"]),
               "api_tennis_unique_match_count":int(dual["secondary_crosscheck"]["unique_match_count"]),
