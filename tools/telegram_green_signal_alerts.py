@@ -479,7 +479,7 @@ def main() -> None:
 
     now = now_utc()
     today = now.astimezone(BOGOTA).date()
-    dates = [str(today), str(today - timedelta(days=1))]
+    dates = [str(today + timedelta(days=1)), str(today), str(today - timedelta(days=1))]
     football = discover_football(dates)
     tennis = discover_tennis(dates)
     candidates = {**football, **tennis}
