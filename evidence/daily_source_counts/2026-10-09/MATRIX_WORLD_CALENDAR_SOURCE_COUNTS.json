@@ -5,7 +5,7 @@
   "calendar_baseline_complete": false,
   "operator_manual_intervention_required": false,
   "browser_baseline_completed_at_utc": null,
-  "last_automated_attempt_at_utc": "2026-10-09T12:17:59.405Z",
+  "last_automated_attempt_at_utc": "2026-10-09T14:16:36.893Z",
   "block_reason": "FOUR_EXACT_TOTALS_UNVERIFIED",
   "tennis": {
     "sofascore": {
@@ -13,14 +13,14 @@
       "url": "https://www.sofascore.com/es/tennis/2026-10-09",
       "captured_at_utc": null,
       "provenance": null,
-      "opera_read_status": "CONNECTED_TODOS_TAB_EXACT_TOTAL_NOT_VISIBLE"
+      "opera_read_status": "CONNECTED_TODOS_TAB_LIVE_34_NOT_DAY_TOTAL"
     },
     "flashscore": {
       "count": null,
       "url": "https://www.flashscore.co/tenis/?d=2026-10-09",
       "captured_at_utc": null,
       "provenance": null,
-      "opera_read_status": "EXACT_TOTAL_NOT_ATTESTABLE_FROM_ACCESSIBILITY_TREE"
+      "opera_read_status": "CONNECTED_TODOS_SHOW_MORE_63_EXACT_DAY_TOTAL_UNVERIFIED"
     }
   },
   "football": {
@@ -29,59 +29,60 @@
       "url": "https://www.sofascore.com/es/football/2026-10-09",
       "captured_at_utc": null,
       "provenance": null,
-      "opera_read_status": "LAZY_UI_MOSTRAR_MAS_EXACT_TOTAL_UNVERIFIED"
+      "opera_read_status": "CONNECTED_TODOS_LIVE_130_LAZY_MOSTRAR_MAS_EXACT_TOTAL_UNVERIFIED"
     },
     "flashscore": {
       "count": null,
       "url": "https://www.flashscore.co/?d=2026-10-09",
       "captured_at_utc": null,
       "provenance": null,
-      "opera_read_status": "COLLAPSED_LEAGUES_EXACT_TOTAL_UNVERIFIED"
+      "opera_read_status": "CONNECTED_TODOS_MOSTRAR_MAS_COLLAPSED_LEAGUES_EXACT_TOTAL_UNVERIFIED"
     }
   },
   "automation_retry_required": true,
   "last_automated_attempt_provenance": {
-    "method": "Opera Browser Connector list_tabs, tab_content, tab_content_jq_search_query; non-interactive",
-    "attempted_at_utc": "2026-10-09T12:17:59.405Z",
+    "method": "Opera Browser Connector list_tabs, go_to_page, tab_content, tab_content_jq_search_query; non-interactive",
+    "attempted_at_utc": "2026-10-09T14:16:36.893Z",
     "tabs": [
       {
         "sport": "tennis",
         "provider": "sofascore",
         "tab_id": 2017701250,
         "url": "https://www.sofascore.com/es/tennis/2026-10-09",
-        "read_status": "CONNECTED_TODOS_TAB_EXACT_TOTAL_NOT_VISIBLE",
-        "visible_unique_match_links_diagnostic": 260,
-        "warning": "Links may include navigation/out-of-date and are not an authoritative exact calendar count."
+        "read_status": "CONNECTED_TODOS_TAB_LIVE_34_NOT_DAY_TOTAL",
+        "visible_non_total": "En Vivo (34)",
+        "warning": "Live badge, Show more label and visible rows are NOT an authoritative exact calendar day total."
       },
       {
         "sport": "tennis",
         "provider": "flashscore",
         "tab_id": 2017701797,
         "url": "https://www.flashscore.co/tenis/?d=2026-10-09",
-        "read_status": "EXACT_TOTAL_NOT_ATTESTABLE_FROM_ACCESSIBILITY_TREE",
-        "visible_unique_match_links_diagnostic": 267,
-        "warning": "Visible links do not certify all competitions and all date-matched events."
+        "read_status": "CONNECTED_TODOS_SHOW_MORE_63_EXACT_DAY_TOTAL_UNVERIFIED",
+        "visible_non_total": "Mostrar más (63)",
+        "warning": "Live badge, Show more label and visible rows are NOT an authoritative exact calendar day total."
       },
       {
         "sport": "football",
         "provider": "sofascore",
         "tab_id": 2017701791,
         "url": "https://www.sofascore.com/es/football/2026-10-09",
-        "read_status": "LAZY_UI_MOSTRAR_MAS_EXACT_TOTAL_UNVERIFIED",
-        "visible_unique_match_links_diagnostic": 31,
-        "warning": "Mostrar más remains; partial links include sidebar/navigation."
+        "read_status": "CONNECTED_TODOS_LIVE_130_LAZY_MOSTRAR_MAS_EXACT_TOTAL_UNVERIFIED",
+        "visible_non_total": "En Vivo (130); Mostrar más",
+        "warning": "Live badge, Show more label and visible rows are NOT an authoritative exact calendar day total."
       },
       {
         "sport": "football",
         "provider": "flashscore",
         "tab_id": 2017701794,
         "url": "https://www.flashscore.co/?d=2026-10-09",
-        "read_status": "COLLAPSED_LEAGUES_EXACT_TOTAL_UNVERIFIED",
-        "visible_unique_match_links_diagnostic": 227,
-        "warning": "Multiple leagues collapsed; partial links include sidebar/navigation."
+        "read_status": "CONNECTED_TODOS_MOSTRAR_MAS_COLLAPSED_LEAGUES_EXACT_TOTAL_UNVERIFIED",
+        "visible_non_total": "Mostrar más",
+        "warning": "Live badge, Show more label and visible rows are NOT an authoritative exact calendar day total."
       }
     ],
-    "reason": "Four exact totals are not physically attestable from the browser tree: Sofascore football lazy Mostrar más, Flashscore football collapsed leagues, and tennis visible match-link totals do not prove full exact day coverage. No API or inferred total substituted.",
-    "all_four_exact_counts_verified": false
+    "reason": "All four exact date totals remain unattestable from accessible browser UI. SofaScore football has lazy Mostrar más, Flashscore tennis/football have Show more or collapsed leagues; live badges are not full-day counts. No API, partial match links, or inferred totals substituted.",
+    "all_four_exact_counts_verified": false,
+    "action": "RETAIN_INCOMPLETE_AND_RETRY"
   }
 }
