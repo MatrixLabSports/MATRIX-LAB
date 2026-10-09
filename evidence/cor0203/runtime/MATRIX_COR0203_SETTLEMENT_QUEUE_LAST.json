@@ -1,6 +1,6 @@
 {
-  "admissible_observations": 237,
-  "duplicate_physical_matches_quarantined": 109,
+  "admissible_observations": 239,
+  "duplicate_physical_matches_quarantined": 110,
   "holdout_id": "A22_POST_AUDIT_VIRGIN_HOLDOUT_V1",
   "identity_mapping_required": 1,
   "items": [
@@ -5098,7 +5098,7 @@
       "provider_tournament_id": "22097",
       "revision": 863,
       "source_reference": "fixtures:matchId=1612;tournament_info=22097;ranking_cut=2026-09-21 | fixtures:matchId=1612;tournament_info=22097;ranking_cut=2026-09-21",
-      "status": "READY_RESULT_LOOKUP"
+      "status": "SETTLED"
     },
     {
       "alphabetical_player_a": "Alibek Kachmazov",
@@ -5187,18 +5187,62 @@
       "revision": 868,
       "source_reference": "fixtures:matchId=1384;tournament_info=22093;ranking_cut=2026-09-21 | fixtures:matchId=1384;tournament_info=22093;ranking_cut=2026-09-21",
       "status": "READY_RESULT_LOOKUP"
+    },
+    {
+      "alphabetical_player_a": "Alibek Kachmazov",
+      "alphabetical_player_b": "Omar Jasika",
+      "blocker": null,
+      "canonical_source_event_id": "rapidapi-tennis:match:1645",
+      "competition": "Wuning 3 Challenger",
+      "event_id": "COR0203-RAPIDAPI-TENNIS-1645-8d2b3e471a50",
+      "event_start_utc": "2026-10-10T04:30:00+00:00",
+      "identity_overlay_applied": false,
+      "observation_index": 238,
+      "observation_sha256": "633de2b9c19089f82cc86201e1f3ef039f17429866d92aec3dd8297a424490b2",
+      "provider": "rapidapi_tennis",
+      "provider_match_key": "1645",
+      "provider_player_map": {
+        "rapidapi-tennis:player:26965": "Omar Jasika",
+        "rapidapi-tennis:player:72877": "Alibek Kachmazov"
+      },
+      "provider_tournament_id": "22097",
+      "revision": 872,
+      "source_reference": "fixtures:matchId=1645;tournament_info=22097;ranking_cut=2026-09-21 | fixtures:matchId=1645;tournament_info=22097;ranking_cut=2026-09-21",
+      "status": "READY_RESULT_LOOKUP"
+    },
+    {
+      "alphabetical_player_a": "Alibek Kachmazov",
+      "alphabetical_player_b": "Omar Jasika",
+      "blocker": "DUPLICATE_PHYSICAL_MATCH",
+      "canonical_source_event_id": "api-tennis:event:12169693",
+      "competition": "Wuning 3 (China) - Qualification",
+      "event_id": "COR0203-API-TENNIS-12169693",
+      "event_start_utc": "2026-10-10T04:30:00+00:00",
+      "identity_overlay_applied": false,
+      "observation_index": 239,
+      "observation_sha256": "57e36481c140928a3e6c62c9eef782d6ee7a229b37fb6ccc99b5f7ca8725a059",
+      "provider": "api_tennis",
+      "provider_match_key": "12169693",
+      "provider_player_map": {
+        "api-tennis:player:1197": "Alibek Kachmazov",
+        "api-tennis:player:1261": "Omar Jasika"
+      },
+      "provider_tournament_id": null,
+      "revision": 873,
+      "source_reference": "get_fixtures:event_key=12169693;get_draw:tournament_key=14335;season=2026;source=draw_feed | get_fixtures:event_key=12169693;get_draw:tournament_key=14335;season=2026;source=draw_feed",
+      "status": "DUPLICATE_PHYSICAL_MATCH_QUARANTINED"
     }
   ],
   "ledger": {
     "hash_chain_verified": true,
     "outcomes_used_for_metrics": 0,
-    "records": 167,
-    "unique_events": 167
+    "records": 168,
+    "unique_events": 168
   },
   "metrics": "SEALED_UNTIL_600",
   "outcomes_used_for_metrics": 0,
   "ready_result_lookup": 13,
   "real_money": "BLOCKED",
   "schema": "MATRIX_COR0203_SETTLEMENT_QUEUE_V1",
-  "settled": 114
+  "settled": 115
 }
