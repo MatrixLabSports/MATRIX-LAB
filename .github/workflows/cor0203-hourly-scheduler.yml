@@ -151,14 +151,18 @@ jobs:
           print(d["source_compliance_status"])
           PY
 
-      - name: One-shot exact world tennis inventory for 2026-10-04
+      - name: One-shot exact world tennis inventory for current Bogota day
         env:
           RAPIDAPI_TENNIS_KEY: ${{ secrets.RAPIDAPI_TENNIS_KEY }}
           API_TENNIS_KEY: ${{ secrets.API_TENNIS_KEY }}
+        shell: bash
         run: |
+          set -euo pipefail
+          D="$(TZ=America/Bogota date +%F)"
+          mkdir -p "evidence/tennis_world_inventory/$D"
           python -m tools.tennis_world_exact_day_dual_audit \
-            --target-date-bogota 2026-10-04 \
-            --out evidence/tennis_world_inventory/2026-10-04/world_exact_day_dual_audit.json
+            --target-date-bogota "$D" \
+            --out "evidence/tennis_world_inventory/$D/world_exact_day_dual_audit.json"
 
       - name: Run governed autonomous production subcycles
         shell: bash
@@ -191,6 +195,8 @@ jobs:
               ;;
           esac
           export CYCLES INTERVAL_SECONDS
+          export MATRIX_WORLD_DATE_BOGOTA="$(TZ=America/Bogota date +%F)"
+          echo "MATRIX_WORLD_DATE_BOGOTA=$MATRIX_WORLD_DATE_BOGOTA"
           AUDIT_JSONL="/tmp/cor0203_scheduler_cycles.jsonl"
           : > "$AUDIT_JSONL"
 
