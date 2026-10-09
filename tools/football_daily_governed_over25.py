@@ -17,7 +17,6 @@ from tools.api_football_market_shadow_p_matrix import PARAMS_OVER25, build_shado
 POLICY = {
     "betano": ["betano"],
     "betplay": ["betplay"],
-    "bwin": ["bwin"],
     "rushbet": ["rushbet", "rush bet"],
 }
 DIAGNOSTIC = {"pinnacle": ["pinnacle"]}
