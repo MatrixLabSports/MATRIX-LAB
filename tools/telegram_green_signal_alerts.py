@@ -90,7 +90,7 @@ def send_telegram(session: requests.Session, token: str, chat_id: str, text: str
     response = session.post(
         f"https://api.telegram.org/bot{token}/sendMessage",
         data={"chat_id": chat_id, "text": text},
-        timeout=20,
+        timeout=(10, 90),
     )
     try:
         payload = response.json()
@@ -505,6 +505,8 @@ def main() -> None:
     settled_keys = {str(x.get("signal_key")) for x in ledger["settlements"]}
     sent_now = corrections_now = settlements_now = quote_checks = 0
     rectifications_now = economic_updates_now = 0
+    delivery_failures_now = 0
+    ledger.setdefault("delivery_failures", [])
 
     for key, c in sorted(candidates.items(), key=lambda kv: (str(kv[1].get("kickoff")), kv[0])):
         if key in sent_by_key:
@@ -517,7 +519,24 @@ def main() -> None:
         if not c.get("physical_quote_verified") or float(c["odds"]) <= 1.50 or float(c["ev"]) <= 0:
             continue
         if key not in sent_by_key:
-            mid = send_telegram(session, token, chat_id, green_message(c))
+            try:
+                mid = send_telegram(session, token, chat_id, green_message(c))
+            except Exception as exc:
+                ledger["delivery_failures"].append({
+                    "signal_key": key,
+                    "fixture_id": c["fixture_id"],
+                    "match": c["match"],
+                    "market": c["market"],
+                    "house": c["house"],
+                    "odds": c["odds"],
+                    "ev": c["ev"],
+                    "attempted_at_utc": now.isoformat(),
+                    "error_type": type(exc).__name__,
+                    "error": str(exc)[:500],
+                    "status": "DELIVERY_FAILED_RETRY_NEXT_RUN",
+                })
+                delivery_failures_now += 1
+                continue
             record = {
                 "signal_key": key,
                 "sport": c["sport"],
@@ -689,6 +708,7 @@ def main() -> None:
         "football_candidates": len(football),
         "tennis_candidates": len(tennis),
         "sent_now": sent_now,
+        "delivery_failures_now": delivery_failures_now,
         "quote_checks": quote_checks,
         "corrections_now": corrections_now,
         "rectifications_now": rectifications_now,
