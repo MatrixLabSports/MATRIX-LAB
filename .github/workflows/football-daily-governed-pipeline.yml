@@ -142,15 +142,8 @@ jobs:
           D="${{ steps.date.outputs.target_date }}"
           python -m tools.football_daily_governed_over25 --target-date "$D"
 
-      - name: Send new Telegram signals immediately
-        env:
-          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
-          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
-          API_FOOTBALL_KEY: ${{ secrets.API_FOOTBALL_KEY }}
-        shell: bash
-        run: |
-          set -euo pipefail
-          python -m tools.telegram_green_signal_alerts
+      # Telegram is intentionally decoupled. The evidence commit below triggers
+      # telegram-green-signals.yml, which owns and persists its ledger atomically.
 
       - name: Persist governed daily evidence
         shell: bash
@@ -163,7 +156,6 @@ jobs:
           git add evidence/api_football/prospective_market_freeze
           git add "evidence/api_football/daily_prematch_reports/$D"
           git add "evidence/football_world_inventory/$D/MATRIX_FOOTBALL_CALIBRATION_ELIGIBILITY.json"
-          git add evidence/notifications/telegram/MATRIX_TELEGRAM_SIGNAL_LEDGER.json
           if git diff --cached --quiet; then
             echo "NO_GOVERNED_DAILY_CHANGE"
             exit 0
