@@ -1,0 +1,81 @@
+{
+  "schema": "MATRIX_09OCT_PARALLEL_TENNIS_FOOTBALL_STATUS_CERTIFICATE_V1",
+  "operational_date_bogota": "2026-10-09",
+  "tennis_live": {
+    "status": "ACTIVE_RESEARCH_MONITORING",
+    "collection_cadence": "EVERY_2_HOURS",
+    "latest_bulk_seed_workflow_run": {
+      "run_id": 37995538954,
+      "conclusion": "success",
+      "created_at_utc": "2026-10-09T21:47:24Z",
+      "job_name": "collect",
+      "job_conclusion": "success"
+    },
+    "latest_cumulative_gate_workflow_run": {
+      "run_id": 37993594212,
+      "conclusion": "success",
+      "created_at_utc": "2026-10-09T21:27:50Z"
+    },
+    "cumulative_gate_artifact": {
+      "path": "evidence/live_tennis_lab/MATRIX_LIVE_TENNIS_CUMULATIVE_GATE_V1.json",
+      "blob_sha": "8eda529b702e9b9b409fe7d3d5a023a5bdd2b0e6",
+      "generated_at_utc": "2026-10-09T21:28:04+00:00",
+      "global_unique_match_count": 53,
+      "sum_lane_settled_unique_matches": 42
+    },
+    "telegram_progress": {
+      "path": "evidence/notifications/telegram/MATRIX_TELEGRAM_LIVE_TENNIS_PROGRESS_LEDGER.json",
+      "blob_sha": "faff7d67783687488de7d9025be384e77c0c39ee",
+      "updated_at_utc": "2026-10-09T21:28:04+00:00",
+      "last_message_id": 62
+    },
+    "model_status": "RESEARCH_ONLY",
+    "probability_output_status": "SEALED",
+    "automatic_wagering": false,
+    "real_money": "BLOCKED"
+  },
+  "tennis_prematch_cor0203": {
+    "scheduler_latest_run": {
+      "run_id": 37995396999,
+      "name": "COR02-03 repo-native hourly scheduler",
+      "conclusion": "success",
+      "created_at_utc": "2026-10-09T21:45:56Z",
+      "job_name": "trigger-production",
+      "job_conclusion": "success"
+    },
+    "canonical_unique_count": 130,
+    "raw_physical_rows": 240,
+    "duplicates_quarantined": 110,
+    "metrics": "SEALED_UNTIL_600",
+    "real_money": "BLOCKED"
+  },
+  "football_user_execution": {
+    "ledger_path": "evidence/notifications/telegram/MATRIX_TELEGRAM_SIGNAL_LEDGER.json",
+    "ledger_blob_sha": "c712097d8de43b6ab29738cba287c5e3e97da4c3",
+    "pending_real_user_bets": [
+      {
+        "fixture_id": "1493172",
+        "match": "Instituto Cordoba vs Boca Juniors",
+        "bookmaker": "Betano",
+        "odds": 2.62,
+        "stake_cop": 1000,
+        "status": "PENDING"
+      },
+      {
+        "fixture_id": "1493181",
+        "match": "Union Santa Fe vs Defensa Y Justicia",
+        "bookmaker": "BetPlay",
+        "odds": 2.07,
+        "stake_cop": 1000,
+        "status": "PENDING"
+      }
+    ],
+    "not_executed": [
+      {
+        "fixture_id": "1580527",
+        "match": "Bala Town vs Buckley Town",
+        "status": "NOT_EXECUTED_USER_CONFIRMED"
+      }
+    ]
+  }
+}
