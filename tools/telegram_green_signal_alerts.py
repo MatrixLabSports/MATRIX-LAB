@@ -593,7 +593,12 @@ def main() -> None:
         kickoff = parse_dt(c.get("kickoff"))
         if kickoff is None or kickoff <= now:
             continue
-        required_house_key = bookmaker_key(record.get("house") or c.get("house"))
+        execution = record.get("execution") if isinstance(record.get("execution"), dict) else None
+        required_house_key = bookmaker_key(
+            (execution or {}).get("bookmaker")
+            or record.get("house")
+            or c.get("house")
+        )
         offer = exact_over25_offer(session, api_key, c["fixture_id"], float(c["p_matrix"]), required_house_key)
         quote_checks += 1
         previous = ledger["quote_state"].get(key) or {}
