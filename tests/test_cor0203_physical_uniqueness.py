@@ -608,3 +608,34 @@ def test_uniqueness_audit_does_not_merge_cross_provider_rows_beyond_time_toleran
     assert report["unique_calibration_observations"] == 2
     assert report["duplicate_observations_quarantined"] == 0
 
+
+
+def test_current_canonical_window_accounting_uses_unique_matches_not_raw_rows():
+    root = Path(__file__).resolve().parents[1]
+    report = json.loads(
+        (root / "evidence/cor0203/runtime/MATRIX_COR0203_PHYSICAL_UNIQUENESS_LAST.json").read_text()
+    )
+
+    assert report["result"] == "PASS"
+    physical = report["physical_frozen_rows"]
+    unique = report["unique_calibration_observations"]
+    duplicates = report["duplicate_observations_quarantined"]
+    unresolved = report["unresolved_identity_rows"]
+
+    assert physical == unique + duplicates + unresolved
+    assert report["metrics_opened"] is False
+    assert report["outcomes_read"] == 0
+    assert report["metrics"] == "SEALED_UNTIL_600_UNIQUE"
+
+    canonical = report["canonical_observations"]
+    assert len(canonical) == unique
+    for row in canonical:
+        index = row["canonical_unique_index"]
+        expected_window = 1 + (index - 1) // 200
+        assert row["window"] == expected_window
+
+    # Raw physical rows can exceed a calibration-window boundary because
+    # cross-provider aliases are quarantined after freeze. Window transitions
+    # therefore use canonical unique matches, never raw frozen-row count.
+    if unique < 200:
+        assert all(row["window"] == 1 for row in canonical)
