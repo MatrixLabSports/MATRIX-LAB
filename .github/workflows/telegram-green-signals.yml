@@ -14,6 +14,12 @@ on:
       - evidence/api_football/daily_prematch_reports/**
       - evidence/tennis_signals/**
   workflow_dispatch:
+  workflow_run:
+    workflows:
+      - "MATRIX Football Daily Governed Pipeline"
+      - "API-Football prospective FINAL-only settlement now"
+    types:
+      - completed
 
 permissions:
   contents: write
@@ -24,6 +30,9 @@ concurrency:
 
 jobs:
   notify:
+    if: >
+      github.event_name != 'workflow_run' ||
+      github.event.workflow_run.conclusion == 'success'
     runs-on: ubuntu-latest
     timeout-minutes: 15
     env:
