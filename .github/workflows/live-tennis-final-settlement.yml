@@ -10,6 +10,11 @@ on:
       - .github/workflows/live-tennis-final-settlement.yml
   schedule:
     - cron: "41 */2 * * *"
+  workflow_run:
+    workflows:
+      - "MATRIX Live Tennis Bulk Seed"
+    types:
+      - completed
 
 permissions:
   contents: write
@@ -20,6 +25,9 @@ concurrency:
 
 jobs:
   settle:
+    if: >
+      github.event_name != 'workflow_run' ||
+      github.event.workflow_run.conclusion == 'success'
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
