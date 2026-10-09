@@ -1,11 +1,11 @@
 {
   "accumulation": {
-    "cumulative_count": 139,
-    "current_fetch_count": 10,
+    "cumulative_count": 140,
+    "current_fetch_count": 11,
     "never_decrease_within_day": true,
-    "newly_discovered_count": 2,
+    "newly_discovered_count": 1,
     "policy": "MONOTONIC_UNION_BY_STABLE_PHYSICAL_IDENTITY",
-    "prior_count": 137,
+    "prior_count": 139,
     "retained_prior_only_count": 129
   },
   "automatic_wagering": false,
@@ -35,7 +35,7 @@
     "ITF": {
       "current_governed_model": null,
       "feeds_COR02_COR03": false,
-      "inventory_count": 87
+      "inventory_count": 88
     },
     "WTA": {
       "current_governed_model": null,
@@ -6421,10 +6421,53 @@
       "provider_channel": "ATP",
       "provider_status": "",
       "round": "1/2",
+      "source_event_aliases": [
+        "rapidapi-tennis:atp:match:1874"
+      ],
       "source_event_id": "rapidapi-tennis:atp:match:1874",
       "source_provider": "rapidapi_tennis",
       "source_snapshot_sha256": "e41e18c5b1dab2fcb89aef1e8018887b8670bcb6d59c98d2f8950c2173ad3f9f",
       "stable_physical_identity_key": "4871c88b1b732a0d51bd0ff097af63330a29c6a4a77f0ddb05adf57bf601a94c",
+      "surface": "I.hard",
+      "tier": "",
+      "tournament_id": "22136",
+      "tournament_name": "M25 Luan"
+    },
+    {
+      "circuit_detail": "ITF_MEN",
+      "circuit_family": "ITF",
+      "event_format": "SINGLES",
+      "event_format_authority": "TWO_INDIVIDUAL_PROVIDER_NAMES",
+      "event_start_bogota": "2026-10-09T19:00:00-05:00",
+      "event_start_utc": "2026-10-10T00:00:00+00:00",
+      "match_id": "1881",
+      "model_derivation": {
+        "blockers": [
+          "CIRCUIT_OUTSIDE_COR0203_ATP_CHALLENGER"
+        ],
+        "domain_candidate": false,
+        "lane": "COR02_COR03_ATP_CHALLENGER_HARD",
+        "note": "Domain candidate only. Governed COR02/COR03 still requires identity, PIT history, ranking/features, unique physical event, future prematch freeze and all existing gates."
+      },
+      "physical_event_key": "4bdc7e479500cf221b973f571199987656f0f28d915e8e209d883108235cf2be",
+      "player1": {
+        "country": "TUR",
+        "id": "44573",
+        "name": "Mert Alkaya"
+      },
+      "player2": {
+        "country": "GER",
+        "id": "76148",
+        "name": "Nino Ehrenschneider"
+      },
+      "player_group": "",
+      "provider_channel": "ATP",
+      "provider_status": "",
+      "round": "1/2",
+      "source_event_id": "rapidapi-tennis:atp:match:1881",
+      "source_provider": "rapidapi_tennis",
+      "source_snapshot_sha256": "7a1fe57c8d1406ff1d036b9937b2400f6d430c337b499d385484226e91785916",
+      "stable_physical_identity_key": "7099faad06a2e5537d1e4b708b047f95f2797e80fd6dde09bbcd6916ac202d9c",
       "surface": "I.hard",
       "tier": "",
       "tournament_id": "22136",
@@ -6461,6 +6504,9 @@
       "provider_channel": "WTA",
       "provider_status": "",
       "round": "1/2",
+      "source_event_aliases": [
+        "rapidapi-tennis:wta:match:1415"
+      ],
       "source_event_id": "rapidapi-tennis:wta:match:1415",
       "source_provider": "rapidapi_tennis",
       "source_snapshot_sha256": "b9a7cb8af59585317442710024769f8a76160f0c1a656d1bf85e3a8e32386a8b",
@@ -6474,18 +6520,18 @@
   "events_by_detail": {
     "ATP_CHALLENGER": 28,
     "ATP_MAIN_OR_OTHER": 14,
-    "ITF_MEN": 38,
+    "ITF_MEN": 39,
     "ITF_WOMEN": 49,
     "WTA_MAIN_OR_OTHER": 10
   },
   "events_by_family": {
     "ATP": 42,
-    "ITF": 87,
+    "ITF": 88,
     "WTA": 10
   },
   "events_by_format": {
     "DOUBLES": 16,
-    "SINGLES": 123
+    "SINGLES": 124
   },
   "metrics_opened": false,
   "operational_timezone": "America/Bogota",
@@ -6502,10 +6548,10 @@
   "provider_channel_errors": {},
   "provider_channel_summaries": {
     "ATP": {
-      "events_in_bogota_day": 5,
+      "events_in_bogota_day": 6,
       "malformed_unplaced_rows": 0,
       "network_calls": 1,
-      "provider_rows_in_query_window": 5,
+      "provider_rows_in_query_window": 6,
       "status": "PASS"
     },
     "WTA": {
@@ -6525,7 +6571,7 @@
   "status": "PASS",
   "target_date_bogota": "2026-10-09",
   "unplaced_rows": [],
-  "world_calendar_inventory_count": 139,
+  "world_calendar_inventory_count": 140,
   "world_complete_gate": "REQUIRES_MULTI_SOURCE_RECONCILIATION",
   "world_inventory_complete": false
 }
