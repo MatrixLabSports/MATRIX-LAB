@@ -8,6 +8,7 @@ on:
     paths:
       - .github/workflows/live-tennis-cumulative-gate-reconcile.yml
       - tools/live_tennis_cumulative_gate.py
+      - tools/telegram_live_tennis_progress.py
   workflow_dispatch:
   workflow_run:
     workflows:
@@ -56,6 +57,9 @@ jobs:
           print(json.dumps({"hard":hard,"clay":clay}))
           PY
 
+      - name: Install Telegram dependency
+        run: python -m pip install requests
+
       - name: Rebuild quality-valid cumulative gates
         run: |
           python -m tools.live_tennis_cumulative_gate             --root evidence/live_tennis_lab             --out evidence/live_tennis_lab/MATRIX_LIVE_TENNIS_CUMULATIVE_GATE_V1.json
@@ -90,6 +94,12 @@ jobs:
           },sort_keys=True))
           PY
 
+      - name: Notify Telegram on Live Tennis progress change
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+        run: python -m tools.telegram_live_tennis_progress
+
       - name: Prove prematch untouched
         shell: bash
         run: |
@@ -116,6 +126,7 @@ jobs:
           git config user.name matrix-live-tennis-cumulative-gate
           git config user.email matrix-live-tennis-cumulative-gate@users.noreply.github.com
           git add evidence/live_tennis_lab/MATRIX_LIVE_TENNIS_CUMULATIVE_GATE_V1.json
+          git add evidence/notifications/telegram/MATRIX_TELEGRAM_LIVE_TENNIS_PROGRESS_LEDGER.json || true
           if git diff --cached --quiet; then
             echo "NO_CUMULATIVE_GATE_CHANGE"
             exit 0
