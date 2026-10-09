@@ -58,6 +58,7 @@ jobs:
               generated_at=datetime.now(timezone.utc),
           )
           out=Path("evidence/api_football/daily_prematch_reports/2026-10-09/p_matrix_shadow_current.json")
+          out.parent.mkdir(parents=True,exist_ok=True)
           out.write_text(json.dumps(payload,indent=2,sort_keys=True,ensure_ascii=False)+"\n")
           print(json.dumps({
               "cycle_root":str(cycle),
