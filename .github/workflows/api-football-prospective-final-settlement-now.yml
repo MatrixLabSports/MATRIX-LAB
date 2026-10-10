@@ -42,6 +42,7 @@ jobs:
           python -m pytest -q \
             tests/test_api_football_prospective_api_settlement.py \
             tests/test_api_football_prospective_supervisor.py \
+            tests/test_api_football_prospective_calibration.py \
             tests/test_api_football_market_calibration_v2.py
 
       - name: Record supervisor due state
@@ -73,6 +74,40 @@ jobs:
           assert sync["parameters_mutated"] is False
           assert sync["real_money"] == "BLOCKED"
           print(json.dumps(sync, sort_keys=True))
+          PY
+
+      - name: Open completed prospective calibration checkpoints only
+        run: python -m tools.api_football_prospective_calibration
+
+      - name: Validate threshold-only calibration opening
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          p=Path("evidence/api_football/prospective_calibration/gates.json")
+          j=json.loads(p.read_text())
+          n=int(j["calibration_observation_count"])
+          for threshold in (30,50,100):
+              g=j["gates"][str(threshold)]
+              if n >= threshold:
+                  assert g["status"]=="OPENED_AT_THRESHOLD"
+                  assert g["metrics_opened"] is True
+                  assert g["observations_used"]==threshold
+              else:
+                  assert g["status"]=="SEALED"
+                  assert g["metrics_opened"] is False
+          assert j["parameter_tuning_allowed"] is False
+          assert j["original_357_holdout_reuse_allowed"] is False
+          assert j["real_money"]=="BLOCKED"
+          print(json.dumps({
+              "n":n,
+              "gate30":j["gates"]["30"]["status"],
+              "gate50":j["gates"]["50"]["status"],
+              "gate100":j["gates"]["100"]["status"],
+              "real_money":j["real_money"],
+          },sort_keys=True))
           PY
 
       - name: Sync separated V2 market lanes
@@ -121,6 +156,7 @@ jobs:
             evidence/api_football/prospective_market_freeze/settlement_raw \
             evidence/api_football/prospective_calibration/ledger.jsonl \
             evidence/api_football/prospective_calibration/sync_last.json \
+            evidence/api_football/prospective_calibration/gates.json \
             evidence/api_football/calibration_v2/lanes
           if git diff --cached --quiet; then
             echo "NO_GOVERNED_SETTLEMENT_CHANGE"
