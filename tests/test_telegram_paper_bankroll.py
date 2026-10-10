@@ -122,3 +122,31 @@ def test_bankroll_balance_correction_uses_available_after_open_exposure():
     assert "Exposición actualmente comprometida: COP 1.950.000" in msg
     assert "BANKROLL DISPONIBLE PARA NUEVAS SEÑALES: COP 3.050.000" in msg
     assert "Apuestas de papel abiertas: 50" in msg
+
+
+
+def test_green_message_still_sends_when_paper_cap_blocks_assignment():
+    c = {
+        "match": "Cap Test FC vs Flow United",
+        "market": "Más de 2.5 goles",
+        "p_matrix": 0.62,
+        "house": "Betano",
+        "odds": 1.90,
+        "ev": 0.09,
+        "kickoff": "2026-10-10T16:00:00+00:00",
+        "execution": None,
+        "paper_bet": None,
+        "paper_plan": {
+            "stake_level": 2,
+            "stake_cop": 50_000.0,
+            "available_now_cop": 3_050_000.0,
+            "assignment_status": "NO_ASIGNADO_LIMITE_EXPOSICION",
+            "reason": "DAILY_EXPOSURE_CAP_REACHED",
+        },
+    }
+    msg = green_message(c)
+    assert "SEÑAL VERDE SIMULADA" in msg
+    assert "Stake MATRIX recomendado: STAKE 2" in msg
+    assert "Monto recomendado de papel: COP 50.000" in msg
+    assert "Bankroll disponible: COP 3.050.000" in msg
+    assert "NO ASIGNADA — límite de exposición alcanzado" in msg
