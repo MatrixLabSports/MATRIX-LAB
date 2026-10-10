@@ -22,26 +22,28 @@
     "activated_at_utc": "2026-10-10T03:33:54+00:00",
     "activation_message_id": 116,
     "automatic_real_money_execution": false,
-    "available_after_open_exposure_cop": 3200000.0,
+    "available_after_open_exposure_cop": 3200000,
     "confidence_policy": {
       "stake_1": "remaining eligible green signals with positive EV",
       "stake_2": "P_MATRIX >= 60% AND EV >= 5%",
       "stake_3": "P_MATRIX >= 65% AND EV >= 10%"
     },
     "currency": "COP",
-    "current_cop": 5000000.0,
+    "current_cop": 5000000,
     "daily_base_exposure_fraction": 0.3,
     "daily_cap_by_date": {
       "2026-10-10": {
-        "cap_cop": 2000000.0,
         "cap_fraction": 0.4,
-        "eligible_signals": 40,
+        "cap_cop": 2000000,
+        "eligible_signals": 45,
         "stake3_signals": 7,
-        "tier2_or_3_signals": 19
+        "tier2_or_3_signals": 20,
+        "tier2_or_3_share": 0.4444444444444444,
+        "classification": "HIGH_CONVICTION_DAY"
       }
     },
     "daily_exposure_by_date": {
-      "2026-10-10": 1800000.0
+      "2026-10-10": 1800000
     },
     "daily_max_exposure_fraction": 0.4,
     "exposure_policy_30_40_message_id": 120,
@@ -56,29 +58,33 @@
       "minimum_tier2_or_3_share": 0.4
     },
     "initial_cohort": {
-      "exposure_cap_exception": "ONE_TIME_INITIAL_45_SIGNAL_COHORT_ONLY",
+      "exposure_cap_exception": null,
       "exposure_cop": 1800000,
       "exposure_fraction_of_initial_bankroll": 0.36,
-      "future_signals_return_to_standard_25PCT_OPEN_EXPOSURE_CAP": true,
+      "future_signals_return_to_standard_25PCT_OPEN_EXPOSURE_CAP": false,
       "signal_count": 45,
       "stake_1_count": 25,
       "stake_2_count": 13,
       "stake_3_count": 7,
       "status": "FULLY_ASSIGNED",
       "telegram_message_id_first": 68,
-      "telegram_message_id_last": 112
+      "telegram_message_id_last": 112,
+      "policy_classification": "HIGH_CONVICTION_DAY_WITHIN_40PCT_CAP",
+      "daily_cap_fraction": 0.4,
+      "daily_cap_cop": 2000000,
+      "future_policy": "30PCT_STANDARD_DAILY_CAP_OR_40PCT_IF_HIGH_CONVICTION_GATE_PASSES"
     },
     "initial_cohort_fully_assigned": true,
     "initial_cop": 5000000,
-    "max_open_exposure_cop": 2000000.0,
+    "max_open_exposure_cop": 2000000,
     "max_open_exposure_fraction": 0.4,
     "open_bets": 45,
-    "open_exposure_cop": 1800000.0,
+    "open_exposure_cop": 1800000,
     "portfolio_seed_message_ids": [
       117
     ],
     "portfolio_seed_sent_at_utc": "2026-10-10T03:35:16+00:00",
-    "realized_profit_cop": 0.0,
+    "realized_profit_cop": 0,
     "schema": "MATRIX_PAPER_BANKROLL_V1",
     "settled_paper_bets": 0,
     "singles_only": true,
@@ -97,7 +103,7 @@
     "final_only_settlement": true,
     "notification_only": true,
     "odds_used_to_generate_probability": false,
-    "paper_bankroll_initial_cop": 5000000.0,
+    "paper_bankroll_initial_cop": 5000000,
     "paper_bankroll_simulation_only": true,
     "paper_max_open_exposure_fraction": 0.4,
     "paper_unit_fraction_initial_bankroll": 0.005,
@@ -747,7 +753,7 @@
         "break_even_probability": 0.5,
         "ev": 0.029445023200000087,
         "house": "Betano",
-        "odds": 2.0
+        "odds": 2
       },
       "required_house_key": "betano",
       "state": "VERDE"
@@ -2110,11 +2116,11 @@
       "duplicate_green_messages_suppressed": 59,
       "economic_updates_now": 0,
       "football_candidates": 59,
-      "paper_bankroll_current_cop": 5000000.0,
+      "paper_bankroll_current_cop": 5000000,
       "paper_bankroll_enabled": true,
       "paper_bets_assigned_now": 0,
       "paper_open_bets": 45,
-      "paper_open_exposure_cop": 1800000.0,
+      "paper_open_exposure_cop": 1800000,
       "quote_checks": 40,
       "real_money": "BLOQUEADO",
       "rectifications_now": 0,
@@ -2137,11 +2143,11 @@
       "duplicate_green_messages_suppressed": 59,
       "economic_updates_now": 0,
       "football_candidates": 59,
-      "paper_bankroll_current_cop": 5000000.0,
+      "paper_bankroll_current_cop": 5000000,
       "paper_bankroll_enabled": true,
       "paper_bets_assigned_now": 0,
       "paper_open_bets": 45,
-      "paper_open_exposure_cop": 1800000.0,
+      "paper_open_exposure_cop": 1800000,
       "quote_checks": 40,
       "real_money": "BLOQUEADO",
       "rectifications_now": 0,
