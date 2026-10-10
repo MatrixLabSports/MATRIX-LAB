@@ -540,7 +540,7 @@ def run() -> dict[str, Any]:
         if fid in frozen_fixture_ids:
             rows.append({**base, "status": "ALREADY_FROZEN_PERSISTENT", "p_matrix": None, "p_research_over": None})
             continue
-        if len(frozen_fixture_ids) + frozen_so_far >= GATES[0]:
+        if len(frozen_fixture_ids) >= GATES[0]:
             rows.append({**base, "status": "PREREGISTERED_GATE30_FREEZE_TARGET_REACHED", "p_matrix": None, "p_research_over": None})
             continue
         if frozen_so_far >= MAX_NEW_RESEARCH_FREEZES_PER_RUN:
