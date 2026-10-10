@@ -1,7 +1,7 @@
 {
   "bottleneck": {
-    "cause": "SOURCE_READY_NO_NEW_ELIGIBLE_EVENTS",
-    "stage": "INVENTORY"
+    "cause": "ALL_PREREGISTERED_EVENTS_BLOCKED_AT_STAGING",
+    "stage": "STAGING"
   },
   "cycle": {
     "ending_physical_count": 240,
@@ -11,12 +11,12 @@
     "waiting_inputs": 0
   },
   "funnel": {
-    "crosswalk_blocked_events": 45,
+    "crosswalk_blocked_events": 46,
     "crosswalk_passed_events": 509,
-    "preregistered_events": 0,
+    "preregistered_events": 1,
     "preregistration_skipped": 0,
-    "preregistration_status": "NO_NEW_EVENTS",
-    "stage_blocked_events": 7,
+    "preregistration_status": "PREREGISTERED",
+    "stage_blocked_events": 8,
     "staged_events": 0
   },
   "governance": {
@@ -44,7 +44,7 @@
     "result": "PASS",
     "silent_imputation_detected": false
   },
-  "operational_state": "IDLE_VALID",
+  "operational_state": "PIPELINE_BLOCKED",
   "schema": "MATRIX_COR0203_PRODUCTION_OBSERVABILITY_V2",
   "source": {
     "cause": "READY",
