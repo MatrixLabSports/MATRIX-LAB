@@ -1,69 +1,10 @@
 {
-  "as_of_utc": "2026-10-10T12:34:24+00:00",
+  "as_of_utc": "2026-10-10T12:45:17+00:00",
   "automatic_model_feed": false,
   "automatic_model_promotion": false,
   "automatic_wagering": false,
-  "eligible_candidates": [
-    {
-      "canonical_source_event_id": "rapidapi-tennis:atp:match:1379",
-      "competition": "Villena Challenger",
-      "competition_id": "rapidapi-tennis:tournament:22093",
-      "event_id": "rapidapi-tennis:atp:match:1379",
-      "event_start_utc": "2026-10-10T12:45:00+00:00",
-      "historical_identity_crosswalk_status": "PENDING",
-      "legacy_provider_event_id": "rapidapi-tennis:match:1379",
-      "physical_event_key": "92493af57866ca8e0796fe61fb25f1ad322117f1ea29882e9853fff7416bf13a",
-      "player_identities": [
-        {
-          "display_name": "Pedro Martinez Portero",
-          "provider": "rapidapi_tennis",
-          "provider_player_id": "rapidapi-tennis:player:27358"
-        },
-        {
-          "display_name": "Laslo Djere",
-          "provider": "rapidapi_tennis",
-          "provider_player_id": "rapidapi-tennis:player:24084"
-        }
-      ],
-      "players": [
-        {
-          "name": "Pedro Martinez Portero",
-          "provider_player_id": "rapidapi-tennis:player:27358",
-          "provider_ranking": {
-            "country": "ESP",
-            "place": "131",
-            "player": "Pedro Martinez Portero",
-            "points": "447",
-            "snapshot_date": "2026-09-21"
-          }
-        },
-        {
-          "name": "Laslo Djere",
-          "provider_player_id": "rapidapi-tennis:player:24084",
-          "provider_ranking": {
-            "country": "SRB",
-            "place": "181",
-            "player": "Laslo Djere",
-            "points": "314",
-            "snapshot_date": "2026-09-21"
-          }
-        }
-      ],
-      "provider_channel": "ATP",
-      "provider_source_event_id": "rapidapi-tennis:atp:match:1379",
-      "round": "1/2",
-      "source_id_collision_resolved": false,
-      "source_provider": "rapidapi_tennis",
-      "source_reference": "fixtures:matchId=1379;tournament_info=22093;ranking_cut=2026-09-21;provider_channel=ATP",
-      "source_snapshot_sha256": "f758c2d9e4296f8d05de652f7ad6ce7d5d0ab7a10831b09cf5dc7868294cc19e",
-      "surface": "Hard",
-      "target_period": 20260921,
-      "tour_level": "C",
-      "world_source_snapshot_sha256": "25a3179ca096c83f1deb13df8e4178aa2c0e955359783a3d3fc12dc5ef79c475",
-      "world_stable_physical_identity_key": "931433f488f7a6c9b250ed14f920709c51dbf5f2a5ef890e6687fa2fad750b15"
-    }
-  ],
-  "eligible_input_events": 1,
+  "eligible_candidates": [],
+  "eligible_input_events": 0,
   "fixture_rows": 2,
   "governed_preregistration_required": true,
   "metrics_opened": false,
@@ -93,6 +34,29 @@
       "source_id_collision_resolved": false,
       "tournament_id": "22093",
       "world_source_event_id": "rapidapi-tennis:atp:match:1407"
+    },
+    {
+      "blockers": [
+        "EVENT_NOT_FUTURE"
+      ],
+      "match_id": "1379",
+      "players": [
+        {
+          "name": "Pedro Martinez Portero",
+          "provider_player_id": "rapidapi-tennis:player:27358",
+          "ranking_found": true
+        },
+        {
+          "name": "Laslo Djere",
+          "provider_player_id": "rapidapi-tennis:player:24084",
+          "ranking_found": true
+        }
+      ],
+      "provider_channel": "ATP",
+      "provider_source_event_id": "rapidapi-tennis:atp:match:1379",
+      "source_id_collision_resolved": false,
+      "tournament_id": "22093",
+      "world_source_event_id": "rapidapi-tennis:atp:match:1379"
     }
   ],
   "ranking_cut": "2026-09-21",
@@ -150,38 +114,16 @@
   "world_inventory_target_date": "2026-10-10",
   "world_inventory_total": 94,
   "world_registry": {
-    "as_of_utc": "2026-10-10T12:34:24+00:00",
+    "as_of_utc": "2026-10-10T12:45:17+00:00",
     "cor0203_denominator_definition": "derived subset: future ATP Challenger Hard events with two real fixed identities and valid source provenance",
-    "cor0203_eligible_event_ids": [
-      "rapidapi-tennis:match:1379"
-    ],
-    "cor0203_eligible_events": 1,
+    "cor0203_eligible_event_ids": [],
+    "cor0203_eligible_events": 0,
     "duplicate_rows": 0,
-    "rows": [
-      {
-        "competition_id": "rapidapi-tennis:tournament:22093",
-        "competition_name": "Villena Challenger",
-        "cor0203_blockers": [],
-        "cor0203_eligible": true,
-        "environment": "UNKNOWN",
-        "event_id": "rapidapi-tennis:match:1379",
-        "event_start_utc": "2026-10-10T12:45:00+00:00",
-        "player1_id": "rapidapi-tennis:player:27358",
-        "player2_id": "rapidapi-tennis:player:24084",
-        "round": "1/2",
-        "source_provider": "rapidapi_tennis",
-        "source_reference": "fixtures:matchId=1379;tournament_info=22093;ranking_cut=2026-09-21",
-        "source_snapshot_sha256": "f758c2d9e4296f8d05de652f7ad6ce7d5d0ab7a10831b09cf5dc7868294cc19e",
-        "sport": "TENNIS",
-        "surface": "Hard",
-        "tour_level": "ATP_CHALLENGER",
-        "world_calendar_status": "PRESERVED"
-      }
-    ],
+    "rows": [],
     "schema": "matrix.world-calendar-registry/1",
     "world_calendar_denominator_definition": "all unique discovered scheduled events preserved before model-domain filtering",
-    "world_calendar_input_rows": 1,
-    "world_calendar_unique_events": 1
+    "world_calendar_input_rows": 0,
+    "world_calendar_unique_events": 0
   },
   "world_rows_malformed": [],
   "world_rows_synthesized": 2,
