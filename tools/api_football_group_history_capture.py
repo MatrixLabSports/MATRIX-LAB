@@ -17,6 +17,10 @@ TIMEOUT_SECONDS = 30.0
 MAX_REQUESTS = 40
 MIN_DAILY_REMAINING_RESERVE = 40
 FINAL_STATUSES = {"FT", "AET", "PEN"}
+# User-requested browser-first competition lanes. This changes acquisition order only;
+# it does not change model parameters, probabilities, odds, EV, or real-money gates.
+PRIORITY_LEAGUE_IDS = ("39", "61", "78", "135", "140", "239")
+PRIORITY_LEAGUE_RANK = {league_id: rank for rank, league_id in enumerate(PRIORITY_LEAGUE_IDS)}
 PUBLIC_HEADER_ALLOWLIST = (
     "content-type",
     "date",
@@ -151,7 +155,7 @@ def _group_targets(benchmark: Mapping[str, Any]) -> list[dict[str, Any]]:
             group["earliest_kickoff_utc"] = kickoff.isoformat()
 
     ordered = list(groups.values())
-    ordered.sort(key=lambda row: (-len(row["target_keys"]), row["earliest_kickoff_utc"], int(row["league_id"])))
+    ordered.sort(\n        key=lambda row: (\n            PRIORITY_LEAGUE_RANK.get(str(row["league_id"]), len(PRIORITY_LEAGUE_IDS)),\n            -len(row["target_keys"]),\n            row["earliest_kickoff_utc"],\n            int(row["league_id"]),\n        )\n    )
     return ordered
 
 
@@ -482,6 +486,7 @@ def capture_group_history(
         "provider": "api_football",
         "endpoint": ENDPOINT,
         "requested_group_count": len(groups),
+        "priority_league_ids": list(PRIORITY_LEAGUE_IDS),
         "captured_group_count": len(captures),
         "network_calls_performed": total_calls,
         "provider_error_group_count": provider_error_groups,
