@@ -9,6 +9,7 @@ from tools.telegram_green_signal_alerts import (
     recalc_paper_bankroll,
     green_message,
     paper_assignment_update_message,
+    paper_bankroll_balance_correction_message,
 )
 
 
@@ -79,7 +80,9 @@ def test_green_message_includes_paper_bankroll_and_stake():
     msg = green_message(c)
     assert "STAKE 2" in msg
     assert "Apuesta de papel: COP 50.000" in msg
-    assert "Bankroll papel antes: COP 5.000.000" in msg
+    assert "Capital total de papel: COP 5.000.000" in msg
+    assert "Bankroll disponible antes: COP" in msg
+    assert "Bankroll disponible después: COP" in msg
 
 
 def test_retroactive_paper_assignment_message_includes_bankroll_and_stake():
@@ -100,5 +103,21 @@ def test_retroactive_paper_assignment_message_includes_bankroll_and_stake():
     msg = paper_assignment_update_message(record, paper, pb)
     assert "STAKE 2" in msg
     assert "Apuesta de papel: COP 50.000" in msg
-    assert "Bankroll de papel: COP 5.000.000" in msg
+    assert "Capital total de papel: COP 5.000.000" in msg
     assert "Exposición abierta de papel: COP 1.950.000 / COP 2.000.000" in msg
+    assert "BANKROLL DISPONIBLE: COP" in msg
+
+
+
+def test_bankroll_balance_correction_uses_available_after_open_exposure():
+    pb = {
+        "current_cop": 5_000_000.0,
+        "open_exposure_cop": 1_950_000.0,
+        "available_after_open_exposure_cop": 3_050_000.0,
+        "open_bets": 50,
+    }
+    msg = paper_bankroll_balance_correction_message(pb)
+    assert "Capital total de papel: COP 5.000.000" in msg
+    assert "Exposición actualmente comprometida: COP 1.950.000" in msg
+    assert "BANKROLL DISPONIBLE PARA NUEVAS SEÑALES: COP 3.050.000" in msg
+    assert "Apuestas de papel abiertas: 50" in msg
