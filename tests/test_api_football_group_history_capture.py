@@ -3,7 +3,7 @@ from unittest.mock import Mock
 
 import pytest
 
-from tools.api_football_group_history_capture import capture_group_history
+from tools.api_football_group_history_capture import _group_targets, capture_group_history
 
 
 def _benchmark():
@@ -68,6 +68,33 @@ def _response(rows, remaining="80"):
         "X-RateLimit-Remaining": "9",
     }
     return response
+
+
+def test_group_targets_prioritize_requested_browser_first_leagues():
+    benchmark = _benchmark()
+    base = benchmark["fixtures"]["api_football:fixture:900"]
+    for offset in range(3):
+        benchmark["fixtures"][f"api_football:fixture:99{offset}"] = {
+            **base,
+            "fixture_id": f"99{offset}",
+            "kickoff_utc": f"2026-09-28T1{5+offset}:00:00+00:00",
+            "league": {"id": "999", "name": "Large Non Priority League", "season": 2026, "round": "R1"},
+            "home": {"id": str(70 + offset), "name": f"NP Home {offset}"},
+            "away": {"id": str(80 + offset), "name": f"NP Away {offset}"},
+        }
+    benchmark["fixtures"]["api_football:fixture:980"] = {
+        **base,
+        "fixture_id": "980",
+        "kickoff_utc": "2026-09-28T17:30:00+00:00",
+        "league": {"id": "239", "name": "Primera A", "season": 2026, "round": "R1"},
+        "home": {"id": "90", "name": "COL Home"},
+        "away": {"id": "91", "name": "COL Away"},
+    }
+
+    groups = _group_targets(benchmark)
+
+    assert [row["league_id"] for row in groups[:2]] == ["39", "239"]
+    assert groups[2]["league_id"] == "999"
 
 
 def test_group_capture_builds_ready_history_without_future_leakage(tmp_path):
