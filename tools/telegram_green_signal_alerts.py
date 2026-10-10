@@ -33,7 +33,11 @@ SELECTION_KEY = "Más de 2.5"
 PAPER_BANKROLL_INITIAL_COP = 5_000_000.0
 PAPER_UNIT_FRACTION = 0.005
 PAPER_UNIT_COP = PAPER_BANKROLL_INITIAL_COP * PAPER_UNIT_FRACTION
-PAPER_MAX_OPEN_EXPOSURE_FRACTION = 0.25
+PAPER_MAX_OPEN_EXPOSURE_FRACTION = 0.40
+PAPER_DAILY_BASE_EXPOSURE_FRACTION = 0.30
+PAPER_DAILY_MAX_EXPOSURE_FRACTION = 0.40
+PAPER_HIGH_CONF_MIN_STAKE3 = 5
+PAPER_HIGH_CONF_MIN_TIER23_SHARE = 0.40
 PAPER_STAKE_LEVELS = {1: 1.0, 2: 2.0, 3: 3.0}
 
 
@@ -461,6 +465,50 @@ def paper_stake_cop(level: int) -> float:
     return PAPER_UNIT_COP * PAPER_STAKE_LEVELS[int(level)]
 
 
+def paper_daily_cap_fraction(candidates_for_day: list[dict[str, Any]]) -> float:
+    eligible = [c for c in candidates_for_day if c.get("eligible_green") is True and float(c.get("ev") or 0.0) > 0.0]
+    if not eligible:
+        return PAPER_DAILY_BASE_EXPOSURE_FRACTION
+    levels = [paper_stake_level(c) for c in eligible]
+    stake3 = sum(1 for x in levels if x == 3)
+    tier23 = sum(1 for x in levels if x >= 2)
+    share = tier23 / len(levels)
+    if stake3 >= PAPER_HIGH_CONF_MIN_STAKE3 and share >= PAPER_HIGH_CONF_MIN_TIER23_SHARE:
+        return PAPER_DAILY_MAX_EXPOSURE_FRACTION
+    return PAPER_DAILY_BASE_EXPOSURE_FRACTION
+
+
+def paper_kickoff_date(value: Any) -> str | None:
+    dt = parse_dt(value)
+    return str(dt.astimezone(BOGOTA).date()) if dt is not None else None
+
+
+def paper_daily_exposure_by_date(ledger: dict[str, Any]) -> dict[str, float]:
+    out: dict[str, float] = {}
+    for record in ledger.get("sent", []):
+        bet = record.get("paper_bet")
+        if not isinstance(bet, dict):
+            continue
+        day = bet.get("kickoff_bogota_date") or paper_kickoff_date(record.get("kickoff"))
+        if not day:
+            continue
+        out[str(day)] = out.get(str(day), 0.0) + float(bet.get("stake_cop") or 0.0)
+    return out
+
+
+def paper_exposure_policy_message(pb: dict[str, Any]) -> str:
+    return "\n".join([
+        "🔵 ACTUALIZACIÓN — EXPOSICIÓN DIARIA BANKROLL DE PAPEL",
+        "",
+        "Exposición diaria estándar: 30% del bankroll.",
+        "Día de alta convicción: hasta 40% del bankroll.",
+        f"Gate 40%: al menos {PAPER_HIGH_CONF_MIN_STAKE3} señales Stake 3 y >= {PAPER_HIGH_CONF_MIN_TIER23_SHARE*100:.0f}% de las señales del día en Stake 2/3.",
+        "Si no cumple ambos gates, se mantiene 30%.",
+        "La cohorte del 10-OCT cumple el gate de alta convicción y su 36% queda dentro del máximo 40%.",
+        "Solo apuestas simples de papel. Sin dinero real.",
+        "DINERO REAL MATRIX: BLOQUEADO",
+    ])
+
 def recalc_paper_bankroll(ledger: dict[str, Any]) -> dict[str, Any]:
     pb = ledger.setdefault("paper_bankroll", {})
     pb.setdefault("schema", "MATRIX_PAPER_BANKROLL_V1")
@@ -479,7 +527,13 @@ def recalc_paper_bankroll(ledger: dict[str, Any]) -> dict[str, Any]:
         "stake_2": "P_MATRIX >= 60% AND EV >= 5%",
         "stake_1": "remaining eligible green signals with positive EV",
     })
-    pb.setdefault("max_open_exposure_fraction", PAPER_MAX_OPEN_EXPOSURE_FRACTION)
+    pb["max_open_exposure_fraction"] = PAPER_MAX_OPEN_EXPOSURE_FRACTION
+    pb["daily_base_exposure_fraction"] = PAPER_DAILY_BASE_EXPOSURE_FRACTION
+    pb["daily_max_exposure_fraction"] = PAPER_DAILY_MAX_EXPOSURE_FRACTION
+    pb["high_confidence_day_gate"] = {
+        "minimum_stake3_signals": PAPER_HIGH_CONF_MIN_STAKE3,
+        "minimum_tier2_or_3_share": PAPER_HIGH_CONF_MIN_TIER23_SHARE,
+    }
     pb.setdefault("singles_only", True)
     pb.setdefault("automatic_real_money_execution", False)
     realized = sum(float(x.get("paper_profit_cop") or 0.0) for x in ledger.get("settlements", []))
@@ -512,7 +566,8 @@ def paper_bankroll_activation_message(pb: dict[str, Any], assigned_now: int) -> 
         "Stake 3: P_MATRIX >= 65% y EV >= 10%",
         "Stake 2: P_MATRIX >= 60% y EV >= 5%",
         "Stake 1: demás señales verdes con EV positivo",
-        f'Tope de exposición abierta: {float(pb["max_open_exposure_fraction"])*100:.0f}%',
+        f'Exposición diaria estándar: {float(pb["daily_base_exposure_fraction"])*100:.0f}%',
+        f'Exposición diaria máxima en alta convicción: {float(pb["daily_max_exposure_fraction"])*100:.0f}%',
         f'Apuestas de papel asignadas ahora: {assigned_now}',
         "Solo apuestas simples. Sin dinero real.",
         "DINERO REAL MATRIX: BLOQUEADO",
@@ -531,8 +586,8 @@ def paper_full_cohort_message(pb: dict[str, Any]) -> str:
         f'Exposición de papel: COP {fmt_cop(cohort.get("exposure_cop") or 0)}',
         f'Bankroll inicial: COP {fmt_cop(pb.get("initial_cop") or 0)}',
         f'Saldo no comprometido: COP {fmt_cop(pb.get("available_after_open_exposure_cop") or 0)}',
-        "Excepción única: se incluyó la cohorte completa de 45 señales aunque supera el tope normal de exposición abierta.",
-        "Las señales futuras vuelven al tope normal del 25%.",
+        "La cohorte cumple el gate de día de alta convicción.",
+        "Su exposición del 36% está dentro del máximo diario permitido del 40%.",
         "SOLO PAPEL — SIN DINERO REAL.",
         "DINERO REAL MATRIX: BLOQUEADO",
     ])
@@ -701,8 +756,7 @@ def main() -> None:
     pb = recalc_paper_bankroll(ledger)
     assigned_paper_now = 0
     if paper_enabled:
-        existing_open_exposure = float(pb["open_exposure_cop"])
-        max_open = float(pb["max_open_exposure_cop"])
+        day_candidates: dict[str, list[dict[str, Any]]] = {}
         priority = []
         for key, candidate in candidates.items():
             if candidate.get("eligible_green") is not True:
@@ -712,15 +766,31 @@ def main() -> None:
             kickoff = parse_dt(candidate.get("kickoff"))
             if kickoff is None or kickoff <= now:
                 continue
+            day = str(kickoff.astimezone(BOGOTA).date())
+            day_candidates.setdefault(day, []).append(candidate)
             record = next((x for x in ledger["sent"] if str(x.get("signal_key")) == key), None)
             if isinstance(record, dict) and isinstance(record.get("paper_bet"), dict):
                 continue
             level = paper_stake_level(candidate)
-            priority.append((level, float(candidate["ev"]), key, candidate, record))
-        priority.sort(key=lambda x: (-x[0], -x[1], str(x[3].get("kickoff")), x[2]))
-        for level, _, key, candidate, record in priority:
+            priority.append((day, level, float(candidate["ev"]), key, candidate, record))
+        daily_exposure = paper_daily_exposure_by_date(ledger)
+        daily_caps = {day: paper_daily_cap_fraction(rows) for day, rows in day_candidates.items()}
+        pb["daily_cap_by_date"] = {
+            day: {
+                "cap_fraction": daily_caps[day],
+                "cap_cop": float(pb["current_cop"]) * daily_caps[day],
+                "eligible_signals": len(rows),
+                "stake3_signals": sum(1 for x in rows if paper_stake_level(x) == 3),
+                "tier2_or_3_signals": sum(1 for x in rows if paper_stake_level(x) >= 2),
+            }
+            for day, rows in day_candidates.items()
+        }
+        priority.sort(key=lambda x: (x[0], -x[1], -x[2], str(x[4].get("kickoff")), x[3]))
+        for day, level, _, key, candidate, record in priority:
             stake = paper_stake_cop(level)
-            if existing_open_exposure + stake > max_open + 1e-9:
+            max_day = float(pb["current_cop"]) * daily_caps.get(day, PAPER_DAILY_BASE_EXPOSURE_FRACTION)
+            used_day = float(daily_exposure.get(day, 0.0))
+            if used_day + stake > max_day + 1e-9:
                 continue
             paper = {
                 "status": "OPEN",
@@ -728,15 +798,18 @@ def main() -> None:
                 "stake_units": float(PAPER_STAKE_LEVELS[level]),
                 "stake_cop": stake,
                 "bankroll_before_cop": float(pb["current_cop"]),
+                "kickoff_bogota_date": day,
+                "daily_cap_fraction": daily_caps.get(day, PAPER_DAILY_BASE_EXPOSURE_FRACTION),
                 "assigned_at_utc": now.isoformat(),
-                "policy": "FIXED_UNIT_0_5PCT_INITIAL_BANKROLL_CONFIDENCE_1_2_3",
+                "policy": "FIXED_UNIT_0_5PCT_INITIAL_BANKROLL_CONFIDENCE_1_2_3_DYNAMIC_DAILY_30_40",
                 "real_money": "BLOCKED",
             }
             candidate["paper_bet"] = paper
             if isinstance(record, dict):
                 record["paper_bet"] = paper
-            existing_open_exposure += stake
+            daily_exposure[day] = used_day + stake
             assigned_paper_now += 1
+        pb["daily_exposure_by_date"] = daily_exposure
         pb = recalc_paper_bankroll(ledger)
 
     session = requests.Session()
@@ -805,6 +878,9 @@ def main() -> None:
             mid = send_telegram(session, token, chat_id, paper_bankroll_activation_message(pb, assigned_paper_now))
             pb["activation_message_id"] = mid
             pb["activated_at_utc"] = now.isoformat()
+        if pb.get("exposure_policy_30_40_message_id") is None:
+            pb["exposure_policy_30_40_message_id"] = send_telegram(session, token, chat_id, paper_exposure_policy_message(pb))
+            pb["exposure_policy_30_40_sent_at_utc"] = now.isoformat()
         if pb.get("portfolio_seed_message_ids") is None:
             portfolio_ids = [send_telegram(session, token, chat_id, text) for text in paper_portfolio_messages(ledger)]
             pb["portfolio_seed_message_ids"] = portfolio_ids
