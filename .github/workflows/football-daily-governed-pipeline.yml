@@ -56,7 +56,7 @@ jobs:
         run: python -m pip install requests pytest
 
       - name: Run targeted history-priority regression tests
-        run: pytest -q tests/test_api_football_group_history_capture.py
+        run: PYTHONPATH=. python -m pytest -q tests/test_api_football_group_history_capture.py
 
       - name: Resolve Bogota target date automatically
         id: date
