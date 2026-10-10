@@ -289,6 +289,28 @@ def run(key:str,root:Path)->dict[str,Any]:
             else: gates[str(g)]={"threshold":g,"status":"OPENED_AT_THRESHOLD","observations_available":len(cal),"observations_used":g,"remaining":0,"metrics_opened":True,"metrics":_gate_metrics(cal[:g])}
         state.update({"freeze_observation_count":len(_load_jsonl(lane_dir/"freeze_ledger.jsonl")),"calibration_observation_count":len(cal),"gates":gates,"last_supervisor_run_utc":now.isoformat(),"prospective_lane_ready":True,"status":"ACTIVE","automatic_wagering":False,"real_money":"BLOCKED"})
         (lane_dir/"state.json").write_text(json.dumps(state,indent=2,sort_keys=True)+"\n",encoding="utf-8")
+    # Refresh canonical summary from lane states so dashboard counts never lag the ledgers.
+    summary_lanes={}
+    for lane in LANES:
+        lane_dir=root/lane.casefold()
+        state=_load_json(lane_dir/"state.json") if (lane_dir/"state.json").exists() else {}
+        gate30=(state.get("gates") or {}).get("30") or {}
+        summary_lanes[lane]={
+            "bet_id":LANES[lane]["bet_id"],
+            "freeze_observation_count":int(state.get("freeze_observation_count") or 0),
+            "calibration_observation_count":int(state.get("calibration_observation_count") or 0),
+            "gate_30":gate30.get("status","SEALED"),
+            "prospective_lane_ready":bool(state.get("prospective_lane_ready")),
+            "status":state.get("status","UNKNOWN"),
+        }
+    (root/"summary.json").write_text(json.dumps({
+        "schema":"MATRIX_PROMOTED_TEAM_MARKETS_PROSPECTIVE_SUMMARY_V2",
+        "updated_at_utc":now.isoformat(),
+        "lanes":summary_lanes,
+        "automatic_wagering":False,
+        "real_money":"BLOCKED",
+    },indent=2,sort_keys=True)+"\n",encoding="utf-8")
+
     if frozen_new:
         zero_freeze_reason=None
     elif events_with_any_canonical_offer==0:
