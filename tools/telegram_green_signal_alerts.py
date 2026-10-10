@@ -674,7 +674,16 @@ def green_message(c: dict[str, Any]) -> str:
             f'Bankroll disponible después: COP {fmt_cop(paper.get("available_after_cop") or 0)}',
         ]
     else:
-        lines += ["Apuesta de papel: NO ASIGNADA"]
+        plan = c.get("paper_plan") if isinstance(c.get("paper_plan"), dict) else None
+        if plan is not None:
+            lines += [
+                f'Stake MATRIX recomendado: STAKE {int(plan["stake_level"])}',
+                f'Monto recomendado de papel: COP {fmt_cop(plan["stake_cop"])}',
+                f'Bankroll disponible: COP {fmt_cop(plan.get("available_now_cop") or 0)}',
+                "Apuesta de papel: NO ASIGNADA — límite de exposición alcanzado",
+            ]
+        else:
+            lines += ["Apuesta de papel: NO ASIGNADA"]
     lines += [
         f'Hora Bogotá: {fmt_bogota(c.get("kickoff"))}',
         "Estado: PENDIENTE DE RESULTADO FINAL",
@@ -828,6 +837,19 @@ def main() -> None:
             max_day = float(pb["current_cop"]) * daily_caps.get(day, PAPER_DAILY_BASE_EXPOSURE_FRACTION)
             used_day = float(daily_exposure.get(day, 0.0))
             if used_day + stake > max_day + 1e-9:
+                available_now = max(0.0, float(pb["current_cop"]) - running_open_exposure)
+                candidate["paper_plan"] = {
+                    "stake_level": level,
+                    "stake_cop": stake,
+                    "available_now_cop": available_now,
+                    "daily_cap_cop": max_day,
+                    "daily_used_cop": used_day,
+                    "assignment_status": "NO_ASIGNADO_LIMITE_EXPOSICION",
+                    "reason": "DAILY_EXPOSURE_CAP_REACHED",
+                    "real_money": "BLOCKED",
+                }
+                if isinstance(record, dict):
+                    record["paper_plan"] = candidate["paper_plan"]
                 continue
             available_before = max(0.0, float(pb["current_cop"]) - running_open_exposure)
             available_after = max(0.0, available_before - stake)
@@ -897,7 +919,7 @@ def main() -> None:
     for key, c in sorted(candidates.items(), key=lambda kv: (str(kv[1].get("kickoff")), kv[0])):
         if key in sent_by_key:
             record = sent_by_key[key]
-            for field in ("sport", "fixture_id", "match", "market", "p_matrix", "house", "odds", "ev", "kickoff", "source", "execution", "paper_bet"):
+            for field in ("sport", "fixture_id", "match", "market", "p_matrix", "house", "odds", "ev", "kickoff", "source", "execution", "paper_bet", "paper_plan"):
                 if record.get(field) is None:
                     record[field] = c.get(field)
         if c.get("eligible_green") is not True:
@@ -937,6 +959,7 @@ def main() -> None:
                 "source": c["source"],
                 "execution": c.get("execution"),
                 "paper_bet": c.get("paper_bet"),
+                "paper_plan": c.get("paper_plan"),
                 "sent_at_utc": now.isoformat(),
                 "telegram_message_id": mid,
                 "status": "ENVIADO_OK",
