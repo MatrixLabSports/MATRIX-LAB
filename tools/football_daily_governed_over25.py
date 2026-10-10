@@ -349,7 +349,7 @@ def build(target_date: str, api_key: str, root: Path = Path(".")) -> dict[str, A
         "signal_generation_authorized": governance["signal_generation_authorized"],
         "governance_resolution": governance,
         "exact_market_binding": {"bet_id": 5, "bet_name": "Goals Over/Under", "value": "Over 2.5"},
-        "policy_houses": ["Betano", "BetPlay", "bwin", "RushBet"],
+        "policy_houses": ["Betano", "BetPlay", "RushBet"],
         "diagnostic_only": ["Pinnacle"],
         "minimum_decimal_odds_exclusive": 1.50,
         "ev_formula": "P_MATRIX * DECIMAL_ODDS - 1",
@@ -372,6 +372,9 @@ def build(target_date: str, api_key: str, root: Path = Path(".")) -> dict[str, A
             "target_outcomes_used": False,
             "broad_market_matching_forbidden": True,
             "pinnacle_not_executable_house": True,
+            "bwin_excluded": True,
+            "physical_house_crosscheck_required": True,
+            "house_selection_policy": "COMPARE_BETANO_BETPLAY_RUSHBET_AND_SELECT_BEST_VALID_EXACT_MARKET_OFFER",
             "automatic_wagering": False,
             "real_money": "BLOCKED",
         },
@@ -426,7 +429,7 @@ def main() -> None:
         assert best["bet_id"] == 5
         assert best["bet_name"] == "Goals Over/Under"
         assert best["label"] == "Over 2.5"
-        assert best["house_key"] in {"betano", "betplay", "bwin", "rushbet"}
+        assert best["house_key"] in {"betano", "betplay", "rushbet"}
 
 
 if __name__ == "__main__":
