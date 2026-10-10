@@ -668,6 +668,25 @@ def green_message(c: dict[str, Any]) -> str:
     return "\n".join(lines)
 
 
+def paper_assignment_update_message(record: dict[str, Any], paper: dict[str, Any], pb: dict[str, Any]) -> str:
+    return "\n".join([
+        "🧪 ACTUALIZACIÓN — BANKROLL DE PAPEL Y STAKE",
+        "",
+        f'Partido: {record.get("match")}',
+        f'Mercado: {record.get("market")}',
+        f'P_MATRIX: {float(record.get("p_matrix") or 0.0)*100:.2f}%',
+        f'Casa: {record.get("house")}',
+        f'Cuota física: {float(record.get("odds") or 0.0):.2f}',
+        f'EV: {float(record.get("ev") or 0.0)*100:+.2f}%',
+        f'Stake MATRIX de papel: STAKE {int(paper["stake_level"])}',
+        f'Apuesta de papel: COP {fmt_cop(paper["stake_cop"])}',
+        f'Bankroll de papel: COP {fmt_cop(pb.get("current_cop") or PAPER_BANKROLL_INITIAL_COP)}',
+        f'Exposición abierta de papel: COP {fmt_cop(pb.get("open_exposure_cop") or 0)} / COP {fmt_cop(pb.get("max_open_exposure_cop") or 0)}',
+        "Solo simulación de papel. Sin ejecución automática.",
+        "DINERO REAL MATRIX: BLOQUEADO",
+    ])
+
+
 def no_bet_message(c: dict[str, Any], offer: dict[str, Any]) -> str:
     return "\n".join([
         "🟡 NO APOSTAR — CORRECCIÓN DE CUOTA",
@@ -806,13 +825,43 @@ def main() -> None:
             }
             candidate["paper_bet"] = paper
             if isinstance(record, dict):
+                paper["assignment_source"] = "RETROACTIVE_EXISTING_SIGNAL"
+                paper["telegram_update_required"] = True
                 record["paper_bet"] = paper
+            else:
+                paper["assignment_source"] = "NEW_SIGNAL_GREEN_MESSAGE"
+                paper["telegram_update_required"] = False
             daily_exposure[day] = used_day + stake
             assigned_paper_now += 1
         pb["daily_exposure_by_date"] = daily_exposure
         pb = recalc_paper_bankroll(ledger)
 
     session = requests.Session()
+    paper_assignment_updates_now = 0
+    if paper_enabled:
+        for record in ledger["sent"]:
+            paper = record.get("paper_bet")
+            if not isinstance(paper, dict) or paper.get("telegram_update_required") is not True:
+                continue
+            try:
+                mid = send_telegram(session, token, chat_id, paper_assignment_update_message(record, paper, pb))
+            except Exception as exc:
+                ledger.setdefault("delivery_failures", []).append({
+                    "signal_key": record.get("signal_key"),
+                    "fixture_id": record.get("fixture_id"),
+                    "match": record.get("match"),
+                    "market": record.get("market"),
+                    "attempted_at_utc": now.isoformat(),
+                    "error_type": type(exc).__name__,
+                    "error": str(exc)[:500],
+                    "status": "PAPER_STAKE_UPDATE_DELIVERY_FAILED_RETRY_NEXT_RUN",
+                })
+                continue
+            paper["telegram_update_required"] = False
+            paper["assignment_message_id"] = mid
+            paper["assignment_message_sent_at_utc"] = now.isoformat()
+            paper_assignment_updates_now += 1
+
     sent_by_key = {str(x.get("signal_key")): x for x in ledger["sent"]}
     settled_keys = {str(x.get("signal_key")) for x in ledger["settlements"]}
     sent_now = corrections_now = settlements_now = quote_checks = 0
@@ -1076,6 +1125,7 @@ def main() -> None:
         "duplicate_green_messages_suppressed": max(0, len(candidates) - sent_now),
         "paper_bankroll_enabled": paper_enabled,
         "paper_bets_assigned_now": assigned_paper_now,
+        "paper_assignment_updates_now": paper_assignment_updates_now,
         "paper_bankroll_current_cop": pb.get("current_cop"),
         "paper_open_exposure_cop": pb.get("open_exposure_cop"),
         "paper_open_bets": pb.get("open_bets"),
