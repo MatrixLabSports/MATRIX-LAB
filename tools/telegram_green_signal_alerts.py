@@ -30,6 +30,12 @@ POLICY_BOOKS = {
 MARKET_KEY = "Goles totales Más/Menos"
 SELECTION_KEY = "Más de 2.5"
 
+PAPER_BANKROLL_INITIAL_COP = 5_000_000.0
+PAPER_UNIT_FRACTION = 0.005
+PAPER_UNIT_COP = PAPER_BANKROLL_INITIAL_COP * PAPER_UNIT_FRACTION
+PAPER_MAX_OPEN_EXPOSURE_FRACTION = 0.25
+PAPER_STAKE_LEVELS = {1: 1.0, 2: 2.0, 3: 3.0}
+
 
 def load_json(path: Path, default: Any) -> Any:
     if not path.exists():
@@ -437,9 +443,86 @@ def fixture_final(session: requests.Session, api_key: str, fixture_id: str) -> d
     }
 
 
+def fmt_cop(value: float) -> str:
+    return f'{int(round(float(value))):,}'.replace(",", ".")
+
+
+def paper_stake_level(c: dict[str, Any]) -> int:
+    p = float(c["p_matrix"])
+    ev = float(c["ev"])
+    if p >= 0.65 and ev >= 0.10:
+        return 3
+    if p >= 0.60 and ev >= 0.05:
+        return 2
+    return 1
+
+
+def paper_stake_cop(level: int) -> float:
+    return PAPER_UNIT_COP * PAPER_STAKE_LEVELS[int(level)]
+
+
+def recalc_paper_bankroll(ledger: dict[str, Any]) -> dict[str, Any]:
+    pb = ledger.setdefault("paper_bankroll", {})
+    pb.setdefault("schema", "MATRIX_PAPER_BANKROLL_V1")
+    pb.setdefault("status", "ACTIVE")
+    pb.setdefault("currency", "COP")
+    pb.setdefault("initial_cop", PAPER_BANKROLL_INITIAL_COP)
+    pb.setdefault("unit_fraction_initial_bankroll", PAPER_UNIT_FRACTION)
+    pb.setdefault("unit_cop", PAPER_UNIT_COP)
+    pb.setdefault("stake_levels_cop", {
+        "1": paper_stake_cop(1),
+        "2": paper_stake_cop(2),
+        "3": paper_stake_cop(3),
+    })
+    pb.setdefault("confidence_policy", {
+        "stake_3": "P_MATRIX >= 65% AND EV >= 10%",
+        "stake_2": "P_MATRIX >= 60% AND EV >= 5%",
+        "stake_1": "remaining eligible green signals with positive EV",
+    })
+    pb.setdefault("max_open_exposure_fraction", PAPER_MAX_OPEN_EXPOSURE_FRACTION)
+    pb.setdefault("singles_only", True)
+    pb.setdefault("automatic_real_money_execution", False)
+    realized = sum(float(x.get("paper_profit_cop") or 0.0) for x in ledger.get("settlements", []))
+    current = float(pb["initial_cop"]) + realized
+    open_bets = []
+    for record in ledger.get("sent", []):
+        bet = record.get("paper_bet")
+        if isinstance(bet, dict) and bet.get("status") == "OPEN":
+            open_bets.append(bet)
+    open_exposure = sum(float(x.get("stake_cop") or 0.0) for x in open_bets)
+    pb["realized_profit_cop"] = realized
+    pb["current_cop"] = current
+    pb["open_exposure_cop"] = open_exposure
+    pb["available_after_open_exposure_cop"] = current - open_exposure
+    pb["open_bets"] = len(open_bets)
+    pb["settled_paper_bets"] = sum(1 for x in ledger.get("settlements", []) if x.get("paper_stake_cop") is not None)
+    pb["max_open_exposure_cop"] = current * float(pb["max_open_exposure_fraction"])
+    return pb
+
+
+def paper_bankroll_activation_message(pb: dict[str, Any], assigned_now: int) -> str:
+    return "\n".join([
+        "🧪 BANKROLL DE PAPEL MATRIX ACTIVADO",
+        "",
+        f'Bankroll inicial: COP {fmt_cop(pb["initial_cop"])}',
+        f'1 unidad: COP {fmt_cop(pb["unit_cop"])} (0,5% del bankroll inicial)',
+        f'Stake 1: COP {fmt_cop(pb["stake_levels_cop"]["1"])}',
+        f'Stake 2: COP {fmt_cop(pb["stake_levels_cop"]["2"])}',
+        f'Stake 3: COP {fmt_cop(pb["stake_levels_cop"]["3"])}',
+        "Stake 3: P_MATRIX >= 65% y EV >= 10%",
+        "Stake 2: P_MATRIX >= 60% y EV >= 5%",
+        "Stake 1: demás señales verdes con EV positivo",
+        f'Tope de exposición abierta: {float(pb["max_open_exposure_fraction"])*100:.0f}%',
+        f'Apuestas de papel asignadas ahora: {assigned_now}',
+        "Solo apuestas simples. Sin dinero real.",
+        "DINERO REAL MATRIX: BLOQUEADO",
+    ])
+
+
 def green_message(c: dict[str, Any]) -> str:
     executed = c.get("execution") is not None
-    return "\n".join([
+    paper = c.get("paper_bet") if isinstance(c.get("paper_bet"), dict) else None
+    lines = [
         "🟢 SEÑAL VERDE SIMULADA",
         "",
         f'Partido: {c.get("match")}',
@@ -448,11 +531,22 @@ def green_message(c: dict[str, Any]) -> str:
         f'Casa: {c.get("house")}',
         f'Cuota física: {float(c["odds"]):.2f}',
         f'EV: {float(c["ev"])*100:+.2f}%',
+    ]
+    if paper is not None:
+        lines += [
+            f'Confianza/Staking: STAKE {int(paper["stake_level"])}',
+            f'Apuesta de papel: COP {fmt_cop(paper["stake_cop"])}',
+            f'Bankroll papel antes: COP {fmt_cop(paper["bankroll_before_cop"])}',
+        ]
+    else:
+        lines += ["Apuesta de papel: NO ASIGNADA"]
+    lines += [
         f'Hora Bogotá: {fmt_bogota(c.get("kickoff"))}',
         "Estado: PENDIENTE DE RESULTADO FINAL",
         f'Apuesta ejecutada por el usuario: {"SÍ" if executed else "NO"}',
         "DINERO REAL MATRIX: BLOQUEADO",
-    ])
+    ]
+    return "\n".join(lines)
 
 
 def no_bet_message(c: dict[str, Any], offer: dict[str, Any]) -> str:
@@ -470,7 +564,7 @@ def no_bet_message(c: dict[str, Any], offer: dict[str, Any]) -> str:
     ])
 
 
-def settlement_message(c: dict[str, Any], settlement: dict[str, Any], accum_u: float, accum_cop: float) -> str:
+def settlement_message(c: dict[str, Any], settlement: dict[str, Any], accum_u: float, accum_cop: float, paper_bankroll_after: float | None = None) -> str:
     title = "✅ GANADA" if settlement["won"] else "❌ PERDIDA"
     lines = [
         title,
@@ -482,6 +576,14 @@ def settlement_message(c: dict[str, Any], settlement: dict[str, Any], accum_u: f
         f'Rendimiento simulado: {float(settlement["shadow_profit_units"]):+.2f} unidades',
         f'Acumulado simulado: {accum_u:+.2f} unidades',
     ]
+    if settlement.get("paper_stake_cop") is not None:
+        lines += [
+            f'Stake de papel: {int(settlement["paper_stake_level"])}',
+            f'Apuesta de papel: COP {fmt_cop(settlement["paper_stake_cop"])}',
+            f'Resultado papel: COP {fmt_cop(settlement["paper_profit_cop"])}',
+        ]
+        if paper_bankroll_after is not None:
+            lines.append(f'Bankroll papel: COP {fmt_cop(paper_bankroll_after)}')
     if settlement.get("actual_stake_cop") is not None:
         stake_txt = f'{int(settlement["actual_stake_cop"]):,}'.replace(",", ".")
         profit_txt = f'{int(round(settlement["actual_profit_cop"])):,}'.replace(",", ".")
@@ -521,6 +623,7 @@ def main() -> None:
         "corrections": [],
         "settlements": [],
         "run_history": [],
+        "paper_bankroll": {},
     })
     ledger["schema"] = "MATRIX_TELEGRAM_SIGNAL_LEDGER_V2"
     ledger.setdefault("sent", [])
@@ -528,6 +631,49 @@ def main() -> None:
     ledger.setdefault("corrections", [])
     ledger.setdefault("settlements", [])
     ledger.setdefault("run_history", [])
+    ledger.setdefault("paper_bankroll", {})
+
+    paper_enabled = os.environ.get("PAPER_BANKROLL", "DISABLED").strip().upper() == "ENABLED"
+    pb = recalc_paper_bankroll(ledger)
+    assigned_paper_now = 0
+    if paper_enabled:
+        existing_open_exposure = float(pb["open_exposure_cop"])
+        max_open = float(pb["max_open_exposure_cop"])
+        priority = []
+        for key, candidate in candidates.items():
+            if candidate.get("eligible_green") is not True:
+                continue
+            if not candidate.get("physical_quote_verified") or float(candidate["odds"]) <= 1.50 or float(candidate["ev"]) <= 0:
+                continue
+            kickoff = parse_dt(candidate.get("kickoff"))
+            if kickoff is None or kickoff <= now:
+                continue
+            record = next((x for x in ledger["sent"] if str(x.get("signal_key")) == key), None)
+            if isinstance(record, dict) and isinstance(record.get("paper_bet"), dict):
+                continue
+            level = paper_stake_level(candidate)
+            priority.append((level, float(candidate["ev"]), key, candidate, record))
+        priority.sort(key=lambda x: (-x[0], -x[1], str(x[3].get("kickoff")), x[2]))
+        for level, _, key, candidate, record in priority:
+            stake = paper_stake_cop(level)
+            if existing_open_exposure + stake > max_open + 1e-9:
+                continue
+            paper = {
+                "status": "OPEN",
+                "stake_level": level,
+                "stake_units": float(PAPER_STAKE_LEVELS[level]),
+                "stake_cop": stake,
+                "bankroll_before_cop": float(pb["current_cop"]),
+                "assigned_at_utc": now.isoformat(),
+                "policy": "FIXED_UNIT_0_5PCT_INITIAL_BANKROLL_CONFIDENCE_1_2_3",
+                "real_money": "BLOCKED",
+            }
+            candidate["paper_bet"] = paper
+            if isinstance(record, dict):
+                record["paper_bet"] = paper
+            existing_open_exposure += stake
+            assigned_paper_now += 1
+        pb = recalc_paper_bankroll(ledger)
 
     session = requests.Session()
     sent_by_key = {str(x.get("signal_key")): x for x in ledger["sent"]}
@@ -540,7 +686,7 @@ def main() -> None:
     for key, c in sorted(candidates.items(), key=lambda kv: (str(kv[1].get("kickoff")), kv[0])):
         if key in sent_by_key:
             record = sent_by_key[key]
-            for field in ("sport", "fixture_id", "match", "market", "p_matrix", "house", "odds", "ev", "kickoff", "source", "execution"):
+            for field in ("sport", "fixture_id", "match", "market", "p_matrix", "house", "odds", "ev", "kickoff", "source", "execution", "paper_bet"):
                 if record.get(field) is None:
                     record[field] = c.get(field)
         if c.get("eligible_green") is not True:
@@ -579,6 +725,7 @@ def main() -> None:
                 "kickoff": c["kickoff"],
                 "source": c["source"],
                 "execution": c.get("execution"),
+                "paper_bet": c.get("paper_bet"),
                 "sent_at_utc": now.isoformat(),
                 "telegram_message_id": mid,
                 "status": "ENVIADO_OK",
@@ -587,6 +734,13 @@ def main() -> None:
             ledger["sent"].append(record)
             sent_by_key[key] = record
             sent_now += 1
+
+    if paper_enabled:
+        pb = recalc_paper_bankroll(ledger)
+        if pb.get("activation_message_id") is None:
+            mid = send_telegram(session, token, chat_id, paper_bankroll_activation_message(pb, assigned_paper_now))
+            pb["activation_message_id"] = mid
+            pb["activated_at_utc"] = now.isoformat()
 
     # Rectify legacy quote corrections that compared a different house than the original signal.
     for correction in ledger["corrections"]:
@@ -710,6 +864,17 @@ def main() -> None:
             actual_stake = float(execution["stake_cop"])
             exec_odds = float(execution.get("decimal_odds") or frozen_odds)
             actual_profit = actual_stake * (exec_odds - 1.0) if won else -actual_stake
+        paper_bet = record.get("paper_bet") if isinstance(record.get("paper_bet"), dict) else None
+        paper_stake = paper_profit = None
+        paper_level = None
+        if paper_enabled and isinstance(paper_bet, dict) and paper_bet.get("status") == "OPEN":
+            paper_stake = float(paper_bet["stake_cop"])
+            paper_level = int(paper_bet["stake_level"])
+            paper_profit = paper_stake * (frozen_odds - 1.0) if won else -paper_stake
+            paper_bet["status"] = "SETTLED"
+            paper_bet["settled_at_utc"] = now.isoformat()
+            paper_bet["profit_cop"] = paper_profit
+
         settlement = {
             "signal_key": key,
             "fixture_id": c["fixture_id"],
@@ -723,17 +888,26 @@ def main() -> None:
             "shadow_profit_units": shadow_profit,
             "actual_stake_cop": actual_stake,
             "actual_profit_cop": actual_profit,
+            "paper_stake_level": paper_level,
+            "paper_stake_cop": paper_stake,
+            "paper_profit_cop": paper_profit,
             "settled_at_utc": now.isoformat(),
         }
         projected = ledger["settlements"] + [settlement]
         accum_u = sum(float(x.get("shadow_profit_units") or 0.0) for x in projected)
         accum_cop = sum(float(x.get("actual_profit_cop") or 0.0) for x in projected if x.get("actual_profit_cop") is not None)
-        mid = send_telegram(session, token, chat_id, settlement_message(c, settlement, accum_u, accum_cop))
+        paper_bankroll_after = None
+        if paper_profit is not None:
+            prior_paper_profit = sum(float(x.get("paper_profit_cop") or 0.0) for x in ledger["settlements"])
+            paper_bankroll_after = float(pb["initial_cop"]) + prior_paper_profit + float(paper_profit)
+        mid = send_telegram(session, token, chat_id, settlement_message(c, settlement, accum_u, accum_cop, paper_bankroll_after))
         settlement["telegram_message_id"] = mid
         settlement["status"] = "FINAL_ENVIADO_OK"
         ledger["settlements"].append(settlement)
         settled_keys.add(key)
         settlements_now += 1
+
+    pb = recalc_paper_bankroll(ledger)
 
     run_record = {
         "run_at_utc": now.isoformat(),
@@ -751,6 +925,11 @@ def main() -> None:
         "total_green_messages": len(ledger["sent"]),
         "total_settlements": len(ledger["settlements"]),
         "duplicate_green_messages_suppressed": max(0, len(candidates) - sent_now),
+        "paper_bankroll_enabled": paper_enabled,
+        "paper_bets_assigned_now": assigned_paper_now,
+        "paper_bankroll_current_cop": pb.get("current_cop"),
+        "paper_open_exposure_cop": pb.get("open_exposure_cop"),
+        "paper_open_bets": pb.get("open_bets"),
         "real_money": "BLOQUEADO",
     }
     ledger["run_history"].append(run_record)
@@ -764,6 +943,10 @@ def main() -> None:
         "final_only_settlement": True,
         "odds_used_to_generate_probability": False,
         "tennis_fail_closed_until_validated_lane": True,
+        "paper_bankroll_simulation_only": True,
+        "paper_bankroll_initial_cop": PAPER_BANKROLL_INITIAL_COP,
+        "paper_unit_fraction_initial_bankroll": PAPER_UNIT_FRACTION,
+        "paper_max_open_exposure_fraction": PAPER_MAX_OPEN_EXPOSURE_FRACTION,
     }
 
     LEDGER.parent.mkdir(parents=True, exist_ok=True)
