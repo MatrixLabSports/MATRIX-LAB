@@ -39,6 +39,7 @@ jobs:
       MATRIX_MODE: SHADOW
       REAL_MONEY: BLOCKED
       AUTO_BETTING: DISABLED
+      PAPER_BANKROLL: ENABLED
     steps:
       - name: Checkout rama de trabajo
         uses: actions/checkout@v4
@@ -61,6 +62,7 @@ jobs:
           test "$MATRIX_MODE" = "SHADOW"
           test "$REAL_MONEY" = "BLOCKED"
           test "$AUTO_BETTING" = "DISABLED"
+          test "$PAPER_BANKROLL" = "ENABLED"
 
       - name: Validate secrets
         env:
