@@ -519,6 +519,25 @@ def paper_bankroll_activation_message(pb: dict[str, Any], assigned_now: int) -> 
     ])
 
 
+def paper_full_cohort_message(pb: dict[str, Any]) -> str:
+    cohort = pb.get("initial_cohort") or {}
+    return "\n".join([
+        "✅ COHORTE INICIAL DE 45 SEÑALES — BANKROLL DE PAPEL",
+        "",
+        f'Señales incluidas: {int(cohort.get("signal_count") or 0)}',
+        f'Stake 1: {int(cohort.get("stake_1_count") or 0)} apuestas',
+        f'Stake 2: {int(cohort.get("stake_2_count") or 0)} apuestas',
+        f'Stake 3: {int(cohort.get("stake_3_count") or 0)} apuestas',
+        f'Exposición de papel: COP {fmt_cop(cohort.get("exposure_cop") or 0)}',
+        f'Bankroll inicial: COP {fmt_cop(pb.get("initial_cop") or 0)}',
+        f'Saldo no comprometido: COP {fmt_cop(pb.get("available_after_open_exposure_cop") or 0)}',
+        "Excepción única: se incluyó la cohorte completa de 45 señales aunque supera el tope normal de exposición abierta.",
+        "Las señales futuras vuelven al tope normal del 25%.",
+        "SOLO PAPEL — SIN DINERO REAL.",
+        "DINERO REAL MATRIX: BLOQUEADO",
+    ])
+
+
 def paper_portfolio_messages(ledger: dict[str, Any]) -> list[str]:
     pb = recalc_paper_bankroll(ledger)
     rows = []
@@ -790,6 +809,11 @@ def main() -> None:
             portfolio_ids = [send_telegram(session, token, chat_id, text) for text in paper_portfolio_messages(ledger)]
             pb["portfolio_seed_message_ids"] = portfolio_ids
             pb["portfolio_seed_sent_at_utc"] = now.isoformat()
+        if pb.get("initial_cohort_fully_assigned") is True and pb.get("full_initial_cohort_message_ids") is None:
+            cohort_ids = [send_telegram(session, token, chat_id, paper_full_cohort_message(pb))]
+            cohort_ids.extend(send_telegram(session, token, chat_id, text) for text in paper_portfolio_messages(ledger))
+            pb["full_initial_cohort_message_ids"] = cohort_ids
+            pb["full_initial_cohort_sent_at_utc"] = now.isoformat()
 
     # Rectify legacy quote corrections that compared a different house than the original signal.
     for correction in ledger["corrections"]:
