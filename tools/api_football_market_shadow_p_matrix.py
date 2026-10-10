@@ -118,6 +118,33 @@ def _team_view(row: Mapping[str, Any], team_id: str) -> tuple[int, int]:
     raise ValueError("TEAM_NOT_IN_FIXTURE")
 
 
+def _canonical_team_history(target: Mapping[str, Any], side: str, kickoff: datetime) -> list[tuple[int, int]]:
+    key = f"{side}_history"
+    team_key = f"{side}_team_id"
+    rows = target.get(key)
+    if not isinstance(rows, list):
+        return []
+    expected_team_id = str(target.get(team_key) or "")
+    output: list[tuple[int, int]] = []
+    for raw in rows:
+        if not isinstance(raw, Mapping):
+            raise ValueError(f"CANONICAL_{side.upper()}_HISTORY_ROW_INVALID")
+        if str(raw.get("team_id") or "") != expected_team_id:
+            raise ValueError(f"CANONICAL_{side.upper()}_HISTORY_TEAM_MISMATCH")
+        observed = _utc(raw.get("kickoff_utc"))
+        if observed >= kickoff:
+            raise ValueError(f"CANONICAL_{side.upper()}_HISTORY_LEAKAGE")
+        gf, ga = raw.get("goals_for"), raw.get("goals_against")
+        if (
+            isinstance(gf, bool) or isinstance(ga, bool)
+            or not isinstance(gf, int) or not isinstance(ga, int)
+            or gf < 0 or ga < 0
+        ):
+            raise ValueError(f"CANONICAL_{side.upper()}_HISTORY_GOALS_INVALID")
+        output.append((gf, ga))
+    return output[:MAX_TEAM_HISTORY]
+
+
 def _inputs_for_target(group_rows: list[dict[str, Any]], target: Mapping[str, Any]) -> tuple[dict[str, Any] | None, str | None]:
     kickoff = _utc(target["kickoff_utc"])
     prior = [r for r in group_rows if r["kickoff_utc"] < kickoff]
@@ -128,17 +155,34 @@ def _inputs_for_target(group_rows: list[dict[str, Any]], target: Mapping[str, An
     for row in prior:
         by_team[row["home_team_id"]].append(row)
         by_team[row["away_team_id"]].append(row)
-    home_hist = by_team[home_id][-MAX_TEAM_HISTORY:]
-    away_hist = by_team[away_id][-MAX_TEAM_HISTORY:]
-    if len(home_hist) < MIN_TEAM_HISTORY:
+
+    raw_home_hist = by_team[home_id][-MAX_TEAM_HISTORY:]
+    raw_away_hist = by_team[away_id][-MAX_TEAM_HISTORY:]
+    canonical_home_hist = _canonical_team_history(target, "home", kickoff)
+    canonical_away_hist = _canonical_team_history(target, "away", kickoff)
+
+    if len(canonical_home_hist) >= MIN_TEAM_HISTORY:
+        home_pairs = canonical_home_hist
+        home_history_source = "CANONICAL_ENRICHED_PIT"
+    else:
+        home_pairs = [_team_view(r, home_id) for r in raw_home_hist]
+        home_history_source = "RAW_GROUP_PIT"
+    if len(canonical_away_hist) >= MIN_TEAM_HISTORY:
+        away_pairs = canonical_away_hist
+        away_history_source = "CANONICAL_ENRICHED_PIT"
+    else:
+        away_pairs = [_team_view(r, away_id) for r in raw_away_hist]
+        away_history_source = "RAW_GROUP_PIT"
+
+    if len(home_pairs) < MIN_TEAM_HISTORY:
         return None, "BLOCKED_HOME_TEAM_HISTORY_BELOW_5"
-    if len(away_hist) < MIN_TEAM_HISTORY:
+    if len(away_pairs) < MIN_TEAM_HISTORY:
         return None, "BLOCKED_AWAY_TEAM_HISTORY_BELOW_5"
 
-    hgf = [_team_view(r, home_id)[0] for r in home_hist]
-    hga = [_team_view(r, home_id)[1] for r in home_hist]
-    agf = [_team_view(r, away_id)[0] for r in away_hist]
-    aga = [_team_view(r, away_id)[1] for r in away_hist]
+    hgf = [x[0] for x in home_pairs]
+    hga = [x[1] for x in home_pairs]
+    agf = [x[0] for x in away_pairs]
+    aga = [x[1] for x in away_pairs]
     hl = min(5.0, max(0.05, (_mean(hgf) + _mean(aga))/2.0))
     al = min(5.0, max(0.05, (_mean(agf) + _mean(hga))/2.0))
     pp = _score_probs(hl, al)
@@ -153,8 +197,10 @@ def _inputs_for_target(group_rows: list[dict[str, Any]], target: Mapping[str, An
     }
     return {
         "prior_group_fixture_count": n,
-        "home_history_count": len(home_hist),
-        "away_history_count": len(away_hist),
+        "home_history_count": len(home_pairs),
+        "away_history_count": len(away_pairs),
+        "home_history_source": home_history_source,
+        "away_history_source": away_history_source,
         "expected_home_goals": round(hl, 8),
         "expected_away_goals": round(al, 8),
         "poisson": pp,
@@ -210,6 +256,7 @@ def build_shadow_p_matrix(*, canonical_bundle: Mapping[str, Any], canonical_mani
             "home_team": target.get("home_team_name"), "away_team": target.get("away_team_name"), "league_id": league_id, "season": season,
             "source_raw_group_sha256": raw_sha, "source_canonical_input_sha256": target.get("canonical_sha256"),
             "feature_counts": {k: features[k] for k in ("prior_group_fixture_count", "home_history_count", "away_history_count")},
+            "history_sources": {"home": features["home_history_source"], "away": features["away_history_source"]},
             "expected_goals": {"home": features["expected_home_goals"], "away": features["expected_away_goals"]},
             "p_matrix_shadow": {"1x2": {k: round(p1[k], 10) for k in ("H", "D", "A")}, "over_2_5": round(po, 10)},
             "model": MODEL, "parameters": {"1x2": PARAMS_1X2, "over_2_5": PARAMS_OVER25},
@@ -224,7 +271,7 @@ def build_shadow_p_matrix(*, canonical_bundle: Mapping[str, Any], canonical_mani
         "p_matrix_status": "GENERATED_SHADOW" if scored else "NOT_GENERATED", "scored_count": len(scored), "blocked_count": len(blocked),
         "markets_generated": ["1x2", "over_2_5"], "btts_status": "BLOCKED_FINAL_HOLDOUT_NOT_SUPERIOR",
         "rows": scored, "blocked": blocked,
-        "protections": {"minimum_group_history": 20, "minimum_team_history": 5, "maximum_team_history": 20, "strictly_prior_kickoff_only": True, "parameter_refit": False, "parameter_search": False, "final_holdout_reused": False, "odds_used_to_generate_probability": False, "target_outcomes_used": False, "automatic_wagering": False, "real_money": "BLOCKED"},
+        "protections": {"minimum_group_history": 20, "minimum_team_history": 5, "maximum_team_history": 20, "strictly_prior_kickoff_only": True, "canonical_enriched_pit_history_allowed": True, "raw_group_history_fallback_allowed": True, "parameter_refit": False, "parameter_search": False, "final_holdout_reused": False, "odds_used_to_generate_probability": False, "target_outcomes_used": False, "automatic_wagering": False, "real_money": "BLOCKED"},
     }
     payload["bundle_sha256"] = _canonical_hash({k: v for k, v in payload.items() if k != "bundle_sha256"})
     return payload
