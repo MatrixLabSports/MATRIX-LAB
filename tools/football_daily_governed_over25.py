@@ -13,6 +13,7 @@ import requests
 
 from tools.api_football_canonicalize_analysis_inputs import load_chunked_canonical_bundle
 from tools.api_football_market_shadow_p_matrix import PARAMS_OVER25, build_shadow_p_matrix
+from tools.api_football_group_history_capture import PRIORITY_LEAGUE_IDS
 
 POLICY = {
     "betano": ["betano"],
@@ -155,6 +156,14 @@ def _cycle_ready_count(cycle: Path) -> int:
 
 def select_probability_cycle(root: Path, target_date: str, inventory_cycle: Path) -> Path:
     base = root / "evidence" / "api_football" / "prospective_daily" / target_date
+    try:
+        registry = json.loads(
+            (inventory_cycle / "fixtures" / "future_fixture_registry.json").read_text(encoding="utf-8")
+        )
+        current_events = [x for x in (registry.get("events") or []) if isinstance(x, dict)]
+    except Exception:
+        current_events = []
+    priority_leagues = set(PRIORITY_LEAGUE_IDS)
     candidates = []
     for p in sorted(x for x in base.glob("*") if x.is_dir() and x <= inventory_cycle):
         summary = p / "cycle_summary.json"
@@ -172,14 +181,25 @@ def select_probability_cycle(root: Path, target_date: str, inventory_cycle: Path
         if m.get("status") != "PASS" or m.get("real_money") != "BLOCKED":
             continue
         ready = int(((j.get("canonical") or {}).get("ready_input_count")) or 0)
-        candidates.append((ready, p))
+        priority_coverage = 0
+        all_coverage = 0
+        for event in current_events:
+            league = str(event.get("provider_league_id") or "")
+            season = event.get("season")
+            if not league or season is None:
+                continue
+            raw = raw_dir / f"league_{league}_season_{int(season)}.bin"
+            if raw.is_file():
+                all_coverage += 1
+                if league in priority_leagues:
+                    priority_coverage += 1
+        candidates.append((priority_coverage, all_coverage, ready, p.name, p))
     if not candidates:
         return inventory_cycle
-    # Prefer the same-day cycle with the widest physically frozen PIT coverage.
-    # Ties prefer the newest cycle. This avoids losing valid frozen probabilities
-    # merely because a later refresh hits the provider's daily reserve.
-    candidates.sort(key=lambda item: (item[0], item[1].name))
-    return candidates[-1][1]
+    # First preserve the governed leagues (39/61/78/135/140/239), then the
+    # widest current-fixture coverage, then canonical readiness, then freshness.
+    candidates.sort(key=lambda item: item[:4])
+    return candidates[-1][4]
 
 
 def _current_future_fixture_ids(inventory_cycle: Path) -> set[str]:
