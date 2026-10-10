@@ -56,6 +56,65 @@ def _poisson_over(mu: float, line: float) -> float:
     return min(max(1.0 - cdf, 1e-12), 1.0 - 1e-12)
 
 
+def _sigmoid(x: float) -> float:
+    if x >= 0:
+        z = math.exp(-x)
+        return 1.0 / (1.0 + z)
+    z = math.exp(x)
+    return z / (1.0 + z)
+
+
+def _logit(p: float) -> float:
+    p = min(max(float(p), 1e-9), 1.0 - 1e-9)
+    return math.log(p / (1.0 - p))
+
+
+def _fit_linear_count(rows: list[dict[str, Any]]) -> tuple[float, float]:
+    xs = [float(r["expected_total"]) for r in rows]
+    ys = [float(r["target_total"]) for r in rows]
+    mx = sum(xs) / len(xs)
+    my = sum(ys) / len(ys)
+    var = sum((x - mx) ** 2 for x in xs)
+    cov = sum((x - mx) * (y - my) for x, y in zip(xs, ys))
+    slope = cov / var if var > 1e-12 else 1.0
+    intercept = my - slope * mx
+    return intercept, slope
+
+
+def _linear_count_mu(row: Mapping[str, Any], intercept: float, slope: float) -> float:
+    return min(max(intercept + slope * float(row["expected_total"]), 0.05), 100.0)
+
+
+def _fit_platt(rows: list[dict[str, Any]], intercept: float, slope: float) -> tuple[float, float]:
+    samples = []
+    for line in EVAL_LINES:
+        for r in rows:
+            base = _poisson_over(_linear_count_mu(r, intercept, slope), line)
+            y = 1.0 if float(r["target_total"]) > line else 0.0
+            samples.append((_logit(base), y))
+    a, b = 0.0, 1.0
+    lr = 0.02
+    l2 = 0.001
+    for _ in range(800):
+        ga = gb = 0.0
+        for x, y in samples:
+            p = _sigmoid(a + b * x)
+            err = p - y
+            ga += err
+            gb += err * x
+        n = len(samples)
+        a -= lr * (ga / n)
+        b -= lr * (gb / n + l2 * (b - 1.0))
+    return a, b
+
+
+def _total_probability(row: Mapping[str, Any], line: float, params: Mapping[str, Any]) -> tuple[float, float]:
+    mu = _linear_count_mu(row, float(params["count_intercept"]), float(params["count_slope"]))
+    base = _poisson_over(mu, line)
+    p = _sigmoid(float(params["platt_intercept"]) + float(params["platt_slope"]) * _logit(base))
+    return p, mu
+
+
 def _side_mu(model: Mapping[str, Any], row: Mapping[str, Any], side: str) -> float:
     p = model["model_parameters"]
     key = "expected_home" if side == "HOME" else "expected_away"
@@ -93,12 +152,29 @@ def _metrics(ys: list[int], ps: list[float]) -> dict[str, float]:
 
 def build_research_model() -> dict[str, Any]:
     dataset_path = Path("evidence/api_football/market_expansion/team_pit/team_total_shots_pit.jsonl")
-    home_path = Path("evidence/api_football/market_expansion/team_total_shots_side_models/home_model.json")
-    away_path = Path("evidence/api_football/market_expansion/team_total_shots_side_models/away_model.json")
     rows = _read_jsonl(dataset_path)
+    train = [r for r in rows if r.get("split") == "TRAIN"]
     validation = [r for r in rows if r.get("split") == "VALIDATION"]
-    home = _read_json(home_path)
-    away = _read_json(away_path)
+    if len(train) < 100 or len(validation) < 30:
+        raise RuntimeError("INSUFFICIENT_MATCH_TOTAL_SHOTS_HISTORICAL_OOS")
+    calibration_n = min(50, max(30, len(train) // 5))
+    fit_rows = train[:-calibration_n]
+    calibration_rows = train[-calibration_n:]
+    count_intercept, count_slope = _fit_linear_count(fit_rows)
+    platt_intercept, platt_slope = _fit_platt(calibration_rows, count_intercept, count_slope)
+    params = {
+        "family": "LINEAR_COUNT_MEAN_PLUS_POISSON_WITH_PLATT_CALIBRATION",
+        "count_intercept": count_intercept,
+        "count_slope": count_slope,
+        "platt_intercept": platt_intercept,
+        "platt_slope": platt_slope,
+        "fit_rows": len(fit_rows),
+        "internal_calibration_rows": len(calibration_rows),
+        "final_validation_rows": len(validation),
+        "arbitrary_half_line_probability_supported": True,
+        "parameter_selection_uses_final_validation": False,
+        "odds_used_for_parameter_fit": False,
+    }
     ys: list[int] = []
     challenger: list[float] = []
     raw_ref: list[float] = []
@@ -108,10 +184,9 @@ def build_research_model() -> dict[str, Any]:
         line_ch: list[float] = []
         line_ref: list[float] = []
         for r in validation:
-            mu = _side_mu(home, r, "HOME") + _side_mu(away, r, "AWAY")
-            y = int(float(r["target_total"]) > line)
-            p = _poisson_over(mu, line)
+            p, _ = _total_probability(r, line, params)
             ref = _poisson_over(float(r["expected_total"]), line)
+            y = int(float(r["target_total"]) > line)
             ys.append(y); challenger.append(p); raw_ref.append(ref)
             line_ys.append(y); line_ch.append(p); line_ref.append(ref)
         by_line[str(line)] = {
@@ -126,27 +201,24 @@ def build_research_model() -> dict[str, Any]:
         and cm["ece_5bin"] <= 0.10
         and cm["max_calibration_error_5bin"] <= 0.20
     )
-    frozen = {
-        "family": "SUM_OF_FROZEN_HOME_AWAY_POISSON_GLM_MEANS",
-        "home_model_parameters_sha256": home.get("model_parameters_sha256"),
-        "away_model_parameters_sha256": away.get("model_parameters_sha256"),
-        "arbitrary_half_line_probability_supported": True,
-        "no_total_model_parameter_tuning_on_validation": True,
-    }
     return {
-        "schema": "MATRIX_MATCH_TOTAL_SHOTS_RESEARCH_MODEL_V1",
+        "schema": "MATRIX_MATCH_TOTAL_SHOTS_RESEARCH_MODEL_V2",
         "source_dataset": str(dataset_path),
         "source_dataset_sha256": hashlib.sha256(dataset_path.read_bytes()).hexdigest(),
+        "train_count": len(train),
+        "fit_count": len(fit_rows),
+        "internal_calibration_count": len(calibration_rows),
         "validation_count": len(validation),
         "evaluation_lines": list(EVAL_LINES),
         "aggregate_challenger": cm,
         "aggregate_reference": rm,
         "by_line": by_line,
         "historical_oos_gate_passed": gate,
-        "model_parameters": frozen,
-        "model_parameters_sha256": _sha_obj(frozen),
+        "model_parameters": params,
+        "model_parameters_sha256": _sha_obj(params),
         "status": "FROZEN_RESEARCH_FOR_PROSPECTIVE_30_GATE" if gate else "RESEARCH_ONLY_HISTORICAL_GATE_NOT_PASSED",
         "prospective_gates": list(GATES),
+        "validation_used_for_parameter_tuning": False,
         "odds_used_to_generate_probability": False,
         "automatic_wagering": False,
         "real_money": "BLOCKED",
@@ -352,10 +424,7 @@ def run() -> dict[str, Any]:
         if feat is None:
             rows.append({**base, "status": "BLOCKED_INSUFFICIENT_PIT_HISTORY", "p_matrix": None, "ev_over": None})
             continue
-        home_model = _read_json(Path("evidence/api_football/market_expansion/team_total_shots_side_models/home_model.json"))
-        away_model = _read_json(Path("evidence/api_football/market_expansion/team_total_shots_side_models/away_model.json"))
-        mu = _side_mu(home_model, feat, "HOME") + _side_mu(away_model, feat, "AWAY")
-        p = _poisson_over(mu, float(chosen["line"]))
+        p, mu = _total_probability(feat, float(chosen["line"]), model["model_parameters"])
         ev = p * float(chosen["over_odds"]) - 1.0
         freeze = {
             **base,
