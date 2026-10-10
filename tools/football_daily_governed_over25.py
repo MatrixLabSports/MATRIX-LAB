@@ -145,6 +145,56 @@ def latest_cycle(root: Path, target_date: str) -> Path:
     return valid[-1]
 
 
+def _cycle_ready_count(cycle: Path) -> int:
+    try:
+        j = json.loads((cycle / "cycle_summary.json").read_text(encoding="utf-8"))
+        return int(((j.get("canonical") or {}).get("ready_input_count")) or 0)
+    except Exception:
+        return 0
+
+
+def select_probability_cycle(root: Path, target_date: str, inventory_cycle: Path) -> Path:
+    base = root / "evidence" / "api_football" / "prospective_daily" / target_date
+    candidates = []
+    for p in sorted(x for x in base.glob("*") if x.is_dir() and x <= inventory_cycle):
+        summary = p / "cycle_summary.json"
+        canonical = p / "canonical_analysis" / "manifest.json"
+        raw_dir = p / "history" / "raw"
+        if not summary.exists() or not canonical.exists() or not raw_dir.exists():
+            continue
+        try:
+            j = json.loads(summary.read_text(encoding="utf-8"))
+            m = json.loads(canonical.read_text(encoding="utf-8"))
+        except Exception:
+            continue
+        if j.get("status") != "PASS" or j.get("target_date_bogota") != target_date:
+            continue
+        if m.get("status") != "PASS" or m.get("real_money") != "BLOCKED":
+            continue
+        ready = int(((j.get("canonical") or {}).get("ready_input_count")) or 0)
+        candidates.append((ready, p))
+    if not candidates:
+        return inventory_cycle
+    # Prefer the same-day cycle with the widest physically frozen PIT coverage.
+    # Ties prefer the newest cycle. This avoids losing valid frozen probabilities
+    # merely because a later refresh hits the provider's daily reserve.
+    candidates.sort(key=lambda item: (item[0], item[1].name))
+    return candidates[-1][1]
+
+
+def _current_future_fixture_ids(inventory_cycle: Path) -> set[str]:
+    path = inventory_cycle / "fixtures" / "future_fixture_registry.json"
+    try:
+        registry = json.loads(path.read_text(encoding="utf-8"))
+    except Exception:
+        return set()
+    return {
+        str(row.get("provider_fixture_id") or "")
+        for row in (registry.get("events") or [])
+        if isinstance(row, dict) and row.get("provider_fixture_id")
+    }
+
+
 def dedupe(xs: list[dict[str, Any]]) -> list[dict[str, Any]]:
     seen: set[tuple[str, float]] = set()
     out: list[dict[str, Any]] = []
@@ -164,7 +214,8 @@ def build(target_date: str, api_key: str, root: Path = Path(".")) -> dict[str, A
     api_key.encode("ascii")
 
     governance = resolve_over25_signal_governance(root)
-    cycle = latest_cycle(root, target_date)
+    inventory_cycle = latest_cycle(root, target_date)
+    cycle = select_probability_cycle(root, target_date, inventory_cycle)
     canonical, manifest = load_chunked_canonical_bundle(cycle / "canonical_analysis")
     generated_at = datetime.now(timezone.utc).replace(microsecond=0)
     p_matrix = build_shadow_p_matrix(
@@ -173,6 +224,21 @@ def build(target_date: str, api_key: str, root: Path = Path(".")) -> dict[str, A
         raw_dir=cycle / "history" / "raw",
         generated_at=generated_at,
     )
+    current_future_ids = _current_future_fixture_ids(inventory_cycle)
+    if current_future_ids:
+        p_matrix["rows"] = [
+            row for row in p_matrix.get("rows", [])
+            if str(row.get("fixture_id") or "") in current_future_ids
+        ]
+        p_matrix["blocked"] = [
+            row for row in p_matrix.get("blocked", [])
+            if str(row.get("fixture_id") or "") in current_future_ids
+        ]
+        p_matrix["scored_count"] = len(p_matrix["rows"])
+        p_matrix["blocked_count"] = len(p_matrix["blocked"])
+    p_matrix["inventory_cycle"] = inventory_cycle.relative_to(root).as_posix()
+    p_matrix["probability_source_cycle"] = cycle.relative_to(root).as_posix()
+    p_matrix["same_day_probability_carry_forward"] = cycle != inventory_cycle
 
     report_root = root / "evidence" / "api_football" / "daily_prematch_reports" / target_date
     report_root.mkdir(parents=True, exist_ok=True)
@@ -338,6 +404,8 @@ def build(target_date: str, api_key: str, root: Path = Path(".")) -> dict[str, A
         "generated_at_utc": now.isoformat(),
         "target_date_bogota": target_date,
         "source_cycle": cycle.as_posix(),
+        "inventory_cycle": inventory_cycle.as_posix(),
+        "same_day_probability_carry_forward": cycle != inventory_cycle,
         "market": "OVER_2_5",
         "probability_engine": "calibrated_log_pool_v1",
         "probability_status": (
@@ -391,6 +459,8 @@ def build(target_date: str, api_key: str, root: Path = Path(".")) -> dict[str, A
     summary = {
         "target_date_bogota": target_date,
         "cycle_root": cycle.as_posix(),
+        "inventory_cycle_root": inventory_cycle.as_posix(),
+        "same_day_probability_carry_forward": cycle != inventory_cycle,
         "ready_inputs": int(p_matrix["source_ready_input_count"]),
         "p_matrix_scored": int(p_matrix["scored_count"]),
         "p_matrix_blocked": int(p_matrix["blocked_count"]),
