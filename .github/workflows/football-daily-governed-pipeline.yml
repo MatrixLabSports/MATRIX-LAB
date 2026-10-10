@@ -20,6 +20,8 @@ on:
       - main
     paths:
       - tools/football_daily_governed_over25.py
+      - tools/api_football_group_history_capture.py
+      - tests/test_api_football_group_history_capture.py
       - .github/workflows/football-daily-governed-pipeline.yml
 
 permissions:
@@ -52,6 +54,9 @@ jobs:
 
       - name: Install governed dependencies
         run: python -m pip install requests pytest
+
+      - name: Run targeted history-priority regression tests
+        run: pytest -q tests/test_api_football_group_history_capture.py
 
       - name: Resolve Bogota target date automatically
         id: date
