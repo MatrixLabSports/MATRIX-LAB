@@ -1,7 +1,7 @@
 from datetime import datetime, timezone
 from unittest.mock import Mock
 
-from tools.api_football_team_last_fallback import run_capture
+from tools.api_football_team_last_fallback import _ordered_needed_teams, _priority_team_ids, run_capture
 
 
 def _hist(fid, when, home_id, away_id):
@@ -316,3 +316,30 @@ def test_team_last_fallback_persistent_429_blocks_missing_without_crashing(tmp_p
         (tmp_path / "history_readiness_after_team_last.json").read_text()
     )
     assert "AWAY_HISTORY_BELOW_MINIMUM" in readiness["rows"][0]["blockers"]
+
+
+
+def test_team_last_priority_puts_requested_league_teams_before_lower_ids():
+    benchmark=_benchmark()
+    benchmark["fixtures"]["api_football:fixture:999"]={
+        "fixture_id":"999",
+        "kickoff_utc":"2026-09-28T20:00:00+00:00",
+        "league":{"id":"999","name":"Other League","season":2026},
+        "home":{"id":"2","name":"Low ID"},
+        "away":{"id":"3","name":"Low ID Away"},
+    }
+    benchmark["fixtures"]["api_football:fixture:998"]={
+        "fixture_id":"998",
+        "kickoff_utc":"2026-09-28T20:30:00+00:00",
+        "league":{"id":"78","name":"Bundesliga","season":2026},
+        "home":{"id":"1660","name":"SV Elversberg"},
+        "away":{"id":"182","name":"Union Berlin"},
+    }
+    priority=_priority_team_ids(benchmark)
+    assert {"1660","182","40","41"}.issubset(priority)
+    ordered=_ordered_needed_teams(
+        {"2":"Low ID","3":"Low ID Away","1660":"SV Elversberg","182":"Union Berlin"},
+        priority,
+    )
+    assert [team_id for team_id,_ in ordered[:2]]==["182","1660"]
+    assert [team_id for team_id,_ in ordered[2:]]==["2","3"]
