@@ -1,0 +1,127 @@
+name: MATRIX MATCH_TOTAL_SHOTS FINAL Calibration
+
+on:
+  schedule:
+    - cron: "47 */2 * * *"
+  workflow_dispatch:
+  workflow_run:
+    workflows:
+      - "API-Football MATCH_TOTAL_SHOTS exact-day lab"
+      - "MATRIX Football Daily Governed Pipeline"
+    types:
+      - completed
+  push:
+    branches:
+      - repair/cor09-world-pipeline
+    paths:
+      - tools/api_football_match_total_shots_settlement.py
+      - tests/test_api_football_match_total_shots_settlement.py
+      - .github/workflows/api-football-match-total-shots-final-calibration.yml
+
+permissions:
+  contents: write
+
+concurrency:
+  group: api-football-match-total-shots-final-calibration
+  cancel-in-progress: false
+
+jobs:
+  settle-calibrate:
+    if: >
+      github.event_name != 'workflow_run' ||
+      github.event.workflow_run.conclusion == 'success'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      MATRIX_TARGET_DATE_BOGOTA: "2026-10-10"
+      REAL_MONEY: BLOCKED
+      AUTO_BETTING: DISABLED
+    steps:
+      - name: Checkout operational branch
+        uses: actions/checkout@v4
+        with:
+          ref: repair/cor09-world-pipeline
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install governed dependencies
+        run: python -m pip install pytest requests
+
+      - name: Regression tests
+        run: PYTHONPATH=. python -m pytest -q tests/test_api_football_match_total_shots_settlement.py
+
+      - name: Safety gates
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$REAL_MONEY" = "BLOCKED"
+          test "$AUTO_BETTING" = "DISABLED"
+
+      - name: Settle standard FINAL and open completed threshold only
+        env:
+          API_FOOTBALL_KEY: ${{ secrets.API_FOOTBALL_KEY }}
+        run: |
+          set -euo pipefail
+          test -n "$API_FOOTBALL_KEY"
+          python -m tools.api_football_match_total_shots_settlement
+
+      - name: Validate fail-closed calibration
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          p=Path("evidence/api_football/match_total_shots_lab/2026-10-10/state.json")
+          j=json.loads(p.read_text())
+          gate=j["gate_30"]
+          assert j["real_money"]=="BLOCKED"
+          assert j["automatic_wagering"] is False
+          assert j["telegram_signal_authorized"] is False
+          assert j["paper_bankroll_authorized"] is False
+          assert j["parameter_tuning_allowed"] is False
+          if int(j["final_settlement_count"]) < 30:
+              assert gate["metrics_opened"] is False
+              assert gate["status"]=="SEALED_AWAIT_FINALS"
+          else:
+              assert gate["metrics_opened"] is True
+              assert gate["observations_used"]==30
+              for key in ("brier_score","log_loss","ece_5bin","max_calibration_error_5bin","shadow_policy"):
+                  assert key in gate["metrics"]
+          print(json.dumps({
+              "freezes":j["cumulative_unique_research_freeze_count"],
+              "finals":j["final_settlement_count"],
+              "gate30":gate["status"],
+              "metrics_opened":gate["metrics_opened"],
+              "real_money":j["real_money"],
+          },sort_keys=True))
+          PY
+
+      - name: Persist settlement and calibration evidence
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name matrix-match-total-shots-calibration
+          git config user.email matrix-match-total-shots-calibration@users.noreply.github.com
+          git add evidence/api_football/match_total_shots_lab/2026-10-10
+          if git diff --cached --quiet; then
+            echo "NO_MATCH_TOTAL_SHOTS_SETTLEMENT_CHANGE"
+            exit 0
+          fi
+          git commit -m "evidence(football): refresh MATCH_TOTAL_SHOTS FINAL calibration"
+          for attempt in 1 2 3 4; do
+            git fetch origin repair/cor09-world-pipeline
+            if ! git rebase origin/repair/cor09-world-pipeline; then
+              git rebase --abort || true
+              exit 1
+            fi
+            if git push origin HEAD:repair/cor09-world-pipeline; then
+              exit 0
+            fi
+            sleep $((attempt*2))
+          done
+          exit 1
