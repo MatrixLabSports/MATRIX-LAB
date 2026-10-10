@@ -18,6 +18,7 @@ from tools.api_football_group_history_capture import (
     _final_history_row,
     _parse_aware,
     _read_rate,
+    PRIORITY_LEAGUE_IDS,
 )
 
 MAX_REQUESTS = 120
@@ -92,6 +93,34 @@ def _deficient_team_ids(
     return needed
 
 
+def _priority_team_ids(benchmark: Mapping[str, Any]) -> set[str]:
+    fixtures = benchmark.get("fixtures")
+    if not isinstance(fixtures, Mapping):
+        raise ValueError("BENCHMARK_FIXTURES_MISSING")
+    priority_leagues = set(PRIORITY_LEAGUE_IDS)
+    output: set[str] = set()
+    for raw in fixtures.values():
+        if not isinstance(raw, Mapping):
+            continue
+        league = raw.get("league")
+        if not isinstance(league, Mapping) or str(league.get("id") or "") not in priority_leagues:
+            continue
+        for side in ("home", "away"):
+            team = raw.get(side)
+            if isinstance(team, Mapping):
+                team_id = str(team.get("id") or "").strip()
+                if team_id:
+                    output.add(team_id)
+    return output
+
+
+def _ordered_needed_teams(needed: Mapping[str, str], priority_team_ids: set[str]) -> list[tuple[str, str]]:
+    return sorted(
+        ((str(team_id), str(team_name)) for team_id, team_name in needed.items()),
+        key=lambda item: (0 if item[0] in priority_team_ids else 1, int(item[0])),
+    )
+
+
 def run_capture(
     *,
     api_key: str,
@@ -129,6 +158,8 @@ def run_capture(
         raise ValueError("REAL_MONEY_MUST_BE_BLOCKED")
 
     needed = _deficient_team_ids(benchmark=benchmark, readiness=readiness)
+    priority_team_ids = _priority_team_ids(benchmark)
+    priority_deficient_team_ids = set(needed).intersection(priority_team_ids)
 
     out_dir.mkdir(parents=True, exist_ok=True)
     if not needed:
@@ -155,6 +186,8 @@ def run_capture(
             "schema": "MATRIX_API_FOOTBALL_TEAM_LAST_FALLBACK_V1",
             "provider": "api_football",
             "deficient_unique_team_count": 0,
+            "priority_league_ids": list(PRIORITY_LEAGUE_IDS),
+            "priority_deficient_team_count": 0,
             "captured_team_count": 0,
             "network_calls_performed": 0,
             "max_requests_policy": max_requests,
@@ -209,7 +242,7 @@ def run_capture(
         "minute_remaining": None,
     }
 
-    for team_id, team_name in sorted(needed.items(), key=lambda item: int(item[0])):
+    for team_id, team_name in _ordered_needed_teams(needed, priority_team_ids):
         if total_calls >= max_requests:
             stopped_reason = "REQUEST_BUDGET_EXHAUSTED"
             break
@@ -438,6 +471,8 @@ def run_capture(
         "schema": "MATRIX_API_FOOTBALL_TEAM_LAST_FALLBACK_V1",
         "provider": "api_football",
         "deficient_unique_team_count": len(needed),
+        "priority_league_ids": list(PRIORITY_LEAGUE_IDS),
+        "priority_deficient_team_count": len(priority_deficient_team_ids),
         "captured_team_count": len(captures),
         "network_calls_performed": total_calls,
         "max_requests_policy": max_requests,
