@@ -131,6 +131,28 @@ def load_existing(out:Path):
     return {x["state_key"]:x for x in j.get("states",[]) if isinstance(x,dict) and x.get("state_key")}
 
 
+def quota_guard_payload(*, operational_date: str, usage: dict, remaining: int, reserve_calls: int, requested_cycles: int, executed_cycles: int, status: str) -> dict:
+    return {
+        "schema": "MATRIX_LIVE_TENNIS_QUOTA_GUARD_V1",
+        "operational_date_bogota": operational_date,
+        "generated_at_utc": datetime.now(timezone.utc).replace(microsecond=0).isoformat(),
+        "status": status,
+        "tier": usage.get("tier") if isinstance(usage, dict) else None,
+        "per_day": ((usage.get("limits") or {}).get("per_day") if isinstance(usage, dict) else None),
+        "remaining_before_run": remaining,
+        "reserve_calls": reserve_calls,
+        "requested_cycles": requested_cycles,
+        "executed_cycles": executed_cycles,
+        "capture_performed": executed_cycles > 0,
+        "protections": {
+            "reserve_not_bypassed": True,
+            "automatic_wagering": False,
+            "real_money": "BLOCKED",
+            "secrets_persisted": False,
+        },
+    }
+
+
 def main():
     ap=argparse.ArgumentParser()
     ap.add_argument("--cycles",type=int,default=6)
@@ -154,8 +176,29 @@ def main():
         raise SystemExit("USAGE_REMAINING_UNKNOWN")
     allowed=max(0,remaining-args.reserve_calls)
     cycles=min(args.cycles,allowed)
+    quota_guard_path=out.parent/"MATRIX_LIVE_TENNIS_QUOTA_GUARD_LAST.json"
+    guard=quota_guard_payload(
+        operational_date=operational_date,
+        usage=usage,
+        remaining=remaining,
+        reserve_calls=args.reserve_calls,
+        requested_cycles=args.cycles,
+        executed_cycles=cycles,
+        status="CAPTURE_ALLOWED" if cycles>0 else "BLOCKED_BY_RESERVE",
+    )
+    quota_guard_path.parent.mkdir(parents=True,exist_ok=True)
+    quota_guard_path.write_text(json.dumps(guard,indent=2,sort_keys=True,ensure_ascii=False)+"\n",encoding="utf-8")
     if cycles<=0:
-        raise SystemExit("DAILY_QUOTA_RESERVE_GATE_BLOCKED")
+        print(json.dumps({
+          "status":"PASS_QUOTA_RESERVE_BLOCKED",
+          "remaining_before_run":remaining,
+          "reserve_calls":args.reserve_calls,
+          "requested_cycles":args.cycles,
+          "executed_cycles":0,
+          "quota_guard_path":str(quota_guard_path),
+          "real_money":"BLOCKED"
+        },sort_keys=True))
+        return
 
     existing=load_existing(out)
     initial=len(existing)
@@ -199,7 +242,8 @@ def main():
       "quota_guard":{
         "tier":usage.get("tier"),"per_day":(usage.get("limits") or {}).get("per_day"),
         "remaining_before_run":remaining,"reserve_calls":args.reserve_calls,
-        "requested_cycles":args.cycles,"executed_cycles":cycles
+        "requested_cycles":args.cycles,"executed_cycles":cycles,
+        "status":"CAPTURE_ALLOWED","reserve_not_bypassed":True
       },
       "capture_summaries":capture_summaries,
       "network_calls":call_meta,
