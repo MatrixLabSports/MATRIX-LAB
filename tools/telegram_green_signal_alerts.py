@@ -519,6 +519,51 @@ def paper_bankroll_activation_message(pb: dict[str, Any], assigned_now: int) -> 
     ])
 
 
+def paper_portfolio_messages(ledger: dict[str, Any]) -> list[str]:
+    pb = recalc_paper_bankroll(ledger)
+    rows = []
+    for record in ledger.get("sent", []):
+        bet = record.get("paper_bet")
+        if not isinstance(bet, dict) or bet.get("status") != "OPEN":
+            continue
+        rows.append({
+            "match": record.get("match"),
+            "house": record.get("house"),
+            "odds": record.get("odds"),
+            "ev": record.get("ev"),
+            "stake_level": bet.get("stake_level"),
+            "stake_cop": bet.get("stake_cop"),
+        })
+    rows.sort(key=lambda x: (-int(x["stake_level"]), -float(x.get("ev") or 0.0), str(x.get("match") or "")))
+    if not rows:
+        return []
+    header = [
+        "📒 PORTAFOLIO BANKROLL DE PAPEL",
+        "",
+        f'Bankroll: COP {fmt_cop(pb["current_cop"])}',
+        f'Exposición abierta: COP {fmt_cop(pb["open_exposure_cop"])} / COP {fmt_cop(pb["max_open_exposure_cop"])}',
+        f'Apuestas abiertas: {len(rows)}',
+        "",
+    ]
+    chunks: list[str] = []
+    current = header[:]
+    for i, row in enumerate(rows, start=1):
+        line = (
+            f'{i}. S{int(row["stake_level"])} | COP {fmt_cop(row["stake_cop"])} | '
+            f'{row.get("house")} @{float(row.get("odds") or 0):.2f} | {row.get("match")}'
+        )
+        trial = "\n".join(current + [line, "", "DINERO REAL MATRIX: BLOQUEADO"])
+        if len(trial) > 3800 and len(current) > len(header):
+            current.append("DINERO REAL MATRIX: BLOQUEADO")
+            chunks.append("\n".join(current))
+            current = ["📒 PORTAFOLIO BANKROLL DE PAPEL — CONT.", "", line]
+        else:
+            current.append(line)
+    current += ["", "DINERO REAL MATRIX: BLOQUEADO"]
+    chunks.append("\n".join(current))
+    return chunks
+
+
 def green_message(c: dict[str, Any]) -> str:
     executed = c.get("execution") is not None
     paper = c.get("paper_bet") if isinstance(c.get("paper_bet"), dict) else None
@@ -741,6 +786,10 @@ def main() -> None:
             mid = send_telegram(session, token, chat_id, paper_bankroll_activation_message(pb, assigned_paper_now))
             pb["activation_message_id"] = mid
             pb["activated_at_utc"] = now.isoformat()
+        if pb.get("portfolio_seed_message_ids") is None:
+            portfolio_ids = [send_telegram(session, token, chat_id, text) for text in paper_portfolio_messages(ledger)]
+            pb["portfolio_seed_message_ids"] = portfolio_ids
+            pb["portfolio_seed_sent_at_utc"] = now.isoformat()
 
     # Rectify legacy quote corrections that compared a different house than the original signal.
     for correction in ledger["corrections"]:
