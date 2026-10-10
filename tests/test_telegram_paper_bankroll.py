@@ -7,6 +7,8 @@ from tools.telegram_green_signal_alerts import (
     paper_stake_cop,
     paper_stake_level,
     recalc_paper_bankroll,
+    green_message,
+    paper_assignment_update_message,
 )
 
 
@@ -55,3 +57,48 @@ def test_recalc_separates_realized_and_open_exposure():
     assert pb["max_open_exposure_cop"] == 2_024_000.0
     assert pb["daily_base_exposure_fraction"] == 0.30
     assert pb["daily_max_exposure_fraction"] == 0.40
+
+
+
+def test_green_message_includes_paper_bankroll_and_stake():
+    c = {
+        "match": "A vs B",
+        "market": "Más de 2.5 goles",
+        "p_matrix": 0.61,
+        "house": "Betano",
+        "odds": 1.80,
+        "ev": 0.08,
+        "kickoff": "2026-10-10T14:00:00+00:00",
+        "execution": None,
+        "paper_bet": {
+            "stake_level": 2,
+            "stake_cop": 50_000.0,
+            "bankroll_before_cop": 5_000_000.0,
+        },
+    }
+    msg = green_message(c)
+    assert "STAKE 2" in msg
+    assert "Apuesta de papel: COP 50.000" in msg
+    assert "Bankroll papel antes: COP 5.000.000" in msg
+
+
+def test_retroactive_paper_assignment_message_includes_bankroll_and_stake():
+    record = {
+        "match": "A vs B",
+        "market": "Más de 2.5 goles",
+        "p_matrix": 0.64,
+        "house": "Betano",
+        "odds": 1.82,
+        "ev": 0.16,
+    }
+    paper = {"stake_level": 2, "stake_cop": 50_000.0}
+    pb = {
+        "current_cop": 5_000_000.0,
+        "open_exposure_cop": 1_950_000.0,
+        "max_open_exposure_cop": 2_000_000.0,
+    }
+    msg = paper_assignment_update_message(record, paper, pb)
+    assert "STAKE 2" in msg
+    assert "Apuesta de papel: COP 50.000" in msg
+    assert "Bankroll de papel: COP 5.000.000" in msg
+    assert "Exposición abierta de papel: COP 1.950.000 / COP 2.000.000" in msg
