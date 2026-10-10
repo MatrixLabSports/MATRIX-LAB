@@ -20,6 +20,7 @@ TIMEOUT = 25.0
 EXECUTABLE_BOOKS = ("betano", "betplay", "rushbet")
 EVAL_LINES = (24.5, 25.5, 26.5)
 GATES = (30, 50, 100, 200)
+MAX_NEW_RESEARCH_FREEZES_PER_RUN = 4
 
 
 def _norm(v: Any) -> str:
@@ -388,18 +389,25 @@ def run() -> dict[str, Any]:
     rows = []
     stats_cache: dict[str, dict[str, float]] = {}
     counter = [0]
-    for fid, fixture_offers in sorted(by_fixture.items(), key=lambda kv: kv[0]):
+    ordered = sorted(
+        by_fixture.items(),
+        key=lambda kv: (
+            str((registry.get(kv[0]) or {}).get("event_start_utc") or "9999"),
+            int(kv[0]),
+        ),
+    )
+    frozen_so_far = 0
+    for fid, fixture_offers in ordered:
         executable = [x for x in fixture_offers if x.get("bookmaker_key") in EXECUTABLE_BOOKS]
         chosen_pool = executable or fixture_offers
         chosen_pool.sort(key=lambda x: (0 if x["main"] else 1, abs(float(x["overround"])), x["line"], x["bookmaker_name"]))
         chosen = chosen_pool[0]
-        detail = team_sup._fixture_detail(session, key, fid, raw_dir, counter)
         reg = registry.get(fid) or {}
         base = {
             "fixture_id": fid,
-            "home_team": (detail or {}).get("home_team_name") or reg.get("home_team"),
-            "away_team": (detail or {}).get("away_team_name") or reg.get("away_team"),
-            "kickoff_utc": (detail or {}).get("kickoff_utc") or reg.get("event_start_utc"),
+            "home_team": reg.get("home_team"),
+            "away_team": reg.get("away_team"),
+            "kickoff_utc": reg.get("event_start_utc"),
             "market": "MATCH_TOTAL_SHOTS",
             "line": float(chosen["line"]),
             "bookmaker_name": chosen["bookmaker_name"],
@@ -410,30 +418,41 @@ def run() -> dict[str, Any]:
             "provider_bet_name": chosen["bet_name"],
             "provider_offer_count": len(fixture_offers),
             "executable_offer_count": len(executable),
+            "preregistered_at_utc": now.isoformat(),
+            "features_loaded": False,
+            "outcome": None,
         }
         if not executable:
-            rows.append({**base, "status": "BLOCKED_NO_EXECUTABLE_POLICY_HOUSE", "p_matrix": None, "ev_over": None})
+            rows.append({**base, "status": "BLOCKED_NO_EXECUTABLE_POLICY_HOUSE", "p_matrix": None, "p_research_over": None})
             continue
-        if not model["historical_oos_gate_passed"]:
-            rows.append({**base, "status": "BLOCKED_RESEARCH_MODEL_HISTORICAL_GATE", "p_matrix": None, "ev_over": None})
+        if frozen_so_far >= MAX_NEW_RESEARCH_FREEZES_PER_RUN:
+            rows.append({**base, "status": "PREREGISTERED_PENDING_NEXT_BATCH", "p_matrix": None, "p_research_over": None})
             continue
+        detail = team_sup._fixture_detail(session, key, fid, raw_dir, counter)
         if not detail or detail.get("status") not in {"NS", "TBD"}:
-            rows.append({**base, "status": "BLOCKED_NOT_PREMATCH", "p_matrix": None, "ev_over": None})
+            rows.append({**base, "status": "BLOCKED_NOT_PREMATCH", "p_matrix": None, "p_research_over": None})
             continue
         feat = team_sup._features(session, key, detail, "Total Shots", raw_dir, counter, stats_cache)
         if feat is None:
-            rows.append({**base, "status": "BLOCKED_INSUFFICIENT_PIT_HISTORY", "p_matrix": None, "ev_over": None})
+            rows.append({**base, "home_team": detail.get("home_team_name"), "away_team": detail.get("away_team_name"), "kickoff_utc": detail.get("kickoff_utc"), "status": "BLOCKED_INSUFFICIENT_PIT_HISTORY", "p_matrix": None, "p_research_over": None})
             continue
         p, mu = _total_probability(feat, float(chosen["line"]), model["model_parameters"])
-        ev = p * float(chosen["over_odds"]) - 1.0
+        research_ev = p * float(chosen["over_odds"]) - 1.0
+        freeze_status = "FROZEN_RESEARCH" if model["historical_oos_gate_passed"] else "FROZEN_RESEARCH_UNVALIDATED_HISTORICAL_GATE"
         freeze = {
             **base,
-            "status": "FROZEN_RESEARCH",
+            "home_team": detail.get("home_team_name"),
+            "away_team": detail.get("away_team_name"),
+            "kickoff_utc": detail.get("kickoff_utc"),
+            "status": freeze_status,
             "freeze_at_utc": now.isoformat(),
+            "features_loaded": True,
             "features": feat,
             "frozen_count_mean": mu,
-            "p_matrix": p,
-            "ev_over": ev,
+            "p_matrix": None,
+            "p_research_over": p,
+            "research_ev_over": research_ev,
+            "model_historical_oos_gate_passed": bool(model["historical_oos_gate_passed"]),
             "model_parameters_sha256": model["model_parameters_sha256"],
             "odds_used_to_generate_probability": False,
             "outcome": None,
@@ -445,8 +464,9 @@ def run() -> dict[str, Any]:
         }
         freeze["record_sha256"] = _sha_obj(freeze)
         rows.append(freeze)
+        frozen_so_far += 1
 
-    frozen = [x for x in rows if x["status"] == "FROZEN_RESEARCH"]
+    frozen = [x for x in rows if str(x["status"]).startswith("FROZEN_RESEARCH")]
     summary = {
         "schema": "MATRIX_MATCH_TOTAL_SHOTS_EXACT_DAY_LAB_V1",
         "target_date_bogota": TARGET_DATE,
@@ -465,6 +485,7 @@ def run() -> dict[str, Any]:
         "prospective_gate": {
             "threshold": 30,
             "observations": 0,
+            "research_freezes_preregistered": len(frozen),
             "remaining": 30,
             "metrics_opened": False,
             "status": "SEALED_UNTIL_30_FINAL_STANDARD",
@@ -476,7 +497,7 @@ def run() -> dict[str, Any]:
         "telegram_signal_authorized": False,
         "automatic_wagering": False,
         "real_money": "BLOCKED",
-        "status": "PASS_RESEARCH_COHORT_CREATED" if frozen else "PASS_FAIL_CLOSED_NO_RESEARCH_FREEZE",
+        "status": "PASS_RESEARCH_COHORT_CREATED_UNVALIDATED" if frozen and not model["historical_oos_gate_passed"] else ("PASS_RESEARCH_COHORT_CREATED" if frozen else "PASS_FAIL_CLOSED_NO_RESEARCH_FREEZE"),
     }
     run_dir.mkdir(parents=True, exist_ok=True)
     manifest = run_dir / "manifest.json"
