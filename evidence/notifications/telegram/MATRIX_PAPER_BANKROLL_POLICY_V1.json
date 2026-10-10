@@ -27,13 +27,20 @@
     }
   },
   "risk_controls": {
-    "maximum_open_exposure_fraction_of_current_bankroll": 0.25,
+    "maximum_open_exposure_fraction_of_current_bankroll": 0.4,
     "singles_only": true,
     "no_forced_bet_when_exposure_cap_reached": true,
     "real_money": "BLOCKED",
     "automatic_wagering": false,
     "odds_used_to_generate_probability": false,
-    "final_only_settlement": true
+    "final_only_settlement": true,
+    "standard_daily_exposure_fraction_of_current_bankroll": 0.3,
+    "high_conviction_daily_exposure_fraction_of_current_bankroll": 0.4,
+    "high_conviction_day_gate": {
+      "minimum_stake3_signals": 5,
+      "minimum_tier2_or_3_share": 0.4,
+      "both_conditions_required": true
+    }
   },
   "governance": {
     "applies_to_telegram_green_signals": true,
@@ -45,11 +52,15 @@
     "telegram_message_id_first": 68,
     "telegram_message_id_last": 112,
     "signal_count": 45,
-    "full_cohort_assignment_required": true,
-    "resulting_open_exposure_cop": 1800000,
-    "resulting_open_exposure_fraction_of_initial_bankroll": 0.36,
-    "exception_scope": "ONE_TIME_INITIAL_45_SIGNAL_COHORT_ONLY",
-    "rationale": "User requested the full already-sent 45-signal cohort to be included in the paper laboratory so stake-tier performance can be measured on the complete cohort.",
-    "future_signals_policy": "RETURN_TO_STANDARD_25PCT_OPEN_EXPOSURE_CAP_AFTER_INITIAL_COHORT"
+    "stake_1_count": 25,
+    "stake_2_count": 13,
+    "stake_3_count": 7,
+    "tier2_or_3_count": 20,
+    "tier2_or_3_share": 0.4444444444444444,
+    "resulting_exposure_cop": 1800000,
+    "resulting_exposure_fraction_of_initial_bankroll": 0.36,
+    "reclassification": "HIGH_CONVICTION_DAY_WITHIN_40PCT_CAP",
+    "exception_required": false,
+    "rationale": "The 10-OCT cohort has 7 Stake-3 signals and 20/45 Stake-2-or-3 signals (44.44%), satisfying the governed 40% high-conviction-day gate. Its 36% exposure is therefore inside policy."
   }
 }
