@@ -21,8 +21,10 @@ on:
     paths:
       - tools/football_daily_governed_over25.py
       - tools/api_football_group_history_capture.py
+      - tools/api_football_team_last_fallback.py
       - tools/api_football_market_shadow_p_matrix.py
       - tests/test_api_football_group_history_capture.py
+      - tests/test_api_football_team_last_fallback.py
       - tests/test_api_football_market_shadow_p_matrix.py
       - .github/workflows/football-daily-governed-pipeline.yml
 
@@ -59,7 +61,7 @@ jobs:
 
       - name: Run targeted history and P_MATRIX regression tests
         run: |
-          PYTHONPATH=. python -m pytest -q             tests/test_api_football_group_history_capture.py             tests/test_api_football_market_shadow_p_matrix.py
+          PYTHONPATH=. python -m pytest -q             tests/test_api_football_group_history_capture.py             tests/test_api_football_team_last_fallback.py             tests/test_api_football_market_shadow_p_matrix.py
 
       - name: Resolve Bogota target date automatically
         id: date
