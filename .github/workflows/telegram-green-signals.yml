@@ -52,8 +52,11 @@ jobs:
         with:
           python-version: "3.11"
 
-      - name: Install requests
-        run: python -m pip install requests
+      - name: Install governed dependencies
+        run: python -m pip install requests pytest
+
+      - name: Verify paper-bankroll Telegram format
+        run: PYTHONPATH=. python -m pytest -q tests/test_telegram_paper_bankroll.py
 
       - name: Enforce safety gates
         shell: bash
