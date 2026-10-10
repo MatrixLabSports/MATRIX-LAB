@@ -554,6 +554,20 @@ def recalc_paper_bankroll(ledger: dict[str, Any]) -> dict[str, Any]:
     return pb
 
 
+def paper_bankroll_balance_correction_message(pb: dict[str, Any]) -> str:
+    return "\n".join([
+        "🔵 CORRECCIÓN — BANKROLL DE PAPEL DISPONIBLE",
+        "",
+        f'Capital total de papel: COP {fmt_cop(pb.get("current_cop") or 0)}',
+        f'Exposición actualmente comprometida: COP {fmt_cop(pb.get("open_exposure_cop") or 0)}',
+        f'BANKROLL DISPONIBLE PARA NUEVAS SEÑALES: COP {fmt_cop(pb.get("available_after_open_exposure_cop") or 0)}',
+        f'Apuestas de papel abiertas: {int(pb.get("open_bets") or 0)}',
+        "La exposición abierta se descuenta del saldo disponible aunque el capital total solo cambia cuando hay settlements FINAL.",
+        "Solo simulación de papel. Sin ejecución automática.",
+        "DINERO REAL MATRIX: BLOQUEADO",
+    ])
+
+
 def paper_bankroll_activation_message(pb: dict[str, Any], assigned_now: int) -> str:
     return "\n".join([
         "🧪 BANKROLL DE PAPEL MATRIX ACTIVADO",
@@ -655,7 +669,9 @@ def green_message(c: dict[str, Any]) -> str:
         lines += [
             f'Confianza/Staking: STAKE {int(paper["stake_level"])}',
             f'Apuesta de papel: COP {fmt_cop(paper["stake_cop"])}',
-            f'Bankroll papel antes: COP {fmt_cop(paper["bankroll_before_cop"])}',
+            f'Capital total de papel: COP {fmt_cop(paper["bankroll_before_cop"])}',
+            f'Bankroll disponible antes: COP {fmt_cop(paper.get("available_before_cop") or 0)}',
+            f'Bankroll disponible después: COP {fmt_cop(paper.get("available_after_cop") or 0)}',
         ]
     else:
         lines += ["Apuesta de papel: NO ASIGNADA"]
@@ -680,8 +696,9 @@ def paper_assignment_update_message(record: dict[str, Any], paper: dict[str, Any
         f'EV: {float(record.get("ev") or 0.0)*100:+.2f}%',
         f'Stake MATRIX de papel: STAKE {int(paper["stake_level"])}',
         f'Apuesta de papel: COP {fmt_cop(paper["stake_cop"])}',
-        f'Bankroll de papel: COP {fmt_cop(pb.get("current_cop") or PAPER_BANKROLL_INITIAL_COP)}',
+        f'Capital total de papel: COP {fmt_cop(pb.get("current_cop") or PAPER_BANKROLL_INITIAL_COP)}',
         f'Exposición abierta de papel: COP {fmt_cop(pb.get("open_exposure_cop") or 0)} / COP {fmt_cop(pb.get("max_open_exposure_cop") or 0)}',
+        f'BANKROLL DISPONIBLE: COP {fmt_cop(pb.get("available_after_open_exposure_cop") or 0)}',
         "Solo simulación de papel. Sin ejecución automática.",
         "DINERO REAL MATRIX: BLOQUEADO",
     ])
@@ -805,18 +822,25 @@ def main() -> None:
             for day, rows in day_candidates.items()
         }
         priority.sort(key=lambda x: (x[0], -x[1], -x[2], str(x[4].get("kickoff")), x[3]))
+        running_open_exposure = float(pb.get("open_exposure_cop") or 0.0)
         for day, level, _, key, candidate, record in priority:
             stake = paper_stake_cop(level)
             max_day = float(pb["current_cop"]) * daily_caps.get(day, PAPER_DAILY_BASE_EXPOSURE_FRACTION)
             used_day = float(daily_exposure.get(day, 0.0))
             if used_day + stake > max_day + 1e-9:
                 continue
+            available_before = max(0.0, float(pb["current_cop"]) - running_open_exposure)
+            available_after = max(0.0, available_before - stake)
             paper = {
                 "status": "OPEN",
                 "stake_level": level,
                 "stake_units": float(PAPER_STAKE_LEVELS[level]),
                 "stake_cop": stake,
                 "bankroll_before_cop": float(pb["current_cop"]),
+                "available_before_cop": available_before,
+                "available_after_cop": available_after,
+                "open_exposure_before_cop": running_open_exposure,
+                "open_exposure_after_cop": running_open_exposure + stake,
                 "kickoff_bogota_date": day,
                 "daily_cap_fraction": daily_caps.get(day, PAPER_DAILY_BASE_EXPOSURE_FRACTION),
                 "assigned_at_utc": now.isoformat(),
@@ -832,6 +856,7 @@ def main() -> None:
                 paper["assignment_source"] = "NEW_SIGNAL_GREEN_MESSAGE"
                 paper["telegram_update_required"] = False
             daily_exposure[day] = used_day + stake
+            running_open_exposure += stake
             assigned_paper_now += 1
         pb["daily_exposure_by_date"] = daily_exposure
         pb = recalc_paper_bankroll(ledger)
@@ -923,6 +948,11 @@ def main() -> None:
 
     if paper_enabled:
         pb = recalc_paper_bankroll(ledger)
+        if pb.get("balance_definition_message_id") is None:
+            pb["balance_definition_message_id"] = send_telegram(
+                session, token, chat_id, paper_bankroll_balance_correction_message(pb)
+            )
+            pb["balance_definition_sent_at_utc"] = now.isoformat()
         if pb.get("activation_message_id") is None:
             mid = send_telegram(session, token, chat_id, paper_bankroll_activation_message(pb, assigned_paper_now))
             pb["activation_message_id"] = mid
