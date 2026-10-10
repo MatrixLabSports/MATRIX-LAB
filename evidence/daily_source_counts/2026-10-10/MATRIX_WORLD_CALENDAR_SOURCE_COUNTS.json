@@ -5,7 +5,7 @@
   "calendar_baseline_complete": false,
   "operator_manual_intervention_required": false,
   "browser_baseline_completed_at_utc": null,
-  "block_reason": "FLASHSCORE_10OCT_DATE_SELECTOR_STALE_FOR_BOTH_SPORTS",
+  "block_reason": "FLASHSCORE_CORRECT_DATE_VISIBLE_BUT_LAZY_COLLAPSED_MATCHES_NO_EXACT_FULL_DAY_TOTAL",
   "tennis": {
     "sofascore": {
       "count": 275,
@@ -19,7 +19,11 @@
       "count": null,
       "url": "https://www.flashscore.co/tenis/?d=2026-10-10",
       "provenance": "OPERA_BROWSER_CONNECTOR",
-      "opera_read_status": "BLOCKED_DATE_SELECTOR_STALE_2026_10_09"
+      "opera_read_status": "BLOCKED_LAZY_MORE_63_COMPETITIONS",
+      "captured_at_utc": "2026-10-10T07:47:17.552Z",
+      "browser_visible_date": "2026-10-10",
+      "browser_diagnostic": "Date selector Saturday 10 October 2026; 'Mostrar más (63)' visible. Exact global total not available.",
+      "exact_total_physically_verified": false
     },
     "paid_providers": {
       "rapidapi_tennis_unique_match_count": 73,
@@ -42,7 +46,11 @@
       "count": null,
       "url": "https://www.flashscore.co/?d=2026-10-10",
       "provenance": "OPERA_BROWSER_CONNECTOR",
-      "opera_read_status": "BLOCKED_DATE_SELECTOR_STALE_2026_10_09"
+      "opera_read_status": "BLOCKED_COLLAPSED_LEAGUE_MATCHES_AND_MORE_COMPETITIONS",
+      "captured_at_utc": "2026-10-10T07:47:17.552Z",
+      "browser_visible_date": "2026-10-10",
+      "browser_diagnostic": "Date selector Saturday 10 October 2026; five 'mostrar partidos (N)' collapsed groups visible (3,3,3,2,1); more competitions not fully expanded. Exact global total not available.",
+      "exact_total_physically_verified": false
     },
     "api_football": {
       "fixtures_received": 1521,
@@ -59,5 +67,6 @@
     "automatic_wagering": false,
     "real_money": "BLOCKED"
   },
-  "next_retry": "Re-read Flashscore football and tennis 10-OCT physically; only then open complete multisource calendar baseline."
+  "next_retry": "Flashscore date selector now displays 2026-10-10 for football and tennis, but visible DOM has collapsed fixtures and additional hidden competitions; retry full-day exact counts without manual operator.",
+  "last_automated_retry_at_utc": "2026-10-10T07:47:17.552Z"
 }
