@@ -38,7 +38,26 @@
   "loaded_match_links_initial": 171,
   "loaded_match_links_latest_connector": 178,
   "user_visible_full_day_count": 275,
-  "user_visible_full_day_count_source": "USER_REPORTED_FROM_SOFASCORE_UI",
+  "user_visible_full_day_count_source": "USER_PROVIDED_SOFASCORE_SCREENSHOT",
   "full_day_count_browser_independently_verified": false,
-  "correction_note": "The earlier 171 figure was only the subset of match links materialized in the Opera accessibility tree, not the complete SofaScore day count. Current connector materialization exposes 178 links, while the user reports 275 visible matches in the full SofaScore UI. Do not use 171 or 178 as the canonical full-day denominator."
+  "correction_note": "The Opera accessibility tree is partial/lazy-loaded. User-provided SofaScore screenshot physically shows Tennis 5 / 275 for tomorrow. Use 275 as the visible SofaScore full-day reference count, while the canonical worldwide count remains pending cross-source reconciliation.",
+  "user_physical_full_day_count_evidence": {
+    "source": "user_provided_screenshot",
+    "screenshot_file": "1002210664.jpg",
+    "screenshot_sha256": "c119842536d81fcdc9059c3f9bb6a42f97dd14de1fbb5892579933436b315ec9",
+    "image_dimensions_px": [
+      1536,
+      787
+    ],
+    "visible_rows": {
+      "football": "75 / 1449",
+      "tennis": "5 / 275"
+    },
+    "interpretation_policy": "Use the white right-hand values as the visible full-day totals reported for tomorrow. Preserve the red numerators without assigning semantics absent source documentation.",
+    "visible_full_day_totals": {
+      "football": 1449,
+      "tennis": 275
+    }
+  },
+  "full_day_count_user_screenshot_verified": true
 }
