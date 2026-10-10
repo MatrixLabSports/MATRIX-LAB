@@ -307,11 +307,34 @@
     "betano": "Exact Over 2.5 quotes are from the physically persisted API-Football bookmaker response already hashed per fixture. Direct Betano UI was not used for this subset.",
     "betplay": "Exact line read from BetPlay Championship UI in Opera, with event IDs persisted.",
     "rushbet": "Direct RushBet event pages were opened using the shared event IDs; team identity and exact Over 2.5 line were physically visible.",
-    "limitation": "This certifies only the six listed high-priority Championship candidates. It does not claim that all 45 signals have been cross-checked across all three houses."
+    "limitation": "Six high-priority Championship candidates are three-house physically certified. Absolute EV ranks 1-3 remain fail-closed because BetPlay/RushBet exact event pages were not physically surfaced; no bookmaker odds were invented."
   },
   "protections": {
     "automatic_wagering": false,
     "real_money": "BLOCKED",
     "odds_used_to_generate_probability": false
-  }
+  },
+  "unresolved_absolute_top3": [
+    {
+      "rank": 1,
+      "fixture_id": "1602504",
+      "match": "Metaloglobus vs Popești-Leordeni",
+      "status": "BLOCKED_NO_THREE_HOUSE_PHYSICAL_VISIBILITY",
+      "note": "Betano structured exact quote exists; BetPlay/RushBet exact event could not be physically surfaced in the accessible sportsbook navigation. No odds inferred."
+    },
+    {
+      "rank": 2,
+      "fixture_id": "1596475",
+      "match": "Avro vs Guiseley AFC",
+      "status": "BLOCKED_NO_THREE_HOUSE_PHYSICAL_VISIBILITY",
+      "note": "Betano structured exact quote exists; BetPlay/RushBet exact event could not be physically surfaced in the accessible sportsbook navigation. No odds inferred."
+    },
+    {
+      "rank": 3,
+      "fixture_id": "1596021",
+      "match": "Stanway Rovers vs Three Bridges",
+      "status": "BLOCKED_NO_THREE_HOUSE_PHYSICAL_VISIBILITY",
+      "note": "Betano structured exact quote exists; BetPlay/RushBet exact event could not be physically surfaced in the accessible sportsbook navigation. No odds inferred."
+    }
+  ]
 }
