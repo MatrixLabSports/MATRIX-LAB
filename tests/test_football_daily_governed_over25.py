@@ -44,3 +44,22 @@ def test_probability_cycle_prefers_newest_on_equal_coverage(tmp_path):
 def test_current_future_fixture_ids_uses_latest_inventory(tmp_path):
     latest=_cycle(tmp_path,"20261010T115258Z",5,["1575178","1575182"])
     assert _current_future_fixture_ids(latest)=={"1575178","1575182"}
+
+
+
+def test_probability_cycle_prefers_governed_league_raw_coverage(tmp_path):
+    broad=_cycle(tmp_path,"20261010T020000Z",500,["1575182"])
+    governed=_cycle(tmp_path,"20261010T081232Z",326,["1575182"])
+    latest=_cycle(tmp_path,"20261010T115258Z",5,["1575182"])
+    # Current inventory says the watched fixture is Bundesliga 78 / season 2026.
+    (latest/"fixtures"/"future_fixture_registry.json").write_text(json.dumps({
+        "events":[{
+            "provider_fixture_id":"1575182",
+            "provider_league_id":"78",
+            "season":2026,
+        }]
+    }),encoding="utf-8")
+    # Only the governed cycle has the physical group raw for Bundesliga.
+    (governed/"history"/"raw"/"league_78_season_2026.bin").write_text("{}",encoding="utf-8")
+    chosen=select_probability_cycle(tmp_path,"2026-10-10",latest)
+    assert chosen==governed
