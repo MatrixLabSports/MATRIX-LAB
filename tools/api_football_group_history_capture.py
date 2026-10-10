@@ -155,7 +155,14 @@ def _group_targets(benchmark: Mapping[str, Any]) -> list[dict[str, Any]]:
             group["earliest_kickoff_utc"] = kickoff.isoformat()
 
     ordered = list(groups.values())
-    ordered.sort(\n        key=lambda row: (\n            PRIORITY_LEAGUE_RANK.get(str(row["league_id"]), len(PRIORITY_LEAGUE_IDS)),\n            -len(row["target_keys"]),\n            row["earliest_kickoff_utc"],\n            int(row["league_id"]),\n        )\n    )
+    ordered.sort(
+        key=lambda row: (
+            PRIORITY_LEAGUE_RANK.get(str(row["league_id"]), len(PRIORITY_LEAGUE_IDS)),
+            -len(row["target_keys"]),
+            row["earliest_kickoff_utc"],
+            int(row["league_id"]),
+        )
+    )
     return ordered
 
 
