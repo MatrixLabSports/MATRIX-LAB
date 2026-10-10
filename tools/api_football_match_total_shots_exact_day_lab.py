@@ -20,7 +20,7 @@ TIMEOUT = 25.0
 EXECUTABLE_BOOKS = ("betano", "betplay", "rushbet")
 EVAL_LINES = (24.5, 25.5, 26.5)
 GATES = (30, 50, 100, 200)
-MAX_NEW_RESEARCH_FREEZES_PER_RUN = 4
+MAX_NEW_RESEARCH_FREEZES_PER_RUN = 8
 
 
 def _norm(v: Any) -> str:
@@ -44,6 +44,79 @@ def _read_jsonl(path: Path) -> list[dict[str, Any]]:
     if not path.exists():
         return []
     return [json.loads(x) for x in path.read_text(encoding="utf-8").splitlines() if x.strip()]
+
+
+def _append_jsonl(path: Path, row: Mapping[str, Any]) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with path.open("a", encoding="utf-8", newline="\n") as fh:
+        fh.write(json.dumps(dict(row), sort_keys=True, separators=(",", ":"), ensure_ascii=False) + "\n")
+
+
+def _bootstrap_persistent_ledgers() -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
+    prereg_path = ROOT / "preregister_ledger.jsonl"
+    freeze_path = ROOT / "freeze_ledger.jsonl"
+    prereg = _read_jsonl(prereg_path)
+    freezes = _read_jsonl(freeze_path)
+    if not freezes:
+        seen: set[str] = set()
+        for manifest in sorted((ROOT / "runs").glob("*/manifest.json")):
+            try:
+                obj = _read_json(manifest)
+            except (OSError, json.JSONDecodeError):
+                continue
+            for row in obj.get("rows") or []:
+                if not isinstance(row, Mapping):
+                    continue
+                if not str(row.get("status") or "").startswith("FROZEN_RESEARCH"):
+                    continue
+                fid = str(row.get("fixture_id") or "")
+                if not fid or fid in seen:
+                    continue
+                migrated = dict(row)
+                migrated["persistent_migration_source"] = str(manifest)
+                migrated["persistent_migrated"] = True
+                _append_jsonl(freeze_path, migrated)
+                freezes.append(migrated)
+                seen.add(fid)
+    if not prereg:
+        manifests = sorted((ROOT / "runs").glob("*/manifest.json"))
+        if manifests:
+            try:
+                obj = _read_json(manifests[-1])
+            except (OSError, json.JSONDecodeError):
+                obj = {}
+            seen: set[str] = set()
+            for row in obj.get("rows") or []:
+                if not isinstance(row, Mapping):
+                    continue
+                fid = str(row.get("fixture_id") or "")
+                if not fid or fid in seen:
+                    continue
+                pr = {
+                    "schema": "MATRIX_MATCH_TOTAL_SHOTS_PREREGISTRATION_V1",
+                    "fixture_id": fid,
+                    "home_team": row.get("home_team"),
+                    "away_team": row.get("away_team"),
+                    "kickoff_utc": row.get("kickoff_utc"),
+                    "market": "MATCH_TOTAL_SHOTS",
+                    "line": row.get("line"),
+                    "bookmaker_name": row.get("bookmaker_name"),
+                    "bookmaker_key": row.get("bookmaker_key"),
+                    "over_odds_observed_at_prereg": row.get("over_odds"),
+                    "under_odds_observed_at_prereg": row.get("under_odds"),
+                    "provider_bet_id": row.get("provider_bet_id"),
+                    "provider_bet_name": row.get("provider_bet_name"),
+                    "preregistered_at_utc": row.get("preregistered_at_utc"),
+                    "features_loaded": False,
+                    "outcome": None,
+                    "metrics_opened": False,
+                    "real_money": "BLOCKED",
+                }
+                pr["record_sha256"] = _sha_obj(pr)
+                _append_jsonl(prereg_path, pr)
+                prereg.append(pr)
+                seen.add(fid)
+    return prereg, freezes
 
 
 def _poisson_over(mu: float, line: float) -> float:
@@ -362,6 +435,10 @@ def run() -> dict[str, Any]:
     raw_dir = run_dir / "raw"
     session = requests.Session()
 
+    persistent_prereg, persistent_freezes = _bootstrap_persistent_ledgers()
+    frozen_fixture_ids = {str(x.get("fixture_id") or "") for x in persistent_freezes}
+    prereg_fixture_ids = {str(x.get("fixture_id") or "") for x in persistent_prereg}
+
     model = build_research_model()
     bindings, binding_meta = resolve_match_total_shots_binding(session, key, raw_dir)
     binding_ids = {int(x["id"]) for x in bindings if x.get("id") is not None}
@@ -385,6 +462,41 @@ def run() -> dict[str, Any]:
     by_fixture: dict[str, list[dict[str, Any]]] = {}
     for offer in offers:
         by_fixture.setdefault(offer["fixture_id"], []).append(offer)
+
+    prereg_path = ROOT / "preregister_ledger.jsonl"
+    freeze_path = ROOT / "freeze_ledger.jsonl"
+    for fid, fixture_offers in sorted(by_fixture.items(), key=lambda kv: kv[0]):
+        if fid in prereg_fixture_ids:
+            continue
+        executable = [x for x in fixture_offers if x.get("bookmaker_key") in EXECUTABLE_BOOKS]
+        chosen_pool = executable or fixture_offers
+        chosen_pool.sort(key=lambda x: (0 if x["main"] else 1, abs(float(x["overround"])), x["line"], x["bookmaker_name"]))
+        chosen = chosen_pool[0]
+        reg = registry.get(fid) or {}
+        pr = {
+            "schema": "MATRIX_MATCH_TOTAL_SHOTS_PREREGISTRATION_V1",
+            "fixture_id": fid,
+            "home_team": reg.get("home_team"),
+            "away_team": reg.get("away_team"),
+            "kickoff_utc": reg.get("event_start_utc"),
+            "market": "MATCH_TOTAL_SHOTS",
+            "line": float(chosen["line"]),
+            "bookmaker_name": chosen["bookmaker_name"],
+            "bookmaker_key": chosen["bookmaker_key"],
+            "over_odds_observed_at_prereg": float(chosen["over_odds"]),
+            "under_odds_observed_at_prereg": float(chosen["under_odds"]),
+            "provider_bet_id": chosen["bet_id"],
+            "provider_bet_name": chosen["bet_name"],
+            "preregistered_at_utc": now.isoformat(),
+            "features_loaded": False,
+            "outcome": None,
+            "metrics_opened": False,
+            "real_money": "BLOCKED",
+        }
+        pr["record_sha256"] = _sha_obj(pr)
+        _append_jsonl(prereg_path, pr)
+        persistent_prereg.append(pr)
+        prereg_fixture_ids.add(fid)
 
     rows = []
     stats_cache: dict[str, dict[str, float]] = {}
@@ -425,6 +537,12 @@ def run() -> dict[str, Any]:
         if not executable:
             rows.append({**base, "status": "BLOCKED_NO_EXECUTABLE_POLICY_HOUSE", "p_matrix": None, "p_research_over": None})
             continue
+        if fid in frozen_fixture_ids:
+            rows.append({**base, "status": "ALREADY_FROZEN_PERSISTENT", "p_matrix": None, "p_research_over": None})
+            continue
+        if len(frozen_fixture_ids) + frozen_so_far >= GATES[0]:
+            rows.append({**base, "status": "PREREGISTERED_GATE30_FREEZE_TARGET_REACHED", "p_matrix": None, "p_research_over": None})
+            continue
         if frozen_so_far >= MAX_NEW_RESEARCH_FREEZES_PER_RUN:
             rows.append({**base, "status": "PREREGISTERED_PENDING_NEXT_BATCH", "p_matrix": None, "p_research_over": None})
             continue
@@ -463,10 +581,38 @@ def run() -> dict[str, Any]:
             "real_money": "BLOCKED",
         }
         freeze["record_sha256"] = _sha_obj(freeze)
+        _append_jsonl(freeze_path, freeze)
+        persistent_freezes.append(freeze)
+        frozen_fixture_ids.add(fid)
         rows.append(freeze)
         frozen_so_far += 1
 
     frozen = [x for x in rows if str(x["status"]).startswith("FROZEN_RESEARCH")]
+    persistent_freezes = _read_jsonl(freeze_path)
+    unique_persistent_freezes = {str(x.get("fixture_id") or ""): x for x in persistent_freezes if x.get("fixture_id")}
+    cumulative_freeze_count = len(unique_persistent_freezes)
+    state = {
+        "schema": "MATRIX_MATCH_TOTAL_SHOTS_PROSPECTIVE_STATE_V1",
+        "target_date_bogota": TARGET_DATE,
+        "preregistered_fixture_count": len({str(x.get("fixture_id") or "") for x in _read_jsonl(prereg_path)}),
+        "cumulative_unique_research_freeze_count": cumulative_freeze_count,
+        "gate_30": {
+            "threshold": 30,
+            "freeze_count": cumulative_freeze_count,
+            "remaining_freezes_to_target": max(0, 30 - cumulative_freeze_count),
+            "final_settlement_count": 0,
+            "metrics_opened": False,
+            "status": "FREEZE_TARGET_REACHED_AWAIT_FINALS" if cumulative_freeze_count >= 30 else "BUILDING_FREEZE_COHORT",
+        },
+        "model_historical_oos_gate_passed": bool(model["historical_oos_gate_passed"]),
+        "telegram_signal_authorized": False,
+        "paper_bankroll_authorized": False,
+        "automatic_wagering": False,
+        "real_money": "BLOCKED",
+        "updated_at_utc": now.isoformat(),
+    }
+    (ROOT / "state.json").write_text(json.dumps(state, indent=2, sort_keys=True, ensure_ascii=False) + "\n", encoding="utf-8")
+
     summary = {
         "schema": "MATRIX_MATCH_TOTAL_SHOTS_EXACT_DAY_LAB_V1",
         "target_date_bogota": TARGET_DATE,
@@ -479,13 +625,20 @@ def run() -> dict[str, Any]:
         "odds_page_calls": odds_pages,
         "provider_offer_rows": len(offers),
         "fixtures_with_market": len(by_fixture),
+        "persistent_preregistered_fixture_count": state["preregistered_fixture_count"],
+        "cumulative_unique_research_freeze_count": cumulative_freeze_count,
+        "preregister_ledger_path": str(prereg_path),
+        "freeze_ledger_path": str(freeze_path),
+        "state_path": str(ROOT / "state.json"),
         "rows": rows,
         "frozen_research_count": len(frozen),
         "blocked_count": len(rows) - len(frozen),
         "prospective_gate": {
             "threshold": 30,
             "observations": 0,
-            "research_freezes_preregistered": len(frozen),
+            "research_freezes_this_run": len(frozen),
+            "research_freezes_cumulative_unique": cumulative_freeze_count,
+            "remaining_freezes_to_target": max(0, 30 - cumulative_freeze_count),
             "remaining": 30,
             "metrics_opened": False,
             "status": "SEALED_UNTIL_30_FINAL_STANDARD",
@@ -511,6 +664,8 @@ def run() -> dict[str, Any]:
         "resolved_bindings": bindings,
         "provider_offer_rows": len(offers),
         "fixtures_with_market": len(by_fixture),
+        "persistent_preregistered_fixture_count": state["preregistered_fixture_count"],
+        "cumulative_unique_research_freeze_count": cumulative_freeze_count,
         "frozen_research_count": len(frozen),
         "blocked_count": len(rows) - len(frozen),
         "status": summary["status"],
