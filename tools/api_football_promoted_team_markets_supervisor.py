@@ -107,7 +107,10 @@ def _canonical_offer(hits:list[dict[str,Any]],bet_id:int)->dict[str,Any]|None:
     return c
 
 def _api(session:requests.Session,key:str,path:str,params:dict[str,Any],raw_dir:Path,label:str,counter:list[int])->dict[str,Any]:
-    r=session.get(BASE_URL+path,headers={"x-apisports-key":key},params=params,timeout=TIMEOUT)
+    clean_key = str(key or "").strip()
+    if not clean_key:
+        raise RuntimeError("API_FOOTBALL_KEY_EMPTY_AFTER_STRIP")
+    r=session.get(BASE_URL+path,headers={"x-apisports-key":clean_key},params=params,timeout=TIMEOUT)
     counter[0]+=1
     body=bytes(r.content); raw_dir.mkdir(parents=True,exist_ok=True)
     (raw_dir/f"{label}.bin").write_bytes(body)
