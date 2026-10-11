@@ -1,0 +1,76 @@
+{
+  "schema": "MATRIX_FOOTBALL_DAILY_RECONCILIATION_07OCT2026_V1",
+  "target_date_bogota": "2026-10-07",
+  "timezone": "America/Bogota",
+  "source_order": ["SOFASCORE", "FLASHSCORE", "API_FOOTBALL", "FOOTBALL_DATA_ORG", "IDENTITY", "PHYSICAL_DEDUP", "MARKETS"],
+  "browser_layer": {
+    "sofascore": {"public_page_access": "PASS", "exact_daily_total": null, "exact_identity_enumeration": "NOT_AVAILABLE_FROM_STATIC_PUBLIC_PAGE", "opera_connector": "UNAVAILABLE"},
+    "flashscore": {"public_page_access": "BLOCKED_BY_PUBLIC_WEB_TOOL", "exact_daily_total": null, "exact_identity_enumeration": "NOT_AVAILABLE", "opera_connector": "UNAVAILABLE"},
+    "exact_four_source_union_count": null,
+    "union_status": "NOT_PROVEN_BROWSER_EXACT_ENUMERATION_UNAVAILABLE",
+    "counts_invented": false
+  },
+  "api_football_fresh_cycle": {
+    "cycle_id": "20261007T101914Z",
+    "fixtures_received": 233,
+    "eligible_future_fixtures": 207,
+    "ready_input_count": 107,
+    "blocked_future_input_count": 100,
+    "candidate_event_count": 88,
+    "skipped_existing_count": 77,
+    "new_event_count": 11,
+    "physical_collision_blocked_count": 0,
+    "network_calls_performed": 161,
+    "status": "PASS"
+  },
+  "football_data_org": {
+    "authenticated": true,
+    "http_status": 200,
+    "accessible_matches_on_target_date": 0,
+    "world_complete": false,
+    "automatic_model_feed": false
+  },
+  "physical_uniqueness_global_after_cycle": {
+    "freeze_rows": 1450,
+    "unique_fixture_ids": 1450,
+    "duplicate_fixture_id_groups": 0,
+    "exact_physical_duplicate_groups": 0,
+    "suspicious_same_pair_within_36h": 0,
+    "calibration_rows": 1024,
+    "calibration_unique_fixture_ids": 1024,
+    "result": "PASS"
+  },
+  "markets": {
+    "OVER_2_5": {"lane_status": "ACTIVE_V2", "governance_label": "STRONG", "freeze_observation_count": 622, "settlement_count": 227, "pending_settlement_count": 395, "metrics_opened": false},
+    "1X2": {"lane_status": "ACTIVE_V2", "governance_label": "DEVELOPING", "freeze_observation_count": 622, "settlement_count": 227, "pending_settlement_count": 395, "metrics_opened": false},
+    "PLAYER_SHOTS_V3": {"lane_status": "ACTIVE", "governance_label": "DEVELOPING", "freeze_observation_count": 0, "calibration_observation_count": 0},
+    "TEAM_TOTAL_SHOTS_HOME": {"lane_status": "ACTIVE", "governance_label": "DEVELOPING", "freeze_observation_count": 0, "calibration_observation_count": 0},
+    "TEAM_TOTAL_SHOTS_AWAY": {"lane_status": "ACTIVE", "governance_label": "DEVELOPING", "freeze_observation_count": 0, "calibration_observation_count": 0},
+    "TEAM_FOULS_TOTAL": {"lane_status": "ACTIVE", "governance_label": "DEVELOPING", "freeze_observation_count": 1, "calibration_observation_count": 1, "remaining_to_gate_30": 29}
+  },
+  "rate_limit_hardening": {
+    "original_failed_run_id": 37605564505,
+    "original_failure": "API_FOOTBALL_TEAM_LAST_HTTP_STATUS_429:1628",
+    "source_commit": "1c92bde777b84203307b9ae48354d2299c644088",
+    "test_commit": "0b2d4a972f1491a301e9dfbcb9c6c13df3ca3afb",
+    "ci_run_id": 37606033708,
+    "ci_conclusion": "success",
+    "production_verification_run_id": 37606526278,
+    "production_verification_conclusion": "success",
+    "fresh_cycle_rate_limit_event_count": 0,
+    "fresh_cycle_daily_remaining": 6522,
+    "fresh_cycle_minute_remaining": 139
+  },
+  "protections": {
+    "no_backfill": true,
+    "missing_not_zero": true,
+    "silent_imputation": false,
+    "name_only_identity_join": false,
+    "physical_dedup_before_counter_increment": true,
+    "odds_to_p_matrix": false,
+    "metrics_opened": false,
+    "automatic_wagering": false,
+    "real_money": "BLOCKED"
+  },
+  "verdict": "STRUCTURED_PIPELINE_PASS_BROWSER_EXACT_UNION_PENDING"
+}

@@ -1,0 +1,113 @@
+# MATRIX_PHYSICAL_TRIGGER 2026-10-09T05:34Z continuity-fallback-telegram
+name: Telegram Señales Verdes MATRIX
+
+on:
+  schedule:
+    - cron: "7,22,37,52 * * * *"
+  push:
+    branches:
+      - main
+      - repair/cor09-world-pipeline
+    paths:
+      - .github/workflows/telegram-green-signals.yml
+      - tools/telegram_green_signal_alerts.py
+      - evidence/api_football/daily_prematch_reports/**
+      - evidence/tennis_signals/**
+  workflow_dispatch:
+  workflow_run:
+    workflows:
+      - "MATRIX Football Daily Governed Pipeline"
+      - "API-Football prospective FINAL-only settlement now"
+    types:
+      - completed
+
+permissions:
+  contents: write
+
+concurrency:
+  group: telegram-green-signals
+  cancel-in-progress: false
+
+jobs:
+  notify:
+    if: >
+      github.event_name != 'workflow_run' ||
+      github.event.workflow_run.conclusion == 'success'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      MATRIX_MODE: SHADOW
+      REAL_MONEY: BLOCKED
+      AUTO_BETTING: DISABLED
+      PAPER_BANKROLL: ENABLED
+    steps:
+      - name: Checkout rama de trabajo
+        uses: actions/checkout@v4
+        with:
+          ref: repair/cor09-world-pipeline
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install governed dependencies
+        run: python -m pip install requests pytest
+
+      - name: Verify paper-bankroll Telegram format
+        run: PYTHONPATH=. python -m pytest -q tests/test_telegram_paper_bankroll.py
+
+      - name: Enforce safety gates
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$MATRIX_MODE" = "SHADOW"
+          test "$REAL_MONEY" = "BLOCKED"
+          test "$AUTO_BETTING" = "DISABLED"
+          test "$PAPER_BANKROLL" = "ENABLED"
+
+      - name: Validate secrets
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          API_FOOTBALL_KEY: ${{ secrets.API_FOOTBALL_KEY }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -n "$TELEGRAM_BOT_TOKEN"
+          test -n "$TELEGRAM_CHAT_ID"
+          test -n "$API_FOOTBALL_KEY"
+          echo "SECRETOS_TELEGRAM_Y_API_FOOTBALL_PRESENTES"
+
+      - name: Supervisor Telegram — señales, cuotas y FINAL
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          API_FOOTBALL_KEY: ${{ secrets.API_FOOTBALL_KEY }}
+        run: python -m tools.telegram_green_signal_alerts
+
+      - name: Persistir ledger gobernado
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name matrix-telegram-alerts
+          git config user.email matrix-telegram-alerts@users.noreply.github.com
+          git add evidence/notifications/telegram/MATRIX_TELEGRAM_SIGNAL_LEDGER.json
+          if git diff --cached --quiet; then
+            echo "SIN_CAMBIOS_LEDGER"
+            exit 0
+          fi
+          git commit -m "evidence(telegram): persist autonomous supervisor ledger"
+          for attempt in 1 2 3 4; do
+            git fetch origin repair/cor09-world-pipeline
+            if ! git rebase origin/repair/cor09-world-pipeline; then
+              git rebase --abort || true
+              exit 1
+            fi
+            if git push origin HEAD:repair/cor09-world-pipeline; then
+              exit 0
+            fi
+            sleep $((attempt*2))
+          done
+          exit 1

@@ -1,0 +1,136 @@
+name: MATRIX Live Tennis Cumulative Gate Reconcile
+# Reconcile after latest FINAL-only ledger persistence.
+
+on:
+  push:
+    branches:
+      - repair/cor09-world-pipeline
+    paths:
+      - .github/workflows/live-tennis-cumulative-gate-reconcile.yml
+      - tools/live_tennis_cumulative_gate.py
+      - tools/telegram_live_tennis_progress.py
+  workflow_dispatch:
+  workflow_run:
+    workflows:
+      - "MATRIX Live Tennis Bulk Seed"
+      - "MATRIX Live Tennis FINAL Settlement"
+    types:
+      - completed
+
+permissions:
+  contents: write
+
+concurrency:
+  group: live-tennis-cumulative-gate-reconcile
+  cancel-in-progress: false
+
+jobs:
+  reconcile:
+    if: >
+      github.event_name != 'workflow_run' ||
+      github.event.workflow_run.conclusion == 'success'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: repair/cor09-world-pipeline
+          fetch-depth: 0
+
+      - name: Seal prematch Hard and Clay
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/live-cum-guard
+          python - <<'PY'
+          import hashlib,json
+          from pathlib import Path
+          def th(root):
+              root=Path(root); h=hashlib.sha256(); n=0
+              for p in sorted(x for x in root.rglob("*") if x.is_file()):
+                  h.update(p.relative_to(root).as_posix().encode()); h.update(b"\0")
+                  h.update(hashlib.sha256(p.read_bytes()).digest()); n+=1
+              return h.hexdigest(),n
+          hard=th("evidence/cor0203")
+          clay=th("evidence/tennis_parallel_lanes/ATP_CHALLENGER_MEN_SINGLES_CLAY")
+          Path("/tmp/live-cum-guard/before.json").write_text(json.dumps({"hard":hard,"clay":clay}))
+          print(json.dumps({"hard":hard,"clay":clay}))
+          PY
+
+      - name: Install Telegram dependency
+        run: python -m pip install requests
+
+      - name: Rebuild quality-valid cumulative gates
+        run: |
+          python -m tools.live_tennis_cumulative_gate             --root evidence/live_tennis_lab             --out evidence/live_tennis_lab/MATRIX_LIVE_TENNIS_CUMULATIVE_GATE_V1.json
+
+      - name: Validate corrected gate semantics
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          j=json.loads(Path("evidence/live_tennis_lab/MATRIX_LIVE_TENNIS_CUMULATIVE_GATE_V1.json").read_text())
+          assert j["gate_unit"]=="UNIQUE_FINAL_STANDARD_MATCHES_WITH_AT_LEAST_ONE_QUALITY_VALID_LIVE_STATE_PER_LANE_ACROSS_DAYS"
+          assert j["states_do_not_substitute_for_matches"] is True
+          assert j["same_match_train_test_forbidden"] is True
+          assert j["metrics_status"]=="SEALED"
+          assert j["probability_output_status"]=="SEALED"
+          for lane,d in j["lanes"].items():
+              usable=d["settled_quality_valid_unique_match_count"]
+              total=d["settled_final_standard_unique_match_count"]
+              assert usable<=total
+              assert d["settled_unique_match_count"]==usable
+              assert d["gates"]["30"]["remaining"]==max(0,30-usable)
+          print(json.dumps({
+            "usable_settled":j["sum_lane_settled_unique_matches"],
+            "final_standard_before_quality":j["sum_lane_final_standard_unique_matches_before_quality_gate"],
+            "lanes":{k:{
+              "usable":v["settled_quality_valid_unique_match_count"],
+              "excluded_low_quality":v["excluded_settled_without_quality_valid_state"],
+              "remaining30":v["gates"]["30"]["remaining"]
+            } for k,v in j["lanes"].items()}
+          },sort_keys=True))
+          PY
+
+      - name: Notify Telegram on Live Tennis progress change
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+        run: python -m tools.telegram_live_tennis_progress
+
+      - name: Prove prematch untouched
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import hashlib,json
+          from pathlib import Path
+          def th(root):
+              root=Path(root); h=hashlib.sha256(); n=0
+              for p in sorted(x for x in root.rglob("*") if x.is_file()):
+                  h.update(p.relative_to(root).as_posix().encode()); h.update(b"\0")
+                  h.update(hashlib.sha256(p.read_bytes()).digest()); n+=1
+              return h.hexdigest(),n
+          b=json.loads(Path("/tmp/live-cum-guard/before.json").read_text())
+          assert list(th("evidence/cor0203"))==b["hard"]
+          assert list(th("evidence/tennis_parallel_lanes/ATP_CHALLENGER_MEN_SINGLES_CLAY"))==b["clay"]
+          print("PREMATCH_HARD_AND_CLAY_UNTOUCHED: PASS")
+          PY
+
+      - name: Persist corrected cumulative gate
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name matrix-live-tennis-cumulative-gate
+          git config user.email matrix-live-tennis-cumulative-gate@users.noreply.github.com
+          git add evidence/live_tennis_lab/MATRIX_LIVE_TENNIS_CUMULATIVE_GATE_V1.json
+          git add evidence/notifications/telegram/MATRIX_TELEGRAM_LIVE_TENNIS_PROGRESS_LEDGER.json || true
+          if git diff --cached --quiet; then
+            echo "NO_CUMULATIVE_GATE_CHANGE"
+            exit 0
+          fi
+          git commit -m "evidence(live): reconcile quality-valid cumulative gates"
+          git pull --rebase origin repair/cor09-world-pipeline
+          git push origin HEAD:repair/cor09-world-pipeline

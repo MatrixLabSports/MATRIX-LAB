@@ -1,0 +1,144 @@
+name: API-Football governed group history capture
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: api-football-governed-group-history-capture
+  cancel-in-progress: false
+
+jobs:
+  capture:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout operational branch
+        uses: actions/checkout@v4
+        with:
+          ref: repair/cor09-world-pipeline
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install minimal dependency
+        run: python -m pip install requests
+
+      - name: Validate secret and fixed request budget
+        shell: bash
+        env:
+          API_FOOTBALL_KEY: ${{ secrets.API_FOOTBALL_KEY }}
+        run: |
+          set -euo pipefail
+          if [[ -z "${API_FOOTBALL_KEY}" ]]; then
+            echo "API_FOOTBALL_KEY_NOT_CONFIGURED"
+            exit 2
+          fi
+          python - <<'PY'
+          import os
+          value = os.environ["API_FOOTBALL_KEY"]
+          value.encode("ascii")
+          print("API_FOOTBALL_KEY_PRESENT_AND_ASCII")
+          print("MAX_REQUESTS=40")
+          print("DAILY_REMAINING_RESERVE=40")
+          PY
+
+      - name: Stop repeated free-plan history calls already proven blocked
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          entitlement_path = Path("evidence/api_football/pro_entitlement_probe/manifest.json")
+          if entitlement_path.is_file():
+              entitlement = json.loads(entitlement_path.read_text(encoding="utf-8"))
+              if entitlement.get("pro_entitlement_verified") is True:
+                  print("API_FOOTBALL_PRO_ENTITLEMENT_VERIFIED: history capture allowed")
+                  raise SystemExit(0)
+
+          path = Path("evidence/api_football/history/history_capture_manifest.json")
+          if not path.is_file():
+              raise SystemExit(0)
+          payload = json.loads(path.read_text(encoding="utf-8"))
+          team_probe = payload.get("team_last_probe") or {}
+          team_errors = team_probe.get("provider_errors") or {}
+          season_blocked = payload.get("free_plan_season_range_blocked") is True
+          last_blocked = "Free plans do not have access to the Last parameter." in str(team_errors.get("plan") or "")
+          if season_blocked and last_blocked:
+              print("API_FOOTBALL_FREE_PLAN_HISTORY_ROUTE_ALREADY_PROVEN_BLOCKED")
+              print("No provider request was sent by this run.")
+              raise SystemExit(3)
+          PY
+
+      - name: Capture league-season history with fail-closed reserve
+        shell: bash
+        env:
+          API_FOOTBALL_KEY: ${{ secrets.API_FOOTBALL_KEY }}
+          MATRIX_API_FOOTBALL_HISTORY_DIR: evidence/api_football/history
+          MATRIX_API_FOOTBALL_HISTORY_MAX_REQUESTS: "40"
+          MATRIX_API_FOOTBALL_DAILY_RESERVE: "40"
+        run: |
+          set -euo pipefail
+          rm -rf "$MATRIX_API_FOOTBALL_HISTORY_DIR"
+          python -m tools.api_football_group_history_capture
+
+      - name: Enforce history acquisition invariants
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          root = Path("evidence/api_football/history")
+          manifest = json.loads((root / "history_capture_manifest.json").read_text(encoding="utf-8"))
+          benchmark = json.loads((root / "benchmark_with_history.json").read_text(encoding="utf-8"))
+          readiness = json.loads((root / "history_readiness.json").read_text(encoding="utf-8"))
+
+          assert manifest["provider"] == "api_football"
+          assert manifest["status"] == "PASS"
+          assert 0 < manifest["network_calls_performed"] <= 40
+          assert manifest["captured_group_count"] <= manifest["requested_group_count"]
+          assert manifest["automatic_wagering"] is False
+          assert manifest["odds_used"] is False
+          assert manifest["real_money"] == "BLOCKED"
+
+          assert benchmark["money_decisions_enabled"] is False
+          assert benchmark["analysis_mode"] == "PREMATCH_RESEARCH_ONLY"
+          assert benchmark["real_money"] == "BLOCKED"
+          assert readiness["real_money"] == "BLOCKED"
+
+          remaining = manifest["last_rate_limit"]["daily_remaining"]
+          if remaining is not None:
+              assert int(remaining) >= 40
+
+          print("API_FOOTBALL_GROUP_HISTORY_CAPTURE_GATE: PASS")
+          print("requested_groups=", manifest["requested_group_count"])
+          print("captured_groups=", manifest["captured_group_count"])
+          print("network_calls=", manifest["network_calls_performed"])
+          print("ready_minimum_history=", manifest["ready_minimum_history_count"])
+          print("blocked_minimum_history=", manifest["blocked_minimum_history_count"])
+          print("daily_remaining=", remaining)
+          print("stopped_reason=", manifest["stopped_reason"])
+          PY
+
+      - name: Persist physical history evidence
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "matrix-api-football-history"
+          git config user.email "matrix-api-football-history@users.noreply.github.com"
+          git add evidence/api_football/history
+          if git diff --cached --quiet; then
+            echo "NO_HISTORY_EVIDENCE_TO_PERSIST"
+            exit 3
+          fi
+          git commit -m "evidence(api-football): persist governed league-season history capture"
+          git pull --rebase origin repair/cor09-world-pipeline
+          git push origin HEAD:repair/cor09-world-pipeline

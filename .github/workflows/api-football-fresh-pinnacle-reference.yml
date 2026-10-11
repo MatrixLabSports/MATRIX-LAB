@@ -1,0 +1,181 @@
+name: API-Football fresh Pinnacle reference audit
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - repair/cor09-world-pipeline
+    paths:
+      - .github/workflows/api-football-fresh-pinnacle-reference.yml
+
+permissions:
+  contents: write
+
+concurrency:
+  group: api-football-fresh-pinnacle-reference
+  cancel-in-progress: false
+
+jobs:
+  fresh-reference:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout operational branch
+        uses: actions/checkout@v4
+        with:
+          ref: repair/cor09-world-pipeline
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install targeted dependencies
+        run: python -m pip install pytest requests
+
+      - name: Run Pinnacle capture and reference tests
+        run: |
+          python -m pytest -q             tests/test_api_football_pinnacle_coverage_probe.py             tests/test_api_football_pinnacle_reference.py             tests/test_api_football_shadow_pinnacle_comparison.py             tests/test_api_football_canonical_analysis_inputs.py             tests/test_api_football_experimental_shadow_freeze.py
+
+      - name: Capture fresh Pinnacle reference from API-Football
+        env:
+          API_FOOTBALL_KEY: ${{ secrets.API_FOOTBALL_KEY }}
+        run: python -m tools.api_football_pinnacle_coverage_probe
+
+      - name: Verify real provider capture
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json
+          from datetime import datetime
+          from pathlib import Path
+
+          path = Path("evidence/api_football/pinnacle_coverage/manifest.json")
+          manifest = json.loads(path.read_text(encoding="utf-8"))
+          assert manifest["status"] == "PASS"
+          assert manifest["provider_error_count"] == 0
+          assert manifest["network_calls_performed"] > 0
+          assert manifest["network_calls_performed"] == manifest["target_fixture_count"]
+          assert manifest["capture_timestamp_scope"] == "PER_FIXTURE_RESPONSE"
+          assert manifest["automatic_wagering"] is False
+          assert manifest["real_money"] == "BLOCKED"
+
+          seen = set()
+          for row in manifest["fixtures"]:
+              assert row["fixture_id"] not in seen
+              seen.add(row["fixture_id"])
+              captured = datetime.fromisoformat(row["captured_at_utc"])
+              kickoff = datetime.fromisoformat(row["kickoff_utc"])
+              assert captured < kickoff
+              raw = Path(row["raw_path"])
+              assert raw.is_file()
+              assert len(row["raw_sha256"]) == 64
+
+          print("PINNACLE_FRESH_PROVIDER_CAPTURE_GATE: PASS")
+          print("target_fixture_count=", manifest["target_fixture_count"])
+          print("fixtures_with_pinnacle_odds=", manifest["fixtures_with_pinnacle_odds"])
+          print("network_calls_performed=", manifest["network_calls_performed"])
+          print("daily_remaining=", manifest["last_rate_limit"].get("daily_remaining"))
+          print("real_money=", manifest["real_money"])
+          PY
+
+      - name: Rebuild verified Pinnacle reference ledger
+        run: python -m tools.api_football_pinnacle_reference_integrate
+
+      - name: Rebuild canonical PIT inputs after odds capture
+        run: python -m tools.api_football_canonicalize_analysis_inputs
+
+      - name: Freeze odds-independent experimental shadow after capture
+        run: python -m tools.api_football_freeze_experimental_shadow
+
+      - name: Compare frozen shadow to fresh Pinnacle diagnostically
+        run: python -m tools.api_football_compare_shadow_to_pinnacle
+
+      - name: Enforce fresh-reference isolation and chronology
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json
+          from datetime import datetime
+          from pathlib import Path
+
+          coverage = json.loads(
+              Path("evidence/api_football/pinnacle_coverage/manifest.json").read_text(encoding="utf-8")
+          )
+          reference = json.loads(
+              Path("evidence/api_football/pinnacle_reference/manifest.json").read_text(encoding="utf-8")
+          )
+          canonical = json.loads(
+              Path("evidence/api_football/canonical_analysis/manifest.json").read_text(encoding="utf-8")
+          )
+          shadow = json.loads(
+              Path("evidence/api_football/experimental_shadow/shadow_freeze.json").read_text(encoding="utf-8")
+          )
+          comparison = json.loads(
+              Path("evidence/api_football/pinnacle_shadow_comparison/manifest.json").read_text(encoding="utf-8")
+          )
+
+          assert coverage["capture_timestamp_scope"] == "PER_FIXTURE_RESPONSE"
+          assert reference["status"] == "PASS"
+          assert reference["capture_timestamp_scope"] == "PER_FIXTURE_RESPONSE"
+          assert reference["odds_used_to_generate_model_probability"] is False
+          assert reference["probability_source"] == "MODEL_ONLY"
+          assert reference["automatic_wagering"] is False
+          assert reference["real_money"] == "BLOCKED"
+
+          assert canonical["status"] == "PASS"
+          assert canonical["p_matrix_status"] == "NOT_GENERATED"
+          assert canonical["odds_used_to_generate_model_probability"] is False
+          assert canonical["real_money"] == "BLOCKED"
+
+          freeze = datetime.fromisoformat(shadow["freeze_at_utc"])
+          assert shadow["model_status"] == "EXPERIMENTAL_NOT_PROMOTED"
+          assert shadow["p_matrix_status"] == "NOT_GENERATED"
+          assert shadow["protections"]["odds_used_to_generate_probability"] is False
+          assert shadow["protections"]["outcomes_used_to_generate_probability"] is False
+          assert shadow["protections"]["real_money"] == "BLOCKED"
+
+          for row in coverage["fixtures"]:
+              captured = datetime.fromisoformat(row["captured_at_utc"])
+              if row["has_pinnacle_odds"] and row["fixture_id"] in {
+                  str(item["fixture_id"]) for item in shadow["rows"]
+              }:
+                  assert captured <= freeze
+
+          assert comparison["status"] == "PASS"
+          assert comparison["comparison_role"] == "DIAGNOSTIC_REFERENCE_ONLY"
+          assert comparison["p_matrix_status"] == "NOT_GENERATED"
+          assert comparison["odds_used_to_generate_shadow_probability"] is False
+          assert comparison["model_promotion"] is False
+          assert comparison["automatic_wagering"] is False
+          assert comparison["real_money"] == "BLOCKED"
+
+          print("PINNACLE_FRESH_REFERENCE_ISOLATION_GATE: PASS")
+          print("canonical_ready_input_count=", canonical["ready_input_count"])
+          print("shadow_frozen_prediction_count=", shadow["frozen_prediction_count"])
+          print("pinnacle_reference_fixture_count=", reference["fixture_count"])
+          print("pinnacle_reference_quote_count=", reference["reference_quote_count"])
+          print("matched_fixture_count=", comparison["matched_fixture_count"])
+          print("comparison_row_count=", comparison["comparison_row_count"])
+          print("rejection_reason_counts=", comparison["rejection_reason_counts"])
+          print("capture_delay_seconds_summary=", comparison["capture_delay_seconds_summary"])
+          print("real_money=", comparison["real_money"])
+          PY
+
+      - name: Persist fresh reference evidence
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "matrix-api-football-pinnacle"
+          git config user.email "matrix-api-football-pinnacle@users.noreply.github.com"
+          git add             evidence/api_football/pinnacle_coverage             evidence/api_football/pinnacle_reference             evidence/api_football/canonical_analysis             evidence/api_football/experimental_shadow             evidence/api_football/pinnacle_shadow_comparison
+          if git diff --cached --quiet; then
+            echo "NO_FRESH_PINNACLE_EVIDENCE_CHANGE"
+            exit 0
+          fi
+          git commit -m "evidence(api-football): refresh Pinnacle reference before shadow comparison"
+          git pull --rebase origin repair/cor09-world-pipeline
+          git push origin HEAD:repair/cor09-world-pipeline

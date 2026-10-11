@@ -1,0 +1,84 @@
+{
+  "arbitrary_half_line_probability_supported": true,
+  "automatic_wagering": false,
+  "lanes": {
+    "AWAY": {
+      "binding": {
+        "api_football_bet_id": 220,
+        "api_football_bet_name": "Shots. Away Total"
+      },
+      "line": 11.5,
+      "prospective_eligible": true,
+      "status": "FROZEN_FOR_NEW_PROSPECTIVE_VALIDATION",
+      "validation": {
+        "challenger": {
+          "brier_score": 0.22966616245196872,
+          "ece_5bin": 0.03275680221170531,
+          "log_loss": 0.6494338801390829,
+          "max_calibration_error_5bin": 0.193025472000393,
+          "sample_size": 50
+        },
+        "constant_train_base_rate": {
+          "brier_score": 0.2587890625,
+          "ece_5bin": 0.09375,
+          "log_loss": 0.7110417344857379,
+          "max_calibration_error_5bin": 0.09375,
+          "sample_size": 50
+        },
+        "delta_brier_challenger_minus_constant": -0.02912290004803128,
+        "delta_brier_challenger_minus_raw": -0.0158595077485843,
+        "delta_log_loss_challenger_minus_constant": -0.061607854346655055,
+        "delta_log_loss_challenger_minus_raw": -0.03443241452844237,
+        "gate_passed": true,
+        "raw_expected_poisson_reference": {
+          "brier_score": 0.24552567020055302,
+          "ece_5bin": 0.14688715773970237,
+          "log_loss": 0.6838662946675252,
+          "max_calibration_error_5bin": 0.36333322807524443,
+          "sample_size": 50
+        }
+      }
+    },
+    "HOME": {
+      "binding": {
+        "api_football_bet_id": 221,
+        "api_football_bet_name": "Shots. Home Total"
+      },
+      "line": 15.5,
+      "prospective_eligible": true,
+      "status": "FROZEN_FOR_NEW_PROSPECTIVE_VALIDATION",
+      "validation": {
+        "challenger": {
+          "brier_score": 0.20627431215564018,
+          "ece_5bin": 0.08395346314322322,
+          "log_loss": 0.5970673454474396,
+          "max_calibration_error_5bin": 0.1806409442564394,
+          "sample_size": 50
+        },
+        "constant_train_base_rate": {
+          "brier_score": 0.2441326530612246,
+          "ece_5bin": 0.06428571428571433,
+          "log_loss": 0.6813946465292636,
+          "max_calibration_error_5bin": 0.06428571428571433,
+          "sample_size": 50
+        },
+        "delta_brier_challenger_minus_constant": -0.03785834090558443,
+        "delta_brier_challenger_minus_raw": -0.021952549531580823,
+        "delta_log_loss_challenger_minus_constant": -0.08432730108182407,
+        "delta_log_loss_challenger_minus_raw": -0.047571826270468076,
+        "gate_passed": true,
+        "raw_expected_poisson_reference": {
+          "brier_score": 0.228226861687221,
+          "ece_5bin": 0.15166164644949173,
+          "log_loss": 0.6446391717179076,
+          "max_calibration_error_5bin": 0.3828634067361798,
+          "sample_size": 50
+        }
+      }
+    }
+  },
+  "real_money": "BLOCKED",
+  "schema": "MATRIX_TEAM_TOTAL_SHOTS_SIDE_MODELS_SUMMARY_V1",
+  "selection_policy": "TEMPORAL_INTERNAL_FOLDS_ON_TRAIN_ONLY; FINAL_50_UNTOUCHED_UNTIL_FINAL_EVALUATION",
+  "source_dataset_sha256": "39878bf7bd8b65de3305090d8f5b1b49eef5ca702008d5a7013906987d61eeb1"
+}

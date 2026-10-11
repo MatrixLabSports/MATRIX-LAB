@@ -1,0 +1,81 @@
+{
+  "schema": "MATRIX_SETTLEMENT_PROGRESS_SNAPSHOT_V1",
+  "target_date_bogota": "2026-10-06",
+  "observed_at_utc": "2026-10-08T13:10:18Z",
+  "observed_branch": "repair/cor09-world-pipeline",
+  "observed_head_before_snapshot": "8374e55ea5c200954ade5dcb800a4a06b7da3ea9",
+  "source_candidates": {
+    "path": "evidence/daily_selection/MATRIX_CALIBRATION_CANDIDATES_20261006_BOGOTA.json",
+    "git_blob_sha": "52e897007840f5bed1a8999edad8ee594fefc767",
+    "football_candidates": 116,
+    "tennis_unique_candidates": 11
+  },
+  "football_v2": {
+    "market": "1X2",
+    "ledger_path": "evidence/api_football/calibration_v2/lanes/1x2/ledger.jsonl",
+    "ledger_blob_sha": "6d227263e03390311cc4665028dddd78424dd240",
+    "state_path": "evidence/api_football/calibration_v2/lanes/1x2/state.json",
+    "state_blob_sha": "eddafce3fae46157e7ff626bb02e8adbbfc84605",
+    "freeze_observation_count": 974,
+    "settlement_count": 343,
+    "pending_settlement_count": 631,
+    "new_settlements_since_previous_review": 3,
+    "new_global_final_fixture_ids": [
+      "1534867",
+      "1534869",
+      "1611773"
+    ],
+    "new_global_finals_in_target_cohort": 0,
+    "cohort_20261006_standard_final": 107,
+    "cohort_20261006_pending_or_nonstandard": 9,
+    "cohort_unsettled_fixture_ids": [
+      "1588817",
+      "1588821",
+      "1588845",
+      "1588863",
+      "1588890",
+      "1588893",
+      "1619499",
+      "1644168",
+      "1596466"
+    ],
+    "global_blocked_nonstandard_count": 32,
+    "source_supervisor": "evidence/api_football/prospective_supervisor/last_run.json",
+    "metrics_opened": false,
+    "parameter_tuning_allowed": false,
+    "real_money": "BLOCKED"
+  },
+  "tennis": {
+    "ledger_path": "evidence/cor0203/settlement/MATRIX_COR0203_SETTLEMENT_LEDGER.jsonl",
+    "ledger_blob_sha": "7677422ef76cca6ef9a4af424ba4ef46841a2c5d",
+    "ledger_records": 160,
+    "unique_settlement_ids": 160,
+    "new_global_finished_since_previous_review": 3,
+    "new_global_finished_event_ids": [
+      "COR0203-RAPIDAPI-TENNIS-1624-7547f9c3780c",
+      "COR0203-RAPIDAPI-TENNIS-1346-eedb2cbd4c81",
+      "COR0203-RAPIDAPI-TENNIS-1373-fb602352da5a"
+    ],
+    "new_global_finished_in_target_cohort": 0,
+    "cohort_20261006_finished": 10,
+    "cohort_20261006_pending_or_nonstandard": 1,
+    "cohort_unsettled_event_id": "COR0203-SOFASCORE-3e334e1ea5e9bca56dc55ad3d88461b1d850a3b7c8db8e0e36d1c8daaccbbd79",
+    "source_uniqueness": "evidence/cor0203/runtime/MATRIX_COR0203_SETTLEMENT_UNIQUENESS_LAST.json",
+    "source_uniqueness_blob_sha": "f35f341f8e6a1ba2a5b5177c5b8972cdc43c4f6e",
+    "settlement_uniqueness": "PASS",
+    "settled_unique_canonical_events": 107,
+    "unsettled_unique_canonical_events": 18,
+    "nonstandard_retired_blocked": 5,
+    "metrics": "SEALED_UNTIL_600",
+    "metrics_opened": false,
+    "outcomes_used_for_metrics": 0,
+    "real_money": "BLOCKED"
+  },
+  "protections": {
+    "metrics_opened": false,
+    "tuning": false,
+    "odds_to_probability": false,
+    "real_money": "BLOCKED"
+  },
+  "note": "Physical read-only cross-match of exact-day candidate IDs against governed settled ledgers. The 3 new football and 3 new tennis global settlements were already present in the repository's governed ledgers; no additional results were invented or inserted, no metrics opened, no tuning performed."
+}

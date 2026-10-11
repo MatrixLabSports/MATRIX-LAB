@@ -1,0 +1,37 @@
+name: Auxiliary PIT Feature Sources Governance
+
+on:
+  push:
+    branches:
+      - repair/cor09-world-pipeline
+    paths:
+      - .github/workflows/auxiliary-pit-feature-sources-governance.yml
+      - docs/providers/MATRIX_AUXILIARY_PIT_FEATURE_SOURCES_V1.json
+      - docs/providers/MATRIX_DISCOVERY_SOURCE_PORTFOLIO_V1.md
+      - evidence/governance/MATRIX_AUXILIARY_SOURCE_BROWSER_VERIFICATION_20261004.json
+      - tests/test_auxiliary_pit_feature_sources.py
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout operational branch
+        uses: actions/checkout@v4
+        with:
+          ref: repair/cor09-world-pipeline
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install pytest
+        run: python -m pip install pytest
+
+      - name: Verify SofaScore and Flashscore PIT governance
+        run: python -m pytest -q tests/test_auxiliary_pit_feature_sources.py

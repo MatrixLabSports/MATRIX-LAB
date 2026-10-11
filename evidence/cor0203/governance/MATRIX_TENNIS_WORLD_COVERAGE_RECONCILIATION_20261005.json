@@ -1,0 +1,85 @@
+{
+  "schema": "MATRIX_TENNIS_WORLD_COVERAGE_RECONCILIATION_20261005_V1",
+  "target_date_bogota": "2026-10-05",
+  "canonical_timezone": "America/Bogota",
+  "status": "RAPIDAPI_PRIMARY_WORLD_TOTAL_SUPERSEDED_AS_INCOMPLETE",
+  "prior_physical_state": {
+    "rapidapi_registered_matches": 42,
+    "rapidapi_families": {
+      "ATP": 42,
+      "WTA": 0,
+      "ITF": 0
+    },
+    "api_tennis_registered_matches": 60,
+    "api_tennis_summary_groups": {
+      "ATP Tokyo singles": 1,
+      "ATP Tokyo doubles": 1,
+      "Challenger Men Antofagasta singles": 10,
+      "Challenger Men Braga singles": 11,
+      "Challenger Men Palermo singles": 10,
+      "Challenger Men Villena singles": 10,
+      "Challenger Men Wuning 3 doubles": 8,
+      "Challenger Women Suzhou doubles": 8,
+      "WTA Beijing singles": 1
+    },
+    "neutral_exact_overlap_count": 0,
+    "audit_interpretation": "ZERO_OVERLAP_NOT_USABLE_AS_REAL_RECONCILIATION_GIVEN_SHARED_TOURNAMENT_COUNTS"
+  },
+  "flashscore_direct_observation": {
+    "source": "Flashscore.mobi Tomorrow All Games",
+    "raw_default_site_timezone_match_count": 82,
+    "category_counts": {
+      "ATP Tokyo singles": 1,
+      "WTA Beijing singles": 8,
+      "ATP Tokyo doubles": 1,
+      "WTA Beijing doubles": 9,
+      "Challenger Men Antofagasta singles": 10,
+      "Challenger Men Braga singles": 11,
+      "Challenger Men Palermo singles": 10,
+      "Challenger Men Villena singles": 10,
+      "Challenger Men Wuning 3 singles": 4,
+      "Challenger Men Wuning 3 qualification": 4,
+      "Challenger Women Suzhou singles": 12,
+      "Challenger Women Suzhou qualification": 2
+    },
+    "user_observed_flashscore_colombia_count": 78,
+    "timezone_boundary_note": "The four Wuning 3 qualification fixtures are on the preceding Bogota calendar day under the localized view; raw mobile tomorrow page uses a different display timezone. User-observed localized Flashscore count is therefore 78."
+  },
+  "rapidapi_missing_vs_flashscore_localized": {
+    "missing_count": 36,
+    "groups": {
+      "WTA Beijing singles": 8,
+      "ATP Tokyo doubles": 1,
+      "WTA Beijing doubles": 9,
+      "Challenger Men Wuning 3 singles": 4,
+      "Challenger Women Suzhou singles": 12,
+      "Challenger Women Suzhou qualification": 2
+    }
+  },
+  "matrix_impact": {
+    "previous_domain_candidates_from_rapidapi": 10,
+    "confirmed_additional_domain_events_visible_in_flashscore": [
+      "Sergey Fomin vs Timofei Derepasko",
+      "Semen Pankin vs Marat Sharipov",
+      "Beibit Zhukayev vs Yaroslav Demin",
+      "Luca Castelnuovo vs Akira Santillan"
+    ],
+    "minimum_known_domain_candidates": 14,
+    "final_domain_count_status": "NOT_CLOSED_UNTIL_PROVIDER_TIME_AND_IDENTITY_RECONCILIATION",
+    "note": "Do not freeze or count additional observations from Flashscore alone; use it as coverage discovery, then resolve through governed PIT/identity/history sources before model feed."
+  },
+  "root_causes": [
+    "RAPIDAPI_TENNIS_WORLD_INVENTORY_COMPLETENESS_FLAG_DOES_NOT_GUARANTEE_ALL_TOURS_OR_FORMATS",
+    "API_TENNIS_SECONDARY_COVERAGE_IS_NOT_A_CANONICAL_BOGOTA_DAY_TOTAL",
+    "CROSS_PROVIDER_NEUTRAL_RECONCILIATION_FAILED_TO_LINK_SHARED_TOURNAMENT_BLOCKS",
+    "WORLD_DISCOVERY_NEEDS_THIRD_SOURCE_COVERAGE_AUDIT_AND_TIMEZONE_NORMALIZATION"
+  ],
+  "governance": {
+    "rapidapi_42_as_world_total": "INVALIDATED",
+    "api_tennis_60_as_world_total": "NOT_AUTHORIZED",
+    "flashscore_78_as_current_localized_visible_count": "SUPPORTED_BY_USER_OBSERVATION_AND_DIRECT_CATEGORY_REVIEW",
+    "metrics_opened": false,
+    "odds_used_for_p_matrix": false,
+    "real_money": "BLOCKED"
+  }
+}

@@ -1,0 +1,87 @@
+{
+  "adjudicated_at_utc": "2026-10-07T04:06:40+00:00",
+  "downstream_policy": {
+    "bet_no_bet_is_separate_from_probability_generation": true,
+    "break_even_required": true,
+    "ev_required": true,
+    "minimum_decimal_odds_exclusive": 1.5,
+    "physical_bookmaker_odds_required": true
+  },
+  "engine_executable_for_p_matrix": true,
+  "engine_id": "calibrated_log_pool_v1_over_2_5",
+  "evidence_gates": {
+    "final_holdout_357": {
+      "challenger_brier": 0.24452925114130833,
+      "challenger_log_loss": 0.6821533519226923,
+      "holdout_seal_sha256": "b9a84e388c0cf2eec0b74705d04a0a8ba7321867754257bc5465ba436543eccf",
+      "passed": true,
+      "poisson_brier": 0.24702601886198647,
+      "poisson_log_loss": 0.6889960982231681
+    },
+    "global_strength": {
+      "n": 1013,
+      "paired_brier_ci95": [
+        -0.005715964826475769,
+        -0.0007340275449695625
+      ],
+      "paired_log_loss_ci95": [
+        -0.013746596828290915,
+        -0.00237705246183672
+      ],
+      "passed": true,
+      "strength_class": "STRONG"
+    },
+    "physical_uniqueness": {
+      "duplicate_fixture_id_groups": 0,
+      "freeze_rows": 1253,
+      "passed": true,
+      "unique_fixture_ids": 1253
+    },
+    "prospective_checkpoint_200": {
+      "delta_brier": -0.0015790675679474564,
+      "delta_log_loss": -0.0038484472875333076,
+      "passed": true,
+      "sample_size": 200
+    },
+    "source_cycle_freeze_binding": {
+      "blocked_without_valid_freeze": 6,
+      "canonical_ready_inputs": 138,
+      "governed_p_matrix_rows": 132,
+      "passed": true
+    }
+  },
+  "frozen_parameters": {
+    "a": 0.6,
+    "b": 0.0,
+    "c": 0.4
+  },
+  "generated_p_matrix_bundle_sha256": "05010eec10b1ee762ec1cfa0a15af77c66c5a3fb83cab755f1adb78876ee4bdc",
+  "governed_p_matrix_engine_available": true,
+  "legacy_sport_wide_engine_gate": {
+    "note": "This market-scoped promotion does not promote 1X2, BTTS, automatic wagering, or real-money execution and does not claim the external audit is closed.",
+    "scope": "SPORT_WIDE_OR_REAL_MONEY",
+    "superseded": false
+  },
+  "market": "OVER_2_5",
+  "other_markets": {
+    "1X2": "NOT_PROMOTED_BY_THIS_GATE",
+    "BTTS": "NO_GO"
+  },
+  "parameter_refit_performed": false,
+  "parameter_search_performed": false,
+  "parameter_sha256": "719341a1bdae894a93934f226244f42fe25a2c46277aead13022245ed2bd3616",
+  "promotion_scope": "MARKET_SCOPED_SIGNAL_GENERATION_NOT_REAL_MONEY",
+  "promotion_status": "PASS_PROMOTED_GOVERNED_P_MATRIX_SIGNAL_ONLY",
+  "protections": {
+    "automatic_wagering": false,
+    "external_audit_closed": false,
+    "missing_not_zero": true,
+    "no_backfill": true,
+    "odds_to_p_matrix": false,
+    "parameter_tuning": false,
+    "real_money": "BLOCKED",
+    "silent_imputation": false,
+    "target_outcomes_used_to_generate_probability": false
+  },
+  "schema": "MATRIX_FOOTBALL_OVER25_P_MATRIX_MARKET_PROMOTION_V1"
+}

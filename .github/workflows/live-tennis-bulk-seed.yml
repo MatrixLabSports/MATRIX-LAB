@@ -1,0 +1,152 @@
+# MATRIX_PHYSICAL_TRIGGER 2026-10-09T11:35Z continuity-fallback-live
+name: MATRIX Live Tennis Bulk Seed
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "11 */2 * * *"
+  workflow_run:
+    workflows:
+      - "COR02-03 repo-native hourly scheduler"
+    types:
+      - completed
+  push:
+    branches:
+      - main
+      - repair/cor09-world-pipeline
+    paths:
+      - .github/workflows/live-tennis-bulk-seed.yml
+      - tools/live_tennis_bulk_collector.py
+      - tests/test_live_tennis_bulk_collector_quota_guard.py
+
+permissions:
+  contents: write
+
+concurrency:
+  group: live-tennis-bulk-seed
+  cancel-in-progress: false
+
+jobs:
+  collect:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: repair/cor09-world-pipeline
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: python -m pip install requests pytest
+      - name: Verify quota reserve guard
+        run: PYTHONPATH=. python -m pytest -q tests/test_live_tennis_bulk_collector_quota_guard.py
+
+      - name: Resolve Bogota date
+        id: date
+        run: echo "d=$(TZ=America/Bogota date +%F)" >> "$GITHUB_OUTPUT"
+
+      - name: Guard quota by physical freshness
+        id: freshness
+        shell: bash
+        run: |
+          python - <<'PY' >> "$GITHUB_OUTPUT"
+          import json, os
+          from datetime import datetime, timezone
+          from pathlib import Path
+          if os.environ.get("GITHUB_EVENT_NAME") == "workflow_dispatch":
+              print("run_capture=true")
+              print("reason=MANUAL_DISPATCH")
+              raise SystemExit
+          p=Path(f"evidence/live_tennis_lab/{os.popen('TZ=America/Bogota date +%F').read().strip()}/MATRIX_LIVE_TENNIS_STATE_LEDGER_V0_1.json")
+          if not p.exists():
+              print("run_capture=true")
+              print("reason=NO_DAILY_LEDGER")
+              raise SystemExit
+          j=json.loads(p.read_text())
+          ts=datetime.fromisoformat(j["generated_at_utc"].replace("Z","+00:00"))
+          age=(datetime.now(timezone.utc)-ts).total_seconds()
+          run=age >= 6000
+          print(f"run_capture={'true' if run else 'false'}")
+          print(f"reason={'STALE_GE_100_MIN' if run else 'FRESH_LT_100_MIN'}")
+          print(f"age_seconds={int(age)}")
+          PY
+
+      - name: Capture six world live snapshots
+        if: steps.freshness.outputs.run_capture == 'true'
+        env:
+          LIVE_TENNIS_API_KEY: ${{ secrets.LIVETENNISAPI_KEY }}
+        run: python -m tools.live_tennis_bulk_collector --date "${{ steps.date.outputs.d }}" --cycles 6 --interval-seconds 20 --reserve-calls 20
+      - name: Validate append-only live-state ledger or controlled quota reserve
+        if: steps.freshness.outputs.run_capture == 'true'
+        env:
+          TARGET_DATE: ${{ steps.date.outputs.d }}
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          import os
+          root=Path(f"evidence/live_tennis_lab/{os.environ['TARGET_DATE']}")
+          q=root/"MATRIX_LIVE_TENNIS_QUOTA_GUARD_LAST.json"
+          assert q.exists()
+          guard=json.loads(q.read_text())
+          assert guard["protections"]["reserve_not_bypassed"] is True
+          assert guard["protections"]["real_money"]=="BLOCKED"
+          if guard["status"]=="BLOCKED_BY_RESERVE":
+              assert guard["capture_performed"] is False
+              assert guard["executed_cycles"]==0
+              assert guard["remaining_before_run"]<=guard["reserve_calls"]
+              print(json.dumps({
+                "status":"PASS_QUOTA_RESERVE_BLOCKED",
+                "remaining_before_run":guard["remaining_before_run"],
+                "reserve_calls":guard["reserve_calls"],
+                "real_money":"BLOCKED"
+              },sort_keys=True))
+              raise SystemExit
+          assert guard["status"]=="CAPTURE_ALLOWED"
+          p=root/"MATRIX_LIVE_TENNIS_STATE_LEDGER_V0_1.json"
+          j=json.loads(p.read_text())
+          assert j["model_status"]=="RESEARCH_ONLY"
+          assert j["observation_unit"]=="UNIQUE_MATCH_SEQUENCE_STATE"
+          assert j["quota_guard"]["executed_cycles"]>=1
+          assert j["quota_guard"]["reserve_not_bypassed"] is True
+          assert j["unique_state_count"]>=1
+          keys=[x["state_key"] for x in j["states"]]
+          assert len(keys)==len(set(keys))
+          labeled=[x for x in j["states"] if x.get("label_opened") is True]
+          pending=[x for x in j["states"] if x.get("label_opened") is not True]
+          assert all(x.get("settlement_status")=="FINAL_STANDARD" and x.get("p1_match_win") in {0,1} for x in labeled)
+          assert all(x.get("p1_match_win") is None and x.get("settlement_status")=="PENDING_FINAL" for x in pending)
+          assert j["protections"]["outcomes_read_during_live_capture"]==0
+          assert j["protections"]["real_money"]=="BLOCKED"
+          print(json.dumps({
+            "status":"PASS_CAPTURE",
+            "matches":j["unique_match_count"],
+            "states":j["unique_state_count"],
+            "new_states":j["new_states_this_run"],
+            "cycles":j["quota_guard"]["executed_cycles"]
+          },sort_keys=True))
+          PY
+      - name: Persist bulk live seed or quota guard
+        if: steps.freshness.outputs.run_capture == 'true'
+        run: |
+          set -euo pipefail
+          git config user.name "matrix-live-tennis-bulk"
+          git config user.email "matrix-live-tennis-bulk@users.noreply.github.com"
+          D="evidence/live_tennis_lab/${{ steps.date.outputs.d }}"
+          git add "$D/MATRIX_LIVE_TENNIS_QUOTA_GUARD_LAST.json"
+          if [ -f "$D/MATRIX_LIVE_TENNIS_STATE_LEDGER_V0_1.json" ]; then
+            git add "$D/MATRIX_LIVE_TENNIS_STATE_LEDGER_V0_1.json"
+          fi
+          if ! git diff --quiet; then
+            echo "UNEXPECTED_TRACKED_UNSTAGED_CHANGES"
+            git status --short
+            exit 1
+          fi
+          if git diff --cached --quiet; then
+            echo "NO_LIVE_STATE_OR_QUOTA_GUARD_CHANGE"
+            exit 0
+          fi
+          git commit -m "evidence(live): persist bulk live tennis state or quota guard"
+          git pull --rebase origin repair/cor09-world-pipeline
+          git push origin HEAD:repair/cor09-world-pipeline

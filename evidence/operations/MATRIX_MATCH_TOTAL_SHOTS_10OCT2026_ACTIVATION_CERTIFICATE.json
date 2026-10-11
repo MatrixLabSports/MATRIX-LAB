@@ -1,0 +1,127 @@
+{
+  "schema": "MATRIX_MATCH_TOTAL_SHOTS_10OCT2026_ACTIVATION_CERTIFICATE_V1",
+  "certified_at_utc": "2026-10-10T04:42:11+00:00",
+  "target_date_bogota": "2026-10-10",
+  "market_lane": "MATCH_TOTAL_SHOTS",
+  "bookmaker_market_name_es": "Remates totales del partido",
+  "physical_market_existence_evidence": {
+    "source": "user_supplied_bookmaker_screenshot",
+    "evidence_path": "evidence/football_market_discovery/2026-10-09/MATRIX_MATCH_TOTAL_SHOTS_PHYSICAL_MARKET_EVIDENCE_PUEBLA_LEON_TIGRES_TOLUCA.json",
+    "screenshot_sha256": "1926ac29dbc479859fe4ed74080ba2fc4968ccc86a31e47a4cdedd618884b8c0",
+    "observed_exact_lines": [
+      24.5,
+      25.5
+    ],
+    "status": "PHYSICALLY_CONFIRMED_MARKET_EXISTS"
+  },
+  "canonical_provider_binding": {
+    "provider": "API-Football",
+    "endpoint": "/odds/bets",
+    "bet_id": 211,
+    "bet_name": "Total Shots",
+    "raw_catalog_sha256": "cb279ed0b0ee2b02cccdf0ec807ce4ed15965b9005a16ceecfbb2dbbde3563ba",
+    "status": "PASS_EXACT_BINDING"
+  },
+  "exact_day_inventory": {
+    "provider_offer_rows": 1019,
+    "fixtures_with_market": 88,
+    "fixtures_with_executable_policy_house": 82,
+    "blocked_no_executable_policy_house": 6,
+    "preregistered_pending_next_batch": 78,
+    "research_frozen_now": 4,
+    "executable_policy_houses": [
+      "Betano",
+      "BetPlay",
+      "RushBet"
+    ]
+  },
+  "research_model": {
+    "schema": "MATRIX_MATCH_TOTAL_SHOTS_RESEARCH_MODEL_V2",
+    "source_dataset_sha256": "39878bf7bd8b65de3305090d8f5b1b49eef5ca702008d5a7013906987d61eeb1",
+    "fit_count": 180,
+    "internal_calibration_count": 44,
+    "untouched_validation_count": 50,
+    "model_parameters_sha256": "6ba826a78600bcdc2451face3412228189ce7682b18ebf26ef1807c6b46b78cb",
+    "validation": {
+      "challenger_brier": 0.23229993887478992,
+      "reference_brier": 0.24811850747649283,
+      "challenger_log_loss": 0.6578471917059904,
+      "reference_log_loss": 0.6882259423519955,
+      "challenger_ece_5bin": 0.10371786469802856,
+      "ece_gate_max": 0.1,
+      "challenger_max_calibration_error_5bin": 0.11826852585890213,
+      "max_calibration_error_gate_max": 0.2
+    },
+    "historical_oos_gate_passed": false,
+    "fail_reason": "ECE_5BIN_0.1037178647_EXCEEDS_0.10",
+    "governance": "RESEARCH_FREEZE_ALLOWED; SIGNAL/PAPER_BANKROLL FOR THIS MARKET FORBIDDEN UNTIL PROSPECTIVE GATE"
+  },
+  "first_research_freeze_batch": [
+    {
+      "fixture_id": "1584426",
+      "match": "Gençlerbirliği S.K. vs Amed",
+      "line": 34.5,
+      "bookmaker": "Betano",
+      "over_odds": 10.5,
+      "p_research_over": 0.06837481564979118,
+      "research_ev_over": -0.2820644356771925
+    },
+    {
+      "fixture_id": "1557417",
+      "match": "Arsenal vs Leeds",
+      "line": 28.5,
+      "bookmaker": "Betano",
+      "over_odds": 2.37,
+      "p_research_over": 0.4098400132088203,
+      "research_ev_over": -0.028679168695095902
+    },
+    {
+      "fixture_id": "1563181",
+      "match": "Charlton vs Bristol City",
+      "line": 33.5,
+      "bookmaker": "Betano",
+      "over_odds": 8.75,
+      "p_research_over": 0.08660217360804011,
+      "research_ev_over": -0.242230980929649
+    },
+    {
+      "fixture_id": "1563187",
+      "match": "Swansea vs Norwich",
+      "line": 18.5,
+      "bookmaker": "Betano",
+      "over_odds": 1.1,
+      "p_research_over": 0.9873091283950933,
+      "research_ev_over": 0.08604004123460274
+    }
+  ],
+  "prospective_gate": {
+    "unit": "FINAL_STANDARD_WITH_FROZEN_PREMATCH_RESEARCH_PROBABILITY_AND_EXACT_LINE",
+    "threshold_sequence": [
+      30,
+      50,
+      100,
+      200
+    ],
+    "current_final_observations": 0,
+    "research_freezes": 4,
+    "metrics_status": "SEALED_UNTIL_30_FINAL_STANDARD"
+  },
+  "physical_run": {
+    "workflow": "API-Football MATCH_TOTAL_SHOTS exact-day lab",
+    "run_id": 38024958443,
+    "conclusion": "success",
+    "manifest_path": "evidence/api_football/match_total_shots_lab/2026-10-10/runs/20261010T044201Z/manifest.json",
+    "manifest_sha256": "80b211253ff21d3485f100be3c1370056ca39502322a97a5aea5abba0bdb1a8b",
+    "evidence_commit": "41280a88236384cc3b744dd424adf4a767be9396"
+  },
+  "protections": {
+    "exact_line_required": true,
+    "no_line_substitution": true,
+    "odds_used_to_generate_probability": false,
+    "missing_not_zero": true,
+    "telegram_signal_authorized": false,
+    "paper_bankroll_authorized": false,
+    "automatic_wagering": false,
+    "real_money": "BLOCKED"
+  }
+}

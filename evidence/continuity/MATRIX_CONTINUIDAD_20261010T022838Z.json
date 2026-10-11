@@ -1,0 +1,112 @@
+{
+  "schema": "MATRIX_CONTINUIDAD_HOURLY_AUDIT_V1",
+  "observed_at_utc": "2026-10-10T02:28:38Z",
+  "observed_at_bogota": "2026-10-09T21:28:38-05:00",
+  "branch": "repair/cor09-world-pipeline",
+  "actions": [
+    {
+      "system": "Tennis Live bulk",
+      "result": "PASS",
+      "source_ledger": "evidence/live_tennis_lab/2026-10-09/MATRIX_LIVE_TENNIS_STATE_LEDGER_V0_1.json",
+      "source_blob_sha": "135b5425a4c06621a1c66ad6d6b7216858ec3f75",
+      "generated_at_utc": "2026-10-10T02:26:37+00:00",
+      "unique_matches_today": 23,
+      "unique_states_today": 66,
+      "new_states_in_last_capture": 13
+    },
+    {
+      "system": "Tennis Live FINAL-only",
+      "result": "PASS",
+      "source_commit": "3021692f432f2774b227e119e16a3453af91c5d7",
+      "settlement_generated_at_utc": "2026-10-10T02:27:04+00:00",
+      "new_final_match_ids": [
+        201667,
+        201817,
+        201819,
+        201821
+      ]
+    },
+    {
+      "system": "Tennis Live cumulative reconciliation",
+      "result": "PASS",
+      "run_id": 38002975224,
+      "run_attempt": 2,
+      "run_conclusion": "success",
+      "completed_at_utc": "2026-10-10T02:28:38Z",
+      "previous_quality_final_count": 43,
+      "new_quality_final_count": 48,
+      "itf_women_hard_previous": 17,
+      "itf_women_hard_new": 18,
+      "itf_women_hard_gate_target": 30,
+      "metrics_status": "SEALED",
+      "model_status": "RESEARCH_ONLY"
+    },
+    {
+      "system": "ATP Shanghai derived index",
+      "result": "BLOCKED",
+      "reason": "GITHUB_UPDATE_FILE_SAFETY_CHECK_BLOCKED",
+      "source_matches": 3,
+      "source_states": 12,
+      "final": 3,
+      "pending": 0,
+      "derived_content_validation": "PASS",
+      "source_sha_in_published_index": "ec59a8362c407c348f10acdc406f8aefd56e9355",
+      "latest_source_sha": "135b5425a4c06621a1c66ad6d6b7216858ec3f75",
+      "source_content_changed_for_shanghai": false
+    },
+    {
+      "system": "Tennis Hard COR02/COR03",
+      "result": "PASS_NO_CHANGE",
+      "run_id": 38016875255,
+      "last_cycle_ended_at_utc": "2026-10-10T02:26:02Z",
+      "physical_frozen_rows": 240,
+      "unique_calibration_count": 130,
+      "new_freezes": 0
+    },
+    {
+      "system": "Football FINAL-only",
+      "result": "PASS",
+      "last_completed_at_utc": "2026-10-10T02:23:00+00:00",
+      "ledger_final_count": 1458,
+      "new_settlements": 11,
+      "settlement_final_only": true
+    },
+    {
+      "system": "Football daily",
+      "result": "PASS",
+      "run_id": 38015071865,
+      "conclusion": "success",
+      "completed_at_utc": "2026-10-10T01:58:00Z"
+    },
+    {
+      "system": "Telegram supervisor",
+      "result": "PASS_NO_CHANGE",
+      "last_run_at_utc": "2026-10-10T02:19:54+00:00",
+      "total_settlements": 18,
+      "signals_sent_last_run": 0
+    }
+  ],
+  "safety": {
+    "real_money": "BLOCKED",
+    "automatic_wagering": false,
+    "missing_is_not_zero": true,
+    "imputation": "FORBIDDEN",
+    "odds_to_probability": "FORBIDDEN",
+    "backfill": "FORBIDDEN",
+    "tuning": "FORBIDDEN",
+    "probability_status": "SEALED",
+    "metrics_status": "SEALED",
+    "new_bets": 0
+  },
+  "summary": {
+    "status": "PASS_PARTIAL",
+    "material_changes": [
+      "Tennis Live cumulative 43->48",
+      "ITF women hard 17->18"
+    ],
+    "material_blockers": [
+      "Shanghai index provenance update blocked"
+    ],
+    "no_new_bets": true
+  }
+}

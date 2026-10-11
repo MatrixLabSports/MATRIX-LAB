@@ -1,0 +1,56 @@
+import subprocess
+from pathlib import Path
+
+SCRIPT = Path("scripts/cor0203_production_cycle.sh")
+
+
+def _text() -> str:
+    return SCRIPT.read_text(encoding="utf-8-sig")
+
+
+def test_cycle_shell_is_syntactically_valid():
+    subprocess.run(["bash", "-n", str(SCRIPT)], check=True)
+
+
+def test_cycle_preserves_governed_ordering():
+    text = _text()
+    prereg = text.index("python -m tools.cor0203_preregister_discovery")
+    crosswalk = text.index("python -m tools.cor0203_build_identity_crosswalk")
+    stage = text.index("python -m tools.cor0203_stage_from_registry")
+    runner = text.index("python -m tools.cor0203_batch_runner")
+    assert prereg < crosswalk < stage < runner
+
+
+def test_cycle_keeps_holdout_sealed_and_persists_all_outputs():
+    text = _text()
+    assert 'assert payload.get("metrics") == "SEALED_UNTIL_600"' in text
+    assert 'assert payload.get("outcomes_read") == 0' in text
+    assert "MATRIX_COR0203_IDENTITY_CROSSWALK_R*.json" in text
+    assert "MATRIX_COR0203_HOLDOUT_BATCH_R*.json" in text
+    assert 'git rebase "origin/$TARGET_BRANCH"' in text
+
+
+def test_cycle_requires_explicit_supported_provider_and_never_auto_switches():
+    text = _text()
+    assert 'TENNIS_PROVIDER="${MATRIX_TENNIS_PROVIDER:-api_tennis}"' in text
+    assert "case \"$TENNIS_PROVIDER\" in" in text
+    assert "api_tennis)" in text
+    assert "rapidapi_tennis)" in text
+    assert "UNSUPPORTED_MATRIX_TENNIS_PROVIDER" in text
+    assert "automatic_provider_switch" not in text
+
+
+def test_rapidapi_discovery_uses_verified_ultra_four_day_horizon():
+    script = Path("scripts/cor0203_production_cycle.sh").read_text(encoding="utf-8")
+    block = script.split("rapidapi_tennis)",1)[1].split(";;",1)[0]
+    assert "--days 4" in block
+
+
+def test_cycle_runs_identity_restage_delta_before_staging():
+    script = Path("scripts/cor0203_production_cycle.sh").read_text(encoding="utf-8")
+    first_crosswalk = script.index("python -m tools.cor0203_build_identity_crosswalk")
+    delta = script.index("python -m tools.cor0203_identity_restage_delta")
+    second_crosswalk = script.index("python -m tools.cor0203_build_identity_crosswalk", first_crosswalk + 1)
+    stage = script.index("python -m tools.cor0203_stage_from_registry")
+    assert first_crosswalk < delta < second_crosswalk < stage
+    assert "MATRIX_COR0203_IDENTITY_RESTAGE_DELTA_LAST.json" in script

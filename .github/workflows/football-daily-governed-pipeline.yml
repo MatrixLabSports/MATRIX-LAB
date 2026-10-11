@@ -1,0 +1,188 @@
+# MATRIX_PHYSICAL_TRIGGER 2026-10-10T01:05Z user-requested-10oct-full-run
+name: MATRIX Football Daily Governed Pipeline
+
+on:
+  schedule:
+    # 00:10 Bogota: current operational day.
+    - cron: "10 5 * * *"
+    # 18:10 Bogota: prepare next operational day.
+    - cron: "10 23 * * *"
+  workflow_dispatch:
+    inputs:
+      target_date:
+        description: Optional Bogota date YYYY-MM-DD; blank resolves automatically.
+        required: false
+        default: ""
+        type: string
+  push:
+    branches:
+      - repair/cor09-world-pipeline
+      - main
+    paths:
+      - tools/football_daily_governed_over25.py
+      - tools/api_football_group_history_capture.py
+      - tools/api_football_team_last_fallback.py
+      - tools/api_football_market_shadow_p_matrix.py
+      - tests/test_api_football_group_history_capture.py
+      - tests/test_api_football_team_last_fallback.py
+      - tests/test_api_football_market_shadow_p_matrix.py
+      - tests/test_football_daily_governed_over25.py
+      - .github/workflows/football-daily-governed-pipeline.yml
+
+permissions:
+  contents: write
+
+concurrency:
+  group: matrix-football-daily-governed-pipeline
+  cancel-in-progress: false
+
+jobs:
+  daily:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    env:
+      MATRIX_MODE: SHADOW
+      REAL_MONEY: BLOCKED
+      AUTO_BETTING: DISABLED
+
+    steps:
+      - name: Checkout operational branch
+        uses: actions/checkout@v4
+        with:
+          ref: repair/cor09-world-pipeline
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install governed dependencies
+        run: python -m pip install requests pytest
+
+      - name: Run targeted history and P_MATRIX regression tests
+        run: |
+          PYTHONPATH=. python -m pytest -q             tests/test_api_football_group_history_capture.py             tests/test_api_football_team_last_fallback.py             tests/test_api_football_market_shadow_p_matrix.py             tests/test_football_daily_governed_over25.py
+
+      - name: Resolve Bogota target date automatically
+        id: date
+        shell: bash
+        run: |
+          set -euo pipefail
+          D="${{ github.event.inputs.target_date }}"
+          if [ -z "$D" ]; then
+            HOUR="$(TZ=America/Bogota date +%H)"
+            if [ "$HOUR" -ge 18 ]; then
+              D="$(TZ=America/Bogota date -d tomorrow +%F)"
+              MODE="NEXT_DAY_PREMATCH"
+            else
+              D="$(TZ=America/Bogota date +%F)"
+              MODE="CURRENT_DAY"
+            fi
+          else
+            MODE="EXPLICIT_TEST_OR_RECOVERY"
+          fi
+          echo "target_date=$D" >> "$GITHUB_OUTPUT"
+          echo "mode=$MODE" >> "$GITHUB_OUTPUT"
+          echo "TARGET_DATE_BOGOTA=$D"
+          echo "DATE_MODE=$MODE"
+
+      - name: Enforce safety gates
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$MATRIX_MODE" = "SHADOW"
+          test "$REAL_MONEY" = "BLOCKED"
+          test "$AUTO_BETTING" = "DISABLED"
+
+      - name: Run governed prospective daily cycle
+        env:
+          API_FOOTBALL_KEY: ${{ secrets.API_FOOTBALL_KEY }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          D="${{ steps.date.outputs.target_date }}"
+          python -m tools.api_football_prospective_daily_cycle --target-date "$D"
+
+      - name: Certify daily calibration eligibility
+        shell: bash
+        run: |
+          set -euo pipefail
+          D="${{ steps.date.outputs.target_date }}"
+          python - "$D" <<'PY'
+          import hashlib, json, sys
+          from pathlib import Path
+          d=sys.argv[1]
+          roots=sorted(p for p in Path(f"evidence/api_football/prospective_daily/{d}").glob("*") if p.is_dir())
+          if not roots:
+              raise SystemExit("NO_DAILY_CYCLE")
+          root=roots[-1]
+          s=json.loads((root/"cycle_summary.json").read_text(encoding="utf-8"))
+          assert s["status"]=="PASS"
+          assert s["target_date_bogota"]==d
+          out={
+            "schema":"MATRIX_FOOTBALL_DAILY_CALIBRATION_ELIGIBILITY_V2",
+            "target_date_bogota":d,
+            "cycle_id":s["cycle_id"],
+            "api_football_fixtures_received":int(s["fixture_capture"]["fixtures_received"]),
+            "eligible_future_fixtures":int(s["fixture_capture"]["eligible_future_fixtures"]),
+            "canonical_ready_input_count":int(s["canonical"]["ready_input_count"]),
+            "blocked_future_input_count":int(s["canonical"]["blocked_future_input_count"]),
+            "freeze_candidate_event_count":int(s["freeze"]["candidate_event_count"]),
+            "new_freeze_event_count":int(s["freeze"]["new_event_count"]),
+            "history_group_ready_count":int(s["history"]["group_ready_minimum_history_count"]),
+            "history_group_blocked_count":int(s["history"]["group_blocked_minimum_history_count"]),
+            "odds_used_to_generate_probability":False,
+            "outcomes_used_to_generate_probability":False,
+            "automatic_wagering":False,
+            "real_money":"BLOCKED",
+            "cycle_summary_sha256":hashlib.sha256((root/"cycle_summary.json").read_bytes()).hexdigest(),
+            "adjudication":"CALIBRABLE_EQUALS_FREEZE_CANDIDATE_EVENT_COUNT"
+          }
+          dest=Path(f"evidence/football_world_inventory/{d}/MATRIX_FOOTBALL_CALIBRATION_ELIGIBILITY.json")
+          dest.parent.mkdir(parents=True,exist_ok=True)
+          dest.write_text(json.dumps(out,ensure_ascii=False,indent=2,sort_keys=True)+"\n",encoding="utf-8")
+          print(json.dumps(out,ensure_ascii=False,sort_keys=True))
+          PY
+
+      - name: Build governed Over 2.5 probabilities, physical odds and EV
+        env:
+          API_FOOTBALL_KEY: ${{ secrets.API_FOOTBALL_KEY }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          D="${{ steps.date.outputs.target_date }}"
+          python -m tools.football_daily_governed_over25 --target-date "$D"
+
+      # Telegram is intentionally decoupled. The evidence commit below triggers
+      # telegram-green-signals.yml, which owns and persists its ledger atomically.
+
+      - name: Persist governed daily evidence
+        shell: bash
+        run: |
+          set -euo pipefail
+          D="${{ steps.date.outputs.target_date }}"
+          git config user.name "matrix-football-daily"
+          git config user.email "matrix-football-daily@users.noreply.github.com"
+          git add "evidence/api_football/prospective_daily/$D"
+          git add evidence/api_football/prospective_market_freeze
+          git add "evidence/api_football/daily_prematch_reports/$D"
+          git add "evidence/football_world_inventory/$D/MATRIX_FOOTBALL_CALIBRATION_ELIGIBILITY.json"
+          if git diff --cached --quiet; then
+            echo "NO_GOVERNED_DAILY_CHANGE"
+            exit 0
+          fi
+          git commit -m "evidence(football): persist autonomous daily governed cycle $D"
+          for attempt in 1 2 3 4; do
+            git fetch origin repair/cor09-world-pipeline
+            if ! git rebase origin/repair/cor09-world-pipeline; then
+              git rebase --abort || true
+              exit 1
+            fi
+            if git push origin HEAD:repair/cor09-world-pipeline; then
+              echo "PUSH_SUCCEEDED_ATTEMPT=$attempt"
+              exit 0
+            fi
+            sleep $((attempt*2))
+          done
+          exit 1

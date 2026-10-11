@@ -1,0 +1,675 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+TRIGGER_SHA=""
+TARGET_BRANCH="${MATRIX_TARGET_BRANCH:-repair/cor09-world-pipeline}"
+TENNIS_PROVIDER="${MATRIX_TENNIS_PROVIDER:-api_tennis}"
+export MATRIX_TENNIS_PROVIDER="$TENNIS_PROVIDER"
+
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --trigger-sha)
+      TRIGGER_SHA="${2:-}"
+      shift 2
+      ;;
+    --target-branch)
+      TARGET_BRANCH="${2:-}"
+      shift 2
+      ;;
+    *)
+      echo "UNKNOWN_ARGUMENT:$1" >&2
+      exit 2
+      ;;
+  esac
+done
+
+if [[ -z "$TRIGGER_SHA" ]]; then
+  echo "TRIGGER_SHA_REQUIRED" >&2
+  exit 2
+fi
+
+STATE="evidence/cor0203/runtime/MATRIX_COR0203_PRE2026_STATE_R706.json.gz.b64"
+BUNDLE="evidence/cor0203/runtime/MATRIX_COR0203_ELO_GLICKO_PROSPECTIVE_BUNDLE_R706.json"
+ANNUAL="evidence/cor0203/preholdout/2026_challenger_live_snapshot.csv"
+ONGOING="evidence/cor0203/preholdout/challenger_ongoing_tourneys_live_snapshot.csv"
+STATIC_CUT="evidence/cor0203/runtime/MATRIX_COR0203_STATIC_CUT_20260921.json"
+DISCOVERY="/tmp/MATRIX_COR0203_API_TENNIS_DISCOVERY.json"
+DURABLE_DISCOVERY_LAST="evidence/cor0203/runtime/MATRIX_COR0203_DURABLE_DISCOVERY_LAST.json"
+ACQUISITION_STORE="evidence/cor0203/acquisition/MATRIX_COR0203_ACQUISITION.sqlite3"
+SOURCE_READINESS_CURRENT="/tmp/MATRIX_COR0203_SOURCE_READINESS_CURRENT.json"
+PREREG_LAST="evidence/cor0203/runtime/MATRIX_COR0203_DISCOVERY_PREREG_LAST.json"
+CROSSWALK_LAST="evidence/cor0203/runtime/MATRIX_COR0203_IDENTITY_CROSSWALK_LAST.json"
+IDENTITY_RESTAGE_LAST="evidence/cor0203/runtime/MATRIX_COR0203_IDENTITY_RESTAGE_DELTA_LAST.json"
+IDENTITY_AUTHORITY_LAST="evidence/cor0203/identity/MATRIX_COR0203_IDENTITY_AUTHORITY_LAST.json"
+IDENTITY_AUTHORITY_AUDIT_LAST="evidence/cor0203/runtime/MATRIX_COR0203_IDENTITY_AUTHORITY_EXPANSION_LAST.json"
+IDENTITY_ALIAS_CERT="evidence/cor0203/identity/MATRIX_COR0203_CERTIFIED_IDENTITY_ALIASES_20261003.json"
+STAGE_LAST="evidence/cor0203/runtime/MATRIX_COR0203_AUTO_STAGE_LAST.json"
+RUNNER_LAST="evidence/cor0203/runtime/MATRIX_COR0203_BATCH_RUNNER_LAST.json"
+INTEGRITY_LAST="evidence/cor0203/runtime/MATRIX_COR0203_HOLDOUT_INTEGRITY_LAST.json"
+UNIQUENESS_LAST="evidence/cor0203/runtime/MATRIX_COR0203_PHYSICAL_UNIQUENESS_LAST.json"
+OBSERVABILITY_LAST="evidence/cor0203/runtime/MATRIX_COR0203_PRODUCTION_OBSERVABILITY_LAST.json"
+SETTLEMENT_QUEUE_LAST="evidence/cor0203/runtime/MATRIX_COR0203_SETTLEMENT_QUEUE_LAST.json"
+HISTORICAL_IDENTITY_LAST="evidence/cor0203/runtime/MATRIX_COR0203_HISTORICAL_IDENTITY_LAST.json"
+SETTLEMENT_SYNC_LAST="evidence/cor0203/runtime/MATRIX_COR0203_SETTLEMENT_SYNC_LAST.json"
+SETTLEMENT_UNIQUENESS_LAST="evidence/cor0203/runtime/MATRIX_COR0203_SETTLEMENT_UNIQUENESS_LAST.json"
+SETTLEMENT_ADJUDICATION_LAST="evidence/cor0203/runtime/MATRIX_COR0203_SETTLEMENT_ADJUDICATION_LAST.json"
+SETTLEMENT_ADJUDICATIONS="evidence/cor0203/adjudication/MATRIX_COR0203_SETTLEMENT_ADJUDICATIONS_20261001.json"
+SETTLEMENT_LEDGER="evidence/cor0203/settlement/MATRIX_COR0203_SETTLEMENT_LEDGER.jsonl"
+HEARTBEAT="evidence/cor0203/runtime/MATRIX_COR0203_SCHEDULER_HEARTBEAT.json"
+WORLD_DATE="${MATRIX_WORLD_DATE_BOGOTA:-$(TZ=America/Bogota date +%F)}"
+WORLD_INVENTORY_LAST="evidence/tennis/world_inventory/MATRIX_TENNIS_WORLD_INVENTORY_LAST.json"
+WORLD_INVENTORY_DAILY="evidence/tennis/world_inventory/${WORLD_DATE}/MATRIX_TENNIS_WORLD_INVENTORY.json"
+WORLD_BRIDGE_LAST="evidence/cor0203/runtime/MATRIX_COR0203_WORLD_INVENTORY_BRIDGE_LAST.json"
+WORLD_DERIVED_DISCOVERY_LAST="evidence/cor0203/runtime/MATRIX_COR0203_WORLD_DERIVED_DISCOVERY_LAST.json"
+WORLD_PREREG_LAST="evidence/cor0203/runtime/MATRIX_COR0203_WORLD_PREREG_LAST.json"
+WORLD_FUNNEL_LAST="evidence/cor0203/runtime/MATRIX_COR0203_WORLD_FUNNEL_LAST.json"
+API_TENNIS_DISCOVERY_CURRENT="/tmp/MATRIX_COR0203_API_TENNIS_SECONDARY_DISCOVERY.json"
+DUAL_RAPIDAPI_DISCOVERY="/tmp/MATRIX_COR0203_DUAL_RAPIDAPI_DISCOVERY.json"
+DUAL_API_TENNIS_DISCOVERY="/tmp/MATRIX_COR0203_DUAL_API_TENNIS_DISCOVERY.json"
+DUAL_RECONCILIATION_LAST="evidence/cor0203/runtime/MATRIX_COR0203_DUAL_PROVIDER_RECONCILIATION_LAST.json"
+DUAL_IDENTITY_ALIASES_LAST="evidence/cor0203/identity/MATRIX_COR0203_DUAL_PROVIDER_IDENTITY_ALIASES_LAST.json"
+API_TENNIS_RANK_BRIDGE_LAST="evidence/cor0203/runtime/MATRIX_COR0203_API_TENNIS_RAPIDAPI_CUT_IDENTITY_BRIDGE_LAST.json"
+API_TENNIS_RANK_HISTORY_RECOVERY_LAST="evidence/cor0203/runtime/MATRIX_COR0203_API_TENNIS_RANK_HISTORY_RECOVERY_LAST.json"
+API_TENNIS_CERTIFIED_AUTHORITY_RECOVERY_LAST="evidence/cor0203/runtime/MATRIX_COR0203_API_TENNIS_CERTIFIED_AUTHORITY_RECOVERY_LAST.json"
+API_TENNIS_RANK_BRIDGE_ALIASES="evidence/cor0203/identity/MATRIX_COR0203_API_TENNIS_RANK_BRIDGE_ALIASES_LAST.json"
+API_TENNIS_RANK_BRIDGE_AUTHORITY="/tmp/MATRIX_COR0203_IDENTITY_AUTHORITY_AFTER_API_TENNIS_BRIDGE.json"
+RAPIDAPI_PREREG_CURRENT="/tmp/MATRIX_COR0203_RAPIDAPI_PREREG_CURRENT.json"
+API_TENNIS_PREREG_CURRENT="/tmp/MATRIX_COR0203_API_TENNIS_PREREG_CURRENT.json"
+HORIZON_AUDIT_LAST="evidence/cor0203/runtime/MATRIX_COR0203_DUAL_8DAY_HORIZON_LAST.json"
+MILESTONES_LAST="evidence/cor0203/runtime/MATRIX_COR0203_MILESTONES_LAST.json"
+R706_TARGET_HISTORY_LAST="evidence/cor0203/runtime/MATRIX_COR0203_R706_TARGET_HISTORY_READINESS_LAST.json"
+RAPIDAPI_PRECUT_STATS_RICH_LAST="evidence/cor0203/rapidapi_stats_rich/MATRIX_COR0203_RAPIDAPI_PRECUT_STATS_RICH_PROBE_LAST.json"
+
+test -s "$STATE"
+test -s "$BUNDLE"
+test -s "$ANNUAL"
+test -s "$ONGOING"
+test "$(sha256sum "$STATE" | awk '{print $1}')" = "384b5537ad9715b552d26464db3d01980021a24e9f6d7e0fcc93ba154efde125"
+test "$(sha256sum "$BUNDLE" | awk '{print $1}')" = "ef5788fa4212c67880a52af85359bed1483ba1d59b1655e28390bbfaf0187ec8"
+test "$(sha256sum "$ANNUAL" | awk '{print $1}')" = "d3f0e7edca273d0e1fcd4700581cf00398e46719f0aaadb62a1c97ec0ffa6ab5"
+
+python -m tools.cor0203_build_static_cut_index \
+  --csv "$ONGOING" \
+  --cut 20260921 \
+  --out "$STATIC_CUT"
+
+case "$TENNIS_PROVIDER" in
+  api_tennis)
+    python -m tools.cor0203_durable_discovery \
+      --out "$DISCOVERY" \
+      --summary-out "$DURABLE_DISCOVERY_LAST" \
+      --store "$ACQUISITION_STORE" \
+      --days 2
+    ;;
+  rapidapi_tennis)
+    mkdir -p "$(dirname "$WORLD_INVENTORY_LAST")" "$(dirname "$WORLD_INVENTORY_DAILY")"
+    WORLD_INVENTORY_CURRENT="/tmp/MATRIX_TENNIS_WORLD_INVENTORY_CURRENT.json"
+    python -m tools.tennis_world_inventory_rapidapi \
+      --out "$WORLD_INVENTORY_CURRENT" \
+      --target-date-bogota "$WORLD_DATE"
+    python -m tools.tennis_world_inventory_accumulate \
+      --current "$WORLD_INVENTORY_CURRENT" \
+      --existing "$WORLD_INVENTORY_DAILY" \
+      --out "$WORLD_INVENTORY_LAST"
+    cp "$WORLD_INVENTORY_LAST" "$WORLD_INVENTORY_DAILY"
+
+    python -m tools.cor0203_world_inventory_discovery \
+      --world-inventory "$WORLD_INVENTORY_LAST" \
+      --out "$WORLD_DERIVED_DISCOVERY_LAST"
+
+    python -m tools.cor0203_rapidapi_durable_discovery \
+      --out "$DISCOVERY" \
+      --summary-out "$DURABLE_DISCOVERY_LAST" \
+      --store "$ACQUISITION_STORE" \
+      --days 4
+
+    python -m tools.cor0203_api_tennis_discovery \
+      --out "$API_TENNIS_DISCOVERY_CURRENT" \
+      --days 4
+
+    python -m tools.cor0203_eight_day_dual_discovery \
+      --rapid-current "$DISCOVERY" \
+      --api-current "$API_TENNIS_DISCOVERY_CURRENT" \
+      --rapid-out "$DISCOVERY" \
+      --api-out "$API_TENNIS_DISCOVERY_CURRENT" \
+      --audit-out "$HORIZON_AUDIT_LAST"
+
+    python -m tools.cor0203_r706_target_history_audit \
+      --world-discovery "$WORLD_DERIVED_DISCOVERY_LAST" \
+      --rapidapi-discovery "$DISCOVERY" \
+      --authority "$IDENTITY_AUTHORITY_LAST" \
+      --out "$R706_TARGET_HISTORY_LAST"
+
+    python -m tools.cor0203_rapidapi_stats_rich_history_probe \
+      --world-discovery "$WORLD_DERIVED_DISCOVERY_LAST" \
+      --rapidapi-discovery "$DISCOVERY" \
+      --authority "$IDENTITY_AUTHORITY_LAST" \
+      --out "$RAPIDAPI_PRECUT_STATS_RICH_LAST" \
+      --max-targets 32
+
+    python -m tools.cor0203_api_tennis_rank_bridge \
+      --discovery "$API_TENNIS_DISCOVERY_CURRENT" \
+      --history-csv "$ANNUAL" \
+      --authority "$IDENTITY_AUTHORITY_LAST" \
+      --base-aliases "$IDENTITY_ALIAS_CERT" \
+      --aliases-out "$API_TENNIS_RANK_BRIDGE_ALIASES" \
+      --authority-out "$API_TENNIS_RANK_BRIDGE_AUTHORITY" \
+      --audit-out "$API_TENNIS_RANK_BRIDGE_LAST" \
+      --max-profiles 24
+    python -m tools.cor0203_api_tennis_rank_history_recovery \
+      --bridge-audit "$API_TENNIS_RANK_BRIDGE_LAST" \
+      --aliases "$API_TENNIS_RANK_BRIDGE_ALIASES" \
+      --authority "$API_TENNIS_RANK_BRIDGE_AUTHORITY" \
+      --history-csv "$ANNUAL" \
+      --aliases-out "$API_TENNIS_RANK_BRIDGE_ALIASES" \
+      --authority-out "$API_TENNIS_RANK_BRIDGE_AUTHORITY" \
+      --audit-out "$API_TENNIS_RANK_HISTORY_RECOVERY_LAST" \
+      --max-recoveries 32
+
+    python -m tools.cor0203_api_tennis_certified_authority_recovery \
+      --discovery "$API_TENNIS_DISCOVERY_CURRENT" \
+      --authority "$API_TENNIS_RANK_BRIDGE_AUTHORITY" \
+      --aliases "$API_TENNIS_RANK_BRIDGE_ALIASES" \
+      --authority-out "$API_TENNIS_RANK_BRIDGE_AUTHORITY" \
+      --aliases-out "$API_TENNIS_RANK_BRIDGE_ALIASES" \
+      --audit-out "$API_TENNIS_CERTIFIED_AUTHORITY_RECOVERY_LAST"
+
+    # Every recovery must be visible to dual reconciliation. The previous
+    # ordering copied authority before rank-history recovery, which could
+    # leave certified aliases invisible to the current cycle.
+    cp "$API_TENNIS_RANK_BRIDGE_AUTHORITY" "$IDENTITY_AUTHORITY_LAST"
+
+    python -m tools.cor0203_dual_provider_reconcile \
+      --rapidapi "$DISCOVERY" \
+      --api-tennis "$API_TENNIS_DISCOVERY_CURRENT" \
+      --static-cut "$STATIC_CUT" \
+      --runtime-dir evidence/cor0203/runtime \
+      --certified-aliases "$API_TENNIS_RANK_BRIDGE_ALIASES" \
+      --identity-authority "$IDENTITY_AUTHORITY_LAST" \
+      --identity-alias-out "$DUAL_IDENTITY_ALIASES_LAST" \
+      --out-rapidapi "$DUAL_RAPIDAPI_DISCOVERY" \
+      --out-api-tennis "$DUAL_API_TENNIS_DISCOVERY" \
+      --audit-out "$DUAL_RECONCILIATION_LAST"
+    ;;
+  *)
+    echo "UNSUPPORTED_MATRIX_TENNIS_PROVIDER:$TENNIS_PROVIDER" >&2
+    exit 2
+    ;;
+esac
+
+python -m tools.cor0203_source_readiness \
+  --discovery "$DISCOVERY" \
+  --evidence-dir evidence/cor0203/source_readiness \
+  --summary-out "$SOURCE_READINESS_CURRENT"
+
+if [[ "$TENNIS_PROVIDER" == "rapidapi_tennis" && -f "$DUAL_RAPIDAPI_DISCOVERY" && -f "$DUAL_API_TENNIS_DISCOVERY" ]]; then
+  python -m tools.cor0203_preregister_discovery \
+    --discovery "$DUAL_RAPIDAPI_DISCOVERY" \
+    --result-out "$RAPIDAPI_PREREG_CURRENT"
+
+  python -m tools.cor0203_preregister_discovery \
+    --discovery "$DUAL_API_TENNIS_DISCOVERY" \
+    --result-out "$API_TENNIS_PREREG_CURRENT"
+
+  python -m tools.cor0203_merge_prereg_results \
+    --rapidapi "$RAPIDAPI_PREREG_CURRENT" \
+    --api-tennis "$API_TENNIS_PREREG_CURRENT" \
+    --out "$PREREG_LAST"
+else
+  python -m tools.cor0203_preregister_discovery \
+    --discovery "$DISCOVERY" \
+    --result-out "$PREREG_LAST"
+fi
+
+if [[ -f "$WORLD_DERIVED_DISCOVERY_LAST" ]]; then
+  python -m tools.cor0203_preregister_discovery \
+    --discovery "$WORLD_DERIVED_DISCOVERY_LAST" \
+    --result-out "$WORLD_PREREG_LAST"
+fi
+
+if [[ -f "$WORLD_INVENTORY_LAST" && -f "$WORLD_DERIVED_DISCOVERY_LAST" && -f "$WORLD_PREREG_LAST" ]]; then
+  python -m tools.cor0203_world_inventory_bridge \
+    --world-inventory "$WORLD_INVENTORY_LAST" \
+    --cor-discovery "$WORLD_DERIVED_DISCOVERY_LAST" \
+    --prereg "$WORLD_PREREG_LAST" \
+    --out "$WORLD_BRIDGE_LAST"
+fi
+
+python -m tools.cor0203_expand_identity_authority \
+  --runtime-dir evidence/cor0203/runtime \
+  --history-csv "$ANNUAL" \
+  --static-cut "$STATIC_CUT" \
+  --certified-aliases "$DUAL_IDENTITY_ALIASES_LAST" \
+  --out "$IDENTITY_AUTHORITY_LAST" \
+  --audit-out "$IDENTITY_AUTHORITY_AUDIT_LAST" \
+  --max-profiles 32
+
+python -m tools.cor0203_build_identity_crosswalk \
+  --static-cut "$STATIC_CUT" \
+  --identity-authority "$IDENTITY_AUTHORITY_LAST" \
+  --summary-out "$CROSSWALK_LAST"
+
+python -m tools.cor0203_identity_restage_delta \
+  --summary-out "$IDENTITY_RESTAGE_LAST"
+
+# A delta can create a new prefeature revision; build its crosswalk before staging.
+python -m tools.cor0203_build_identity_crosswalk \
+  --static-cut "$STATIC_CUT" \
+  --identity-authority "$IDENTITY_AUTHORITY_LAST" \
+  --summary-out "$CROSSWALK_LAST"
+
+python -m tools.cor0203_stage_from_registry \
+  --summary-out "$STAGE_LAST"
+
+python -m tools.cor0203_batch_runner \
+  --state-b64 "$STATE" \
+  --bundle "$BUNDLE" \
+  --annual-2026 "$ANNUAL" \
+  --trigger-sha "$TRIGGER_SHA" \
+  --summary-out "$RUNNER_LAST"
+
+python -m tools.cor0203_holdout_integrity_audit \
+  --runtime-dir evidence/cor0203/runtime \
+  --holdout-dir evidence/cor0203/holdout \
+  --state-b64 "$STATE" \
+  --bundle "$BUNDLE" \
+  --annual-2026 "$ANNUAL" \
+  --binding evidence/cor0203/runtime/MATRIX_COR0203_MODEL_BINDING_R707.json \
+  --out "$INTEGRITY_LAST"
+
+python -m tools.cor0203_physical_uniqueness_audit \
+  --runtime-dir evidence/cor0203/runtime \
+  --holdout-dir evidence/cor0203/holdout \
+  --integrity "$INTEGRITY_LAST" \
+  --out "$UNIQUENESS_LAST"
+
+python -m tools.cor0203_milestone_status \
+  --uniqueness "$UNIQUENESS_LAST" \
+  --out "$MILESTONES_LAST"
+
+if [[ -f "$WORLD_INVENTORY_LAST" && -f "$WORLD_DERIVED_DISCOVERY_LAST" ]]; then
+  python -m tools.cor0203_world_funnel_audit \
+    --world-inventory "$WORLD_INVENTORY_LAST" \
+    --world-discovery "$WORLD_DERIVED_DISCOVERY_LAST" \
+    --uniqueness "$UNIQUENESS_LAST" \
+    --runtime-dir evidence/cor0203/runtime \
+    --out "$WORLD_FUNNEL_LAST"
+fi
+
+python -m tools.cor0203_settlement_queue \
+  --runtime-dir evidence/cor0203/runtime \
+  --holdout-dir evidence/cor0203/holdout \
+  --integrity "$INTEGRITY_LAST" \
+  --uniqueness "$UNIQUENESS_LAST" \
+  --ledger "$SETTLEMENT_LEDGER" \
+  --out "$SETTLEMENT_QUEUE_LAST"
+
+python -m tools.cor0203_historical_identity_reconcile \
+  --queue "$SETTLEMENT_QUEUE_LAST" \
+  --out "$HISTORICAL_IDENTITY_LAST" \
+  --max-date-requests 10
+
+python -m tools.cor0203_settlement_queue \
+  --runtime-dir evidence/cor0203/runtime \
+  --holdout-dir evidence/cor0203/holdout \
+  --integrity "$INTEGRITY_LAST" \
+  --uniqueness "$UNIQUENESS_LAST" \
+  --ledger "$SETTLEMENT_LEDGER" \
+  --identity-overlay "$HISTORICAL_IDENTITY_LAST" \
+  --out "$SETTLEMENT_QUEUE_LAST"
+
+if [[ -f "$SETTLEMENT_ADJUDICATIONS" ]]; then
+  python -m tools.cor0203_apply_adjudications \
+    --adjudications "$SETTLEMENT_ADJUDICATIONS" \
+    --queue "$SETTLEMENT_QUEUE_LAST" \
+    --ledger "$SETTLEMENT_LEDGER" \
+    --out "$SETTLEMENT_ADJUDICATION_LAST"
+fi
+
+python -m tools.cor0203_settlement_sync \
+  --queue "$SETTLEMENT_QUEUE_LAST" \
+  --ledger "$SETTLEMENT_LEDGER" \
+  --summary-out "$SETTLEMENT_SYNC_LAST" \
+  --max-requests 50
+
+python -m tools.cor0203_settlement_queue \
+  --runtime-dir evidence/cor0203/runtime \
+  --holdout-dir evidence/cor0203/holdout \
+  --integrity "$INTEGRITY_LAST" \
+  --uniqueness "$UNIQUENESS_LAST" \
+  --ledger "$SETTLEMENT_LEDGER" \
+  --identity-overlay "$HISTORICAL_IDENTITY_LAST" \
+  --out "$SETTLEMENT_QUEUE_LAST"
+
+python -m tools.cor0203_settlement_uniqueness_reconcile \
+  --uniqueness "$UNIQUENESS_LAST" \
+  --ledger "$SETTLEMENT_LEDGER" \
+  --out "$SETTLEMENT_UNIQUENESS_LAST"
+
+python -m tools.cor0203_production_observability \
+  --source-readiness "$SOURCE_READINESS_CURRENT" \
+  --prereg "$PREREG_LAST" \
+  --crosswalk "$CROSSWALK_LAST" \
+  --stage "$STAGE_LAST" \
+  --runner "$RUNNER_LAST" \
+  --integrity "$INTEGRITY_LAST" \
+  --uniqueness "$UNIQUENESS_LAST" \
+  --out "$OBSERVABILITY_LAST"
+
+python - <<'PY'
+import json
+import re
+from pathlib import Path
+
+runtime = Path("evidence/cor0203/runtime")
+holdout = Path("evidence/cor0203/holdout")
+
+prereg = json.loads((runtime / "MATRIX_COR0203_DISCOVERY_PREREG_LAST.json").read_text())
+crosswalk = json.loads((runtime / "MATRIX_COR0203_IDENTITY_CROSSWALK_LAST.json").read_text())
+identity_restage = json.loads((runtime / "MATRIX_COR0203_IDENTITY_RESTAGE_DELTA_LAST.json").read_text())
+stage = json.loads((runtime / "MATRIX_COR0203_AUTO_STAGE_LAST.json").read_text())
+runner = json.loads((runtime / "MATRIX_COR0203_BATCH_RUNNER_LAST.json").read_text())
+integrity = json.loads((runtime / "MATRIX_COR0203_HOLDOUT_INTEGRITY_LAST.json").read_text())
+uniqueness = json.loads((runtime / "MATRIX_COR0203_PHYSICAL_UNIQUENESS_LAST.json").read_text())
+source_readiness = json.loads(Path("/tmp/MATRIX_COR0203_SOURCE_READINESS_CURRENT.json").read_text())
+durable_discovery = json.loads((runtime / "MATRIX_COR0203_DURABLE_DISCOVERY_LAST.json").read_text())
+observability = json.loads((runtime / "MATRIX_COR0203_PRODUCTION_OBSERVABILITY_LAST.json").read_text())
+settlement_queue = json.loads((runtime / "MATRIX_COR0203_SETTLEMENT_QUEUE_LAST.json").read_text())
+historical_identity = json.loads((runtime / "MATRIX_COR0203_HISTORICAL_IDENTITY_LAST.json").read_text())
+settlement_sync = json.loads((runtime / "MATRIX_COR0203_SETTLEMENT_SYNC_LAST.json").read_text())
+settlement_uniqueness = json.loads((runtime / "MATRIX_COR0203_SETTLEMENT_UNIQUENESS_LAST.json").read_text())
+settlement_adjudication = json.loads((runtime / "MATRIX_COR0203_SETTLEMENT_ADJUDICATION_LAST.json").read_text())
+world_inventory_path = Path("evidence/tennis/world_inventory/MATRIX_TENNIS_WORLD_INVENTORY_LAST.json")
+world_inventory = (
+    json.loads(world_inventory_path.read_text())
+    if world_inventory_path.exists()
+    else None
+)
+world_bridge_path = runtime / "MATRIX_COR0203_WORLD_INVENTORY_BRIDGE_LAST.json"
+world_bridge = (
+    json.loads(world_bridge_path.read_text())
+    if world_bridge_path.exists()
+    else None
+)
+world_derived_path = runtime / "MATRIX_COR0203_WORLD_DERIVED_DISCOVERY_LAST.json"
+world_derived = (
+    json.loads(world_derived_path.read_text())
+    if world_derived_path.exists()
+    else None
+)
+world_prereg_path = runtime / "MATRIX_COR0203_WORLD_PREREG_LAST.json"
+world_prereg = (
+    json.loads(world_prereg_path.read_text())
+    if world_prereg_path.exists()
+    else None
+)
+world_funnel_path = runtime / "MATRIX_COR0203_WORLD_FUNNEL_LAST.json"
+world_funnel = (
+    json.loads(world_funnel_path.read_text())
+    if world_funnel_path.exists()
+    else None
+)
+
+assert source_readiness["provider"] == __import__("os").environ["MATRIX_TENNIS_PROVIDER"]
+assert durable_discovery["real_money"] == "BLOCKED"
+assert durable_discovery["automatic_wagering"] is False
+if source_readiness["ready"]:
+    assert durable_discovery["status"] == "PASS"
+    assert durable_discovery["store_integrity_ok"] is True
+assert source_readiness["real_money"] == "BLOCKED"
+assert prereg["status"] in {"NO_DISCOVERY_INPUT", "NO_NEW_EVENTS", "PREREGISTERED"}
+assert crosswalk["real_money"] == "BLOCKED"
+assert identity_restage["real_money"] == "BLOCKED"
+assert identity_restage["status"] in {"CREATED", "NO_NEWLY_UNBLOCKED_EVENTS", "NO_PREFEATURE_REGISTRIES"}
+assert stage["real_money"] == "BLOCKED"
+assert runner["ending_physical_count"] >= runner["starting_physical_count"]
+assert integrity["result"] == "PASS"
+assert integrity["admissible_observations"] == runner["ending_physical_count"]
+assert integrity["audited_observations"] == integrity["passed_observations"]
+assert integrity["failed_observations"] == 0
+assert integrity["outcomes_read"] == 0
+assert integrity["metrics_opened"] is False
+assert integrity["median_or_neutral_fallback_admissible"] is False
+assert uniqueness["result"] == "PASS"
+assert uniqueness["outcomes_read"] == 0
+assert uniqueness["metrics_opened"] is False
+assert uniqueness["physical_frozen_rows"] == runner["ending_physical_count"]
+assert observability["holdout"]["physical_frozen_rows"] == runner["ending_physical_count"]
+assert observability["holdout"]["total_count"] == uniqueness["unique_calibration_observations"]
+assert observability["integrity"]["result"] == "PASS"
+assert settlement_queue["admissible_observations"] == runner["ending_physical_count"]
+assert settlement_queue["metrics"] == "SEALED_UNTIL_600"
+assert settlement_queue["outcomes_used_for_metrics"] == 0
+assert settlement_queue["ledger"]["outcomes_used_for_metrics"] == 0
+assert historical_identity["automatic_fuzzy_matching"] is False
+assert historical_identity["freeze_mutation"] is False
+assert historical_identity["metrics_opened"] is False
+assert settlement_adjudication["status"] in {"PASS", "PASS_WITH_BLOCKERS"}
+assert settlement_adjudication["outcomes_used_for_metrics"] == 0
+assert settlement_adjudication["metrics_opened"] is False
+assert settlement_sync["outcomes_used_for_metrics"] == 0
+assert settlement_uniqueness["result"] == "PASS"
+assert settlement_uniqueness["duplicate_aliases_used_for_metrics"] == 0
+assert settlement_uniqueness["metrics_opened"] is False
+assert settlement_sync["metrics"] == "SEALED_UNTIL_600"
+if world_inventory is not None:
+    assert world_inventory["status"] == "PASS"
+    assert world_inventory["provider_inventory_complete"] is True
+    assert world_inventory["world_inventory_complete"] is False
+    assert world_inventory["world_complete_gate"] == "REQUIRES_MULTI_SOURCE_RECONCILIATION"
+    assert world_inventory["operational_timezone"] == "America/Bogota"
+    assert world_inventory["calendar_day_rule"] == "00:00:00-23:59:59_LOCAL_FULL_DAY"
+    assert world_inventory["coverage_families_required"] == ["ATP", "WTA", "ITF"]
+    assert world_inventory["provider_architecture"]["independent_itf_endpoint_required"] is False
+    assert world_inventory["p_matrix"] == "NOT_GENERATED"
+    assert world_inventory["metrics_opened"] is False
+    assert world_inventory["automatic_wagering"] is False
+    assert world_inventory["real_money"] == "BLOCKED"
+    assert world_inventory["derived_lanes"]["COR02_COR03_ATP_CHALLENGER_HARD"]["feeds_model_automatically"] is False
+if world_derived is not None:
+    assert world_derived["status"] == "DISCOVERY_COMPLETED"
+    assert world_derived["source_mode"] == "WORLD_INVENTORY_DERIVED"
+    assert world_derived["automatic_model_feed"] is False
+    assert world_derived["governed_preregistration_required"] is True
+    assert world_derived["metrics_opened"] is False
+    assert world_derived["outcomes_read"] == 0
+    assert world_derived["real_money"] == "BLOCKED"
+if world_prereg is not None:
+    assert world_prereg["status"] in {"NO_NEW_EVENTS", "PREREGISTERED"}
+if world_funnel is not None:
+    assert world_funnel["world_inventory_status"] == "PASS"
+    assert world_funnel["provider_inventory_complete"] is True
+    assert world_funnel["world_inventory_complete"] is False
+    assert world_funnel["world_complete_gate"] == "REQUIRES_MULTI_SOURCE_RECONCILIATION"
+    assert sum(world_funnel["status_counts"].values()) == world_funnel["world_domain_candidates"]
+    assert world_funnel["unique_holdout_count"] == uniqueness["unique_calibration_observations"]
+    assert world_funnel["metrics"] == "SEALED_UNTIL_600"
+    assert world_funnel["metrics_opened"] is False
+    assert world_funnel["outcomes_read"] == 0
+    assert world_funnel["automatic_model_feed"] is False
+    assert world_funnel["real_money"] == "BLOCKED"
+if world_bridge is not None:
+    assert world_bridge["automatic_model_feed"] is False
+    assert world_bridge["governed_preregistration_authoritative"] is True
+    assert world_bridge["metrics_opened"] is False
+    assert world_bridge["outcomes_read"] == 0
+    assert world_bridge["real_money"] == "BLOCKED"
+assert settlement_uniqueness["metrics_opened"] is False
+assert settlement_sync["metrics"] == "SEALED_UNTIL_600"
+if not source_readiness["ready"]:
+    assert observability["operational_state"] == "SOURCE_BLOCKED"
+    assert observability["bottleneck"]["stage"] == "SOURCE"
+
+exact_batch = re.compile(r"^MATRIX_COR0203_HOLDOUT_BATCH_R\d+\.json$")
+for path in holdout.glob("MATRIX_COR0203_HOLDOUT_BATCH_R*.json"):
+    if not exact_batch.match(path.name):
+        continue
+    payload = json.loads(path.read_text())
+    assert payload.get("metrics") == "SEALED_UNTIL_600"
+    assert payload.get("outcomes_read") == 0
+    for observation in payload.get("observations", []):
+        assert observation.get("outcome") is None
+        assert observation.get("metrics_opened") is False
+        assert observation["freeze_at_utc"] < observation["event_start_utc"]
+
+print(json.dumps({
+    "prereg_status": prereg["status"],
+    "crosswalk_revisions": len(crosswalk.get("crosswalk_revisions", [])),
+    "ending_physical_count": runner["ending_physical_count"],
+    "new_freezes": runner["new_freezes"],
+    "new_blocked": runner["new_blocked"],
+    "holdout_integrity": integrity["result"],
+    "audited_observations": integrity["audited_observations"],
+    "source_ready": source_readiness["ready"],
+    "source_status": source_readiness["status"],
+    "source_cause": source_readiness["cause"],
+    "operational_state": observability["operational_state"],
+    "bottleneck": observability["bottleneck"],
+}, sort_keys=True))
+PY
+
+git config user.name "${MATRIX_GIT_USER_NAME:-matrix-production}"
+git config user.email "${MATRIX_GIT_USER_EMAIL:-matrix-production@users.noreply.github.com}"
+
+# Stage append-only/revision evidence first. Mutable *_LAST/heartbeat files do
+# not define whether a cycle is material; this prevents empty cycles from
+# creating commits or racing with code changes.
+git add evidence/cor0203/source_readiness/MATRIX_COR0203_SOURCE_READINESS_*.json 2>/dev/null || true
+if [[ -f "$ACQUISITION_STORE" ]]; then
+  git add "$ACQUISITION_STORE"
+fi
+if [[ -f "$SETTLEMENT_LEDGER" ]]; then
+  git add "$SETTLEMENT_LEDGER"
+fi
+if [[ -f "$IDENTITY_ALIAS_CERT" ]]; then
+  git add "$IDENTITY_ALIAS_CERT"
+fi
+if [[ -f "$DUAL_IDENTITY_ALIASES_LAST" ]]; then
+  git add "$DUAL_IDENTITY_ALIASES_LAST"
+fi
+if [[ -f "$API_TENNIS_RANK_BRIDGE_ALIASES" ]]; then
+  git add "$API_TENNIS_RANK_BRIDGE_ALIASES"
+fi
+if [[ -f "$API_TENNIS_RANK_BRIDGE_LAST" ]]; then
+  git add "$API_TENNIS_RANK_BRIDGE_LAST"
+fi
+if [[ -f "$API_TENNIS_RANK_HISTORY_RECOVERY_LAST" ]]; then
+  git add "$API_TENNIS_RANK_HISTORY_RECOVERY_LAST"
+fi
+if [[ -f "$API_TENNIS_CERTIFIED_AUTHORITY_RECOVERY_LAST" ]]; then
+  git add "$API_TENNIS_CERTIFIED_AUTHORITY_RECOVERY_LAST"
+fi
+if [[ -f "$R706_TARGET_HISTORY_LAST" ]]; then
+  git add "$R706_TARGET_HISTORY_LAST"
+fi
+if [[ -f "$RAPIDAPI_PRECUT_STATS_RICH_LAST" ]]; then
+  git add "$RAPIDAPI_PRECUT_STATS_RICH_LAST"
+fi
+git add evidence/cor0203/runtime/MATRIX_COR0203_PREFEATURE_REGISTRY_R*.json 2>/dev/null || true
+git add evidence/cor0203/runtime/MATRIX_COR0203_IDENTITY_CROSSWALK_R*.json 2>/dev/null || true
+git add evidence/cor0203/runtime/MATRIX_COR0203_STAGE_BLOCKERS_R*.json 2>/dev/null || true
+git add evidence/cor0203/runtime/MATRIX_COR0203_STATIC4_R*.json 2>/dev/null || true
+git add evidence/cor0203/runtime/MATRIX_COR0203_PROSPECTIVE_EVENTS_R*.json 2>/dev/null || true
+git add evidence/cor0203/runtime/MATRIX_COR0203_BATCH_PREFLIGHT_R*.json 2>/dev/null || true
+git add evidence/cor0203/adjudication/*.json 2>/dev/null || true
+git add evidence/tennis/world_inventory/MATRIX_TENNIS_WORLD_INVENTORY_LAST.json 2>/dev/null || true
+git add evidence/tennis/world_inventory/*/MATRIX_TENNIS_WORLD_INVENTORY.json 2>/dev/null || true
+git add evidence/tennis_world_inventory/*/world_exact_day_dual_audit.json 2>/dev/null || true
+git add "$WORLD_DERIVED_DISCOVERY_LAST" 2>/dev/null || true
+git add "$WORLD_PREREG_LAST" 2>/dev/null || true
+git add "$WORLD_BRIDGE_LAST" 2>/dev/null || true
+git add "$WORLD_FUNNEL_LAST" 2>/dev/null || true
+git add "$DUAL_RECONCILIATION_LAST" 2>/dev/null || true
+git add evidence/cor0203/runtime/MATRIX_COR0203_HISTORY_GATE_R*.json 2>/dev/null || true
+git add evidence/cor0203/holdout/MATRIX_COR0203_HOLDOUT_BATCH_R*.json 2>/dev/null || true
+
+# Persist the new governed audit files on first activation even when the cycle
+# produces no new physical match. On later cycles they remain mutable summaries
+# and are carried only with a material production change.
+if ! git cat-file -e "HEAD:$HORIZON_AUDIT_LAST" 2>/dev/null; then
+  git add "$HORIZON_AUDIT_LAST"
+fi
+if ! git cat-file -e "HEAD:$MILESTONES_LAST" 2>/dev/null; then
+  git add "$MILESTONES_LAST"
+fi
+
+if git diff --cached --quiet; then
+  echo "COR0203_CYCLE_NO_MATERIAL_CHANGE"
+  python - <<'PY'
+import json
+from pathlib import Path
+x=json.loads(Path("/tmp/MATRIX_COR0203_SOURCE_READINESS_CURRENT.json").read_text())
+if not x["ready"]:
+    raise SystemExit("SOURCE_NOT_READY:" + str(x["cause"]) + ":" + str(x["status"]))
+PY
+  exit 0
+fi
+
+# Only a material append-only change is allowed to carry mutable summaries.
+git add "$STATIC_CUT"
+git add "$PREREG_LAST"
+git add "$CROSSWALK_LAST"
+git add "$IDENTITY_RESTAGE_LAST"
+git add "$IDENTITY_AUTHORITY_LAST"
+git add "$IDENTITY_AUTHORITY_AUDIT_LAST"
+git add "$STAGE_LAST"
+git add "$RUNNER_LAST"
+git add "$INTEGRITY_LAST"
+git add "$UNIQUENESS_LAST"
+git add "$HORIZON_AUDIT_LAST"
+git add "$MILESTONES_LAST"
+git add "$OBSERVABILITY_LAST"
+git add "$DURABLE_DISCOVERY_LAST"
+if [[ -f "$WORLD_DERIVED_DISCOVERY_LAST" ]]; then
+  git add "$WORLD_DERIVED_DISCOVERY_LAST"
+fi
+if [[ -f "$WORLD_PREREG_LAST" ]]; then
+  git add "$WORLD_PREREG_LAST"
+fi
+if [[ -f "$WORLD_BRIDGE_LAST" ]]; then
+  git add "$WORLD_BRIDGE_LAST"
+fi
+if [[ -f "$WORLD_FUNNEL_LAST" ]]; then
+  git add "$WORLD_FUNNEL_LAST"
+fi
+if [[ -f "$DUAL_RECONCILIATION_LAST" ]]; then
+  git add "$DUAL_RECONCILIATION_LAST"
+fi
+git add "$SETTLEMENT_QUEUE_LAST"
+git add "$HISTORICAL_IDENTITY_LAST"
+git add "$SETTLEMENT_SYNC_LAST"
+git add "$SETTLEMENT_UNIQUENESS_LAST"
+git add "$SETTLEMENT_ADJUDICATION_LAST"
+if [[ -f "$HEARTBEAT" ]]; then
+  git add "$HEARTBEAT"
+fi
+
+git commit -m "evidence(cor02-03): governed autonomous production cycle"
+
+PUSHED=0
+for attempt in 1 2 3 4; do
+  git fetch origin "$TARGET_BRANCH"
+  if ! git rebase "origin/$TARGET_BRANCH"; then
+    git rebase --abort || true
+    echo "COR0203_REBASE_CONFLICT_ATTEMPT_${attempt}" >&2
+    exit 1
+  fi
+  if git push origin "HEAD:$TARGET_BRANCH"; then
+    PUSHED=1
+    break
+  fi
+  echo "COR0203_PUSH_RACE_RETRY_${attempt}" >&2
+  sleep $((attempt * 2))
+done
+if [[ "$PUSHED" != "1" ]]; then
+  echo "COR0203_PUSH_RETRY_EXHAUSTED" >&2
+  exit 1
+fi
+
+python - <<'PY'
+import json
+from pathlib import Path
+x=json.loads(Path("/tmp/MATRIX_COR0203_SOURCE_READINESS_CURRENT.json").read_text())
+if not x["ready"]:
+    raise SystemExit("SOURCE_NOT_READY:" + str(x["cause"]) + ":" + str(x["status"]))
+PY

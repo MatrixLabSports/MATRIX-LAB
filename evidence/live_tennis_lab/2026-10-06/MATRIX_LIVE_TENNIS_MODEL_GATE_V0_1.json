@@ -1,0 +1,108 @@
+{
+  "any_lane_training_eligible": false,
+  "candidate_feature_set": [
+    "set_diff_p1",
+    "total_game_diff_p1",
+    "current_set_game_diff_p1",
+    "point_diff_p1",
+    "server_is_p1",
+    "ranking_advantage_p1",
+    "is_tiebreak",
+    "age_seconds",
+    "observed_age_seconds",
+    "corroborated",
+    "sources_count"
+  ],
+  "generated_at_utc": "2026-10-08T01:49:19+00:00",
+  "lane_gates": {
+    "challenger|men|clay": {
+      "metadata_lane_promotable": true,
+      "minimum_required": 30,
+      "probability_output_gate": "SEALED",
+      "remaining": 23,
+      "settled_unique_matches": 7,
+      "training_gate": "SEALED"
+    },
+    "challenger|women|hard": {
+      "metadata_lane_promotable": true,
+      "minimum_required": 30,
+      "probability_output_gate": "SEALED",
+      "remaining": 29,
+      "settled_unique_matches": 1,
+      "training_gate": "SEALED"
+    },
+    "itf|men|clay": {
+      "metadata_lane_promotable": true,
+      "minimum_required": 30,
+      "probability_output_gate": "SEALED",
+      "remaining": 28,
+      "settled_unique_matches": 2,
+      "training_gate": "SEALED"
+    },
+    "itf|men|hard": {
+      "metadata_lane_promotable": true,
+      "minimum_required": 30,
+      "probability_output_gate": "SEALED",
+      "remaining": 29,
+      "settled_unique_matches": 1,
+      "training_gate": "SEALED"
+    },
+    "itf|women|hard": {
+      "metadata_lane_promotable": true,
+      "minimum_required": 30,
+      "probability_output_gate": "SEALED",
+      "remaining": 23,
+      "settled_unique_matches": 7,
+      "training_gate": "SEALED"
+    },
+    "utr|men|clay": {
+      "metadata_lane_promotable": true,
+      "minimum_required": 30,
+      "probability_output_gate": "SEALED",
+      "remaining": 29,
+      "settled_unique_matches": 1,
+      "training_gate": "SEALED"
+    },
+    "utr|men|unknown": {
+      "metadata_lane_promotable": false,
+      "minimum_required": 30,
+      "probability_output_gate": "SEALED",
+      "remaining": 29,
+      "settled_unique_matches": 1,
+      "training_gate": "SEALED"
+    },
+    "utr|women|unknown": {
+      "metadata_lane_promotable": false,
+      "minimum_required": 30,
+      "probability_output_gate": "SEALED",
+      "remaining": 30,
+      "settled_unique_matches": 0,
+      "training_gate": "SEALED"
+    }
+  },
+  "metrics_status": "SEALED",
+  "minimum_unique_settled_matches_per_lane": 30,
+  "model_family_status": "SPECIFIED_NOT_TRAINED",
+  "probability_output_status": "SEALED",
+  "protections": {
+    "automatic_wagering": false,
+    "odds_as_model_feature": false,
+    "odds_to_probability": false,
+    "prematch_model_mutated": false,
+    "real_money": "BLOCKED",
+    "same_match_train_test_forbidden": true
+  },
+  "required_first_metrics_when_gate_opens": [
+    "brier_score",
+    "log_loss",
+    "ece",
+    "auc",
+    "calibration_by_probability_band",
+    "calibration_by_match_state_band"
+  ],
+  "schema": "MATRIX_LIVE_TENNIS_MODEL_GATE_V0_1",
+  "split_group": "MATCH_ID",
+  "target": "P_LIVE_P1_MATCH_WIN",
+  "training_executed": false,
+  "training_unit": "UNIQUE_LIVE_STATE"
+}

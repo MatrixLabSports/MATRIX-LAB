@@ -1,0 +1,637 @@
+from __future__ import annotations
+
+import json
+from pathlib import Path
+
+from tools.cor0203_build_identity_crosswalk import build_crosswalk
+
+
+def _load(path: Path):
+    return json.loads(path.read_text(encoding="utf-8"))
+
+
+def static_cut():
+    return {
+        "ranking_cut": "20260921",
+        "source_sha256": "a" * 64,
+        "silent_imputation": False,
+        "post_cut_data_used": False,
+        "players": {
+            "D0DW": {
+                "canonical_name": "Titouan Droguet",
+                "hand": "R",
+                "age": 25.268,
+                "rank": 84,
+                "rank_points": 690,
+                "ioc": "FRA",
+            },
+            "P0HW": {
+                "canonical_name": "Dino Prizmic",
+                "hand": "R",
+                "age": 21.128,
+                "rank": 101,
+                "rank_points": 603,
+                "ioc": "CRO",
+            },
+        },
+    }
+
+
+def prefeature():
+    return {
+        "revision": "R800",
+        "holdout_id": "H",
+        "events": [
+            {
+                "event_id": "e1",
+                "identity_crosswalk_required": True,
+                "player_identities": [
+                    {
+                        "display_name": "Titouan Droguet",
+                        "provider_player_id": "api-tennis:player:11",
+                        "provider_ranking": {
+                            "place": "84",
+                            "points": "690",
+                            "player": "Titouan Droguet",
+                            "country": "France",
+                        },
+                    },
+                    {
+                        "display_name": "Dino Prizmic",
+                        "provider_player_id": "api-tennis:player:22",
+                        "provider_ranking": {
+                            "place": "101",
+                            "points": "603",
+                            "player": "Dino Prizmic",
+                            "country": "Croatia",
+                        },
+                    },
+                ],
+            }
+        ],
+    }
+
+
+def test_exact_rank_points_plus_name_confirmation_passes():
+    result = build_crosswalk(prefeature=prefeature(), static_cut=static_cut())
+
+    assert result["status"] == "PASS"
+    assert result["passed_events"] == 1
+    assert result["blocked_events"] == 0
+    assert result["join_by_name_only"] is False
+    mappings = {m["provider_player_id"]: m for m in result["mappings"]}
+    assert mappings["api-tennis:player:11"]["canonical_source_id"] == "D0DW"
+    assert mappings["api-tennis:player:22"]["canonical_source_id"] == "P0HW"
+    assert mappings["api-tennis:player:11"]["match_basis"] == "EXACT_RANK_AND_POINTS_PLUS_NAME_CONFIRMATION"
+
+
+def test_name_match_alone_cannot_pass_wrong_rank_points():
+    pre = prefeature()
+    pre["events"][0]["player_identities"][0]["provider_ranking"]["place"] = "999"
+
+    result = build_crosswalk(prefeature=pre, static_cut=static_cut())
+
+    assert result["status"] == "ALL_BLOCKED"
+    event = result["events"][0]
+    assert "STATIC_IDENTITY_NO_MATCH:api-tennis:player:11" in event["blockers"]
+
+
+def test_exact_rank_points_cannot_override_name_mismatch():
+    pre = prefeature()
+    pre["events"][0]["player_identities"][0]["display_name"] = "Wrong Person"
+    pre["events"][0]["player_identities"][0]["provider_ranking"]["player"] = "Wrong Person"
+
+    result = build_crosswalk(prefeature=pre, static_cut=static_cut())
+
+    assert result["status"] == "ALL_BLOCKED"
+    assert "IDENTITY_NAME_CONFIRMATION_FAIL:api-tennis:player:11" in result["events"][0]["blockers"]
+
+
+def test_nonunique_rank_points_are_blocked():
+    cut = static_cut()
+    cut["players"]["OTHER"] = {
+        "canonical_name": "Other Player",
+        "hand": "R",
+        "age": 30.0,
+        "rank": 84,
+        "rank_points": 690,
+        "ioc": "USA",
+    }
+
+    result = build_crosswalk(prefeature=prefeature(), static_cut=cut)
+
+    assert result["status"] == "ALL_BLOCKED"
+    assert "STATIC_IDENTITY_NONUNIQUE:api-tennis:player:11" in result["events"][0]["blockers"]
+
+
+def test_missing_provider_ranking_blocks_without_name_fallback():
+    pre = prefeature()
+    pre["events"][0]["player_identities"][0]["provider_ranking"] = None
+
+    result = build_crosswalk(prefeature=pre, static_cut=static_cut())
+
+    assert result["status"] == "ALL_BLOCKED"
+    assert "PROVIDER_RANKING_MISSING:api-tennis:player:11" in result["events"][0]["blockers"]
+
+
+def test_events_are_isolated_when_one_crosswalk_fails():
+    pre = prefeature()
+    second = {
+        "event_id": "e2",
+        "identity_crosswalk_required": True,
+        "player_identities": [
+            {
+                "display_name": "Titouan Droguet",
+                "provider_player_id": "api-tennis:player:11",
+                "provider_ranking": {
+                    "place": "84",
+                    "points": "690",
+                    "player": "Titouan Droguet",
+                },
+            },
+            {
+                "display_name": "Unknown Player",
+                "provider_player_id": "api-tennis:player:33",
+                "provider_ranking": {
+                    "place": "777",
+                    "points": "10",
+                    "player": "Unknown Player",
+                },
+            },
+        ],
+    }
+    pre["events"].append(second)
+
+    result = build_crosswalk(prefeature=pre, static_cut=static_cut())
+
+    assert result["status"] == "PASS_WITH_BLOCKERS"
+    by_event = {row["event_id"]: row for row in result["events"]}
+    assert by_event["e1"]["status"] == "PASS"
+    assert by_event["e2"]["status"] == "BLOCKED"
+
+
+
+def governed_identity_authority():
+    return {
+        "post_cut_competitive_data_used": False,
+        "outcomes_used": False,
+        "odds_used": False,
+        "records": [
+            {
+                "provider_player_id": "rapidapi-tennis:player:26925",
+                "provider_display_name": "Michael Mmoh",
+                "provider_ioc_raw": "USA",
+                "provider_ioc_canonical": "USA",
+                "ranking_cut": "2026-09-21",
+                "provider_rank": "148",
+                "provider_rank_points": "379",
+                "pre_cut_history": {
+                    "canonical_source_ids": ["MP01"],
+                    "canonical_iocs": ["USA"],
+                    "observed_hands": ["R"],
+                    "rows": 39,
+                    "latest_row_date": 20260914,
+                },
+                "biographical_candidates": [
+                    {
+                        "master_id": "111581",
+                        "name": "Michael Mmoh",
+                        "hand": "R",
+                        "dob": "19980110",
+                        "ioc": "USA",
+                    }
+                ],
+            }
+        ],
+    }
+
+
+def rapidapi_prefeature_for_authority():
+    return {
+        "revision": "R900",
+        "holdout_id": "H",
+        "discovery_provider": "rapidapi_tennis",
+        "events": [
+            {
+                "event_id": "rapid-e1",
+                "identity_crosswalk_required": True,
+                "player_identities": [
+                    {
+                        "display_name": "Michael Mmoh",
+                        "provider": "rapidapi_tennis",
+                        "provider_player_id": "rapidapi-tennis:player:26925",
+                        "provider_ranking": {
+                            "place": "148",
+                            "points": "379",
+                            "player": "Michael Mmoh",
+                            "country": "USA",
+                            "snapshot_date": "2026-09-21",
+                        },
+                    },
+                    {
+                        "display_name": "Dino Prizmic",
+                        "provider": "api_tennis",
+                        "provider_player_id": "api-tennis:player:22",
+                        "provider_ranking": {
+                            "place": "101",
+                            "points": "603",
+                            "player": "Dino Prizmic",
+                            "country": "CRO",
+                        },
+                    },
+                ],
+            }
+        ],
+    }
+
+
+def test_governed_authority_can_resolve_player_absent_from_exact_static_cut():
+    result = build_crosswalk(
+        prefeature=rapidapi_prefeature_for_authority(),
+        static_cut=static_cut(),
+        identity_authority=governed_identity_authority(),
+    )
+
+    assert result["status"] == "PASS"
+    mappings = {m["provider_player_id"]: m for m in result["mappings"]}
+    mmoh = mappings["rapidapi-tennis:player:26925"]
+    assert mmoh["canonical_source_id"] == "MP01"
+    assert mmoh["canonical_name"] == "Michael Mmoh"
+    assert mmoh["canonical_hand"] == "R"
+    assert mmoh["canonical_age"] == 28.695
+    assert mmoh["canonical_rank"] == 148
+    assert mmoh["canonical_rank_points"] == 379
+    assert mmoh["ranking_cut"] == "20260921"
+    assert "EXACT_PROVIDER_ID_PLUS_NAME_IOC" in mmoh["match_basis"]
+
+
+def test_governed_authority_allows_proven_ioc_transition():
+    pre = rapidapi_prefeature_for_authority()
+    pre["events"][0]["player_identities"][0] = {
+        "display_name": "Marko Topo",
+        "provider": "rapidapi_tennis",
+        "provider_player_id": "rapidapi-tennis:player:84561",
+        "provider_ranking": {
+            "place": "362",
+            "points": "139",
+            "player": "Marko Topo",
+            "country": "SRB",
+            "snapshot_date": "2026-09-21",
+        },
+    }
+    authority = {
+        "schema": "MATRIX_COR0203_IDENTITY_AUTHORITY_AUTOEXPAND_V1",
+        "post_cut_competitive_data_used": False,
+        "outcomes_used": False,
+        "odds_used": False,
+        "records": [
+            {
+                "provider_player_id": "rapidapi-tennis:player:84561",
+                "provider_display_name": "Marko Topo",
+                "provider_ioc_raw": "SRB",
+                "provider_ioc_canonical": "SRB",
+                "ranking_cut": "2026-09-21",
+                "provider_rank": "362",
+                "provider_rank_points": "139",
+                "pre_cut_history": {
+                    "canonical_source_ids": ["T0FI"],
+                    "canonical_iocs": ["GER"],
+                    "observed_hands": ["R"],
+                    "rows": 18,
+                    "latest_row_date": 20260907,
+                },
+                "biographical_candidates": [
+                    {
+                        "master_id": "209916",
+                        "name": "Marko Topo",
+                        "hand": "R",
+                        "dob": "20030913",
+                        "ioc": "SRB",
+                    }
+                ],
+            }
+        ],
+    }
+
+    result = build_crosswalk(
+        prefeature=pre,
+        static_cut=static_cut(),
+        identity_authority=authority,
+    )
+
+    assert result["status"] == "PASS"
+    mappings = {m["provider_player_id"]: m for m in result["mappings"]}
+    topo = mappings["rapidapi-tennis:player:84561"]
+    assert topo["canonical_source_id"] == "T0FI"
+    assert topo["canonical_name"] == "Marko Topo"
+    assert topo["canonical_ioc"] == "SRB"
+    assert topo["canonical_hand"] == "R"
+    assert topo["ioc_transition"] == {
+        "historical_ioc": "GER",
+        "ranking_cut_ioc": "SRB",
+        "basis": "EXACT_PROVIDER_ID_NAME_DOB_HAND_RANKING_CUT_AND_UNIQUE_PRECUT_SOURCE_ID",
+    }
+    assert "PROVEN_IOC_TRANSITION" in topo["match_basis"]
+    assert result["join_by_name_only"] is False
+
+
+def test_governed_authority_fails_closed_on_country_mismatch():
+    authority = governed_identity_authority()
+    authority["records"][0]["provider_ioc_canonical"] = "CAN"
+
+    result = build_crosswalk(
+        prefeature=rapidapi_prefeature_for_authority(),
+        static_cut=static_cut(),
+        identity_authority=authority,
+    )
+
+    assert result["status"] == "ALL_BLOCKED"
+    blockers = result["events"][0]["blockers"]
+    assert "STATIC_IDENTITY_NO_MATCH:rapidapi-tennis:player:26925" in blockers
+    assert "IDENTITY_AUTHORITY_IOC_MISMATCH:rapidapi-tennis:player:26925" in blockers
+
+
+def test_governed_authority_fails_closed_when_biographical_dob_is_missing():
+    authority = governed_identity_authority()
+    authority["records"][0]["biographical_candidates"][0]["dob"] = None
+
+    result = build_crosswalk(
+        prefeature=rapidapi_prefeature_for_authority(),
+        static_cut=static_cut(),
+        identity_authority=authority,
+    )
+
+    assert result["status"] == "ALL_BLOCKED"
+    blockers = result["events"][0]["blockers"]
+    assert "IDENTITY_AUTHORITY_DOB_INVALID:rapidapi-tennis:player:26925" in blockers
+
+
+def test_r730_r731_authority_releases_only_evidenced_events():
+    pre=_load(Path("evidence/cor0203/runtime/MATRIX_COR0203_PREFEATURE_REGISTRY_R730.json"))
+    static=_load(Path("evidence/cor0203/runtime/MATRIX_COR0203_STATIC_CUT_20260921.json"))
+    authority=_load(Path("evidence/cor0203/identity/MATRIX_COR0203_ATP_BIOGRAPHICAL_SUBSET_R731.json"))
+    out=build_crosswalk(prefeature=pre,static_cut=static,identity_authority=authority)
+    assert out["passed_events"] == 12
+    assert out["blocked_events"] == 5
+    assert out["status"] == "PASS_WITH_BLOCKERS"
+    blocked={row["event_id"]:row["blockers"] for row in out["events"] if row["status"]=="BLOCKED"}
+    assert set(blocked) == {
+        "COR0203-RAPIDAPI-TENNIS-1415",
+        "COR0203-RAPIDAPI-TENNIS-1469",
+        "COR0203-RAPIDAPI-TENNIS-1471",
+        "COR0203-RAPIDAPI-TENNIS-1466",
+        "COR0203-RAPIDAPI-TENNIS-1475",
+    }
+
+
+def test_r730_r733_authority_releases_ultra_evidenced_profiles_only():
+    pre=_load(Path("evidence/cor0203/runtime/MATRIX_COR0203_PREFEATURE_REGISTRY_R730.json"))
+    static=_load(Path("evidence/cor0203/runtime/MATRIX_COR0203_STATIC_CUT_20260921.json"))
+    authority=_load(Path("evidence/cor0203/identity/MATRIX_COR0203_ATP_BIOGRAPHICAL_SUBSET_R733.json"))
+    out=build_crosswalk(prefeature=pre,static_cut=static,identity_authority=authority)
+    assert out["passed_events"] == 15
+    assert out["blocked_events"] == 2
+    blocked={row["event_id"] for row in out["events"] if row["status"]=="BLOCKED"}
+    assert blocked == {
+        "COR0203-RAPIDAPI-TENNIS-1471",
+        "COR0203-RAPIDAPI-TENNIS-1466",
+    }
+    assert all(
+        row.get("identity_authority")=="MATRIX_COR0203_ATP_BIOGRAPHICAL_SUBSET_R733"
+        for row in out["mappings"]
+        if row.get("identity_authority")
+    )
+
+
+def test_r734_maps_provider_marat_display_to_precut_canonical_name():
+    pre=_load(Path("evidence/cor0203/runtime/MATRIX_COR0203_PREFEATURE_REGISTRY_R730.json"))
+    static=_load(Path("evidence/cor0203/runtime/MATRIX_COR0203_STATIC_CUT_20260921.json"))
+    authority=_load(Path("evidence/cor0203/identity/MATRIX_COR0203_ATP_BIOGRAPHICAL_SUBSET_R734.json"))
+    out=build_crosswalk(prefeature=pre,static_cut=static,identity_authority=authority)
+    marat=next(
+        row for row in out["mappings"]
+        if row["provider_player_id"]=="rapidapi-tennis:player:80183"
+    )
+    assert marat["provider_display_name"]=="Marat Sharipov (RUS)"
+    assert marat["canonical_name"]=="Marat Sharipov"
+    assert marat["canonical_source_id"]=="S0MN"
+    assert marat["identity_authority"]=="MATRIX_COR0203_ATP_BIOGRAPHICAL_SUBSET_R734"
+
+def test_r735_r738_authority_releases_new_exact_id_profiles_only():
+    pre=_load(Path("evidence/cor0203/runtime/MATRIX_COR0203_PREFEATURE_REGISTRY_R735.json"))
+    static=_load(Path("evidence/cor0203/runtime/MATRIX_COR0203_STATIC_CUT_20260921.json"))
+    authority=_load(Path("evidence/cor0203/identity/MATRIX_COR0203_ATP_BIOGRAPHICAL_SUBSET_R738.json"))
+    out=build_crosswalk(prefeature=pre,static_cut=static,identity_authority=authority)
+
+    assert out["passed_events"] == 10
+    assert out["blocked_events"] == 1
+    assert out["status"] == "PASS_WITH_BLOCKERS"
+
+    blocked={row["event_id"] for row in out["events"] if row["status"]=="BLOCKED"}
+    assert blocked == {"COR0203-RAPIDAPI-TENNIS-1472"}
+
+    mappings={row["provider_player_id"]:row for row in out["mappings"]}
+    mcdonald=mappings["rapidapi-tennis:player:18094"]
+    samuel=mappings["rapidapi-tennis:player:79068"]
+
+    assert mcdonald["canonical_source_id"]=="MK66"
+    assert mcdonald["canonical_name"]=="Mackenzie McDonald"
+    assert mcdonald["canonical_ioc"]=="USA"
+    assert mcdonald["canonical_hand"]=="R"
+    assert mcdonald["identity_authority"]=="MATRIX_COR0203_ATP_BIOGRAPHICAL_SUBSET_R738"
+
+    assert samuel["canonical_source_id"]=="S0TM"
+    assert samuel["canonical_name"]=="Toby Samuel"
+    assert samuel["canonical_ioc"]=="GBR"
+    assert samuel["canonical_hand"]=="R"
+    assert samuel["identity_authority"]=="MATRIX_COR0203_ATP_BIOGRAPHICAL_SUBSET_R738"
+
+
+
+def test_r741_r743_authority_releases_mccabe_cina_exact_ids():
+    pre=_load(Path("evidence/cor0203/runtime/MATRIX_COR0203_PREFEATURE_REGISTRY_R741.json"))
+    static=_load(Path("evidence/cor0203/runtime/MATRIX_COR0203_STATIC_CUT_20260921.json"))
+    authority=_load(Path("evidence/cor0203/identity/MATRIX_COR0203_ATP_BIOGRAPHICAL_SUBSET_R743.json"))
+    out=build_crosswalk(prefeature=pre,static_cut=static,identity_authority=authority)
+
+    assert out["passed_events"] == 1
+    assert out["blocked_events"] == 0
+    assert out["status"] == "PASS"
+
+    mappings={row["provider_player_id"]:row for row in out["mappings"]}
+    mccabe=mappings["rapidapi-tennis:player:83315"]
+    cina=mappings["rapidapi-tennis:player:95698"]
+
+    assert mccabe["canonical_source_id"]=="M0OQ"
+    assert mccabe["canonical_name"]=="James McCabe"
+    assert mccabe["canonical_ioc"]=="AUS"
+    assert mccabe["canonical_hand"]=="R"
+    assert mccabe["identity_authority"]=="MATRIX_COR0203_ATP_BIOGRAPHICAL_SUBSET_R743"
+
+    assert cina["canonical_source_id"]=="C0NB"
+    assert cina["canonical_name"]=="Federico Cina"
+    assert cina["canonical_ioc"]=="ITA"
+    assert cina["canonical_hand"]=="R"
+    assert cina["identity_authority"]=="MATRIX_COR0203_ATP_BIOGRAPHICAL_SUBSET_R743"
+
+
+def test_sealed_frozen_authority_can_resolve_provider_id_without_name_only_join():
+    pre={
+        "revision":"R901",
+        "holdout_id":"H",
+        "discovery_provider":"rapidapi_tennis",
+        "events":[{
+            "event_id":"rapid-sealed",
+            "identity_crosswalk_required":True,
+            "player_identities":[
+                {
+                    "display_name":"Player One",
+                    "provider":"rapidapi_tennis",
+                    "provider_player_id":"rapidapi-tennis:player:111",
+                    "provider_ranking":{
+                        "place":"200","points":"300","player":"Player One",
+                        "country":"USA","snapshot_date":"2026-09-21",
+                    },
+                },
+                {
+                    "display_name":"Dino Prizmic",
+                    "provider":"api_tennis",
+                    "provider_player_id":"api-tennis:player:22",
+                    "provider_ranking":{
+                        "place":"101","points":"603","player":"Dino Prizmic",
+                        "country":"CRO","snapshot_date":"2026-09-21",
+                    },
+                },
+            ],
+        }],
+    }
+    authority={
+        "schema":"MATRIX_COR0203_IDENTITY_AUTHORITY_AUTOEXPAND_V1",
+        "post_cut_competitive_data_used":False,
+        "outcomes_used":False,
+        "odds_used":False,
+        "records":[{
+            "provider_player_id":"rapidapi-tennis:player:111",
+            "provider_display_name":"Player One",
+            "canonical_name":"Player One",
+            "provider_ioc_raw":"USA",
+            "provider_ioc_canonical":"USA",
+            "ranking_cut":"2026-09-21",
+            "provider_rank":"200",
+            "provider_rank_points":"300",
+            "authority_basis":"SEALED_FROZEN_STATIC4_PLUS_PROFILE",
+            "sealed_frozen_identity":{
+                "canonical_name":"Player One",
+                "canonical_rank":200,
+                "canonical_rank_points":300,
+                "canonical_hand":"R",
+                "canonical_age":26.72,
+                "canonical_source_id":"COR0203-R700-PLAYER-ONE",
+                "evidence_event_ids":["COR0203-R700-PLAYER-ONE"],
+                "inherited_from":["MATRIX_COR0203_PROSPECTIVE_EVENTS_R700.json"],
+                "physically_frozen":True,
+            },
+            "biographical_candidates":[{
+                "master_id":"RAPIDAPI_PROFILE_111",
+                "name":"Player One",
+                "hand":"R",
+                "dob":"20000102",
+                "ioc":"USA",
+            }],
+        }],
+    }
+    result=build_crosswalk(
+        prefeature=pre,
+        static_cut=static_cut(),
+        identity_authority=authority,
+    )
+    assert result["status"]=="PASS"
+    mappings={m["provider_player_id"]:m for m in result["mappings"]}
+    row=mappings["rapidapi-tennis:player:111"]
+    assert row["canonical_name"]=="Player One"
+    assert row["canonical_source_id"]=="COR0203-R700-PLAYER-ONE"
+    assert "SEALED_FROZEN_STATIC4" in row["match_basis"]
+    assert result["join_by_name_only"] is False
+
+
+def test_r706_provider_history_authority_resolves_without_state_mutation():
+    pre={
+        "revision":"R902","holdout_id":"H","discovery_provider":"rapidapi_tennis",
+        "events":[{
+            "event_id":"derepasko-e1","identity_crosswalk_required":True,
+            "player_identities":[
+                {
+                    "display_name":"Timofei Derepasko",
+                    "provider":"rapidapi_tennis",
+                    "provider_player_id":"rapidapi-tennis:player:94367",
+                    "provider_ranking":{
+                        "place":"649","points":"55","player":"Timofei Derepasko",
+                        "country":"RUS","snapshot_date":"2026-09-21",
+                    },
+                },
+                {
+                    "display_name":"Dino Prizmic",
+                    "provider":"api_tennis",
+                    "provider_player_id":"api-tennis:player:22",
+                    "provider_ranking":{
+                        "place":"101","points":"603","player":"Dino Prizmic",
+                        "country":"CRO","snapshot_date":"2026-09-21",
+                    },
+                },
+            ],
+        }],
+    }
+    authority={
+        "schema":"MATRIX_COR0203_IDENTITY_AUTHORITY_AUTOEXPAND_V1",
+        "post_cut_competitive_data_used":False,
+        "outcomes_used":False,
+        "odds_used":False,
+        "records":[{
+            "provider_player_id":"rapidapi-tennis:player:94367",
+            "provider_display_name":"Timofei Derepasko",
+            "canonical_name":"Timofei Derepasko",
+            "canonical_source_id":"R706_STATE_RAPIDAPI_PLAYER_94367",
+            "provider_ioc_raw":"RUS",
+            "provider_ioc_canonical":"RUS",
+            "ranking_cut":"2026-09-21",
+            "provider_rank":"649",
+            "provider_rank_points":"55",
+            "authority_basis":"SEALED_R706_STATE_PLUS_PRECUT_PROVIDER_HISTORY_AND_PROFILE",
+            "sealed_r706_history":{
+                "name":"Timofei Derepasko",
+                "fully_history_ready":True,
+                "required_components":{
+                    "form_history":True,"overall_history":True,"hard_history":True,
+                    "serve_history":True,"return_history":True,
+                    "opponent_strength_history":True,"elo_overall":True,"elo_hard":True,
+                    "glicko_overall":True,"glicko_hard":True,
+                },
+                "state_sha256":"a"*64,
+            },
+            "pre_cut_provider_history":{
+                "provider_player_id":"rapidapi-tennis:player:94367",
+                "eligible_pre_cut_matches":13,
+                "observed_names":["Timofei Derepasko"],
+                "cutoff_exclusive_utc":"2026-09-21T00:00:00+00:00",
+            },
+            "biographical_candidates":[{
+                "master_id":"RAPIDAPI_PROFILE_94367",
+                "name":"Timofei Derepasko",
+                "hand":"R",
+                "dob":"20070410",
+                "ioc":"RUS",
+            }],
+        }],
+    }
+    result=build_crosswalk(
+        prefeature=pre,
+        static_cut=static_cut(),
+        identity_authority=authority,
+    )
+    assert result["status"]=="PASS"
+    mappings={m["provider_player_id"]:m for m in result["mappings"]}
+    row=mappings["rapidapi-tennis:player:94367"]
+    assert row["canonical_name"]=="Timofei Derepasko"
+    assert row["canonical_source_id"]=="R706_STATE_RAPIDAPI_PLAYER_94367"
+    assert "SEALED_R706_HISTORY" in row["match_basis"]
+    assert result["join_by_name_only"] is False

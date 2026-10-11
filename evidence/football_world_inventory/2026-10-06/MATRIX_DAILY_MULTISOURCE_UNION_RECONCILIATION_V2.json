@@ -1,0 +1,134 @@
+{
+  "schema": "MATRIX_FOOTBALL_DAILY_MULTISOURCE_UNION_RECONCILIATION_V2",
+  "operational_date_bogota": "2026-10-06",
+  "timezone": "America/Bogota",
+  "generated_from_physical_evidence_at_head": "7b954e2d8b4459311d9664eaf0b18e5690e157aa",
+  "status": "PASS_GOVERNED_PROSPECTIVE_UNION_FULL_DAY_WORLD_UNION_NOT_PROVEN",
+  "source_counts": {
+    "sofascore": {
+      "exact_daily_total": null,
+      "status": "NOT_PROVEN",
+      "prior_claim_105": "RETRACTED",
+      "current_accessibility_competition_blocks": 35,
+      "current_accessibility_counter_sum": 104,
+      "counter_sum_role": "PARTIAL_VISIBLE_COVERAGE_FLOOR_NOT_WORLD_TOTAL",
+      "evidence_path": "evidence/sofascore/2026-10-06/football_daily_physical_count.json"
+    },
+    "flashscore": {
+      "main_ui_snapshot_count": 209,
+      "main_ui_snapshot_role": "TIMESTAMPED_UI_SNAPSHOT_NOT_IDENTITY_COMPLETE_DAY_UNION",
+      "main_accessibility_unique_match_ids": 90,
+      "mobile_target_page_unique_match_ids": 221,
+      "mobile_target_page": "https://www.flashscore.mobi/?d=-1",
+      "mobile_heading": "Football » Yesterday » All Games",
+      "mobile_role": "IDENTITY_COMPLETE_MOBILE_PAGE_FOR_TARGET_RELATIVE_DAY_WITH_DIFFERENT_PARAMETERIZATION",
+      "adjudication": "DO_NOT_REPLACE_209_WITH_221_AS_IF_SAME_SNAPSHOT_OR_TIME_GROUPING"
+    },
+    "api_football": {
+      "fixtures_received": 200,
+      "exact_structured_count": true,
+      "timezone": "America/Bogota",
+      "eligible_future_fixtures": 146,
+      "ready_input_count": 138,
+      "blocked_future_input_count": 8,
+      "new_freezes": 14,
+      "evidence_path": "evidence/api_football/prospective_daily/2026-10-06/20261006T120503Z/cycle_summary.json",
+      "raw_response_path": "evidence/api_football/prospective_daily/2026-10-06/20261006T120503Z/fixtures/response_body.bin"
+    },
+    "football_data_org": {
+      "authenticated": true,
+      "http_status": 200,
+      "accessible_matches_target_date": 0,
+      "role": "AUXILIARY_FREE_TIER_NOT_WORLD_COMPLETE"
+    }
+  },
+  "cross_source_identity_reconciliation": {
+    "flashscore_mobile_vs_api_football": {
+      "flashscore_rows": 221,
+      "api_rows": 200,
+      "exact_normalized_team_pair_overlap": 81,
+      "exact_pair_overlap_role": "CONSERVATIVE_CONFIRMED_SHARED_EVENTS_ONLY",
+      "exact_stage_naive_union": 340,
+      "exact_stage_naive_union_status": "NOT_CANONICAL_DO_NOT_USE",
+      "reason": "Many remaining rows are aliases, translations, youth/reserve naming variants, or image-split labels. Unsafe fuzzy auto-merge is prohibited."
+    }
+  },
+  "governed_prospective_discovery_union": {
+    "api_future_registry_unique": 146,
+    "browser_only_future_gaps_raw": 6,
+    "raw_discovery_union_unique": 152,
+    "raw_union_rule": "146 API future registry + 6 browser-only gaps physically confirmed absent from that registry",
+    "post_official_adjudication": {
+      "confirmed_target_day_browser_only_additions": [
+        {
+          "match": "JK Tabasalu U21 - Tallinna FC Zealot Sporting",
+          "adjudication": "CONFIRMED_TARGET_DAY_POST_START_NO_BACKFILL"
+        },
+        {
+          "match": "Kjelsas 2 - FK Manglerud Star",
+          "adjudication": "CONFIRMED_TARGET_DAY_PROVIDER_UNSUPPORTED_NO_STRUCTURED_HISTORY_FEATURES"
+        },
+        {
+          "match": "Altın Kalpler FK - Alpha Çeşme",
+          "adjudication": "CONFIRMED_TARGET_DAY_PROVIDER_UNSUPPORTED_NO_STRUCTURED_HISTORY_FEATURES"
+        }
+      ],
+      "corrected_or_excluded": [
+        {
+          "match": "Paide Linnameeskond U19 - JK Narva Trans U19",
+          "adjudication": "MOVED_TO_2026_10_07"
+        },
+        {
+          "match": "Hastings United - Sevenoaks Town",
+          "adjudication": "QUARANTINED_FALSE_OR_STALE_BROWSER_PAIR"
+        }
+      ],
+      "unresolved_quarantine": [
+        {
+          "match": "Seaford Town - Haywards Heath Town",
+          "adjudication": "BLOCKED_SCHEDULE_CONFLICT"
+        }
+      ],
+      "confirmed_target_day_browser_additions_count": 3,
+      "canonical_recognized_target_day_prospective_coverage": 149,
+      "quarantined_unresolved_count": 1,
+      "corrected_or_excluded_count": 2
+    },
+    "model_admission": {
+      "api_ready_input_count": 138,
+      "browser_only_new_model_admissions": 0,
+      "reason": "Browser-only events lacked exact provider binding and/or governed historical features; no silent name-only feed.",
+      "new_freezes_from_api_cycle": 14,
+      "new_freezes_from_browser_gaps": 0
+    },
+    "evidence_paths": [
+      "evidence/daily_source_counts/2026-10-06/MATRIX_IMMEDIATE_BROWSER_GAP_RECONCILIATION.json",
+      "evidence/daily_source_counts/2026-10-06/MATRIX_API_FOOTBALL_BROWSER_GAP_PROBE.json",
+      "evidence/daily_source_counts/2026-10-06/MATRIX_BROWSER_GAP_POST_API_OFFICIAL_ADJUDICATION.json"
+    ]
+  },
+  "full_day_world_union": {
+    "exact_unique_event_total": null,
+    "status": "NOT_PROVEN",
+    "block_reasons": [
+      "SofaScore lacks an identity-complete physically captured daily snapshot.",
+      "Flashscore main UI 209 and mobile 221 are different snapshots/parameterizations and must not be treated as the same denominator.",
+      "Conservative Flashscore↔API exact-name matching confirms 81 shared events but leaves aliases unresolved; fuzzy auto-merge is prohibited.",
+      "football-data.org free tier is not world-complete."
+    ],
+    "rule": "NO SINGLE SOURCE WORLD TRUTH; DO NOT SUM RAW SOURCE COUNTS"
+  },
+  "protections": {
+    "exact_identity_required": true,
+    "unsafe_fuzzy_automerge": false,
+    "physical_dedup_before_counter_increment": true,
+    "no_backfill": true,
+    "missing_not_zero": true,
+    "silent_imputation": false,
+    "odds_to_p_matrix": false,
+    "outcomes_to_probability": false,
+    "metrics_opened": false,
+    "automatic_wagering": false,
+    "real_money": "BLOCKED"
+  }
+}

@@ -1,0 +1,293 @@
+name: MATRIX Live Tennis Reactivation and Cumulative Gates
+
+on:
+  push:
+    branches:
+      - repair/cor09-world-pipeline
+    paths:
+      - .github/workflows/live-tennis-reactivation-cumulative-gates.yml
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: live-tennis-reactivation-cumulative-gates
+  cancel-in-progress: false
+
+jobs:
+  reactivate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout operational branch
+        uses: actions/checkout@v4
+        with:
+          ref: repair/cor09-world-pipeline
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - run: python -m pip install requests
+
+      - name: Resolve Bogota dates
+        id: dates
+        shell: bash
+        run: |
+          echo "d0=$(TZ=America/Bogota date +%F)" >> "$GITHUB_OUTPUT"
+          echo "d1=$(TZ=America/Bogota date -d 'yesterday' +%F)" >> "$GITHUB_OUTPUT"
+
+      - name: Seal prematch Hard and Clay before Live work
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/live-tennis-guard
+          python - <<'PY'
+          import hashlib,json
+          from pathlib import Path
+          def tree_hash(path):
+              root=Path(path); h=hashlib.sha256(); n=0
+              for p in sorted(x for x in root.rglob("*") if x.is_file()):
+                  h.update(p.relative_to(root).as_posix().encode()); h.update(b"\0")
+                  h.update(hashlib.sha256(p.read_bytes()).digest()); n+=1
+              return h.hexdigest(),n
+          hard_hash,hard_n=tree_hash("evidence/cor0203")
+          clay_hash,clay_n=tree_hash("evidence/tennis_parallel_lanes/ATP_CHALLENGER_MEN_SINGLES_CLAY")
+          hard=json.loads(Path("evidence/cor0203/runtime/MATRIX_COR0203_PHYSICAL_UNIQUENESS_LAST.json").read_text())
+          clay=json.loads(Path("evidence/tennis_parallel_lanes/ATP_CHALLENGER_MEN_SINGLES_CLAY/prospective/state.json").read_text())
+          seal={
+            "hard_tree_sha256":hard_hash,
+            "hard_file_count":hard_n,
+            "hard_unique":hard["unique_calibration_observations"],
+            "hard_metrics_opened":hard["metrics_opened"],
+            "hard_outcomes_read":hard["outcomes_read"],
+            "clay_tree_sha256":clay_hash,
+            "clay_file_count":clay_n,
+            "clay_observations":clay["observation_count"],
+            "clay_metrics_opened":clay["metrics_opened"],
+            "clay_outcomes_read":clay["outcomes_read"],
+          }
+          Path("/tmp/live-tennis-guard/before.json").write_text(json.dumps(seal,sort_keys=True))
+          print(json.dumps(seal,sort_keys=True))
+          PY
+
+      - name: Settle yesterday FINAL-only first
+        env:
+          LIVE_TENNIS_API_KEY: ${{ secrets.LIVETENNISAPI_KEY }}
+          D1: ${{ steps.dates.outputs.d1 }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          LEDGER="evidence/live_tennis_lab/$D1/MATRIX_LIVE_TENNIS_STATE_LEDGER_V0_1.json"
+          OUT="evidence/live_tennis_lab/$D1/MATRIX_LIVE_TENNIS_SETTLEMENT_SYNC_V0_1.json"
+          if [ -f "$LEDGER" ]; then
+            python -m tools.live_tennis_settlement_sync               --ledger "$LEDGER"               --out "$OUT"               --max-detail-queries 20               --reserve-calls 35
+          else
+            echo "NO_YESTERDAY_LEDGER"
+          fi
+
+      - name: Capture current live tennis states
+        env:
+          LIVE_TENNIS_API_KEY: ${{ secrets.LIVETENNISAPI_KEY }}
+          D0: ${{ steps.dates.outputs.d0 }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m tools.live_tennis_bulk_collector             --date "$D0"             --cycles 6             --interval-seconds 12             --reserve-calls 25
+
+      - name: Reconcile explicit current metadata
+        env:
+          D0: ${{ steps.dates.outputs.d0 }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m tools.live_tennis_metadata_reconcile             --ledger "evidence/live_tennis_lab/$D0/MATRIX_LIVE_TENNIS_STATE_LEDGER_V0_1.json"             --out "evidence/live_tennis_lab/$D0/MATRIX_LIVE_TENNIS_METADATA_RECONCILIATION_V0_1.json"
+
+      - name: Attempt current-day FINAL-only settlement
+        env:
+          LIVE_TENNIS_API_KEY: ${{ secrets.LIVETENNISAPI_KEY }}
+          D0: ${{ steps.dates.outputs.d0 }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m tools.live_tennis_settlement_sync             --ledger "evidence/live_tennis_lab/$D0/MATRIX_LIVE_TENNIS_STATE_LEDGER_V0_1.json"             --out "evidence/live_tennis_lab/$D0/MATRIX_LIVE_TENNIS_SETTLEMENT_SYNC_V0_1.json"             --max-detail-queries 10             --reserve-calls 20
+
+      - name: Rebuild daily readiness and gates
+        env:
+          D0: ${{ steps.dates.outputs.d0 }}
+          D1: ${{ steps.dates.outputs.d1 }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          for D in "$D1" "$D0"; do
+            L="evidence/live_tennis_lab/$D/MATRIX_LIVE_TENNIS_STATE_LEDGER_V0_1.json"
+            [ -f "$L" ] || continue
+            python -m tools.live_tennis_readiness_audit               --ledger "$L"               --out "evidence/live_tennis_lab/$D/MATRIX_LIVE_TENNIS_READINESS_AUDIT_V0_1.json"
+            python -m tools.live_tennis_model_gate               --readiness "evidence/live_tennis_lab/$D/MATRIX_LIVE_TENNIS_READINESS_AUDIT_V0_1.json"               --out "evidence/live_tennis_lab/$D/MATRIX_LIVE_TENNIS_MODEL_GATE_V0_1.json"
+          done
+
+      - name: Build cumulative 1-to-30 gates across days
+        run: |
+          python -m tools.live_tennis_cumulative_gate             --root evidence/live_tennis_lab             --out evidence/live_tennis_lab/MATRIX_LIVE_TENNIS_CUMULATIVE_GATE_V1.json
+
+      - name: Validate cumulative gate semantics
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          p=Path("evidence/live_tennis_lab/MATRIX_LIVE_TENNIS_CUMULATIVE_GATE_V1.json")
+          j=json.loads(p.read_text())
+          assert j["gate_unit"]=="UNIQUE_FINAL_STANDARD_MATCHES_PER_LANE_ACROSS_DAYS"
+          assert j["dedupe_key"]=="provider+match_id"
+          assert j["states_do_not_substitute_for_matches"] is True
+          assert j["same_match_train_test_forbidden"] is True
+          assert j["model_status"]=="RESEARCH_ONLY"
+          assert j["probability_output_status"]=="SEALED"
+          assert j["metrics_status"]=="SEALED"
+          assert j["protections"]["real_money"]=="BLOCKED"
+          for lane,data in j["lanes"].items():
+              settled=data["settled_unique_match_count"]
+              assert data["gates"]["1"]["status"]==("OPEN" if settled>=1 else "SEALED")
+              assert data["gates"]["30"]["status"]==("OPEN" if settled>=30 else "SEALED")
+          print(json.dumps({
+            "dates":j["ledger_dates_count"],
+            "global_unique_matches":j["global_unique_match_count"],
+            "settled":j["sum_lane_settled_unique_matches"],
+            "lanes":{k:v["settled_unique_match_count"] for k,v in j["lanes"].items()}
+          },sort_keys=True))
+          PY
+
+      - name: Prove Hard and Clay prematch untouched
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import hashlib,json
+          from pathlib import Path
+          def tree_hash(path):
+              root=Path(path); h=hashlib.sha256(); n=0
+              for p in sorted(x for x in root.rglob("*") if x.is_file()):
+                  h.update(p.relative_to(root).as_posix().encode()); h.update(b"\0")
+                  h.update(hashlib.sha256(p.read_bytes()).digest()); n+=1
+              return h.hexdigest(),n
+          before=json.loads(Path("/tmp/live-tennis-guard/before.json").read_text())
+          hh,hn=tree_hash("evidence/cor0203")
+          ch,cn=tree_hash("evidence/tennis_parallel_lanes/ATP_CHALLENGER_MEN_SINGLES_CLAY")
+          assert hh==before["hard_tree_sha256"] and hn==before["hard_file_count"]
+          assert ch==before["clay_tree_sha256"] and cn==before["clay_file_count"]
+          hard=json.loads(Path("evidence/cor0203/runtime/MATRIX_COR0203_PHYSICAL_UNIQUENESS_LAST.json").read_text())
+          clay=json.loads(Path("evidence/tennis_parallel_lanes/ATP_CHALLENGER_MEN_SINGLES_CLAY/prospective/state.json").read_text())
+          assert hard["unique_calibration_observations"]==before["hard_unique"]
+          assert hard["metrics_opened"]==before["hard_metrics_opened"] is False
+          assert hard["outcomes_read"]==before["hard_outcomes_read"]==0
+          assert clay["observation_count"]==before["clay_observations"]==0
+          assert clay["metrics_opened"]==before["clay_metrics_opened"] is False
+          assert clay["outcomes_read"]==before["clay_outcomes_read"]==0
+          print("PREMATCH_HARD_AND_CLAY_UNTOUCHED: PASS")
+          print("HARD_UNIQUE:",hard["unique_calibration_observations"])
+          print("CLAY_PROSPECTIVE:",clay["observation_count"])
+          PY
+
+      - name: Build reactivation certificate
+        env:
+          D0: ${{ steps.dates.outputs.d0 }}
+          D1: ${{ steps.dates.outputs.d1 }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import hashlib,json,os
+          from datetime import datetime,timezone
+          from pathlib import Path
+          before=json.loads(Path("/tmp/live-tennis-guard/before.json").read_text())
+          cum=json.loads(Path("evidence/live_tennis_lab/MATRIX_LIVE_TENNIS_CUMULATIVE_GATE_V1.json").read_text())
+          d0=os.environ["D0"]; d1=os.environ["D1"]
+          current=json.loads(Path(f"evidence/live_tennis_lab/{d0}/MATRIX_LIVE_TENNIS_STATE_LEDGER_V0_1.json").read_text())
+          cert={
+            "schema":"MATRIX_LIVE_TENNIS_REACTIVATION_CERT_V1",
+            "generated_at_utc":datetime.now(timezone.utc).replace(microsecond=0).isoformat(),
+            "status":"PASS_LIVE_REACTIVATED_CUMULATIVE_GATES_ACTIVE",
+            "operational_date_bogota":d0,
+            "previous_date_bogota":d1,
+            "current_capture":{
+              "unique_matches":current["unique_match_count"],
+              "unique_states":current["unique_state_count"],
+              "new_states_this_run":current["new_states_this_run"],
+              "executed_cycles":current["quota_guard"]["executed_cycles"],
+              "remaining_before_run":current["quota_guard"]["remaining_before_run"]
+            },
+            "cumulative":{
+              "ledger_dates_count":cum["ledger_dates_count"],
+              "global_unique_match_count":cum["global_unique_match_count"],
+              "sum_lane_settled_unique_matches":cum["sum_lane_settled_unique_matches"],
+              "lanes":{k:{
+                "settled_unique_match_count":v["settled_unique_match_count"],
+                "remaining_to_30":v["gates"]["30"]["remaining"],
+                "gate_1":v["gates"]["1"]["status"],
+                "gate_30":v["gates"]["30"]["status"]
+              } for k,v in cum["lanes"].items()}
+            },
+            "prematch_protection":{
+              "hard_unique_observations":before["hard_unique"],
+              "hard_tree_sha256":before["hard_tree_sha256"],
+              "hard_unchanged":True,
+              "clay_prospective_observations":before["clay_observations"],
+              "clay_tree_sha256":before["clay_tree_sha256"],
+              "clay_unchanged":True
+            },
+            "protections":{
+              "final_only_settlement":True,
+              "same_match_train_test_forbidden":True,
+              "states_do_not_substitute_for_matches":True,
+              "odds_to_probability":False,
+              "silent_imputation":False,
+              "missing_not_zero":True,
+              "automatic_wagering":False,
+              "real_money":"BLOCKED"
+            }
+          }
+          raw=json.dumps(cert,sort_keys=True,separators=(",",":"),ensure_ascii=False).encode()
+          cert["sha256_without_self"]=hashlib.sha256(raw).hexdigest()
+          p=Path(f"evidence/live_tennis_lab/{d0}/MATRIX_LIVE_TENNIS_REACTIVATION_CERT_V1.json")
+          p.write_text(json.dumps(cert,indent=2,sort_keys=True,ensure_ascii=False)+"\n")
+          print(json.dumps({
+            "status":cert["status"],
+            "current_capture":cert["current_capture"],
+            "cumulative":cert["cumulative"]
+          },sort_keys=True))
+          PY
+
+      - name: Persist Live-only evidence
+        shell: bash
+        run: |
+          set -euo pipefail
+          if ! git diff --quiet -- evidence/cor0203; then
+            echo "HARD_PREMATCH_DIRTY"; exit 1
+          fi
+          if ! git diff --quiet -- evidence/tennis_parallel_lanes/ATP_CHALLENGER_MEN_SINGLES_CLAY; then
+            echo "CLAY_PREMATCH_DIRTY"; exit 1
+          fi
+          git config user.name matrix-live-tennis-reactivation
+          git config user.email matrix-live-tennis-reactivation@users.noreply.github.com
+          git add evidence/live_tennis_lab
+          CHANGED="$(git diff --cached --name-only)"
+          if [ -z "$CHANGED" ]; then
+            echo "NO_LIVE_CHANGE"
+            exit 0
+          fi
+          if echo "$CHANGED" | grep -v '^evidence/live_tennis_lab/' ; then
+            echo "UNAUTHORIZED_PATH"; echo "$CHANGED"; exit 1
+          fi
+          git commit -m "evidence(live): reactivate tennis and cumulative lane gates"
+          for attempt in 1 2 3 4; do
+            git fetch origin repair/cor09-world-pipeline
+            if ! git rebase origin/repair/cor09-world-pipeline; then git rebase --abort || true; exit 1; fi
+            if git push origin HEAD:repair/cor09-world-pipeline; then exit 0; fi
+            sleep $((attempt*2))
+          done
+          exit 1
