@@ -1,6 +1,6 @@
 {
-  "admissible_observations": 288,
-  "duplicate_physical_matches_quarantined": 126,
+  "admissible_observations": 290,
+  "duplicate_physical_matches_quarantined": 127,
   "holdout_id": "A22_POST_AUDIT_VIRGIN_HOLDOUT_V1",
   "identity_mapping_required": 1,
   "items": [
@@ -6309,6 +6309,50 @@
       "revision": 893,
       "source_reference": "fixtures:matchId=1802;tournament_info=22101;ranking_cut=2026-09-21 | fixtures:matchId=1802;tournament_info=22101;ranking_cut=2026-09-21",
       "status": "READY_RESULT_LOOKUP"
+    },
+    {
+      "alphabetical_player_a": "Oleg Prihodko",
+      "alphabetical_player_b": "Patrick Brady",
+      "blocker": null,
+      "canonical_source_event_id": "rapidapi-tennis:match:1790",
+      "competition": "Roanne Challenger",
+      "event_id": "COR0203-RAPIDAPI-TENNIS-1790-92733bd11b4c",
+      "event_start_utc": "2026-10-11T15:30:00+00:00",
+      "identity_overlay_applied": false,
+      "observation_index": 289,
+      "observation_sha256": "7ae419ca2d5b16268b2a0fbb25b7918df338f0f973a0d54f3d188ac4591039f0",
+      "provider": "rapidapi_tennis",
+      "provider_match_key": "1790",
+      "provider_player_map": {
+        "rapidapi-tennis:player:36042": "Oleg Prihodko",
+        "rapidapi-tennis:player:87770": "Patrick Brady"
+      },
+      "provider_tournament_id": "22101",
+      "revision": 895,
+      "source_reference": "fixtures:matchId=1790;tournament_info=22101;ranking_cut=2026-09-21 | fixtures:matchId=1790;tournament_info=22101;ranking_cut=2026-09-21",
+      "status": "READY_RESULT_LOOKUP"
+    },
+    {
+      "alphabetical_player_a": "Oleg Prihodko",
+      "alphabetical_player_b": "Patrick Brady",
+      "blocker": "DUPLICATE_PHYSICAL_MATCH",
+      "canonical_source_event_id": "rapidapi-tennis:atp:match:1790",
+      "competition": "Roanne Challenger",
+      "event_id": "COR0203-RAPIDAPI-TENNIS-1790-0af6a1b6daf2",
+      "event_start_utc": "2026-10-11T15:30:00+00:00",
+      "identity_overlay_applied": false,
+      "observation_index": 290,
+      "observation_sha256": "50077eb0362637fdae917fb2a5ef322f52ab61a5b25563e23a6ca1d4dfe6aa77",
+      "provider": "rapidapi_tennis",
+      "provider_match_key": "1790",
+      "provider_player_map": {
+        "rapidapi-tennis:player:36042": "Oleg Prihodko",
+        "rapidapi-tennis:player:87770": "Patrick Brady"
+      },
+      "provider_tournament_id": "22101",
+      "revision": 896,
+      "source_reference": "fixtures:matchId=1790;tournament_info=22101;ranking_cut=2026-09-21;provider_channel=ATP | fixtures:matchId=1790;tournament_info=22101;ranking_cut=2026-09-21;provider_channel=ATP",
+      "status": "DUPLICATE_PHYSICAL_MATCH_QUARANTINED"
     }
   ],
   "ledger": {
@@ -6319,7 +6363,7 @@
   },
   "metrics": "SEALED_UNTIL_600",
   "outcomes_used_for_metrics": 0,
-  "ready_result_lookup": 41,
+  "ready_result_lookup": 42,
   "real_money": "BLOCKED",
   "schema": "MATRIX_COR0203_SETTLEMENT_QUEUE_V1",
   "settled": 120
