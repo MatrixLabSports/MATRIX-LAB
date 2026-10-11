@@ -12,6 +12,7 @@ on:
       - completed
   push:
     branches:
+      - main
       - repair/cor09-world-pipeline
     paths:
       - .github/workflows/live-tennis-bulk-seed.yml
@@ -136,6 +137,11 @@ jobs:
           git add "$D/MATRIX_LIVE_TENNIS_QUOTA_GUARD_LAST.json"
           if [ -f "$D/MATRIX_LIVE_TENNIS_STATE_LEDGER_V0_1.json" ]; then
             git add "$D/MATRIX_LIVE_TENNIS_STATE_LEDGER_V0_1.json"
+          fi
+          if ! git diff --quiet; then
+            echo "UNEXPECTED_TRACKED_UNSTAGED_CHANGES"
+            git status --short
+            exit 1
           fi
           if git diff --cached --quiet; then
             echo "NO_LIVE_STATE_OR_QUOTA_GUARD_CHANGE"
