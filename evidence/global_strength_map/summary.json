@@ -1,10 +1,10 @@
 {
-  "cell_count": 529,
+  "cell_count": 535,
   "class_counts": {
-    "DEVELOPING": 76,
-    "INSUFFICIENT_DATA": 446,
+    "DEVELOPING": 87,
+    "INSUFFICIENT_DATA": 440,
     "NO_GO": 5,
-    "STRONG": 2
+    "STRONG": 3
   },
   "football_global_cells": [
     {
@@ -12,36 +12,48 @@
       "classification_reason": "BOTH_PROPER_SCORES_BETTER_AND_95CI_FAVORABLE",
       "competition_id": "ALL",
       "competition_name": "ALL_COMPETITIONS",
-      "market": "OVER_2_5",
+      "market": "1X2",
       "metrics": {
-        "challenger_brier": 0.24161097034065393,
-        "challenger_log_loss": 0.6766572447856576,
-        "delta_brier": -0.0035083756840632585,
-        "delta_log_loss": -0.008659520006191634,
-        "n": 2005,
+        "challenger_accuracy": 0.5253194510175107,
+        "challenger_brier": 0.5983616623512524,
+        "challenger_log_loss": 1.006301262322631,
+        "delta_accuracy": 0.023189777567439673,
+        "delta_brier": -0.012875501741795414,
+        "delta_log_loss": -0.0136982436572739,
+        "n": 2113,
+        "paired_accuracy": {
+          "ci95": [
+            0.008820278418426284,
+            0.03755927671645304
+          ],
+          "mean": 0.02318977756743966,
+          "n": 2113,
+          "se": 0.007331377116843559
+        },
         "paired_brier": {
           "ci95": [
-            -0.005311412461036914,
-            -0.0017053389070897833
+            -0.019591988372752722,
+            -0.006159015110835828
           ],
-          "mean": -0.0035083756840633487,
-          "n": 2005,
-          "se": 0.0009199167229456967
+          "mean": -0.012875501741794275,
+          "n": 2113,
+          "se": 0.0034267788933461463
         },
         "paired_log_loss": {
           "ci95": [
-            -0.012728146126850987,
-            -0.004590893885530151
+            -0.025320263158129484,
+            -0.002076224156420321
           ],
-          "mean": -0.00865952000619057,
-          "n": 2005,
-          "se": 0.0020758296533981723
+          "mean": -0.013698243657274903,
+          "n": 2113,
+          "se": 0.005929601786150297
         },
-        "reference_brier": 0.2451193460247172,
-        "reference_log_loss": 0.6853167647918492
+        "reference_accuracy": 0.502129673450071,
+        "reference_brier": 0.6112371640930478,
+        "reference_log_loss": 1.019999505979905
       },
       "model_mutation_allowed": false,
-      "prospective_n": 2005,
+      "prospective_n": 2113,
       "scope": "GLOBAL_MARKET",
       "season": "MIXED",
       "sport": "FOOTBALL",
@@ -49,55 +61,43 @@
     },
     {
       "cell_used_to_generate_probability": false,
-      "classification_reason": "TRACKING_SAMPLE_WITHOUT_DECISIVE_STRONG_OR_NO_GO_EVIDENCE",
+      "classification_reason": "BOTH_PROPER_SCORES_BETTER_AND_95CI_FAVORABLE",
       "competition_id": "ALL",
       "competition_name": "ALL_COMPETITIONS",
-      "market": "1X2",
+      "market": "OVER_2_5",
       "metrics": {
-        "challenger_accuracy": 0.5251870324189526,
-        "challenger_brier": 0.5983168797246132,
-        "challenger_log_loss": 1.005903263250665,
-        "delta_accuracy": 0.01945137157107224,
-        "delta_brier": -0.011070146186258345,
-        "delta_log_loss": -0.011503679195677963,
-        "n": 2005,
-        "paired_accuracy": {
-          "ci95": [
-            0.004809118155149001,
-            0.03409362498699564
-          ],
-          "mean": 0.01945137157107232,
-          "n": 2005,
-          "se": 0.007470537457103734
-        },
+        "challenger_brier": 0.24081301678921982,
+        "challenger_log_loss": 0.6749686016035676,
+        "delta_brier": -0.003437314193032809,
+        "delta_log_loss": -0.008475858436521322,
+        "n": 2113,
         "paired_brier": {
           "ci95": [
-            -0.01783662446891092,
-            -0.004303667903602618
+            -0.0051915494864064075,
+            -0.0016830788996591523
           ],
-          "mean": -0.011070146186256768,
-          "n": 2005,
-          "se": 0.003452284838088852
+          "mean": -0.0034373141930327798,
+          "n": 2113,
+          "se": 0.0008950180068232794
         },
         "paired_log_loss": {
           "ci95": [
-            -0.023294846488888993,
-            0.00028748809753009405
+            -0.012435291828833222,
+            -0.004516425044208234
           ],
-          "mean": -0.01150367919567945,
-          "n": 2005,
-          "se": 0.0060159016802089505
+          "mean": -0.008475858436520729,
+          "n": 2113,
+          "se": 0.0020201190777104565
         },
-        "reference_accuracy": 0.5057356608478804,
-        "reference_brier": 0.6093870259108716,
-        "reference_log_loss": 1.017406942446343
+        "reference_brier": 0.24425033098225263,
+        "reference_log_loss": 0.683444460040089
       },
       "model_mutation_allowed": false,
-      "prospective_n": 2005,
+      "prospective_n": 2113,
       "scope": "GLOBAL_MARKET",
       "season": "MIXED",
       "sport": "FOOTBALL",
-      "strength_class": "DEVELOPING"
+      "strength_class": "STRONG"
     },
     {
       "cell_used_to_generate_probability": false,
@@ -254,7 +254,7 @@
       "strength_class": "NO_GO"
     }
   ],
-  "generated_at_utc": "2026-10-11T19:45:55+00:00",
+  "generated_at_utc": "2026-10-11T23:14:12+00:00",
   "schema": "MATRIX_GLOBAL_STRENGTH_MAP_SUMMARY_V1",
   "status": "PASS",
   "tennis_domain_cells": [
@@ -271,8 +271,8 @@
         "glicko": "R223_BATCH_GLICKO_RATING_BOTH"
       },
       "outcomes_read": 0,
-      "prospective_n": 198,
-      "remaining_to_600": 402,
+      "prospective_n": 199,
+      "remaining_to_600": 401,
       "scope": "DOMAIN",
       "season": 2026,
       "sport": "TENNIS",
@@ -295,7 +295,7 @@
       "eligible_current_world_candidates": 0,
       "evaluation_policy": "WORLD_EVENTS_PRESERVED_BEFORE_DOMAIN_FILTER; EACH_DOMAIN_REQUIRES_INDEPENDENT_MODEL_AND_CALIBRATION",
       "mode": "WORLD_INVENTORY_THEN_GOVERNED_DOMAIN_FILTER",
-      "rapidapi_base_candidates": 45,
+      "rapidapi_base_candidates": 46,
       "world_domain_candidates_input": 36,
       "world_inventory_target_date": "2026-10-11",
       "world_inventory_total": 185
