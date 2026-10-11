@@ -18,6 +18,37 @@ def get_json(path:str,key:str,params:dict[str,Any]|None=None):
     return payload,r.status_code
 
 
+def persist_blocked_state(*, ledger_path:Path, out_path:Path, ledger:dict[str,Any], match_ids:list[int], already_settled_ids:set[int], status:str, reason:str, remaining:int|None=None)->None:
+    payload={
+      "schema":"MATRIX_LIVE_TENNIS_SETTLEMENT_SYNC_V0_1",
+      "generated_at_utc":datetime.now(timezone.utc).replace(microsecond=0).isoformat(),
+      "source_ledger":str(ledger_path),
+      "status":status,
+      "blocking_reason":reason,
+      "quota_remaining":remaining,
+      "match_ids_seen":len(match_ids),
+      "currently_live_match_ids":[],
+      "already_settled_match_ids":sorted(already_settled_ids),
+      "departed_match_ids":[],
+      "queried_match_ids":[],
+      "standard_final_settlements":[],
+      "blocked_or_pending":[],
+      "labeled_state_rows":0,
+      "protections":{
+        "final_only":True,
+        "retired_walkover_abandoned_not_silently_labeled":True,
+        "prematch_freeze_mutated":False,
+        "odds_to_probability":False,
+        "reserve_not_bypassed":True,
+        "real_money":"BLOCKED"
+      }
+    }
+    out_path.parent.mkdir(parents=True,exist_ok=True)
+    out_path.write_text(json.dumps(payload,indent=2,sort_keys=True,ensure_ascii=False)+"\n",encoding="utf-8")
+    ledger_path.write_text(json.dumps(ledger,indent=2,sort_keys=True,ensure_ascii=False)+"\n",encoding="utf-8")
+    print(json.dumps({"status":status,"reason":reason,"quota_remaining":remaining,"settled_matches":0,"labeled_state_rows":0},sort_keys=True))
+
+
 def main():
     ap=argparse.ArgumentParser()
     ap.add_argument("--ledger",required=True)
@@ -43,14 +74,36 @@ def main():
         and x.get("p1_match_win") in {0,1}
     }
 
+    out_path=Path(args.out)
     usage,code=get_json("/usage",key)
+    if code==429:
+        persist_blocked_state(
+            ledger_path=ledger_path,out_path=out_path,ledger=ledger,
+            match_ids=match_ids,already_settled_ids=already_settled_ids,
+            status="BLOCKED_HTTP_429",reason="USAGE_HTTP_429",remaining=None,
+        )
+        return
     if code!=200:
         raise SystemExit(f"USAGE_HTTP_{code}")
     remaining=((usage.get("today") or {}).get("remaining_day") if isinstance(usage,dict) else None)
     if not isinstance(remaining,int):
         raise SystemExit("USAGE_REMAINING_UNKNOWN")
+    if remaining<=args.reserve_calls:
+        persist_blocked_state(
+            ledger_path=ledger_path,out_path=out_path,ledger=ledger,
+            match_ids=match_ids,already_settled_ids=already_settled_ids,
+            status="BLOCKED_BY_RESERVE",reason="QUOTA_RESERVE_PROTECTED",remaining=remaining,
+        )
+        return
 
     live,code=get_json("/matches",key,{"status":"live","limit":50})
+    if code==429:
+        persist_blocked_state(
+            ledger_path=ledger_path,out_path=out_path,ledger=ledger,
+            match_ids=match_ids,already_settled_ids=already_settled_ids,
+            status="BLOCKED_HTTP_429",reason="LIVE_HTTP_429",remaining=remaining,
+        )
+        return
     if code!=200:
         raise SystemExit(f"LIVE_HTTP_{code}")
     live_rows=live.get("data") if isinstance(live,dict) and isinstance(live.get("data"),list) else []
@@ -63,6 +116,9 @@ def main():
     blocked=[]
     for mid in query_ids:
         detail,code=get_json(f"/matches/{mid}",key)
+        if code==429:
+            blocked.append({"match_id":mid,"reason":"DETAIL_HTTP_429_RATE_LIMIT_STOP"})
+            break
         if code!=200:
             blocked.append({"match_id":mid,"reason":f"DETAIL_HTTP_{code}"})
             continue
