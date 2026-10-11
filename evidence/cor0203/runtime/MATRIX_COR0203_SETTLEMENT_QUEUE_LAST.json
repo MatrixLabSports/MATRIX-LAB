@@ -1,6 +1,6 @@
 {
-  "admissible_observations": 311,
-  "duplicate_physical_matches_quarantined": 132,
+  "admissible_observations": 313,
+  "duplicate_physical_matches_quarantined": 133,
   "holdout_id": "A22_POST_AUDIT_VIRGIN_HOLDOUT_V1",
   "identity_mapping_required": 1,
   "items": [
@@ -6022,7 +6022,7 @@
       "provider_tournament_id": "22099",
       "revision": 889,
       "source_reference": "fixtures:matchId=1740;tournament_info=22099;ranking_cut=2026-09-21 | fixtures:matchId=1740;tournament_info=22099;ranking_cut=2026-09-21",
-      "status": "READY_RESULT_LOOKUP"
+      "status": "SETTLED"
     },
     {
       "alphabetical_player_a": "Benjamin Bonzi",
@@ -6815,18 +6815,62 @@
       "revision": 904,
       "source_reference": "get_fixtures:event_key=12170106;get_draw:tournament_key=10295;season=2026;source=draw_feed | get_fixtures:event_key=12170106;get_draw:tournament_key=10295;season=2026;source=draw_feed",
       "status": "READY_RESULT_LOOKUP"
+    },
+    {
+      "alphabetical_player_a": "Christian Langmo",
+      "alphabetical_player_b": "Viktor Durasovic",
+      "blocker": "DUPLICATE_PHYSICAL_MATCH",
+      "canonical_source_event_id": "rapidapi-tennis:match:1705",
+      "competition": "Olbia Challenger",
+      "event_id": "COR0203-RAPIDAPI-TENNIS-1705-459350bc8276",
+      "event_start_utc": "2026-10-12T08:00:00+00:00",
+      "identity_overlay_applied": false,
+      "observation_index": 312,
+      "observation_sha256": "4a21b3c8cff090cdc5cb90f8b9194efad5bd003cd63cbe8e0277b891b96b47fd",
+      "provider": "rapidapi_tennis",
+      "provider_match_key": "1705",
+      "provider_player_map": {
+        "rapidapi-tennis:player:28685": "Viktor Durasovic",
+        "rapidapi-tennis:player:30954": "Christian Langmo"
+      },
+      "provider_tournament_id": "22099",
+      "revision": 906,
+      "source_reference": "fixtures:matchId=1705;tournament_info=22099;ranking_cut=2026-09-21 | fixtures:matchId=1705;tournament_info=22099;ranking_cut=2026-09-21",
+      "status": "DUPLICATE_PHYSICAL_MATCH_QUARANTINED"
+    },
+    {
+      "alphabetical_player_a": "Lucas Poullain",
+      "alphabetical_player_b": "Tom Paris",
+      "blocker": null,
+      "canonical_source_event_id": "rapidapi-tennis:match:1792",
+      "competition": "Roanne Challenger",
+      "event_id": "COR0203-RAPIDAPI-TENNIS-1792-d64b36dd1811",
+      "event_start_utc": "2026-10-12T08:00:00+00:00",
+      "identity_overlay_applied": false,
+      "observation_index": 313,
+      "observation_sha256": "b4a39e007cf25f6ea36700f0be98bb26301cc65336f3ae2244a5f3660a96da6c",
+      "provider": "rapidapi_tennis",
+      "provider_match_key": "1792",
+      "provider_player_map": {
+        "rapidapi-tennis:player:30496": "Lucas Poullain",
+        "rapidapi-tennis:player:82262": "Tom Paris"
+      },
+      "provider_tournament_id": "22101",
+      "revision": 906,
+      "source_reference": "fixtures:matchId=1792;tournament_info=22101;ranking_cut=2026-09-21 | fixtures:matchId=1792;tournament_info=22101;ranking_cut=2026-09-21",
+      "status": "READY_RESULT_LOOKUP"
     }
   ],
   "ledger": {
     "hash_chain_verified": true,
     "outcomes_used_for_metrics": 0,
-    "records": 184,
-    "unique_events": 184
+    "records": 185,
+    "unique_events": 185
   },
   "metrics": "SEALED_UNTIL_600",
   "outcomes_used_for_metrics": 0,
   "ready_result_lookup": 47,
   "real_money": "BLOCKED",
   "schema": "MATRIX_COR0203_SETTLEMENT_QUEUE_V1",
-  "settled": 131
+  "settled": 132
 }
