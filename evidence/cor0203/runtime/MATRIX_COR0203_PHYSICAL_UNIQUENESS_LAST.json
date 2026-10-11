@@ -5051,7 +5051,7 @@
       "canonical_source_event_id": "api-tennis:event:12170169",
       "canonical_unique_index": 195,
       "competition": "Jinan",
-      "duplicate_alias_count": 0,
+      "duplicate_alias_count": 1,
       "event_id": "COR0203-API-TENNIS-12170169",
       "event_start_utc": "2026-10-12T08:00:00+00:00",
       "freeze_at_utc": "2026-10-11T18:26:58+00:00",
@@ -5148,10 +5148,36 @@
       "round": "Olbia - Final",
       "source_provider": "api_tennis",
       "window": 1
+    },
+    {
+      "alphabetical_player_a": "Norbert Gombos",
+      "alphabetical_player_b": "Robin Catry",
+      "canonical_source_event_id": "rapidapi-tennis:match:1603",
+      "canonical_unique_index": 199,
+      "competition": "Roanne Challenger",
+      "duplicate_alias_count": 0,
+      "event_id": "COR0203-RAPIDAPI-TENNIS-1603-8ae9bc6582d7",
+      "event_start_utc": "2026-10-12T11:30:00+00:00",
+      "freeze_at_utc": "2026-10-11T22:26:38+00:00",
+      "observation_index": 340,
+      "physical_event_key": "f5b6bbe83c9668893b476b3baab0a587520e429fa00c43009fae92d94779bec6",
+      "physical_identity_authority": "PROVIDER_TOURNAMENT_PLAYER_IDS_ROUND",
+      "physical_identity_components": {
+        "competition_id": "rapidapi-tennis:tournament:22101",
+        "players": [
+          "rapidapi-tennis:player:17928",
+          "rapidapi-tennis:player:84849"
+        ],
+        "round": "Q3"
+      },
+      "revision": 911,
+      "round": "Q3",
+      "source_provider": "rapidapi_tennis",
+      "window": 1
     }
   ],
-  "duplicate_groups": 96,
-  "duplicate_observations_quarantined": 140,
+  "duplicate_groups": 97,
+  "duplicate_observations_quarantined": 141,
   "duplicate_rows_count_toward_cor0203": false,
   "historical_backfill": false,
   "holdout_id": "A22_POST_AUDIT_VIRGIN_HOLDOUT_V1",
@@ -5159,7 +5185,7 @@
   "metrics_opened": false,
   "outcomes_read": 0,
   "outcomes_used_for_uniqueness": 0,
-  "physical_frozen_rows": 338,
+  "physical_frozen_rows": 340,
   "quarantined_duplicates": [
     {
       "alphabetical_player_a": "Jerome Kym",
@@ -8940,6 +8966,33 @@
       "revision": 908,
       "round": "First",
       "source_provider": "rapidapi_tennis"
+    },
+    {
+      "alphabetical_player_a": "Keegan Smith",
+      "alphabetical_player_b": "Stefanos Sakellaridis",
+      "canonical_event_id": "COR0203-API-TENNIS-12170169",
+      "canonical_observation_index": 335,
+      "canonical_physical_event_key": "9079aae160813d8bdcd954f8d7ecea8d05b6e416c29e104bae3efdaf81d969f8",
+      "canonical_source_event_id": "rapidapi-tennis:match:1479",
+      "competition": "Jinan Challenger",
+      "event_id": "COR0203-RAPIDAPI-TENNIS-1479-bf9e9c5b241a",
+      "event_start_utc": "2026-10-12T08:00:00+00:00",
+      "freeze_at_utc": "2026-10-11T22:26:38+00:00",
+      "observation_index": 339,
+      "physical_event_key": "3486971cc2939ca1f9ce66f7531d57d3aad47e3c5ffca4cdb3651848de68ea98",
+      "physical_identity_authority": "PROVIDER_TOURNAMENT_PLAYER_IDS_ROUND",
+      "physical_identity_components": {
+        "competition_id": "rapidapi-tennis:tournament:22098",
+        "players": [
+          "rapidapi-tennis:player:56211",
+          "rapidapi-tennis:player:74880"
+        ],
+        "round": "R1"
+      },
+      "quarantine_reason": "DUPLICATE_PHYSICAL_MATCH_CROSS_PROVIDER",
+      "revision": 911,
+      "round": "First",
+      "source_provider": "rapidapi_tennis"
     }
   ],
   "raw_append_only_evidence_preserved": true,
@@ -8947,9 +9000,9 @@
   "result": "PASS",
   "schema": "MATRIX_COR0203_PHYSICAL_UNIQUENESS_AUDIT_V1",
   "source_integrity_result": "PASS",
-  "unique_calibration_observations": 198,
-  "unique_remaining_to_200": 2,
-  "unique_remaining_to_600": 402,
+  "unique_calibration_observations": 199,
+  "unique_remaining_to_200": 1,
+  "unique_remaining_to_600": 401,
   "unresolved": [],
   "unresolved_identity_rows": 0
 }
