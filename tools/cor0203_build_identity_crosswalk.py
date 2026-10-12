@@ -106,8 +106,19 @@ def build_crosswalk(
         event_provider_ids: list[str] = []
 
         identities = list(event.get("player_identities") or [])
-        if len(identities) != 2:
-            event_blockers.append("PROVIDER_IDENTITIES_REQUIRED")
+        identity_only_mode = (
+            prefeature.get("identity_only") is True
+            and prefeature.get("model_admission_forbidden") is True
+            and event.get("identity_only") is True
+            and event.get("model_admission_forbidden") is True
+        )
+        required_identity_count = 1 if identity_only_mode else 2
+        if len(identities) != required_identity_count:
+            event_blockers.append(
+                "PROVIDER_IDENTITIES_REQUIRED"
+                if required_identity_count == 2
+                else "IDENTITY_ONLY_PROVIDER_IDENTITY_REQUIRED"
+            )
 
         for identity in identities:
             provider_id = str(identity.get("provider_player_id") or "")
