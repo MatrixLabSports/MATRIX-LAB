@@ -89,3 +89,35 @@ def test_dynamic_probe_targets_only_current_players_without_authority(tmp_path):
     assert targets["103054"]=="Thijs Boogaard"
     assert targets["92242"]=="Charles Chen"
     assert "111" not in targets
+
+def test_dynamic_probe_preserves_current_world_priority_before_wider_horizon(tmp_path):
+    world=tmp_path/"world.json"
+    extra=tmp_path/"extra.json"
+    authority=tmp_path/"authority.json"
+    world.write_text(json.dumps({
+        "eligible_candidates":[{
+            "player_identities":[{
+                "provider_player_id":"rapidapi-tennis:player:999999",
+                "display_name":"Current World Candidate",
+            }]
+        }],
+    }),encoding="utf-8")
+    extra.write_text(json.dumps({
+        "eligible_candidates":[{
+            "player_identities":[{
+                "provider_player_id":"rapidapi-tennis:player:1",
+                "display_name":"Wider Horizon Candidate",
+            }]
+        }],
+    }),encoding="utf-8")
+    authority.write_text(json.dumps({"records":[]}),encoding="utf-8")
+
+    targets=discover_targets(
+        world_discovery_path=world,
+        authority_path=authority,
+        max_targets=1,
+        extra_discovery_path=extra,
+    )
+
+    assert list(targets.items())==[("999999","Current World Candidate")]
+
