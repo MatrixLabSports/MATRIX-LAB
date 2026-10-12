@@ -134,8 +134,6 @@ def recover(
             blocked.append({"provider_player_id":pid,"reason":"PROFILE_IOC_MISMATCH"}); continue
         if p["dob"] is None:
             blocked.append({"provider_player_id":pid,"reason":"PROFILE_DOB_INVALID"}); continue
-        if p["hand"] not in {"R","L"}:
-            blocked.append({"provider_player_id":pid,"reason":"PROFILE_HAND_INVALID"}); continue
 
         hist_rows=hist.get(_norm(names[0]),[])
         hist_ids=sorted({x["canonical_source_id"] for x in hist_rows})
@@ -144,8 +142,16 @@ def recover(
 
         if len(hist_ids)==1:
             hands=sorted({x["hand"] for x in hist_rows if x["hand"]})
-            if len(hands)>1 or (hands and hands[0]!=p["hand"]):
+            if len(hands)!=1:
+                blocked.append({"provider_player_id":pid,"reason":"HISTORICAL_HAND_NOT_UNIQUE"}); continue
+            if p["hand"] in {"R","L"} and hands[0]!=p["hand"]:
                 blocked.append({"provider_player_id":pid,"reason":"PROFILE_HISTORICAL_HAND_CONFLICT"}); continue
+            resolved_hand=hands[0]
+            hand_source=(
+                "RAPIDAPI_PROFILE_CONFIRMED_BY_UNIQUE_CLAY_HISTORY"
+                if p["hand"] in {"R","L"}
+                else "UNIQUE_PRE_CUT_CLAY_HISTORY"
+            )
             diffs=[]
             for x in hist_rows:
                 expected=_age_on(p["dob"],x["tourney_date"])
@@ -158,9 +164,13 @@ def recover(
                     "max_age_delta":max(diffs) if diffs else None,
                 }); continue
             cid=hist_ids[0]
-            basis="EXACT_PROVIDER_ID_NAME_IOC_PROFILE_DOB_HAND_PLUS_UNIQUE_CLAY_HISTORICAL_ID_AGE"
+            basis="EXACT_PROVIDER_ID_NAME_IOC_PROFILE_DOB_PLUS_UNIQUE_CLAY_HISTORICAL_ID_HAND_AGE"
             new_player=False
         else:
+            if p["hand"] not in {"R","L"}:
+                blocked.append({"provider_player_id":pid,"reason":"PROFILE_HAND_INVALID_FOR_NEW_PLAYER"}); continue
+            resolved_hand=p["hand"]
+            hand_source="RAPIDAPI_PROFILE"
             cid="RAPIDAPI_CLAY_NEW_"+numeric
             basis="EXACT_PROVIDER_ID_NAME_IOC_PROFILE_DOB_HAND_PLUS_FROZEN_ELO_NEW_PLAYER_PRIOR"
             new_player=True
@@ -176,7 +186,8 @@ def recover(
             "canonical_name":names[0],
             "canonical_ioc":iocs[0],
             "canonical_dob":p["dob"].isoformat(),
-            "canonical_hand":p["hand"],
+            "canonical_hand":resolved_hand,
+            "hand_source":hand_source,
             "match_basis":basis,
             "identity_evidence_role":"CLAY_CATCHUP_IDENTITY_ONLY",
             "new_to_clay_historical_dataset":new_player,
