@@ -71,3 +71,70 @@ def test_authority_index_uses_unique_precut_source_id_when_top_level_id_absent()
     out=authority_index(authority)
     assert out["11"]["canonical_source_id"]=="P001"
     assert out["11"]["canonical_name"]=="Player One"
+
+def test_causal_identity_closure_ignores_later_only_opponent_branch():
+    historical=[
+        _hist("A","B",1,20260913),
+        _hist("A","B",0,20260914),
+    ]
+    authority={
+        "records":[
+            {"provider_player_id":"rapidapi-tennis:player:11","canonical_source_id":"A","canonical_name":"A"},
+            {"provider_player_id":"rapidapi-tennis:player:22","canonical_source_id":"B","canonical_name":"B"},
+        ]
+    }
+    results=[
+        _result("1","2026-09-15","11","22"),
+        _result("2","2026-09-16","22","44"),
+    ]
+    state=build_state(
+        historical_rows=historical,
+        result_rows=results,
+        authority_payload=authority,
+        target_provider_ids={"rapidapi-tennis:player:11"},
+        source_start=date(2026,9,15),
+        source_stop=date(2026,9,16),
+    )
+    target=state["targets"][0]
+    assert target["ready"] is True
+    assert target["component_unmapped_provider_ids"]==[]
+    assert state["identity_closure_policy"]=="REVERSE_TIME_CAUSAL_BATCH_DAY"
+
+
+def test_supplemental_identity_only_crosswalk_can_complete_causal_mapping():
+    historical=[
+        _hist("A","B",1,20260913),
+        _hist("A","B",0,20260914),
+    ]
+    authority={
+        "records":[
+            {"provider_player_id":"rapidapi-tennis:player:11","canonical_source_id":"A","canonical_name":"A"},
+        ]
+    }
+    supplemental={
+        "events":[{
+            "event_id":"identity-only-22",
+            "status":"PASS",
+            "provider_player_ids":["rapidapi-tennis:player:22"],
+            "blockers":[],
+        }],
+        "mappings":[{
+            "provider_player_id":"rapidapi-tennis:player:22",
+            "canonical_source_id":"B",
+            "canonical_name":"B",
+            "status":"PASS",
+        }],
+    }
+    results=[_result("1","2026-09-15","11","22")]
+    state=build_state(
+        historical_rows=historical,
+        result_rows=results,
+        authority_payload=authority,
+        target_provider_ids={"rapidapi-tennis:player:11"},
+        source_start=date(2026,9,15),
+        source_stop=date(2026,9,15),
+        supplemental_crosswalk_payload=supplemental,
+    )
+    assert state["targets"][0]["ready"] is True
+    assert state["supplemental_identity_crosswalk_used"] is True
+
