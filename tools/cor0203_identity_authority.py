@@ -172,9 +172,11 @@ def resolve_authority_mapping(
             "status": "PASS",
         }, None
 
-    if str(row.get("authority_basis") or "") == (
-        "SEALED_R706_STATE_PLUS_PRECUT_PROVIDER_HISTORY_AND_PROFILE"
-    ):
+    r706_basis = str(row.get("authority_basis") or "")
+    if r706_basis in {
+        "SEALED_R706_STATE_PLUS_PRECUT_PROVIDER_HISTORY_AND_PROFILE",
+        "SEALED_R706_STATE_PLUS_EXACT_CUT_PROVIDER_IDENTITY_AND_PROFILE",
+    }:
         sealed = row.get("sealed_r706_history")
         provider_history = row.get("pre_cut_provider_history")
         if not isinstance(sealed, Mapping) or sealed.get("fully_history_ready") is not True:
@@ -183,12 +185,11 @@ def resolve_authority_mapping(
             return None, "IDENTITY_AUTHORITY_PROVIDER_HISTORY_MISSING:" + provider_id
         if str(provider_history.get("cutoff_exclusive_utc") or "") != "2026-09-21T00:00:00+00:00":
             return None, "IDENTITY_AUTHORITY_PROVIDER_HISTORY_CUT_MISMATCH:" + provider_id
+
         try:
             eligible_pre_cut = int(provider_history.get("eligible_pre_cut_matches") or 0)
         except (TypeError, ValueError):
             eligible_pre_cut = 0
-        if eligible_pre_cut <= 0:
-            return None, "IDENTITY_AUTHORITY_PROVIDER_PRECUT_HISTORY_EMPTY:" + provider_id
         observed_names = [
             str(x).strip()
             for x in provider_history.get("observed_names", []) or []
@@ -199,6 +200,51 @@ def resolve_authority_mapping(
             for x in observed_names
         ):
             return None, "IDENTITY_AUTHORITY_PROVIDER_HISTORY_NAME_MISMATCH:" + provider_id
+
+        identity_only = (
+            r706_basis
+            == "SEALED_R706_STATE_PLUS_EXACT_CUT_PROVIDER_IDENTITY_AND_PROFILE"
+        )
+        if identity_only:
+            if provider_history.get("competitive_history_admitted") is not False:
+                return None, "IDENTITY_AUTHORITY_PROVIDER_HISTORY_ADMISSION_INVALID:" + provider_id
+            identity_evidence = row.get("provider_identity_evidence")
+            if not isinstance(identity_evidence, Mapping):
+                return None, "IDENTITY_AUTHORITY_PROVIDER_IDENTITY_EVIDENCE_MISSING:" + provider_id
+            if str(identity_evidence.get("provider_player_id") or "") != provider_id:
+                return None, "IDENTITY_AUTHORITY_PROVIDER_IDENTITY_ID_MISMATCH:" + provider_id
+            if str(identity_evidence.get("role") or "") != "IDENTITY_ONLY":
+                return None, "IDENTITY_AUTHORITY_PROVIDER_IDENTITY_ROLE_INVALID:" + provider_id
+            if identity_evidence.get("post_cut_competitive_data_used") is not False:
+                return None, "IDENTITY_AUTHORITY_PROVIDER_IDENTITY_POSTCUT_INVALID:" + provider_id
+            if str(identity_evidence.get("ranking_cut") or "").replace("-", "") != CUT_TOKEN:
+                return None, "IDENTITY_AUTHORITY_PROVIDER_IDENTITY_RANKING_CUT_MISMATCH:" + provider_id
+            try:
+                evidence_rank = int(identity_evidence.get("rank"))
+                evidence_points = int(identity_evidence.get("rank_points"))
+                past_matches_returned = int(identity_evidence.get("past_matches_returned") or 0)
+            except (TypeError, ValueError):
+                return None, "IDENTITY_AUTHORITY_PROVIDER_IDENTITY_NUMERIC_INVALID:" + provider_id
+            if past_matches_returned <= 0:
+                return None, "IDENTITY_AUTHORITY_PROVIDER_IDENTITY_ROWS_EMPTY:" + provider_id
+            if (evidence_rank, evidence_points) != (rank, points):
+                return None, "IDENTITY_AUTHORITY_PROVIDER_IDENTITY_RANK_POINTS_MISMATCH:" + provider_id
+            if _canonical_ioc(identity_evidence.get("ioc")) != provider_ioc:
+                return None, "IDENTITY_AUTHORITY_PROVIDER_IDENTITY_IOC_MISMATCH:" + provider_id
+            identity_names = [
+                str(x).strip()
+                for x in identity_evidence.get("observed_names", []) or []
+                if str(x).strip()
+            ]
+            if not identity_names or any(
+                _norm_name(x) != _norm_name(canonical_name)
+                for x in identity_names
+            ):
+                return None, "IDENTITY_AUTHORITY_PROVIDER_IDENTITY_NAME_MISMATCH:" + provider_id
+        else:
+            if eligible_pre_cut <= 0:
+                return None, "IDENTITY_AUTHORITY_PROVIDER_PRECUT_HISTORY_EMPTY:" + provider_id
+
         sealed_name = str(sealed.get("name") or "").strip()
         if not sealed_name or _norm_name(sealed_name) != _norm_name(canonical_name):
             return None, "IDENTITY_AUTHORITY_R706_NAME_MISMATCH:" + provider_id
@@ -246,6 +292,11 @@ def resolve_authority_mapping(
             "canonical_dob": dob.isoformat(),
             "ranking_cut": CUT_TOKEN,
             "match_basis": (
+                "EXACT_PROVIDER_ID_PLUS_NAME_IOC_DATED_RANKING_"
+                "PLUS_IDENTITY_ONLY_PROVIDER_ROWS_PLUS_SEALED_R706_HISTORY_"
+                "PLUS_PROFILE_DOB_HAND"
+                if identity_only
+                else
                 "EXACT_PROVIDER_ID_PLUS_NAME_IOC_DATED_RANKING_"
                 "PLUS_PRECUT_PROVIDER_RESULTS_PLUS_SEALED_R706_HISTORY_"
                 "PLUS_PROFILE_DOB_HAND"
