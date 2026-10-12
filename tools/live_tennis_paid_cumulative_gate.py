@@ -13,6 +13,10 @@ GATES=(1,30,50,100,200)
 
 def _lane(row: Mapping[str,Any]) -> str:
     event_type=str(row.get("event_type") or "unknown").strip().casefold()
+    if "challenger men" in event_type and "singles" in event_type:
+        return "api_tennis|challenger_men_singles"
+    if "challenger women" in event_type and "singles" in event_type:
+        return "api_tennis|challenger_women_singles"
     if "atp" in event_type and "singles" in event_type:
         return "api_tennis|atp_singles"
     if "wta" in event_type and "singles" in event_type:
