@@ -1,13 +1,9 @@
 name: Tennis Prematch 08OCT Browser First Dual Paid Lanes
 
+# Historical 08-OCT certification workflow. Kept for audit/replay only.
+# It must not auto-run after the operational date; current Hard/Clay cycles
+# are handled by their governed dynamic-date workflows.
 on:
-  push:
-    branches:
-      - repair/cor09-world-pipeline
-    paths:
-      - .github/workflows/tennis-prematch-20261008-browser-first-dual-lanes.yml
-      - tools/tennis_api_tennis_dual_lane_exact_day.py
-      - tools/tennis_dual_lane_event_reconcile.py
   workflow_dispatch:
 
 permissions:
