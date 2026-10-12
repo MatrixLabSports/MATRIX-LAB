@@ -1,0 +1,58 @@
+{
+  "schema": "MATRIX_LIVE_TENNIS_CROSS_PROVIDER_EQUIVALENCE_AUDIT_V1",
+  "generated_context_utc": "2026-10-12T06:59:00Z",
+  "status": "BLOCKED_INSUFFICIENT_CROSS_PROVIDER_OVERLAP",
+  "purpose": "Test whether API-Tennis paid failover identities can be admitted into the existing Live Tennis API calibration lane without name-only joins.",
+  "sources": {
+    "free_2026_10_11": {
+      "path": "evidence/live_tennis_lab/2026-10-11/MATRIX_LIVE_TENNIS_STATE_LEDGER_V0_1.json",
+      "blob": "90b72097aecf63258ccad45f5bc645f9c4452110",
+      "unique_matches": 20,
+      "unique_states": 55
+    },
+    "paid_2026_10_11": {
+      "path": "evidence/live_tennis_lab/2026-10-11/MATRIX_LIVE_TENNIS_API_TENNIS_FAILOVER_LEDGER_V1.json",
+      "blob": "44362e281e63cb089ee89bae4fbf60f9626049fd",
+      "unique_matches": 9,
+      "unique_states": 29,
+      "quality_valid_states": 24
+    },
+    "paid_2026_10_12": {
+      "path": "evidence/live_tennis_lab/2026-10-12/MATRIX_LIVE_TENNIS_API_TENNIS_FAILOVER_LEDGER_V1.json",
+      "blob": "35ebab31adfdf16cb2d2f588013faa7db9de86c2",
+      "unique_matches": 9,
+      "unique_states": 24,
+      "quality_valid_states": 18
+    }
+  },
+  "identity_rule": {
+    "single_name_join_allowed": false,
+    "required_for_candidate_overlap": [
+      "both participant identities as unordered pair",
+      "compatible tournament identity",
+      "same operational capture window"
+    ],
+    "provider_event_ids_preserved": true
+  },
+  "observed_overlap": {
+    "free_matches_examined": 20,
+    "paid_matches_examined": 9,
+    "exact_unordered_participant_pair_plus_tournament_candidates": 0,
+    "adjudicable_cross_provider_match_pairs": 0
+  },
+  "calibration_admission": {
+    "paid_failover_admitted": false,
+    "reason": "NO_ADJUDICABLE_CROSS_PROVIDER_OVERLAP_SAMPLE",
+    "existing_free_provider_lane_unchanged": true,
+    "states_added_to_calibration": 0
+  },
+  "next_evidence_condition": "Require at least one physically overlapping event observed by both providers with non-name-only identity evidence before any equivalence mapping can be adjudicated. Do not infer equivalence from separate match sets.",
+  "protections": {
+    "missing_not_zero": true,
+    "silent_imputation": false,
+    "odds_to_probability": false,
+    "same_match_train_test_forbidden": true,
+    "automatic_wagering": false,
+    "real_money": "BLOCKED"
+  }
+}
