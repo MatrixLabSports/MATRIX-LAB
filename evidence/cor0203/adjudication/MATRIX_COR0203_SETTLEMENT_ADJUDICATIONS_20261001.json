@@ -1,6 +1,6 @@
 {
   "schema": "MATRIX_COR0203_SETTLEMENT_ADJUDICATIONS_20261001_V1",
-  "created_at_utc": "2026-10-12T17:58:00+00:00",
+  "created_at_utc": "2026-10-12T18:05:00+00:00",
   "policy": {
     "completed_match": "append canonical binary settlement",
     "retired_match": "append official-winner settlement; preserve RETIRED terminal status; metrics remain sealed",
@@ -8,7 +8,8 @@
     "suspended_or_rescheduled": "do not invent an outcome; keep waiting for FINAL result",
     "fuzzy_matching": false,
     "metrics_opened": false,
-    "real_money": "BLOCKED"
+    "real_money": "BLOCKED",
+    "walkover_match": "append terminal WALKOVER closure with official advancement reference; no binary sporting outcome; exclude from calibration metric denominator"
   },
   "entries": [
     {
@@ -95,6 +96,21 @@
         "USER_PROVIDED_FLASHSCORE_SCREENSHOT_SHA256:0988609ba7008bcba07622bd20edb2df7ee16713c9fc73ad65f523c0bf0eec3f",
         "24score Lloyd Harris vs Alex Bolt Jingshan 03-Oct-2026: Harris W 1:1 (5:7,7:6) Retired",
         "CanalTenis Jingshan 2026 semifinal: Lloyd Harris vs Alex Bolt 5-7,7-6(2),0-0 Ret."
+      ]
+    },
+    {
+      "event_id": "COR0203-RAPIDAPI-TENNIS-1346-5af0075e1c7b",
+      "action": "APPEND_SETTLEMENT",
+      "terminal_status": "WALKOVER",
+      "event_final_result": "WALKOVER - Jerome Kym withdrew before play; Henrique Rocha advanced",
+      "winner_canonical_name": "Henrique Rocha",
+      "outcome_player_a": null,
+      "metric_eligibility_at_open": "EXCLUDED_WALKOVER_NO_SPORTING_OUTCOME",
+      "source_provider": "external_multi_source_adjudication",
+      "sources": [
+        "USER_PROVIDED_SCREENSHOT_SHA256:04dd185d118adf257f6dec2719aab8962d08b8e2a4c3ae8e6097744d8028e638",
+        "https://www.sofascore.com/tennis/match/henrique-rocha-jerome-kym/wGycsvLLc",
+        "https://eupagoportoopen.org/henrique-rocha-e-montes-de-la-torre-decidem-titulo-no-eupago-porto-open/"
       ]
     }
   ],
