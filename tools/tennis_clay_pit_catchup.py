@@ -45,6 +45,15 @@ def _player_id(row: Mapping[str,Any], side: int) -> str:
     return token if token.isdigit() and int(token)>0 else ""
 
 
+def _player_meta(row: Mapping[str,Any], side: int) -> dict[str,str]:
+    p=row.get(f"player{side}")
+    p=p if isinstance(p,Mapping) else {}
+    return {
+        "name":str(p.get("name") or row.get(f"player{side}Name") or "").strip(),
+        "ioc":str(p.get("countryAcr") or p.get("country") or row.get(f"player{side}Country") or "").strip().upper(),
+    }
+
+
 def _is_standard_clay(row: Mapping[str,Any]) -> bool:
     result_type=str(row.get("result_type") or row.get("resultType") or "").strip().casefold()
     if result_type!="completed":
@@ -124,11 +133,16 @@ def normalize_catchup_rows(rows: Iterable[Mapping[str,Any]]) -> list[dict[str,An
             continue
         seen.add(mid)
         tournament=row.get("tournament") if isinstance(row.get("tournament"),Mapping) else {}
+        m1=_player_meta(row,1); m2=_player_meta(row,2)
         out.append({
             "match_id":mid,
             "tourney_date":token,
             "winner_provider_id":p1,
+            "winner_name":m1["name"],
+            "winner_ioc":m1["ioc"],
             "loser_provider_id":p2,
+            "loser_name":m2["name"],
+            "loser_ioc":m2["ioc"],
             "tournament_id":str(tournament.get("id") or row.get("tournamentId") or ""),
             "tournament_name":str(tournament.get("name") or ""),
             "source_sha256":hashlib.sha256(
@@ -226,6 +240,40 @@ def build_state(
                 else "CATCHUP_COMPONENT_HAS_UNMAPPED_IDENTITIES"
             ),
         })
+    target_components=[]
+    for raw in sorted(target_provider_ids):
+        pid=raw.split(":")[-1] if raw.startswith("rapidapi-tennis:player:") else raw
+        target_components.append(component(graph,pid))
+    target_component_hits=defaultdict(int)
+    for comp in target_components:
+        for pid in comp:
+            if pid not in auth:
+                target_component_hits[pid]+=1
+    observed=defaultdict(lambda:{"names":set(),"iocs":set(),"matches":0})
+    for row in matches:
+        for prefix in ("winner","loser"):
+            pid=str(row[f"{prefix}_provider_id"])
+            item=observed[pid]
+            name=str(row.get(f"{prefix}_name") or "").strip()
+            ioc=str(row.get(f"{prefix}_ioc") or "").strip().upper()
+            if name:
+                item["names"].add(name)
+            if ioc:
+                item["iocs"].add(ioc)
+            item["matches"]+=1
+    backlog=[]
+    for pid,hits in sorted(target_component_hits.items(), key=lambda kv:(-kv[1],-observed[kv[0]]["matches"],kv[0])):
+        names=sorted(observed[pid]["names"])
+        iocs=sorted(observed[pid]["iocs"])
+        backlog.append({
+            "provider_player_id":"rapidapi-tennis:player:"+pid,
+            "numeric_player_id":pid,
+            "observed_names":names,
+            "observed_iocs":iocs,
+            "catchup_matches":int(observed[pid]["matches"]),
+            "target_component_hits":int(hits),
+            "identity_observation_status":"CONSISTENT" if len(names)==1 and len(iocs)<=1 else "CONFLICT",
+        })
     return {
         "schema":"MATRIX_TENNIS_CLAY_ELO_PIT_CATCHUP_STATE_V1",
         "lane_id":LANE_ID,
@@ -243,6 +291,8 @@ def build_state(
         "targets":targets,
         "ready_targets":sum(1 for x in targets if x["ready"]),
         "blocked_targets":sum(1 for x in targets if not x["ready"]),
+        "unmapped_identity_backlog":backlog,
+        "unmapped_identity_backlog_count":len(backlog),
         "metrics_opened":False,
         "outcomes_used_for_model_parameter_tuning":0,
         "historical_backfill_into_prospective_holdout":False,
@@ -323,6 +373,7 @@ def main()->None:
         "targets":len(state["targets"]),
         "ready_targets":state["ready_targets"],
         "blocked_targets":state["blocked_targets"],
+        "unmapped_identity_backlog_count":state["unmapped_identity_backlog_count"],
         "provider_network_calls":state["provider_network_calls"],
         "real_money":"BLOCKED"
     },sort_keys=True))
