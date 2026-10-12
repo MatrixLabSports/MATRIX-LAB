@@ -639,3 +639,108 @@ def test_current_canonical_window_accounting_uses_unique_matches_not_raw_rows():
     # therefore use canonical unique matches, never raw frozen-row count.
     if unique < 200:
         assert all(row["window"] == 1 for row in canonical)
+
+
+def test_uniqueness_audit_uses_schedule_override_for_cross_provider_reschedule(tmp_path):
+    runtime = tmp_path / "runtime"
+    holdout = tmp_path / "holdout"
+    runtime.mkdir()
+    holdout.mkdir()
+
+    api = {
+        "event_id": "API-OLBIA",
+        "canonical_source_event_id": "api-tennis:event:12170098",
+        "competition_id": "api-tennis:tournament:10295",
+        "competition": "Olbia",
+        "round": "1/16-finals",
+        "event_start_utc": "2026-10-12T09:00:00+00:00",
+        "source_provider": "api_tennis",
+        "player_identities": [
+            {"display_name": "Laslo Djere", "provider_player_id": "api-tennis:player:2386"},
+            {"display_name": "Michael Mmoh", "provider_player_id": "api-tennis:player:439"},
+        ],
+        "players": ["Laslo Djere", "Michael Mmoh"],
+    }
+    rapid = {
+        "event_id": "RAPID-OLBIA",
+        "canonical_source_event_id": "rapidapi-tennis:match:1638",
+        "competition_id": "rapidapi-tennis:tournament:22099",
+        "competition": "Olbia Challenger",
+        "round": "First",
+        "event_start_utc": "2026-10-13T09:00:00+00:00",
+        "source_provider": "rapidapi_tennis",
+        "player_identities": [
+            {"display_name": "Laslo Djere", "provider_player_id": "rapidapi-tennis:player:24084"},
+            {"display_name": "Michael Mmoh", "provider_player_id": "rapidapi-tennis:player:26925"},
+        ],
+        "players": ["Laslo Djere", "Michael Mmoh"],
+    }
+
+    _write(runtime / "MATRIX_COR0203_PREFEATURE_REGISTRY_R1.json", {"events": [api, rapid]})
+    _write(
+        holdout / "MATRIX_COR0203_HOLDOUT_BATCH_R1.json",
+        {
+            "observations": [
+                {
+                    "event_id": "API-OLBIA",
+                    "canonical_source_event_id": "api-tennis:event:12170098",
+                    "observation_index": 1,
+                    "freeze_at_utc": "2026-10-11T10:00:00+00:00",
+                    "event_start_utc": "2026-10-12T09:00:00+00:00",
+                    "competition": "Olbia",
+                    "round": "1/16-finals",
+                    "alphabetical_player_a": "Laslo Djere",
+                    "alphabetical_player_b": "Michael Mmoh",
+                    "outcome": None,
+                },
+                {
+                    "event_id": "RAPID-OLBIA",
+                    "canonical_source_event_id": "rapidapi-tennis:match:1638",
+                    "observation_index": 2,
+                    "freeze_at_utc": "2026-10-12T10:00:00+00:00",
+                    "event_start_utc": "2026-10-13T09:00:00+00:00",
+                    "competition": "Olbia Challenger",
+                    "round": "First",
+                    "alphabetical_player_a": "Laslo Djere",
+                    "alphabetical_player_b": "Michael Mmoh",
+                    "outcome": None,
+                },
+            ]
+        },
+    )
+
+    without_override = audit_physical_uniqueness(
+        runtime_dir=runtime,
+        holdout_dir=holdout,
+        integrity={
+            "holdout_id": "A22_POST_AUDIT_VIRGIN_HOLDOUT_V1",
+            "result": "PASS",
+            "admissible_batch_revisions": [1],
+            "admissible_observations": 2,
+        },
+    )
+    assert without_override["unique_calibration_observations"] == 2
+
+    with_override = audit_physical_uniqueness(
+        runtime_dir=runtime,
+        holdout_dir=holdout,
+        integrity={
+            "holdout_id": "A22_POST_AUDIT_VIRGIN_HOLDOUT_V1",
+            "result": "PASS",
+            "admissible_batch_revisions": [1],
+            "admissible_observations": 2,
+        },
+        schedule_overrides={
+            "API-OLBIA": {
+                "effective_event_start_utc": "2026-10-13T09:30:00+00:00"
+            }
+        },
+    )
+    assert with_override["unique_calibration_observations"] == 1
+    assert with_override["duplicate_observations_quarantined"] == 1
+    assert with_override["quarantined_duplicates"][0]["event_id"] == "RAPID-OLBIA"
+    assert with_override["quarantined_duplicates"][0]["quarantine_reason"] == (
+        "DUPLICATE_PHYSICAL_MATCH_CROSS_PROVIDER"
+    )
+    assert with_override["outcomes_read"] == 0
+    assert with_override["metrics_opened"] is False
