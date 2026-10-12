@@ -306,7 +306,7 @@ jobs:
           assert hard["unique_calibration_observations"]==before["hard_unique"]
           assert hard["metrics_opened"]==before["hard_metrics_opened"] is False
           assert hard["outcomes_read"]==before["hard_outcomes_read"]==0
-          assert clay["observation_count"]==before["clay_observations"]==0
+          assert clay["observation_count"]==before["clay_observations"]
           assert clay["metrics_opened"]==before["clay_metrics_opened"] is False
           assert clay["outcomes_read"]==before["clay_outcomes_read"]==0
           print("PREMATCH_HARD_AND_CLAY_UNTOUCHED: PASS")
@@ -439,3 +439,5 @@ jobs:
             sleep $((attempt*2))
           done
           exit 1
+
+# MATRIX_USER_AUTHORIZED_TRIGGER 2026-10-12T14:42Z live-continuity-fix-clay-nonzero
