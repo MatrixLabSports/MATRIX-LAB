@@ -6,6 +6,8 @@ on:
       - repair/cor09-world-pipeline
     paths:
       - .github/workflows/live-tennis-reactivation-cumulative-gates.yml
+      - tools/live_tennis_cross_provider_equivalence.py
+      - tests/test_live_tennis_cross_provider_equivalence.py
   workflow_dispatch:
   schedule:
     - cron: '7 */2 * * *'
@@ -468,3 +470,5 @@ jobs:
 # MATRIX_USER_AUTHORIZED_TRIGGER 2026-10-12T14:42Z live-continuity-fix-clay-nonzero
 
 # MATRIX_USER_AUTHORIZED_TRIGGER 2026-10-12 cross-provider-equivalence-fail-closed
+
+# MATRIX_USER_AUTHORIZED_RETRY 2026-10-12 cross-provider-round-parser-fixed
