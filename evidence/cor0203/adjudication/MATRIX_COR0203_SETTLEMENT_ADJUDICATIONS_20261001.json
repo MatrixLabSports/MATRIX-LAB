@@ -1,6 +1,6 @@
 {
   "schema": "MATRIX_COR0203_SETTLEMENT_ADJUDICATIONS_20261001_V1",
-  "created_at_utc": "2026-10-12T18:25:00+00:00",
+  "created_at_utc": "2026-10-12T18:31:00+00:00",
   "policy": {
     "completed_match": "append canonical binary settlement",
     "retired_match": "append official-winner settlement; preserve RETIRED terminal status; metrics remain sealed",
@@ -186,6 +186,20 @@
         "https://www.flashscore.es/partido/tenis/pinnington-jones-jack-jRDvhb4q/prizmic-dino-YcluY2Zi/"
       ],
       "adjudication_note": "Fixture existed but was cancelled before play after Dino Prizmic withdrew. MATRIX source event_start_utc=2026-10-04T08:00:00Z differs from public scheduled time 2026-10-05T13:30:00Z; freeze is preserved and no sporting outcome is imputed."
+    },
+    {
+      "event_id": "COR0203-SOFASCORE-eea19bb214f290ab6ec299b2141a863cd35923e447e5b635c4fe222fe1962995",
+      "action": "APPEND_SETTLEMENT",
+      "terminal_status": "RETIRED",
+      "event_final_result": "6-3 1-0 RET",
+      "winner_canonical_name": "Fajing Sun",
+      "outcome_player_a": false,
+      "metric_eligibility_at_open": "ELIGIBLE_OFFICIAL_WINNER_NONSTANDARD_TERMINAL",
+      "source_provider": "external_multi_source_adjudication",
+      "sources": [
+        "USER_PROVIDED_SCREENSHOT_SHA256:5e6fd226cacaadc4e0580ceaf139378011ae146b1082c0059949970076e19ee1",
+        "rapidapi_tennis:match:1298929;event_status=RETIRED"
+      ]
     }
   ],
   "metrics_opened": false,
