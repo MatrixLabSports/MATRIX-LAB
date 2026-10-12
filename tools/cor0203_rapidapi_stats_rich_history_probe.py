@@ -76,7 +76,11 @@ def discover_targets(
 
     if not selected:
         selected.update(BASE_TARGETS)
-    return dict(list(sorted(selected.items()))[:max(0, int(max_targets))])
+    # Preserve governed discovery priority: current world-domain candidates are
+    # inserted before the wider durable horizon. Sorting provider IDs here used
+    # to destroy that priority and could push an immediately actionable,
+    # pre-cut-history-ready player outside the bounded probe budget.
+    return dict(list(selected.items())[:max(0, int(max_targets))])
 
 
 def _rows(payload: object) -> list[Mapping[str, Any]]:
