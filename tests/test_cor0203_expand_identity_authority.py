@@ -414,3 +414,117 @@ def test_certified_alias_is_merged_without_name_only_join():
     out2,added2=merge_certified_aliases(out,aliases)
     assert added2==[]
     assert len(out2["records"])==1
+
+def test_r706_identity_only_provider_evidence_can_authorize_without_fabricating_history(tmp_path):
+    runtime=tmp_path/"runtime"; runtime.mkdir()
+    _pref(runtime,pid="6101",name="Marin Cilic",country="CRO",rank="79",points="741")
+    hist=tmp_path/"h.csv"; _history(hist,[])
+    static=tmp_path/"s.json"; _static(static)
+    provider_history={
+        "cutoff_exclusive_utc":"2026-09-21T00:00:00+00:00",
+        "metrics_opened":False,
+        "outcomes_used_for_metrics":0,
+        "targets":[{
+            "provider_player_id":"rapidapi-tennis:player:6101",
+            "eligible_pre_cut_matches":0,
+            "past_matches_returned":30,
+            "observed_names":["Marin Cilic"],
+        }],
+    }
+    required={
+        "form_history":True,"overall_history":True,"hard_history":True,
+        "serve_history":True,"return_history":True,
+        "opponent_strength_history":True,"elo_overall":True,"elo_hard":True,
+        "glicko_overall":True,"glicko_hard":True,
+    }
+    r706={
+        "state_mutated":False,"metrics_opened":False,"outcomes_read":0,
+        "state_sha256":"c"*64,
+        "targets":[{
+            "name":"Marin Cilic","fully_history_ready":True,
+            "required_components":required,
+            "counts":{"form_matches":21,"hard_n":9,"serve_n":1704,"return_n":1720},
+            "ratings":{"elo_overall_present":True,"elo_hard_present":True,
+                       "glicko_overall_present":True,"glicko_hard_present":True},
+        }],
+    }
+    calls=[]
+    def profile(pid):
+        calls.append(pid)
+        return {"data":{
+            "id":pid,
+            "name":"Marin Cilic",
+            "birthday":"1988-09-28T00:00:00.000Z",
+            "countryAcr":"CRO",
+            "currentRank":80,
+            "points":741,
+            "information":{"plays":"Right-Handed, Two-Handed Backhand"},
+        }}
+    out,audit=expand_authority(
+        runtime_dir=runtime,
+        history_csv=hist,
+        static_cut_path=static,
+        authority=_authority(),
+        profile_fetcher=profile,
+        provider_history=provider_history,
+        r706_readiness=r706,
+    )
+    assert audit["new_records"]==1
+    assert calls==["6101"]
+    row=out["records"][0]
+    assert row["authority_basis"]=="SEALED_R706_STATE_PLUS_EXACT_CUT_PROVIDER_IDENTITY_AND_PROFILE"
+    assert row["sealed_r706_history"]["fully_history_ready"] is True
+    assert row["pre_cut_provider_history"]["eligible_pre_cut_matches"]==0
+    assert row["pre_cut_provider_history"]["competitive_history_admitted"] is False
+    assert row["provider_identity_evidence"]["past_matches_returned"]==30
+    assert row["provider_identity_evidence"]["role"]=="IDENTITY_ONLY"
+    assert row["provider_identity_evidence"]["ranking_cut"]=="2026-09-21"
+    assert row["provider_identity_evidence"]["rank"]=="79"
+    assert row["provider_identity_evidence"]["rank_points"]=="741"
+    assert row["profile_competitive_fields_discarded"]==["currentRank","points"]
+    assert out["post_cut_competitive_data_used"] is False
+
+
+def test_r706_identity_only_provider_evidence_requires_physical_provider_rows(tmp_path):
+    runtime=tmp_path/"runtime"; runtime.mkdir()
+    _pref(runtime,pid="6101",name="Marin Cilic",country="CRO",rank="79",points="741")
+    hist=tmp_path/"h.csv"; _history(hist,[])
+    static=tmp_path/"s.json"; _static(static)
+    provider_history={
+        "cutoff_exclusive_utc":"2026-09-21T00:00:00+00:00",
+        "metrics_opened":False,
+        "outcomes_used_for_metrics":0,
+        "targets":[{
+            "provider_player_id":"rapidapi-tennis:player:6101",
+            "eligible_pre_cut_matches":0,
+            "past_matches_returned":0,
+            "observed_names":["Marin Cilic"],
+        }],
+    }
+    r706={
+        "state_mutated":False,"metrics_opened":False,"outcomes_read":0,
+        "state_sha256":"c"*64,
+        "targets":[{
+            "name":"Marin Cilic","fully_history_ready":True,
+            "required_components":{
+                "form_history":True,"overall_history":True,"hard_history":True,
+                "serve_history":True,"return_history":True,
+                "opponent_strength_history":True,"elo_overall":True,"elo_hard":True,
+                "glicko_overall":True,"glicko_hard":True,
+            },
+            "counts":{},"ratings":{},
+        }],
+    }
+    out,audit=expand_authority(
+        runtime_dir=runtime,
+        history_csv=hist,
+        static_cut_path=static,
+        authority=_authority(),
+        profile_fetcher=lambda pid: (_ for _ in ()).throw(AssertionError("profile must not be called")),
+        provider_history=provider_history,
+        r706_readiness=r706,
+    )
+    assert audit["new_records"]==0
+    assert audit["blocked"][0]["reason"]=="PROVIDER_PRECUT_HISTORY_EMPTY"
+    assert out["records"]==[]
+
