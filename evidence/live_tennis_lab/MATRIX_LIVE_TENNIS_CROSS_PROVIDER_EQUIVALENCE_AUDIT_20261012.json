@@ -1,58 +1,90 @@
 {
-  "schema": "MATRIX_LIVE_TENNIS_CROSS_PROVIDER_EQUIVALENCE_AUDIT_V1",
-  "generated_context_utc": "2026-10-12T06:59:00Z",
-  "status": "BLOCKED_INSUFFICIENT_CROSS_PROVIDER_OVERLAP",
-  "purpose": "Test whether API-Tennis paid failover identities can be admitted into the existing Live Tennis API calibration lane without name-only joins.",
-  "sources": {
-    "free_2026_10_11": {
-      "path": "evidence/live_tennis_lab/2026-10-11/MATRIX_LIVE_TENNIS_STATE_LEDGER_V0_1.json",
-      "blob": "90b72097aecf63258ccad45f5bc645f9c4452110",
-      "unique_matches": 20,
-      "unique_states": 55
-    },
-    "paid_2026_10_11": {
-      "path": "evidence/live_tennis_lab/2026-10-11/MATRIX_LIVE_TENNIS_API_TENNIS_FAILOVER_LEDGER_V1.json",
-      "blob": "44362e281e63cb089ee89bae4fbf60f9626049fd",
-      "unique_matches": 9,
-      "unique_states": 29,
-      "quality_valid_states": 24
-    },
-    "paid_2026_10_12": {
-      "path": "evidence/live_tennis_lab/2026-10-12/MATRIX_LIVE_TENNIS_API_TENNIS_FAILOVER_LEDGER_V1.json",
-      "blob": "35ebab31adfdf16cb2d2f588013faa7db9de86c2",
-      "unique_matches": 9,
-      "unique_states": 24,
-      "quality_valid_states": 18
-    }
-  },
-  "identity_rule": {
-    "single_name_join_allowed": false,
-    "required_for_candidate_overlap": [
-      "both participant identities as unordered pair",
-      "compatible tournament identity",
-      "same operational capture window"
-    ],
-    "provider_event_ids_preserved": true
-  },
-  "observed_overlap": {
-    "free_matches_examined": 20,
-    "paid_matches_examined": 9,
-    "exact_unordered_participant_pair_plus_tournament_candidates": 0,
-    "adjudicable_cross_provider_match_pairs": 0
-  },
+  "adjudicable_crosswalks": [],
   "calibration_admission": {
-    "paid_failover_admitted": false,
-    "reason": "NO_ADJUDICABLE_CROSS_PROVIDER_OVERLAP_SAMPLE",
-    "existing_free_provider_lane_unchanged": true,
-    "states_added_to_calibration": 0
+    "existing_free_provider_lane_mutated": false,
+    "paid_only_events_admitted_to_existing_free_provider_lane": false,
+    "provider_wide_equivalence_certified": false,
+    "reason": "NO_ADJUDICABLE_CROSS_PROVIDER_OVERLAP_SAMPLE"
   },
-  "next_evidence_condition": "Require at least one physically overlapping event observed by both providers with non-name-only identity evidence before any equivalence mapping can be adjudicated. Do not infer equivalence from separate match sets.",
+  "candidates": [],
+  "counts": {
+    "adjudicable_exact_event_crosswalks": 0,
+    "free_unique_match_records_examined": 91,
+    "paid_singles_unique_match_records_examined": 42,
+    "participant_pair_plus_tournament_same_day_candidates": 0,
+    "states_admitted_to_existing_free_provider_lane": 0
+  },
+  "generated_at_utc": "2026-10-12T15:38:19+00:00",
+  "identity_rule": {
+    "both_participants_required": true,
+    "capture_window_required_hours_max": 8.0,
+    "final_outcome_orientation_must_agree_when_both_final": true,
+    "provider_event_ids_preserved": true,
+    "round_must_not_conflict": true,
+    "same_operational_date_required": true,
+    "single_name_join_allowed": false,
+    "surface_binding_source_for_crosswalk": "FREE_PROVIDER_EVENT_ONLY_AFTER_EVENT_IDENTITY_IS_ADJUDICATED",
+    "tournament_compatibility_required": true
+  },
+  "operational_resolution": {
+    "automatic_shadow_overlap_probe": "REQUIRED_WHEN_FREE_PRIMARY_HAS_SAME_DAY_LIVE_MATCHES",
+    "free_provider_lane": "REMAINS_SEPARATE",
+    "merge_policy": "FAIL_CLOSED",
+    "paid_provider_native_lane": "CONTINUE_INDEPENDENTLY"
+  },
   "protections": {
-    "missing_not_zero": true,
-    "silent_imputation": false,
-    "odds_to_probability": false,
-    "same_match_train_test_forbidden": true,
     "automatic_wagering": false,
-    "real_money": "BLOCKED"
-  }
+    "missing_not_zero": true,
+    "odds_to_probability": false,
+    "real_money": "BLOCKED",
+    "same_match_train_test_forbidden": true,
+    "silent_imputation": false,
+    "synthetic_backfill": false
+  },
+  "purpose": "Fail-closed event-level cross-provider identity audit. It never authorizes provider-wide calibration merging.",
+  "schema": "MATRIX_LIVE_TENNIS_CROSS_PROVIDER_EQUIVALENCE_AUDIT_V2",
+  "sha256_without_self": "6104ad4925ab64ae51df9862f0b9a5e0b8e7133704d156ed63b5f0d1f3897506",
+  "source_files": [
+    {
+      "path": "evidence/live_tennis_lab/2026-10-06/MATRIX_LIVE_TENNIS_STATE_LEDGER_V0_1.json",
+      "provider": "live_tennis_api",
+      "sha256": "765d2b9b9b3b414c3591fad14427cc0c07358eac39001fb74cdd305c7117d70c"
+    },
+    {
+      "path": "evidence/live_tennis_lab/2026-10-07/MATRIX_LIVE_TENNIS_STATE_LEDGER_V0_1.json",
+      "provider": "live_tennis_api",
+      "sha256": "3f71a71545b6b5434db3a91b01a1603e2b51fa30f6d418e50afc524f4b0de7c6"
+    },
+    {
+      "path": "evidence/live_tennis_lab/2026-10-08/MATRIX_LIVE_TENNIS_STATE_LEDGER_V0_1.json",
+      "provider": "live_tennis_api",
+      "sha256": "6fe6c92f76792a608c6f9264e4022bbb4f495b5d06a38f59e77455d78239107b"
+    },
+    {
+      "path": "evidence/live_tennis_lab/2026-10-09/MATRIX_LIVE_TENNIS_STATE_LEDGER_V0_1.json",
+      "provider": "live_tennis_api",
+      "sha256": "26c4479d211f7afbcb3803c2f10ba9ba6269469c9f9105ac82dfa9a77eef04b0"
+    },
+    {
+      "path": "evidence/live_tennis_lab/2026-10-10/MATRIX_LIVE_TENNIS_STATE_LEDGER_V0_1.json",
+      "provider": "live_tennis_api",
+      "sha256": "e4cdbb9368f9f7d0686c42c3dad3a1a3bff38a13da0e9ff3673eb8d9050e5c4c"
+    },
+    {
+      "path": "evidence/live_tennis_lab/2026-10-11/MATRIX_LIVE_TENNIS_API_TENNIS_FAILOVER_LEDGER_V1.json",
+      "provider": "api_tennis",
+      "sha256": "418ddfaa624b0799a60d773378f56a6994510642b0ebe296ef36fab4409e2811"
+    },
+    {
+      "path": "evidence/live_tennis_lab/2026-10-11/MATRIX_LIVE_TENNIS_STATE_LEDGER_V0_1.json",
+      "provider": "live_tennis_api",
+      "sha256": "d648c3f5bb4322f7a69fa7f802e73cb61ff111e2f8328cccc64b771a1a1d7d01"
+    },
+    {
+      "path": "evidence/live_tennis_lab/2026-10-12/MATRIX_LIVE_TENNIS_API_TENNIS_FAILOVER_LEDGER_V1.json",
+      "provider": "api_tennis",
+      "sha256": "9fb477b752dfd5dcc292603fc787ff927451e12daaa620e9a3004623c164be22"
+    }
+  ],
+  "status": "BLOCKED_NO_ADJUDICABLE_CROSS_PROVIDER_OVERLAP"
 }
