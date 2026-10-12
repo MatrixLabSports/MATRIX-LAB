@@ -137,7 +137,11 @@ def _rounds_compatible(left: Mapping[str, Any], right: Mapping[str, Any]) -> boo
 
 
 def _event_start(row: Mapping[str, Any]) -> datetime | None:
-    raw = str(row.get("event_start_utc") or "").strip()
+    raw = str(
+        row.get("effective_event_start_utc")
+        or row.get("event_start_utc")
+        or ""
+    ).strip()
     if not raw:
         return None
     try:
@@ -167,6 +171,7 @@ def audit_physical_uniqueness(
     runtime_dir: Path,
     holdout_dir: Path,
     integrity: Mapping[str, Any],
+    schedule_overrides: Mapping[str, Mapping[str, Any]] | None = None,
 ) -> dict[str, Any]:
     admissible = {
         int(value)
@@ -205,6 +210,7 @@ def audit_physical_uniqueness(
                 })
                 continue
 
+            override = (schedule_overrides or {}).get(event_id) or {}
             rows.append({
                 "revision": revision,
                 "event_id": event_id,
@@ -214,6 +220,7 @@ def audit_physical_uniqueness(
                 "observation_index": int(observation.get("observation_index", -1)),
                 "freeze_at_utc": observation.get("freeze_at_utc"),
                 "event_start_utc": observation.get("event_start_utc"),
+                "effective_event_start_utc": override.get("effective_event_start_utc"),
                 "competition": observation.get("competition"),
                 "round": observation.get("round"),
                 "alphabetical_player_a": observation.get("alphabetical_player_a"),
@@ -362,12 +369,22 @@ def main() -> None:
         default="evidence/cor0203/runtime/MATRIX_COR0203_HOLDOUT_INTEGRITY_LAST.json",
     )
     parser.add_argument("--out", required=True)
+    parser.add_argument("--schedule-overrides")
     args = parser.parse_args()
 
+    schedule_overrides: dict[str, Mapping[str, Any]] = {}
+    if args.schedule_overrides:
+        payload = _load(Path(args.schedule_overrides))
+        schedule_overrides = {
+            str(row.get("event_id") or ""): row
+            for row in payload.get("entries", []) or []
+            if row.get("event_id")
+        }
     report = audit_physical_uniqueness(
         runtime_dir=Path(args.runtime_dir),
         holdout_dir=Path(args.holdout_dir),
         integrity=_load(Path(args.integrity)),
+        schedule_overrides=schedule_overrides,
     )
     out = Path(args.out)
     out.parent.mkdir(parents=True, exist_ok=True)
