@@ -1,3 +1,4 @@
+# MATRIX_USER_AUTHORIZED_TRIGGER 2026-10-12 adjudicate-harris-bolt-retired
 # MATRIX_MANUAL_TRIGGER 2026-10-12 FIX_R706_IDENTITY_ONLY_CROSSWALK_FOR_UNIQUE_200
 # MATRIX_PHYSICAL_TRIGGER 2026-10-09T05:46Z continuity-hard-production-proof
 # manual trigger: SofaScore identity remediation 2026-10-05
@@ -40,6 +41,7 @@ on:
       - tools/cor0203_settlement_queue.py
       - tools/cor0203_settlement_sync.py
       - tools/cor0203_historical_identity_reconcile.py
+      - evidence/cor0203/adjudication/MATRIX_COR0203_SETTLEMENT_ADJUDICATIONS_20261001.json
   workflow_dispatch:
   schedule:
     - cron: '17 */2 * * *'
