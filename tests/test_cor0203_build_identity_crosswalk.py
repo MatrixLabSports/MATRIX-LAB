@@ -635,3 +635,164 @@ def test_r706_provider_history_authority_resolves_without_state_mutation():
     assert row["canonical_source_id"]=="R706_STATE_RAPIDAPI_PLAYER_94367"
     assert "SEALED_R706_HISTORY" in row["match_basis"]
     assert result["join_by_name_only"] is False
+
+def test_r706_identity_only_authority_resolves_without_admitting_provider_history():
+    pre={
+        "revision":"R913","holdout_id":"H","discovery_provider":"rapidapi_tennis",
+        "events":[{
+            "event_id":"walton-cilic","identity_crosswalk_required":True,
+            "player_identities":[
+                {
+                    "display_name":"Marin Cilic",
+                    "provider":"rapidapi_tennis",
+                    "provider_player_id":"rapidapi-tennis:player:6101",
+                    "provider_ranking":{
+                        "place":"79","points":"741","player":"Marin Cilic",
+                        "country":"CRO","snapshot_date":"2026-09-21",
+                    },
+                },
+                {
+                    "display_name":"Dino Prizmic",
+                    "provider":"api_tennis",
+                    "provider_player_id":"api-tennis:player:22",
+                    "provider_ranking":{
+                        "place":"101","points":"603","player":"Dino Prizmic",
+                        "country":"CRO",
+                    },
+                },
+            ],
+        }],
+    }
+    authority={
+        "schema":"MATRIX_COR0203_IDENTITY_AUTHORITY_AUTOEXPAND_V1",
+        "post_cut_competitive_data_used":False,
+        "outcomes_used":False,
+        "odds_used":False,
+        "records":[{
+            "provider_player_id":"rapidapi-tennis:player:6101",
+            "provider_display_name":"Marin Cilic",
+            "canonical_name":"Marin Cilic",
+            "canonical_source_id":"R706_STATE_RAPIDAPI_PLAYER_6101",
+            "provider_ioc_raw":"CRO",
+            "provider_ioc_canonical":"CRO",
+            "ranking_cut":"2026-09-21",
+            "provider_rank":"79",
+            "provider_rank_points":"741",
+            "authority_basis":"SEALED_R706_STATE_PLUS_EXACT_CUT_PROVIDER_IDENTITY_AND_PROFILE",
+            "sealed_r706_history":{
+                "name":"Marin Cilic",
+                "fully_history_ready":True,
+                "required_components":{
+                    "form_history":True,"overall_history":True,"hard_history":True,
+                    "serve_history":True,"return_history":True,
+                    "opponent_strength_history":True,"elo_overall":True,"elo_hard":True,
+                    "glicko_overall":True,"glicko_hard":True,
+                },
+                "state_sha256":"c"*64,
+            },
+            "pre_cut_provider_history":{
+                "provider_player_id":"rapidapi-tennis:player:6101",
+                "eligible_pre_cut_matches":0,
+                "observed_names":["Marin Cilic"],
+                "cutoff_exclusive_utc":"2026-09-21T00:00:00+00:00",
+                "competitive_history_admitted":False,
+            },
+            "provider_identity_evidence":{
+                "provider_player_id":"rapidapi-tennis:player:6101",
+                "past_matches_returned":30,
+                "observed_names":["Marin Cilic"],
+                "role":"IDENTITY_ONLY",
+                "ranking_cut":"2026-09-21",
+                "rank":"79",
+                "rank_points":"741",
+                "ioc":"CRO",
+                "post_cut_competitive_data_used":False,
+            },
+            "biographical_candidates":[{
+                "master_id":"RAPIDAPI_PROFILE_6101",
+                "name":"Marin Cilic",
+                "hand":"R",
+                "dob":"19880928",
+                "ioc":"CRO",
+            }],
+        }],
+    }
+    result=build_crosswalk(
+        prefeature=pre,
+        static_cut=static_cut(),
+        identity_authority=authority,
+    )
+    assert result["status"]=="PASS"
+    row={m["provider_player_id"]:m for m in result["mappings"]}["rapidapi-tennis:player:6101"]
+    assert row["canonical_source_id"]=="R706_STATE_RAPIDAPI_PLAYER_6101"
+    assert row["canonical_name"]=="Marin Cilic"
+    assert row["canonical_rank"]==79
+    assert row["canonical_rank_points"]==741
+    assert "IDENTITY_ONLY_PROVIDER_ROWS" in row["match_basis"]
+    assert result["join_by_name_only"] is False
+
+
+def test_r706_identity_only_authority_fails_closed_if_provider_rows_missing():
+    pre={
+        "revision":"R913","holdout_id":"H","discovery_provider":"rapidapi_tennis",
+        "events":[{
+            "event_id":"cilic-only","identity_crosswalk_required":True,
+            "player_identities":[{
+                "display_name":"Marin Cilic",
+                "provider":"rapidapi_tennis",
+                "provider_player_id":"rapidapi-tennis:player:6101",
+                "provider_ranking":{
+                    "place":"79","points":"741","player":"Marin Cilic",
+                    "country":"CRO","snapshot_date":"2026-09-21",
+                },
+            }],
+        }],
+    }
+    authority={
+        "schema":"MATRIX_COR0203_IDENTITY_AUTHORITY_AUTOEXPAND_V1",
+        "post_cut_competitive_data_used":False,
+        "outcomes_used":False,
+        "odds_used":False,
+        "records":[{
+            "provider_player_id":"rapidapi-tennis:player:6101",
+            "provider_display_name":"Marin Cilic",
+            "canonical_name":"Marin Cilic",
+            "canonical_source_id":"R706_STATE_RAPIDAPI_PLAYER_6101",
+            "provider_ioc_raw":"CRO","provider_ioc_canonical":"CRO",
+            "ranking_cut":"2026-09-21","provider_rank":"79","provider_rank_points":"741",
+            "authority_basis":"SEALED_R706_STATE_PLUS_EXACT_CUT_PROVIDER_IDENTITY_AND_PROFILE",
+            "sealed_r706_history":{
+                "name":"Marin Cilic","fully_history_ready":True,
+                "required_components":{"form_history":True},
+                "state_sha256":"c"*64,
+            },
+            "pre_cut_provider_history":{
+                "provider_player_id":"rapidapi-tennis:player:6101",
+                "eligible_pre_cut_matches":0,
+                "observed_names":["Marin Cilic"],
+                "cutoff_exclusive_utc":"2026-09-21T00:00:00+00:00",
+                "competitive_history_admitted":False,
+            },
+            "provider_identity_evidence":{
+                "provider_player_id":"rapidapi-tennis:player:6101",
+                "past_matches_returned":0,
+                "observed_names":["Marin Cilic"],
+                "role":"IDENTITY_ONLY",
+                "ranking_cut":"2026-09-21",
+                "rank":"79","rank_points":"741","ioc":"CRO",
+                "post_cut_competitive_data_used":False,
+            },
+            "biographical_candidates":[{
+                "name":"Marin Cilic","hand":"R","dob":"19880928","ioc":"CRO",
+            }],
+        }],
+    }
+    result=build_crosswalk(
+        prefeature=pre,
+        static_cut={"ranking_cut":"20260921","source_sha256":"a"*64,
+                    "silent_imputation":False,"post_cut_data_used":False,"players":{}},
+        identity_authority=authority,
+    )
+    assert result["status"]=="ALL_BLOCKED"
+    assert "IDENTITY_AUTHORITY_PROVIDER_IDENTITY_ROWS_EMPTY:rapidapi-tennis:player:6101" in result["events"][0]["blockers"]
+
