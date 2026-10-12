@@ -12,6 +12,8 @@ on:
       - tools/tennis_clay_pit_catchup.py
       - tests/test_tennis_dual_lane_event_reconcile.py
       - tests/test_tennis_clay_pit_catchup.py
+      - tools/tennis_clay_prospective_producer.py
+      - tests/test_tennis_clay_prospective_producer.py
       - tools/cor0203_expand_identity_authority.py
       - tools/cor0203_build_identity_crosswalk.py
       - tests/test_tennis_clay_prefeature_discovery.py
@@ -49,7 +51,8 @@ jobs:
         run: |
           python -m pytest -q             tests/test_tennis_clay_prefeature_discovery.py             tests/test_tennis_clay_lane_bootstrap.py             tests/test_tennis_parallel_lane_registry.py \
             tests/test_tennis_dual_lane_event_reconcile.py \
-            tests/test_tennis_clay_pit_catchup.py
+            tests/test_tennis_clay_pit_catchup.py \
+            tests/test_tennis_clay_prospective_producer.py
 
       - name: Resolve Bogota date
         id: date
@@ -117,6 +120,23 @@ jobs:
           set -euo pipefail
           python -m tools.tennis_dual_lane_event_reconcile             --rapid "evidence/tennis/world_inventory/$D0/MATRIX_TENNIS_WORLD_INVENTORY.json"             --api-tennis "evidence/tennis_world_inventory/$D0/api_tennis_challenger_men_singles_exact_day.json"             --clay-holdout evidence/tennis_parallel_lanes/ATP_CHALLENGER_MEN_SINGLES_CLAY/prospective/holdout_contract.json             --clay-bootstrap evidence/tennis_parallel_lanes/ATP_CHALLENGER_MEN_SINGLES_CLAY/bootstrap/bootstrap_manifest.json             --out "evidence/tennis_world_inventory/$D0/hard_clay_event_reconciliation.json"
 
+      - name: Freeze eligible Clay prospectives
+        env:
+          D0: ${{ steps.date.outputs.d0 }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          REV="$(echo "$D0" | tr -d '-')"
+          python -m tools.tennis_clay_prospective_producer \
+            --prefeature "evidence/tennis_parallel_lanes/ATP_CHALLENGER_MEN_SINGLES_CLAY/runtime/MATRIX_COR0203_PREFEATURE_REGISTRY_R$REV.json" \
+            --crosswalk "evidence/tennis_parallel_lanes/ATP_CHALLENGER_MEN_SINGLES_CLAY/runtime/MATRIX_COR0203_IDENTITY_CROSSWALK_R$REV.json" \
+            --catchup evidence/tennis_parallel_lanes/ATP_CHALLENGER_MEN_SINGLES_CLAY/runtime/MATRIX_CLAY_ELO_PIT_CATCHUP_LAST.json \
+            --reconciliation "evidence/tennis_world_inventory/$D0/hard_clay_event_reconciliation.json" \
+            --state evidence/tennis_parallel_lanes/ATP_CHALLENGER_MEN_SINGLES_CLAY/prospective/state.json \
+            --model evidence/tennis_parallel_lanes/ATP_CHALLENGER_MEN_SINGLES_CLAY/bootstrap/elo_candidate_v1.json \
+            --observations evidence/tennis_parallel_lanes/ATP_CHALLENGER_MEN_SINGLES_CLAY/prospective/observations.jsonl \
+            --audit-out evidence/tennis_parallel_lanes/ATP_CHALLENGER_MEN_SINGLES_CLAY/runtime/MATRIX_CLAY_PROSPECTIVE_PRODUCER_LAST.json
+
       - name: Write current Clay bridge and root-cause receipt
         env:
           D0: ${{ steps.date.outputs.d0 }}
@@ -134,6 +154,8 @@ jobs:
           xsum=json.loads((root/"runtime"/"MATRIX_CLAY_IDENTITY_CROSSWALK_SUMMARY_LAST.json").read_text())
           rec=json.loads(Path(f"evidence/tennis_world_inventory/{d}/hard_clay_event_reconciliation.json").read_text())
           state=json.loads((root/"prospective"/"state.json").read_text())
+          catch=json.loads((root/"runtime"/"MATRIX_CLAY_ELO_PIT_CATCHUP_LAST.json").read_text())
+          prod=json.loads((root/"runtime"/"MATRIX_CLAY_PROSPECTIVE_PRODUCER_LAST.json").read_text())
           current=[x for x in xsum.get("crosswalk_revisions",[]) if int(x.get("revision") or -1)==int(rev)]
           bridge={
             "schema":"MATRIX_TENNIS_CLAY_DAILY_BRIDGE_V2",
@@ -149,12 +171,15 @@ jobs:
             "dual_provider_bound_clay":int(rec.get("clay_bound_count") or 0),
             "dual_provider_freeze_ready_under_old_pit_rule":int(rec.get("clay_freeze_ready_count") or 0),
             "current_observation_count":int(state.get("observation_count") or 0),
+            "pit_ready_targets":int(catch.get("ready_targets") or 0),
+            "pit_blocked_targets":int(catch.get("blocked_targets") or 0),
+            "new_observations_this_cycle":int(prod.get("new_observations") or 0),
             "operational_blocker":(
-              "PIT_STATE_CATCHUP_REQUIRED_BEFORE_FIRST_FREEZE"
-              if int(rec.get("clay_bound_count") or 0)>0 and int(rec.get("clay_freeze_ready_count") or 0)==0
+              "NONE_FREEZES_PRODUCED"
+              if int(prod.get("new_observations") or 0)>0
+              else "PIT_OR_IDENTITY_COMPONENT_BLOCKED"
+              if int(rec.get("clay_bound_count") or 0)>0
               else "IDENTITY_OR_DUAL_PROVIDER_BINDING"
-              if int(rec.get("clay_bound_count") or 0)==0
-              else "FREEZE_READY"
             ),
             "protections":{
               "cor0203_holdout_reused":False,
