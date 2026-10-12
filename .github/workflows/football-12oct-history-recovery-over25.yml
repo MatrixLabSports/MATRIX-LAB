@@ -63,6 +63,10 @@ jobs:
           from tools.api_football_market_shadow_p_matrix import build_shadow_p_matrix
 
           root=Path(".")
+          api_key=os.environ["API_FOOTBALL_KEY"].strip()
+          if not api_key:
+              raise SystemExit("API_FOOTBALL_KEY_EMPTY_AFTER_STRIP")
+          api_key.encode("ascii")
           target=os.environ["TARGET_DATE"]
           base=root/"evidence"/"api_football"/"prospective_daily"/target
           cycles=sorted(p for p in base.glob("*") if p.is_dir() and (p/"cycle_summary.json").exists())
