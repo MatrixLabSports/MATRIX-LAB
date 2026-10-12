@@ -1,0 +1,72 @@
+{
+  "schema": "MATRIX_LIVE_TENNIS_QUOTA_FAILOVER_CERT_V1",
+  "generated_at_utc": "2026-10-12T04:15:02+00:00",
+  "operational_date_bogota": "2026-10-11",
+  "status": "PASS_PHYSICALLY_VERIFIED",
+  "problem": "FREE_LIVE_TENNIS_PROVIDER_DAILY_QUOTA_RESERVE_BLOCKED_FURTHER_CAPTURE",
+  "root_cause": {
+    "provider": "live_tennis_api",
+    "tier": "free",
+    "per_day": 100,
+    "quota_guard_status": "BLOCKED_BY_RESERVE",
+    "executed_cycles_current_run": 0,
+    "reserve_not_bypassed": true,
+    "quota_guard_blob_sha": "bb7281608442d368f75ab617c0cebe6aa982adc4"
+  },
+  "paid_failover": {
+    "provider": "api_tennis",
+    "endpoint": "get_livescore",
+    "probe_run_id": 38202573368,
+    "probe_http_status": 200,
+    "probe_success": 1,
+    "probe_live_match_count": 9,
+    "production_run_id": 38202864137,
+    "requested_cycles": 6,
+    "executed_cycles": 6,
+    "unique_match_count": 9,
+    "unique_state_count": 29,
+    "quality_valid_state_count": 24,
+    "ledger_blob_sha": "44362e281e63cb089ee89bae4fbf60f9626049fd",
+    "status": "PASS"
+  },
+  "continuity": {
+    "coverage_mode": "PAID_FAILOVER_ONLY",
+    "requested_monitor_cycles": 6,
+    "total_monitor_cycles": 6,
+    "monitoring_continuity": true,
+    "continuity_blob_sha": "34f573d4666134b23a46cf870a8d7cc7e37e7c30",
+    "operational_workflow_run_id": 38202864137,
+    "operational_workflow_conclusion": "success"
+  },
+  "scheduler": {
+    "repository_default_branch": "main",
+    "workflow": ".github/workflows/live-tennis-two-hour-supervisor.yml",
+    "cron_utc": "9 1-23/2 * * *",
+    "cadence": "EVERY_2_HOURS",
+    "timezone_policy": "America/Bogota",
+    "scheduler_commit_sha": "ea0493b23a2228cc8d845a68c65391a020c0068a",
+    "scheduler_run_id": 38202766289,
+    "scheduler_run_conclusion": "success",
+    "dispatch_target_ref": "repair/cor09-world-pipeline"
+  },
+  "persisted_operational_head": {
+    "commit_sha": "139dbbd50705a0df66fde3330b878b1debc88b90",
+    "tree_sha": "6265dc9ecba217db9486e93a93d26d737461c67d",
+    "commit_message": "evidence(live): reactivate tennis and cumulative lane gates"
+  },
+  "calibration_safety": {
+    "paid_failover_admitted": false,
+    "reason": "CROSS_PROVIDER_EQUIVALENCE_AND_IDENTITY_RECONCILIATION_REQUIRED",
+    "prematch_hard_mutated": false,
+    "prematch_clay_mutated": false,
+    "cumulative_global_unique_matches": 90,
+    "cumulative_settled_quality_valid_matches": 59,
+    "cumulative_gate_blob_sha": "acb21b93b8244ef44efe95b5e4365434af0c7b60",
+    "target_outcomes_read_during_failover": false,
+    "odds_used_to_generate_probability": false,
+    "missing_not_zero": true,
+    "silent_imputation": false,
+    "automatic_wagering": false,
+    "real_money": "BLOCKED"
+  }
+}
