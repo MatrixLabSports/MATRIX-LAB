@@ -1,0 +1,175 @@
+{
+  "schema": "MATRIX_EXECUTION_LIVE_FOOTBALL_FINAL_ONLY_V1",
+  "operational_date_bogota": "2026-10-12",
+  "compiled_after_utc": "2026-10-12T14:48:56Z",
+  "user_authorized": true,
+  "live_tennis": {
+    "defect_resolved": {
+      "defect": "Live reactivation workflow incorrectly required Clay observation_count == 0 even though Clay had 2 legitimate prospective observations.",
+      "previous_failed_run": {
+        "run_id": 38253272512,
+        "conclusion": "failure",
+        "failed_step": "Prove Hard and Clay prematch untouched"
+      },
+      "fix_commit": "b48177a4a6a769e216c8d4b351e7e4d4f1513c90",
+      "corrected_invariant": "clay observation_count must equal the pre-run value; it is not required to be zero"
+    },
+    "reactivation_run": {
+      "run_id": 38265228712,
+      "conclusion": "success",
+      "completed_at_utc": "2026-10-12T14:46:53Z",
+      "all_operational_steps_success": true,
+      "coverage_mode": "PAID_FAILOVER_ONLY",
+      "free_provider_status": "BLOCKED_BY_RESERVE",
+      "paid_failover_provider": "api_tennis",
+      "paid_failover_executed_cycles": 6,
+      "paid_failover_unique_matches": 37,
+      "paid_failover_unique_states": 88,
+      "paid_failover_new_states_this_run": 48,
+      "calibration_admitted": false
+    },
+    "cumulative_free_provider_lane": {
+      "global_unique_matches": 90,
+      "final_standard": 69,
+      "final_quality_valid": 59,
+      "leading_lane": "itf|women|hard",
+      "leading_lane_final_quality_valid": 24,
+      "leading_lane_remaining_to_30": 6,
+      "gate_30": "SEALED",
+      "explanation": "Paid failover monitoring is not silently merged into the existing free-provider cumulative lane.",
+      "blob_sha": "62a0b7b739886f068851dccf1a94b636b42b4504"
+    },
+    "paid_provider_native_lane": {
+      "trigger_commit": "d27b5318f51de8b9a5e58158eb0f256b5d4a1f02",
+      "run_id": 38265572316,
+      "conclusion": "success",
+      "completed_at_utc": "2026-10-12T14:48:56Z",
+      "status": "PASS_PROVIDER_NATIVE_EVIDENCE_LANE_ACTIVE",
+      "before": {
+        "global_unique_matches": 26,
+        "settled_quality_valid": 9
+      },
+      "after": {
+        "global_unique_matches": 46,
+        "settled_quality_valid": 15
+      },
+      "delta": {
+        "global_unique_matches": 20,
+        "settled_quality_valid": 6
+      },
+      "lane_progress": {
+        "api_tennis|wta_singles": {
+          "final_quality_valid": 7,
+          "remaining_to_30": 23
+        },
+        "api_tennis|atp_singles": {
+          "final_quality_valid": 4,
+          "remaining_to_30": 26
+        },
+        "api_tennis|challenger_men_singles": {
+          "final_quality_valid": 3,
+          "remaining_to_30": 27
+        },
+        "api_tennis|challenger_women_singles": {
+          "final_quality_valid": 1,
+          "remaining_to_30": 29
+        },
+        "api_tennis|doubles": {
+          "final_quality_valid": 0,
+          "remaining_to_30": 30
+        }
+      },
+      "cross_provider_equivalence_required": false,
+      "blob_sha": "1c00a2611222b5bd68ae6909c4bd00730d8bb096"
+    },
+    "prematch_protection": {
+      "hard_unique_observations": 201,
+      "clay_observations": 2,
+      "hard_unchanged": true,
+      "clay_unchanged": true,
+      "metrics_sealed": true,
+      "odds_to_probability": false,
+      "real_money": "BLOCKED"
+    },
+    "schedules": {
+      "reactivation": "7 */2 * * *",
+      "paid_native_lane": "53 */2 * * *"
+    }
+  },
+  "football": {
+    "final_only_trigger_commit": "2acd7010bc68e39dc8ff3aa6a014752a9bf04625",
+    "final_only_run": {
+      "run_id": 38265246608,
+      "conclusion": "success",
+      "completed_at_utc": "2026-10-12T14:46:22Z",
+      "new_settlements": 9,
+      "ledger_final_count": 2149,
+      "settlement_final_only": true,
+      "metrics_opened": false,
+      "outcomes_used_for_metrics": 0,
+      "real_money": "BLOCKED"
+    },
+    "over_2_5_active_v2": {
+      "freeze_observation_count": 1772,
+      "settlement_count": 1347,
+      "pending_settlement_count": 425,
+      "status": "ACTIVE_V2",
+      "delta_since_pre_trigger": {
+        "settlements": 9,
+        "pending": -9
+      }
+    },
+    "physical_uniqueness": {
+      "result": "PASS",
+      "freeze_rows": 2600,
+      "unique_fixture_ids": 2600,
+      "duplicate_fixture_id_groups": 0,
+      "exact_physical_duplicate_groups": 0,
+      "suspicious_same_pair_within_36h": 0
+    },
+    "schedule_final_only": "17 */2 * * *",
+    "evidence_blobs": {
+      "settlement_sync": "9136f0220769b3e53dab241bece13e963904a1bf",
+      "over25_state": "ce32b401ce4e03132fc8ef45a791a54b0faa9dc1",
+      "uniqueness_audit": "e247cdd383bc08cf6224cce27bdcae6c2d8787ca"
+    }
+  },
+  "telegram_paper": {
+    "workflow_run_id": 38265349437,
+    "workflow_conclusion": "success",
+    "supervisor_step": "success",
+    "ledger_persist_step": "success",
+    "ledger_updated_at_utc": "2026-10-12T14:46:51+00:00",
+    "signals_for_2026_10_12": 22,
+    "open_signals_for_2026_10_12": 22,
+    "total_open_bets": 23,
+    "total_settled_paper_bets": 77,
+    "reason_no_new_paper_settlement_yet": "At physical browser verification, the earliest 12-Oct paper signal (Cagliari U20 vs Monza U20) was still in the 2nd Half, score 0-1; FINAL_ONLY forbids settling it early.",
+    "flashscore_physical_readback": {
+      "match": "Cagliari U20 vs Monza U20",
+      "score_at_check": "0-1",
+      "status_at_check": "2nd Half",
+      "final": false
+    },
+    "schedule": "7,22,37,52 * * * *",
+    "ledger_blob_sha": "b1c14ddd505065ae34e316ef7421912316c2df07"
+  },
+  "protections": {
+    "final_only": true,
+    "no_synthetic_backfill": true,
+    "missing_not_zero": true,
+    "silent_imputation": false,
+    "odds_to_probability": false,
+    "automatic_real_money_execution": false,
+    "real_money": "BLOCKED"
+  },
+  "conclusion": {
+    "status": "PASS_EXECUTED_AND_PHYSICALLY_VERIFIED",
+    "live_workflow_defect_fixed": true,
+    "live_reactivation_success": true,
+    "paid_native_lane_advanced": true,
+    "football_final_only_advanced": true,
+    "telegram_supervisor_success": true,
+    "paper_results_not_forced_before_final": true
+  }
+}
