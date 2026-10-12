@@ -63,22 +63,28 @@ def _tournament_core(v: object) -> str:
     return " ".join(x for x in _tokens(v) if x not in drop)
 
 
-def _same_calendar_identity(api_event: dict[str,Any], rapid_event: dict[str,Any]) -> tuple[bool,float|None]:
-    if _tournament_core(api_event.get("tournament_name")) != _tournament_core(rapid_event.get("tournament_name")):
-        return False,None
+def _same_calendar_identity(api_event: dict[str,Any], rapid_event: dict[str,Any]) -> tuple[bool,float|None,str|None]:
     try:
         a=datetime.fromisoformat(str(api_event["event_start_bogota"]))
         r=datetime.fromisoformat(str(rapid_event["event_start_bogota"]))
     except Exception:
-        return False,None
+        return False,None,None
     if a.date()!=r.date():
-        return False,None
+        return False,None,None
     delta=abs((a-r).total_seconds())/60.0
     if delta>30:
-        return False,delta
+        return False,delta,None
     if not _pair_compatible(api_event,rapid_event):
-        return False,delta
-    return True,delta
+        return False,delta,None
+    api_tournament=_tournament_core(api_event.get("tournament_name"))
+    rapid_tournament=_tournament_core(rapid_event.get("tournament_name"))
+    if api_tournament and rapid_tournament and api_tournament==rapid_tournament:
+        return True,delta,"PAIR_DATE_TIME_TOURNAMENT"
+    # Provider tournament labels are not a stable cross-provider key
+    # (e.g. "Santa Cruz 2" vs "Santa Cruz de la Sierra 2 Challenger").
+    # A unique participant-pair match on the same Bogota calendar date, within
+    # 30 minutes, is admissible only after surface agreement is checked below.
+    return True,delta,"PAIR_DATE_TIME_UNIQUE_TOURNAMENT_LABEL_VARIANT"
 
 
 def run(rapid_path:Path,api_path:Path,clay_holdout:Path,clay_bootstrap:Path,out:Path)->dict[str,Any]:
@@ -108,9 +114,9 @@ def run(rapid_path:Path,api_path:Path,clay_holdout:Path,clay_bootstrap:Path,out:
     for a in aa:
         identity=[]
         for r in rr:
-            ok,delta=_same_calendar_identity(a,r)
+            ok,delta,basis=_same_calendar_identity(a,r)
             if ok:
-                identity.append((r,delta))
+                identity.append((r,delta,basis))
         if len(identity)!=1:
             blocked.append({
                 "api_tennis_source_event_id":a.get("source_event_id"),
@@ -123,7 +129,7 @@ def run(rapid_path:Path,api_path:Path,clay_holdout:Path,clay_bootstrap:Path,out:
             })
             continue
 
-        r,delta=identity[0]
+        r,delta,basis=identity[0]
         rid=str(r.get("physical_event_key") or r.get("source_event_id"))
         rapid_referenced.add(rid)
         rsf=surface_family(r.get("surface")); asf=a.get("surface_family")
@@ -159,7 +165,8 @@ def run(rapid_path:Path,api_path:Path,clay_holdout:Path,clay_bootstrap:Path,out:
             "api_tennis_start_utc":a.get("event_start_utc"),
             "start_time_delta_minutes":delta,
             "future_at_reconciliation":future,
-            "identity_binding":"PASS_TOURNAMENT_TIME_PLAYER_PAIR_UNIQUE",
+            "identity_binding":"PASS_PAIR_DATE_TIME_SURFACE_UNIQUE",
+            "identity_binding_basis":basis,
             "surface_binding":"PASS",
         }
         blockers=[]
@@ -209,7 +216,8 @@ def run(rapid_path:Path,api_path:Path,clay_holdout:Path,clay_bootstrap:Path,out:
         "binding_blocked":blocked,
         "protections":{
             "no_name_only_join":True,
-            "identity_requires_tournament_date_start_and_pair":True,
+            "identity_requires_pair_date_start_surface_and_uniqueness":True,
+            "tournament_text_exact_match_required":False,
             "abbreviated_name_matching_requires_initial_and_surname_tokens":True,
             "surface_agreement_required":True,
             "clay_pit_caught_up_required":True,
