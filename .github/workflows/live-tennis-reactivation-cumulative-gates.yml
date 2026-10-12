@@ -98,6 +98,101 @@ jobs:
           set -euo pipefail
           python -m tools.live_tennis_bulk_collector             --date "$D0"             --cycles 6             --interval-seconds 12             --reserve-calls 25
 
+      - name: Determine paid failover cycles
+        id: failover
+        env:
+          D0: ${{ steps.dates.outputs.d0 }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json,os
+          from pathlib import Path
+          d=os.environ["D0"]
+          p=Path(f"evidence/live_tennis_lab/{d}/MATRIX_LIVE_TENNIS_QUOTA_GUARD_LAST.json")
+          executed=0
+          status="NO_FREE_GUARD"
+          if p.is_file():
+              j=json.loads(p.read_text())
+              executed=int(j.get("executed_cycles") or 0)
+              status=str(j.get("status") or "UNKNOWN")
+          missing=max(0,6-executed)
+          with open(os.environ["GITHUB_OUTPUT"],"a",encoding="utf-8") as fh:
+              fh.write(f"cycles={missing}\n")
+              fh.write(f"free_cycles={executed}\n")
+              fh.write(f"free_status={status}\n")
+          print(json.dumps({"free_cycles":executed,"fallback_cycles":missing,"free_status":status},sort_keys=True))
+          PY
+
+      - name: Paid API-Tennis livescore failover
+        if: steps.failover.outputs.cycles != '0'
+        env:
+          API_TENNIS_KEY: ${{ secrets.API_TENNIS_KEY }}
+          D0: ${{ steps.dates.outputs.d0 }}
+          FAILOVER_CYCLES: ${{ steps.failover.outputs.cycles }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m tools.live_tennis_api_tennis_fallback \
+            --date "$D0" \
+            --cycles "$FAILOVER_CYCLES" \
+            --interval-seconds 12
+
+      - name: Record provider continuity receipt
+        env:
+          D0: ${{ steps.dates.outputs.d0 }}
+          FREE_CYCLES: ${{ steps.failover.outputs.free_cycles }}
+          FREE_STATUS: ${{ steps.failover.outputs.free_status }}
+          FAILOVER_CYCLES: ${{ steps.failover.outputs.cycles }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import hashlib,json,os
+          from datetime import datetime,timezone
+          from pathlib import Path
+          d=os.environ["D0"]
+          free_cycles=int(os.environ["FREE_CYCLES"])
+          requested_fallback=int(os.environ["FAILOVER_CYCLES"])
+          fp=Path(f"evidence/live_tennis_lab/{d}/MATRIX_LIVE_TENNIS_API_TENNIS_FAILOVER_LEDGER_V1.json")
+          fallback=None
+          if fp.is_file():
+              fallback=json.loads(fp.read_text())
+          fallback_executed=int((fallback or {}).get("executed_cycles") or 0) if requested_fallback else 0
+          total=free_cycles+fallback_executed
+          mode="FREE_PRIMARY_ONLY" if requested_fallback==0 else "FREE_PLUS_PAID_FAILOVER" if free_cycles else "PAID_FAILOVER_ONLY"
+          receipt={
+            "schema":"MATRIX_LIVE_TENNIS_PROVIDER_CONTINUITY_V1",
+            "generated_at_utc":datetime.now(timezone.utc).replace(microsecond=0).isoformat(),
+            "operational_date_bogota":d,
+            "requested_monitor_cycles":6,
+            "free_provider":{"provider":"live_tennis_api","status":os.environ["FREE_STATUS"],"executed_cycles":free_cycles},
+            "paid_failover":{"provider":"api_tennis","requested_cycles":requested_fallback,"executed_cycles":fallback_executed,"ledger_present":fp.is_file()},
+            "coverage_mode":mode,
+            "total_monitor_cycles":total,
+            "monitoring_continuity": total>=6,
+            "calibration_admission":{
+              "free_provider_existing_lane_unchanged":True,
+              "paid_failover_admitted":False,
+              "reason":"CROSS_PROVIDER_EQUIVALENCE_AND_IDENTITY_RECONCILIATION_REQUIRED"
+            },
+            "protections":{
+              "missing_not_zero":True,
+              "silent_imputation":False,
+              "odds_to_probability":False,
+              "automatic_wagering":False,
+              "real_money":"BLOCKED"
+            }
+          }
+          raw=json.dumps(receipt,sort_keys=True,separators=(",",":"),ensure_ascii=False).encode()
+          receipt["sha256_without_self"]=hashlib.sha256(raw).hexdigest()
+          out=Path(f"evidence/live_tennis_lab/{d}/MATRIX_LIVE_TENNIS_PROVIDER_CONTINUITY_LAST.json")
+          out.write_text(json.dumps(receipt,indent=2,sort_keys=True,ensure_ascii=False)+"\n",encoding="utf-8")
+          print(json.dumps({"coverage_mode":mode,"total_monitor_cycles":total,"continuity":receipt["monitoring_continuity"]},sort_keys=True))
+          if total < 6:
+              raise SystemExit("LIVE_TENNIS_MONITORING_CONTINUITY_INCOMPLETE")
+          PY
+
       - name: Reconcile explicit current metadata
         env:
           D0: ${{ steps.dates.outputs.d0 }}
