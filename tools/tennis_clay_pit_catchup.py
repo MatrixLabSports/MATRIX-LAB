@@ -88,7 +88,10 @@ def load_historical_rows(path: Path) -> list[dict[str,Any]]:
         return out
 
 
-def authority_index(authority: Mapping[str,Any]) -> dict[str,dict[str,Any]]:
+def authority_index(
+    authority: Mapping[str,Any],
+    supplemental_crosswalk: Mapping[str,Any] | None = None,
+) -> dict[str,dict[str,Any]]:
     out={}
     for row in authority.get("records",[]) or []:
         if not isinstance(row,Mapping):
@@ -114,8 +117,37 @@ def authority_index(authority: Mapping[str,Any]) -> dict[str,dict[str,Any]]:
             "canonical_name":name,
             "authority_basis":row.get("authority_basis"),
         }
-    return out
 
+    if isinstance(supplemental_crosswalk,Mapping):
+        passed_provider_ids={
+            str(pid)
+            for event in supplemental_crosswalk.get("events",[]) or []
+            if isinstance(event,Mapping) and event.get("status")=="PASS"
+            for pid in event.get("provider_player_ids",[]) or []
+            if str(pid)
+        }
+        for row in supplemental_crosswalk.get("mappings",[]) or []:
+            if not isinstance(row,Mapping) or row.get("status")!="PASS":
+                continue
+            provider_id=str(row.get("provider_player_id") or "")
+            if provider_id not in passed_provider_ids:
+                continue
+            if not provider_id.startswith("rapidapi-tennis:player:"):
+                continue
+            cid=str(row.get("canonical_source_id") or "").strip()
+            name=str(row.get("canonical_name") or "").strip()
+            if not cid or not name:
+                continue
+            numeric=provider_id.split(":")[-1]
+            existing=out.get(numeric)
+            if existing is not None and existing["canonical_source_id"]!=cid:
+                raise ValueError("CLAY_SUPPLEMENTAL_IDENTITY_COLLISION:"+provider_id)
+            out.setdefault(numeric,{
+                "canonical_source_id":cid,
+                "canonical_name":name,
+                "authority_basis":"SUPPLEMENTAL_IDENTITY_ONLY_CROSSWALK",
+            })
+    return out
 
 def normalize_catchup_rows(rows: Iterable[Mapping[str,Any]]) -> list[dict[str,Any]]:
     seen=set(); out=[]
@@ -171,6 +203,31 @@ def component(graph: Mapping[str,set[str]], start: str) -> set[str]:
     return seen
 
 
+def causal_component(matches: list[dict[str,Any]], start: str) -> set[str]:
+    """Return only identities that can causally affect start's final rating.
+
+    Ratings update in day batches. A player newly introduced by a match on day D
+    needs its pre-D rating, so only matches from earlier days can feed that
+    requirement. Later-only branches in the undirected match graph cannot
+    retroactively affect the target and must not block a prospective freeze.
+    """
+    needed={start}
+    grouped=defaultdict(list)
+    for row in matches:
+        grouped[int(row["tourney_date"])].append(row)
+    for day in sorted(grouped,reverse=True):
+        needed_at_end=set(needed)
+        active=[
+            row for row in grouped[day]
+            if row["winner_provider_id"] in needed_at_end
+            or row["loser_provider_id"] in needed_at_end
+        ]
+        for row in active:
+            needed.add(row["winner_provider_id"])
+            needed.add(row["loser_provider_id"])
+    return needed
+
+
 def replay(
     *,
     base_ratings: Mapping[str,float],
@@ -208,16 +265,16 @@ def build_state(
     target_provider_ids: set[str],
     source_start: date,
     source_stop: date,
+    supplemental_crosswalk_payload: Mapping[str,Any] | None = None,
 ) -> dict[str,Any]:
     _,base=evaluate_elo(historical_rows,k=K,score_split=None)
     matches=normalize_catchup_rows(result_rows)
-    auth=authority_index(authority_payload)
-    graph=build_graph(matches)
+    auth=authority_index(authority_payload,supplemental_crosswalk_payload)
     ratings=replay(base_ratings=base,matches=matches,authority=auth)
     targets=[]
     for raw in sorted(target_provider_ids):
         pid=raw.split(":")[-1] if raw.startswith("rapidapi-tennis:player:") else raw
-        comp=component(graph,pid)
+        comp=causal_component(matches,pid)
         missing=sorted(x for x in comp if x not in auth)
         mapping=auth.get(pid)
         ready=bool(mapping) and not missing
@@ -243,7 +300,7 @@ def build_state(
     target_components=[]
     for raw in sorted(target_provider_ids):
         pid=raw.split(":")[-1] if raw.startswith("rapidapi-tennis:player:") else raw
-        target_components.append(component(graph,pid))
+        target_components.append(causal_component(matches,pid))
     target_component_hits=defaultdict(int)
     for comp in target_components:
         for pid in comp:
@@ -288,6 +345,8 @@ def build_state(
         "catchup_standard_clay_matches":len(matches),
         "catchup_match_ids_sha256":hashlib.sha256("\n".join(x["match_id"] for x in matches).encode()).hexdigest(),
         "authority_provider_ids":len(auth),
+        "identity_closure_policy":"REVERSE_TIME_CAUSAL_BATCH_DAY",
+        "supplemental_identity_crosswalk_used":isinstance(supplemental_crosswalk_payload,Mapping),
         "targets":targets,
         "ready_targets":sum(1 for x in targets if x["ready"]),
         "blocked_targets":sum(1 for x in targets if not x["ready"]),
@@ -308,6 +367,7 @@ def main()->None:
     p.add_argument("--historical-dataset",required=True)
     p.add_argument("--identity-authority",required=True)
     p.add_argument("--prefeature",required=True)
+    p.add_argument("--supplemental-crosswalk")
     p.add_argument("--out",required=True)
     a=p.parse_args()
     key=os.environ.get("RAPIDAPI_TENNIS_KEY","").strip()
@@ -316,6 +376,11 @@ def main()->None:
     historical=load_historical_rows(Path(a.historical_dataset))
     authority=_load(Path(a.identity_authority))
     pre=_load(Path(a.prefeature))
+    supplemental=(
+        _load(Path(a.supplemental_crosswalk))
+        if a.supplemental_crosswalk and Path(a.supplemental_crosswalk).exists()
+        else None
+    )
     target_ids={
         str(identity.get("provider_player_id") or "")
         for event in pre.get("events",[]) or []
@@ -361,6 +426,7 @@ def main()->None:
         target_provider_ids=target_ids,
         source_start=start,
         source_stop=stop,
+        supplemental_crosswalk_payload=supplemental,
     )
     state["provider"]="rapidapi_tennis"
     state["provider_network_calls"]=client.request_count
