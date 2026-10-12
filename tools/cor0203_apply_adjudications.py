@@ -67,7 +67,7 @@ def apply_adjudications(
             continue
 
         terminal_status=str(entry.get("terminal_status") or "")
-        if terminal_status not in {"FINISHED","RETIRED","CANCELLED"}:
+        if terminal_status not in {"FINISHED","RETIRED","CANCELLED","WALKOVER"}:
             blocked.append({"event_id":event_id,"reason":"ADJUDICATION_TERMINAL_STATUS_INVALID"})
             continue
 
@@ -75,8 +75,8 @@ def apply_adjudications(
         if terminal_status in {"FINISHED","RETIRED"} and not isinstance(outcome,bool):
             blocked.append({"event_id":event_id,"reason":"ADJUDICATION_BINARY_OUTCOME_REQUIRED"})
             continue
-        if terminal_status=="CANCELLED" and outcome is not None:
-            blocked.append({"event_id":event_id,"reason":"CANCELLED_OUTCOME_MUST_BE_NULL"})
+        if terminal_status in {"CANCELLED","WALKOVER"} and outcome is not None:
+            blocked.append({"event_id":event_id,"reason":terminal_status+"_OUTCOME_MUST_BE_NULL"})
             continue
 
         sources=list(entry.get("sources") or [])
