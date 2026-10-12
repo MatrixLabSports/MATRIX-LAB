@@ -536,20 +536,47 @@ def recalc_paper_bankroll(ledger: dict[str, Any]) -> dict[str, Any]:
     }
     pb.setdefault("singles_only", True)
     pb.setdefault("automatic_real_money_execution", False)
-    realized = sum(float(x.get("paper_profit_cop") or 0.0) for x in ledger.get("settlements", []))
-    current = float(pb["initial_cop"]) + realized
+    # The canonical paper-bankroll source of truth is sent[].paper_bet.
+    # Historical settlement entries can mirror the same result and must never be
+    # summed independently, otherwise autonomous runs can double count or revert
+    # externally reconciled PAPER closures.
     open_bets = []
+    settled_bets = []
+    settlements_by_key = {
+        str(x.get("signal_key")): x
+        for x in ledger.get("settlements", [])
+        if isinstance(x, dict) and str(x.get("signal_key") or "")
+    }
+    realized = 0.0
     for record in ledger.get("sent", []):
         bet = record.get("paper_bet")
-        if isinstance(bet, dict) and bet.get("status") == "OPEN":
+        if not isinstance(bet, dict):
+            continue
+        status = str(bet.get("status") or "").upper()
+        if status == "OPEN":
             open_bets.append(bet)
+            continue
+        if status != "SETTLED":
+            continue
+        settled_bets.append(bet)
+        profit = bet.get("profit_cop")
+        if profit is None:
+            legacy = settlements_by_key.get(str(record.get("signal_key") or ""))
+            profit = None if legacy is None else legacy.get("paper_profit_cop")
+        if profit is None:
+            raise ValueError(
+                f"SETTLED_PAPER_BET_MISSING_PROFIT:{record.get('signal_key') or record.get('fixture_id')}"
+            )
+        realized += float(profit)
+
+    current = float(pb["initial_cop"]) + realized
     open_exposure = sum(float(x.get("stake_cop") or 0.0) for x in open_bets)
     pb["realized_profit_cop"] = realized
     pb["current_cop"] = current
     pb["open_exposure_cop"] = open_exposure
     pb["available_after_open_exposure_cop"] = current - open_exposure
     pb["open_bets"] = len(open_bets)
-    pb["settled_paper_bets"] = sum(1 for x in ledger.get("settlements", []) if x.get("paper_stake_cop") is not None)
+    pb["settled_paper_bets"] = len(settled_bets)
     pb["max_open_exposure_cop"] = current * float(pb["max_open_exposure_fraction"])
     return pb
 
