@@ -2,6 +2,7 @@
 # MATRIX_PHYSICAL_TRIGGER 2026-10-09T05:46Z continuity-hard-production-proof
 # manual trigger: SofaScore identity remediation 2026-10-05
 name: COR02-03 governed batch freeze
+# MATRIX_AUTONOMOUS_CADENCE_V1: every 2h, governed fail-closed
 
 on:
   push:
@@ -40,6 +41,8 @@ on:
       - tools/cor0203_settlement_sync.py
       - tools/cor0203_historical_identity_reconcile.py
   workflow_dispatch:
+  schedule:
+    - cron: '17 */2 * * *'
 
 permissions:
   contents: write
