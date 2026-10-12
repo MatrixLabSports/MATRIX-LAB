@@ -88,6 +88,15 @@ def authority_index(authority: Mapping[str,Any]) -> dict[str,dict[str,Any]]:
         if not pid.startswith("rapidapi-tennis:player:"):
             continue
         cid=str(row.get("canonical_source_id") or "").strip()
+        if not cid:
+            history=row.get("pre_cut_history")
+            source_ids=[
+                str(x).strip()
+                for x in (history.get("canonical_source_ids",[]) if isinstance(history,Mapping) else [])
+                if str(x).strip()
+            ]
+            if len(set(source_ids))==1:
+                cid=source_ids[0]
         name=str(row.get("canonical_name") or row.get("provider_display_name") or "").strip()
         if not cid or not name:
             continue
@@ -272,10 +281,28 @@ def main()->None:
     windows=[]
     while cursor<=stop:
         end=min(stop,cursor+timedelta(days=13))
-        payload=client.results_for_range(cursor,end)
-        rows=_rows(payload)
-        raw.extend(rows)
-        windows.append({"start":cursor.isoformat(),"stop":end.isoformat(),"rows":len(rows)})
+        if cursor==end:
+            path=f"/tennis/v2/atp/results/{cursor.isoformat()}"
+        else:
+            path=f"/tennis/v2/atp/results/{cursor.isoformat()}/{end.isoformat()}"
+        window_rows=[]
+        page=1
+        while page<=20:
+            payload=client._get(path,{
+                "pageNo":page,
+                "pageSize":100,
+                "filter":"PlayerGroup:singles;TourRank:1",
+                "include":"round,tournament.court,tournament.rank",
+            })
+            rows=_rows(payload)
+            window_rows.extend(rows)
+            if not bool(payload.get("hasNextPage")):
+                break
+            page+=1
+        if page>20:
+            raise SystemExit("CLAY_CATCHUP_RESULT_PAGE_LIMIT_REACHED")
+        raw.extend(window_rows)
+        windows.append({"start":cursor.isoformat(),"stop":end.isoformat(),"rows":len(window_rows),"pages":page})
         cursor=end+timedelta(days=1)
     state=build_state(
         historical_rows=historical,
