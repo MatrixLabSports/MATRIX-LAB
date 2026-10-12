@@ -54,6 +54,7 @@ SETTLEMENT_SYNC_LAST="evidence/cor0203/runtime/MATRIX_COR0203_SETTLEMENT_SYNC_LA
 SETTLEMENT_UNIQUENESS_LAST="evidence/cor0203/runtime/MATRIX_COR0203_SETTLEMENT_UNIQUENESS_LAST.json"
 SETTLEMENT_ADJUDICATION_LAST="evidence/cor0203/runtime/MATRIX_COR0203_SETTLEMENT_ADJUDICATION_LAST.json"
 SETTLEMENT_ADJUDICATIONS="evidence/cor0203/adjudication/MATRIX_COR0203_SETTLEMENT_ADJUDICATIONS_20261001.json"
+SETTLEMENT_SCHEDULE_OVERRIDES="evidence/cor0203/adjudication/MATRIX_COR0203_SCHEDULE_OVERRIDES_20261012.json"
 SETTLEMENT_LEDGER="evidence/cor0203/settlement/MATRIX_COR0203_SETTLEMENT_LEDGER.jsonl"
 HEARTBEAT="evidence/cor0203/runtime/MATRIX_COR0203_SCHEDULER_HEARTBEAT.json"
 WORLD_DATE="${MATRIX_WORLD_DATE_BOGOTA:-$(TZ=America/Bogota date +%F)}"
@@ -326,11 +327,20 @@ if [[ -f "$SETTLEMENT_ADJUDICATIONS" ]]; then
     --out "$SETTLEMENT_ADJUDICATION_LAST"
 fi
 
-python -m tools.cor0203_settlement_sync \
-  --queue "$SETTLEMENT_QUEUE_LAST" \
-  --ledger "$SETTLEMENT_LEDGER" \
-  --summary-out "$SETTLEMENT_SYNC_LAST" \
-  --max-requests 50
+if [[ -f "$SETTLEMENT_SCHEDULE_OVERRIDES" ]]; then
+  python -m tools.cor0203_settlement_sync \
+    --queue "$SETTLEMENT_QUEUE_LAST" \
+    --ledger "$SETTLEMENT_LEDGER" \
+    --summary-out "$SETTLEMENT_SYNC_LAST" \
+    --schedule-overrides "$SETTLEMENT_SCHEDULE_OVERRIDES" \
+    --max-requests 50
+else
+  python -m tools.cor0203_settlement_sync \
+    --queue "$SETTLEMENT_QUEUE_LAST" \
+    --ledger "$SETTLEMENT_LEDGER" \
+    --summary-out "$SETTLEMENT_SYNC_LAST" \
+    --max-requests 50
+fi
 
 python -m tools.cor0203_settlement_queue \
   --runtime-dir evidence/cor0203/runtime \
