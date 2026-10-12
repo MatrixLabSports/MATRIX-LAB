@@ -45,11 +45,24 @@ def test_daily_cap_uses_40_percent_only_for_high_conviction_day():
 def test_recalc_separates_realized_and_open_exposure():
     ledger = {
         "sent": [
-            {"paper_bet": {"status": "OPEN", "stake_cop": 50_000.0}},
-            {"paper_bet": {"status": "SETTLED", "stake_cop": 75_000.0}},
+            {"signal_key": "open-1", "paper_bet": {"status": "OPEN", "stake_cop": 50_000.0}},
+            {
+                "signal_key": "settled-1",
+                "paper_bet": {
+                    "status": "SETTLED",
+                    "stake_cop": 75_000.0,
+                    "profit_cop": 60_000.0,
+                },
+            },
         ],
+        # The historical settlement entry may contain the same paper result.
+        # recalc_paper_bankroll must not double count it.
         "settlements": [
-            {"paper_stake_cop": 75_000.0, "paper_profit_cop": 60_000.0},
+            {
+                "signal_key": "settled-1",
+                "paper_stake_cop": 75_000.0,
+                "paper_profit_cop": 60_000.0,
+            },
         ],
     }
     pb = recalc_paper_bankroll(ledger)
@@ -59,6 +72,9 @@ def test_recalc_separates_realized_and_open_exposure():
     assert pb["max_open_exposure_cop"] == 2_024_000.0
     assert pb["daily_base_exposure_fraction"] == 0.30
     assert pb["daily_max_exposure_fraction"] == 0.40
+    assert pb["settled_paper_bets"] == 1
+    assert pb["realized_profit_cop"] == 60_000.0
+
 
 
 
