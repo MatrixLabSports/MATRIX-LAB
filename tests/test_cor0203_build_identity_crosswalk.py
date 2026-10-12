@@ -796,3 +796,53 @@ def test_r706_identity_only_authority_fails_closed_if_provider_rows_missing():
     assert result["status"]=="ALL_BLOCKED"
     assert "IDENTITY_AUTHORITY_PROVIDER_IDENTITY_ROWS_EMPTY:rapidapi-tennis:player:6101" in result["events"][0]["blockers"]
 
+def test_identity_only_registry_allows_one_strictly_evidenced_provider_identity():
+    pre={
+        "revision":"R2026101290",
+        "identity_only":True,
+        "model_admission_forbidden":True,
+        "events":[{
+            "event_id":"identity-only-one",
+            "identity_crosswalk_required":True,
+            "identity_only":True,
+            "model_admission_forbidden":True,
+            "player_identities":[{
+                "display_name":"Titouan Droguet",
+                "provider":"rapidapi_tennis",
+                "provider_player_id":"rapidapi-tennis:player:111",
+                "provider_ranking":{
+                    "place":"84","points":"690","player":"Titouan Droguet",
+                    "country":"FRA","snapshot_date":"2026-09-21",
+                },
+            }],
+        }],
+    }
+    out=build_crosswalk(prefeature=pre,static_cut=static_cut())
+    assert out["status"]=="PASS"
+    assert out["passed_events"]==1
+    assert out["blocked_events"]==0
+    assert out["mappings"][0]["canonical_source_id"]=="D0DW"
+    assert out["join_by_name_only"] is False
+
+
+def test_single_player_event_still_blocks_outside_identity_only_mode():
+    pre={
+        "revision":"R2026101291",
+        "events":[{
+            "event_id":"ordinary-one",
+            "identity_crosswalk_required":True,
+            "player_identities":[{
+                "display_name":"Titouan Droguet",
+                "provider":"rapidapi_tennis",
+                "provider_player_id":"rapidapi-tennis:player:111",
+                "provider_ranking":{
+                    "place":"84","points":"690","player":"Titouan Droguet",
+                    "country":"FRA","snapshot_date":"2026-09-21",
+                },
+            }],
+        }],
+    }
+    out=build_crosswalk(prefeature=pre,static_cut=static_cut())
+    assert out["status"]=="ALL_BLOCKED"
+    assert "PROVIDER_IDENTITIES_REQUIRED" in out["events"][0]["blockers"]
+
