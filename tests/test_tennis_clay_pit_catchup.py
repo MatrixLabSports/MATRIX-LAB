@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from datetime import date
 
-from tools.tennis_clay_pit_catchup import build_state
+from tools.tennis_clay_pit_catchup import authority_index, build_state
 
 
 def _hist(a,b,y,day):
@@ -58,3 +58,16 @@ def test_catchup_ready_only_when_connected_identity_component_is_complete():
     assert by_id["rapidapi-tennis:player:33"]["component_unmapped_provider_ids"]==["rapidapi-tennis:player:44"]
     assert state["silent_imputation"] is False
     assert state["real_money"]=="BLOCKED"
+
+
+def test_authority_index_uses_unique_precut_source_id_when_top_level_id_absent():
+    authority={
+        "records":[{
+            "provider_player_id":"rapidapi-tennis:player:11",
+            "provider_display_name":"Player One",
+            "pre_cut_history":{"canonical_source_ids":["P001"]},
+        }]
+    }
+    out=authority_index(authority)
+    assert out["11"]["canonical_source_id"]=="P001"
+    assert out["11"]["canonical_name"]=="Player One"
