@@ -7,6 +7,8 @@ on:
     paths:
       - .github/workflows/live-tennis-reactivation-cumulative-gates.yml
   workflow_dispatch:
+  schedule:
+    - cron: '7 */2 * * *'
 
 permissions:
   contents: write
