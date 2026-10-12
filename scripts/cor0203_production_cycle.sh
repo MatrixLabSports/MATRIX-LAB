@@ -278,11 +278,20 @@ python -m tools.cor0203_holdout_integrity_audit \
   --binding evidence/cor0203/runtime/MATRIX_COR0203_MODEL_BINDING_R707.json \
   --out "$INTEGRITY_LAST"
 
-python -m tools.cor0203_physical_uniqueness_audit \
-  --runtime-dir evidence/cor0203/runtime \
-  --holdout-dir evidence/cor0203/holdout \
-  --integrity "$INTEGRITY_LAST" \
-  --out "$UNIQUENESS_LAST"
+if [[ -f "$SETTLEMENT_SCHEDULE_OVERRIDES" ]]; then
+  python -m tools.cor0203_physical_uniqueness_audit \
+    --runtime-dir evidence/cor0203/runtime \
+    --holdout-dir evidence/cor0203/holdout \
+    --integrity "$INTEGRITY_LAST" \
+    --schedule-overrides "$SETTLEMENT_SCHEDULE_OVERRIDES" \
+    --out "$UNIQUENESS_LAST"
+else
+  python -m tools.cor0203_physical_uniqueness_audit \
+    --runtime-dir evidence/cor0203/runtime \
+    --holdout-dir evidence/cor0203/holdout \
+    --integrity "$INTEGRITY_LAST" \
+    --out "$UNIQUENESS_LAST"
+fi
 
 python -m tools.cor0203_milestone_status \
   --uniqueness "$UNIQUENESS_LAST" \
