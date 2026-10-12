@@ -1,4 +1,4 @@
-# MATRIX_PHYSICAL_TRIGGER 2026-10-09T14:25Z continue-football-calibration-settlement
+# MATRIX_PHYSICAL_TRIGGER 2026-10-11 reconcile-post-settlement-supervisor-uniqueness
 name: API-Football prospective FINAL-only settlement now
 
 on:
@@ -45,11 +45,6 @@ jobs:
             tests/test_api_football_prospective_calibration.py \
             tests/test_api_football_market_calibration_v2.py
 
-      - name: Record supervisor due state
-        run: |
-          python -m tools.api_football_prospective_supervisor \
-            --out evidence/api_football/prospective_supervisor/last_run.json
-
       - name: Settle API-Football standard FINAL results only
         env:
           API_FOOTBALL_KEY: ${{ secrets.API_FOOTBALL_KEY }}
@@ -75,6 +70,20 @@ jobs:
           assert sync["real_money"] == "BLOCKED"
           print(json.dumps(sync, sort_keys=True))
           PY
+
+      - name: Audit physical uniqueness after settlement
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m tools.api_football_physical_uniqueness_audit \
+            --freeze evidence/api_football/prospective_market_freeze/freeze.json \
+            --calibration-ledger evidence/api_football/prospective_calibration/ledger.jsonl \
+            --out evidence/api_football/physical_uniqueness/audit_last.json
+
+      - name: Record reconciled supervisor state after settlement
+        run: |
+          python -m tools.api_football_prospective_supervisor \
+            --out evidence/api_football/prospective_supervisor/last_run.json
 
       - name: Open completed prospective calibration checkpoints only
         run: python -m tools.api_football_prospective_calibration
@@ -130,6 +139,23 @@ jobs:
           assert settlement["p_matrix_status"] == "NOT_GENERATED"
           assert settlement["real_money"] == "BLOCKED"
 
+          supervisor = json.loads(
+              (root / "prospective_supervisor" / "last_run.json").read_text(encoding="utf-8")
+          )
+          uniqueness = json.loads(
+              (root / "physical_uniqueness" / "audit_last.json").read_text(encoding="utf-8")
+          )
+          assert supervisor["settled_event_count"] == settlement["ledger_final_count"]
+          assert uniqueness["result"] == "PASS"
+          assert uniqueness["freeze_rows"] == uniqueness["unique_fixture_ids"]
+          assert uniqueness["calibration_unique_fixture_ids"] == settlement["ledger_final_count"]
+          assert uniqueness["duplicate_fixture_id_groups"] == 0
+          assert uniqueness["exact_physical_duplicate_groups"] == 0
+          assert uniqueness["suspicious_same_pair_within_36h"] == 0
+          assert uniqueness["calibration_duplicate_fixture_ids"] == []
+          assert uniqueness["calibration_outside_freeze"] == []
+          assert uniqueness["real_money"] == "BLOCKED"
+
           for slug in ("1x2", "over_2_5", "under_2_5", "double_chance_1x", "double_chance_x2"):
               state = json.loads(
                   (root / "calibration_v2" / "lanes" / slug / "state.json").read_text(encoding="utf-8")
@@ -151,6 +177,7 @@ jobs:
           git config user.email "matrix-api-football-supervisor@users.noreply.github.com"
           git add \
             evidence/api_football/prospective_supervisor/last_run.json \
+            evidence/api_football/physical_uniqueness/audit_last.json \
             evidence/api_football/prospective_market_freeze/settlement_ledger.jsonl \
             evidence/api_football/prospective_market_freeze/settlement_sync_last.json \
             evidence/api_football/prospective_market_freeze/settlement_raw \
