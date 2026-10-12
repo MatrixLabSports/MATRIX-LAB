@@ -1,0 +1,175 @@
+name: MATRIX Tennis Clay Daily Prospective
+
+on:
+  push:
+    branches:
+      - repair/cor09-world-pipeline
+    paths:
+      - .github/workflows/tennis-clay-daily-prospective.yml
+      - tools/tennis_clay_prefeature_discovery.py
+      - tools/tennis_api_tennis_dual_lane_exact_day.py
+      - tools/tennis_dual_lane_event_reconcile.py
+      - tools/cor0203_expand_identity_authority.py
+      - tools/cor0203_build_identity_crosswalk.py
+      - tests/test_tennis_clay_prefeature_discovery.py
+  workflow_dispatch:
+  schedule:
+    - cron: '37 */2 * * *'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: tennis-clay-daily-prospective
+  cancel-in-progress: false
+
+jobs:
+  clay-daily:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout operational branch
+        uses: actions/checkout@v4
+        with:
+          ref: repair/cor09-world-pipeline
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install test dependency
+        run: python -m pip install pytest requests
+
+      - name: Run Clay regression tests
+        run: |
+          python -m pytest -q             tests/test_tennis_clay_prefeature_discovery.py             tests/test_tennis_clay_lane_bootstrap.py             tests/test_tennis_parallel_lane_registry.py
+
+      - name: Resolve Bogota date
+        id: date
+        run: echo "d0=$(TZ=America/Bogota date +%F)" >> "$GITHUB_OUTPUT"
+
+      - name: Capture structured secondary providers
+        env:
+          RAPIDAPI_TENNIS_KEY: ${{ secrets.RAPIDAPI_TENNIS_KEY }}
+          API_TENNIS_KEY: ${{ secrets.API_TENNIS_KEY }}
+          D0: ${{ steps.date.outputs.d0 }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "evidence/tennis/world_inventory/$D0"
+          mkdir -p "evidence/tennis_world_inventory/$D0"
+          python -m tools.tennis_world_inventory_rapidapi             --target-date-bogota "$D0"             --out "evidence/tennis/world_inventory/$D0/MATRIX_TENNIS_WORLD_INVENTORY.json"             --fail-on-partial
+          python -m tools.tennis_api_tennis_dual_lane_exact_day             --target-date-bogota "$D0"             --out "evidence/tennis_world_inventory/$D0/api_tennis_challenger_men_singles_exact_day.json"
+
+      - name: Build current Clay prefeature registry
+        env:
+          RAPIDAPI_TENNIS_KEY: ${{ secrets.RAPIDAPI_TENNIS_KEY }}
+          D0: ${{ steps.date.outputs.d0 }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          REV="$(echo "$D0" | tr -d '-')"
+          mkdir -p evidence/tennis_parallel_lanes/ATP_CHALLENGER_MEN_SINGLES_CLAY/runtime
+          python -m tools.tennis_clay_prefeature_discovery             --inventory "evidence/tennis/world_inventory/$D0/MATRIX_TENNIS_WORLD_INVENTORY.json"             --state evidence/tennis_parallel_lanes/ATP_CHALLENGER_MEN_SINGLES_CLAY/prospective/state.json             --revision "R$REV"             --out "evidence/tennis_parallel_lanes/ATP_CHALLENGER_MEN_SINGLES_CLAY/runtime/MATRIX_COR0203_PREFEATURE_REGISTRY_R$REV.json"
+
+      - name: Expand Clay identity authority without Hard holdout reuse
+        env:
+          RAPIDAPI_TENNIS_KEY: ${{ secrets.RAPIDAPI_TENNIS_KEY }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p evidence/tennis_parallel_lanes/ATP_CHALLENGER_MEN_SINGLES_CLAY/identity
+          mkdir -p evidence/tennis_parallel_lanes/ATP_CHALLENGER_MEN_SINGLES_CLAY/empty_holdout
+          python -m tools.cor0203_expand_identity_authority             --runtime-dir evidence/tennis_parallel_lanes/ATP_CHALLENGER_MEN_SINGLES_CLAY/runtime             --holdout-dir evidence/tennis_parallel_lanes/ATP_CHALLENGER_MEN_SINGLES_CLAY/empty_holdout             --history-csv evidence/cor0203/preholdout/2026_challenger_live_snapshot.csv             --static-cut evidence/cor0203/runtime/MATRIX_COR0203_STATIC_CUT_20260921.json             --base-authority evidence/cor0203/identity/MATRIX_COR0203_IDENTITY_AUTHORITY_LAST.json             --out evidence/tennis_parallel_lanes/ATP_CHALLENGER_MEN_SINGLES_CLAY/identity/MATRIX_CLAY_IDENTITY_AUTHORITY_LAST.json             --audit-out evidence/tennis_parallel_lanes/ATP_CHALLENGER_MEN_SINGLES_CLAY/runtime/MATRIX_CLAY_IDENTITY_AUTHORITY_EXPANSION_LAST.json             --provider-history evidence/tennis_parallel_lanes/ATP_CHALLENGER_MEN_SINGLES_CLAY/runtime/NO_PROVIDER_HISTORY.json             --r706-readiness evidence/tennis_parallel_lanes/ATP_CHALLENGER_MEN_SINGLES_CLAY/runtime/NO_R706_HISTORY.json             --biography-supplement evidence/tennis_parallel_lanes/ATP_CHALLENGER_MEN_SINGLES_CLAY/runtime/NO_BIO_SUPPLEMENT.json             --certified-aliases evidence/tennis_parallel_lanes/ATP_CHALLENGER_MEN_SINGLES_CLAY/runtime/NO_CERTIFIED_ALIASES.json             --max-profiles 32
+
+      - name: Build Clay identity crosswalk
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m tools.cor0203_build_identity_crosswalk             --runtime-dir evidence/tennis_parallel_lanes/ATP_CHALLENGER_MEN_SINGLES_CLAY/runtime             --static-cut evidence/cor0203/runtime/MATRIX_COR0203_STATIC_CUT_20260921.json             --identity-authority evidence/tennis_parallel_lanes/ATP_CHALLENGER_MEN_SINGLES_CLAY/identity/MATRIX_CLAY_IDENTITY_AUTHORITY_LAST.json             --summary-out evidence/tennis_parallel_lanes/ATP_CHALLENGER_MEN_SINGLES_CLAY/runtime/MATRIX_CLAY_IDENTITY_CROSSWALK_SUMMARY_LAST.json
+
+      - name: Reconcile both paid providers
+        env:
+          D0: ${{ steps.date.outputs.d0 }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m tools.tennis_dual_lane_event_reconcile             --rapid "evidence/tennis/world_inventory/$D0/MATRIX_TENNIS_WORLD_INVENTORY.json"             --api-tennis "evidence/tennis_world_inventory/$D0/api_tennis_challenger_men_singles_exact_day.json"             --clay-holdout evidence/tennis_parallel_lanes/ATP_CHALLENGER_MEN_SINGLES_CLAY/prospective/holdout_contract.json             --clay-bootstrap evidence/tennis_parallel_lanes/ATP_CHALLENGER_MEN_SINGLES_CLAY/bootstrap/bootstrap_manifest.json             --out "evidence/tennis_world_inventory/$D0/hard_clay_event_reconciliation.json"
+
+      - name: Write current Clay bridge and root-cause receipt
+        env:
+          D0: ${{ steps.date.outputs.d0 }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import hashlib,json,os
+          from datetime import datetime,timezone
+          from pathlib import Path
+          d=os.environ["D0"]; rev=d.replace("-","")
+          root=Path("evidence/tennis_parallel_lanes/ATP_CHALLENGER_MEN_SINGLES_CLAY")
+          pre=json.loads((root/"runtime"/f"MATRIX_COR0203_PREFEATURE_REGISTRY_R{rev}.json").read_text())
+          exp=json.loads((root/"runtime"/"MATRIX_CLAY_IDENTITY_AUTHORITY_EXPANSION_LAST.json").read_text())
+          xsum=json.loads((root/"runtime"/"MATRIX_CLAY_IDENTITY_CROSSWALK_SUMMARY_LAST.json").read_text())
+          rec=json.loads(Path(f"evidence/tennis_world_inventory/{d}/hard_clay_event_reconciliation.json").read_text())
+          state=json.loads((root/"prospective"/"state.json").read_text())
+          current=[x for x in xsum.get("crosswalk_revisions",[]) if int(x.get("revision") or -1)==int(rev)]
+          bridge={
+            "schema":"MATRIX_TENNIS_CLAY_DAILY_BRIDGE_V2",
+            "generated_at_utc":datetime.now(timezone.utc).replace(microsecond=0).isoformat(),
+            "target_date_bogota":d,
+            "lane_id":"ATP_CHALLENGER_MEN_SINGLES_CLAY",
+            "holdout_id":"ATP_CHALLENGER_CLAY_PROSPECTIVE_V1",
+            "source_priority":["SOFASCORE_BROWSER","FLASHSCORE_BROWSER","RAPIDAPI_TENNIS","API_TENNIS"],
+            "structured_layer_role":"SECONDARY_AFTER_BROWSER_VERIFICATION_NOT_WORLD_TRUTH",
+            "future_clay_candidates_with_cut_ranking":len(pre.get("events",[])),
+            "identity_authority_new_records":int(exp.get("new_records") or 0),
+            "identity_crosswalk_current_revision":current[0] if current else None,
+            "dual_provider_bound_clay":int(rec.get("clay_bound_count") or 0),
+            "dual_provider_freeze_ready_under_old_pit_rule":int(rec.get("clay_freeze_ready_count") or 0),
+            "current_observation_count":int(state.get("observation_count") or 0),
+            "operational_blocker":(
+              "PIT_STATE_CATCHUP_REQUIRED_BEFORE_FIRST_FREEZE"
+              if int(rec.get("clay_bound_count") or 0)>0 and int(rec.get("clay_freeze_ready_count") or 0)==0
+              else "IDENTITY_OR_DUAL_PROVIDER_BINDING"
+              if int(rec.get("clay_bound_count") or 0)==0
+              else "FREEZE_READY"
+            ),
+            "protections":{
+              "cor0203_holdout_reused":False,
+              "cor0203_observations_reused":False,
+              "historical_backfill_into_holdout":False,
+              "missing_not_zero":True,
+              "silent_imputation":False,
+              "odds_to_probability":False,
+              "metrics_opened":False,
+              "outcomes_read":0,
+              "real_money":"BLOCKED"
+            }
+          }
+          raw=json.dumps(bridge,sort_keys=True,separators=(",",":"),ensure_ascii=False).encode()
+          bridge["sha256_without_self"]=hashlib.sha256(raw).hexdigest()
+          (root/"prospective"/"world_calendar_bridge_last.json").write_text(json.dumps(bridge,indent=2,sort_keys=True,ensure_ascii=False)+"\n")
+          print(json.dumps(bridge,sort_keys=True))
+          PY
+
+      - name: Persist Clay-only evidence
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name matrix-tennis-clay-daily
+          git config user.email matrix-tennis-clay-daily@users.noreply.github.com
+          git add evidence/tennis_parallel_lanes/ATP_CHALLENGER_MEN_SINGLES_CLAY
+          git add evidence/tennis/world_inventory
+          git add evidence/tennis_world_inventory
+          if git diff --cached --quiet; then exit 0; fi
+          git commit -m "evidence(tennis): refresh governed Clay prospective bridge"
+          for attempt in 1 2 3 4; do
+            git fetch origin repair/cor09-world-pipeline
+            git rebase origin/repair/cor09-world-pipeline
+            if git push origin HEAD:repair/cor09-world-pipeline; then exit 0; fi
+            sleep $((attempt*2))
+          done
+          exit 1
