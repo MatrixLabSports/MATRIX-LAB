@@ -41,6 +41,7 @@ def build_prefeature(
     ranking_by_player: Mapping[str, Mapping[str, Any]],
     now_utc: datetime,
     starting_observation_count: int,
+    revision: str = "R1",
 ) -> dict[str, Any]:
     events = []
     blocked = []
@@ -122,7 +123,7 @@ def build_prefeature(
         })
     return {
         "schema": "MATRIX_TENNIS_CLAY_PREFEATURE_REGISTRY_V1",
-        "revision": "R1",
+        "revision": revision,
         "lane_id": LANE_ID,
         "holdout_id": HOLDOUT_ID,
         "starting_observation_count": int(starting_observation_count),
@@ -144,6 +145,7 @@ def main() -> None:
     p.add_argument("--inventory", required=True)
     p.add_argument("--state", required=True)
     p.add_argument("--out", required=True)
+    p.add_argument("--revision", default="R1")
     a = p.parse_args()
 
     key = os.environ.get("RAPIDAPI_TENNIS_KEY", "").strip()
@@ -205,6 +207,7 @@ def main() -> None:
         ranking_by_player=rankings,
         now_utc=datetime.now(timezone.utc),
         starting_observation_count=int(state.get("observation_count") or 0),
+        revision=str(a.revision),
     )
     payload["provider_network_calls"] = client.request_count
     payload["ranking_players_requested"] = len(wanted)
