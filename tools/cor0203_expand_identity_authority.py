@@ -310,8 +310,18 @@ def _sealed_r706_provider_history_match(
         eligible = int(provider_row.get("eligible_pre_cut_matches") or 0)
     except (TypeError, ValueError):
         eligible = 0
-    if eligible <= 0:
+    try:
+        past_matches_returned = int(provider_row.get("past_matches_returned") or 0)
+    except (TypeError, ValueError):
+        past_matches_returned = 0
+    # A provider can legitimately have no pre-cut Challenger rows for a player
+    # whose sealed R706 model state is already fully history-ready. In that
+    # case, do not fabricate model history. We may use the provider's own
+    # player-ID observations only as identity evidence, provided at least one
+    # physical provider row exists and the observed name is exact/consistent.
+    if eligible <= 0 and past_matches_returned <= 0:
         return None, "PROVIDER_PRECUT_HISTORY_EMPTY"
+    identity_only_provider_history = eligible <= 0
     display_name = str(candidate.get("display_name") or "").strip()
     observed_names = [
         str(x).strip()
@@ -355,8 +365,11 @@ def _sealed_r706_provider_history_match(
         "state_sha256": state_sha,
         "provider_player_id": provider_id,
         "eligible_pre_cut_matches": eligible,
+        "past_matches_returned": past_matches_returned,
         "observed_names": observed_names,
         "cutoff_exclusive_utc": "2026-09-21T00:00:00+00:00",
+        "provider_history_identity_only": identity_only_provider_history,
+        "provider_competitive_history_admitted": not identity_only_provider_history,
     }, None
 
 
@@ -509,7 +522,9 @@ def expand_authority(
                     "provider_rank": candidate["provider_rank"],
                     "provider_rank_points": candidate["provider_rank_points"],
                     "authority_basis": (
-                        "SEALED_R706_STATE_PLUS_PRECUT_PROVIDER_HISTORY_AND_PROFILE"
+                        "SEALED_R706_STATE_PLUS_EXACT_CUT_PROVIDER_IDENTITY_AND_PROFILE"
+                        if r706_evidence.get("provider_history_identity_only")
+                        else "SEALED_R706_STATE_PLUS_PRECUT_PROVIDER_HISTORY_AND_PROFILE"
                     ),
                     "sealed_r706_history": {
                         "name": r706_evidence["name"],
@@ -524,6 +539,22 @@ def expand_authority(
                         "eligible_pre_cut_matches": r706_evidence["eligible_pre_cut_matches"],
                         "observed_names": r706_evidence["observed_names"],
                         "cutoff_exclusive_utc": r706_evidence["cutoff_exclusive_utc"],
+                        "competitive_history_admitted": r706_evidence["provider_competitive_history_admitted"],
+                    },
+                    "provider_identity_evidence": {
+                        "provider_player_id": provider_id,
+                        "past_matches_returned": r706_evidence["past_matches_returned"],
+                        "observed_names": r706_evidence["observed_names"],
+                        "role": (
+                            "IDENTITY_ONLY"
+                            if r706_evidence.get("provider_history_identity_only")
+                            else "IDENTITY_PLUS_PRECUT_HISTORY"
+                        ),
+                        "ranking_cut": "2026-09-21",
+                        "rank": candidate["provider_rank"],
+                        "rank_points": candidate["provider_rank_points"],
+                        "ioc": ioc,
+                        "post_cut_competitive_data_used": False,
                     },
                     "biographical_candidates": [{
                         "master_id": "RAPIDAPI_PROFILE_" + candidate["numeric_player_id"],
@@ -916,8 +947,7 @@ def main() -> None:
     audit["sealed_r706_history_promotions"] = [
         row["provider_player_id"]
         for row in output.get("records", [])
-        if row.get("authority_basis")
-        == "SEALED_R706_STATE_PLUS_PRECUT_PROVIDER_HISTORY_AND_PROFILE"
+        if str(row.get("authority_basis") or "").startswith("SEALED_R706_STATE_PLUS_")
     ]
     audit["certified_aliases_loaded"] = (
         len(certified_aliases.get("records", []))
