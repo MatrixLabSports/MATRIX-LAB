@@ -85,6 +85,9 @@ def _secondary_cross_provider_key(row: Mapping[str, Any]) -> tuple[str, str] | N
 
 
 def _round_identity_token(row: Mapping[str, Any]) -> str:
+    effective = str(row.get("effective_round") or "").strip()
+    if effective:
+        return effective.upper().replace("_", " ")
     components = row.get("physical_identity_components")
     if isinstance(components, Mapping):
         return str(components.get("round") or "").strip().upper()
@@ -221,6 +224,7 @@ def audit_physical_uniqueness(
                 "freeze_at_utc": observation.get("freeze_at_utc"),
                 "event_start_utc": observation.get("event_start_utc"),
                 "effective_event_start_utc": override.get("effective_event_start_utc"),
+                "effective_round": override.get("effective_round"),
                 "competition": observation.get("competition"),
                 "round": observation.get("round"),
                 "alphabetical_player_a": observation.get("alphabetical_player_a"),

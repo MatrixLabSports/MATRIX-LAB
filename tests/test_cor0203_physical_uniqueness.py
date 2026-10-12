@@ -744,3 +744,113 @@ def test_uniqueness_audit_uses_schedule_override_for_cross_provider_reschedule(t
     )
     assert with_override["outcomes_read"] == 0
     assert with_override["metrics_opened"] is False
+
+
+def test_uniqueness_audit_uses_physical_round_override_for_qualification_final_alias(tmp_path):
+    runtime = tmp_path / "runtime"
+    holdout = tmp_path / "holdout"
+    runtime.mkdir()
+    holdout.mkdir()
+
+    rapid = {
+        "event_id": "RAPID-Draxl-Jasika",
+        "canonical_source_event_id": "rapidapi-tennis:match:1724",
+        "competition_id": "rapidapi-tennis:tournament:22098",
+        "competition": "Jinan Challenger",
+        "round": "Q3",
+        "event_start_utc": "2026-10-12T05:30:00+00:00",
+        "source_provider": "rapidapi_tennis",
+        "player_identities": [
+            {"display_name": "Liam Draxl", "provider_player_id": "rapidapi-tennis:player:53532"},
+            {"display_name": "Omar Jasika", "provider_player_id": "rapidapi-tennis:player:26965"},
+        ],
+        "players": ["Liam Draxl", "Omar Jasika"],
+    }
+    api = {
+        "event_id": "API-Draxl-Jasika",
+        "canonical_source_event_id": "api-tennis:event:12170077",
+        "competition_id": "api-tennis:tournament:2770",
+        "competition": "Jinan",
+        "round": "JINAN FINAL",
+        "event_start_utc": "2026-10-12T05:30:00+00:00",
+        "source_provider": "api_tennis",
+        "player_identities": [
+            {"display_name": "Liam Draxl", "provider_player_id": "api-tennis:player:3696"},
+            {"display_name": "Omar Jasika", "provider_player_id": "api-tennis:player:1261"},
+        ],
+        "players": ["Liam Draxl", "Omar Jasika"],
+    }
+    _write(runtime / "MATRIX_COR0203_PREFEATURE_REGISTRY_R1.json", {"events": [rapid, api]})
+    _write(
+        holdout / "MATRIX_COR0203_HOLDOUT_BATCH_R1.json",
+        {
+            "observations": [
+                {
+                    "event_id": "RAPID-Draxl-Jasika",
+                    "canonical_source_event_id": "rapidapi-tennis:match:1724",
+                    "observation_index": 1,
+                    "freeze_at_utc": "2026-10-11T13:29:00+00:00",
+                    "event_start_utc": "2026-10-12T05:30:00+00:00",
+                    "competition": "Jinan Challenger",
+                    "round": "Q3",
+                    "alphabetical_player_a": "Liam Draxl",
+                    "alphabetical_player_b": "Omar Jasika",
+                    "outcome": None,
+                },
+                {
+                    "event_id": "API-Draxl-Jasika",
+                    "canonical_source_event_id": "api-tennis:event:12170077",
+                    "observation_index": 2,
+                    "freeze_at_utc": "2026-10-11T13:29:00+00:00",
+                    "event_start_utc": "2026-10-12T05:30:00+00:00",
+                    "competition": "Jinan",
+                    "round": "Jinan - Final",
+                    "alphabetical_player_a": "Liam Draxl",
+                    "alphabetical_player_b": "Omar Jasika",
+                    "outcome": None,
+                },
+            ]
+        },
+    )
+
+    without_override = audit_physical_uniqueness(
+        runtime_dir=runtime,
+        holdout_dir=holdout,
+        integrity={
+            "holdout_id": "A22_POST_AUDIT_VIRGIN_HOLDOUT_V1",
+            "result": "PASS",
+            "admissible_batch_revisions": [1],
+            "admissible_observations": 2,
+        },
+    )
+    assert without_override["unique_calibration_observations"] == 2
+
+    with_override = audit_physical_uniqueness(
+        runtime_dir=runtime,
+        holdout_dir=holdout,
+        integrity={
+            "holdout_id": "A22_POST_AUDIT_VIRGIN_HOLDOUT_V1",
+            "result": "PASS",
+            "admissible_batch_revisions": [1],
+            "admissible_observations": 2,
+        },
+        schedule_overrides={
+            "RAPID-Draxl-Jasika": {
+                "effective_event_start_utc": "2026-10-13T03:00:00+00:00",
+                "effective_round": "Q3",
+            },
+            "API-Draxl-Jasika": {
+                "effective_event_start_utc": "2026-10-13T03:00:00+00:00",
+                "effective_round": "Q3",
+            },
+        },
+    )
+    assert with_override["unique_calibration_observations"] == 1
+    assert with_override["duplicate_observations_quarantined"] == 1
+    assert with_override["canonical_observations"][0]["event_id"] == "RAPID-Draxl-Jasika"
+    assert with_override["quarantined_duplicates"][0]["event_id"] == "API-Draxl-Jasika"
+    assert with_override["quarantined_duplicates"][0]["quarantine_reason"] == (
+        "DUPLICATE_PHYSICAL_MATCH_CROSS_PROVIDER"
+    )
+    assert with_override["outcomes_read"] == 0
+    assert with_override["metrics_opened"] is False
