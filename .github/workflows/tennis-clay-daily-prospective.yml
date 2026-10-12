@@ -9,6 +9,9 @@ on:
       - tools/tennis_clay_prefeature_discovery.py
       - tools/tennis_api_tennis_dual_lane_exact_day.py
       - tools/tennis_dual_lane_event_reconcile.py
+      - tools/tennis_clay_pit_catchup.py
+      - tests/test_tennis_dual_lane_event_reconcile.py
+      - tests/test_tennis_clay_pit_catchup.py
       - tools/cor0203_expand_identity_authority.py
       - tools/cor0203_build_identity_crosswalk.py
       - tests/test_tennis_clay_prefeature_discovery.py
@@ -44,7 +47,9 @@ jobs:
 
       - name: Run Clay regression tests
         run: |
-          python -m pytest -q             tests/test_tennis_clay_prefeature_discovery.py             tests/test_tennis_clay_lane_bootstrap.py             tests/test_tennis_parallel_lane_registry.py
+          python -m pytest -q             tests/test_tennis_clay_prefeature_discovery.py             tests/test_tennis_clay_lane_bootstrap.py             tests/test_tennis_parallel_lane_registry.py \
+            tests/test_tennis_dual_lane_event_reconcile.py \
+            tests/test_tennis_clay_pit_catchup.py
 
       - name: Resolve Bogota date
         id: date
@@ -89,6 +94,20 @@ jobs:
         run: |
           set -euo pipefail
           python -m tools.cor0203_build_identity_crosswalk             --runtime-dir evidence/tennis_parallel_lanes/ATP_CHALLENGER_MEN_SINGLES_CLAY/runtime             --static-cut evidence/cor0203/runtime/MATRIX_COR0203_STATIC_CUT_20260921.json             --identity-authority evidence/tennis_parallel_lanes/ATP_CHALLENGER_MEN_SINGLES_CLAY/identity/MATRIX_CLAY_IDENTITY_AUTHORITY_LAST.json             --summary-out evidence/tennis_parallel_lanes/ATP_CHALLENGER_MEN_SINGLES_CLAY/runtime/MATRIX_CLAY_IDENTITY_CROSSWALK_SUMMARY_LAST.json
+
+      - name: Rebuild Clay ELO PIT state through yesterday
+        env:
+          RAPIDAPI_TENNIS_KEY: ${{ secrets.RAPIDAPI_TENNIS_KEY }}
+          D0: ${{ steps.date.outputs.d0 }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          REV="$(echo "$D0" | tr -d '-')"
+          python -m tools.tennis_clay_pit_catchup \
+            --historical-dataset evidence/tennis_parallel_lanes/ATP_CHALLENGER_MEN_SINGLES_CLAY/bootstrap/historical_pit_dataset.csv \
+            --identity-authority evidence/tennis_parallel_lanes/ATP_CHALLENGER_MEN_SINGLES_CLAY/identity/MATRIX_CLAY_IDENTITY_AUTHORITY_LAST.json \
+            --prefeature "evidence/tennis_parallel_lanes/ATP_CHALLENGER_MEN_SINGLES_CLAY/runtime/MATRIX_COR0203_PREFEATURE_REGISTRY_R$REV.json" \
+            --out evidence/tennis_parallel_lanes/ATP_CHALLENGER_MEN_SINGLES_CLAY/runtime/MATRIX_CLAY_ELO_PIT_CATCHUP_LAST.json
 
       - name: Reconcile both paid providers
         env:
