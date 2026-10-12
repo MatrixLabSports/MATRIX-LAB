@@ -46,6 +46,19 @@ def _utc(value: str) -> datetime:
     return parsed.astimezone(timezone.utc)
 
 
+def _effective_start_utc(
+    item: Mapping[str, Any],
+    schedule_overrides: Mapping[str, Mapping[str, Any]] | None,
+) -> datetime:
+    event_id = str(item.get("event_id") or "")
+    override = (schedule_overrides or {}).get(event_id)
+    if override is not None:
+        value = str(override.get("effective_event_start_utc") or "").strip()
+        if value:
+            return _utc(value)
+    return _utc(str(item.get("event_start_utc") or ""))
+
+
 def _fixture_rows(payload: Mapping[str, Any]) -> list[Mapping[str, Any]]:
     rows = payload.get("result")
     if not isinstance(rows, list):
@@ -60,6 +73,7 @@ def sync_settlements(
     client: MatchLookupClient,
     now_utc: str,
     max_requests: int = 50,
+    schedule_overrides: Mapping[str, Mapping[str, Any]] | None = None,
 ) -> dict[str, Any]:
     now = _utc(now_utc)
     if max_requests <= 0:
@@ -81,7 +95,7 @@ def sync_settlements(
             skipped_already_settled.append(event_id)
             continue
 
-        start = _utc(str(item.get("event_start_utc") or ""))
+        start = _effective_start_utc(item, schedule_overrides)
         if now <= start:
             pending.append({
                 "event_id": event_id,
@@ -277,6 +291,7 @@ def sync_mixed_settlements(
     rapidapi_client: RapidApiTennisClient | None,
     now_utc: str,
     max_requests: int = 50,
+    schedule_overrides: Mapping[str, Mapping[str, Any]] | None = None,
 ) -> dict[str, Any]:
     now = _utc(now_utc)
     if max_requests <= 0:
@@ -305,14 +320,14 @@ def sync_mixed_settlements(
             str(item.get("status") or "") == "READY_RESULT_LOOKUP"
             and str(item.get("provider") or "") == "rapidapi_tennis"
             and str(item.get("event_id") or "") not in existing
-            and now > _utc(str(item.get("event_start_utc") or ""))
+            and now > _effective_start_utc(item, schedule_overrides)
         )
     ]
     rapid_rows: list[Mapping[str, Any]] = []
     rapid_window: dict[str, Any] | None = None
     if rapid_items and rapidapi_client is not None:
         dates = sorted(
-            {_utc(str(item.get("event_start_utc") or "")).date() for item in rapid_items}
+            {_effective_start_utc(item, schedule_overrides).date() for item in rapid_items}
         )
         start_date = max(dates[0] - timedelta(days=1), now.date() - timedelta(days=13))
         stop_date = min(now.date(), dates[-1] + timedelta(days=1))
@@ -342,7 +357,7 @@ def sync_mixed_settlements(
             skipped_already_settled.append(event_id)
             continue
 
-        start_time = _utc(str(item.get("event_start_utc") or ""))
+        start_time = _effective_start_utc(item, schedule_overrides)
         if now <= start_time:
             pending.append({
                 "event_id": event_id,
@@ -554,10 +569,19 @@ def main() -> None:
     )
     parser.add_argument("--summary-out", required=True)
     parser.add_argument("--max-requests", type=int, default=50)
+    parser.add_argument("--schedule-overrides")
     args = parser.parse_args()
 
     queue = json.loads(Path(args.queue).read_text(encoding="utf-8"))
     ledger = Cor0203SettlementLedger(Path(args.ledger))
+    schedule_overrides: dict[str, Mapping[str, Any]] = {}
+    if args.schedule_overrides:
+        raw_overrides = json.loads(Path(args.schedule_overrides).read_text(encoding="utf-8"))
+        schedule_overrides = {
+            str(row.get("event_id") or ""): row
+            for row in raw_overrides.get("entries", []) or []
+            if row.get("event_id")
+        }
     api_key = os.environ.get("API_TENNIS_KEY", "").strip()
     rapid_key = os.environ.get("RAPIDAPI_TENNIS_KEY", "").strip()
 
@@ -579,6 +603,7 @@ def main() -> None:
         rapidapi_client=rapid_client,
         now_utc=now,
         max_requests=args.max_requests,
+        schedule_overrides=schedule_overrides,
     )
 
     out = Path(args.summary_out)
