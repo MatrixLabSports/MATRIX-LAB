@@ -1,4 +1,4 @@
-# MATRIX_MANUAL_TRIGGER 2026-10-12 FIX_WORLD_PRIORITY_FOR_UNIQUE_200
+# MATRIX_MANUAL_TRIGGER 2026-10-12 FIX_R706_IDENTITY_ONLY_CROSSWALK_FOR_UNIQUE_200
 # MATRIX_PHYSICAL_TRIGGER 2026-10-09T05:46Z continuity-hard-production-proof
 # manual trigger: SofaScore identity remediation 2026-10-05
 name: COR02-03 governed batch freeze
@@ -23,6 +23,7 @@ on:
       - tools/cor0203_rapidapi_stats_rich_history_probe.py
       - tools/cor0203_expand_identity_authority.py
       - tools/cor0203_build_static_cut_index.py
+      - tools/cor0203_identity_authority.py
       - tools/cor0203_build_identity_crosswalk.py
       - tools/cor0203_stage_from_registry.py
       - tools/cor0203_batch_runner.py
@@ -76,6 +77,8 @@ jobs:
             tests/test_cor0203_rapidapi_durable_discovery.py \
             tests/test_cor0203_rapidapi_stats_rich_history_probe.py \
             tests/test_cor0203_expand_identity_authority.py \
+            tests/test_cor0203_build_identity_crosswalk.py \
+            tests/test_cor0203_identity_restage_delta.py \
             tests/test_cor0203_preregister_discovery.py \
             tests/test_cor0203_batch_preflight.py \
             tests/test_cor0203_physical_uniqueness.py \
