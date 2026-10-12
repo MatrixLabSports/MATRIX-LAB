@@ -237,7 +237,7 @@ jobs:
           from pathlib import Path
           p=Path("evidence/live_tennis_lab/MATRIX_LIVE_TENNIS_CUMULATIVE_GATE_V1.json")
           j=json.loads(p.read_text())
-          assert j["gate_unit"]=="UNIQUE_FINAL_STANDARD_MATCHES_PER_LANE_ACROSS_DAYS"
+          assert j["gate_unit"]=="UNIQUE_FINAL_STANDARD_MATCHES_WITH_AT_LEAST_ONE_QUALITY_VALID_LIVE_STATE_PER_LANE_ACROSS_DAYS"
           assert j["dedupe_key"]=="provider+match_id"
           assert j["states_do_not_substitute_for_matches"] is True
           assert j["same_match_train_test_forbidden"] is True
