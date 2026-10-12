@@ -199,7 +199,21 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          python -m tools.live_tennis_metadata_reconcile             --ledger "evidence/live_tennis_lab/$D0/MATRIX_LIVE_TENNIS_STATE_LEDGER_V0_1.json"             --out "evidence/live_tennis_lab/$D0/MATRIX_LIVE_TENNIS_METADATA_RECONCILIATION_V0_1.json"
+          FREE_LEDGER="evidence/live_tennis_lab/$D0/MATRIX_LIVE_TENNIS_STATE_LEDGER_V0_1.json"
+          PAID_LEDGER="evidence/live_tennis_lab/$D0/MATRIX_LIVE_TENNIS_API_TENNIS_FAILOVER_LEDGER_V1.json"
+          if [ -f "$FREE_LEDGER" ]; then
+            LEDGER="$FREE_LEDGER"
+            echo "METADATA_LEDGER_MODE=FREE_PRIMARY"
+          elif [ -f "$PAID_LEDGER" ]; then
+            LEDGER="$PAID_LEDGER"
+            echo "METADATA_LEDGER_MODE=PAID_FAILOVER_NONCALIBRATION"
+          else
+            echo "NO_CURRENT_LIVE_LEDGER"
+            exit 1
+          fi
+          python -m tools.live_tennis_metadata_reconcile \
+            --ledger "$LEDGER" \
+            --out "evidence/live_tennis_lab/$D0/MATRIX_LIVE_TENNIS_METADATA_RECONCILIATION_V0_1.json"
 
       - name: Attempt current-day FINAL-only settlement
         env:
@@ -208,7 +222,17 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          python -m tools.live_tennis_settlement_sync             --ledger "evidence/live_tennis_lab/$D0/MATRIX_LIVE_TENNIS_STATE_LEDGER_V0_1.json"             --out "evidence/live_tennis_lab/$D0/MATRIX_LIVE_TENNIS_SETTLEMENT_SYNC_V0_1.json"             --max-detail-queries 10             --reserve-calls 20
+          FREE_LEDGER="evidence/live_tennis_lab/$D0/MATRIX_LIVE_TENNIS_STATE_LEDGER_V0_1.json"
+          if [ -f "$FREE_LEDGER" ]; then
+            python -m tools.live_tennis_settlement_sync \
+              --ledger "$FREE_LEDGER" \
+              --out "evidence/live_tennis_lab/$D0/MATRIX_LIVE_TENNIS_SETTLEMENT_SYNC_V0_1.json" \
+              --max-detail-queries 10 \
+              --reserve-calls 20
+          else
+            echo "PAID_FAILOVER_ONLY: FINAL settlement skipped because cross-provider admission is not certified."
+            echo "CALIBRATION_ADMISSION=BLOCKED"
+          fi
 
       - name: Rebuild daily readiness and gates
         env:
@@ -302,19 +326,46 @@ jobs:
           before=json.loads(Path("/tmp/live-tennis-guard/before.json").read_text())
           cum=json.loads(Path("evidence/live_tennis_lab/MATRIX_LIVE_TENNIS_CUMULATIVE_GATE_V1.json").read_text())
           d0=os.environ["D0"]; d1=os.environ["D1"]
-          current=json.loads(Path(f"evidence/live_tennis_lab/{d0}/MATRIX_LIVE_TENNIS_STATE_LEDGER_V0_1.json").read_text())
+          free_path=Path(f"evidence/live_tennis_lab/{d0}/MATRIX_LIVE_TENNIS_STATE_LEDGER_V0_1.json")
+          paid_path=Path(f"evidence/live_tennis_lab/{d0}/MATRIX_LIVE_TENNIS_API_TENNIS_FAILOVER_LEDGER_V1.json")
+          guard_path=Path(f"evidence/live_tennis_lab/{d0}/MATRIX_LIVE_TENNIS_QUOTA_GUARD_LAST.json")
+          guard=json.loads(guard_path.read_text()) if guard_path.is_file() else {}
+          if free_path.is_file():
+              current=json.loads(free_path.read_text())
+              current_provider="live_tennis_api"
+              calibration_admitted=True
+              unique_matches=current["unique_match_count"]
+              unique_states=current["unique_state_count"]
+              new_states=current["new_states_this_run"]
+              executed_cycles=current["quota_guard"]["executed_cycles"]
+              remaining_before=current["quota_guard"]["remaining_before_run"]
+              cert_status="PASS_LIVE_REACTIVATED_CUMULATIVE_GATES_ACTIVE"
+          elif paid_path.is_file():
+              current=json.loads(paid_path.read_text())
+              current_provider="api_tennis"
+              calibration_admitted=False
+              unique_matches=current["unique_match_count"]
+              unique_states=current["unique_state_count"]
+              new_states=current["new_states_this_run"]
+              executed_cycles=current["executed_cycles"]
+              remaining_before=guard.get("remaining_before_run")
+              cert_status="PASS_LIVE_MONITORING_CONTINUITY_PAID_FAILOVER_ONLY"
+          else:
+              raise SystemExit("NO_CURRENT_LIVE_LEDGER_FOR_CERTIFICATE")
           cert={
             "schema":"MATRIX_LIVE_TENNIS_REACTIVATION_CERT_V1",
             "generated_at_utc":datetime.now(timezone.utc).replace(microsecond=0).isoformat(),
-            "status":"PASS_LIVE_REACTIVATED_CUMULATIVE_GATES_ACTIVE",
+            "status":cert_status,
             "operational_date_bogota":d0,
             "previous_date_bogota":d1,
             "current_capture":{
-              "unique_matches":current["unique_match_count"],
-              "unique_states":current["unique_state_count"],
-              "new_states_this_run":current["new_states_this_run"],
-              "executed_cycles":current["quota_guard"]["executed_cycles"],
-              "remaining_before_run":current["quota_guard"]["remaining_before_run"]
+              "provider":current_provider,
+              "calibration_admitted":calibration_admitted,
+              "unique_matches":unique_matches,
+              "unique_states":unique_states,
+              "new_states_this_run":new_states,
+              "executed_cycles":executed_cycles,
+              "remaining_before_run":remaining_before
             },
             "cumulative":{
               "ledger_dates_count":cum["ledger_dates_count"],
