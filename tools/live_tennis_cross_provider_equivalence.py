@@ -63,18 +63,20 @@ def _round_stage(value: object) -> str | None:
         return None
     if "qualification" in s or "qualifying" in s:
         return "Q"
-    if "final" in s and "semi" not in s and "quarter" not in s:
-        return "F"
-    if "semi" in s or "1 2 finals" in s:
-        return "SF"
-    if "quarter" in s or "1 4 finals" in s:
-        return "QF"
-    if "1 8 finals" in s or "round of 16" in s:
-        return "R16"
-    if "1 16 finals" in s or "round of 32" in s:
-        return "R32"
+    # Fractional round labels contain the token "finals"; parse them before
+    # the generic final/semi-final branches to avoid 1/16-finals -> F.
     if "1 32 finals" in s or "round of 64" in s:
         return "R64"
+    if "1 16 finals" in s or "round of 32" in s:
+        return "R32"
+    if "1 8 finals" in s or "round of 16" in s:
+        return "R16"
+    if "quarter" in s or "1 4 finals" in s:
+        return "QF"
+    if "semi" in s or "1 2 finals" in s:
+        return "SF"
+    if "final" in s:
+        return "F"
     return None
 
 
