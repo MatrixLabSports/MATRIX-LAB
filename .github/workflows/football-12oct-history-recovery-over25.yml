@@ -100,7 +100,7 @@ jobs:
           for league,season in sorted(missing):
               resp=session.get(
                   "https://v3.football.api-sports.io/fixtures",
-                  headers={"x-apisports-key":os.environ["API_FOOTBALL_KEY"]},
+                  headers={"x-apisports-key":api_key},
                   params={"league":league,"season":season},
                   timeout=(10,30),
               )
