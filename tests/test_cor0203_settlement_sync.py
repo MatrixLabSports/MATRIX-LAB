@@ -291,3 +291,47 @@ def test_mixed_sync_blocks_ambiguous_pair_fallback(tmp_path):
     assert result["new_settlements"] == 0
     assert result["blocked"][0]["reason"] == "AMBIGUOUS_EXACT_PLAYER_PAIR"
     assert ledger.audit().records == 0
+
+
+def test_schedule_overlay_keeps_rescheduled_event_waiting(tmp_path):
+    client = FakeClient({"123": payload()})
+    ledger = Cor0203SettlementLedger(tmp_path / "ledger.jsonl")
+    row = item(start="2026-10-12T02:00:00+00:00")
+    result = sync_settlements(
+        queue=queue(row),
+        ledger=ledger,
+        client=client,
+        now_utc="2026-10-12T18:00:00+00:00",
+        schedule_overrides={
+            row["event_id"]: {
+                "effective_event_start_utc": "2026-10-13T07:30:00+00:00",
+                "classification": "RESCHEDULED_WAITING_EVENT_START",
+            }
+        },
+    )
+    assert result["new_settlements"] == 0
+    assert result["network_calls"] == 0
+    assert result["pending"][0]["reason"] == "WAITING_EVENT_START"
+    assert ledger.audit().records == 0
+
+
+def test_mixed_schedule_overlay_excludes_future_rapidapi_from_bulk_lookup(tmp_path):
+    rapid = FakeRapidClient(rapid_payload())
+    ledger = Cor0203SettlementLedger(tmp_path / "ledger.jsonl")
+    row = rapid_item(start="2026-10-12T02:00:00+00:00")
+    result = sync_mixed_settlements(
+        queue=queue(row),
+        ledger=ledger,
+        api_tennis_client=None,
+        rapidapi_client=rapid,
+        now_utc="2026-10-12T18:00:00+00:00",
+        schedule_overrides={
+            row["event_id"]: {
+                "effective_event_start_utc": "2026-10-13T07:30:00+00:00",
+                "classification": "RESCHEDULED_WAITING_EVENT_START",
+            }
+        },
+    )
+    assert result["new_settlements"] == 0
+    assert result["network_calls"] == 0
+    assert result["pending"][0]["reason"] == "WAITING_EVENT_START"
