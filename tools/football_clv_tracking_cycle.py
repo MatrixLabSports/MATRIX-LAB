@@ -241,8 +241,10 @@ def capture_due_closing_lines(
     api_key: str,
     now: datetime,
     session: Any | None = None,
+    capture_clock: Any | None = None,
 ) -> dict[str, Any]:
     reference = now.astimezone(timezone.utc)
+    clock = capture_clock or (lambda: datetime.now(timezone.utc))
     decisions, closings = _existing_decisions_and_closings(ledger)
     due: list[FrozenProspectiveDecision] = []
     missed_after_kickoff = 0
@@ -279,7 +281,9 @@ def capture_due_closing_lines(
             timeout=(10, 30),
         )
         calls += 1
-        captured_at = datetime.now(timezone.utc).replace(microsecond=0)
+        captured_at = clock().astimezone(timezone.utc).replace(microsecond=0)
+        if captured_at.tzinfo is None or captured_at.utcoffset() is None:
+            raise ValueError("CAPTURE_CLOCK_MUST_BE_TIMEZONE_AWARE")
         body = bytes(response.content)
         raw_sha256 = hashlib.sha256(body).hexdigest()
         try:
@@ -498,6 +502,7 @@ def run_cycle(
     api_key: str = "",
     now: datetime | None = None,
     session: Any | None = None,
+    capture_clock: Any | None = None,
 ) -> dict[str, Any]:
     reference = (now or datetime.now(timezone.utc)).astimezone(timezone.utc)
     ledger = FootballProspectiveEvidenceLedger(ledger_path)
@@ -519,6 +524,7 @@ def run_cycle(
         api_key=api_key,
         now=reference,
         session=session,
+        capture_clock=capture_clock,
     )
     state = build_state(
         ledger,
