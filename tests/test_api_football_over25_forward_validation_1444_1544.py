@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import importlib.util
+
+import pytest
 from pathlib import Path
 
 MODULE_PATH = Path("tools/api_football_over25_forward_validation_1444_1544.py")
@@ -30,7 +32,7 @@ def test_metrics_expose_required_calibration_fields():
     assert m["ece"] >= 0
     assert m["max_calibration_error"] >= 0
     assert m["observed_over_2_5_rate"] == 0.5
-    assert m["mean_predicted_probability"] == 0.5
+    assert m["mean_predicted_probability"] == pytest.approx(0.5, abs=1e-12)
     assert m["accuracy_at_0_5_diagnostic_only"] == 1.0
     assert len(m["probability_band_reliability"]) == 4
 

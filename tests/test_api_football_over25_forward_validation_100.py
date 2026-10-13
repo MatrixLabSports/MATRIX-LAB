@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import importlib.util
+
+import pytest
 from pathlib import Path
 
 MODULE_PATH = Path("tools/api_football_over25_forward_validation_100.py")
@@ -28,7 +30,7 @@ def test_binary_metrics_reports_calibration_and_outcome_rate():
     result = MOD._binary_metrics(rows, "challenger")
     assert result["sample_size"] == 4
     assert result["observed_over_2_5_rate"] == 0.5
-    assert result["mean_predicted_probability"] == 0.5
+    assert result["mean_predicted_probability"] == pytest.approx(0.5, abs=1e-12)
     assert result["accuracy_at_0_5_diagnostic_only"] == 1.0
     assert result["calibration"]["method"] == "EQUAL_WIDTH_10_BINS"
     assert len(result["probability_band_reliability"]) == 4

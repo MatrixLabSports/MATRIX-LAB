@@ -30,20 +30,30 @@ def test_cycle_keeps_holdout_sealed_and_persists_all_outputs():
     assert 'git rebase "origin/$TARGET_BRANCH"' in text
 
 
-def test_cycle_requires_explicit_supported_provider_and_never_auto_switches():
+def test_cycle_requires_symmetric_dual_paid_provider_mode_and_never_auto_switches():
     text = _text()
-    assert 'TENNIS_PROVIDER="${MATRIX_TENNIS_PROVIDER:-api_tennis}"' in text
-    assert "case \"$TENNIS_PROVIDER\" in" in text
-    assert "api_tennis)" in text
-    assert "rapidapi_tennis)" in text
-    assert "UNSUPPORTED_MATRIX_TENNIS_PROVIDER" in text
+    assert 'TENNIS_MODE="${MATRIX_TENNIS_MODE:-dual_paid_tennis}"' in text
+    assert 'if [[ "$TENNIS_MODE" != "dual_paid_tennis" ]]' in text
+    assert "DUAL_PAID_TENNIS_MODE_REQUIRED" in text
+    assert "TWO_PAID_TENNIS_KEYS_REQUIRED" in text
+    assert "RAPIDAPI_TENNIS_KEY" in text
+    assert "API_TENNIS_KEY" in text
+    assert "python -m tools.cor0203_rapidapi_durable_discovery" in text
+    assert "python -m tools.cor0203_api_tennis_discovery" in text
+    assert "python -m tools.cor0203_dual_provider_reconcile" in text
+    assert "python -m tools.cor0203_dual_source_readiness" in text
     assert "automatic_provider_switch" not in text
 
 
-def test_rapidapi_discovery_uses_verified_ultra_four_day_horizon():
+def test_both_paid_provider_discoveries_use_governed_four_day_seed_horizon():
     script = Path("scripts/cor0203_production_cycle.sh").read_text(encoding="utf-8")
-    block = script.split("rapidapi_tennis)",1)[1].split(";;",1)[0]
-    assert "--days 4" in block
+    rapid_start = script.index("python -m tools.cor0203_rapidapi_durable_discovery")
+    api_start = script.index("python -m tools.cor0203_api_tennis_discovery")
+    horizon_start = script.index("python -m tools.cor0203_eight_day_dual_discovery")
+    rapid_block = script[rapid_start:api_start]
+    api_block = script[api_start:horizon_start]
+    assert "--days 4" in rapid_block
+    assert "--days 4" in api_block
 
 
 def test_cycle_runs_identity_restage_delta_before_staging():
