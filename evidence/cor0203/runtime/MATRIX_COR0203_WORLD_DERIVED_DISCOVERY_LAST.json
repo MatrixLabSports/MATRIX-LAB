@@ -1,67 +1,9 @@
 {
-  "as_of_utc": "2026-10-13T08:34:39+00:00",
+  "as_of_utc": "2026-10-13T08:45:45+00:00",
   "automatic_model_feed": false,
   "automatic_model_promotion": false,
   "automatic_wagering": false,
   "eligible_candidates": [
-    {
-      "canonical_source_event_id": "rapidapi-tennis:atp:match:1473",
-      "competition": "Jinan Challenger",
-      "competition_id": "rapidapi-tennis:tournament:22098",
-      "event_id": "rapidapi-tennis:atp:match:1473",
-      "event_start_utc": "2026-10-13T08:40:00+00:00",
-      "historical_identity_crosswalk_status": "PENDING",
-      "legacy_provider_event_id": "rapidapi-tennis:match:1473",
-      "physical_event_key": "983f64ca65b4841f5c32f40935695f3b9e5cfd156d5a51226a38dc27ab1640d3",
-      "player_identities": [
-        {
-          "display_name": "Adam Walton",
-          "provider": "rapidapi_tennis",
-          "provider_player_id": "rapidapi-tennis:player:47752"
-        },
-        {
-          "display_name": "Marin Cilic",
-          "provider": "rapidapi_tennis",
-          "provider_player_id": "rapidapi-tennis:player:6101"
-        }
-      ],
-      "players": [
-        {
-          "name": "Adam Walton",
-          "provider_player_id": "rapidapi-tennis:player:47752",
-          "provider_ranking": {
-            "country": "AUS",
-            "place": "99",
-            "player": "Adam Walton",
-            "points": "630",
-            "snapshot_date": "2026-09-21"
-          }
-        },
-        {
-          "name": "Marin Cilic",
-          "provider_player_id": "rapidapi-tennis:player:6101",
-          "provider_ranking": {
-            "country": "CRO",
-            "place": "79",
-            "player": "Marin Cilic",
-            "points": "741",
-            "snapshot_date": "2026-09-21"
-          }
-        }
-      ],
-      "provider_channel": "ATP",
-      "provider_source_event_id": "rapidapi-tennis:atp:match:1473",
-      "round": "First",
-      "source_id_collision_resolved": false,
-      "source_provider": "rapidapi_tennis",
-      "source_reference": "fixtures:matchId=1473;tournament_info=22098;ranking_cut=2026-09-21;provider_channel=ATP",
-      "source_snapshot_sha256": "6d54c79f7eae746d9101f9cfcb66778dd047c78556514a7744dae3941c6a90ed",
-      "surface": "Hard",
-      "target_period": 20260921,
-      "tour_level": "C",
-      "world_source_snapshot_sha256": "a7311af4a91f70f44076b737eecccf219279aea91cf2260f240e6761c586a49b",
-      "world_stable_physical_identity_key": "cc6a47de3e1160528bc30f8671273cb4f000bd2c26e6839c3d1b982fe42140a4"
-    },
     {
       "canonical_source_event_id": "rapidapi-tennis:atp:match:1483",
       "competition": "Jinan Challenger",
@@ -1049,7 +991,7 @@
       "world_stable_physical_identity_key": "ae43619ec28e0ce719d4a2a93384db5213ecadac9cd316c253cc4b466b8a0958"
     }
   ],
-  "eligible_input_events": 18,
+  "eligible_input_events": 17,
   "fixture_rows": 30,
   "governed_preregistration_required": true,
   "metrics_opened": false,
@@ -1266,6 +1208,29 @@
     },
     {
       "blockers": [
+        "EVENT_NOT_FUTURE"
+      ],
+      "match_id": "1473",
+      "players": [
+        {
+          "name": "Adam Walton",
+          "provider_player_id": "rapidapi-tennis:player:47752",
+          "ranking_found": true
+        },
+        {
+          "name": "Marin Cilic",
+          "provider_player_id": "rapidapi-tennis:player:6101",
+          "ranking_found": true
+        }
+      ],
+      "provider_channel": "ATP",
+      "provider_source_event_id": "rapidapi-tennis:atp:match:1473",
+      "source_id_collision_resolved": false,
+      "tournament_id": "22098",
+      "world_source_event_id": "rapidapi-tennis:atp:match:1473"
+    },
+    {
+      "blockers": [
         "RANKING_CUT_MISSING_PLAYER1"
       ],
       "match_id": "1624",
@@ -1460,10 +1425,9 @@
   "world_inventory_target_date": "2026-10-13",
   "world_inventory_total": 366,
   "world_registry": {
-    "as_of_utc": "2026-10-13T08:34:39+00:00",
+    "as_of_utc": "2026-10-13T08:45:45+00:00",
     "cor0203_denominator_definition": "derived subset: future ATP Challenger Hard events with two real fixed identities and valid source provenance",
     "cor0203_eligible_event_ids": [
-      "rapidapi-tennis:match:1473",
       "rapidapi-tennis:match:1483",
       "rapidapi-tennis:match:1513",
       "rapidapi-tennis:match:1515",
@@ -1482,28 +1446,9 @@
       "rapidapi-tennis:match:1538",
       "rapidapi-tennis:match:1649"
     ],
-    "cor0203_eligible_events": 18,
+    "cor0203_eligible_events": 17,
     "duplicate_rows": 0,
     "rows": [
-      {
-        "competition_id": "rapidapi-tennis:tournament:22098",
-        "competition_name": "Jinan Challenger",
-        "cor0203_blockers": [],
-        "cor0203_eligible": true,
-        "environment": "UNKNOWN",
-        "event_id": "rapidapi-tennis:match:1473",
-        "event_start_utc": "2026-10-13T08:40:00+00:00",
-        "player1_id": "rapidapi-tennis:player:47752",
-        "player2_id": "rapidapi-tennis:player:6101",
-        "round": "First",
-        "source_provider": "rapidapi_tennis",
-        "source_reference": "fixtures:matchId=1473;tournament_info=22098;ranking_cut=2026-09-21",
-        "source_snapshot_sha256": "6d54c79f7eae746d9101f9cfcb66778dd047c78556514a7744dae3941c6a90ed",
-        "sport": "TENNIS",
-        "surface": "Hard",
-        "tour_level": "ATP_CHALLENGER",
-        "world_calendar_status": "PRESERVED"
-      },
       {
         "competition_id": "rapidapi-tennis:tournament:22098",
         "competition_name": "Jinan Challenger",
@@ -1830,8 +1775,8 @@
     ],
     "schema": "matrix.world-calendar-registry/1",
     "world_calendar_denominator_definition": "all unique discovered scheduled events preserved before model-domain filtering",
-    "world_calendar_input_rows": 18,
-    "world_calendar_unique_events": 18
+    "world_calendar_input_rows": 17,
+    "world_calendar_unique_events": 17
   },
   "world_rows_malformed": [],
   "world_rows_synthesized": 30,
