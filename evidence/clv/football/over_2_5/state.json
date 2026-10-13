@@ -10,8 +10,14 @@
     "missed_after_kickoff": 0,
     "network_calls": 0
   },
+  "closing_freshness_policy": {
+    "governance_basis": "evidence/api_football/pinnacle_snapshot_age_audit/audit.json",
+    "max_provider_quote_age_seconds": 120,
+    "nominal_3h_band_is_closing_reference": false,
+    "strict_fresh_gate_seconds": 120
+  },
   "closing_odds_count": 0,
-  "closing_reference_choice": "OPTION_B_PINNACLE",
+  "closing_reference_choice": "OPTION_B_PINNACLE_STRICT_FRESH",
   "closing_reference_transport": "API-Football /odds bookmaker_id=4",
   "decision_count": 27,
   "direct_pinnacle_api_connection": false,
@@ -21,7 +27,7 @@
     "frozen_new": 0,
     "skipped_existing": 27
   },
-  "generated_at_utc": "2026-10-13T11:45:16+00:00",
+  "generated_at_utc": "2026-10-13T11:50:15+00:00",
   "ledger_path": "evidence/clv/football/over_2_5/prospective_clv_ledger.jsonl",
   "ledger_sha256": "c0d0a72a1b7ac48211a5165a6446943722e558a705d530281b11141d6f3daccc",
   "market_key": "over_2_5",
@@ -40,6 +46,6 @@
   },
   "remaining_to_open_metrics": 300,
   "schema": "MATRIX_FOOTBALL_CLV_TRACKING_STATE_V1",
-  "source_quality_flag": "SHARP_PINNACLE_VIA_API_FOOTBALL",
+  "source_quality_flag": "SHARP_PINNACLE_VIA_API_FOOTBALL_STRICT_120S",
   "status": "ACCUMULATING_SEALED_UNTIL_300"
 }
