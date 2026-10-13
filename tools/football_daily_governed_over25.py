@@ -303,7 +303,9 @@ def build(target_date: str, api_key: str, root: Path = Path(".")) -> dict[str, A
             timeout=(10, 30),
         )
         calls += 1
+        odds_captured_at = datetime.now(timezone.utc).replace(microsecond=0)
         body = bytes(response.content)
+        raw_sha256 = hashlib.sha256(body).hexdigest()
         (raw_root / f"fixture_{fixture_id}.bin").write_bytes(body)
         try:
             payload = response.json()
@@ -317,6 +319,7 @@ def build(target_date: str, api_key: str, root: Path = Path(".")) -> dict[str, A
             for fixture_row in payload.get("response", []) or []:
                 if not isinstance(fixture_row, dict):
                     continue
+                provider_quote_updated_at_utc = str(fixture_row.get("update") or "").strip() or None
                 for bookmaker in fixture_row.get("bookmakers", []) or []:
                     if not isinstance(bookmaker, dict):
                         continue
@@ -355,7 +358,30 @@ def build(target_date: str, api_key: str, root: Path = Path(".")) -> dict[str, A
                                 "p_matrix": probability,
                                 "ev": probability * decimal - 1.0,
                                 "odds_used_to_generate_probability": False,
+                                "odds_captured_at_utc": odds_captured_at.isoformat(),
+                                "provider_quote_updated_at_utc": provider_quote_updated_at_utc,
+                                "raw_sha256": raw_sha256,
                             }
+                            quote_identity = {
+                                "fixture_id": fixture_id,
+                                "bookmaker_id": offer["bookmaker_id"],
+                                "bookmaker_name": offer["bookmaker_name"],
+                                "bet_id": offer["bet_id"],
+                                "bet_name": offer["bet_name"],
+                                "label": offer["label"],
+                                "decimal_odds": offer["decimal_odds"],
+                                "odds_captured_at_utc": offer["odds_captured_at_utc"],
+                                "provider_quote_updated_at_utc": offer["provider_quote_updated_at_utc"],
+                                "raw_sha256": raw_sha256,
+                            }
+                            offer["quote_evidence_sha256"] = hashlib.sha256(
+                                json.dumps(
+                                    quote_identity,
+                                    sort_keys=True,
+                                    separators=(",", ":"),
+                                    ensure_ascii=False,
+                                ).encode("utf-8")
+                            ).hexdigest()
                             (policy_offers if policy_key else diagnostic_offers).append(offer)
 
         policy_offers = dedupe(policy_offers)
@@ -388,7 +414,8 @@ def build(target_date: str, api_key: str, root: Path = Path(".")) -> dict[str, A
             "best_policy_offer": best,
             "decision": decision,
             "reason": reason,
-            "raw_sha256": hashlib.sha256(body).hexdigest(),
+            "odds_captured_at_utc": odds_captured_at.isoformat(),
+            "raw_sha256": raw_sha256,
             "provider_http_status": int(response.status_code),
             "provider_errors": errors,
         })
@@ -462,6 +489,8 @@ def build(target_date: str, api_key: str, root: Path = Path(".")) -> dict[str, A
             "pinnacle_not_executable_house": True,
             "bwin_excluded": True,
             "physical_house_crosscheck_required": True,
+            "entry_quote_timestamp_and_hash_required_for_clv": True,
+            "historical_rows_without_entry_quote_timestamp_are_not_backfilled_into_clv": True,
             "house_selection_policy": "COMPARE_BETANO_BETPLAY_RUSHBET_AND_SELECT_BEST_VALID_EXACT_MARKET_OFFER",
             "automatic_wagering": False,
             "real_money": "BLOCKED",
