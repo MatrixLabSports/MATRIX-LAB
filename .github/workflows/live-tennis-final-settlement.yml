@@ -107,6 +107,10 @@ jobs:
       - name: Persist settlement evidence
         shell: bash
         run: |
+          set -euo pipefail
+          TARGET_BRANCH="repair/cor09-world-pipeline"
+          MAX_PUSH_ATTEMPTS=6
+
           git config user.name "matrix-live-tennis-settlement"
           git config user.email "matrix-live-tennis-settlement@users.noreply.github.com"
           git add evidence/live_tennis_lab/*/MATRIX_LIVE_TENNIS_STATE_LEDGER_V0_1.json
@@ -115,6 +119,28 @@ jobs:
             echo "NO_SETTLEMENT_CHANGE"
             exit 0
           fi
+
           git commit -m "evidence(live): sync FINAL-only tennis labels"
-          git pull --rebase origin repair/cor09-world-pipeline
-          git push origin HEAD:repair/cor09-world-pipeline
+
+          for attempt in $(seq 1 "$MAX_PUSH_ATTEMPTS"); do
+            echo "PERSIST_ATTEMPT=$attempt/$MAX_PUSH_ATTEMPTS"
+            git fetch origin "$TARGET_BRANCH"
+
+            if ! git rebase "origin/$TARGET_BRANCH"; then
+              git rebase --abort || true
+              echo "PERSIST_REBASE_CONFLICT=1"
+              exit 1
+            fi
+
+            if git push origin "HEAD:$TARGET_BRANCH"; then
+              echo "PERSIST_PUSH_SUCCESS=1"
+              echo "PERSISTED_HEAD=$(git rev-parse HEAD)"
+              exit 0
+            fi
+
+            echo "PERSIST_PUSH_RACE_RETRY=1"
+            sleep $((attempt * 2))
+          done
+
+          echo "PERSIST_PUSH_EXHAUSTED=1"
+          exit 1
