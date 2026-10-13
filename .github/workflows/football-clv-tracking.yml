@@ -2,10 +2,8 @@ name: MATRIX Football CLV Tracking
 
 on:
   workflow_dispatch:
-  schedule:
-    # Five-minute cadence so at least one run can land inside the governed
-    # final 15-minute prematch closing window.
-    - cron: "*/5 * * * *"
+  # Scheduled execution is delegated to the proven
+  # telegram-matrix-supervisor-15m workflow to avoid duplicate writers.
   push:
     branches:
       - repair/cor09-world-pipeline
