@@ -5,7 +5,7 @@
   "calendar_baseline_complete": false,
   "operator_manual_intervention_required": true,
   "browser_baseline_completed_at_utc": null,
-  "block_reason": "FLASHSCORE_EXACT_FULL_DAY_TOTAL_NOT_PHYSICALLY_VERIFIED_AND_SOFASCORE_TOTAL_IS_USER_SCREENSHOT_NOT_AUTOMATED_BROWSER_EXACT",
+  "block_reason": "SOFASCORE_EXACT_FULL_DAY_MATCH_TOTALS_NOT_PHYSICALLY_VERIFIED; UI_BADGE_DENOMINATORS_CAPTURED_BUT_SEMANTICS_NOT_PROVEN_AS_MATCH_COUNTS",
   "task_order": [
     "CALENDAR_BASELINE_SOFASCORE_FLASHSCORE_FIRST",
     "PAID_APIS_SECOND",
@@ -14,31 +14,37 @@
   ],
   "tennis": {
     "sofascore": {
-      "count": 574,
-      "count_type": "USER_PHYSICAL_SCREENSHOT_EXACT_VISIBLE_TOTAL",
+      "count": null,
+      "count_type": "UNCLASSIFIED_UI_BADGE_DENOMINATOR_NOT_PROVEN_AS_MATCH_TOTAL",
       "url": "https://www.sofascore.com/es/tennis?date=2026-10-13",
       "provenance": "USER_PROVIDED_SOFASCORE_SCREENSHOT",
       "screenshot_file": "1002212169.jpg",
       "screenshot_sha256": "7108c9f287f7d8ddef42f70a49ee5c46770daa5b85336cd4f84fac128a6e669e",
-      "image_dimensions_px": [1536, 770],
-      "visible_row": "21 / 574",
-      "interpretation_policy": "Use only the right-hand white value as the visible full-day total; do not assign semantics to the red numerator absent source documentation.",
-      "opera_read_status": "PASS_USER_PHYSICAL_FULL_DAY_TOTAL",
-      "exact_total_physically_verified": true,
+      "image_dimensions_px": [
+        1536,
+        770
+      ],
+      "ui_badge_text": "21 / 574",
+      "ui_badge_right_value": 574,
+      "badge_semantics_verified": false,
+      "exact_total_physically_verified": false,
       "automated_browser_exact": false,
+      "opera_read_status": "PASS_SCREENSHOT_BADGE_CAPTURE_MATCH_TOTAL_UNVERIFIED",
       "operator_manual_intervention_required": true
     },
     "flashscore": {
-      "count": null,
-      "count_type": "PARTIAL_BROWSER_LOWER_BOUND_ONLY",
+      "count": 326,
+      "count_type": "MACHINE_VERIFIED_BROWSER_UI_EXACT",
       "url": "https://www.flashscore.com/tennis/?d=20261013",
-      "provenance": "OPERA_BROWSER_CONNECTOR",
-      "materialized_unique_match_links": 155,
-      "hidden_competition_indicator": "Show more (61)",
-      "hidden_competitions_count": 61,
-      "exact_total_physically_verified": false,
-      "opera_read_status": "BLOCKED_SHOW_MORE_61_HIDDEN_COMPETITIONS",
-      "operator_manual_intervention_required": true
+      "provenance": "LIVE_BROWSER_AUTOMATION_EXHAUSTIVE",
+      "automation_run_id": "7166c28a-4481-4963-9158-2ad83dda1272",
+      "date_verified": "2026-10-13",
+      "visible_unique_match_rows": 326,
+      "collapsed_hidden_match_rows": 0,
+      "competition_show_more_exhausted": true,
+      "exact_total_physically_verified": true,
+      "operator_manual_intervention_required": false,
+      "status": "PASS_EXACT"
     },
     "rapidapi_tennis": {
       "count": null,
@@ -53,33 +59,39 @@
   },
   "football": {
     "sofascore": {
-      "count": 749,
-      "count_type": "USER_PHYSICAL_SCREENSHOT_EXACT_VISIBLE_TOTAL",
+      "count": null,
+      "count_type": "UNCLASSIFIED_UI_BADGE_DENOMINATOR_NOT_PROVEN_AS_MATCH_TOTAL",
       "url": "https://www.sofascore.com/es/football/2026-10-13",
-      "provenance": "USER_PROVIDED_SOFASCORE_SCREENSHOT",
+      "provenance": "USER_PROVIDED_SOFASCORE_SCREENSHOT_PLUS_FAILED_AUTOMATED_VERIFICATION",
       "screenshot_file": "1002212169.jpg",
       "screenshot_sha256": "7108c9f287f7d8ddef42f70a49ee5c46770daa5b85336cd4f84fac128a6e669e",
-      "image_dimensions_px": [1536, 770],
-      "visible_row": "8 / 749",
-      "interpretation_policy": "Use only the right-hand white value as the visible full-day total; do not assign semantics to the red numerator absent source documentation.",
-      "opera_read_status": "PASS_USER_PHYSICAL_FULL_DAY_TOTAL",
-      "exact_total_physically_verified": true,
+      "image_dimensions_px": [
+        1536,
+        770
+      ],
+      "ui_badge_text": "8 / 749",
+      "ui_badge_right_value": 749,
+      "badge_semantics_verified": false,
+      "exact_total_physically_verified": false,
       "automated_browser_exact": false,
+      "automated_verification_run_id": "fcd33beb-8ec6-467a-8e6f-edbe59c8ccc0",
+      "automated_verification_status": "BLOCKED_CLOUDFLARE_TURNSTILE",
+      "opera_read_status": "PASS_SCREENSHOT_BADGE_CAPTURE_MATCH_TOTAL_UNVERIFIED",
       "operator_manual_intervention_required": true
     },
     "flashscore": {
-      "count": null,
-      "count_type": "PARTIAL_BROWSER_LOWER_BOUND_ONLY",
+      "count": 78,
+      "count_type": "MACHINE_VERIFIED_BROWSER_UI_EXACT",
       "url": "https://www.flashscore.com/?d=20261013",
-      "provenance": "OPERA_BROWSER_CONNECTOR",
-      "materialized_unique_match_links": 186,
-      "collapsed_match_groups": 37,
-      "collapsed_hidden_match_rows": 75,
-      "physically_proven_lower_bound": 261,
-      "additional_hidden_competitions_indicator": "Show more",
-      "exact_total_physically_verified": false,
-      "opera_read_status": "BLOCKED_COLLAPSED_MATCH_GROUPS_AND_SHOW_MORE_COMPETITIONS",
-      "operator_manual_intervention_required": true
+      "provenance": "LIVE_BROWSER_AUTOMATION_EXHAUSTIVE",
+      "automation_run_id": "768dcb49-c655-410f-a2fa-dbf8f3ed892f",
+      "date_verified": "13 October 2026",
+      "visible_match_rows": 55,
+      "collapsed_hidden_match_rows": 23,
+      "competition_show_more_exhausted": true,
+      "exact_total_physically_verified": true,
+      "operator_manual_intervention_required": false,
+      "status": "PASS_EXACT"
     },
     "api_football": {
       "count": 289,
@@ -92,16 +104,19 @@
     }
   },
   "flashscore_exact_count_attempt": {
-    "automation_run_id": "9c022250-9200-4aa1-a016-ace90031b258",
-    "status": "FAILED_BEFORE_EXHAUSTIVE_EXPANSION",
-    "terminal_step_count": 17,
-    "failure_note": "Live browser automation began expanding football league groups but terminated with a provider-side error before all expandable groups and tennis could be exhausted. No exact total was promoted."
+    "canonical_audit_path": "evidence/daily_source_counts/2026-10-13/MATRIX_FLASHSCORE_EXACT_DAY_BROWSER_AUDIT.json",
+    "football_run_id": "768dcb49-c655-410f-a2fa-dbf8f3ed892f",
+    "football_exact_total": 78,
+    "tennis_run_id": "7166c28a-4481-4963-9158-2ad83dda1272",
+    "tennis_exact_total": 326,
+    "status": "PASS_BOTH_SPORTS_EXACT"
   },
   "truth_rules": {
     "invented_counts_prohibited": true,
     "partial_accessibility_count_is_never_promoted_to_world_total": true,
     "user_screenshot_total_may_be_recorded_as_physical_evidence_but_does_not_satisfy_automated_exact_gate": true,
-    "flashscore_lower_bound_must_not_be_used_as_exact_total": true
+    "flashscore_lower_bound_must_not_be_used_as_exact_total": true,
+    "user_screenshot_badge_must_not_be_promoted_to_match_total_without_semantic_verification": true
   },
   "automation_retry_required": true,
   "paid_api_counts_are_not_world_complete": true,
@@ -111,5 +126,5 @@
     "automatic_wagering": false,
     "real_money": "BLOCKED"
   },
-  "next_retry": "Obtain automated exact Flashscore full-day totals for football and tennis after exhausting every collapsed match group and every Show more competition. Do not promote 186, 261 or 155 as world totals."
+  "next_retry": "Resolve SofaScore exact full-day FOOTBALL and TENNIS match totals independently of the sport-selector badge. Flashscore exact totals are now closed at football=78 and tennis=326. Keep baseline incomplete until SofaScore exact match counts are physically verified."
 }
