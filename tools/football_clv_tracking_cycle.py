@@ -468,7 +468,7 @@ def build_state(
         "market_key": MARKET_KEY,
         "model_version": MODEL_VERSION,
         "closing_reference_choice": "OPTION_B_PINNACLE",
-        "closing_reference_transport": "API_FOOTball /odds bookmaker_id=4",
+        "closing_reference_transport": "API-Football /odds bookmaker_id=4",
         "direct_pinnacle_api_connection": False,
         "source_quality_flag": "SHARP_PINNACLE_VIA_API_FOOTBALL",
         "ledger_path": ledger.path.as_posix(),
