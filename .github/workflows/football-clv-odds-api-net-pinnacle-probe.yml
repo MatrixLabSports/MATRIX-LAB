@@ -38,7 +38,58 @@ jobs:
       - name: Install dependency
         run: python -m pip install requests
 
+      - name: Credential preflight
+        id: credential
+        shell: bash
+        env:
+          ODDS_API_NET_KEY: ${{ secrets.ODDS_API_NET_KEY }}
+        run: |
+          set -euo pipefail
+          if [ -n "${ODDS_API_NET_KEY:-}" ]; then
+            echo "ready=true" >> "$GITHUB_OUTPUT"
+            echo "ODDS_API_NET_CREDENTIAL=CONFIGURED"
+          else
+            echo "ready=false" >> "$GITHUB_OUTPUT"
+            echo "ODDS_API_NET_CREDENTIAL=REQUIRED_NOT_CONFIGURED"
+          fi
+
+      - name: Persist explicit credential blocker
+        if: steps.credential.outputs.ready != 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p evidence/clv/football/over_2_5
+          python - <<'PY'
+          import hashlib, json
+          from datetime import datetime, timezone
+          from pathlib import Path
+          p=Path("evidence/clv/football/over_2_5/odds_api_net_probe_latest.json")
+          payload={
+            "schema":"MATRIX_FOOTBALL_CLV_ODDS_API_NET_PINNACLE_PROBE_V1",
+            "generated_at_utc":datetime.now(timezone.utc).replace(microsecond=0).isoformat(),
+            "transport":"odds-api.net /v1/events/{event_id}/odds/snapshot",
+            "reference_bookmaker":"pinnacle",
+            "status":"BLOCKED_CREDENTIAL_REQUIRED",
+            "credential_name":"ODDS_API_NET_KEY",
+            "credential_configured":False,
+            "strict_ready_count":0,
+            "protections":{
+              "strict_fresh_gate_seconds":120,
+              "historical_backfill":False,
+              "post_kickoff_capture":False,
+              "odds_used_to_generate_probability":False,
+              "automatic_wagering":False,
+              "real_money":"BLOCKED"
+            }
+          }
+          raw=json.dumps(payload,ensure_ascii=False,sort_keys=True,separators=(",",":")).encode()
+          payload["payload_sha256"]=hashlib.sha256(raw).hexdigest()
+          p.write_text(json.dumps(payload,ensure_ascii=False,indent=2,sort_keys=True)+"\n",encoding="utf-8")
+          print(json.dumps({"status":payload["status"],"credential_configured":False,"real_money":"BLOCKED"},sort_keys=True))
+          PY
+
       - name: Probe fresh Pinnacle transport
+        if: steps.credential.outputs.ready == 'true'
         env:
           API_FOOTBALL_KEY: ${{ secrets.API_FOOTBALL_KEY }}
           ODDS_API_NET_KEY: ${{ secrets.ODDS_API_NET_KEY }}
