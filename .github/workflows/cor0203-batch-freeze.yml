@@ -1,3 +1,4 @@
+# MATRIX_USER_AUTHORIZED_TRIGGER 2026-10-12 mandatory-symmetric-dual-paid-tennis
 # MATRIX_USER_AUTHORIZED_TRIGGER 2026-10-12 reconcile-current-list-stale-jinan-aliases
 # MATRIX_USER_AUTHORIZED_TRIGGER 2026-10-12 Djere-Mmoh-reschedule-cross-provider-dedupe
 # MATRIX_USER_AUTHORIZED_TRIGGER 2026-10-12 Kecmanovic-Shevchenko-reschedule
@@ -36,6 +37,7 @@ on:
       - tools/cor0203_batch_runner.py
       - tools/cor0203_batch_preflight.py
       - tools/cor0203_source_readiness.py
+      - tools/cor0203_dual_source_readiness.py
       - tools/cor0203_holdout_integrity_audit.py
       - tools/cor0203_prospective_producer.py
       - tools/cor0203_production_observability.py
@@ -83,6 +85,7 @@ jobs:
         run: |
           python -m pytest -q \
             tests/test_cor0203_bogota_full_day_calendar.py \
+            tests/test_cor0203_dual_source_readiness.py \
             tests/test_tennis_world_inventory_rapidapi.py \
             tests/test_cor0203_world_inventory_discovery.py \
             tests/test_cor0203_world_inventory_bridge.py \
@@ -120,8 +123,8 @@ jobs:
         env:
           API_TENNIS_KEY: ${{ secrets.API_TENNIS_KEY }}
           RAPIDAPI_TENNIS_KEY: ${{ secrets.RAPIDAPI_TENNIS_KEY }}
-          # Paid source is mandatory for MATRIX tennis production.
-          MATRIX_TENNIS_PROVIDER: rapidapi_tennis
+          # Both paid tennis providers are mandatory peers; no primary/fallback provider.
+          MATRIX_TENNIS_MODE: dual_paid_tennis
           MATRIX_TARGET_BRANCH: repair/cor09-world-pipeline
           MATRIX_GIT_USER_NAME: matrix-ci
           MATRIX_GIT_USER_EMAIL: matrix-ci@users.noreply.github.com

@@ -3,8 +3,8 @@ set -euo pipefail
 
 TRIGGER_SHA=""
 TARGET_BRANCH="${MATRIX_TARGET_BRANCH:-repair/cor09-world-pipeline}"
-TENNIS_PROVIDER="${MATRIX_TENNIS_PROVIDER:-api_tennis}"
-export MATRIX_TENNIS_PROVIDER="$TENNIS_PROVIDER"
+TENNIS_MODE="${MATRIX_TENNIS_MODE:-dual_paid_tennis}"
+export MATRIX_TENNIS_MODE="$TENNIS_MODE"
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
@@ -25,6 +25,15 @@ done
 
 if [[ -z "$TRIGGER_SHA" ]]; then
   echo "TRIGGER_SHA_REQUIRED" >&2
+  exit 2
+fi
+
+if [[ "$TENNIS_MODE" != "dual_paid_tennis" ]]; then
+  echo "DUAL_PAID_TENNIS_MODE_REQUIRED:$TENNIS_MODE" >&2
+  exit 2
+fi
+if [[ -z "${RAPIDAPI_TENNIS_KEY:-}" || -z "${API_TENNIS_KEY:-}" ]]; then
+  echo "TWO_PAID_TENNIS_KEYS_REQUIRED" >&2
   exit 2
 fi
 
@@ -64,7 +73,7 @@ WORLD_BRIDGE_LAST="evidence/cor0203/runtime/MATRIX_COR0203_WORLD_INVENTORY_BRIDG
 WORLD_DERIVED_DISCOVERY_LAST="evidence/cor0203/runtime/MATRIX_COR0203_WORLD_DERIVED_DISCOVERY_LAST.json"
 WORLD_PREREG_LAST="evidence/cor0203/runtime/MATRIX_COR0203_WORLD_PREREG_LAST.json"
 WORLD_FUNNEL_LAST="evidence/cor0203/runtime/MATRIX_COR0203_WORLD_FUNNEL_LAST.json"
-API_TENNIS_DISCOVERY_CURRENT="/tmp/MATRIX_COR0203_API_TENNIS_SECONDARY_DISCOVERY.json"
+API_TENNIS_DISCOVERY_CURRENT="/tmp/MATRIX_COR0203_API_TENNIS_PEER_DISCOVERY.json"
 DUAL_RAPIDAPI_DISCOVERY="/tmp/MATRIX_COR0203_DUAL_RAPIDAPI_DISCOVERY.json"
 DUAL_API_TENNIS_DISCOVERY="/tmp/MATRIX_COR0203_DUAL_API_TENNIS_DISCOVERY.json"
 DUAL_RECONCILIATION_LAST="evidence/cor0203/runtime/MATRIX_COR0203_DUAL_PROVIDER_RECONCILIATION_LAST.json"
@@ -94,133 +103,118 @@ python -m tools.cor0203_build_static_cut_index \
   --cut 20260921 \
   --out "$STATIC_CUT"
 
-case "$TENNIS_PROVIDER" in
-  api_tennis)
-    python -m tools.cor0203_durable_discovery \
-      --out "$DISCOVERY" \
-      --summary-out "$DURABLE_DISCOVERY_LAST" \
-      --store "$ACQUISITION_STORE" \
-      --days 2
-    ;;
-  rapidapi_tennis)
-    mkdir -p "$(dirname "$WORLD_INVENTORY_LAST")" "$(dirname "$WORLD_INVENTORY_DAILY")"
-    WORLD_INVENTORY_CURRENT="/tmp/MATRIX_TENNIS_WORLD_INVENTORY_CURRENT.json"
-    python -m tools.tennis_world_inventory_rapidapi \
-      --out "$WORLD_INVENTORY_CURRENT" \
-      --target-date-bogota "$WORLD_DATE"
-    python -m tools.tennis_world_inventory_accumulate \
-      --current "$WORLD_INVENTORY_CURRENT" \
-      --existing "$WORLD_INVENTORY_DAILY" \
-      --out "$WORLD_INVENTORY_LAST"
-    cp "$WORLD_INVENTORY_LAST" "$WORLD_INVENTORY_DAILY"
+# Dual paid-provider discovery is mandatory. Neither provider is primary or fallback.
+# Both feeds are discovered independently, expanded to the same governed horizon,
+# reconciled by provider-neutral physical identity, and only then admitted downstream.
+mkdir -p "$(dirname "$WORLD_INVENTORY_LAST")" "$(dirname "$WORLD_INVENTORY_DAILY")"
+WORLD_INVENTORY_CURRENT="/tmp/MATRIX_TENNIS_WORLD_INVENTORY_CURRENT.json"
+python -m tools.tennis_world_inventory_rapidapi \
+  --out "$WORLD_INVENTORY_CURRENT" \
+  --target-date-bogota "$WORLD_DATE"
+python -m tools.tennis_world_inventory_accumulate \
+  --current "$WORLD_INVENTORY_CURRENT" \
+  --existing "$WORLD_INVENTORY_DAILY" \
+  --out "$WORLD_INVENTORY_LAST"
+cp "$WORLD_INVENTORY_LAST" "$WORLD_INVENTORY_DAILY"
 
-    python -m tools.cor0203_world_inventory_discovery \
-      --world-inventory "$WORLD_INVENTORY_LAST" \
-      --out "$WORLD_DERIVED_DISCOVERY_LAST"
+python -m tools.cor0203_world_inventory_discovery \
+  --world-inventory "$WORLD_INVENTORY_LAST" \
+  --out "$WORLD_DERIVED_DISCOVERY_LAST"
 
-    python -m tools.cor0203_rapidapi_durable_discovery \
-      --out "$DISCOVERY" \
-      --summary-out "$DURABLE_DISCOVERY_LAST" \
-      --store "$ACQUISITION_STORE" \
-      --days 4
+python -m tools.cor0203_rapidapi_durable_discovery \
+  --out "$DISCOVERY" \
+  --summary-out "$DURABLE_DISCOVERY_LAST" \
+  --store "$ACQUISITION_STORE" \
+  --days 4
 
-    python -m tools.cor0203_api_tennis_discovery \
-      --out "$API_TENNIS_DISCOVERY_CURRENT" \
-      --days 4
+python -m tools.cor0203_api_tennis_discovery \
+  --out "$API_TENNIS_DISCOVERY_CURRENT" \
+  --days 4
 
-    python -m tools.cor0203_eight_day_dual_discovery \
-      --rapid-current "$DISCOVERY" \
-      --api-current "$API_TENNIS_DISCOVERY_CURRENT" \
-      --rapid-out "$DISCOVERY" \
-      --api-out "$API_TENNIS_DISCOVERY_CURRENT" \
-      --audit-out "$HORIZON_AUDIT_LAST"
+python -m tools.cor0203_eight_day_dual_discovery \
+  --rapid-current "$DISCOVERY" \
+  --api-current "$API_TENNIS_DISCOVERY_CURRENT" \
+  --rapid-out "$DISCOVERY" \
+  --api-out "$API_TENNIS_DISCOVERY_CURRENT" \
+  --audit-out "$HORIZON_AUDIT_LAST"
 
-    python -m tools.cor0203_r706_target_history_audit \
-      --world-discovery "$WORLD_DERIVED_DISCOVERY_LAST" \
-      --rapidapi-discovery "$DISCOVERY" \
-      --authority "$IDENTITY_AUTHORITY_LAST" \
-      --out "$R706_TARGET_HISTORY_LAST"
+python -m tools.cor0203_r706_target_history_audit \
+  --world-discovery "$WORLD_DERIVED_DISCOVERY_LAST" \
+  --rapidapi-discovery "$DISCOVERY" \
+  --authority "$IDENTITY_AUTHORITY_LAST" \
+  --out "$R706_TARGET_HISTORY_LAST"
 
-    python -m tools.cor0203_rapidapi_stats_rich_history_probe \
-      --world-discovery "$WORLD_DERIVED_DISCOVERY_LAST" \
-      --rapidapi-discovery "$DISCOVERY" \
-      --authority "$IDENTITY_AUTHORITY_LAST" \
-      --out "$RAPIDAPI_PRECUT_STATS_RICH_LAST" \
-      --max-targets 32
+python -m tools.cor0203_rapidapi_stats_rich_history_probe \
+  --world-discovery "$WORLD_DERIVED_DISCOVERY_LAST" \
+  --rapidapi-discovery "$DISCOVERY" \
+  --authority "$IDENTITY_AUTHORITY_LAST" \
+  --out "$RAPIDAPI_PRECUT_STATS_RICH_LAST" \
+  --max-targets 32
 
-    python -m tools.cor0203_api_tennis_rank_bridge \
-      --discovery "$API_TENNIS_DISCOVERY_CURRENT" \
-      --history-csv "$ANNUAL" \
-      --authority "$IDENTITY_AUTHORITY_LAST" \
-      --base-aliases "$IDENTITY_ALIAS_CERT" \
-      --aliases-out "$API_TENNIS_RANK_BRIDGE_ALIASES" \
-      --authority-out "$API_TENNIS_RANK_BRIDGE_AUTHORITY" \
-      --audit-out "$API_TENNIS_RANK_BRIDGE_LAST" \
-      --max-profiles 24
-    python -m tools.cor0203_api_tennis_rank_history_recovery \
-      --bridge-audit "$API_TENNIS_RANK_BRIDGE_LAST" \
-      --aliases "$API_TENNIS_RANK_BRIDGE_ALIASES" \
-      --authority "$API_TENNIS_RANK_BRIDGE_AUTHORITY" \
-      --history-csv "$ANNUAL" \
-      --aliases-out "$API_TENNIS_RANK_BRIDGE_ALIASES" \
-      --authority-out "$API_TENNIS_RANK_BRIDGE_AUTHORITY" \
-      --audit-out "$API_TENNIS_RANK_HISTORY_RECOVERY_LAST" \
-      --max-recoveries 32
+python -m tools.cor0203_api_tennis_rank_bridge \
+  --discovery "$API_TENNIS_DISCOVERY_CURRENT" \
+  --history-csv "$ANNUAL" \
+  --authority "$IDENTITY_AUTHORITY_LAST" \
+  --base-aliases "$IDENTITY_ALIAS_CERT" \
+  --aliases-out "$API_TENNIS_RANK_BRIDGE_ALIASES" \
+  --authority-out "$API_TENNIS_RANK_BRIDGE_AUTHORITY" \
+  --audit-out "$API_TENNIS_RANK_BRIDGE_LAST" \
+  --max-profiles 24
+python -m tools.cor0203_api_tennis_rank_history_recovery \
+  --bridge-audit "$API_TENNIS_RANK_BRIDGE_LAST" \
+  --aliases "$API_TENNIS_RANK_BRIDGE_ALIASES" \
+  --authority "$API_TENNIS_RANK_BRIDGE_AUTHORITY" \
+  --history-csv "$ANNUAL" \
+  --aliases-out "$API_TENNIS_RANK_BRIDGE_ALIASES" \
+  --authority-out "$API_TENNIS_RANK_BRIDGE_AUTHORITY" \
+  --audit-out "$API_TENNIS_RANK_HISTORY_RECOVERY_LAST" \
+  --max-recoveries 32
 
-    python -m tools.cor0203_api_tennis_certified_authority_recovery \
-      --discovery "$API_TENNIS_DISCOVERY_CURRENT" \
-      --authority "$API_TENNIS_RANK_BRIDGE_AUTHORITY" \
-      --aliases "$API_TENNIS_RANK_BRIDGE_ALIASES" \
-      --authority-out "$API_TENNIS_RANK_BRIDGE_AUTHORITY" \
-      --aliases-out "$API_TENNIS_RANK_BRIDGE_ALIASES" \
-      --audit-out "$API_TENNIS_CERTIFIED_AUTHORITY_RECOVERY_LAST"
+python -m tools.cor0203_api_tennis_certified_authority_recovery \
+  --discovery "$API_TENNIS_DISCOVERY_CURRENT" \
+  --authority "$API_TENNIS_RANK_BRIDGE_AUTHORITY" \
+  --aliases "$API_TENNIS_RANK_BRIDGE_ALIASES" \
+  --authority-out "$API_TENNIS_RANK_BRIDGE_AUTHORITY" \
+  --aliases-out "$API_TENNIS_RANK_BRIDGE_ALIASES" \
+  --audit-out "$API_TENNIS_CERTIFIED_AUTHORITY_RECOVERY_LAST"
 
-    # Every recovery must be visible to dual reconciliation. The previous
-    # ordering copied authority before rank-history recovery, which could
-    # leave certified aliases invisible to the current cycle.
-    cp "$API_TENNIS_RANK_BRIDGE_AUTHORITY" "$IDENTITY_AUTHORITY_LAST"
+# Every recovery must be visible to dual reconciliation. The previous
+# ordering copied authority before rank-history recovery, which could
+# leave certified aliases invisible to the current cycle.
+cp "$API_TENNIS_RANK_BRIDGE_AUTHORITY" "$IDENTITY_AUTHORITY_LAST"
 
-    python -m tools.cor0203_dual_provider_reconcile \
-      --rapidapi "$DISCOVERY" \
-      --api-tennis "$API_TENNIS_DISCOVERY_CURRENT" \
-      --static-cut "$STATIC_CUT" \
-      --runtime-dir evidence/cor0203/runtime \
-      --certified-aliases "$API_TENNIS_RANK_BRIDGE_ALIASES" \
-      --identity-authority "$IDENTITY_AUTHORITY_LAST" \
-      --identity-alias-out "$DUAL_IDENTITY_ALIASES_LAST" \
-      --out-rapidapi "$DUAL_RAPIDAPI_DISCOVERY" \
-      --out-api-tennis "$DUAL_API_TENNIS_DISCOVERY" \
-      --audit-out "$DUAL_RECONCILIATION_LAST"
-    ;;
-  *)
-    echo "UNSUPPORTED_MATRIX_TENNIS_PROVIDER:$TENNIS_PROVIDER" >&2
-    exit 2
-    ;;
-esac
+python -m tools.cor0203_dual_provider_reconcile \
+  --rapidapi "$DISCOVERY" \
+  --api-tennis "$API_TENNIS_DISCOVERY_CURRENT" \
+  --static-cut "$STATIC_CUT" \
+  --runtime-dir evidence/cor0203/runtime \
+  --certified-aliases "$API_TENNIS_RANK_BRIDGE_ALIASES" \
+  --identity-authority "$IDENTITY_AUTHORITY_LAST" \
+  --identity-alias-out "$DUAL_IDENTITY_ALIASES_LAST" \
+  --out-rapidapi "$DUAL_RAPIDAPI_DISCOVERY" \
+  --out-api-tennis "$DUAL_API_TENNIS_DISCOVERY" \
+  --audit-out "$DUAL_RECONCILIATION_LAST"
 
-python -m tools.cor0203_source_readiness \
-  --discovery "$DISCOVERY" \
+python -m tools.cor0203_dual_source_readiness \
+  --rapidapi "$DISCOVERY" \
+  --api-tennis "$API_TENNIS_DISCOVERY_CURRENT" \
+  --horizon "$HORIZON_AUDIT_LAST" \
+  --reconciliation "$DUAL_RECONCILIATION_LAST" \
   --evidence-dir evidence/cor0203/source_readiness \
   --summary-out "$SOURCE_READINESS_CURRENT"
 
-if [[ "$TENNIS_PROVIDER" == "rapidapi_tennis" && -f "$DUAL_RAPIDAPI_DISCOVERY" && -f "$DUAL_API_TENNIS_DISCOVERY" ]]; then
-  python -m tools.cor0203_preregister_discovery \
-    --discovery "$DUAL_RAPIDAPI_DISCOVERY" \
-    --result-out "$RAPIDAPI_PREREG_CURRENT"
+python -m tools.cor0203_preregister_discovery \
+  --discovery "$DUAL_RAPIDAPI_DISCOVERY" \
+  --result-out "$RAPIDAPI_PREREG_CURRENT"
 
-  python -m tools.cor0203_preregister_discovery \
-    --discovery "$DUAL_API_TENNIS_DISCOVERY" \
-    --result-out "$API_TENNIS_PREREG_CURRENT"
+python -m tools.cor0203_preregister_discovery \
+  --discovery "$DUAL_API_TENNIS_DISCOVERY" \
+  --result-out "$API_TENNIS_PREREG_CURRENT"
 
-  python -m tools.cor0203_merge_prereg_results \
-    --rapidapi "$RAPIDAPI_PREREG_CURRENT" \
-    --api-tennis "$API_TENNIS_PREREG_CURRENT" \
-    --out "$PREREG_LAST"
-else
-  python -m tools.cor0203_preregister_discovery \
-    --discovery "$DISCOVERY" \
-    --result-out "$PREREG_LAST"
-fi
+python -m tools.cor0203_merge_prereg_results \
+  --rapidapi "$RAPIDAPI_PREREG_CURRENT" \
+  --api-tennis "$API_TENNIS_PREREG_CURRENT" \
+  --out "$PREREG_LAST"
 
 if [[ -f "$WORLD_DERIVED_DISCOVERY_LAST" ]]; then
   python -m tools.cor0203_preregister_discovery \
@@ -429,7 +423,20 @@ world_funnel = (
     else None
 )
 
-assert source_readiness["provider"] == __import__("os").environ["MATRIX_TENNIS_PROVIDER"]
+assert source_readiness["provider"] == "dual_paid_tennis"
+assert source_readiness["status"] == "DUAL_DISCOVERY_COMPLETED"
+assert source_readiness["ready"] is True
+assert source_readiness["both_paid_providers_required"] is True
+assert source_readiness["symmetric_discovery"] is True
+assert source_readiness["provider_primary"] is None
+assert source_readiness["required_providers"] == ["rapidapi_tennis", "api_tennis"]
+assert set(source_readiness["providers"]) == {"rapidapi_tennis", "api_tennis"}
+assert all(source_readiness["providers"][p]["ready"] for p in source_readiness["required_providers"])
+assert all(source_readiness["providers"][p]["network_calls"] > 0 for p in source_readiness["required_providers"])
+assert source_readiness["reconciliation"]["status"] == "PASS"
+assert source_readiness["horizon"]["status"] == "PASS"
+assert source_readiness["horizon"]["logical_horizon_days"] >= 8
+assert durable_discovery["provider"] == "rapidapi_tennis"
 assert durable_discovery["real_money"] == "BLOCKED"
 assert durable_discovery["automatic_wagering"] is False
 if source_readiness["ready"]:
