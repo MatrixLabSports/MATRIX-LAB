@@ -16,7 +16,8 @@
     "main_unique_match_event_urls": 140,
     "main_unique_event_identity_method": "UNIQUE_MATCH_URL_WITH_EVENT_ID_FRAGMENT",
     "main_show_more_present": true,
-    "show_more_button_id": 195592,
+    "show_more_button_id_at_prior_audit": 195592,
+    "latest_connected_opera_show_more_button_id": 219585,
     "exact_full_day_match_total": null,
     "status": "BLOCKED_HIDDEN_CONTENT_REMAINS",
     "note": "140 is a physically materialized lower bound only because the main event list still exposes a Mostrar más button."
@@ -31,14 +32,49 @@
     "note": "603 unique tennis event URLs were present under the page main region and no Show more/Mostrar más/display-matches control remained in that main region."
   },
   "automated_external_verification": {
-    "run_id": "1d17a98d-856e-4d0f-bcfb-5106ecf7834a",
-    "football_status": "BLOCKED_CLOUDFLARE_TURNSTILE",
-    "api_host_attempt": "https://api.sofascore.com/api/v1/sport/{sport}/scheduled-events/2026-10-13",
-    "api_host_status": "HTTP_403"
+    "prior_run_id": "1d17a98d-856e-4d0f-bcfb-5106ecf7834a",
+    "prior_football_status": "BLOCKED_CLOUDFLARE_TURNSTILE",
+    "closure_attempts": [
+      {
+        "run_id": "b5f2bf76-ca3a-419c-b395-754d9101bf05",
+        "browser_profile": "STEALTH",
+        "persistent_profile": false,
+        "terminal_status": "COMPLETED_WITH_BLOCKER",
+        "show_more_exhausted": false,
+        "unique_event_count": null,
+        "blocker": "CLOUDFLARE_SECURITY_CHALLENGE_CAPTCHA_SLIDER",
+        "note": "Actual football results page could not load; no event IDs were accepted from this run."
+      },
+      {
+        "run_id": "1143fc6b-6585-45c8-a246-c990a5e9933c",
+        "browser_profile": "STEALTH",
+        "persistent_profile": true,
+        "terminal_status": "COMPLETED_WITH_BLOCKER",
+        "show_more_exhausted": false,
+        "unique_event_count": null,
+        "blocker": "CLOUDFLARE_CAPTCHA_VERIFYING_YOU_ARE_HUMAN",
+        "note": "Persistent profile also remained blocked; no event IDs were accepted from this run."
+      }
+    ],
+    "structured_endpoint_attempts": [
+      {
+        "url": "https://api.sofascore.com/api/v1/sport/football/scheduled-events/2026-10-13",
+        "status": "HTTP_403"
+      },
+      {
+        "url": "https://www.sofascore.com/api/v1/sport/football/scheduled-events/2026-10-13",
+        "status": "HTTP_403"
+      }
+    ],
+    "exact_total_certified": false,
+    "calendar_baseline_complete": false,
+    "adjudication": "FAIL_CLOSED_NO_EXACT_TOTAL"
   },
   "protections": {
     "screenshot_badge_not_promoted_without_semantic_proof": true,
     "partial_football_count_not_promoted": true,
+    "automation_zero_count_not_promoted": true,
+    "http_403_not_interpreted_as_empty_inventory": true,
     "invented_counts_prohibited": true,
     "automatic_wagering": false,
     "real_money": "BLOCKED"
