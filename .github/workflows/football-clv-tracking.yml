@@ -1,23 +1,15 @@
 name: MATRIX Football CLV Tracking
 
 on:
+  # Manual fallback only. Automatic CLV ownership belongs exclusively to
+  # MATRIX Football CLV Continuous Watcher.
   workflow_dispatch:
-  # Scheduled execution is delegated to the proven
-  # telegram-matrix-supervisor-15m workflow to avoid duplicate writers.
-  push:
-    branches:
-      - repair/cor09-world-pipeline
-    paths:
-      - tools/football_clv_tracking_cycle.py
-      - tools/football_daily_governed_over25.py
-      - tests/test_football_clv_tracking_cycle.py
-      - .github/workflows/football-clv-tracking.yml
 
 permissions:
   contents: write
 
 concurrency:
-  group: matrix-football-clv-tracking
+  group: matrix-football-clv-continuous-watcher
   cancel-in-progress: false
 
 jobs:
