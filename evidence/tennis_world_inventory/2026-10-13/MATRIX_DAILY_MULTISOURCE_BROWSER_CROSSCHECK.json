@@ -3,39 +3,44 @@
   "target_date_bogota": "2026-10-13",
   "sources": {
     "sofascore": {
-      "opera_read_status": "PASS_USER_PHYSICAL_FULL_DAY_TOTAL",
-      "football_count": 749,
-      "tennis_count": 574,
+      "opera_read_status": "PASS_SCREENSHOT_BADGE_CAPTURE_MATCH_TOTAL_UNVERIFIED",
+      "football_exact_match_count": null,
+      "tennis_exact_match_count": null,
+      "football_ui_badge_text": "8 / 749",
+      "tennis_ui_badge_text": "21 / 574",
+      "football_ui_badge_right_value": 749,
+      "tennis_ui_badge_right_value": 574,
+      "badge_semantics_verified": false,
       "evidence_file": "1002212169.jpg",
       "evidence_sha256": "7108c9f287f7d8ddef42f70a49ee5c46770daa5b85336cd4f84fac128a6e669e",
-      "image_dimensions_px": [1536, 770],
-      "visible_rows": {
-        "football": "8 / 749",
-        "tennis": "21 / 574"
-      },
-      "automated_exact": false,
-      "interpretation_policy": "Only the white right-hand values are admitted as visible full-day totals. Red numerators are preserved without assigning semantics."
+      "image_dimensions_px": [
+        1536,
+        770
+      ],
+      "automated_football_verification_run_id": "fcd33beb-8ec6-467a-8e6f-edbe59c8ccc0",
+      "automated_football_verification_status": "BLOCKED_CLOUDFLARE_TURNSTILE",
+      "automated_exact": false
     },
     "flashscore": {
-      "opera_read_status": "BLOCKED_EXACT_TOTAL_NOT_AVAILABLE",
+      "opera_read_status": "PASS_MACHINE_VERIFIED_EXACT_BOTH_SPORTS",
       "football_url": "https://www.flashscore.com/?d=20261013",
-      "football_materialized_unique_match_links": 186,
-      "football_collapsed_group_count": 37,
-      "football_collapsed_hidden_match_rows": 75,
-      "football_physically_proven_lower_bound": 261,
-      "football_show_more_present": true,
+      "exact_football_count": 78,
+      "football_visible_match_rows": 55,
+      "football_collapsed_hidden_match_rows": 23,
+      "football_show_more_exhausted": true,
+      "football_run_id": "768dcb49-c655-410f-a2fa-dbf8f3ed892f",
       "tennis_url": "https://www.flashscore.com/tennis/?d=20261013",
-      "tennis_materialized_unique_match_links": 155,
-      "tennis_show_more_hidden_competitions": 61,
-      "exact_football_count": null,
-      "exact_tennis_count": null
+      "exact_tennis_count": 326,
+      "tennis_visible_unique_match_rows": 326,
+      "tennis_collapsed_hidden_match_rows": 0,
+      "tennis_show_more_exhausted": true,
+      "tennis_run_id": "7166c28a-4481-4963-9158-2ad83dda1272"
     }
   },
   "flashscore_automation_attempt": {
-    "run_id": "9c022250-9200-4aa1-a016-ace90031b258",
-    "status": "FAILED_BEFORE_EXHAUSTIVE_EXPANSION",
-    "step_count": 17,
-    "exact_counts_promoted": false
+    "canonical_audit_path": "evidence/daily_source_counts/2026-10-13/MATRIX_FLASHSCORE_EXACT_DAY_BROWSER_AUDIT.json",
+    "status": "PASS_BOTH_SPORTS_EXACT",
+    "exact_counts_promoted": true
   },
   "governance_basis": {
     "sofascore_flashscore_daily_crosscheck_required": true,
@@ -46,7 +51,7 @@
   "adjudication": {
     "status": "BLOCKED_FAIL_CLOSED",
     "paid_api_counts_are_not_world_complete": true,
-    "reason": "FLASHSCORE_EXACT_FULL_DAY_COUNTS_NOT_PHYSICALLY_VERIFIED"
+    "reason": "SOFASCORE_EXACT_MATCH_TOTALS_NOT_VERIFIED; SCREENSHOT_BADGE_DENOMINATORS_MUST_NOT_BE_ASSUMED_TO_EQUAL_MATCH_COUNTS"
   },
   "protections": {
     "metrics_opened": false,
