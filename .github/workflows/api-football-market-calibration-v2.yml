@@ -1,3 +1,4 @@
+# MATRIX_USER_AUTHORIZED_TRIGGER 2026-10-12 close-over25-forward-validation-1329-1429
 name: API Football Market Calibration V2
 
 on:
@@ -8,7 +9,9 @@ on:
       - "evidence/api_football/prospective_calibration/ledger.jsonl"
       - "tools/api_football_market_calibration_v2_sync.py"
       - "tools/api_football_market_calibration_v2_checkpoint_200.py"
+      - "tools/api_football_over25_forward_validation_100.py"
       - "tests/test_api_football_market_calibration_v2.py"
+      - "tests/test_api_football_over25_forward_validation_100.py"
       - ".github/workflows/api-football-market-calibration-v2.yml"
   workflow_dispatch:
 
@@ -37,8 +40,11 @@ jobs:
       - name: Install test dependency
         run: python -m pip install pytest
 
-      - name: Verify separation contract
-        run: pytest -q tests/test_api_football_market_calibration_v2.py
+      - name: Verify separation and forward-validation contracts
+        run: |
+          pytest -q \
+            tests/test_api_football_market_calibration_v2.py \
+            tests/test_api_football_over25_forward_validation_100.py
 
       - name: Sync V2 market ledgers
         run: python tools/api_football_market_calibration_v2_sync.py
@@ -89,6 +95,48 @@ jobs:
           }, sort_keys=True))
           PY
 
+      - name: Close preregistered Over 2.5 forward-validation block 1329 to 1429
+        run: |
+          python tools/api_football_over25_forward_validation_100.py \
+            --out evidence/api_football/calibration_v2/OVER25_FORWARD_VALIDATION_RESULT_20261013.json
+
+      - name: Validate Over 2.5 forward-validation governance and physical sample
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          p = Path("evidence/api_football/calibration_v2/OVER25_FORWARD_VALIDATION_RESULT_20261013.json")
+          j = json.loads(p.read_text(encoding="utf-8"))
+          assert j["physical_sample"]["sample_size"] == 100
+          assert j["physical_sample"]["unique_fixture_ids"] == 100
+          assert j["baseline"]["over_2_5_lane_settlements"] == 1329
+          assert j["maturity"]["target_over_2_5_lane_settlement_count"] == 1429
+          assert j["maturity"]["current_over_2_5_lane_settlements"] >= 1429
+          assert j["physical_sample"]["source_baseline_prefix_unchanged"] is True
+          assert j["physical_sample"]["lane_probability_binding_verified"] is True
+          assert j["physical_sample"]["lane_outcome_binding_verified"] is True
+          assert j["physical_sample"]["all_rows_standard_final_ft"] is True
+          assert j["physical_sample"]["parameter_tuning_used"] is False
+          assert j["physical_sample"]["parameters_mutated_after_freeze"] is False
+          assert j["governance"]["parameter_tuning_allowed"] is False
+          assert j["governance"]["refit_allowed"] is False
+          assert j["governance"]["model_files_modified"] is False
+          assert j["governance"]["real_money"] == "BLOCKED"
+          assert j["challenger"]["sample_size"] == 100
+          assert j["poisson"]["sample_size"] == 100
+          print(json.dumps({
+              "sample_size": j["physical_sample"]["sample_size"],
+              "brier": j["challenger"]["brier_score"],
+              "log_loss": j["challenger"]["log_loss"],
+              "ece": j["challenger"]["calibration"]["ece"],
+              "max_calibration_error": j["challenger"]["calibration"]["max_calibration_error"],
+              "delta_brier": j["paired_comparison"]["delta_brier_challenger_minus_poisson"],
+              "delta_log_loss": j["paired_comparison"]["delta_log_loss_challenger_minus_poisson"],
+              "verdict": j["adjudication"]["verdict"],
+              "real_money": j["governance"]["real_money"],
+          }, sort_keys=True))
+          PY
+
       - name: Persist V2 evidence if changed
         shell: bash
         run: |
@@ -97,12 +145,13 @@ jobs:
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add \
             evidence/api_football/calibration_v2/lanes \
-            evidence/api_football/calibration_v2/checkpoint_200_1x2_over_2_5_20261006.json
+            evidence/api_football/calibration_v2/checkpoint_200_1x2_over_2_5_20261006.json \
+            evidence/api_football/calibration_v2/OVER25_FORWARD_VALIDATION_RESULT_20261013.json
           if git diff --cached --quiet; then
             echo "No V2 market-ledger/checkpoint changes."
             exit 0
           fi
-          git commit -m "evidence(football): persist closed V2 checkpoint 200"
+          git commit -m "evidence(football): persist V2 checkpoint and Over25 forward 100"
           for attempt in 1 2 3 4; do
             git fetch origin repair/cor09-world-pipeline
             if ! git rebase origin/repair/cor09-world-pipeline; then
