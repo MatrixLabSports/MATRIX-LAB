@@ -5,7 +5,7 @@
   "calendar_baseline_complete": false,
   "operator_manual_intervention_required": true,
   "browser_baseline_completed_at_utc": null,
-  "block_reason": "SOFASCORE_EXACT_FULL_DAY_MATCH_TOTALS_NOT_PHYSICALLY_VERIFIED; UI_BADGE_DENOMINATORS_CAPTURED_BUT_SEMANTICS_NOT_PROVEN_AS_MATCH_COUNTS",
+  "block_reason": "SOFASCORE_FOOTBALL_EXACT_FULL_DAY_MATCH_TOTAL_NOT_VERIFIED; 140 MATERIALIZED EVENTS BUT MAIN SHOW_MORE REMAINS",
   "task_order": [
     "CALENDAR_BASELINE_SOFASCORE_FLASHSCORE_FIRST",
     "PAID_APIS_SECOND",
@@ -14,23 +14,21 @@
   ],
   "tennis": {
     "sofascore": {
-      "count": null,
-      "count_type": "UNCLASSIFIED_UI_BADGE_DENOMINATOR_NOT_PROVEN_AS_MATCH_TOTAL",
+      "count": 603,
+      "count_type": "MACHINE_VERIFIED_BROWSER_UI_EXACT",
       "url": "https://www.sofascore.com/es/tennis?date=2026-10-13",
-      "provenance": "USER_PROVIDED_SOFASCORE_SCREENSHOT",
+      "provenance": "CONNECTED_OPERA_ACCESSIBILITY_MAIN_UNIQUE_EVENT_IDS",
+      "main_unique_match_event_urls": 603,
+      "main_show_more_present": false,
+      "exact_total_physically_verified": true,
+      "automated_browser_exact": true,
+      "operator_manual_intervention_required": false,
       "screenshot_file": "1002212169.jpg",
       "screenshot_sha256": "7108c9f287f7d8ddef42f70a49ee5c46770daa5b85336cd4f84fac128a6e669e",
-      "image_dimensions_px": [
-        1536,
-        770
-      ],
       "ui_badge_text": "21 / 574",
       "ui_badge_right_value": 574,
-      "badge_semantics_verified": false,
-      "exact_total_physically_verified": false,
-      "automated_browser_exact": false,
-      "opera_read_status": "PASS_SCREENSHOT_BADGE_CAPTURE_MATCH_TOTAL_UNVERIFIED",
-      "operator_manual_intervention_required": true
+      "badge_semantics_verified_as_match_total": false,
+      "correction_note": "The screenshot badge denominator 574 is not used as the match total. The current page main region contains 603 unique tennis event URLs and no Show more/Mostrar más control."
     },
     "flashscore": {
       "count": 326,
@@ -60,7 +58,7 @@
   "football": {
     "sofascore": {
       "count": null,
-      "count_type": "UNCLASSIFIED_UI_BADGE_DENOMINATOR_NOT_PROVEN_AS_MATCH_TOTAL",
+      "count_type": "PARTIAL_BROWSER_LOWER_BOUND_SHOW_MORE_REMAINS",
       "url": "https://www.sofascore.com/es/football/2026-10-13",
       "provenance": "USER_PROVIDED_SOFASCORE_SCREENSHOT_PLUS_FAILED_AUTOMATED_VERIFICATION",
       "screenshot_file": "1002212169.jpg",
@@ -77,7 +75,11 @@
       "automated_verification_run_id": "fcd33beb-8ec6-467a-8e6f-edbe59c8ccc0",
       "automated_verification_status": "BLOCKED_CLOUDFLARE_TURNSTILE",
       "opera_read_status": "PASS_SCREENSHOT_BADGE_CAPTURE_MATCH_TOTAL_UNVERIFIED",
-      "operator_manual_intervention_required": true
+      "operator_manual_intervention_required": true,
+      "main_unique_match_event_urls": 140,
+      "main_show_more_present": true,
+      "show_more_button_id": 195592,
+      "materialized_lower_bound": 140
     },
     "flashscore": {
       "count": 78,
@@ -126,5 +128,5 @@
     "automatic_wagering": false,
     "real_money": "BLOCKED"
   },
-  "next_retry": "Resolve SofaScore exact full-day FOOTBALL and TENNIS match totals independently of the sport-selector badge. Flashscore exact totals are now closed at football=78 and tennis=326. Keep baseline incomplete until SofaScore exact match counts are physically verified."
+  "next_retry": "Resolve the remaining SofaScore football Mostrar más control in the connected browser and recount unique event IDs. Tennis SofaScore is closed at 603; Flashscore is closed at football=78 and tennis=326."
 }
