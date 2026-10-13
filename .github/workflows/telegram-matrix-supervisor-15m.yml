@@ -61,11 +61,6 @@ jobs:
           test -n "$API_FOOTBALL_KEY"
           echo "SECRETOS_PRESENTES"
 
-      - name: Ejecutar ciclo CLV gobernado
-        env:
-          API_FOOTBALL_KEY: ${{ secrets.API_FOOTBALL_KEY }}
-        run: PYTHONPATH=. python -m tools.football_clv_tracking_cycle
-
       - name: Ejecutar supervisor Telegram
         env:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
@@ -73,19 +68,18 @@ jobs:
           API_FOOTBALL_KEY: ${{ secrets.API_FOOTBALL_KEY }}
         run: python -m tools.telegram_green_signal_alerts
 
-      - name: Persistir Telegram + CLV en rama operativa
+      - name: Persistir ledger en rama operativa
         shell: bash
         run: |
           set -euo pipefail
           git config user.name matrix-telegram-supervisor
           git config user.email matrix-telegram-supervisor@users.noreply.github.com
           git add evidence/notifications/telegram/MATRIX_TELEGRAM_SIGNAL_LEDGER.json
-          git add evidence/clv/football/over_2_5
           if git diff --cached --quiet; then
-            echo "SIN_CAMBIOS_TELEGRAM_CLV"
+            echo "SIN_CAMBIOS_LEDGER"
             exit 0
           fi
-          git commit -m "evidence(supervisor): persist telegram and CLV state"
+          git commit -m "evidence(telegram): persist 15m supervisor ledger"
           for attempt in 1 2 3 4; do
             git fetch origin repair/cor09-world-pipeline
             if ! git rebase origin/repair/cor09-world-pipeline; then
