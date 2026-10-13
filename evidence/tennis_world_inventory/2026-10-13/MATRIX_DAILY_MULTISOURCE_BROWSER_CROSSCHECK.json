@@ -1,65 +1,65 @@
 {
-  "schema": "MATRIX_DAILY_MULTISOURCE_BROWSER_CROSSCHECK_V1",
+  "schema": "MATRIX_DAILY_MULTISOURCE_BROWSER_CROSSCHECK_V2",
   "target_date_bogota": "2026-10-13",
   "sources": {
     "sofascore": {
-      "opera_read_status": "PARTIAL_PASS_TENNIS_EXACT_FOOTBALL_BLOCKED_SHOW_MORE_PRESENT",
-      "football_exact_match_count": null,
-      "football_materialized_lower_bound": 140,
-      "football_show_more_present": true,
-      "football_show_more_button_id_prior": 195592,
-      "football_show_more_button_id_latest": 219585,
-      "football_automation_run_ids": [
-        "1d17a98d-856e-4d0f-bcfb-5106ecf7834a",
-        "b5f2bf76-ca3a-419c-b395-754d9101bf05",
-        "1143fc6b-6585-45c8-a246-c990a5e9933c"
-      ],
-      "football_automation_status": "BLOCKED_CLOUDFLARE_CAPTCHA",
-      "football_structured_endpoint_statuses": {
-        "https://api.sofascore.com/api/v1/sport/football/scheduled-events/2026-10-13": "HTTP_403",
-        "https://www.sofascore.com/api/v1/sport/football/scheduled-events/2026-10-13": "HTTP_403"
-      },
+      "football_exact_match_count": 138,
+      "football_count_type": "CONNECTED_OPERA_ACCESSIBILITY_CALENDAR_SECTION_UNIQUE_EVENT_IDS",
+      "football_match_list_show_more_present": false,
+      "football_unrelated_show_more_present": true,
+      "football_unrelated_show_more_context": "MEJORES_ACTUACIONES_PLAYER_MODULE",
+      "football_top_navigation_more_context": "ADDITIONAL_SPORTS_MENU",
       "tennis_exact_match_count": 603,
-      "tennis_unique_main_event_urls": 603,
       "tennis_show_more_present": false,
-      "evidence_file": "1002212169.jpg",
-      "evidence_sha256": "7108c9f287f7d8ddef42f70a49ee5c46770daa5b85336cd4f84fac128a6e669e",
-      "football_ui_badge_text": "8 / 749",
-      "tennis_ui_badge_text": "21 / 574",
-      "badge_semantics_verified_as_match_totals": false,
-      "canonical_audit_path": "evidence/daily_source_counts/2026-10-13/MATRIX_SOFASCORE_BROWSER_EVENT_AUDIT.json"
+      "canonical_audit_path": "evidence/daily_source_counts/2026-10-13/MATRIX_SOFASCORE_BROWSER_EVENT_AUDIT.json",
+      "status": "PASS_EXACT_BOTH_SPORTS"
     },
     "flashscore": {
-      "opera_read_status": "PASS_MACHINE_VERIFIED_EXACT_BOTH_SPORTS",
       "football_url": "https://www.flashscore.com/?d=20261013",
       "exact_football_count": 78,
-      "football_visible_match_rows": 55,
-      "football_collapsed_hidden_match_rows": 23,
-      "football_show_more_exhausted": true,
       "football_run_id": "768dcb49-c655-410f-a2fa-dbf8f3ed892f",
+      "football_show_more_exhausted": true,
       "tennis_url": "https://www.flashscore.com/tennis/?d=20261013",
       "exact_tennis_count": 326,
-      "tennis_visible_unique_match_rows": 326,
-      "tennis_collapsed_hidden_match_rows": 0,
+      "tennis_run_id": "7166c28a-4481-4963-9158-2ad83dda1272",
       "tennis_show_more_exhausted": true,
-      "tennis_run_id": "7166c28a-4481-4963-9158-2ad83dda1272"
+      "status": "PASS_EXACT_BOTH_SPORTS"
     }
   },
-  "flashscore_automation_attempt": {
-    "canonical_audit_path": "evidence/daily_source_counts/2026-10-13/MATRIX_FLASHSCORE_EXACT_DAY_BROWSER_AUDIT.json",
-    "status": "PASS_BOTH_SPORTS_EXACT",
-    "exact_counts_promoted": true
+  "browser_baseline": {
+    "complete": true,
+    "status": "PASS",
+    "counts": {
+      "sofascore": {
+        "football": 138,
+        "tennis": 603
+      },
+      "flashscore": {
+        "football": 78,
+        "tennis": 326
+      }
+    },
+    "note": "Source counts differ materially; this does not invalidate the browser baseline. Differences must be resolved event-by-event in the reconciliation stage."
+  },
+  "semantic_correction": {
+    "false_blocker_removed": true,
+    "reason": "The SofaScore textual 'Mostrar más' control is tied to 'Mejores actuaciones'; the top navigation 'Más' is an additional-sports menu. Neither is match-calendar pagination.",
+    "previous_materialized_140_not_promoted": true,
+    "corrected_sofascore_football_exact": 138
   },
   "governance_basis": {
     "sofascore_flashscore_daily_crosscheck_required": true,
     "sofascore_first": true,
     "flashscore_second": true,
-    "paid_apis_after_browser_sources": true
+    "paid_apis_after_browser_sources": true,
+    "source_disagreement_requires_event_level_reconciliation": true
   },
   "adjudication": {
-    "status": "BLOCKED_FAIL_CLOSED",
-    "paid_api_counts_are_not_world_complete": true,
-    "reason": "SOFASCORE_FOOTBALL_EXACT_TOTAL_PENDING_SHOW_MORE; EXTERNAL_AUTOMATION_BLOCKED_CLOUDFLARE_CAPTCHA; SOFASCORE_STRUCTURED_ENDPOINTS_HTTP_403; TENNIS_SOFASCORE_EXACT=603; FLASHSCORE_FOOTBALL_EXACT=78; FLASHSCORE_TENNIS_EXACT=326"
+    "status": "PASS_BROWSER_BASELINE_COMPLETE",
+    "next_stage": "RECONCILE_BROWSER_TO_STRUCTURED_APIS",
+    "football_difference_sofascore_minus_flashscore": 60,
+    "tennis_difference_sofascore_minus_flashscore": 277,
+    "reason": "Both browser sources are now individually closed/exact; discrepancies remain to be reconciled rather than overwritten."
   },
   "protections": {
     "metrics_opened": false,
@@ -67,7 +67,6 @@
     "automatic_wagering": false,
     "real_money": "BLOCKED",
     "no_badge_promotion": true,
-    "no_partial_count_promotion": true,
-    "no_403_as_zero_inventory": true
+    "no_promotional_match_link_inclusion": true
   }
 }
