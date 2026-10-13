@@ -1,3 +1,4 @@
+# MATRIX_USER_AUTHORIZED_TRIGGER 2026-10-12 backup-next-day-2010-bogota
 name: MATRIX Football Daily Governed Pipeline
 
 on:
@@ -6,6 +7,8 @@ on:
     - cron: "10 5 * * *"
     # 18:10 Bogota: prepare next operational day.
     - cron: "10 23 * * *"
+    # 20:10 Bogota: backup next-day preparation if the primary cron is delayed/skipped.
+    - cron: "10 1 * * *"
   workflow_dispatch:
     inputs:
       target_date:
