@@ -1,3 +1,4 @@
+# MATRIX_USER_AUTHORIZED_TRIGGER 2026-10-12 preregister-over25-forward-1444-1544
 # MATRIX_USER_AUTHORIZED_TRIGGER 2026-10-12 restore-immutable-checkpoint200-and-recertify-forward100
 # MATRIX_USER_AUTHORIZED_TRIGGER 2026-10-12 close-over25-forward-validation-1329-1429
 name: API Football Market Calibration V2
@@ -11,8 +12,11 @@ on:
       - "tools/api_football_market_calibration_v2_sync.py"
       - "tools/api_football_market_calibration_v2_checkpoint_200.py"
       - "tools/api_football_over25_forward_validation_100.py"
+      - "tools/api_football_over25_forward_validation_1444_1544.py"
       - "tests/test_api_football_market_calibration_v2.py"
       - "tests/test_api_football_over25_forward_validation_100.py"
+      - "tests/test_api_football_over25_forward_validation_1444_1544.py"
+      - "evidence/api_football/calibration_v2/OVER25_FORWARD_VALIDATION_PROTOCOL_1444_1544.json"
       - ".github/workflows/api-football-market-calibration-v2.yml"
   workflow_dispatch:
 
@@ -45,7 +49,8 @@ jobs:
         run: |
           pytest -q \
             tests/test_api_football_market_calibration_v2.py \
-            tests/test_api_football_over25_forward_validation_100.py
+            tests/test_api_football_over25_forward_validation_100.py \
+            tests/test_api_football_over25_forward_validation_1444_1544.py
 
       - name: Sync V2 market ledgers
         run: python tools/api_football_market_calibration_v2_sync.py
@@ -146,6 +151,51 @@ jobs:
           }, sort_keys=True))
           PY
 
+      - name: Monitor or close preregistered Over 2.5 block 1444 to 1544
+        run: python tools/api_football_over25_forward_validation_1444_1544.py
+
+      - name: Enforce second-block sealing and governance
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          p = Path("evidence/api_football/calibration_v2/OVER25_FORWARD_VALIDATION_1444_1544_STATE.json")
+          j = json.loads(p.read_text(encoding="utf-8"))
+          assert j["baseline_settlement_count"] == 1444
+          assert j["target_settlement_count"] == 1544
+          assert j["cohort_size_required"] == 100
+          assert j["parameter_tuning_allowed"] is False
+          assert j["refit_allowed"] is False
+          assert j["automatic_wagering"] is False
+          assert j["real_money"] == "BLOCKED"
+          assert j["continuous_lane_metrics_remain_sealed"] is True
+          if j["status"] == "SEALED_PENDING":
+              assert j["metrics_opened"] is False
+              assert j["outcomes_read_for_metrics"] == 0
+              assert not Path("evidence/api_football/calibration_v2/OVER25_FORWARD_VALIDATION_1444_1544_RESULT.json").exists()
+          elif j["status"] == "CLOSED_FIXED_100":
+              assert j["metrics_opened"] is True
+              assert j["outcomes_read_for_metrics"] == 100
+              r = json.loads(Path("evidence/api_football/calibration_v2/OVER25_FORWARD_VALIDATION_1444_1544_RESULT.json").read_text(encoding="utf-8"))
+              assert r["sample_size"] == 100
+              assert len(r["fixture_ids"]) == 100
+              assert r["governance"]["real_money"] == "BLOCKED"
+              assert r["governance"]["parameter_tuning_allowed"] is False
+          else:
+              raise AssertionError(j["status"])
+          print(json.dumps({
+              "status": j["status"],
+              "baseline": j["baseline_settlement_count"],
+              "current": j["current_settlement_count"],
+              "target": j["target_settlement_count"],
+              "new": j["new_settlements_after_baseline"],
+              "remaining": j["remaining_to_target"],
+              "metrics_opened": j["metrics_opened"],
+              "outcomes_read_for_metrics": j["outcomes_read_for_metrics"],
+              "real_money": j["real_money"],
+          }, sort_keys=True))
+          PY
+
       - name: Persist V2 evidence if changed
         shell: bash
         run: |
@@ -154,7 +204,11 @@ jobs:
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add \
             evidence/api_football/calibration_v2/lanes \
-            evidence/api_football/calibration_v2/OVER25_FORWARD_VALIDATION_RESULT_20261013.json
+            evidence/api_football/calibration_v2/OVER25_FORWARD_VALIDATION_RESULT_20261013.json \
+            evidence/api_football/calibration_v2/OVER25_FORWARD_VALIDATION_1444_1544_STATE.json
+          if [ -f evidence/api_football/calibration_v2/OVER25_FORWARD_VALIDATION_1444_1544_RESULT.json ]; then
+            git add evidence/api_football/calibration_v2/OVER25_FORWARD_VALIDATION_1444_1544_RESULT.json
+          fi
           if git diff --cached --quiet; then
             echo "No V2 market-ledger/checkpoint changes."
             exit 0
