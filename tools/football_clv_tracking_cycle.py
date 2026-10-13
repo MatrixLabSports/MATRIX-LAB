@@ -281,9 +281,10 @@ def capture_due_closing_lines(
             timeout=(10, 30),
         )
         calls += 1
-        captured_at = clock().astimezone(timezone.utc).replace(microsecond=0)
-        if captured_at.tzinfo is None or captured_at.utcoffset() is None:
+        captured_raw = clock()
+        if captured_raw.tzinfo is None or captured_raw.utcoffset() is None:
             raise ValueError("CAPTURE_CLOCK_MUST_BE_TIMEZONE_AWARE")
+        captured_at = captured_raw.astimezone(timezone.utc).replace(microsecond=0)
         body = bytes(response.content)
         raw_sha256 = hashlib.sha256(body).hexdigest()
         try:
