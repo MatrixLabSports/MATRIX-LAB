@@ -15,6 +15,7 @@ SOURCE_LEDGER = ROOT / "prospective_calibration" / "ledger.jsonl"
 LANE_LEDGER = ROOT / "calibration_v2" / "lanes" / "over_2_5" / "ledger.jsonl"
 LANE_STATE = ROOT / "calibration_v2" / "lanes" / "over_2_5" / "state.json"
 CHECKPOINT_200 = ROOT / "calibration_v2" / "checkpoint_200_1x2_over_2_5_20261006.json"
+CANONICAL_CHECKPOINT_200_BLOB_SHA = "5ce70e45da122590862ddcd49cdbac0014d01b39"
 DEFAULT_OUT = ROOT / "calibration_v2" / "OVER25_FORWARD_VALIDATION_RESULT_20261013.json"
 
 BASELINE_SOURCE_COUNT = 2131
@@ -80,6 +81,16 @@ def _git_show_jsonl(commit: str, path: Path) -> list[dict[str, Any]]:
 def _git_blob_sha(commit: str, path: Path) -> str:
     proc = subprocess.run(
         ["git", "rev-parse", f"{commit}:{path.as_posix()}"],
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+    return proc.stdout.strip()
+
+
+def _working_tree_blob_sha(path: Path) -> str:
+    proc = subprocess.run(
+        ["git", "hash-object", path.as_posix()],
         check=True,
         capture_output=True,
         text=True,
@@ -411,6 +422,7 @@ def evaluate_forward_block(
         "poisson": poisson,
         "paired_comparison": paired,
         "stability": {
+            "reference_checkpoint_200_blob_sha": CANONICAL_CHECKPOINT_200_BLOB_SHA,
             "reference_checkpoint_200_ece": reference_ece,
             "forward_100_ece": forward_ece,
             "ece_change_forward_minus_checkpoint_200": forward_ece - reference_ece,
@@ -470,6 +482,14 @@ def main() -> None:
     protocol = _load_json(PROTOCOL)
     current_source = _load_jsonl(SOURCE_LEDGER)
     current_lane = _load_jsonl(LANE_LEDGER)
+    checkpoint_200_blob_sha = _working_tree_blob_sha(CHECKPOINT_200)
+    if checkpoint_200_blob_sha != CANONICAL_CHECKPOINT_200_BLOB_SHA:
+        raise RuntimeError(
+            "CANONICAL_CHECKPOINT_200_MUTATED:"
+            + checkpoint_200_blob_sha
+            + ":"
+            + CANONICAL_CHECKPOINT_200_BLOB_SHA
+        )
     checkpoint_200 = _load_json(CHECKPOINT_200)
     lane_state = _load_json(LANE_STATE)
 

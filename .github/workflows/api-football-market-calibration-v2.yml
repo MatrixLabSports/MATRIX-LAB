@@ -1,3 +1,4 @@
+# MATRIX_USER_AUTHORIZED_TRIGGER 2026-10-12 restore-immutable-checkpoint200-and-recertify-forward100
 # MATRIX_USER_AUTHORIZED_TRIGGER 2026-10-12 close-over25-forward-validation-1329-1429
 name: API Football Market Calibration V2
 
@@ -49,10 +50,18 @@ jobs:
       - name: Sync V2 market ledgers
         run: python tools/api_football_market_calibration_v2_sync.py
 
-      - name: Execute closed fixed-prefix checkpoint 200 for 1X2 and Over 2.5
+      - name: Verify immutable closed fixed-prefix checkpoint 200
+        shell: bash
         run: |
-          python tools/api_football_market_calibration_v2_checkpoint_200.py \
-            --out evidence/api_football/calibration_v2/checkpoint_200_1x2_over_2_5_20261006.json
+          set -euo pipefail
+          CHECKPOINT="evidence/api_football/calibration_v2/checkpoint_200_1x2_over_2_5_20261006.json"
+          EXPECTED_BLOB="5ce70e45da122590862ddcd49cdbac0014d01b39"
+          ACTUAL_BLOB="$(git hash-object "$CHECKPOINT")"
+          test "$ACTUAL_BLOB" = "$EXPECTED_BLOB" || {
+            echo "CHECKPOINT_200_IMMUTABILITY_VIOLATION:$ACTUAL_BLOB:$EXPECTED_BLOB"
+            exit 1
+          }
+          echo "CHECKPOINT_200_IMMUTABLE_BLOB=$ACTUAL_BLOB"
 
       - name: Validate checkpoint-200 governance and physical sample
         run: |
@@ -145,13 +154,12 @@ jobs:
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add \
             evidence/api_football/calibration_v2/lanes \
-            evidence/api_football/calibration_v2/checkpoint_200_1x2_over_2_5_20261006.json \
             evidence/api_football/calibration_v2/OVER25_FORWARD_VALIDATION_RESULT_20261013.json
           if git diff --cached --quiet; then
             echo "No V2 market-ledger/checkpoint changes."
             exit 0
           fi
-          git commit -m "evidence(football): persist V2 checkpoint and Over25 forward 100"
+          git commit -m "evidence(football): persist V2 lanes and Over25 forward 100"
           for attempt in 1 2 3 4; do
             git fetch origin repair/cor09-world-pipeline
             if ! git rebase origin/repair/cor09-world-pipeline; then
