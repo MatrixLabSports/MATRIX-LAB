@@ -28,7 +28,7 @@ MARKET_KEY = "over_2_5"
 SELECTION_KEY = "over"
 MODEL_VERSION = "calibrated_log_pool_v1_over_2_5"
 CLOSE_WINDOW_MINUTES = 15
-MAX_PINNACLE_PROVIDER_QUOTE_AGE_SECONDS = 10_800
+MAX_PINNACLE_PROVIDER_QUOTE_AGE_SECONDS = 120
 MIN_CLV_CLOSING_OBSERVATIONS = 300
 
 DEFAULT_ROOT = Path("evidence/clv/football/over_2_5")
@@ -356,7 +356,7 @@ def capture_due_closing_lines(
                 "provider": PINNACLE_BOOKMAKER_NAME,
                 "transport": "API-Football /odds",
                 "direct_pinnacle_api_connection": False,
-                "source_quality_flag": "SHARP_PINNACLE_VIA_API_FOOTBALL",
+                "source_quality_flag": "SHARP_PINNACLE_VIA_API_FOOTBALL_STRICT_120S",
                 "system_captured_at_utc": captured_at.isoformat(),
                 "provider_quote_updated_at_utc": provider_update.isoformat(),
                 "provider_quote_age_seconds": provider_quote_age_seconds,
@@ -467,10 +467,16 @@ def build_state(
         "generated_at_utc": generated_at.astimezone(timezone.utc).replace(microsecond=0).isoformat(),
         "market_key": MARKET_KEY,
         "model_version": MODEL_VERSION,
-        "closing_reference_choice": "OPTION_B_PINNACLE",
+        "closing_reference_choice": "OPTION_B_PINNACLE_STRICT_FRESH",
         "closing_reference_transport": "API-Football /odds bookmaker_id=4",
         "direct_pinnacle_api_connection": False,
-        "source_quality_flag": "SHARP_PINNACLE_VIA_API_FOOTBALL",
+        "source_quality_flag": "SHARP_PINNACLE_VIA_API_FOOTBALL_STRICT_120S",
+        "closing_freshness_policy": {
+            "max_provider_quote_age_seconds": MAX_PINNACLE_PROVIDER_QUOTE_AGE_SECONDS,
+            "governance_basis": "evidence/api_football/pinnacle_snapshot_age_audit/audit.json",
+            "nominal_3h_band_is_closing_reference": False,
+            "strict_fresh_gate_seconds": 120,
+        },
         "ledger_path": ledger.path.as_posix(),
         "ledger_sha256": audit.ledger_sha256,
         "decision_count": audit.decision_count,
