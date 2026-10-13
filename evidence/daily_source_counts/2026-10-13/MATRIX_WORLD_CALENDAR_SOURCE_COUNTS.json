@@ -5,7 +5,7 @@
   "calendar_baseline_complete": false,
   "operator_manual_intervention_required": true,
   "browser_baseline_completed_at_utc": null,
-  "block_reason": "SOFASCORE_FOOTBALL_EXACT_FULL_DAY_MATCH_TOTAL_NOT_VERIFIED; 140 MATERIALIZED EVENTS BUT MAIN SHOW_MORE REMAINS",
+  "block_reason": "SOFASCORE_FOOTBALL_EXACT_FULL_DAY_MATCH_TOTAL_NOT_VERIFIED; 140 MATERIALIZED EVENTS BUT MAIN SHOW_MORE REMAINS; AUTOMATION BLOCKED_BY_CLOUDFLARE_CAPTCHA; STRUCTURED_ENDPOINTS_HTTP_403",
   "task_order": [
     "CALENDAR_BASELINE_SOFASCORE_FLASHSCORE_FIRST",
     "PAID_APIS_SECOND",
@@ -60,7 +60,7 @@
       "count": null,
       "count_type": "PARTIAL_BROWSER_LOWER_BOUND_SHOW_MORE_REMAINS",
       "url": "https://www.sofascore.com/es/football/2026-10-13",
-      "provenance": "USER_PROVIDED_SOFASCORE_SCREENSHOT_PLUS_FAILED_AUTOMATED_VERIFICATION",
+      "provenance": "CONNECTED_OPERA_ACCESSIBILITY_PLUS_EXTERNAL_AUTOMATION_BLOCKER_AUDIT",
       "screenshot_file": "1002212169.jpg",
       "screenshot_sha256": "7108c9f287f7d8ddef42f70a49ee5c46770daa5b85336cd4f84fac128a6e669e",
       "image_dimensions_px": [
@@ -72,14 +72,24 @@
       "badge_semantics_verified": false,
       "exact_total_physically_verified": false,
       "automated_browser_exact": false,
-      "automated_verification_run_id": "fcd33beb-8ec6-467a-8e6f-edbe59c8ccc0",
-      "automated_verification_status": "BLOCKED_CLOUDFLARE_TURNSTILE",
-      "opera_read_status": "PASS_SCREENSHOT_BADGE_CAPTURE_MATCH_TOTAL_UNVERIFIED",
+      "automated_verification_run_ids": [
+        "1d17a98d-856e-4d0f-bcfb-5106ecf7834a",
+        "b5f2bf76-ca3a-419c-b395-754d9101bf05",
+        "1143fc6b-6585-45c8-a246-c990a5e9933c"
+      ],
+      "automated_verification_status": "BLOCKED_CLOUDFLARE_CAPTCHA",
+      "structured_endpoint_statuses": {
+        "https://api.sofascore.com/api/v1/sport/football/scheduled-events/2026-10-13": "HTTP_403",
+        "https://www.sofascore.com/api/v1/sport/football/scheduled-events/2026-10-13": "HTTP_403"
+      },
+      "opera_read_status": "PASS_PAGE_LOADED_SHOW_MORE_STILL_PRESENT",
       "operator_manual_intervention_required": true,
       "main_unique_match_event_urls": 140,
       "main_show_more_present": true,
-      "show_more_button_id": 195592,
-      "materialized_lower_bound": 140
+      "show_more_button_id_prior": 195592,
+      "show_more_button_id_latest": 219585,
+      "materialized_lower_bound": 140,
+      "canonical_audit_path": "evidence/daily_source_counts/2026-10-13/MATRIX_SOFASCORE_BROWSER_EVENT_AUDIT.json"
     },
     "flashscore": {
       "count": 78,
@@ -118,7 +128,9 @@
     "partial_accessibility_count_is_never_promoted_to_world_total": true,
     "user_screenshot_total_may_be_recorded_as_physical_evidence_but_does_not_satisfy_automated_exact_gate": true,
     "flashscore_lower_bound_must_not_be_used_as_exact_total": true,
-    "user_screenshot_badge_must_not_be_promoted_to_match_total_without_semantic_verification": true
+    "user_screenshot_badge_must_not_be_promoted_to_match_total_without_semantic_verification": true,
+    "automation_zero_due_to_blocker_must_not_be_promoted_to_empty_inventory": true,
+    "http_403_must_not_be_interpreted_as_zero_events": true
   },
   "automation_retry_required": true,
   "paid_api_counts_are_not_world_complete": true,
@@ -128,5 +140,5 @@
     "automatic_wagering": false,
     "real_money": "BLOCKED"
   },
-  "next_retry": "Resolve the remaining SofaScore football Mostrar más control in the connected browser and recount unique event IDs. Tennis SofaScore is closed at 603; Flashscore is closed at football=78 and tennis=326."
+  "next_retry": "Use the already loaded connected Opera SofaScore football page to exhaust the remaining Mostrar más control and recount unique event IDs. Automated external browsers and structured SofaScore endpoints are physically blocked by Cloudflare/HTTP 403. Tennis SofaScore remains closed at 603; Flashscore remains closed at football=78 and tennis=326."
 }
