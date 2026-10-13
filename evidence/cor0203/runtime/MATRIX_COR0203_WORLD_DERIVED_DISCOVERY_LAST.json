@@ -1,69 +1,10 @@
 {
-  "as_of_utc": "2026-10-13T16:46:59+00:00",
+  "as_of_utc": "2026-10-13T16:50:05+00:00",
   "automatic_model_feed": false,
   "automatic_model_promotion": false,
   "automatic_wagering": false,
-  "eligible_candidates": [
-    {
-      "canonical_source_event_id": "rapidapi-tennis:atp:match:1671",
-      "competition": "Roanne Challenger",
-      "competition_id": "rapidapi-tennis:tournament:22101",
-      "event_id": "rapidapi-tennis:atp:match:1671",
-      "event_start_utc": "2026-10-13T16:50:00+00:00",
-      "historical_identity_crosswalk_status": "PENDING",
-      "legacy_provider_event_id": "rapidapi-tennis:match:1671",
-      "physical_event_key": "f56f68323d01dfd1cd4265f1080dccaa7ad2e532d43c4a005e1269e6043c2af6",
-      "player_identities": [
-        {
-          "display_name": "Moise Kouame",
-          "provider": "rapidapi_tennis",
-          "provider_player_id": "rapidapi-tennis:player:111498"
-        },
-        {
-          "display_name": "Diego Dedura",
-          "provider": "rapidapi_tennis",
-          "provider_player_id": "rapidapi-tennis:player:104494"
-        }
-      ],
-      "players": [
-        {
-          "name": "Moise Kouame",
-          "provider_player_id": "rapidapi-tennis:player:111498",
-          "provider_ranking": {
-            "country": "FRA",
-            "place": "191",
-            "player": "Moise Kouame",
-            "points": "293",
-            "snapshot_date": "2026-09-21"
-          }
-        },
-        {
-          "name": "Diego Dedura",
-          "provider_player_id": "rapidapi-tennis:player:104494",
-          "provider_ranking": {
-            "country": "GER",
-            "place": "186",
-            "player": "Diego Dedura",
-            "points": "303",
-            "snapshot_date": "2026-09-21"
-          }
-        }
-      ],
-      "provider_channel": "ATP",
-      "provider_source_event_id": "rapidapi-tennis:atp:match:1671",
-      "round": "First",
-      "source_id_collision_resolved": false,
-      "source_provider": "rapidapi_tennis",
-      "source_reference": "fixtures:matchId=1671;tournament_info=22101;ranking_cut=2026-09-21;provider_channel=ATP",
-      "source_snapshot_sha256": "bce551e923dc72408d171fff1f9f92004f345265b60459f02501d93f2923e7a7",
-      "surface": "Hard",
-      "target_period": 20260921,
-      "tour_level": "C",
-      "world_source_snapshot_sha256": "c80729548d2e903db13904c520ba4a9adfbf2f604ab2b5264bc947b6baa08c85",
-      "world_stable_physical_identity_key": "ae43619ec28e0ce719d4a2a93384db5213ecadac9cd316c253cc4b466b8a0958"
-    }
-  ],
-  "eligible_input_events": 1,
+  "eligible_candidates": [],
+  "eligible_input_events": 0,
   "fixture_rows": 30,
   "governed_preregistration_required": true,
   "metrics_opened": false,
@@ -719,6 +660,29 @@
     },
     {
       "blockers": [
+        "EVENT_NOT_FUTURE"
+      ],
+      "match_id": "1671",
+      "players": [
+        {
+          "name": "Moise Kouame",
+          "provider_player_id": "rapidapi-tennis:player:111498",
+          "ranking_found": true
+        },
+        {
+          "name": "Diego Dedura",
+          "provider_player_id": "rapidapi-tennis:player:104494",
+          "ranking_found": true
+        }
+      ],
+      "provider_channel": "ATP",
+      "provider_source_event_id": "rapidapi-tennis:atp:match:1671",
+      "source_id_collision_resolved": false,
+      "tournament_id": "22101",
+      "world_source_event_id": "rapidapi-tennis:atp:match:1671"
+    },
+    {
+      "blockers": [
         "RANKING_CUT_MISSING_PLAYER2"
       ],
       "match_id": "1651",
@@ -867,38 +831,16 @@
   "world_inventory_target_date": "2026-10-13",
   "world_inventory_total": 373,
   "world_registry": {
-    "as_of_utc": "2026-10-13T16:46:59+00:00",
+    "as_of_utc": "2026-10-13T16:50:05+00:00",
     "cor0203_denominator_definition": "derived subset: future ATP Challenger Hard events with two real fixed identities and valid source provenance",
-    "cor0203_eligible_event_ids": [
-      "rapidapi-tennis:match:1671"
-    ],
-    "cor0203_eligible_events": 1,
+    "cor0203_eligible_event_ids": [],
+    "cor0203_eligible_events": 0,
     "duplicate_rows": 0,
-    "rows": [
-      {
-        "competition_id": "rapidapi-tennis:tournament:22101",
-        "competition_name": "Roanne Challenger",
-        "cor0203_blockers": [],
-        "cor0203_eligible": true,
-        "environment": "UNKNOWN",
-        "event_id": "rapidapi-tennis:match:1671",
-        "event_start_utc": "2026-10-13T16:50:00+00:00",
-        "player1_id": "rapidapi-tennis:player:111498",
-        "player2_id": "rapidapi-tennis:player:104494",
-        "round": "First",
-        "source_provider": "rapidapi_tennis",
-        "source_reference": "fixtures:matchId=1671;tournament_info=22101;ranking_cut=2026-09-21",
-        "source_snapshot_sha256": "bce551e923dc72408d171fff1f9f92004f345265b60459f02501d93f2923e7a7",
-        "sport": "TENNIS",
-        "surface": "Hard",
-        "tour_level": "ATP_CHALLENGER",
-        "world_calendar_status": "PRESERVED"
-      }
-    ],
+    "rows": [],
     "schema": "matrix.world-calendar-registry/1",
     "world_calendar_denominator_definition": "all unique discovered scheduled events preserved before model-domain filtering",
-    "world_calendar_input_rows": 1,
-    "world_calendar_unique_events": 1
+    "world_calendar_input_rows": 0,
+    "world_calendar_unique_events": 0
   },
   "world_rows_malformed": [],
   "world_rows_synthesized": 30,
