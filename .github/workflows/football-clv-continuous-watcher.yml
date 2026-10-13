@@ -15,6 +15,7 @@ on:
 
 permissions:
   contents: write
+  actions: write
 
 concurrency:
   group: matrix-football-clv-continuous-watcher
@@ -24,12 +25,12 @@ jobs:
   watch:
     if: ${{ github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success' }}
     runs-on: ubuntu-latest
-    timeout-minutes: 330
+    timeout-minutes: 350
     env:
       MATRIX_MODE: SHADOW
       REAL_MONEY: BLOCKED
       AUTO_BETTING: DISABLED
-      WATCH_SECONDS: 18000
+      WATCH_SECONDS: 19800
       POLL_SECONDS: 90
 
     steps:
@@ -176,3 +177,51 @@ jobs:
           print("remaining_to_open_metrics=",j["remaining_to_open_metrics"])
           print("real_money=",j["protections"]["real_money"])
           PY
+
+      - name: Renew watcher if future decisions remain
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          remaining="$(PYTHONPATH=. python - <<'PY'
+          from datetime import datetime, timezone
+          from pathlib import Path
+          from app.research.football.prospective_ledger import (
+              ClosingOddsReference,
+              FootballProspectiveEvidenceLedger,
+              FrozenProspectiveDecision,
+          )
+          path=Path("evidence/clv/football/over_2_5/prospective_clv_ledger.jsonl")
+          ledger=FootballProspectiveEvidenceLedger(path)
+          closed=set()
+          decisions=[]
+          for event in ledger.load_events():
+              if event.event_type=="CLOSING_ODDS_RECORDED":
+                  closed.add(ClosingOddsReference.from_mapping(event.payload).decision_id)
+              elif event.event_type=="DECISION_FROZEN":
+                  decisions.append(FrozenProspectiveDecision.from_mapping(event.payload))
+          now=datetime.now(timezone.utc)
+          count=0
+          for d in decisions:
+              if d.decision_id in closed:
+                  continue
+              kickoff=datetime.fromisoformat(d.fixture_kickoff_utc.replace("Z","+00:00")).astimezone(timezone.utc)
+              if kickoff > now:
+                  count += 1
+          print(count)
+          PY
+          )"
+          echo "CLV_FUTURE_DECISIONS_AFTER_WATCH=$remaining"
+          if [ "$remaining" -gt 0 ]; then
+            curl --fail-with-body --silent --show-error \
+              -X POST \
+              -H "Accept: application/vnd.github+json" \
+              -H "Authorization: Bearer $GH_TOKEN" \
+              -H "X-GitHub-Api-Version: 2022-11-28" \
+              "https://api.github.com/repos/MatrixLabSports/MATRIX-LAB/actions/workflows/football-clv-continuous-watcher.yml/dispatches" \
+              -d '{"ref":"main"}'
+            echo "CLV_SUCCESSOR_DISPATCHED"
+          else
+            echo "CLV_SUCCESSOR_NOT_NEEDED"
+          fi
