@@ -1,67 +1,9 @@
 {
-  "as_of_utc": "2026-10-13T16:35:32+00:00",
+  "as_of_utc": "2026-10-13T16:46:59+00:00",
   "automatic_model_feed": false,
   "automatic_model_promotion": false,
   "automatic_wagering": false,
   "eligible_candidates": [
-    {
-      "canonical_source_event_id": "rapidapi-tennis:atp:match:1553",
-      "competition": "Olbia Challenger",
-      "competition_id": "rapidapi-tennis:tournament:22099",
-      "event_id": "rapidapi-tennis:atp:match:1553",
-      "event_start_utc": "2026-10-13T16:45:00+00:00",
-      "historical_identity_crosswalk_status": "PENDING",
-      "legacy_provider_event_id": "rapidapi-tennis:match:1553",
-      "physical_event_key": "eaf8aa877963f6ff9d8d90b97b2d20522c97458b9ca057835eb4d5fc7ed27c30",
-      "player_identities": [
-        {
-          "display_name": "Mili Poljicak",
-          "provider": "rapidapi_tennis",
-          "provider_player_id": "rapidapi-tennis:player:84120"
-        },
-        {
-          "display_name": "Francesco Maestrelli",
-          "provider": "rapidapi_tennis",
-          "provider_player_id": "rapidapi-tennis:player:63737"
-        }
-      ],
-      "players": [
-        {
-          "name": "Mili Poljicak",
-          "provider_player_id": "rapidapi-tennis:player:84120",
-          "provider_ranking": {
-            "country": "CRO",
-            "place": "291",
-            "player": "Mili Poljicak",
-            "points": "189",
-            "snapshot_date": "2026-09-21"
-          }
-        },
-        {
-          "name": "Francesco Maestrelli",
-          "provider_player_id": "rapidapi-tennis:player:63737",
-          "provider_ranking": {
-            "country": "ITA",
-            "place": "171",
-            "player": "Francesco Maestrelli",
-            "points": "337",
-            "snapshot_date": "2026-09-21"
-          }
-        }
-      ],
-      "provider_channel": "ATP",
-      "provider_source_event_id": "rapidapi-tennis:atp:match:1553",
-      "round": "First",
-      "source_id_collision_resolved": false,
-      "source_provider": "rapidapi_tennis",
-      "source_reference": "fixtures:matchId=1553;tournament_info=22099;ranking_cut=2026-09-21;provider_channel=ATP",
-      "source_snapshot_sha256": "b9500818ddb5889b26ca6d4d91e1b5fc3b09ff2c069a5348d8e40b11f08989fb",
-      "surface": "Hard",
-      "target_period": 20260921,
-      "tour_level": "C",
-      "world_source_snapshot_sha256": "dd053cf77fea98ff901088e7cb4041eebdc4c984938f0e0057db940d0e595797",
-      "world_stable_physical_identity_key": "d5f6cb727bd7bbea3ae031260c4402b16338f9bcf4767db3b175310a0430fdd3"
-    },
     {
       "canonical_source_event_id": "rapidapi-tennis:atp:match:1671",
       "competition": "Roanne Challenger",
@@ -121,7 +63,7 @@
       "world_stable_physical_identity_key": "ae43619ec28e0ce719d4a2a93384db5213ecadac9cd316c253cc4b466b8a0958"
     }
   ],
-  "eligible_input_events": 2,
+  "eligible_input_events": 1,
   "fixture_rows": 30,
   "governed_preregistration_required": true,
   "metrics_opened": false,
@@ -754,6 +696,29 @@
     },
     {
       "blockers": [
+        "EVENT_NOT_FUTURE"
+      ],
+      "match_id": "1553",
+      "players": [
+        {
+          "name": "Mili Poljicak",
+          "provider_player_id": "rapidapi-tennis:player:84120",
+          "ranking_found": true
+        },
+        {
+          "name": "Francesco Maestrelli",
+          "provider_player_id": "rapidapi-tennis:player:63737",
+          "ranking_found": true
+        }
+      ],
+      "provider_channel": "ATP",
+      "provider_source_event_id": "rapidapi-tennis:atp:match:1553",
+      "source_id_collision_resolved": false,
+      "tournament_id": "22099",
+      "world_source_event_id": "rapidapi-tennis:atp:match:1553"
+    },
+    {
+      "blockers": [
         "RANKING_CUT_MISSING_PLAYER2"
       ],
       "match_id": "1651",
@@ -902,34 +867,14 @@
   "world_inventory_target_date": "2026-10-13",
   "world_inventory_total": 373,
   "world_registry": {
-    "as_of_utc": "2026-10-13T16:35:32+00:00",
+    "as_of_utc": "2026-10-13T16:46:59+00:00",
     "cor0203_denominator_definition": "derived subset: future ATP Challenger Hard events with two real fixed identities and valid source provenance",
     "cor0203_eligible_event_ids": [
-      "rapidapi-tennis:match:1553",
       "rapidapi-tennis:match:1671"
     ],
-    "cor0203_eligible_events": 2,
+    "cor0203_eligible_events": 1,
     "duplicate_rows": 0,
     "rows": [
-      {
-        "competition_id": "rapidapi-tennis:tournament:22099",
-        "competition_name": "Olbia Challenger",
-        "cor0203_blockers": [],
-        "cor0203_eligible": true,
-        "environment": "UNKNOWN",
-        "event_id": "rapidapi-tennis:match:1553",
-        "event_start_utc": "2026-10-13T16:45:00+00:00",
-        "player1_id": "rapidapi-tennis:player:84120",
-        "player2_id": "rapidapi-tennis:player:63737",
-        "round": "First",
-        "source_provider": "rapidapi_tennis",
-        "source_reference": "fixtures:matchId=1553;tournament_info=22099;ranking_cut=2026-09-21",
-        "source_snapshot_sha256": "b9500818ddb5889b26ca6d4d91e1b5fc3b09ff2c069a5348d8e40b11f08989fb",
-        "sport": "TENNIS",
-        "surface": "Hard",
-        "tour_level": "ATP_CHALLENGER",
-        "world_calendar_status": "PRESERVED"
-      },
       {
         "competition_id": "rapidapi-tennis:tournament:22101",
         "competition_name": "Roanne Challenger",
@@ -952,8 +897,8 @@
     ],
     "schema": "matrix.world-calendar-registry/1",
     "world_calendar_denominator_definition": "all unique discovered scheduled events preserved before model-domain filtering",
-    "world_calendar_input_rows": 2,
-    "world_calendar_unique_events": 2
+    "world_calendar_input_rows": 1,
+    "world_calendar_unique_events": 1
   },
   "world_rows_malformed": [],
   "world_rows_synthesized": 30,
