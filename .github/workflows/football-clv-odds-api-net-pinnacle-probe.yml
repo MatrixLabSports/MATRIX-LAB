@@ -1,0 +1,281 @@
+name: MATRIX Football CLV OddsAPI Pinnacle Probe
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+    paths:
+      - .github/workflows/football-clv-odds-api-net-pinnacle-probe.yml
+
+permissions:
+  contents: write
+
+concurrency:
+  group: matrix-football-clv-odds-api-net-pinnacle-probe
+  cancel-in-progress: true
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      MATRIX_MODE: SHADOW
+      REAL_MONEY: BLOCKED
+      AUTO_BETTING: DISABLED
+    steps:
+      - name: Checkout operational branch
+        uses: actions/checkout@v4
+        with:
+          ref: repair/cor09-world-pipeline
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependency
+        run: python -m pip install requests
+
+      - name: Probe fresh Pinnacle transport
+        env:
+          API_FOOTBALL_KEY: ${{ secrets.API_FOOTBALL_KEY }}
+          ODDS_API_NET_KEY: ${{ secrets.ODDS_API_NET_KEY }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$MATRIX_MODE" = "SHADOW"
+          test "$REAL_MONEY" = "BLOCKED"
+          test "$AUTO_BETTING" = "DISABLED"
+          test -n "$API_FOOTBALL_KEY"
+          test -n "$ODDS_API_NET_KEY"
+
+          python - <<'PY'
+          import hashlib, json, os, re, time, unicodedata
+          from datetime import datetime, timezone
+          from difflib import SequenceMatcher
+          from pathlib import Path
+          import requests
+
+          API_FOOTBALL = "https://v3.football.api-sports.io"
+          ODDS_API = "https://api.odds-api.net/v1"
+          TARGETS = ("1604195", "1549745")
+          OUT = Path("evidence/clv/football/over_2_5/odds_api_net_probe_latest.json")
+
+          def norm(v):
+              s=unicodedata.normalize("NFKD", str(v or ""))
+              s="".join(ch for ch in s if not unicodedata.combining(ch)).casefold()
+              return re.sub(r"[^a-z0-9]+", " ", s).strip()
+
+          def sim(a,b):
+              a,b=norm(a),norm(b)
+              if not a or not b:
+                  return 0.0
+              if a==b:
+                  return 1.0
+              ta,tb=set(a.split()),set(b.split())
+              jac=len(ta & tb)/max(1,len(ta | tb))
+              seq=SequenceMatcher(None,a,b).ratio()
+              subset=1.0 if ta <= tb or tb <= ta else 0.0
+              return max(jac,seq,subset)
+
+          def get_json(url, *, headers, params=None):
+              r=requests.get(url,headers=headers,params=params,timeout=(10,30))
+              try: payload=r.json()
+              except Exception: payload={}
+              return r,payload
+
+          af_headers={"x-apisports-key":os.environ["API_FOOTBALL_KEY"].strip()}
+          oa_headers={"X-API-Key":os.environ["ODDS_API_NET_KEY"].strip(),"Accept":"application/json"}
+          now=datetime.now(timezone.utc).replace(microsecond=0)
+
+          books_r,books=get_json(ODDS_API+"/bookmakers",headers=oa_headers)
+          book_items=books.get("items") if isinstance(books,dict) else []
+          book_keys=sorted({
+              norm(x.get("bookmaker")).replace(" ","")
+              for x in (book_items or []) if isinstance(x,dict)
+          })
+          pinnacle_catalog_present="pinnacle" in book_keys
+
+          sports_r,sports=get_json(ODDS_API+"/sports",headers=oa_headers)
+          sport_items=sports.get("items") if isinstance(sports,dict) else []
+          candidates=[]
+          for x in sport_items or []:
+              if isinstance(x,str):
+                  candidates.append(x)
+              elif isinstance(x,dict):
+                  for k in ("sport","key","name"):
+                      if x.get(k):
+                          candidates.append(str(x[k]))
+          sport_key=next((x for x in candidates if norm(x) in {"soccer","football"}), None)
+          if sport_key is None:
+              sport_key="soccer"
+
+          results=[]
+          for fixture_id in TARGETS:
+              fr,fp=get_json(API_FOOTBALL+"/fixtures",headers=af_headers,params={"id":fixture_id})
+              rows=fp.get("response") if isinstance(fp,dict) else []
+              if fr.status_code>=300 or not rows:
+                  results.append({"fixture_id":fixture_id,"status":"API_FOOTBALL_FIXTURE_UNAVAILABLE","http":fr.status_code})
+                  continue
+              row=rows[0]
+              kickoff_raw=row.get("fixture",{}).get("date")
+              kickoff=datetime.fromisoformat(str(kickoff_raw).replace("Z","+00:00")).astimezone(timezone.utc)
+              home=str(row.get("teams",{}).get("home",{}).get("name") or "")
+              away=str(row.get("teams",{}).get("away",{}).get("name") or "")
+              start=int(kickoff.timestamp())
+
+              er,ep=get_json(
+                  ODDS_API+"/events",
+                  headers=oa_headers,
+                  params={
+                      "sport":sport_key,
+                      "start_from":start-900,
+                      "start_to":start+900,
+                      "limit":100,
+                      "include_bookmaker_ids":"true",
+                  },
+              )
+              events=ep.get("items") if isinstance(ep,dict) else []
+              scored=[]
+              for ev in events or []:
+                  if not isinstance(ev,dict):
+                      continue
+                  direct=(sim(home,ev.get("home_team"))+sim(away,ev.get("away_team")))/2
+                  swapped=(sim(home,ev.get("away_team"))+sim(away,ev.get("home_team")))/2
+                  scored.append((max(direct,swapped),direct>=swapped,ev))
+              scored.sort(key=lambda x:x[0], reverse=True)
+              if not scored or scored[0][0] < 0.72:
+                  results.append({
+                      "fixture_id":fixture_id,"kickoff_utc":kickoff.isoformat(),
+                      "api_football_match":f"{home} vs {away}",
+                      "status":"ODDS_API_EVENT_NOT_UNIQUELY_MATCHED",
+                      "event_http":er.status_code,
+                      "candidate_count":len(scored),
+                      "best_score":round(scored[0][0],6) if scored else None,
+                  })
+                  continue
+
+              score,direct,ev=scored[0]
+              event_id=str(ev.get("event_id"))
+              sr,sp=get_json(
+                  ODDS_API+f"/events/{event_id}/odds/snapshot",
+                  headers=oa_headers,
+                  params={
+                      "bookmakers":"pinnacle",
+                      "types":"total",
+                      "periods":"full time",
+                      "include_source":"true",
+                      "include_unavailable":"true",
+                  },
+              )
+              bm_ts=(sp.get("bookmaker_as_of_ts_ms") or {}).get("pinnacle") if isinstance(sp,dict) else None
+              age=None
+              if isinstance(bm_ts,(int,float)):
+                  age=max(0,int(now.timestamp()-(float(bm_ts)/1000.0)))
+              items=sp.get("items") if isinstance(sp,dict) else []
+              total25=[]
+              for item in items or []:
+                  if not isinstance(item,dict) or norm(item.get("bookmaker"))!="pinnacle":
+                      continue
+                  bt=norm(item.get("bet_type"))
+                  mk=norm(item.get("market_key"))
+                  line=item.get("line")
+                  try: line_num=float(line)
+                  except Exception: line_num=None
+                  if ("total" in bt or "total" in mk or "over under" in mk) and line_num==2.5:
+                      total25.append({
+                          k:item.get(k) for k in (
+                              "id","bookmaker","market_key","bet_type","period","side",
+                              "selection_name","line","odds","is_available"
+                          )
+                      })
+              results.append({
+                  "fixture_id":fixture_id,
+                  "kickoff_utc":kickoff.isoformat(),
+                  "api_football_match":f"{home} vs {away}",
+                  "odds_api_event_id":event_id,
+                  "odds_api_match":f"{ev.get('home_team')} vs {ev.get('away_team')}",
+                  "identity_score":round(score,6),
+                  "orientation":"direct" if direct else "swapped",
+                  "snapshot_http":sr.status_code,
+                  "excluded_bookmakers":sp.get("excluded_bookmakers") if isinstance(sp,dict) else None,
+                  "bookmakers_included":sp.get("bookmakers_included") if isinstance(sp,dict) else None,
+                  "bookmaker_as_of_ts_ms":bm_ts,
+                  "provider_quote_age_seconds_at_probe":age,
+                  "target_refresh_interval_seconds":sp.get("target_refresh_interval_seconds") if isinstance(sp,dict) else None,
+                  "snapshot_capture_ts_ms":sp.get("snapshot_capture_ts_ms") if isinstance(sp,dict) else None,
+                  "total_2_5_lines":total25,
+                  "strict_120s_fresh":bool(age is not None and age <= 120),
+                  "complete_market_over_under_2_5":len(total25)>=2,
+                  "status":"MATCHED",
+              })
+
+          strict_ready=[
+              x for x in results
+              if x.get("strict_120s_fresh") and x.get("complete_market_over_under_2_5")
+          ]
+          payload={
+              "schema":"MATRIX_FOOTBALL_CLV_ODDS_API_NET_PINNACLE_PROBE_V1",
+              "generated_at_utc":now.isoformat(),
+              "transport":"odds-api.net /v1/events/{event_id}/odds/snapshot",
+              "reference_bookmaker":"pinnacle",
+              "pinnacle_catalog_http":books_r.status_code,
+              "pinnacle_catalog_present":pinnacle_catalog_present,
+              "sports_http":sports_r.status_code,
+              "sport_key_used":sport_key,
+              "targets":list(TARGETS),
+              "results":results,
+              "strict_ready_count":len(strict_ready),
+              "protections":{
+                  "strict_fresh_gate_seconds":120,
+                  "historical_backfill":False,
+                  "post_kickoff_capture":False,
+                  "odds_used_to_generate_probability":False,
+                  "automatic_wagering":False,
+                  "real_money":"BLOCKED",
+              },
+          }
+          raw=json.dumps(payload,ensure_ascii=False,sort_keys=True,separators=(",",":")).encode()
+          payload["payload_sha256"]=hashlib.sha256(raw).hexdigest()
+          OUT.parent.mkdir(parents=True,exist_ok=True)
+          OUT.write_text(json.dumps(payload,ensure_ascii=False,indent=2,sort_keys=True)+"\n",encoding="utf-8")
+          print(json.dumps({
+              "pinnacle_catalog_present":pinnacle_catalog_present,
+              "strict_ready_count":len(strict_ready),
+              "results":[{
+                  "fixture_id":x.get("fixture_id"),"status":x.get("status"),
+                  "age":x.get("provider_quote_age_seconds_at_probe"),
+                  "complete25":x.get("complete_market_over_under_2_5"),
+                  "fresh":x.get("strict_120s_fresh"),
+              } for x in results],
+              "real_money":"BLOCKED",
+          },sort_keys=True))
+          PY
+
+      - name: Persist probe evidence
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "matrix-clv-odds-api-probe"
+          git config user.email "matrix-clv-odds-api-probe@users.noreply.github.com"
+          git add evidence/clv/football/over_2_5/odds_api_net_probe_latest.json
+          if git diff --cached --quiet; then
+            echo "CLV_ODDS_API_PROBE_NO_CHANGE"
+            exit 0
+          fi
+          git commit -m "evidence(clv): probe fresh Pinnacle via odds-api.net"
+          for attempt in 1 2 3 4 5 6; do
+            git fetch origin repair/cor09-world-pipeline
+            if ! git rebase origin/repair/cor09-world-pipeline; then
+              git rebase --abort || true
+              exit 1
+            fi
+            if git push origin HEAD:repair/cor09-world-pipeline; then
+              echo "CLV_ODDS_API_PROBE_PUSH_SUCCESS=$attempt"
+              exit 0
+            fi
+            sleep $((attempt*2))
+          done
+          exit 1
