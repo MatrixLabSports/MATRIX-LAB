@@ -36,6 +36,11 @@ jobs:
         env:
           API_FOOTBALL_KEY: ${{ secrets.API_FOOTBALL_KEY }}
         run: python -m tools.api_football_promoted_team_markets_supervisor
+      - name: Run governed CLV closing capture
+        env:
+          API_FOOTBALL_KEY: ${{ secrets.API_FOOTBALL_KEY }}
+        run: PYTHONPATH=. python -m tools.football_clv_tracking_cycle
+
       - name: Enforce governance
         shell: bash
         run: |
@@ -63,11 +68,12 @@ jobs:
           git config user.name "matrix-football-promoted-supervisor"
           git config user.email "matrix-football-promoted-supervisor@users.noreply.github.com"
           git add evidence/api_football/promoted_team_markets
+          git add evidence/clv/football/over_2_5
           if git diff --cached --quiet; then
-            echo "NO_PROMOTED_TEAM_MARKET_CHANGE"
+            echo "NO_PROMOTED_TEAM_MARKET_OR_CLV_CHANGE"
             exit 0
           fi
-          git commit -m "evidence(football): persist promoted team-market supervisor"
+          git commit -m "evidence(football): persist promoted markets and CLV"
           for attempt in 1 2 3 4; do
             git fetch origin repair/cor09-world-pipeline
             if ! git rebase origin/repair/cor09-world-pipeline; then
