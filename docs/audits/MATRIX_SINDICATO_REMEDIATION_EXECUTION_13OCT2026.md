@@ -16,6 +16,7 @@ Reglas físicas:
 - referencia de cierre: Pinnacle vía API-Football, bookmaker_id=4;
 - Pinnacle se usa como referencia, no como casa ejecutora;
 - cierre solo prematch, dentro de la ventana gobernada final de 15 minutos;
+- la cotización del proveedor Pinnacle debe tener antigüedad <=120 segundos; la banda nominal de 3 h NO cuenta como closing line;
 - el mercado Over/Under 2.5 debe estar completo para hacer devig;
 - se registran CLV log-price y CLV contra probabilidad de cierre devigged;
 - métricas selladas hasta 300 cierres.
@@ -45,7 +46,7 @@ MATRIX ya tenía físicamente una capa Pinnacle de referencia vía API-Football:
 - `direct_pinnacle_api_connection=false`;
 - odds nunca generan P_MATRIX.
 
-El nuevo CLV usa `source_quality_flag=SHARP_PINNACLE_VIA_API_FOOTBALL`.
+El nuevo CLV usa `source_quality_flag=SHARP_PINNACLE_VIA_API_FOOTBALL_STRICT_120S`. La infraestructura Pinnacle existente es válida como referencia, pero su auditoría histórica reportó 0 cotizaciones que cumplieran el gate estricto de 120 s; por tanto, el feed de cierre sharp todavía debe demostrarse prospectivamente y no se relaja el gate para fabricar CLV.
 
 ## 4. Riesgo correlacionado — MOTOR LISTO, LÍMITES NO INVENTADOS
 
