@@ -1,3 +1,4 @@
+# MATRIX_USER_AUTHORIZED_TRIGGER 2026-10-13 freeze-closed-over25-forward100-artifact
 # MATRIX_USER_AUTHORIZED_TRIGGER 2026-10-12 preregister-over25-forward-1444-1544
 # MATRIX_USER_AUTHORIZED_TRIGGER 2026-10-12 restore-immutable-checkpoint200-and-recertify-forward100
 # MATRIX_USER_AUTHORIZED_TRIGGER 2026-10-12 close-over25-forward-validation-1329-1429
@@ -109,10 +110,18 @@ jobs:
           }, sort_keys=True))
           PY
 
-      - name: Close preregistered Over 2.5 forward-validation block 1329 to 1429
+      - name: Verify immutable closed Over 2.5 forward-validation block 1329 to 1429
+        shell: bash
         run: |
-          python tools/api_football_over25_forward_validation_100.py \
-            --out evidence/api_football/calibration_v2/OVER25_FORWARD_VALIDATION_RESULT_20261013.json
+          set -euo pipefail
+          RESULT="evidence/api_football/calibration_v2/OVER25_FORWARD_VALIDATION_RESULT_20261013.json"
+          EXPECTED_BLOB="c323e61946fc315109f61658c8c20ed3ba606bd9"
+          ACTUAL_BLOB="$(git hash-object "$RESULT")"
+          test "$ACTUAL_BLOB" = "$EXPECTED_BLOB" || {
+            echo "OVER25_FORWARD_100_IMMUTABILITY_VIOLATION:$ACTUAL_BLOB:$EXPECTED_BLOB"
+            exit 1
+          }
+          echo "OVER25_FORWARD_100_IMMUTABLE_BLOB=$ACTUAL_BLOB"
 
       - name: Validate Over 2.5 forward-validation governance and physical sample
         run: |
@@ -204,7 +213,6 @@ jobs:
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add \
             evidence/api_football/calibration_v2/lanes \
-            evidence/api_football/calibration_v2/OVER25_FORWARD_VALIDATION_RESULT_20261013.json \
             evidence/api_football/calibration_v2/OVER25_FORWARD_VALIDATION_1444_1544_STATE.json
           if [ -f evidence/api_football/calibration_v2/OVER25_FORWARD_VALIDATION_1444_1544_RESULT.json ]; then
             git add evidence/api_football/calibration_v2/OVER25_FORWARD_VALIDATION_1444_1544_RESULT.json
