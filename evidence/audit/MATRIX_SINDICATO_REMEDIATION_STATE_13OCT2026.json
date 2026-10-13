@@ -1,6 +1,6 @@
 {
   "schema": "MATRIX_SINDICATO_REMEDIATION_STATE_13OCT2026_V1",
-  "generated_at_utc": "2026-10-13T11:46:44.742Z",
+  "generated_at_utc": "2026-10-13T11:49:29.196Z",
   "source_plan": "USER_PROVIDED_MATRIX_PLAN_ACCION_AUDITORIA_NIVEL_SINDICATO_13OCT2026",
   "source_named_documents_repository_lookup": {
     "MATRIX_AUDITORIA_NIVEL_SINDICATO_13OCT2026_md": "NOT_FOUND_IN_CURRENT_REPOSITORY_TREE",
@@ -26,7 +26,7 @@
     "1_clv_tracking": {
       "priority": 1,
       "status": "IMPLEMENTED_ACTIVE_ACCUMULATING_SEALED",
-      "closing_reference": "PINNACLE_VIA_API_FOOTBALL_BOOKMAKER_ID_4",
+      "closing_reference": "PINNACLE_VIA_API_FOOTBALL_BOOKMAKER_ID_4_STRICT_120S_ONLY",
       "direct_pinnacle_api_connection": false,
       "entry_capture": {
         "timestamp_required": true,
@@ -39,7 +39,10 @@
         "complete_over_under_2_5_market_required": true,
         "devig_method": "MULTIPLICATIVE",
         "provider_quote_age_bounded": true,
-        "post_kickoff_close": "FORBIDDEN"
+        "post_kickoff_close": "FORBIDDEN",
+        "max_provider_quote_age_seconds": 120,
+        "nominal_3h_band_counts_as_close": false,
+        "strict_freshness_governance_source": "evidence/api_football/pinnacle_snapshot_age_audit/audit.json"
       },
       "clv_measures": [
         "LOG_ENTRY_ODDS_OVER_CLOSE_ODDS",
@@ -81,7 +84,7 @@
     },
     "3_sharp_reference": {
       "priority": 3,
-      "status": "FOUNDATION_PASS_USED_BY_CLV",
+      "status": "REFERENCE_FOUNDATION_PASS_STRICT_CLOSING_FEED_NOT_YET_PROVEN",
       "bookmaker": "Pinnacle",
       "transport": "API-Football /odds",
       "direct_pinnacle_api_connection": false,
@@ -98,7 +101,15 @@
         "Betano",
         "Rushbet"
       ],
-      "source_quality_flag": "SHARP_PINNACLE_VIA_API_FOOTBALL"
+      "source_quality_flag": "SHARP_PINNACLE_VIA_API_FOOTBALL_STRICT_120S",
+      "strict_closing_freshness": {
+        "max_provider_quote_age_seconds": 120,
+        "historical_strict_fresh_quote_count": 0,
+        "nominal_3h_band_is_closing_reference": false,
+        "evidence_path": "evidence/api_football/pinnacle_snapshot_age_audit/audit.json",
+        "evidence_blob_sha": "1c1063ccc52bad44e0d977dab81eb62af95f641a"
+      },
+      "next_requirement": "OBTAIN_STRICT_FRESH_PINNACLE_CLOSES_OR_APPROVED_ALTERNATIVE_SHARP_CLOSE_SOURCE_WITHOUT_RELAXING_120S_GATE"
     },
     "4_correlated_risk": {
       "priority": 4,
@@ -196,8 +207,8 @@
     }
   },
   "physical_references": {
-    "clv_tool_blob_sha": "00c8a16d10b76f0b4569b5af6a8dee98d21762e8",
-    "clv_workflow_blob_sha": "595f55f30421c2f1c9bf24e96a89313a9f10eee5",
+    "clv_tool_blob_sha": "2b6ef95f2464b5d42dd0e743a78e597d07af5663",
+    "clv_workflow_blob_sha": "2d27553df29048bf191f9f5bf7c810e2f605d75e",
     "paper_stake_ledger_blob_sha": "214abf105be83ee8565ded0b7cfe40135403f421",
     "correlated_exposure_blob_sha": "8f40ff86c4635950fdd6489582d698a0fcb5abb0",
     "tennis_observability_blob_sha": "f7af825e9b48ba0eef6a16d23d3c143a274f55fe",
@@ -205,8 +216,8 @@
     "clv_ledger_blob_sha": "4b4bc77e838326a1b51e4a3c024424068409d61a",
     "regime_protocol_blob_sha": "5a6d71d626b597e6f02c92aeef8898de6d2c9a8d",
     "remediation_doc_blob_sha": "2beffff5a0e81e3b9ea820f5b0a8c08e1c752d14",
-    "main_schedule_workflow_blob_sha": "595f55f30421c2f1c9bf24e96a89313a9f10eee5",
-    "main_schedule_commit": "03bea6074a068e05cef380589b85229ae3d4b5f0"
+    "main_schedule_workflow_blob_sha": "2d27553df29048bf191f9f5bf7c810e2f605d75e",
+    "main_schedule_commit": "e0c77366520d22fd4770de9b7f36b778176d8289"
   },
   "protections": {
     "no_odds_to_model_probability": true,
@@ -225,6 +236,8 @@
     "targeted_clv_metrics_opened": false,
     "main_schedule_installed": true,
     "main_schedule_cron": "*/5 * * * *",
-    "final_matrix_ci_status": "PENDING_THIS_COMMIT"
+    "final_matrix_ci_status": "PENDING_LATEST_STRICT_FRESHNESS_COMMITS",
+    "strict_fresh_gate_seconds": 120,
+    "nominal_3h_band_is_closing_reference": false
   }
 }
