@@ -535,6 +535,18 @@ def run_cycle(
         generated_at=reference,
     )
     state_path.parent.mkdir(parents=True, exist_ok=True)
+    previous_state = None
+    if state_path.is_file():
+        try:
+            previous_state = _load_json(state_path)
+        except Exception:
+            previous_state = None
+    candidate_for_compare = dict(state)
+    candidate_for_compare.pop("generated_at_utc", None)
+    previous_for_compare = dict(previous_state or {})
+    previous_for_compare.pop("generated_at_utc", None)
+    if previous_state is not None and previous_for_compare == candidate_for_compare:
+        return previous_state
     state_path.write_text(
         json.dumps(state, ensure_ascii=False, indent=2, sort_keys=True) + "\n",
         encoding="utf-8",
