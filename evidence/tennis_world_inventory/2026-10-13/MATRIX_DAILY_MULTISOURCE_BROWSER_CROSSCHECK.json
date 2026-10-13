@@ -3,11 +3,22 @@
   "target_date_bogota": "2026-10-13",
   "sources": {
     "sofascore": {
-      "opera_read_status": "PARTIAL_PASS_TENNIS_EXACT_FOOTBALL_BLOCKED",
+      "opera_read_status": "PARTIAL_PASS_TENNIS_EXACT_FOOTBALL_BLOCKED_SHOW_MORE_PRESENT",
       "football_exact_match_count": null,
       "football_materialized_lower_bound": 140,
       "football_show_more_present": true,
-      "football_show_more_button_id": 195592,
+      "football_show_more_button_id_prior": 195592,
+      "football_show_more_button_id_latest": 219585,
+      "football_automation_run_ids": [
+        "1d17a98d-856e-4d0f-bcfb-5106ecf7834a",
+        "b5f2bf76-ca3a-419c-b395-754d9101bf05",
+        "1143fc6b-6585-45c8-a246-c990a5e9933c"
+      ],
+      "football_automation_status": "BLOCKED_CLOUDFLARE_CAPTCHA",
+      "football_structured_endpoint_statuses": {
+        "https://api.sofascore.com/api/v1/sport/football/scheduled-events/2026-10-13": "HTTP_403",
+        "https://www.sofascore.com/api/v1/sport/football/scheduled-events/2026-10-13": "HTTP_403"
+      },
       "tennis_exact_match_count": 603,
       "tennis_unique_main_event_urls": 603,
       "tennis_show_more_present": false,
@@ -48,12 +59,15 @@
   "adjudication": {
     "status": "BLOCKED_FAIL_CLOSED",
     "paid_api_counts_are_not_world_complete": true,
-    "reason": "SOFASCORE_FOOTBALL_EXACT_TOTAL_PENDING_SHOW_MORE; TENNIS_SOFASCORE_EXACT=603; FLASHSCORE_FOOTBALL_EXACT=78; FLASHSCORE_TENNIS_EXACT=326"
+    "reason": "SOFASCORE_FOOTBALL_EXACT_TOTAL_PENDING_SHOW_MORE; EXTERNAL_AUTOMATION_BLOCKED_CLOUDFLARE_CAPTCHA; SOFASCORE_STRUCTURED_ENDPOINTS_HTTP_403; TENNIS_SOFASCORE_EXACT=603; FLASHSCORE_FOOTBALL_EXACT=78; FLASHSCORE_TENNIS_EXACT=326"
   },
   "protections": {
     "metrics_opened": false,
     "outcomes_read": 0,
     "automatic_wagering": false,
-    "real_money": "BLOCKED"
+    "real_money": "BLOCKED",
+    "no_badge_promotion": true,
+    "no_partial_count_promotion": true,
+    "no_403_as_zero_inventory": true
   }
 }
