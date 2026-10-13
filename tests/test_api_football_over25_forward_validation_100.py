@@ -1,7 +1,13 @@
-from tools.api_football_over25_forward_validation_100 import (
-    _binary_metrics,
-    _paired_comparison,
-)
+from __future__ import annotations
+
+import importlib.util
+from pathlib import Path
+
+MODULE_PATH = Path("tools/api_football_over25_forward_validation_100.py")
+SPEC = importlib.util.spec_from_file_location("over25_forward_100", MODULE_PATH)
+MOD = importlib.util.module_from_spec(SPEC)
+assert SPEC and SPEC.loader
+SPEC.loader.exec_module(MOD)
 
 
 def _row(pc: float, pp: float, y: bool):
@@ -19,7 +25,7 @@ def test_binary_metrics_reports_calibration_and_outcome_rate():
         _row(0.4, 0.45, False),
         _row(0.2, 0.3, False),
     ]
-    result = _binary_metrics(rows, "challenger")
+    result = MOD._binary_metrics(rows, "challenger")
     assert result["sample_size"] == 4
     assert result["observed_over_2_5_rate"] == 0.5
     assert result["mean_predicted_probability"] == 0.5
@@ -35,18 +41,18 @@ def test_paired_comparison_directional_pass_when_both_scores_improve():
         _row(0.75, 0.55, True),
         _row(0.25, 0.45, False),
     ]
-    result = _paired_comparison(rows)
+    result = MOD._paired_comparison(rows)
     assert result["delta_brier_challenger_minus_poisson"] < 0
     assert result["delta_log_loss_challenger_minus_poisson"] < 0
     assert result["proper_scoring_directional_pass"] is True
 
 
-def test_paired_comparison_rejects_directional_pass_if_one_score_worse():
+def test_paired_comparison_exposes_uncertainty_intervals():
     rows = [
         _row(0.99, 0.8, True),
         _row(0.49, 0.3, False),
     ]
-    result = _paired_comparison(rows)
+    result = MOD._paired_comparison(rows)
     assert isinstance(result["proper_scoring_directional_pass"], bool)
     assert len(result["brier_ci95"]) == 2
     assert len(result["log_loss_ci95"]) == 2
