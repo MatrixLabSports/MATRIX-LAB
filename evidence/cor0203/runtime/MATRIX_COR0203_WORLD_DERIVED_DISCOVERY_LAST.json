@@ -1,67 +1,9 @@
 {
-  "as_of_utc": "2026-10-13T08:23:30+00:00",
+  "as_of_utc": "2026-10-13T08:34:39+00:00",
   "automatic_model_feed": false,
   "automatic_model_promotion": false,
   "automatic_wagering": false,
   "eligible_candidates": [
-    {
-      "canonical_source_event_id": "rapidapi-tennis:atp:match:1616",
-      "competition": "Roanne Challenger",
-      "competition_id": "rapidapi-tennis:tournament:22101",
-      "event_id": "rapidapi-tennis:atp:match:1616",
-      "event_start_utc": "2026-10-13T08:30:00+00:00",
-      "historical_identity_crosswalk_status": "PENDING",
-      "legacy_provider_event_id": "rapidapi-tennis:match:1616",
-      "physical_event_key": "57dd0aaefd00d8d048e22735003849cc0938796ae4e747194096f02d25b19b5b",
-      "player_identities": [
-        {
-          "display_name": "Matteo Martineau",
-          "provider": "rapidapi_tennis",
-          "provider_player_id": "rapidapi-tennis:player:35323"
-        },
-        {
-          "display_name": "Max Schoenhaus",
-          "provider": "rapidapi_tennis",
-          "provider_player_id": "rapidapi-tennis:player:95311"
-        }
-      ],
-      "players": [
-        {
-          "name": "Matteo Martineau",
-          "provider_player_id": "rapidapi-tennis:player:35323",
-          "provider_ranking": {
-            "country": "FRA",
-            "place": "276",
-            "player": "Matteo Martineau",
-            "points": "200",
-            "snapshot_date": "2026-09-21"
-          }
-        },
-        {
-          "name": "Max Schoenhaus",
-          "provider_player_id": "rapidapi-tennis:player:95311",
-          "provider_ranking": {
-            "country": "GER",
-            "place": "287",
-            "player": "Max Schoenhaus",
-            "points": "192",
-            "snapshot_date": "2026-09-21"
-          }
-        }
-      ],
-      "provider_channel": "ATP",
-      "provider_source_event_id": "rapidapi-tennis:atp:match:1616",
-      "round": "First",
-      "source_id_collision_resolved": false,
-      "source_provider": "rapidapi_tennis",
-      "source_reference": "fixtures:matchId=1616;tournament_info=22101;ranking_cut=2026-09-21;provider_channel=ATP",
-      "source_snapshot_sha256": "cdef357a39e02baabccf0aaa0b7c0edac84e381d09ce8793c3cb485b4ddd577e",
-      "surface": "Hard",
-      "target_period": 20260921,
-      "tour_level": "C",
-      "world_source_snapshot_sha256": "646853518748fd580ecec8e1c7c2113123f1e283a32b09b2ba3cf53d96f6a39f",
-      "world_stable_physical_identity_key": "42c5a848b939da862be42e4f41f0dac691b5f7a24f721af6c0839c35cf9e50f4"
-    },
     {
       "canonical_source_event_id": "rapidapi-tennis:atp:match:1473",
       "competition": "Jinan Challenger",
@@ -1107,7 +1049,7 @@
       "world_stable_physical_identity_key": "ae43619ec28e0ce719d4a2a93384db5213ecadac9cd316c253cc4b466b8a0958"
     }
   ],
-  "eligible_input_events": 19,
+  "eligible_input_events": 18,
   "fixture_rows": 30,
   "governed_preregistration_required": true,
   "metrics_opened": false,
@@ -1301,6 +1243,29 @@
     },
     {
       "blockers": [
+        "EVENT_NOT_FUTURE"
+      ],
+      "match_id": "1616",
+      "players": [
+        {
+          "name": "Matteo Martineau",
+          "provider_player_id": "rapidapi-tennis:player:35323",
+          "ranking_found": true
+        },
+        {
+          "name": "Max Schoenhaus",
+          "provider_player_id": "rapidapi-tennis:player:95311",
+          "ranking_found": true
+        }
+      ],
+      "provider_channel": "ATP",
+      "provider_source_event_id": "rapidapi-tennis:atp:match:1616",
+      "source_id_collision_resolved": false,
+      "tournament_id": "22101",
+      "world_source_event_id": "rapidapi-tennis:atp:match:1616"
+    },
+    {
+      "blockers": [
         "RANKING_CUT_MISSING_PLAYER1"
       ],
       "match_id": "1624",
@@ -1491,14 +1456,13 @@
   ],
   "world_domain_candidates_input": 30,
   "world_identity_binding_rejection_count": 0,
-  "world_inventory_sha256": "b0bbc21169bea2f6b012e0fbd75433c86b64ca80e2be2046e0b3ce1db5b51067",
+  "world_inventory_sha256": "5d917e7662c7af666ae053519026c82e480587bd9c1e1a532ce9464cffded274",
   "world_inventory_target_date": "2026-10-13",
   "world_inventory_total": 366,
   "world_registry": {
-    "as_of_utc": "2026-10-13T08:23:30+00:00",
+    "as_of_utc": "2026-10-13T08:34:39+00:00",
     "cor0203_denominator_definition": "derived subset: future ATP Challenger Hard events with two real fixed identities and valid source provenance",
     "cor0203_eligible_event_ids": [
-      "rapidapi-tennis:match:1616",
       "rapidapi-tennis:match:1473",
       "rapidapi-tennis:match:1483",
       "rapidapi-tennis:match:1513",
@@ -1518,28 +1482,9 @@
       "rapidapi-tennis:match:1538",
       "rapidapi-tennis:match:1649"
     ],
-    "cor0203_eligible_events": 19,
+    "cor0203_eligible_events": 18,
     "duplicate_rows": 0,
     "rows": [
-      {
-        "competition_id": "rapidapi-tennis:tournament:22101",
-        "competition_name": "Roanne Challenger",
-        "cor0203_blockers": [],
-        "cor0203_eligible": true,
-        "environment": "UNKNOWN",
-        "event_id": "rapidapi-tennis:match:1616",
-        "event_start_utc": "2026-10-13T08:30:00+00:00",
-        "player1_id": "rapidapi-tennis:player:35323",
-        "player2_id": "rapidapi-tennis:player:95311",
-        "round": "First",
-        "source_provider": "rapidapi_tennis",
-        "source_reference": "fixtures:matchId=1616;tournament_info=22101;ranking_cut=2026-09-21",
-        "source_snapshot_sha256": "cdef357a39e02baabccf0aaa0b7c0edac84e381d09ce8793c3cb485b4ddd577e",
-        "sport": "TENNIS",
-        "surface": "Hard",
-        "tour_level": "ATP_CHALLENGER",
-        "world_calendar_status": "PRESERVED"
-      },
       {
         "competition_id": "rapidapi-tennis:tournament:22098",
         "competition_name": "Jinan Challenger",
@@ -1885,8 +1830,8 @@
     ],
     "schema": "matrix.world-calendar-registry/1",
     "world_calendar_denominator_definition": "all unique discovered scheduled events preserved before model-domain filtering",
-    "world_calendar_input_rows": 19,
-    "world_calendar_unique_events": 19
+    "world_calendar_input_rows": 18,
+    "world_calendar_unique_events": 18
   },
   "world_rows_malformed": [],
   "world_rows_synthesized": 30,
