@@ -1,6 +1,6 @@
 {
   "schema": "MATRIX_FOOTBALL_CLV_CONTINUOUS_WATCHER_REMEDIATION_V1",
-  "observed_at_utc": "2026-10-13T16:33:32.758Z",
+  "observed_at_utc": "2026-10-13T16:38:43.497Z",
   "problem": {
     "code": "GITHUB_SCHEDULE_NOT_PRECISE_ENOUGH_FOR_15M_CLV_WINDOW",
     "observed_effect": "Expected schedule-triggered CLV runs did not materialize reliably inside the closing window.",
@@ -9,18 +9,22 @@
   "remediation": {
     "strategy": "CONTINUOUS_LONG_LIVED_WATCHER",
     "active_workflow_path": ".github/workflows/football-clv-continuous-watcher.yml",
-    "active_workflow_blob_sha": "794abe602ba317a00dbd4292b7d2736bd8ca87ac",
+    "active_workflow_blob_sha": "fe58cf4090ebf268676dc469962cfd5807b5cf48",
     "active_run_id": 38431061832,
     "active_run_status": "IN_PROGRESS_CONTINUOUS_STEP_VERIFIED",
     "poll_seconds": 90,
-    "max_watch_seconds": 18000,
+    "max_watch_seconds": 19800,
     "activation": [
       "push_on_workflow_creation",
       "workflow_run_after_governed_daily_pipeline",
       "manual_dispatch"
     ],
     "immediate_persistence": true,
-    "checkout_ref": "repair/cor09-world-pipeline"
+    "checkout_ref": "repair/cor09-world-pipeline",
+    "self_renewal": true,
+    "self_renewal_transport": "workflow_dispatch_via_GITHUB_TOKEN",
+    "successor_run_id": 38432066469,
+    "successor_run_status": "PENDING_BEHIND_CONCURRENCY_GROUP"
   },
   "single_writer_governance": {
     "automatic_clv_writer": "MATRIX Football CLV Continuous Watcher",
@@ -47,5 +51,5 @@
     "automatic_wagering": false,
     "real_money": "BLOCKED"
   },
-  "adjudication": "REMEDIATION_ACTIVE_PHYSICALLY_VERIFIED_WATCHER_RUNNING"
+  "adjudication": "REMEDIATION_ACTIVE_CONTINUOUS_AND_SELF_RENEWING_PHYSICALLY_VERIFIED"
 }
