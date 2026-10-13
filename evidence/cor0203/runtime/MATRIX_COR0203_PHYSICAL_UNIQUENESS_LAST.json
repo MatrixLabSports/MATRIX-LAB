@@ -6251,7 +6251,7 @@
       "canonical_source_event_id": "rapidapi-tennis:match:1481",
       "canonical_unique_index": 224,
       "competition": "Olbia Challenger",
-      "duplicate_alias_count": 0,
+      "duplicate_alias_count": 1,
       "effective_event_start_utc": null,
       "effective_round": null,
       "event_id": "COR0203-RAPIDAPI-TENNIS-1481-d17cfb37cade",
@@ -6328,10 +6328,38 @@
       "round": "Second",
       "source_provider": "rapidapi_tennis",
       "window": 2
+    },
+    {
+      "alphabetical_player_a": "Moise Kouame",
+      "alphabetical_player_b": "Nicolai Budkov Kjaer",
+      "canonical_source_event_id": "rapidapi-tennis:match:1609",
+      "canonical_unique_index": 227,
+      "competition": "Roanne Challenger",
+      "duplicate_alias_count": 0,
+      "effective_event_start_utc": null,
+      "effective_round": null,
+      "event_id": "COR0203-RAPIDAPI-TENNIS-1609-7980eb21c124",
+      "event_start_utc": "2026-10-15T08:30:00+00:00",
+      "freeze_at_utc": "2026-10-13T21:32:12+00:00",
+      "observation_index": 397,
+      "physical_event_key": "e68b60a29fcb2beaa58ad808c34734356b16fd79ec3ee488d356bc13c6701e9a",
+      "physical_identity_authority": "PROVIDER_TOURNAMENT_PLAYER_IDS_ROUND",
+      "physical_identity_components": {
+        "competition_id": "rapidapi-tennis:tournament:22101",
+        "players": [
+          "rapidapi-tennis:player:104215",
+          "rapidapi-tennis:player:111498"
+        ],
+        "round": "R2"
+      },
+      "revision": 939,
+      "round": "Second",
+      "source_provider": "rapidapi_tennis",
+      "window": 2
     }
   ],
-  "duplicate_groups": 118,
-  "duplicate_observations_quarantined": 170,
+  "duplicate_groups": 119,
+  "duplicate_observations_quarantined": 171,
   "duplicate_rows_count_toward_cor0203": false,
   "historical_backfill": false,
   "holdout_id": "A22_POST_AUDIT_VIRGIN_HOLDOUT_V1",
@@ -6339,7 +6367,7 @@
   "metrics_opened": false,
   "outcomes_read": 0,
   "outcomes_used_for_uniqueness": 0,
-  "physical_frozen_rows": 396,
+  "physical_frozen_rows": 398,
   "quarantined_duplicates": [
     {
       "alphabetical_player_a": "Jerome Kym",
@@ -11270,6 +11298,35 @@
       "revision": 937,
       "round": "Olbia - 1/8-finals",
       "source_provider": "api_tennis"
+    },
+    {
+      "alphabetical_player_a": "Lorenzo Carboni",
+      "alphabetical_player_b": "Luca Nardi",
+      "canonical_event_id": "COR0203-RAPIDAPI-TENNIS-1481-d17cfb37cade",
+      "canonical_observation_index": 393,
+      "canonical_physical_event_key": "d85018e490abfd5c72accb07ce7baee40a7d7bc973094e1959a5d1a9dc5b15e6",
+      "canonical_source_event_id": "api-tennis:event:12171004",
+      "competition": "Olbia",
+      "effective_event_start_utc": null,
+      "effective_round": null,
+      "event_id": "COR0203-API-TENNIS-12171004",
+      "event_start_utc": "2026-10-14T15:00:00+00:00",
+      "freeze_at_utc": "2026-10-13T21:32:13+00:00",
+      "observation_index": 398,
+      "physical_event_key": "af1261b9d351f34e95cc5c6ab0617d4623da29879780717afb42f75485c2c9df",
+      "physical_identity_authority": "PROVIDER_TOURNAMENT_PLAYER_IDS_ROUND",
+      "physical_identity_components": {
+        "competition_id": "api-tennis:tournament:10295",
+        "players": [
+          "api-tennis:player:386",
+          "api-tennis:player:49616"
+        ],
+        "round": "UNKNOWN ROUND"
+      },
+      "quarantine_reason": "DUPLICATE_PHYSICAL_MATCH_CROSS_PROVIDER",
+      "revision": 940,
+      "round": "UNKNOWN_ROUND",
+      "source_provider": "api_tennis"
     }
   ],
   "raw_append_only_evidence_preserved": true,
@@ -11277,9 +11334,9 @@
   "result": "PASS",
   "schema": "MATRIX_COR0203_PHYSICAL_UNIQUENESS_AUDIT_V1",
   "source_integrity_result": "PASS",
-  "unique_calibration_observations": 226,
+  "unique_calibration_observations": 227,
   "unique_remaining_to_200": 0,
-  "unique_remaining_to_600": 374,
+  "unique_remaining_to_600": 373,
   "unresolved": [],
   "unresolved_identity_rows": 0
 }

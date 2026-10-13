@@ -1,6 +1,6 @@
 {
-  "admissible_observations": 396,
-  "duplicate_physical_matches_quarantined": 170,
+  "admissible_observations": 398,
+  "duplicate_physical_matches_quarantined": 171,
   "holdout_id": "A22_POST_AUDIT_VIRGIN_HOLDOUT_V1",
   "identity_mapping_required": 0,
   "items": [
@@ -6638,7 +6638,7 @@
       "provider_tournament_id": null,
       "revision": 901,
       "source_reference": "get_fixtures:event_key=12170099;get_draw:tournament_key=10295;season=2026;source=draw_feed | get_fixtures:event_key=12170099;get_draw:tournament_key=10295;season=2026;source=draw_feed",
-      "status": "READY_RESULT_LOOKUP"
+      "status": "SETTLED"
     },
     {
       "alphabetical_player_a": "Francesco Maestrelli",
@@ -6660,7 +6660,7 @@
       "provider_tournament_id": null,
       "revision": 901,
       "source_reference": "get_fixtures:event_key=12170101;get_draw:tournament_key=10295;season=2026;source=draw_feed | get_fixtures:event_key=12170101;get_draw:tournament_key=10295;season=2026;source=draw_feed",
-      "status": "READY_RESULT_LOOKUP"
+      "status": "SETTLED"
     },
     {
       "alphabetical_player_a": "Christian Langmo",
@@ -8685,18 +8685,62 @@
       "revision": 937,
       "source_reference": "get_fixtures:event_key=12170984;get_draw:tournament_key=10295;season=2026;source=draw_feed | get_fixtures:event_key=12170984;get_draw:tournament_key=10295;season=2026;source=draw_feed",
       "status": "DUPLICATE_PHYSICAL_MATCH_QUARANTINED"
+    },
+    {
+      "alphabetical_player_a": "Moise Kouame",
+      "alphabetical_player_b": "Nicolai Budkov Kjaer",
+      "blocker": null,
+      "canonical_source_event_id": "rapidapi-tennis:match:1609",
+      "competition": "Roanne Challenger",
+      "event_id": "COR0203-RAPIDAPI-TENNIS-1609-7980eb21c124",
+      "event_start_utc": "2026-10-15T08:30:00+00:00",
+      "identity_overlay_applied": false,
+      "observation_index": 397,
+      "observation_sha256": "b2476b91e0f74578097e61d695f896594b0d232ad1789f1ed97cac3b3f413efa",
+      "provider": "rapidapi_tennis",
+      "provider_match_key": "1609",
+      "provider_player_map": {
+        "rapidapi-tennis:player:104215": "Nicolai Budkov Kjaer",
+        "rapidapi-tennis:player:111498": "Moise Kouame"
+      },
+      "provider_tournament_id": "22101",
+      "revision": 939,
+      "source_reference": "fixtures:matchId=1609;tournament_info=22101;ranking_cut=2026-09-21 | fixtures:matchId=1609;tournament_info=22101;ranking_cut=2026-09-21",
+      "status": "READY_RESULT_LOOKUP"
+    },
+    {
+      "alphabetical_player_a": "Lorenzo Carboni",
+      "alphabetical_player_b": "Luca Nardi",
+      "blocker": "DUPLICATE_PHYSICAL_MATCH",
+      "canonical_source_event_id": "api-tennis:event:12171004",
+      "competition": "Olbia",
+      "event_id": "COR0203-API-TENNIS-12171004",
+      "event_start_utc": "2026-10-14T15:00:00+00:00",
+      "identity_overlay_applied": false,
+      "observation_index": 398,
+      "observation_sha256": "d5dbff16471b056fd3d4094c6208f322d758dd5fa9e6f983d286b27ea78ff943",
+      "provider": "api_tennis",
+      "provider_match_key": "12171004",
+      "provider_player_map": {
+        "api-tennis:player:386": "Luca Nardi",
+        "api-tennis:player:49616": "Lorenzo Carboni"
+      },
+      "provider_tournament_id": null,
+      "revision": 940,
+      "source_reference": "get_fixtures:event_key=12171004;get_draw:tournament_key=10295;season=2026;source=draw_feed | get_fixtures:event_key=12171004;get_draw:tournament_key=10295;season=2026;source=draw_feed",
+      "status": "DUPLICATE_PHYSICAL_MATCH_QUARANTINED"
     }
   ],
   "ledger": {
     "hash_chain_verified": true,
     "outcomes_used_for_metrics": 0,
-    "records": 246,
-    "unique_events": 246
+    "records": 248,
+    "unique_events": 248
   },
   "metrics": "SEALED_UNTIL_600",
   "outcomes_used_for_metrics": 0,
-  "ready_result_lookup": 33,
+  "ready_result_lookup": 32,
   "real_money": "BLOCKED",
   "schema": "MATRIX_COR0203_SETTLEMENT_QUEUE_V1",
-  "settled": 193
+  "settled": 195
 }
