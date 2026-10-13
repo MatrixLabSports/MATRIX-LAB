@@ -81,9 +81,11 @@ jobs:
               raise SystemExit("CLV_STATE_MISSING")
           j=json.loads(p.read_text(encoding="utf-8"))
           assert j["market_key"] == "over_2_5"
-          assert j["closing_reference_choice"] == "OPTION_B_PINNACLE"
-          assert j["source_quality_flag"] == "SHARP_PINNACLE_VIA_API_FOOTBALL"
+          assert j["closing_reference_choice"] == "OPTION_B_PINNACLE_STRICT_FRESH"
+          assert j["source_quality_flag"] == "SHARP_PINNACLE_VIA_API_FOOTBALL_STRICT_120S"
           assert j["minimum_clv_closing_observations"] == 300
+          assert j["closing_freshness_policy"]["max_provider_quote_age_seconds"] == 120
+          assert j["closing_freshness_policy"]["nominal_3h_band_is_closing_reference"] is False
           assert j["protections"]["historical_backfill_without_physical_entry_timestamp"] == "FORBIDDEN"
           assert j["protections"]["post_kickoff_closing_line"] == "FORBIDDEN"
           assert j["protections"]["incomplete_market_devig"] == "FORBIDDEN"
