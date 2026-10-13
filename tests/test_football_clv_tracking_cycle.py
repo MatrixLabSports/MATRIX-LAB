@@ -151,7 +151,7 @@ def test_due_pinnacle_close_requires_complete_market_and_writes_devigged_clv(tmp
     assert len(captures) == 1
     evidence = json.loads(captures[0].read_text(encoding="utf-8"))
     assert evidence["closing"]["provider"] == "Pinnacle"
-    assert evidence["closing"]["source_quality_flag"] == "SHARP_PINNACLE_VIA_API_FOOTBALL"
+    assert evidence["closing"]["source_quality_flag"] == "SHARP_PINNACLE_VIA_API_FOOTBALL_STRICT_120S"
     assert evidence["closing"]["complete_market_snapshot"] is True
     assert evidence["closing"]["devig_method"] == "MULTIPLICATIVE"
     assert evidence["closing"]["fair_over_2_5_probability_devigged"] == 0.5
@@ -179,6 +179,28 @@ def test_stale_pinnacle_provider_update_fails_closed(tmp_path):
     assert result["blocked_stale_provider_quote"] == 1
     assert ledger.audit().closing_odds_count == 0
 
+
+
+def test_pinnacle_quote_older_than_strict_120_seconds_is_not_closing_line(tmp_path):
+    report = _report(tmp_path / "report.json", with_timestamp=True)
+    ledger = FootballProspectiveEvidenceLedger(tmp_path / "ledger.jsonl")
+    freeze_new_decisions(report, ledger)
+    # Capture is 12:00 UTC; provider quote is 2m01s old.
+    session = FakeSession(_pinnacle_payload(update="2026-10-13T11:57:59+00:00"))
+    capture_at = datetime(2026, 10, 13, 12, 0, tzinfo=UTC)
+
+    result = capture_due_closing_lines(
+        ledger,
+        tmp_path / "captures",
+        api_key="test-key",
+        now=capture_at,
+        session=session,
+        capture_clock=lambda: capture_at,
+    )
+
+    assert result["captured_new"] == 0
+    assert result["blocked_stale_provider_quote"] == 1
+    assert ledger.audit().closing_odds_count == 0
 
 def test_cycle_keeps_clv_metrics_sealed_below_300(tmp_path):
     report = _report(tmp_path / "report.json", with_timestamp=True)
