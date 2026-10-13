@@ -5,6 +5,7 @@ from tools.telegram_green_signal_alerts import (
     PAPER_DAILY_MAX_EXPOSURE_FRACTION,
     PAPER_UNIT_COP,
     paper_daily_cap_fraction,
+    paper_daily_exposure_by_date,
     paper_stake_cop,
     paper_stake_level,
     recalc_paper_bankroll,
@@ -166,3 +167,48 @@ def test_green_message_still_sends_when_paper_cap_blocks_assignment():
     assert "Monto recomendado de papel: COP 50.000" in msg
     assert "Bankroll disponible: COP 3.050.000" in msg
     assert "NO ASIGNADA — límite de exposición alcanzado" in msg
+
+
+def test_reconciliation_adjustment_and_cancelled_exposure_are_governed():
+    ledger = {
+        "paper_bankroll_adjustments": [
+            {
+                "adjustment_id": "TEST_CLOSE_CORRECTION",
+                "status": "APPLIED",
+                "amount_cop": 57_750.0,
+            }
+        ],
+        "sent": [
+            {
+                "signal_key": "open",
+                "kickoff": "2026-10-13T23:00:00+00:00",
+                "paper_bet": {"status": "OPEN", "stake_cop": 25_000.0},
+            },
+            {
+                "signal_key": "settled",
+                "kickoff": "2026-10-13T18:00:00+00:00",
+                "paper_bet": {
+                    "status": "SETTLED",
+                    "stake_cop": 50_000.0,
+                    "profit_cop": 30_000.0,
+                },
+            },
+            {
+                "signal_key": "cancelled",
+                "kickoff": "2026-10-13T17:00:00+00:00",
+                "paper_bet": {"status": "CANCELLED_NO_BET", "stake_cop": 75_000.0},
+            },
+            {
+                "signal_key": "void",
+                "kickoff": "2026-10-13T16:00:00+00:00",
+                "paper_bet": {"status": "VOID_POSTPONED", "stake_cop": 25_000.0},
+            },
+        ],
+        "settlements": [],
+    }
+    pb = recalc_paper_bankroll(ledger)
+    assert pb["reconciliation_adjustment_cop"] == 57_750.0
+    assert pb["current_cop"] == 5_087_750.0
+    assert pb["open_exposure_cop"] == 25_000.0
+    assert pb["available_after_open_exposure_cop"] == 5_062_750.0
+    assert paper_daily_exposure_by_date(ledger)["2026-10-13"] == 75_000.0
