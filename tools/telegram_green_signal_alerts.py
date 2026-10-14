@@ -489,6 +489,9 @@ def paper_daily_exposure_by_date(ledger: dict[str, Any]) -> dict[str, float]:
         bet = record.get("paper_bet")
         if not isinstance(bet, dict):
             continue
+        status = str(bet.get("status") or "").upper()
+        if status in {"CANCELLED_NO_BET", "VOID_POSTPONED"}:
+            continue
         day = bet.get("kickoff_bogota_date") or paper_kickoff_date(record.get("kickoff"))
         if not day:
             continue
@@ -569,8 +572,14 @@ def recalc_paper_bankroll(ledger: dict[str, Any]) -> dict[str, Any]:
             )
         realized += float(profit)
 
-    current = float(pb["initial_cop"]) + realized
+    reconciliation_adjustment = sum(
+        float(x.get("amount_cop") or 0.0)
+        for x in ledger.get("paper_bankroll_adjustments", [])
+        if isinstance(x, dict) and str(x.get("status") or "").upper() == "APPLIED"
+    )
+    current = float(pb["initial_cop"]) + reconciliation_adjustment + realized
     open_exposure = sum(float(x.get("stake_cop") or 0.0) for x in open_bets)
+    pb["reconciliation_adjustment_cop"] = reconciliation_adjustment
     pb["realized_profit_cop"] = realized
     pb["current_cop"] = current
     pb["open_exposure_cop"] = open_exposure
@@ -1122,6 +1131,9 @@ def main() -> None:
 
     for key, record in list(sent_by_key.items()):
         if key in settled_keys or str(record.get("sport") or "football") != "football":
+            continue
+        paper_bet_guard = record.get("paper_bet")
+        if isinstance(paper_bet_guard, dict) and str(paper_bet_guard.get("status") or "").upper() in {"CANCELLED_NO_BET", "VOID_POSTPONED"}:
             continue
         c = candidates.get(key)
         if c is None:
