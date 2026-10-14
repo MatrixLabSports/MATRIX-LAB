@@ -22,6 +22,7 @@ GREEN_STATUSES = {
     "SEÑAL_VERDE_SIMULADA",
 }
 FINAL_STATUSES = {"FT", "AET", "PEN"}
+VOID_STATUSES = {"PST", "CANC", "ABD"}
 POLICY_BOOKS = {
     "betano": ("betano",),
     "betplay": ("betplay",),
@@ -499,6 +500,81 @@ def paper_daily_exposure_by_date(ledger: dict[str, Any]) -> dict[str, float]:
     return out
 
 
+def reconcile_existing_paper_state(ledger: dict[str, Any], now: datetime) -> dict[str, int]:
+    sent_by_key = {
+        str(x.get("signal_key") or ""): x
+        for x in ledger.get("sent", [])
+        if isinstance(x, dict) and str(x.get("signal_key") or "")
+    }
+    settlement_by_key = {
+        str(x.get("signal_key") or ""): x
+        for x in ledger.get("settlements", [])
+        if isinstance(x, dict) and str(x.get("signal_key") or "")
+    }
+    cancelled = 0
+    backfilled = 0
+
+    # A prematch NO_APOSTAR correction cancels the paper bet and releases its stake.
+    for correction in ledger.get("corrections", []):
+        if not isinstance(correction, dict) or correction.get("status") != "NO_APOSTAR_ENVIADO":
+            continue
+        key = str(correction.get("signal_key") or "")
+        record = sent_by_key.get(key)
+        if not isinstance(record, dict):
+            continue
+        correction_at = parse_dt(correction.get("sent_at_utc"))
+        kickoff = parse_dt(record.get("kickoff"))
+        if correction_at is None or kickoff is None or correction_at >= kickoff:
+            continue
+        bet = record.get("paper_bet")
+        if not isinstance(bet, dict):
+            continue
+        if str(bet.get("status") or "").upper() == "CANCELLED_NO_BET":
+            continue
+        bet["status"] = "CANCELLED_NO_BET"
+        bet["cancelled_at_utc"] = correction_at.isoformat()
+        bet["cancel_reason"] = "PREMATCH_NO_APOSTAR_CORRECTION"
+        bet["profit_cop"] = 0.0
+        settlement = settlement_by_key.get(key)
+        if isinstance(settlement, dict):
+            settlement["paper_reconciliation_status"] = "VOIDED_BY_PREMATCH_NO_APOSTAR_CORRECTION"
+            settlement["paper_reconciliation_at_utc"] = now.isoformat()
+            settlement["paper_profit_cop"] = 0.0
+            settlement["paper_stake_cop"] = 0.0
+            settlement["paper_stake_level"] = None
+        cancelled += 1
+
+    # Older FINAL rows can predate the paper-stake assignment. Reconcile them
+    # deterministically from the frozen odds and the already-recorded outcome.
+    for key, settlement in settlement_by_key.items():
+        record = sent_by_key.get(key)
+        if not isinstance(record, dict):
+            continue
+        bet = record.get("paper_bet")
+        if not isinstance(bet, dict) or str(bet.get("status") or "").upper() != "OPEN":
+            continue
+        stake = float(bet.get("stake_cop") or 0.0)
+        if stake <= 0:
+            continue
+        frozen_odds = float(record.get("odds") or settlement.get("odds") or 0.0)
+        if frozen_odds <= 1.0:
+            continue
+        won = bool(settlement.get("won"))
+        profit = stake * (frozen_odds - 1.0) if won else -stake
+        bet["status"] = "SETTLED"
+        bet["settled_at_utc"] = settlement.get("settled_at_utc") or now.isoformat()
+        bet["profit_cop"] = profit
+        bet["settlement_reconciled_from_existing_final"] = True
+        settlement["paper_stake_level"] = int(bet.get("stake_level") or 0) or None
+        settlement["paper_stake_cop"] = stake
+        settlement["paper_profit_cop"] = profit
+        settlement["paper_reconciliation_status"] = "BACKFILLED_FROM_EXISTING_FINAL_AND_FROZEN_ODDS"
+        settlement["paper_reconciliation_at_utc"] = now.isoformat()
+        backfilled += 1
+
+    return {"cancelled_no_bet": cancelled, "settlement_backfills": backfilled}
+
+
 def paper_exposure_policy_message(pb: dict[str, Any]) -> str:
     return "\n".join([
         "🔵 ACTUALIZACIÓN — EXPOSICIÓN DIARIA BANKROLL DE PAPEL",
@@ -834,6 +910,7 @@ def main() -> None:
     ledger.setdefault("paper_bankroll", {})
 
     paper_enabled = os.environ.get("PAPER_BANKROLL", "DISABLED").strip().upper() == "ENABLED"
+    paper_reconciliation = reconcile_existing_paper_state(ledger, now)
     pb = recalc_paper_bankroll(ledger)
     assigned_paper_now = 0
     if paper_enabled:
@@ -1142,7 +1219,25 @@ def main() -> None:
         if kickoff is not None and kickoff > now:
             continue
         final = fixture_final(session, api_key, c["fixture_id"])
-        if not final or final.get("final") is not True:
+        if not final:
+            continue
+        if final.get("final") is not True:
+            if str(final.get("status") or "").upper() in VOID_STATUSES:
+                paper_bet = record.get("paper_bet") if isinstance(record.get("paper_bet"), dict) else None
+                if paper_enabled and isinstance(paper_bet, dict) and str(paper_bet.get("status") or "").upper() == "OPEN":
+                    paper_bet["status"] = "VOID_POSTPONED"
+                    paper_bet["voided_at_utc"] = now.isoformat()
+                    paper_bet["void_status"] = str(final.get("status") or "").upper()
+                    paper_bet["profit_cop"] = 0.0
+                    ledger.setdefault("voids", []).append({
+                        "signal_key": key,
+                        "fixture_id": c["fixture_id"],
+                        "match": c["match"],
+                        "market": c["market"],
+                        "status": str(final.get("status") or "").upper(),
+                        "paper_stake_returned_cop": float(paper_bet.get("stake_cop") or 0.0),
+                        "voided_at_utc": now.isoformat(),
+                    })
             continue
         total = int(final["home_goals"]) + int(final["away_goals"])
         won = total >= 3
@@ -1218,6 +1313,8 @@ def main() -> None:
         "paper_bankroll_enabled": paper_enabled,
         "paper_bets_assigned_now": assigned_paper_now,
         "paper_assignment_updates_now": paper_assignment_updates_now,
+        "paper_reconciliation_cancelled_no_bet": paper_reconciliation.get("cancelled_no_bet", 0),
+        "paper_reconciliation_settlement_backfills": paper_reconciliation.get("settlement_backfills", 0),
         "paper_bankroll_current_cop": pb.get("current_cop"),
         "paper_open_exposure_cop": pb.get("open_exposure_cop"),
         "paper_open_bets": pb.get("open_bets"),
