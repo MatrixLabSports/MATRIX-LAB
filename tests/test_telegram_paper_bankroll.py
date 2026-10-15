@@ -1,13 +1,19 @@
 # PHYSICAL_RECHECK_AVAILABLE_BANKROLL_20261010
+from datetime import datetime, timezone
+
 from tools.telegram_green_signal_alerts import (
     PAPER_BANKROLL_INITIAL_COP,
     PAPER_DAILY_BASE_EXPOSURE_FRACTION,
     PAPER_DAILY_MAX_EXPOSURE_FRACTION,
     PAPER_UNIT_COP,
+    GREEN_PREMATCH_REVALIDATION_WINDOW_MINUTES,
+    PAPER_MAX_SIGNALS_PER_LEAGUE_DAY,
     paper_daily_cap_fraction,
     paper_daily_exposure_by_date,
     paper_stake_cop,
     paper_stake_level,
+    prematch_revalidation_state,
+    paper_league_day_key,
     recalc_paper_bankroll,
     green_message,
     paper_assignment_update_message,
@@ -212,3 +218,27 @@ def test_reconciliation_adjustment_and_cancelled_exposure_are_governed():
     assert pb["open_exposure_cop"] == 25_000.0
     assert pb["available_after_open_exposure_cop"] == 5_062_750.0
     assert paper_daily_exposure_by_date(ledger)["2026-10-13"] == 75_000.0
+
+
+def test_final_prematch_revalidation_window_is_120_minutes():
+    now = datetime(2026, 10, 15, 12, 0, tzinfo=timezone.utc)
+    assert GREEN_PREMATCH_REVALIDATION_WINDOW_MINUTES == 120
+    assert prematch_revalidation_state(
+        {"kickoff": "2026-10-15T14:00:00+00:00"}, now
+    ) == "READY_FOR_FINAL_REVALIDATION"
+    assert prematch_revalidation_state(
+        {"kickoff": "2026-10-15T14:00:01+00:00"}, now
+    ) == "WAITING_FINAL_REVALIDATION_WINDOW"
+    assert prematch_revalidation_state(
+        {"kickoff": "2026-10-15T12:00:00+00:00"}, now
+    ) == "BLOCKED_KICKOFF_REACHED"
+
+
+def test_league_day_concentration_policy_is_three():
+    assert PAPER_MAX_SIGNALS_PER_LEAGUE_DAY == 3
+    c = {
+        "league_id": "848",
+        "kickoff": "2026-10-15T16:45:00+00:00",
+    }
+    assert paper_league_day_key(c) == ("2026-10-15", "848")
+    assert paper_league_day_key({"kickoff": c["kickoff"]}) is None
