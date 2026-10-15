@@ -189,7 +189,18 @@ def run(target:date,out:Path)->dict[str,Any]:
 
     api_client=ApiTennisDiscoveryClient(api_key)
     # Query the two UTC dates spanning the full Bogotá day in bounded chunks.
-    api_all=_fetch_api_rows_for_bogota_day(api_client,target)
+    # The secondary paid source is a cross-check, not world truth. If it is
+    # temporarily unavailable, preserve the primary paid-provider capture,
+    # record the secondary blocker explicitly, keep the world gate unsealed,
+    # and fail closed for any model feed.
+    api_status="PASS"
+    api_blocker=None
+    try:
+        api_all=_fetch_api_rows_for_bogota_day(api_client,target)
+    except ApiTennisDiscoveryError as error:
+        api_all=[]
+        api_status="BLOCKED"
+        api_blocker=str(error)
     api_events=[]
     seen_api=set()
     malformed=0
@@ -269,7 +280,9 @@ def run(target:date,out:Path)->dict[str,Any]:
         },
         "secondary_crosscheck":{
             "provider":"api_tennis",
-            "status":"PASS",
+            "status":api_status,
+            "blocker":api_blocker,
+            "attempted":True,
             "unique_match_count":len(api_events),
             "network_calls":api_client.request_count,
             "malformed_unplaced_rows":malformed,
@@ -295,7 +308,13 @@ def run(target:date,out:Path)->dict[str,Any]:
         "real_money":"BLOCKED",
         "world_inventory_complete":False,
         "world_complete_gate":"REQUIRES_MULTI_SOURCE_RECONCILIATION",
-        "status":"PASS_PROVIDER_CAPTURE_WORLD_UNSEALED" if rapid.get("provider_inventory_complete") else "PARTIAL",
+        "status":(
+            "PASS_PROVIDER_CAPTURE_WORLD_UNSEALED"
+            if rapid.get("provider_inventory_complete") and api_status=="PASS"
+            else "PASS_PRIMARY_PROVIDER_CAPTURE_SECONDARY_BLOCKED_WORLD_UNSEALED"
+            if rapid.get("provider_inventory_complete")
+            else "PARTIAL"
+        ),
     }
     out.parent.mkdir(parents=True,exist_ok=True)
     out.write_text(json.dumps(result,indent=2,sort_keys=True,ensure_ascii=False)+"\n",encoding="utf-8")
