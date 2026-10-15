@@ -19,7 +19,7 @@ permissions:
 
 concurrency:
   group: matrix-football-clv-continuous-watcher
-  cancel-in-progress: false
+  cancel-in-progress: true
 
 jobs:
   watch:
@@ -243,3 +243,4 @@ jobs:
           fi
 # MATRIX_CLV_REFRESH_REPAIR 2026-10-15 stale-checkout-before-each-cycle
 # MATRIX_CLV_MULTI_TRANSPORT_REPAIR 2026-10-15 odds-api-preferred-api-football-fallback
+# MATRIX_CLV_SINGLE_WRITER_LATEST_VERSION_WINS 2026-10-15
