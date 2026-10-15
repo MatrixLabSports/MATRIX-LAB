@@ -138,6 +138,17 @@ jobs:
             cycle=$((cycle + 1))
             echo "CLV_WATCH_CYCLE=$cycle UTC=$(date -u --iso-8601=seconds)"
 
+            # Long-lived jobs must refresh the operational branch before every
+            # cycle. Otherwise newly persisted daily reports/decisions can remain
+            # invisible until after kickoff.
+            git fetch origin repair/cor09-world-pipeline
+            if ! git rebase --autostash origin/repair/cor09-world-pipeline; then
+              git rebase --abort || true
+              echo "CLV_WATCHER_OPERATIONAL_REFRESH_FAILED" >&2
+              exit 1
+            fi
+            echo "CLV_WATCHER_OPERATIONAL_REFRESH=PASS"
+
             PYTHONPATH=. python -m tools.football_clv_tracking_cycle
             persist_if_changed
 
@@ -225,3 +236,4 @@ jobs:
           else
             echo "CLV_SUCCESSOR_NOT_NEEDED"
           fi
+# MATRIX_CLV_REFRESH_REPAIR 2026-10-15 stale-checkout-before-each-cycle
