@@ -164,6 +164,20 @@ jobs:
             --target-date-bogota "$D" \
             --out "evidence/tennis_world_inventory/$D/world_exact_day_dual_audit.json"
 
+      - name: One-shot exact world tennis inventory for next Bogota day on explicit trigger
+        if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+        env:
+          RAPIDAPI_TENNIS_KEY: ${{ secrets.RAPIDAPI_TENNIS_KEY }}
+          API_TENNIS_KEY: ${{ secrets.API_TENNIS_KEY }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          D="$(TZ=America/Bogota date -d 'tomorrow' +%F)"
+          mkdir -p "evidence/tennis_world_inventory/$D"
+          python -m tools.tennis_world_exact_day_dual_audit \
+            --target-date-bogota "$D" \
+            --out "evidence/tennis_world_inventory/$D/world_exact_day_dual_audit.json"
+
       - name: Run governed autonomous production subcycles
         shell: bash
         env:
@@ -283,7 +297,7 @@ jobs:
           git config user.email "matrix-scheduler@users.noreply.github.com"
           git add evidence/cor0203/runtime/MATRIX_COR0203_SCHEDULER_CONTINUITY_LAST.json
           git add evidence/cor0203/runtime/MATRIX_COR0203_SCHEDULER_HEARTBEAT.json 2>/dev/null || true
-          git add evidence/tennis_world_inventory/2026-10-04 2>/dev/null || true
+          git add evidence/tennis_world_inventory 2>/dev/null || true
           if ! git diff --cached --quiet; then
             git commit -m "evidence(cor02-03): persist scheduler continuity audit"
             git pull --rebase origin repair/cor09-world-pipeline
@@ -350,3 +364,4 @@ jobs:
 # Governed continuation 04OCT2026 post-CI-green: recheck 05-OCT horizon and Wuning supply through paid APIs.
 
 # Governed physical retrigger 2026-10-11: attempt legitimate COR02/03 199-to-200 after football reconciliation.
+# MATRIX_USER_AUTHORIZED_TRIGGER 2026-10-14T23:19-05:00 exact-15oct-tennis-inventory
