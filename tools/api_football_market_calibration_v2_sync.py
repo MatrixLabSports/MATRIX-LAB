@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import subprocess
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
@@ -11,6 +12,9 @@ COHORT_START_UTC = "2026-10-04T18:51:32Z"
 SOURCE_LEDGER = Path("evidence/api_football/prospective_calibration/ledger.jsonl")
 SOURCE_FREEZE = Path("evidence/api_football/prospective_market_freeze/freeze.json")
 ROOT = Path("evidence/api_football/calibration_v2/lanes")
+OVER25_APPEND_ONLY_BASELINE_COMMIT = "dcb14d12834e1db463474e11bebe86f26fa1130a"
+OVER25_APPEND_ONLY_BASELINE_SOURCE_ROWS = 2246
+OVER25_APPEND_ONLY_BASELINE_LANE_ROWS = 1444
 
 ACTIVE_LANES = {
     "1x2": "1X2",
@@ -182,6 +186,109 @@ def build_lane_records(
     return result
 
 
+def _git_show_jsonl(commit: str, path: Path) -> list[dict[str, Any]]:
+    proc = subprocess.run(
+        ["git", "show", f"{commit}:{path.as_posix()}"],
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+    return [
+        json.loads(line)
+        for line in proc.stdout.splitlines()
+        if line.strip()
+    ]
+
+
+def build_over25_append_only_records(
+    source_rows: list[dict[str, Any]],
+) -> list[dict[str, Any]]:
+    """Preserve the preregistered 1444-row Over 2.5 prefix and append only.
+
+    New source rows may arrive later with an old freeze_at_utc. Re-sorting the
+    full lane by freeze time would insert those rows into the historical prefix
+    and mutate the hash chain. The governed forward block requires the baseline
+    prefix to remain byte-for-byte immutable, so post-baseline rows are appended
+    in source-ledger order instead.
+    """
+    lane_path = ROOT / "over_2_5" / "ledger.jsonl"
+    baseline_lane = _git_show_jsonl(OVER25_APPEND_ONLY_BASELINE_COMMIT, lane_path)
+    baseline_source = _git_show_jsonl(OVER25_APPEND_ONLY_BASELINE_COMMIT, SOURCE_LEDGER)
+
+    if len(baseline_lane) != OVER25_APPEND_ONLY_BASELINE_LANE_ROWS:
+        raise RuntimeError(
+            f"OVER25_BASELINE_LANE_COUNT_MISMATCH:"
+            f"{len(baseline_lane)}!={OVER25_APPEND_ONLY_BASELINE_LANE_ROWS}"
+        )
+    if len(baseline_source) != OVER25_APPEND_ONLY_BASELINE_SOURCE_ROWS:
+        raise RuntimeError(
+            f"OVER25_BASELINE_SOURCE_COUNT_MISMATCH:"
+            f"{len(baseline_source)}!={OVER25_APPEND_ONLY_BASELINE_SOURCE_ROWS}"
+        )
+    if len(source_rows) < len(baseline_source):
+        raise RuntimeError("OVER25_SOURCE_REGRESSION_BELOW_BASELINE")
+
+    for i, expected in enumerate(baseline_source):
+        actual = source_rows[i]
+        if expected.get("record_sha256") != actual.get("record_sha256"):
+            raise RuntimeError(f"OVER25_SOURCE_PREFIX_MUTATED:index={i}")
+
+    result = [dict(row) for row in baseline_lane]
+    seen_fixture_ids = {str(row["fixture_id"]) for row in result}
+    previous_hash = result[-1]["record_sha256"] if result else None
+    start = _dt(COHORT_START_UTC)
+
+    for row in source_rows[len(baseline_source):]:
+        freeze = row.get("freeze_at_utc")
+        kickoff = row.get("kickoff_utc")
+        if not freeze or not kickoff:
+            continue
+        if _dt(freeze) < start:
+            continue
+        if _dt(freeze) >= _dt(kickoff):
+            raise RuntimeError(f"NON_PREMATCH_SOURCE_FREEZE:{row.get('fixture_id')}")
+        if row.get("parameters_mutated_after_freeze") is not False:
+            raise RuntimeError(f"PARAMETER_MUTATION_SOURCE_ROW:{row.get('fixture_id')}")
+        if row.get("used_for_parameter_tuning") is not False:
+            raise RuntimeError(f"TUNING_SOURCE_ROW:{row.get('fixture_id')}")
+
+        over = _lane_payloads(row).get("over_2_5")
+        if over is None:
+            continue
+        probability, outcome, parent = over
+        fixture_id = str(row.get("fixture_id") or "")
+        if not fixture_id:
+            raise RuntimeError("OVER25_APPEND_FIXTURE_ID_MISSING")
+        if fixture_id in seen_fixture_ids:
+            raise RuntimeError(f"OVER25_APPEND_DUPLICATE_FIXTURE:{fixture_id}")
+
+        payload = {
+            "schema": "MATRIX_FOOTBALL_MARKET_CALIBRATION_V2_OBSERVATION_V1",
+            "cohort_id": COHORT_ID,
+            "market": ACTIVE_LANES["over_2_5"],
+            "parent_market": parent,
+            "fixture_id": fixture_id,
+            "freeze_at_utc": row["freeze_at_utc"],
+            "kickoff_utc": row["kickoff_utc"],
+            "settled_at_utc": row.get("settled_at_utc"),
+            "frozen_probability": probability,
+            "outcome": outcome,
+            "source_record_sha256": row.get("record_sha256"),
+            "source_target_key": row.get("target_key"),
+            "previous_lane_record_sha256": previous_hash,
+            "parameters_mutated_after_freeze": False,
+            "used_for_parameter_tuning": False,
+            "real_money": "BLOCKED",
+            "automatic_wagering": False,
+        }
+        payload["record_sha256"] = _canonical_sha(payload)
+        result.append(payload)
+        seen_fixture_ids.add(fixture_id)
+        previous_hash = payload["record_sha256"]
+
+    return result
+
+
 def _read_source() -> list[dict[str, Any]]:
     if not SOURCE_LEDGER.exists():
         raise SystemExit("SOURCE_LEDGER_MISSING")
@@ -292,6 +399,7 @@ def main() -> None:
     rows = _read_source()
     freeze_rows = _read_freeze_source()
     lanes = build_lane_records(rows)
+    lanes["over_2_5"] = build_over25_append_only_records(rows)
     freeze_lanes = build_lane_freeze_records(freeze_rows)
     for slug, lane_rows in lanes.items():
         _write_lane(slug, lane_rows, freeze_lanes[slug])
