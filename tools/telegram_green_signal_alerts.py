@@ -40,6 +40,8 @@ PAPER_DAILY_MAX_EXPOSURE_FRACTION = 0.40
 PAPER_HIGH_CONF_MIN_STAKE3 = 5
 PAPER_HIGH_CONF_MIN_TIER23_SHARE = 0.40
 PAPER_STAKE_LEVELS = {1: 1.0, 2: 2.0, 3: 3.0}
+GREEN_PREMATCH_REVALIDATION_WINDOW_MINUTES = 120
+PAPER_MAX_SIGNALS_PER_LEAGUE_DAY = 3
 
 
 def load_json(path: Path, default: Any) -> Any:
@@ -170,6 +172,7 @@ def browser_candidate(row: dict[str, Any], path: Path) -> dict[str, Any] | None:
         "sport": "football",
         "fixture_id": str(row.get("fixture_id") or ""),
         "match": row.get("match"),
+        "league_id": str(row.get("league_id") or row.get("league") or ""),
         "market": "Más de 2.5 goles",
         "market_key": MARKET_KEY,
         "selection_key": SELECTION_KEY,
@@ -205,6 +208,7 @@ def quote_freeze_candidate(row: dict[str, Any], path: Path) -> dict[str, Any] | 
         "sport": "football",
         "fixture_id": str(row.get("fixture_id") or ""),
         "match": row.get("match"),
+        "league_id": str(row.get("league_id") or row.get("league") or ""),
         "market": "Más de 2.5 goles",
         "market_key": MARKET_KEY,
         "selection_key": SELECTION_KEY,
@@ -239,6 +243,7 @@ def shadow_ev_candidate(row: dict[str, Any], path: Path) -> dict[str, Any] | Non
         "sport": "football",
         "fixture_id": str(row.get("fixture_id") or ""),
         "match": row.get("match"),
+        "league_id": str(row.get("league_id") or row.get("league") or ""),
         "market": "Más de 2.5 goles",
         "market_key": MARKET_KEY,
         "selection_key": SELECTION_KEY,
@@ -412,6 +417,7 @@ def exact_over25_offer(session: requests.Session, api_key: str, fixture_id: str,
                         "odds": dec,
                         "ev": p * dec - 1.0,
                         "break_even_probability": 1.0 / dec,
+                        "provider_quote_updated_at_utc": fr.get("update"),
                     })
     return max(offers, key=lambda x: x["ev"]) if offers else None
 
@@ -482,6 +488,26 @@ def paper_daily_cap_fraction(candidates_for_day: list[dict[str, Any]]) -> float:
 def paper_kickoff_date(value: Any) -> str | None:
     dt = parse_dt(value)
     return str(dt.astimezone(BOGOTA).date()) if dt is not None else None
+
+
+def prematch_revalidation_state(candidate: dict[str, Any], now: datetime) -> str:
+    kickoff = parse_dt(candidate.get("kickoff"))
+    if kickoff is None:
+        return "BLOCKED_INVALID_KICKOFF"
+    seconds = (kickoff - now).total_seconds()
+    if seconds <= 0:
+        return "BLOCKED_KICKOFF_REACHED"
+    if seconds > GREEN_PREMATCH_REVALIDATION_WINDOW_MINUTES * 60:
+        return "WAITING_FINAL_REVALIDATION_WINDOW"
+    return "READY_FOR_FINAL_REVALIDATION"
+
+
+def paper_league_day_key(candidate: dict[str, Any]) -> tuple[str, str] | None:
+    day = paper_kickoff_date(candidate.get("kickoff"))
+    league_id = str(candidate.get("league_id") or "").strip()
+    if not day or not league_id:
+        return None
+    return day, league_id
 
 
 def paper_daily_exposure_by_date(ledger: dict[str, Any]) -> dict[str, float]:
@@ -840,6 +866,21 @@ def no_bet_message(c: dict[str, Any], offer: dict[str, Any]) -> str:
     ])
 
 
+def no_bet_missing_quote_message(c: dict[str, Any], required_house_key: str | None) -> str:
+    return "\n".join([
+        "🟡 NO APOSTAR — REVALIDACIÓN PREMATCH",
+        "",
+        f'Partido: {c.get("match")}',
+        f'Mercado: {c.get("market")}',
+        f'P_MATRIX congelada: {float(c["p_matrix"])*100:.2f}%',
+        f'Casa original: {c.get("house")}',
+        "Motivo: ya no existe una cuota exacta Over 2.5 >1.50 verificable en la misma casa.",
+        f'Casa requerida: {required_house_key or "NO_IDENTIFICADA"}',
+        "La apuesta de papel queda cancelada antes del inicio.",
+        "DINERO REAL MATRIX: BLOQUEADO",
+    ])
+
+
 def settlement_message(c: dict[str, Any], settlement: dict[str, Any], accum_u: float, accum_cop: float, paper_bankroll_after: float | None = None) -> str:
     title = "✅ GANADA" if settlement["won"] else "❌ PERDIDA"
     lines = [
@@ -908,6 +949,70 @@ def main() -> None:
     ledger.setdefault("settlements", [])
     ledger.setdefault("run_history", [])
     ledger.setdefault("paper_bankroll", {})
+    ledger.setdefault("pre_send_gate", {})
+
+    session = requests.Session()
+    pre_send_quote_checks = 0
+    pre_send_waiting = 0
+    pre_send_blocked = 0
+    pre_send_passed = 0
+    for key, candidate in candidates.items():
+        if candidate.get("sport") != "football" or candidate.get("eligible_green") is not True:
+            continue
+        gate_state = prematch_revalidation_state(candidate, now)
+        gate_record = {
+            "checked_at_utc": now.isoformat(),
+            "fixture_id": candidate.get("fixture_id"),
+            "kickoff": candidate.get("kickoff"),
+            "league_id": candidate.get("league_id"),
+            "window_minutes": GREEN_PREMATCH_REVALIDATION_WINDOW_MINUTES,
+            "state": gate_state,
+        }
+        if gate_state == "WAITING_FINAL_REVALIDATION_WINDOW":
+            candidate["eligible_green"] = False
+            candidate["send_gate_status"] = gate_state
+            ledger["pre_send_gate"][key] = gate_record
+            pre_send_waiting += 1
+            continue
+        if gate_state != "READY_FOR_FINAL_REVALIDATION":
+            candidate["eligible_green"] = False
+            candidate["send_gate_status"] = gate_state
+            ledger["pre_send_gate"][key] = gate_record
+            pre_send_blocked += 1
+            continue
+        required_house_key = bookmaker_key(candidate.get("house"))
+        offer = exact_over25_offer(
+            session,
+            api_key,
+            str(candidate["fixture_id"]),
+            float(candidate["p_matrix"]),
+            required_house_key,
+        )
+        pre_send_quote_checks += 1
+        gate_record["required_house_key"] = required_house_key
+        gate_record["offer"] = offer
+        if offer is None:
+            gate_record["state"] = "BLOCKED_NO_VALID_EXACT_SAME_HOUSE_OVER25"
+            candidate["eligible_green"] = False
+            candidate["send_gate_status"] = gate_record["state"]
+            ledger["pre_send_gate"][key] = gate_record
+            pre_send_blocked += 1
+            continue
+        if float(offer["ev"]) <= 0:
+            gate_record["state"] = "BLOCKED_NONPOSITIVE_EV"
+            candidate["eligible_green"] = False
+            candidate["send_gate_status"] = gate_record["state"]
+            ledger["pre_send_gate"][key] = gate_record
+            pre_send_blocked += 1
+            continue
+        candidate["house"] = offer["house"]
+        candidate["odds"] = offer["odds"]
+        candidate["ev"] = offer["ev"]
+        candidate["send_gate_status"] = "PASS_FINAL_PREMATCH_REVALIDATION"
+        candidate["pre_send_revalidated_at_utc"] = now.isoformat()
+        gate_record["state"] = candidate["send_gate_status"]
+        ledger["pre_send_gate"][key] = gate_record
+        pre_send_passed += 1
 
     paper_enabled = os.environ.get("PAPER_BANKROLL", "DISABLED").strip().upper() == "ENABLED"
     paper_reconciliation = reconcile_existing_paper_state(ledger, now)
@@ -932,6 +1037,18 @@ def main() -> None:
             level = paper_stake_level(candidate)
             priority.append((day, level, float(candidate["ev"]), key, candidate, record))
         daily_exposure = paper_daily_exposure_by_date(ledger)
+        league_day_counts: dict[tuple[str, str], int] = {}
+        for existing in ledger.get("sent", []):
+            bet = existing.get("paper_bet")
+            if not isinstance(bet, dict):
+                continue
+            if str(bet.get("status") or "").upper() in {"CANCELLED_NO_BET", "VOID_POSTPONED"}:
+                continue
+            day = bet.get("kickoff_bogota_date") or paper_kickoff_date(existing.get("kickoff"))
+            league_id = str(existing.get("league_id") or "").strip()
+            if day and league_id:
+                k = (str(day), league_id)
+                league_day_counts[k] = league_day_counts.get(k, 0) + 1
         daily_caps = {day: paper_daily_cap_fraction(rows) for day, rows in day_candidates.items()}
         pb["daily_cap_by_date"] = {
             day: {
@@ -946,6 +1063,27 @@ def main() -> None:
         priority.sort(key=lambda x: (x[0], -x[1], -x[2], str(x[4].get("kickoff")), x[3]))
         running_open_exposure = float(pb.get("open_exposure_cop") or 0.0)
         for day, level, _, key, candidate, record in priority:
+            league_key = paper_league_day_key(candidate)
+            if league_key is not None and league_day_counts.get(league_key, 0) >= PAPER_MAX_SIGNALS_PER_LEAGUE_DAY:
+                candidate["eligible_green"] = False
+                candidate["send_gate_status"] = "BLOCKED_LEAGUE_CONCENTRATION_CAP"
+                candidate["paper_plan"] = {
+                    "stake_level": level,
+                    "stake_cop": paper_stake_cop(level),
+                    "assignment_status": "NO_ASIGNADO_RIESGO_CORRELACIONADO",
+                    "reason": "LEAGUE_CONCENTRATION_CAP_REACHED",
+                    "league_id": league_key[1],
+                    "league_day_cap": PAPER_MAX_SIGNALS_PER_LEAGUE_DAY,
+                    "real_money": "BLOCKED",
+                }
+                ledger["pre_send_gate"][key] = {
+                    **(ledger["pre_send_gate"].get(key) or {}),
+                    "state": "BLOCKED_LEAGUE_CONCENTRATION_CAP",
+                    "league_id": league_key[1],
+                    "league_day_cap": PAPER_MAX_SIGNALS_PER_LEAGUE_DAY,
+                }
+                pre_send_blocked += 1
+                continue
             stake = paper_stake_cop(level)
             max_day = float(pb["current_cop"]) * daily_caps.get(day, PAPER_DAILY_BASE_EXPOSURE_FRACTION)
             used_day = float(daily_exposure.get(day, 0.0))
@@ -992,11 +1130,12 @@ def main() -> None:
                 paper["telegram_update_required"] = False
             daily_exposure[day] = used_day + stake
             running_open_exposure += stake
+            if league_key is not None:
+                league_day_counts[league_key] = league_day_counts.get(league_key, 0) + 1
             assigned_paper_now += 1
         pb["daily_exposure_by_date"] = daily_exposure
         pb = recalc_paper_bankroll(ledger)
 
-    session = requests.Session()
     paper_assignment_updates_now = 0
     if paper_enabled:
         for record in ledger["sent"]:
@@ -1032,7 +1171,7 @@ def main() -> None:
     for key, c in sorted(candidates.items(), key=lambda kv: (str(kv[1].get("kickoff")), kv[0])):
         if key in sent_by_key:
             record = sent_by_key[key]
-            for field in ("sport", "fixture_id", "match", "market", "p_matrix", "house", "odds", "ev", "kickoff", "source", "execution", "paper_bet", "paper_plan"):
+            for field in ("sport", "fixture_id", "match", "league_id", "market", "p_matrix", "house", "odds", "ev", "kickoff", "source", "execution", "paper_bet", "paper_plan", "send_gate_status", "pre_send_revalidated_at_utc"):
                 if record.get(field) is None:
                     record[field] = c.get(field)
         if c.get("eligible_green") is not True:
@@ -1063,6 +1202,7 @@ def main() -> None:
                 "sport": c["sport"],
                 "fixture_id": c["fixture_id"],
                 "match": c["match"],
+                "league_id": c.get("league_id"),
                 "market": c["market"],
                 "p_matrix": c["p_matrix"],
                 "house": c["house"],
@@ -1073,6 +1213,8 @@ def main() -> None:
                 "execution": c.get("execution"),
                 "paper_bet": c.get("paper_bet"),
                 "paper_plan": c.get("paper_plan"),
+                "send_gate_status": c.get("send_gate_status"),
+                "pre_send_revalidated_at_utc": c.get("pre_send_revalidated_at_utc"),
                 "sent_at_utc": now.isoformat(),
                 "telegram_message_id": mid,
                 "status": "ENVIADO_OK",
@@ -1149,8 +1291,9 @@ def main() -> None:
         offer = exact_over25_offer(session, api_key, c["fixture_id"], float(c["p_matrix"]), required_house_key)
         quote_checks += 1
         previous = ledger["quote_state"].get(key) or {}
-        state = "CASA_ORIGINAL_NO_DISPONIBLE_EN_FEED" if required_house_key else "SIN_CUOTA_EXACTA"
-        if offer is not None:
+        if offer is None:
+            state = "NO_APOSTAR_SIN_CUOTA_VALIDA_MISMA_CASA"
+        else:
             state = "VERDE" if float(offer["ev"]) > 0 else "NO_APOSTAR"
         ledger["quote_state"][key] = {
             "checked_at_utc": now.isoformat(),
@@ -1159,8 +1302,14 @@ def main() -> None:
             "state": state,
             "offer": offer,
         }
-        if offer is not None and float(offer["ev"]) <= 0 and previous.get("state") != "NO_APOSTAR":
-            mid = send_telegram(session, token, chat_id, no_bet_message(c, offer))
+        invalid_now = offer is None or float(offer["ev"]) <= 0
+        invalid_was_sent = previous.get("state") not in {"NO_APOSTAR", "NO_APOSTAR_SIN_CUOTA_VALIDA_MISMA_CASA"}
+        if invalid_now and invalid_was_sent:
+            if offer is None:
+                correction_text = no_bet_missing_quote_message(c, required_house_key)
+            else:
+                correction_text = no_bet_message(c, offer)
+            mid = send_telegram(session, token, chat_id, correction_text)
             ledger["corrections"].append({
                 "signal_key": key,
                 "fixture_id": c["fixture_id"],
@@ -1168,8 +1317,22 @@ def main() -> None:
                 "telegram_message_id": mid,
                 "status": "NO_APOSTAR_ENVIADO",
                 "offer": offer,
+                "reason": state,
             })
             corrections_now += 1
+
+    # Apply any NO_APOSTAR correction created in this same supervisor run immediately,
+    # so paper exposure is released before settlement handling.
+    post_quote_reconciliation = reconcile_existing_paper_state(ledger, now)
+    paper_reconciliation["cancelled_no_bet"] = (
+        paper_reconciliation.get("cancelled_no_bet", 0)
+        + post_quote_reconciliation.get("cancelled_no_bet", 0)
+    )
+    paper_reconciliation["settlement_backfills"] = (
+        paper_reconciliation.get("settlement_backfills", 0)
+        + post_quote_reconciliation.get("settlement_backfills", 0)
+    )
+    pb = recalc_paper_bankroll(ledger)
 
     # Enrich already-sent FINAL settlements with any user execution that arrived later in physical evidence.
     for settlement in ledger["settlements"]:
@@ -1303,6 +1466,10 @@ def main() -> None:
         "sent_now": sent_now,
         "delivery_failures_now": delivery_failures_now,
         "quote_checks": quote_checks,
+        "pre_send_quote_checks": pre_send_quote_checks,
+        "pre_send_waiting_window": pre_send_waiting,
+        "pre_send_blocked": pre_send_blocked,
+        "pre_send_passed": pre_send_passed,
         "corrections_now": corrections_now,
         "rectifications_now": rectifications_now,
         "economic_updates_now": economic_updates_now,
@@ -1335,6 +1502,10 @@ def main() -> None:
         "paper_bankroll_initial_cop": PAPER_BANKROLL_INITIAL_COP,
         "paper_unit_fraction_initial_bankroll": PAPER_UNIT_FRACTION,
         "paper_max_open_exposure_fraction": PAPER_MAX_OPEN_EXPOSURE_FRACTION,
+        "green_prematch_revalidation_window_minutes": GREEN_PREMATCH_REVALIDATION_WINDOW_MINUTES,
+        "same_house_exact_over25_revalidation_required": True,
+        "paper_max_signals_per_league_day": PAPER_MAX_SIGNALS_PER_LEAGUE_DAY,
+        "cancel_if_ev_nonpositive_or_exact_quote_missing": True,
     }
 
     LEDGER.parent.mkdir(parents=True, exist_ok=True)
