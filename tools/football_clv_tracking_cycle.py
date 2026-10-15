@@ -34,6 +34,7 @@ MIN_CLV_CLOSING_OBSERVATIONS = 300
 DEFAULT_ROOT = Path("evidence/clv/football/over_2_5")
 DEFAULT_LEDGER = DEFAULT_ROOT / "prospective_clv_ledger.jsonl"
 DEFAULT_CAPTURE_DIR = DEFAULT_ROOT / "closing_captures"
+DEFAULT_ATTEMPT_LOG = DEFAULT_ROOT / "closing_attempts.jsonl"
 DEFAULT_STATE = DEFAULT_ROOT / "state.json"
 
 
@@ -63,6 +64,14 @@ def _load_json(path: Path) -> dict[str, Any]:
     if not isinstance(payload, dict):
         raise ValueError("JSON_ROOT_MUST_BE_OBJECT")
     return payload
+
+
+def _append_closing_attempt(path: Path, payload: Mapping[str, Any]) -> None:
+    row = dict(payload)
+    row["attempt_sha256"] = _canonical_sha256(row)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with path.open("a", encoding="utf-8") as handle:
+        handle.write(json.dumps(row, ensure_ascii=False, sort_keys=True) + "\n")
 
 
 def _existing_decisions_and_closings(
@@ -242,6 +251,7 @@ def capture_due_closing_lines(
     now: datetime,
     session: Any | None = None,
     capture_clock: Any | None = None,
+    attempt_log_path: Path | None = None,
 ) -> dict[str, Any]:
     reference = now.astimezone(timezone.utc)
     clock = capture_clock or (lambda: datetime.now(timezone.utc))
@@ -273,6 +283,8 @@ def capture_due_closing_lines(
     blocked_temporal = 0
     evidence_paths: list[str] = []
 
+    attempt_path = attempt_log_path or DEFAULT_ATTEMPT_LOG
+
     for decision in sorted(due, key=lambda d: (d.fixture_kickoff_utc, d.fixture_id)):
         response = client.get(
             API_BASE + "/odds",
@@ -292,22 +304,68 @@ def capture_due_closing_lines(
         except Exception:
             payload = {}
 
+        kickoff = _aware(decision.fixture_kickoff_utc, name="KICKOFF")
+        attempt_base = {
+            "schema": "MATRIX_FOOTBALL_CLV_CLOSING_ATTEMPT_V1",
+            "decision_id": decision.decision_id,
+            "fixture_id": decision.fixture_id,
+            "market_key": decision.market_key,
+            "selection_key": decision.selection_key,
+            "transport": "API-Football /odds bookmaker_id=4",
+            "reference_bookmaker": PINNACLE_BOOKMAKER_NAME,
+            "attempted_at_utc": captured_at.isoformat(),
+            "fixture_kickoff_utc": kickoff.isoformat(),
+            "capture_lead_seconds": int((kickoff - captured_at).total_seconds()),
+            "http_status": int(response.status_code),
+            "raw_payload_sha256": raw_sha256,
+            "strict_fresh_gate_seconds": MAX_PINNACLE_PROVIDER_QUOTE_AGE_SECONDS,
+            "automatic_wagering": False,
+            "real_money": "BLOCKED",
+        }
+
         if response.status_code >= 300 or not isinstance(payload, Mapping):
             blocked_provider_error += 1
+            _append_closing_attempt(attempt_path, {
+                **attempt_base,
+                "outcome": "BLOCKED_PROVIDER_ERROR",
+                "provider_quote_updated_at_utc": None,
+                "provider_quote_age_seconds": None,
+            })
             continue
         parsed = _extract_pinnacle_over25_market(payload)
         if parsed is None:
             blocked_market_incomplete += 1
+            _append_closing_attempt(attempt_path, {
+                **attempt_base,
+                "outcome": "BLOCKED_MARKET_INCOMPLETE",
+                "provider_quote_updated_at_utc": None,
+                "provider_quote_age_seconds": None,
+            })
             continue
         over_odds, under_odds, provider_update = parsed
-        kickoff = _aware(decision.fixture_kickoff_utc, name="KICKOFF")
+        provider_quote_age_seconds = int((captured_at - provider_update).total_seconds())
 
         if captured_at >= kickoff or provider_update >= kickoff or provider_update > captured_at:
             blocked_temporal += 1
+            _append_closing_attempt(attempt_path, {
+                **attempt_base,
+                "outcome": "BLOCKED_TEMPORAL",
+                "provider_quote_updated_at_utc": provider_update.isoformat(),
+                "provider_quote_age_seconds": provider_quote_age_seconds,
+                "over_2_5_decimal_odds": over_odds,
+                "under_2_5_decimal_odds": under_odds,
+            })
             continue
-        provider_quote_age_seconds = int((captured_at - provider_update).total_seconds())
         if provider_quote_age_seconds > MAX_PINNACLE_PROVIDER_QUOTE_AGE_SECONDS:
             blocked_stale_provider_quote += 1
+            _append_closing_attempt(attempt_path, {
+                **attempt_base,
+                "outcome": "BLOCKED_STALE_PROVIDER_QUOTE",
+                "provider_quote_updated_at_utc": provider_update.isoformat(),
+                "provider_quote_age_seconds": provider_quote_age_seconds,
+                "over_2_5_decimal_odds": over_odds,
+                "under_2_5_decimal_odds": under_odds,
+            })
             continue
 
         snapshots = (
@@ -409,6 +467,16 @@ def capture_due_closing_lines(
             source_authorized=True,
         )
         ledger.append_closing_odds(closing)
+        _append_closing_attempt(attempt_path, {
+            **attempt_base,
+            "outcome": "CAPTURED_VALID",
+            "provider_quote_updated_at_utc": provider_update.isoformat(),
+            "provider_quote_age_seconds": provider_quote_age_seconds,
+            "over_2_5_decimal_odds": over_odds,
+            "under_2_5_decimal_odds": under_odds,
+            "evidence_path": evidence_path.as_posix(),
+            "evidence_payload_sha256": evidence["payload_sha256"],
+        })
         captured += 1
         evidence_paths.append(evidence_path.as_posix())
 
@@ -479,6 +547,7 @@ def build_state(
         },
         "ledger_path": ledger.path.as_posix(),
         "ledger_sha256": audit.ledger_sha256,
+        "closing_attempt_log_path": DEFAULT_ATTEMPT_LOG.as_posix(),
         "decision_count": audit.decision_count,
         "closing_odds_count": audit.closing_odds_count,
         "minimum_clv_closing_observations": MIN_CLV_CLOSING_OBSERVATIONS,
@@ -505,6 +574,7 @@ def run_cycle(
     report_path: Path | None,
     ledger_path: Path = DEFAULT_LEDGER,
     capture_dir: Path = DEFAULT_CAPTURE_DIR,
+    attempt_log_path: Path = DEFAULT_ATTEMPT_LOG,
     state_path: Path = DEFAULT_STATE,
     api_key: str = "",
     now: datetime | None = None,
@@ -532,6 +602,7 @@ def run_cycle(
         now=reference,
         session=session,
         capture_clock=capture_clock,
+        attempt_log_path=attempt_log_path,
     )
     state = build_state(
         ledger,
@@ -573,6 +644,7 @@ def main() -> None:
     parser.add_argument("--report-path", default="")
     parser.add_argument("--ledger-path", default=str(DEFAULT_LEDGER))
     parser.add_argument("--capture-dir", default=str(DEFAULT_CAPTURE_DIR))
+    parser.add_argument("--attempt-log-path", default=str(DEFAULT_ATTEMPT_LOG))
     parser.add_argument("--state-path", default=str(DEFAULT_STATE))
     args = parser.parse_args()
 
@@ -581,6 +653,7 @@ def main() -> None:
         report_path=report_path if report_path.is_file() else None,
         ledger_path=Path(args.ledger_path),
         capture_dir=Path(args.capture_dir),
+        attempt_log_path=Path(args.attempt_log_path),
         state_path=Path(args.state_path),
         api_key=os.environ.get("API_FOOTBALL_KEY", ""),
     )
