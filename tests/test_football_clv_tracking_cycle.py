@@ -134,6 +134,7 @@ def test_due_pinnacle_close_requires_complete_market_and_writes_devigged_clv(tmp
     session = FakeSession(_pinnacle_payload())
     capture_at = datetime(2026, 10, 13, 12, 0, tzinfo=UTC)
 
+    attempts = tmp_path / "attempts.jsonl"
     result = capture_due_closing_lines(
         ledger,
         tmp_path / "captures",
@@ -141,6 +142,7 @@ def test_due_pinnacle_close_requires_complete_market_and_writes_devigged_clv(tmp
         now=capture_at,
         session=session,
         capture_clock=lambda: capture_at,
+        attempt_log_path=attempts,
     )
 
     assert result["due_count"] == 1
@@ -157,6 +159,12 @@ def test_due_pinnacle_close_requires_complete_market_and_writes_devigged_clv(tmp
     assert evidence["closing"]["fair_over_2_5_probability_devigged"] == 0.5
     assert evidence["clv"]["probability_clv_vs_devigged_close"] == 0.0
     assert evidence["protections"]["real_money"] == "BLOCKED"
+    attempt_rows = [json.loads(x) for x in attempts.read_text(encoding="utf-8").splitlines()]
+    assert len(attempt_rows) == 1
+    assert attempt_rows[0]["outcome"] == "CAPTURED_VALID"
+    assert attempt_rows[0]["provider_quote_age_seconds"] == 60
+    assert attempt_rows[0]["strict_fresh_gate_seconds"] == 120
+    assert len(attempt_rows[0]["attempt_sha256"]) == 64
 
 
 def test_stale_pinnacle_provider_update_fails_closed(tmp_path):
@@ -166,6 +174,7 @@ def test_stale_pinnacle_provider_update_fails_closed(tmp_path):
     session = FakeSession(_pinnacle_payload(update="2026-10-13T08:00:00+00:00"))
     capture_at = datetime(2026, 10, 13, 12, 0, tzinfo=UTC)
 
+    attempts = tmp_path / "attempts.jsonl"
     result = capture_due_closing_lines(
         ledger,
         tmp_path / "captures",
@@ -173,11 +182,15 @@ def test_stale_pinnacle_provider_update_fails_closed(tmp_path):
         now=capture_at,
         session=session,
         capture_clock=lambda: capture_at,
+        attempt_log_path=attempts,
     )
 
     assert result["captured_new"] == 0
     assert result["blocked_stale_provider_quote"] == 1
     assert ledger.audit().closing_odds_count == 0
+    rows = [json.loads(x) for x in attempts.read_text(encoding="utf-8").splitlines()]
+    assert rows[-1]["outcome"] == "BLOCKED_STALE_PROVIDER_QUOTE"
+    assert rows[-1]["provider_quote_age_seconds"] > 120
 
 
 
