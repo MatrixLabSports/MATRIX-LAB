@@ -18,6 +18,8 @@ class FakeApiClient:
 
 
 def test_secondary_provider_failure_preserves_primary_capture_and_fails_closed(monkeypatch, tmp_path: Path):
+    monkeypatch.setenv("RAPIDAPI_TENNIS_KEY", "test-rapidapi-key")
+    monkeypatch.setenv("API_TENNIS_KEY", "test-api-tennis-key")
     monkeypatch.setattr(mod, "RapidApiTennisClient", FakeRapidClient)
     monkeypatch.setattr(mod, "ApiTennisDiscoveryClient", FakeApiClient)
     monkeypatch.setattr(
