@@ -198,9 +198,14 @@ jobs:
         run: |
           set -euo pipefail
           REV="$(echo "$D0" | tr -d '-')"
+          CROSSWALK="evidence/tennis_parallel_lanes/ATP_CHALLENGER_MEN_SINGLES_CLAY/runtime/MATRIX_COR0203_IDENTITY_CROSSWALK_R${REV}90.json"
+          if [[ ! -f "$CROSSWALK" ]]; then
+            echo "NO_IDENTITY_ALIAS_DELTA_FOR_RECOVERY_REVISION"
+            exit 0
+          fi
           python -m tools.tennis_clay_identity_alias_ledger \
             --current evidence/tennis_parallel_lanes/ATP_CHALLENGER_MEN_SINGLES_CLAY/identity/MATRIX_CLAY_IDENTITY_ALIAS_LEDGER_LAST.json \
-            --crosswalk "evidence/tennis_parallel_lanes/ATP_CHALLENGER_MEN_SINGLES_CLAY/runtime/MATRIX_COR0203_IDENTITY_CROSSWALK_R${REV}90.json" \
+            --crosswalk "$CROSSWALK" \
             --out evidence/tennis_parallel_lanes/ATP_CHALLENGER_MEN_SINGLES_CLAY/identity/MATRIX_CLAY_IDENTITY_ALIAS_LEDGER_LAST.json
 
       - name: Rebuild Clay ELO PIT state with recovered identity mappings
