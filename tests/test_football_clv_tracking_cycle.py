@@ -225,6 +225,7 @@ def test_cycle_keeps_clv_metrics_sealed_below_300(tmp_path):
         ledger_path=tmp_path / "ledger.jsonl",
         capture_dir=tmp_path / "captures",
         state_path=tmp_path / "state.json",
+        attempt_log_path=tmp_path / "attempts.jsonl",
         api_key="test-key",
         now=capture_at,
         session=session,
