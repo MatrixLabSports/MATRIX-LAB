@@ -50,6 +50,9 @@ jobs:
             tests/test_cor0203_bogota_full_day_calendar.py \
             tests/test_tennis_world_inventory_rapidapi.py \
             tests/test_tennis_world_exact_day_dual_audit.py \
+            tests/test_cor0203_eight_day_rapidapi_discovery.py \
+            tests/test_cor0203_primary_source_readiness.py \
+            tests/test_cor0203_api_tennis_retirement.py \
             tests/test_tennis_world_inventory_accumulate.py \
             tests/test_cor0203_world_inventory_discovery.py \
             tests/test_cor0203_world_inventory_bridge.py \
@@ -104,10 +107,9 @@ jobs:
           )
           PY
 
-      - name: Verify paid tennis API source state
+      - name: Verify active tennis source architecture
         shell: bash
         env:
-          API_TENNIS_KEY: ${{ secrets.API_TENNIS_KEY }}
           RAPIDAPI_TENNIS_KEY: ${{ secrets.RAPIDAPI_TENNIS_KEY }}
         run: |
           set -euo pipefail
@@ -116,16 +118,11 @@ jobs:
             exit 2
           fi
           echo "RAPIDAPI_TENNIS_CONFIGURED=true" >> "$GITHUB_ENV"
-          echo "RAPIDAPI_TENNIS_PAID_SOURCE: CONFIGURED"
-          if [[ -z "${API_TENNIS_KEY:-}" ]]; then
-            echo "API_TENNIS_CONFIGURED=false" >> "$GITHUB_ENV"
-            echo "::warning::API_TENNIS_KEY_NOT_CONFIGURED_SECOND_PAID_SOURCE_BLOCKED"
-          else
-            echo "API_TENNIS_CONFIGURED=true" >> "$GITHUB_ENV"
-            echo "API_TENNIS_PAID_SOURCE: CONFIGURED"
-          fi
+          echo "RAPIDAPI_TENNIS_PAID_PRIMARY: CONFIGURED"
+          echo "API_TENNIS_STATUS=RETIRED_COST_UTILITY_DECISION" >> "$GITHUB_ENV"
+          echo "API_TENNIS: RETIRED_COST_UTILITY_DECISION"
 
-      - name: Record two-paid-source status in heartbeat
+      - name: Record active tennis source architecture in heartbeat
         shell: bash
         run: |
           set -euo pipefail
@@ -136,16 +133,21 @@ jobs:
           p=Path("evidence/cor0203/runtime/MATRIX_COR0203_SCHEDULER_HEARTBEAT.json")
           d=json.loads(p.read_text())
           rapid=os.environ.get("RAPIDAPI_TENNIS_CONFIGURED")=="true"
-          api=os.environ.get("API_TENNIS_CONFIGURED")=="true"
-          d["paid_sources"]={
-              "rapidapi_tennis":{"configured":rapid,"role":"PRIMARY_DISCOVERY_AND_HISTORY"},
-              "api_tennis":{"configured":api,"role":"SECONDARY_DISCOVERY_AND_STATS_RICH_VALIDATION"},
+          d["tennis_source_architecture"]={
+              "paid_primary":{"provider":"rapidapi_tennis","configured":rapid},
+              "paid_secondary":None,
+              "api_tennis":{
+                  "status":"RETIRED_COST_UTILITY_DECISION",
+                  "subscription":"EXPIRED_NOT_RENEWED",
+                  "required":False,
+              },
+              "required_open_calendar_reconciliation":["SofaScore","Flashscore"],
+              "two_paid_sources_required":False,
           }
-          d["two_paid_sources_ready"]=bool(rapid and api)
           d["source_compliance_status"]=(
-              "PASS_TWO_PAID_SOURCES"
-              if rapid and api
-              else "DEGRADED_SECOND_PAID_SOURCE_SECRET_MISSING"
+              "PASS_RAPIDAPI_PRIMARY_OPEN_RECONCILIATION"
+              if rapid
+              else "BLOCKED_RAPIDAPI_PRIMARY_MISSING"
           )
           d["real_money"]="BLOCKED"
           p.write_text(json.dumps(d,indent=2,sort_keys=True)+"\n")
@@ -155,7 +157,6 @@ jobs:
       - name: One-shot exact world tennis inventory for current Bogota day
         env:
           RAPIDAPI_TENNIS_KEY: ${{ secrets.RAPIDAPI_TENNIS_KEY }}
-          API_TENNIS_KEY: ${{ secrets.API_TENNIS_KEY }}
         shell: bash
         run: |
           set -euo pipefail
@@ -169,7 +170,6 @@ jobs:
         if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
         env:
           RAPIDAPI_TENNIS_KEY: ${{ secrets.RAPIDAPI_TENNIS_KEY }}
-          API_TENNIS_KEY: ${{ secrets.API_TENNIS_KEY }}
         shell: bash
         run: |
           set -euo pipefail
@@ -213,9 +213,9 @@ jobs:
       - name: Run governed autonomous production subcycles
         shell: bash
         env:
-          API_TENNIS_KEY: ${{ secrets.API_TENNIS_KEY }}
           RAPIDAPI_TENNIS_KEY: ${{ secrets.RAPIDAPI_TENNIS_KEY }}
           MATRIX_TENNIS_PROVIDER: rapidapi_tennis
+          MATRIX_TENNIS_MODE: rapidapi_primary_open_reconciliation
           MATRIX_TARGET_BRANCH: repair/cor09-world-pipeline
           MATRIX_GIT_USER_NAME: matrix-scheduler
           MATRIX_GIT_USER_EMAIL: matrix-scheduler@users.noreply.github.com
@@ -401,3 +401,4 @@ jobs:
 # MATRIX_USER_AUTHORIZED_RETRIGGER 2026-10-14T23:27-05:00 exact-15oct-after-test-env-fix
 # MATRIX_USER_AUTHORIZED_RETRIGGER 2026-10-14T23:32-05:00 exact-day-persist-before-subcycles
 # MATRIX_USER_AUTHORIZED_RETRIGGER 2026-10-14T23:34-05:00 exact-day-persist-autostash
+# MATRIX_USER_AUTHORIZED_RETRIGGER 2026-10-15T04:13-05:00 retire-api-tennis-cost-utility
