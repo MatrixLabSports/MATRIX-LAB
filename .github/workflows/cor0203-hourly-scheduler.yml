@@ -48,6 +48,7 @@ jobs:
         run: |
           python -m pytest -q \
             tests/test_cor0203_bogota_full_day_calendar.py \
+            tests/test_cor0203_world_date_rollover.py \
             tests/test_tennis_world_inventory_rapidapi.py \
             tests/test_tennis_world_exact_day_dual_audit.py \
             tests/test_cor0203_eight_day_rapidapi_discovery.py \
@@ -288,8 +289,9 @@ jobs:
               ;;
           esac
           export CYCLES INTERVAL_SECONDS
-          export MATRIX_WORLD_DATE_BOGOTA="$(TZ=America/Bogota date +%F)"
+          export MATRIX_WORLD_DATE_BOGOTA="$(python -m tools.cor0203_world_date_rollover)"
           echo "MATRIX_WORLD_DATE_BOGOTA=$MATRIX_WORLD_DATE_BOGOTA"
+          echo "WORLD_DATE_POLICY=BOGOTA_15H_ROLLOVER"
           AUDIT_JSONL="/tmp/cor0203_scheduler_cycles.jsonl"
           : > "$AUDIT_JSONL"
 
