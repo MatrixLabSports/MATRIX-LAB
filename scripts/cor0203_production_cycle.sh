@@ -368,14 +368,13 @@ world_funnel = (
 assert source_readiness["provider"] == "rapidapi_tennis_primary_with_open_reconciliation"
 assert source_readiness["status"] == "PRIMARY_PAID_DISCOVERY_COMPLETED"
 assert source_readiness["ready"] is True
-assert source_readiness["both_paid_providers_required"] is True
-assert source_readiness["symmetric_discovery"] is True
-assert source_readiness["provider_primary"] is None
-assert source_readiness["required_providers"] == ["rapidapi_tennis", "api_tennis"]
-assert set(source_readiness["providers"]) == {"rapidapi_tennis", "api_tennis"}
-assert all(source_readiness["providers"][p]["ready"] for p in source_readiness["required_providers"])
-assert all(source_readiness["providers"][p]["network_calls"] > 0 for p in source_readiness["required_providers"])
-assert source_readiness["reconciliation"]["status"] == "PASS"
+assert source_readiness["two_paid_sources_required"] is False
+assert source_readiness["required_paid_providers"] == ["rapidapi_tennis"]
+assert source_readiness["provider_state"]["ready"] is True
+assert source_readiness["provider_state"]["network_calls"] > 0
+assert source_readiness["retired_paid_sources"]["api_tennis"]["status"] == "RETIRED_COST_UTILITY_DECISION"
+assert source_readiness["retired_paid_sources"]["api_tennis"]["required"] is False
+assert source_readiness["required_open_calendar_reconciliation"] == ["SofaScore", "Flashscore"]
 assert source_readiness["horizon"]["status"] == "PASS"
 assert source_readiness["horizon"]["logical_horizon_days"] >= 8
 assert durable_discovery["provider"] == "rapidapi_tennis"
@@ -512,21 +511,6 @@ fi
 if [[ -f "$IDENTITY_ALIAS_CERT" ]]; then
   git add "$IDENTITY_ALIAS_CERT"
 fi
-if [[ -f "$DUAL_IDENTITY_ALIASES_LAST" ]]; then
-  git add "$DUAL_IDENTITY_ALIASES_LAST"
-fi
-if [[ -f "$API_TENNIS_RANK_BRIDGE_ALIASES" ]]; then
-  git add "$API_TENNIS_RANK_BRIDGE_ALIASES"
-fi
-if [[ -f "$API_TENNIS_RANK_BRIDGE_LAST" ]]; then
-  git add "$API_TENNIS_RANK_BRIDGE_LAST"
-fi
-if [[ -f "$API_TENNIS_RANK_HISTORY_RECOVERY_LAST" ]]; then
-  git add "$API_TENNIS_RANK_HISTORY_RECOVERY_LAST"
-fi
-if [[ -f "$API_TENNIS_CERTIFIED_AUTHORITY_RECOVERY_LAST" ]]; then
-  git add "$API_TENNIS_CERTIFIED_AUTHORITY_RECOVERY_LAST"
-fi
 if [[ -f "$R706_TARGET_HISTORY_LAST" ]]; then
   git add "$R706_TARGET_HISTORY_LAST"
 fi
@@ -547,7 +531,6 @@ git add "$WORLD_DERIVED_DISCOVERY_LAST" 2>/dev/null || true
 git add "$WORLD_PREREG_LAST" 2>/dev/null || true
 git add "$WORLD_BRIDGE_LAST" 2>/dev/null || true
 git add "$WORLD_FUNNEL_LAST" 2>/dev/null || true
-git add "$DUAL_RECONCILIATION_LAST" 2>/dev/null || true
 git add evidence/cor0203/runtime/MATRIX_COR0203_HISTORY_GATE_R*.json 2>/dev/null || true
 git add evidence/cor0203/holdout/MATRIX_COR0203_HOLDOUT_BATCH_R*.json 2>/dev/null || true
 
@@ -599,9 +582,6 @@ if [[ -f "$WORLD_BRIDGE_LAST" ]]; then
 fi
 if [[ -f "$WORLD_FUNNEL_LAST" ]]; then
   git add "$WORLD_FUNNEL_LAST"
-fi
-if [[ -f "$DUAL_RECONCILIATION_LAST" ]]; then
-  git add "$DUAL_RECONCILIATION_LAST"
 fi
 git add "$SETTLEMENT_QUEUE_LAST"
 git add "$HISTORICAL_IDENTITY_LAST"
