@@ -54,9 +54,10 @@ jobs:
             tests/test_football_clv_tracking_cycle.py \
             tests/test_football_clv_odds_api_net_capture.py
 
-      - name: Validate watcher safety and secret
+      - name: Validate watcher safety and secrets
         env:
           API_FOOTBALL_KEY: ${{ secrets.API_FOOTBALL_KEY }}
+          ODDS_API_NET_KEY: ${{ secrets.ODDS_API_NET_KEY }}
         shell: bash
         run: |
           set -euo pipefail
@@ -64,7 +65,9 @@ jobs:
           test "$REAL_MONEY" = "BLOCKED"
           test "$AUTO_BETTING" = "DISABLED"
           test -n "$API_FOOTBALL_KEY"
+          test -n "$ODDS_API_NET_KEY"
           echo "CLV_CONTINUOUS_WATCHER_SAFETY: PASS"
+          echo "CLV_ODDS_API_NET_SECRET_PRESENT: PASS"
 
       - name: Continuous CLV watch and immediate persistence
         env:
