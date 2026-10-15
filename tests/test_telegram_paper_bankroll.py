@@ -13,7 +13,9 @@ from tools.telegram_green_signal_alerts import (
     paper_stake_cop,
     paper_stake_level,
     prematch_revalidation_state,
+    final_prematch_quote_state,
     paper_league_day_key,
+    paper_league_concentration_blocked,
     recalc_paper_bankroll,
     green_message,
     paper_assignment_update_message,
@@ -242,3 +244,17 @@ def test_league_day_concentration_policy_is_three():
     }
     assert paper_league_day_key(c) == ("2026-10-15", "848")
     assert paper_league_day_key({"kickoff": c["kickoff"]}) is None
+
+
+def test_final_prematch_quote_state_blocks_missing_or_nonpositive_ev():
+    assert final_prematch_quote_state(None) == "BLOCKED_NO_VALID_EXACT_SAME_HOUSE_OVER25"
+    assert final_prematch_quote_state({"ev": 0.0}) == "BLOCKED_NONPOSITIVE_EV"
+    assert final_prematch_quote_state({"ev": -0.01}) == "BLOCKED_NONPOSITIVE_EV"
+    assert final_prematch_quote_state({"ev": 0.01}) == "PASS_FINAL_PREMATCH_REVALIDATION"
+
+
+def test_league_concentration_blocks_fourth_signal_same_day():
+    assert paper_league_concentration_blocked(0) is False
+    assert paper_league_concentration_blocked(2) is False
+    assert paper_league_concentration_blocked(3) is True
+    assert paper_league_concentration_blocked(4) is True
