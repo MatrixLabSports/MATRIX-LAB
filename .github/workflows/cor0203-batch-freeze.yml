@@ -123,10 +123,10 @@ jobs:
       - name: Run shared governed production cycle
         shell: bash
         env:
-          API_TENNIS_KEY: ${{ secrets.API_TENNIS_KEY }}
           RAPIDAPI_TENNIS_KEY: ${{ secrets.RAPIDAPI_TENNIS_KEY }}
-          # Both paid tennis providers are mandatory peers; no primary/fallback provider.
-          MATRIX_TENNIS_MODE: dual_paid_tennis
+          # Active architecture: SofaScore -> Flashscore -> RapidAPI Tennis.
+          # API-Tennis is RETIRED_COST_UTILITY_DECISION and is not required.
+          MATRIX_TENNIS_MODE: rapidapi_primary_open_reconciliation
           MATRIX_TARGET_BRANCH: repair/cor09-world-pipeline
           MATRIX_GIT_USER_NAME: matrix-ci
           MATRIX_GIT_USER_EMAIL: matrix-ci@users.noreply.github.com
