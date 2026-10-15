@@ -48,6 +48,7 @@ jobs:
         run: |
           PYTHONPATH=. python -m pytest -q \
             tests/test_football_clv_tracking_cycle.py \
+            tests/test_football_clv_odds_api_net_capture.py \
             tests/test_football_prospective_evidence.py \
             tests/test_api_football_pinnacle_reference.py \
             tests/test_paper_stake_ledger.py \
@@ -56,7 +57,10 @@ jobs:
       - name: Run governed CLV cycle
         env:
           API_FOOTBALL_KEY: ${{ secrets.API_FOOTBALL_KEY }}
-        run: PYTHONPATH=. python -m tools.football_clv_tracking_cycle
+          ODDS_API_NET_KEY: ${{ secrets.ODDS_API_NET_KEY }}
+        run: |
+          PYTHONPATH=. python -m tools.football_clv_odds_api_net_capture
+          PYTHONPATH=. python -m tools.football_clv_tracking_cycle
 
       - name: Enforce CLV state protections
         shell: bash
@@ -72,7 +76,7 @@ jobs:
           j=json.loads(p.read_text(encoding="utf-8"))
           assert j["market_key"] == "over_2_5"
           assert j["closing_reference_choice"] == "OPTION_B_PINNACLE_STRICT_FRESH"
-          assert j["source_quality_flag"] == "SHARP_PINNACLE_VIA_API_FOOTBALL_STRICT_120S"
+          assert j["source_quality_flag"] == "SHARP_PINNACLE_MULTI_TRANSPORT_STRICT_120S"
           assert j["minimum_clv_closing_observations"] == 300
           assert j["closing_freshness_policy"]["max_provider_quote_age_seconds"] == 120
           assert j["closing_freshness_policy"]["nominal_3h_band_is_closing_reference"] is False
@@ -120,3 +124,4 @@ jobs:
             sleep $((attempt*2))
           done
           exit 1
+# MATRIX_CLV_MANUAL_FALLBACK_MULTI_TRANSPORT 2026-10-15
