@@ -1,0 +1,50 @@
+name: MATRIX Football CLV API-Football sharp freshness probe
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - .github/workflows/football-clv-api-football-sharp-probe.yml
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout operational branch
+        uses: actions/checkout@v4
+        with:
+          ref: repair/cor09-world-pipeline
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependency
+        run: python -m pip install requests
+
+      - name: Probe Betfair and Pinnacle freshness
+        env:
+          API_FOOTBALL_KEY: ${{ secrets.API_FOOTBALL_KEY }}
+        run: |
+          set -euo pipefail
+          PYTHONPATH=. python -m tools.football_clv_api_football_sharp_probe
+
+      - name: Persist evidence
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "matrix-clv-sharp-probe"
+          git config user.email "matrix-clv-sharp-probe@users.noreply.github.com"
+          git add evidence/clv/football/over_2_5/api_football_sharp_transport_probe_latest.json
+          git commit -m "evidence(clv): compare Betfair and Pinnacle freshness"
+          git fetch origin repair/cor09-world-pipeline
+          git rebase --autostash origin/repair/cor09-world-pipeline
+          git push origin HEAD:repair/cor09-world-pipeline
