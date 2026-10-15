@@ -11,6 +11,7 @@ on:
     paths:
       - .github/workflows/tennis-clay-daily-prospective.yml
       - tools/tennis_clay_prefeature_discovery.py
+      - tools/cor0203_world_date_rollover.py
       - tools/tennis_api_tennis_dual_lane_exact_day.py
       - tools/tennis_dual_lane_event_reconcile.py
       - tools/tennis_primary_lane_event_reconcile.py
@@ -64,7 +65,7 @@ jobs:
 
       - name: Run Clay regression tests
         run: |
-          python -m pytest -q             tests/test_tennis_clay_prefeature_discovery.py             tests/test_tennis_clay_lane_bootstrap.py             tests/test_tennis_parallel_lane_registry.py \
+          python -m pytest -q             tests/test_cor0203_world_date_rollover.py             tests/test_tennis_clay_prefeature_discovery.py             tests/test_tennis_clay_lane_bootstrap.py             tests/test_tennis_parallel_lane_registry.py \
             tests/test_tennis_dual_lane_event_reconcile.py \
             tests/test_tennis_primary_lane_event_reconcile.py \
             tests/test_tennis_clay_parent_state_sync.py \
@@ -75,9 +76,12 @@ jobs:
             tests/test_cor0203_build_identity_crosswalk.py \
             tests/test_tennis_clay_prospective_producer.py
 
-      - name: Resolve Bogota date
+      - name: Resolve governed Bogota world date
         id: date
-        run: echo "d0=$(TZ=America/Bogota date +%F)" >> "$GITHUB_OUTPUT"
+        run: |
+          D0="$(python -m tools.cor0203_world_date_rollover)"
+          echo "d0=$D0" >> "$GITHUB_OUTPUT"
+          echo "WORLD_DATE_POLICY=BOGOTA_15H_ROLLOVER"
 
       - name: Capture structured secondary providers
         env:
