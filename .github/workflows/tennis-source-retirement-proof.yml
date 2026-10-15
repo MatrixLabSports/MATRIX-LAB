@@ -1,0 +1,109 @@
+name: Tennis source retirement proof
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - .github/workflows/tennis-source-retirement-proof.yml
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  prove:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout operational branch
+        uses: actions/checkout@v4
+        with:
+          ref: repair/cor09-world-pipeline
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install pytest
+        run: python -m pip install pytest
+
+      - name: Run API-Tennis retirement tests
+        run: |
+          python -m pytest -q \
+            tests/test_tennis_world_exact_day_dual_audit.py \
+            tests/test_cor0203_eight_day_rapidapi_discovery.py \
+            tests/test_cor0203_primary_source_readiness.py \
+            tests/test_cor0203_api_tennis_retirement.py
+
+      - name: Verify physical production configuration
+        shell: bash
+        run: |
+          set -euo pipefail
+          ! grep -q "TWO_PAID_TENNIS_KEYS_REQUIRED" scripts/cor0203_production_cycle.sh
+          ! grep -q "DUAL_PAID_TENNIS_MODE_REQUIRED" scripts/cor0203_production_cycle.sh
+          ! grep -q "python -m tools.cor0203_api_tennis_discovery" scripts/cor0203_production_cycle.sh
+          ! grep -q "python -m tools.cor0203_eight_day_dual_discovery" scripts/cor0203_production_cycle.sh
+          ! grep -q "python -m tools.cor0203_dual_source_readiness" scripts/cor0203_production_cycle.sh
+          ! grep -q "python -m tools.cor0203_dual_provider_reconcile" scripts/cor0203_production_cycle.sh
+          grep -q "RAPIDAPI_TENNIS_KEY_REQUIRED" scripts/cor0203_production_cycle.sh
+          grep -q "rapidapi_primary_open_reconciliation" scripts/cor0203_production_cycle.sh
+
+      - name: Write proof evidence
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p evidence/governance
+          python - <<'PY'
+          import json
+          import os
+          from datetime import datetime, timezone
+          from pathlib import Path
+
+          payload={
+              "schema":"MATRIX_TENNIS_API_TENNIS_RETIREMENT_PROOF_V1",
+              "verified_at_utc":datetime.now(timezone.utc).replace(microsecond=0).isoformat(),
+              "workflow_run_id":os.environ.get("GITHUB_RUN_ID"),
+              "workflow_sha":os.environ.get("GITHUB_SHA"),
+              "operational_branch":"repair/cor09-world-pipeline",
+              "tests_passed":True,
+              "tests":[
+                  "test_tennis_world_exact_day_dual_audit.py",
+                  "test_cor0203_eight_day_rapidapi_discovery.py",
+                  "test_cor0203_primary_source_readiness.py",
+                  "test_cor0203_api_tennis_retirement.py",
+              ],
+              "api_tennis":{
+                  "status":"RETIRED_COST_UTILITY_DECISION",
+                  "subscription":"EXPIRED_NOT_RENEWED",
+                  "required":False,
+                  "queried_by_active_production":False,
+              },
+              "active_paid_primary":"rapidapi_tennis",
+              "required_open_calendar_reconciliation":["SofaScore","Flashscore"],
+              "two_paid_sources_required":False,
+              "production_mode":"rapidapi_primary_open_reconciliation",
+              "metrics_opened":False,
+              "automatic_wagering":False,
+              "real_money":"BLOCKED",
+              "result":"PASS",
+          }
+          Path("evidence/governance/MATRIX_TENNIS_API_TENNIS_RETIREMENT_PROOF_LAST.json").write_text(
+              json.dumps(payload,indent=2,sort_keys=True)+"\n",
+              encoding="utf-8",
+          )
+          PY
+
+      - name: Persist proof
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "matrix-tennis-governance"
+          git config user.email "matrix-tennis-governance@users.noreply.github.com"
+          git add evidence/governance/MATRIX_TENNIS_API_TENNIS_RETIREMENT_PROOF_LAST.json
+          git commit -m "evidence(tennis): prove API-Tennis retirement"
+          git fetch origin repair/cor09-world-pipeline
+          git rebase --autostash origin/repair/cor09-world-pipeline
+          git push origin HEAD:repair/cor09-world-pipeline
