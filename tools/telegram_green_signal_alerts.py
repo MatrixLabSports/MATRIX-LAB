@@ -502,6 +502,18 @@ def prematch_revalidation_state(candidate: dict[str, Any], now: datetime) -> str
     return "READY_FOR_FINAL_REVALIDATION"
 
 
+def final_prematch_quote_state(offer: dict[str, Any] | None) -> str:
+    if offer is None:
+        return "BLOCKED_NO_VALID_EXACT_SAME_HOUSE_OVER25"
+    if float(offer.get("ev") or 0.0) <= 0:
+        return "BLOCKED_NONPOSITIVE_EV"
+    return "PASS_FINAL_PREMATCH_REVALIDATION"
+
+
+def paper_league_concentration_blocked(existing_count: int) -> bool:
+    return int(existing_count) >= PAPER_MAX_SIGNALS_PER_LEAGUE_DAY
+
+
 def paper_league_day_key(candidate: dict[str, Any]) -> tuple[str, str] | None:
     day = paper_kickoff_date(candidate.get("kickoff"))
     league_id = str(candidate.get("league_id") or "").strip()
@@ -956,7 +968,14 @@ def main() -> None:
     pre_send_waiting = 0
     pre_send_blocked = 0
     pre_send_passed = 0
+    existing_sent_keys = {
+        str(x.get("signal_key") or "")
+        for x in ledger.get("sent", [])
+        if isinstance(x, dict) and str(x.get("signal_key") or "")
+    }
     for key, candidate in candidates.items():
+        if key in existing_sent_keys:
+            continue
         if candidate.get("sport") != "football" or candidate.get("eligible_green") is not True:
             continue
         gate_state = prematch_revalidation_state(candidate, now)
@@ -991,24 +1010,18 @@ def main() -> None:
         pre_send_quote_checks += 1
         gate_record["required_house_key"] = required_house_key
         gate_record["offer"] = offer
-        if offer is None:
-            gate_record["state"] = "BLOCKED_NO_VALID_EXACT_SAME_HOUSE_OVER25"
+        final_quote_state = final_prematch_quote_state(offer)
+        if final_quote_state != "PASS_FINAL_PREMATCH_REVALIDATION":
+            gate_record["state"] = final_quote_state
             candidate["eligible_green"] = False
-            candidate["send_gate_status"] = gate_record["state"]
-            ledger["pre_send_gate"][key] = gate_record
-            pre_send_blocked += 1
-            continue
-        if float(offer["ev"]) <= 0:
-            gate_record["state"] = "BLOCKED_NONPOSITIVE_EV"
-            candidate["eligible_green"] = False
-            candidate["send_gate_status"] = gate_record["state"]
+            candidate["send_gate_status"] = final_quote_state
             ledger["pre_send_gate"][key] = gate_record
             pre_send_blocked += 1
             continue
         candidate["house"] = offer["house"]
         candidate["odds"] = offer["odds"]
         candidate["ev"] = offer["ev"]
-        candidate["send_gate_status"] = "PASS_FINAL_PREMATCH_REVALIDATION"
+        candidate["send_gate_status"] = final_quote_state
         candidate["pre_send_revalidated_at_utc"] = now.isoformat()
         gate_record["state"] = candidate["send_gate_status"]
         ledger["pre_send_gate"][key] = gate_record
@@ -1064,7 +1077,7 @@ def main() -> None:
         running_open_exposure = float(pb.get("open_exposure_cop") or 0.0)
         for day, level, _, key, candidate, record in priority:
             league_key = paper_league_day_key(candidate)
-            if league_key is not None and league_day_counts.get(league_key, 0) >= PAPER_MAX_SIGNALS_PER_LEAGUE_DAY:
+            if league_key is not None and paper_league_concentration_blocked(league_day_counts.get(league_key, 0)):
                 candidate["eligible_green"] = False
                 candidate["send_gate_status"] = "BLOCKED_LEAGUE_CONCENTRATION_CAP"
                 candidate["paper_plan"] = {
