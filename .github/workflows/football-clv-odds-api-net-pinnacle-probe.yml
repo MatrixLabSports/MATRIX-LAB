@@ -111,8 +111,38 @@ jobs:
 
           API_FOOTBALL = "https://v3.football.api-sports.io"
           ODDS_API = "https://api.odds-api.net/v1"
-          TARGETS = ("1604195", "1549745")
+          LEDGER = Path("evidence/clv/football/over_2_5/prospective_clv_ledger.jsonl")
           OUT = Path("evidence/clv/football/over_2_5/odds_api_net_probe_latest.json")
+
+          # Select current physical CLV decisions instead of stale hard-coded fixtures.
+          # Probe only future, not-yet-closed decisions; this is diagnostic only and
+          # does not record a closing line outside the governed <=15m capture window.
+          frozen = {}
+          closed = set()
+          if LEDGER.is_file():
+              for raw_line in LEDGER.read_text(encoding="utf-8").splitlines():
+                  if not raw_line.strip():
+                      continue
+                  evt = json.loads(raw_line)
+                  payload = evt.get("payload") or {}
+                  if evt.get("event_type") == "DECISION_FROZEN":
+                      frozen[str(payload.get("decision_id"))] = payload
+                  elif evt.get("event_type") == "CLOSING_ODDS_RECORDED":
+                      closed.add(str(payload.get("decision_id")))
+          future_targets = []
+          for decision_id, payload in frozen.items():
+              if decision_id in closed:
+                  continue
+              kickoff_raw = payload.get("fixture_kickoff_utc")
+              fixture_id = payload.get("fixture_id")
+              if not kickoff_raw or not fixture_id:
+                  continue
+              kickoff = datetime.fromisoformat(str(kickoff_raw).replace("Z","+00:00")).astimezone(timezone.utc)
+              if kickoff <= now:
+                  continue
+              future_targets.append((kickoff, str(fixture_id)))
+          future_targets.sort(key=lambda x: (x[0], x[1]))
+          TARGETS = tuple(dict.fromkeys(fixture_id for _, fixture_id in future_targets[:5]))
 
           def norm(v):
               s=unicodedata.normalize("NFKD", str(v or ""))
