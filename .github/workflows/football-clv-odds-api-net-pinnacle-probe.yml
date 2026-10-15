@@ -227,7 +227,12 @@ jobs:
                   swapped=(sim(home,ev.get("away_team"))+sim(away,ev.get("home_team")))/2
                   scored.append((max(direct,swapped),direct>=swapped,ev))
               scored.sort(key=lambda x:x[0], reverse=True)
-              if not scored or scored[0][0] < 0.72:
+              second_score = scored[1][0] if len(scored) > 1 else 0.0
+              if (
+                  not scored
+                  or scored[0][0] < 0.85
+                  or (len(scored) > 1 and scored[0][0] - second_score < 0.05)
+              ):
                   results.append({
                       "fixture_id":fixture_id,"kickoff_utc":kickoff.isoformat(),
                       "api_football_match":f"{home} vs {away}",
@@ -235,6 +240,7 @@ jobs:
                       "event_http":er.status_code,
                       "candidate_count":len(scored),
                       "best_score":round(scored[0][0],6) if scored else None,
+                      "second_score":round(second_score,6) if scored else None,
                   })
                   continue
 
@@ -279,6 +285,9 @@ jobs:
                   "odds_api_event_id":event_id,
                   "odds_api_match":f"{ev.get('home_team')} vs {ev.get('away_team')}",
                   "identity_score":round(score,6),
+                  "second_identity_score":round(second_score,6),
+                  "candidate_count":len(scored),
+                  "production_identity_gate_compatible":True,
                   "orientation":"direct" if direct else "swapped",
                   "snapshot_http":sr.status_code,
                   "excluded_bookmakers":sp.get("excluded_bookmakers") if isinstance(sp,dict) else None,
