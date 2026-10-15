@@ -154,6 +154,53 @@ jobs:
           print(d["source_compliance_status"])
           PY
 
+      - name: Persist tennis source architecture activation evidence
+        shell: bash
+        env:
+          MATRIX_TARGET_BRANCH: repair/cor09-world-pipeline
+        run: |
+          set -euo pipefail
+          mkdir -p evidence/governance
+          python - <<'PY'
+          import json
+          import os
+          from datetime import datetime, timezone
+          from pathlib import Path
+          payload={
+              "schema":"MATRIX_TENNIS_SOURCE_ARCHITECTURE_RUNTIME_V1",
+              "verified_at_utc":datetime.now(timezone.utc).replace(microsecond=0).isoformat(),
+              "workflow_run_id":os.environ.get("GITHUB_RUN_ID"),
+              "workflow_event":os.environ.get("GITHUB_EVENT_NAME"),
+              "workflow_sha":os.environ.get("GITHUB_SHA"),
+              "tests_verified_before_this_step":True,
+              "paid_primary":"rapidapi_tennis",
+              "required_paid_sources":["rapidapi_tennis"],
+              "two_paid_sources_required":False,
+              "api_tennis":{
+                  "status":"RETIRED_COST_UTILITY_DECISION",
+                  "subscription":"EXPIRED_NOT_RENEWED",
+                  "required":False,
+                  "attempted":False,
+              },
+              "required_open_calendar_reconciliation":["SofaScore","Flashscore"],
+              "production_mode":"rapidapi_primary_open_reconciliation",
+              "metrics_opened":False,
+              "automatic_wagering":False,
+              "real_money":"BLOCKED",
+          }
+          Path("evidence/governance/MATRIX_TENNIS_SOURCE_ARCHITECTURE_RUNTIME_LAST.json").write_text(
+              json.dumps(payload,indent=2,sort_keys=True)+"\n",encoding="utf-8"
+          )
+          PY
+          git config user.name "matrix-scheduler"
+          git config user.email "matrix-scheduler@users.noreply.github.com"
+          git add evidence/governance/MATRIX_TENNIS_SOURCE_ARCHITECTURE_RUNTIME_LAST.json
+          git add evidence/cor0203/runtime/MATRIX_COR0203_SCHEDULER_HEARTBEAT.json
+          git commit -m "evidence(tennis): activate retired API-Tennis architecture"
+          git fetch origin "$MATRIX_TARGET_BRANCH"
+          git rebase --autostash "origin/$MATRIX_TARGET_BRANCH"
+          git push origin "HEAD:$MATRIX_TARGET_BRANCH"
+
       - name: One-shot exact world tennis inventory for current Bogota day
         env:
           RAPIDAPI_TENNIS_KEY: ${{ secrets.RAPIDAPI_TENNIS_KEY }}
@@ -402,3 +449,4 @@ jobs:
 # MATRIX_USER_AUTHORIZED_RETRIGGER 2026-10-14T23:32-05:00 exact-day-persist-before-subcycles
 # MATRIX_USER_AUTHORIZED_RETRIGGER 2026-10-14T23:34-05:00 exact-day-persist-autostash
 # MATRIX_USER_AUTHORIZED_RETRIGGER 2026-10-15T04:13-05:00 retire-api-tennis-cost-utility
+# MATRIX_PHYSICAL_PROOF_TRIGGER 2026-10-15 retire-api-tennis-runtime-evidence
