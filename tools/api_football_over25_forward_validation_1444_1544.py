@@ -252,8 +252,26 @@ def monitor_or_close() -> dict[str, Any]:
     if len(current_lane) < target:
         raise RuntimeError("CURRENT_LANE_FILE_BELOW_TARGET")
     baseline_hashes = [r["record_sha256"] for r in baseline_lane]
-    if [r["record_sha256"] for r in current_lane[:baseline]] != baseline_hashes:
-        raise RuntimeError("BASELINE_LANE_PREFIX_MUTATED")
+    current_prefix_hashes = [r["record_sha256"] for r in current_lane[:baseline]]
+    if current_prefix_hashes != baseline_hashes:
+        mismatch_index = next(
+            (
+                i for i, (expected, actual)
+                in enumerate(zip(baseline_hashes, current_prefix_hashes))
+                if expected != actual
+            ),
+            min(len(baseline_hashes), len(current_prefix_hashes)),
+        )
+        baseline_row = baseline_lane[mismatch_index] if mismatch_index < len(baseline_lane) else {}
+        current_row = current_lane[mismatch_index] if mismatch_index < len(current_lane) else {}
+        raise RuntimeError(
+            "BASELINE_LANE_PREFIX_MUTATED:"
+            f"index={mismatch_index}:"
+            f"baseline_fixture={baseline_row.get('fixture_id')}:"
+            f"current_fixture={current_row.get('fixture_id')}:"
+            f"baseline_hash={baseline_row.get('record_sha256')}:"
+            f"current_hash={current_row.get('record_sha256')}"
+        )
 
     cohort_lane = current_lane[baseline:target]
     if len(cohort_lane) != 100:
