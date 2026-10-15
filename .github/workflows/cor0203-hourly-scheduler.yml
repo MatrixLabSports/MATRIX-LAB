@@ -179,6 +179,37 @@ jobs:
             --target-date-bogota "$D" \
             --out "evidence/tennis_world_inventory/$D/world_exact_day_dual_audit.json"
 
+      - name: Persist exact-day inventory before production subcycles
+        if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+        shell: bash
+        env:
+          MATRIX_TARGET_BRANCH: repair/cor09-world-pipeline
+        run: |
+          set -euo pipefail
+          git config user.name "matrix-scheduler"
+          git config user.email "matrix-scheduler@users.noreply.github.com"
+          git add evidence/tennis_world_inventory/*/world_exact_day_dual_audit.json 2>/dev/null || true
+          if git diff --cached --quiet; then
+            echo "EXACT_DAY_INVENTORY_NO_CHANGE"
+            exit 0
+          fi
+          git commit -m "evidence(tennis): persist exact-day world inventory"
+          PUSHED=0
+          for attempt in 1 2 3 4; do
+            git fetch origin "$MATRIX_TARGET_BRANCH"
+            if ! git rebase "origin/$MATRIX_TARGET_BRANCH"; then
+              git rebase --abort || true
+              echo "EXACT_DAY_REBASE_CONFLICT_ATTEMPT_$attempt" >&2
+              exit 1
+            fi
+            if git push origin "HEAD:$MATRIX_TARGET_BRANCH"; then
+              PUSHED=1
+              break
+            fi
+            sleep $((attempt * 2))
+          done
+          test "$PUSHED" = "1"
+
       - name: Run governed autonomous production subcycles
         shell: bash
         env:
@@ -368,3 +399,4 @@ jobs:
 # MATRIX_USER_AUTHORIZED_TRIGGER 2026-10-14T23:19-05:00 exact-15oct-tennis-inventory
 # MATRIX_USER_AUTHORIZED_RETRIGGER 2026-10-14T23:25-05:00 exact-15oct-after-secondary-failclosed-fix
 # MATRIX_USER_AUTHORIZED_RETRIGGER 2026-10-14T23:27-05:00 exact-15oct-after-test-env-fix
+# MATRIX_USER_AUTHORIZED_RETRIGGER 2026-10-14T23:32-05:00 exact-day-persist-before-subcycles
