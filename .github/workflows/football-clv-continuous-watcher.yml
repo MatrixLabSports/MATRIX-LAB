@@ -49,7 +49,10 @@ jobs:
         run: python -m pip install pytest requests
 
       - name: Verify CLV protections before watch
-        run: PYTHONPATH=. python -m pytest -q tests/test_football_clv_tracking_cycle.py
+        run: |
+          PYTHONPATH=. python -m pytest -q \
+            tests/test_football_clv_tracking_cycle.py \
+            tests/test_football_clv_odds_api_net_capture.py
 
       - name: Validate watcher safety and secret
         env:
@@ -66,6 +69,7 @@ jobs:
       - name: Continuous CLV watch and immediate persistence
         env:
           API_FOOTBALL_KEY: ${{ secrets.API_FOOTBALL_KEY }}
+          ODDS_API_NET_KEY: ${{ secrets.ODDS_API_NET_KEY }}
         shell: bash
         run: |
           set -euo pipefail
@@ -149,6 +153,7 @@ jobs:
             fi
             echo "CLV_WATCHER_OPERATIONAL_REFRESH=PASS"
 
+            PYTHONPATH=. python -m tools.football_clv_odds_api_net_capture
             PYTHONPATH=. python -m tools.football_clv_tracking_cycle
             persist_if_changed
 
@@ -237,3 +242,4 @@ jobs:
             echo "CLV_SUCCESSOR_NOT_NEEDED"
           fi
 # MATRIX_CLV_REFRESH_REPAIR 2026-10-15 stale-checkout-before-each-cycle
+# MATRIX_CLV_MULTI_TRANSPORT_REPAIR 2026-10-15 odds-api-preferred-api-football-fallback
