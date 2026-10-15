@@ -1,24 +1,30 @@
 {
-  "emitted_at_utc": "2026-10-13T21:57:04+00:00",
-  "paid_sources": {
-    "api_tennis": {
-      "configured": true,
-      "role": "SECONDARY_DISCOVERY_AND_STATS_RICH_VALIDATION"
-    },
-    "rapidapi_tennis": {
-      "configured": true,
-      "role": "PRIMARY_DISCOVERY_AND_HISTORY"
-    }
-  },
+  "emitted_at_utc": "2026-10-15T09:31:15+00:00",
   "purpose": "Trigger the governed COR02/COR03 production workflow without chat or browser dependency.",
   "real_money": "BLOCKED",
   "scheduler": "GITHUB_ACTIONS_DEFAULT_BRANCH_CRON",
-  "scheduler_event": "workflow_run",
+  "scheduler_event": "push",
   "scheduler_run_attempt": "1",
-  "scheduler_run_id": "38474187678",
+  "scheduler_run_id": "38712805073",
   "schema": "MATRIX_COR0203_SCHEDULER_HEARTBEAT_V1",
-  "source_compliance_status": "PASS_TWO_PAID_SOURCES",
+  "source_compliance_status": "PASS_RAPIDAPI_PRIMARY_OPEN_RECONCILIATION",
   "target_branch": "repair/cor09-world-pipeline",
-  "target_head_before": "6fcecb37c03d5977be96155bcb343cad815f3ecf",
-  "two_paid_sources_ready": true
+  "target_head_before": "74d7263df9cd59772546c3f2ec5c23cd70f338d9",
+  "tennis_source_architecture": {
+    "api_tennis": {
+      "required": false,
+      "status": "RETIRED_COST_UTILITY_DECISION",
+      "subscription": "EXPIRED_NOT_RENEWED"
+    },
+    "paid_primary": {
+      "configured": true,
+      "provider": "rapidapi_tennis"
+    },
+    "paid_secondary": null,
+    "required_open_calendar_reconciliation": [
+      "SofaScore",
+      "Flashscore"
+    ],
+    "two_paid_sources_required": false
+  }
 }
