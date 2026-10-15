@@ -1,8 +1,8 @@
 {
-  "credential_configured": false,
-  "credential_name": "ODDS_API_NET_KEY",
-  "generated_at_utc": "2026-10-15T14:47:58+00:00",
-  "payload_sha256": "6a45232ba58cb51db6466ee0baf622aa6d4d6eedeb5364632255fa65f598964b",
+  "generated_at_utc": "2026-10-15T21:10:45+00:00",
+  "payload_sha256": "490e374bc593339730b9966797bbf673fadf207e11dbb2cc316e63a689bf8505",
+  "pinnacle_catalog_http": 200,
+  "pinnacle_catalog_present": true,
   "protections": {
     "automatic_wagering": false,
     "historical_backfill": false,
@@ -12,8 +12,33 @@
     "strict_fresh_gate_seconds": 120
   },
   "reference_bookmaker": "pinnacle",
+  "results": [
+    {
+      "api_football_match": "USA W vs Spain W",
+      "best_score": null,
+      "candidate_count": 0,
+      "event_http": 200,
+      "fixture_id": "1604195",
+      "kickoff_utc": "2026-10-13T23:00:00+00:00",
+      "status": "ODDS_API_EVENT_NOT_UNIQUELY_MATCHED"
+    },
+    {
+      "api_football_match": "Bucaramanga vs Águilas Doradas",
+      "best_score": null,
+      "candidate_count": 0,
+      "event_http": 200,
+      "fixture_id": "1549745",
+      "kickoff_utc": "2026-10-13T23:30:00+00:00",
+      "status": "ODDS_API_EVENT_NOT_UNIQUELY_MATCHED"
+    }
+  ],
   "schema": "MATRIX_FOOTBALL_CLV_ODDS_API_NET_PINNACLE_PROBE_V1",
-  "status": "BLOCKED_CREDENTIAL_REQUIRED",
+  "sport_key_used": "soccer",
+  "sports_http": 200,
   "strict_ready_count": 0,
+  "targets": [
+    "1604195",
+    "1549745"
+  ],
   "transport": "odds-api.net /v1/events/{event_id}/odds/snapshot"
 }
