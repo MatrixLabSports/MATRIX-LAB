@@ -197,7 +197,7 @@ jobs:
           PUSHED=0
           for attempt in 1 2 3 4; do
             git fetch origin "$MATRIX_TARGET_BRANCH"
-            if ! git rebase "origin/$MATRIX_TARGET_BRANCH"; then
+            if ! git rebase --autostash "origin/$MATRIX_TARGET_BRANCH"; then
               git rebase --abort || true
               echo "EXACT_DAY_REBASE_CONFLICT_ATTEMPT_$attempt" >&2
               exit 1
@@ -400,3 +400,4 @@ jobs:
 # MATRIX_USER_AUTHORIZED_RETRIGGER 2026-10-14T23:25-05:00 exact-15oct-after-secondary-failclosed-fix
 # MATRIX_USER_AUTHORIZED_RETRIGGER 2026-10-14T23:27-05:00 exact-15oct-after-test-env-fix
 # MATRIX_USER_AUTHORIZED_RETRIGGER 2026-10-14T23:32-05:00 exact-day-persist-before-subcycles
+# MATRIX_USER_AUTHORIZED_RETRIGGER 2026-10-14T23:34-05:00 exact-day-persist-autostash
