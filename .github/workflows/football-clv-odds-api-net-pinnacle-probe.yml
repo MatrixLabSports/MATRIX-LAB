@@ -138,7 +138,7 @@ jobs:
               if not kickoff_raw or not fixture_id:
                   continue
               kickoff = datetime.fromisoformat(str(kickoff_raw).replace("Z","+00:00")).astimezone(timezone.utc)
-              if kickoff <= now:
+              if kickoff <= datetime.now(timezone.utc):
                   continue
               future_targets.append((kickoff, str(fixture_id)))
           future_targets.sort(key=lambda x: (x[0], x[1]))
