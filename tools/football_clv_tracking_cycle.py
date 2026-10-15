@@ -536,9 +536,9 @@ def build_state(
         "market_key": MARKET_KEY,
         "model_version": MODEL_VERSION,
         "closing_reference_choice": "OPTION_B_PINNACLE_STRICT_FRESH",
-        "closing_reference_transport": "API-Football /odds bookmaker_id=4",
+        "closing_reference_transport": "odds-api.net preferred; API-Football /odds bookmaker_id=4 fallback",
         "direct_pinnacle_api_connection": False,
-        "source_quality_flag": "SHARP_PINNACLE_VIA_API_FOOTBALL_STRICT_120S",
+        "source_quality_flag": "SHARP_PINNACLE_MULTI_TRANSPORT_STRICT_120S",
         "closing_freshness_policy": {
             "max_provider_quote_age_seconds": MAX_PINNACLE_PROVIDER_QUOTE_AGE_SECONDS,
             "governance_basis": "evidence/api_football/pinnacle_snapshot_age_audit/audit.json",
