@@ -12,6 +12,7 @@ from tools.telegram_green_signal_alerts import (
     SIGNAL_QUALITY_MIN_REVALIDATED_EV,
     signal_quality_gate_state,
     odds_api_net_exact_over25_offer,
+    shadow_watch_candidate,
     paper_daily_cap_fraction,
     paper_daily_exposure_by_date,
     paper_stake_cop,
@@ -463,3 +464,36 @@ def test_odds_api_parser_accepts_current_period_str_and_string_line_contract():
     assert offer is not None
     assert offer["house_key"] == "betplay"
     assert offer["odds"] == 1.84
+
+
+def test_shadow_watch_candidate_promotes_quality_eligible_p_matrix_without_initial_odds():
+    row={
+        "fixture_id":"future-1",
+        "match":"Alpha vs Beta",
+        "league_id":"999",
+        "kickoff_utc":"2026-10-16T23:00:00+00:00",
+        "p_over_2_5":0.64,
+        "decision":"BLOCKED",
+        "best_policy_offer":None,
+    }
+    c=shadow_watch_candidate(row, __import__("pathlib").Path("report.json"))
+    assert c is not None
+    assert c["watch_candidate"] is True
+    assert c["eligible_green"] is True
+    assert c["p_matrix"] == 0.64
+    assert c["odds"] is None
+    assert c["ev"] is None
+    assert c["physical_quote_verified"] is False
+    assert c["house"] == "MULTIBOOK_REVALIDATION"
+
+
+def test_shadow_watch_candidate_rejects_p_matrix_below_quality_floor():
+    row={
+        "fixture_id":"future-2",
+        "match":"Gamma vs Delta",
+        "league_id":"999",
+        "kickoff_utc":"2026-10-16T23:00:00+00:00",
+        "p_over_2_5":0.5999,
+        "best_policy_offer":None,
+    }
+    assert shadow_watch_candidate(row, __import__("pathlib").Path("report.json")) is None
