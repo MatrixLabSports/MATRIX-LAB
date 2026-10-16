@@ -1089,6 +1089,7 @@ def main() -> None:
     token = os.environ.get("TELEGRAM_BOT_TOKEN", "").strip()
     chat_id = os.environ.get("TELEGRAM_CHAT_ID", "").strip()
     api_key = os.environ.get("API_FOOTBALL_KEY", "").strip()
+    odds_api_net_key = os.environ.get("ODDS_API_NET_KEY", "").strip()
     if not token:
         raise SystemExit("TELEGRAM_BOT_TOKEN_NOT_CONFIGURED")
     if not chat_id:
@@ -1159,16 +1160,30 @@ def main() -> None:
             pre_send_blocked += 1
             continue
         required_house_key = bookmaker_key(candidate.get("house"))
-        offer = exact_over25_offer(
+        primary_offer = exact_over25_offer(
             session,
             api_key,
             str(candidate["fixture_id"]),
             float(candidate["p_matrix"]),
             required_house_key,
         )
+        fallback_offer = odds_api_net_exact_over25_offer(
+            session,
+            odds_api_net_key,
+            str(candidate["fixture_id"]),
+            candidate.get("kickoff"),
+            float(candidate["p_matrix"]),
+            api_key,
+        )
+        comparable = [x for x in (primary_offer, fallback_offer) if isinstance(x, dict)]
+        offer = max(comparable, key=lambda x: float(x.get("ev") or -999.0)) if comparable else None
         pre_send_quote_checks += 1
         gate_record["required_house_key"] = required_house_key
+        gate_record["primary_same_house_offer"] = primary_offer
+        gate_record["odds_api_net_multi_book_offer"] = fallback_offer
         gate_record["offer"] = offer
+        gate_record["selected_quote_provider"] = (offer or {}).get("provider") or ("api-football" if offer else None)
+        gate_record["multi_book_fallback_used"] = bool(offer is not None and offer is fallback_offer)
         final_quote_state = final_prematch_quote_state(offer)
         if final_quote_state != "PASS_FINAL_PREMATCH_REVALIDATION":
             gate_record["state"] = final_quote_state
