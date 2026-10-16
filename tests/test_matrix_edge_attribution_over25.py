@@ -98,3 +98,27 @@ def test_edge_attribution_v2_refuses_to_invent_missing_feature_trace():
     assert row["edge_attribution"]["feature_level_drivers"] is None
     assert row["edge_attribution"]["feature_level_driver_status"] == "NOT_AVAILABLE_IN_SOURCE_TRACE"
     assert row["protections"]["feature_contributions_invented"] is False
+
+
+def test_edge_attribution_v2_keeps_model_trace_even_without_price():
+    source={
+        "all_rows":[{
+            "fixture_id":"4",
+            "match":"G vs H",
+            "kickoff_utc":"2026-10-16T22:00:00+00:00",
+            "p_over_2_5":0.6288022142,
+            "over25_feature_trace":_trace(),
+            "best_policy_offer":None,
+            "decision":"BLOCKED",
+            "reason":"NO_EXACT_POLICY_HOUSE_OVER25_ODDS_ABOVE_1_50"
+        }]
+    }
+    artifact=build(source)
+    assert artifact["row_count"] == 1
+    assert artifact["feature_trace_available_count"] == 1
+    assert artifact["priced_row_count"] == 0
+    row=artifact["rows"][0]
+    assert row["quoted_decimal_odds"] is None
+    assert row["expected_value"] is None
+    assert row["edge_attribution"]["feature_level_driver_status"] == "AVAILABLE_REAL_ENGINE_TRACE"
+    assert row["protections"]["p_matrix_modified"] is False
