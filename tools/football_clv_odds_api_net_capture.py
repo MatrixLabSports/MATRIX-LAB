@@ -202,6 +202,9 @@ def capture_due_via_odds_api_net(
                 "capture_lead_seconds": int((kickoff-reference).total_seconds()),
                 "outcome": "ODDS_API_BLOCKED_FIXTURE_LOOKUP",
                 "http_status": int(fr.status_code),
+                "provider_quote_updated_at_utc": None,
+                "provider_quote_age_seconds": None,
+                "gate_excess_seconds": None,
             })
             continue
 
@@ -246,6 +249,9 @@ def capture_due_via_odds_api_net(
                 "capture_lead_seconds": int((kickoff-reference).total_seconds()),
                 "outcome": "ODDS_API_BLOCKED_IDENTITY",
                 "http_status": int(er.status_code),
+                "provider_quote_updated_at_utc": None,
+                "provider_quote_age_seconds": None,
+                "gate_excess_seconds": None,
                 "best_identity_score": best[0] if best else None,
                 "second_identity_score": second_score if best else None,
             })
@@ -278,6 +284,9 @@ def capture_due_via_odds_api_net(
             "odds_api_event_id": event_id,
             "identity_score": score,
             "identity_orientation": "direct" if direct else "swapped",
+            "provider_quote_updated_at_utc": None,
+            "provider_quote_age_seconds": None,
+            "gate_excess_seconds": None,
         }
         if sr.status_code >= 300 or not isinstance(sp, Mapping):
             result["blocked_provider_error"] += 1
@@ -291,9 +300,14 @@ def capture_due_via_odds_api_net(
             continue
         over_odds, under_odds, provider_update = parsed
         quote_age = int((captured_at-provider_update).total_seconds())
+        gate_excess_seconds = max(
+            0,
+            quote_age - MAX_PINNACLE_PROVIDER_QUOTE_AGE_SECONDS,
+        )
         attempt.update({
             "provider_quote_updated_at_utc": provider_update.isoformat(),
             "provider_quote_age_seconds": quote_age,
+            "gate_excess_seconds": gate_excess_seconds,
             "over_2_5_decimal_odds": over_odds,
             "under_2_5_decimal_odds": under_odds,
         })
@@ -351,6 +365,7 @@ def capture_due_via_odds_api_net(
                 "system_captured_at_utc": captured_at.isoformat(),
                 "provider_quote_updated_at_utc": provider_update.isoformat(),
                 "provider_quote_age_seconds": quote_age,
+                "gate_excess_seconds": gate_excess_seconds,
                 "kickoff_utc": kickoff.isoformat(),
                 "capture_lead_seconds": int((kickoff-captured_at).total_seconds()),
                 "complete_market_snapshot": True,
