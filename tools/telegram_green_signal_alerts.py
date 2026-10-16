@@ -231,6 +231,55 @@ def quote_freeze_candidate(row: dict[str, Any], path: Path) -> dict[str, Any] | 
     }
 
 
+def shadow_watch_candidate(row: dict[str, Any], path: Path) -> dict[str, Any] | None:
+    """Promote any scored P_MATRIX row that can still pass the immutable quality gate.
+
+    Price is intentionally optional here. Exact executable odds are acquired only
+    in the final prematch revalidation window from an authorized policy house.
+    """
+    try:
+        p = float(row.get("p_over_2_5"))
+    except Exception:
+        return None
+    if p < SIGNAL_QUALITY_MIN_P_MATRIX:
+        return None
+    fixture_id = str(row.get("fixture_id") or "").strip()
+    kickoff = row.get("kickoff_utc")
+    if not fixture_id or parse_dt(kickoff) is None:
+        return None
+    offer = row.get("best_policy_offer")
+    initial_odds = None
+    initial_ev = None
+    initial_house = "MULTIBOOK_REVALIDATION"
+    physical = False
+    if isinstance(offer, dict):
+        initial_odds = odd(offer.get("decimal_odds"))
+        if initial_odds is not None:
+            initial_ev = float(offer.get("ev") if offer.get("ev") is not None else p * initial_odds - 1.0)
+            initial_house = str(offer.get("bookmaker_name") or initial_house)
+            physical = True
+    return {
+        "sport": "football",
+        "fixture_id": fixture_id,
+        "match": row.get("match"),
+        "league_id": str(row.get("league_id") or row.get("league") or ""),
+        "market": "Más de 2.5 goles",
+        "market_key": MARKET_KEY,
+        "selection_key": SELECTION_KEY,
+        "p_matrix": p,
+        "house": initial_house,
+        "odds": initial_odds,
+        "ev": initial_ev,
+        "kickoff": kickoff,
+        "source": str(path),
+        "source_priority": 10,
+        "physical_quote_verified": physical,
+        "eligible_green": True,
+        "watch_candidate": True,
+        "execution": None,
+    }
+
+
 def shadow_ev_candidate(row: dict[str, Any], path: Path) -> dict[str, Any] | None:
     if str(row.get("decision") or "") != "BET_SHADOW":
         return None
@@ -301,8 +350,14 @@ def discover_football(dates: list[str]) -> dict[str, dict[str, Any]]:
                         continue
                     if payload.get("probability_status") != "FROZEN_GOVERNED_MARKET_SCOPED_SIGNAL_ONLY":
                         continue
-                    rows = payload.get("bet_shadow", [])
-                    parser = shadow_ev_candidate
+                    # Discovery must start from every scored P_MATRIX row that
+                    # can still pass the immutable >=60% quality gate. Requiring
+                    # BET_SHADOW here would discard fixtures merely because an
+                    # executable quote was absent hours before kickoff. Exact
+                    # authorized-book price and EV are enforced later inside the
+                    # final 120-minute revalidation window.
+                    rows = payload.get("all_rows", [])
+                    parser = shadow_watch_candidate
                 if not isinstance(rows, list):
                     continue
                 for row in rows:
@@ -1275,6 +1330,7 @@ def main() -> None:
         candidate["house"] = offer["house"]
         candidate["odds"] = offer["odds"]
         candidate["ev"] = offer["ev"]
+        candidate["physical_quote_verified"] = True
         candidate["send_gate_status"] = quality_state
         candidate["pre_send_revalidated_at_utc"] = now.isoformat()
         gate_record["state"] = candidate["send_gate_status"]
@@ -1729,6 +1785,9 @@ def main() -> None:
         "bogota_date": str(today),
         "dates_scanned": dates,
         "football_candidates": len(football),
+        "football_watch_candidates": sum(1 for x in football.values() if x.get("watch_candidate") is True),
+        "football_existing_sent_candidates": sum(1 for k in football if k in existing_sent_keys),
+        "football_unsent_candidates": sum(1 for k in football if k not in existing_sent_keys),
         "tennis_candidates": len(tennis),
         "sent_now": sent_now,
         "delivery_failures_now": delivery_failures_now,
