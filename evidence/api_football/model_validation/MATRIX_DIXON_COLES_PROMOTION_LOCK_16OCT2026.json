@@ -1,0 +1,40 @@
+{
+  "schema": "MATRIX_DIXON_COLES_PROMOTION_LOCK_V1",
+  "date_bogota": "2026-10-16",
+  "production_market": "OVER_2_5",
+  "current_production_engine": "calibrated_log_pool_v1",
+  "dixon_coles": {
+    "source_artifact": "evidence/api_football/model_validation/MATRIX_DIXON_COLES_FULL_CHALLENGER_V1.json",
+    "source_blob_sha": "e3b1ae8c5cbb3eae5c31c2a6918cb49b858664f5",
+    "source_artifact_sha256": "ee2aa71a397930340b6fc8e416b9b947809138caf66a52d9f99b49f8b9054fdb",
+    "holdout_comparable_n": 490,
+    "frozen_poisson_brier": 0.22514963410509425,
+    "dixon_coles_brier": 0.23981292455476969,
+    "frozen_poisson_log_loss": 0.6409118789648016,
+    "dixon_coles_log_loss": 0.674114857817723,
+    "holdout_beats_frozen_both_metrics": false,
+    "adjudication": "NO_PROMOTION_DIXON_COLES_NOT_SUPERIOR_ON_HOLDOUT"
+  },
+  "time_decay": {
+    "source_artifact": "evidence/api_football/model_validation/MATRIX_OVER25_TIME_DECAY_CHALLENGER_V1.json",
+    "source_blob_sha": "022c5e7506ac6cf4a28d518f3b0c4dcb91e76200",
+    "selected_half_life_days": 180,
+    "holdout_delta_selected_minus_frozen": {
+      "brier": 0.0001328678813884432,
+      "log_loss": 0.00038189391112986026
+    },
+    "holdout_beats_frozen_both_metrics": false,
+    "adjudication": "NO_PROMOTION_TIME_DECAY_NOT_SUPERIOR_ON_HOLDOUT"
+  },
+  "governance": {
+    "production_engine_modified": false,
+    "p_matrix_modified": false,
+    "telegram_modified": false,
+    "odds_used_to_generate_probability": false,
+    "research_only_challengers": true,
+    "promotion_locked": true,
+    "promotion_requires_new_preregistered_oos_evidence": true,
+    "automatic_wagering": false,
+    "real_money": "BLOCKED"
+  }
+}
