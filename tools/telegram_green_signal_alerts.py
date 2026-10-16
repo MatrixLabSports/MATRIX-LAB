@@ -653,7 +653,7 @@ def prematch_revalidation_state(candidate: dict[str, Any], now: datetime) -> str
 
 def final_prematch_quote_state(offer: dict[str, Any] | None) -> str:
     if offer is None:
-        return "BLOCKED_NO_VALID_EXACT_SAME_HOUSE_OVER25"
+        return "BLOCKED_NO_VALID_EXACT_AUTHORIZED_BOOK_OVER25"
     if float(offer.get("ev") or 0.0) <= 0:
         return "BLOCKED_NONPOSITIVE_EV"
     return "PASS_FINAL_PREMATCH_REVALIDATION"
