@@ -1,0 +1,64 @@
+{
+  "schema": "MATRIX_16OCT_BROWSER_FIRST_CALENDAR_PROOF_V1",
+  "target_date_bogota": "2026-10-16",
+  "browser_baseline_completed_at_utc": "2026-10-16T00:04:02Z",
+  "source_order": [
+    "SofaScore",
+    "Flashscore",
+    "APIs",
+    "reconciliation",
+    "P_MATRIX",
+    "freeze",
+    "odds_EV",
+    "signal"
+  ],
+  "browser": {
+    "football": {
+      "sofascore": 126,
+      "flashscore": 253,
+      "sofascore_nonstandard_blocked": 6
+    },
+    "tennis": {
+      "sofascore_total": 263,
+      "sofascore_singles": 183,
+      "sofascore_doubles": 80,
+      "sofascore_nonstandard": 5,
+      "sofascore_placeholders": 4,
+      "flashscore_total": 388,
+      "flashscore_singles_like": 241,
+      "flashscore_doubles": 147
+    }
+  },
+  "preexisting_structured_api_snapshots": {
+    "api_football": {
+      "fixtures_received": 411,
+      "eligible_future_fixtures": 407,
+      "canonical_ready_input_count": 154,
+      "blocked_future_input_count": 253,
+      "captured_before_this_browser_baseline": true,
+      "admission_for_order_proof": "STALE_FOR_BROWSER_FIRST_ORDER_PROOF"
+    },
+    "rapidapi_tennis": {
+      "world_calendar_inventory_count": 94,
+      "event_format": "SINGLES",
+      "atp_challenger": 20,
+      "captured_before_this_browser_baseline": true,
+      "admission_for_order_proof": "STALE_FOR_BROWSER_FIRST_ORDER_PROOF"
+    },
+    "api_tennis": {
+      "status": "RETIRED_COST_UTILITY_DECISION",
+      "required": false,
+      "attempted": false
+    }
+  },
+  "next_required_physical_step": "Refresh API-Football and RapidAPI Tennis after browser_baseline_completed_at_utc, then persist reconciliation and read back.",
+  "protections": {
+    "no_forced_count_equality": true,
+    "no_forced_admission": true,
+    "metrics_opened": false,
+    "automatic_wagering": false,
+    "real_money": "BLOCKED",
+    "odds_to_probability": false
+  },
+  "status": "BROWSER_BASELINE_PHYSICALLY_CAPTURED_API_REFRESH_REQUIRED"
+}
