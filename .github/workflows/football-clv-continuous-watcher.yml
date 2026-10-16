@@ -69,6 +69,38 @@ jobs:
           echo "CLV_CONTINUOUS_WATCHER_SAFETY: PASS"
           echo "CLV_ODDS_API_NET_SECRET_PRESENT: PASS"
 
+      - name: Verify startup coverage and per-cycle refresh contract
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch origin main
+          git show origin/main:.github/workflows/football-clv-continuous-watcher.yml > /tmp/football-clv-continuous-watcher.yml
+          python - <<'PY'
+          from pathlib import Path
+          s=Path("/tmp/football-clv-continuous-watcher.yml").read_text(encoding="utf-8")
+          required=[
+              "workflow_run:",
+              "MATRIX Football Daily Governed Pipeline",
+              "git fetch origin repair/cor09-world-pipeline",
+              "git rebase --autostash origin/repair/cor09-world-pipeline",
+              "CLV_WATCHER_OPERATIONAL_REFRESH=PASS",
+              "POLL_SECONDS: 90",
+              'assert j["closing_freshness_policy"]["max_provider_quote_age_seconds"]==120',
+          ]
+          missing=[x for x in required if x not in s]
+          if missing:
+              raise SystemExit("CLV_WATCHER_COVERAGE_CONTRACT_MISSING="+repr(missing))
+          cycle=s.index('echo "CLV_WATCH_CYCLE=$cycle')
+          refresh=s.index("git fetch origin repair/cor09-world-pipeline", cycle)
+          capture=s.index("python -m tools.football_clv_odds_api_net_capture", cycle)
+          fallback=s.index("python -m tools.football_clv_tracking_cycle", cycle)
+          if not (cycle < refresh < capture < fallback):
+              raise SystemExit("CLV_WATCHER_REFRESH_ORDER_INVALID")
+          print("CLV_WATCHER_STARTUP_COVERAGE_CONTRACT=PASS")
+          print("CLV_WATCHER_PER_CYCLE_REFRESH_ORDER=PASS")
+          print("CLV_STRICT_FRESH_GATE_SECONDS=120")
+          PY
+
       - name: Continuous CLV watch and immediate persistence
         env:
           API_FOOTBALL_KEY: ${{ secrets.API_FOOTBALL_KEY }}
