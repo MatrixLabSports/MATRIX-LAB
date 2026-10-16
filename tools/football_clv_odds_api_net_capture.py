@@ -87,17 +87,25 @@ def _exact_line_from_item(item: Mapping[str, Any]) -> float | None:
             return float(raw)
     except (TypeError, ValueError):
         pass
-    # Strict fallback: recover a numeric total only from an explicit Over/Under
-    # selection label such as "Over 2.5" / "Under 2.5". This does not broaden
-    # the market or accept an inferred line from unrelated text.
+    # Current odds-api.net contract may encode the side together with the line,
+    # e.g. line="over 2.5" / "under 2.5". Accept only that exact form.
+    raw_text = str(raw or "").strip()
+    m = re.fullmatch(r"(?i)\s*(?:over|under)\s+([0-9]+(?:\.[0-9]+)?)\s*", raw_text)
+    if m:
+        return float(m.group(1))
+    # Strict secondary fallback for older/alternate payloads where the exact
+    # total is in selection_name.
     label = str(item.get("selection_name") or "").strip()
     m = re.fullmatch(r"(?i)\s*(?:over|under)\s+([0-9]+(?:\.[0-9]+)?)\s*", label)
-    if not m:
-        return None
-    try:
-        return float(m.group(1))
-    except ValueError:
-        return None
+    return float(m.group(1)) if m else None
+
+
+def _is_standard_goal_total(item: Mapping[str, Any]) -> bool:
+    metric = _norm(item.get("metric"))
+    if metric and metric != "standard":
+        return False
+    market_text = " ".join([_norm(item.get("market_key")), _norm(item.get("bet_type"))])
+    return "total" in market_text or "over under" in market_text
 
 
 def _extract_total_25(snapshot: Mapping[str, Any]) -> tuple[float, float, datetime] | None:
@@ -120,11 +128,7 @@ def _extract_total_25(snapshot: Mapping[str, Any]) -> tuple[float, float, dateti
             continue
         if line != 2.5 or odds <= 1.0 or item.get("is_available") is False:
             continue
-        market_text = " ".join([
-            _norm(item.get("market_key")),
-            _norm(item.get("bet_type")),
-        ])
-        if "total" not in market_text and "over under" not in market_text:
+        if not _is_standard_goal_total(item):
             continue
         label = " ".join([
             _norm(item.get("side")),
@@ -158,11 +162,7 @@ def _diagnose_total_25(snapshot: Mapping[str, Any]) -> dict[str, Any]:
         if not isinstance(item, Mapping) or _norm(item.get("bookmaker")) != "pinnacle":
             continue
         diagnostic["pinnacle_item_count"] += 1
-        market_text = " ".join([
-            _norm(item.get("market_key")),
-            _norm(item.get("bet_type")),
-        ])
-        if "total" not in market_text and "over under" not in market_text:
+        if not _is_standard_goal_total(item):
             continue
         diagnostic["total_market_item_count"] += 1
         if len(diagnostic["sample_total_items"]) < 12:
