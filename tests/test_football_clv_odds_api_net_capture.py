@@ -232,3 +232,56 @@ def test_incomplete_odds_api_market_persists_total_25_missing(tmp_path):
     assert row["market_diagnostic"]["total_market_item_count"] == 2
     assert row["market_diagnostic"]["available_total_lines"] == [3.0]
     assert row["market_diagnostic"]["incomplete_reason"] == "TOTAL_2_5_LINE_MISSING"
+
+
+class LabelOnlyLineSession(RoutedSession):
+    def get(self, url, headers=None, params=None, timeout=None):
+        if "/odds/snapshot" in url:
+            self.calls.append((url, params or {}))
+            ts_ms = int((self.capture_at.timestamp() - 60) * 1000)
+            return Resp({
+                "bookmaker_as_of_ts_ms": {"pinnacle": ts_ms},
+                "items": [
+                    {
+                        "bookmaker": "pinnacle",
+                        "market_key": "total",
+                        "bet_type": "total",
+                        "side": "over",
+                        "selection_name": "Over 2.5",
+                        "line": None,
+                        "odds": 1.91,
+                        "is_available": True,
+                    },
+                    {
+                        "bookmaker": "pinnacle",
+                        "market_key": "total",
+                        "bet_type": "total",
+                        "side": "under",
+                        "selection_name": "Under 2.5",
+                        "line": None,
+                        "odds": 1.93,
+                        "is_available": True,
+                    },
+                ],
+            })
+        return super().get(url, headers=headers, params=params, timeout=timeout)
+
+
+def test_exact_total_25_can_be_recovered_from_explicit_selection_label(tmp_path):
+    ledger = _ledger(tmp_path)
+    capture_at = datetime(2026, 10, 15, 14, 50, tzinfo=UTC)
+    attempts = tmp_path / "attempts.jsonl"
+    result = capture_due_via_odds_api_net(
+        ledger_path=ledger.path,
+        capture_dir=tmp_path / "captures",
+        attempt_log_path=attempts,
+        api_football_key="af",
+        odds_api_key="oa",
+        now=capture_at,
+        session=LabelOnlyLineSession(capture_at),
+        capture_clock=lambda: capture_at,
+    )
+    assert result["captured_new"] == 1
+    assert ledger.audit().closing_odds_count == 1
+    rows = [json.loads(x) for x in attempts.read_text(encoding="utf-8").splitlines()]
+    assert rows[-1]["outcome"] == "ODDS_API_CAPTURED_VALID"
