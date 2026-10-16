@@ -1,0 +1,73 @@
+{
+  "schema": "MATRIX_CLV_4STEP_REMEDIATION_SUMMARY_V1",
+  "generated_at_utc": "2026-10-16T03:16:00+00:00",
+  "forensic_basis": {
+    "path": "evidence/clv/football/over_2_5/MATRIX_CLV_48_MISSED_CLOSE_FORENSIC_DIAGNOSIS_15OCT2026.json",
+    "forensic_commit": "cdf2ac5bdd781020911af5ca66aec6a16b674d09",
+    "forensic_csv_commit": "deb5870e2634215f736872ea20ec3dbcb2ad8752"
+  },
+  "steps": {
+    "step1": {
+      "status": "PHYSICALLY_VERIFIED",
+      "proof_path": "evidence/clv/football/over_2_5/MATRIX_CLV_STEP1_WATCHER_REFRESH_STARTUP_COVERAGE_PROOF_16OCT2026.json",
+      "proof_commit": "22ff5c67f4f3e5ce0ead8a41eed386a007c2e49a",
+      "proof_blob_sha": "298ea8752273e9dd9babe345ccb128dcaa913c09",
+      "workflow_run_id": 38843315814,
+      "result": "workflow_run startup coverage + per-cycle operational refresh contract verified"
+    },
+    "step2": {
+      "status": "PHYSICALLY_VERIFIED",
+      "proof_path": "evidence/clv/football/over_2_5/MATRIX_CLV_STEP2_PER_ATTEMPT_TELEMETRY_PROOF_16OCT2026.json",
+      "proof_commit": "86a724dbe0d47adbe2c0bdd16632cb743b67231b",
+      "proof_blob_sha": "a9b8da074b5a528e014dabae8ac52e6332264356",
+      "clean_workflow_run_id": 38843658396,
+      "fields": [
+        "attempted_at_utc",
+        "provider_quote_updated_at_utc",
+        "provider_quote_age_seconds",
+        "gate_excess_seconds"
+      ],
+      "test_artifact_quarantine": "evidence/clv/football/over_2_5/MATRIX_CLV_CLOSING_ATTEMPT_TEST_ARTIFACT_QUARANTINE_16OCT2026.json"
+    },
+    "step3": {
+      "status": "EVALUATED_PHYSICALLY_NO_PRODUCTION_CUTOVER_YET",
+      "proof_path": "evidence/clv/football/over_2_5/MATRIX_CLV_STEP3_PUSH_TRANSPORT_EVALUATION_16OCT2026.json",
+      "proof_commit": "7d67bd3e0d13861ed54c5592938078b3504612b6",
+      "proof_blob_sha": "a9020799ed6ac0c18a09dda5c5efea98e329c892",
+      "selected_trial_candidate": "PinnOdds",
+      "paid_migration_status": "NOT_ACTIVATED_PENDING_PHYSICAL_TRIAL",
+      "acceptance_gate": {
+        "minimum_observations": 50,
+        "max_provider_quote_age_seconds": 120,
+        "stale_gt_120_count": 0,
+        "max_stream_error_rate_pct": 1
+      },
+      "current_production_transport": "odds-api.net preferred; API-Football strict-fresh fallback"
+    },
+    "step4": {
+      "status": "PHYSICALLY_VERIFIED",
+      "proof_path": "evidence/clv/football/over_2_5/MATRIX_CLV_STEP4_INCOMPLETE_MARKET_RESOLUTION_PROOF_16OCT2026.json",
+      "proof_commit": "d2408a6eda28546bce610401d228b6b59e4cdd9d",
+      "proof_blob_sha": "779f01dc6db678706fb8954d17f0f26dda9500aa",
+      "workflow_run_id": 38844118922,
+      "workflow_job_id": 116790622054,
+      "tests_passed": 11,
+      "result": "market-incomplete subreason instrumentation active for both API-Football and odds-api.net",
+      "recurrence": "historical one incomplete episode plus 9 repeated odds-api.net incomplete attempts on fixture 1559671; current persisted probe proves Pinnacle/identity/HTTP present but complete total 2.5 line absent"
+    }
+  },
+  "invariants": {
+    "closing_reference_choice": "OPTION_B_PINNACLE_STRICT_FRESH",
+    "strict_fresh_gate_seconds": 120,
+    "freshness_gate_relaxed": false,
+    "post_kickoff_backfill": false,
+    "odds_used_to_generate_probability": false,
+    "automatic_wagering": false,
+    "real_money": "BLOCKED"
+  },
+  "heads_before_summary_commit": {
+    "operational": "d2408a6eda28546bce610401d228b6b59e4cdd9d",
+    "main": "c35a88d7961054476eaa964cd212dd5c05d63252"
+  },
+  "final_adjudication": "STEPS_1_2_4_COMPLETE_AND_PHYSICALLY_VERIFIED; STEP_3_EVALUATION_COMPLETE_WITH_TRIAL_GATED_MIGRATION_DECISION"
+}
