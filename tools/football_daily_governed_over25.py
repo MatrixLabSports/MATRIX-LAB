@@ -409,6 +409,7 @@ def build(target_date: str, api_key: str, root: Path = Path(".")) -> dict[str, A
             "kickoff_utc": row["kickoff_utc"],
             "p_over_2_5": probability,
             "fair_decimal_odds": 1.0 / probability,
+            "over25_feature_trace": row.get("over25_feature_trace"),
             "policy_offers": policy_offers,
             "diagnostic_offers": diagnostic_offers,
             "best_policy_offer": best,
