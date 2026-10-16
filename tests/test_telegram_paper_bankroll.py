@@ -8,6 +8,9 @@ from tools.telegram_green_signal_alerts import (
     PAPER_UNIT_COP,
     GREEN_PREMATCH_REVALIDATION_WINDOW_MINUTES,
     PAPER_MAX_SIGNALS_PER_LEAGUE_DAY,
+    SIGNAL_QUALITY_MIN_P_MATRIX,
+    SIGNAL_QUALITY_MIN_REVALIDATED_EV,
+    signal_quality_gate_state,
     paper_daily_cap_fraction,
     paper_daily_exposure_by_date,
     paper_stake_cop,
@@ -258,3 +261,20 @@ def test_league_concentration_blocks_fourth_signal_same_day():
     assert paper_league_concentration_blocked(2) is False
     assert paper_league_concentration_blocked(3) is True
     assert paper_league_concentration_blocked(4) is True
+
+
+def test_precision_quality_gate_requires_p60_and_ev5():
+    assert SIGNAL_QUALITY_MIN_P_MATRIX == 0.60
+    assert SIGNAL_QUALITY_MIN_REVALIDATED_EV == 0.05
+    assert signal_quality_gate_state(
+        {"p_matrix": 0.5999},
+        {"ev": 0.20},
+    ) == "BLOCKED_QUALITY_P_MATRIX_BELOW_60PCT"
+    assert signal_quality_gate_state(
+        {"p_matrix": 0.61},
+        {"ev": 0.0499},
+    ) == "BLOCKED_QUALITY_REVALIDATED_EV_BELOW_5PCT"
+    assert signal_quality_gate_state(
+        {"p_matrix": 0.60},
+        {"ev": 0.05},
+    ) == "PASS_API_COST_RECOVERY_PRECISION_GATE"
