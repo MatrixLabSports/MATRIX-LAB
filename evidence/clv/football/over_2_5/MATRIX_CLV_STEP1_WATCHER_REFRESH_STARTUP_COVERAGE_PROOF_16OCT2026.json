@@ -1,0 +1,69 @@
+{
+  "schema": "MATRIX_CLV_STEP1_WATCHER_REFRESH_STARTUP_COVERAGE_PROOF_V1",
+  "generated_at_utc": "2026-10-16T03:01:30+00:00",
+  "step": 1,
+  "diagnosis_basis": {
+    "forensic_path": "evidence/clv/football/over_2_5/MATRIX_CLV_48_MISSED_CLOSE_FORENSIC_DIAGNOSIS_15OCT2026.json",
+    "historical_gap_events": [
+      "1557272",
+      "1557268",
+      "1557269",
+      "1557265"
+    ],
+    "late_ledger_event": "1571804",
+    "historical_root_cause": "LONG_LIVED_WATCHER_DID_NOT_REFRESH_OPERATIONAL_BRANCH_BEFORE_EACH_CYCLE"
+  },
+  "implementation": {
+    "workflow_path": ".github/workflows/football-clv-continuous-watcher.yml",
+    "main_commit": "cbcca3433b74156dca454c960d9e8c3f6fe7ec0b",
+    "workflow_blob_sha": "a66865380584004e83fe7f03d748d7b85f46bcc8",
+    "startup_trigger_contract": [
+      "workflow_run after MATRIX Football Daily Governed Pipeline",
+      "manual workflow_dispatch retained",
+      "workflow update push trigger retained"
+    ],
+    "per_cycle_refresh": [
+      "git fetch origin repair/cor09-world-pipeline",
+      "git rebase --autostash origin/repair/cor09-world-pipeline",
+      "fail closed on refresh failure",
+      "refresh occurs before odds-api.net capture and API-Football fallback cycle"
+    ],
+    "regression_guard_added": true,
+    "strict_fresh_gate_seconds": 120,
+    "gate_changed": false
+  },
+  "physical_verification": {
+    "workflow_run_id": 38843315814,
+    "workflow_job_id": 116788111411,
+    "steps": {
+      "verify_clv_protections": "success",
+      "validate_watcher_safety_and_secrets": "success",
+      "startup_coverage_and_per_cycle_refresh_contract": "success",
+      "continuous_watch_and_immediate_persistence": "success",
+      "final_clv_state_gate": "success",
+      "renew_watcher_if_future_decisions_remain": "success"
+    },
+    "log_assertions": [
+      "CLV_WATCHER_STARTUP_COVERAGE_CONTRACT=PASS",
+      "CLV_WATCHER_PER_CYCLE_REFRESH_ORDER=PASS",
+      "CLV_STRICT_FRESH_GATE_SECONDS=120",
+      "CLV_WATCHER_OPERATIONAL_REFRESH=PASS",
+      "CLV_CONTINUOUS_WATCHER_FINAL_GATE: PASS"
+    ],
+    "final_state_from_run": {
+      "decision_count": 67,
+      "closing_odds_count": 1,
+      "missed_after_kickoff": 66,
+      "remaining_to_open_metrics": 299,
+      "real_money": "BLOCKED"
+    },
+    "operational_head_before_proof": "eec1b87f504931f25e288a1ccc93f4cb57377e72"
+  },
+  "adjudication": "STEP_1_PHYSICALLY_VERIFIED",
+  "protections": {
+    "automatic_wagering": false,
+    "real_money": "BLOCKED",
+    "strict_fresh_gate_seconds": 120,
+    "freshness_gate_relaxed": false
+  }
+}
