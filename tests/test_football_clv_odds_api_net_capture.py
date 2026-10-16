@@ -285,3 +285,74 @@ def test_exact_total_25_can_be_recovered_from_explicit_selection_label(tmp_path)
     assert ledger.audit().closing_odds_count == 1
     rows = [json.loads(x) for x in attempts.read_text(encoding="utf-8").splitlines()]
     assert rows[-1]["outcome"] == "ODDS_API_CAPTURED_VALID"
+
+
+class CurrentOddsApiLineContractSession(RoutedSession):
+    def get(self, url, headers=None, params=None, timeout=None):
+        if "/odds/snapshot" in url:
+            self.calls.append((url, params or {}))
+            ts_ms = int((self.capture_at.timestamp() - 60) * 1000)
+            return Resp({
+                "bookmaker_as_of_ts_ms": {"pinnacle": ts_ms},
+                "items": [
+                    {
+                        "bookmaker": "pinnacle",
+                        "market_key": "total/cards/over 2.5 (full time)",
+                        "bet_type": "total",
+                        "metric": "cards",
+                        "period": "full time",
+                        "selection_name": "over",
+                        "side": None,
+                        "line": "over 2.5",
+                        "odds": 1.40,
+                        "is_available": True,
+                    },
+                    {
+                        "bookmaker": "pinnacle",
+                        "market_key": "total/over 2.5 (full time)",
+                        "bet_type": "total",
+                        "metric": "standard",
+                        "period": "full time",
+                        "selection_name": "over",
+                        "side": None,
+                        "line": "over 2.5",
+                        "odds": 1.91,
+                        "is_available": True,
+                    },
+                    {
+                        "bookmaker": "pinnacle",
+                        "market_key": "total/under 2.5 (full time)",
+                        "bet_type": "total",
+                        "metric": "standard",
+                        "period": "full time",
+                        "selection_name": "under",
+                        "side": None,
+                        "line": "under 2.5",
+                        "odds": 1.93,
+                        "is_available": True,
+                    },
+                ],
+            })
+        return super().get(url, headers=headers, params=params, timeout=timeout)
+
+
+def test_current_odds_api_side_prefixed_line_contract_is_parsed_strictly(tmp_path):
+    ledger = _ledger(tmp_path)
+    capture_at = datetime(2026, 10, 15, 14, 50, tzinfo=UTC)
+    attempts = tmp_path / "attempts.jsonl"
+    result = capture_due_via_odds_api_net(
+        ledger_path=ledger.path,
+        capture_dir=tmp_path / "captures",
+        attempt_log_path=attempts,
+        api_football_key="af",
+        odds_api_key="oa",
+        now=capture_at,
+        session=CurrentOddsApiLineContractSession(capture_at),
+        capture_clock=lambda: capture_at,
+    )
+    assert result["captured_new"] == 1
+    captures = list((tmp_path / "captures").glob("*.json"))
+    assert len(captures) == 1
+    evidence = json.loads(captures[0].read_text(encoding="utf-8"))
+    assert evidence["closing"]["over_2_5_decimal_odds"] == 1.91
+    assert evidence["closing"]["under_2_5_decimal_odds"] == 1.93
