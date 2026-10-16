@@ -138,6 +138,38 @@ jobs:
           print("CLV_STRICT_FRESH_GATE_SECONDS=120")
           PY
 
+      - name: Verify CLV incomplete-market diagnostics contract
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          from pathlib import Path
+          checks={
+              Path("tools/football_clv_tracking_cycle.py"):[
+                  "_diagnose_pinnacle_over25_market",
+                  "market_diagnostic",
+                  "TOTAL_2_5_LINE_MISSING",
+                  "OVER_2_5_MISSING",
+                  "UNDER_2_5_MISSING",
+              ],
+              Path("tools/football_clv_odds_api_net_capture.py"):[
+                  "_diagnose_total_25",
+                  "market_diagnostic",
+                  "TOTAL_2_5_LINE_MISSING",
+                  "OVER_2_5_MISSING",
+                  "UNDER_2_5_MISSING",
+              ],
+          }
+          for path, required in checks.items():
+              s=path.read_text(encoding="utf-8")
+              missing=[x for x in required if x not in s]
+              if missing:
+                  raise SystemExit(f"CLV_INCOMPLETE_MARKET_DIAGNOSTIC_MISSING {path}: {missing}")
+          assert "MAX_PINNACLE_PROVIDER_QUOTE_AGE_SECONDS = 120" in Path("tools/football_clv_tracking_cycle.py").read_text(encoding="utf-8")
+          print("CLV_INCOMPLETE_MARKET_DIAGNOSTIC_CONTRACT=PASS")
+          print("CLV_STRICT_FRESH_GATE_SECONDS=120")
+          PY
+
       - name: Continuous CLV watch and immediate persistence
         env:
           API_FOOTBALL_KEY: ${{ secrets.API_FOOTBALL_KEY }}
@@ -318,3 +350,5 @@ jobs:
 # MATRIX_CLV_SINGLE_WRITER_LATEST_VERSION_WINS 2026-10-15
 
 # MATRIX_CLV_PER_ATTEMPT_TELEMETRY_V2 2026-10-16 exact-attempt-fields-and-test-isolation
+
+# MATRIX_CLV_INCOMPLETE_MARKET_DIAGNOSTICS_V1 2026-10-16 persist-exact-subreason
