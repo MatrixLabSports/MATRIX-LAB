@@ -54,6 +54,16 @@ jobs:
             tests/test_football_clv_tracking_cycle.py \
             tests/test_football_clv_odds_api_net_capture.py
 
+      - name: Verify CLV tests do not mutate persisted evidence
+        shell: bash
+        run: |
+          set -euo pipefail
+          if ! git diff --exit-code -- evidence/clv/football/over_2_5; then
+            echo "CLV_TEST_EVIDENCE_MUTATION_DETECTED" >&2
+            exit 1
+          fi
+          echo "CLV_TEST_EVIDENCE_ISOLATION=PASS"
+
       - name: Validate watcher safety and secrets
         env:
           API_FOOTBALL_KEY: ${{ secrets.API_FOOTBALL_KEY }}
@@ -306,3 +316,5 @@ jobs:
 # MATRIX_CLV_REFRESH_REPAIR 2026-10-15 stale-checkout-before-each-cycle
 # MATRIX_CLV_MULTI_TRANSPORT_REPAIR 2026-10-15 odds-api-preferred-api-football-fallback
 # MATRIX_CLV_SINGLE_WRITER_LATEST_VERSION_WINS 2026-10-15
+
+# MATRIX_CLV_PER_ATTEMPT_TELEMETRY_V2 2026-10-16 exact-attempt-fields-and-test-isolation
