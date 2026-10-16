@@ -404,10 +404,24 @@ def odds_api_net_exact_over25_offer(
     kickoff: Any,
     p: float,
     api_football_key: str,
+    diagnostic: dict[str, Any] | None = None,
 ) -> dict[str, Any] | None:
     key = str(odds_api_key or "").strip()
     kickoff_dt = parse_dt(kickoff)
+    if diagnostic is not None:
+        diagnostic.clear()
+        diagnostic.update({
+            "fixture_id": str(fixture_id),
+            "authorized_books": sorted(POLICY_BOOKS),
+            "status": "STARTED",
+            "rows_seen": 0,
+            "rows_by_book": {},
+            "candidate_lines_by_book": {},
+            "discard_reasons": {},
+        })
     if not key or kickoff_dt is None:
+        if diagnostic is not None:
+            diagnostic["status"] = "BLOCKED_CREDENTIAL_OR_KICKOFF"
         return None
     fr = session.get(
         "https://v3.football.api-sports.io/fixtures",
@@ -421,6 +435,8 @@ def odds_api_net_exact_over25_offer(
         return None
     rows = fp.get("response", []) if isinstance(fp, dict) else []
     if fr.status_code >= 300 or not rows:
+        if diagnostic is not None:
+            diagnostic["status"] = "BLOCKED_FIXTURE_LOOKUP"
         return None
     row = rows[0]
     home = str(((row.get("teams") or {}).get("home") or {}).get("name") or "")
@@ -451,13 +467,23 @@ def odds_api_net_exact_over25_offer(
         swapped = (_identity_similarity(home, event.get("away_team")) + _identity_similarity(away, event.get("home_team"))) / 2.0
         scored.append((max(direct, swapped), direct >= swapped, event))
     scored.sort(key=lambda x: x[0], reverse=True)
+    if diagnostic is not None:
+        diagnostic["identity_top_scores"] = [round(float(x[0]), 6) for x in scored[:3]]
     if not scored or scored[0][0] < 0.85:
+        if diagnostic is not None:
+            diagnostic["status"] = "BLOCKED_IDENTITY_LOW_SCORE"
         return None
     if len(scored) > 1 and scored[0][0] - scored[1][0] < 0.05:
+        if diagnostic is not None:
+            diagnostic["status"] = "BLOCKED_IDENTITY_AMBIGUOUS"
         return None
     event_id = str(scored[0][2].get("event_id") or "")
     if not event_id:
+        if diagnostic is not None:
+            diagnostic["status"] = "BLOCKED_EVENT_ID_MISSING"
         return None
+    if diagnostic is not None:
+        diagnostic["odds_api_event_id"] = event_id
     sr = session.get(
         ODDS_API_NET_BASE + f"/events/{event_id}/odds/snapshot",
         headers={"X-API-Key": key, "Accept": "application/json"},
@@ -474,7 +500,13 @@ def odds_api_net_exact_over25_offer(
         sp = sr.json()
     except Exception:
         return None
+    if diagnostic is not None:
+        diagnostic["snapshot_http_status"] = int(sr.status_code)
+        diagnostic["snapshot_complete"] = sp.get("complete") if isinstance(sp, dict) else None
+        diagnostic["excluded_bookmakers"] = sp.get("excluded_bookmakers") if isinstance(sp, dict) else None
     if sr.status_code >= 300 or not isinstance(sp, dict):
+        if diagnostic is not None:
+            diagnostic["status"] = "BLOCKED_SNAPSHOT_PROVIDER_ERROR"
         return None
     book_ts = sp.get("bookmaker_as_of_ts_ms") or {}
     offers: list[dict[str, Any]] = []
@@ -482,26 +514,59 @@ def odds_api_net_exact_over25_offer(
         if not isinstance(item, dict):
             continue
         house_key = str(item.get("bookmaker") or "").strip().casefold()
-        if house_key not in POLICY_BOOKS or item.get("is_available") is False:
+        if diagnostic is not None:
+            diagnostic["rows_seen"] += 1
+            diagnostic["rows_by_book"][house_key or "UNKNOWN"] = diagnostic["rows_by_book"].get(house_key or "UNKNOWN", 0) + 1
+        if house_key not in POLICY_BOOKS:
+            if diagnostic is not None:
+                diagnostic["discard_reasons"]["UNAUTHORIZED_BOOK"] = diagnostic["discard_reasons"].get("UNAUTHORIZED_BOOK", 0) + 1
+            continue
+        if item.get("is_available") is False:
+            if diagnostic is not None:
+                diagnostic["discard_reasons"]["UNAVAILABLE"] = diagnostic["discard_reasons"].get("UNAVAILABLE", 0) + 1
             continue
         try:
             line = float(item.get("line"))
             dec = float(item.get("odds"))
         except (TypeError, ValueError):
+            if diagnostic is not None:
+                diagnostic["discard_reasons"]["INVALID_LINE_OR_ODDS"] = diagnostic["discard_reasons"].get("INVALID_LINE_OR_ODDS", 0) + 1
             continue
-        if line != 2.5 or dec <= 1.50:
+        if diagnostic is not None:
+            diagnostic["candidate_lines_by_book"].setdefault(house_key, []).append({
+                "market_key": item.get("market_key"),
+                "bet_type": item.get("bet_type"),
+                "metric": item.get("metric"),
+                "period": item.get("period"),
+                "period_str": item.get("period_str"),
+                "line": item.get("line"),
+                "side": item.get("side"),
+                "selection_name": item.get("selection_name"),
+                "odds": item.get("odds"),
+            })
+        if line != 2.5:
+            if diagnostic is not None:
+                diagnostic["discard_reasons"]["LINE_NOT_2_5"] = diagnostic["discard_reasons"].get("LINE_NOT_2_5", 0) + 1
+            continue
+        if dec <= 1.50:
+            if diagnostic is not None:
+                diagnostic["discard_reasons"]["ODDS_NOT_GT_1_50"] = diagnostic["discard_reasons"].get("ODDS_NOT_GT_1_50", 0) + 1
             continue
         market_text = " ".join([
             _identity_norm(item.get("market_key")),
             _identity_norm(item.get("bet_type")),
         ])
         if "total" not in market_text and "over under" not in market_text:
+            if diagnostic is not None:
+                diagnostic["discard_reasons"]["NOT_TOTAL_MARKET"] = diagnostic["discard_reasons"].get("NOT_TOTAL_MARKET", 0) + 1
             continue
         label = " ".join([
             _identity_norm(item.get("side")),
             _identity_norm(item.get("selection_name")),
         ])
         if "over" not in label:
+            if diagnostic is not None:
+                diagnostic["discard_reasons"]["NOT_OVER_SIDE"] = diagnostic["discard_reasons"].get("NOT_OVER_SIDE", 0) + 1
             continue
         ts_ms = book_ts.get(house_key)
         provider_updated = None
@@ -518,6 +583,9 @@ def odds_api_net_exact_over25_offer(
             "fallback_multi_book": True,
             "odds_api_event_id": event_id,
         })
+    if diagnostic is not None:
+        diagnostic["eligible_offer_count"] = len(offers)
+        diagnostic["status"] = "PASS_EXACT_OVER25_FOUND" if offers else "NO_EXACT_OVER25_FOUND"
     return max(offers, key=lambda x: x["ev"]) if offers else None
 
 
