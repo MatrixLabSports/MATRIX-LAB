@@ -250,7 +250,33 @@ def build_shadow_p_matrix(*, canonical_bundle: Mapping[str, Any], canonical_mani
             blocked.append({"target_key": target.get("target_key"), "fixture_id": target.get("fixture_id"), "league_id": league_id, "season": season, "reason": reason})
             continue
         p1 = _pool_1x2(features["poisson"]["1x2"], features["baseline"]["1x2"])
-        po = _pool_over25(features["poisson"]["over_2_5"], features["baseline"]["over_2_5"])
+        poisson_over25 = float(features["poisson"]["over_2_5"])
+        baseline_over25 = float(features["baseline"]["over_2_5"])
+        poisson_logit = _logit(poisson_over25)
+        baseline_logit = _logit(baseline_over25)
+        poisson_weighted_logit = PARAMS_OVER25["a"] * poisson_logit
+        baseline_weighted_logit = PARAMS_OVER25["c"] * baseline_logit
+        intercept_logit = PARAMS_OVER25["b"]
+        pooled_logit = poisson_weighted_logit + baseline_weighted_logit + intercept_logit
+        po = _sigmoid(pooled_logit)
+        over25_feature_trace = {
+            "trace_schema": "MATRIX_OVER25_FEATURE_TRACE_V1",
+            "space": "LOGIT",
+            "poisson_probability": round(poisson_over25, 10),
+            "baseline_probability": round(baseline_over25, 10),
+            "poisson_logit": round(poisson_logit, 10),
+            "baseline_logit": round(baseline_logit, 10),
+            "poisson_weight": float(PARAMS_OVER25["a"]),
+            "baseline_weight": float(PARAMS_OVER25["c"]),
+            "intercept": float(PARAMS_OVER25["b"]),
+            "poisson_weighted_logit_contribution": round(poisson_weighted_logit, 10),
+            "baseline_weighted_logit_contribution": round(baseline_weighted_logit, 10),
+            "intercept_logit_contribution": round(intercept_logit, 10),
+            "pooled_logit": round(pooled_logit, 10),
+            "reconstructed_probability": round(_sigmoid(pooled_logit), 10),
+            "probability_modified_by_trace": False,
+            "odds_used_in_trace": False,
+        }
         scored.append({
             "target_key": target["target_key"], "fixture_id": target["fixture_id"], "kickoff_utc": target["kickoff_utc"],
             "home_team": target.get("home_team_name"), "away_team": target.get("away_team_name"), "league_id": league_id, "season": season,
@@ -258,6 +284,7 @@ def build_shadow_p_matrix(*, canonical_bundle: Mapping[str, Any], canonical_mani
             "feature_counts": {k: features[k] for k in ("prior_group_fixture_count", "home_history_count", "away_history_count")},
             "history_sources": {"home": features["home_history_source"], "away": features["away_history_source"]},
             "expected_goals": {"home": features["expected_home_goals"], "away": features["expected_away_goals"]},
+            "over25_feature_trace": over25_feature_trace,
             "p_matrix_shadow": {"1x2": {k: round(p1[k], 10) for k in ("H", "D", "A")}, "over_2_5": round(po, 10)},
             "model": MODEL, "parameters": {"1x2": PARAMS_1X2, "over_2_5": PARAMS_OVER25},
             "btts_status": "BLOCKED_FINAL_HOLDOUT_NOT_SUPERIOR",
