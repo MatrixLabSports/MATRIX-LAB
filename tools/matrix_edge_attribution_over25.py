@@ -17,22 +17,31 @@ def _sha(value: Any) -> str:
 
 
 def build(source: Mapping[str, Any], generated_at: str | None = None) -> dict[str, Any]:
-    rows = source.get("bet_shadow")
+    rows = source.get("all_rows")
     if not isinstance(rows, list):
-        raise ValueError("BET_SHADOW_ROWS_MISSING")
+        rows = source.get("bet_shadow")
+    if not isinstance(rows, list):
+        raise ValueError("ATTRIBUTION_SOURCE_ROWS_MISSING")
 
     out_rows = []
     for row in rows:
         if not isinstance(row, Mapping):
             continue
-        offer = row.get("best_policy_offer")
-        if not isinstance(offer, Mapping):
+        if row.get("p_over_2_5") is None:
             continue
+        offer = row.get("best_policy_offer")
         p = float(row["p_over_2_5"])
-        odds = float(offer["decimal_odds"])
-        break_even = 1.0 / odds
-        ev = p * odds - 1.0
         fair_odds = 1.0 / p
+        if isinstance(offer, Mapping):
+            odds = float(offer["decimal_odds"])
+            break_even = 1.0 / odds
+            ev = p * odds - 1.0
+            price_edge_ratio = odds / fair_odds - 1.0
+        else:
+            odds = None
+            break_even = None
+            ev = None
+            price_edge_ratio = None
         trace = row.get("over25_feature_trace")
         drivers = None
         driver_status = "NOT_AVAILABLE_IN_SOURCE_TRACE"
@@ -71,21 +80,21 @@ def build(source: Mapping[str, Any], generated_at: str | None = None) -> dict[st
             "market": "OVER_2_5",
             "p_matrix": p,
             "fair_decimal_odds": fair_odds,
-            "execution_house": offer.get("bookmaker_name"),
-            "execution_house_key": offer.get("house_key"),
+            "execution_house": offer.get("bookmaker_name") if isinstance(offer, Mapping) else None,
+            "execution_house_key": offer.get("house_key") if isinstance(offer, Mapping) else None,
             "quoted_decimal_odds": odds,
             "break_even_probability": break_even,
-            "edge_probability_points": (p - break_even) * 100.0,
+            "edge_probability_points": ((p - break_even) * 100.0) if break_even is not None else None,
             "expected_value": ev,
-            "price_edge_ratio": odds / fair_odds - 1.0,
-            "quote_evidence_sha256": offer.get("quote_evidence_sha256"),
-            "source_raw_sha256": offer.get("raw_sha256"),
-            "odds_captured_at_utc": offer.get("odds_captured_at_utc"),
-            "provider_quote_updated_at_utc": offer.get("provider_quote_updated_at_utc"),
+            "price_edge_ratio": price_edge_ratio,
+            "quote_evidence_sha256": offer.get("quote_evidence_sha256") if isinstance(offer, Mapping) else None,
+            "source_raw_sha256": offer.get("raw_sha256") if isinstance(offer, Mapping) else row.get("raw_sha256"),
+            "odds_captured_at_utc": offer.get("odds_captured_at_utc") if isinstance(offer, Mapping) else row.get("odds_captured_at_utc"),
+            "provider_quote_updated_at_utc": offer.get("provider_quote_updated_at_utc") if isinstance(offer, Mapping) else None,
             "edge_attribution": {
                 "model_probability_component": p,
                 "market_break_even_component": break_even,
-                "measurable_probability_edge": p - break_even,
+                "measurable_probability_edge": (p - break_even) if break_even is not None else None,
                 "feature_level_drivers": drivers,
                 "feature_level_driver_status": driver_status,
                 "feature_trace_space": "LOGIT" if drivers is not None else None,
@@ -100,7 +109,7 @@ def build(source: Mapping[str, Any], generated_at: str | None = None) -> dict[st
             }
         })
 
-    out_rows.sort(key=lambda x: (-x["expected_value"], x["fixture_id"]))
+    out_rows.sort(key=lambda x: (x["expected_value"] is None, -(x["expected_value"] or -999.0), x["fixture_id"]))
     artifact = {
         "schema": "MATRIX_EDGE_ATTRIBUTION_OVER25_V2",
         "generated_at_utc": generated_at or datetime.now(timezone.utc).replace(microsecond=0).isoformat(),
@@ -109,6 +118,8 @@ def build(source: Mapping[str, Any], generated_at: str | None = None) -> dict[st
         "market": "OVER_2_5",
         "attribution_scope": "MODEL_COMPONENT_LOGIT_AND_PRICE_EDGE",
         "row_count": len(out_rows),
+        "feature_trace_available_count": sum(1 for x in out_rows if x["edge_attribution"]["feature_level_driver_status"] == "AVAILABLE_REAL_ENGINE_TRACE"),
+        "priced_row_count": sum(1 for x in out_rows if x["quoted_decimal_odds"] is not None),
         "rows": out_rows,
         "governance": {
             "p_matrix_is_input_not_modified": True,
