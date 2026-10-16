@@ -163,6 +163,7 @@ def test_due_pinnacle_close_requires_complete_market_and_writes_devigged_clv(tmp
     assert len(attempt_rows) == 1
     assert attempt_rows[0]["outcome"] == "CAPTURED_VALID"
     assert attempt_rows[0]["provider_quote_age_seconds"] == 60
+    assert attempt_rows[0]["gate_excess_seconds"] == 0
     assert attempt_rows[0]["strict_fresh_gate_seconds"] == 120
     assert len(attempt_rows[0]["attempt_sha256"]) == 64
 
@@ -190,7 +191,8 @@ def test_stale_pinnacle_provider_update_fails_closed(tmp_path):
     assert ledger.audit().closing_odds_count == 0
     rows = [json.loads(x) for x in attempts.read_text(encoding="utf-8").splitlines()]
     assert rows[-1]["outcome"] == "BLOCKED_STALE_PROVIDER_QUOTE"
-    assert rows[-1]["provider_quote_age_seconds"] > 120
+    assert rows[-1]["provider_quote_age_seconds"] == 14400
+    assert rows[-1]["gate_excess_seconds"] == 14280
 
 
 
