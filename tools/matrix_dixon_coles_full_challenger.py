@@ -19,6 +19,7 @@ OUT=Path("evidence/api_football/model_validation/MATRIX_DIXON_COLES_FULL_CHALLEN
 FIT_FRACTION=0.60
 VALIDATION_FRACTION=0.20
 MIN_GROUP_FINALS=100
+MIN_HOLDOUT_COMPARABLE=20
 HALF_LIVES=(0,180,365)  # 0 = no decay
 RHO_BOUND=0.20
 RIDGE=0.01
@@ -77,7 +78,7 @@ def _fit_dc(matches:list[dict[str,Any]],half_life:int)->dict[str,Any]|None:
     x0[-2]=0.15
     bounds=[(-2.0,2.0)]*(2*n)+[(-1.0,1.0),(-RHO_BOUND,RHO_BOUND)]
     res=minimize(obj,x0,method="L-BFGS-B",bounds=bounds,options={"maxiter":500,"ftol":1e-9})
-    if not res.success and not np.isfinite(res.fun):return None
+    if not res.success or not np.isfinite(res.fun):return None
     att,deff,home,rho=unpack(res.x)
     return {
         "teams":teams,"index":idx,"attack":att.tolist(),"defense":deff.tolist(),
@@ -162,7 +163,7 @@ def build(raw_dir:Path=RAW_DIR)->dict[str,Any]:
                 "y":1.0 if m["home_goals"]+m["away_goals"]>=3 else 0.0,
                 "dc":dc,"frozen":fr,
             })
-        if not local:continue
+        if len(local)<MIN_HOLDOUT_COMPARABLE:continue
         fitted_groups+=1; all_hold.extend(local)
         group_reports.append({
             "source_path":path.as_posix(),"final_count":n,"fit_n":len(fit),"validation_n":len(val),"holdout_n":len(local),
@@ -179,7 +180,7 @@ def build(raw_dir:Path=RAW_DIR)->dict[str,Any]:
         "evaluation_kind":"LEAGUE_SEASON_CHRONOLOGICAL_60_20_20_RESEARCH_ONLY",
         "eligible_group_count":len(_load_groups(raw_dir)),"fitted_group_count":fitted_groups,
         "holdout_comparable_n":len(all_hold),
-        "pre_registered_half_lives_days":list(HALF_LIVES),
+        "pre_registered_half_lives_days":list(HALF_LIVES),"minimum_holdout_comparable_per_group":MIN_HOLDOUT_COMPARABLE,
         "selection_rule":"MIN_VALIDATION_BRIER_THEN_LOGLOSS_THEN_SHORTEST_HALF_LIFE",
         "aggregate_holdout":{"dixon_coles":dc,"frozen_poisson":fr,
             "delta_dc_minus_frozen":{"brier":db,"log_loss":dl}},
