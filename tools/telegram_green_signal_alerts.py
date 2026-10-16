@@ -42,6 +42,9 @@ PAPER_HIGH_CONF_MIN_TIER23_SHARE = 0.40
 PAPER_STAKE_LEVELS = {1: 1.0, 2: 2.0, 3: 3.0}
 GREEN_PREMATCH_REVALIDATION_WINDOW_MINUTES = 120
 PAPER_MAX_SIGNALS_PER_LEAGUE_DAY = 3
+SIGNAL_QUALITY_MIN_P_MATRIX = 0.60
+SIGNAL_QUALITY_MIN_REVALIDATED_EV = 0.05
+SIGNAL_QUALITY_POLICY = "API_COST_RECOVERY_PRECISION_V1"
 
 
 def load_json(path: Path, default: Any) -> Any:
@@ -508,6 +511,16 @@ def final_prematch_quote_state(offer: dict[str, Any] | None) -> str:
     if float(offer.get("ev") or 0.0) <= 0:
         return "BLOCKED_NONPOSITIVE_EV"
     return "PASS_FINAL_PREMATCH_REVALIDATION"
+
+
+def signal_quality_gate_state(candidate: dict[str, Any], offer: dict[str, Any]) -> str:
+    p_matrix = float(candidate.get("p_matrix") or 0.0)
+    revalidated_ev = float(offer.get("ev") or 0.0)
+    if p_matrix < SIGNAL_QUALITY_MIN_P_MATRIX:
+        return "BLOCKED_QUALITY_P_MATRIX_BELOW_60PCT"
+    if revalidated_ev < SIGNAL_QUALITY_MIN_REVALIDATED_EV:
+        return "BLOCKED_QUALITY_REVALIDATED_EV_BELOW_5PCT"
+    return "PASS_API_COST_RECOVERY_PRECISION_GATE"
 
 
 def paper_league_concentration_blocked(existing_count: int) -> bool:
@@ -1018,10 +1031,22 @@ def main() -> None:
             ledger["pre_send_gate"][key] = gate_record
             pre_send_blocked += 1
             continue
+        quality_state = signal_quality_gate_state(candidate, offer)
+        gate_record["quality_policy"] = SIGNAL_QUALITY_POLICY
+        gate_record["quality_min_p_matrix"] = SIGNAL_QUALITY_MIN_P_MATRIX
+        gate_record["quality_min_revalidated_ev"] = SIGNAL_QUALITY_MIN_REVALIDATED_EV
+        gate_record["quality_state"] = quality_state
+        if quality_state != "PASS_API_COST_RECOVERY_PRECISION_GATE":
+            gate_record["state"] = quality_state
+            candidate["eligible_green"] = False
+            candidate["send_gate_status"] = quality_state
+            ledger["pre_send_gate"][key] = gate_record
+            pre_send_blocked += 1
+            continue
         candidate["house"] = offer["house"]
         candidate["odds"] = offer["odds"]
         candidate["ev"] = offer["ev"]
-        candidate["send_gate_status"] = final_quote_state
+        candidate["send_gate_status"] = quality_state
         candidate["pre_send_revalidated_at_utc"] = now.isoformat()
         gate_record["state"] = candidate["send_gate_status"]
         ledger["pre_send_gate"][key] = gate_record
