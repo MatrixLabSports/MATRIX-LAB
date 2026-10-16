@@ -121,11 +121,12 @@ def _extract_total_25(snapshot: Mapping[str, Any]) -> tuple[float, float, dateti
 def _diagnose_total_25(snapshot: Mapping[str, Any]) -> dict[str, Any]:
     ts_ms = (snapshot.get("bookmaker_as_of_ts_ms") or {}).get("pinnacle")
     diagnostic: dict[str, Any] = {
-        "market_diagnostic_version": 1,
+        "market_diagnostic_version": 2,
         "provider_timestamp_present": isinstance(ts_ms, (int, float)),
         "pinnacle_item_count": 0,
         "total_market_item_count": 0,
         "available_total_lines": [],
+        "sample_total_items": [],
         "over_2_5_present": False,
         "under_2_5_present": False,
         "incomplete_reason": None,
@@ -142,6 +143,19 @@ def _diagnose_total_25(snapshot: Mapping[str, Any]) -> dict[str, Any]:
         if "total" not in market_text and "over under" not in market_text:
             continue
         diagnostic["total_market_item_count"] += 1
+        if len(diagnostic["sample_total_items"]) < 12:
+            diagnostic["sample_total_items"].append({
+                "market_key": item.get("market_key"),
+                "bet_type": item.get("bet_type"),
+                "metric": item.get("metric"),
+                "period": item.get("period"),
+                "period_str": item.get("period_str"),
+                "line": item.get("line"),
+                "side": item.get("side"),
+                "selection_name": item.get("selection_name"),
+                "odds": item.get("odds"),
+                "is_available": item.get("is_available"),
+            })
         try:
             line = float(item.get("line"))
             odds = float(item.get("odds"))
