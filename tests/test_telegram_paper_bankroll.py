@@ -356,3 +356,72 @@ def test_odds_api_net_fallback_selects_best_authorized_colombia_book():
     assert round(offer["ev"], 3) == 0.098
     assert offer["provider"] == "odds-api.net"
     assert offer["fallback_multi_book"] is True
+
+
+class _SingleBookSession:
+    def __init__(self, house_key, odds):
+        self.house_key = house_key
+        self.odds = odds
+    def get(self, url, headers=None, params=None, timeout=None):
+        if url.endswith("/fixtures"):
+            return _QuoteResponse({
+                "response": [{
+                    "teams": {
+                        "home": {"name": "Gamma FC"},
+                        "away": {"name": "Delta United"},
+                    }
+                }]
+            })
+        if url.endswith("/events"):
+            return _QuoteResponse({
+                "items": [{
+                    "event_id": "oa-single",
+                    "home_team": "Gamma FC",
+                    "away_team": "Delta United",
+                }]
+            })
+        if "/odds/snapshot" in url:
+            return _QuoteResponse({
+                "bookmaker_as_of_ts_ms": {self.house_key: 1792140000000},
+                "items": [{
+                    "bookmaker": self.house_key,
+                    "market_key": "total_goals",
+                    "bet_type": "total",
+                    "period": "full time",
+                    "line": 2.5,
+                    "side": "over",
+                    "odds": self.odds,
+                    "is_available": True,
+                }],
+            })
+        raise AssertionError(url)
+
+
+def test_multibook_gate_accepts_betplay_when_other_two_are_absent():
+    offer = odds_api_net_exact_over25_offer(
+        _SingleBookSession("betplay", 1.82),
+        "secret",
+        "fixture-betplay",
+        "2026-10-16T18:00:00+00:00",
+        0.62,
+        "api-football-secret",
+    )
+    assert offer is not None
+    assert offer["house_key"] == "betplay"
+    assert offer["house"] == "BetPlay"
+    assert round(offer["ev"], 4) == 0.1284
+
+
+def test_multibook_gate_accepts_rushbet_when_other_two_are_absent():
+    offer = odds_api_net_exact_over25_offer(
+        _SingleBookSession("rushbet", 1.77),
+        "secret",
+        "fixture-rushbet",
+        "2026-10-16T18:00:00+00:00",
+        0.63,
+        "api-football-secret",
+    )
+    assert offer is not None
+    assert offer["house_key"] == "rushbet"
+    assert offer["house"] == "Rushbet"
+    assert round(offer["ev"], 4) == 0.1151
