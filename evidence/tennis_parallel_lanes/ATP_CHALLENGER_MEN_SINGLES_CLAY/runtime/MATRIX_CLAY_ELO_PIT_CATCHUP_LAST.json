@@ -1,13 +1,13 @@
 {
-  "authority_provider_ids": 393,
+  "authority_provider_ids": 397,
   "automatic_wagering": false,
-  "blocked_targets": 19,
-  "catchup_match_ids_sha256": "3cecc3fc699fc0826d03dd71c23ab093ea233c68220131b809cb4012d9587ba0",
+  "blocked_targets": 20,
+  "catchup_match_ids_sha256": "d387b56bd5533f8bcdff8d624f58f820ab030b16c4b3c4af0ef58b36b1970085",
   "catchup_source_start": "2026-09-15",
-  "catchup_source_stop": "2026-10-14",
-  "catchup_standard_clay_matches": 532,
+  "catchup_source_stop": "2026-10-15",
+  "catchup_standard_clay_matches": 542,
   "chosen_k": 32.0,
-  "generated_at_utc": "2026-10-15T23:27:59+00:00",
+  "generated_at_utc": "2026-10-16T00:06:11+00:00",
   "historical_backfill_into_prospective_holdout": false,
   "historical_dataset_max_tourney_date": 20260914,
   "identity_closure_policy": "REVERSE_TIME_CAUSAL_BATCH_DAY",
@@ -20,7 +20,7 @@
   "provider": "rapidapi_tennis",
   "provider_network_calls": 14,
   "rating_initial_for_truly_unseen_canonical_player": 1500.0,
-  "ready_targets": 1,
+  "ready_targets": 0,
   "real_money": "BLOCKED",
   "same_day_update_policy": "BATCH_AFTER_ALL_MATCHES_ON_TOURNEY_DATE",
   "schema": "MATRIX_TENNIS_CLAY_ELO_PIT_CATCHUP_STATE_V1",
@@ -40,9 +40,9 @@
     },
     {
       "pages": 2,
-      "rows": 103,
+      "rows": 129,
       "start": "2026-10-13",
-      "stop": "2026-10-14"
+      "stop": "2026-10-15"
     }
   ],
   "supplemental_identity_crosswalk_used": true,
@@ -52,7 +52,7 @@
       "blocker": "TARGET_IDENTITY_MISSING",
       "canonical_name": null,
       "canonical_source_id": null,
-      "catchup_match_count": 255,
+      "catchup_match_count": 260,
       "component_player_count": 96,
       "component_unmapped_provider_ids": [
         "rapidapi-tennis:player:105210",
@@ -77,7 +77,7 @@
       "blocker": "CATCHUP_COMPONENT_HAS_UNMAPPED_IDENTITIES",
       "canonical_name": "Lorenzo Giustino",
       "canonical_source_id": "GA79",
-      "catchup_match_count": 300,
+      "catchup_match_count": 307,
       "component_player_count": 122,
       "component_unmapped_provider_ids": [
         "rapidapi-tennis:player:102640",
@@ -96,22 +96,32 @@
     },
     {
       "base_rating": 1584.9475893209942,
-      "blocker": null,
+      "blocker": "CATCHUP_COMPONENT_HAS_UNMAPPED_IDENTITIES",
       "canonical_name": "Marco Trungelliti",
       "canonical_source_id": "TA29",
-      "catchup_match_count": 150,
-      "component_player_count": 45,
-      "component_unmapped_provider_ids": [],
+      "catchup_match_count": 324,
+      "component_player_count": 128,
+      "component_unmapped_provider_ids": [
+        "rapidapi-tennis:player:102640",
+        "rapidapi-tennis:player:112188",
+        "rapidapi-tennis:player:113380",
+        "rapidapi-tennis:player:129191",
+        "rapidapi-tennis:player:129436",
+        "rapidapi-tennis:player:131440",
+        "rapidapi-tennis:player:132309",
+        "rapidapi-tennis:player:89521",
+        "rapidapi-tennis:player:95896"
+      ],
       "provider_player_id": "rapidapi-tennis:player:12653",
-      "rating_after_catchup": 1615.4223137617018,
-      "ready": true
+      "rating_after_catchup": null,
+      "ready": false
     },
     {
       "base_rating": 1695.065284836622,
       "blocker": "CATCHUP_COMPONENT_HAS_UNMAPPED_IDENTITIES",
       "canonical_name": "Hugo Dellien",
       "canonical_source_id": "DA31",
-      "catchup_match_count": 92,
+      "catchup_match_count": 93,
       "component_player_count": 34,
       "component_unmapped_provider_ids": [
         "rapidapi-tennis:player:123845",
@@ -128,7 +138,7 @@
       "blocker": "CATCHUP_COMPONENT_HAS_UNMAPPED_IDENTITIES",
       "canonical_name": "Zdenek Kolar",
       "canonical_source_id": "KH56",
-      "catchup_match_count": 330,
+      "catchup_match_count": 337,
       "component_player_count": 133,
       "component_unmapped_provider_ids": [
         "rapidapi-tennis:player:105356",
@@ -155,7 +165,7 @@
       "blocker": "CATCHUP_COMPONENT_HAS_UNMAPPED_IDENTITIES",
       "canonical_name": "Genaro Alberto Olivieri",
       "canonical_source_id": "O660",
-      "catchup_match_count": 250,
+      "catchup_match_count": 255,
       "component_player_count": 90,
       "component_unmapped_provider_ids": [
         "rapidapi-tennis:player:105210",
@@ -178,7 +188,7 @@
       "blocker": "CATCHUP_COMPONENT_HAS_UNMAPPED_IDENTITIES",
       "canonical_name": "Zsombor Piros",
       "canonical_source_id": "P09O",
-      "catchup_match_count": 276,
+      "catchup_match_count": 284,
       "component_player_count": 102,
       "component_unmapped_provider_ids": [
         "rapidapi-tennis:player:129191",
@@ -195,13 +205,15 @@
       "blocker": "CATCHUP_COMPONENT_HAS_UNMAPPED_IDENTITIES",
       "canonical_name": "Marvin Moeller",
       "canonical_source_id": "M0BN",
-      "catchup_match_count": 318,
-      "component_player_count": 121,
+      "catchup_match_count": 327,
+      "component_player_count": 128,
       "component_unmapped_provider_ids": [
         "rapidapi-tennis:player:104662",
+        "rapidapi-tennis:player:105620",
         "rapidapi-tennis:player:106915",
         "rapidapi-tennis:player:113380",
         "rapidapi-tennis:player:115746",
+        "rapidapi-tennis:player:115944",
         "rapidapi-tennis:player:131440",
         "rapidapi-tennis:player:132309",
         "rapidapi-tennis:player:59848",
@@ -217,7 +229,7 @@
       "blocker": "CATCHUP_COMPONENT_HAS_UNMAPPED_IDENTITIES",
       "canonical_name": "Buvaysar Gadamauri",
       "canonical_source_id": "G0CV",
-      "catchup_match_count": 328,
+      "catchup_match_count": 335,
       "component_player_count": 135,
       "component_unmapped_provider_ids": [
         "rapidapi-tennis:player:102640",
@@ -240,8 +252,8 @@
       "blocker": "CATCHUP_COMPONENT_HAS_UNMAPPED_IDENTITIES",
       "canonical_name": "Tristan Boyer",
       "canonical_source_id": "B0EJ",
-      "catchup_match_count": 330,
-      "component_player_count": 145,
+      "catchup_match_count": 349,
+      "component_player_count": 157,
       "component_unmapped_provider_ids": [
         "rapidapi-tennis:player:102640",
         "rapidapi-tennis:player:105356",
@@ -249,9 +261,11 @@
         "rapidapi-tennis:player:112188",
         "rapidapi-tennis:player:113380",
         "rapidapi-tennis:player:118341",
+        "rapidapi-tennis:player:129191",
         "rapidapi-tennis:player:129436",
         "rapidapi-tennis:player:131440",
         "rapidapi-tennis:player:132309",
+        "rapidapi-tennis:player:89521",
         "rapidapi-tennis:player:94535",
         "rapidapi-tennis:player:95668",
         "rapidapi-tennis:player:95896",
@@ -267,7 +281,7 @@
       "blocker": "CATCHUP_COMPONENT_HAS_UNMAPPED_IDENTITIES",
       "canonical_name": "Francisco Comesana",
       "canonical_source_id": "C0DF",
-      "catchup_match_count": 247,
+      "catchup_match_count": 252,
       "component_player_count": 92,
       "component_unmapped_provider_ids": [
         "rapidapi-tennis:player:105210",
@@ -290,8 +304,8 @@
       "blocker": "CATCHUP_COMPONENT_HAS_UNMAPPED_IDENTITIES",
       "canonical_name": "Francesco Passaro",
       "canonical_source_id": "P0CT",
-      "catchup_match_count": 342,
-      "component_player_count": 155,
+      "catchup_match_count": 353,
+      "component_player_count": 159,
       "component_unmapped_provider_ids": [
         "rapidapi-tennis:player:102640",
         "rapidapi-tennis:player:105356",
@@ -318,7 +332,7 @@
       "blocker": "CATCHUP_COMPONENT_HAS_UNMAPPED_IDENTITIES",
       "canonical_name": "Radu Mihai Papoe",
       "canonical_source_id": "P0FJ",
-      "catchup_match_count": 329,
+      "catchup_match_count": 336,
       "component_player_count": 140,
       "component_unmapped_provider_ids": [
         "rapidapi-tennis:player:102640",
@@ -343,7 +357,7 @@
       "blocker": "CATCHUP_COMPONENT_HAS_UNMAPPED_IDENTITIES",
       "canonical_name": "Felix Gill",
       "canonical_source_id": "G0EU",
-      "catchup_match_count": 210,
+      "catchup_match_count": 213,
       "component_player_count": 74,
       "component_unmapped_provider_ids": [
         "rapidapi-tennis:player:102640",
@@ -363,15 +377,20 @@
       "blocker": "CATCHUP_COMPONENT_HAS_UNMAPPED_IDENTITIES",
       "canonical_name": "Max Wiskandt",
       "canonical_source_id": "W0BB",
-      "catchup_match_count": 281,
-      "component_player_count": 95,
+      "catchup_match_count": 312,
+      "component_player_count": 111,
       "component_unmapped_provider_ids": [
         "rapidapi-tennis:player:104662",
         "rapidapi-tennis:player:106915",
+        "rapidapi-tennis:player:112188",
         "rapidapi-tennis:player:113380",
+        "rapidapi-tennis:player:115746",
+        "rapidapi-tennis:player:129436",
         "rapidapi-tennis:player:131440",
         "rapidapi-tennis:player:132309",
-        "rapidapi-tennis:player:59848"
+        "rapidapi-tennis:player:59848",
+        "rapidapi-tennis:player:95896",
+        "rapidapi-tennis:player:97368"
       ],
       "provider_player_id": "rapidapi-tennis:player:74151",
       "rating_after_catchup": null,
@@ -382,15 +401,20 @@
       "blocker": "CATCHUP_COMPONENT_HAS_UNMAPPED_IDENTITIES",
       "canonical_name": "Massimo Giunta",
       "canonical_source_id": "G0I3",
-      "catchup_match_count": 257,
-      "component_player_count": 86,
+      "catchup_match_count": 272,
+      "component_player_count": 99,
       "component_unmapped_provider_ids": [
+        "rapidapi-tennis:player:102640",
         "rapidapi-tennis:player:106915",
+        "rapidapi-tennis:player:112188",
+        "rapidapi-tennis:player:113380",
         "rapidapi-tennis:player:118341",
         "rapidapi-tennis:player:131440",
         "rapidapi-tennis:player:132309",
         "rapidapi-tennis:player:94535",
         "rapidapi-tennis:player:95668",
+        "rapidapi-tennis:player:95896",
+        "rapidapi-tennis:player:96819",
         "rapidapi-tennis:player:99145"
       ],
       "provider_player_id": "rapidapi-tennis:player:85513",
@@ -402,7 +426,7 @@
       "blocker": "CATCHUP_COMPONENT_HAS_UNMAPPED_IDENTITIES",
       "canonical_name": "Luka Mikrut",
       "canonical_source_id": "M0N1",
-      "catchup_match_count": 313,
+      "catchup_match_count": 321,
       "component_player_count": 116,
       "component_unmapped_provider_ids": [
         "rapidapi-tennis:player:113380",
@@ -420,7 +444,7 @@
       "blocker": "CATCHUP_COMPONENT_HAS_UNMAPPED_IDENTITIES",
       "canonical_name": "Matej Dodig",
       "canonical_source_id": "D0L3",
-      "catchup_match_count": 352,
+      "catchup_match_count": 360,
       "component_player_count": 155,
       "component_unmapped_provider_ids": [
         "rapidapi-tennis:player:102640",
@@ -445,13 +469,18 @@
       "blocker": "CATCHUP_COMPONENT_HAS_UNMAPPED_IDENTITIES",
       "canonical_name": "Gianluca Cadenasso",
       "canonical_source_id": "C0NN",
-      "catchup_match_count": 239,
-      "component_player_count": 77,
+      "catchup_match_count": 264,
+      "component_player_count": 92,
       "component_unmapped_provider_ids": [
         "rapidapi-tennis:player:106915",
+        "rapidapi-tennis:player:112188",
+        "rapidapi-tennis:player:113380",
+        "rapidapi-tennis:player:115746",
         "rapidapi-tennis:player:118341",
         "rapidapi-tennis:player:132309",
+        "rapidapi-tennis:player:87740",
         "rapidapi-tennis:player:94535",
+        "rapidapi-tennis:player:95896",
         "rapidapi-tennis:player:99145"
       ],
       "provider_player_id": "rapidapi-tennis:player:96517",
@@ -463,7 +492,7 @@
       "blocker": "CATCHUP_COMPONENT_HAS_UNMAPPED_IDENTITIES",
       "canonical_name": "Alejo Sanchez Quilez",
       "canonical_source_id": "S0XE",
-      "catchup_match_count": 303,
+      "catchup_match_count": 310,
       "component_player_count": 120,
       "component_unmapped_provider_ids": [
         "rapidapi-tennis:player:100720",
@@ -494,7 +523,7 @@
         "Riccardo Carpano"
       ],
       "provider_player_id": "rapidapi-tennis:player:131440",
-      "target_component_hits": 17
+      "target_component_hits": 18
     },
     {
       "catchup_matches": 1,
@@ -507,7 +536,7 @@
         "Tomaso Calla"
       ],
       "provider_player_id": "rapidapi-tennis:player:132309",
-      "target_component_hits": 15
+      "target_component_hits": 16
     },
     {
       "catchup_matches": 3,
@@ -520,7 +549,7 @@
         "Lorenzo Berto"
       ],
       "provider_player_id": "rapidapi-tennis:player:113380",
-      "target_component_hits": 11
+      "target_component_hits": 14
     },
     {
       "catchup_matches": 1,
@@ -538,6 +567,45 @@
     {
       "catchup_matches": 1,
       "identity_observation_status": "CONSISTENT",
+      "numeric_player_id": "129436",
+      "observed_iocs": [
+        "BUL"
+      ],
+      "observed_names": [
+        "Aleksandar Tolev"
+      ],
+      "provider_player_id": "rapidapi-tennis:player:129436",
+      "target_component_hits": 11
+    },
+    {
+      "catchup_matches": 1,
+      "identity_observation_status": "CONSISTENT",
+      "numeric_player_id": "102640",
+      "observed_iocs": [
+        "ROU"
+      ],
+      "observed_names": [
+        "Rares Teodor Pieleanu"
+      ],
+      "provider_player_id": "rapidapi-tennis:player:102640",
+      "target_component_hits": 10
+    },
+    {
+      "catchup_matches": 1,
+      "identity_observation_status": "CONSISTENT",
+      "numeric_player_id": "112188",
+      "observed_iocs": [
+        "ITA"
+      ],
+      "observed_names": [
+        "Filippo Francesco Garbero"
+      ],
+      "provider_player_id": "rapidapi-tennis:player:112188",
+      "target_component_hits": 10
+    },
+    {
+      "catchup_matches": 1,
+      "identity_observation_status": "CONSISTENT",
       "numeric_player_id": "94535",
       "observed_iocs": [
         "ESP"
@@ -551,28 +619,15 @@
     {
       "catchup_matches": 1,
       "identity_observation_status": "CONSISTENT",
-      "numeric_player_id": "129436",
+      "numeric_player_id": "95896",
       "observed_iocs": [
-        "BUL"
+        "ESP"
       ],
       "observed_names": [
-        "Aleksandar Tolev"
+        "Carles Cordoba"
       ],
-      "provider_player_id": "rapidapi-tennis:player:129436",
-      "target_component_hits": 9
-    },
-    {
-      "catchup_matches": 1,
-      "identity_observation_status": "CONSISTENT",
-      "numeric_player_id": "102640",
-      "observed_iocs": [
-        "ROU"
-      ],
-      "observed_names": [
-        "Rares Teodor Pieleanu"
-      ],
-      "provider_player_id": "rapidapi-tennis:player:102640",
-      "target_component_hits": 8
+      "provider_player_id": "rapidapi-tennis:player:95896",
+      "target_component_hits": 10
     },
     {
       "catchup_matches": 1,
@@ -601,6 +656,19 @@
       "target_component_hits": 7
     },
     {
+      "catchup_matches": 2,
+      "identity_observation_status": "CONSISTENT",
+      "numeric_player_id": "115746",
+      "observed_iocs": [
+        "ITA"
+      ],
+      "observed_names": [
+        "Sebastiano Cocola"
+      ],
+      "provider_player_id": "rapidapi-tennis:player:115746",
+      "target_component_hits": 6
+    },
+    {
       "catchup_matches": 1,
       "identity_observation_status": "CONSISTENT",
       "numeric_player_id": "105356",
@@ -616,41 +684,41 @@
     {
       "catchup_matches": 1,
       "identity_observation_status": "CONSISTENT",
-      "numeric_player_id": "112188",
+      "numeric_player_id": "129191",
       "observed_iocs": [
         "ITA"
       ],
       "observed_names": [
-        "Filippo Francesco Garbero"
+        "Elia Ruffino"
       ],
-      "provider_player_id": "rapidapi-tennis:player:112188",
-      "target_component_hits": 6
+      "provider_player_id": "rapidapi-tennis:player:129191",
+      "target_component_hits": 5
     },
     {
       "catchup_matches": 1,
       "identity_observation_status": "CONSISTENT",
-      "numeric_player_id": "95896",
-      "observed_iocs": [
-        "ESP"
-      ],
-      "observed_names": [
-        "Carles Cordoba"
-      ],
-      "provider_player_id": "rapidapi-tennis:player:95896",
-      "target_component_hits": 6
-    },
-    {
-      "catchup_matches": 2,
-      "identity_observation_status": "CONSISTENT",
-      "numeric_player_id": "115746",
+      "numeric_player_id": "89521",
       "observed_iocs": [
         "ITA"
       ],
       "observed_names": [
-        "Sebastiano Cocola"
+        "Riccardo Trione"
       ],
-      "provider_player_id": "rapidapi-tennis:player:115746",
-      "target_component_hits": 4
+      "provider_player_id": "rapidapi-tennis:player:89521",
+      "target_component_hits": 5
+    },
+    {
+      "catchup_matches": 1,
+      "identity_observation_status": "CONSISTENT",
+      "numeric_player_id": "96819",
+      "observed_iocs": [
+        "ROU"
+      ],
+      "observed_names": [
+        "Robert Guna"
+      ],
+      "provider_player_id": "rapidapi-tennis:player:96819",
+      "target_component_hits": 5
     },
     {
       "catchup_matches": 2,
@@ -702,19 +770,6 @@
         "Jackson Ross"
       ],
       "provider_player_id": "rapidapi-tennis:player:83697",
-      "target_component_hits": 4
-    },
-    {
-      "catchup_matches": 1,
-      "identity_observation_status": "CONSISTENT",
-      "numeric_player_id": "96819",
-      "observed_iocs": [
-        "ROU"
-      ],
-      "observed_names": [
-        "Robert Guna"
-      ],
-      "provider_player_id": "rapidapi-tennis:player:96819",
       "target_component_hits": 4
     },
     {
@@ -785,19 +840,6 @@
     {
       "catchup_matches": 1,
       "identity_observation_status": "CONSISTENT",
-      "numeric_player_id": "129191",
-      "observed_iocs": [
-        "ITA"
-      ],
-      "observed_names": [
-        "Elia Ruffino"
-      ],
-      "provider_player_id": "rapidapi-tennis:player:129191",
-      "target_component_hits": 3
-    },
-    {
-      "catchup_matches": 1,
-      "identity_observation_status": "CONSISTENT",
       "numeric_player_id": "132674",
       "observed_iocs": [
         "POR"
@@ -806,19 +848,6 @@
         "Tiago Esculcas"
       ],
       "provider_player_id": "rapidapi-tennis:player:132674",
-      "target_component_hits": 3
-    },
-    {
-      "catchup_matches": 1,
-      "identity_observation_status": "CONSISTENT",
-      "numeric_player_id": "89521",
-      "observed_iocs": [
-        "ITA"
-      ],
-      "observed_names": [
-        "Riccardo Trione"
-      ],
-      "provider_player_id": "rapidapi-tennis:player:89521",
       "target_component_hits": 3
     },
     {
@@ -874,6 +903,19 @@
       "target_component_hits": 1
     },
     {
+      "catchup_matches": 2,
+      "identity_observation_status": "CONSISTENT",
+      "numeric_player_id": "105620",
+      "observed_iocs": [
+        "CZE"
+      ],
+      "observed_names": [
+        "Jakub Vrba"
+      ],
+      "provider_player_id": "rapidapi-tennis:player:105620",
+      "target_component_hits": 1
+    },
+    {
       "catchup_matches": 1,
       "identity_observation_status": "CONSISTENT",
       "numeric_player_id": "100720",
@@ -902,6 +944,19 @@
     {
       "catchup_matches": 1,
       "identity_observation_status": "CONSISTENT",
+      "numeric_player_id": "115944",
+      "observed_iocs": [
+        "ITA"
+      ],
+      "observed_names": [
+        "Paolo Gabriele Marino"
+      ],
+      "provider_player_id": "rapidapi-tennis:player:115944",
+      "target_component_hits": 1
+    },
+    {
+      "catchup_matches": 1,
+      "identity_observation_status": "CONSISTENT",
       "numeric_player_id": "127600",
       "observed_iocs": [
         "BOL"
@@ -924,7 +979,33 @@
       ],
       "provider_player_id": "rapidapi-tennis:player:85675",
       "target_component_hits": 1
+    },
+    {
+      "catchup_matches": 1,
+      "identity_observation_status": "CONSISTENT",
+      "numeric_player_id": "87740",
+      "observed_iocs": [
+        "SLO"
+      ],
+      "observed_names": [
+        "Tilen Kovac"
+      ],
+      "provider_player_id": "rapidapi-tennis:player:87740",
+      "target_component_hits": 1
+    },
+    {
+      "catchup_matches": 1,
+      "identity_observation_status": "CONSISTENT",
+      "numeric_player_id": "97368",
+      "observed_iocs": [
+        "ROU"
+      ],
+      "observed_names": [
+        "Radu David Turcanu"
+      ],
+      "provider_player_id": "rapidapi-tennis:player:97368",
+      "target_component_hits": 1
     }
   ],
-  "unmapped_identity_backlog_count": 34
+  "unmapped_identity_backlog_count": 38
 }
