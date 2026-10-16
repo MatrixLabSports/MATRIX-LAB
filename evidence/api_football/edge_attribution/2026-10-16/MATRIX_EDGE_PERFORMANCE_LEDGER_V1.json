@@ -1,5 +1,5 @@
 {
-  "artifact_sha256": "69be03fa7fecd3d492dda2ad2a60c8eecd738279ee688eb2584a5520cb48c517",
+  "artifact_sha256": "f95ef0d88ed84a491f787997ba15c7fc94a0b45022e953b2386058778e4fdde0",
   "clv_join_count": 0,
   "driver_groups": {
     "GROUP_BASELINE_OVER25": {
@@ -21,6 +21,16 @@
       "roi_units_per_settled": null,
       "row_count": 55,
       "settled_count": 0
+    }
+  },
+  "gates": {
+    "remaining_clv_to_open_by_driver": {
+      "GROUP_BASELINE_OVER25": 300,
+      "POISSON_OVER25": 300
+    },
+    "remaining_settled_to_open_by_driver": {
+      "GROUP_BASELINE_OVER25": 30,
+      "POISSON_OVER25": 30
     }
   },
   "governance": {
@@ -1142,5 +1152,19 @@
     }
   ],
   "schema": "MATRIX_EDGE_PERFORMANCE_LEDGER_V1",
-  "settled_join_count": 0
+  "settled_join_count": 0,
+  "source_artifacts": {
+    "clv_prospective_ledger": {
+      "path": "evidence/clv/football/over_2_5/prospective_clv_ledger.jsonl",
+      "sha256": "a7ce9c9e59bab83ba2968009e30938fd54b93d83b481a701d7891cb49470e6f8"
+    },
+    "edge_attribution": {
+      "path": "evidence/api_football/edge_attribution/2026-10-16/MATRIX_EDGE_ATTRIBUTION_OVER25_V2.json",
+      "sha256": "bb17339311788d0f0f4d72360d5109b359aa42c278bc26d110e73a204586ae80"
+    },
+    "telegram_signal_ledger": {
+      "path": "evidence/notifications/telegram/MATRIX_TELEGRAM_SIGNAL_LEDGER.json",
+      "sha256": "c139b24b9eb3ea81669dcab89eeb844184f42db4ccb11017569187070f57d21f"
+    }
+  }
 }
