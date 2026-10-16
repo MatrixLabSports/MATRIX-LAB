@@ -54,8 +54,8 @@ jobs:
           from pathlib import Path
           import requests
 
-          API_FOOTBALL_KEY=os.environ["API_FOOTBALL_KEY"]
-          ODDS_API_NET_KEY=os.environ["ODDS_API_NET_KEY"]
+          API_FOOTBALL_KEY=os.environ["API_FOOTBALL_KEY"].strip()
+          ODDS_API_NET_KEY=os.environ["ODDS_API_NET_KEY"].strip()
           FIXTURES=[
               "1567924","1607987","1551838","1552785","1564901","1570415"
           ]
