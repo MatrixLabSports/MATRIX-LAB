@@ -26,6 +26,8 @@ def test_edge_performance_ledger_stays_sealed_without_sample():
     assert out["driver_groups"]["POISSON_OVER25"]["clv_gate_open"] is False
     assert out["governance"]["driver_superiority_claim_allowed"] is False
     assert out["governance"]["real_money"]=="BLOCKED"
+    assert out["gates"]["remaining_settled_to_open_by_driver"]["POISSON_OVER25"] == 29
+    assert out["gates"]["remaining_clv_to_open_by_driver"]["POISSON_OVER25"] == 299
 
 def test_dominant_driver_uses_absolute_real_logit_contribution():
     attr={"rows":[
