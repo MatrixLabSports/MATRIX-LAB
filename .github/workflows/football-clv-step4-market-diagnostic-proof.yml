@@ -1,0 +1,70 @@
+name: MATRIX CLV Step4 Market Diagnostic Proof
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+    paths:
+      - .github/workflows/football-clv-step4-market-diagnostic-proof.yml
+
+permissions:
+  contents: read
+
+jobs:
+  prove:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      MATRIX_MODE: SHADOW
+      REAL_MONEY: BLOCKED
+      AUTO_BETTING: DISABLED
+    steps:
+      - name: Checkout operational branch
+        uses: actions/checkout@v4
+        with:
+          ref: repair/cor09-world-pipeline
+          fetch-depth: 1
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install targeted dependencies
+        run: python -m pip install pytest requests
+
+      - name: Run CLV diagnostic tests
+        run: |
+          PYTHONPATH=. python -m pytest -q \
+            tests/test_football_clv_tracking_cycle.py \
+            tests/test_football_clv_odds_api_net_capture.py
+
+      - name: Prove tests do not mutate CLV evidence
+        shell: bash
+        run: |
+          set -euo pipefail
+          git diff --exit-code -- evidence/clv/football/over_2_5
+          echo "CLV_STEP4_TEST_EVIDENCE_ISOLATION=PASS"
+
+      - name: Verify market diagnostic and PIT contracts
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          from pathlib import Path
+          a=Path("tools/football_clv_tracking_cycle.py").read_text(encoding="utf-8")
+          b=Path("tools/football_clv_odds_api_net_capture.py").read_text(encoding="utf-8")
+          assert "MAX_PINNACLE_PROVIDER_QUOTE_AGE_SECONDS = 120" in a
+          for token in (
+              "market_diagnostic",
+              "TOTAL_2_5_LINE_MISSING",
+              "OVER_2_5_MISSING",
+              "UNDER_2_5_MISSING",
+          ):
+              assert token in a
+              assert token in b
+          print("CLV_STEP4_MARKET_DIAGNOSTIC_CONTRACT=PASS")
+          print("CLV_STEP4_STRICT_FRESH_GATE_SECONDS=120")
+          print("CLV_STEP4_REAL_MONEY=BLOCKED")
+          PY
