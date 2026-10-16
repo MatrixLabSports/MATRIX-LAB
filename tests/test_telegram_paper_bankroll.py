@@ -11,6 +11,7 @@ from tools.telegram_green_signal_alerts import (
     SIGNAL_QUALITY_MIN_P_MATRIX,
     SIGNAL_QUALITY_MIN_REVALIDATED_EV,
     signal_quality_gate_state,
+    odds_api_net_exact_over25_offer,
     paper_daily_cap_fraction,
     paper_daily_exposure_by_date,
     paper_stake_cop,
@@ -278,3 +279,80 @@ def test_precision_quality_gate_requires_p60_and_ev5():
         {"p_matrix": 0.60},
         {"ev": 0.05},
     ) == "PASS_API_COST_RECOVERY_PRECISION_GATE"
+
+
+class _QuoteResponse:
+    def __init__(self, payload, status_code=200):
+        self._payload = payload
+        self.status_code = status_code
+    def json(self):
+        return self._payload
+
+
+class _MultiBookSession:
+    def get(self, url, headers=None, params=None, timeout=None):
+        if url.endswith("/fixtures"):
+            return _QuoteResponse({
+                "response": [{
+                    "teams": {
+                        "home": {"name": "Alpha FC"},
+                        "away": {"name": "Beta United"},
+                    }
+                }]
+            })
+        if url.endswith("/events"):
+            return _QuoteResponse({
+                "items": [{
+                    "event_id": "oa-1",
+                    "home_team": "Alpha FC",
+                    "away_team": "Beta United",
+                }]
+            })
+        if "/odds/snapshot" in url:
+            return _QuoteResponse({
+                "bookmaker_as_of_ts_ms": {
+                    "betplay": 1792140000000,
+                    "rushbet": 1792140000000,
+                },
+                "items": [
+                    {
+                        "bookmaker": "betplay",
+                        "market_key": "total_goals",
+                        "bet_type": "total",
+                        "period": "full time",
+                        "line": 2.5,
+                        "side": "over",
+                        "odds": 1.75,
+                        "is_available": True,
+                    },
+                    {
+                        "bookmaker": "rushbet",
+                        "market_key": "total_goals",
+                        "bet_type": "total",
+                        "period": "full time",
+                        "line": 2.5,
+                        "side": "over",
+                        "odds": 1.80,
+                        "is_available": True,
+                    },
+                ],
+            })
+        raise AssertionError(url)
+
+
+def test_odds_api_net_fallback_selects_best_authorized_colombia_book():
+    offer = odds_api_net_exact_over25_offer(
+        _MultiBookSession(),
+        "secret",
+        "fixture-1",
+        "2026-10-16T18:00:00+00:00",
+        0.61,
+        "api-football-secret",
+    )
+    assert offer is not None
+    assert offer["house_key"] == "rushbet"
+    assert offer["house"] == "Rushbet"
+    assert offer["odds"] == 1.80
+    assert round(offer["ev"], 3) == 0.098
+    assert offer["provider"] == "odds-api.net"
+    assert offer["fallback_multi_book"] is True
