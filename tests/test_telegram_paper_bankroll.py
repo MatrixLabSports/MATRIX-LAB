@@ -425,3 +425,41 @@ def test_multibook_gate_accepts_rushbet_when_other_two_are_absent():
     assert offer["house_key"] == "rushbet"
     assert offer["house"] == "Rushbet"
     assert round(offer["ev"], 4) == 0.1151
+
+
+def test_odds_api_parser_accepts_current_period_str_and_string_line_contract():
+    class Session:
+        def get(self, url, headers=None, params=None, timeout=None):
+            if url.endswith("/fixtures"):
+                return _QuoteResponse({"response":[{"teams":{"home":{"name":"Alpha FC"},"away":{"name":"Beta United"}}}]})
+            if url.endswith("/events"):
+                return _QuoteResponse({"items":[{"event_id":"oa-contract","home_team":"Alpha FC","away_team":"Beta United"}]})
+            if "/odds/snapshot" in url:
+                return _QuoteResponse({
+                    "bookmaker_as_of_ts_ms":{"betplay":1792140000000},
+                    "items":[{
+                        "bookmaker":"betplay",
+                        "market_key":"match total goals",
+                        "bet_type":"total",
+                        "metric":"goals",
+                        "period_str":"full time",
+                        "line":"2.5",
+                        "side":"over",
+                        "selection_name":"Over 2.5",
+                        "odds":1.84,
+                        "is_available":True
+                    }]
+                })
+            raise AssertionError(url)
+
+    offer = odds_api_net_exact_over25_offer(
+        Session(),
+        "secret",
+        "fixture-contract",
+        "2026-10-16T18:00:00+00:00",
+        0.62,
+        "api-football-secret",
+    )
+    assert offer is not None
+    assert offer["house_key"] == "betplay"
+    assert offer["odds"] == 1.84
