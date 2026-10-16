@@ -1,0 +1,103 @@
+{
+  "schema": "MATRIX_CLV_STEP4_INCOMPLETE_MARKET_RESOLUTION_PROOF_V1",
+  "generated_at_utc": "2026-10-16T03:14:00+00:00",
+  "step": 4,
+  "historical_residual": {
+    "snapshot_commit": "f5a07ca274a20a2e4fa171c31abe20df1e1ac868",
+    "blocked_market_incomplete_count": 1,
+    "exact_fixture_id": "NOT_RECOVERABLE_FROM_PRE_TELEMETRY_AGGREGATE_STATE",
+    "exact_payload_subreason": "NOT_RECOVERABLE_RAW_PAYLOAD_NOT_PERSISTED",
+    "note": "The historical state proves one incomplete Pinnacle O/U2.5 attempt, but pre-telemetry evidence did not persist event identity/subreason."
+  },
+  "recurrence_check": {
+    "current_attempt_log_path": "evidence/clv/football/over_2_5/closing_attempts.jsonl",
+    "attempt_log_blob_sha_before_step4": "6ed58ebbc7073d22d53e6b08f5015ba5251feaa0",
+    "current_incomplete_attempt_rows": 9,
+    "distinct_current_fixture_ids": [
+      "1559671"
+    ],
+    "fixture_1559671": {
+      "kickoff_utc": "2026-10-16T01:00:00+00:00",
+      "odds_api_event_id": "3550166666",
+      "first_incomplete_attempt_utc": "2026-10-16T00:46:06+00:00",
+      "last_incomplete_attempt_utc": "2026-10-16T00:58:32+00:00",
+      "transport": "odds-api.net /v1/events/{event_id}/odds/snapshot",
+      "http_status": 200,
+      "repeated_attempts": 9
+    },
+    "adjudication": "NOT_GLOBALLY_ISOLATED: historical API-Football episode plus a later independent odds-api.net episode; latest recurrence is concentrated in one fixture across nine polls."
+  },
+  "physical_provider_snapshot": {
+    "path": "evidence/clv/football/over_2_5/odds_api_net_probe_latest.json",
+    "blob_sha": "9e8c41b00fb3188817301c680b6cd012b1068105",
+    "generated_at_utc": "2026-10-15T22:29:06+00:00",
+    "fixture_id": "1559671",
+    "identity_score": 1,
+    "second_identity_score": 0.339683,
+    "pinnacle_catalog_present": true,
+    "snapshot_http": 200,
+    "bookmaker_as_of_timestamp_present": true,
+    "provider_quote_age_seconds_at_probe": 914,
+    "complete_market_over_under_2_5": false,
+    "total_2_5_lines": [],
+    "cause_supported_by_persisted_snapshot": "PINNACLE_PRESENT_BUT_COMPLETE_TOTAL_2_5_LINE_ABSENT",
+    "unsupported_inference": "Do not claim why Pinnacle/provider omitted 2.5 upstream; persisted evidence only proves absence of a complete 2.5 line."
+  },
+  "implementation": {
+    "api_football_diagnostic_code_commit": "76f70e2554bf6c11e8b60403534966eb55b9b282",
+    "api_football_diagnostic_blob_sha": "8e6505fbfb0cec21f18eb24440fc1308e3aee31a",
+    "odds_api_diagnostic_code_commit": "ae14b2a42d506d9d50f2923cfa25c60f259c02d8",
+    "odds_api_diagnostic_blob_sha": "dabd1efbcc8ccca85e0610fdb94a215009fa7cf3",
+    "api_football_test_commit": "bcf9e786d152fed3bdee39a7c0cd0fbc0c78b101",
+    "odds_api_test_commit": "bca8e75133344bdea8323b11a933d379952fdc9b",
+    "persisted_diagnostic_fields": [
+      "provider_timestamp_present",
+      "pinnacle_bookmaker_present / pinnacle_item_count",
+      "goals_over_under_market_present / total_market_item_count",
+      "available_total_labels / available_total_lines",
+      "over_2_5_present",
+      "under_2_5_present",
+      "incomplete_reason"
+    ],
+    "incomplete_reason_codes": [
+      "PAYLOAD_ERRORS",
+      "PROVIDER_TIMESTAMP_MISSING",
+      "PINNACLE_BOOKMAKER_MISSING / PINNACLE_ITEMS_MISSING",
+      "GOALS_OVER_UNDER_MARKET_MISSING / TOTAL_MARKET_MISSING",
+      "TOTAL_2_5_LINE_MISSING",
+      "OVER_2_5_MISSING",
+      "UNDER_2_5_MISSING"
+    ]
+  },
+  "verification": {
+    "workflow_main_contract_commit": "2b3b96e08cd6299e85749e29c2f34b372719df80",
+    "workflow_run_id": 38844118922,
+    "workflow_job_id": 116790622054,
+    "tests_passed": 11,
+    "test_duration_seconds": 0.28,
+    "step_results": {
+      "verify_clv_protections": "success",
+      "test_evidence_isolation": "success",
+      "startup_coverage_refresh_contract": "success",
+      "per_attempt_telemetry_contract": "success",
+      "incomplete_market_diagnostic_contract": "success",
+      "continuous_watch": "success",
+      "final_state_gate": "success"
+    },
+    "log_assertions": [
+      "11 passed in 0.28s",
+      "CLV_TEST_EVIDENCE_ISOLATION=PASS",
+      "CLV_INCOMPLETE_MARKET_DIAGNOSTIC_CONTRACT=PASS",
+      "CLV_STRICT_FRESH_GATE_SECONDS=120",
+      "CLV_CONTINUOUS_WATCHER_FINAL_GATE: PASS"
+    ]
+  },
+  "adjudication": "STEP_4_PHYSICALLY_VERIFIED",
+  "protections": {
+    "strict_fresh_gate_seconds": 120,
+    "freshness_gate_relaxed": false,
+    "post_kickoff_backfill": false,
+    "automatic_wagering": false,
+    "real_money": "BLOCKED"
+  }
+}
