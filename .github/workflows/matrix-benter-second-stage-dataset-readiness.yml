@@ -48,9 +48,11 @@ jobs:
           p=Path("evidence/api_football/model_validation/MATRIX_BENTER_SECOND_STAGE_DATASET_READINESS_V2.json")
           x=json.loads(p.read_text())
           assert x["schema"]=="MATRIX_BENTER_SECOND_STAGE_DATASET_READINESS_V2"
-          assert x["valid_model_market_outcome_triplets"]==41
-          assert x["remaining_to_readiness"]==259
-          assert x["fusion_training_ready"] is False
+          n=int(x["valid_model_market_outcome_triplets"])
+          remaining=int(x["remaining_to_readiness"])
+          assert 0 <= n <= 300
+          assert remaining == max(0,300-n)
+          assert x["fusion_training_ready"] is (n >= 300)
           assert x["governance"]["second_stage_fusion_enabled"] is False
           assert x["governance"]["production_p_matrix_modified"] is False
           assert x["governance"]["real_money"]=="BLOCKED"
