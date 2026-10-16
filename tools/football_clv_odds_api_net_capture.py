@@ -193,13 +193,17 @@ def capture_due_via_odds_api_net(
             params={"id": decision.fixture_id},
         )
         result["network_calls"] += 1
+        lookup_attempted_raw = clock()
+        if lookup_attempted_raw.tzinfo is None or lookup_attempted_raw.utcoffset() is None:
+            raise ValueError("CAPTURE_CLOCK_MUST_BE_TIMEZONE_AWARE")
+        lookup_attempted_at = lookup_attempted_raw.astimezone(timezone.utc).replace(microsecond=0)
         rows = fp.get("response") if isinstance(fp, Mapping) else []
         if fr.status_code >= 300 or not rows:
             result["blocked_fixture_lookup"] += 1
             _append_closing_attempt(attempt_log_path, {
                 **base,
-                "attempted_at_utc": reference.isoformat(),
-                "capture_lead_seconds": int((kickoff-reference).total_seconds()),
+                "attempted_at_utc": lookup_attempted_at.isoformat(),
+                "capture_lead_seconds": int((kickoff-lookup_attempted_at).total_seconds()),
                 "outcome": "ODDS_API_BLOCKED_FIXTURE_LOOKUP",
                 "http_status": int(fr.status_code),
                 "provider_quote_updated_at_utc": None,
@@ -225,6 +229,10 @@ def capture_due_via_odds_api_net(
             },
         )
         result["network_calls"] += 1
+        identity_attempted_raw = clock()
+        if identity_attempted_raw.tzinfo is None or identity_attempted_raw.utcoffset() is None:
+            raise ValueError("CAPTURE_CLOCK_MUST_BE_TIMEZONE_AWARE")
+        identity_attempted_at = identity_attempted_raw.astimezone(timezone.utc).replace(microsecond=0)
         events = ep.get("items") if isinstance(ep, Mapping) else []
         scored: list[tuple[float, bool, Mapping[str, Any]]] = []
         for event in events or []:
@@ -245,8 +253,8 @@ def capture_due_via_odds_api_net(
             result["blocked_identity"] += 1
             _append_closing_attempt(attempt_log_path, {
                 **base,
-                "attempted_at_utc": reference.isoformat(),
-                "capture_lead_seconds": int((kickoff-reference).total_seconds()),
+                "attempted_at_utc": identity_attempted_at.isoformat(),
+                "capture_lead_seconds": int((kickoff-identity_attempted_at).total_seconds()),
                 "outcome": "ODDS_API_BLOCKED_IDENTITY",
                 "http_status": int(er.status_code),
                 "provider_quote_updated_at_utc": None,
