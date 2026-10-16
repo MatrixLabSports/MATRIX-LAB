@@ -1,0 +1,57 @@
+{
+  "schema": "MATRIX_DAILY_MULTISOURCE_BROWSER_CROSSCHECK_V3",
+  "target_date_bogota": "2026-10-16",
+  "captured_at_utc": "2026-10-16T00:04:02Z",
+  "sources": {
+    "sofascore": {
+      "url": "https://www.sofascore.com/es/tennis/2026-10-16",
+      "opera_read_status": "PASS",
+      "count": 263,
+      "count_type": "MACHINE_VERIFIED_BROWSER_UI_EXACT",
+      "operator_manual_intervention_required": false,
+      "captured_at_utc": "2026-10-16T00:04:02Z",
+      "singles": 183,
+      "doubles": 80,
+      "nonstandard_total": 5,
+      "singles_nonstandard": 4,
+      "doubles_nonstandard": 1,
+      "unresolved_placeholder_total": 4,
+      "singles_placeholders": 2,
+      "doubles_placeholders": 2,
+      "note": "Accessibility-tree unique selected-day /tennis/match/ links; odds shown in UI are not admitted to P_MATRIX."
+    },
+    "flashscore": {
+      "url": "https://www.flashscore.com/tennis/?d=1",
+      "opera_read_status": "PASS",
+      "count": 388,
+      "count_type": "MACHINE_VERIFIED_BROWSER_UI_EXACT",
+      "operator_manual_intervention_required": false,
+      "captured_at_utc": "2026-10-16T00:04:02Z",
+      "singles_like": 241,
+      "doubles": 147,
+      "note": "Unique /match/tennis/ links inside the main region of the tomorrow page. Source count disagreement is retained, not overwritten."
+    }
+  },
+  "governance_basis": {
+    "sofascore_flashscore_daily_crosscheck_required": true,
+    "sofascore_first": true,
+    "flashscore_second": true,
+    "paid_apis_after_browser_sources": true,
+    "source_disagreement_requires_event_level_reconciliation": true
+  },
+  "adjudication": {
+    "status": "PASS_BROWSER_BASELINE_CAPTURED_PENDING_POST_BROWSER_API_REFRESH",
+    "paid_api_counts_are_not_world_complete": true,
+    "source_count_equality_required": false,
+    "difference_sofascore_minus_flashscore": -125,
+    "next_stage": "POST_BROWSER_RAPIDAPI_REFRESH_AND_LANE_GATES"
+  },
+  "protections": {
+    "metrics_opened": false,
+    "outcomes_read": 0,
+    "automatic_wagering": false,
+    "real_money": "BLOCKED",
+    "odds_to_probability": false,
+    "no_synthetic_backfill": true
+  }
+}
