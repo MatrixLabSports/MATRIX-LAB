@@ -59,12 +59,16 @@ jobs:
           assert x["governance"]["no_synthetic_drivers"] is True
           assert x["governance"]["p_matrix_is_input_not_modified"] is True
           assert x["governance"]["real_money"]=="BLOCKED"
-          assert all(r["edge_attribution"]["feature_level_driver_status"] in {"AVAILABLE_REAL_ENGINE_TRACE","NOT_AVAILABLE_IN_SOURCE_TRACE"} for r in x["rows"])
-          if any(r["edge_attribution"]["feature_level_driver_status"]=="AVAILABLE_REAL_ENGINE_TRACE" for r in x["rows"]):
-              assert all(r["edge_attribution"]["feature_trace_space"]=="LOGIT" for r in x["rows"] if r["edge_attribution"]["feature_level_driver_status"]=="AVAILABLE_REAL_ENGINE_TRACE")
+          assert x["row_count"] > 0
+          assert x["feature_trace_available_count"] == x["row_count"]
+          assert all(r["edge_attribution"]["feature_level_driver_status"]=="AVAILABLE_REAL_ENGINE_TRACE" for r in x["rows"])
+          assert all(r["edge_attribution"]["feature_trace_space"]=="LOGIT" for r in x["rows"])
+          assert all(abs(r["edge_attribution"]["reconstructed_probability"]-r["p_matrix"]) < 1e-9 for r in x["rows"])
           assert all(r["protections"]["feature_contributions_invented"] is False for r in x["rows"])
           print("MATRIX_EDGE_ATTRIBUTION_GATE: PASS")
           print("row_count=",x["row_count"])
+          print("feature_trace_available_count=",x["feature_trace_available_count"])
+          print("priced_row_count=",x["priced_row_count"])
           print("artifact_sha256=",x["artifact_sha256"])
           PY
 
