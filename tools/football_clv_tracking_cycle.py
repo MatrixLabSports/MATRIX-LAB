@@ -481,6 +481,7 @@ def capture_due_closing_lines(
             "outcome": "CAPTURED_VALID",
             "provider_quote_updated_at_utc": provider_update.isoformat(),
             "provider_quote_age_seconds": provider_quote_age_seconds,
+            "gate_excess_seconds": gate_excess_seconds,
             "over_2_5_decimal_odds": over_odds,
             "under_2_5_decimal_odds": under_odds,
             "evidence_path": evidence_path.as_posix(),
