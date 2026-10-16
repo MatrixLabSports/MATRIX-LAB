@@ -251,7 +251,7 @@ def test_league_day_concentration_policy_is_three():
 
 
 def test_final_prematch_quote_state_blocks_missing_or_nonpositive_ev():
-    assert final_prematch_quote_state(None) == "BLOCKED_NO_VALID_EXACT_SAME_HOUSE_OVER25"
+    assert final_prematch_quote_state(None) == "BLOCKED_NO_VALID_EXACT_AUTHORIZED_BOOK_OVER25"
     assert final_prematch_quote_state({"ev": 0.0}) == "BLOCKED_NONPOSITIVE_EV"
     assert final_prematch_quote_state({"ev": -0.01}) == "BLOCKED_NONPOSITIVE_EV"
     assert final_prematch_quote_state({"ev": 0.01}) == "PASS_FINAL_PREMATCH_REVALIDATION"
