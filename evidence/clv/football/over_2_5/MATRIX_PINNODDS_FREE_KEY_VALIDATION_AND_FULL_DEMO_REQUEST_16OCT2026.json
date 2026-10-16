@@ -1,0 +1,59 @@
+{
+  "schema": "MATRIX_PINNODDS_FREE_KEY_VALIDATION_AND_FULL_DEMO_REQUEST_V1",
+  "generated_at_utc": "2026-10-16T05:20:00Z",
+  "provider": "PinnOdds",
+  "account_email": "yoansanchezlozano@gmail.com",
+  "free_key": {
+    "issued": true,
+    "secret_persisted_in_evidence": false,
+    "validation_endpoint": "GET /health",
+    "validation_result": "PASS",
+    "health_status": "healthy",
+    "prematch_status": "healthy",
+    "source": "ws",
+    "prematch_source": "ws"
+  },
+  "plan": {
+    "current_tier": "TRIAL_FREE_TIER",
+    "limits": {
+      "requests_per_minute": 20,
+      "requests_per_hour": 100,
+      "requests_per_day": 100
+    },
+    "rest_access": true,
+    "sse_access": false,
+    "websocket_access": false
+  },
+  "full_demo": {
+    "requested": true,
+    "requested_via": "email",
+    "request_recipient": "info@pinnodds.com",
+    "request_subject": "Request to enable 3-day full demo for existing free trial key",
+    "gmail_sent_message_id": "1a1432609fb527e4",
+    "activated": false,
+    "window_72h_started": false,
+    "start_timestamp_utc": null,
+    "activation_dependency": "PROVIDER_SUPPORT_ENABLEMENT"
+  },
+  "matrix_transport_preservation": {
+    "odds_api_net_preferred": true,
+    "api_football_strict_fresh_fallback": true,
+    "pinnodds_cutover": false
+  },
+  "acceptance_gate": {
+    "minimum_real_observations": 50,
+    "market": "football prematch FT O/U 2.5",
+    "provider_quote_age_seconds_max": 120,
+    "stale_gt_120_count_required": 0,
+    "stream_error_rate_pct_max": 1,
+    "post_kickoff_backfill_allowed": false
+  },
+  "protections": {
+    "payment_entered": false,
+    "paid_plan_started": false,
+    "production_cutover_authorized": false,
+    "real_money": "BLOCKED",
+    "automatic_wagering": false
+  },
+  "status": "FREE_KEY_PHYSICALLY_VALIDATED_FULL_DEMO_PENDING_PROVIDER_ENABLEMENT"
+}
