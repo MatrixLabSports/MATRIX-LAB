@@ -101,6 +101,33 @@ jobs:
           print("CLV_STRICT_FRESH_GATE_SECONDS=120")
           PY
 
+      - name: Verify CLV per-attempt telemetry contract
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          from pathlib import Path
+          targets=[
+              Path("tools/football_clv_tracking_cycle.py"),
+              Path("tools/football_clv_odds_api_net_capture.py"),
+          ]
+          required=[
+              "attempted_at_utc",
+              "provider_quote_updated_at_utc",
+              "provider_quote_age_seconds",
+              "gate_excess_seconds",
+          ]
+          for path in targets:
+              s=path.read_text(encoding="utf-8")
+              missing=[x for x in required if x not in s]
+              if missing:
+                  raise SystemExit(f"CLV_PER_ATTEMPT_TELEMETRY_MISSING {path}: {missing}")
+          assert "MAX_PINNACLE_PROVIDER_QUOTE_AGE_SECONDS = 120" in Path("tools/football_clv_tracking_cycle.py").read_text(encoding="utf-8")
+          print("CLV_PER_ATTEMPT_TELEMETRY_CONTRACT=PASS")
+          print("CLV_TELEMETRY_FIELDS="+",".join(required))
+          print("CLV_STRICT_FRESH_GATE_SECONDS=120")
+          PY
+
       - name: Continuous CLV watch and immediate persistence
         env:
           API_FOOTBALL_KEY: ${{ secrets.API_FOOTBALL_KEY }}
