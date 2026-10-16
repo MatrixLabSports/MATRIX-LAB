@@ -1,0 +1,92 @@
+name: MATRIX Quant Reference Adjudication
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - repair/cor09-world-pipeline
+    paths:
+      - tools/matrix_quant_research_adjudication.py
+      - tests/test_matrix_quant_research_adjudication.py
+      - .github/workflows/matrix-quant-reference-adjudication.yml
+      - evidence/api_football/model_validation/MATRIX_DIXON_COLES_OVER25_RELEVANCE_AUDIT_V1.json
+      - evidence/api_football/model_validation/MATRIX_DIXON_COLES_FULL_OVER25_CHALLENGER_V1.json
+      - evidence/api_football/model_validation/MATRIX_DIXON_COLES_FULL_CHALLENGER_V1.json
+      - evidence/api_football/model_validation/MATRIX_OVER25_TIME_DECAY_CHALLENGER_V1.json
+
+permissions:
+  contents: write
+
+concurrency:
+  group: matrix-quant-reference-adjudication
+  cancel-in-progress: false
+
+jobs:
+  adjudicate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      REAL_MONEY: BLOCKED
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: repair/cor09-world-pipeline
+          fetch-depth: 0
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install pytest
+        run: python -m pip install pytest
+
+      - name: Run tests
+        run: PYTHONPATH=. python -m pytest -q tests/test_matrix_quant_research_adjudication.py
+
+      - name: Build adjudication artifact
+        run: PYTHONPATH=. python -m tools.matrix_quant_research_adjudication
+
+      - name: Enforce governance
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          p=Path("evidence/api_football/model_validation/MATRIX_QUANT_REFERENCE_ADJUDICATION_16OCT2026.json")
+          x=json.loads(p.read_text())
+          assert x["schema"]=="MATRIX_QUANT_REFERENCE_ADJUDICATION_V1"
+          assert x["adjudication"]=="KEEP_FROZEN_PRODUCTION_ENGINE_NO_DIXON_COLES_OR_TIME_DECAY_PROMOTION"
+          assert x["benter_second_stage_market_fusion"]["status"]=="RESEARCH_ONLY_NOT_ENABLED"
+          assert x["governance"]["production_engine_modified"] is False
+          assert x["governance"]["p_matrix_modified"] is False
+          assert x["governance"]["telegram_modified"] is False
+          assert x["governance"]["odds_used_to_generate_initial_probability"] is False
+          assert x["governance"]["real_money"]=="BLOCKED"
+          print("MATRIX_QUANT_REFERENCE_ADJUDICATION_GATE: PASS")
+          print("adjudication=",x["adjudication"])
+          print("artifact_sha256=",x["artifact_sha256"])
+          PY
+
+      - name: Persist evidence
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name matrix-quant-research
+          git config user.email matrix-quant-research@users.noreply.github.com
+          git add evidence/api_football/model_validation/MATRIX_QUANT_REFERENCE_ADJUDICATION_16OCT2026.json
+          if git diff --cached --quiet; then
+            echo "NO_QUANT_ADJUDICATION_CHANGE"
+            exit 0
+          fi
+          git commit -m "evidence(research): persist quantitative reference adjudication"
+          for attempt in 1 2 3 4; do
+            git fetch origin repair/cor09-world-pipeline
+            if ! git rebase origin/repair/cor09-world-pipeline; then
+              git rebase --abort || true
+              exit 1
+            fi
+            if git push origin HEAD:repair/cor09-world-pipeline; then exit 0; fi
+            sleep $((attempt*2))
+          done
+          exit 1
