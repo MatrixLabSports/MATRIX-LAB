@@ -36,6 +36,9 @@ jobs:
         with:
           python-version: "3.11"
 
+      - name: Install pytest
+        run: python -m pip install pytest
+
       - name: Run tests
         run: PYTHONPATH=. python -m pytest -q tests/test_matrix_edge_performance_ledger.py
 
