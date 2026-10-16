@@ -1,0 +1,115 @@
+{
+  "schema": "MATRIX_SETTLEMENT_PROGRESS_20261006_BOGOTA_AUDIT_SNAPSHOT_V1",
+  "cohort": "2026-10-06_BOGOTA",
+  "observed_at_utc": "2026-10-16T22:16:29Z",
+  "source_branch": "repair/cor09-world-pipeline",
+  "source_head_observed": "9b9e4ef7bab1d11615dc6dd3e909c5d005926048",
+  "previous_snapshot_path": "evidence/daily_selection/MATRIX_SETTLEMENT_PROGRESS_20261006_BOGOTA_20261016T202228Z_V2_1933_T279.json",
+  "previous_snapshot_blob_sha": "51e676c17f3218910f027c05bf0883982a82d9fb",
+  "source_candidate_path": "evidence/daily_selection/MATRIX_CALIBRATION_CANDIDATES_20261006_BOGOTA.json",
+  "source_candidate_blob_sha": "52e897007840f5bed1a8999edad8ee594fefc767",
+  "football": {
+    "v2_freezes": 2668,
+    "v2_settlements": 1953,
+    "v2_pending": 715,
+    "delta_freezes": 0,
+    "delta_v2_settlements": 20,
+    "delta_pending": -20,
+    "all_five_v2_lanes_consistent": true,
+    "cohort_total": 116,
+    "cohort_ft_last_full_ledger_audit": 107,
+    "cohort_new_ft_from_new_global_ids": 0,
+    "cohort_remaining_nonstandard_or_pending": 9,
+    "cohort_full_ledger_recheck_this_run": false,
+    "cohort_ft_basis": "Previous persisted full-ledger audit at 2026-10-16T20:22:28.003Z; 20 new global FT ids have zero intersection with 116 candidate ids; nine blockers reconfirmed in current sync.",
+    "new_global_ft_fixture_ids": [
+      "1607990",
+      "1607991",
+      "1608097",
+      "1608098",
+      "1608099",
+      "1574132",
+      "1608103",
+      "1566380",
+      "1566381",
+      "1574133",
+      "1574137",
+      "1586607",
+      "1587511",
+      "1592545",
+      "1592546",
+      "1599972",
+      "1628000",
+      "1628004",
+      "1549516",
+      "1551837"
+    ],
+    "global_calibration_settlements": 2755,
+    "global_ledger_hash_chain_verified_by_source_sync": true,
+    "blocked_nonstandard": {
+      "PEN": [
+        "1588817",
+        "1588821",
+        "1588845",
+        "1588863",
+        "1588890",
+        "1588893",
+        "1619499"
+      ],
+      "AET": [
+        "1644168"
+      ],
+      "NS_pending": [
+        "1596466"
+      ]
+    },
+    "source_sync_path": "evidence/api_football/prospective_market_freeze/settlement_sync_last.json",
+    "source_sync_blob_sha": "04f95b5d48098a0aad960df6bd0963dfd8e5f721",
+    "source_calibration_sync_path": "evidence/api_football/prospective_calibration/sync_last.json",
+    "source_calibration_sync_blob_sha": "cdb26ec867a952cea23350e1332d677368092d30",
+    "v2_state_blob_shas": {
+      "1x2": "2a9c03e8fa17df5a11ed35d7bbddde02a89b0e73",
+      "over_2_5": "0f923cb05f01fc21d3fbd8debd0bba9c1af1e6a7",
+      "under_2_5": "63d589fc21fc13d45e980bfd961c7d9f9d936748",
+      "double_chance_1x": "15103cca8e272e621b39d2569daa01c99d53603f",
+      "double_chance_x2": "17a5b632f8d4ef481975b1cb11f67a63f84e4e2e"
+    }
+  },
+  "tennis": {
+    "cohort_total": 11,
+    "cohort_finished": 11,
+    "cohort_unique_events": 11,
+    "cohort_unique_settlements": 11,
+    "cohort_duplicate_settlements": 0,
+    "global_settlement_rows": 280,
+    "delta_global_settlements": 1,
+    "global_unique_calibration_observations": 248,
+    "delta_global_unique": 1,
+    "duplicate_quarantined": 171,
+    "uniqueness": "PASS",
+    "global_ledger_previous_hash_links_verified": true,
+    "global_ledger_last_record_sha256": "5d316144d4bb1e2f080a9c115dcad836c945f5e9e2a6cb2f7e7504b3d68cbc49",
+    "new_global_finished_event_ids": [
+      "COR0203-RAPIDAPI-TENNIS-66827-a4d11fc007d1"
+    ],
+    "new_events_in_cohort": false,
+    "source_ledger_path": "evidence/cor0203/settlement/MATRIX_COR0203_SETTLEMENT_LEDGER.jsonl",
+    "source_ledger_blob_sha": "de84d9cef5352df4974cb2db363a5a1c1376a45c",
+    "source_uniqueness_path": "evidence/cor0203/runtime/MATRIX_COR0203_SETTLEMENT_UNIQUENESS_LAST.json",
+    "source_uniqueness_blob_sha": "42a1ec25659bfe24b39511249abe62c4dd1bce36"
+  },
+  "governance": {
+    "metrics_opened": false,
+    "parameter_tuning_allowed": false,
+    "odds_to_probability": false,
+    "settlement_final_only": true,
+    "real_money": "BLOCKED",
+    "automated_wagering": false
+  },
+  "limitations": [
+    "New global settlements were already persisted by governed workflows; no duplicate settlement writes performed.",
+    "Football cohort 107/116 uses the last complete ledger audit and a current zero-intersection plus nine-blocker check; this run did not read the oversized full football ledger.",
+    "Football blocked states derive from repository sync, without independent provider revalidation.",
+    "Snapshot-only write; no metrics opening, tuning, odds-to-probability, or motor changes."
+  ]
+}
