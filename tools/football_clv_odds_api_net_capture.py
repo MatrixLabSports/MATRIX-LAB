@@ -117,6 +117,68 @@ def _extract_total_25(snapshot: Mapping[str, Any]) -> tuple[float, float, dateti
     return over, under, provider_update
 
 
+
+def _diagnose_total_25(snapshot: Mapping[str, Any]) -> dict[str, Any]:
+    ts_ms = (snapshot.get("bookmaker_as_of_ts_ms") or {}).get("pinnacle")
+    diagnostic: dict[str, Any] = {
+        "market_diagnostic_version": 1,
+        "provider_timestamp_present": isinstance(ts_ms, (int, float)),
+        "pinnacle_item_count": 0,
+        "total_market_item_count": 0,
+        "available_total_lines": [],
+        "over_2_5_present": False,
+        "under_2_5_present": False,
+        "incomplete_reason": None,
+    }
+    lines: set[float] = set()
+    for item in snapshot.get("items") or []:
+        if not isinstance(item, Mapping) or _norm(item.get("bookmaker")) != "pinnacle":
+            continue
+        diagnostic["pinnacle_item_count"] += 1
+        market_text = " ".join([
+            _norm(item.get("market_key")),
+            _norm(item.get("bet_type")),
+        ])
+        if "total" not in market_text and "over under" not in market_text:
+            continue
+        diagnostic["total_market_item_count"] += 1
+        try:
+            line = float(item.get("line"))
+            odds = float(item.get("odds"))
+        except (TypeError, ValueError):
+            continue
+        if item.get("is_available") is False or odds <= 1.0:
+            continue
+        lines.add(line)
+        if line != 2.5:
+            continue
+        label = " ".join([
+            _norm(item.get("side")),
+            _norm(item.get("selection_name")),
+        ])
+        if "over" in label:
+            diagnostic["over_2_5_present"] = True
+        elif "under" in label:
+            diagnostic["under_2_5_present"] = True
+    diagnostic["available_total_lines"] = sorted(lines)
+    if not diagnostic["provider_timestamp_present"]:
+        reason = "PROVIDER_TIMESTAMP_MISSING"
+    elif diagnostic["pinnacle_item_count"] == 0:
+        reason = "PINNACLE_ITEMS_MISSING"
+    elif diagnostic["total_market_item_count"] == 0:
+        reason = "TOTAL_MARKET_MISSING"
+    elif 2.5 not in diagnostic["available_total_lines"]:
+        reason = "TOTAL_2_5_LINE_MISSING"
+    elif not diagnostic["over_2_5_present"]:
+        reason = "OVER_2_5_MISSING"
+    elif not diagnostic["under_2_5_present"]:
+        reason = "UNDER_2_5_MISSING"
+    else:
+        reason = "COMPLETE"
+    diagnostic["incomplete_reason"] = reason
+    return diagnostic
+
+
 def capture_due_via_odds_api_net(
     *,
     ledger_path: Path = DEFAULT_LEDGER,
@@ -304,7 +366,15 @@ def capture_due_via_odds_api_net(
         parsed = _extract_total_25(sp)
         if parsed is None:
             result["blocked_market_incomplete"] += 1
-            _append_closing_attempt(attempt_log_path, {**attempt, "outcome": "ODDS_API_BLOCKED_MARKET_INCOMPLETE"})
+            market_diagnostic = _diagnose_total_25(sp)
+            _append_closing_attempt(
+                attempt_log_path,
+                {
+                    **attempt,
+                    "outcome": "ODDS_API_BLOCKED_MARKET_INCOMPLETE",
+                    "market_diagnostic": market_diagnostic,
+                },
+            )
             continue
         over_odds, under_odds, provider_update = parsed
         quote_age = int((captured_at-provider_update).total_seconds())
