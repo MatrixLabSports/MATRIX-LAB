@@ -243,6 +243,81 @@ def _extract_pinnacle_over25_market(
     return None
 
 
+
+def _diagnose_pinnacle_over25_market(payload: Mapping[str, Any]) -> dict[str, Any]:
+    diagnostic: dict[str, Any] = {
+        "market_diagnostic_version": 1,
+        "payload_errors_present": payload.get("errors") not in ({}, [], None),
+        "provider_timestamp_present": False,
+        "pinnacle_bookmaker_present": False,
+        "goals_over_under_market_present": False,
+        "available_total_labels": [],
+        "over_2_5_present": False,
+        "under_2_5_present": False,
+        "incomplete_reason": None,
+    }
+    labels: set[str] = set()
+    for fixture_row in payload.get("response") or []:
+        if not isinstance(fixture_row, Mapping):
+            continue
+        if str(fixture_row.get("update") or "").strip():
+            diagnostic["provider_timestamp_present"] = True
+        for bookmaker in fixture_row.get("bookmakers") or []:
+            if not isinstance(bookmaker, Mapping):
+                continue
+            if str(bookmaker.get("id")) != str(PINNACLE_BOOKMAKER_ID):
+                continue
+            if str(bookmaker.get("name") or "").strip().casefold() != PINNACLE_BOOKMAKER_NAME.casefold():
+                continue
+            diagnostic["pinnacle_bookmaker_present"] = True
+            for bet in bookmaker.get("bets") or []:
+                if not isinstance(bet, Mapping):
+                    continue
+                try:
+                    bet_id = int(bet.get("id"))
+                except (TypeError, ValueError):
+                    continue
+                if bet_id != 5 or str(bet.get("name") or "").strip().casefold() != "goals over/under":
+                    continue
+                diagnostic["goals_over_under_market_present"] = True
+                for value in bet.get("values") or []:
+                    if not isinstance(value, Mapping):
+                        continue
+                    label = str(value.get("value") or "").strip()
+                    if label:
+                        labels.add(label)
+                    try:
+                        odds = float(value.get("odd"))
+                    except (TypeError, ValueError):
+                        continue
+                    if odds <= 1.0:
+                        continue
+                    folded = label.casefold()
+                    if folded == "over 2.5":
+                        diagnostic["over_2_5_present"] = True
+                    elif folded == "under 2.5":
+                        diagnostic["under_2_5_present"] = True
+    diagnostic["available_total_labels"] = sorted(labels)
+    if diagnostic["payload_errors_present"]:
+        reason = "PAYLOAD_ERRORS"
+    elif not diagnostic["provider_timestamp_present"]:
+        reason = "PROVIDER_TIMESTAMP_MISSING"
+    elif not diagnostic["pinnacle_bookmaker_present"]:
+        reason = "PINNACLE_BOOKMAKER_MISSING"
+    elif not diagnostic["goals_over_under_market_present"]:
+        reason = "GOALS_OVER_UNDER_MARKET_MISSING"
+    elif not diagnostic["over_2_5_present"] and not diagnostic["under_2_5_present"]:
+        reason = "TOTAL_2_5_LINE_MISSING"
+    elif not diagnostic["over_2_5_present"]:
+        reason = "OVER_2_5_MISSING"
+    elif not diagnostic["under_2_5_present"]:
+        reason = "UNDER_2_5_MISSING"
+    else:
+        reason = "COMPLETE"
+    diagnostic["incomplete_reason"] = reason
+    return diagnostic
+
+
 def capture_due_closing_lines(
     ledger: FootballProspectiveEvidenceLedger,
     capture_dir: Path,
@@ -336,12 +411,14 @@ def capture_due_closing_lines(
         parsed = _extract_pinnacle_over25_market(payload)
         if parsed is None:
             blocked_market_incomplete += 1
+            market_diagnostic = _diagnose_pinnacle_over25_market(payload)
             _append_closing_attempt(attempt_path, {
                 **attempt_base,
                 "outcome": "BLOCKED_MARKET_INCOMPLETE",
                 "provider_quote_updated_at_utc": None,
                 "provider_quote_age_seconds": None,
                 "gate_excess_seconds": None,
+                "market_diagnostic": market_diagnostic,
             })
             continue
         over_odds, under_odds, provider_update = parsed
