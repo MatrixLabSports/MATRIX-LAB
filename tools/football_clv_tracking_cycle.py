@@ -330,6 +330,7 @@ def capture_due_closing_lines(
                 "outcome": "BLOCKED_PROVIDER_ERROR",
                 "provider_quote_updated_at_utc": None,
                 "provider_quote_age_seconds": None,
+                "gate_excess_seconds": None,
             })
             continue
         parsed = _extract_pinnacle_over25_market(payload)
@@ -340,10 +341,15 @@ def capture_due_closing_lines(
                 "outcome": "BLOCKED_MARKET_INCOMPLETE",
                 "provider_quote_updated_at_utc": None,
                 "provider_quote_age_seconds": None,
+                "gate_excess_seconds": None,
             })
             continue
         over_odds, under_odds, provider_update = parsed
         provider_quote_age_seconds = int((captured_at - provider_update).total_seconds())
+        gate_excess_seconds = max(
+            0,
+            provider_quote_age_seconds - MAX_PINNACLE_PROVIDER_QUOTE_AGE_SECONDS,
+        )
 
         if captured_at >= kickoff or provider_update >= kickoff or provider_update > captured_at:
             blocked_temporal += 1
@@ -352,6 +358,7 @@ def capture_due_closing_lines(
                 "outcome": "BLOCKED_TEMPORAL",
                 "provider_quote_updated_at_utc": provider_update.isoformat(),
                 "provider_quote_age_seconds": provider_quote_age_seconds,
+                "gate_excess_seconds": gate_excess_seconds,
                 "over_2_5_decimal_odds": over_odds,
                 "under_2_5_decimal_odds": under_odds,
             })
@@ -363,6 +370,7 @@ def capture_due_closing_lines(
                 "outcome": "BLOCKED_STALE_PROVIDER_QUOTE",
                 "provider_quote_updated_at_utc": provider_update.isoformat(),
                 "provider_quote_age_seconds": provider_quote_age_seconds,
+                "gate_excess_seconds": gate_excess_seconds,
                 "over_2_5_decimal_odds": over_odds,
                 "under_2_5_decimal_odds": under_odds,
             })
@@ -418,6 +426,7 @@ def capture_due_closing_lines(
                 "system_captured_at_utc": captured_at.isoformat(),
                 "provider_quote_updated_at_utc": provider_update.isoformat(),
                 "provider_quote_age_seconds": provider_quote_age_seconds,
+                "gate_excess_seconds": gate_excess_seconds,
                 "kickoff_utc": kickoff.isoformat(),
                 "capture_lead_seconds": lead_seconds,
                 "complete_market_snapshot": True,
