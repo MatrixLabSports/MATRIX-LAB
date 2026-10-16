@@ -47,6 +47,18 @@ def test_scoring_uses_prior_group_only_and_btts_stays_blocked(tmp_path: Path):
     assert row["btts_status"] == "BLOCKED_FINAL_HOLDOUT_NOT_SUPERIOR"
     assert row["odds_used_to_generate_probability"] is False
     assert row["outcomes_used_from_target"] is False
+    trace=row["over25_feature_trace"]
+    assert trace["trace_schema"]=="MATRIX_OVER25_FEATURE_TRACE_V1"
+    assert trace["space"]=="LOGIT"
+    assert trace["probability_modified_by_trace"] is False
+    assert trace["odds_used_in_trace"] is False
+    assert trace["reconstructed_probability"] == row["p_matrix_shadow"]["over_2_5"]
+    assert abs(
+        trace["poisson_weighted_logit_contribution"]
+        + trace["baseline_weighted_logit_contribution"]
+        + trace["intercept_logit_contribution"]
+        - trace["pooled_logit"]
+    ) < 1e-9
     assert out["protections"]["parameter_refit"] is False
     assert out["protections"]["final_holdout_reused"] is False
 
