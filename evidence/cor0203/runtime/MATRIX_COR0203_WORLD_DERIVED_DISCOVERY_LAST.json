@@ -1,67 +1,9 @@
 {
-  "as_of_utc": "2026-10-16T09:57:51+00:00",
+  "as_of_utc": "2026-10-16T11:30:27+00:00",
   "automatic_model_feed": false,
   "automatic_model_promotion": false,
   "automatic_wagering": false,
   "eligible_candidates": [
-    {
-      "canonical_source_event_id": "rapidapi-tennis:atp:match:1494",
-      "competition": "Olbia Challenger",
-      "competition_id": "rapidapi-tennis:tournament:22099",
-      "event_id": "rapidapi-tennis:atp:match:1494",
-      "event_start_utc": "2026-10-16T10:30:00+00:00",
-      "historical_identity_crosswalk_status": "PENDING",
-      "legacy_provider_event_id": "rapidapi-tennis:match:1494",
-      "physical_event_key": "d9f5721ce26ee3f50a124089751ec0af7b5265fc2ad2136e229ae42c80984272",
-      "player_identities": [
-        {
-          "display_name": "Maks Kasnikowski",
-          "provider": "rapidapi_tennis",
-          "provider_player_id": "rapidapi-tennis:player:84060"
-        },
-        {
-          "display_name": "Stefano Travaglia",
-          "provider": "rapidapi_tennis",
-          "provider_player_id": "rapidapi-tennis:player:12097"
-        }
-      ],
-      "players": [
-        {
-          "name": "Maks Kasnikowski",
-          "provider_player_id": "rapidapi-tennis:player:84060",
-          "provider_ranking": {
-            "country": "POL",
-            "place": "235",
-            "player": "Maks Kasnikowski",
-            "points": "240",
-            "snapshot_date": "2026-09-21"
-          }
-        },
-        {
-          "name": "Stefano Travaglia",
-          "provider_player_id": "rapidapi-tennis:player:12097",
-          "provider_ranking": {
-            "country": "ITA",
-            "place": "159",
-            "player": "Stefano Travaglia",
-            "points": "355",
-            "snapshot_date": "2026-09-21"
-          }
-        }
-      ],
-      "provider_channel": "ATP",
-      "provider_source_event_id": "rapidapi-tennis:atp:match:1494",
-      "round": "1/4",
-      "source_id_collision_resolved": false,
-      "source_provider": "rapidapi_tennis",
-      "source_reference": "fixtures:matchId=1494;tournament_info=22099;ranking_cut=2026-09-21;provider_channel=ATP",
-      "source_snapshot_sha256": "1cb4f129d17ede15179dab60fb5dd559e006ae2103151d0ed96c491d0a942026",
-      "surface": "Hard",
-      "target_period": 20260921,
-      "tour_level": "C",
-      "world_source_snapshot_sha256": "ed789b10d8a2d4311698066289b5438c7dcd62e3b21d0bc94389b176e75498b7",
-      "world_stable_physical_identity_key": "e473978558906a2fa5ce49f46765e25e34b633b8f6fd766855adbbd54e11a620"
-    },
     {
       "canonical_source_event_id": "rapidapi-tennis:atp:match:58248",
       "competition": "Roanne Challenger",
@@ -411,7 +353,7 @@
       "world_stable_physical_identity_key": "4e1fe2bc0c4db4593d3e1a7c0642d88ddd2def806a9bd707d184a6fbe35fc7fb"
     }
   ],
-  "eligible_input_events": 7,
+  "eligible_input_events": 6,
   "fixture_rows": 10,
   "governed_preregistration_required": true,
   "metrics_opened": false,
@@ -487,6 +429,29 @@
       "source_id_collision_resolved": false,
       "tournament_id": "22099",
       "world_source_event_id": "rapidapi-tennis:atp:match:58137"
+    },
+    {
+      "blockers": [
+        "EVENT_NOT_FUTURE"
+      ],
+      "match_id": "1494",
+      "players": [
+        {
+          "name": "Maks Kasnikowski",
+          "provider_player_id": "rapidapi-tennis:player:84060",
+          "ranking_found": true
+        },
+        {
+          "name": "Stefano Travaglia",
+          "provider_player_id": "rapidapi-tennis:player:12097",
+          "ranking_found": true
+        }
+      ],
+      "provider_channel": "ATP",
+      "provider_source_event_id": "rapidapi-tennis:atp:match:1494",
+      "source_id_collision_resolved": false,
+      "tournament_id": "22099",
+      "world_source_event_id": "rapidapi-tennis:atp:match:1494"
     }
   ],
   "ranking_cut": "2026-09-21",
@@ -548,14 +513,13 @@
   ],
   "world_domain_candidates_input": 10,
   "world_identity_binding_rejection_count": 0,
-  "world_inventory_sha256": "350534f01177fb31e1d01cd2626e4f2aa77c05b15f705088892a5993bc3f5515",
+  "world_inventory_sha256": "e343d85c6050311b76f2baafa64a702e59f8e503d9504d7491eda9855f717d52",
   "world_inventory_target_date": "2026-10-16",
-  "world_inventory_total": 146,
+  "world_inventory_total": 155,
   "world_registry": {
-    "as_of_utc": "2026-10-16T09:57:51+00:00",
+    "as_of_utc": "2026-10-16T11:30:27+00:00",
     "cor0203_denominator_definition": "derived subset: future ATP Challenger Hard events with two real fixed identities and valid source provenance",
     "cor0203_eligible_event_ids": [
-      "rapidapi-tennis:match:1494",
       "rapidapi-tennis:match:58248",
       "rapidapi-tennis:match:66724",
       "rapidapi-tennis:match:49700",
@@ -563,28 +527,9 @@
       "rapidapi-tennis:match:72576",
       "rapidapi-tennis:match:66827"
     ],
-    "cor0203_eligible_events": 7,
+    "cor0203_eligible_events": 6,
     "duplicate_rows": 0,
     "rows": [
-      {
-        "competition_id": "rapidapi-tennis:tournament:22099",
-        "competition_name": "Olbia Challenger",
-        "cor0203_blockers": [],
-        "cor0203_eligible": true,
-        "environment": "UNKNOWN",
-        "event_id": "rapidapi-tennis:match:1494",
-        "event_start_utc": "2026-10-16T10:30:00+00:00",
-        "player1_id": "rapidapi-tennis:player:84060",
-        "player2_id": "rapidapi-tennis:player:12097",
-        "round": "1/4",
-        "source_provider": "rapidapi_tennis",
-        "source_reference": "fixtures:matchId=1494;tournament_info=22099;ranking_cut=2026-09-21",
-        "source_snapshot_sha256": "1cb4f129d17ede15179dab60fb5dd559e006ae2103151d0ed96c491d0a942026",
-        "sport": "TENNIS",
-        "surface": "Hard",
-        "tour_level": "ATP_CHALLENGER",
-        "world_calendar_status": "PRESERVED"
-      },
       {
         "competition_id": "rapidapi-tennis:tournament:22101",
         "competition_name": "Roanne Challenger",
@@ -702,8 +647,8 @@
     ],
     "schema": "matrix.world-calendar-registry/1",
     "world_calendar_denominator_definition": "all unique discovered scheduled events preserved before model-domain filtering",
-    "world_calendar_input_rows": 7,
-    "world_calendar_unique_events": 7
+    "world_calendar_input_rows": 6,
+    "world_calendar_unique_events": 6
   },
   "world_rows_malformed": [],
   "world_rows_synthesized": 10,
