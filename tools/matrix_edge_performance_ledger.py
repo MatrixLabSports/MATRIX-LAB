@@ -13,6 +13,9 @@ MIN_CLV_N=300
 def _sha(x:Any)->str:
     return hashlib.sha256(json.dumps(x,sort_keys=True,ensure_ascii=False,separators=(",",":")).encode()).hexdigest()
 
+def _file_sha(path:Path)->str:
+    return hashlib.sha256(path.read_bytes()).hexdigest()
+
 def _dominant(drivers):
     xs=[d for d in (drivers or []) if d.get("driver") in {"POISSON_OVER25","GROUP_BASELINE_OVER25"}]
     if not xs:return None
@@ -65,11 +68,26 @@ def build(attr:Mapping[str,Any], telegram:Mapping[str,Any], clv_events:list[Mapp
         }
     out={
         "schema":"MATRIX_EDGE_PERFORMANCE_LEDGER_V1",
+        "source_artifacts":{
+            "edge_attribution":{"path":ATTR.as_posix(),"sha256":_file_sha(ATTR) if ATTR.exists() else None},
+            "telegram_signal_ledger":{"path":TELEGRAM.as_posix(),"sha256":_file_sha(TELEGRAM) if TELEGRAM.exists() else None},
+            "clv_prospective_ledger":{"path":CLV.as_posix(),"sha256":_file_sha(CLV) if CLV.exists() else None},
+        },
         "row_count":len(rows),
         "settled_join_count":sum(x["shadow_profit_units"] is not None for x in rows),
         "clv_join_count":sum(x["clv_decimal_ratio_minus_1"] is not None for x in rows),
         "driver_groups":groups,
         "rows":rows,
+        "gates":{
+            "remaining_settled_to_open_by_driver":{
+                name:max(0,MIN_DRIVER_SETTLED_N-int(group["settled_count"]))
+                for name,group in groups.items()
+            },
+            "remaining_clv_to_open_by_driver":{
+                name:max(0,MIN_CLV_N-int(group["clv_count"]))
+                for name,group in groups.items()
+            },
+        },
         "governance":{
             "minimum_settled_per_driver_before_comparison":MIN_DRIVER_SETTLED_N,
             "minimum_clv_observations_before_clv_metrics":MIN_CLV_N,
