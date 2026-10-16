@@ -7,7 +7,7 @@ from pathlib import Path
 from typing import Any, Mapping
 
 SOURCE = Path("evidence/api_football/daily_prematch_reports/2026-10-16/over25_shadow_ev/MATRIX_FOOTBALL_DAILY_OVER25_GOVERNED_SHADOW_EV.json")
-OUT = Path("evidence/api_football/edge_attribution/2026-10-16/MATRIX_EDGE_ATTRIBUTION_OVER25_V1.json")
+OUT = Path("evidence/api_football/edge_attribution/2026-10-16/MATRIX_EDGE_ATTRIBUTION_OVER25_V2.json")
 
 
 def _sha(value: Any) -> str:
@@ -33,6 +33,37 @@ def build(source: Mapping[str, Any], generated_at: str | None = None) -> dict[st
         break_even = 1.0 / odds
         ev = p * odds - 1.0
         fair_odds = 1.0 / p
+        trace = row.get("over25_feature_trace")
+        drivers = None
+        driver_status = "NOT_AVAILABLE_IN_SOURCE_TRACE"
+        reconstructed = None
+        if isinstance(trace, Mapping) and trace.get("trace_schema") == "MATRIX_OVER25_FEATURE_TRACE_V1":
+            reconstructed = float(trace["reconstructed_probability"])
+            drivers = [
+                {
+                    "driver": "POISSON_OVER25",
+                    "input_probability": float(trace["poisson_probability"]),
+                    "weight": float(trace["poisson_weight"]),
+                    "raw_logit": float(trace["poisson_logit"]),
+                    "weighted_logit_contribution": float(trace["poisson_weighted_logit_contribution"]),
+                    "direction": "UP" if float(trace["poisson_weighted_logit_contribution"]) > 0 else ("DOWN" if float(trace["poisson_weighted_logit_contribution"]) < 0 else "NEUTRAL"),
+                },
+                {
+                    "driver": "GROUP_BASELINE_OVER25",
+                    "input_probability": float(trace["baseline_probability"]),
+                    "weight": float(trace["baseline_weight"]),
+                    "raw_logit": float(trace["baseline_logit"]),
+                    "weighted_logit_contribution": float(trace["baseline_weighted_logit_contribution"]),
+                    "direction": "UP" if float(trace["baseline_weighted_logit_contribution"]) > 0 else ("DOWN" if float(trace["baseline_weighted_logit_contribution"]) < 0 else "NEUTRAL"),
+                },
+                {
+                    "driver": "INTERCEPT",
+                    "weight": 1.0,
+                    "weighted_logit_contribution": float(trace["intercept_logit_contribution"]),
+                    "direction": "UP" if float(trace["intercept_logit_contribution"]) > 0 else ("DOWN" if float(trace["intercept_logit_contribution"]) < 0 else "NEUTRAL"),
+                },
+            ]
+            driver_status = "AVAILABLE_REAL_ENGINE_TRACE"
         out_rows.append({
             "fixture_id": str(row["fixture_id"]),
             "match": row.get("match"),
@@ -55,9 +86,11 @@ def build(source: Mapping[str, Any], generated_at: str | None = None) -> dict[st
                 "model_probability_component": p,
                 "market_break_even_component": break_even,
                 "measurable_probability_edge": p - break_even,
-                "feature_level_drivers": None,
-                "feature_level_driver_status": "NOT_AVAILABLE_IN_CURRENT_ENGINE_TRACE",
-                "interpretation": "Edge is measured against the executable price after P_MATRIX; no feature contribution is inferred."
+                "feature_level_drivers": drivers,
+                "feature_level_driver_status": driver_status,
+                "feature_trace_space": "LOGIT" if drivers is not None else None,
+                "reconstructed_probability": reconstructed,
+                "interpretation": "Model-component contributions are reported exactly in the logit space used by the frozen engine; executable price remains post-probability."
             },
             "protections": {
                 "odds_used_to_generate_probability": False,
@@ -69,18 +102,19 @@ def build(source: Mapping[str, Any], generated_at: str | None = None) -> dict[st
 
     out_rows.sort(key=lambda x: (-x["expected_value"], x["fixture_id"]))
     artifact = {
-        "schema": "MATRIX_EDGE_ATTRIBUTION_OVER25_V1",
+        "schema": "MATRIX_EDGE_ATTRIBUTION_OVER25_V2",
         "generated_at_utc": generated_at or datetime.now(timezone.utc).replace(microsecond=0).isoformat(),
         "source_artifact": SOURCE.as_posix(),
         "source_artifact_sha256_without_external_metadata": _sha(source),
         "market": "OVER_2_5",
-        "attribution_scope": "PRICE_EDGE_ONLY_UNTIL_FEATURE_TRACE_EXISTS",
+        "attribution_scope": "MODEL_COMPONENT_LOGIT_AND_PRICE_EDGE",
         "row_count": len(out_rows),
         "rows": out_rows,
         "governance": {
             "p_matrix_is_input_not_modified": True,
             "odds_are_post_probability": True,
-            "feature_attribution_requires_future_engine_trace": True,
+            "feature_attribution_requires_future_engine_trace": False,
+            "feature_attribution_source": "FROZEN_ENGINE_LOGIT_COMPONENT_TRACE",
             "no_synthetic_drivers": True,
             "automatic_wagering": False,
             "real_money": "BLOCKED"
