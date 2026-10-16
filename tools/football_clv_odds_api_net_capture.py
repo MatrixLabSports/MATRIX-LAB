@@ -80,6 +80,26 @@ def _get_json(session: Any, url: str, *, headers: Mapping[str, str], params: Map
     return response, payload
 
 
+def _exact_line_from_item(item: Mapping[str, Any]) -> float | None:
+    raw = item.get("line")
+    try:
+        if raw is not None and not isinstance(raw, bool):
+            return float(raw)
+    except (TypeError, ValueError):
+        pass
+    # Strict fallback: recover a numeric total only from an explicit Over/Under
+    # selection label such as "Over 2.5" / "Under 2.5". This does not broaden
+    # the market or accept an inferred line from unrelated text.
+    label = str(item.get("selection_name") or "").strip()
+    m = re.fullmatch(r"(?i)\s*(?:over|under)\s+([0-9]+(?:\.[0-9]+)?)\s*", label)
+    if not m:
+        return None
+    try:
+        return float(m.group(1))
+    except ValueError:
+        return None
+
+
 def _extract_total_25(snapshot: Mapping[str, Any]) -> tuple[float, float, datetime] | None:
     ts_ms = (snapshot.get("bookmaker_as_of_ts_ms") or {}).get("pinnacle")
     if not isinstance(ts_ms, (int, float)):
@@ -92,8 +112,10 @@ def _extract_total_25(snapshot: Mapping[str, Any]) -> tuple[float, float, dateti
         if _norm(item.get("bookmaker")) != "pinnacle":
             continue
         try:
-            line = float(item.get("line"))
+            line = _exact_line_from_item(item)
             odds = float(item.get("odds"))
+            if line is None:
+                raise ValueError("LINE_MISSING")
         except (TypeError, ValueError):
             continue
         if line != 2.5 or odds <= 1.0 or item.get("is_available") is False:
@@ -157,8 +179,10 @@ def _diagnose_total_25(snapshot: Mapping[str, Any]) -> dict[str, Any]:
                 "is_available": item.get("is_available"),
             })
         try:
-            line = float(item.get("line"))
+            line = _exact_line_from_item(item)
             odds = float(item.get("odds"))
+            if line is None:
+                raise ValueError("LINE_MISSING")
         except (TypeError, ValueError):
             continue
         if item.get("is_available") is False or odds <= 1.0:
