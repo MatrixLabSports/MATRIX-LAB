@@ -196,6 +196,37 @@ def test_stale_pinnacle_provider_update_fails_closed(tmp_path):
 
 
 
+
+def test_incomplete_api_football_market_persists_subreason(tmp_path):
+    report = _report(tmp_path / "report.json", with_timestamp=True)
+    ledger = FootballProspectiveEvidenceLedger(tmp_path / "ledger.jsonl")
+    freeze_new_decisions(report, ledger)
+    payload = _pinnacle_payload()
+    payload["response"][0]["bookmakers"][0]["bets"][0]["values"] = [
+        {"value": "Over 2.5", "odd": "1.90"},
+    ]
+    capture_at = datetime(2026, 10, 13, 12, 0, tzinfo=UTC)
+    attempts = tmp_path / "attempts.jsonl"
+    result = capture_due_closing_lines(
+        ledger,
+        tmp_path / "captures",
+        api_key="test-key",
+        now=capture_at,
+        session=FakeSession(payload),
+        capture_clock=lambda: capture_at,
+        attempt_log_path=attempts,
+    )
+    assert result["captured_new"] == 0
+    assert result["blocked_market_incomplete"] == 1
+    row = json.loads(attempts.read_text(encoding="utf-8").splitlines()[-1])
+    assert row["outcome"] == "BLOCKED_MARKET_INCOMPLETE"
+    assert row["market_diagnostic"]["pinnacle_bookmaker_present"] is True
+    assert row["market_diagnostic"]["goals_over_under_market_present"] is True
+    assert row["market_diagnostic"]["over_2_5_present"] is True
+    assert row["market_diagnostic"]["under_2_5_present"] is False
+    assert row["market_diagnostic"]["incomplete_reason"] == "UNDER_2_5_MISSING"
+
+
 def test_pinnacle_quote_older_than_strict_120_seconds_is_not_closing_line(tmp_path):
     report = _report(tmp_path / "report.json", with_timestamp=True)
     ledger = FootballProspectiveEvidenceLedger(tmp_path / "ledger.jsonl")
