@@ -7,6 +7,8 @@ import re
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any
+from difflib import SequenceMatcher
+import unicodedata
 from zoneinfo import ZoneInfo
 
 import requests
@@ -42,6 +44,7 @@ PAPER_HIGH_CONF_MIN_TIER23_SHARE = 0.40
 PAPER_STAKE_LEVELS = {1: 1.0, 2: 2.0, 3: 3.0}
 GREEN_PREMATCH_REVALIDATION_WINDOW_MINUTES = 120
 PAPER_MAX_SIGNALS_PER_LEAGUE_DAY = 3
+ODDS_API_NET_BASE = "https://api.odds-api.net/v1"
 SIGNAL_QUALITY_MIN_P_MATRIX = 0.60
 SIGNAL_QUALITY_MIN_REVALIDATED_EV = 0.05
 SIGNAL_QUALITY_POLICY = "API_COST_RECOVERY_PRECISION_V1"
@@ -373,6 +376,149 @@ def discover_tennis(dates: list[str]) -> dict[str, dict[str, Any]]:
                     "signal_key": key,
                 }
     return found
+
+
+def _identity_norm(value: Any) -> str:
+    text = unicodedata.normalize("NFKD", str(value or ""))
+    text = "".join(ch for ch in text if not unicodedata.combining(ch)).casefold()
+    return re.sub(r"[^a-z0-9]+", " ", text).strip()
+
+
+def _identity_similarity(left: Any, right: Any) -> float:
+    a, b = _identity_norm(left), _identity_norm(right)
+    if not a or not b:
+        return 0.0
+    if a == b:
+        return 1.0
+    ta, tb = set(a.split()), set(b.split())
+    jac = len(ta & tb) / max(1, len(ta | tb))
+    seq = SequenceMatcher(None, a, b).ratio()
+    subset = 1.0 if ta <= tb or tb <= ta else 0.0
+    return max(jac, seq, subset)
+
+
+def odds_api_net_exact_over25_offer(
+    session: requests.Session,
+    odds_api_key: str,
+    fixture_id: str,
+    kickoff: Any,
+    p: float,
+    api_football_key: str,
+) -> dict[str, Any] | None:
+    key = str(odds_api_key or "").strip()
+    kickoff_dt = parse_dt(kickoff)
+    if not key or kickoff_dt is None:
+        return None
+    fr = session.get(
+        "https://v3.football.api-sports.io/fixtures",
+        headers={"x-apisports-key": api_football_key},
+        params={"id": fixture_id},
+        timeout=20,
+    )
+    try:
+        fp = fr.json()
+    except Exception:
+        return None
+    rows = fp.get("response", []) if isinstance(fp, dict) else []
+    if fr.status_code >= 300 or not rows:
+        return None
+    row = rows[0]
+    home = str(((row.get("teams") or {}).get("home") or {}).get("name") or "")
+    away = str(((row.get("teams") or {}).get("away") or {}).get("name") or "")
+    start = int(kickoff_dt.timestamp())
+    er = session.get(
+        ODDS_API_NET_BASE + "/events",
+        headers={"X-API-Key": key, "Accept": "application/json"},
+        params={
+            "sport": "soccer",
+            "start_from": start - 900,
+            "start_to": start + 900,
+            "limit": 100,
+            "include_bookmaker_ids": "true",
+        },
+        timeout=20,
+    )
+    try:
+        ep = er.json()
+    except Exception:
+        return None
+    events = ep.get("items", []) if isinstance(ep, dict) else []
+    scored: list[tuple[float, bool, dict[str, Any]]] = []
+    for event in events or []:
+        if not isinstance(event, dict):
+            continue
+        direct = (_identity_similarity(home, event.get("home_team")) + _identity_similarity(away, event.get("away_team"))) / 2.0
+        swapped = (_identity_similarity(home, event.get("away_team")) + _identity_similarity(away, event.get("home_team"))) / 2.0
+        scored.append((max(direct, swapped), direct >= swapped, event))
+    scored.sort(key=lambda x: x[0], reverse=True)
+    if not scored or scored[0][0] < 0.85:
+        return None
+    if len(scored) > 1 and scored[0][0] - scored[1][0] < 0.05:
+        return None
+    event_id = str(scored[0][2].get("event_id") or "")
+    if not event_id:
+        return None
+    sr = session.get(
+        ODDS_API_NET_BASE + f"/events/{event_id}/odds/snapshot",
+        headers={"X-API-Key": key, "Accept": "application/json"},
+        params={
+            "bookmakers": "betano,betplay,rushbet",
+            "types": "total",
+            "periods": "full time",
+            "include_source": "true",
+            "include_unavailable": "true",
+        },
+        timeout=20,
+    )
+    try:
+        sp = sr.json()
+    except Exception:
+        return None
+    if sr.status_code >= 300 or not isinstance(sp, dict):
+        return None
+    book_ts = sp.get("bookmaker_as_of_ts_ms") or {}
+    offers: list[dict[str, Any]] = []
+    for item in sp.get("items") or []:
+        if not isinstance(item, dict):
+            continue
+        house_key = str(item.get("bookmaker") or "").strip().casefold()
+        if house_key not in POLICY_BOOKS or item.get("is_available") is False:
+            continue
+        try:
+            line = float(item.get("line"))
+            dec = float(item.get("odds"))
+        except (TypeError, ValueError):
+            continue
+        if line != 2.5 or dec <= 1.50:
+            continue
+        market_text = " ".join([
+            _identity_norm(item.get("market_key")),
+            _identity_norm(item.get("bet_type")),
+        ])
+        if "total" not in market_text and "over under" not in market_text:
+            continue
+        label = " ".join([
+            _identity_norm(item.get("side")),
+            _identity_norm(item.get("selection_name")),
+        ])
+        if "over" not in label:
+            continue
+        ts_ms = book_ts.get(house_key)
+        provider_updated = None
+        if isinstance(ts_ms, (int, float)) and not isinstance(ts_ms, bool):
+            provider_updated = datetime.fromtimestamp(float(ts_ms) / 1000.0, tz=timezone.utc).isoformat()
+        offers.append({
+            "house": POLICY_BOOKS[house_key][0].replace("rush bet", "Rushbet").title() if house_key != "betplay" else "BetPlay",
+            "house_key": house_key,
+            "odds": dec,
+            "ev": p * dec - 1.0,
+            "break_even_probability": 1.0 / dec,
+            "provider_quote_updated_at_utc": provider_updated,
+            "provider": "odds-api.net",
+            "fallback_multi_book": True,
+            "odds_api_event_id": event_id,
+        })
+    return max(offers, key=lambda x: x["ev"]) if offers else None
 
 
 def exact_over25_offer(session: requests.Session, api_key: str, fixture_id: str, p: float, required_house_key: str | None = None) -> dict[str, Any] | None:
