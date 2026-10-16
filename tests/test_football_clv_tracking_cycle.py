@@ -204,6 +204,7 @@ def test_pinnacle_quote_older_than_strict_120_seconds_is_not_closing_line(tmp_pa
     session = FakeSession(_pinnacle_payload(update="2026-10-13T11:57:59+00:00"))
     capture_at = datetime(2026, 10, 13, 12, 0, tzinfo=UTC)
 
+    attempts = tmp_path / "attempts.jsonl"
     result = capture_due_closing_lines(
         ledger,
         tmp_path / "captures",
@@ -211,11 +212,15 @@ def test_pinnacle_quote_older_than_strict_120_seconds_is_not_closing_line(tmp_pa
         now=capture_at,
         session=session,
         capture_clock=lambda: capture_at,
+        attempt_log_path=attempts,
     )
 
     assert result["captured_new"] == 0
     assert result["blocked_stale_provider_quote"] == 1
     assert ledger.audit().closing_odds_count == 0
+    rows = [json.loads(x) for x in attempts.read_text(encoding="utf-8").splitlines()]
+    assert rows[-1]["provider_quote_age_seconds"] == 121
+    assert rows[-1]["gate_excess_seconds"] == 1
 
 def test_cycle_keeps_clv_metrics_sealed_below_300(tmp_path):
     report = _report(tmp_path / "report.json", with_timestamp=True)
