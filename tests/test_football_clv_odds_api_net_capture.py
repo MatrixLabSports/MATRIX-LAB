@@ -22,8 +22,9 @@ class Resp:
 
 
 class RoutedSession:
-    def __init__(self, capture_at):
+    def __init__(self, capture_at, quote_age_seconds=60):
         self.capture_at = capture_at
+        self.quote_age_seconds = quote_age_seconds
         self.calls = []
 
     def get(self, url, headers=None, params=None, timeout=None):
@@ -46,7 +47,7 @@ class RoutedSession:
                 }]
             })
         if "/odds/snapshot" in url:
-            ts_ms = int((self.capture_at.timestamp() - 60) * 1000)
+            ts_ms = int((self.capture_at.timestamp() - self.quote_age_seconds) * 1000)
             return Resp({
                 "bookmaker_as_of_ts_ms": {"pinnacle": ts_ms},
                 "items": [
@@ -144,4 +145,31 @@ def test_fresh_odds_api_pinnacle_close_is_persisted_automatically(tmp_path):
     assert evidence["protections"]["real_money"] == "BLOCKED"
     rows = [json.loads(x) for x in attempts.read_text(encoding="utf-8").splitlines()]
     assert rows[-1]["outcome"] == "ODDS_API_CAPTURED_VALID"
+    assert rows[-1]["attempted_at_utc"] == capture_at.isoformat()
+    assert rows[-1]["provider_quote_updated_at_utc"] == "2026-10-15T14:49:00+00:00"
     assert rows[-1]["provider_quote_age_seconds"] == 60
+    assert rows[-1]["gate_excess_seconds"] == 0
+
+def test_stale_odds_api_attempt_persists_exact_gate_excess(tmp_path):
+    ledger = _ledger(tmp_path)
+    capture_at = datetime(2026, 10, 15, 14, 50, tzinfo=UTC)
+    session = RoutedSession(capture_at, quote_age_seconds=121)
+    attempts = tmp_path / "attempts.jsonl"
+    result = capture_due_via_odds_api_net(
+        ledger_path=ledger.path,
+        capture_dir=tmp_path / "captures",
+        attempt_log_path=attempts,
+        api_football_key="af",
+        odds_api_key="oa",
+        now=capture_at,
+        session=session,
+        capture_clock=lambda: capture_at,
+    )
+    assert result["captured_new"] == 0
+    assert result["blocked_stale_provider_quote"] == 1
+    rows = [json.loads(x) for x in attempts.read_text(encoding="utf-8").splitlines()]
+    assert rows[-1]["outcome"] == "ODDS_API_BLOCKED_STALE_PROVIDER_QUOTE"
+    assert rows[-1]["attempted_at_utc"] == capture_at.isoformat()
+    assert rows[-1]["provider_quote_updated_at_utc"] == "2026-10-15T14:47:59+00:00"
+    assert rows[-1]["provider_quote_age_seconds"] == 121
+    assert rows[-1]["gate_excess_seconds"] == 1
