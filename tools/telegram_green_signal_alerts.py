@@ -586,6 +586,24 @@ def odds_api_net_exact_over25_offer(
         except (TypeError, ValueError):
             if diagnostic is not None:
                 diagnostic["discard_reasons"]["INVALID_LINE_OR_ODDS"] = diagnostic["discard_reasons"].get("INVALID_LINE_OR_ODDS", 0) + 1
+                samples = diagnostic.setdefault("invalid_line_or_odds_samples", [])
+                if len(samples) < 8:
+                    samples.append({
+                        "bookmaker": item.get("bookmaker"),
+                        "market_key": item.get("market_key"),
+                        "bet_type": item.get("bet_type"),
+                        "metric": item.get("metric"),
+                        "period": item.get("period"),
+                        "period_str": item.get("period_str"),
+                        "line": item.get("line"),
+                        "side": item.get("side"),
+                        "selection_name": item.get("selection_name"),
+                        "odds": item.get("odds"),
+                        "price": item.get("price"),
+                        "decimal_odds": item.get("decimal_odds"),
+                        "value": item.get("value"),
+                        "raw_keys": sorted(item.keys()),
+                    })
             continue
         if diagnostic is not None:
             diagnostic["candidate_lines_by_book"].setdefault(house_key, []).append({
