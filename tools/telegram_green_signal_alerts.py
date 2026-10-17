@@ -1290,6 +1290,7 @@ def main() -> None:
             float(candidate["p_matrix"]),
             required_house_key,
         )
+        odds_api_net_diagnostic: dict[str, Any] = {}
         fallback_offer = odds_api_net_exact_over25_offer(
             session,
             odds_api_net_key,
@@ -1297,6 +1298,7 @@ def main() -> None:
             candidate.get("kickoff"),
             float(candidate["p_matrix"]),
             api_key,
+            odds_api_net_diagnostic,
         )
         comparable = [x for x in (primary_offer, fallback_offer) if isinstance(x, dict)]
         offer = max(comparable, key=lambda x: float(x.get("ev") or -999.0)) if comparable else None
@@ -1304,6 +1306,7 @@ def main() -> None:
         gate_record["required_house_key"] = required_house_key
         gate_record["primary_same_house_offer"] = primary_offer
         gate_record["odds_api_net_multi_book_offer"] = fallback_offer
+        gate_record["odds_api_net_diagnostic"] = odds_api_net_diagnostic
         gate_record["offer"] = offer
         gate_record["selected_quote_provider"] = (offer or {}).get("provider") or ("api-football" if offer else None)
         gate_record["multi_book_fallback_used"] = bool(offer is not None and offer is fallback_offer)
