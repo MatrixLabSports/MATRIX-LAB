@@ -149,5 +149,32 @@
     "retirement_gate": "Do not restore 2u/3u until calibration/CLV evidence shows high-P/high-EV bins are no longer materially overconfident."
   },
   "next_diagnostic": "Stratify losses by league/competition and compare closing-line movement before any P_MATRIX tuning.",
-  "adjudication": "ROOT_CAUSE_IDENTIFIED_AND_RISK_AMPLIFIER_CAPPED_WITHOUT_MODEL_TUNING"
+  "adjudication": "ROOT_CAUSE_IDENTIFIED; VARIABLE_STAKING_RISK_AMPLIFIER_CAPPED_AT_1U; WORKFLOW_AND_LEDGER_POLICY_VERIFIED_PHYSICALLY; NO_MODEL_TUNING",
+  "physical_verification": {
+    "effective_policy_commit": "9ba8e4f9315cc716ec3a4cd0259ca53ed22aa10b",
+    "workflow_run_id": 39068148168,
+    "workflow_job_id": 117499989704,
+    "workflow_conclusion": "success",
+    "tests": "20 passed in 0.32s",
+    "persisted_ledger_commit": "64792b9df",
+    "persisted_ledger_blob": "4b978c6eda8b96f08cc03f78deb4d1c3c3772eea",
+    "effective_policy": {
+      "stake_1": "ACTIVE: all eligible paper signals capped at 1u / COP 25,000",
+      "stake_2": "TEMPORARILY_DISABLED_BY_RISK_OVERRIDE",
+      "stake_3": "TEMPORARILY_DISABLED_BY_RISK_OVERRIDE",
+      "max_stake_level": 1,
+      "max_stake_cop": 25000,
+      "effective_daily_cap_fraction": 0.3
+    },
+    "runtime_readback": {
+      "bankroll_cop": 4833500,
+      "open_bets": 0,
+      "open_exposure_cop": 0,
+      "real_money": "BLOCKED",
+      "sent_now": 0,
+      "total_green_messages": 209,
+      "total_settlements": 174
+    },
+    "limitation": "No new signal passed the send gate in Run 217, so the 1u cap is physically proven by code, tests, workflow success and ledger policy readback; a new live assignment at 1u has not yet occurred in this verification run."
+  }
 }
