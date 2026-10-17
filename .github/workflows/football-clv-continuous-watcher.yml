@@ -106,10 +106,12 @@ jobs:
           freeze=s.index("python -m tools.football_clv_tracking_cycle --freeze-only", cycle)
           capture=s.index("python -m tools.football_clv_odds_api_net_capture", freeze)
           fallback=s.index("python -m tools.football_clv_tracking_cycle", capture)
-          if not (cycle < refresh < freeze < capture < fallback):
+          quality=s.index("python -m tools.football_clv_subgate_quality", fallback)
+          if not (cycle < refresh < freeze < capture < fallback < quality):
               raise SystemExit("CLV_WATCHER_REFRESH_ORDER_INVALID")
           print("CLV_WATCHER_STARTUP_COVERAGE_CONTRACT=PASS")
           print("CLV_WATCHER_PER_CYCLE_REFRESH_ORDER=PASS")
+          print("CLV_SUBGATE_30_QUALITY_MONITOR_CONTRACT=PASS")
           print("CLV_STRICT_FRESH_GATE_SECONDS=120")
           PY
 
@@ -262,6 +264,7 @@ jobs:
             PYTHONPATH=. python -m tools.football_clv_tracking_cycle --freeze-only
             PYTHONPATH=. python -m tools.football_clv_odds_api_net_capture
             PYTHONPATH=. python -m tools.football_clv_tracking_cycle
+            PYTHONPATH=. python -m tools.football_clv_subgate_quality
             persist_if_changed
 
             status="$(remaining_future)"
