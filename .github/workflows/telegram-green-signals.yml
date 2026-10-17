@@ -72,19 +72,22 @@ jobs:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
           API_FOOTBALL_KEY: ${{ secrets.API_FOOTBALL_KEY }}
+          ODDS_API_NET_KEY: ${{ secrets.ODDS_API_NET_KEY }}
         shell: bash
         run: |
           set -euo pipefail
           test -n "$TELEGRAM_BOT_TOKEN"
           test -n "$TELEGRAM_CHAT_ID"
           test -n "$API_FOOTBALL_KEY"
-          echo "SECRETOS_TELEGRAM_Y_API_FOOTBALL_PRESENTES"
+          test -n "$ODDS_API_NET_KEY"
+          echo "SECRETOS_TELEGRAM_API_FOOTBALL_Y_ODDS_API_NET_PRESENTES"
 
       - name: Supervisor Telegram — señales, cuotas y FINAL
         env:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
           API_FOOTBALL_KEY: ${{ secrets.API_FOOTBALL_KEY }}
+          ODDS_API_NET_KEY: ${{ secrets.ODDS_API_NET_KEY }}
         run: python -m tools.telegram_green_signal_alerts
 
       - name: Persistir ledger gobernado
@@ -111,3 +114,5 @@ jobs:
             sleep $((attempt*2))
           done
           exit 1
+
+# MATRIX_TELEGRAM_MULTIBOOK_SECRET_WIRING 2026-10-17 odds-api.net enabled for final prematch revalidation
