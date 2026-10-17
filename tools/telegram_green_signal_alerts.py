@@ -1765,7 +1765,8 @@ def main() -> None:
         current_house_key = bookmaker_key(current_offer.get("house"))
         if not original_house_key or original_house_key != current_house_key:
             continue
-        correction_text = "\n".join([
+        bet = record.get("paper_bet") if isinstance(record.get("paper_bet"), dict) else None
+        correction_lines = [
             "🔵 RECTIFICACIÓN — SEÑAL PREMATCH VIGENTE",
             "",
             f'Partido: {record.get("match")}',
@@ -1773,11 +1774,20 @@ def main() -> None:
             f'Casa: {record.get("house")}',
             f'Cuota revalidada actual: {float(current_offer.get("odds") or 0):.2f}',
             f'EV revalidado actual: {float(current_offer.get("ev") or 0)*100:+.2f}%',
+        ]
+        if bet is not None:
+            correction_lines += [
+                f'Stake MATRIX: STAKE {int(bet.get("stake_level") or 0)}',
+                f'Unidades de stake: {float(bet.get("stake_units") or 0):.0f}u',
+                f'Apuesta de papel: COP {fmt_cop(bet.get("stake_cop") or 0)}',
+            ]
+        correction_lines += [
             "La alerta NO APOSTAR anterior fue generada por una ruta de revalidación incompleta que no consultó odds-api.net.",
             "La misma casa vuelve a estar físicamente validada por la ruta multibook gobernada.",
             "La apuesta de papel vuelve a estado ABIERTO.",
             "DINERO REAL MATRIX: BLOQUEADO",
-        ])
+        ]
+        correction_text = "\n".join(correction_lines)
         mid = send_telegram(session, token, chat_id, correction_text)
         correction["status"] = "RECTIFICADA_REVALIDACION_MULTIBOOK"
         correction["rectification_message_id"] = mid
@@ -1793,6 +1803,37 @@ def main() -> None:
             bet["reopened_at_utc"] = now.isoformat()
             bet["reopen_reason"] = "RECTIFIED_FALSE_NO_BET_MULTIBOOK_SAME_HOUSE"
         rectifications_now += 1
+
+    # One-time stake clarification for already-rectified Telegram messages that
+    # predate stake fields in the rectification format.
+    for correction in ledger["corrections"]:
+        if correction.get("status") != "RECTIFICADA_REVALIDACION_MULTIBOOK":
+            continue
+        if correction.get("stake_rectification_message_id") is not None:
+            continue
+        key = str(correction.get("signal_key") or "")
+        record = sent_by_key.get(key)
+        if not isinstance(record, dict):
+            continue
+        bet = record.get("paper_bet")
+        if not isinstance(bet, dict) or str(bet.get("status") or "").upper() != "OPEN":
+            continue
+        stake_text = "\n".join([
+            "🧪 ACTUALIZACIÓN — STAKE DE LA SEÑAL VIGENTE",
+            "",
+            f'Partido: {record.get("match")}',
+            f'Mercado: {record.get("market")}',
+            f'Casa: {record.get("house")}',
+            f'Cuota: {float(record.get("odds") or 0):.2f}',
+            f'Stake MATRIX: STAKE {int(bet.get("stake_level") or 0)}',
+            f'Unidades de stake: {float(bet.get("stake_units") or 0):.0f}u',
+            f'Apuesta de papel: COP {fmt_cop(bet.get("stake_cop") or 0)}',
+            "Estado: ABIERTO",
+            "DINERO REAL MATRIX: BLOQUEADO",
+        ])
+        mid = send_telegram(session, token, chat_id, stake_text)
+        correction["stake_rectification_message_id"] = mid
+        correction["stake_rectification_sent_at_utc"] = now.isoformat()
 
     # Apply any NO_APOSTAR correction created in this same supervisor run immediately,
     # so paper exposure is released before settlement handling.
