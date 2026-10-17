@@ -1,9 +1,9 @@
 {
   "accumulation": {
-    "cumulative_count": 76,
-    "current_fetch_count": 76,
+    "cumulative_count": 78,
+    "current_fetch_count": 78,
     "never_decrease_within_day": true,
-    "newly_discovered_count": 0,
+    "newly_discovered_count": 2,
     "policy": "MONOTONIC_UNION_BY_STABLE_PHYSICAL_IDENTITY",
     "prior_count": 76,
     "retained_prior_only_count": 0
@@ -36,7 +36,7 @@
     "ITF": {
       "current_governed_model": null,
       "feeds_COR02_COR03": false,
-      "inventory_count": 27
+      "inventory_count": 29
     },
     "WTA": {
       "current_governed_model": null,
@@ -2251,6 +2251,47 @@
       "tournament_name": "Mallorca Women's Championships - Mallorca"
     },
     {
+      "circuit_detail": "ITF_WOMEN",
+      "circuit_family": "ITF",
+      "event_format": "SINGLES",
+      "event_format_authority": "TWO_INDIVIDUAL_PROVIDER_NAMES",
+      "event_start_bogota": "2026-10-17T04:30:00-05:00",
+      "event_start_utc": "2026-10-17T09:30:00+00:00",
+      "match_id": "94574",
+      "model_derivation": {
+        "blockers": [
+          "CIRCUIT_OUTSIDE_COR0203_ATP_CHALLENGER",
+          "SURFACE_OUTSIDE_COR0203_HARD"
+        ],
+        "domain_candidate": false,
+        "lane": "COR02_COR03_ATP_CHALLENGER_HARD",
+        "note": "Domain candidate only. Governed COR02/COR03 still requires identity, PIT history, ranking/features, unique physical event, future prematch freeze and all existing gates."
+      },
+      "physical_event_key": "69d5d104bf2bc4a9e5441da09a4f3e3d79be431b8b4032d913c9005a744a3413",
+      "player1": {
+        "country": "CZE",
+        "id": "76365",
+        "name": "Eliska Tichackova"
+      },
+      "player2": {
+        "country": "CRO",
+        "id": "70347",
+        "name": "Tara Wuerth"
+      },
+      "player_group": "",
+      "provider_channel": "WTA",
+      "provider_status": "",
+      "round": "1/2",
+      "source_event_id": "rapidapi-tennis:wta:match:94574",
+      "source_provider": "rapidapi_tennis",
+      "source_snapshot_sha256": "c6e67b93b59c867629f46eced232fb447758e2e32529aa4bcd92ba401e240833",
+      "stable_physical_identity_key": "2c8367d715e5b0557fef2c1694a3b4edf235dbbd61ddc9b827b622d8afbf0b6e",
+      "surface": "Clay",
+      "tier": "",
+      "tournament_id": "17342",
+      "tournament_name": "W15 Bol"
+    },
+    {
       "circuit_detail": "ATP_CHALLENGER",
       "circuit_family": "ATP",
       "event_format": "SINGLES",
@@ -2422,6 +2463,46 @@
       "tier": "",
       "tournament_id": "21358",
       "tournament_name": "European Open - Brussels"
+    },
+    {
+      "circuit_detail": "ITF_MEN",
+      "circuit_family": "ITF",
+      "event_format": "SINGLES",
+      "event_format_authority": "TWO_INDIVIDUAL_PROVIDER_NAMES",
+      "event_start_bogota": "2026-10-17T05:30:00-05:00",
+      "event_start_utc": "2026-10-17T10:30:00+00:00",
+      "match_id": "148126",
+      "model_derivation": {
+        "blockers": [
+          "CIRCUIT_OUTSIDE_COR0203_ATP_CHALLENGER"
+        ],
+        "domain_candidate": false,
+        "lane": "COR02_COR03_ATP_CHALLENGER_HARD",
+        "note": "Domain candidate only. Governed COR02/COR03 still requires identity, PIT history, ranking/features, unique physical event, future prematch freeze and all existing gates."
+      },
+      "physical_event_key": "e8ed2ba01a503fe465a07c26a8e1f53d89ea9700f4572afb43cd5c9cca42663a",
+      "player1": {
+        "country": "FRA",
+        "id": "54208",
+        "name": "Florent Bax"
+      },
+      "player2": {
+        "country": "BEL",
+        "id": "96547",
+        "name": "Jack Loge"
+      },
+      "player_group": "",
+      "provider_channel": "ATP",
+      "provider_status": "",
+      "round": "1/2",
+      "source_event_id": "rapidapi-tennis:atp:match:148126",
+      "source_provider": "rapidapi_tennis",
+      "source_snapshot_sha256": "662344d7a22f4b226145bf0afd126a176d61bd2b56b0e66ab9d279fc530b5c79",
+      "stable_physical_identity_key": "5196e7bcb140fd95c79183345ecded1c563f0d7e6d3aedd2547710dfbe1e0a15",
+      "surface": "Hard",
+      "tier": "",
+      "tournament_id": "22145",
+      "tournament_name": "M25 Luanda"
     },
     {
       "circuit_detail": "WTA_MAIN_OR_OTHER",
@@ -3324,18 +3405,18 @@
   "events_by_detail": {
     "ATP_CHALLENGER": 10,
     "ATP_MAIN_OR_OTHER": 19,
-    "ITF_MEN": 14,
-    "ITF_WOMEN": 13,
+    "ITF_MEN": 15,
+    "ITF_WOMEN": 14,
     "WTA_MAIN_OR_OTHER": 20
   },
   "events_by_family": {
     "ATP": 29,
-    "ITF": 27,
+    "ITF": 29,
     "WTA": 20
   },
   "events_by_format": {
     "DOUBLES": 3,
-    "SINGLES": 73
+    "SINGLES": 75
   },
   "metrics_opened": false,
   "operational_timezone": "America/Bogota",
@@ -3352,17 +3433,17 @@
   "provider_channel_errors": {},
   "provider_channel_summaries": {
     "ATP": {
-      "events_in_bogota_day": 43,
+      "events_in_bogota_day": 44,
       "malformed_unplaced_rows": 0,
       "network_calls": 1,
-      "provider_rows_in_query_window": 62,
+      "provider_rows_in_query_window": 61,
       "status": "PASS"
     },
     "WTA": {
-      "events_in_bogota_day": 33,
+      "events_in_bogota_day": 34,
       "malformed_unplaced_rows": 0,
       "network_calls": 1,
-      "provider_rows_in_query_window": 60,
+      "provider_rows_in_query_window": 61,
       "status": "PASS"
     }
   },
@@ -3375,7 +3456,7 @@
   "status": "PASS",
   "target_date_bogota": "2026-10-17",
   "unplaced_rows": [],
-  "world_calendar_inventory_count": 76,
+  "world_calendar_inventory_count": 78,
   "world_complete_gate": "REQUIRES_MULTI_SOURCE_RECONCILIATION",
   "world_inventory_complete": false
 }
