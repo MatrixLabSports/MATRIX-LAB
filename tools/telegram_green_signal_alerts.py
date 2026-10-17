@@ -488,6 +488,7 @@ def odds_api_net_exact_over25_offer(
     p: float,
     api_football_key: str,
     diagnostic: dict[str, Any] | None = None,
+    required_house_key: str | None = None,
 ) -> dict[str, Any] | None:
     key = str(odds_api_key or "").strip()
     kickoff_dt = parse_dt(kickoff)
@@ -619,6 +620,10 @@ def odds_api_net_exact_over25_offer(
         if house_key not in POLICY_BOOKS:
             if diagnostic is not None:
                 diagnostic["discard_reasons"]["UNAUTHORIZED_BOOK"] = diagnostic["discard_reasons"].get("UNAUTHORIZED_BOOK", 0) + 1
+            continue
+        if required_house_key and house_key != required_house_key:
+            if diagnostic is not None:
+                diagnostic["discard_reasons"]["DIFFERENT_AUTHORIZED_BOOK"] = diagnostic["discard_reasons"].get("DIFFERENT_AUTHORIZED_BOOK", 0) + 1
             continue
         if item.get("is_available") is False:
             if diagnostic is not None:
@@ -1686,7 +1691,20 @@ def main() -> None:
             or record.get("house")
             or c.get("house")
         )
-        offer = exact_over25_offer(session, api_key, c["fixture_id"], float(c["p_matrix"]), required_house_key)
+        primary_offer = exact_over25_offer(session, api_key, c["fixture_id"], float(c["p_matrix"]), required_house_key)
+        correction_diag: dict[str, Any] = {}
+        fallback_offer = odds_api_net_exact_over25_offer(
+            session,
+            odds_api_net_key,
+            str(c["fixture_id"]),
+            c.get("kickoff"),
+            float(c["p_matrix"]),
+            api_key,
+            correction_diag,
+            required_house_key,
+        )
+        comparable = [x for x in (primary_offer, fallback_offer) if isinstance(x, dict)]
+        offer = max(comparable, key=lambda x: float(x.get("ev") or -999.0)) if comparable else None
         quote_checks += 1
         previous = ledger["quote_state"].get(key) or {}
         if offer is None:
@@ -1699,6 +1717,10 @@ def main() -> None:
             "required_house_key": required_house_key,
             "state": state,
             "offer": offer,
+            "primary_same_house_offer": primary_offer,
+            "odds_api_net_same_house_offer": fallback_offer,
+            "odds_api_net_diagnostic": correction_diag,
+            "selected_quote_provider": (offer or {}).get("provider") if isinstance(offer, dict) else None,
         }
         invalid_now = offer is None or float(offer["ev"]) <= 0
         invalid_was_sent = previous.get("state") not in {"NO_APOSTAR", "NO_APOSTAR_SIN_CUOTA_VALIDA_MISMA_CASA"}
