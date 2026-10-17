@@ -856,9 +856,39 @@ def main() -> None:
     parser.add_argument("--attempt-log-path", default=str(DEFAULT_ATTEMPT_LOG))
     parser.add_argument("--state-path", default=str(DEFAULT_STATE))
     parser.add_argument("--telegram-ledger-path", default=str(DEFAULT_TELEGRAM_LEDGER))
+    parser.add_argument("--freeze-only", action="store_true")
     args = parser.parse_args()
 
     report_path = Path(args.report_path) if args.report_path else _default_report_for_today()
+    if args.freeze_only:
+        reference = datetime.now(timezone.utc)
+        ledger = FootballProspectiveEvidenceLedger(Path(args.ledger_path))
+        if report_path.is_file():
+            freeze_result = freeze_new_decisions(report_path, ledger)
+        else:
+            freeze_result = {
+                "frozen_new": 0,
+                "skipped_existing": 0,
+                "blocked_missing_entry_timestamp": 0,
+                "blocked_invalid": 0,
+                "report_missing": True,
+            }
+        telegram_result = freeze_new_telegram_signals(
+            Path(args.telegram_ledger_path),
+            ledger,
+            now=reference,
+        ) if args.telegram_ledger_path else {}
+        freeze_result = {**freeze_result, **telegram_result}
+        freeze_result["frozen_new"] = int(freeze_result.get("frozen_new") or 0) + int(
+            telegram_result.get("telegram_frozen_new") or 0
+        )
+        print(json.dumps({
+            "mode": "FREEZE_ONLY",
+            **freeze_result,
+            "real_money": "BLOCKED",
+        }, sort_keys=True))
+        return
+
     state = run_cycle(
         report_path=report_path if report_path.is_file() else None,
         ledger_path=Path(args.ledger_path),
