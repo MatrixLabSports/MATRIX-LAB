@@ -523,7 +523,23 @@ def odds_api_net_exact_over25_offer(
         scored.append((max(direct, swapped), direct >= swapped, event))
     scored.sort(key=lambda x: x[0], reverse=True)
     if diagnostic is not None:
+        diagnostic["identity_source"] = {"home": home, "away": away, "kickoff": kickoff_dt.isoformat()}
         diagnostic["identity_top_scores"] = [round(float(x[0]), 6) for x in scored[:3]]
+        diagnostic["identity_top_candidates"] = [
+            {
+                "score": round(float(score), 6),
+                "orientation": "direct" if is_direct else "swapped",
+                "event_id": str(event.get("event_id") or ""),
+                "home_team": event.get("home_team"),
+                "away_team": event.get("away_team"),
+                "start_time": event.get("start_time"),
+                "home_similarity_direct": round(_identity_similarity(home, event.get("home_team")), 6),
+                "away_similarity_direct": round(_identity_similarity(away, event.get("away_team")), 6),
+                "home_similarity_swapped": round(_identity_similarity(home, event.get("away_team")), 6),
+                "away_similarity_swapped": round(_identity_similarity(away, event.get("home_team")), 6),
+            }
+            for score, is_direct, event in scored[:5]
+        ]
     if not scored or scored[0][0] < 0.85:
         if diagnostic is not None:
             diagnostic["status"] = "BLOCKED_IDENTITY_LOW_SCORE"
