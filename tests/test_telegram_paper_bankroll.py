@@ -43,8 +43,10 @@ def test_paper_bankroll_constants():
 
 
 def test_confidence_stake_levels():
-    assert paper_stake_level(candidate(0.66, 0.11)) == 3
-    assert paper_stake_level(candidate(0.61, 0.06)) == 2
+    # Temporary 17-OCT risk override: preserve candidate quality inputs but cap
+    # all paper exposure at 1u until the high-P/high-EV tail is recalibrated.
+    assert paper_stake_level(candidate(0.66, 0.11)) == 1
+    assert paper_stake_level(candidate(0.61, 0.06)) == 1
     assert paper_stake_level(candidate(0.59, 0.20)) == 1
     assert paper_stake_level(candidate(0.70, 0.03)) == 1
 
