@@ -5,6 +5,8 @@ from tools.telegram_green_signal_alerts import (
     PAPER_BANKROLL_INITIAL_COP,
     PAPER_DAILY_BASE_EXPOSURE_FRACTION,
     PAPER_DAILY_MAX_EXPOSURE_FRACTION,
+    PAPER_STAKE_MAX_LEVEL,
+    PAPER_STAKE_RISK_OVERRIDE,
     PAPER_UNIT_COP,
     GREEN_PREMATCH_REVALIDATION_WINDOW_MINUTES,
     PAPER_MAX_SIGNALS_PER_LEAGUE_DAY,
@@ -49,6 +51,19 @@ def test_confidence_stake_levels():
     assert paper_stake_level(candidate(0.61, 0.06)) == 1
     assert paper_stake_level(candidate(0.59, 0.20)) == 1
     assert paper_stake_level(candidate(0.70, 0.03)) == 1
+
+
+def test_risk_override_is_physically_active_and_persisted():
+    assert PAPER_STAKE_MAX_LEVEL == 1
+    assert PAPER_STAKE_RISK_OVERRIDE == "TEMPORARY_FLAT_1U_CAP_17OCT2026"
+    ledger = {"sent": [], "settlements": []}
+    pb = recalc_paper_bankroll(ledger)
+    assert pb["stake_risk_override"]["status"] == "ACTIVE"
+    assert pb["stake_risk_override"]["max_stake_level"] == 1
+    assert pb["stake_risk_override"]["max_stake_cop"] == 25_000.0
+    assert pb["confidence_policy"]["stake_2"] == "TEMPORARILY_DISABLED_BY_RISK_OVERRIDE"
+    assert pb["confidence_policy"]["stake_3"] == "TEMPORARILY_DISABLED_BY_RISK_OVERRIDE"
+    assert pb["effective_daily_cap_fraction_under_risk_override"] == 0.30
 
 
 def test_daily_cap_uses_40_percent_only_for_high_conviction_day():
