@@ -830,6 +830,8 @@ def paper_stake_cop(level: int) -> float:
 
 
 def paper_daily_cap_fraction(candidates_for_day: list[dict[str, Any]]) -> float:
+    if PAPER_STAKE_MAX_LEVEL <= 1:
+        return PAPER_DAILY_BASE_EXPOSURE_FRACTION
     eligible = [c for c in candidates_for_day if c.get("eligible_green") is True and float(c.get("ev") or 0.0) > 0.0]
     if not eligible:
         return PAPER_DAILY_BASE_EXPOSURE_FRACTION
