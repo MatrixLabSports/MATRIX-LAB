@@ -439,6 +439,11 @@ def _identity_norm(value: Any) -> str:
     return re.sub(r"[^a-z0-9]+", " ", text).strip()
 
 
+IDENTITY_CLUB_DESIGNATORS = {"fc", "sc", "cs", "csl", "afc", "cf", "club"}
+
+def _identity_core_tokens(value: Any) -> list[str]:
+    return [tok for tok in _identity_norm(value).split() if tok not in IDENTITY_CLUB_DESIGNATORS]
+
 def _identity_similarity(left: Any, right: Any) -> float:
     a, b = _identity_norm(left), _identity_norm(right)
     if not a or not b:
@@ -449,7 +454,30 @@ def _identity_similarity(left: Any, right: Any) -> float:
     jac = len(ta & tb) / max(1, len(ta | tb))
     seq = SequenceMatcher(None, a, b).ratio()
     subset = 1.0 if ta <= tb or tb <= ta else 0.0
-    return max(jac, seq, subset)
+
+    ca, cb = _identity_core_tokens(left), _identity_core_tokens(right)
+    core_score = 0.0
+    if ca and cb:
+        core_a, core_b = " ".join(ca), " ".join(cb)
+        if core_a == core_b:
+            core_score = 1.0
+        else:
+            cta, ctb = set(ca), set(cb)
+            core_jac = len(cta & ctb) / max(1, len(cta | ctb))
+            core_seq = SequenceMatcher(None, core_a, core_b).ratio()
+            core_subset = 1.0 if cta <= ctb or ctb <= cta else 0.0
+
+            shorter, longer = (ca, cb) if len(ca) <= len(cb) else (cb, ca)
+            fuzzy_cover = 0.0
+            if shorter and any(len(tok) >= 5 for tok in shorter):
+                token_scores = [
+                    max(SequenceMatcher(None, tok, other).ratio() for other in longer)
+                    for tok in shorter
+                ]
+                if token_scores and min(token_scores) >= 0.90:
+                    fuzzy_cover = sum(token_scores) / len(token_scores)
+            core_score = max(core_jac, core_seq, core_subset, fuzzy_cover)
+    return max(jac, seq, subset, core_score)
 
 
 def odds_api_net_exact_over25_offer(
