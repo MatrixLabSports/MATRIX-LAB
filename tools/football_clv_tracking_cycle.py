@@ -36,6 +36,7 @@ DEFAULT_LEDGER = DEFAULT_ROOT / "prospective_clv_ledger.jsonl"
 DEFAULT_CAPTURE_DIR = DEFAULT_ROOT / "closing_captures"
 DEFAULT_ATTEMPT_LOG = DEFAULT_ROOT / "closing_attempts.jsonl"
 DEFAULT_STATE = DEFAULT_ROOT / "state.json"
+DEFAULT_TELEGRAM_LEDGER = Path("evidence/notifications/telegram/MATRIX_TELEGRAM_SIGNAL_LEDGER.json")
 
 
 def _aware(value: Any, *, name: str) -> datetime:
@@ -191,6 +192,115 @@ def freeze_new_decisions(
         "skipped_existing": skipped_existing,
         "blocked_missing_entry_timestamp": blocked_missing_entry_timestamp,
         "blocked_invalid": blocked_invalid,
+    }
+
+
+def freeze_new_telegram_signals(
+    telegram_ledger_path: Path,
+    ledger: FootballProspectiveEvidenceLedger,
+    *,
+    now: datetime,
+) -> dict[str, int]:
+    if not telegram_ledger_path.is_file():
+        return {
+            "telegram_frozen_new": 0,
+            "telegram_skipped_existing": 0,
+            "telegram_blocked_invalid": 0,
+            "telegram_blocked_post_kickoff": 0,
+            "telegram_source_missing": True,
+        }
+
+    payload = _load_json(telegram_ledger_path)
+    existing, _ = _existing_decisions_and_closings(ledger)
+    natural_keys = {
+        (d.fixture_id, d.market_key, d.selection_key, d.model_version)
+        for d in existing.values()
+    }
+
+    frozen = skipped = blocked_invalid = blocked_post = 0
+    for record in payload.get("sent") or []:
+        if not isinstance(record, Mapping):
+            continue
+        fixture_id = str(record.get("fixture_id") or "").strip()
+        if (
+            not fixture_id
+            or str(record.get("status") or "") != "ENVIADO_OK"
+            or str(record.get("matrix_real_money") or "") != "BLOQUEADO"
+            or str(record.get("market") or "").casefold() not in {"más de 2.5 goles", "mas de 2.5 goles"}
+            or str(record.get("send_gate_status") or "") != "PASS_API_COST_RECOVERY_PRECISION_GATE"
+        ):
+            blocked_invalid += 1
+            continue
+
+        natural_key = (fixture_id, MARKET_KEY, SELECTION_KEY, MODEL_VERSION)
+        if natural_key in natural_keys:
+            skipped += 1
+            continue
+
+        try:
+            kickoff = _aware(record.get("kickoff"), name="KICKOFF")
+            decision_at = _aware(
+                record.get("pre_send_revalidated_at_utc") or record.get("sent_at_utc"),
+                name="TELEGRAM_ENTRY_CAPTURE",
+            )
+            if decision_at >= kickoff or now >= kickoff:
+                blocked_post += 1
+                continue
+            p_matrix = float(record.get("p_matrix"))
+            decimal_odds = float(record.get("odds"))
+            bookmaker = str(record.get("house") or "").strip()
+            if not (0.0 <= p_matrix <= 1.0) or decimal_odds <= 1.0 or not bookmaker:
+                raise ValueError("TELEGRAM_ENTRY_VALUES_INVALID")
+
+            snapshot_payload = {
+                "fixture_id": fixture_id,
+                "market": record.get("market"),
+                "p_matrix": p_matrix,
+                "house": bookmaker,
+                "odds": decimal_odds,
+                "pre_send_revalidated_at_utc": record.get("pre_send_revalidated_at_utc"),
+                "sent_at_utc": record.get("sent_at_utc"),
+                "telegram_message_id": record.get("telegram_message_id"),
+                "send_gate_status": record.get("send_gate_status"),
+                "source": record.get("source"),
+            }
+            quote_sha = _canonical_sha256(snapshot_payload)
+            decision_id = "clv-over25-" + hashlib.sha256(
+                f"{fixture_id}|{MARKET_KEY}|{SELECTION_KEY}|{MODEL_VERSION}".encode("utf-8")
+            ).hexdigest()
+            decision = FrozenProspectiveDecision(
+                decision_id=decision_id,
+                fixture_id=fixture_id,
+                market_key=MARKET_KEY,
+                selection_key=SELECTION_KEY,
+                model_version=MODEL_VERSION,
+                model_probability=p_matrix,
+                decision_at_utc=decision_at.isoformat(),
+                fixture_kickoff_utc=kickoff.isoformat(),
+                block_id=str(kickoff.astimezone(BOGOTA).date()),
+                odds_snapshot_sha256=quote_sha,
+                odds_observed_at_utc=decision_at.isoformat(),
+                decimal_odds=decimal_odds,
+                odds_source_provider=bookmaker,
+                odds_source_reference=(
+                    f"{telegram_ledger_path.as_posix()};fixture={fixture_id};"
+                    f"telegram_message_id={record.get('telegram_message_id')};"
+                    f"entry_snapshot_sha256={quote_sha}"
+                ),
+                odds_source_authorized=True,
+                model_input_sha256s=(_file_sha256(telegram_ledger_path),),
+            )
+            ledger.append_decision(decision)
+            natural_keys.add(natural_key)
+            frozen += 1
+        except (TypeError, ValueError):
+            blocked_invalid += 1
+
+    return {
+        "telegram_frozen_new": frozen,
+        "telegram_skipped_existing": skipped,
+        "telegram_blocked_invalid": blocked_invalid,
+        "telegram_blocked_post_kickoff": blocked_post,
     }
 
 
@@ -667,6 +777,7 @@ def run_cycle(
     now: datetime | None = None,
     session: Any | None = None,
     capture_clock: Any | None = None,
+    telegram_ledger_path: Path | None = None,
 ) -> dict[str, Any]:
     reference = (now or datetime.now(timezone.utc)).astimezone(timezone.utc)
     ledger = FootballProspectiveEvidenceLedger(ledger_path)
@@ -681,6 +792,17 @@ def run_cycle(
             "blocked_invalid": 0,
             "report_missing": True,
         }
+
+    if telegram_ledger_path is not None:
+        telegram_freeze = freeze_new_telegram_signals(
+            telegram_ledger_path,
+            ledger,
+            now=reference,
+        )
+        freeze_result = {**freeze_result, **telegram_freeze}
+        freeze_result["frozen_new"] = int(freeze_result.get("frozen_new") or 0) + int(
+            telegram_freeze.get("telegram_frozen_new") or 0
+        )
 
     close_result = capture_due_closing_lines(
         ledger,
@@ -733,6 +855,7 @@ def main() -> None:
     parser.add_argument("--capture-dir", default=str(DEFAULT_CAPTURE_DIR))
     parser.add_argument("--attempt-log-path", default=str(DEFAULT_ATTEMPT_LOG))
     parser.add_argument("--state-path", default=str(DEFAULT_STATE))
+    parser.add_argument("--telegram-ledger-path", default=str(DEFAULT_TELEGRAM_LEDGER))
     args = parser.parse_args()
 
     report_path = Path(args.report_path) if args.report_path else _default_report_for_today()
@@ -743,6 +866,7 @@ def main() -> None:
         attempt_log_path=Path(args.attempt_log_path),
         state_path=Path(args.state_path),
         api_key=os.environ.get("API_FOOTBALL_KEY", ""),
+        telegram_ledger_path=Path(args.telegram_ledger_path) if args.telegram_ledger_path else None,
     )
     print(json.dumps({
         "status": state["status"],
