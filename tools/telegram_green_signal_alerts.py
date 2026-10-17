@@ -2027,6 +2027,8 @@ def main() -> None:
         "paper_bankroll_current_cop": pb.get("current_cop"),
         "paper_open_exposure_cop": pb.get("open_exposure_cop"),
         "paper_open_bets": pb.get("open_bets"),
+        "paper_stake_max_level": PAPER_STAKE_MAX_LEVEL,
+        "paper_stake_risk_override": PAPER_STAKE_RISK_OVERRIDE,
         "real_money": "BLOQUEADO",
     }
     ledger["run_history"].append(run_record)
