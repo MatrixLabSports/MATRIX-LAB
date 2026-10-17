@@ -42,6 +42,12 @@ PAPER_DAILY_MAX_EXPOSURE_FRACTION = 0.40
 PAPER_HIGH_CONF_MIN_STAKE3 = 5
 PAPER_HIGH_CONF_MIN_TIER23_SHARE = 0.40
 PAPER_STAKE_LEVELS = {1: 1.0, 2: 2.0, 3: 3.0}
+# Temporary risk override after physical ledger audit on 17-OCT-2026:
+# variable 2u/3u sizing amplified losses while the high-P/high-EV tail
+# remains insufficiently calibrated. Preserve model/signal gates, but cap
+# paper exposure at 1u until the risk override is explicitly retired.
+PAPER_STAKE_MAX_LEVEL = 1
+PAPER_STAKE_RISK_OVERRIDE = "TEMPORARY_FLAT_1U_CAP_17OCT2026"
 GREEN_PREMATCH_REVALIDATION_WINDOW_MINUTES = 120
 PAPER_MAX_SIGNALS_PER_LEAGUE_DAY = 3
 ODDS_API_NET_BASE = "https://api.odds-api.net/v1"
@@ -808,13 +814,15 @@ def fmt_cop(value: float) -> str:
 
 
 def paper_stake_level(c: dict[str, Any]) -> int:
-    p = float(c["p_matrix"])
-    ev = float(c["ev"])
-    if p >= 0.65 and ev >= 0.10:
-        return 3
-    if p >= 0.60 and ev >= 0.05:
-        return 2
-    return 1
+    """Return the governed paper stake after the temporary risk cap.
+
+    The confidence tiers are intentionally not used to increase exposure while
+    the 17-OCT physical audit shows material overconfidence in the high-EV tail.
+    Signal-generation gates and P_MATRIX remain unchanged.
+    """
+    _ = float(c["p_matrix"])
+    _ = float(c["ev"])
+    return PAPER_STAKE_MAX_LEVEL
 
 
 def paper_stake_cop(level: int) -> float:
