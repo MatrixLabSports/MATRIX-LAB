@@ -1,0 +1,102 @@
+{
+  "schema": "MATRIX_SETTLEMENT_PROGRESS_20261006_BOGOTA_AUDIT_SNAPSHOT_V1",
+  "cohort": "2026-10-06_BOGOTA",
+  "observed_at_utc": "2026-10-17T00:26:13.119Z",
+  "source_branch": "repair/cor09-world-pipeline",
+  "source_head_observed": "a589802a821fbd0cc9bcebb9c4cc75d97f1bd940",
+  "previous_snapshot_path": "evidence/daily_selection/MATRIX_SETTLEMENT_PROGRESS_20261006_BOGOTA_20261016T221629Z_V2_1953_T280.json",
+  "previous_snapshot_blob_sha": "65288e833b188e40d625a9c5d5d900c630686fb8",
+  "source_candidate_path": "evidence/daily_selection/MATRIX_CALIBRATION_CANDIDATES_20261006_BOGOTA.json",
+  "source_candidate_blob_sha": "52e897007840f5bed1a8999edad8ee594fefc767",
+  "football": {
+    "v2_freezes": 2668,
+    "v2_settlements": 1963,
+    "v2_pending": 705,
+    "delta_freezes": 0,
+    "delta_v2_settlements": 10,
+    "delta_pending": -10,
+    "all_five_v2_lanes_consistent": true,
+    "cohort_total": 116,
+    "cohort_ft_last_full_ledger_audit": 107,
+    "cohort_new_ft_from_new_global_ids": 0,
+    "cohort_remaining_nonstandard_or_pending": 9,
+    "cohort_full_ledger_recheck_this_run": false,
+    "cohort_ft_basis": "Prior full-ledger audit at 2026-10-16T20:22:28Z; new FT IDs have zero intersection with original 116; current settlement_sync_last confirms 7 PEN, 1 AET and 1 NS pending.",
+    "new_global_ft_fixture_ids": [
+      "1551838",
+      "1551839",
+      "1551840",
+      "1552495",
+      "1552496",
+      "1552497",
+      "1552498",
+      "1552502",
+      "1566382",
+      "1592547"
+    ],
+    "global_calibration_settlements": 2765,
+    "global_ledger_hash_chain_verified_by_source_sync": true,
+    "blocked_nonstandard": {
+      "PEN": [
+        "1588817",
+        "1588821",
+        "1588845",
+        "1588863",
+        "1588890",
+        "1588893",
+        "1619499"
+      ],
+      "AET": [
+        "1644168"
+      ],
+      "NS_pending": [
+        "1596466"
+      ]
+    },
+    "source_sync_path": "evidence/api_football/prospective_market_freeze/settlement_sync_last.json",
+    "source_sync_blob_sha": "4cb98dab4edc3e8aa07c17d0e16d821c5b051381",
+    "source_calibration_sync_path": "evidence/api_football/prospective_calibration/sync_last.json",
+    "source_calibration_sync_blob_sha": "22997f3c95b052e85b9031388ef8d35758b18d41",
+    "v2_state_blob_shas": {
+      "1x2": "45d0a2a74eb38fe61dc0c13c379ef068410f44fa",
+      "over_2_5": "5028e3a0dc040e40ec1a57b1b7a508b19b23361e",
+      "under_2_5": "50612e3d54b235271893e161f8fcf3c6db33cefe",
+      "double_chance_1x": "a541ad8a6fef10df30348c86a5eabbb50a268c59",
+      "double_chance_x2": "62b1920f7aa314b80457468cbed4d1ccb26218e8"
+    }
+  },
+  "tennis": {
+    "cohort_total": 11,
+    "cohort_finished": 11,
+    "cohort_unique_events": 11,
+    "cohort_unique_settlements": 11,
+    "cohort_duplicate_settlements": 0,
+    "global_settlement_rows": 280,
+    "delta_global_settlements": 0,
+    "global_unique_calibration_observations": 248,
+    "delta_global_unique": 0,
+    "duplicate_quarantined": 171,
+    "uniqueness": "PASS",
+    "global_ledger_previous_hash_links_verified": true,
+    "global_ledger_last_record_sha256": "5d316144d4bb1e2f080a9c115dcad836c945f5e9e2a6cb2f7e7504b3d68cbc49",
+    "new_global_finished_event_ids": [],
+    "new_events_in_cohort": false,
+    "source_ledger_path": "evidence/cor0203/settlement/MATRIX_COR0203_SETTLEMENT_LEDGER.jsonl",
+    "source_ledger_blob_sha": "de84d9cef5352df4974cb2db363a5a1c1376a45c",
+    "source_uniqueness_path": "evidence/cor0203/runtime/MATRIX_COR0203_SETTLEMENT_UNIQUENESS_LAST.json",
+    "source_uniqueness_blob_sha": "42a1ec25659bfe24b39511249abe62c4dd1bce36"
+  },
+  "governance": {
+    "metrics_opened": false,
+    "parameter_tuning_allowed": false,
+    "odds_to_probability": false,
+    "settlement_final_only": true,
+    "real_money": "BLOCKED",
+    "automatic_wagering": false
+  },
+  "notes": [
+    "10 new global football FT settlements were already committed by governed pipeline; no duplicate settlements were created.",
+    "No new cohort settlements. No independent provider result revalidation performed.",
+    "Football full global ledger re-read unavailable through fetch_file for large content; cohort count carried forward only after new ID intersection check and nine blocker confirmation."
+  ]
+}
