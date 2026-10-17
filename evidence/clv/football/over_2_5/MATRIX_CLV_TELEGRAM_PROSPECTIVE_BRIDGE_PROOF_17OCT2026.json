@@ -1,0 +1,44 @@
+{
+  "schema": "MATRIX_CLV_TELEGRAM_PROSPECTIVE_BRIDGE_PROOF_V1",
+  "generated_at_utc": "2026-10-17T07:58:26+00:00",
+  "diagnosis": {
+    "prior_watcher_run_id": 39006841795,
+    "prior_watcher_job_id": 117320931280,
+    "prior_decision_count": 79,
+    "prior_closing_odds_count": 2,
+    "prior_remaining_future": 0,
+    "root_cause": "TODAY_DAILY_REPORT_BET_SHADOW_COUNT_ZERO_WHILE_VALID_TELEGRAM_SIGNALS_ARRIVED_LATER"
+  },
+  "repair": {
+    "code_commit": "71fa7249917c84f22191a5d2d50351d05cf7692a",
+    "code_path": "tools/football_clv_tracking_cycle.py",
+    "mechanism": "FREEZE_ONLY_PHYSICALLY_SENT_PREMATCH_TELEGRAM_SIGNALS_WITH_PASS_GATE",
+    "historical_post_kickoff_backfill": false,
+    "real_money": "BLOCKED"
+  },
+  "verification": {
+    "watcher_trigger_main_commit": "8fc7bcdb0ada7b63fe50f2d17c6182016954fa70",
+    "watcher_run_id": 39015584006,
+    "watcher_job_id": 117346924901,
+    "operational_evidence_commit": "0822a2809ca1c2fed5323b18e3ef9ef869a687a9",
+    "state_blob_sha": "1b19cc52aec681a93a9cfbcbcadc335a6abfb5d4",
+    "decision_count": 81,
+    "telegram_frozen_new": 2,
+    "closing_odds_count": 2,
+    "remaining_to_open_metrics": 298,
+    "due_count": 2,
+    "captured_new": 0,
+    "blocked_stale_provider_quote": 1,
+    "blocked_market_incomplete": 1,
+    "watcher_continuous_step": "IN_PROGRESS"
+  },
+  "protections": {
+    "strict_fresh_gate_seconds": 120,
+    "post_kickoff_closing_line": "FORBIDDEN",
+    "historical_backfill_without_physical_entry_timestamp": "FORBIDDEN",
+    "odds_used_to_generate_probability": false,
+    "automatic_wagering": false,
+    "real_money": "BLOCKED"
+  },
+  "adjudication": "PROSPECTIVE_INGESTION_REPAIRED_PHYSICALLY; FRESH_SHARP_CLOSE_NOT_YET_OBTAINED"
+}
