@@ -54,7 +54,8 @@ def test_confidence_stake_levels():
 def test_daily_cap_uses_40_percent_only_for_high_conviction_day():
     high = [candidate(0.66, 0.11) for _ in range(5)] + [candidate(0.61, 0.06) for _ in range(5)]
     normal = [candidate(0.66, 0.11) for _ in range(4)] + [candidate(0.61, 0.06) for _ in range(6)]
-    assert paper_daily_cap_fraction(high) == 0.40
+    # Temporary 1u risk override disables the historical 40% high-conviction cap.
+    assert paper_daily_cap_fraction(high) == 0.30
     assert paper_daily_cap_fraction(normal) == 0.30
 
 
