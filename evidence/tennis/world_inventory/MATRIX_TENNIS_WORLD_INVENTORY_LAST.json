@@ -1,9 +1,9 @@
 {
   "accumulation": {
-    "cumulative_count": 78,
-    "current_fetch_count": 78,
+    "cumulative_count": 80,
+    "current_fetch_count": 80,
     "never_decrease_within_day": true,
-    "newly_discovered_count": 0,
+    "newly_discovered_count": 2,
     "policy": "MONOTONIC_UNION_BY_STABLE_PHYSICAL_IDENTITY",
     "prior_count": 78,
     "retained_prior_only_count": 0
@@ -36,7 +36,7 @@
     "ITF": {
       "current_governed_model": null,
       "feeds_COR02_COR03": false,
-      "inventory_count": 29
+      "inventory_count": 30
     },
     "WTA": {
       "current_governed_model": null,
@@ -2942,6 +2942,47 @@
       "tournament_name": "European Open - Brussels"
     },
     {
+      "circuit_detail": "ITF_MEN",
+      "circuit_family": "ITF",
+      "event_format": "SINGLES",
+      "event_format_authority": "TWO_INDIVIDUAL_PROVIDER_NAMES",
+      "event_start_bogota": "2026-10-17T07:00:00-05:00",
+      "event_start_utc": "2026-10-17T12:00:00+00:00",
+      "match_id": "140039",
+      "model_derivation": {
+        "blockers": [
+          "CIRCUIT_OUTSIDE_COR0203_ATP_CHALLENGER",
+          "SURFACE_OUTSIDE_COR0203_HARD"
+        ],
+        "domain_candidate": false,
+        "lane": "COR02_COR03_ATP_CHALLENGER_HARD",
+        "note": "Domain candidate only. Governed COR02/COR03 still requires identity, PIT history, ranking/features, unique physical event, future prematch freeze and all existing gates."
+      },
+      "physical_event_key": "1562e2615349157bcb79bbdb3fbc12d86073c2c8fe858de39b2dd93c68b423c4",
+      "player1": {
+        "country": "POL",
+        "id": "112660",
+        "name": "Alan Wazny"
+      },
+      "player2": {
+        "country": "ARG",
+        "id": "88054",
+        "name": "Iannis Miletich"
+      },
+      "player_group": "",
+      "provider_channel": "ATP",
+      "provider_status": "",
+      "round": "1/2",
+      "source_event_id": "rapidapi-tennis:atp:match:140039",
+      "source_provider": "rapidapi_tennis",
+      "source_snapshot_sha256": "b2a101e61b759c00478c3c783f3bb942700b8280f6cb46031b8984d629cf1b90",
+      "stable_physical_identity_key": "b33efe0d71a75855cca050cfc2c22fcbe3fc712bc5adb725cdd8917b3690ebd4",
+      "surface": "Clay",
+      "tier": "",
+      "tournament_id": "22154",
+      "tournament_name": "M15 Bol"
+    },
+    {
       "circuit_detail": "WTA_MAIN_OR_OTHER",
       "circuit_family": "WTA",
       "event_format": "DOUBLES",
@@ -3406,23 +3447,63 @@
       "tier": "",
       "tournament_id": "21358",
       "tournament_name": "European Open - Brussels"
+    },
+    {
+      "circuit_detail": "ATP_CHALLENGER",
+      "circuit_family": "ATP",
+      "event_format": "SINGLES",
+      "event_format_authority": "TWO_INDIVIDUAL_PROVIDER_NAMES",
+      "event_start_bogota": "2026-10-17T14:00:00-05:00",
+      "event_start_utc": "2026-10-17T19:00:00+00:00",
+      "match_id": "156890",
+      "model_derivation": {
+        "blockers": [
+          "SURFACE_OUTSIDE_COR0203_HARD"
+        ],
+        "domain_candidate": false,
+        "lane": "COR02_COR03_ATP_CHALLENGER_HARD",
+        "note": "Domain candidate only. Governed COR02/COR03 still requires identity, PIT history, ranking/features, unique physical event, future prematch freeze and all existing gates."
+      },
+      "physical_event_key": "d0106d3809a207cbb1407aedfdb475041cca93d4a7730dfb3fc34b2dc83dcd7d",
+      "player1": {
+        "country": "ARG",
+        "id": "86275",
+        "name": "Juan Manuel La Serna"
+      },
+      "player2": {
+        "country": "BOL",
+        "id": "18477",
+        "name": "Hugo Dellien"
+      },
+      "player_group": "",
+      "provider_channel": "ATP",
+      "provider_status": "",
+      "round": "1/2",
+      "source_event_id": "rapidapi-tennis:atp:match:156890",
+      "source_provider": "rapidapi_tennis",
+      "source_snapshot_sha256": "4faa7f7d6a035af2198d52ebf27d7f7e145979123aff3001625edcac4ee05258",
+      "stable_physical_identity_key": "43ba24d8dd47e1124e976d1c17d2d72a9cbefb0c9d4536410ee6745bb4595409",
+      "surface": "Clay",
+      "tier": "",
+      "tournament_id": "22102",
+      "tournament_name": "Santa Cruz de la Sierra 2 Challenger"
     }
   ],
   "events_by_detail": {
-    "ATP_CHALLENGER": 10,
+    "ATP_CHALLENGER": 11,
     "ATP_MAIN_OR_OTHER": 19,
-    "ITF_MEN": 15,
+    "ITF_MEN": 16,
     "ITF_WOMEN": 14,
     "WTA_MAIN_OR_OTHER": 20
   },
   "events_by_family": {
-    "ATP": 29,
-    "ITF": 29,
+    "ATP": 30,
+    "ITF": 30,
     "WTA": 20
   },
   "events_by_format": {
     "DOUBLES": 3,
-    "SINGLES": 75
+    "SINGLES": 77
   },
   "metrics_opened": false,
   "operational_timezone": "America/Bogota",
@@ -3439,10 +3520,10 @@
   "provider_channel_errors": {},
   "provider_channel_summaries": {
     "ATP": {
-      "events_in_bogota_day": 44,
+      "events_in_bogota_day": 46,
       "malformed_unplaced_rows": 0,
       "network_calls": 1,
-      "provider_rows_in_query_window": 61,
+      "provider_rows_in_query_window": 62,
       "status": "PASS"
     },
     "WTA": {
@@ -3462,7 +3543,7 @@
   "status": "PASS",
   "target_date_bogota": "2026-10-17",
   "unplaced_rows": [],
-  "world_calendar_inventory_count": 78,
+  "world_calendar_inventory_count": 80,
   "world_complete_gate": "REQUIRES_MULTI_SOURCE_RECONCILIATION",
   "world_inventory_complete": false
 }
