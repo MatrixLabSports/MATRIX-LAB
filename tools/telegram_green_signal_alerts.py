@@ -1008,14 +1008,29 @@ def recalc_paper_bankroll(ledger: dict[str, Any]) -> dict[str, Any]:
         "2": paper_stake_cop(2),
         "3": paper_stake_cop(3),
     })
-    pb.setdefault("confidence_policy", {
+    historical_policy = {
         "stake_3": "P_MATRIX >= 65% AND EV >= 10%",
         "stake_2": "P_MATRIX >= 60% AND EV >= 5%",
         "stake_1": "remaining eligible green signals with positive EV",
-    })
+    }
+    pb.setdefault("confidence_policy_historical", historical_policy)
+    pb["confidence_policy"] = {
+        "stake_1": "ACTIVE: all eligible paper signals capped at 1u / COP 25,000",
+        "stake_2": "TEMPORARILY_DISABLED_BY_RISK_OVERRIDE",
+        "stake_3": "TEMPORARILY_DISABLED_BY_RISK_OVERRIDE",
+    }
+    pb["stake_risk_override"] = {
+        "status": "ACTIVE",
+        "policy": PAPER_STAKE_RISK_OVERRIDE,
+        "max_stake_level": PAPER_STAKE_MAX_LEVEL,
+        "max_stake_cop": paper_stake_cop(PAPER_STAKE_MAX_LEVEL),
+        "basis": "17-OCT physical loss audit: 2u/3u amplified high-P/high-EV overconfidence",
+        "retirement_gate": "Do not restore 2u/3u until calibration/CLV evidence clears high-P/high-EV overconfidence.",
+    }
     pb["max_open_exposure_fraction"] = PAPER_MAX_OPEN_EXPOSURE_FRACTION
     pb["daily_base_exposure_fraction"] = PAPER_DAILY_BASE_EXPOSURE_FRACTION
     pb["daily_max_exposure_fraction"] = PAPER_DAILY_MAX_EXPOSURE_FRACTION
+    pb["effective_daily_cap_fraction_under_risk_override"] = PAPER_DAILY_BASE_EXPOSURE_FRACTION
     pb["high_confidence_day_gate"] = {
         "minimum_stake3_signals": PAPER_HIGH_CONF_MIN_STAKE3,
         "minimum_tier2_or_3_share": PAPER_HIGH_CONF_MIN_TIER23_SHARE,
