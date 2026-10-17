@@ -1741,6 +1741,59 @@ def main() -> None:
             })
             corrections_now += 1
 
+    # Rectify legacy false NO_APOSTAR corrections created when the post-send
+    # checker used only API-Football while the send gate had already validated
+    # the same authorized house through odds-api.net. Reopen paper exposure only
+    # when a fresh same-house revalidation is currently VERDE before kickoff.
+    for correction in ledger["corrections"]:
+        if correction.get("status") != "NO_APOSTAR_ENVIADO":
+            continue
+        if correction.get("reason") != "NO_APOSTAR_SIN_CUOTA_VALIDA_MISMA_CASA":
+            continue
+        key = str(correction.get("signal_key") or "")
+        record = sent_by_key.get(key)
+        current_quote = ledger["quote_state"].get(key) or {}
+        if not isinstance(record, dict) or current_quote.get("state") != "VERDE":
+            continue
+        kickoff = parse_dt(record.get("kickoff"))
+        if kickoff is None or kickoff <= now:
+            continue
+        current_offer = current_quote.get("offer")
+        if not isinstance(current_offer, dict):
+            continue
+        original_house_key = bookmaker_key(record.get("house"))
+        current_house_key = bookmaker_key(current_offer.get("house"))
+        if not original_house_key or original_house_key != current_house_key:
+            continue
+        correction_text = "\n".join([
+            "🔵 RECTIFICACIÓN — SEÑAL PREMATCH VIGENTE",
+            "",
+            f'Partido: {record.get("match")}',
+            f'Mercado: {record.get("market")}',
+            f'Casa: {record.get("house")}',
+            f'Cuota revalidada actual: {float(current_offer.get("odds") or 0):.2f}',
+            f'EV revalidado actual: {float(current_offer.get("ev") or 0)*100:+.2f}%',
+            "La alerta NO APOSTAR anterior fue generada por una ruta de revalidación incompleta que no consultó odds-api.net.",
+            "La misma casa vuelve a estar físicamente validada por la ruta multibook gobernada.",
+            "La apuesta de papel vuelve a estado ABIERTO.",
+            "DINERO REAL MATRIX: BLOQUEADO",
+        ])
+        mid = send_telegram(session, token, chat_id, correction_text)
+        correction["status"] = "RECTIFICADA_REVALIDACION_MULTIBOOK"
+        correction["rectification_message_id"] = mid
+        correction["rectified_at_utc"] = now.isoformat()
+        correction["rectification_offer"] = current_offer
+        correction["rectification_reason"] = "FALSE_NO_BET_API_FOOTBALL_ONLY_PATH"
+        bet = record.get("paper_bet")
+        if isinstance(bet, dict) and str(bet.get("status") or "").upper() == "CANCELLED_NO_BET":
+            bet["status"] = "OPEN"
+            bet.pop("cancelled_at_utc", None)
+            bet.pop("cancel_reason", None)
+            bet.pop("profit_cop", None)
+            bet["reopened_at_utc"] = now.isoformat()
+            bet["reopen_reason"] = "RECTIFIED_FALSE_NO_BET_MULTIBOOK_SAME_HOUSE"
+        rectifications_now += 1
+
     # Apply any NO_APOSTAR correction created in this same supervisor run immediately,
     # so paper exposure is released before settlement handling.
     post_quote_reconciliation = reconcile_existing_paper_state(ledger, now)
