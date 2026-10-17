@@ -580,10 +580,17 @@ def odds_api_net_exact_over25_offer(
             if diagnostic is not None:
                 diagnostic["discard_reasons"]["UNAVAILABLE"] = diagnostic["discard_reasons"].get("UNAVAILABLE", 0) + 1
             continue
+        line_raw = item.get("line")
         try:
-            line = float(item.get("line"))
             dec = float(item.get("odds"))
         except (TypeError, ValueError):
+            dec = None
+        try:
+            line = float(line_raw)
+        except (TypeError, ValueError):
+            m = re.search(r"(?:over|under)\\s*([0-9]+(?:\\.[0-9]+)?)", str(line_raw or "").casefold())
+            line = float(m.group(1)) if m else None
+        if line is None or dec is None:
             if diagnostic is not None:
                 diagnostic["discard_reasons"]["INVALID_LINE_OR_ODDS"] = diagnostic["discard_reasons"].get("INVALID_LINE_OR_ODDS", 0) + 1
                 samples = diagnostic.setdefault("invalid_line_or_odds_samples", [])
@@ -636,6 +643,9 @@ def odds_api_net_exact_over25_offer(
         label = " ".join([
             _identity_norm(item.get("side")),
             _identity_norm(item.get("selection_name")),
+            _identity_norm(item.get("line")),
+            _identity_norm(item.get("selection_key")),
+            _identity_norm(item.get("market_key")),
         ])
         if "over" not in label:
             if diagnostic is not None:
