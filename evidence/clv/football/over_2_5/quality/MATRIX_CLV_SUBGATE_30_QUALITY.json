@@ -1,0 +1,84 @@
+{
+  "schema": "MATRIX_CLV_SUBGATE_30_QUALITY_V1",
+  "generated_at_utc": "2026-10-17T19:15:29.007914+00:00",
+  "market_key": "over_2_5",
+  "status": {
+    "decision_count": 87,
+    "closing_odds_count": 8,
+    "subgate_target": 30,
+    "remaining_to_subgate_30": 22,
+    "final_target": 300,
+    "remaining_to_300": 292,
+    "subgate_30_reached": false,
+    "metrics_opened": false,
+    "state_status": "ACCUMULATING_SEALED_UNTIL_300"
+  },
+  "valid_closing_quality": {
+    "closing_events": 8,
+    "capture_files_read": 8,
+    "valid_strict_fresh_captures": 8,
+    "missing_capture_files": 0,
+    "invalid_capture_reason_counts": {},
+    "valid_capture_rate_pct_of_closing_events": 100.0,
+    "quote_age_seconds": {
+      "count": 8,
+      "min": 46.0,
+      "mean": 65.50450000000001,
+      "median": 56.5,
+      "p95": 102.22339999999997,
+      "max": 119.036,
+      "all_within_120": true
+    },
+    "capture_lead_seconds": {
+      "count": 8,
+      "min": 33.0,
+      "mean": 512.3705,
+      "median": 651.5,
+      "p95": 691.65,
+      "max": 692.0,
+      "all_prematch": true
+    },
+    "valid_transport_breakdown": {
+      "odds-api.net": 7,
+      "odds-api.net Sandbox": 1
+    }
+  },
+  "attempt_quality": {
+    "attempt_count": 405,
+    "outcome_counts": {
+      "BLOCKED_MARKET_INCOMPLETE": 1,
+      "BLOCKED_STALE_PROVIDER_QUOTE": 264,
+      "ODDS_API_BLOCKED_IDENTITY": 57,
+      "ODDS_API_BLOCKED_MARKET_INCOMPLETE": 43,
+      "ODDS_API_BLOCKED_STALE_PROVIDER_QUOTE": 32,
+      "ODDS_API_BLOCKED_TEMPORAL": 1,
+      "ODDS_API_CAPTURED_VALID": 7
+    },
+    "failure_bucket_counts": {
+      "CAPTURED_VALID": 7,
+      "IDENTITY": 57,
+      "MARKET_INCOMPLETE": 44,
+      "STALE": 296,
+      "TEMPORAL": 1
+    },
+    "transport_attempt_counts": {
+      "API-Football /odds bookmaker_id=4": 265,
+      "odds-api.net /v1/events/{event_id}/odds/snapshot": 140
+    },
+    "note": "Attempt counts include repeated watcher polls and are not an event-level capture-rate denominator."
+  },
+  "subgate_30_policy": {
+    "strict_fresh_gate_seconds": 120,
+    "required_provider": "Pinnacle",
+    "require_complete_market_snapshot": true,
+    "require_prematch_capture": true,
+    "historical_backfill_without_physical_entry_timestamp": "FORBIDDEN",
+    "post_kickoff_closing_line": "FORBIDDEN",
+    "odds_used_to_generate_probability": false,
+    "automatic_wagering": false,
+    "real_money": "BLOCKED",
+    "metrics_remain_sealed_until": 300,
+    "tuning_before_300": "FORBIDDEN"
+  },
+  "adjudication": "ACCUMULATING_TO_SUBGATE_30_WITHOUT_TUNING"
+}
