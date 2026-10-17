@@ -103,9 +103,10 @@ jobs:
               raise SystemExit("CLV_WATCHER_COVERAGE_CONTRACT_MISSING="+repr(missing))
           cycle=s.index('echo "CLV_WATCH_CYCLE=$cycle')
           refresh=s.index("git fetch origin repair/cor09-world-pipeline", cycle)
-          capture=s.index("python -m tools.football_clv_odds_api_net_capture", cycle)
-          fallback=s.index("python -m tools.football_clv_tracking_cycle", cycle)
-          if not (cycle < refresh < capture < fallback):
+          freeze=s.index("python -m tools.football_clv_tracking_cycle --freeze-only", cycle)
+          capture=s.index("python -m tools.football_clv_odds_api_net_capture", freeze)
+          fallback=s.index("python -m tools.football_clv_tracking_cycle", capture)
+          if not (cycle < refresh < freeze < capture < fallback):
               raise SystemExit("CLV_WATCHER_REFRESH_ORDER_INVALID")
           print("CLV_WATCHER_STARTUP_COVERAGE_CONTRACT=PASS")
           print("CLV_WATCHER_PER_CYCLE_REFRESH_ORDER=PASS")
@@ -258,6 +259,7 @@ jobs:
             fi
             echo "CLV_WATCHER_OPERATIONAL_REFRESH=PASS"
 
+            PYTHONPATH=. python -m tools.football_clv_tracking_cycle --freeze-only
             PYTHONPATH=. python -m tools.football_clv_odds_api_net_capture
             PYTHONPATH=. python -m tools.football_clv_tracking_cycle
             persist_if_changed
