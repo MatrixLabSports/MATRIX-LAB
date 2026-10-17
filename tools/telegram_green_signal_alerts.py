@@ -588,7 +588,7 @@ def odds_api_net_exact_over25_offer(
         try:
             line = float(line_raw)
         except (TypeError, ValueError):
-            m = re.search(r"(?:over|under)\\s*([0-9]+(?:\\.[0-9]+)?)", str(line_raw or "").casefold())
+            m = re.search(r"(?:over|under)\s*([0-9]+(?:\.[0-9]+)?)", str(line_raw or "").casefold())
             line = float(m.group(1)) if m else None
         if line is None or dec is None:
             if diagnostic is not None:
