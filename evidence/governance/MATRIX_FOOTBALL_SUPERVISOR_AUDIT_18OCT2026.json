@@ -1,0 +1,44 @@
+{
+  "schema": "MATRIX_FOOTBALL_SUPERVISOR_AUDIT_V1",
+  "audit_date": "2026-10-18",
+  "audited_head": "ee07d15f30514806549b78b56699c6b6f0678511",
+  "predecessor_supervisor_commit": "1ec61081ef1b4e00010718a29ffeecfcf55d2d80",
+  "findings": {
+    "physical_uniqueness": "PASS",
+    "duplicate_fixture_id_groups": 0,
+    "exact_physical_duplicate_groups": 0,
+    "suspicious_same_pair_within_36h": 0,
+    "calibration_rows": 3065,
+    "calibration_unique_fixture_ids": 3065,
+    "freeze_rows": 3633,
+    "lane_v2_freeze_observation_count": 2805,
+    "lane_v2_settlement_count": 2263,
+    "lane_v2_pending_settlement_count": 542,
+    "new_settlement_count": 26,
+    "settlement_final_only": true,
+    "settlement_sync_status": "PASS",
+    "supervisor_status": "PASS",
+    "no_backfill": true,
+    "parameter_tuning_allowed": false,
+    "real_money": "BLOCKED",
+    "automatic_wagering": false
+  },
+  "lanes_verified": [
+    "1X2",
+    "OVER_2_5",
+    "UNDER_2_5",
+    "DOUBLE_CHANCE_1X",
+    "DOUBLE_CHANCE_X2"
+  ],
+  "market_expansion_probe": {
+    "status": "PASS",
+    "player_shots_lineup_observed_count": 0,
+    "player_shots_prospective_freeze_allowed": false,
+    "team_fouls_live_hit_count": 0,
+    "team_total_shots_live_hit_count": 0,
+    "team_total_shots_prospective_freeze_allowed": false,
+    "team_total_shots_scope_alignment_certified": true
+  },
+  "note": "3065 is the global prospective calibration ledger unique fixture count; 2263 is the V2 per-lane eligible/settled observation count. These are distinct scopes and are not treated as equal counters.",
+  "resolution": "FOOTBALL_SUPERVISOR_AND_MARKET_EXPANSION_EVIDENCE_AUDITED_COMPLIANT"
+}
