@@ -1,5 +1,5 @@
 {
-  "as_of_utc": "2026-10-18T20:05:13+00:00",
+  "as_of_utc": "2026-10-18T21:23:13+00:00",
   "automatic_model_feed": false,
   "automatic_model_promotion": false,
   "automatic_wagering": false,
@@ -873,10 +873,68 @@
       "tour_level": "C",
       "world_source_snapshot_sha256": "e52945a2aeb33bfed7a4545fa3ebb2ef914a188bf917ab1fb8ad06232f2d1824",
       "world_stable_physical_identity_key": "b1d5c540d32d2454646b177dabf834ff95bcdea4568e42167898be9466d59b1f"
+    },
+    {
+      "canonical_source_event_id": "rapidapi-tennis:atp:match:297493",
+      "competition": "Fort Worth Challenger",
+      "competition_id": "rapidapi-tennis:tournament:22106",
+      "event_id": "rapidapi-tennis:atp:match:297493",
+      "event_start_utc": "2026-10-19T15:00:00+00:00",
+      "historical_identity_crosswalk_status": "PENDING",
+      "legacy_provider_event_id": "rapidapi-tennis:match:297493",
+      "physical_event_key": "db1c87548e4dfd68b49f89ef54de1f5ebdcb1f835bc38331e86f8ec1bc2202b9",
+      "player_identities": [
+        {
+          "display_name": "Kenta Miyoshi",
+          "provider": "rapidapi_tennis",
+          "provider_player_id": "rapidapi-tennis:player:96788"
+        },
+        {
+          "display_name": "Sander Jong",
+          "provider": "rapidapi_tennis",
+          "provider_player_id": "rapidapi-tennis:player:84237"
+        }
+      ],
+      "players": [
+        {
+          "name": "Kenta Miyoshi",
+          "provider_player_id": "rapidapi-tennis:player:96788",
+          "provider_ranking": {
+            "country": "JPN",
+            "place": "447",
+            "player": "Kenta Miyoshi",
+            "points": "108",
+            "snapshot_date": "2026-09-21"
+          }
+        },
+        {
+          "name": "Sander Jong",
+          "provider_player_id": "rapidapi-tennis:player:84237",
+          "provider_ranking": {
+            "country": "NED",
+            "place": "534",
+            "player": "Sander Jong",
+            "points": "81",
+            "snapshot_date": "2026-09-21"
+          }
+        }
+      ],
+      "provider_channel": "ATP",
+      "provider_source_event_id": "rapidapi-tennis:atp:match:297493",
+      "round": "Q3",
+      "source_id_collision_resolved": false,
+      "source_provider": "rapidapi_tennis",
+      "source_reference": "fixtures:matchId=297493;tournament_info=22106;ranking_cut=2026-09-21;provider_channel=ATP",
+      "source_snapshot_sha256": "42eddd4d5759584e74188039220f2675313a90ab04921cea5e3788bb235ea2e3",
+      "surface": "Hard",
+      "target_period": 20260921,
+      "tour_level": "C",
+      "world_source_snapshot_sha256": "ef9143ebd4fc7c0297fe672f428d114936f5da2bd1d455098d38353b7b4b4213",
+      "world_stable_physical_identity_key": "e26ecf5f13a278a5c210461883dd1b5e0eeb065a809cc509569ae09a4bf422a4"
     }
   ],
-  "eligible_input_events": 15,
-  "fixture_rows": 17,
+  "eligible_input_events": 16,
+  "fixture_rows": 18,
   "governed_preregistration_required": true,
   "metrics_opened": false,
   "network_calls": 12,
@@ -962,8 +1020,8 @@
     ],
     "schema": "MATRIX_COR0203_EXACT_CUT_RANK_HISTORY_RECOVERY_V1"
   },
-  "ranking_players_found": 32,
-  "ranking_players_requested": 34,
+  "ranking_players_found": 34,
+  "ranking_players_requested": 36,
   "ranking_profile_alias_recovered_count": 0,
   "ranking_profile_alias_recovery": {
     "blocked": [
@@ -1022,15 +1080,16 @@
     "rapidapi-tennis:atp:match:255074",
     "rapidapi-tennis:atp:match:255075",
     "rapidapi-tennis:atp:match:255077",
-    "rapidapi-tennis:atp:match:255079"
+    "rapidapi-tennis:atp:match:255079",
+    "rapidapi-tennis:atp:match:297493"
   ],
-  "world_domain_candidates_input": 17,
+  "world_domain_candidates_input": 18,
   "world_identity_binding_rejection_count": 0,
-  "world_inventory_sha256": "32e21ae0243579658a31549a6ae917507e11a7477846617d7c71587f9e194396",
+  "world_inventory_sha256": "4d9cfdde5cfc59e1179eb6971ef8698a83e630fa5668004a3094b964c861425b",
   "world_inventory_target_date": "2026-10-19",
-  "world_inventory_total": 76,
+  "world_inventory_total": 102,
   "world_registry": {
-    "as_of_utc": "2026-10-18T20:05:13+00:00",
+    "as_of_utc": "2026-10-18T21:23:13+00:00",
     "cor0203_denominator_definition": "derived subset: future ATP Challenger Hard events with two real fixed identities and valid source provenance",
     "cor0203_eligible_event_ids": [
       "rapidapi-tennis:match:262131",
@@ -1047,9 +1106,10 @@
       "rapidapi-tennis:match:255074",
       "rapidapi-tennis:match:255075",
       "rapidapi-tennis:match:255077",
-      "rapidapi-tennis:match:255079"
+      "rapidapi-tennis:match:255079",
+      "rapidapi-tennis:match:297493"
     ],
-    "cor0203_eligible_events": 15,
+    "cor0203_eligible_events": 16,
     "duplicate_rows": 0,
     "rows": [
       {
@@ -1336,14 +1396,33 @@
         "surface": "Hard",
         "tour_level": "ATP_CHALLENGER",
         "world_calendar_status": "PRESERVED"
+      },
+      {
+        "competition_id": "rapidapi-tennis:tournament:22106",
+        "competition_name": "Fort Worth Challenger",
+        "cor0203_blockers": [],
+        "cor0203_eligible": true,
+        "environment": "UNKNOWN",
+        "event_id": "rapidapi-tennis:match:297493",
+        "event_start_utc": "2026-10-19T15:00:00+00:00",
+        "player1_id": "rapidapi-tennis:player:96788",
+        "player2_id": "rapidapi-tennis:player:84237",
+        "round": "Q3",
+        "source_provider": "rapidapi_tennis",
+        "source_reference": "fixtures:matchId=297493;tournament_info=22106;ranking_cut=2026-09-21",
+        "source_snapshot_sha256": "42eddd4d5759584e74188039220f2675313a90ab04921cea5e3788bb235ea2e3",
+        "sport": "TENNIS",
+        "surface": "Hard",
+        "tour_level": "ATP_CHALLENGER",
+        "world_calendar_status": "PRESERVED"
       }
     ],
     "schema": "matrix.world-calendar-registry/1",
     "world_calendar_denominator_definition": "all unique discovered scheduled events preserved before model-domain filtering",
-    "world_calendar_input_rows": 15,
-    "world_calendar_unique_events": 15
+    "world_calendar_input_rows": 16,
+    "world_calendar_unique_events": 16
   },
   "world_rows_malformed": [],
-  "world_rows_synthesized": 17,
+  "world_rows_synthesized": 18,
   "world_source_event_id_collision_count": 0
 }
