@@ -145,34 +145,28 @@
     }
   ],
   "correlated_risk_calibration": {
-    "agreement_wilson_upper95": 0.5390214373254855,
-    "generated_at_utc": "2026-10-18T02:22:28+00:00",
-    "limits": {
-      "max_day_fraction": 0.3,
-      "max_fixture_fraction": 0.005,
-      "max_tournament_day_fraction": 0.015
+    "basis": "PHYSICAL_PAPER_LEDGER_NO_SYNTHETIC_CORRELATION",
+    "caps": {
+      "daily_cap_fraction": 0.13,
+      "daily_policy_ceiling_fraction": 0.3,
+      "fixture_cap_cop": 25000.0,
+      "tournament_day_cap_cop": 75000.0,
+      "tournament_day_policy_ceiling_cop": 75000.0
     },
-    "method": {
-      "concentration_quantile": "nearest-rank p95",
-      "day_ceiling": "existing governed daily cap = 30%",
-      "fixture_ceiling": "1u = 0.5% initial bankroll",
-      "historical_overexposure_can_raise_caps": false,
-      "pair_dependence_diagnostic": "same-league/day binary outcome agreement + Wilson 95% upper bound",
-      "sample": "real settled paper bets only",
-      "tournament_day_ceiling": "existing 3-signal league/day policy = 1.5% under flat 1u"
+    "h02_closed": false,
+    "observed_maxima_cop": {
+      "operational_day": 650000.0,
+      "same_fixture_day": 75000.0,
+      "same_tournament_day": 225000.0
     },
-    "observed_pair_agreement_rate": 0.5167014613778705,
-    "protections": {
-      "automatic_wagering": false,
-      "ev_modified": false,
-      "odds_used_to_generate_probability": false,
-      "p_matrix_modified": false,
-      "real_money": "BLOCKED"
+    "pairwise_cross_market_correlation": {
+      "calibrated": false,
+      "reason": "SINGLE_MARKET_TELEGRAM_LEDGER_NO_ADJUDICABLE_CROSS_MARKET_PAIRS"
     },
-    "same_league_day_outcome_pairs": 1916,
-    "sample_settled": 153,
-    "schema": "MATRIX_CORRELATED_RISK_CALIBRATION_V1",
-    "status": "PASS_EMPIRICAL_CONCENTRATION_CALIBRATION"
+    "real_money": "BLOCKED",
+    "sample_records": 43,
+    "schema": "MATRIX_EMPIRICAL_CORRELATED_EXPOSURE_CALIBRATION_V1",
+    "status": "READY_FAIL_CLOSED"
   },
   "created_at_utc": "2026-10-08T14:13:02+00:00",
   "delivery_failures": [],
@@ -321,7 +315,7 @@
   },
   "pre_send_gate": {
     "0130da1a6f1c7afe4fd2ff9c2e178b9988afcb285db41ef379da1befe8de99fb": {
-      "checked_at_utc": "2026-10-18T02:22:28+00:00",
+      "checked_at_utc": "2026-10-18T02:23:52+00:00",
       "fixture_id": "1595707",
       "kickoff": "2026-10-17T10:00:00+00:00",
       "league_id": "488",
@@ -329,7 +323,7 @@
       "window_minutes": 120
     },
     "02b734687881eb853dfb96ff34f012a9272fc6f15f9def8976bbdd40c2ecef8e": {
-      "checked_at_utc": "2026-10-18T02:22:28+00:00",
+      "checked_at_utc": "2026-10-18T02:23:52+00:00",
       "fixture_id": "1564360",
       "kickoff": "2026-10-17T11:30:00+00:00",
       "league_id": "41",
@@ -337,7 +331,7 @@
       "window_minutes": 120
     },
     "03b6a99881ec4728f3a732169b5194175568edbf36c47dda465eff6472a3135c": {
-      "checked_at_utc": "2026-10-18T02:22:28+00:00",
+      "checked_at_utc": "2026-10-18T02:23:52+00:00",
       "fixture_id": "1495987",
       "kickoff": "2026-10-18T15:00:00+00:00",
       "league_id": "104",
@@ -345,7 +339,7 @@
       "window_minutes": 120
     },
     "03e6ef0581c103613c218408b9463f351b8713e52edef09acb1662c94b7587c2": {
-      "checked_at_utc": "2026-10-18T02:22:28+00:00",
+      "checked_at_utc": "2026-10-18T02:23:52+00:00",
       "fixture_id": "1631769",
       "kickoff": "2026-10-17T22:00:00+00:00",
       "league_id": "722",
@@ -353,7 +347,7 @@
       "window_minutes": 120
     },
     "041cb7db87a48896ad45faaf114545bd54ee613112e8efbb642cf4e3179f8f7a": {
-      "checked_at_utc": "2026-10-18T02:22:28+00:00",
+      "checked_at_utc": "2026-10-18T02:23:52+00:00",
       "fixture_id": "1511429",
       "kickoff": "2026-10-18T12:00:00+00:00",
       "league_id": "596",
@@ -361,7 +355,7 @@
       "window_minutes": 120
     },
     "04b9d647de56dc35ce87bd721e4a634e49f6af6f6e980231d2c9b45b665d4b8d": {
-      "checked_at_utc": "2026-10-18T02:22:28+00:00",
+      "checked_at_utc": "2026-10-18T02:23:52+00:00",
       "fixture_id": "1495988",
       "kickoff": "2026-10-18T15:00:00+00:00",
       "league_id": "104",
@@ -377,7 +371,7 @@
       "window_minutes": 120
     },
     "07b4622439db1ded0cd271ae40c1b9e928827d96d8302c8675797b0a6fb7993d": {
-      "checked_at_utc": "2026-10-18T02:22:28+00:00",
+      "checked_at_utc": "2026-10-18T02:23:52+00:00",
       "fixture_id": "1586607",
       "kickoff": "2026-10-16T17:30:00+00:00",
       "league_id": "84",
@@ -484,7 +478,7 @@
       "window_minutes": 120
     },
     "0a0dcdffb98521ca2522bb1af727553e285b2af1ab0581e8c3db5d44693d70da": {
-      "checked_at_utc": "2026-10-18T02:22:28+00:00",
+      "checked_at_utc": "2026-10-18T02:23:52+00:00",
       "fixture_id": "1595715",
       "kickoff": "2026-10-18T12:00:00+00:00",
       "league_id": "488",
@@ -5728,7 +5722,7 @@
       "window_minutes": 120
     },
     "0ca1b3e6fd18792263aa756c034d37ada9a8d335f71d2a1e12dee25555b4d6a6": {
-      "checked_at_utc": "2026-10-18T02:22:28+00:00",
+      "checked_at_utc": "2026-10-18T02:23:52+00:00",
       "fixture_id": "1552785",
       "kickoff": "2026-10-16T18:45:00+00:00",
       "league_id": "61",
@@ -5736,7 +5730,7 @@
       "window_minutes": 120
     },
     "0caa5fef7a85f89e65acbf6deef58a9dd86e061e05fc1a88dc1e391411381835": {
-      "checked_at_utc": "2026-10-18T02:22:28+00:00",
+      "checked_at_utc": "2026-10-18T02:23:52+00:00",
       "fixture_id": "1616127",
       "kickoff": "2026-10-17T11:00:00+00:00",
       "league_id": "450",
@@ -5744,7 +5738,7 @@
       "window_minutes": 120
     },
     "0cb625ba5e5e79b07c4651fd37baf684cbde8bdf4d4639da91a703601d844230": {
-      "checked_at_utc": "2026-10-18T02:22:28+00:00",
+      "checked_at_utc": "2026-10-18T02:23:52+00:00",
       "fixture_id": "1495985",
       "kickoff": "2026-10-18T15:00:00+00:00",
       "league_id": "104",
@@ -5752,7 +5746,7 @@
       "window_minutes": 120
     },
     "0deab2fbb7fcda73f747eeb7dab55bb7233071d150e7d2cdb9ad7f6f93bb6978": {
-      "checked_at_utc": "2026-10-18T02:22:28+00:00",
+      "checked_at_utc": "2026-10-18T02:23:52+00:00",
       "fixture_id": "1592546",
       "kickoff": "2026-10-16T17:30:00+00:00",
       "league_id": "751",
@@ -5760,7 +5754,7 @@
       "window_minutes": 120
     },
     "1003ff1dd1360d6348280c2e45cbbe85b577fc28688c773bf086c76857d8c08a": {
-      "checked_at_utc": "2026-10-18T02:22:28+00:00",
+      "checked_at_utc": "2026-10-18T02:23:52+00:00",
       "fixture_id": "1613071",
       "kickoff": "2026-10-18T10:00:00+00:00",
       "league_id": "440",
@@ -5768,7 +5762,7 @@
       "window_minutes": 120
     },
     "115bc8ce75824d444b94e30d7ab8f3c46587a1913a0683d74792e01ecc199bcc": {
-      "checked_at_utc": "2026-10-18T02:22:28+00:00",
+      "checked_at_utc": "2026-10-18T02:23:52+00:00",
       "fixture_id": "1547025",
       "kickoff": "2026-10-17T14:00:00+00:00",
       "league_id": "730",
@@ -5776,7 +5770,7 @@
       "window_minutes": 120
     },
     "1215b45a31ee0c69c7d463704bd1fa2f2b4452a294eec7d48f00bd163ba64805": {
-      "checked_at_utc": "2026-10-18T02:22:28+00:00",
+      "checked_at_utc": "2026-10-18T02:23:52+00:00",
       "fixture_id": "1618408",
       "kickoff": "2026-10-17T13:00:00+00:00",
       "league_id": "92",
@@ -5800,7 +5794,7 @@
       "window_minutes": 120
     },
     "13ddc58ce4a41c6dab7b9767fd24e54c5ff190e17e27015a7ef6999633c2e2ab": {
-      "checked_at_utc": "2026-10-18T02:22:28+00:00",
+      "checked_at_utc": "2026-10-18T02:23:52+00:00",
       "fixture_id": "1591644",
       "kickoff": "2026-10-18T11:30:00+00:00",
       "league_id": "205",
@@ -5808,7 +5802,7 @@
       "window_minutes": 120
     },
     "14af64fc5502411bd7f40767a04c05a653e73818aca4d11ac58430a53b34ae75": {
-      "checked_at_utc": "2026-10-18T02:22:28+00:00",
+      "checked_at_utc": "2026-10-18T02:23:52+00:00",
       "fixture_id": "1550155",
       "kickoff": "2026-10-18T10:30:00+00:00",
       "league_id": "135",
@@ -5816,7 +5810,7 @@
       "window_minutes": 120
     },
     "167b6b911116e8abc0fd8ecfe23f8da3d1ebad3cc9652ba217498100c8100504": {
-      "checked_at_utc": "2026-10-18T02:22:28+00:00",
+      "checked_at_utc": "2026-10-18T02:23:52+00:00",
       "fixture_id": "1551839",
       "kickoff": "2026-10-16T18:00:00+00:00",
       "league_id": "89",
@@ -5824,7 +5818,7 @@
       "window_minutes": 120
     },
     "16ae9f8c48b0cc466d1daebd881d08d0b78ef01cd3b0cd2b139a9e0fc49083d0": {
-      "checked_at_utc": "2026-10-18T02:22:28+00:00",
+      "checked_at_utc": "2026-10-18T02:23:52+00:00",
       "fixture_id": "1492995",
       "kickoff": "2026-10-16T18:45:00+00:00",
       "league_id": "358",
@@ -5840,7 +5834,7 @@
       "window_minutes": 120
     },
     "1767faf795189cbfe7641275ed3c7fd4bd03a2a6122a0ca58b462f1c73f7eea5": {
-      "checked_at_utc": "2026-10-18T02:22:28+00:00",
+      "checked_at_utc": "2026-10-18T02:23:52+00:00",
       "fixture_id": "1564898",
       "kickoff": "2026-10-16T18:45:00+00:00",
       "league_id": "407",
@@ -5848,7 +5842,7 @@
       "window_minutes": 120
     },
     "17a2e5bcb96f6bace8a18fa448ed8fc031268eee31f8ae0932d7cd5459b75ba3": {
-      "checked_at_utc": "2026-10-18T02:22:28+00:00",
+      "checked_at_utc": "2026-10-18T02:23:52+00:00",
       "fixture_id": "1595702",
       "kickoff": "2026-10-17T11:00:00+00:00",
       "league_id": "488",
@@ -5856,7 +5850,7 @@
       "window_minutes": 120
     },
     "17ec680ac13ace29e2476f909488921d4f3ea8e0b9235cb2b2526a11efceabc3": {
-      "checked_at_utc": "2026-10-18T02:22:28+00:00",
+      "checked_at_utc": "2026-10-18T02:23:52+00:00",
       "fixture_id": "1621047",
       "kickoff": "2026-10-16T18:00:00+00:00",
       "league_id": "702",
@@ -5864,7 +5858,7 @@
       "window_minutes": 120
     },
     "181aa578f6a53630f9f15ec81e088dddcbf3a9a6f8684a782daa3fda2b98562e": {
-      "checked_at_utc": "2026-10-18T02:22:28+00:00",
+      "checked_at_utc": "2026-10-18T02:23:52+00:00",
       "fixture_id": "1551840",
       "kickoff": "2026-10-16T18:00:00+00:00",
       "league_id": "89",
@@ -5872,7 +5866,7 @@
       "window_minutes": 120
     },
     "186b351090113758e85746ff7c3a4457e9699e44723435e154b05d5116fd2f03": {
-      "checked_at_utc": "2026-10-18T02:22:28+00:00",
+      "checked_at_utc": "2026-10-18T02:23:52+00:00",
       "fixture_id": "1490546",
       "kickoff": "2026-10-17T23:30:00+00:00",
       "league_id": "253",
@@ -5888,7 +5882,7 @@
       "window_minutes": 120
     },
     "19ac54d29491e4e93e8e70d9fc2c2181f98954c9288ff04d8db05259cd0936e0": {
-      "checked_at_utc": "2026-10-18T02:22:28+00:00",
+      "checked_at_utc": "2026-10-18T02:23:52+00:00",
       "fixture_id": "1618407",
       "kickoff": "2026-10-17T13:00:00+00:00",
       "league_id": "92",
@@ -5896,7 +5890,7 @@
       "window_minutes": 120
     },
     "19d5c4c2f58d77728e75e6977d5e6f5f585b29469a4943f2ee1eae854697f898": {
-      "checked_at_utc": "2026-10-18T02:22:28+00:00",
+      "checked_at_utc": "2026-10-18T02:23:52+00:00",
       "fixture_id": "1625627",
       "kickoff": "2026-10-18T13:00:00+00:00",
       "league_id": "430",
@@ -5904,7 +5898,7 @@
       "window_minutes": 120
     },
     "19f1134895e23d808612d3a79bee9ec24d3529e471d097f482cbc22addb9891e": {
-      "checked_at_utc": "2026-10-18T02:22:28+00:00",
+      "checked_at_utc": "2026-10-18T02:23:52+00:00",
       "fixture_id": "1595714",
       "kickoff": "2026-10-17T11:00:00+00:00",
       "league_id": "488",
@@ -5912,7 +5906,7 @@
       "window_minutes": 120
     },
     "1a53933daf59e219526739312d6ba29e73c71e56e9330e17a7aafd1f9a7a7769": {
-      "checked_at_utc": "2026-10-18T02:22:28+00:00",
+      "checked_at_utc": "2026-10-18T02:23:52+00:00",
       "fixture_id": "1568526",
       "kickoff": "2026-10-17T15:00:00+00:00",
       "league_id": "782",
@@ -5920,7 +5914,7 @@
       "window_minutes": 120
     },
     "1ac8e0fe3871cdb27af3f1fe81eb26a9e19f561e1b4104f44e87b39971b9c79d": {
-      "checked_at_utc": "2026-10-18T02:22:28+00:00",
+      "checked_at_utc": "2026-10-18T02:23:52+00:00",
       "fixture_id": "1631767",
       "kickoff": "2026-10-17T17:00:00+00:00",
       "league_id": "722",
@@ -5944,7 +5938,7 @@
       "window_minutes": 120
     },
     "1e895df094c484b45bf5e7e4d172b37e9131a417900f43e1d08c4676dbe97254": {
-      "checked_at_utc": "2026-10-18T02:22:28+00:00",
+      "checked_at_utc": "2026-10-18T02:23:52+00:00",
       "fixture_id": "1614599",
       "kickoff": "2026-10-18T16:00:00+00:00",
       "league_id": "445",
@@ -5960,7 +5954,7 @@
       "window_minutes": 120
     },
     "2243a2acf13d87352b0813378c7e04d1b90785b87fa9adb48b6d053ca57f7271": {
-      "checked_at_utc": "2026-10-18T02:22:28+00:00",
+      "checked_at_utc": "2026-10-18T02:23:52+00:00",
       "fixture_id": "1621978",
       "kickoff": "2026-10-17T10:00:00+00:00",
       "league_id": "696",
@@ -5968,7 +5962,7 @@
       "window_minutes": 120
     },
     "24de290f87defcb8d909ac62c47f1b9c456b7e2f6e0d5a300b7e7b8fd7ec25dc": {
-      "checked_at_utc": "2026-10-18T02:22:28+00:00",
+      "checked_at_utc": "2026-10-18T02:23:52+00:00",
       "fixture_id": "1621980",
       "kickoff": "2026-10-17T11:00:00+00:00",
       "league_id": "696",
@@ -5976,7 +5970,7 @@
       "window_minutes": 120
     },
     "250ede779a28cf53d33ed8848d053a291a09c493ca5758f708c5a8e2c562f854": {
-      "checked_at_utc": "2026-10-18T02:22:28+00:00",
+      "checked_at_utc": "2026-10-18T02:23:52+00:00",
       "fixture_id": "1579507",
       "kickoff": "2026-10-17T13:00:00+00:00",
       "league_id": "492",
@@ -5984,7 +5978,7 @@
       "window_minutes": 120
     },
     "267898562185af3827f731a2f9903636b0121a6ce22fd3f3bc659ad291297d65": {
-      "checked_at_utc": "2026-10-18T02:22:28+00:00",
+      "checked_at_utc": "2026-10-18T02:23:52+00:00",
       "fixture_id": "1575190",
       "kickoff": "2026-10-17T13:30:00+00:00",
       "league_id": "78",
@@ -5992,7 +5986,7 @@
       "window_minutes": 120
     },
     "26d0f8538b181151796a4b0ef8882b49494415b617bdd858aeaebcf389bfa122": {
-      "checked_at_utc": "2026-10-18T02:22:28+00:00",
+      "checked_at_utc": "2026-10-18T02:23:52+00:00",
       "fixture_id": "1629037",
       "kickoff": "2026-10-16T18:00:00+00:00",
       "league_id": "209",
@@ -6000,7 +5994,7 @@
       "window_minutes": 120
     },
     "26f8df540fe35c15d9e5f5a176eb29b1da8c3078f3ff8947d6dedb7b2576053f": {
-      "checked_at_utc": "2026-10-18T02:22:28+00:00",
+      "checked_at_utc": "2026-10-18T02:23:52+00:00",
       "fixture_id": "1511247",
       "kickoff": "2026-10-18T12:00:00+00:00",
       "league_id": "595",
@@ -6008,7 +6002,7 @@
       "window_minutes": 120
     },
     "2799f7f2913aa24afa580ec9febbe415dbc8c4d08574421be8477c66e61a3a0f": {
-      "checked_at_utc": "2026-10-18T02:22:28+00:00",
+      "checked_at_utc": "2026-10-18T02:23:52+00:00",
       "fixture_id": "1591642",
       "kickoff": "2026-10-18T12:00:00+00:00",
       "league_id": "205",
@@ -6016,7 +6010,7 @@
       "window_minutes": 120
     },
     "27b70c2afe118cf2d7b9a4175dd0d46f7646404b41201c0309229de92c522860": {
-      "checked_at_utc": "2026-10-18T02:22:28+00:00",
+      "checked_at_utc": "2026-10-18T02:23:52+00:00",
       "fixture_id": "1495989",
       "kickoff": "2026-10-18T15:00:00+00:00",
       "league_id": "104",
@@ -6024,7 +6018,7 @@
       "window_minutes": 120
     },
     "27f8d704b60cc78ceb1aae14a8653fcd976ea5b5fe0744ba895ebcb09d03b342": {
-      "checked_at_utc": "2026-10-18T02:22:28+00:00",
+      "checked_at_utc": "2026-10-18T02:23:52+00:00",
       "fixture_id": "1595705",
       "kickoff": "2026-10-18T09:00:00+00:00",
       "league_id": "488",
@@ -6032,7 +6026,7 @@
       "window_minutes": 120
     },
     "2896f18b141654bb2c6f325e2d5df0a626be5c64e65cd226c0730ad43f70fe6b": {
-      "checked_at_utc": "2026-10-18T02:22:28+00:00",
+      "checked_at_utc": "2026-10-18T02:23:52+00:00",
       "fixture_id": "1595695",
       "kickoff": "2026-10-17T11:30:00+00:00",
       "league_id": "488",
@@ -6040,7 +6034,7 @@
       "window_minutes": 120
     },
     "28e04d3660134bb0d59f6cf89661052ee99972f8a8290a72fdc8bc22cc3bfdf5": {
-      "checked_at_utc": "2026-10-18T02:22:28+00:00",
+      "checked_at_utc": "2026-10-18T02:23:52+00:00",
       "fixture_id": "1578717",
       "kickoff": "2026-10-17T14:00:00+00:00",
       "league_id": "731",
@@ -6048,7 +6042,7 @@
       "window_minutes": 120
     },
     "29dd4efe6d4a63430b2ef49daac7d587e7535a1189af33cbe82dd4e75e3c3859": {
-      "checked_at_utc": "2026-10-18T02:22:28+00:00",
+      "checked_at_utc": "2026-10-18T02:23:52+00:00",
       "fixture_id": "1641829",
       "kickoff": "2026-10-16T22:00:00+00:00",
       "league_id": "909",
@@ -6056,7 +6050,7 @@
       "window_minutes": 120
     },
     "29ff32b2f42b70550947cdd08ee51f86e33114179c363dda04d468ee0de28aaa": {
-      "checked_at_utc": "2026-10-18T02:22:28+00:00",
+      "checked_at_utc": "2026-10-18T02:23:52+00:00",
       "fixture_id": "1578724",
       "kickoff": "2026-10-17T14:00:00+00:00",
       "league_id": "731",
@@ -6064,7 +6058,7 @@
       "window_minutes": 120
     },
     "2a6dd8f6521b97ad8b74bc97460150ecd921f8fe37f63917a6649d87e79bdde2": {
-      "checked_at_utc": "2026-10-18T02:22:28+00:00",
+      "checked_at_utc": "2026-10-18T02:23:52+00:00",
       "fixture_id": "1557434",
       "kickoff": "2026-10-17T16:30:00+00:00",
       "league_id": "39",
@@ -6072,7 +6066,7 @@
       "window_minutes": 120
     },
     "2ad50a379b34abd0fb9028734f90914b508de6d622002adf6ad7a8bde9999eec": {
-      "checked_at_utc": "2026-10-18T02:22:28+00:00",
+      "checked_at_utc": "2026-10-18T02:23:52+00:00",
       "fixture_id": "1595700",
       "kickoff": "2026-10-17T11:00:00+00:00",
       "league_id": "488",
@@ -6080,7 +6074,7 @@
       "window_minutes": 120
     },
     "2bd65b77d9ed9396f85a147d1c1003bb6aebfaa6bfb0a562a1a3fda90cce79f6": {
-      "checked_at_utc": "2026-10-18T02:22:28+00:00",
+      "checked_at_utc": "2026-10-18T02:23:52+00:00",
       "fixture_id": "1490554",
       "kickoff": "2026-10-18T02:30:00+00:00",
       "league_id": "253",
@@ -8242,7 +8236,7 @@
       "window_minutes": 120
     },
     "2bf8d97e6ad5b20b4b32032cf9626510ed203f90d61e3c11e9d54b45ef926c0d": {
-      "checked_at_utc": "2026-10-18T02:22:28+00:00",
+      "checked_at_utc": "2026-10-18T02:23:52+00:00",
       "fixture_id": "1606194",
       "kickoff": "2026-10-17T13:00:00+00:00",
       "league_id": "177",
@@ -8266,7 +8260,7 @@
       "window_minutes": 120
     },
     "2cded02e413fbbe5cfa044865ce0b40000ed2420b6f54c15414a5957c19eb0cd": {
-      "checked_at_utc": "2026-10-18T02:22:28+00:00",
+      "checked_at_utc": "2026-10-18T02:23:52+00:00",
       "fixture_id": "1570419",
       "kickoff": "2026-10-18T12:00:00+00:00",
       "league_id": "140",
@@ -8282,7 +8276,7 @@
       "window_minutes": 120
     },
     "2dbc0e2891289d10b474dcadbd06a30765f1c7254710dbe455cdf596f620429e": {
-      "checked_at_utc": "2026-10-18T02:22:28+00:00",
+      "checked_at_utc": "2026-10-18T02:23:52+00:00",
       "fixture_id": "1595701",
       "kickoff": "2026-10-17T12:00:00+00:00",
       "league_id": "488",
@@ -8290,7 +8284,7 @@
       "window_minutes": 120
     },
     "2f198694eecfbe903cdf47adae99dda4fd539ccf0368a61fb661a5f475736ccc": {
-      "checked_at_utc": "2026-10-18T02:22:28+00:00",
+      "checked_at_utc": "2026-10-18T02:23:52+00:00",
       "fixture_id": "1563207",
       "kickoff": "2026-10-17T11:30:00+00:00",
       "league_id": "40",
@@ -8298,7 +8292,7 @@
       "window_minutes": 120
     },
     "2f21075e0829a74456bdf651dbfab0955bead32f0b0af5d8d862efd97924cdae": {
-      "checked_at_utc": "2026-10-18T02:22:28+00:00",
+      "checked_at_utc": "2026-10-18T02:23:52+00:00",
       "fixture_id": "1596026",
       "kickoff": "2026-10-17T14:00:00+00:00",
       "league_id": "58",
@@ -8314,7 +8308,7 @@
       "window_minutes": 120
     },
     "3094234813927dbc49020b2d63f15d39a5ae3a7606fb71f2026a42a230772f5f": {
-      "checked_at_utc": "2026-10-18T02:22:28+00:00",
+      "checked_at_utc": "2026-10-18T02:23:52+00:00",
       "fixture_id": "1547023",
       "kickoff": "2026-10-17T14:00:00+00:00",
       "league_id": "730",
@@ -8322,7 +8316,7 @@
       "window_minutes": 120
     },
     "30b71d6ef05f368720a8874ec2b872b252e05651d319cb48b693023db361ec12": {
-      "checked_at_utc": "2026-10-18T02:22:28+00:00",
+      "checked_at_utc": "2026-10-18T02:23:52+00:00",
       "fixture_id": "1557433",
       "kickoff": "2026-10-17T14:00:00+00:00",
       "league_id": "39",
@@ -8330,7 +8324,7 @@
       "window_minutes": 120
     },
     "31b55d656164c71f67a3289811a21c423dcd5df5d05d3e414f81995d5e7a932f": {
-      "checked_at_utc": "2026-10-18T02:22:28+00:00",
+      "checked_at_utc": "2026-10-18T02:23:52+00:00",
       "fixture_id": "1511427",
       "kickoff": "2026-10-18T12:00:00+00:00",
       "league_id": "596",
@@ -8354,7 +8348,7 @@
       "window_minutes": 120
     },
     "3212416ac1bdc7d8ca1f192524d2c113291566209bd528538a62f8e6a48e2017": {
-      "checked_at_utc": "2026-10-18T02:22:28+00:00",
+      "checked_at_utc": "2026-10-18T02:23:52+00:00",
       "fixture_id": "1490545",
       "kickoff": "2026-10-17T23:30:00+00:00",
       "league_id": "253",
@@ -8362,7 +8356,7 @@
       "window_minutes": 120
     },
     "323a8c90e4b30ca3d2f4b5e75c22760c56eccd083e70f02c800532e4527e9195": {
-      "checked_at_utc": "2026-10-18T02:22:28+00:00",
+      "checked_at_utc": "2026-10-18T02:23:52+00:00",
       "fixture_id": "1547027",
       "kickoff": "2026-10-17T14:00:00+00:00",
       "league_id": "730",
@@ -8378,7 +8372,7 @@
       "window_minutes": 120
     },
     "3351e02117842a6b784088dcc8174758184cab04bb7a8e4903c7429542b15c74": {
-      "checked_at_utc": "2026-10-18T02:22:28+00:00",
+      "checked_at_utc": "2026-10-18T02:23:52+00:00",
       "fixture_id": "1595689",
       "kickoff": "2026-10-18T10:00:00+00:00",
       "league_id": "488",
@@ -8386,7 +8380,7 @@
       "window_minutes": 120
     },
     "33582b5b0088ae75205bb597100e5c91338e284b9d36c6d3933870dc64545f2f": {
-      "checked_at_utc": "2026-10-18T02:22:28+00:00",
+      "checked_at_utc": "2026-10-18T02:23:52+00:00",
       "fixture_id": "1579505",
       "kickoff": "2026-10-17T12:30:00+00:00",
       "league_id": "492",
@@ -8410,7 +8404,7 @@
       "window_minutes": 120
     },
     "35f7e6c5f27d1e1a25f47451a113e52ad283fef3c6922caba08b96e2546a34fc": {
-      "checked_at_utc": "2026-10-18T02:22:28+00:00",
+      "checked_at_utc": "2026-10-18T02:23:52+00:00",
       "fixture_id": "1606195",
       "kickoff": "2026-10-17T13:00:00+00:00",
       "league_id": "177",
@@ -8418,7 +8412,7 @@
       "window_minutes": 120
     },
     "3857845219c745a3fca3294684c25c219ccea8807cc5b611a08149bedf952fd3": {
-      "checked_at_utc": "2026-10-18T02:22:28+00:00",
+      "checked_at_utc": "2026-10-18T02:23:52+00:00",
       "fixture_id": "1596496",
       "kickoff": "2026-10-17T14:00:00+00:00",
       "league_id": "59",
@@ -8426,7 +8420,7 @@
       "window_minutes": 120
     },
     "388bc44a99b788db5261a0aa075c0e3332aef059e98dc8d5551a506f218c991d": {
-      "checked_at_utc": "2026-10-18T02:22:28+00:00",
+      "checked_at_utc": "2026-10-18T02:23:52+00:00",
       "fixture_id": "1578729",
       "kickoff": "2026-10-17T14:00:00+00:00",
       "league_id": "731",
@@ -8434,7 +8428,7 @@
       "window_minutes": 120
     },
     "38e9d01ce6fb05498dc69a8510ab400fb16c7247a6445d2c085629a4b8a35230": {
-      "checked_at_utc": "2026-10-18T02:22:28+00:00",
+      "checked_at_utc": "2026-10-18T02:23:52+00:00",
       "fixture_id": "1595713",
       "kickoff": "2026-10-17T11:00:00+00:00",
       "league_id": "488",
@@ -8450,7 +8444,7 @@
       "window_minutes": 120
     },
     "3a116b93fdda1ffde10f9d27c588b0b19ac569695c7d3cb17e375a538e9df9a5": {
-      "checked_at_utc": "2026-10-18T02:22:28+00:00",
+      "checked_at_utc": "2026-10-18T02:23:52+00:00",
       "fixture_id": "1614598",
       "kickoff": "2026-10-18T09:30:00+00:00",
       "league_id": "445",
@@ -8458,7 +8452,7 @@
       "window_minutes": 120
     },
     "3a9ae104416e843c2b1961dfb589ebfc1f88bd3ab2d61fff475eb960743ea98d": {
-      "checked_at_utc": "2026-10-18T02:22:28+00:00",
+      "checked_at_utc": "2026-10-18T02:23:52+00:00",
       "fixture_id": "1490548",
       "kickoff": "2026-10-18T00:30:00+00:00",
       "league_id": "253",
@@ -8565,7 +8559,7 @@
       "window_minutes": 120
     },
     "3c092625d12f27cfdc925417b9bf77ff33a95cea5e743b0334a1ba4c7ac74d80": {
-      "checked_at_utc": "2026-10-18T02:22:28+00:00",
+      "checked_at_utc": "2026-10-18T02:23:52+00:00",
       "fixture_id": "1621981",
       "kickoff": "2026-10-17T11:30:00+00:00",
       "league_id": "696",
@@ -8581,7 +8575,7 @@
       "window_minutes": 120
     },
     "3d80693417706bc4a281ec91eae6300a84d1726024360869fcde27b267985a37": {
-      "checked_at_utc": "2026-10-18T02:22:28+00:00",
+      "checked_at_utc": "2026-10-18T02:23:52+00:00",
       "fixture_id": "1590731",
       "kickoff": "2026-10-18T12:00:00+00:00",
       "league_id": "553",
@@ -8597,7 +8591,7 @@
       "window_minutes": 120
     },
     "3fc8de8c2c6ebc50bb98b222614c4c54956d23f65dfd6e58728ab8beff24f8cb": {
-      "checked_at_utc": "2026-10-18T02:22:28+00:00",
+      "checked_at_utc": "2026-10-18T02:23:52+00:00",
       "fixture_id": "1578728",
       "kickoff": "2026-10-17T14:00:00+00:00",
       "league_id": "731",
@@ -8613,7 +8607,7 @@
       "window_minutes": 120
     },
     "40e367752645817bb8a48d01543164d5dd7f7977b14340f1f0d745f4665ae0e6": {
-      "checked_at_utc": "2026-10-18T02:22:28+00:00",
+      "checked_at_utc": "2026-10-18T02:23:52+00:00",
       "fixture_id": "1621977",
       "kickoff": "2026-10-17T11:00:00+00:00",
       "league_id": "696",
@@ -8621,7 +8615,7 @@
       "window_minutes": 120
     },
     "40ee9147de72de2ebe9db02325add509bebcc46a22cc65148c545305b40e56ac": {
-      "checked_at_utc": "2026-10-18T02:22:28+00:00",
+      "checked_at_utc": "2026-10-18T02:23:52+00:00",
       "fixture_id": "1618413",
       "kickoff": "2026-10-17T16:00:00+00:00",
       "league_id": "92",
@@ -8629,7 +8623,7 @@
       "window_minutes": 120
     },
     "412d941bb0a3d500a6612f4dfe236bfba943075912fafc95a652128fde98b1f4": {
-      "checked_at_utc": "2026-10-18T02:22:28+00:00",
+      "checked_at_utc": "2026-10-18T02:23:52+00:00",
       "fixture_id": "1596501",
       "kickoff": "2026-10-17T14:00:00+00:00",
       "league_id": "59",
@@ -9138,7 +9132,7 @@
       "window_minutes": 120
     },
     "42bc59e378ab681bafc738b3a5a1725b7e8b7a540b064c72ef6bc0f75426d30f": {
-      "checked_at_utc": "2026-10-18T02:22:28+00:00",
+      "checked_at_utc": "2026-10-18T02:23:52+00:00",
       "fixture_id": "1608103",
       "kickoff": "2026-10-16T17:15:00+00:00",
       "league_id": "1239",
@@ -9146,7 +9140,7 @@
       "window_minutes": 120
     },
     "431a6bb25db1e66c627790564f9b74b991c808c1e0a0fe7d27c3fdedebb619b2": {
-      "checked_at_utc": "2026-10-18T02:22:28+00:00",
+      "checked_at_utc": "2026-10-18T02:23:52+00:00",
       "fixture_id": "1595692",
       "kickoff": "2026-10-17T10:30:00+00:00",
       "league_id": "488",
@@ -9154,7 +9148,7 @@
       "window_minutes": 120
     },
     "43ffaf3f796f03300f5870969e5e6e9d1251349fa51d3a0b661dfebb627b127c": {
-      "checked_at_utc": "2026-10-18T02:22:28+00:00",
+      "checked_at_utc": "2026-10-18T02:23:52+00:00",
       "fixture_id": "1495990",
       "kickoff": "2026-10-18T12:30:00+00:00",
       "league_id": "104",
@@ -9162,7 +9156,7 @@
       "window_minutes": 120
     },
     "444cc78550727c1066ab5165a58e7927fdc76b3db94cd181e6d44a8bbd51c573": {
-      "checked_at_utc": "2026-10-18T02:22:28+00:00",
+      "checked_at_utc": "2026-10-18T02:23:52+00:00",
       "fixture_id": "1592545",
       "kickoff": "2026-10-16T17:30:00+00:00",
       "league_id": "751",
@@ -9170,7 +9164,7 @@
       "window_minutes": 120
     },
     "4613495f1acdbcbca9a91184f634f2be0280d40e99f7720b5837b58604e89ab4": {
-      "checked_at_utc": "2026-10-18T02:22:28+00:00",
+      "checked_at_utc": "2026-10-18T02:23:52+00:00",
       "fixture_id": "1581455",
       "kickoff": "2026-10-17T03:00:00+00:00",
       "league_id": "263",
@@ -9186,7 +9180,7 @@
       "window_minutes": 120
     },
     "46889812ff5c098cf42f7f27cff20c40a1d58b543723d56e5c7875f5ca9a6b6a": {
-      "checked_at_utc": "2026-10-18T02:22:28+00:00",
+      "checked_at_utc": "2026-10-18T02:23:52+00:00",
       "fixture_id": "1606191",
       "kickoff": "2026-10-17T13:00:00+00:00",
       "league_id": "177",
@@ -9194,7 +9188,7 @@
       "window_minutes": 120
     },
     "47736ac0e5f6bb168eeaeea59c6c60ba84ba3f42896becd4429ba5490762c676": {
-      "checked_at_utc": "2026-10-18T02:22:28+00:00",
+      "checked_at_utc": "2026-10-18T02:23:52+00:00",
       "fixture_id": "1595711",
       "kickoff": "2026-10-17T11:00:00+00:00",
       "league_id": "488",
@@ -9210,7 +9204,7 @@
       "window_minutes": 120
     },
     "4856b671a661d1075b96a4c62a105e6baaee06ac2b1966bf6bc62d04f8e08359": {
-      "checked_at_utc": "2026-10-18T02:22:28+00:00",
+      "checked_at_utc": "2026-10-18T02:23:52+00:00",
       "fixture_id": "1567097",
       "kickoff": "2026-10-17T12:00:00+00:00",
       "league_id": "939",
@@ -9218,7 +9212,7 @@
       "window_minutes": 120
     },
     "48e3428ca1a536837905fd96dbe1a9a21f29a7788fe0445d6549dc60f372fc61": {
-      "checked_at_utc": "2026-10-18T02:22:28+00:00",
+      "checked_at_utc": "2026-10-18T02:23:52+00:00",
       "fixture_id": "1566380",
       "kickoff": "2026-10-16T17:30:00+00:00",
       "league_id": "745",
@@ -9234,7 +9228,7 @@
       "window_minutes": 120
     },
     "49c1be3a7cc2b768d166611770ba088e0e56dea9e585b21ef2a464fe1075b51a": {
-      "checked_at_utc": "2026-10-18T02:22:28+00:00",
+      "checked_at_utc": "2026-10-18T02:23:52+00:00",
       "fixture_id": "1566382",
       "kickoff": "2026-10-16T18:00:00+00:00",
       "league_id": "745",
@@ -9242,7 +9236,7 @@
       "window_minutes": 120
     },
     "4a67c74fe036f5c9c14404665a3e4f7387822e66a562ebfd8fa88d650f544bf4": {
-      "checked_at_utc": "2026-10-18T02:22:28+00:00",
+      "checked_at_utc": "2026-10-18T02:23:52+00:00",
       "fixture_id": "1596942",
       "kickoff": "2026-10-17T14:00:00+00:00",
       "league_id": "931",
@@ -9250,7 +9244,7 @@
       "window_minutes": 120
     },
     "4af493a5589d4185b07951684d98859d8ad6bdd785657532319878a388c33124": {
-      "checked_at_utc": "2026-10-18T02:22:28+00:00",
+      "checked_at_utc": "2026-10-18T02:23:52+00:00",
       "fixture_id": "1592547",
       "kickoff": "2026-10-16T18:00:00+00:00",
       "league_id": "751",
@@ -9266,7 +9260,7 @@
       "window_minutes": 120
     },
     "4cf01555122e82ee6d371969ee6f15c33df37def5c64a10596728b38324963d2": {
-      "checked_at_utc": "2026-10-18T02:22:28+00:00",
+      "checked_at_utc": "2026-10-18T02:23:52+00:00",
       "fixture_id": "1617661",
       "kickoff": "2026-10-18T14:30:00+00:00",
       "league_id": "455",
@@ -9274,7 +9268,7 @@
       "window_minutes": 120
     },
     "4db5e32728df475f4a923ec2f5076dd3520d281e1c79c75f97701ea4c52b5cae": {
-      "checked_at_utc": "2026-10-18T02:22:28+00:00",
+      "checked_at_utc": "2026-10-18T02:23:52+00:00",
       "fixture_id": "1610343",
       "kickoff": "2026-10-18T13:30:00+00:00",
       "league_id": "746",
@@ -9282,7 +9276,7 @@
       "window_minutes": 120
     },
     "4f0e9206cecd99770eed952a6c08bc248ad734766f3136b53da99cc9eacf85c2": {
-      "checked_at_utc": "2026-10-18T02:22:28+00:00",
+      "checked_at_utc": "2026-10-18T02:23:52+00:00",
       "fixture_id": "1621979",
       "kickoff": "2026-10-17T11:00:00+00:00",
       "league_id": "696",
@@ -9290,7 +9284,7 @@
       "window_minutes": 120
     },
     "4fc0a302a90e72001ff5de613baafbe4f62362b5d03ecf4fdc8956fa46957786": {
-      "checked_at_utc": "2026-10-18T02:22:28+00:00",
+      "checked_at_utc": "2026-10-18T02:23:52+00:00",
       "fixture_id": "1610340",
       "kickoff": "2026-10-18T13:00:00+00:00",
       "league_id": "746",
@@ -9298,7 +9292,7 @@
       "window_minutes": 120
     },
     "509db7ddedd990b3186e0445f1c9a99ca82bbbef639e1e47f392c8a25cbdf86e": {
-      "checked_at_utc": "2026-10-18T02:22:28+00:00",
+      "checked_at_utc": "2026-10-18T02:23:52+00:00",
       "fixture_id": "1617660",
       "kickoff": "2026-10-18T14:30:00+00:00",
       "league_id": "455",
@@ -9306,7 +9300,7 @@
       "window_minutes": 120
     },
     "51077d2dad39429608bd0f215f4befc7d44e8ca5463096f1243a62fddbae856b": {
-      "checked_at_utc": "2026-10-18T02:22:28+00:00",
+      "checked_at_utc": "2026-10-18T02:23:52+00:00",
       "fixture_id": "1579504",
       "kickoff": "2026-10-17T13:00:00+00:00",
       "league_id": "492",
@@ -9314,7 +9308,7 @@
       "window_minutes": 120
     },
     "5121d2fd5d1d375d473c0a68134e6c473b6cb38c16b24a91f5e62a3af069e2a4": {
-      "checked_at_utc": "2026-10-18T02:22:28+00:00",
+      "checked_at_utc": "2026-10-18T02:23:52+00:00",
       "fixture_id": "1511246",
       "kickoff": "2026-10-18T12:00:00+00:00",
       "league_id": "595",
@@ -9330,7 +9324,7 @@
       "window_minutes": 120
     },
     "5167f6d1f5600a5ddd57aa223e33519bc794562b9285cc0b67fa568469599ff6": {
-      "checked_at_utc": "2026-10-18T02:22:28+00:00",
+      "checked_at_utc": "2026-10-18T02:23:52+00:00",
       "fixture_id": "1596503",
       "kickoff": "2026-10-17T14:00:00+00:00",
       "league_id": "59",
@@ -9346,7 +9340,7 @@
       "window_minutes": 120
     },
     "522166f9a3d5a80c9f127d81155d1e850d019d00f46f75242f91bca331514c8d": {
-      "checked_at_utc": "2026-10-18T02:22:28+00:00",
+      "checked_at_utc": "2026-10-18T02:23:52+00:00",
       "fixture_id": "1610341",
       "kickoff": "2026-10-18T13:00:00+00:00",
       "league_id": "746",
@@ -9354,7 +9348,7 @@
       "window_minutes": 120
     },
     "5233e165b3a6e5cc4d32e3b55234edc1cae212fac4f174b74365a827c180459e": {
-      "checked_at_utc": "2026-10-18T02:22:28+00:00",
+      "checked_at_utc": "2026-10-18T02:23:52+00:00",
       "fixture_id": "1495984",
       "kickoff": "2026-10-18T12:30:00+00:00",
       "league_id": "104",
@@ -9362,7 +9356,7 @@
       "window_minutes": 120
     },
     "52466159090033bd676fd59a1c80cdb1fc703aec71f6e7e05badb70f9fef6506": {
-      "checked_at_utc": "2026-10-18T02:22:28+00:00",
+      "checked_at_utc": "2026-10-18T02:23:52+00:00",
       "fixture_id": "1575193",
       "kickoff": "2026-10-17T13:30:00+00:00",
       "league_id": "78",
@@ -9370,7 +9364,7 @@
       "window_minutes": 120
     },
     "5446653bf324cf6c580562ae111e448c30e1f5eaf8aec33a2c5eda29694a9e08": {
-      "checked_at_utc": "2026-10-18T02:22:28+00:00",
+      "checked_at_utc": "2026-10-18T02:23:52+00:00",
       "fixture_id": "1579506",
       "kickoff": "2026-10-17T12:30:00+00:00",
       "league_id": "492",
@@ -9378,7 +9372,7 @@
       "window_minutes": 120
     },
     "565a2ac1b973be0f4cdcb19d2822d736cb1478666c4c5ef5cc27d79a6fe7fd73": {
-      "checked_at_utc": "2026-10-18T02:22:28+00:00",
+      "checked_at_utc": "2026-10-18T02:23:52+00:00",
       "fixture_id": "1567098",
       "kickoff": "2026-10-17T14:00:00+00:00",
       "league_id": "939",
@@ -9386,7 +9380,7 @@
       "window_minutes": 120
     },
     "591f6571b4ee3bafcd5c16a5c1f2678cb5279dfe6c1b9d78730853040acf6079": {
-      "checked_at_utc": "2026-10-18T02:22:28+00:00",
+      "checked_at_utc": "2026-10-18T02:23:52+00:00",
       "fixture_id": "1578721",
       "kickoff": "2026-10-17T14:00:00+00:00",
       "league_id": "731",
@@ -9394,7 +9388,7 @@
       "window_minutes": 120
     },
     "598f5cf7d9bc7e8efd8d29a6090f6ad2c6b4d2178efc2c62f1a6fff3acc3ce07": {
-      "checked_at_utc": "2026-10-18T02:22:28+00:00",
+      "checked_at_utc": "2026-10-18T02:23:52+00:00",
       "fixture_id": "1631773",
       "kickoff": "2026-10-18T00:00:00+00:00",
       "league_id": "722",
@@ -9402,7 +9396,7 @@
       "window_minutes": 120
     },
     "59b8af9859c42bb49b1a9f6f4763e6842d8e106b258fb809ec3dbff037743484": {
-      "checked_at_utc": "2026-10-18T02:22:28+00:00",
+      "checked_at_utc": "2026-10-18T02:23:52+00:00",
       "fixture_id": "1547021",
       "kickoff": "2026-10-17T14:00:00+00:00",
       "league_id": "730",
@@ -9410,7 +9404,7 @@
       "window_minutes": 120
     },
     "59ba9eb61199d5e3f1694ba1c94eda60345cdca98f1a2c44b6bce96735660860": {
-      "checked_at_utc": "2026-10-18T02:22:28+00:00",
+      "checked_at_utc": "2026-10-18T02:23:52+00:00",
       "fixture_id": "1551837",
       "kickoff": "2026-10-16T18:00:00+00:00",
       "league_id": "89",
@@ -9418,7 +9412,7 @@
       "window_minutes": 120
     },
     "59e2cf607a5866c8c09158b477a959d20bfa6819d5ea58c0eb237b6831a1a506": {
-      "checked_at_utc": "2026-10-18T02:22:28+00:00",
+      "checked_at_utc": "2026-10-18T02:23:52+00:00",
       "fixture_id": "1552790",
       "kickoff": "2026-10-17T15:15:00+00:00",
       "league_id": "61",
@@ -9426,7 +9420,7 @@
       "window_minutes": 120
     },
     "5a6140e488a5d77f054b5f4b23ac9a3cbed879db72387b46f6fce44e053c6174": {
-      "checked_at_utc": "2026-10-18T02:22:28+00:00",
+      "checked_at_utc": "2026-10-18T02:23:52+00:00",
       "fixture_id": "1492999",
       "kickoff": "2026-10-16T18:45:00+00:00",
       "league_id": "358",
@@ -11633,7 +11627,7 @@
       "window_minutes": 120
     },
     "5c20bb27a0771a3ffcaebcc2580249b082c94538cee1c3864fc6979bf160fec0": {
-      "checked_at_utc": "2026-10-18T02:22:28+00:00",
+      "checked_at_utc": "2026-10-18T02:23:52+00:00",
       "fixture_id": "1596033",
       "kickoff": "2026-10-17T14:00:00+00:00",
       "league_id": "58",
@@ -11679,7 +11673,7 @@
       "window_minutes": 120
     },
     "66327c572da4bf303616e4f35a56486513509151f1ea865f94ab9d8d57c327e1": {
-      "checked_at_utc": "2026-10-18T02:22:28+00:00",
+      "checked_at_utc": "2026-10-18T02:23:52+00:00",
       "fixture_id": "1557430",
       "kickoff": "2026-10-17T11:30:00+00:00",
       "league_id": "39",
@@ -11687,7 +11681,7 @@
       "window_minutes": 120
     },
     "6697bfc3b7c44feed226e08ad36ad0d68207d7f829a88cff7c7e5fc70e1a5419": {
-      "checked_at_utc": "2026-10-18T02:22:28+00:00",
+      "checked_at_utc": "2026-10-18T02:23:52+00:00",
       "fixture_id": "1596498",
       "kickoff": "2026-10-17T14:00:00+00:00",
       "league_id": "59",
@@ -11695,7 +11689,7 @@
       "window_minutes": 120
     },
     "66bc51ff75f3f3aca445a434a5cbadc9a793591ae97152300e56885901cfdd96": {
-      "checked_at_utc": "2026-10-18T02:22:28+00:00",
+      "checked_at_utc": "2026-10-18T02:23:52+00:00",
       "fixture_id": "1517367",
       "kickoff": "2026-10-17T02:00:00+00:00",
       "league_id": "479",
@@ -11703,7 +11697,7 @@
       "window_minutes": 120
     },
     "6762edcb4d24e1763bc7c43912c7979704d335763a8a37f11c1e78395e3154d5": {
-      "checked_at_utc": "2026-10-18T02:22:28+00:00",
+      "checked_at_utc": "2026-10-18T02:23:52+00:00",
       "fixture_id": "1641834",
       "kickoff": "2026-10-17T02:00:00+00:00",
       "league_id": "909",
@@ -11711,7 +11705,7 @@
       "window_minutes": 120
     },
     "67798062ae40b52eed43424437444cef562ce014029079c193818071cbd7acfc": {
-      "checked_at_utc": "2026-10-18T02:22:28+00:00",
+      "checked_at_utc": "2026-10-18T02:23:52+00:00",
       "fixture_id": "1595716",
       "kickoff": "2026-10-17T13:30:00+00:00",
       "league_id": "488",
@@ -11719,7 +11713,7 @@
       "window_minutes": 120
     },
     "678bfac4a69f30c58c97423160132f49370b2d125f9b2b379e4494852ee7fdda": {
-      "checked_at_utc": "2026-10-18T02:22:28+00:00",
+      "checked_at_utc": "2026-10-18T02:23:52+00:00",
       "fixture_id": "1511248",
       "kickoff": "2026-10-18T12:00:00+00:00",
       "league_id": "595",
@@ -11727,7 +11721,7 @@
       "window_minutes": 120
     },
     "68a018ff9c3dd95a447794dff6ca93f0dd49ec438c34ba4591b5e3d602710663": {
-      "checked_at_utc": "2026-10-18T02:22:28+00:00",
+      "checked_at_utc": "2026-10-18T02:23:52+00:00",
       "fixture_id": "1635998",
       "kickoff": "2026-10-17T00:00:00+00:00",
       "league_id": "1242",
@@ -11735,7 +11729,7 @@
       "window_minutes": 120
     },
     "68b3e13df3a85da2895b27f02f63e65574965ab767f2a9f42ace68ac01795aca": {
-      "checked_at_utc": "2026-10-18T02:22:28+00:00",
+      "checked_at_utc": "2026-10-18T02:23:52+00:00",
       "fixture_id": "1613066",
       "kickoff": "2026-10-18T10:00:00+00:00",
       "league_id": "440",
@@ -11743,7 +11737,7 @@
       "window_minutes": 120
     },
     "68df7f3332f528b5a2f2af6253c74a5ec4b8cd0fc2ac48f4c4fc45eeef2ec8b3": {
-      "checked_at_utc": "2026-10-18T02:22:28+00:00",
+      "checked_at_utc": "2026-10-18T02:23:52+00:00",
       "fixture_id": "1631768",
       "kickoff": "2026-10-17T21:30:00+00:00",
       "league_id": "722",
@@ -11759,7 +11753,7 @@
       "window_minutes": 120
     },
     "6a523058311872763aca93975458a37a4b3b203e329e72dc6e02ce1f1d87dcc9": {
-      "checked_at_utc": "2026-10-18T02:22:28+00:00",
+      "checked_at_utc": "2026-10-18T02:23:52+00:00",
       "fixture_id": "1606189",
       "kickoff": "2026-10-17T13:00:00+00:00",
       "league_id": "177",
@@ -11767,7 +11761,7 @@
       "window_minutes": 120
     },
     "6c31d60bec9217f25b5046832d860b160ef5c30cb13a8aca91ab5504093318a5": {
-      "checked_at_utc": "2026-10-18T02:22:28+00:00",
+      "checked_at_utc": "2026-10-18T02:23:52+00:00",
       "fixture_id": "1606188",
       "kickoff": "2026-10-17T13:00:00+00:00",
       "league_id": "177",
@@ -11775,7 +11769,7 @@
       "window_minutes": 120
     },
     "6eeb1971324c7f833fbd708277ac9f907233dc47f6d73e2b4ad883d357d412a0": {
-      "checked_at_utc": "2026-10-18T02:22:28+00:00",
+      "checked_at_utc": "2026-10-18T02:23:52+00:00",
       "fixture_id": "1564899",
       "kickoff": "2026-10-16T18:45:00+00:00",
       "league_id": "407",
@@ -11783,7 +11777,7 @@
       "window_minutes": 120
     },
     "6f0eeb5343ba4b470963230d18921a4697583628ec18404cefb39fc9adf7447c": {
-      "checked_at_utc": "2026-10-18T02:22:28+00:00",
+      "checked_at_utc": "2026-10-18T02:23:52+00:00",
       "fixture_id": "1490541",
       "kickoff": "2026-10-17T18:30:00+00:00",
       "league_id": "253",
@@ -11791,7 +11785,7 @@
       "window_minutes": 120
     },
     "71290a7c35b46d5600634b72a2599be3193d16356408e30dd351b1fe3985ec8a": {
-      "checked_at_utc": "2026-10-18T02:22:28+00:00",
+      "checked_at_utc": "2026-10-18T02:23:52+00:00",
       "fixture_id": "1613989",
       "kickoff": "2026-10-18T16:30:00+00:00",
       "league_id": "443",
@@ -11799,7 +11793,7 @@
       "window_minutes": 120
     },
     "7193c47ae62603c5585161b960fe529976a3bde49b0ff8822c61d8daee49893f": {
-      "checked_at_utc": "2026-10-18T02:22:28+00:00",
+      "checked_at_utc": "2026-10-18T02:23:52+00:00",
       "fixture_id": "1610342",
       "kickoff": "2026-10-18T13:30:00+00:00",
       "league_id": "746",
@@ -11807,7 +11801,7 @@
       "window_minutes": 120
     },
     "71cbbb8ffb9054fbfdab496dc7073311f3cb8c880867eac12ed22425255030c1": {
-      "checked_at_utc": "2026-10-18T02:22:28+00:00",
+      "checked_at_utc": "2026-10-18T02:23:52+00:00",
       "fixture_id": "1595703",
       "kickoff": "2026-10-18T12:00:00+00:00",
       "league_id": "488",
@@ -11815,7 +11809,7 @@
       "window_minutes": 120
     },
     "72578dc793c30e7d0eac824c58835123fe42d932e0040e00f06f411fd5cf28c8": {
-      "checked_at_utc": "2026-10-18T02:22:28+00:00",
+      "checked_at_utc": "2026-10-18T02:23:52+00:00",
       "fixture_id": "1621045",
       "kickoff": "2026-10-16T18:00:00+00:00",
       "league_id": "702",
@@ -11831,7 +11825,7 @@
       "window_minutes": 120
     },
     "732ccada8a5cea15c7c40f7c3162d1f89332883659fa12fdfdf03d1acf6fdd2f": {
-      "checked_at_utc": "2026-10-18T02:22:28+00:00",
+      "checked_at_utc": "2026-10-18T02:23:52+00:00",
       "fixture_id": "1570422",
       "kickoff": "2026-10-17T14:15:00+00:00",
       "league_id": "140",
@@ -11847,7 +11841,7 @@
       "window_minutes": 120
     },
     "738cd64cd32d52e84fff5fb4afb0fecfa255971ad250b9e782296250667115a2": {
-      "checked_at_utc": "2026-10-18T02:22:28+00:00",
+      "checked_at_utc": "2026-10-18T02:23:52+00:00",
       "fixture_id": "1567101",
       "kickoff": "2026-10-17T12:30:00+00:00",
       "league_id": "939",
@@ -11855,7 +11849,7 @@
       "window_minutes": 120
     },
     "73edd8d5744c876c18bbbbb3a50a85db23f06dcea30c6d28ce690e606ff0c0c4": {
-      "checked_at_utc": "2026-10-18T02:22:28+00:00",
+      "checked_at_utc": "2026-10-18T02:23:52+00:00",
       "fixture_id": "1614595",
       "kickoff": "2026-10-18T10:00:00+00:00",
       "league_id": "445",
@@ -11863,7 +11857,7 @@
       "window_minutes": 120
     },
     "75cf84088d08e764cecc9aa14d0bc9ad3d312d13083bd8451574d7b1bffea51c": {
-      "checked_at_utc": "2026-10-18T02:22:28+00:00",
+      "checked_at_utc": "2026-10-18T02:23:52+00:00",
       "fixture_id": "1618404",
       "kickoff": "2026-10-17T12:30:00+00:00",
       "league_id": "92",
@@ -11879,7 +11873,7 @@
       "window_minutes": 120
     },
     "77e2d43cb6d033d0f07730b5c87bf43df58dc0df1a9f33b585262d709f918409": {
-      "checked_at_utc": "2026-10-18T02:22:28+00:00",
+      "checked_at_utc": "2026-10-18T02:23:52+00:00",
       "fixture_id": "1606187",
       "kickoff": "2026-10-17T13:00:00+00:00",
       "league_id": "177",
@@ -11887,7 +11881,7 @@
       "window_minutes": 120
     },
     "795ff3b1da9736c6d354c69155d2fb2c31a5cd02bdd653bdb74350f141a088c3": {
-      "checked_at_utc": "2026-10-18T02:22:28+00:00",
+      "checked_at_utc": "2026-10-18T02:23:52+00:00",
       "fixture_id": "1547022",
       "kickoff": "2026-10-17T14:00:00+00:00",
       "league_id": "730",
@@ -11895,7 +11889,7 @@
       "window_minutes": 120
     },
     "79a3195a01c51e7f09a5fe4f9b99d3a351cd9e0de1e6af4afaea02865da65394": {
-      "checked_at_utc": "2026-10-18T02:22:28+00:00",
+      "checked_at_utc": "2026-10-18T02:23:52+00:00",
       "fixture_id": "1568211",
       "kickoff": "2026-10-17T14:00:00+00:00",
       "league_id": "783",
@@ -11911,7 +11905,7 @@
       "window_minutes": 120
     },
     "7a58433a36d7ef362f4844f7c0d1fa6b43a9f85bcfffaed186f2ef1259c8ff39": {
-      "checked_at_utc": "2026-10-18T02:22:28+00:00",
+      "checked_at_utc": "2026-10-18T02:23:52+00:00",
       "fixture_id": "1587511",
       "kickoff": "2026-10-16T17:30:00+00:00",
       "league_id": "87",
@@ -11927,7 +11921,7 @@
       "window_minutes": 120
     },
     "7c81737b8495643e0d2ed53adcc40ca605a993bc26d5ac4a2e7ca4c960acce3b": {
-      "checked_at_utc": "2026-10-18T02:22:28+00:00",
+      "checked_at_utc": "2026-10-18T02:23:52+00:00",
       "fixture_id": "1490553",
       "kickoff": "2026-10-18T02:30:00+00:00",
       "league_id": "253",
@@ -14023,7 +14017,7 @@
       "window_minutes": 120
     },
     "7ccbab37093bd58f9fe50229ccbc55e13bc7116cdb1c64891a32dbfa69cadda2": {
-      "checked_at_utc": "2026-10-18T02:22:28+00:00",
+      "checked_at_utc": "2026-10-18T02:23:52+00:00",
       "fixture_id": "1492781",
       "kickoff": "2026-10-16T18:45:00+00:00",
       "league_id": "357",
@@ -14031,7 +14025,7 @@
       "window_minutes": 120
     },
     "7d6cb7706b7f0e9a419340d3143a6d82c43d93256258a47679cc6c807545e9d7": {
-      "checked_at_utc": "2026-10-18T02:22:28+00:00",
+      "checked_at_utc": "2026-10-18T02:23:52+00:00",
       "fixture_id": "1567266",
       "kickoff": "2026-10-17T13:00:00+00:00",
       "league_id": "939",
@@ -14039,7 +14033,7 @@
       "window_minutes": 120
     },
     "7dc96b98292bc0f7eb921e25569891d2f63b8421fccf023986d719b51b73f9f2": {
-      "checked_at_utc": "2026-10-18T02:22:28+00:00",
+      "checked_at_utc": "2026-10-18T02:23:52+00:00",
       "fixture_id": "1570413",
       "kickoff": "2026-10-17T16:30:00+00:00",
       "league_id": "140",
@@ -14047,7 +14041,7 @@
       "window_minutes": 120
     },
     "7e210720234e9bddd1a77348a825b9e58a06f8e89b0f4d8595e9cc6b2ca76e41": {
-      "checked_at_utc": "2026-10-18T02:22:28+00:00",
+      "checked_at_utc": "2026-10-18T02:23:52+00:00",
       "fixture_id": "1511244",
       "kickoff": "2026-10-18T12:00:00+00:00",
       "league_id": "595",
@@ -14055,7 +14049,7 @@
       "window_minutes": 120
     },
     "82c694a275c3ac08602fd95bc10d762b5749a1e7f89aeb874c3d0fe914a69daa": {
-      "checked_at_utc": "2026-10-18T02:22:28+00:00",
+      "checked_at_utc": "2026-10-18T02:23:52+00:00",
       "fixture_id": "1567100",
       "kickoff": "2026-10-17T12:00:00+00:00",
       "league_id": "939",
@@ -14063,7 +14057,7 @@
       "window_minutes": 120
     },
     "83ba002f0bcb52e20f34701fee2fe7055c94a6cab018753ef800715b7bd7079b": {
-      "checked_at_utc": "2026-10-18T02:22:28+00:00",
+      "checked_at_utc": "2026-10-18T02:23:52+00:00",
       "fixture_id": "1606190",
       "kickoff": "2026-10-17T13:00:00+00:00",
       "league_id": "177",
@@ -14071,7 +14065,7 @@
       "window_minutes": 120
     },
     "8674efacf04671b4f463af0c8ce0e113a8985f1b909d6a26d306ba038832d704": {
-      "checked_at_utc": "2026-10-18T02:22:28+00:00",
+      "checked_at_utc": "2026-10-18T02:23:52+00:00",
       "fixture_id": "1610339",
       "kickoff": "2026-10-18T13:00:00+00:00",
       "league_id": "746",
@@ -14087,7 +14081,7 @@
       "window_minutes": 120
     },
     "872198a1b863a265d930bd714025d716af461afa5522a524f0185f64a94fb1ac": {
-      "checked_at_utc": "2026-10-18T02:22:28+00:00",
+      "checked_at_utc": "2026-10-18T02:23:52+00:00",
       "fixture_id": "1596032",
       "kickoff": "2026-10-17T14:00:00+00:00",
       "league_id": "58",
@@ -14095,7 +14089,7 @@
       "window_minutes": 120
     },
     "87c313de2895f517bab4c8b33ae303a412645cf4ab13ba30963c51014c132b38": {
-      "checked_at_utc": "2026-10-18T02:22:28+00:00",
+      "checked_at_utc": "2026-10-18T02:23:52+00:00",
       "fixture_id": "1511426",
       "kickoff": "2026-10-18T12:00:00+00:00",
       "league_id": "596",
@@ -14103,7 +14097,7 @@
       "window_minutes": 120
     },
     "898267bd05f9cd9319e691d3d0741fb8fe0bcf159c4a1ddfd627a5ed06932493": {
-      "checked_at_utc": "2026-10-18T02:22:28+00:00",
+      "checked_at_utc": "2026-10-18T02:23:52+00:00",
       "fixture_id": "1631772",
       "kickoff": "2026-10-16T21:30:00+00:00",
       "league_id": "722",
@@ -14111,7 +14105,7 @@
       "window_minutes": 120
     },
     "8bfef17a2cc1e0c776b839aee72a113f72c0832ff2382fcfb8e560e7ae25158f": {
-      "checked_at_utc": "2026-10-18T02:22:28+00:00",
+      "checked_at_utc": "2026-10-18T02:23:52+00:00",
       "fixture_id": "1595698",
       "kickoff": "2026-10-18T09:00:00+00:00",
       "league_id": "488",
@@ -14119,7 +14113,7 @@
       "window_minutes": 120
     },
     "8c679f8d87ff83e197b4d33c8307f9288dcbf2de8406f62948142a28b08d8483": {
-      "checked_at_utc": "2026-10-18T02:22:28+00:00",
+      "checked_at_utc": "2026-10-18T02:23:52+00:00",
       "fixture_id": "1490551",
       "kickoff": "2026-10-18T02:30:00+00:00",
       "league_id": "253",
@@ -16272,7 +16266,7 @@
       "window_minutes": 120
     },
     "8c8d5b787fca075574887491865659d820d3adfa1ed4ced26a55c6d093de3a29": {
-      "checked_at_utc": "2026-10-18T02:22:28+00:00",
+      "checked_at_utc": "2026-10-18T02:23:52+00:00",
       "fixture_id": "1591344",
       "kickoff": "2026-10-18T12:00:00+00:00",
       "league_id": "205",
@@ -16280,7 +16274,7 @@
       "window_minutes": 120
     },
     "8d2cea50a8e31dc83c23857a27072ed764d5e93a106a4290870313e3f43e23cd": {
-      "checked_at_utc": "2026-10-18T02:22:28+00:00",
+      "checked_at_utc": "2026-10-18T02:23:52+00:00",
       "fixture_id": "1578726",
       "kickoff": "2026-10-17T14:00:00+00:00",
       "league_id": "731",
@@ -16310,7 +16304,7 @@
       "window_minutes": 120
     },
     "8e207f327582181c44231905910680b16919255e9c861b21c35532c5f393dfbf": {
-      "checked_at_utc": "2026-10-18T02:22:28+00:00",
+      "checked_at_utc": "2026-10-18T02:23:52+00:00",
       "fixture_id": "1575185",
       "kickoff": "2026-10-17T16:30:00+00:00",
       "league_id": "78",
@@ -16318,7 +16312,7 @@
       "window_minutes": 120
     },
     "8e5770ba2ba25ec7702eb46f343aef87edba7372e29bdec6b169478673d4e921": {
-      "checked_at_utc": "2026-10-18T02:22:28+00:00",
+      "checked_at_utc": "2026-10-18T02:23:52+00:00",
       "fixture_id": "1618409",
       "kickoff": "2026-10-17T13:00:00+00:00",
       "league_id": "92",
@@ -16334,7 +16328,7 @@
       "window_minutes": 120
     },
     "93923ba1b410461127d80fe7f8f152790bd50741f8913450afbdcef3a0715ba1": {
-      "checked_at_utc": "2026-10-18T02:22:28+00:00",
+      "checked_at_utc": "2026-10-18T02:23:52+00:00",
       "fixture_id": "1591349",
       "kickoff": "2026-10-18T16:00:00+00:00",
       "league_id": "205",
@@ -16342,7 +16336,7 @@
       "window_minutes": 120
     },
     "93c5270cfec560f6fba30ba28c917d9dbf4ee1654c6acb2e436794b4c75d556b": {
-      "checked_at_utc": "2026-10-18T02:22:28+00:00",
+      "checked_at_utc": "2026-10-18T02:23:52+00:00",
       "fixture_id": "1591641",
       "kickoff": "2026-10-18T11:30:00+00:00",
       "league_id": "205",
@@ -16350,7 +16344,7 @@
       "window_minutes": 120
     },
     "94f7813c8011eaeefc8aa52231c5bb27290750cfaac5a72c6708286d819e7ace": {
-      "checked_at_utc": "2026-10-18T02:22:28+00:00",
+      "checked_at_utc": "2026-10-18T02:23:52+00:00",
       "fixture_id": "1621975",
       "kickoff": "2026-10-17T10:00:00+00:00",
       "league_id": "696",
@@ -16358,7 +16352,7 @@
       "window_minutes": 120
     },
     "961ccb0f3d583df937bd18db4924398b8b5bd8e1c7d1da8b5d15790e72297675": {
-      "checked_at_utc": "2026-10-18T02:22:28+00:00",
+      "checked_at_utc": "2026-10-18T02:23:52+00:00",
       "fixture_id": "1579977",
       "kickoff": "2026-10-17T17:30:00+00:00",
       "league_id": "487",
@@ -16374,7 +16368,7 @@
       "window_minutes": 120
     },
     "973d1a797aa4c27bf8f25bd0e8770535dabd06a2872cc647c5af0ee4074cebd5": {
-      "checked_at_utc": "2026-10-18T02:22:28+00:00",
+      "checked_at_utc": "2026-10-18T02:23:52+00:00",
       "fixture_id": "1511431",
       "kickoff": "2026-10-18T12:00:00+00:00",
       "league_id": "596",
@@ -16382,7 +16376,7 @@
       "window_minutes": 120
     },
     "979ccd9f79121fe75f494afed1c01910e4491ab864a0d1d67308ef4b6209452a": {
-      "checked_at_utc": "2026-10-18T02:22:28+00:00",
+      "checked_at_utc": "2026-10-18T02:23:52+00:00",
       "fixture_id": "1618400",
       "kickoff": "2026-10-17T12:30:00+00:00",
       "league_id": "92",
@@ -16390,7 +16384,7 @@
       "window_minutes": 120
     },
     "98761d53b9c16d5e6b64bcf51322c394ff5ca456c5645340f1e7e202ec65eb33": {
-      "checked_at_utc": "2026-10-18T02:22:28+00:00",
+      "checked_at_utc": "2026-10-18T02:23:52+00:00",
       "fixture_id": "1596502",
       "kickoff": "2026-10-17T14:00:00+00:00",
       "league_id": "59",
@@ -16876,7 +16870,7 @@
       "window_minutes": 120
     },
     "a0dd14cdaea87240d9dbd7288bd877fb55af8d24ca9743cfef818f7c5d014df7": {
-      "checked_at_utc": "2026-10-18T02:22:28+00:00",
+      "checked_at_utc": "2026-10-18T02:23:52+00:00",
       "fixture_id": "1511430",
       "kickoff": "2026-10-18T12:00:00+00:00",
       "league_id": "596",
@@ -16884,7 +16878,7 @@
       "window_minutes": 120
     },
     "a128ec1b310ef82798b0af892654c48df9478e067189a47259b48802a6514af2": {
-      "checked_at_utc": "2026-10-18T02:22:28+00:00",
+      "checked_at_utc": "2026-10-18T02:23:52+00:00",
       "fixture_id": "1579501",
       "kickoff": "2026-10-17T12:00:00+00:00",
       "league_id": "492",
@@ -16892,7 +16886,7 @@
       "window_minutes": 120
     },
     "a5db48ca15d8e60acc3ab8c190a4c4c6eb0fb79f3f1d9f97d44f77da393eb82f": {
-      "checked_at_utc": "2026-10-18T02:22:28+00:00",
+      "checked_at_utc": "2026-10-18T02:23:52+00:00",
       "fixture_id": "1575189",
       "kickoff": "2026-10-18T15:30:00+00:00",
       "league_id": "78",
@@ -16900,7 +16894,7 @@
       "window_minutes": 120
     },
     "a618646f1126a7c1f2e4da443208161238d85faf2f4b7409163c9b6d82d52a6c": {
-      "checked_at_utc": "2026-10-18T02:22:28+00:00",
+      "checked_at_utc": "2026-10-18T02:23:52+00:00",
       "fixture_id": "1616129",
       "kickoff": "2026-10-17T16:00:00+00:00",
       "league_id": "450",
@@ -16908,7 +16902,7 @@
       "window_minutes": 120
     },
     "a70a90cc17adbf86cdb79f9c82b4d96c07fbc3e17f8fe5efaa50ef6c2a5715b4": {
-      "checked_at_utc": "2026-10-18T02:22:28+00:00",
+      "checked_at_utc": "2026-10-18T02:23:52+00:00",
       "fixture_id": "1596941",
       "kickoff": "2026-10-17T14:00:00+00:00",
       "league_id": "931",
@@ -16916,7 +16910,7 @@
       "window_minutes": 120
     },
     "a9292703855d304e28d1f302ef4c4dc106aa46e36ff2d9a1f6b76f980e8f067e": {
-      "checked_at_utc": "2026-10-18T02:22:28+00:00",
+      "checked_at_utc": "2026-10-18T02:23:52+00:00",
       "fixture_id": "1490543",
       "kickoff": "2026-10-17T23:30:00+00:00",
       "league_id": "253",
@@ -16940,7 +16934,7 @@
       "window_minutes": 120
     },
     "ab34f41b62a65d055858e13d9efbfee087e2bc4ab449da17d545011f519c254e": {
-      "checked_at_utc": "2026-10-18T02:22:28+00:00",
+      "checked_at_utc": "2026-10-18T02:23:52+00:00",
       "fixture_id": "1596023",
       "kickoff": "2026-10-17T14:00:00+00:00",
       "league_id": "58",
@@ -16956,7 +16950,7 @@
       "window_minutes": 120
     },
     "ae01892b6613e8365e69ae609bc75fcf1c958121928f32f0190d122b1823d2b0": {
-      "checked_at_utc": "2026-10-18T02:22:28+00:00",
+      "checked_at_utc": "2026-10-18T02:23:52+00:00",
       "fixture_id": "1568207",
       "kickoff": "2026-10-17T13:00:00+00:00",
       "league_id": "783",
@@ -16964,7 +16958,7 @@
       "window_minutes": 120
     },
     "aec30cc4d01ee2e6240099a1ae58c0d9590c2e043ebc7ed7b89139a16a437473": {
-      "checked_at_utc": "2026-10-18T02:22:28+00:00",
+      "checked_at_utc": "2026-10-18T02:23:52+00:00",
       "fixture_id": "1511250",
       "kickoff": "2026-10-18T12:00:00+00:00",
       "league_id": "595",
@@ -16972,7 +16966,7 @@
       "window_minutes": 120
     },
     "aee672ccba56fb5ae5bdb950bc575c0a887487814e7c8bcbd05a6da03fc0796a": {
-      "checked_at_utc": "2026-10-18T02:22:28+00:00",
+      "checked_at_utc": "2026-10-18T02:23:52+00:00",
       "fixture_id": "1574133",
       "kickoff": "2026-10-16T17:30:00+00:00",
       "league_id": "221",
@@ -16980,7 +16974,7 @@
       "window_minutes": 120
     },
     "af3d9ae8b0e15b9867abba90c2ada67631704e0fcbe99625bbe7d06e9bb069c7": {
-      "checked_at_utc": "2026-10-18T02:22:28+00:00",
+      "checked_at_utc": "2026-10-18T02:23:52+00:00",
       "fixture_id": "1618403",
       "kickoff": "2026-10-17T12:30:00+00:00",
       "league_id": "92",
@@ -16988,7 +16982,7 @@
       "window_minutes": 120
     },
     "af44e75bc5cf408765d1e41f87426fc8483ae48b171ee2710a2eeaf1c99192f0": {
-      "checked_at_utc": "2026-10-18T02:22:28+00:00",
+      "checked_at_utc": "2026-10-18T02:23:52+00:00",
       "fixture_id": "1579980",
       "kickoff": "2026-10-17T18:00:00+00:00",
       "league_id": "487",
@@ -17004,7 +16998,7 @@
       "window_minutes": 120
     },
     "aff13498853cb02dbbbe3289d41f5afce7e0cc3424b5fbf1087a4d0db46fc58a": {
-      "checked_at_utc": "2026-10-18T02:22:28+00:00",
+      "checked_at_utc": "2026-10-18T02:23:52+00:00",
       "fixture_id": "1591345",
       "kickoff": "2026-10-18T11:30:00+00:00",
       "league_id": "205",
@@ -17012,7 +17006,7 @@
       "window_minutes": 120
     },
     "b046ef0c46d6415ad24dc72c52dfc113cbdfe7836453d937fbc5dc860c0af2a1": {
-      "checked_at_utc": "2026-10-18T02:22:28+00:00",
+      "checked_at_utc": "2026-10-18T02:23:52+00:00",
       "fixture_id": "1578716",
       "kickoff": "2026-10-17T14:00:00+00:00",
       "league_id": "731",
@@ -17020,7 +17014,7 @@
       "window_minutes": 120
     },
     "b0c62cb55b621601e01217e009ffce908c2dc8d285ec3fee45eed58a13de5216": {
-      "checked_at_utc": "2026-10-18T02:22:28+00:00",
+      "checked_at_utc": "2026-10-18T02:23:52+00:00",
       "fixture_id": "1616124",
       "kickoff": "2026-10-17T11:00:00+00:00",
       "league_id": "450",
@@ -17028,7 +17022,7 @@
       "window_minutes": 120
     },
     "b218593ea1c9c5c5e48d3b534aee727590a11bd592711e695d8de61548aae9cd": {
-      "checked_at_utc": "2026-10-18T02:22:28+00:00",
+      "checked_at_utc": "2026-10-18T02:23:52+00:00",
       "fixture_id": "1621046",
       "kickoff": "2026-10-16T18:00:00+00:00",
       "league_id": "702",
@@ -17036,7 +17030,7 @@
       "window_minutes": 120
     },
     "b26b5b5877c43c8bb0e7368c1e9b7f06509e038c5909d44480594ee8bc20fb5c": {
-      "checked_at_utc": "2026-10-18T02:22:28+00:00",
+      "checked_at_utc": "2026-10-18T02:23:52+00:00",
       "fixture_id": "1618406",
       "kickoff": "2026-10-17T12:45:00+00:00",
       "league_id": "92",
@@ -17052,7 +17046,7 @@
       "window_minutes": 120
     },
     "b33733731778a5128f82251e1ecd4f2b2ef0bb0e6d0d5f25eb63cfe77970c0e1": {
-      "checked_at_utc": "2026-10-18T02:22:28+00:00",
+      "checked_at_utc": "2026-10-18T02:23:52+00:00",
       "fixture_id": "1631771",
       "kickoff": "2026-10-17T22:00:00+00:00",
       "league_id": "722",
@@ -17060,7 +17054,7 @@
       "window_minutes": 120
     },
     "b66bc4e5c0245fbca1ffb1302c688411e051e7f8fe89e1eb89dc0d187cf07df1": {
-      "checked_at_utc": "2026-10-18T02:22:28+00:00",
+      "checked_at_utc": "2026-10-18T02:23:52+00:00",
       "fixture_id": "1579502",
       "kickoff": "2026-10-17T12:30:00+00:00",
       "league_id": "492",
@@ -17082,7 +17076,7 @@
       "window_minutes": 120
     },
     "b8653c7eeb4621b586f479702d2c226f6c427ef6936c7867a646ea65c142ec39": {
-      "checked_at_utc": "2026-10-18T02:22:28+00:00",
+      "checked_at_utc": "2026-10-18T02:23:52+00:00",
       "fixture_id": "1517366",
       "kickoff": "2026-10-16T23:00:00+00:00",
       "league_id": "479",
@@ -17090,7 +17084,7 @@
       "window_minutes": 120
     },
     "b8973cea1e1aa695b93ffb03529c0ff0337e028309531660975274343f723a65": {
-      "checked_at_utc": "2026-10-18T02:22:28+00:00",
+      "checked_at_utc": "2026-10-18T02:23:52+00:00",
       "fixture_id": "1568212",
       "kickoff": "2026-10-17T15:00:00+00:00",
       "league_id": "783",
@@ -17098,7 +17092,7 @@
       "window_minutes": 120
     },
     "b8b427315a883683eab29ee1c13fcb160630ba83da7542268c25abf89a5cec0f": {
-      "checked_at_utc": "2026-10-18T02:22:28+00:00",
+      "checked_at_utc": "2026-10-18T02:23:52+00:00",
       "fixture_id": "1578722",
       "kickoff": "2026-10-17T14:00:00+00:00",
       "league_id": "731",
@@ -17106,7 +17100,7 @@
       "window_minutes": 120
     },
     "b9c38f4cdf03a691500fc9b6005fd50dbf5ec02f807c47cff42bf1a644435d07": {
-      "checked_at_utc": "2026-10-18T02:22:28+00:00",
+      "checked_at_utc": "2026-10-18T02:23:52+00:00",
       "fixture_id": "1596506",
       "kickoff": "2026-10-17T14:00:00+00:00",
       "league_id": "59",
@@ -17114,7 +17108,7 @@
       "window_minutes": 120
     },
     "b9feb98f6dc9f7ab6e3cc42a307329c31ec69aabbe696883d1575eed3c2de73f": {
-      "checked_at_utc": "2026-10-18T02:22:28+00:00",
+      "checked_at_utc": "2026-10-18T02:23:52+00:00",
       "fixture_id": "1579500",
       "kickoff": "2026-10-17T12:30:00+00:00",
       "league_id": "492",
@@ -17122,7 +17116,7 @@
       "window_minutes": 120
     },
     "bbba3947ec228f9de4bdd27f04cb1ecd42150854c9b1ddb44136315908712746": {
-      "checked_at_utc": "2026-10-18T02:22:28+00:00",
+      "checked_at_utc": "2026-10-18T02:23:52+00:00",
       "fixture_id": "1566381",
       "kickoff": "2026-10-16T17:30:00+00:00",
       "league_id": "745",
@@ -17130,7 +17124,7 @@
       "window_minutes": 120
     },
     "bbcff3181c76ee6dc9a4c5031d077d6a1432bcd4dc18cacac241d6b882c41886": {
-      "checked_at_utc": "2026-10-18T02:22:28+00:00",
+      "checked_at_utc": "2026-10-18T02:23:52+00:00",
       "fixture_id": "1621976",
       "kickoff": "2026-10-17T10:00:00+00:00",
       "league_id": "696",
@@ -17138,7 +17132,7 @@
       "window_minutes": 120
     },
     "bc4e5f823d7f6086c501bf94cc033b90c745cce68080bc419b0c7ad1e2ae1d18": {
-      "checked_at_utc": "2026-10-18T02:22:28+00:00",
+      "checked_at_utc": "2026-10-18T02:23:52+00:00",
       "fixture_id": "1490542",
       "kickoff": "2026-10-17T20:30:00+00:00",
       "league_id": "253",
@@ -17146,7 +17140,7 @@
       "window_minutes": 120
     },
     "bcc0318d664083027dd446344e49b1e7b4b591c6dd879409e125b66804fb0e6a": {
-      "checked_at_utc": "2026-10-18T02:22:28+00:00",
+      "checked_at_utc": "2026-10-18T02:23:52+00:00",
       "fixture_id": "1557429",
       "kickoff": "2026-10-18T13:00:00+00:00",
       "league_id": "39",
@@ -17154,7 +17148,7 @@
       "window_minutes": 120
     },
     "bcfdb4e155b1c17fdd7338f70a7294aa21190938b7725a8e60f889f501699628": {
-      "checked_at_utc": "2026-10-18T02:22:28+00:00",
+      "checked_at_utc": "2026-10-18T02:23:52+00:00",
       "fixture_id": "1511432",
       "kickoff": "2026-10-18T12:00:00+00:00",
       "league_id": "596",
@@ -17162,7 +17156,7 @@
       "window_minutes": 120
     },
     "bd2ac5dfb325c20943bb796a29bd911b0de90c56cf4c5712706d7dd3ae21e812": {
-      "checked_at_utc": "2026-10-18T02:22:28+00:00",
+      "checked_at_utc": "2026-10-18T02:23:52+00:00",
       "fixture_id": "1567265",
       "kickoff": "2026-10-17T12:00:00+00:00",
       "league_id": "939",
@@ -17170,7 +17164,7 @@
       "window_minutes": 120
     },
     "bd9cc5b683fe1fdbee91efe9fb69bf6fbefa12cf280f56a6a40f64e1a0dd1b7b": {
-      "checked_at_utc": "2026-10-18T02:22:28+00:00",
+      "checked_at_utc": "2026-10-18T02:23:52+00:00",
       "fixture_id": "1581452",
       "kickoff": "2026-10-17T01:00:00+00:00",
       "league_id": "263",
@@ -17178,7 +17172,7 @@
       "window_minutes": 120
     },
     "bdda9f5e26f56146c51be0fa0e007d22acc4cf3f45c989d0186eb69a68dd81b7": {
-      "checked_at_utc": "2026-10-18T02:22:28+00:00",
+      "checked_at_utc": "2026-10-18T02:23:52+00:00",
       "fixture_id": "1595704",
       "kickoff": "2026-10-17T12:00:00+00:00",
       "league_id": "488",
@@ -17186,7 +17180,7 @@
       "window_minutes": 120
     },
     "c0b1e8bc4458075114c69a3c4cd3610a1feb53d824f7ca24bc6d311dbaabeaac": {
-      "checked_at_utc": "2026-10-18T02:22:28+00:00",
+      "checked_at_utc": "2026-10-18T02:23:52+00:00",
       "fixture_id": "1617655",
       "kickoff": "2026-10-18T15:30:00+00:00",
       "league_id": "455",
@@ -17194,7 +17188,7 @@
       "window_minutes": 120
     },
     "c2090d003e8bc8f124b430e115cafb570c8b2b28348312e4fce1bddb60c1aa68": {
-      "checked_at_utc": "2026-10-18T02:22:28+00:00",
+      "checked_at_utc": "2026-10-18T02:23:52+00:00",
       "fixture_id": "1575187",
       "kickoff": "2026-10-16T18:30:00+00:00",
       "league_id": "78",
@@ -17202,7 +17196,7 @@
       "window_minutes": 120
     },
     "c2fb3148393f3cebef3eefd72bc735811528d81ea8b0db88f9e9e22a07ffa027": {
-      "checked_at_utc": "2026-10-18T02:22:28+00:00",
+      "checked_at_utc": "2026-10-18T02:23:52+00:00",
       "fixture_id": "1618402",
       "kickoff": "2026-10-17T12:30:00+00:00",
       "league_id": "92",
@@ -17210,7 +17204,7 @@
       "window_minutes": 120
     },
     "c3ada936e373e9dc42910821df1bba2f52780827debc450e595a094e4e45ef16": {
-      "checked_at_utc": "2026-10-18T02:22:28+00:00",
+      "checked_at_utc": "2026-10-18T02:23:52+00:00",
       "fixture_id": "1629036",
       "kickoff": "2026-10-16T18:00:00+00:00",
       "league_id": "209",
@@ -17226,7 +17220,7 @@
       "window_minutes": 120
     },
     "c45e862c16abaafc139478b2ed075ec817631a6b9abc9870b4d1940707ab4d8f": {
-      "checked_at_utc": "2026-10-18T02:22:28+00:00",
+      "checked_at_utc": "2026-10-18T02:23:52+00:00",
       "fixture_id": "1563210",
       "kickoff": "2026-10-17T14:00:00+00:00",
       "league_id": "40",
@@ -17250,7 +17244,7 @@
       "window_minutes": 120
     },
     "c5e5e848452b8b0e28472ebad06a98c17c912e7a234af38308b84e03950c8e77": {
-      "checked_at_utc": "2026-10-18T02:22:28+00:00",
+      "checked_at_utc": "2026-10-18T02:23:52+00:00",
       "fixture_id": "1595699",
       "kickoff": "2026-10-18T11:00:00+00:00",
       "league_id": "488",
@@ -17258,7 +17252,7 @@
       "window_minutes": 120
     },
     "c954054f3a48ec7f44addf3a0801813cfab998a90a4a2b7af00c4b577ffa9f71": {
-      "checked_at_utc": "2026-10-18T02:22:28+00:00",
+      "checked_at_utc": "2026-10-18T02:23:52+00:00",
       "fixture_id": "1579499",
       "kickoff": "2026-10-17T13:00:00+00:00",
       "league_id": "492",
@@ -17266,7 +17260,7 @@
       "window_minutes": 120
     },
     "c9ea4f66b942864249cbfd8509cf50f9d6e1dca8607e807c46b07553ee59b111": {
-      "checked_at_utc": "2026-10-18T02:22:28+00:00",
+      "checked_at_utc": "2026-10-18T02:23:52+00:00",
       "fixture_id": "1621974",
       "kickoff": "2026-10-17T09:30:00+00:00",
       "league_id": "696",
@@ -17274,7 +17268,7 @@
       "window_minutes": 120
     },
     "ca38e21f080f391e79bd649f178e5c0eae71c6c570c19c1b40ee2ac035c00550": {
-      "checked_at_utc": "2026-10-18T02:22:28+00:00",
+      "checked_at_utc": "2026-10-18T02:23:52+00:00",
       "fixture_id": "1511428",
       "kickoff": "2026-10-18T12:00:00+00:00",
       "league_id": "596",
@@ -17282,7 +17276,7 @@
       "window_minutes": 120
     },
     "ca7619e39ee8c2358d65fcbfd6c11eabad04d34055237d0ce6ed301bb2aa2925": {
-      "checked_at_utc": "2026-10-18T02:22:28+00:00",
+      "checked_at_utc": "2026-10-18T02:23:52+00:00",
       "fixture_id": "1578719",
       "kickoff": "2026-10-17T14:00:00+00:00",
       "league_id": "731",
@@ -17290,7 +17284,7 @@
       "window_minutes": 120
     },
     "cad24a9c810a36f569746d5ac1d7e40ffede8cb5fb8b44c95bb1639162c38a45": {
-      "checked_at_utc": "2026-10-18T02:22:28+00:00",
+      "checked_at_utc": "2026-10-18T02:23:52+00:00",
       "fixture_id": "1617659",
       "kickoff": "2026-10-18T14:30:00+00:00",
       "league_id": "455",
@@ -17298,7 +17292,7 @@
       "window_minutes": 120
     },
     "ce72ad91bce40ff13ecf49d65ddf2f22611b7b37756c6f2edfb85fde82e532d3": {
-      "checked_at_utc": "2026-10-18T02:22:28+00:00",
+      "checked_at_utc": "2026-10-18T02:23:52+00:00",
       "fixture_id": "1579503",
       "kickoff": "2026-10-17T13:00:00+00:00",
       "league_id": "492",
@@ -17306,7 +17300,7 @@
       "window_minutes": 120
     },
     "cee50743f8d28083669d996a52c15a17bad9598a3d9180b57dc2fb0818997d96": {
-      "checked_at_utc": "2026-10-18T02:22:28+00:00",
+      "checked_at_utc": "2026-10-18T02:23:52+00:00",
       "fixture_id": "1595712",
       "kickoff": "2026-10-17T12:00:00+00:00",
       "league_id": "488",
@@ -17314,7 +17308,7 @@
       "window_minutes": 120
     },
     "cf69b97710213c08f65a228db626d0c009b94c7172c581aca58d812a9b34ca3f": {
-      "checked_at_utc": "2026-10-18T02:22:28+00:00",
+      "checked_at_utc": "2026-10-18T02:23:52+00:00",
       "fixture_id": "1578725",
       "kickoff": "2026-10-17T14:00:00+00:00",
       "league_id": "731",
@@ -17338,7 +17332,7 @@
       "window_minutes": 120
     },
     "d0809976046320d0d6c8fff9b1a63ba13b5fa731cfe228ef472b1d83574ad852": {
-      "checked_at_utc": "2026-10-18T02:22:28+00:00",
+      "checked_at_utc": "2026-10-18T02:23:52+00:00",
       "fixture_id": "1631766",
       "kickoff": "2026-10-18T00:00:00+00:00",
       "league_id": "722",
@@ -17354,7 +17348,7 @@
       "window_minutes": 120
     },
     "d16a1b14c09d39d2dfeffb2440f7d327cefdccac679ddc56f08109c1df29db64": {
-      "checked_at_utc": "2026-10-18T02:22:28+00:00",
+      "checked_at_utc": "2026-10-18T02:23:52+00:00",
       "fixture_id": "1547019",
       "kickoff": "2026-10-17T14:00:00+00:00",
       "league_id": "730",
@@ -17362,7 +17356,7 @@
       "window_minutes": 120
     },
     "d328f7a3127ecf575f2bdcadd54946cbab13e2ae8870bc41eb562a12151a4782": {
-      "checked_at_utc": "2026-10-18T02:22:28+00:00",
+      "checked_at_utc": "2026-10-18T02:23:52+00:00",
       "fixture_id": "1495983",
       "kickoff": "2026-10-18T15:00:00+00:00",
       "league_id": "104",
@@ -17370,7 +17364,7 @@
       "window_minutes": 120
     },
     "d4986a443820699842993235af831c9f33561ede2582b067081e2e432b66f11e": {
-      "checked_at_utc": "2026-10-18T02:22:28+00:00",
+      "checked_at_utc": "2026-10-18T02:23:52+00:00",
       "fixture_id": "1567102",
       "kickoff": "2026-10-17T12:00:00+00:00",
       "league_id": "939",
@@ -17378,7 +17372,7 @@
       "window_minutes": 120
     },
     "d501537a7c1a07a625aec152fec524b88b88c19be65e61c2799539389bc8ca5e": {
-      "checked_at_utc": "2026-10-18T02:22:28+00:00",
+      "checked_at_utc": "2026-10-18T02:23:52+00:00",
       "fixture_id": "1618412",
       "kickoff": "2026-10-17T17:00:00+00:00",
       "league_id": "92",
@@ -17394,7 +17388,7 @@
       "window_minutes": 120
     },
     "d5290bd7106fc79ece5992575ac2c18b2301b7753a9ec2b55086853de20f7f52": {
-      "checked_at_utc": "2026-10-18T02:22:28+00:00",
+      "checked_at_utc": "2026-10-18T02:23:52+00:00",
       "fixture_id": "1595708",
       "kickoff": "2026-10-17T12:00:00+00:00",
       "league_id": "488",
@@ -17402,7 +17396,7 @@
       "window_minutes": 120
     },
     "d6c0b977a5a1204894c19df2dfdd95380feba5f68895c18875eb555196a19f93": {
-      "checked_at_utc": "2026-10-18T02:22:28+00:00",
+      "checked_at_utc": "2026-10-18T02:23:52+00:00",
       "fixture_id": "1618410",
       "kickoff": "2026-10-17T13:00:00+00:00",
       "league_id": "92",
@@ -17410,7 +17404,7 @@
       "window_minutes": 120
     },
     "d7be6976aa4ad2564d11c1fe9bb1cf91da298d035366e27423ea8a98d41cac3b": {
-      "checked_at_utc": "2026-10-18T02:22:28+00:00",
+      "checked_at_utc": "2026-10-18T02:23:52+00:00",
       "fixture_id": "1643526",
       "kickoff": "2026-10-16T18:00:00+00:00",
       "league_id": "1086",
@@ -22570,7 +22564,7 @@
       "window_minutes": 120
     },
     "d9f5eaa6fb6ed9110fe26fc9fc0146aa02cffe8a09c783a43d993262c48dabf3": {
-      "checked_at_utc": "2026-10-18T02:22:28+00:00",
+      "checked_at_utc": "2026-10-18T02:23:52+00:00",
       "fixture_id": "1490550",
       "kickoff": "2026-10-18T00:30:00+00:00",
       "league_id": "253",
@@ -22578,7 +22572,7 @@
       "window_minutes": 120
     },
     "da6fe07a09ba62f1992bf3942b2c0eba6a2e724ccb0de150491e3cc0b8f86b6d": {
-      "checked_at_utc": "2026-10-18T02:22:28+00:00",
+      "checked_at_utc": "2026-10-18T02:23:52+00:00",
       "fixture_id": "1547020",
       "kickoff": "2026-10-17T14:00:00+00:00",
       "league_id": "730",
@@ -22586,7 +22580,7 @@
       "window_minutes": 120
     },
     "db010eb53f693392818486051d514fc89b08f3b58dfa3117eaf228aa17b7e28b": {
-      "checked_at_utc": "2026-10-18T02:22:28+00:00",
+      "checked_at_utc": "2026-10-18T02:23:52+00:00",
       "fixture_id": "1595706",
       "kickoff": "2026-10-17T11:00:00+00:00",
       "league_id": "488",
@@ -22602,7 +22596,7 @@
       "window_minutes": 120
     },
     "db443312374004170f9abdc5ad56f8eda72687ff33ecd2986fbfde0db12f2683": {
-      "checked_at_utc": "2026-10-18T02:22:28+00:00",
+      "checked_at_utc": "2026-10-18T02:23:52+00:00",
       "fixture_id": "1552791",
       "kickoff": "2026-10-17T18:45:00+00:00",
       "league_id": "61",
@@ -22610,7 +22604,7 @@
       "window_minutes": 120
     },
     "dbb3e1810f02f386e82c9734eccd72bd0f574f028f5f3c7c5e8708ae2233195a": {
-      "checked_at_utc": "2026-10-18T02:22:28+00:00",
+      "checked_at_utc": "2026-10-18T02:23:52+00:00",
       "fixture_id": "1629039",
       "kickoff": "2026-10-16T18:15:00+00:00",
       "league_id": "209",
@@ -22618,7 +22612,7 @@
       "window_minutes": 120
     },
     "dca760f1f81867208a31500a47d2e732d0f3e7125368530f64dad50fa6f5ad43": {
-      "checked_at_utc": "2026-10-18T02:22:28+00:00",
+      "checked_at_utc": "2026-10-18T02:23:52+00:00",
       "fixture_id": "1595709",
       "kickoff": "2026-10-18T09:00:00+00:00",
       "league_id": "488",
@@ -22634,7 +22628,7 @@
       "window_minutes": 120
     },
     "dee346ce6c09342f48c0d9cbdb87a264a7b3c64d478f10772b40b74aa061b301": {
-      "checked_at_utc": "2026-10-18T02:22:28+00:00",
+      "checked_at_utc": "2026-10-18T02:23:52+00:00",
       "fixture_id": "1591343",
       "kickoff": "2026-10-18T11:30:00+00:00",
       "league_id": "205",
@@ -22642,7 +22636,7 @@
       "window_minutes": 120
     },
     "df57a471de7653b036a57c1ff67ba6d3ab0e080e634030b73fd9ca156c25d494": {
-      "checked_at_utc": "2026-10-18T02:22:28+00:00",
+      "checked_at_utc": "2026-10-18T02:23:52+00:00",
       "fixture_id": "1495986",
       "kickoff": "2026-10-18T15:00:00+00:00",
       "league_id": "104",
@@ -22650,7 +22644,7 @@
       "window_minutes": 120
     },
     "dfaa47b955203a98c6c3a41d15b54930d34c3345bc6dbabdf179c9ccaf5cee28": {
-      "checked_at_utc": "2026-10-18T02:22:28+00:00",
+      "checked_at_utc": "2026-10-18T02:23:52+00:00",
       "fixture_id": "1610507",
       "kickoff": "2026-10-18T13:30:00+00:00",
       "league_id": "746",
@@ -22658,7 +22652,7 @@
       "window_minutes": 120
     },
     "e0c0d9bfeebddeaa073bfb3480e0e7551ea5c7fcbce040a153207049a2d671c0": {
-      "checked_at_utc": "2026-10-18T02:22:28+00:00",
+      "checked_at_utc": "2026-10-18T02:23:52+00:00",
       "fixture_id": "1618401",
       "kickoff": "2026-10-17T12:30:00+00:00",
       "league_id": "92",
@@ -22666,7 +22660,7 @@
       "window_minutes": 120
     },
     "e134e2875c3e0b1dd0c6a7508300e4a824d65a2a190f5a968b3f2bd1edc571b6": {
-      "checked_at_utc": "2026-10-18T02:22:28+00:00",
+      "checked_at_utc": "2026-10-18T02:23:52+00:00",
       "fixture_id": "1596031",
       "kickoff": "2026-10-17T14:00:00+00:00",
       "league_id": "58",
@@ -22674,7 +22668,7 @@
       "window_minutes": 120
     },
     "e1b0a7804f5fabc020a27133a09914bb811dee90d61219be700a5ea968d370c2": {
-      "checked_at_utc": "2026-10-18T02:22:28+00:00",
+      "checked_at_utc": "2026-10-18T02:23:52+00:00",
       "fixture_id": "1596945",
       "kickoff": "2026-10-17T14:00:00+00:00",
       "league_id": "931",
@@ -25690,7 +25684,7 @@
       "window_minutes": 120
     },
     "e3f13f8b2bd633c479716bc8228878ef6a3ca27232231e428b8be307d0441569": {
-      "checked_at_utc": "2026-10-18T02:22:28+00:00",
+      "checked_at_utc": "2026-10-18T02:23:52+00:00",
       "fixture_id": "1570420",
       "kickoff": "2026-10-18T19:00:00+00:00",
       "league_id": "140",
@@ -25698,7 +25692,7 @@
       "window_minutes": 120
     },
     "e590aa0ac4c1a69f9df842554a42a3868d653636852bcdec927514e98bb28ee1": {
-      "checked_at_utc": "2026-10-18T02:22:28+00:00",
+      "checked_at_utc": "2026-10-18T02:23:52+00:00",
       "fixture_id": "1564364",
       "kickoff": "2026-10-17T14:00:00+00:00",
       "league_id": "41",
@@ -25706,7 +25700,7 @@
       "window_minutes": 120
     },
     "e6717d4521bde0a7f10dc780c7518b9f13975d39ca7eb5de81392ed7c75db2ea": {
-      "checked_at_utc": "2026-10-18T02:22:28+00:00",
+      "checked_at_utc": "2026-10-18T02:23:52+00:00",
       "fixture_id": "1579979",
       "kickoff": "2026-10-17T18:00:00+00:00",
       "league_id": "487",
@@ -25722,7 +25716,7 @@
       "window_minutes": 120
     },
     "e9f2b373093745d534c856ec8c6697f7f71998d95b48279ed798e76fa93774bb": {
-      "checked_at_utc": "2026-10-18T02:22:28+00:00",
+      "checked_at_utc": "2026-10-18T02:23:52+00:00",
       "fixture_id": "1595693",
       "kickoff": "2026-10-17T11:00:00+00:00",
       "league_id": "488",
@@ -25730,7 +25724,7 @@
       "window_minutes": 120
     },
     "ea759fdd5c50b27a88e9c47354884be78e700c6371f740d8406edc9a7960c222": {
-      "checked_at_utc": "2026-10-18T02:22:28+00:00",
+      "checked_at_utc": "2026-10-18T02:23:52+00:00",
       "fixture_id": "1570415",
       "kickoff": "2026-10-16T19:00:00+00:00",
       "league_id": "140",
@@ -25762,7 +25756,7 @@
       "window_minutes": 120
     },
     "f24c6c5689f97b5ad00a942d2a9aceb45d70cfa58507b71de0e9b921c09e464f": {
-      "checked_at_utc": "2026-10-18T02:22:28+00:00",
+      "checked_at_utc": "2026-10-18T02:23:52+00:00",
       "fixture_id": "1551838",
       "kickoff": "2026-10-16T18:00:00+00:00",
       "league_id": "89",
@@ -25770,7 +25764,7 @@
       "window_minutes": 120
     },
     "f27d89dbf5dac942cc013101693c91991627627eb2851f4d4202cbab3df13dc6": {
-      "checked_at_utc": "2026-10-18T02:22:28+00:00",
+      "checked_at_utc": "2026-10-18T02:23:52+00:00",
       "fixture_id": "1490547",
       "kickoff": "2026-10-17T23:30:00+00:00",
       "league_id": "253",
@@ -25778,7 +25772,7 @@
       "window_minutes": 120
     },
     "f314f50714f1bfe815f6c2a0039e01a00c511290e44a86887192b2f1664378c1": {
-      "checked_at_utc": "2026-10-18T02:22:28+00:00",
+      "checked_at_utc": "2026-10-18T02:23:52+00:00",
       "fixture_id": "1575186",
       "kickoff": "2026-10-18T13:30:00+00:00",
       "league_id": "78",
@@ -25794,7 +25788,7 @@
       "window_minutes": 120
     },
     "f651af9a624705f7af263c704d0ff87a10f22d101c97643c02f5ba9b77b09789": {
-      "checked_at_utc": "2026-10-18T02:22:28+00:00",
+      "checked_at_utc": "2026-10-18T02:23:52+00:00",
       "fixture_id": "1578715",
       "kickoff": "2026-10-17T14:00:00+00:00",
       "league_id": "731",
@@ -25802,7 +25796,7 @@
       "window_minutes": 120
     },
     "f693dec5755ddd440cfa229e36ed83185eaa917f649fdc277ed1405d29ac2775": {
-      "checked_at_utc": "2026-10-18T02:22:28+00:00",
+      "checked_at_utc": "2026-10-18T02:23:52+00:00",
       "fixture_id": "1610345",
       "kickoff": "2026-10-18T13:45:00+00:00",
       "league_id": "746",
@@ -25810,7 +25804,7 @@
       "window_minutes": 120
     },
     "f6a7cd5925d8fec738cff36070389f8a3dcbff7a3712072055da48993faa7032": {
-      "checked_at_utc": "2026-10-18T02:22:28+00:00",
+      "checked_at_utc": "2026-10-18T02:23:52+00:00",
       "fixture_id": "1578720",
       "kickoff": "2026-10-17T14:00:00+00:00",
       "league_id": "731",
@@ -25818,7 +25812,7 @@
       "window_minutes": 120
     },
     "f72d23c70f794a310624794f74f3e73957cddcbbd10e13f444f6cdbd523773ce": {
-      "checked_at_utc": "2026-10-18T02:22:28+00:00",
+      "checked_at_utc": "2026-10-18T02:23:52+00:00",
       "fixture_id": "1606193",
       "kickoff": "2026-10-17T13:00:00+00:00",
       "league_id": "177",
@@ -25826,7 +25820,7 @@
       "window_minutes": 120
     },
     "f928b3cba588989008fefa721948133f9273e45dd74c037a4f64cc9e1078f057": {
-      "checked_at_utc": "2026-10-18T02:22:28+00:00",
+      "checked_at_utc": "2026-10-18T02:23:52+00:00",
       "fixture_id": "1592551",
       "kickoff": "2026-10-16T18:00:00+00:00",
       "league_id": "751",
@@ -25834,7 +25828,7 @@
       "window_minutes": 120
     },
     "fa45d35775681eed246cbc8db12ecab1be6b7c57d0f2bd36389485b463d7f9f8": {
-      "checked_at_utc": "2026-10-18T02:22:28+00:00",
+      "checked_at_utc": "2026-10-18T02:23:52+00:00",
       "fixture_id": "1596027",
       "kickoff": "2026-10-17T14:00:00+00:00",
       "league_id": "58",
@@ -25842,7 +25836,7 @@
       "window_minutes": 120
     },
     "faaabd42c6dbe93d04c53b0959d16c21ab016b3f26133b0ddf32975ee7fe501f": {
-      "checked_at_utc": "2026-10-18T02:22:28+00:00",
+      "checked_at_utc": "2026-10-18T02:23:52+00:00",
       "fixture_id": "1596030",
       "kickoff": "2026-10-17T14:00:00+00:00",
       "league_id": "58",
@@ -25850,7 +25844,7 @@
       "window_minutes": 120
     },
     "fc4ff5ffc987b41edbc93baedfda8d37960fb483e1dbfb1f643b9cfca13fbaa8": {
-      "checked_at_utc": "2026-10-18T02:22:28+00:00",
+      "checked_at_utc": "2026-10-18T02:23:52+00:00",
       "fixture_id": "1511249",
       "kickoff": "2026-10-18T12:00:00+00:00",
       "league_id": "595",
@@ -25866,7 +25860,7 @@
       "window_minutes": 120
     },
     "fe09a5cb4b9551303985c5043bceb439c10517202251f0595eb9d664dd2a44a4": {
-      "checked_at_utc": "2026-10-18T02:22:28+00:00",
+      "checked_at_utc": "2026-10-18T02:23:52+00:00",
       "fixture_id": "1573009",
       "kickoff": "2026-10-18T10:00:00+00:00",
       "league_id": "878",
@@ -25874,7 +25868,7 @@
       "window_minutes": 120
     },
     "fe21bc6fdb178775de1a114b2662a8217279b9d4acf03fabd7e811c6fe1de673": {
-      "checked_at_utc": "2026-10-18T02:22:28+00:00",
+      "checked_at_utc": "2026-10-18T02:23:52+00:00",
       "fixture_id": "1610344",
       "kickoff": "2026-10-18T13:30:00+00:00",
       "league_id": "746",
@@ -25882,7 +25876,7 @@
       "window_minutes": 120
     },
     "fe9373da81e5b53f5ccae9bbe47e249e9228bdc2794703e5c5707b75d950d849": {
-      "checked_at_utc": "2026-10-18T02:22:28+00:00",
+      "checked_at_utc": "2026-10-18T02:23:52+00:00",
       "fixture_id": "1596025",
       "kickoff": "2026-10-17T14:00:00+00:00",
       "league_id": "58",
@@ -25893,7 +25887,7 @@
   "protections": {
     "automatic_wagering": false,
     "cancel_if_ev_nonpositive_or_exact_quote_missing": true,
-    "correlated_risk_calibration_required": "PASS_EMPIRICAL_CONCENTRATION_CALIBRATION",
+    "correlated_risk_calibration_required": "READY_FAIL_CLOSED",
     "correlated_risk_gate": true,
     "duplicate_signal_suppression": true,
     "final_only_settlement": true,
@@ -38061,34 +38055,6 @@
       "football_candidates": 53,
       "paper_assignment_updates_now": 0,
       "paper_bankroll_current_cop": 5000000,
-      "paper_bankroll_enabled": false,
-      "paper_bets_assigned_now": 0,
-      "paper_open_bets": 51,
-      "paper_open_exposure_cop": 1975000,
-      "quote_checks": 0,
-      "real_money": "BLOQUEADO",
-      "rectifications_now": 0,
-      "run_at_utc": "2026-10-10T22:12:49+00:00",
-      "sent_now": 0,
-      "settlements_now": 0,
-      "tennis_candidates": 0,
-      "total_green_messages": 76,
-      "total_settlements": 19
-    },
-    {
-      "bogota_date": "2026-10-10",
-      "corrections_now": 0,
-      "dates_scanned": [
-        "2026-10-11",
-        "2026-10-10",
-        "2026-10-09"
-      ],
-      "delivery_failures_now": 0,
-      "duplicate_green_messages_suppressed": 53,
-      "economic_updates_now": 0,
-      "football_candidates": 53,
-      "paper_assignment_updates_now": 0,
-      "paper_bankroll_current_cop": 5000000,
       "paper_bankroll_enabled": true,
       "paper_bets_assigned_now": 0,
       "paper_open_bets": 51,
@@ -44518,6 +44484,48 @@
       "real_money": "BLOQUEADO",
       "rectifications_now": 0,
       "run_at_utc": "2026-10-18T02:22:28+00:00",
+      "sent_now": 0,
+      "settlements_now": 0,
+      "tennis_candidates": 0,
+      "total_green_messages": 209,
+      "total_settlements": 174
+    },
+    {
+      "bogota_date": "2026-10-17",
+      "corrections_now": 0,
+      "correlated_risk_h02_closed": false,
+      "correlated_risk_sample_records": 43,
+      "correlated_risk_status": "READY_FAIL_CLOSED",
+      "dates_scanned": [
+        "2026-10-18",
+        "2026-10-17",
+        "2026-10-16"
+      ],
+      "delivery_failures_now": 0,
+      "duplicate_green_messages_suppressed": 242,
+      "economic_updates_now": 0,
+      "football_candidates": 242,
+      "football_existing_sent_candidates": 6,
+      "football_unsent_candidates": 236,
+      "football_watch_candidates": 242,
+      "paper_assignment_updates_now": 0,
+      "paper_bankroll_current_cop": 4833500.0,
+      "paper_bankroll_enabled": true,
+      "paper_bets_assigned_now": 0,
+      "paper_open_bets": 0,
+      "paper_open_exposure_cop": 0,
+      "paper_reconciliation_cancelled_no_bet": 0,
+      "paper_reconciliation_settlement_backfills": 0,
+      "paper_stake_max_level": 1,
+      "paper_stake_risk_override": "TEMPORARY_FLAT_1U_CAP_17OCT2026",
+      "pre_send_blocked": 174,
+      "pre_send_passed": 0,
+      "pre_send_quote_checks": 3,
+      "pre_send_waiting_window": 62,
+      "quote_checks": 0,
+      "real_money": "BLOQUEADO",
+      "rectifications_now": 0,
+      "run_at_utc": "2026-10-18T02:23:52+00:00",
       "sent_now": 0,
       "settlements_now": 0,
       "tennis_candidates": 0,
@@ -56951,7 +56959,7 @@
     }
   ],
   "source": "evidence/api_football/daily_prematch_reports/2026-10-08/browser_physical_verification/MATRIX_FOOTBALL_08OCT_BROWSER_PHYSICAL_QUOTES.json",
-  "updated_at_utc": "2026-10-18T02:22:28+00:00",
+  "updated_at_utc": "2026-10-18T02:23:52+00:00",
   "user_settlement_policy": {
     "bookmaker_evidence_does_not_block_future_provider_final": true,
     "bookmaker_physical_lane": "user_settlements",
