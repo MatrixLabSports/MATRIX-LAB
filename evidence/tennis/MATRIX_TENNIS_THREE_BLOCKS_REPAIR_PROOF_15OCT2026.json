@@ -1,0 +1,172 @@
+{
+  "schema": "MATRIX_TENNIS_THREE_BLOCKS_REPAIR_PROOF_V1",
+  "generated_at_utc": "2026-10-15T23:29:30+00:00",
+  "repository": "MatrixLabSports/MATRIX-LAB",
+  "operational_branch": "repair/cor09-world-pipeline",
+  "source_governance": {
+    "priority": [
+      "SofaScore",
+      "Flashscore",
+      "RapidAPI Tennis"
+    ],
+    "api_tennis": {
+      "status": "RETIRED_COST_UTILITY_DECISION",
+      "subscription": "EXPIRED_NOT_RENEWED",
+      "required": false
+    },
+    "no_synthetic_backfill": true,
+    "missing_not_zero": true,
+    "silent_imputation": false,
+    "odds_to_probability": false,
+    "real_money": "BLOCKED",
+    "automatic_wagering": false
+  },
+  "hard_cor0203": {
+    "calibration_target": 600,
+    "unique_calibration_count": 242,
+    "remaining": 358,
+    "physical_frozen_rows": 413,
+    "duplicate_observations_quarantined": 171,
+    "window1": {
+      "count": 200,
+      "target": 200,
+      "status": "COMPLETE"
+    },
+    "metrics": "SEALED_UNTIL_600",
+    "outcomes_read": 0,
+    "operational_state": "IDLE_VALID",
+    "repaired_issue": "Late-day scheduler previously forced current Bogota date and could inspect already-started same-day events.",
+    "repair": {
+      "rollover_hour_bogota": 15,
+      "policy": "Before 15:00 Bogota use current day; at/after 15:00 use next Bogota day.",
+      "scheduler_run_id": 38822427559,
+      "scheduler_run_conclusion": "success",
+      "scheduler_target_date_bogota": "2026-10-16",
+      "next_day_world_inventory_count": 85,
+      "atp_challenger_inventory_count": 20,
+      "cor_domain_candidates": 10,
+      "cor_domain_status_counts": {
+        "FROZEN_UNIQUE": 10
+      },
+      "new_legitimate_freezes": 0,
+      "reason_count_did_not_increase": "All 10 eligible domain candidates for 16-OCT were already frozen unique physical events; adding them again would duplicate evidence.",
+      "alternate_batch_run_id": 38823093636,
+      "alternate_batch_run_conclusion": "success",
+      "alternate_batch_tests": "123 passed in 1.27s",
+      "active_mode": "rapidapi_primary_open_reconciliation"
+    },
+    "evidence": {
+      "observability_blob": "6f2d008030679ed152126d8f1efbee79a8a8be75",
+      "world_funnel_blob": "faa14dc45deeb73da73ecd87789d993d6607ab97",
+      "scheduler_continuity_blob": "77979e7369da7622fe5df8153869c71735fad020"
+    }
+  },
+  "live_tennis": {
+    "model_status": "RESEARCH_ONLY",
+    "metrics_status": "SEALED",
+    "global_unique_match_count": 175,
+    "sum_lane_settled_quality_valid_matches": 110,
+    "key_lanes": {
+      "itf|women|hard": {
+        "settled_quality_valid": 40,
+        "gate30": "OPEN",
+        "remaining_to_50": 10
+      },
+      "challenger|men|clay": {
+        "settled_quality_valid": 19,
+        "remaining_to_30": 11
+      },
+      "itf|men|clay": {
+        "settled_quality_valid": 10,
+        "remaining_to_30": 20
+      },
+      "itf|women|clay": {
+        "settled_quality_valid": 3,
+        "remaining_to_30": 27
+      }
+    },
+    "latest_cumulative_run_id": 38823466039,
+    "latest_cumulative_run_conclusion": "success",
+    "cumulative_gate_blob": "9153e78b1c9889ed8b372cecf985256577da9d65",
+    "protections": {
+      "real_money": "BLOCKED",
+      "automatic_wagering": false,
+      "missing_not_zero": true,
+      "odds_to_probability": false,
+      "prematch_hard_mutated": false,
+      "prematch_clay_mutated": false,
+      "silent_imputation": false
+    },
+    "status": "ACTIVE_CUMULATIVE_GATES"
+  },
+  "clay_atp_challenger_singles": {
+    "model": "ATP_CHALLENGER_CLAY_ELO_V1",
+    "prospective_target": 600,
+    "prospective_observations": 2,
+    "remaining": 598,
+    "unique_physical_event_count": 2,
+    "metrics_opened": false,
+    "outcomes_read": 0,
+    "real_money": "BLOCKED",
+    "parent_counter_reconciled": true,
+    "parent_state_blob": "1984ea8ce58299da7acae847412d71480109e27c",
+    "prospective_state_blob": "26ef767298def5dafc5f5de3c529381bbbf7cf54",
+    "repaired_issues": [
+      "Parent state incorrectly showed 0 while prospective state physically showed 2.",
+      "Clay workflow still required retired API-Tennis.",
+      "Empty identity-alias recovery delta caused a FileNotFoundError.",
+      "Clay workflow used current Bogota day even late in the day.",
+      "Clay cron existed only on the operational branch rather than default branch main."
+    ],
+    "final_default_branch_run": {
+      "run_id": 38823470225,
+      "conclusion": "success",
+      "regression_tests": "61 passed in 0.99s",
+      "target_date_bogota": "2026-10-16",
+      "world_inventory_count": 94,
+      "challenger_bound_total": 20,
+      "hard_bound": 10,
+      "clay_bound": 10,
+      "clay_freeze_ready": 0,
+      "new_observations": 0,
+      "ending_observation_count": 2,
+      "source_mode": "rapidapi_primary_open_reconciliation",
+      "api_tennis_status": "RETIRED_COST_UTILITY_DECISION",
+      "reason_no_new_freeze": "PIT/identity components did not satisfy the frozen prospective admission contract; no event was forced."
+    },
+    "scheduler": {
+      "installed_on_default_branch_main": true,
+      "cron": "37 */2 * * *",
+      "operational_checkout": "repair/cor09-world-pipeline",
+      "rollover_policy": "BOGOTA_15H_ROLLOVER",
+      "main_workflow_blob": "c86c672f37440c0443ee1a363b7bda7cfdd31816"
+    },
+    "latest_operational_bridge": {
+      "target_date_bogota": "2026-10-16",
+      "future_clay_candidates_with_cut_ranking": 10,
+      "identity_alias_ledger_count": 199,
+      "identity_crosswalk_passed_events": 9,
+      "identity_crosswalk_blocked_events": 1,
+      "pit_ready_targets": 1,
+      "pit_blocked_targets": 19,
+      "operational_blocker": "PIT_OR_IDENTITY_COMPONENT_BLOCKED",
+      "source_priority": [
+        "SOFASCORE_BROWSER",
+        "FLASHSCORE_BROWSER",
+        "RAPIDAPI_TENNIS"
+      ]
+    },
+    "status": "ACTIVE_PROSPECTIVE_VALID_NO_FORCED_ADMISSION"
+  },
+  "adjudication": {
+    "operational_repairs_resolved_physically": true,
+    "calibration_targets_completed": false,
+    "hard_reason": "242/600 remains valid because there were no new unique admissible events.",
+    "live_reason": "Gates continue accumulating; only lanes meeting thresholds open their corresponding gate.",
+    "clay_reason": "2/600 remains valid because current future candidates fail PIT/identity admission.",
+    "metrics_remain_protected": true,
+    "tuning_performed": false,
+    "real_money": "BLOCKED",
+    "result": "RESOLVED_PHYSICALLY"
+  }
+}

@@ -1,0 +1,52 @@
+{
+  "automatic_wagering": false,
+  "lane": "TEAM_YELLOW_CARDS",
+  "line": 5.5,
+  "metrics_opened": true,
+  "minimum_train_required": 200,
+  "minimum_validation_required": 50,
+  "model_parameters": {
+    "baseline_probability": 0.33031674208144796,
+    "count_model": {
+      "scale": 0.959093187225036,
+      "shrinkage_alpha": 0.25,
+      "training_poisson_nll_without_constant": -2.5316417184791646,
+      "training_target_mean": 4.67420814479638
+    },
+    "evaluation_line": 5.5
+  },
+  "model_parameters_sha256": "3b635711cee84e5a9d5e46b99a69c5161cbcef38fd50c7257b0c692a264002ba",
+  "odds_used_to_generate_probability": false,
+  "p_matrix_generated": false,
+  "prospective_eligible": false,
+  "prospective_gates": [],
+  "real_money": "BLOCKED",
+  "row_count": 271,
+  "schema": "MATRIX_FOOTBALL_EXTENDED_TEAM_MODEL_V1",
+  "semantic_gate": "YELLOW_CARDS_ONLY_FOUNDATION_NOT_FULL_CARD_SETTLEMENT",
+  "source_dataset": "evidence/api_football/market_expansion/team_pit/team_yellow_cards_pit.jsonl",
+  "source_dataset_sha256": "648adddabe6782774cb82373cda1f19b840f3d71f1f22eaf545ff6de00dad016",
+  "status": "REJECTED_HISTORICAL_OOS",
+  "train_count": 221,
+  "validation": {
+    "baseline": {
+      "brier_score": 0.17019512294998063,
+      "ece_5bin": 0.15031674208144813,
+      "log_loss": 0.5281659376244682,
+      "max_calibration_error_5bin": 0.15031674208144813,
+      "sample_size": 50
+    },
+    "challenger": {
+      "brier_score": 0.16396466135186838,
+      "ece_5bin": 0.12953498159969556,
+      "log_loss": 0.5136881241266775,
+      "max_calibration_error_5bin": 0.12953498159969556,
+      "sample_size": 50
+    },
+    "delta_brier_challenger_minus_baseline": -0.006230461598112247,
+    "delta_log_loss_challenger_minus_baseline": -0.014477813497790648,
+    "gate_passed": false
+  },
+  "validation_count": 50,
+  "validation_used_for_parameter_tuning": false
+}

@@ -1,0 +1,183 @@
+{
+  "schema": "MATRIX_FOOTBALL_DAILY_MARKET_ADJUDICATION_V1",
+  "target_date_bogota": "2026-10-05",
+  "created_from_head": "3514dfd6e102a304b9dd2a0e9a45db611c8fd9f1",
+  "scope": [
+    "UEFA Nations League",
+    "Liga Profesional Argentina",
+    "Independiente Medellin vs Santa Fe"
+  ],
+  "model_status": {
+    "daily_p_matrix": "NOT_GENERATED",
+    "lane_1x2": "ACTIVE_V2_METRICS_NOT_OPENED",
+    "lane_over_2_5": "ACTIVE_V2_METRICS_NOT_OPENED",
+    "lane_btts": "BLOCKED_NEW_CHALLENGER_REQUIRED",
+    "real_money": "BLOCKED"
+  },
+  "probability_sources": {
+    "1x2": "evidence/api_football/calibration_v2/lanes/1x2/freeze_ledger.jsonl",
+    "over_2_5": "evidence/api_football/calibration_v2/lanes/over_2_5/freeze_ledger.jsonl",
+    "btts_governance": "evidence/api_football/governance/BTTS_V2_V3_NO_GO_20261003.json",
+    "daily_cycle": "evidence/api_football/prospective_daily/2026-10-05/20261005T122132Z/cycle_summary.json"
+  },
+  "bookmaker_connector_status": {
+    "opera_direct_verification": "UNAVAILABLE_AT_ADJUDICATION_TIME",
+    "consequence": "No quote from BetPlay/Rushbet/bwin/Betano is called a direct execution quote. Web-published bookmaker references are informational and must be rechecked in-book before any user action."
+  },
+  "candidates": [
+    {
+      "fixture_id": "1493166",
+      "match": "Velez Sarsfield vs Platense",
+      "market": "1X2_HOME",
+      "frozen_v2_probability": 0.5677142381199003,
+      "fair_odds_v2": 1.76145,
+      "observed_bookmaker": "Betano",
+      "observed_decimal_odds": 1.98,
+      "source_url": "https://footballnation.eu/match/liga-profesional/2026/770411/",
+      "research_ev": 0.12407319147740264,
+      "adjudication": "RESEARCH_SIGNAL_NOT_EXECUTION_AUTHORIZED",
+      "reason": "Positive V2 value with market direction aligned, but daily P_MATRIX is not generated, V2 metrics are unopened and real_money is BLOCKED."
+    },
+    {
+      "fixture_id": "1493157",
+      "match": "Deportivo Riestra vs Central Cordoba de Santiago",
+      "market": "1X2_AWAY",
+      "frozen_v2_probability": 0.24913652979144155,
+      "fair_odds_v2": 4.01386,
+      "observed_bookmaker": "Betano",
+      "observed_decimal_odds": 4.5,
+      "source_url": "https://footballnation.eu/match/liga-profesional/2026/770402/",
+      "research_ev": 0.12111438406148695,
+      "adjudication": "WATCHLIST_NO_BET",
+      "reason": "Positive formulaic EV but underdog disagreement; V2 1X2 evaluation not opened."
+    },
+    {
+      "fixture_id": "1493158",
+      "match": "Estudiantes L.P. vs Gimnasia M.",
+      "market": "1X2",
+      "frozen_v2_probability": {
+        "H": 0.45527549966150666,
+        "D": 0.2589844507022177,
+        "A": 0.2857400496362757
+      },
+      "observed_bookmaker": "Betano",
+      "observed_odds": {
+        "H": 1.75,
+        "D": 3.45,
+        "A": 5.4
+      },
+      "source_url": "https://footballnation.eu/match/liga-profesional/2026/770403/",
+      "adjudication": "NO_BET_MODEL_MARKET_DISAGREEMENT"
+    },
+    {
+      "fixture_id": "1493154",
+      "match": "Banfield vs Rosario Central",
+      "market": "1X2",
+      "frozen_v2_probability": {
+        "H": 0.36969570549343,
+        "D": 0.24547490095001473,
+        "A": 0.38482939355655515
+      },
+      "observed_bookmaker": "Betano",
+      "observed_odds": {
+        "H": 4.2,
+        "D": 3.35,
+        "A": 1.95
+      },
+      "source_url": "https://oddsfutebol.com/odds/banfield-vs-rosario-central-1493154/",
+      "quote_source_timestamp": "2026-10-05 03:45 BRT",
+      "adjudication": "NO_BET_MODEL_MARKET_DISAGREEMENT"
+    },
+    {
+      "fixture_id": "1549809",
+      "match": "Independiente Medellin vs Santa Fe",
+      "market": "1X2",
+      "frozen_v2_probability": {
+        "H": 0.41862184674703157,
+        "D": 0.24294932026572522,
+        "A": 0.3384288329872433
+      },
+      "observed_bookmaker": "Betano",
+      "observed_partial_odds": {
+        "H": 2.02,
+        "A": 3.9
+      },
+      "source_url": "https://gainblers.com/pe/apuestas/futbol/colombia/primera-a/independientemedellin-santafe/",
+      "quote_freshness": "SOURCE_CRAWLED_6_DAYS_AGO",
+      "adjudication": "NO_BET_QUOTE_NOT_EXECUTION_FRESH_AND_MODEL_METRICS_UNOPENED"
+    },
+    {
+      "fixture_id": "1528944",
+      "match": "France vs Belgium",
+      "market": "1X2",
+      "frozen_v2_probability": {
+        "H": 0.319184858062544,
+        "D": 0.18292824051705878,
+        "A": 0.49788690142039715
+      },
+      "observed_bookmaker": "Betano",
+      "observed_odds": {
+        "H": 1.53,
+        "D": 4.65,
+        "A": 5.5
+      },
+      "source_url": "https://www.toffeeweb.com/ng/france-vs-belgium-predictions-picks-odds-05-10-2026/",
+      "quote_recorded": "2026-10-05 14:09 source-local",
+      "adjudication": "NO_BET_EXTREME_MODEL_MARKET_DISAGREEMENT"
+    },
+    {
+      "fixture_id": "1528945",
+      "match": "Italy vs Turkiye",
+      "market": "1X2",
+      "frozen_v2_probability": {
+        "H": 0.44115497067714476,
+        "D": 0.19432983945333504,
+        "A": 0.3645151898695202
+      },
+      "observed_bookmaker": "Betano",
+      "observed_odds": {
+        "H": 1.4,
+        "D": 5,
+        "A": 7.3
+      },
+      "source_url": "https://www.toffeeweb.com/ng/italy-vs-turkiye-predictions-picks-odds-05-10-2026/",
+      "quote_recorded": "2026-10-05 13:55 source-local",
+      "adjudication": "NO_BET_EXTREME_MODEL_MARKET_DISAGREEMENT"
+    },
+    {
+      "fixture_id": "1528949",
+      "match": "Romania vs Sweden",
+      "market": "OVER_2_5",
+      "frozen_v2_probability": 0.6108080509655457,
+      "fair_odds_v2": 1.63718,
+      "observed_reference_market": "Betfair Exchange",
+      "observed_decimal_odds": 1.63,
+      "source_url": "https://www.betfair.com/exchange/plus/en/football/uefa-nations-league-b/romania-v-sweden-betting-36139159",
+      "research_ev": -0.004382876926159,
+      "adjudication": "NO_BET_NO_POSITIVE_EV_AT_VERIFIED_PRICE"
+    },
+    {
+      "fixture_id": "1528950",
+      "match": "Montenegro vs Armenia",
+      "market": "OVER_2_5",
+      "frozen_v2_probability": 0.5716897325537111,
+      "fair_odds_v2": 1.7492,
+      "observed_reference_market": "PokerStars Sports",
+      "observed_decimal_odds": 1.7,
+      "source_url": "https://www.pokerstars.es/sports/futbol/1/liga-c-de-naciones-de-la-uefa/12288803/montenegro-armenia/36142896/",
+      "research_ev": -0.028127454658691,
+      "adjudication": "NO_BET_NO_POSITIVE_EV_AT_VERIFIED_PRICE"
+    }
+  ],
+  "btts": {
+    "adjudication": "NO_BET_ALL_SCOPED_FIXTURES",
+    "reason": "BTTS V2 and V3 are formally NO_GO; new challenger required. No BTTS probability may be promoted as a current MATRIX signal."
+  },
+  "protections": {
+    "no_odds_to_probability": true,
+    "no_backfill": true,
+    "metrics_opened": false,
+    "automatic_wagering": false,
+    "real_money": "BLOCKED"
+  }
+}

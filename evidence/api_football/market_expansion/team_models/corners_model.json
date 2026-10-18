@@ -1,0 +1,51 @@
+{
+  "automatic_wagering": false,
+  "lane": "CORNERS",
+  "line": 10.5,
+  "metrics_opened": true,
+  "minimum_train_required": 200,
+  "minimum_validation_required": 50,
+  "model_parameters": {
+    "baseline_probability": 0.47297297297297297,
+    "count_model": {
+      "scale": 1.0163464201324461,
+      "shrinkage_alpha": 0.5,
+      "training_poisson_nll_without_constant": -13.818560800253692,
+      "training_target_mean": 10.337837837837839
+    },
+    "evaluation_line": 10.5
+  },
+  "model_parameters_sha256": "f3f283df593a460c4edfb91df1df5a11832d0b3b27f1ba8e738a33e1d5f1378b",
+  "odds_used_to_generate_probability": false,
+  "p_matrix_generated": false,
+  "prospective_eligible": false,
+  "prospective_gates": [],
+  "real_money": "BLOCKED",
+  "row_count": 272,
+  "schema": "MATRIX_FOOTBALL_EXTENDED_TEAM_MODEL_V1",
+  "source_dataset": "evidence/api_football/market_expansion/team_pit/corners_pit.jsonl",
+  "source_dataset_sha256": "4e7c1d7efdb65bf64d83a31ae34289a1017163933cc99536e646b856256e6129",
+  "status": "REJECTED_HISTORICAL_OOS",
+  "train_count": 222,
+  "validation": {
+    "baseline": {
+      "brier_score": 0.2453250547845143,
+      "ece_5bin": 0.07297297297297284,
+      "log_loss": 0.6837888809306158,
+      "max_calibration_error_5bin": 0.07297297297297284,
+      "sample_size": 50
+    },
+    "challenger": {
+      "brier_score": 0.24748364446523838,
+      "ece_5bin": 0.0543884061883539,
+      "log_loss": 0.688087419777051,
+      "max_calibration_error_5bin": 0.0870685100811065,
+      "sample_size": 50
+    },
+    "delta_brier_challenger_minus_baseline": 0.0021585896807240768,
+    "delta_log_loss_challenger_minus_baseline": 0.004298538846435163,
+    "gate_passed": false
+  },
+  "validation_count": 50,
+  "validation_used_for_parameter_tuning": false
+}

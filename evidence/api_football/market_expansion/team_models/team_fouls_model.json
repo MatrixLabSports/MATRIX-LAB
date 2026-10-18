@@ -1,0 +1,52 @@
+{
+  "automatic_wagering": false,
+  "lane": "TEAM_FOULS",
+  "line": 28.5,
+  "metrics_opened": true,
+  "minimum_train_required": 200,
+  "minimum_validation_required": 50,
+  "model_parameters": {
+    "baseline_probability": 0.47767857142857145,
+    "count_model": {
+      "scale": 1.0093870565648246,
+      "shrinkage_alpha": 1.0,
+      "training_poisson_nll_without_constant": -65.04708852481325,
+      "training_target_mean": 27.875
+    },
+    "evaluation_line": 28.5
+  },
+  "model_parameters_sha256": "bc1a47b5bbac6c95a2e9d20e1ef67943927fa8ebeb8667eedceef3f1d4190e52",
+  "odds_used_to_generate_probability": false,
+  "p_matrix_generated": false,
+  "prospective_eligible": false,
+  "prospective_gates": [],
+  "real_money": "BLOCKED",
+  "row_count": 274,
+  "schema": "MATRIX_FOOTBALL_EXTENDED_TEAM_MODEL_V1",
+  "semantic_gate": "FOUNDATION_LANE_REQUIRES_BOOKMAKER_SCOPE_BINDING",
+  "source_dataset": "evidence/api_football/market_expansion/team_pit/team_fouls_pit.jsonl",
+  "source_dataset_sha256": "cc419f2e28327ff1fccba8041218095b3b19b7acf75682b872d5c7d519b05ee7",
+  "status": "REJECTED_HISTORICAL_OOS",
+  "train_count": 224,
+  "validation": {
+    "baseline": {
+      "brier_score": 0.24603396045918374,
+      "ece_5bin": 0.07767857142857182,
+      "log_loss": 0.6852101571916235,
+      "max_calibration_error_5bin": 0.07767857142857182,
+      "sample_size": 50
+    },
+    "challenger": {
+      "brier_score": 0.23008165471920694,
+      "ece_5bin": 0.08667786620122293,
+      "log_loss": 0.681259242214468,
+      "max_calibration_error_5bin": 0.17624136352829184,
+      "sample_size": 50
+    },
+    "delta_brier_challenger_minus_baseline": -0.015952305739976802,
+    "delta_log_loss_challenger_minus_baseline": -0.003950914977155495,
+    "gate_passed": false
+  },
+  "validation_count": 50,
+  "validation_used_for_parameter_tuning": false
+}

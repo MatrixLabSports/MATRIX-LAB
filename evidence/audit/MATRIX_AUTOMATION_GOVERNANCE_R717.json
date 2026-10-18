@@ -1,0 +1,61 @@
+{
+  "schema": "MATRIX_AUTOMATION_GOVERNANCE_R717_V1",
+  "revision": "R717",
+  "ancestor": "R716",
+  "created_at_utc": "2026-09-25T15:36:00+00:00",
+  "problem": {
+    "stale_active_automation_found": true,
+    "stale_title": "Validación pendientes MATRIX",
+    "stale_checkpoint": "R666",
+    "risk": [
+      "obsolete COR06/COR08 states",
+      "obsolete holdout count 0",
+      "overlap with current COR02/COR03 conversion watch",
+      "possible duplicate or regressive persistence"
+    ]
+  },
+  "remediation": {
+    "stale_automation_repurposed": true,
+    "new_title": "Validación COR10/COR11 MATRIX",
+    "scope": [
+      "COR10",
+      "COR11"
+    ],
+    "minimum_reference": "R716",
+    "physical_latest_head_required": true,
+    "cor0203_excluded_from_this_automation": true,
+    "zero_change_no_write": true,
+    "zero_change_no_notify": true
+  },
+  "active_separation": {
+    "cor0203_watch": {
+      "purpose": "discover and convert new ATP Challenger Hard/Indoor Hard identity-fixed future matches",
+      "current_holdout": "8/600",
+      "metrics": "SEALED_UNTIL_600"
+    },
+    "cor10_cor11_watch": {
+      "purpose": "genuine future execution evidence and real local calendar cadence only",
+      "cor10": "IN_PROGRESS_NO_GENUINE_FUTURE_EXECUTION",
+      "cor11": "5/14_REAL_DAYS"
+    }
+  },
+  "current_inventory_check": {
+    "saint_tropez": "quarterfinals still scheduled/live/upcoming; no identity-fixed semifinal recovered",
+    "san_diego": "quarterfinals not yet completed into identity-fixed semifinals",
+    "porto": "entry-list level; no individual draw recovered",
+    "columbus": "entry-list level; no individual draw recovered",
+    "mouilleron": "qualifying scheduled 27SEP; no individual draw recovered",
+    "jingshan": "entry-list/event authority; no individual draw recovered",
+    "new_admissible_freezes": 0
+  },
+  "protections": {
+    "no_duplicate_automation_scope": true,
+    "append_only": true,
+    "no_odds_to_p": true,
+    "no_silent_imputation": true,
+    "no_probability_rewrite": true,
+    "no_freeze_rewrite": true,
+    "settlement": "FINAL_ONLY",
+    "real_money": "BLOCKED"
+  }
+}

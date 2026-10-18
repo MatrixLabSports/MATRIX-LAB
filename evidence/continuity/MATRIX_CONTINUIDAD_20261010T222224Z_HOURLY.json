@@ -1,0 +1,86 @@
+{
+  "schema": "MATRIX_CONTINUITY_HOURLY_AUDIT_V1",
+  "audit_context_utc": "2026-10-10T22:22:24Z",
+  "timezone": "America/Bogota",
+  "target_branch": "repair/cor09-world-pipeline",
+  "head_read": "5c2b8c324b66b7d4d2dc08601272de770d785f7b",
+  "overall_status": "BLOCKED_PARTIAL",
+  "actions": {
+    "telegram": {
+      "run_id": 38090549105,
+      "conclusion": "success",
+      "created_at_utc": "2026-10-10T22:12:32Z",
+      "fallback": "NOT_DUE"
+    },
+    "football_final": {
+      "run_id": 38086176320,
+      "conclusion": "success",
+      "created_at_utc": "2026-10-10T21:03:48Z",
+      "fallback": "NOT_DUE"
+    },
+    "football_daily": {
+      "run_id": 38084300569,
+      "conclusion": "success",
+      "created_at_utc": "2026-10-10T20:34:49Z",
+      "fallback": "NOT_DUE_1810_BOGOTA"
+    },
+    "tennis_hard": {
+      "run_id": 38086202071,
+      "conclusion": "success",
+      "created_at_utc": "2026-10-10T21:04:14Z",
+      "unique_last_reported": 149,
+      "metrics": "SEALED",
+      "fallback": "NOT_DUE_90_MIN"
+    },
+    "live_bulk": {
+      "run_id": 38086286687,
+      "conclusion": "failure",
+      "captured_new_states_in_runner": 2,
+      "committed_to_remote": false,
+      "error": "git pull --rebase refused unstaged changes",
+      "daily_ledger": "MISSING",
+      "last_persisted_quota_guard": {
+        "generated_at_utc": "2026-10-10T15:24:28+00:00",
+        "remaining_before_run": 0,
+        "reserve_calls": 20
+      },
+      "no_op_trigger": "BLOCKED_BY_SAFETY_CHECKS"
+    },
+    "live_final": {
+      "run_id": 38077394459,
+      "previous_conclusion": "failure",
+      "previous_error": "LIVE_HTTP_429",
+      "rerun_requested": true,
+      "attempt": 2,
+      "rerun_result": "ACCEPTED_PENDING_FINAL_RESULT"
+    },
+    "shanghai": {
+      "source_ledger": "evidence/live_tennis_lab/2026-10-09/MATRIX_LIVE_TENNIS_STATE_LEDGER_V0_1.json",
+      "source_blob_sha": "135b5425a4c06621a1c66ad6d6b7216858ec3f75",
+      "index_source_blob_sha": "ec59a8362c407c348f10acdc406f8aefd56e9355",
+      "matches": 3,
+      "states": 12,
+      "final": 3,
+      "field_differences": 0,
+      "index_update": "BLOCKED_BY_SAFETY_CHECKS"
+    }
+  },
+  "safety": {
+    "real_money": "BLOQUEADO",
+    "automatic_wagering": false,
+    "model_status": "RESEARCH_ONLY",
+    "probabilities": "SEALED",
+    "metrics": "SEALED",
+    "no_imputation": true,
+    "no_odds_to_p": true,
+    "no_backfill": true,
+    "no_tuning": true,
+    "active_houses": [
+      "Betano",
+      "BetPlay",
+      "RushBet"
+    ],
+    "new_wagers": 0
+  },
+  "note": "No settled outcomes, gate advances, or remote changes are claimed without read-after-write."
+}

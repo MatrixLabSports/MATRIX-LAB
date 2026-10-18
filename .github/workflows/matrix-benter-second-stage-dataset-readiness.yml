@@ -1,0 +1,82 @@
+name: MATRIX Benter Second Stage Dataset Readiness
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - repair/cor09-world-pipeline
+    paths:
+      - tools/matrix_benter_second_stage_dataset_readiness.py
+      - tests/test_matrix_benter_second_stage_dataset_readiness.py
+      - .github/workflows/matrix-benter-second-stage-dataset-readiness.yml
+      - evidence/api_football/model_validation/benter_second_stage/2026-10-16/MATRIX_BENTER_ALL_CANDIDATE_SETTLED_V1.json
+
+permissions:
+  contents: write
+
+concurrency:
+  group: matrix-benter-second-stage-dataset-readiness
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      REAL_MONEY: BLOCKED
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: repair/cor09-world-pipeline
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install pytest
+        run: python -m pip install pytest
+      - name: Run tests
+        run: PYTHONPATH=. python -m pytest -q tests/test_matrix_benter_second_stage_dataset_readiness.py
+      - name: Build readiness artifact
+        run: PYTHONPATH=. python -m tools.matrix_benter_second_stage_dataset_readiness
+      - name: Enforce governance
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          p=Path("evidence/api_football/model_validation/MATRIX_BENTER_SECOND_STAGE_DATASET_READINESS_V2.json")
+          x=json.loads(p.read_text())
+          assert x["schema"]=="MATRIX_BENTER_SECOND_STAGE_DATASET_READINESS_V2"
+          n=int(x["valid_model_market_outcome_triplets"])
+          remaining=int(x["remaining_to_readiness"])
+          assert 0 <= n <= 300
+          assert remaining == max(0,300-n)
+          assert x["fusion_training_ready"] is (n >= 300)
+          assert x["governance"]["second_stage_fusion_enabled"] is False
+          assert x["governance"]["production_p_matrix_modified"] is False
+          assert x["governance"]["real_money"]=="BLOCKED"
+          print("MATRIX_BENTER_DATASET_READINESS_GATE: PASS")
+          print("triplets=",x["valid_model_market_outcome_triplets"])
+          print("remaining=",x["remaining_to_readiness"])
+          print("artifact_sha256=",x["artifact_sha256"])
+          PY
+      - name: Persist evidence
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name matrix-benter-readiness
+          git config user.email matrix-benter-readiness@users.noreply.github.com
+          git add evidence/api_football/model_validation/MATRIX_BENTER_SECOND_STAGE_DATASET_READINESS_V2.json
+          if git diff --cached --quiet; then
+            echo "NO_BENTER_READINESS_CHANGE"
+            exit 0
+          fi
+          git commit -m "evidence(benter): persist second-stage dataset readiness v2"
+          for attempt in 1 2 3 4; do
+            git fetch origin repair/cor09-world-pipeline
+            if ! git rebase origin/repair/cor09-world-pipeline; then git rebase --abort || true; exit 1; fi
+            if git push origin HEAD:repair/cor09-world-pipeline; then exit 0; fi
+            sleep $((attempt*2))
+          done
+          exit 1

@@ -1,0 +1,48 @@
+{
+  "schema": "MATRIX_TEAM_TOTAL_SHOTS_CANONICAL_BINDING_V1",
+  "as_of_local": "2026-10-02 21:15 COT / America/Bogota",
+  "repository": "MatrixLabSports/MATRIX-LAB",
+  "branch": "repair/cor09-world-pipeline",
+  "parent_head": "5e7854e4464fff3fb979b9ba7b98bd0f086df26e",
+  "lane": "TEAM_TOTAL_SHOTS",
+  "canonical_market": "MATRIX-MARKET-R2/football/TEAM_TOTAL_SHOTS/team-threshold",
+  "source": {
+    "provider": "api_football",
+    "endpoint": "/fixtures/statistics",
+    "field": "Total Shots",
+    "subject_scope": "TEAM"
+  },
+  "price_catalog_binding": {
+    "home": {
+      "bet_id": 221,
+      "name": "Shots. Home Total"
+    },
+    "away": {
+      "bet_id": 220,
+      "name": "Shots. Away Total"
+    },
+    "catalog_path": "evidence/api_football/market_expansion/bet_catalog/manifest.json",
+    "catalog_blob_sha": "87a2a503afe5e2e9fe6e142ee327d6c609581d3d",
+    "status": "CATALOG_BINDING_VERIFIED"
+  },
+  "live_prematch_evidence": {
+    "probe_path": "evidence/api_football/market_expansion/fixture_odds_probe/manifest.json",
+    "probe_blob_sha": "d1496734b395375a2804012cd13b5a367616061e",
+    "probed_fixture_ids": [
+      "1520905",
+      "1603384",
+      "1493728"
+    ],
+    "observed_canonical_bet_ids": [],
+    "status": "NOT_OBSERVED_IN_EXISTING_PROBE"
+  },
+  "decision": {
+    "canonical_scope_binding": "RESOLVED",
+    "live_price_gate": "BLOCKED_PENDING_PHYSICAL_PREMATCH_OBSERVATION",
+    "prospective_freeze": "NOT_STARTED",
+    "gates_30_50_100_200": "PREPARED_NOT_STARTED",
+    "odds_used_to_generate_probability": false,
+    "automatic_wagering": false,
+    "real_money": "BLOCKED"
+  }
+}

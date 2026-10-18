@@ -1,0 +1,87 @@
+name: MATRIX Live Tennis Metadata Reconcile
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - repair/cor09-world-pipeline
+    paths:
+      - tools/live_tennis_metadata_reconcile.py
+      - tools/live_tennis_model_gate.py
+      - .github/workflows/live-tennis-metadata-reconcile.yml
+
+permissions:
+  contents: write
+
+jobs:
+  reconcile:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: repair/cor09-world-pipeline
+          fetch-depth: 0
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Reconcile current Bogota-day metadata
+        id: date
+        shell: bash
+        run: |
+          D="$(TZ=America/Bogota date +%F)"
+          echo "d=$D" >> "$GITHUB_OUTPUT"
+          LEDGER="evidence/live_tennis_lab/$D/MATRIX_LIVE_TENNIS_STATE_LEDGER_V0_1.json"
+          OUT="evidence/live_tennis_lab/$D/MATRIX_LIVE_TENNIS_METADATA_RECONCILIATION_V0_1.json"
+          test -f "$LEDGER"
+          python -m tools.live_tennis_metadata_reconcile --ledger "$LEDGER" --out "$OUT"
+
+      - name: Rebuild readiness and model gate
+        shell: bash
+        run: |
+          D="${{ steps.date.outputs.d }}"
+          LEDGER="evidence/live_tennis_lab/$D/MATRIX_LIVE_TENNIS_STATE_LEDGER_V0_1.json"
+          READY="evidence/live_tennis_lab/$D/MATRIX_LIVE_TENNIS_READINESS_AUDIT_V0_1.json"
+          GATE="evidence/live_tennis_lab/$D/MATRIX_LIVE_TENNIS_MODEL_GATE_V0_1.json"
+          python -m tools.live_tennis_readiness_audit --ledger "$LEDGER" --out "$READY"
+          python -m tools.live_tennis_model_gate --readiness "$READY" --out "$GATE"
+
+      - name: Validate no silent metadata fabrication
+        env:
+          TARGET_DATE: ${{ steps.date.outputs.d }}
+        shell: bash
+        run: |
+          python - <<'PY'
+          import json, os
+          from pathlib import Path
+          d=os.environ["TARGET_DATE"]
+          e=json.loads(Path(f"evidence/live_tennis_lab/{d}/MATRIX_LIVE_TENNIS_METADATA_RECONCILIATION_V0_1.json").read_text())
+          g=json.loads(Path(f"evidence/live_tennis_lab/{d}/MATRIX_LIVE_TENNIS_MODEL_GATE_V0_1.json").read_text())
+          assert e["surface_imputations"]==0
+          assert e["protections"]["silent_imputation"] is False
+          assert e["protections"]["missing_surface_preserved"] is True
+          assert g["training_executed"] is False
+          assert g["probability_output_status"]=="SEALED"
+          assert g["protections"]["real_money"]=="BLOCKED"
+          print(json.dumps({"states_changed":e["states_changed"],"matches_changed":e["matches_changed"],"any_lane_training_eligible":g["any_lane_training_eligible"]},sort_keys=True))
+          PY
+
+      - name: Persist metadata reconciliation
+        shell: bash
+        run: |
+          D="${{ steps.date.outputs.d }}"
+          git config user.name "matrix-live-tennis-metadata"
+          git config user.email "matrix-live-tennis-metadata@users.noreply.github.com"
+          git add "evidence/live_tennis_lab/$D/MATRIX_LIVE_TENNIS_STATE_LEDGER_V0_1.json"
+          git add "evidence/live_tennis_lab/$D/MATRIX_LIVE_TENNIS_METADATA_RECONCILIATION_V0_1.json"
+          git add "evidence/live_tennis_lab/$D/MATRIX_LIVE_TENNIS_READINESS_AUDIT_V0_1.json"
+          git add "evidence/live_tennis_lab/$D/MATRIX_LIVE_TENNIS_MODEL_GATE_V0_1.json"
+          if git diff --cached --quiet; then
+            echo "NO_METADATA_CHANGE"
+            exit 0
+          fi
+          git commit -m "evidence(live): reconcile explicit UTR metadata"
+          git pull --rebase origin repair/cor09-world-pipeline
+          git push origin HEAD:repair/cor09-world-pipeline

@@ -1,0 +1,34 @@
+{
+  "error": "SofaScoreDiscoveryError:SOFASCORE_ALL_BASE_URLS_FAILED:https://api.sofascore.com/api/v1=HTTP_403|https://www.sofascore.com/api/v1=HTTP_403:/sport/football/scheduled-events/2026-10-04",
+  "http_backend": "curl_cffi_chrome",
+  "protections": {
+    "automatic_wagering": false,
+    "feeds_model_automatically": false,
+    "metrics_opened": false,
+    "odds_used_to_generate_probability": false,
+    "outcomes_used_to_generate_probability": false,
+    "real_money": "BLOCKED"
+  },
+  "provider": "sofascore",
+  "provider_network_calls": 2,
+  "provider_role": "WORLD_DISCOVERY_AND_ENTITY_METADATA_SIDECAR",
+  "request_log": [
+    {
+      "base_url": "https://api.sofascore.com/api/v1",
+      "http_status": 403,
+      "path": "/sport/football/scheduled-events/2026-10-04",
+      "response_bytes": 48,
+      "response_sha256": "6b771bca0fe4271cc0baf29954f10c68be99102048e4df524b6d7d6bf38dad5d"
+    },
+    {
+      "base_url": "https://www.sofascore.com/api/v1",
+      "http_status": 403,
+      "path": "/sport/football/scheduled-events/2026-10-04",
+      "response_bytes": 48,
+      "response_sha256": "6b771bca0fe4271cc0baf29954f10c68be99102048e4df524b6d7d6bf38dad5d"
+    }
+  ],
+  "schema": "MATRIX_SOFASCORE_MULTISPORT_DISCOVERY_V1",
+  "status": "BLOCKED",
+  "target_date_bogota": "2026-10-05"
+}

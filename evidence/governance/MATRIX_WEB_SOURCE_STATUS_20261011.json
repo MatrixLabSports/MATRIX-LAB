@@ -1,0 +1,59 @@
+{
+  "schema": "MATRIX_WEB_SOURCE_STATUS_V1",
+  "operational_date_bogota": "2026-10-11",
+  "source_order": [
+    "SofaScore",
+    "Flashscore/Flashcore",
+    "paid APIs",
+    "governed free APIs",
+    "official sources"
+  ],
+  "web_sources": {
+    "sofascore": {
+      "attempted_first": true,
+      "transport": "TinyFish fetch_content",
+      "status": "BLOCKED_UNAVAILABLE",
+      "physical_error": "bot_blocked",
+      "fabricated_reading": false
+    },
+    "flashscore": {
+      "attempted_after_sofascore": true,
+      "transport": "TinyFish fetch_content",
+      "status": "AVAILABLE",
+      "page": "https://www.flashscore.com/tennis/",
+      "physically_loaded": true
+    },
+    "opera_browser_connector": {
+      "status": "BLOCKED_BROWSER_CONNECTOR_UPSTREAM_BUG_30053",
+      "source_of_status": "canonical 11-OCT handoff",
+      "rechecked_in_this_cycle": false
+    }
+  },
+  "paid_tennis_sources": {
+    "rapidapi_tennis": {
+      "configured": true
+    },
+    "api_tennis": {
+      "configured": true
+    },
+    "two_paid_sources_ready": true,
+    "source_compliance_status": "PASS_TWO_PAID_SOURCES",
+    "physical_evidence": "evidence/cor0203/runtime/MATRIX_COR0203_SCHEDULER_HEARTBEAT.json"
+  },
+  "cor0203": {
+    "scheduler_run_id": "38186595755",
+    "scheduler_result": "SUCCESS",
+    "unique_calibration_observations": 199,
+    "remaining_to_200": 1,
+    "new_freezes_across_triggered_subcycles": 0,
+    "bottleneck_stage": "INVENTORY",
+    "bottleneck_cause": "SOURCE_READY_NO_NEW_ELIGIBLE_EVENTS",
+    "metrics_opened": false,
+    "outcomes_read_for_metrics": 0
+  },
+  "world_complete": false,
+  "world_complete_gate": "REQUIRES_MULTI_SOURCE_RECONCILIATION",
+  "automatic_model_feed": false,
+  "automatic_wagering": false,
+  "real_money": "BLOCKED"
+}

@@ -1,0 +1,86 @@
+{
+  "schema": "MATRIX_FRESH_FETCH_PHYSICAL_VERIFICATION_V1",
+  "verified_at_utc": "2026-10-11T01:52:37Z",
+  "repository": "MatrixLabSports/MATRIX-LAB",
+  "branch": "repair/cor09-world-pipeline",
+  "handoff_head": "a798af1935a9c4f4408ac61b1458786c770d0daa",
+  "pre_write_head": "04f238e439c9da70e818b86ef4915cf9d30de2dc",
+  "observed_autonomous_cycles": [
+    {
+      "workflow": "MATRIX Football Daily Governed Pipeline",
+      "run_id": 38103181960,
+      "job_id": 114363160728,
+      "conclusion": "success",
+      "persisted_commit": "fec54743510b622307f614f4e9e2ccfb1136f620",
+      "commit_message": "evidence(football): persist autonomous daily governed cycle 2026-10-11",
+      "push_log": "PUSH_SUCCEEDED_ATTEMPT=1"
+    },
+    {
+      "workflow": "Telegram Señales Verdes MATRIX",
+      "run_id": 38103258424,
+      "job_id": 114363387815,
+      "conclusion": "success",
+      "persisted_commit": "04f238e439c9da70e818b86ef4915cf9d30de2dc",
+      "commit_message": "evidence(telegram): persist autonomous supervisor ledger"
+    }
+  ],
+  "readback": {
+    "telegram_ledger": {
+      "blob_sha": "45314fecbaedcad08bc272d58a4d7ceba9fd3b4b",
+      "updated_at_utc": "2026-10-11T01:52:15+00:00",
+      "total_green_messages": 99,
+      "settlements": 54,
+      "user_settlements": 7,
+      "delivery_failures": 0,
+      "latest_run_sent_now": 13,
+      "latest_run_quote_checks": 23,
+      "paper_bankroll_current_cop": 5101250,
+      "paper_open_bets": 40,
+      "paper_open_exposure_cop": 1550000,
+      "paper_available_after_open_exposure_cop": 3551250
+    },
+    "football_2026_10_11_over25": {
+      "blob_sha": "d050016822ebbd0e1f326afbc7d931253ded4204",
+      "generated_at_utc": "2026-10-11T01:51:13+00:00",
+      "p_matrix_scored_count": 251,
+      "p_matrix_blocked_count": 34,
+      "decision_counts": {
+        "BET_SHADOW": 23,
+        "NO_BET": 39,
+        "BLOCKED": 223
+      },
+      "signal_generation_authorized": true,
+      "real_money": "BLOCKED",
+      "automatic_wagering": false
+    },
+    "football_cycle_summary": {
+      "blob_sha": "25016696764d64e03750d7ea5d1c0a7d766d0e3e",
+      "cycle_id": "20261011T015046Z",
+      "status": "PASS",
+      "fixtures_received": 1127,
+      "eligible_future_fixtures": 1119,
+      "network_calls_performed": 161,
+      "ready_input_count": 285,
+      "blocked_future_input_count": 834,
+      "new_freeze_events": 0,
+      "freeze_status": "NO_NEW_ELIGIBLE_EVENTS",
+      "real_money": "BLOCKED",
+      "automatic_wagering": false
+    }
+  },
+  "ci_current_head": {
+    "pull_request_run_id": 38103298596,
+    "pull_request_run_conclusion": "action_required",
+    "pull_request_run_jobs": 0,
+    "exact_sha_workflow_dispatch_seen": false,
+    "combined_status_contexts": 0,
+    "status": "NOT_FULLY_CERTIFIED_CURRENT_HEAD"
+  },
+  "governance": {
+    "real_money": "BLOCKED",
+    "automatic_wagering": false,
+    "odds_used_to_generate_probability": false,
+    "outcomes_used_to_generate_probability": false
+  },
+  "conclusion": "AUTONOMOUS_FOOTBALL_AND_TELEGRAM_PERSISTENCE_PHYSICALLY_PROVEN; CURRENT_HEAD_CI_EXACT_SHA_NOT_YET_CERTIFIED"
+}

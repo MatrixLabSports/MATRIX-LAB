@@ -1,0 +1,62 @@
+{
+  "schema": "MATRIX_FOOTBALL_SOFASCORE_BROWSER_CALENDAR_V1",
+  "target_date_bogota": "2026-10-10",
+  "source": "SofaScore via Opera Browser Connector",
+  "source_url": "https://www.sofascore.com/es/football/2026-10-10",
+  "physical_browser_verified": true,
+  "extraction_method": "accessibility_tree_jq_exact_date_match_links",
+  "exact_date_label": "10/10/26",
+  "materialized_exact_date_rows": 340,
+  "unique_exact_date_match_urls": 340,
+  "duplicate_exact_date_urls": 0,
+  "includes_postponed_rows": true,
+  "example_rows": [
+    "Deportivo Pereira vs Deportivo Cali",
+    "Junior Barranquilla vs Internacional de Bogotá",
+    "Atlético Nacional vs Deportivo Pasto — Aplazado",
+    "Vasco da Gama vs Remo",
+    "São Paulo vs Vitória"
+  ],
+  "flashscore_status": {
+    "target_url": "https://www.flashscore.co/?d=2026-10-10",
+    "browser_url_changed": true,
+    "ui_date_still_visible": "viernes, 9 de octubre de 2026",
+    "physically_verified_for_10_oct": false,
+    "use_for_reconciliation_now": false
+  },
+  "governance": {
+    "sofa_first": true,
+    "flashscore_second": true,
+    "structured_apis_after_browser_sources": true,
+    "canonical_world_denominator_pending_reconciliation": true,
+    "deduplication_required": true,
+    "postponed_not_model_eligible_until_rescheduled": true,
+    "automatic_model_feed": false,
+    "odds_do_not_generate_probability": true,
+    "real_money": "BLOCKED"
+  },
+  "note": "340 is the physically materialized set of unique SofaScore football match links explicitly labeled 10/10/26 in the Opera accessibility tree. It is a browser inventory baseline, not yet the canonical worldwide denominator until Flashscore and API reconciliation are completed.",
+  "user_physical_full_day_count_evidence": {
+    "source": "user_provided_screenshot",
+    "screenshot_file": "1002210664.jpg",
+    "screenshot_sha256": "c119842536d81fcdc9059c3f9bb6a42f97dd14de1fbb5892579933436b315ec9",
+    "image_dimensions_px": [
+      1536,
+      787
+    ],
+    "visible_rows": {
+      "football": "75 / 1449",
+      "tennis": "5 / 275"
+    },
+    "interpretation_policy": "Use the white right-hand values as the visible full-day totals reported for tomorrow. Preserve the red numerators without assigning semantics absent source documentation.",
+    "visible_full_day_totals": {
+      "football": 1449,
+      "tennis": 275
+    }
+  },
+  "user_visible_full_day_count": 1449,
+  "user_visible_full_day_count_source": "USER_PROVIDED_SOFASCORE_SCREENSHOT",
+  "full_day_count_user_screenshot_verified": true,
+  "status": "PARTIAL_BROWSER_EXTRACTION_DO_NOT_USE_AS_FULL_DAY_DENOMINATOR",
+  "correction_note": "The 340 exact-date match links materialized by Opera are a partial browser extraction. User-provided SofaScore screenshot physically shows Football 75 / 1449 for tomorrow. Use 1449 as the visible SofaScore full-day reference count, while the canonical worldwide count remains pending cross-source reconciliation."
+}

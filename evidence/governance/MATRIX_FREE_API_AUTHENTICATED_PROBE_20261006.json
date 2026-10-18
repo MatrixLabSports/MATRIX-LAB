@@ -1,0 +1,72 @@
+{
+  "generated_at_utc": "2026-10-06T17:55:59+00:00",
+  "promotion_gate": {
+    "automatic_model_feed": false,
+    "both_pass": true,
+    "football_data_org_pass": true,
+    "live_tennis_api_pass": true,
+    "requires_separate_coverage_reconciliation_before_matrix_use": true
+  },
+  "protections": {
+    "metrics_opened": false,
+    "odds_to_probability": false,
+    "real_money": "BLOCKED",
+    "secrets_echoed": false,
+    "secrets_persisted": false
+  },
+  "providers": {
+    "football_data_org": {
+      "auth_method": "X-Auth-Token",
+      "authenticated": true,
+      "competitions_returned": 13,
+      "endpoint": {
+        "content_type": "application/json;charset=UTF-8",
+        "http_status": 200,
+        "params": {},
+        "response_bytes": 5642,
+        "response_sha256": "efe49286710a53e7b44c590e0d1297ce575bbd267b9c57bb705355beeaddd025",
+        "url": "https://api.football-data.org/v4/competitions"
+      },
+      "token_redacted": true
+    },
+    "live_tennis_api": {
+      "auth_method": "X-API-Key",
+      "authenticated": true,
+      "matches_endpoint": {
+        "content_type": "application/json",
+        "http_status": 200,
+        "params": {
+          "limit": 5,
+          "status": "upcoming"
+        },
+        "response_bytes": 7022,
+        "response_sha256": "9ad1d22806ebdd32af2ea28cc0a9a702578577a1213fc9ae857ba6aedcc17db6",
+        "url": "https://api.livetennisapi.com/api/public/v1/matches"
+      },
+      "token_redacted": true,
+      "upcoming_sample_count": 5,
+      "usage_endpoint": {
+        "content_type": "application/json",
+        "http_status": 200,
+        "params": {},
+        "response_bytes": 267,
+        "response_sha256": "6aa07004674c65c27c5c8d033528ddfece0ff962edfc8ef07870577e9bc46cbd",
+        "url": "https://api.livetennisapi.com/api/public/v1/usage"
+      },
+      "usage_response_keys": [
+        "as_of",
+        "base_tier",
+        "channel",
+        "history",
+        "history_limits",
+        "limits",
+        "principal",
+        "tier",
+        "tier_expires_at",
+        "today"
+      ]
+    }
+  },
+  "schema": "MATRIX_FREE_API_AUTHENTICATED_PROBE_V1",
+  "status": "PASS"
+}

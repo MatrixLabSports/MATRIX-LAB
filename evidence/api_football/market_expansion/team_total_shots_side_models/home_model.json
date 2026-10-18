@@ -1,0 +1,101 @@
+{
+  "automatic_wagering": false,
+  "bookmaker_scope_alignment_certified": true,
+  "historical_evaluation_line": 15.5,
+  "internal_selection": {
+    "final_validation_used_for_selection": false,
+    "selected": {
+      "internal_challenger": {
+        "brier_score": 0.23237299147284252,
+        "ece_5bin": 0.10023188793393628,
+        "log_loss": 0.6572465072636208,
+        "max_calibration_error_5bin": 0.3651756419192267,
+        "sample_size": 84
+      },
+      "internal_raw_expected_poisson_reference": {
+        "brier_score": 0.30568916111656985,
+        "ece_5bin": 0.28273509359262855,
+        "log_loss": 0.8448606460143334,
+        "max_calibration_error_5bin": 0.5618344055730329,
+        "sample_size": 84
+      },
+      "l2": 0.001,
+      "mode": "EXPECTED_ONLY"
+    },
+    "selection_rows": 224,
+    "trial_count": 9
+  },
+  "lane": "TEAM_TOTAL_SHOTS_HOME",
+  "market_binding": {
+    "api_football_bet_id": 221,
+    "api_football_bet_name": "Shots. Home Total"
+  },
+  "model_parameters": {
+    "arbitrary_half_line_probability_supported": true,
+    "epochs": 500,
+    "family": "POISSON_GLM",
+    "historical_evaluation_line": 15.5,
+    "l2": 0.001,
+    "learning_rate": 0.01,
+    "means": [
+      12.648847130079334
+    ],
+    "mode": "EXPECTED_ONLY",
+    "side": "HOME",
+    "stds": [
+      1.3576311072522047
+    ],
+    "train_base_rate_at_evaluation_line": 0.4642857142857143,
+    "weights": [
+      2.7069266447442306,
+      0.10266779218261608
+    ]
+  },
+  "model_parameters_sha256": "5de1a87e083bb03d73a551370ea765ff9c36bb08d141adb6c7a27800ada94a82",
+  "odds_used_to_generate_probability": false,
+  "p_matrix_generated": false,
+  "prospective_eligible": true,
+  "prospective_gates": [
+    30,
+    50,
+    100,
+    200
+  ],
+  "real_money": "BLOCKED",
+  "row_count": 274,
+  "schema": "MATRIX_TEAM_TOTAL_SHOTS_SIDE_MODEL_V1",
+  "side": "HOME",
+  "source_dataset": "evidence/api_football/market_expansion/team_pit/team_total_shots_pit.jsonl",
+  "status": "FROZEN_FOR_NEW_PROSPECTIVE_VALIDATION",
+  "train_count": 224,
+  "validation": {
+    "challenger": {
+      "brier_score": 0.20627431215564018,
+      "ece_5bin": 0.08395346314322322,
+      "log_loss": 0.5970673454474396,
+      "max_calibration_error_5bin": 0.1806409442564394,
+      "sample_size": 50
+    },
+    "constant_train_base_rate": {
+      "brier_score": 0.2441326530612246,
+      "ece_5bin": 0.06428571428571433,
+      "log_loss": 0.6813946465292636,
+      "max_calibration_error_5bin": 0.06428571428571433,
+      "sample_size": 50
+    },
+    "delta_brier_challenger_minus_constant": -0.03785834090558443,
+    "delta_brier_challenger_minus_raw": -0.021952549531580823,
+    "delta_log_loss_challenger_minus_constant": -0.08432730108182407,
+    "delta_log_loss_challenger_minus_raw": -0.047571826270468076,
+    "gate_passed": true,
+    "raw_expected_poisson_reference": {
+      "brier_score": 0.228226861687221,
+      "ece_5bin": 0.15166164644949173,
+      "log_loss": 0.6446391717179076,
+      "max_calibration_error_5bin": 0.3828634067361798,
+      "sample_size": 50
+    }
+  },
+  "validation_count": 50,
+  "validation_used_for_parameter_tuning": false
+}

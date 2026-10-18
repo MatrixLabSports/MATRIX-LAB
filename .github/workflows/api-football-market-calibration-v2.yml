@@ -1,0 +1,241 @@
+# MATRIX_RECONCILIATION_TRIGGER 2026-10-15 forward-1444-1544-vs-lane-v2 physical close
+# MATRIX_USER_AUTHORIZED_TRIGGER 2026-10-13 freeze-closed-over25-forward100-artifact
+# MATRIX_USER_AUTHORIZED_TRIGGER 2026-10-12 preregister-over25-forward-1444-1544
+# MATRIX_USER_AUTHORIZED_TRIGGER 2026-10-12 restore-immutable-checkpoint200-and-recertify-forward100
+# MATRIX_USER_AUTHORIZED_TRIGGER 2026-10-12 close-over25-forward-validation-1329-1429
+name: API Football Market Calibration V2
+
+on:
+  push:
+    branches:
+      - repair/cor09-world-pipeline
+    paths:
+      - "evidence/api_football/prospective_calibration/ledger.jsonl"
+      - "tools/api_football_market_calibration_v2_sync.py"
+      - "tools/api_football_market_calibration_v2_checkpoint_200.py"
+      - "tools/api_football_over25_forward_validation_100.py"
+      - "tools/api_football_over25_forward_validation_1444_1544.py"
+      - "tests/test_api_football_market_calibration_v2.py"
+      - "tests/test_api_football_over25_forward_validation_100.py"
+      - "tests/test_api_football_over25_forward_validation_1444_1544.py"
+      - "evidence/api_football/calibration_v2/OVER25_FORWARD_VALIDATION_PROTOCOL_1444_1544.json"
+      - ".github/workflows/api-football-market-calibration-v2.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: api-football-market-calibration-v2
+  cancel-in-progress: false
+
+jobs:
+  sync-separated-market-ledgers:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout operational branch
+        uses: actions/checkout@v4
+        with:
+          ref: repair/cor09-world-pipeline
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install test dependency
+        run: python -m pip install pytest
+
+      - name: Verify separation and forward-validation contracts
+        run: |
+          pytest -q \
+            tests/test_api_football_market_calibration_v2.py \
+            tests/test_api_football_over25_forward_validation_100.py \
+            tests/test_api_football_over25_forward_validation_1444_1544.py
+
+      - name: Sync V2 market ledgers
+        run: python tools/api_football_market_calibration_v2_sync.py
+
+      - name: Verify immutable closed fixed-prefix checkpoint 200
+        shell: bash
+        run: |
+          set -euo pipefail
+          CHECKPOINT="evidence/api_football/calibration_v2/checkpoint_200_1x2_over_2_5_20261006.json"
+          EXPECTED_BLOB="5ce70e45da122590862ddcd49cdbac0014d01b39"
+          ACTUAL_BLOB="$(git hash-object "$CHECKPOINT")"
+          test "$ACTUAL_BLOB" = "$EXPECTED_BLOB" || {
+            echo "CHECKPOINT_200_IMMUTABILITY_VIOLATION:$ACTUAL_BLOB:$EXPECTED_BLOB"
+            exit 1
+          }
+          echo "CHECKPOINT_200_IMMUTABLE_BLOB=$ACTUAL_BLOB"
+
+      - name: Validate checkpoint-200 governance and physical sample
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          p = Path("evidence/api_football/calibration_v2/checkpoint_200_1x2_over_2_5_20261006.json")
+          j = json.loads(p.read_text(encoding="utf-8"))
+          assert j["checkpoint"] == 200
+          assert j["checkpoint_role"] == "CLOSED_FIXED_PREFIX_200_INFORMATIVE_STABILITY_CHECKPOINT_NOT_PROMOTION_GATE"
+          assert j["lane_audit"]["1x2"]["observations_used"] == 200
+          assert j["lane_audit"]["1x2"]["unique_fixture_id_count"] == 200
+          assert j["lane_audit"]["over_2_5"]["observations_used"] == 200
+          assert j["lane_audit"]["over_2_5"]["unique_fixture_id_count"] == 200
+          assert j["lane_audit"]["1x2"]["probability_binding_verified"] is True
+          assert j["lane_audit"]["over_2_5"]["probability_binding_verified"] is True
+          assert j["lane_audit"]["1x2"]["outcome_binding_verified"] is True
+          assert j["lane_audit"]["over_2_5"]["outcome_binding_verified"] is True
+          assert j["governance"]["checkpoint_metrics_opened"] is True
+          assert j["governance"]["continuous_lane_metrics_remain_sealed"] is True
+          assert j["governance"]["parameter_tuning_allowed"] is False
+          assert j["governance"]["parameters_mutated"] is False
+          assert j["governance"]["model_files_modified"] is False
+          assert j["governance"]["model_promotion_performed"] is False
+          assert j["governance"]["odds_used_to_generate_probability"] is False
+          assert j["governance"]["real_money"] == "BLOCKED"
+          for market in ("1x2", "over_2_5"):
+              m = j["market_adjudication"][market]
+              assert m["challenger"]["sample_size"] == 200
+              assert m["poisson"]["sample_size"] == 200
+              assert m["gate_rule"] == "delta_brier<0 AND delta_log_loss<0"
+          print(json.dumps({
+              "checkpoint": j["checkpoint"],
+              "one_x_two_gate": j["market_adjudication"]["1x2"]["gate_passed"],
+              "over_2_5_gate": j["market_adjudication"]["over_2_5"]["gate_passed"],
+              "verdict": j["overall"]["verdict"],
+              "parameters_mutated": j["governance"]["parameters_mutated"],
+              "real_money": j["governance"]["real_money"],
+          }, sort_keys=True))
+          PY
+
+      - name: Verify immutable closed Over 2.5 forward-validation block 1329 to 1429
+        shell: bash
+        run: |
+          set -euo pipefail
+          RESULT="evidence/api_football/calibration_v2/OVER25_FORWARD_VALIDATION_RESULT_20261013.json"
+          EXPECTED_BLOB="c323e61946fc315109f61658c8c20ed3ba606bd9"
+          ACTUAL_BLOB="$(git hash-object "$RESULT")"
+          test "$ACTUAL_BLOB" = "$EXPECTED_BLOB" || {
+            echo "OVER25_FORWARD_100_IMMUTABILITY_VIOLATION:$ACTUAL_BLOB:$EXPECTED_BLOB"
+            exit 1
+          }
+          echo "OVER25_FORWARD_100_IMMUTABLE_BLOB=$ACTUAL_BLOB"
+
+      - name: Validate Over 2.5 forward-validation governance and physical sample
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          p = Path("evidence/api_football/calibration_v2/OVER25_FORWARD_VALIDATION_RESULT_20261013.json")
+          j = json.loads(p.read_text(encoding="utf-8"))
+          assert j["physical_sample"]["sample_size"] == 100
+          assert j["physical_sample"]["unique_fixture_ids"] == 100
+          assert j["baseline"]["over_2_5_lane_settlements"] == 1329
+          assert j["maturity"]["target_over_2_5_lane_settlement_count"] == 1429
+          assert j["maturity"]["current_over_2_5_lane_settlements"] >= 1429
+          assert j["physical_sample"]["source_baseline_prefix_unchanged"] is True
+          assert j["physical_sample"]["lane_probability_binding_verified"] is True
+          assert j["physical_sample"]["lane_outcome_binding_verified"] is True
+          assert j["physical_sample"]["all_rows_standard_final_ft"] is True
+          assert j["physical_sample"]["parameter_tuning_used"] is False
+          assert j["physical_sample"]["parameters_mutated_after_freeze"] is False
+          assert j["governance"]["parameter_tuning_allowed"] is False
+          assert j["governance"]["refit_allowed"] is False
+          assert j["governance"]["model_files_modified"] is False
+          assert j["governance"]["real_money"] == "BLOCKED"
+          assert j["challenger"]["sample_size"] == 100
+          assert j["poisson"]["sample_size"] == 100
+          print(json.dumps({
+              "sample_size": j["physical_sample"]["sample_size"],
+              "brier": j["challenger"]["brier_score"],
+              "log_loss": j["challenger"]["log_loss"],
+              "ece": j["challenger"]["calibration"]["ece"],
+              "max_calibration_error": j["challenger"]["calibration"]["max_calibration_error"],
+              "delta_brier": j["paired_comparison"]["delta_brier_challenger_minus_poisson"],
+              "delta_log_loss": j["paired_comparison"]["delta_log_loss_challenger_minus_poisson"],
+              "verdict": j["adjudication"]["verdict"],
+              "real_money": j["governance"]["real_money"],
+          }, sort_keys=True))
+          PY
+
+      - name: Monitor or close preregistered Over 2.5 block 1444 to 1544
+        run: python tools/api_football_over25_forward_validation_1444_1544.py
+
+      - name: Enforce second-block sealing and governance
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          p = Path("evidence/api_football/calibration_v2/OVER25_FORWARD_VALIDATION_1444_1544_STATE.json")
+          j = json.loads(p.read_text(encoding="utf-8"))
+          assert j["baseline_settlement_count"] == 1444
+          assert j["target_settlement_count"] == 1544
+          assert j["cohort_size_required"] == 100
+          assert j["parameter_tuning_allowed"] is False
+          assert j["refit_allowed"] is False
+          assert j["automatic_wagering"] is False
+          assert j["real_money"] == "BLOCKED"
+          assert j["continuous_lane_metrics_remain_sealed"] is True
+          if j["status"] == "SEALED_PENDING":
+              assert j["metrics_opened"] is False
+              assert j["outcomes_read_for_metrics"] == 0
+              assert not Path("evidence/api_football/calibration_v2/OVER25_FORWARD_VALIDATION_1444_1544_RESULT.json").exists()
+          elif j["status"] == "CLOSED_FIXED_100":
+              assert j["metrics_opened"] is True
+              assert j["outcomes_read_for_metrics"] == 100
+              r = json.loads(Path("evidence/api_football/calibration_v2/OVER25_FORWARD_VALIDATION_1444_1544_RESULT.json").read_text(encoding="utf-8"))
+              assert r["sample_size"] == 100
+              assert len(r["fixture_ids"]) == 100
+              assert r["governance"]["real_money"] == "BLOCKED"
+              assert r["governance"]["parameter_tuning_allowed"] is False
+          else:
+              raise AssertionError(j["status"])
+          print(json.dumps({
+              "status": j["status"],
+              "baseline": j["baseline_settlement_count"],
+              "current": j["current_settlement_count"],
+              "target": j["target_settlement_count"],
+              "new": j["new_settlements_after_baseline"],
+              "remaining": j["remaining_to_target"],
+              "metrics_opened": j["metrics_opened"],
+              "outcomes_read_for_metrics": j["outcomes_read_for_metrics"],
+              "real_money": j["real_money"],
+          }, sort_keys=True))
+          PY
+
+      - name: Persist V2 evidence if changed
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add \
+            evidence/api_football/calibration_v2/lanes \
+            evidence/api_football/calibration_v2/OVER25_FORWARD_VALIDATION_1444_1544_STATE.json
+          if [ -f evidence/api_football/calibration_v2/OVER25_FORWARD_VALIDATION_1444_1544_RESULT.json ]; then
+            git add evidence/api_football/calibration_v2/OVER25_FORWARD_VALIDATION_1444_1544_RESULT.json
+          fi
+          if git diff --cached --quiet; then
+            echo "No V2 market-ledger/checkpoint changes."
+            exit 0
+          fi
+          git commit -m "evidence(football): persist V2 lanes and Over25 forward 100"
+          for attempt in 1 2 3 4; do
+            git fetch origin repair/cor09-world-pipeline
+            if ! git rebase origin/repair/cor09-world-pipeline; then
+              echo "REBASE_CONFLICT_ABORTING"
+              git rebase --abort || true
+              exit 1
+            fi
+            if git push origin HEAD:repair/cor09-world-pipeline; then
+              echo "PUSH_SUCCEEDED_ATTEMPT=${attempt}"
+              exit 0
+            fi
+            echo "PUSH_RACE_RETRY_ATTEMPT=${attempt}"
+            sleep $((attempt * 2))
+          done
+          echo "PUSH_RETRY_BUDGET_EXHAUSTED"
+          exit 1

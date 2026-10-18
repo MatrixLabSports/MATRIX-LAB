@@ -1,0 +1,259 @@
+name: Football 08OCT Two Shadow Final Quote Freeze
+
+on:
+  push:
+    branches:
+      - repair/cor09-world-pipeline
+    paths:
+      - .github/workflows/football-08oct-two-shadow-final-quote-freeze.yml
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: football-08oct-two-shadow-final-quote-freeze
+  cancel-in-progress: false
+
+jobs:
+  quote-freeze:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: repair/cor09-world-pipeline
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install requests
+        run: python -m pip install requests
+
+      - name: Refresh exact Over 2.5 quotes and freeze shadow decisions
+        env:
+          API_FOOTBALL_KEY: ${{ secrets.API_FOOTBALL_KEY }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import hashlib,json,os,re
+          from datetime import datetime,timezone
+          from pathlib import Path
+          import requests
+
+          src=Path("evidence/api_football/daily_prematch_reports/2026-10-08/over25_shadow_ev/MATRIX_FOOTBALL_08OCT_OVER25_GOVERNED_SHADOW_EV.json")
+          j=json.loads(src.read_text())
+          wanted={"1621358","1492394"}
+          by_id={str(x["fixture_id"]):x for x in j["bet_shadow"] if str(x["fixture_id"]) in wanted}
+          if set(by_id)!=wanted:
+              raise SystemExit("TWO_EXPECTED_SHADOW_FIXTURES_NOT_FOUND")
+
+          key=os.environ.get("API_FOOTBALL_KEY","").strip()
+          if not key:
+              raise SystemExit("API_FOOTBALL_KEY_NOT_CONFIGURED")
+
+          def norm(v): return re.sub(r"[^a-z0-9]+","",str(v or "").casefold())
+          policy={"betano":["betano"],"betplay":["betplay"],"bwin":["bwin"],"rushbet":["rushbet","rush bet"]}
+          diagnostic={"pinnacle":["pinnacle"]}
+
+          def book_key(name,mapping):
+              n=norm(name)
+              for k,toks in mapping.items():
+                  if any(norm(t) in n for t in toks): return k
+              return None
+
+          def parse_odd(v):
+              try:
+                  x=float(v)
+                  return x if x>1 else None
+              except Exception:
+                  return None
+
+          now=datetime.now(timezone.utc).replace(microsecond=0)
+          out_root=Path("evidence/api_football/daily_prematch_reports/2026-10-08/shadow_quote_freeze")
+          raw=out_root/"raw"; raw.mkdir(parents=True,exist_ok=True)
+          sess=requests.Session()
+          rows=[]
+          calls=0
+
+          for fid in sorted(wanted):
+              base=by_id[fid]
+              p=float(base["p_over_2_5"])
+              ko=datetime.fromisoformat(str(base["kickoff_utc"]).replace("Z","+00:00")).astimezone(timezone.utc)
+              if ko<=now:
+                  rows.append({
+                    "fixture_id":fid,
+                    "match":base["match"],
+                    "p_matrix":p,
+                    "kickoff_utc":base["kickoff_utc"],
+                    "decision":"BLOCKED",
+                    "reason":"EVENT_NOT_FUTURE_AT_REFRESH"
+                  })
+                  continue
+
+              resp=sess.get(
+                "https://v3.football.api-sports.io/odds",
+                headers={"x-apisports-key":key},
+                params={"fixture":fid},
+                timeout=20
+              )
+              calls+=1
+              body=bytes(resp.content)
+              (raw/f"fixture_{fid}.bin").write_bytes(body)
+              try: payload=resp.json()
+              except Exception: payload={}
+              errors=payload.get("errors") if isinstance(payload,dict) else None
+
+              policy_offers=[]
+              diag_offers=[]
+              if 200 <= resp.status_code < 300 and errors in ({},[],None):
+                  for fr in payload.get("response",[]) or []:
+                      if not isinstance(fr,dict): continue
+                      for book in fr.get("bookmakers",[]) or []:
+                          if not isinstance(book,dict): continue
+                          bname=str(book.get("name") or "")
+                          pk=book_key(bname,policy)
+                          dk=book_key(bname,diagnostic)
+                          if not pk and not dk: continue
+                          for bet in book.get("bets",[]) or []:
+                              if not isinstance(bet,dict): continue
+                              try: bid=int(bet.get("id"))
+                              except Exception: continue
+                              btitle=str(bet.get("name") or "").strip()
+                              if bid!=5 or btitle.casefold()!="goals over/under": continue
+                              for val in bet.get("values",[]) or []:
+                                  if not isinstance(val,dict): continue
+                                  if str(val.get("value") or "").strip().casefold()!="over 2.5": continue
+                                  dec=parse_odd(val.get("odd"))
+                                  if dec is None: continue
+                                  offer={
+                                    "house_key":pk or dk,
+                                    "bookmaker_name":bname,
+                                    "bookmaker_id":book.get("id"),
+                                    "decimal_odds":dec,
+                                    "break_even_probability":1.0/dec,
+                                    "p_matrix":p,
+                                    "ev":p*dec-1.0,
+                                    "bet_id":5,
+                                    "bet_name":"Goals Over/Under",
+                                    "value":"Over 2.5"
+                                  }
+                                  (policy_offers if pk else diag_offers).append(offer)
+
+              elig=[x for x in policy_offers if x["decimal_odds"]>1.50]
+              best=max(elig,key=lambda x:x["ev"]) if elig else None
+              if best is None:
+                  decision="BLOCKED"; reason="NO_EXACT_POLICY_HOUSE_OVER25_QUOTE_ABOVE_1_50_AT_REFRESH"
+              elif best["ev"]>0:
+                  decision="BET_SHADOW"; reason="POSITIVE_EV_SURVIVED_REFRESH"
+              else:
+                  decision="NO_BET"; reason="EV_NO_LONGER_POSITIVE_AT_REFRESH"
+
+              rows.append({
+                "fixture_id":fid,
+                "match":base["match"],
+                "kickoff_utc":base["kickoff_utc"],
+                "p_matrix":p,
+                "fair_decimal_odds":1.0/p,
+                "policy_offers":policy_offers,
+                "diagnostic_offers":diag_offers,
+                "best_policy_offer":best,
+                "decision":decision,
+                "reason":reason,
+                "quote_observed_at_utc":now.isoformat(),
+                "raw_sha256":hashlib.sha256(body).hexdigest(),
+                "provider_http_status":int(resp.status_code),
+                "provider_errors":errors
+              })
+
+          out={
+            "schema":"MATRIX_FOOTBALL_08OCT_TWO_SHADOW_FINAL_QUOTE_FREEZE_V1",
+            "generated_at_utc":now.isoformat(),
+            "target_date_bogota":"2026-10-08",
+            "market":"OVER_2_5",
+            "source_shadow_artifact":str(src),
+            "network_calls":calls,
+            "rows":rows,
+            "decision_counts":{
+              "BET_SHADOW":sum(x["decision"]=="BET_SHADOW" for x in rows),
+              "NO_BET":sum(x["decision"]=="NO_BET" for x in rows),
+              "BLOCKED":sum(x["decision"]=="BLOCKED" for x in rows)
+            },
+            "stake_normalization":"1_UNIT_SHADOW_PER_BET_SHADOW",
+            "settlement_status":"PENDING_FINAL",
+            "protections":{
+              "p_matrix_immutable_from_prior_freeze":True,
+              "odds_used_to_generate_probability":False,
+              "exact_market_binding":{"bet_id":5,"bet_name":"Goals Over/Under","value":"Over 2.5"},
+              "minimum_decimal_odds_exclusive":1.50,
+              "automatic_wagering":False,
+              "real_money":"BLOCKED"
+            }
+          }
+          rawb=json.dumps(out,sort_keys=True,separators=(",",":"),ensure_ascii=False).encode()
+          out["sha256_without_self"]=hashlib.sha256(rawb).hexdigest()
+          out_root.mkdir(parents=True,exist_ok=True)
+          (out_root/"MATRIX_FOOTBALL_08OCT_TWO_SHADOW_FINAL_QUOTE_FREEZE.json").write_text(
+              json.dumps(out,indent=2,sort_keys=True,ensure_ascii=False)+"\n"
+          )
+          print(json.dumps({
+            "network_calls":calls,
+            "decision_counts":out["decision_counts"],
+            "rows":[{
+              "fixture_id":x["fixture_id"],
+              "match":x["match"],
+              "decision":x["decision"],
+              "p":x["p_matrix"],
+              "odds":(x.get("best_policy_offer") or {}).get("decimal_odds"),
+              "house":(x.get("best_policy_offer") or {}).get("bookmaker_name"),
+              "ev":(x.get("best_policy_offer") or {}).get("ev"),
+              "reason":x["reason"]
+            } for x in rows],
+            "real_money":"BLOCKED"
+          },sort_keys=True))
+          PY
+
+      - name: Validate shadow freeze
+        shell: bash
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          p=Path("evidence/api_football/daily_prematch_reports/2026-10-08/shadow_quote_freeze/MATRIX_FOOTBALL_08OCT_TWO_SHADOW_FINAL_QUOTE_FREEZE.json")
+          j=json.loads(p.read_text())
+          assert len(j["rows"])==2
+          assert j["protections"]["p_matrix_immutable_from_prior_freeze"] is True
+          assert j["protections"]["odds_used_to_generate_probability"] is False
+          assert j["protections"]["automatic_wagering"] is False
+          assert j["protections"]["real_money"]=="BLOCKED"
+          for x in j["rows"]:
+              if x["decision"]=="BET_SHADOW":
+                  b=x["best_policy_offer"]
+                  assert b["decimal_odds"]>1.50
+                  assert b["ev"]>0
+                  assert b["bet_id"]==5
+                  assert b["bet_name"]=="Goals Over/Under"
+                  assert b["value"]=="Over 2.5"
+          print("TWO_SHADOW_QUOTE_FREEZE_GATE: PASS")
+          PY
+
+      - name: Persist
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name matrix-football-shadow-freeze
+          git config user.email matrix-football-shadow-freeze@users.noreply.github.com
+          git add evidence/api_football/daily_prematch_reports/2026-10-08/shadow_quote_freeze
+          git commit -m "evidence(football): refresh and freeze 08OCT two Over25 shadow quotes"
+          for attempt in 1 2 3 4; do
+            git fetch origin repair/cor09-world-pipeline
+            if ! git rebase origin/repair/cor09-world-pipeline; then git rebase --abort || true; exit 1; fi
+            if git push origin HEAD:repair/cor09-world-pipeline; then exit 0; fi
+            sleep $((attempt*2))
+          done
+          exit 1

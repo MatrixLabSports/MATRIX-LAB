@@ -1,0 +1,84 @@
+{
+  "schema": "MATRIX_COR0203_FRONTIER_R720_V1",
+  "revision": "R720",
+  "ancestor": "R719",
+  "local_checkpoint": "2026-09-25T16:25:00-05:00",
+  "holdout_before": {
+    "window1": 9,
+    "total": 9,
+    "metrics": "SEALED_UNTIL_600"
+  },
+  "saint_tropez": {
+    "observation_9": "Harold Mayot vs Murphy Cassone — already frozen R718",
+    "second_semifinal_status": "NOT_ADMISSIBLE_YET",
+    "reason": "No sufficiently reliable terminal result recovered for both remaining quarterfinals at this checkpoint."
+  },
+  "san_diego_2": {
+    "completed_quarterfinal": {
+      "event": "Igor Marcondes vs Federico Agustin Gomez",
+      "result": "Igor Marcondes won 4-6 6-4 6-1",
+      "status": "FINAL",
+      "use": "IDENTITY_PROGRESSION_ONLY",
+      "performance_metrics_opened": false
+    },
+    "next_semifinal": {
+      "known_player": "Igor Marcondes",
+      "other_slot": "WINNER_OF_BOYER_LEGOUT",
+      "scheduled_start_utc": "2026-09-26T21:00:00+00:00",
+      "status": "PARTIAL_IDENTITY_ONLY",
+      "preregistration_allowed": false
+    },
+    "live_quarterfinal": {
+      "event": "Tristan Boyer vs Timo Legout",
+      "status": "LIVE",
+      "current_bracket_score": "1-0 at latest structured snapshot",
+      "model_feature_use": false
+    },
+    "other_quarterfinals": [
+      {
+        "event": "Dylan Dietrich vs Henry Searle",
+        "status": "NOT_STARTED"
+      },
+      {
+        "event": "Nishesh Basavareddy vs Andres Andrade",
+        "status": "NOT_STARTED"
+      }
+    ]
+  },
+  "next_week_pools": {
+    "porto": "Entry list + official qualifying schedule only; no individual ATP qualifying pairings recovered.",
+    "columbus": "Entry list + daily schedule only; no individual pairings recovered.",
+    "mouilleron": "Entry list only; no individual pairings recovered.",
+    "jingshan": "ATP entry list only; no individual ATP pairings recovered. WTA qualifying pairings exist but are outside the governed ATP Challenger domain."
+  },
+  "conversion": {
+    "new_full_identity_future_events": 0,
+    "new_preregistrations": 0,
+    "new_freezes": 0,
+    "holdout_increment": 0
+  },
+  "holdout_after": {
+    "window1": 9,
+    "total": 9,
+    "metrics": "SEALED_UNTIL_600"
+  },
+  "protections": {
+    "live_results_as_features": false,
+    "same_period_results_in_model_state": false,
+    "outcomes_read_for_performance": 0,
+    "metrics_opened": false,
+    "placeholders_counted": 0,
+    "retroactive_freezes": 0,
+    "silent_imputation": false,
+    "odds_to_p": false,
+    "real_money": "BLOCKED"
+  },
+  "trigger": "When Boyer-Legout becomes FINAL, fix Marcondes vs winner as a future semifinal, preregister before feature acquisition, then run PIT -> R218/R223 -> governed freeze if all gates pass.",
+  "sources": [
+    "Structured tennis tournament bracket source: San Diego 2 Challenger, 25-SEP-2026 live snapshot",
+    "https://umpiry.com/tournaments/challenger-san-diego-2",
+    "https://www.flashscore.com.au/tennis/challenger-men-singles/san-diego-2/fixtures/",
+    "https://eupagoportoopen.org/programa-atp-125/",
+    "https://www.columbuschallenger.com/new-page-1"
+  ]
+}

@@ -1,0 +1,82 @@
+{
+  "schema": "MATRIX_CLV_DYNAMIC_PROBE_REPAIR_PROOF_V1",
+  "generated_at_utc": "2026-10-15T22:29:50Z",
+  "repository": "MatrixLabSports/MATRIX-LAB",
+  "operational_branch": "repair/cor09-world-pipeline",
+  "main_workflow_path": ".github/workflows/football-clv-odds-api-net-pinnacle-probe.yml",
+  "repair": {
+    "stale_target_fix_commit": "24ac23e593b4a5a68b46df7d972d0841eb0342a0",
+    "time_initialization_fix_commit": "421efa62af45559e445ed841380990eab1797c05",
+    "production_identity_alignment_commit": "e2cb742f0b9a14f82651fed78c35b7596332de6b",
+    "successful_run_id": 38817361492,
+    "successful_run_conclusion": "success",
+    "persisted_probe_evidence_commit": "58674428b",
+    "intermediate_failed_run": {
+      "run_id": 38817142100,
+      "conclusion": "failure",
+      "cause": "NameError: now was referenced before definition",
+      "contained_without_ledger_or_metric_change": true
+    }
+  },
+  "target": {
+    "fixture_id": "1559671",
+    "match": "Suchitepéquez vs Deportivo San Pedro",
+    "kickoff_utc": "2026-10-16T01:00:00+00:00",
+    "odds_api_event_id": "3550166666"
+  },
+  "identity_validation": {
+    "status": "MATCHED",
+    "identity_score": 1,
+    "second_identity_score": 0.339683,
+    "candidate_count": 5,
+    "minimum_identity_score": 0.85,
+    "minimum_margin_to_second": 0.05,
+    "production_identity_gate_compatible": true
+  },
+  "provider_snapshot": {
+    "pinnacle_catalog_present": true,
+    "snapshot_http": 200,
+    "bookmaker_as_of_ts_ms": 1792102432000,
+    "provider_quote_age_seconds_at_probe": 914,
+    "strict_120s_fresh": false,
+    "complete_market_over_under_2_5": false,
+    "total_2_5_lines": [],
+    "target_refresh_interval_seconds": 1127
+  },
+  "clv_state_readback": {
+    "decision_count": 67,
+    "closing_odds_count": 1,
+    "remaining_to_open_metrics": 299,
+    "metrics_opened": false,
+    "strict_fresh_gate_seconds": 120,
+    "real_money": "BLOCKED",
+    "automatic_wagering": false
+  },
+  "continuous_watcher": {
+    "run_id": 38807223849,
+    "status": "in_progress",
+    "started_at_utc": "2026-10-15T21:05:52Z",
+    "watch_seconds": 19800,
+    "poll_seconds": 90,
+    "nominal_deadline_utc": "2026-10-16T02:35:52Z",
+    "governed_close_window_start_utc": "2026-10-16T00:45:00Z",
+    "kickoff_utc": "2026-10-16T01:00:00Z",
+    "covers_full_governed_close_window": true,
+    "prewatch_protection_tests": "SUCCESS",
+    "safety_and_secret_validation": "SUCCESS"
+  },
+  "governance": {
+    "strict_gate_relaxed": false,
+    "historical_backfill": false,
+    "post_kickoff_capture": false,
+    "odds_used_to_generate_probability": false,
+    "automatic_wagering": false,
+    "real_money": "BLOCKED"
+  },
+  "result": {
+    "diagnostic_target_repair": "RESOLVED_PHYSICALLY",
+    "identity_selection": "RESOLVED_PHYSICALLY",
+    "strict_fresh_closing_capture": "PENDING_PROVIDER_FRESH_COMPLETE_MARKET_IN_GOVERNED_WINDOW",
+    "declaration_rule": "DO_NOT_DECLARE_NEW_CLV_CLOSE_UNTIL_STRICT_FRESH_120S_AND_COMPLETE_MARKET_ARE_PHYSICALLY_PERSISTED"
+  }
+}

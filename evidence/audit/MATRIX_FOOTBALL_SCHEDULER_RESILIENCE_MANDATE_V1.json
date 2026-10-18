@@ -1,0 +1,69 @@
+{
+  "schema": "MATRIX_FOOTBALL_SCHEDULER_RESILIENCE_MANDATE_V1",
+  "effective_date_bogota": "2026-09-28",
+  "status": "ACTIVE",
+  "mode": "PERMANENT_ADDITIVE",
+  "change_control": "USER_EXPLICIT_REPLACE_MODIFY_SUSPEND_REVOKE_ONLY",
+  "diagnosis": {
+    "default_branch": "main",
+    "workflow_files_present_on_default_branch": true,
+    "push_trigger_execution_verified": true,
+    "expected_schedule_delivery_missing": true,
+    "root_cause_classification": "GITHUB_SCHEDULE_DELIVERY_NOT_PHYSICALLY_OBSERVED",
+    "external_platform_limitation": "GitHub documents schedule delay/drop under load; MATRIX therefore uses redundant triggers."
+  },
+  "architecture": {
+    "legacy_settlement_schedule": false,
+    "legacy_calibration_schedule": false,
+    "supervisor_schedule_utc_minutes": [
+      7,
+      22,
+      37,
+      52
+    ],
+    "supervisor_workflow_run_fallbacks": [
+      "COR02-03 repo-native hourly scheduler",
+      "API-Football daily prospective production"
+    ],
+    "shared_concurrency_group": "api-football-prospective-settlement-calibration",
+    "minimum_settlement_age_minutes": 45,
+    "final_delay_minutes": 120,
+    "settlement_and_calibration_same_cycle": true
+  },
+  "hard_invariants": {
+    "settlement_final_only": true,
+    "outcomes_do_not_auto_open_metrics": true,
+    "calibration_thresholds": [
+      30,
+      50,
+      100
+    ],
+    "parameter_tuning_allowed": false,
+    "original_357_holdout_reuse_allowed": false,
+    "p_matrix_status": "NOT_GENERATED",
+    "automatic_wagering": false,
+    "real_money": "BLOCKED",
+    "duplicate_polling_inside_freshness_window": false,
+    "physical_workflow_evidence_required": true
+  },
+  "verification": {
+    "supervisor_code_ci_run_id": 36488863377,
+    "supervisor_code_ci_tests_passed": 3203,
+    "supervisor_code_ci_quality_gate": "PASS",
+    "first_supervisor_push_run_id": 36489069833,
+    "first_supervisor_push_conclusion": "success",
+    "first_supervisor_regression_tests_passed": 15,
+    "first_supervisor_decision": "HEALTHY_SKIP",
+    "first_supervisor_reason": "RECENT_SETTLEMENT_SYNC",
+    "first_supervisor_extra_provider_calls": 0,
+    "second_supervisor_push_run_id": 36489200346,
+    "second_supervisor_push_conclusion": "success"
+  },
+  "source_artifacts": [
+    "tools/api_football_prospective_supervisor.py",
+    "tests/test_api_football_prospective_supervisor.py",
+    ".github/workflows/api-football-prospective-supervisor.yml",
+    ".github/workflows/api-football-prospective-final-settlement.yml",
+    ".github/workflows/api-football-prospective-calibration.yml"
+  ]
+}

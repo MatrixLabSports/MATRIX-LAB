@@ -1,0 +1,127 @@
+{
+  "schema": "MATRIX_P0_WORLD_INVENTORY_CERTIFICATION_V1",
+  "certified_at_utc": "2026-10-02T15:00:00+00:00",
+  "target_date_bogota": "2026-10-02",
+  "priority": "P0",
+  "component": "WORLD_TENNIS_CALENDAR_INVENTORY",
+  "result": "CERTIFIED_PASS",
+  "status": "RESOLVED",
+  "operational_timezone": "America/Bogota",
+  "acceptance": {
+    "full_day_local_rule": "00:00:00-23:59:59_LOCAL_FULL_DAY",
+    "coverage_families_required": [
+      "ATP",
+      "WTA",
+      "ITF"
+    ],
+    "monotonic_persistence_required": true,
+    "model_derivation_separate_from_world_inventory": true,
+    "no_automatic_model_feed": true,
+    "metrics_must_remain_sealed": true,
+    "real_money_must_remain_blocked": true
+  },
+  "defect_reconciled": {
+    "prior_bug": "DAILY_WORLD_INVENTORY_OVERWRITTEN_BY_LATER_PROVIDER_SNAPSHOT",
+    "observed_shrink_before_fix": {
+      "earlier_snapshot_count": 119,
+      "later_snapshot_count": 80
+    },
+    "recovery": {
+      "recovered_prior_count": 119,
+      "later_snapshot_count": 80,
+      "cumulative_after_git_history_recovery": 129,
+      "newly_present_in_later_snapshot": 10,
+      "retained_prior_only": 49
+    },
+    "fix_policy": "MONOTONIC_UNION_BY_STABLE_PHYSICAL_IDENTITY",
+    "mutable_provider_match_id_handling": "PRESERVE_SINGLE_PHYSICAL_EVENT_AND_SOURCE_EVENT_ALIASES"
+  },
+  "implementation": {
+    "accumulator": {
+      "path": "tools/tennis_world_inventory_accumulate.py",
+      "blob_sha": "3ec7f96ad18a9fb58e871beac3c57da79c834164"
+    },
+    "regression_test": {
+      "path": "tests/test_tennis_world_inventory_accumulate.py",
+      "blob_sha": "c3ee2ac4e47f048a379b571c8658c364fb15bc4e"
+    },
+    "production_cycle": {
+      "path": "scripts/cor0203_production_cycle.sh",
+      "blob_sha": "b9d99e67643ca6df5332b7b4a9962850a65755e6"
+    }
+  },
+  "verification_runs": [
+    {
+      "run_id": 37017875704,
+      "event": "push",
+      "conclusion": "success",
+      "workflow_head_sha": "7df1a1878cfd02fc7853ee44712331a1a2dc8dee",
+      "production_commit": "8f5e6b46837367817f7d357a483fee92def4d556",
+      "tests_passed": 60,
+      "tests_failed": 0,
+      "verified_world_inventory_total": 129
+    },
+    {
+      "run_id": 37023532691,
+      "event": "schedule",
+      "conclusion": "success",
+      "workflow_head_sha": "7df1a1878cfd02fc7853ee44712331a1a2dc8dee",
+      "production_commit": "e53a913df4e26ec6db434b6f16f18a306b7fec6d",
+      "tests_passed": 60,
+      "tests_failed": 0,
+      "provider_current_fetch_count": 75,
+      "prior_cumulative_count": 129,
+      "cumulative_count": 131,
+      "retained_prior_only_count": 56,
+      "newly_discovered_count": 2
+    }
+  ],
+  "current_certified_inventory": {
+    "inventory_blob_sha": "4a6018e57388c461ba1d5f8856ebbff9ece3b67f",
+    "world_inventory_complete": true,
+    "status": "PASS",
+    "world_calendar_inventory_count": 131,
+    "events_by_family": {
+      "ATP": 41,
+      "WTA": 15,
+      "ITF": 75
+    },
+    "cor0203_domain_candidate_count": 13,
+    "accumulation": {
+      "policy": "MONOTONIC_UNION_BY_STABLE_PHYSICAL_IDENTITY",
+      "prior_count": 129,
+      "current_fetch_count": 75,
+      "cumulative_count": 131,
+      "retained_prior_only_count": 56,
+      "newly_discovered_count": 2,
+      "never_decrease_within_day": true
+    }
+  },
+  "governed_funnel": {
+    "world_inventory_total": 131,
+    "world_domain_candidates": 13,
+    "status_counts": {
+      "DISCOVERY_REJECTED": 7,
+      "PREREGISTERED_BLOCKED": 6
+    },
+    "unique_holdout_count": 54,
+    "automatic_model_feed": false
+  },
+  "invariants": {
+    "p_matrix": "NOT_GENERATED",
+    "metrics": "SEALED_UNTIL_600",
+    "metrics_opened": false,
+    "outcomes_read": 0,
+    "automatic_wagering": false,
+    "real_money": "BLOCKED",
+    "holdout_integrity": "PASS",
+    "silent_imputation_detected": false
+  },
+  "source_verification": {
+    "provider": "rapidapi_tennis",
+    "paid_source_configured": true,
+    "source_ready": true,
+    "discovery_status": "DISCOVERY_COMPLETED"
+  },
+  "closure_statement": "P0 is certified resolved: the full-day tennis inventory is persistent and monotonic across repeated provider snapshots, preserves previously discovered physical events, separates world inventory from governed model eligibility, and leaves all calibration and real-money gates unchanged."
+}

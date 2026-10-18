@@ -1,0 +1,101 @@
+{
+  "schema": "MATRIX_SETTLEMENT_PROGRESS_20261006_BOGOTA_AUDIT_SNAPSHOT_V1",
+  "source_branch": "repair/cor09-world-pipeline",
+  "source_head_observed": "9658abd94b88594ace7c74aae6d99298cbd6ba49",
+  "source_candidate_file": "evidence/daily_selection/MATRIX_CALIBRATION_CANDIDATES_20261006_BOGOTA.json",
+  "source_candidate_blob_sha": "52e897007840f5bed1a8999edad8ee594fefc767",
+  "compared_to_previous_review": {
+    "football_v2_freezes": 2351,
+    "football_v2_settlements": 1864,
+    "football_v2_pending": 487,
+    "tennis_settlement_rows": 269,
+    "tennis_unique_observations": 242,
+    "tennis_duplicate_quarantined": 171
+  },
+  "football": {
+    "v2_freeze": 2351,
+    "v2_settled": 1869,
+    "v2_pending": 482,
+    "delta_settled": 5,
+    "delta_freeze": 0,
+    "v2_state_blob_shas": {
+      "1x2": "43dd72ae1472e91934336fb1e75fd8e525dc5697",
+      "over_2_5": "d87b8e71b660f62703066bc484fd50427b1a44c3",
+      "under_2_5": "c9669eeb6d5a58029e0e599eecf58d94fc8262d3",
+      "double_chance_1x": "78501048ece94b3ea6c6558848d5ede3963b7b09",
+      "double_chance_x2": "f3302db36551ed2267d141fd4b2e1a3a2e990679"
+    },
+    "cohort_total": 116,
+    "cohort_ft_last_verified": 107,
+    "cohort_ft_new": 0,
+    "cohort_pending_or_nonstandard": 9,
+    "cohort_full_ledger_recheck": false,
+    "new_ft_fixture_ids": [
+      "1645639",
+      "1645640",
+      "1549662",
+      "1643392",
+      "1642286"
+    ],
+    "cohort_new_settlement_intersection": [],
+    "blocked_nonstandard": {
+      "PEN": [
+        "1588817",
+        "1588821",
+        "1588845",
+        "1588863",
+        "1588890",
+        "1588893",
+        "1619499"
+      ],
+      "AET": [
+        "1644168"
+      ],
+      "NS_pending": [
+        "1596466"
+      ]
+    },
+    "global_ledger_final_count": 2671,
+    "global_pending_count": 444,
+    "source_calibration_sync_path": "evidence/api_football/prospective_calibration/sync_last.json",
+    "source_calibration_sync_blob_sha": "8796ad21d5456fe1a22e2f85655884670d98cb26",
+    "source_sync_path": "evidence/api_football/prospective_market_freeze/settlement_sync_last.json",
+    "source_sync_blob_sha": "27bcbe2b839118008a64fb44573087a6b50503ce",
+    "source_governed_settlement_commit": "c36a2c34f33d7e25e191e11932518322db34ae60"
+  },
+  "tennis": {
+    "cohort_total": 11,
+    "cohort_finished": 11,
+    "cohort_unique_events": 11,
+    "cohort_unique_settlements": 11,
+    "cohort_duplicate_settlements": 0,
+    "settlement_rows": 269,
+    "delta_settlement_rows": 0,
+    "unique_calibration_observations": 242,
+    "delta_unique": 0,
+    "duplicate_quarantined": 171,
+    "uniqueness": "PASS",
+    "settled_unique_canonical_events": 216,
+    "settled_duplicate_alias_records": 53,
+    "cohort_new_settlement_intersection": [],
+    "source_ledger_path": "evidence/cor0203/settlement/MATRIX_COR0203_SETTLEMENT_LEDGER.jsonl",
+    "source_ledger_blob_sha": "af3b5c2a4c2ce0305d9c978740dc9abe7a739559",
+    "source_uniqueness_path": "evidence/cor0203/runtime/MATRIX_COR0203_SETTLEMENT_UNIQUENESS_LAST.json",
+    "source_uniqueness_blob_sha": "4bcededd5080b4912c45b2cfead4a67212c074fd"
+  },
+  "governance": {
+    "metrics_opened": false,
+    "parameter_tuning_allowed": false,
+    "odds_to_probability": false,
+    "real_money": "BLOCKED",
+    "settlement_final_only": true,
+    "automated_wagering": false
+  },
+  "limitations": [
+    "Football 107/116 is the last complete cohort ledger audit. Current V2 1x2 ledger content was not retrievable through connector; new five governed FT IDs were compared with the frozen 116 candidate IDs and have zero intersection.",
+    "Football nonstandard statuses were read from repository sync, not independently revalidated against provider.",
+    "Tennis cohort 11/11 FINISHED and exactly one distinct settlement per event verified against all 269 ledger rows.",
+    "Five new football FT settlements were already physically persisted by governed process. No duplicate settlement created.",
+    "No metrics opened, tuning, odds-to-probability conversion, model changes, or wagering."
+  ]
+}

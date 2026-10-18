@@ -1,0 +1,92 @@
+{
+  "schema": "MATRIX_SETTLEMENT_PROGRESS_GOVERNED_SNAPSHOT_V1",
+  "cohort_date_bogota": "2026-10-06",
+  "snapshot_observed_at_utc": "2026-10-11T23:10:09Z",
+  "source_branch": "repair/cor09-world-pipeline",
+  "baseline_reference": "previous reported counts: football_v2=1257/1633, tennis_ledger=189, tennis_unique_settled=136, tennis_unique_observations=198, duplicates_quarantined=140",
+  "football": {
+    "total": 116,
+    "settled_standard_final": 107,
+    "pending": 9,
+    "new_cohort_settlements": 0,
+    "blocked_fixture_ids": [
+      "1588817",
+      "1588821",
+      "1588845",
+      "1588863",
+      "1588890",
+      "1588893",
+      "1619499",
+      "1644168",
+      "1596466"
+    ],
+    "blocked_statuses": {
+      "PEN": [
+        "1588817",
+        "1588821",
+        "1588845",
+        "1588863",
+        "1588890",
+        "1588893",
+        "1619499"
+      ],
+      "ABD": [
+        "1596466"
+      ],
+      "AET": [
+        "1644168"
+      ]
+    }
+  },
+  "tennis": {
+    "total_unique": 11,
+    "settled_finished": 10,
+    "pending": 1,
+    "new_cohort_settlements": 0,
+    "blocked_event_id": "COR0203-SOFASCORE-3e334e1ea5e9bca56dc55ad3d88461b1d850a3b7c8db8e0e36d1c8daaccbbd79",
+    "blocked_players": [
+      "August Holmgren",
+      "Pedro Martinez"
+    ],
+    "block_reason": "NO_CANONICAL_FINISHED_SETTLEMENT_RECORD"
+  },
+  "football_v2": {
+    "freezes": 1633,
+    "settlements": 1311,
+    "pending": 322,
+    "delta_since_previous_report": {
+      "freezes": 0,
+      "settlements": 54,
+      "pending": -54
+    }
+  },
+  "tennis_global": {
+    "ledger_records": 189,
+    "settled_unique": 136,
+    "pending_unique": 63,
+    "observations_unique": 199,
+    "duplicates_quarantined": 141,
+    "uniqueness": "PASS",
+    "delta_since_previous_report": {
+      "ledger_records": 0,
+      "settled_unique": 0,
+      "pending_unique": 1,
+      "observations_unique": 1,
+      "duplicates_quarantined": 1
+    }
+  },
+  "new_cohort_settlements_executed_this_review": 0,
+  "source_blob_sha": {
+    "cohort": "52e897007840f5bed1a8999edad8ee594fefc767",
+    "football_v2_state": "6d78266d38ca704bb3f84c45163265cd7b330114",
+    "football_v2_ledger": "131877c340a71ec0ed4b31f059884529abe258b1",
+    "football_settlement_sync": "f5067a96b8f41679d62af704a0c9fe53bca0e5da",
+    "tennis_settlement_ledger": "a9158d87adbb592ddad5d3cf99cb5b35e00342a3",
+    "tennis_uniqueness": "5659d70cedca3f9d85c4e8161df181ed18dc3dd0"
+  },
+  "metrics_opened": false,
+  "parameter_tuning_allowed": false,
+  "odds_to_probability": false,
+  "real_money": "BLOCKED",
+  "caveat": "Snapshot of already-committed global changes. No new 6-OCT cohort settlements or nonstandard promotions. Delta baseline is previous user-facing report, not a GitHub snapshot."
+}

@@ -1,0 +1,116 @@
+{
+  "schema": "MATRIX_LIVE_TENNIS_GOVERNANCE_V0_1",
+  "effective_date": "2026-10-06",
+  "timezone": "America/Bogota",
+  "status": "RESEARCH_ONLY",
+  "target": "P_LIVE_P1_MATCH_WIN",
+  "observation_unit": "UNIQUE_MATCH_SEQUENCE_STATE",
+  "source_priority": [
+    "live_tennis_api",
+    "sofascore_live_crosscheck_when_available",
+    "flashscore_live_crosscheck_when_available",
+    "official_tour_or_itf_source_when_needed"
+  ],
+  "live_capture": {
+    "dedup_key": [
+      "provider",
+      "match_id",
+      "sequence"
+    ],
+    "duplicate_transport_snapshots": "QUARANTINE",
+    "valid_state_requirements": {
+      "status": "live",
+      "stale": false,
+      "origin": "observed",
+      "server_present": true,
+      "sets_games_points_present": true
+    },
+    "invalid_states": "PRESERVE_RAW_EXCLUDE_FROM_CALIBRATION"
+  },
+  "lanes": {
+    "separation_keys": [
+      "tour",
+      "gender",
+      "surface"
+    ],
+    "rule": "NO_SILENT_POOLING_ACROSS_LANES",
+    "current_observed_lanes": [
+      "challenger|men|clay",
+      "challenger|women|hard",
+      "itf|men|hard",
+      "itf|women|hard",
+      "itf|men|clay",
+      "unknown|unknown|clay",
+      "unknown|unknown|unknown"
+    ]
+  },
+  "settlement": {
+    "final_only": true,
+    "accepted": {
+      "status": "completed",
+      "outcome": "completed",
+      "winner_values": [
+        1,
+        2
+      ]
+    },
+    "blocked_outcomes": [
+      "unresolved",
+      "retired",
+      "walkover",
+      "abandoned",
+      "cancelled",
+      "unknown"
+    ],
+    "rule": "NO_LABEL_UNLESS_STANDARD_FINAL_WINNER_IS_PHYSICALLY_RETURNED"
+  },
+  "split_governance": {
+    "grouping_key": "match_id",
+    "same_match_across_train_test": false,
+    "reason": "Multiple live states from one match are correlated and cannot be split across train/test."
+  },
+  "calibration_gates": {
+    "unit": "UNIQUE_SETTLED_MATCHES_PER_LANE",
+    "gate_30": {
+      "minimum": 30,
+      "purpose": "FIRST_EXPERIMENTAL_READ",
+      "metrics_open_before_gate": false
+    },
+    "gate_50": {
+      "minimum": 50,
+      "purpose": "EARLY_STABILITY_CHECK"
+    },
+    "gate_100": {
+      "minimum": 100,
+      "purpose": "PRIMARY_CALIBRATION_CHECK"
+    },
+    "gate_200": {
+      "minimum": 200,
+      "purpose": "PROMOTION_REVIEW_CANDIDATE"
+    },
+    "metrics_sealed_until_first_gate": true,
+    "state_rows_do_not_substitute_for_unique_matches": true
+  },
+  "model_policy": {
+    "baseline_status": "NOT_GENERATED",
+    "probability_output_status": "SEALED",
+    "no_odds_to_probability": true,
+    "prematch_probability_mutation": false,
+    "no_tuning_before_gate_30": true
+  },
+  "current_seed": {
+    "unique_matches": 24,
+    "unique_states": 54,
+    "quality_valid_states": 46,
+    "quality_invalid_states": 8,
+    "settled_standard_matches": 0,
+    "labeled_states": 0
+  },
+  "protections": {
+    "missing_not_zero": true,
+    "silent_imputation": false,
+    "outcomes_read_during_live_capture": 0,
+    "automatic_wagering": false,
+    "real_money": "BLOCKED"
+  }
+}

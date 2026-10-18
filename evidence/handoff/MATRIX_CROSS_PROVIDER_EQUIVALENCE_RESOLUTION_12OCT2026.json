@@ -1,0 +1,115 @@
+{
+  "schema": "MATRIX_CROSS_PROVIDER_EQUIVALENCE_RESOLUTION_V1",
+  "operational_date_bogota": "2026-10-12",
+  "repository": "MatrixLabSports/MATRIX-LAB",
+  "branch": "repair/cor09-world-pipeline",
+  "resolution": {
+    "status": "PASS_RESOLVED_FAIL_CLOSED_NO_MERGE",
+    "conclusion": "Cross-provider provider-wide equivalence is NOT certified from current evidence. Existing free-provider calibration remains unchanged; API-Tennis continues in its independent provider-native lane.",
+    "reason": "No adjudicable same-day participant-pair+tournament overlap exists in the current physical ledgers.",
+    "synthetic_or_manual_merge_performed": false
+  },
+  "implementation": {
+    "audit_tool": {
+      "path": "tools/live_tennis_cross_provider_equivalence.py",
+      "initial_commit": "a93dfc308c77816e92b664f0564361039d02d1a0",
+      "parser_fix_commit": "b26dfdef4c66645aff785a1e2005a7468711679a"
+    },
+    "tests": {
+      "path": "tests/test_live_tennis_cross_provider_equivalence.py",
+      "commit": "851cbd882d8524263190feda679b438f1677c43a",
+      "cases": [
+        "blocks_without_overlap",
+        "detects_event_crosswalk_without_authorizing_provider_wide_merge"
+      ]
+    },
+    "workflow": {
+      "path": ".github/workflows/live-tennis-reactivation-cumulative-gates.yml",
+      "automation_commit": "9cb62225bee3a01c40aaad2062e138006b31ab2e",
+      "retry_after_parser_fix_commit": "d0e2063f339a9e632dc8eb2a4d4789d552a9b910",
+      "behavior": [
+        "Run regression test before operational capture",
+        "If free primary executes all 6 cycles and no paid failover is needed, capture one API-Tennis shadow cycle for same-day overlap evidence",
+        "Run fail-closed cross-provider audit every reactivation cycle",
+        "Never admit paid-only events to the existing free-provider lane automatically"
+      ]
+    }
+  },
+  "execution_evidence": {
+    "failed_validation_run": {
+      "run_id": 38271355255,
+      "conclusion": "failure",
+      "failed_step": "Validate cross-provider audit regression tests",
+      "cause": "Fractional round label 1/16-finals was parsed as generic Final",
+      "data_mutation_after_failure": false
+    },
+    "corrected_reactivation_run": {
+      "run_id": 38271521242,
+      "conclusion": "success",
+      "completed_at_utc": "2026-10-12T15:38:26Z",
+      "regression_test_step": "success",
+      "equivalence_audit_step": "success",
+      "prematch_hard_clay_untouched_step": "success",
+      "persist_live_evidence_step": "success",
+      "shadow_sample_step": "skipped",
+      "shadow_sample_skip_reason": "Free provider executed 0 cycles because quota reserve gate remained active; paid failover supplied continuity."
+    },
+    "equivalence_audit": {
+      "path": "evidence/live_tennis_lab/MATRIX_LIVE_TENNIS_CROSS_PROVIDER_EQUIVALENCE_AUDIT_20261012.json",
+      "blob_sha": "5a23695bdb032d0691a4fa42a1fd4f4a7555342b",
+      "sha256_without_self": "6104ad4925ab64ae51df9862f0b9a5e0b8e7133704d156ed63b5f0d1f3897506",
+      "status": "BLOCKED_NO_ADJUDICABLE_CROSS_PROVIDER_OVERLAP",
+      "free_unique_match_records_examined": 91,
+      "paid_singles_unique_match_records_examined": 42,
+      "participant_pair_plus_tournament_same_day_candidates": 0,
+      "adjudicable_exact_event_crosswalks": 0,
+      "states_admitted_to_existing_free_provider_lane": 0
+    }
+  },
+  "lane_state_after_resolution": {
+    "historical_free_provider_lane": {
+      "global_unique_matches": 90,
+      "total_final_quality_valid": 59,
+      "leading_lane": "itf|women|hard",
+      "leading_lane_final_quality_valid": 24,
+      "remaining_to_gate_30": 6,
+      "gate_30": "SEALED",
+      "mutated_by_paid_provider": false,
+      "cumulative_gate_blob_sha": "0081cbdfce086016d9e01bc9990ab056ad04375e"
+    },
+    "api_tennis_provider_native_lane": {
+      "status": "PASS_PROVIDER_NATIVE_EVIDENCE_LANE_ACTIVE",
+      "global_unique_matches": 51,
+      "settled_quality_valid_unique_matches": 20,
+      "leading_lane": "api_tennis|wta_singles",
+      "leading_lane_final_quality_valid": 8,
+      "leading_lane_remaining_to_30": 22,
+      "receipt_blob_sha": "17e86995a1a2403ed75d2616581d210a4381751e",
+      "paid_native_run_id": 38265572316,
+      "paid_native_run_attempt": 2,
+      "paid_native_run_conclusion": "success"
+    }
+  },
+  "prematch_protection": {
+    "hard_unique_observations": 201,
+    "clay_observations": 2,
+    "hard_unchanged": true,
+    "clay_unchanged": true
+  },
+  "forward_policy": {
+    "merge_policy": "FAIL_CLOSED",
+    "when_free_provider_returns": "Capture one same-day API-Tennis shadow cycle and rerun event-level equivalence audit.",
+    "event_crosswalk_policy": "Even an exact event crosswalk does not by itself certify provider-wide equivalence.",
+    "paid_lane_policy": "Continue API-Tennis provider-native calibration independently toward its own gates.",
+    "free_lane_policy": "Continue historical free-provider lane only with its own legitimate observations unless a later governed provider-wide equivalence protocol is separately certified."
+  },
+  "protections": {
+    "missing_not_zero": true,
+    "silent_imputation": false,
+    "odds_to_probability": false,
+    "same_match_train_test_forbidden": true,
+    "synthetic_backfill": false,
+    "automatic_wagering": false,
+    "real_money": "BLOCKED"
+  }
+}

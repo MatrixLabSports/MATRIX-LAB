@@ -1,0 +1,351 @@
+{
+  "api_tennis_exact_day": {
+    "challenger_men_singles_count": 30,
+    "current_model_family_ceiling_before_surface_pit": 0.061601642710472276,
+    "format_rows": [
+      {
+        "circuit": "ATP_MAIN",
+        "exact_day_count": 17,
+        "existing_governed_model_family": false,
+        "format": "SINGLES",
+        "gender": "MEN",
+        "model_status": "MISSING_SEPARATE_GOVERNED_MODEL",
+        "provider_event_type": "Atp Singles",
+        "surface_resolved_in_api_tennis_exact_audit": false
+      },
+      {
+        "circuit": "ATP_CHALLENGER",
+        "exact_day_count": 30,
+        "existing_governed_model_family": false,
+        "format": "DOUBLES",
+        "gender": "MEN",
+        "model_status": "MISSING_SEPARATE_GOVERNED_MODEL",
+        "provider_event_type": "Challenger Men Doubles",
+        "surface_resolved_in_api_tennis_exact_audit": false
+      },
+      {
+        "circuit": "ATP_CHALLENGER",
+        "exact_day_count": 30,
+        "existing_governed_model_family": true,
+        "format": "SINGLES",
+        "gender": "MEN",
+        "model_status": "EXISTS_ONLY_IF_HARD_OR_INDOOR_HARD",
+        "provider_event_type": "Challenger Men Singles",
+        "surface_resolved_in_api_tennis_exact_audit": false
+      },
+      {
+        "circuit": "WTA_CHALLENGER_OR_125",
+        "exact_day_count": 9,
+        "existing_governed_model_family": false,
+        "format": "DOUBLES",
+        "gender": "WOMEN",
+        "model_status": "MISSING_SEPARATE_GOVERNED_MODEL",
+        "provider_event_type": "Challenger Women Doubles",
+        "surface_resolved_in_api_tennis_exact_audit": false
+      },
+      {
+        "circuit": "WTA_CHALLENGER_OR_125",
+        "exact_day_count": 12,
+        "existing_governed_model_family": false,
+        "format": "SINGLES",
+        "gender": "WOMEN",
+        "model_status": "MISSING_SEPARATE_GOVERNED_MODEL",
+        "provider_event_type": "Challenger Women Singles",
+        "surface_resolved_in_api_tennis_exact_audit": false
+      },
+      {
+        "circuit": "ITF_MEN",
+        "exact_day_count": 28,
+        "existing_governed_model_family": false,
+        "format": "DOUBLES",
+        "gender": "MEN",
+        "model_status": "MISSING_SEPARATE_GOVERNED_MODEL",
+        "provider_event_type": "Itf Men Doubles",
+        "surface_resolved_in_api_tennis_exact_audit": false
+      },
+      {
+        "circuit": "ITF_MEN",
+        "exact_day_count": 128,
+        "existing_governed_model_family": false,
+        "format": "SINGLES",
+        "gender": "MEN",
+        "model_status": "MISSING_SEPARATE_GOVERNED_MODEL",
+        "provider_event_type": "Itf Men Singles",
+        "surface_resolved_in_api_tennis_exact_audit": false
+      },
+      {
+        "circuit": "ITF_WOMEN",
+        "exact_day_count": 61,
+        "existing_governed_model_family": false,
+        "format": "DOUBLES",
+        "gender": "WOMEN",
+        "model_status": "MISSING_SEPARATE_GOVERNED_MODEL",
+        "provider_event_type": "Itf Women Doubles",
+        "surface_resolved_in_api_tennis_exact_audit": false
+      },
+      {
+        "circuit": "ITF_WOMEN",
+        "exact_day_count": 163,
+        "existing_governed_model_family": false,
+        "format": "SINGLES",
+        "gender": "WOMEN",
+        "model_status": "MISSING_SEPARATE_GOVERNED_MODEL",
+        "provider_event_type": "Itf Women Singles",
+        "surface_resolved_in_api_tennis_exact_audit": false
+      },
+      {
+        "circuit": "WTA_MAIN",
+        "exact_day_count": 5,
+        "existing_governed_model_family": false,
+        "format": "DOUBLES",
+        "gender": "WOMEN",
+        "model_status": "MISSING_SEPARATE_GOVERNED_MODEL",
+        "provider_event_type": "Wta Doubles",
+        "surface_resolved_in_api_tennis_exact_audit": false
+      },
+      {
+        "circuit": "WTA_MAIN",
+        "exact_day_count": 4,
+        "existing_governed_model_family": false,
+        "format": "SINGLES",
+        "gender": "WOMEN",
+        "model_status": "MISSING_SEPARATE_GOVERNED_MODEL",
+        "provider_event_type": "Wta Singles",
+        "surface_resolved_in_api_tennis_exact_audit": false
+      }
+    ],
+    "total": 487
+  },
+  "audit_mode": "READ_ONLY_NO_MODEL_MUTATION",
+  "coverage_interpretation": {
+    "api_tennis_challenger_men_singles_share_of_487": 0.061601642710472276,
+    "holdout_unique_observations": 123,
+    "new_freezes_today_after_all_current_gates": 0,
+    "note_api_tennis": "This is still an upper bound before surface, future, identity, PIT and uniqueness gates.",
+    "note_sofascore": "This is only a category ceiling: Challenger includes formats/surfaces not accepted by COR02/COR03.",
+    "remaining_to_200": 77,
+    "sofascore_challenger_category_share_of_560": 0.10892857142857143
+  },
+  "current_governed_model": {
+    "circuit": "ATP_CHALLENGER",
+    "format": "SINGLES",
+    "gender": "MEN",
+    "holdout_id": "A22_POST_AUDIT_VIRGIN_HOLDOUT_V1",
+    "market": "MATCH_WINNER",
+    "models": [
+      "R218_ELO_BOTH",
+      "R223_BATCH_GLICKO_RATING_BOTH"
+    ],
+    "surfaces": [
+      "HARD",
+      "I.HARD",
+      "INDOOR HARD",
+      "INDOOR_HARD"
+    ]
+  },
+  "generated_at_utc": "2026-10-07T21:22:48+00:00",
+  "missing_model_lanes": [
+    {
+      "lane": "ATP_CHALLENGER_CLAY_SINGLES",
+      "priority": 1,
+      "reason": "Closest domain to existing model; 21 clay singles observed in structured RapidAPI accumulated inventory."
+    },
+    {
+      "lane": "ATP_MAIN_HARD_SINGLES",
+      "priority": 2,
+      "reason": "11 hard ATP-main singles observed in structured RapidAPI accumulated inventory."
+    },
+    {
+      "lane": "WTA_HARD_SINGLES",
+      "priority": 3,
+      "reason": "11 WTA-main hard singles observed in structured RapidAPI accumulated inventory; separate female model required."
+    },
+    {
+      "lane": "ITF_MEN_HARD_SINGLES",
+      "priority": 4,
+      "reason": "63 hard + 18 indoor-hard ITF-men singles observed in structured RapidAPI accumulated inventory."
+    },
+    {
+      "lane": "ITF_WOMEN_HARD_SINGLES",
+      "priority": 5,
+      "reason": "72 hard + 9 indoor-hard ITF-women singles observed in structured RapidAPI accumulated inventory."
+    },
+    {
+      "lane": "ITF_MEN_CLAY_SINGLES",
+      "priority": 6,
+      "reason": "34 clay ITF-men singles observed."
+    },
+    {
+      "lane": "ITF_WOMEN_CLAY_SINGLES",
+      "priority": 7,
+      "reason": "60 clay ITF-women singles observed."
+    },
+    {
+      "lane": "WTA_125_OR_CHALLENGER_WOMEN_SINGLES",
+      "priority": 8,
+      "reason": "12 exact-day Challenger Women singles in API-Tennis; surface requires separate authoritative resolution."
+    },
+    {
+      "lane": "DOUBLES_BY_CIRCUIT_AND_SURFACE",
+      "priority": 9,
+      "reason": "API-Tennis exact day includes 133 doubles across Challenger/WTA/ITF; doubles must remain independent from singles models."
+    },
+    {
+      "lane": "GRASS_FAMILIES",
+      "priority": 10,
+      "reason": "No structured grass events observed in today's RapidAPI inventory, but world architecture still needs independent grass lanes before grass events can be modeled."
+    }
+  ],
+  "model_integrity": {
+    "duplicates_quarantined": 109,
+    "elo_identity": "R218_ELO_BOTH",
+    "elo_sha256": "123b25888e203fba792c9f68ccffd611bb9561cd259f52b92e5a107a3178b4a9",
+    "glicko_identity": "R223_BATCH_GLICKO_RATING_BOTH",
+    "glicko_sha256": "7701aaa009de782ab4485806606d304805c0bee923239ab3ffd511ca82c41ef6",
+    "holdout_modified_by_audit": false,
+    "holdout_unique_before_after_audit": 123,
+    "metrics_opened": false,
+    "model_mutated": false,
+    "outcomes_read": 0,
+    "physical_frozen_rows": 232
+  },
+  "protections": {
+    "automatic_model_promotion": false,
+    "automatic_wagering": false,
+    "metrics_opened": false,
+    "missing_not_zero": true,
+    "no_backfill": true,
+    "odds_to_probability": false,
+    "real_money": "BLOCKED",
+    "silent_imputation": false
+  },
+  "rapidapi_structured_accumulated_same_day": {
+    "current_model_compatible_observed_events": 5,
+    "surface_format_rows": [
+      {
+        "circuit": "ATP_CHALLENGER",
+        "feeds_current_cor0203": false,
+        "format": "DOUBLES",
+        "model_status": "MISSING_SEPARATE_GOVERNED_MODEL",
+        "physical_same_day_count": 10,
+        "surface": "CLAY"
+      },
+      {
+        "circuit": "ATP_CHALLENGER",
+        "feeds_current_cor0203": false,
+        "format": "DOUBLES",
+        "model_status": "MISSING_SEPARATE_GOVERNED_MODEL",
+        "physical_same_day_count": 9,
+        "surface": "HARD"
+      },
+      {
+        "circuit": "ATP_CHALLENGER",
+        "feeds_current_cor0203": false,
+        "format": "SINGLES",
+        "model_status": "MISSING_SEPARATE_GOVERNED_MODEL",
+        "physical_same_day_count": 21,
+        "surface": "CLAY"
+      },
+      {
+        "circuit": "ATP_CHALLENGER",
+        "feeds_current_cor0203": true,
+        "format": "SINGLES",
+        "model_status": "EXISTING_R218_R223_COR0203",
+        "physical_same_day_count": 5,
+        "surface": "HARD"
+      },
+      {
+        "circuit": "ATP_MAIN_OR_OTHER",
+        "feeds_current_cor0203": false,
+        "format": "SINGLES",
+        "model_status": "MISSING_SEPARATE_GOVERNED_MODEL",
+        "physical_same_day_count": 11,
+        "surface": "HARD"
+      },
+      {
+        "circuit": "ITF_MEN",
+        "feeds_current_cor0203": false,
+        "format": "SINGLES",
+        "model_status": "MISSING_SEPARATE_GOVERNED_MODEL",
+        "physical_same_day_count": 34,
+        "surface": "CLAY"
+      },
+      {
+        "circuit": "ITF_MEN",
+        "feeds_current_cor0203": false,
+        "format": "SINGLES",
+        "model_status": "MISSING_SEPARATE_GOVERNED_MODEL",
+        "physical_same_day_count": 63,
+        "surface": "HARD"
+      },
+      {
+        "circuit": "ITF_MEN",
+        "feeds_current_cor0203": false,
+        "format": "SINGLES",
+        "model_status": "MISSING_SEPARATE_GOVERNED_MODEL",
+        "physical_same_day_count": 18,
+        "surface": "I.HARD"
+      },
+      {
+        "circuit": "ITF_WOMEN",
+        "feeds_current_cor0203": false,
+        "format": "SINGLES",
+        "model_status": "MISSING_SEPARATE_GOVERNED_MODEL",
+        "physical_same_day_count": 60,
+        "surface": "CLAY"
+      },
+      {
+        "circuit": "ITF_WOMEN",
+        "feeds_current_cor0203": false,
+        "format": "SINGLES",
+        "model_status": "MISSING_SEPARATE_GOVERNED_MODEL",
+        "physical_same_day_count": 72,
+        "surface": "HARD"
+      },
+      {
+        "circuit": "ITF_WOMEN",
+        "feeds_current_cor0203": false,
+        "format": "SINGLES",
+        "model_status": "MISSING_SEPARATE_GOVERNED_MODEL",
+        "physical_same_day_count": 9,
+        "surface": "I.HARD"
+      },
+      {
+        "circuit": "WTA_MAIN_OR_OTHER",
+        "feeds_current_cor0203": false,
+        "format": "DOUBLES",
+        "model_status": "MISSING_SEPARATE_GOVERNED_MODEL",
+        "physical_same_day_count": 9,
+        "surface": "HARD"
+      },
+      {
+        "circuit": "WTA_MAIN_OR_OTHER",
+        "feeds_current_cor0203": false,
+        "format": "SINGLES",
+        "model_status": "MISSING_SEPARATE_GOVERNED_MODEL",
+        "physical_same_day_count": 11,
+        "surface": "HARD"
+      }
+    ],
+    "total_physical_events": 332
+  },
+  "schema": "MATRIX_TENNIS_WORLD_MODEL_COVERAGE_AUDIT_07OCT2026_V1",
+  "sofascore": {
+    "baseline_only_now_unclassified": 9,
+    "classification_scope": "CIRCUIT_CATEGORY_ONLY_FROM_CURRENT_OPERA_ACCESSIBILITY_TREE",
+    "closed_baseline_exact": 560,
+    "current_classifiable_snapshot": {
+      "ATP": 16,
+      "CHALLENGER": 61,
+      "ITF_MEN": 155,
+      "ITF_WOMEN": 281,
+      "UNKNOWN": 6,
+      "WTA": 9,
+      "WTA_125": 23,
+      "snapshot_unique_match_count": 551
+    },
+    "surface_or_format_imputation_performed": false
+  },
+  "target_date_bogota": "2026-10-07",
+  "verdict": "WORLD_DISCOVERY_EXISTS_BUT_WORLD_MODEL_COVERAGE_IS_INCOMPLETE"
+}

@@ -1,0 +1,70 @@
+{
+  "schema": "MATRIX_FOOTBALL_CALENDAR_RECONCILIATION_V1",
+  "target_date_bogota": "2026-10-15",
+  "operational_timezone": "America/Bogota",
+  "source_order": [
+    "SofaScore",
+    "Flashscore",
+    "API-Football Pro",
+    "MATRIX governed Over 2.5",
+    "Telegram PAPER/SHADOW"
+  ],
+  "sofascore": {
+    "physical_count": 1529,
+    "evidence_path": "evidence/calendar_physical/2026-10-15/MATRIX_SOFASCORE_CALENDAR_COUNTS_USER_SCREENSHOT.json",
+    "screenshot_sha256": "237760dac47be751129ce442579d00a302e489c5adc538f7ade1a9b35c0d061c"
+  },
+  "flashscore": {
+    "physical_unique_main_calendar_count": 126,
+    "selected_visible_date": "Thursday, October 15, 2026",
+    "evidence_path": "evidence/calendar_physical/2026-10-15/MATRIX_FLASHSCORE_FOOTBALL_CALENDAR_15OCT2026.json",
+    "browser_automation_run_id": "5a63d930-a671-47d6-a50b-700523dbf671"
+  },
+  "api_football": {
+    "cycle_summary_path": "evidence/api_football/prospective_daily/2026-10-15/20261015T012649Z/cycle_summary.json",
+    "cycle_summary_blob_sha": "8d9dfd2e44609e73beae32a33e7986c3845783b7",
+    "fixtures_received": 144,
+    "eligible_future_fixtures": 139,
+    "ready_input_count": 123,
+    "blocked_future_input_count": 16,
+    "competition_count": 43,
+    "country_count": 36,
+    "unique_team_count": 278,
+    "network_calls_performed": 161,
+    "status": "PASS"
+  },
+  "matrix_over25": {
+    "report_path": "evidence/api_football/daily_prematch_reports/2026-10-15/over25_shadow_ev/MATRIX_FOOTBALL_DAILY_OVER25_GOVERNED_SHADOW_EV.json",
+    "report_blob_sha": "44858550c0e73cc6eb840cc26241f335dd0284f1",
+    "p_matrix_scored_count": 111,
+    "p_matrix_blocked_count": 12,
+    "decisions": {
+      "BET_SHADOW": 19,
+      "BLOCKED": 56,
+      "NO_BET": 48
+    },
+    "minimum_decimal_odds_exclusive": 1.5,
+    "signal_generation_authorized": true,
+    "governance_status": "PASS_PROMOTED_GOVERNED_P_MATRIX_SIGNAL_ONLY"
+  },
+  "telegram": {
+    "paper_shadow_signals_for_15_oct": 19,
+    "market": "Más de 2.5 goles",
+    "status_at_readback": "OPEN",
+    "ledger_path": "evidence/notifications/telegram/MATRIX_TELEGRAM_SIGNAL_LEDGER.json"
+  },
+  "coverage_differences": {
+    "flashscore_minus_sofascore": -1403,
+    "api_football_received_minus_sofascore": -1385,
+    "api_football_future_minus_sofascore": -1390,
+    "interpretation": "PROVIDER_SCOPE_AND_COVERAGE_DIFFERENCES; NO_FORCED_EQUALITY"
+  },
+  "protections": {
+    "odds_used_to_generate_probability": false,
+    "target_outcomes_used": false,
+    "probability_frozen_before_odds_query": true,
+    "physical_house_crosscheck_required": true,
+    "automatic_wagering": false,
+    "real_money": "BLOCKED"
+  }
+}

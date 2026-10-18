@@ -1,0 +1,238 @@
+# MATRIX_PHYSICAL_TRIGGER 2026-10-09T05:34Z continuity-fallback-hard
+name: MATRIX Tennis Hard Governed Day Resolution
+
+on:
+  workflow_dispatch:
+    inputs:
+      target_date:
+        description: Optional Bogota date YYYY-MM-DD; blank resolves current/next day automatically
+        required: false
+        default: ""
+        type: string
+  push:
+    branches:
+      - repair/cor09-world-pipeline
+    paths:
+      - .github/workflows/tennis-hard-governed-day-resolution.yml
+
+permissions:
+  contents: write
+
+concurrency:
+  group: cor0203-holdout-repair-cor09-world-pipeline
+  cancel-in-progress: false
+
+jobs:
+  resolve:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: repair/cor09-world-pipeline
+          fetch-depth: 0
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - run: python -m pip install pytest requests
+
+      - name: Resolve Bogota target date
+        id: date
+        shell: bash
+        run: |
+          set -euo pipefail
+          D="${{ github.event.inputs.target_date }}"
+          if [ -z "$D" ]; then
+            HOUR="$(TZ=America/Bogota date +%H)"
+            if [ "$HOUR" -ge 18 ]; then
+              D="$(TZ=America/Bogota date -d tomorrow +%F)"
+              MODE="NEXT_DAY"
+            else
+              D="$(TZ=America/Bogota date +%F)"
+              MODE="CURRENT_DAY"
+            fi
+          else
+            MODE="EXPLICIT"
+          fi
+          echo "target_date=$D" >> "$GITHUB_OUTPUT"
+          echo "mode=$MODE" >> "$GITHUB_OUTPUT"
+          echo "TARGET_DATE_BOGOTA=$D"
+          echo "DATE_MODE=$MODE"
+
+      - name: Verify browser-first Hard-domain baseline
+        shell: bash
+        run: |
+          set -euo pipefail
+          D="${{ steps.date.outputs.target_date }}"
+          P="evidence/tennis_world_inventory/$D/MATRIX_BROWSER_HARD_DOMAIN_CANDIDATES.json"
+          test -f "$P"
+          python - "$P" <<'PY'
+          import json,sys
+          from pathlib import Path
+          p=Path(sys.argv[1]); j=json.loads(p.read_text())
+          assert j["target_date_bogota"]==p.parent.name
+          visible=int(j["sofascore"]["visible_ui_total_count"])
+          assert visible > 0
+          if "governed_bogota_day_reconciliation" in j:
+              hard=int(j["governed_bogota_day_reconciliation"]["hard_domain_candidate_count"])
+          else:
+              hard=int(j["domain"]["browser_domain_candidate_count"])
+          assert hard >= 0
+          assert "SofaScore" in j["source_order"]
+          assert "Flashscore" in j["source_order"]
+          assert j["protections"]["metrics_opened"] is False
+          assert j["protections"]["real_money"]=="BLOCKED"
+          if p.parent.name=="2026-10-09":
+              assert visible==448
+              assert hard==4
+              assert j.get("correction",{}).get("prior_v1_invalidated") is True
+          print(f"BROWSER_HARD_DOMAIN_PASS total={visible} hard_domain={hard}")
+          PY
+
+      - name: Snapshot governed counter before run
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          j=json.loads(Path("evidence/cor0203/runtime/MATRIX_COR0203_PHYSICAL_UNIQUENESS_LAST.json").read_text())
+          Path("/tmp/hard_before.json").write_text(json.dumps({
+            "unique":j["unique_calibration_observations"],
+            "physical":j["physical_frozen_rows"],
+            "duplicates":j["duplicate_observations_quarantined"],
+            "remaining200":j["unique_remaining_to_200"],
+            "remaining600":j["unique_remaining_to_600"],
+            "metrics_opened":j["metrics_opened"],
+            "outcomes_read":j["outcomes_read"]
+          },sort_keys=True))
+          print(Path("/tmp/hard_before.json").read_text())
+          PY
+
+      - name: Refresh both paid providers exact-day audit
+        env:
+          API_TENNIS_KEY: ${{ secrets.API_TENNIS_KEY }}
+          RAPIDAPI_TENNIS_KEY: ${{ secrets.RAPIDAPI_TENNIS_KEY }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          D="${{ steps.date.outputs.target_date }}"
+          mkdir -p "evidence/tennis_world_inventory/$D"
+          python -m tools.tennis_world_exact_day_dual_audit             --target-date-bogota "$D"             --out "evidence/tennis_world_inventory/$D/world_exact_day_dual_audit.json"
+
+      - name: Run governed COR02 COR03 Hard production
+        env:
+          API_TENNIS_KEY: ${{ secrets.API_TENNIS_KEY }}
+          RAPIDAPI_TENNIS_KEY: ${{ secrets.RAPIDAPI_TENNIS_KEY }}
+          MATRIX_TENNIS_PROVIDER: rapidapi_tennis
+          MATRIX_WORLD_DATE_BOGOTA: ${{ steps.date.outputs.target_date }}
+          MATRIX_TARGET_BRANCH: repair/cor09-world-pipeline
+          MATRIX_GIT_USER_NAME: matrix-ci
+          MATRIX_GIT_USER_EMAIL: matrix-ci@users.noreply.github.com
+        shell: bash
+        run: |
+          set -euo pipefail
+          bash scripts/cor0203_production_cycle.sh --trigger-sha "$(git rev-parse HEAD)"
+
+      - name: Refresh physical branch after production commits
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch origin repair/cor09-world-pipeline
+          git reset --hard origin/repair/cor09-world-pipeline
+
+      - name: Certify how many can actually increment 128 to 200
+        shell: bash
+        run: |
+          set -euo pipefail
+          D="${{ steps.date.outputs.target_date }}"
+          python - "$D" <<'PY'
+          import json,sys,hashlib
+          from pathlib import Path
+          d=sys.argv[1]
+          before=json.loads(Path("/tmp/hard_before.json").read_text())
+          hard=json.loads(Path("evidence/cor0203/runtime/MATRIX_COR0203_PHYSICAL_UNIQUENESS_LAST.json").read_text())
+          batch=json.loads(Path("evidence/cor0203/runtime/MATRIX_COR0203_BATCH_RUNNER_LAST.json").read_text())
+          prereg=json.loads(Path("evidence/cor0203/runtime/MATRIX_COR0203_DISCOVERY_PREREG_LAST.json").read_text())
+          browser=json.loads(Path(f"evidence/tennis_world_inventory/{d}/MATRIX_BROWSER_HARD_DOMAIN_CANDIDATES.json").read_text())
+          dual=json.loads(Path(f"evidence/tennis_world_inventory/{d}/world_exact_day_dual_audit.json").read_text())
+          after=int(hard["unique_calibration_observations"])
+          increment=after-int(before["unique"])
+          reconciled=browser.get("governed_bogota_day_reconciliation") or {}
+          legacy_domain=browser.get("domain") or {}
+          browser_hard=int(reconciled.get("hard_domain_candidate_count",legacy_domain.get("browser_domain_candidate_count",0)))
+          hard_tournaments=(browser["sofascore"].get("fresh_09oct_hard_challenger_men_singles") or browser["sofascore"].get("hard_challenger_men_singles") or [])
+          out={
+            "schema":"MATRIX_TENNIS_HARD_DAILY_RESOLUTION_V2",
+            "target_date_bogota":d,
+            "sofascore_visible_total":int(browser["sofascore"]["visible_ui_total_count"]),
+            "flashscore_loaded_unique_match_links":int(browser["flashscore"].get("loaded_tree_unique_tennis_match_links",0)),
+            "browser_hard_domain_candidate_count":browser_hard,
+            "hard_domain_tournaments":hard_tournaments,
+            "paid_provider_capture":{
+              "rapidapi_unique_match_count":int(dual["primary_world_inventory"]["unique_match_count"]),
+              "api_tennis_unique_match_count":int(dual["secondary_crosscheck"]["unique_match_count"]),
+              "paid_exact_union_count":int(dual["cross_provider_reconciliation"]["exact_union_count"]),
+              "world_complete":False
+            },
+            "governed_pipeline":{
+              "unique_before":int(before["unique"]),
+              "unique_after":after,
+              "actual_new_unique_observations":increment,
+              "remaining_to_200":int(hard["unique_remaining_to_200"]),
+              "remaining_to_600":int(hard["unique_remaining_to_600"]),
+              "physical_frozen_rows":int(hard["physical_frozen_rows"]),
+              "duplicates_quarantined":int(hard["duplicate_observations_quarantined"]),
+              "batch_new_freezes":int(batch["new_freezes"]),
+              "batch_new_blocked":int(batch["new_blocked"]),
+              "prereg_status":prereg.get("status"),
+              "preregistered_events":int(prereg.get("events_registered") or 0),
+              "prereg_skipped_count":len(prereg.get("skipped") or []),
+              "metrics_opened":hard["metrics_opened"],
+              "outcomes_read":hard["outcomes_read"]
+            },
+            "adjudication":{
+              "browser_domain_candidates_can_be_examined":browser_hard,
+              "physically_proven_increment_now":increment,
+              "rule":"Only actual new unique governed freezes count toward 128/200; browser-domain rows alone never increment the holdout.",
+              "provider_gap_if_increment_below_browser_domain": increment < browser_hard
+            },
+            "protections":{
+              "missing_not_zero":True,
+              "silent_imputation":False,
+              "odds_to_probability":False,
+              "metrics_opened":False,
+              "automatic_wagering":False,
+              "real_money":"BLOCKED"
+            }
+          }
+          raw=json.dumps(out,sort_keys=True,separators=(",",":"),ensure_ascii=False).encode()
+          out["sha256_without_self"]=hashlib.sha256(raw).hexdigest()
+          dest=Path(f"evidence/tennis_world_inventory/{d}/MATRIX_TENNIS_HARD_DAILY_RESOLUTION.json")
+          dest.write_text(json.dumps(out,indent=2,sort_keys=True,ensure_ascii=False)+"\n")
+          print(json.dumps(out,sort_keys=True,ensure_ascii=False))
+          PY
+
+      - name: Persist final physical resolution
+        shell: bash
+        run: |
+          set -euo pipefail
+          D="${{ steps.date.outputs.target_date }}"
+          git config user.name matrix-tennis-resolution
+          git config user.email matrix-tennis-resolution@users.noreply.github.com
+          git add "evidence/tennis_world_inventory/$D/MATRIX_TENNIS_HARD_DAILY_RESOLUTION.json"
+          git add "evidence/tennis_world_inventory/$D/world_exact_day_dual_audit.json"
+          if git diff --cached --quiet; then
+            echo "NO_FINAL_RESOLUTION_CHANGE"
+            exit 0
+          fi
+          git commit -m "evidence(tennis): certify governed Hard daily resolution $D"
+          for attempt in 1 2 3 4; do
+            git fetch origin repair/cor09-world-pipeline
+            if ! git rebase origin/repair/cor09-world-pipeline; then git rebase --abort || true; exit 1; fi
+            if git push origin HEAD:repair/cor09-world-pipeline; then exit 0; fi
+            sleep $((attempt*2))
+          done
+          exit 1

@@ -1,0 +1,114 @@
+{
+  "schema": "MATRIX_TENNIS_FOOTBALL_THROUGHPUT_ROOT_CAUSE_AUDIT_V1",
+  "generated_at_utc": "2026-10-04T07:37:00Z",
+  "branch": "repair/cor09-world-pipeline",
+  "comparison_unit": "UNIQUE_PHYSICAL_EVENTS",
+  "football": {
+    "prospective_calibration_ledger_rows": 631,
+    "unique_fixture_ids": 631,
+    "observation_scope": "GLOBAL_FOOTBALL_PROSPECTIVE_LEDGER",
+    "key_operational_difference": "MULTIDAY_PREMATCH_FREEZE_THEN_SETTLEMENT",
+    "evidence_examples": {
+      "latest_oct04_settlements_had_freeze_at": "2026-10-01",
+      "current_daily_world_fixture_inventory_seen": 775
+    }
+  },
+  "tennis": {
+    "holdout_id": "A22_POST_AUDIT_VIRGIN_HOLDOUT_V1",
+    "domain": "ATP Challenger Hard singles match-winner",
+    "model_binding": [
+      "R218_ELO_BOTH",
+      "R223_BATCH_GLICKO_RATING_BOTH"
+    ],
+    "unique_before_identity_fix": 94,
+    "unique_after_identity_fix": 96,
+    "physical_frozen_rows_after_fix": 155,
+    "duplicate_alias_rows_quarantined": 59,
+    "world_inventory_20261004": 151,
+    "domain_candidates_20261004": 20,
+    "funnel_after_fix": {
+      "DISCOVERY_REJECTED": 11,
+      "FROZEN_UNIQUE": 8,
+      "PREREGISTERED_BLOCKED": 1
+    },
+    "exact_cut_static_registry": {
+      "source_rows": 96,
+      "players_pass": 121,
+      "ranking_cut": "2026-09-21"
+    },
+    "eight_day_horizon": {
+      "rapidapi_base_candidates": 27,
+      "api_tennis_base_candidates": 16,
+      "extension_candidates_both": 0
+    }
+  },
+  "confirmed_root_causes": [
+    {
+      "cause": "DOMAIN_SUPPLY_MISMATCH",
+      "severity": "STRUCTURAL",
+      "detail": "Football ledger accepts a broad worldwide fixture population while COR02/COR03 tennis is intentionally restricted to ATP Challenger Hard singles. The counters are therefore not expected to grow at the same raw rate."
+    },
+    {
+      "cause": "REACTIVE_AND_NARROW_PIT_PLAYER_AUTHORITY",
+      "severity": "HIGH",
+      "detail": "The tennis static cut was seeded from only 96 exact-cut Challenger rows / 121 passing players. Future qualifiers and lower-frequency players often arrive outside that registry and must be resolved reactively."
+    },
+    {
+      "cause": "IDENTITY_IOC_TRANSITION_FALSE_NEGATIVES",
+      "severity": "CONFIRMED_AND_REPAIRED",
+      "detail": "A player can have a stable provider ID/name/DOB/hand/source-id while historical IOC differs from ranking-cut IOC. Marko Topo was blocked with historical GER versus cut SRB despite strong deterministic identity evidence."
+    },
+    {
+      "cause": "EXACT_CUT_RANKING_COVERAGE",
+      "severity": "HIGH",
+      "detail": "rank_diff and rank_points_diff are mandatory model features. Eleven of twenty 04-Oct domain candidates were rejected at discovery, primarily because an exact 21-Sep ranking row could not be resolved for at least one player."
+    },
+    {
+      "cause": "PROVIDER_ID_ALIAS_AND_PHYSICAL_DUPLICATE_OVERHEAD",
+      "severity": "HISTORICAL_HIGH_CURRENTLY_CONTROLLED",
+      "detail": "155 physical frozen rows map to 96 unique calibration observations; 59 duplicate/alias rows are quarantined. Current dedupe prevents those rows from inflating the calibration denominator, but legacy/provider ID drift consumed throughput."
+    },
+    {
+      "cause": "PREMATCH_TIMING_FOR_ASIA_AND_QUALIFYING_DRAWS",
+      "severity": "OPERATIONAL",
+      "detail": "Some Challenger matches start shortly after 00:00 Bogota. Discovery/identity work performed too close to match start can produce EVENT_NOT_FUTURE or POST_START_FREEZE_FORBIDDEN. Football more often freezes multiple days ahead."
+    }
+  ],
+  "correction_executed": {
+    "description": "Permit a governed IOC transition only when provider ID, exact dated ranking, name, unique pre-cut source-id, fixed hand and unique DOB all agree; no name-only join, no outcomes, no post-cut competitive fields.",
+    "commits": [
+      "a985616dbac9a36e3c9669a83c5c9a31b7169c95",
+      "b2519b2744e296a6e71f5fb46f92e23503b38a2a"
+    ],
+    "validation": {
+      "workflow_run_id": 37176695509,
+      "workflow_attempt": 4,
+      "conclusion": "SUCCESS",
+      "unique_count_before": 94,
+      "unique_count_after": 96,
+      "new_unique_freezes": [
+        "Alibek Kachmazov vs Grigoriy Lomakin",
+        "Marko Topo vs Niels Visker"
+      ],
+      "marko_topo_transition": {
+        "historical_ioc": "GER",
+        "ranking_cut_ioc": "SRB"
+      }
+    }
+  },
+  "next_architecture_actions": [
+    "Build a proactive sealed PIT player authority for every player appearing in the forward Challenger-Hard calendar, before match day, instead of relying on the 121-player exact-cut static registry.",
+    "Resolve exact 21-Sep ranking, stable provider IDs, biography and pre-cut Challenger history as soon as a draw appears; persist BLOCKED causes explicitly when no legal PIT source exists.",
+    "Move identity/history preparation to the forward horizon so Asian/qualifying matches are freeze-ready before local midnight.",
+    "Keep physical-event dedupe before preregistration/model execution across both paid APIs.",
+    "Keep COR02/COR03 ATP-Challenger-Hard immutable; if higher tennis throughput is desired, create separate governed calibration lanes for other surfaces/circuits rather than contaminating the 600-match holdout."
+  ],
+  "protections": {
+    "metrics": "SEALED_UNTIL_600",
+    "outcomes_read": 0,
+    "silent_imputation": false,
+    "historical_backfill": "FORBIDDEN",
+    "odds_to_probability": false,
+    "real_money": "BLOCKED"
+  }
+}

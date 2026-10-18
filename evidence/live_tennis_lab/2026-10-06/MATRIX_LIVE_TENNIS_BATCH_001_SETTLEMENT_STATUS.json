@@ -1,0 +1,68 @@
+{
+  "schema": "MATRIX_LIVE_TENNIS_BATCH_001_SETTLEMENT_STATUS_V1",
+  "batch_id": "LIVE-TENNIS-20261006-B001",
+  "source_closure": {
+    "path": "evidence/live_tennis_lab/2026-10-06/MATRIX_LIVE_TENNIS_BATCH_001_CLOSURE.json",
+    "content_sha": "72e6aa93491f57983eca2a68014de844c37a4f0e"
+  },
+  "source_settlement": {
+    "path": "evidence/live_tennis_lab/2026-10-06/MATRIX_LIVE_TENNIS_SETTLEMENT_SYNC_V0_1.json",
+    "content_sha": "d299112081af39c1af409151df775a8a0ce00d46",
+    "generated_at_utc": "2026-10-06T19:33:20+00:00"
+  },
+  "source_ledger": {
+    "path": "evidence/live_tennis_lab/2026-10-06/MATRIX_LIVE_TENNIS_STATE_LEDGER_V0_1.json",
+    "content_sha": "b9debb68f0c90c5873435aa5052bed36cb214bab"
+  },
+  "counts": {
+    "captured_unique_matches": 28,
+    "captured_unique_states": 159,
+    "quality_valid_states": 148,
+    "currently_live_batch_matches": 25,
+    "departed_batch_matches": 3,
+    "standard_final_settled_matches": 0,
+    "unresolved_or_blocked_departed_matches": 3,
+    "labeled_state_rows": 0,
+    "quality_valid_labeled_states": 0,
+    "quality_valid_unlabeled_states": 148,
+    "calibrable_examples_now": 0,
+    "unique_match_outcomes_available_now": 0
+  },
+  "unresolved_departed": [
+    {
+      "match_id": 200829,
+      "outcome": "unresolved",
+      "reason": "NOT_STANDARD_COMPLETED_RESULT",
+      "status": "completed",
+      "winner": null
+    },
+    {
+      "match_id": 200832,
+      "outcome": "unresolved",
+      "reason": "NOT_STANDARD_COMPLETED_RESULT",
+      "status": "completed",
+      "winner": null
+    },
+    {
+      "match_id": 200833,
+      "outcome": "unresolved",
+      "reason": "NOT_STANDARD_COMPLETED_RESULT",
+      "status": "completed",
+      "winner": null
+    }
+  ],
+  "settlement_adjudication": "NO_STANDARD_FINAL_LABELS_AVAILABLE_YET",
+  "model_training_gate": "BLOCKED_UNTIL_STANDARD_FINAL_LABELS_EXIST",
+  "note": "A final outcome may label multiple unique live states from the same match, but evaluation/training splits must remain grouped by match_id. Match outcomes are not counted multiple times as independent matches.",
+  "protections": {
+    "final_only": true,
+    "unresolved_not_labeled": true,
+    "retired_walkover_abandoned_not_silently_labeled": true,
+    "duplicate_transport_states_not_reused": true,
+    "same_match_must_not_cross_train_test": true,
+    "odds_to_probability": false,
+    "automatic_wagering": false,
+    "real_money": "BLOCKED"
+  },
+  "status": "SETTLEMENT_PENDING_25_LIVE_3_UNRESOLVED"
+}

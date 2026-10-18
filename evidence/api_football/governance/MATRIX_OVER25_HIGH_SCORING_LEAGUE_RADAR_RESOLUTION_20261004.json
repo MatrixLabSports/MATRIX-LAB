@@ -1,0 +1,141 @@
+{
+  "schema": "MATRIX_OVER25_HIGH_SCORING_LEAGUE_RADAR_RESOLUTION_V1",
+  "verified_at_utc": "2026-10-04T03:08:23Z",
+  "status": "COMPLETE_NON_INVASIVE_INTEGRATION",
+  "purpose": "Prioritize review/discovery of high-scoring leagues without modifying the football Matrix, probabilities, features, queues, freezes, or calibration.",
+  "implementation": {
+    "radar_module": {
+      "path": "tools/api_football_over25_high_scoring_league_radar.py",
+      "blob_sha": "41b8111118c535885e5cabdefe630e347df0ac1c"
+    },
+    "radar_tests": {
+      "path": "tests/test_api_football_over25_high_scoring_league_radar.py",
+      "blob_sha": "cea0a38063b3762de3909d485af0ab9d6ab23f42"
+    },
+    "daily_cycle": {
+      "path": "tools/api_football_prospective_daily_cycle.py",
+      "blob_sha": "aff7b6bf619b37bac9f220efe3cad8331c17db80",
+      "integration_role": "SIDECAR_ONLY"
+    },
+    "daily_production_workflow": {
+      "path": ".github/workflows/api-football-prospective-daily-production.yml",
+      "blob_sha": "80e9e8944c0d2ac6ca71867ca49f0eada2c973fe",
+      "radar_regression_test_wired": true,
+      "invariance_assertion_wired": true
+    },
+    "league_audit_workflow": {
+      "path": ".github/workflows/api-football-over25-league-audit-screenshots.yml",
+      "blob_sha": "01201a871c8aeee0c9bc12da4d005eaf8f34c7bc",
+      "schedule_utc": "15 5 * * *",
+      "schedule_bogota_description": "00:15 America/Bogota",
+      "frequency": "DAILY"
+    },
+    "frequent_market_probe_restored": {
+      "path": ".github/workflows/api-football-market-expansion-live-probe.yml",
+      "blob_sha": "c3742eb4488fd262456a23f06d906486bcdf6e24",
+      "league_audit_removed_from_frequent_probe": true
+    }
+  },
+  "sources": {
+    "league_audit": {
+      "path": "evidence/api_football/league_over25_audit/audit_last.json",
+      "blob_sha": "26b568a1a853bf775058f83f3bf61b37dbaf8068",
+      "provider": "API_FOOTBALL",
+      "network_calls": 88
+    },
+    "canonical_policy": {
+      "path": "evidence/api_football/league_over25_radar/league_policy_current.json",
+      "blob_sha": "9df19a21ad3de907eddf5a1982accf714ed660f3",
+      "selected_league_count": 15
+    },
+    "current_snapshot": {
+      "path": "evidence/api_football/league_over25_radar/current_freeze_snapshot_20261004T025800Z.json",
+      "blob_sha": "f2b03f125ed0b8753b903b4826eee46ebfca63f3",
+      "future_candidate_count": 7,
+      "all_candidates_p_matrix_adjustment_zero": true
+    },
+    "diagnostic_624": {
+      "path": "evidence/api_football/league_over25_radar/diagnostic_624.json",
+      "blob_sha": "0724b15d4e701ad5dfc74fb05efcc274618ba24e",
+      "governance_role": "POST_HOC_DIAGNOSTIC_ONLY_NOT_MODEL_SELECTION_NOT_PROMOTION",
+      "priority_subset_n": 17,
+      "priority_subset_realized_over25_pct": 70.58823529411765,
+      "priority_subset_delta_brier_vs_poisson": -0.005861145276452928,
+      "priority_subset_delta_log_loss_vs_poisson": -0.012571741163144523
+    }
+  },
+  "source_identity_resolution": {
+    "oberliga_hamburg": {
+      "screenshot_label": "Oberliga Hamburg",
+      "provider_name": "Oberliga - Hamburg",
+      "provider_league_id": "745",
+      "status": "RESOLVED_FROM_EXISTING_API_FOOTBALL_FREEZE",
+      "evidence_fixture_ids": [
+        "1566361",
+        "1566368",
+        "1566362",
+        "1566363",
+        "1566364"
+      ],
+      "note": "Audit alias corrected to query exact provider name on next daily refresh."
+    },
+    "argentina_primera_a_femenina": {
+      "screenshot_label": "Primera A Femenina",
+      "status": "SOURCE_UNAVAILABLE_IN_CURRENT_API_FOOTBALL_COVERAGE",
+      "radar_action": "EXCLUDED_FROM_CANONICAL_RADAR_UNTIL_SUPPORTED_SOURCE_EXISTS",
+      "silent_substitution_forbidden": true
+    },
+    "burkina_faso_premier_league": {
+      "screenshot_label": "Premier League",
+      "provider_coverage_name": "Ligue 1",
+      "status": "BOOKMAKER_TO_PROVIDER_NAME_MAPPING_RESOLVED",
+      "audit_query_corrected": true,
+      "radar_action": "NOT_INCLUDED_UNTIL_PROVIDER_ID_AND_CURRENT_SEASON_STATS_ARE_OBSERVED",
+      "silent_id_inference_forbidden": true
+    }
+  },
+  "matrix_integrity": {
+    "freeze": {
+      "path": "evidence/api_football/prospective_market_freeze/freeze.json",
+      "blob_sha_before_radar": "ca8551c3b8cfc7888d371df2911e45ec18b14231",
+      "blob_sha_after_radar": "ca8551c3b8cfc7888d371df2911e45ec18b14231",
+      "unchanged": true
+    },
+    "checkpoint_624": {
+      "path": "evidence/api_football/prospective_calibration/MATRIX_FOOTBALL_POST_SETTLEMENT_CHECKPOINTS_20261004_624.json",
+      "blob_sha_before_radar": "49fa45a6f1f36585f88a1d1a533c0ebc95768951",
+      "blob_sha_after_radar": "49fa45a6f1f36585f88a1d1a533c0ebc95768951",
+      "unchanged": true
+    },
+    "calibration_ledger": {
+      "pre_radar_snapshot_blob_sha": "f56730a8885dad1e8625e0ee08e5dda89cbebde9",
+      "pre_radar_observation_count": 624,
+      "current_blob_sha": "8706bbdbb00851815277ed3300e46f04ebf1603a",
+      "current_observation_count": 626,
+      "change_attributed_to_settlement_pipeline": true,
+      "new_fixture_ids": [
+        "1493722",
+        "1494024"
+      ],
+      "parameters_mutated": false,
+      "ledger_hash_chain_verified": true,
+      "radar_writer_access_to_calibration_ledger": false
+    }
+  },
+  "hard_protections": {
+    "filters_world_inventory": false,
+    "reorders_history_queue": false,
+    "changes_features": false,
+    "changes_model_parameters": false,
+    "changes_frozen_probabilities": false,
+    "changes_p_matrix": false,
+    "league_rate_used_as_probability": false,
+    "p_matrix_adjustment": 0,
+    "adds_network_calls_to_daily_cycle": false,
+    "odds_used": false,
+    "parameter_tuning": false,
+    "automatic_wagering": false,
+    "real_money": "BLOCKED"
+  },
+  "decision_rule": "LEAGUE_RADAR_MAY_PRIORITIZE_REVIEW_ONLY; EVERY_MATCH_STILL_REQUIRES_EXISTING_PIT_MODEL_FREEZE_AND_SEPARATE_ODDS_EV_DECISION"
+}

@@ -1,0 +1,54 @@
+{
+  "schema": "MATRIX_TELEGRAM_STAKE_GUARDRAIL_PHYSICAL_PROOF_V1",
+  "generated_at_utc": "2026-10-17T21:24:10+00:00",
+  "branch": "repair/cor09-world-pipeline",
+  "trigger_commit": "87f333da8425c254ebe3039077de3cc75e3cedd5",
+  "verification_run": {
+    "run_number": 223,
+    "run_id": 39070741654,
+    "job_id": 117507635550,
+    "conclusion": "success",
+    "tests": "21 passed in 0.23s"
+  },
+  "guardrail": {
+    "policy": "TEMPORARY_FLAT_1U_CAP_17OCT2026",
+    "paper_stake_max_level": 1,
+    "active_stake_level": 1,
+    "max_stake_cop": 25000,
+    "stake_2": "TEMPORARILY_DISABLED_BY_RISK_OVERRIDE",
+    "stake_3": "TEMPORARILY_DISABLED_BY_RISK_OVERRIDE",
+    "effective_daily_cap_fraction": 0.3
+  },
+  "physical_run_readback": {
+    "paper_bankroll_current_cop": 4833500,
+    "paper_open_bets": 0,
+    "paper_open_exposure_cop": 0,
+    "paper_bets_assigned_now": 0,
+    "sent_now": 0,
+    "total_green_messages": 209,
+    "total_settlements": 174,
+    "paper_stake_max_level": 1,
+    "paper_stake_risk_override": "TEMPORARY_FLAT_1U_CAP_17OCT2026",
+    "real_money": "BLOQUEADO"
+  },
+  "diagnostic_basis": {
+    "stake_1_units": 5.54,
+    "stake_2_units": -6.6,
+    "stake_3_units": -12.45,
+    "ev_lt_5pct_units": 7.55,
+    "ev_5_to_10pct_units": 4.1,
+    "ev_10_to_15pct_units": -13.52,
+    "ev_ge_15pct_units": -11.64,
+    "interpretation": "Higher nominal confidence/EV segments were amplifying paper losses; this guardrail limits sizing without changing P_MATRIX, EV, or signal gates."
+  },
+  "protections": {
+    "p_matrix_modified": false,
+    "ev_modified": false,
+    "signal_quality_thresholds_modified": false,
+    "clv_gate_modified": false,
+    "automatic_real_money_execution": false,
+    "real_money": "BLOCKED"
+  },
+  "retirement_gate": "Do not restore 2u/3u until calibration/CLV evidence clears high-P/high-EV overconfidence.",
+  "adjudication": "PASS_PHYSICALLY_VERIFIED_TEMPORARY_1U_CAP_ACTIVE"
+}

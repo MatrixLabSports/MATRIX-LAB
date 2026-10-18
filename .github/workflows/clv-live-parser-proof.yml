@@ -1,0 +1,61 @@
+name: MATRIX CLV Live Parser Proof
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - repair/cor09-world-pipeline
+    paths:
+      - .github/workflows/clv-live-parser-proof.yml
+
+permissions:
+  contents: read
+
+jobs:
+  proof:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      REAL_MONEY: BLOCKED
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: repair/cor09-world-pipeline
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: python -m pip install requests
+      - name: Run isolated live CLV parser proof
+        env:
+          API_FOOTBALL_KEY: ${{ secrets.API_FOOTBALL_KEY }}
+          ODDS_API_NET_KEY: ${{ secrets.ODDS_API_NET_KEY }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          cp evidence/clv/football/over_2_5/prospective_clv_ledger.jsonl /tmp/clv-proof-ledger.jsonl
+          PYTHONPATH=. python - <<'PY'
+          import json, os
+          from pathlib import Path
+          from tools.football_clv_odds_api_net_capture import capture_due_via_odds_api_net
+          result=capture_due_via_odds_api_net(
+              ledger_path=Path("/tmp/clv-proof-ledger.jsonl"),
+              capture_dir=Path("/tmp/clv-proof-captures"),
+              attempt_log_path=Path("/tmp/clv-proof-attempts.jsonl"),
+              api_football_key=os.environ["API_FOOTBALL_KEY"],
+              odds_api_key=os.environ["ODDS_API_NET_KEY"],
+          )
+          print("CLV_LIVE_PARSER_PROOF_RESULT="+json.dumps(result,sort_keys=True))
+          p=Path("/tmp/clv-proof-attempts.jsonl")
+          rows=[json.loads(x) for x in p.read_text().splitlines()] if p.exists() else []
+          print("CLV_LIVE_PARSER_PROOF_ATTEMPTS="+str(len(rows)))
+          for row in rows[-12:]:
+              print("CLV_LIVE_ATTEMPT="+json.dumps({
+                  "fixture_id":row.get("fixture_id"),
+                  "outcome":row.get("outcome"),
+                  "provider_quote_age_seconds":row.get("provider_quote_age_seconds"),
+                  "market_diagnostic":row.get("market_diagnostic"),
+                  "evidence_path":row.get("evidence_path"),
+              },sort_keys=True))
+          PY
+      - name: Enforce safety
+        run: test "$REAL_MONEY" = "BLOCKED"

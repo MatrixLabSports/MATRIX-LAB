@@ -1,0 +1,48 @@
+{
+  "away_team_id": null,
+  "fixture_id": null,
+  "generated_at_utc": "2026-10-06T16:20:20+00:00",
+  "home_team_id": 7231,
+  "match": "Hastings United - Burgess Hill Town",
+  "official_kickoff_local": "2026-10-06 19:45 Europe/London",
+  "official_schedule_source": "https://www.hastingsunited.com/",
+  "protections": {
+    "automatic_model_feed": false,
+    "automatic_wagering": false,
+    "real_money": "BLOCKED"
+  },
+  "provider_fixture": null,
+  "request_evidence": [
+    {
+      "endpoint": "/teams",
+      "http_status": 200,
+      "params": {
+        "search": "Hastings United"
+      },
+      "response_bytes": 506,
+      "response_sha256": "3754c0322b51edb460e0358a0f4caca22857c5f2e08a7b5733c39f34fe90e887"
+    },
+    {
+      "endpoint": "/teams",
+      "http_status": 200,
+      "params": {
+        "search": "Burgess Hill Town"
+      },
+      "response_bytes": 822,
+      "response_sha256": "59cefff58a7c3cced45092f715c4c7da25f3813c466488f90cdd5e4d4f3694a4"
+    },
+    {
+      "endpoint": "/fixtures",
+      "http_status": 200,
+      "params": {
+        "date": "2026-10-06",
+        "team": 7231,
+        "timezone": "America/Bogota"
+      },
+      "response_bytes": 207,
+      "response_sha256": "a71582530908d0376b6152bcfdfc200828cea6d47bf1084f9ee2c7b60b9977bd"
+    }
+  ],
+  "schema": "MATRIX_API_FOOTBALL_OFFICIAL_CORRECTED_GAP_PROBE_V1",
+  "status": "TEAM_BINDING_INCOMPLETE"
+}

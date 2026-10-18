@@ -1,0 +1,147 @@
+name: Tennis World Exact Day 2026-10-07
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - repair/cor09-world-pipeline
+    paths:
+      - .github/workflows/tennis-world-exact-day-20261007.yml
+
+permissions:
+  contents: write
+
+concurrency:
+  group: cor0203-tennis-exact-day-20261007
+  cancel-in-progress: false
+
+jobs:
+  exact-day-tennis:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - name: Checkout operational branch
+        uses: actions/checkout@v4
+        with:
+          ref: repair/cor09-world-pipeline
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install governed dependencies
+        run: python -m pip install pytest requests
+
+      - name: Verify tennis browser-first baseline
+        shell: bash
+        run: |
+          set -euo pipefail
+          EVIDENCE="evidence/tennis_world_inventory/2026-10-07/MATRIX_DAILY_MULTISOURCE_BROWSER_CROSSCHECK.json"
+          test -f "$EVIDENCE"
+          python - "$EVIDENCE" <<'PY'
+          import json, sys
+          from pathlib import Path
+          j=json.loads(Path(sys.argv[1]).read_text())
+          assert j["target_date_bogota"]=="2026-10-07"
+          assert j["sources"]["sofascore"]["opera_read_status"]=="PASS"
+          assert j["sources"]["flashscore"]["opera_read_status"]=="PASS"
+          assert j["sources"]["sofascore"]["exact_unique_match_count"]==560
+          assert j["sources"]["flashscore"]["exact_unique_match_count"]==488
+          assert j["sources"]["sofascore"]["machine_verified_exact"] is True
+          assert j["sources"]["flashscore"]["machine_verified_exact"] is True
+          assert j["adjudication"]["paid_api_counts_are_not_world_complete"] is True
+          assert j["protections"]["metrics_opened"] is False
+          assert j["protections"]["real_money"]=="BLOCKED"
+          print("TENNIS_BROWSER_FIRST_BASELINE: PASS 560/488")
+          PY
+
+      - name: Run exact-day and COR02/03 regression suite
+        run: |
+          python -m pytest -q             tests/test_tennis_world_inventory_rapidapi.py             tests/test_cor0203_world_inventory_discovery.py             tests/test_cor0203_api_tennis_discovery.py             tests/test_cor0203_preregister_discovery.py             tests/test_cor0203_physical_uniqueness.py
+
+      - name: Record checkout SHA
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch origin repair/cor09-world-pipeline
+          git checkout repair/cor09-world-pipeline
+          git reset --hard origin/repair/cor09-world-pipeline
+          echo "CHECKOUT_SHA=$(git rev-parse HEAD)" >> "$GITHUB_ENV"
+
+      - name: Recapture both paid tennis providers after browser baseline
+        shell: bash
+        env:
+          API_TENNIS_KEY: ${{ secrets.API_TENNIS_KEY }}
+          RAPIDAPI_TENNIS_KEY: ${{ secrets.RAPIDAPI_TENNIS_KEY }}
+        run: |
+          set -euo pipefail
+          python -m tools.tennis_world_exact_day_dual_audit             --target-date-bogota 2026-10-07             --out evidence/tennis_world_inventory/2026-10-07/world_exact_day_dual_audit.json
+
+      - name: Run governed COR02/03 production cycle for 07-OCT
+        shell: bash
+        env:
+          API_TENNIS_KEY: ${{ secrets.API_TENNIS_KEY }}
+          RAPIDAPI_TENNIS_KEY: ${{ secrets.RAPIDAPI_TENNIS_KEY }}
+          MATRIX_TENNIS_PROVIDER: rapidapi_tennis
+          MATRIX_WORLD_DATE_BOGOTA: "2026-10-07"
+          MATRIX_TARGET_BRANCH: repair/cor09-world-pipeline
+          MATRIX_GIT_USER_NAME: matrix-ci
+          MATRIX_GIT_USER_EMAIL: matrix-ci@users.noreply.github.com
+        run: |
+          set -euo pipefail
+          bash scripts/cor0203_production_cycle.sh --trigger-sha "$CHECKOUT_SHA"
+
+      - name: Verify sealed metrics and physical uniqueness
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          u=json.loads(Path("evidence/cor0203/runtime/MATRIX_COR0203_PHYSICAL_UNIQUENESS_LAST.json").read_text())
+          d=json.loads(Path("evidence/tennis_world_inventory/2026-10-07/world_exact_day_dual_audit.json").read_text())
+          assert u["result"]=="PASS"
+          assert u["metrics_opened"] is False
+          assert u["outcomes_read"]==0
+          assert d["target_date_bogota"]=="2026-10-07"
+          assert d["status"]=="PASS_PROVIDER_CAPTURE_WORLD_UNSEALED"
+          assert d["metrics_opened"] is False
+          assert d["real_money"]=="BLOCKED"
+          print(json.dumps({
+            "rapidapi_tennis": d["primary_world_inventory"]["unique_match_count"],
+            "api_tennis": d["secondary_crosscheck"]["unique_match_count"],
+            "paid_union": d["cross_provider_reconciliation"]["exact_union_count"],
+            "unique_calibration_observations": u["unique_calibration_observations"],
+            "remaining_to_200": u["unique_remaining_to_200"],
+            "remaining_to_600": u["unique_remaining_to_600"],
+            "metrics_opened": False,
+            "real_money": "BLOCKED"
+          }, sort_keys=True))
+          PY
+
+      - name: Persist exact-day audit if not already carried by production
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name matrix-ci
+          git config user.email matrix-ci@users.noreply.github.com
+          git add evidence/tennis_world_inventory/2026-10-07/world_exact_day_dual_audit.json
+          if git diff --cached --quiet; then
+            echo "NO_EXTRA_EXACT_DAY_CHANGE"
+            exit 0
+          fi
+          git commit -m "evidence(tennis): recapture 07OCT dual paid sources after browser baseline"
+          for attempt in 1 2 3 4; do
+            git fetch origin repair/cor09-world-pipeline
+            if ! git rebase origin/repair/cor09-world-pipeline; then
+              git rebase --abort || true
+              exit 1
+            fi
+            if git push origin HEAD:repair/cor09-world-pipeline; then
+              exit 0
+            fi
+            sleep $((attempt * 2))
+          done
+          exit 1

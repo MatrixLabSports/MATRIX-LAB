@@ -1,0 +1,304 @@
+{
+  "schema": "MATRIX_AUXILIARY_PIT_FEATURE_SOURCES_V1",
+  "effective_date": "2026-10-04",
+  "timezone": "America/Bogota",
+  "status": "ACTIVE_PERMANENT_ADDITIVE",
+  "principle": "SOFASCORE_AND_FLASHSCORE_ARE_MANDATORY_DAILY_DISCOVERY_AND_CROSSCHECK_SOURCES_FOR_FOOTBALL_AND_TENNIS_WITH_POINT_IN_TIME_PROVENANCE",
+  "sources": {
+    "sofascore": {
+      "browser_web_verified": true,
+      "ci_api_automation": "BLOCKED_WAF_HTTP_403",
+      "tennis": {
+        "allowed": [
+          "calendar",
+          "tournament",
+          "surface",
+          "player_identity",
+          "current_rank_visible_at_capture",
+          "historical_rank_only_when_explicitly_dated_and_captured",
+          "head_to_head",
+          "recent_matches",
+          "event_statistics",
+          "player_metadata"
+        ],
+        "browser_evidence_examples": [
+          "2026-10-05 tennis calendar page exposes competition, surface, player identities and event times",
+          "tennis cards visibly expose ATP/WTA ranking positions for players"
+        ]
+      },
+      "football": {
+        "allowed": [
+          "calendar",
+          "competition",
+          "team_identity",
+          "standings",
+          "roster",
+          "player_identity",
+          "player_position",
+          "minutes",
+          "starts",
+          "goals",
+          "cards",
+          "lineups",
+          "substitutions",
+          "match_statistics",
+          "recent_matches",
+          "team_metadata",
+          "player_metadata"
+        ],
+        "browser_evidence_examples": [
+          "Juventus team page exposes fixtures, standings, roster and player statistics",
+          "SofaScore states player totals include matches played, starts, minutes, goals and cards"
+        ]
+      }
+    },
+    "flashscore": {
+      "browser_web_verified": true,
+      "tennis": {
+        "allowed": [
+          "calendar",
+          "tournament",
+          "surface",
+          "player_identity",
+          "current_rank_visible_at_capture",
+          "ranking_history_when_explicitly dated",
+          "match_record_by_season",
+          "match_record_by_surface",
+          "recent_matches",
+          "injury_updates",
+          "player_metadata"
+        ],
+        "browser_evidence_examples": [
+          "Sascha Gueymard Wayenburg profile exposes RANKING links",
+          "Flashscore profile text states current ATP/WTA ranking and ranking history are available"
+        ]
+      },
+      "football": {
+        "allowed": [
+          "calendar",
+          "competition",
+          "team_identity",
+          "lineups",
+          "player_statistics",
+          "expected_goals_xg",
+          "possession",
+          "shots",
+          "match_statistics",
+          "team_recent_results",
+          "cards",
+          "corners_when_visible",
+          "player_metadata"
+        ],
+        "browser_evidence_examples": [
+          "Pereira vs Santa Fe match page exposes ESTADÍSTICAS, ALINEACIONES and ESTADÍSTICAS DE JUGADORES",
+          "same page exposes Goles esperados (xG), Posesión de balón and Remates"
+        ]
+      }
+    },
+    "football_data_org": {
+      "authenticated_verified": true,
+      "verification_evidence": "evidence/governance/MATRIX_FREE_API_AUTHENTICATED_PROBE_20261006.json",
+      "role": "AUXILIARY_STRUCTURED_COVERAGE_IDENTITY_AND_SCHEDULE_CROSSCHECK",
+      "football": {
+        "allowed": [
+          "competition_identity",
+          "match_identity",
+          "team_identity",
+          "scheduled_time",
+          "match_status",
+          "accessible_competition_calendar",
+          "standings_when_available",
+          "historical_matches_when_plan_allows"
+        ]
+      },
+      "world_complete": false,
+      "automatic_model_feed": false,
+      "note": "Free-plan coverage is limited. It supplements API-Football and browser discovery; it never replaces SofaScore/Flashscore or API-Football."
+    },
+    "live_tennis_api": {
+      "authenticated_verified": true,
+      "verification_evidence": "evidence/governance/MATRIX_FREE_API_AUTHENTICATED_PROBE_20261006.json",
+      "role": "AUXILIARY_TENNIS_DISCOVERY_IDENTITY_AND_GAP_CROSSCHECK",
+      "tennis": {
+        "allowed": [
+          "upcoming_fixtures",
+          "stable_match_id",
+          "event_date",
+          "scheduled_start_time",
+          "tour",
+          "tournament",
+          "round",
+          "round_code",
+          "surface",
+          "player_identity",
+          "qualifying_flag",
+          "gender",
+          "draw"
+        ]
+      },
+      "world_complete": false,
+      "automatic_model_feed": false,
+      "note": "Especially useful as an independent Challenger singles discovery/gap source. Every candidate still requires canonical reconciliation, PIT history gates and physical dedup before MATRIX admission."
+    }
+  },
+  "admission_rules": {
+    "point_in_time_required": true,
+    "captured_at_required": true,
+    "source_url_or_entity_reference_required": true,
+    "source_name_required": true,
+    "raw_snapshot_or_physical_evidence_required": true,
+    "canonical_identity_required": true,
+    "timezone_aware": true,
+    "missing_not_zero": true,
+    "silent_imputation": false,
+    "name_only_identity_join": false,
+    "future_knowledge_used": false,
+    "historical_backfill_allowed": false,
+    "odds_to_p_matrix": false,
+    "automatic_model_feed": false,
+    "automatic_model_promotion": false,
+    "automatic_wagering": false,
+    "real_money": "BLOCKED"
+  },
+  "ranking_rule": {
+    "current_rank": "May be used only for a prospective event when captured before freeze and the model/domain explicitly permits that timestamp.",
+    "historical_rank": "May be used only when the source exposes an explicit historical date and the captured value can be tied to that date.",
+    "retroactive_use": "PROHIBITED. A rank visible today may not be injected into a freeze or historical feature cutoff from an earlier date."
+  },
+  "football_statistics_rule": {
+    "prospective_use": "Allowed only when the statistic existed and was captured before the governed feature cutoff/freeze.",
+    "examples": [
+      "team form",
+      "shots",
+      "shots on target",
+      "xG",
+      "possession",
+      "corners",
+      "cards",
+      "lineups",
+      "player minutes",
+      "player starts",
+      "player goals"
+    ],
+    "reconciliation": "If a paid API provides the same statistic, disagreement must be persisted and adjudicated under provider reconciliation; no silent overwrite."
+  },
+  "provider_priority_rule": {
+    "statement": "SofaScore and Flashscore remain the mandatory first daily world-calendar baseline for BOTH football and tennis. Paid APIs remain mandatory primary structured acquisition sources. Verified free APIs football-data.org and Live Tennis API are mandatory auxiliary post-baseline crosschecks when available, used to detect omissions and add independent structured identity without replacing either browser sources or paid APIs.",
+    "no_single_source_world_truth": true,
+    "no_single_source_feature_override": true,
+    "free_auxiliary_sources": [
+      "football_data_org",
+      "live_tennis_api"
+    ]
+  },
+  "daily_crosscheck_rule": {
+    "required": true,
+    "sports": [
+      "tennis",
+      "football"
+    ],
+    "tennis_required_sources": [
+      "rapidapi_tennis",
+      "api_tennis",
+      "live_tennis_api",
+      "sofascore",
+      "flashscore",
+      "official_atp_wta_itf_as_applicable"
+    ],
+    "football_required_sources": [
+      "api_football",
+      "football_data_org",
+      "sofascore",
+      "flashscore",
+      "official_competition_or_team_sources_as_applicable"
+    ],
+    "rule": "Every operational Bogota date must have physical SofaScore and Flashscore query evidence for both football and tennis before a source set may be treated as daily world discovery complete enough to feed governed candidate selection.",
+    "paid_api_role": "Structured acquisition, IDs, timestamps, history, reproducible features, automation and SHA/provenance.",
+    "browser_role": "Worldwide discovery, omission detection, calendar/identity validation and auxiliary PIT features.",
+    "fail_closed_if_browser_crosscheck_missing": true,
+    "no_single_source_world_truth": true,
+    "free_api_role": "Independent structured coverage/gap detection after the SofaScore/Flashscore baseline and alongside paid-API reconciliation. No free API is world truth."
+  },
+  "calendar_first_operating_order": {
+    "required": true,
+    "applies_to": [
+      "tennis",
+      "football"
+    ],
+    "order": [
+      "1_SOFASCORE_AND_FLASHSCORE_WORLD_CALENDAR_BASELINE",
+      "2_PAID_APIS_PRIMARY_STRUCTURED_ACQUISITION_AND_ENRICHMENT",
+      "3_VERIFIED_FREE_APIS_AUXILIARY_COVERAGE_AND_GAP_CROSSCHECK",
+      "4_SOURCE_BY_SOURCE_COUNT_REPORT_AND_COVERAGE_GAP_ANALYSIS",
+      "5_CANONICAL_IDENTITY_RECONCILIATION_AND_PHYSICAL_DEDUP",
+      "6_GOVERNED_CANDIDATE_ADMISSION_FREEZE_AND_SETTLEMENT"
+    ],
+    "daily_count_report_required": true,
+    "daily_count_report_path_template": "evidence/daily_source_counts/YYYY-MM-DD/MATRIX_WORLD_CALENDAR_SOURCE_COUNTS.json",
+    "exact_count_rule": "A numeric total may be labeled exact only when physically observed or machine-verified from that source. User-visible reports and lazy/partial accessibility enumerations must retain their provenance and may not be silently promoted to exact world totals.",
+    "invented_counts_prohibited": true,
+    "api_must_not_run_as_world_truth_before_browser_baseline": true
+  },
+  "autonomous_calendar_analysis_rule": {
+    "required": true,
+    "applies_to": [
+      "tennis",
+      "football"
+    ],
+    "user_manual_counting_prohibited": true,
+    "user_manual_source_enumeration_prohibited": true,
+    "exact_browser_totals_must_be_captured_by_automation": true,
+    "if_browser_connector_unavailable": "BLOCK_AND_RETRY_AUTOMATICALLY_DO_NOT_PROMOTE_PARTIAL_COUNTS",
+    "if_exact_total_unavailable": "COUNT_NULL_STATUS_PENDING_EXACT_UI_TOTAL",
+    "do_not_ask_user_to_count_matches": true,
+    "do_not_present_accessibility_floor_as_daily_total": true,
+    "production_must_fail_closed_until_calendar_baseline_complete": true,
+    "report_fields_required": [
+      "count",
+      "count_type",
+      "captured_at_utc",
+      "url",
+      "operator_manual_intervention_required"
+    ]
+  },
+  "free_provider_promotion_rule": {
+    "status": "AUTHENTICATED_VERIFIED_AUXILIARY_ONLY",
+    "authenticated_probe_evidence": "evidence/governance/MATRIX_FREE_API_AUTHENTICATED_PROBE_20261006.json",
+    "daily_coverage_evidence_template": "evidence/free_providers/YYYY-MM-DD/MATRIX_FREE_PROVIDER_COVERAGE_SNAPSHOT.json",
+    "football_data_org": {
+      "promotion": "AUXILIARY_ONLY",
+      "reason": "Free plan has limited competition coverage and is not world complete."
+    },
+    "live_tennis_api": {
+      "promotion": "AUXILIARY_ONLY",
+      "reason": "Useful independent fixture/identity source; must prove incremental coverage and pass reconciliation before any model feature role."
+    },
+    "automatic_model_feed": false,
+    "automatic_counter_increment": false,
+    "physical_reconciliation_required": true,
+    "pit_required": true,
+    "dedup_required": true
+  },
+  "operational_day_rule": {
+    "timezone": "America/Bogota",
+    "local_start_inclusive": "00:00:00.000",
+    "local_end_inclusive": "23:59:59.999",
+    "utc_offset_standard": "-05:00",
+    "dst_observed": false,
+    "canonical_membership_rule": "An event belongs to the operational date determined by converting its authoritative scheduled start timestamp to America/Bogota. Provider calendar_date/event_date fields do not override the Bogota-local date.",
+    "utc_window_formula": "For Bogota date D, include event_start_utc >= D 05:00:00Z and < (D+1) 05:00:00Z.",
+    "example_2026_10_06": {
+      "bogota_window": "2026-10-06T00:00:00-05:00 <= start < 2026-10-07T00:00:00-05:00",
+      "utc_window": "2026-10-06T05:00:00Z <= start < 2026-10-07T05:00:00Z",
+      "example_event": "2026-10-07T03:00:00Z",
+      "example_event_bogota": "2026-10-06T22:00:00-05:00",
+      "canonical_operational_date": "2026-10-06"
+    },
+    "requirements": {
+      "timezone_aware_timestamp_required": true,
+      "naive_provider_date_not_authoritative": true,
+      "no_midnight_double_count": true,
+      "physical_dedup_after_timezone_normalization": true
+    }
+  }
+}

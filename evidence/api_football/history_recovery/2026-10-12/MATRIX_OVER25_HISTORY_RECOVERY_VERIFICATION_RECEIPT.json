@@ -1,0 +1,81 @@
+{
+  "schema": "MATRIX_OVER25_HISTORY_RECOVERY_VERIFICATION_RECEIPT_V1",
+  "verified_at_utc": "2026-10-12T03:57:23+00:00",
+  "target_date_bogota": "2026-10-12",
+  "result": "PASS_PHYSICALLY_VERIFIED",
+  "history_recovery": {
+    "workflow_run_id": 38200589833,
+    "workflow_conclusion": "success",
+    "commit_sha": "f812f1c63cc07fbfe718931f0a89cb18103bcc7d",
+    "evidence_path": "evidence/api_football/history_recovery/2026-10-12/MATRIX_OVER25_HISTORY_RECOVERY.json",
+    "evidence_blob_sha": "f244e999805305e9c49aeffdc9c926a3ec44b12f",
+    "evidence_internal_sha256_without_self": "e4d04ef269c9757acb92380c2a003d9266ad5511bdae2afea5dc235962961e36",
+    "missing_groups_before": 27,
+    "network_calls": 27,
+    "groups_persisted": 27,
+    "groups_failed": 0,
+    "p_matrix_scored_before": 96,
+    "p_matrix_scored_after": 124,
+    "p_matrix_blocked_before": 36,
+    "p_matrix_blocked_after": 8,
+    "remaining_blocker_reasons": {
+      "BLOCKED_GROUP_HISTORY_BELOW_20": 8
+    }
+  },
+  "governed_over25_report": {
+    "path": "evidence/api_football/daily_prematch_reports/2026-10-12/over25_shadow_ev/MATRIX_FOOTBALL_DAILY_OVER25_GOVERNED_SHADOW_EV.json",
+    "blob_sha": "6b818cff5bc3c36a4185632f0e579c7101320a33",
+    "bet_shadow_count": 21,
+    "no_bet_count": 64,
+    "blocked_count": 47,
+    "probability_scored_count": 124,
+    "probability_blocked_count": 8
+  },
+  "telegram": {
+    "workflow_run_id": 38201770242,
+    "workflow_conclusion": "success",
+    "trigger_commit_sha": "6659925c13be3205e77e32577db8dd5eefaf8112",
+    "ledger_commit_sha": "10255869b457fde7fe9c0cabd011f94318ecac40",
+    "ledger_path": "evidence/notifications/telegram/MATRIX_TELEGRAM_SIGNAL_LEDGER.json",
+    "ledger_blob_sha": "6c6c630b401476b9d313bbe5ed1b28df30585ab6",
+    "signals_before": 15,
+    "signals_after": 21,
+    "sent_now": 6,
+    "delivery_failures_now": 0,
+    "new_telegram_message_ids": [
+      226,
+      227,
+      228,
+      229,
+      230,
+      231
+    ],
+    "new_fixture_ids": [
+      "1494776",
+      "1553880",
+      "1493173",
+      "1492764",
+      "1628977",
+      "1493171"
+    ],
+    "duplicate_suppression": true,
+    "daily_paper_exposure_cop": 600000,
+    "daily_cap_cop": 1512675
+  },
+  "protections": {
+    "strictly_prior_kickoff_only": true,
+    "target_outcomes_used": false,
+    "odds_used_to_generate_probability": false,
+    "parameter_tuning": false,
+    "missing_not_zero": true,
+    "silent_imputation": false,
+    "real_money": "BLOCKED",
+    "automatic_wagering": false,
+    "previously_sent_signals_overwritten": false
+  },
+  "branch_state_before_receipt": {
+    "branch": "repair/cor09-world-pipeline",
+    "head_sha": "10255869b457fde7fe9c0cabd011f94318ecac40",
+    "head_tree_sha": "8e5c767fa30b2909e4a91a927ed4a6b5c675a690"
+  }
+}

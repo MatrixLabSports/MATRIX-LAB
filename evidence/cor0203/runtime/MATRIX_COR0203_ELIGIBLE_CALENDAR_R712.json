@@ -1,0 +1,143 @@
+{
+  "schema": "MATRIX_COR0203_ELIGIBLE_CALENDAR_R712_V1",
+  "revision": "R712",
+  "derived_from": "evidence/world_calendar/MATRIX_WORLD_TENNIS_CALENDAR_R712.json",
+  "as_of_local": "2026-09-25T05:47:31-05:00",
+  "as_of_utc": "2026-09-25T10:47:31+00:00",
+  "holdout_id": "A22_POST_AUDIT_VIRGIN_HOLDOUT_V1",
+  "tournament_pool_count": 6,
+  "tournament_pool": [
+    {
+      "id": "CH-STTROPEZ-2026",
+      "name": "Saint-Tropez Open",
+      "status": "CURRENT_ALREADY_REPRESENTED_IN_HOLDOUT"
+    },
+    {
+      "id": "CH-SANDIEGO2-2026",
+      "name": "Tennis Warehouse Open / San Diego 2",
+      "status": "CURRENT_PARTIAL_HOLDOUT_PLUS_ONE_NEW_IDENTITY"
+    },
+    {
+      "id": "CH-PORTO-2026",
+      "name": "Eupago Porto Open",
+      "status": "WAIT_IDENTITY_FIXED_DRAW"
+    },
+    {
+      "id": "CH-COLUMBUS-2026",
+      "name": "Columbus Challenger",
+      "status": "WAIT_IDENTITY_FIXED_DRAW"
+    },
+    {
+      "id": "CH-MOUILLERON-2026",
+      "name": "Open de Vendée",
+      "status": "WAIT_IDENTITY_FIXED_DRAW"
+    },
+    {
+      "id": "CH-JINGSHAN-2026",
+      "name": "Jingshan Open",
+      "status": "WAIT_IDENTITY_FIXED_DRAW"
+    }
+  ],
+  "match_projection": [
+    {
+      "event": "Daniil Glinka vs Dino Prizmic",
+      "competition": "Saint-Tropez Open",
+      "status": "EXISTING_VALID_HOLDOUT",
+      "observation_index": 1
+    },
+    {
+      "event": "Mark Lajal vs Titouan Droguet",
+      "competition": "Saint-Tropez Open",
+      "status": "EXISTING_VALID_HOLDOUT",
+      "observation_index": 2
+    },
+    {
+      "event": "Daniel Masur vs Murphy Cassone",
+      "competition": "Saint-Tropez Open",
+      "status": "EXISTING_VALID_HOLDOUT",
+      "observation_index": 3
+    },
+    {
+      "event": "Harold Mayot vs Jesper De Jong",
+      "competition": "Saint-Tropez Open",
+      "status": "EXISTING_VALID_HOLDOUT",
+      "observation_index": 4
+    },
+    {
+      "event": "Federico Agustin Gomez vs Igor Marcondes",
+      "competition": "San Diego 2",
+      "status": "EXISTING_VALID_HOLDOUT",
+      "observation_index": 5
+    },
+    {
+      "event": "Dylan Dietrich vs Henry Searle",
+      "competition": "San Diego 2",
+      "status": "EXISTING_VALID_HOLDOUT",
+      "observation_index": 6
+    },
+    {
+      "event": "Tristan Boyer vs Timo Legout",
+      "competition": "San Diego 2",
+      "status": "EXISTING_VALID_HOLDOUT",
+      "observation_index": 7
+    },
+    {
+      "event": "Nishesh Basavareddy vs Andres Andrade",
+      "competition": "San Diego 2",
+      "status": "IDENTITY_FIXED_START_AUTHORITY_PENDING",
+      "identity_fixed": true,
+      "features_loaded": false,
+      "preregistered": false,
+      "outcome": null,
+      "metrics_opened": false,
+      "reason": "Quarterfinal identity is now fixed after Basavareddy defeated Hance and Andrade defeated Blanch, but public sources currently disagree or are insufficiently authoritative on exact match start timestamp. Fail closed before feature acquisition."
+    },
+    {
+      "competition": "Eupago Porto Open",
+      "status": "WAIT_IDENTITY_FIXED_DRAW"
+    },
+    {
+      "competition": "Columbus Challenger",
+      "status": "WAIT_IDENTITY_FIXED_DRAW"
+    },
+    {
+      "competition": "Open de Vendée",
+      "status": "WAIT_IDENTITY_FIXED_DRAW"
+    },
+    {
+      "competition": "Jingshan Open",
+      "status": "WAIT_IDENTITY_FIXED_DRAW"
+    }
+  ],
+  "counts": {
+    "existing_valid_holdout_observations": 7,
+    "new_identity_fixed_candidates": 1,
+    "new_preregistrations": 0,
+    "new_freezes": 0,
+    "window1_count": 7,
+    "total_count": 7
+  },
+  "protections": {
+    "metrics": "SEALED_UNTIL_600",
+    "outcomes_read_for_performance": 0,
+    "no_backfill": true,
+    "no_odds_to_p": true,
+    "no_silent_imputation": true,
+    "no_feature_load_before_preregistration": true,
+    "real_money": "BLOCKED"
+  },
+  "source_evidence": [
+    {
+      "role": "San Diego official organizer confirms quarterfinal day",
+      "url": "https://www.barnestenniscenter.com/tenniswarehouseopen"
+    },
+    {
+      "role": "San Diego R16/result crosscheck",
+      "url": "https://matchstat.com/tennis/tournaments/m/San%20Diego%202%20Challenger/2026/"
+    },
+    {
+      "role": "San Diego current schedule crosscheck",
+      "url": "https://www.livescores.com/tennis/"
+    }
+  ]
+}

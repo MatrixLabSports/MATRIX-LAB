@@ -1,0 +1,149 @@
+name: API-Football governed future fixture capture
+
+on:
+  workflow_dispatch:
+    inputs:
+      target_date:
+        description: Optional YYYY-MM-DD in America/Bogota; blank means next Bogota calendar day
+        required: false
+        default: ""
+
+permissions:
+  contents: write
+
+concurrency:
+  group: api-football-governed-future-fixture-capture
+  cancel-in-progress: false
+
+jobs:
+  capture:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout operational branch
+        uses: actions/checkout@v4
+        with:
+          ref: repair/cor09-world-pipeline
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install minimal dependency
+        run: python -m pip install requests
+
+      - name: Validate secret and request budget assumptions
+        shell: bash
+        env:
+          API_FOOTBALL_KEY: ${{ secrets.API_FOOTBALL_KEY }}
+        run: |
+          set -euo pipefail
+          if [[ -z "${API_FOOTBALL_KEY}" ]]; then
+            echo "API_FOOTBALL_KEY_NOT_CONFIGURED"
+            exit 2
+          fi
+          python - <<'PY'
+          import os
+          value = os.environ["API_FOOTBALL_KEY"]
+          try:
+              value.encode("ascii")
+          except UnicodeEncodeError:
+              raise SystemExit("API_FOOTBALL_KEY_MUST_BE_ASCII")
+          print("API_FOOTBALL_KEY_PRESENT_AND_ASCII")
+          print("REQUEST_BUDGET_FOR_THIS_WORKFLOW=1")
+          PY
+
+      - name: Require daily SofaScore and Flashscore football crosscheck
+        shell: bash
+        run: |
+          set -euo pipefail
+          TODAY="$(TZ=America/Bogota date +%F)"
+          EVIDENCE="evidence/football_world_inventory/${TODAY}/MATRIX_DAILY_MULTISOURCE_BROWSER_CROSSCHECK.json"
+          test -f "${EVIDENCE}" || {
+            echo "DAILY_FOOTBALL_SOFASCORE_FLASHSCORE_CROSSCHECK_MISSING: ${EVIDENCE}"
+            exit 1
+          }
+          python - "${EVIDENCE}" <<'PY'
+          import json, sys
+          from pathlib import Path
+          p=Path(sys.argv[1])
+          j=json.loads(p.read_text(encoding="utf-8"))
+          assert j["target_date_bogota"] == p.parent.name
+          assert j["sources"]["sofascore"]["opera_read_status"] == "PASS"
+          assert j["sources"]["flashscore"]["opera_read_status"] == "PASS"
+          assert j["governance_basis"]["sofascore_flashscore_daily_crosscheck_required"] is True
+          assert j["adjudication"]["api_football_counts_are_not_world_complete"] is True
+          assert j["protections"]["metrics_opened"] is False
+          assert j["protections"]["real_money"] == "BLOCKED"
+          print("DAILY_FOOTBALL_MULTISOURCE_BROWSER_CROSSCHECK: PASS")
+          PY
+
+      - name: Require autonomous exact calendar-first source-count report
+        shell: bash
+        run: |
+          set -euo pipefail
+          TODAY="$(TZ=America/Bogota date +%F)"
+          REPORT="evidence/daily_source_counts/${TODAY}/MATRIX_WORLD_CALENDAR_SOURCE_COUNTS.json"
+          test -f "${REPORT}" || exit 1
+          python -m tools.matrix_daily_calendar_baseline_gate --report "${REPORT}"
+
+      - name: Execute exactly one future fixture request
+        shell: bash
+        env:
+          API_FOOTBALL_KEY: ${{ secrets.API_FOOTBALL_KEY }}
+          MATRIX_API_FOOTBALL_TARGET_DATE: ${{ inputs.target_date }}
+          MATRIX_API_FOOTBALL_FIXTURE_DIR: evidence/api_football/fixtures
+        run: |
+          set -euo pipefail
+          rm -rf "$MATRIX_API_FOOTBALL_FIXTURE_DIR"
+          python -m tools.api_football_future_fixture_capture
+
+      - name: Enforce governed capture evidence
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          root = Path("evidence/api_football/fixtures")
+          manifest = json.loads((root / "capture_manifest.json").read_text(encoding="utf-8"))
+          registry = json.loads((root / "future_fixture_registry.json").read_text(encoding="utf-8"))
+
+          assert manifest["provider"] == "api_football"
+          assert manifest["endpoint"] == "/fixtures"
+          assert manifest["network_call_performed"] is True
+          assert manifest["provider_response_received"] is True
+          assert manifest["verified_successful_provider_response"] is True
+          assert manifest["raw_response_persisted"] is True
+          assert manifest["status"] == "PASS"
+          assert manifest["automatic_wagering"] is False
+          assert manifest["real_money"] == "BLOCKED"
+
+          assert registry["provider"] == "api_football"
+          assert registry["future_only"] is True
+          assert registry["protections"]["outcomes_used"] is False
+          assert registry["protections"]["odds_used"] is False
+          assert registry["protections"]["real_money"] == "BLOCKED"
+
+          print("API_FOOTBALL_FUTURE_FIXTURE_CAPTURE_GATE: PASS")
+          print("fixtures_received=", manifest["fixtures_received"])
+          print("eligible_future_fixtures=", manifest["eligible_future_fixtures"])
+          print("daily_remaining=", manifest["rate_limit"]["daily_remaining"])
+          PY
+
+      - name: Persist physical acquisition evidence
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "matrix-api-football-fixtures"
+          git config user.email "matrix-api-football-fixtures@users.noreply.github.com"
+          git add evidence/api_football/fixtures
+          if git diff --cached --quiet; then
+            echo "NO_FIXTURE_EVIDENCE_TO_PERSIST"
+            exit 3
+          fi
+          git commit -m "evidence(api-football): persist governed future fixture capture"
+          git pull --rebase origin repair/cor09-world-pipeline
+          git push origin HEAD:repair/cor09-world-pipeline

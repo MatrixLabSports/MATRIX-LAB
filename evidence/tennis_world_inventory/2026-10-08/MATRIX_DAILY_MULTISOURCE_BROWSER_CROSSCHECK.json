@@ -1,0 +1,77 @@
+{
+  "schema": "MATRIX_DAILY_MULTISOURCE_BROWSER_CROSSCHECK_V1",
+  "target_date_bogota": "2026-10-08",
+  "timezone": "America/Bogota",
+  "status": "PASS_USER_VISIBLE_TOTAL_CORRECTED_LAZY_TREE_RETAINED",
+  "governance_basis": {
+    "permanent_source_policy": "SOFASCORE_AND_FLASHSCORE_FIRST_THEN_PAID_APIS",
+    "paid_apis_mandatory": true,
+    "sofascore_flashscore_daily_crosscheck_required": true,
+    "no_single_source_world_truth": true
+  },
+  "sources": {
+    "sofascore": {
+      "url": "https://www.sofascore.com/es/tennis/2026-10-08",
+      "opera_read_status": "PASS",
+      "exact_unique_match_count": 541,
+      "count_type": "USER_VISIBLE_SOFASCORE_DAY_TOTAL",
+      "provenance": "User-provided SofaScore screenshot for 2026-10-08 visibly shows Tenis 19 / 541; denominator 541 is the selected-day total. Opera accessibility-tree unique /tennis/match/ links=444 is retained only as a partial lazy-loaded DOM count.",
+      "machine_verified_exact": false,
+      "circuit_breakdown_from_loaded_tree": {
+        "ATP": 42,
+        "WTA": 4,
+        "CHALLENGER": 50,
+        "WTA_125": 12,
+        "ITF_MEN": 124,
+        "ITF_WOMEN": 207,
+        "UNKNOWN": 5
+      },
+      "limitation": "541 is the visible SofaScore selected-day total; 444 was a partial accessibility-tree/lazy-load count and must not be used as the calendar total.",
+      "user_visible_total_count": 541,
+      "loaded_tree_unique_match_link_count": 444,
+      "user_visible_screenshot_verified": true,
+      "screenshot_sha256": "158e5247a7c171c69710147b80a54c70937bff471bf3fd711c7b23ee0c7cfd82"
+    },
+    "flashscore": {
+      "url": "https://www.flashscore.co/tenis/?d=2026-10-08",
+      "opera_read_status": "PASS",
+      "exact_unique_match_count": null,
+      "count_type": "PARTIAL_ACCESSIBILITY_TREE_LAZY_LOAD_COUNT",
+      "provenance": "Opera Browser Connector accessibility-tree jq count of unique /partido/tenis/ links on the loaded 2026-10-08 tennis page.",
+      "machine_verified_exact": false,
+      "limitation": "Loaded accessibility-tree count only; must not be labeled as the provider selected-day total until a visible/full-load count is physically verified.",
+      "loaded_tree_unique_match_link_count": 501,
+      "exact_visible_day_total_status": "PENDING_PHYSICAL_VISIBLE_TOTAL"
+    },
+    "rapidapi_tennis": {
+      "role": "MANDATORY_STRUCTURED_ACQUISITION_HISTORY_IDS_TIMESTAMPS",
+      "status": "PENDING_POST_BROWSER_RECAPTURE"
+    },
+    "api_tennis": {
+      "role": "MANDATORY_SECONDARY_STRUCTURED_DISCOVERY_STATS_RICH_VALIDATION",
+      "status": "PENDING_POST_BROWSER_RECAPTURE"
+    }
+  },
+  "adjudication": {
+    "paid_api_counts_are_not_world_complete": true,
+    "browser_sources_must_be_checked_daily": true,
+    "discovery_union_requires_physical_dedup": true,
+    "api_enrichment_after_browser_discovery": true,
+    "exact_browser_counts_are_not_additive": true,
+    "prematch_lanes": {
+      "ATP_CHALLENGER_MEN_SINGLES_HARD": "EXISTING_HARD_HOLDOUT_SEPARATE",
+      "ATP_CHALLENGER_MEN_SINGLES_CLAY": "NEW_CLAY_HOLDOUT_SEPARATE"
+    },
+    "non_domain_events": "WORLD_DISCOVERY_ONLY_OR_SEPARATE_GOVERNED_LANES",
+    "sofascore_visible_total_supersedes_lazy_tree_count": true,
+    "lazy_tree_counts_must_not_be_labeled_exact_calendar_total": true
+  },
+  "protections": {
+    "missing_not_zero": true,
+    "silent_imputation": false,
+    "odds_to_p_matrix": false,
+    "metrics_opened": false,
+    "automatic_wagering": false,
+    "real_money": "BLOCKED"
+  }
+}

@@ -1,0 +1,83 @@
+{
+  "schema": "MATRIX_FOOTBALL_OVER25_SIGNAL_GOVERNANCE_RESOLUTION_V1",
+  "adjudicated_at_utc": "2026-10-09T05:42:00+00:00",
+  "target_market": "OVER_2_5",
+  "resolution_status": "PASS_SCOPE_CONFLICT_RESOLVED",
+  "issue": {
+    "legacy_artifact": "evidence/api_football/market_governance/market_governance.json",
+    "legacy_created_at_utc": "2026-09-28T09:53:08+00:00",
+    "legacy_governed_engine_promoted": false,
+    "newer_market_scoped_artifact": "evidence/api_football/governance/over_2_5_p_matrix_promotion.json",
+    "newer_adjudicated_at_utc": "2026-10-07T04:06:40+00:00",
+    "newer_promotion_status": "PASS_PROMOTED_GOVERNED_P_MATRIX_SIGNAL_ONLY"
+  },
+  "adjudication": {
+    "conflict_is_real_contradiction": false,
+    "explanation": "The legacy boolean governs SPORT_WIDE_OR_REAL_MONEY scope. The later Over 2.5 promotion governs MARKET_SCOPED_SIGNAL_GENERATION_NOT_REAL_MONEY. Both remain valid in their own scopes.",
+    "precedence_rule": "For OVER_2_5 signal generation, the later explicit market-scoped promotion is authoritative. For sport-wide promotion, automatic wagering or real-money execution, the legacy/global gate remains restrictive.",
+    "over_2_5_signal_generation_authorized": true,
+    "over_2_5_automatic_wagering_authorized": false,
+    "real_money": "BLOCKED",
+    "one_x_two_signal_promotion_by_this_resolution": false,
+    "btts_signal_promotion_by_this_resolution": false
+  },
+  "evidence": {
+    "final_holdout_357": {
+      "sample_size": 357,
+      "challenger_brier": 0.24452925114130833,
+      "poisson_brier": 0.24702601886198647,
+      "challenger_log_loss": 0.6821533519226923,
+      "poisson_log_loss": 0.6889960982231681,
+      "market_superiority": true,
+      "holdout_seal_sha256": "b9a84e388c0cf2eec0b74705d04a0a8ba7321867754257bc5465ba436543eccf"
+    },
+    "prospective_checkpoint_200": {
+      "sample_size": 200,
+      "gate_passed": true,
+      "delta_brier_challenger_minus_poisson": -0.0015790675679474564,
+      "delta_log_loss_challenger_minus_poisson": -0.0038484472875333076
+    },
+    "current_global_strength": {
+      "n": 1232,
+      "strength_class": "STRONG",
+      "paired_brier_ci95": [
+        -0.005733504245403356,
+        -0.0009681094431569465
+      ],
+      "paired_log_loss_ci95": [
+        -0.013718224628227346,
+        -0.003001821097304313
+      ]
+    },
+    "current_daily_cycle": {
+      "generated_at_utc": "2026-10-09T05:39:01+00:00",
+      "artifact": "evidence/api_football/daily_prematch_reports/2026-10-09/over25_shadow_ev/MATRIX_FOOTBALL_DAILY_OVER25_GOVERNED_SHADOW_EV.json",
+      "artifact_blob_sha1": "547b3c77cfa719a32eabd619aa1e724ab88ff537",
+      "probability_status": "FROZEN_GOVERNED_MARKET_SCOPED_SIGNAL_ONLY",
+      "market_governance_status": "PASS_PROMOTED_GOVERNED_P_MATRIX_SIGNAL_ONLY",
+      "signal_generation_authorized": true,
+      "decision_counts": {
+        "BET_SHADOW": 18,
+        "NO_BET": 46,
+        "BLOCKED": 138
+      }
+    }
+  },
+  "operational_policy": {
+    "exact_market": "Goals Over/Under -> Over 2.5",
+    "minimum_decimal_odds_exclusive": 1.5,
+    "positive_ev_required": true,
+    "probability_must_be_frozen_before_odds": true,
+    "exact_bookmaker_binding_required": true,
+    "user_manual_execution_only": true,
+    "automatic_wagering": false,
+    "real_money": "BLOCKED",
+    "historical_telegram_signals_preserved": true,
+    "forward_only_fail_closed": true
+  },
+  "stale_or_historical_artifacts": {
+    "historical_report": "evidence/api_football/daily_prematch_reports/2026-10-09/MATRIX_FOOTBALL_PREMATCH_REPORT_20261009.json",
+    "historical_report_status": "0 BET / TODOS NO BET",
+    "treatment": "PRESERVED_AS_HISTORICAL_SNAPSHOT_BUT_GOVERNANCE_CONFLICT_STATEMENT_SUPERSEDED_BY_THIS_RESOLUTION"
+  }
+}

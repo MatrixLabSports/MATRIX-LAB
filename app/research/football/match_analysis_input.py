@@ -319,6 +319,8 @@ def _history_side(
 
 def build_match_analysis_inputs_from_benchmark(
     document: Mapping[str, Any],
+    *,
+    analysis_as_of_utc: str | None = None,
 ) -> tuple[tuple[FootballMatchAnalysisInput, ...], tuple[str, ...]]:
     benchmark_id = _non_empty(document.get("benchmark_id"), "benchmark_id")
     provider = _non_empty(document.get("provider"), "provider")
@@ -327,6 +329,7 @@ def build_match_analysis_inputs_from_benchmark(
     if not isinstance(fixtures, Mapping):
         raise ValueError("benchmark fixtures must be an object")
     histories = histories if isinstance(histories, Mapping) else {}
+    runtime_as_of = None if analysis_as_of_utc is None else _utc(analysis_as_of_utc)
 
     inputs: list[FootballMatchAnalysisInput] = []
     rejected: list[str] = []
@@ -347,11 +350,19 @@ def build_match_analysis_inputs_from_benchmark(
         home_name = _non_empty(home.get("name"), "home.name")
         away_name = _non_empty(away.get("name"), "away.name")
         kickoff = _non_empty(raw.get("kickoff_utc"), "kickoff_utc")
+        if runtime_as_of is not None and runtime_as_of >= _utc(kickoff):
+            rejected.append(str(target_key))
+            continue
+        effective_as_of = (
+            runtime_as_of.isoformat()
+            if runtime_as_of is not None
+            else _non_empty(raw.get("observed_at_utc"), "observed_at_utc")
+        )
         value = FootballMatchAnalysisInput(
             benchmark_id=benchmark_id,
             target_key=str(target_key),
             fixture_id=_non_empty(raw.get("fixture_id"), "fixture_id"),
-            as_of_utc=_non_empty(raw.get("observed_at_utc"), "observed_at_utc"),
+            as_of_utc=effective_as_of,
             kickoff_utc=kickoff,
             home_team_id=home_id,
             home_team_name=home_name,

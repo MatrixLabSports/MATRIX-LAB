@@ -1,0 +1,89 @@
+{
+  "schema": "MATRIX_SETTLEMENT_PROGRESS_GOVERNED_SNAPSHOT_V1",
+  "cohort_date_bogota": "2026-10-06",
+  "snapshot_observed_at_utc": "2026-10-11T18:45:28Z",
+  "source_branch": "repair/cor09-world-pipeline",
+  "source_head_at_read": "806f42f9a5c8b45afb64cc8c82178687c167d5e2",
+  "baseline_snapshot": "evidence/daily_selection/MATRIX_SETTLEMENT_PROGRESS_20261006_BOGOTA_20261011_1015.json",
+  "football": {
+    "total": 116,
+    "settled_standard_final": 107,
+    "pending": 9,
+    "new_cohort_settlements": 0,
+    "blocked_fixture_ids": [
+      "1588817",
+      "1588821",
+      "1588845",
+      "1588863",
+      "1588890",
+      "1588893",
+      "1619499",
+      "1644168",
+      "1596466"
+    ]
+  },
+  "tennis": {
+    "total_unique": 11,
+    "settled_finished": 10,
+    "pending": 1,
+    "new_cohort_settlements": 0,
+    "blocked_event_id": "COR0203-SOFASCORE-3e334e1ea5e9bca56dc55ad3d88461b1d850a3b7c8db8e0e36d1c8daaccbbd79",
+    "blocked_players": [
+      "August Holmgren",
+      "Pedro Martinez"
+    ],
+    "block_reason": "NO_CANONICAL_FINISHED_SETTLEMENT_RECORD"
+  },
+  "football_v2": {
+    "freezes": 1633,
+    "settlements": 1094,
+    "pending": 539,
+    "delta_since_baseline": {
+      "freezes": 0,
+      "settlements": 0,
+      "pending": 0
+    }
+  },
+  "tennis_global": {
+    "ledger_records": 188,
+    "settled_unique": 135,
+    "pending_unique": 63,
+    "observations_unique": 198,
+    "duplicates_quarantined": 140,
+    "uniqueness": "PASS",
+    "delta_since_baseline": {
+      "ledger_records": 2,
+      "settled_unique": 2,
+      "pending_unique": 16,
+      "observations_unique": 18,
+      "duplicates_quarantined": 7
+    }
+  },
+  "new_global_tennis_settlements_outside_target_cohort": [
+    {
+      "event_id": "COR0203-API-TENNIS-12169925",
+      "winner": "George Loffhagen",
+      "terminal_status": "FINISHED",
+      "settled_at_utc": "2026-10-11T18:27:01+00:00"
+    },
+    {
+      "event_id": "COR0203-RAPIDAPI-TENNIS-1802-4b564675df0c",
+      "winner": "Loann Massard",
+      "terminal_status": "FINISHED",
+      "settled_at_utc": "2026-10-11T18:27:01+00:00"
+    }
+  ],
+  "source_blob_sha": {
+    "cohort": "52e897007840f5bed1a8999edad8ee594fefc767",
+    "football_v2_state": "d9f103190b4aebb279d082791f2a0903e52173cb",
+    "football_v2_ledger": "14e6de3dc754315dd131791b31c21f8676b41c5f",
+    "tennis_settlement_ledger": "b13df00b0f83cacb45ce6e3bdbf8349c8a1fa958",
+    "tennis_uniqueness": "ef1359555040ff67f6b5a25c79cafa914417050e",
+    "baseline_snapshot": "4df3002db1b054291082005818fa6a9acccf0341"
+  },
+  "metrics_opened": false,
+  "parameter_tuning_allowed": false,
+  "odds_to_probability": false,
+  "real_money": "BLOCKED",
+  "caveat": "Snapshot of already-committed ledger changes. No new cohort settlements were executed in this review. Non-standard outcomes were not promoted."
+}

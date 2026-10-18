@@ -1,0 +1,230 @@
+name: Paid API Retrospective Recovery 28SEP-07OCT
+
+on:
+  push:
+    branches:
+      - repair/cor09-world-pipeline
+    paths:
+      - .github/workflows/paid-api-retrospective-recovery-28sep-07oct.yml
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: paid-api-retrospective-recovery-28sep-07oct
+  cancel-in-progress: false
+
+jobs:
+  recover:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: repair/cor09-world-pipeline
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: python -m pip install requests
+
+      - name: Resolve run id
+        id: meta
+        shell: bash
+        run: |
+          set -euo pipefail
+          echo "run_id=$(date -u +%Y%m%dT%H%M%SZ)" >> "$GITHUB_OUTPUT"
+
+      - name: Capture API-Tennis 28SEP-07OCT retrospectively
+        env:
+          API_TENNIS_KEY: ${{ secrets.API_TENNIS_KEY }}
+          RUN_ID: ${{ steps.meta.outputs.run_id }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          ROOT="evidence/paid_api_archive/retrospective_20260928_20261007/$RUN_ID/api_tennis"
+          python -m tools.api_tennis_raw_archive             --start 2026-09-28             --stop 2026-10-04             --out-root "$ROOT/chunk_20260928_20261004"
+          python -m tools.api_tennis_raw_archive             --start 2026-10-05             --stop 2026-10-07             --out-root "$ROOT/chunk_20261005_20261007"
+
+      - name: Capture RapidAPI Tennis 28SEP-07OCT retrospectively
+        env:
+          RAPIDAPI_TENNIS_KEY: ${{ secrets.RAPIDAPI_TENNIS_KEY }}
+          RUN_ID: ${{ steps.meta.outputs.run_id }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          ROOT="evidence/paid_api_archive/retrospective_20260928_20261007/$RUN_ID/rapidapi_tennis"
+          mkdir -p "$ROOT"
+          for D in             2026-09-28 2026-09-29 2026-09-30             2026-10-01 2026-10-02 2026-10-03 2026-10-04             2026-10-05 2026-10-06 2026-10-07; do
+            python -m tools.tennis_world_inventory_rapidapi               --target-date-bogota "$D"               --out "$ROOT/${D}_world_inventory.json"               --fail-on-partial
+          done
+
+      - name: Capture API-Football 28SEP-07OCT retrospectively
+        env:
+          API_FOOTBALL_KEY: ${{ secrets.API_FOOTBALL_KEY }}
+          RUN_ID: ${{ steps.meta.outputs.run_id }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          ROOT="evidence/paid_api_archive/retrospective_20260928_20261007/$RUN_ID/api_football"
+          python -m tools.api_football_raw_archive             --start 2026-09-28             --stop 2026-10-04             --out-root "$ROOT/chunk_20260928_20261004"
+          python -m tools.api_football_raw_archive             --start 2026-10-05             --stop 2026-10-07             --out-root "$ROOT/chunk_20261005_20261007"
+
+      - name: Build original-vs-recovered evidence index
+        env:
+          RUN_ID: ${{ steps.meta.outputs.run_id }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import hashlib,json,os
+          from datetime import datetime,timezone
+          from pathlib import Path
+
+          rid=os.environ["RUN_ID"]
+          root=Path("evidence/paid_api_archive/retrospective_20260928_20261007")/rid
+
+          original={
+            "football_prospective_daily_dates":[],
+            "tennis_world_inventory_dates":[],
+            "tennis_multisource_inventory_dates":[],
+          }
+          for p in Path("evidence/api_football/prospective_daily").glob("2026-*"):
+              if p.is_dir():
+                  original["football_prospective_daily_dates"].append(p.name)
+          for p in Path("evidence/tennis/world_inventory").glob("2026-*"):
+              if p.is_dir():
+                  original["tennis_world_inventory_dates"].append(p.name)
+          for p in Path("evidence/tennis_world_inventory").glob("2026-*"):
+              if p.is_dir():
+                  original["tennis_multisource_inventory_dates"].append(p.name)
+          for k in original:
+              original[k]=sorted(original[k])
+
+          api_tennis_rows=0
+          api_tennis_days=[]
+          for mp in sorted((root/"api_tennis").glob("chunk_*/manifest.json")):
+              m=json.loads(mp.read_text())
+              api_tennis_rows += sum(x["fixture_rows"] for x in m["captures"])
+              api_tennis_days.extend(x["utc_query_date"] for x in m["captures"])
+
+          api_football_rows=0
+          api_football_days=[]
+          for mp in sorted((root/"api_football").glob("chunk_*/manifest.json")):
+              m=json.loads(mp.read_text())
+              api_football_rows += sum(x["fixture_rows"] for x in m["captures"])
+              api_football_days.extend(x["date_bogota"] for x in m["captures"])
+
+          rapid=[]
+          for p in sorted((root/"rapidapi_tennis").glob("*_world_inventory.json")):
+              j=json.loads(p.read_text())
+              rapid.append({
+                  "date":j.get("target_date_bogota"),
+                  "world_calendar_inventory_count":j.get("world_calendar_inventory_count"),
+                  "status":j.get("status"),
+                  "provider_network_calls":j.get("provider_network_calls"),
+                  "sha256":hashlib.sha256(p.read_bytes()).hexdigest(),
+              })
+
+          cert={
+              "schema":"MATRIX_PAID_API_RETROSPECTIVE_RECOVERY_CERT_V1",
+              "generated_at_utc":datetime.now(timezone.utc).replace(microsecond=0).isoformat(),
+              "recovered_period":"2026-09-28/2026-10-07",
+              "capture_semantics":"RETROSPECTIVE_RECOVERY_EXECUTED_NOW; NOT_ORIGINAL_CONTEMPORANEOUS_SNAPSHOT",
+              "status":"PASS_RETROSPECTIVE_RECOVERY",
+              "original_evidence_already_present":original,
+              "recovery":{
+                  "api_tennis":{
+                      "days":sorted(set(api_tennis_days)),
+                      "fixture_rows":api_tennis_rows,
+                  },
+                  "rapidapi_tennis":{
+                      "days":rapid,
+                  },
+                  "api_football":{
+                      "days":sorted(set(api_football_days)),
+                      "fixture_rows":api_football_rows,
+                  },
+              },
+              "limitations":[
+                  "Historical provider responses retrieved now may differ from what the provider would have returned on the original date.",
+                  "Recovery must never be relabeled as contemporaneous evidence.",
+                  "Original same-day evidence, when present, has priority for proving what was known at that time."
+              ],
+              "protections":{
+                  "secrets_persisted":False,
+                  "model_state_modified":False,
+                  "holdout_backfill_performed":False,
+                  "metrics_opened":False,
+                  "automatic_wagering":False,
+                  "real_money":"BLOCKED"
+              }
+          }
+          raw=json.dumps(cert,sort_keys=True,separators=(",",":"),ensure_ascii=False).encode()
+          cert["sha256_without_self"]=hashlib.sha256(raw).hexdigest()
+          root.mkdir(parents=True,exist_ok=True)
+          (root/"MATRIX_PAID_API_RETROSPECTIVE_RECOVERY_CERT.json").write_text(
+              json.dumps(cert,indent=2,sort_keys=True,ensure_ascii=False)+"\n"
+          )
+          print(json.dumps({
+              "status":cert["status"],
+              "api_tennis_fixture_rows":api_tennis_rows,
+              "rapidapi_days":len(rapid),
+              "api_football_fixture_rows":api_football_rows,
+              "original":original,
+          },sort_keys=True))
+          PY
+
+      - name: Build archive manifest
+        env:
+          RUN_ID: ${{ steps.meta.outputs.run_id }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          ROOT="evidence/paid_api_archive/retrospective_20260928_20261007/$RUN_ID"
+          python -m tools.paid_api_archive_manifest             --root "$ROOT"             --out "$ROOT/MATRIX_RETROSPECTIVE_RECOVERY_MANIFEST.json"
+
+      - name: Reject oversized files
+        env:
+          RUN_ID: ${{ steps.meta.outputs.run_id }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import os
+          from pathlib import Path
+          root=Path("evidence/paid_api_archive/retrospective_20260928_20261007")/os.environ["RUN_ID"]
+          too=[(str(p),p.stat().st_size) for p in root.rglob("*") if p.is_file() and p.stat().st_size>90*1024*1024]
+          if too:
+              raise SystemExit("RECOVERY_FILE_EXCEEDS_90MB:"+str(too))
+          print("RETROSPECTIVE_SIZE_GATE_PASS")
+          PY
+
+      - name: Persist retrospective recovery
+        env:
+          RUN_ID: ${{ steps.meta.outputs.run_id }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name matrix-paid-api-recovery
+          git config user.email matrix-paid-api-recovery@users.noreply.github.com
+          git add "evidence/paid_api_archive/retrospective_20260928_20261007/$RUN_ID"
+          git commit -m "evidence(archive): recover paid API history 28SEP-07OCT"
+          for attempt in 1 2 3 4; do
+            git fetch origin repair/cor09-world-pipeline
+            if ! git rebase origin/repair/cor09-world-pipeline; then
+              git rebase --abort || true
+              exit 1
+            fi
+            if git push origin HEAD:repair/cor09-world-pipeline; then
+              exit 0
+            fi
+            sleep $((attempt*2))
+          done
+          exit 1
