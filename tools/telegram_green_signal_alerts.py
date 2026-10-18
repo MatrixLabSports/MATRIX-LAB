@@ -15,6 +15,16 @@ from zoneinfo import ZoneInfo
 import requests
 
 from app.research.football.correlated_exposure import (
+    CorrelationLimits,
+    ExposureRecord,
+    assess_correlated_exposure,
+)
+from app.research.football.correlated_risk_calibration import (
+    calibrate_correlated_risk_from_ledger,
+    calibration_evidence,
+)
+
+from app.research.football.correlated_exposure import (
     assess_paper_correlated_exposure,
     calibrate_paper_correlated_exposure,
 )
@@ -916,6 +926,72 @@ def paper_daily_exposure_by_date(ledger: dict[str, Any]) -> dict[str, float]:
     return out
 
 
+def current_correlated_exposures(ledger: dict[str, Any]) -> list[ExposureRecord]:
+    rows: list[ExposureRecord] = []
+    for record in ledger.get("sent", []):
+        if not isinstance(record, dict):
+            continue
+        bet = record.get("paper_bet")
+        if not isinstance(bet, dict):
+            continue
+        if str(bet.get("status") or "").upper() != "OPEN":
+            continue
+        stake = float(bet.get("stake_cop") or 0.0)
+        day = str(bet.get("kickoff_bogota_date") or paper_kickoff_date(record.get("kickoff")) or "").strip()
+        fixture_id = str(record.get("fixture_id") or "").strip()
+        league_id = str(record.get("league_id") or "UNKNOWN").strip() or "UNKNOWN"
+        if stake <= 0 or not day or not fixture_id:
+            continue
+        rows.append(ExposureRecord(fixture_id, league_id, day, stake))
+    return rows
+
+
+def correlated_risk_gate_state(
+    candidate: dict[str, Any],
+    *,
+    bankroll: float,
+    limits: CorrelationLimits,
+    existing: list[ExposureRecord],
+) -> tuple[str, dict[str, Any], ExposureRecord | None]:
+    day = paper_kickoff_date(candidate.get("kickoff"))
+    fixture_id = str(candidate.get("fixture_id") or "").strip()
+    league_id = str(candidate.get("league_id") or "UNKNOWN").strip() or "UNKNOWN"
+    if not day or not fixture_id:
+        return "BLOCKED_CORRELATED_RISK_IDENTITY_INCOMPLETE", {"allowed": False}, None
+    proposed = ExposureRecord(
+        fixture_id=fixture_id,
+        tournament_key=league_id,
+        operational_date=day,
+        stake=PAPER_UNIT_COP,
+    )
+    decision = assess_correlated_exposure(
+        existing,
+        proposed,
+        bankroll=float(bankroll),
+        limits=limits,
+    )
+    detail = {
+        "allowed": decision.allowed,
+        "status": decision.status,
+        "fixture_exposure_after_cop": decision.fixture_exposure_after,
+        "tournament_day_exposure_after_cop": decision.tournament_day_exposure_after,
+        "day_exposure_after_cop": decision.day_exposure_after,
+        "blocked_reasons": list(decision.blocked_reasons),
+        "limits": {
+            "max_fixture_fraction": limits.max_fixture_fraction,
+            "max_tournament_day_fraction": limits.max_tournament_day_fraction,
+            "max_day_fraction": limits.max_day_fraction,
+        },
+        "paper_stake_cop": PAPER_UNIT_COP,
+        "real_money": "BLOCKED",
+    }
+    return (
+        "PASS_CORRELATED_EXPOSURE_GATE" if decision.allowed else "BLOCKED_CORRELATED_EXPOSURE",
+        detail,
+        proposed if decision.allowed else None,
+    )
+
+
 def reconcile_existing_paper_state(ledger: dict[str, Any], now: datetime) -> dict[str, int]:
     sent_by_key = {
         str(x.get("signal_key") or ""): x
@@ -1365,6 +1441,29 @@ def main() -> None:
     )
     ledger["correlated_risk_calibration"] = correlated_risk_calibration
 
+    risk_calibration = calibrate_correlated_risk_from_ledger(ledger)
+    risk_evidence = calibration_evidence(risk_calibration)
+    risk_evidence["generated_at_utc"] = now.isoformat()
+    risk_evidence["integration"] = {
+        "stage": "FINAL_PREMATCH_BEFORE_TELEGRAM",
+        "fail_closed": True,
+        "stake_basis": "TEMPORARY_FLAT_1U_CAP_17OCT2026",
+        "real_money": "BLOCKED",
+    }
+    CORRELATED_RISK_EVIDENCE.parent.mkdir(parents=True, exist_ok=True)
+    CORRELATED_RISK_EVIDENCE.write_text(
+        json.dumps(risk_evidence, indent=2, sort_keys=True, ensure_ascii=False) + "\n",
+        encoding="utf-8",
+    )
+    risk_limits = CorrelationLimits(
+        max_fixture_fraction=risk_calibration.fixture_cap_fraction,
+        max_tournament_day_fraction=risk_calibration.tournament_day_cap_fraction,
+        max_day_fraction=risk_calibration.day_cap_fraction,
+    )
+    risk_bankroll = float(recalc_paper_bankroll(ledger).get("current_cop") or PAPER_BANKROLL_INITIAL_COP)
+    risk_existing_exposures = current_correlated_exposures(ledger)
+    risk_pending_exposures: list[ExposureRecord] = []
+
     session = requests.Session()
     pre_send_quote_checks = 0
     pre_send_waiting = 0
@@ -1449,6 +1548,24 @@ def main() -> None:
             ledger["pre_send_gate"][key] = gate_record
             pre_send_blocked += 1
             continue
+        risk_state, risk_detail, risk_proposed = correlated_risk_gate_state(
+            candidate,
+            bankroll=risk_bankroll,
+            limits=risk_limits,
+            existing=risk_existing_exposures + risk_pending_exposures,
+        )
+        gate_record["correlated_risk"] = risk_detail
+        gate_record["correlated_risk_state"] = risk_state
+        if risk_state != "PASS_CORRELATED_EXPOSURE_GATE":
+            gate_record["state"] = risk_state
+            candidate["eligible_green"] = False
+            candidate["send_gate_status"] = risk_state
+            ledger["pre_send_gate"][key] = gate_record
+            pre_send_blocked += 1
+            continue
+        if risk_proposed is not None:
+            risk_pending_exposures.append(risk_proposed)
+
         candidate["house"] = offer["house"]
         candidate["odds"] = offer["odds"]
         candidate["ev"] = offer["ev"]
@@ -2106,6 +2223,9 @@ def main() -> None:
         "green_prematch_revalidation_window_minutes": GREEN_PREMATCH_REVALIDATION_WINDOW_MINUTES,
         "same_house_exact_over25_revalidation_required": True,
         "paper_max_signals_per_league_day": PAPER_MAX_SIGNALS_PER_LEAGUE_DAY,
+        "correlated_risk_gate_before_telegram": True,
+        "correlated_risk_calibration_status": risk_calibration.status,
+        "correlated_risk_evidence_path": str(CORRELATED_RISK_EVIDENCE),
         "correlated_risk_gate": True,
         "correlated_risk_calibration_required": "READY_FAIL_CLOSED",
         "cancel_if_ev_nonpositive_or_exact_quote_missing": True,
