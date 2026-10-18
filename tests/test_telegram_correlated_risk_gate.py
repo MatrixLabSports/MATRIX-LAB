@@ -3,7 +3,10 @@ from app.research.football.correlated_risk_calibration import (
     calibrate_correlated_risk_from_ledger,
     calibration_evidence,
 )
-from tools.telegram_green_signal_alerts import correlated_risk_gate_state
+from tools.telegram_green_signal_alerts import (
+    correlated_risk_gate_state,
+    correlated_risk_limits_from_physical_calibration,
+)
 
 
 def _risk_ledger(n: int = 40) -> dict:
@@ -87,3 +90,32 @@ def test_correlated_gate_passes_single_1u_signal_with_complete_identity():
     assert detail["allowed"] is True
     assert proposed is not None
     assert proposed.stake == 25_000.0
+
+def test_physical_caps_preserve_single_flat_1u_after_bankroll_drawdown():
+    calibration = {
+        "caps": {
+            "fixture_cap_cop": 25_000.0,
+            "tournament_day_cap_cop": 75_000.0,
+            "daily_cap_fraction": 0.13,
+        }
+    }
+    limits = correlated_risk_limits_from_physical_calibration(
+        calibration,
+        bankroll=4_833_500.0,
+    )
+    state, detail, proposed = correlated_risk_gate_state(
+        {
+            "fixture_id": "fx-drawdown",
+            "league_id": "league-a",
+            "kickoff": "2026-10-18T18:00:00+00:00",
+        },
+        bankroll=4_833_500.0,
+        limits=limits,
+        existing=[],
+    )
+    assert state == "PASS_CORRELATED_EXPOSURE_GATE"
+    assert detail["allowed"] is True
+    assert proposed is not None
+    assert proposed.stake == 25_000.0
+    assert round(4_833_500.0 * limits.max_fixture_fraction, 6) == 25_000.0
+
