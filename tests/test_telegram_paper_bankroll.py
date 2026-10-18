@@ -515,3 +515,85 @@ def test_shadow_watch_candidate_rejects_p_matrix_below_quality_floor():
         "best_policy_offer":None,
     }
     assert shadow_watch_candidate(row, __import__("pathlib").Path("report.json")) is None
+
+
+def test_empirical_correlated_risk_calibration_uses_physical_ledger():
+    from app.research.football.correlated_exposure import calibrate_paper_correlated_exposure
+
+    ledger = {
+        "sent": [
+            {"fixture_id": "fx1", "league_id": "L1", "paper_bet": {"status": "SETTLED", "stake_cop": 25000, "kickoff_bogota_date": "2026-10-17"}},
+            {"fixture_id": "fx2", "league_id": "L1", "paper_bet": {"status": "SETTLED", "stake_cop": 25000, "kickoff_bogota_date": "2026-10-17"}},
+            {"fixture_id": "fx3", "league_id": "L1", "paper_bet": {"status": "SETTLED", "stake_cop": 25000, "kickoff_bogota_date": "2026-10-17"}},
+            {"fixture_id": "fx4", "league_id": "L2", "paper_bet": {"status": "SETTLED", "stake_cop": 25000, "kickoff_bogota_date": "2026-10-17"}},
+        ]
+    }
+    out = calibrate_paper_correlated_exposure(
+        ledger,
+        initial_bankroll_cop=5_000_000,
+        unit_cop=25_000,
+        max_signals_per_tournament_day=3,
+        daily_policy_cap_fraction=0.30,
+    )
+    assert out["status"] == "READY_FAIL_CLOSED"
+    assert out["sample_records"] == 4
+    assert out["observed_maxima_cop"]["same_tournament_day"] == 75_000
+    assert out["caps"]["fixture_cap_cop"] == 25_000
+    assert out["caps"]["tournament_day_cap_cop"] == 75_000
+    assert out["pairwise_cross_market_correlation"]["calibrated"] is False
+    assert out["h02_closed"] is False
+
+
+def test_correlated_risk_gate_blocks_second_same_fixture_before_telegram():
+    from app.research.football.correlated_exposure import (
+        assess_paper_correlated_exposure,
+        calibrate_paper_correlated_exposure,
+    )
+    ledger = {
+        "sent": [
+            {"fixture_id": "fx1", "league_id": "L1", "paper_bet": {"status": "OPEN", "stake_cop": 25000, "kickoff_bogota_date": "2026-10-18"}}
+        ]
+    }
+    calibration = calibrate_paper_correlated_exposure(
+        ledger,
+        initial_bankroll_cop=5_000_000,
+        unit_cop=25_000,
+        max_signals_per_tournament_day=3,
+        daily_policy_cap_fraction=0.30,
+    )
+    decision = assess_paper_correlated_exposure(
+        ledger,
+        {"fixture_id": "fx1", "tournament_key": "L1", "operational_date": "2026-10-18", "stake_cop": 25_000},
+        calibration=calibration,
+        bankroll_cop=4_833_500,
+    )
+    assert decision["allowed"] is False
+    assert "FIXTURE_CORRELATED_EXPOSURE_LIMIT" in decision["blocked_reasons"]
+    assert decision["real_money"] == "BLOCKED"
+
+
+def test_correlated_risk_gate_fails_closed_on_missing_tournament_identity():
+    from app.research.football.correlated_exposure import (
+        assess_paper_correlated_exposure,
+        calibrate_paper_correlated_exposure,
+    )
+    ledger = {
+        "sent": [
+            {"fixture_id": "fx0", "league_id": "L0", "paper_bet": {"status": "SETTLED", "stake_cop": 25000, "kickoff_bogota_date": "2026-10-17"}}
+        ]
+    }
+    calibration = calibrate_paper_correlated_exposure(
+        ledger,
+        initial_bankroll_cop=5_000_000,
+        unit_cop=25_000,
+        max_signals_per_tournament_day=3,
+        daily_policy_cap_fraction=0.30,
+    )
+    decision = assess_paper_correlated_exposure(
+        ledger,
+        {"fixture_id": "fx2", "tournament_key": "", "operational_date": "2026-10-18", "stake_cop": 25_000},
+        calibration=calibration,
+        bankroll_cop=4_833_500,
+    )
+    assert decision["allowed"] is False
+    assert decision["status"] == "BLOCKED_CORRELATED_RISK_METADATA_MISSING"
