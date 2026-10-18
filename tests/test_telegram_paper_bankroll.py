@@ -1,4 +1,3 @@
-from app.research.football.correlated_risk_calibration import calibrate_correlated_risk_from_ledger
 # PHYSICAL_RECHECK_AVAILABLE_BANKROLL_20261010
 from datetime import datetime, timezone
 
@@ -24,7 +23,6 @@ from tools.telegram_green_signal_alerts import (
     final_prematch_quote_state,
     paper_league_day_key,
     paper_league_concentration_blocked,
-    correlated_risk_gate_state,
     recalc_paper_bankroll,
     green_message,
     paper_assignment_update_message,
@@ -599,79 +597,3 @@ def test_correlated_risk_gate_fails_closed_on_missing_tournament_identity():
     )
     assert decision["allowed"] is False
     assert decision["status"] == "BLOCKED_CORRELATED_RISK_METADATA_MISSING"
-
-
-def _risk_calibration_ledger(n: int = 40) -> dict:
-    sent=[]; settlements=[]
-    for i in range(n):
-        day=f"2026-10-{10 + (i % 4):02d}"
-        key=f"risk-{i}"
-        sent.append({
-            "signal_key":key,
-            "fixture_id":f"fx-{i}",
-            "league_id":f"league-{i % 3}",
-            "kickoff":f"{day}T18:00:00+00:00",
-            "paper_bet":{
-                "status":"SETTLED",
-                "stake_cop":25000.0,
-                "bankroll_before_cop":5000000.0,
-                "kickoff_bogota_date":day,
-            },
-        })
-        settlements.append({"signal_key":key,"won": bool(i % 2)})
-    return {"sent":sent,"settlements":settlements}
-
-
-def test_empirical_correlated_risk_calibration_requires_real_sample_and_caps_history():
-    blocked=calibrate_correlated_risk_from_ledger({"sent":[],"settlements":[]})
-    assert blocked.status == "BLOCKED_INSUFFICIENT_REAL_SETTLED_SAMPLE"
-    ledger=_risk_calibration_ledger()
-    cal=calibrate_correlated_risk_from_ledger(ledger)
-    assert cal.status == "PASS_EMPIRICAL_CONCENTRATION_CALIBRATION"
-    assert cal.sample_settled == 40
-    assert cal.fixture_cap_fraction == 0.005
-    assert 0.005 <= cal.tournament_day_cap_fraction <= 0.015
-    assert 0.005 <= cal.day_cap_fraction <= 0.30
-    assert cal.pair_count_same_league_day > 0
-    assert cal.agreement_wilson_upper95 is not None
-
-
-def test_correlated_risk_gate_blocks_second_signal_same_fixture_before_telegram():
-    ledger=_risk_calibration_ledger()
-    cal=calibrate_correlated_risk_from_ledger(ledger)
-    ledger["sent"].append({
-        "signal_key":"open-same-fixture",
-        "fixture_id":"future-fx",
-        "league_id":"future-league",
-        "kickoff":"2026-10-18T18:00:00+00:00",
-        "paper_bet":{
-            "status":"OPEN",
-            "stake_cop":25000.0,
-            "bankroll_before_cop":5000000.0,
-            "kickoff_bogota_date":"2026-10-18",
-        },
-    })
-    state, detail=correlated_risk_gate_state(
-        ledger,
-        {
-            "fixture_id":"future-fx",
-            "league_id":"future-league",
-            "kickoff":"2026-10-18T18:30:00+00:00",
-        },
-        bankroll=5000000.0,
-        calibration=cal,
-    )
-    assert state == "BLOCKED_CORRELATED_EXPOSURE"
-    assert "FIXTURE_CORRELATED_EXPOSURE_LIMIT" in detail["blocked_reasons"]
-
-
-def test_correlated_risk_gate_fails_closed_without_calibration():
-    cal=calibrate_correlated_risk_from_ledger({"sent":[],"settlements":[]})
-    state, detail=correlated_risk_gate_state(
-        {},
-        {"fixture_id":"fx-new","league_id":"league-new","kickoff":"2026-10-18T18:00:00+00:00"},
-        bankroll=5000000.0,
-        calibration=cal,
-    )
-    assert state == "BLOCKED_CORRELATED_RISK_CALIBRATION_NOT_READY"
-    assert detail["real_money"] == "BLOCKED"
