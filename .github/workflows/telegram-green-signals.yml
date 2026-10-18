@@ -11,6 +11,8 @@ on:
     paths:
       - .github/workflows/telegram-green-signals.yml
       - tools/telegram_green_signal_alerts.py
+      - app/research/football/correlated_exposure.py
+      - app/research/football/correlated_risk_calibration.py
       - tests/test_telegram_paper_bankroll.py
       - evidence/api_football/daily_prematch_reports/**
       - evidence/tennis_signals/**
@@ -57,7 +59,7 @@ jobs:
         run: python -m pip install requests pytest
 
       - name: Verify paper-bankroll Telegram format
-        run: PYTHONPATH=. python -m pytest -q tests/test_telegram_paper_bankroll.py
+        run: PYTHONPATH=. python -m pytest -q tests/test_telegram_paper_bankroll.py tests/test_correlated_exposure.py
 
       - name: Enforce safety gates
         shell: bash
