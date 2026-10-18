@@ -1,5 +1,5 @@
 {
-  "blocked_events": 2,
+  "blocked_events": 3,
   "events": [
     {
       "blockers": [],
@@ -29,6 +29,19 @@
       "provider_player_ids": [
         "rapidapi-tennis:player:76009",
         "rapidapi-tennis:player:83923"
+      ],
+      "status": "BLOCKED"
+    },
+    {
+      "blockers": [
+        "IDENTITY_AUTHORITY_SOURCE_ID_NOT_UNIQUE:rapidapi-tennis:player:18612",
+        "IDENTITY_CROSSWALK_MISSING:rapidapi-tennis:player:18612",
+        "STATIC_IDENTITY_NO_MATCH:rapidapi-tennis:player:18612"
+      ],
+      "event_id": "CLAY-rapidapi-tennis-atp-match-217376-fad3650ca387",
+      "provider_player_ids": [
+        "rapidapi-tennis:player:18612",
+        "rapidapi-tennis:player:26500"
       ],
       "status": "BLOCKED"
     },
@@ -71,11 +84,58 @@
         "rapidapi-tennis:player:80500"
       ],
       "status": "PASS"
+    },
+    {
+      "blockers": [],
+      "event_id": "CLAY-rapidapi-tennis-atp-match-234341-f57f2fed0cb9",
+      "provider_player_ids": [
+        "rapidapi-tennis:player:36858",
+        "rapidapi-tennis:player:18477"
+      ],
+      "status": "PASS"
     }
   ],
   "holdout_id": "ATP_CHALLENGER_CLAY_PROSPECTIVE_V1",
   "join_by_name_only": false,
   "mappings": [
+    {
+      "canonical_age": 33.265,
+      "canonical_hand": "R",
+      "canonical_ioc": "BOL",
+      "canonical_name": "Hugo Dellien",
+      "canonical_rank": 129,
+      "canonical_rank_points": 460,
+      "canonical_source_id": "DA31",
+      "match_basis": "EXACT_RANK_AND_POINTS_PLUS_NAME_CONFIRMATION",
+      "provider": "rapidapi_tennis",
+      "provider_display_name": "Hugo Dellien",
+      "provider_player_id": "rapidapi-tennis:player:18477",
+      "provider_rank": 129,
+      "provider_rank_points": 460,
+      "provider_ranking_name": "Hugo Dellien",
+      "ranking_cut": "20260921",
+      "status": "PASS"
+    },
+    {
+      "canonical_age": 29.878,
+      "canonical_dob": "1996-11-04",
+      "canonical_hand": "L",
+      "canonical_ioc": "RUS",
+      "canonical_name": "Ivan Gakhov",
+      "canonical_rank": 445,
+      "canonical_rank_points": 109,
+      "canonical_source_id": "GE28",
+      "identity_authority": "MATRIX_COR0203_IDENTITY_AUTHORITY_AUTOEXPAND",
+      "match_basis": "EXACT_PROVIDER_ID_PLUS_NAME_IOC_UNIQUE_PRECUT_SOURCE_ID_PLUS_FIXED_BIOGRAPHY_DOB_AND_DATED_PROVIDER_RANKING",
+      "provider": "rapidapi_tennis",
+      "provider_display_name": "Ivan Gakhov",
+      "provider_player_id": "rapidapi-tennis:player:26500",
+      "provider_rank": 445,
+      "provider_rank_points": 109,
+      "provider_ranking_name": "Ivan Gakhov",
+      "ranking_cut": "20260921",
+      "status": "PASS"
+    },
     {
       "canonical_age": 29.12,
       "canonical_hand": "R",
@@ -131,6 +191,26 @@
       "provider_rank": 611,
       "provider_rank_points": 62,
       "provider_ranking_name": "Kai Wehnelt",
+      "ranking_cut": "20260921",
+      "status": "PASS"
+    },
+    {
+      "canonical_age": 26.533,
+      "canonical_dob": "2000-03-10",
+      "canonical_hand": "R",
+      "canonical_ioc": "BRA",
+      "canonical_name": "Thiago Seyboth Wild",
+      "canonical_rank": 138,
+      "canonical_rank_points": 426,
+      "canonical_source_id": "SX91",
+      "identity_authority": "MATRIX_COR0203_IDENTITY_AUTHORITY_AUTOEXPAND",
+      "match_basis": "EXACT_PROVIDER_ID_PLUS_NAME_IOC_UNIQUE_PRECUT_SOURCE_ID_PLUS_FIXED_BIOGRAPHY_DOB_AND_DATED_PROVIDER_RANKING",
+      "provider": "rapidapi_tennis",
+      "provider_display_name": "Thiago Seyboth Wild",
+      "provider_player_id": "rapidapi-tennis:player:36858",
+      "provider_rank": 138,
+      "provider_rank_points": 426,
+      "provider_ranking_name": "Thiago Seyboth Wild",
       "ranking_cut": "20260921",
       "status": "PASS"
     },
@@ -311,7 +391,7 @@
       "status": "PASS"
     }
   ],
-  "passed_events": 5,
+  "passed_events": 6,
   "ranking_cut": "20260921",
   "real_money": "BLOCKED",
   "revision": "R20261018",
