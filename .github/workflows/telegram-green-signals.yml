@@ -1,4 +1,4 @@
-# MATRIX_PHYSICAL_TRIGGER 2026-10-10T07:45Z available-paper-bankroll-recheck
+# MATRIX_PHYSICAL_TRIGGER 2026-10-09T05:34Z continuity-fallback-telegram
 name: Telegram Señales Verdes MATRIX
 
 on:
@@ -11,6 +11,11 @@ on:
     paths:
       - .github/workflows/telegram-green-signals.yml
       - tools/telegram_green_signal_alerts.py
+      - app/research/football/correlated_exposure.py
+      - app/research/football/correlated_risk_calibration.py
+      - app/research/football/correlated_exposure.py
+      - tests/test_telegram_paper_bankroll.py
+      - tests/test_telegram_correlated_risk_gate.py
       - evidence/api_football/daily_prematch_reports/**
       - evidence/tennis_signals/**
   workflow_dispatch:
@@ -56,7 +61,7 @@ jobs:
         run: python -m pip install requests pytest
 
       - name: Verify paper-bankroll Telegram format
-        run: PYTHONPATH=. python -m pytest -q tests/test_telegram_paper_bankroll.py
+        run: PYTHONPATH=. python -m pytest -q tests/test_telegram_paper_bankroll.py tests/test_telegram_correlated_risk_gate.py tests/test_correlated_exposure.py
 
       - name: Enforce safety gates
         shell: bash
@@ -96,12 +101,23 @@ jobs:
           set -euo pipefail
           git config user.name matrix-telegram-alerts
           git config user.email matrix-telegram-alerts@users.noreply.github.com
-          git add evidence/notifications/telegram/MATRIX_TELEGRAM_SIGNAL_LEDGER.json
+          git add evidence/notifications/telegram/MATRIX_TELEGRAM_SIGNAL_LEDGER.json \
+            evidence/notifications/telegram/MATRIX_CORRELATED_RISK_CALIBRATION_LAST.json
+          if ! git diff --quiet; then
+            echo "TELEGRAM_UNEXPECTED_UNSTAGED_TRACKED_CHANGES"
+            git status --short
+            exit 1
+          fi
           if git diff --cached --quiet; then
             echo "SIN_CAMBIOS_LEDGER"
             exit 0
           fi
           git commit -m "evidence(telegram): persist autonomous supervisor ledger"
+          if ! git diff --quiet; then
+            echo "TELEGRAM_WORKTREE_DIRTY_AFTER_COMMIT"
+            git status --short
+            exit 1
+          fi
           for attempt in 1 2 3 4; do
             git fetch origin repair/cor09-world-pipeline
             if ! git rebase origin/repair/cor09-world-pipeline; then
@@ -115,4 +131,13 @@ jobs:
           done
           exit 1
 
-# MATRIX_TELEGRAM_MULTIBOOK_SECRET_WIRING 2026-10-17 odds-api.net enabled for final prematch revalidation
+# MATRIX_USER_AUTHORIZED_TRIGGER 2026-10-11 close-today-telegram-signals
+
+# MATRIX_USER_AUTHORIZED_TRIGGER 2026-10-11 send-12oct-over25-signals
+
+# MATRIX_USER_AUTHORIZED_TRIGGER 2026-10-11 send-history-recovered-12oct-over25
+
+# MATRIX_USER_AUTHORIZED_TRIGGER 2026-10-14 post-calendar-final-signals
+# MATRIX_USER_AUTHORIZED_TRIGGER 2026-10-15 settle-current-open-and-refresh-table
+
+# MATRIX_CORRELATED_RISK_PERSISTENCE_RECHECK_18OCT2026
