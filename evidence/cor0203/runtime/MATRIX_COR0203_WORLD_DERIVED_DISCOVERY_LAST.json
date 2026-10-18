@@ -1,67 +1,9 @@
 {
-  "as_of_utc": "2026-10-18T19:35:17+00:00",
+  "as_of_utc": "2026-10-18T19:46:27+00:00",
   "automatic_model_feed": false,
   "automatic_model_promotion": false,
   "automatic_wagering": false,
   "eligible_candidates": [
-    {
-      "canonical_source_event_id": "rapidapi-tennis:atp:match:255067",
-      "competition": "Fort Worth Challenger",
-      "competition_id": "rapidapi-tennis:tournament:22106",
-      "event_id": "rapidapi-tennis:atp:match:255067",
-      "event_start_utc": "2026-10-18T19:45:00+00:00",
-      "historical_identity_crosswalk_status": "PENDING",
-      "legacy_provider_event_id": "rapidapi-tennis:match:255067",
-      "physical_event_key": "6ddc45f477b149d86e93baaac045cc488a058b1f0eb313fb75a61e1d07f39cbb",
-      "player_identities": [
-        {
-          "display_name": "Quinn Vandecasteele",
-          "provider": "rapidapi_tennis",
-          "provider_player_id": "rapidapi-tennis:player:71628"
-        },
-        {
-          "display_name": "Michael Antonius",
-          "provider": "rapidapi_tennis",
-          "provider_player_id": "rapidapi-tennis:player:121326"
-        }
-      ],
-      "players": [
-        {
-          "name": "Quinn Vandecasteele",
-          "provider_player_id": "rapidapi-tennis:player:71628",
-          "provider_ranking": {
-            "country": "USA",
-            "place": "465",
-            "player": "Quinn Vandecasteele",
-            "points": "101",
-            "snapshot_date": "2026-09-21"
-          }
-        },
-        {
-          "name": "Michael Antonius",
-          "provider_player_id": "rapidapi-tennis:player:121326",
-          "provider_ranking": {
-            "country": "USA",
-            "place": "624",
-            "player": "Michael Antonius",
-            "points": "58",
-            "snapshot_date": "2026-09-21"
-          }
-        }
-      ],
-      "provider_channel": "ATP",
-      "provider_source_event_id": "rapidapi-tennis:atp:match:255067",
-      "round": "Q1",
-      "source_id_collision_resolved": false,
-      "source_provider": "rapidapi_tennis",
-      "source_reference": "fixtures:matchId=255067;tournament_info=22106;ranking_cut=2026-09-21;provider_channel=ATP",
-      "source_snapshot_sha256": "9e3e452731277773208a877c3616244ef66af106adf4c778aaba25074ddab21a",
-      "surface": "Hard",
-      "target_period": 20260921,
-      "tour_level": "C",
-      "world_source_snapshot_sha256": "5afc3945ea661ae2da249fa818edef26c6dad63b9389e4ec366032685c56d226",
-      "world_stable_physical_identity_key": "d235843f167da744fcc452a2b27dcf8231f3cdf8cdde9330d26b0153d89643ca"
-    },
     {
       "canonical_source_event_id": "rapidapi-tennis:atp:match:255069",
       "competition": "Fort Worth Challenger",
@@ -295,7 +237,7 @@
       "world_stable_physical_identity_key": "1f2ad0770af791b0a8282a065b27db9e3b25343ac685f0d677f19c2d7f27c81f"
     }
   ],
-  "eligible_input_events": 5,
+  "eligible_input_events": 4,
   "fixture_rows": 13,
   "governed_preregistration_required": true,
   "metrics_opened": false,
@@ -467,6 +409,29 @@
     },
     {
       "blockers": [
+        "EVENT_NOT_FUTURE"
+      ],
+      "match_id": "255067",
+      "players": [
+        {
+          "name": "Quinn Vandecasteele",
+          "provider_player_id": "rapidapi-tennis:player:71628",
+          "ranking_found": true
+        },
+        {
+          "name": "Michael Antonius",
+          "provider_player_id": "rapidapi-tennis:player:121326",
+          "ranking_found": true
+        }
+      ],
+      "provider_channel": "ATP",
+      "provider_source_event_id": "rapidapi-tennis:atp:match:255067",
+      "source_id_collision_resolved": false,
+      "tournament_id": "22106",
+      "world_source_event_id": "rapidapi-tennis:atp:match:255067"
+    },
+    {
+      "blockers": [
         "RANKING_CUT_MISSING_PLAYER1"
       ],
       "match_id": "255080",
@@ -585,37 +550,17 @@
   "world_inventory_target_date": "2026-10-18",
   "world_inventory_total": 125,
   "world_registry": {
-    "as_of_utc": "2026-10-18T19:35:17+00:00",
+    "as_of_utc": "2026-10-18T19:46:27+00:00",
     "cor0203_denominator_definition": "derived subset: future ATP Challenger Hard events with two real fixed identities and valid source provenance",
     "cor0203_eligible_event_ids": [
-      "rapidapi-tennis:match:255067",
       "rapidapi-tennis:match:255069",
       "rapidapi-tennis:match:255066",
       "rapidapi-tennis:match:255084",
       "rapidapi-tennis:match:255065"
     ],
-    "cor0203_eligible_events": 5,
+    "cor0203_eligible_events": 4,
     "duplicate_rows": 0,
     "rows": [
-      {
-        "competition_id": "rapidapi-tennis:tournament:22106",
-        "competition_name": "Fort Worth Challenger",
-        "cor0203_blockers": [],
-        "cor0203_eligible": true,
-        "environment": "UNKNOWN",
-        "event_id": "rapidapi-tennis:match:255067",
-        "event_start_utc": "2026-10-18T19:45:00+00:00",
-        "player1_id": "rapidapi-tennis:player:71628",
-        "player2_id": "rapidapi-tennis:player:121326",
-        "round": "Q1",
-        "source_provider": "rapidapi_tennis",
-        "source_reference": "fixtures:matchId=255067;tournament_info=22106;ranking_cut=2026-09-21",
-        "source_snapshot_sha256": "9e3e452731277773208a877c3616244ef66af106adf4c778aaba25074ddab21a",
-        "sport": "TENNIS",
-        "surface": "Hard",
-        "tour_level": "ATP_CHALLENGER",
-        "world_calendar_status": "PRESERVED"
-      },
       {
         "competition_id": "rapidapi-tennis:tournament:22106",
         "competition_name": "Fort Worth Challenger",
@@ -695,8 +640,8 @@
     ],
     "schema": "matrix.world-calendar-registry/1",
     "world_calendar_denominator_definition": "all unique discovered scheduled events preserved before model-domain filtering",
-    "world_calendar_input_rows": 5,
-    "world_calendar_unique_events": 5
+    "world_calendar_input_rows": 4,
+    "world_calendar_unique_events": 4
   },
   "world_rows_malformed": [],
   "world_rows_synthesized": 13,
