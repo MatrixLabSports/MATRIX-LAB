@@ -14,10 +14,16 @@ from zoneinfo import ZoneInfo
 
 import requests
 
+from app.research.football.correlated_exposure import (
+    assess_paper_correlated_exposure,
+    calibrate_paper_correlated_exposure,
+)
+
 BOGOTA = ZoneInfo("America/Bogota")
 FOOTBALL_ROOT = Path("evidence/api_football/daily_prematch_reports")
 TENNIS_ROOT = Path("evidence/tennis_signals")
 LEDGER = Path("evidence/notifications/telegram/MATRIX_TELEGRAM_SIGNAL_LEDGER.json")
+CORRELATED_RISK_EVIDENCE = Path("evidence/notifications/telegram/MATRIX_CORRELATED_RISK_CALIBRATION_LAST.json")
 
 GREEN_STATUSES = {
     "SEÑAL_VERDE_SIMULADA_Y_APUESTA_USUARIO_EJECUTADA",
@@ -1349,6 +1355,16 @@ def main() -> None:
     ledger.setdefault("paper_bankroll", {})
     ledger.setdefault("pre_send_gate", {})
 
+    pre_risk_bankroll = recalc_paper_bankroll(ledger)
+    correlated_risk_calibration = calibrate_paper_correlated_exposure(
+        ledger,
+        initial_bankroll_cop=PAPER_BANKROLL_INITIAL_COP,
+        unit_cop=PAPER_UNIT_COP,
+        max_signals_per_tournament_day=PAPER_MAX_SIGNALS_PER_LEAGUE_DAY,
+        daily_policy_cap_fraction=PAPER_DAILY_BASE_EXPOSURE_FRACTION,
+    )
+    ledger["correlated_risk_calibration"] = correlated_risk_calibration
+
     session = requests.Session()
     pre_send_quote_checks = 0
     pre_send_waiting = 0
@@ -1491,7 +1507,38 @@ def main() -> None:
         }
         priority.sort(key=lambda x: (x[0], -x[1], -x[2], str(x[4].get("kickoff")), x[3]))
         running_open_exposure = float(pb.get("open_exposure_cop") or 0.0)
+        correlated_risk_provisional: list[dict[str, Any]] = []
         for day, level, _, key, candidate, record in priority:
+            correlated_risk_decision = assess_paper_correlated_exposure(
+                ledger,
+                {
+                    "fixture_id": candidate.get("fixture_id"),
+                    "tournament_key": candidate.get("league_id"),
+                    "operational_date": day,
+                    "stake_cop": paper_stake_cop(level),
+                },
+                calibration=correlated_risk_calibration,
+                bankroll_cop=float(pb["current_cop"]),
+                provisional=correlated_risk_provisional,
+            )
+            candidate["correlated_risk"] = correlated_risk_decision
+            ledger["pre_send_gate"][key] = {
+                **(ledger["pre_send_gate"].get(key) or {}),
+                "correlated_risk": correlated_risk_decision,
+            }
+            if correlated_risk_decision.get("allowed") is not True:
+                candidate["eligible_green"] = False
+                candidate["send_gate_status"] = correlated_risk_decision.get("status")
+                candidate["paper_plan"] = {
+                    "stake_level": level,
+                    "stake_cop": paper_stake_cop(level),
+                    "assignment_status": "NO_ASIGNADO_RIESGO_CORRELACIONADO",
+                    "reason": ",".join(correlated_risk_decision.get("blocked_reasons") or []),
+                    "real_money": "BLOCKED",
+                }
+                ledger["pre_send_gate"][key]["state"] = candidate["send_gate_status"]
+                pre_send_blocked += 1
+                continue
             league_key = paper_league_day_key(candidate)
             if league_key is not None and paper_league_concentration_blocked(league_day_counts.get(league_key, 0)):
                 candidate["eligible_green"] = False
@@ -1561,6 +1608,12 @@ def main() -> None:
             running_open_exposure += stake
             if league_key is not None:
                 league_day_counts[league_key] = league_day_counts.get(league_key, 0) + 1
+            correlated_risk_provisional.append({
+                "fixture_id": candidate.get("fixture_id"),
+                "tournament_key": candidate.get("league_id"),
+                "operational_date": day,
+                "stake_cop": stake,
+            })
             assigned_paper_now += 1
         pb["daily_exposure_by_date"] = daily_exposure
         pb = recalc_paper_bankroll(ledger)
@@ -2030,6 +2083,9 @@ def main() -> None:
         "paper_open_bets": pb.get("open_bets"),
         "paper_stake_max_level": PAPER_STAKE_MAX_LEVEL,
         "paper_stake_risk_override": PAPER_STAKE_RISK_OVERRIDE,
+        "correlated_risk_status": correlated_risk_calibration.get("status"),
+        "correlated_risk_sample_records": correlated_risk_calibration.get("sample_records"),
+        "correlated_risk_h02_closed": False,
         "real_money": "BLOQUEADO",
     }
     ledger["run_history"].append(run_record)
@@ -2054,6 +2110,29 @@ def main() -> None:
     }
 
     LEDGER.parent.mkdir(parents=True, exist_ok=True)
+    CORRELATED_RISK_EVIDENCE.parent.mkdir(parents=True, exist_ok=True)
+    correlated_risk_evidence = {
+        "schema": "MATRIX_CORRELATED_RISK_CALIBRATION_PHYSICAL_PROOF_V1",
+        "generated_at_utc": now.isoformat(),
+        "ledger_path": str(LEDGER),
+        "integration": {
+            "pre_telegram_gate": True,
+            "fixture_tournament_day_daily_caps": True,
+            "fail_closed_missing_metadata": True,
+            "flat_1u_preserved": PAPER_STAKE_MAX_LEVEL == 1,
+            "p_matrix_modified": False,
+            "ev_modified": False,
+        },
+        "calibration": correlated_risk_calibration,
+        "h02_closed": False,
+        "h02_blocker": "PAIRWISE_CROSS_MARKET_CORRELATION_NOT_IDENTIFIABLE_FROM_SINGLE_MARKET_TELEGRAM_LEDGER",
+        "automatic_wagering": False,
+        "real_money": "BLOCKED",
+    }
+    CORRELATED_RISK_EVIDENCE.write_text(
+        json.dumps(correlated_risk_evidence, indent=2, sort_keys=True, ensure_ascii=False) + "\n",
+        encoding="utf-8",
+    )
     LEDGER.write_text(json.dumps(ledger, indent=2, sort_keys=True, ensure_ascii=False) + "\n", encoding="utf-8")
     print(json.dumps(run_record, ensure_ascii=False, sort_keys=True))
 
