@@ -14,9 +14,6 @@ from zoneinfo import ZoneInfo
 
 import requests
 
-from app.research.football.correlated_exposure import CorrelationLimits, ExposureRecord, assess_correlated_exposure
-from app.research.football.correlated_risk_calibration import calibrate_correlated_risk_from_ledger, calibration_evidence
-
 from app.research.football.correlated_exposure import (
     assess_paper_correlated_exposure,
     calibrate_paper_correlated_exposure,
@@ -26,7 +23,6 @@ BOGOTA = ZoneInfo("America/Bogota")
 FOOTBALL_ROOT = Path("evidence/api_football/daily_prematch_reports")
 TENNIS_ROOT = Path("evidence/tennis_signals")
 LEDGER = Path("evidence/notifications/telegram/MATRIX_TELEGRAM_SIGNAL_LEDGER.json")
-CORRELATED_RISK_CALIBRATION_EVIDENCE = Path("evidence/notifications/telegram/MATRIX_CORRELATED_RISK_CALIBRATION_LAST.json")
 CORRELATED_RISK_EVIDENCE = Path("evidence/notifications/telegram/MATRIX_CORRELATED_RISK_CALIBRATION_LAST.json")
 
 GREEN_STATUSES = {
@@ -904,73 +900,6 @@ def paper_league_day_key(candidate: dict[str, Any]) -> tuple[str, str] | None:
     return day, league_id
 
 
-def correlated_risk_gate_state(
-    ledger: dict[str, Any],
-    candidate: dict[str, Any],
-    *,
-    bankroll: float,
-    calibration,
-) -> tuple[str, dict[str, Any]]:
-    if calibration.status != "PASS_EMPIRICAL_CONCENTRATION_CALIBRATION":
-        return "BLOCKED_CORRELATED_RISK_CALIBRATION_NOT_READY", {
-            "status": calibration.status,
-            "real_money": "BLOCKED",
-        }
-    day = paper_kickoff_date(candidate.get("kickoff"))
-    fixture_id = str(candidate.get("fixture_id") or "").strip()
-    league_id = str(candidate.get("league_id") or "").strip() or "UNKNOWN"
-    if not day or not fixture_id:
-        return "BLOCKED_CORRELATED_RISK_IDENTITY_INCOMPLETE", {"real_money": "BLOCKED"}
-    existing: list[ExposureRecord] = []
-    for record in ledger.get("sent", []):
-        if not isinstance(record, dict):
-            continue
-        bet = record.get("paper_bet")
-        if not isinstance(bet, dict):
-            continue
-        status = str(bet.get("status") or "").upper()
-        if status in {"CANCELLED_NO_BET", "VOID_POSTPONED"}:
-            continue
-        rec_day = str(bet.get("kickoff_bogota_date") or paper_kickoff_date(record.get("kickoff")) or "")
-        if rec_day != day:
-            continue
-        stake = float(bet.get("stake_cop") or 0.0)
-        if stake <= 0:
-            continue
-        existing.append(ExposureRecord(
-            fixture_id=str(record.get("fixture_id") or ""),
-            tournament_key=str(record.get("league_id") or "").strip() or "UNKNOWN",
-            operational_date=day,
-            stake=stake,
-        ))
-    proposed = ExposureRecord(
-        fixture_id=fixture_id,
-        tournament_key=league_id,
-        operational_date=day,
-        stake=paper_stake_cop(PAPER_STAKE_MAX_LEVEL),
-    )
-    limits = CorrelationLimits(
-        max_fixture_fraction=float(calibration.fixture_cap_fraction),
-        max_tournament_day_fraction=float(calibration.tournament_day_cap_fraction),
-        max_day_fraction=float(calibration.day_cap_fraction),
-    )
-    decision = assess_correlated_exposure(existing, proposed, bankroll=float(bankroll), limits=limits)
-    detail = {
-        "allowed": decision.allowed,
-        "blocked_reasons": list(decision.blocked_reasons),
-        "fixture_exposure_after": decision.fixture_exposure_after,
-        "tournament_day_exposure_after": decision.tournament_day_exposure_after,
-        "day_exposure_after": decision.day_exposure_after,
-        "limits": {
-            "max_fixture_fraction": limits.max_fixture_fraction,
-            "max_tournament_day_fraction": limits.max_tournament_day_fraction,
-            "max_day_fraction": limits.max_day_fraction,
-        },
-        "real_money": "BLOCKED",
-    }
-    return ("PASS_CORRELATED_RISK_GATE" if decision.allowed else "BLOCKED_CORRELATED_EXPOSURE"), detail
-
-
 def paper_daily_exposure_by_date(ledger: dict[str, Any]) -> dict[str, float]:
     out: dict[str, float] = {}
     for record in ledger.get("sent", []):
@@ -1533,15 +1462,6 @@ def main() -> None:
     paper_enabled = os.environ.get("PAPER_BANKROLL", "DISABLED").strip().upper() == "ENABLED"
     paper_reconciliation = reconcile_existing_paper_state(ledger, now)
     pb = recalc_paper_bankroll(ledger)
-    correlated_calibration = calibrate_correlated_risk_from_ledger(ledger)
-    correlated_evidence = calibration_evidence(correlated_calibration)
-    correlated_evidence["generated_at_utc"] = now.isoformat()
-    CORRELATED_RISK_CALIBRATION_EVIDENCE.parent.mkdir(parents=True, exist_ok=True)
-    CORRELATED_RISK_CALIBRATION_EVIDENCE.write_text(
-        json.dumps(correlated_evidence, indent=2, sort_keys=True, ensure_ascii=False) + "\n",
-        encoding="utf-8",
-    )
-    ledger["correlated_risk_calibration"] = correlated_evidence
     assigned_paper_now = 0
     if paper_enabled:
         day_candidates: dict[str, list[dict[str, Any]]] = {}
@@ -2187,7 +2107,7 @@ def main() -> None:
         "same_house_exact_over25_revalidation_required": True,
         "paper_max_signals_per_league_day": PAPER_MAX_SIGNALS_PER_LEAGUE_DAY,
         "correlated_risk_gate": True,
-        "correlated_risk_calibration_required": "PASS_EMPIRICAL_CONCENTRATION_CALIBRATION",
+        "correlated_risk_calibration_required": "READY_FAIL_CLOSED",
         "cancel_if_ev_nonpositive_or_exact_quote_missing": True,
     }
 
