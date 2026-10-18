@@ -103,11 +103,21 @@ jobs:
           git config user.email matrix-telegram-alerts@users.noreply.github.com
           git add evidence/notifications/telegram/MATRIX_TELEGRAM_SIGNAL_LEDGER.json \
             evidence/notifications/telegram/MATRIX_CORRELATED_RISK_CALIBRATION_LAST.json
+          if ! git diff --quiet; then
+            echo "TELEGRAM_UNEXPECTED_UNSTAGED_TRACKED_CHANGES"
+            git status --short
+            exit 1
+          fi
           if git diff --cached --quiet; then
             echo "SIN_CAMBIOS_LEDGER"
             exit 0
           fi
           git commit -m "evidence(telegram): persist autonomous supervisor ledger"
+          if ! git diff --quiet; then
+            echo "TELEGRAM_WORKTREE_DIRTY_AFTER_COMMIT"
+            git status --short
+            exit 1
+          fi
           for attempt in 1 2 3 4; do
             git fetch origin repair/cor09-world-pipeline
             if ! git rebase origin/repair/cor09-world-pipeline; then
