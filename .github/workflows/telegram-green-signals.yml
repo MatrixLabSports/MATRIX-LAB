@@ -97,7 +97,8 @@ jobs:
           set -euo pipefail
           git config user.name matrix-telegram-alerts
           git config user.email matrix-telegram-alerts@users.noreply.github.com
-          git add evidence/notifications/telegram/MATRIX_TELEGRAM_SIGNAL_LEDGER.json
+          git add evidence/notifications/telegram/MATRIX_TELEGRAM_SIGNAL_LEDGER.json \
+            evidence/notifications/telegram/MATRIX_CORRELATED_RISK_CALIBRATION_LAST.json
           if git diff --cached --quiet; then
             echo "SIN_CAMBIOS_LEDGER"
             exit 0
