@@ -946,6 +946,27 @@ def current_correlated_exposures(ledger: dict[str, Any]) -> list[ExposureRecord]
     return rows
 
 
+def correlated_risk_limits_from_physical_calibration(
+    calibration: dict[str, Any],
+    *,
+    bankroll: float,
+) -> CorrelationLimits:
+    capital = float(bankroll)
+    if capital <= 0:
+        raise ValueError("BANKROLL_MUST_BE_POSITIVE")
+    caps = calibration.get("caps") or {}
+    fixture_cap_cop = float(caps.get("fixture_cap_cop") or 0.0)
+    tournament_day_cap_cop = float(caps.get("tournament_day_cap_cop") or 0.0)
+    day_cap_fraction = float(caps.get("daily_cap_fraction") or 0.0)
+    if fixture_cap_cop <= 0 or tournament_day_cap_cop <= 0 or not 0 < day_cap_fraction <= 1:
+        raise ValueError("PHYSICAL_CORRELATED_RISK_CAPS_INVALID")
+    return CorrelationLimits(
+        max_fixture_fraction=min(1.0, fixture_cap_cop / capital),
+        max_tournament_day_fraction=min(1.0, tournament_day_cap_cop / capital),
+        max_day_fraction=day_cap_fraction,
+    )
+
+
 def correlated_risk_gate_state(
     candidate: dict[str, Any],
     *,
@@ -1455,12 +1476,11 @@ def main() -> None:
         json.dumps(risk_evidence, indent=2, sort_keys=True, ensure_ascii=False) + "\n",
         encoding="utf-8",
     )
-    risk_limits = CorrelationLimits(
-        max_fixture_fraction=risk_calibration.fixture_cap_fraction,
-        max_tournament_day_fraction=risk_calibration.tournament_day_cap_fraction,
-        max_day_fraction=risk_calibration.day_cap_fraction,
-    )
     risk_bankroll = float(recalc_paper_bankroll(ledger).get("current_cop") or PAPER_BANKROLL_INITIAL_COP)
+    risk_limits = correlated_risk_limits_from_physical_calibration(
+        correlated_risk_calibration,
+        bankroll=risk_bankroll,
+    )
     risk_existing_exposures = current_correlated_exposures(ledger)
     risk_pending_exposures: list[ExposureRecord] = []
 
