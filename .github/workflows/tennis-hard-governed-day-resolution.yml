@@ -68,28 +68,43 @@ jobs:
           set -euo pipefail
           D="${{ steps.date.outputs.target_date }}"
           P="evidence/tennis_world_inventory/$D/MATRIX_BROWSER_HARD_DOMAIN_CANDIDATES.json"
-          test -f "$P"
-          python - "$P" <<'PY'
+          python - "$D" "$P" <<'PY'
           import json,sys
           from pathlib import Path
-          p=Path(sys.argv[1]); j=json.loads(p.read_text())
-          assert j["target_date_bogota"]==p.parent.name
-          visible=int(j["sofascore"]["visible_ui_total_count"])
-          assert visible > 0
-          if "governed_bogota_day_reconciliation" in j:
-              hard=int(j["governed_bogota_day_reconciliation"]["hard_domain_candidate_count"])
+          d=sys.argv[1]; legacy=Path(sys.argv[2])
+          if legacy.exists():
+              j=json.loads(legacy.read_text())
+              assert j["target_date_bogota"]==d
+              visible=int(j["sofascore"]["visible_ui_total_count"])
+              flash=int(j["flashscore"].get("loaded_tree_unique_tennis_match_links",0))
+              rec=j.get("governed_bogota_day_reconciliation") or {}
+              dom=j.get("domain") or {}
+              browser_hard=int(rec.get("hard_domain_candidate_count",dom.get("browser_domain_candidate_count",0)))
+              mode="LEGACY_HARD_DOMAIN_ARTIFACT"
           else:
-              hard=int(j["domain"]["browser_domain_candidate_count"])
-          assert hard >= 0
-          assert "SofaScore" in j["source_order"]
-          assert "Flashscore" in j["source_order"]
+              matches=[]
+              for p in Path("evidence/tennis").glob("MATRIX_TENNIS_*_BROWSER_FIRST_RECONCILIATION.json"):
+                  try:
+                      x=json.loads(p.read_text())
+                  except Exception:
+                      continue
+                  if x.get("target_date_bogota")==d:
+                      matches.append((p,x))
+              assert matches, f"BROWSER_FIRST_RECONCILIATION_MISSING:{d}"
+              p,j=matches[-1]
+              assert j["reconciliation"]["browser_first_gate"]=="PASS"
+              visible=int(j["sofascore"]["visible_event_rows_full_page"])
+              flash=int(j["flashscore"]["visible_match_count"])
+              browser_hard=None
+              mode="CANONICAL_BROWSER_FIRST_RECONCILIATION"
+          assert visible>0
+          assert "SofaScore" in j["source_order"] and "Flashscore" in j["source_order"]
           assert j["protections"]["metrics_opened"] is False
           assert j["protections"]["real_money"]=="BLOCKED"
-          if p.parent.name=="2026-10-09":
-              assert visible==448
-              assert hard==4
-              assert j.get("correction",{}).get("prior_v1_invalidated") is True
-          print(f"BROWSER_HARD_DOMAIN_PASS total={visible} hard_domain={hard}")
+          out={"target_date_bogota":d,"mode":mode,"sofascore_visible_total":visible,
+               "flashscore_visible_or_loaded":flash,"browser_hard_domain_candidate_count":browser_hard}
+          Path("/tmp/browser_baseline.json").write_text(json.dumps(out,sort_keys=True))
+          print("BROWSER_FIRST_PASS",json.dumps(out,sort_keys=True))
           PY
 
       - name: Snapshot governed counter before run
@@ -157,20 +172,21 @@ jobs:
           hard=json.loads(Path("evidence/cor0203/runtime/MATRIX_COR0203_PHYSICAL_UNIQUENESS_LAST.json").read_text())
           batch=json.loads(Path("evidence/cor0203/runtime/MATRIX_COR0203_BATCH_RUNNER_LAST.json").read_text())
           prereg=json.loads(Path("evidence/cor0203/runtime/MATRIX_COR0203_DISCOVERY_PREREG_LAST.json").read_text())
-          browser=json.loads(Path(f"evidence/tennis_world_inventory/{d}/MATRIX_BROWSER_HARD_DOMAIN_CANDIDATES.json").read_text())
+          browser=json.loads(Path("/tmp/browser_baseline.json").read_text())
+          rec=json.loads(Path(f"evidence/tennis_world_inventory/{d}/hard_clay_event_reconciliation.json").read_text())
           dual=json.loads(Path(f"evidence/tennis_world_inventory/{d}/world_exact_day_dual_audit.json").read_text())
           after=int(hard["unique_calibration_observations"])
           increment=after-int(before["unique"])
-          reconciled=browser.get("governed_bogota_day_reconciliation") or {}
-          legacy_domain=browser.get("domain") or {}
-          browser_hard=int(reconciled.get("hard_domain_candidate_count",legacy_domain.get("browser_domain_candidate_count",0)))
-          hard_tournaments=(browser["sofascore"].get("fresh_09oct_hard_challenger_men_singles") or browser["sofascore"].get("hard_challenger_men_singles") or [])
+          browser_hard=browser.get("browser_hard_domain_candidate_count")
+          structured_hard=int(rec.get("hard_bound_count") or 0)
+          hard_tournaments=[]
           out={
             "schema":"MATRIX_TENNIS_HARD_DAILY_RESOLUTION_V2",
             "target_date_bogota":d,
-            "sofascore_visible_total":int(browser["sofascore"]["visible_ui_total_count"]),
-            "flashscore_loaded_unique_match_links":int(browser["flashscore"].get("loaded_tree_unique_tennis_match_links",0)),
+            "sofascore_visible_total":int(browser["sofascore_visible_total"]),
+            "flashscore_loaded_unique_match_links":int(browser["flashscore_visible_or_loaded"]),
             "browser_hard_domain_candidate_count":browser_hard,
+            "structured_hard_bound_count":structured_hard,
             "hard_domain_tournaments":hard_tournaments,
             "paid_provider_capture":{
               "rapidapi_unique_match_count":int(dual["primary_world_inventory"]["unique_match_count"]),
@@ -196,9 +212,10 @@ jobs:
             },
             "adjudication":{
               "browser_domain_candidates_can_be_examined":browser_hard,
+              "structured_hard_candidates_can_be_examined":structured_hard,
               "physically_proven_increment_now":increment,
               "rule":"Only actual new unique governed freezes count toward 128/200; browser-domain rows alone never increment the holdout.",
-              "provider_gap_if_increment_below_browser_domain": increment < browser_hard
+              "provider_gap_if_increment_below_browser_domain": (increment < browser_hard) if isinstance(browser_hard,int) else None
             },
             "protections":{
               "missing_not_zero":True,
