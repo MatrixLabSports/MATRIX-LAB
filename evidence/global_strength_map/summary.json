@@ -1,10 +1,10 @@
 {
   "cell_count": 649,
   "class_counts": {
-    "DEVELOPING": 159,
-    "INSUFFICIENT_DATA": 482,
+    "DEVELOPING": 160,
+    "INSUFFICIENT_DATA": 480,
     "NO_GO": 5,
-    "STRONG": 3
+    "STRONG": 4
   },
   "football_global_cells": [
     {
@@ -12,36 +12,48 @@
       "classification_reason": "BOTH_PROPER_SCORES_BETTER_AND_95CI_FAVORABLE",
       "competition_id": "ALL",
       "competition_name": "ALL_COMPETITIONS",
-      "market": "OVER_2_5",
+      "market": "1X2",
       "metrics": {
-        "challenger_brier": 0.23923757994336445,
-        "challenger_log_loss": 0.6717532419491404,
-        "delta_brier": -0.002948826131736443,
-        "delta_log_loss": -0.007467313744998538,
-        "n": 3280,
+        "challenger_accuracy": 0.5154171704957679,
+        "challenger_brier": 0.6036592268841401,
+        "challenger_log_loss": 1.0131117670230774,
+        "delta_accuracy": 0.01723095525997581,
+        "delta_brier": -0.009477897615615904,
+        "delta_log_loss": -0.009337229650784984,
+        "n": 3308,
+        "paired_accuracy": {
+          "ci95": [
+            0.005319728508620248,
+            0.02914218201133139
+          ],
+          "mean": 0.017230955259975818,
+          "n": 3308,
+          "se": 0.006077156505793658
+        },
         "paired_brier": {
           "ci95": [
-            -0.0043155037365861975,
-            -0.001582148526887309
+            -0.014798971494642328,
+            -0.0041568237365904315
           ],
-          "mean": -0.0029488261317367533,
-          "n": 3280,
-          "se": 0.0006972844922701247
+          "mean": -0.00947789761561638,
+          "n": 3308,
+          "se": 0.002714833611747933
         },
         "paired_log_loss": {
           "ci95": [
-            -0.010574590277377387,
-            -0.004360037212620995
+            -0.01844035954498196,
+            -0.00023409975658763606
           ],
-          "mean": -0.0074673137449991905,
-          "n": 3280,
-          "se": 0.0015853451695807118
+          "mean": -0.009337229650784798,
+          "n": 3308,
+          "se": 0.004644454027651614
         },
-        "reference_brier": 0.2421864060751009,
-        "reference_log_loss": 0.679220555694139
+        "reference_accuracy": 0.49818621523579204,
+        "reference_brier": 0.613137124499756,
+        "reference_log_loss": 1.0224489966738624
       },
       "model_mutation_allowed": false,
-      "prospective_n": 3280,
+      "prospective_n": 3308,
       "scope": "GLOBAL_MARKET",
       "season": "MIXED",
       "sport": "FOOTBALL",
@@ -49,55 +61,43 @@
     },
     {
       "cell_used_to_generate_probability": false,
-      "classification_reason": "TRACKING_SAMPLE_WITHOUT_DECISIVE_STRONG_OR_NO_GO_EVIDENCE",
+      "classification_reason": "BOTH_PROPER_SCORES_BETTER_AND_95CI_FAVORABLE",
       "competition_id": "ALL",
       "competition_name": "ALL_COMPETITIONS",
-      "market": "1X2",
+      "market": "OVER_2_5",
       "metrics": {
-        "challenger_accuracy": 0.5146341463414634,
-        "challenger_brier": 0.6038162259169961,
-        "challenger_log_loss": 1.0134663565445299,
-        "delta_accuracy": 0.01737804878048782,
-        "delta_brier": -0.0094623796720269,
-        "delta_log_loss": -0.00914463403522725,
-        "n": 3280,
-        "paired_accuracy": {
-          "ci95": [
-            0.005424865806673654,
-            0.02933123175430196
-          ],
-          "mean": 0.017378048780487806,
-          "n": 3280,
-          "se": 0.0060985627417419145
-        },
+        "challenger_brier": 0.23926147897792469,
+        "challenger_log_loss": 0.6717661542096631,
+        "delta_brier": -0.002952276371355228,
+        "delta_log_loss": -0.007464811211594591,
+        "n": 3308,
         "paired_brier": {
           "ci95": [
-            -0.014818096353851819,
-            -0.004106662990203497
+            -0.00431308492008581,
+            -0.0015914678226254804
           ],
-          "mean": -0.009462379672027657,
-          "n": 3280,
-          "se": 0.002732508511134776
+          "mean": -0.0029522763713556452,
+          "n": 3308,
+          "se": 0.0006942900758827371
         },
         "paired_log_loss": {
           "ci95": [
-            -0.018313088573776698,
-            2.3820503323298756e-05
+            -0.01055772541240748,
+            -0.004371897010783275
           ],
-          "mean": -0.0091446340352267,
-          "n": 3280,
-          "se": 0.004677782927831632
+          "mean": -0.0074648112115953775,
+          "n": 3308,
+          "se": 0.00157801744939393
         },
-        "reference_accuracy": 0.4972560975609756,
-        "reference_brier": 0.613278605589023,
-        "reference_log_loss": 1.0226109905797571
+        "reference_brier": 0.2422137553492799,
+        "reference_log_loss": 0.6792309654212577
       },
       "model_mutation_allowed": false,
-      "prospective_n": 3280,
+      "prospective_n": 3308,
       "scope": "GLOBAL_MARKET",
       "season": "MIXED",
       "sport": "FOOTBALL",
-      "strength_class": "DEVELOPING"
+      "strength_class": "STRONG"
     },
     {
       "cell_used_to_generate_probability": false,
@@ -254,7 +254,7 @@
       "strength_class": "NO_GO"
     }
   ],
-  "generated_at_utc": "2026-10-18T23:45:32+00:00",
+  "generated_at_utc": "2026-10-19T01:53:17+00:00",
   "schema": "MATRIX_GLOBAL_STRENGTH_MAP_SUMMARY_V1",
   "status": "PASS",
   "tennis_domain_cells": [
@@ -271,8 +271,8 @@
         "glicko": "R223_BATCH_GLICKO_RATING_BOTH"
       },
       "outcomes_read": 0,
-      "prospective_n": 280,
-      "remaining_to_600": 320,
+      "prospective_n": 281,
+      "remaining_to_600": 319,
       "scope": "DOMAIN",
       "season": 2026,
       "sport": "TENNIS",
@@ -282,23 +282,23 @@
   ],
   "world_coverage": {
     "FOOTBALL": {
-      "competition_count": 70,
+      "competition_count": 99,
       "evaluation_policy": "ALL_DISCOVERED_COMPETITIONS_REMAIN_VISIBLE; MISSING_STRENGTH_EVIDENCE=INSUFFICIENT_DATA",
-      "future_fixture_count": 228,
+      "future_fixture_count": 197,
       "mode": "WORLD_DAILY_FUTURE_FIXTURE_REGISTRY",
-      "source_path": "evidence/api_football/prospective_daily/2026-10-20/20261018T094246Z/fixtures/future_fixture_registry.json",
-      "source_sha256": "db5445dca8e0753953de6c85904bd85d2a3245472aa8a5af4860c78edb671625"
+      "source_path": "evidence/api_football/prospective_daily/2026-10-19/20261019T011342Z/fixtures/future_fixture_registry.json",
+      "source_sha256": "c5859bb8bf5b67d009b4661417b1f88efa54cd3ca481fd8afdd4a86bc0fcf04d"
     },
     "TENNIS": {
       "api_tennis_base_candidates": 17,
       "dual_source_logical_horizon_days": 8,
-      "eligible_current_world_candidates": 16,
+      "eligible_current_world_candidates": 12,
       "evaluation_policy": "WORLD_EVENTS_PRESERVED_BEFORE_DOMAIN_FILTER; EACH_DOMAIN_REQUIRES_INDEPENDENT_MODEL_AND_CALIBRATION",
       "mode": "WORLD_INVENTORY_THEN_GOVERNED_DOMAIN_FILTER",
       "rapidapi_base_candidates": 24,
-      "world_domain_candidates_input": 18,
+      "world_domain_candidates_input": 15,
       "world_inventory_target_date": "2026-10-19",
-      "world_inventory_total": 105
+      "world_inventory_total": 110
     }
   }
 }
