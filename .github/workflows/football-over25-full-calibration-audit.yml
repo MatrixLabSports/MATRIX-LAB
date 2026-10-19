@@ -32,7 +32,7 @@ jobs:
 
       - name: Run full Over2.5 calibration audit
         run: |
-          python tools/api_football_over25_full_calibration_audit.py
+          PYTHONPATH=. python tools/api_football_over25_full_calibration_audit.py
 
       - name: Verify physical audit evidence
         run: |
