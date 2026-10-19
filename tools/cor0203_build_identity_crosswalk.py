@@ -70,6 +70,7 @@ def build_crosswalk(
     prefeature: Mapping[str, Any],
     static_cut: Mapping[str, Any],
     identity_authority: Mapping[str, Any] | None = None,
+    supplemental_alias_ledger: Mapping[str, Any] | None = None,
 ) -> dict[str, Any]:
     if str(static_cut.get("ranking_cut")) != "20260921":
         raise ValueError("STATIC_CUT_AUTHORITY_MISMATCH")
@@ -95,6 +96,30 @@ def build_crosswalk(
         by_rank_points.setdefault((rank, points), []).append(payload)
 
     authority_index = build_provider_authority_index(identity_authority)
+    supplemental_mappings: dict[str, Mapping[str, Any]] = {}
+    if isinstance(supplemental_alias_ledger, Mapping):
+        if supplemental_alias_ledger.get("identity_only") is not True:
+            raise ValueError("SUPPLEMENTAL_ALIAS_LEDGER_IDENTITY_ONLY_REQUIRED")
+        if supplemental_alias_ledger.get("model_admission_forbidden") is not True:
+            raise ValueError("SUPPLEMENTAL_ALIAS_LEDGER_MODEL_ADMISSION_GUARD_REQUIRED")
+        if supplemental_alias_ledger.get("odds_used") is not False:
+            raise ValueError("SUPPLEMENTAL_ALIAS_LEDGER_ODDS_FLAG_INVALID")
+        if supplemental_alias_ledger.get("outcomes_used") is not False:
+            raise ValueError("SUPPLEMENTAL_ALIAS_LEDGER_OUTCOME_FLAG_INVALID")
+        if supplemental_alias_ledger.get("post_cut_competitive_data_used") is not False:
+            raise ValueError("SUPPLEMENTAL_ALIAS_LEDGER_POST_CUT_FLAG_INVALID")
+        for row in supplemental_alias_ledger.get("mappings", []) or []:
+            if not isinstance(row, Mapping) or row.get("status") != "PASS":
+                continue
+            if row.get("identity_only") is not True or row.get("model_admission_forbidden") is not True:
+                continue
+            provider_id = str(row.get("provider_player_id") or "")
+            canonical_source_id = str(row.get("canonical_source_id") or "")
+            canonical_name = str(row.get("canonical_name") or "")
+            if not provider_id or not canonical_source_id or not canonical_name:
+                continue
+            supplemental_mappings[provider_id] = row
+
     mappings_by_provider: dict[str, dict[str, Any]] = {}
     events: list[dict[str, Any]] = []
 
@@ -201,11 +226,41 @@ def build_crosswalk(
                     authority_index=authority_index,
                 )
                 if authority_mapping is None:
-                    event_blockers.append(static_blocker)
-                    if authority_index and authority_blocker:
-                        event_blockers.append(authority_blocker)
-                    continue
-                mapping = authority_mapping
+                    supplemental = supplemental_mappings.get(provider_id)
+                    if isinstance(supplemental, Mapping):
+                        supplemental_name = str(supplemental.get("provider_display_name") or supplemental.get("canonical_name") or "").strip()
+                        supplemental_ioc = str(supplemental.get("canonical_ioc") or "").strip().upper()
+                        provider_name = str(ranking.get("player") or identity.get("display_name") or "").strip()
+                        provider_ioc = str(ranking.get("country") or "").strip().upper()
+                        if (
+                            supplemental_name
+                            and _norm_name(supplemental_name) in {_norm_name(provider_name), _norm_name(identity.get("display_name"))}
+                            and supplemental_ioc == provider_ioc
+                            and str(supplemental.get("ranking_cut") or "").replace("-", "") == "20260921"
+                        ):
+                            mapping = dict(supplemental)
+                            mapping["provider"] = provider
+                            mapping["provider_player_id"] = provider_id
+                            mapping["provider_display_name"] = str(identity.get("display_name") or "")
+                            mapping["provider_ranking_name"] = provider_name
+                            mapping["provider_rank"] = rank
+                            mapping["provider_rank_points"] = points
+                            mapping["canonical_rank"] = rank
+                            mapping["canonical_rank_points"] = points
+                            mapping["match_basis"] = str(mapping.get("match_basis") or "") + "_SUPPLEMENTAL_IDENTITY_ALIAS"
+                            mapping["status"] = "PASS"
+                        else:
+                            event_blockers.append(static_blocker)
+                            if authority_index and authority_blocker:
+                                event_blockers.append(authority_blocker)
+                            continue
+                    else:
+                        event_blockers.append(static_blocker)
+                        if authority_index and authority_blocker:
+                            event_blockers.append(authority_blocker)
+                        continue
+                else:
+                    mapping = authority_mapping
 
             assert mapping is not None
 
@@ -274,6 +329,12 @@ def build_all_crosswalks(
         if identity_authority_path is not None and identity_authority_path.exists()
         else None
     )
+    supplemental_alias_path = runtime_dir.parent / "identity" / "MATRIX_CLAY_IDENTITY_ALIAS_LEDGER_LAST.json"
+    supplemental_alias_ledger = (
+        _load(supplemental_alias_path)
+        if supplemental_alias_path.exists()
+        else None
+    )
     results: list[dict[str, Any]] = []
 
     for pre_path in sorted(runtime_dir.glob("MATRIX_COR0203_PREFEATURE_REGISTRY_R*.json"), key=_rev):
@@ -291,6 +352,7 @@ def build_all_crosswalks(
             prefeature=pre,
             static_cut=static_cut,
             identity_authority=identity_authority,
+            supplemental_alias_ledger=supplemental_alias_ledger,
         )
         result["revision"] = f"R{revision}"
         _write(out, result)
