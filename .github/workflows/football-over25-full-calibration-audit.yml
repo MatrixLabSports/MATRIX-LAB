@@ -42,8 +42,10 @@ jobs:
           p=Path("evidence/api_football/calibration_v2/MATRIX_OVER25_FULL_CALIBRATION_AUDIT_CURRENT.json")
           d=json.loads(p.read_text())
           assert d["schema"]=="MATRIX_OVER25_FULL_CALIBRATION_AUDIT_V1"
-          assert d["physical_sample"]["sample_size"]==3308
-          assert d["physical_sample"]["unique_fixture_ids"]==3308
+          sync=json.loads(Path("evidence/api_football/prospective_calibration/sync_last.json").read_text())
+          expected=int(sync["calibration_observation_count"])
+          assert d["physical_sample"]["sample_size"]==expected
+          assert d["physical_sample"]["unique_fixture_ids"]==expected
           assert d["physical_sample"]["duplicates"]==0
           assert d["physical_sample"]["ledger_hash_chain_verified"] is True
           assert d["governance"]["parameter_tuning_allowed"] is False
