@@ -190,9 +190,10 @@ jobs:
             "hard_domain_tournaments":hard_tournaments,
             "paid_provider_capture":{
               "rapidapi_unique_match_count":int(dual["primary_world_inventory"]["unique_match_count"]),
-              "api_tennis_unique_match_count":int(dual["secondary_crosscheck"]["unique_match_count"]),
-              "paid_exact_union_count":int(dual["cross_provider_reconciliation"]["exact_union_count"]),
-              "world_complete":False
+              "api_tennis_unique_match_count":int((dual.get("secondary_crosscheck") or {}).get("unique_match_count") or 0),
+              "api_tennis_status":((dual.get("source_architecture") or {}).get("api_tennis") or {}).get("status"),
+              "paid_exact_union_count":int((dual.get("cross_provider_reconciliation") or {}).get("exact_union_count") or dual.get("primary_worldwide_registered_match_count") or dual["primary_world_inventory"]["unique_match_count"]),
+              "world_complete":bool(dual.get("world_inventory_complete",False))
             },
             "governed_pipeline":{
               "unique_before":int(before["unique"]),
