@@ -108,7 +108,15 @@ def recover(
     backlog=[
         row for row in catchup.get("unmapped_identity_backlog",[]) or []
         if isinstance(row,Mapping)
-    ][:max(0,int(max_targets))]
+    ]
+    backlog.sort(
+        key=lambda row: (
+            -int(row.get("target_component_hits") or 0),
+            -int(row.get("catchup_matches") or 0),
+            str(row.get("provider_player_id") or ""),
+        )
+    )
+    backlog=backlog[:max(0,int(max_targets))]
 
     for raw in backlog:
         pid=str(raw.get("provider_player_id") or "")
