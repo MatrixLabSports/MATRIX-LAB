@@ -134,5 +134,16 @@ jobs:
             exit 0
           fi
           git commit -m "evidence(live): reconcile quality-valid cumulative gates"
-          git pull --rebase origin repair/cor09-world-pipeline
-          git push origin HEAD:repair/cor09-world-pipeline
+          for attempt in 1 2 3 4; do
+            git fetch origin repair/cor09-world-pipeline
+            if ! git rebase origin/repair/cor09-world-pipeline; then
+              git rebase --abort || true
+              echo "LIVE_GATE_REBASE_CONFLICT_RETRY_${attempt}" >&2
+              sleep $((attempt*2))
+              continue
+            fi
+            if git push origin HEAD:repair/cor09-world-pipeline; then exit 0; fi
+            echo "LIVE_GATE_PUSH_RACE_RETRY_${attempt}" >&2
+            sleep $((attempt*2))
+          done
+          exit 1
