@@ -60,7 +60,7 @@ jobs:
         run: |
           set -euo pipefail
           python -m tools.api_football_prospective_supervisor \
-            --minimum-age-minutes 45 \
+            --minimum-age-minutes 15 \
             --out /tmp/football_supervisor_decision.json
           cat /tmp/football_supervisor_decision.json
           python - <<'PY' >> "$GITHUB_OUTPUT"
