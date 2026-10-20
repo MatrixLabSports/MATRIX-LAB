@@ -1,26 +1,27 @@
 {
   "checks": {
     "clay": {
-      "age_minutes": 0.76,
-      "latest_conclusion": null,
+      "age_minutes": 2.89,
+      "latest_conclusion": "success",
       "latest_event": "push",
       "latest_run_id": 39383055427,
-      "latest_status": "in_progress",
+      "latest_status": "completed",
       "reason": "RECENT_RUN_PRESENT",
       "status": "PASS",
       "workflow": "tennis-clay-daily-prospective.yml"
     },
     "hard": {
-      "age_minutes": 16.87,
-      "latest_conclusion": "cancelled",
-      "latest_run_id": 39381461904,
-      "latest_status": "completed",
-      "reason": "LATEST_TERMINAL_RUN_FAILED",
-      "status": "FAIL",
+      "age_minutes": 0.91,
+      "latest_conclusion": null,
+      "latest_event": "push",
+      "latest_run_id": 39383256220,
+      "latest_status": "in_progress",
+      "reason": "RECENT_RUN_PRESENT",
+      "status": "PASS",
       "workflow": "tennis-hard-governed-day-resolution.yml"
     },
     "live": {
-      "age_minutes": 7.27,
+      "age_minutes": 9.41,
       "latest_conclusion": "success",
       "latest_event": "workflow_run",
       "latest_run_id": 39382408822,
@@ -30,19 +31,8 @@
       "workflow": "live-tennis-cumulative-gate-reconcile.yml"
     }
   },
-  "failures": [
-    {
-      "age_minutes": 16.87,
-      "lane": "hard",
-      "latest_conclusion": "cancelled",
-      "latest_run_id": 39381461904,
-      "latest_status": "completed",
-      "reason": "LATEST_TERMINAL_RUN_FAILED",
-      "status": "FAIL",
-      "workflow": "tennis-hard-governed-day-resolution.yml"
-    }
-  ],
-  "generated_at_utc": "2026-10-20T06:54:21.422312+00:00",
+  "failures": [],
+  "generated_at_utc": "2026-10-20T06:56:29.454749+00:00",
   "policy": {
     "default_branch_scheduler_required": true,
     "expected_cadence_minutes": 15,
@@ -51,8 +41,8 @@
   },
   "schema": "MATRIX_TENNIS_MONITORING_WATCHDOG_V1",
   "summary": {
-    "failures": 1,
+    "failures": 0,
     "lanes_checked": 3,
-    "status": "FAIL_CLOSED"
+    "status": "PASS"
   }
 }
