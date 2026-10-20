@@ -34,6 +34,9 @@ jobs:
         with:
           python-version: "3.11"
 
+      - name: Install test dependency
+        run: python -m pip install pytest
+
       - name: Verify canonical counter rules
         run: PYTHONPATH=. python -m pytest -q tests/test_football_4000_canonical_tracker.py
 
