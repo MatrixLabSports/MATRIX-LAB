@@ -1,3 +1,5 @@
+# MATRIX_PHYSICAL_TRIGGER 2026-10-19T01:00-05:00 midnight-continuity-check
+# MATRIX_PHYSICAL_TRIGGER 2026-10-18T20:23-05:00 post-recovery-19oct-pmatrix151
 # MATRIX_PHYSICAL_TRIGGER 2026-10-09T05:34Z continuity-fallback-telegram
 name: Telegram Señales Verdes MATRIX
 
@@ -16,6 +18,8 @@ on:
       - app/research/football/correlated_exposure.py
       - tests/test_telegram_paper_bankroll.py
       - tests/test_telegram_correlated_risk_gate.py
+      - tests/test_telegram_monitoring_watchdog.py
+      - tools/telegram_monitoring_watchdog.py
       - evidence/api_football/daily_prematch_reports/**
       - evidence/tennis_signals/**
   workflow_dispatch:
@@ -61,7 +65,7 @@ jobs:
         run: python -m pip install requests pytest
 
       - name: Verify paper-bankroll Telegram format
-        run: PYTHONPATH=. python -m pytest -q tests/test_telegram_paper_bankroll.py tests/test_telegram_correlated_risk_gate.py tests/test_correlated_exposure.py
+        run: PYTHONPATH=. python -m pytest -q tests/test_telegram_paper_bankroll.py tests/test_telegram_correlated_risk_gate.py tests/test_correlated_exposure.py tests/test_telegram_monitoring_watchdog.py
 
       - name: Enforce safety gates
         shell: bash
@@ -102,7 +106,8 @@ jobs:
           git config user.name matrix-telegram-alerts
           git config user.email matrix-telegram-alerts@users.noreply.github.com
           git add evidence/notifications/telegram/MATRIX_TELEGRAM_SIGNAL_LEDGER.json \
-            evidence/notifications/telegram/MATRIX_CORRELATED_RISK_CALIBRATION_LAST.json
+            evidence/notifications/telegram/MATRIX_CORRELATED_RISK_CALIBRATION_LAST.json \
+            evidence/notifications/telegram/MATRIX_TELEGRAM_BLOCKER_RECOVERY_AUDIT_LAST.json
           if ! git diff --quiet; then
             echo "TELEGRAM_UNEXPECTED_UNSTAGED_TRACKED_CHANGES"
             git status --short
@@ -141,3 +146,14 @@ jobs:
 # MATRIX_USER_AUTHORIZED_TRIGGER 2026-10-15 settle-current-open-and-refresh-table
 
 # MATRIX_CORRELATED_RISK_PERSISTENCE_RECHECK_18OCT2026
+
+# MATRIX_USER_AUTHORIZED_TRIGGER 2026-10-19 close-current-telegram-ledger-physical-check
+
+# MATRIX_USER_AUTHORIZED_TRIGGER 2026-10-19T21:25-05:00 post-20oct-hard-football-clay-physical-check
+# MATRIX_USER_AUTHORIZED_TRIGGER 2026-10-19T22:08-05:00 refresh-20oct-waiting-window-now
+
+# MATRIX_USER_AUTHORIZED_TRIGGER 2026-10-19T23:09-05:00 blocker-recovery-audit
+# MATRIX_USER_AUTHORIZED_TRIGGER 2026-10-19T23:20-05:00 lifecycle-kickoff-breach-prevention
+# MATRIX_USER_AUTHORIZED_TRIGGER 2026-10-19T23:48-05:00 verify-legacy-vs-real-monitoring-breach
+# MATRIX_USER_AUTHORIZED_TRIGGER 2026-10-20 permanent-watchdog-rule-lock
+# MATRIX_USER_AUTHORIZED_TRIGGER 2026-10-20 live-38-candidate-monitoring-proof
