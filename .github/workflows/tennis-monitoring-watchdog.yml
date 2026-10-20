@@ -6,6 +6,14 @@ on:
   workflow_dispatch:
   schedule:
     - cron: '4,19,34,49 * * * *'
+  workflow_run:
+    workflows:
+      - "MATRIX Tennis Hard Governed Day Resolution"
+      - "MATRIX Tennis Clay Daily Prospective"
+      - "MATRIX Live Tennis Cumulative Gate Reconcile"
+      - "MATRIX Canonical Heartbeat 15m"
+    types:
+      - completed
   push:
     branches:
       - main
