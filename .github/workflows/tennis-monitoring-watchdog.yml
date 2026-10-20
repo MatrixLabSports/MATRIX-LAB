@@ -47,7 +47,7 @@ jobs:
           GITHUB_TOKEN: ${{ github.token }}
         run: |
           set +e
-          PYTHONPATH=. python -m tools.tennis_monitoring_watchdog             --repo "${{ github.repository }}"             --out evidence/tennis/MATRIX_TENNIS_MONITORING_WATCHDOG_LAST.json             --max-age-minutes 35
+          PYTHONPATH=. python -m tools.tennis_monitoring_watchdog             --repo "${{ github.repository }}"             --out evidence/tennis/MATRIX_TENNIS_MONITORING_WATCHDOG_LAST.json             --max-age-minutes 30
           code=$?
           echo "exit_code=$code" >> "$GITHUB_OUTPUT"
           exit 0
