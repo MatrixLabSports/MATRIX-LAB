@@ -118,7 +118,15 @@ def main()->None:
         row for row in catchup.get("unmapped_identity_backlog",[]) or []
         if isinstance(row,Mapping)
         and row.get("identity_observation_status")=="CONSISTENT"
-    ][:max(0,int(a.max_targets))]
+    ]
+    backlog.sort(
+        key=lambda row: (
+            -int(row.get("target_component_hits") or 0),
+            -int(row.get("catchup_matches") or 0),
+            str(row.get("provider_player_id") or ""),
+        )
+    )
+    backlog=backlog[:max(0,int(a.max_targets))]
     wanted={str(row.get("numeric_player_id") or "") for row in backlog}
     client=RapidApiTennisClient(key)
     rankings=client.ranking_snapshot(ranking_date=RANKING_CUT,wanted_player_ids=wanted)
