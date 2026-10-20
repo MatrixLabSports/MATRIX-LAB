@@ -1,0 +1,120 @@
+name: MATRIX Canonical Heartbeat 15m
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "0,15,30,45 * * * *"
+  push:
+    branches:
+      - main
+    paths:
+      - .github/workflows/matrix-canonical-heartbeat-15m.yml
+
+permissions:
+  contents: write
+
+concurrency:
+  group: matrix-canonical-heartbeat-15m
+  cancel-in-progress: false
+
+jobs:
+  heartbeat:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      REAL_MONEY: BLOCKED
+    steps:
+      - name: Checkout operational branch
+        uses: actions/checkout@v4
+        with:
+          ref: repair/cor09-world-pipeline
+          fetch-depth: 0
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install tests
+        run: python -m pip install pytest
+
+      - name: Verify canonical generators
+        run: |
+          PYTHONPATH=. python -m pytest -q \
+            tests/test_football_4000_canonical_tracker.py \
+            tests/test_tennis_three_block_stagnation_audit.py \
+            tests/test_telegram_daily_bankroll_canonical.py \
+            tests/test_matrix_canonical_truth_guard.py
+
+      - name: Rebuild football canonical tracker
+        run: PYTHONPATH=. python -m tools.football_4000_canonical_tracker
+
+      - name: Rebuild tennis three-block audit
+        run: PYTHONPATH=. python -m tools.tennis_three_block_stagnation_audit
+
+      - name: Rebuild live tennis cumulative gate
+        run: |
+          PYTHONPATH=. python -m tools.live_tennis_cumulative_gate \
+            --root evidence/live_tennis_lab \
+            --out evidence/live_tennis_lab/MATRIX_LIVE_TENNIS_CUMULATIVE_GATE_V1.json
+
+      - name: Rebuild Telegram daily bankroll
+        run: PYTHONPATH=. python -m tools.telegram_daily_bankroll_canonical
+
+      - name: Run canonical truth guard
+        id: guard
+        shell: bash
+        run: |
+          set +e
+          PYTHONPATH=. python -m tools.matrix_canonical_truth_guard \
+            --registry evidence/governance/MATRIX_CANONICAL_SOURCE_REGISTRY.json \
+            --out evidence/governance/MATRIX_CANONICAL_TRUTH_GUARD_LAST.json
+          code=$?
+          echo "exit_code=$code" >> "$GITHUB_OUTPUT"
+          exit 0
+
+      - name: Persist atomic heartbeat evidence
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name matrix-canonical-heartbeat
+          git config user.email matrix-canonical-heartbeat@users.noreply.github.com
+          git add evidence/api_football/governance/MATRIX_FOOTBALL_4000_CANONICAL_TRACKER_LAST.json
+          git add evidence/tennis/MATRIX_TENNIS_THREE_BLOCK_STAGNATION_AUDIT_LAST.json
+          git add evidence/live_tennis_lab/MATRIX_LIVE_TENNIS_CUMULATIVE_GATE_V1.json
+          git add evidence/notifications/telegram/MATRIX_TELEGRAM_DAILY_BANKROLL_CANONICAL_LAST.json
+          git add evidence/governance/MATRIX_CANONICAL_TRUTH_GUARD_LAST.json
+          if git diff --cached --quiet; then
+            echo "NO_HEARTBEAT_CHANGE"
+            exit 0
+          fi
+          git commit -m "evidence(matrix): persist 15-minute canonical heartbeat"
+          for attempt in 1 2 3 4; do
+            git fetch origin repair/cor09-world-pipeline
+            if ! git rebase origin/repair/cor09-world-pipeline; then
+              git rebase --abort || true
+              echo "HEARTBEAT_REBASE_RETRY_${attempt}" >&2
+              git fetch origin repair/cor09-world-pipeline
+              git reset --hard origin/repair/cor09-world-pipeline
+              PYTHONPATH=. python -m tools.football_4000_canonical_tracker
+              PYTHONPATH=. python -m tools.tennis_three_block_stagnation_audit
+              PYTHONPATH=. python -m tools.live_tennis_cumulative_gate --root evidence/live_tennis_lab --out evidence/live_tennis_lab/MATRIX_LIVE_TENNIS_CUMULATIVE_GATE_V1.json
+              PYTHONPATH=. python -m tools.telegram_daily_bankroll_canonical
+              set +e
+              PYTHONPATH=. python -m tools.matrix_canonical_truth_guard --registry evidence/governance/MATRIX_CANONICAL_SOURCE_REGISTRY.json --out evidence/governance/MATRIX_CANONICAL_TRUTH_GUARD_LAST.json
+              set -e
+              git add evidence/api_football/governance/MATRIX_FOOTBALL_4000_CANONICAL_TRACKER_LAST.json
+              git add evidence/tennis/MATRIX_TENNIS_THREE_BLOCK_STAGNATION_AUDIT_LAST.json
+              git add evidence/live_tennis_lab/MATRIX_LIVE_TENNIS_CUMULATIVE_GATE_V1.json
+              git add evidence/notifications/telegram/MATRIX_TELEGRAM_DAILY_BANKROLL_CANONICAL_LAST.json
+              git add evidence/governance/MATRIX_CANONICAL_TRUTH_GUARD_LAST.json
+              if git diff --cached --quiet; then exit 0; fi
+              git commit -m "evidence(matrix): persist 15-minute canonical heartbeat retry"
+            fi
+            if git push origin HEAD:repair/cor09-world-pipeline; then exit 0; fi
+            sleep $((attempt*2))
+          done
+          exit 1
+
+      - name: Fail closed if canonical truth is stale
+        if: steps.guard.outputs.exit_code != '0'
+        run: exit 2
