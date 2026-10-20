@@ -8,7 +8,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
-MAX_AGE_MINUTES = 35
+MAX_AGE_MINUTES = 30
 WORKFLOWS = {
     "hard": "tennis-hard-governed-day-resolution.yml",
     "clay": "tennis-clay-daily-prospective.yml",
