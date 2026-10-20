@@ -42,19 +42,14 @@ def evaluate_runs(runs: list[dict[str, Any]], now: datetime, max_age_minutes: in
     status = str(latest.get("status") or "")
     conclusion = latest.get("conclusion")
     if status == "completed" and conclusion not in {"success", "neutral", "skipped"}:
-        newer_active = next(
-            (r for r in ordered if str(r.get("status") or "") in {"queued", "pending", "in_progress", "waiting", "requested"}),
-            None,
-        )
-        if newer_active is None:
-            return {
-                "status": "FAIL",
-                "reason": "LATEST_TERMINAL_RUN_FAILED",
-                "age_minutes": round(age, 2),
-                "latest_run_id": latest.get("id"),
-                "latest_status": status,
-                "latest_conclusion": conclusion,
-            }
+        return {
+            "status": "FAIL",
+            "reason": "LATEST_TERMINAL_RUN_FAILED",
+            "age_minutes": round(age, 2),
+            "latest_run_id": latest.get("id"),
+            "latest_status": status,
+            "latest_conclusion": conclusion,
+        }
 
     return {
         "status": "PASS",
