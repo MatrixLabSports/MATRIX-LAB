@@ -46,3 +46,13 @@ def test_31_minutes_fails():
     r=evaluate_runs([run("2026-10-20T05:59:00Z")],NOW)
     assert r["status"]=="FAIL"
     assert r["reason"]=="LATEST_RUN_STALE"
+
+
+def test_latest_cancelled_fails_even_if_older_run_active():
+    runs=[
+        run("2026-10-20T06:25:00Z","completed","cancelled",rid=2),
+        run("2026-10-20T06:20:00Z","in_progress",None,rid=1),
+    ]
+    r=evaluate_runs(runs,NOW)
+    assert r["status"]=="FAIL"
+    assert r["reason"]=="LATEST_TERMINAL_RUN_FAILED"
