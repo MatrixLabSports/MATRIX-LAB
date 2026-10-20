@@ -104,7 +104,8 @@ jobs:
           git config user.name matrix-telegram-alerts
           git config user.email matrix-telegram-alerts@users.noreply.github.com
           git add evidence/notifications/telegram/MATRIX_TELEGRAM_SIGNAL_LEDGER.json \
-            evidence/notifications/telegram/MATRIX_CORRELATED_RISK_CALIBRATION_LAST.json
+            evidence/notifications/telegram/MATRIX_CORRELATED_RISK_CALIBRATION_LAST.json \
+            evidence/notifications/telegram/MATRIX_TELEGRAM_BLOCKER_RECOVERY_AUDIT_LAST.json
           if ! git diff --quiet; then
             echo "TELEGRAM_UNEXPECTED_UNSTAGED_TRACKED_CHANGES"
             git status --short
@@ -148,3 +149,5 @@ jobs:
 
 # MATRIX_USER_AUTHORIZED_TRIGGER 2026-10-19T21:25-05:00 post-20oct-hard-football-clay-physical-check
 # MATRIX_USER_AUTHORIZED_TRIGGER 2026-10-19T22:08-05:00 refresh-20oct-waiting-window-now
+
+# MATRIX_USER_AUTHORIZED_TRIGGER 2026-10-19T23:09-05:00 blocker-recovery-audit
