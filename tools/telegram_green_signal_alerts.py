@@ -1451,7 +1451,7 @@ def blocker_recovery_profile(gate_record: dict[str, Any]) -> dict[str, Any]:
         })
         return profile
 
-    if state == "BLOCKED_KICKOFF_REACHED":
+    if state in {"BLOCKED_KICKOFF_REACHED", "BLOCKED_KICKOFF_REACHED_AFTER_REVALIDATION"}:
         profile.update({
             "missing_or_failed_variable": "PREMATCH_TIME_ELIGIBILITY",
             "recoverability": "NOT_RECOVERABLE_NO_BACKFILL",
@@ -1459,6 +1459,17 @@ def blocker_recovery_profile(gate_record: dict[str, Any]) -> dict[str, Any]:
             "sources_available_for_recovery": [],
             "automatic_recovery_exhausted": True,
             "final_disposition": "DEFINITIVE_BLOCK_NO_BACKFILL",
+        })
+        return profile
+
+    if state == "BLOCKED_KICKOFF_REACHED_MONITORING_BREACH":
+        profile.update({
+            "missing_or_failed_variable": "MONITORING_CADENCE_OR_DISCOVERY",
+            "recoverability": "NOT_RECOVERABLE_NO_BACKFILL",
+            "sources_already_checked": ["MATRIX_CANDIDATE_LIFECYCLE"],
+            "sources_available_for_recovery": [],
+            "automatic_recovery_exhausted": True,
+            "final_disposition": "MONITORING_BREACH_REQUIRES_PREVENTIVE_FIX",
         })
         return profile
 
@@ -1624,6 +1635,7 @@ def main() -> None:
     ledger.setdefault("run_history", [])
     ledger.setdefault("paper_bankroll", {})
     ledger.setdefault("pre_send_gate", {})
+    ledger.setdefault("candidate_lifecycle", {})
 
     pre_risk_bankroll = recalc_paper_bankroll(ledger)
     correlated_risk_calibration = calibrate_paper_correlated_exposure(
@@ -1667,11 +1679,22 @@ def main() -> None:
         for x in ledger.get("sent", [])
         if isinstance(x, dict) and str(x.get("signal_key") or "")
     }
+    monitoring_breaches_now = 0
     for key, candidate in candidates.items():
         if key in existing_sent_keys:
             continue
         if candidate.get("sport") != "football" or candidate.get("eligible_green") is not True:
             continue
+
+        lifecycle = ledger["candidate_lifecycle"].setdefault(key, {
+            "fixture_id": candidate.get("fixture_id"),
+            "match": candidate.get("match"),
+            "kickoff": candidate.get("kickoff"),
+            "first_seen_utc": now.isoformat(),
+            "final_revalidation_attempts": 0,
+            "monitoring_breach": False,
+        })
+        lifecycle["last_seen_utc"] = now.isoformat()
         gate_state = prematch_revalidation_state(candidate, now)
         gate_record = {
             "checked_at_utc": now.isoformat(),
@@ -1681,7 +1704,31 @@ def main() -> None:
             "window_minutes": GREEN_PREMATCH_REVALIDATION_WINDOW_MINUTES,
             "state": gate_state,
         }
+
+        # Preserve the first definitive prematch reason instead of overwriting it
+        # later with KICKOFF_REACHED on historical scans.
+        if gate_state == "BLOCKED_KICKOFF_REACHED":
+            prior_terminal = lifecycle.get("first_terminal_state")
+            attempts = int(lifecycle.get("final_revalidation_attempts") or 0)
+            if prior_terminal:
+                gate_record["state"] = str(prior_terminal)
+                gate_record["time_state_now"] = "KICKOFF_REACHED"
+                gate_record["preserved_terminal_reason"] = True
+            elif attempts <= 0:
+                gate_record["state"] = "BLOCKED_KICKOFF_REACHED_MONITORING_BREACH"
+                lifecycle["monitoring_breach"] = True
+                lifecycle["monitoring_breach_detected_at_utc"] = now.isoformat()
+                monitoring_breaches_now += 1
+            else:
+                gate_record["state"] = "BLOCKED_KICKOFF_REACHED_AFTER_REVALIDATION"
+            candidate["eligible_green"] = False
+            candidate["send_gate_status"] = gate_record["state"]
+            ledger["pre_send_gate"][key] = gate_record
+            pre_send_blocked += 1
+            continue
+
         if gate_state == "WAITING_FINAL_REVALIDATION_WINDOW":
+            lifecycle["last_waiting_check_utc"] = now.isoformat()
             candidate["eligible_green"] = False
             candidate["send_gate_status"] = gate_state
             ledger["pre_send_gate"][key] = gate_record
@@ -1693,6 +1740,9 @@ def main() -> None:
             ledger["pre_send_gate"][key] = gate_record
             pre_send_blocked += 1
             continue
+
+        lifecycle.setdefault("first_ready_for_final_revalidation_utc", now.isoformat())
+        lifecycle["last_ready_for_final_revalidation_utc"] = now.isoformat()
         required_house_key = bookmaker_key(candidate.get("house"))
         primary_offer = exact_over25_offer(
             session,
@@ -1714,6 +1764,8 @@ def main() -> None:
         comparable = [x for x in (primary_offer, fallback_offer) if isinstance(x, dict)]
         offer = max(comparable, key=lambda x: float(x.get("ev") or -999.0)) if comparable else None
         pre_send_quote_checks += 1
+        lifecycle["final_revalidation_attempts"] = int(lifecycle.get("final_revalidation_attempts") or 0) + 1
+        lifecycle["last_final_revalidation_at_utc"] = now.isoformat()
         gate_record["required_house_key"] = required_house_key
         gate_record["primary_same_house_offer"] = primary_offer
         gate_record["odds_api_net_multi_book_offer"] = fallback_offer
@@ -1726,6 +1778,8 @@ def main() -> None:
             gate_record["state"] = final_quote_state
             candidate["eligible_green"] = False
             candidate["send_gate_status"] = final_quote_state
+            lifecycle.setdefault("first_terminal_state", final_quote_state)
+            lifecycle.setdefault("first_terminal_at_utc", now.isoformat())
             ledger["pre_send_gate"][key] = gate_record
             pre_send_blocked += 1
             continue
@@ -1738,6 +1792,8 @@ def main() -> None:
             gate_record["state"] = quality_state
             candidate["eligible_green"] = False
             candidate["send_gate_status"] = quality_state
+            lifecycle.setdefault("first_terminal_state", quality_state)
+            lifecycle.setdefault("first_terminal_at_utc", now.isoformat())
             ledger["pre_send_gate"][key] = gate_record
             pre_send_blocked += 1
             continue
@@ -1753,6 +1809,8 @@ def main() -> None:
             gate_record["state"] = risk_state
             candidate["eligible_green"] = False
             candidate["send_gate_status"] = risk_state
+            lifecycle.setdefault("first_terminal_state", risk_state)
+            lifecycle.setdefault("first_terminal_at_utc", now.isoformat())
             ledger["pre_send_gate"][key] = gate_record
             pre_send_blocked += 1
             continue
@@ -2379,6 +2437,7 @@ def main() -> None:
         "pre_send_waiting_window": pre_send_waiting,
         "pre_send_blocked": pre_send_blocked,
         "pre_send_passed": pre_send_passed,
+        "monitoring_breaches_now": monitoring_breaches_now,
         "blocker_audit_records": blocker_summary.get("records"),
         "blocker_counts_by_state": blocker_summary.get("counts_by_state"),
         "blocker_counts_by_variable": blocker_summary.get("counts_by_variable"),
