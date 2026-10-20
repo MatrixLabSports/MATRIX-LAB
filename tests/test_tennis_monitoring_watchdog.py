@@ -35,3 +35,14 @@ def test_no_runs_fails():
     r=evaluate_runs([],NOW)
     assert r["status"]=="FAIL"
     assert r["reason"]=="NO_RUNS_FOUND"
+
+
+def test_29_minutes_passes():
+    r=evaluate_runs([run("2026-10-20T06:01:00Z")],NOW)
+    assert r["status"]=="PASS"
+
+
+def test_31_minutes_fails():
+    r=evaluate_runs([run("2026-10-20T05:59:00Z")],NOW)
+    assert r["status"]=="FAIL"
+    assert r["reason"]=="LATEST_RUN_STALE"
