@@ -40,3 +40,9 @@ def test_current_football_canonical_counter_reconciles():
     assert g["valid_final_settlement_count"]+g["pending_count"]+g["blocked_count"]==g["frozen_event_count"]
     assert g["valid_final_settlement_count"]==g["calibration_observation_count"]
     assert j["counter_precedence"]["target_4000"]=="global.valid_final_settlement_count"
+
+
+def test_all_registered_sources_fail_closed_after_30_minutes():
+    registry=json.loads(Path("evidence/governance/MATRIX_CANONICAL_SOURCE_REGISTRY.json").read_text())
+    assert registry["sources"]
+    assert all(int(spec["max_age_minutes"])==30 for spec in registry["sources"].values())
