@@ -1462,6 +1462,17 @@ def blocker_recovery_profile(gate_record: dict[str, Any]) -> dict[str, Any]:
         })
         return profile
 
+    if state == "BLOCKED_KICKOFF_REACHED_LEGACY_UNOBSERVABLE":
+        profile.update({
+            "missing_or_failed_variable": "PRE_LIFECYCLE_MONITORING_HISTORY",
+            "recoverability": "NOT_RECOVERABLE_NO_BACKFILL",
+            "sources_already_checked": ["MATRIX_CANDIDATE_LIFECYCLE"],
+            "sources_available_for_recovery": [],
+            "automatic_recovery_exhausted": True,
+            "final_disposition": "LEGACY_CASE_NOT_EVIDENCE_OF_CURRENT_MONITORING_BREACH",
+        })
+        return profile
+
     if state == "BLOCKED_KICKOFF_REACHED_MONITORING_BREACH":
         profile.update({
             "missing_or_failed_variable": "MONITORING_CADENCE_OR_DISCOVERY",
@@ -1715,10 +1726,20 @@ def main() -> None:
                 gate_record["time_state_now"] = "KICKOFF_REACHED"
                 gate_record["preserved_terminal_reason"] = True
             elif attempts <= 0:
-                gate_record["state"] = "BLOCKED_KICKOFF_REACHED_MONITORING_BREACH"
-                lifecycle["monitoring_breach"] = True
-                lifecycle["monitoring_breach_detected_at_utc"] = now.isoformat()
-                monitoring_breaches_now += 1
+                first_seen = parse_dt(lifecycle.get("first_seen_utc"))
+                kickoff_dt = parse_dt(candidate.get("kickoff"))
+                # Historical candidates first observed only after kickoff cannot
+                # prove a monitoring failure because lifecycle tracking did not
+                # exist before this fix. Keep them explicitly unobservable.
+                if first_seen is not None and kickoff_dt is not None and first_seen >= kickoff_dt:
+                    gate_record["state"] = "BLOCKED_KICKOFF_REACHED_LEGACY_UNOBSERVABLE"
+                    lifecycle["monitoring_breach"] = False
+                    lifecycle["legacy_unobservable"] = True
+                else:
+                    gate_record["state"] = "BLOCKED_KICKOFF_REACHED_MONITORING_BREACH"
+                    lifecycle["monitoring_breach"] = True
+                    lifecycle["monitoring_breach_detected_at_utc"] = now.isoformat()
+                    monitoring_breaches_now += 1
             else:
                 gate_record["state"] = "BLOCKED_KICKOFF_REACHED_AFTER_REVALIDATION"
             candidate["eligible_green"] = False
