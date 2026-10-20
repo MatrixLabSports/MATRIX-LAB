@@ -6,6 +6,14 @@ on:
   workflow_dispatch:
   schedule:
     - cron: "10,25,40,55 * * * *"
+  workflow_run:
+    workflows:
+      - "API-Football prospective FINAL-only settlement"
+      - "API-Football prospective calibration gates 30-50-100"
+      - "API-Football prospective market freeze"
+      - "MATRIX Football Daily Governed Pipeline"
+    types:
+      - completed
   push:
     branches:
       - main
