@@ -179,7 +179,7 @@ def main() -> None:
             "real_money": "BLOCKED",
         },
         "automatic_recovery_policy": {
-            "identity": "SEARCH_SOFASCORE_FLASHScore_RAPIDAPI_THEN_GOVERNED_IDENTITY_AUTHORITY",
+            "identity": "SEARCH_SOFASCORE_FLASHSCORE_RAPIDAPI_THEN_GOVERNED_IDENTITY_AUTHORITY",
             "pit_or_surface_history": "ONLY_PRE_EVENT_CAUSAL_HISTORY_CAN_RECOVER",
             "ranking": "ONLY_PRE_CUT_RANKING_SOURCE_CAN_RECOVER",
             "duplicates": "NEVER_COUNT_AS_NEW",
