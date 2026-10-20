@@ -6,6 +6,16 @@ on:
   workflow_dispatch:
   schedule:
     - cron: "13,28,43,58 * * * *"
+  workflow_run:
+    workflows:
+      - "MATRIX Football 4000 Canonical Tracker"
+      - "MATRIX Tennis Three-Block Stagnation Audit"
+      - "MATRIX Live Tennis Cumulative Gate Reconcile"
+      - "MATRIX Tennis Hard Governed Day Resolution"
+      - "MATRIX Tennis Clay Daily Prospective"
+      - "MATRIX Telegram Daily Bankroll Canonical"
+    types:
+      - completed
   push:
     branches:
       - main
