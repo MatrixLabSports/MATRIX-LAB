@@ -1,0 +1,102 @@
+name: MATRIX Tennis Monitoring Watchdog
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '4,19,34,49 * * * *'
+  push:
+    branches:
+      - main
+    paths:
+      - tools/tennis_monitoring_watchdog.py
+      - tests/test_tennis_monitoring_watchdog.py
+      - .github/workflows/tennis-monitoring-watchdog.yml
+
+permissions:
+  contents: write
+  actions: read
+
+concurrency:
+  group: tennis-monitoring-watchdog
+  cancel-in-progress: false
+
+jobs:
+  watchdog:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      REAL_MONEY: BLOCKED
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Probar reglas del vigilante
+        run: PYTHONPATH=. python -m unittest discover -s tests -p 'test_tennis_monitoring_watchdog.py'
+
+      - name: Ejecutar vigilante independiente
+        id: watch
+        shell: bash
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          set +e
+          PYTHONPATH=. python -m tools.tennis_monitoring_watchdog             --repo "${{ github.repository }}"             --out evidence/tennis/MATRIX_TENNIS_MONITORING_WATCHDOG_LAST.json             --max-age-minutes 35
+          code=$?
+          echo "exit_code=$code" >> "$GITHUB_OUTPUT"
+          exit 0
+
+      - name: Persistir evidencia física
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name matrix-tennis-monitoring-watchdog
+          git config user.email matrix-tennis-monitoring-watchdog@users.noreply.github.com
+          git add evidence/tennis/MATRIX_TENNIS_MONITORING_WATCHDOG_LAST.json
+          if git diff --cached --quiet; then
+            echo "NO_WATCHDOG_CHANGE"
+          else
+            git commit -m "evidence(tennis): persist monitoring watchdog"
+            for attempt in 1 2 3 4; do
+              git fetch origin main
+              if ! git rebase origin/main; then
+                git rebase --abort || true
+                exit 1
+              fi
+              if git push origin HEAD:main; then exit 0; fi
+              sleep $((attempt*2))
+            done
+            exit 1
+          fi
+
+      - name: Alertar por Telegram si falla
+        if: steps.watch.outputs.exit_code != '0'
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+        shell: bash
+        run: |
+          if [ -z "${TELEGRAM_BOT_TOKEN:-}" ] || [ -z "${TELEGRAM_CHAT_ID:-}" ]; then
+            echo "TELEGRAM_ALERT_NOT_CONFIGURED"
+            exit 0
+          fi
+          python - <<'PY'
+          import json, os, urllib.parse, urllib.request
+          from pathlib import Path
+          p=Path("evidence/tennis/MATRIX_TENNIS_MONITORING_WATCHDOG_LAST.json")
+          j=json.loads(p.read_text())
+          fails=", ".join(x["lane"]+":"+x["reason"] for x in j.get("failures",[]))
+          text="🚨 MATRIX TENIS: vigilante de cadencia en FALLO. "+fails+". DINERO REAL BLOQUEADO."
+          url="https://api.telegram.org/bot"+os.environ["TELEGRAM_BOT_TOKEN"]+"/sendMessage"
+          data=urllib.parse.urlencode({"chat_id":os.environ["TELEGRAM_CHAT_ID"],"text":text}).encode()
+          urllib.request.urlopen(urllib.request.Request(url,data=data),timeout=20).read()
+          PY
+
+      - name: Cerrar en fallo si hay brecha
+        if: steps.watch.outputs.exit_code != '0'
+        run: exit 2
