@@ -156,7 +156,17 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          bash scripts/cor0203_production_cycle.sh --trigger-sha "$(git rev-parse HEAD)"
+          for attempt in 1 2 3; do
+            if bash scripts/cor0203_production_cycle.sh --trigger-sha "$(git rev-parse HEAD)"; then
+              exit 0
+            fi
+            echo "HARD_PRODUCTION_RETRY_FROM_LATEST_BRANCH_${attempt}" >&2
+            git rebase --abort || true
+            git fetch origin repair/cor09-world-pipeline
+            git reset --hard origin/repair/cor09-world-pipeline
+            sleep $((attempt*2))
+          done
+          exit 1
 
       - name: Refresh physical branch after production commits
         shell: bash
