@@ -44,6 +44,17 @@
       "max_age_minutes": 45,
       "required_schema": "MATRIX_LIVE_TENNIS_CUMULATIVE_GATE_V1",
       "metric_path": "lanes.itf|women|hard.settled_quality_valid_unique_match_count"
+    },
+    "telegram_daily_bankroll": {
+      "canonical_path": "evidence/notifications/telegram/MATRIX_TELEGRAM_DAILY_BANKROLL_CANONICAL_LAST.json",
+      "timestamp_field": "generated_at_utc",
+      "max_age_minutes": 45,
+      "required_schema": "MATRIX_TELEGRAM_DAILY_BANKROLL_CANONICAL_V1",
+      "metric_paths": [
+        "summary.current_bankroll_cop",
+        "summary.total_profit_cop",
+        "summary.total_effective_settled"
+      ]
     }
   }
 }
