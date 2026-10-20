@@ -34,6 +34,7 @@ FOOTBALL_ROOT = Path("evidence/api_football/daily_prematch_reports")
 TENNIS_ROOT = Path("evidence/tennis_signals")
 LEDGER = Path("evidence/notifications/telegram/MATRIX_TELEGRAM_SIGNAL_LEDGER.json")
 CORRELATED_RISK_EVIDENCE = Path("evidence/notifications/telegram/MATRIX_CORRELATED_RISK_CALIBRATION_LAST.json")
+BLOCKER_AUDIT_EVIDENCE = Path("evidence/notifications/telegram/MATRIX_TELEGRAM_BLOCKER_RECOVERY_AUDIT_LAST.json")
 
 GREEN_STATUSES = {
     "SEÑAL_VERDE_SIMULADA_Y_APUESTA_USUARIO_EJECUTADA",
@@ -1414,6 +1415,178 @@ def settlement_message(c: dict[str, Any], settlement: dict[str, Any], accum_u: f
     return "\n".join(lines)
 
 
+
+def blocker_recovery_profile(gate_record: dict[str, Any]) -> dict[str, Any]:
+    """Classify the exact blocking variable and the governed recovery path."""
+    state = str(gate_record.get("state") or "")
+    diag = gate_record.get("odds_api_net_diagnostic") or {}
+    profile = {
+        "state": state,
+        "missing_or_failed_variable": "UNKNOWN",
+        "recoverability": "REVIEW_REQUIRED",
+        "sources_already_checked": [],
+        "sources_available_for_recovery": [],
+        "automatic_recovery_attempted": False,
+        "automatic_recovery_exhausted": False,
+        "final_disposition": "REVIEW_REQUIRED",
+    }
+
+    if state == "WAITING_FINAL_REVALIDATION_WINDOW":
+        profile.update({
+            "missing_or_failed_variable": "FINAL_PREMATCH_WINDOW_NOT_OPEN_YET",
+            "recoverability": "TEMPORAL_WAIT",
+            "sources_already_checked": ["MATRIX_PREMATCH_SCHEDULE"],
+            "sources_available_for_recovery": ["API-Football", "odds-api.net", "Betano", "BetPlay", "Rushbet"],
+            "final_disposition": "WAIT_FOR_120_MIN_WINDOW",
+        })
+        return profile
+
+    if state == "BLOCKED_INVALID_KICKOFF":
+        profile.update({
+            "missing_or_failed_variable": "KICKOFF_DATETIME",
+            "recoverability": "RECOVERABLE_IF_PREMATCH",
+            "sources_already_checked": ["MATRIX_CANONICAL_CANDIDATE"],
+            "sources_available_for_recovery": ["SofaScore", "Flashscore", "API-Football"],
+            "final_disposition": "SOURCE_RECONCILIATION_REQUIRED",
+        })
+        return profile
+
+    if state == "BLOCKED_KICKOFF_REACHED":
+        profile.update({
+            "missing_or_failed_variable": "PREMATCH_TIME_ELIGIBILITY",
+            "recoverability": "NOT_RECOVERABLE_NO_BACKFILL",
+            "sources_already_checked": ["MATRIX_PREMATCH_SCHEDULE"],
+            "sources_available_for_recovery": [],
+            "automatic_recovery_exhausted": True,
+            "final_disposition": "DEFINITIVE_BLOCK_NO_BACKFILL",
+        })
+        return profile
+
+    if state in {"BLOCKED_NO_VALID_EXACT_AUTHORIZED_BOOK_OVER25", "BLOCKED_NONPOSITIVE_EV"}:
+        provider_status = str(diag.get("status") or "")
+        variable = "EXACT_AUTHORIZED_BOOK_OVER25_QUOTE" if state.startswith("BLOCKED_NO_VALID") else "POSITIVE_EXPECTED_VALUE"
+        sources = ["API-Football", "odds-api.net"]
+        recovery = ["Betano", "BetPlay", "Rushbet"]
+        if provider_status in {"BLOCKED_IDENTITY_LOW_SCORE", "BLOCKED_IDENTITY_AMBIGUOUS", "BLOCKED_EVENT_ID_MISSING"}:
+            variable = "EVENT_IDENTITY"
+            recovery = ["SofaScore", "Flashscore", "API-Football", "odds-api.net"]
+        elif provider_status in {"BLOCKED_FIXTURE_LOOKUP", "BLOCKED_CREDENTIAL_OR_KICKOFF"}:
+            variable = "FIXTURE_OR_KICKOFF_BINDING"
+            recovery = ["SofaScore", "Flashscore", "API-Football"]
+        elif provider_status == "BLOCKED_SNAPSHOT_PROVIDER_ERROR":
+            variable = "ODDS_PROVIDER_SNAPSHOT"
+            recovery = ["odds-api.net", "API-Football", "Betano", "BetPlay", "Rushbet"]
+        profile.update({
+            "missing_or_failed_variable": variable,
+            "recoverability": "RECOVERABLE_WHILE_PREMATCH",
+            "sources_already_checked": sources,
+            "sources_available_for_recovery": recovery,
+            "automatic_recovery_attempted": True,
+            "automatic_recovery_exhausted": False,
+            "provider_diagnostic_status": provider_status or None,
+            "provider_discard_reasons": diag.get("discard_reasons") or {},
+            "final_disposition": "KEEP_RETRYING_UNTIL_KICKOFF_OR_RECOVERED",
+        })
+        return profile
+
+    if state == "BLOCKED_QUALITY_P_MATRIX_BELOW_60PCT":
+        profile.update({
+            "missing_or_failed_variable": "P_MATRIX_QUALITY_THRESHOLD",
+            "recoverability": "NOT_RECOVERABLE_BY_ODDS_OR_EXTERNAL_DATA",
+            "sources_already_checked": ["MATRIX_FROZEN_P_MATRIX"],
+            "sources_available_for_recovery": [],
+            "automatic_recovery_exhausted": True,
+            "final_disposition": "DEFINITIVE_BLOCK_MODEL_QUALITY",
+        })
+        return profile
+
+    if state == "BLOCKED_QUALITY_REVALIDATED_EV_BELOW_5PCT":
+        profile.update({
+            "missing_or_failed_variable": "REVALIDATED_EXPECTED_VALUE_THRESHOLD",
+            "recoverability": "RECOVERABLE_WITH_BETTER_AUTHORIZED_QUOTE_WHILE_PREMATCH",
+            "sources_already_checked": ["API-Football", "odds-api.net"],
+            "sources_available_for_recovery": ["Betano", "BetPlay", "Rushbet"],
+            "automatic_recovery_attempted": True,
+            "final_disposition": "RETRY_AUTHORIZED_BOOKS_UNTIL_KICKOFF",
+        })
+        return profile
+
+    if state in {"BLOCKED_CORRELATED_EXPOSURE", "BLOCKED_CORRELATED_RISK_IDENTITY_INCOMPLETE", "BLOCKED_LEAGUE_CONCENTRATION_CAP"}:
+        profile.update({
+            "missing_or_failed_variable": "CORRELATED_RISK_OR_CONCENTRATION_CAP",
+            "recoverability": "POLICY_BLOCK_NOT_DATA_GAP",
+            "sources_already_checked": ["MATRIX_CORRELATED_RISK_LEDGER"],
+            "sources_available_for_recovery": [],
+            "automatic_recovery_exhausted": True,
+            "final_disposition": "DEFINITIVE_BLOCK_RISK_POLICY",
+        })
+        return profile
+
+    profile["sources_already_checked"] = ["MATRIX_PRE_SEND_GATE"]
+    profile["final_disposition"] = "MANUAL_CLASSIFICATION_REQUIRED"
+    return profile
+
+
+def build_blocker_recovery_audit(
+    ledger: dict[str, Any],
+    candidates: dict[str, dict[str, Any]],
+    existing_sent_keys: set[str],
+    now: datetime,
+) -> dict[str, Any]:
+    records: list[dict[str, Any]] = []
+    counts_by_state: dict[str, int] = {}
+    counts_by_variable: dict[str, int] = {}
+    counts_by_recoverability: dict[str, int] = {}
+    for key, candidate in sorted(candidates.items(), key=lambda kv: (str(kv[1].get("kickoff")), kv[0])):
+        if key in existing_sent_keys or candidate.get("sport") != "football":
+            continue
+        gate = ledger.get("pre_send_gate", {}).get(key)
+        if not isinstance(gate, dict):
+            continue
+        profile = blocker_recovery_profile(gate)
+        state = str(gate.get("state") or "UNKNOWN")
+        variable = str(profile.get("missing_or_failed_variable") or "UNKNOWN")
+        recoverability = str(profile.get("recoverability") or "REVIEW_REQUIRED")
+        counts_by_state[state] = counts_by_state.get(state, 0) + 1
+        counts_by_variable[variable] = counts_by_variable.get(variable, 0) + 1
+        counts_by_recoverability[recoverability] = counts_by_recoverability.get(recoverability, 0) + 1
+        records.append({
+            "signal_key": key,
+            "fixture_id": candidate.get("fixture_id"),
+            "match": candidate.get("match"),
+            "league_id": candidate.get("league_id"),
+            "kickoff": candidate.get("kickoff"),
+            "p_matrix": candidate.get("p_matrix"),
+            "current_house": candidate.get("house"),
+            "current_odds": candidate.get("odds"),
+            "current_ev": candidate.get("ev"),
+            "gate_state": state,
+            **profile,
+            "checked_at_utc": gate.get("checked_at_utc") or now.isoformat(),
+            "real_money": "BLOCKED",
+        })
+    return {
+        "schema": "MATRIX_TELEGRAM_BLOCKER_RECOVERY_AUDIT_V1",
+        "generated_at_utc": now.isoformat(),
+        "policy": {
+            "blocked_does_not_mean_discarded": True,
+            "missing_is_not_zero": True,
+            "no_silent_imputation": True,
+            "no_backfill_after_kickoff": True,
+            "source_order": ["SofaScore", "Flashscore", "API-Football", "odds-api.net", "Betano", "BetPlay", "Rushbet"],
+            "automatic_quote_recovery": ["API-Football", "odds-api.net"],
+            "browser_or_bookmaker_recovery_when_needed": ["SofaScore", "Flashscore", "Betano", "BetPlay", "Rushbet"],
+            "real_money": "BLOCKED",
+        },
+        "summary": {
+            "records": len(records),
+            "counts_by_state": dict(sorted(counts_by_state.items())),
+            "counts_by_variable": dict(sorted(counts_by_variable.items())),
+            "counts_by_recoverability": dict(sorted(counts_by_recoverability.items())),
+        },
+        "records": records,
+    }
+
 def main() -> None:
     token = os.environ.get("TELEGRAM_BOT_TOKEN", "").strip()
     chat_id = os.environ.get("TELEGRAM_CHAT_ID", "").strip()
@@ -2187,6 +2360,9 @@ def main() -> None:
 
     pb = recalc_paper_bankroll(ledger)
 
+    blocker_audit = build_blocker_recovery_audit(ledger, candidates, existing_sent_keys, now)
+    blocker_summary = blocker_audit.get("summary") or {}
+
     run_record = {
         "run_at_utc": now.isoformat(),
         "bogota_date": str(today),
@@ -2203,6 +2379,10 @@ def main() -> None:
         "pre_send_waiting_window": pre_send_waiting,
         "pre_send_blocked": pre_send_blocked,
         "pre_send_passed": pre_send_passed,
+        "blocker_audit_records": blocker_summary.get("records"),
+        "blocker_counts_by_state": blocker_summary.get("counts_by_state"),
+        "blocker_counts_by_variable": blocker_summary.get("counts_by_variable"),
+        "blocker_counts_by_recoverability": blocker_summary.get("counts_by_recoverability"),
         "corrections_now": corrections_now,
         "rectifications_now": rectifications_now,
         "economic_updates_now": economic_updates_now,
@@ -2253,6 +2433,18 @@ def main() -> None:
 
     LEDGER.parent.mkdir(parents=True, exist_ok=True)
     CORRELATED_RISK_EVIDENCE.parent.mkdir(parents=True, exist_ok=True)
+    BLOCKER_AUDIT_EVIDENCE.parent.mkdir(parents=True, exist_ok=True)
+    blocker_audit["run_record_reference"] = {
+        "run_at_utc": run_record.get("run_at_utc"),
+        "football_candidates": run_record.get("football_candidates"),
+        "pre_send_waiting_window": run_record.get("pre_send_waiting_window"),
+        "pre_send_blocked": run_record.get("pre_send_blocked"),
+        "pre_send_passed": run_record.get("pre_send_passed"),
+    }
+    BLOCKER_AUDIT_EVIDENCE.write_text(
+        json.dumps(blocker_audit, indent=2, sort_keys=True, ensure_ascii=False) + "\n",
+        encoding="utf-8",
+    )
     correlated_risk_evidence = {
         "schema": "MATRIX_CORRELATED_RISK_CALIBRATION_PHYSICAL_PROOF_V1",
         "generated_at_utc": now.isoformat(),
