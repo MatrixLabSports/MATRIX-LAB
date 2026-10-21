@@ -523,3 +523,37 @@ def test_fetch_discovery_uses_bounded_fallback_when_fixture_lacks_tournament_met
     assert result["tournaments_network_queried"] == 1
     assert result["tournaments_unresolved"] == 0
     assert client.tournament_info_calls == ["500"]
+
+
+def test_shared_request_budget_blocks_before_network(monkeypatch, tmp_path):
+    ledger = tmp_path / "budget.json"
+    monkeypatch.setenv("MATRIX_RAPIDAPI_REQUEST_BUDGET", "2")
+    monkeypatch.setenv("MATRIX_RAPIDAPI_BUDGET_FILE", str(ledger))
+
+    opener1 = RecordingOpener([
+        {"data": [], "pageNo": 1, "pageSize": 0, "hasNextPage": False}
+    ])
+    opener2 = RecordingOpener([
+        {"data": [], "pageNo": 1, "pageSize": 0, "hasNextPage": False}
+    ])
+    c1 = RapidApiTennisClient("ascii-key", opener=opener1)
+    c2 = RapidApiTennisClient("ascii-key", opener=opener2)
+
+    c1.fixtures(date(2026, 9, 27), date(2026, 9, 27))
+    c2.fixtures(date(2026, 9, 27), date(2026, 9, 27))
+
+    opener3 = RecordingOpener([
+        {"data": [], "pageNo": 1, "pageSize": 0, "hasNextPage": False}
+    ])
+    c3 = RapidApiTennisClient("ascii-key", opener=opener3)
+    with pytest.raises(
+        RapidApiTennisDiscoveryError,
+        match="RAPIDAPI_TENNIS_REQUEST_BUDGET_EXHAUSTED:2/2",
+    ):
+        c3.fixtures(date(2026, 9, 27), date(2026, 9, 27))
+
+    assert len(opener1.requests) == 1
+    assert len(opener2.requests) == 1
+    assert len(opener3.requests) == 0
+    state = json.loads(ledger.read_text())
+    assert state == {"attempts": 2, "limit": 2}
