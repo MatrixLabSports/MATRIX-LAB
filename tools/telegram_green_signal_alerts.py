@@ -1579,6 +1579,7 @@ def build_blocker_recovery_audit(
         counts_by_state[state] = counts_by_state.get(state, 0) + 1
         counts_by_variable[variable] = counts_by_variable.get(variable, 0) + 1
         counts_by_recoverability[recoverability] = counts_by_recoverability.get(recoverability, 0) + 1
+        provider_diag = gate.get("odds_api_net_diagnostic") or {}
         records.append({
             "signal_key": key,
             "fixture_id": candidate.get("fixture_id"),
@@ -1591,6 +1592,8 @@ def build_blocker_recovery_audit(
             "current_ev": candidate.get("ev"),
             "gate_state": state,
             **profile,
+            "provider_identity_top_scores": provider_diag.get("identity_top_scores") or [],
+            "provider_identity_top_candidates": (provider_diag.get("identity_top_candidates") or [])[:5],
             "checked_at_utc": gate.get("checked_at_utc") or now.isoformat(),
             "real_money": "BLOCKED",
         })
