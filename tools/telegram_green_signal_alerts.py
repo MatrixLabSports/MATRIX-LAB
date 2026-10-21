@@ -1563,9 +1563,30 @@ def blocker_recovery_profile(gate_record: dict[str, Any]) -> dict[str, Any]:
 
     if state in {"BLOCKED_NO_VALID_EXACT_AUTHORIZED_BOOK_OVER25", "BLOCKED_NONPOSITIVE_EV"}:
         provider_status = str(diag.get("status") or "")
+        selected_offer = gate_record.get("offer") if isinstance(gate_record.get("offer"), dict) else None
+        physical_offer = gate_record.get("physical_browser_offer") if isinstance(gate_record.get("physical_browser_offer"), dict) else None
         variable = "EXACT_AUTHORIZED_BOOK_OVER25_QUOTE" if state.startswith("BLOCKED_NO_VALID") else "POSITIVE_EXPECTED_VALUE"
         sources = ["API-Football", "odds-api.net"]
         recovery = ["Betano", "BetPlay", "Rushbet"]
+
+        # A physically verified authorized-book quote with non-positive EV
+        # is an economic block, not a provider-coverage or identity gap.
+        if state == "BLOCKED_NONPOSITIVE_EV" and selected_offer is not None:
+            if physical_offer is not None:
+                sources.append(str(physical_offer.get("house") or "PHYSICAL_BOOK"))
+            profile.update({
+                "missing_or_failed_variable": "POSITIVE_EXPECTED_VALUE",
+                "recoverability": "RECOVERABLE_WITH_BETTER_AUTHORIZED_QUOTE_WHILE_PREMATCH",
+                "sources_already_checked": sources,
+                "sources_available_for_recovery": ["Betano", "BetPlay", "Rushbet"],
+                "automatic_recovery_attempted": True,
+                "automatic_recovery_exhausted": False,
+                "provider_diagnostic_status": provider_status or None,
+                "provider_discard_reasons": diag.get("discard_reasons") or {},
+                "final_disposition": "RETRY_BETTER_AUTHORIZED_QUOTE_UNTIL_KICKOFF",
+            })
+            return profile
+
         if provider_status == "BLOCKED_EVENT_NOT_COVERED":
             variable = "ODDS_PROVIDER_EVENT_COVERAGE"
             recovery = ["API-Football", "odds-api.net", "Betano", "BetPlay", "Rushbet"]
@@ -1653,6 +1674,7 @@ def build_blocker_recovery_audit(
         counts_by_variable[variable] = counts_by_variable.get(variable, 0) + 1
         counts_by_recoverability[recoverability] = counts_by_recoverability.get(recoverability, 0) + 1
         provider_diag = gate.get("odds_api_net_diagnostic") or {}
+        current_offer = gate.get("offer") if isinstance(gate.get("offer"), dict) else {}
         records.append({
             "signal_key": key,
             "fixture_id": candidate.get("fixture_id"),
@@ -1660,9 +1682,11 @@ def build_blocker_recovery_audit(
             "league_id": candidate.get("league_id"),
             "kickoff": candidate.get("kickoff"),
             "p_matrix": candidate.get("p_matrix"),
-            "current_house": candidate.get("house"),
-            "current_odds": candidate.get("odds"),
-            "current_ev": candidate.get("ev"),
+            "current_house": current_offer.get("house") or candidate.get("house"),
+            "current_odds": current_offer.get("odds") if current_offer else candidate.get("odds"),
+            "current_ev": current_offer.get("ev") if current_offer else candidate.get("ev"),
+            "selected_quote_provider": current_offer.get("provider") if current_offer else None,
+            "physical_evidence_path": current_offer.get("physical_evidence_path") if current_offer else None,
             "gate_state": state,
             **profile,
             "provider_identity_top_scores": provider_diag.get("identity_top_scores") or [],
