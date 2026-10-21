@@ -2,9 +2,11 @@ from __future__ import annotations
 
 import hashlib
 import json
+import os
 import time
 import unicodedata
 from datetime import date, datetime, timezone
+from pathlib import Path
 from typing import Any, Callable, Iterable, Mapping
 from urllib.error import HTTPError, URLError
 from urllib.parse import urlencode
@@ -132,6 +134,52 @@ class RapidApiTennisClient:
         self.request_attempt_count = 0
         self.request_count = 0
 
+    def _consume_shared_request_budget(self) -> None:
+        raw_limit = os.environ.get("MATRIX_RAPIDAPI_REQUEST_BUDGET", "").strip()
+        if not raw_limit:
+            return
+        try:
+            limit = int(raw_limit)
+        except ValueError as error:
+            raise RapidApiTennisDiscoveryError(
+                "RAPIDAPI_TENNIS_REQUEST_BUDGET_INVALID"
+            ) from error
+        if limit < 1:
+            raise RapidApiTennisDiscoveryError(
+                "RAPIDAPI_TENNIS_REQUEST_BUDGET_INVALID"
+            )
+        ledger_path = Path(
+            os.environ.get(
+                "MATRIX_RAPIDAPI_BUDGET_FILE",
+                "/tmp/MATRIX_RAPIDAPI_TENNIS_REQUEST_BUDGET.json",
+            )
+        )
+        state = {"attempts": 0, "limit": limit}
+        if ledger_path.exists():
+            try:
+                loaded = json.loads(ledger_path.read_text(encoding="utf-8"))
+                if isinstance(loaded, Mapping):
+                    state["attempts"] = int(loaded.get("attempts") or 0)
+                    state["limit"] = int(loaded.get("limit") or limit)
+            except (ValueError, TypeError, json.JSONDecodeError):
+                raise RapidApiTennisDiscoveryError(
+                    "RAPIDAPI_TENNIS_REQUEST_BUDGET_LEDGER_INVALID"
+                )
+        if state["limit"] != limit:
+            raise RapidApiTennisDiscoveryError(
+                "RAPIDAPI_TENNIS_REQUEST_BUDGET_LIMIT_MISMATCH"
+            )
+        if state["attempts"] >= limit:
+            raise RapidApiTennisDiscoveryError(
+                f"RAPIDAPI_TENNIS_REQUEST_BUDGET_EXHAUSTED:{state['attempts']}/{limit}"
+            )
+        state["attempts"] += 1
+        ledger_path.parent.mkdir(parents=True, exist_ok=True)
+        ledger_path.write_text(
+            json.dumps(state, sort_keys=True) + "\n",
+            encoding="utf-8",
+        )
+
     def _get(self, path: str, params: Mapping[str, Any] | None = None) -> Any:
         public = {
             str(k): str(v)
@@ -144,6 +192,7 @@ class RapidApiTennisClient:
         last_transient: BaseException | None = None
 
         for attempt in range(1, self._retry_policy.max_attempts + 1):
+            self._consume_shared_request_budget()
             request = Request(
                 url,
                 headers={
