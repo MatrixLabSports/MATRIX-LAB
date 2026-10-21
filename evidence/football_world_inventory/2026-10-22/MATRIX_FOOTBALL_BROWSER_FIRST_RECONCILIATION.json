@@ -1,0 +1,55 @@
+{
+  "schema": "MATRIX_FOOTBALL_BROWSER_FIRST_RECONCILIATION_V1",
+  "target_date_bogota": "2026-10-22",
+  "generated_at_bogota": "2026-10-21T17:35:00-05:00",
+  "sofascore": {
+    "status": "PHYSICALLY_VERIFIED",
+    "url": "https://www.sofascore.com/es/football/2026-10-22",
+    "visible_unique_event_rows": 110,
+    "count_basis": "unique accessibility rows matching ^22/10/26 ",
+    "examples": [
+      "Atlético Nacional vs Deportivo Pasto",
+      "Flamengo vs Estudiantes de La Plata",
+      "FC Ararat-Armenia vs AZ Alkmaar",
+      "Juventus vs Stade Rennais",
+      "Beşiktaş JK vs Crystal Palace"
+    ]
+  },
+  "flashscore": {
+    "status": "PHYSICALLY_VERIFIED",
+    "visible_date": "jueves, 22 de octubre de 2026",
+    "url": "https://www.flashscore.co/manana/",
+    "unique_football_match_urls": 98,
+    "count_basis": "unique DOM URLs containing /partido/futbol/",
+    "examples": [
+      "Al Najma vs A'ali",
+      "AGF vs KF Egnatia",
+      "AC Milan vs Bournemouth",
+      "Ajax vs Atalanta",
+      "Atlético Nacional vs Deportivo Pasto"
+    ]
+  },
+  "reconciliation": {
+    "browser_first_gate": "PASS",
+    "date_alignment": "PASS",
+    "exact_identity_reconciliation": "PENDING_API_STAGE",
+    "parity_claimed": false,
+    "note": "Visible counts use different page representations. 110 vs 98 is not treated as a conflict or exact parity claim."
+  },
+  "next_stage_authorized": "API_FOOTBALL_GOVERNED_DAILY_CYCLE",
+  "protections": {
+    "source_order": [
+      "SofaScore",
+      "Flashscore",
+      "API-Football",
+      "other APIs",
+      "odds/EV",
+      "Telegram"
+    ],
+    "missing_not_zero": true,
+    "silent_imputation": false,
+    "odds_to_p_matrix": false,
+    "automatic_wagering": false,
+    "real_money": "BLOCKED"
+  }
+}
