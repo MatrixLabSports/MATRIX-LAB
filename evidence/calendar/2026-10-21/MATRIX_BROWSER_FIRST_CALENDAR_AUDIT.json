@@ -92,10 +92,21 @@
     "football": {
       "pipeline": "MATRIX Football Daily Governed Pipeline",
       "trigger_commit": "a691d0d74b0b65823ef9cdaa2836c69d74244f75",
-      "expected_target_date_bogota": "2026-10-21",
-      "expected_evidence_path": "evidence/football_world_inventory/2026-10-21/MATRIX_FOOTBALL_CALIBRATION_ELIGIBILITY.json",
-      "evidence_present_at_audit": false,
-      "status": "TRIGGERED_PENDING_EVIDENCE"
+      "canonical_path": "evidence/football_world_inventory/2026-10-21/MATRIX_FOOTBALL_CALIBRATION_ELIGIBILITY.json",
+      "source_blob_sha": "4932e05d16536f86a7a256fd3a1380694f92247e",
+      "cycle_id": "20261021T000707Z",
+      "api_football_fixtures_received": 268,
+      "eligible_future_fixtures": 266,
+      "canonical_ready_input_count": 156,
+      "blocked_future_input_count": 110,
+      "freeze_candidate_event_count": 127,
+      "new_freeze_event_count": 0,
+      "history_group_ready_count": 111,
+      "history_group_blocked_count": 155,
+      "odds_used_to_generate_probability": false,
+      "outcomes_used_to_generate_probability": false,
+      "real_money": "BLOCKED",
+      "status": "PASS"
     }
   },
   "protections": {
@@ -110,7 +121,8 @@
   "adjudication": {
     "discovery_capture": "PASS",
     "full_browser_first_reconciliation": "FAIL_CLOSED",
-    "reason": "Flashscore full dynamic match inventory is not yet physically certified and API-Football 21-OCT governed evidence has not yet appeared.",
-    "telegram_green_signals_allowed_from_this_audit": false
+    "reason": "SofaScore full-day capture and governed APIs are physically evidenced. Flashscore date pages remain dynamically incomplete/redirected in available browser extraction, so exhaustive Flashscore match-level reconciliation is not certified.",
+    "telegram_green_signals_allowed_from_this_audit": false,
+    "api_reconciliation": "PASS"
   }
 }
