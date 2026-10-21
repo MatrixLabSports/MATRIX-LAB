@@ -597,3 +597,65 @@ def test_correlated_risk_gate_fails_closed_on_missing_tournament_identity():
     )
     assert decision["allowed"] is False
     assert decision["status"] == "BLOCKED_CORRELATED_RISK_METADATA_MISSING"
+
+
+class _SharpReferenceSession:
+    def get(self, url, headers=None, params=None, timeout=None):
+        if url.endswith("/fixtures"):
+            return _QuoteResponse({
+                "response": [{
+                    "teams": {
+                        "home": {"name": "Alpha FC"},
+                        "away": {"name": "Beta United"},
+                    }
+                }]
+            })
+        if url.endswith("/events"):
+            return _QuoteResponse({
+                "items": [{
+                    "event_id": "oa-sharp",
+                    "home_team": "Alpha FC",
+                    "away_team": "Beta United",
+                }]
+            })
+        if "/odds/snapshot" in url:
+            requested = str((params or {}).get("bookmakers") or "")
+            assert "pinnacle" in requested
+            assert "circa" in requested
+            assert "fanduel" in requested
+            assert "betfair" not in requested
+            return _QuoteResponse({
+                "items": [
+                    {"bookmaker":"rushbet","market_key":"total_goals","bet_type":"total","line":2.5,"side":"over","odds":1.88,"is_available":True},
+                    {"bookmaker":"pinnacle","market_key":"total_goals","bet_type":"total","line":2.5,"side":"over","odds":1.82,"is_available":True},
+                    {"bookmaker":"pinnacle","market_key":"total_goals","bet_type":"total","line":2.5,"side":"under","odds":2.02,"is_available":True},
+                    {"bookmaker":"circa","market_key":"total_goals","bet_type":"total","line":2.5,"side":"over","odds":1.84,"is_available":True},
+                    {"bookmaker":"circa","market_key":"total_goals","bet_type":"total","line":2.5,"side":"under","odds":2.00,"is_available":True},
+                    {"bookmaker":"fanduel","market_key":"total_goals","bet_type":"total","line":2.5,"side":"over","odds":1.90,"is_available":True},
+                    {"bookmaker":"fanduel","market_key":"total_goals","bet_type":"total","line":2.5,"side":"under","odds":1.94,"is_available":True},
+                ]
+            })
+        raise AssertionError(url)
+
+
+def test_multibook_snapshot_collects_sharp_references_without_execution_leakage():
+    diagnostic = {}
+    offer = odds_api_net_exact_over25_offer(
+        _SharpReferenceSession(),
+        "secret",
+        "fixture-sharp",
+        "2026-10-22T23:00:00+00:00",
+        0.61,
+        "api-football-secret",
+        diagnostic,
+    )
+    assert offer is not None
+    assert offer["house_key"] == "rushbet"
+    assert offer["provider"] == "odds-api.net"
+    consensus = diagnostic["sharp_consensus"]
+    assert consensus["sharp_source_count"] == 2
+    assert [x["source"] for x in consensus["sharp_rows"]] == ["pinnacle", "circa"]
+    assert [x["source"] for x in consensus["market_context_rows"]] == ["fanduel"]
+    assert consensus["sharp_reference_policy"]["p_matrix_mutated_by_odds"] is False
+    assert consensus["p_matrix"] == 0.61
+    assert diagnostic["betfair_status"] == "PENDING_SEPARATE_EXCHANGE_FEED_PHYSICAL_VALIDATION"
