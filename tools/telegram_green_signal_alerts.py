@@ -538,7 +538,9 @@ def odds_api_net_exact_over25_offer(
             "rows_by_book": {},
             "candidate_lines_by_book": {},
             "discard_reasons": {},
-            "sharp_reference_requested": ["pinnacle", "circa", "betfair"],
+            "sharp_reference_requested": ["pinnacle", "circa"],
+            "sharp_reference_supported_but_not_requested": ["betfair"],
+            "betfair_status": "PENDING_SEPARATE_EXCHANGE_FEED_PHYSICAL_VALIDATION",
             "market_context_requested": ["fanduel"],
             "sharp_quote_rows": [],
         })
@@ -631,7 +633,7 @@ def odds_api_net_exact_over25_offer(
         ODDS_API_NET_BASE + f"/events/{event_id}/odds/snapshot",
         headers={"X-API-Key": key, "Accept": "application/json"},
         params={
-            "bookmakers": "betano,betplay,rushbet,pinnacle,circa,betfair,fanduel",
+            "bookmakers": "betano,betplay,rushbet,pinnacle,circa,fanduel",
             "types": "total",
             "periods": "full time",
             "include_source": "true",
