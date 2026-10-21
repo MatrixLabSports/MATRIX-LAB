@@ -195,3 +195,26 @@ def test_physical_quote_fails_closed_when_stale(tmp_path):
         root=tmp_path,
     )
     assert offer is None
+
+
+def test_physical_negative_ev_is_classified_as_positive_ev_gap():
+    profile = blocker_recovery_profile({
+        "state": "BLOCKED_NONPOSITIVE_EV",
+        "offer": {
+            "house": "Rushbet",
+            "odds": 1.53,
+            "ev": -0.009897350356,
+            "provider": "physical-browser-evidence",
+        },
+        "physical_browser_offer": {
+            "house": "Rushbet",
+            "odds": 1.53,
+            "ev": -0.009897350356,
+            "provider": "physical-browser-evidence",
+        },
+        "odds_api_net_diagnostic": {"status": "BLOCKED_EVENT_NOT_COVERED"},
+    })
+    assert profile["missing_or_failed_variable"] == "POSITIVE_EXPECTED_VALUE"
+    assert profile["recoverability"] == "RECOVERABLE_WITH_BETTER_AUTHORIZED_QUOTE_WHILE_PREMATCH"
+    assert "Rushbet" in profile["sources_already_checked"]
+    assert profile["final_disposition"] == "RETRY_BETTER_AUTHORIZED_QUOTE_UNTIL_KICKOFF"
