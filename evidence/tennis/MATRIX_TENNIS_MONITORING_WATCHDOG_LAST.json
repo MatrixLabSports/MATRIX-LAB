@@ -1,7 +1,7 @@
 {
   "checks": {
     "clay": {
-      "age_minutes": 236.56,
+      "age_minutes": 255.35,
       "latest_conclusion": "success",
       "latest_run_id": 39610435041,
       "latest_status": "completed",
@@ -10,16 +10,17 @@
       "workflow": "tennis-clay-daily-prospective.yml"
     },
     "hard": {
-      "age_minutes": 283.21,
+      "age_minutes": 2.79,
       "latest_conclusion": "success",
-      "latest_run_id": 39603682169,
+      "latest_event": "schedule",
+      "latest_run_id": 39648136532,
       "latest_status": "completed",
-      "reason": "LATEST_RUN_STALE",
-      "status": "FAIL",
+      "reason": "RECENT_RUN_PRESENT",
+      "status": "PASS",
       "workflow": "tennis-hard-governed-day-resolution.yml"
     },
     "live": {
-      "age_minutes": 212.06,
+      "age_minutes": 230.85,
       "latest_conclusion": "success",
       "latest_run_id": 39614090853,
       "latest_status": "completed",
@@ -30,17 +31,7 @@
   },
   "failures": [
     {
-      "age_minutes": 283.21,
-      "lane": "hard",
-      "latest_conclusion": "success",
-      "latest_run_id": 39603682169,
-      "latest_status": "completed",
-      "reason": "LATEST_RUN_STALE",
-      "status": "FAIL",
-      "workflow": "tennis-hard-governed-day-resolution.yml"
-    },
-    {
-      "age_minutes": 236.56,
+      "age_minutes": 255.35,
       "lane": "clay",
       "latest_conclusion": "success",
       "latest_run_id": 39610435041,
@@ -50,7 +41,7 @@
       "workflow": "tennis-clay-daily-prospective.yml"
     },
     {
-      "age_minutes": 212.06,
+      "age_minutes": 230.85,
       "lane": "live",
       "latest_conclusion": "success",
       "latest_run_id": 39614090853,
@@ -60,7 +51,7 @@
       "workflow": "live-tennis-cumulative-gate-reconcile.yml"
     }
   ],
-  "generated_at_utc": "2026-10-21T17:39:42.573569+00:00",
+  "generated_at_utc": "2026-10-21T17:58:30.288776+00:00",
   "policy": {
     "default_branch_scheduler_required": true,
     "expected_cadence_minutes": 15,
@@ -69,7 +60,7 @@
   },
   "schema": "MATRIX_TENNIS_MONITORING_WATCHDOG_V1",
   "summary": {
-    "failures": 3,
+    "failures": 2,
     "lanes_checked": 3,
     "status": "FAIL_CLOSED"
   }
