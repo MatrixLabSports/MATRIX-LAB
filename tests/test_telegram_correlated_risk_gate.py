@@ -4,6 +4,7 @@ from app.research.football.correlated_risk_calibration import (
     calibration_evidence,
 )
 from tools.telegram_green_signal_alerts import (
+    _identity_similarity,
     correlated_risk_gate_state,
     correlated_risk_limits_from_physical_calibration,
 )
@@ -119,3 +120,8 @@ def test_physical_caps_preserve_single_flat_1u_after_bankroll_drawdown():
     assert proposed.stake == 25_000.0
     assert round(4_833_500.0 * limits.max_fixture_fraction, 6) == 25_000.0
 
+
+
+def test_identity_aliases_cover_fukushima_kitakyushu_revalidation():
+    assert _identity_similarity("Fukushima United", "Fukushima Utd") == 1.0
+    assert _identity_similarity("Kitakyushu", "Giravanz Kitakyushu") == 1.0
