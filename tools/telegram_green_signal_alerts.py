@@ -23,6 +23,7 @@ from app.research.football.correlated_risk_calibration import (
     calibrate_correlated_risk_from_ledger,
     calibration_evidence,
 )
+from app.research.football.sharp_consensus import assess_sharp_consensus
 
 from app.research.football.correlated_exposure import (
     assess_paper_correlated_exposure,
@@ -537,6 +538,9 @@ def odds_api_net_exact_over25_offer(
             "rows_by_book": {},
             "candidate_lines_by_book": {},
             "discard_reasons": {},
+            "sharp_reference_requested": ["pinnacle", "circa", "betfair"],
+            "market_context_requested": ["fanduel"],
+            "sharp_quote_rows": [],
         })
     if not key or kickoff_dt is None:
         if diagnostic is not None:
@@ -627,7 +631,7 @@ def odds_api_net_exact_over25_offer(
         ODDS_API_NET_BASE + f"/events/{event_id}/odds/snapshot",
         headers={"X-API-Key": key, "Accept": "application/json"},
         params={
-            "bookmakers": "betano,betplay,rushbet",
+            "bookmakers": "betano,betplay,rushbet,pinnacle,circa,betfair,fanduel",
             "types": "total",
             "periods": "full time",
             "include_source": "true",
@@ -712,6 +716,34 @@ def odds_api_net_exact_over25_offer(
                 "selection_name": item.get("selection_name"),
                 "odds": item.get("odds"),
             })
+
+        if diagnostic is not None and house_key in {"pinnacle", "circa", "betfair", "fanduel"}:
+            market_text_ref = " ".join([
+                _identity_norm(item.get("market_key")),
+                _identity_norm(item.get("bet_type")),
+            ])
+            label_ref = " ".join([
+                _identity_norm(item.get("side")),
+                _identity_norm(item.get("selection_name")),
+                _identity_norm(item.get("selection_key")),
+                _identity_norm(item.get("market_key")),
+            ])
+            if line == 2.5 and dec is not None and dec > 1.0 and (
+                "total" in market_text_ref or "over under" in market_text_ref
+            ):
+                side_ref = "over" if "over" in label_ref else ("under" if "under" in label_ref else None)
+                if side_ref:
+                    ts_ms_ref = book_ts.get(house_key)
+                    age_seconds_ref = None
+                    if isinstance(ts_ms_ref, (int, float)) and not isinstance(ts_ms_ref, bool):
+                        quote_dt_ref = datetime.fromtimestamp(float(ts_ms_ref) / 1000.0, tz=timezone.utc)
+                        age_seconds_ref = max(0, int((now_utc() - quote_dt_ref).total_seconds()))
+                    diagnostic["sharp_quote_rows"].append({
+                        "source": house_key,
+                        "side": side_ref,
+                        "odds": dec,
+                        "quote_age_seconds": age_seconds_ref,
+                    })
         if line != 2.5:
             if diagnostic is not None:
                 diagnostic["discard_reasons"]["LINE_NOT_2_5"] = diagnostic["discard_reasons"].get("LINE_NOT_2_5", 0) + 1
@@ -755,6 +787,26 @@ def odds_api_net_exact_over25_offer(
             "odds_api_event_id": event_id,
         })
     if diagnostic is not None:
+        paired: dict[str, dict[str, Any]] = {}
+        for row_ref in diagnostic.get("sharp_quote_rows", []):
+            src = str(row_ref.get("source") or "")
+            side = str(row_ref.get("side") or "")
+            if src and side in {"over", "under"}:
+                paired.setdefault(src, {})[side] = row_ref
+        consensus_inputs = []
+        for src, sides in paired.items():
+            if "over" in sides and "under" in sides:
+                ages = [x.get("quote_age_seconds") for x in (sides["over"], sides["under"]) if x.get("quote_age_seconds") is not None]
+                consensus_inputs.append({
+                    "source": src,
+                    "over_odds": float(sides["over"]["odds"]),
+                    "under_odds": float(sides["under"]["odds"]),
+                    "quote_age_seconds": max(ages) if ages else None,
+                })
+        diagnostic["sharp_consensus"] = assess_sharp_consensus(
+            p_matrix=float(p),
+            quotes=consensus_inputs,
+        )
         diagnostic["eligible_offer_count"] = len(offers)
         diagnostic["status"] = "PASS_EXACT_OVER25_FOUND" if offers else "NO_EXACT_OVER25_FOUND"
     return max(offers, key=lambda x: x["ev"]) if offers else None
