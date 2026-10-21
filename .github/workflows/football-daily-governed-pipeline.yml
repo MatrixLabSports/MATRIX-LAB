@@ -74,10 +74,6 @@ jobs:
         run: |
           set -euo pipefail
           D="${{ github.event.inputs.target_date }}"
-          if [ "${{ github.event_name }}" = "push" ]; then
-            D="2026-10-22"
-            MODE="ONE_SHOT_USER_AUTHORIZED_22OCT"
-          fi
           if [ -z "$D" ]; then
             HOUR="$(TZ=America/Bogota date +%H)"
             if [ "$HOUR" -ge 18 ]; then
