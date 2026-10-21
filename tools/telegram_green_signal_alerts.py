@@ -459,10 +459,17 @@ def discover_tennis(dates: list[str]) -> dict[str, dict[str, Any]]:
     return found
 
 
+IDENTITY_TOKEN_ALIASES = {
+    "utd": "united",
+}
+
+
 def _identity_norm(value: Any) -> str:
     text = unicodedata.normalize("NFKD", str(value or ""))
     text = "".join(ch for ch in text if not unicodedata.combining(ch)).casefold()
-    return re.sub(r"[^a-z0-9]+", " ", text).strip()
+    text = re.sub(r"[^a-z0-9]+", " ", text).strip()
+    tokens = [IDENTITY_TOKEN_ALIASES.get(tok, tok) for tok in text.split()]
+    return " ".join(tokens)
 
 
 IDENTITY_CLUB_DESIGNATORS = {"fc", "sc", "cs", "csl", "afc", "cf", "club"}
