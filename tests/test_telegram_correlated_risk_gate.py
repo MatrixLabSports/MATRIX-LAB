@@ -1,3 +1,6 @@
+from datetime import datetime, timezone
+import json
+
 from app.research.football.correlated_exposure import CorrelationLimits, ExposureRecord
 from app.research.football.correlated_risk_calibration import (
     calibrate_correlated_risk_from_ledger,
@@ -6,6 +9,7 @@ from app.research.football.correlated_risk_calibration import (
 from tools.telegram_green_signal_alerts import (
     _identity_similarity,
     blocker_recovery_profile,
+    physical_book_over25_offer,
     correlated_risk_gate_state,
     correlated_risk_limits_from_physical_calibration,
 )
@@ -140,3 +144,54 @@ def test_empty_odds_provider_event_set_is_coverage_not_identity():
     assert profile["missing_or_failed_variable"] == "ODDS_PROVIDER_EVENT_COVERAGE"
     assert "Betano" in profile["sources_available_for_recovery"]
     assert profile["recoverability"] == "RECOVERABLE_WHILE_PREMATCH"
+
+
+def test_physical_rushbet_quote_is_recovered_and_remains_negative_ev(tmp_path):
+    day = tmp_path / "2026-10-21"
+    day.mkdir()
+    artifact = {
+        "schema": "MATRIX_PHYSICAL_BOOK_QUOTE_V1",
+        "fixture_id": "1555752",
+        "captured_at_bogota": "2026-10-20T21:41:45-05:00",
+        "kickoff_utc": "2026-10-21T04:00:00+00:00",
+        "market": "Más de 2.5 goles",
+        "house": "Rushbet",
+        "decimal_odds": 1.53,
+    }
+    (day / "MATRIX_FUKUSHIMA_KITAKYUSHU_RUSHBET_QUOTE_214145_BOG.json").write_text(
+        json.dumps(artifact),
+        encoding="utf-8",
+    )
+    offer = physical_book_over25_offer(
+        "1555752",
+        0.6471259148,
+        datetime(2026, 10, 21, 2, 42, 0, tzinfo=timezone.utc),
+        root=tmp_path,
+    )
+    assert offer is not None
+    assert offer["house"] == "Rushbet"
+    assert offer["odds"] == 1.53
+    assert offer["provider"] == "physical-browser-evidence"
+    assert offer["ev"] < 0
+
+
+def test_physical_quote_fails_closed_when_stale(tmp_path):
+    day = tmp_path / "2026-10-21"
+    day.mkdir()
+    artifact = {
+        "schema": "MATRIX_PHYSICAL_BOOK_QUOTE_V1",
+        "fixture_id": "1555752",
+        "captured_at_bogota": "2026-10-20T20:00:00-05:00",
+        "kickoff_utc": "2026-10-21T04:00:00+00:00",
+        "market": "Más de 2.5 goles",
+        "house": "Rushbet",
+        "decimal_odds": 1.53,
+    }
+    (day / "MATRIX_STALE_QUOTE.json").write_text(json.dumps(artifact), encoding="utf-8")
+    offer = physical_book_over25_offer(
+        "1555752",
+        0.6471259148,
+        datetime(2026, 10, 21, 2, 42, 0, tzinfo=timezone.utc),
+        root=tmp_path,
+    )
+    assert offer is None
