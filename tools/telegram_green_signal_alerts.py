@@ -35,6 +35,8 @@ TENNIS_ROOT = Path("evidence/tennis_signals")
 LEDGER = Path("evidence/notifications/telegram/MATRIX_TELEGRAM_SIGNAL_LEDGER.json")
 CORRELATED_RISK_EVIDENCE = Path("evidence/notifications/telegram/MATRIX_CORRELATED_RISK_CALIBRATION_LAST.json")
 BLOCKER_AUDIT_EVIDENCE = Path("evidence/notifications/telegram/MATRIX_TELEGRAM_BLOCKER_RECOVERY_AUDIT_LAST.json")
+PHYSICAL_BOOK_QUOTE_ROOT = Path("evidence/football_world_inventory")
+PHYSICAL_BOOK_QUOTE_MAX_AGE_MINUTES = 30
 
 GREEN_STATUSES = {
     "SEÑAL_VERDE_SIMULADA_Y_APUESTA_USUARIO_EJECUTADA",
@@ -756,6 +758,70 @@ def odds_api_net_exact_over25_offer(
         diagnostic["eligible_offer_count"] = len(offers)
         diagnostic["status"] = "PASS_EXACT_OVER25_FOUND" if offers else "NO_EXACT_OVER25_FOUND"
     return max(offers, key=lambda x: x["ev"]) if offers else None
+
+
+def physical_book_over25_offer(
+    fixture_id: str,
+    p: float,
+    now: datetime,
+    *,
+    required_house_key: str | None = None,
+    root: Path = PHYSICAL_BOOK_QUOTE_ROOT,
+) -> dict[str, Any] | None:
+    """Load the freshest physically captured authorized-book Over 2.5 quote.
+
+    Fail closed unless fixture identity, market, house, odds, freshness and
+    prematch timing are all explicit in the evidence artifact.
+    """
+    best: dict[str, Any] | None = None
+    target_fixture = str(fixture_id)
+    if not root.exists():
+        return None
+    for path in root.glob("*/MATRIX_*_QUOTE_*.json"):
+        data = load_json(path, {})
+        if not isinstance(data, dict):
+            continue
+        if data.get("schema") != "MATRIX_PHYSICAL_BOOK_QUOTE_V1":
+            continue
+        if str(data.get("fixture_id") or "") != target_fixture:
+            continue
+        if str(data.get("market") or "").strip().casefold() not in {
+            "más de 2.5 goles",
+            "mas de 2.5 goles",
+            "over 2.5",
+        }:
+            continue
+        house_key = bookmaker_key(data.get("house"))
+        if house_key is None:
+            continue
+        if required_house_key is not None and house_key != required_house_key:
+            continue
+        dec = odd(data.get("decimal_odds"))
+        if dec is None or dec <= 1.50:
+            continue
+        captured = parse_dt(data.get("captured_at_utc") or data.get("captured_at_bogota"))
+        kickoff = parse_dt(data.get("kickoff_utc"))
+        if captured is None or kickoff is None:
+            continue
+        age_seconds = (now - captured).total_seconds()
+        if age_seconds < 0 or age_seconds > PHYSICAL_BOOK_QUOTE_MAX_AGE_MINUTES * 60:
+            continue
+        if captured >= kickoff or now >= kickoff:
+            continue
+        offer = {
+            "house": str(data.get("house") or ""),
+            "house_key": house_key,
+            "odds": dec,
+            "ev": p * dec - 1.0,
+            "break_even_probability": 1.0 / dec,
+            "provider_quote_updated_at_utc": captured.isoformat(),
+            "provider": "physical-browser-evidence",
+            "physical_evidence_path": str(path),
+            "fallback_multi_book": True,
+        }
+        if best is None or parse_dt(offer["provider_quote_updated_at_utc"]) > parse_dt(best["provider_quote_updated_at_utc"]):
+            best = offer
+    return best
 
 
 def exact_over25_offer(session: requests.Session, api_key: str, fixture_id: str, p: float, required_house_key: str | None = None) -> dict[str, Any] | None:
@@ -1799,7 +1865,13 @@ def main() -> None:
             api_key,
             odds_api_net_diagnostic,
         )
-        comparable = [x for x in (primary_offer, fallback_offer) if isinstance(x, dict)]
+        physical_offer = physical_book_over25_offer(
+            str(candidate["fixture_id"]),
+            float(candidate["p_matrix"]),
+            now,
+            required_house_key=None,
+        )
+        comparable = [x for x in (primary_offer, fallback_offer, physical_offer) if isinstance(x, dict)]
         offer = max(comparable, key=lambda x: float(x.get("ev") or -999.0)) if comparable else None
         pre_send_quote_checks += 1
         lifecycle["final_revalidation_attempts"] = int(lifecycle.get("final_revalidation_attempts") or 0) + 1
@@ -1807,6 +1879,7 @@ def main() -> None:
         gate_record["required_house_key"] = required_house_key
         gate_record["primary_same_house_offer"] = primary_offer
         gate_record["odds_api_net_multi_book_offer"] = fallback_offer
+        gate_record["physical_browser_offer"] = physical_offer
         gate_record["odds_api_net_diagnostic"] = odds_api_net_diagnostic
         gate_record["offer"] = offer
         gate_record["selected_quote_provider"] = (offer or {}).get("provider") or ("api-football" if offer else None)
