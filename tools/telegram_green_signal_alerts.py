@@ -51,6 +51,9 @@ POLICY_BOOKS = {
     "betplay": ("betplay",),
     "rushbet": ("rushbet", "rush bet"),
 }
+SHARP_REFERENCE_BOOKS = {"pinnacle", "circa", "betfair"}
+MARKET_CONTEXT_BOOKS = {"fanduel"}
+REFERENCE_BOOKS = SHARP_REFERENCE_BOOKS | MARKET_CONTEXT_BOOKS
 MARKET_KEY = "Goles totales Más/Menos"
 SELECTION_KEY = "Más de 2.5"
 
@@ -662,11 +665,11 @@ def odds_api_net_exact_over25_offer(
         if diagnostic is not None:
             diagnostic["rows_seen"] += 1
             diagnostic["rows_by_book"][house_key or "UNKNOWN"] = diagnostic["rows_by_book"].get(house_key or "UNKNOWN", 0) + 1
-        if house_key not in POLICY_BOOKS:
+        if house_key not in POLICY_BOOKS and house_key not in REFERENCE_BOOKS:
             if diagnostic is not None:
                 diagnostic["discard_reasons"]["UNAUTHORIZED_BOOK"] = diagnostic["discard_reasons"].get("UNAUTHORIZED_BOOK", 0) + 1
             continue
-        if required_house_key and house_key != required_house_key:
+        if house_key in POLICY_BOOKS and required_house_key and house_key != required_house_key:
             if diagnostic is not None:
                 diagnostic["discard_reasons"]["DIFFERENT_AUTHORIZED_BOOK"] = diagnostic["discard_reasons"].get("DIFFERENT_AUTHORIZED_BOOK", 0) + 1
             continue
@@ -746,6 +749,8 @@ def odds_api_net_exact_over25_offer(
                         "odds": dec,
                         "quote_age_seconds": age_seconds_ref,
                     })
+        if house_key not in POLICY_BOOKS:
+            continue
         if line != 2.5:
             if diagnostic is not None:
                 diagnostic["discard_reasons"]["LINE_NOT_2_5"] = diagnostic["discard_reasons"].get("LINE_NOT_2_5", 0) + 1
