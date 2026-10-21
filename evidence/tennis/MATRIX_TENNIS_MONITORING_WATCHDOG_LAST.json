@@ -1,17 +1,16 @@
 {
   "checks": {
     "clay": {
-      "age_minutes": 20.38,
+      "age_minutes": 39.51,
       "latest_conclusion": "success",
-      "latest_event": "schedule",
       "latest_run_id": 39651301827,
       "latest_status": "completed",
-      "reason": "RECENT_RUN_PRESENT",
-      "status": "PASS",
+      "reason": "LATEST_RUN_STALE",
+      "status": "FAIL",
       "workflow": "tennis-clay-daily-prospective.yml"
     },
     "hard": {
-      "age_minutes": 41.63,
+      "age_minutes": 60.76,
       "latest_conclusion": "success",
       "latest_run_id": 39648136532,
       "latest_status": "completed",
@@ -20,10 +19,10 @@
       "workflow": "tennis-hard-governed-day-resolution.yml"
     },
     "live": {
-      "age_minutes": 1.13,
+      "age_minutes": 1.16,
       "latest_conclusion": "success",
       "latest_event": "workflow_run",
-      "latest_run_id": 39654207705,
+      "latest_run_id": 39657051418,
       "latest_status": "completed",
       "reason": "RECENT_RUN_PRESENT",
       "status": "PASS",
@@ -32,7 +31,7 @@
   },
   "failures": [
     {
-      "age_minutes": 41.63,
+      "age_minutes": 60.76,
       "lane": "hard",
       "latest_conclusion": "success",
       "latest_run_id": 39648136532,
@@ -40,9 +39,19 @@
       "reason": "LATEST_RUN_STALE",
       "status": "FAIL",
       "workflow": "tennis-hard-governed-day-resolution.yml"
+    },
+    {
+      "age_minutes": 39.51,
+      "lane": "clay",
+      "latest_conclusion": "success",
+      "latest_run_id": 39651301827,
+      "latest_status": "completed",
+      "reason": "LATEST_RUN_STALE",
+      "status": "FAIL",
+      "workflow": "tennis-clay-daily-prospective.yml"
     }
   ],
-  "generated_at_utc": "2026-10-21T18:37:20.956682+00:00",
+  "generated_at_utc": "2026-10-21T18:56:28.880984+00:00",
   "policy": {
     "default_branch_scheduler_required": true,
     "expected_cadence_minutes": 15,
@@ -51,7 +60,7 @@
   },
   "schema": "MATRIX_TENNIS_MONITORING_WATCHDOG_V1",
   "summary": {
-    "failures": 1,
+    "failures": 2,
     "lanes_checked": 3,
     "status": "FAIL_CLOSED"
   }
