@@ -5,6 +5,7 @@ from app.research.football.correlated_risk_calibration import (
 )
 from tools.telegram_green_signal_alerts import (
     _identity_similarity,
+    blocker_recovery_profile,
     correlated_risk_gate_state,
     correlated_risk_limits_from_physical_calibration,
 )
@@ -125,3 +126,17 @@ def test_physical_caps_preserve_single_flat_1u_after_bankroll_drawdown():
 def test_identity_aliases_cover_fukushima_kitakyushu_revalidation():
     assert _identity_similarity("Fukushima United", "Fukushima Utd") == 1.0
     assert _identity_similarity("Kitakyushu", "Giravanz Kitakyushu") == 1.0
+
+
+def test_empty_odds_provider_event_set_is_coverage_not_identity():
+    profile = blocker_recovery_profile({
+        "state": "BLOCKED_NO_VALID_EXACT_AUTHORIZED_BOOK_OVER25",
+        "odds_api_net_diagnostic": {
+            "status": "BLOCKED_EVENT_NOT_COVERED",
+            "identity_top_scores": [],
+            "identity_top_candidates": [],
+        },
+    })
+    assert profile["missing_or_failed_variable"] == "ODDS_PROVIDER_EVENT_COVERAGE"
+    assert "Betano" in profile["sources_available_for_recovery"]
+    assert profile["recoverability"] == "RECOVERABLE_WHILE_PREMATCH"
