@@ -5,7 +5,7 @@ import json
 from pathlib import Path
 from typing import Any
 
-MILESTONES=(100,150,200)
+MILESTONES=(100,150,200,300,400,500,600)
 
 
 def build_status(uniqueness: dict[str,Any]) -> dict[str,Any]:
@@ -21,7 +21,7 @@ def build_status(uniqueness: dict[str,Any]) -> dict[str,Any]:
             "status":"REACHED" if reached else "PENDING",
             "current_unique_observations":count,
             "remaining":max(0,threshold-count),
-            "metrics_open_allowed":False,
+            "metrics_open_allowed":bool(reached and threshold==600),
         }
     return {
         "schema":"MATRIX_COR0203_MILESTONE_STATUS_V1",
@@ -56,6 +56,10 @@ def main() -> None:
         "m100":payload["milestones"]["100"]["status"],
         "m150":payload["milestones"]["150"]["status"],
         "m200":payload["milestones"]["200"]["status"],
+        "m300":payload["milestones"]["300"]["status"],
+        "m400":payload["milestones"]["400"]["status"],
+        "m500":payload["milestones"]["500"]["status"],
+        "m600":payload["milestones"]["600"]["status"],
         "metrics_opened":False,
         "real_money":"BLOCKED",
     },sort_keys=True))
