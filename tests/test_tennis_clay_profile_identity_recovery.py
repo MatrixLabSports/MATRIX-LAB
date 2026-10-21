@@ -156,3 +156,5 @@ def test_new_player_still_requires_profile_hand():
     assert out["passed_events"]==0
     assert out["blocked"][0]["reason"]=="PROFILE_HAND_INVALID_FOR_NEW_PLAYER"
 
+
+# MATRIX_CACHE_PHYSICAL_PROOF_TRIGGER_20261020T2230BOG
