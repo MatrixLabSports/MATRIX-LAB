@@ -1,6 +1,11 @@
 name: MATRIX RapidAPI Tennis Paid-Window Harvest
 
 on:
+  push:
+    branches:
+      - repair/cor09-world-pipeline
+    paths:
+      - .github/workflows/rapidapi-tennis-paid-window-harvest.yml
   workflow_dispatch:
     inputs:
       target_date:
@@ -47,6 +52,10 @@ jobs:
           set -euo pipefail
           D="${{ github.event.inputs.target_date }}"
           NOW_BOG="$(TZ=America/Bogota date +%F)"
+          if [ "${{ github.event_name }}" = "push" ]; then
+            D="2026-10-21"
+            echo "BOOTSTRAP_PHYSICAL_RUN=2026-10-21"
+          fi
           if [ -z "$D" ]; then
             H="$(TZ=America/Bogota date +%H)"
             if [ "$H" -ge 18 ]; then
