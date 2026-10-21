@@ -140,7 +140,7 @@ jobs:
             "inventory_path":src,
             "inventory_sha256":hashlib.sha256(p.read_bytes()).hexdigest(),
             "unique_match_count":int(j.get("unique_match_count") or len(events)),
-            "network_calls":int(j.get("network_calls") or 0),
+            "network_calls":int(j.get("provider_network_calls") or j.get("network_calls") or 0),
             "provider_inventory_complete":bool(j.get("provider_inventory_complete",False)),
             "families":families,
             "surfaces":surfaces,
