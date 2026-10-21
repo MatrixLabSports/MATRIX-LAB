@@ -1,5 +1,3 @@
-# MATRIX_USER_AUTHORIZED_RETRY 2026-10-21T17:52-05:00 persist-r1000-after-git-race
-# MATRIX_USER_AUTHORIZED_TRIGGER 2026-10-21T17:45-05:00 browser-first-22oct-refresh
 # MATRIX_PHYSICAL_TRIGGER 2026-10-19T01:10-05:00 accumulation-cycle
 # MATRIX_PHYSICAL_TRIGGER 2026-10-18T19:55Z hard-calibration-refresh
 # MATRIX_PHYSICAL_TRIGGER 2026-10-09T05:34Z continuity-fallback-hard
@@ -48,10 +46,6 @@ jobs:
         run: |
           set -euo pipefail
           D="${{ github.event.inputs.target_date }}"
-          if [ "${{ github.event_name }}" = "push" ]; then
-            D="2026-10-22"
-            echo "MATRIX_ONE_SHOT_TARGET=2026-10-22"
-          fi
           if [ -z "$D" ]; then
             HOUR="$(TZ=America/Bogota date +%H)"
             if [ "$HOUR" -ge 18 ]; then
