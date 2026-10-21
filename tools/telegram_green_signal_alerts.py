@@ -602,7 +602,11 @@ def odds_api_net_exact_over25_offer(
             }
             for score, is_direct, event in scored[:5]
         ]
-    if not scored or scored[0][0] < 0.85:
+    if not scored:
+        if diagnostic is not None:
+            diagnostic["status"] = "BLOCKED_EVENT_NOT_COVERED"
+        return None
+    if scored[0][0] < 0.85:
         if diagnostic is not None:
             diagnostic["status"] = "BLOCKED_IDENTITY_LOW_SCORE"
         return None
@@ -1496,7 +1500,10 @@ def blocker_recovery_profile(gate_record: dict[str, Any]) -> dict[str, Any]:
         variable = "EXACT_AUTHORIZED_BOOK_OVER25_QUOTE" if state.startswith("BLOCKED_NO_VALID") else "POSITIVE_EXPECTED_VALUE"
         sources = ["API-Football", "odds-api.net"]
         recovery = ["Betano", "BetPlay", "Rushbet"]
-        if provider_status in {"BLOCKED_IDENTITY_LOW_SCORE", "BLOCKED_IDENTITY_AMBIGUOUS", "BLOCKED_EVENT_ID_MISSING"}:
+        if provider_status == "BLOCKED_EVENT_NOT_COVERED":
+            variable = "ODDS_PROVIDER_EVENT_COVERAGE"
+            recovery = ["API-Football", "odds-api.net", "Betano", "BetPlay", "Rushbet"]
+        elif provider_status in {"BLOCKED_IDENTITY_LOW_SCORE", "BLOCKED_IDENTITY_AMBIGUOUS", "BLOCKED_EVENT_ID_MISSING"}:
             variable = "EVENT_IDENTITY"
             recovery = ["SofaScore", "Flashscore", "API-Football", "odds-api.net"]
         elif provider_status in {"BLOCKED_FIXTURE_LOOKUP", "BLOCKED_CREDENTIAL_OR_KICKOFF"}:
