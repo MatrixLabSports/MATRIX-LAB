@@ -7,7 +7,7 @@ import json
 import os
 import unicodedata
 from collections import defaultdict
-from datetime import date
+from datetime import date, datetime, timezone
 from pathlib import Path
 from typing import Any, Callable, Mapping
 
@@ -17,6 +17,12 @@ SCHEMA="MATRIX_TENNIS_CLAY_PROFILE_IDENTITY_RECOVERY_V1"
 LANE_ID="ATP_CHALLENGER_MEN_SINGLES_CLAY"
 CUT_TOKEN="20260921"
 COUNTRY_ALIASES={"POR":"PRT"}
+DETERMINISTIC_CACHEABLE_REASONS={
+    "PROFILE_HAND_INVALID_FOR_NEW_PLAYER",
+    "PROFILE_DOB_INVALID",
+    "HISTORICAL_HAND_NOT_UNIQUE",
+}
+CACHE_MAX_AGE_SECONDS=6*60*60
 
 
 def _norm(value: object) -> str:
@@ -93,6 +99,7 @@ def recover(
     model: Mapping[str,Any],
     profile_fetcher: Callable[[str],Mapping[str,Any]],
     max_targets: int,
+    cached_blocks: Mapping[str,Mapping[str,Any]] | None = None,
 ) -> dict[str,Any]:
     if model.get("candidate_identity")!="ATP_CHALLENGER_CLAY_ELO_V1":
         raise ValueError("CLAY_PROFILE_RECOVERY_MODEL_IDENTITY_INVALID")
@@ -104,7 +111,8 @@ def recover(
         raise ValueError("CLAY_PROFILE_RECOVERY_CATCHUP_IMPUTATION_FLAG_INVALID")
 
     hist=_historical_index(historical_rows)
-    mappings=[]; events=[]; blocked=[]; requests=0
+    cached_blocks=cached_blocks or {}
+    mappings=[]; events=[]; blocked=[]; requests=0; cached_blocked=0
     backlog=[
         row for row in catchup.get("unmapped_identity_backlog",[]) or []
         if isinstance(row,Mapping)
@@ -130,6 +138,15 @@ def recover(
             or not numeric.isdigit()
         ):
             blocked.append({"provider_player_id":pid,"reason":"CATCHUP_IDENTITY_NOT_UNIQUE"})
+            continue
+
+        cached=cached_blocks.get(pid)
+        if cached and str(cached.get("reason") or "") in DETERMINISTIC_CACHEABLE_REASONS:
+            row=dict(cached)
+            row["provider_player_id"]=pid
+            row["cached_deterministic_block"]=True
+            blocked.append(row)
+            cached_blocked+=1
             continue
 
         payload=profile_fetcher(numeric); requests+=1
@@ -226,6 +243,7 @@ def recover(
         "mappings":mappings,
         "blocked":blocked,
         "profile_requests":requests,
+        "cached_deterministic_blocks":cached_blocked,
         "model_identity":model.get("candidate_identity"),
         "model_rating_initial":1500.0,
         "same_day_update_policy":model.get("same_day_update_policy"),
@@ -255,20 +273,45 @@ def main()->None:
     rows=list(csv.DictReader(Path(a.historical_dataset).read_text(encoding="utf-8-sig").splitlines()))
     model=json.loads(Path(a.model).read_text(encoding="utf-8"))
     catchup=json.loads(Path(a.catchup).read_text(encoding="utf-8"))
+    path=Path(a.out)
+    cached_blocks={}
+    cache_source_generated_at_utc=None
+    if path.exists():
+        try:
+            prior=json.loads(path.read_text(encoding="utf-8"))
+            stamp=str(prior.get("generated_at_utc") or "")
+            parsed=datetime.fromisoformat(stamp.replace("Z","+00:00")) if stamp else None
+            now=datetime.now(timezone.utc)
+            if parsed is not None and parsed.tzinfo is not None and 0 <= (now-parsed).total_seconds() <= CACHE_MAX_AGE_SECONDS:
+                cached_blocks={
+                    str(x.get("provider_player_id") or ""):x
+                    for x in prior.get("blocked",[]) or []
+                    if str(x.get("reason") or "") in DETERMINISTIC_CACHEABLE_REASONS
+                    and str(x.get("provider_player_id") or "")
+                }
+                cache_source_generated_at_utc=stamp
+        except (ValueError,TypeError,json.JSONDecodeError):
+            cached_blocks={}
     out=recover(
         catchup=catchup,
         historical_rows=rows,
         model=model,
         profile_fetcher=lambda numeric: client.player_profile(player_id=numeric),
         max_targets=a.max_targets,
+        cached_blocks=cached_blocks,
     )
     out["provider_network_calls"]=client.request_count
-    path=Path(a.out); path.parent.mkdir(parents=True,exist_ok=True)
+    out["generated_at_utc"]=datetime.now(timezone.utc).replace(microsecond=0).isoformat()
+    out["cache_source_generated_at_utc"]=cache_source_generated_at_utc
+    out["cache_policy"]="DETERMINISTIC_BLOCKS_ONLY_6H"
+    path.parent.mkdir(parents=True,exist_ok=True)
     path.write_text(json.dumps(out,indent=2,sort_keys=True,ensure_ascii=False)+"\n",encoding="utf-8")
     print(json.dumps({
         "passed_events":out["passed_events"],
         "blocked_events":out["blocked_events"],
         "profile_requests":out["profile_requests"],
+        "cached_deterministic_blocks":out["cached_deterministic_blocks"],
+        "provider_network_calls":out["provider_network_calls"],
         "new_player_priors":sum(1 for x in out["mappings"] if x["new_to_clay_historical_dataset"]),
         "historical_links":sum(1 for x in out["mappings"] if not x["new_to_clay_historical_dataset"]),
         "real_money":"BLOCKED",
