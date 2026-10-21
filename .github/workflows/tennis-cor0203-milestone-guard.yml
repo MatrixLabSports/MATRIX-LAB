@@ -1,0 +1,72 @@
+name: MATRIX Tennis COR0203 Milestone Guard
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+      - repair/cor09-world-pipeline
+    paths:
+      - tools/cor0203_milestone_status.py
+      - .github/workflows/tennis-cor0203-milestone-guard.yml
+  schedule:
+    - cron: "13 5 * * *"
+
+permissions:
+  contents: write
+
+jobs:
+  guard:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: repair/cor09-world-pipeline
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Rebuild milestones from physical uniqueness
+        run: |
+          set -euo pipefail
+          python -m tools.cor0203_milestone_status             --uniqueness evidence/cor0203/runtime/MATRIX_COR0203_PHYSICAL_UNIQUENESS_LAST.json             --out evidence/cor0203/runtime/MATRIX_COR0203_MILESTONES_LAST.json
+      - name: Prove sealed-until-600 semantics
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          j=json.loads(Path("evidence/cor0203/runtime/MATRIX_COR0203_MILESTONES_LAST.json").read_text())
+          assert j["metrics_policy"]=="SEALED_UNTIL_600"
+          assert j["metrics_opened"] is False
+          assert j["outcomes_read_for_metrics"]==0
+          assert j["parameter_tuning_allowed"] is False
+          for t in ("100","150","200","300","400","500"):
+              assert j["milestones"][t]["metrics_open_allowed"] is False
+          m600=j["milestones"]["600"]
+          assert m600["metrics_open_allowed"] is (j["unique_calibration_observations"]>=600)
+          assert j["real_money"]=="BLOCKED"
+          print(json.dumps({
+            "count":j["unique_calibration_observations"],
+            "remaining600":j["remaining_to_600"],
+            "m300":j["milestones"]["300"],
+            "m400":j["milestones"]["400"],
+            "m500":j["milestones"]["500"],
+            "m600":j["milestones"]["600"],
+            "metrics_opened":j["metrics_opened"],
+            "real_money":j["real_money"]
+          },sort_keys=True))
+          PY
+      - name: Persist milestone receipt
+        run: |
+          set -euo pipefail
+          git config user.name matrix-tennis-milestone
+          git config user.email matrix-tennis-milestone@users.noreply.github.com
+          git add evidence/cor0203/runtime/MATRIX_COR0203_MILESTONES_LAST.json
+          if git diff --cached --quiet; then
+            echo NO_MILESTONE_CHANGE
+            exit 0
+          fi
+          git commit -m "evidence(tennis): refresh COR0203 milestones through 600"
+          git fetch origin repair/cor09-world-pipeline
+          git rebase origin/repair/cor09-world-pipeline
+          git push origin HEAD:repair/cor09-world-pipeline
