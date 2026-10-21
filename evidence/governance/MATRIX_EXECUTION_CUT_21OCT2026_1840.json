@@ -1,0 +1,90 @@
+{
+  "schema": "MATRIX_EXECUTION_CUT_21OCT2026_1840_V1",
+  "generated_at_bogota": "2026-10-21T18:40:00-05:00",
+  "football": {
+    "telegram_run": {
+      "run_number": 338,
+      "run_id": 39694749438,
+      "conclusion": "SUCCESS",
+      "run_at_utc": "2026-10-21T23:39:40+00:00"
+    },
+    "football_candidates": 75,
+    "unsent_candidates": 72,
+    "pre_send_waiting_window": 32,
+    "pre_send_blocked": 40,
+    "pre_send_quote_checks": 3,
+    "pre_send_passed": 0,
+    "sent_now": 0,
+    "blocker_counts": {
+      "WAITING_FINAL_REVALIDATION_WINDOW": 32,
+      "BLOCKED_NO_VALID_EXACT_AUTHORIZED_BOOK_OVER25": 20,
+      "BLOCKED_QUALITY_REVALIDATED_EV_BELOW_5PCT": 5,
+      "BLOCKED_NONPOSITIVE_EV": 4,
+      "BLOCKED_KICKOFF_REACHED_MONITORING_BREACH": 10,
+      "BLOCKED_KICKOFF_REACHED_LEGACY_UNOBSERVABLE": 1
+    },
+    "real_money": "BLOCKED",
+    "conclusion": "NO_GREEN_SIGNAL_PASSING_ALL_GATES"
+  },
+  "live": {
+    "run": {
+      "run_number": 450,
+      "run_id": 39694646385,
+      "conclusion": "SUCCESS"
+    },
+    "global_unique_match_count": 306,
+    "settled_quality_valid_unique_matches": 196,
+    "challenger_men_clay": {
+      "current": 29,
+      "target": 30,
+      "remaining": 1
+    },
+    "challenger_men_hard": {
+      "current": 10,
+      "target": 30,
+      "remaining": 20
+    },
+    "itf_women_hard": {
+      "current": 75,
+      "target": 100,
+      "remaining": 25
+    },
+    "conclusion": "NO_NEW_GATE_CLOSED"
+  },
+  "hard": {
+    "unique_calibration_observations": 301,
+    "physical_frozen_rows": 472,
+    "remaining_to_400": 99,
+    "remaining_to_600": 299,
+    "metrics_policy": "SEALED_UNTIL_600",
+    "conclusion": "NO_NEW_CANONICAL_INCREMENT_OBSERVED_IN_CURRENT_CUT"
+  },
+  "clay": {
+    "observation_count": 3,
+    "status": "ACTIVE_PROSPECTIVE",
+    "metrics_opened": false,
+    "outcomes_read": 0,
+    "main_blockers": [
+      "PIT_CATCHUP_NOT_READY",
+      "CATCHUP_COMPONENT_HAS_UNMAPPED_IDENTITIES"
+    ],
+    "evidence_recovery_status": "NO_SAFE_NEW_IDENTITY_PROMOTION_AVAILABLE",
+    "conclusion": "BLOCKED_BY_LEGITIMATE_EVIDENCE_GAP_NOT_PIPELINE_FAILURE"
+  },
+  "cadences_main": {
+    "football_telegram": "*/15 * * * *",
+    "hard": "2,17,32,47 * * * *",
+    "clay": "7,22,37,52 * * * *",
+    "live": "12,27,42,57 * * * *",
+    "changed": false
+  },
+  "protections": {
+    "missing_not_zero": true,
+    "no_silent_imputation": true,
+    "no_backfill": true,
+    "metrics_before_600": false,
+    "automatic_wagering": false,
+    "real_money": "BLOCKED"
+  },
+  "decision": "CONTINUE_EXISTING_15_MIN_CYCLES_FAIL_CLOSED_NO_FORCE"
+}
