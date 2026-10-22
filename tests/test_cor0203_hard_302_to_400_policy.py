@@ -1,6 +1,7 @@
 from pathlib import Path
 
 ROLLING = Path(".github/workflows/tennis-world-rolling-horizon.yml")
+BATCH = Path(".github/workflows/cor0203-batch-freeze.yml")
 CYCLE = Path("scripts/cor0203_production_cycle.sh")
 
 
@@ -26,3 +27,11 @@ def test_holdout_protections_remain_explicit():
     assert 'assert uniqueness["outcomes_read"] == 0' in raw
     assert 'assert source_readiness["required_paid_providers"] == ["rapidapi_tennis"]' in raw
     assert 'assert source_readiness["retired_paid_sources"]["api_tennis"]["required"] is False' in raw
+
+
+def test_only_rolling_horizon_owns_routine_two_hour_hard_schedule():
+    rolling = ROLLING.read_text(encoding="utf-8")
+    batch = BATCH.read_text(encoding="utf-8")
+    assert 'cron: "17 */2 * * *"' in rolling
+    assert "cron: '17 */2 * * *'" not in batch
+    assert "workflow_dispatch:" in batch
