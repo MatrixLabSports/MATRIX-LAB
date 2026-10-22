@@ -1,69 +1,71 @@
 {
   "schema": "MATRIX_CLV_SUBGATE_30_QUALITY_V1",
-  "generated_at_utc": "2026-10-22T16:28:31.976869+00:00",
+  "generated_at_utc": "2026-10-22T16:30:07.336938+00:00",
   "market_key": "over_2_5",
   "status": {
     "decision_count": 156,
-    "closing_odds_count": 10,
+    "closing_odds_count": 11,
     "subgate_target": 30,
-    "remaining_to_subgate_30": 20,
+    "remaining_to_subgate_30": 19,
     "final_target": 300,
-    "remaining_to_300": 290,
+    "remaining_to_300": 289,
     "subgate_30_reached": false,
     "metrics_opened": false,
     "state_status": "ACCUMULATING_SEALED_UNTIL_300"
   },
   "valid_closing_quality": {
-    "closing_events": 10,
-    "capture_files_read": 10,
-    "valid_strict_fresh_captures": 10,
+    "closing_events": 11,
+    "capture_files_read": 11,
+    "valid_strict_fresh_captures": 11,
     "missing_capture_files": 0,
     "invalid_capture_reason_counts": {},
     "valid_capture_rate_pct_of_closing_events": 100.0,
     "quote_age_seconds": {
-      "count": 10,
+      "count": 11,
       "min": 46.0,
-      "mean": 74.4036,
-      "median": 65.0,
-      "p95": 119.0198,
+      "mean": 77.73054545454545,
+      "median": 70.0,
+      "p95": 119.018,
       "max": 119.036,
       "all_within_120": true
     },
     "capture_lead_seconds": {
-      "count": 10,
+      "count": 11,
       "min": 33.0,
-      "mean": 576.2964,
-      "median": 671.5,
-      "p95": 833.0,
-      "max": 842.0,
+      "mean": 605.0876363636364,
+      "median": 691.0,
+      "p95": 867.5,
+      "max": 893.0,
       "all_prematch": true
     },
     "valid_transport_breakdown": {
+      "API-Football /odds": 1,
       "odds-api.net": 9,
       "odds-api.net Sandbox": 1
     }
   },
   "attempt_quality": {
-    "attempt_count": 1516,
+    "attempt_count": 1520,
     "outcome_counts": {
       "BLOCKED_MARKET_INCOMPLETE": 1,
-      "BLOCKED_STALE_PROVIDER_QUOTE": 818,
-      "ODDS_API_BLOCKED_IDENTITY": 612,
+      "BLOCKED_STALE_PROVIDER_QUOTE": 819,
+      "CAPTURED_VALID": 1,
+      "ODDS_API_BLOCKED_IDENTITY": 614,
       "ODDS_API_BLOCKED_MARKET_INCOMPLETE": 43,
       "ODDS_API_BLOCKED_STALE_PROVIDER_QUOTE": 32,
       "ODDS_API_BLOCKED_TEMPORAL": 1,
       "ODDS_API_CAPTURED_VALID": 9
     },
     "failure_bucket_counts": {
-      "CAPTURED_VALID": 9,
-      "IDENTITY": 612,
+      "CAPTURED_VALID": 10,
+      "IDENTITY": 614,
       "MARKET_INCOMPLETE": 44,
-      "STALE": 850,
+      "STALE": 851,
       "TEMPORAL": 1
     },
     "transport_attempt_counts": {
-      "API-Football /odds bookmaker_id=4": 819,
-      "odds-api.net /v1/events/{event_id}/odds/snapshot": 697
+      "API-Football /odds bookmaker_id=4": 821,
+      "odds-api.net /v1/events/{event_id}/odds/snapshot": 699
     },
     "note": "Attempt counts include repeated watcher polls and are not an event-level capture-rate denominator."
   },
