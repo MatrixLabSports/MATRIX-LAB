@@ -103,6 +103,7 @@ jobs:
         run: python -m tools.telegram_green_signal_alerts
 
       - name: Persistir ledger gobernado
+        if: ${{ always() }}
         shell: bash
         run: |
           set -euo pipefail
