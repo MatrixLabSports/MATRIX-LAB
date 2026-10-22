@@ -54,7 +54,39 @@ def build_ledger(
     tennis_quota = _quota_from_headers(tennis_headers)
     football_quota = _quota_from_headers(football_headers)
 
-    prior_tennis = ((previous_ledger.get("providers") or {}).get("rapidapi_tennis") or {})
+    prior_providers = previous_ledger.get("providers") or {}
+    prior_tennis = prior_providers.get("rapidapi_tennis") or {}
+    prior_football = prior_providers.get("api_football") or {}
+
+    def preserve_verified_prior(current: dict[str, Any], prior: Mapping[str, Any]) -> dict[str, Any]:
+        trusted = {
+            "VERIFIED_RESPONSE_HEADERS",
+            "VERIFIED_ACCOUNT_CONSOLE_PLUS_PROVIDER_DOCS",
+        }
+        if current.get("quota_evidence_status") == "VERIFIED_RESPONSE_HEADERS":
+            return current
+        if prior.get("quota_evidence_status") in trusted:
+            out = dict(current)
+            for key in (
+                "quota_limit",
+                "quota_remaining",
+                "quota_remaining_fraction",
+                "quota_evidence_status",
+                "plan",
+                "plan_price_usd_month",
+                "quota_usage_percent",
+                "bandwidth_quota_usage_percent",
+                "account_console_status",
+                "account_console_observed_at",
+                "provider_docs_quota_basis",
+            ):
+                if key in prior:
+                    out[key] = prior[key]
+            return out
+        return current
+
+    tennis_quota = preserve_verified_prior(tennis_quota, prior_tennis)
+    football_quota = preserve_verified_prior(football_quota, prior_football)
     tennis_probe_count = int(prior_tennis.get("quota_probe_count") or 0)
     if "provider_public_rate_headers" in tennis_inventory:
         tennis_probe_count += 1
