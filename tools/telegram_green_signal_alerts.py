@@ -34,6 +34,7 @@ BOGOTA = ZoneInfo("America/Bogota")
 FOOTBALL_ROOT = Path("evidence/api_football/daily_prematch_reports")
 TENNIS_ROOT = Path("evidence/tennis_signals")
 LEDGER = Path("evidence/notifications/telegram/MATRIX_TELEGRAM_SIGNAL_LEDGER.json")
+SENT_RECOVERY_OVERRIDES = Path("evidence/notifications/telegram/MATRIX_TELEGRAM_SENT_RECOVERY_OVERRIDES.json")
 CORRELATED_RISK_EVIDENCE = Path("evidence/notifications/telegram/MATRIX_CORRELATED_RISK_CALIBRATION_LAST.json")
 BLOCKER_AUDIT_EVIDENCE = Path("evidence/notifications/telegram/MATRIX_TELEGRAM_BLOCKER_RECOVERY_AUDIT_LAST.json")
 PHYSICAL_BOOK_QUOTE_ROOT = Path("evidence/football_world_inventory")
@@ -1813,6 +1814,28 @@ def main() -> None:
     ledger.setdefault("paper_bankroll", {})
     ledger.setdefault("pre_send_gate", {})
     ledger.setdefault("candidate_lifecycle", {})
+
+    # Recover physically delivered Telegram signals when a prior Git persistence
+    # race lost the sent[] append. Recovery is evidence-driven and never assigns
+    # paper or real-money exposure retroactively.
+    recovered_sent = load_json(SENT_RECOVERY_OVERRIDES, {"records": []})
+    existing_sent_recovery_keys = {
+        str(x.get("signal_key") or "")
+        for x in ledger.get("sent", [])
+        if isinstance(x, dict)
+    }
+    for recovered in recovered_sent.get("records", []):
+        if not isinstance(recovered, dict):
+            continue
+        recovered_key = str(recovered.get("signal_key") or "")
+        if not recovered_key or recovered_key in existing_sent_recovery_keys:
+            continue
+        record = dict(recovered)
+        record["paper_bet"] = None
+        record["execution"] = None
+        record["matrix_real_money"] = "BLOQUEADO"
+        ledger["sent"].append(record)
+        existing_sent_recovery_keys.add(recovered_key)
 
     pre_risk_bankroll = recalc_paper_bankroll(ledger)
     correlated_risk_calibration = calibrate_paper_correlated_exposure(
