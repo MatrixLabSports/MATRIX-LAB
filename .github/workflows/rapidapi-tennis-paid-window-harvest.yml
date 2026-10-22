@@ -1,6 +1,11 @@
 name: MATRIX RapidAPI Tennis Paid-Window Harvest
 
 on:
+  push:
+    branches:
+      - main
+    paths:
+      - .github/workflows/rapidapi-tennis-paid-window-harvest.yml
   workflow_dispatch:
     inputs:
       target_date:
@@ -38,7 +43,12 @@ jobs:
           python-version: "3.11"
 
       - name: Install dependency
-        run: python -m pip install requests
+        run: python -m pip install requests pytest
+
+      - name: Verify subscription deadline guard
+        run: |
+          python -m pytest -q tests/test_tennis_subscription_deadline_guard.py
+          python -m tools.tennis_subscription_deadline_guard --out evidence/governance/MATRIX_TENNIS_SUBSCRIPTION_DEADLINE_LAST.json
 
       - name: Resolve governed Bogota date and paid-window gate
         id: date
@@ -159,6 +169,7 @@ jobs:
           git config user.name matrix-tennis-harvest
           git config user.email matrix-tennis-harvest@users.noreply.github.com
           git add "evidence/tennis/paid_window_harvest/$D"
+          git add evidence/governance/MATRIX_TENNIS_SUBSCRIPTION_DEADLINE_LAST.json
           if git diff --cached --quiet; then
             echo "NO_HARVEST_CHANGE"
             exit 0
