@@ -136,7 +136,8 @@ jobs:
                       str(x.get("legacy_provider_event_id") or x.get("provider_source_event_id") or x.get("event_id") or "")
                       for x in (discovery.get("eligible_candidates") or [])
                   ],
-                  "provider_rejected":discovery.get("provider_rejected") or []
+                  "provider_rejected":discovery.get("provider_rejected") or [],
+                  "certified_exact_cut_rank_override":discovery.get("certified_exact_cut_rank_override") or {}
               },
               "metrics_opened":u["metrics_opened"],
               "outcomes_read":u["outcomes_read"],
