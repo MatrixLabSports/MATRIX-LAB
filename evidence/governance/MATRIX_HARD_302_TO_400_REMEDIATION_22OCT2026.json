@@ -1,0 +1,85 @@
+{
+  "schema": "MATRIX_HARD_302_TO_400_REMEDIATION_V1",
+  "date_bogota": "2026-10-22",
+  "objective": {
+    "current_unique_observations": 302,
+    "target_unique_observations": 400,
+    "remaining_unique_observations": 98,
+    "metrics_policy": "SEALED_UNTIL_600"
+  },
+  "physical_state": {
+    "physical_frozen_rows": 473,
+    "duplicate_observations_quarantined": 171,
+    "holdout_integrity": "PASS",
+    "outcomes_read_for_metrics": 0,
+    "metrics_opened": false,
+    "parameter_tuning_allowed": false,
+    "real_money": "BLOCKED"
+  },
+  "diagnosis": {
+    "production_observability_bottleneck": "SOURCE_READY_NO_NEW_ELIGIBLE_EVENTS",
+    "latest_batch_new_freezes": 0,
+    "latest_batch_new_blocked": 427,
+    "latest_batch_waiting_inputs": 0,
+    "recent_blocker_sample": {
+      "already_frozen_or_physical_duplicate": true,
+      "post_start_freeze_forbidden_seen": true,
+      "surface_history_missing_seen": true,
+      "elo_surface_missing_seen": true,
+      "glicko_surface_missing_seen": true
+    },
+    "rapidapi_precut_stats_rich": {
+      "provider_network_calls": 32,
+      "stats_hits": 0,
+      "observed_failure_mode": "INLINE_STAT_REQUIRED_SERVICE_COUNTS_MISSING",
+      "routine_repetition_authorized": false
+    }
+  },
+  "future_inventory": {
+    "date_bogota": "2026-10-23",
+    "rapidapi_registered_matches": 12,
+    "atp_challenger_matches": 6,
+    "challenger_tournaments_observed": [
+      "Fort Worth Challenger",
+      "Guangzhou Challenger",
+      "Lisbon Challenger"
+    ],
+    "surface_assumption_made": false,
+    "automatic_holdout_increment": false,
+    "source_evidence": "evidence/tennis_world_inventory/2026-10-23/world_exact_day_dual_audit.json"
+  },
+  "remediation": {
+    "canonical_routine_workflow": ".github/workflows/tennis-world-rolling-horizon.yml",
+    "routine_schedule": "17 */2 * * *",
+    "horizon_bogota": ["D0", "D1", "D2"],
+    "paid_structured_source": "rapidapi_tennis",
+    "api_tennis": "RETIRED_NO_NETWORK",
+    "browser_source_order": ["SofaScore", "Flashscore", "RapidAPI Tennis"],
+    "batch_freeze_routine_cron_removed": true,
+    "batch_freeze_manual_available": true,
+    "rolling_horizon_push_trigger_removed": true,
+    "stats_rich_probe_default": "DISABLED_ZERO_HIT_DIAGNOSTIC_ONLY",
+    "stats_rich_probe_manual_opt_in_env": "MATRIX_COR0203_STATS_RICH_PROBE=1",
+    "daily_calendar_baseline_restored": "evidence/daily_source_counts/2026-10-22/MATRIX_WORLD_CALENDAR_SOURCE_COUNTS.json",
+    "retired_api_tennis_baseline_semantics": "RETIRED_NO_NETWORK_WITHOUT_FAKE_COUNT"
+  },
+  "physical_verification": {
+    "prior_failed_run_id": 39768689734,
+    "prior_failed_run_tests_passed": 49,
+    "prior_failed_run_failure_reason": "LEGACY_BROWSER_CROSSCHECK_PATH_MISSING",
+    "legacy_browser_gate_fixed_to_accept_canonical_evidence": true,
+    "canonical_tennis_browser_first_evidence": "evidence/tennis/MATRIX_TENNIS_20261022_BROWSER_FIRST_RECONCILIATION.json",
+    "canonical_football_browser_first_evidence": "evidence/football_world_inventory/2026-10-22/MATRIX_FOOTBALL_BROWSER_FIRST_RECONCILIATION.json",
+    "final_clean_verification_run_id": 39769446977,
+    "final_clean_verification_run_status_at_receipt": "QUEUED",
+    "final_clean_verification_success_claimed": false
+  },
+  "protections": {
+    "missing_not_zero": true,
+    "silent_imputation": false,
+    "backfill_into_holdout": false,
+    "odds_to_probability": false,
+    "automatic_wagering": false,
+    "real_money": "BLOCKED"
+  }
+}
