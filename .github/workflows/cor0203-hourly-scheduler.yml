@@ -46,6 +46,13 @@ jobs:
       - name: Install scheduler test dependency
         run: python -m pip install pytest
 
+      - name: Enforce paid API deadline before COR02 COR03 acquisition
+        env:
+          RAPIDAPI_TENNIS_KEY: ${{ secrets.RAPIDAPI_TENNIS_KEY }}
+        run: |
+          python -m pytest -q tests/test_tennis_subscription_deadline_guard.py
+          python -m tools.tennis_subscription_deadline_guard --require-paid-use --require-key
+
       - name: Verify governed tennis production protections
         run: |
           python -m pytest -q \
