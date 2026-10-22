@@ -17,6 +17,7 @@ concurrency:
 
 jobs:
   probe:
+    if: ${{ false }} # API-Tennis retired 2026-10-13; NO_NETWORK unless explicitly reauthorized in governance
     runs-on: ubuntu-latest
     timeout-minutes: 10
     env:
