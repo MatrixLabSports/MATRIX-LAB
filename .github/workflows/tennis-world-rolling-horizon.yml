@@ -20,6 +20,7 @@ on:
       - tools/cor0203_api_tennis_certified_authority_recovery.py
       - tools/matrix_daily_calendar_baseline_gate.py
       - tests/test_matrix_daily_calendar_baseline_gate.py
+      - tests/test_cor0203_hard_302_to_400_policy.py
 
 permissions:
   contents: write
@@ -58,7 +59,8 @@ jobs:
             tests/test_cor0203_preregister_discovery.py \
             tests/test_cor0203_world_inventory_discovery.py \
             tests/test_cor0203_api_tennis_certified_authority_recovery.py \
-            tests/test_cor0203_physical_uniqueness.py
+            tests/test_cor0203_physical_uniqueness.py \
+            tests/test_cor0203_hard_302_to_400_policy.py
 
       - name: Record physical checkout
         shell: bash
