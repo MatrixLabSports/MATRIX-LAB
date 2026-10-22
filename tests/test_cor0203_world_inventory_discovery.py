@@ -1,6 +1,9 @@
 from __future__ import annotations
 
-from tools.cor0203_world_inventory_discovery import derive_world_cor_discovery
+from tools.cor0203_world_inventory_discovery import (
+    apply_certified_exact_cut_rank_overrides,
+    derive_world_cor_discovery,
+)
 
 
 def _world_event(
@@ -286,3 +289,101 @@ def test_world_derived_discovery_resolves_same_atp_match_id_by_physical_identity
     assert all(row["source_id_collision_resolved"] is True for row in collision_rows)
     assert result["world_source_event_id_collision_count"] >= 1
     assert result["world_identity_binding_rejection_count"] == 0
+
+
+def test_certified_atp_exact_cut_override_fills_only_missing_numeric_id(tmp_path):
+    import json
+
+    path = tmp_path / "rank_overrides.json"
+    path.write_text(json.dumps({
+        "schema": "MATRIX_COR0203_CERTIFIED_EXACT_CUT_RANK_OVERRIDES_V1",
+        "ranking_cut": "2026-09-21",
+        "entries": [{
+            "provider_player_id": "rapidapi-tennis:player:60951",
+            "provider_numeric_player_id": "60951",
+            "player": "Patrick Maloney",
+            "country": "USA",
+            "place": "999",
+            "points": "19",
+            "snapshot_date": "2026-09-21",
+            "source_authority": "ATP_OFFICIAL_RANKINGS_BROWSER_EXACT_DATE",
+            "source_url": "https://www.atptour.com/en/rankings/singles?dateWeek=2026-09-21",
+            "verified_date_filter_value": "2026.09.21",
+            "protections": {
+                "overwrite_existing_provider_rank": False,
+                "join_by_name_only": False,
+                "post_cut_competitive_data_used": False,
+                "outcomes_used": False,
+                "odds_used": False
+            }
+        }]
+    }), encoding="utf-8")
+
+    merged, audit = apply_certified_exact_cut_rank_overrides(
+        rankings={"40609": {
+            "place": "77", "points": "763", "player": "Jenson Brooksby",
+            "country": "USA", "snapshot_date": "2026-09-21"
+        }},
+        wanted_player_ids={"40609", "60951"},
+        fixture_identity_by_player={
+            "40609": {"name": "Jenson Brooksby", "country": "USA"},
+            "60951": {"name": "Patrick Maloney", "country": "USA"},
+        },
+        path=path,
+    )
+
+    assert merged["60951"]["place"] == "999"
+    assert merged["60951"]["points"] == "19"
+    assert merged["60951"]["ranking_source"] == (
+        "ATP_OFFICIAL_BROWSER_EXACT_CUT_CERTIFIED_OVERRIDE"
+    )
+    assert audit["applied_count"] == 1
+    assert audit["overwrote_existing_provider_rank"] is False
+    assert audit["join_by_name_only"] is False
+
+
+def test_certified_exact_cut_override_never_overwrites_provider_rank(tmp_path):
+    import json
+
+    path = tmp_path / "rank_overrides.json"
+    path.write_text(json.dumps({
+        "schema": "MATRIX_COR0203_CERTIFIED_EXACT_CUT_RANK_OVERRIDES_V1",
+        "ranking_cut": "2026-09-21",
+        "entries": [{
+            "provider_numeric_player_id": "60951",
+            "player": "Patrick Maloney",
+            "country": "USA",
+            "place": "999",
+            "points": "19",
+            "snapshot_date": "2026-09-21",
+            "source_authority": "ATP_OFFICIAL_RANKINGS_BROWSER_EXACT_DATE",
+            "source_url": "https://www.atptour.com/en/rankings/singles?dateWeek=2026-09-21",
+            "verified_date_filter_value": "2026.09.21",
+            "protections": {
+                "overwrite_existing_provider_rank": False,
+                "join_by_name_only": False,
+                "post_cut_competitive_data_used": False,
+                "outcomes_used": False,
+                "odds_used": False
+            }
+        }]
+    }), encoding="utf-8")
+
+    provider = {
+        "60951": {
+            "place": "998", "points": "20", "player": "Patrick Maloney",
+            "country": "USA", "snapshot_date": "2026-09-21"
+        }
+    }
+    merged, audit = apply_certified_exact_cut_rank_overrides(
+        rankings=provider,
+        wanted_player_ids={"60951"},
+        fixture_identity_by_player={
+            "60951": {"name": "Patrick Maloney", "country": "USA"},
+        },
+        path=path,
+    )
+
+    assert merged["60951"]["place"] == "998"
+    assert audit["applied_count"] == 0
+    assert audit["skipped_existing_provider_rank"] == ["60951"]
