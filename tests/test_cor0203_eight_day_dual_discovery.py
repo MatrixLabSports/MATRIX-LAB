@@ -49,6 +49,12 @@ def test_milestones_do_not_open_metrics():
 def test_window_closes_only_at_200_without_metrics():
     p=build_status({"result":"PASS","unique_calibration_observations":200})
     assert p["window1_physical_status"]=="CLOSED_AT_200"
-    assert all(x["status"]=="REACHED" for x in p["milestones"].values())
+    assert p["milestones"]["100"]["status"]=="REACHED"
+    assert p["milestones"]["150"]["status"]=="REACHED"
+    assert p["milestones"]["200"]["status"]=="REACHED"
+    assert p["milestones"]["300"]["status"]=="PENDING"
+    assert p["milestones"]["400"]["status"]=="PENDING"
+    assert p["milestones"]["500"]["status"]=="PENDING"
+    assert p["milestones"]["600"]["status"]=="PENDING"
     assert all(x["metrics_open_allowed"] is False for x in p["milestones"].values())
     assert p["metrics_opened"] is False
