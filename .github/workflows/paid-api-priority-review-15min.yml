@@ -109,7 +109,7 @@ jobs:
           [ -n "$F" ] && ARGS+=(--football-manifest "$F")
           [ -f "$PREV" ] && ARGS+=(--previous-ledger "$PREV")
           python -m tools.paid_api_quota_ledger "${ARGS[@]}" --out /tmp/MATRIX_PAID_API_QUOTA_LEDGER_SEEDED.json
-          cp /tmp/MATRIX_PAID_API_QUOTA_LEDGER_SEEDED.json evidence/governance/MATRIX_PAID_API_QUOTA_LEDGER_LAST.json
+          echo "QUOTA_LEDGER_SEEDED_IN_TMP_ONLY"
 
       - name: Decide provider-specific network refresh
         id: refresh
@@ -126,7 +126,8 @@ jobs:
           event=os.environ.get("GITHUB_EVENT_NAME","")
           now=datetime.now(timezone.utc)
           last=Path("evidence/governance/MATRIX_PAID_API_15MIN_REVIEW_LAST.json")
-          ledger=Path("evidence/governance/MATRIX_PAID_API_QUOTA_LEDGER_LAST.json")
+          tmp_ledger=Path("/tmp/MATRIX_PAID_API_QUOTA_LEDGER_SEEDED.json")
+          ledger=tmp_ledger if tmp_ledger.exists() else Path("evidence/governance/MATRIX_PAID_API_QUOTA_LEDGER_LAST.json")
 
           base_due=True
           base_reason="NO_PREVIOUS_RECEIPT"
@@ -303,7 +304,7 @@ jobs:
           PY
 
       - name: Persist governed quota evidence
-        if: steps.window.outputs.active == 'true'
+        if: steps.window.outputs.active == 'true' && (steps.refresh.outputs.tennis_due == 'true' || steps.refresh.outputs.football_due == 'true')
         shell: bash
         run: |
           set -euo pipefail
