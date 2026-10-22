@@ -82,7 +82,7 @@ jobs:
           tj=json.loads(t.read_text())
           fj=json.loads(f.read_text())
           ts=tj.get("source_order") or []
-          fs=fj.get("source_order") or []
+          fs=fj.get("source_order") or (fj.get("protections") or {}).get("source_order") or []
           assert "SofaScore" in ts and "Flashscore" in ts and ts.index("SofaScore") < ts.index("Flashscore")
           assert "SofaScore" in fs and "Flashscore" in fs and fs.index("SofaScore") < fs.index("Flashscore")
           print("BROWSER_FIRST_GATE_PASS",t,f)
