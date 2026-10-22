@@ -31,6 +31,7 @@ def test_workflow_schedule_is_every_15_minutes_and_fail_closed_policy_is_present
     assert 'no_duplicate_persistence' in raw
     assert 'REAL_MONEY: BLOCKED' in raw
     assert 'AUTO_BETTING: DISABLED' in raw
+    assert 'cancel-in-progress: false' in raw
 
 
 def test_source_order_remains_browser_first():
