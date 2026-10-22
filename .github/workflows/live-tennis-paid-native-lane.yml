@@ -10,8 +10,6 @@ on:
       - tools/live_tennis_paid_cumulative_gate.py
       - tests/test_live_tennis_paid_native_lane.py
   workflow_dispatch:
-  schedule:
-    - cron: '53 */2 * * *'
 
 permissions:
   contents: write
@@ -22,6 +20,7 @@ concurrency:
 
 jobs:
   paid-native:
+    if: ${{ false }} # API-Tennis retired 2026-10-13; NO_NETWORK unless explicitly reauthorized in governance
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
