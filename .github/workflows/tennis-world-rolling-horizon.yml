@@ -3,7 +3,7 @@ name: Tennis World Rolling Horizon
 on:
   workflow_dispatch:
   schedule:
-    - cron: "17 14,20 * * *"
+    - cron: "17 */2 * * *"
   push:
     branches:
       - repair/cor09-world-pipeline
@@ -106,11 +106,11 @@ jobs:
           }
           python -m tools.matrix_daily_calendar_baseline_gate --report "${REPORT}"
 
-      - name: Build and process D0 D1 D2 Bogotá horizon with both paid providers
+      - name: Build and process D0 D1 D2 Bogotá horizon with RapidAPI primary
         shell: bash
         env:
-          API_TENNIS_KEY: ${{ secrets.API_TENNIS_KEY }}
           RAPIDAPI_TENNIS_KEY: ${{ secrets.RAPIDAPI_TENNIS_KEY }}
+          MATRIX_COR0203_STATS_RICH_PROBE: "0"
           MATRIX_TENNIS_PROVIDER: rapidapi_tennis
           MATRIX_TARGET_BRANCH: repair/cor09-world-pipeline
           MATRIX_GIT_USER_NAME: matrix-ci
