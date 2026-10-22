@@ -83,3 +83,29 @@ def test_paid_api_cannot_start_before_browser_baseline():
         assert "PAID_API_STARTED_BEFORE_BROWSER_BASELINE" in str(exc)
     else:
         raise AssertionError("API-first execution must block")
+
+
+def test_retired_api_tennis_is_valid_without_fake_capture():
+    r = report()
+    r["tennis"]["api_tennis"] = {
+        "status": "RETIRED_NO_NETWORK",
+        "attempted": False,
+        "count": None,
+    }
+    result = validate(r)
+    assert result["status"] == "PASS"
+
+
+def test_retired_api_tennis_cannot_be_marked_attempted():
+    r = report()
+    r["tennis"]["api_tennis"] = {
+        "status": "RETIRED_NO_NETWORK",
+        "attempted": True,
+        "count": None,
+    }
+    try:
+        validate(r)
+    except BaselineGateError as exc:
+        assert "RETIRED_SOURCE_MUST_NOT_BE_ATTEMPTED" in str(exc)
+    else:
+        raise AssertionError("retired API-Tennis must remain NO_NETWORK")
