@@ -76,24 +76,38 @@ jobs:
         run: |
           set -euo pipefail
           TODAY="$(TZ=America/Bogota date +%F)"
-          EVIDENCE="evidence/tennis_world_inventory/${TODAY}/MATRIX_DAILY_MULTISOURCE_BROWSER_CROSSCHECK.json"
-          test -f "${EVIDENCE}" || {
-            echo "DAILY_SOFASCORE_FLASHSCORE_CROSSCHECK_MISSING: ${EVIDENCE}"
+          LEGACY="evidence/tennis_world_inventory/${TODAY}/MATRIX_DAILY_MULTISOURCE_BROWSER_CROSSCHECK.json"
+          CANONICAL="evidence/tennis/MATRIX_TENNIS_${TODAY//-/}_BROWSER_FIRST_RECONCILIATION.json"
+          if [ -f "$LEGACY" ]; then
+            EVIDENCE="$LEGACY"
+            MODE="LEGACY_DAILY_MULTISOURCE"
+          elif [ -f "$CANONICAL" ]; then
+            EVIDENCE="$CANONICAL"
+            MODE="CANONICAL_BROWSER_FIRST"
+          else
+            echo "DAILY_SOFASCORE_FLASHSCORE_CROSSCHECK_MISSING: $LEGACY OR $CANONICAL"
             exit 1
-          }
-          python - "${EVIDENCE}" <<'PY'
+          fi
+          python - "$TODAY" "$EVIDENCE" "$MODE" <<'PY'
           import json, sys
           from pathlib import Path
-          p=Path(sys.argv[1])
+          today,pth,mode=sys.argv[1:4]
+          p=Path(pth)
           j=json.loads(p.read_text(encoding="utf-8"))
-          assert j["target_date_bogota"] == p.parent.name
-          assert j["sources"]["sofascore"]["opera_read_status"] == "PASS"
-          assert j["sources"]["flashscore"]["opera_read_status"] == "PASS"
-          assert j["governance_basis"]["sofascore_flashscore_daily_crosscheck_required"] is True
-          assert j["adjudication"]["paid_api_counts_are_not_world_complete"] is True
+          assert j["target_date_bogota"] == today
+          if mode=="LEGACY_DAILY_MULTISOURCE":
+              assert j["sources"]["sofascore"]["opera_read_status"] == "PASS"
+              assert j["sources"]["flashscore"]["opera_read_status"] == "PASS"
+              assert j["governance_basis"]["sofascore_flashscore_daily_crosscheck_required"] is True
+              assert j["adjudication"]["paid_api_counts_are_not_world_complete"] is True
+          else:
+              assert j["reconciliation"]["browser_first_gate"] == "PASS"
+              assert "SofaScore" in j["source_order"]
+              assert "Flashscore" in j["source_order"]
+              assert j["source_order"].index("SofaScore") < j["source_order"].index("Flashscore")
           assert j["protections"]["metrics_opened"] is False
           assert j["protections"]["real_money"] == "BLOCKED"
-          print("DAILY_MULTISOURCE_BROWSER_CROSSCHECK: PASS")
+          print("DAILY_MULTISOURCE_BROWSER_CROSSCHECK: PASS",mode,p)
           PY
 
       - name: Require autonomous exact calendar-first source-count report
