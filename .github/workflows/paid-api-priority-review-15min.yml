@@ -88,8 +88,44 @@ jobs:
           print("BROWSER_FIRST_GATE_PASS",t,f)
           PY
 
-      - name: Enforce paid subscription guards
+      - name: Decide whether network refresh is due
+        id: refresh
         if: steps.window.outputs.active == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY' >> "$GITHUB_OUTPUT"
+          import json, os
+          from datetime import datetime, timezone
+          from pathlib import Path
+
+          event=os.environ.get("GITHUB_EVENT_NAME","")
+          now=datetime.now(timezone.utc)
+          last=Path("evidence/governance/MATRIX_PAID_API_15MIN_REVIEW_LAST.json")
+          due=True
+          reason="NO_PREVIOUS_RECEIPT"
+          age_minutes=None
+          if event=="workflow_dispatch":
+              due=True
+              reason="MANUAL_DISPATCH"
+          elif last.exists():
+              try:
+                  j=json.loads(last.read_text())
+                  ts=datetime.fromisoformat(str(j["generated_at_utc"]).replace("Z","+00:00"))
+                  age_minutes=(now-ts.astimezone(timezone.utc)).total_seconds()/60
+                  same_day=(str(j.get("target_date_bogota"))==datetime.now().astimezone().date().isoformat())
+                  due=age_minutes>=60 or not same_day
+                  reason="STALE_60M_OR_NEW_DAY" if due else "FRESH_UNDER_60M_SKIP_NETWORK"
+              except Exception:
+                  due=True
+                  reason="RECEIPT_PARSE_ERROR_REFRESH"
+          print(f"network_due={'true' if due else 'false'}")
+          print(f"reason={reason}")
+          print(f"age_minutes={'' if age_minutes is None else round(age_minutes,2)}")
+          PY
+
+      - name: Enforce paid subscription guards
+        if: steps.window.outputs.active == 'true' && steps.refresh.outputs.network_due == 'true'
         env:
           RAPIDAPI_TENNIS_KEY: ${{ secrets.RAPIDAPI_TENNIS_KEY }}
           API_FOOTBALL_KEY: ${{ secrets.API_FOOTBALL_KEY }}
@@ -98,7 +134,7 @@ jobs:
           python -m tools.football_subscription_deadline_guard --require-paid-use --require-key --out /tmp/football_deadline.json
 
       - name: Review RapidAPI Tennis and API-Football
-        if: steps.window.outputs.active == 'true'
+        if: steps.window.outputs.active == 'true' && steps.refresh.outputs.network_due == 'true'
         env:
           RAPIDAPI_TENNIS_KEY: ${{ secrets.RAPIDAPI_TENNIS_KEY }}
           API_FOOTBALL_KEY: ${{ secrets.API_FOOTBALL_KEY }}
@@ -112,7 +148,7 @@ jobs:
           python -m tools.api_football_raw_archive --start "$D" --stop "$D" --out-root /tmp/matrix_paid_15min/football
 
       - name: Build deduplicated review evidence
-        if: steps.window.outputs.active == 'true'
+        if: steps.window.outputs.active == 'true' && steps.refresh.outputs.network_due == 'true'
         shell: bash
         run: |
           set -euo pipefail
@@ -168,7 +204,7 @@ jobs:
           PY
 
       - name: Persist only new evidence or latest receipt
-        if: steps.window.outputs.active == 'true'
+        if: steps.window.outputs.active == 'true' && steps.refresh.outputs.network_due == 'true'
         shell: bash
         run: |
           set -euo pipefail
