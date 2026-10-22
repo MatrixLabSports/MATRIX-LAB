@@ -192,12 +192,48 @@ jobs:
             echo "NO_GOVERNED_SETTLEMENT_CHANGE"
             exit 0
           fi
+          python - <<'PY' > /tmp/matrix_local_settled_ids.txt
+          import json
+          from pathlib import Path
+          p=Path("evidence/api_football/prospective_market_freeze/settlement_sync_last.json")
+          j=json.loads(p.read_text())
+          for fid in j.get("settled_fixture_ids") or []:
+              print(str(fid))
+          PY
+
           git commit -m "evidence(football): refresh FINAL-only prospective settlement and V2"
           for attempt in 1 2 3 4; do
             git fetch origin repair/cor09-world-pipeline
             if ! git rebase origin/repair/cor09-world-pipeline; then
               git rebase --abort || true
-              exit 1
+              python - <<'PY'
+          import json, subprocess
+          from pathlib import Path
+          wanted=[x.strip() for x in Path("/tmp/matrix_local_settled_ids.txt").read_text().splitlines() if x.strip()]
+          try:
+              raw=subprocess.check_output([
+                  "git","show",
+                  "origin/repair/cor09-world-pipeline:evidence/api_football/prospective_market_freeze/settlement_ledger.jsonl"
+              ],text=True)
+          except Exception:
+              raise SystemExit(3)
+          present=set()
+          for line in raw.splitlines():
+              if not line.strip(): continue
+              row=json.loads(line)
+              present.add(str(row.get("fixture_id")))
+          missing=[x for x in wanted if x not in present]
+          if missing:
+              print("SUPERSEDE_CHECK_MISSING=",missing)
+              raise SystemExit(4)
+          print("SUPERSEDED_BY_EQUIVALENT_PERSISTED_EVIDENCE")
+          PY
+              rc=$?
+              if [ "$rc" -eq 0 ]; then
+                exit 0
+              fi
+              sleep $((attempt * 2))
+              continue
             fi
             if git push origin HEAD:repair/cor09-world-pipeline; then
               echo "PUSH_SUCCEEDED_ATTEMPT=${attempt}"
