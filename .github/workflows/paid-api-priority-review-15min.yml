@@ -113,7 +113,7 @@ jobs:
                   j=json.loads(last.read_text())
                   ts=datetime.fromisoformat(str(j["generated_at_utc"]).replace("Z","+00:00"))
                   age_minutes=(now-ts.astimezone(timezone.utc)).total_seconds()/60
-                  same_day=(str(j.get("target_date_bogota"))==datetime.now().astimezone().date().isoformat())
+                  same_day=(str(j.get("target_date_bogota"))==datetime.now(__import__("zoneinfo").ZoneInfo("America/Bogota")).date().isoformat())
                   due=age_minutes>=60 or not same_day
                   reason="STALE_60M_OR_NEW_DAY" if due else "FRESH_UNDER_60M_SKIP_NETWORK"
               except Exception:
