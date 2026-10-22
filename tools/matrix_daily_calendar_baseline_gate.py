@@ -82,6 +82,17 @@ def validate(report: dict[str, Any]) -> dict[str, Any]:
         payload = report[sport].get(source)
         if not isinstance(payload, dict):
             raise BaselineGateError(f"{sport}:{source}:PAID_SOURCE_REQUIRED")
+
+        if source == "api_tennis" and payload.get("status") in {
+            "RETIRED_NO_NETWORK",
+            "EXPIRED_NOT_RENEWED",
+        }:
+            if payload.get("attempted") is not False:
+                raise BaselineGateError("tennis:api_tennis:RETIRED_SOURCE_MUST_NOT_BE_ATTEMPTED")
+            if payload.get("count") not in (None, 0):
+                raise BaselineGateError("tennis:api_tennis:RETIRED_SOURCE_COUNT_MUST_BE_NULL_OR_ZERO")
+            continue
+
         started = payload.get("capture_started_at_utc")
         if not started:
             raise BaselineGateError(f"{sport}:{source}:CAPTURE_START_REQUIRED")
