@@ -56,7 +56,7 @@ def build_ledger(
 
     prior_tennis = ((previous_ledger.get("providers") or {}).get("rapidapi_tennis") or {})
     tennis_probe_count = int(prior_tennis.get("quota_probe_count") or 0)
-    if tennis_inventory:
+    if "provider_public_rate_headers" in tennis_inventory:
         tennis_probe_count += 1
 
     reserve_fraction = 0.20
