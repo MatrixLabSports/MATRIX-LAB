@@ -123,16 +123,22 @@ jobs:
               j=json.loads(p.read_text())
               executed=int(j.get("executed_cycles") or 0)
               status=str(j.get("status") or "UNKNOWN")
-          missing=max(0,6-executed)
           with open(os.environ["GITHUB_OUTPUT"],"a",encoding="utf-8") as fh:
-              fh.write(f"cycles={missing}\n")
+              fh.write("cycles=0\n")
               fh.write(f"free_cycles={executed}\n")
               fh.write(f"free_status={status}\n")
-          print(json.dumps({"free_cycles":executed,"fallback_cycles":missing,"free_status":status},sort_keys=True))
+          print(json.dumps({
+              "free_cycles":executed,
+              "fallback_cycles":0,
+              "free_status":status,
+              "api_tennis_status":"RETIRED_NO_NETWORK"
+          },sort_keys=True))
+          if executed < 1:
+              raise SystemExit("LIVE_PRIMARY_UNAVAILABLE_API_TENNIS_RETIRED_FAIL_CLOSED")
           PY
 
       - name: Paid API-Tennis livescore failover
-        if: steps.failover.outputs.cycles != '0'
+        if: ${{ false }} # API-Tennis retired; NO_NETWORK
         env:
           API_TENNIS_KEY: ${{ secrets.API_TENNIS_KEY }}
           D0: ${{ steps.dates.outputs.d0 }}
@@ -146,7 +152,7 @@ jobs:
             --interval-seconds 12
 
       - name: Capture one API-Tennis shadow sample for equivalence
-        if: steps.failover.outputs.free_cycles == '6' && steps.failover.outputs.cycles == '0'
+        if: ${{ false }} # API-Tennis retired; NO_NETWORK
         env:
           API_TENNIS_KEY: ${{ secrets.API_TENNIS_KEY }}
           D0: ${{ steps.dates.outputs.d0 }}
@@ -184,19 +190,16 @@ jobs:
           free_cycles=int(os.environ["FREE_CYCLES"])
           requested_fallback=int(os.environ["FAILOVER_CYCLES"])
           fp=Path(f"evidence/live_tennis_lab/{d}/MATRIX_LIVE_TENNIS_API_TENNIS_FAILOVER_LEDGER_V1.json")
-          fallback=None
-          if fp.is_file():
-              fallback=json.loads(fp.read_text())
-          fallback_executed=int((fallback or {}).get("executed_cycles") or 0) if requested_fallback else 0
-          total=free_cycles+fallback_executed
-          mode="FREE_PRIMARY_ONLY" if requested_fallback==0 else "FREE_PLUS_PAID_FAILOVER" if free_cycles else "PAID_FAILOVER_ONLY"
+          fallback_executed=0
+          total=free_cycles
+          mode="FREE_PRIMARY_ONLY" if free_cycles else "FAIL_CLOSED_NO_VALID_LIVE_PROVIDER"
           receipt={
             "schema":"MATRIX_LIVE_TENNIS_PROVIDER_CONTINUITY_V1",
             "generated_at_utc":datetime.now(timezone.utc).replace(microsecond=0).isoformat(),
             "operational_date_bogota":d,
             "requested_monitor_cycles":6,
             "free_provider":{"provider":"live_tennis_api","status":os.environ["FREE_STATUS"],"executed_cycles":free_cycles},
-            "paid_failover":{"provider":"api_tennis","requested_cycles":requested_fallback,"executed_cycles":fallback_executed,"ledger_present":fp.is_file()},
+            "paid_failover":{"provider":"api_tennis","status":"RETIRED_NO_NETWORK","requested_cycles":0,"executed_cycles":0,"ledger_present":fp.is_file()},
             "coverage_mode":mode,
             "total_monitor_cycles":total,
             "monitoring_continuity": total>=6,
@@ -229,15 +232,11 @@ jobs:
         run: |
           set -euo pipefail
           FREE_LEDGER="evidence/live_tennis_lab/$D0/MATRIX_LIVE_TENNIS_STATE_LEDGER_V0_1.json"
-          PAID_LEDGER="evidence/live_tennis_lab/$D0/MATRIX_LIVE_TENNIS_API_TENNIS_FAILOVER_LEDGER_V1.json"
           if [ -f "$FREE_LEDGER" ]; then
             LEDGER="$FREE_LEDGER"
             echo "METADATA_LEDGER_MODE=FREE_PRIMARY"
-          elif [ -f "$PAID_LEDGER" ]; then
-            LEDGER="$PAID_LEDGER"
-            echo "METADATA_LEDGER_MODE=PAID_FAILOVER_NONCALIBRATION"
           else
-            echo "NO_CURRENT_LIVE_LEDGER"
+            echo "NO_CURRENT_LIVE_LEDGER_API_TENNIS_RETIRED_FAIL_CLOSED"
             exit 1
           fi
           python -m tools.live_tennis_metadata_reconcile \
@@ -369,18 +368,8 @@ jobs:
               executed_cycles=current["quota_guard"]["executed_cycles"]
               remaining_before=current["quota_guard"]["remaining_before_run"]
               cert_status="PASS_LIVE_REACTIVATED_CUMULATIVE_GATES_ACTIVE"
-          elif paid_path.is_file():
-              current=json.loads(paid_path.read_text())
-              current_provider="api_tennis"
-              calibration_admitted=False
-              unique_matches=current["unique_match_count"]
-              unique_states=current["unique_state_count"]
-              new_states=current["new_states_this_run"]
-              executed_cycles=current["executed_cycles"]
-              remaining_before=guard.get("remaining_before_run")
-              cert_status="PASS_LIVE_MONITORING_CONTINUITY_PAID_FAILOVER_ONLY"
           else:
-              raise SystemExit("NO_CURRENT_LIVE_LEDGER_FOR_CERTIFICATE")
+              raise SystemExit("NO_CURRENT_VALID_LIVE_LEDGER_API_TENNIS_RETIRED_FAIL_CLOSED")
           cert={
             "schema":"MATRIX_LIVE_TENNIS_REACTIVATION_CERT_V1",
             "generated_at_utc":datetime.now(timezone.utc).replace(microsecond=0).isoformat(),
