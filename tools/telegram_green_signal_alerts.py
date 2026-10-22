@@ -89,6 +89,21 @@ def load_json(path: Path, default: Any) -> Any:
     return json.loads(path.read_text(encoding="utf-8"))
 
 
+def persist_ledger_checkpoint(ledger: dict[str, Any]) -> None:
+    """Atomically persist confirmed Telegram delivery state before later work.
+
+    This closes the local durability gap where Telegram accepted a message but
+    a later exception prevented the end-of-run ledger write.
+    """
+    LEDGER.parent.mkdir(parents=True, exist_ok=True)
+    tmp = LEDGER.with_suffix(LEDGER.suffix + ".tmp")
+    tmp.write_text(
+        json.dumps(ledger, indent=2, sort_keys=True, ensure_ascii=False) + "\n",
+        encoding="utf-8",
+    )
+    os.replace(tmp, LEDGER)
+
+
 def over25_signal_governance_authorized() -> tuple[bool, dict[str, Any]]:
     path = Path("evidence/api_football/governance/over_2_5_p_matrix_promotion.json")
     promotion = load_json(path, {})
@@ -2289,6 +2304,9 @@ def main() -> None:
             }
             ledger["sent"].append(record)
             sent_by_key[key] = record
+            # Durability boundary: once Telegram confirms delivery, persist it
+            # locally before any later notification, settlement, or audit step.
+            persist_ledger_checkpoint(ledger)
             sent_now += 1
 
     if paper_enabled:
