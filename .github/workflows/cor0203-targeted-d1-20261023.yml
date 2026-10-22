@@ -101,6 +101,7 @@ jobs:
           m=json.loads(Path("evidence/cor0203/runtime/MATRIX_COR0203_MILESTONES_LAST.json").read_text())
           runtime=Path("evidence/cor0203/runtime")
           ids=["472142","530598","498292","504120"]
+          discovery=json.loads((runtime/"MATRIX_COR0203_WORLD_DERIVED_DISCOVERY_LAST.json").read_text())
           evidence={}
           for mid in ids:
               rows=[]
@@ -127,6 +128,16 @@ jobs:
               "duplicates_after":u["duplicate_observations_quarantined"],
               "remaining_to_400":max(0,400-u["unique_calibration_observations"]),
               "candidate_evidence":evidence,
+              "world_discovery":{
+                  "target_date_bogota":discovery.get("world_inventory_target_date"),
+                  "world_domain_candidates_input":discovery.get("world_domain_candidates_input"),
+                  "eligible_input_events":discovery.get("eligible_input_events"),
+                  "eligible_candidate_ids":[
+                      str(x.get("legacy_provider_event_id") or x.get("provider_source_event_id") or x.get("event_id") or "")
+                      for x in (discovery.get("eligible_candidates") or [])
+                  ],
+                  "provider_rejected":discovery.get("provider_rejected") or []
+              },
               "metrics_opened":u["metrics_opened"],
               "outcomes_read":u["outcomes_read"],
               "integrity_result":u["result"],
