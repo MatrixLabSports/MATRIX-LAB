@@ -94,7 +94,10 @@ def build_ledger(
     reserve_fraction = 0.20
 
     def route(quota: Mapping[str, Any], *, unknown_probe_count: int = 0) -> dict[str, Any]:
-        known = quota.get("quota_evidence_status") == "VERIFIED_RESPONSE_HEADERS"
+        known = quota.get("quota_evidence_status") in {
+            "VERIFIED_RESPONSE_HEADERS",
+            "VERIFIED_ACCOUNT_CONSOLE_PLUS_PROVIDER_DOCS",
+        }
         remaining_fraction = quota.get("quota_remaining_fraction")
         if known:
             low_value_allowed = bool(remaining_fraction is not None and remaining_fraction > reserve_fraction)
