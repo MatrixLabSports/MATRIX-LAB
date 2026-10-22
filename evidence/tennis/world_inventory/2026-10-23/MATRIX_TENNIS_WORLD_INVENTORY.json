@@ -1,9 +1,9 @@
 {
   "accumulation": {
-    "cumulative_count": 13,
-    "current_fetch_count": 13,
+    "cumulative_count": 14,
+    "current_fetch_count": 14,
     "never_decrease_within_day": true,
-    "newly_discovered_count": 0,
+    "newly_discovered_count": 1,
     "policy": "MONOTONIC_UNION_BY_STABLE_PHYSICAL_IDENTITY",
     "prior_count": 13,
     "retained_prior_only_count": 0
@@ -39,7 +39,7 @@
     "WTA": {
       "current_governed_model": null,
       "feeds_COR02_COR03": false,
-      "inventory_count": 2
+      "inventory_count": 3
     }
   },
   "duplicate_source_rows": [],
@@ -169,6 +169,46 @@
       "tier": "",
       "tournament_id": "22107",
       "tournament_name": "Guangzhou Challenger"
+    },
+    {
+      "circuit_detail": "WTA_MAIN_OR_OTHER",
+      "circuit_family": "WTA",
+      "event_format": "SINGLES",
+      "event_format_authority": "TWO_INDIVIDUAL_PROVIDER_NAMES",
+      "event_start_bogota": "2026-10-23T01:00:00-05:00",
+      "event_start_utc": "2026-10-23T06:00:00+00:00",
+      "match_id": "348684",
+      "model_derivation": {
+        "blockers": [
+          "CIRCUIT_OUTSIDE_COR0203_ATP_CHALLENGER"
+        ],
+        "domain_candidate": false,
+        "lane": "COR02_COR03_ATP_CHALLENGER_HARD",
+        "note": "Domain candidate only. Governed COR02/COR03 still requires identity, PIT history, ranking/features, unique physical event, future prematch freeze and all existing gates."
+      },
+      "physical_event_key": "19273a329723a6aae31fce1ad9345903cd5e9969fe272e91f914320d6ec86964",
+      "player1": {
+        "country": "CAN",
+        "id": "49081",
+        "name": "Leylah Annie Fernandez"
+      },
+      "player2": {
+        "country": "RUS",
+        "id": "14054",
+        "name": "Ekaterina Alexandrova"
+      },
+      "player_group": "",
+      "provider_channel": "WTA",
+      "provider_status": "",
+      "round": "1/4",
+      "source_event_id": "rapidapi-tennis:wta:match:348684",
+      "source_provider": "rapidapi_tennis",
+      "source_snapshot_sha256": "be23dd5b089927813f03f6068c4a7bc2457818248d87aadce41b5ddaa307f930",
+      "stable_physical_identity_key": "7d8d690896000adbfd6a72b8b1af2c7ec33fb193e23ce1f8e3afbb500222f9c2",
+      "surface": "Hard",
+      "tier": "",
+      "tournament_id": "16751",
+      "tournament_name": "Ningbo Open - Ningbo"
     },
     {
       "circuit_detail": "ATP_MAIN_OR_OTHER",
@@ -601,16 +641,16 @@
   "events_by_detail": {
     "ATP_CHALLENGER": 6,
     "ATP_MAIN_OR_OTHER": 5,
-    "WTA_MAIN_OR_OTHER": 2
+    "WTA_MAIN_OR_OTHER": 3
   },
   "events_by_family": {
     "ATP": 11,
     "ITF": 0,
-    "WTA": 2
+    "WTA": 3
   },
   "events_by_format": {
     "DOUBLES": 1,
-    "SINGLES": 12
+    "SINGLES": 13
   },
   "metrics_opened": false,
   "operational_timezone": "America/Bogota",
@@ -630,14 +670,14 @@
       "events_in_bogota_day": 11,
       "malformed_unplaced_rows": 0,
       "network_calls": 1,
-      "provider_rows_in_query_window": 140,
+      "provider_rows_in_query_window": 137,
       "status": "PASS"
     },
     "WTA": {
-      "events_in_bogota_day": 2,
+      "events_in_bogota_day": 3,
       "malformed_unplaced_rows": 0,
       "network_calls": 1,
-      "provider_rows_in_query_window": 85,
+      "provider_rows_in_query_window": 89,
       "status": "PASS"
     }
   },
@@ -647,9 +687,9 @@
     "x-ratelimit-limit": "3000",
     "x-ratelimit-remaining": "2991",
     "x-ratelimit-requests-limit": "1200000",
-    "x-ratelimit-requests-remaining": "1151552",
-    "x-ratelimit-requests-reset": "519211",
-    "x-ratelimit-reset": "11"
+    "x-ratelimit-requests-remaining": "1151470",
+    "x-ratelimit-requests-reset": "518609",
+    "x-ratelimit-reset": "4"
   },
   "provider_query_date_start": "2026-10-22",
   "provider_query_date_stop": "2026-10-24",
@@ -658,7 +698,7 @@
   "status": "PASS",
   "target_date_bogota": "2026-10-23",
   "unplaced_rows": [],
-  "world_calendar_inventory_count": 13,
+  "world_calendar_inventory_count": 14,
   "world_complete_gate": "REQUIRES_MULTI_SOURCE_RECONCILIATION",
   "world_inventory_complete": false
 }
