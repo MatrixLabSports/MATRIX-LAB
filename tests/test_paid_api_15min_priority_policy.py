@@ -25,8 +25,9 @@ def test_workflow_schedule_is_every_15_minutes_and_fail_closed_policy_is_present
     assert 'cron: "*/15 * * * *"' in raw
     assert 'PAID_WINDOW_CLOSED_NO_NETWORK_CALLS' in raw
     assert 'BROWSER_FIRST_GATE_PASS' in raw
-    assert 'FRESH_UNDER_60M_SKIP_NETWORK' in raw
-    assert "steps.refresh.outputs.network_due == 'true'" in raw
+    assert 'FRESH_UNDER_60M' in raw
+    assert "steps.refresh.outputs.tennis_due == 'true'" in raw
+    assert "steps.refresh.outputs.football_due == 'true'" in raw
     assert 'no_duplicate_persistence' in raw
     assert 'REAL_MONEY: BLOCKED' in raw
     assert 'AUTO_BETTING: DISABLED' in raw
