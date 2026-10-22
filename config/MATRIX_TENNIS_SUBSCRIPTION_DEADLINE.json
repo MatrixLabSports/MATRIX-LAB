@@ -9,7 +9,8 @@
     "spending_after_cutoff_authorized": false,
     "priority_until_cutoff": "MAXIMIZE_USEFUL_EVIDENCE_WITHOUT_DUPLICATE_OR_LOW_VALUE_CALLS",
     "review_interval_minutes": 15,
-    "review_cadence_policy": "REVIEW_PAID_PROVIDER_EVERY_15_MINUTES_WHILE_WINDOW_ACTIVE"
+    "review_cadence_policy": "SUPERVISE_EVERY_15_MINUTES_NETWORK_REFRESH_AT_MOST_HOURLY_UNLESS_MANUAL_OR_NEW_DAY",
+    "minimum_network_refresh_minutes": 60
   },
   "retired_sources": {
     "api_tennis": {
@@ -28,7 +29,7 @@
     "clay": "PRIORITIZE_PIT_AND_IDENTITY_BLOCKER_RECOVERY",
     "live": "DO_NOT_SPEND_PAID_CALLS_UNLESS_WORKFLOW_EXPLICITLY_REQUIRES_RAPIDAPI",
     "harvest": "PERSIST_REUSABLE_INVENTORY_SNAPSHOTS_AND_RECEIPTS",
-    "paid_api_review": "EVERY_15_MINUTES_WITH_BROWSER_FIRST_GATE_AND_CONTENT_HASH_DEDUPLICATION"
+    "paid_api_review": "EVERY_15_MINUTES_SUPERVISOR; NETWORK_REFRESH_AT_MOST_HOURLY_UNLESS_MANUAL_OR_NEW_DAY; BROWSER_FIRST_GATE_REQUIRED"
   },
   "after_cutoff": {
     "paid_api_use": "BLOCKED_UNLESS_NEW_EXPLICIT_USER_AUTHORIZATION",
