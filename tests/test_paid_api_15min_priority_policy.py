@@ -32,6 +32,8 @@ def test_workflow_schedule_is_every_15_minutes_and_fail_closed_policy_is_present
     assert 'REAL_MONEY: BLOCKED' in raw
     assert 'AUTO_BETTING: DISABLED' in raw
     assert 'cancel-in-progress: false' in raw
+    assert 'QUOTA_LEDGER_SEEDED_IN_TMP_ONLY' in raw
+    assert "if: steps.window.outputs.active == 'true' && (steps.refresh.outputs.tennis_due == 'true' || steps.refresh.outputs.football_due == 'true')" in raw
 
 
 def test_source_order_remains_browser_first():
