@@ -79,6 +79,13 @@ def build_ledger(
                 "account_console_status",
                 "account_console_observed_at",
                 "provider_docs_quota_basis",
+                "quota_remaining_is_estimated_from_usage_percent",
+                "subscription_start",
+                "analytics_30d_api_calls_display",
+                "analytics_30d_paid_api_calls_display",
+                "analytics_30d_overage_spend_usd",
+                "account_evidence",
+                "analytics_evidence",
             ):
                 if key in prior:
                     out[key] = prior[key]
