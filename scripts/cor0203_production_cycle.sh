@@ -606,9 +606,34 @@ PUSHED=0
 for attempt in 1 2 3 4; do
   git fetch origin "$TARGET_BRANCH"
   if ! git rebase "origin/$TARGET_BRANCH"; then
-    git rebase --abort || true
-    echo "COR0203_REBASE_CONFLICT_ATTEMPT_${attempt}" >&2
-    exit 1
+    mapfile -t conflicts < <(git diff --name-only --diff-filter=U)
+    safe_mutable=1
+    for p in "${conflicts[@]}"; do
+      case "$p" in
+        evidence/cor0203/runtime/*_LAST.json|evidence/cor0203/runtime/MATRIX_COR0203_SCHEDULER_HEARTBEAT.json)
+          ;;
+        *)
+          safe_mutable=0
+          ;;
+      esac
+    done
+    if [[ "${#conflicts[@]}" -gt 0 && "$safe_mutable" == "1" ]]; then
+      echo "COR0203_SAFE_MUTABLE_REBASE_CONFLICT_ATTEMPT_${attempt}: ${conflicts[*]}"
+      for p in "${conflicts[@]}"; do
+        git checkout --theirs -- "$p"
+        git add "$p"
+      done
+      if ! GIT_EDITOR=true git rebase --continue; then
+        git rebase --abort || true
+        echo "COR0203_SAFE_MUTABLE_REBASE_CONTINUE_FAILED_${attempt}" >&2
+        sleep $((attempt * 2))
+        continue
+      fi
+    else
+      git rebase --abort || true
+      echo "COR0203_UNSAFE_REBASE_CONFLICT_ATTEMPT_${attempt}: ${conflicts[*]}" >&2
+      exit 1
+    fi
   fi
   if git push origin "HEAD:$TARGET_BRANCH"; then
     PUSHED=1
