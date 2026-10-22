@@ -1,5 +1,8 @@
 # PHYSICAL_RECHECK_AVAILABLE_BANKROLL_20261010
 from datetime import datetime, timezone
+import json
+
+import tools.telegram_green_signal_alerts as telegram_alerts
 
 from tools.telegram_green_signal_alerts import (
     PAPER_BANKROLL_INITIAL_COP,
@@ -659,3 +662,27 @@ def test_multibook_snapshot_collects_sharp_references_without_execution_leakage(
     assert consensus["sharp_reference_policy"]["p_matrix_mutated_by_odds"] is False
     assert consensus["p_matrix"] == 0.61
     assert diagnostic["betfair_status"] == "PENDING_SEPARATE_EXCHANGE_FEED_PHYSICAL_VALIDATION"
+
+
+def test_confirmed_telegram_delivery_checkpoint_survives_later_failure(tmp_path, monkeypatch):
+    ledger_path = tmp_path / "ledger.json"
+    monkeypatch.setattr(telegram_alerts, "LEDGER", ledger_path)
+    ledger = {
+        "sent": [{
+            "signal_key": "physical-delivery-proof",
+            "match": "Lille vs Galatasaray",
+            "telegram_message_id": 12345,
+            "status": "ENVIADO_OK",
+            "paper_bet": None,
+        }],
+        "settlements": [],
+    }
+
+    telegram_alerts.persist_ledger_checkpoint(ledger)
+
+    # Simulate a later supervisor failure: the confirmed delivery must already
+    # be durable and recoverable from disk.
+    reloaded = json.loads(ledger_path.read_text(encoding="utf-8"))
+    assert reloaded["sent"][0]["signal_key"] == "physical-delivery-proof"
+    assert reloaded["sent"][0]["telegram_message_id"] == 12345
+    assert reloaded["sent"][0]["paper_bet"] is None
