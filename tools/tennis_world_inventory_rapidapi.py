@@ -503,6 +503,9 @@ def main() -> None:
             target_date_bogota=target,
         )
         report["provider_network_calls"] = client.request_count
+        report["provider_public_rate_headers"] = dict(
+            getattr(client, "public_rate_headers", {}) or {}
+        )
 
     out = Path(args.out)
     out.parent.mkdir(parents=True, exist_ok=True)
