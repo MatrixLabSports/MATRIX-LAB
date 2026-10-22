@@ -1,8 +1,6 @@
 import json
 from pathlib import Path
 
-import yaml
-
 
 TENNIS = Path("config/MATRIX_TENNIS_SUBSCRIPTION_DEADLINE.json")
 FOOTBALL = Path("config/MATRIX_FOOTBALL_SUBSCRIPTION_DEADLINE.json")
