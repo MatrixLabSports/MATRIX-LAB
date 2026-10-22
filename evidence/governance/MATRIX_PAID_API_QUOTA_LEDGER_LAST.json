@@ -1,7 +1,7 @@
 {
   "schema": "MATRIX_PAID_API_QUOTA_LEDGER_V1",
-  "generated_from_persisted_evidence": true,
-  "evidence_as_of_utc": "2026-10-22T10:17:45+00:00",
+  "generated_from_persisted_and_account_evidence": true,
+  "evidence_date_bogota": "2026-10-22",
   "review_interval_minutes": 15,
   "network_refresh_floor_minutes": 60,
   "policy": {
@@ -13,23 +13,35 @@
   },
   "providers": {
     "rapidapi_tennis": {
-      "network_calls_in_observation": 2,
-      "quota_probe_count": 0,
-      "quota_limit": null,
-      "quota_remaining": null,
-      "quota_remaining_fraction": null,
-      "quota_evidence_status": "UNKNOWN_NOT_EXPOSED_YET",
+      "provider": "Tennis API - ATP WTA ITF",
+      "plan": "Ultra",
+      "plan_price_usd_month": 59.0,
+      "account_console_status": "Active",
+      "subscription_start": "2026-09-28 06:40",
+      "quota_usage_percent": 4.05,
+      "bandwidth_quota_usage_percent": 26.33,
+      "quota_limit": 1200000,
+      "quota_remaining": 1151400,
+      "quota_remaining_is_estimated_from_usage_percent": true,
+      "quota_remaining_fraction": 0.9595,
+      "quota_evidence_status": "VERIFIED_ACCOUNT_CONSOLE_PLUS_PROVIDER_DOCS",
+      "provider_docs_quota_basis": "ULTRA_1200000_REQUESTS_PER_MONTH",
+      "analytics_30d_api_calls_display": "47.56K",
+      "analytics_30d_paid_api_calls_display": "47.42K",
+      "analytics_30d_overage_spend_usd": 0,
       "public_rate_headers": {},
       "router": {
-        "routine_inventory_refresh_allowed": false,
+        "routine_inventory_refresh_allowed": true,
         "critical_scientific_call_allowed": true,
-        "quota_probe_allowed": true,
-        "reason": "UNKNOWN_QUOTA_BLOCK_ROUTINE_CALLS",
+        "quota_probe_allowed": false,
+        "reason": "VERIFIED_ULTRA_QUOTA_ABOVE_INTERNAL_RESERVE",
         "internal_reserve_fraction": 0.2
       },
-      "source_evidence": "evidence/paid_api_15min_review/2026-10-22/20261022T101745Z/rapidapi_tennis_inventory.json"
+      "account_evidence": "RapidAPI Console > Billing > Subscriptions & Usage",
+      "analytics_evidence": "RapidAPI Console > Analytics > My Subscriptions"
     },
     "api_football": {
+      "provider": "API-Football",
       "network_calls_in_observation": 1,
       "quota_limit": 7500,
       "quota_remaining": 4169,
