@@ -4,6 +4,7 @@ import argparse
 import hashlib
 import json
 from datetime import date, datetime, timedelta, timezone
+from zoneinfo import ZoneInfo
 from pathlib import Path
 from typing import Any
 
@@ -46,7 +47,14 @@ def build(ledger:dict[str,Any])->dict[str,Any]:
     if not paper:
         raise ValueError("NO_PAPER_BETS")
     start=min(d for d,_,_ in paper)
-    end=max(d for d,_,_ in paper)
+    last_bet_date=max(d for d,_,_ in paper)
+    ledger_updated_raw=str(ledger.get("updated_at_utc") or "")
+    if ledger_updated_raw:
+        ledger_updated=datetime.fromisoformat(ledger_updated_raw.replace("Z","+00:00"))
+        ledger_bogota_date=ledger_updated.astimezone(ZoneInfo("America/Bogota")).date().isoformat()
+        end=max(last_bet_date, ledger_bogota_date)
+    else:
+        end=last_bet_date
     bankroll=initial
     rows=[]
     seen_signal_keys=set()
