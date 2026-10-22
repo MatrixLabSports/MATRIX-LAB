@@ -1,67 +1,9 @@
 {
-  "as_of_utc": "2026-10-22T09:59:19+00:00",
+  "as_of_utc": "2026-10-22T10:23:34+00:00",
   "automatic_model_feed": false,
   "automatic_model_promotion": false,
   "automatic_wagering": false,
   "eligible_candidates": [
-    {
-      "canonical_source_event_id": "rapidapi-tennis:atp:match:406713",
-      "competition": "Guangzhou Challenger",
-      "competition_id": "rapidapi-tennis:tournament:22107",
-      "event_id": "rapidapi-tennis:atp:match:406713",
-      "event_start_utc": "2026-10-22T10:00:00+00:00",
-      "historical_identity_crosswalk_status": "PENDING",
-      "legacy_provider_event_id": "rapidapi-tennis:match:406713",
-      "physical_event_key": "f688c8bcab990048264b174d38570d7018334dde2f56445eb0949a567bd85cb7",
-      "player_identities": [
-        {
-          "display_name": "Jie Cui",
-          "provider": "rapidapi_tennis",
-          "provider_player_id": "rapidapi-tennis:player:45197"
-        },
-        {
-          "display_name": "Yibing Wu",
-          "provider": "rapidapi_tennis",
-          "provider_player_id": "rapidapi-tennis:player:39310"
-        }
-      ],
-      "players": [
-        {
-          "name": "Jie Cui",
-          "provider_player_id": "rapidapi-tennis:player:45197",
-          "provider_ranking": {
-            "country": "CHN",
-            "place": "456",
-            "player": "Jie Cui",
-            "points": "105",
-            "snapshot_date": "2026-09-21"
-          }
-        },
-        {
-          "name": "Yibing Wu",
-          "provider_player_id": "rapidapi-tennis:player:39310",
-          "provider_ranking": {
-            "country": "CHN",
-            "place": "113",
-            "player": "Yibing Wu",
-            "points": "535",
-            "snapshot_date": "2026-09-21"
-          }
-        }
-      ],
-      "provider_channel": "ATP",
-      "provider_source_event_id": "rapidapi-tennis:atp:match:406713",
-      "round": "Second",
-      "source_id_collision_resolved": false,
-      "source_provider": "rapidapi_tennis",
-      "source_reference": "fixtures:matchId=406713;tournament_info=22107;ranking_cut=2026-09-21;provider_channel=ATP",
-      "source_snapshot_sha256": "7b02cd55d9e51a89b87dfeb7f3ea53a5a5971e814304a120fbc0353513336fac",
-      "surface": "Hard",
-      "target_period": 20260921,
-      "tour_level": "C",
-      "world_source_snapshot_sha256": "a57bba6b857eda15305ba75d1443cc67393e835d688bd32a058a09fd77ce34ed",
-      "world_stable_physical_identity_key": "6c6426431c365beb53bd15de3d36831a20e755eb8a458d50515638e38d601048"
-    },
     {
       "canonical_source_event_id": "rapidapi-tennis:atp:match:426314",
       "competition": "Fort Worth Challenger",
@@ -295,14 +237,38 @@
       "world_stable_physical_identity_key": "637dcc4051e6a7b98d25e50b9dd1c9bf81e4fa818358362f77ef271d9972fe9f"
     }
   ],
-  "eligible_input_events": 5,
+  "eligible_input_events": 4,
   "fixture_rows": 5,
   "governed_preregistration_required": true,
   "metrics_opened": false,
   "network_calls": 4,
   "outcomes_read": 0,
   "provider": "rapidapi_tennis",
-  "provider_rejected": [],
+  "provider_rejected": [
+    {
+      "blockers": [
+        "EVENT_NOT_FUTURE"
+      ],
+      "match_id": "406713",
+      "players": [
+        {
+          "name": "Jie Cui",
+          "provider_player_id": "rapidapi-tennis:player:45197",
+          "ranking_found": true
+        },
+        {
+          "name": "Yibing Wu",
+          "provider_player_id": "rapidapi-tennis:player:39310",
+          "ranking_found": true
+        }
+      ],
+      "provider_channel": "ATP",
+      "provider_source_event_id": "rapidapi-tennis:atp:match:406713",
+      "source_id_collision_resolved": false,
+      "tournament_id": "22107",
+      "world_source_event_id": "rapidapi-tennis:atp:match:406713"
+    }
+  ],
   "ranking_cut": "2026-09-21",
   "ranking_enrichment_error": null,
   "ranking_history_recovered_count": 0,
@@ -361,37 +327,17 @@
   "world_inventory_target_date": "2026-10-22",
   "world_inventory_total": 204,
   "world_registry": {
-    "as_of_utc": "2026-10-22T09:59:19+00:00",
+    "as_of_utc": "2026-10-22T10:23:34+00:00",
     "cor0203_denominator_definition": "derived subset: future ATP Challenger Hard events with two real fixed identities and valid source provenance",
     "cor0203_eligible_event_ids": [
-      "rapidapi-tennis:match:406713",
       "rapidapi-tennis:match:426314",
       "rapidapi-tennis:match:437699",
       "rapidapi-tennis:match:440547",
       "rapidapi-tennis:match:446242"
     ],
-    "cor0203_eligible_events": 5,
+    "cor0203_eligible_events": 4,
     "duplicate_rows": 0,
     "rows": [
-      {
-        "competition_id": "rapidapi-tennis:tournament:22107",
-        "competition_name": "Guangzhou Challenger",
-        "cor0203_blockers": [],
-        "cor0203_eligible": true,
-        "environment": "UNKNOWN",
-        "event_id": "rapidapi-tennis:match:406713",
-        "event_start_utc": "2026-10-22T10:00:00+00:00",
-        "player1_id": "rapidapi-tennis:player:45197",
-        "player2_id": "rapidapi-tennis:player:39310",
-        "round": "Second",
-        "source_provider": "rapidapi_tennis",
-        "source_reference": "fixtures:matchId=406713;tournament_info=22107;ranking_cut=2026-09-21",
-        "source_snapshot_sha256": "7b02cd55d9e51a89b87dfeb7f3ea53a5a5971e814304a120fbc0353513336fac",
-        "sport": "TENNIS",
-        "surface": "Hard",
-        "tour_level": "ATP_CHALLENGER",
-        "world_calendar_status": "PRESERVED"
-      },
       {
         "competition_id": "rapidapi-tennis:tournament:22106",
         "competition_name": "Fort Worth Challenger",
@@ -471,8 +417,8 @@
     ],
     "schema": "matrix.world-calendar-registry/1",
     "world_calendar_denominator_definition": "all unique discovered scheduled events preserved before model-domain filtering",
-    "world_calendar_input_rows": 5,
-    "world_calendar_unique_events": 5
+    "world_calendar_input_rows": 4,
+    "world_calendar_unique_events": 4
   },
   "world_rows_malformed": [],
   "world_rows_synthesized": 5,
