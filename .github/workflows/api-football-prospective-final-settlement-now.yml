@@ -206,17 +206,14 @@ jobs:
             git fetch origin repair/cor09-world-pipeline
             if ! git rebase origin/repair/cor09-world-pipeline; then
               git rebase --abort || true
-              python - <<'PY'
+              if python - <<'PY'
           import json, subprocess
           from pathlib import Path
           wanted=[x.strip() for x in Path("/tmp/matrix_local_settled_ids.txt").read_text().splitlines() if x.strip()]
-          try:
-              raw=subprocess.check_output([
-                  "git","show",
-                  "origin/repair/cor09-world-pipeline:evidence/api_football/prospective_market_freeze/settlement_ledger.jsonl"
-              ],text=True)
-          except Exception:
-              raise SystemExit(3)
+          raw=subprocess.check_output([
+              "git","show",
+              "origin/repair/cor09-world-pipeline:evidence/api_football/prospective_market_freeze/settlement_ledger.jsonl"
+          ],text=True)
           present=set()
           for line in raw.splitlines():
               if not line.strip(): continue
@@ -228,8 +225,7 @@ jobs:
               raise SystemExit(4)
           print("SUPERSEDED_BY_EQUIVALENT_PERSISTED_EVIDENCE")
           PY
-              rc=$?
-              if [ "$rc" -eq 0 ]; then
+              then
                 exit 0
               fi
               sleep $((attempt * 2))
