@@ -104,6 +104,7 @@ def run_pending_batches(
         "manifests_seen": len(manifests),
         "processed_revisions": [],
         "skipped_already_frozen": [],
+        "skipped_immutable_all_blocked": [],
         "waiting_inputs": [],
         "new_freezes": 0,
         "new_blocked": 0,
@@ -123,6 +124,24 @@ def run_pending_batches(
         static_path = runtime_dir / f"MATRIX_COR0203_STATIC4_R{revision}.json"
         report_path = runtime_dir / f"MATRIX_COR0203_BATCH_PREFLIGHT_R{revision}.json"
         history_path = runtime_dir / f"MATRIX_COR0203_HISTORY_GATE_R{revision}.json"
+
+        # Historical preflight evidence is immutable once a revision has been
+        # conclusively certified ALL_BLOCKED. Identity improvements are
+        # represented by a new restage revision, so rewriting the old
+        # preflight only changes freeze_at_utc and creates false git conflicts.
+        if report_path.exists() and history_path.exists():
+            try:
+                prior_report = _load_json(report_path)
+                prior_history = _load_json(history_path)
+            except Exception:
+                prior_report = {}
+                prior_history = {}
+            if (
+                prior_report.get("result") == "ALL_BLOCKED"
+                and prior_history.get("result") == "ALL_BLOCKED"
+            ):
+                summary["skipped_immutable_all_blocked"].append(revision)
+                continue
 
         missing = [str(p.name) for p in (pre_path, static_path) if not p.exists()]
         if missing:
