@@ -1,0 +1,52 @@
+{
+  "schema": "MATRIX_PAID_API_QUOTA_LEDGER_V1",
+  "generated_from_persisted_evidence": true,
+  "evidence_as_of_utc": "2026-10-22T10:17:45+00:00",
+  "review_interval_minutes": 15,
+  "network_refresh_floor_minutes": 60,
+  "policy": {
+    "unknown_quota_blocks_routine_calls": true,
+    "critical_scientific_calls_are_separate": true,
+    "internal_reserve_fraction": 0.2,
+    "real_money": "BLOCKED",
+    "automatic_wagering": false
+  },
+  "providers": {
+    "rapidapi_tennis": {
+      "network_calls_in_observation": 2,
+      "quota_probe_count": 0,
+      "quota_limit": null,
+      "quota_remaining": null,
+      "quota_remaining_fraction": null,
+      "quota_evidence_status": "UNKNOWN_NOT_EXPOSED_YET",
+      "public_rate_headers": {},
+      "router": {
+        "routine_inventory_refresh_allowed": false,
+        "critical_scientific_call_allowed": true,
+        "quota_probe_allowed": true,
+        "reason": "UNKNOWN_QUOTA_BLOCK_ROUTINE_CALLS",
+        "internal_reserve_fraction": 0.2
+      },
+      "source_evidence": "evidence/paid_api_15min_review/2026-10-22/20261022T101745Z/rapidapi_tennis_inventory.json"
+    },
+    "api_football": {
+      "network_calls_in_observation": 1,
+      "quota_limit": 7500,
+      "quota_remaining": 4169,
+      "quota_remaining_fraction": 0.5558666666666666,
+      "quota_evidence_status": "VERIFIED_RESPONSE_HEADERS",
+      "public_rate_headers": {
+        "x-ratelimit-requests-limit": "7500",
+        "x-ratelimit-requests-remaining": "4169"
+      },
+      "router": {
+        "routine_inventory_refresh_allowed": true,
+        "critical_scientific_call_allowed": true,
+        "quota_probe_allowed": false,
+        "reason": "QUOTA_ABOVE_INTERNAL_RESERVE",
+        "internal_reserve_fraction": 0.2
+      },
+      "source_evidence": "evidence/paid_api_15min_review/2026-10-22/20261022T101745Z/api_football_manifest.json"
+    }
+  }
+}
