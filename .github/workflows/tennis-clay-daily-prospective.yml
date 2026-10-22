@@ -66,6 +66,13 @@ jobs:
       - name: Install test dependency
         run: python -m pip install pytest requests
 
+      - name: Enforce paid API deadline before Clay acquisition
+        env:
+          RAPIDAPI_TENNIS_KEY: ${{ secrets.RAPIDAPI_TENNIS_KEY }}
+        run: |
+          python -m pytest -q tests/test_tennis_subscription_deadline_guard.py
+          python -m tools.tennis_subscription_deadline_guard --require-paid-use --require-key
+
       - name: Run Clay regression tests
         run: |
           python -m pytest -q             tests/test_cor0203_world_date_rollover.py             tests/test_tennis_clay_prefeature_discovery.py             tests/test_tennis_clay_lane_bootstrap.py             tests/test_tennis_parallel_lane_registry.py \
