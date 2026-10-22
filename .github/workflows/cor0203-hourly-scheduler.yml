@@ -300,7 +300,20 @@ jobs:
             STARTED_AT="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
             HEAD_BEFORE="$(git rev-parse HEAD)"
             CURRENT_TRIGGER_SHA="$HEAD_BEFORE"
-            bash scripts/cor0203_production_cycle.sh --trigger-sha "$CURRENT_TRIGGER_SHA"
+            CYCLE_OK=0
+            for attempt in 1 2 3; do
+              if bash scripts/cor0203_production_cycle.sh --trigger-sha "$CURRENT_TRIGGER_SHA"; then
+                CYCLE_OK=1
+                break
+              fi
+              echo "COR0203_SCHEDULER_RETRY_FROM_LATEST_BRANCH_${attempt}" >&2
+              git rebase --abort || true
+              git fetch origin "$MATRIX_TARGET_BRANCH"
+              git reset --hard "origin/$MATRIX_TARGET_BRANCH"
+              CURRENT_TRIGGER_SHA="$(git rev-parse HEAD)"
+              sleep $((attempt*2))
+            done
+            test "$CYCLE_OK" = "1"
             HEAD_AFTER="$(git rev-parse HEAD)"
             ENDED_AT="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
             export cycle STARTED_AT ENDED_AT HEAD_BEFORE HEAD_AFTER AUDIT_JSONL
