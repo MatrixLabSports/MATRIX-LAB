@@ -79,3 +79,71 @@ def test_nonfinal_result_never_enters_ledger(tmp_path):
     assert result["new_settlement_count"]==0
     assert result["pending_count"]==1
     assert not (tmp_path/"prospective_market_freeze/settlement_ledger.jsonl").exists()
+
+
+def test_sticky_block_is_carried_without_network(tmp_path):
+    _write_freeze(tmp_path)
+    sync_path=tmp_path/"prospective_market_freeze"/"settlement_sync_last.json"
+    sync_path.write_text(json.dumps({
+        "blocked":[{
+            "fixture_id":"900",
+            "reason":"NONSTANDARD_TERMINAL_REQUIRES_ADJUDICATION:PEN"
+        }],
+        "pending":[]
+    }),encoding="utf-8")
+    session=FakeSession(_provider("FT"))
+    result=run(tmp_path,"secret",datetime(2026,9,28,21,1,tzinfo=timezone.utc),session)
+    assert result["network_calls"]==0
+    assert result["new_settlement_count"]==0
+    assert result["blocked_count"]==1
+    assert result["sticky_blocked_carried_without_network"]==1
+    assert session.calls==[]
+
+
+def test_nonfinal_pending_waits_until_retry_window(tmp_path):
+    _write_freeze(tmp_path)
+    sync_path=tmp_path/"prospective_market_freeze"/"settlement_sync_last.json"
+    sync_path.write_text(json.dumps({
+        "blocked":[],
+        "pending":[{
+            "fixture_id":"900",
+            "reason":"RESULT_NOT_STANDARD_FINAL",
+            "provider_status":"NS",
+            "lookup_after_utc":"2026-09-28T22:00:00+00:00"
+        }]
+    }),encoding="utf-8")
+    session=FakeSession(_provider("FT"))
+    result=run(tmp_path,"secret",datetime(2026,9,28,21,30,tzinfo=timezone.utc),session)
+    assert result["network_calls"]==0
+    assert result["pending_count"]==1
+    assert result["deferred_pending_carried_without_network"]==1
+    assert session.calls==[]
+
+
+def test_nonfinal_pending_retries_when_window_is_due(tmp_path):
+    _write_freeze(tmp_path)
+    sync_path=tmp_path/"prospective_market_freeze"/"settlement_sync_last.json"
+    sync_path.write_text(json.dumps({
+        "blocked":[],
+        "pending":[{
+            "fixture_id":"900",
+            "reason":"RESULT_NOT_STANDARD_FINAL",
+            "provider_status":"NS",
+            "lookup_after_utc":"2026-09-28T21:00:00+00:00"
+        }]
+    }),encoding="utf-8")
+    session=FakeSession(_provider("FT"))
+    result=run(tmp_path,"secret",datetime(2026,9,28,21,1,tzinfo=timezone.utc),session)
+    assert result["network_calls"]==1
+    assert result["new_settlement_count"]==1
+    assert result["ledger_final_count"]==1
+
+
+def test_new_nonfinal_response_gets_explicit_retry_window(tmp_path):
+    _write_freeze(tmp_path)
+    session=FakeSession(_provider("NS"))
+    now=datetime(2026,9,28,21,1,tzinfo=timezone.utc)
+    result=run(tmp_path,"secret",now,session)
+    assert result["network_calls"]==1
+    assert result["new_settlement_count"]==0
+    assert result["pending"][0]["lookup_after_utc"]=="2026-09-28T22:01:00+00:00"
