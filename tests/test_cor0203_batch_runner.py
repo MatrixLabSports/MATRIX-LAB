@@ -234,3 +234,62 @@ def test_incomplete_revision_does_not_block_later_complete_revision(tmp_path, mo
     assert result["new_freezes"] == 1
     assert result["ending_physical_count"] == 10
     assert (runtime / "MATRIX_COR0203_BATCH_PREFLIGHT_R800.json").exists()
+
+
+def test_all_blocked_preflight_is_immutable_on_rerun(tmp_path, monkeypatch):
+    runtime = tmp_path / "runtime"
+    holdout = tmp_path / "holdout"
+    runtime.mkdir()
+    holdout.mkdir()
+    _existing_holdout(holdout / "MATRIX_COR0203_HOLDOUT_BATCH_R700.json", 9, "old")
+
+    rev = 800
+    event_id = "blocked"
+    _write(runtime / f"MATRIX_COR0203_PROSPECTIVE_EVENTS_R{rev}.json", _manifest(rev, 9, event_id))
+    _write(runtime / f"MATRIX_COR0203_PREFEATURE_REGISTRY_R{rev}.json", _pre(9, event_id))
+    _write(runtime / f"MATRIX_COR0203_STATIC4_R{rev}.json", _static(event_id))
+    report = {
+        "schema": "MATRIX_COR0203_BATCH_PREFLIGHT_V1",
+        "revision": "R800",
+        "result": "ALL_BLOCKED",
+        "freeze_at_utc": "2026-09-25T12:00:00+00:00",
+        "blocked": [{"event_id": event_id, "blockers": ["SURFACE_HISTORY_MISSING:A"]}],
+    }
+    history = {
+        "schema": "MATRIX_COR0203_BATCH_HISTORY_GATE_V2",
+        "revision": "R800",
+        "result": "ALL_BLOCKED",
+        "blocked": report["blocked"],
+    }
+    report_path = runtime / f"MATRIX_COR0203_BATCH_PREFLIGHT_R{rev}.json"
+    history_path = runtime / f"MATRIX_COR0203_HISTORY_GATE_R{rev}.json"
+    _write(report_path, report)
+    _write(history_path, history)
+    before_report = report_path.read_bytes()
+    before_history = history_path.read_bytes()
+
+    annual = tmp_path / "annual.csv"
+    annual.write_text("tourney_date\n", encoding="utf-8")
+    state = tmp_path / "state"
+    state.write_text("x", encoding="utf-8")
+    bundle = tmp_path / "bundle"
+    bundle.write_text("{}", encoding="utf-8")
+
+    def should_not_partition(**kwargs):
+        raise AssertionError("immutable ALL_BLOCKED revision must not be recalculated")
+
+    monkeypatch.setattr(runner, "partition_batch", should_not_partition)
+
+    result = runner.run_pending_batches(
+        runtime_dir=runtime,
+        holdout_dir=holdout,
+        state_b64=state,
+        bundle=bundle,
+        annual_2026=annual,
+        trigger_sha="abc",
+    )
+
+    assert result["skipped_immutable_all_blocked"] == [800]
+    assert result["new_freezes"] == 0
+    assert report_path.read_bytes() == before_report
+    assert history_path.read_bytes() == before_history
