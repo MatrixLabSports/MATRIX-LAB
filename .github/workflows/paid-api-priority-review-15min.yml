@@ -1,0 +1,195 @@
+name: MATRIX Paid APIs Priority Review 15min
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "*/15 * * * *"
+  push:
+    branches:
+      - repair/cor09-world-pipeline
+    paths:
+      - .github/workflows/paid-api-priority-review-15min.yml
+      - config/MATRIX_TENNIS_SUBSCRIPTION_DEADLINE.json
+      - config/MATRIX_FOOTBALL_SUBSCRIPTION_DEADLINE.json
+      - tools/tennis_subscription_deadline_guard.py
+      - tools/football_subscription_deadline_guard.py
+      - tests/test_paid_api_15min_priority_policy.py
+
+permissions:
+  contents: write
+
+concurrency:
+  group: matrix-paid-api-priority-review-15min
+  cancel-in-progress: true
+
+jobs:
+  review:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      REAL_MONEY: BLOCKED
+      AUTO_BETTING: DISABLED
+    steps:
+      - name: Checkout operational branch
+        uses: actions/checkout@v4
+        with:
+          ref: repair/cor09-world-pipeline
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: python -m pip install requests pytest
+
+      - name: Prove 15-minute policy and deadline guards
+        run: |
+          python -m pytest -q tests/test_tennis_subscription_deadline_guard.py tests/test_football_subscription_deadline_guard.py tests/test_paid_api_15min_priority_policy.py
+
+      - name: Resolve active paid window
+        id: window
+        shell: bash
+        run: |
+          set -euo pipefail
+          D="$(TZ=America/Bogota date +%F)"
+          echo "date=$D" >> "$GITHUB_OUTPUT"
+          if [[ "$D" > "2026-10-28" ]]; then
+            echo "active=false" >> "$GITHUB_OUTPUT"
+            echo "PAID_WINDOW_CLOSED_NO_NETWORK_CALLS"
+          else
+            echo "active=true" >> "$GITHUB_OUTPUT"
+            echo "PAID_WINDOW_ACTIVE_15MIN_PRIORITY_REVIEW"
+          fi
+
+      - name: Enforce browser-first evidence
+        if: steps.window.outputs.active == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          D="${{ steps.window.outputs.date }}"
+          TD="${D//-/}"
+          test -f "evidence/football_world_inventory/$D/MATRIX_FOOTBALL_BROWSER_FIRST_RECONCILIATION.json"
+          TENNIS_FILE="$(find evidence/tennis -maxdepth 1 -type f -name "MATRIX_TENNIS_${TD}_BROWSER_FIRST_RECONCILIATION.json" | head -n1)"
+          test -n "$TENNIS_FILE"
+          python - "$D" "$TENNIS_FILE" <<'PY'
+          import json,sys
+          from pathlib import Path
+          d=sys.argv[1]
+          t=Path(sys.argv[2])
+          f=Path(f"evidence/football_world_inventory/{d}/MATRIX_FOOTBALL_BROWSER_FIRST_RECONCILIATION.json")
+          tj=json.loads(t.read_text())
+          fj=json.loads(f.read_text())
+          ts=tj.get("source_order") or []
+          fs=fj.get("source_order") or []
+          assert "SofaScore" in ts and "Flashscore" in ts and ts.index("SofaScore") < ts.index("Flashscore")
+          assert "SofaScore" in fs and "Flashscore" in fs and fs.index("SofaScore") < fs.index("Flashscore")
+          print("BROWSER_FIRST_GATE_PASS",t,f)
+          PY
+
+      - name: Enforce paid subscription guards
+        if: steps.window.outputs.active == 'true'
+        env:
+          RAPIDAPI_TENNIS_KEY: ${{ secrets.RAPIDAPI_TENNIS_KEY }}
+          API_FOOTBALL_KEY: ${{ secrets.API_FOOTBALL_KEY }}
+        run: |
+          python -m tools.tennis_subscription_deadline_guard --require-paid-use --require-key --out /tmp/tennis_deadline.json
+          python -m tools.football_subscription_deadline_guard --require-paid-use --require-key --out /tmp/football_deadline.json
+
+      - name: Review RapidAPI Tennis and API-Football
+        if: steps.window.outputs.active == 'true'
+        env:
+          RAPIDAPI_TENNIS_KEY: ${{ secrets.RAPIDAPI_TENNIS_KEY }}
+          API_FOOTBALL_KEY: ${{ secrets.API_FOOTBALL_KEY }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          D="${{ steps.window.outputs.date }}"
+          rm -rf /tmp/matrix_paid_15min
+          mkdir -p /tmp/matrix_paid_15min/football
+          python -m tools.tennis_world_inventory_rapidapi --target-date-bogota "$D" --out /tmp/matrix_paid_15min/tennis.json --fail-on-partial
+          python -m tools.api_football_raw_archive --start "$D" --stop "$D" --out-root /tmp/matrix_paid_15min/football
+
+      - name: Build deduplicated review evidence
+        if: steps.window.outputs.active == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          D="${{ steps.window.outputs.date }}"
+          python - "$D" <<'PY'
+          import hashlib,json,sys,shutil
+          from datetime import datetime,timezone
+          from pathlib import Path
+          d=sys.argv[1]
+          tennis=Path("/tmp/matrix_paid_15min/tennis.json")
+          football=Path(f"/tmp/matrix_paid_15min/football/{d}/api_football_fixtures_raw.json")
+          fm=Path("/tmp/matrix_paid_15min/football/manifest.json")
+          tj=json.loads(tennis.read_text())
+          fj=json.loads(fm.read_text())
+          tsha=hashlib.sha256(tennis.read_bytes()).hexdigest()
+          fsha=hashlib.sha256(football.read_bytes()).hexdigest()
+          last=Path("evidence/governance/MATRIX_PAID_API_15MIN_REVIEW_LAST.json")
+          prev={}
+          if last.exists():
+              prev=json.loads(last.read_text())
+          changed=(prev.get("tennis_inventory_sha256")!=tsha or prev.get("football_raw_sha256")!=fsha)
+          stamp=datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
+          out={
+            "schema":"MATRIX_PAID_API_15MIN_PRIORITY_REVIEW_V1",
+            "generated_at_utc":datetime.now(timezone.utc).replace(microsecond=0).isoformat(),
+            "target_date_bogota":d,
+            "review_interval_minutes":15,
+            "paid_through_bogota_date":"2026-10-28",
+            "browser_first_gate":"PASS",
+            "source_order":["SofaScore","Flashscore","RapidAPI Tennis","API-Football"],
+            "tennis_inventory_sha256":tsha,
+            "tennis_unique_match_count":tj.get("unique_match_count") or tj.get("world_calendar_inventory_count") or len(tj.get("events") or []),
+            "tennis_network_calls":tj.get("provider_network_calls") or sum((x.get("network_calls") or 0) for x in (tj.get("provider_channel_summaries") or {}).values()),
+            "football_raw_sha256":fsha,
+            "football_fixture_rows":sum(x.get("fixture_rows",0) for x in fj.get("captures",[])),
+            "football_network_calls":fj.get("network_calls"),
+            "content_changed_since_previous_review":changed,
+            "automatic_model_feed":False,
+            "automatic_wagering":False,
+            "real_money":"BLOCKED",
+            "no_duplicate_persistence":True
+          }
+          last.parent.mkdir(parents=True,exist_ok=True)
+          last.write_text(json.dumps(out,indent=2,sort_keys=True)+"\n")
+          if changed:
+              root=Path("evidence/paid_api_15min_review")/d/stamp
+              root.mkdir(parents=True,exist_ok=True)
+              shutil.copy2(tennis,root/"rapidapi_tennis_inventory.json")
+              shutil.copy2(football,root/"api_football_fixtures_raw.json")
+              shutil.copy2(fm,root/"api_football_manifest.json")
+              (root/"receipt.json").write_text(json.dumps(out,indent=2,sort_keys=True)+"\n")
+          print(json.dumps(out,sort_keys=True))
+          PY
+
+      - name: Persist only new evidence or latest receipt
+        if: steps.window.outputs.active == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          D="${{ steps.window.outputs.date }}"
+          git config user.name matrix-paid-api-15min
+          git config user.email matrix-paid-api-15min@users.noreply.github.com
+          git add evidence/governance/MATRIX_PAID_API_15MIN_REVIEW_LAST.json
+          git add "evidence/paid_api_15min_review/$D" 2>/dev/null || true
+          if git diff --cached --quiet; then
+            echo "NO_EVIDENCE_CHANGE"
+            exit 0
+          fi
+          git commit -m "evidence(api): 15-minute paid provider priority review $D"
+          for attempt in 1 2 3 4; do
+            git fetch origin repair/cor09-world-pipeline
+            if ! git rebase origin/repair/cor09-world-pipeline; then
+              git rebase --abort || true
+              sleep $((attempt*2))
+              continue
+            fi
+            if git push origin HEAD:repair/cor09-world-pipeline; then exit 0; fi
+            sleep $((attempt*2))
+          done
+          exit 1
