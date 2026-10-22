@@ -43,7 +43,12 @@ jobs:
           python-version: "3.11"
 
       - name: Install dependency
-        run: python -m pip install requests
+        run: python -m pip install requests pytest
+
+      - name: Verify subscription deadline guard
+        run: |
+          python -m pytest -q tests/test_tennis_subscription_deadline_guard.py
+          python -m tools.tennis_subscription_deadline_guard --out evidence/governance/MATRIX_TENNIS_SUBSCRIPTION_DEADLINE_LAST.json
 
       - name: Resolve governed Bogota date and paid-window gate
         id: date
@@ -52,10 +57,6 @@ jobs:
           set -euo pipefail
           D="${{ github.event.inputs.target_date }}"
           NOW_BOG="$(TZ=America/Bogota date +%F)"
-          if [ "${{ github.event_name }}" = "push" ]; then
-            D="2026-10-21"
-            echo "BOOTSTRAP_PHYSICAL_RUN=2026-10-21"
-          fi
           if [ -z "$D" ]; then
             H="$(TZ=America/Bogota date +%H)"
             if [ "$H" -ge 18 ]; then
@@ -168,6 +169,7 @@ jobs:
           git config user.name matrix-tennis-harvest
           git config user.email matrix-tennis-harvest@users.noreply.github.com
           git add "evidence/tennis/paid_window_harvest/$D"
+          git add evidence/governance/MATRIX_TENNIS_SUBSCRIPTION_DEADLINE_LAST.json
           if git diff --cached --quiet; then
             echo "NO_HARVEST_CHANGE"
             exit 0
