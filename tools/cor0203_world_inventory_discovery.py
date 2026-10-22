@@ -52,6 +52,127 @@ def _numeric(value: object) -> str | None:
     return token if token.isdigit() and int(token) > 0 else None
 
 
+CERTIFIED_EXACT_CUT_RANK_OVERRIDES = Path(
+    "evidence/cor0203/ranking/MATRIX_COR0203_CERTIFIED_EXACT_CUT_RANK_OVERRIDES.json"
+)
+
+
+def _norm_identity(value: object) -> str:
+    return " ".join(str(value or "").split()).casefold()
+
+
+def apply_certified_exact_cut_rank_overrides(
+    *,
+    rankings: Mapping[str, Mapping[str, Any]],
+    wanted_player_ids: set[str],
+    fixture_identity_by_player: Mapping[str, Mapping[str, Any]],
+    path: Path = CERTIFIED_EXACT_CUT_RANK_OVERRIDES,
+) -> tuple[dict[str, Mapping[str, Any]], dict[str, Any]]:
+    merged = dict(rankings)
+    audit: dict[str, Any] = {
+        "schema": "MATRIX_COR0203_CERTIFIED_EXACT_CUT_RANK_OVERRIDE_AUDIT_V1",
+        "ranking_cut": RANKING_CUT.isoformat(),
+        "source_path": str(path),
+        "applied": [],
+        "skipped_existing_provider_rank": [],
+        "blocked": [],
+        "applied_count": 0,
+        "overwrote_existing_provider_rank": False,
+        "join_by_name_only": False,
+        "current_rank_used": False,
+        "post_cut_competitive_data_used": False,
+        "outcomes_used": False,
+        "odds_used": False,
+        "real_money": "BLOCKED",
+    }
+    if not path.exists():
+        audit["status"] = "NO_CERTIFIED_OVERRIDE_FILE"
+        return merged, audit
+
+    payload = _load(path)
+    if payload.get("schema") != "MATRIX_COR0203_CERTIFIED_EXACT_CUT_RANK_OVERRIDES_V1":
+        raise ValueError("CERTIFIED_EXACT_CUT_RANK_OVERRIDE_SCHEMA_INVALID")
+    if str(payload.get("ranking_cut") or "") != RANKING_CUT.isoformat():
+        raise ValueError("CERTIFIED_EXACT_CUT_RANK_OVERRIDE_CUT_MISMATCH")
+
+    for row in payload.get("entries", []) or []:
+        if not isinstance(row, Mapping):
+            continue
+        pid = str(row.get("provider_numeric_player_id") or "").strip()
+        if not pid:
+            token = str(row.get("provider_player_id") or "")
+            pid = token.rsplit(":", 1)[-1].strip()
+        if pid not in wanted_player_ids:
+            continue
+        if pid in merged:
+            audit["skipped_existing_provider_rank"].append(pid)
+            continue
+
+        identity = fixture_identity_by_player.get(pid)
+        blockers: list[str] = []
+        if not isinstance(identity, Mapping):
+            blockers.append("FIXTURE_IDENTITY_MISSING")
+        else:
+            if _norm_identity(identity.get("name")) != _norm_identity(row.get("player")):
+                blockers.append("EXACT_NAME_MISMATCH")
+            expected_country = _norm_identity(identity.get("country"))
+            certified_country = _norm_identity(row.get("country"))
+            if expected_country and certified_country and expected_country != certified_country:
+                blockers.append("COUNTRY_MISMATCH")
+
+        if str(row.get("snapshot_date") or "") != RANKING_CUT.isoformat():
+            blockers.append("SNAPSHOT_DATE_MISMATCH")
+        if str(row.get("source_authority") or "") != "ATP_OFFICIAL_RANKINGS_BROWSER_EXACT_DATE":
+            blockers.append("SOURCE_AUTHORITY_INVALID")
+        if str(row.get("verified_date_filter_value") or "") != "2026.09.21":
+            blockers.append("DATE_FILTER_NOT_EXACT")
+        source_url = str(row.get("source_url") or "")
+        if not source_url.startswith("https://www.atptour.com/"):
+            blockers.append("ATP_OFFICIAL_URL_REQUIRED")
+        place = str(row.get("place") or "").strip()
+        points = str(row.get("points") or "").strip()
+        if not place.isdigit() or int(place) <= 0:
+            blockers.append("RANK_INVALID")
+        if not points.isdigit() or int(points) < 0:
+            blockers.append("POINTS_INVALID")
+
+        protections = row.get("protections") or {}
+        if protections.get("overwrite_existing_provider_rank") is not False:
+            blockers.append("OVERWRITE_PROTECTION_REQUIRED")
+        if protections.get("join_by_name_only") is not False:
+            blockers.append("NAME_ONLY_JOIN_FORBIDDEN")
+        if protections.get("post_cut_competitive_data_used") is not False:
+            blockers.append("POST_CUT_DATA_FORBIDDEN")
+        if protections.get("outcomes_used") is not False:
+            blockers.append("OUTCOME_USE_FORBIDDEN")
+        if protections.get("odds_used") is not False:
+            blockers.append("ODDS_USE_FORBIDDEN")
+
+        if blockers:
+            audit["blocked"].append({"player_id": pid, "blockers": blockers})
+            continue
+
+        merged[pid] = {
+            "place": place,
+            "points": points,
+            "player": str(row.get("player") or "").strip(),
+            "country": str(row.get("country") or "").strip(),
+            "snapshot_date": RANKING_CUT.isoformat(),
+            "ranking_source": "ATP_OFFICIAL_BROWSER_EXACT_CUT_CERTIFIED_OVERRIDE",
+            "source_url": source_url,
+        }
+        audit["applied"].append({
+            "player_id": pid,
+            "player": merged[pid]["player"],
+            "place": place,
+            "points": points,
+        })
+
+    audit["applied_count"] = len(audit["applied"])
+    audit["status"] = "PASS"
+    return merged, audit
+
+
 def _world_domain_rows(
     inventory: Mapping[str, Any],
 ) -> list[Mapping[str, Any]]:
@@ -231,6 +352,20 @@ def derive_world_cor_discovery(
         "odds_used": False,
         "real_money": "BLOCKED",
     }
+    certified_rank_override = {
+        "schema": "MATRIX_COR0203_CERTIFIED_EXACT_CUT_RANK_OVERRIDE_AUDIT_V1",
+        "ranking_cut": RANKING_CUT.isoformat(),
+        "status": "NOT_ATTEMPTED_PROVIDER_ERROR",
+        "applied": [],
+        "applied_count": 0,
+        "overwrote_existing_provider_rank": False,
+        "join_by_name_only": False,
+        "current_rank_used": False,
+        "post_cut_competitive_data_used": False,
+        "outcomes_used": False,
+        "odds_used": False,
+        "real_money": "BLOCKED",
+    }
     if wanted_player_ids and ranking_error is None:
         rankings, ranking_history_recovery = recover_exact_rankings_from_history(
             client=client,
@@ -244,6 +379,11 @@ def derive_world_cor_discovery(
             ranking_date=RANKING_CUT,
             wanted_player_ids=wanted_player_ids,
             existing_rankings=rankings,
+            fixture_identity_by_player=fixture_identity_by_player,
+        )
+        rankings, certified_rank_override = apply_certified_exact_cut_rank_overrides(
+            rankings=rankings,
+            wanted_player_ids=wanted_player_ids,
             fixture_identity_by_player=fixture_identity_by_player,
         )
 
@@ -477,6 +617,10 @@ def derive_world_cor_discovery(
     result["ranking_profile_alias_recovery"] = ranking_profile_alias_recovery
     result["ranking_profile_alias_recovered_count"] = int(
         ranking_profile_alias_recovery.get("recovered_count", 0)
+    )
+    result["certified_exact_cut_rank_override"] = certified_rank_override
+    result["certified_exact_cut_rank_override_count"] = int(
+        certified_rank_override.get("applied_count", 0)
     )
     result["ranking_enrichment_error"] = ranking_error
     result["network_calls"] = client.request_count
