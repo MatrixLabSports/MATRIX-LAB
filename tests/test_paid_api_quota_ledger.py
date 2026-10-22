@@ -23,7 +23,7 @@ def test_api_football_verified_headers_are_physical_quota_evidence():
 
 def test_unknown_tennis_quota_blocks_routine_calls_after_probe():
     ledger = build_ledger(
-        tennis_inventory={"provider_network_calls": 2},
+        tennis_inventory={"provider_network_calls": 2, "provider_public_rate_headers": {}},
         football_manifest={},
     )
     row = ledger["providers"]["rapidapi_tennis"]
