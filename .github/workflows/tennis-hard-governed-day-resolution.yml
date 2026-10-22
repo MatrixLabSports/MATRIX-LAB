@@ -40,6 +40,13 @@ jobs:
 
       - run: python -m pip install pytest requests
 
+      - name: Enforce paid API deadline before Hard acquisition
+        env:
+          RAPIDAPI_TENNIS_KEY: ${{ secrets.RAPIDAPI_TENNIS_KEY }}
+        run: |
+          python -m pytest -q tests/test_tennis_subscription_deadline_guard.py
+          python -m tools.tennis_subscription_deadline_guard --require-paid-use --require-key
+
       - name: Resolve Bogota target date
         id: date
         shell: bash
@@ -128,9 +135,8 @@ jobs:
           print(Path("/tmp/hard_before.json").read_text())
           PY
 
-      - name: Refresh both paid providers exact-day audit
+      - name: Refresh RapidAPI primary exact-day audit
         env:
-          API_TENNIS_KEY: ${{ secrets.API_TENNIS_KEY }}
           RAPIDAPI_TENNIS_KEY: ${{ secrets.RAPIDAPI_TENNIS_KEY }}
         shell: bash
         run: |
@@ -141,7 +147,6 @@ jobs:
 
       - name: Run governed COR02 COR03 Hard production
         env:
-          API_TENNIS_KEY: ${{ secrets.API_TENNIS_KEY }}
           RAPIDAPI_TENNIS_KEY: ${{ secrets.RAPIDAPI_TENNIS_KEY }}
           MATRIX_TENNIS_PROVIDER: rapidapi_tennis
           MATRIX_WORLD_DATE_BOGOTA: ${{ steps.date.outputs.target_date }}
