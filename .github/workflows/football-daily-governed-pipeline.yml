@@ -66,7 +66,13 @@ jobs:
 
       - name: Run targeted history and P_MATRIX regression tests
         run: |
-          PYTHONPATH=. python -m pytest -q             tests/test_api_football_group_history_capture.py             tests/test_api_football_team_last_fallback.py             tests/test_api_football_market_shadow_p_matrix.py             tests/test_football_daily_governed_over25.py
+          PYTHONPATH=. python -m pytest -q             tests/test_api_football_group_history_capture.py             tests/test_api_football_team_last_fallback.py             tests/test_api_football_market_shadow_p_matrix.py             tests/test_football_daily_governed_over25.py             tests/test_football_subscription_deadline_guard.py
+
+      - name: Enforce API-Football subscription deadline
+        env:
+          API_FOOTBALL_KEY: ${{ secrets.API_FOOTBALL_KEY }}
+        run: |
+          python -m tools.football_subscription_deadline_guard --require-paid-use --require-key --out evidence/governance/MATRIX_FOOTBALL_SUBSCRIPTION_DEADLINE_LAST.json
 
       - name: Resolve Bogota target date automatically
         id: date
@@ -172,6 +178,7 @@ jobs:
           git add evidence/api_football/prospective_market_freeze
           git add "evidence/api_football/daily_prematch_reports/$D"
           git add "evidence/football_world_inventory/$D/MATRIX_FOOTBALL_CALIBRATION_ELIGIBILITY.json"
+          git add evidence/governance/MATRIX_FOOTBALL_SUBSCRIPTION_DEADLINE_LAST.json
           if git diff --cached --quiet; then
             echo "NO_GOVERNED_DAILY_CHANGE"
             exit 0
