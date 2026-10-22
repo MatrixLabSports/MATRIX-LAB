@@ -144,12 +144,16 @@ python -m tools.cor0203_r706_target_history_audit \
   --authority "$IDENTITY_AUTHORITY_LAST" \
   --out "$R706_TARGET_HISTORY_LAST"
 
-python -m tools.cor0203_rapidapi_stats_rich_history_probe \
-  --world-discovery "$WORLD_DERIVED_DISCOVERY_LAST" \
-  --rapidapi-discovery "$DISCOVERY" \
-  --authority "$IDENTITY_AUTHORITY_LAST" \
-  --out "$RAPIDAPI_PRECUT_STATS_RICH_LAST" \
-  --max-targets 32
+if [[ "${MATRIX_COR0203_STATS_RICH_PROBE:-0}" == "1" ]]; then
+  python -m tools.cor0203_rapidapi_stats_rich_history_probe \
+    --world-discovery "$WORLD_DERIVED_DISCOVERY_LAST" \
+    --rapidapi-discovery "$DISCOVERY" \
+    --authority "$IDENTITY_AUTHORITY_LAST" \
+    --out "$RAPIDAPI_PRECUT_STATS_RICH_LAST" \
+    --max-targets 32
+else
+  echo "COR0203_STATS_RICH_PROBE_SKIPPED_ZERO_HIT_DIAGNOSTIC_ONLY"
+fi
 
 python -m tools.cor0203_primary_source_readiness \
   --rapidapi "$DISCOVERY" \
