@@ -4,23 +4,6 @@ on:
   workflow_dispatch:
   schedule:
     - cron: "17 */2 * * *"
-  push:
-    branches:
-      - repair/cor09-world-pipeline
-    paths:
-      - .github/workflows/tennis-world-rolling-horizon.yml
-      - scripts/cor0203_production_cycle.sh
-      - tools/tennis_world_exact_day_dual_audit.py
-      - tools/tennis_world_inventory_rapidapi.py
-      - tools/cor0203_api_tennis_discovery.py
-      - tools/cor0203_rapidapi_tennis_discovery.py
-      - tools/cor0203_eight_day_dual_discovery.py
-      - tools/cor0203_preregister_discovery.py
-      - tools/cor0203_world_inventory_discovery.py
-      - tools/cor0203_api_tennis_certified_authority_recovery.py
-      - tools/matrix_daily_calendar_baseline_gate.py
-      - tests/test_matrix_daily_calendar_baseline_gate.py
-      - tests/test_cor0203_hard_302_to_400_policy.py
 
 permissions:
   contents: write
