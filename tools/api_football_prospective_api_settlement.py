@@ -12,6 +12,7 @@ import requests
 BASE_URL="https://v3.football.api-sports.io"
 FINAL_DELAY_MINUTES=120
 MAX_REQUESTS=180
+NONFINAL_RETRY_MINUTES=60
 TIMEOUT_SECONDS=20.0
 STANDARD_FINAL={"FT"}
 NONSTANDARD_TERMINAL={"AET","PEN","PST","CANC","ABD","AWD","WO","SUSP","INT"}
@@ -82,6 +83,28 @@ def _provider_errors_empty(v:Any)->bool:
     return v is None or (isinstance(v,(list,dict,str)) and len(v)==0)
 
 
+def _previous_sync(path:Path)->dict[str,Any]:
+    if not path.exists():
+        return {}
+    try:
+        value=_load(path)
+    except Exception:
+        return {}
+    return value
+
+
+def _sticky_block_reason(reason:Any)->bool:
+    text=str(reason or "")
+    return (
+        text.startswith("NONSTANDARD_TERMINAL_REQUIRES_ADJUDICATION:")
+        or text=="TEAM_IDENTITY_MISMATCH"
+        or text=="TEAM_IDENTITY_MISSING"
+        or text=="FINAL_PAYLOAD_STRUCTURE_INVALID"
+        or text=="FULLTIME_SCORE_MISSING"
+        or text=="FULLTIME_SCORE_INVALID"
+    )
+
+
 def _exact_fixture(payload:Mapping[str,Any],fixture_id:str)->Mapping[str,Any]:
     if not _provider_errors_empty(payload.get("errors")):
         raise ValueError("API_FOOTBALL_PROVIDER_ERROR")
@@ -102,6 +125,15 @@ def run(root:Path,api_key:str,now_utc:datetime|None=None,session:Any|None=None)-
     now=(now_utc or datetime.now(timezone.utc)).astimezone(timezone.utc).replace(microsecond=0)
     ledger_path=root/"prospective_market_freeze/settlement_ledger.jsonl"
     existing={str(r["fixture_id"]) for r in _load_ledger(ledger_path)}
+    previous=_previous_sync(root/"prospective_market_freeze/settlement_sync_last.json")
+    previous_pending={
+        str(x.get("fixture_id")):x for x in previous.get("pending",[])
+        if isinstance(x,Mapping) and x.get("fixture_id") is not None
+    }
+    previous_blocked={
+        str(x.get("fixture_id")):x for x in previous.get("blocked",[])
+        if isinstance(x,Mapping) and x.get("fixture_id") is not None
+    }
     client=session or requests.Session()
     raw_dir=root/"prospective_market_freeze/settlement_raw"; raw_dir.mkdir(parents=True,exist_ok=True)
     settled=[]; pending=[]; blocked=[]; network_calls=0
@@ -115,6 +147,23 @@ def run(root:Path,api_key:str,now_utc:datetime|None=None,session:Any|None=None)-
         if now<ready_after:
             pending.append({"fixture_id":fid,"reason":"WAITING_FINAL_WINDOW","lookup_after_utc":ready_after.isoformat()})
             continue
+
+        prior_block=previous_blocked.get(fid)
+        if prior_block and _sticky_block_reason(prior_block.get("reason")):
+            blocked.append(dict(prior_block))
+            continue
+
+        prior_pending=previous_pending.get(fid)
+        prior_lookup=(prior_pending or {}).get("lookup_after_utc")
+        if prior_lookup:
+            try:
+                retry_after=_utc(prior_lookup)
+            except Exception:
+                retry_after=None
+            if retry_after is not None and now<retry_after:
+                pending.append(dict(prior_pending))
+                continue
+
         if network_calls>=MAX_REQUESTS:
             blocked.append({"fixture_id":fid,"reason":"REQUEST_BUDGET_REACHED"})
             continue
@@ -138,7 +187,13 @@ def run(root:Path,api_key:str,now_utc:datetime|None=None,session:Any|None=None)-
         if short in NONSTANDARD_TERMINAL:
             blocked.append({"fixture_id":fid,"reason":"NONSTANDARD_TERMINAL_REQUIRES_ADJUDICATION:"+short}); continue
         if short not in STANDARD_FINAL:
-            pending.append({"fixture_id":fid,"reason":"RESULT_NOT_STANDARD_FINAL","provider_status":short}); continue
+            retry_after=now+timedelta(minutes=NONFINAL_RETRY_MINUTES)
+            pending.append({
+                "fixture_id":fid,
+                "reason":"RESULT_NOT_STANDARD_FINAL",
+                "provider_status":short,
+                "lookup_after_utc":retry_after.isoformat(),
+            }); continue
 
         home=teams.get("home"); away=teams.get("away")
         if not isinstance(home,Mapping) or not isinstance(away,Mapping):
@@ -188,6 +243,16 @@ def run(root:Path,api_key:str,now_utc:datetime|None=None,session:Any|None=None)-
         "pending_count":len(pending),
         "blocked_count":len(blocked),
         "network_calls":network_calls,
+        "network_call_policy":"DUE_ONLY_WITH_STICKY_BLOCK_QUARANTINE_AND_NONFINAL_RETRY_WINDOW",
+        "nonfinal_retry_minutes":NONFINAL_RETRY_MINUTES,
+        "sticky_blocked_carried_without_network":sum(
+            1 for x in blocked if str(x.get("fixture_id")) in previous_blocked and _sticky_block_reason(x.get("reason"))
+        ),
+        "deferred_pending_carried_without_network":sum(
+            1 for x in pending
+            if str(x.get("fixture_id")) in previous_pending
+            and x.get("lookup_after_utc")==previous_pending[str(x.get("fixture_id"))].get("lookup_after_utc")
+        ),
         "settled_fixture_ids":settled,
         "pending":pending,
         "blocked":blocked,
