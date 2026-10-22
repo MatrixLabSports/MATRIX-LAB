@@ -133,6 +133,7 @@ class RapidApiTennisClient:
         self._sleeper = sleeper
         self.request_attempt_count = 0
         self.request_count = 0
+        self.public_rate_headers: dict[str, str] = {}
 
     def _consume_shared_request_budget(self) -> None:
         raw_limit = os.environ.get("MATRIX_RAPIDAPI_REQUEST_BUDGET", "").strip()
@@ -206,6 +207,22 @@ class RapidApiTennisClient:
             self.request_attempt_count += 1
             try:
                 with self._opener(request, timeout=self._timeout) as response:
+                    headers = getattr(response, "headers", {}) or {}
+                    safe = {}
+                    try:
+                        items = headers.items()
+                    except AttributeError:
+                        items = []
+                    for key, value in items:
+                        name = str(key).lower()
+                        if name.startswith("x-ratelimit-") or name in {
+                            "x-rapidapi-quota-limit",
+                            "x-rapidapi-quota-remaining",
+                            "x-rapidapi-proxy-response",
+                        }:
+                            safe[name] = str(value)
+                    if safe:
+                        self.public_rate_headers.update(safe)
                     body = _read_bounded(response)
             except HTTPError as error:
                 if error.code == 429 or 500 <= int(error.code) <= 599:
