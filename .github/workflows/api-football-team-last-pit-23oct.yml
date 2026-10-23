@@ -1,0 +1,140 @@
+name: API-Football team-last fallback and PIT 23OCT
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - repair/cor09-world-pipeline
+    paths:
+      - .github/workflows/api-football-team-last-pit-23oct.yml
+
+permissions:
+  contents: write
+
+concurrency:
+  group: api-football-team-last-pit-23oct
+  cancel-in-progress: false
+
+jobs:
+  recover-and-canonicalize:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      REAL_MONEY: BLOCKED
+      AUTO_BETTING: DISABLED
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: repair/cor09-world-pipeline
+          fetch-depth: 0
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - run: python -m pip install requests pytest
+
+      - name: Run fallback and canonical PIT tests
+        run: |
+          python -m pytest -q \
+            tests/test_api_football_team_last_fallback.py \
+            tests/test_api_football_canonical_analysis_inputs.py
+
+      - name: Verify current 23OCT history source
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          p=Path("evidence/api_football/history/history_capture_manifest.json")
+          j=json.loads(p.read_text())
+          assert j["status"]=="PASS"
+          assert j["requested_group_count"]==211
+          assert j["captured_group_count"]==40
+          assert j["network_calls_performed"]==40
+          assert j["ready_minimum_history_count"]==150
+          assert j["blocked_minimum_history_count"]==310
+          assert j["real_money"]=="BLOCKED"
+          print("HISTORY_23OCT_SOURCE_GATE: PASS")
+          PY
+
+      - name: Recover deficient teams with bounded team-last calls
+        env:
+          API_FOOTBALL_KEY: ${{ secrets.API_FOOTBALL_KEY }}
+          MATRIX_API_FOOTBALL_TEAM_LAST_MAX_REQUESTS: "120"
+          MATRIX_API_FOOTBALL_DAILY_RESERVE: "1500"
+        run: python -m tools.api_football_team_last_fallback
+
+      - name: Validate fallback protections
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          m=json.loads(Path("evidence/api_football/team_last_fallback/manifest.json").read_text())
+          r=json.loads(Path("evidence/api_football/team_last_fallback/history_readiness_after_team_last.json").read_text())
+          assert m["status"]=="PASS"
+          assert m["network_calls_performed"] <= 120
+          assert m["real_money"]=="BLOCKED"
+          assert m["automatic_wagering"] is False
+          assert m["odds_used"] is False
+          assert m["ready_minimum_history_count"] + m["blocked_minimum_history_count"] == 460
+          assert r["ready_minimum_history_count"] == m["ready_minimum_history_count"]
+          assert r["blocked_minimum_history_count"] == m["blocked_minimum_history_count"]
+          remaining=m["last_rate_limit"]["daily_remaining"]
+          if remaining is not None:
+              assert int(remaining) >= 1500
+          print(json.dumps({
+            "ready":m["ready_minimum_history_count"],
+            "blocked":m["blocked_minimum_history_count"],
+            "network_calls":m["network_calls_performed"],
+            "daily_remaining":remaining,
+            "stopped_reason":m["stopped_reason"]
+          },sort_keys=True))
+          PY
+
+      - name: Build canonical PIT inputs
+        run: python -m tools.api_football_canonicalize_analysis_inputs
+
+      - name: Validate canonical PIT protections
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          m=json.loads(Path("evidence/api_football/canonical_analysis/manifest.json").read_text())
+          assert m["status"]=="PASS"
+          assert m["total_fixture_count"]==460
+          assert m["p_matrix_status"]=="NOT_GENERATED"
+          assert m["model_probability_generated"] is False
+          assert m["odds_used_to_generate_model_probability"] is False
+          assert m["automatic_wagering"] is False
+          assert m["real_money"]=="BLOCKED"
+          print(json.dumps({
+            "total":m["total_fixture_count"],
+            "ready":m["ready_input_count"],
+            "blocked_future":m["blocked_future_input_count"],
+            "not_future":m["not_future_at_analysis_count"],
+            "p_matrix_status":m["p_matrix_status"]
+          },sort_keys=True))
+          PY
+
+      - name: Persist fallback and canonical PIT evidence
+        run: |
+          git config user.name matrix-api-football-team-last-pit
+          git config user.email matrix-api-football-team-last-pit@users.noreply.github.com
+          git add evidence/api_football/team_last_fallback evidence/api_football/canonical_analysis
+          if git diff --cached --quiet; then
+            echo "NO_TEAM_LAST_OR_PIT_CHANGE"
+            exit 0
+          fi
+          git commit -m "evidence(football): recover team history and build 23oct PIT inputs"
+          for attempt in 1 2 3 4; do
+            git fetch origin repair/cor09-world-pipeline
+            if ! git rebase origin/repair/cor09-world-pipeline; then
+              git rebase --abort || true
+              sleep $((attempt*2))
+              continue
+            fi
+            if git push origin HEAD:repair/cor09-world-pipeline; then exit 0; fi
+            sleep $((attempt*2))
+          done
+          exit 1
