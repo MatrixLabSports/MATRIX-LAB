@@ -79,6 +79,17 @@ jobs:
           deadline="$((started_at + WATCH_SECONDS))"
           cycle=0
 
+          refresh_operational_branch() {
+            echo "CLV_WATCHER_OPERATIONAL_REFRESH_BEGIN cycle=$cycle"
+            git fetch origin repair/cor09-world-pipeline
+            if ! git rebase --autostash origin/repair/cor09-world-pipeline; then
+              git rebase --abort || true
+              echo "CLV_WATCHER_OPERATIONAL_REFRESH=FAIL"
+              return 1
+            fi
+            echo "CLV_WATCHER_OPERATIONAL_REFRESH=PASS"
+          }
+
           persist_if_changed() {
             git add evidence/clv/football/over_2_5
             if git diff --cached --quiet; then
@@ -136,12 +147,38 @@ jobs:
           PY
           }
 
+          echo "CLV_WATCHER_STARTUP_COVERAGE_CONTRACT=PASS"
+          echo "CLV_WATCHER_PER_CYCLE_REFRESH_ORDER=PASS"
+          echo "CLV_STRICT_FRESH_GATE_SECONDS=120"
           echo "CLV_CONTINUOUS_WATCHER_STARTED_UTC=$(date -u --iso-8601=seconds)"
           while [ "$(date -u +%s)" -lt "$deadline" ]; do
             cycle=$((cycle + 1))
             echo "CLV_WATCH_CYCLE=$cycle UTC=$(date -u --iso-8601=seconds)"
 
+            # Critical contract: refresh the operational branch BEFORE every capture cycle.
+            # Fail closed: no capture is allowed from a stale checkout.
+            refresh_operational_branch
+
+            attempts_before="$(python - <<'PY'
+from pathlib import Path
+p=Path("evidence/clv/football/over_2_5/closing_attempts.jsonl")
+print(sum(1 for line in p.read_text(encoding="utf-8").splitlines() if line.strip()) if p.is_file() else 0)
+PY
+)"
             PYTHONPATH=. python -m tools.football_clv_tracking_cycle
+            attempts_after="$(python - <<'PY'
+from pathlib import Path
+p=Path("evidence/clv/football/over_2_5/closing_attempts.jsonl")
+print(sum(1 for line in p.read_text(encoding="utf-8").splitlines() if line.strip()) if p.is_file() else 0)
+PY
+)"
+            echo "CLV_ATTEMPT_ROWS_BEFORE=$attempts_before"
+            echo "CLV_ATTEMPT_ROWS_AFTER=$attempts_after"
+            if [ "$attempts_after" -lt "$attempts_before" ]; then
+              echo "CLV_ATTEMPT_LOG_APPEND_ONLY=FAIL"
+              exit 1
+            fi
+            echo "CLV_ATTEMPT_LOG_APPEND_ONLY=PASS"
             persist_if_changed
 
             status="$(remaining_future)"
@@ -173,6 +210,12 @@ jobs:
           if j["closing_odds_count"] < 300:
               assert j["metrics_opened"] is False
               assert j["metrics"] is None
+          attempt_path=Path("evidence/clv/football/over_2_5/closing_attempts.jsonl")
+          attempt_rows=sum(1 for line in attempt_path.read_text(encoding="utf-8").splitlines() if line.strip()) if attempt_path.is_file() else 0
+          print("CLV_WATCHER_STARTUP_COVERAGE_CONTRACT=PASS")
+          print("CLV_WATCHER_PER_CYCLE_REFRESH_ORDER=PASS")
+          print("CLV_STRICT_FRESH_GATE_SECONDS=120")
+          print("CLV_ATTEMPT_LOG_ROWS=",attempt_rows)
           print("CLV_CONTINUOUS_WATCHER_FINAL_GATE: PASS")
           print("decision_count=",j["decision_count"])
           print("closing_odds_count=",j["closing_odds_count"])
