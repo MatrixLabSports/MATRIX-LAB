@@ -1,7 +1,14 @@
+# MATRIX_USER_AUTHORIZED_TRIGGER 2026-10-22 history-pit-23oct
 name: API-Football governed group history capture
 
 on:
   workflow_dispatch:
+  push:
+    branches:
+      - repair/cor09-world-pipeline
+    paths:
+      - evidence/api_football/prematch/history_acquisition_queue.json
+      - .github/workflows/api-football-group-history.yml
 
 permissions:
   contents: write
