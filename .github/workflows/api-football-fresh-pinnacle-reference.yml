@@ -8,6 +8,7 @@ on:
       - repair/cor09-world-pipeline
     paths:
       - .github/workflows/api-football-fresh-pinnacle-reference.yml
+      - tools/api_football_pinnacle_coverage_probe.py
 
 permissions:
   contents: write
@@ -57,6 +58,10 @@ jobs:
           manifest = json.loads(path.read_text(encoding="utf-8"))
           assert manifest["status"] == "PASS"
           assert manifest["provider_error_count"] == 0
+          assert manifest["target_scope"] == "CANONICAL_PIT_READY_ONLY"
+          canonical = json.loads(Path("evidence/api_football/canonical_analysis/manifest.json").read_text(encoding="utf-8"))
+          assert manifest["eligible_fixture_filter_count"] == canonical["ready_input_count"]
+          assert manifest["target_fixture_count"] == canonical["ready_input_count"]
           assert manifest["network_calls_performed"] > 0
           assert manifest["network_calls_performed"] == manifest["target_fixture_count"]
           assert manifest["capture_timestamp_scope"] == "PER_FIXTURE_RESPONSE"
