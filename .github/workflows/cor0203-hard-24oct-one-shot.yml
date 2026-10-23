@@ -1,0 +1,183 @@
+name: MATRIX COR02-03 Hard 24OCT One-Shot
+
+on:
+  push:
+    branches:
+      - repair/cor09-world-pipeline
+    paths:
+      - .github/workflows/cor0203-hard-24oct-one-shot.yml
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: cor0203-holdout-repair-cor09-world-pipeline
+  cancel-in-progress: false
+
+jobs:
+  hard-24oct:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    env:
+      REAL_MONEY: BLOCKED
+      AUTOMATIC_WAGERING: "false"
+      TARGET_DATE_BOGOTA: "2026-10-24"
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: repair/cor09-world-pipeline
+          fetch-depth: 0
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - run: python -m pip install pytest requests
+
+      - name: Enforce paid-window and browser-first gates
+        env:
+          RAPIDAPI_TENNIS_KEY: ${{ secrets.RAPIDAPI_TENNIS_KEY }}
+        run: |
+          python -m pytest -q tests/test_tennis_subscription_deadline_guard.py tests/test_cor0203_hard_302_to_400_policy.py
+          python -m tools.tennis_subscription_deadline_guard --require-paid-use --require-key
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          p=Path("evidence/tennis/MATRIX_TENNIS_20261024_BROWSER_FIRST_RECONCILIATION.json")
+          j=json.loads(p.read_text(encoding="utf-8"))
+          assert j["target_date_bogota"]=="2026-10-24"
+          assert j["source_order"][:2]==["SofaScore","Flashscore"]
+          assert j["reconciliation"]["browser_first_gate"]=="PASS"
+          assert j["sofascore"]["visible_event_rows_full_page"]>0
+          assert j["flashscore"]["visible_match_count"]>0
+          assert j["protections"]["metrics_opened"] is False
+          assert j["protections"]["real_money"]=="BLOCKED"
+          print("BROWSER_FIRST_24OCT: PASS")
+          print("sofascore_visible=",j["sofascore"]["visible_event_rows_full_page"])
+          print("flashscore_visible=",j["flashscore"]["visible_match_count"])
+          PY
+
+      - name: Snapshot Hard counter before
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          j=json.loads(Path("evidence/cor0203/runtime/MATRIX_COR0203_PHYSICAL_UNIQUENESS_LAST.json").read_text())
+          Path("/tmp/hard_before.json").write_text(json.dumps({
+            "unique":j["unique_calibration_observations"],
+            "physical":j["physical_frozen_rows"],
+            "duplicates":j["duplicate_observations_quarantined"]
+          }))
+          print(Path("/tmp/hard_before.json").read_text())
+          PY
+
+      - name: Capture 24OCT full RapidAPI Tennis inventory
+        env:
+          RAPIDAPI_TENNIS_KEY: ${{ secrets.RAPIDAPI_TENNIS_KEY }}
+        run: |
+          mkdir -p evidence/tennis/paid_window_harvest/2026-10-24
+          python -m tools.tennis_world_inventory_rapidapi             --target-date-bogota 2026-10-24             --out evidence/tennis/paid_window_harvest/2026-10-24/MATRIX_RAPIDAPI_TENNIS_INVENTORY_LAST.json             --fail-on-partial
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          j=json.loads(Path("evidence/tennis/paid_window_harvest/2026-10-24/MATRIX_RAPIDAPI_TENNIS_INVENTORY_LAST.json").read_text())
+          candidates=[]
+          for e in j.get("events") or []:
+              d=e.get("model_derivation") or {}
+              if d.get("lane")=="COR02_COR03_ATP_CHALLENGER_HARD" and d.get("domain_candidate") is True:
+                  candidates.append({
+                      "match_id":str(e.get("match_id") or ""),
+                      "source_event_id":e.get("source_event_id"),
+                      "tournament":e.get("tournament_name"),
+                      "surface":e.get("surface"),
+                      "round":e.get("round"),
+                      "event_start_utc":e.get("event_start_utc"),
+                      "player1":(e.get("player1") or {}).get("name"),
+                      "player2":(e.get("player2") or {}).get("name"),
+                  })
+          print(json.dumps({
+              "unique_match_count":j.get("unique_match_count"),
+              "provider_network_calls":j.get("provider_network_calls"),
+              "hard_challenger_candidate_count":len(candidates),
+              "hard_challenger_candidates":candidates
+          },ensure_ascii=False,sort_keys=True))
+          PY
+
+      - name: Run governed COR02 COR03 production for 24OCT
+        env:
+          RAPIDAPI_TENNIS_KEY: ${{ secrets.RAPIDAPI_TENNIS_KEY }}
+          MATRIX_TENNIS_PROVIDER: rapidapi_tennis
+          MATRIX_WORLD_DATE_BOGOTA: "2026-10-24"
+          MATRIX_TARGET_BRANCH: repair/cor09-world-pipeline
+          MATRIX_GIT_USER_NAME: matrix-ci
+          MATRIX_GIT_USER_EMAIL: matrix-ci@users.noreply.github.com
+        run: |
+          bash scripts/cor0203_production_cycle.sh --trigger-sha "$(git rev-parse HEAD)"
+
+      - name: Refresh operational branch after production commits
+        run: |
+          git fetch origin repair/cor09-world-pipeline
+          git reset --hard origin/repair/cor09-world-pipeline
+
+      - name: Certify actual 24OCT increment
+        run: |
+          python - <<'PY'
+          import json, hashlib
+          from datetime import datetime, timezone
+          from pathlib import Path
+          before=json.loads(Path("/tmp/hard_before.json").read_text())
+          hard=json.loads(Path("evidence/cor0203/runtime/MATRIX_COR0203_PHYSICAL_UNIQUENESS_LAST.json").read_text())
+          inv=json.loads(Path("evidence/tennis/paid_window_harvest/2026-10-24/MATRIX_RAPIDAPI_TENNIS_INVENTORY_LAST.json").read_text())
+          candidates=[]
+          for e in inv.get("events") or []:
+              d=e.get("model_derivation") or {}
+              if d.get("lane")=="COR02_COR03_ATP_CHALLENGER_HARD" and d.get("domain_candidate") is True:
+                  candidates.append(str(e.get("match_id") or ""))
+          after=int(hard["unique_calibration_observations"])
+          out={
+            "schema":"MATRIX_COR0203_24OCT_ONE_SHOT_CERT_V1",
+            "generated_at_utc":datetime.now(timezone.utc).replace(microsecond=0).isoformat(),
+            "target_date_bogota":"2026-10-24",
+            "browser_first":{"sofascore_visible":17,"flashscore_visible":221,"gate":"PASS"},
+            "rapidapi":{"unique_match_count":inv.get("unique_match_count"),"hard_candidate_match_ids":sorted(set(candidates))},
+            "unique_before":int(before["unique"]),
+            "unique_after":after,
+            "unique_increment":after-int(before["unique"]),
+            "remaining_to_400":max(0,400-after),
+            "physical_rows":int(hard["physical_frozen_rows"]),
+            "duplicates_quarantined":int(hard["duplicate_observations_quarantined"]),
+            "metrics_opened":bool(hard["metrics_opened"]),
+            "outcomes_read":int(hard["outcomes_read"]),
+            "real_money":"BLOCKED",
+            "status":"PASS"
+          }
+          raw=json.dumps(out,sort_keys=True,separators=(",",":")).encode()
+          out["sha256_without_self"]=hashlib.sha256(raw).hexdigest()
+          p=Path("evidence/governance/MATRIX_COR0203_24OCT_ONE_SHOT_CERT.json")
+          p.write_text(json.dumps(out,indent=2,sort_keys=True)+"\n")
+          print(json.dumps(out,sort_keys=True))
+          PY
+
+      - name: Persist 24OCT audit artifacts
+        run: |
+          set -euo pipefail
+          git config user.name matrix-tennis-hard-24oct
+          git config user.email matrix-tennis-hard-24oct@users.noreply.github.com
+          git add evidence/tennis/paid_window_harvest/2026-10-24/MATRIX_RAPIDAPI_TENNIS_INVENTORY_LAST.json
+          git add evidence/governance/MATRIX_COR0203_24OCT_ONE_SHOT_CERT.json
+          if git diff --cached --quiet; then
+            echo "NO_24OCT_AUDIT_CHANGE"
+            exit 0
+          fi
+          git commit -m "evidence(tennis): certify governed Hard 24oct one-shot"
+          for attempt in 1 2 3 4; do
+            git fetch origin repair/cor09-world-pipeline
+            if ! git rebase origin/repair/cor09-world-pipeline; then
+              git rebase --abort || true
+              exit 1
+            fi
+            if git push origin HEAD:repair/cor09-world-pipeline; then exit 0; fi
+            sleep $((attempt*2))
+          done
+          exit 1
