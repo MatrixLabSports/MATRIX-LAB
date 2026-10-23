@@ -13,7 +13,7 @@ BASE_URL = "https://v3.football.api-sports.io"
 BOOKMAKER_ID = 4
 BOOKMAKER_NAME = "Pinnacle"
 TIMEOUT_SECONDS = 20.0
-MAX_REQUESTS = 120
+MAX_REQUESTS = 200
 
 
 def _parse_aware(value: str) -> datetime:
@@ -67,6 +67,7 @@ def run(
     session: Any | None = None,
     now: datetime | None = None,
     capture_clock: Callable[[], datetime] | None = None,
+    eligible_fixture_ids: set[str] | None = None,
 ) -> dict[str, Any]:
     key = str(api_key or "").strip()
     if not key:
@@ -89,6 +90,8 @@ def run(
         if not fixture_id or not kickoff:
             continue
         if _parse_aware(kickoff) <= reference:
+            continue
+        if eligible_fixture_ids is not None and fixture_id not in eligible_fixture_ids:
             continue
         targets.append(event)
 
@@ -158,6 +161,8 @@ def run(
         "completed_at_utc": clock().astimezone(timezone.utc).replace(microsecond=0).isoformat(),
         "capture_timestamp_scope": "PER_FIXTURE_RESPONSE",
         "bookmaker": {"id": BOOKMAKER_ID, "name": BOOKMAKER_NAME},
+        "target_scope": "CANONICAL_PIT_READY_ONLY" if eligible_fixture_ids is not None else "ALL_FUTURE_REGISTRY",
+        "eligible_fixture_filter_count": None if eligible_fixture_ids is None else len(eligible_fixture_ids),
         "target_fixture_count": len(targets),
         "network_calls_performed": calls,
         "fixtures_with_pinnacle_odds": covered,
@@ -180,10 +185,24 @@ def run(
 
 
 def main() -> None:
+    from tools.api_football_canonicalize_analysis_inputs import load_chunked_canonical_bundle
+
+    canonical_bundle, canonical_manifest = load_chunked_canonical_bundle(
+        Path("evidence/api_football/canonical_analysis")
+    )
+    eligible_fixture_ids = {
+        str(row.get("fixture_id"))
+        for row in canonical_bundle.get("inputs", [])
+        if isinstance(row, Mapping) and str(row.get("fixture_id") or "").strip()
+    }
+    if len(eligible_fixture_ids) != int(canonical_manifest.get("ready_input_count") or 0):
+        raise ValueError("PINNACLE_CANONICAL_READY_ID_COUNT_MISMATCH")
+
     result = run(
         os.environ.get("API_FOOTBALL_KEY", ""),
         Path("evidence/api_football/fixtures/future_fixture_registry.json"),
         Path("evidence/api_football/pinnacle_coverage"),
+        eligible_fixture_ids=eligible_fixture_ids,
     )
     print("API_FOOTBALL_PINNACLE_COVERAGE_GATE:", result["status"])
     print("target_fixture_count=", result["target_fixture_count"])
