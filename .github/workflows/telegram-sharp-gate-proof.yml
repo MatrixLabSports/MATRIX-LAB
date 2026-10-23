@@ -1,0 +1,37 @@
+name: MATRIX Telegram Sharp Gate Proof
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - repair/cor09-world-pipeline
+    paths:
+      - .github/workflows/telegram-sharp-gate-proof.yml
+
+permissions:
+  contents: read
+
+jobs:
+  proof:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      REAL_MONEY: BLOCKED
+      AUTO_BETTING: DISABLED
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: repair/cor09-world-pipeline
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: python -m pip install pytest requests
+      - name: Prove sharp consensus and Telegram enforcement
+        run: |
+          PYTHONPATH=. python -m pytest -q \
+            tests/test_football_sharp_consensus.py \
+            tests/test_telegram_sharp_reference_gate.py
+      - name: Enforce safety
+        run: |
+          test "$REAL_MONEY" = "BLOCKED"
+          test "$AUTO_BETTING" = "DISABLED"
