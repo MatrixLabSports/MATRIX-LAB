@@ -1,7 +1,7 @@
 {
   "checks": {
     "football_4000": {
-      "age_minutes": 22.69,
+      "age_minutes": 27.71,
       "canonical_path": "evidence/api_football/governance/MATRIX_FOOTBALL_4000_CANONICAL_TRACKER_LAST.json",
       "failures": [],
       "max_age_minutes": 30.0,
@@ -13,7 +13,7 @@
       "status": "PASS"
     },
     "live_tennis_cumulative": {
-      "age_minutes": 49.55,
+      "age_minutes": 54.58,
       "canonical_path": "evidence/live_tennis_lab/MATRIX_LIVE_TENNIS_CUMULATIVE_GATE_V1.json",
       "failures": [
         "CANONICAL_SOURCE_STALE"
@@ -27,7 +27,7 @@
       "status": "FAIL_CLOSED"
     },
     "telegram_daily_bankroll": {
-      "age_minutes": 21.73,
+      "age_minutes": 0.78,
       "canonical_path": "evidence/notifications/telegram/MATRIX_TELEGRAM_DAILY_BANKROLL_CANONICAL_LAST.json",
       "failures": [],
       "max_age_minutes": 30.0,
@@ -37,15 +37,13 @@
         "summary.total_profit_cop": -140500
       },
       "name": "telegram_daily_bankroll",
-      "source_timestamp_utc": "2026-10-23T10:03:32.285542+00:00",
+      "source_timestamp_utc": "2026-10-23T10:29:30.621835+00:00",
       "status": "PASS"
     },
     "tennis_three_blocks": {
-      "age_minutes": 49.54,
+      "age_minutes": 0.85,
       "canonical_path": "evidence/tennis/MATRIX_TENNIS_THREE_BLOCK_STAGNATION_AUDIT_LAST.json",
-      "failures": [
-        "CANONICAL_SOURCE_STALE"
-      ],
+      "failures": [],
       "max_age_minutes": 30.0,
       "metrics": {
         "blocks.clay.current_counter": 3,
@@ -53,8 +51,8 @@
         "blocks.live.current_counter": 79
       },
       "name": "tennis_three_blocks",
-      "source_timestamp_utc": "2026-10-23T09:35:43.657873+00:00",
-      "status": "FAIL_CLOSED"
+      "source_timestamp_utc": "2026-10-23T10:29:26.885708+00:00",
+      "status": "PASS"
     }
   },
   "failures": [
@@ -62,16 +60,10 @@
       "failures": [
         "CANONICAL_SOURCE_STALE"
       ],
-      "source": "tennis_three_blocks"
-    },
-    {
-      "failures": [
-        "CANONICAL_SOURCE_STALE"
-      ],
       "source": "live_tennis_cumulative"
     }
   ],
-  "generated_at_utc": "2026-10-23T10:25:15.962319+00:00",
+  "generated_at_utc": "2026-10-23T10:30:17.650694+00:00",
   "precedence": [
     "LATEST_PHYSICAL_EVIDENCE",
     "HANDOFF",
@@ -88,7 +80,7 @@
   },
   "schema": "MATRIX_CANONICAL_TRUTH_GUARD_V1",
   "summary": {
-    "failed_sources": 2,
+    "failed_sources": 1,
     "registered_sources": 4,
     "status": "FAIL_CLOSED"
   }
