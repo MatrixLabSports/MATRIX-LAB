@@ -109,6 +109,59 @@ jobs:
           ODDS_API_NET_KEY: ${{ secrets.ODDS_API_NET_KEY }}
         run: python -m tools.telegram_green_signal_alerts
 
+      - name: Rebuild canonical daily bankroll table
+        run: python -m tools.telegram_daily_bankroll_canonical
+
+      - name: Audit 22-OCT closure
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          ledger=json.loads(Path("evidence/notifications/telegram/MATRIX_TELEGRAM_SIGNAL_LEDGER.json").read_text(encoding="utf-8"))
+          rows=[]
+          for s in ledger.get("sent", []):
+              if not isinstance(s, dict):
+                  continue
+              bet=s.get("paper_bet")
+              if not isinstance(bet, dict) or str(bet.get("kickoff_bogota_date") or "")!="2026-10-22":
+                  continue
+              rows.append({
+                  "signal_key":s.get("signal_key"),
+                  "fixture_id":s.get("fixture_id"),
+                  "match":s.get("match"),
+                  "house":s.get("house"),
+                  "odds":s.get("odds"),
+                  "paper_status":bet.get("status"),
+                  "paper_profit_cop":bet.get("profit_cop"),
+              })
+          open_rows=[x for x in rows if str(x.get("paper_status") or "").upper() in {"OPEN","PENDING"}]
+          wins=sum(1 for x in rows if str(x.get("paper_status") or "").upper()=="SETTLED" and float(x.get("paper_profit_cop") or 0)>0)
+          losses=sum(1 for x in rows if str(x.get("paper_status") or "").upper()=="SETTLED" and float(x.get("paper_profit_cop") or 0)<0)
+          voids=sum(1 for x in rows if str(x.get("paper_status") or "").upper().startswith("VOID"))
+          cancelled=sum(1 for x in rows if str(x.get("paper_status") or "").upper()=="CANCELLED_NO_BET")
+          profit=round(sum(float(x.get("paper_profit_cop") or 0) for x in rows))
+          out={
+              "schema":"MATRIX_TELEGRAM_DAILY_CLOSURE_AUDIT_V1",
+              "date_bogota":"2026-10-22",
+              "signals":len(rows),
+              "wins":wins,
+              "losses":losses,
+              "voids":voids,
+              "cancelled_no_bet":cancelled,
+              "open":len(open_rows),
+              "profit_cop":profit,
+              "units":round(profit/25000,2),
+              "rows":rows,
+              "status":"PASS_CLOSED" if not open_rows else "PENDING_FINALS",
+              "real_money":"BLOCKED",
+          }
+          Path("evidence/notifications/telegram/MATRIX_TELEGRAM_20261022_CLOSURE_AUDIT.json").write_text(
+              json.dumps(out,ensure_ascii=False,indent=2,sort_keys=True)+"\n",encoding="utf-8"
+          )
+          assert len(open_rows)==0, f"22OCT_OPEN_SIGNALS:{len(open_rows)}"
+          print(json.dumps({k:out[k] for k in ("signals","wins","losses","voids","cancelled_no_bet","open","profit_cop","units","status")},sort_keys=True))
+          PY
+
       - name: Persistir ledger gobernado
         if: ${{ always() }}
         shell: bash
@@ -118,7 +171,9 @@ jobs:
           git config user.email matrix-telegram-alerts@users.noreply.github.com
           git add evidence/notifications/telegram/MATRIX_TELEGRAM_SIGNAL_LEDGER.json \
             evidence/notifications/telegram/MATRIX_CORRELATED_RISK_CALIBRATION_LAST.json \
-            evidence/notifications/telegram/MATRIX_TELEGRAM_BLOCKER_RECOVERY_AUDIT_LAST.json
+            evidence/notifications/telegram/MATRIX_TELEGRAM_BLOCKER_RECOVERY_AUDIT_LAST.json \
+            evidence/notifications/telegram/MATRIX_TELEGRAM_DAILY_BANKROLL_CANONICAL_LAST.json \
+            evidence/notifications/telegram/MATRIX_TELEGRAM_20261022_CLOSURE_AUDIT.json
           if ! git diff --quiet; then
             echo "TELEGRAM_UNEXPECTED_UNSTAGED_TRACKED_CHANGES"
             git status --short
