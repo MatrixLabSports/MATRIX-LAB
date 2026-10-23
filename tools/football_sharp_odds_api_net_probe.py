@@ -14,6 +14,24 @@ from tools.football_clv_odds_api_net_capture import _extract_total_25, _sim
 ODDS_API_BASE = "https://api.odds-api.net/v1"
 MAX_SAMPLE = 12
 STRICT_FRESH_SECONDS = 120
+REFERENCE_PRIORITY_COMPETITIONS = {
+    "A-League",
+    "2. Bundesliga",
+    "Bundesliga",
+    "Allsvenskan",
+    "Eredivisie",
+    "Eerste Divisie",
+    "Ligue 1",
+    "Ligue 2",
+    "Serie A",
+    "Serie B",
+    "Premier League",
+    "Championship",
+    "La Liga",
+    "Primeira Liga",
+    "Liga Profesional Argentina",
+    "Primera A",
+}
 
 
 def _aware(value: Any) -> datetime:
@@ -48,7 +66,9 @@ def run(*, api_key: str, now: datetime | None = None, session: Any | None = None
         )
     ]
     ready.sort(key=lambda row: (_aware(row["kickoff_utc"]), str(row.get("fixture_id"))))
-    sample = ready[:sample_size]
+    priority = [row for row in ready if str(row.get("competition") or "") in REFERENCE_PRIORITY_COMPETITIONS]
+    non_priority = [row for row in ready if str(row.get("competition") or "") not in REFERENCE_PRIORITY_COMPETITIONS]
+    sample = (priority + non_priority)[:sample_size]
 
     client = session or requests.Session()
     headers = {"X-API-Key": key, "Accept": "application/json"}
@@ -159,7 +179,7 @@ def run(*, api_key: str, now: datetime | None = None, session: Any | None = None
         "source_canonical_bundle_sha256": manifest.get("bundle_sha256"),
         "canonical_ready_input_count": manifest.get("ready_input_count"),
         "api_football_pinnacle_covered_fixture_count": len(covered_fixture_ids),
-        "sample_selection": "EARLIEST_FUTURE_INTERSECTION_OF_CANONICAL_READY_AND_API_FOOTBALL_PINNACLE_COVERAGE",
+        "sample_selection": "PRIORITY_COMPETITIONS_THEN_EARLIEST_FUTURE_INTERSECTION_OF_CANONICAL_READY_AND_API_FOOTBALL_PINNACLE_COVERAGE",
         "sample_size": len(sample),
         "network_calls": calls,
         "identity_matched_count": matched,
