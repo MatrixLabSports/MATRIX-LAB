@@ -510,10 +510,47 @@ def run_capture(
 def main() -> None:
     history_root = Path("evidence/api_football/history")
     out_dir = Path("evidence/api_football/team_last_fallback")
+    benchmark = _load(history_root / "benchmark_with_history.json")
+    readiness = _load(history_root / "history_readiness.json")
+
+    # Idempotency guard: a serialized/retried workflow must not repeat the same
+    # paid team-last acquisition against an unchanged source benchmark.
+    existing_benchmark_path = out_dir / "benchmark_after_team_last.json"
+    existing_manifest_path = out_dir / "manifest.json"
+    if existing_benchmark_path.is_file() and existing_manifest_path.is_file():
+        try:
+            existing_benchmark = _load(existing_benchmark_path)
+            existing_manifest = _load(existing_manifest_path)
+            source_fixtures = benchmark.get("fixtures")
+            existing_fixtures = existing_benchmark.get("fixtures")
+            same_source = (
+                isinstance(source_fixtures, Mapping)
+                and isinstance(existing_fixtures, Mapping)
+                and len(source_fixtures) == len(existing_fixtures)
+                and existing_benchmark.get("benchmark_id") == benchmark.get("benchmark_id")
+                and existing_benchmark.get("captured_at_utc") == benchmark.get("captured_at_utc")
+                and existing_manifest.get("target_fixture_count") == len(source_fixtures)
+                and existing_manifest.get("status") == "PASS"
+                and existing_manifest.get("real_money") == "BLOCKED"
+            )
+            if same_source:
+                print(json.dumps({
+                    "status": "PASS",
+                    "idempotent_reuse": True,
+                    "network_calls_performed": 0,
+                    "target_fixture_count": len(source_fixtures),
+                    "ready_minimum_history_count": existing_manifest.get("ready_minimum_history_count"),
+                    "blocked_minimum_history_count": existing_manifest.get("blocked_minimum_history_count"),
+                    "real_money": "BLOCKED",
+                }, sort_keys=True))
+                return
+        except (OSError, ValueError, json.JSONDecodeError):
+            pass
+
     result = run_capture(
         api_key=os.environ.get("API_FOOTBALL_KEY", ""),
-        benchmark=_load(history_root / "benchmark_with_history.json"),
-        readiness=_load(history_root / "history_readiness.json"),
+        benchmark=benchmark,
+        readiness=readiness,
         out_dir=out_dir,
         max_requests=int(os.environ.get("MATRIX_API_FOOTBALL_TEAM_LAST_MAX_REQUESTS", str(MAX_REQUESTS))),
         min_daily_remaining_reserve=int(os.environ.get("MATRIX_API_FOOTBALL_DAILY_RESERVE", str(MIN_DAILY_REMAINING_RESERVE))),
