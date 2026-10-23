@@ -1,0 +1,67 @@
+{
+  "schema": "MATRIX_SHARP_REFERENCE_GOVERNANCE_V1",
+  "effective_date_bogota": "2026-10-23",
+  "hierarchy": [
+    {
+      "name": "Pinnacle",
+      "role": "PRIMARY_SHARP_REFERENCE",
+      "integration_status": "ACTIVE_REFRESHING",
+      "transport": "API-Football /odds bookmaker_id=4",
+      "probability_generation": "PROHIBITED",
+      "eligible_for_diagnostic_comparison": true
+    },
+    {
+      "name": "Betfair Exchange",
+      "role": "SECONDARY_MARKET_REFERENCE",
+      "integration_status": "NOT_CONNECTED_TO_MATRIX",
+      "external_evidence": "Official Exchange API exists and provides market odds/volumes; requires Betfair account, App Key and session token.",
+      "probability_generation": "PROHIBITED",
+      "eligible_for_diagnostic_comparison": false
+    },
+    {
+      "name": "Circa Sports",
+      "role": "SECONDARY_SHARP_REFERENCE_IF_CERTIFIED_COVERAGE",
+      "integration_status": "NO_DIRECT_OFFICIAL_API_CERTIFIED_IN_MATRIX",
+      "external_evidence": "No official public Circa developer odds API located; third-party aggregator required.",
+      "probability_generation": "PROHIBITED",
+      "eligible_for_diagnostic_comparison": false
+    },
+    {
+      "name": "FanDuel",
+      "role": "CONTEXTUAL_REFERENCE_NOT_PRIMARY_SHARP",
+      "integration_status": "NO_DIRECT_OFFICIAL_API_CERTIFIED_IN_MATRIX",
+      "external_evidence": "No official public FanDuel sportsbook odds API located; third-party feed required.",
+      "probability_generation": "PROHIBITED",
+      "eligible_for_diagnostic_comparison": false
+    }
+  ],
+  "current_pinnacle_repair": {
+    "prior_problem": "Coverage probe targeted all future registry fixtures and had MAX_REQUESTS=120, incompatible with 190 canonical PIT-ready fixtures.",
+    "repair": "Probe now filters to canonical PIT-ready fixture IDs and MAX_REQUESTS=200; workflow asserts target count equals canonical ready_input_count.",
+    "workflow_run_id": 39903539859,
+    "expected_pit_ready_count": 190,
+    "status": "IN_PROGRESS_AT_RECEIPT_WRITE"
+  },
+  "rules": {
+    "sharp_odds_never_generate_p_matrix": true,
+    "sharp_reference_is_diagnostic_only": true,
+    "no_coverage_means_no_certified_sharp_comparison": true,
+    "no_silent_fallback_to_contextual_books": true,
+    "real_money": "BLOCKED",
+    "automatic_wagering": false
+  },
+  "sources": {
+    "matrix": [
+      "evidence/api_football/canonical_analysis/manifest.json",
+      "evidence/api_football/pinnacle_coverage/manifest.json",
+      "evidence/api_football/pinnacle_reference/manifest.json",
+      "evidence/api_football/pinnacle_shadow_comparison/manifest.json"
+    ],
+    "external": [
+      "https://developer.betfair.com/exchange-api/",
+      "https://support.developer.betfair.com/hc/en-us/articles/115003864651-How-do-I-get-started",
+      "https://oddspapi.io/blog/circa-sports-api-odds-access/",
+      "https://fanlinewire.com/fanduel-odds-api"
+    ]
+  }
+}
