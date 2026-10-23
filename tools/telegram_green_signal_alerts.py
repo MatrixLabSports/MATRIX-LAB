@@ -7,7 +7,7 @@ import os
 import re
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
-from typing import Any
+from typing import Any, Mapping
 from difflib import SequenceMatcher
 import unicodedata
 from zoneinfo import ZoneInfo
