@@ -1,0 +1,148 @@
+name: MATRIX Telegram Prematch Rescue
+
+on:
+  schedule:
+    - cron: "12,27,42,57 * * * *"
+  push:
+    branches:
+      - main
+    paths:
+      - .github/workflows/telegram-prematch-rescue.yml
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: telegram-green-signals
+  cancel-in-progress: false
+
+jobs:
+  rescue:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      MATRIX_MODE: SHADOW
+      REAL_MONEY: BLOCKED
+      AUTO_BETTING: DISABLED
+      PAPER_BANKROLL: ENABLED
+    steps:
+      - name: Checkout governed operational branch
+        uses: actions/checkout@v4
+        with:
+          ref: repair/cor09-world-pipeline
+          fetch-depth: 0
+
+      - name: Decide whether primary supervisor is stale
+        id: stale
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY' >> "$GITHUB_OUTPUT"
+          import json
+          from datetime import datetime, timezone
+          from pathlib import Path
+
+          path=Path("evidence/notifications/telegram/MATRIX_TELEGRAM_SIGNAL_LEDGER.json")
+          stale=True
+          age_minutes=None
+          last_run=None
+          if path.exists():
+              ledger=json.loads(path.read_text(encoding="utf-8"))
+              hist=ledger.get("run_history") or []
+              if hist:
+                  last_run=str((hist[-1] or {}).get("run_at_utc") or "")
+                  try:
+                      dt=datetime.fromisoformat(last_run.replace("Z","+00:00")).astimezone(timezone.utc)
+                      age_minutes=(datetime.now(timezone.utc)-dt).total_seconds()/60.0
+                      stale=age_minutes >= 10.0
+                  except Exception:
+                      stale=True
+          print(f"run_rescue={'true' if stale else 'false'}")
+          print(f"last_run_at_utc={last_run or 'NONE'}")
+          print(f"age_minutes={age_minutes if age_minutes is not None else 'UNKNOWN'}")
+          PY
+
+      - name: Show rescue decision
+        run: |
+          echo "run_rescue=${{ steps.stale.outputs.run_rescue }}"
+          echo "last_run_at_utc=${{ steps.stale.outputs.last_run_at_utc }}"
+          echo "age_minutes=${{ steps.stale.outputs.age_minutes }}"
+          test "$REAL_MONEY" = "BLOCKED"
+          test "$AUTO_BETTING" = "DISABLED"
+
+      - name: Set up Python
+        if: steps.stale.outputs.run_rescue == 'true'
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install governed dependencies
+        if: steps.stale.outputs.run_rescue == 'true'
+        run: python -m pip install requests pytest
+
+      - name: Verify safety and Telegram gates
+        if: steps.stale.outputs.run_rescue == 'true'
+        run: |
+          PYTHONPATH=. python -m pytest -q \
+            tests/test_telegram_paper_bankroll.py \
+            tests/test_telegram_correlated_risk_gate.py \
+            tests/test_telegram_sharp_reference_gate.py \
+            tests/test_football_sharp_consensus.py \
+            tests/test_telegram_monitoring_watchdog.py
+          test "$MATRIX_MODE" = "SHADOW"
+          test "$REAL_MONEY" = "BLOCKED"
+          test "$AUTO_BETTING" = "DISABLED"
+          test "$PAPER_BANKROLL" = "ENABLED"
+
+      - name: Validate paid-window and secrets
+        if: steps.stale.outputs.run_rescue == 'true'
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          API_FOOTBALL_KEY: ${{ secrets.API_FOOTBALL_KEY }}
+          ODDS_API_NET_KEY: ${{ secrets.ODDS_API_NET_KEY }}
+        run: |
+          python -m tools.football_subscription_deadline_guard --require-paid-use --require-key
+          test -n "$TELEGRAM_BOT_TOKEN"
+          test -n "$TELEGRAM_CHAT_ID"
+          test -n "$API_FOOTBALL_KEY"
+          test -n "$ODDS_API_NET_KEY"
+
+      - name: Rescue prematch supervisor
+        if: steps.stale.outputs.run_rescue == 'true'
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          API_FOOTBALL_KEY: ${{ secrets.API_FOOTBALL_KEY }}
+          ODDS_API_NET_KEY: ${{ secrets.ODDS_API_NET_KEY }}
+        run: python -m tools.telegram_green_signal_alerts
+
+      - name: Persist rescue ledger
+        if: steps.stale.outputs.run_rescue == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name matrix-telegram-rescue
+          git config user.email matrix-telegram-rescue@users.noreply.github.com
+          git add \
+            evidence/notifications/telegram/MATRIX_TELEGRAM_SIGNAL_LEDGER.json \
+            evidence/notifications/telegram/MATRIX_CORRELATED_RISK_CALIBRATION_LAST.json \
+            evidence/notifications/telegram/MATRIX_TELEGRAM_BLOCKER_RECOVERY_AUDIT_LAST.json
+          if git diff --cached --quiet; then
+            echo "RESCUE_NO_LEDGER_CHANGE"
+            exit 0
+          fi
+          git commit -m "evidence(telegram): prematch rescue supervisor"
+          for attempt in 1 2 3 4; do
+            git fetch origin repair/cor09-world-pipeline
+            if ! git rebase origin/repair/cor09-world-pipeline; then
+              git rebase --abort || true
+              exit 1
+            fi
+            if git push origin HEAD:repair/cor09-world-pipeline; then
+              exit 0
+            fi
+            sleep $((attempt*2))
+          done
+          exit 1
