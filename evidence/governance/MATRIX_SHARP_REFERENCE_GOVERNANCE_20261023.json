@@ -60,7 +60,8 @@
     },
     "odds_api_net_priority_competition_probe": {
       "run_id": 39904155351,
-      "status": "QUEUED_AT_RECEIPT_UPDATE"
+      "status": "QUEUED_AT_RECEIPT_UPDATE",
+      "policy": "PRIORITY_LIQUID_COMPETITIONS"
     }
   },
   "rules": {
@@ -87,5 +88,20 @@
       "https://oddspapi.io/blog/circa-sports-api-odds-access/",
       "https://fanlinewire.com/fanduel-odds-api"
     ]
+  },
+  "telegram_enforcement": {
+    "status": "CODE_PERSISTED_FAIL_CLOSED",
+    "policy": "PINNACLE_PRIMARY_SHARP_GATE_V1",
+    "fresh_pinnacle_required_before_green": true,
+    "circa_role": "CORROBORATION_ONLY",
+    "betfair_role": "CORROBORATION_ONLY_WHEN_PHYSICALLY_CONNECTED",
+    "fanduel_role": "MARKET_CONTEXT_ONLY_NEVER_COUNTS_AS_SHARP",
+    "contradiction_action": "BLOCKED_SHARP_CONTRADICTION",
+    "no_pinnacle_action": "BLOCKED_NO_FRESH_PINNACLE_REFERENCE",
+    "p_matrix_mutated_by_odds": false,
+    "implementation_commit": "807dd9c7be6e7161bca857e2ef38b5ab16d2c49c",
+    "regression_suite_commit": "4af1b1b3f1ef673c6c34824111d7aea4216be4fe",
+    "dedicated_proof_run_id": 39904484399,
+    "dedicated_proof_run_status": "QUEUED_AT_RECEIPT_UPDATE"
   }
 }
