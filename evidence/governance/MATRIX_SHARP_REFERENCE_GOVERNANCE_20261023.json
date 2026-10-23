@@ -39,8 +39,29 @@
     "prior_problem": "Coverage probe targeted all future registry fixtures and had MAX_REQUESTS=120, incompatible with 190 canonical PIT-ready fixtures.",
     "repair": "Probe now filters to canonical PIT-ready fixture IDs and MAX_REQUESTS=200; workflow asserts target count equals canonical ready_input_count.",
     "workflow_run_id": 39903539859,
-    "expected_pit_ready_count": 190,
-    "status": "IN_PROGRESS_AT_RECEIPT_WRITE"
+    "status": "SUCCESS",
+    "canonical_pit_ready_count": 190,
+    "api_football_pinnacle_covered_fixtures": 118,
+    "api_football_pinnacle_coverage_rate": 0.6210526315789474,
+    "reference_quote_count": 10330,
+    "strict_fresh_comparison_matched_fixtures": 0,
+    "strict_fresh_block_reason": "API_FOOTBALL_PINNACLE_SNAPSHOT_CAPTURE_DELAY_EXCEEDED_120S",
+    "odds_api_net_probe_run_ids": [
+      39903917303,
+      39904025550,
+      39904155351
+    ],
+    "odds_api_net_latest_completed_probe": {
+      "run_id": 39904025550,
+      "sample_size": 12,
+      "identity_matched_count": 0,
+      "strict_fresh_120s_count": 0,
+      "scientific_status": "NO_CERTIFIED_FRESH_REFERENCE_FROM_THIS_SAMPLE"
+    },
+    "odds_api_net_priority_competition_probe": {
+      "run_id": 39904155351,
+      "status": "QUEUED_AT_RECEIPT_UPDATE"
+    }
   },
   "rules": {
     "sharp_odds_never_generate_p_matrix": true,
@@ -48,7 +69,10 @@
     "no_coverage_means_no_certified_sharp_comparison": true,
     "no_silent_fallback_to_contextual_books": true,
     "real_money": "BLOCKED",
-    "automatic_wagering": false
+    "automatic_wagering": false,
+    "no_sharp_match_action": "NO_CERTIFIED_SHARP_COMPARISON",
+    "api_football_nominal_pinnacle_snapshot_is_closing_reference": false,
+    "strict_freshness_seconds": 120
   },
   "sources": {
     "matrix": [
