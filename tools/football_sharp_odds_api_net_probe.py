@@ -32,9 +32,20 @@ def run(*, api_key: str, now: datetime | None = None, session: Any | None = None
 
     reference = (now or datetime.now(timezone.utc)).astimezone(timezone.utc).replace(microsecond=0)
     bundle, manifest = load_chunked_canonical_bundle(Path("evidence/api_football/canonical_analysis"))
+    coverage_path = Path("evidence/api_football/pinnacle_coverage/manifest.json")
+    coverage = json.loads(coverage_path.read_text(encoding="utf-8"))
+    covered_fixture_ids = {
+        str(row.get("fixture_id"))
+        for row in coverage.get("fixtures", [])
+        if isinstance(row, Mapping) and row.get("has_pinnacle_odds") is True
+    }
     ready = [
         row for row in bundle.get("inputs", [])
-        if isinstance(row, Mapping) and _aware(row["kickoff_utc"]) > reference
+        if (
+            isinstance(row, Mapping)
+            and _aware(row["kickoff_utc"]) > reference
+            and str(row.get("fixture_id")) in covered_fixture_ids
+        )
     ]
     ready.sort(key=lambda row: (_aware(row["kickoff_utc"]), str(row.get("fixture_id"))))
     sample = ready[:sample_size]
@@ -147,6 +158,8 @@ def run(*, api_key: str, now: datetime | None = None, session: Any | None = None
         "captured_at_utc": datetime.now(timezone.utc).replace(microsecond=0).isoformat(),
         "source_canonical_bundle_sha256": manifest.get("bundle_sha256"),
         "canonical_ready_input_count": manifest.get("ready_input_count"),
+        "api_football_pinnacle_covered_fixture_count": len(covered_fixture_ids),
+        "sample_selection": "EARLIEST_FUTURE_INTERSECTION_OF_CANONICAL_READY_AND_API_FOOTBALL_PINNACLE_COVERAGE",
         "sample_size": len(sample),
         "network_calls": calls,
         "identity_matched_count": matched,
