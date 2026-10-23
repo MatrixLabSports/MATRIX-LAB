@@ -1,7 +1,7 @@
 {
   "checks": {
     "clay": {
-      "age_minutes": 291.8,
+      "age_minutes": 331.04,
       "latest_conclusion": "success",
       "latest_run_id": 39908854013,
       "latest_status": "completed",
@@ -10,38 +10,37 @@
       "workflow": "tennis-clay-daily-prospective.yml"
     },
     "hard": {
-      "age_minutes": 27.83,
+      "age_minutes": 67.08,
       "latest_conclusion": "failure",
       "latest_run_id": 39938796810,
       "latest_status": "completed",
-      "reason": "LATEST_TERMINAL_RUN_FAILED",
+      "reason": "LATEST_RUN_STALE",
       "status": "FAIL",
       "workflow": "tennis-hard-governed-day-resolution.yml"
     },
     "live": {
-      "age_minutes": 1.15,
+      "age_minutes": 40.39,
       "latest_conclusion": "success",
-      "latest_event": "schedule",
       "latest_run_id": 39941920267,
       "latest_status": "completed",
-      "reason": "RECENT_RUN_PRESENT",
-      "status": "PASS",
+      "reason": "LATEST_RUN_STALE",
+      "status": "FAIL",
       "workflow": "live-tennis-cumulative-gate-reconcile.yml"
     }
   },
   "failures": [
     {
-      "age_minutes": 27.83,
+      "age_minutes": 67.08,
       "lane": "hard",
       "latest_conclusion": "failure",
       "latest_run_id": 39938796810,
       "latest_status": "completed",
-      "reason": "LATEST_TERMINAL_RUN_FAILED",
+      "reason": "LATEST_RUN_STALE",
       "status": "FAIL",
       "workflow": "tennis-hard-governed-day-resolution.yml"
     },
     {
-      "age_minutes": 291.8,
+      "age_minutes": 331.04,
       "lane": "clay",
       "latest_conclusion": "success",
       "latest_run_id": 39908854013,
@@ -49,9 +48,19 @@
       "reason": "LATEST_RUN_STALE",
       "status": "FAIL",
       "workflow": "tennis-clay-daily-prospective.yml"
+    },
+    {
+      "age_minutes": 40.39,
+      "lane": "live",
+      "latest_conclusion": "success",
+      "latest_run_id": 39941920267,
+      "latest_status": "completed",
+      "reason": "LATEST_RUN_STALE",
+      "status": "FAIL",
+      "workflow": "live-tennis-cumulative-gate-reconcile.yml"
     }
   ],
-  "generated_at_utc": "2026-10-23T10:51:38.996813+00:00",
+  "generated_at_utc": "2026-10-23T11:30:53.654028+00:00",
   "policy": {
     "default_branch_scheduler_required": true,
     "expected_cadence_minutes": 15,
@@ -60,7 +69,7 @@
   },
   "schema": "MATRIX_TENNIS_MONITORING_WATCHDOG_V1",
   "summary": {
-    "failures": 2,
+    "failures": 3,
     "lanes_checked": 3,
     "status": "FAIL_CLOSED"
   }
