@@ -161,7 +161,7 @@ jobs:
 
             PYTHONPATH=. python -m tools.football_clv_tracking_cycle
             if [ -f evidence/clv/football/over_2_5/closing_attempts.jsonl ]; then
-              echo "CLV_ATTEMPT_LOG_ROWS=$(grep -cve '^[[:space:]]*
+              rows="$(grep -cve '^[[:space:]]*
 
             status="$(remaining_future)"
             echo "$status"
@@ -249,8 +249,9 @@ jobs:
           fi
  evidence/clv/football/over_2_5/closing_attempts.jsonl || true)"
             else
-              echo "CLV_ATTEMPT_LOG_ROWS=0"
+              rows=0
             fi
+            echo "CLV_ATTEMPT_LOG_ROWS=$rows"
             persist_if_changed
 
             status="$(remaining_future)"
