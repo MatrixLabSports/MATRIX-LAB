@@ -69,7 +69,7 @@ jobs:
         run: python -m pip install requests pytest
 
       - name: Verify paper-bankroll Telegram format
-        run: PYTHONPATH=. python -m pytest -q tests/test_telegram_paper_bankroll.py tests/test_telegram_correlated_risk_gate.py tests/test_telegram_sharp_reference_gate.py tests/test_football_sharp_consensus.py tests/test_correlated_exposure.py tests/test_telegram_monitoring_watchdog.py
+        run: PYTHONPATH=. python -m pytest -q tests/test_telegram_paper_bankroll.py tests/test_telegram_correlated_risk_gate.py tests/test_telegram_sharp_reference_gate.py tests/test_football_sharp_consensus.py tests/test_correlated_exposure.py tests/test_telegram_monitoring_watchdog.py tests/test_telegram_quote_recovery_window.py
 
       - name: Enforce safety gates
         shell: bash
