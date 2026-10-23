@@ -1,7 +1,7 @@
 {
   "checks": {
     "football_4000": {
-      "age_minutes": 121.46,
+      "age_minutes": 151.14,
       "canonical_path": "evidence/api_football/governance/MATRIX_FOOTBALL_4000_CANONICAL_TRACKER_LAST.json",
       "failures": [
         "CANONICAL_SOURCE_STALE"
@@ -15,7 +15,7 @@
       "status": "FAIL_CLOSED"
     },
     "live_tennis_cumulative": {
-      "age_minutes": 113.07,
+      "age_minutes": 142.74,
       "canonical_path": "evidence/live_tennis_lab/MATRIX_LIVE_TENNIS_CUMULATIVE_GATE_V1.json",
       "failures": [
         "CANONICAL_SOURCE_STALE"
@@ -29,11 +29,9 @@
       "status": "FAIL_CLOSED"
     },
     "telegram_daily_bankroll": {
-      "age_minutes": 122.61,
+      "age_minutes": 0.83,
       "canonical_path": "evidence/notifications/telegram/MATRIX_TELEGRAM_DAILY_BANKROLL_CANONICAL_LAST.json",
-      "failures": [
-        "CANONICAL_SOURCE_STALE"
-      ],
+      "failures": [],
       "max_age_minutes": 30.0,
       "metrics": {
         "summary.current_bankroll_cop": 4859500,
@@ -41,11 +39,11 @@
         "summary.total_profit_cop": -140500
       },
       "name": "telegram_daily_bankroll",
-      "source_timestamp_utc": "2026-10-23T15:26:14.512965+00:00",
-      "status": "FAIL_CLOSED"
+      "source_timestamp_utc": "2026-10-23T17:57:42.068718+00:00",
+      "status": "PASS"
     },
     "tennis_three_blocks": {
-      "age_minutes": 122.56,
+      "age_minutes": 152.24,
       "canonical_path": "evidence/tennis/MATRIX_TENNIS_THREE_BLOCK_STAGNATION_AUDIT_LAST.json",
       "failures": [
         "CANONICAL_SOURCE_STALE"
@@ -79,15 +77,9 @@
         "CANONICAL_SOURCE_STALE"
       ],
       "source": "live_tennis_cumulative"
-    },
-    {
-      "failures": [
-        "CANONICAL_SOURCE_STALE"
-      ],
-      "source": "telegram_daily_bankroll"
     }
   ],
-  "generated_at_utc": "2026-10-23T17:28:50.935762+00:00",
+  "generated_at_utc": "2026-10-23T17:58:31.683009+00:00",
   "precedence": [
     "LATEST_PHYSICAL_EVIDENCE",
     "HANDOFF",
@@ -104,7 +96,7 @@
   },
   "schema": "MATRIX_CANONICAL_TRUTH_GUARD_V1",
   "summary": {
-    "failed_sources": 4,
+    "failed_sources": 3,
     "registered_sources": 4,
     "status": "FAIL_CLOSED"
   }
