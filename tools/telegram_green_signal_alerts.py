@@ -835,6 +835,46 @@ def odds_api_net_exact_over25_offer(
     return max(offers, key=lambda x: x["ev"]) if offers else None
 
 
+def sharp_reference_gate_state(diagnostic: Mapping[str, Any] | None) -> tuple[str, dict[str, Any]]:
+    """Require a fresh Pinnacle reference before a football green signal.
+
+    Circa and Betfair may corroborate the primary reference. FanDuel is
+    context-only and never satisfies the sharp gate. The sharp market never
+    mutates P_MATRIX; it only approves or blocks downstream signal emission.
+    """
+    diag = diagnostic if isinstance(diagnostic, Mapping) else {}
+    raw = diag.get("sharp_consensus")
+    consensus = raw if isinstance(raw, Mapping) else {}
+    sharp_rows = consensus.get("sharp_rows")
+    if not isinstance(sharp_rows, list):
+        sharp_rows = []
+    fresh_sources = {
+        str(row.get("source") or "").strip().casefold().replace(" ", "")
+        for row in sharp_rows
+        if isinstance(row, Mapping)
+    }
+    pinnacle_present = "pinnacle" in fresh_sources
+    status = str(consensus.get("status") or "INSUFFICIENT_SHARP_COVERAGE")
+    detail = {
+        "policy": "PINNACLE_PRIMARY_SHARP_GATE_V1",
+        "consensus_status": status,
+        "fresh_sharp_sources": sorted(fresh_sources),
+        "pinnacle_present": pinnacle_present,
+        "circa_present": "circa" in fresh_sources,
+        "betfair_present": "betfair" in fresh_sources,
+        "fanduel_counts_as_sharp": False,
+        "p_matrix_mutated_by_odds": False,
+        "real_money": "BLOCKED",
+    }
+    if not pinnacle_present:
+        return "BLOCKED_NO_FRESH_PINNACLE_REFERENCE", detail
+    if status == "CONTRADICTION_REVIEW":
+        return "BLOCKED_SHARP_CONTRADICTION", detail
+    if status in {"PASS_ALIGNED", "SINGLE_SHARP_REFERENCE_ONLY"}:
+        return "PASS_SHARP_REFERENCE_GATE", detail
+    return "BLOCKED_INSUFFICIENT_SHARP_COVERAGE", detail
+
+
 def physical_book_over25_offer(
     fixture_id: str,
     p: float,
@@ -2015,6 +2055,18 @@ def main() -> None:
             ledger["pre_send_gate"][key] = gate_record
             pre_send_blocked += 1
             continue
+        sharp_state, sharp_detail = sharp_reference_gate_state(odds_api_net_diagnostic)
+        gate_record["sharp_reference_gate"] = sharp_detail
+        gate_record["sharp_reference_state"] = sharp_state
+        if sharp_state != "PASS_SHARP_REFERENCE_GATE":
+            gate_record["state"] = sharp_state
+            candidate["eligible_green"] = False
+            candidate["send_gate_status"] = sharp_state
+            lifecycle.setdefault("first_terminal_state", sharp_state)
+            lifecycle.setdefault("first_terminal_at_utc", now.isoformat())
+            ledger["pre_send_gate"][key] = gate_record
+            pre_send_blocked += 1
+            continue
         quality_state = signal_quality_gate_state(candidate, offer)
         gate_record["quality_policy"] = SIGNAL_QUALITY_POLICY
         gate_record["quality_min_p_matrix"] = SIGNAL_QUALITY_MIN_P_MATRIX
@@ -2389,8 +2441,11 @@ def main() -> None:
         offer = max(comparable, key=lambda x: float(x.get("ev") or -999.0)) if comparable else None
         quote_checks += 1
         previous = ledger["quote_state"].get(key) or {}
+        sharp_state, sharp_detail = sharp_reference_gate_state(correction_diag)
         if offer is None:
             state = "NO_APOSTAR_SIN_CUOTA_VALIDA_MISMA_CASA"
+        elif sharp_state != "PASS_SHARP_REFERENCE_GATE":
+            state = "NO_APOSTAR_SIN_REFERENCIA_SHARP_PINNACLE"
         else:
             state = "VERDE" if float(offer["ev"]) > 0 else "NO_APOSTAR"
         ledger["quote_state"][key] = {
@@ -2402,6 +2457,8 @@ def main() -> None:
             "primary_same_house_offer": primary_offer,
             "odds_api_net_same_house_offer": fallback_offer,
             "odds_api_net_diagnostic": correction_diag,
+            "sharp_reference_state": sharp_state,
+            "sharp_reference_gate": sharp_detail,
             "selected_quote_provider": (offer or {}).get("provider") if isinstance(offer, dict) else None,
         }
         invalid_now = offer is None or float(offer["ev"]) <= 0
