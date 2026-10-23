@@ -1,0 +1,40 @@
+name: API-Football team-last idempotency proof
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - repair/cor09-world-pipeline
+    paths:
+      - .github/workflows/api-football-team-last-idempotency-proof.yml
+
+permissions:
+  contents: read
+
+jobs:
+  prove-zero-network:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: repair/cor09-world-pipeline
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: python -m pip install requests
+      - name: Prove idempotent reuse with API key absent
+        run: |
+          set -euo pipefail
+          unset API_FOOTBALL_KEY || true
+          BEFORE_MANIFEST="$(sha256sum evidence/api_football/team_last_fallback/manifest.json | awk '{print $1}')"
+          BEFORE_BENCH="$(sha256sum evidence/api_football/team_last_fallback/benchmark_after_team_last.json | awk '{print $1}')"
+          python -m tools.api_football_team_last_fallback | tee /tmp/idempotent.txt
+          grep -q '"idempotent_reuse": true' /tmp/idempotent.txt
+          grep -q '"network_calls_performed": 0' /tmp/idempotent.txt
+          AFTER_MANIFEST="$(sha256sum evidence/api_football/team_last_fallback/manifest.json | awk '{print $1}')"
+          AFTER_BENCH="$(sha256sum evidence/api_football/team_last_fallback/benchmark_after_team_last.json | awk '{print $1}')"
+          test "$BEFORE_MANIFEST" = "$AFTER_MANIFEST"
+          test "$BEFORE_BENCH" = "$AFTER_BENCH"
+          echo "TEAM_LAST_IDEMPOTENCY_ZERO_NETWORK: PASS"
