@@ -78,6 +78,7 @@ PAPER_STAKE_RISK_OVERRIDE = "TEMPORARY_FLAT_1U_CAP_17OCT2026"
 GREEN_PREMATCH_REVALIDATION_WINDOW_MINUTES = 120
 PAPER_MAX_SIGNALS_PER_LEAGUE_DAY = 3
 ODDS_API_NET_BASE = "https://api.odds-api.net/v1"
+ODDS_API_NET_EVENT_SEARCH_WINDOW_SECONDS = 7200
 SIGNAL_QUALITY_MIN_P_MATRIX = 0.60
 SIGNAL_QUALITY_MIN_REVALIDATED_EV = 0.05
 SIGNAL_QUALITY_POLICY = "API_COST_RECOVERY_PRECISION_V1"
@@ -562,6 +563,7 @@ def odds_api_net_exact_over25_offer(
             "betfair_status": "PENDING_SEPARATE_EXCHANGE_FEED_PHYSICAL_VALIDATION",
             "market_context_requested": ["fanduel"],
             "sharp_quote_rows": [],
+            "event_search_window_seconds": ODDS_API_NET_EVENT_SEARCH_WINDOW_SECONDS,
         })
     if not key or kickoff_dt is None:
         if diagnostic is not None:
@@ -591,8 +593,8 @@ def odds_api_net_exact_over25_offer(
         headers={"X-API-Key": key, "Accept": "application/json"},
         params={
             "sport": "soccer",
-            "start_from": start - 900,
-            "start_to": start + 900,
+            "start_from": start - ODDS_API_NET_EVENT_SEARCH_WINDOW_SECONDS,
+            "start_to": start + ODDS_API_NET_EVENT_SEARCH_WINDOW_SECONDS,
             "limit": 100,
             "include_bookmaker_ids": "true",
         },
@@ -1783,6 +1785,20 @@ def build_blocker_recovery_audit(
             continue
         profile = blocker_recovery_profile(gate)
         state = str(gate.get("state") or "UNKNOWN")
+        kickoff_dt = parse_dt(candidate.get("kickoff"))
+        time_state = "PREMATCH"
+        if kickoff_dt is not None and kickoff_dt <= now:
+            time_state = "PAST_KICKOFF"
+            if str(profile.get("recoverability") or "") in {
+                "RECOVERABLE_WHILE_PREMATCH",
+                "RECOVERABLE_WITH_BETTER_AUTHORIZED_QUOTE_WHILE_PREMATCH",
+                "TEMPORAL_WAIT",
+                "REVIEW_REQUIRED",
+            }:
+                profile["recoverability"] = "NOT_RECOVERABLE_NO_BACKFILL"
+                profile["automatic_recovery_exhausted"] = True
+                profile["final_disposition"] = "PAST_KICKOFF_NO_BACKFILL"
+                profile["sources_available_for_recovery"] = []
         variable = str(profile.get("missing_or_failed_variable") or "UNKNOWN")
         recoverability = str(profile.get("recoverability") or "REVIEW_REQUIRED")
         counts_by_state[state] = counts_by_state.get(state, 0) + 1
@@ -1807,6 +1823,7 @@ def build_blocker_recovery_audit(
             "provider_identity_top_scores": provider_diag.get("identity_top_scores") or [],
             "provider_identity_top_candidates": (provider_diag.get("identity_top_candidates") or [])[:5],
             "checked_at_utc": gate.get("checked_at_utc") or now.isoformat(),
+            "time_state_at_audit": time_state,
             "real_money": "BLOCKED",
         })
     return {
