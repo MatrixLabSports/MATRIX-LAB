@@ -31,6 +31,8 @@ on:
       - main
     paths:
       - tools/football_daily_governed_over25.py
+      - tools/api_football_prospective_daily_cycle.py
+      - tests/test_api_football_prospective_daily_cycle_retry.py
       - tools/matrix_multi_market_supervisor.py
       - tools/api_football_market_binding_catalog.py
       - app/market/matrix_market_portfolio.py
@@ -106,7 +108,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          python -m pytest -q tests/test_football_subscription_deadline_guard.py
+          python -m pytest -q tests/test_football_subscription_deadline_guard.py             tests/test_api_football_prospective_daily_cycle_retry.py
           python -m tools.football_subscription_deadline_guard --require-paid-use --require-key --out evidence/governance/MATRIX_FOOTBALL_SUBSCRIPTION_DEADLINE_LAST.json
 
       - name: Enforce safety gates
