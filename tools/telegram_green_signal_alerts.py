@@ -1982,6 +1982,26 @@ def blocker_recovery_profile(gate_record: dict[str, Any]) -> dict[str, Any]:
         })
         return profile
 
+    if state == "BLOCKED_NO_FRESH_PINNACLE_REFERENCE":
+        fallback = diag.get("api_football_pinnacle_fallback") or {}
+        fallback_status = str(fallback.get("status") or "")
+        sources = ["odds-api.net"]
+        if fallback_status:
+            sources.append("API-Football Pinnacle bookmaker_id=4")
+        profile.update({
+            "missing_or_failed_variable": "PINNACLE_FRESH_REFERENCE",
+            "recoverability": "RECOVERABLE_WHILE_PREMATCH",
+            "sources_already_checked": sources,
+            "sources_available_for_recovery": ["odds-api.net", "API-Football Pinnacle bookmaker_id=4"],
+            "automatic_recovery_attempted": bool(fallback_status),
+            "automatic_recovery_exhausted": False,
+            "api_football_pinnacle_fallback_status": fallback_status or None,
+            "api_football_pinnacle_quote_age_seconds": fallback.get("provider_quote_age_seconds"),
+            "api_football_pinnacle_provider_quote_updated_at_utc": fallback.get("provider_quote_updated_at_utc"),
+            "final_disposition": "RETRY_FRESH_PINNACLE_UNTIL_KICKOFF",
+        })
+        return profile
+
     if state == "BLOCKED_QUALITY_P_MATRIX_BELOW_60PCT":
         profile.update({
             "missing_or_failed_variable": "P_MATRIX_QUALITY_THRESHOLD",
