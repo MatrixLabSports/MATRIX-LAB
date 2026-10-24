@@ -1,5 +1,5 @@
 {
-  "generated_at_utc": "2026-10-24T21:25:11+00:00",
+  "generated_at_utc": "2026-10-24T22:06:57+00:00",
   "policy": {
     "automatic_wagering": false,
     "no_fake_backfill": true,
@@ -70,9 +70,9 @@
       "sport": "football"
     },
     {
-      "blocker": "COVERAGE_IMPLEMENTATION_PRESENT_BUT_NO_GOVERNED_PREMATCH_PREDICTIVE_FREEZE",
+      "blocker": "MODEL_REJECTED_HISTORICAL_OOS_V3",
       "evidence": [
-        "tools/api_football_extended_market_coverage_probe.py"
+        "evidence/api_football/market_expansion/failed_team_markets_v3/summary.json"
       ],
       "market_lane": "CARDS_OVER_UNDER",
       "must_continue_collecting": true,
@@ -82,9 +82,9 @@
       "sport": "football"
     },
     {
-      "blocker": "COVERAGE_IMPLEMENTATION_PRESENT_BUT_NO_GOVERNED_PREMATCH_PREDICTIVE_FREEZE",
+      "blocker": "MODEL_REJECTED_HISTORICAL_OOS_V3",
       "evidence": [
-        "tools/api_football_extended_market_coverage_probe.py"
+        "evidence/api_football/market_expansion/failed_team_markets_v3/summary.json"
       ],
       "market_lane": "CORNERS_OVER_UNDER",
       "must_continue_collecting": true,
@@ -118,9 +118,9 @@
       "sport": "tennis"
     },
     {
-      "blocker": "COVERAGE_IMPLEMENTATION_PRESENT_BUT_NO_GOVERNED_PREMATCH_PREDICTIVE_FREEZE",
+      "blocker": "MODEL_REJECTED_HISTORICAL_OOS_V3",
       "evidence": [
-        "tools/api_football_extended_market_coverage_probe.py"
+        "evidence/api_football/market_expansion/failed_team_markets_v3/summary.json"
       ],
       "market_lane": "GOALKEEPER_SAVES",
       "must_continue_collecting": true,
@@ -130,9 +130,9 @@
       "sport": "football"
     },
     {
-      "blocker": "COVERAGE_IMPLEMENTATION_PRESENT_BUT_NO_GOVERNED_PREMATCH_PREDICTIVE_FREEZE",
+      "blocker": "PLAYER_MODEL_REJECTED_HISTORICAL_OOS",
       "evidence": [
-        "tools/api_football_extended_market_coverage_probe.py"
+        "evidence/api_football/market_expansion/player_models/summary.json"
       ],
       "market_lane": "PLAYER_ASSISTS",
       "must_continue_collecting": true,
@@ -142,9 +142,9 @@
       "sport": "football"
     },
     {
-      "blocker": "COVERAGE_IMPLEMENTATION_PRESENT_BUT_NO_GOVERNED_PREMATCH_PREDICTIVE_FREEZE",
+      "blocker": "PLAYER_MODEL_REJECTED_HISTORICAL_OOS",
       "evidence": [
-        "tools/api_football_extended_market_coverage_probe.py"
+        "evidence/api_football/market_expansion/player_models/summary.json"
       ],
       "market_lane": "PLAYER_FOULS",
       "must_continue_collecting": true,
@@ -154,9 +154,9 @@
       "sport": "football"
     },
     {
-      "blocker": "COVERAGE_IMPLEMENTATION_PRESENT_BUT_NO_GOVERNED_PREMATCH_PREDICTIVE_FREEZE",
+      "blocker": "PLAYER_MODEL_REJECTED_HISTORICAL_OOS",
       "evidence": [
-        "tools/api_football_extended_market_coverage_probe.py"
+        "evidence/api_football/market_expansion/player_models/summary.json"
       ],
       "market_lane": "PLAYER_PASSES",
       "must_continue_collecting": true,
@@ -166,8 +166,9 @@
       "sport": "football"
     },
     {
-      "blocker": "PREMATCH_LINEUP_NOT_AVAILABLE_IN_CHECKED_EVENTS",
+      "blocker": "PLAYER_SHOTS_V3_MODEL_ELIGIBLE_BUT_PREMATCH_LINEUP_NOT_AVAILABLE",
       "evidence": [
+        "evidence/api_football/market_expansion/player_shots_lineup_role_v3/summary.json",
         "evidence/api_football/player_shots_v3_prospective/last_run.json"
       ],
       "market_lane": "PLAYER_SHOTS",
@@ -178,9 +179,9 @@
       "sport": "football"
     },
     {
-      "blocker": "COVERAGE_IMPLEMENTATION_PRESENT_BUT_NO_GOVERNED_PREMATCH_PREDICTIVE_FREEZE",
+      "blocker": "PLAYER_MODEL_REJECTED_HISTORICAL_OOS",
       "evidence": [
-        "tools/api_football_extended_market_coverage_probe.py"
+        "evidence/api_football/market_expansion/player_models/summary.json"
       ],
       "market_lane": "PLAYER_SHOTS_ON_TARGET",
       "must_continue_collecting": true,
@@ -190,9 +191,9 @@
       "sport": "football"
     },
     {
-      "blocker": "COVERAGE_IMPLEMENTATION_PRESENT_BUT_NO_GOVERNED_PREMATCH_PREDICTIVE_FREEZE",
+      "blocker": "PLAYER_MODEL_REJECTED_HISTORICAL_OOS",
       "evidence": [
-        "tools/api_football_extended_market_coverage_probe.py"
+        "evidence/api_football/market_expansion/player_models/summary.json"
       ],
       "market_lane": "PLAYER_TACKLES",
       "must_continue_collecting": true,
@@ -238,9 +239,10 @@
       "sport": "tennis"
     },
     {
-      "blocker": "COVERAGE_IMPLEMENTATION_PRESENT_BUT_NO_GOVERNED_PREMATCH_PREDICTIVE_FREEZE",
+      "blocker": "TEAM_FOULS_V3_MODEL_ELIGIBLE_BUT_CANONICAL_HOME_AWAY_FREEZE_NOT_AVAILABLE",
       "evidence": [
-        "tools/api_football_extended_market_coverage_probe.py"
+        "evidence/api_football/market_expansion/failed_team_markets_v3/summary.json",
+        "evidence/api_football/promoted_team_markets/last_run.json"
       ],
       "market_lane": "TEAM_FOULS_AWAY",
       "must_continue_collecting": true,
@@ -250,9 +252,10 @@
       "sport": "football"
     },
     {
-      "blocker": "COVERAGE_IMPLEMENTATION_PRESENT_BUT_NO_GOVERNED_PREMATCH_PREDICTIVE_FREEZE",
+      "blocker": "TEAM_FOULS_V3_MODEL_ELIGIBLE_BUT_CANONICAL_HOME_AWAY_FREEZE_NOT_AVAILABLE",
       "evidence": [
-        "tools/api_football_extended_market_coverage_probe.py"
+        "evidence/api_football/market_expansion/failed_team_markets_v3/summary.json",
+        "evidence/api_football/promoted_team_markets/last_run.json"
       ],
       "market_lane": "TEAM_FOULS_HOME",
       "must_continue_collecting": true,
@@ -262,9 +265,9 @@
       "sport": "football"
     },
     {
-      "blocker": "COVERAGE_IMPLEMENTATION_PRESENT_BUT_NO_GOVERNED_PREMATCH_PREDICTIVE_FREEZE",
+      "blocker": "MODEL_REJECTED_HISTORICAL_OOS_V3",
       "evidence": [
-        "tools/api_football_extended_market_coverage_probe.py"
+        "evidence/api_football/market_expansion/failed_team_markets_v3/summary.json"
       ],
       "market_lane": "TEAM_SHOTS_ON_TARGET_AWAY",
       "must_continue_collecting": true,
@@ -274,9 +277,9 @@
       "sport": "football"
     },
     {
-      "blocker": "COVERAGE_IMPLEMENTATION_PRESENT_BUT_NO_GOVERNED_PREMATCH_PREDICTIVE_FREEZE",
+      "blocker": "MODEL_REJECTED_HISTORICAL_OOS_V3",
       "evidence": [
-        "tools/api_football_extended_market_coverage_probe.py"
+        "evidence/api_football/market_expansion/failed_team_markets_v3/summary.json"
       ],
       "market_lane": "TEAM_SHOTS_ON_TARGET_HOME",
       "must_continue_collecting": true,
@@ -310,8 +313,9 @@
       "sport": "football"
     },
     {
-      "blocker": "NO_CANONICAL_TARGET_MARKET_OFFERS_IN_CHECKED_EVENTS",
+      "blocker": "MODEL_FROZEN_PROSPECTIVE_ELIGIBLE_BUT_NO_CANONICAL_PREMATCH_OFFER",
       "evidence": [
+        "evidence/api_football/market_expansion/team_total_shots_side_models/summary.json",
         "evidence/api_football/promoted_team_markets/last_run.json"
       ],
       "market_lane": "TEAM_TOTAL_SHOTS_AWAY",
@@ -322,8 +326,9 @@
       "sport": "football"
     },
     {
-      "blocker": "NO_CANONICAL_TARGET_MARKET_OFFERS_IN_CHECKED_EVENTS",
+      "blocker": "MODEL_FROZEN_PROSPECTIVE_ELIGIBLE_BUT_NO_CANONICAL_PREMATCH_OFFER",
       "evidence": [
+        "evidence/api_football/market_expansion/team_total_shots_side_models/summary.json",
         "evidence/api_football/promoted_team_markets/last_run.json"
       ],
       "market_lane": "TEAM_TOTAL_SHOTS_HOME",
@@ -374,9 +379,13 @@
   "source_checks": {
     "player_shots_blocker_count": 20,
     "player_shots_future_events_checked": 20,
+    "player_shots_v3_model_status": "FROZEN_FOR_NEW_PROSPECTIVE_VALIDATION_V3",
     "priority_lab_status": "PASS",
     "priority_probability_not_generated_count": 4,
     "promoted_zero_freeze_reason": "NO_CANONICAL_TARGET_MARKET_OFFERS_IN_CHECKED_EVENTS",
+    "team_fouls_v3_model_status": "FROZEN_FOR_NEW_PROSPECTIVE_VALIDATION_V3",
+    "team_total_shots_away_model_status": "FROZEN_FOR_NEW_PROSPECTIVE_VALIDATION",
+    "team_total_shots_home_model_status": "FROZEN_FOR_NEW_PROSPECTIVE_VALIDATION",
     "tennis_serve_provider_mode": "INPLAY_SOURCE_COVERAGE",
     "tennis_serve_status": "PASS_SOURCE_LAB"
   },
