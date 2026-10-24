@@ -1,0 +1,118 @@
+{
+  "schema": "MATRIX_42_LANE_PROSPECTIVE_EXPANSION_14_LANES_AUDIT_V1",
+  "generated_at_utc": "2026-10-24T22:15:30+00:00",
+  "status": "PASS_14_LANES_RUNTIME_CERTIFIED",
+  "portfolio": {
+    "total_lanes": 42,
+    "football_lanes": 30,
+    "tennis_lanes": 12,
+    "cadence_minutes": 15
+  },
+  "runtime": {
+    "multi_market_supervisor_run": 40137475911,
+    "multi_market_supervisor_conclusion": "success",
+    "football_daily_production_rerun": 40136847947,
+    "football_daily_production_rerun_conclusion": "success",
+    "football_market_freeze_run": 40136866966,
+    "football_market_freeze_conclusion": "success",
+    "blocker_registry_run": 40136965055,
+    "blocker_registry_run_attempt": 2,
+    "blocker_registry_conclusion": "success"
+  },
+  "prospective_counts": {
+    "MATCH_RESULT_1X2": 393,
+    "DOUBLE_CHANCE_1X": 393,
+    "DOUBLE_CHANCE_X2": 393,
+    "DOUBLE_CHANCE_12": 393,
+    "TOTAL_GOALS_OVER_UNDER": 393,
+    "FIRST_HALF_TOTAL_GOALS_OVER_UNDER": 384,
+    "SECOND_HALF_TOTAL_GOALS_OVER_UNDER": 384,
+    "FIRST_HALF_TEAM_TOTAL_GOALS_HOME": 384,
+    "FIRST_HALF_TEAM_TOTAL_GOALS_AWAY": 384,
+    "SECOND_HALF_TEAM_TOTAL_GOALS_HOME": 384,
+    "SECOND_HALF_TEAM_TOTAL_GOALS_AWAY": 384,
+    "MATCH_WINNER": 27,
+    "TEAM_TOTAL_SHOTS_HOME": 2,
+    "TEAM_TOTAL_SHOTS_AWAY": 2
+  },
+  "totals": {
+    "lanes_with_any_valid_prospective": 14,
+    "zero_prospective_lanes": 28,
+    "lanes_at_100": 11,
+    "lanes_at_300": 11,
+    "lanes_at_600": 0,
+    "ledger_rows_total": 4300,
+    "last_cycle_admitted": 4,
+    "last_cycle_rejected": 0
+  },
+  "team_shots_offline_bridge": {
+    "tool": "tools/matrix_42_lane_team_shots_offline_bridge.py",
+    "tool_commit": "2d238f46a2f67d359ea191160a8d1829d3647f0f",
+    "test": "tests/test_matrix_42_lane_team_shots_offline_bridge.py",
+    "test_commit": "89d10695cf8ffc8df6478aec138af9b5716953ae",
+    "workflow_main_commit": "b676e0729b5ba0e6e29630f6885b9265f9d2eb8f",
+    "workflow_operational_commit": "2e735d12f09deff8d0bc2888ee0dfb14adc45b1f",
+    "future_source_fixture_candidates": 378,
+    "eligible_future_unique_fixtures": 2,
+    "emitted_lane_rows": 4,
+    "blocked_count": 376,
+    "blocked_reason": "INSUFFICIENT_PERSISTED_TEAM_SHOTS_PIT_HISTORY",
+    "network_calls": 0,
+    "lines": {
+      "TEAM_TOTAL_SHOTS_HOME": 15.5,
+      "TEAM_TOTAL_SHOTS_AWAY": 11.5
+    },
+    "price_observed": false,
+    "odds_used_to_generate_probability": false
+  },
+  "football_15m_cadence": {
+    "regression_test": "tests/test_football_prospective_15m_cadence.py",
+    "regression_test_commit": "960b678b79a9a9418d1193fdcfee64dc6acab832",
+    "daily_production_main_commit": "5d8852e2c22339267fc4e5a2b19a8d9596bf21ce",
+    "market_freeze_main_commit": "bbe47913510a90d0592938ea5cfdd661d09f4a27",
+    "daily_production_cron": "1,16,31,46 * * * *",
+    "market_freeze_cron": "8,23,38,53 * * * *",
+    "cancel_in_progress": false,
+    "daily_production_runtime_certified": true,
+    "market_freeze_runtime_certified": true
+  },
+  "external_blocker": {
+    "provider": "API-Football",
+    "condition": "DAILY_REQUEST_LIMIT_REACHED",
+    "evidence_commit": "b656b59fcd2605cc4b00c5fd74738102df1750d8",
+    "observed_in_raw_payloads": true,
+    "interpretation": "Do not spend additional network calls against the exhausted daily quota; offline PIT bridges remain allowed when their source evidence is sufficient."
+  },
+  "remaining_28_blockers": {
+    "INPLAY_SOURCE_COVERAGE_ONLY_NO_PREMATCH_PREDICTIVE_FREEZE": 3,
+    "PRIORITY_LAB_PROBABILITY_NOT_GENERATED": 3,
+    "LIVE_FEATURE_IMPLEMENTATION_HAS_NO_GOVERNED_PREMATCH_FREEZE_PRODUCER": 8,
+    "BTTS_CANDIDATES_REJECTED_NOT_APPROVED_FOR_PROSPECTIVE_BRIDGE": 1,
+    "MODEL_REJECTED_HISTORICAL_OOS_V3": 5,
+    "PLAYER_MODEL_REJECTED_HISTORICAL_OOS": 5,
+    "PLAYER_SHOTS_V3_MODEL_ELIGIBLE_BUT_PREMATCH_LINEUP_NOT_AVAILABLE": 1,
+    "TEAM_FOULS_V3_MODEL_ELIGIBLE_BUT_CANONICAL_HOME_AWAY_FREEZE_NOT_AVAILABLE": 2
+  },
+  "blocker_taxonomy": {
+    "tool_commit": "6e7255ebdb67df62bcb746ea69ed093879e84f89",
+    "test_commit": "e3ea89a81dac49e25a8c112008c6e88933693dbd",
+    "runtime_certified": true
+  },
+  "promoted_team_supervisor": {
+    "model_only_code_commit": "e1158c3d5eb9fefe7b83a335c1cc37545c3a9b93",
+    "model_only_test_commit": "33447e94a38b3ef1db2f9ec14597ba5bad4590d7",
+    "persistence_guard_main_commit": "da3bd08fcc553c32809c16f18e2ccffd1d3c5a8b",
+    "persistence_guard_workflow_recognized_by_github": true,
+    "persistence_guard_run_id": 40137709893,
+    "persistence_guard_runtime_status_at_audit_cut": "QUEUED",
+    "note": "This queued run is not required for the offline Team Shots bridge, which is already runtime-certified through the canonical 42-lane supervisor."
+  },
+  "protections": {
+    "post_start_backfill_forbidden": true,
+    "missing_not_zero": true,
+    "silent_imputation": false,
+    "odds_used_to_generate_probability": false,
+    "automatic_wagering": false,
+    "real_money": "BLOCKED"
+  }
+}
