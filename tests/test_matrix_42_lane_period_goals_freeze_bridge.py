@@ -36,12 +36,16 @@ def test_period_bridge_emits_six_lanes(tmp_path:Path):
       }]
     }
     rows,audit=build_rows(source,repo_root=tmp_path,now_utc=datetime(2026,10,24,20,0,tzinfo=timezone.utc),existing_keys=set())
-    assert len(rows)==6
+    assert len(rows)==8
     assert {x["market_lane"] for x in rows}=={
+      "TEAM_TOTAL_GOALS_HOME","TEAM_TOTAL_GOALS_AWAY",
       "FIRST_HALF_TOTAL_GOALS_OVER_UNDER","SECOND_HALF_TOTAL_GOALS_OVER_UNDER",
       "FIRST_HALF_TEAM_TOTAL_GOALS_HOME","FIRST_HALF_TEAM_TOTAL_GOALS_AWAY",
       "SECOND_HALF_TEAM_TOTAL_GOALS_HOME","SECOND_HALF_TEAM_TOTAL_GOALS_AWAY"
     }
+    by={x["market_lane"]:x for x in rows}
+    assert set(by["TEAM_TOTAL_GOALS_HOME"]["prediction"])=={"over_0_5","under_0_5","over_1_5","under_1_5","over_2_5","under_2_5"}
+    assert set(by["TEAM_TOTAL_GOALS_AWAY"]["prediction"])=={"over_0_5","under_0_5","over_1_5","under_1_5","over_2_5","under_2_5"}
     assert all(x["target_outcome"] is None for x in rows)
     assert all(x["odds_used_to_generate_probability"] is False for x in rows)
     assert audit["blocked_count"]==0
