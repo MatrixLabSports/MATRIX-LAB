@@ -51,3 +51,25 @@ def test_safety_invariants_remain_blocked():
     assert m["invariants"]["odds_do_not_generate_p_matrix"] is True
     assert m["invariants"]["automatic_wagering"] is False
     assert m["invariants"]["real_money"]=="BLOCKED"
+
+
+
+def test_first_and_second_half_goal_markets_are_mandatory():
+    required = {
+        "TEAM_TOTAL_GOALS_HOME",
+        "TEAM_TOTAL_GOALS_AWAY",
+        "FIRST_HALF_TOTAL_GOALS_OVER_UNDER",
+        "SECOND_HALF_TOTAL_GOALS_OVER_UNDER",
+        "FIRST_HALF_TEAM_TOTAL_GOALS_HOME",
+        "FIRST_HALF_TEAM_TOTAL_GOALS_AWAY",
+        "SECOND_HALF_TEAM_TOTAL_GOALS_HOME",
+        "SECOND_HALF_TEAM_TOTAL_GOALS_AWAY",
+    }
+    assert required.issubset(EXPECTED_FOOTBALL_KEYS)
+    m=json.loads(MANDATE.read_text(encoding="utf-8"))
+    assert required.issubset(set(m["football_markets"]))
+    corr=m["explicit_user_correction_2026_10_24_goals_by_period"]
+    assert corr["first_half_goals_required"] is True
+    assert corr["second_half_goals_required"] is True
+    assert corr["team_total_goals_full_match_required"] is True
+    assert corr["team_total_goals_by_half_required"] is True
