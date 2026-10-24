@@ -47,6 +47,7 @@ def evaluate_watchdog(ledger: dict[str, Any], now: datetime) -> dict[str, Any]:
     active_future = 0
     critical_unresolved = 0
     monitoring_breaches = 0
+    new_monitoring_breaches = 0
 
     for key, row in lifecycle.items():
         kickoff = parse_dt(row.get("kickoff"))
@@ -56,6 +57,14 @@ def evaluate_watchdog(ledger: dict[str, Any], now: datetime) -> dict[str, Any]:
 
         if row.get("monitoring_breach") is True:
             monitoring_breaches += 1
+            detected = parse_dt(row.get("monitoring_breach_detected_at_utc"))
+            if detected is None:
+                warnings.append({
+                    "code": "MONITORING_BREACH_TIMESTAMP_MISSING",
+                    "signal_key": key,
+                })
+            elif last_run_dt is not None and detected >= last_run_dt:
+                new_monitoring_breaches += 1
 
         if kickoff <= now:
             continue
@@ -77,10 +86,10 @@ def evaluate_watchdog(ledger: dict[str, Any], now: datetime) -> dict[str, Any]:
                 "minutes_to_kickoff": round(minutes_to_kickoff, 2),
             })
 
-    if monitoring_breaches > 0:
+    if new_monitoring_breaches > 0:
         failures.append({
             "code": "NEW_MONITORING_BREACH_PRESENT",
-            "count": monitoring_breaches,
+            "count": new_monitoring_breaches,
         })
 
     return {
@@ -98,6 +107,7 @@ def evaluate_watchdog(ledger: dict[str, Any], now: datetime) -> dict[str, Any]:
             "active_future_candidates": active_future,
             "critical_unresolved_candidates": critical_unresolved,
             "monitoring_breaches": monitoring_breaches,
+            "new_monitoring_breaches": new_monitoring_breaches,
             "failures": len(failures),
             "warnings": len(warnings),
         },
