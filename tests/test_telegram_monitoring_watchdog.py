@@ -76,3 +76,19 @@ def test_watchdog_fails_if_any_real_monitoring_breach_is_persisted():
     assert report["summary"]["status"] == "FAIL_CLOSED"
     assert report["summary"]["monitoring_breaches"] == 1
     assert any(x["code"] == "NEW_MONITORING_BREACH_PRESENT" for x in report["failures"])
+
+
+def test_monitoring_breach_registration_is_idempotent():
+    from datetime import datetime, timezone
+    from tools.telegram_green_signal_alerts import register_monitoring_breach
+
+    lifecycle = {"monitoring_breach": False}
+    first = datetime(2026, 10, 24, 6, 20, tzinfo=timezone.utc)
+    second = datetime(2026, 10, 24, 6, 25, tzinfo=timezone.utc)
+
+    assert register_monitoring_breach(lifecycle, first) is True
+    assert register_monitoring_breach(lifecycle, second) is False
+    assert lifecycle["monitoring_breach"] is True
+    assert lifecycle["monitoring_breach_detected_at_utc"] == first.isoformat()
+    assert lifecycle["first_terminal_state"] == "BLOCKED_KICKOFF_REACHED_MONITORING_BREACH"
+    assert lifecycle["first_terminal_at_utc"] == first.isoformat()
