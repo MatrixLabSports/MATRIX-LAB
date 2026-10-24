@@ -25,11 +25,13 @@ on:
       - tests/test_matrix_42_lane_football_freeze_bridge.py
       - tests/test_matrix_42_lane_period_goals_freeze_bridge.py
       - tests/test_matrix_42_lane_tennis_match_winner_bridge.py
+      - tests/test_matrix_42_lane_zero_prospective_blockers.py
       - tests/test_matrix_nine_lab_gate_registry.py
       - tools/matrix_42_lane_prospective_registry.py
       - tools/matrix_42_lane_football_freeze_bridge.py
       - tools/matrix_42_lane_period_goals_freeze_bridge.py
       - tools/matrix_42_lane_tennis_match_winner_bridge.py
+      - tools/matrix_42_lane_zero_prospective_blockers.py
       - tools/matrix_nine_lab_gate_registry.py
       - .github/workflows/matrix-multi-market-supervisor.yml
 
@@ -76,6 +78,7 @@ jobs:
             tests/test_matrix_42_lane_football_freeze_bridge.py \
             tests/test_matrix_42_lane_period_goals_freeze_bridge.py \
             tests/test_matrix_42_lane_tennis_match_winner_bridge.py \
+            tests/test_matrix_42_lane_zero_prospective_blockers.py \
             tests/test_matrix_nine_lab_gate_registry.py
 
       - name: Refresh football market catalog while paid window is active
@@ -251,6 +254,29 @@ jobs:
           },sort_keys=True))
           PY
 
+      - name: Build zero-prospective blocker registry
+        shell: bash
+        run: |
+          set -euo pipefail
+          PYTHONPATH=. python -m tools.matrix_42_lane_zero_prospective_blockers
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          p=Path("evidence/market_portfolio/MATRIX_42_LANE_ZERO_PROSPECTIVE_BLOCKERS_LAST.json")
+          j=json.loads(p.read_text(encoding="utf-8"))
+          assert j["status"]=="PASS"
+          assert j["policy"]["no_fake_backfill"] is True
+          assert j["policy"]["no_silent_imputation"] is True
+          assert j["policy"]["odds_do_not_generate_probability"] is True
+          assert j["policy"]["automatic_wagering"] is False
+          assert j["policy"]["real_money"]=="BLOCKED"
+          print(json.dumps({
+              "status":j["status"],
+              "zero_prospective_lane_count":j["zero_prospective_lane_count"],
+              "source_checks":j["source_checks"],
+          },sort_keys=True))
+          PY
+
       - name: Build blocked-lane activation plan
         shell: bash
         run: |
@@ -287,6 +313,7 @@ jobs:
           git add evidence/market_portfolio/MATRIX_42_LANE_FOOTBALL_FREEZE_BRIDGE_LAST.json
           git add evidence/market_portfolio/MATRIX_42_LANE_PERIOD_GOALS_FREEZE_BRIDGE_LAST.json
           git add evidence/market_portfolio/MATRIX_42_LANE_TENNIS_MATCH_WINNER_BRIDGE_LAST.json
+          git add evidence/market_portfolio/MATRIX_42_LANE_ZERO_PROSPECTIVE_BLOCKERS_LAST.json
           git add evidence/market_portfolio/MATRIX_42_LANE_FREEZE_INBOX.jsonl
           if [ -f evidence/market_portfolio/MATRIX_42_LANE_PROSPECTIVE_LEDGER.jsonl ]; then
             git add evidence/market_portfolio/MATRIX_42_LANE_PROSPECTIVE_LEDGER.jsonl
