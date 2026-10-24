@@ -2122,9 +2122,9 @@ def build_blocker_recovery_audit(
             "missing_is_not_zero": True,
             "no_silent_imputation": True,
             "no_backfill_after_kickoff": True,
-            "source_order": ["SofaScore", "Flashscore", "API-Football", "odds-api.net", "Betano", "BetPlay", "Rushbet"],
+            "source_order": ["SofaScore", "Flashscore", "API-Football", "odds-api.net", "Betano", "BetPlay", "Betsson", "Bwin", "Codere", "Luckia", "MrYoker", "Rivalo", "Rushbet", "Sportium", "Stake", "Wplay", "YaJuego", "Zamba"],
             "automatic_quote_recovery": ["API-Football", "odds-api.net"],
-            "browser_or_bookmaker_recovery_when_needed": ["SofaScore", "Flashscore", "Betano", "BetPlay", "Rushbet"],
+            "browser_or_bookmaker_recovery_when_needed": ["SofaScore", "Flashscore", "Betano", "BetPlay", "Betsson", "Bwin", "Codere", "Luckia", "MrYoker", "Rivalo", "Rushbet", "Sportium", "Stake", "Wplay", "YaJuego", "Zamba"],
             "real_money": "BLOCKED",
         },
         "summary": {
@@ -2230,6 +2230,19 @@ def main() -> None:
     risk_pending_exposures: list[ExposureRecord] = []
 
     session = requests.Session()
+    ev_lab = load_json(EV_MARGINAL_LAB_EVIDENCE, {
+        "schema": "MATRIX_EV_MARGINAL_SHADOW_LAB_V1",
+        "created_at_utc": now.isoformat(),
+        "observations": [],
+    })
+    ev_lab["schema"] = "MATRIX_EV_MARGINAL_SHADOW_LAB_V1"
+    ev_lab.setdefault("observations", [])
+    ev_lab_existing_keys = {
+        str(x.get("signal_key") or "")
+        for x in ev_lab["observations"]
+        if isinstance(x, dict) and str(x.get("signal_key") or "")
+    }
+    ev_lab_new_now = 0
     pre_send_quote_checks = 0
     pre_send_waiting = 0
     pre_send_blocked = 0
@@ -2381,6 +2394,48 @@ def main() -> None:
             ledger["pre_send_gate"][key] = gate_record
             pre_send_blocked += 1
             continue
+        offer_ev = float(offer["ev"])
+        offer_odds = float(offer["odds"])
+        p_matrix = float(candidate["p_matrix"])
+        if (
+            key not in ev_lab_existing_keys
+            and p_matrix >= SIGNAL_QUALITY_MIN_P_MATRIX
+            and offer_odds > 1.50
+            and EV_MARGINAL_LAB_MIN_EV_EXCLUSIVE < offer_ev < EV_MARGINAL_LAB_MAX_EV_EXCLUSIVE
+        ):
+            lab_risk_state, lab_risk_detail, _ = correlated_risk_gate_state(
+                candidate,
+                bankroll=risk_bankroll,
+                limits=risk_limits,
+                existing=risk_existing_exposures + risk_pending_exposures,
+            )
+            band = "EV_0_2PCT" if offer_ev < 0.02 else "EV_2_5PCT"
+            ev_lab["observations"].append({
+                "signal_key": key,
+                "fixture_id": candidate.get("fixture_id"),
+                "match": candidate.get("match"),
+                "league_id": candidate.get("league_id"),
+                "kickoff": candidate.get("kickoff"),
+                "frozen_at_utc": now.isoformat(),
+                "p_matrix": p_matrix,
+                "house": offer.get("house"),
+                "decimal_odds": offer_odds,
+                "ev": offer_ev,
+                "ev_band": band,
+                "selected_quote_provider": (offer or {}).get("provider") or "api-football",
+                "sharp_reference_state": sharp_state,
+                "sharp_reference_gate": sharp_detail,
+                "correlated_risk_state_shadow": lab_risk_state,
+                "correlated_risk_shadow": lab_risk_detail,
+                "production_signal_emitted": False,
+                "production_ev_gate": SIGNAL_QUALITY_MIN_REVALIDATED_EV,
+                "lab_only": True,
+                "automatic_wagering": False,
+                "real_money": "BLOCKED",
+            })
+            ev_lab_existing_keys.add(key)
+            ev_lab_new_now += 1
+
         quality_state = signal_quality_gate_state(candidate, offer)
         gate_record["quality_policy"] = SIGNAL_QUALITY_POLICY
         gate_record["quality_min_p_matrix"] = SIGNAL_QUALITY_MIN_P_MATRIX
@@ -3043,6 +3098,8 @@ def main() -> None:
         "pre_send_waiting_window": pre_send_waiting,
         "pre_send_blocked": pre_send_blocked,
         "pre_send_passed": pre_send_passed,
+        "ev_marginal_lab_new_now": ev_lab_new_now,
+        "ev_marginal_lab_total_frozen": len(ev_lab["observations"]),
         "monitoring_breaches_now": monitoring_breaches_now,
         "blocker_audit_records": blocker_summary.get("records"),
         "blocker_counts_by_state": blocker_summary.get("counts_by_state"),
@@ -3099,6 +3156,7 @@ def main() -> None:
     LEDGER.parent.mkdir(parents=True, exist_ok=True)
     CORRELATED_RISK_EVIDENCE.parent.mkdir(parents=True, exist_ok=True)
     BLOCKER_AUDIT_EVIDENCE.parent.mkdir(parents=True, exist_ok=True)
+    EV_MARGINAL_LAB_EVIDENCE.parent.mkdir(parents=True, exist_ok=True)
     blocker_audit["run_record_reference"] = {
         "run_at_utc": run_record.get("run_at_utc"),
         "football_candidates": run_record.get("football_candidates"),
@@ -3130,6 +3188,40 @@ def main() -> None:
     }
     CORRELATED_RISK_EVIDENCE.write_text(
         json.dumps(correlated_risk_evidence, indent=2, sort_keys=True, ensure_ascii=False) + "\n",
+        encoding="utf-8",
+    )
+    band_counts = {"EV_0_2PCT": 0, "EV_2_5PCT": 0}
+    for row in ev_lab["observations"]:
+        if isinstance(row, dict) and row.get("ev_band") in band_counts:
+            band_counts[row["ev_band"]] += 1
+    ev_lab["updated_at_utc"] = now.isoformat()
+    ev_lab["policy"] = {
+        "purpose": "PROSPECTIVE_SHADOW_CALIBRATION_ONLY",
+        "minimum_decimal_odds_exclusive": 1.50,
+        "p_matrix_minimum": SIGNAL_QUALITY_MIN_P_MATRIX,
+        "lab_ev_min_exclusive": EV_MARGINAL_LAB_MIN_EV_EXCLUSIVE,
+        "lab_ev_max_exclusive": EV_MARGINAL_LAB_MAX_EV_EXCLUSIVE,
+        "production_ev_minimum": SIGNAL_QUALITY_MIN_REVALIDATED_EV,
+        "sharp_reference_required": True,
+        "correlated_risk_observed_shadow_only": True,
+        "p_matrix_mutated_by_odds": False,
+        "production_gate_modified": False,
+        "telegram_emission": False,
+        "automatic_wagering": False,
+        "real_money": "BLOCKED",
+    }
+    ev_lab["summary"] = {
+        "frozen_observations": len(ev_lab["observations"]),
+        "new_observations_this_run": ev_lab_new_now,
+        "remaining_to_300": max(0, EV_MARGINAL_LAB_TARGET_OBSERVATIONS - len(ev_lab["observations"])),
+        "target_observations": EV_MARGINAL_LAB_TARGET_OBSERVATIONS,
+        "metrics_opened": len(ev_lab["observations"]) >= EV_MARGINAL_LAB_TARGET_OBSERVATIONS,
+        "outcomes_read_for_metrics": 0,
+        "band_counts": band_counts,
+        "status": "ACCUMULATING_PROSPECTIVE_SHADOW",
+    }
+    EV_MARGINAL_LAB_EVIDENCE.write_text(
+        json.dumps(ev_lab, indent=2, sort_keys=True, ensure_ascii=False) + "\n",
         encoding="utf-8",
     )
     LEDGER.write_text(json.dumps(ledger, indent=2, sort_keys=True, ensure_ascii=False) + "\n", encoding="utf-8")
