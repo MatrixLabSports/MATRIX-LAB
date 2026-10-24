@@ -3,9 +3,10 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 from pathlib import Path
 from typing import Any, Iterable, Mapping
+from zoneinfo import ZoneInfo
 
 from app.market.matrix_market_portfolio import ALL_MARKETS
 
@@ -150,24 +151,75 @@ def _gate(count: int) -> dict[str, Any]:
     }
 
 
-def _football_inventory() -> dict[str, Any]:
+def _football_inventory(now_utc: datetime) -> dict[str, Any]:
     if not FOOTBALL_FIXTURES.exists():
-        return {"available": False, "event_count": 0, "captured_at_utc": None}
+        return {"available": False, "event_count": 0, "future_event_count_now": 0, "captured_at_utc": None}
     data = _load_json(FOOTBALL_FIXTURES)
+    events = [x for x in (data.get("events") or []) if isinstance(x, Mapping)]
+    future_now = 0
+    latest_start = None
+    for row in events:
+        try:
+            start = _aware(row.get("event_start_utc"), "EVENT_START")
+        except (TypeError, ValueError):
+            continue
+        if latest_start is None or start > latest_start:
+            latest_start = start
+        if start > now_utc:
+            future_now += 1
+    captured = data.get("captured_at_utc")
+    captured_age_hours = None
+    try:
+        captured_dt = _aware(captured, "CAPTURED_AT")
+        captured_age_hours = round((now_utc - captured_dt).total_seconds() / 3600.0, 3)
+    except (TypeError, ValueError):
+        pass
     return {
         "available": True,
-        "event_count": len(data.get("events") or []),
-        "captured_at_utc": data.get("captured_at_utc"),
-        "future_only": data.get("future_only"),
+        "event_count": len(events),
+        "future_event_count_now": future_now,
+        "captured_at_utc": captured,
+        "captured_age_hours": captured_age_hours,
+        "latest_event_start_utc": latest_start.isoformat() if latest_start else None,
+        "source_usable_for_new_freeze_now": future_now > 0,
+        "blocker": None if future_now > 0 else "NO_FUTURE_EVENTS_IN_PERSISTED_FOOTBALL_INVENTORY",
     }
 
 
-def _latest_tennis_inventory() -> dict[str, Any]:
+def _tennis_day_audit(day: str) -> dict[str, Any]:
+    path = Path("evidence/tennis_world_inventory") / day / "world_exact_day_dual_audit.json"
+    if not path.exists():
+        return {"available": False, "day": day, "open_reconciliation_required": True}
+    data = _load_json(path)
+    primary = data.get("primary_world_inventory") or {}
+    return {
+        "available": True,
+        "day": day,
+        "status": data.get("status"),
+        "primary_paid_unique_match_count": data.get("primary_worldwide_registered_match_count"),
+        "provider_inventory_complete": primary.get("provider_inventory_complete"),
+        "world_inventory_complete": data.get("world_inventory_complete"),
+        "open_reconciliation_required": data.get("open_reconciliation_required"),
+        "authoritative_count_policy": data.get("authoritative_count_policy"),
+        "required_open_calendar_reconciliation": (data.get("source_architecture") or {}).get("required_open_calendar_reconciliation"),
+    }
+
+
+def _tennis_inventory(now_utc: datetime) -> dict[str, Any]:
     root = Path("evidence/tennis_world_inventory")
+    bogota = ZoneInfo("America/Bogota")
+    local_day = now_utc.astimezone(bogota).date()
+    today = local_day.isoformat()
+    tomorrow = (local_day + timedelta(days=1)).isoformat()
     if not root.exists():
-        return {"available": False, "latest_day": None}
+        return {"available": False, "today": _tennis_day_audit(today), "tomorrow": _tennis_day_audit(tomorrow)}
     days = sorted([p.name for p in root.iterdir() if p.is_dir()])
-    return {"available": bool(days), "latest_day": days[-1] if days else None}
+    return {
+        "available": bool(days),
+        "latest_day": days[-1] if days else None,
+        "today": _tennis_day_audit(today),
+        "tomorrow": _tennis_day_audit(tomorrow),
+    }
 
 
 def build(
@@ -232,8 +284,8 @@ def build(
             "ledger_rows_total": len(ledger),
         },
         "source_inventory": {
-            "football": _football_inventory(),
-            "tennis": _latest_tennis_inventory(),
+            "football": _football_inventory(datetime.fromisoformat(now)),
+            "tennis": _tennis_inventory(datetime.fromisoformat(now)),
         },
         "append_result": append,
         "admission_contract": {
