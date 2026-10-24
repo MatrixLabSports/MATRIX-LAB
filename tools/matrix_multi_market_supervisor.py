@@ -54,6 +54,9 @@ TENNIS_IMPLEMENTATION = {
     "TOTAL_GAMES": ("LAB", ["tools/live_tennis_feature_extractor.py"]),
     "PLAYER_TOTAL_GAMES": ("LAB", ["tools/live_tennis_feature_extractor.py"]),
     "TIEBREAK_YES_NO": ("LAB", ["tools/live_tennis_feature_extractor.py"]),
+    "ACES": ("LAB", ["tools/rapidapi_tennis_serve_stats_lab.py"]),
+    "DOUBLE_FAULTS": ("LAB", ["tools/rapidapi_tennis_serve_stats_lab.py"]),
+    "BREAKS_OF_SERVE": ("LAB", ["tools/rapidapi_tennis_serve_stats_lab.py"]),
 }
 
 FOOTBALL_PRICE_TERMS = {
@@ -154,7 +157,11 @@ def _row(lane: MarketLane, catalog_names: list[str]) -> dict[str, Any]:
         blockers.append(state)
     if lane.sport == "football" and price_state == "PRICE_FAMILY_NOT_OBSERVED":
         blockers.append("BLOCKED_PRICE_FAMILY")
-    if lane.sport == "tennis" and lane.key in {"ACES", "DOUBLE_FAULTS", "BREAKS_OF_SERVE"}:
+    if (
+        lane.sport == "tennis"
+        and lane.key in {"ACES", "DOUBLE_FAULTS", "BREAKS_OF_SERVE"}
+        and not implemented
+    ):
         blockers.append("BLOCKED_TENNIS_STAT_MARKET_IMPLEMENTATION")
 
     return {
