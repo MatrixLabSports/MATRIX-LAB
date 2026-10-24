@@ -1,7 +1,7 @@
 {
   "checks": {
     "football_4000": {
-      "age_minutes": 6.47,
+      "age_minutes": 10.7,
       "canonical_path": "evidence/api_football/governance/MATRIX_FOOTBALL_4000_CANONICAL_TRACKER_LAST.json",
       "failures": [],
       "max_age_minutes": 30.0,
@@ -13,7 +13,7 @@
       "status": "PASS"
     },
     "live_tennis_cumulative": {
-      "age_minutes": 0.86,
+      "age_minutes": 5.09,
       "canonical_path": "evidence/live_tennis_lab/MATRIX_LIVE_TENNIS_CUMULATIVE_GATE_V1.json",
       "failures": [],
       "max_age_minutes": 30.0,
@@ -25,7 +25,7 @@
       "status": "PASS"
     },
     "telegram_daily_bankroll": {
-      "age_minutes": 5.43,
+      "age_minutes": 9.66,
       "canonical_path": "evidence/notifications/telegram/MATRIX_TELEGRAM_DAILY_BANKROLL_CANONICAL_LAST.json",
       "failures": [],
       "max_age_minutes": 30.0,
@@ -39,31 +39,22 @@
       "status": "PASS"
     },
     "tennis_three_blocks": {
-      "age_minutes": 42.55,
+      "age_minutes": 0.88,
       "canonical_path": "evidence/tennis/MATRIX_TENNIS_THREE_BLOCK_STAGNATION_AUDIT_LAST.json",
-      "failures": [
-        "CANONICAL_SOURCE_STALE"
-      ],
+      "failures": [],
       "max_age_minutes": 30.0,
       "metrics": {
         "blocks.clay.current_counter": 3,
-        "blocks.hard.current_counter": 317,
+        "blocks.hard.current_counter": 328,
         "blocks.live.current_counter": 86
       },
       "name": "tennis_three_blocks",
-      "source_timestamp_utc": "2026-10-24T18:59:05.779353+00:00",
-      "status": "FAIL_CLOSED"
+      "source_timestamp_utc": "2026-10-24T19:44:59.683569+00:00",
+      "status": "PASS"
     }
   },
-  "failures": [
-    {
-      "failures": [
-        "CANONICAL_SOURCE_STALE"
-      ],
-      "source": "tennis_three_blocks"
-    }
-  ],
-  "generated_at_utc": "2026-10-24T19:41:38.518209+00:00",
+  "failures": [],
+  "generated_at_utc": "2026-10-24T19:45:52.472670+00:00",
   "precedence": [
     "LATEST_PHYSICAL_EVIDENCE",
     "HANDOFF",
@@ -80,8 +71,8 @@
   },
   "schema": "MATRIX_CANONICAL_TRUTH_GUARD_V1",
   "summary": {
-    "failed_sources": 1,
+    "failed_sources": 0,
     "registered_sources": 4,
-    "status": "FAIL_CLOSED"
+    "status": "PASS"
   }
 }
