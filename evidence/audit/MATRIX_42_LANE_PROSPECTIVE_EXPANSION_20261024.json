@@ -1,7 +1,7 @@
 {
   "schema": "MATRIX_42_LANE_PROSPECTIVE_EXPANSION_AUDIT_V1",
-  "generated_at_utc": "2026-10-24T21:02:30+00:00",
-  "status": "PASS_12_LANES_RUNTIME_CERTIFIED_BLOCKER_AUTOMATION_CODED_RUNTIME_QUEUED",
+  "generated_at_utc": "2026-10-24T21:03:20+00:00",
+  "status": "PASS_12_LANES_RUNTIME_CERTIFIED_AND_30_BLOCKERS_RUNTIME_CERTIFIED",
   "canonical_portfolio": {
     "total": 42,
     "football": 30,
@@ -14,7 +14,8 @@
     "period_goals_run": 40132029246,
     "period_goals_operational_run": 40132031850,
     "tennis_match_winner_run": 40132189742,
-    "tennis_match_winner_operational_run": 40132193678
+    "tennis_match_winner_operational_run": 40132193678,
+    "zero_prospective_blocker_run": 40132326171
   },
   "prospective_counts": {
     "MATCH_RESULT_1X2": 393,
@@ -71,8 +72,8 @@
     "workflow_main_commit": "9f44059f54b2f000517a47c138d76cbc92096973",
     "workflow_operational_commit": "0f0ae3480ed3aae7b9f21c30a8d7d46768b58b8b",
     "operational_run_id": 40132326171,
-    "operational_run_status": "QUEUED_AT_AUDIT_CUT",
-    "runtime_certified": false
+    "operational_run_status": "COMPLETED_SUCCESS",
+    "runtime_certified": true
   },
   "protections": {
     "post_start_backfill_forbidden": true,
@@ -83,5 +84,20 @@
     "automatic_wagering": false,
     "real_money": "BLOCKED"
   },
-  "interpretation": "Twelve of forty-two canonical lanes now have physically admitted prospective prematch observations. The remaining thirty are intentionally not populated without a governed prematch predictive freeze. Their blocker automation is committed and scheduled in the same 15-minute supervisor; runtime certification of that final blocker step was still queued at this audit cut."
+  "interpretation": "Twelve of forty-two canonical lanes have physically admitted prospective prematch observations. The remaining thirty are not populated without a governed prematch predictive freeze and now have an automatically generated physical blocker per lane every 15-minute supervisor cycle. Runtime, persistence, and deduplication are certified.",
+  "final_runtime_state": {
+    "generated_at_utc": "2026-10-24T21:03:08+00:00",
+    "lanes_with_any_valid_prospective": 12,
+    "zero_prospective_lanes": 30,
+    "lanes_at_100": 11,
+    "lanes_at_300": 11,
+    "lanes_at_600": 0,
+    "ledger_rows_total": 4291,
+    "second_cycle_existing_rows_before": 4291,
+    "second_cycle_incoming_rows": 0,
+    "second_cycle_admitted_this_run": 0,
+    "second_cycle_rejected_this_run": 0,
+    "duplicate_inflation": false,
+    "zero_blocker_registry_status": "PASS"
+  }
 }
