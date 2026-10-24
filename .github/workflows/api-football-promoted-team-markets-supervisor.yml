@@ -75,13 +75,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          MATERIAL_FLAG="$(python - <<'PY'
-          import json
-          from pathlib import Path
-          p=json.loads(Path("evidence/api_football/promoted_team_markets/last_run.json").read_text())
-          print("MATERIAL" if (p.get("new_freezes") or p.get("new_settlements")) else "TELEMETRY_ONLY")
-          PY
-          )"
+          MATERIAL_FLAG="$(python -c 'import json; from pathlib import Path; p=json.loads(Path("evidence/api_football/promoted_team_markets/last_run.json").read_text()); print("MATERIAL" if (p.get("new_freezes") or p.get("new_settlements")) else "TELEMETRY_ONLY")')"
           git config user.name "matrix-football-promoted-supervisor"
           git config user.email "matrix-football-promoted-supervisor@users.noreply.github.com"
           git add evidence/api_football/promoted_team_markets
@@ -140,3 +134,5 @@ jobs:
 # MATRIX_PROMOTED_PERSISTENCE_RACE_GUARD_2026-10-24
 
 # MATRIX_PROMOTED_PERSISTENCE_RACE_GUARD_V2_2026-10-24
+
+# MATRIX_PROMOTED_PERSISTENCE_RACE_GUARD_V3_2026-10-24
