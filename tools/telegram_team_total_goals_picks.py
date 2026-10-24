@@ -435,6 +435,14 @@ def main()->None:
     ledger["automatic_wagering"]=False; ledger["real_money"]="BLOCKED"
     ledger_path.parent.mkdir(parents=True,exist_ok=True)
     ledger_path.write_text(json.dumps(ledger,indent=2,sort_keys=True,ensure_ascii=False)+"\n",encoding="utf-8")
+    diagnostic_status_counts={}
+    for row in diagnostics:
+        status=str(row.get("status") or "UNKNOWN")
+        diagnostic_status_counts[status]=diagnostic_status_counts.get(status,0)+1
+    in_window_diagnostic_samples=[
+        row for row in diagnostics
+        if str(row.get("status") or "")!="WAIT_OUTSIDE_12H_QUOTE_WINDOW"
+    ][:100]
     audit={
       **base,
       "schema":"MATRIX_TELEGRAM_TEAM_TOTAL_GOALS_PICKS_RUN_V1",
@@ -449,7 +457,10 @@ def main()->None:
       "eligible_quote_count":eligible,
       "sent_count":len(sent),
       "dry_run":bool(a.dry_run),
-      "diagnostics":diagnostics[-200:],
+      "diagnostic_count":len(diagnostics),
+      "diagnostic_status_counts":diagnostic_status_counts,
+      "in_window_diagnostic_samples":in_window_diagnostic_samples,
+      "diagnostics_tail":diagnostics[-200:],
       "protections":{**base["protections"],"physical_exact_quote_required":True,"ev_revalidation_required":True,"minimum_ev":MIN_EV,"minimum_odds":MIN_ODDS,"paper_stake_units":1.0},
       "status":"PASS",
     }
