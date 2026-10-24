@@ -65,6 +65,51 @@ def _append_unique(path: Path, rows: list[dict[str, Any]]) -> tuple[int, int]:
     return len(existing), len(new_rows)
 
 
+
+def _aware_iso(value: object, field: str) -> datetime:
+    token = str(value or "").strip()
+    if not token:
+        raise ValueError(f"{field}_MISSING")
+    parsed = datetime.fromisoformat(token.replace("Z", "+00:00"))
+    if parsed.tzinfo is None or parsed.utcoffset() is None:
+        raise ValueError(f"{field}_NOT_TIMEZONE_AWARE")
+    return parsed.astimezone(timezone.utc)
+
+
+def _validate_prospective_row(row: Mapping[str, Any]) -> tuple[bool, list[str]]:
+    errors: list[str] = []
+    if row.get("record_type") != "PROSPECTIVE_PREMATCH_FREEZE":
+        errors.append("RECORD_TYPE_INVALID")
+    if str(row.get("market_lane") or "") not in ALL_LANES:
+        errors.append("UNKNOWN_MARKET_LANE")
+    if not str(row.get("event_id") or row.get("fixture_id") or "").strip():
+        errors.append("EVENT_ID_MISSING")
+    if not str(row.get("observation_key") or "").strip():
+        errors.append("OBSERVATION_KEY_MISSING")
+    try:
+        freeze = _aware_iso(row.get("freeze_timestamp_utc"), "FREEZE_TIMESTAMP")
+        start = _aware_iso(row.get("event_start_utc"), "EVENT_START")
+        if freeze >= start:
+            errors.append("FREEZE_NOT_BEFORE_EVENT_START")
+    except (TypeError, ValueError) as exc:
+        errors.append(str(exc))
+    if not row.get("prediction_snapshot_sha256") and not row.get("feature_snapshot_sha256"):
+        errors.append("PREDICTION_OR_FEATURE_SNAPSHOT_MISSING")
+    if row.get("target_outcome") is not None or row.get("settlement") is not None:
+        errors.append("OUTCOME_PRESENT_AT_FREEZE")
+    if row.get("odds_used_to_generate_probability") is not False:
+        errors.append("ODDS_TO_P_MATRIX_NOT_EXPLICITLY_FALSE")
+    if row.get("missing_not_zero") is not True:
+        errors.append("MISSING_NOT_ZERO_NOT_ASSERTED")
+    if row.get("silent_imputation") is not False:
+        errors.append("SILENT_IMPUTATION_NOT_FALSE")
+    if row.get("automatic_wagering") is not False:
+        errors.append("AUTOMATIC_WAGERING_NOT_FALSE")
+    if row.get("real_money") != "BLOCKED":
+        errors.append("REAL_MONEY_NOT_BLOCKED")
+    return (not errors), errors
+
+
 def _gate_state(count: int) -> dict[str, Any]:
     return {
         str(g): {
@@ -148,7 +193,9 @@ def build_registry(
         if row.get("record_type") == "SOURCE_COVERAGE":
             source_coverage_counts[lane] += 1
         if row.get("prospective_admitted") is True and row.get("counts_toward_100_300_600") is True:
-            prospective_counts[lane] += 1
+            valid, _ = _validate_prospective_row(row)
+            if valid:
+                prospective_counts[lane] += 1
 
     lanes = {}
     for lane in ALL_LANES:
