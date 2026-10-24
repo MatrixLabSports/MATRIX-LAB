@@ -1,7 +1,7 @@
 {
   "catalog_market_names_observed": 0,
   "football_required_lanes": 30,
-  "generated_at_utc": "2026-10-24T16:04:16+00:00",
+  "generated_at_utc": "2026-10-24T18:31:21+00:00",
   "invariants": {
     "aces_present": true,
     "automatic_wagering": false,
@@ -135,16 +135,16 @@
       "sport": "football"
     },
     {
-      "blockers": [
-        "BLOCKED_MODEL"
-      ],
+      "blockers": [],
       "display_name": "Goles primer tiempo Over/Under",
       "family": "goals_period",
-      "implementation_paths": [],
-      "implementation_present": false,
+      "implementation_paths": [
+        "tools/api_football_period_goals_lab.py"
+      ],
+      "implementation_present": true,
       "market_key": "FIRST_HALF_TOTAL_GOALS_OVER_UNDER",
       "must_continue_collecting": true,
-      "operational_state": "BLOCKED_MODEL",
+      "operational_state": "LAB",
       "price_state": "PRICE_CATALOG_NOT_SUPPLIED",
       "production_authorized": false,
       "required": true,
@@ -152,16 +152,16 @@
       "sport": "football"
     },
     {
-      "blockers": [
-        "BLOCKED_MODEL"
-      ],
+      "blockers": [],
       "display_name": "Goles segundo tiempo Over/Under",
       "family": "goals_period",
-      "implementation_paths": [],
-      "implementation_present": false,
+      "implementation_paths": [
+        "tools/api_football_period_goals_lab.py"
+      ],
+      "implementation_present": true,
       "market_key": "SECOND_HALF_TOTAL_GOALS_OVER_UNDER",
       "must_continue_collecting": true,
-      "operational_state": "BLOCKED_MODEL",
+      "operational_state": "LAB",
       "price_state": "PRICE_CATALOG_NOT_SUPPLIED",
       "production_authorized": false,
       "required": true,
@@ -169,16 +169,16 @@
       "sport": "football"
     },
     {
-      "blockers": [
-        "BLOCKED_MODEL"
-      ],
+      "blockers": [],
       "display_name": "Goles equipo local primer tiempo",
       "family": "goals_period_team",
-      "implementation_paths": [],
-      "implementation_present": false,
+      "implementation_paths": [
+        "tools/api_football_period_goals_lab.py"
+      ],
+      "implementation_present": true,
       "market_key": "FIRST_HALF_TEAM_TOTAL_GOALS_HOME",
       "must_continue_collecting": true,
-      "operational_state": "BLOCKED_MODEL",
+      "operational_state": "LAB",
       "price_state": "PRICE_CATALOG_NOT_SUPPLIED",
       "production_authorized": false,
       "required": true,
@@ -186,16 +186,16 @@
       "sport": "football"
     },
     {
-      "blockers": [
-        "BLOCKED_MODEL"
-      ],
+      "blockers": [],
       "display_name": "Goles equipo visitante primer tiempo",
       "family": "goals_period_team",
-      "implementation_paths": [],
-      "implementation_present": false,
+      "implementation_paths": [
+        "tools/api_football_period_goals_lab.py"
+      ],
+      "implementation_present": true,
       "market_key": "FIRST_HALF_TEAM_TOTAL_GOALS_AWAY",
       "must_continue_collecting": true,
-      "operational_state": "BLOCKED_MODEL",
+      "operational_state": "LAB",
       "price_state": "PRICE_CATALOG_NOT_SUPPLIED",
       "production_authorized": false,
       "required": true,
@@ -203,16 +203,16 @@
       "sport": "football"
     },
     {
-      "blockers": [
-        "BLOCKED_MODEL"
-      ],
+      "blockers": [],
       "display_name": "Goles equipo local segundo tiempo",
       "family": "goals_period_team",
-      "implementation_paths": [],
-      "implementation_present": false,
+      "implementation_paths": [
+        "tools/api_football_period_goals_lab.py"
+      ],
+      "implementation_present": true,
       "market_key": "SECOND_HALF_TEAM_TOTAL_GOALS_HOME",
       "must_continue_collecting": true,
-      "operational_state": "BLOCKED_MODEL",
+      "operational_state": "LAB",
       "price_state": "PRICE_CATALOG_NOT_SUPPLIED",
       "production_authorized": false,
       "required": true,
@@ -220,16 +220,16 @@
       "sport": "football"
     },
     {
-      "blockers": [
-        "BLOCKED_MODEL"
-      ],
+      "blockers": [],
       "display_name": "Goles equipo visitante segundo tiempo",
       "family": "goals_period_team",
-      "implementation_paths": [],
-      "implementation_present": false,
+      "implementation_paths": [
+        "tools/api_football_period_goals_lab.py"
+      ],
+      "implementation_present": true,
       "market_key": "SECOND_HALF_TEAM_TOTAL_GOALS_AWAY",
       "must_continue_collecting": true,
-      "operational_state": "BLOCKED_MODEL",
+      "operational_state": "LAB",
       "price_state": "PRICE_CATALOG_NOT_SUPPLIED",
       "production_authorized": false,
       "required": true,
@@ -735,11 +735,11 @@
     }
   ],
   "schema": "MATRIX_MULTI_MARKET_SUPERVISOR_V1",
-  "source_run": "canonical-multi-market-supervisor",
+  "source_run": "period-goals-lab",
   "state_counts": {
     "ACTIVE": 2,
-    "BLOCKED_MODEL": 9,
-    "LAB": 31
+    "BLOCKED_MODEL": 3,
+    "LAB": 37
   },
   "status": "PASS",
   "target_date_bogota": "2026-10-24",
