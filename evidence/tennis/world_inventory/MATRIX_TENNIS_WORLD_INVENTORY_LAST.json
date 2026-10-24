@@ -1,9 +1,9 @@
 {
   "accumulation": {
-    "cumulative_count": 71,
-    "current_fetch_count": 71,
+    "cumulative_count": 74,
+    "current_fetch_count": 74,
     "never_decrease_within_day": true,
-    "newly_discovered_count": 0,
+    "newly_discovered_count": 3,
     "policy": "MONOTONIC_UNION_BY_STABLE_PHYSICAL_IDENTITY",
     "prior_count": 71,
     "retained_prior_only_count": 0
@@ -21,10 +21,13 @@
   ],
   "derived_lanes": {
     "COR02_COR03_ATP_CHALLENGER_HARD": {
-      "domain_candidate_count": 0,
+      "domain_candidate_count": 2,
       "feeds_model_automatically": false,
       "governed_pipeline_remains_authoritative": true,
-      "source_event_ids": []
+      "source_event_ids": [
+        "rapidapi-tennis:atp:match:650614",
+        "rapidapi-tennis:atp:match:653652"
+      ]
     },
     "ITF": {
       "current_governed_model": null,
@@ -2858,6 +2861,46 @@
       "event_format_authority": "TWO_INDIVIDUAL_PROVIDER_NAMES",
       "event_start_bogota": "2026-10-24T08:30:00-05:00",
       "event_start_utc": "2026-10-24T13:30:00+00:00",
+      "match_id": "656527",
+      "model_derivation": {
+        "blockers": [
+          "CIRCUIT_OUTSIDE_COR0203_ATP_CHALLENGER"
+        ],
+        "domain_candidate": false,
+        "lane": "COR02_COR03_ATP_CHALLENGER_HARD",
+        "note": "Domain candidate only. Governed COR02/COR03 still requires identity, PIT history, ranking/features, unique physical event, future prematch freeze and all existing gates."
+      },
+      "physical_event_key": "3afd5f539151cf6bd311af7071fbdd14b9d56675e777e375b164e4707e0e1188",
+      "player1": {
+        "country": "ITA",
+        "id": "67546",
+        "name": "Flavio Cobolli"
+      },
+      "player2": {
+        "country": "ITA",
+        "id": "63572",
+        "name": "Lorenzo Musetti"
+      },
+      "player_group": "",
+      "provider_channel": "ATP",
+      "provider_status": "",
+      "round": "1/2",
+      "source_event_id": "rapidapi-tennis:atp:match:656527",
+      "source_provider": "rapidapi_tennis",
+      "source_snapshot_sha256": "ce148c4e8e4e0d12a811c498003ddaa7fceb8d003884863b5fb64bb0b15a2d3b",
+      "stable_physical_identity_key": "59e3ab14104cc84c0ed05b126a231900e55becb8434a786b0d9c0d1000e63346",
+      "surface": "I.hard",
+      "tier": "",
+      "tournament_id": "21359",
+      "tournament_name": "Grand Prix Auvergne-Rhone-Alpes - Lyon"
+    },
+    {
+      "circuit_detail": "ATP_MAIN_OR_OTHER",
+      "circuit_family": "ATP",
+      "event_format": "SINGLES",
+      "event_format_authority": "TWO_INDIVIDUAL_PROVIDER_NAMES",
+      "event_start_bogota": "2026-10-24T08:30:00-05:00",
+      "event_start_utc": "2026-10-24T13:30:00+00:00",
       "match_id": "641300",
       "model_derivation": {
         "blockers": [
@@ -2981,49 +3024,6 @@
       "tournament_name": "Erste Bank Open - Vienna"
     },
     {
-      "circuit_detail": "ATP_CHALLENGER",
-      "circuit_family": "ATP",
-      "event_format": "SINGLES",
-      "event_format_authority": "TWO_INDIVIDUAL_PROVIDER_NAMES",
-      "event_start_bogota": "2026-10-24T10:00:00-05:00",
-      "event_start_utc": "2026-10-24T15:00:00+00:00",
-      "match_id": "647490",
-      "model_derivation": {
-        "blockers": [
-          "SURFACE_OUTSIDE_COR0203_HARD"
-        ],
-        "domain_candidate": false,
-        "lane": "COR02_COR03_ATP_CHALLENGER_HARD",
-        "note": "Domain candidate only. Governed COR02/COR03 still requires identity, PIT history, ranking/features, unique physical event, future prematch freeze and all existing gates."
-      },
-      "physical_event_key": "0bc1375a436aa0dcdede1cfc9c574190f49436af6f5d7a98c967404cbd54ea62",
-      "player1": {
-        "country": "BRA",
-        "id": "36617",
-        "name": "Felipe Meligeni Alves"
-      },
-      "player2": {
-        "country": "ARG",
-        "id": "73268",
-        "name": "Valerio Aboian"
-      },
-      "player_group": "",
-      "provider_channel": "ATP",
-      "provider_status": "",
-      "round": "1/2",
-      "source_event_aliases": [
-        "rapidapi-tennis:atp:match:647490"
-      ],
-      "source_event_id": "rapidapi-tennis:atp:match:647490",
-      "source_provider": "rapidapi_tennis",
-      "source_snapshot_sha256": "079c6223f76af75650ddedcee5fa0053a4834e3e5cc7b26e96142a5a1823a6c4",
-      "stable_physical_identity_key": "f0ee42d9f17d86c3266c381a6f2c056f997905cfd965d4610256bd87e55283e1",
-      "surface": "Clay",
-      "tier": "",
-      "tournament_id": "22105",
-      "tournament_name": "Cali Challenger"
-    },
-    {
       "circuit_detail": "ATP_MAIN_OR_OTHER",
       "circuit_family": "ATP",
       "event_format": "SINGLES",
@@ -3067,6 +3067,49 @@
       "tournament_name": "Erste Bank Open - Vienna"
     },
     {
+      "circuit_detail": "ATP_CHALLENGER",
+      "circuit_family": "ATP",
+      "event_format": "SINGLES",
+      "event_format_authority": "TWO_INDIVIDUAL_PROVIDER_NAMES",
+      "event_start_bogota": "2026-10-24T11:00:00-05:00",
+      "event_start_utc": "2026-10-24T16:00:00+00:00",
+      "match_id": "647490",
+      "model_derivation": {
+        "blockers": [
+          "SURFACE_OUTSIDE_COR0203_HARD"
+        ],
+        "domain_candidate": false,
+        "lane": "COR02_COR03_ATP_CHALLENGER_HARD",
+        "note": "Domain candidate only. Governed COR02/COR03 still requires identity, PIT history, ranking/features, unique physical event, future prematch freeze and all existing gates."
+      },
+      "physical_event_key": "183a30648d749dcb9348b24519182ac11d2dff2e5623e49f0ae8c675f99be2f8",
+      "player1": {
+        "country": "BRA",
+        "id": "36617",
+        "name": "Felipe Meligeni Alves"
+      },
+      "player2": {
+        "country": "ARG",
+        "id": "73268",
+        "name": "Valerio Aboian"
+      },
+      "player_group": "",
+      "provider_channel": "ATP",
+      "provider_status": "",
+      "round": "1/2",
+      "source_event_aliases": [
+        "rapidapi-tennis:atp:match:647490"
+      ],
+      "source_event_id": "rapidapi-tennis:atp:match:647490",
+      "source_provider": "rapidapi_tennis",
+      "source_snapshot_sha256": "0323c28de9c80479b2a42416fb2163e9080d04189d2667497b3c337b00d64934",
+      "stable_physical_identity_key": "f0ee42d9f17d86c3266c381a6f2c056f997905cfd965d4610256bd87e55283e1",
+      "surface": "Clay",
+      "tier": "",
+      "tournament_id": "22105",
+      "tournament_name": "Cali Challenger"
+    },
+    {
       "circuit_detail": "ATP_MAIN_OR_OTHER",
       "circuit_family": "ATP",
       "event_format": "SINGLES",
@@ -3108,23 +3151,99 @@
       "tier": "",
       "tournament_id": "21358",
       "tournament_name": "European Open - Brussels"
+    },
+    {
+      "circuit_detail": "ATP_CHALLENGER",
+      "circuit_family": "ATP",
+      "event_format": "SINGLES",
+      "event_format_authority": "TWO_INDIVIDUAL_PROVIDER_NAMES",
+      "event_start_bogota": "2026-10-24T15:00:00-05:00",
+      "event_start_utc": "2026-10-24T20:00:00+00:00",
+      "match_id": "650614",
+      "model_derivation": {
+        "blockers": [],
+        "domain_candidate": true,
+        "lane": "COR02_COR03_ATP_CHALLENGER_HARD",
+        "note": "Domain candidate only. Governed COR02/COR03 still requires identity, PIT history, ranking/features, unique physical event, future prematch freeze and all existing gates."
+      },
+      "physical_event_key": "9f5edf34733979b429d335038c4b18a55d828eecb62c2fa7b972fcfb9e89db05",
+      "player1": {
+        "country": "NED",
+        "id": "84237",
+        "name": "Sander Jong"
+      },
+      "player2": {
+        "country": "USA",
+        "id": "92243",
+        "name": "Darwin Blanch"
+      },
+      "player_group": "",
+      "provider_channel": "ATP",
+      "provider_status": "",
+      "round": "1/2",
+      "source_event_id": "rapidapi-tennis:atp:match:650614",
+      "source_provider": "rapidapi_tennis",
+      "source_snapshot_sha256": "e216478c499fef54bcc524d0cabc5f768309af20299036b36cc0c217069cdda4",
+      "stable_physical_identity_key": "55f3a1f3b37de3f1db71a6a46a8d35ad1a413cbb2eec846d4f2d72cd0068b339",
+      "surface": "Hard",
+      "tier": "",
+      "tournament_id": "22106",
+      "tournament_name": "Fort Worth Challenger"
+    },
+    {
+      "circuit_detail": "ATP_CHALLENGER",
+      "circuit_family": "ATP",
+      "event_format": "SINGLES",
+      "event_format_authority": "TWO_INDIVIDUAL_PROVIDER_NAMES",
+      "event_start_bogota": "2026-10-24T16:30:00-05:00",
+      "event_start_utc": "2026-10-24T21:30:00+00:00",
+      "match_id": "653652",
+      "model_derivation": {
+        "blockers": [],
+        "domain_candidate": true,
+        "lane": "COR02_COR03_ATP_CHALLENGER_HARD",
+        "note": "Domain candidate only. Governed COR02/COR03 still requires identity, PIT history, ranking/features, unique physical event, future prematch freeze and all existing gates."
+      },
+      "physical_event_key": "e3b7bf6bd78a1b20761d59fee82f3cb04eb66d51076ae6d6b9d7639c481100a2",
+      "player1": {
+        "country": "USA",
+        "id": "40609",
+        "name": "Jenson Brooksby"
+      },
+      "player2": {
+        "country": "FRA",
+        "id": "85523",
+        "name": "Gabriel Debru"
+      },
+      "player_group": "",
+      "provider_channel": "ATP",
+      "provider_status": "",
+      "round": "1/2",
+      "source_event_id": "rapidapi-tennis:atp:match:653652",
+      "source_provider": "rapidapi_tennis",
+      "source_snapshot_sha256": "4abc4bf2d4de62280ad4b4a621188afe69359f021211544a18ca401569baa18e",
+      "stable_physical_identity_key": "73fc9be15bffe4fb56fc661b246a61a5e81b4ae7b02e548971df2e350f29584f",
+      "surface": "Hard",
+      "tier": "",
+      "tournament_id": "22106",
+      "tournament_name": "Fort Worth Challenger"
     }
   ],
   "events_by_detail": {
-    "ATP_CHALLENGER": 5,
-    "ATP_MAIN_OR_OTHER": 21,
+    "ATP_CHALLENGER": 7,
+    "ATP_MAIN_OR_OTHER": 22,
     "ITF_MEN": 15,
     "ITF_WOMEN": 18,
     "WTA_MAIN_OR_OTHER": 12
   },
   "events_by_family": {
-    "ATP": 26,
+    "ATP": 29,
     "ITF": 33,
     "WTA": 12
   },
   "events_by_format": {
     "DOUBLES": 4,
-    "SINGLES": 67
+    "SINGLES": 70
   },
   "metrics_opened": false,
   "operational_timezone": "America/Bogota",
@@ -3141,10 +3260,10 @@
   "provider_channel_errors": {},
   "provider_channel_summaries": {
     "ATP": {
-      "events_in_bogota_day": 41,
+      "events_in_bogota_day": 44,
       "malformed_unplaced_rows": 0,
       "network_calls": 1,
-      "provider_rows_in_query_window": 59,
+      "provider_rows_in_query_window": 61,
       "status": "PASS"
     },
     "WTA": {
@@ -3159,11 +3278,11 @@
   "provider_network_calls": 2,
   "provider_public_rate_headers": {
     "x-ratelimit-limit": "3000",
-    "x-ratelimit-remaining": "2998",
+    "x-ratelimit-remaining": "2996",
     "x-ratelimit-requests-limit": "1200000",
-    "x-ratelimit-requests-remaining": "1150927",
-    "x-ratelimit-requests-reset": "386465",
-    "x-ratelimit-reset": "59"
+    "x-ratelimit-requests-remaining": "1150918",
+    "x-ratelimit-requests-reset": "386316",
+    "x-ratelimit-reset": "58"
   },
   "provider_query_date_start": "2026-10-23",
   "provider_query_date_stop": "2026-10-25",
@@ -3172,7 +3291,7 @@
   "status": "PASS",
   "target_date_bogota": "2026-10-24",
   "unplaced_rows": [],
-  "world_calendar_inventory_count": 71,
+  "world_calendar_inventory_count": 74,
   "world_complete_gate": "REQUIRES_MULTI_SOURCE_RECONCILIATION",
   "world_inventory_complete": false
 }
