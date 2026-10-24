@@ -1126,7 +1126,26 @@ def physical_book_over25_offer(
     return best
 
 
-def exact_over25_offer(session: requests.Session, api_key: str, fixture_id: str, p: float, required_house_key: str | None = None) -> dict[str, Any] | None:
+def exact_over25_offer(
+    session: requests.Session,
+    api_key: str,
+    fixture_id: str,
+    p: float,
+    required_house_key: str | None = None,
+    diagnostic: dict[str, Any] | None = None,
+) -> dict[str, Any] | None:
+    if diagnostic is not None:
+        diagnostic.clear()
+        diagnostic.update({
+            "provider": "API-Football",
+            "fixture_id": str(fixture_id),
+            "required_house_key": required_house_key,
+            "authorized_books_seen": [],
+            "goals_over_under_books": [],
+            "over25_books": [],
+            "eligible_offer_count": 0,
+            "status": "STARTED",
+        })
     response = session.get(
         "https://v3.football.api-sports.io/odds",
         headers={"x-apisports-key": api_key},
@@ -1137,7 +1156,12 @@ def exact_over25_offer(session: requests.Session, api_key: str, fixture_id: str,
         payload = response.json()
     except Exception:
         payload = {}
+    if diagnostic is not None:
+        diagnostic["http_status"] = int(response.status_code)
+        diagnostic["response_rows"] = len(payload.get("response", []) or []) if isinstance(payload, dict) else 0
     if response.status_code >= 300 or (isinstance(payload, dict) and payload.get("errors") not in ({}, [], None)):
+        if diagnostic is not None:
+            diagnostic["status"] = "BLOCKED_PROVIDER_ERROR"
         return None
     offers: list[dict[str, Any]] = []
     for fr in payload.get("response", []) or []:
@@ -1149,6 +1173,8 @@ def exact_over25_offer(session: requests.Session, api_key: str, fixture_id: str,
             bk = bookmaker_key(book.get("name"))
             if bk is None:
                 continue
+            if diagnostic is not None and bk not in diagnostic["authorized_books_seen"]:
+                diagnostic["authorized_books_seen"].append(bk)
             if required_house_key is not None and bk != required_house_key:
                 continue
             for bet in book.get("bets", []) or []:
@@ -1160,9 +1186,13 @@ def exact_over25_offer(session: requests.Session, api_key: str, fixture_id: str,
                     continue
                 if bid != 5 or str(bet.get("name") or "").strip().casefold() != "goals over/under":
                     continue
+                if diagnostic is not None and bk not in diagnostic["goals_over_under_books"]:
+                    diagnostic["goals_over_under_books"].append(bk)
                 for value in bet.get("values", []) or []:
                     if not isinstance(value, dict) or str(value.get("value") or "").strip().casefold() != "over 2.5":
                         continue
+                    if diagnostic is not None and bk not in diagnostic["over25_books"]:
+                        diagnostic["over25_books"].append(bk)
                     dec = odd(value.get("odd"))
                     if dec is None or dec <= 1.50:
                         continue
@@ -1173,8 +1203,19 @@ def exact_over25_offer(session: requests.Session, api_key: str, fixture_id: str,
                         "break_even_probability": 1.0 / dec,
                         "provider_quote_updated_at_utc": fr.get("update"),
                     })
+    if diagnostic is not None:
+        diagnostic["eligible_offer_count"] = len(offers)
+        if offers:
+            diagnostic["status"] = "PASS_EXACT_AUTHORIZED_OVER25_FOUND"
+        elif not diagnostic.get("authorized_books_seen"):
+            diagnostic["status"] = "BLOCKED_NO_AUTHORIZED_BOOK_COVERAGE"
+        elif not diagnostic.get("goals_over_under_books"):
+            diagnostic["status"] = "BLOCKED_AUTHORIZED_BOOK_NO_TOTALS_MARKET"
+        elif not diagnostic.get("over25_books"):
+            diagnostic["status"] = "BLOCKED_AUTHORIZED_BOOK_NO_OVER25_LINE"
+        else:
+            diagnostic["status"] = "BLOCKED_AUTHORIZED_BOOK_OVER25_ODDS_NOT_GT_1_50"
     return max(offers, key=lambda x: x["ev"]) if offers else None
-
 
 def fixture_final(session: requests.Session, api_key: str, fixture_id: str) -> dict[str, Any] | None:
     response = session.get(
@@ -2224,12 +2265,14 @@ def main() -> None:
         lifecycle.setdefault("first_ready_for_final_revalidation_utc", now.isoformat())
         lifecycle["last_ready_for_final_revalidation_utc"] = now.isoformat()
         required_house_key = bookmaker_key(candidate.get("house"))
+        api_football_offer_diagnostic: dict[str, Any] = {}
         primary_offer = exact_over25_offer(
             session,
             api_key,
             str(candidate["fixture_id"]),
             float(candidate["p_matrix"]),
             required_house_key,
+            api_football_offer_diagnostic,
         )
         odds_api_net_diagnostic: dict[str, Any] = {}
         fallback_offer = odds_api_net_exact_over25_offer(
@@ -2254,6 +2297,7 @@ def main() -> None:
         lifecycle["last_final_revalidation_at_utc"] = now.isoformat()
         gate_record["required_house_key"] = required_house_key
         gate_record["primary_same_house_offer"] = primary_offer
+        gate_record["api_football_offer_diagnostic"] = api_football_offer_diagnostic
         gate_record["odds_api_net_multi_book_offer"] = fallback_offer
         gate_record["physical_browser_offer"] = physical_offer
         gate_record["odds_api_net_diagnostic"] = odds_api_net_diagnostic
