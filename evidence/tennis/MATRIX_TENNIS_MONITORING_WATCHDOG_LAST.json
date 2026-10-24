@@ -1,7 +1,7 @@
 {
   "checks": {
     "clay": {
-      "age_minutes": 15.56,
+      "age_minutes": 18.8,
       "latest_conclusion": "success",
       "latest_event": "schedule",
       "latest_run_id": 40090458325,
@@ -11,7 +11,7 @@
       "workflow": "tennis-clay-daily-prospective.yml"
     },
     "hard": {
-      "age_minutes": 121.94,
+      "age_minutes": 125.18,
       "latest_conclusion": "failure",
       "latest_run_id": 40083398484,
       "latest_status": "completed",
@@ -20,18 +20,19 @@
       "workflow": "tennis-hard-governed-day-resolution.yml"
     },
     "live": {
-      "age_minutes": 56.86,
+      "age_minutes": 3.15,
       "latest_conclusion": "success",
-      "latest_run_id": 40087688505,
+      "latest_event": "workflow_run",
+      "latest_run_id": 40091491576,
       "latest_status": "completed",
-      "reason": "LATEST_RUN_STALE",
-      "status": "FAIL",
+      "reason": "RECENT_RUN_PRESENT",
+      "status": "PASS",
       "workflow": "live-tennis-cumulative-gate-reconcile.yml"
     }
   },
   "failures": [
     {
-      "age_minutes": 121.94,
+      "age_minutes": 125.18,
       "lane": "hard",
       "latest_conclusion": "failure",
       "latest_run_id": 40083398484,
@@ -39,19 +40,9 @@
       "reason": "LATEST_RUN_STALE",
       "status": "FAIL",
       "workflow": "tennis-hard-governed-day-resolution.yml"
-    },
-    {
-      "age_minutes": 56.86,
-      "lane": "live",
-      "latest_conclusion": "success",
-      "latest_run_id": 40087688505,
-      "latest_status": "completed",
-      "reason": "LATEST_RUN_STALE",
-      "status": "FAIL",
-      "workflow": "live-tennis-cumulative-gate-reconcile.yml"
     }
   ],
-  "generated_at_utc": "2026-10-24T11:50:11.605182+00:00",
+  "generated_at_utc": "2026-10-24T11:53:26.096860+00:00",
   "policy": {
     "default_branch_scheduler_required": true,
     "expected_cadence_minutes": 15,
@@ -60,7 +51,7 @@
   },
   "schema": "MATRIX_TENNIS_MONITORING_WATCHDOG_V1",
   "summary": {
-    "failures": 2,
+    "failures": 1,
     "lanes_checked": 3,
     "status": "FAIL_CLOSED"
   }
