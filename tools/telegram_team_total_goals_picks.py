@@ -394,6 +394,26 @@ def main()->None:
     sent_keys={str(x.get("candidate_key") or "") for x in ledger.get("sent",[]) if isinstance(x,Mapping)}
     session=requests.Session(); odds_key=os.getenv("ODDS_API_NET_KEY","").strip()
     token=os.getenv("TELEGRAM_BOT_TOKEN","").strip(); chat=os.getenv("TELEGRAM_CHAT_ID","").strip()
+    window_rows=[]
+    for row in candidates:
+        start=_utc(row["event_start_utc"])
+        mins=(start-now).total_seconds()/60.0
+        window_rows.append((mins,row))
+    inside_window=[x for x in window_rows if 0 < x[0] <= QUOTE_WINDOW_MINUTES]
+    outside_window=[x for x in window_rows if x[0] > QUOTE_WINDOW_MINUTES]
+    next_open=None
+    next_candidate=None
+    if outside_window:
+        outside_window.sort(key=lambda x:x[0])
+        mins,row=outside_window[0]
+        next_open=(now + __import__("datetime").timedelta(minutes=(mins-QUOTE_WINDOW_MINUTES))).replace(microsecond=0).isoformat()
+        next_candidate={
+            "fixture_id":row["fixture_id"],
+            "match":f"{row['home_team']} vs {row['away_team']}",
+            "kickoff_utc":row["event_start_utc"],
+            "minutes_to_kickoff":round(mins,2),
+            "quote_window_opens_utc":next_open,
+        }
     diagnostics=[]; sent=[]; eligible=0
     for c in candidates:
         if c["candidate_key"] in sent_keys: continue
@@ -419,6 +439,11 @@ def main()->None:
       **base,
       "schema":"MATRIX_TELEGRAM_TEAM_TOTAL_GOALS_PICKS_RUN_V1",
       "quote_window_minutes":QUOTE_WINDOW_MINUTES,
+      "quote_window_summary":{
+          "candidates_inside_window":len(inside_window),
+          "candidates_outside_window":len(outside_window),
+          "next_candidate":next_candidate,
+      },
       "minimum_odds_strictly_greater_than":MIN_ODDS,
       "minimum_ev":MIN_EV,
       "eligible_quote_count":eligible,
