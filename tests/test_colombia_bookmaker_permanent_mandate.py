@@ -72,6 +72,10 @@ def test_permanent_odds_to_probability_and_activation_guards_remain_fail_closed(
     activation = mandate["activation"]
     assert activation["purchase_required_now"] is False
     assert activation["physical_activation_required"] is True
+    assert activation["status"] == "ACTIVE_PRICE_DISCOVERY_PORTFOLIO"
+    assert activation["all_execution_candidates_enabled_for_quote_discovery"] is True
+    assert activation["provider_gap_policy"] == "FAIL_CLOSED_PER_BOOK_NO_SILENT_IMPUTATION"
+    assert activation["automatic_wagering"] is False
     assert activation["real_money"] == "BLOCKED"
 
 
