@@ -20,4 +20,4 @@ def test_blocker_report_classifies_zero_lanes(tmp_path:Path, monkeypatch):
     assert out["zero_prospective_lane_count"]==2
     by={x["market_lane"]:x["blocker"] for x in out["rows"]}
     assert by["ACES"]=="INPLAY_SOURCE_COVERAGE_ONLY_NO_PREMATCH_PREDICTIVE_FREEZE"
-    assert by["PLAYER_SHOTS"]=="PREMATCH_LINEUP_NOT_AVAILABLE_IN_CHECKED_EVENTS"
+    assert by["PLAYER_SHOTS"]=="PLAYER_SHOTS_V3_MODEL_ELIGIBLE_BUT_PREMATCH_LINEUP_NOT_AVAILABLE"
