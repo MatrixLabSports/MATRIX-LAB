@@ -25,12 +25,14 @@ on:
       - tests/test_matrix_42_lane_football_freeze_bridge.py
       - tests/test_matrix_42_lane_period_goals_freeze_bridge.py
       - tests/test_matrix_42_lane_tennis_match_winner_bridge.py
+      - tests/test_matrix_42_lane_team_shots_offline_bridge.py
       - tests/test_matrix_42_lane_zero_prospective_blockers.py
       - tests/test_matrix_nine_lab_gate_registry.py
       - tools/matrix_42_lane_prospective_registry.py
       - tools/matrix_42_lane_football_freeze_bridge.py
       - tools/matrix_42_lane_period_goals_freeze_bridge.py
       - tools/matrix_42_lane_tennis_match_winner_bridge.py
+      - tools/matrix_42_lane_team_shots_offline_bridge.py
       - tools/matrix_42_lane_zero_prospective_blockers.py
       - tools/matrix_nine_lab_gate_registry.py
       - .github/workflows/matrix-multi-market-supervisor.yml
@@ -78,6 +80,7 @@ jobs:
             tests/test_matrix_42_lane_football_freeze_bridge.py \
             tests/test_matrix_42_lane_period_goals_freeze_bridge.py \
             tests/test_matrix_42_lane_tennis_match_winner_bridge.py \
+            tests/test_matrix_42_lane_team_shots_offline_bridge.py \
             tests/test_matrix_42_lane_zero_prospective_blockers.py \
             tests/test_matrix_nine_lab_gate_registry.py
 
@@ -225,6 +228,39 @@ jobs:
           },sort_keys=True))
           PY
 
+      - name: Bridge offline PIT Team Shots freezes
+        shell: bash
+        run: |
+          set -euo pipefail
+          PYTHONPATH=. python -m tools.matrix_42_lane_team_shots_offline_bridge
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          p=Path("evidence/market_portfolio/MATRIX_42_LANE_TEAM_SHOTS_OFFLINE_BRIDGE_LAST.json")
+          j=json.loads(p.read_text(encoding="utf-8"))
+          assert j["status"]=="PASS"
+          assert j["protections"]["network_calls"]==0
+          assert j["protections"]["strictly_prior_persisted_pit_history_only"] is True
+          assert j["protections"]["same_match_target_used_in_features"] is False
+          assert j["protections"]["historical_model_lines_only"] is True
+          assert j["protections"]["price_observed"] is False
+          assert j["protections"]["odds_used_to_generate_probability"] is False
+          assert j["protections"]["parameter_refit"] is False
+          assert j["protections"]["parameter_search"] is False
+          assert j["protections"]["post_start_backfill_forbidden"] is True
+          assert j["protections"]["outcomes_read"]==0
+          assert j["protections"]["automatic_wagering"] is False
+          assert j["protections"]["real_money"]=="BLOCKED"
+          print(json.dumps({
+              "status":j["status"],
+              "future_source_fixture_candidates":j["future_source_fixture_candidates"],
+              "eligible_future_unique_fixtures":j["eligible_future_unique_fixtures"],
+              "eligible_future_lane_rows":j["eligible_future_lane_rows"],
+              "blocked_count":j["blocked_count"],
+              "blocked_reason_counts":j["blocked_reason_counts"],
+          },sort_keys=True))
+          PY
+
       - name: Build strict 42-lane prospective registry
         shell: bash
         run: |
@@ -313,6 +349,7 @@ jobs:
           git add evidence/market_portfolio/MATRIX_42_LANE_FOOTBALL_FREEZE_BRIDGE_LAST.json
           git add evidence/market_portfolio/MATRIX_42_LANE_PERIOD_GOALS_FREEZE_BRIDGE_LAST.json
           git add evidence/market_portfolio/MATRIX_42_LANE_TENNIS_MATCH_WINNER_BRIDGE_LAST.json
+          git add evidence/market_portfolio/MATRIX_42_LANE_TEAM_SHOTS_OFFLINE_BRIDGE_LAST.json
           git add evidence/market_portfolio/MATRIX_42_LANE_ZERO_PROSPECTIVE_BLOCKERS_LAST.json
           git add evidence/market_portfolio/MATRIX_42_LANE_FREEZE_INBOX.jsonl
           if [ -f evidence/market_portfolio/MATRIX_42_LANE_PROSPECTIVE_LEDGER.jsonl ]; then
