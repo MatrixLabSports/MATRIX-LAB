@@ -15,7 +15,7 @@ on:
   schedule:
     # Multiple retry windows. Idempotence below prevents duplicate paid-API cycles
     # once the target date has one successful capture on the current Bogota day.
-    - cron: "17 5,11,17,23 * * *"
+    - cron: "1,16,31,46 * * * *"
 
 permissions:
   contents: write
@@ -77,7 +77,8 @@ jobs:
             tests/test_api_football_prospective_horizon.py \
             tests/test_api_football_bogota_full_day_calendar.py \
             tests/test_api_football_physical_uniqueness.py \
-            tests/test_api_football_over25_high_scoring_league_radar.py
+            tests/test_api_football_over25_high_scoring_league_radar.py \
+            tests/test_football_prospective_15m_cadence.py
 
       - name: Record pre-cycle cumulative freeze count
         shell: bash
