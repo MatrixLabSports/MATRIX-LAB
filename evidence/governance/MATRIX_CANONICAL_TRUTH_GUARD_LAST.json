@@ -1,19 +1,21 @@
 {
   "checks": {
     "football_4000": {
-      "age_minutes": 22.99,
+      "age_minutes": 30.01,
       "canonical_path": "evidence/api_football/governance/MATRIX_FOOTBALL_4000_CANONICAL_TRACKER_LAST.json",
-      "failures": [],
+      "failures": [
+        "CANONICAL_SOURCE_STALE"
+      ],
       "max_age_minutes": 30.0,
       "metrics": {
         "global.valid_final_settlement_count": 4088
       },
       "name": "football_4000",
       "source_timestamp_utc": "2026-10-24T09:53:20.219018+00:00",
-      "status": "PASS"
+      "status": "FAIL_CLOSED"
     },
     "live_tennis_cumulative": {
-      "age_minutes": 10.36,
+      "age_minutes": 17.38,
       "canonical_path": "evidence/live_tennis_lab/MATRIX_LIVE_TENNIS_CUMULATIVE_GATE_V1.json",
       "failures": [],
       "max_age_minutes": 30.0,
@@ -25,7 +27,7 @@
       "status": "PASS"
     },
     "telegram_daily_bankroll": {
-      "age_minutes": 1.79,
+      "age_minutes": 2.08,
       "canonical_path": "evidence/notifications/telegram/MATRIX_TELEGRAM_DAILY_BANKROLL_CANONICAL_LAST.json",
       "failures": [],
       "max_age_minutes": 30.0,
@@ -35,11 +37,11 @@
         "summary.total_profit_cop": -140500
       },
       "name": "telegram_daily_bankroll",
-      "source_timestamp_utc": "2026-10-24T10:14:31.689318+00:00",
+      "source_timestamp_utc": "2026-10-24T10:21:16.014937+00:00",
       "status": "PASS"
     },
     "tennis_three_blocks": {
-      "age_minutes": 111.7,
+      "age_minutes": 118.72,
       "canonical_path": "evidence/tennis/MATRIX_TENNIS_THREE_BLOCK_STAGNATION_AUDIT_LAST.json",
       "failures": [
         "CANONICAL_SOURCE_STALE"
@@ -60,10 +62,16 @@
       "failures": [
         "CANONICAL_SOURCE_STALE"
       ],
+      "source": "football_4000"
+    },
+    {
+      "failures": [
+        "CANONICAL_SOURCE_STALE"
+      ],
       "source": "tennis_three_blocks"
     }
   ],
-  "generated_at_utc": "2026-10-24T10:16:19.366831+00:00",
+  "generated_at_utc": "2026-10-24T10:23:20.598421+00:00",
   "precedence": [
     "LATEST_PHYSICAL_EVIDENCE",
     "HANDOFF",
@@ -80,7 +88,7 @@
   },
   "schema": "MATRIX_CANONICAL_TRUTH_GUARD_V1",
   "summary": {
-    "failed_sources": 1,
+    "failed_sources": 2,
     "registered_sources": 4,
     "status": "FAIL_CLOSED"
   }
