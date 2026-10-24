@@ -42,10 +42,43 @@ KEYWORDS={
 def run(key:str,out:Path):
     key=str(key or "").strip()
     if not key: raise ValueError("API_FOOTBALL_KEY_NOT_CONFIGURED")
+    previous=None
+    if out.exists():
+        try:
+            previous=json.loads(out.read_text(encoding="utf-8"))
+        except Exception:
+            previous=None
     r=requests.get(BASE_URL+"/odds/bets",headers={"x-apisports-key":key},timeout=20)
     if not 200<=r.status_code<300: raise RuntimeError("ODDS_BETS_HTTP_"+str(r.status_code))
     p=r.json()
     rows=p.get("response") or []
+    if not rows:
+        if isinstance(previous,dict) and int(previous.get("catalog_count") or 0)>0:
+            degraded={
+              **previous,
+              "refresh_attempted_at_utc":datetime.now(timezone.utc).replace(microsecond=0).isoformat(),
+              "refresh_status":"PROVIDER_EMPTY_LAST_NONEMPTY_PRESERVED",
+              "provider_empty_response_count":0,
+              "automatic_wagering":False,
+              "real_money":"BLOCKED",
+              "status":"STALE_LAST_NONEMPTY_FAIL_CLOSED",
+            }
+            out.parent.mkdir(parents=True,exist_ok=True)
+            out.write_text(json.dumps(degraded,indent=2,sort_keys=True)+"\n",encoding="utf-8")
+            print(json.dumps({"status":degraded["status"],"catalog_count":degraded["catalog_count"]},sort_keys=True))
+            return degraded
+        empty={
+          "schema":"MATRIX_API_FOOTBALL_MARKET_BINDING_CATALOG_V1",
+          "observed_at_utc":datetime.now(timezone.utc).replace(microsecond=0).isoformat(),
+          "provider":"api_football","catalog_count":0,
+          "matches":{lane:[] for lane in KEYWORDS},
+          "automatic_wagering":False,"real_money":"BLOCKED",
+          "status":"PROVIDER_EMPTY_FAIL_CLOSED",
+        }
+        out.parent.mkdir(parents=True,exist_ok=True)
+        out.write_text(json.dumps(empty,indent=2,sort_keys=True)+"\n",encoding="utf-8")
+        print(json.dumps({"status":empty["status"],"catalog_count":0},sort_keys=True))
+        return empty
     matches={}
     for lane,terms in KEYWORDS.items():
         found=[]
