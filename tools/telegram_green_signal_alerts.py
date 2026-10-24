@@ -1854,6 +1854,7 @@ def blocker_recovery_profile(gate_record: dict[str, Any]) -> dict[str, Any]:
     """Classify the exact blocking variable and the governed recovery path."""
     state = str(gate_record.get("state") or "")
     diag = gate_record.get("odds_api_net_diagnostic") or {}
+    api_diag = gate_record.get("api_football_offer_diagnostic") or {}
     profile = {
         "state": state,
         "missing_or_failed_variable": "UNKNOWN",
@@ -1939,13 +1940,25 @@ def blocker_recovery_profile(gate_record: dict[str, Any]) -> dict[str, Any]:
                 "automatic_recovery_attempted": True,
                 "automatic_recovery_exhausted": False,
                 "provider_diagnostic_status": provider_status or None,
+                "api_football_offer_diagnostic_status": api_status or None,
+                "api_football_offer_diagnostic": api_diag,
                 "provider_discard_reasons": diag.get("discard_reasons") or {},
                 "final_disposition": "RETRY_BETTER_AUTHORIZED_QUOTE_UNTIL_KICKOFF",
             })
             return profile
 
+        api_status = str(api_diag.get("status") or "")
         if provider_status == "BLOCKED_EVENT_NOT_COVERED":
-            variable = "ODDS_PROVIDER_EVENT_COVERAGE"
+            if api_status == "BLOCKED_NO_AUTHORIZED_BOOK_COVERAGE":
+                variable = "AUTHORIZED_BOOK_PROVIDER_COVERAGE"
+            elif api_status == "BLOCKED_AUTHORIZED_BOOK_NO_TOTALS_MARKET":
+                variable = "AUTHORIZED_BOOK_TOTALS_MARKET_COVERAGE"
+            elif api_status == "BLOCKED_AUTHORIZED_BOOK_NO_OVER25_LINE":
+                variable = "AUTHORIZED_BOOK_OVER25_LINE_COVERAGE"
+            elif api_status == "BLOCKED_AUTHORIZED_BOOK_OVER25_ODDS_NOT_GT_1_50":
+                variable = "AUTHORIZED_BOOK_MIN_ODDS_THRESHOLD"
+            else:
+                variable = "ODDS_PROVIDER_EVENT_COVERAGE"
             recovery = ["API-Football", "odds-api.net", "Betano", "BetPlay", "Rushbet"]
         elif provider_status in {"BLOCKED_IDENTITY_LOW_SCORE", "BLOCKED_IDENTITY_AMBIGUOUS", "BLOCKED_EVENT_ID_MISSING"}:
             variable = "EVENT_IDENTITY"
@@ -2045,6 +2058,7 @@ def build_blocker_recovery_audit(
         counts_by_variable[variable] = counts_by_variable.get(variable, 0) + 1
         counts_by_recoverability[recoverability] = counts_by_recoverability.get(recoverability, 0) + 1
         provider_diag = gate.get("odds_api_net_diagnostic") or {}
+        api_offer_diag = gate.get("api_football_offer_diagnostic") or {}
         current_offer = gate.get("offer") if isinstance(gate.get("offer"), dict) else {}
         records.append({
             "signal_key": key,
@@ -2062,6 +2076,11 @@ def build_blocker_recovery_audit(
             **profile,
             "provider_identity_top_scores": provider_diag.get("identity_top_scores") or [],
             "provider_identity_top_candidates": (provider_diag.get("identity_top_candidates") or [])[:5],
+            "api_football_offer_diagnostic_status": api_offer_diag.get("status"),
+            "api_football_authorized_books_seen": api_offer_diag.get("authorized_books_seen") or [],
+            "api_football_goals_over_under_books": api_offer_diag.get("goals_over_under_books") or [],
+            "api_football_over25_books": api_offer_diag.get("over25_books") or [],
+            "api_football_eligible_offer_count": api_offer_diag.get("eligible_offer_count"),
             "checked_at_utc": gate.get("checked_at_utc") or now.isoformat(),
             "time_state_at_audit": time_state,
             "real_money": "BLOCKED",
