@@ -1,19 +1,21 @@
 {
   "checks": {
     "football_4000": {
-      "age_minutes": 10.28,
+      "age_minutes": 32.76,
       "canonical_path": "evidence/api_football/governance/MATRIX_FOOTBALL_4000_CANONICAL_TRACKER_LAST.json",
-      "failures": [],
+      "failures": [
+        "CANONICAL_SOURCE_STALE"
+      ],
       "max_age_minutes": 30.0,
       "metrics": {
         "global.valid_final_settlement_count": 4072
       },
       "name": "football_4000",
       "source_timestamp_utc": "2026-10-24T01:03:00.226576+00:00",
-      "status": "PASS"
+      "status": "FAIL_CLOSED"
     },
     "live_tennis_cumulative": {
-      "age_minutes": 7.09,
+      "age_minutes": 29.56,
       "canonical_path": "evidence/live_tennis_lab/MATRIX_LIVE_TENNIS_CUMULATIVE_GATE_V1.json",
       "failures": [],
       "max_age_minutes": 30.0,
@@ -25,9 +27,11 @@
       "status": "PASS"
     },
     "telegram_daily_bankroll": {
-      "age_minutes": 20.78,
+      "age_minutes": 43.26,
       "canonical_path": "evidence/notifications/telegram/MATRIX_TELEGRAM_DAILY_BANKROLL_CANONICAL_LAST.json",
-      "failures": [],
+      "failures": [
+        "CANONICAL_SOURCE_STALE"
+      ],
       "max_age_minutes": 30.0,
       "metrics": {
         "summary.current_bankroll_cop": 4859500,
@@ -36,10 +40,10 @@
       },
       "name": "telegram_daily_bankroll",
       "source_timestamp_utc": "2026-10-24T00:52:30.168414+00:00",
-      "status": "PASS"
+      "status": "FAIL_CLOSED"
     },
     "tennis_three_blocks": {
-      "age_minutes": 0.76,
+      "age_minutes": 23.24,
       "canonical_path": "evidence/tennis/MATRIX_TENNIS_THREE_BLOCK_STAGNATION_AUDIT_LAST.json",
       "failures": [],
       "max_age_minutes": 30.0,
@@ -53,8 +57,21 @@
       "status": "PASS"
     }
   },
-  "failures": [],
-  "generated_at_utc": "2026-10-24T01:13:17.245221+00:00",
+  "failures": [
+    {
+      "failures": [
+        "CANONICAL_SOURCE_STALE"
+      ],
+      "source": "football_4000"
+    },
+    {
+      "failures": [
+        "CANONICAL_SOURCE_STALE"
+      ],
+      "source": "telegram_daily_bankroll"
+    }
+  ],
+  "generated_at_utc": "2026-10-24T01:35:45.817191+00:00",
   "precedence": [
     "LATEST_PHYSICAL_EVIDENCE",
     "HANDOFF",
@@ -71,8 +88,8 @@
   },
   "schema": "MATRIX_CANONICAL_TRUTH_GUARD_V1",
   "summary": {
-    "failed_sources": 0,
+    "failed_sources": 2,
     "registered_sources": 4,
-    "status": "PASS"
+    "status": "FAIL_CLOSED"
   }
 }
