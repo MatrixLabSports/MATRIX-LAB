@@ -1,9 +1,9 @@
 {
   "accumulation": {
-    "cumulative_count": 64,
-    "current_fetch_count": 64,
+    "cumulative_count": 74,
+    "current_fetch_count": 74,
     "never_decrease_within_day": true,
-    "newly_discovered_count": 0,
+    "newly_discovered_count": 10,
     "policy": "MONOTONIC_UNION_BY_STABLE_PHYSICAL_IDENTITY",
     "prior_count": 64,
     "retained_prior_only_count": 0
@@ -21,7 +21,7 @@
   ],
   "derived_lanes": {
     "COR02_COR03_ATP_CHALLENGER_HARD": {
-      "domain_candidate_count": 22,
+      "domain_candidate_count": 24,
       "feeds_model_automatically": false,
       "governed_pipeline_remains_authoritative": true,
       "source_event_ids": [
@@ -29,16 +29,18 @@
         "rapidapi-tennis:atp:match:687501",
         "rapidapi-tennis:atp:match:687511",
         "rapidapi-tennis:atp:match:687518",
-        "rapidapi-tennis:atp:match:690650",
+        "rapidapi-tennis:atp:match:690648",
         "rapidapi-tennis:atp:match:690652",
         "rapidapi-tennis:atp:match:690641",
-        "rapidapi-tennis:atp:match:690645",
+        "rapidapi-tennis:atp:match:690650",
         "rapidapi-tennis:atp:match:690657",
         "rapidapi-tennis:atp:match:690644",
         "rapidapi-tennis:atp:match:709704",
         "rapidapi-tennis:atp:match:709708",
+        "rapidapi-tennis:atp:match:690645",
         "rapidapi-tennis:atp:match:690642",
         "rapidapi-tennis:atp:match:709707",
+        "rapidapi-tennis:atp:match:709709",
         "rapidapi-tennis:atp:match:709706",
         "rapidapi-tennis:atp:match:709711",
         "rapidapi-tennis:atp:match:709702",
@@ -52,12 +54,12 @@
     "ITF": {
       "current_governed_model": null,
       "feeds_COR02_COR03": false,
-      "inventory_count": 27
+      "inventory_count": 30
     },
     "WTA": {
       "current_governed_model": null,
       "feeds_COR02_COR03": false,
-      "inventory_count": 5
+      "inventory_count": 7
     }
   },
   "duplicate_source_rows": [],
@@ -449,39 +451,76 @@
       "event_format_authority": "TWO_INDIVIDUAL_PROVIDER_NAMES",
       "event_start_bogota": "2026-10-25T01:00:00-05:00",
       "event_start_utc": "2026-10-25T06:00:00+00:00",
-      "match_id": "690650",
+      "match_id": "690648",
       "model_derivation": {
         "blockers": [],
         "domain_candidate": true,
         "lane": "COR02_COR03_ATP_CHALLENGER_HARD",
         "note": "Domain candidate only. Governed COR02/COR03 still requires identity, PIT history, ranking/features, unique physical event, future prematch freeze and all existing gates."
       },
-      "physical_event_key": "e65a844ada66aa12169b90aff594f98d2fa29f5475c2d897ceef8fda61ec9208",
+      "physical_event_key": "901140f537871d9265d5e966976212669bb290ae5da545c2fb645d33fd236dc1",
       "player1": {
-        "country": "MAS",
-        "id": "95918",
-        "name": "Mitsuki Wei Kang Leong"
+        "country": "RUS",
+        "id": "73055",
+        "name": "Alexandr Binda"
       },
       "player2": {
         "country": "CHN",
-        "id": "68996",
-        "name": "Qian Sun"
+        "id": "113955",
+        "name": "Jia Hu"
       },
       "player_group": "",
       "provider_channel": "ATP",
       "provider_status": "",
       "round": "Q1",
-      "source_event_aliases": [
-        "rapidapi-tennis:atp:match:690650"
-      ],
-      "source_event_id": "rapidapi-tennis:atp:match:690650",
+      "source_event_id": "rapidapi-tennis:atp:match:690648",
       "source_provider": "rapidapi_tennis",
-      "source_snapshot_sha256": "e2d6b00dafc9b26d39852c355faa9bb3433417336faf6c26f5b8de7c0193950c",
-      "stable_physical_identity_key": "c67ee3c13cf287b072763cbf07c7768bd60aaaa95cbb5ec684230e13fb28c868",
+      "source_snapshot_sha256": "4fa6c1109441050d8c53cdec37104eedaf8ad680f429f95746ecddae4daa2a2b",
+      "stable_physical_identity_key": "e22aed5e0f7cca33b3a36d6c8c882db9642f95f845d551a0699c390aebaad79b",
       "surface": "Hard",
       "tier": "",
       "tournament_id": "22113",
       "tournament_name": "Ningboo Challenger"
+    },
+    {
+      "circuit_detail": "WTA_MAIN_OR_OTHER",
+      "circuit_family": "WTA",
+      "event_format": "SINGLES",
+      "event_format_authority": "TWO_INDIVIDUAL_PROVIDER_NAMES",
+      "event_start_bogota": "2026-10-25T01:00:00-05:00",
+      "event_start_utc": "2026-10-25T06:00:00+00:00",
+      "match_id": "510442",
+      "model_derivation": {
+        "blockers": [
+          "CIRCUIT_OUTSIDE_COR0203_ATP_CHALLENGER"
+        ],
+        "domain_candidate": false,
+        "lane": "COR02_COR03_ATP_CHALLENGER_HARD",
+        "note": "Domain candidate only. Governed COR02/COR03 still requires identity, PIT history, ranking/features, unique physical event, future prematch freeze and all existing gates."
+      },
+      "physical_event_key": "2945c1d76e220d04e1df975aa70c9545c91616e488532cd028681ac4508404da",
+      "player1": {
+        "country": "CZE",
+        "id": "73274",
+        "name": "Tereza Valentova"
+      },
+      "player2": {
+        "country": "CHN",
+        "id": "4263",
+        "name": "Shuai Zhang"
+      },
+      "player_group": "",
+      "provider_channel": "WTA",
+      "provider_status": "",
+      "round": "Q3",
+      "source_event_id": "rapidapi-tennis:wta:match:510442",
+      "source_provider": "rapidapi_tennis",
+      "source_snapshot_sha256": "18908e01dededfb1ac676fbf29a4b927b520fd5f5f3228e8652397075bf397d4",
+      "stable_physical_identity_key": "3b4391cc31e0a8add45fb9d368aafc1b25af073e9b33c46659e86c174caea962",
+      "surface": "Hard",
+      "tier": "",
+      "tournament_id": "16753",
+      "tournament_name": "Toray Pan Pacific Open - Tokyo"
     },
     {
       "circuit_detail": "ATP_CHALLENGER",
@@ -652,6 +691,47 @@
       "tier": "",
       "tournament_id": "22181",
       "tournament_name": "M15 Singapore"
+    },
+    {
+      "circuit_detail": "WTA_MAIN_OR_OTHER",
+      "circuit_family": "WTA",
+      "event_format": "DOUBLES",
+      "event_format_authority": "PROVIDER_PAIR_NAME_STRUCTURE",
+      "event_start_bogota": "2026-10-25T01:30:00-05:00",
+      "event_start_utc": "2026-10-25T06:30:00+00:00",
+      "match_id": "519425",
+      "model_derivation": {
+        "blockers": [
+          "CIRCUIT_OUTSIDE_COR0203_ATP_CHALLENGER",
+          "EVENT_FORMAT_NOT_PROVEN_SINGLES"
+        ],
+        "domain_candidate": false,
+        "lane": "COR02_COR03_ATP_CHALLENGER_HARD",
+        "note": "Domain candidate only. Governed COR02/COR03 still requires identity, PIT history, ranking/features, unique physical event, future prematch freeze and all existing gates."
+      },
+      "physical_event_key": "c80e694e74f6c3532200dbe814c5ede981bebaee8068608fe3add3e96d5c297a",
+      "player1": {
+        "country": "N/A",
+        "id": "102560",
+        "name": "Cristina Bucsa/Nicole Melichar"
+      },
+      "player2": {
+        "country": "N/A",
+        "id": "112386",
+        "name": "Desirae Krawczyk/Fanny Stollar"
+      },
+      "player_group": "",
+      "provider_channel": "WTA",
+      "provider_status": "",
+      "round": "Final",
+      "source_event_id": "rapidapi-tennis:wta:match:519425",
+      "source_provider": "rapidapi_tennis",
+      "source_snapshot_sha256": "d9c90cd31d81459a5f6b3a662b0d0e42b1577b9b3777edd00e81e256e859e740",
+      "stable_physical_identity_key": "9238774ce1e77ed3ebfa951e8b87f3255a2b1164d2587e400e7302c1ee02b087",
+      "surface": "Hard",
+      "tier": "",
+      "tournament_id": "16751",
+      "tournament_name": "Ningbo Open - Ningbo"
     },
     {
       "circuit_detail": "WTA_MAIN_OR_OTHER",
@@ -1045,35 +1125,35 @@
       "event_format_authority": "TWO_INDIVIDUAL_PROVIDER_NAMES",
       "event_start_bogota": "2026-10-25T02:30:00-05:00",
       "event_start_utc": "2026-10-25T07:30:00+00:00",
-      "match_id": "690645",
+      "match_id": "690650",
       "model_derivation": {
         "blockers": [],
         "domain_candidate": true,
         "lane": "COR02_COR03_ATP_CHALLENGER_HARD",
         "note": "Domain candidate only. Governed COR02/COR03 still requires identity, PIT history, ranking/features, unique physical event, future prematch freeze and all existing gates."
       },
-      "physical_event_key": "466603e0a9b466c592e9733b88264b72e18d3c3eae0167c7f5ca7a603cb15949",
+      "physical_event_key": "a694d12f4276114932d8782f4d5ce7ae8c01845b3a6c0068ab329730716e9edf",
       "player1": {
-        "country": "BLR",
-        "id": "48075",
-        "name": "Martin Borisiouk"
+        "country": "MAS",
+        "id": "95918",
+        "name": "Mitsuki Wei Kang Leong"
       },
       "player2": {
-        "country": "RUS",
-        "id": "85075",
-        "name": "Yaroslav Demin"
+        "country": "CHN",
+        "id": "68996",
+        "name": "Qian Sun"
       },
       "player_group": "",
       "provider_channel": "ATP",
       "provider_status": "",
       "round": "Q1",
       "source_event_aliases": [
-        "rapidapi-tennis:atp:match:690645"
+        "rapidapi-tennis:atp:match:690650"
       ],
-      "source_event_id": "rapidapi-tennis:atp:match:690645",
+      "source_event_id": "rapidapi-tennis:atp:match:690650",
       "source_provider": "rapidapi_tennis",
-      "source_snapshot_sha256": "51e280b8412efa6df462f0545c95ddf433232aee52f0555a3486c1bfa30a1de0",
-      "stable_physical_identity_key": "520f46b43bdbf20003bafa593599fbcb0ec9d4fc1265cf836e93a8f785461cf2",
+      "source_snapshot_sha256": "5b1370a1428edf3c925754910e401b5b4d36a8a9aa7c61d694a623762477a75b",
+      "stable_physical_identity_key": "c67ee3c13cf287b072763cbf07c7768bd60aaaa95cbb5ec684230e13fb28c868",
       "surface": "Hard",
       "tier": "",
       "tournament_id": "22113",
@@ -1589,6 +1669,47 @@
       "tournament_name": "Brest Challenger"
     },
     {
+      "circuit_detail": "ATP_CHALLENGER",
+      "circuit_family": "ATP",
+      "event_format": "SINGLES",
+      "event_format_authority": "TWO_INDIVIDUAL_PROVIDER_NAMES",
+      "event_start_bogota": "2026-10-25T04:00:00-05:00",
+      "event_start_utc": "2026-10-25T09:00:00+00:00",
+      "match_id": "690645",
+      "model_derivation": {
+        "blockers": [],
+        "domain_candidate": true,
+        "lane": "COR02_COR03_ATP_CHALLENGER_HARD",
+        "note": "Domain candidate only. Governed COR02/COR03 still requires identity, PIT history, ranking/features, unique physical event, future prematch freeze and all existing gates."
+      },
+      "physical_event_key": "292d7f051969a2599f4d275600f160e3069db4f9c50e73b7eca6292a75eef1a3",
+      "player1": {
+        "country": "BLR",
+        "id": "48075",
+        "name": "Martin Borisiouk"
+      },
+      "player2": {
+        "country": "RUS",
+        "id": "85075",
+        "name": "Yaroslav Demin"
+      },
+      "player_group": "",
+      "provider_channel": "ATP",
+      "provider_status": "",
+      "round": "Q1",
+      "source_event_aliases": [
+        "rapidapi-tennis:atp:match:690645"
+      ],
+      "source_event_id": "rapidapi-tennis:atp:match:690645",
+      "source_provider": "rapidapi_tennis",
+      "source_snapshot_sha256": "993fe9d250badee1e9f1ca0e7f824b0aad2c6a707151eaaf793d3341225eef1a",
+      "stable_physical_identity_key": "520f46b43bdbf20003bafa593599fbcb0ec9d4fc1265cf836e93a8f785461cf2",
+      "surface": "Hard",
+      "tier": "",
+      "tournament_id": "22113",
+      "tournament_name": "Ningboo Challenger"
+    },
+    {
       "circuit_detail": "ITF_MEN",
       "circuit_family": "ITF",
       "event_format": "SINGLES",
@@ -1717,6 +1838,46 @@
       "tier": "",
       "tournament_id": "17353",
       "tournament_name": "W35 Monastir"
+    },
+    {
+      "circuit_detail": "ITF_WOMEN",
+      "circuit_family": "ITF",
+      "event_format": "SINGLES",
+      "event_format_authority": "TWO_INDIVIDUAL_PROVIDER_NAMES",
+      "event_start_bogota": "2026-10-25T04:00:00-05:00",
+      "event_start_utc": "2026-10-25T09:00:00+00:00",
+      "match_id": "518341",
+      "model_derivation": {
+        "blockers": [
+          "CIRCUIT_OUTSIDE_COR0203_ATP_CHALLENGER"
+        ],
+        "domain_candidate": false,
+        "lane": "COR02_COR03_ATP_CHALLENGER_HARD",
+        "note": "Domain candidate only. Governed COR02/COR03 still requires identity, PIT history, ranking/features, unique physical event, future prematch freeze and all existing gates."
+      },
+      "physical_event_key": "32f806b4769770db322a587ff86e9f2024347c00eeef0b7c36a7770d3fa92505",
+      "player1": {
+        "country": "GBR",
+        "id": "97445",
+        "name": "Georgiana Mititelu"
+      },
+      "player2": {
+        "country": "NED",
+        "id": "72812",
+        "name": "Vanja Gudelj"
+      },
+      "player_group": "",
+      "provider_channel": "WTA",
+      "provider_status": "",
+      "round": "Q1",
+      "source_event_id": "rapidapi-tennis:wta:match:518341",
+      "source_provider": "rapidapi_tennis",
+      "source_snapshot_sha256": "d62839c3244e75c059e332847aae3e0bc7d7b5ab849832bbd653c5adde313da7",
+      "stable_physical_identity_key": "baad85ddabf2ed4be8a0baf76f0a7667997f08d110e25b4936733dd32cacb2a6",
+      "surface": "I.hard",
+      "tier": "",
+      "tournament_id": "17364",
+      "tournament_name": "W75 Glasgow"
     },
     {
       "circuit_detail": "ITF_WOMEN",
@@ -2102,6 +2263,84 @@
       "tournament_name": "Brest Challenger"
     },
     {
+      "circuit_detail": "ATP_CHALLENGER",
+      "circuit_family": "ATP",
+      "event_format": "SINGLES",
+      "event_format_authority": "TWO_INDIVIDUAL_PROVIDER_NAMES",
+      "event_start_bogota": "2026-10-25T05:10:00-05:00",
+      "event_start_utc": "2026-10-25T10:10:00+00:00",
+      "match_id": "709709",
+      "model_derivation": {
+        "blockers": [],
+        "domain_candidate": true,
+        "lane": "COR02_COR03_ATP_CHALLENGER_HARD",
+        "note": "Domain candidate only. Governed COR02/COR03 still requires identity, PIT history, ranking/features, unique physical event, future prematch freeze and all existing gates."
+      },
+      "physical_event_key": "f9a68f2b94ec1f5727384fc4da8b2688d6dd57b4ed4dbac802f2e4dac62d8137",
+      "player1": {
+        "country": "FRA",
+        "id": "56817",
+        "name": "Adan Freire Da Silva"
+      },
+      "player2": {
+        "country": "UKR",
+        "id": "30801",
+        "name": "Vadym Ursu"
+      },
+      "player_group": "",
+      "provider_channel": "ATP",
+      "provider_status": "",
+      "round": "Q1",
+      "source_event_id": "rapidapi-tennis:atp:match:709709",
+      "source_provider": "rapidapi_tennis",
+      "source_snapshot_sha256": "d5a0727c57137f8b74bb48a12f7f066302ed8b1cfa6006717873f3e16b314b7d",
+      "stable_physical_identity_key": "b80fc41f3ef185dc5d83e7b29ea19eaf1ce3e13e24b81a6343a9728a07e43c8a",
+      "surface": "I.hard",
+      "tier": "",
+      "tournament_id": "22110",
+      "tournament_name": "Brest Challenger"
+    },
+    {
+      "circuit_detail": "ITF_WOMEN",
+      "circuit_family": "ITF",
+      "event_format": "SINGLES",
+      "event_format_authority": "TWO_INDIVIDUAL_PROVIDER_NAMES",
+      "event_start_bogota": "2026-10-25T05:30:00-05:00",
+      "event_start_utc": "2026-10-25T10:30:00+00:00",
+      "match_id": "518347",
+      "model_derivation": {
+        "blockers": [
+          "CIRCUIT_OUTSIDE_COR0203_ATP_CHALLENGER"
+        ],
+        "domain_candidate": false,
+        "lane": "COR02_COR03_ATP_CHALLENGER_HARD",
+        "note": "Domain candidate only. Governed COR02/COR03 still requires identity, PIT history, ranking/features, unique physical event, future prematch freeze and all existing gates."
+      },
+      "physical_event_key": "ceb852fcd1803fb68bd8aeee0b84efaad1e8aa189ea78365a26df2177bde977a",
+      "player1": {
+        "country": "FRA",
+        "id": "11442",
+        "name": "Laetitia Sarrazin"
+      },
+      "player2": {
+        "country": "FRA",
+        "id": "72003",
+        "name": "Hanna Bougouffa"
+      },
+      "player_group": "",
+      "provider_channel": "WTA",
+      "provider_status": "",
+      "round": "Q1",
+      "source_event_id": "rapidapi-tennis:wta:match:518347",
+      "source_provider": "rapidapi_tennis",
+      "source_snapshot_sha256": "61d2116f385a27fd5bf62b0aebeb8a70a5171ce2abd90b81c58363f7897e4af9",
+      "stable_physical_identity_key": "6ed0fedcf37c6d9634dadf25edf11979f4b1111c13d67764b6118a651c05b124",
+      "surface": "I.hard",
+      "tier": "",
+      "tournament_id": "17365",
+      "tournament_name": "W75 Poitiers"
+    },
+    {
       "circuit_detail": "ATP_MAIN_OR_OTHER",
       "circuit_family": "ATP",
       "event_format": "SINGLES",
@@ -2186,6 +2425,46 @@
       "tier": "",
       "tournament_id": "22104",
       "tournament_name": "Lisbon Challenger"
+    },
+    {
+      "circuit_detail": "ITF_WOMEN",
+      "circuit_family": "ITF",
+      "event_format": "SINGLES",
+      "event_format_authority": "TWO_INDIVIDUAL_PROVIDER_NAMES",
+      "event_start_bogota": "2026-10-25T06:00:00-05:00",
+      "event_start_utc": "2026-10-25T11:00:00+00:00",
+      "match_id": "518385",
+      "model_derivation": {
+        "blockers": [
+          "CIRCUIT_OUTSIDE_COR0203_ATP_CHALLENGER"
+        ],
+        "domain_candidate": false,
+        "lane": "COR02_COR03_ATP_CHALLENGER_HARD",
+        "note": "Domain candidate only. Governed COR02/COR03 still requires identity, PIT history, ranking/features, unique physical event, future prematch freeze and all existing gates."
+      },
+      "physical_event_key": "85849b31ef7654018ea6d5ab948dc0dfda8f7f9dc7461e91d00d108a7e8593dd",
+      "player1": {
+        "country": "RUS",
+        "id": "108739",
+        "name": "Yekaterina Krupina"
+      },
+      "player2": {
+        "country": "RUS",
+        "id": "87261",
+        "name": "Anna Sedysheva"
+      },
+      "player_group": "",
+      "provider_channel": "WTA",
+      "provider_status": "",
+      "round": "Q1",
+      "source_event_id": "rapidapi-tennis:wta:match:518385",
+      "source_provider": "rapidapi_tennis",
+      "source_snapshot_sha256": "d1dd2682508bbd1c079891d64321d3c7bb9d507d2174e91c1ae2bf8712b559ad",
+      "stable_physical_identity_key": "1f69830960eeecacd911a7863c24acc4ada9d9d8c9bd4143fb2c4d2552f72224",
+      "surface": "I.hard",
+      "tier": "",
+      "tournament_id": "17366",
+      "tournament_name": "W50 Istanbul"
     },
     {
       "circuit_detail": "ATP_MAIN_OR_OTHER",
@@ -2610,6 +2889,86 @@
       "tournament_name": "Erste Bank Open - Vienna"
     },
     {
+      "circuit_detail": "ATP_MAIN_OR_OTHER",
+      "circuit_family": "ATP",
+      "event_format": "SINGLES",
+      "event_format_authority": "TWO_INDIVIDUAL_PROVIDER_NAMES",
+      "event_start_bogota": "2026-10-25T08:30:00-05:00",
+      "event_start_utc": "2026-10-25T13:30:00+00:00",
+      "match_id": "715441",
+      "model_derivation": {
+        "blockers": [
+          "CIRCUIT_OUTSIDE_COR0203_ATP_CHALLENGER"
+        ],
+        "domain_candidate": false,
+        "lane": "COR02_COR03_ATP_CHALLENGER_HARD",
+        "note": "Domain candidate only. Governed COR02/COR03 still requires identity, PIT history, ranking/features, unique physical event, future prematch freeze and all existing gates."
+      },
+      "physical_event_key": "1d081eec6992d757d692802a84f45c6c2829e23acd91b37f389a40b1cd086861",
+      "player1": {
+        "country": "FRA",
+        "id": "7806",
+        "name": "Adrian Mannarino"
+      },
+      "player2": {
+        "country": "SVK",
+        "id": "34539",
+        "name": "Alex Molcan"
+      },
+      "player_group": "",
+      "provider_channel": "ATP",
+      "provider_status": "",
+      "round": "Q3",
+      "source_event_id": "rapidapi-tennis:atp:match:715441",
+      "source_provider": "rapidapi_tennis",
+      "source_snapshot_sha256": "6b8287d3b87ab14813466942376acda99c0ebe1aa68be9c75179a83c1db21c47",
+      "stable_physical_identity_key": "64937dc949980d850d67ca49f2c080e24f382baa5f9ee85458ff19cd49859587",
+      "surface": "I.hard",
+      "tier": "",
+      "tournament_id": "21361",
+      "tournament_name": "Erste Bank Open - Vienna"
+    },
+    {
+      "circuit_detail": "ATP_MAIN_OR_OTHER",
+      "circuit_family": "ATP",
+      "event_format": "SINGLES",
+      "event_format_authority": "TWO_INDIVIDUAL_PROVIDER_NAMES",
+      "event_start_bogota": "2026-10-25T09:00:00-05:00",
+      "event_start_utc": "2026-10-25T14:00:00+00:00",
+      "match_id": "709278",
+      "model_derivation": {
+        "blockers": [
+          "CIRCUIT_OUTSIDE_COR0203_ATP_CHALLENGER"
+        ],
+        "domain_candidate": false,
+        "lane": "COR02_COR03_ATP_CHALLENGER_HARD",
+        "note": "Domain candidate only. Governed COR02/COR03 still requires identity, PIT history, ranking/features, unique physical event, future prematch freeze and all existing gates."
+      },
+      "physical_event_key": "77a9f4ad96ebce57401ba932aa84029151231f10fb8090e866bbf0bd722547a8",
+      "player1": {
+        "country": "SUI",
+        "id": "84377",
+        "name": "Mika Brunold"
+      },
+      "player2": {
+        "country": "SUI",
+        "id": "35296",
+        "name": "Remy Bertola"
+      },
+      "player_group": "",
+      "provider_channel": "ATP",
+      "provider_status": "",
+      "round": "Q3",
+      "source_event_id": "rapidapi-tennis:atp:match:709278",
+      "source_provider": "rapidapi_tennis",
+      "source_snapshot_sha256": "5c2f2cedc650b223b47551044e77124acfc1cf768e5fffb1935735cd7fa29a2c",
+      "stable_physical_identity_key": "35beb2e8583aa80b66ff5f0363ca06b8fae9cd061acf2b7e9b033c34aef65788",
+      "surface": "I.hard",
+      "tier": "",
+      "tournament_id": "21360",
+      "tournament_name": "Swiss Indoors Basel - Basel"
+    },
+    {
       "circuit_detail": "ATP_CHALLENGER",
       "circuit_family": "ATP",
       "event_format": "SINGLES",
@@ -2690,6 +3049,46 @@
       "tier": "",
       "tournament_id": "22110",
       "tournament_name": "Brest Challenger"
+    },
+    {
+      "circuit_detail": "ATP_MAIN_OR_OTHER",
+      "circuit_family": "ATP",
+      "event_format": "SINGLES",
+      "event_format_authority": "TWO_INDIVIDUAL_PROVIDER_NAMES",
+      "event_start_bogota": "2026-10-25T10:30:00-05:00",
+      "event_start_utc": "2026-10-25T15:30:00+00:00",
+      "match_id": "715277",
+      "model_derivation": {
+        "blockers": [
+          "CIRCUIT_OUTSIDE_COR0203_ATP_CHALLENGER"
+        ],
+        "domain_candidate": false,
+        "lane": "COR02_COR03_ATP_CHALLENGER_HARD",
+        "note": "Domain candidate only. Governed COR02/COR03 still requires identity, PIT history, ranking/features, unique physical event, future prematch freeze and all existing gates."
+      },
+      "physical_event_key": "3c0783ab07643cce285ba80fdbf62d75482afea6fc14f196c892f793ea4fabf9",
+      "player1": {
+        "country": "GER",
+        "id": "14177",
+        "name": "Jan-Lennard Struff"
+      },
+      "player2": {
+        "country": "NED",
+        "id": "33860",
+        "name": "Tallon Griekspoor"
+      },
+      "player_group": "",
+      "provider_channel": "ATP",
+      "provider_status": "",
+      "round": "Final",
+      "source_event_id": "rapidapi-tennis:atp:match:715277",
+      "source_provider": "rapidapi_tennis",
+      "source_snapshot_sha256": "d6e8bddff1bb024c1e598eb416c626c4da610df51240b63941654e978d81d49f",
+      "stable_physical_identity_key": "e90d04ee3b602d063c84b63adbc011832820b3ab4cef1b382c93118ae9440a9b",
+      "surface": "I.hard",
+      "tier": "",
+      "tournament_id": "21358",
+      "tournament_name": "European Open - Brussels"
     },
     {
       "circuit_detail": "ATP_CHALLENGER",
@@ -2775,19 +3174,20 @@
     }
   ],
   "events_by_detail": {
-    "ATP_CHALLENGER": 24,
-    "ATP_MAIN_OR_OTHER": 8,
+    "ATP_CHALLENGER": 26,
+    "ATP_MAIN_OR_OTHER": 11,
     "ITF_MEN": 15,
-    "ITF_WOMEN": 12,
-    "WTA_MAIN_OR_OTHER": 5
+    "ITF_WOMEN": 15,
+    "WTA_MAIN_OR_OTHER": 7
   },
   "events_by_family": {
-    "ATP": 32,
-    "ITF": 27,
-    "WTA": 5
+    "ATP": 37,
+    "ITF": 30,
+    "WTA": 7
   },
   "events_by_format": {
-    "SINGLES": 64
+    "DOUBLES": 1,
+    "SINGLES": 73
   },
   "metrics_opened": false,
   "operational_timezone": "America/Bogota",
@@ -2804,17 +3204,17 @@
   "provider_channel_errors": {},
   "provider_channel_summaries": {
     "ATP": {
-      "events_in_bogota_day": 47,
+      "events_in_bogota_day": 52,
       "malformed_unplaced_rows": 0,
       "network_calls": 1,
-      "provider_rows_in_query_window": 74,
+      "provider_rows_in_query_window": 78,
       "status": "PASS"
     },
     "WTA": {
-      "events_in_bogota_day": 17,
+      "events_in_bogota_day": 22,
       "malformed_unplaced_rows": 0,
       "network_calls": 1,
-      "provider_rows_in_query_window": 38,
+      "provider_rows_in_query_window": 42,
       "status": "PASS"
     }
   },
@@ -2824,8 +3224,8 @@
     "x-ratelimit-limit": "3000",
     "x-ratelimit-remaining": "2996",
     "x-ratelimit-requests-limit": "1200000",
-    "x-ratelimit-requests-remaining": "1149544",
-    "x-ratelimit-requests-reset": "307111",
+    "x-ratelimit-requests-remaining": "1150241",
+    "x-ratelimit-requests-reset": "301937",
     "x-ratelimit-reset": "58"
   },
   "provider_query_date_start": "2026-10-24",
@@ -2835,7 +3235,7 @@
   "status": "PASS",
   "target_date_bogota": "2026-10-25",
   "unplaced_rows": [],
-  "world_calendar_inventory_count": 64,
+  "world_calendar_inventory_count": 74,
   "world_complete_gate": "REQUIRES_MULTI_SOURCE_RECONCILIATION",
   "world_inventory_complete": false
 }
