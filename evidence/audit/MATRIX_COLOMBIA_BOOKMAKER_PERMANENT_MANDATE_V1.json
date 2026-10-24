@@ -61,9 +61,13 @@
     "provider_candidate": "odds_api_net",
     "secret_name": "ODDS_API_NET_KEY",
     "purchase_required_now": false,
-    "status": "DEFERRED_UNTIL_OPERATIONALLY_USEFUL",
+    "status": "ACTIVE_PRICE_DISCOVERY_PORTFOLIO",
     "physical_activation_required": true,
-    "real_money": "BLOCKED"
+    "real_money": "BLOCKED",
+    "activation_scope": "QUOTE_DISCOVERY_COMPARISON_AND_PAPER_SIGNAL_SELECTION_ONLY",
+    "all_execution_candidates_enabled_for_quote_discovery": true,
+    "provider_gap_policy": "FAIL_CLOSED_PER_BOOK_NO_SILENT_IMPUTATION",
+    "automatic_wagering": false
   },
   "regression_protection": {
     "ci_required": true,
@@ -78,5 +82,29 @@
     "evidence/audit/MATRIX_COLOMBIA_BOOKMAKER_PORTFOLIO_20260928.json",
     "evidence/audit/MATRIX_COLOMBIA_ODDS_ARCHITECTURE_READINESS_20260928.json",
     "docs/providers/MATRIX_COLOMBIA_ODDS_EXECUTION_ARCHITECTURE_V1.md"
-  ]
+  ],
+  "last_user_reaffirmed_date_bogota": "2026-10-24",
+  "regulatory_reconciliation_2026_10_24": {
+    "authority": "Coljuegos",
+    "current_table_last_modified": "2026-10-13",
+    "current_table_execution_candidates": [
+      "wplay",
+      "betplay",
+      "betsson",
+      "zamba",
+      "codere",
+      "luckia",
+      "sportium",
+      "rushbet",
+      "rivalo",
+      "yajuego",
+      "bwin",
+      "stake",
+      "betano",
+      "mryoker"
+    ],
+    "current_table_count": 14,
+    "bingo_casino_status": "KEEP_QUARANTINED_NOT_IN_CURRENT_TABLE",
+    "note": "A 26-MAY-2026 bulletin listed 15 including Bingo Casino; the current operator table modified 13-OCT-2026 lists 14 and excludes Bingo Casino. Latest current table prevails."
+  }
 }
