@@ -176,16 +176,17 @@ jobs:
             python -m tools.matrix_multi_market_supervisor \
               --football-catalog "$CATALOG" \
               --target-date-bogota "$D" \
-              --out evidence/market_portfolio/MATRIX_MULTI_MARKET_SUPERVISOR_LAST.json
+              --source-run rapidapi-tennis-paid-window-harvest \
+              --out evidence/market_portfolio/MATRIX_MULTI_MARKET_SUPERVISOR_TENNIS_LAST.json
           else
             python -m tools.matrix_multi_market_supervisor \
               --target-date-bogota "$D" \
-              --out evidence/market_portfolio/MATRIX_MULTI_MARKET_SUPERVISOR_LAST.json
+              --out evidence/market_portfolio/MATRIX_MULTI_MARKET_SUPERVISOR_TENNIS_LAST.json
           fi
           python - <<'PY'
           import json
           from pathlib import Path
-          j=json.loads(Path("evidence/market_portfolio/MATRIX_MULTI_MARKET_SUPERVISOR_LAST.json").read_text())
+          j=json.loads(Path("evidence/market_portfolio/MATRIX_MULTI_MARKET_SUPERVISOR_TENNIS_LAST.json").read_text())
           assert j["status"]=="PASS"
           assert j["total_required_lanes"]==42
           assert j["invariants"]["aces_present"] is True
@@ -205,7 +206,7 @@ jobs:
           git config user.email matrix-tennis-harvest@users.noreply.github.com
           git add "evidence/tennis/paid_window_harvest/$D"
           git add evidence/governance/MATRIX_TENNIS_SUBSCRIPTION_DEADLINE_LAST.json
-          git add evidence/market_portfolio/MATRIX_MULTI_MARKET_SUPERVISOR_LAST.json
+          git add evidence/market_portfolio/MATRIX_MULTI_MARKET_SUPERVISOR_TENNIS_LAST.json
           if git diff --cached --quiet; then
             echo "NO_HARVEST_CHANGE"
             exit 0
