@@ -1,0 +1,125 @@
+{
+  "captures": [
+    {
+      "calibration_admitted": false,
+      "event_id": "4242951",
+      "participant1": "Ariana Arseneault",
+      "participant2": "Yuki Naito",
+      "statistics": {
+        "aces": {
+          "player1": 1.0,
+          "player2": 2.0
+        },
+        "breaks_of_serve": {
+          "player1": 2.0,
+          "player2": 3.0
+        },
+        "double_faults": {
+          "player1": 1.0,
+          "player2": 1.0
+        }
+      },
+      "stats_http_status": 200,
+      "stats_payload_sha256": "0034b1c487fbdae83466250c0e7f7abf96750e27cfbf77363bb664858ff4e76d",
+      "status": "InPlay",
+      "timeline_break_events": 5,
+      "timeline_http_status": 200,
+      "timeline_payload_sha256": "165bbbe738c51d8c6bbbd2c7ce497f5340c216596a5fbb4eac95af690f9f1f6e",
+      "tour_type": "wta"
+    },
+    {
+      "calibration_admitted": false,
+      "event_id": "4241607",
+      "participant1": "Arthur Fils",
+      "participant2": "Jan-Lennard Struff",
+      "statistics": {
+        "aces": {
+          "player1": 15.0,
+          "player2": 13.0
+        },
+        "breaks_of_serve": {
+          "player1": 2.0,
+          "player2": 2.0
+        },
+        "double_faults": {
+          "player1": 3.0,
+          "player2": 1.0
+        }
+      },
+      "stats_http_status": 200,
+      "stats_payload_sha256": "6e9a6474540cbd3df745d531796ff5bdeb31ea0d8628aa97097336587e5cb408",
+      "status": "InPlay",
+      "timeline_break_events": 4,
+      "timeline_http_status": 200,
+      "timeline_payload_sha256": "2e389c3c668c34e1ab29786bc846b8541f43f9b0cd3d1e32eac8d58d34d8c1ec",
+      "tour_type": "atp"
+    },
+    {
+      "calibration_admitted": false,
+      "event_id": "4241340",
+      "participant1": "Thiago Agustin Tirante",
+      "participant2": "Adrian Mannarino",
+      "statistics": {
+        "aces": {
+          "player1": 8.0,
+          "player2": 3.0
+        },
+        "breaks_of_serve": {
+          "player1": 3.0,
+          "player2": 4.0
+        },
+        "double_faults": {
+          "player1": 1.0,
+          "player2": 3.0
+        }
+      },
+      "stats_http_status": 200,
+      "stats_payload_sha256": "e379696abdbabe3658519824216cd3d453c546610673b5b742ac03e52a173da5",
+      "status": "InPlay",
+      "timeline_break_events": 7,
+      "timeline_http_status": 200,
+      "timeline_payload_sha256": "5d980c92ad099031a80d06ce4442e9a3e1ceaf637ed7e21aba63bafeb30f15d7",
+      "tour_type": "atp"
+    }
+  ],
+  "events_probed": 3,
+  "field_observation_counts": {
+    "ACES": 3,
+    "BREAKS_OF_SERVE": 3,
+    "DOUBLE_FAULTS": 3
+  },
+  "generated_at_utc": "2026-10-24T18:43:26+00:00",
+  "live_endpoint": "/tennis/v2/extend/api/events/live",
+  "live_event_count": 3,
+  "live_http_status": 200,
+  "live_payload_sha256": "f3581f4ec6b3edba4355412783aea7bcb3b7426a280e047e385b16a5d9292a7a",
+  "market_lanes": [
+    "ACES",
+    "DOUBLE_FAULTS",
+    "BREAKS_OF_SERVE"
+  ],
+  "metrics_status": "SEALED",
+  "network_calls": 7,
+  "p_matrix_status": "NOT_GENERATED_SOURCE_LAB_ONLY",
+  "payload_sha256": "f0f46a6cf007c2d4b56b6883008efb81cb09229f0accbe8cfc80ff0925893bd5",
+  "protections": {
+    "automatic_wagering": false,
+    "calibration_admitted": false,
+    "missing_not_zero": true,
+    "odds_used_to_generate_probability": false,
+    "provider_values_not_used_as_target_probability": true,
+    "real_money": "BLOCKED",
+    "silent_imputation": false
+  },
+  "provider": "rapidapi_tennis",
+  "schema": "MATRIX_TENNIS_SERVE_STATS_LAB_V1",
+  "source_contract": {
+    "aces": "statistics.ALL.service.aces",
+    "break_timeline_crosscheck": "event/timeline/{event_id} text contains breaks",
+    "breaks_of_serve": "statistics.ALL.return.breakPointsScored",
+    "double_faults": "statistics.ALL.service.doubleFaults"
+  },
+  "statistics_endpoint_template": "/tennis/v2/extend/api/event/data/statistics/{p1}/{p2}",
+  "status": "PASS_SOURCE_LAB",
+  "timeline_endpoint_template": "/tennis/v2/extend/api/event/timeline/{event_id}"
+}
