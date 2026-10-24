@@ -88,3 +88,9 @@ def test_three_tennis_serve_stat_markets_are_real_labs():
         assert row["implementation_present"] is True
         assert row["implementation_paths"]==["tools/rapidapi_tennis_serve_stats_lab.py"]
         assert row["production_authorized"] is False
+
+
+def test_canonical_supervisor_keeps_15m_cadence():
+    text=open(".github/workflows/matrix-multi-market-supervisor.yml",encoding="utf-8").read()
+    assert 'cron: "*/15 * * * *"' in text
+    assert 'cron: "17 */2 * * *"' not in text
