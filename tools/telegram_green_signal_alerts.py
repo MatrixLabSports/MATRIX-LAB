@@ -1921,6 +1921,7 @@ def blocker_recovery_profile(gate_record: dict[str, Any]) -> dict[str, Any]:
 
     if state in {"BLOCKED_NO_VALID_EXACT_AUTHORIZED_BOOK_OVER25", "BLOCKED_NONPOSITIVE_EV"}:
         provider_status = str(diag.get("status") or "")
+        api_status = str(api_diag.get("status") or "")
         selected_offer = gate_record.get("offer") if isinstance(gate_record.get("offer"), dict) else None
         physical_offer = gate_record.get("physical_browser_offer") if isinstance(gate_record.get("physical_browser_offer"), dict) else None
         variable = "EXACT_AUTHORIZED_BOOK_OVER25_QUOTE" if state.startswith("BLOCKED_NO_VALID") else "POSITIVE_EXPECTED_VALUE"
@@ -1947,7 +1948,6 @@ def blocker_recovery_profile(gate_record: dict[str, Any]) -> dict[str, Any]:
             })
             return profile
 
-        api_status = str(api_diag.get("status") or "")
         if provider_status == "BLOCKED_EVENT_NOT_COVERED":
             if api_status == "BLOCKED_NO_AUTHORIZED_BOOK_COVERAGE":
                 variable = "AUTHORIZED_BOOK_PROVIDER_COVERAGE"
