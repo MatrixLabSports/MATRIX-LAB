@@ -76,12 +76,11 @@ jobs:
         env:
           RAPIDAPI_TENNIS_KEY: ${{ secrets.RAPIDAPI_TENNIS_KEY }}
         run: |
-          mkdir -p evidence/tennis/paid_window_harvest/2026-10-24
-          python -m tools.tennis_world_inventory_rapidapi             --target-date-bogota 2026-10-24             --out evidence/tennis/paid_window_harvest/2026-10-24/MATRIX_RAPIDAPI_TENNIS_INVENTORY_LAST.json             --fail-on-partial
+          python -m tools.tennis_world_inventory_rapidapi             --target-date-bogota 2026-10-24             --out /tmp/MATRIX_RAPIDAPI_TENNIS_INVENTORY_2026-10-24.json             --fail-on-partial
           python - <<'PY'
           import json
           from pathlib import Path
-          j=json.loads(Path("evidence/tennis/paid_window_harvest/2026-10-24/MATRIX_RAPIDAPI_TENNIS_INVENTORY_LAST.json").read_text())
+          j=json.loads(Path("/tmp/MATRIX_RAPIDAPI_TENNIS_INVENTORY_2026-10-24.json").read_text())
           candidates=[]
           for e in j.get("events") or []:
               d=e.get("model_derivation") or {}
@@ -128,7 +127,7 @@ jobs:
           from pathlib import Path
           before=json.loads(Path("/tmp/hard_before.json").read_text())
           hard=json.loads(Path("evidence/cor0203/runtime/MATRIX_COR0203_PHYSICAL_UNIQUENESS_LAST.json").read_text())
-          inv=json.loads(Path("evidence/tennis/paid_window_harvest/2026-10-24/MATRIX_RAPIDAPI_TENNIS_INVENTORY_LAST.json").read_text())
+          inv=json.loads(Path("/tmp/MATRIX_RAPIDAPI_TENNIS_INVENTORY_2026-10-24.json").read_text())
           candidates=[]
           for e in inv.get("events") or []:
               d=e.get("model_derivation") or {}
@@ -168,6 +167,8 @@ jobs:
           set -euo pipefail
           git config user.name matrix-tennis-hard-24oct
           git config user.email matrix-tennis-hard-24oct@users.noreply.github.com
+          mkdir -p evidence/tennis/paid_window_harvest/2026-10-24
+          cp /tmp/MATRIX_RAPIDAPI_TENNIS_INVENTORY_2026-10-24.json evidence/tennis/paid_window_harvest/2026-10-24/MATRIX_RAPIDAPI_TENNIS_INVENTORY_LAST.json
           git add evidence/tennis/paid_window_harvest/2026-10-24/MATRIX_RAPIDAPI_TENNIS_INVENTORY_LAST.json
           git add evidence/governance/MATRIX_COR0203_24OCT_ONE_SHOT_CERT.json
           if git diff --cached --quiet; then
