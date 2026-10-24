@@ -36,6 +36,10 @@ RECOVERABLE_FIXTURE_ERRORS = (
     "API_FOOTBALL_HTTP_STATUS_503",
     "API_FOOTBALL_HTTP_STATUS_504",
 )
+TERMINAL_FIXTURE_ERRORS = (
+    "API_FOOTBALL_DAILY_REQUEST_LIMIT_REACHED",
+    "API_FOOTBALL_PLAN_OR_ENTITLEMENT_BLOCK",
+)
 
 
 def _capture_fixtures_with_retry(
@@ -86,12 +90,14 @@ def _capture_fixtures_with_retry(
         except Exception as exc:
             last_error = exc
             token = str(exc)
-            recoverable = any(token.startswith(prefix) for prefix in RECOVERABLE_FIXTURE_ERRORS)
+            terminal = any(token.startswith(prefix) for prefix in TERMINAL_FIXTURE_ERRORS)
+            recoverable = (not terminal) and any(token.startswith(prefix) for prefix in RECOVERABLE_FIXTURE_ERRORS)
             attempts.append({
                 "attempt": attempt,
                 "status": "FAIL",
                 "error": token,
                 "recoverable": recoverable,
+                "terminal_for_current_cycle": terminal,
                 "attempt_dir": attempt_dir.as_posix(),
             })
             if not recoverable:
