@@ -75,21 +75,48 @@ def _sim(a:Any,b:Any)->float:
     return max(jac,SequenceMatcher(None,x,y).ratio())
 
 
-def _latest_fixture_registry(root:Path,now_utc:datetime)->Path:
-    candidates=[]
-    for path in root.glob("*/*/fixtures/future_fixture_registry.json"):
+def _merged_future_fixture_registry(root:Path,now_utc:datetime)->dict[str,Any]:
+    merged:dict[str,dict[str,Any]]={}
+    sources=[]
+    for path in sorted(root.glob("*/*/fixtures/future_fixture_registry.json")):
         try:
             data=_load(path)
             captured=_utc(data.get("captured_at_utc"))
-            future=sum(1 for row in data.get("events") or [] if isinstance(row,Mapping) and _utc(row.get("event_start_utc"))>now_utc)
-            if future>0:
-                candidates.append((captured,path,future))
         except Exception:
             continue
-    if not candidates:
+        kept=0
+        for row in data.get("events") or []:
+            if not isinstance(row,Mapping):
+                continue
+            try:
+                start=_utc(row.get("event_start_utc"))
+            except Exception:
+                continue
+            if start<=now_utc:
+                continue
+            fid=str(row.get("provider_fixture_id") or "")
+            if not fid:
+                continue
+            current=merged.get(fid)
+            if current is None or captured>_utc(current["_captured_at_utc"]):
+                merged[fid]={**dict(row),"_captured_at_utc":captured.isoformat(),"_registry_path":path.as_posix()}
+            kept+=1
+        if kept:
+            sources.append({"path":path.as_posix(),"captured_at_utc":captured.isoformat(),"future_rows_seen":kept})
+    if not merged:
         raise FileNotFoundError("NO_FUTURE_FIXTURE_REGISTRY_AVAILABLE")
-    candidates.sort(key=lambda x:(x[0],x[1].as_posix()),reverse=True)
-    return candidates[0][1]
+    events=[]
+    for row in merged.values():
+        row=dict(row); row.pop("_captured_at_utc",None)
+        events.append(row)
+    events.sort(key=lambda x:(x.get("event_start_utc"),str(x.get("provider_fixture_id"))))
+    return {
+        "captured_at_utc":now_utc.isoformat(),
+        "merged_future_fixture_count":len(events),
+        "source_registry_count":len(sources),
+        "source_registries":sources,
+        "events":events,
+    }
 
 
 def _fixture_map(registry:Mapping[str,Any])->dict[str,dict[str,Any]]:
@@ -274,6 +301,16 @@ def find_quote(session:requests.Session,key:str,c:Mapping[str,Any],diagnostic:di
         swap=(_sim(c["home_team"],e.get("away_team"))+_sim(c["away_team"],e.get("home_team")))/2
         scored.append((max(direct,swap),e))
     scored.sort(key=lambda x:x[0],reverse=True)
+    diagnostic["identity_top_candidates"]=[
+        {
+            "score":round(float(score),6),
+            "home_team":event.get("home_team"),
+            "away_team":event.get("away_team"),
+            "event_id":event.get("event_id"),
+            "start_time":event.get("start_time"),
+        }
+        for score,event in scored[:5]
+    ]
     if not scored or scored[0][0]<0.85:
         diagnostic["status"]="BLOCKED_EVENT_IDENTITY"; return None
     event_id=str(scored[0][1].get("event_id") or "")
@@ -342,9 +379,16 @@ def main()->None:
     p.add_argument("--dry-run",action="store_true")
     a=p.parse_args()
     now=datetime.now(timezone.utc).replace(microsecond=0)
-    fixture_path=Path(a.fixtures) if a.fixtures else _latest_fixture_registry(PROSPECTIVE_DAILY_ROOT,now)
-    candidates,base=build_candidates(_load(Path(a.source)),_load(fixture_path),repo_root=Path("."),now_utc=now)
-    base["fixture_registry_path"]=fixture_path.as_posix()
+    if a.fixtures:
+        fixture_registry=_load(Path(a.fixtures))
+        fixture_registry_descriptor=Path(a.fixtures).as_posix()
+    else:
+        fixture_registry=_merged_future_fixture_registry(PROSPECTIVE_DAILY_ROOT,now)
+        fixture_registry_descriptor="MERGED_ALL_FUTURE_PROSPECTIVE_REGISTRIES"
+    candidates,base=build_candidates(_load(Path(a.source)),fixture_registry,repo_root=Path("."),now_utc=now)
+    base["fixture_registry_path"]=fixture_registry_descriptor
+    base["merged_future_fixture_count"]=fixture_registry.get("merged_future_fixture_count")
+    base["source_registry_count"]=fixture_registry.get("source_registry_count")
     ledger_path=Path(a.ledger)
     ledger=_load(ledger_path) if ledger_path.exists() else {"schema":"MATRIX_TELEGRAM_TEAM_TOTAL_GOALS_PICKS_LEDGER_V1","sent":[]}
     sent_keys={str(x.get("candidate_key") or "") for x in ledger.get("sent",[]) if isinstance(x,Mapping)}
