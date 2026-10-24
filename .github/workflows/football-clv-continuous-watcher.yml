@@ -100,6 +100,7 @@ jobs:
               "cancel-in-progress: false",
               "CLV_MISSED_BASELINE",
               "CLV_NO_NEW_MISSED_AFTER_KICKOFF=PASS",
+              "CLV_WATCHER_HEARTBEAT_PERSISTED=PASS",
               'assert j["closing_freshness_policy"]["max_provider_quote_age_seconds"]==120',
           ]
           missing=[x for x in required if x not in s]
@@ -227,6 +228,31 @@ jobs:
             done
             return 1
           }
+
+          python - <<'PY'
+          import json
+          from datetime import datetime, timezone
+          from pathlib import Path
+          baseline_path=Path("/tmp/clv_missed_baseline.txt")
+          if not baseline_path.exists():
+              raise SystemExit("CLV_MISSED_BASELINE_MISSING_BEFORE_HEARTBEAT")
+          payload={
+              "schema":"MATRIX_CLV_CONTINUOUS_WATCHER_HEARTBEAT_V1",
+              "started_at_utc":datetime.now(timezone.utc).isoformat(),
+              "baseline_missed_after_kickoff":int(baseline_path.read_text(encoding="utf-8").strip()),
+              "poll_seconds":90,
+              "strict_fresh_gate_seconds":120,
+              "odds_api_net_preferred":True,
+              "api_football_fallback":True,
+              "automatic_wagering":False,
+              "real_money":"BLOCKED",
+          }
+          p=Path("evidence/clv/football/over_2_5/watcher_heartbeat.json")
+          p.write_text(json.dumps(payload,ensure_ascii=False,indent=2,sort_keys=True)+"\n",encoding="utf-8")
+          print(json.dumps(payload,sort_keys=True))
+          PY
+          persist_if_changed
+          echo "CLV_WATCHER_HEARTBEAT_PERSISTED=PASS"
 
           remaining_future() {
             PYTHONPATH=. python - <<'PY'
