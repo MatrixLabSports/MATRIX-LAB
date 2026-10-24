@@ -132,11 +132,12 @@ jobs:
           python -m tools.matrix_multi_market_supervisor \
             --football-catalog evidence/api_football/market_expansion/market_binding_catalog.json \
             --target-date-bogota "$D" \
-            --out evidence/market_portfolio/MATRIX_MULTI_MARKET_SUPERVISOR_LAST.json
+            --source-run football-daily-governed-pipeline \
+            --out evidence/market_portfolio/MATRIX_MULTI_MARKET_SUPERVISOR_FOOTBALL_LAST.json
           python - <<'PY'
           import json
           from pathlib import Path
-          j=json.loads(Path("evidence/market_portfolio/MATRIX_MULTI_MARKET_SUPERVISOR_LAST.json").read_text())
+          j=json.loads(Path("evidence/market_portfolio/MATRIX_MULTI_MARKET_SUPERVISOR_FOOTBALL_LAST.json").read_text())
           assert j["status"]=="PASS"
           assert j["football_required_lanes"]==30
           assert j["tennis_required_lanes"]==12
@@ -223,7 +224,7 @@ jobs:
           git add "evidence/football_world_inventory/$D/MATRIX_FOOTBALL_CALIBRATION_ELIGIBILITY.json"
           git add evidence/governance/MATRIX_FOOTBALL_SUBSCRIPTION_DEADLINE_LAST.json
           git add evidence/api_football/market_expansion/market_binding_catalog.json
-          git add evidence/market_portfolio/MATRIX_MULTI_MARKET_SUPERVISOR_LAST.json
+          git add evidence/market_portfolio/MATRIX_MULTI_MARKET_SUPERVISOR_FOOTBALL_LAST.json
           if git diff --cached --quiet; then
             echo "NO_GOVERNED_DAILY_CHANGE"
             exit 0
