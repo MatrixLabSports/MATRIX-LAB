@@ -30,7 +30,7 @@
     300,
     600
   ],
-  "generated_at_utc": "2026-10-24T20:01:50+00:00",
+  "generated_at_utc": "2026-10-24T20:02:43+00:00",
   "lanes": {
     "ACES": {
       "blockers": [
@@ -1383,18 +1383,50 @@
     "production_authorized": false,
     "real_money": "BLOCKED"
   },
-  "registry_sha256": "f5276012388f7d7e048184f5ea1ea7330daa6b87f3c899deeddf0066eb81080f",
+  "registry_sha256": "3ef379cb255160b8c5297c5b8d9b870502a8657152b11157eb33e47b7f9b0c9d",
   "schema": "MATRIX_42_LANE_PROSPECTIVE_REGISTRY_V1",
   "source_inventory": {
     "football": {
       "available": true,
+      "blocker": "NO_FUTURE_EVENTS_IN_PERSISTED_FOOTBALL_INVENTORY",
+      "captured_age_hours": 39.962,
       "captured_at_utc": "2026-10-23T04:05:00+00:00",
       "event_count": 460,
-      "future_only": true
+      "future_event_count_now": 0,
+      "latest_event_start_utc": "2026-10-24T04:00:00+00:00",
+      "source_usable_for_new_freeze_now": false
     },
     "tennis": {
       "available": true,
-      "latest_day": "2026-10-29"
+      "latest_day": "2026-10-29",
+      "today": {
+        "authoritative_count_policy": "SOFASCORE_FIRST_FLASHSCORE_SECOND_RAPIDAPI_STRUCTURED; NO_FORCED_COUNT_EQUALITY",
+        "available": true,
+        "day": "2026-10-24",
+        "open_reconciliation_required": true,
+        "primary_paid_unique_match_count": 20,
+        "provider_inventory_complete": true,
+        "required_open_calendar_reconciliation": [
+          "SofaScore",
+          "Flashscore"
+        ],
+        "status": "PASS_PRIMARY_PAID_CAPTURE_OPEN_RECONCILIATION_REQUIRED",
+        "world_inventory_complete": false
+      },
+      "tomorrow": {
+        "authoritative_count_policy": "SOFASCORE_FIRST_FLASHSCORE_SECOND_RAPIDAPI_STRUCTURED; NO_FORCED_COUNT_EQUALITY",
+        "available": true,
+        "day": "2026-10-25",
+        "open_reconciliation_required": true,
+        "primary_paid_unique_match_count": 0,
+        "provider_inventory_complete": true,
+        "required_open_calendar_reconciliation": [
+          "SofaScore",
+          "Flashscore"
+        ],
+        "status": "PASS_PRIMARY_PAID_CAPTURE_OPEN_RECONCILIATION_REQUIRED",
+        "world_inventory_complete": false
+      }
     }
   },
   "status": "PASS",
