@@ -1,6 +1,6 @@
 {
   "schema": "MATRIX_PERMANENT_MANDATE_INDEX_V1",
-  "as_of_date_bogota": "2026-09-28",
+  "as_of_date_bogota": "2026-10-24",
   "purpose": "Physical index of permanent governance mandates that future MATRIX continuity/handoff work must read before changing operational behavior.",
   "conflict_rule": "PHYSICAL_EVIDENCE_WINS",
   "change_control": "Each indexed mandate retains its own explicit change-control clause.",
@@ -26,6 +26,12 @@
       "status": "PERMANENT_ACTIVE",
       "path": "docs/governance/MATRIX_FOOTBALL_SCHEDULER_RESILIENCE_MANDATE_V1.md",
       "evidence_path": "evidence/audit/MATRIX_FOOTBALL_SCHEDULER_RESILIENCE_MANDATE_V1.json"
+    },
+    {
+      "id": "MARKET_PORTFOLIO_PERMANENT_MANDATE_V1",
+      "status": "PERMANENT_ACTIVE",
+      "path": "app/market/matrix_market_portfolio.py",
+      "evidence_path": "evidence/audit/MATRIX_MARKET_PORTFOLIO_PERMANENT_MANDATE_V1.json"
     }
   ],
   "continuity_requirement": "Future prompts, handoffs, audits and implementation changes must preserve indexed mandates unless the user explicitly changes the specific mandate."
