@@ -1,7 +1,7 @@
 {
-  "catalog_market_names_observed": 89,
+  "catalog_market_names_observed": 0,
   "football_required_lanes": 30,
-  "generated_at_utc": "2026-10-24T11:17:53+00:00",
+  "generated_at_utc": "2026-10-24T11:51:14+00:00",
   "invariants": {
     "aces_present": true,
     "automatic_wagering": false,
@@ -26,7 +26,7 @@
       "market_key": "MATCH_RESULT_1X2",
       "must_continue_collecting": true,
       "operational_state": "LAB",
-      "price_state": "PRICE_FAMILY_OBSERVED",
+      "price_state": "PRICE_CATALOG_NOT_SUPPLIED",
       "production_authorized": false,
       "required": true,
       "required_lifecycle": "ACTIVE_OR_PROSPECTIVE_REQUIRED",
@@ -43,7 +43,7 @@
       "market_key": "DOUBLE_CHANCE_1X",
       "must_continue_collecting": true,
       "operational_state": "LAB",
-      "price_state": "PRICE_FAMILY_OBSERVED",
+      "price_state": "PRICE_CATALOG_NOT_SUPPLIED",
       "production_authorized": false,
       "required": true,
       "required_lifecycle": "ACTIVE_OR_PROSPECTIVE_REQUIRED",
@@ -60,33 +60,31 @@
       "market_key": "DOUBLE_CHANCE_X2",
       "must_continue_collecting": true,
       "operational_state": "LAB",
-      "price_state": "PRICE_FAMILY_OBSERVED",
+      "price_state": "PRICE_CATALOG_NOT_SUPPLIED",
       "production_authorized": false,
       "required": true,
       "required_lifecycle": "ACTIVE_OR_PROSPECTIVE_REQUIRED",
       "sport": "football"
     },
     {
-      "blockers": [
-        "BLOCKED_MODEL"
-      ],
+      "blockers": [],
       "display_name": "Doble oportunidad 12",
       "family": "core",
-      "implementation_paths": [],
-      "implementation_present": false,
+      "implementation_paths": [
+        "tools/api_football_priority_market_lab.py"
+      ],
+      "implementation_present": true,
       "market_key": "DOUBLE_CHANCE_12",
       "must_continue_collecting": true,
-      "operational_state": "BLOCKED_MODEL",
-      "price_state": "PRICE_FAMILY_OBSERVED",
+      "operational_state": "LAB",
+      "price_state": "PRICE_CATALOG_NOT_SUPPLIED",
       "production_authorized": false,
       "required": true,
       "required_lifecycle": "ACTIVE_OR_PROSPECTIVE_REQUIRED",
       "sport": "football"
     },
     {
-      "blockers": [
-        "BLOCKED_PRICE_FAMILY"
-      ],
+      "blockers": [],
       "display_name": "Over/Under goles",
       "family": "core",
       "implementation_paths": [
@@ -96,24 +94,41 @@
       "market_key": "TOTAL_GOALS_OVER_UNDER",
       "must_continue_collecting": true,
       "operational_state": "ACTIVE",
-      "price_state": "PRICE_FAMILY_NOT_OBSERVED",
+      "price_state": "PRICE_CATALOG_NOT_SUPPLIED",
       "production_authorized": true,
       "required": true,
       "required_lifecycle": "ACTIVE_OR_PROSPECTIVE_REQUIRED",
       "sport": "football"
     },
     {
-      "blockers": [
-        "BLOCKED_MODEL"
-      ],
+      "blockers": [],
       "display_name": "Goles totales equipo local",
       "family": "goals_team",
-      "implementation_paths": [],
-      "implementation_present": false,
+      "implementation_paths": [
+        "tools/api_football_priority_market_lab.py"
+      ],
+      "implementation_present": true,
       "market_key": "TEAM_TOTAL_GOALS_HOME",
       "must_continue_collecting": true,
-      "operational_state": "BLOCKED_MODEL",
-      "price_state": "PRICE_FAMILY_OBSERVED",
+      "operational_state": "LAB",
+      "price_state": "PRICE_CATALOG_NOT_SUPPLIED",
+      "production_authorized": false,
+      "required": true,
+      "required_lifecycle": "LAB_REQUIRED",
+      "sport": "football"
+    },
+    {
+      "blockers": [],
+      "display_name": "Goles totales equipo visitante",
+      "family": "goals_team",
+      "implementation_paths": [
+        "tools/api_football_priority_market_lab.py"
+      ],
+      "implementation_present": true,
+      "market_key": "TEAM_TOTAL_GOALS_AWAY",
+      "must_continue_collecting": true,
+      "operational_state": "LAB",
+      "price_state": "PRICE_CATALOG_NOT_SUPPLIED",
       "production_authorized": false,
       "required": true,
       "required_lifecycle": "LAB_REQUIRED",
@@ -122,24 +137,6 @@
     {
       "blockers": [
         "BLOCKED_MODEL"
-      ],
-      "display_name": "Goles totales equipo visitante",
-      "family": "goals_team",
-      "implementation_paths": [],
-      "implementation_present": false,
-      "market_key": "TEAM_TOTAL_GOALS_AWAY",
-      "must_continue_collecting": true,
-      "operational_state": "BLOCKED_MODEL",
-      "price_state": "PRICE_FAMILY_OBSERVED",
-      "production_authorized": false,
-      "required": true,
-      "required_lifecycle": "LAB_REQUIRED",
-      "sport": "football"
-    },
-    {
-      "blockers": [
-        "BLOCKED_MODEL",
-        "BLOCKED_PRICE_FAMILY"
       ],
       "display_name": "Goles primer tiempo Over/Under",
       "family": "goals_period",
@@ -148,7 +145,7 @@
       "market_key": "FIRST_HALF_TOTAL_GOALS_OVER_UNDER",
       "must_continue_collecting": true,
       "operational_state": "BLOCKED_MODEL",
-      "price_state": "PRICE_FAMILY_NOT_OBSERVED",
+      "price_state": "PRICE_CATALOG_NOT_SUPPLIED",
       "production_authorized": false,
       "required": true,
       "required_lifecycle": "LAB_REQUIRED",
@@ -156,8 +153,7 @@
     },
     {
       "blockers": [
-        "BLOCKED_MODEL",
-        "BLOCKED_PRICE_FAMILY"
+        "BLOCKED_MODEL"
       ],
       "display_name": "Goles segundo tiempo Over/Under",
       "family": "goals_period",
@@ -166,7 +162,7 @@
       "market_key": "SECOND_HALF_TOTAL_GOALS_OVER_UNDER",
       "must_continue_collecting": true,
       "operational_state": "BLOCKED_MODEL",
-      "price_state": "PRICE_FAMILY_NOT_OBSERVED",
+      "price_state": "PRICE_CATALOG_NOT_SUPPLIED",
       "production_authorized": false,
       "required": true,
       "required_lifecycle": "LAB_REQUIRED",
@@ -174,8 +170,7 @@
     },
     {
       "blockers": [
-        "BLOCKED_MODEL",
-        "BLOCKED_PRICE_FAMILY"
+        "BLOCKED_MODEL"
       ],
       "display_name": "Goles equipo local primer tiempo",
       "family": "goals_period_team",
@@ -184,7 +179,7 @@
       "market_key": "FIRST_HALF_TEAM_TOTAL_GOALS_HOME",
       "must_continue_collecting": true,
       "operational_state": "BLOCKED_MODEL",
-      "price_state": "PRICE_FAMILY_NOT_OBSERVED",
+      "price_state": "PRICE_CATALOG_NOT_SUPPLIED",
       "production_authorized": false,
       "required": true,
       "required_lifecycle": "LAB_REQUIRED",
@@ -192,8 +187,7 @@
     },
     {
       "blockers": [
-        "BLOCKED_MODEL",
-        "BLOCKED_PRICE_FAMILY"
+        "BLOCKED_MODEL"
       ],
       "display_name": "Goles equipo visitante primer tiempo",
       "family": "goals_period_team",
@@ -202,7 +196,7 @@
       "market_key": "FIRST_HALF_TEAM_TOTAL_GOALS_AWAY",
       "must_continue_collecting": true,
       "operational_state": "BLOCKED_MODEL",
-      "price_state": "PRICE_FAMILY_NOT_OBSERVED",
+      "price_state": "PRICE_CATALOG_NOT_SUPPLIED",
       "production_authorized": false,
       "required": true,
       "required_lifecycle": "LAB_REQUIRED",
@@ -210,8 +204,7 @@
     },
     {
       "blockers": [
-        "BLOCKED_MODEL",
-        "BLOCKED_PRICE_FAMILY"
+        "BLOCKED_MODEL"
       ],
       "display_name": "Goles equipo local segundo tiempo",
       "family": "goals_period_team",
@@ -220,7 +213,7 @@
       "market_key": "SECOND_HALF_TEAM_TOTAL_GOALS_HOME",
       "must_continue_collecting": true,
       "operational_state": "BLOCKED_MODEL",
-      "price_state": "PRICE_FAMILY_NOT_OBSERVED",
+      "price_state": "PRICE_CATALOG_NOT_SUPPLIED",
       "production_authorized": false,
       "required": true,
       "required_lifecycle": "LAB_REQUIRED",
@@ -228,8 +221,7 @@
     },
     {
       "blockers": [
-        "BLOCKED_MODEL",
-        "BLOCKED_PRICE_FAMILY"
+        "BLOCKED_MODEL"
       ],
       "display_name": "Goles equipo visitante segundo tiempo",
       "family": "goals_period_team",
@@ -238,16 +230,14 @@
       "market_key": "SECOND_HALF_TEAM_TOTAL_GOALS_AWAY",
       "must_continue_collecting": true,
       "operational_state": "BLOCKED_MODEL",
-      "price_state": "PRICE_FAMILY_NOT_OBSERVED",
+      "price_state": "PRICE_CATALOG_NOT_SUPPLIED",
       "production_authorized": false,
       "required": true,
       "required_lifecycle": "LAB_REQUIRED",
       "sport": "football"
     },
     {
-      "blockers": [
-        "BLOCKED_PRICE_FAMILY"
-      ],
+      "blockers": [],
       "display_name": "Ambos equipos marcan",
       "family": "core",
       "implementation_paths": [
@@ -258,24 +248,24 @@
       "market_key": "BTTS",
       "must_continue_collecting": true,
       "operational_state": "LAB",
-      "price_state": "PRICE_FAMILY_NOT_OBSERVED",
+      "price_state": "PRICE_CATALOG_NOT_SUPPLIED",
       "production_authorized": false,
       "required": true,
       "required_lifecycle": "ACTIVE_OR_PROSPECTIVE_REQUIRED",
       "sport": "football"
     },
     {
-      "blockers": [
-        "BLOCKED_MODEL"
-      ],
+      "blockers": [],
       "display_name": "Hándicap",
       "family": "core",
-      "implementation_paths": [],
-      "implementation_present": false,
+      "implementation_paths": [
+        "tools/api_football_priority_market_lab.py"
+      ],
+      "implementation_present": true,
       "market_key": "ASIAN_OR_EUROPEAN_HANDICAP",
       "must_continue_collecting": true,
-      "operational_state": "BLOCKED_MODEL",
-      "price_state": "PRICE_FAMILY_OBSERVED",
+      "operational_state": "LAB",
+      "price_state": "PRICE_CATALOG_NOT_SUPPLIED",
       "production_authorized": false,
       "required": true,
       "required_lifecycle": "ACTIVE_OR_PROSPECTIVE_REQUIRED",
@@ -292,7 +282,7 @@
       "market_key": "CORNERS_OVER_UNDER",
       "must_continue_collecting": true,
       "operational_state": "LAB",
-      "price_state": "PRICE_FAMILY_OBSERVED",
+      "price_state": "PRICE_CATALOG_NOT_SUPPLIED",
       "production_authorized": false,
       "required": true,
       "required_lifecycle": "LAB_REQUIRED",
@@ -309,16 +299,14 @@
       "market_key": "CARDS_OVER_UNDER",
       "must_continue_collecting": true,
       "operational_state": "LAB",
-      "price_state": "PRICE_FAMILY_OBSERVED",
+      "price_state": "PRICE_CATALOG_NOT_SUPPLIED",
       "production_authorized": false,
       "required": true,
       "required_lifecycle": "LAB_REQUIRED",
       "sport": "football"
     },
     {
-      "blockers": [
-        "BLOCKED_PRICE_FAMILY"
-      ],
+      "blockers": [],
       "display_name": "Tiros totales equipo local",
       "family": "team",
       "implementation_paths": [
@@ -328,16 +316,14 @@
       "market_key": "TEAM_TOTAL_SHOTS_HOME",
       "must_continue_collecting": true,
       "operational_state": "LAB",
-      "price_state": "PRICE_FAMILY_NOT_OBSERVED",
+      "price_state": "PRICE_CATALOG_NOT_SUPPLIED",
       "production_authorized": false,
       "required": true,
       "required_lifecycle": "LAB_REQUIRED",
       "sport": "football"
     },
     {
-      "blockers": [
-        "BLOCKED_PRICE_FAMILY"
-      ],
+      "blockers": [],
       "display_name": "Tiros totales equipo visitante",
       "family": "team",
       "implementation_paths": [
@@ -347,7 +333,7 @@
       "market_key": "TEAM_TOTAL_SHOTS_AWAY",
       "must_continue_collecting": true,
       "operational_state": "LAB",
-      "price_state": "PRICE_FAMILY_NOT_OBSERVED",
+      "price_state": "PRICE_CATALOG_NOT_SUPPLIED",
       "production_authorized": false,
       "required": true,
       "required_lifecycle": "LAB_REQUIRED",
@@ -364,7 +350,7 @@
       "market_key": "TEAM_SHOTS_ON_TARGET_HOME",
       "must_continue_collecting": true,
       "operational_state": "LAB",
-      "price_state": "PRICE_FAMILY_OBSERVED",
+      "price_state": "PRICE_CATALOG_NOT_SUPPLIED",
       "production_authorized": false,
       "required": true,
       "required_lifecycle": "LAB_REQUIRED",
@@ -381,16 +367,14 @@
       "market_key": "TEAM_SHOTS_ON_TARGET_AWAY",
       "must_continue_collecting": true,
       "operational_state": "LAB",
-      "price_state": "PRICE_FAMILY_OBSERVED",
+      "price_state": "PRICE_CATALOG_NOT_SUPPLIED",
       "production_authorized": false,
       "required": true,
       "required_lifecycle": "LAB_REQUIRED",
       "sport": "football"
     },
     {
-      "blockers": [
-        "BLOCKED_PRICE_FAMILY"
-      ],
+      "blockers": [],
       "display_name": "Faltas equipo local",
       "family": "team",
       "implementation_paths": [
@@ -400,16 +384,14 @@
       "market_key": "TEAM_FOULS_HOME",
       "must_continue_collecting": true,
       "operational_state": "LAB",
-      "price_state": "PRICE_FAMILY_NOT_OBSERVED",
+      "price_state": "PRICE_CATALOG_NOT_SUPPLIED",
       "production_authorized": false,
       "required": true,
       "required_lifecycle": "LAB_REQUIRED",
       "sport": "football"
     },
     {
-      "blockers": [
-        "BLOCKED_PRICE_FAMILY"
-      ],
+      "blockers": [],
       "display_name": "Faltas equipo visitante",
       "family": "team",
       "implementation_paths": [
@@ -419,7 +401,7 @@
       "market_key": "TEAM_FOULS_AWAY",
       "must_continue_collecting": true,
       "operational_state": "LAB",
-      "price_state": "PRICE_FAMILY_NOT_OBSERVED",
+      "price_state": "PRICE_CATALOG_NOT_SUPPLIED",
       "production_authorized": false,
       "required": true,
       "required_lifecycle": "LAB_REQUIRED",
@@ -436,7 +418,7 @@
       "market_key": "GOALKEEPER_SAVES",
       "must_continue_collecting": true,
       "operational_state": "LAB",
-      "price_state": "PRICE_FAMILY_OBSERVED",
+      "price_state": "PRICE_CATALOG_NOT_SUPPLIED",
       "production_authorized": false,
       "required": true,
       "required_lifecycle": "LAB_REQUIRED",
@@ -453,7 +435,7 @@
       "market_key": "PLAYER_SHOTS",
       "must_continue_collecting": true,
       "operational_state": "LAB",
-      "price_state": "PRICE_FAMILY_OBSERVED",
+      "price_state": "PRICE_CATALOG_NOT_SUPPLIED",
       "production_authorized": false,
       "required": true,
       "required_lifecycle": "LAB_REQUIRED",
@@ -470,16 +452,14 @@
       "market_key": "PLAYER_SHOTS_ON_TARGET",
       "must_continue_collecting": true,
       "operational_state": "LAB",
-      "price_state": "PRICE_FAMILY_OBSERVED",
+      "price_state": "PRICE_CATALOG_NOT_SUPPLIED",
       "production_authorized": false,
       "required": true,
       "required_lifecycle": "LAB_REQUIRED",
       "sport": "football"
     },
     {
-      "blockers": [
-        "BLOCKED_PRICE_FAMILY"
-      ],
+      "blockers": [],
       "display_name": "Asistencias de jugador",
       "family": "player",
       "implementation_paths": [
@@ -489,16 +469,14 @@
       "market_key": "PLAYER_ASSISTS",
       "must_continue_collecting": true,
       "operational_state": "LAB",
-      "price_state": "PRICE_FAMILY_NOT_OBSERVED",
+      "price_state": "PRICE_CATALOG_NOT_SUPPLIED",
       "production_authorized": false,
       "required": true,
       "required_lifecycle": "LAB_REQUIRED",
       "sport": "football"
     },
     {
-      "blockers": [
-        "BLOCKED_PRICE_FAMILY"
-      ],
+      "blockers": [],
       "display_name": "Pases de jugador",
       "family": "player",
       "implementation_paths": [
@@ -508,16 +486,14 @@
       "market_key": "PLAYER_PASSES",
       "must_continue_collecting": true,
       "operational_state": "LAB",
-      "price_state": "PRICE_FAMILY_NOT_OBSERVED",
+      "price_state": "PRICE_CATALOG_NOT_SUPPLIED",
       "production_authorized": false,
       "required": true,
       "required_lifecycle": "LAB_REQUIRED",
       "sport": "football"
     },
     {
-      "blockers": [
-        "BLOCKED_PRICE_FAMILY"
-      ],
+      "blockers": [],
       "display_name": "Tackles de jugador",
       "family": "player",
       "implementation_paths": [
@@ -527,7 +503,7 @@
       "market_key": "PLAYER_TACKLES",
       "must_continue_collecting": true,
       "operational_state": "LAB",
-      "price_state": "PRICE_FAMILY_NOT_OBSERVED",
+      "price_state": "PRICE_CATALOG_NOT_SUPPLIED",
       "production_authorized": false,
       "required": true,
       "required_lifecycle": "LAB_REQUIRED",
@@ -544,7 +520,7 @@
       "market_key": "PLAYER_FOULS",
       "must_continue_collecting": true,
       "operational_state": "LAB",
-      "price_state": "PRICE_FAMILY_OBSERVED",
+      "price_state": "PRICE_CATALOG_NOT_SUPPLIED",
       "production_authorized": false,
       "required": true,
       "required_lifecycle": "LAB_REQUIRED",
@@ -762,8 +738,8 @@
   "source_run": "rapidapi-tennis-paid-window-harvest",
   "state_counts": {
     "ACTIVE": 2,
-    "BLOCKED_MODEL": 13,
-    "LAB": 27
+    "BLOCKED_MODEL": 9,
+    "LAB": 31
   },
   "status": "PASS",
   "target_date_bogota": "2026-10-24",
