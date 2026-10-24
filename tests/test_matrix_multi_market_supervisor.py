@@ -29,7 +29,11 @@ def test_supervisor_locks_explicitly_forgotten_markets():
 def test_every_lane_continues_collecting_even_if_not_production_ready():
     r=build()
     assert all(x["must_continue_collecting"] is True for x in r["rows"])
-    assert any(x["operational_state"].startswith("BLOCKED") for x in r["rows"])
+    assert all(
+        x["operational_state"] in {"ACTIVE", "LAB"}
+        or x["operational_state"].startswith("BLOCKED")
+        for x in r["rows"]
+    )
 
 
 def test_supervisor_preserves_safety_invariants():
@@ -43,12 +47,15 @@ def test_supervisor_preserves_safety_invariants():
     assert inv["real_money"]=="BLOCKED"
 
 
-def test_aces_blocker_is_visible_not_silently_omitted():
+def test_aces_is_visible_and_has_physical_source_lab():
     r=build()
     row=next(x for x in r["rows"] if x["market_key"]=="ACES")
     assert row["required"] is True
     assert row["must_continue_collecting"] is True
-    assert "BLOCKED_TENNIS_STAT_MARKET_IMPLEMENTATION" in row["blockers"]
+    assert row["operational_state"]=="LAB"
+    assert row["implementation_present"] is True
+    assert row["implementation_paths"]==["tools/rapidapi_tennis_serve_stats_lab.py"]
+    assert "BLOCKED_TENNIS_STAT_MARKET_IMPLEMENTATION" not in row["blockers"]
 
 
 def test_six_period_goal_markets_are_real_labs_not_blocked_models():
@@ -69,4 +76,15 @@ def test_six_period_goal_markets_are_real_labs_not_blocked_models():
         assert row["implementation_present"] is True
         assert row["implementation_paths"]==["tools/api_football_period_goals_lab.py"]
         assert "BLOCKED_MODEL" not in row["blockers"]
+        assert row["production_authorized"] is False
+
+
+def test_three_tennis_serve_stat_markets_are_real_labs():
+    r=build()
+    rows={x["market_key"]:x for x in r["rows"]}
+    for key in {"ACES","DOUBLE_FAULTS","BREAKS_OF_SERVE"}:
+        row=rows[key]
+        assert row["operational_state"]=="LAB"
+        assert row["implementation_present"] is True
+        assert row["implementation_paths"]==["tools/rapidapi_tennis_serve_stats_lab.py"]
         assert row["production_authorized"] is False
