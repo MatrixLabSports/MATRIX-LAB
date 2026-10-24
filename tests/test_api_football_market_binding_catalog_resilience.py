@@ -43,3 +43,15 @@ def test_empty_provider_response_without_history_is_fail_closed(monkeypatch,tmp_
     assert r["status"]=="PROVIDER_EMPTY_FAIL_CLOSED"
     assert r["automatic_wagering"] is False
     assert r["real_money"]=="BLOCKED"
+
+
+def test_daily_limit_is_classified_explicitly(monkeypatch,tmp_path):
+    out=tmp_path/"catalog.json"
+    payload={"errors":{"requests":"request limit reached for day"},"response":[]}
+    monkeypatch.setattr(catalog.requests,"get",lambda *a,**k:Resp(payload))
+    r=catalog.run("k",out)
+    assert r["catalog_count"]==0
+    assert r["status"]=="PROVIDER_LIMIT_REACHED_FAIL_CLOSED"
+    assert r["provider_error_classification"]=="DAILY_REQUEST_LIMIT_REACHED"
+    assert r["provider_errors"]==payload["errors"]
+    assert r["real_money"]=="BLOCKED"
