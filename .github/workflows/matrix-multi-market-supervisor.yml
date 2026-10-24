@@ -59,7 +59,8 @@ jobs:
         run: |
           PYTHONPATH=. python -m pytest -q \
             tests/test_market_portfolio_permanent_mandate.py \
-            tests/test_matrix_multi_market_supervisor.py
+            tests/test_matrix_multi_market_supervisor.py \
+            tests/test_multi_market_supervisor_single_writer.py
 
       - name: Refresh football market catalog while paid window is active
         env:
