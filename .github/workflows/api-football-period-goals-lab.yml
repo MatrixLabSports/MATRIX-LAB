@@ -44,7 +44,8 @@ jobs:
           PYTHONPATH=. python -m pytest -q \
             tests/test_api_football_period_goals_lab.py \
             tests/test_matrix_multi_market_supervisor.py \
-            tests/test_market_portfolio_permanent_mandate.py
+            tests/test_market_portfolio_permanent_mandate.py \
+            tests/test_matrix_nine_lab_gate_registry.py
 
       - name: Enforce safety contract
         shell: bash
@@ -113,6 +114,24 @@ jobs:
           print("PERIOD_GOALS_6_LANES_SUPERVISOR=PASS")
           PY
 
+      - name: Update append-only nine-lab gates
+        run: |
+          PYTHONPATH=. python -m tools.matrix_nine_lab_gate_registry
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          p=Path("evidence/lab_gates/MATRIX_NINE_LAB_GATE_REGISTRY_LAST.json")
+          j=json.loads(p.read_text(encoding="utf-8"))
+          assert j["status"]=="PASS"
+          assert j["lane_count"]==9
+          assert j["gate_thresholds"]==[100,300,600]
+          assert j["baseline"]["football_baseline_counts_as_prospective"] is False
+          assert j["baseline"]["tennis_inplay_counts_as_prospective"] is False
+          assert j["admission_contract"]["post_start_backfill_forbidden"] is True
+          assert j["protections"]["real_money"]=="BLOCKED"
+          print("NINE_LAB_APPEND_ONLY_GATES=PASS")
+          PY
+
       - name: Persist physical evidence
         shell: bash
         run: |
@@ -121,6 +140,8 @@ jobs:
           git config user.email matrix-period-goals-lab@users.noreply.github.com
           git add evidence/api_football/period_goals_lab/MATRIX_PERIOD_GOALS_LAB_LAST.json
           git add evidence/market_portfolio/MATRIX_MULTI_MARKET_SUPERVISOR_LAST.json
+          git add evidence/lab_gates/MATRIX_NINE_LAB_GATE_REGISTRY_LAST.json
+          git add evidence/lab_gates/MATRIX_NINE_LAB_OBSERVATION_LEDGER.jsonl
           if git diff --cached --quiet; then
             echo "PERIOD_GOALS_NO_EVIDENCE_CHANGE"
             exit 0
@@ -135,7 +156,9 @@ jobs:
                 [ -z "$file" ] && continue
                 case "$file" in
                   evidence/api_football/period_goals_lab/MATRIX_PERIOD_GOALS_LAB_LAST.json|\
-                  evidence/market_portfolio/MATRIX_MULTI_MARKET_SUPERVISOR_LAST.json)
+                  evidence/market_portfolio/MATRIX_MULTI_MARKET_SUPERVISOR_LAST.json|\
+                  evidence/lab_gates/MATRIX_NINE_LAB_GATE_REGISTRY_LAST.json|\
+                  evidence/lab_gates/MATRIX_NINE_LAB_OBSERVATION_LEDGER.jsonl)
                     git checkout --theirs -- "$file"
                     git add "$file"
                     ;;
