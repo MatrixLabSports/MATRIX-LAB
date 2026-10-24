@@ -1,43 +1,95 @@
 {
-  "schema": "MATRIX_TENNIS_BROWSER_FIRST_RECONCILIATION_V1",
+  "schema": "MATRIX_TENNIS_BROWSER_FIRST_RECONCILIATION_V2",
   "target_date_bogota": "2026-10-24",
-  "captured_from_opera_at_utc": "2026-10-23T05:48:00+00:00",
+  "generated_at_bogota": "2026-10-23T22:42:00-05:00",
   "source_order": [
     "SofaScore",
     "Flashscore",
-    "RapidAPI Tennis"
+    "RapidAPI Tennis",
+    "governed historical sources"
   ],
   "sofascore": {
+    "status": "PHYSICALLY_VERIFIED",
     "url": "https://www.sofascore.com/es/tennis/2026-10-24",
-    "tab_id": 2017706908,
-    "visible_event_rows_full_page": 17,
-    "count_semantics": "UNIQUE_TENNIS_MATCH_LINKS_EXPOSED_IN_CURRENT_ACCESSIBILITY_TREE",
+    "tab_id": 2017706577,
+    "visible_match_url_count": 216,
+    "count_basis": "unique accessibility URLs containing /tennis/match/",
     "exact_world_total_claim": false,
-    "status": "PASS_PHYSICAL_BROWSER_READ"
+    "target_date_proven_by_url": true
   },
   "flashscore": {
-    "url": "https://www.flashscore.co/tenis/#/tomorrow",
-    "tab_id": 2017706926,
-    "visible_match_count": 221,
-    "count_semantics": "UNIQUE_/PARTIDO/TENIS/_LINKS_EXPOSED_IN_CURRENT_ACCESSIBILITY_TREE",
+    "status": "PHYSICALLY_VERIFIED",
+    "url": "https://www.flashscore.co/tenis/manana/",
+    "tab_id": 2017706904,
+    "visible_match_url_count": 140,
+    "count_basis": "unique accessibility URLs containing /partido/tenis/",
     "exact_world_total_claim": false,
     "target_day_semantics": "TOMORROW_FROM_2026-10-23_BOGOTA_EQUALS_2026-10-24",
-    "status": "PARTIAL_DATE_SELECTOR_MISMATCH",
-    "date_selector_observed": "viernes, 23 de octubre de 2026",
-    "target_date_proven_by_selector": false
+    "date_selector_observed": "sábado, 24 de octubre de 2026",
+    "target_date_proven_by_selector": true
   },
   "reconciliation": {
-    "browser_first_gate": "PARTIAL_NOT_ADMISSIBLE_FOR_24OCT_HOLDOUT",
-    "parity_claim": false,
+    "browser_first_gate": "PASS",
+    "date_alignment": "PASS",
+    "parity_claimed": false,
     "source_specific_counts_only": true,
-    "paid_api_may_follow": "SCOUTING_ONLY",
-    "holdout_admission_allowed": false,
-    "rectification_reason": "Flashscore #/tomorrow URL did not expose 24-OCT in the accessible date selector; 221 links cannot be certified as exact-day 24-OCT."
+    "exact_identity_reconciliation_status": "PROVIDER_STAGE_REQUIRED",
+    "paid_api_may_follow": "SCOUTING_AND_IDENTITY_RECONCILIATION_ONLY",
+    "holdout_admission_allowed": "CONDITIONAL_ONLY_AFTER_LANE_GATES"
+  },
+  "lane_governance": {
+    "hard": {
+      "auto_admit_from_calendar": false,
+      "requirements": [
+        "exact_identity",
+        "surface=hard",
+        "PIT causal history",
+        "prematch timing",
+        "not already frozen"
+      ],
+      "metrics_opened": false
+    },
+    "clay": {
+      "auto_admit_from_calendar": false,
+      "requirements": [
+        "exact_identity",
+        "surface=clay",
+        "PIT causal history",
+        "prematch timing",
+        "not already frozen"
+      ],
+      "metrics_opened": false
+    },
+    "live": {
+      "auto_admit_from_calendar": false,
+      "requirements": [
+        "exact_identity",
+        "governed live provider",
+        "quality-valid live state",
+        "no settled-state substitution"
+      ],
+      "metrics_opened": false
+    }
+  },
+  "exclusions": {
+    "cancelled": "DO_NOT_ADMIT",
+    "interrupted": "DO_NOT_TREAT_AS_NEW_PREMATCH_OBSERVATION",
+    "doubles": "OUTSIDE_SINGLES_LANES_UNLESS_SEPARATELY_GOVERNED",
+    "missing_surface": "MISSING_NOT_ZERO_FAIL_CLOSED"
   },
   "protections": {
     "metrics_opened": false,
     "outcomes_read_for_metrics": 0,
     "automatic_wagering": false,
-    "real_money": "BLOCKED"
+    "real_money": "BLOCKED",
+    "missing_not_zero": true,
+    "silent_imputation": false,
+    "api_tennis_retired_no_network": true,
+    "odds_used_to_generate_probability": false
+  },
+  "supersedes": {
+    "prior_blob_sha": "968038fd2bb8ff7f06d7e050d45320face1df931",
+    "prior_status": "PARTIAL_DATE_SELECTOR_MISMATCH",
+    "rectification": "Flashscore date selector is now physically verified on 24-OCT-2026 and browser-first gate is upgraded to PASS."
   }
 }
