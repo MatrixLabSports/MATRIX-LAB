@@ -60,7 +60,8 @@ jobs:
           PYTHONPATH=. python -m pytest -q \
             tests/test_market_portfolio_permanent_mandate.py \
             tests/test_matrix_multi_market_supervisor.py \
-            tests/test_multi_market_supervisor_single_writer.py
+            tests/test_multi_market_supervisor_single_writer.py \
+            tests/test_matrix_blocked_market_activation_plan.py
 
       - name: Refresh football market catalog while paid window is active
         env:
@@ -124,6 +125,27 @@ jobs:
           },sort_keys=True))
           PY
 
+      - name: Build blocked-lane activation plan
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m tools.matrix_blocked_market_activation_plan
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          j=json.loads(Path("evidence/market_portfolio/MATRIX_BLOCKED_MARKET_ACTIVATION_PLAN_LAST.json").read_text())
+          assert j["status"]=="PASS"
+          assert j["blocked_model_count"]==13
+          assert j["policy"]["price_does_not_generate_p_matrix"] is True
+          assert j["policy"]["real_money"]=="BLOCKED"
+          print(json.dumps({
+            "status":"PASS",
+            "blocked_model_count":j["blocked_model_count"],
+            "immediate_model_lab_candidate_count":j["immediate_model_lab_candidate_count"],
+            "immediate_model_lab_candidates":j["immediate_model_lab_candidates"],
+          },sort_keys=True))
+          PY
+
       - name: Persist canonical supervisor evidence
         shell: bash
         run: |
@@ -131,6 +153,7 @@ jobs:
           git config user.name matrix-market-supervisor
           git config user.email matrix-market-supervisor@users.noreply.github.com
           git add evidence/market_portfolio/MATRIX_MULTI_MARKET_SUPERVISOR_LAST.json
+          git add evidence/market_portfolio/MATRIX_BLOCKED_MARKET_ACTIVATION_PLAN_LAST.json
           if [ -f evidence/api_football/market_expansion/market_binding_catalog.json ]; then
             git add evidence/api_football/market_expansion/market_binding_catalog.json
           fi
