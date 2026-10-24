@@ -24,6 +24,7 @@ from app.research.football.correlated_risk_calibration import (
     calibration_evidence,
 )
 from app.research.football.sharp_consensus import assess_sharp_consensus
+from app.market.colombia_bookmakers import EXECUTION_BOOKMAKERS
 
 from app.research.football.correlated_exposure import (
     assess_paper_correlated_exposure,
@@ -37,6 +38,7 @@ LEDGER = Path("evidence/notifications/telegram/MATRIX_TELEGRAM_SIGNAL_LEDGER.jso
 SENT_RECOVERY_OVERRIDES = Path("evidence/notifications/telegram/MATRIX_TELEGRAM_SENT_RECOVERY_OVERRIDES.json")
 CORRELATED_RISK_EVIDENCE = Path("evidence/notifications/telegram/MATRIX_CORRELATED_RISK_CALIBRATION_LAST.json")
 BLOCKER_AUDIT_EVIDENCE = Path("evidence/notifications/telegram/MATRIX_TELEGRAM_BLOCKER_RECOVERY_AUDIT_LAST.json")
+EV_MARGINAL_LAB_EVIDENCE = Path("evidence/notifications/telegram/MATRIX_EV_MARGINAL_SHADOW_LAB_LAST.json")
 PHYSICAL_BOOK_QUOTE_ROOT = Path("evidence/football_world_inventory")
 PHYSICAL_BOOK_QUOTE_MAX_AGE_MINUTES = 30
 
@@ -48,9 +50,13 @@ GREEN_STATUSES = {
 FINAL_STATUSES = {"FT", "AET", "PEN"}
 VOID_STATUSES = {"PST", "CANC", "ABD"}
 POLICY_BOOKS = {
-    "betano": ("betano",),
-    "betplay": ("betplay",),
+    **EXECUTION_BOOKMAKERS,
+    "mryoker": ("mryoker", "mr yoker", "mr. yoker"),
     "rushbet": ("rushbet", "rush bet"),
+    "sportium": ("sportiumco", "sportium"),
+    "stake": ("stake", "stakeco", "stake colombia"),
+    "wplay": ("wplay", "w play"),
+    "yajuego": ("yajuego", "ya juego"),
 }
 SHARP_REFERENCE_BOOKS = {"pinnacle", "circa", "betfair"}
 MARKET_CONTEXT_BOOKS = {"fanduel"}
@@ -82,6 +88,9 @@ ODDS_API_NET_EVENT_SEARCH_WINDOW_SECONDS = 7200
 SIGNAL_QUALITY_MIN_P_MATRIX = 0.60
 SIGNAL_QUALITY_MIN_REVALIDATED_EV = 0.05
 SIGNAL_QUALITY_POLICY = "API_COST_RECOVERY_PRECISION_V1"
+EV_MARGINAL_LAB_MIN_EV_EXCLUSIVE = 0.0
+EV_MARGINAL_LAB_MAX_EV_EXCLUSIVE = 0.05
+EV_MARGINAL_LAB_TARGET_OBSERVATIONS = 300
 
 
 def load_json(path: Path, default: Any) -> Any:
