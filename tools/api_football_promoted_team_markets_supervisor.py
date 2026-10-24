@@ -18,6 +18,7 @@ MIN_HISTORY=5
 MAX_HISTORY=20
 MAX_NEW_FREEZES_PER_RUN=4
 GATES=(30,50,100,200)
+MODEL_ONLY_RESEARCH_LANES={"TEAM_TOTAL_SHOTS_HOME","TEAM_TOTAL_SHOTS_AWAY"}
 BOOK_PRIORITY=("pinnacle","betano","bwin","betplay","rushbet")
 
 LANES={
@@ -229,6 +230,7 @@ def run(key:str,root:Path)->dict[str,Any]:
     lane_leagues={lane:_trained_leagues(Path(cfg["source_dataset"])) for lane,cfg in LANES.items()}
     frozen_new=[]; blockers=[]
     offer_counts={lane:0 for lane in LANES}
+    model_only_freeze_count=0
     events_with_any_canonical_offer=0
     events_without_target_offer=0
     detail_not_prematch_count=0
@@ -242,17 +244,19 @@ def run(key:str,root:Path)->dict[str,Any]:
         offered_lanes=[lane for lane,offer in offers.items() if offer is not None]
         if not offered_lanes:
             events_without_target_offer+=1
-            continue
-        events_with_any_canonical_offer+=1
-        for lane in offered_lanes:
-            offer_counts[lane]+=1
+        else:
+            events_with_any_canonical_offer+=1
+            for lane in offered_lanes:
+                offer_counts[lane]+=1
+        candidate_lanes=set(offered_lanes) | MODEL_ONLY_RESEARCH_LANES
         detail=_fixture_detail(session,key,fid,raw,counter)
         if not detail or detail["status"] not in {"NS","TBD"} or _utc(detail["kickoff_utc"])<=now:
             detail_not_prematch_count+=1
             continue
         for lane,cfg in LANES.items():
+            if lane not in candidate_lanes:
+                continue
             offer=offers[lane]
-            if offer is None: continue
             ledger=root/lane.casefold()/"freeze_ledger.jsonl"
             existing=_load_jsonl(ledger)
             if any(str(x["fixture_id"])==fid for x in existing):
@@ -263,9 +267,23 @@ def run(key:str,root:Path)->dict[str,Any]:
             feat=_features(session,key,detail,cfg["metric"],raw,counter,stats_cache)
             if feat is None:
                 blockers.append({"lane":lane,"fixture_id":fid,"reason":"INSUFFICIENT_CURRENT_PIT_HISTORY"}); continue
-            prob,refp,mu=_probability(lane,lane_models[lane],feat,float(offer["line"]))
-            row={"schema":"MATRIX_PROMOTED_TEAM_MARKET_FREEZE_V1","lane":lane,"fixture_id":fid,"kickoff_utc":detail["kickoff_utc"],"freeze_at_utc":now.isoformat(),"market_line":float(offer["line"]),"frozen_probability_over":prob,"frozen_reference_probability_over":refp,"frozen_count_mean":mu,"bookmaker_name":offer["bookmaker_name"],"over_odds_observed":offer["over_odds"],"under_odds_observed":offer["under_odds"],"overround_observed":offer["overround"],"features":feat,"model_parameters_sha256":lane_models[lane].get("model_parameters_sha256"),"odds_used_to_generate_probability":False,"outcome":None,"automatic_wagering":False,"real_money":"BLOCKED"}
-            row["record_sha256"]=_sha(row); _append_jsonl(ledger,row); frozen_new.append({"lane":lane,"fixture_id":fid})
+            if offer is not None:
+                market_line=float(offer["line"])
+                price_mode="CANONICAL_PREMATCH_OFFER"
+                bookmaker_name=offer["bookmaker_name"]
+                over_odds=offer["over_odds"]; under_odds=offer["under_odds"]; overround=offer["overround"]
+            else:
+                model=lane_models[lane]
+                if lane not in MODEL_ONLY_RESEARCH_LANES or model.get("prospective_eligible") is not True:
+                    continue
+                market_line=float(model.get("historical_evaluation_line"))
+                price_mode="MODEL_ONLY_RESEARCH_NO_ODDS"
+                bookmaker_name=None; over_odds=None; under_odds=None; overround=None
+            prob,refp,mu=_probability(lane,lane_models[lane],feat,market_line)
+            row={"schema":"MATRIX_PROMOTED_TEAM_MARKET_FREEZE_V2","lane":lane,"fixture_id":fid,"kickoff_utc":detail["kickoff_utc"],"freeze_at_utc":now.isoformat(),"market_line":market_line,"price_mode":price_mode,"price_observed":offer is not None,"frozen_probability_over":prob,"frozen_reference_probability_over":refp,"frozen_count_mean":mu,"bookmaker_name":bookmaker_name,"over_odds_observed":over_odds,"under_odds_observed":under_odds,"overround_observed":overround,"features":feat,"model_parameters_sha256":lane_models[lane].get("model_parameters_sha256"),"odds_used_to_generate_probability":False,"outcome":None,"automatic_wagering":False,"real_money":"BLOCKED"}
+            row["record_sha256"]=_sha(row); _append_jsonl(ledger,row); frozen_new.append({"lane":lane,"fixture_id":fid,"price_mode":price_mode})
+            if price_mode=="MODEL_ONLY_RESEARCH_NO_ODDS":
+                model_only_freeze_count+=1
     # Settlement/calibration of previously frozen records.
     settled_new=[]
     for lane,cfg in LANES.items():
@@ -335,6 +353,8 @@ def run(key:str,root:Path)->dict[str,Any]:
         "events_with_any_canonical_offer":events_with_any_canonical_offer,
         "events_without_target_offer":events_without_target_offer,
         "canonical_offer_fixture_count_by_lane":offer_counts,
+        "model_only_research_freeze_count":model_only_freeze_count,
+        "model_only_research_lanes":sorted(MODEL_ONLY_RESEARCH_LANES),
         "detail_not_prematch_count":detail_not_prematch_count,
         "already_frozen_count":already_frozen_count,
         "zero_freeze_reason":zero_freeze_reason,
