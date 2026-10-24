@@ -8,7 +8,7 @@ import os
 import re
 import unicodedata
 from collections import defaultdict
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from difflib import SequenceMatcher
 from pathlib import Path
 from typing import Any, Mapping
@@ -406,7 +406,7 @@ def main()->None:
     if outside_window:
         outside_window.sort(key=lambda x:x[0])
         mins,row=outside_window[0]
-        next_open=(now + __import__("datetime").timedelta(minutes=(mins-QUOTE_WINDOW_MINUTES))).replace(microsecond=0).isoformat()
+        next_open=(now + timedelta(minutes=(mins-QUOTE_WINDOW_MINUTES))).replace(microsecond=0).isoformat()
         next_candidate={
             "fixture_id":row["fixture_id"],
             "match":f"{row['home_team']} vs {row['away_team']}",
