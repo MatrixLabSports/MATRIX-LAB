@@ -1,16 +1,17 @@
 {
   "checks": {
     "clay": {
-      "age_minutes": 267.57,
+      "age_minutes": 13.32,
       "latest_conclusion": "success",
-      "latest_run_id": 40070254756,
+      "latest_event": "schedule",
+      "latest_run_id": 40090458325,
       "latest_status": "completed",
-      "reason": "LATEST_RUN_STALE",
-      "status": "FAIL",
+      "reason": "RECENT_RUN_PRESENT",
+      "status": "PASS",
       "workflow": "tennis-clay-daily-prospective.yml"
     },
     "hard": {
-      "age_minutes": 66.4,
+      "age_minutes": 119.71,
       "latest_conclusion": "failure",
       "latest_run_id": 40083398484,
       "latest_status": "completed",
@@ -19,19 +20,18 @@
       "workflow": "tennis-hard-governed-day-resolution.yml"
     },
     "live": {
-      "age_minutes": 1.32,
+      "age_minutes": 54.62,
       "latest_conclusion": "success",
-      "latest_event": "workflow_run",
       "latest_run_id": 40087688505,
       "latest_status": "completed",
-      "reason": "RECENT_RUN_PRESENT",
-      "status": "PASS",
+      "reason": "LATEST_RUN_STALE",
+      "status": "FAIL",
       "workflow": "live-tennis-cumulative-gate-reconcile.yml"
     }
   },
   "failures": [
     {
-      "age_minutes": 66.4,
+      "age_minutes": 119.71,
       "lane": "hard",
       "latest_conclusion": "failure",
       "latest_run_id": 40083398484,
@@ -41,17 +41,17 @@
       "workflow": "tennis-hard-governed-day-resolution.yml"
     },
     {
-      "age_minutes": 267.57,
-      "lane": "clay",
+      "age_minutes": 54.62,
+      "lane": "live",
       "latest_conclusion": "success",
-      "latest_run_id": 40070254756,
+      "latest_run_id": 40087688505,
       "latest_status": "completed",
       "reason": "LATEST_RUN_STALE",
       "status": "FAIL",
-      "workflow": "tennis-clay-daily-prospective.yml"
+      "workflow": "live-tennis-cumulative-gate-reconcile.yml"
     }
   ],
-  "generated_at_utc": "2026-10-24T10:54:39.003718+00:00",
+  "generated_at_utc": "2026-10-24T11:47:57.412215+00:00",
   "policy": {
     "default_branch_scheduler_required": true,
     "expected_cadence_minutes": 15,
