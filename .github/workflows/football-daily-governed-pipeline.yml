@@ -31,6 +31,12 @@ on:
       - main
     paths:
       - tools/football_daily_governed_over25.py
+      - tools/matrix_multi_market_supervisor.py
+      - tools/api_football_market_binding_catalog.py
+      - app/market/matrix_market_portfolio.py
+      - evidence/audit/MATRIX_MARKET_PORTFOLIO_PERMANENT_MANDATE_V1.json
+      - tests/test_matrix_multi_market_supervisor.py
+      - tests/test_market_portfolio_permanent_mandate.py
       - .github/workflows/football-daily-governed-pipeline.yml
 
 permissions:
@@ -66,6 +72,10 @@ jobs:
 
       - name: Install governed dependencies
         run: python -m pip install requests pytest
+
+      - name: Verify permanent 42-lane market contracts
+        run: |
+          PYTHONPATH=. python -m pytest -q tests/test_market_portfolio_permanent_mandate.py tests/test_matrix_multi_market_supervisor.py
 
       - name: Resolve Bogota target date automatically
         id: date
@@ -106,6 +116,33 @@ jobs:
           test "$MATRIX_MODE" = "SHADOW"
           test "$REAL_MONEY" = "BLOCKED"
           test "$AUTO_BETTING" = "DISABLED"
+
+      - name: Capture 30-market API-Football catalog and enforce 42-lane supervisor
+        env:
+          API_FOOTBALL_KEY: ${{ secrets.API_FOOTBALL_KEY }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          D="${{ steps.date.outputs.target_date }}"
+          python -m tools.api_football_market_binding_catalog
+          python -m tools.matrix_multi_market_supervisor \
+            --football-catalog evidence/api_football/market_expansion/market_binding_catalog.json \
+            --target-date-bogota "$D" \
+            --out evidence/market_portfolio/MATRIX_MULTI_MARKET_SUPERVISOR_LAST.json
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          j=json.loads(Path("evidence/market_portfolio/MATRIX_MULTI_MARKET_SUPERVISOR_LAST.json").read_text())
+          assert j["status"]=="PASS"
+          assert j["football_required_lanes"]==30
+          assert j["tennis_required_lanes"]==12
+          assert j["total_required_lanes"]==42
+          assert j["invariants"]["aces_present"] is True
+          assert j["invariants"]["first_half_goals_present"] is True
+          assert j["invariants"]["second_half_goals_present"] is True
+          assert j["invariants"]["real_money"]=="BLOCKED"
+          print(json.dumps({"status":"PASS","lanes":42,"states":j["state_counts"]},sort_keys=True))
+          PY
 
       - name: Run governed prospective daily cycle
         env:
@@ -181,6 +218,8 @@ jobs:
           git add "evidence/api_football/daily_prematch_reports/$D"
           git add "evidence/football_world_inventory/$D/MATRIX_FOOTBALL_CALIBRATION_ELIGIBILITY.json"
           git add evidence/governance/MATRIX_FOOTBALL_SUBSCRIPTION_DEADLINE_LAST.json
+          git add evidence/api_football/market_expansion/market_binding_catalog.json
+          git add evidence/market_portfolio/MATRIX_MULTI_MARKET_SUPERVISOR_LAST.json
           if git diff --cached --quiet; then
             echo "NO_GOVERNED_DAILY_CHANGE"
             exit 0
