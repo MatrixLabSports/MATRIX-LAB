@@ -1,53 +1,284 @@
 {
-  "schema": "MATRIX_NINE_LAB_GATE_REGISTRY_V1",
-  "generated_at_utc": "2026-10-24T18:49:00+00:00",
+  "admission_contract": {
+    "duplicate_observation_key_forbidden": true,
+    "event_identity_required": true,
+    "freeze_strictly_before_event_start": true,
+    "freeze_timestamp_required": true,
+    "missing_not_zero": true,
+    "post_start_backfill_forbidden": true,
+    "prediction_or_feature_snapshot_required": true,
+    "required_record_type": "PROSPECTIVE_PREMATCH_FREEZE",
+    "silent_imputation": false
+  },
+  "baseline": {
+    "football_baseline_counts_as_prospective": false,
+    "football_historical_walk_forward_rows": 3177,
+    "tennis_inplay_counts_as_prospective": false,
+    "tennis_live_source_events": 3
+  },
   "gate_thresholds": [
     100,
     300,
     600
   ],
+  "generated_at_utc": "2026-10-24T18:50:55+00:00",
   "lane_count": 9,
-  "prospective_counts": {
-    "FIRST_HALF_TOTAL_GOALS_OVER_UNDER": 0,
-    "SECOND_HALF_TOTAL_GOALS_OVER_UNDER": 0,
-    "FIRST_HALF_TEAM_TOTAL_GOALS_HOME": 0,
-    "FIRST_HALF_TEAM_TOTAL_GOALS_AWAY": 0,
-    "SECOND_HALF_TEAM_TOTAL_GOALS_HOME": 0,
-    "SECOND_HALF_TEAM_TOTAL_GOALS_AWAY": 0,
-    "ACES": 0,
-    "DOUBLE_FAULTS": 0,
-    "BREAKS_OF_SERVE": 0
-  },
-  "source_coverage_counts": {
-    "ACES": 3,
-    "DOUBLE_FAULTS": 3,
-    "BREAKS_OF_SERVE": 3
+  "lanes": {
+    "ACES": {
+      "gates": {
+        "100": {
+          "count": 0,
+          "remaining": 100,
+          "status": "SEALED",
+          "threshold": 100
+        },
+        "300": {
+          "count": 0,
+          "remaining": 300,
+          "status": "SEALED",
+          "threshold": 300
+        },
+        "600": {
+          "count": 0,
+          "remaining": 600,
+          "status": "SEALED",
+          "threshold": 600
+        }
+      },
+      "metrics_status": "SEALED_UNTIL_GATE",
+      "production_authorized": false,
+      "prospective_unique_count": 0,
+      "source_coverage_count": 3,
+      "sport": "tennis"
+    },
+    "BREAKS_OF_SERVE": {
+      "gates": {
+        "100": {
+          "count": 0,
+          "remaining": 100,
+          "status": "SEALED",
+          "threshold": 100
+        },
+        "300": {
+          "count": 0,
+          "remaining": 300,
+          "status": "SEALED",
+          "threshold": 300
+        },
+        "600": {
+          "count": 0,
+          "remaining": 600,
+          "status": "SEALED",
+          "threshold": 600
+        }
+      },
+      "metrics_status": "SEALED_UNTIL_GATE",
+      "production_authorized": false,
+      "prospective_unique_count": 0,
+      "source_coverage_count": 3,
+      "sport": "tennis"
+    },
+    "DOUBLE_FAULTS": {
+      "gates": {
+        "100": {
+          "count": 0,
+          "remaining": 100,
+          "status": "SEALED",
+          "threshold": 100
+        },
+        "300": {
+          "count": 0,
+          "remaining": 300,
+          "status": "SEALED",
+          "threshold": 300
+        },
+        "600": {
+          "count": 0,
+          "remaining": 600,
+          "status": "SEALED",
+          "threshold": 600
+        }
+      },
+      "metrics_status": "SEALED_UNTIL_GATE",
+      "production_authorized": false,
+      "prospective_unique_count": 0,
+      "source_coverage_count": 3,
+      "sport": "tennis"
+    },
+    "FIRST_HALF_TEAM_TOTAL_GOALS_AWAY": {
+      "gates": {
+        "100": {
+          "count": 0,
+          "remaining": 100,
+          "status": "SEALED",
+          "threshold": 100
+        },
+        "300": {
+          "count": 0,
+          "remaining": 300,
+          "status": "SEALED",
+          "threshold": 300
+        },
+        "600": {
+          "count": 0,
+          "remaining": 600,
+          "status": "SEALED",
+          "threshold": 600
+        }
+      },
+      "metrics_status": "SEALED_UNTIL_GATE",
+      "production_authorized": false,
+      "prospective_unique_count": 0,
+      "source_coverage_count": 0,
+      "sport": "football"
+    },
+    "FIRST_HALF_TEAM_TOTAL_GOALS_HOME": {
+      "gates": {
+        "100": {
+          "count": 0,
+          "remaining": 100,
+          "status": "SEALED",
+          "threshold": 100
+        },
+        "300": {
+          "count": 0,
+          "remaining": 300,
+          "status": "SEALED",
+          "threshold": 300
+        },
+        "600": {
+          "count": 0,
+          "remaining": 600,
+          "status": "SEALED",
+          "threshold": 600
+        }
+      },
+      "metrics_status": "SEALED_UNTIL_GATE",
+      "production_authorized": false,
+      "prospective_unique_count": 0,
+      "source_coverage_count": 0,
+      "sport": "football"
+    },
+    "FIRST_HALF_TOTAL_GOALS_OVER_UNDER": {
+      "gates": {
+        "100": {
+          "count": 0,
+          "remaining": 100,
+          "status": "SEALED",
+          "threshold": 100
+        },
+        "300": {
+          "count": 0,
+          "remaining": 300,
+          "status": "SEALED",
+          "threshold": 300
+        },
+        "600": {
+          "count": 0,
+          "remaining": 600,
+          "status": "SEALED",
+          "threshold": 600
+        }
+      },
+      "metrics_status": "SEALED_UNTIL_GATE",
+      "production_authorized": false,
+      "prospective_unique_count": 0,
+      "source_coverage_count": 0,
+      "sport": "football"
+    },
+    "SECOND_HALF_TEAM_TOTAL_GOALS_AWAY": {
+      "gates": {
+        "100": {
+          "count": 0,
+          "remaining": 100,
+          "status": "SEALED",
+          "threshold": 100
+        },
+        "300": {
+          "count": 0,
+          "remaining": 300,
+          "status": "SEALED",
+          "threshold": 300
+        },
+        "600": {
+          "count": 0,
+          "remaining": 600,
+          "status": "SEALED",
+          "threshold": 600
+        }
+      },
+      "metrics_status": "SEALED_UNTIL_GATE",
+      "production_authorized": false,
+      "prospective_unique_count": 0,
+      "source_coverage_count": 0,
+      "sport": "football"
+    },
+    "SECOND_HALF_TEAM_TOTAL_GOALS_HOME": {
+      "gates": {
+        "100": {
+          "count": 0,
+          "remaining": 100,
+          "status": "SEALED",
+          "threshold": 100
+        },
+        "300": {
+          "count": 0,
+          "remaining": 300,
+          "status": "SEALED",
+          "threshold": 300
+        },
+        "600": {
+          "count": 0,
+          "remaining": 600,
+          "status": "SEALED",
+          "threshold": 600
+        }
+      },
+      "metrics_status": "SEALED_UNTIL_GATE",
+      "production_authorized": false,
+      "prospective_unique_count": 0,
+      "source_coverage_count": 0,
+      "sport": "football"
+    },
+    "SECOND_HALF_TOTAL_GOALS_OVER_UNDER": {
+      "gates": {
+        "100": {
+          "count": 0,
+          "remaining": 100,
+          "status": "SEALED",
+          "threshold": 100
+        },
+        "300": {
+          "count": 0,
+          "remaining": 300,
+          "status": "SEALED",
+          "threshold": 300
+        },
+        "600": {
+          "count": 0,
+          "remaining": 600,
+          "status": "SEALED",
+          "threshold": 600
+        }
+      },
+      "metrics_status": "SEALED_UNTIL_GATE",
+      "production_authorized": false,
+      "prospective_unique_count": 0,
+      "source_coverage_count": 0,
+      "sport": "football"
+    }
   },
   "ledger_path": "evidence/lab_gates/MATRIX_NINE_LAB_OBSERVATION_LEDGER.jsonl",
-  "ledger_rows_total": 15,
-  "baseline": {
-    "football_historical_walk_forward_rows": 3177,
-    "football_baseline_counts_as_prospective": false,
-    "tennis_live_source_events": 3,
-    "tennis_inplay_counts_as_prospective": false
-  },
-  "admission_contract": {
-    "required_record_type": "PROSPECTIVE_PREMATCH_FREEZE",
-    "freeze_strictly_before_event_start": true,
-    "duplicate_observation_key_forbidden": true,
-    "post_start_backfill_forbidden": true,
-    "missing_not_zero": true,
-    "silent_imputation": false
-  },
+  "ledger_rows_appended_this_run": 6,
+  "ledger_rows_before_run": 15,
+  "ledger_rows_total": 21,
   "protections": {
+    "automatic_wagering": false,
     "metrics_open_only_at_declared_gate": true,
     "odds_used_to_generate_probability": false,
-    "automatic_wagering": false,
     "real_money": "BLOCKED"
   },
-  "workflow_runs_pending": [
-    40122338971,
-    40122341398
-  ],
-  "status": "PASS_SEEDED_APPEND_ONLY"
+  "registry_sha256": "bcbffcd8eaf33199dabc3e8eba75c22e3e3b6dfff760c582dac498291b0adfa4",
+  "schema": "MATRIX_NINE_LAB_GATE_REGISTRY_V1",
+  "status": "PASS"
 }
