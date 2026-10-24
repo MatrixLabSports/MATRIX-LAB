@@ -21,6 +21,10 @@ on:
       - evidence/audit/MATRIX_MARKET_PORTFOLIO_PERMANENT_MANDATE_V1.json
       - tests/test_matrix_multi_market_supervisor.py
       - tests/test_market_portfolio_permanent_mandate.py
+      - tests/test_matrix_42_lane_prospective_registry.py
+      - tests/test_matrix_nine_lab_gate_registry.py
+      - tools/matrix_42_lane_prospective_registry.py
+      - tools/matrix_nine_lab_gate_registry.py
       - .github/workflows/matrix-multi-market-supervisor.yml
 
 permissions:
@@ -61,7 +65,9 @@ jobs:
             tests/test_market_portfolio_permanent_mandate.py \
             tests/test_matrix_multi_market_supervisor.py \
             tests/test_multi_market_supervisor_single_writer.py \
-            tests/test_matrix_blocked_market_activation_plan.py
+            tests/test_matrix_blocked_market_activation_plan.py \
+            tests/test_matrix_42_lane_prospective_registry.py \
+            tests/test_matrix_nine_lab_gate_registry.py
 
       - name: Refresh football market catalog while paid window is active
         env:
@@ -125,6 +131,35 @@ jobs:
           },sort_keys=True))
           PY
 
+      - name: Build strict 42-lane prospective registry
+        shell: bash
+        run: |
+          set -euo pipefail
+          PYTHONPATH=. python -m tools.matrix_42_lane_prospective_registry
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          p=Path("evidence/market_portfolio/MATRIX_42_LANE_PROSPECTIVE_REGISTRY_LAST.json")
+          j=json.loads(p.read_text(encoding="utf-8"))
+          assert j["status"]=="PASS"
+          assert j["total_lanes"]==42
+          assert j["football_lanes"]==30
+          assert j["tennis_lanes"]==12
+          assert j["gate_thresholds"]==[100,300,600]
+          assert j["admission_contract"]["freeze_strictly_before_event_start"] is True
+          assert j["admission_contract"]["target_outcome_forbidden_at_freeze"] is True
+          assert j["protections"]["odds_used_to_generate_probability"] is False
+          assert j["protections"]["automatic_wagering"] is False
+          assert j["protections"]["real_money"]=="BLOCKED"
+          print(json.dumps({
+              "status":j["status"],
+              "total_lanes":j["total_lanes"],
+              "counts":j["counts"],
+              "append_result":j["append_result"],
+              "source_inventory":j["source_inventory"],
+          },sort_keys=True))
+          PY
+
       - name: Build blocked-lane activation plan
         shell: bash
         run: |
@@ -157,6 +192,10 @@ jobs:
           git config user.email matrix-market-supervisor@users.noreply.github.com
           git add evidence/market_portfolio/MATRIX_MULTI_MARKET_SUPERVISOR_LAST.json
           git add evidence/market_portfolio/MATRIX_BLOCKED_MARKET_ACTIVATION_PLAN_LAST.json
+          git add evidence/market_portfolio/MATRIX_42_LANE_PROSPECTIVE_REGISTRY_LAST.json
+          if [ -f evidence/market_portfolio/MATRIX_42_LANE_PROSPECTIVE_LEDGER.jsonl ]; then
+            git add evidence/market_portfolio/MATRIX_42_LANE_PROSPECTIVE_LEDGER.jsonl
+          fi
           if [ -f evidence/api_football/market_expansion/market_binding_catalog.json ]; then
             git add evidence/api_football/market_expansion/market_binding_catalog.json
           fi
