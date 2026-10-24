@@ -1,17 +1,16 @@
 {
   "checks": {
     "clay": {
-      "age_minutes": 8.88,
+      "age_minutes": 125.81,
       "latest_conclusion": "success",
-      "latest_event": "schedule",
       "latest_run_id": 40050358159,
       "latest_status": "completed",
-      "reason": "RECENT_RUN_PRESENT",
-      "status": "PASS",
+      "reason": "LATEST_RUN_STALE",
+      "status": "FAIL",
       "workflow": "tennis-clay-daily-prospective.yml"
     },
     "hard": {
-      "age_minutes": 42.78,
+      "age_minutes": 159.71,
       "latest_conclusion": "failure",
       "latest_run_id": 40047705936,
       "latest_status": "completed",
@@ -20,7 +19,7 @@
       "workflow": "tennis-hard-governed-day-resolution.yml"
     },
     "live": {
-      "age_minutes": 37.18,
+      "age_minutes": 154.11,
       "latest_conclusion": "success",
       "latest_run_id": 40048176759,
       "latest_status": "completed",
@@ -31,7 +30,7 @@
   },
   "failures": [
     {
-      "age_minutes": 42.78,
+      "age_minutes": 159.71,
       "lane": "hard",
       "latest_conclusion": "failure",
       "latest_run_id": 40047705936,
@@ -41,7 +40,17 @@
       "workflow": "tennis-hard-governed-day-resolution.yml"
     },
     {
-      "age_minutes": 37.18,
+      "age_minutes": 125.81,
+      "lane": "clay",
+      "latest_conclusion": "success",
+      "latest_run_id": 40050358159,
+      "latest_status": "completed",
+      "reason": "LATEST_RUN_STALE",
+      "status": "FAIL",
+      "workflow": "tennis-clay-daily-prospective.yml"
+    },
+    {
+      "age_minutes": 154.11,
       "lane": "live",
       "latest_conclusion": "success",
       "latest_run_id": 40048176759,
@@ -51,7 +60,7 @@
       "workflow": "live-tennis-cumulative-gate-reconcile.yml"
     }
   ],
-  "generated_at_utc": "2026-10-24T01:42:36.880602+00:00",
+  "generated_at_utc": "2026-10-24T03:39:32.301015+00:00",
   "policy": {
     "default_branch_scheduler_required": true,
     "expected_cadence_minutes": 15,
@@ -60,7 +69,7 @@
   },
   "schema": "MATRIX_TENNIS_MONITORING_WATCHDOG_V1",
   "summary": {
-    "failures": 2,
+    "failures": 3,
     "lanes_checked": 3,
     "status": "FAIL_CLOSED"
   }
