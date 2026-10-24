@@ -1,0 +1,159 @@
+name: API-Football Period Goals Lab
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+    paths:
+      - .github/workflows/api-football-period-goals-lab.yml
+  schedule:
+    - cron: "11,26,41,56 * * * *"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: api-football-period-goals-lab
+  cancel-in-progress: false
+
+jobs:
+  lab:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      REAL_MONEY: BLOCKED
+      AUTO_BETTING: DISABLED
+    steps:
+      - name: Checkout operational branch
+        uses: actions/checkout@v4
+        with:
+          ref: repair/cor09-world-pipeline
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install test dependency
+        run: python -m pip install pytest
+
+      - name: Run period-goals and supervisor contracts
+        run: |
+          PYTHONPATH=. python -m pytest -q \
+            tests/test_api_football_period_goals_lab.py \
+            tests/test_matrix_multi_market_supervisor.py \
+            tests/test_market_portfolio_permanent_mandate.py
+
+      - name: Enforce safety contract
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$REAL_MONEY" = "BLOCKED"
+          test "$AUTO_BETTING" = "DISABLED"
+
+      - name: Build physical period-goals lab evidence
+        run: |
+          PYTHONPATH=. python -m tools.api_football_period_goals_lab
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          p=Path("evidence/api_football/period_goals_lab/MATRIX_PERIOD_GOALS_LAB_LAST.json")
+          j=json.loads(p.read_text(encoding="utf-8"))
+          assert j["status"]=="PASS_LAB"
+          assert j["market_lane_count"]==6
+          assert j["eligible_walk_forward_rows"]>0
+          assert j["protections"]["strictly_prior_kickoff_only"] is True
+          assert j["protections"]["target_outcome_used_to_generate_probability"] is False
+          assert j["protections"]["odds_used_to_generate_probability"] is False
+          assert j["protections"]["real_money"]=="BLOCKED"
+          print(json.dumps({
+              "status":j["status"],
+              "market_lane_count":j["market_lane_count"],
+              "source_file_count":j["source_file_count"],
+              "eligible_walk_forward_rows":j["eligible_walk_forward_rows"],
+              "payload_sha256":j["payload_sha256"],
+          },sort_keys=True))
+          PY
+
+      - name: Rebuild canonical 42-lane supervisor
+        run: |
+          CATALOG="evidence/api_football/market_expansion/market_binding_catalog.json"
+          if [ -f "$CATALOG" ]; then
+            PYTHONPATH=. python -m tools.matrix_multi_market_supervisor \
+              --football-catalog "$CATALOG" \
+              --target-date-bogota "$(TZ=America/Bogota date +%F)" \
+              --source-run period-goals-lab \
+              --out evidence/market_portfolio/MATRIX_MULTI_MARKET_SUPERVISOR_LAST.json
+          else
+            PYTHONPATH=. python -m tools.matrix_multi_market_supervisor \
+              --target-date-bogota "$(TZ=America/Bogota date +%F)" \
+              --source-run period-goals-lab \
+              --out evidence/market_portfolio/MATRIX_MULTI_MARKET_SUPERVISOR_LAST.json
+          fi
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          j=json.loads(Path("evidence/market_portfolio/MATRIX_MULTI_MARKET_SUPERVISOR_LAST.json").read_text(encoding="utf-8"))
+          assert j["total_required_lanes"]==42
+          keys={
+              "FIRST_HALF_TOTAL_GOALS_OVER_UNDER",
+              "SECOND_HALF_TOTAL_GOALS_OVER_UNDER",
+              "FIRST_HALF_TEAM_TOTAL_GOALS_HOME",
+              "FIRST_HALF_TEAM_TOTAL_GOALS_AWAY",
+              "SECOND_HALF_TEAM_TOTAL_GOALS_HOME",
+              "SECOND_HALF_TEAM_TOTAL_GOALS_AWAY",
+          }
+          rows={x["market_key"]:x for x in j["rows"]}
+          for key in keys:
+              assert rows[key]["operational_state"]=="LAB"
+              assert rows[key]["implementation_present"] is True
+          assert j["invariants"]["real_money"]=="BLOCKED"
+          print("PERIOD_GOALS_6_LANES_SUPERVISOR=PASS")
+          PY
+
+      - name: Persist physical evidence
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name matrix-period-goals-lab
+          git config user.email matrix-period-goals-lab@users.noreply.github.com
+          git add evidence/api_football/period_goals_lab/MATRIX_PERIOD_GOALS_LAB_LAST.json
+          git add evidence/market_portfolio/MATRIX_MULTI_MARKET_SUPERVISOR_LAST.json
+          if git diff --cached --quiet; then
+            echo "PERIOD_GOALS_NO_EVIDENCE_CHANGE"
+            exit 0
+          fi
+          git commit -m "evidence(markets): persist period-goals lab"
+          for attempt in 1 2 3 4; do
+            git fetch origin repair/cor09-world-pipeline
+            if ! git rebase origin/repair/cor09-world-pipeline; then
+              conflicts="$(git diff --name-only --diff-filter=U)"
+              unexpected=0
+              while IFS= read -r file; do
+                [ -z "$file" ] && continue
+                case "$file" in
+                  evidence/api_football/period_goals_lab/MATRIX_PERIOD_GOALS_LAB_LAST.json|\
+                  evidence/market_portfolio/MATRIX_MULTI_MARKET_SUPERVISOR_LAST.json)
+                    git checkout --theirs -- "$file"
+                    git add "$file"
+                    ;;
+                  *)
+                    echo "PERIOD_GOALS_UNEXPECTED_CONFLICT:$file"
+                    unexpected=1
+                    ;;
+                esac
+              done <<< "$conflicts"
+              if [ "$unexpected" -ne 0 ] || ! GIT_EDITOR=true git rebase --continue; then
+                git rebase --abort || true
+                exit 1
+              fi
+            fi
+            if git push origin HEAD:repair/cor09-world-pipeline; then
+              echo "PERIOD_GOALS_EVIDENCE_PUSH=PASS"
+              exit 0
+            fi
+            sleep $((attempt*2))
+          done
+          exit 1
