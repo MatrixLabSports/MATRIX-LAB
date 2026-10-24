@@ -1,7 +1,7 @@
 {
   "catalog_market_names_observed": 0,
   "football_required_lanes": 30,
-  "generated_at_utc": "2026-10-24T11:35:03+00:00",
+  "generated_at_utc": "2026-10-24T14:02:42+00:00",
   "invariants": {
     "aces_present": true,
     "automatic_wagering": false,
@@ -67,16 +67,16 @@
       "sport": "football"
     },
     {
-      "blockers": [
-        "BLOCKED_MODEL"
-      ],
+      "blockers": [],
       "display_name": "Doble oportunidad 12",
       "family": "core",
-      "implementation_paths": [],
-      "implementation_present": false,
+      "implementation_paths": [
+        "tools/api_football_priority_market_lab.py"
+      ],
+      "implementation_present": true,
       "market_key": "DOUBLE_CHANCE_12",
       "must_continue_collecting": true,
-      "operational_state": "BLOCKED_MODEL",
+      "operational_state": "LAB",
       "price_state": "PRICE_CATALOG_NOT_SUPPLIED",
       "production_authorized": false,
       "required": true,
@@ -101,16 +101,16 @@
       "sport": "football"
     },
     {
-      "blockers": [
-        "BLOCKED_MODEL"
-      ],
+      "blockers": [],
       "display_name": "Goles totales equipo local",
       "family": "goals_team",
-      "implementation_paths": [],
-      "implementation_present": false,
+      "implementation_paths": [
+        "tools/api_football_priority_market_lab.py"
+      ],
+      "implementation_present": true,
       "market_key": "TEAM_TOTAL_GOALS_HOME",
       "must_continue_collecting": true,
-      "operational_state": "BLOCKED_MODEL",
+      "operational_state": "LAB",
       "price_state": "PRICE_CATALOG_NOT_SUPPLIED",
       "production_authorized": false,
       "required": true,
@@ -118,16 +118,16 @@
       "sport": "football"
     },
     {
-      "blockers": [
-        "BLOCKED_MODEL"
-      ],
+      "blockers": [],
       "display_name": "Goles totales equipo visitante",
       "family": "goals_team",
-      "implementation_paths": [],
-      "implementation_present": false,
+      "implementation_paths": [
+        "tools/api_football_priority_market_lab.py"
+      ],
+      "implementation_present": true,
       "market_key": "TEAM_TOTAL_GOALS_AWAY",
       "must_continue_collecting": true,
-      "operational_state": "BLOCKED_MODEL",
+      "operational_state": "LAB",
       "price_state": "PRICE_CATALOG_NOT_SUPPLIED",
       "production_authorized": false,
       "required": true,
@@ -255,16 +255,16 @@
       "sport": "football"
     },
     {
-      "blockers": [
-        "BLOCKED_MODEL"
-      ],
+      "blockers": [],
       "display_name": "Hándicap",
       "family": "core",
-      "implementation_paths": [],
-      "implementation_present": false,
+      "implementation_paths": [
+        "tools/api_football_priority_market_lab.py"
+      ],
+      "implementation_present": true,
       "market_key": "ASIAN_OR_EUROPEAN_HANDICAP",
       "must_continue_collecting": true,
-      "operational_state": "BLOCKED_MODEL",
+      "operational_state": "LAB",
       "price_state": "PRICE_CATALOG_NOT_SUPPLIED",
       "production_authorized": false,
       "required": true,
@@ -738,8 +738,8 @@
   "source_run": "canonical-multi-market-supervisor",
   "state_counts": {
     "ACTIVE": 2,
-    "BLOCKED_MODEL": 13,
-    "LAB": 27
+    "BLOCKED_MODEL": 9,
+    "LAB": 31
   },
   "status": "PASS",
   "target_date_bogota": "2026-10-24",
