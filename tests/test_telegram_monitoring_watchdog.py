@@ -63,19 +63,38 @@ def test_watchdog_accepts_critical_candidate_after_revalidation_attempt():
     assert report["summary"]["status"] == "PASS"
 
 
-def test_watchdog_fails_if_any_real_monitoring_breach_is_persisted():
-    ledger = _ledger()
+def test_watchdog_fails_if_a_new_real_monitoring_breach_is_persisted():
+    ledger = _ledger(last_run_minutes_ago=10)
     ledger["candidate_lifecycle"]["breach"] = {
         "fixture_id": "fx-breach",
         "match": "E vs F",
         "kickoff": (NOW - timedelta(minutes=1)).isoformat(),
         "final_revalidation_attempts": 0,
         "monitoring_breach": True,
+        "monitoring_breach_detected_at_utc": (NOW - timedelta(minutes=5)).isoformat(),
     }
     report = evaluate_watchdog(ledger, NOW)
     assert report["summary"]["status"] == "FAIL_CLOSED"
     assert report["summary"]["monitoring_breaches"] == 1
+    assert report["summary"]["new_monitoring_breaches"] == 1
     assert any(x["code"] == "NEW_MONITORING_BREACH_PRESENT" for x in report["failures"])
+
+
+def test_watchdog_does_not_realert_on_historical_monitoring_breach():
+    ledger = _ledger(last_run_minutes_ago=10)
+    ledger["candidate_lifecycle"]["breach"] = {
+        "fixture_id": "fx-breach",
+        "match": "E vs F",
+        "kickoff": (NOW - timedelta(minutes=20)).isoformat(),
+        "final_revalidation_attempts": 0,
+        "monitoring_breach": True,
+        "monitoring_breach_detected_at_utc": (NOW - timedelta(minutes=20)).isoformat(),
+    }
+    report = evaluate_watchdog(ledger, NOW)
+    assert report["summary"]["status"] == "PASS"
+    assert report["summary"]["monitoring_breaches"] == 1
+    assert report["summary"]["new_monitoring_breaches"] == 0
+    assert not any(x["code"] == "NEW_MONITORING_BREACH_PRESENT" for x in report["failures"])
 
 
 def test_monitoring_breach_registration_is_idempotent():
