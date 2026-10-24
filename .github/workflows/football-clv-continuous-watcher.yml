@@ -1,3 +1,4 @@
+# MATRIX_PHYSICAL_TRIGGER 2026-10-23T22:15-05:00 verify-next-day-clv-freeze
 name: MATRIX Football CLV Continuous Watcher
 
 on:
@@ -5,13 +6,12 @@ on:
   push:
     branches:
       - main
-      - repair/cor09-world-pipeline
     paths:
       - .github/workflows/football-clv-continuous-watcher.yml
-      - evidence/notifications/telegram/MATRIX_TELEGRAM_SIGNAL_LEDGER.json
   workflow_run:
     workflows:
       - MATRIX Football Daily Governed Pipeline
+      - Telegram Señales Verdes MATRIX
     types:
       - completed
 
@@ -51,11 +51,25 @@ jobs:
         run: python -m pip install pytest requests
 
       - name: Verify CLV protections before watch
-        run: PYTHONPATH=. python -m pytest -q tests/test_football_clv_tracking_cycle.py
+        run: |
+          PYTHONPATH=. python -m pytest -q \
+            tests/test_football_clv_tracking_cycle.py \
+            tests/test_football_clv_odds_api_net_capture.py
 
-      - name: Validate watcher safety and secret
+      - name: Verify CLV tests do not mutate persisted evidence
+        shell: bash
+        run: |
+          set -euo pipefail
+          if ! git diff --exit-code -- evidence/clv/football/over_2_5; then
+            echo "CLV_TEST_EVIDENCE_MUTATION_DETECTED" >&2
+            exit 1
+          fi
+          echo "CLV_TEST_EVIDENCE_ISOLATION=PASS"
+
+      - name: Validate watcher safety and secrets
         env:
           API_FOOTBALL_KEY: ${{ secrets.API_FOOTBALL_KEY }}
+          ODDS_API_NET_KEY: ${{ secrets.ODDS_API_NET_KEY }}
         shell: bash
         run: |
           set -euo pipefail
@@ -63,21 +77,109 @@ jobs:
           test "$REAL_MONEY" = "BLOCKED"
           test "$AUTO_BETTING" = "DISABLED"
           test -n "$API_FOOTBALL_KEY"
+          test -n "$ODDS_API_NET_KEY"
           echo "CLV_CONTINUOUS_WATCHER_SAFETY: PASS"
+          echo "CLV_ODDS_API_NET_SECRET_PRESENT: PASS"
 
       - name: Verify startup coverage and per-cycle refresh contract
         shell: bash
         run: |
           set -euo pipefail
-          grep -Fq 'git fetch origin repair/cor09-world-pipeline' .github/workflows/football-clv-continuous-watcher.yml
-          grep -Fq 'git rebase --autostash origin/repair/cor09-world-pipeline' .github/workflows/football-clv-continuous-watcher.yml
-          echo "CLV_WATCHER_STARTUP_COVERAGE_CONTRACT=PASS"
-          echo "CLV_WATCHER_PER_CYCLE_REFRESH_ORDER=PASS"
-          echo "CLV_STRICT_FRESH_GATE_SECONDS=120"
+          git fetch origin main
+          git show origin/main:.github/workflows/football-clv-continuous-watcher.yml > /tmp/football-clv-continuous-watcher.yml
+          python - <<'PY'
+          from pathlib import Path
+          s=Path("/tmp/football-clv-continuous-watcher.yml").read_text(encoding="utf-8")
+          required=[
+              "workflow_run:",
+              "MATRIX Football Daily Governed Pipeline",
+              "git fetch origin repair/cor09-world-pipeline",
+              "git rebase --autostash origin/repair/cor09-world-pipeline",
+              "CLV_WATCHER_OPERATIONAL_REFRESH=PASS",
+              "POLL_SECONDS: 90",
+              "cancel-in-progress: false",
+              'assert j["closing_freshness_policy"]["max_provider_quote_age_seconds"]==120',
+          ]
+          missing=[x for x in required if x not in s]
+          if missing:
+              raise SystemExit("CLV_WATCHER_COVERAGE_CONTRACT_MISSING="+repr(missing))
+          cycle=s.index('echo "CLV_WATCH_CYCLE=$cycle')
+          refresh=s.index("git fetch origin repair/cor09-world-pipeline", cycle)
+          freeze=s.index("python -m tools.football_clv_tracking_cycle --freeze-only", cycle)
+          capture=s.index("python -m tools.football_clv_odds_api_net_capture", freeze)
+          fallback=s.index("python -m tools.football_clv_tracking_cycle", capture)
+          quality=s.index("python -m tools.football_clv_subgate_quality", fallback)
+          if not (cycle < refresh < freeze < capture < fallback < quality):
+              raise SystemExit("CLV_WATCHER_REFRESH_ORDER_INVALID")
+          print("CLV_WATCHER_STARTUP_COVERAGE_CONTRACT=PASS")
+          print("CLV_WATCHER_PER_CYCLE_REFRESH_ORDER=PASS")
+          print("CLV_SUBGATE_30_QUALITY_MONITOR_CONTRACT=PASS")
+          print("CLV_STRICT_FRESH_GATE_SECONDS=120")
+          PY
+
+      - name: Verify CLV per-attempt telemetry contract
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          from pathlib import Path
+          targets=[
+              Path("tools/football_clv_tracking_cycle.py"),
+              Path("tools/football_clv_odds_api_net_capture.py"),
+          ]
+          required=[
+              "attempted_at_utc",
+              "provider_quote_updated_at_utc",
+              "provider_quote_age_seconds",
+              "gate_excess_seconds",
+          ]
+          for path in targets:
+              s=path.read_text(encoding="utf-8")
+              missing=[x for x in required if x not in s]
+              if missing:
+                  raise SystemExit(f"CLV_PER_ATTEMPT_TELEMETRY_MISSING {path}: {missing}")
+          assert "MAX_PINNACLE_PROVIDER_QUOTE_AGE_SECONDS = 120" in Path("tools/football_clv_tracking_cycle.py").read_text(encoding="utf-8")
+          print("CLV_PER_ATTEMPT_TELEMETRY_CONTRACT=PASS")
+          print("CLV_TELEMETRY_FIELDS="+",".join(required))
+          print("CLV_STRICT_FRESH_GATE_SECONDS=120")
+          PY
+
+      - name: Verify CLV incomplete-market diagnostics contract
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          from pathlib import Path
+          checks={
+              Path("tools/football_clv_tracking_cycle.py"):[
+                  "_diagnose_pinnacle_over25_market",
+                  "market_diagnostic",
+                  "TOTAL_2_5_LINE_MISSING",
+                  "OVER_2_5_MISSING",
+                  "UNDER_2_5_MISSING",
+              ],
+              Path("tools/football_clv_odds_api_net_capture.py"):[
+                  "_diagnose_total_25",
+                  "market_diagnostic",
+                  "TOTAL_2_5_LINE_MISSING",
+                  "OVER_2_5_MISSING",
+                  "UNDER_2_5_MISSING",
+              ],
+          }
+          for path, required in checks.items():
+              s=path.read_text(encoding="utf-8")
+              missing=[x for x in required if x not in s]
+              if missing:
+                  raise SystemExit(f"CLV_INCOMPLETE_MARKET_DIAGNOSTIC_MISSING {path}: {missing}")
+          assert "MAX_PINNACLE_PROVIDER_QUOTE_AGE_SECONDS = 120" in Path("tools/football_clv_tracking_cycle.py").read_text(encoding="utf-8")
+          print("CLV_INCOMPLETE_MARKET_DIAGNOSTIC_CONTRACT=PASS")
+          print("CLV_STRICT_FRESH_GATE_SECONDS=120")
+          PY
 
       - name: Continuous CLV watch and immediate persistence
         env:
           API_FOOTBALL_KEY: ${{ secrets.API_FOOTBALL_KEY }}
+          ODDS_API_NET_KEY: ${{ secrets.ODDS_API_NET_KEY }}
         shell: bash
         run: |
           set -euo pipefail
@@ -150,22 +252,21 @@ jobs:
             cycle=$((cycle + 1))
             echo "CLV_WATCH_CYCLE=$cycle UTC=$(date -u --iso-8601=seconds)"
 
-            echo "CLV_WATCHER_OPERATIONAL_REFRESH_BEGIN cycle=$cycle"
+            # Long-lived jobs must refresh the operational branch before every
+            # cycle. Otherwise newly persisted daily reports/decisions can remain
+            # invisible until after kickoff.
             git fetch origin repair/cor09-world-pipeline
             if ! git rebase --autostash origin/repair/cor09-world-pipeline; then
               git rebase --abort || true
-              echo "CLV_WATCHER_OPERATIONAL_REFRESH=FAIL"
+              echo "CLV_WATCHER_OPERATIONAL_REFRESH_FAILED" >&2
               exit 1
             fi
             echo "CLV_WATCHER_OPERATIONAL_REFRESH=PASS"
 
+            PYTHONPATH=. python -m tools.football_clv_tracking_cycle --freeze-only
+            PYTHONPATH=. python -m tools.football_clv_odds_api_net_capture
             PYTHONPATH=. python -m tools.football_clv_tracking_cycle
-            if [ -f evidence/clv/football/over_2_5/closing_attempts.jsonl ]; then
-              rows="$(grep -cve '^[[:space:]]*$' evidence/clv/football/over_2_5/closing_attempts.jsonl || true)"
-            else
-              rows=0
-            fi
-            echo "CLV_ATTEMPT_LOG_ROWS=$rows"
+            PYTHONPATH=. python -m tools.football_clv_subgate_quality
             persist_if_changed
 
             status="$(remaining_future)"
@@ -252,3 +353,12 @@ jobs:
           else
             echo "CLV_SUCCESSOR_NOT_NEEDED"
           fi
+# MATRIX_CLV_REFRESH_REPAIR 2026-10-15 stale-checkout-before-each-cycle
+# MATRIX_CLV_MULTI_TRANSPORT_REPAIR 2026-10-15 odds-api-preferred-api-football-fallback
+# MATRIX_CLV_SINGLE_WRITER_LATEST_VERSION_WINS 2026-10-15
+
+# MATRIX_CLV_PER_ATTEMPT_TELEMETRY_V2 2026-10-16 exact-attempt-fields-and-test-isolation
+
+# MATRIX_CLV_INCOMPLETE_MARKET_DIAGNOSTICS_V1 2026-10-16 persist-exact-subreason
+
+# MATRIX_CLV_TELEGRAM_BRIDGE_TRIGGER 2026-10-17 prospective-signal-freeze
