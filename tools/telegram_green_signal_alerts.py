@@ -1063,6 +1063,20 @@ def paper_kickoff_date(value: Any) -> str | None:
     return str(dt.astimezone(BOGOTA).date()) if dt is not None else None
 
 
+def register_monitoring_breach(lifecycle: dict[str, Any], now: datetime) -> bool:
+    """Record a monitoring breach once and freeze its first physical detection.
+
+    Returns True only on the first transition into monitoring_breach=True so
+    run-level telemetry does not recount the same historical breach forever.
+    """
+    already_recorded = lifecycle.get("monitoring_breach") is True
+    lifecycle["monitoring_breach"] = True
+    lifecycle.setdefault("monitoring_breach_detected_at_utc", now.isoformat())
+    lifecycle.setdefault("first_terminal_state", "BLOCKED_KICKOFF_REACHED_MONITORING_BREACH")
+    lifecycle.setdefault("first_terminal_at_utc", now.isoformat())
+    return not already_recorded
+
+
 def prematch_revalidation_state(candidate: dict[str, Any], now: datetime) -> str:
     kickoff = parse_dt(candidate.get("kickoff"))
     if kickoff is None:
@@ -1998,9 +2012,8 @@ def main() -> None:
                     lifecycle["legacy_unobservable"] = True
                 else:
                     gate_record["state"] = "BLOCKED_KICKOFF_REACHED_MONITORING_BREACH"
-                    lifecycle["monitoring_breach"] = True
-                    lifecycle["monitoring_breach_detected_at_utc"] = now.isoformat()
-                    monitoring_breaches_now += 1
+                    if register_monitoring_breach(lifecycle, now):
+                        monitoring_breaches_now += 1
             else:
                 gate_record["state"] = "BLOCKED_KICKOFF_REACHED_AFTER_REVALIDATION"
             candidate["eligible_green"] = False
