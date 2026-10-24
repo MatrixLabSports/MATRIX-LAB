@@ -6,6 +6,11 @@ on:
       - main
     paths:
       - .github/workflows/rapidapi-tennis-paid-window-harvest.yml
+      - tools/matrix_multi_market_supervisor.py
+      - app/market/matrix_market_portfolio.py
+      - evidence/audit/MATRIX_MARKET_PORTFOLIO_PERMANENT_MANDATE_V1.json
+      - tests/test_matrix_multi_market_supervisor.py
+      - tests/test_market_portfolio_permanent_mandate.py
   workflow_dispatch:
     inputs:
       target_date:
@@ -45,9 +50,9 @@ jobs:
       - name: Install dependency
         run: python -m pip install requests pytest
 
-      - name: Verify subscription deadline guard
+      - name: Verify subscription deadline guard and permanent market contracts
         run: |
-          python -m pytest -q tests/test_tennis_subscription_deadline_guard.py
+          python -m pytest -q tests/test_tennis_subscription_deadline_guard.py tests/test_market_portfolio_permanent_mandate.py tests/test_matrix_multi_market_supervisor.py
           python -m tools.tennis_subscription_deadline_guard --out evidence/governance/MATRIX_TENNIS_SUBSCRIPTION_DEADLINE_LAST.json
 
       - name: Resolve governed Bogota date and paid-window gate
@@ -160,6 +165,36 @@ jobs:
           print(json.dumps(receipt,sort_keys=True))
           PY
 
+      - name: Enforce 42-lane market supervisor after tennis harvest
+        if: steps.date.outputs.skip != 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          D="${{ steps.date.outputs.target_date }}"
+          CATALOG="evidence/api_football/market_expansion/market_binding_catalog.json"
+          if [ -f "$CATALOG" ]; then
+            python -m tools.matrix_multi_market_supervisor \
+              --football-catalog "$CATALOG" \
+              --target-date-bogota "$D" \
+              --out evidence/market_portfolio/MATRIX_MULTI_MARKET_SUPERVISOR_LAST.json
+          else
+            python -m tools.matrix_multi_market_supervisor \
+              --target-date-bogota "$D" \
+              --out evidence/market_portfolio/MATRIX_MULTI_MARKET_SUPERVISOR_LAST.json
+          fi
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          j=json.loads(Path("evidence/market_portfolio/MATRIX_MULTI_MARKET_SUPERVISOR_LAST.json").read_text())
+          assert j["status"]=="PASS"
+          assert j["total_required_lanes"]==42
+          assert j["invariants"]["aces_present"] is True
+          assert j["invariants"]["first_half_goals_present"] is True
+          assert j["invariants"]["second_half_goals_present"] is True
+          assert j["invariants"]["real_money"]=="BLOCKED"
+          print(json.dumps({"status":"PASS","lanes":42,"states":j["state_counts"]},sort_keys=True))
+          PY
+
       - name: Persist paid-window evidence
         if: steps.date.outputs.skip != 'true'
         shell: bash
@@ -170,6 +205,7 @@ jobs:
           git config user.email matrix-tennis-harvest@users.noreply.github.com
           git add "evidence/tennis/paid_window_harvest/$D"
           git add evidence/governance/MATRIX_TENNIS_SUBSCRIPTION_DEADLINE_LAST.json
+          git add evidence/market_portfolio/MATRIX_MULTI_MARKET_SUPERVISOR_LAST.json
           if git diff --cached --quiet; then
             echo "NO_HARVEST_CHANGE"
             exit 0
