@@ -49,13 +49,13 @@ jobs:
           assert j["target_date_bogota"]=="2026-10-24"
           assert j["source_order"][:2]==["SofaScore","Flashscore"]
           assert j["reconciliation"]["browser_first_gate"]=="PASS"
-          assert j["sofascore"]["visible_event_rows_full_page"]>0
-          assert j["flashscore"]["visible_match_count"]>0
+          assert j["sofascore"]["visible_match_url_count"]>0
+          assert j["flashscore"]["visible_match_url_count"]>0
           assert j["protections"]["metrics_opened"] is False
           assert j["protections"]["real_money"]=="BLOCKED"
           print("BROWSER_FIRST_24OCT: PASS")
-          print("sofascore_visible=",j["sofascore"]["visible_event_rows_full_page"])
-          print("flashscore_visible=",j["flashscore"]["visible_match_count"])
+          print("sofascore_visible=",j["sofascore"]["visible_match_url_count"])
+          print("flashscore_visible=",j["flashscore"]["visible_match_url_count"])
           PY
 
       - name: Snapshot Hard counter before
@@ -139,7 +139,11 @@ jobs:
             "schema":"MATRIX_COR0203_24OCT_ONE_SHOT_CERT_V1",
             "generated_at_utc":datetime.now(timezone.utc).replace(microsecond=0).isoformat(),
             "target_date_bogota":"2026-10-24",
-            "browser_first":{"sofascore_visible":17,"flashscore_visible":221,"gate":"PASS"},
+            "browser_first":{
+              "sofascore_visible":int(json.loads(Path("evidence/tennis/MATRIX_TENNIS_20261024_BROWSER_FIRST_RECONCILIATION.json").read_text())["sofascore"]["visible_match_url_count"]),
+              "flashscore_visible":int(json.loads(Path("evidence/tennis/MATRIX_TENNIS_20261024_BROWSER_FIRST_RECONCILIATION.json").read_text())["flashscore"]["visible_match_url_count"]),
+              "gate":json.loads(Path("evidence/tennis/MATRIX_TENNIS_20261024_BROWSER_FIRST_RECONCILIATION.json").read_text())["reconciliation"]["browser_first_gate"]
+            },
             "rapidapi":{"unique_match_count":inv.get("unique_match_count"),"hard_candidate_match_ids":sorted(set(candidates))},
             "unique_before":int(before["unique"]),
             "unique_after":after,
