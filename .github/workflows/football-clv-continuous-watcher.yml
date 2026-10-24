@@ -21,7 +21,7 @@ permissions:
 
 concurrency:
   group: matrix-football-clv-continuous-watcher
-  cancel-in-progress: true
+  cancel-in-progress: false
 
 jobs:
   watch:
@@ -97,6 +97,7 @@ jobs:
               "git rebase --autostash origin/repair/cor09-world-pipeline",
               "CLV_WATCHER_OPERATIONAL_REFRESH=PASS",
               "POLL_SECONDS: 90",
+              "cancel-in-progress: false",
               'assert j["closing_freshness_policy"]["max_provider_quote_age_seconds"]==120',
           ]
           missing=[x for x in required if x not in s]
