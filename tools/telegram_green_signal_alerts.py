@@ -93,6 +93,21 @@ EV_MARGINAL_LAB_MAX_EV_EXCLUSIVE = 0.05
 EV_MARGINAL_LAB_TARGET_OBSERVATIONS = 300
 
 
+def is_ev_marginal_lab_candidate(p_matrix: float, decimal_odds: float, ev: float) -> bool:
+    return (
+        float(p_matrix) >= SIGNAL_QUALITY_MIN_P_MATRIX
+        and float(decimal_odds) > 1.50
+        and EV_MARGINAL_LAB_MIN_EV_EXCLUSIVE < float(ev) < EV_MARGINAL_LAB_MAX_EV_EXCLUSIVE
+    )
+
+
+def ev_marginal_band(ev: float) -> str:
+    value = float(ev)
+    if not EV_MARGINAL_LAB_MIN_EV_EXCLUSIVE < value < EV_MARGINAL_LAB_MAX_EV_EXCLUSIVE:
+        raise ValueError("EV_OUTSIDE_MARGINAL_LAB")
+    return "EV_0_2PCT" if value < 0.02 else "EV_2_5PCT"
+
+
 def load_json(path: Path, default: Any) -> Any:
     if not path.exists():
         return default
@@ -2399,9 +2414,7 @@ def main() -> None:
         p_matrix = float(candidate["p_matrix"])
         if (
             key not in ev_lab_existing_keys
-            and p_matrix >= SIGNAL_QUALITY_MIN_P_MATRIX
-            and offer_odds > 1.50
-            and EV_MARGINAL_LAB_MIN_EV_EXCLUSIVE < offer_ev < EV_MARGINAL_LAB_MAX_EV_EXCLUSIVE
+            and is_ev_marginal_lab_candidate(p_matrix, offer_odds, offer_ev)
         ):
             lab_risk_state, lab_risk_detail, _ = correlated_risk_gate_state(
                 candidate,
@@ -2409,7 +2422,7 @@ def main() -> None:
                 limits=risk_limits,
                 existing=risk_existing_exposures + risk_pending_exposures,
             )
-            band = "EV_0_2PCT" if offer_ev < 0.02 else "EV_2_5PCT"
+            band = ev_marginal_band(offer_ev)
             ev_lab["observations"].append({
                 "signal_key": key,
                 "fixture_id": candidate.get("fixture_id"),
