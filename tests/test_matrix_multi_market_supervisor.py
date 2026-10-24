@@ -49,3 +49,24 @@ def test_aces_blocker_is_visible_not_silently_omitted():
     assert row["required"] is True
     assert row["must_continue_collecting"] is True
     assert "BLOCKED_TENNIS_STAT_MARKET_IMPLEMENTATION" in row["blockers"]
+
+
+def test_six_period_goal_markets_are_real_labs_not_blocked_models():
+    r=build()
+    required={
+        "FIRST_HALF_TOTAL_GOALS_OVER_UNDER",
+        "SECOND_HALF_TOTAL_GOALS_OVER_UNDER",
+        "FIRST_HALF_TEAM_TOTAL_GOALS_HOME",
+        "FIRST_HALF_TEAM_TOTAL_GOALS_AWAY",
+        "SECOND_HALF_TEAM_TOTAL_GOALS_HOME",
+        "SECOND_HALF_TEAM_TOTAL_GOALS_AWAY",
+    }
+    rows={x["market_key"]:x for x in r["rows"]}
+    assert required.issubset(rows)
+    for key in required:
+        row=rows[key]
+        assert row["operational_state"]=="LAB"
+        assert row["implementation_present"] is True
+        assert row["implementation_paths"]==["tools/api_football_period_goals_lab.py"]
+        assert "BLOCKED_MODEL" not in row["blockers"]
+        assert row["production_authorized"] is False
