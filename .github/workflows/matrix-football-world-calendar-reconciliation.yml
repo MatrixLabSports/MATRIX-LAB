@@ -1,0 +1,90 @@
+name: MATRIX Football World Calendar Reconciliation
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "4,19,34,49 * * * *"
+  push:
+    paths:
+      - "evidence/calendar_physical/**"
+      - "tools/reconcile_opera_football_calendar.py"
+      - "tests/test_reconcile_opera_football_calendar.py"
+      - ".github/workflows/matrix-football-world-calendar-reconciliation.yml"
+
+concurrency:
+  group: matrix-football-world-calendar-reconciliation
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+jobs:
+  reconcile:
+    runs-on: ubuntu-latest
+    env:
+      REAL_MONEY: BLOCKED
+      AUTOMATIC_WAGERING: "false"
+    steps:
+      - name: Checkout operational branch
+        uses: actions/checkout@v4
+        with:
+          ref: repair/cor09-world-pipeline
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Test calendar reconciliation
+        run: PYTHONPATH=. python -m pytest -q tests/test_reconcile_opera_football_calendar.py
+
+      - name: Reconcile latest physical football calendar
+        run: |
+          set -euo pipefail
+          PYTHONPATH=. python -m tools.reconcile_opera_football_calendar
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          p=Path("evidence/calendar_reconciliation/MATRIX_FOOTBALL_WORLD_CALENDAR_RECONCILIATION_LAST.json")
+          j=json.loads(p.read_text(encoding="utf-8"))
+          assert j["status"]=="PASS_OPEN_RECONCILIATION"
+          assert j["source_order"]==["SOFASCORE","FLASHSCORE","APIS"]
+          assert j["policy"]["missing_not_zero"] is True
+          assert j["policy"]["no_silent_imputation"] is True
+          assert j["policy"]["no_forced_count_equality"] is True
+          assert j["policy"]["api_absence_does_not_delete_open_source_event"] is True
+          assert j["policy"]["post_start_backfill_forbidden"] is True
+          assert j["policy"]["automatic_wagering"] is False
+          assert j["policy"]["real_money"]=="BLOCKED"
+          print(json.dumps({
+            "target_date_bogota":j["target_date_bogota"],
+            "source_counts":j["source_counts"],
+            "reconciliation":j["reconciliation"],
+          },sort_keys=True))
+          PY
+
+      - name: Persist reconciliation evidence
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "matrix-calendar-reconciliation"
+          git config user.email "matrix-calendar-reconciliation@users.noreply.github.com"
+          git add evidence/calendar_reconciliation/MATRIX_FOOTBALL_WORLD_CALENDAR_RECONCILIATION_LAST.json
+          if git diff --cached --quiet; then
+            echo "NO_CALENDAR_RECONCILIATION_CHANGE"
+            exit 0
+          fi
+          git commit -m "evidence(calendar): persist world football reconciliation"
+          for attempt in 1 2 3 4; do
+            git fetch origin repair/cor09-world-pipeline
+            if ! git rebase origin/repair/cor09-world-pipeline; then
+              git rebase --abort || true
+              exit 1
+            fi
+            if git push origin HEAD:repair/cor09-world-pipeline; then
+              exit 0
+            fi
+            sleep $((attempt*2))
+          done
+          exit 1
