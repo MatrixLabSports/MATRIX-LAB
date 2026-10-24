@@ -3,6 +3,7 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import math
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Mapping
@@ -65,6 +66,18 @@ def _sha(value: Any)->str:
     ).hexdigest()
 
 
+def _poisson_over_generic(lam:float,line:float)->float:
+    if lam < 0:
+        raise ValueError("NEGATIVE_LAMBDA")
+    cut=int(math.floor(float(line)))
+    term=math.exp(-lam)
+    cdf=term
+    for k in range(1,cut+1):
+        term*=lam/k
+        cdf+=term
+    return min(max(1.0-cdf,0.0),1.0)
+
+
 def _predictions(fhl:float,fal:float,shl:float,sal:float)->dict[str,Any]:
     return {
         "TEAM_TOTAL_GOALS_HOME":{
@@ -72,16 +85,16 @@ def _predictions(fhl:float,fal:float,shl:float,sal:float)->dict[str,Any]:
             "under_0_5":1.0-_poisson_over(fhl+shl,0.5),
             "over_1_5":_poisson_over(fhl+shl,1.5),
             "under_1_5":1.0-_poisson_over(fhl+shl,1.5),
-            "over_2_5":_poisson_over(fhl+shl,2.5),
-            "under_2_5":1.0-_poisson_over(fhl+shl,2.5),
+            "over_2_5":_poisson_over_generic(fhl+shl,2.5),
+            "under_2_5":1.0-_poisson_over_generic(fhl+shl,2.5),
         },
         "TEAM_TOTAL_GOALS_AWAY":{
             "over_0_5":_poisson_over(fal+sal,0.5),
             "under_0_5":1.0-_poisson_over(fal+sal,0.5),
             "over_1_5":_poisson_over(fal+sal,1.5),
             "under_1_5":1.0-_poisson_over(fal+sal,1.5),
-            "over_2_5":_poisson_over(fal+sal,2.5),
-            "under_2_5":1.0-_poisson_over(fal+sal,2.5),
+            "over_2_5":_poisson_over_generic(fal+sal,2.5),
+            "under_2_5":1.0-_poisson_over_generic(fal+sal,2.5),
         },
         "FIRST_HALF_TOTAL_GOALS_OVER_UNDER":{
             "over_0_5":_poisson_over(fhl+fal,0.5),
