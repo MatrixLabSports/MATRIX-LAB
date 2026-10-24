@@ -164,7 +164,7 @@ def _row(lane: MarketLane, catalog_names: list[str]) -> dict[str, Any]:
     }
 
 
-def build(*, football_catalog: Path | None = None, target_date_bogota: str | None = None) -> dict[str, Any]:
+def build(*, football_catalog: Path | None = None, target_date_bogota: str | None = None, source_run: str | None = None) -> dict[str, Any]:
     catalog_names = _load_catalog(football_catalog)
     rows = [_row(x, catalog_names) for x in (*FOOTBALL_MARKETS, *TENNIS_MARKETS)]
     counts: dict[str, int] = {}
@@ -175,6 +175,7 @@ def build(*, football_catalog: Path | None = None, target_date_bogota: str | Non
         "schema": "MATRIX_MULTI_MARKET_SUPERVISOR_V1",
         "generated_at_utc": datetime.now(timezone.utc).replace(microsecond=0).isoformat(),
         "target_date_bogota": target_date_bogota,
+        "source_run": source_run,
         "total_required_lanes": len(rows),
         "football_required_lanes": len(FOOTBALL_MARKETS),
         "tennis_required_lanes": len(TENNIS_MARKETS),
@@ -201,11 +202,13 @@ def main() -> None:
     p = argparse.ArgumentParser()
     p.add_argument("--football-catalog")
     p.add_argument("--target-date-bogota")
+    p.add_argument("--source-run")
     p.add_argument("--out", default=str(OUT))
     args = p.parse_args()
     result = build(
         football_catalog=Path(args.football_catalog) if args.football_catalog else None,
         target_date_bogota=args.target_date_bogota,
+        source_run=args.source_run,
     )
     out = Path(args.out)
     out.parent.mkdir(parents=True, exist_ok=True)
