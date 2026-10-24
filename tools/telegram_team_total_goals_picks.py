@@ -29,7 +29,7 @@ ODDS_BASE="https://api.odds-api.net/v1"
 MIN_P=0.60
 MIN_EV=0.05
 MIN_ODDS=1.50
-QUOTE_WINDOW_MINUTES=120
+QUOTE_WINDOW_MINUTES=720
 QUOTE_MAX_AGE_SECONDS=1800
 MAX_HISTORY=20
 MIN_HISTORY=5
@@ -285,7 +285,7 @@ def find_quote(session:requests.Session,key:str,c:Mapping[str,Any],diagnostic:di
     if mins<=0:
         diagnostic["status"]="BLOCKED_STARTED"; return None
     if mins>QUOTE_WINDOW_MINUTES:
-        diagnostic["status"]="WAIT_OUTSIDE_120M_QUOTE_WINDOW"; return None
+        diagnostic["status"]="WAIT_OUTSIDE_12H_QUOTE_WINDOW"; return None
     if not key:
         diagnostic["status"]="BLOCKED_ODDS_API_KEY_MISSING"; return None
     er=session.get(ODDS_BASE+"/events",headers={"X-API-Key":key,"Accept":"application/json"},params={
