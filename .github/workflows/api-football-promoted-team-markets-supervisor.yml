@@ -75,6 +75,13 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+          MATERIAL_FLAG="$(python - <<'PY'
+          import json
+          from pathlib import Path
+          p=json.loads(Path("evidence/api_football/promoted_team_markets/last_run.json").read_text())
+          print("MATERIAL" if (p.get("new_freezes") or p.get("new_settlements")) else "TELEMETRY_ONLY")
+          PY
+          )"
           git config user.name "matrix-football-promoted-supervisor"
           git config user.email "matrix-football-promoted-supervisor@users.noreply.github.com"
           git add evidence/api_football/promoted_team_markets
@@ -87,14 +94,19 @@ jobs:
             git fetch origin repair/cor09-world-pipeline
             if ! git rebase origin/repair/cor09-world-pipeline; then
               git rebase --abort || true
-              python - <<'PY' > /tmp/promoted_mutation_flag
-          import json
-          from pathlib import Path
-          p=json.loads(Path("evidence/api_football/promoted_team_markets/last_run.json").read_text())
-          has_material=bool(p.get("new_freezes") or p.get("new_settlements"))
-          print("MATERIAL" if has_material else "TELEMETRY_ONLY")
-          PY
-              if grep -q '^TELEMETRY_ONLY
+              if [[ "$MATERIAL_FLAG" == "TELEMETRY_ONLY" ]]; then
+                echo "REMOTE_BRANCH_ADVANCED; NO_LOCAL_FREEZE_OR_SETTLEMENT; KEEP_REMOTE_NEWER_EVIDENCE"
+                exit 0
+              fi
+              echo "REMOTE_BRANCH_ADVANCED_WITH_LOCAL_MATERIAL_EVIDENCE; FAIL_CLOSED_TO_AVOID_DATA_LOSS"
+              exit 1
+            fi
+            if git push origin HEAD:repair/cor09-world-pipeline; then
+              exit 0
+            fi
+            sleep $((attempt*2))
+          done
+          exit 1
 
 # explicit parallel production retrigger 2026-10-04T04:00Z
 
@@ -126,3 +138,5 @@ jobs:
 # MATRIX_MODEL_ONLY_TEAM_SHOTS_2026-10-24
 
 # MATRIX_PROMOTED_PERSISTENCE_RACE_GUARD_2026-10-24
+
+# MATRIX_PROMOTED_PERSISTENCE_RACE_GUARD_V2_2026-10-24
