@@ -1,0 +1,157 @@
+name: MATRIX Telegram Prematch Continuous Watcher
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+    paths:
+      - .github/workflows/telegram-prematch-continuous-watcher.yml
+  workflow_run:
+    workflows:
+      - "MATRIX Football Daily Governed Pipeline"
+    types:
+      - completed
+
+permissions:
+  contents: read
+  actions: write
+
+concurrency:
+  group: matrix-telegram-prematch-continuous-watcher
+  cancel-in-progress: true
+
+jobs:
+  watch:
+    if: >
+      github.event_name != 'workflow_run' ||
+      github.event.workflow_run.conclusion == 'success'
+    runs-on: ubuntu-latest
+    timeout-minutes: 350
+    env:
+      MATRIX_MODE: SHADOW
+      REAL_MONEY: BLOCKED
+      AUTO_BETTING: DISABLED
+      WATCH_SECONDS: 18000
+      POLL_SECONDS: 300
+
+    steps:
+      - name: Checkout operational evidence
+        uses: actions/checkout@v4
+        with:
+          ref: repair/cor09-world-pipeline
+          fetch-depth: 0
+
+      - name: Prove watcher safety contract
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$MATRIX_MODE" = "SHADOW"
+          test "$REAL_MONEY" = "BLOCKED"
+          test "$AUTO_BETTING" = "DISABLED"
+          test "$POLL_SECONDS" = "300"
+          echo "TELEGRAM_CONTINUOUS_WATCHER_SAFETY=PASS"
+
+      - name: Continuous prematch dispatch coverage
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          started_at="$(date -u +%s)"
+          deadline="$((started_at + WATCH_SECONDS))"
+          cycle=0
+
+          waiting_count() {
+            python - <<'PY'
+          import json
+          from pathlib import Path
+          p=Path("evidence/notifications/telegram/MATRIX_TELEGRAM_BLOCKER_RECOVERY_AUDIT_LAST.json")
+          if not p.exists():
+              print(0)
+              raise SystemExit
+          j=json.loads(p.read_text(encoding="utf-8"))
+          rows=j.get("records") or []
+          print(sum(1 for x in rows if (x or {}).get("state")=="WAITING_FINAL_REVALIDATION_WINDOW"))
+          PY
+          }
+
+          next_waiting_kickoff() {
+            python - <<'PY'
+          import json
+          from pathlib import Path
+          p=Path("evidence/notifications/telegram/MATRIX_TELEGRAM_BLOCKER_RECOVERY_AUDIT_LAST.json")
+          if not p.exists():
+              print("NONE")
+              raise SystemExit
+          j=json.loads(p.read_text(encoding="utf-8"))
+          ks=sorted(
+              str((x or {}).get("kickoff") or "")
+              for x in (j.get("records") or [])
+              if (x or {}).get("state")=="WAITING_FINAL_REVALIDATION_WINDOW"
+              and (x or {}).get("kickoff")
+          )
+          print(ks[0] if ks else "NONE")
+          PY
+          }
+
+          echo "TELEGRAM_CONTINUOUS_WATCHER_STARTED_UTC=$(date -u --iso-8601=seconds)"
+          while [ "$(date -u +%s)" -lt "$deadline" ]; do
+            cycle=$((cycle + 1))
+            git fetch origin repair/cor09-world-pipeline
+            git reset --hard origin/repair/cor09-world-pipeline
+
+            waiting="$(waiting_count)"
+            next_kickoff="$(next_waiting_kickoff)"
+            echo "TELEGRAM_WATCH_CYCLE=$cycle WAITING=$waiting NEXT_KICKOFF_UTC=$next_kickoff UTC=$(date -u --iso-8601=seconds)"
+
+            if [ "$waiting" -eq 0 ]; then
+              echo "TELEGRAM_CONTINUOUS_WATCHER_NO_TEMPORAL_WAIT"
+              break
+            fi
+
+            curl --fail-with-body --silent --show-error \
+              -X POST \
+              -H "Accept: application/vnd.github+json" \
+              -H "Authorization: Bearer $GH_TOKEN" \
+              -H "X-GitHub-Api-Version: 2022-11-28" \
+              "https://api.github.com/repos/MatrixLabSports/MATRIX-LAB/actions/workflows/telegram-green-signals.yml/dispatches" \
+              -d '{"ref":"main"}'
+            echo "TELEGRAM_PRIMARY_DISPATCHED=PASS"
+
+            sleep "$POLL_SECONDS"
+          done
+          echo "TELEGRAM_CONTINUOUS_WATCHER_FINISHED_UTC=$(date -u --iso-8601=seconds)"
+
+      - name: Renew watcher while temporal waits remain
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch origin repair/cor09-world-pipeline
+          git reset --hard origin/repair/cor09-world-pipeline
+          waiting="$(python - <<'PY'
+          import json
+          from pathlib import Path
+          p=Path("evidence/notifications/telegram/MATRIX_TELEGRAM_BLOCKER_RECOVERY_AUDIT_LAST.json")
+          if not p.exists():
+              print(0)
+          else:
+              j=json.loads(p.read_text(encoding="utf-8"))
+              print(sum(1 for x in (j.get("records") or []) if (x or {}).get("state")=="WAITING_FINAL_REVALIDATION_WINDOW"))
+          PY
+          )"
+          echo "TELEGRAM_TEMPORAL_WAIT_AFTER_WATCH=$waiting"
+          if [ "$waiting" -gt 0 ]; then
+            curl --fail-with-body --silent --show-error \
+              -X POST \
+              -H "Accept: application/vnd.github+json" \
+              -H "Authorization: Bearer $GH_TOKEN" \
+              -H "X-GitHub-Api-Version: 2022-11-28" \
+              "https://api.github.com/repos/MatrixLabSports/MATRIX-LAB/actions/workflows/telegram-prematch-continuous-watcher.yml/dispatches" \
+              -d '{"ref":"main"}'
+            echo "TELEGRAM_CONTINUOUS_WATCHER_SUCCESSOR_DISPATCHED=PASS"
+          else
+            echo "TELEGRAM_CONTINUOUS_WATCHER_SUCCESSOR_NOT_NEEDED=PASS"
+          fi
