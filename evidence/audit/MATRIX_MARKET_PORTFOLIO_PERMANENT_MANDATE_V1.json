@@ -1,0 +1,67 @@
+{
+  "schema": "MATRIX_MARKET_PORTFOLIO_PERMANENT_MANDATE_V1",
+  "effective_date_bogota": "2026-10-24",
+  "status": "PERMANENT_ACTIVE",
+  "change_control": "USER_EXPLICIT_REPLACE_MODIFY_SUSPEND_REVOKE_ONLY",
+  "purpose": "Prevent silent narrowing to Over 2.5 and require continuous prospective work across the user-mandated football and tennis market portfolio.",
+  "subscription_urgency": {
+    "tennis_paid_provider": "RapidAPI Tennis",
+    "football_paid_provider": "API-Football",
+    "paid_through_bogota_date": "2026-10-28",
+    "remaining_calendar_days_from_2026_10_24_inclusive": 5,
+    "mandate": "MAXIMIZE_PHYSICAL_EVIDENCE_BEFORE_EXPIRY"
+  },
+  "invariants": {
+    "over_2_5_is_not_the_only_market": true,
+    "defined_market_may_not_be_silently_dropped": true,
+    "no_go_for_production_does_not_mean_stop_collecting_research": true,
+    "laboratory_collection_runs_in_parallel": true,
+    "missing_not_zero": true,
+    "no_silent_imputation": true,
+    "odds_do_not_generate_p_matrix": true,
+    "automatic_wagering": false,
+    "real_money": "BLOCKED"
+  },
+  "football_markets": [
+    "MATCH_RESULT_1X2",
+    "DOUBLE_CHANCE_1X",
+    "DOUBLE_CHANCE_X2",
+    "DOUBLE_CHANCE_12",
+    "TOTAL_GOALS_OVER_UNDER",
+    "BTTS",
+    "ASIAN_OR_EUROPEAN_HANDICAP",
+    "CORNERS_OVER_UNDER",
+    "CARDS_OVER_UNDER",
+    "TEAM_TOTAL_SHOTS_HOME",
+    "TEAM_TOTAL_SHOTS_AWAY",
+    "TEAM_SHOTS_ON_TARGET_HOME",
+    "TEAM_SHOTS_ON_TARGET_AWAY",
+    "TEAM_FOULS_HOME",
+    "TEAM_FOULS_AWAY",
+    "GOALKEEPER_SAVES",
+    "PLAYER_SHOTS",
+    "PLAYER_SHOTS_ON_TARGET",
+    "PLAYER_ASSISTS",
+    "PLAYER_PASSES",
+    "PLAYER_TACKLES",
+    "PLAYER_FOULS"
+  ],
+  "tennis_markets": [
+    "MATCH_WINNER",
+    "SET_WINNER",
+    "SET_HANDICAP",
+    "TOTAL_SETS",
+    "BOTH_PLAYERS_WIN_SET",
+    "GAME_HANDICAP",
+    "TOTAL_GAMES",
+    "PLAYER_TOTAL_GAMES",
+    "TIEBREAK_YES_NO",
+    "ACES",
+    "DOUBLE_FAULTS",
+    "BREAKS_OF_SERVE"
+  ],
+  "explicit_user_correction_2026_10_24": {
+    "aces_required": true,
+    "note": "ACES is mandatory and must not be omitted from future prompts, audits, handoffs, registries, labs, or implementation plans."
+  }
+}
