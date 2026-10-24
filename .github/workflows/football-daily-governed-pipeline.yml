@@ -1,3 +1,4 @@
+# MATRIX_PHYSICAL_TRIGGER 2026-10-23T19:10-05:00 force-24oct-governed-report-and-link-prospective
 # MATRIX_USER_AUTHORIZED_RECOVERY 2026-10-22T04:13-05:00 football-refresh
 # MATRIX_USER_AUTHORIZED_STALE_REFRESH 2026-10-20T21:47-05:00 football-daily-governed-pipeline.yml
 # MATRIX_USER_AUTHORIZED_TRIGGER 2026-10-20 prepare-21oct-calendar-physical-audit
@@ -12,6 +13,11 @@ on:
     - cron: "10 23 * * *"
     # 20:10 Bogota: backup next-day preparation if the primary cron is delayed/skipped.
     - cron: "10 1 * * *"
+  workflow_run:
+    workflows:
+      - "API-Football daily prospective production"
+    types:
+      - completed
   workflow_dispatch:
     inputs:
       target_date:
@@ -36,6 +42,9 @@ concurrency:
 
 jobs:
   daily:
+    if: >-
+      github.event_name != 'workflow_run' ||
+      github.event.workflow_run.conclusion == 'success'
     runs-on: ubuntu-latest
     timeout-minutes: 90
     env:
