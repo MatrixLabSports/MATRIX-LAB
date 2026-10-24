@@ -1,0 +1,81 @@
+name: MATRIX Main-Operational Bridge Contracts
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+    paths:
+      - .github/workflows/football-clv-continuous-watcher.yml
+      - .github/workflows/telegram-green-signals.yml
+      - .github/workflows/football-daily-governed-pipeline.yml
+      - .github/workflows/workflow-bridge-contracts.yml
+  pull_request:
+    paths:
+      - .github/workflows/football-clv-continuous-watcher.yml
+      - .github/workflows/telegram-green-signals.yml
+      - .github/workflows/football-daily-governed-pipeline.yml
+      - .github/workflows/workflow-bridge-contracts.yml
+
+permissions:
+  contents: read
+
+jobs:
+  bridge:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout main
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Verify scheduler-to-operational semantic bridge
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          from pathlib import Path
+
+          root=Path(".")
+          clv=(root/".github/workflows/football-clv-continuous-watcher.yml").read_text(encoding="utf-8")
+          tg=(root/".github/workflows/telegram-green-signals.yml").read_text(encoding="utf-8")
+          gov=(root/".github/workflows/football-daily-governed-pipeline.yml").read_text(encoding="utf-8")
+
+          def req(label, cond):
+              if not cond:
+                  raise SystemExit(label+"=FAIL")
+              print(label+"=PASS")
+
+          for label, text in [
+              ("MAIN_CLV_CHECKOUT_OPERATIONAL", clv),
+              ("MAIN_TELEGRAM_CHECKOUT_OPERATIONAL", tg),
+              ("MAIN_GOVERNED_CHECKOUT_OPERATIONAL", gov),
+          ]:
+              req(label, "ref: repair/cor09-world-pipeline" in text)
+
+          req("MAIN_CLV_REAL_MONEY_BLOCKED", "REAL_MONEY: BLOCKED" in clv)
+          req("MAIN_CLV_AUTO_BETTING_DISABLED", "AUTO_BETTING: DISABLED" in clv)
+          req("MAIN_CLV_STRICT_FRESH_120S", 'max_provider_quote_age_seconds"]==120' in clv)
+          cycle=clv.index('echo "CLV_WATCH_CYCLE=$cycle')
+          refresh=clv.index("git fetch origin repair/cor09-world-pipeline", cycle)
+          rebase=clv.index("git rebase --autostash origin/repair/cor09-world-pipeline", cycle)
+          capture=clv.index("python -m tools.football_clv_tracking_cycle --freeze-only", cycle)
+          req("MAIN_CLV_PRE_CYCLE_REFRESH_ORDER", cycle < refresh < rebase < capture)
+          req("MAIN_CLV_TELEMETRY_CONTRACT_PRESENT", "CLV_PER_ATTEMPT_TELEMETRY_CONTRACT=PASS" in clv)
+          req("MAIN_CLV_FINAL_GATE_PRESENT", "CLV_CONTINUOUS_WATCHER_FINAL_GATE: PASS" in clv)
+
+          req("MAIN_TELEGRAM_GOVERNED_TRIGGER", "MATRIX Football Daily Governed Pipeline" in tg)
+          req("MAIN_TELEGRAM_SHARP_TEST", "tests/test_telegram_sharp_reference_gate.py" in tg)
+          req("MAIN_TELEGRAM_CONSENSUS_TEST", "tests/test_football_sharp_consensus.py" in tg)
+          req("MAIN_TELEGRAM_MONITORING_TEST", "tests/test_telegram_monitoring_watchdog.py" in tg)
+          req("MAIN_TELEGRAM_QUOTE_RECOVERY_TEST", "tests/test_telegram_quote_recovery_window.py" in tg)
+          req("MAIN_TELEGRAM_REAL_MONEY_BLOCKED", "REAL_MONEY: BLOCKED" in tg)
+
+          req("MAIN_GOVERNED_PROSPECTIVE_TRIGGER", "API-Football daily prospective production" in gov)
+          req("MAIN_GOVERNED_NEXT_DAY_1810_BOGOTA", 'cron: "10 23 * * *"' in gov)
+          req("MAIN_GOVERNED_BACKUP_2010_BOGOTA", 'cron: "10 1 * * *"' in gov)
+          req("MAIN_GOVERNED_REAL_MONEY_BLOCKED", "REAL_MONEY: BLOCKED" in gov)
+
+          print("MATRIX_MAIN_OPERATIONAL_BRIDGE_CONTRACTS=PASS")
+          PY
