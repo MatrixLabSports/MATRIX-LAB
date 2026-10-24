@@ -840,12 +840,25 @@ def run_cycle(
     return state
 
 
-def _default_report_for_today() -> Path:
-    day = str(datetime.now(timezone.utc).astimezone(BOGOTA).date())
+def _report_for_bogota_day(day) -> Path:
     return Path(
         f"evidence/api_football/daily_prematch_reports/{day}/"
         "over25_shadow_ev/MATRIX_FOOTBALL_DAILY_OVER25_GOVERNED_SHADOW_EV.json"
     )
+
+
+def _default_report_for_today() -> Path:
+    day = datetime.now(timezone.utc).astimezone(BOGOTA).date()
+    return _report_for_bogota_day(day)
+
+
+def _default_freeze_report_paths(reference: datetime) -> list[Path]:
+    local_day = reference.astimezone(BOGOTA).date()
+    paths = [
+        _report_for_bogota_day(local_day),
+        _report_for_bogota_day(local_day + timedelta(days=1)),
+    ]
+    return [p for p in paths if p.is_file()]
 
 
 def main() -> None:
@@ -863,16 +876,21 @@ def main() -> None:
     if args.freeze_only:
         reference = datetime.now(timezone.utc)
         ledger = FootballProspectiveEvidenceLedger(Path(args.ledger_path))
-        if report_path.is_file():
-            freeze_result = freeze_new_decisions(report_path, ledger)
+        report_paths = [report_path] if args.report_path else _default_freeze_report_paths(reference)
+        freeze_result = {
+            "frozen_new": 0,
+            "skipped_existing": 0,
+            "blocked_missing_entry_timestamp": 0,
+            "blocked_invalid": 0,
+            "report_paths_checked": [p.as_posix() for p in report_paths],
+        }
+        if report_paths:
+            for candidate_report in report_paths:
+                one = freeze_new_decisions(candidate_report, ledger)
+                for key in ("frozen_new", "skipped_existing", "blocked_missing_entry_timestamp", "blocked_invalid"):
+                    freeze_result[key] += int(one.get(key) or 0)
         else:
-            freeze_result = {
-                "frozen_new": 0,
-                "skipped_existing": 0,
-                "blocked_missing_entry_timestamp": 0,
-                "blocked_invalid": 0,
-                "report_missing": True,
-            }
+            freeze_result["report_missing"] = True
         telegram_result = freeze_new_telegram_signals(
             Path(args.telegram_ledger_path),
             ledger,
