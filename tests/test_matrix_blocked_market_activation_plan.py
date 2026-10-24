@@ -17,3 +17,10 @@ def test_activation_plan_prioritizes_price_ready_blocked_markets():
     assert r["rows"][0]["next_required_action"]=="BUILD_PROSPECTIVE_MODEL_LAB_NOW"
     assert r["policy"]["price_does_not_generate_p_matrix"] is True
     assert r["policy"]["real_money"]=="BLOCKED"
+
+
+def test_workflow_allows_blocked_count_to_shrink():
+    text=open(".github/workflows/matrix-multi-market-supervisor.yml",encoding="utf-8").read()
+    assert 'assert j["blocked_model_count"]==13' not in text
+    assert 'assert j["blocked_model_count"]==len(j["rows"])' in text
+    assert '0 <= j["blocked_model_count"] <= 13' in text
