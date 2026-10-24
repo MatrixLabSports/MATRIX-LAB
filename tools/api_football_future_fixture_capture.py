@@ -26,6 +26,19 @@ PUBLIC_HEADER_ALLOWLIST = (
 FUTURE_STATUSES = {"NS", "TBD"}
 
 
+
+def _classify_provider_errors(errors: object) -> tuple[str, bool]:
+    if errors in ({}, [], None):
+        return ("NONE", False)
+    text = json.dumps(errors, sort_keys=True, ensure_ascii=False).casefold()
+    if "request limit" in text or "reached the request limit" in text:
+        return ("DAILY_REQUEST_LIMIT_REACHED", True)
+    if "rate limit" in text or "too many requests" in text:
+        return ("RATE_LIMIT_REACHED", True)
+    if "plan" in text or "subscription" in text or "upgrade your plan" in text:
+        return ("PLAN_OR_ENTITLEMENT_BLOCK", True)
+    return ("PROVIDER_ERROR_TRANSIENT_OR_UNKNOWN", False)
+
 def _sha256(data: bytes) -> str:
     return hashlib.sha256(data).hexdigest()
 
@@ -195,6 +208,30 @@ def run_capture(
     if not (200 <= int(response.status_code) < 300):
         raise ValueError(f"API_FOOTBALL_HTTP_STATUS_{response.status_code}")
     if errors not in ({}, [], None):
+        error_class, terminal = _classify_provider_errors(errors)
+        _write_json(out_dir / "provider_error_public.json", {
+            "schema": "MATRIX_API_FOOTBALL_PROVIDER_ERROR_PUBLIC_V1",
+            "captured_at_utc": captured_at.isoformat(),
+            "target_date": target_date,
+            "http_status": int(response.status_code),
+            "classification": error_class,
+            "terminal_for_current_cycle": terminal,
+            "errors": errors,
+            "rate_limit": {
+                "daily_limit": public_headers.get("x-ratelimit-requests-limit"),
+                "daily_remaining": public_headers.get("x-ratelimit-requests-remaining"),
+                "minute_limit": public_headers.get("x-ratelimit-limit"),
+                "minute_remaining": public_headers.get("x-ratelimit-remaining"),
+            },
+            "automatic_wagering": False,
+            "real_money": "BLOCKED",
+        })
+        if error_class == "DAILY_REQUEST_LIMIT_REACHED":
+            raise ValueError("API_FOOTBALL_DAILY_REQUEST_LIMIT_REACHED")
+        if error_class == "RATE_LIMIT_REACHED":
+            raise ValueError("API_FOOTBALL_RATE_LIMIT_REACHED")
+        if error_class == "PLAN_OR_ENTITLEMENT_BLOCK":
+            raise ValueError("API_FOOTBALL_PLAN_OR_ENTITLEMENT_BLOCK")
         raise ValueError("API_FOOTBALL_PROVIDER_ERRORS")
     if not isinstance(raw_rows, list):
         raise ValueError("API_FOOTBALL_FIXTURES_RESPONSE_INVALID")
