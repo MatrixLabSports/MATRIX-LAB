@@ -19,6 +19,8 @@ DEFAULT_LEDGER = Path("evidence/market_portfolio/MATRIX_42_LANE_PROSPECTIVE_LEDG
 DEFAULT_AUDIT = Path("evidence/market_portfolio/MATRIX_42_LANE_PERIOD_GOALS_FREEZE_BRIDGE_LAST.json")
 
 LANES = (
+    "TEAM_TOTAL_GOALS_HOME",
+    "TEAM_TOTAL_GOALS_AWAY",
     "FIRST_HALF_TOTAL_GOALS_OVER_UNDER",
     "SECOND_HALF_TOTAL_GOALS_OVER_UNDER",
     "FIRST_HALF_TEAM_TOTAL_GOALS_HOME",
@@ -65,6 +67,22 @@ def _sha(value: Any)->str:
 
 def _predictions(fhl:float,fal:float,shl:float,sal:float)->dict[str,Any]:
     return {
+        "TEAM_TOTAL_GOALS_HOME":{
+            "over_0_5":_poisson_over(fhl+shl,0.5),
+            "under_0_5":1.0-_poisson_over(fhl+shl,0.5),
+            "over_1_5":_poisson_over(fhl+shl,1.5),
+            "under_1_5":1.0-_poisson_over(fhl+shl,1.5),
+            "over_2_5":_poisson_over(fhl+shl,2.5),
+            "under_2_5":1.0-_poisson_over(fhl+shl,2.5),
+        },
+        "TEAM_TOTAL_GOALS_AWAY":{
+            "over_0_5":_poisson_over(fal+sal,0.5),
+            "under_0_5":1.0-_poisson_over(fal+sal,0.5),
+            "over_1_5":_poisson_over(fal+sal,1.5),
+            "under_1_5":1.0-_poisson_over(fal+sal,1.5),
+            "over_2_5":_poisson_over(fal+sal,2.5),
+            "under_2_5":1.0-_poisson_over(fal+sal,2.5),
+        },
         "FIRST_HALF_TOTAL_GOALS_OVER_UNDER":{
             "over_0_5":_poisson_over(fhl+fal,0.5),
             "under_0_5":1.0-_poisson_over(fhl+fal,0.5),
@@ -197,7 +215,7 @@ def build_rows(
 
     admitted.sort(key=lambda x:(x["event_start_utc"],x["fixture_id"],x["market_lane"]))
     audit={
-        "schema":"MATRIX_42_LANE_PERIOD_GOALS_FREEZE_BRIDGE_V1",
+        "schema":"MATRIX_42_LANE_PERIOD_GOALS_FREEZE_BRIDGE_V2",
         "generated_at_utc":now_utc.replace(microsecond=0).isoformat(),
         "source_schema":source.get("schema"),
         "future_source_fixture_candidates":future_candidates,
