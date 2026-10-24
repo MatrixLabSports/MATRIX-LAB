@@ -57,7 +57,7 @@ jobs:
           req("MAIN_CLV_REAL_MONEY_BLOCKED", "REAL_MONEY: BLOCKED" in clv)
           req("MAIN_CLV_AUTO_BETTING_DISABLED", "AUTO_BETTING: DISABLED" in clv)
           req("MAIN_CLV_STRICT_FRESH_120S", 'max_provider_quote_age_seconds"]==120' in clv)
-          cycle=clv.index('echo "CLV_WATCH_CYCLE=$cycle')
+          cycle=clv.rindex('echo "CLV_WATCH_CYCLE=$cycle')
           refresh=clv.index("git fetch origin repair/cor09-world-pipeline", cycle)
           rebase=clv.index("git rebase --autostash origin/repair/cor09-world-pipeline", cycle)
           capture=clv.index("python -m tools.football_clv_tracking_cycle --freeze-only", cycle)
