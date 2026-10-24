@@ -837,6 +837,191 @@ def odds_api_net_exact_over25_offer(
     return max(offers, key=lambda x: x["ev"]) if offers else None
 
 
+def _recompute_sharp_consensus(diagnostic: dict[str, Any], p: float) -> None:
+    paired: dict[str, dict[str, Any]] = {}
+    for row in diagnostic.get("sharp_quote_rows", []) or []:
+        if not isinstance(row, Mapping):
+            continue
+        src = str(row.get("source") or "").strip().casefold()
+        side = str(row.get("side") or "").strip().casefold()
+        if src and side in {"over", "under"}:
+            paired.setdefault(src, {})[side] = dict(row)
+    consensus_inputs: list[dict[str, Any]] = []
+    for src, sides in paired.items():
+        if "over" not in sides or "under" not in sides:
+            continue
+        ages = [
+            x.get("quote_age_seconds")
+            for x in (sides["over"], sides["under"])
+            if x.get("quote_age_seconds") is not None
+        ]
+        consensus_inputs.append({
+            "source": src,
+            "over_odds": float(sides["over"]["odds"]),
+            "under_odds": float(sides["under"]["odds"]),
+            "quote_age_seconds": max(ages) if ages else None,
+        })
+    diagnostic["sharp_consensus"] = assess_sharp_consensus(
+        p_matrix=float(p),
+        quotes=consensus_inputs,
+    )
+
+
+def api_football_pinnacle_over25_reference(
+    session: requests.Session,
+    api_key: str,
+    fixture_id: str,
+    p: float,
+    diagnostic: dict[str, Any] | None = None,
+) -> dict[str, Any] | None:
+    """Fallback sharp transport using API-Football Pinnacle bookmaker_id=4.
+
+    This mirrors the CLV transport contract: Pinnacle is reference-only,
+    never mutates P_MATRIX, and must be complete and <=120 seconds old.
+    """
+    key = str(api_key or "").strip()
+    if diagnostic is not None:
+        diagnostic.clear()
+        diagnostic.update({
+            "transport": "API-Football /odds bookmaker_id=4",
+            "fixture_id": str(fixture_id),
+            "reference_bookmaker": "Pinnacle",
+            "bookmaker_id": 4,
+            "strict_fresh_gate_seconds": 120,
+            "status": "STARTED",
+            "p_matrix_mutated_by_odds": False,
+            "real_money": "BLOCKED",
+        })
+    if not key:
+        if diagnostic is not None:
+            diagnostic["status"] = "BLOCKED_CREDENTIAL_MISSING"
+        return None
+    response = session.get(
+        "https://v3.football.api-sports.io/odds",
+        headers={"x-apisports-key": key},
+        params={"fixture": str(fixture_id), "bookmaker": 4},
+        timeout=20,
+    )
+    try:
+        payload = response.json()
+    except Exception:
+        payload = {}
+    if diagnostic is not None:
+        diagnostic["http_status"] = int(response.status_code)
+    if response.status_code >= 300 or not isinstance(payload, Mapping):
+        if diagnostic is not None:
+            diagnostic["status"] = "BLOCKED_PROVIDER_ERROR"
+        return None
+
+    for fixture_row in payload.get("response", []) or []:
+        if not isinstance(fixture_row, Mapping):
+            continue
+        provider_update = parse_dt(fixture_row.get("update"))
+        if provider_update is None:
+            continue
+        for bookmaker in fixture_row.get("bookmakers", []) or []:
+            if not isinstance(bookmaker, Mapping):
+                continue
+            if str(bookmaker.get("id")) != "4":
+                continue
+            if str(bookmaker.get("name") or "").strip().casefold() != "pinnacle":
+                continue
+            for bet in bookmaker.get("bets", []) or []:
+                if not isinstance(bet, Mapping):
+                    continue
+                try:
+                    bet_id = int(bet.get("id"))
+                except Exception:
+                    continue
+                if bet_id != 5 or str(bet.get("name") or "").strip().casefold() != "goals over/under":
+                    continue
+                over = under = None
+                for value in bet.get("values", []) or []:
+                    if not isinstance(value, Mapping):
+                        continue
+                    label = str(value.get("value") or "").strip().casefold()
+                    dec = odd(value.get("odd"))
+                    if dec is None:
+                        continue
+                    if label == "over 2.5":
+                        over = dec
+                    elif label == "under 2.5":
+                        under = dec
+                if over is None or under is None:
+                    continue
+                age_seconds = int((now_utc() - provider_update).total_seconds())
+                if diagnostic is not None:
+                    diagnostic.update({
+                        "provider_quote_updated_at_utc": provider_update.isoformat(),
+                        "provider_quote_age_seconds": age_seconds,
+                        "over_2_5_decimal_odds": over,
+                        "under_2_5_decimal_odds": under,
+                    })
+                if age_seconds < 0 or age_seconds > 120:
+                    if diagnostic is not None:
+                        diagnostic["status"] = "BLOCKED_STALE_PINNACLE_REFERENCE"
+                    return None
+                row = {
+                    "source": "pinnacle",
+                    "over_odds": over,
+                    "under_odds": under,
+                    "quote_age_seconds": age_seconds,
+                }
+                if diagnostic is not None:
+                    diagnostic["status"] = "PASS_FRESH_PINNACLE_REFERENCE"
+                return row
+
+    if diagnostic is not None:
+        diagnostic["status"] = "BLOCKED_PINNACLE_OVER25_MARKET_INCOMPLETE"
+    return None
+
+
+def augment_sharp_diagnostic_with_api_football_fallback(
+    diagnostic: dict[str, Any],
+    *,
+    session: requests.Session,
+    api_key: str,
+    fixture_id: str,
+    p: float,
+) -> dict[str, Any]:
+    """Add API-Football Pinnacle only when odds-api.net lacks a fresh Pinnacle."""
+    state, _ = sharp_reference_gate_state(diagnostic)
+    if state != "BLOCKED_NO_FRESH_PINNACLE_REFERENCE":
+        diagnostic["api_football_pinnacle_fallback"] = {
+            "status": "NOT_NEEDED_PRIMARY_PINNACLE_AVAILABLE"
+        }
+        return diagnostic
+    fallback_diag: dict[str, Any] = {}
+    row = api_football_pinnacle_over25_reference(
+        session,
+        api_key,
+        fixture_id,
+        p,
+        fallback_diag,
+    )
+    diagnostic["api_football_pinnacle_fallback"] = fallback_diag
+    if row is None:
+        return diagnostic
+    diagnostic.setdefault("sharp_quote_rows", []).extend([
+        {
+            "source": "pinnacle",
+            "side": "over",
+            "odds": row["over_odds"],
+            "quote_age_seconds": row["quote_age_seconds"],
+            "transport": "api-football",
+        },
+        {
+            "source": "pinnacle",
+            "side": "under",
+            "odds": row["under_odds"],
+            "quote_age_seconds": row["quote_age_seconds"],
+            "transport": "api-football",
+        },
+    ])
+    _recompute_sharp_consensus(diagnostic, p)
+    return diagnostic
+
+
 def sharp_reference_gate_state(diagnostic: Mapping[str, Any] | None) -> tuple[str, dict[str, Any]]:
     """Require a fresh Pinnacle reference before a football green signal.
 
@@ -2085,6 +2270,13 @@ def main() -> None:
             ledger["pre_send_gate"][key] = gate_record
             pre_send_blocked += 1
             continue
+        odds_api_net_diagnostic = augment_sharp_diagnostic_with_api_football_fallback(
+            odds_api_net_diagnostic,
+            session=session,
+            api_key=api_key,
+            fixture_id=str(candidate["fixture_id"]),
+            p=float(candidate["p_matrix"]),
+        )
         sharp_state, sharp_detail = sharp_reference_gate_state(odds_api_net_diagnostic)
         gate_record["sharp_reference_gate"] = sharp_detail
         gate_record["sharp_reference_state"] = sharp_state
