@@ -1,0 +1,125 @@
+name: MATRIX Telegram Team Total Goals Picks
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "5,20,35,50 * * * *"
+  push:
+    paths:
+      - "tools/telegram_team_total_goals_picks.py"
+      - "tests/test_telegram_team_total_goals_picks.py"
+      - "evidence/api_football/prospective_market_freeze/**"
+      - "evidence/api_football/prospective_daily/**/future_fixture_registry.json"
+      - ".github/workflows/telegram-team-total-goals-picks.yml"
+
+concurrency:
+  group: matrix-telegram-team-total-goals-picks
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+jobs:
+  picks:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    env:
+      MATRIX_MODE: SHADOW
+      REAL_MONEY: BLOCKED
+      AUTO_BETTING: DISABLED
+      PAPER_BANKROLL: ENABLED
+
+    steps:
+      - name: Checkout operational branch
+        uses: actions/checkout@v4
+        with:
+          ref: repair/cor09-world-pipeline
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: python -m pip install requests pytest
+
+      - name: Test Team Total Goals picks pipeline
+        run: PYTHONPATH=. python -m pytest -q tests/test_telegram_team_total_goals_picks.py
+
+      - name: Enforce PAPER SHADOW safety
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$MATRIX_MODE" = "SHADOW"
+          test "$REAL_MONEY" = "BLOCKED"
+          test "$AUTO_BETTING" = "DISABLED"
+          test "$PAPER_BANKROLL" = "ENABLED"
+
+      - name: Validate Telegram and odds secrets
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          ODDS_API_NET_KEY: ${{ secrets.ODDS_API_NET_KEY }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -n "$TELEGRAM_BOT_TOKEN"
+          test -n "$TELEGRAM_CHAT_ID"
+          test -n "$ODDS_API_NET_KEY"
+          echo "TEAM_TOTAL_GOALS_PICKS_SECRETS_PRESENT"
+
+      - name: Generate and send governed Team Total Goals picks
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          ODDS_API_NET_KEY: ${{ secrets.ODDS_API_NET_KEY }}
+        run: |
+          set -euo pipefail
+          PYTHONPATH=. python -m tools.telegram_team_total_goals_picks
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          p=Path("evidence/notifications/telegram/MATRIX_TELEGRAM_TEAM_TOTAL_GOALS_PICKS_LAST.json")
+          j=json.loads(p.read_text(encoding="utf-8"))
+          assert j["status"]=="PASS"
+          assert j["protections"]["strictly_prior_history_only"] is True
+          assert j["protections"]["odds_used_to_generate_probability"] is False
+          assert j["protections"]["physical_exact_quote_required"] is True
+          assert j["protections"]["ev_revalidation_required"] is True
+          assert j["protections"]["minimum_ev"]==0.05
+          assert j["protections"]["minimum_odds"]==1.5
+          assert j["protections"]["automatic_wagering"] is False
+          assert j["protections"]["real_money"]=="BLOCKED"
+          print(json.dumps({
+              "candidate_count":j["candidate_count"],
+              "eligible_quote_count":j["eligible_quote_count"],
+              "sent_count":j["sent_count"],
+              "fixture_registry_path":j.get("fixture_registry_path"),
+          },sort_keys=True))
+          PY
+
+      - name: Persist Team Total Goals picks evidence
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "matrix-team-total-goals-picks"
+          git config user.email "matrix-team-total-goals-picks@users.noreply.github.com"
+          git add evidence/notifications/telegram/MATRIX_TELEGRAM_TEAM_TOTAL_GOALS_PICKS_LEDGER.json             evidence/notifications/telegram/MATRIX_TELEGRAM_TEAM_TOTAL_GOALS_PICKS_LAST.json
+          if git diff --cached --quiet; then
+            echo "NO_TEAM_TOTAL_GOALS_PICKS_CHANGE"
+            exit 0
+          fi
+          git commit -m "evidence(telegram): persist Team Total Goals picks"
+          for attempt in 1 2 3 4; do
+            git fetch origin repair/cor09-world-pipeline
+            if ! git rebase origin/repair/cor09-world-pipeline; then
+              git rebase --abort || true
+              exit 1
+            fi
+            if git push origin HEAD:repair/cor09-world-pipeline; then
+              exit 0
+            fi
+            sleep $((attempt*2))
+          done
+          exit 1
