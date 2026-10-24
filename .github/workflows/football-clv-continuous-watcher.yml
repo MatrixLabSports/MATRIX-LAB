@@ -54,7 +54,8 @@ jobs:
         run: |
           PYTHONPATH=. python -m pytest -q \
             tests/test_football_clv_tracking_cycle.py \
-            tests/test_football_clv_odds_api_net_capture.py
+            tests/test_football_clv_odds_api_net_capture.py \
+            tests/test_monitoring_scheduler_contracts.py
 
       - name: Verify CLV tests do not mutate persisted evidence
         shell: bash
