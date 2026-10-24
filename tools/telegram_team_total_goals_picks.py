@@ -22,7 +22,7 @@ from tools.matrix_42_lane_period_goals_freeze_bridge import _predictions
 
 BOGOTA=ZoneInfo("America/Bogota")
 SOURCE_FREEZE=Path("evidence/api_football/prospective_market_freeze/freeze.json")
-FIXTURE_REGISTRY=Path("evidence/api_football/prospective_daily/2026-10-25/20261024T093801Z/fixtures/future_fixture_registry.json")
+PROSPECTIVE_DAILY_ROOT=Path("evidence/api_football/prospective_daily")
 LEDGER=Path("evidence/notifications/telegram/MATRIX_TELEGRAM_TEAM_TOTAL_GOALS_PICKS_LEDGER.json")
 AUDIT=Path("evidence/notifications/telegram/MATRIX_TELEGRAM_TEAM_TOTAL_GOALS_PICKS_LAST.json")
 ODDS_BASE="https://api.odds-api.net/v1"
@@ -73,6 +73,23 @@ def _sim(a:Any,b:Any)->float:
     tx,ty=set(x.split()),set(y.split())
     jac=len(tx&ty)/max(1,len(tx|ty))
     return max(jac,SequenceMatcher(None,x,y).ratio())
+
+
+def _latest_fixture_registry(root:Path,now_utc:datetime)->Path:
+    candidates=[]
+    for path in root.glob("*/*/fixtures/future_fixture_registry.json"):
+        try:
+            data=_load(path)
+            captured=_utc(data.get("captured_at_utc"))
+            future=sum(1 for row in data.get("events") or [] if isinstance(row,Mapping) and _utc(row.get("event_start_utc"))>now_utc)
+            if future>0:
+                candidates.append((captured,path,future))
+        except Exception:
+            continue
+    if not candidates:
+        raise FileNotFoundError("NO_FUTURE_FIXTURE_REGISTRY_AVAILABLE")
+    candidates.sort(key=lambda x:(x[0],x[1].as_posix()),reverse=True)
+    return candidates[0][1]
 
 
 def _fixture_map(registry:Mapping[str,Any])->dict[str,dict[str,Any]]:
@@ -319,13 +336,15 @@ def _message(c:Mapping[str,Any],q:Mapping[str,Any])->str:
 def main()->None:
     p=argparse.ArgumentParser()
     p.add_argument("--source",default=str(SOURCE_FREEZE))
-    p.add_argument("--fixtures",default=str(FIXTURE_REGISTRY))
+    p.add_argument("--fixtures")
     p.add_argument("--ledger",default=str(LEDGER))
     p.add_argument("--audit",default=str(AUDIT))
     p.add_argument("--dry-run",action="store_true")
     a=p.parse_args()
     now=datetime.now(timezone.utc).replace(microsecond=0)
-    candidates,base=build_candidates(_load(Path(a.source)),_load(Path(a.fixtures)),repo_root=Path("."),now_utc=now)
+    fixture_path=Path(a.fixtures) if a.fixtures else _latest_fixture_registry(PROSPECTIVE_DAILY_ROOT,now)
+    candidates,base=build_candidates(_load(Path(a.source)),_load(fixture_path),repo_root=Path("."),now_utc=now)
+    base["fixture_registry_path"]=fixture_path.as_posix()
     ledger_path=Path(a.ledger)
     ledger=_load(ledger_path) if ledger_path.exists() else {"schema":"MATRIX_TELEGRAM_TEAM_TOTAL_GOALS_PICKS_LEDGER_V1","sent":[]}
     sent_keys={str(x.get("candidate_key") or "") for x in ledger.get("sent",[]) if isinstance(x,Mapping)}
