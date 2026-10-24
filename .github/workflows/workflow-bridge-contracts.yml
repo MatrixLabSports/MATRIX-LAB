@@ -8,6 +8,7 @@ on:
     paths:
       - .github/workflows/football-clv-continuous-watcher.yml
       - .github/workflows/telegram-green-signals.yml
+      - .github/workflows/telegram-prematch-continuous-watcher.yml
       - .github/workflows/football-daily-governed-pipeline.yml
       - .github/workflows/workflow-bridge-contracts.yml
   pull_request:
@@ -40,6 +41,7 @@ jobs:
           root=Path(".")
           clv=(root/".github/workflows/football-clv-continuous-watcher.yml").read_text(encoding="utf-8")
           tg=(root/".github/workflows/telegram-green-signals.yml").read_text(encoding="utf-8")
+          tgw=(root/".github/workflows/telegram-prematch-continuous-watcher.yml").read_text(encoding="utf-8")
           gov=(root/".github/workflows/football-daily-governed-pipeline.yml").read_text(encoding="utf-8")
 
           def req(label, cond):
@@ -50,6 +52,7 @@ jobs:
           for label, text in [
               ("MAIN_CLV_CHECKOUT_OPERATIONAL", clv),
               ("MAIN_TELEGRAM_CHECKOUT_OPERATIONAL", tg),
+              ("MAIN_TELEGRAM_WATCHER_CHECKOUT_OPERATIONAL", tgw),
               ("MAIN_GOVERNED_CHECKOUT_OPERATIONAL", gov),
           ]:
               req(label, "ref: repair/cor09-world-pipeline" in text)
@@ -71,6 +74,13 @@ jobs:
           req("MAIN_TELEGRAM_MONITORING_TEST", "tests/test_telegram_monitoring_watchdog.py" in tg)
           req("MAIN_TELEGRAM_QUOTE_RECOVERY_TEST", "tests/test_telegram_quote_recovery_window.py" in tg)
           req("MAIN_TELEGRAM_REAL_MONEY_BLOCKED", "REAL_MONEY: BLOCKED" in tg)
+          req("MAIN_TELEGRAM_OFF_PEAK_CRON", 'cron: "7,22,37,52 * * * *"' in tg)
+          req("MAIN_TELEGRAM_WATCHER_GOVERNED_TRIGGER", "MATRIX Football Daily Governed Pipeline" in tgw)
+          req("MAIN_TELEGRAM_WATCHER_POLL_5M", "POLL_SECONDS: 300" in tgw)
+          req("MAIN_TELEGRAM_WATCHER_PRIMARY_DISPATCH", "telegram-green-signals.yml/dispatches" in tgw)
+          req("MAIN_TELEGRAM_WATCHER_SELF_RENEW", "telegram-prematch-continuous-watcher.yml/dispatches" in tgw)
+          req("MAIN_TELEGRAM_WATCHER_REAL_MONEY_BLOCKED", "REAL_MONEY: BLOCKED" in tgw)
+          req("MAIN_TELEGRAM_WATCHER_AUTO_BETTING_DISABLED", "AUTO_BETTING: DISABLED" in tgw)
 
           req("MAIN_GOVERNED_PROSPECTIVE_TRIGGER", "API-Football daily prospective production" in gov)
           req("MAIN_GOVERNED_NEXT_DAY_1810_BOGOTA", 'cron: "10 23 * * *"' in gov)
