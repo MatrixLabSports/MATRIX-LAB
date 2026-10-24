@@ -98,6 +98,8 @@ jobs:
               "CLV_WATCHER_OPERATIONAL_REFRESH=PASS",
               "POLL_SECONDS: 90",
               "cancel-in-progress: false",
+              "CLV_MISSED_BASELINE",
+              "CLV_NO_NEW_MISSED_AFTER_KICKOFF=PASS",
               'assert j["closing_freshness_policy"]["max_provider_quote_age_seconds"]==120',
           ]
           missing=[x for x in required if x not in s]
@@ -174,6 +176,20 @@ jobs:
           assert "MAX_PINNACLE_PROVIDER_QUOTE_AGE_SECONDS = 120" in Path("tools/football_clv_tracking_cycle.py").read_text(encoding="utf-8")
           print("CLV_INCOMPLETE_MARKET_DIAGNOSTIC_CONTRACT=PASS")
           print("CLV_STRICT_FRESH_GATE_SECONDS=120")
+          PY
+
+      - name: Capture CLV missed-after-kickoff baseline
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          p=Path("evidence/clv/football/over_2_5/state.json")
+          j=json.loads(p.read_text(encoding="utf-8"))
+          missed=int((j.get("closing_cycle") or {}).get("missed_after_kickoff") or 0)
+          Path("/tmp/clv_missed_baseline.txt").write_text(str(missed), encoding="utf-8")
+          print(f"CLV_MISSED_BASELINE={missed}")
           PY
 
       - name: Continuous CLV watch and immediate persistence
@@ -301,9 +317,20 @@ jobs:
           print("CLV_CONTINUOUS_WATCHER_FINAL_GATE: PASS")
           print("decision_count=",j["decision_count"])
           print("closing_odds_count=",j["closing_odds_count"])
-          print("missed_after_kickoff=",j["closing_cycle"]["missed_after_kickoff"])
+          current_missed=int(j["closing_cycle"]["missed_after_kickoff"])
+          baseline_path=Path("/tmp/clv_missed_baseline.txt")
+          if not baseline_path.exists():
+              raise SystemExit("CLV_MISSED_BASELINE_MISSING")
+          baseline=int(baseline_path.read_text(encoding="utf-8").strip())
+          delta=current_missed-baseline
+          print("missed_after_kickoff=",current_missed)
+          print("missed_after_kickoff_baseline=",baseline)
+          print("missed_after_kickoff_delta=",delta)
+          if delta > 0:
+              raise SystemExit(f"CLV_NEW_MISSED_AFTER_KICKOFF_DETECTED:{delta}")
           print("remaining_to_open_metrics=",j["remaining_to_open_metrics"])
           print("real_money=",j["protections"]["real_money"])
+          print("CLV_NO_NEW_MISSED_AFTER_KICKOFF=PASS")
           PY
 
       - name: Renew watcher if future decisions remain
