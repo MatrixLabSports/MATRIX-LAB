@@ -1,7 +1,7 @@
 {
   "catalog_market_names_observed": 0,
   "football_required_lanes": 30,
-  "generated_at_utc": "2026-10-24T18:31:58+00:00",
+  "generated_at_utc": "2026-10-24T18:36:24+00:00",
   "invariants": {
     "aces_present": true,
     "automatic_wagering": false,
@@ -680,17 +680,16 @@
       "sport": "tennis"
     },
     {
-      "blockers": [
-        "BLOCKED_MODEL",
-        "BLOCKED_TENNIS_STAT_MARKET_IMPLEMENTATION"
-      ],
+      "blockers": [],
       "display_name": "Aces",
       "family": "serve",
-      "implementation_paths": [],
-      "implementation_present": false,
+      "implementation_paths": [
+        "tools/rapidapi_tennis_serve_stats_lab.py"
+      ],
+      "implementation_present": true,
       "market_key": "ACES",
       "must_continue_collecting": true,
-      "operational_state": "BLOCKED_MODEL",
+      "operational_state": "LAB",
       "price_state": "PRICE_MAPPING_REQUIRES_TENNIS_PROVIDER_OR_BOOK_CATALOG",
       "production_authorized": false,
       "required": true,
@@ -698,17 +697,16 @@
       "sport": "tennis"
     },
     {
-      "blockers": [
-        "BLOCKED_MODEL",
-        "BLOCKED_TENNIS_STAT_MARKET_IMPLEMENTATION"
-      ],
+      "blockers": [],
       "display_name": "Dobles faltas",
       "family": "serve",
-      "implementation_paths": [],
-      "implementation_present": false,
+      "implementation_paths": [
+        "tools/rapidapi_tennis_serve_stats_lab.py"
+      ],
+      "implementation_present": true,
       "market_key": "DOUBLE_FAULTS",
       "must_continue_collecting": true,
-      "operational_state": "BLOCKED_MODEL",
+      "operational_state": "LAB",
       "price_state": "PRICE_MAPPING_REQUIRES_TENNIS_PROVIDER_OR_BOOK_CATALOG",
       "production_authorized": false,
       "required": true,
@@ -716,17 +714,16 @@
       "sport": "tennis"
     },
     {
-      "blockers": [
-        "BLOCKED_MODEL",
-        "BLOCKED_TENNIS_STAT_MARKET_IMPLEMENTATION"
-      ],
+      "blockers": [],
       "display_name": "Breaks de servicio",
       "family": "serve",
-      "implementation_paths": [],
-      "implementation_present": false,
+      "implementation_paths": [
+        "tools/rapidapi_tennis_serve_stats_lab.py"
+      ],
+      "implementation_present": true,
       "market_key": "BREAKS_OF_SERVE",
       "must_continue_collecting": true,
-      "operational_state": "BLOCKED_MODEL",
+      "operational_state": "LAB",
       "price_state": "PRICE_MAPPING_REQUIRES_TENNIS_PROVIDER_OR_BOOK_CATALOG",
       "production_authorized": false,
       "required": true,
@@ -738,8 +735,7 @@
   "source_run": "rapidapi-tennis-paid-window-harvest",
   "state_counts": {
     "ACTIVE": 2,
-    "BLOCKED_MODEL": 3,
-    "LAB": 37
+    "LAB": 40
   },
   "status": "PASS",
   "target_date_bogota": "2026-10-24",
