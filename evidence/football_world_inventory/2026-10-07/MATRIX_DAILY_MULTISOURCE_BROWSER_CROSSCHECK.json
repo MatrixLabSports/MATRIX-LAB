@@ -1,0 +1,45 @@
+{
+  "schema": "MATRIX_DAILY_MULTISOURCE_BROWSER_CROSSCHECK_V1",
+  "target_date_bogota": "2026-10-07",
+  "timezone": "America/Bogota",
+  "captured_at_utc": "2026-10-07T16:59:07Z",
+  "status": "PASS_EXACT_AUTOMATED_BROWSER_COUNTS",
+  "governance_basis": {
+    "permanent_source_policy": "SOFASCORE_AND_FLASHSCORE_FIRST_THEN_PAID_APIS",
+    "sofascore_flashscore_daily_crosscheck_required": true,
+    "no_single_source_world_truth": true
+  },
+  "sources": {
+    "sofascore": {
+      "url": "https://www.sofascore.com/es",
+      "opera_read_status": "PASS",
+      "exact_unique_match_count": 1544,
+      "count_type": "MACHINE_VERIFIED_BROWSER_UI_EXACT",
+      "provenance": "Opera accessibility tree jq count of unique /football/match/ URLs with unique event IDs under the main daily football page headed Resultados de fútbol en directo y calendario de hoy",
+      "machine_verified_exact": true
+    },
+    "flashscore": {
+      "url": "https://www.flashscore.co/",
+      "opera_read_status": "PASS",
+      "exact_unique_match_count": 82,
+      "count_type": "MACHINE_VERIFIED_BROWSER_UI_EXACT",
+      "provenance": "Opera accessibility tree jq count of unique /partido/futbol/ match links with date selector miércoles, 7 de octubre de 2026",
+      "machine_verified_exact": true
+    }
+  },
+  "adjudication": {
+    "api_football_counts_are_not_world_complete": true,
+    "browser_sources_must_be_checked_daily": true,
+    "discovery_union_requires_physical_dedup": true,
+    "api_enrichment_after_browser_discovery": true,
+    "exact_browser_counts_are_not_additive": true
+  },
+  "protections": {
+    "missing_not_zero": true,
+    "silent_imputation": false,
+    "odds_to_p_matrix": false,
+    "metrics_opened": false,
+    "automatic_wagering": false,
+    "real_money": "BLOCKED"
+  }
+}

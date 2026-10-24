@@ -1,0 +1,88 @@
+{
+  "schema": "MATRIX_CLV_10_AND_TELEGRAM_SCHEDULE_CERTIFICATION_V1",
+  "generated_at_utc": "2026-10-18T14:00:00Z",
+  "telegram_schedule_certification": {
+    "workflow": "Telegram Señales Verdes MATRIX",
+    "run_number": 253,
+    "run_id": 39132270517,
+    "event": "schedule",
+    "displayed_started_at_bogota": "2026-10-18 08:36 GMT-5",
+    "conclusion": "success",
+    "tests": "32 passed in 0.23s",
+    "safety": {
+      "matrix_mode": "SHADOW",
+      "real_money": "BLOCKED",
+      "auto_betting": "DISABLED",
+      "paper_bankroll": "ENABLED"
+    },
+    "supervisor": {
+      "total_green_messages": 211,
+      "total_settlements": 175,
+      "settlements_now": 1,
+      "sent_now": 0,
+      "paper_bankroll_current_cop": 4861000,
+      "paper_open_bets": 1,
+      "paper_open_exposure_cop": 25000,
+      "correlated_risk_h02_closed": false,
+      "correlated_risk_status": "READY_FAIL_CLOSED"
+    },
+    "persistence": {
+      "step_conclusion": "success",
+      "local_commit_before_rebase": "5ed8aa55f",
+      "pushed_branch": "repair/cor09-world-pipeline",
+      "pushed_head": "0cb0743c3"
+    },
+    "adjudication": "FIRST_NATIVE_SCHEDULE_POST_MAIN_FIX_OBSERVED_AND_SUCCESS"
+  },
+  "clv_certification": {
+    "market": "over_2_5",
+    "fixture_id": "1570419",
+    "match": "Osasuna vs Racing Santander",
+    "decision_id": "clv-over25-bab0ffdca83c005f01578644b39b12497076c514af2301afefe9c06433486ff1",
+    "watcher_run_number": 95,
+    "watcher_run_id": 39121851325,
+    "watcher_conclusion": "success",
+    "followup_watcher_run_number": 96,
+    "followup_watcher_run_id": 39132348862,
+    "followup_watcher_conclusion": "success",
+    "entry": {
+      "bookmaker": "Betano",
+      "decimal_odds": 1.65,
+      "observed_at_utc": "2026-10-18T10:08:36+00:00",
+      "model_probability": 0.6735005502
+    },
+    "closing": {
+      "provider": "Pinnacle",
+      "transport": "odds-api.net",
+      "observed_at_utc": "2026-10-18T11:46:18+00:00",
+      "provider_quote_updated_at_utc": "2026-10-18T11:44:37+00:00",
+      "provider_quote_age_seconds": 101,
+      "strict_fresh_gate_seconds": 120,
+      "capture_lead_seconds": 822,
+      "complete_market_snapshot": true,
+      "over_2_5_decimal_odds": 1.65,
+      "under_2_5_decimal_odds": 2.36,
+      "evidence_path": "evidence/clv/football/over_2_5/closing_captures/dd2c7d389245bea0d0f0525274a81c1e61d981dc3800b2ab8e811d03eb1ee574.json",
+      "payload_sha256": "d39bd1fe0d980aa6ed51f6458191b6b08ea81926359fb579790132dd821ebc9c",
+      "attempt_outcome": "ODDS_API_CAPTURED_VALID"
+    },
+    "state_after_capture": {
+      "decision_count": 89,
+      "closing_odds_count": 10,
+      "remaining_to_subgate_30": 20,
+      "remaining_to_open_metrics": 290,
+      "metrics_opened": false,
+      "status": "ACCUMULATING_SEALED_UNTIL_300"
+    },
+    "protections": {
+      "historical_backfill": "FORBIDDEN",
+      "post_kickoff_close": "FORBIDDEN",
+      "incomplete_market_devig": "FORBIDDEN",
+      "odds_used_to_generate_probability": false,
+      "automatic_wagering": false,
+      "real_money": "BLOCKED"
+    },
+    "adjudication": "CLV_9_TO_10_PHYSICALLY_CAPTURED_PREMATCH_AND_STRICT_FRESH"
+  },
+  "final_adjudication": "BOTH_PREVIOUS_OPEN_GATES_CLOSED_PHYSICALLY; CONTINUE_CLV_10_TO_30_WITHOUT_TUNING_OR_RELAXING_FRESHNESS"
+}

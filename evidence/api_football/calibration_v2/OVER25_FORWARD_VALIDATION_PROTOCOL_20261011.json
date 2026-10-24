@@ -1,0 +1,67 @@
+{
+  "schema": "MATRIX_OVER25_FORWARD_VALIDATION_PROTOCOL_V1",
+  "created_at_utc": "2026-10-12T01:17:08+00:00",
+  "purpose": "PROSPECTIVE_STABILITY_MONITORING_ONLY_NOT_PARAMETER_TUNING_NOT_NEW_PROMOTION",
+  "market": "OVER_2_5",
+  "baseline": {
+    "settlement_count": 1329,
+    "freeze_observation_count": 1633,
+    "pending_settlement_count": 304,
+    "lane_state_blob_sha": "a885079799f452cdea3be9dfc49a3339632b8f67",
+    "physical_uniqueness_result": "PASS",
+    "physical_duplicate_fixture_id_groups": 0,
+    "calibration_outside_freeze_count": 0
+  },
+  "frozen_engine": {
+    "engine_id": "calibrated_log_pool_v1_over_2_5",
+    "parameters": {
+      "a": 0.6,
+      "b": 0,
+      "c": 0.4
+    },
+    "parameter_sha256": "719341a1bdae894a93934f226244f42fe25a2c46277aead13022245ed2bd3616",
+    "parameter_tuning_allowed": false,
+    "refit_allowed": false
+  },
+  "forward_validation": {
+    "cohort_definition": "NEXT_100_NEW_STANDARD_FINAL_SETTLEMENTS_ADDED_TO_OVER_2_5_LANE_AFTER_BASELINE_1329",
+    "target_settlement_count": 1429,
+    "required_new_standard_finals": 100,
+    "final_only": true,
+    "nonstandard_terminal_outcomes": "BLOCK_OR_ADJUDICATE_SEPARATELY_NEVER_SILENTLY_INCLUDE",
+    "missing_not_zero": true,
+    "silent_imputation": false,
+    "odds_used_to_generate_probability": false,
+    "target_outcomes_used_to_generate_probability": false,
+    "no_backfill": true,
+    "no_result_based_selection": true,
+    "no_parameter_change_before_cohort_completion": true
+  },
+  "metrics_to_report_at_completion": [
+    "sample_size",
+    "brier_score",
+    "log_loss",
+    "ece",
+    "max_calibration_error",
+    "observed_over_2_5_rate",
+    "mean_predicted_probability",
+    "accuracy_at_0_5_diagnostic_only",
+    "probability_band_reliability",
+    "paired_delta_brier_vs_poisson_if_frozen_baseline_probability_available",
+    "paired_delta_log_loss_vs_poisson_if_frozen_baseline_probability_available"
+  ],
+  "interpretation_rules": {
+    "no_single_day_retuning": true,
+    "no_single_day_promotion_or_demotion": true,
+    "no_hit_rate_only_decision": true,
+    "proper_scoring_rules_primary": true,
+    "calibration_reliability_required": true,
+    "signal_profitability_kept_separate_from_probability_calibration": true
+  },
+  "execution": {
+    "signal_market_scope": "OVER_2_5_ONLY",
+    "telegram_1x2_enabled": false,
+    "real_money": "BLOCKED",
+    "automatic_wagering": false
+  }
+}

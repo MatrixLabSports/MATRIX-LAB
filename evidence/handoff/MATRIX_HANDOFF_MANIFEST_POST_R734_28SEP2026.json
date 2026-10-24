@@ -1,0 +1,194 @@
+{
+  "schema": "MATRIX_HANDOFF_MANIFEST_POST_R734_V1",
+  "created_date": "2026-09-28",
+  "timezone": "America/Bogota",
+  "repository": "MatrixLabSports/MATRIX-LAB",
+  "operational_branch": "repair/cor09-world-pipeline",
+  "main_branch": "main",
+  "baseline_operational_head_before_handoff": "02ed415ea37000bc3a53270257e280c9d5c47635",
+  "baseline_main_head_before_handoff": "c75e12f9dd02ebf926578d1a8affbc07895d0055",
+  "baseline_matrix_ci": {
+    "run_id": 36424149666,
+    "job_id": 108933852129,
+    "conclusion": "SUCCESS",
+    "tests_passed": 3158,
+    "gate": "MATRIX CI QUALITY GATE: PASS"
+  },
+  "handoff_commits": {
+    "continuity_prompt": "8a8af939f9f450b9c5bfec2ad114df780a9ef83e",
+    "executive_summary": "266cdc38afe38d3c9ee62ebbba52e4e3e177a954"
+  },
+  "current_state": {
+    "overall": "RESEARCH_VALIDATION_NOT_PRODUCTION_READY",
+    "external_audit": "NOT_CLOSED",
+    "real_money": "BLOCKED",
+    "automatic_wagering": false,
+    "cor": {
+      "resolved": [
+        "COR01",
+        "COR04",
+        "COR05",
+        "COR06",
+        "COR07",
+        "COR08",
+        "COR09",
+        "COR10",
+        "COR12"
+      ],
+      "pending": [
+        "COR02",
+        "COR03",
+        "COR11"
+      ],
+      "resolved_count": 9,
+      "pending_count": 3
+    },
+    "tennis": {
+      "provider": "rapidapi_tennis",
+      "plan": "Ultra",
+      "holdout_id": "A22_POST_AUDIT_VIRGIN_HOLDOUT_V1",
+      "total": 47,
+      "target": 600,
+      "window1": 47,
+      "window1_target": 200,
+      "passed_observations": 47,
+      "failed_observations": 0,
+      "metrics": "SEALED_UNTIL_600",
+      "outcomes_read": 0,
+      "integrity": "PASS",
+      "identity_authority": "MATRIX_COR0203_ATP_BIOGRAPHICAL_SUBSET_R734",
+      "r730_identity_passed_events": 15,
+      "r730_identity_blocked_events": 2,
+      "unresolved_provider_player_ids": [
+        "rapidapi-tennis:player:76126",
+        "rapidapi-tennis:player:73055"
+      ],
+      "latest_identity_restage_revision": 732,
+      "discovery_horizon_days": 4,
+      "days5_8_probe": {
+        "status": "PASS_TECHNICAL_NO_INVENTORY",
+        "network_calls": 3,
+        "ranking_players_found": 900,
+        "fixture_rows": 0,
+        "eligible_input_events": 0
+      }
+    },
+    "football": {
+      "canonical_total_fixture_count": 83,
+      "canonical_builder_output_count": 82,
+      "canonical_ready_input_count": 81,
+      "canonical_blocked_future_input_count": 1,
+      "canonical_not_future_at_analysis_count": 1,
+      "p_matrix": "NOT_GENERATED",
+      "baseline_poisson": "EXPERIMENTAL_NOT_PROMOTED",
+      "governed_p_matrix_engine_available": false,
+      "retrospective_source_rows": 2379,
+      "market_governance": {
+        "approved": [
+          "1x2",
+          "over_2_5"
+        ],
+        "rejected": [
+          "btts"
+        ],
+        "engine_executable_for_p_matrix": false
+      },
+      "btts_v2": {
+        "status": "FROZEN_BTTS_V2_AWAITING_NEW_PROSPECTIVE_HOLDOUT",
+        "forbidden_original_holdout_count": 357
+      },
+      "prospective_freeze": {
+        "frozen_event_count": 67,
+        "excluded_event_count": 14,
+        "freeze_sha256": "692bf57783664baffe2b9fb3af8cc85153557ee7086a8e09fc870e292e95abe3",
+        "settlement_final_only": true
+      },
+      "last_read_settlement_sync": {
+        "run_at_utc": "2026-09-28T10:03:42+00:00",
+        "ledger_final_count": 0,
+        "pending_count": 67,
+        "note": "Must be re-read on resume because scheduler may have advanced."
+      }
+    },
+    "cor10": {
+      "status": "RESOLVED",
+      "execution_id": "COR10-FOOTBALL-1528902-OVER25-PINNACLE",
+      "bookmaker": "Pinnacle",
+      "decimal_odds": 2.2,
+      "nominal_shadow_stake_cop": 1000,
+      "funds_transferred": false
+    },
+    "cor11": {
+      "real_consecutive_days": 8,
+      "target_days": 14
+    },
+    "rushbet": {
+      "status": "PREACTIVATION_CREDENTIAL_REQUIRED_NOT_VERIFIED_USED",
+      "candidate_provider": "odds-api.net",
+      "required_secret": "ODDS_API_NET_KEY"
+    }
+  },
+  "handoff_files": [
+    "evidence/handoff/PROMPT_MAESTRO_CONTINUIDAD_MATRIX_28SEP2026_POST_R734_47_600.md",
+    "evidence/handoff/MATRIX_HANDOFF_RESUMEN_POST_R734_28SEP2026.md",
+    "evidence/handoff/MATRIX_HANDOFF_MANIFEST_POST_R734_28SEP2026.json"
+  ],
+  "critical_files": [
+    "docs/governance/MATRIX_RECONCILED_BASELINE_SUPREMACY_V1.md",
+    "evidence/audit/MATRIX_TOTAL_RECONCILIATION_AUDIT_20260926.md",
+    "evidence/audit/MATRIX_RECONCILED_TRUTH_STATE_20260926.json",
+    "docs/governance/MATRIX_TRUTHFULNESS_AND_PHYSICAL_EVIDENCE_CONSTITUTION_V1.md",
+    "evidence/audit/MATRIX_API_USAGE_CLAIM_GATE_V1.md",
+    "evidence/audit/MATRIX_OPEN_COR_STATUS_20260928.json",
+    "evidence/cor10/MATRIX_COR10_ADJUDICATION.json",
+    "evidence/cor10/MATRIX_COR10_GENUINE_FUTURE_EXECUTION.json",
+    "evidence/cor10/COR10_CLOSURE_MANIFEST.json",
+    "evidence/cor0203/runtime/MATRIX_COR0203_PRODUCTION_OBSERVABILITY_LAST.json",
+    "evidence/cor0203/runtime/MATRIX_COR0203_HOLDOUT_INTEGRITY_LAST.json",
+    "evidence/cor0203/runtime/MATRIX_COR0203_IDENTITY_CROSSWALK_R730.json",
+    "evidence/cor0203/runtime/MATRIX_COR0203_IDENTITY_RESTAGE_DELTA_LAST.json",
+    "evidence/cor0203/runtime/MATRIX_COR0203_PREFEATURE_REGISTRY_R731.json",
+    "evidence/cor0203/runtime/MATRIX_COR0203_PREFEATURE_REGISTRY_R732.json",
+    "evidence/cor0203/holdout/MATRIX_COR0203_HOLDOUT_BATCH_R731.json",
+    "evidence/cor0203/holdout/MATRIX_COR0203_HOLDOUT_BATCH_R732.json",
+    "evidence/cor0203/identity/MATRIX_COR0203_ATP_BIOGRAPHICAL_SUBSET_R734.json",
+    "evidence/cor0203/identity/MATRIX_COR0203_RAPIDAPI_PROFILE_IDENTITY_R732.json",
+    "tools/cor0203_identity_authority.py",
+    "tools/cor0203_identity_restage_delta.py",
+    "tools/cor0203_build_identity_crosswalk.py",
+    "scripts/cor0203_production_cycle.sh",
+    "evidence/api_football/canonical_analysis/manifest.json",
+    "evidence/api_football/engine_registry/physical_adjudication.json",
+    "evidence/api_football/challenger/challenger_manifest.json",
+    "evidence/api_football/challenger/final_holdout_adjudication.json",
+    "evidence/api_football/market_governance/market_governance.json",
+    "evidence/api_football/btts_challenger_v2/manifest.json",
+    "evidence/api_football/btts_challenger_v2/exclusion_registry.json",
+    "evidence/api_football/prospective_market_freeze/manifest.json",
+    "evidence/api_football/prospective_market_freeze/freeze.json",
+    "evidence/api_football/prospective_market_freeze/settlement_sync_last.json",
+    "evidence/api_football/pinnacle_reference/manifest.json",
+    "evidence/api_football/pinnacle_reference/pinnacle_reference_odds.jsonl",
+    "evidence/audit/MATRIX_RUSHBET_SOURCE_SELECTION_20260928.md",
+    "tools/odds_api_net_colombia_catalog_probe.py",
+    "tests/test_odds_api_net_colombia_catalog_probe.py",
+    "evidence/cor11/MATRIX_COR11_CADENCE_LEDGER_R727.json",
+    "tools/cor11_cadence_update.py"
+  ],
+  "non_negotiable": [
+    "Physical evidence wins over chat/memory.",
+    "Never claim API use without real calls and persisted evidence.",
+    "Missing != 0.",
+    "No silent imputation.",
+    "No odds to model probability.",
+    "No silent name-only identity joins.",
+    "No historical backfill into prospective holdout.",
+    "Freeze strictly before event.",
+    "Settlement FINAL-only.",
+    "Do not open metrics before the preregistered gate.",
+    "Do not retune on the holdout and then call it unseen.",
+    "Persist append-only where required.",
+    "Tennis and football remain separate.",
+    "Real money remains blocked."
+  ]
+}

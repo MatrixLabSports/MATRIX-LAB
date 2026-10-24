@@ -1,0 +1,69 @@
+name: API-Football PLAYER_SHOTS expected-minutes v2 research
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - repair/cor09-world-pipeline
+    paths:
+      - .github/workflows/api-football-player-shots-expected-minutes-v2.yml
+      - tools/api_football_player_shots_expected_minutes_v2.py
+
+permissions:
+  contents: write
+
+concurrency:
+  group: api-football-player-shots-expected-minutes-v2
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout exact trigger state
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Build role-aware PIT and historical OOS challenger
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m tools.api_football_player_shots_expected_minutes_v2
+
+      - name: Assert prospective remains closed
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          s=json.loads(Path("evidence/api_football/market_expansion/player_shots_expected_minutes_v2/summary.json").read_text())
+          assert s["cross_source_role_equivalence_certified"] is False
+          assert s["prematch_lineup_source_certified"] is False
+          assert s["expected_minutes_pit_prospective_certified"] is False
+          assert s["prospective_freeze_allowed"] is False
+          assert s["real_money"] == "BLOCKED"
+          print("PLAYER_SHOTS_V2_PROSPECTIVE_CLOSED_GUARD=PASS")
+          PY
+
+      - name: Persist research evidence
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "matrix-player-shots-v2"
+          git config user.email "matrix-player-shots-v2@users.noreply.github.com"
+          git add evidence/api_football/market_expansion/player_shots_expected_minutes_v2
+          if git diff --cached --quiet; then
+            echo "NO_PLAYER_SHOTS_V2_EVIDENCE"
+            exit 3
+          fi
+          git commit -m "evidence(football): evaluate PLAYER_SHOTS expected-minutes v2"
+          git pull --rebase origin repair/cor09-world-pipeline
+          git push origin HEAD:repair/cor09-world-pipeline

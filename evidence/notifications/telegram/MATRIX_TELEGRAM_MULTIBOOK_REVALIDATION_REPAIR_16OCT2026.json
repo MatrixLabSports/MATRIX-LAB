@@ -1,0 +1,69 @@
+{
+  "schema": "MATRIX_TELEGRAM_MULTIBOOK_REVALIDATION_REPAIR_V1",
+  "operational_date_bogota": "2026-10-16",
+  "problem": "Final Telegram revalidation was effectively constrained to Betano because API-Football catalog did not expose BetPlay or Rushbet.",
+  "diagnosis": {
+    "api_football_catalog": {
+      "betano_present": true,
+      "betplay_present": false,
+      "rushbet_present": false,
+      "evidence_path": "evidence/api_football/bookmakers/manifest.json"
+    },
+    "odds_api_net_catalog": {
+      "workflow_run_id": 38913936826,
+      "status": "PASS",
+      "provider_rows": 15,
+      "portfolio_status": "PASS_ALL_EXECUTION_TARGETS_VISIBLE",
+      "portfolio_covered": "14/14",
+      "betano_present": true,
+      "betplay_present": true,
+      "rushbet_present": true,
+      "catalog_manifest_blob_sha": "ec20c7f41ad7f0608df709fd10cafe1738ce753b",
+      "raw_sha256": "05e221893e3dc10cdaf0ca3183b5d4c0d776bffbbf2f5c8ac1a745c9f642d10e"
+    }
+  },
+  "repair": {
+    "policy": "Same-house API-Football quote is retained when available; odds-api.net independently checks Betano, BetPlay and Rushbet and the best valid exact Over 2.5 quote may be selected after frozen P_MATRIX.",
+    "implementation_commits": [
+      "d8ef3cf5367698f1712e0f492633fbda714c5cec",
+      "8bc9ffa27b56cf6aa8bef3443a4ef7963c230bd1",
+      "792801012ed9f32db16933b61de34607f54fe24b",
+      "6f6ddee2ef339d471bd382072b3d7bb2937fa8b2",
+      "f6cef95bc5f1841f85f89d6227906cedb050a8fe",
+      "6a124949d2d71a82a29af1a90a132629ce267f58",
+      "aa937c007dec467669240824a51804de315dde70"
+    ],
+    "final_validation_run_id": 38914260737,
+    "tests": "15 passed in 0.17s",
+    "secrets_gate": "TELEGRAM + API_FOOTBALL + ODDS_API_NET present",
+    "supervisor": "success",
+    "ledger_persist": "success",
+    "delivery_failures_now": 0
+  },
+  "live_check": {
+    "fixture_id": "1559801",
+    "match": "Karviná vs Dukla Praha",
+    "checked_at_utc": "2026-10-16T14:15:40+00:00",
+    "primary_same_house_offer": null,
+    "odds_api_net_multi_book_offer": null,
+    "state": "BLOCKED_NO_VALID_EXACT_AUTHORIZED_BOOK_OVER25",
+    "interpretation": "The multi-book route was executed, but none of Betano/BetPlay/Rushbet returned a valid exact Over 2.5 offer for this event at this check. No signal was forced."
+  },
+  "current_state": {
+    "pre_send_passed": 0,
+    "sent_now": 0,
+    "waiting_final_120m": 6,
+    "ledger_blob_sha": "288575bce91832abc4d98b970dd7a402ab6a42a4",
+    "branch_head": "9a1cbbe773c3bfef5dd1e35c6e7ae5d6f34c73e8"
+  },
+  "protections": {
+    "p_matrix_frozen": true,
+    "odds_used_to_generate_probability": false,
+    "min_decimal_odds_strictly_greater_than_1_50": true,
+    "quality_gate_p_matrix_min": 0.6,
+    "quality_gate_revalidated_ev_min": 0.05,
+    "real_money": "BLOCKED",
+    "automatic_wagering": false
+  },
+  "status": "PHYSICALLY_REPAIRED_MULTIBOOK_GATE_ACTIVE_NO_VALID_QUOTE_YET"
+}

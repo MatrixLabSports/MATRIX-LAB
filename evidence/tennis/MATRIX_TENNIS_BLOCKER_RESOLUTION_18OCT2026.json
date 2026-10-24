@@ -1,0 +1,161 @@
+{
+  "schema": "MATRIX_TENNIS_BLOCKER_RESOLUTION_18OCT2026_V1",
+  "generated_at_utc": "2026-10-18T20:12:00Z",
+  "branch": "repair/cor09-world-pipeline",
+  "corrections": {
+    "clay_prior_interpretation": {
+      "prior_phrase": "8 PIT-ready targets interpreted as 8 matches",
+      "corrected_meaning": "8 PIT-ready player targets, not 8 fully freeze-ready matches",
+      "verified_ready_players": [
+        "Jacopo Vasami",
+        "Thiago Moura Monteiro",
+        "Alexander Ritschard",
+        "Juan Pablo Varillas",
+        "Daniel Elahi Galan",
+        "Nicolas Jarry",
+        "Matias Soto",
+        "Max Houkes"
+      ],
+      "producer_starting_observation_count": 2,
+      "producer_ending_observation_count": 3,
+      "legitimate_new_observations": 1
+    }
+  },
+  "clay": {
+    "state_after": 3,
+    "target": 600,
+    "remaining": 597,
+    "pit_ready_player_targets": 8,
+    "pit_blocked_player_targets": 46,
+    "identity_backlog": 44,
+    "bound_events": 30,
+    "reconciliation_freeze_ready_under_old_rule": 0,
+    "adjudication": "ONE_EVENT_HAD_SUFFICIENT_END_TO_END_PIT_IDENTITY_TO_FREEZE; ALL_OTHER_EVENTS_REMAIN_FAIL_CLOSED",
+    "protections": {
+      "historical_backfill_into_holdout": false,
+      "metrics_opened": false,
+      "outcomes_read": 0,
+      "missing_not_zero": true,
+      "silent_imputation": false,
+      "real_money": "BLOCKED"
+    }
+  },
+  "hard": {
+    "state_after": 280,
+    "target": 600,
+    "remaining": 320,
+    "target_date_bogota": "2026-10-19",
+    "blocked_events": [
+      {
+        "match_id": "195716",
+        "players": [
+          "Chak Lam Coleman Wong",
+          "Jake Delaney"
+        ],
+        "start_bogota": "2026-10-19T05:00:00-05:00",
+        "blockers": [
+          "IDENTITY_CROSSWALK_MISSING:rapidapi-tennis:player:71166",
+          "SEALED_STATIC4_PLAYER_NOT_FOUND:Chak Lam Coleman Wong"
+        ],
+        "safe_recovery_now": false
+      },
+      {
+        "match_id": "255062",
+        "players": [
+          "Jeff Wolf",
+          "Tyler Zink"
+        ],
+        "start_bogota": "2026-10-19T10:00:00-05:00",
+        "blockers": [
+          "IDENTITY_CROSSWALK_MISSING:rapidapi-tennis:player:46722",
+          "SEALED_STATIC4_PLAYER_NOT_FOUND:Jeff Wolf"
+        ],
+        "safe_recovery_now": false
+      },
+      {
+        "match_id": "255063",
+        "players": [
+          "Alastair Gray",
+          "Lui Maxted"
+        ],
+        "start_bogota": "2026-10-19T10:00:00-05:00",
+        "blockers": [
+          "IDENTITY_CROSSWALK_MISSING:rapidapi-tennis:player:83521",
+          "SEALED_STATIC4_PLAYER_NOT_FOUND:Lui Maxted"
+        ],
+        "note": "Identity authority contains a Lui Maxted record with pre-cut history, but governed crosswalk/static4 gate still fails; no manual substitution permitted.",
+        "safe_recovery_now": false
+      },
+      {
+        "match_id": "255077",
+        "players": [
+          "Cosme Rolland De Ravel",
+          "Ozan Baris"
+        ],
+        "start_bogota": "2026-10-19T10:00:00-05:00",
+        "blockers": [
+          "ELO_SURFACE_MISSING:Cosme Rolland De Ravel",
+          "GLICKO_SURFACE_MISSING:Cosme Rolland De Ravel",
+          "SURFACE_HISTORY_MISSING:Cosme Rolland De Ravel"
+        ],
+        "note": "Identity authority exists, but Hard surface history required by the frozen model is missing.",
+        "safe_recovery_now": false
+      },
+      {
+        "match_id": "255079",
+        "players": [
+          "Sebastian Gorzny",
+          "Igor Ribeiro Marcondes"
+        ],
+        "start_bogota": "2026-10-19T10:00:00-05:00",
+        "blockers": [
+          "IDENTITY_CROSSWALK_MISSING:rapidapi-tennis:player:29610",
+          "SEALED_STATIC4_PLAYER_NOT_FOUND:Igor Ribeiro Marcondes"
+        ],
+        "safe_recovery_now": false
+      }
+    ],
+    "discovery_rejected": [
+      {
+        "match_id": "255072",
+        "blocker": "RANKING_CUT_MISSING_PLAYER2"
+      },
+      {
+        "match_id": "255073",
+        "blocker": "RANKING_CUT_MISSING_PLAYER2"
+      }
+    ],
+    "frozen_unique_existing": 10,
+    "canonical_recovery_run": {
+      "run_id": 39161652402,
+      "job_id": 117776027857,
+      "conclusion": "success",
+      "new_freezes": 0
+    },
+    "adjudication": "NO_SAFE_MANUAL_RECOVERY_AVAILABLE_WITHOUT_MUTATING_SEALED_MODEL_INPUTS"
+  },
+  "live": {
+    "lane": "itf|women|hard",
+    "settled_quality_valid": 49,
+    "target_gate": 50,
+    "remaining": 1,
+    "bulk_run_id": 39161456029,
+    "settlement_run_id": 39161509931,
+    "provider_remaining_before_run": 0,
+    "executed_cycles": 0,
+    "api_tennis_reactivated": false,
+    "adjudication": "FAIL_CLOSED_UNTIL_NEW_VALID_LIVE_PROVIDER_QUOTA_OR_NEW_PROVIDER_EQUIVALENCE_IS_GOVERNED"
+  },
+  "final": {
+    "hard": "280/600",
+    "clay": "3/600",
+    "live_itf_women_hard": "49/50",
+    "forced_additions": 0,
+    "manual_imputations": 0,
+    "backfill": false,
+    "tuning": false,
+    "metrics_opened": false,
+    "real_money": "BLOCKED",
+    "status": "RESOLVED_TO_MAXIMUM_LEGITIMATE_PROGRESS_WITH_CURRENT_EVIDENCE"
+  }
+}

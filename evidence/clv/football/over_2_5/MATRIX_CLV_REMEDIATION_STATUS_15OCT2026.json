@@ -1,0 +1,37 @@
+{
+  "schema": "MATRIX_FOOTBALL_CLV_REMEDIATION_STATUS_V1",
+  "status": "INTERNAL_REMEDIATION_PASS_EXTERNAL_FRESH_SHARP_SOURCE_PENDING",
+  "root_cause_counts": {
+    "total_missed": 52,
+    "pre_watcher_gap": 4,
+    "stale_sharp_quote_gt_120s": 46,
+    "incomplete_market": 1,
+    "stale_long_lived_checkout": 1
+  },
+  "repaired": {
+    "per_attempt_telemetry": true,
+    "refresh_operational_branch_each_cycle": true,
+    "alternate_sharp_transport_code_ready": true,
+    "strict_120s_gate_unchanged": true,
+    "targeted_tests_passed": true
+  },
+  "proof": {
+    "workflow_run_id": 38755243592,
+    "conclusion": "success",
+    "proof_blob_sha": "ce6b94824f6a8ea5785e5de2ca5ed2ff3ba34765"
+  },
+  "sharp_probe": {
+    "workflow_run_id": 38755665028,
+    "conclusion": "success",
+    "pinnacle_fresh_120s": "0/5",
+    "betfair_fresh_120s": "0/5",
+    "min_quote_age_seconds": 8997,
+    "max_quote_age_seconds": 9058
+  },
+  "remaining_gate": "ONE_NEW_AUTOMATIC_STRICT_FRESH_PREMATCH_CLOSE_REQUIRED",
+  "protections": {
+    "freshness_gate_seconds": 120,
+    "automatic_wagering": false,
+    "real_money": "BLOCKED"
+  }
+}

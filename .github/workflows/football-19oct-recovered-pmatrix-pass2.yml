@@ -1,0 +1,82 @@
+name: MATRIX Football 19Oct Recovered P_MATRIX Pass2
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - repair/cor09-world-pipeline
+    paths:
+      - .github/workflows/football-19oct-recovered-pmatrix-pass2.yml
+
+permissions:
+  contents: write
+
+jobs:
+  rebuild:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      REAL_MONEY: BLOCKED
+      AUTO_BETTING: DISABLED
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: repair/cor09-world-pipeline
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Safety gate
+        run: |
+          test "$REAL_MONEY" = "BLOCKED"
+          test "$AUTO_BETTING" = "DISABLED"
+      - name: Build recovered canonical and P_MATRIX shadow
+        run: |
+          python - <<'PY'
+          import json
+          from datetime import datetime, timezone
+          from pathlib import Path
+          from tools.api_football_canonicalize_analysis_inputs import build_canonical_analysis_bundle, write_chunked_canonical_bundle
+          from tools.api_football_market_shadow_p_matrix import build_shadow_p_matrix
+
+          root=Path("evidence/api_football/prospective_daily/2026-10-19/20261019T005952Z")
+          bench=json.loads((root/"team_last_fallback_pass2/benchmark_after_team_last.json").read_text())
+          out=root/"canonical_analysis_pass2"
+          bundle, manifest=build_canonical_analysis_bundle(
+              benchmark=bench,
+              analysis_as_of=datetime.now(timezone.utc).replace(microsecond=0),
+          )
+          persisted=write_chunked_canonical_bundle(out=out,bundle=bundle,manifest=manifest)
+          pm=build_shadow_p_matrix(
+              canonical_bundle=bundle,
+              canonical_manifest=manifest,
+              raw_dir=root/"history/raw",
+              generated_at=datetime.now(timezone.utc).replace(microsecond=0),
+          )
+          pout=root/"p_matrix_shadow_pass2"
+          pout.mkdir(parents=True,exist_ok=True)
+          (pout/"p_matrix_shadow.json").write_text(json.dumps(pm,ensure_ascii=False,indent=2,sort_keys=True)+"\n")
+          cert={
+            "schema":"MATRIX_FOOTBALL_19OCT_RECOVERED_PMATRIX_PASS2_V1",
+            "canonical_ready_input_count":persisted["ready_input_count"],
+            "canonical_blocked_future_input_count":persisted["blocked_future_input_count"],
+            "p_matrix_scored_count":pm["scored_count"],
+            "p_matrix_blocked_count":pm["blocked_count"],
+            "real_money":"BLOCKED",
+            "automatic_wagering":False,
+            "odds_used_to_generate_probability":False
+          }
+          (root/"MATRIX_19OCT_RECOVERED_PMATRIX_PASS2_CERT.json").write_text(json.dumps(cert,indent=2,sort_keys=True)+"\n")
+          print(json.dumps(cert,sort_keys=True))
+          PY
+      - name: Persist recovered P_MATRIX evidence
+        run: |
+          git config user.name matrix-football-recovered-pmatrix
+          git config user.email matrix-football-recovered-pmatrix@users.noreply.github.com
+          git add evidence/api_football/prospective_daily/2026-10-19/20261019T005952Z/canonical_analysis_pass2
+          git add evidence/api_football/prospective_daily/2026-10-19/20261019T005952Z/p_matrix_shadow_pass2
+          git add evidence/api_football/prospective_daily/2026-10-19/20261019T005952Z/MATRIX_19OCT_RECOVERED_PMATRIX_PASS2_CERT.json
+          git commit -m "evidence(football): persist recovered 19-Oct P_MATRIX pass2" || exit 0
+          git fetch origin repair/cor09-world-pipeline
+          git rebase origin/repair/cor09-world-pipeline
+          git push origin HEAD:repair/cor09-world-pipeline

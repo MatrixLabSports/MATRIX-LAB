@@ -1,0 +1,114 @@
+{
+  "schema": "MATRIX_SETTLEMENT_PROGRESS_20261006_BOGOTA_AUDIT_SNAPSHOT_V1",
+  "cohort": "2026-10-06_BOGOTA",
+  "observed_at_utc": "2026-10-16T20:22:28.003Z",
+  "source_branch": "repair/cor09-world-pipeline",
+  "source_head_observed": "133ac5417fcf7f86fd885d386be5806ead2fa00c",
+  "previous_snapshot_path": "evidence/daily_selection/MATRIX_SETTLEMENT_PROGRESS_20261006_BOGOTA_20261016T1830Z_V2_1913_T278.json",
+  "previous_snapshot_blob_sha": "277fa64ea49a3ebde21830356c92a087334d5b61",
+  "source_candidate_path": "evidence/daily_selection/MATRIX_CALIBRATION_CANDIDATES_20261006_BOGOTA.json",
+  "source_candidate_blob_sha": "52e897007840f5bed1a8999edad8ee594fefc767",
+  "football": {
+    "v2_freezes": 2668,
+    "v2_settlements": 1933,
+    "v2_pending": 735,
+    "delta_freezes": 0,
+    "delta_v2_settlements": 20,
+    "delta_pending": -20,
+    "all_five_v2_lanes_consistent": true,
+    "cohort_total": 116,
+    "cohort_ft_fully_verified": 107,
+    "cohort_new_ft": 0,
+    "cohort_remaining_nonstandard_or_pending": 9,
+    "cohort_full_ledger_recheck": true,
+    "cohort_duplicate_settlements": 0,
+    "new_global_ft_fixture_ids": [
+      "1519171",
+      "1556470",
+      "1556471",
+      "1556472",
+      "1556473",
+      "1559802",
+      "1559804",
+      "1559805",
+      "1567924",
+      "1567925",
+      "1567929",
+      "1597942",
+      "1566379",
+      "1574130",
+      "1574131",
+      "1607985",
+      "1607986",
+      "1607987",
+      "1607988",
+      "1607989"
+    ],
+    "global_calibration_settlements": 2735,
+    "global_ledger_hash_chain_verified": true,
+    "global_ledger_last_record_sha256": "00695cc744ab3e8896c86bbf851cba606b63f1867c48d7eedd5b10f9901f0d95",
+    "blocked_nonstandard": {
+      "PEN": [
+        "1588817",
+        "1588821",
+        "1588845",
+        "1588863",
+        "1588890",
+        "1588893",
+        "1619499"
+      ],
+      "AET": [
+        "1644168"
+      ],
+      "NS_pending": [
+        "1596466"
+      ]
+    },
+    "source_sync_path": "evidence/api_football/prospective_market_freeze/settlement_sync_last.json",
+    "source_sync_blob_sha": "a46a6ea9306b90d0c46c79590937a0a688522f95",
+    "source_calibration_sync_path": "evidence/api_football/prospective_calibration/sync_last.json",
+    "source_calibration_sync_blob_sha": "1893f33b55edcfdb6ea8bfa40d470fc50c6a4769",
+    "v2_state_blob_shas": {
+      "1x2": "8139d249acda9048672e0575a7531263d755c3c8",
+      "over_2_5": "e7d0bb59c6be8213d55bf1148cc2e75118cabf2c",
+      "under_2_5": "e2eab9d187c24d5f99949ce7d4a90b5d9f690eaf",
+      "double_chance_1x": "c009a1acd42a98f52cd9f8513a5042949d796f3b",
+      "double_chance_x2": "8fea116802f89c5f6348ba0baf40f0af2dfb1429"
+    }
+  },
+  "tennis": {
+    "cohort_total": 11,
+    "cohort_finished": 11,
+    "cohort_unique_events": 11,
+    "cohort_unique_settlements": 11,
+    "cohort_duplicate_settlements": 0,
+    "global_settlement_rows": 279,
+    "delta_global_settlements": 1,
+    "global_unique_calibration_observations": 247,
+    "delta_global_unique": 0,
+    "duplicate_quarantined": 171,
+    "uniqueness": "PASS",
+    "global_ledger_hash_chain_verified": true,
+    "new_global_finished_event_ids": [
+      "COR0203-RAPIDAPI-TENNIS-72576-b2a50214bd5c"
+    ],
+    "new_events_in_cohort": false,
+    "source_ledger_path": "evidence/cor0203/settlement/MATRIX_COR0203_SETTLEMENT_LEDGER.jsonl",
+    "source_ledger_blob_sha": "57522e6e14128d7bfebbffc73303e8e10959550b",
+    "source_uniqueness_path": "evidence/cor0203/runtime/MATRIX_COR0203_SETTLEMENT_UNIQUENESS_LAST.json",
+    "source_uniqueness_blob_sha": "cd4fdd30651eb2fd8abdba8040d2a92768047b56"
+  },
+  "governance": {
+    "metrics_opened": false,
+    "parameter_tuning_allowed": false,
+    "odds_to_probability": false,
+    "settlement_final_only": true,
+    "real_money": "BLOCKED",
+    "automated_wagering": false
+  },
+  "limitations": [
+    "Global settlements already persisted by governed workflows before this audit; no duplicate settlements created.",
+    "Cohort football nonstandard states are from repository sync, not independently revalidated with provider.",
+    "No tuning, odds-to-probability, or metrics opening; snapshot-only write."
+  ]
+}

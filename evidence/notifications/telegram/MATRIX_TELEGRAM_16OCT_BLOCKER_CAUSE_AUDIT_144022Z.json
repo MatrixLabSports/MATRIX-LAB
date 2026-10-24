@@ -1,0 +1,84 @@
+{
+  "schema": "MATRIX_TELEGRAM_16OCT_BLOCKER_CAUSE_AUDIT_V1",
+  "operational_date_bogota": "2026-10-16",
+  "captured_at_utc": "2026-10-16T14:40:22+00:00",
+  "workflow_run_id": 38917573818,
+  "workflow_conclusion": "success",
+  "tests": "17 passed in 0.26s",
+  "summary": {
+    "football_candidates": 27,
+    "pre_send_quote_checks": 2,
+    "pre_send_passed": 0,
+    "pre_send_blocked": 5,
+    "waiting_final_120m": 5,
+    "sent_now": 0,
+    "delivery_failures_now": 0
+  },
+  "blocker_breakdown": {
+    "BLOCKED_KICKOFF_REACHED": 3,
+    "BLOCKED_NO_VALID_EXACT_AUTHORIZED_BOOK_OVER25": 2,
+    "BLOCKED_QUALITY_P_MATRIX_BELOW_60PCT": 0,
+    "BLOCKED_QUALITY_REVALIDATED_EV_BELOW_5PCT": 0,
+    "BLOCKED_IDENTITY": 0,
+    "WAITING_FINAL_REVALIDATION_WINDOW": 5
+  },
+  "processed_in_final_window": [
+    {
+      "fixture_id": "1559801",
+      "match": "Karviná vs Dukla Praha",
+      "kickoff_utc": "2026-10-16T15:30:00+00:00",
+      "primary_same_house_offer": null,
+      "odds_api_net_multi_book_offer": null,
+      "state": "BLOCKED_NO_VALID_EXACT_AUTHORIZED_BOOK_OVER25"
+    },
+    {
+      "fixture_id": "1567924",
+      "match": "Voitsberg vs First Vienna",
+      "kickoff_utc": "2026-10-16T16:30:00+00:00",
+      "primary_same_house_offer": null,
+      "odds_api_net_multi_book_offer": null,
+      "state": "BLOCKED_NO_VALID_EXACT_AUTHORIZED_BOOK_OVER25"
+    }
+  ],
+  "waiting": [
+    {
+      "fixture_id": "1607987",
+      "match": "SV Lafnitz vs Gleisdorf 09",
+      "kickoff_utc": "2026-10-16T17:00:00+00:00"
+    },
+    {
+      "fixture_id": "1551838",
+      "match": "FC Eindhoven vs Vitesse",
+      "kickoff_utc": "2026-10-16T18:00:00+00:00"
+    },
+    {
+      "fixture_id": "1552785",
+      "match": "Le Mans vs Toulouse",
+      "kickoff_utc": "2026-10-16T18:45:00+00:00"
+    },
+    {
+      "fixture_id": "1564901",
+      "match": "Strabane Athletic vs Loughgall",
+      "kickoff_utc": "2026-10-16T18:45:00+00:00"
+    },
+    {
+      "fixture_id": "1570415",
+      "match": "Deportivo La Coruna vs Levante",
+      "kickoff_utc": "2026-10-16T19:00:00+00:00"
+    }
+  ],
+  "conclusion": "Current bottleneck is exact executable Over 2.5 quote availability, not Telegram delivery and not the P_MATRIX/EV precision gate. No candidate has yet reached quality-gate evaluation because both in-window quote checks returned no valid authorized-book offer.",
+  "ledger": {
+    "blob_sha": "cdcc278f7478613ac27570e97feffadc502db6c9",
+    "bankroll_current_cop": 5230250
+  },
+  "protections": {
+    "thresholds_unchanged": true,
+    "engines_unchanged": true,
+    "p_matrix_unchanged": true,
+    "real_money": "BLOCKED",
+    "automatic_wagering": false,
+    "no_forced_signal": true
+  },
+  "status": "PHYSICALLY_AUDITED_CURRENT_BOTTLENECK_EXACT_QUOTE_AVAILABILITY"
+}

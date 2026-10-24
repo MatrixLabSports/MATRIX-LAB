@@ -1,0 +1,186 @@
+{
+  "schema": "MATRIX_GLOBAL_STRENGTH_MAP_RESOLUTION_V1",
+  "verified_at_utc": "2026-10-04T03:18:00Z",
+  "status": "COMPLETE_PHYSICALLY_MATERIALIZED",
+  "objective": "Maintain worldwide evaluation for football and tennis while measuring strength separately by sport x competition x market, without modifying model probabilities or governance.",
+  "implementation": {
+    "generator": {
+      "path": "tools/matrix_global_strength_map.py",
+      "blob_sha": "589ad75bfcdecc42ce71a8e7e6f4dd8f8a0ac374"
+    },
+    "tests": {
+      "path": "tests/test_matrix_global_strength_map.py",
+      "blob_sha": "731d6ba2dd2cb94df40c106e824227689fc0759c"
+    },
+    "hourly_workflow": {
+      "path": ".github/workflows/matrix-global-strength-map.yml",
+      "main_blob_sha": "68de927bb323d5b8a178e0d176f9f8baebf67408",
+      "cron": "52 * * * *",
+      "network_calls_required": 0,
+      "purpose": "Rebuild evidence-only strength map from current canonical artifacts."
+    }
+  },
+  "materialized_outputs": {
+    "strength_map_json": {
+      "path": "evidence/global_strength_map/strength_map.json",
+      "blob_sha": "bc129adcd1543858d60eaaa17db3765e4c73b827",
+      "cell_count": 237
+    },
+    "summary": {
+      "path": "evidence/global_strength_map/summary.json",
+      "blob_sha": "11eade6d4654125bae18239664eed4670bf2e29f"
+    },
+    "manifest": {
+      "path": "evidence/global_strength_map/manifest.json",
+      "blob_sha": "fe3deebdac4f2a0ca5dcd32d123b8cf06539d90b"
+    },
+    "csv": {
+      "path": "evidence/global_strength_map/strength_map.csv",
+      "blob_sha": "fdd16041010ac5bdee69e9bac0ecfed6b74279fc"
+    }
+  },
+  "current_classification": {
+    "total_cells": 237,
+    "STRONG": 1,
+    "DEVELOPING": 15,
+    "INSUFFICIENT_DATA": 216,
+    "NO_GO": 5,
+    "football": {
+      "STRONG": 1,
+      "DEVELOPING": 15,
+      "INSUFFICIENT_DATA": 204,
+      "NO_GO": 5
+    },
+    "tennis": {
+      "STRONG": 0,
+      "DEVELOPING": 0,
+      "INSUFFICIENT_DATA": 12,
+      "NO_GO": 0
+    }
+  },
+  "current_global_market_state": {
+    "football": {
+      "OVER_2_5": {
+        "class": "STRONG",
+        "prospective_n": 626,
+        "rule": "Brier and Log Loss better than Poisson with paired 95% intervals fully favorable."
+      },
+      "ONE_X_TWO": {
+        "class": "DEVELOPING",
+        "prospective_n": 626,
+        "rule": "Large prospective sample but evidence is not yet decisive enough for STRONG under the canonical uncertainty rule."
+      },
+      "PLAYER_SHOTS_V3": {
+        "class": "DEVELOPING",
+        "prospective_n": 0,
+        "historical_oos_pass": true
+      },
+      "TEAM_TOTAL_SHOTS_HOME": {
+        "class": "DEVELOPING",
+        "prospective_n": 0,
+        "historical_oos_pass": true
+      },
+      "TEAM_TOTAL_SHOTS_AWAY": {
+        "class": "DEVELOPING",
+        "prospective_n": 0,
+        "historical_oos_pass": true
+      },
+      "TEAM_FOULS_TOTAL": {
+        "class": "DEVELOPING",
+        "prospective_n": 0,
+        "historical_oos_pass": true
+      },
+      "BTTS": {
+        "class": "NO_GO"
+      },
+      "CORNERS_V3": {
+        "class": "NO_GO"
+      },
+      "TEAM_SHOTS_ON_TARGET_V3": {
+        "class": "NO_GO"
+      },
+      "TEAM_GOALKEEPER_SAVES_V3": {
+        "class": "NO_GO"
+      },
+      "TEAM_YELLOW_CARDS_V3": {
+        "class": "NO_GO"
+      }
+    },
+    "tennis": {
+      "ATP_CHALLENGER_HARD_MATCH_WINNER": {
+        "class": "INSUFFICIENT_DATA",
+        "prospective_n": 93,
+        "target_n": 600,
+        "remaining_to_600": 507,
+        "models": [
+          "R218_ELO_BOTH",
+          "R223_BATCH_GLICKO_RATING_BOTH"
+        ],
+        "metrics_opened": false,
+        "outcomes_read": 0,
+        "reason": "SEALED_UNTIL_600"
+      }
+    }
+  },
+  "world_coverage": {
+    "football": {
+      "mode": "WORLD_DAILY_PROSPECTIVE_DISCOVERY_ENABLED",
+      "freeze_fixture_count": 807,
+      "settled_fixture_count": 626,
+      "competition_count_in_freeze": 119,
+      "policy": "All discovered competitions remain visible. Lack of strength evidence maps to INSUFFICIENT_DATA, never silent exclusion."
+    },
+    "tennis": {
+      "mode": "WORLD_INVENTORY_THEN_GOVERNED_DOMAIN_FILTER",
+      "world_inventory_total": 79,
+      "world_domain_candidates_input": 7,
+      "dual_source_horizon_days": 8,
+      "rapidapi_base_candidates": 27,
+      "api_tennis_base_candidates": 20,
+      "policy": "World calendar is preserved before domain filtering. Each tennis domain requires independent calibration."
+    }
+  },
+  "source_integrity": {
+    "football_freeze": {
+      "path": "evidence/api_football/prospective_market_freeze/freeze.json",
+      "blob_sha_before_and_after": "ca8551c3b8cfc7888d371df2911e45ec18b14231",
+      "unchanged": true
+    },
+    "football_calibration_ledger": {
+      "path": "evidence/api_football/prospective_calibration/ledger.jsonl",
+      "blob_sha_before_and_after": "8706bbdbb00851815277ed3300e46f04ebf1603a",
+      "unchanged_by_strength_map": true
+    },
+    "tennis_uniqueness": {
+      "path": "evidence/cor0203/runtime/MATRIX_COR0203_PHYSICAL_UNIQUENESS_LAST.json",
+      "blob_sha_before_and_after": "a4dc81c1d89f385f9cfe2c4474e9242726ad32de",
+      "unchanged": true
+    },
+    "tennis_model_binding": {
+      "path": "evidence/cor0203/runtime/MATRIX_COR0203_MODEL_BINDING_R707.json",
+      "blob_sha_before_and_after": "b5cb0d297996e71639d56443e153742732546d62",
+      "unchanged": true
+    }
+  },
+  "classification_policy": {
+    "STRONG": "Prospective n>=30 AND challenger better in Brier and Log Loss AND paired 95% CI fully favorable for both.",
+    "DEVELOPING": "At least 15 prospectives or historical OOS PASS, without decisive STRONG or NO-GO evidence.",
+    "NO_GO": "Formal governance rejection or statistically decisive underperformance.",
+    "INSUFFICIENT_DATA": "n<15, unavailable evidence, or metrics sealed by governance."
+  },
+  "protections": {
+    "read_only_evidence_aggregation": true,
+    "changes_p_matrix": false,
+    "changes_frozen_probabilities": false,
+    "changes_model_parameters": false,
+    "changes_feature_values": false,
+    "changes_discovery_eligibility": false,
+    "changes_bet_decision": false,
+    "uses_odds_to_generate_probability": false,
+    "opens_sealed_tennis_metrics": false,
+    "silent_competition_merge": false,
+    "automatic_wagering": false,
+    "real_money": "BLOCKED"
+  },
+  "conclusion": "The worldwide coverage principle is now physically represented as an evidence-only strength map. Strong competitions/markets can be prioritized for review, while weak or immature cells continue accumulating evidence without altering the underlying Matrix."
+}

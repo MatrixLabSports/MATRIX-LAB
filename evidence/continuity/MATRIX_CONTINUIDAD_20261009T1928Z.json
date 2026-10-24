@@ -1,0 +1,130 @@
+{
+  "schema": "MATRIX_CONTINUITY_AUDIT_V1",
+  "audit_at_utc": "2026-10-09T19:28:00Z",
+  "timezone": "America/Bogota",
+  "branch": "repair/cor09-world-pipeline",
+  "observed_head_sha": "d73d46ba2f8a7c54da54fc7a8233b230a11fd622",
+  "source": "GitHub connector physical reads and GitHub Actions",
+  "status": "BLOCKED_PARTIAL_PASS",
+  "runs": {
+    "live_bulk": {
+      "id": 37977708716,
+      "conclusion": "failure",
+      "reason": "DAILY_QUOTA_RESERVE_GATE_BLOCKED",
+      "last_checked_utc": "2026-10-09T19:04:54Z",
+      "fallback": "BLOCKED_BY_PROVIDER_QUOTA_NO_BYPASS"
+    },
+    "live_final_settlement": {
+      "id": 37964408323,
+      "attempt": 2,
+      "conclusion": "failure",
+      "attempt_2_completed_utc": "2026-10-09T19:27:21Z",
+      "reason": "LIVE_HTTP_429",
+      "fallback": "ATTEMPTED_AND_BLOCKED"
+    },
+    "telegram": {
+      "id": 37972644455,
+      "conclusion": "success",
+      "last_completed_utc": "2026-10-09T18:21:19Z",
+      "fallback": "BLOCKED_BY_WRITE_SAFETY_CONTROLS"
+    },
+    "tennis_hard_scheduler": {
+      "id": 37977548362,
+      "conclusion": "success",
+      "last_completed_utc": "2026-10-09T19:04:27Z",
+      "fallback": "NOT_DUE"
+    },
+    "football_settlement_supervisor": {
+      "id": 37977355316,
+      "conclusion": "success",
+      "last_completed_utc": "2026-10-09T19:03:00Z",
+      "fallback": "NOT_DUE"
+    },
+    "football_governed_daily": {
+      "id": 37943795870,
+      "conclusion": "success",
+      "last_completed_utc": "2026-10-09T14:24:42Z",
+      "fallback": "OUTSIDE_0010_1810_BOGOTA_WINDOWS"
+    }
+  },
+  "physical_counters": {
+    "tennis_live_unique_matches": 53,
+    "tennis_live_final_quality_valid": 41,
+    "itf_women_hard_final_quality_valid": 17,
+    "itf_women_hard_gate": 30,
+    "model_status": "RESEARCH_ONLY",
+    "metrics_status": "SEALED",
+    "probability_output_status": "SEALED",
+    "tennis_hard_unique_freezes": 130,
+    "tennis_hard_goal": 200,
+    "tennis_hard_duplicate_quarantine": 110,
+    "football_final_prospective": 1364,
+    "football_new_final_since_prior_audit": 43,
+    "football_metrics_opened": false,
+    "telegram_sent_historical": 24,
+    "telegram_settlements_historical": 7,
+    "telegram_manual_execution_certified": 15,
+    "telegram_manual_execution_reported": 17,
+    "telegram_pending_execution_certification": 2
+  },
+  "shanghai": {
+    "source_ledger": "evidence/live_tennis_lab/2026-10-09/MATRIX_LIVE_TENNIS_STATE_LEDGER_V0_1.json",
+    "source_blob_sha": "7401579e3eb5342c6524d816c30c1d5815ffd90e",
+    "index": "evidence/live_tennis_lab/tournaments/ATP_SHANGHAI_2026/MATRIX_ATP_SHANGHAI_LIVE_INDEX.json",
+    "index_blob_sha": "edba1f8384ba5b306dd1ed1c696ee46c7c3d1dbb",
+    "unique_matches": 3,
+    "unique_state_keys": 12,
+    "final": 2,
+    "pending": 1,
+    "comparison": "PASS_NO_CHANGE",
+    "global_ledger_mutated": false
+  },
+  "governance": {
+    "market_governance_promoted": false,
+    "authorized_bets": 0,
+    "shadow_conflict": "UNRESOLVED",
+    "allowed_houses": [
+      "Betano",
+      "BetPlay",
+      "RushBet"
+    ],
+    "real_money": "BLOCKED",
+    "automatic_wagering": false,
+    "odds_to_probability": false,
+    "missing_not_zero": true,
+    "imputation": false,
+    "backfill": false,
+    "tuning": false
+  },
+  "actions_taken": [
+    {
+      "action": "rerun_failed_jobs",
+      "run_id": 37964408323,
+      "result": "BLOCKED_LIVE_HTTP_429"
+    },
+    {
+      "action": "telegram_workflow_comment_noop_trigger",
+      "result": "BLOCKED_BY_SAFETY_CHECKS_NO_COMMIT"
+    },
+    {
+      "action": "telegram_job_rerun",
+      "result": "BLOCKED_BY_SAFETY_CHECKS_NO_RUN"
+    },
+    {
+      "action": "shanghai_index_rebuild_compare",
+      "result": "PASS_NO_CHANGE"
+    }
+  ],
+  "material_changes": [
+    {
+      "area": "football_prospective_final",
+      "previous": 1321,
+      "current": 1364,
+      "delta": 43,
+      "source": "evidence/api_football/prospective_calibration/sync_last.json",
+      "timestamp_utc": "2026-10-09T19:02:53+00:00"
+    }
+  ],
+  "settlement_policy": "FINAL_ONLY",
+  "new_real_money_bets": 0
+}

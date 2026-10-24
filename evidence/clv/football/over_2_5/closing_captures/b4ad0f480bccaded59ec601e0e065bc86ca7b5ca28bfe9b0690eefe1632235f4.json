@@ -1,0 +1,76 @@
+{
+  "adjudication": {
+    "metrics_opened": false,
+    "metrics_status": "SEALED_UNTIL_300",
+    "note": "Raw odds-ratio CLV is descriptive only; governed devigged CLV remains sealed until the 300-close gate.",
+    "official_closing_observation_number": 1,
+    "status": "PASS_PHYSICAL_MANUAL_CLOSE_ELIGIBLE"
+  },
+  "closing": {
+    "capture_lead_seconds": 38.964,
+    "complete_market_snapshot": true,
+    "devig_method": "MULTIPLICATIVE",
+    "direct_pinnacle_api_connection": false,
+    "duplicate_row_not_double_counted": true,
+    "fair_over_2_5_probability_devigged": 0.5026178010471204,
+    "kickoff_bogota": "2026-10-14T22:00:00-05:00",
+    "kickoff_utc": "2026-10-15T03:00:00+00:00",
+    "odds_api_net_event_id": "173974295",
+    "over_2_5_decimal_odds": 1.9,
+    "physical_console_capture_path": "evidence/clv/football/over_2_5/manual_physical/2026-10-14/1559670/CLV_CLOSE_MARQUENSE_MIXCO.csv",
+    "physical_console_capture_sha256": "cc4ab34673747c0f059e476a27676b28b099eb2880cc49ac5ff316e99805f384",
+    "provider": "Pinnacle",
+    "provider_quote_age_seconds": 119.036,
+    "provider_quote_updated_at_bogota": "2026-10-14T21:57:22.000-05:00",
+    "provider_quote_updated_at_utc": "2026-10-15T02:57:22+00:00",
+    "raw_provider_payload_available": false,
+    "raw_provider_payload_sha256": null,
+    "selected_physical_row_sha256": "0f0cdebd80deea0d5d721eae5738b172247c056976f7eae681c2b95b577a7121",
+    "source_quality_flag": "SHARP_PINNACLE_VIA_ODDS_API_NET_STRICT_120S_MANUAL_PHYSICAL",
+    "strict_fresh_gate_pass": true,
+    "strict_fresh_gate_seconds": 120,
+    "system_captured_at_bogota": "2026-10-14T21:59:21.036-05:00",
+    "system_captured_at_utc": "2026-10-15T02:59:21.036000+00:00",
+    "transport": "odds-api.net Sandbox",
+    "under_2_5_decimal_odds": 1.92
+  },
+  "clv": {
+    "fair_odds_clv_ratio": -0.029947643979057692,
+    "log_price_clv": 0.015666116744399456,
+    "probability_clv_vs_devigged_close": -0.015516913978786406,
+    "simple_raw_odds_ratio_clv": 0.015789473684210575
+  },
+  "decision_id": "clv-over25-e6d18f4f9072201cf3e7c2da44493e2a69a034be3ce919dfc5f0fe83f42ef6a1",
+  "entry": {
+    "decimal_odds": 1.93,
+    "decision_at_utc": "2026-10-14T06:08:47+00:00",
+    "decision_event_sequence": 35,
+    "decision_event_sha256": "7c47d5c71e179a318fddac9ef7862432132670479ce70f6f3f3af5c8777b9b50",
+    "entry_raw_sha256": "e0338dabe901d1ec0628866d835f7873e97f672d3b171ad50edd6863c94e11d0",
+    "model_input_sha256s": [
+      "e424a2e7b83aafd457e4b8c889b4bf5150bed4c4b6751389f31e5af263112102"
+    ],
+    "observed_at_utc": "2026-10-14T06:08:47+00:00",
+    "provider": "Betano",
+    "quote_sha256": "1aaa2be76fd83a666e4b5a4e37e31aa3f7c3c739e5888d52a9e910c3df54666e",
+    "telegram_message_id": 331,
+    "telegram_sent_at_utc": "2026-10-14T06:09:23+00:00",
+    "telegram_signal_key": "b305d5c47f71cf6cf0efffe79e9ffef88bc9d1dc99d9fe1ab0d30c0628909da0",
+    "telegram_signal_ledger_git_blob_sha": "7886f925f324415c9159de87de52e9044c192f89"
+  },
+  "fixture_id": "1559670",
+  "market_key": "over_2_5",
+  "model_version": "calibrated_log_pool_v1_over_2_5",
+  "payload_sha256": "f82314ead772f70edc3eabde78e030e7f18db42c8d78db84bb9cce8d0afb8fe3",
+  "protections": {
+    "automatic_wagering": false,
+    "historical_backfill_without_physical_entry_timestamp": "FORBIDDEN",
+    "incomplete_market_devig_forbidden": true,
+    "odds_used_to_generate_probability": false,
+    "post_kickoff_close_forbidden": true,
+    "provider_quote_age_bounded_seconds": 120,
+    "real_money": "BLOCKED"
+  },
+  "schema": "MATRIX_FOOTBALL_CLV_CLOSING_CAPTURE_MANUAL_PHYSICAL_V1",
+  "selection_key": "over"
+}

@@ -1,0 +1,47 @@
+name: COR06 Archive Raw Body
+
+on:
+  push:
+    branches:
+      - repair/cor09-world-pipeline
+    paths:
+      - .github/workflows/cor06-archive-raw-body.yml
+
+permissions:
+  contents: write
+
+jobs:
+  archive:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: repair/cor09-world-pipeline
+          fetch-depth: 1
+
+      - name: Archive exact raw body without changing bytes
+        shell: bash
+        run: |
+          set -euo pipefail
+          P="evidence/cor06/football_uefa"
+          RAW="$P/response_body.bin"
+          GZ="$P/response_body.bin.gz"
+          test -f "$RAW"
+          RAW_SHA="$(sha256sum "$RAW" | awk '{print $1}')"
+          test "$RAW_SHA" = "dcfae7c95af8b31b6432ef84ee89286e9dd57bfb6a4c0d73963d51a54b134c67"
+          gzip -n -c "$RAW" > "$GZ"
+          gzip -cd "$GZ" | sha256sum | awk '{print $1}' > "$P/decompressed_body.sha256"
+          test "$(cat "$P/decompressed_body.sha256")" = "$RAW_SHA"
+          sha256sum "$GZ" > "$P/response_body_gzip.sha256"
+          rm "$RAW"
+
+      - name: Persist reversible archive
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "matrix-cor06-bot"
+          git config user.email "matrix-cor06-bot@users.noreply.github.com"
+          git add -A evidence/cor06/football_uefa
+          git commit -m "evidence(cor06): archive exact UEFA body reversibly"
+          git push origin HEAD:repair/cor09-world-pipeline

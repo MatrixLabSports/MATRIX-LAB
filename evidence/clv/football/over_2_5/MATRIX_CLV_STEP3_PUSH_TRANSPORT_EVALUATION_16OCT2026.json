@@ -1,0 +1,137 @@
+{
+  "schema": "MATRIX_CLV_STEP3_PUSH_TRANSPORT_EVALUATION_V1",
+  "generated_at_utc": "2026-10-16T03:12:00+00:00",
+  "step": 3,
+  "scope": "Evaluate push transports for Pinnacle closing-line freshness without changing OPTION_B_PINNACLE_STRICT_FRESH=120s.",
+  "current_transport": {
+    "preferred": "odds-api.net Pinnacle snapshot",
+    "fallback": "API-Football /odds bookmaker_id=4",
+    "historical_problem": "API-Football Pinnacle quotes stale >120s in 42/48 historical misses"
+  },
+  "candidates": [
+    {
+      "name": "OpticOdds",
+      "transport": "SSE real-time odds stream; no WebSocket according to official FAQ",
+      "pinnacle_specific_latency_publicly_quantified": false,
+      "public_latency_claim": "SSE updates within milliseconds / real-time; no Pinnacle-specific measured number found",
+      "pricing": "CUSTOM_QUOTE_NOT_PUBLIC",
+      "trial": "Trial/demo available via sales/contact flow",
+      "approval_or_sales": "YES",
+      "concerns": [
+        "No public Pinnacle-specific end-to-end latency benchmark found",
+        "Pinnacle feed incidents recorded in 2026 status history"
+      ],
+      "sources": [
+        "https://developer.opticodds.com/docs/api-faq",
+        "https://developer.opticodds.com/docs/sse-streaming",
+        "https://opticodds.com/pricing",
+        "https://status.opticodds.com/en-us/cmphk4d1g01tnpbhlddew8cy9",
+        "https://status.opticodds.com/cmrz96512019e1aru269qkotl"
+      ]
+    },
+    {
+      "name": "PinnWire",
+      "transport": "REST + SSE drops; optional raw WebSocket",
+      "pinnacle_specific_latency_publicly_quantified": true,
+      "public_latency_claim": "1-19ms published path/TTFB benchmark; vendor explicitly states this is not market-change-to-client latency",
+      "pricing": {
+        "trial_usd_month": 0,
+        "stream_usd_month": 89,
+        "pro_usd_month": 89,
+        "pro_plus_drops_usd_month": 139,
+        "scale_usd_month": 219,
+        "raw_websocket_addon_usd_month": 89,
+        "minimum_rest_plus_raw_ws_usd_month": 178
+      },
+      "trial": "Public demo REST only; private trial by email. Raw WebSocket not included in public Trial plan.",
+      "approval_or_sales": "NO for REST demo; credential/payment required for raw WS",
+      "physical_probe_16oct2026": {
+        "endpoint": "https://pinnwire.com/v1/health?key=demo",
+        "result": "HTTP page returned rate_limited for demo daily quota",
+        "demo_limit_reported": 50,
+        "freshness_measurement_obtained": false
+      },
+      "sources": [
+        "https://pinnwire.com/",
+        "https://pinnwire.com/docs.html",
+        "https://pinnwire.com/latency.html",
+        "https://pinnwire.com/pinnacle-websocket-api.html"
+      ]
+    },
+    {
+      "name": "pinnapi",
+      "transport": "REST + SSE drops; optional raw Pinnacle WebSocket",
+      "pinnacle_specific_latency_publicly_quantified": true,
+      "public_latency_claim": "Vendor benchmark: median ~22ms, p99 ~41ms / quoted 15-40ms band; explicitly recommends measuring from own server",
+      "pricing": {
+        "free_usd_month": 0,
+        "drops_usd_month": 99,
+        "rest_usd_month": 99,
+        "edge_usd_month": 149,
+        "scale_usd_month": 229,
+        "raw_websocket_addon_usd_month": 99,
+        "minimum_rest_plus_raw_ws_usd_month": 198
+      },
+      "trial": "Free REST key/no card; public information does not prove raw WebSocket is enabled on free tier",
+      "approval_or_sales": "NO for free REST; paid add-on required for raw WS",
+      "sources": [
+        "https://pinnapi.com/",
+        "https://pinnapi.com/pinnacle-websocket-api",
+        "https://pinnapi.com/blog/pinnacle-api-latency-benchmark"
+      ]
+    },
+    {
+      "name": "PinnOdds",
+      "transport": "REST + SSE + raw WebSocket; prematch prices pushed from Pinnacle MQTT /pre",
+      "pinnacle_specific_latency_publicly_quantified": true,
+      "public_latency_claim": "30-150ms push; docs state typical lag <200ms and prematch prices are pushed as Pinnacle publishes them",
+      "pricing": {
+        "trial_usd_month": 0,
+        "stream_usd_month": 99,
+        "pro_usd_month": 99,
+        "pro_plus_sse_usd_month": 149,
+        "scale_usd_month": 229,
+        "raw_websocket_addon_usd_month": 99,
+        "minimum_rest_plus_raw_ws_usd_month": 198
+      },
+      "trial": "3-day full demo on request includes SSE + WebSocket + REST; no card",
+      "approval_or_sales": "NO purchase required for full demo; demo activation requested from provider",
+      "sources": [
+        "https://pinnodds.com/",
+        "https://pinnodds.com/docs",
+        "https://pinnodds.com/pinnacle-websocket-api",
+        "https://pinnodds.com/pinnacle-api-pricing"
+      ]
+    }
+  ],
+  "adjudication": {
+    "architecture_migration_away_from_stale_polling_justified": true,
+    "immediate_paid_production_cutover_justified": false,
+    "reason": "No candidate has yet been measured from the MATRIX GitHub runner against real prematch Pinnacle O/U 2.5 with the exact 120s PIT gate. Vendor latency claims are insufficient for an irreversible cutover.",
+    "selected_trial_candidate": "PinnOdds",
+    "why_selected": [
+      "Pinnacle-only feed",
+      "raw WebSocket available",
+      "prematch feed explicitly pushed from Pinnacle MQTT",
+      "3-day full demo includes raw WebSocket/SSE/REST before payment",
+      "published latency comfortably below 120s, but must be verified in our runner"
+    ],
+    "runner_acceptance_gate": {
+      "minimum_observations": 50,
+      "market": "soccer full-time O/U 2.5 prematch",
+      "required_provider_quote_age_seconds_max": 120,
+      "required_stale_gt_120_count": 0,
+      "required_http_or_stream_error_rate_pct_max": 1,
+      "require_exact_attempt_telemetry": true,
+      "require_no_post_kickoff_backfill": true
+    },
+    "production_transport_until_trial_passes": "odds-api.net preferred; API-Football fallback only if quote_age<=120s",
+    "paid_migration_status": "NOT_ACTIVATED_PENDING_PHYSICAL_TRIAL"
+  },
+  "protections": {
+    "strict_fresh_gate_seconds": 120,
+    "gate_changed": false,
+    "automatic_wagering": false,
+    "real_money": "BLOCKED"
+  }
+}

@@ -1,0 +1,131 @@
+{
+  "schema": "MATRIX_DAILY_MULTISOURCE_BROWSER_CROSSCHECK_V3",
+  "target_date_bogota": "2026-10-16",
+  "captured_at_utc": "2026-10-16T00:04:02Z",
+  "sources": {
+    "sofascore": {
+      "url": "https://www.sofascore.com/es/tennis/2026-10-16",
+      "opera_read_status": "PASS",
+      "count": 263,
+      "count_type": "MACHINE_VERIFIED_BROWSER_UI_EXACT",
+      "operator_manual_intervention_required": false,
+      "captured_at_utc": "2026-10-16T00:04:02Z",
+      "singles": 183,
+      "doubles": 80,
+      "nonstandard_total": 5,
+      "singles_nonstandard": 4,
+      "doubles_nonstandard": 1,
+      "unresolved_placeholder_total": 4,
+      "singles_placeholders": 2,
+      "doubles_placeholders": 2,
+      "note": "Accessibility-tree unique selected-day /tennis/match/ links; odds shown in UI are not admitted to P_MATRIX."
+    },
+    "flashscore": {
+      "url": "https://www.flashscore.com/tennis/?d=1",
+      "opera_read_status": "PASS",
+      "count": 388,
+      "count_type": "MULTI_RENDER_BROWSER_OBSERVATIONS_DIVERGENT",
+      "operator_manual_intervention_required": false,
+      "captured_at_utc": "2026-10-16T00:04:02Z",
+      "singles_like": 241,
+      "doubles": 147,
+      "note": "Unique /match/tennis/ links inside the main region of the tomorrow page. Source count disagreement is retained, not overwritten.",
+      "exact_total_physically_verified": false,
+      "show_more_present": true,
+      "limitation": "Flashscore still exposes a Show more control in Opera; loaded-tree count is retained as a lower-bound observation and is not promoted to exact world total.",
+      "opera_loaded_tree_count": 388,
+      "opera_loaded_tree_singles_like": 241,
+      "opera_loaded_tree_doubles": 147,
+      "opera_show_more_present": true,
+      "tinyfish_exhaustive_session": {
+        "run_id": "8216d869-6455-4097-a958-781d19b69ff5",
+        "status": "COMPLETED",
+        "all_visible_show_more_exhausted": true,
+        "visible_total": 74,
+        "visible_singles": 45,
+        "visible_doubles": 29,
+        "interpretation": "Independent dynamic-render observation; differs materially from Opera loaded accessibility-tree links and is retained as source-render divergence, not promoted to world truth."
+      }
+    }
+  },
+  "governance_basis": {
+    "sofascore_flashscore_daily_crosscheck_required": true,
+    "sofascore_first": true,
+    "flashscore_second": true,
+    "paid_apis_after_browser_sources": true,
+    "source_disagreement_requires_event_level_reconciliation": true
+  },
+  "adjudication": {
+    "status": "RESOLVED_PHYSICALLY_WITH_BROWSER_RENDER_DIVERGENCE_RETAINED",
+    "source_count_equality_required": false,
+    "exact_world_total_claimed": false,
+    "admission_basis": "EVENT_LEVEL_GOVERNED_RECONCILIATION_AND_LANE_GATES",
+    "no_forced_admission": true
+  },
+  "protections": {
+    "metrics_opened": false,
+    "outcomes_read": 0,
+    "automatic_wagering": false,
+    "real_money": "BLOCKED",
+    "odds_to_probability": false,
+    "no_synthetic_backfill": true,
+    "partial_accessibility_count_is_never_promoted_to_world_total": true
+  },
+  "post_browser_api": {
+    "provider": "RapidAPI Tennis",
+    "run_id": 38827410737,
+    "target_date_bogota": "2026-10-16",
+    "capture_output_at_utc": "2026-10-16T00:05:35.3083396Z",
+    "world_calendar_inventory_count": 94,
+    "singles": 94,
+    "detail_counts": {
+      "ATP_CHALLENGER": 20,
+      "ATP_MAIN_OR_OTHER": 2,
+      "ITF_MEN": 23,
+      "ITF_WOMEN": 36,
+      "WTA_MAIN_OR_OTHER": 13
+    },
+    "provider_network_calls": 2,
+    "status": "PASS",
+    "world_complete_gate": "REQUIRES_MULTI_SOURCE_RECONCILIATION",
+    "api_tennis": {
+      "status": "RETIRED_COST_UTILITY_DECISION",
+      "required": false
+    }
+  },
+  "lane_results": {
+    "hard_cor0203": {
+      "workflow_run_id": 38827699339,
+      "conclusion": "success",
+      "regression_tests": "123 passed in 1.07s",
+      "world_inventory_total": 94,
+      "world_domain_candidates": 10,
+      "status_counts": {
+        "FROZEN_UNIQUE": 10
+      },
+      "new_freezes": 0,
+      "unique_calibration_count": 242,
+      "remaining": 358,
+      "integrity": "PASS",
+      "metrics": "SEALED_UNTIL_600",
+      "outcomes_read": 0,
+      "bottleneck": "SOURCE_READY_NO_NEW_ELIGIBLE_EVENTS"
+    },
+    "clay": {
+      "workflow_run_id": 38827410737,
+      "conclusion": "success",
+      "future_clay_candidates": 10,
+      "new_observations": 0,
+      "ending_observation_count": 2,
+      "pit_ready_targets": 0,
+      "pit_blocked_targets": 20,
+      "operational_blocker": "PIT_OR_IDENTITY_COMPONENT_BLOCKED",
+      "metrics_opened": false,
+      "outcomes_read": 0
+    },
+    "live": {
+      "status": "NOT_MUTATED_BY_PREMATCH_CALENDAR_REFRESH",
+      "note": "Live Tennis remains a separate research-only cumulative lane; tomorrow calendar discovery does not force live settlements."
+    }
+  }
+}

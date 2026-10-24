@@ -1,0 +1,240 @@
+{
+  "schema": "MATRIX_API_FOOTBALL_EXTENDED_MARKET_BINDINGS_V1",
+  "as_of_utc": "2026-10-02T21:15:02+00:00",
+  "evidence": {
+    "source_coverage_manifest": {
+      "path": "evidence/api_football/market_expansion/coverage_probe/manifest.json",
+      "blob_sha": "86a431417a92187784ab97b79380b9032ec3cdbc",
+      "sampled_fixtures": 8,
+      "source_field_coverage_count": 7
+    },
+    "bet_catalog_manifest": {
+      "path": "evidence/api_football/market_expansion/bet_catalog/manifest.json",
+      "blob_sha": "dffdf734001bf8502df6dc9203fc62646ebdb6ae",
+      "provider_rows": 338
+    }
+  },
+  "coverage_policy": {
+    "source_verified_definition": "field observed physically in provider responses for at least one stats-rich fixture",
+    "universal_coverage_claimed": false,
+    "per_fixture_source_availability_gate_required": true,
+    "missing_field_means": "BLOCK_MARKET_FOR_FIXTURE"
+  },
+  "lanes": {
+    "CORNERS_OVER_UNDER": {
+      "canonical_version": "MATRIX-MARKET-R2/football/CORNERS/total-corners",
+      "source_endpoint": "/fixtures/statistics",
+      "source_field": "Corner Kicks",
+      "source_coverage": "7/8",
+      "price_catalog_ids": [
+        45,
+        57,
+        58,
+        77,
+        127,
+        132,
+        133,
+        134,
+        135
+      ],
+      "price_catalog_names": [
+        "Corners Over Under",
+        "Home Corners Over/Under",
+        "Away Corners Over/Under",
+        "Total Corners (1st Half)",
+        "Total Corners (2nd Half)",
+        "Home Total Corners (1st Half)",
+        "Home Total Corners (2nd Half)",
+        "Away Total Corners (1st Half)",
+        "Away Total Corners (2nd Half)"
+      ],
+      "verification_status": "SOURCE_AND_PRICE_CATALOG_VERIFIED"
+    },
+    "CARDS_OVER_UNDER": {
+      "canonical_version": "MATRIX-MARKET-R2/football/CARDS/total-cards",
+      "source_endpoint": "/fixtures/statistics",
+      "source_field": "Yellow Cards / Red Cards",
+      "source_coverage": "7/8",
+      "price_catalog_ids": [
+        80,
+        82,
+        83,
+        335
+      ],
+      "price_catalog_names": [
+        "Cards Over/Under",
+        "Home Team Total Cards",
+        "Away Team Total Cards",
+        "Red Cards Over/Under"
+      ],
+      "verification_status": "SOURCE_AND_PRICE_CATALOG_VERIFIED"
+    },
+    "PLAYER_SHOTS": {
+      "canonical_version": "MATRIX-MARKET-R2/football/PLAYER_SHOTS_OR_SHOTS_ON_TARGET/player-threshold",
+      "source_endpoint": "/fixtures/players",
+      "source_field": "shots.total",
+      "source_coverage": "7/8",
+      "price_catalog_ids": [
+        240,
+        241,
+        265,
+        270,
+        276
+      ],
+      "price_catalog_names": [
+        "Home Player Shots",
+        "Away Player Shots",
+        "Player Shots Total",
+        "Home Player Shots Total",
+        "Away Player Shots Total"
+      ],
+      "verification_status": "SOURCE_AND_PRICE_CATALOG_VERIFIED"
+    },
+    "PLAYER_SHOTS_ON_TARGET": {
+      "canonical_version": "MATRIX-MARKET-R2/football/PLAYER_SHOTS_OR_SHOTS_ON_TARGET/player-threshold",
+      "source_endpoint": "/fixtures/players",
+      "source_field": "shots.on",
+      "source_coverage": "7/8",
+      "price_catalog_ids": [
+        242,
+        264,
+        269,
+        275
+      ],
+      "price_catalog_names": [
+        "Player Shots On Target",
+        "Player Shots On Target Total",
+        "Home Player Shots On Target Total",
+        "Away Player Shots On Target Total"
+      ],
+      "verification_status": "SOURCE_AND_PRICE_CATALOG_VERIFIED"
+    },
+    "GOALKEEPER_SAVES": {
+      "canonical_version": "MATRIX-MARKET-R2/football/GOALKEEPER_SAVES/player-threshold",
+      "source_endpoint": "/fixtures/players",
+      "source_field": "goals.saves",
+      "source_coverage": "7/8",
+      "price_catalog_ids": [
+        267,
+        268,
+        274,
+        315,
+        318,
+        319
+      ],
+      "price_catalog_names": [
+        "Goalkeeper Saves",
+        "Home Goalkeeper Saves",
+        "Away Goalkeeper Saves",
+        "Saves Total",
+        "Saves O/U Home",
+        "Saves O/U Away"
+      ],
+      "verification_status": "SOURCE_AND_PRICE_CATALOG_VERIFIED"
+    },
+    "PLAYER_ASSISTS": {
+      "canonical_version": "MATRIX-MARKET-R2/football/PLAYER_ASSISTS_OR_PASSES/player-threshold",
+      "source_endpoint": "/fixtures/players",
+      "source_field": "goals.assists",
+      "source_coverage": "7/8",
+      "price_catalog_ids": [
+        212,
+        255,
+        256
+      ],
+      "price_catalog_names": [
+        "Player Assists",
+        "Home Player Assists",
+        "Away Player Assists"
+      ],
+      "verification_status": "SOURCE_AND_PRICE_CATALOG_VERIFIED"
+    },
+    "PLAYER_PASSES": {
+      "canonical_version": "MATRIX-MARKET-R2/football/PLAYER_ASSISTS_OR_PASSES/player-threshold",
+      "source_endpoint": "/fixtures/players",
+      "source_field": "passes.total",
+      "source_coverage": "7/8",
+      "price_catalog_ids": [
+        273,
+        279
+      ],
+      "price_catalog_names": [
+        "Home Player Passes",
+        "Away Player Passes"
+      ],
+      "verification_status": "SOURCE_AND_PRICE_CATALOG_VERIFIED"
+    },
+    "PLAYER_TACKLES": {
+      "canonical_version": "MATRIX-MARKET-R2/football/PLAYER_TACKLES/player-threshold",
+      "source_endpoint": "/fixtures/players",
+      "source_field": "tackles.total",
+      "source_coverage": "7/8",
+      "price_catalog_ids": [
+        272,
+        278
+      ],
+      "price_catalog_names": [
+        "Home Player Tackles",
+        "Away Player Tackles"
+      ],
+      "verification_status": "SOURCE_AND_PRICE_CATALOG_VERIFIED"
+    },
+    "PLAYER_FOULS": {
+      "canonical_version": "MATRIX-MARKET-R2/football/PLAYER_FOULS/player-threshold",
+      "source_endpoint": "/fixtures/players",
+      "source_field": "fouls.committed",
+      "source_coverage": "7/8",
+      "price_catalog_ids": [
+        266,
+        271,
+        277
+      ],
+      "price_catalog_names": [
+        "Player Fouls Committed",
+        "Home Player Fouls Committed",
+        "Away Player Fouls Committed"
+      ],
+      "verification_status": "SOURCE_AND_PRICE_CATALOG_VERIFIED"
+    },
+    "TEAM_SHOTS_ON_TARGET": {
+      "canonical_version": "MATRIX-MARKET-R2/football/TEAM_SHOTS_ON_TARGET/team-threshold",
+      "source_endpoint": "/fixtures/statistics",
+      "source_field": "Shots on Goal / Shots on Target",
+      "source_coverage": "7/8",
+      "price_catalog_ids": [
+        87,
+        88,
+        89,
+        243,
+        244
+      ],
+      "price_catalog_names": [
+        "Total ShotOnGoal",
+        "Home Total ShotOnGoal",
+        "Away Total ShotOnGoal",
+        "Home Shots On Target",
+        "Away Shots On Target"
+      ],
+      "verification_status": "SOURCE_AND_PRICE_CATALOG_VERIFIED"
+    }
+  },
+  "model_layer": {
+    "all_extended_lanes": "MODEL_NOT_YET_VALIDATED_PROSPECTIVELY",
+    "required_next_stages": [
+      "HISTORICAL_PIT_DATASET_PER_LANE",
+      "EMPIRICAL_BASELINE_PER_LANE",
+      "CHALLENGER_PER_LANE",
+      "OOS_VALIDATION_PER_LANE",
+      "PROSPECTIVE_FREEZE_PER_LANE",
+      "FINAL_ONLY_SETTLEMENT_PER_LANE",
+      "CALIBRATION_GATES_PER_LANE"
+    ]
+  },
+  "odds_api_net": {
+    "credential_status": "REQUIRED_NOT_CONFIGURED",
+    "execution_bookmaker_price_verification_status": "NOT_VERIFIED_THROUGH_ODDS_API_NET"
+  },
+  "odds_used_to_generate_probability": false,
+  "automatic_wagering": false,
+  "real_money": "BLOCKED"
+}

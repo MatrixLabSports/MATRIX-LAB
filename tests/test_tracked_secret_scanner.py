@@ -108,7 +108,7 @@ def test_env_example_is_still_content_scanned(tmp_path):
     )
 
 
-def test_oversized_tracked_text_fails_closed(tmp_path):
+def test_oversized_safe_text_is_stream_scanned(tmp_path):
     _init_repo(tmp_path)
     path = tmp_path / "large.txt"
     path.write_text(
@@ -127,10 +127,33 @@ def test_oversized_tracked_text_fails_closed(tmp_path):
         forbidden_names=(".env",),
     )
 
+    assert report.ok is True
+    assert report.scanned_files == 1
+
+
+def test_oversized_text_secret_after_old_limit_is_blocked(tmp_path):
+    _init_repo(tmp_path)
+    path = tmp_path / "large.json"
+    path.write_text(
+        ("A" * (2 * 1024 * 1024 + 32))
+        + '\n{"api_key":"live_1234567890abcdef"}\n',
+        encoding="utf-8",
+    )
+    subprocess.run(
+        ["git", "add", "large.json"],
+        cwd=tmp_path,
+        check=True,
+        capture_output=True,
+    )
+
+    report = scan_tracked_repository(
+        tmp_path,
+        forbidden_names=(".env",),
+    )
+
     assert report.ok is False
     assert any(
-        item.rule
-        == "OVERSIZED_TEXT_NOT_SCANNED"
+        item.rule == "LIKELY_EMBEDDED_SECRET"
         for item in report.findings
     )
 

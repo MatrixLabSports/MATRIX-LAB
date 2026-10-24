@@ -1,0 +1,137 @@
+{
+  "schema": "MATRIX_BROWSER_FIRST_CALENDAR_AUDIT_V1",
+  "target_date_bogota": "2026-10-21",
+  "source_order": [
+    "SofaScore",
+    "Flashscore",
+    "structured APIs",
+    "reconciliation",
+    "identity/PIT",
+    "P_MATRIX",
+    "prematch freeze",
+    "odds/EV",
+    "risk",
+    "Telegram"
+  ],
+  "sofascore": {
+    "football": {
+      "url": "https://www.sofascore.com/es/football/2026-10-21",
+      "browser": "Opera connector",
+      "visible_date_rows": 33,
+      "status": "PASS",
+      "examples": [
+        "Santa Fe vs Jaguares",
+        "Palmeiras vs Fluminense",
+        "Real Madrid vs Leipzig",
+        "Bayern vs Arsenal",
+        "Levante vs Athletic Club",
+        "Barranquilla FC vs América"
+      ]
+    },
+    "tennis": {
+      "url": "https://www.sofascore.com/es/tennis/2026-10-21",
+      "browser": "Opera connector",
+      "visible_date_rows": 510,
+      "status": "PASS",
+      "examples": [
+        "J. Duckworth vs L. Darderi",
+        "D. Goffin vs R. Bertola",
+        "S. Wawrinka vs M. Landaluce",
+        "M. Bouzkova vs A. Zakharova",
+        "M. Alcalá Gurri vs E. Møller",
+        "G. Heide vs J. Varillas"
+      ]
+    }
+  },
+  "flashscore": {
+    "football_url": "https://www.flashscore.co/futbol/?d=2026-10-21",
+    "tennis_url": "https://www.flashscore.co/tenis/?d=2026-10-21",
+    "opera_direct_navigation": "TIMEOUT_NOT_READY",
+    "rendered_fetch": "PARTIAL_DYNAMIC_LOADING",
+    "search_crosschecks": {
+      "football": [
+        "Barranquilla vs América de Cali",
+        "Real Madrid vs RB Leipzig",
+        "Ind. Santa Fe vs Once Caldas"
+      ],
+      "tennis": [
+        "David Goffin vs Remy Bertola",
+        "Carole Monnet vs Lucie Havlickova",
+        "Lucia Cortez Llorca vs Tena Lukas"
+      ]
+    },
+    "full_match_count_certified": false,
+    "status": "PARTIAL_BLOCKED",
+    "tomorrow_pages": {
+      "football_url": "https://www.flashscore.co/manana/",
+      "football_title": "Fútbol mañana: partidos y resultados | Flashscore.co",
+      "tennis_url": "https://www.flashscore.co/tenis/manana/",
+      "tennis_title": "Tenis mañana: programa y resultados | Flashscore.co",
+      "tournament_links_detected": true,
+      "full_dynamic_match_rows_extracted": false,
+      "note": "Rendered fetch confirms the tomorrow pages and relevant competition links, but the page body remains dynamic ('Loading...'), so exhaustive match-level count is not certified."
+    }
+  },
+  "structured_apis": {
+    "tennis": {
+      "source": "RapidAPI Tennis governed inventory",
+      "canonical_path": "evidence/tennis/world_inventory/2026-10-21/MATRIX_TENNIS_WORLD_INVENTORY.json",
+      "source_blob_sha": "034231696a738a1becf5c8820d99f248ef3a5e93",
+      "singles_events": 200,
+      "circuit_detail_counts": {
+        "ITF_MEN": 76,
+        "ITF_WOMEN": 83,
+        "WTA_MAIN_OR_OTHER": 5,
+        "ATP_CHALLENGER": 20,
+        "ATP_MAIN_OR_OTHER": 16
+      },
+      "surface_counts": {
+        "I.hard": 52,
+        "Hard": 95,
+        "Clay": 47,
+        "Carpet": 6
+      },
+      "atp_challenger_hard_domain_candidates": 8,
+      "clay_prefeature_events": 12,
+      "clay_prefeature_path": "evidence/tennis_parallel_lanes/ATP_CHALLENGER_MEN_SINGLES_CLAY/runtime/MATRIX_COR0203_PREFEATURE_REGISTRY_R20261021.json",
+      "clay_prefeature_blob_sha": "0e25535217c473b421415e326a338ee1acfa75ff",
+      "api_tennis_status": "RETIRED_COST_UTILITY_DECISION",
+      "status": "PASS"
+    },
+    "football": {
+      "pipeline": "MATRIX Football Daily Governed Pipeline",
+      "trigger_commit": "a691d0d74b0b65823ef9cdaa2836c69d74244f75",
+      "canonical_path": "evidence/football_world_inventory/2026-10-21/MATRIX_FOOTBALL_CALIBRATION_ELIGIBILITY.json",
+      "source_blob_sha": "4932e05d16536f86a7a256fd3a1380694f92247e",
+      "cycle_id": "20261021T000707Z",
+      "api_football_fixtures_received": 268,
+      "eligible_future_fixtures": 266,
+      "canonical_ready_input_count": 156,
+      "blocked_future_input_count": 110,
+      "freeze_candidate_event_count": 127,
+      "new_freeze_event_count": 0,
+      "history_group_ready_count": 111,
+      "history_group_blocked_count": 155,
+      "odds_used_to_generate_probability": false,
+      "outcomes_used_to_generate_probability": false,
+      "real_money": "BLOCKED",
+      "status": "PASS"
+    }
+  },
+  "protections": {
+    "no_synthetic_data": true,
+    "missing_not_zero": true,
+    "no_silent_imputation": true,
+    "no_odds_to_p_matrix": true,
+    "no_backfill": true,
+    "real_money": "BLOCKED",
+    "automatic_wagering": false
+  },
+  "adjudication": {
+    "discovery_capture": "PASS",
+    "full_browser_first_reconciliation": "FAIL_CLOSED",
+    "reason": "SofaScore full-day capture and governed APIs are physically evidenced. Flashscore date pages remain dynamically incomplete/redirected in available browser extraction, so exhaustive Flashscore match-level reconciliation is not certified.",
+    "telegram_green_signals_allowed_from_this_audit": false,
+    "api_reconciliation": "PASS"
+  }
+}

@@ -1,0 +1,108 @@
+name: MATRIX Football OOS 1000
+
+on:
+  push:
+    branches:
+      - repair/cor09-world-pipeline
+    paths:
+      - tools/api_football_oos_1000_tracker.py
+      - evidence/api_football/prospective_calibration/ledger.jsonl
+      - evidence/api_football/prospective_calibration/sync_last.json
+      - evidence/api_football/calibration_v2/CHECKPOINT_4000_MARKET_CALIBRATION_20261023.json
+      - .github/workflows/api-football-oos-1000.yml
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: api-football-oos-1000
+  cancel-in-progress: false
+
+jobs:
+  track-oos:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      REAL_MONEY: BLOCKED
+      AUTO_BETTING: DISABLED
+    steps:
+      - name: Checkout operational branch
+        uses: actions/checkout@v4
+        with:
+          ref: repair/cor09-world-pipeline
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Enforce safety
+        run: |
+          test "$REAL_MONEY" = "BLOCKED"
+          test "$AUTO_BETTING" = "DISABLED"
+
+      - name: Track frozen OOS 4001 to 5000
+        run: python tools/api_football_oos_1000_tracker.py
+
+      - name: Verify OOS governance
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          p=Path("evidence/api_football/calibration_v2/OOS_4001_5000_STATE.json")
+          j=json.loads(p.read_text(encoding="utf-8"))
+          assert j["baseline_checkpoint"] == 4000
+          assert j["target_oos_observations"] == 1000
+          assert j["target_total_observations"] == 5000
+          assert j["oos_cohort"]["index_start_inclusive"] == 4001
+          assert j["oos_cohort"]["index_end_inclusive"] == 5000
+          assert j["oos_cohort"]["baseline_overlap_count"] == 0
+          assert j["oos_cohort"]["append_only"] is True
+          assert j["oos_cohort"]["prospective_only"] is True
+          assert j["oos_cohort"]["no_backfill"] is True
+          assert j["frozen_policy"]["parameter_tuning_allowed"] is False
+          assert j["frozen_policy"]["refit_allowed"] is False
+          assert j["frozen_policy"]["parameter_changes_allowed"] is False
+          assert j["frozen_policy"]["metrics_policy"] == "SEALED_UNTIL_1000_OOS"
+          assert j["frozen_policy"]["real_money"] == "BLOCKED"
+          assert j["frozen_policy"]["automatic_wagering"] is False
+          if j["current_oos_observations"] < 1000:
+              assert j["metrics_opened"] is False
+              assert j["outcomes_read_for_oos_metrics"] == 0
+              assert j["adjudication"]["promotion_before_1000"] == "FORBIDDEN"
+          print(json.dumps({
+              "oos":j["current_oos_observations"],
+              "remaining":j["remaining_to_1000"],
+              "status":j["status"],
+              "metrics_opened":j["metrics_opened"],
+              "checkpoint_sha256":j["baseline_anchor"]["checkpoint_sha256"],
+              "real_money":j["frozen_policy"]["real_money"],
+          },sort_keys=True))
+          PY
+
+      - name: Persist OOS state
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add evidence/api_football/calibration_v2/OOS_4001_5000_STATE.json
+          if git diff --cached --quiet; then
+            echo "OOS_1000_NO_CHANGE"
+            exit 0
+          fi
+          git commit -m "evidence(football): track OOS 4001-5000"
+          for attempt in 1 2 3 4; do
+            git fetch origin repair/cor09-world-pipeline
+            if ! git rebase origin/repair/cor09-world-pipeline; then
+              git rebase --abort || true
+              exit 1
+            fi
+            if git push origin HEAD:repair/cor09-world-pipeline; then
+              exit 0
+            fi
+            sleep $((attempt*2))
+          done
+          exit 1

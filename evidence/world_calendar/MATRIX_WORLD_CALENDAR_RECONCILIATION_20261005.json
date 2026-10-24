@@ -1,0 +1,470 @@
+{
+  "schema": "MATRIX_WORLD_CALENDAR_RECONCILIATION_V1",
+  "target_date_bogota": "2026-10-05",
+  "observed_from_bogota": "2026-10-04T21:43:39-05:00",
+  "operational_timezone": "America/Bogota",
+  "source_registry": "config/matrix_multisource_registry.json",
+  "policy": {
+    "all_managed_sources_considered": true,
+    "source_specific_counts_not_summed_without_dedupe": true,
+    "no_single_source_world_truth": true,
+    "canonical_identity_before_merge": true,
+    "physical_dedupe_before_counter_increment": true,
+    "browser_sources_expand_discovery_only": true,
+    "pit_required": true,
+    "no_backfill": true,
+    "missing_not_zero": true,
+    "silent_imputation_forbidden": true,
+    "odds_to_p_matrix_forbidden": true,
+    "real_money": "BLOCKED"
+  },
+  "tennis": {
+    "structured_paid": [
+      {
+        "source": "RapidAPI Tennis",
+        "status": "PASS",
+        "role": "exact-day discovery + governed prospective pipeline",
+        "exact_day_unique_matches": 137,
+        "tournament_count": 20,
+        "circuit_counts": {
+          "ATP": 66,
+          "ITF": 57,
+          "WTA": 14
+        },
+        "detail_counts": {
+          "ATP_CHALLENGER": 43,
+          "ATP_MAIN_OR_OTHER": 23,
+          "ITF_MEN": 15,
+          "ITF_WOMEN": 42,
+          "WTA_MAIN_OR_OTHER": 14
+        },
+        "artifact": "evidence/tennis_world_inventory/2026-10-05/world_exact_day_dual_audit.json"
+      },
+      {
+        "source": "API-Tennis",
+        "status": "PASS",
+        "role": "exact-day discovery + cross-provider validation/stats-rich",
+        "exact_day_unique_matches": 134,
+        "tournament_count": 20,
+        "artifact": "evidence/tennis_world_inventory/2026-10-05/world_exact_day_dual_audit.json"
+      }
+    ],
+    "public_free": [
+      {
+        "source": "Flashscore",
+        "status": "PASS_BROWSER",
+        "role": "world calendar/discovery/identity crosscheck",
+        "exact_date_event_links_visible": 99,
+        "url": "https://www.flashscore.co/tenis/manana/?d=2026-10-05",
+        "caveat": "Browser-visible event-link count; not a reconciled worldwide denominator."
+      },
+      {
+        "source": "SofaScore",
+        "status": "PASS_BROWSER_ACTIVE_TAB_CORRECTED",
+        "role": "calendar/discovery/identity/ranking/surface crosscheck",
+        "loaded_match_links_visible": 77,
+        "url": "https://www.sofascore.com/tennis?date=2026-10-05",
+        "direct_api_status": "BLOCKED_HTTP_403",
+        "direct_api_artifact": "evidence/sofascore/2026-10-05/multisport_discovery.json",
+        "caveat": "This is the SofaScore page total for the selected date based on tournament-card counters. It is source-specific, not a reconciled cross-provider worldwide denominator.",
+        "explicitly_dated_2026_10_05_match_links": 70,
+        "active_opera_tab_id": 2017698895,
+        "active_opera_url": "https://www.sofascore.com/tennis/2026-10-05",
+        "browser_verified_at_bogota": "2026-10-04T21:58:00-05:00",
+        "verified_competition_families": [
+          "ATP",
+          "WTA",
+          "ATP Challenger",
+          "ITF Men",
+          "ITF Women"
+        ],
+        "verified_examples": [
+          "Villena/Alicante Challenger",
+          "Wuning 3 Challenger",
+          "Antofagasta Challenger",
+          "Braga Challenger",
+          "Palermo Challenger",
+          "Shanghai ATP",
+          "Beijing WTA",
+          "Samsun",
+          "Suzhou"
+        ],
+        "tournament_sections_counted": 47,
+        "tournament_badge_match_total": 413,
+        "tournament_sections": [
+          {
+            "tournament": "Shanghai, China, Qualifying",
+            "count": 18
+          },
+          {
+            "tournament": "Beijing, China",
+            "count": 9
+          },
+          {
+            "tournament": "Beijing, China",
+            "count": 2
+          },
+          {
+            "tournament": "Tokyo, Japan",
+            "count": 2
+          },
+          {
+            "tournament": "Beijing, China, Doubles",
+            "count": 1
+          },
+          {
+            "tournament": "Tokyo, Japan, Doubles",
+            "count": 1
+          },
+          {
+            "tournament": "Beijing, China, Doubles",
+            "count": 6
+          },
+          {
+            "tournament": "Antofagasta, Chile",
+            "count": 9
+          },
+          {
+            "tournament": "Alicante, Spain",
+            "count": 11
+          },
+          {
+            "tournament": "Braga, Portugal",
+            "count": 11
+          },
+          {
+            "tournament": "Palermo, Italy Men Singles",
+            "count": 8
+          },
+          {
+            "tournament": "Wuning 3, China",
+            "count": 10
+          },
+          {
+            "tournament": "Antofagasta, Chile, Doubles",
+            "count": 1
+          },
+          {
+            "tournament": "Wuning 3, China, Doubles",
+            "count": 8
+          },
+          {
+            "tournament": "Samsun, Turkiye",
+            "count": 8
+          },
+          {
+            "tournament": "Suzhou, China",
+            "count": 7
+          },
+          {
+            "tournament": "Samsun, Turkiye, Doubles",
+            "count": 1
+          },
+          {
+            "tournament": "Suzhou, China, Doubles",
+            "count": 8
+          },
+          {
+            "tournament": "ITF M15 Burgas Men",
+            "count": 8
+          },
+          {
+            "tournament": "ITF M15 Heraklion 7 Men",
+            "count": 15
+          },
+          {
+            "tournament": "ITF M15 Monastir 33 Men",
+            "count": 15
+          },
+          {
+            "tournament": "ITF M15 Pontevedra Men",
+            "count": 5
+          },
+          {
+            "tournament": "ITF M15 Quito 3 Men",
+            "count": 7
+          },
+          {
+            "tournament": "ITF M15 Sharm El Sheikh 12 Men",
+            "count": 13
+          },
+          {
+            "tournament": "ITF M15+H Rodez Men",
+            "count": 15
+          },
+          {
+            "tournament": "ITF M25 Darwin 2 Men",
+            "count": 16
+          },
+          {
+            "tournament": "ITF M25 Kigali 2 Men",
+            "count": 8
+          },
+          {
+            "tournament": "ITF M25 Santa Margherita di Pula 9 Men",
+            "count": 14
+          },
+          {
+            "tournament": "ITF W15 Chisinau Women",
+            "count": 8
+          },
+          {
+            "tournament": "ITF W15 Cipolletti Women",
+            "count": 8
+          },
+          {
+            "tournament": "ITF W15 Maanshan 7 Women",
+            "count": 4
+          },
+          {
+            "tournament": "ITF W15 Sharm El Sheikh 14 Women",
+            "count": 14
+          },
+          {
+            "tournament": "ITF W15 Székesfehérvár Women",
+            "count": 16
+          },
+          {
+            "tournament": "ITF W35 Lagos Women",
+            "count": 7
+          },
+          {
+            "tournament": "ITF W35 Monastir 6 Women",
+            "count": 15
+          },
+          {
+            "tournament": "ITF W35 Santa Margherita di Pula 9 Women",
+            "count": 16
+          },
+          {
+            "tournament": "ITF W35 Seville Women",
+            "count": 8
+          },
+          {
+            "tournament": "ITF W35 Villeneuve d'Ascq Women",
+            "count": 8
+          },
+          {
+            "tournament": "ITF W50 Burgas Women",
+            "count": 8
+          },
+          {
+            "tournament": "ITF W50 Heraklion 2 Women",
+            "count": 16
+          },
+          {
+            "tournament": "ITF W35 Seville Women Double",
+            "count": 1
+          },
+          {
+            "tournament": "UTR Boca Raton M06",
+            "count": 10
+          },
+          {
+            "tournament": "UTR PTT Cordoba Men +H 06",
+            "count": 8
+          },
+          {
+            "tournament": "UTR PTT Newport Beach Men 23",
+            "count": 3
+          },
+          {
+            "tournament": "UTR PTT San Diego Men 01",
+            "count": 8
+          },
+          {
+            "tournament": "UTR PTT Belgrade Women 05",
+            "count": 8
+          },
+          {
+            "tournament": "UTR PTT San Diego Women 01",
+            "count": 10
+          }
+        ],
+        "previous_link_based_count_70_status": "INVALID_AS_TOTAL",
+        "correction_reason": "The previous 70 counted only explicitly dated match links loaded in the accessibility tree. SofaScore's full day view exposes tournament cards with per-section match counters; summing those counters is the correct page-level total for the selected date."
+      },
+      {
+        "source": "ITF official",
+        "status": "PASS_BROWSER_TOURNAMENT_CORROBORATION",
+        "role": "World Tennis Tour calendar/competition authority",
+        "visible_tournament_labels_sample_count": 22,
+        "url": "https://www.itftennis.com/en/world-tennis-tour-live/",
+        "caveat": "Used here for tournament corroboration; exact Oct-5 worldwide match denominator not established from this page."
+      },
+      {
+        "source": "ATP official",
+        "status": "REGISTERED_AUTHORITY_NOT_USED_AS_EXACT_DAY_DENOMINATOR_IN_THIS_PASS",
+        "role": "competition/surface/draw/ranking/identity authority"
+      },
+      {
+        "source": "WTA official",
+        "status": "REGISTERED_AUTHORITY_NOT_USED_AS_EXACT_DAY_DENOMINATOR_IN_THIS_PASS",
+        "role": "competition/surface/draw/ranking/identity authority"
+      },
+      {
+        "source": "Jeff Sackmann",
+        "status": "HISTORICAL_ROLE_ONLY",
+        "role": "historical results/biographical crosscheck"
+      },
+      {
+        "source": "Tennis-Data",
+        "status": "HISTORICAL_ROLE_ONLY",
+        "role": "historical results"
+      }
+    ],
+    "cross_provider": {
+      "unreconciled_exact_union_paid_sources": 271,
+      "neutral_exact_overlap": 0,
+      "world_inventory_complete": false,
+      "interpretation": "Provider aliases/timestamps remain unresolved; 271 must not be called the unique worldwide total."
+    },
+    "protected_calibration": {
+      "domain": "ATP Challenger + Hard + Singles + Match Winner",
+      "unique_calibration_observations": 102,
+      "physical_frozen_rows": 177,
+      "duplicate_observations_quarantined": 75,
+      "latest_domain_candidates_input": 20,
+      "latest_eligible_input_events": 19,
+      "latest_provider_rejected": 1,
+      "new_unique_added_by_latest_refresh": 0,
+      "remaining_to_200": 98,
+      "remaining_to_600": 498,
+      "metrics": "SEALED_UNTIL_600_UNIQUE",
+      "explanation": "Latest 19 eligible events were already preregistered/frozen or duplicate-resolved, so the legitimate unique counter did not increase."
+    },
+    "sofascore_calibration_domain": {
+      "target_date_bogota": "2026-10-05",
+      "protected_domain": "ATP Challenger + Hard + Singles + Match Winner",
+      "counting_method": "Selected-date SofaScore tournament-card counters filtered by Challenger + hard + singles; doubles excluded.",
+      "raw_candidate_matches": 21,
+      "breakdown": [
+        {
+          "tournament": "Alicante, Spain",
+          "surface": "Outdoor hard",
+          "category": "Challenger 100",
+          "matches": 11
+        },
+        {
+          "tournament": "Wuning 3, China",
+          "surface": "Outdoor hard",
+          "category": "Challenger",
+          "matches": 10
+        }
+      ],
+      "excluded_examples": [
+        "Antofagasta Challenger: clay",
+        "Braga Challenger: clay",
+        "Palermo Challenger: red clay",
+        "Wuning 3 Doubles: doubles",
+        "Samsun/Suzhou: WTA 125, outside protected ATP Challenger domain"
+      ],
+      "latest_governed_pipeline_crosscheck": {
+        "domain_candidates_input": 20,
+        "eligible_input_events": 19,
+        "new_unique_added_latest_refresh": 0,
+        "current_unique_calibration_observations": 102,
+        "note": "SofaScore raw source candidates are not automatically calibration observations. Identity, PIT, history, preregistration, dedupe and freeze gates remain mandatory."
+      },
+      "source": "SofaScore Opera active calendar",
+      "source_url": "https://www.sofascore.com/tennis/2026-10-05",
+      "verified_at_bogota": "2026-10-04T21:58:00-05:00",
+      "status": "PHYSICALLY_VERIFIED_SOURCE_LEVEL_CANDIDATE_COUNT"
+    }
+  },
+  "football": {
+    "structured_paid": [
+      {
+        "source": "API-Football",
+        "status": "PASS",
+        "role": "fixtures/history/stats/lineups/odds/prospective pipeline",
+        "fixtures_received": 99,
+        "competitions": 42,
+        "countries": 25,
+        "canonical_ready_inputs": 1,
+        "canonical_blocked_inputs": 98,
+        "new_freezes": 0,
+        "p_matrix_status": "NOT_GENERATED",
+        "artifact": "evidence/api_football/prospective_daily/2026-10-05/20261004T110939Z/cycle_summary.json"
+      }
+    ],
+    "public_free": [
+      {
+        "source": "Flashscore",
+        "status": "PASS_BROWSER",
+        "role": "world calendar/discovery/identity/stats crosscheck",
+        "exact_date_event_links_with_mid_visible": 296,
+        "url": "https://www.flashscore.co/?d=2026-10-05",
+        "caveat": "Browser-visible event-link count; not a reconciled worldwide denominator."
+      },
+      {
+        "source": "SofaScore",
+        "status": "PASS_BROWSER_DIRECT_API_BLOCKED",
+        "role": "world calendar/discovery/team/player/stat crosscheck",
+        "loaded_match_links_visible": 49,
+        "url": "https://www.sofascore.com/football?date=2026-10-05",
+        "direct_api_status": "BLOCKED_HTTP_403",
+        "direct_api_artifact": "evidence/sofascore/2026-10-05/multisport_discovery.json",
+        "caveat": "Loaded accessibility-tree count is a lower bound due dynamic/lazy page loading."
+      },
+      {
+        "source": "Official competition/team sources",
+        "status": "ON_DEMAND_AUTHORITY",
+        "role": "fixture/lineup/competition/disciplinary authority",
+        "caveat": "Not a single worldwide calendar endpoint; queried when candidate identity/authority needs adjudication."
+      }
+    ],
+    "reference_and_execution_sources": {
+      "pinnacle_reference": {
+        "status": "REFERENCE_ONLY_NOT_CALENDAR_DENOMINATOR",
+        "execution_authorized": false
+      },
+      "bookmaker_sources": [
+        "BetPlay",
+        "bwin",
+        "Betano",
+        "RushBet",
+        "Betsson",
+        "Codere",
+        "Luckia",
+        "MrYoker",
+        "Rivalo",
+        "Sportium",
+        "Stake Colombia",
+        "Wplay",
+        "YaJuego",
+        "Zamba"
+      ],
+      "role": "price/execution verification after governed candidate selection; not used to define world calendar"
+    },
+    "calibration": {
+      "current_discovery_pool_api_football": 99,
+      "current_public_flashscore_visible_pool": 296,
+      "ready_for_experimental_evaluation": 1,
+      "blocked_for_history_or_source_resolution": 98,
+      "new_freezes": 0,
+      "rule": "Public-source discoveries may enter calibration only after canonical identity, PIT history/features, governed model/freeze and physical dedupe pass."
+    }
+  },
+  "overall": {
+    "status": "PASS_WORLD_DISCOVERY_UNSEALED",
+    "world_complete": false,
+    "key_result": "Public calendars materially expand discovery beyond structured paid feeds, but no source-specific counts are summed or promoted directly into calibration.",
+    "next_actions": [
+      "Reconcile public football events against API-Football canonical identities and acquire PIT history where available.",
+      "Continue tennis dual-API discovery and physical dedupe; only new ATP Challenger Hard singles that pass all gates may increment 102/600.",
+      "Persist every accepted freeze and every blocked candidate with exact cause."
+    ],
+    "last_browser_verification": {
+      "source": "SofaScore",
+      "sport": "tennis",
+      "active_tab": true,
+      "target_date": "2026-10-05",
+      "counting_method": "SUM_OF_TOURNAMENT_CARD_COUNTERS",
+      "tournament_sections_counted": 47,
+      "sofascore_page_total": 413,
+      "previous_70_status": "INVALID_AS_TOTAL",
+      "verified_at_bogota": "2026-10-04T21:58:00-05:00"
+    }
+  }
+}

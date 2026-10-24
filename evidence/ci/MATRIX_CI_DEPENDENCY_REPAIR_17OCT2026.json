@@ -1,0 +1,42 @@
+{
+  "date_bogota": "2026-10-17",
+  "purpose": "Physical CI repair evidence and push-trigger validation",
+  "base_head": "6db4e350df7a565b8c9a6036b3acf976bad47062",
+  "repaired_dependency_commit": "9e91089f3615477f90199c9695bccb2a31d4b15a",
+  "requirements_blob": "8f17192093c6dab49c7f9cce072c23aea982f586",
+  "root_cause": {
+    "prior_run": 39077459543,
+    "prior_job": 117527471720,
+    "failure": "ModuleNotFoundError: No module named 'numpy'",
+    "affected_tests": [
+      "tests/test_matrix_dixon_coles_full_challenger.py",
+      "tests/test_matrix_dixon_coles_full_over25_challenger.py"
+    ],
+    "required_imports": [
+      "numpy",
+      "scipy"
+    ]
+  },
+  "repair": {
+    "file": "requirements.txt",
+    "additions": [
+      "numpy>=1.26,<3",
+      "scipy>=1.11,<2"
+    ],
+    "engines_modified": false,
+    "p_matrix_modified": false
+  },
+  "governance": {
+    "real_money": "BLOQUEADO",
+    "note": "CI evidence only; no model or staking logic change."
+  },
+  "parent_green_proof": {
+    "certified_sha": "f1d59f2629d0f89f37d9760f2bb8815befff7262",
+    "workflow_run": 39079713543,
+    "job_id": 117534001496,
+    "tests_passed": 3586,
+    "gate": "MATRIX CI QUALITY GATE: PASS"
+  },
+  "latest_autonomous_cycle_head": "750990bf04eb25e10c7abb3382e9c544c6ddd7c3",
+  "latest_autonomous_cycle_parent": "f1d59f2629d0f89f37d9760f2bb8815befff7262"
+}

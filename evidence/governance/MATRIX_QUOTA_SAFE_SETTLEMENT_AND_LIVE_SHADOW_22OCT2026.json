@@ -1,0 +1,73 @@
+{
+  "schema": "MATRIX_QUOTA_SAFE_SETTLEMENT_AND_LIVE_SHADOW_V1",
+  "date_bogota": "2026-10-22",
+  "football": {
+    "objective_final_valid": 4000,
+    "current_final_valid": 3828,
+    "remaining": 172,
+    "canonical_sync_path": "evidence/api_football/prospective_market_freeze/settlement_sync_last.json",
+    "network_call_policy": "DUE_ONLY_WITH_STICKY_BLOCK_QUARANTINE_AND_NONFINAL_RETRY_WINDOW",
+    "nonfinal_retry_minutes": 60,
+    "proof_runs": [
+      {
+        "run_id": 39765892764,
+        "conclusion": "success",
+        "network_calls": 30,
+        "new_settlement_count": 2,
+        "ledger_final_count": 3822
+      },
+      {
+        "run_id": 39766753189,
+        "conclusion": "success",
+        "network_calls": 8,
+        "new_settlement_count": 6,
+        "ledger_final_count": 3828
+      },
+      {
+        "run_id": 39767412827,
+        "conclusion": "success",
+        "network_calls": 0,
+        "new_settlement_count": 0,
+        "ledger_final_count": 3828,
+        "deferred_pending_carried_without_network": 597,
+        "sticky_blocked_carried_without_network": 108
+      }
+    ],
+    "push_trigger_removed": true,
+    "schedule": "17 */2 * * *",
+    "workflow_dispatch": true,
+    "concurrency_group": "api-football-prospective-final-settlement-now-v2-due-only",
+    "equivalent_concurrent_persistence_is_success": true
+  },
+  "live_tennis": {
+    "challenger_men_clay_gate": {
+      "current": 29,
+      "target": 30,
+      "remaining": 1
+    },
+    "retired_api_tennis_network_disabled": true,
+    "rapidapi_tennis_shadow": {
+      "provider": "Tennis API - ATP WTA ITF",
+      "endpoint": "/tennis/v2/extend/api/events/live",
+      "initial_run_id": 39767584573,
+      "initial_run_conclusion": "success",
+      "initial_network_calls": 4,
+      "initial_live_observation_rows": 219,
+      "initial_challenger_men_clay_candidate_rows": 0,
+      "initial_quality_valid_shadow_candidate_rows": 0,
+      "calibration_admitted": false,
+      "canonical_initial_evidence_path": "evidence/live_tennis_lab/2026-10-22/MATRIX_RAPIDAPI_TENNIS_LIVE_SHADOW_V1.json",
+      "watch_schedule": "*/15 * * * *",
+      "network_calls_per_watch": 1,
+      "persist_only_when_quality_valid_candidate_present": true,
+      "push_trigger_removed": true
+    }
+  },
+  "protections": {
+    "missing_not_zero": true,
+    "silent_imputation": false,
+    "odds_to_probability": false,
+    "automatic_wagering": false,
+    "real_money": "BLOCKED"
+  }
+}

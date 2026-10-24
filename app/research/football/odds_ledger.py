@@ -224,3 +224,40 @@ class FootballOddsLedger:
             handle.write(serialized + "\n")
             handle.flush()
         return entry
+
+
+    def append_many(self, quotes: Iterable[FootballOddsQuote]) -> tuple[FootballOddsLedgerEntry, ...]:
+        """Append a batch after one integrity read and duplicate preflight."""
+        incoming = list(quotes)
+        if not incoming:
+            return ()
+        entries = self.load(verify=True)
+        seen = {entry.quote.identity() for entry in entries}
+        for quote in incoming:
+            identity = quote.identity()
+            if identity in seen:
+                raise ValueError("duplicate odds quote identity")
+            seen.add(identity)
+
+        previous_hash = entries[-1].entry_sha256 if entries else self.GENESIS_HASH
+        sequence = len(entries)
+        built: list[FootballOddsLedgerEntry] = []
+        for quote in incoming:
+            sequence += 1
+            entry_hash = self._entry_hash(sequence, previous_hash, quote)
+            entry = FootballOddsLedgerEntry(
+                sequence=sequence,
+                previous_entry_sha256=previous_hash,
+                quote=quote,
+                entry_sha256=entry_hash,
+            )
+            built.append(entry)
+            previous_hash = entry_hash
+
+        self.path.parent.mkdir(parents=True, exist_ok=True)
+        with self.path.open("a", encoding="utf-8", newline="\n") as handle:
+            for entry in built:
+                handle.write(_canonical_json(entry.as_serializable_dict()) + "\n")
+            handle.flush()
+        self.verify([*entries, *built])
+        return tuple(built)

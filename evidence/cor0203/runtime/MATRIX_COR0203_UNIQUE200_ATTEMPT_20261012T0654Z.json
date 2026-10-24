@@ -1,0 +1,71 @@
+{
+  "schema": "MATRIX_COR0203_UNIQUE200_ATTEMPT_V1",
+  "status": "BLOCKED_NO_NEW_UNIQUE_ELIGIBLE_EVENT",
+  "attempted_at_utc": "2026-10-12T06:54:13Z",
+  "workflow_run_id": 38214688179,
+  "workflow_conclusion": "success",
+  "trigger_commit": "9c08970bb33052c31fb2427251defd6cc9e11c72",
+  "production_commit": "9c49b215f87afea9c92fec4b889f25ce732ae7b2",
+  "holdout_id": "A22_POST_AUDIT_VIRGIN_HOLDOUT_V1",
+  "domain": "ATP Challenger Hard Singles Match Winner",
+  "counters_after": {
+    "physical_frozen_rows": 340,
+    "unique_calibration_observations": 199,
+    "remaining_to_200": 1,
+    "remaining_to_600": 401,
+    "duplicates_quarantined": 141,
+    "metrics": "SEALED_UNTIL_600_UNIQUE",
+    "metrics_opened": false,
+    "outcomes_read": 0
+  },
+  "new_freezes": 0,
+  "latest_candidate_revisions": [
+    {
+      "revision": "R913",
+      "preflight_blob": "86e81e07c07811156eec24c0288bc001736d9b83",
+      "candidates": [
+        {
+          "event_id": "COR0203-RAPIDAPI-TENNIS-1507-1bae6f1ef3b0",
+          "match": "Dimitar Kuzmanov vs Matyas Cerny",
+          "blockers": [
+            "ELO_SURFACE_MISSING:Matyas Cerny",
+            "GLICKO_SURFACE_MISSING:Matyas Cerny",
+            "SURFACE_HISTORY_MISSING:Matyas Cerny"
+          ]
+        },
+        {
+          "event_id": "COR0203-RAPIDAPI-TENNIS-1612-d38d30e96be5",
+          "match": "Ugo Blanchet vs Daniel De Jonge",
+          "blockers": [
+            "ELO_OVERALL_MISSING:Daniel De Jonge",
+            "ELO_SURFACE_MISSING:Daniel De Jonge",
+            "FORM_HISTORY_MISSING:Daniel De Jonge",
+            "GLICKO_OVERALL_MISSING:Daniel De Jonge",
+            "GLICKO_SURFACE_MISSING:Daniel De Jonge",
+            "OPPONENT_STRENGTH_HISTORY_MISSING:Daniel De Jonge",
+            "OVERALL_HISTORY_MISSING:Daniel De Jonge",
+            "RETURN_HISTORY_MISSING:Daniel De Jonge",
+            "SERVE_HISTORY_MISSING:Daniel De Jonge",
+            "SURFACE_HISTORY_MISSING:Daniel De Jonge"
+          ]
+        }
+      ]
+    },
+    {
+      "revision": "R914",
+      "preflight_blob": "bf5237535946b9ef7b92afc809475733a7249d06",
+      "result": "ALL_BLOCKED",
+      "valid_events": 0
+    }
+  ],
+  "adjudication": "Do not manufacture observation #200. The governed cycle completed successfully but both newly staged candidates fail frozen pre-cut history gates. Window1 remains 199/200 until a genuinely new eligible future event appears.",
+  "protections": {
+    "same_period_results_used": false,
+    "silent_imputation": false,
+    "no_backfill": true,
+    "odds_to_probability": false,
+    "metrics_opened": false,
+    "automatic_wagering": false,
+    "real_money": "BLOCKED"
+  }
+}

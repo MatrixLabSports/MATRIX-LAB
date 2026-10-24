@@ -1,0 +1,167 @@
+name: MATRIX Tennis Lyon Combo Audit 19OCT
+
+on:
+  push:
+    branches:
+      - repair/cor09-world-pipeline
+    paths:
+      - .github/workflows/tennis-lyon-combo-audit-19oct.yml
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: repair/cor09-world-pipeline
+          fetch-depth: 0
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Audit three Lyon selections against canonical MATRIX evidence
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json, re, hashlib
+          from pathlib import Path
+
+          invp=Path("evidence/tennis/world_inventory/2026-10-19/MATRIX_TENNIS_WORLD_INVENTORY.json")
+          lane_p=Path("evidence/tennis_parallel_lanes/ATP_MAIN_MEN_SINGLES_HARD/state.json")
+          browser_p=Path("evidence/tennis/MATRIX_TENNIS_19OCT_BROWSER_FIRST_RECONCILIATION.json")
+          inv=json.loads(invp.read_text())
+          lane=json.loads(lane_p.read_text())
+          browser=json.loads(browser_p.read_text())
+
+          targets=[
+            {"pair":["Kyrian Jacquet","Michael Mmoh"],"selection":"Kyrian Jacquet","odds":1.42},
+            {"pair":["Matteo Arnaldi","Lorenzo Musetti"],"selection":"Lorenzo Musetti","odds":1.44},
+            {"pair":["Jaime Faria","Felix Balshaw"],"selection":"Jaime Faria","odds":1.52},
+          ]
+          def norm(s):
+              return re.sub(r"[^a-z0-9]+"," ",s.lower()).strip()
+
+          rows=[]
+          for t in targets:
+              wanted={norm(x) for x in t["pair"]}
+              matches=[]
+              for e in inv.get("events",[]):
+                  names={norm((e.get("player1") or {}).get("name","")), norm((e.get("player2") or {}).get("name",""))}
+                  if names==wanted:
+                      matches.append(e)
+              be=1.0/t["odds"]
+              row={
+                **t,
+                "break_even_probability":be,
+                "rapidapi_exact_match_count":len(matches),
+                "rapidapi_events":[{
+                  "source_event_id":e.get("source_event_id"),
+                  "match_id":e.get("match_id"),
+                  "tournament_name":e.get("tournament_name"),
+                  "event_start_utc":e.get("event_start_utc"),
+                  "event_start_bogota":e.get("event_start_bogota"),
+                  "surface":e.get("surface"),
+                  "circuit_detail":e.get("circuit_detail"),
+                  "event_format":e.get("event_format"),
+                  "player1":(e.get("player1") or {}).get("name"),
+                  "player2":(e.get("player2") or {}).get("name"),
+                  "physical_event_key":e.get("physical_event_key"),
+                } for e in matches],
+                "matrix_lane_id":lane["lane_id"],
+                "matrix_lane_status":lane["status"],
+                "candidate_model_status":lane["candidate_model_status"],
+                "historical_dataset_status":lane["historical_dataset_status"],
+                "holdout_status":lane["holdout_status"],
+                "prospective_observations":lane["prospective_observations"],
+                "p_matrix":None,
+                "ev":None,
+                "decision":"NO_BET",
+                "reason":"ATP_MAIN_MEN_SINGLES_HARD_NOT_TRAINED_NO_AUTHORIZED_P_MATRIX"
+              }
+              rows.append(row)
+
+          out={
+            "schema":"MATRIX_TENNIS_LYON_COMBO_AUDIT_19OCT2026_V1",
+            "target_date_bogota":"2026-10-19",
+            "market":"MATCH_WINNER",
+            "source_order":["SofaScore","Flashscore","RapidAPI Tennis"],
+            "browser_first":{
+              "sofascore_reviewed":browser["reconciliation"]["sofascore_reviewed"],
+              "flashscore_reviewed":browser["reconciliation"]["flashscore_reviewed"],
+              "browser_first_gate":browser["reconciliation"]["browser_first_gate"],
+              "sofascore_visible_event_rows_full_page":browser["sofascore"]["visible_event_rows_full_page"],
+              "flashscore_visible_match_count":browser["flashscore"]["visible_match_count"]
+            },
+            "rapidapi_inventory":{
+              "inventory_count":inv["accumulation"]["cumulative_count"],
+              "provider":"rapidapi_tennis"
+            },
+            "matrix_lane":{
+              "lane_id":lane["lane_id"],
+              "status":lane["status"],
+              "candidate_model_status":lane["candidate_model_status"],
+              "historical_dataset_status":lane["historical_dataset_status"],
+              "holdout_status":lane["holdout_status"],
+              "prospective_observations":lane["prospective_observations"],
+              "metrics_opened":lane["metrics_opened"]
+            },
+            "selections":rows,
+            "combo":{
+              "odds_product":1.42*1.44*1.52,
+              "displayed_combo_odds":3.10,
+              "break_even_at_displayed_odds":1/3.10,
+              "matrix_combo_probability":None,
+              "matrix_combo_ev":None,
+              "decision":"NO_BET",
+              "reason":"NO_AUTHORIZED_ATP_MAIN_HARD_PROBABILITY_MODEL"
+            },
+            "protections":{
+              "odds_used_to_generate_probability":False,
+              "missing_not_zero":True,
+              "silent_imputation":False,
+              "forced_probability":False,
+              "automatic_wagering":False,
+              "real_money":"BLOCKED"
+            },
+            "adjudication":"PHYSICALLY_VERIFIED_NO_BET_UNTIL_ATP_MAIN_MEN_SINGLES_HARD_MODEL_IS_TRAINED_AND_VALIDATED"
+          }
+          raw=json.dumps(out,sort_keys=True,separators=(",",":"),ensure_ascii=False).encode()
+          out["sha256_without_self"]=hashlib.sha256(raw).hexdigest()
+          dest=Path("evidence/tennis/2026-10-19/MATRIX_TENNIS_LYON_COMBO_AUDIT_19OCT2026.json")
+          dest.parent.mkdir(parents=True,exist_ok=True)
+          dest.write_text(json.dumps(out,indent=2,sort_keys=True,ensure_ascii=False)+"\n")
+          print(json.dumps(out,sort_keys=True,ensure_ascii=False))
+          PY
+
+      - name: Verify fail-closed adjudication
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          p=Path("evidence/tennis/2026-10-19/MATRIX_TENNIS_LYON_COMBO_AUDIT_19OCT2026.json")
+          d=json.loads(p.read_text())
+          assert d["browser_first"]["browser_first_gate"]=="PASS"
+          assert d["matrix_lane"]["lane_id"]=="ATP_MAIN_MEN_SINGLES_HARD"
+          assert d["matrix_lane"]["candidate_model_status"]=="NOT_TRAINED"
+          assert d["matrix_lane"]["prospective_observations"]==0
+          assert all(x["p_matrix"] is None and x["decision"]=="NO_BET" for x in d["selections"])
+          assert d["combo"]["matrix_combo_probability"] is None
+          assert d["combo"]["decision"]=="NO_BET"
+          assert d["protections"]["real_money"]=="BLOCKED"
+          print("MATRIX_LYON_COMBO_FAIL_CLOSED_PASS")
+          PY
+
+      - name: Persist physical audit
+        run: |
+          git config user.name matrix-tennis-lyon-audit
+          git config user.email matrix-tennis-lyon-audit@users.noreply.github.com
+          git add evidence/tennis/2026-10-19/MATRIX_TENNIS_LYON_COMBO_AUDIT_19OCT2026.json
+          git commit -m "evidence(tennis): audit Lyon triple against ATP Main Hard lane"
+          git pull --rebase origin repair/cor09-world-pipeline
+          git push origin HEAD:repair/cor09-world-pipeline

@@ -1,0 +1,57 @@
+{
+  "schema": "MATRIX_10OCT_BROWSER_FIRST_CROSSCHECK_STATUS_V1",
+  "target_date_bogota": "2026-10-10",
+  "generated_from_physical_checks": true,
+  "sofa_score": {
+    "football": {
+      "status": "PASS_USER_PHYSICAL_SCREENSHOT",
+      "visible_full_day_reference_count": 1449,
+      "screenshot_file": "1002210664.jpg",
+      "screenshot_sha256": "c119842536d81fcdc9059c3f9bb6a42f97dd14de1fbb5892579933436b315ec9",
+      "browser_url": "https://www.sofascore.com/es/football/2026-10-10",
+      "opera_materialized_exact_date_unique_links": 340,
+      "note": "340 is partial accessibility-tree materialization; 1449 is the physically visible full-day SofaScore total supplied by the user."
+    },
+    "tennis": {
+      "status": "PASS_USER_PHYSICAL_SCREENSHOT",
+      "visible_full_day_reference_count": 275,
+      "screenshot_file": "1002210664.jpg",
+      "screenshot_sha256": "c119842536d81fcdc9059c3f9bb6a42f97dd14de1fbb5892579933436b315ec9",
+      "browser_url": "https://www.sofascore.com/es/tennis/2026-10-10",
+      "opera_materialized_links_latest": 178,
+      "note": "178 is partial accessibility-tree materialization; 275 is the physically visible full-day SofaScore total supplied by the user."
+    }
+  },
+  "flashscore": {
+    "football": {
+      "status": "DATE_SELECTOR_STALE_BLOCKED",
+      "attempted_urls": [
+        "https://www.flashscore.co/?d=2026-10-10",
+        "https://www.flashscore.co/?d=2026-10-11"
+      ],
+      "physically_visible_date_selector": "viernes, 9 de octubre de 2026",
+      "use_as_10oct_denominator": false
+    },
+    "tennis": {
+      "status": "DATE_SELECTOR_STALE_BLOCKED",
+      "attempted_urls": [
+        "https://www.flashscore.co/tenis/?d=2026-10-10",
+        "https://www.flashscore.co/tenis/?d=2026-10-11"
+      ],
+      "physically_visible_date_selector": "viernes, 9 de octubre de 2026",
+      "use_as_10oct_denominator": false
+    }
+  },
+  "source_order_check": {
+    "sofascore_checked_first": true,
+    "flashscore_checked_second": true,
+    "structured_api_stage_allowed_after_attempt": true,
+    "canonical_multisource_denominator_open": false
+  },
+  "protections": {
+    "no_guessed_flashscore_counts": true,
+    "automatic_wagering": false,
+    "real_money": "BLOCKED"
+  },
+  "adjudication": "PROCEED_TO_STRUCTURED_API_CAPTURE_BUT_KEEP_CROSS_SOURCE_CANONICALIZATION_BLOCKED_UNTIL_FLASHSCORE_10OCT_IS_PHYSICALLY_READABLE"
+}

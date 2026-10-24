@@ -1,0 +1,61 @@
+name: MATRIX Workflow Regression Contracts
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - repair/cor09-world-pipeline
+    paths:
+      - .github/workflows/football-clv-continuous-watcher.yml
+      - .github/workflows/telegram-green-signals.yml
+      - tools/football_clv_tracking_cycle.py
+      - tools/workflow_regression_contracts.py
+      - tests/test_football_clv_tracking_cycle.py
+      - tests/test_telegram_sharp_reference_gate.py
+      - tests/test_football_sharp_consensus.py
+      - tests/test_telegram_monitoring_watchdog.py
+      - tests/test_telegram_quote_recovery_window.py
+  pull_request:
+    paths:
+      - .github/workflows/football-clv-continuous-watcher.yml
+      - .github/workflows/telegram-green-signals.yml
+      - tools/football_clv_tracking_cycle.py
+      - tools/workflow_regression_contracts.py
+
+permissions:
+  contents: read
+
+jobs:
+  contracts:
+    runs-on: ubuntu-latest
+    env:
+      MATRIX_MODE: SHADOW
+      REAL_MONEY: BLOCKED
+      AUTO_BETTING: DISABLED
+    steps:
+      - name: Checkout operational branch
+        uses: actions/checkout@v4
+        with:
+          ref: repair/cor09-world-pipeline
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install test dependencies
+        run: python -m pip install pytest requests
+
+      - name: Enforce semantic workflow contracts
+        run: PYTHONPATH=. python -m tools.workflow_regression_contracts
+
+      - name: Re-run certified CLV and Telegram regressions
+        run: |
+          PYTHONPATH=. python -m pytest -q             tests/test_football_clv_tracking_cycle.py             tests/test_telegram_sharp_reference_gate.py             tests/test_football_sharp_consensus.py             tests/test_telegram_monitoring_watchdog.py             tests/test_telegram_quote_recovery_window.py
+
+      - name: Final CI gate
+        run: |
+          test "$REAL_MONEY" = "BLOCKED"
+          test "$AUTO_BETTING" = "DISABLED"
+          echo "MATRIX_WORKFLOW_REGRESSION_CI=PASS"

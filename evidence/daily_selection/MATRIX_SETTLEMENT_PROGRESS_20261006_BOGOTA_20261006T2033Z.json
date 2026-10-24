@@ -1,0 +1,56 @@
+{
+  "schema": "MATRIX_DAILY_SELECTION_SETTLEMENT_PROGRESS_V1",
+  "target_date_bogota": "2026-10-06",
+  "captured_at_utc": "2026-10-06T20:33:17Z",
+  "source_selection": "evidence/daily_selection/MATRIX_CALIBRATION_CANDIDATES_20261006_BOGOTA.json",
+  "previous_snapshot": "evidence/daily_selection/MATRIX_SETTLEMENT_PROGRESS_20261006_BOGOTA_20261006T1655Z.json",
+  "football": {
+    "target_frozen_candidates": 116,
+    "global_v2_1x2": {
+      "freeze_observation_count": 425,
+      "settlement_count": 166,
+      "pending_settlement_count": 259,
+      "metrics_opened": false,
+      "parameter_tuning_allowed": false,
+      "real_money": "BLOCKED",
+      "source": "evidence/api_football/calibration_v2/lanes/1x2/state.json",
+      "source_blob_sha": "d28bd39b96f7bad9bcbfb6e409f343605acf6899"
+    },
+    "change_since_previous_snapshot": {
+      "previous_global_v2_settlement_count": 133,
+      "current_global_v2_settlement_count": 166,
+      "new_global_v2_settlements": 33
+    },
+    "cohort_6oct": {
+      "previous_physically_closed": 29,
+      "current_physically_closed": null,
+      "remaining": null,
+      "reason": "NOT_ASSERTED: oversized append-only ledger content unavailable through connector; no cohort-specific count inferred from global delta."
+    },
+    "settlement_sync": {
+      "new_settlement_count": 52,
+      "blocked_count": 25,
+      "source": "evidence/api_football/prospective_market_freeze/settlement_sync_last.json",
+      "source_blob_sha": "b4767ae809157348c07f1002d623dc0a5833b214"
+    }
+  },
+  "tennis": {
+    "target_unique_events": 11,
+    "ledger_records": 147,
+    "new_settlements_latest_sync": 0,
+    "new_6oct_standard_final_settlements_physically_attributable_in_this_review": 0,
+    "nonstandard_blocked_retired": 4,
+    "metrics": "SEALED_UNTIL_600",
+    "outcomes_used_for_metrics": 0,
+    "real_money": "BLOCKED",
+    "source": "evidence/cor0203/runtime/MATRIX_COR0203_SETTLEMENT_SYNC_LAST.json",
+    "source_blob_sha": "b7838d88b9cd535be467705d30e6e5f1930385b0"
+  },
+  "protections": {
+    "final_only": true,
+    "metrics_opened": false,
+    "tuning": false,
+    "odds_to_p": false,
+    "real_money": "BLOCKED"
+  }
+}

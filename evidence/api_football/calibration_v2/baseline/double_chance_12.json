@@ -1,0 +1,33 @@
+{
+  "schema": "MATRIX_FOOTBALL_MARKET_BASELINE_CERTIFICATION_V1",
+  "market": "DOUBLE_CHANCE_12",
+  "certified_at_utc": "2026-10-04T18:51:32Z",
+  "source_head": "da12bb6d3edeac0bde38f8f71d58b5769647a87f",
+  "source_ledger_blob_sha": "c405280d6e1cf59c72e547686a698d4951f4f0d9",
+  "method": {
+    "brier": "binary mean squared error",
+    "log_loss": "binary cross entropy",
+    "ece_10": "10 equal-width probability bins",
+    "max_cal_error_10": "maximum absolute bin calibration gap"
+  },
+  "status": "NOT_PROMOTED_DIAGNOSTIC_ONLY",
+  "n": 746,
+  "challenger": {
+    "brier": 0.15350662529754275,
+    "log_loss": 0.4895897026641347,
+    "accuracy": 0.8163538873994638,
+    "ece_10": 0.04266337773719494,
+    "max_cal_error_10": 0.24903612528949903
+  },
+  "poisson": {
+    "brier": 0.15352444472342996,
+    "log_loss": 0.4866088588108847,
+    "accuracy": 0.8163538873994638,
+    "ece_10": 0.05019825689008052,
+    "max_cal_error_10": 0.2534918957142859
+  },
+  "delta_brier": -0.000017819425887216633,
+  "delta_log_loss": 0.0029808438532499815,
+  "blocker": "CHALLENGER_LOG_LOSS_WORSE_THAN_POISSON",
+  "real_money": "BLOCKED"
+}

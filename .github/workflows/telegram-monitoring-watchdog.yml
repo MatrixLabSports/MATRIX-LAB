@@ -1,0 +1,101 @@
+name: MATRIX Vigilante Independiente Telegram
+
+on:
+  schedule:
+    - cron: "14,29,44,59 * * * *"
+  workflow_dispatch:
+  push:
+    branches:
+      - repair/cor09-world-pipeline
+    paths:
+      - tools/telegram_monitoring_watchdog.py
+      - tests/test_telegram_monitoring_watchdog.py
+      - .github/workflows/telegram-monitoring-watchdog.yml
+
+permissions:
+  contents: write
+
+concurrency:
+  group: telegram-monitoring-watchdog
+  cancel-in-progress: false
+
+jobs:
+  watchdog:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      REAL_MONEY: BLOCKED
+    steps:
+      - name: Checkout rama operativa
+        uses: actions/checkout@v4
+        with:
+          ref: repair/cor09-world-pipeline
+          fetch-depth: 0
+
+      - name: Configurar Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Instalar pruebas y dependencia del supervisor
+        run: python -m pip install pytest requests
+
+      - name: Probar reglas permanentes del vigilante
+        run: PYTHONPATH=. python -m pytest -q tests/test_telegram_monitoring_watchdog.py
+
+      - name: Ejecutar vigilante independiente
+        id: watchdog
+        shell: bash
+        run: |
+          set +e
+          PYTHONPATH=. python -m tools.telegram_monitoring_watchdog
+          code=$?
+          echo "exit_code=$code" >> "$GITHUB_OUTPUT"
+          exit 0
+
+      - name: Persistir evidencia del vigilante
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name matrix-monitoring-watchdog
+          git config user.email matrix-monitoring-watchdog@users.noreply.github.com
+          git add evidence/notifications/telegram/MATRIX_TELEGRAM_MONITORING_WATCHDOG_LAST.json
+          if git diff --cached --quiet; then
+            echo "SIN_CAMBIOS_VIGILANTE"
+            exit 0
+          fi
+          git commit -m "evidence(telegram): persist independent monitoring watchdog"
+          for attempt in 1 2 3 4; do
+            git fetch origin repair/cor09-world-pipeline
+            if ! git rebase origin/repair/cor09-world-pipeline; then
+              git rebase --abort || true
+              exit 1
+            fi
+            if git push origin HEAD:repair/cor09-world-pipeline; then
+              exit 0
+            fi
+            sleep $((attempt*2))
+          done
+          exit 1
+
+      - name: Alertar por Telegram si el vigilante falla
+        if: steps.watchdog.outputs.exit_code != '0'
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          msg="🚨 MATRIX: FALLO DEL VIGILANTE DE MONITOREO. Revisar ejecución $GITHUB_RUN_ID. Posible supervisor atrasado, candidato a menos de 30 minutos sin revalidación o brecha real de monitoreo. DINERO REAL BLOQUEADO."
+          curl -fsS --retry 2 --max-time 20 \
+            -X POST "https://api.telegram.org/bot$TELEGRAM_BOT_TOKEN/sendMessage" \
+            --data-urlencode "chat_id=$TELEGRAM_CHAT_ID" \
+            --data-urlencode "text=$msg"
+
+      - name: Cerrar en fallo si existe una brecha
+        if: steps.watchdog.outputs.exit_code != '0'
+        run: |
+          echo "VIGILANTE_FAIL_CLOSED"
+          exit 1
+
+# MATRIX_USER_AUTHORIZED_TRIGGER 2026-10-20 post-live-supervisor-watchdog-proof

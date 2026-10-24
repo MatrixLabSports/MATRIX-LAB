@@ -1,0 +1,106 @@
+{
+  "schema": "MATRIX_TELEGRAM_STAKING_RISK_GUARDRAIL_17OCT2026_V1",
+  "generated_at_utc": "2026-10-17T20:55:00+00:00",
+  "branch": "repair/cor09-world-pipeline",
+  "diagnosis": {
+    "source_ledger_blob": "278ebe6913e0dec200bba92340815a97e523f50f",
+    "settled_with_positive_paper_stake": 154,
+    "overall": {
+      "wins": 87,
+      "losses": 67,
+      "hit_rate_pct": 56.4935064935,
+      "profit_cop": -337750,
+      "units": -13.51
+    },
+    "by_stake": {
+      "stake_1": {
+        "n": 95,
+        "wins": 56,
+        "losses": 39,
+        "hit_rate_pct": 58.9473684211,
+        "profit_cop": 138500,
+        "units": 5.54
+      },
+      "stake_2": {
+        "n": 37,
+        "wins": 20,
+        "losses": 17,
+        "hit_rate_pct": 54.0540540541,
+        "profit_cop": -165000,
+        "units": -6.6
+      },
+      "stake_3": {
+        "n": 22,
+        "wins": 11,
+        "losses": 11,
+        "hit_rate_pct": 50,
+        "profit_cop": -311250,
+        "units": -12.45
+      }
+    },
+    "by_revalidated_ev": {
+      "lt_5pct": {
+        "n": 61,
+        "wins": 41,
+        "losses": 20,
+        "hit_rate_pct": 67.2131147541,
+        "profit_cop": 188750,
+        "units": 7.55
+      },
+      "pct_5_to_10": {
+        "n": 37,
+        "wins": 22,
+        "losses": 15,
+        "hit_rate_pct": 59.4594594595,
+        "profit_cop": 102500,
+        "units": 4.1
+      },
+      "pct_10_to_15": {
+        "n": 26,
+        "wins": 10,
+        "losses": 16,
+        "hit_rate_pct": 38.4615384615,
+        "profit_cop": -338000,
+        "units": -13.52
+      },
+      "gte_15pct": {
+        "n": 30,
+        "wins": 14,
+        "losses": 16,
+        "hit_rate_pct": 46.6666666667,
+        "profit_cop": -291000,
+        "units": -11.64
+      }
+    },
+    "adjudication": "HIGH_STAKE_AND_HIGH_EV_TAIL_MATERIAL_UNDERPERFORMANCE; VARIABLE_SIZING_AMPLIFIES_MODEL_OVERCONFIDENCE_RISK"
+  },
+  "temporary_guardrail": {
+    "code_path": "tools/telegram_green_signal_alerts.py",
+    "paper_stake_max_level": 1,
+    "paper_stake_risk_override": "TEMPORARY_FLAT_1U_CAP_17OCT2026",
+    "paper_stake_cop": 25000,
+    "daily_cap_fraction": 0.3,
+    "stake_2_new_assignments": "BLOCKED_BY_CAP",
+    "stake_3_new_assignments": "BLOCKED_BY_CAP",
+    "p_matrix_changed": false,
+    "ev_calculation_changed": false,
+    "signal_gate_changed": false,
+    "clv_metrics_opened": false,
+    "model_tuning": false,
+    "automatic_real_money_execution": false,
+    "real_money": "BLOCKED"
+  },
+  "release_gate": {
+    "retire_override_only_after": [
+      "high-P/high-EV calibration is physically revalidated",
+      "CLV accumulation supplies sufficient evidence",
+      "paper-only forward sample shows no material overconfidence in upper tail"
+    ],
+    "automatic_retirement": false
+  },
+  "required_tests": [
+    "paper_stake_level returns 1 for candidate tiers previously assigned 2u/3u",
+    "high-conviction 40% cap is disabled while flat-1u guardrail is active",
+    "Telegram workflow remains REAL_MONEY=BLOCKED"
+  ]
+}

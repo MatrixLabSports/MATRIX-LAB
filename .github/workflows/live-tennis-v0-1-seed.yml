@@ -1,0 +1,74 @@
+name: MATRIX Live Tennis v0.1 Seed
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - repair/cor09-world-pipeline
+    paths:
+      - tools/live_tennis_feature_extractor.py
+      - tests/test_live_tennis_feature_extractor.py
+      - docs/live_tennis/MATRIX_LIVE_TENNIS_V0_1.md
+      - .github/workflows/live-tennis-v0-1-seed.yml
+
+permissions:
+  contents: write
+
+jobs:
+  seed:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: repair/cor09-world-pipeline
+          fetch-depth: 0
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Run live feature tests
+        run: |
+          python -m pip install pytest
+          PYTHONPATH=. pytest -q tests/test_live_tennis_feature_extractor.py
+
+      - name: Build first live feature ledger
+        run: |
+          python -m tools.live_tennis_feature_extractor             --lab-snapshot evidence/live_tennis_lab/2026-10-06/MATRIX_LIVE_TENNIS_LAB_SNAPSHOT.json             --micro-lab evidence/live_tennis_lab/2026-10-06/MATRIX_LIVE_TENNIS_MICRO_LAB_200549.json             --out evidence/live_tennis_lab/2026-10-06/MATRIX_LIVE_TENNIS_FEATURE_LEDGER_V0_1.json
+
+      - name: Validate seed contract
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          p=Path("evidence/live_tennis_lab/2026-10-06/MATRIX_LIVE_TENNIS_FEATURE_LEDGER_V0_1.json")
+          j=json.loads(p.read_text())
+          assert j["model_status"]=="RESEARCH_ONLY"
+          assert j["raw_snapshot_count"]==6
+          assert j["unique_state_count"]==3
+          assert j["duplicate_transport_snapshots_quarantined"]==3
+          assert [x["sequence"] for x in j["states"]]==[104,105,106]
+          assert all(x["p1_match_win"] is None for x in j["states"])
+          assert all(x["label_opened"] is False for x in j["states"])
+          assert j["protections"]["real_money"]=="BLOCKED"
+          print(json.dumps({
+            "raw":j["raw_snapshot_count"],
+            "unique":j["unique_state_count"],
+            "duplicates":j["duplicate_transport_snapshots_quarantined"],
+            "sequences":[x["sequence"] for x in j["states"]]
+          },sort_keys=True))
+          PY
+
+      - name: Persist seed evidence
+        run: |
+          git config user.name "matrix-live-tennis-v01"
+          git config user.email "matrix-live-tennis-v01@users.noreply.github.com"
+          git add evidence/live_tennis_lab/2026-10-06/MATRIX_LIVE_TENNIS_FEATURE_LEDGER_V0_1.json
+          if git diff --cached --quiet; then
+            echo "NO_SEED_CHANGE"
+            exit 0
+          fi
+          git commit -m "evidence(live): persist MATRIX Live Tennis v0.1 seed ledger"
+          git pull --rebase origin repair/cor09-world-pipeline
+          git push origin HEAD:repair/cor09-world-pipeline

@@ -1,0 +1,141 @@
+{
+  "schema": "MATRIX_SOFASCORE_SOURCE_ACTIVATION_20261004_V1",
+  "generated_at_utc": "2026-10-04T08:46:00Z",
+  "timezone": "America/Bogota",
+  "provider": "sofascore",
+  "approved_role": "WORLD_DISCOVERY_AND_ENTITY_METADATA_SIDECAR",
+  "api_automation": {
+    "status": "BLOCKED_WAF_HTTP_403",
+    "github_workflow": "SofaScore Multisport Discovery 2026-10-05",
+    "runs": [
+      {
+        "run_id": 37189651953,
+        "conclusion": "failure",
+        "reason": "Initial real network verification blocked before persistence"
+      },
+      {
+        "run_id": 37189775444,
+        "conclusion": "failure",
+        "capture_step": "success",
+        "persistence_step": "success",
+        "adjudication_step": "failure",
+        "reason": "Both api.sofascore.com and www.sofascore.com/api/v1 returned HTTP 403 from GitHub Actions"
+      }
+    ],
+    "physical_evidence_path": "evidence/sofascore/2026-10-05/multisport_discovery.json",
+    "physical_evidence_blob_sha": "ef47f964d9ee8051966a088aceb374b4835ea3e7",
+    "http_backend": "curl_cffi_chrome",
+    "provider_network_calls": 2,
+    "observed_requests": [
+      {
+        "base_url": "https://api.sofascore.com/api/v1",
+        "path": "/sport/football/scheduled-events/2026-10-04",
+        "http_status": 403
+      },
+      {
+        "base_url": "https://www.sofascore.com/api/v1",
+        "path": "/sport/football/scheduled-events/2026-10-04",
+        "http_status": 403
+      }
+    ]
+  },
+  "browser_web_verification": {
+    "status": "PASS",
+    "tennis": {
+      "verified_capabilities": [
+        "tournament calendar",
+        "competition category",
+        "surface",
+        "player identity",
+        "visible ATP/WTA ranking",
+        "event date and time",
+        "venue/court when published",
+        "upcoming and prior matches",
+        "event statistics metadata"
+      ],
+      "direct_examples": [
+        {
+          "url": "https://www.sofascore.com/tennis/tournament/challenger/wuning-3-china/38610",
+          "observed": {
+            "tournament": "Wuning 3, China",
+            "category": "Challenger",
+            "season": 2026,
+            "date_range": "2026-10-04/2026-10-11"
+          }
+        },
+        {
+          "url": "https://www.sofascore.com/es/tennis/match/julien-de-cuyper-max-purcell/iTZsonTb",
+          "observed": {
+            "competition": "Wuning 3, China, Qualifying",
+            "date": "2026-10-04",
+            "player_rankings_visible": true
+          }
+        },
+        {
+          "url": "https://www.sofascore.com/tennis/match/priska-madelyn-nugroho-kyoka-okamura/PncbsvAqc",
+          "observed": {
+            "competition": "Suzhou, China, Qualifying",
+            "category": "WTA 125",
+            "surface": "Outdoor hard",
+            "player_rankings_visible": true
+          }
+        }
+      ]
+    },
+    "football": {
+      "verified_capabilities": [
+        "team profile",
+        "season schedule",
+        "future fixtures",
+        "current roster",
+        "player starts and appearances",
+        "minutes",
+        "goals",
+        "cards",
+        "nationality",
+        "date of birth",
+        "height",
+        "preferred foot",
+        "position"
+      ],
+      "direct_example": {
+        "url": "https://www.sofascore.com/es-la/football/team/juventus/2687",
+        "observed": {
+          "team": "Juventus",
+          "roster_visible": true,
+          "schedule_visible": true,
+          "player_statistics_visible": true
+        }
+      }
+    }
+  },
+  "endpoint_capability_reference": {
+    "football_daily_schedule": "/sport/football/scheduled-events/{date}",
+    "tennis_daily_tournaments": "/sport/tennis/scheduled-tournaments/{date}/page/{page}",
+    "event_detail": "/event/{eventId}",
+    "player_profile": "/player/{playerId}",
+    "player_next_events": "/player/{playerId}/events/next",
+    "player_last_events": "/player/{playerId}/events/last",
+    "team_profile": "/team/{teamId}",
+    "team_roster": "/team/{teamId}/players",
+    "event_statistics": "/event/{eventId}/statistics",
+    "event_lineups": "/event/{eventId}/lineups"
+  },
+  "governance": {
+    "browser_verified_use_allowed": true,
+    "ci_api_use_allowed": false,
+    "feeds_model_automatically": false,
+    "calendar_discovery_allowed": true,
+    "entity_identity_enrichment_allowed": true,
+    "football_team_player_metadata_allowed": true,
+    "tennis_player_tournament_metadata_allowed": true,
+    "requires_cross_provider_reconciliation": true,
+    "world_complete_from_sofascore_alone": false,
+    "odds_to_p_matrix": false,
+    "metrics_opened": false,
+    "automatic_wagering": false,
+    "real_money": "BLOCKED"
+  },
+  "source_portfolio_document": "docs/providers/MATRIX_DISCOVERY_SOURCE_PORTFOLIO_V1.md",
+  "status": "PASS_BROWSER_VERIFIED_API_AUTOMATION_BLOCKED"
+}

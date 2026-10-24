@@ -1,0 +1,94 @@
+# VERIFY_CONTROLS_20OCT2026_1055UTC
+name: MATRIX Tennis Three-Block Stagnation Audit
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "11 */2 * * *"
+  push:
+    branches:
+      - repair/cor09-world-pipeline
+    paths:
+      - tools/tennis_three_block_stagnation_audit.py
+      - tests/test_tennis_three_block_stagnation_audit.py
+      - .github/workflows/tennis-three-block-stagnation-audit.yml
+
+permissions:
+  contents: write
+
+concurrency:
+  group: tennis-three-block-stagnation-audit
+  cancel-in-progress: false
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      REAL_MONEY: BLOCKED
+    steps:
+      - name: Checkout operational branch
+        uses: actions/checkout@v4
+        with:
+          ref: repair/cor09-world-pipeline
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install tests
+        run: python -m pip install pytest
+
+      - name: Verify permanent blocker rules
+        run: PYTHONPATH=. python -m pytest -q tests/test_tennis_three_block_stagnation_audit.py
+
+      - name: Build physical three-block blocker audit
+        run: PYTHONPATH=. python -m tools.tennis_three_block_stagnation_audit
+
+      - name: Validate safety and counters
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          p=Path("evidence/tennis/MATRIX_TENNIS_THREE_BLOCK_STAGNATION_AUDIT_LAST.json")
+          j=json.loads(p.read_text())
+          assert j["permanent_rules"]["missing_not_zero"] is True
+          assert j["permanent_rules"]["silent_imputation"] is False
+          assert j["permanent_rules"]["historical_backfill_into_holdout"] is False
+          assert j["permanent_rules"]["real_money"]=="BLOCKED"
+          for lane in ("hard","clay","live"):
+              assert lane in j["blocks"]
+          assert j["blocks"]["hard"]["current_counter"] >= 0
+          assert j["blocks"]["clay"]["current_counter"] >= 0
+          assert j["blocks"]["live"]["current_counter"] >= 0
+          print(json.dumps(j["blocks"],sort_keys=True))
+          PY
+
+      - name: Persist physical evidence
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name matrix-tennis-stagnation-audit
+          git config user.email matrix-tennis-stagnation-audit@users.noreply.github.com
+          git add evidence/tennis/MATRIX_TENNIS_THREE_BLOCK_STAGNATION_AUDIT_LAST.json
+          if git diff --cached --quiet; then
+            echo "NO_AUDIT_CHANGE"
+            exit 0
+          fi
+          git commit -m "evidence(tennis): persist three-block stagnation audit"
+          for attempt in 1 2 3 4; do
+            git fetch origin repair/cor09-world-pipeline
+            if ! git rebase origin/repair/cor09-world-pipeline; then
+              git rebase --abort || true
+              exit 1
+            fi
+            if git push origin HEAD:repair/cor09-world-pipeline; then exit 0; fi
+            sleep $((attempt*2))
+          done
+          exit 1
+
+# MATRIX_USER_AUTHORIZED_TRIGGER 2026-10-20 physical-three-block-stagnation-audit

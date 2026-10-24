@@ -1,0 +1,28 @@
+{
+  "schema": "MATRIX_COR_CLOSURE_EVIDENCE_V1",
+  "correction": "COR05",
+  "status": "RESOLVED",
+  "literal_acceptance": "Exact probability origin without exception",
+  "verified_result": "Closure preserved in authoritative correction board/reconciliation; current governed football freeze explicitly records odds_used_to_generate_probability=false.",
+  "closure_mode": "PROBABILITY_ORIGIN_PROVENANCE",
+  "evidence": [
+    {
+      "path": "evidence/audit/source_snapshots/MATRIX_CORRECTION_BOARD_R704_LIBRARY_SNAPSHOT.md",
+      "role": "literal_acceptance_snapshot"
+    },
+    {
+      "path": "evidence/audit/MATRIX_TOTAL_RECONCILIATION_AUDIT_20260926.md",
+      "blob_sha": "1c05bafb5b16e946442956801c23caa52ce1739a",
+      "role": "authoritative_reconciliation"
+    },
+    {
+      "path": "app/release/provenance.py",
+      "role": "provenance_implementation"
+    }
+  ],
+  "caveats": [
+    "Any future ambiguous probability origin is a regression and must fail closed.",
+    "Odds must never be converted into P_MATRIX."
+  ],
+  "real_money": "BLOCKED"
+}

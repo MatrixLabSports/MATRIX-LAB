@@ -1,0 +1,250 @@
+# MATRIX_PHYSICAL_TRIGGER 2026-10-23T23:15-05:00 recover-scheduler-silence-final-window
+# MATRIX_PHYSICAL_TRIGGER 2026-10-23T12:52-05:00 recover-missed-prematch-window
+# MATRIX_USER_AUTHORIZED_TRIGGER 2026-10-20T21:53-05:00 rushbet-refresh-revalidation
+# MATRIX_USER_AUTHORIZED_TRIGGER 2026-10-20T21:26-05:00 immediate-window-supervision
+# MATRIX_USER_AUTHORIZED_TRIGGER 2026-10-20T21:02-05:00 immediate-final-window-revalidation
+# MATRIX_PHYSICAL_TRIGGER 2026-10-19T01:00-05:00 midnight-continuity-check
+# MATRIX_PHYSICAL_TRIGGER 2026-10-18T20:23-05:00 post-recovery-19oct-pmatrix151
+# MATRIX_PHYSICAL_TRIGGER 2026-10-09T05:34Z continuity-fallback-telegram
+name: Telegram Señales Verdes MATRIX
+
+on:
+  schedule:
+    - cron: "7,22,37,52 * * * *"
+  push:
+    branches:
+      - main
+      - repair/cor09-world-pipeline
+    paths:
+      - .github/workflows/telegram-green-signals.yml
+      - tools/telegram_green_signal_alerts.py
+      - app/research/football/correlated_exposure.py
+      - app/research/football/correlated_risk_calibration.py
+      - app/research/football/correlated_exposure.py
+      - tests/test_telegram_paper_bankroll.py
+      - tests/test_telegram_correlated_risk_gate.py
+      - tests/test_telegram_monitoring_watchdog.py
+      - tools/telegram_monitoring_watchdog.py
+      - evidence/api_football/daily_prematch_reports/**
+      - evidence/tennis_signals/**
+  workflow_dispatch:
+  workflow_run:
+    workflows:
+      - "MATRIX Football Daily Governed Pipeline"
+      - "API-Football prospective FINAL-only settlement now"
+    types:
+      - completed
+
+permissions:
+  contents: write
+
+concurrency:
+  group: telegram-green-signals
+  cancel-in-progress: false
+
+jobs:
+  notify:
+    if: >
+      github.event_name != 'workflow_run' ||
+      github.event.workflow_run.conclusion == 'success'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      MATRIX_MODE: SHADOW
+      REAL_MONEY: BLOCKED
+      AUTO_BETTING: DISABLED
+      PAPER_BANKROLL: ENABLED
+    steps:
+      - name: Checkout rama de trabajo
+        uses: actions/checkout@v4
+        with:
+          ref: repair/cor09-world-pipeline
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install governed dependencies
+        run: python -m pip install requests pytest
+
+      - name: Verify paper-bankroll Telegram format
+        run: PYTHONPATH=. python -m pytest -q tests/test_telegram_paper_bankroll.py tests/test_telegram_correlated_risk_gate.py tests/test_telegram_sharp_reference_gate.py tests/test_football_sharp_consensus.py tests/test_correlated_exposure.py tests/test_telegram_monitoring_watchdog.py tests/test_telegram_quote_recovery_window.py tests/test_telegram_colombia_portfolio_ev_lab.py
+
+      - name: Enforce safety gates
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$MATRIX_MODE" = "SHADOW"
+          test "$REAL_MONEY" = "BLOCKED"
+          test "$AUTO_BETTING" = "DISABLED"
+          test "$PAPER_BANKROLL" = "ENABLED"
+
+      - name: Enforce API-Football subscription deadline before supervisor
+        env:
+          API_FOOTBALL_KEY: ${{ secrets.API_FOOTBALL_KEY }}
+        run: |
+          python -m pytest -q tests/test_football_subscription_deadline_guard.py
+          python -m tools.football_subscription_deadline_guard --require-paid-use --require-key
+
+      - name: Validate secrets
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          API_FOOTBALL_KEY: ${{ secrets.API_FOOTBALL_KEY }}
+          ODDS_API_NET_KEY: ${{ secrets.ODDS_API_NET_KEY }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -n "$TELEGRAM_BOT_TOKEN"
+          test -n "$TELEGRAM_CHAT_ID"
+          test -n "$API_FOOTBALL_KEY"
+          test -n "$ODDS_API_NET_KEY"
+          echo "SECRETOS_TELEGRAM_API_FOOTBALL_Y_ODDS_API_NET_PRESENTES"
+
+      - name: Supervisor Telegram — señales, cuotas y FINAL
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          API_FOOTBALL_KEY: ${{ secrets.API_FOOTBALL_KEY }}
+          ODDS_API_NET_KEY: ${{ secrets.ODDS_API_NET_KEY }}
+        run: python -m tools.telegram_green_signal_alerts
+
+      - name: Rebuild canonical daily bankroll table
+        run: python -m tools.telegram_daily_bankroll_canonical
+
+      - name: Audit 22-OCT closure
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          ledger=json.loads(Path("evidence/notifications/telegram/MATRIX_TELEGRAM_SIGNAL_LEDGER.json").read_text(encoding="utf-8"))
+          rows=[]
+          for s in ledger.get("sent", []):
+              if not isinstance(s, dict):
+                  continue
+              bet=s.get("paper_bet")
+              if not isinstance(bet, dict) or str(bet.get("kickoff_bogota_date") or "")!="2026-10-22":
+                  continue
+              rows.append({
+                  "signal_key":s.get("signal_key"),
+                  "fixture_id":s.get("fixture_id"),
+                  "match":s.get("match"),
+                  "house":s.get("house"),
+                  "odds":s.get("odds"),
+                  "paper_status":bet.get("status"),
+                  "paper_profit_cop":bet.get("profit_cop"),
+              })
+          open_rows=[x for x in rows if str(x.get("paper_status") or "").upper() in {"OPEN","PENDING"}]
+          wins=sum(1 for x in rows if str(x.get("paper_status") or "").upper()=="SETTLED" and float(x.get("paper_profit_cop") or 0)>0)
+          losses=sum(1 for x in rows if str(x.get("paper_status") or "").upper()=="SETTLED" and float(x.get("paper_profit_cop") or 0)<0)
+          voids=sum(1 for x in rows if str(x.get("paper_status") or "").upper().startswith("VOID"))
+          cancelled=sum(1 for x in rows if str(x.get("paper_status") or "").upper()=="CANCELLED_NO_BET")
+          profit=round(sum(float(x.get("paper_profit_cop") or 0) for x in rows))
+          out={
+              "schema":"MATRIX_TELEGRAM_DAILY_CLOSURE_AUDIT_V1",
+              "date_bogota":"2026-10-22",
+              "signals":len(rows),
+              "wins":wins,
+              "losses":losses,
+              "voids":voids,
+              "cancelled_no_bet":cancelled,
+              "open":len(open_rows),
+              "profit_cop":profit,
+              "units":round(profit/25000,2),
+              "rows":rows,
+              "status":"PASS_CLOSED" if not open_rows else "PENDING_FINALS",
+              "real_money":"BLOCKED",
+          }
+          Path("evidence/notifications/telegram/MATRIX_TELEGRAM_20261022_CLOSURE_AUDIT.json").write_text(
+              json.dumps(out,ensure_ascii=False,indent=2,sort_keys=True)+"\n",encoding="utf-8"
+          )
+          assert len(open_rows)==0, f"22OCT_OPEN_SIGNALS:{len(open_rows)}"
+          print(json.dumps({k:out[k] for k in ("signals","wins","losses","voids","cancelled_no_bet","open","profit_cop","units","status")},sort_keys=True))
+          PY
+
+      - name: Persistir ledger gobernado
+        if: ${{ always() }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name matrix-telegram-alerts
+          git config user.email matrix-telegram-alerts@users.noreply.github.com
+          git add evidence/notifications/telegram/MATRIX_TELEGRAM_SIGNAL_LEDGER.json \
+            evidence/notifications/telegram/MATRIX_CORRELATED_RISK_CALIBRATION_LAST.json \
+            evidence/notifications/telegram/MATRIX_TELEGRAM_BLOCKER_RECOVERY_AUDIT_LAST.json \
+            evidence/notifications/telegram/MATRIX_EV_MARGINAL_SHADOW_LAB_LAST.json \
+            evidence/notifications/telegram/MATRIX_TELEGRAM_DAILY_BANKROLL_CANONICAL_LAST.json \
+            evidence/notifications/telegram/MATRIX_TELEGRAM_20261022_CLOSURE_AUDIT.json
+          if ! git diff --quiet; then
+            echo "TELEGRAM_UNEXPECTED_UNSTAGED_TRACKED_CHANGES"
+            git status --short
+            exit 1
+          fi
+          if git diff --cached --quiet; then
+            echo "SIN_CAMBIOS_LEDGER"
+            exit 0
+          fi
+          git commit -m "evidence(telegram): persist autonomous supervisor ledger"
+          if ! git diff --quiet; then
+            echo "TELEGRAM_WORKTREE_DIRTY_AFTER_COMMIT"
+            git status --short
+            exit 1
+          fi
+          for attempt in 1 2 3 4; do
+            git fetch origin repair/cor09-world-pipeline
+            if ! git rebase origin/repair/cor09-world-pipeline; then
+              conflicts="$(git diff --name-only --diff-filter=U)"
+              unexpected=0
+              while IFS= read -r file; do
+                [ -z "$file" ] && continue
+                case "$file" in
+                  evidence/notifications/telegram/MATRIX_TELEGRAM_SIGNAL_LEDGER.json|\
+                  evidence/notifications/telegram/MATRIX_CORRELATED_RISK_CALIBRATION_LAST.json|\
+                  evidence/notifications/telegram/MATRIX_TELEGRAM_BLOCKER_RECOVERY_AUDIT_LAST.json|\
+                  evidence/notifications/telegram/MATRIX_EV_MARGINAL_SHADOW_LAB_LAST.json|\
+                  evidence/notifications/telegram/MATRIX_TELEGRAM_DAILY_BANKROLL_CANONICAL_LAST.json|\
+                  evidence/notifications/telegram/MATRIX_TELEGRAM_20261022_CLOSURE_AUDIT.json)
+                    git checkout --theirs -- "$file"
+                    git add "$file"
+                    ;;
+                  *)
+                    echo "TELEGRAM_UNEXPECTED_REBASE_CONFLICT:$file"
+                    unexpected=1
+                    ;;
+                esac
+              done <<< "$conflicts"
+              if [ "$unexpected" -ne 0 ] || ! GIT_EDITOR=true git rebase --continue; then
+                git rebase --abort || true
+                exit 1
+              fi
+            fi
+            if git push origin HEAD:repair/cor09-world-pipeline; then
+              exit 0
+            fi
+            sleep $((attempt*2))
+          done
+          exit 1
+
+# MATRIX_USER_AUTHORIZED_TRIGGER 2026-10-11 close-today-telegram-signals
+
+# MATRIX_USER_AUTHORIZED_TRIGGER 2026-10-11 send-12oct-over25-signals
+
+# MATRIX_USER_AUTHORIZED_TRIGGER 2026-10-11 send-history-recovered-12oct-over25
+
+# MATRIX_USER_AUTHORIZED_TRIGGER 2026-10-14 post-calendar-final-signals
+# MATRIX_USER_AUTHORIZED_TRIGGER 2026-10-15 settle-current-open-and-refresh-table
+
+# MATRIX_CORRELATED_RISK_PERSISTENCE_RECHECK_18OCT2026
+
+# MATRIX_USER_AUTHORIZED_TRIGGER 2026-10-19 close-current-telegram-ledger-physical-check
+
+# MATRIX_USER_AUTHORIZED_TRIGGER 2026-10-19T21:25-05:00 post-20oct-hard-football-clay-physical-check
+# MATRIX_USER_AUTHORIZED_TRIGGER 2026-10-19T22:08-05:00 refresh-20oct-waiting-window-now
+
+# MATRIX_USER_AUTHORIZED_TRIGGER 2026-10-19T23:09-05:00 blocker-recovery-audit
+# MATRIX_USER_AUTHORIZED_TRIGGER 2026-10-19T23:20-05:00 lifecycle-kickoff-breach-prevention
+# MATRIX_USER_AUTHORIZED_TRIGGER 2026-10-19T23:48-05:00 verify-legacy-vs-real-monitoring-breach
+# MATRIX_USER_AUTHORIZED_TRIGGER 2026-10-20 permanent-watchdog-rule-lock
+# MATRIX_USER_AUTHORIZED_TRIGGER 2026-10-20 live-38-candidate-monitoring-proof

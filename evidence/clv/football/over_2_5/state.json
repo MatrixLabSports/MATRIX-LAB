@@ -1,0 +1,56 @@
+{
+  "closing_attempt_log_path": "evidence/clv/football/over_2_5/closing_attempts.jsonl",
+  "closing_cycle": {
+    "blocked_market_incomplete": 5,
+    "blocked_provider_error": 0,
+    "blocked_stale_provider_quote": 0,
+    "blocked_temporal": 0,
+    "captured_new": 0,
+    "due_count": 5,
+    "evidence_paths": [],
+    "missed_after_kickoff": 196,
+    "network_calls": 5
+  },
+  "closing_freshness_policy": {
+    "governance_basis": "evidence/api_football/pinnacle_snapshot_age_audit/audit.json",
+    "max_provider_quote_age_seconds": 120,
+    "nominal_3h_band_is_closing_reference": false,
+    "strict_fresh_gate_seconds": 120
+  },
+  "closing_odds_count": 11,
+  "closing_reference_choice": "OPTION_B_PINNACLE_STRICT_FRESH",
+  "closing_reference_transport": "odds-api.net preferred; API-Football /odds bookmaker_id=4 fallback",
+  "decision_count": 215,
+  "direct_pinnacle_api_connection": false,
+  "freeze_cycle": {
+    "blocked_invalid": 0,
+    "blocked_missing_entry_timestamp": 0,
+    "frozen_new": 0,
+    "skipped_existing": 25,
+    "telegram_blocked_invalid": 202,
+    "telegram_blocked_post_kickoff": 0,
+    "telegram_frozen_new": 0,
+    "telegram_skipped_existing": 21
+  },
+  "generated_at_utc": "2026-10-24T15:45:57+00:00",
+  "ledger_path": "evidence/clv/football/over_2_5/prospective_clv_ledger.jsonl",
+  "ledger_sha256": "db05d1dd4de4a718d59467cd6f9c8cfbe5d4de4196d0704e8758f7cd9b010f7e",
+  "market_key": "over_2_5",
+  "metrics": null,
+  "metrics_opened": false,
+  "minimum_clv_closing_observations": 300,
+  "model_version": "calibrated_log_pool_v1_over_2_5",
+  "protections": {
+    "automatic_wagering": false,
+    "clv_from_raw_overround_probability": "FORBIDDEN",
+    "historical_backfill_without_physical_entry_timestamp": "FORBIDDEN",
+    "incomplete_market_devig": "FORBIDDEN",
+    "odds_used_to_generate_probability": false,
+    "post_kickoff_closing_line": "FORBIDDEN",
+    "real_money": "BLOCKED"
+  },
+  "remaining_to_open_metrics": 289,
+  "schema": "MATRIX_FOOTBALL_CLV_TRACKING_STATE_V1",
+  "source_quality_flag": "SHARP_PINNACLE_MULTI_TRANSPORT_STRICT_120S",
+  "status": "ACCUMULATING_SEALED_UNTIL_300"
+}

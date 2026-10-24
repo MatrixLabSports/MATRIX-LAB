@@ -1,0 +1,72 @@
+{
+  "schema": "MATRIX_SETTLEMENT_PROGRESS_20261006_BOGOTA_V1",
+  "observed_at_utc": "2026-10-20T11:28:57Z",
+  "source_head": "91f8a8a1062601c79db86c6c84dae54afd12c492",
+  "candidate_blob": "52e897007840f5bed1a8999edad8ee594fefc767",
+  "football_sync_blob": "d539605e769573bea54764d06021de67d643e7ee",
+  "football_settlement_sync_blob": "f20d211fe9068c639e31bbb53570f46eb8cc64ef",
+  "football_uniqueness_audit_blob": "717ff4ec2b98badbc0b529aac48ee743798978da",
+  "tennis_ledger_blob": "ab640768fadb51a3bf5a33f53790208a96c4604b",
+  "football": {
+    "cohort": 116,
+    "last_full_audit_final": 107,
+    "recomputed": false,
+    "new_cohort_final": 0,
+    "new_global_final": 0,
+    "global_final": 3555,
+    "global_unique_fixture_ids": 3555,
+    "v2_freeze": 3200,
+    "v2_final_each_of_five_lanes": 2753,
+    "v2_pending_each": 447,
+    "v2_change_since_previous_review": {
+      "freeze": 99,
+      "final": 9,
+      "pending": 90,
+      "explanation": "9 previously global-ledgered FT now included in V2; 99 new freezes"
+    },
+    "nonstandard": {
+      "PEN": [
+        "1588817",
+        "1588821",
+        "1588845",
+        "1588863",
+        "1588890",
+        "1588893",
+        "1619499"
+      ],
+      "AET": [
+        "1644168"
+      ],
+      "NS": [
+        "1596466"
+      ]
+    },
+    "settlement_sync_new_count": 0
+  },
+  "tennis": {
+    "cohort_finished": 11,
+    "cohort_total": 11,
+    "global": 316,
+    "unique_events": 316,
+    "unique_settlements": 316,
+    "new_global_finished": 2,
+    "new_cohort_finished": 0,
+    "new_global_event_ids": [
+      "COR0203-RAPIDAPI-TENNIS-195728-99099ec618cd",
+      "COR0203-RAPIDAPI-TENNIS-335675-a882de48298a"
+    ]
+  },
+  "governance": {
+    "metrics_opened": false,
+    "tuning": false,
+    "odds_to_probability": false,
+    "final_only": true,
+    "real_money": "BLOCKED"
+  },
+  "notes": [
+    "Football cohort 107/116 is last full audit, not independently recomputed because full ledger read unavailable.",
+    "V2 states read independently for 1x2, over_2_5, under_2_5, double_chance_1x, double_chance_x2.",
+    "All 11 tennis cohort event IDs matched exactly one FINISHED settlement.",
+    "No manual settlement or model change performed; governed processes had already persisted changes."
+  ]
+}

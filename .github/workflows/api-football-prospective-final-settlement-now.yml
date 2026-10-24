@@ -1,0 +1,244 @@
+# MATRIX_USER_AUTHORIZED_TRIGGER 2026-10-22T05:55-05:00 due-only-settlement-quota-safe
+# MATRIX_USER_AUTHORIZED_TRIGGER 2026-10-22T05:45-05:00 close-global-3820-to-4000-final-only
+# MATRIX_PHYSICAL_TRIGGER 2026-10-19T01:10-05:00 accumulation-cycle
+# MATRIX_PHYSICAL_TRIGGER 2026-10-12T14:42Z USER_AUTHORIZED_FINAL_ONLY_SYNC
+name: API-Football prospective FINAL-only settlement now
+
+on:
+  schedule:
+    - cron: "17 */2 * * *"
+  workflow_dispatch:
+  push:
+    branches:
+      - repair/cor09-world-pipeline
+    paths:
+      - evidence/governance/MATRIX_USER_AUTHORIZED_FOOTBALL_SETTLEMENT_20261022.json
+
+permissions:
+  contents: write
+
+concurrency:
+  group: api-football-prospective-final-settlement-now-v2-due-only
+  cancel-in-progress: false
+
+jobs:
+  settle-sync-v2:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout operational branch
+        uses: actions/checkout@v4
+        with:
+          ref: repair/cor09-world-pipeline
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install governed dependencies
+        run: python -m pip install pytest requests
+
+      - name: Run settlement and V2 regression tests
+        run: |
+          python -m pytest -q \
+            tests/test_api_football_prospective_api_settlement.py \
+            tests/test_api_football_prospective_supervisor.py \
+            tests/test_api_football_prospective_calibration.py \
+            tests/test_api_football_market_calibration_v2.py
+
+      - name: Settle API-Football standard FINAL results only
+        env:
+          API_FOOTBALL_KEY: ${{ secrets.API_FOOTBALL_KEY }}
+        run: python -m tools.api_football_prospective_api_settlement
+
+      - name: Sync calibration ledger without opening metrics
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          from tools.api_football_prospective_calibration import sync_calibration_ledger
+
+          root = Path("evidence/api_football")
+          sync = sync_calibration_ledger(root)
+          out = root / "prospective_calibration" / "sync_last.json"
+          out.parent.mkdir(parents=True, exist_ok=True)
+          out.write_text(
+              json.dumps(sync, ensure_ascii=False, indent=2, sort_keys=True) + "\n",
+              encoding="utf-8",
+          )
+          assert sync["ledger_hash_chain_verified"] is True
+          assert sync["parameters_mutated"] is False
+          assert sync["real_money"] == "BLOCKED"
+          print(json.dumps(sync, sort_keys=True))
+          PY
+
+      - name: Audit physical uniqueness after settlement
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m tools.api_football_physical_uniqueness_audit \
+            --freeze evidence/api_football/prospective_market_freeze/freeze.json \
+            --calibration-ledger evidence/api_football/prospective_calibration/ledger.jsonl \
+            --out evidence/api_football/physical_uniqueness/audit_last.json
+
+      - name: Record reconciled supervisor state after settlement
+        run: |
+          python -m tools.api_football_prospective_supervisor \
+            --out evidence/api_football/prospective_supervisor/last_run.json
+
+      - name: Open completed prospective calibration checkpoints only
+        run: python -m tools.api_football_prospective_calibration
+
+      - name: Validate threshold-only calibration opening
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          p=Path("evidence/api_football/prospective_calibration/gates.json")
+          j=json.loads(p.read_text())
+          n=int(j["calibration_observation_count"])
+          for threshold in (30,50,100):
+              g=j["gates"][str(threshold)]
+              if n >= threshold:
+                  assert g["status"]=="OPENED_AT_THRESHOLD"
+                  assert g["metrics_opened"] is True
+                  assert g["observations_used"]==threshold
+              else:
+                  assert g["status"]=="SEALED"
+                  assert g["metrics_opened"] is False
+          assert j["parameter_tuning_allowed"] is False
+          assert j["original_357_holdout_reuse_allowed"] is False
+          assert j["real_money"]=="BLOCKED"
+          print(json.dumps({
+              "n":n,
+              "gate30":j["gates"]["30"]["status"],
+              "gate50":j["gates"]["50"]["status"],
+              "gate100":j["gates"]["100"]["status"],
+              "real_money":j["real_money"],
+          },sort_keys=True))
+          PY
+
+      - name: Sync separated V2 market lanes
+        run: python tools/api_football_market_calibration_v2_sync.py
+
+      - name: Enforce FINAL-only and sealed-metrics invariants
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          root = Path("evidence/api_football")
+          settlement = json.loads(
+              (root / "prospective_market_freeze" / "settlement_sync_last.json").read_text(encoding="utf-8")
+          )
+          assert settlement["status"] == "PASS"
+          assert settlement["settlement_final_only"] is True
+          assert settlement["metrics_opened"] is False
+          assert settlement["outcomes_used_for_metrics"] == 0
+          assert settlement["p_matrix_status"] == "NOT_GENERATED"
+          assert settlement["real_money"] == "BLOCKED"
+
+          supervisor = json.loads(
+              (root / "prospective_supervisor" / "last_run.json").read_text(encoding="utf-8")
+          )
+          uniqueness = json.loads(
+              (root / "physical_uniqueness" / "audit_last.json").read_text(encoding="utf-8")
+          )
+          assert supervisor["settled_event_count"] == settlement["ledger_final_count"]
+          assert uniqueness["result"] == "PASS"
+          assert uniqueness["freeze_rows"] == uniqueness["unique_fixture_ids"]
+          assert uniqueness["calibration_unique_fixture_ids"] == settlement["ledger_final_count"]
+          assert uniqueness["duplicate_fixture_id_groups"] == 0
+          assert uniqueness["exact_physical_duplicate_groups"] == 0
+          assert uniqueness["suspicious_same_pair_within_36h"] == 0
+          assert uniqueness["calibration_duplicate_fixture_ids"] == []
+          assert uniqueness["calibration_outside_freeze"] == []
+          assert uniqueness["real_money"] == "BLOCKED"
+
+          for slug in ("1x2", "over_2_5", "under_2_5", "double_chance_1x", "double_chance_x2"):
+              state = json.loads(
+                  (root / "calibration_v2" / "lanes" / slug / "state.json").read_text(encoding="utf-8")
+              )
+              assert state["metrics_opened"] is False
+              assert state["parameter_tuning_allowed"] is False
+              assert state["real_money"] == "BLOCKED"
+
+          print("FINAL_ONLY_SETTLEMENT_AND_V2_SEALED_GATE: PASS")
+          print("new_settlement_count=", settlement["new_settlement_count"])
+          print("ledger_final_count=", settlement["ledger_final_count"])
+          PY
+
+      - name: Persist governed evidence
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "matrix-api-football-supervisor"
+          git config user.email "matrix-api-football-supervisor@users.noreply.github.com"
+          git add \
+            evidence/api_football/prospective_supervisor/last_run.json \
+            evidence/api_football/physical_uniqueness/audit_last.json \
+            evidence/api_football/prospective_market_freeze/settlement_ledger.jsonl \
+            evidence/api_football/prospective_market_freeze/settlement_sync_last.json \
+            evidence/api_football/prospective_market_freeze/settlement_raw \
+            evidence/api_football/prospective_calibration/ledger.jsonl \
+            evidence/api_football/prospective_calibration/sync_last.json \
+            evidence/api_football/prospective_calibration/gates.json \
+            evidence/api_football/calibration_v2/lanes
+          if git diff --cached --quiet; then
+            echo "NO_GOVERNED_SETTLEMENT_CHANGE"
+            exit 0
+          fi
+          python - <<'PY' > /tmp/matrix_local_settled_ids.txt
+          import json
+          from pathlib import Path
+          p=Path("evidence/api_football/prospective_market_freeze/settlement_sync_last.json")
+          j=json.loads(p.read_text())
+          for fid in j.get("settled_fixture_ids") or []:
+              print(str(fid))
+          PY
+
+          git commit -m "evidence(football): refresh FINAL-only prospective settlement and V2"
+          for attempt in 1 2 3 4; do
+            git fetch origin repair/cor09-world-pipeline
+            if ! git rebase origin/repair/cor09-world-pipeline; then
+              git rebase --abort || true
+              if python - <<'PY'
+          import json, subprocess
+          from pathlib import Path
+          wanted=[x.strip() for x in Path("/tmp/matrix_local_settled_ids.txt").read_text().splitlines() if x.strip()]
+          raw=subprocess.check_output([
+              "git","show",
+              "origin/repair/cor09-world-pipeline:evidence/api_football/prospective_market_freeze/settlement_ledger.jsonl"
+          ],text=True)
+          present=set()
+          for line in raw.splitlines():
+              if not line.strip(): continue
+              row=json.loads(line)
+              present.add(str(row.get("fixture_id")))
+          missing=[x for x in wanted if x not in present]
+          if missing:
+              print("SUPERSEDE_CHECK_MISSING=",missing)
+              raise SystemExit(4)
+          print("SUPERSEDED_BY_EQUIVALENT_PERSISTED_EVIDENCE")
+          PY
+              then
+                exit 0
+              fi
+              sleep $((attempt * 2))
+              continue
+            fi
+            if git push origin HEAD:repair/cor09-world-pipeline; then
+              echo "PUSH_SUCCEEDED_ATTEMPT=${attempt}"
+              exit 0
+            fi
+            sleep $((attempt * 2))
+          done
+          exit 1
+
+# MATRIX_USER_AUTHORIZED_TRIGGER 2026-10-11 continue-football-calibration-user-authorized
+
+# MATRIX_USER_AUTHORIZED_TRIGGER 2026-10-11 over25-objective-calibration

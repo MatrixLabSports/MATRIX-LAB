@@ -1,0 +1,251 @@
+{
+  "schema": "MATRIX_PARALLEL_FOOTBALL_TENNIS_PRODUCTION_V1",
+  "verified_at_utc": "2026-10-04T04:08:30Z",
+  "operational_timezone": "America/Bogota",
+  "status": "PASS_WITH_EXTERNAL_DATA_BLOCKERS_ONLY",
+  "objective": "Run football and tennis in parallel, accumulate legitimate prospective evidence, preserve worldwide discovery, and never synthesize freezes or open sealed metrics.",
+  "football": {
+    "core_markets": {
+      "calibration_observation_count": 627,
+      "latest_checkpoint_path": "evidence/api_football/prospective_calibration/MATRIX_FOOTBALL_POST_SETTLEMENT_CHECKPOINT_20261004_627.json",
+      "latest_checkpoint_blob_sha": "a63fa340e277c7a0f49486d7706df298ef780fd2",
+      "over_2_5": {
+        "strength": "STRONG",
+        "challenger_brier": 0.23859942318539282,
+        "poisson_brier": 0.24205016726769227,
+        "delta_brier": -0.0034507440822994506,
+        "challenger_log_loss": 0.6702326229045998,
+        "poisson_log_loss": 0.6784544792150593,
+        "delta_log_loss": -0.008221856310459463,
+        "brier_ci95": [
+          -0.00648198684620566,
+          -0.0004195013183932936
+        ],
+        "log_loss_ci95": [
+          -0.015182408846513954,
+          -0.0012613037744041676
+        ],
+        "gate_passed": true,
+        "parameter_tuning": false
+      },
+      "1x2": {
+        "strength": "DEVELOPING",
+        "challenger_brier": 0.5959373565874847,
+        "poisson_brier": 0.6071525584357319,
+        "delta_brier": -0.011215201848247203,
+        "challenger_log_loss": 1.0010982296731168,
+        "poisson_log_loss": 1.0136853724711328,
+        "delta_log_loss": -0.012587142798015982,
+        "brier_ci95": [
+          -0.02267704625510938,
+          0.00024664255861475
+        ],
+        "log_loss_ci95": [
+          -0.033511055118360854,
+          0.008336769522329335
+        ],
+        "decisive_strong_evidence": false,
+        "parameter_tuning": false
+      },
+      "latest_supervisor": {
+        "completed_at_utc": "2026-10-04T04:02:12+00:00",
+        "new_settlement_count": 1,
+        "new_fixture_ids": [
+          "1629004"
+        ],
+        "ledger_hash_chain_verified": true,
+        "parameters_mutated": false
+      }
+    },
+    "usa_mexico": {
+      "fixture_id": "1629004",
+      "match": "USA vs Mexico",
+      "frozen_over_2_5_probability": 0.6042859828380851,
+      "final_over_2_5": true,
+      "terminal_status": "FT",
+      "cor10_execution_evidence_path": "evidence/cor10/football/20261003_USA_MEXICO_OVER25_BETANO_190.json",
+      "cor10_execution_evidence_blob_sha": "7eeb794e665024e0a2d9cb3bd291a33b99b330c1",
+      "betano_odds_decimal": 1.9,
+      "stake_cop": 580,
+      "sports_result": "WIN",
+      "actual_bookmaker_payout_verified": false
+    },
+    "developing_lanes": {
+      "TEAM_TOTAL_SHOTS_HOME": {
+        "status": "ACTIVE",
+        "freeze_observation_count": 0,
+        "gate_30": "SEALED",
+        "last_run_utc": "2026-10-04T04:07:18+00:00",
+        "future_events_checked": 24,
+        "canonical_offer_fixture_count": 0,
+        "blocker": "NO_CANONICAL_TARGET_MARKET_OFFERS_IN_CHECKED_EVENTS"
+      },
+      "TEAM_TOTAL_SHOTS_AWAY": {
+        "status": "ACTIVE",
+        "freeze_observation_count": 0,
+        "gate_30": "SEALED",
+        "last_run_utc": "2026-10-04T04:07:18+00:00",
+        "future_events_checked": 24,
+        "canonical_offer_fixture_count": 0,
+        "blocker": "NO_CANONICAL_TARGET_MARKET_OFFERS_IN_CHECKED_EVENTS"
+      },
+      "TEAM_FOULS_TOTAL": {
+        "status": "ACTIVE",
+        "freeze_observation_count": 0,
+        "gate_30": "SEALED",
+        "last_run_utc": "2026-10-04T04:07:18+00:00",
+        "future_events_checked": 24,
+        "canonical_offer_fixture_count": 0,
+        "blocker": "NO_CANONICAL_TARGET_MARKET_OFFERS_IN_CHECKED_EVENTS"
+      },
+      "PLAYER_SHOTS_V3": {
+        "status": "ACTIVE",
+        "freeze_observation_count": 0,
+        "gate_30": "SEALED",
+        "last_run_utc": "2026-10-04T04:02:01+00:00",
+        "future_events_checked": 19,
+        "network_calls": 19,
+        "blocked_fixture_count": 19,
+        "blocker": "PREMATCH_LINEUP_NOT_AVAILABLE"
+      }
+    },
+    "promoted_team_market_offer_audit": {
+      "run_id": "20261004T040718Z",
+      "evidence_path": "evidence/api_football/promoted_team_markets/last_run.json",
+      "evidence_blob_sha": "352336e6558371634184e18e547ba1cfeb8b7da6",
+      "events_with_any_canonical_offer": 0,
+      "events_without_target_offer": 24,
+      "canonical_offer_fixture_count_by_lane": {
+        "TEAM_FOULS_TOTAL": 0,
+        "TEAM_TOTAL_SHOTS_AWAY": 0,
+        "TEAM_TOTAL_SHOTS_HOME": 0
+      },
+      "zero_freeze_reason": "NO_CANONICAL_TARGET_MARKET_OFFERS_IN_CHECKED_EVENTS"
+    },
+    "player_shots_run": {
+      "run_id": "20261004T040201Z",
+      "evidence_path": "evidence/api_football/player_shots_v3_prospective/last_run.json",
+      "evidence_blob_sha": "6ce4f8d0b76af20c86bd324df55ee4d32483155c",
+      "future_events_checked": 19,
+      "network_calls": 19,
+      "new_freezes": 0
+    },
+    "no_go_lanes": {
+      "BTTS": "NO_GO_CURRENT_V2_V3",
+      "CORNERS_V3": "NO_GO_HISTORICAL_OOS_V3",
+      "TEAM_SHOTS_ON_TARGET_V3": "NO_GO_HISTORICAL_OOS_V3",
+      "TEAM_GOALKEEPER_SAVES_V3": "NO_GO_HISTORICAL_OOS_V3",
+      "TEAM_YELLOW_CARDS_V3": "NO_GO_HISTORICAL_OOS_V3"
+    }
+  },
+  "tennis": {
+    "holdout": {
+      "domain": "ATP_CHALLENGER_HARD_MATCH_WINNER",
+      "unique_calibration_observations": 93,
+      "remaining_to_100": 7,
+      "remaining_to_150": 57,
+      "remaining_to_200": 107,
+      "remaining_to_600": 507,
+      "metrics_policy": "SEALED_UNTIL_600",
+      "metrics_opened": false,
+      "outcomes_read": 0,
+      "new_freezes_latest_verified_cycle": 0,
+      "bottleneck": "SOURCE_READY_NO_NEW_ELIGIBLE_EVENTS",
+      "integrity": "PASS"
+    },
+    "scheduler": {
+      "run_id": 37173196391,
+      "run_attempt": 2,
+      "job_id": 111358003172,
+      "conclusion": "success",
+      "cycle_started_at_utc": "2026-10-04T04:04:50Z",
+      "cycle_ended_at_utc": "2026-10-04T04:05:27Z",
+      "two_paid_sources_ready": true,
+      "source_compliance_status": "PASS_TWO_PAID_SOURCES",
+      "rapidapi_role": "PRIMARY_DISCOVERY_AND_HISTORY",
+      "api_tennis_role": "SECONDARY_DISCOVERY_AND_STATS_RICH_VALIDATION"
+    },
+    "dual_horizon": {
+      "evidence_path": "evidence/cor0203/runtime/MATRIX_COR0203_DUAL_8DAY_HORIZON_LAST.json",
+      "evidence_blob_sha": "5f18d20866c357041b1d9bd423e5a56c8c59c555",
+      "logical_horizon_days": 8,
+      "rapidapi_base_candidates": 27,
+      "rapidapi_extension_candidates": 0,
+      "api_tennis_base_candidates": 17,
+      "api_tennis_extension_candidates": 0,
+      "dedupe_before_dual_reconciliation": true
+    },
+    "world_inventory": {
+      "evidence_path": "evidence/tennis/world_inventory/MATRIX_TENNIS_WORLD_INVENTORY_LAST.json",
+      "evidence_blob_sha": "6f4aa0dbbd57224e3d8dfc26a16289ea9692da16",
+      "target_date_bogota": "2026-10-03",
+      "total_events": 79,
+      "ATP": 24,
+      "WTA": 19,
+      "ITF": 36,
+      "details": {
+        "ATP_CHALLENGER": 16,
+        "ATP_MAIN_OR_OTHER": 8,
+        "ITF_MEN": 20,
+        "ITF_WOMEN": 16,
+        "WTA_MAIN_OR_OTHER": 19
+      },
+      "cor0203_domain_candidates": 7,
+      "cor0203_feeds_model_automatically": false,
+      "WTA_feeds_cor0203": false,
+      "ITF_feeds_cor0203": false,
+      "p_matrix": "NOT_GENERATED",
+      "metrics_opened": false
+    }
+  },
+  "cor11": {
+    "current_real_consecutive_days": 13,
+    "target_days": 14,
+    "status": "IN_PROGRESS",
+    "latest_ledger_path": "evidence/cor11/MATRIX_COR11_CADENCE_LEDGER_LAST.json",
+    "latest_ledger_blob_sha": "7ec02531e700a72e791d8d50805d6b1a27f2b9fa",
+    "scheduler_cron_utc": "10 5 * * *",
+    "scheduler_local_time": "00:10 America/Bogota",
+    "default_target_rule": "PREVIOUS_COMPLETED_BOGOTA_DAY",
+    "current_local_calendar_context": "2026-10-03 late evening",
+    "day14_calendar_date": "2026-10-04",
+    "earliest_default_scheduler_that_can_record_day14_if_qualifying_evidence_exists": "2026-10-05T00:10:00-05:00",
+    "synthetic_or_early_close_forbidden": true
+  },
+  "source_integrity": {
+    "football_freeze_blob_sha": "ca8551c3b8cfc7888d371df2911e45ec18b14231",
+    "football_calibration_ledger_blob_sha": "a47e976f3d422a4945109ee42a96dd41ff3ce970",
+    "tennis_physical_uniqueness_blob_sha": "a4dc81c1d89f385f9cfe2c4474e9242726ad32de",
+    "tennis_model_binding_blob_sha": "b5cb0d297996e71639d56443e153742732546d62"
+  },
+  "executions": {
+    "parallel_retrigger_commits": [
+      "4ab810857929e80142e6e3a45ef28ac46870b7e9",
+      "9cbef5292f8c3276817a4a6bdd1096339894245c",
+      "570055073d58539240339d0f1292e1b98e5f0302",
+      "0e68ccdef5bc1a4be60df27d9d7363d8372f42dc"
+    ],
+    "promoted_market_instrumentation_commit": "0f207d3c196435185437f5f6a67bc5ae0b90f0f6",
+    "promoted_market_retrigger_commit": "bc7a707ce6242696771de8497f669eb56a71869c",
+    "checkpoint_627_commit": "bc7358ac886b56ddf7d1962d044fc491eb4e4342",
+    "usa_mexico_cor10_settlement_commit": "0bedfb6ab1c1d3278bb9e72dfa5af6f439668975",
+    "strength_map_sync_trigger_commit": "d818e631211b6df49c862fb3a3f69b57343a19ad"
+  },
+  "protections": {
+    "silent_imputation": false,
+    "historical_backfill": false,
+    "odds_to_probability": false,
+    "mutate_frozen_probabilities": false,
+    "parameter_tuning_from_new_settlements": false,
+    "open_tennis_metrics_before_600": false,
+    "synthetic_freezes": false,
+    "automatic_wagering": false,
+    "real_money": "BLOCKED"
+  },
+  "remaining_external_dependencies": [
+    "Canonical prematch bet 173/220/221 lines must actually appear before team-market freezes can be created.",
+    "Prematch /fixtures/lineups must actually appear before Player Shots v3 can freeze.",
+    "New future ATP Challenger Hard events with valid identity/history must appear before tennis can advance 93->100.",
+    "The full Bogota calendar day 2026-10-04 plus qualifying real evidence must exist before COR11 can record day 14."
+  ]
+}

@@ -1,0 +1,225 @@
+name: MATRIX RapidAPI Tennis Paid-Window Harvest
+
+on:
+  push:
+    branches:
+      - repair/cor09-world-pipeline
+    paths:
+      - .github/workflows/rapidapi-tennis-paid-window-harvest.yml
+      - tools/matrix_multi_market_supervisor.py
+      - app/market/matrix_market_portfolio.py
+      - evidence/audit/MATRIX_MARKET_PORTFOLIO_PERMANENT_MANDATE_V1.json
+      - tests/test_matrix_multi_market_supervisor.py
+      - tests/test_market_portfolio_permanent_mandate.py
+  workflow_dispatch:
+    inputs:
+      target_date:
+        description: Optional Bogota date YYYY-MM-DD
+        required: false
+        default: ""
+        type: string
+  schedule:
+    - cron: "7 5,11,17,23 * * *"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: rapidapi-tennis-paid-window-harvest
+  cancel-in-progress: false
+
+jobs:
+  harvest:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      REAL_MONEY: BLOCKED
+      AUTOMATIC_WAGERING: "false"
+    steps:
+      - name: Checkout operational branch
+        uses: actions/checkout@v4
+        with:
+          ref: repair/cor09-world-pipeline
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependency
+        run: python -m pip install requests pytest
+
+      - name: Verify subscription deadline guard and permanent market contracts
+        run: |
+          python -m pytest -q tests/test_tennis_subscription_deadline_guard.py tests/test_market_portfolio_permanent_mandate.py tests/test_matrix_multi_market_supervisor.py
+          python -m tools.tennis_subscription_deadline_guard --out evidence/governance/MATRIX_TENNIS_SUBSCRIPTION_DEADLINE_LAST.json
+
+      - name: Resolve governed Bogota date and paid-window gate
+        id: date
+        shell: bash
+        run: |
+          set -euo pipefail
+          D="${{ github.event.inputs.target_date }}"
+          NOW_BOG="$(TZ=America/Bogota date +%F)"
+          if [ -z "$D" ]; then
+            H="$(TZ=America/Bogota date +%H)"
+            if [ "$H" -ge 18 ]; then
+              D="$(TZ=America/Bogota date -d tomorrow +%F)"
+            else
+              D="$NOW_BOG"
+            fi
+          fi
+          CUTOFF="2026-10-28"
+          if [[ "$D" > "$CUTOFF" ]]; then
+            echo "PAID_WINDOW_EXPIRED target=$D cutoff=$CUTOFF"
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "skip=false" >> "$GITHUB_OUTPUT"
+          fi
+          echo "target_date=$D" >> "$GITHUB_OUTPUT"
+          echo "TARGET_DATE_BOGOTA=$D"
+
+      - name: Require browser-first SofaScore and Flashscore evidence
+        if: steps.date.outputs.skip != 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          D="${{ steps.date.outputs.target_date }}"
+          python - "$D" <<'PY'
+          import json,sys
+          from pathlib import Path
+          d=sys.argv[1]
+          candidates=[]
+          for p in Path("evidence/tennis").glob("MATRIX_TENNIS_*_BROWSER_FIRST_RECONCILIATION.json"):
+              try:
+                  j=json.loads(p.read_text())
+              except Exception:
+                  continue
+              if j.get("target_date_bogota")==d:
+                  candidates.append((p,j))
+          if not candidates:
+              raise SystemExit(f"BROWSER_FIRST_EVIDENCE_MISSING:{d}")
+          p,j=candidates[-1]
+          assert j["reconciliation"]["browser_first_gate"]=="PASS"
+          order=j.get("source_order") or []
+          assert "SofaScore" in order and "Flashscore" in order
+          assert order.index("SofaScore") < order.index("Flashscore")
+          assert j["protections"]["metrics_opened"] is False
+          assert j["protections"]["real_money"]=="BLOCKED"
+          print("BROWSER_FIRST_PASS",p)
+          PY
+
+      - name: Capture full RapidAPI Tennis inventory
+        if: steps.date.outputs.skip != 'true'
+        env:
+          RAPIDAPI_TENNIS_KEY: ${{ secrets.RAPIDAPI_TENNIS_KEY }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          D="${{ steps.date.outputs.target_date }}"
+          TS="$(date -u +%Y%m%dT%H%M%SZ)"
+          OUTDIR="evidence/tennis/paid_window_harvest/$D"
+          mkdir -p "$OUTDIR"
+          python -m tools.tennis_world_inventory_rapidapi             --target-date-bogota "$D"             --out "$OUTDIR/MATRIX_RAPIDAPI_TENNIS_INVENTORY_$TS.json"             --fail-on-partial
+          cp "$OUTDIR/MATRIX_RAPIDAPI_TENNIS_INVENTORY_$TS.json" "$OUTDIR/MATRIX_RAPIDAPI_TENNIS_INVENTORY_LAST.json"
+          python - "$D" "$TS" "$OUTDIR/MATRIX_RAPIDAPI_TENNIS_INVENTORY_$TS.json" <<'PY'
+          import hashlib,json,sys
+          from datetime import datetime,timezone
+          from pathlib import Path
+          d,ts,src=sys.argv[1:]
+          p=Path(src); j=json.loads(p.read_text())
+          events=j.get("events") or []
+          families={}
+          surfaces={}
+          for e in events:
+              fam=str(e.get("circuit_family") or "UNKNOWN")
+              surf=str(e.get("surface") or "UNKNOWN")
+              families[fam]=families.get(fam,0)+1
+              surfaces[surf]=surfaces.get(surf,0)+1
+          receipt={
+            "schema":"MATRIX_RAPIDAPI_TENNIS_PAID_WINDOW_HARVEST_V1",
+            "generated_at_utc":datetime.now(timezone.utc).replace(microsecond=0).isoformat(),
+            "target_date_bogota":d,
+            "subscription_paid_through":"2026-10-28",
+            "provider":"rapidapi_tennis",
+            "inventory_path":src,
+            "inventory_sha256":hashlib.sha256(p.read_bytes()).hexdigest(),
+            "unique_match_count":int(j.get("unique_match_count") or len(events)),
+            "network_calls":int(j.get("provider_network_calls") or j.get("network_calls") or 0),
+            "provider_inventory_complete":bool(j.get("provider_inventory_complete",False)),
+            "families":families,
+            "surfaces":surfaces,
+            "governance":{
+              "source_order":["SofaScore","Flashscore","RapidAPI Tennis"],
+              "automatic_model_feed":False,
+              "automatic_wagering":False,
+              "metrics_opened":False,
+              "historical_backfill":False,
+              "real_money":"BLOCKED"
+            }
+          }
+          out=Path(src).with_name(f"MATRIX_RAPIDAPI_TENNIS_HARVEST_RECEIPT_{ts}.json")
+          out.write_text(json.dumps(receipt,indent=2,sort_keys=True)+"\n")
+          out.with_name("MATRIX_RAPIDAPI_TENNIS_HARVEST_RECEIPT_LAST.json").write_text(json.dumps(receipt,indent=2,sort_keys=True)+"\n")
+          print(json.dumps(receipt,sort_keys=True))
+          PY
+
+      - name: Enforce 42-lane market supervisor after tennis harvest
+        if: steps.date.outputs.skip != 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          D="${{ steps.date.outputs.target_date }}"
+          CATALOG="evidence/api_football/market_expansion/market_binding_catalog.json"
+          if [ -f "$CATALOG" ]; then
+            python -m tools.matrix_multi_market_supervisor \
+              --football-catalog "$CATALOG" \
+              --target-date-bogota "$D" \
+              --source-run rapidapi-tennis-paid-window-harvest \
+              --out evidence/market_portfolio/MATRIX_MULTI_MARKET_SUPERVISOR_TENNIS_LAST.json
+          else
+            python -m tools.matrix_multi_market_supervisor \
+              --target-date-bogota "$D" \
+              --out evidence/market_portfolio/MATRIX_MULTI_MARKET_SUPERVISOR_TENNIS_LAST.json
+          fi
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          j=json.loads(Path("evidence/market_portfolio/MATRIX_MULTI_MARKET_SUPERVISOR_TENNIS_LAST.json").read_text())
+          assert j["status"]=="PASS"
+          assert j["total_required_lanes"]==42
+          assert j["invariants"]["aces_present"] is True
+          assert j["invariants"]["first_half_goals_present"] is True
+          assert j["invariants"]["second_half_goals_present"] is True
+          assert j["invariants"]["real_money"]=="BLOCKED"
+          print(json.dumps({"status":"PASS","lanes":42,"states":j["state_counts"]},sort_keys=True))
+          PY
+
+      - name: Persist paid-window evidence
+        if: steps.date.outputs.skip != 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          D="${{ steps.date.outputs.target_date }}"
+          git config user.name matrix-tennis-harvest
+          git config user.email matrix-tennis-harvest@users.noreply.github.com
+          git add "evidence/tennis/paid_window_harvest/$D"
+          git add evidence/governance/MATRIX_TENNIS_SUBSCRIPTION_DEADLINE_LAST.json
+          git add evidence/market_portfolio/MATRIX_MULTI_MARKET_SUPERVISOR_TENNIS_LAST.json
+          if git diff --cached --quiet; then
+            echo "NO_HARVEST_CHANGE"
+            exit 0
+          fi
+          git commit -m "evidence(tennis): harvest paid RapidAPI window $D"
+          for attempt in 1 2 3 4; do
+            git fetch origin repair/cor09-world-pipeline
+            if ! git rebase origin/repair/cor09-world-pipeline; then
+              git rebase --abort || true
+              sleep $((attempt*2))
+              continue
+            fi
+            if git push origin HEAD:repair/cor09-world-pipeline; then exit 0; fi
+            sleep $((attempt*2))
+          done
+          exit 1

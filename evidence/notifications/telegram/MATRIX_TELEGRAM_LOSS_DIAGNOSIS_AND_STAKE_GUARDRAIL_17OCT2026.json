@@ -1,0 +1,112 @@
+{
+  "schema": "MATRIX_TELEGRAM_LOSS_DIAGNOSIS_AND_STAKE_GUARDRAIL_V1",
+  "generated_at_utc": "2026-10-17T21:03:00+00:00",
+  "branch": "repair/cor09-world-pipeline",
+  "diagnosis": {
+    "settled_with_physical_stake": 154,
+    "overall": {
+      "wins": 87,
+      "losses": 67,
+      "hit_rate_pct": 56.4935064935,
+      "profit_cop": -337750,
+      "units": -13.51
+    },
+    "by_stake": {
+      "1": {
+        "n": 95,
+        "wins": 56,
+        "losses": 39,
+        "hit_rate_pct": 58.9473684211,
+        "profit_cop": 138500,
+        "units": 5.54
+      },
+      "2": {
+        "n": 37,
+        "wins": 20,
+        "losses": 17,
+        "hit_rate_pct": 54.0540540541,
+        "profit_cop": -165000,
+        "units": -6.6
+      },
+      "3": {
+        "n": 22,
+        "wins": 11,
+        "losses": 11,
+        "hit_rate_pct": 50,
+        "profit_cop": -311250,
+        "units": -12.45
+      }
+    },
+    "by_ev": {
+      "<5%": {
+        "n": 61,
+        "wins": 41,
+        "losses": 20,
+        "hit_rate_pct": 67.2131147541,
+        "profit_cop": 188750,
+        "units": 7.55
+      },
+      "5-10%": {
+        "n": 37,
+        "wins": 22,
+        "losses": 15,
+        "hit_rate_pct": 59.4594594595,
+        "profit_cop": 102500,
+        "units": 4.1
+      },
+      "10-15%": {
+        "n": 26,
+        "wins": 10,
+        "losses": 16,
+        "hit_rate_pct": 38.4615384615,
+        "profit_cop": -338000,
+        "units": -13.52
+      },
+      ">=15%": {
+        "n": 30,
+        "wins": 14,
+        "losses": 16,
+        "hit_rate_pct": 46.6666666667,
+        "profit_cop": -291000,
+        "units": -11.64
+      }
+    },
+    "conclusion": "HIGH_CONFIDENCE/HIGH_EV_TAIL_IS_OVERCONFIDENT_AND_VARIABLE_2U_3U_SIZING_AMPLIFIED_LOSSES"
+  },
+  "correction": {
+    "policy": "TEMPORARY_FLAT_1U_CAP_17OCT2026",
+    "max_stake_level": 1,
+    "max_stake_cop": 25000,
+    "stake_2": "TEMPORARILY_DISABLED_BY_RISK_OVERRIDE",
+    "stake_3": "TEMPORARILY_DISABLED_BY_RISK_OVERRIDE",
+    "daily_operational_cap_fraction": 0.3,
+    "signal_generation_gates_unchanged": true,
+    "p_matrix_unchanged": true,
+    "ev_formula_unchanged": true,
+    "tuning_applied": false,
+    "real_money": "BLOCKED",
+    "retirement_gate": "Do not restore 2u/3u until calibration/CLV evidence clears high-P/high-EV overconfidence."
+  },
+  "implementation": {
+    "script_path": "tools/telegram_green_signal_alerts.py",
+    "script_commit_message_alignment": "17b301ea2555d3aee0127d8c96ce28c400fc1478",
+    "test_path": "tests/test_telegram_paper_bankroll.py",
+    "test_contract_commit": "28c4956e672813742c3954af3ba23c5e5b79b00d"
+  },
+  "physical_proof": {
+    "successful_workflow_run_id": 39068802407,
+    "successful_job_id": 117501919545,
+    "tests_passed": 20,
+    "observed_runtime": {
+      "paper_stake_max_level": 1,
+      "paper_stake_risk_override": "TEMPORARY_FLAT_1U_CAP_17OCT2026",
+      "paper_bankroll_current_cop": 4833500,
+      "paper_open_bets": 0,
+      "paper_open_exposure_cop": 0,
+      "total_green_messages": 209,
+      "total_settlements": 174,
+      "real_money": "BLOQUEADO"
+    }
+  },
+  "adjudication": "RISK_GUARDRAIL_PHYSICALLY_ACTIVE; STAKE_2_AND_STAKE_3_DISABLED; FLAT_1U_CAP_ENFORCED"
+}

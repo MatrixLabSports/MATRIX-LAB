@@ -1,0 +1,110 @@
+{
+  "schema": "MATRIX_SHARP_REFERENCE_GOVERNANCE_V1",
+  "effective_date_bogota": "2026-10-23",
+  "hierarchy": [
+    {
+      "name": "Pinnacle",
+      "role": "PRIMARY_SHARP_REFERENCE",
+      "integration_status": "ACTIVE_REFRESHING",
+      "transport": "API-Football /odds bookmaker_id=4",
+      "probability_generation": "PROHIBITED",
+      "eligible_for_diagnostic_comparison": true
+    },
+    {
+      "name": "Betfair Exchange",
+      "role": "SECONDARY_MARKET_REFERENCE",
+      "integration_status": "NOT_CONNECTED_TO_MATRIX",
+      "external_evidence": "Official Exchange API exists and provides market odds/volumes; requires Betfair account, App Key and session token.",
+      "probability_generation": "PROHIBITED",
+      "eligible_for_diagnostic_comparison": false
+    },
+    {
+      "name": "Circa Sports",
+      "role": "SECONDARY_SHARP_REFERENCE_IF_CERTIFIED_COVERAGE",
+      "integration_status": "NO_DIRECT_OFFICIAL_API_CERTIFIED_IN_MATRIX",
+      "external_evidence": "No official public Circa developer odds API located; third-party aggregator required.",
+      "probability_generation": "PROHIBITED",
+      "eligible_for_diagnostic_comparison": false
+    },
+    {
+      "name": "FanDuel",
+      "role": "CONTEXTUAL_REFERENCE_NOT_PRIMARY_SHARP",
+      "integration_status": "NO_DIRECT_OFFICIAL_API_CERTIFIED_IN_MATRIX",
+      "external_evidence": "No official public FanDuel sportsbook odds API located; third-party feed required.",
+      "probability_generation": "PROHIBITED",
+      "eligible_for_diagnostic_comparison": false
+    }
+  ],
+  "current_pinnacle_repair": {
+    "prior_problem": "Coverage probe targeted all future registry fixtures and had MAX_REQUESTS=120, incompatible with 190 canonical PIT-ready fixtures.",
+    "repair": "Probe now filters to canonical PIT-ready fixture IDs and MAX_REQUESTS=200; workflow asserts target count equals canonical ready_input_count.",
+    "workflow_run_id": 39903539859,
+    "status": "SUCCESS",
+    "canonical_pit_ready_count": 190,
+    "api_football_pinnacle_covered_fixtures": 118,
+    "api_football_pinnacle_coverage_rate": 0.6210526315789474,
+    "reference_quote_count": 10330,
+    "strict_fresh_comparison_matched_fixtures": 0,
+    "strict_fresh_block_reason": "API_FOOTBALL_PINNACLE_SNAPSHOT_CAPTURE_DELAY_EXCEEDED_120S",
+    "odds_api_net_probe_run_ids": [
+      39903917303,
+      39904025550,
+      39904155351
+    ],
+    "odds_api_net_latest_completed_probe": {
+      "run_id": 39904025550,
+      "sample_size": 12,
+      "identity_matched_count": 0,
+      "strict_fresh_120s_count": 0,
+      "scientific_status": "NO_CERTIFIED_FRESH_REFERENCE_FROM_THIS_SAMPLE"
+    },
+    "odds_api_net_priority_competition_probe": {
+      "run_id": 39904155351,
+      "status": "SUCCESS_WORKFLOW_NO_CERTIFIED_FRESH_REFERENCE",
+      "sample_size": 12,
+      "identity_matched_count": 0,
+      "strict_fresh_120s_count": 0
+    }
+  },
+  "rules": {
+    "sharp_odds_never_generate_p_matrix": true,
+    "sharp_reference_is_diagnostic_only": true,
+    "no_coverage_means_no_certified_sharp_comparison": true,
+    "no_silent_fallback_to_contextual_books": true,
+    "real_money": "BLOCKED",
+    "automatic_wagering": false,
+    "no_sharp_match_action": "NO_CERTIFIED_SHARP_COMPARISON",
+    "api_football_nominal_pinnacle_snapshot_is_closing_reference": false,
+    "strict_freshness_seconds": 120
+  },
+  "sources": {
+    "matrix": [
+      "evidence/api_football/canonical_analysis/manifest.json",
+      "evidence/api_football/pinnacle_coverage/manifest.json",
+      "evidence/api_football/pinnacle_reference/manifest.json",
+      "evidence/api_football/pinnacle_shadow_comparison/manifest.json"
+    ],
+    "external": [
+      "https://developer.betfair.com/exchange-api/",
+      "https://support.developer.betfair.com/hc/en-us/articles/115003864651-How-do-I-get-started",
+      "https://oddspapi.io/blog/circa-sports-api-odds-access/",
+      "https://fanlinewire.com/fanduel-odds-api"
+    ]
+  },
+  "telegram_enforcement": {
+    "status": "CODE_PERSISTED_FAIL_CLOSED",
+    "policy": "PINNACLE_PRIMARY_SHARP_GATE_V1",
+    "fresh_pinnacle_required_before_green": true,
+    "circa_role": "CORROBORATION_ONLY",
+    "betfair_role": "CORROBORATION_ONLY_WHEN_PHYSICALLY_CONNECTED",
+    "fanduel_role": "MARKET_CONTEXT_ONLY_NEVER_COUNTS_AS_SHARP",
+    "contradiction_action": "BLOCKED_SHARP_CONTRADICTION",
+    "no_pinnacle_action": "BLOCKED_NO_FRESH_PINNACLE_REFERENCE",
+    "p_matrix_mutated_by_odds": false,
+    "implementation_commit": "807dd9c7be6e7161bca857e2ef38b5ab16d2c49c",
+    "regression_suite_commit": "4af1b1b3f1ef673c6c34824111d7aea4216be4fe",
+    "dedicated_proof_run_id": 39907688059,
+    "dedicated_proof_run_status": "SUCCESS",
+    "dedicated_proof_commit": "f5d4254654e0af48914123a249fa4da5f1bab0f5"
+  }
+}

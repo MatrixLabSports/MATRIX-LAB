@@ -1,0 +1,88 @@
+{
+  "schema": "MATRIX_CLV_SUBGATE_30_QUALITY_V1",
+  "generated_at_utc": "2026-10-24T15:49:08.211432+00:00",
+  "market_key": "over_2_5",
+  "status": {
+    "decision_count": 215,
+    "closing_odds_count": 11,
+    "subgate_target": 30,
+    "remaining_to_subgate_30": 19,
+    "final_target": 300,
+    "remaining_to_300": 289,
+    "subgate_30_reached": false,
+    "metrics_opened": false,
+    "state_status": "ACCUMULATING_SEALED_UNTIL_300"
+  },
+  "valid_closing_quality": {
+    "closing_events": 11,
+    "capture_files_read": 11,
+    "valid_strict_fresh_captures": 11,
+    "missing_capture_files": 0,
+    "invalid_capture_reason_counts": {},
+    "valid_capture_rate_pct_of_closing_events": 100.0,
+    "quote_age_seconds": {
+      "count": 11,
+      "min": 46.0,
+      "mean": 77.73054545454545,
+      "median": 70.0,
+      "p95": 119.018,
+      "max": 119.036,
+      "all_within_120": true
+    },
+    "capture_lead_seconds": {
+      "count": 11,
+      "min": 33.0,
+      "mean": 605.0876363636364,
+      "median": 691.0,
+      "p95": 867.5,
+      "max": 893.0,
+      "all_prematch": true
+    },
+    "valid_transport_breakdown": {
+      "API-Football /odds": 1,
+      "odds-api.net": 9,
+      "odds-api.net Sandbox": 1
+    }
+  },
+  "attempt_quality": {
+    "attempt_count": 2503,
+    "outcome_counts": {
+      "BLOCKED_MARKET_INCOMPLETE": 271,
+      "BLOCKED_STALE_PROVIDER_QUOTE": 1041,
+      "CAPTURED_VALID": 1,
+      "ODDS_API_BLOCKED_FIXTURE_LOOKUP": 232,
+      "ODDS_API_BLOCKED_IDENTITY": 873,
+      "ODDS_API_BLOCKED_MARKET_INCOMPLETE": 43,
+      "ODDS_API_BLOCKED_STALE_PROVIDER_QUOTE": 32,
+      "ODDS_API_BLOCKED_TEMPORAL": 1,
+      "ODDS_API_CAPTURED_VALID": 9
+    },
+    "failure_bucket_counts": {
+      "CAPTURED_VALID": 10,
+      "IDENTITY": 873,
+      "MARKET_INCOMPLETE": 314,
+      "OTHER": 232,
+      "STALE": 1073,
+      "TEMPORAL": 1
+    },
+    "transport_attempt_counts": {
+      "API-Football /odds bookmaker_id=4": 1313,
+      "odds-api.net /v1/events/{event_id}/odds/snapshot": 1190
+    },
+    "note": "Attempt counts include repeated watcher polls and are not an event-level capture-rate denominator."
+  },
+  "subgate_30_policy": {
+    "strict_fresh_gate_seconds": 120,
+    "required_provider": "Pinnacle",
+    "require_complete_market_snapshot": true,
+    "require_prematch_capture": true,
+    "historical_backfill_without_physical_entry_timestamp": "FORBIDDEN",
+    "post_kickoff_closing_line": "FORBIDDEN",
+    "odds_used_to_generate_probability": false,
+    "automatic_wagering": false,
+    "real_money": "BLOCKED",
+    "metrics_remain_sealed_until": 300,
+    "tuning_before_300": "FORBIDDEN"
+  },
+  "adjudication": "ACCUMULATING_TO_SUBGATE_30_WITHOUT_TUNING"
+}

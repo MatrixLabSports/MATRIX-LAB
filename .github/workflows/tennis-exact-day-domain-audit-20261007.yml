@@ -1,0 +1,87 @@
+name: Tennis Exact-Day Domain Audit 2026-10-07
+
+on:
+  push:
+    branches:
+      - repair/cor09-world-pipeline
+    paths:
+      - .github/workflows/tennis-exact-day-domain-audit-20261007.yml
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: repair/cor09-world-pipeline
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: python -m pip install requests
+      - name: Capture governed exact-day API-Tennis domain
+        env:
+          API_TENNIS_KEY: ${{ secrets.API_TENNIS_KEY }}
+        run: |
+          mkdir -p evidence/cor0203/audit/2026-10-07
+          python -m tools.cor0203_api_tennis_discovery             --days 1             --out evidence/cor0203/audit/2026-10-07/api_tennis_exact_day_discovery.json
+      - name: Summarize exact-day blocker funnel
+        run: |
+          python - <<'PY'
+          import json
+          from collections import Counter
+          from pathlib import Path
+          p=Path("evidence/cor0203/audit/2026-10-07/api_tennis_exact_day_discovery.json")
+          j=json.loads(p.read_text())
+          c=Counter()
+          for r in j.get("provider_rejected",[]) or []:
+              for b in r.get("blockers",[]) or []:
+                  c[str(b)]+=1
+          out={
+            "schema":"MATRIX_TENNIS_API_TENNIS_EXACT_DAY_DOMAIN_AUDIT_07OCT2026_V1",
+            "as_of_utc":j.get("as_of_utc"),
+            "fixture_rows_challenger_men_singles":j.get("fixture_rows"),
+            "eligible_hard_future_fixed_identity":j.get("eligible_input_events"),
+            "provider_rejected_count":len(j.get("provider_rejected",[]) or []),
+            "rejection_reason_counts":dict(sorted(c.items())),
+            "tournaments_seen":j.get("tournaments_seen"),
+            "draw_requests":j.get("draw_requests"),
+            "draw_request_limit":j.get("draw_request_limit"),
+            "eligible_candidates":[
+              {
+                "event_id":x.get("event_id"),
+                "competition":x.get("competition"),
+                "round":x.get("round"),
+                "event_start_utc":x.get("event_start_utc"),
+                "players":[p.get("name") for p in x.get("players",[]) if isinstance(p,dict)]
+              }
+              for x in j.get("eligible_candidates",[]) or []
+            ],
+            "metrics_opened":False,
+            "outcomes_read":0,
+            "real_money":"BLOCKED"
+          }
+          q=p.parent/"MATRIX_TENNIS_API_TENNIS_EXACT_DAY_DOMAIN_AUDIT_07OCT2026.json"
+          q.write_text(json.dumps(out,indent=2,sort_keys=True,ensure_ascii=False)+"\n")
+          print(json.dumps(out,sort_keys=True))
+          PY
+      - name: Persist
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name matrix-tennis-audit
+          git config user.email matrix-tennis-audit@users.noreply.github.com
+          git add evidence/cor0203/audit/2026-10-07
+          git commit -m "evidence(tennis): close exact-day domain audit 07OCT" || exit 0
+          for attempt in 1 2 3 4; do
+            git fetch origin repair/cor09-world-pipeline
+            if ! git rebase origin/repair/cor09-world-pipeline; then git rebase --abort || true; exit 1; fi
+            if git push origin HEAD:repair/cor09-world-pipeline; then exit 0; fi
+            sleep $((attempt*2))
+          done
+          exit 1

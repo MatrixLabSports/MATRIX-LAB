@@ -1,0 +1,161 @@
+{
+  "schema": "MATRIX_POST_HANDOFF_RESOLUTION_12OCT2026_V1",
+  "status": "PASS_PHYSICALLY_VERIFIED_WITH_FUTURE_DEPENDENCIES_EXPLICITLY_BLOCKED",
+  "repository": "MatrixLabSports/MATRIX-LAB",
+  "branch": "repair/cor09-world-pipeline",
+  "observed_head_before_receipt": "0ca5f3789a46133a822beff58434da0cdc4e239a",
+  "handoff_snapshot_head": "9c0e0d886becc951683fd058eda2e70539e2068c",
+  "resolved_now": {
+    "paper_bankroll_11oct": {
+      "status": "PASS_PHYSICALLY_VERIFIED",
+      "reconciliation_artifact": "evidence/notifications/telegram/MATRIX_PAPER_RECONCILIATION_11OCT2026_27_OF_27.json",
+      "reconciliation_blob": "1cae1f1fb1188e174ff893ed2901020162e561dd",
+      "reconciliation_receipt_blob": "6f32d0502493e9af52fc2061fdae1b79e4a442aa",
+      "result": {
+        "signals": 27,
+        "wins": 16,
+        "losses": 11,
+        "exposure_cop": 1000000,
+        "profit_cop": 171250,
+        "roi": 0.17125
+      },
+      "bankroll_fix": {
+        "regression_test_commit": "ede2315c5eff3e4a8d82daa24852b7ef1ff84d84",
+        "code_fix_commit": "212933ace41a11ac4ee531d85adbf635523804d4",
+        "autonomous_validation_run_id": 38215571190,
+        "autonomous_validation_conclusion": "success",
+        "autonomous_ledger_commit": "0ca5f3789a46133a822beff58434da0cdc4e239a",
+        "ledger_blob_after_autonomous_run": "1fbe100cd3bdcdbe6cdc1a130b1af298ad30a3f7",
+        "canonical_current_cop": 5213500,
+        "realized_profit_cop": 213500,
+        "settled_paper_bets": 77,
+        "open_bets": 22,
+        "open_exposure_cop": 625000,
+        "available_after_open_exposure_cop": 4588500,
+        "root_cause": "recalc_paper_bankroll previously derived realized profit only from ledger.settlements and ignored canonical sent[].paper_bet SETTLED closures",
+        "permanent_fix": "derive realized PAPER profit and settled count from canonical sent[].paper_bet; historical settlement collection no longer double counts or reverts reconciled closures"
+      }
+    },
+    "cor0203_unique200_attempt": {
+      "status": "BLOCKED_NO_NEW_UNIQUE_ELIGIBLE_EVENT",
+      "workflow_run_id": 38214688179,
+      "workflow_conclusion": "success",
+      "production_commit": "9c49b215f87afea9c92fec4b889f25ce732ae7b2",
+      "receipt_path": "evidence/cor0203/runtime/MATRIX_COR0203_UNIQUE200_ATTEMPT_20261012T0654Z.json",
+      "receipt_blob": "9ec1eae4021b23d8e0b1bd5dfaf2ba3a4de07f9d",
+      "physical_frozen_rows": 340,
+      "unique_calibration_observations": 199,
+      "remaining_to_200": 1,
+      "remaining_to_600": 401,
+      "new_freezes": 0,
+      "metrics": "SEALED_UNTIL_600_UNIQUE",
+      "outcomes_read": 0,
+      "adjudication": "No synthetic #200. Latest future candidates failed frozen pre-cut history gates."
+    },
+    "football_remaining8_history": {
+      "status": "PASS_PHYSICALLY_ADJUDICATED_BLOCKED",
+      "path": "evidence/api_football/history_recovery/2026-10-12/MATRIX_OVER25_REMAINING8_STRUCTURAL_ADJUDICATION.json",
+      "blob": "b7d0fbb5054f3bf0119fdec04508f37dcd6d4414",
+      "blocked_structural": 8,
+      "promotable_now": 0,
+      "same_group_minimum_final_history": 20,
+      "observed_prior_final_counts_by_group": {
+        "368:2026": 10,
+        "390:2026": 6,
+        "384:2026": 0
+      },
+      "no_cross_season_backfill": true,
+      "no_synthetic_backfill": true,
+      "parameter_change": false
+    },
+    "live_tennis_12oct": {
+      "bug_fixed": true,
+      "failed_pre_fix_run_id": 38214752946,
+      "fix_commit": "7ee001b501f9e56ee17ec8f796db04d219a3c8a2",
+      "corrected_run_id": 38215080777,
+      "corrected_run_conclusion": "success",
+      "certificate_path": "evidence/live_tennis_lab/2026-10-12/MATRIX_LIVE_TENNIS_REACTIVATION_CERT_V1.json",
+      "certificate_blob": "b07a64432d1377b03fe641be65c267d82deb9217",
+      "certificate_status": "PASS_LIVE_MONITORING_CONTINUITY_PAID_FAILOVER_ONLY",
+      "provider": "api_tennis",
+      "executed_cycles": 6,
+      "unique_matches": 9,
+      "unique_states": 24,
+      "quality_valid_states": 18,
+      "hard_unique_observations_unchanged": 199,
+      "clay_prospective_observations_unchanged": 0,
+      "calibration_admitted": false,
+      "calibration_blocker": "CROSS_PROVIDER_EQUIVALENCE_AND_IDENTITY_RECONCILIATION_REQUIRED"
+    },
+    "live_tennis_cross_provider_equivalence": {
+      "status": "BLOCKED_INSUFFICIENT_CROSS_PROVIDER_OVERLAP",
+      "path": "evidence/live_tennis_lab/MATRIX_LIVE_TENNIS_CROSS_PROVIDER_EQUIVALENCE_AUDIT_20261012.json",
+      "blob": "1acc25ec36e65b7a637913866cf875e768c28828",
+      "free_matches_examined": 20,
+      "paid_matches_examined": 9,
+      "adjudicable_overlap_pairs": 0,
+      "states_admitted_to_calibration": 0,
+      "name_only_join_allowed": false
+    },
+    "over25_final_only_sync": {
+      "workflow_run_id": 38215156807,
+      "conclusion": "success",
+      "trigger_commit": "ed41ace91c6fd570598c67a705ed7bbaebc4eccc",
+      "state_blob": "968844e456f7bad75f9fa1b431b7780fa6079cdb",
+      "settlement_sync_blob": "ba6e992af64c5e9b1b1ca44bfbbd07798ae1d092",
+      "freeze_observations": 1635,
+      "settlements": 1331,
+      "pending": 304,
+      "forward_baseline": 1329,
+      "forward_target": 1429,
+      "forward_progress": 2,
+      "new_standard_final_settlements_this_sync": 0,
+      "settlement_final_only": true,
+      "metrics_opened": false,
+      "parameter_tuning_allowed": false
+    }
+  },
+  "future_or_external_evidence_required": [
+    {
+      "item": "COR02/COR03 unique observation #200",
+      "state": "BLOCKED_UNTIL_GENUINELY_ELIGIBLE_FUTURE_EVENT",
+      "reason": "latest governed cycle produced 0 valid new freezes"
+    },
+    {
+      "item": "Over2.5 forward block 1329->1429",
+      "state": "WAITING_STANDARD_FINALS",
+      "reason": "latest FINAL-only run succeeded but found 0 new eligible FINAL settlements"
+    },
+    {
+      "item": "12-OCT Telegram signal settlement",
+      "state": "WAITING_STANDARD_FINALS",
+      "reason": "prematch signals cannot be settled before governed FINAL states"
+    },
+    {
+      "item": "API-Tennis admission into existing Live Tennis calibration",
+      "state": "BLOCKED_UNTIL_CROSS_PROVIDER_OVERLAP",
+      "reason": "physical audit found 0 adjudicable overlapping match identities"
+    }
+  ],
+  "governance_preserved": {
+    "source_order": [
+      "SofaScore",
+      "Flashscore/Flashcore",
+      "paid APIs",
+      "verified free/official sources"
+    ],
+    "real_money": "BLOCKED",
+    "automatic_wagering": false,
+    "paper_shadow_only": true,
+    "missing_not_zero": true,
+    "silent_imputation": false,
+    "strict_pit": true,
+    "odds_to_p_matrix": false,
+    "freeze_prematch_immutable": true,
+    "final_only": true,
+    "no_backfill": true,
+    "no_name_only_joins": true,
+    "physical_dedupe": true,
+    "protected_metrics_sealed": true
+  }
+}

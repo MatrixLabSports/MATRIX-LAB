@@ -1,0 +1,74 @@
+{
+  "schema": "MATRIX_RAPIDAPI_TENNIS_FREE50_CONTINUITY_V1",
+  "generated_at_utc": "2026-10-21T03:59:00Z",
+  "paid_plan": {
+    "current": "ULTRA",
+    "paid_through": "2026-10-28",
+    "physically_confirmed_charge_usd": 59
+  },
+  "post_paid_continuity": {
+    "target_plan": "FREE",
+    "documented_quota_requests_per_day": 50,
+    "documented_rate_limit_requests_per_second": 4,
+    "documented_access_model": "FREE_SAME_AS_PRO_PAYLOAD_QUOTA_DIFFERS",
+    "matrix_used_endpoints_supported_on_free": [
+      "/tennis/v2/{atp|wta}/fixtures",
+      "/tennis/v2/ranking/atp",
+      "/tennis/v2/{atp|wta}/player/profile/{player_id}",
+      "/tennis/v2/{atp|wta}/results/{date}"
+    ],
+    "premium_fields_not_required_by_matrix": [
+      "modelPrediction",
+      "written_predictions",
+      "Socket.IO"
+    ]
+  },
+  "measured_paid_cycle_20261021": {
+    "world_inventory_calls": 2,
+    "world_derived_discovery_calls": 10,
+    "durable_discovery_calls": 16,
+    "stats_rich_probe_calls": 32,
+    "settlement_sync_calls": 9,
+    "note": "These are separate physical log blocks and demonstrate that the paid-mode pipeline cannot be copied unchanged into a 50/day free quota."
+  },
+  "free50_policy": {
+    "priority_lane": "ATP_CHALLENGER_MEN_SINGLES_HARD",
+    "current_hard_unique": 298,
+    "hard_target": 600,
+    "hard_remaining": 302,
+    "current_clay_unique": 3,
+    "browser_first_required": true,
+    "source_order": [
+      "SofaScore",
+      "Flashscore",
+      "RapidAPI Tennis FREE"
+    ],
+    "intended_daily_budget": {
+      "hard_inventory_and_enrichment_max": 30,
+      "settlement_reserve_max": 10,
+      "clay_or_identity_recovery_reserve_max": 10,
+      "total_max": 50
+    },
+    "forbidden": {
+      "metrics_before_600": true,
+      "forced_backfill": true,
+      "silent_imputation": true,
+      "odds_to_probability": true,
+      "real_money": true
+    }
+  },
+  "fallback_candidate": {
+    "provider": "Live Tennis API",
+    "documented_free_requests_per_day": 100,
+    "documented_free_fixtures": true,
+    "coverage": [
+      "ATP",
+      "WTA",
+      "Challenger",
+      "ITF"
+    ],
+    "status": "SECONDARY_CANDIDATE_NOT_YET_INTEGRATED_OR_KEYED"
+  },
+  "status": "READY_FOR_POST_28_TRANSITION_WITH_QUOTA_REFACTOR_REQUIRED",
+  "real_money": "BLOCKED"
+}

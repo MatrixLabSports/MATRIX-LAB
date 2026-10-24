@@ -1,0 +1,332 @@
+name: MATRIX Paid APIs Priority Review 15min
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "*/15 * * * *"
+  push:
+    branches:
+      - repair/cor09-world-pipeline
+    paths:
+      - .github/workflows/paid-api-priority-review-15min.yml
+      - config/MATRIX_TENNIS_SUBSCRIPTION_DEADLINE.json
+      - config/MATRIX_FOOTBALL_SUBSCRIPTION_DEADLINE.json
+      - tools/tennis_subscription_deadline_guard.py
+      - tools/football_subscription_deadline_guard.py
+      - tools/cor0203_rapidapi_tennis_discovery.py
+      - tools/tennis_world_inventory_rapidapi.py
+      - tools/paid_api_quota_ledger.py
+      - tests/test_paid_api_15min_priority_policy.py
+      - tests/test_paid_api_quota_ledger.py
+
+permissions:
+  contents: write
+
+concurrency:
+  group: matrix-paid-api-priority-review-15min-v2
+  cancel-in-progress: false
+
+jobs:
+  review:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      REAL_MONEY: BLOCKED
+      AUTO_BETTING: DISABLED
+    steps:
+      - name: Checkout operational branch
+        uses: actions/checkout@v4
+        with:
+          ref: repair/cor09-world-pipeline
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: python -m pip install requests pytest
+
+      - name: Prove paid API governance
+        run: |
+          python -m pytest -q \
+            tests/test_tennis_subscription_deadline_guard.py \
+            tests/test_football_subscription_deadline_guard.py \
+            tests/test_paid_api_15min_priority_policy.py \
+            tests/test_paid_api_quota_ledger.py
+
+      - name: Resolve active paid window
+        id: window
+        shell: bash
+        run: |
+          set -euo pipefail
+          D="$(TZ=America/Bogota date +%F)"
+          echo "date=$D" >> "$GITHUB_OUTPUT"
+          if [[ "$D" > "2026-10-28" ]]; then
+            echo "active=false" >> "$GITHUB_OUTPUT"
+            echo "PAID_WINDOW_CLOSED_NO_NETWORK_CALLS"
+          else
+            echo "active=true" >> "$GITHUB_OUTPUT"
+            echo "PAID_WINDOW_ACTIVE_15MIN_PRIORITY_REVIEW"
+          fi
+
+      - name: Enforce browser-first evidence
+        if: steps.window.outputs.active == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          D="${{ steps.window.outputs.date }}"
+          TD="${D//-/}"
+          test -f "evidence/football_world_inventory/$D/MATRIX_FOOTBALL_BROWSER_FIRST_RECONCILIATION.json"
+          TENNIS_FILE="$(find evidence/tennis -maxdepth 1 -type f -name "MATRIX_TENNIS_${TD}_BROWSER_FIRST_RECONCILIATION.json" | head -n1)"
+          test -n "$TENNIS_FILE"
+          python - "$D" "$TENNIS_FILE" <<'PY'
+          import json,sys
+          from pathlib import Path
+          d=sys.argv[1]
+          t=Path(sys.argv[2])
+          f=Path(f"evidence/football_world_inventory/{d}/MATRIX_FOOTBALL_BROWSER_FIRST_RECONCILIATION.json")
+          tj=json.loads(t.read_text())
+          fj=json.loads(f.read_text())
+          ts=tj.get("source_order") or []
+          fs=fj.get("source_order") or (fj.get("protections") or {}).get("source_order") or []
+          assert "SofaScore" in ts and "Flashscore" in ts and ts.index("SofaScore") < ts.index("Flashscore")
+          assert "SofaScore" in fs and "Flashscore" in fs and fs.index("SofaScore") < fs.index("Flashscore")
+          print("BROWSER_FIRST_GATE_PASS",t,f)
+          PY
+
+      - name: Seed or refresh quota ledger from persisted evidence
+        if: steps.window.outputs.active == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          T="$(find evidence/paid_api_15min_review -type f -name rapidapi_tennis_inventory.json | sort | tail -n1 || true)"
+          F="$(find evidence/paid_api_15min_review -type f -name api_football_manifest.json | sort | tail -n1 || true)"
+          PREV="evidence/governance/MATRIX_PAID_API_QUOTA_LEDGER_LAST.json"
+          ARGS=()
+          [ -n "$T" ] && ARGS+=(--tennis-inventory "$T")
+          [ -n "$F" ] && ARGS+=(--football-manifest "$F")
+          [ -f "$PREV" ] && ARGS+=(--previous-ledger "$PREV")
+          python -m tools.paid_api_quota_ledger "${ARGS[@]}" --out /tmp/MATRIX_PAID_API_QUOTA_LEDGER_SEEDED.json
+          echo "QUOTA_LEDGER_SEEDED_IN_TMP_ONLY"
+
+      - name: Decide provider-specific network refresh
+        id: refresh
+        if: steps.window.outputs.active == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY' >> "$GITHUB_OUTPUT"
+          import json, os
+          from datetime import datetime, timezone
+          from pathlib import Path
+          from zoneinfo import ZoneInfo
+
+          event=os.environ.get("GITHUB_EVENT_NAME","")
+          now=datetime.now(timezone.utc)
+          last=Path("evidence/governance/MATRIX_PAID_API_15MIN_REVIEW_LAST.json")
+          tmp_ledger=Path("/tmp/MATRIX_PAID_API_QUOTA_LEDGER_SEEDED.json")
+          ledger=tmp_ledger if tmp_ledger.exists() else Path("evidence/governance/MATRIX_PAID_API_QUOTA_LEDGER_LAST.json")
+
+          base_due=True
+          base_reason="NO_PREVIOUS_RECEIPT"
+          age_minutes=None
+          if last.exists():
+              try:
+                  j=json.loads(last.read_text())
+                  ts=datetime.fromisoformat(str(j["generated_at_utc"]).replace("Z","+00:00"))
+                  age_minutes=(now-ts.astimezone(timezone.utc)).total_seconds()/60
+                  same_day=(str(j.get("target_date_bogota"))==datetime.now(ZoneInfo("America/Bogota")).date().isoformat())
+                  base_due=age_minutes>=60 or not same_day
+                  base_reason="STALE_60M_OR_NEW_DAY" if base_due else "FRESH_UNDER_60M"
+              except Exception:
+                  base_due=True
+                  base_reason="RECEIPT_PARSE_ERROR_REFRESH"
+
+          q=json.loads(ledger.read_text()) if ledger.exists() else {}
+          providers=q.get("providers") or {}
+          tq=providers.get("rapidapi_tennis") or {}
+          fq=providers.get("api_football") or {}
+          tr=tq.get("router") or {}
+          fr=fq.get("router") or {}
+
+          if event=="workflow_dispatch":
+              tennis_due=True
+              football_due=True
+              tennis_reason="MANUAL_DISPATCH"
+              football_reason="MANUAL_DISPATCH"
+          else:
+              if tq.get("quota_evidence_status") != "VERIFIED_RESPONSE_HEADERS" and tr.get("quota_probe_allowed") is True:
+                  tennis_due=True
+                  tennis_reason="ONE_TIME_QUOTA_DISCOVERY_PROBE"
+              else:
+                  tennis_due=bool(base_due and tr.get("routine_inventory_refresh_allowed") is True)
+                  tennis_reason=(base_reason if tennis_due else tr.get("reason") or "TENNIS_ROUTINE_CALL_BLOCKED")
+              football_due=bool(base_due and fr.get("routine_inventory_refresh_allowed") is True)
+              football_reason=(base_reason if football_due else fr.get("reason") or "FOOTBALL_ROUTINE_CALL_BLOCKED")
+
+          print(f"tennis_due={'true' if tennis_due else 'false'}")
+          print(f"football_due={'true' if football_due else 'false'}")
+          print(f"tennis_reason={tennis_reason}")
+          print(f"football_reason={football_reason}")
+          print(f"age_minutes={'' if age_minutes is None else round(age_minutes,2)}")
+          PY
+
+      - name: Enforce Tennis subscription guard
+        if: steps.window.outputs.active == 'true' && steps.refresh.outputs.tennis_due == 'true'
+        env:
+          RAPIDAPI_TENNIS_KEY: ${{ secrets.RAPIDAPI_TENNIS_KEY }}
+        run: |
+          python -m tools.tennis_subscription_deadline_guard --require-paid-use --require-key --out /tmp/tennis_deadline.json
+
+      - name: Enforce Football subscription guard
+        if: steps.window.outputs.active == 'true' && steps.refresh.outputs.football_due == 'true'
+        env:
+          API_FOOTBALL_KEY: ${{ secrets.API_FOOTBALL_KEY }}
+        run: |
+          python -m tools.football_subscription_deadline_guard --require-paid-use --require-key --out /tmp/football_deadline.json
+
+      - name: Review RapidAPI Tennis
+        if: steps.window.outputs.active == 'true' && steps.refresh.outputs.tennis_due == 'true'
+        env:
+          RAPIDAPI_TENNIS_KEY: ${{ secrets.RAPIDAPI_TENNIS_KEY }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          D="${{ steps.window.outputs.date }}"
+          mkdir -p /tmp/matrix_paid_15min
+          python -m tools.tennis_world_inventory_rapidapi \
+            --target-date-bogota "$D" \
+            --out /tmp/matrix_paid_15min/tennis.json \
+            --fail-on-partial
+
+      - name: Review API-Football
+        if: steps.window.outputs.active == 'true' && steps.refresh.outputs.football_due == 'true'
+        env:
+          API_FOOTBALL_KEY: ${{ secrets.API_FOOTBALL_KEY }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          D="${{ steps.window.outputs.date }}"
+          mkdir -p /tmp/matrix_paid_15min/football
+          python -m tools.api_football_raw_archive \
+            --start "$D" \
+            --stop "$D" \
+            --out-root /tmp/matrix_paid_15min/football
+
+      - name: Build canonical quota ledger after any provider refresh
+        if: steps.window.outputs.active == 'true' && (steps.refresh.outputs.tennis_due == 'true' || steps.refresh.outputs.football_due == 'true')
+        shell: bash
+        run: |
+          set -euo pipefail
+          T="/tmp/matrix_paid_15min/tennis.json"
+          F="/tmp/matrix_paid_15min/football/manifest.json"
+          [ -f "$T" ] || T="$(find evidence/paid_api_15min_review -type f -name rapidapi_tennis_inventory.json | sort | tail -n1 || true)"
+          [ -f "$F" ] || F="$(find evidence/paid_api_15min_review -type f -name api_football_manifest.json | sort | tail -n1 || true)"
+          PREV="evidence/governance/MATRIX_PAID_API_QUOTA_LEDGER_LAST.json"
+          ARGS=()
+          [ -n "$T" ] && [ -f "$T" ] && ARGS+=(--tennis-inventory "$T")
+          [ -n "$F" ] && [ -f "$F" ] && ARGS+=(--football-manifest "$F")
+          [ -f "$PREV" ] && ARGS+=(--previous-ledger "$PREV")
+          python -m tools.paid_api_quota_ledger "${ARGS[@]}" --out evidence/governance/MATRIX_PAID_API_QUOTA_LEDGER_LAST.json
+
+      - name: Build deduplicated review evidence
+        if: steps.window.outputs.active == 'true' && (steps.refresh.outputs.tennis_due == 'true' || steps.refresh.outputs.football_due == 'true')
+        shell: bash
+        run: |
+          set -euo pipefail
+          D="${{ steps.window.outputs.date }}"
+          python - "$D" <<'PY'
+          import hashlib,json,sys,shutil
+          from datetime import datetime,timezone
+          from pathlib import Path
+
+          d=sys.argv[1]
+          tennis=Path("/tmp/matrix_paid_15min/tennis.json")
+          football=Path(f"/tmp/matrix_paid_15min/football/{d}/api_football_fixtures_raw.json")
+          fm=Path("/tmp/matrix_paid_15min/football/manifest.json")
+          last=Path("evidence/governance/MATRIX_PAID_API_15MIN_REVIEW_LAST.json")
+          prev=json.loads(last.read_text()) if last.exists() else {}
+          out=dict(prev)
+          out.update({
+            "schema":"MATRIX_PAID_API_15MIN_PRIORITY_REVIEW_V2",
+            "generated_at_utc":datetime.now(timezone.utc).replace(microsecond=0).isoformat(),
+            "target_date_bogota":d,
+            "review_interval_minutes":15,
+            "paid_through_bogota_date":"2026-10-28",
+            "browser_first_gate":"PASS",
+            "source_order":["SofaScore","Flashscore","RapidAPI Tennis","API-Football"],
+            "automatic_model_feed":False,
+            "automatic_wagering":False,
+            "real_money":"BLOCKED",
+            "no_duplicate_persistence":True,
+          })
+          changed=False
+          if tennis.exists():
+              tj=json.loads(tennis.read_text())
+              tsha=hashlib.sha256(tennis.read_bytes()).hexdigest()
+              changed=changed or prev.get("tennis_inventory_sha256")!=tsha
+              out["tennis_inventory_sha256"]=tsha
+              out["tennis_unique_match_count"]=tj.get("unique_match_count") or tj.get("world_calendar_inventory_count") or len(tj.get("events") or [])
+              out["tennis_network_calls"]=tj.get("provider_network_calls") or 0
+              out["tennis_public_rate_headers"]=tj.get("provider_public_rate_headers") or {}
+          else:
+              out["tennis_network_calls"]=0
+          if fm.exists() and football.exists():
+              fj=json.loads(fm.read_text())
+              fsha=hashlib.sha256(football.read_bytes()).hexdigest()
+              changed=changed or prev.get("football_raw_sha256")!=fsha
+              out["football_raw_sha256"]=fsha
+              out["football_fixture_rows"]=sum(x.get("fixture_rows",0) for x in fj.get("captures",[]))
+              out["football_network_calls"]=fj.get("network_calls") or 0
+              caps=fj.get("captures") or []
+              out["football_public_rate_headers"]=(caps[0].get("public_rate_headers") or {}) if caps else {}
+          else:
+              out["football_network_calls"]=0
+          out["content_changed_since_previous_review"]=changed
+          out["tennis_refresh_reason"]="${{ steps.refresh.outputs.tennis_reason }}"
+          out["football_refresh_reason"]="${{ steps.refresh.outputs.football_reason }}"
+
+          last.parent.mkdir(parents=True,exist_ok=True)
+          last.write_text(json.dumps(out,indent=2,sort_keys=True)+"\n")
+          stamp=datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
+          root=Path("evidence/paid_api_15min_review")/d/stamp
+          root.mkdir(parents=True,exist_ok=True)
+          if tennis.exists():
+              shutil.copy2(tennis,root/"rapidapi_tennis_inventory.json")
+          if football.exists():
+              shutil.copy2(football,root/"api_football_fixtures_raw.json")
+          if fm.exists():
+              shutil.copy2(fm,root/"api_football_manifest.json")
+          (root/"receipt.json").write_text(json.dumps(out,indent=2,sort_keys=True)+"\n")
+          print(json.dumps(out,sort_keys=True))
+          PY
+
+      - name: Persist governed quota evidence
+        if: steps.window.outputs.active == 'true' && (steps.refresh.outputs.tennis_due == 'true' || steps.refresh.outputs.football_due == 'true')
+        shell: bash
+        run: |
+          set -euo pipefail
+          D="${{ steps.window.outputs.date }}"
+          git config user.name matrix-paid-api-15min
+          git config user.email matrix-paid-api-15min@users.noreply.github.com
+          git add evidence/governance/MATRIX_PAID_API_QUOTA_LEDGER_LAST.json
+          git add evidence/governance/MATRIX_PAID_API_15MIN_REVIEW_LAST.json 2>/dev/null || true
+          git add "evidence/paid_api_15min_review/$D" 2>/dev/null || true
+          if git diff --cached --quiet; then
+            echo "NO_EVIDENCE_CHANGE"
+            exit 0
+          fi
+          git commit -m "evidence(api): persist quota-aware 15-minute review $D"
+          for attempt in 1 2 3 4; do
+            git fetch origin repair/cor09-world-pipeline
+            if ! git rebase origin/repair/cor09-world-pipeline; then
+              git rebase --abort || true
+              sleep $((attempt*2))
+              continue
+            fi
+            if git push origin HEAD:repair/cor09-world-pipeline; then exit 0; fi
+            sleep $((attempt*2))
+          done
+          exit 1

@@ -1,0 +1,42 @@
+{
+  "schema": "MATRIX_FOOTBALL_BTTS_V2_V3_NO_GO_V1",
+  "decided_at_utc": "2026-10-04T00:02:00Z",
+  "market": "BTTS",
+  "decision": "NO_GO_CURRENT_GENERATIONS",
+  "btts_v2": {
+    "prospective_ledger_total": 589,
+    "complete_frozen_probabilities": 547,
+    "missing_frozen_probabilities": 42,
+    "checkpoint_200": "FAIL",
+    "checkpoint_300": "FAIL",
+    "policy": "DO_NOT_BACKFILL_OR_MUTATE_FROZEN_ROWS",
+    "reason": "V2 failed earlier checkpoints and 42 settled observations lack frozen BTTS v2 probability; retrospective filling would violate freeze immutability."
+  },
+  "btts_v3": {
+    "candidate_status": "REJECTED_INTERNAL_TEMPORAL_OOS",
+    "temporal_oos_sample_size": 822,
+    "folds": 3,
+    "fold_superiority_count": 0,
+    "aggregate_poisson_brier": 0.2420552962281139,
+    "aggregate_best_candidate_brier": 0.24697681991835505,
+    "aggregate_poisson_log_loss": 0.6770901160307063,
+    "aggregate_best_candidate_log_loss": 0.6870955799665258,
+    "protected_final_357_used_for_tuning": false,
+    "prospective_checkpoint_200_used_for_tuning": false,
+    "prospective_ledger_used_for_tuning": false,
+    "reason": "No v3 candidate beat Poisson on aggregate Brier and log loss; no temporal fold achieved superiority."
+  },
+  "next_generation_policy": {
+    "new_challenger_required": true,
+    "v2_or_v3_promotion_forbidden": true,
+    "reuse_of_protected_357_for_tuning": false,
+    "mutation_of_existing_589": false
+  },
+  "sources": {
+    "v3_manifest_path": "evidence/api_football/btts_challenger_v3/manifest.json",
+    "v3_manifest_blob_sha": "e76b2b616bf686462ec75bfdebda212857960a93",
+    "extended_checkpoint_path": "evidence/api_football/prospective_calibration/MATRIX_FOOTBALL_EXTENDED_CHECKPOINTS_20261003_589.json"
+  },
+  "automatic_wagering": false,
+  "real_money": "BLOCKED"
+}

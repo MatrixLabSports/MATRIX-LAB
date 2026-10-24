@@ -1,0 +1,140 @@
+name: MATRIX Football 19Oct Group Recovery P_MATRIX Pass3
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - repair/cor09-world-pipeline
+    paths:
+      - .github/workflows/football-19oct-group-recovery-pmatrix-pass3.yml
+
+permissions:
+  contents: write
+
+jobs:
+  recover:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    env:
+      REAL_MONEY: BLOCKED
+      AUTO_BETTING: DISABLED
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: repair/cor09-world-pipeline
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: python -m pip install requests
+      - name: Safety gate
+        run: |
+          test "$REAL_MONEY" = "BLOCKED"
+          test "$AUTO_BETTING" = "DISABLED"
+      - name: Recover missing league-season RAW groups and rebuild P_MATRIX
+        env:
+          API_FOOTBALL_KEY: ${{ secrets.API_FOOTBALL_KEY }}
+        run: |
+          python - <<'PY'
+          import json, os, shutil
+          from collections import Counter
+          from datetime import datetime, timezone
+          from pathlib import Path
+          from tools.api_football_group_history_capture import capture_group_history
+          from tools.api_football_canonicalize_analysis_inputs import load_chunked_canonical_bundle
+          from tools.api_football_market_shadow_p_matrix import build_shadow_p_matrix
+
+          root=Path("evidence/api_football/prospective_daily/2026-10-19/20261019T005952Z")
+          target_groups={
+            ("71",2026),("357",2026),("113",2026),("775",2026),("114",2026),("129",2026),
+            ("327",2026),("266",2026),("365",2026),("328",2026),("72",2026),("362",2026),
+            ("119",2026),("162",2026),("62",2026),("106",2026),("287",2026),("383",2026),
+            ("107",2026),("339",2026),("235",2026),("141",2026),("272",2026),("94",2026),
+            ("304",2026),("203",2026),("58",2026),("931",2026),("318",2026),("943",2026),
+            ("340",2027),("164",2026),("242",2026),("323",2026),("268",2026),("425",2026),
+            ("132",2026),("322",2026)
+          }
+
+          bench=json.loads((root/"team_last_fallback_pass2/benchmark_after_team_last.json").read_text())
+          fixtures=bench["fixtures"]
+          subset={}
+          for k,v in fixtures.items():
+              league=v.get("league") or {}
+              key=(str(league.get("id") or ""), league.get("season"))
+              if key in target_groups:
+                  subset[k]=v
+          subbench=dict(bench)
+          subbench["fixtures"]=subset
+          out=root/"group_history_recovery_pass3"
+          manifest=capture_group_history(
+              api_key=os.environ["API_FOOTBALL_KEY"],
+              benchmark=subbench,
+              out_dir=out,
+              max_requests=40,
+              min_daily_remaining_reserve=1500,
+          )
+
+          merged=Path("/tmp/matrix_19oct_merged_raw")
+          merged.mkdir(parents=True,exist_ok=True)
+          for srcdir in [root/"history/raw", out/"raw"]:
+              for p in srcdir.glob("*.bin"):
+                  shutil.copy2(p, merged/p.name)
+
+          bundle, canonical_manifest=load_chunked_canonical_bundle(root/"canonical_analysis_pass2")
+          pm=build_shadow_p_matrix(
+              canonical_bundle=bundle,
+              canonical_manifest=canonical_manifest,
+              raw_dir=merged,
+              generated_at=datetime.now(timezone.utc).replace(microsecond=0),
+          )
+          pout=root/"p_matrix_shadow_pass3"
+          pout.mkdir(parents=True,exist_ok=True)
+          (pout/"p_matrix_shadow.json").write_text(json.dumps(pm,ensure_ascii=False,indent=2,sort_keys=True)+"\n")
+
+          reasons=Counter(str(x.get("reason") or "UNKNOWN") for x in pm.get("blocked",[]))
+          cert={
+            "schema":"MATRIX_FOOTBALL_19OCT_GROUP_RECOVERY_PMATRIX_PASS3_V1",
+            "target_group_count":len(target_groups),
+            "subset_fixture_count":len(subset),
+            "requested_group_count":manifest["requested_group_count"],
+            "captured_group_count":manifest["captured_group_count"],
+            "provider_error_group_count":manifest["provider_error_group_count"],
+            "network_calls_performed":manifest["network_calls_performed"],
+            "daily_remaining":manifest["last_rate_limit"]["daily_remaining"],
+            "p_matrix_scored_count":pm["scored_count"],
+            "p_matrix_blocked_count":pm["blocked_count"],
+            "blocked_reason_counts":dict(reasons),
+            "real_money":"BLOCKED",
+            "automatic_wagering":False,
+            "odds_used_to_generate_probability":False,
+            "historical_backfill":False
+          }
+          (root/"MATRIX_19OCT_GROUP_RECOVERY_PMATRIX_PASS3_CERT.json").write_text(json.dumps(cert,indent=2,sort_keys=True)+"\n")
+          print(json.dumps(cert,sort_keys=True))
+          PY
+      - name: Persist group recovery evidence
+        run: |
+          set -euo pipefail
+          git config user.name matrix-football-group-recovery
+          git config user.email matrix-football-group-recovery@users.noreply.github.com
+          git add evidence/api_football/prospective_daily/2026-10-19/20261019T005952Z/group_history_recovery_pass3
+          git add evidence/api_football/prospective_daily/2026-10-19/20261019T005952Z/p_matrix_shadow_pass3
+          git add evidence/api_football/prospective_daily/2026-10-19/20261019T005952Z/MATRIX_19OCT_GROUP_RECOVERY_PMATRIX_PASS3_CERT.json
+          if git diff --cached --quiet; then
+            echo "NO_RECOVERY_CHANGE"
+            exit 0
+          fi
+          git commit -m "evidence(football): persist 19-Oct group recovery P_MATRIX pass3"
+          for attempt in 1 2 3 4; do
+            git fetch origin repair/cor09-world-pipeline
+            if ! git rebase origin/repair/cor09-world-pipeline; then
+              git rebase --abort || true
+              exit 1
+            fi
+            if git push origin HEAD:repair/cor09-world-pipeline; then
+              echo "PUSH_SUCCEEDED_ATTEMPT=$attempt"
+              exit 0
+            fi
+            sleep $((attempt*2))
+          done
+          exit 1

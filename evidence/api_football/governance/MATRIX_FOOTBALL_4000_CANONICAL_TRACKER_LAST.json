@@ -1,0 +1,66 @@
+{
+  "blocked_reason_counts": {
+    "API_FOOTBALL_PROVIDER_ERROR": 92,
+    "NONSTANDARD_TERMINAL_REQUIRES_ADJUDICATION:ABD": 3,
+    "NONSTANDARD_TERMINAL_REQUIRES_ADJUDICATION:AET": 4,
+    "NONSTANDARD_TERMINAL_REQUIRES_ADJUDICATION:AWD": 5,
+    "NONSTANDARD_TERMINAL_REQUIRES_ADJUDICATION:CANC": 7,
+    "NONSTANDARD_TERMINAL_REQUIRES_ADJUDICATION:INT": 1,
+    "NONSTANDARD_TERMINAL_REQUIRES_ADJUDICATION:PEN": 42,
+    "NONSTANDARD_TERMINAL_REQUIRES_ADJUDICATION:PST": 52,
+    "TEAM_IDENTITY_MISMATCH": 3
+  },
+  "canonical_scope": "GLOBAL_APPEND_ONLY_PROSPECTIVE_FINAL_CALIBRATION",
+  "counter_precedence": {
+    "never_use_for_global_4000": "v2_lane_counters.*.cohort_settlement_count",
+    "reason": "V2 lanes start at a later cohort cut and are intentionally partial.",
+    "target_4000": "global.valid_final_settlement_count"
+  },
+  "generated_at_utc": "2026-10-24T14:41:23.791260+00:00",
+  "global": {
+    "blocked_count": 209,
+    "calibration_observation_count": 4092,
+    "current_inventory_unresolved_total": 811,
+    "frozen_event_count": 4903,
+    "new_frozen_events_still_required_even_if_all_current_inventory_resolves": 0,
+    "pending_count": 602,
+    "reconciliation_equation": "4092+602+209=4903",
+    "remaining_valid_finals_to_target": 0,
+    "valid_final_settlement_count": 4092
+  },
+  "governance": {
+    "automatic_wagering": false,
+    "missing_not_zero": true,
+    "no_backfill": true,
+    "real_money": "BLOCKED",
+    "settlement_final_only": true
+  },
+  "pending_reason_counts": {
+    "WAITING_FINAL_WINDOW": 602
+  },
+  "schema": "MATRIX_FOOTBALL_4000_CANONICAL_TRACKER_V1",
+  "target_valid_final_observations": 4000,
+  "v2_lane_counters": {
+    "1x2": {
+      "cohort_freeze_count": 4075,
+      "cohort_id": "FOOTBALL_ALL_MARKETS_V2_20261004",
+      "cohort_settlement_count": 3290,
+      "cohort_start_utc": "2026-10-04T18:51:32Z",
+      "scope": "PARTIAL_V2_COHORT_NOT_GLOBAL_TARGET_COUNTER"
+    },
+    "over_2_5": {
+      "cohort_freeze_count": 4075,
+      "cohort_id": "FOOTBALL_ALL_MARKETS_V2_20261004",
+      "cohort_settlement_count": 3290,
+      "cohort_start_utc": "2026-10-04T18:51:32Z",
+      "scope": "PARTIAL_V2_COHORT_NOT_GLOBAL_TARGET_COUNTER"
+    },
+    "under_2_5": {
+      "cohort_freeze_count": 4075,
+      "cohort_id": "FOOTBALL_ALL_MARKETS_V2_20261004",
+      "cohort_settlement_count": 3290,
+      "cohort_start_utc": "2026-10-04T18:51:32Z",
+      "scope": "PARTIAL_V2_COHORT_NOT_GLOBAL_TARGET_COUNTER"
+    }
+  }
+}

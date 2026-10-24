@@ -1,0 +1,254 @@
+name: MATRIX Football CLV Continuous Watcher
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+      - repair/cor09-world-pipeline
+    paths:
+      - .github/workflows/football-clv-continuous-watcher.yml
+      - evidence/notifications/telegram/MATRIX_TELEGRAM_SIGNAL_LEDGER.json
+  workflow_run:
+    workflows:
+      - MATRIX Football Daily Governed Pipeline
+    types:
+      - completed
+
+permissions:
+  contents: write
+  actions: write
+
+concurrency:
+  group: matrix-football-clv-continuous-watcher
+  cancel-in-progress: false
+
+jobs:
+  watch:
+    if: ${{ github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 350
+    env:
+      MATRIX_MODE: SHADOW
+      REAL_MONEY: BLOCKED
+      AUTO_BETTING: DISABLED
+      WATCH_SECONDS: 19800
+      POLL_SECONDS: 90
+
+    steps:
+      - name: Checkout operational branch
+        uses: actions/checkout@v4
+        with:
+          ref: repair/cor09-world-pipeline
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install targeted dependencies
+        run: python -m pip install pytest requests
+
+      - name: Verify CLV protections before watch
+        run: PYTHONPATH=. python -m pytest -q tests/test_football_clv_tracking_cycle.py
+
+      - name: Validate watcher safety and secret
+        env:
+          API_FOOTBALL_KEY: ${{ secrets.API_FOOTBALL_KEY }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$MATRIX_MODE" = "SHADOW"
+          test "$REAL_MONEY" = "BLOCKED"
+          test "$AUTO_BETTING" = "DISABLED"
+          test -n "$API_FOOTBALL_KEY"
+          echo "CLV_CONTINUOUS_WATCHER_SAFETY: PASS"
+
+      - name: Verify startup coverage and per-cycle refresh contract
+        shell: bash
+        run: |
+          set -euo pipefail
+          grep -Fq 'git fetch origin repair/cor09-world-pipeline' .github/workflows/football-clv-continuous-watcher.yml
+          grep -Fq 'git rebase --autostash origin/repair/cor09-world-pipeline' .github/workflows/football-clv-continuous-watcher.yml
+          echo "CLV_WATCHER_STARTUP_COVERAGE_CONTRACT=PASS"
+          echo "CLV_WATCHER_PER_CYCLE_REFRESH_ORDER=PASS"
+          echo "CLV_STRICT_FRESH_GATE_SECONDS=120"
+
+      - name: Continuous CLV watch and immediate persistence
+        env:
+          API_FOOTBALL_KEY: ${{ secrets.API_FOOTBALL_KEY }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "matrix-clv-continuous-watcher"
+          git config user.email "matrix-clv-continuous-watcher@users.noreply.github.com"
+
+          started_at="$(date -u +%s)"
+          deadline="$((started_at + WATCH_SECONDS))"
+          cycle=0
+
+          persist_if_changed() {
+            git add evidence/clv/football/over_2_5
+            if git diff --cached --quiet; then
+              echo "CLV_NO_STATE_CHANGE"
+              return 0
+            fi
+            git commit -m "evidence(clv): persist continuous watcher cycle"
+            for attempt in 1 2 3 4; do
+              git fetch origin repair/cor09-world-pipeline
+              if ! git rebase origin/repair/cor09-world-pipeline; then
+                git rebase --abort || true
+                return 1
+              fi
+              if git push origin HEAD:repair/cor09-world-pipeline; then
+                echo "CLV_WATCHER_PUSH_SUCCEEDED_ATTEMPT=$attempt"
+                return 0
+              fi
+              sleep $((attempt * 2))
+            done
+            return 1
+          }
+
+          remaining_future() {
+            PYTHONPATH=. python - <<'PY'
+          from datetime import datetime, timezone
+          from pathlib import Path
+          from app.research.football.prospective_ledger import (
+              ClosingOddsReference,
+              FootballProspectiveEvidenceLedger,
+              FrozenProspectiveDecision,
+          )
+          path=Path("evidence/clv/football/over_2_5/prospective_clv_ledger.jsonl")
+          ledger=FootballProspectiveEvidenceLedger(path)
+          closed=set()
+          decisions=[]
+          for event in ledger.load_events():
+              if event.event_type=="CLOSING_ODDS_RECORDED":
+                  closed.add(ClosingOddsReference.from_mapping(event.payload).decision_id)
+              elif event.event_type=="DECISION_FROZEN":
+                  decisions.append(FrozenProspectiveDecision.from_mapping(event.payload))
+          now=datetime.now(timezone.utc)
+          remaining=0
+          next_kickoff=None
+          for d in decisions:
+              if d.decision_id in closed:
+                  continue
+              kickoff=datetime.fromisoformat(d.fixture_kickoff_utc.replace("Z","+00:00")).astimezone(timezone.utc)
+              if kickoff <= now:
+                  continue
+              remaining += 1
+              if next_kickoff is None or kickoff < next_kickoff:
+                  next_kickoff=kickoff
+          print(f"REMAINING_FUTURE={remaining}")
+          print(f"NEXT_KICKOFF_UTC={next_kickoff.isoformat() if next_kickoff else 'NONE'}")
+          PY
+          }
+
+          echo "CLV_CONTINUOUS_WATCHER_STARTED_UTC=$(date -u --iso-8601=seconds)"
+          while [ "$(date -u +%s)" -lt "$deadline" ]; do
+            cycle=$((cycle + 1))
+            echo "CLV_WATCH_CYCLE=$cycle UTC=$(date -u --iso-8601=seconds)"
+
+            echo "CLV_WATCHER_OPERATIONAL_REFRESH_BEGIN cycle=$cycle"
+            git fetch origin repair/cor09-world-pipeline
+            if ! git rebase --autostash origin/repair/cor09-world-pipeline; then
+              git rebase --abort || true
+              echo "CLV_WATCHER_OPERATIONAL_REFRESH=FAIL"
+              exit 1
+            fi
+            echo "CLV_WATCHER_OPERATIONAL_REFRESH=PASS"
+
+            PYTHONPATH=. python -m tools.football_clv_tracking_cycle
+            if [ -f evidence/clv/football/over_2_5/closing_attempts.jsonl ]; then
+              rows="$(grep -cve '^[[:space:]]*$' evidence/clv/football/over_2_5/closing_attempts.jsonl || true)"
+            else
+              rows=0
+            fi
+            echo "CLV_ATTEMPT_LOG_ROWS=$rows"
+            persist_if_changed
+
+            status="$(remaining_future)"
+            echo "$status"
+            remaining="$(printf '%s\n' "$status" | sed -n 's/^REMAINING_FUTURE=//p')"
+            if [ "$remaining" -eq 0 ]; then
+              echo "CLV_CONTINUOUS_WATCHER_NO_FUTURE_DECISIONS"
+              break
+            fi
+
+            sleep "$POLL_SECONDS"
+          done
+
+          echo "CLV_CONTINUOUS_WATCHER_FINISHED_UTC=$(date -u --iso-8601=seconds)"
+
+      - name: Final CLV state gate
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          p=Path("evidence/clv/football/over_2_5/state.json")
+          j=json.loads(p.read_text(encoding="utf-8"))
+          assert j["protections"]["real_money"]=="BLOCKED"
+          assert j["protections"]["automatic_wagering"] is False
+          assert j["protections"]["odds_used_to_generate_probability"] is False
+          assert j["closing_freshness_policy"]["max_provider_quote_age_seconds"]==120
+          if j["closing_odds_count"] < 300:
+              assert j["metrics_opened"] is False
+              assert j["metrics"] is None
+          print("CLV_CONTINUOUS_WATCHER_FINAL_GATE: PASS")
+          print("decision_count=",j["decision_count"])
+          print("closing_odds_count=",j["closing_odds_count"])
+          print("missed_after_kickoff=",j["closing_cycle"]["missed_after_kickoff"])
+          print("remaining_to_open_metrics=",j["remaining_to_open_metrics"])
+          print("real_money=",j["protections"]["real_money"])
+          PY
+
+      - name: Renew watcher if future decisions remain
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          remaining="$(PYTHONPATH=. python - <<'PY'
+          from datetime import datetime, timezone
+          from pathlib import Path
+          from app.research.football.prospective_ledger import (
+              ClosingOddsReference,
+              FootballProspectiveEvidenceLedger,
+              FrozenProspectiveDecision,
+          )
+          path=Path("evidence/clv/football/over_2_5/prospective_clv_ledger.jsonl")
+          ledger=FootballProspectiveEvidenceLedger(path)
+          closed=set()
+          decisions=[]
+          for event in ledger.load_events():
+              if event.event_type=="CLOSING_ODDS_RECORDED":
+                  closed.add(ClosingOddsReference.from_mapping(event.payload).decision_id)
+              elif event.event_type=="DECISION_FROZEN":
+                  decisions.append(FrozenProspectiveDecision.from_mapping(event.payload))
+          now=datetime.now(timezone.utc)
+          count=0
+          for d in decisions:
+              if d.decision_id in closed:
+                  continue
+              kickoff=datetime.fromisoformat(d.fixture_kickoff_utc.replace("Z","+00:00")).astimezone(timezone.utc)
+              if kickoff > now:
+                  count += 1
+          print(count)
+          PY
+          )"
+          echo "CLV_FUTURE_DECISIONS_AFTER_WATCH=$remaining"
+          if [ "$remaining" -gt 0 ]; then
+            curl --fail-with-body --silent --show-error \
+              -X POST \
+              -H "Accept: application/vnd.github+json" \
+              -H "Authorization: Bearer $GH_TOKEN" \
+              -H "X-GitHub-Api-Version: 2022-11-28" \
+              "https://api.github.com/repos/MatrixLabSports/MATRIX-LAB/actions/workflows/football-clv-continuous-watcher.yml/dispatches" \
+              -d '{"ref":"main"}'
+            echo "CLV_SUCCESSOR_DISPATCHED"
+          else
+            echo "CLV_SUCCESSOR_NOT_NEEDED"
+          fi

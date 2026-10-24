@@ -1,0 +1,120 @@
+name: API-Football shadow FINAL-only settlement
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - repair/cor09-world-pipeline
+    paths:
+      - .github/workflows/api-football-shadow-settlement.yml
+      - tools/api_football_shadow_settlement.py
+      - tests/test_api_football_shadow_settlement.py
+
+permissions:
+  contents: write
+
+concurrency:
+  group: api-football-shadow-final-only-settlement
+  cancel-in-progress: false
+
+jobs:
+  settlement:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout operational branch
+        uses: actions/checkout@v4
+        with:
+          ref: repair/cor09-world-pipeline
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install targeted dependencies
+        run: python -m pip install pytest requests
+
+      - name: Run FINAL-only settlement tests
+        run: python -m pytest -q tests/test_api_football_shadow_settlement.py
+
+      - name: Build queue and settle standard FINAL results only
+        env:
+          API_FOOTBALL_KEY: ${{ secrets.API_FOOTBALL_KEY }}
+        run: python -m tools.api_football_shadow_settlement
+
+      - name: Enforce settlement invariants
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          root = Path("evidence/api_football/shadow_settlement")
+          queue = json.loads((root / "queue.json").read_text(encoding="utf-8"))
+          sync = json.loads((root / "sync_last.json").read_text(encoding="utf-8"))
+
+          assert queue["model_role"] == "RESEARCH_SHADOW_BASELINE"
+          assert queue["model_status"] == "EXPERIMENTAL_NOT_PROMOTED"
+          assert queue["p_matrix_status"] == "NOT_GENERATED"
+          assert queue["final_lookup_delay_minutes"] == 120
+          assert queue["metrics_opened"] is False
+          assert queue["outcomes_used_for_metrics"] == 0
+          assert queue["automatic_wagering"] is False
+          assert queue["real_money"] == "BLOCKED"
+
+          assert sync["status"] == "PASS"
+          assert sync["ledger_hash_chain_verified"] is True
+          assert sync["outcomes_used_for_metrics"] == 0
+          assert sync["metrics_opened"] is False
+          assert sync["p_matrix_status"] == "NOT_GENERATED"
+          assert sync["model_status"] == "EXPERIMENTAL_NOT_PROMOTED"
+          assert sync["automatic_wagering"] is False
+          assert sync["real_money"] == "BLOCKED"
+
+          allowed = {
+              "SETTLED",
+              "WAITING_KICKOFF",
+              "WAITING_FINAL_WINDOW",
+              "READY_RESULT_LOOKUP",
+          }
+          assert all(item["status"] in allowed for item in queue["items"])
+
+          ledger_path = root / "ledger.jsonl"
+          if ledger_path.exists():
+              for raw in ledger_path.read_text(encoding="utf-8").splitlines():
+                  if not raw.strip():
+                      continue
+                  row = json.loads(raw)
+                  assert row["terminal_status"] == "FT"
+                  assert row["metrics_opened"] is False
+                  assert row["used_for_metrics"] is False
+                  assert row["p_matrix_status"] == "NOT_GENERATED"
+                  assert row["real_money"] == "BLOCKED"
+
+          print("API_FOOTBALL_SHADOW_FINAL_ONLY_SETTLEMENT_GATE: PASS")
+          print("fixture_count=", queue["fixture_count"])
+          print("queue_counts=", queue["counts"])
+          print("new_settlement_count=", sync["new_settlement_count"])
+          print("network_calls=", sync["network_calls"])
+          print("ledger_records=", sync["ledger_records"])
+          print("outcomes_used_for_metrics=", sync["outcomes_used_for_metrics"])
+          print("real_money=", sync["real_money"])
+          PY
+
+      - name: Persist settlement evidence
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "matrix-api-football-settlement"
+          git config user.email "matrix-api-football-settlement@users.noreply.github.com"
+          git add evidence/api_football/shadow_settlement
+          if git diff --cached --quiet; then
+            echo "NO_SHADOW_SETTLEMENT_EVIDENCE_CHANGE"
+            exit 0
+          fi
+          git commit -m "evidence(api-football): persist FINAL-only shadow settlement state"
+          git pull --rebase origin repair/cor09-world-pipeline
+          git push origin HEAD:repair/cor09-world-pipeline

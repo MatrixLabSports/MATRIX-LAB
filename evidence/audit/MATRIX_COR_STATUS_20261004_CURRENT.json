@@ -1,0 +1,97 @@
+{
+  "schema": "MATRIX_COR_STATUS_CURRENT_V1",
+  "as_of_bogota_date": "2026-10-04",
+  "authority_branch": "repair/cor09-world-pipeline",
+  "authority_head_before_write": "5601f9c83896929de77256b3144d274352af7f06",
+  "resolved_count": 10,
+  "total_cor": 12,
+  "open_count": 2,
+  "corrections": {
+    "COR01": {
+      "status": "RESOLVED",
+      "basis": "evidence/cor01/COR01_CLOSURE_EVIDENCE.json"
+    },
+    "COR02": {
+      "status": "IN_PROGRESS",
+      "basis": "evidence/cor0203/runtime/MATRIX_COR0203_PHYSICAL_UNIQUENESS_LAST.json",
+      "blocker": "Official stability metrics remain sealed until 600 unique observations."
+    },
+    "COR03": {
+      "status": "IN_PROGRESS",
+      "basis": "evidence/cor0203/runtime/MATRIX_COR0203_PHYSICAL_UNIQUENESS_LAST.json",
+      "blocker": "Official BSS/performance metrics remain sealed until 600 unique observations."
+    },
+    "COR04": {
+      "status": "RESOLVED",
+      "basis": "evidence/cor04/COR04_CLOSURE_EVIDENCE.json"
+    },
+    "COR05": {
+      "status": "RESOLVED",
+      "basis": "evidence/cor05/COR05_CLOSURE_EVIDENCE.json"
+    },
+    "COR06": {
+      "status": "RESOLVED",
+      "basis": "evidence/cor06/COR06_CLOSURE_EVIDENCE.json"
+    },
+    "COR07": {
+      "status": "RESOLVED",
+      "basis": "evidence/cor07/COR07_CLOSURE_EVIDENCE.json",
+      "caveat": "Resolved by formal pause; no governed executable football engine implied."
+    },
+    "COR08": {
+      "status": "RESOLVED",
+      "basis": "evidence/cor08/COR08_CLOSURE_EVIDENCE.json"
+    },
+    "COR09": {
+      "status": "RESOLVED",
+      "basis": "evidence/cor09/COR09_CLOSURE_EVIDENCE.json",
+      "caveat": "Literal one-cycle COR closure only; separate GO/NO-GO 3-cycle freeze-yield gate remains unsatisfied."
+    },
+    "COR10": {
+      "status": "RESOLVED",
+      "basis": "evidence/cor10/MATRIX_COR10_ADJUDICATION.json",
+      "verified_future_executions": 1
+    },
+    "COR11": {
+      "status": "RESOLVED",
+      "basis": "evidence/cor11/MATRIX_COR11_CADENCE_LEDGER_20261004.json",
+      "cadence_days_observed": 14,
+      "cadence_days_required": 14
+    },
+    "COR12": {
+      "status": "RESOLVED",
+      "basis": "evidence/cor12/COR12_CLOSURE_EVIDENCE.json",
+      "caveat": "Governance defect closure does not equal GO or real-money authorization."
+    }
+  },
+  "cor0203": {
+    "unique_calibration_observations": 102,
+    "physical_frozen_rows": 177,
+    "duplicate_observations_quarantined": 75,
+    "settled_unique_canonical_events": 70,
+    "unsettled_unique_canonical_events": 32,
+    "remaining_to_200": 98,
+    "remaining_to_600": 498,
+    "milestone_100": "REACHED",
+    "metrics_opened": false,
+    "metrics_policy": "SEALED_UNTIL_600"
+  },
+  "go_no_go_snapshot": {
+    "criteria_total": 8,
+    "physically_supported_yes": 5,
+    "yes": [
+      "historical_age_validity",
+      "clean_single_use_holdout",
+      "at_least_one_verified_live_source_per_sport",
+      "throughput_floor",
+      "two_week_cadence"
+    ],
+    "pending": [
+      "BSS >=3% sustained",
+      "temporal_and_band_stability",
+      "stable_freeze_yield_over_at_least_3_cycles"
+    ],
+    "note": "COR09 is closed under its literal one-cycle acceptance criterion, but its separate 3-cycle GO/NO-GO criterion remains pending."
+  },
+  "real_money": "BLOCKED"
+}

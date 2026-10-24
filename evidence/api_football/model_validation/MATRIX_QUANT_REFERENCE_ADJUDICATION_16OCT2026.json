@@ -1,0 +1,71 @@
+{
+  "adjudication": "KEEP_FROZEN_PRODUCTION_ENGINE_NO_DIXON_COLES_OR_TIME_DECAY_PROMOTION",
+  "artifact_sha256": "a0fd3193d91fbba868d415ce3aca65ebb06da63631720954a42d5be527df638d",
+  "benter_second_stage_market_fusion": {
+    "production_enabled": false,
+    "reason": "REQUIRES_SEPARATE_PREREGISTERED_OOS_TEST_AND_MUST_NOT_REPLACE_INDEPENDENT_P_MATRIX",
+    "status": "RESEARCH_ONLY_NOT_ENABLED"
+  },
+  "facts": {
+    "dixon_coles_fixed_lambda_over25_changes_probability": false,
+    "dixon_coles_full_beats_frozen_both_metrics": false,
+    "dixon_coles_full_over25_beats_frozen_both_metrics": false,
+    "time_decay_beats_frozen_both_metrics": false
+  },
+  "governance": {
+    "automatic_wagering": false,
+    "odds_used_to_generate_initial_probability": false,
+    "p_matrix_modified": false,
+    "production_engine_modified": false,
+    "real_money": "BLOCKED",
+    "research_only": true,
+    "telegram_modified": false
+  },
+  "next_research_step": "PREREGISTER_BENTER_STYLE_SECOND_STAGE_FUSION_CHALLENGER_ONLY_AFTER_SUFFICIENT_PHYSICAL_MARKET_AND_OUTCOME_SAMPLE",
+  "schema": "MATRIX_QUANT_REFERENCE_ADJUDICATION_V1",
+  "source_artifacts": {
+    "dc_full": {
+      "path": "evidence/api_football/model_validation/MATRIX_DIXON_COLES_FULL_CHALLENGER_V1.json",
+      "sha256": "5292e2e23477df5f8970a3c47981e403012efde76f28cadb5d8e6be3c9364e31"
+    },
+    "dc_full_over25": {
+      "path": "evidence/api_football/model_validation/MATRIX_DIXON_COLES_FULL_OVER25_CHALLENGER_V1.json",
+      "sha256": "6d361e791a33bb0c1adbd7316e8767d5c0f3b3e3cf1dd0b24ec8aa4af08b40e0"
+    },
+    "dc_relevance": {
+      "path": "evidence/api_football/model_validation/MATRIX_DIXON_COLES_OVER25_RELEVANCE_AUDIT_V1.json",
+      "sha256": "30921168db9da8801beaa3e3c420fc9dd636f876578b4c2f137771a0d3bd9777"
+    },
+    "time_decay": {
+      "path": "evidence/api_football/model_validation/MATRIX_OVER25_TIME_DECAY_CHALLENGER_V1.json",
+      "sha256": "dfd77dfe338404bbcdbbac2aeb7df0416bebcdec7681566489f71c745d2ae453"
+    }
+  },
+  "verified_findings": {
+    "dixon_coles_full": {
+      "adjudication": "NO_PROMOTION_DIXON_COLES_NOT_SUPERIOR_ON_HOLDOUT",
+      "delta_brier_dc_minus_frozen": 0.014663290449675431,
+      "delta_log_loss_dc_minus_frozen": 0.03320297885292134,
+      "holdout_n": 490
+    },
+    "dixon_coles_full_over25": {
+      "adjudication": "NO_PROMOTION_DIXON_COLES_NOT_SUPERIOR_ON_HOLDOUT",
+      "delta_brier_dc_minus_frozen": 0.01642551872535608,
+      "delta_log_loss_dc_minus_frozen": 0.048563670585096586,
+      "holdout_n": 946
+    },
+    "dixon_coles_relevance": {
+      "finding": "LOW_SCORE_TAU_WITH_FIXED_LAMBDAS_DOES_NOT_CHANGE_OVER25",
+      "max_abs_over25_delta": 1.1102230246251565e-16,
+      "rows": 2379
+    },
+    "time_decay": {
+      "adjudication": "NO_PROMOTION_TIME_DECAY_NOT_SUPERIOR_ON_HOLDOUT",
+      "delta_brier_selected_minus_frozen": 0.0001328678813884432,
+      "delta_log_loss_selected_minus_frozen": 0.00038189391112986026,
+      "holdout_n": 714,
+      "rows": 2379,
+      "selected_half_life_days": 180
+    }
+  }
+}

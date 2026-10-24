@@ -1,0 +1,78 @@
+{
+  "schema": "MATRIX_ACCUMULATION_CYCLE_CHECKPOINT_19OCT2026_V1",
+  "verified_at_utc": "2026-10-19T06:34:14Z",
+  "branch": "repair/cor09-world-pipeline",
+  "football_over25": {
+    "settlement_sync_commit": "3f9f919b9b49070047fe51b13d28e3a3aada490b",
+    "audit_commit": "d9a4d037c376b38b95e64a68c69365b479a463d5",
+    "observation_count": 3352,
+    "prior_count": 3338,
+    "net_increment": 14,
+    "brier_matrix": 0.2392095732868446,
+    "brier_poisson": 0.24210918330694334,
+    "logloss_matrix": 0.6716306124272029,
+    "logloss_poisson": 0.6789693745631664,
+    "ece_matrix": 0.032363332474309045,
+    "verdict": "CHALLENGER_SUPERIOR_ON_FULL_CURRENT_SAMPLE_BY_PAIRED_95CI",
+    "remaining_to_4000": 648,
+    "remaining_to_5000": 1648
+  },
+  "tennis_hard": {
+    "trigger_commit": "c6057e18e4d1ef934feca0bf45b7515271fb1a64",
+    "unique_observations": 282,
+    "prior_unique": 282,
+    "net_increment": 0,
+    "physical_frozen_rows": 453,
+    "duplicates_quarantined": 171,
+    "remaining_to_600": 318,
+    "status": "NO_NEW_GOVERNED_UNIQUE_FREEZES_CURRENT_CYCLE"
+  },
+  "tennis_clay": {
+    "trigger_commit": "a274b87bd9070fe1b51f12f841e41aa6c5494a84",
+    "evidence_commit": "8d4b077329ff95a0cdda826c47d8467ac4a43eba",
+    "observations": 3,
+    "net_increment": 0,
+    "admitted_events": 0,
+    "blocked_events": 31,
+    "remaining_to_600": 597,
+    "status": "PIT_OR_IDENTITY_BLOCKERS_FAIL_CLOSED"
+  },
+  "tennis_live": {
+    "trigger_commit": "776176c23d0ad6e32eaf552aa73a47522e2b187b",
+    "settlement_commit": "38f4ab7e24fb8d27e6fdf58596efd72348fe1b9d",
+    "cumulative_reconciliation_commit": "63dc40b38955913001cec893bbd7711c3d73ceaa",
+    "global_unique_match_count": 232,
+    "itf_women_hard_settled_quality_valid_unique_matches": 55,
+    "itf_women_hard_remaining_to_100": 45,
+    "gate_50": "OPEN",
+    "net_increment_itf_women_hard": 0
+  },
+  "clv": {
+    "trigger_commit": "a05040307d973fb58ab3cf5a48d54688a5ccccee",
+    "evidence_commit": "8f548b0430bffeb1d8e98248f47ecd9f4fa8131f",
+    "decision_count": 89,
+    "closing_odds_count": 10,
+    "valid_strict_fresh_captures": 10,
+    "remaining_to_subgate_30": 20,
+    "remaining_to_300": 290,
+    "quote_age_max_seconds": 119.036,
+    "all_within_120": true,
+    "all_prematch": true,
+    "metrics_opened": false,
+    "adjudication": "ACCUMULATING_TO_SUBGATE_30_WITHOUT_TUNING"
+  },
+  "governance": {
+    "source_priority": [
+      "SofaScore",
+      "Flashscore",
+      "APIs"
+    ],
+    "missing_not_zero": true,
+    "silent_imputation": false,
+    "historical_backfill": false,
+    "parameter_tuning": false,
+    "automatic_wagering": false,
+    "real_money": "BLOCKED"
+  },
+  "adjudication": "CYCLE_EXECUTED_AND_PHYSICALLY_VERIFIED_NO_FORCED_VOLUME"
+}

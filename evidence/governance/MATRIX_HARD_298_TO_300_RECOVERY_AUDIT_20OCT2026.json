@@ -1,0 +1,111 @@
+{
+  "schema": "MATRIX_HARD_298_TO_300_RECOVERY_AUDIT_V1",
+  "generated_at_bogota": "2026-10-20T23:05:00-05:00",
+  "target_date_bogota": "2026-10-21",
+  "hard_unique_before": 298,
+  "target_checkpoint": 300,
+  "required_new_unique": 2,
+  "world_domain_candidates": 7,
+  "already_frozen_unique": [
+    {
+      "match_id": "390173",
+      "players": [
+        "Zhizhen Zhang",
+        "Yi Zhou"
+      ]
+    },
+    {
+      "match_id": "426300",
+      "players": [
+        "Daniel Milavsky",
+        "Darwin Blanch"
+      ]
+    },
+    {
+      "match_id": "373780",
+      "players": [
+        "Jenson Brooksby",
+        "Timo Legout"
+      ]
+    }
+  ],
+  "blocked_candidates": [
+    {
+      "match_id": "395651",
+      "players": [
+        "Khumoun Sultanov",
+        "Andre Ilagan"
+      ],
+      "blockers": [
+        "IDENTITY_CROSSWALK_MISSING:rapidapi-tennis:player:28774",
+        "SEALED_STATIC4_PLAYER_NOT_FOUND:Khumoun Sultanov"
+      ],
+      "recovery_assessment": "NOT_RECOVERABLE_WITHOUT_PRECUT_HISTORY",
+      "evidence": "R706 target history: Khumoun Sultanov fully_history_ready=false; all required components false."
+    },
+    {
+      "match_id": "392922",
+      "players": [
+        "Chak Lam Coleman Wong",
+        "Kasidit Samrej"
+      ],
+      "blockers": [
+        "IDENTITY_CROSSWALK_MISSING:rapidapi-tennis:player:71166",
+        "SEALED_STATIC4_PLAYER_NOT_FOUND:Chak Lam Coleman Wong"
+      ],
+      "recovery_assessment": "NOT_RECOVERABLE_WITHOUT_PRECUT_MODEL_HISTORY",
+      "evidence": "R706 target history: Chak Lam Coleman Wong fully_history_ready=false; stats-rich probe found pre-cut matches but required service stats are absent."
+    },
+    {
+      "match_id": "434837",
+      "players": [
+        "Patrick Maloney",
+        "Kenta Miyoshi"
+      ],
+      "blockers": [
+        "RANKING_CUT_MISSING_PLAYER1"
+      ],
+      "recovery_assessment": "NOT_RECOVERABLE_AT_EXACT_CUT_WITH_CURRENT_EVIDENCE",
+      "evidence": {
+        "patrick_history_ready": true,
+        "patrick_hard_n": 21,
+        "exact_rank_history_recovery": "EXACT_RANKING_CUT_NOT_FOUND",
+        "profile_alias_recovery": "RANKING_PROFILE_ALIAS_NOT_FOUND",
+        "ranking_snapshot_rows_scanned": 900,
+        "current_rank_used": false,
+        "post_cut_competitive_data_used": false
+      }
+    },
+    {
+      "match_id": "423483",
+      "players": [
+        "Mees Rottgering",
+        "Cosme Rolland De Ravel"
+      ],
+      "blockers": [
+        "ELO_SURFACE_MISSING:Cosme Rolland De Ravel",
+        "GLICKO_SURFACE_MISSING:Cosme Rolland De Ravel",
+        "SURFACE_HISTORY_MISSING:Cosme Rolland De Ravel"
+      ],
+      "recovery_assessment": "NOT_RECOVERABLE_FOR_HARD_WITH_CURRENT_PRECUT_STATE",
+      "evidence": "Identity authority has 6 pre-cut rows for Cosme Rolland De Ravel, but no sealed Hard surface state required by the model."
+    }
+  ],
+  "conclusion": {
+    "physically_proven_new_unique_now": 0,
+    "hard_unique_after": 298,
+    "checkpoint_300_status": "PENDING",
+    "remaining_to_300": 2,
+    "next_valid_source": "2026-10-22 future browser-first reconciled events",
+    "force_or_backfill_forbidden": true
+  },
+  "protections": {
+    "metrics_opened": false,
+    "outcomes_read_for_metrics": 0,
+    "historical_backfill": false,
+    "silent_imputation": false,
+    "missing_not_zero": true,
+    "odds_to_probability": false,
+    "real_money": "BLOCKED"
+  }
+}

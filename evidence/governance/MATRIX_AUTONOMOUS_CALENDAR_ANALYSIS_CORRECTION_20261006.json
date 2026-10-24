@@ -1,0 +1,48 @@
+{
+  "schema": "MATRIX_AUTONOMOUS_CALENDAR_ANALYSIS_CORRECTION_V1",
+  "date_bogota": "2026-10-06",
+  "status": "CORRECTED_FAIL_CLOSED",
+  "problem": {
+    "summary": "Daily world-calendar analysis was not being completed autonomously before paid-API processing.",
+    "observed_failures": [
+      "Partial accessibility-tree counts were surfaced as if they could represent daily totals.",
+      "The user had to manually identify larger Flashscore/SofaScore calendars.",
+      "Paid API inventories could proceed before an exact browser-calendar baseline was autonomously closed."
+    ],
+    "prohibited_behavior": "USER_REQUIRED_TO_MANUALLY_COUNT_OR_ENUMERATE_WORLD_CALENDAR"
+  },
+  "root_cause": [
+    "Browser accessibility trees are lazy/partial.",
+    "Previous gates checked presence/readability but did not require exact autonomous browser totals.",
+    "Source-count report schema did not enforce browser-baseline timestamp ordering before paid APIs."
+  ],
+  "corrections": {
+    "strict_gate": "tools/matrix_daily_calendar_baseline_gate.py",
+    "regression_test": "tests/test_matrix_daily_calendar_baseline_gate.py",
+    "policy": "docs/providers/MATRIX_AUXILIARY_PIT_FEATURE_SOURCES_V1.json",
+    "tennis_workflow": ".github/workflows/tennis-world-rolling-horizon.yml",
+    "football_workflow": ".github/workflows/api-football-future-fixtures.yml",
+    "current_day_report": "evidence/daily_source_counts/2026-10-06/MATRIX_WORLD_CALENDAR_SOURCE_COUNTS.json"
+  },
+  "enforcement": {
+    "exact_numeric_sofascore_flashscore_required_for_both_sports": true,
+    "automated_browser_provenance_required": true,
+    "manual_user_count_not_accepted_as_autonomous_baseline": true,
+    "browser_baseline_must_precede_paid_api_capture": true,
+    "connector_unavailable_behavior": "BLOCK_AND_AUTOMATIC_RETRY",
+    "partial_or_pending_behavior": "BLOCK",
+    "invented_counts_prohibited": true
+  },
+  "current_day": {
+    "calendar_baseline_complete": false,
+    "reason": "SOFASCORE_EXACT_FOOTBALL_TOTAL_AND_AUTOMATED_EXACT_BROWSER_COUNTS_NOT_YET_CAPTURED",
+    "user_action_required": false,
+    "downstream_paid_api_as_world_truth_allowed": false
+  },
+  "protections": {
+    "metrics_opened": false,
+    "tuning": false,
+    "odds_to_probability": false,
+    "real_money": "BLOCKED"
+  }
+}

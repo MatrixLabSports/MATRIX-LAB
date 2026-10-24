@@ -1,0 +1,95 @@
+{
+  "schema": "MATRIX_CI_AND_COR0203_DEDUPE_ADJUDICATION_V1",
+  "generated_date": "2026-10-04",
+  "branch": "repair/cor09-world-pipeline",
+  "repository_head_before_adjudication": "16494932190df75736dc491c975e368991a91377",
+  "ci_resolution": {
+    "prior_action_required_runs": [
+      {
+        "run_id": 37203624176,
+        "head_sha": "fdcc048d189040dd32714b9bec703d81fc089b43",
+        "actor": "github-actions[bot]",
+        "jobs": 0,
+        "conclusion": "action_required"
+      },
+      {
+        "run_id": 37209676576,
+        "head_sha": "cb58756f655708124a9cab40ba99b3782248199b",
+        "actor": "github-actions[bot]",
+        "jobs": 0,
+        "conclusion": "action_required"
+      }
+    ],
+    "owner_trigger_commit": "2324b1baa463594288d48106388b335fc843ac8e",
+    "first_green_run": {
+      "run_id": 37210094349,
+      "job_id": 111459348170,
+      "pytest_passed": 3381,
+      "pytest_failed": 0,
+      "conclusion": "success"
+    },
+    "dedupe_code_green_run": {
+      "run_id": 37210497853,
+      "job_id": 111460526050,
+      "pytest_passed": 3382,
+      "pytest_failed": 0,
+      "conclusion": "success"
+    },
+    "quality_gate": "PASS"
+  },
+  "cor0203_cross_provider_dedupe": {
+    "code_fix_commit": "bb2b28b09363de3927e8086b3a509ffb97e576f9",
+    "test_commit": "59057f446f9cbf7612c0b2f7b5617f9bd06b716c",
+    "normalization_fix_commit": "cc47b4a715a01c23b893a4492509860e449dd132",
+    "governed_batch_run_id": 37210497773,
+    "governed_batch_run_number": 140,
+    "governed_batch_conclusion": "success",
+    "regenerated_state": {
+      "physical_frozen_rows": 165,
+      "duplicate_observations_quarantined": 69,
+      "unique_calibration_observations": 96,
+      "remaining_to_100": 4,
+      "remaining_to_200": 104,
+      "remaining_to_600": 504,
+      "metrics": "SEALED_UNTIL_600"
+    },
+    "cross_provider_duplicates": [
+      {
+        "players": [
+          "Alibek Kachmazov",
+          "Grigoriy Lomakin"
+        ],
+        "canonical_event_id": "COR0203-API-TENNIS-12168107",
+        "duplicate_event_id": "COR0203-RAPIDAPI-TENNIS-3168-166c0a3ab6f1",
+        "quarantine_reason": "DUPLICATE_PHYSICAL_MATCH_CROSS_PROVIDER"
+      },
+      {
+        "players": [
+          "Maxim Zhukov",
+          "Ryan Seggerman"
+        ],
+        "canonical_event_id": "COR0203-RAPIDAPI-TENNIS-3129-fcee2aeb74a2",
+        "duplicate_event_id": "COR0203-API-TENNIS-12168175",
+        "quarantine_reason": "DUPLICATE_PHYSICAL_MATCH_CROSS_PROVIDER"
+      }
+    ],
+    "no_name_only_join": true,
+    "matching_gate": [
+      "canonical player pair",
+      "exact event_start_utc",
+      "normalized competition",
+      "different providers",
+      "compatible round or one unknown"
+    ],
+    "outcomes_read": 0,
+    "metrics_opened": false
+  },
+  "football_parallel_state": {
+    "prospective_calibration_rows": 641,
+    "settlement_rows": 641,
+    "ledger_hash_chain_verified": true
+  },
+  "real_money": "BLOCKED",
+  "automatic_wagering": false,
+  "adjudication": "CI_RESOLVED_AND_CROSS_PROVIDER_DEDUPE_PHYSICALLY_CORRECTED"
+}

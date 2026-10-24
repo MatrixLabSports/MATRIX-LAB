@@ -1,0 +1,180 @@
+name: MATRIX Multi-Market Canonical Supervisor
+
+on:
+  workflow_run:
+    workflows:
+      - "MATRIX Football Daily Governed Pipeline"
+      - "MATRIX RapidAPI Tennis Paid-Window Harvest"
+    types:
+      - completed
+  schedule:
+    - cron: "17 */2 * * *"
+  workflow_dispatch:
+  push:
+    branches:
+      - repair/cor09-world-pipeline
+      - main
+    paths:
+      - tools/matrix_multi_market_supervisor.py
+      - tools/api_football_market_binding_catalog.py
+      - app/market/matrix_market_portfolio.py
+      - evidence/audit/MATRIX_MARKET_PORTFOLIO_PERMANENT_MANDATE_V1.json
+      - tests/test_matrix_multi_market_supervisor.py
+      - tests/test_market_portfolio_permanent_mandate.py
+      - .github/workflows/matrix-multi-market-supervisor.yml
+
+permissions:
+  contents: write
+
+concurrency:
+  group: matrix-multi-market-canonical-supervisor
+  cancel-in-progress: false
+
+jobs:
+  supervise:
+    if: >-
+      github.event_name != 'workflow_run' ||
+      github.event.workflow_run.conclusion == 'success'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      REAL_MONEY: BLOCKED
+      AUTOMATIC_WAGERING: "false"
+    steps:
+      - name: Checkout operational branch
+        uses: actions/checkout@v4
+        with:
+          ref: repair/cor09-world-pipeline
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install governed dependencies
+        run: python -m pip install requests pytest
+
+      - name: Enforce permanent market contracts
+        run: |
+          PYTHONPATH=. python -m pytest -q \
+            tests/test_market_portfolio_permanent_mandate.py \
+            tests/test_matrix_multi_market_supervisor.py \
+            tests/test_multi_market_supervisor_single_writer.py \
+            tests/test_matrix_blocked_market_activation_plan.py
+
+      - name: Refresh football market catalog while paid window is active
+        env:
+          API_FOOTBALL_KEY: ${{ secrets.API_FOOTBALL_KEY }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          TODAY="$(TZ=America/Bogota date +%F)"
+          CUTOFF="2026-10-28"
+          if [[ "$TODAY" > "$CUTOFF" ]]; then
+            echo "PAID_WINDOW_EXPIRED_USE_LAST_PHYSICAL_CATALOG"
+            exit 0
+          fi
+          if [ -z "${API_FOOTBALL_KEY:-}" ]; then
+            echo "API_FOOTBALL_KEY_MISSING_USE_LAST_PHYSICAL_CATALOG"
+            exit 0
+          fi
+          python -m tools.api_football_market_binding_catalog
+
+      - name: Build canonical 42-lane state
+        shell: bash
+        run: |
+          set -euo pipefail
+          D="$(TZ=America/Bogota date +%F)"
+          CATALOG="evidence/api_football/market_expansion/market_binding_catalog.json"
+          if [ -f "$CATALOG" ]; then
+            python -m tools.matrix_multi_market_supervisor \
+              --football-catalog "$CATALOG" \
+              --target-date-bogota "$D" \
+              --source-run canonical-multi-market-supervisor \
+              --out evidence/market_portfolio/MATRIX_MULTI_MARKET_SUPERVISOR_LAST.json
+          else
+            python -m tools.matrix_multi_market_supervisor \
+              --target-date-bogota "$D" \
+              --source-run canonical-multi-market-supervisor \
+              --out evidence/market_portfolio/MATRIX_MULTI_MARKET_SUPERVISOR_LAST.json
+          fi
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          p=Path("evidence/market_portfolio/MATRIX_MULTI_MARKET_SUPERVISOR_LAST.json")
+          j=json.loads(p.read_text())
+          assert j["status"]=="PASS"
+          assert j["total_required_lanes"]==42
+          assert j["football_required_lanes"]==30
+          assert j["tennis_required_lanes"]==12
+          assert j["invariants"]["every_mandated_lane_emitted_each_cycle"] is True
+          assert j["invariants"]["aces_present"] is True
+          assert j["invariants"]["first_half_goals_present"] is True
+          assert j["invariants"]["second_half_goals_present"] is True
+          assert j["invariants"]["real_money"]=="BLOCKED"
+          print(json.dumps({
+            "status":"PASS",
+            "total_required_lanes":42,
+            "state_counts":j["state_counts"],
+            "catalog_market_names_observed":j["catalog_market_names_observed"],
+            "aces_present":j["invariants"]["aces_present"],
+            "first_half_goals_present":j["invariants"]["first_half_goals_present"],
+            "second_half_goals_present":j["invariants"]["second_half_goals_present"],
+            "real_money":j["invariants"]["real_money"],
+          },sort_keys=True))
+          PY
+
+      - name: Build blocked-lane activation plan
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m tools.matrix_blocked_market_activation_plan
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          j=json.loads(Path("evidence/market_portfolio/MATRIX_BLOCKED_MARKET_ACTIVATION_PLAN_LAST.json").read_text())
+          assert j["status"]=="PASS"
+          assert j["blocked_model_count"]==len(j["rows"])
+          assert 0 <= j["blocked_model_count"] <= 13
+          assert all(x["next_required_action"] for x in j["rows"])
+          assert all(x["must_continue_collecting"] is True for x in j["rows"])
+          assert j["policy"]["price_does_not_generate_p_matrix"] is True
+          assert j["policy"]["real_money"]=="BLOCKED"
+          print(json.dumps({
+            "status":"PASS",
+            "blocked_model_count":j["blocked_model_count"],
+            "immediate_model_lab_candidate_count":j["immediate_model_lab_candidate_count"],
+            "immediate_model_lab_candidates":j["immediate_model_lab_candidates"],
+          },sort_keys=True))
+          PY
+
+      - name: Persist canonical supervisor evidence
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name matrix-market-supervisor
+          git config user.email matrix-market-supervisor@users.noreply.github.com
+          git add evidence/market_portfolio/MATRIX_MULTI_MARKET_SUPERVISOR_LAST.json
+          git add evidence/market_portfolio/MATRIX_BLOCKED_MARKET_ACTIVATION_PLAN_LAST.json
+          if [ -f evidence/api_football/market_expansion/market_binding_catalog.json ]; then
+            git add evidence/api_football/market_expansion/market_binding_catalog.json
+          fi
+          if git diff --cached --quiet; then
+            echo "NO_CANONICAL_SUPERVISOR_CHANGE"
+            exit 0
+          fi
+          git commit -m "evidence(markets): persist canonical 42-lane supervisor"
+          for attempt in 1 2 3 4; do
+            git fetch origin repair/cor09-world-pipeline
+            if ! git rebase origin/repair/cor09-world-pipeline; then
+              git rebase --abort || true
+              sleep $((attempt*2))
+              continue
+            fi
+            if git push origin HEAD:repair/cor09-world-pipeline; then
+              exit 0
+            fi
+            sleep $((attempt*2))
+          done
+          exit 1

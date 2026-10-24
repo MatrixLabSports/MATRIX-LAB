@@ -1,0 +1,42 @@
+{
+  "schema": "MATRIX_FOOTBALL_SUBSCRIPTION_DEADLINE_V1",
+  "timezone": "America/Bogota",
+  "paid_primary": {
+    "provider": "api_football",
+    "paid_through_bogota_date": "2026-10-28",
+    "renewal_authorized": false,
+    "auto_renewal_authorized": false,
+    "spending_after_cutoff_authorized": false,
+    "priority_until_cutoff": "MAXIMIZE_USEFUL_FOOTBALL_EVIDENCE_WITHOUT_DUPLICATE_OR_LOW_VALUE_CALLS",
+    "review_interval_minutes": 15,
+    "review_cadence_policy": "SUPERVISE_EVERY_15_MINUTES_NETWORK_REFRESH_AT_MOST_HOURLY_UNLESS_MANUAL_OR_NEW_DAY",
+    "minimum_network_refresh_minutes": 60
+  },
+  "independent_sources": {
+    "odds_api_net": {
+      "status": "SEPARATE_SOURCE_NOT_COVERED_BY_THIS_EXPIRY_RULE"
+    }
+  },
+  "source_order": [
+    "SofaScore",
+    "Flashscore",
+    "API-Football",
+    "odds-api.net"
+  ],
+  "before_cutoff": {
+    "football": "PRIORITIZE_CALENDAR_HISTORY_SETTLEMENT_AND_SIGNAL_SUPPORT",
+    "harvest": "PERSIST_REUSABLE_FIXTURE_HISTORY_AND_PROVIDER_METADATA_WHERE_ALLOWED",
+    "paid_api_review": "EVERY_15_MINUTES_SUPERVISOR; NETWORK_REFRESH_AT_MOST_HOURLY_UNLESS_MANUAL_OR_NEW_DAY; BROWSER_FIRST_GATE_REQUIRED"
+  },
+  "after_cutoff": {
+    "api_football_use": "BLOCKED_UNLESS_NEW_EXPLICIT_USER_AUTHORIZATION_AFTER_PHYSICAL_PLAN_CHECK",
+    "automatic_paid_fallback": false
+  },
+  "protections": {
+    "no_backfill": true,
+    "missing_not_zero": true,
+    "no_silent_imputation": true,
+    "automatic_wagering": false,
+    "real_money": "BLOCKED"
+  }
+}

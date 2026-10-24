@@ -1,0 +1,121 @@
+name: API-Football experimental shadow freeze
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - repair/cor09-world-pipeline
+    paths:
+      - tools/api_football_freeze_experimental_shadow.py
+      - tests/test_api_football_experimental_shadow_freeze.py
+      - evidence/api_football/canonical_analysis/index.json
+      - evidence/api_football/canonical_analysis/manifest.json
+      - evidence/api_football/canonical_analysis/chunks/**
+      - .github/workflows/api-football-experimental-shadow-freeze.yml
+
+permissions:
+  contents: write
+
+concurrency:
+  group: api-football-experimental-shadow-freeze
+  cancel-in-progress: false
+
+jobs:
+  freeze:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout operational branch
+        uses: actions/checkout@v4
+        with:
+          ref: repair/cor09-world-pipeline
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install targeted test dependency
+        run: python -m pip install pytest
+
+      - name: Run shadow-freeze adversarial tests
+        run: python -m pytest -q tests/test_api_football_experimental_shadow_freeze.py
+
+      - name: Freeze experimental research baseline
+        run: python -m tools.api_football_freeze_experimental_shadow
+
+      - name: Enforce shadow-only governance invariants
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          from datetime import datetime
+          import json
+          from pathlib import Path
+
+          root = Path("evidence/api_football/experimental_shadow")
+          ledger = json.loads((root / "shadow_freeze.json").read_text(encoding="utf-8"))
+          adjudication = json.loads((root / "engine_adjudication.json").read_text(encoding="utf-8"))
+
+          assert ledger["model_name"] == "transparent_poisson_baseline_v1"
+          assert ledger["model_role"] == "RESEARCH_SHADOW_BASELINE"
+          assert ledger["model_status"] == "EXPERIMENTAL_NOT_PROMOTED"
+          assert ledger["p_matrix_status"] == "NOT_GENERATED"
+          assert ledger["protections"]["minimum_markets_per_fixture"] == 3
+          assert ledger["protections"]["odds_used_to_generate_probability"] is False
+          assert ledger["protections"]["outcomes_used_to_generate_probability"] is False
+          assert ledger["protections"]["pinnacle_reference_joined"] is False
+          assert ledger["protections"]["money_decisions_enabled"] is False
+          assert ledger["protections"]["automatic_wagering"] is False
+          assert ledger["protections"]["real_money"] == "BLOCKED"
+
+          freeze = datetime.fromisoformat(ledger["freeze_at_utc"])
+          seen = set()
+          for row in ledger["rows"]:
+              assert row["target_key"] not in seen
+              seen.add(row["target_key"])
+              assert freeze < datetime.fromisoformat(row["kickoff_utc"])
+              assert datetime.fromisoformat(row["analysis_as_of_utc"]) <= freeze
+              assert row["model_status"] == "EXPERIMENTAL_NOT_PROMOTED"
+              assert row["model_role"] == "RESEARCH_SHADOW_BASELINE"
+              assert row["decision"] == "NO_BET"
+              assert row["p_matrix"] is None
+              assert row["governed_model_probability"] is None
+              assert row["odds_used_to_generate_probability"] is False
+              assert row["outcomes_used_to_generate_probability"] is False
+              assert row["market_count"] >= 3
+              assert len(row["markets"]) == row["market_count"]
+
+          assert adjudication["governed_p_matrix_engine_available"] is False
+          assert adjudication["governed_p_matrix_engine"] is None
+          assert adjudication["selected_research_baseline"] == "transparent_poisson_baseline_v1"
+          assert adjudication["selected_status"] == "EXPERIMENTAL_NOT_PROMOTED"
+          assert adjudication["promotion_status"] == "BLOCKED"
+          assert adjudication["shadow_probability_role"] == "RESEARCH_ONLY_NOT_P_MATRIX"
+          assert adjudication["minimum_three_markets_enforced"] is True
+          assert adjudication["automatic_wagering"] is False
+          assert adjudication["real_money"] == "BLOCKED"
+
+          print("API_FOOTBALL_EXPERIMENTAL_SHADOW_FREEZE_GATE: PASS")
+          print("freeze_at_utc=", ledger["freeze_at_utc"])
+          print("frozen_prediction_count=", ledger["frozen_prediction_count"])
+          print("excluded_not_future_count=", ledger["excluded_not_future_count"])
+          print("markets_per_fixture_min=", min((row["market_count"] for row in ledger["rows"]), default=0))
+          print("p_matrix_status=", ledger["p_matrix_status"])
+          print("real_money=", ledger["protections"]["real_money"])
+          PY
+
+      - name: Persist experimental shadow evidence
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "matrix-api-football-shadow"
+          git config user.email "matrix-api-football-shadow@users.noreply.github.com"
+          git add evidence/api_football/experimental_shadow
+          if git diff --cached --quiet; then
+            echo "NO_EXPERIMENTAL_SHADOW_EVIDENCE_CHANGE"
+            exit 0
+          fi
+          git commit -m "evidence(api-football): persist experimental shadow freeze"
+          git pull --rebase origin repair/cor09-world-pipeline
+          git push origin HEAD:repair/cor09-world-pipeline

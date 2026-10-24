@@ -1,0 +1,71 @@
+{
+  "schema": "MATRIX_FOOTBALL_MATCH_TOTAL_SHOTS_PHYSICAL_MARKET_EVIDENCE_V1",
+  "observed_date_bogota": "2026-10-09",
+  "market_lane": "MATCH_TOTAL_SHOTS",
+  "spanish_market_name": "Remates totales del partido",
+  "distinction": {
+    "not_team_total_shots": true,
+    "not_player_shots": true,
+    "exact_line_required": true,
+    "line_can_vary_by_match": true
+  },
+  "user_supplied_screenshot": {
+    "filename": "1002210724.jpg",
+    "sha256": "1926ac29dbc479859fe4ed74080ba2fc4968ccc86a31e47a4cdedd618884b8c0",
+    "dimensions": "1352x1536"
+  },
+  "visible_bet": {
+    "type": "DOUBLE",
+    "stake_cop": 1500,
+    "combined_decimal_odds": 2.12,
+    "potential_return_cop": 3192,
+    "legs": [
+      {
+        "match": "Club Puebla vs Club León",
+        "market": "Remates totales",
+        "selection": "Más de 24.5",
+        "decimal_odds": 1.4,
+        "visible_status": "GREEN_CHECK_VISIBLE"
+      },
+      {
+        "match": "CF Tigres UANL vs Deportivo Toluca FC",
+        "market": "Remates totales",
+        "selection": "Más de 25.5",
+        "decimal_odds": 1.52,
+        "visible_live_total_shots": 27,
+        "visible_live_minute": 62,
+        "visible_score": "3-2",
+        "visible_status": "LIVE_NOT_FINAL_IN_SCREENSHOT"
+      }
+    ]
+  },
+  "governance_proposal": {
+    "create_independent_market_lane": true,
+    "prospective_only_for_model_evaluation": true,
+    "required_features": [
+      "home_total_shots_history_PIT",
+      "away_total_shots_history_PIT",
+      "combined_total_shots_distribution",
+      "opponent_shots_allowed_PIT",
+      "pace_and_possession_context_PIT",
+      "competition_and_home_away_context",
+      "expected_lineups_or_availability_when_relevant",
+      "exact_bookmaker_line",
+      "decimal_odds",
+      "freeze_timestamp_before_kickoff",
+      "FINAL_standard_total_shots"
+    ],
+    "gates": [
+      30,
+      50,
+      100,
+      200
+    ],
+    "no_line_substitution": true,
+    "no_odds_to_probability": true,
+    "missing_not_zero": true,
+    "automatic_wagering": false,
+    "real_money": "BLOCKED"
+  },
+  "note": "This screenshot physically confirms that match-level total shots is an offered bookmaker market with varying exact lines. It should be modeled and calibrated as a separate lane from team-total-shots and player-shots."
+}

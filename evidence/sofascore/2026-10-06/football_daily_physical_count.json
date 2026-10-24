@@ -1,0 +1,27 @@
+{
+  "schema": "MATRIX_SOFASCORE_FOOTBALL_DAILY_PHYSICAL_COUNT_V2",
+  "operational_date_bogota": "2026-10-06",
+  "timezone": "America/Bogota",
+  "source_url": "https://www.sofascore.com/es/football/2026-10-06",
+  "status": "SUPERSEDED_EXACT_TOTAL_NOT_PROVEN",
+  "correction_reason": [
+    "The prior V1 value 105 was an arithmetic/coverage overclaim and must not remain canonical.",
+    "A fresh accessibility-tree extraction exposed 35 competition counters summing to 104, but the UI is virtualized/lazy and this cannot be promoted to the full daily world total.",
+    "Individual match links are only partially materialized in the accessibility tree.",
+    "Therefore exact_daily_total is intentionally null until a full identity-complete snapshot is captured."
+  ],
+  "prior_v1_claimed_exact_total": 105,
+  "current_accessibility_observed_competition_blocks": 35,
+  "current_accessibility_observed_counter_sum": 104,
+  "current_accessibility_counter_sum_role": "PARTIAL_VISIBLE_COVERAGE_FLOOR_NOT_WORLD_TOTAL",
+  "exact_daily_total": null,
+  "exact_daily_total_status": "NOT_PROVEN",
+  "protections": {
+    "invented_counts_prohibited": true,
+    "partial_accessibility_count_never_promoted": true,
+    "feeds_model_automatically": false,
+    "odds_used_to_generate_probability": false,
+    "automatic_wagering": false,
+    "real_money": "BLOCKED"
+  }
+}

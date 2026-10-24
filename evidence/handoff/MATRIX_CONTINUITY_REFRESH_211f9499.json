@@ -1,0 +1,116 @@
+{
+  "schema": "MATRIX_CONTINUITY_REFRESH_RECEIPT_V1",
+  "repository": "MatrixLabSports/MATRIX-LAB",
+  "branch": "repair/cor09-world-pipeline",
+  "handoff_snapshot_head": "9c0e0d886becc951683fd058eda2e70539e2068c",
+  "observed_head_before_receipt": "211f94992c4fdef7b931a0c9f40e03946181e654",
+  "observed_advancement": {
+    "ahead_by": 3,
+    "commits": [
+      {
+        "sha": "8d4b028b1a644abfbdb8110ee653ccb82ebab976",
+        "message": "evidence(live): sync FINAL-only tennis labels"
+      },
+      {
+        "sha": "6786b9d85792d1c38377ad2b4092dc25298ab4ee",
+        "message": "evidence(live): reconcile quality-valid cumulative gates"
+      },
+      {
+        "sha": "211f94992c4fdef7b931a0c9f40e03946181e654",
+        "message": "evidence(api-football): update hourly shadow settlement state"
+      }
+    ]
+  },
+  "authorities": {
+    "over25_state": {
+      "path": "evidence/api_football/calibration_v2/lanes/over_2_5/state.json",
+      "blob": "968844e456f7bad75f9fa1b431b7780fa6079cdb",
+      "freeze_observations": 1635,
+      "settlements": 1331,
+      "pending": 304,
+      "metrics_opened": false,
+      "parameter_tuning_allowed": false,
+      "real_money": "BLOCKED"
+    },
+    "cor0203_uniqueness": {
+      "path": "evidence/cor0203/runtime/MATRIX_COR0203_PHYSICAL_UNIQUENESS_LAST.json",
+      "blob": "ebd89cde30ae8f5dd3a3b8f532d9e5dfa2d49eec",
+      "physical_frozen_rows": 340,
+      "unique_calibration_observations": 199,
+      "remaining_to_200": 1,
+      "remaining_to_600": 401,
+      "duplicates_quarantined": 141,
+      "metrics": "SEALED_UNTIL_600_UNIQUE",
+      "outcomes_read": 0,
+      "real_money": "BLOCKED"
+    },
+    "telegram_ledger": {
+      "path": "evidence/notifications/telegram/MATRIX_TELEGRAM_SIGNAL_LEDGER.json",
+      "blob": "83c78a76e19f3df23495f230ce890eba8b738e1a",
+      "sent_total": 124,
+      "settlements_total": 76,
+      "user_settlements_total": 7,
+      "paper_bankroll_current_cop": 5042250,
+      "paper_realized_profit_cop": 42250,
+      "canonical_5213500_persisted": false
+    },
+    "live_tennis_gate": {
+      "path": "evidence/live_tennis_lab/MATRIX_LIVE_TENNIS_CUMULATIVE_GATE_V1.json",
+      "blob": "c97268f0c37379bd43a2790645d693d6624896de",
+      "global_unique_matches": 90,
+      "settled_quality_valid_matches": 59,
+      "metrics_status": "SEALED",
+      "model_status": "RESEARCH_ONLY"
+    },
+    "live_tennis_quota_guard": {
+      "path": "evidence/live_tennis_lab/2026-10-12/MATRIX_LIVE_TENNIS_QUOTA_GUARD_LAST.json",
+      "blob": "9726d4ade5142a74372033dea56628efeaccfc59",
+      "status": "BLOCKED_BY_RESERVE",
+      "remaining_before_run": 10,
+      "reserve_calls": 20
+    },
+    "football_shadow_settlement": {
+      "queue_blob": "19d9a5d1d4edf81d7b058403d9fa86ad3b401fef",
+      "heartbeat_blob": "4b2cf10af7f3a57195b55974d85f043b03e0453e",
+      "sync_blob": "b2ee3de9b98ea4bea2e5ec6e4cab8dda19ba7c04",
+      "scheduler_run_id": "38213040479",
+      "ledger_records": 79,
+      "new_settlement_count": 0,
+      "blocked_count": 2,
+      "blocked_reasons": [
+        "FINAL_FIXTURE_HOME_TEAM_ID_MISMATCH",
+        "FINAL_FIXTURE_HOME_TEAM_ID_MISMATCH"
+      ],
+      "status": "PASS"
+    },
+    "source_order": {
+      "path": "evidence/governance/MATRIX_SOURCE_ORDER_20261012_PREMATCH.json",
+      "blob": "e7e35a562d7e646e1d721741d6d1578973d2a886",
+      "order": [
+        "SofaScore",
+        "Flashscore",
+        "API-Football"
+      ],
+      "world_complete": false
+    }
+  },
+  "governance": {
+    "real_money": "BLOCKED",
+    "automatic_wagering": false,
+    "paper_shadow_only": true,
+    "final_only": true,
+    "missing_not_zero": true,
+    "no_silent_imputation": true,
+    "odds_to_p_matrix": false,
+    "no_backfill": true,
+    "cor0203_metrics_opened": false,
+    "over25_parameter_tuning_allowed": false
+  },
+  "next_safe_priorities": [
+    "Advance Over2.5 only with new standard FINAL settlements; keep a=0.6,b=0.0,c=0.4 frozen.",
+    "Do not settle 12-OCT Telegram signals before standard FINAL.",
+    "Persist 11-OCT 27/27 reconciliation only after fixture-level provenance is physically available; do not call 5,213,500 COP canonical before then.",
+    "Obtain COR02/03 unique observation #200 prospectively; do not count duplicates.",
+    "Keep API-Tennis failover out of calibration until cross-provider equivalence and identity reconciliation."
+  ]
+}

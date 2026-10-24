@@ -1,0 +1,225 @@
+{
+  "schema": "MATRIX_HARD_302_TO_400_REMEDIATION_V3",
+  "date_bogota": "2026-10-22",
+  "objective": {
+    "current_unique_observations": 304,
+    "target_unique_observations": 400,
+    "remaining_unique_observations": 96,
+    "total_target": 600,
+    "remaining_to_600": 296,
+    "metrics_policy": "SEALED_UNTIL_600"
+  },
+  "physical_state": {
+    "physical_frozen_rows": 475,
+    "duplicate_observations_quarantined": 171,
+    "holdout_integrity": "PASS",
+    "outcomes_read_for_metrics": 0,
+    "metrics_opened": false,
+    "parameter_tuning_allowed": false,
+    "real_money": "BLOCKED"
+  },
+  "diagnosis": {
+    "production_observability_bottleneck": "SOURCE_READY_NO_NEW_ELIGIBLE_EVENTS",
+    "latest_batch_new_freezes": 0,
+    "latest_batch_new_blocked": 427,
+    "latest_batch_waiting_inputs": 0,
+    "recent_blocker_sample": {
+      "already_frozen_or_physical_duplicate": true,
+      "post_start_freeze_forbidden_seen": true,
+      "surface_history_missing_seen": true,
+      "elo_surface_missing_seen": true,
+      "glicko_surface_missing_seen": true
+    },
+    "rapidapi_precut_stats_rich": {
+      "provider_network_calls": 32,
+      "stats_hits": 0,
+      "observed_failure_mode": "INLINE_STAT_REQUIRED_SERVICE_COUNTS_MISSING",
+      "routine_repetition_authorized": false
+    }
+  },
+  "future_inventory": {
+    "date_bogota": "2026-10-23",
+    "rapidapi_registered_matches": 12,
+    "atp_challenger_matches": 6,
+    "challenger_tournaments_observed": [
+      "Fort Worth Challenger",
+      "Guangzhou Challenger",
+      "Lisbon Challenger"
+    ],
+    "surface_assumption_made": false,
+    "automatic_holdout_increment": false,
+    "source_evidence": "evidence/tennis_world_inventory/2026-10-23/world_exact_day_dual_audit.json"
+  },
+  "remediation": {
+    "canonical_routine_workflow": ".github/workflows/tennis-world-rolling-horizon.yml",
+    "routine_schedule": "17 */2 * * *",
+    "horizon_bogota": [
+      "D0",
+      "D1",
+      "D2"
+    ],
+    "paid_structured_source": "rapidapi_tennis",
+    "api_tennis": "RETIRED_NO_NETWORK",
+    "browser_source_order": [
+      "SofaScore",
+      "Flashscore",
+      "RapidAPI Tennis"
+    ],
+    "batch_freeze_manual_only": true,
+    "targeted_d1_manual_only": true,
+    "rolling_horizon_push_trigger_removed": true,
+    "stats_rich_probe_default": "DISABLED_ZERO_HIT_DIAGNOSTIC_ONLY",
+    "stats_rich_probe_manual_opt_in_env": "MATRIX_COR0203_STATS_RICH_PROBE=1",
+    "daily_calendar_baseline_restored": "evidence/daily_source_counts/2026-10-22/MATRIX_WORLD_CALENDAR_SOURCE_COUNTS.json",
+    "retired_api_tennis_baseline_semantics": "RETIRED_NO_NETWORK_WITHOUT_FAKE_COUNT"
+  },
+  "physical_verification": {
+    "prior_failed_run_id": 39768689734,
+    "prior_failed_run_tests_passed": 49,
+    "prior_failed_run_failure_reason": "LEGACY_BROWSER_CROSSCHECK_PATH_MISSING",
+    "legacy_browser_gate_fixed_to_accept_canonical_evidence": true,
+    "canonical_tennis_browser_first_evidence": "evidence/tennis/MATRIX_TENNIS_20261022_BROWSER_FIRST_RECONCILIATION.json",
+    "canonical_football_browser_first_evidence": "evidence/football_world_inventory/2026-10-22/MATRIX_FOOTBALL_BROWSER_FIRST_RECONCILIATION.json",
+    "final_clean_verification_run_id": 39769446977,
+    "final_clean_verification_run_status_at_receipt": "QUEUED",
+    "final_clean_verification_success_claimed": false
+  },
+  "protections": {
+    "missing_not_zero": true,
+    "silent_imputation": false,
+    "backfill_into_holdout": false,
+    "exact_cut_rank_only": true,
+    "certified_rank_override_missing_only": true,
+    "odds_to_probability": false,
+    "outcomes_read_for_metrics": 0,
+    "metrics_opened": false,
+    "automatic_wagering": false,
+    "real_money": "BLOCKED"
+  },
+  "updated_at_bogota": "2026-10-22T12:14:00-05:00",
+  "final_verification": {
+    "rolling_horizon_run": {
+      "run_id": 39769446977,
+      "run_attempt": 2,
+      "conclusion": "success",
+      "proves": [
+        "REGRESSION_SUITE_PASS",
+        "BROWSER_FIRST_PASS",
+        "DAILY_CALENDAR_BASELINE_PASS",
+        "D0_D1_D2_EXECUTED",
+        "HOLDOUT_INTEGRITY_PASS",
+        "METRICS_SEALED"
+      ]
+    },
+    "targeted_d1_run": {
+      "run_id": 39773643580,
+      "conclusion": "success",
+      "unique_before": 302,
+      "unique_after": 303,
+      "unique_increment": 1,
+      "physical_before": 473,
+      "physical_after": 474,
+      "remaining_to_400": 97,
+      "certificate_path": "evidence/governance/MATRIX_COR0203_TARGETED_D1_20261023_CERT.json",
+      "certificate_sha256_git_blob": "8574862f290001873f796636c45dcaef01c17d32"
+    }
+  },
+  "new_unique_freeze": {
+    "match_id": "504120",
+    "event_id": "COR0203-RAPIDAPI-TENNIS-504120-52694148c988",
+    "players": [
+      "Jenson Brooksby",
+      "Patrick Maloney"
+    ],
+    "tournament": "Fort Worth Challenger",
+    "surface": "Hard",
+    "preflight_revision": 1004,
+    "preflight_result": "PASS",
+    "freeze_at_utc": "2026-10-22T11:55:16+00:00",
+    "counted_unique": true,
+    "followup_revision": 1005,
+    "followup_result": "ALL_BLOCKED_ALREADY_FROZEN"
+  },
+  "certified_exact_cut_rank_recovery": {
+    "player": "Patrick Maloney",
+    "rapidapi_player_id": "60951",
+    "ranking_cut": "2026-09-21",
+    "official_atp_rank": 999,
+    "official_atp_points": 19,
+    "official_atp_date_filter": "2026.09.21",
+    "authority": "ATP_OFFICIAL_RANKINGS_BROWSER_EXACT_DATE",
+    "evidence_path": "evidence/cor0203/ranking/MATRIX_COR0203_CERTIFIED_EXACT_CUT_RANK_OVERRIDES.json",
+    "overwrite_existing_provider_rank": false,
+    "join_by_name_only": false,
+    "post_cut_competitive_data_used": false,
+    "outcomes_used": false,
+    "odds_used": false,
+    "override_audit_status": "PASS"
+  },
+  "d1_20261023": {
+    "hard_candidates": [
+      "472142",
+      "530598",
+      "498292",
+      "504120"
+    ],
+    "already_frozen_before_targeted_run": [
+      "472142",
+      "530598",
+      "498292"
+    ],
+    "newly_frozen": [
+      "504120"
+    ],
+    "provider_rejected_after_recovery": [],
+    "candidate_count": 4,
+    "newly_added_unique": 1
+  },
+  "runner_race_fix": {
+    "all_blocked_preflights_immutable": true,
+    "proof_field": "skipped_immutable_all_blocked",
+    "latest_batch_runner_starting_physical_count": 473,
+    "latest_batch_runner_ending_physical_count": 474,
+    "latest_batch_runner_new_freezes": 1,
+    "latest_batch_runner_new_blocked": 1,
+    "waiting_inputs": []
+  },
+  "status": "PASS_ADVANCED_TO_304_D0_D7_ACTIVE",
+  "d0_d7_horizon": {
+    "status": "PASS",
+    "verification_run_id": 39808044668,
+    "production_offsets": [
+      0,
+      1,
+      2
+    ],
+    "shadow_offsets": [
+      3,
+      4,
+      5,
+      6,
+      7
+    ],
+    "shadow_candidate_count": 0,
+    "shadow_network_calls": 10,
+    "shadow_admitted_to_holdout": false,
+    "evidence_path": "evidence/governance/MATRIX_HARD_D0_D7_HORIZON_22OCT2026.json"
+  },
+  "latest_unique_freeze": {
+    "revision": 1006,
+    "match_id": "548335",
+    "event_id": "COR0203-RAPIDAPI-TENNIS-548335-0a2c8363c018",
+    "players": [
+      "Akira Santillan",
+      "Jie Cui"
+    ],
+    "tournament": "Guangzhou Challenger",
+    "surface": "Hard",
+    "freeze_at_utc": "2026-10-22T14:41:56+00:00",
+    "preflight_result": "PASS",
+    "created_by_d0_d7_verification_run": false,
+    "reconciled_by_d0_d7_verification_run": true,
+    "duplicate_guard_revision": 1007,
+    "duplicate_guard_result": "ALL_BLOCKED"
+  }
+}
