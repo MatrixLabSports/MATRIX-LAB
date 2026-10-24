@@ -1895,7 +1895,7 @@ def blocker_recovery_profile(gate_record: dict[str, Any]) -> dict[str, Any]:
             "missing_or_failed_variable": "FINAL_PREMATCH_WINDOW_NOT_OPEN_YET",
             "recoverability": "TEMPORAL_WAIT",
             "sources_already_checked": ["MATRIX_PREMATCH_SCHEDULE"],
-            "sources_available_for_recovery": ["API-Football", "odds-api.net", "Betano", "BetPlay", "Rushbet"],
+            "sources_available_for_recovery": ["API-Football", "odds-api.net", "Betano", "BetPlay", "Betsson", "Bwin", "Codere", "Luckia", "MrYoker", "Rivalo", "Rushbet", "Sportium", "Stake", "Wplay", "YaJuego", "Zamba"],
             "final_disposition": "WAIT_FOR_120_MIN_WINDOW",
         })
         return profile
@@ -1950,7 +1950,7 @@ def blocker_recovery_profile(gate_record: dict[str, Any]) -> dict[str, Any]:
         physical_offer = gate_record.get("physical_browser_offer") if isinstance(gate_record.get("physical_browser_offer"), dict) else None
         variable = "EXACT_AUTHORIZED_BOOK_OVER25_QUOTE" if state.startswith("BLOCKED_NO_VALID") else "POSITIVE_EXPECTED_VALUE"
         sources = ["API-Football", "odds-api.net"]
-        recovery = ["Betano", "BetPlay", "Rushbet"]
+        recovery = ["Betano", "BetPlay", "Betsson", "Bwin", "Codere", "Luckia", "MrYoker", "Rivalo", "Rushbet", "Sportium", "Stake", "Wplay", "YaJuego", "Zamba"]
 
         # A physically verified authorized-book quote with non-positive EV
         # is an economic block, not a provider-coverage or identity gap.
@@ -1961,7 +1961,7 @@ def blocker_recovery_profile(gate_record: dict[str, Any]) -> dict[str, Any]:
                 "missing_or_failed_variable": "POSITIVE_EXPECTED_VALUE",
                 "recoverability": "RECOVERABLE_WITH_BETTER_AUTHORIZED_QUOTE_WHILE_PREMATCH",
                 "sources_already_checked": sources,
-                "sources_available_for_recovery": ["Betano", "BetPlay", "Rushbet"],
+                "sources_available_for_recovery": ["Betano", "BetPlay", "Betsson", "Bwin", "Codere", "Luckia", "MrYoker", "Rivalo", "Rushbet", "Sportium", "Stake", "Wplay", "YaJuego", "Zamba"],
                 "automatic_recovery_attempted": True,
                 "automatic_recovery_exhausted": False,
                 "provider_diagnostic_status": provider_status or None,
@@ -1983,7 +1983,7 @@ def blocker_recovery_profile(gate_record: dict[str, Any]) -> dict[str, Any]:
                 variable = "AUTHORIZED_BOOK_MIN_ODDS_THRESHOLD"
             else:
                 variable = "ODDS_PROVIDER_EVENT_COVERAGE"
-            recovery = ["API-Football", "odds-api.net", "Betano", "BetPlay", "Rushbet"]
+            recovery = ["API-Football", "odds-api.net", "Betano", "BetPlay", "Betsson", "Bwin", "Codere", "Luckia", "MrYoker", "Rivalo", "Rushbet", "Sportium", "Stake", "Wplay", "YaJuego", "Zamba"]
         elif provider_status in {"BLOCKED_IDENTITY_LOW_SCORE", "BLOCKED_IDENTITY_AMBIGUOUS", "BLOCKED_EVENT_ID_MISSING"}:
             variable = "EVENT_IDENTITY"
             recovery = ["SofaScore", "Flashscore", "API-Football", "odds-api.net"]
@@ -2042,7 +2042,7 @@ def blocker_recovery_profile(gate_record: dict[str, Any]) -> dict[str, Any]:
             "missing_or_failed_variable": "REVALIDATED_EXPECTED_VALUE_THRESHOLD",
             "recoverability": "RECOVERABLE_WITH_BETTER_AUTHORIZED_QUOTE_WHILE_PREMATCH",
             "sources_already_checked": ["API-Football", "odds-api.net"],
-            "sources_available_for_recovery": ["Betano", "BetPlay", "Rushbet"],
+            "sources_available_for_recovery": ["Betano", "BetPlay", "Betsson", "Bwin", "Codere", "Luckia", "MrYoker", "Rivalo", "Rushbet", "Sportium", "Stake", "Wplay", "YaJuego", "Zamba"],
             "automatic_recovery_attempted": True,
             "final_disposition": "RETRY_AUTHORIZED_BOOKS_UNTIL_KICKOFF",
         })
