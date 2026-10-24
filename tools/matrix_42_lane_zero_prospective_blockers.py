@@ -11,6 +11,9 @@ PRIORITY=Path("evidence/api_football/market_expansion/priority_market_lab_last.j
 PROMOTED=Path("evidence/api_football/promoted_team_markets/last_run.json")
 PLAYER=Path("evidence/api_football/player_shots_v3_prospective/last_run.json")
 SERVE=Path("evidence/tennis_serve_stats_lab/MATRIX_TENNIS_SERVE_STATS_LAB_LAST.json")
+TEAM_MODELS_V3=Path("evidence/api_football/market_expansion/failed_team_markets_v3/summary.json")
+TEAM_SHOTS_MODELS=Path("evidence/api_football/market_expansion/team_total_shots_side_models/summary.json")
+PLAYER_MODELS=Path("evidence/api_football/market_expansion/player_models/summary.json")
 OUT=Path("evidence/market_portfolio/MATRIX_42_LANE_ZERO_PROSPECTIVE_BLOCKERS_LAST.json")
 
 TENNIS_LIVE_ONLY={
@@ -20,10 +23,19 @@ TENNIS_LIVE_ONLY={
 TENNIS_SERVE={"ACES","DOUBLE_FAULTS","BREAKS_OF_SERVE"}
 PRIORITY_LANES={"TEAM_TOTAL_GOALS_HOME","TEAM_TOTAL_GOALS_AWAY","ASIAN_OR_EUROPEAN_HANDICAP"}
 TEAM_SHOTS={"TEAM_TOTAL_SHOTS_HOME","TEAM_TOTAL_SHOTS_AWAY"}
-EXTENDED_FOOTBALL={
- "CORNERS_OVER_UNDER","CARDS_OVER_UNDER","TEAM_SHOTS_ON_TARGET_HOME","TEAM_SHOTS_ON_TARGET_AWAY",
- "TEAM_FOULS_HOME","TEAM_FOULS_AWAY","GOALKEEPER_SAVES","PLAYER_SHOTS_ON_TARGET",
- "PLAYER_ASSISTS","PLAYER_PASSES","PLAYER_TACKLES","PLAYER_FOULS",
+REJECTED_TEAM_V3={
+ "CORNERS_OVER_UNDER":"CORNERS",
+ "CARDS_OVER_UNDER":"TEAM_YELLOW_CARDS",
+ "TEAM_SHOTS_ON_TARGET_HOME":"TEAM_SHOTS_ON_TARGET",
+ "TEAM_SHOTS_ON_TARGET_AWAY":"TEAM_SHOTS_ON_TARGET",
+ "GOALKEEPER_SAVES":"TEAM_GOALKEEPER_SAVES",
+}
+REJECTED_PLAYER={
+ "PLAYER_SHOTS_ON_TARGET":"PLAYER_SHOTS_ON_TARGET",
+ "PLAYER_ASSISTS":"PLAYER_ASSISTS",
+ "PLAYER_PASSES":"PLAYER_PASSES",
+ "PLAYER_TACKLES":"PLAYER_TACKLES",
+ "PLAYER_FOULS":"PLAYER_FOULS",
 }
 
 
@@ -36,6 +48,7 @@ def _load(path:Path)->dict[str,Any]:
 
 def build(generated_at:datetime|None=None)->dict[str,Any]:
     reg=_load(REGISTRY); priority=_load(PRIORITY); promoted=_load(PROMOTED); player=_load(PLAYER); serve=_load(SERVE)
+    team_v3=_load(TEAM_MODELS_V3); team_shots_models=_load(TEAM_SHOTS_MODELS); player_models=_load(PLAYER_MODELS)
     if reg.get("status")!="PASS" or reg.get("total_lanes")!=42:
         raise ValueError("PROSPECTIVE_REGISTRY_NOT_PASS")
     rows=[]
@@ -54,20 +67,42 @@ def build(generated_at:datetime|None=None)->dict[str,Any]:
             reason="PRIORITY_LAB_PROBABILITY_NOT_GENERATED"
             evidence.append(PRIORITY.as_posix())
         elif lane in TEAM_SHOTS:
-            reason="NO_CANONICAL_TARGET_MARKET_OFFERS_IN_CHECKED_EVENTS"
-            evidence.append(PROMOTED.as_posix())
+            side="HOME" if lane.endswith("_HOME") else "AWAY"
+            model=((team_shots_models.get("lanes") or {}).get(side) or {})
+            if model.get("prospective_eligible") is True:
+                reason="MODEL_FROZEN_PROSPECTIVE_ELIGIBLE_BUT_NO_CANONICAL_PREMATCH_OFFER"
+            else:
+                reason="TEAM_TOTAL_SHOTS_MODEL_NOT_PROSPECTIVE_ELIGIBLE"
+            evidence.extend([TEAM_SHOTS_MODELS.as_posix(),PROMOTED.as_posix()])
+        elif lane in {"TEAM_FOULS_HOME","TEAM_FOULS_AWAY"}:
+            model=((team_v3.get("lanes") or {}).get("TEAM_FOULS") or {})
+            if model.get("prospective_eligible") is True:
+                reason="TEAM_FOULS_V3_MODEL_ELIGIBLE_BUT_CANONICAL_HOME_AWAY_FREEZE_NOT_AVAILABLE"
+            else:
+                reason="TEAM_FOULS_MODEL_REJECTED"
+            evidence.extend([TEAM_MODELS_V3.as_posix(),PROMOTED.as_posix()])
         elif lane=="PLAYER_SHOTS":
-            reason="PREMATCH_LINEUP_NOT_AVAILABLE_IN_CHECKED_EVENTS"
-            evidence.append(PLAYER.as_posix())
+            reason="PLAYER_SHOTS_V3_MODEL_ELIGIBLE_BUT_PREMATCH_LINEUP_NOT_AVAILABLE"
+            evidence.extend([
+              "evidence/api_football/market_expansion/player_shots_lineup_role_v3/summary.json",
+              PLAYER.as_posix(),
+            ])
         elif lane=="BTTS":
             reason="BTTS_CANDIDATES_REJECTED_NOT_APPROVED_FOR_PROSPECTIVE_BRIDGE"
             evidence.extend([
               "evidence/api_football/btts_challenger_v2/manifest.json",
               "evidence/api_football/btts_challenger_v3/manifest.json",
             ])
-        elif lane in EXTENDED_FOOTBALL:
-            reason="COVERAGE_IMPLEMENTATION_PRESENT_BUT_NO_GOVERNED_PREMATCH_PREDICTIVE_FREEZE"
-            evidence.append("tools/api_football_extended_market_coverage_probe.py")
+        elif lane in REJECTED_TEAM_V3:
+            model_key=REJECTED_TEAM_V3[lane]
+            model=((team_v3.get("lanes") or {}).get(model_key) or {})
+            reason="MODEL_REJECTED_HISTORICAL_OOS_V3" if model.get("prospective_eligible") is False else "NO_GOVERNED_PREMATCH_FREEZE"
+            evidence.append(TEAM_MODELS_V3.as_posix())
+        elif lane in REJECTED_PLAYER:
+            model_key=REJECTED_PLAYER[lane]
+            model=((player_models.get("lanes") or {}).get(model_key) or {})
+            reason="PLAYER_MODEL_REJECTED_HISTORICAL_OOS" if model.get("historical_candidate_passed") is False else "PLAYER_MODEL_PROSPECTIVE_BLOCKED"
+            evidence.append(PLAYER_MODELS.as_posix())
         rows.append({
             "market_lane":lane,
             "sport":state.get("sport"),
@@ -93,6 +128,10 @@ def build(generated_at:datetime|None=None)->dict[str,Any]:
         "player_shots_blocker_count":len(player.get("blockers") or []),
         "tennis_serve_status":serve.get("status"),
         "tennis_serve_provider_mode":"INPLAY_SOURCE_COVERAGE",
+        "team_total_shots_home_model_status":((team_shots_models.get("lanes") or {}).get("HOME") or {}).get("status"),
+        "team_total_shots_away_model_status":((team_shots_models.get("lanes") or {}).get("AWAY") or {}).get("status"),
+        "team_fouls_v3_model_status":((team_v3.get("lanes") or {}).get("TEAM_FOULS") or {}).get("status"),
+        "player_shots_v3_model_status":"FROZEN_FOR_NEW_PROSPECTIVE_VALIDATION_V3",
       },
       "policy":{
         "no_fake_backfill":True,
