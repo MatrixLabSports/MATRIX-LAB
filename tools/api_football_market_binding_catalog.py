@@ -51,7 +51,10 @@ def run(key:str,out:Path):
     r=requests.get(BASE_URL+"/odds/bets",headers={"x-apisports-key":key},timeout=20)
     if not 200<=r.status_code<300: raise RuntimeError("ODDS_BETS_HTTP_"+str(r.status_code))
     p=r.json()
+    errors=p.get("errors") if isinstance(p,dict) else None
     rows=p.get("response") or []
+    error_text=json.dumps(errors,sort_keys=True,ensure_ascii=False).casefold() if errors not in ({},[],None) else ""
+    provider_error_classification=("DAILY_REQUEST_LIMIT_REACHED" if ("request limit" in error_text or "reached the request limit" in error_text) else "PLAN_OR_ENTITLEMENT_BLOCK" if ("upgrade your plan" in error_text or "subscription" in error_text) else "PROVIDER_ERROR_OTHER" if error_text else None)
     if not rows:
         if isinstance(previous,dict) and int(previous.get("catalog_count") or 0)>0:
             degraded={
