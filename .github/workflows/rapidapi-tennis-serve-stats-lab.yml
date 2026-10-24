@@ -1,0 +1,162 @@
+name: RapidAPI Tennis Serve Stats Lab
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+    paths:
+      - .github/workflows/rapidapi-tennis-serve-stats-lab.yml
+  schedule:
+    - cron: "14,29,44,59 * * * *"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: rapidapi-tennis-serve-stats-lab
+  cancel-in-progress: false
+
+jobs:
+  lab:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      REAL_MONEY: BLOCKED
+      AUTO_BETTING: DISABLED
+    steps:
+      - name: Checkout operational branch
+        uses: actions/checkout@v4
+        with:
+          ref: repair/cor09-world-pipeline
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: python -m pip install requests pytest
+
+      - name: Run serve-stat and supervisor contracts
+        run: |
+          PYTHONPATH=. python -m pytest -q \
+            tests/test_rapidapi_tennis_serve_stats_lab.py \
+            tests/test_matrix_multi_market_supervisor.py \
+            tests/test_market_portfolio_permanent_mandate.py
+
+      - name: Enforce RapidAPI paid-window guard
+        env:
+          RAPIDAPI_TENNIS_KEY: ${{ secrets.RAPIDAPI_TENNIS_KEY }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$REAL_MONEY" = "BLOCKED"
+          test "$AUTO_BETTING" = "DISABLED"
+          test -n "$RAPIDAPI_TENNIS_KEY"
+          TODAY="$(TZ=America/Bogota date +%F)"
+          if [[ "$TODAY" > "2026-10-28" ]]; then
+            echo "RAPIDAPI_TENNIS_PAID_WINDOW_EXPIRED"
+            exit 1
+          fi
+
+      - name: Build physical tennis serve-stat source evidence
+        env:
+          RAPIDAPI_TENNIS_KEY: ${{ secrets.RAPIDAPI_TENNIS_KEY }}
+        run: |
+          PYTHONPATH=. python -m tools.rapidapi_tennis_serve_stats_lab --max-events 8
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          p=Path("evidence/tennis_serve_stats_lab/MATRIX_TENNIS_SERVE_STATS_LAB_LAST.json")
+          j=json.loads(p.read_text(encoding="utf-8"))
+          assert j["status"]=="PASS_SOURCE_LAB"
+          assert set(j["market_lanes"])=={"ACES","DOUBLE_FAULTS","BREAKS_OF_SERVE"}
+          assert j["p_matrix_status"]=="NOT_GENERATED_SOURCE_LAB_ONLY"
+          assert j["protections"]["missing_not_zero"] is True
+          assert j["protections"]["silent_imputation"] is False
+          assert j["protections"]["real_money"]=="BLOCKED"
+          print(json.dumps({
+              "status":j["status"],
+              "live_event_count":j["live_event_count"],
+              "events_probed":j["events_probed"],
+              "field_observation_counts":j["field_observation_counts"],
+              "network_calls":j["network_calls"],
+              "payload_sha256":j["payload_sha256"],
+          },sort_keys=True))
+          PY
+
+      - name: Rebuild canonical 42-lane supervisor
+        run: |
+          CATALOG="evidence/api_football/market_expansion/market_binding_catalog.json"
+          if [ -f "$CATALOG" ]; then
+            PYTHONPATH=. python -m tools.matrix_multi_market_supervisor \
+              --football-catalog "$CATALOG" \
+              --target-date-bogota "$(TZ=America/Bogota date +%F)" \
+              --source-run tennis-serve-stats-lab \
+              --out evidence/market_portfolio/MATRIX_MULTI_MARKET_SUPERVISOR_LAST.json
+          else
+            PYTHONPATH=. python -m tools.matrix_multi_market_supervisor \
+              --target-date-bogota "$(TZ=America/Bogota date +%F)" \
+              --source-run tennis-serve-stats-lab \
+              --out evidence/market_portfolio/MATRIX_MULTI_MARKET_SUPERVISOR_LAST.json
+          fi
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          j=json.loads(Path("evidence/market_portfolio/MATRIX_MULTI_MARKET_SUPERVISOR_LAST.json").read_text(encoding="utf-8"))
+          assert j["total_required_lanes"]==42
+          rows={x["market_key"]:x for x in j["rows"]}
+          for key in {"ACES","DOUBLE_FAULTS","BREAKS_OF_SERVE"}:
+              assert rows[key]["operational_state"]=="LAB"
+              assert rows[key]["implementation_present"] is True
+              assert "BLOCKED_TENNIS_STAT_MARKET_IMPLEMENTATION" not in rows[key]["blockers"]
+          assert j["invariants"]["real_money"]=="BLOCKED"
+          print("TENNIS_SERVE_STATS_3_LANES_SUPERVISOR=PASS")
+          PY
+
+      - name: Persist physical evidence
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name matrix-tennis-serve-stats-lab
+          git config user.email matrix-tennis-serve-stats-lab@users.noreply.github.com
+          git add evidence/tennis_serve_stats_lab/MATRIX_TENNIS_SERVE_STATS_LAB_LAST.json
+          git add evidence/market_portfolio/MATRIX_MULTI_MARKET_SUPERVISOR_LAST.json
+          if git diff --cached --quiet; then
+            echo "TENNIS_SERVE_STATS_NO_EVIDENCE_CHANGE"
+            exit 0
+          fi
+          git commit -m "evidence(tennis): persist serve-stat source lab"
+          for attempt in 1 2 3 4; do
+            git fetch origin repair/cor09-world-pipeline
+            if ! git rebase origin/repair/cor09-world-pipeline; then
+              conflicts="$(git diff --name-only --diff-filter=U)"
+              unexpected=0
+              while IFS= read -r file; do
+                [ -z "$file" ] && continue
+                case "$file" in
+                  evidence/tennis_serve_stats_lab/MATRIX_TENNIS_SERVE_STATS_LAB_LAST.json|\
+                  evidence/market_portfolio/MATRIX_MULTI_MARKET_SUPERVISOR_LAST.json)
+                    git checkout --theirs -- "$file"
+                    git add "$file"
+                    ;;
+                  *)
+                    echo "TENNIS_SERVE_STATS_UNEXPECTED_CONFLICT:$file"
+                    unexpected=1
+                    ;;
+                esac
+              done <<< "$conflicts"
+              if [ "$unexpected" -ne 0 ] || ! GIT_EDITOR=true git rebase --continue; then
+                git rebase --abort || true
+                exit 1
+              fi
+            fi
+            if git push origin HEAD:repair/cor09-world-pipeline; then
+              echo "TENNIS_SERVE_STATS_EVIDENCE_PUSH=PASS"
+              exit 0
+            fi
+            sleep $((attempt*2))
+          done
+          exit 1
