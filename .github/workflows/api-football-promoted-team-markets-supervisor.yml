@@ -87,6 +87,27 @@ jobs:
             git fetch origin repair/cor09-world-pipeline
             if ! git rebase origin/repair/cor09-world-pipeline; then
               git rebase --abort || true
+              python - <<'PY' > /tmp/promoted_mutation_flag
+          import json
+          from pathlib import Path
+          p=json.loads(Path("evidence/api_football/promoted_team_markets/last_run.json").read_text())
+          has_material=bool(p.get("new_freezes") or p.get("new_settlements"))
+          print("MATERIAL" if has_material else "TELEMETRY_ONLY")
+          PY
+              if grep -q '^TELEMETRY_ONLY
+
+# explicit parallel production retrigger 2026-10-04T04:00Z
+
+# retrigger after explicit zero-freeze instrumentation 2026-10-04T04:06Z
+
+# MATRIX_USER_AUTHORIZED_TRIGGER 2026-10-11 continue-football-calibration-user-authorized
+
+# MATRIX_MODEL_ONLY_TEAM_SHOTS_2026-10-24
+ /tmp/promoted_mutation_flag; then
+                echo "REMOTE_BRANCH_ADVANCED; LOCAL_RUN_HAS_NO_NEW_FREEZE_OR_SETTLEMENT; KEEP_REMOTE_NEWER_EVIDENCE"
+                exit 0
+              fi
+              echo "REMOTE_BRANCH_ADVANCED_WITH_LOCAL_MATERIAL_EVIDENCE; FAIL_CLOSED_TO_AVOID_DATA_LOSS"
               exit 1
             fi
             if git push origin HEAD:repair/cor09-world-pipeline; then
@@ -103,3 +124,5 @@ jobs:
 # MATRIX_USER_AUTHORIZED_TRIGGER 2026-10-11 continue-football-calibration-user-authorized
 
 # MATRIX_MODEL_ONLY_TEAM_SHOTS_2026-10-24
+
+# MATRIX_PROMOTED_PERSISTENCE_RACE_GUARD_2026-10-24
