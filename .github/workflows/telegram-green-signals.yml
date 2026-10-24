@@ -194,8 +194,29 @@ jobs:
           for attempt in 1 2 3 4; do
             git fetch origin repair/cor09-world-pipeline
             if ! git rebase origin/repair/cor09-world-pipeline; then
-              git rebase --abort || true
-              exit 1
+              conflicts="$(git diff --name-only --diff-filter=U)"
+              unexpected=0
+              while IFS= read -r file; do
+                [ -z "$file" ] && continue
+                case "$file" in
+                  evidence/notifications/telegram/MATRIX_TELEGRAM_SIGNAL_LEDGER.json|\
+                  evidence/notifications/telegram/MATRIX_CORRELATED_RISK_CALIBRATION_LAST.json|\
+                  evidence/notifications/telegram/MATRIX_TELEGRAM_BLOCKER_RECOVERY_AUDIT_LAST.json|\
+                  evidence/notifications/telegram/MATRIX_TELEGRAM_DAILY_BANKROLL_CANONICAL_LAST.json|\
+                  evidence/notifications/telegram/MATRIX_TELEGRAM_20261022_CLOSURE_AUDIT.json)
+                    git checkout --theirs -- "$file"
+                    git add "$file"
+                    ;;
+                  *)
+                    echo "TELEGRAM_UNEXPECTED_REBASE_CONFLICT:$file"
+                    unexpected=1
+                    ;;
+                esac
+              done <<< "$conflicts"
+              if [ "$unexpected" -ne 0 ] || ! GIT_EDITOR=true git rebase --continue; then
+                git rebase --abort || true
+                exit 1
+              fi
             fi
             if git push origin HEAD:repair/cor09-world-pipeline; then
               exit 0
