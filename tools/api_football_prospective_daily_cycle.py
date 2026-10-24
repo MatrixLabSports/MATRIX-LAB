@@ -38,6 +38,79 @@ RECOVERABLE_FIXTURE_ERRORS = (
 )
 
 
+def _capture_fixtures_with_retry(
+    *,
+    api_key: str,
+    out_dir: Path,
+    target_date: str,
+    captured_at_utc: str,
+    sleep_fn=time.sleep,
+) -> tuple[dict[str, Any], dict[str, Any]]:
+    attempts: list[dict[str, Any]] = []
+    last_error: Exception | None = None
+    for attempt in range(1, FIXTURE_CAPTURE_MAX_ATTEMPTS + 1):
+        attempt_dir = out_dir / f"attempt_{attempt}"
+        if attempt > 1:
+            sleep_fn(FIXTURE_CAPTURE_RETRY_SECONDS[attempt - 1])
+        try:
+            manifest = capture_future_fixtures(
+                api_key=api_key,
+                out_dir=attempt_dir,
+                target_date=target_date,
+                captured_at_utc=captured_at_utc,
+            )
+            attempts.append({
+                "attempt": attempt,
+                "status": "PASS",
+                "error": None,
+                "attempt_dir": attempt_dir.as_posix(),
+                "fixtures_received": int(manifest.get("fixtures_received") or 0),
+                "eligible_future_fixtures": int(manifest.get("eligible_future_fixtures") or 0),
+            })
+            recovery = {
+                "schema": "MATRIX_API_FOOTBALL_FIXTURE_CAPTURE_RECOVERY_V1",
+                "target_date": target_date,
+                "max_attempts": FIXTURE_CAPTURE_MAX_ATTEMPTS,
+                "attempts": attempts,
+                "successful_attempt": attempt,
+                "status": "PASS_AFTER_RETRY" if attempt > 1 else "PASS_FIRST_ATTEMPT",
+                "automatic_wagering": False,
+                "real_money": "BLOCKED",
+            }
+            _write(out_dir / "provider_recovery.json", recovery)
+            for name in ("future_fixture_registry.json","capture_manifest.json","request.json","response_headers_public.json","response_body.bin"):
+                src = attempt_dir / name
+                if src.exists():
+                    (out_dir / name).write_bytes(src.read_bytes())
+            return manifest, recovery
+        except Exception as exc:
+            last_error = exc
+            token = str(exc)
+            recoverable = any(token.startswith(prefix) for prefix in RECOVERABLE_FIXTURE_ERRORS)
+            attempts.append({
+                "attempt": attempt,
+                "status": "FAIL",
+                "error": token,
+                "recoverable": recoverable,
+                "attempt_dir": attempt_dir.as_posix(),
+            })
+            if not recoverable:
+                break
+
+    recovery = {
+        "schema": "MATRIX_API_FOOTBALL_FIXTURE_CAPTURE_RECOVERY_V1",
+        "target_date": target_date,
+        "max_attempts": FIXTURE_CAPTURE_MAX_ATTEMPTS,
+        "attempts": attempts,
+        "successful_attempt": None,
+        "status": "PROVIDER_BLOCKED_AFTER_RETRIES",
+        "automatic_wagering": False,
+        "real_money": "BLOCKED",
+    }
+    _write(out_dir / "provider_recovery.json", recovery)
+    raise ValueError("API_FOOTBALL_FIXTURE_CAPTURE_EXHAUSTED") from last_error
+
+
 def _load(path: Path) -> dict[str, Any]:
     value = json.loads(path.read_text(encoding="utf-8"))
     if not isinstance(value, dict):
