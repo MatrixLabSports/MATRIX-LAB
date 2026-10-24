@@ -3,6 +3,7 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import time
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Mapping
@@ -25,6 +26,16 @@ from tools.api_football_team_last_fallback import run_capture as capture_team_la
 GROUP_HISTORY_MAX_REQUESTS = 40
 TEAM_LAST_MAX_REQUESTS = 120
 DAILY_REMAINING_RESERVE = 1500
+FIXTURE_CAPTURE_MAX_ATTEMPTS = 3
+FIXTURE_CAPTURE_RETRY_SECONDS = (0, 2, 5)
+RECOVERABLE_FIXTURE_ERRORS = (
+    "API_FOOTBALL_PROVIDER_ERRORS",
+    "API_FOOTBALL_HTTP_STATUS_429",
+    "API_FOOTBALL_HTTP_STATUS_500",
+    "API_FOOTBALL_HTTP_STATUS_502",
+    "API_FOOTBALL_HTTP_STATUS_503",
+    "API_FOOTBALL_HTTP_STATUS_504",
+)
 
 
 def _load(path: Path) -> dict[str, Any]:
