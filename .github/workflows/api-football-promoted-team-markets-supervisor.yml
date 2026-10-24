@@ -49,11 +49,26 @@ jobs:
           assert p["automatic_wagering"] is False
           assert p["real_money"]=="BLOCKED"
           for lane in ("team_total_shots_home","team_total_shots_away","team_fouls_total"):
-              s=json.loads((Path("evidence/api_football/promoted_team_markets")/lane/"state.json").read_text())
+              lane_dir=Path("evidence/api_football/promoted_team_markets")/lane
+              s=json.loads((lane_dir/"state.json").read_text())
               assert s["real_money"]=="BLOCKED"
               for g in ("30","50","100","200"):
                   if s["gates"][g]["metrics_opened"]:
                       assert s["gates"][g]["status"]=="OPENED_AT_THRESHOLD"
+              ledger=lane_dir/"freeze_ledger.jsonl"
+              if ledger.exists():
+                  for raw in ledger.read_text().splitlines():
+                      if not raw.strip():
+                          continue
+                      row=json.loads(raw)
+                      if row.get("price_mode")=="MODEL_ONLY_RESEARCH_NO_ODDS":
+                          assert row["price_observed"] is False
+                          assert row["bookmaker_name"] is None
+                          assert row["over_odds_observed"] is None
+                          assert row["under_odds_observed"] is None
+                          assert row["odds_used_to_generate_probability"] is False
+                          assert row["automatic_wagering"] is False
+                          assert row["real_money"]=="BLOCKED"
           print("PROMOTED_TEAM_MARKETS_SUPERVISOR_GOVERNANCE: PASS")
           PY
       - name: Persist supervisor evidence
@@ -86,3 +101,5 @@ jobs:
 # retrigger after explicit zero-freeze instrumentation 2026-10-04T04:06Z
 
 # MATRIX_USER_AUTHORIZED_TRIGGER 2026-10-11 continue-football-calibration-user-authorized
+
+# MATRIX_MODEL_ONLY_TEAM_SHOTS_2026-10-24
