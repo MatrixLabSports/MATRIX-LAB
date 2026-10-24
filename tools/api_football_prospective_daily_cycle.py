@@ -151,7 +151,7 @@ def run_daily_cycle(
     canonical_dir = cycle_root / "canonical_analysis"
     radar_dir = cycle_root / "radar_over25_high_scoring_leagues"
 
-    fixture_manifest = capture_future_fixtures(
+    fixture_manifest, fixture_recovery = _capture_fixtures_with_retry(
         api_key=key,
         out_dir=fixtures_dir,
         target_date=target_date,
@@ -240,6 +240,8 @@ def run_daily_cycle(
             "fixtures_received": fixture_manifest["fixtures_received"],
             "eligible_future_fixtures": fixture_manifest["eligible_future_fixtures"],
             "response_sha256": fixture_manifest["response_sha256"],
+            "recovery_status": fixture_recovery["status"],
+            "capture_attempts": len(fixture_recovery["attempts"]),
         },
         "prematch": {
             "future_fixture_count": inventory["future_fixture_count"],
