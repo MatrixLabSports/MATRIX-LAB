@@ -62,6 +62,8 @@ def run(key:str,out:Path):
               "refresh_attempted_at_utc":datetime.now(timezone.utc).replace(microsecond=0).isoformat(),
               "refresh_status":"PROVIDER_EMPTY_LAST_NONEMPTY_PRESERVED",
               "provider_empty_response_count":0,
+              "provider_error_classification":provider_error_classification,
+              "provider_errors":errors,
               "automatic_wagering":False,
               "real_money":"BLOCKED",
               "status":"STALE_LAST_NONEMPTY_FAIL_CLOSED",
@@ -75,8 +77,10 @@ def run(key:str,out:Path):
           "observed_at_utc":datetime.now(timezone.utc).replace(microsecond=0).isoformat(),
           "provider":"api_football","catalog_count":0,
           "matches":{lane:[] for lane in KEYWORDS},
+          "provider_error_classification":provider_error_classification,
+          "provider_errors":errors,
           "automatic_wagering":False,"real_money":"BLOCKED",
-          "status":"PROVIDER_EMPTY_FAIL_CLOSED",
+          "status":("PROVIDER_LIMIT_REACHED_FAIL_CLOSED" if provider_error_classification=="DAILY_REQUEST_LIMIT_REACHED" else "PROVIDER_ENTITLEMENT_BLOCK_FAIL_CLOSED" if provider_error_classification=="PLAN_OR_ENTITLEMENT_BLOCK" else "PROVIDER_EMPTY_FAIL_CLOSED"),
         }
         out.parent.mkdir(parents=True,exist_ok=True)
         out.write_text(json.dumps(empty,indent=2,sort_keys=True)+"\n",encoding="utf-8")
