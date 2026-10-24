@@ -1,0 +1,53 @@
+{
+  "schema": "MATRIX_NINE_LAB_GATE_REGISTRY_V1",
+  "generated_at_utc": "2026-10-24T18:49:00+00:00",
+  "gate_thresholds": [
+    100,
+    300,
+    600
+  ],
+  "lane_count": 9,
+  "prospective_counts": {
+    "FIRST_HALF_TOTAL_GOALS_OVER_UNDER": 0,
+    "SECOND_HALF_TOTAL_GOALS_OVER_UNDER": 0,
+    "FIRST_HALF_TEAM_TOTAL_GOALS_HOME": 0,
+    "FIRST_HALF_TEAM_TOTAL_GOALS_AWAY": 0,
+    "SECOND_HALF_TEAM_TOTAL_GOALS_HOME": 0,
+    "SECOND_HALF_TEAM_TOTAL_GOALS_AWAY": 0,
+    "ACES": 0,
+    "DOUBLE_FAULTS": 0,
+    "BREAKS_OF_SERVE": 0
+  },
+  "source_coverage_counts": {
+    "ACES": 3,
+    "DOUBLE_FAULTS": 3,
+    "BREAKS_OF_SERVE": 3
+  },
+  "ledger_path": "evidence/lab_gates/MATRIX_NINE_LAB_OBSERVATION_LEDGER.jsonl",
+  "ledger_rows_total": 15,
+  "baseline": {
+    "football_historical_walk_forward_rows": 3177,
+    "football_baseline_counts_as_prospective": false,
+    "tennis_live_source_events": 3,
+    "tennis_inplay_counts_as_prospective": false
+  },
+  "admission_contract": {
+    "required_record_type": "PROSPECTIVE_PREMATCH_FREEZE",
+    "freeze_strictly_before_event_start": true,
+    "duplicate_observation_key_forbidden": true,
+    "post_start_backfill_forbidden": true,
+    "missing_not_zero": true,
+    "silent_imputation": false
+  },
+  "protections": {
+    "metrics_open_only_at_declared_gate": true,
+    "odds_used_to_generate_probability": false,
+    "automatic_wagering": false,
+    "real_money": "BLOCKED"
+  },
+  "workflow_runs_pending": [
+    40122338971,
+    40122341398
+  ],
+  "status": "PASS_SEEDED_APPEND_ONLY"
+}
