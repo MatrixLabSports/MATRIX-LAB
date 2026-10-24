@@ -35,6 +35,8 @@ on:
       - tests/test_api_football_prospective_daily_cycle_retry.py
       - tools/matrix_multi_market_supervisor.py
       - tools/api_football_market_binding_catalog.py
+      - tools/api_football_priority_market_lab.py
+      - tests/test_api_football_priority_market_lab.py
       - app/market/matrix_market_portfolio.py
       - evidence/audit/MATRIX_MARKET_PORTFOLIO_PERMANENT_MANDATE_V1.json
       - tests/test_matrix_multi_market_supervisor.py
@@ -147,16 +149,81 @@ jobs:
           print(json.dumps({"status":"PASS","lanes":42,"states":j["state_counts"]},sort_keys=True))
           PY
 
-      - name: Run governed prospective daily cycle
-        env:
-          API_FOOTBALL_KEY: ${{ secrets.API_FOOTBALL_KEY }}
+      - name: Start physically priced priority market labs
         shell: bash
         run: |
           set -euo pipefail
           D="${{ steps.date.outputs.target_date }}"
+          python -m tools.api_football_priority_market_lab \
+            --catalog evidence/api_football/market_expansion/market_binding_catalog.json \
+            --target-date-bogota "$D" \
+            --out evidence/api_football/market_expansion/priority_market_lab_last.json
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          j=json.loads(Path("evidence/api_football/market_expansion/priority_market_lab_last.json").read_text())
+          assert j["status"]=="PASS"
+          assert j["odds_used_to_generate_p_matrix"] is False
+          assert j["automatic_wagering"] is False
+          assert j["real_money"]=="BLOCKED"
+          print(json.dumps({
+            "status":"PASS",
+            "active_price_coverage_labs":j["active_price_coverage_labs"],
+            "blocked_price_labs":j["blocked_price_labs"],
+          },sort_keys=True))
+          PY
+
+      - name: Run governed prospective daily cycle
+        id: cycle
+        env:
+          API_FOOTBALL_KEY: ${{ secrets.API_FOOTBALL_KEY }}
+        shell: bash
+        run: |
+          set -uo pipefail
+          D="${{ steps.date.outputs.target_date }}"
+          set +e
           python -m tools.api_football_prospective_daily_cycle --target-date "$D"
+          RC=$?
+          set -e
+          if [ "$RC" -eq 0 ]; then
+            echo "status=PASS" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          RECOVERY="$(find "evidence/api_football/prospective_daily/$D" -path '*/fixtures/provider_recovery.json' -type f 2>/dev/null | sort | tail -1 || true)"
+          if [ -n "$RECOVERY" ]; then
+            mkdir -p evidence/api_football/provider_failures
+            cp "$RECOVERY" evidence/api_football/provider_failures/MATRIX_API_FOOTBALL_PROVIDER_RECOVERY_LAST.json
+            python - "$RECOVERY" "$D" "$RC" <<'PY'
+          import json,sys
+          from datetime import datetime,timezone
+          from pathlib import Path
+          src,d,rc=sys.argv[1:]
+          r=json.loads(Path(src).read_text())
+          out={
+            "schema":"MATRIX_API_FOOTBALL_PROVIDER_BLOCKER_V1",
+            "generated_at_utc":datetime.now(timezone.utc).replace(microsecond=0).isoformat(),
+            "target_date_bogota":d,
+            "exit_code":int(rc),
+            "provider_recovery":r,
+            "status":"PROVIDER_BLOCKED_FAIL_CLOSED",
+            "downstream_probability_cycle_executed":False,
+            "silent_data_loss":False,
+            "automatic_wagering":False,
+            "real_money":"BLOCKED",
+          }
+          Path("evidence/api_football/provider_failures/MATRIX_API_FOOTBALL_PROVIDER_BLOCKER_LAST.json").write_text(
+            json.dumps(out,indent=2,sort_keys=True)+"\n"
+          )
+          print(json.dumps({"status":out["status"],"attempts":len(r.get("attempts") or []),"real_money":"BLOCKED"},sort_keys=True))
+          PY
+            echo "status=PROVIDER_BLOCKED" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          echo "status=UNEXPECTED_FAILURE" >> "$GITHUB_OUTPUT"
+          exit "$RC"
 
       - name: Certify daily calibration eligibility
+        if: steps.cycle.outputs.status == 'PASS'
         shell: bash
         run: |
           set -euo pipefail
@@ -198,6 +265,7 @@ jobs:
           PY
 
       - name: Build governed Over 2.5 probabilities, physical odds and EV
+        if: steps.cycle.outputs.status == 'PASS'
         env:
           API_FOOTBALL_KEY: ${{ secrets.API_FOOTBALL_KEY }}
         shell: bash
@@ -210,18 +278,21 @@ jobs:
       # telegram-green-signals.yml, which owns and persists its ledger atomically.
 
       - name: Persist governed daily evidence
+        if: always() && steps.cycle.outputs.status != 'UNEXPECTED_FAILURE'
         shell: bash
         run: |
           set -euo pipefail
           D="${{ steps.date.outputs.target_date }}"
           git config user.name "matrix-football-daily"
           git config user.email "matrix-football-daily@users.noreply.github.com"
-          git add "evidence/api_football/prospective_daily/$D"
-          git add evidence/api_football/prospective_market_freeze
-          git add "evidence/api_football/daily_prematch_reports/$D"
-          git add "evidence/football_world_inventory/$D/MATRIX_FOOTBALL_CALIBRATION_ELIGIBILITY.json"
+          if [ -d "evidence/api_football/prospective_daily/$D" ]; then git add "evidence/api_football/prospective_daily/$D"; fi
+          if [ -d evidence/api_football/prospective_market_freeze ]; then git add evidence/api_football/prospective_market_freeze; fi
+          if [ -d "evidence/api_football/daily_prematch_reports/$D" ]; then git add "evidence/api_football/daily_prematch_reports/$D"; fi
+          if [ -f "evidence/football_world_inventory/$D/MATRIX_FOOTBALL_CALIBRATION_ELIGIBILITY.json" ]; then git add "evidence/football_world_inventory/$D/MATRIX_FOOTBALL_CALIBRATION_ELIGIBILITY.json"; fi
           git add evidence/governance/MATRIX_FOOTBALL_SUBSCRIPTION_DEADLINE_LAST.json
           git add evidence/api_football/market_expansion/market_binding_catalog.json
+          git add evidence/api_football/market_expansion/priority_market_lab_last.json
+          if [ -d evidence/api_football/provider_failures ]; then git add evidence/api_football/provider_failures; fi
           git add evidence/market_portfolio/MATRIX_MULTI_MARKET_SUPERVISOR_FOOTBALL_LAST.json
           if git diff --cached --quiet; then
             echo "NO_GOVERNED_DAILY_CHANGE"
