@@ -79,3 +79,23 @@ def test_fixture_capture_exhausts_three_recoverable_attempts(monkeypatch, tmp_pa
     assert len(calls)==3
     text=(tmp_path/"provider_recovery.json").read_text()
     assert text.count('"status": "FAIL"')==3
+
+
+def test_fixture_capture_does_not_retry_terminal_daily_limit(monkeypatch, tmp_path):
+    calls=[]
+    def fake_capture(**kwargs):
+        calls.append(1)
+        raise ValueError("API_FOOTBALL_DAILY_REQUEST_LIMIT_REACHED")
+    monkeypatch.setattr(daily, "capture_future_fixtures", fake_capture)
+    with pytest.raises(ValueError, match="API_FOOTBALL_FIXTURE_CAPTURE_EXHAUSTED"):
+        daily._capture_fixtures_with_retry(
+            api_key="k",
+            out_dir=tmp_path,
+            target_date="2026-10-24",
+            captured_at_utc="2026-10-24T10:00:00+00:00",
+            sleep_fn=lambda _: None,
+        )
+    assert len(calls)==1
+    data=(tmp_path/"provider_recovery.json").read_text()
+    assert '"terminal_for_current_cycle": true' in data
+    assert "API_FOOTBALL_DAILY_REQUEST_LIMIT_REACHED" in data
