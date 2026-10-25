@@ -1,0 +1,83 @@
+{
+  "schema": "MATRIX_GATE600_AUDIT_TRANSITION_24OCT2026_V1",
+  "generated_at_utc": "2026-10-25T04:35:39.133Z",
+  "status": "PASS",
+  "certified_run": {
+    "workflow": "MATRIX Multi-Market Canonical Supervisor",
+    "run_id": 40162336500,
+    "conclusion": "success",
+    "head_sha": "e687393bbe732939f1e679dd266f608ae968f940"
+  },
+  "behavior": {
+    "lab_lane_at_or_above_600_priority": "P0_GATE600_REACHED_AWAIT_AUDIT",
+    "lab_lane_at_or_above_600_action": "RUN_GATE600_CALIBRATION_STABILITY_AUDIT_NO_AUTO_PROMOTION",
+    "active_lane_post_gate_priority": "P0_MAINTAIN_ACTIVE_POST_GATE",
+    "active_lane_post_gate_action": "KEEP_ACTIVE_PAPER_MONITORING_AND_CONTINUE_POST_GATE_VALIDATION",
+    "automatic_promotion": false,
+    "accelerator_scope": "LAB_LANES_WITH_300_TO_599_VALID_PROSPECTIVE"
+  },
+  "current_physical_state": {
+    "gate600_lab_lanes": [
+      {
+        "lane": "MATCH_RESULT_1X2",
+        "count": 640
+      },
+      {
+        "lane": "DOUBLE_CHANCE_1X",
+        "count": 640
+      },
+      {
+        "lane": "DOUBLE_CHANCE_X2",
+        "count": 640
+      },
+      {
+        "lane": "DOUBLE_CHANCE_12",
+        "count": 640
+      }
+    ],
+    "active_post_gate": [
+      {
+        "lane": "TOTAL_GOALS_OVER_UNDER",
+        "count": 640
+      }
+    ],
+    "next_acceleration_cohort": {
+      "count": 592,
+      "remaining_to_600": 8,
+      "lanes": [
+        "FIRST_HALF_TOTAL_GOALS_OVER_UNDER",
+        "SECOND_HALF_TOTAL_GOALS_OVER_UNDER",
+        "FIRST_HALF_TEAM_TOTAL_GOALS_HOME",
+        "FIRST_HALF_TEAM_TOTAL_GOALS_AWAY",
+        "SECOND_HALF_TEAM_TOTAL_GOALS_HOME",
+        "SECOND_HALF_TEAM_TOTAL_GOALS_AWAY"
+      ]
+    },
+    "following_cohort": {
+      "count": 585,
+      "remaining_to_600": 15,
+      "lanes": [
+        "TEAM_TOTAL_GOALS_HOME",
+        "TEAM_TOTAL_GOALS_AWAY"
+      ]
+    }
+  },
+  "invariants": {
+    "all_42_present_exactly_once": true,
+    "gate600_never_auto_promotes": true,
+    "lab_lane_at_600_routes_to_audit": true,
+    "all_42_remain_supervised": true,
+    "missing_not_zero": true,
+    "no_silent_imputation": true,
+    "odds_do_not_generate_p_matrix": true,
+    "automatic_wagering": false,
+    "real_money": "BLOCKED"
+  },
+  "commits": {
+    "action_board_transition": "2cb52747dc8be9c5e6e538e8fd9bd8eebcdeaf47",
+    "action_board_tests": "82f8e2684f021e0664e85fd8bd1c91604a69bc46",
+    "accelerator_post600_queue": "b01398d55ca4057b3ae2f030f3cf90075ce4678b",
+    "accelerator_tests": "46f6b2cc2c6da5b5c894cd0e41001cb45c13c889",
+    "stale_test_cleanup": "e687393bbe732939f1e679dd266f608ae968f940"
+  }
+}
