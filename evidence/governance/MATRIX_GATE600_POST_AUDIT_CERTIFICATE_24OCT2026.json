@@ -1,0 +1,94 @@
+{
+  "schema": "MATRIX_GATE600_POST_AUDIT_CERTIFICATE_24OCT2026_V1",
+  "generated_at_utc": "2026-10-25T05:01:55.028Z",
+  "status": "PASS",
+  "physical_run": {
+    "workflow": "MATRIX Multi-Market Canonical Supervisor",
+    "run_id": 40163932242,
+    "conclusion": "success",
+    "head_sha": "887ccf6f66d9b13ebcb08e88b4b854754c16b77b"
+  },
+  "audit": {
+    "source": "evidence/market_portfolio/MATRIX_GATE600_POST_AUDIT_LAST.json",
+    "generated_at_utc": "2026-10-25T05:01:23+00:00",
+    "overall_verdict": "HOLD",
+    "reason": "EXACT_GATE600_FREEZES_EXIST_BUT_ONLY_42_EXACT_MATCHING_FINAL_FT_SETTLEMENTS_ARE_AVAILABLE_PER_LANE",
+    "lanes": [
+      {
+        "lane": "MATCH_RESULT_1X2",
+        "freeze": 640,
+        "settled": 42,
+        "remaining_settled_to_600": 558,
+        "verdict": "HOLD",
+        "brier_challenger": 0.6420862508327865,
+        "brier_poisson": 0.6539020372869372,
+        "logloss_challenger": 1.064751812803222,
+        "logloss_poisson": 1.080577857735293,
+        "proper_scoring_direction": "BETTER_BOTH_DIAGNOSTIC"
+      },
+      {
+        "lane": "DOUBLE_CHANCE_1X",
+        "freeze": 640,
+        "settled": 42,
+        "remaining_settled_to_600": 558,
+        "verdict": "HOLD",
+        "brier_challenger": 0.1766217486003241,
+        "brier_poisson": 0.18753077302670795,
+        "logloss_challenger": 0.5350870714252876,
+        "logloss_poisson": 0.56084023823844,
+        "proper_scoring_direction": "BETTER_BOTH_DIAGNOSTIC"
+      },
+      {
+        "lane": "DOUBLE_CHANCE_X2",
+        "freeze": 640,
+        "settled": 42,
+        "remaining_settled_to_600": 558,
+        "verdict": "HOLD",
+        "brier_challenger": 0.2634162756673995,
+        "brier_poisson": 0.27088919967685166,
+        "logloss_challenger": 0.7205520704033593,
+        "logloss_poisson": 0.7406870721916997,
+        "proper_scoring_direction": "BETTER_BOTH_DIAGNOSTIC"
+      },
+      {
+        "lane": "DOUBLE_CHANCE_12",
+        "freeze": 640,
+        "settled": 42,
+        "remaining_settled_to_600": 558,
+        "verdict": "HOLD",
+        "brier_challenger": 0.20204822656506286,
+        "brier_poisson": 0.1954820645833776,
+        "logloss_challenger": 0.6001354058380604,
+        "logloss_poisson": 0.5798664484968976,
+        "proper_scoring_direction": "WORSE_BOTH_DIAGNOSTIC"
+      }
+    ]
+  },
+  "adjudication_policy": {
+    "pass_requires_exact_settled_600": true,
+    "pass_requires_brier_better_than_poisson": true,
+    "pass_requires_logloss_better_than_poisson": true,
+    "ece_diagnostic_only": true,
+    "temporal_stability_diagnostic_only": true,
+    "competition_concentration_diagnostic_only": true,
+    "automatic_promotion": false
+  },
+  "protections": {
+    "exact_fixture_intersection": true,
+    "final_ft_only": true,
+    "no_parameter_tuning": true,
+    "no_refit": true,
+    "historical_backfill": false,
+    "post_start_backfill": false,
+    "missing_not_zero": true,
+    "silent_imputation": false,
+    "odds_used_to_generate_probability": false,
+    "automatic_wagering": false,
+    "real_money": "BLOCKED"
+  },
+  "commits": {
+    "auditor": "671d1a443a36726be1d44ad986b7c87435b72dae",
+    "tests": "ba06027ab1b059b89e2e3003a8e913de5e687fa2",
+    "workflow_integration": "887ccf6f66d9b13ebcb08e88b4b854754c16b77b"
+  }
+}
