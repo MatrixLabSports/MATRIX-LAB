@@ -96,6 +96,8 @@ jobs:
           assert j["minimum_ev"]==0.05
           assert j["team_total_quote_policy"]["snapshot_type"]=="team total"
           assert j["team_total_quote_policy"]["period"]=="full time"
+          assert j["team_total_quote_policy"]["physical_browser_fallback"] is True
+          assert j["team_total_quote_policy"]["physical_browser_max_age_seconds"]==1800
           assert j["event_identity_policy"]["pagination_required"] is True
           assert j["event_identity_policy"]["recovery_window_seconds"]==21600
           print(json.dumps({
