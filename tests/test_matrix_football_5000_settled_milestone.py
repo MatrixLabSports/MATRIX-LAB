@@ -12,6 +12,9 @@ def test_current_physical_milestone_is_consistent_and_safe():
     assert c["final_ft_only"] is True
     assert c["append_only"] is True
     assert c["duplicate_fixture_ids_forbidden"] is True
+    assert c["duplicate_record_hashes_forbidden"] is True
+    assert c["record_sha256_required"] is True
+    assert c["sync_settlement_count_must_equal_ledger_count"] is True
     assert c["hash_chain_verified"] is True
     assert c["historical_backfill"] is False
     assert c["post_start_backfill"] is False
@@ -38,3 +41,23 @@ def test_state_above_5000_remains_ready_for_same_fixed_prefix_audit():
     state,action=_state(TARGET+250)
     assert state=="READY_FOR_5000_AUDIT"
     assert action=="RUN_FIXED_PREFIX_5000_CALIBRATION_AUDIT_NO_AUTO_PROMOTION"
+
+
+
+def test_current_source_counts_and_record_hash_counts_match_physical_ledger():
+    r=build()
+    src=r["source"]
+    assert src["settlement_record_count"]==r["current_settled_count"]
+    assert src["calibration_observation_count"]==r["current_settled_count"]
+    assert src["ledger_record_hash_count"]==r["current_settled_count"]
+    assert src["ledger_unique_record_hash_count"]==r["current_settled_count"]
+
+
+def test_fixed_prefix_5000_stays_closed_before_target():
+    r=build()
+    if r["current_settled_count"]<TARGET:
+        assert r["fixed_prefix_5000"]["opened"] is False
+        assert r["fixed_prefix_5000"]["metrics_authorized"] is False
+        assert r["fixed_prefix_5000"]["observation_count"]==0
+        assert r["fixed_prefix_5000"]["fixture_ids_sha256"] is None
+        assert r["fixed_prefix_5000"]["record_hashes_sha256"] is None
