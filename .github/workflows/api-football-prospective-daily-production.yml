@@ -9,8 +9,11 @@ on:
         default: ""
   push:
     branches:
+      - repair/cor09-world-pipeline
       - main
     paths:
+      - tools/api_football_prospective_horizon.py
+      - tests/test_api_football_prospective_horizon.py
       - .github/workflows/api-football-prospective-daily-production.yml
   schedule:
     # Multiple retry windows. Idempotence below prevents duplicate paid-API cycles
@@ -102,7 +105,7 @@ jobs:
           if [[ -n "${MATRIX_TARGET_DATE_INPUT:-}" ]]; then
             python -m tools.api_football_prospective_horizon --target-date "$MATRIX_TARGET_DATE_INPUT"
           else
-            python -m tools.api_football_prospective_horizon --days 3
+            python -m tools.api_football_prospective_horizon --days 5
           fi
 
       # Permanent defense against provider fixture-id aliasing; rerun after collision-test correction.
@@ -132,7 +135,10 @@ jobs:
           pre=int(os.environ["PRE_FREEZE_COUNT"])
 
           assert horizon["status"]=="PASS"
-          assert 1 <= horizon["days_requested"] <= 3
+          assert 1 <= horizon["days_requested"] <= 5
+          assert horizon["paid_through_bogota_date"]=="2026-10-28"
+          assert horizon["paid_window_target_cap_enforced"] is True
+          assert all(x["target_date_bogota"] <= "2026-10-28" for x in horizon["targets"])
           assert horizon["real_money"]=="BLOCKED"
           assert horizon["automatic_wagering"] is False
           assert horizon["p_matrix_status"]=="NOT_GENERATED"
