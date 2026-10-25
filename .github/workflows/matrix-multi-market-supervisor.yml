@@ -27,6 +27,8 @@ on:
       - tests/test_matrix_42_lane_tennis_match_winner_bridge.py
       - tests/test_matrix_42_lane_team_shots_offline_bridge.py
       - tests/test_matrix_42_lane_zero_prospective_blockers.py
+      - tests/test_matrix_42_lane_action_board.py
+      - tools/matrix_42_lane_action_board.py
       - tests/test_matrix_nine_lab_gate_registry.py
       - tools/matrix_42_lane_prospective_registry.py
       - tools/matrix_42_lane_football_freeze_bridge.py
@@ -82,6 +84,7 @@ jobs:
             tests/test_matrix_42_lane_tennis_match_winner_bridge.py \
             tests/test_matrix_42_lane_team_shots_offline_bridge.py \
             tests/test_matrix_42_lane_zero_prospective_blockers.py \
+            tests/test_matrix_42_lane_action_board.py \
             tests/test_matrix_nine_lab_gate_registry.py
 
       - name: Refresh football market catalog while paid window is active
@@ -313,6 +316,30 @@ jobs:
           },sort_keys=True))
           PY
 
+      - name: Build canonical 42-lane action board
+        shell: bash
+        run: |
+          set -euo pipefail
+          PYTHONPATH=. python -m tools.matrix_42_lane_action_board
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          j=json.loads(Path("evidence/market_portfolio/MATRIX_42_LANE_ACTION_BOARD_LAST.json").read_text(encoding="utf-8"))
+          assert j["status"]=="PASS"
+          assert j["counts"]["total_lanes"]==42
+          assert j["counts"]["football_lanes"]==30
+          assert j["counts"]["tennis_lanes"]==12
+          assert j["invariants"]["all_42_present_exactly_once"] is True
+          assert j["invariants"]["every_lane_has_next_action"] is True
+          assert j["invariants"]["every_lane_must_continue_collecting"] is True
+          assert j["invariants"]["missing_not_zero"] is True
+          assert j["invariants"]["no_silent_imputation"] is True
+          assert j["invariants"]["odds_do_not_generate_p_matrix"] is True
+          assert j["invariants"]["automatic_wagering"] is False
+          assert j["invariants"]["real_money"]=="BLOCKED"
+          print(json.dumps({"status":"PASS","counts":j["counts"]},sort_keys=True))
+          PY
+
       - name: Build blocked-lane activation plan
         shell: bash
         run: |
@@ -351,6 +378,7 @@ jobs:
           git add evidence/market_portfolio/MATRIX_42_LANE_TENNIS_MATCH_WINNER_BRIDGE_LAST.json
           git add evidence/market_portfolio/MATRIX_42_LANE_TEAM_SHOTS_OFFLINE_BRIDGE_LAST.json
           git add evidence/market_portfolio/MATRIX_42_LANE_ZERO_PROSPECTIVE_BLOCKERS_LAST.json
+          git add evidence/market_portfolio/MATRIX_42_LANE_ACTION_BOARD_LAST.json
           git add evidence/market_portfolio/MATRIX_42_LANE_FREEZE_INBOX.jsonl
           if [ -f evidence/market_portfolio/MATRIX_42_LANE_PROSPECTIVE_LEDGER.jsonl ]; then
             git add evidence/market_portfolio/MATRIX_42_LANE_PROSPECTIVE_LEDGER.jsonl
