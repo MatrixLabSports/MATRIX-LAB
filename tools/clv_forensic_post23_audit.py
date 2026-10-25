@@ -105,6 +105,26 @@ def main():
     valid_ages=[int(r["provider_quote_age_seconds"]) for r in post if r.get("outcome") in valid and isinstance(r.get("provider_quote_age_seconds"),(int,float))]
     fresh_ages=[int(r["provider_quote_age_seconds"]) for r in post if isinstance(r.get("provider_quote_age_seconds"),(int,float)) and 0<=int(r["provider_quote_age_seconds"])<=120]
     dates=collections.Counter(stamp(new_d[k]["fixture_kickoff_utc"]).date().isoformat() for k in delta)
+    def outcome_family(s):
+        if s in stale: return "stale_gt120"
+        if s in market: return "market_incomplete"
+        if s=="ODDS_API_BLOCKED_FIXTURE_LOOKUP": return "fixture_lookup"
+        if s=="ODDS_API_BLOCKED_IDENTITY": return "identity_mapping"
+        if s in ("BLOCKED_PROVIDER_ERROR","ODDS_API_BLOCKED_PROVIDER_ERROR"): return "provider_error"
+        if s in ("BLOCKED_TEMPORAL","ODDS_API_BLOCKED_TEMPORAL"): return "temporal"
+        if s in valid: return "captured_valid"
+        return "other"
+    signatures=collections.Counter()
+    family_cases=collections.Counter()
+    signature_samples={}
+    for cat in order:
+        for case in classified[cat]:
+            families=tuple(sorted({outcome_family(s) for s in case["outcomes"]}))
+            signature="+".join(families) if families else "no_attempt"
+            signatures[signature]+=1
+            signature_samples.setdefault(signature,case)
+            for fam in families: family_cases[fam]+=1
+    signature_examples={k:{"fixture_id":v["fixture_id"],"kickoff_utc":v["kickoff_utc"],"outcomes":v["outcomes"],"max_quote_age_seconds":v["max_quote_age_seconds"]} for k,v in signature_samples.items()}
     report={
         "schema":"MATRIX_CLV_POST23_FORENSIC_READ_ONLY_V1",
         "repair_baseline_commit":BASE,
@@ -118,6 +138,9 @@ def main():
         "current_missed_decisions_reconstructed":len(now_missed),
         "new_missed_by_kickoff_utc_date":dict(sorted(dates.items())),
         "categories_mutually_exclusive":{cat:len(classified[cat]) for cat in order},
+        "misses_with_evidence_by_cause_nonexclusive":dict(sorted(family_cases.items())),
+        "mutually_exclusive_cause_combinations":dict(sorted(signatures.items())),
+        "cause_combination_examples":signature_examples,
         "case_samples":{cat:classified[cat][:4] for cat in order},
         "all_cases_compact":[{"category":cat,**x} for cat in order for x in classified[cat]],
         "post_repair_attempt_rows":len(post),
@@ -142,6 +165,7 @@ def main():
         "push_transport_recommendation":"NO_MIGRATION_UNTIL_RECENT_CAUSES_ADJUDICATED_AND_TRIAL_GATE_MET",
         "real_money":"BLOCKED"
     }
+    Path("/tmp/MATRIX_CLV_POST23_FORENSIC_25OCT2026.json").write_text(json.dumps(report,ensure_ascii=False,sort_keys=True,indent=2)+"\\n",encoding="utf-8")
     print("MATRIX_CLV_FORENSIC_JSON="+json.dumps(report,ensure_ascii=False,sort_keys=True,separators=(",",":")))
     assert len(delta)==report["state_missed_delta"], "MISMATCH_MISSED_DELTA"
     assert sum(report["categories_mutually_exclusive"].values())==len(delta)
