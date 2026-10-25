@@ -35,3 +35,21 @@ def test_new_picks_source_code_is_present():
     assert "EVENT_SEARCH_RECOVERY_WINDOW_SECONDS=21600" in text
     assert "physical_book_team_total_offer" in text
     assert "PHYSICAL_BOOK_QUOTE_MAX_AGE_SECONDS=1800" in text
+
+
+def test_physical_team_total_capture_workflow_is_permanent_15m():
+    text=Path(".github/workflows/matrix-team-total-physical-capture.yml").read_text(encoding="utf-8")
+    assert 'cron: "6,21,36,51 * * * *"' in text
+    assert "python -m tools.physical_team_total_browser_capture" in text
+    assert "MATRIX_TEAM_TOTAL_PHYSICAL_CAPTURE_BRIDGE_LAST.json" in text
+    assert "REAL_MONEY: BLOCKED" in text
+    assert "AUTO_BETTING: DISABLED" in text
+
+
+def test_picks_workflow_bridges_physical_captures_before_signal_generation():
+    text=Path(".github/workflows/telegram-team-total-goals-picks.yml").read_text(encoding="utf-8")
+    bridge=text.index("Normalize physical Team Total captures before PICKS NUEVOS")
+    picks=text.index("Generate and dispatch governed PICKS NUEVOS")
+    assert bridge < picks
+    assert "python -m tools.physical_team_total_browser_capture" in text
+    assert "tests/test_physical_team_total_browser_capture.py" in text
