@@ -147,6 +147,10 @@ def build_rows(
     admitted=[]; blocked=[]
     cache:dict[str,tuple[list[dict[str,Any]],str]]={}
     future_candidates=0
+    feature_eligible_fixtures:set[str]=set()
+    duplicate_existing_lane_rows=0
+    duplicate_existing_lane_counts={lane:0 for lane in LANES}
+    admitted_lane_counts={lane:0 for lane in LANES}
     for src in source.get("rows") or []:
         if not isinstance(src,Mapping):
             continue
@@ -196,10 +200,14 @@ def build_rows(
         }
         feature_sha=_sha(feature_snapshot)
         preds=_predictions(fhl,fal,shl,sal)
+        feature_eligible_fixtures.add(fid)
         for lane,prediction in preds.items():
             obs_key=f"football|{lane}|fixture:{fid}|freeze:{freeze.isoformat()}"
             if obs_key in existing_keys:
+                duplicate_existing_lane_rows+=1
+                duplicate_existing_lane_counts[lane]+=1
                 continue
+            admitted_lane_counts[lane]+=1
             admitted.append({
                 "observation_key":obs_key,
                 "record_type":"PROSPECTIVE_PREMATCH_FREEZE",
@@ -232,14 +240,19 @@ def build_rows(
         "generated_at_utc":now_utc.replace(microsecond=0).isoformat(),
         "source_schema":source.get("schema"),
         "future_source_fixture_candidates":future_candidates,
+        "feature_eligible_future_unique_fixtures":len(feature_eligible_fixtures),
         "eligible_future_unique_fixtures":len({x["fixture_id"] for x in admitted}),
         "eligible_future_lane_rows":len(admitted),
+        "duplicate_existing_lane_rows":duplicate_existing_lane_rows,
+        "duplicate_existing_lane_counts":duplicate_existing_lane_counts,
+        "admitted_lane_counts":admitted_lane_counts,
         "lanes_emitted":list(LANES),
         "blocked_count":len(blocked),
         "blocked_reason_counts":{},
         "blocked":blocked[:100],
         "protections":{
             "strictly_prior_kickoff_history_only":True,
+            "duplicate_observation_keys_never_recounted":True,
             "source_probabilities_not_used_for_period_model":True,
             "parameter_refit":False,
             "parameter_search":False,
