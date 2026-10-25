@@ -1,0 +1,1658 @@
+{
+  "adjudication_policy": {
+    "competition_concentration_is_diagnostic_not_a_new_invented_threshold": true,
+    "ece_is_diagnostic_not_a_new_invented_threshold": true,
+    "freeze_gate_threshold": 600,
+    "no_automatic_promotion": true,
+    "pass_requires_brier_better_than_poisson": true,
+    "pass_requires_exact_settled_600": true,
+    "pass_requires_logloss_better_than_poisson": true,
+    "settled_gate_threshold": 600,
+    "temporal_stability_is_diagnostic_not_a_new_invented_threshold": true
+  },
+  "audit_overall_verdict": "HOLD",
+  "gate600_lab_lane_count": 4,
+  "generated_at_utc": "2026-10-25T05:01:23+00:00",
+  "lanes": [
+    {
+      "action_board_count": 640,
+      "automatic_promotion": false,
+      "competition_concentration_diagnostic": {
+        "competition_count": 6,
+        "top_competitions": [
+          {
+            "competition": "Major League Soccer",
+            "count": 12,
+            "share": 0.2857142857142857
+          },
+          {
+            "competition": "USL Championship",
+            "count": 12,
+            "share": 0.2857142857142857
+          },
+          {
+            "competition": "Primera B",
+            "count": 8,
+            "share": 0.19047619047619047
+          },
+          {
+            "competition": "USL League One",
+            "count": 7,
+            "share": 0.16666666666666666
+          },
+          {
+            "competition": "Primera A",
+            "count": 2,
+            "share": 0.047619047619047616
+          },
+          {
+            "competition": "Primera B Metropolitana",
+            "count": 1,
+            "share": 0.023809523809523808
+          }
+        ]
+      },
+      "display_name": "1X2",
+      "exact_settled_count": 42,
+      "market_lane": "MATCH_RESULT_1X2",
+      "metrics": {
+        "beats_poisson_brier": true,
+        "beats_poisson_log_loss": true,
+        "challenger": {
+          "accuracy": 0.42857142857142855,
+          "brier_score": 0.6420862508327865,
+          "confidence_ece": {
+            "ece": 0.08758248017509465,
+            "method": "EQUAL_WIDTH_10_BINS",
+            "nonempty_bins": [
+              {
+                "absolute_gap": 0.022872700991616313,
+                "count": 5,
+                "lower": 0.3,
+                "mean_probability": 0.3771272990083837,
+                "observed_rate": 0.4,
+                "upper": 0.4
+              },
+              {
+                "absolute_gap": 0.015782358537609786,
+                "count": 21,
+                "lower": 0.4,
+                "mean_probability": 0.44435378710903833,
+                "observed_rate": 0.42857142857142855,
+                "upper": 0.5
+              },
+              {
+                "absolute_gap": 0.182890394110983,
+                "count": 14,
+                "lower": 0.5,
+                "mean_probability": 0.5400332512538402,
+                "observed_rate": 0.35714285714285715,
+                "upper": 0.6
+              },
+              {
+                "absolute_gap": 0.33610280777616297,
+                "count": 2,
+                "lower": 0.6,
+                "mean_probability": 0.663897192223837,
+                "observed_rate": 1.0,
+                "upper": 0.7
+              }
+            ]
+          },
+          "log_loss": 1.064751812803222,
+          "sample_size": 42
+        },
+        "delta_brier_challenger_minus_poisson": -0.011815786454150712,
+        "delta_log_loss_challenger_minus_poisson": -0.01582604493207085,
+        "poisson": {
+          "accuracy": 0.47619047619047616,
+          "brier_score": 0.6539020372869372,
+          "confidence_ece": {
+            "ece": 0.11950588952380956,
+            "method": "EQUAL_WIDTH_10_BINS",
+            "nonempty_bins": [
+              {
+                "absolute_gap": 0.12381916800000003,
+                "count": 10,
+                "lower": 0.3,
+                "mean_probability": 0.37618083199999997,
+                "observed_rate": 0.5,
+                "upper": 0.4
+              },
+              {
+                "absolute_gap": 0.06586545192307697,
+                "count": 26,
+                "lower": 0.4,
+                "mean_probability": 0.43413454807692303,
+                "observed_rate": 0.5,
+                "upper": 0.5
+              },
+              {
+                "absolute_gap": 0.33886334,
+                "count": 5,
+                "lower": 0.5,
+                "mean_probability": 0.53886334,
+                "observed_rate": 0.2,
+                "upper": 0.6
+              },
+              {
+                "absolute_gap": 0.37423723,
+                "count": 1,
+                "lower": 0.6,
+                "mean_probability": 0.62576277,
+                "observed_rate": 1.0,
+                "upper": 0.7
+              }
+            ]
+          },
+          "log_loss": 1.080577857735293,
+          "sample_size": 42
+        },
+        "proper_scoring_gate_passed": true
+      },
+      "missing_or_not_yet_final_fixture_count": 598,
+      "prospective_freeze_count": 640,
+      "remaining_settled_to_600": 558,
+      "temporal_stability_diagnostic": {
+        "method": "CHRONOLOGICAL_THIRDS",
+        "segments": [
+          {
+            "beats_poisson_brier": true,
+            "beats_poisson_log_loss": true,
+            "challenger": {
+              "accuracy": 0.42857142857142855,
+              "brier_score": 0.6146961873033943,
+              "confidence_ece": {
+                "ece": 0.07783900358759518,
+                "method": "EQUAL_WIDTH_10_BINS",
+                "nonempty_bins": [
+                  {
+                    "absolute_gap": 0.12266069578344818,
+                    "count": 4,
+                    "lower": 0.3,
+                    "mean_probability": 0.3726606957834482,
+                    "observed_rate": 0.25,
+                    "upper": 0.4
+                  },
+                  {
+                    "absolute_gap": 0.018829563112174097,
+                    "count": 7,
+                    "lower": 0.4,
+                    "mean_probability": 0.44740099168360264,
+                    "observed_rate": 0.42857142857142855,
+                    "upper": 0.5
+                  },
+                  {
+                    "absolute_gap": 0.04804034710842353,
+                    "count": 2,
+                    "lower": 0.5,
+                    "mean_probability": 0.5480403471084235,
+                    "observed_rate": 0.5,
+                    "upper": 0.6
+                  },
+                  {
+                    "absolute_gap": 0.37121563109047406,
+                    "count": 1,
+                    "lower": 0.6,
+                    "mean_probability": 0.6287843689095259,
+                    "observed_rate": 1.0,
+                    "upper": 0.7
+                  }
+                ]
+              },
+              "log_loss": 1.0193295276239696,
+              "sample_size": 14
+            },
+            "delta_brier_challenger_minus_poisson": -0.02381293512370808,
+            "delta_log_loss_challenger_minus_poisson": -0.036570336654814906,
+            "end_kickoff_utc": "2026-10-24T22:00:00+00:00",
+            "poisson": {
+              "accuracy": 0.5,
+              "brier_score": 0.6385091224271023,
+              "confidence_ece": {
+                "ece": 0.220455925,
+                "method": "EQUAL_WIDTH_10_BINS",
+                "nonempty_bins": [
+                  {
+                    "absolute_gap": 0.1192974,
+                    "count": 4,
+                    "lower": 0.3,
+                    "mean_probability": 0.3692974,
+                    "observed_rate": 0.25,
+                    "upper": 0.4
+                  },
+                  {
+                    "absolute_gap": 0.28406261571428576,
+                    "count": 7,
+                    "lower": 0.4,
+                    "mean_probability": 0.43022309857142854,
+                    "observed_rate": 0.7142857142857143,
+                    "upper": 0.5
+                  },
+                  {
+                    "absolute_gap": 0.20691834666666659,
+                    "count": 3,
+                    "lower": 0.5,
+                    "mean_probability": 0.5402516799999999,
+                    "observed_rate": 0.3333333333333333,
+                    "upper": 0.6
+                  }
+                ]
+              },
+              "log_loss": 1.0558998642787845,
+              "sample_size": 14
+            },
+            "proper_scoring_gate_passed": true,
+            "segment": 1,
+            "start_kickoff_utc": "2026-10-24T20:30:00+00:00"
+          },
+          {
+            "beats_poisson_brier": false,
+            "beats_poisson_log_loss": false,
+            "challenger": {
+              "accuracy": 0.5,
+              "brier_score": 0.6296560948038964,
+              "confidence_ece": {
+                "ece": 0.2526673544518662,
+                "method": "EQUAL_WIDTH_10_BINS",
+                "nonempty_bins": [
+                  {
+                    "absolute_gap": 0.6050062880918742,
+                    "count": 1,
+                    "lower": 0.3,
+                    "mean_probability": 0.3949937119081258,
+                    "observed_rate": 1.0,
+                    "upper": 0.4
+                  },
+                  {
+                    "absolute_gap": 0.12477466091355233,
+                    "count": 7,
+                    "lower": 0.4,
+                    "mean_probability": 0.44665391051501907,
+                    "observed_rate": 0.5714285714285714,
+                    "upper": 0.5
+                  },
+                  {
+                    "absolute_gap": 0.35158481267550695,
+                    "count": 5,
+                    "lower": 0.5,
+                    "mean_probability": 0.551584812675507,
+                    "observed_rate": 0.2,
+                    "upper": 0.6
+                  },
+                  {
+                    "absolute_gap": 0.3009899844618519,
+                    "count": 1,
+                    "lower": 0.6,
+                    "mean_probability": 0.6990100155381481,
+                    "observed_rate": 1.0,
+                    "upper": 0.7
+                  }
+                ]
+              },
+              "log_loss": 1.046626709096722,
+              "sample_size": 14
+            },
+            "delta_brier_challenger_minus_poisson": 0.008464592388933267,
+            "delta_log_loss_challenger_minus_poisson": 0.010708862695971932,
+            "end_kickoff_utc": "2026-10-25T00:00:00+00:00",
+            "poisson": {
+              "accuracy": 0.5714285714285714,
+              "brier_score": 0.6211915024149631,
+              "confidence_ece": {
+                "ece": 0.14104502785714287,
+                "method": "EQUAL_WIDTH_10_BINS",
+                "nonempty_bins": [
+                  {
+                    "absolute_gap": 0.22140784400000002,
+                    "count": 5,
+                    "lower": 0.3,
+                    "mean_probability": 0.37859215599999996,
+                    "observed_rate": 0.6,
+                    "upper": 0.4
+                  },
+                  {
+                    "absolute_gap": 0.0616692425,
+                    "count": 8,
+                    "lower": 0.4,
+                    "mean_probability": 0.4383307575,
+                    "observed_rate": 0.5,
+                    "upper": 0.5
+                  },
+                  {
+                    "absolute_gap": 0.37423723,
+                    "count": 1,
+                    "lower": 0.6,
+                    "mean_probability": 0.62576277,
+                    "observed_rate": 1.0,
+                    "upper": 0.7
+                  }
+                ]
+              },
+              "log_loss": 1.0359178464007501,
+              "sample_size": 14
+            },
+            "proper_scoring_gate_passed": false,
+            "segment": 2,
+            "start_kickoff_utc": "2026-10-24T22:00:00+00:00"
+          },
+          {
+            "beats_poisson_brier": true,
+            "beats_poisson_log_loss": true,
+            "challenger": {
+              "accuracy": 0.35714285714285715,
+              "brier_score": 0.6819064703910686,
+              "confidence_ece": {
+                "ece": 0.12710756956134536,
+                "method": "EQUAL_WIDTH_10_BINS",
+                "nonempty_bins": [
+                  {
+                    "absolute_gap": 0.15329217341420764,
+                    "count": 7,
+                    "lower": 0.4,
+                    "mean_probability": 0.43900645912849334,
+                    "observed_rate": 0.2857142857142857,
+                    "upper": 0.5
+                  },
+                  {
+                    "absolute_gap": 0.10092296570848308,
+                    "count": 7,
+                    "lower": 0.5,
+                    "mean_probability": 0.5294943942799116,
+                    "observed_rate": 0.42857142857142855,
+                    "upper": 0.6
+                  }
+                ]
+              },
+              "log_loss": 1.128299201688973,
+              "sample_size": 14
+            },
+            "delta_brier_challenger_minus_poisson": -0.020099016627677546,
+            "delta_log_loss_challenger_minus_poisson": -0.02161666083737046,
+            "end_kickoff_utc": "2026-10-25T02:30:00+00:00",
+            "poisson": {
+              "accuracy": 0.35714285714285715,
+              "brier_score": 0.7020054870187461,
+              "confidence_ece": {
+                "ece": 0.17508530142857137,
+                "method": "EQUAL_WIDTH_10_BINS",
+                "nonempty_bins": [
+                  {
+                    "absolute_gap": 0.60834206,
+                    "count": 1,
+                    "lower": 0.3,
+                    "mean_probability": 0.39165794,
+                    "observed_rate": 1.0,
+                    "upper": 0.4
+                  },
+                  {
+                    "absolute_gap": 0.06993549999999993,
+                    "count": 11,
+                    "lower": 0.4,
+                    "mean_probability": 0.4335718636363636,
+                    "observed_rate": 0.36363636363636365,
+                    "upper": 0.5
+                  },
+                  {
+                    "absolute_gap": 0.5367808300000001,
+                    "count": 2,
+                    "lower": 0.5,
+                    "mean_probability": 0.5367808300000001,
+                    "observed_rate": 0.0,
+                    "upper": 0.6
+                  }
+                ]
+              },
+              "log_loss": 1.1499158625263435,
+              "sample_size": 14
+            },
+            "proper_scoring_gate_passed": true,
+            "segment": 3,
+            "start_kickoff_utc": "2026-10-25T00:00:00+00:00"
+          }
+        ]
+      },
+      "verdict": "HOLD",
+      "verdict_reason": "AWAITING_600_EXACT_SETTLED_OBSERVATIONS"
+    },
+    {
+      "action_board_count": 640,
+      "automatic_promotion": false,
+      "competition_concentration_diagnostic": {
+        "competition_count": 6,
+        "top_competitions": [
+          {
+            "competition": "Major League Soccer",
+            "count": 12,
+            "share": 0.2857142857142857
+          },
+          {
+            "competition": "USL Championship",
+            "count": 12,
+            "share": 0.2857142857142857
+          },
+          {
+            "competition": "Primera B",
+            "count": 8,
+            "share": 0.19047619047619047
+          },
+          {
+            "competition": "USL League One",
+            "count": 7,
+            "share": 0.16666666666666666
+          },
+          {
+            "competition": "Primera A",
+            "count": 2,
+            "share": 0.047619047619047616
+          },
+          {
+            "competition": "Primera B Metropolitana",
+            "count": 1,
+            "share": 0.023809523809523808
+          }
+        ]
+      },
+      "display_name": "Doble oportunidad 1X",
+      "exact_settled_count": 42,
+      "market_lane": "DOUBLE_CHANCE_1X",
+      "metrics": {
+        "beats_poisson_brier": true,
+        "beats_poisson_log_loss": true,
+        "challenger": {
+          "brier_score": 0.1766217486003241,
+          "calibration": {
+            "ece": 0.11699213948844361,
+            "method": "EQUAL_WIDTH_10_BINS",
+            "nonempty_bins": [
+              {
+                "absolute_gap": 0.5080255135417404,
+                "count": 1,
+                "lower": 0.4,
+                "mean_probability": 0.4919744864582596,
+                "observed_rate": 1.0,
+                "upper": 0.5
+              },
+              {
+                "absolute_gap": 0.1537219190007415,
+                "count": 7,
+                "lower": 0.5,
+                "mean_probability": 0.5605637952849728,
+                "observed_rate": 0.7142857142857143,
+                "upper": 0.6
+              },
+              {
+                "absolute_gap": 0.004643855574165134,
+                "count": 17,
+                "lower": 0.6,
+                "mean_probability": 0.6517026791035769,
+                "observed_rate": 0.6470588235294118,
+                "upper": 0.7
+              },
+              {
+                "absolute_gap": 0.1959544604199399,
+                "count": 13,
+                "lower": 0.7,
+                "mean_probability": 0.7271224626569832,
+                "observed_rate": 0.9230769230769231,
+                "upper": 0.8
+              },
+              {
+                "absolute_gap": 0.17580934543691873,
+                "count": 4,
+                "lower": 0.8,
+                "mean_probability": 0.8241906545630813,
+                "observed_rate": 1.0,
+                "upper": 0.9
+              }
+            ]
+          },
+          "log_loss": 0.5350870714252876,
+          "sample_size": 42
+        },
+        "delta_brier_challenger_minus_poisson": -0.010909024426383862,
+        "delta_log_loss_challenger_minus_poisson": -0.02575316681315243,
+        "poisson": {
+          "brier_score": 0.18753077302670795,
+          "calibration": {
+            "ece": 0.19939661952380952,
+            "method": "EQUAL_WIDTH_10_BINS",
+            "nonempty_bins": [
+              {
+                "absolute_gap": 0.5362157825,
+                "count": 4,
+                "lower": 0.4,
+                "mean_probability": 0.46378421750000004,
+                "observed_rate": 1.0,
+                "upper": 0.5
+              },
+              {
+                "absolute_gap": 0.07221900166666662,
+                "count": 12,
+                "lower": 0.5,
+                "mean_probability": 0.5722190016666666,
+                "observed_rate": 0.5,
+                "upper": 0.6
+              },
+              {
+                "absolute_gap": 0.24144194157894738,
+                "count": 19,
+                "lower": 0.6,
+                "mean_probability": 0.6532949005263158,
+                "observed_rate": 0.8947368421052632,
+                "upper": 0.7
+              },
+              {
+                "absolute_gap": 0.09881405833333345,
+                "count": 6,
+                "lower": 0.7,
+                "mean_probability": 0.7345192749999999,
+                "observed_rate": 0.8333333333333334,
+                "upper": 0.8
+              },
+              {
+                "absolute_gap": 0.1828856299999999,
+                "count": 1,
+                "lower": 0.8,
+                "mean_probability": 0.8171143700000001,
+                "observed_rate": 1.0,
+                "upper": 0.9
+              }
+            ]
+          },
+          "log_loss": 0.56084023823844,
+          "sample_size": 42
+        },
+        "proper_scoring_gate_passed": true
+      },
+      "missing_or_not_yet_final_fixture_count": 598,
+      "prospective_freeze_count": 640,
+      "remaining_settled_to_600": 558,
+      "temporal_stability_diagnostic": {
+        "method": "CHRONOLOGICAL_THIRDS",
+        "segments": [
+          {
+            "beats_poisson_brier": true,
+            "beats_poisson_log_loss": true,
+            "challenger": {
+              "brier_score": 0.1749141960144974,
+              "calibration": {
+                "ece": 0.13375020928262465,
+                "method": "EQUAL_WIDTH_10_BINS",
+                "nonempty_bins": [
+                  {
+                    "absolute_gap": 0.038370831932550975,
+                    "count": 5,
+                    "lower": 0.5,
+                    "mean_probability": 0.561629168067449,
+                    "observed_rate": 0.6,
+                    "upper": 0.6
+                  },
+                  {
+                    "absolute_gap": 0.13630966217316365,
+                    "count": 5,
+                    "lower": 0.6,
+                    "mean_probability": 0.6636903378268364,
+                    "observed_rate": 0.8,
+                    "upper": 0.7
+                  },
+                  {
+                    "absolute_gap": 0.2720360491913164,
+                    "count": 3,
+                    "lower": 0.7,
+                    "mean_probability": 0.7279639508086836,
+                    "observed_rate": 1.0,
+                    "upper": 0.8
+                  },
+                  {
+                    "absolute_gap": 0.18299231185422304,
+                    "count": 1,
+                    "lower": 0.8,
+                    "mean_probability": 0.817007688145777,
+                    "observed_rate": 1.0,
+                    "upper": 0.9
+                  }
+                ]
+              },
+              "log_loss": 0.5316727954470467,
+              "sample_size": 14
+            },
+            "delta_brier_challenger_minus_poisson": -0.010137337982094513,
+            "delta_log_loss_challenger_minus_poisson": -0.0235360782808538,
+            "end_kickoff_utc": "2026-10-24T22:00:00+00:00",
+            "poisson": {
+              "brier_score": 0.1850515339965919,
+              "calibration": {
+                "ece": 0.35008174214285714,
+                "method": "EQUAL_WIDTH_10_BINS",
+                "nonempty_bins": [
+                  {
+                    "absolute_gap": 0.5356507349999999,
+                    "count": 2,
+                    "lower": 0.4,
+                    "mean_probability": 0.464349265,
+                    "observed_rate": 1.0,
+                    "upper": 0.5
+                  },
+                  {
+                    "absolute_gap": 0.32215272000000006,
+                    "count": 4,
+                    "lower": 0.5,
+                    "mean_probability": 0.5721527200000001,
+                    "observed_rate": 0.25,
+                    "upper": 0.6
+                  },
+                  {
+                    "absolute_gap": 0.33767227,
+                    "count": 6,
+                    "lower": 0.6,
+                    "mean_probability": 0.66232773,
+                    "observed_rate": 1.0,
+                    "upper": 0.7
+                  },
+                  {
+                    "absolute_gap": 0.25759920999999997,
+                    "count": 2,
+                    "lower": 0.7,
+                    "mean_probability": 0.74240079,
+                    "observed_rate": 1.0,
+                    "upper": 0.8
+                  }
+                ]
+              },
+              "log_loss": 0.5552088737279005,
+              "sample_size": 14
+            },
+            "proper_scoring_gate_passed": true,
+            "segment": 1,
+            "start_kickoff_utc": "2026-10-24T20:30:00+00:00"
+          },
+          {
+            "beats_poisson_brier": false,
+            "beats_poisson_log_loss": true,
+            "challenger": {
+              "brier_score": 0.19329436901668923,
+              "calibration": {
+                "ece": 0.13586848358937445,
+                "method": "EQUAL_WIDTH_10_BINS",
+                "nonempty_bins": [
+                  {
+                    "absolute_gap": 0.14599157373249116,
+                    "count": 6,
+                    "lower": 0.6,
+                    "mean_probability": 0.6459915737324912,
+                    "observed_rate": 0.5,
+                    "upper": 0.7
+                  },
+                  {
+                    "absolute_gap": 0.11654170009701659,
+                    "count": 6,
+                    "lower": 0.7,
+                    "mean_probability": 0.7167916332363168,
+                    "observed_rate": 0.8333333333333334,
+                    "upper": 0.8
+                  },
+                  {
+                    "absolute_gap": 0.16347956363709792,
+                    "count": 2,
+                    "lower": 0.8,
+                    "mean_probability": 0.8365204363629021,
+                    "observed_rate": 1.0,
+                    "upper": 0.9
+                  }
+                ]
+              },
+              "log_loss": 0.5699669211689634,
+              "sample_size": 14
+            },
+            "delta_brier_challenger_minus_poisson": 4.60695940832645e-05,
+            "delta_log_loss_challenger_minus_poisson": -0.002268032643127915,
+            "end_kickoff_utc": "2026-10-25T00:00:00+00:00",
+            "poisson": {
+              "brier_score": 0.19324829942260596,
+              "calibration": {
+                "ece": 0.22891371,
+                "method": "EQUAL_WIDTH_10_BINS",
+                "nonempty_bins": [
+                  {
+                    "absolute_gap": 0.23737602666666674,
+                    "count": 3,
+                    "lower": 0.5,
+                    "mean_probability": 0.57070936,
+                    "observed_rate": 0.3333333333333333,
+                    "upper": 0.6
+                  },
+                  {
+                    "absolute_gap": 0.23157039375,
+                    "count": 8,
+                    "lower": 0.6,
+                    "mean_probability": 0.64342960625,
+                    "observed_rate": 0.875,
+                    "upper": 0.7
+                  },
+                  {
+                    "absolute_gap": 0.22860754000000005,
+                    "count": 2,
+                    "lower": 0.7,
+                    "mean_probability": 0.72860754,
+                    "observed_rate": 0.5,
+                    "upper": 0.8
+                  },
+                  {
+                    "absolute_gap": 0.1828856299999999,
+                    "count": 1,
+                    "lower": 0.8,
+                    "mean_probability": 0.8171143700000001,
+                    "observed_rate": 1.0,
+                    "upper": 0.9
+                  }
+                ]
+              },
+              "log_loss": 0.5722349538120913,
+              "sample_size": 14
+            },
+            "proper_scoring_gate_passed": false,
+            "segment": 2,
+            "start_kickoff_utc": "2026-10-24T22:00:00+00:00"
+          },
+          {
+            "beats_poisson_brier": true,
+            "beats_poisson_log_loss": true,
+            "challenger": {
+              "brier_score": 0.16165668076978568,
+              "calibration": {
+                "ece": 0.19521542525535143,
+                "method": "EQUAL_WIDTH_10_BINS",
+                "nonempty_bins": [
+                  {
+                    "absolute_gap": 0.5080255135417404,
+                    "count": 1,
+                    "lower": 0.4,
+                    "mean_probability": 0.4919744864582596,
+                    "observed_rate": 1.0,
+                    "upper": 0.5
+                  },
+                  {
+                    "absolute_gap": 0.44209963667121777,
+                    "count": 2,
+                    "lower": 0.5,
+                    "mean_probability": 0.5579003633287822,
+                    "observed_rate": 1.0,
+                    "upper": 0.6
+                  },
+                  {
+                    "absolute_gap": 0.01924259779472015,
+                    "count": 6,
+                    "lower": 0.6,
+                    "mean_probability": 0.6474240688719465,
+                    "observed_rate": 0.6666666666666666,
+                    "upper": 0.7
+                  },
+                  {
+                    "absolute_gap": 0.25801240932579184,
+                    "count": 4,
+                    "lower": 0.7,
+                    "mean_probability": 0.7419875906742082,
+                    "observed_rate": 1.0,
+                    "upper": 0.8
+                  },
+                  {
+                    "absolute_gap": 0.19328594261925613,
+                    "count": 1,
+                    "lower": 0.8,
+                    "mean_probability": 0.8067140573807439,
+                    "observed_rate": 1.0,
+                    "upper": 0.9
+                  }
+                ]
+              },
+              "log_loss": 0.5036214976598522,
+              "sample_size": 14
+            },
+            "delta_brier_challenger_minus_poisson": -0.02263580489114017,
+            "delta_log_loss_challenger_minus_poisson": -0.051455389515476124,
+            "end_kickoff_utc": "2026-10-25T02:30:00+00:00",
+            "poisson": {
+              "brier_score": 0.18429248566092585,
+              "calibration": {
+                "ece": 0.24652669500000005,
+                "method": "EQUAL_WIDTH_10_BINS",
+                "nonempty_bins": [
+                  {
+                    "absolute_gap": 0.53678083,
+                    "count": 2,
+                    "lower": 0.4,
+                    "mean_probability": 0.46321917,
+                    "observed_rate": 1.0,
+                    "upper": 0.5
+                  },
+                  {
+                    "absolute_gap": 0.2268221880000001,
+                    "count": 5,
+                    "lower": 0.5,
+                    "mean_probability": 0.573177812,
+                    "observed_rate": 0.8,
+                    "upper": 0.6
+                  },
+                  {
+                    "absolute_gap": 0.1417600240000001,
+                    "count": 5,
+                    "lower": 0.6,
+                    "mean_probability": 0.658239976,
+                    "observed_rate": 0.8,
+                    "upper": 0.7
+                  },
+                  {
+                    "absolute_gap": 0.267450505,
+                    "count": 2,
+                    "lower": 0.7,
+                    "mean_probability": 0.732549495,
+                    "observed_rate": 1.0,
+                    "upper": 0.8
+                  }
+                ]
+              },
+              "log_loss": 0.5550768871753283,
+              "sample_size": 14
+            },
+            "proper_scoring_gate_passed": true,
+            "segment": 3,
+            "start_kickoff_utc": "2026-10-25T00:00:00+00:00"
+          }
+        ]
+      },
+      "verdict": "HOLD",
+      "verdict_reason": "AWAITING_600_EXACT_SETTLED_OBSERVATIONS"
+    },
+    {
+      "action_board_count": 640,
+      "automatic_promotion": false,
+      "competition_concentration_diagnostic": {
+        "competition_count": 6,
+        "top_competitions": [
+          {
+            "competition": "Major League Soccer",
+            "count": 12,
+            "share": 0.2857142857142857
+          },
+          {
+            "competition": "USL Championship",
+            "count": 12,
+            "share": 0.2857142857142857
+          },
+          {
+            "competition": "Primera B",
+            "count": 8,
+            "share": 0.19047619047619047
+          },
+          {
+            "competition": "USL League One",
+            "count": 7,
+            "share": 0.16666666666666666
+          },
+          {
+            "competition": "Primera A",
+            "count": 2,
+            "share": 0.047619047619047616
+          },
+          {
+            "competition": "Primera B Metropolitana",
+            "count": 1,
+            "share": 0.023809523809523808
+          }
+        ]
+      },
+      "display_name": "Doble oportunidad X2",
+      "exact_settled_count": 42,
+      "market_lane": "DOUBLE_CHANCE_X2",
+      "metrics": {
+        "beats_poisson_brier": true,
+        "beats_poisson_log_loss": true,
+        "challenger": {
+          "brier_score": 0.2634162756673995,
+          "calibration": {
+            "ece": 0.17957820701367666,
+            "method": "EQUAL_WIDTH_10_BINS",
+            "nonempty_bins": [
+              {
+                "absolute_gap": 0.33610280777616297,
+                "count": 2,
+                "lower": 0.3,
+                "mean_probability": 0.33610280777616297,
+                "observed_rate": 0.0,
+                "upper": 0.4
+              },
+              {
+                "absolute_gap": 0.15788000030861715,
+                "count": 13,
+                "lower": 0.4,
+                "mean_probability": 0.45750461507599827,
+                "observed_rate": 0.6153846153846154,
+                "upper": 0.5
+              },
+              {
+                "absolute_gap": 0.05318742169395596,
+                "count": 14,
+                "lower": 0.5,
+                "mean_probability": 0.553187421693956,
+                "observed_rate": 0.5,
+                "upper": 0.6
+              },
+              {
+                "absolute_gap": 0.31515342572660404,
+                "count": 12,
+                "lower": 0.6,
+                "mean_probability": 0.6484867590599374,
+                "observed_rate": 0.3333333333333333,
+                "upper": 0.7
+              },
+              {
+                "absolute_gap": 0.29117406257543876,
+                "count": 1,
+                "lower": 0.7,
+                "mean_probability": 0.7088259374245612,
+                "observed_rate": 1.0,
+                "upper": 0.8
+              }
+            ]
+          },
+          "log_loss": 0.7205520704033593,
+          "sample_size": 42
+        },
+        "delta_brier_challenger_minus_poisson": -0.007472924009452153,
+        "delta_log_loss_challenger_minus_poisson": -0.02013500178834038,
+        "poisson": {
+          "brier_score": 0.27088919967685166,
+          "calibration": {
+            "ece": 0.14941612285714287,
+            "method": "EQUAL_WIDTH_10_BINS",
+            "nonempty_bins": [
+              {
+                "absolute_gap": 0.37423723,
+                "count": 1,
+                "lower": 0.3,
+                "mean_probability": 0.37423723,
+                "observed_rate": 0.0,
+                "upper": 0.4
+              },
+              {
+                "absolute_gap": 0.45054643,
+                "count": 1,
+                "lower": 0.4,
+                "mean_probability": 0.45054643,
+                "observed_rate": 0.0,
+                "upper": 0.5
+              },
+              {
+                "absolute_gap": 0.0604195521428571,
+                "count": 14,
+                "lower": 0.5,
+                "mean_probability": 0.5604195521428571,
+                "observed_rate": 0.5,
+                "upper": 0.6
+              },
+              {
+                "absolute_gap": 0.0973031144444445,
+                "count": 18,
+                "lower": 0.6,
+                "mean_probability": 0.6528586700000001,
+                "observed_rate": 0.5555555555555556,
+                "upper": 0.7
+              },
+              {
+                "absolute_gap": 0.35667046375,
+                "count": 8,
+                "lower": 0.7,
+                "mean_probability": 0.73167046375,
+                "observed_rate": 0.375,
+                "upper": 0.8
+              }
+            ]
+          },
+          "log_loss": 0.7406870721916997,
+          "sample_size": 42
+        },
+        "proper_scoring_gate_passed": true
+      },
+      "missing_or_not_yet_final_fixture_count": 598,
+      "prospective_freeze_count": 640,
+      "remaining_settled_to_600": 558,
+      "temporal_stability_diagnostic": {
+        "method": "CHRONOLOGICAL_THIRDS",
+        "segments": [
+          {
+            "beats_poisson_brier": true,
+            "beats_poisson_log_loss": true,
+            "challenger": {
+              "brier_score": 0.2659778010415664,
+              "calibration": {
+                "ece": 0.2143980020482766,
+                "method": "EQUAL_WIDTH_10_BINS",
+                "nonempty_bins": [
+                  {
+                    "absolute_gap": 0.37121563109047406,
+                    "count": 1,
+                    "lower": 0.3,
+                    "mean_probability": 0.37121563109047406,
+                    "observed_rate": 0.0,
+                    "upper": 0.4
+                  },
+                  {
+                    "absolute_gap": 0.04804034710842353,
+                    "count": 2,
+                    "lower": 0.4,
+                    "mean_probability": 0.45195965289157647,
+                    "observed_rate": 0.5,
+                    "upper": 0.5
+                  },
+                  {
+                    "absolute_gap": 0.030023608938768098,
+                    "count": 2,
+                    "lower": 0.5,
+                    "mean_probability": 0.5300236089387681,
+                    "observed_rate": 0.5,
+                    "upper": 0.6
+                  },
+                  {
+                    "absolute_gap": 0.2728818028644471,
+                    "count": 8,
+                    "lower": 0.6,
+                    "mean_probability": 0.6478818028644471,
+                    "observed_rate": 0.375,
+                    "upper": 0.7
+                  },
+                  {
+                    "absolute_gap": 0.29117406257543876,
+                    "count": 1,
+                    "lower": 0.7,
+                    "mean_probability": 0.7088259374245612,
+                    "observed_rate": 1.0,
+                    "upper": 0.8
+                  }
+                ]
+              },
+              "log_loss": 0.7256539350842337,
+              "sample_size": 14
+            },
+            "delta_brier_challenger_minus_poisson": -0.01634696676510894,
+            "delta_log_loss_challenger_minus_poisson": -0.03992656288779428,
+            "end_kickoff_utc": "2026-10-24T22:00:00+00:00",
+            "poisson": {
+              "brier_score": 0.2823247678066753,
+              "calibration": {
+                "ece": 0.2173327235714286,
+                "method": "EQUAL_WIDTH_10_BINS",
+                "nonempty_bins": [
+                  {
+                    "absolute_gap": 0.45054643,
+                    "count": 1,
+                    "lower": 0.4,
+                    "mean_probability": 0.45054643,
+                    "observed_rate": 0.0,
+                    "upper": 0.5
+                  },
+                  {
+                    "absolute_gap": 0.2332758133333333,
+                    "count": 3,
+                    "lower": 0.5,
+                    "mean_probability": 0.5666091466666666,
+                    "observed_rate": 0.3333333333333333,
+                    "upper": 0.6
+                  },
+                  {
+                    "absolute_gap": 0.053651900000000086,
+                    "count": 5,
+                    "lower": 0.6,
+                    "mean_probability": 0.6536519000000001,
+                    "observed_rate": 0.6,
+                    "upper": 0.7
+                  },
+                  {
+                    "absolute_gap": 0.32480495200000004,
+                    "count": 5,
+                    "lower": 0.7,
+                    "mean_probability": 0.7248049520000001,
+                    "observed_rate": 0.4,
+                    "upper": 0.8
+                  }
+                ]
+              },
+              "log_loss": 0.765580497972028,
+              "sample_size": 14
+            },
+            "proper_scoring_gate_passed": true,
+            "segment": 1,
+            "start_kickoff_utc": "2026-10-24T20:30:00+00:00"
+          },
+          {
+            "beats_poisson_brier": false,
+            "beats_poisson_log_loss": false,
+            "challenger": {
+              "brier_score": 0.2586311885688452,
+              "calibration": {
+                "ece": 0.2526673544518662,
+                "method": "EQUAL_WIDTH_10_BINS",
+                "nonempty_bins": [
+                  {
+                    "absolute_gap": 0.3009899844618519,
+                    "count": 1,
+                    "lower": 0.3,
+                    "mean_probability": 0.3009899844618519,
+                    "observed_rate": 0.0,
+                    "upper": 0.4
+                  },
+                  {
+                    "absolute_gap": 0.3515848126755069,
+                    "count": 5,
+                    "lower": 0.4,
+                    "mean_probability": 0.44841518732449315,
+                    "observed_rate": 0.8,
+                    "upper": 0.5
+                  },
+                  {
+                    "absolute_gap": 0.12477466091355233,
+                    "count": 7,
+                    "lower": 0.5,
+                    "mean_probability": 0.5533460894849809,
+                    "observed_rate": 0.42857142857142855,
+                    "upper": 0.6
+                  },
+                  {
+                    "absolute_gap": 0.6050062880918741,
+                    "count": 1,
+                    "lower": 0.6,
+                    "mean_probability": 0.6050062880918741,
+                    "observed_rate": 0.0,
+                    "upper": 0.7
+                  }
+                ]
+              },
+              "log_loss": 0.7097088493226916,
+              "sample_size": 14
+            },
+            "delta_brier_challenger_minus_poisson": 0.00473210332421925,
+            "delta_log_loss_challenger_minus_poisson": 0.007056345582478807,
+            "end_kickoff_utc": "2026-10-25T00:00:00+00:00",
+            "poisson": {
+              "brier_score": 0.25389908524462595,
+              "calibration": {
+                "ece": 0.1273142778571429,
+                "method": "EQUAL_WIDTH_10_BINS",
+                "nonempty_bins": [
+                  {
+                    "absolute_gap": 0.37423723,
+                    "count": 1,
+                    "lower": 0.3,
+                    "mean_probability": 0.37423723,
+                    "observed_rate": 0.0,
+                    "upper": 0.4
+                  },
+                  {
+                    "absolute_gap": 0.043754831999999966,
+                    "count": 5,
+                    "lower": 0.5,
+                    "mean_probability": 0.556245168,
+                    "observed_rate": 0.6,
+                    "upper": 0.6
+                  },
+                  {
+                    "absolute_gap": 0.14867356250000008,
+                    "count": 8,
+                    "lower": 0.6,
+                    "mean_probability": 0.6486735625000001,
+                    "observed_rate": 0.5,
+                    "upper": 0.7
+                  }
+                ]
+              },
+              "log_loss": 0.7026525037402128,
+              "sample_size": 14
+            },
+            "proper_scoring_gate_passed": false,
+            "segment": 2,
+            "start_kickoff_utc": "2026-10-24T22:00:00+00:00"
+          },
+          {
+            "beats_poisson_brier": true,
+            "beats_poisson_log_loss": true,
+            "challenger": {
+              "brier_score": 0.26563983739178704,
+              "calibration": {
+                "ece": 0.0986472560490326,
+                "method": "EQUAL_WIDTH_10_BINS",
+                "nonempty_bins": [
+                  {
+                    "absolute_gap": 0.03307254106960689,
+                    "count": 6,
+                    "lower": 0.4,
+                    "mean_probability": 0.4669274589303931,
+                    "observed_rate": 0.5,
+                    "upper": 0.5
+                  },
+                  {
+                    "absolute_gap": 0.03776918811140351,
+                    "count": 5,
+                    "lower": 0.5,
+                    "mean_probability": 0.5622308118885965,
+                    "observed_rate": 0.6,
+                    "upper": 0.6
+                  },
+                  {
+                    "absolute_gap": 0.3312601325705992,
+                    "count": 3,
+                    "lower": 0.6,
+                    "mean_probability": 0.6645934659039325,
+                    "observed_rate": 0.3333333333333333,
+                    "upper": 0.7
+                  }
+                ]
+              },
+              "log_loss": 0.7262934268031522,
+              "sample_size": 14
+            },
+            "delta_brier_challenger_minus_poisson": -0.010803908587466549,
+            "delta_log_loss_challenger_minus_poisson": -0.027534788059705995,
+            "end_kickoff_utc": "2026-10-25T02:30:00+00:00",
+            "poisson": {
+              "brier_score": 0.2764437459792536,
+              "calibration": {
+                "ece": 0.13485481857142856,
+                "method": "EQUAL_WIDTH_10_BINS",
+                "nonempty_bins": [
+                  {
+                    "absolute_gap": 0.06080340833333331,
+                    "count": 6,
+                    "lower": 0.5,
+                    "mean_probability": 0.5608034083333333,
+                    "observed_rate": 0.5,
+                    "upper": 0.6
+                  },
+                  {
+                    "absolute_gap": 0.05876161199999996,
+                    "count": 5,
+                    "lower": 0.6,
+                    "mean_probability": 0.6587616119999999,
+                    "observed_rate": 0.6,
+                    "upper": 0.7
+                  },
+                  {
+                    "absolute_gap": 0.40977965,
+                    "count": 3,
+                    "lower": 0.7,
+                    "mean_probability": 0.7431129833333333,
+                    "observed_rate": 0.3333333333333333,
+                    "upper": 0.8
+                  }
+                ]
+              },
+              "log_loss": 0.7538282148628582,
+              "sample_size": 14
+            },
+            "proper_scoring_gate_passed": true,
+            "segment": 3,
+            "start_kickoff_utc": "2026-10-25T00:00:00+00:00"
+          }
+        ]
+      },
+      "verdict": "HOLD",
+      "verdict_reason": "AWAITING_600_EXACT_SETTLED_OBSERVATIONS"
+    },
+    {
+      "action_board_count": 640,
+      "automatic_promotion": false,
+      "competition_concentration_diagnostic": {
+        "competition_count": 6,
+        "top_competitions": [
+          {
+            "competition": "Major League Soccer",
+            "count": 12,
+            "share": 0.2857142857142857
+          },
+          {
+            "competition": "USL Championship",
+            "count": 12,
+            "share": 0.2857142857142857
+          },
+          {
+            "competition": "Primera B",
+            "count": 8,
+            "share": 0.19047619047619047
+          },
+          {
+            "competition": "USL League One",
+            "count": 7,
+            "share": 0.16666666666666666
+          },
+          {
+            "competition": "Primera A",
+            "count": 2,
+            "share": 0.047619047619047616
+          },
+          {
+            "competition": "Primera B Metropolitana",
+            "count": 1,
+            "share": 0.023809523809523808
+          }
+        ]
+      },
+      "display_name": "Doble oportunidad 12",
+      "exact_settled_count": 42,
+      "market_lane": "DOUBLE_CHANCE_12",
+      "metrics": {
+        "beats_poisson_brier": false,
+        "beats_poisson_log_loss": false,
+        "challenger": {
+          "brier_score": 0.20204822656506286,
+          "calibration": {
+            "ece": 0.10400897421198113,
+            "method": "EQUAL_WIDTH_10_BINS",
+            "nonempty_bins": [
+              {
+                "absolute_gap": 0.32143862949989244,
+                "count": 3,
+                "lower": 0.6,
+                "mean_probability": 0.6785613705001076,
+                "observed_rate": 1.0,
+                "upper": 0.7
+              },
+              {
+                "absolute_gap": 0.01585361565618626,
+                "count": 17,
+                "lower": 0.7,
+                "mean_probability": 0.7488522666967549,
+                "observed_rate": 0.7647058823529411,
+                "upper": 0.8
+              },
+              {
+                "absolute_gap": 0.1424795255567438,
+                "count": 22,
+                "lower": 0.8,
+                "mean_probability": 0.8242977073749256,
+                "observed_rate": 0.6818181818181818,
+                "upper": 0.9
+              }
+            ]
+          },
+          "log_loss": 0.6001354058380604,
+          "sample_size": 42
+        },
+        "delta_brier_challenger_minus_poisson": 0.006566161981685248,
+        "delta_log_loss_challenger_minus_poisson": 0.02026895734116274,
+        "poisson": {
+          "brier_score": 0.1954820645833776,
+          "calibration": {
+            "ece": 0.045080462380952466,
+            "method": "EQUAL_WIDTH_10_BINS",
+            "nonempty_bins": [
+              {
+                "absolute_gap": 0.11447513600000003,
+                "count": 5,
+                "lower": 0.6,
+                "mean_probability": 0.685524864,
+                "observed_rate": 0.8,
+                "upper": 0.7
+              },
+              {
+                "absolute_gap": 0.031379226111111214,
+                "count": 36,
+                "lower": 0.7,
+                "mean_probability": 0.7536014483333334,
+                "observed_rate": 0.7222222222222222,
+                "upper": 0.8
+              },
+              {
+                "absolute_gap": 0.19135159999999996,
+                "count": 1,
+                "lower": 0.8,
+                "mean_probability": 0.8086484,
+                "observed_rate": 1.0,
+                "upper": 0.9
+              }
+            ]
+          },
+          "log_loss": 0.5798664484968976,
+          "sample_size": 42
+        },
+        "proper_scoring_gate_passed": false
+      },
+      "missing_or_not_yet_final_fixture_count": 598,
+      "prospective_freeze_count": 640,
+      "remaining_settled_to_600": 558,
+      "temporal_stability_diagnostic": {
+        "method": "CHRONOLOGICAL_THIRDS",
+        "segments": [
+          {
+            "beats_poisson_brier": false,
+            "beats_poisson_log_loss": false,
+            "challenger": {
+              "brier_score": 0.1738041902473305,
+              "calibration": {
+                "ece": 0.07173112060745807,
+                "method": "EQUAL_WIDTH_10_BINS",
+                "nonempty_bins": [
+                  {
+                    "absolute_gap": 0.32289277553133244,
+                    "count": 2,
+                    "lower": 0.6,
+                    "mean_probability": 0.6771072244686676,
+                    "observed_rate": 1.0,
+                    "upper": 0.7
+                  },
+                  {
+                    "absolute_gap": 0.05413967528082142,
+                    "count": 6,
+                    "lower": 0.7,
+                    "mean_probability": 0.720806341947488,
+                    "observed_rate": 0.6666666666666666,
+                    "upper": 0.8
+                  },
+                  {
+                    "absolute_gap": 0.00560201429280327,
+                    "count": 6,
+                    "lower": 0.8,
+                    "mean_probability": 0.8277313190405301,
+                    "observed_rate": 0.8333333333333334,
+                    "upper": 0.9
+                  }
+                ]
+              },
+              "log_loss": 0.5323252266647968,
+              "sample_size": 14
+            },
+            "delta_brier_challenger_minus_poisson": 0.002671369623495373,
+            "delta_log_loss_challenger_minus_poisson": 0.0073958584385301895,
+            "end_kickoff_utc": "2026-10-24T22:00:00+00:00",
+            "poisson": {
+              "brier_score": 0.1711328206238351,
+              "calibration": {
+                "ece": 0.051338248571428616,
+                "method": "EQUAL_WIDTH_10_BINS",
+                "nonempty_bins": [
+                  {
+                    "absolute_gap": 0.06424040249999996,
+                    "count": 4,
+                    "lower": 0.6,
+                    "mean_probability": 0.6857595975,
+                    "observed_rate": 0.75,
+                    "upper": 0.7
+                  },
+                  {
+                    "absolute_gap": 0.04617738700000007,
+                    "count": 10,
+                    "lower": 0.7,
+                    "mean_probability": 0.753822613,
+                    "observed_rate": 0.8,
+                    "upper": 0.8
+                  }
+                ]
+              },
+              "log_loss": 0.5249293682262666,
+              "sample_size": 14
+            },
+            "proper_scoring_gate_passed": false,
+            "segment": 1,
+            "start_kickoff_utc": "2026-10-24T20:30:00+00:00"
+          },
+          {
+            "beats_poisson_brier": false,
+            "beats_poisson_log_loss": false,
+            "challenger": {
+              "brier_score": 0.17773053721836213,
+              "calibration": {
+                "ece": 0.08480762903738179,
+                "method": "EQUAL_WIDTH_10_BINS",
+                "nonempty_bins": [
+                  {
+                    "absolute_gap": 0.3185303374370123,
+                    "count": 1,
+                    "lower": 0.6,
+                    "mean_probability": 0.6814696625629877,
+                    "observed_rate": 1.0,
+                    "upper": 0.7
+                  },
+                  {
+                    "absolute_gap": 0.042148108175902976,
+                    "count": 5,
+                    "lower": 0.7,
+                    "mean_probability": 0.7578518918240971,
+                    "observed_rate": 0.8,
+                    "upper": 0.8
+                  },
+                  {
+                    "absolute_gap": 0.08225449102585225,
+                    "count": 8,
+                    "lower": 0.8,
+                    "mean_probability": 0.8322544910258522,
+                    "observed_rate": 0.75,
+                    "upper": 0.9
+                  }
+                ]
+              },
+              "log_loss": 0.5471012445989535,
+              "sample_size": 14
+            },
+            "delta_brier_challenger_minus_poisson": 0.0036864194706308917,
+            "delta_log_loss_challenger_minus_poisson": 0.013617344287023325,
+            "end_kickoff_utc": "2026-10-25T00:00:00+00:00",
+            "poisson": {
+              "brier_score": 0.17404411774773124,
+              "calibration": {
+                "ece": 0.03819895642857127,
+                "method": "EQUAL_WIDTH_10_BINS",
+                "nonempty_bins": [
+                  {
+                    "absolute_gap": 0.31541407,
+                    "count": 1,
+                    "lower": 0.6,
+                    "mean_probability": 0.68458593,
+                    "observed_rate": 1.0,
+                    "upper": 0.7
+                  },
+                  {
+                    "absolute_gap": 0.0023349766666664884,
+                    "count": 12,
+                    "lower": 0.7,
+                    "mean_probability": 0.7523349766666665,
+                    "observed_rate": 0.75,
+                    "upper": 0.8
+                  },
+                  {
+                    "absolute_gap": 0.19135159999999996,
+                    "count": 1,
+                    "lower": 0.8,
+                    "mean_probability": 0.8086484,
+                    "observed_rate": 1.0,
+                    "upper": 0.9
+                  }
+                ]
+              },
+              "log_loss": 0.5334839003119302,
+              "sample_size": 14
+            },
+            "proper_scoring_gate_passed": false,
+            "segment": 2,
+            "start_kickoff_utc": "2026-10-24T22:00:00+00:00"
+          },
+          {
+            "beats_poisson_brier": false,
+            "beats_poisson_log_loss": false,
+            "challenger": {
+              "brier_score": 0.2546099522294959,
+              "calibration": {
+                "ece": 0.20669533548278157,
+                "method": "EQUAL_WIDTH_10_BINS",
+                "nonempty_bins": [
+                  {
+                    "absolute_gap": 0.0639348294934301,
+                    "count": 6,
+                    "lower": 0.7,
+                    "mean_probability": 0.7693985038399033,
+                    "observed_rate": 0.8333333333333334,
+                    "upper": 0.8
+                  },
+                  {
+                    "absolute_gap": 0.3137657149747952,
+                    "count": 8,
+                    "lower": 0.8,
+                    "mean_probability": 0.8137657149747952,
+                    "observed_rate": 0.5,
+                    "upper": 0.9
+                  }
+                ]
+              },
+              "log_loss": 0.7209797462504314,
+              "sample_size": 14
+            },
+            "delta_brier_challenger_minus_poisson": 0.013340696850929284,
+            "delta_log_loss_challenger_minus_poisson": 0.039793669297935375,
+            "end_kickoff_utc": "2026-10-25T02:30:00+00:00",
+            "poisson": {
+              "brier_score": 0.2412692553785666,
+              "calibration": {
+                "ece": 0.11167187785714283,
+                "method": "EQUAL_WIDTH_10_BINS",
+                "nonempty_bins": [
+                  {
+                    "absolute_gap": 0.11167187785714283,
+                    "count": 14,
+                    "lower": 0.7,
+                    "mean_probability": 0.7545290207142857,
+                    "observed_rate": 0.6428571428571429,
+                    "upper": 0.8
+                  }
+                ]
+              },
+              "log_loss": 0.681186076952496,
+              "sample_size": 14
+            },
+            "proper_scoring_gate_passed": false,
+            "segment": 3,
+            "start_kickoff_utc": "2026-10-25T00:00:00+00:00"
+          }
+        ]
+      },
+      "verdict": "HOLD",
+      "verdict_reason": "AWAITING_600_EXACT_SETTLED_OBSERVATIONS"
+    }
+  ],
+  "protections": {
+    "automatic_wagering": false,
+    "exact_fixture_intersection_between_42_lane_ledger_and_final_calibration_ledger": true,
+    "final_ft_only": true,
+    "historical_backfill": false,
+    "missing_not_zero": true,
+    "odds_used_to_generate_probability": false,
+    "parameter_tuning_allowed": false,
+    "post_start_backfill": false,
+    "real_money": "BLOCKED",
+    "refit_allowed": false,
+    "silent_imputation": false
+  },
+  "schema": "MATRIX_GATE600_POST_AUDIT_V1",
+  "source_sha256": {
+    "action_board": "e6d17da828a867ea2d9f5017f86725b331f83031ac2c51cab1e1e908b346a06e",
+    "calibration_ledger": "9a609b146d8841c82eba35f676da5351fed0d6ec0628c3512120f064cd5a65f4",
+    "portfolio_ledger": "2c44de2cbea6739322e8a10522364cac35c0c7d1c71208221d1b2ab80708b9d2"
+  },
+  "status": "PASS"
+}
