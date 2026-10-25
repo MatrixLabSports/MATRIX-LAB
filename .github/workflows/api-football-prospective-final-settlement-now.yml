@@ -13,6 +13,9 @@ on:
       - repair/cor09-world-pipeline
     paths:
       - evidence/governance/MATRIX_USER_AUTHORIZED_FOOTBALL_SETTLEMENT_20261022.json
+      - tools/matrix_football_fixed_prefix_5000_audit.py
+      - tests/test_matrix_football_fixed_prefix_5000_audit.py
+      - .github/workflows/api-football-prospective-final-settlement-now.yml
 
 permissions:
   contents: write
@@ -47,7 +50,8 @@ jobs:
             tests/test_api_football_prospective_supervisor.py \
             tests/test_api_football_prospective_calibration.py \
             tests/test_api_football_market_calibration_v2.py \
-            tests/test_matrix_football_5000_settled_milestone.py
+            tests/test_matrix_football_5000_settled_milestone.py \
+            tests/test_matrix_football_fixed_prefix_5000_audit.py
 
       - name: Settle API-Football standard FINAL results only
         env:
@@ -105,6 +109,42 @@ jobs:
               "current_settled_count":j["current_settled_count"],
               "remaining_to_5000":j["remaining_to_5000"],
               "next_required_action":j["next_required_action"],
+          },sort_keys=True))
+          PY
+
+      - name: Run sealed fixed-prefix 5000 audit
+        shell: bash
+        run: |
+          set -euo pipefail
+          PYTHONPATH=. python -m tools.matrix_football_fixed_prefix_5000_audit
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          j=json.loads(Path("evidence/api_football/calibration_v2/MATRIX_FOOTBALL_FIXED_PREFIX_5000_AUDIT_LAST.json").read_text(encoding="utf-8"))
+          assert j["status"]=="PASS"
+          assert j["target_settled_count"]==5000
+          assert j["automatic_promotion"] is False
+          assert j["protections"]["final_ft_only"] is True
+          assert j["protections"]["parameter_tuning_allowed"] is False
+          assert j["protections"]["refit_allowed"] is False
+          assert j["protections"]["historical_backfill"] is False
+          assert j["protections"]["post_start_backfill"] is False
+          assert j["protections"]["automatic_wagering"] is False
+          assert j["protections"]["real_money"]=="BLOCKED"
+          if j["current_settled_count"] < 5000:
+              assert j["audit_state"]=="SEALED_BELOW_5000"
+              assert j["metrics_opened"] is False
+              assert j["metrics"] is None
+          else:
+              assert j["audit_state"]=="OPEN_FIXED_PREFIX_5000"
+              assert j["metrics_opened"] is True
+              assert j["prefix"]["observation_count"]==5000
+          print(json.dumps({
+              "audit_state":j["audit_state"],
+              "current_settled_count":j["current_settled_count"],
+              "remaining_to_5000":j["remaining_to_5000"],
+              "metrics_opened":j["metrics_opened"],
+              "audit_verdict":j["audit_verdict"],
           },sort_keys=True))
           PY
 
@@ -222,7 +262,8 @@ jobs:
             evidence/api_football/prospective_calibration/sync_last.json \
             evidence/api_football/prospective_calibration/gates.json \
             evidence/api_football/calibration_v2/lanes \
-            evidence/market_portfolio/MATRIX_FOOTBALL_5000_SETTLED_MILESTONE_LAST.json
+            evidence/market_portfolio/MATRIX_FOOTBALL_5000_SETTLED_MILESTONE_LAST.json \
+            evidence/api_football/calibration_v2/MATRIX_FOOTBALL_FIXED_PREFIX_5000_AUDIT_LAST.json
           if git diff --cached --quiet; then
             echo "NO_GOVERNED_SETTLEMENT_CHANGE"
             exit 0
