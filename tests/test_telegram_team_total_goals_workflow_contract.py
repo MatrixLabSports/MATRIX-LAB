@@ -10,6 +10,9 @@ def test_team_total_goals_picks_workflow_is_permanent_15m():
     assert "MATRIX_TELEGRAM_TEAM_TOTAL_GOALS_PICKS_LAST.json" in text
     assert "REAL_MONEY: BLOCKED" in text
     assert "AUTO_BETTING: DISABLED" in text
+    assert 'j["team_total_quote_policy"]["snapshot_type"]=="team total"' in text
+    assert 'j["team_total_quote_policy"]["period"]=="full time"' in text
+    assert 'j["event_identity_policy"]["recovery_window_seconds"]==21600' in text
 
 
 def test_existing_green_signal_workflow_remains_15m():
@@ -25,3 +28,6 @@ def test_new_picks_source_code_is_present():
     assert "MIN_EV=0.05" in text
     assert "MIN_ODDS=1.50" in text
     assert 'real_money":"BLOCKED"' in text
+    assert '"types":"team total"' in text
+    assert '"periods":"full time"' in text
+    assert "EVENT_SEARCH_RECOVERY_WINDOW_SECONDS=21600" in text
