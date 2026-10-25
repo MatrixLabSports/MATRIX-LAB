@@ -350,7 +350,7 @@ def _parse_line(item:Mapping[str,Any])->float|None:
         return float(m.group(1)) if m else None
 
 
-def find_quote(session:requests.Session,key:str,c:Mapping[str,Any],diagnostic:dict[str,Any])->dict[str,Any]|None:
+def find_quote(session:requests.Session,key:str,c:Mapping[str,Any],diagnostic:dict[str,Any],event_cache:dict[int,list[dict[str,Any]]]|None=None)->dict[str,Any]|None:
     diagnostic.clear(); diagnostic["status"]="STARTED"; diagnostic["fixture_id"]=c["fixture_id"]
     start=_utc(c["event_start_utc"])
     now=datetime.now(timezone.utc)
@@ -362,7 +362,16 @@ def find_quote(session:requests.Session,key:str,c:Mapping[str,Any],diagnostic:di
         diagnostic["status"]="WAIT_OUTSIDE_12H_QUOTE_WINDOW"; return None
     if not key:
         diagnostic["status"]="BLOCKED_ODDS_API_KEY_MISSING"; return None
-    events=_event_pages(session,key,start,diagnostic)
+    cache_key=int(start.timestamp())
+    if event_cache is not None and cache_key in event_cache:
+        events=event_cache[cache_key]
+        diagnostic["event_search_cache_hit"]=True
+        diagnostic["event_search_rows"]=len(events)
+    else:
+        events=_event_pages(session,key,start,diagnostic)
+        diagnostic["event_search_cache_hit"]=False
+        if event_cache is not None:
+            event_cache[cache_key]=events
     scored=[]
     for e in events:
         direct=(_sim(c["home_team"],e.get("home_team"))+_sim(c["away_team"],e.get("away_team")))/2
@@ -494,9 +503,10 @@ def main()->None:
             "quote_window_opens_utc":next_open,
         }
     diagnostics=[]; sent=[]; eligible=0
+    event_cache:dict[int,list[dict[str,Any]]]={}
     for c in candidates:
         if c["candidate_key"] in sent_keys: continue
-        diag={}; q=find_quote(session,odds_key,c,diag); diagnostics.append({**diag,"candidate_key":c["candidate_key"]})
+        diag={}; q=find_quote(session,odds_key,c,diag,event_cache); diagnostics.append({**diag,"candidate_key":c["candidate_key"]})
         if q is None: continue
         eligible+=1
         msg=_message(c,q)
