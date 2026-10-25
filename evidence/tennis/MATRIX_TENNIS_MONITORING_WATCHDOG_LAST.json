@@ -1,16 +1,17 @@
 {
   "checks": {
     "clay": {
-      "age_minutes": 188.53,
+      "age_minutes": 1.8,
       "latest_conclusion": "success",
-      "latest_run_id": 40201696569,
+      "latest_event": "schedule",
+      "latest_run_id": 40217833540,
       "latest_status": "completed",
-      "reason": "LATEST_RUN_STALE",
-      "status": "FAIL",
+      "reason": "RECENT_RUN_PRESENT",
+      "status": "PASS",
       "workflow": "tennis-clay-daily-prospective.yml"
     },
     "hard": {
-      "age_minutes": 1.6,
+      "age_minutes": 18.73,
       "latest_conclusion": "failure",
       "latest_run_id": 40216476830,
       "latest_status": "completed",
@@ -19,7 +20,7 @@
       "workflow": "tennis-hard-governed-day-resolution.yml"
     },
     "live": {
-      "age_minutes": 7.46,
+      "age_minutes": 24.6,
       "latest_conclusion": "success",
       "latest_event": "schedule",
       "latest_run_id": 40215999578,
@@ -31,7 +32,7 @@
   },
   "failures": [
     {
-      "age_minutes": 1.6,
+      "age_minutes": 18.73,
       "lane": "hard",
       "latest_conclusion": "failure",
       "latest_run_id": 40216476830,
@@ -39,19 +40,9 @@
       "reason": "LATEST_TERMINAL_RUN_FAILED",
       "status": "FAIL",
       "workflow": "tennis-hard-governed-day-resolution.yml"
-    },
-    {
-      "age_minutes": 188.53,
-      "lane": "clay",
-      "latest_conclusion": "success",
-      "latest_run_id": 40201696569,
-      "latest_status": "completed",
-      "reason": "LATEST_RUN_STALE",
-      "status": "FAIL",
-      "workflow": "tennis-clay-daily-prospective.yml"
     }
   ],
-  "generated_at_utc": "2026-10-25T17:28:04.834072+00:00",
+  "generated_at_utc": "2026-10-25T17:45:12.905812+00:00",
   "policy": {
     "default_branch_scheduler_required": true,
     "expected_cadence_minutes": 15,
@@ -60,7 +51,7 @@
   },
   "schema": "MATRIX_TENNIS_MONITORING_WATCHDOG_V1",
   "summary": {
-    "failures": 2,
+    "failures": 1,
     "lanes_checked": 3,
     "status": "FAIL_CLOSED"
   }
