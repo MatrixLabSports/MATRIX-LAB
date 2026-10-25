@@ -32,6 +32,8 @@ on:
       - tools/matrix_42_lane_action_board.py
       - tests/test_matrix_42_lane_300_to_600_accelerator.py
       - tools/matrix_42_lane_300_to_600_accelerator.py
+      - tests/test_matrix_gate600_post_audit.py
+      - tools/matrix_gate600_post_audit.py
       - tests/test_matrix_nine_lab_gate_registry.py
       - tools/matrix_42_lane_prospective_registry.py
       - tools/matrix_42_lane_football_freeze_bridge.py
@@ -89,6 +91,7 @@ jobs:
             tests/test_matrix_42_lane_zero_prospective_blockers.py \
             tests/test_matrix_42_lane_action_board.py \
             tests/test_matrix_42_lane_300_to_600_accelerator.py \
+            tests/test_matrix_gate600_post_audit.py \
             tests/test_matrix_nine_lab_gate_registry.py
 
       - name: Refresh football market catalog while paid window is active
@@ -365,6 +368,40 @@ jobs:
           print(json.dumps({"status":"PASS","selected_cohort":j["selected_cohort"],"ordered_cohorts":j["ordered_cohorts"]},sort_keys=True))
           PY
 
+      - name: Audit exact post-600 LAB lanes
+        shell: bash
+        run: |
+          set -euo pipefail
+          PYTHONPATH=. python -m tools.matrix_gate600_post_audit
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          j=json.loads(Path("evidence/market_portfolio/MATRIX_GATE600_POST_AUDIT_LAST.json").read_text(encoding="utf-8"))
+          assert j["status"]=="PASS"
+          assert j["gate600_lab_lane_count"]>=1
+          assert j["adjudication_policy"]["pass_requires_exact_settled_600"] is True
+          assert j["adjudication_policy"]["pass_requires_brier_better_than_poisson"] is True
+          assert j["adjudication_policy"]["pass_requires_logloss_better_than_poisson"] is True
+          assert j["adjudication_policy"]["no_automatic_promotion"] is True
+          assert j["protections"]["exact_fixture_intersection_between_42_lane_ledger_and_final_calibration_ledger"] is True
+          assert j["protections"]["final_ft_only"] is True
+          assert j["protections"]["historical_backfill"] is False
+          assert j["protections"]["post_start_backfill"] is False
+          assert j["protections"]["automatic_wagering"] is False
+          assert j["protections"]["real_money"]=="BLOCKED"
+          print(json.dumps({
+              "status":"PASS",
+              "audit_overall_verdict":j["audit_overall_verdict"],
+              "lanes":[{
+                  "lane":x["market_lane"],
+                  "freeze":x["prospective_freeze_count"],
+                  "settled":x["exact_settled_count"],
+                  "remaining_settled_to_600":x["remaining_settled_to_600"],
+                  "verdict":x["verdict"],
+              } for x in j["lanes"]],
+          },sort_keys=True))
+          PY
+
       - name: Build blocked-lane activation plan
         shell: bash
         run: |
@@ -405,6 +442,7 @@ jobs:
           git add evidence/market_portfolio/MATRIX_42_LANE_ZERO_PROSPECTIVE_BLOCKERS_LAST.json
           git add evidence/market_portfolio/MATRIX_42_LANE_ACTION_BOARD_LAST.json
           git add evidence/market_portfolio/MATRIX_42_LANE_300_TO_600_ACCELERATOR_LAST.json
+          git add evidence/market_portfolio/MATRIX_GATE600_POST_AUDIT_LAST.json
           git add evidence/market_portfolio/MATRIX_42_LANE_FREEZE_INBOX.jsonl
           if [ -f evidence/market_portfolio/MATRIX_42_LANE_PROSPECTIVE_LEDGER.jsonl ]; then
             git add evidence/market_portfolio/MATRIX_42_LANE_PROSPECTIVE_LEDGER.jsonl
