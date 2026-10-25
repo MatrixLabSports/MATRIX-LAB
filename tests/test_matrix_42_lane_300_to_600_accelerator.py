@@ -7,12 +7,15 @@ def test_accelerator_selects_highest_count_cohort_without_silent_drop():
     sel=r["selected_cohort"]
     assert sel["prospective_unique_count"]==393
     assert set(sel["lanes"])=={
-        "MATCH_RESULT_1X2",
-        "DOUBLE_CHANCE_1X",
-        "DOUBLE_CHANCE_X2",
-        "DOUBLE_CHANCE_12",
+        "FIRST_HALF_TOTAL_GOALS_OVER_UNDER",
+        "SECOND_HALF_TOTAL_GOALS_OVER_UNDER",
+        "FIRST_HALF_TEAM_TOTAL_GOALS_HOME",
+        "FIRST_HALF_TEAM_TOTAL_GOALS_AWAY",
+        "SECOND_HALF_TEAM_TOTAL_GOALS_HOME",
+        "SECOND_HALF_TEAM_TOTAL_GOALS_AWAY",
     }
-    assert sel["remaining_to_600"]==207
+    assert sel["prospective_unique_count"]==592
+    assert sel["remaining_to_600"]==8
     assert r["portfolio_visibility"]["all_42_remain_supervised"] is True
     assert r["portfolio_visibility"]["selected_cohort_does_not_suspend_other_lanes"] is True
 
@@ -21,7 +24,7 @@ def test_accelerator_orders_remaining_300_to_600_cohorts():
     r=build()
     counts=[x["prospective_unique_count"] for x in r["ordered_cohorts"]]
     assert counts==sorted(counts,reverse=True)
-    assert counts[:3]==[393,384,377]
+    assert counts[:2]==[592,585]
 
 
 def test_accelerator_preserves_safety_and_no_backfill():
@@ -50,3 +53,17 @@ def test_accelerator_keeps_price_gap_visible_for_period_goals():
         "SECOND_HALF_TEAM_TOTAL_GOALS_HOME",
         "SECOND_HALF_TEAM_TOTAL_GOALS_AWAY",
     }
+
+
+def test_gate600_lab_lanes_are_removed_from_acceleration_and_listed_for_audit():
+    r=build()
+    assert set(r["post600_audit_queue"]["lanes"])=={
+        "MATCH_RESULT_1X2",
+        "DOUBLE_CHANCE_1X",
+        "DOUBLE_CHANCE_X2",
+        "DOUBLE_CHANCE_12",
+    }
+    assert r["post600_audit_queue"]["automatic_promotion"] is False
+    assert all(x>=600 for x in r["post600_audit_queue"]["counts"])
+    accelerated={lane for cohort in r["ordered_cohorts"] for lane in cohort["lanes"]}
+    assert accelerated.isdisjoint(set(r["post600_audit_queue"]["lanes"]))
