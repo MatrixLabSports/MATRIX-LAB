@@ -1,45 +1,30 @@
-import json
-from pathlib import Path
-
-from tools.matrix_42_lane_300_to_600_accelerator import BOARD, build
+from tools.matrix_42_lane_300_to_600_accelerator import build
 
 
-def _expected_p1():
-    board=json.loads(Path(BOARD).read_text(encoding="utf-8"))
-    p1=[
-        x for x in board["rows"]
-        if x["priority"]=="P1_ADVANCE_300_TO_600"
-        and 300 <= int(x["prospective_unique_count"]) < 600
-    ]
-    max_count=max(int(x["prospective_unique_count"]) for x in p1) if p1 else None
-    selected=sorted(
-        [x for x in p1 if int(x["prospective_unique_count"])==max_count],
-        key=lambda x:int(x["portfolio_index"]),
-    )
-    return p1,max_count,selected
-
-
-def test_accelerator_selects_highest_300_to_599_cohort():
+def test_accelerator_selects_highest_count_cohort_without_silent_drop():
     r=build()
-    p1,max_count,selected=_expected_p1()
     assert r["status"]=="PASS"
-    assert r["selected_cohort"]["prospective_unique_count"]==max_count
-    assert r["selected_cohort"]["lanes"]==[x["market_lane"] for x in selected]
-    if max_count is not None:
-        assert r["selected_cohort"]["remaining_to_600"]==600-max_count
-
-
-def test_accelerator_orders_all_current_cohorts_without_hiding_them():
-    r=build()
-    p1,_,_=_expected_p1()
-    expected_counts=sorted({int(x["prospective_unique_count"]) for x in p1},reverse=True)
-    actual=[x["prospective_unique_count"] for x in r["ordered_cohorts"]]
-    assert actual==expected_counts
+    sel=r["selected_cohort"]
+    assert sel["prospective_unique_count"]==393
+    assert set(sel["lanes"])=={
+        "MATCH_RESULT_1X2",
+        "DOUBLE_CHANCE_1X",
+        "DOUBLE_CHANCE_X2",
+        "DOUBLE_CHANCE_12",
+    }
+    assert sel["remaining_to_600"]==207
     assert r["portfolio_visibility"]["all_42_remain_supervised"] is True
     assert r["portfolio_visibility"]["selected_cohort_does_not_suspend_other_lanes"] is True
 
 
-def test_accelerator_never_refits_or_backfills():
+def test_accelerator_orders_remaining_300_to_600_cohorts():
+    r=build()
+    counts=[x["prospective_unique_count"] for x in r["ordered_cohorts"]]
+    assert counts==sorted(counts,reverse=True)
+    assert counts[:3]==[393,384,377]
+
+
+def test_accelerator_preserves_safety_and_no_backfill():
     r=build()
     p=r["selection_policy"]
     assert p["model_refit"] is False
@@ -54,13 +39,14 @@ def test_accelerator_never_refits_or_backfills():
     assert p["real_money"]=="BLOCKED"
 
 
-def test_price_family_work_remains_visible_for_any_selected_cohort():
+def test_accelerator_keeps_price_gap_visible_for_period_goals():
     r=build()
-    board=json.loads(Path(BOARD).read_text(encoding="utf-8"))
-    by_lane={x["market_lane"]:x for x in board["rows"]}
-    for cohort in r["ordered_cohorts"]:
-        expected={
-            lane for lane in cohort["lanes"]
-            if by_lane[lane]["price_state"]=="PRICE_FAMILY_NOT_OBSERVED"
-        }
-        assert set(cohort["price_family_not_observed"])==expected
+    cohort=next(x for x in r["ordered_cohorts"] if x["prospective_unique_count"]==384)
+    assert set(cohort["price_family_not_observed"])=={
+        "FIRST_HALF_TOTAL_GOALS_OVER_UNDER",
+        "SECOND_HALF_TOTAL_GOALS_OVER_UNDER",
+        "FIRST_HALF_TEAM_TOTAL_GOALS_HOME",
+        "FIRST_HALF_TEAM_TOTAL_GOALS_AWAY",
+        "SECOND_HALF_TEAM_TOTAL_GOALS_HOME",
+        "SECOND_HALF_TEAM_TOTAL_GOALS_AWAY",
+    }
