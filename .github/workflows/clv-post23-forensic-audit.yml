@@ -1,0 +1,40 @@
+name: MATRIX CLV Post23 Forensic Audit
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+    paths:
+      - .github/workflows/clv-post23-forensic-audit.yml
+
+permissions:
+  contents: read
+
+jobs:
+  forensic:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      REAL_MONEY: BLOCKED
+      AUTO_BETTING: DISABLED
+    steps:
+      - name: Checkout operational branch and complete history
+        uses: actions/checkout@v4
+        with:
+          ref: repair/cor09-world-pipeline
+          fetch-depth: 0
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Check immutable safeguards
+        run: |
+          test "$REAL_MONEY" = "BLOCKED"
+          test "$AUTO_BETTING" = "DISABLED"
+      - name: Execute post23 physical forensic audit
+        run: python tools/clv_forensic_post23_audit.py
+      - name: Ensure no evidence mutated
+        run: |
+          git diff --exit-code -- evidence/clv/football/over_2_5
+          echo "CLV_FORENSIC_READ_ONLY=PASS"
