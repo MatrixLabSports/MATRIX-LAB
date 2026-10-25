@@ -49,3 +49,43 @@ def test_period_bridge_emits_six_lanes(tmp_path:Path):
     assert all(x["target_outcome"] is None for x in rows)
     assert all(x["odds_used_to_generate_probability"] is False for x in rows)
     assert audit["blocked_count"]==0
+
+
+
+def test_period_bridge_counts_team_total_goal_lanes_and_never_recounts_existing_keys(tmp_path:Path):
+    hist=tmp_path/"history.bin"; _raw_history(hist)
+    source={
+      "schema":"MATRIX_FOOTBALL_PROSPECTIVE_MARKET_FREEZE_V1",
+      "protections":{
+        "freeze_strictly_before_kickoff":True,
+        "outcomes_read_at_freeze":False,
+        "odds_used_to_generate_probability":False,
+        "real_money":"BLOCKED",
+      },
+      "rows":[{
+        "fixture_id":"77","home_team_id":"1","away_team_id":"2",
+        "kickoff_utc":"2026-10-25T18:00:00+00:00",
+        "freeze_at_utc":"2026-10-24T18:00:00+00:00",
+        "historical_baseline_source":"history.bin",
+        "outcome":None,
+      }]
+    }
+    freeze="2026-10-24T18:00:00+00:00"
+    existing={
+      f"football|TEAM_TOTAL_GOALS_HOME|fixture:77|freeze:{freeze}",
+      f"football|TEAM_TOTAL_GOALS_AWAY|fixture:77|freeze:{freeze}",
+    }
+    rows,audit=build_rows(
+      source,
+      repo_root=tmp_path,
+      now_utc=datetime(2026,10,24,20,0,tzinfo=timezone.utc),
+      existing_keys=existing,
+    )
+    assert audit["feature_eligible_future_unique_fixtures"]==1
+    assert audit["duplicate_existing_lane_rows"]==2
+    assert audit["duplicate_existing_lane_counts"]["TEAM_TOTAL_GOALS_HOME"]==1
+    assert audit["duplicate_existing_lane_counts"]["TEAM_TOTAL_GOALS_AWAY"]==1
+    assert audit["admitted_lane_counts"]["TEAM_TOTAL_GOALS_HOME"]==0
+    assert audit["admitted_lane_counts"]["TEAM_TOTAL_GOALS_AWAY"]==0
+    assert all(x["market_lane"] not in {"TEAM_TOTAL_GOALS_HOME","TEAM_TOTAL_GOALS_AWAY"} for x in rows)
+    assert audit["protections"]["duplicate_observation_keys_never_recounted"] is True
