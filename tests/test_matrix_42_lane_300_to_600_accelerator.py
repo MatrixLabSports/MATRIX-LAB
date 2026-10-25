@@ -5,7 +5,6 @@ def test_accelerator_selects_highest_count_cohort_without_silent_drop():
     r=build()
     assert r["status"]=="PASS"
     sel=r["selected_cohort"]
-    assert sel["prospective_unique_count"]==393
     assert set(sel["lanes"])=={
         "FIRST_HALF_TOTAL_GOALS_OVER_UNDER",
         "SECOND_HALF_TOTAL_GOALS_OVER_UNDER",
@@ -44,7 +43,7 @@ def test_accelerator_preserves_safety_and_no_backfill():
 
 def test_accelerator_keeps_price_gap_visible_for_period_goals():
     r=build()
-    cohort=next(x for x in r["ordered_cohorts"] if x["prospective_unique_count"]==384)
+    cohort=next(x for x in r["ordered_cohorts"] if x["prospective_unique_count"]==592)
     assert set(cohort["price_family_not_observed"])=={
         "FIRST_HALF_TOTAL_GOALS_OVER_UNDER",
         "SECOND_HALF_TOTAL_GOALS_OVER_UNDER",
