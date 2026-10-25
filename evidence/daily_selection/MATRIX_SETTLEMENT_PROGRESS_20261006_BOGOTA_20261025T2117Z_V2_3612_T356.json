@@ -1,0 +1,152 @@
+{
+  "schema": "MATRIX_WORLD_CALIBRATION_SETTLEMENT_PROGRESS_AUDIT_V1",
+  "target_date_bogota": "2026-10-06",
+  "audited_at_utc": "2026-10-25T21:17:00Z",
+  "branch": "repair/cor09-world-pipeline",
+  "comparison_baseline": {
+    "path": "evidence/daily_selection/MATRIX_SETTLEMENT_PROGRESS_20261006_BOGOTA_20261025T203019Z_V2_3612_T355.json",
+    "commit": "2af6be193e9e4151bbf2db8e0beff03bad01cc28"
+  },
+  "source_blobs": {
+    "candidates": {
+      "path": "evidence/daily_selection/MATRIX_CALIBRATION_CANDIDATES_20261006_BOGOTA.json",
+      "blob_sha": "52e897007840f5bed1a8999edad8ee594fefc767"
+    },
+    "football_sync": {
+      "path": "evidence/api_football/prospective_market_freeze/settlement_sync_last.json",
+      "blob_sha": "25dc2b3d22be11913a2ad4d7d477d6142237a957",
+      "run_at_utc": "2026-10-25T21:08:43+00:00"
+    },
+    "football_tracker": {
+      "path": "evidence/api_football/governance/MATRIX_FOOTBALL_4000_CANONICAL_TRACKER_LAST.json",
+      "blob_sha": "87732220e07bd67685a84636e941df46e23a19c2"
+    },
+    "tennis_ledger": {
+      "path": "evidence/cor0203/settlement/MATRIX_COR0203_SETTLEMENT_LEDGER.jsonl",
+      "blob_sha": "55d504535664362004692440206ef805ed115c66"
+    },
+    "tennis_uniqueness": {
+      "path": "evidence/cor0203/runtime/MATRIX_COR0203_SETTLEMENT_UNIQUENESS_LAST.json",
+      "blob_sha": "6d133fe9e8d3a9fe6c6709d7d1e053df3e1f1a78"
+    },
+    "tennis_sync": {
+      "path": "evidence/cor0203/runtime/MATRIX_COR0203_SETTLEMENT_SYNC_LAST.json",
+      "blob_sha": "90c56c95ab91e6a0ce834b2415c965c51f9e568e"
+    }
+  },
+  "football": {
+    "original_6oct": {
+      "candidates": 116,
+      "standard_ft_settled": 107,
+      "new_standard_ft": 0,
+      "settled_count_provenance": "Unchanged from previous physically persisted snapshot; current sync reports 0 new FT; nine original blocked IDs individually confirmed",
+      "blocked_nonstandard_and_provider": [
+        {
+          "fixture_id": "1588817",
+          "reason": "PEN"
+        },
+        {
+          "fixture_id": "1588821",
+          "reason": "PEN"
+        },
+        {
+          "fixture_id": "1588845",
+          "reason": "PEN"
+        },
+        {
+          "fixture_id": "1588863",
+          "reason": "PEN"
+        },
+        {
+          "fixture_id": "1588890",
+          "reason": "PEN"
+        },
+        {
+          "fixture_id": "1588893",
+          "reason": "PEN"
+        },
+        {
+          "fixture_id": "1619499",
+          "reason": "PEN"
+        },
+        {
+          "fixture_id": "1644168",
+          "reason": "AET"
+        },
+        {
+          "fixture_id": "1596466",
+          "reason": "API_FOOTBALL_PROVIDER_ERROR"
+        }
+      ]
+    },
+    "global_sync": {
+      "frozen": 5169,
+      "standard_final": 4415,
+      "pending": 333,
+      "blocked": 421,
+      "reconciliation": "4415+333+421=5169",
+      "new_standard_ft": 0
+    },
+    "previous_snapshot": {
+      "standard_final": 4415,
+      "pending": 340,
+      "blocked": 414
+    },
+    "change": {
+      "standard_final": 0,
+      "pending": -7,
+      "blocked": 7,
+      "classification_only": true,
+      "reason": "REQUEST_BUDGET_REACHED",
+      "request_budget_reached_previous": 110,
+      "request_budget_reached_current": "Not independently counted from full sync in this audit; delta pending-to-blocked=7"
+    },
+    "v2": {
+      "frozen": 4341,
+      "settled_per_market": 3612,
+      "pending_per_market": 729,
+      "new_settlements": 0,
+      "metrics_opened": false
+    },
+    "canonical_tracker": {
+      "standard_final": 4415,
+      "pending": 340,
+      "blocked": 414,
+      "frozen": 5169,
+      "discrepancy_vs_latest_sync": {
+        "pending": 7,
+        "blocked": -7
+      },
+      "reconciled_with_latest_sync": false,
+      "manual_overwrite_performed": false
+    }
+  },
+  "tennis": {
+    "original_6oct_unique": 11,
+    "original_6oct_finished": 11,
+    "ledger_records": 356,
+    "unique_event_ids": 356,
+    "unique_settlement_ids": 356,
+    "new_settlements": 1,
+    "new_event_id": "COR0203-RAPIDAPI-TENNIS-735423-023a65bc567d",
+    "new_event_terminal_status": "FINISHED",
+    "new_event_result": "6-1 6-4",
+    "new_event_settled_at_utc": "2026-10-25T20:46:40+00:00",
+    "ledger_hash_chain_verified": true,
+    "uniqueness_result": "PASS",
+    "settled_unique_canonical_events": 303,
+    "settled_duplicate_alias_records": 53,
+    "duplicate_aliases_used_for_metrics": 0,
+    "metrics_opened": false
+  },
+  "governance": {
+    "settlement_final_only": true,
+    "metrics_opened": false,
+    "no_tuning": true,
+    "no_odds_to_p": true,
+    "automatic_wagering": false,
+    "real_money": "BLOCKED",
+    "no_duplicate_settlement_execution": true
+  },
+  "method": "Read-only physical comparison of branch candidate, sync, tracker, full tennis ledger and uniqueness. Ledger 356 lines: 356 unique event IDs, 356 unique settlement IDs, zero broken adjacent hash links; all 11 exact-day tennis event IDs FINISHED. Tennis FINISHED settlement already governed in ledger, not duplicated. Football no new FT; 7 newly blocked vs previous snapshot in latest sync, tracker lags by 7 and was not manually overwritten. Original football 107 FT inherited from physically verified baseline and 9 blocked IDs checked in current sync. Metrics remain sealed."
+}
