@@ -31,6 +31,9 @@ MIN_EV=0.05
 MIN_ODDS=1.50
 QUOTE_WINDOW_MINUTES=720
 QUOTE_MAX_AGE_SECONDS=1800
+EVENT_SEARCH_MAX_PAGES=10
+EVENT_IDENTITY_MIN_SCORE=0.85
+EVENT_IDENTITY_MIN_MARGIN=0.05
 MAX_HISTORY=20
 MIN_HISTORY=5
 LINES=(0.5,1.5,2.5)
@@ -58,10 +61,19 @@ def _sha(value:Any)->str:
     return hashlib.sha256(json.dumps(value,sort_keys=True,separators=(",",":"),ensure_ascii=False).encode()).hexdigest()
 
 
+IDENTITY_TOKEN_ALIASES={"utd":"united"}
+IDENTITY_CLUB_DESIGNATORS={"fc","sc","cs","csl","afc","cf","club"}
+
+
 def _norm(value:Any)->str:
     text=unicodedata.normalize("NFKD",str(value or ""))
     text="".join(ch for ch in text if not unicodedata.combining(ch)).casefold()
-    return re.sub(r"[^a-z0-9]+"," ",text).strip()
+    text=re.sub(r"[^a-z0-9]+"," ",text).strip()
+    return " ".join(IDENTITY_TOKEN_ALIASES.get(tok,tok) for tok in text.split())
+
+
+def _identity_core_tokens(value:Any)->list[str]:
+    return [tok for tok in _norm(value).split() if tok not in IDENTITY_CLUB_DESIGNATORS]
 
 
 def _sim(a:Any,b:Any)->float:
@@ -72,7 +84,69 @@ def _sim(a:Any,b:Any)->float:
         return 1.0
     tx,ty=set(x.split()),set(y.split())
     jac=len(tx&ty)/max(1,len(tx|ty))
-    return max(jac,SequenceMatcher(None,x,y).ratio())
+    seq=SequenceMatcher(None,x,y).ratio()
+    subset=1.0 if tx<=ty or ty<=tx else 0.0
+
+    ca,cb=_identity_core_tokens(a),_identity_core_tokens(b)
+    core_score=0.0
+    if ca and cb:
+        core_a,core_b=" ".join(ca)," ".join(cb)
+        if core_a==core_b:
+            core_score=1.0
+        else:
+            cta,ctb=set(ca),set(cb)
+            core_jac=len(cta&ctb)/max(1,len(cta|ctb))
+            core_seq=SequenceMatcher(None,core_a,core_b).ratio()
+            core_subset=1.0 if cta<=ctb or ctb<=cta else 0.0
+            shorter,longer=(ca,cb) if len(ca)<=len(cb) else (cb,ca)
+            fuzzy_cover=0.0
+            if shorter and any(len(tok)>=5 for tok in shorter):
+                scores=[max(SequenceMatcher(None,tok,other).ratio() for other in longer) for tok in shorter]
+                if scores and min(scores)>=0.90:
+                    fuzzy_cover=sum(scores)/len(scores)
+            core_score=max(core_jac,core_seq,core_subset,fuzzy_cover)
+    return max(jac,seq,subset,core_score)
+
+
+def _event_pages(session:requests.Session,key:str,start:datetime,diagnostic:dict[str,Any])->list[dict[str,Any]]:
+    params={
+        "sport":"soccer",
+        "start_from":int(start.timestamp())-7200,
+        "start_to":int(start.timestamp())+7200,
+        "limit":100,
+        "include_bookmaker_ids":"true",
+        "not_started_only":"true",
+    }
+    events:list[dict[str,Any]]=[]
+    cursor=None
+    page_count=0
+    for _ in range(EVENT_SEARCH_MAX_PAGES):
+        page_params=dict(params)
+        if cursor:
+            page_params["cursor"]=cursor
+        response=session.get(
+            ODDS_BASE+"/events",
+            headers={"X-API-Key":key,"Accept":"application/json"},
+            params=page_params,
+            timeout=20,
+        )
+        try:
+            payload=response.json()
+        except Exception:
+            payload={}
+        page_count+=1
+        items=payload.get("items",[]) if isinstance(payload,Mapping) else []
+        for item in items:
+            if isinstance(item,Mapping):
+                events.append(dict(item))
+        cursor=str(payload.get("next_cursor") or "").strip() if isinstance(payload,Mapping) else ""
+        if not cursor:
+            break
+    diagnostic["event_search_pages"]=page_count
+    diagnostic["event_search_rows"]=len(events)
+    diagnostic["event_search_pagination_exhausted"]=not bool(cursor)
+    diagnostic["event_search_page_cap"]=EVENT_SEARCH_MAX_PAGES
+    return events
 
 
 def _merged_future_fixture_registry(root:Path,now_utc:datetime)->dict[str,Any]:
@@ -288,32 +362,37 @@ def find_quote(session:requests.Session,key:str,c:Mapping[str,Any],diagnostic:di
         diagnostic["status"]="WAIT_OUTSIDE_12H_QUOTE_WINDOW"; return None
     if not key:
         diagnostic["status"]="BLOCKED_ODDS_API_KEY_MISSING"; return None
-    er=session.get(ODDS_BASE+"/events",headers={"X-API-Key":key,"Accept":"application/json"},params={
-        "sport":"soccer","start_from":int(start.timestamp())-7200,"start_to":int(start.timestamp())+7200,
-        "limit":100,"include_bookmaker_ids":"true"},timeout=20)
-    try: ep=er.json()
-    except Exception: ep={}
-    events=ep.get("items",[]) if isinstance(ep,Mapping) else []
+    events=_event_pages(session,key,start,diagnostic)
     scored=[]
     for e in events:
-        if not isinstance(e,Mapping): continue
         direct=(_sim(c["home_team"],e.get("home_team"))+_sim(c["away_team"],e.get("away_team")))/2
         swap=(_sim(c["home_team"],e.get("away_team"))+_sim(c["away_team"],e.get("home_team")))/2
-        scored.append((max(direct,swap),e))
+        scored.append((max(direct,swap),direct>=swap,e))
     scored.sort(key=lambda x:x[0],reverse=True)
     diagnostic["identity_top_candidates"]=[
         {
             "score":round(float(score),6),
+            "orientation":"direct" if is_direct else "swapped",
             "home_team":event.get("home_team"),
             "away_team":event.get("away_team"),
             "event_id":event.get("event_id"),
             "start_time":event.get("start_time"),
+            "home_similarity_direct":round(_sim(c["home_team"],event.get("home_team")),6),
+            "away_similarity_direct":round(_sim(c["away_team"],event.get("away_team")),6),
+            "home_similarity_swapped":round(_sim(c["home_team"],event.get("away_team")),6),
+            "away_similarity_swapped":round(_sim(c["away_team"],event.get("home_team")),6),
         }
-        for score,event in scored[:5]
+        for score,is_direct,event in scored[:5]
     ]
-    if not scored or scored[0][0]<0.85:
-        diagnostic["status"]="BLOCKED_EVENT_IDENTITY"; return None
-    event_id=str(scored[0][1].get("event_id") or "")
+    if not scored:
+        diagnostic["status"]="BLOCKED_EVENT_NOT_COVERED"; return None
+    if scored[0][0]<EVENT_IDENTITY_MIN_SCORE:
+        diagnostic["status"]="BLOCKED_IDENTITY_LOW_SCORE"; return None
+    if len(scored)>1 and scored[0][0]-scored[1][0]<EVENT_IDENTITY_MIN_MARGIN:
+        diagnostic["status"]="BLOCKED_IDENTITY_AMBIGUOUS"; return None
+    diagnostic["identity_orientation"]="direct" if scored[0][1] else "swapped"
+    diagnostic["identity_score"]=round(float(scored[0][0]),6)
+    event_id=str(scored[0][2].get("event_id") or "")
     if not event_id:
         diagnostic["status"]="BLOCKED_EVENT_ID_MISSING"; return None
     sr=session.get(ODDS_BASE+f"/events/{event_id}/odds/snapshot",headers={"X-API-Key":key,"Accept":"application/json"},params={
