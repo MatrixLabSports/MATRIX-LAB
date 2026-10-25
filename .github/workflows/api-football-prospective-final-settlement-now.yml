@@ -46,7 +46,8 @@ jobs:
             tests/test_api_football_prospective_api_settlement.py \
             tests/test_api_football_prospective_supervisor.py \
             tests/test_api_football_prospective_calibration.py \
-            tests/test_api_football_market_calibration_v2.py
+            tests/test_api_football_market_calibration_v2.py \
+            tests/test_matrix_football_5000_settled_milestone.py
 
       - name: Settle API-Football standard FINAL results only
         env:
@@ -72,6 +73,39 @@ jobs:
           assert sync["parameters_mutated"] is False
           assert sync["real_money"] == "BLOCKED"
           print(json.dumps(sync, sort_keys=True))
+          PY
+
+      - name: Update governed 5000-settled milestone
+        shell: bash
+        run: |
+          set -euo pipefail
+          PYTHONPATH=. python -m tools.matrix_football_5000_settled_milestone
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          j=json.loads(Path("evidence/market_portfolio/MATRIX_FOOTBALL_5000_SETTLED_MILESTONE_LAST.json").read_text(encoding="utf-8"))
+          assert j["status"]=="PASS"
+          assert j["target_settled_count"]==5000
+          assert j["remaining_to_5000"]==max(0,5000-j["current_settled_count"])
+          assert j["settlement_contract"]["final_ft_only"] is True
+          assert j["settlement_contract"]["hash_chain_verified"] is True
+          assert j["settlement_contract"]["automatic_promotion"] is False
+          assert j["settlement_contract"]["automatic_wagering"] is False
+          assert j["settlement_contract"]["real_money"]=="BLOCKED"
+          if j["current_settled_count"] < 5000:
+              assert j["milestone_state"]=="TRACKING_TO_5000"
+              assert j["fixed_prefix_5000"]["opened"] is False
+              assert j["fixed_prefix_5000"]["metrics_authorized"] is False
+          else:
+              assert j["milestone_state"]=="READY_FOR_5000_AUDIT"
+              assert j["fixed_prefix_5000"]["opened"] is True
+              assert j["fixed_prefix_5000"]["metrics_authorized"] is True
+          print(json.dumps({
+              "milestone_state":j["milestone_state"],
+              "current_settled_count":j["current_settled_count"],
+              "remaining_to_5000":j["remaining_to_5000"],
+              "next_required_action":j["next_required_action"],
+          },sort_keys=True))
           PY
 
       - name: Audit physical uniqueness after settlement
@@ -187,7 +221,8 @@ jobs:
             evidence/api_football/prospective_calibration/ledger.jsonl \
             evidence/api_football/prospective_calibration/sync_last.json \
             evidence/api_football/prospective_calibration/gates.json \
-            evidence/api_football/calibration_v2/lanes
+            evidence/api_football/calibration_v2/lanes \
+            evidence/market_portfolio/MATRIX_FOOTBALL_5000_SETTLED_MILESTONE_LAST.json
           if git diff --cached --quiet; then
             echo "NO_GOVERNED_SETTLEMENT_CHANGE"
             exit 0
