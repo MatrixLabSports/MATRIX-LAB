@@ -6,6 +6,7 @@ on:
       - "MATRIX Football Daily Governed Pipeline"
       - "MATRIX RapidAPI Tennis Paid-Window Harvest"
       - "API-Football daily prospective production"
+      - "API-Football prospective FINAL-only settlement now"
     types:
       - completed
   schedule:
@@ -34,6 +35,8 @@ on:
       - tools/matrix_42_lane_300_to_600_accelerator.py
       - tests/test_matrix_gate600_post_audit.py
       - tools/matrix_gate600_post_audit.py
+      - tests/test_matrix_football_5000_settled_milestone.py
+      - tools/matrix_football_5000_settled_milestone.py
       - tests/test_matrix_nine_lab_gate_registry.py
       - tools/matrix_42_lane_prospective_registry.py
       - tools/matrix_42_lane_football_freeze_bridge.py
@@ -92,6 +95,7 @@ jobs:
             tests/test_matrix_42_lane_action_board.py \
             tests/test_matrix_42_lane_300_to_600_accelerator.py \
             tests/test_matrix_gate600_post_audit.py \
+            tests/test_matrix_football_5000_settled_milestone.py \
             tests/test_matrix_nine_lab_gate_registry.py
 
       - name: Refresh football market catalog while paid window is active
@@ -402,6 +406,32 @@ jobs:
           },sort_keys=True))
           PY
 
+      - name: Track football 5000-settled milestone
+        shell: bash
+        run: |
+          set -euo pipefail
+          PYTHONPATH=. python -m tools.matrix_football_5000_settled_milestone
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          j=json.loads(Path("evidence/market_portfolio/MATRIX_FOOTBALL_5000_SETTLED_MILESTONE_LAST.json").read_text(encoding="utf-8"))
+          assert j["status"]=="PASS"
+          assert j["target_settled_count"]==5000
+          assert j["remaining_to_5000"]==max(0,5000-j["current_settled_count"])
+          assert j["settlement_contract"]["final_ft_only"] is True
+          assert j["settlement_contract"]["automatic_promotion"] is False
+          assert j["settlement_contract"]["automatic_wagering"] is False
+          assert j["settlement_contract"]["real_money"]=="BLOCKED"
+          print(json.dumps({
+              "status":"PASS",
+              "milestone_state":j["milestone_state"],
+              "current_settled_count":j["current_settled_count"],
+              "remaining_to_5000":j["remaining_to_5000"],
+              "progress_pct":j["progress_pct"],
+              "next_required_action":j["next_required_action"],
+          },sort_keys=True))
+          PY
+
       - name: Build blocked-lane activation plan
         shell: bash
         run: |
@@ -443,6 +473,7 @@ jobs:
           git add evidence/market_portfolio/MATRIX_42_LANE_ACTION_BOARD_LAST.json
           git add evidence/market_portfolio/MATRIX_42_LANE_300_TO_600_ACCELERATOR_LAST.json
           git add evidence/market_portfolio/MATRIX_GATE600_POST_AUDIT_LAST.json
+          git add evidence/market_portfolio/MATRIX_FOOTBALL_5000_SETTLED_MILESTONE_LAST.json
           git add evidence/market_portfolio/MATRIX_42_LANE_FREEZE_INBOX.jsonl
           if [ -f evidence/market_portfolio/MATRIX_42_LANE_PROSPECTIVE_LEDGER.jsonl ]; then
             git add evidence/market_portfolio/MATRIX_42_LANE_PROSPECTIVE_LEDGER.jsonl
