@@ -34,6 +34,7 @@ QUOTE_MAX_AGE_SECONDS=1800
 EVENT_SEARCH_MAX_PAGES=10
 EVENT_IDENTITY_MIN_SCORE=0.85
 EVENT_IDENTITY_MIN_MARGIN=0.05
+EVENT_SEARCH_RECOVERY_WINDOW_SECONDS=21600
 MAX_HISTORY=20
 MIN_HISTORY=5
 LINES=(0.5,1.5,2.5)
@@ -108,11 +109,11 @@ def _sim(a:Any,b:Any)->float:
     return max(jac,seq,subset,core_score)
 
 
-def _event_pages(session:requests.Session,key:str,start:datetime,diagnostic:dict[str,Any])->list[dict[str,Any]]:
+def _event_pages(session:requests.Session,key:str,start:datetime,diagnostic:dict[str,Any],window_seconds:int=7200)->list[dict[str,Any]]:
     params={
         "sport":"soccer",
-        "start_from":int(start.timestamp())-7200,
-        "start_to":int(start.timestamp())+7200,
+        "start_from":int(start.timestamp())-int(window_seconds),
+        "start_to":int(start.timestamp())+int(window_seconds),
         "limit":100,
         "include_bookmaker_ids":"true",
         "not_started_only":"true",
@@ -146,6 +147,7 @@ def _event_pages(session:requests.Session,key:str,start:datetime,diagnostic:dict
     diagnostic["event_search_rows"]=len(events)
     diagnostic["event_search_pagination_exhausted"]=not bool(cursor)
     diagnostic["event_search_page_cap"]=EVENT_SEARCH_MAX_PAGES
+    diagnostic["event_search_window_seconds"]=int(window_seconds)
     return events
 
 
@@ -367,9 +369,22 @@ def find_quote(session:requests.Session,key:str,c:Mapping[str,Any],diagnostic:di
         events=event_cache[cache_key]
         diagnostic["event_search_cache_hit"]=True
         diagnostic["event_search_rows"]=len(events)
+        diagnostic["event_search_window_seconds"]=7200
     else:
-        events=_event_pages(session,key,start,diagnostic)
+        events=_event_pages(session,key,start,diagnostic,7200)
         diagnostic["event_search_cache_hit"]=False
+        if not events:
+            recovery_diag={}
+            events=_event_pages(session,key,start,recovery_diag,EVENT_SEARCH_RECOVERY_WINDOW_SECONDS)
+            diagnostic["event_search_recovery_used"]=True
+            diagnostic["event_search_recovery"]={
+                "pages":recovery_diag.get("event_search_pages"),
+                "rows":recovery_diag.get("event_search_rows"),
+                "pagination_exhausted":recovery_diag.get("event_search_pagination_exhausted"),
+                "window_seconds":recovery_diag.get("event_search_window_seconds"),
+            }
+        else:
+            diagnostic["event_search_recovery_used"]=False
         if event_cache is not None:
             event_cache[cache_key]=events
     scored=[]
@@ -405,7 +420,12 @@ def find_quote(session:requests.Session,key:str,c:Mapping[str,Any],diagnostic:di
     if not event_id:
         diagnostic["status"]="BLOCKED_EVENT_ID_MISSING"; return None
     sr=session.get(ODDS_BASE+f"/events/{event_id}/odds/snapshot",headers={"X-API-Key":key,"Accept":"application/json"},params={
-        "bookmakers":",".join(sorted(BOOKS)),"types":"total","periods":"full time","include_source":"true","include_unavailable":"true"},timeout=20)
+        "bookmakers":",".join(sorted(BOOKS)),
+        "types":"team total",
+        "periods":"full time",
+        "include_source":"true",
+        "include_debug_ids":"true",
+        "include_unavailable":"true"},timeout=20)
     try: sp=sr.json()
     except Exception: sp={}
     book_ts=sp.get("bookmaker_as_of_ts_ms") or {} if isinstance(sp,Mapping) else {}
@@ -418,10 +438,26 @@ def find_quote(session:requests.Session,key:str,c:Mapping[str,Any],diagnostic:di
         try: dec=float(item.get("odds"))
         except Exception: continue
         if line!=float(c["line"]) or dec<=MIN_ODDS: continue
-        text=" ".join(_norm(item.get(k)) for k in ("market_key","bet_type","selection_name","selection_key","side","metric"))
-        if "total" not in text: continue
-        if _norm(c["team_name"]).split()[0] not in text and "team total" not in text and "home total" not in text and "away total" not in text:
+        text=" ".join(_norm(item.get(k)) for k in ("market_key","market_name","bet_type","selection_name","selection_key","side","metric"))
+        bet_type=_norm(item.get("bet_type"))
+        if bet_type!="team total" and "team total" not in text:
             continue
+        period=_norm(item.get("period") or item.get("period_str"))
+        if period and period not in {"full time","fulltime","ft"}:
+            continue
+        team_subject=item.get("team_subject")
+        target_team=str(c["team_name"])
+        if team_subject:
+            if _sim(target_team,team_subject)<EVENT_IDENTITY_MIN_SCORE:
+                continue
+        else:
+            lane=str(c.get("market_lane") or "")
+            side_hint="home" if lane=="TEAM_TOTAL_GOALS_HOME" else "away"
+            target_tokens=_identity_core_tokens(target_team)
+            name_match=any(tok in text for tok in target_tokens if len(tok)>=4)
+            side_match=(side_hint+" total") in text or (side_hint+" team total") in text
+            if not name_match and not side_match:
+                continue
         side=str(c["selection_side"])
         if side not in text: continue
         ts=book_ts.get(house)
