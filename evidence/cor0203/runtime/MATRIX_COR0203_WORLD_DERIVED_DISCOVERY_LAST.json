@@ -1,5 +1,5 @@
 {
-  "as_of_utc": "2026-10-25T14:21:40+00:00",
+  "as_of_utc": "2026-10-25T14:31:58+00:00",
   "automatic_model_feed": false,
   "automatic_model_promotion": false,
   "automatic_wagering": false,
@@ -22,64 +22,6 @@
   },
   "certified_exact_cut_rank_override_count": 0,
   "eligible_candidates": [
-    {
-      "canonical_source_event_id": "rapidapi-tennis:atp:match:709703",
-      "competition": "Brest Challenger",
-      "competition_id": "rapidapi-tennis:tournament:22110",
-      "event_id": "rapidapi-tennis:atp:match:709703",
-      "event_start_utc": "2026-10-25T14:30:00+00:00",
-      "historical_identity_crosswalk_status": "PENDING",
-      "legacy_provider_event_id": "rapidapi-tennis:match:709703",
-      "physical_event_key": "5a0fd9084b8005c86b242af4060745dbb382e77956eaed042629db0c80df6cce",
-      "player_identities": [
-        {
-          "display_name": "Ryan Peniston",
-          "provider": "rapidapi_tennis",
-          "provider_player_id": "rapidapi-tennis:player:29459"
-        },
-        {
-          "display_name": "Benjamin Hassan",
-          "provider": "rapidapi_tennis",
-          "provider_player_id": "rapidapi-tennis:player:32887"
-        }
-      ],
-      "players": [
-        {
-          "name": "Ryan Peniston",
-          "provider_player_id": "rapidapi-tennis:player:29459",
-          "provider_ranking": {
-            "country": "GBR",
-            "place": "508",
-            "player": "Ryan Peniston",
-            "points": "87",
-            "snapshot_date": "2026-09-21"
-          }
-        },
-        {
-          "name": "Benjamin Hassan",
-          "provider_player_id": "rapidapi-tennis:player:32887",
-          "provider_ranking": {
-            "country": "LIB",
-            "place": "428",
-            "player": "Benjamin Hassan",
-            "points": "114",
-            "snapshot_date": "2026-09-21"
-          }
-        }
-      ],
-      "provider_channel": "ATP",
-      "provider_source_event_id": "rapidapi-tennis:atp:match:709703",
-      "round": "Q1",
-      "source_id_collision_resolved": false,
-      "source_provider": "rapidapi_tennis",
-      "source_reference": "fixtures:matchId=709703;tournament_info=22110;ranking_cut=2026-09-21;provider_channel=ATP",
-      "source_snapshot_sha256": "a7d0a6c501f44a5a2c913f73a66c334b03130b48b4c65ff7a92ea4e0ea5c8f0f",
-      "surface": "Hard",
-      "target_period": 20260921,
-      "tour_level": "C",
-      "world_source_snapshot_sha256": "b2829656584ef409892d19a7a0868b852b8588713a926707c0bb88e09ab9e717",
-      "world_stable_physical_identity_key": "157116bd7aeb09427fd435c0f6b2adfa4c6565d752e8e7829a18a78e61c45376"
-    },
     {
       "canonical_source_event_id": "rapidapi-tennis:atp:match:752239",
       "competition": "Sioux Falls Challenger",
@@ -777,7 +719,7 @@
       "world_stable_physical_identity_key": "3fa480f728de94203ffd9fa93116ae22031935b3e57a0ab465ffff9779b2ae51"
     }
   ],
-  "eligible_input_events": 13,
+  "eligible_input_events": 12,
   "fixture_rows": 19,
   "governed_preregistration_required": true,
   "metrics_opened": false,
@@ -808,6 +750,29 @@
       "source_id_collision_resolved": false,
       "tournament_id": "22110",
       "world_source_event_id": "rapidapi-tennis:atp:match:709702"
+    },
+    {
+      "blockers": [
+        "EVENT_NOT_FUTURE"
+      ],
+      "match_id": "709703",
+      "players": [
+        {
+          "name": "Ryan Peniston",
+          "provider_player_id": "rapidapi-tennis:player:29459",
+          "ranking_found": true
+        },
+        {
+          "name": "Benjamin Hassan",
+          "provider_player_id": "rapidapi-tennis:player:32887",
+          "ranking_found": true
+        }
+      ],
+      "provider_channel": "ATP",
+      "provider_source_event_id": "rapidapi-tennis:atp:match:709703",
+      "source_id_collision_resolved": false,
+      "tournament_id": "22110",
+      "world_source_event_id": "rapidapi-tennis:atp:match:709703"
     },
     {
       "blockers": [
@@ -1075,14 +1040,13 @@
   ],
   "world_domain_candidates_input": 19,
   "world_identity_binding_rejection_count": 0,
-  "world_inventory_sha256": "c9704b445ed40723c4d356487874f95c904292fc02153bf382122d50c9c43fbb",
+  "world_inventory_sha256": "0d95fe89479c3b2e4030442b97ebc27374e10a22ca020e29536e6597697d7e0d",
   "world_inventory_target_date": "2026-10-25",
   "world_inventory_total": 117,
   "world_registry": {
-    "as_of_utc": "2026-10-25T14:21:40+00:00",
+    "as_of_utc": "2026-10-25T14:31:58+00:00",
     "cor0203_denominator_definition": "derived subset: future ATP Challenger Hard events with two real fixed identities and valid source provenance",
     "cor0203_eligible_event_ids": [
-      "rapidapi-tennis:match:709703",
       "rapidapi-tennis:match:752239",
       "rapidapi-tennis:match:709710",
       "rapidapi-tennis:match:752250",
@@ -1096,28 +1060,9 @@
       "rapidapi-tennis:match:752249",
       "rapidapi-tennis:match:752244"
     ],
-    "cor0203_eligible_events": 13,
+    "cor0203_eligible_events": 12,
     "duplicate_rows": 0,
     "rows": [
-      {
-        "competition_id": "rapidapi-tennis:tournament:22110",
-        "competition_name": "Brest Challenger",
-        "cor0203_blockers": [],
-        "cor0203_eligible": true,
-        "environment": "UNKNOWN",
-        "event_id": "rapidapi-tennis:match:709703",
-        "event_start_utc": "2026-10-25T14:30:00+00:00",
-        "player1_id": "rapidapi-tennis:player:29459",
-        "player2_id": "rapidapi-tennis:player:32887",
-        "round": "Q1",
-        "source_provider": "rapidapi_tennis",
-        "source_reference": "fixtures:matchId=709703;tournament_info=22110;ranking_cut=2026-09-21",
-        "source_snapshot_sha256": "a7d0a6c501f44a5a2c913f73a66c334b03130b48b4c65ff7a92ea4e0ea5c8f0f",
-        "sport": "TENNIS",
-        "surface": "Hard",
-        "tour_level": "ATP_CHALLENGER",
-        "world_calendar_status": "PRESERVED"
-      },
       {
         "competition_id": "rapidapi-tennis:tournament:22111",
         "competition_name": "Sioux Falls Challenger",
@@ -1349,8 +1294,8 @@
     ],
     "schema": "matrix.world-calendar-registry/1",
     "world_calendar_denominator_definition": "all unique discovered scheduled events preserved before model-domain filtering",
-    "world_calendar_input_rows": 13,
-    "world_calendar_unique_events": 13
+    "world_calendar_input_rows": 12,
+    "world_calendar_unique_events": 12
   },
   "world_rows_malformed": [],
   "world_rows_synthesized": 19,
