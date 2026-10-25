@@ -73,3 +73,13 @@ def test_first_and_second_half_goal_markets_are_mandatory():
     assert corr["second_half_goals_required"] is True
     assert corr["team_total_goals_full_match_required"] is True
     assert corr["team_total_goals_by_half_required"] is True
+
+
+def test_full_42_lane_reporting_is_permanent():
+    m=json.loads(MANDATE.read_text(encoding="utf-8"))
+    corr=m["explicit_user_correction_2026_10_24_all_42"]
+    assert corr["all_42_must_be_reported_in_status_updates"] is True
+    assert corr["all_42_must_have_next_required_action"] is True
+    assert corr["per_lane_prospective_counter_required"] is True
+    assert corr["active_and_lab_lanes_may_not_be_silently_omitted"] is True
+    assert corr["team_total_goals_is_not_a_substitute_for_full_portfolio"] is True
