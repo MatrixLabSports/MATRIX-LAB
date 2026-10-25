@@ -13,6 +13,9 @@ on:
       - "tools/telegram_team_total_goals_picks.py"
       - "tests/test_telegram_team_total_goals_picks.py"
       - "tests/test_telegram_team_total_goals_workflow_contract.py"
+      - "tools/physical_team_total_browser_capture.py"
+      - "tests/test_physical_team_total_browser_capture.py"
+      - "evidence/browser_capture_inbox/team_total/**"
       - "evidence/api_football/prospective_market_freeze/**"
       - "evidence/api_football/prospective_daily/**"
 
@@ -57,7 +60,23 @@ jobs:
           test "$AUTO_BETTING" = "DISABLED"
           PYTHONPATH=. python -m pytest -q \
             tests/test_telegram_team_total_goals_picks.py \
-            tests/test_telegram_team_total_goals_workflow_contract.py
+            tests/test_telegram_team_total_goals_workflow_contract.py \
+            tests/test_physical_team_total_browser_capture.py
+
+      - name: Normalize physical Team Total captures before PICKS NUEVOS
+        shell: bash
+        run: |
+          set -euo pipefail
+          PYTHONPATH=. python -m tools.physical_team_total_browser_capture
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          j=json.loads(Path("evidence/browser_capture_inbox/MATRIX_TEAM_TOTAL_PHYSICAL_CAPTURE_BRIDGE_LAST.json").read_text(encoding="utf-8"))
+          assert j["status"]=="PASS"
+          assert j["protections"]["real_money"]=="BLOCKED"
+          assert j["protections"]["automatic_wagering"] is False
+          assert j["protections"]["probability_from_odds"] is False
+          PY
 
       - name: Validate Telegram and odds secrets
         env:
@@ -118,7 +137,9 @@ jobs:
           git config user.email "matrix-telegram-team-total-goals@users.noreply.github.com"
           git add \
             evidence/notifications/telegram/MATRIX_TELEGRAM_TEAM_TOTAL_GOALS_PICKS_LAST.json \
-            evidence/notifications/telegram/MATRIX_TELEGRAM_TEAM_TOTAL_GOALS_PICKS_LEDGER.json
+            evidence/notifications/telegram/MATRIX_TELEGRAM_TEAM_TOTAL_GOALS_PICKS_LEDGER.json \
+            evidence/browser_capture_inbox/MATRIX_TEAM_TOTAL_PHYSICAL_CAPTURE_BRIDGE_LAST.json \
+            evidence/football_world_inventory
           if git diff --cached --quiet; then
             echo "NO_TEAM_TOTAL_GOALS_TELEGRAM_CHANGE"
             exit 0
