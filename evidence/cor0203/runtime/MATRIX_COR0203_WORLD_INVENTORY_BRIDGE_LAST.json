@@ -1,8 +1,8 @@
 {
   "automatic_model_feed": false,
   "cor_candidates_outside_today_world_lane": [],
-  "cor_discovery_eligible_total": 17,
-  "cor_discovery_rejected_total": 22,
+  "cor_discovery_eligible_total": 18,
+  "cor_discovery_rejected_total": 21,
   "governed_preregistration_authoritative": true,
   "metrics_opened": false,
   "outcomes_read": 0,
@@ -80,14 +80,6 @@
       "blockers": [
         "EVENT_NOT_FUTURE"
       ],
-      "match_id": "690647",
-      "status": "COR_DISCOVERY_REJECTED",
-      "world_source_event_id": "rapidapi-tennis:atp:match:690647"
-    },
-    {
-      "blockers": [
-        "EVENT_NOT_FUTURE"
-      ],
       "match_id": "709707",
       "status": "COR_DISCOVERY_REJECTED",
       "world_source_event_id": "rapidapi-tennis:atp:match:709707"
@@ -103,11 +95,21 @@
     },
     {
       "blockers": [
+        "EVENT_NOT_FUTURE",
         "RANKING_CUT_MISSING_PLAYER1"
       ],
       "match_id": "690652",
       "status": "COR_DISCOVERY_REJECTED",
       "world_source_event_id": "rapidapi-tennis:atp:match:690652"
+    },
+    {
+      "blockers": [
+        "ALREADY_PREREGISTERED_OR_FROZEN",
+        "ALREADY_PREREGISTERED_OR_FROZEN_PHYSICAL_EVENT"
+      ],
+      "match_id": "690647",
+      "status": "PREREGISTRATION_SKIPPED",
+      "world_source_event_id": "rapidapi-tennis:atp:match:690647"
     },
     {
       "blockers": [
@@ -187,15 +189,6 @@
     },
     {
       "blockers": [
-        "ALREADY_PREREGISTERED_OR_FROZEN",
-        "ALREADY_PREREGISTERED_OR_FROZEN_PHYSICAL_EVENT"
-      ],
-      "match_id": "690645",
-      "status": "PREREGISTRATION_SKIPPED",
-      "world_source_event_id": "rapidapi-tennis:atp:match:690645"
-    },
-    {
-      "blockers": [
         "RANKING_CUT_MISSING_PLAYER2"
       ],
       "match_id": "709705",
@@ -210,6 +203,15 @@
       "match_id": "709710",
       "status": "PREREGISTRATION_SKIPPED",
       "world_source_event_id": "rapidapi-tennis:atp:match:709710"
+    },
+    {
+      "blockers": [
+        "ALREADY_PREREGISTERED_OR_FROZEN",
+        "ALREADY_PREREGISTERED_OR_FROZEN_PHYSICAL_EVENT"
+      ],
+      "match_id": "690645",
+      "status": "PREREGISTRATION_SKIPPED",
+      "world_source_event_id": "rapidapi-tennis:atp:match:690645"
     },
     {
       "blockers": [
@@ -345,13 +347,13 @@
   ],
   "schema": "MATRIX_COR0203_WORLD_INVENTORY_BRIDGE_V1",
   "status_counts": {
-    "COR_DISCOVERY_REJECTED": 22,
-    "PREREGISTRATION_SKIPPED": 17
+    "COR_DISCOVERY_REJECTED": 21,
+    "PREREGISTRATION_SKIPPED": 18
   },
   "target_date_bogota": "2026-10-25",
   "world_complete_gate": "REQUIRES_MULTI_SOURCE_RECONCILIATION",
   "world_domain_candidates": 39,
   "world_inventory_complete": false,
   "world_inventory_status": "PASS",
-  "world_inventory_total": 158
+  "world_inventory_total": 165
 }
