@@ -127,3 +127,63 @@ def test_horizon_does_not_retry_valid_completed_cycle(tmp_path, monkeypatch):
     )
     assert d["targets"][0]["status"] == "ALREADY_COMPLETED_TODAY"
     assert d["new_freezes_total"] == 0
+
+
+def test_horizon_extends_to_paid_cutoff_without_crossing_it(tmp_path, monkeypatch):
+    calls = []
+
+    def fake_cycle(*, root, api_key, target_date):
+        calls.append(target_date)
+        cycle_root = Path("evidence/api_football/prospective_daily") / target_date / "cycle"
+        (tmp_path / cycle_root).mkdir(parents=True, exist_ok=True)
+        return {
+            "cycle_root": cycle_root.as_posix(),
+            "fixture_capture": {"fixtures_received": 10, "eligible_future_fixtures": 8},
+            "canonical": {"ready_input_count": 6},
+            "freeze": {"new_event_count": 6},
+            "network_calls_performed": 3,
+        }
+
+    monkeypatch.setattr(horizon, "run_daily_cycle", fake_cycle)
+    d = horizon.run_horizon(
+        root=tmp_path,
+        api_key="k",
+        days=5,
+        now_utc=datetime(2026, 10, 25, 12, 0, tzinfo=timezone.utc),
+    )
+    assert calls == ["2026-10-25", "2026-10-26", "2026-10-27", "2026-10-28"]
+    assert d["days_requested"] == 4
+    assert d["paid_through_bogota_date"] == "2026-10-28"
+    assert d["paid_window_target_cap_enforced"] is True
+
+
+def test_horizon_on_oct24_covers_full_remaining_paid_window(tmp_path, monkeypatch):
+    calls = []
+
+    def fake_cycle(*, root, api_key, target_date):
+        calls.append(target_date)
+        cycle_root = Path("evidence/api_football/prospective_daily") / target_date / "cycle"
+        (tmp_path / cycle_root).mkdir(parents=True, exist_ok=True)
+        return {
+            "cycle_root": cycle_root.as_posix(),
+            "fixture_capture": {"fixtures_received": 10, "eligible_future_fixtures": 8},
+            "canonical": {"ready_input_count": 6},
+            "freeze": {"new_event_count": 6},
+            "network_calls_performed": 3,
+        }
+
+    monkeypatch.setattr(horizon, "run_daily_cycle", fake_cycle)
+    d = horizon.run_horizon(
+        root=tmp_path,
+        api_key="k",
+        days=5,
+        now_utc=datetime(2026, 10, 24, 12, 0, tzinfo=timezone.utc),
+    )
+    assert calls == [
+        "2026-10-24",
+        "2026-10-25",
+        "2026-10-26",
+        "2026-10-27",
+        "2026-10-28",
+    ]
+    assert d["days_requested"] == 5
