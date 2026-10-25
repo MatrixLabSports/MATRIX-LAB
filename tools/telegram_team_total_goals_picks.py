@@ -25,6 +25,8 @@ SOURCE_FREEZE=Path("evidence/api_football/prospective_market_freeze/freeze.json"
 PROSPECTIVE_DAILY_ROOT=Path("evidence/api_football/prospective_daily")
 LEDGER=Path("evidence/notifications/telegram/MATRIX_TELEGRAM_TEAM_TOTAL_GOALS_PICKS_LEDGER.json")
 AUDIT=Path("evidence/notifications/telegram/MATRIX_TELEGRAM_TEAM_TOTAL_GOALS_PICKS_LAST.json")
+PHYSICAL_BOOK_QUOTE_ROOT=Path("evidence/football_world_inventory")
+PHYSICAL_BOOK_QUOTE_MAX_AGE_SECONDS=1800
 ODDS_BASE="https://api.odds-api.net/v1"
 MIN_P=0.60
 MIN_EV=0.05
@@ -344,6 +346,108 @@ def build_candidates(
     return candidates,audit
 
 
+def _book_key(value:Any)->str|None:
+    token=_norm(value).replace(" ","")
+    aliases={
+        "betano":{"betano"},
+        "betplay":{"betplay"},
+        "rushbet":{"rushbet","rushbetco"},
+        "bwin":{"bwin"},
+    }
+    for key,names in aliases.items():
+        if token in names:
+            return key
+    return None
+
+
+def physical_book_team_total_offer(
+    candidate:Mapping[str,Any],
+    now_utc:datetime,
+    *,
+    root:Path=PHYSICAL_BOOK_QUOTE_ROOT,
+)->dict[str,Any]|None:
+    """Load a fresh physically captured exact Team Total Goals quote.
+
+    Required identity is fixture + team/lane + side + line. The artifact is
+    execution evidence only; it never changes P_MATRIX.
+    """
+    if not root.exists():
+        return None
+    target_fixture=str(candidate.get("fixture_id") or "")
+    target_team=str(candidate.get("team_name") or "")
+    target_lane=str(candidate.get("market_lane") or "")
+    target_side=str(candidate.get("selection_side") or "").casefold()
+    try:
+        target_line=float(candidate.get("line"))
+        p=float(candidate.get("p_matrix"))
+        kickoff=_utc(candidate.get("event_start_utc"))
+    except Exception:
+        return None
+    best=None
+    for path in root.glob("*/MATRIX_*_QUOTE_*.json"):
+        try:
+            data=_load(path)
+        except Exception:
+            continue
+        if data.get("schema")!="MATRIX_PHYSICAL_BOOK_QUOTE_V1":
+            continue
+        if str(data.get("fixture_id") or "")!=target_fixture:
+            continue
+        market_key=str(data.get("market_key") or "").strip().upper()
+        market_text=_norm(data.get("market"))
+        if market_key not in {"TEAM_TOTAL_GOALS_HOME","TEAM_TOTAL_GOALS_AWAY"} and "team total" not in market_text and "goles equipo" not in market_text:
+            continue
+        if market_key and market_key!=target_lane:
+            continue
+        artifact_team=str(data.get("team_name") or data.get("team_subject") or "")
+        if artifact_team and _sim(target_team,artifact_team)<EVENT_IDENTITY_MIN_SCORE:
+            continue
+        side=str(data.get("selection_side") or data.get("side") or "").strip().casefold()
+        if side not in {"over","under"}:
+            selection=_norm(data.get("selection"))
+            side="over" if "over" in selection or "mas de" in selection else "under" if "under" in selection or "menos de" in selection else ""
+        if side!=target_side:
+            continue
+        try:
+            line=float(data.get("line"))
+            dec=float(data.get("decimal_odds"))
+        except Exception:
+            continue
+        if line!=target_line or dec<=MIN_ODDS:
+            continue
+        house_key=_book_key(data.get("house"))
+        if house_key not in BOOKS:
+            continue
+        try:
+            captured=_utc(data.get("captured_at_utc") or data.get("captured_at_bogota"))
+            artifact_kickoff=_utc(data.get("kickoff_utc"))
+        except Exception:
+            continue
+        if abs((artifact_kickoff-kickoff).total_seconds())>300:
+            continue
+        age=(now_utc-captured).total_seconds()
+        if age<0 or age>PHYSICAL_BOOK_QUOTE_MAX_AGE_SECONDS:
+            continue
+        if captured>=kickoff or now_utc>=kickoff:
+            continue
+        ev=p*dec-1.0
+        if ev<MIN_EV:
+            continue
+        offer={
+            "house_key":house_key,
+            "house":str(data.get("house") or house_key.title()),
+            "odds":dec,
+            "ev":ev,
+            "quote_age_seconds":int(age),
+            "provider":"physical-browser-evidence",
+            "physical_evidence_path":path.as_posix(),
+            "event_id":None,
+        }
+        if best is None or int(offer["quote_age_seconds"])<int(best["quote_age_seconds"]):
+            best=offer
+    return best
+
+
 def _parse_line(item:Mapping[str,Any])->float|None:
     try:return float(item.get("line"))
     except Exception:
@@ -352,7 +456,7 @@ def _parse_line(item:Mapping[str,Any])->float|None:
         return float(m.group(1)) if m else None
 
 
-def find_quote(session:requests.Session,key:str,c:Mapping[str,Any],diagnostic:dict[str,Any],event_cache:dict[int,tuple[list[dict[str,Any]],int]]|None=None)->dict[str,Any]|None:
+def find_quote(session:requests.Session,key:str,c:Mapping[str,Any],diagnostic:dict[str,Any],event_cache:dict[int,tuple[list[dict[str,Any]],int]]|None=None,physical_root:Path=PHYSICAL_BOOK_QUOTE_ROOT)->dict[str,Any]|None:
     diagnostic.clear(); diagnostic["status"]="STARTED"; diagnostic["fixture_id"]=c["fixture_id"]
     start=_utc(c["event_start_utc"])
     now=datetime.now(timezone.utc)
@@ -412,6 +516,13 @@ def find_quote(session:requests.Session,key:str,c:Mapping[str,Any],diagnostic:di
         for score,is_direct,event in scored[:5]
     ]
     if not scored:
+        physical=physical_book_team_total_offer(c,now,root=physical_root)
+        if physical is not None:
+            diagnostic["status"]="PASS_PHYSICAL_BROWSER_TEAM_TOTAL_QUOTE"
+            diagnostic["physical_fallback_used"]=True
+            diagnostic["physical_evidence_path"]=physical.get("physical_evidence_path")
+            return physical
+        diagnostic["physical_fallback_used"]=False
         diagnostic["status"]="BLOCKED_EVENT_NOT_COVERED"; return None
     if scored[0][0]<EVENT_IDENTITY_MIN_SCORE:
         diagnostic["status"]="BLOCKED_IDENTITY_LOW_SCORE"; return None
@@ -472,8 +583,19 @@ def find_quote(session:requests.Session,key:str,c:Mapping[str,Any],diagnostic:di
         if ev<MIN_EV: continue
         offers.append({"house_key":house,"house":house.title(),"odds":dec,"ev":ev,"quote_age_seconds":age,"provider":"odds-api.net","event_id":event_id})
     diagnostic["eligible_offer_count"]=len(offers)
-    diagnostic["status"]="PASS_EXACT_TEAM_TOTAL_QUOTE" if offers else "BLOCKED_NO_EXACT_TEAM_TOTAL_QUOTE"
-    return max(offers,key=lambda x:x["ev"]) if offers else None
+    if offers:
+        diagnostic["status"]="PASS_EXACT_TEAM_TOTAL_QUOTE"
+        diagnostic["physical_fallback_used"]=False
+        return max(offers,key=lambda x:x["ev"])
+    physical=physical_book_team_total_offer(c,now,root=physical_root)
+    if physical is not None:
+        diagnostic["status"]="PASS_PHYSICAL_BROWSER_TEAM_TOTAL_QUOTE"
+        diagnostic["physical_fallback_used"]=True
+        diagnostic["physical_evidence_path"]=physical.get("physical_evidence_path")
+        return physical
+    diagnostic["physical_fallback_used"]=False
+    diagnostic["status"]="BLOCKED_NO_EXACT_TEAM_TOTAL_QUOTE"
+    return None
 
 
 def _message(c:Mapping[str,Any],q:Mapping[str,Any])->str:
@@ -583,7 +705,7 @@ def main()->None:
       "minimum_odds_strictly_greater_than":MIN_ODDS,
       "minimum_ev":MIN_EV,
       "event_identity_policy":{"minimum_score":EVENT_IDENTITY_MIN_SCORE,"minimum_margin":EVENT_IDENTITY_MIN_MARGIN,"max_event_pages":EVENT_SEARCH_MAX_PAGES,"pagination_required":True,"same_kickoff_event_search_cache":True,"primary_window_seconds":7200,"recovery_window_seconds":EVENT_SEARCH_RECOVERY_WINDOW_SECONDS},
-      "team_total_quote_policy":{"snapshot_type":"team total","period":"full time","team_subject_required_when_present":True},
+      "team_total_quote_policy":{"snapshot_type":"team total","period":"full time","team_subject_required_when_present":True,"physical_browser_fallback":True,"physical_browser_max_age_seconds":PHYSICAL_BOOK_QUOTE_MAX_AGE_SECONDS,"physical_identity_fields":["fixture_id","market_lane","team_name","selection_side","line"]},
       "eligible_quote_count":eligible,
       "sent_count":len(sent),
       "dry_run":bool(a.dry_run),
