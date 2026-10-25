@@ -1,5 +1,5 @@
 {
-  "as_of_utc": "2026-10-25T10:06:42+00:00",
+  "as_of_utc": "2026-10-25T10:17:13+00:00",
   "automatic_model_feed": false,
   "automatic_model_promotion": false,
   "automatic_wagering": false,
@@ -22,64 +22,6 @@
   },
   "certified_exact_cut_rank_override_count": 0,
   "eligible_candidates": [
-    {
-      "canonical_source_event_id": "rapidapi-tennis:atp:match:709707",
-      "competition": "Brest Challenger",
-      "competition_id": "rapidapi-tennis:tournament:22110",
-      "event_id": "rapidapi-tennis:atp:match:709707",
-      "event_start_utc": "2026-10-25T10:10:00+00:00",
-      "historical_identity_crosswalk_status": "PENDING",
-      "legacy_provider_event_id": "rapidapi-tennis:match:709707",
-      "physical_event_key": "454a8df95178fdb3a2c091f5bdc14eb64b8bfc3dc30ef108cee0471c01eba40a",
-      "player_identities": [
-        {
-          "display_name": "Ugo Blanchet",
-          "provider": "rapidapi_tennis",
-          "provider_player_id": "rapidapi-tennis:player:44595"
-        },
-        {
-          "display_name": "Samir Hamza Reguig",
-          "provider": "rapidapi_tennis",
-          "provider_player_id": "rapidapi-tennis:player:66500"
-        }
-      ],
-      "players": [
-        {
-          "name": "Ugo Blanchet",
-          "provider_player_id": "rapidapi-tennis:player:44595",
-          "provider_ranking": {
-            "country": "FRA",
-            "place": "320",
-            "player": "Ugo Blanchet",
-            "points": "168",
-            "snapshot_date": "2026-09-21"
-          }
-        },
-        {
-          "name": "Samir Hamza Reguig",
-          "provider_player_id": "rapidapi-tennis:player:66500",
-          "provider_ranking": {
-            "country": "ALG",
-            "place": "684",
-            "player": "Samir Hamza Reguig",
-            "points": "49",
-            "snapshot_date": "2026-09-21"
-          }
-        }
-      ],
-      "provider_channel": "ATP",
-      "provider_source_event_id": "rapidapi-tennis:atp:match:709707",
-      "round": "Q1",
-      "source_id_collision_resolved": false,
-      "source_provider": "rapidapi_tennis",
-      "source_reference": "fixtures:matchId=709707;tournament_info=22110;ranking_cut=2026-09-21;provider_channel=ATP",
-      "source_snapshot_sha256": "d070ad4a0b09960fd1c13da97c379585d532c05199e5d43873042e96d7b9742a",
-      "surface": "Hard",
-      "target_period": 20260921,
-      "tour_level": "C",
-      "world_source_snapshot_sha256": "7b8006acdab60761026bd7205ec72a1973c8156b0b4b2ca6adc2763b52db4cd2",
-      "world_stable_physical_identity_key": "bb341f11bc5ab8ec612465d0db1497bfe52b2014afb8ae13e21670e94f06b3c9"
-    },
     {
       "canonical_source_event_id": "rapidapi-tennis:atp:match:690642",
       "competition": "Ningboo Challenger",
@@ -1067,7 +1009,7 @@
       "world_stable_physical_identity_key": "3fa480f728de94203ffd9fa93116ae22031935b3e57a0ab465ffff9779b2ae51"
     }
   ],
-  "eligible_input_events": 18,
+  "eligible_input_events": 17,
   "fixture_rows": 39,
   "governed_preregistration_required": true,
   "metrics_opened": false,
@@ -1287,6 +1229,30 @@
     },
     {
       "blockers": [
+        "EVENT_NOT_FUTURE"
+      ],
+      "match_id": "709707",
+      "players": [
+        {
+          "name": "Ugo Blanchet",
+          "provider_player_id": "rapidapi-tennis:player:44595",
+          "ranking_found": true
+        },
+        {
+          "name": "Samir Hamza Reguig",
+          "provider_player_id": "rapidapi-tennis:player:66500",
+          "ranking_found": true
+        }
+      ],
+      "provider_channel": "ATP",
+      "provider_source_event_id": "rapidapi-tennis:atp:match:709707",
+      "source_id_collision_resolved": false,
+      "tournament_id": "22110",
+      "world_source_event_id": "rapidapi-tennis:atp:match:709707"
+    },
+    {
+      "blockers": [
+        "EVENT_NOT_FUTURE",
         "RANKING_CUT_MISSING_PLAYER1"
       ],
       "match_id": "709709",
@@ -1849,14 +1815,13 @@
   ],
   "world_domain_candidates_input": 39,
   "world_identity_binding_rejection_count": 0,
-  "world_inventory_sha256": "033ea674476dda814b831166676d3a5913031e52bf71f37f8a11ec2629fb91d3",
+  "world_inventory_sha256": "9929c92f068e1945aeb22464f8759fd58455089d03a2ba5a1cd5359f0beb8eea",
   "world_inventory_target_date": "2026-10-25",
   "world_inventory_total": 158,
   "world_registry": {
-    "as_of_utc": "2026-10-25T10:06:42+00:00",
+    "as_of_utc": "2026-10-25T10:17:13+00:00",
     "cor0203_denominator_definition": "derived subset: future ATP Challenger Hard events with two real fixed identities and valid source provenance",
     "cor0203_eligible_event_ids": [
-      "rapidapi-tennis:match:709707",
       "rapidapi-tennis:match:690642",
       "rapidapi-tennis:match:709711",
       "rapidapi-tennis:match:709703",
@@ -1875,28 +1840,9 @@
       "rapidapi-tennis:match:752249",
       "rapidapi-tennis:match:752244"
     ],
-    "cor0203_eligible_events": 18,
+    "cor0203_eligible_events": 17,
     "duplicate_rows": 0,
     "rows": [
-      {
-        "competition_id": "rapidapi-tennis:tournament:22110",
-        "competition_name": "Brest Challenger",
-        "cor0203_blockers": [],
-        "cor0203_eligible": true,
-        "environment": "UNKNOWN",
-        "event_id": "rapidapi-tennis:match:709707",
-        "event_start_utc": "2026-10-25T10:10:00+00:00",
-        "player1_id": "rapidapi-tennis:player:44595",
-        "player2_id": "rapidapi-tennis:player:66500",
-        "round": "Q1",
-        "source_provider": "rapidapi_tennis",
-        "source_reference": "fixtures:matchId=709707;tournament_info=22110;ranking_cut=2026-09-21",
-        "source_snapshot_sha256": "d070ad4a0b09960fd1c13da97c379585d532c05199e5d43873042e96d7b9742a",
-        "sport": "TENNIS",
-        "surface": "Hard",
-        "tour_level": "ATP_CHALLENGER",
-        "world_calendar_status": "PRESERVED"
-      },
       {
         "competition_id": "rapidapi-tennis:tournament:22113",
         "competition_name": "Ningboo Challenger",
@@ -2223,8 +2169,8 @@
     ],
     "schema": "matrix.world-calendar-registry/1",
     "world_calendar_denominator_definition": "all unique discovered scheduled events preserved before model-domain filtering",
-    "world_calendar_input_rows": 18,
-    "world_calendar_unique_events": 18
+    "world_calendar_input_rows": 17,
+    "world_calendar_unique_events": 17
   },
   "world_rows_malformed": [],
   "world_rows_synthesized": 39,
