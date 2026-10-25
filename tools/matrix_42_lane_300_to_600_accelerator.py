@@ -31,6 +31,11 @@ def build(generated_at:datetime|None=None)->dict[str,Any]:
         and int(x.get("prospective_unique_count") or 0)>=300
         and int(x.get("prospective_unique_count") or 0)<600
     ]
+    post600_audit=[
+        x for x in rows
+        if x.get("operational_state")=="LAB"
+        and int(x.get("prospective_unique_count") or 0)>=600
+    ]
     if not p1:
         selected=[]
         selected_count=None
@@ -88,6 +93,13 @@ def build(generated_at:datetime|None=None)->dict[str,Any]:
             "required_actions":[str(x.get("next_required_action")) for x in selected],
         },
         "ordered_cohorts":cohorts,
+        "post600_audit_queue":{
+            "lane_count":len(post600_audit),
+            "lanes":[str(x.get("market_lane")) for x in sorted(post600_audit,key=lambda x:int(x.get("portfolio_index") or 9999))],
+            "counts":[int(x.get("prospective_unique_count") or 0) for x in sorted(post600_audit,key=lambda x:int(x.get("portfolio_index") or 9999))],
+            "automatic_promotion":False,
+            "required_action":"RUN_GATE600_CALIBRATION_STABILITY_AUDIT",
+        },
         "portfolio_visibility":{
             "all_42_remain_supervised":True,
             "total_lanes":42,
