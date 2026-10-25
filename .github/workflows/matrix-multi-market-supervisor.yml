@@ -29,6 +29,8 @@ on:
       - tests/test_matrix_42_lane_zero_prospective_blockers.py
       - tests/test_matrix_42_lane_action_board.py
       - tools/matrix_42_lane_action_board.py
+      - tests/test_matrix_42_lane_300_to_600_accelerator.py
+      - tools/matrix_42_lane_300_to_600_accelerator.py
       - tests/test_matrix_nine_lab_gate_registry.py
       - tools/matrix_42_lane_prospective_registry.py
       - tools/matrix_42_lane_football_freeze_bridge.py
@@ -85,6 +87,7 @@ jobs:
             tests/test_matrix_42_lane_team_shots_offline_bridge.py \
             tests/test_matrix_42_lane_zero_prospective_blockers.py \
             tests/test_matrix_42_lane_action_board.py \
+            tests/test_matrix_42_lane_300_to_600_accelerator.py \
             tests/test_matrix_nine_lab_gate_registry.py
 
       - name: Refresh football market catalog while paid window is active
@@ -340,6 +343,27 @@ jobs:
           print(json.dumps({"status":"PASS","counts":j["counts"]},sort_keys=True))
           PY
 
+      - name: Select deterministic 300-to-600 accelerator cohort
+        shell: bash
+        run: |
+          set -euo pipefail
+          PYTHONPATH=. python -m tools.matrix_42_lane_300_to_600_accelerator
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          j=json.loads(Path("evidence/market_portfolio/MATRIX_42_LANE_300_TO_600_ACCELERATOR_LAST.json").read_text(encoding="utf-8"))
+          assert j["status"]=="PASS"
+          assert j["portfolio_visibility"]["all_42_remain_supervised"] is True
+          assert j["portfolio_visibility"]["selected_cohort_does_not_suspend_other_lanes"] is True
+          assert j["selection_policy"]["model_refit"] is False
+          assert j["selection_policy"]["historical_backfill"] is False
+          assert j["selection_policy"]["post_start_backfill"] is False
+          assert j["selection_policy"]["odds_used_to_generate_probability"] is False
+          assert j["selection_policy"]["automatic_wagering"] is False
+          assert j["selection_policy"]["real_money"]=="BLOCKED"
+          print(json.dumps({"status":"PASS","selected_cohort":j["selected_cohort"],"ordered_cohorts":j["ordered_cohorts"]},sort_keys=True))
+          PY
+
       - name: Build blocked-lane activation plan
         shell: bash
         run: |
@@ -379,6 +403,7 @@ jobs:
           git add evidence/market_portfolio/MATRIX_42_LANE_TEAM_SHOTS_OFFLINE_BRIDGE_LAST.json
           git add evidence/market_portfolio/MATRIX_42_LANE_ZERO_PROSPECTIVE_BLOCKERS_LAST.json
           git add evidence/market_portfolio/MATRIX_42_LANE_ACTION_BOARD_LAST.json
+          git add evidence/market_portfolio/MATRIX_42_LANE_300_TO_600_ACCELERATOR_LAST.json
           git add evidence/market_portfolio/MATRIX_42_LANE_FREEZE_INBOX.jsonl
           if [ -f evidence/market_portfolio/MATRIX_42_LANE_PROSPECTIVE_LEDGER.jsonl ]; then
             git add evidence/market_portfolio/MATRIX_42_LANE_PROSPECTIVE_LEDGER.jsonl
