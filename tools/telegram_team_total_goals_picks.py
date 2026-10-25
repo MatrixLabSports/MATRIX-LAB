@@ -582,6 +582,8 @@ def main()->None:
       },
       "minimum_odds_strictly_greater_than":MIN_ODDS,
       "minimum_ev":MIN_EV,
+      "event_identity_policy":{"minimum_score":EVENT_IDENTITY_MIN_SCORE,"minimum_margin":EVENT_IDENTITY_MIN_MARGIN,"max_event_pages":EVENT_SEARCH_MAX_PAGES,"pagination_required":True,"same_kickoff_event_search_cache":True,"primary_window_seconds":7200,"recovery_window_seconds":EVENT_SEARCH_RECOVERY_WINDOW_SECONDS},
+      "team_total_quote_policy":{"snapshot_type":"team total","period":"full time","team_subject_required_when_present":True},
       "eligible_quote_count":eligible,
       "sent_count":len(sent),
       "dry_run":bool(a.dry_run),
