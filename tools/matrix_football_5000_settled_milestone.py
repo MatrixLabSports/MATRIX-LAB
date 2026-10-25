@@ -54,15 +54,23 @@ def build(generated_at:datetime|None=None)->dict[str,Any]:
         raise ValueError("REAL_MONEY_NOT_BLOCKED")
 
     sync_count=int(sync.get("calibration_observation_count") or 0)
+    settlement_record_count=int(sync.get("settlement_record_count") or 0)
     ledger_count=len(rows)
     if ledger_count!=sync_count:
         raise ValueError(f"SYNC_LEDGER_COUNT_MISMATCH:{sync_count}:{ledger_count}")
+    if settlement_record_count!=ledger_count:
+        raise ValueError(f"SETTLEMENT_RECORD_COUNT_MISMATCH:{settlement_record_count}:{ledger_count}")
 
     fixture_ids=[str(r.get("fixture_id") or "") for r in rows]
     if any(not x for x in fixture_ids):
         raise ValueError("MISSING_FIXTURE_ID")
     if len(fixture_ids)!=len(set(fixture_ids)):
         raise ValueError("DUPLICATE_FIXTURE_ID")
+    record_hashes=[str(r.get("record_sha256") or "").strip().lower() for r in rows]
+    if any(len(x)!=64 or any(ch not in "0123456789abcdef" for ch in x) for x in record_hashes):
+        raise ValueError("INVALID_OR_MISSING_RECORD_SHA256")
+    if len(record_hashes)!=len(set(record_hashes)):
+        raise ValueError("DUPLICATE_RECORD_SHA256")
 
     for row in rows:
         if row.get("source_terminal_status")!="FT":
@@ -103,6 +111,9 @@ def build(generated_at:datetime|None=None)->dict[str,Any]:
             "final_ft_only":True,
             "append_only":True,
             "duplicate_fixture_ids_forbidden":True,
+            "duplicate_record_hashes_forbidden":True,
+            "record_sha256_required":True,
+            "sync_settlement_count_must_equal_ledger_count":True,
             "hash_chain_verified":True,
             "metrics_before_5000_for_milestone_audit_forbidden":True,
             "historical_backfill":False,
@@ -116,7 +127,10 @@ def build(generated_at:datetime|None=None)->dict[str,Any]:
         "source":{
             "sync_generated_at_utc":sync.get("synced_at_utc"),
             "sync_new_observation_count":int(sync.get("new_observation_count") or 0),
-            "settlement_record_count":int(sync.get("settlement_record_count") or 0),
+            "settlement_record_count":settlement_record_count,
+            "calibration_observation_count":sync_count,
+            "ledger_record_hash_count":len(record_hashes),
+            "ledger_unique_record_hash_count":len(set(record_hashes)),
             "ledger_sha256":_sha(rows),
         },
     }
