@@ -35,7 +35,7 @@ def test_action_board_preserves_safety_contract():
     assert inv["real_money"]=="BLOCKED"
 
 
-def test_advanced_goal_lanes_are_prioritized_toward_600():
+def test_gate600_lab_lanes_leave_acceleration_queue_and_require_audit():
     r=build()
     rows={x["market_lane"]:x for x in r["rows"]}
     for key in {
@@ -43,6 +43,16 @@ def test_advanced_goal_lanes_are_prioritized_toward_600():
         "DOUBLE_CHANCE_1X",
         "DOUBLE_CHANCE_X2",
         "DOUBLE_CHANCE_12",
+    }:
+        assert rows[key]["prospective_unique_count"]>=600
+        assert rows[key]["priority"]=="P0_GATE600_REACHED_AWAIT_AUDIT"
+        assert rows[key]["next_required_action"]=="RUN_GATE600_CALIBRATION_STABILITY_AUDIT_NO_AUTO_PROMOTION"
+
+
+def test_sub600_advanced_lanes_remain_in_300_to_600_queue():
+    r=build()
+    rows={x["market_lane"]:x for x in r["rows"]}
+    for key in {
         "TEAM_TOTAL_GOALS_HOME",
         "TEAM_TOTAL_GOALS_AWAY",
         "FIRST_HALF_TOTAL_GOALS_OVER_UNDER",
@@ -52,7 +62,7 @@ def test_advanced_goal_lanes_are_prioritized_toward_600():
         "SECOND_HALF_TEAM_TOTAL_GOALS_HOME",
         "SECOND_HALF_TEAM_TOTAL_GOALS_AWAY",
     }:
-        assert rows[key]["prospective_unique_count"]>=300
+        assert 300<=rows[key]["prospective_unique_count"]<600
         assert rows[key]["priority"]=="P1_ADVANCE_300_TO_600"
 
 
@@ -62,3 +72,19 @@ def test_zero_lanes_are_never_silently_marked_complete():
     assert zero
     assert all(x["priority"]=="P4_OPEN_VALID_PROSPECTIVE_FREEZE" for x in zero)
     assert all(x["remaining_to_600"]==600 for x in zero)
+
+
+def test_active_lane_post_gate_is_maintained_not_demoted_to_audit_queue():
+    r=build()
+    rows={x["market_lane"]:x for x in r["rows"]}
+    total=rows["TOTAL_GOALS_OVER_UNDER"]
+    assert total["operational_state"]=="ACTIVE"
+    assert total["prospective_unique_count"]>=600
+    assert total["priority"]=="P0_MAINTAIN_ACTIVE_POST_GATE"
+    assert total["next_required_action"]=="KEEP_ACTIVE_PAPER_MONITORING_AND_CONTINUE_POST_GATE_VALIDATION"
+
+
+def test_gate600_never_auto_promotes():
+    r=build()
+    assert r["invariants"]["gate600_never_auto_promotes"] is True
+    assert r["invariants"]["lab_lane_at_600_routes_to_audit"] is True
