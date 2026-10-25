@@ -2,7 +2,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 import json
 
-from tools.telegram_team_total_goals_picks import build_candidates, _event_pages, _message, _sim
+from tools.telegram_team_total_goals_picks import build_candidates, _event_pages, find_quote, _message, _sim
 
 
 def _history(path:Path):
@@ -84,3 +84,102 @@ def test_event_search_paginates_until_next_cursor_is_exhausted():
     assert diagnostic["event_search_pages"] == 2
     assert diagnostic["event_search_rows"] == 2
     assert diagnostic["event_search_pagination_exhausted"] is True
+
+
+class _RouteSession:
+    def __init__(self):
+        self.calls=[]
+    def get(self,url,headers=None,params=None,timeout=None):
+        self.calls.append({"url":url,"params":dict(params or {})})
+        if url.endswith("/events"):
+            return _FakeResponse({
+                "items":[{
+                    "event_id":"evt-1",
+                    "home_team":"Manchester United",
+                    "away_team":"Arsenal",
+                    "start_time":"2026-10-25T08:00:00Z",
+                }],
+                "next_cursor":None,
+            })
+        if url.endswith("/events/evt-1/odds/snapshot"):
+            return _FakeResponse({
+                "bookmaker_as_of_ts_ms":{},
+                "items":[{
+                    "bookmaker":"betano",
+                    "market_key":"team_total",
+                    "bet_type":"team total",
+                    "period":"full time",
+                    "team_subject":"Manchester United",
+                    "selection_name":"Over 1.5",
+                    "selection_key":"team_total:home:over:1.5",
+                    "side":"over",
+                    "line":"1.5",
+                    "odds":1.80,
+                    "is_available":True,
+                }],
+            })
+        raise AssertionError(url)
+
+
+def test_find_quote_requests_exact_team_total_full_time_market():
+    session=_RouteSession()
+    diagnostic={}
+    candidate={
+        "fixture_id":"999",
+        "event_start_utc":"2026-10-25T08:00:00+00:00",
+        "home_team":"Manchester Utd FC",
+        "away_team":"Arsenal",
+        "team_name":"Manchester Utd FC",
+        "market_lane":"TEAM_TOTAL_GOALS_HOME",
+        "selection_side":"over",
+        "line":1.5,
+        "p_matrix":0.62,
+    }
+    quote=find_quote(session,"key",candidate,diagnostic,{})
+    assert quote is not None
+    assert quote["house_key"]=="betano"
+    assert quote["odds"]==1.80
+    snap=[x for x in session.calls if x["url"].endswith("/odds/snapshot")][0]
+    assert snap["params"]["types"]=="team total"
+    assert snap["params"]["periods"]=="full time"
+    assert diagnostic["status"]=="PASS_EXACT_TEAM_TOTAL_QUOTE"
+
+
+def test_find_quote_rejects_wrong_team_subject():
+    session=_RouteSession()
+    original_get=session.get
+    def wrong_subject(url,headers=None,params=None,timeout=None):
+        if url.endswith("/events/evt-1/odds/snapshot"):
+            session.calls.append({"url":url,"params":dict(params or {})})
+            return _FakeResponse({
+                "bookmaker_as_of_ts_ms":{},
+                "items":[{
+                    "bookmaker":"betano",
+                    "market_key":"team_total",
+                    "bet_type":"team total",
+                    "period":"full time",
+                    "team_subject":"Arsenal",
+                    "selection_name":"Over 1.5",
+                    "selection_key":"team_total:away:over:1.5",
+                    "side":"over",
+                    "line":"1.5",
+                    "odds":2.10,
+                    "is_available":True,
+                }],
+            })
+        return original_get(url,headers=headers,params=params,timeout=timeout)
+    session.get=wrong_subject
+    diagnostic={}
+    candidate={
+        "fixture_id":"999",
+        "event_start_utc":"2026-10-25T08:00:00+00:00",
+        "home_team":"Manchester United",
+        "away_team":"Arsenal",
+        "team_name":"Manchester United",
+        "market_lane":"TEAM_TOTAL_GOALS_HOME",
+        "selection_side":"over",
+        "line":1.5,
+        "p_matrix":0.62,
+    }
+    assert find_quote(session,"key",candidate,diagnostic,{}) is None
+    assert diagnostic["status"]=="BLOCKED_NO_EXACT_TEAM_TOTAL_QUOTE"
