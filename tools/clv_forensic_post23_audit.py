@@ -165,7 +165,7 @@ def main():
         "push_transport_recommendation":"NO_MIGRATION_UNTIL_RECENT_CAUSES_ADJUDICATED_AND_TRIAL_GATE_MET",
         "real_money":"BLOCKED"
     }
-    Path("/tmp/MATRIX_CLV_POST23_FORENSIC_25OCT2026.json").write_text(json.dumps(report,ensure_ascii=False,sort_keys=True,indent=2)+"\\n",encoding="utf-8")
+    Path("/tmp/MATRIX_CLV_POST23_FORENSIC_25OCT2026.json").write_text(json.dumps(report,ensure_ascii=False,sort_keys=True,indent=2)+"\n",encoding="utf-8")
     print("MATRIX_CLV_FORENSIC_JSON="+json.dumps(report,ensure_ascii=False,sort_keys=True,separators=(",",":")))
     assert len(delta)==report["state_missed_delta"], "MISMATCH_MISSED_DELTA"
     assert sum(report["categories_mutually_exclusive"].values())==len(delta)
