@@ -88,3 +88,25 @@ def test_gate600_never_auto_promotes():
     r=build()
     assert r["invariants"]["gate600_never_auto_promotes"] is True
     assert r["invariants"]["lab_lane_at_600_routes_to_audit"] is True
+
+
+def test_gate600_missing_price_family_never_auto_promotes_and_requires_certification():
+    from tools.matrix_42_lane_action_board import _next_action
+
+    assert _next_action(
+        count=600,
+        state="LAB",
+        price_state="PRICE_FAMILY_NOT_OBSERVED",
+        blocker=None,
+    )=="RUN_GATE600_AUDIT_AND_CERTIFY_EXACT_PRICE_FAMILY_NO_AUTO_PROMOTION"
+
+
+def test_sub600_missing_price_family_keeps_collecting_and_requires_exact_price_family():
+    from tools.matrix_42_lane_action_board import _next_action
+
+    assert _next_action(
+        count=599,
+        state="LAB",
+        price_state="PRICE_FAMILY_NOT_OBSERVED",
+        blocker=None,
+    )=="CONTINUE_PROSPECTIVE_TO_600_AND_CERTIFY_EXACT_PRICE_FAMILY"
