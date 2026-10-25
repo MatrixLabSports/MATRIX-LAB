@@ -23,7 +23,9 @@ def _load(path:Path)->dict[str,Any]:
 
 def _priority(count:int,state:str)->str:
     if state=="ACTIVE":
-        return "P0_MAINTAIN_ACTIVE_AND_CONTINUE_600"
+        return "P0_MAINTAIN_ACTIVE_POST_GATE"
+    if count>=600:
+        return "P0_GATE600_REACHED_AWAIT_AUDIT"
     if count>=300:
         return "P1_ADVANCE_300_TO_600"
     if count>=100:
@@ -35,7 +37,11 @@ def _priority(count:int,state:str)->str:
 
 def _next_action(*,count:int,state:str,price_state:str,blocker:str|None)->str:
     if state=="ACTIVE":
-        return "KEEP_ACTIVE_PAPER_MONITORING_AND_CONTINUE_PROSPECTIVE_TO_600"
+        return "KEEP_ACTIVE_PAPER_MONITORING_AND_CONTINUE_POST_GATE_VALIDATION"
+    if count>=600:
+        if price_state=="PRICE_FAMILY_NOT_OBSERVED":
+            return "RUN_GATE600_AUDIT_AND_CERTIFY_EXACT_PRICE_FAMILY_NO_AUTO_PROMOTION"
+        return "RUN_GATE600_CALIBRATION_STABILITY_AUDIT_NO_AUTO_PROMOTION"
     if count>=300:
         if price_state=="PRICE_FAMILY_NOT_OBSERVED":
             return "CONTINUE_PROSPECTIVE_TO_600_AND_CERTIFY_EXACT_PRICE_FAMILY"
@@ -120,7 +126,8 @@ def build(generated_at:datetime|None=None)->dict[str,Any]:
         "counts":counts,
         "rows":rows,
         "priority_order":[
-            "P0_MAINTAIN_ACTIVE_AND_CONTINUE_600",
+            "P0_MAINTAIN_ACTIVE_POST_GATE",
+            "P0_GATE600_REACHED_AWAIT_AUDIT",
             "P1_ADVANCE_300_TO_600",
             "P2_ADVANCE_100_TO_300",
             "P3_ADVANCE_TO_100",
@@ -135,6 +142,12 @@ def build(generated_at:datetime|None=None)->dict[str,Any]:
             "no_silent_imputation":True,
             "odds_do_not_generate_p_matrix":True,
             "automatic_wagering":False,
+            "gate600_never_auto_promotes":True,
+            "lab_lane_at_600_routes_to_audit":all(
+                x["operational_state"]!="LAB" or x["prospective_unique_count"]<600
+                or x["priority"]=="P0_GATE600_REACHED_AWAIT_AUDIT"
+                for x in rows
+            ),
             "real_money":"BLOCKED",
         },
         "source_generated_at":{
