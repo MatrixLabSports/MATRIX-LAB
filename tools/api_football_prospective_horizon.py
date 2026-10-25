@@ -11,7 +11,8 @@ from zoneinfo import ZoneInfo
 from tools.api_football_prospective_daily_cycle import run_daily_cycle
 
 BOGOTA = ZoneInfo("America/Bogota")
-MAX_DAYS = 3
+MAX_DAYS = 5
+PAID_THROUGH_BOGOTA_DATE = datetime(2026, 10, 28).date()
 
 
 def _day_window(target_date: str) -> dict[str, str]:
@@ -96,7 +97,12 @@ def run_horizon(
     targets = (
         [target_date]
         if target_date
-        else [(local_today + timedelta(days=i)).isoformat() for i in range(days)]
+        else [
+            d.isoformat()
+            for i in range(days)
+            for d in [local_today + timedelta(days=i)]
+            if d <= PAID_THROUGH_BOGOTA_DATE
+        ]
     )
 
     entries: list[dict[str, Any]] = []
@@ -161,6 +167,8 @@ def run_horizon(
         "operational_timezone": "America/Bogota",
         "calendar_day_rule": "00:00:00-23:59:59_LOCAL_FULL_DAY",
         "days_requested": len(targets),
+        "paid_through_bogota_date": PAID_THROUGH_BOGOTA_DATE.isoformat(),
+        "paid_window_target_cap_enforced": True,
         "targets": entries,
         "new_freezes_total": total_new_freezes,
         "network_calls_total": total_network_calls,
@@ -177,7 +185,7 @@ def run_horizon(
 
 def main() -> None:
     parser = argparse.ArgumentParser()
-    parser.add_argument("--days", type=int, default=3)
+    parser.add_argument("--days", type=int, default=5)
     parser.add_argument("--target-date", default="")
     parser.add_argument("--now-utc", default="")
     args = parser.parse_args()
