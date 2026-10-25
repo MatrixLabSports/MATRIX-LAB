@@ -2,7 +2,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 import json
 
-from tools.telegram_team_total_goals_picks import build_candidates, _event_pages, find_quote, _message, _sim
+from tools.telegram_team_total_goals_picks import build_candidates, _event_pages, find_quote, physical_book_team_total_offer, _message, _sim
 
 
 def _history(path:Path):
@@ -183,3 +183,85 @@ def test_find_quote_rejects_wrong_team_subject():
     }
     assert find_quote(session,"key",candidate,diagnostic,{}) is None
     assert diagnostic["status"]=="BLOCKED_NO_EXACT_TEAM_TOTAL_QUOTE"
+
+
+def test_physical_browser_team_total_offer_requires_exact_identity_and_freshness(tmp_path:Path):
+    root=tmp_path/"physical"/"2026-10-25"
+    root.mkdir(parents=True)
+    quote_path=root/"MATRIX_BETANO_QUOTE_999.json"
+    quote_path.write_text(json.dumps({
+        "schema":"MATRIX_PHYSICAL_BOOK_QUOTE_V1",
+        "fixture_id":"999",
+        "market_key":"TEAM_TOTAL_GOALS_HOME",
+        "market":"Team Total Goals",
+        "team_name":"Manchester United",
+        "selection_side":"over",
+        "line":1.5,
+        "decimal_odds":1.80,
+        "house":"Betano",
+        "captured_at_utc":"2026-10-25T07:40:00+00:00",
+        "kickoff_utc":"2026-10-25T08:00:00+00:00"
+    }),encoding="utf-8")
+    candidate={
+        "fixture_id":"999",
+        "event_start_utc":"2026-10-25T08:00:00+00:00",
+        "team_name":"Manchester Utd FC",
+        "market_lane":"TEAM_TOTAL_GOALS_HOME",
+        "selection_side":"over",
+        "line":1.5,
+        "p_matrix":0.62,
+    }
+    q=physical_book_team_total_offer(candidate,datetime(2026,10,25,7,50,tzinfo=timezone.utc),root=tmp_path/"physical")
+    assert q is not None
+    assert q["provider"]=="physical-browser-evidence"
+    assert q["house_key"]=="betano"
+    assert q["quote_age_seconds"]==600
+    assert q["ev"] > 0.05
+
+
+def test_find_quote_uses_physical_fallback_when_provider_event_missing(tmp_path:Path):
+    root=tmp_path/"physical"/"2026-10-25"
+    root.mkdir(parents=True)
+    (root/"MATRIX_BETANO_QUOTE_999.json").write_text(json.dumps({
+        "schema":"MATRIX_PHYSICAL_BOOK_QUOTE_V1",
+        "fixture_id":"999",
+        "market_key":"TEAM_TOTAL_GOALS_HOME",
+        "market":"Team Total Goals",
+        "team_name":"Manchester United",
+        "selection_side":"over",
+        "line":1.5,
+        "decimal_odds":1.80,
+        "house":"Betano",
+        "captured_at_utc":"2026-10-25T07:40:00+00:00",
+        "kickoff_utc":"2026-10-25T08:00:00+00:00"
+    }),encoding="utf-8")
+    class EmptyEventsSession:
+        def get(self,url,headers=None,params=None,timeout=None):
+            return _FakeResponse({"items":[],"next_cursor":None})
+    diagnostic={}
+    candidate={
+        "fixture_id":"999",
+        "event_start_utc":"2026-10-25T08:00:00+00:00",
+        "home_team":"Manchester United",
+        "away_team":"Arsenal",
+        "team_name":"Manchester United",
+        "market_lane":"TEAM_TOTAL_GOALS_HOME",
+        "selection_side":"over",
+        "line":1.5,
+        "p_matrix":0.62,
+    }
+    import tools.telegram_team_total_goals_picks as mod
+    real_datetime=mod.datetime
+    class FixedDateTime(real_datetime):
+        @classmethod
+        def now(cls,tz=None):
+            return cls(2026,10,25,7,50,tzinfo=timezone.utc)
+    mod.datetime=FixedDateTime
+    try:
+        q=find_quote(EmptyEventsSession(),"key",candidate,diagnostic,{},tmp_path/"physical")
+    finally:
+        mod.datetime=real_datetime
+    assert q is not None
+    assert q["provider"]=="physical-browser-evidence"
+    assert diagnostic["status"]=="PASS_PHYSICAL_BROWSER_TEAM_TOTAL_QUOTE"
+    assert diagnostic["physical_fallback_used"] is True
