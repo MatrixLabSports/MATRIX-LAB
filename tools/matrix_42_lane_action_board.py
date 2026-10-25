@@ -143,6 +143,15 @@ def build(generated_at:datetime|None=None)->dict[str,Any]:
             "odds_do_not_generate_p_matrix":True,
             "automatic_wagering":False,
             "gate600_never_auto_promotes":True,
+            "gate600_missing_price_requires_price_certification":all(
+                x["operational_state"]!="LAB" or x["prospective_unique_count"]<600
+                or x["price_state"]!="PRICE_FAMILY_NOT_OBSERVED"
+                or (
+                    x["production_authorized"] is False
+                    and x["next_required_action"]=="RUN_GATE600_AUDIT_AND_CERTIFY_EXACT_PRICE_FAMILY_NO_AUTO_PROMOTION"
+                )
+                for x in rows
+            ),
             "lab_lane_at_600_routes_to_audit":all(
                 x["operational_state"]!="LAB" or x["prospective_unique_count"]<600
                 or x["priority"]=="P0_GATE600_REACHED_AWAIT_AUDIT"
