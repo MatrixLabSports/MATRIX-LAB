@@ -20,7 +20,9 @@ def test_stale_pit_requires_refresh(tmp_path,monkeypatch):
     r=mod.build(datetime(2026,10,25,22,0,tzinfo=timezone.utc))
     assert r["pit_stale"] is True
     assert r["requires_causal_pit_refresh"] is True
+    assert r["fully_blocked_by_missing_pit_history"] is True
     assert r["protections"]["minimum_history_not_lowered"] is True
+    assert r["protections"]["settlement_score_never_used_as_team_shots"] is True
     assert r["protections"]["post_start_backfill"] is False
 
 def test_fresh_pit_allows_normal_bridge(tmp_path,monkeypatch):
@@ -40,3 +42,4 @@ def test_fresh_pit_allows_normal_bridge(tmp_path,monkeypatch):
     r=mod.build(datetime(2026,10,25,21,0,tzinfo=timezone.utc))
     assert r["pit_stale"] is False
     assert r["requires_causal_pit_refresh"] is False
+    assert r["fully_blocked_by_missing_pit_history"] is False
