@@ -146,26 +146,96 @@ def append_attempt(path:Path,row:Mapping[str,Any])->dict[str,Any]:
     return item
 
 
-def summarize_run(rows:list[Mapping[str,Any]],run_token:str)->dict[str,Any]:
-    current=[x for x in rows if str(x.get("run_token") or "")==str(run_token)]
+def _summary_core(rows:list[Mapping[str,Any]])->dict[str,Any]:
     coverage={h:0 for h in AUTHORIZED}; all_three_fail=0; identity_problem=0; nearby_without_exact=0
-    for row in current:
+    for row in rows:
         ident=(row.get("identity_match") or {}).get("state")
-        if ident in {"LOW_SCORE","AMBIGUOUS","NOT_COVERED"}: identity_problem+=1
+        if ident in {"LOW_SCORE","AMBIGUOUS","NOT_COVERED"}:
+            identity_problem+=1
         houses=row.get("houses") or {}
         exact_any=False; near_any=False
         for h in AUTHORIZED:
             hv=houses.get(h) or {}
-            if hv.get("over_2_5_seen"): coverage[h]+=1; exact_any=True
-            if hv.get("nearby_lines_2_25_2_75"): near_any=True
-        if not exact_any: all_three_fail+=1
-        if near_any and not exact_any: nearby_without_exact+=1
+            if hv.get("over_2_5_seen"):
+                coverage[h]+=1
+                exact_any=True
+            if hv.get("nearby_lines_2_25_2_75"):
+                near_any=True
+        if not exact_any:
+            all_three_fail+=1
+        if near_any and not exact_any:
+            nearby_without_exact+=1
     return {
-        "quote_attempts_live_this_run":len(current),
+        "attempt_count":len(rows),
         "exact_over25_coverage_by_house":coverage,
         "all_three_without_exact_over25":all_three_fail,
         "identity_problem_count":identity_problem,
         "nearby_2_25_or_2_75_without_exact_2_5":nearby_without_exact,
+    }
+
+
+def _timing_disappearance(rows:list[Mapping[str,Any]])->dict[str,Any]:
+    by_fixture:dict[str,list[Mapping[str,Any]]]={}
+    for row in rows:
+        fid=str(row.get("fixture_id") or "")
+        if fid:
+            by_fixture.setdefault(fid,[]).append(row)
+    affected=[]
+    for fid,attempts in by_fixture.items():
+        ordered=sorted(
+            attempts,
+            key=lambda x:(
+                int(x.get("seconds_to_kickoff") or -10**12),
+                str(x.get("query_at_utc") or ""),
+            ),
+            reverse=True,
+        )
+        seen_exact=False
+        first_exact_seconds=None
+        for row in ordered:
+            exact=bool(row.get("over_2_5_seen_any_authorized"))
+            seconds=int(row.get("seconds_to_kickoff") or 0)
+            if exact:
+                seen_exact=True
+                if first_exact_seconds is None:
+                    first_exact_seconds=seconds
+                continue
+            if seen_exact and seconds>=0:
+                affected.append({
+                    "fixture_id":fid,
+                    "exact_seen_earlier_seconds_to_kickoff":first_exact_seconds,
+                    "missing_later_seconds_to_kickoff":seconds,
+                    "later_attempt_id":row.get("attempt_id"),
+                })
+                break
+    return {
+        "timing_disappearance_fixture_count":len(affected),
+        "timing_disappearance_fixtures":affected,
+    }
+
+
+def summarize_run(rows:list[Mapping[str,Any]],run_token:str)->dict[str,Any]:
+    current=[x for x in rows if str(x.get("run_token") or "")==str(run_token)]
+    core=_summary_core(current)
+    return {
+        "quote_attempts_live_this_run":core.pop("attempt_count"),
+        **core,
+    }
+
+
+def summarize_cumulative(rows:list[Mapping[str,Any]],minimum_target:int=50,maximum_target:int=100)->dict[str,Any]:
+    core=_summary_core(rows)
+    timing=_timing_disappearance(rows)
+    n=int(core["attempt_count"])
+    return {
+        "real_quote_attempts_total":n,
+        "target_window_minimum":int(minimum_target),
+        "target_window_maximum":int(maximum_target),
+        "sample_gate_status":"READY_FOR_CAUSAL_RECOMMENDATION" if n>=minimum_target else "ACCUMULATING_REAL_REVALIDATIONS",
+        "remaining_to_minimum":max(0,int(minimum_target)-n),
+        **{k:v for k,v in core.items() if k!="attempt_count"},
+        **timing,
+        "synthetic_attempts_included":False,
     }
 
 
