@@ -49,7 +49,8 @@ jobs:
             tests/test_telegram_sharp_reference_gate.py \
             tests/test_telegram_colombia_portfolio_ev_lab.py \
             tests/test_telegram_paper_bankroll.py \
-            tests/test_monitoring_scheduler_contracts.py
+            tests/test_monitoring_scheduler_contracts.py \
+            tests/test_telegram_quote_attempt_telemetry.py
 
       - name: Verify scheduler source contract on default branch
         shell: bash
@@ -138,6 +139,7 @@ jobs:
             evidence/notifications/telegram/MATRIX_TELEGRAM_DAILY_BANKROLL_CANONICAL_LAST.json
             evidence/notifications/telegram/MATRIX_TELEGRAM_MONITORING_WATCHDOG_LAST.json
             evidence/notifications/telegram/MATRIX_CORRELATED_RISK_CALIBRATION_LAST.json
+            evidence/notifications/telegram/MATRIX_TELEGRAM_QUOTE_ATTEMPTS.jsonl
           )
           for file in "${allowed[@]}"; do
             if [ -e "$file" ]; then
@@ -164,7 +166,8 @@ jobs:
                   evidence/notifications/telegram/MATRIX_EV_MARGINAL_SHADOW_LAB_LAST.json|\
                   evidence/notifications/telegram/MATRIX_TELEGRAM_DAILY_BANKROLL_CANONICAL_LAST.json|\
                   evidence/notifications/telegram/MATRIX_TELEGRAM_MONITORING_WATCHDOG_LAST.json|\
-                  evidence/notifications/telegram/MATRIX_CORRELATED_RISK_CALIBRATION_LAST.json)
+                  evidence/notifications/telegram/MATRIX_CORRELATED_RISK_CALIBRATION_LAST.json|\
+                  evidence/notifications/telegram/MATRIX_TELEGRAM_QUOTE_ATTEMPTS.jsonl)
                     git checkout --theirs -- "$file"
                     git add "$file"
                     ;;
