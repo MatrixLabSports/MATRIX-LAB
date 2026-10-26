@@ -176,8 +176,10 @@ jobs:
             evidence/notifications/telegram/MATRIX_TELEGRAM_BLOCKER_RECOVERY_AUDIT_LAST.json \
             evidence/notifications/telegram/MATRIX_EV_MARGINAL_SHADOW_LAB_LAST.json \
             evidence/notifications/telegram/MATRIX_TELEGRAM_DAILY_BANKROLL_CANONICAL_LAST.json \
-            evidence/notifications/telegram/MATRIX_TELEGRAM_QUOTE_ATTEMPTS.jsonl \
             evidence/notifications/telegram/MATRIX_TELEGRAM_20261022_CLOSURE_AUDIT.json
+          if [ -f evidence/notifications/telegram/MATRIX_TELEGRAM_QUOTE_ATTEMPTS.jsonl ]; then
+            git add evidence/notifications/telegram/MATRIX_TELEGRAM_QUOTE_ATTEMPTS.jsonl
+          fi
           if ! git diff --quiet; then
             echo "TELEGRAM_UNEXPECTED_UNSTAGED_TRACKED_CHANGES"
             git status --short
