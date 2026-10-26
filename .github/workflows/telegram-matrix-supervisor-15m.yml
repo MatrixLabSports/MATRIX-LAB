@@ -50,7 +50,7 @@ jobs:
             tests/test_telegram_colombia_portfolio_ev_lab.py \
             tests/test_telegram_paper_bankroll.py \
             tests/test_monitoring_scheduler_contracts.py \
-            tests/test_telegram_quote_attempt_telemetry.py
+            tests/test_telegram_quote_attempt_telemetry.py tests/test_telegram_quote_attempt_telemetry_audit.py
 
       - name: Verify scheduler source contract on default branch
         shell: bash
@@ -116,6 +116,34 @@ jobs:
           ODDS_API_NET_KEY: ${{ secrets.ODDS_API_NET_KEY }}
         run: PYTHONPATH=. python -m tools.telegram_green_signal_alerts
 
+      - name: Build immutable quote-attempt telemetry audit
+        shell: bash
+        run: |
+          set -euo pipefail
+          PYTHONPATH=. python -m tools.telegram_quote_attempt_telemetry_audit
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          p=Path("evidence/notifications/telegram/MATRIX_TELEGRAM_QUOTE_ATTEMPT_TELEMETRY_AUDIT_LAST.json")
+          j=json.loads(p.read_text(encoding="utf-8"))
+          assert j["status"]=="PASS"
+          assert j["immutable_hash_chain_verified"] is True
+          assert j["first_terminal_state_independent"] is True
+          assert j["exact_line_policy"]["required_valid_execution_line"]==2.5
+          assert j["exact_line_policy"]["nearby_lines_never_substitute_for_2_5"] is True
+          assert j["protections"]["append_only"] is True
+          assert j["protections"]["historical_terminal_state_cannot_overwrite_attempt"] is True
+          assert j["protections"]["automatic_wagering"] is False
+          assert j["protections"]["real_money"]=="BLOCKED"
+          print(json.dumps({
+            "status":"PASS",
+            "real_quote_attempts_total":j["sample"]["real_quote_attempts_total"],
+            "remaining_to_minimum":j["sample"]["remaining_to_minimum"],
+            "sample_gate_status":j["sample"]["sample_gate_status"],
+            "recommendation_authorized":j["recommendation_gate"]["recommendation_authorized"],
+          },sort_keys=True))
+          PY
+
       - name: Rebuild canonical daily bankroll
         run: PYTHONPATH=. python -m tools.telegram_daily_bankroll_canonical
 
@@ -140,6 +168,7 @@ jobs:
             evidence/notifications/telegram/MATRIX_TELEGRAM_MONITORING_WATCHDOG_LAST.json
             evidence/notifications/telegram/MATRIX_CORRELATED_RISK_CALIBRATION_LAST.json
             evidence/notifications/telegram/MATRIX_TELEGRAM_QUOTE_ATTEMPTS.jsonl
+            evidence/notifications/telegram/MATRIX_TELEGRAM_QUOTE_ATTEMPT_TELEMETRY_AUDIT_LAST.json
           )
           for file in "${allowed[@]}"; do
             if [ -e "$file" ]; then
@@ -167,7 +196,8 @@ jobs:
                   evidence/notifications/telegram/MATRIX_TELEGRAM_DAILY_BANKROLL_CANONICAL_LAST.json|\
                   evidence/notifications/telegram/MATRIX_TELEGRAM_MONITORING_WATCHDOG_LAST.json|\
                   evidence/notifications/telegram/MATRIX_CORRELATED_RISK_CALIBRATION_LAST.json|\
-                  evidence/notifications/telegram/MATRIX_TELEGRAM_QUOTE_ATTEMPTS.jsonl)
+                  evidence/notifications/telegram/MATRIX_TELEGRAM_QUOTE_ATTEMPTS.jsonl|\
+                  evidence/notifications/telegram/MATRIX_TELEGRAM_QUOTE_ATTEMPT_TELEMETRY_AUDIT_LAST.json)
                     git checkout --theirs -- "$file"
                     git add "$file"
                     ;;
