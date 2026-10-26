@@ -72,6 +72,44 @@ def _house_view(diag:Mapping[str,Any],house:str)->dict[str,Any]:
     }
 
 
+def _merge_api_football_house_views(houses:dict[str,dict[str,Any]],api_diag:Mapping[str,Any])->None:
+    seen={str(x or "").strip().casefold() for x in (api_diag.get("authorized_books_seen") or [])}
+    totals={str(x or "").strip().casefold() for x in (api_diag.get("goals_over_under_books") or [])}
+    over25={str(x or "").strip().casefold() for x in (api_diag.get("over25_books") or [])}
+    required=str(api_diag.get("required_house_key") or "").strip().casefold()
+    exact_odds=api_diag.get("exact_over25_odds_by_book")
+    if not isinstance(exact_odds,Mapping):
+        exact_odds={}
+    for house in AUTHORIZED:
+        view=houses[house]
+        if house in seen:
+            view["seen"]=True
+            view["api_football_seen"]=True
+        else:
+            view["api_football_seen"]=False
+        if house in totals:
+            view["totals_market_seen"]=True
+            view["api_football_totals_market_seen"]=True
+        else:
+            view["api_football_totals_market_seen"]=False
+        if house in over25:
+            view["over_2_5_seen"]=True
+            view["api_football_over_2_5_seen"]=True
+            if 2.5 not in view["available_lines"]:
+                view["available_lines"]=sorted(view["available_lines"]+[2.5])
+        else:
+            view["api_football_over_2_5_seen"]=False
+        vals=exact_odds.get(house)
+        if isinstance(vals,list):
+            merged=sorted(set(view["exact_over_2_5_odds"]+[float(x) for x in vals if isinstance(x,(int,float))]))
+            view["exact_over_2_5_odds"]=merged
+        elif isinstance(vals,(int,float)):
+            merged=sorted(set(view["exact_over_2_5_odds"]+[float(vals)]))
+            view["exact_over_2_5_odds"]=merged
+        if required==house:
+            view["api_football_required_house"]=True
+
+
 def _identity(diag:Mapping[str,Any])->dict[str,Any]:
     status=str(diag.get("status") or "")
     scores=diag.get("identity_top_scores") if isinstance(diag.get("identity_top_scores"),list) else []
@@ -96,6 +134,7 @@ def build_attempt(*,fixture_id:str,signal_key:str,query_at_utc:datetime,kickoff:
     q=query_at_utc.astimezone(timezone.utc).replace(microsecond=0)
     k=_utc(kickoff)
     houses={h:_house_view(odds_diag,h) for h in AUTHORIZED}
+    _merge_api_football_house_views(houses,api_diag)
     evidence={
         "odds_api_net_diagnostic":dict(odds_diag),
         "api_football_offer_diagnostic":dict(api_diag),
