@@ -9,6 +9,8 @@ from typing import Any, Mapping
 SCHEMA="MATRIX_TELEGRAM_QUOTE_ATTEMPT_V1"
 GENESIS="0"*64
 AUTHORIZED=("betano","betplay","rushbet")
+IDENTITY_STATES={"MATCHED","LOW_SCORE","AMBIGUOUS","NOT_COVERED"}
+REQUIRED_HOUSE_FIELDS={"seen","totals_market_seen","available_lines","nearby_lines_2_25_2_75","over_2_5_seen","exact_over_2_5_odds"}
 
 
 def _canonical(value:Any)->str:
@@ -37,6 +39,32 @@ def _load(path:Path)->list[dict[str,Any]]:
         attempt_id=str(row.get("attempt_id") or "")
         if not attempt_id or attempt_id in seen: raise ValueError(f"QUOTE_ATTEMPT_DUPLICATE_OR_MISSING_ID:{n}")
         if row.get("previous_record_sha256")!=prev: raise ValueError(f"QUOTE_ATTEMPT_CHAIN_BROKEN:{n}")
+        for field in ("fixture_id","query_at_utc","kickoff_utc","seconds_to_kickoff","identity_match","houses",
+                      "totals_market_seen_any_authorized","exact_lines_available_any_authorized",
+                      "over_2_5_seen_any_authorized","exact_over_2_5_odds_by_house",
+                      "final_discard_reason","evidence_sha256","evidence_snapshot"):
+            if field not in row:
+                raise ValueError(f"QUOTE_ATTEMPT_REQUIRED_FIELD_MISSING:{n}:{field}")
+        _utc(row["query_at_utc"]); _utc(row["kickoff_utc"])
+        if isinstance(row.get("seconds_to_kickoff"),bool) or not isinstance(row.get("seconds_to_kickoff"),int):
+            raise ValueError(f"QUOTE_ATTEMPT_SECONDS_TO_KICKOFF_INVALID:{n}")
+        ident=row.get("identity_match")
+        if not isinstance(ident,Mapping) or ident.get("state") not in IDENTITY_STATES:
+            raise ValueError(f"QUOTE_ATTEMPT_IDENTITY_INVALID:{n}")
+        houses=row.get("houses")
+        if not isinstance(houses,Mapping) or set(AUTHORIZED)-set(houses):
+            raise ValueError(f"QUOTE_ATTEMPT_HOUSES_INCOMPLETE:{n}")
+        for house in AUTHORIZED:
+            view=houses.get(house)
+            if not isinstance(view,Mapping) or REQUIRED_HOUSE_FIELDS-set(view):
+                raise ValueError(f"QUOTE_ATTEMPT_HOUSE_VIEW_INCOMPLETE:{n}:{house}")
+        snapshot=row.get("evidence_snapshot")
+        if row.get("evidence_sha256")!=_sha(snapshot):
+            raise ValueError(f"QUOTE_ATTEMPT_EVIDENCE_SHA_MISMATCH:{n}")
+        if "first_terminal_state" in row:
+            raise ValueError(f"QUOTE_ATTEMPT_MUST_BE_INDEPENDENT_OF_TERMINAL_STATE:{n}")
+        if row.get("automatic_wagering") is not False or row.get("real_money")!="BLOCKED":
+            raise ValueError(f"QUOTE_ATTEMPT_SAFETY_INVALID:{n}")
         body=dict(row); record_sha=body.pop("record_sha256",None)
         if record_sha!=_sha(body): raise ValueError(f"QUOTE_ATTEMPT_SHA_MISMATCH:{n}")
         prev=record_sha; seen.add(attempt_id); rows.append(row)
@@ -165,6 +193,7 @@ def build_attempt(*,fixture_id:str,signal_key:str,query_at_utc:datetime,kickoff:
         "final_discard_reason":str(final_discard_reason),
         "evidence_sha256":evidence_sha,
         "evidence_snapshot":evidence,
+        "terminal_state_independent":True,
         "automatic_wagering":False,
         "real_money":"BLOCKED",
     }
@@ -186,7 +215,7 @@ def append_attempt(path:Path,row:Mapping[str,Any])->dict[str,Any]:
 
 
 def _summary_core(rows:list[Mapping[str,Any]])->dict[str,Any]:
-    coverage={h:0 for h in AUTHORIZED}; all_three_fail=0; identity_problem=0; nearby_without_exact=0
+    coverage={h:0 for h in AUTHORIZED}; seen={h:0 for h in AUTHORIZED}; totals={h:0 for h in AUTHORIZED}; all_three_fail=0; identity_problem=0; nearby_without_exact=0
     for row in rows:
         ident=(row.get("identity_match") or {}).get("state")
         if ident in {"LOW_SCORE","AMBIGUOUS","NOT_COVERED"}:
@@ -195,6 +224,8 @@ def _summary_core(rows:list[Mapping[str,Any]])->dict[str,Any]:
         exact_any=False; near_any=False
         for h in AUTHORIZED:
             hv=houses.get(h) or {}
+            if hv.get("seen"): seen[h]+=1
+            if hv.get("totals_market_seen"): totals[h]+=1
             if hv.get("over_2_5_seen"):
                 coverage[h]+=1
                 exact_any=True
@@ -206,6 +237,8 @@ def _summary_core(rows:list[Mapping[str,Any]])->dict[str,Any]:
             nearby_without_exact+=1
     return {
         "attempt_count":len(rows),
+        "book_seen_by_house":seen,
+        "totals_market_seen_by_house":totals,
         "exact_over25_coverage_by_house":coverage,
         "all_three_without_exact_over25":all_three_fail,
         "identity_problem_count":identity_problem,
