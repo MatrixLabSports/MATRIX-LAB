@@ -25,6 +25,7 @@ from app.research.football.correlated_risk_calibration import (
 )
 from app.research.football.sharp_consensus import assess_sharp_consensus
 from app.market.colombia_bookmakers import EXECUTION_BOOKMAKERS
+from tools.telegram_quote_attempt_telemetry import build_attempt, append_attempt, load_verified, summarize_run
 
 from app.research.football.correlated_exposure import (
     assess_paper_correlated_exposure,
@@ -39,6 +40,7 @@ SENT_RECOVERY_OVERRIDES = Path("evidence/notifications/telegram/MATRIX_TELEGRAM_
 CORRELATED_RISK_EVIDENCE = Path("evidence/notifications/telegram/MATRIX_CORRELATED_RISK_CALIBRATION_LAST.json")
 BLOCKER_AUDIT_EVIDENCE = Path("evidence/notifications/telegram/MATRIX_TELEGRAM_BLOCKER_RECOVERY_AUDIT_LAST.json")
 EV_MARGINAL_LAB_EVIDENCE = Path("evidence/notifications/telegram/MATRIX_EV_MARGINAL_SHADOW_LAB_LAST.json")
+QUOTE_ATTEMPT_LEDGER = Path("evidence/notifications/telegram/MATRIX_TELEGRAM_QUOTE_ATTEMPTS.jsonl")
 PHYSICAL_BOOK_QUOTE_ROOT = Path("evidence/football_world_inventory")
 PHYSICAL_BOOK_QUOTE_MAX_AGE_MINUTES = 30
 
@@ -603,6 +605,8 @@ def odds_api_net_exact_over25_offer(
         fp = fr.json()
     except Exception:
         return None
+    if diagnostic is not None:
+        diagnostic["fixture_lookup_payload_sha256"] = hashlib.sha256(json.dumps(fp,sort_keys=True,separators=(",",":"),ensure_ascii=False).encode("utf-8")).hexdigest()
     rows = fp.get("response", []) if isinstance(fp, dict) else []
     if fr.status_code >= 300 or not rows:
         if diagnostic is not None:
@@ -628,6 +632,8 @@ def odds_api_net_exact_over25_offer(
         ep = er.json()
     except Exception:
         return None
+    if diagnostic is not None:
+        diagnostic["event_search_payload_sha256"] = hashlib.sha256(json.dumps(ep,sort_keys=True,separators=(",",":"),ensure_ascii=False).encode("utf-8")).hexdigest()
     events = ep.get("items", []) if isinstance(ep, dict) else []
     scored: list[tuple[float, bool, dict[str, Any]]] = []
     for event in events or []:
@@ -691,6 +697,7 @@ def odds_api_net_exact_over25_offer(
     except Exception:
         return None
     if diagnostic is not None:
+        diagnostic["odds_snapshot_payload_sha256"] = hashlib.sha256(json.dumps(sp,sort_keys=True,separators=(",",":"),ensure_ascii=False).encode("utf-8")).hexdigest()
         diagnostic["snapshot_http_status"] = int(sr.status_code)
         diagnostic["snapshot_complete"] = sp.get("complete") if isinstance(sp, dict) else None
         diagnostic["excluded_bookmakers"] = sp.get("excluded_bookmakers") if isinstance(sp, dict) else None
@@ -1181,6 +1188,7 @@ def exact_over25_offer(
     except Exception:
         payload = {}
     if diagnostic is not None:
+        diagnostic["raw_payload_sha256"] = hashlib.sha256(json.dumps(payload,sort_keys=True,separators=(",",":"),ensure_ascii=False).encode("utf-8")).hexdigest()
         diagnostic["http_status"] = int(response.status_code)
         diagnostic["response_rows"] = len(payload.get("response", []) or []) if isinstance(payload, dict) else 0
     if response.status_code >= 300 or (isinstance(payload, dict) and payload.get("errors") not in ({}, [], None)):
@@ -2074,6 +2082,8 @@ def build_blocker_recovery_audit(
     counts_by_state: dict[str, int] = {}
     counts_by_variable: dict[str, int] = {}
     counts_by_recoverability: dict[str, int] = {}
+    live_counts_by_state: dict[str, int] = {}
+    historical_terminal_counts_by_state: dict[str, int] = {}
     for key, candidate in sorted(candidates.items(), key=lambda kv: (str(kv[1].get("kickoff")), kv[0])):
         if key in existing_sent_keys or candidate.get("sport") != "football":
             continue
@@ -2099,6 +2109,10 @@ def build_blocker_recovery_audit(
         variable = str(profile.get("missing_or_failed_variable") or "UNKNOWN")
         recoverability = str(profile.get("recoverability") or "REVIEW_REQUIRED")
         counts_by_state[state] = counts_by_state.get(state, 0) + 1
+        if gate.get("live_quote_attempted_this_run") is True and str(gate.get("quote_attempt_run_token") or "") == now.isoformat():
+            live_counts_by_state[state] = live_counts_by_state.get(state, 0) + 1
+        elif lifecycle_state := (ledger.get("candidate_lifecycle", {}).get(key) or {}).get("first_terminal_state"):
+            historical_terminal_counts_by_state[str(lifecycle_state)] = historical_terminal_counts_by_state.get(str(lifecycle_state), 0) + 1
         counts_by_variable[variable] = counts_by_variable.get(variable, 0) + 1
         counts_by_recoverability[recoverability] = counts_by_recoverability.get(recoverability, 0) + 1
         provider_diag = gate.get("odds_api_net_diagnostic") or {}
@@ -2147,6 +2161,9 @@ def build_blocker_recovery_audit(
             "counts_by_state": dict(sorted(counts_by_state.items())),
             "counts_by_variable": dict(sorted(counts_by_variable.items())),
             "counts_by_recoverability": dict(sorted(counts_by_recoverability.items())),
+            "live_quote_attempts_this_run_by_state": dict(sorted(live_counts_by_state.items())),
+            "historical_terminal_inherited_by_state": dict(sorted(historical_terminal_counts_by_state.items())),
+            "reporting_separates_live_attempts_from_historical_terminal_states": True,
         },
         "records": records,
     }
@@ -2164,6 +2181,7 @@ def main() -> None:
         raise SystemExit("API_FOOTBALL_KEY_NOT_CONFIGURED")
 
     now = now_utc()
+    quote_attempt_run_token = now.isoformat()
     today = now.astimezone(BOGOTA).date()
     dates = [str(today + timedelta(days=1)), str(today), str(today - timedelta(days=1))]
     football = discover_football(dates)
@@ -2262,6 +2280,7 @@ def main() -> None:
     pre_send_waiting = 0
     pre_send_blocked = 0
     pre_send_passed = 0
+    immutable_quote_attempts_this_run = 0
     existing_sent_keys = {
         str(x.get("signal_key") or "")
         for x in ledger.get("sent", [])
@@ -2380,6 +2399,31 @@ def main() -> None:
         gate_record["offer"] = offer
         gate_record["selected_quote_provider"] = (offer or {}).get("provider") or ("api-football" if offer else None)
         gate_record["multi_book_fallback_used"] = bool(offer is not None and offer is fallback_offer)
+        gate_record["live_quote_attempted_this_run"] = True
+        gate_record["quote_attempt_run_token"] = quote_attempt_run_token
+        quote_attempt_persisted = False
+
+        def persist_quote_attempt(final_reason: str) -> None:
+            nonlocal immutable_quote_attempts_this_run, quote_attempt_persisted
+            if quote_attempt_persisted:
+                raise RuntimeError("QUOTE_ATTEMPT_DOUBLE_PERSIST_FOR_CANDIDATE")
+            attempt = build_attempt(
+                fixture_id=str(candidate["fixture_id"]),
+                signal_key=key,
+                query_at_utc=now,
+                kickoff=candidate.get("kickoff"),
+                odds_diag=odds_api_net_diagnostic,
+                api_diag=api_football_offer_diagnostic,
+                selected_offer=offer,
+                final_discard_reason=final_reason,
+                run_token=quote_attempt_run_token,
+            )
+            append_attempt(QUOTE_ATTEMPT_LEDGER, attempt)
+            gate_record["immutable_quote_attempt_id"] = attempt["attempt_id"]
+            gate_record["immutable_quote_attempt_record_sha256"] = load_verified(QUOTE_ATTEMPT_LEDGER)[-1]["record_sha256"]
+            quote_attempt_persisted = True
+            immutable_quote_attempts_this_run += 1
+
         final_quote_state = final_prematch_quote_state(offer)
         if final_quote_state != "PASS_FINAL_PREMATCH_REVALIDATION":
             gate_record["state"] = final_quote_state
@@ -2387,6 +2431,7 @@ def main() -> None:
             candidate["send_gate_status"] = final_quote_state
             lifecycle.setdefault("first_terminal_state", final_quote_state)
             lifecycle.setdefault("first_terminal_at_utc", now.isoformat())
+            persist_quote_attempt(final_quote_state)
             ledger["pre_send_gate"][key] = gate_record
             pre_send_blocked += 1
             continue
@@ -2406,6 +2451,7 @@ def main() -> None:
             candidate["send_gate_status"] = sharp_state
             lifecycle.setdefault("first_terminal_state", sharp_state)
             lifecycle.setdefault("first_terminal_at_utc", now.isoformat())
+            persist_quote_attempt(sharp_state)
             ledger["pre_send_gate"][key] = gate_record
             pre_send_blocked += 1
             continue
@@ -2460,6 +2506,7 @@ def main() -> None:
             candidate["send_gate_status"] = quality_state
             lifecycle.setdefault("first_terminal_state", quality_state)
             lifecycle.setdefault("first_terminal_at_utc", now.isoformat())
+            persist_quote_attempt(quality_state)
             ledger["pre_send_gate"][key] = gate_record
             pre_send_blocked += 1
             continue
@@ -2477,6 +2524,7 @@ def main() -> None:
             candidate["send_gate_status"] = risk_state
             lifecycle.setdefault("first_terminal_state", risk_state)
             lifecycle.setdefault("first_terminal_at_utc", now.isoformat())
+            persist_quote_attempt(risk_state)
             ledger["pre_send_gate"][key] = gate_record
             pre_send_blocked += 1
             continue
@@ -2490,6 +2538,7 @@ def main() -> None:
         candidate["send_gate_status"] = quality_state
         candidate["pre_send_revalidated_at_utc"] = now.isoformat()
         gate_record["state"] = candidate["send_gate_status"]
+        persist_quote_attempt("PASS_FINAL_PREMATCH_ALL_IMMEDIATE_GATES")
         ledger["pre_send_gate"][key] = gate_record
         pre_send_passed += 1
 
@@ -3095,6 +3144,8 @@ def main() -> None:
     blocker_audit = build_blocker_recovery_audit(ledger, candidates, existing_sent_keys, now)
     blocker_summary = blocker_audit.get("summary") or {}
 
+    quote_attempt_summary = summarize_run(load_verified(QUOTE_ATTEMPT_LEDGER), quote_attempt_run_token)
+
     run_record = {
         "run_at_utc": now.isoformat(),
         "bogota_date": str(today),
@@ -3108,6 +3159,8 @@ def main() -> None:
         "delivery_failures_now": delivery_failures_now,
         "quote_checks": quote_checks,
         "pre_send_quote_checks": pre_send_quote_checks,
+        "immutable_quote_attempts_persisted_this_run": immutable_quote_attempts_this_run,
+        "quote_attempt_telemetry": quote_attempt_summary,
         "pre_send_waiting_window": pre_send_waiting,
         "pre_send_blocked": pre_send_blocked,
         "pre_send_passed": pre_send_passed,
@@ -3118,6 +3171,8 @@ def main() -> None:
         "blocker_counts_by_state": blocker_summary.get("counts_by_state"),
         "blocker_counts_by_variable": blocker_summary.get("counts_by_variable"),
         "blocker_counts_by_recoverability": blocker_summary.get("counts_by_recoverability"),
+        "blocker_live_quote_attempts_this_run_by_state": blocker_summary.get("live_quote_attempts_this_run_by_state"),
+        "blocker_historical_terminal_inherited_by_state": blocker_summary.get("historical_terminal_inherited_by_state"),
         "corrections_now": corrections_now,
         "rectifications_now": rectifications_now,
         "economic_updates_now": economic_updates_now,
