@@ -30,6 +30,7 @@ def test_attempt_captures_identity_books_nearby_lines_and_exact_odds():
     assert row["houses"]["betano"]["nearby_lines_2_25_2_75"]==[2.25,2.75]
     assert row["houses"]["betplay"]["over_2_5_seen"] is True
     assert row["houses"]["betplay"]["exact_over_2_5_odds"]==[1.9]
+    assert row["terminal_state_independent"] is True
 
 
 def test_append_only_hash_chain_rejects_duplicate_attempt(tmp_path:Path):
@@ -125,3 +126,29 @@ def test_api_football_house_evidence_is_merged_into_immutable_view():
     assert row["houses"]["betano"]["exact_over_2_5_odds"]==[1.62]
     assert row["houses"]["betplay"]["seen"] is False
     assert row["houses"]["rushbet"]["seen"] is False
+
+
+
+def test_verified_loader_rejects_tampered_evidence_snapshot(tmp_path:Path):
+    path=tmp_path/"attempts.jsonl"
+    row=build_attempt(
+      fixture_id="20",signal_key="tamper",query_at_utc=datetime(2026,10,26,1,0,tzinfo=timezone.utc),
+      kickoff="2026-10-26T02:00:00+00:00",odds_diag=_diag(),api_diag={},
+      selected_offer=None,final_discard_reason="BLOCKED",run_token="r")
+    append_attempt(path,row)
+    raw=path.read_text(encoding="utf-8")
+    raw=raw.replace('"status":"NO_EXACT_OVER25_FOUND"','"status":"TAMPERED"')
+    path.write_text(raw,encoding="utf-8")
+    with pytest.raises(ValueError):
+        load_verified(path)
+
+
+def test_summary_reports_seen_totals_and_exact_per_house():
+    row=build_attempt(
+      fixture_id="30",signal_key="summary",query_at_utc=datetime(2026,10,26,1,0,tzinfo=timezone.utc),
+      kickoff="2026-10-26T02:00:00+00:00",odds_diag=_diag(),api_diag={},
+      selected_offer=None,final_discard_reason="BLOCKED",run_token="r3")
+    s=summarize_run([row],"r3")
+    assert s["book_seen_by_house"]=={"betano":1,"betplay":1,"rushbet":1}
+    assert s["totals_market_seen_by_house"]=={"betano":1,"betplay":1,"rushbet":0}
+    assert s["exact_over25_coverage_by_house"]=={"betano":0,"betplay":1,"rushbet":0}
