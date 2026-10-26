@@ -25,7 +25,7 @@ from app.research.football.correlated_risk_calibration import (
 )
 from app.research.football.sharp_consensus import assess_sharp_consensus
 from app.market.colombia_bookmakers import EXECUTION_BOOKMAKERS
-from tools.telegram_quote_attempt_telemetry import build_attempt, append_attempt, load_verified, summarize_run
+from tools.telegram_quote_attempt_telemetry import build_attempt, append_attempt, load_verified, summarize_run, summarize_cumulative
 
 from app.research.football.correlated_exposure import (
     assess_paper_correlated_exposure,
@@ -2360,6 +2360,7 @@ def main() -> None:
         lifecycle.setdefault("first_ready_for_final_revalidation_utc", now.isoformat())
         lifecycle["last_ready_for_final_revalidation_utc"] = now.isoformat()
         required_house_key = bookmaker_key(candidate.get("house"))
+        quote_query_at_utc = now_utc()
         api_football_offer_diagnostic: dict[str, Any] = {}
         primary_offer = exact_over25_offer(
             session,
@@ -2410,7 +2411,7 @@ def main() -> None:
             attempt = build_attempt(
                 fixture_id=str(candidate["fixture_id"]),
                 signal_key=key,
-                query_at_utc=now,
+                query_at_utc=quote_query_at_utc,
                 kickoff=candidate.get("kickoff"),
                 odds_diag=odds_api_net_diagnostic,
                 api_diag=api_football_offer_diagnostic,
@@ -3144,7 +3145,9 @@ def main() -> None:
     blocker_audit = build_blocker_recovery_audit(ledger, candidates, existing_sent_keys, now)
     blocker_summary = blocker_audit.get("summary") or {}
 
-    quote_attempt_summary = summarize_run(load_verified(QUOTE_ATTEMPT_LEDGER), quote_attempt_run_token)
+    verified_quote_attempts = load_verified(QUOTE_ATTEMPT_LEDGER)
+    quote_attempt_summary = summarize_run(verified_quote_attempts, quote_attempt_run_token)
+    quote_attempt_cumulative = summarize_cumulative(verified_quote_attempts, minimum_target=50, maximum_target=100)
 
     run_record = {
         "run_at_utc": now.isoformat(),
@@ -3161,6 +3164,7 @@ def main() -> None:
         "pre_send_quote_checks": pre_send_quote_checks,
         "immutable_quote_attempts_persisted_this_run": immutable_quote_attempts_this_run,
         "quote_attempt_telemetry": quote_attempt_summary,
+        "quote_attempt_cumulative_telemetry": quote_attempt_cumulative,
         "pre_send_waiting_window": pre_send_waiting,
         "pre_send_blocked": pre_send_blocked,
         "pre_send_passed": pre_send_passed,
