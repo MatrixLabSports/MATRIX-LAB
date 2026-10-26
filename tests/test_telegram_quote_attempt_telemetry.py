@@ -2,7 +2,7 @@ from datetime import datetime,timezone
 from pathlib import Path
 import pytest
 
-from tools.telegram_quote_attempt_telemetry import build_attempt,append_attempt,load_verified,summarize_run
+from tools.telegram_quote_attempt_telemetry import build_attempt,append_attempt,load_verified,summarize_run,summarize_cumulative
 
 
 def _diag():
@@ -55,3 +55,40 @@ def test_summary_is_run_scoped_not_historical(tmp_path:Path):
     s=summarize_run(load_verified(path),"new")
     assert s["quote_attempts_live_this_run"]==1
     assert s["exact_over25_coverage_by_house"]["betplay"]==1
+
+
+def test_cumulative_summary_detects_real_timing_disappearance(tmp_path:Path):
+    path=tmp_path/"attempts.jsonl"
+    early_diag=_diag()
+    late_diag=_diag()
+    late_diag["candidate_lines_by_book"]={
+      "betano":[{"market_key":"total","side":"over","line":2.25,"odds":1.8}],
+      "betplay":[],
+      "rushbet":[],
+    }
+    for minute,diag in ((0,early_diag),(20,late_diag)):
+      row=build_attempt(
+        fixture_id="timing1",signal_key=f"k{minute}",
+        query_at_utc=datetime(2026,10,26,1,minute,tzinfo=timezone.utc),
+        kickoff="2026-10-26T01:30:00+00:00",odds_diag=diag,api_diag={},
+        selected_offer=None,final_discard_reason="BLOCKED",run_token=f"r{minute}")
+      append_attempt(path,row)
+    s=summarize_cumulative(load_verified(path))
+    assert s["real_quote_attempts_total"]==2
+    assert s["timing_disappearance_fixture_count"]==1
+    assert s["timing_disappearance_fixtures"][0]["fixture_id"]=="timing1"
+    assert s["synthetic_attempts_included"] is False
+
+
+def test_cumulative_sample_gate_requires_50_real_attempts(tmp_path:Path):
+    path=tmp_path/"attempts.jsonl"
+    for i in range(3):
+      row=build_attempt(
+        fixture_id=str(i),signal_key=str(i),
+        query_at_utc=datetime(2026,10,26,1,i,tzinfo=timezone.utc),
+        kickoff="2026-10-26T03:00:00+00:00",odds_diag=_diag(),api_diag={},
+        selected_offer=None,final_discard_reason="BLOCKED",run_token=str(i))
+      append_attempt(path,row)
+    s=summarize_cumulative(load_verified(path))
+    assert s["sample_gate_status"]=="ACCUMULATING_REAL_REVALIDATIONS"
+    assert s["remaining_to_minimum"]==47
