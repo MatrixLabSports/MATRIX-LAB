@@ -92,3 +92,36 @@ def test_cumulative_sample_gate_requires_50_real_attempts(tmp_path:Path):
     s=summarize_cumulative(load_verified(path))
     assert s["sample_gate_status"]=="ACCUMULATING_REAL_REVALIDATIONS"
     assert s["remaining_to_minimum"]==47
+
+
+
+def test_api_football_house_evidence_is_merged_into_immutable_view():
+    row=build_attempt(
+      fixture_id="11",signal_key="k2",query_at_utc=datetime(2026,10,26,1,0,tzinfo=timezone.utc),
+      kickoff="2026-10-26T01:30:00+00:00",
+      odds_diag={
+        "status":"BLOCKED_EVENT_NOT_COVERED",
+        "identity_top_scores":[],
+        "identity_top_candidates":[],
+        "rows_by_book":{},
+        "candidate_lines_by_book":{},
+      },
+      api_diag={
+        "status":"PASS_EXACT_AUTHORIZED_OVER25_FOUND",
+        "required_house_key":"betano",
+        "authorized_books_seen":["betano"],
+        "goals_over_under_books":["betano"],
+        "over25_books":["betano"],
+        "exact_over25_odds_by_book":{"betano":[1.62]},
+      },
+      selected_offer={"house":"Betano","odds":1.62},
+      final_discard_reason="BLOCKED_NO_FRESH_PINNACLE_REFERENCE",
+      run_token="r2",
+    )
+    assert row["houses"]["betano"]["seen"] is True
+    assert row["houses"]["betano"]["totals_market_seen"] is True
+    assert row["houses"]["betano"]["over_2_5_seen"] is True
+    assert row["houses"]["betano"]["available_lines"]==[2.5]
+    assert row["houses"]["betano"]["exact_over_2_5_odds"]==[1.62]
+    assert row["houses"]["betplay"]["seen"] is False
+    assert row["houses"]["rushbet"]["seen"] is False
