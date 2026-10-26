@@ -34,9 +34,11 @@ def build(now_utc:datetime|None=None)->dict[str,Any]:
     lane=(pit.get("lanes") or {}).get("TEAM_TOTAL_SHOTS") or {}
     blocked_reasons=audit.get("blocked_reason_counts") or {}
     insufficient=int(blocked_reasons.get("INSUFFICIENT_PERSISTED_TEAM_SHOTS_PIT_HISTORY") or 0)
+    blocked=int(audit.get("blocked_count") or 0)
     future=int(audit.get("future_source_fixture_candidates") or 0)
     eligible=int(audit.get("eligible_future_unique_fixtures") or 0)
     stale=age>MAX_AGE_HOURS
+    fully_blocked_by_pit=(future>0 and eligible==0 and blocked>0 and insufficient==blocked)
     zero_history_pattern=(future>0 and eligible==0 and insufficient>0)
     needs_refresh=stale and zero_history_pattern
     return {
@@ -49,7 +51,9 @@ def build(now_utc:datetime|None=None)->dict[str,Any]:
         "pit_stale":stale,
         "future_source_fixture_candidates":future,
         "eligible_future_unique_fixtures":eligible,
+        "blocked_count":blocked,
         "insufficient_pit_history_blocked_count":insufficient,
+        "fully_blocked_by_missing_pit_history":fully_blocked_by_pit,
         "pit_row_count":int(lane.get("row_count") or 0),
         "pit_train_count":int(lane.get("train_count") or 0),
         "pit_validation_count":int(lane.get("validation_count") or 0),
@@ -61,6 +65,7 @@ def build(now_utc:datetime|None=None)->dict[str,Any]:
         ),
         "protections":{
             "stale_pit_never_interpreted_as_true_zero_history":True,
+            "settlement_score_never_used_as_team_shots":True,
             "minimum_history_not_lowered":True,
             "post_start_backfill":False,
             "same_match_target_used_in_features":False,
