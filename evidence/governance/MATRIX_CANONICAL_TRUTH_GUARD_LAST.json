@@ -1,7 +1,7 @@
 {
   "checks": {
     "football_4000": {
-      "age_minutes": 46.09,
+      "age_minutes": 116.44,
       "canonical_path": "evidence/api_football/governance/MATRIX_FOOTBALL_4000_CANONICAL_TRACKER_LAST.json",
       "failures": [
         "CANONICAL_SOURCE_STALE"
@@ -15,23 +15,23 @@
       "status": "FAIL_CLOSED"
     },
     "live_tennis_cumulative": {
-      "age_minutes": 49.93,
+      "age_minutes": 1.05,
       "canonical_path": "evidence/live_tennis_lab/MATRIX_LIVE_TENNIS_CUMULATIVE_GATE_V1.json",
-      "failures": [
-        "CANONICAL_SOURCE_STALE"
-      ],
+      "failures": [],
       "max_age_minutes": 30.0,
       "metrics": {
         "lanes.itf|women|hard.settled_quality_valid_unique_match_count": 96
       },
       "name": "live_tennis_cumulative",
-      "source_timestamp_utc": "2026-10-26T06:08:08+00:00",
-      "status": "FAIL_CLOSED"
+      "source_timestamp_utc": "2026-10-26T08:07:22+00:00",
+      "status": "PASS"
     },
     "telegram_daily_bankroll": {
-      "age_minutes": 1.11,
+      "age_minutes": 71.46,
       "canonical_path": "evidence/notifications/telegram/MATRIX_TELEGRAM_DAILY_BANKROLL_CANONICAL_LAST.json",
-      "failures": [],
+      "failures": [
+        "CANONICAL_SOURCE_STALE"
+      ],
       "max_age_minutes": 30.0,
       "metrics": {
         "summary.current_bankroll_cop": 4859500,
@@ -40,10 +40,10 @@
       },
       "name": "telegram_daily_bankroll",
       "source_timestamp_utc": "2026-10-26T06:56:57.638651+00:00",
-      "status": "PASS"
+      "status": "FAIL_CLOSED"
     },
     "tennis_three_blocks": {
-      "age_minutes": 49.93,
+      "age_minutes": 120.29,
       "canonical_path": "evidence/tennis/MATRIX_TENNIS_THREE_BLOCK_STAGNATION_AUDIT_LAST.json",
       "failures": [
         "CANONICAL_SOURCE_STALE"
@@ -76,10 +76,10 @@
       "failures": [
         "CANONICAL_SOURCE_STALE"
       ],
-      "source": "live_tennis_cumulative"
+      "source": "telegram_daily_bankroll"
     }
   ],
-  "generated_at_utc": "2026-10-26T06:58:03.996943+00:00",
+  "generated_at_utc": "2026-10-26T08:08:25.101638+00:00",
   "precedence": [
     "LATEST_PHYSICAL_EVIDENCE",
     "HANDOFF",
