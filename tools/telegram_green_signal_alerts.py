@@ -1174,6 +1174,7 @@ def exact_over25_offer(
             "authorized_books_seen": [],
             "goals_over_under_books": [],
             "over25_books": [],
+            "exact_over25_odds_by_book": {},
             "eligible_offer_count": 0,
             "status": "STARTED",
         })
@@ -1226,6 +1227,8 @@ def exact_over25_offer(
                     if diagnostic is not None and bk not in diagnostic["over25_books"]:
                         diagnostic["over25_books"].append(bk)
                     dec = odd(value.get("odd"))
+                    if diagnostic is not None and dec is not None:
+                        diagnostic["exact_over25_odds_by_book"].setdefault(bk, []).append(dec)
                     if dec is None or dec <= 1.50:
                         continue
                     offers.append({
