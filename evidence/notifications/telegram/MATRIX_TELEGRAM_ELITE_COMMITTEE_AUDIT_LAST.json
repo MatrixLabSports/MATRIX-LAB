@@ -1,10 +1,10 @@
 {
   "blocker_state_counts": {
     "BLOCKED_KICKOFF_REACHED_MONITORING_BREACH": 2,
-    "BLOCKED_NONPOSITIVE_EV": 1,
-    "BLOCKED_NO_FRESH_PINNACLE_REFERENCE": 2,
-    "BLOCKED_NO_VALID_EXACT_AUTHORIZED_BOOK_OVER25": 8,
-    "WAITING_FINAL_REVALIDATION_WINDOW": 45
+    "BLOCKED_NONPOSITIVE_EV": 9,
+    "BLOCKED_NO_FRESH_PINNACLE_REFERENCE": 13,
+    "BLOCKED_NO_VALID_EXACT_AUTHORIZED_BOOK_OVER25": 33,
+    "WAITING_FINAL_REVALIDATION_WINDOW": 1
   },
   "committee_decision": {
     "continue_t120_revalidation": true,
@@ -17,7 +17,7 @@
   "committee_name": "MATRIX Sindicato Elite — Comité de Diagnóstico Telegram",
   "direct_causes_of_current_zero": [
     "NO_CANDIDATE_PASSED_PRE_SEND_IN_LATEST_GREEN_SIGNAL_RUN",
-    "FINAL_PREMATCH_WINDOW_NOT_OPEN_FOR_45_RECORDS",
+    "FINAL_PREMATCH_WINDOW_NOT_OPEN_FOR_1_RECORDS",
     "EXACT_AUTHORIZED_OVER25_QUOTE_COVERAGE_LIMITATION"
   ],
   "findings": [
@@ -43,7 +43,7 @@
     {
       "diagnosis": "Candidates outside the final prematch window must wait; no backfill after kickoff is permitted.",
       "evidence": {
-        "WAITING_FINAL_REVALIDATION_WINDOW": 45
+        "WAITING_FINAL_REVALIDATION_WINDOW": 1
       },
       "id": "F02_FINAL_WINDOW_IS_ACTIVE_PRIMARY_SHORT_TERM_BLOCKER",
       "owners": [
@@ -57,13 +57,13 @@
     {
       "diagnosis": "Exact executable Over 2.5 coverage is concentrated in Betano; BetPlay and Rushbet have zero exact observed coverage in the current immutable sample.",
       "evidence": {
-        "blocked_no_valid_exact_authorized_book_over25": 8,
+        "blocked_no_valid_exact_authorized_book_over25": 33,
         "exact_over25_coverage_by_house": {
-          "betano": 45,
+          "betano": 81,
           "betplay": 0,
           "rushbet": 0
         },
-        "real_quote_attempts_total": 99,
+        "real_quote_attempts_total": 143,
         "remaining_to_50": 0
       },
       "id": "F03_EXACT_AUTHORIZED_OVER25_QUOTE_COVERAGE_IS_STRUCTURAL_BOTTLENECK",
@@ -78,8 +78,8 @@
     {
       "diagnosis": "Some candidates are correctly rejected by fresh-sharp-reference and positive-EV gates; these gates must not be weakened to manufacture signals.",
       "evidence": {
-        "blocked_no_fresh_pinnacle": 2,
-        "blocked_nonpositive_ev": 1
+        "blocked_no_fresh_pinnacle": 13,
+        "blocked_nonpositive_ev": 9
       },
       "id": "F04_SHARP_AND_EV_GATES_ALSO_REMOVE_CANDIDATES",
       "owners": [
@@ -151,10 +151,10 @@
         "green_signal_conclusion": "success",
         "green_signal_run": 1250,
         "watchdog_summary": {
-          "active_future_candidates": 53,
+          "active_future_candidates": 45,
           "critical_unresolved_candidates": 0,
           "failures": 0,
-          "last_supervisor_run_age_minutes": 0.05,
+          "last_supervisor_run_age_minutes": 0.49,
           "monitoring_breaches": 53,
           "new_monitoring_breaches": 0,
           "status": "PASS",
@@ -220,20 +220,20 @@
     "workflow": "Telegram Señales Verdes MATRIX"
   },
   "quote_sample": {
-    "all_three_without_exact_over25": 54,
+    "all_three_without_exact_over25": 62,
     "book_seen_by_house": {
-      "betano": 45,
+      "betano": 83,
       "betplay": 0,
       "rushbet": 0
     },
     "exact_over25_coverage_by_house": {
-      "betano": 45,
+      "betano": 81,
       "betplay": 0,
       "rushbet": 0
     },
-    "identity_problem_count": 60,
+    "identity_problem_count": 66,
     "nearby_2_25_or_2_75_without_exact_2_5": 0,
-    "real_quote_attempts_total": 99,
+    "real_quote_attempts_total": 143,
     "remaining_to_minimum": 0,
     "sample_gate_status": "READY_FOR_CAUSAL_RECOMMENDATION",
     "synthetic_attempts_included": false,
@@ -242,7 +242,7 @@
     "timing_disappearance_fixture_count": 0,
     "timing_disappearance_fixtures": [],
     "totals_market_seen_by_house": {
-      "betano": 45,
+      "betano": 83,
       "betplay": 0,
       "rushbet": 0
     }

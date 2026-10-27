@@ -9,7 +9,7 @@
     "real_money_decision": "NO_GO_KEEP_BLOCKED",
     "reason": "FULL_GO_NO_GO_REQUIRES_PREREGISTERED_MARKET_RULES_PLUS_CLV_RISK_AND_EXECUTION_EVIDENCE"
   },
-  "generated_at_utc": "2026-10-27T13:58:58+00:00",
+  "generated_at_utc": "2026-10-27T17:45:54+00:00",
   "markets": [
     {
       "calibration_rows": 4000,
@@ -34,16 +34,6 @@
     {
       "calibration_rows": 4000,
       "explicit_signal_promotion": false,
-      "market": "1X2",
-      "quote_extraction_path_present": false,
-      "reason": "4000-row calibration exists, but checkpoint explicitly forbids automatic market promotion; no dedicated Telegram quote/revalidation signal contract is certified.",
-      "signal_status": "RESEARCH_ONLY",
-      "source_evidence": "evidence/api_football/calibration_v2/CHECKPOINT_4000_MARKET_CALIBRATION_20261023.json",
-      "telegram_signal_engine_present": false
-    },
-    {
-      "calibration_rows": 4000,
-      "explicit_signal_promotion": false,
       "market": "DOUBLE_CHANCE_1X",
       "quote_extraction_path_present": false,
       "reason": "4000-row calibration exists, but checkpoint explicitly forbids automatic market promotion; no dedicated Telegram quote/revalidation signal contract is certified.",
@@ -59,6 +49,16 @@
       "reason": "4000-row calibration exists, but checkpoint explicitly forbids automatic market promotion; no dedicated Telegram quote/revalidation signal contract is certified.",
       "signal_status": "RESEARCH_ONLY",
       "source_evidence": "evidence/api_football/calibration_v2/CHECKPOINT_4000_MARKET_CALIBRATION_20261023.json",
+      "telegram_signal_engine_present": false
+    },
+    {
+      "calibration_rows": 4000,
+      "explicit_signal_promotion": false,
+      "market": "1X2",
+      "quote_extraction_path_present": false,
+      "reason": "Fail-closed 1X2 promotion audit blocks signal authorization: OOS_4001_5000_NOT_COMPLETE,OOS_1000_METRICS_NOT_OPENED,NO_EXPLICIT_GOVERNED_1X2_P_MATRIX_PROMOTION,NO_DEDICATED_1X2_QUOTE_REVALIDATION_CONTRACT,NO_1X2_TELEGRAM_SIGNAL_ENGINE",
+      "signal_status": "RESEARCH_ONLY",
+      "source_evidence": "evidence/api_football/governance/MATRIX_1X2_PROMOTION_READINESS_LAST.json",
       "telegram_signal_engine_present": false
     },
     {
