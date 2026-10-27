@@ -226,3 +226,38 @@ def test_verified_loader_rejects_terminal_independence_false(tmp_path:Path):
     path.write_text(canonical(data)+"\n",encoding="utf-8")
     with pytest.raises(ValueError,match="QUOTE_ATTEMPT_TERMINAL_INDEPENDENCE_INVALID"):
         load_verified(path)
+
+
+def test_legacy_v1_rows_remain_readable_without_rewrite(tmp_path:Path):
+    path=tmp_path/"attempts.jsonl"
+    row=build_attempt(
+      fixture_id="42",signal_key="legacy-v1",
+      query_at_utc=datetime(2026,10,26,1,0,tzinfo=timezone.utc),
+      kickoff="2026-10-26T02:00:00+00:00",odds_diag=_diag(),api_diag={},
+      selected_offer=None,final_discard_reason="BLOCKED",run_token="legacy")
+    row["schema"]="MATRIX_TELEGRAM_QUOTE_ATTEMPT_V1"
+    row.pop("terminal_state_independent",None)
+    row["identity_match"].pop("provider",None)
+    import hashlib,json
+    canonical=lambda value: json.dumps(value,ensure_ascii=False,sort_keys=True,separators=(",",":"),allow_nan=False)
+    row["previous_record_sha256"]="0"*64
+    row["record_sha256"]=hashlib.sha256(canonical(row).encode("utf-8")).hexdigest()
+    # record_sha256 must hash the body before record_sha256 itself is present
+    body=dict(row)
+    body.pop("record_sha256",None)
+    row["record_sha256"]=hashlib.sha256(canonical(body).encode("utf-8")).hexdigest()
+    path.write_text(canonical(row)+"\n",encoding="utf-8")
+    loaded=load_verified(path)
+    assert len(loaded)==1
+    assert loaded[0]["schema"]=="MATRIX_TELEGRAM_QUOTE_ATTEMPT_V1"
+
+
+def test_new_rows_use_v2_schema_and_full_identity_contract():
+    row=build_attempt(
+      fixture_id="43",signal_key="v2",
+      query_at_utc=datetime(2026,10,26,1,0,tzinfo=timezone.utc),
+      kickoff="2026-10-26T02:00:00+00:00",odds_diag=_diag(),api_diag={},
+      selected_offer=None,final_discard_reason="BLOCKED",run_token="v2")
+    assert row["schema"]=="MATRIX_TELEGRAM_QUOTE_ATTEMPT_V2"
+    assert row["terminal_state_independent"] is True
+    assert {"state","score","provider_event_id","provider"} <= set(row["identity_match"])
