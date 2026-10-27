@@ -147,3 +147,27 @@ def test_invalid_items_blocks(tmp_path: Path):
     assert result["status"] == "BLOCKED"
     assert result["provider_rows"] == 0
     assert result["portfolio_status"] == "BLOCKED_PROVIDER_GATE"
+
+
+def test_http_429_retries_with_bounded_backoff_and_then_succeeds(tmp_path: Path):
+    class RetrySession:
+        def __init__(self):
+            self.calls = 0
+
+        def get(self, *args, **kwargs):
+            self.calls += 1
+            if self.calls == 1:
+                r = FakeResponse({"detail": "rate limited"}, status_code=429)
+                r.headers["Retry-After"] = "0"
+                return r
+            return FakeResponse({"items": _all_target_items()})
+
+    sleeps = []
+    session = RetrySession()
+    result = run("secret", tmp_path, session=session, sleeper=lambda seconds: sleeps.append(seconds), max_attempts=4)
+    assert result["status"] == "PASS"
+    assert result["network_calls_performed"] == 2
+    assert [x["http_status"] for x in result["attempts"]] == [429, 200]
+    assert sleeps == [0.0]
+    assert result["portfolio_complete"] is True
+    assert result["real_money"] == "BLOCKED"
