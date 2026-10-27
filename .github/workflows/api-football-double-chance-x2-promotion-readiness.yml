@@ -1,0 +1,64 @@
+name: MATRIX Double Chance X2 Promotion Readiness Audit
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "14,29,44,59 * * * *"
+  push:
+    branches:
+      - repair/cor09-world-pipeline
+    paths:
+      - tools/matrix_double_chance_x2_promotion_readiness_audit.py
+      - tools/telegram_multi_market_signal_gate.py
+      - .github/workflows/api-football-double-chance-x2-promotion-readiness.yml
+      - evidence/api_football/calibration_v2/OOS_4001_5000_STATE.json
+      - evidence/api_football/calibration_v2/lanes/double_chance_x2/state.json
+
+permissions:
+  contents: write
+
+concurrency:
+  group: matrix-double-chance-x2-readiness
+  cancel-in-progress: true
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: repair/cor09-world-pipeline
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Build X2 readiness evidence
+        run: PYTHONPATH=. python -m tools.matrix_double_chance_x2_promotion_readiness_audit
+      - name: Assert fail-closed safety
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          j=json.loads(Path("evidence/api_football/governance/MATRIX_DOUBLE_CHANCE_X2_PROMOTION_READINESS_LAST.json").read_text())
+          assert j["governance"]["real_money"]=="BLOCKED"
+          assert j["governance"]["automatic_wagering"] is False
+          assert j["governance"]["odds_may_not_generate_probability"] is True
+          assert j["governance"]["p_matrix_must_exist_before_odds"] is True
+          if not j["promotion_allowed"]:
+              assert j["signal_status"]=="RESEARCH_ONLY"
+              assert j["blockers"]
+          print(j["status"], j["blockers"])
+          PY
+      - name: Rebuild multi-market gate
+        run: PYTHONPATH=. python -m tools.telegram_multi_market_signal_gate
+      - name: Persist evidence
+        run: |
+          git config user.name matrix-dcx2-readiness
+          git config user.email matrix-dcx2-readiness@users.noreply.github.com
+          git add evidence/api_football/governance/MATRIX_DOUBLE_CHANCE_X2_PROMOTION_READINESS_LAST.json
+          git add evidence/notifications/telegram/MATRIX_TELEGRAM_MULTI_MARKET_SIGNAL_GATE_LAST.json
+          if git diff --cached --quiet; then exit 0; fi
+          git commit -m "evidence(football): refresh Double Chance X2 readiness"
+          git pull --rebase origin repair/cor09-world-pipeline
+          git push origin HEAD:repair/cor09-world-pipeline
