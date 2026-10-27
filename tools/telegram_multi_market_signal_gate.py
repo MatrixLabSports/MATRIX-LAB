@@ -19,6 +19,8 @@ def build()->dict[str,Any]:
     core=load(ROOT/"governance/MATRIX_FOOTBALL_CORE_MARKETS_STATUS_20261003.json")
     resolution=load(ROOT/"governance/MATRIX_FOOTBALL_MARKET_RESOLUTION_MASTER_20261004.json")
     failed=load(ROOT/"governance/MATRIX_FOOTBALL_FAILED_MARKETS_V3_DECISION_20261003.json")
+    one_x_two_audit_path=ROOT/"governance/MATRIX_1X2_PROMOTION_READINESS_LAST.json"
+    one_x_two_audit=load(one_x_two_audit_path) if one_x_two_audit_path.exists() else {}
 
     rows=[]
     def add(market,status,reason,calibration_rows=None,quote_path=False,signal_engine=False,source=None):
@@ -39,12 +41,26 @@ def build()->dict[str,Any]:
         over.get("eligible_rows"),True,True,
         "evidence/api_football/governance/over_2_5_p_matrix_promotion.json")
 
-    for key,name in [("under_2_5","UNDER_2_5"),("1x2","1X2"),("double_chance_1x","DOUBLE_CHANCE_1X"),("double_chance_x2","DOUBLE_CHANCE_X2")]:
+    for key,name in [("under_2_5","UNDER_2_5"),("double_chance_1x","DOUBLE_CHANCE_1X"),("double_chance_x2","DOUBLE_CHANCE_X2")]:
         row=checkpoint.get("markets",{}).get(key,{})
         add(name,"RESEARCH_ONLY",
             "4000-row calibration exists, but checkpoint explicitly forbids automatic market promotion; no dedicated Telegram quote/revalidation signal contract is certified.",
             row.get("eligible_rows"),False,False,
             "evidence/api_football/calibration_v2/CHECKPOINT_4000_MARKET_CALIBRATION_20261023.json")
+
+    one_x_two=checkpoint.get("markets",{}).get("1x2",{})
+    one_x_two_ready=one_x_two_audit.get("status")=="PASS_PROMOTION_READY" and one_x_two_audit.get("promotion_allowed") is True
+    if one_x_two_ready:
+        add("1X2","SIGNAL_AUTHORIZED",
+            "Dedicated fail-closed 1X2 readiness audit passed all OOS, P_MATRIX promotion, quote/revalidation and Telegram engine gates.",
+            one_x_two.get("eligible_rows"),True,True,
+            "evidence/api_football/governance/MATRIX_1X2_PROMOTION_READINESS_LAST.json")
+    else:
+        blockers=one_x_two_audit.get("blockers") or ["READINESS_AUDIT_NOT_YET_PERSISTED"]
+        add("1X2","RESEARCH_ONLY",
+            "Fail-closed 1X2 promotion audit blocks signal authorization: "+",".join(blockers),
+            one_x_two.get("eligible_rows"),False,False,
+            "evidence/api_football/governance/MATRIX_1X2_PROMOTION_READINESS_LAST.json")
 
     add("DOUBLE_CHANCE_12","NO_GO",
         "Closed: challenger not superior to Poisson at the governed checkpoint.",4000,False,False,
