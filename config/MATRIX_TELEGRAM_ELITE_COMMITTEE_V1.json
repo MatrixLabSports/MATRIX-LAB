@@ -1,0 +1,132 @@
+{
+  "schema": "MATRIX_TELEGRAM_ELITE_COMMITTEE_V1",
+  "name": "MATRIX Sindicato Elite — Comité de Diagnóstico Telegram",
+  "mission": "Diagnosticar por evidencia física por qué no se emiten señales verdes y separar fallas de selección, cuotas, tiempo, orquestación, persistencia y entrega.",
+  "decision_rules": {
+    "no_invention": true,
+    "evidence_precedence": [
+      "LATEST_GITHUB_PHYSICAL_EVIDENCE",
+      "WORKFLOW_LOGS",
+      "PERSISTED_AUDITS",
+      "OLDER_HANDOFFS"
+    ],
+    "missing_not_zero": true,
+    "no_silent_imputation": true,
+    "no_backfill_after_kickoff": true,
+    "odds_never_generate_p_matrix": true,
+    "real_money": "BLOCKED",
+    "automatic_wagering": false
+  },
+  "roles": [
+    {
+      "id": "INCIDENT_COMMANDER",
+      "title": "Director de incidente / Reliability Lead",
+      "remit": "Integra hallazgos, prioriza causa raíz y separa causa primaria de defectos secundarios."
+    },
+    {
+      "id": "SRE_WORKFLOW",
+      "title": "Principal Site Reliability Engineer",
+      "remit": "Cadencia, disponibilidad, runs, fallos, timeouts y recuperación."
+    },
+    {
+      "id": "GITOPS_CONCURRENCY",
+      "title": "Staff GitOps & Concurrency Engineer",
+      "remit": "Rebase, push, dirty worktree, carreras de escritores y persistencia."
+    },
+    {
+      "id": "TELEGRAM_DELIVERY",
+      "title": "Principal Messaging/Telegram Engineer",
+      "remit": "Secretos, API Telegram, errores de entrega, duplicados y confirmación de envío."
+    },
+    {
+      "id": "QUANT_MODEL",
+      "title": "Lead Quantitative Sports Modeler",
+      "remit": "P_MATRIX, elegibilidad, calibración y separación modelo/cuotas."
+    },
+    {
+      "id": "MARKET_MICROSTRUCTURE",
+      "title": "Sports Betting Market Microstructure Lead",
+      "remit": "Cuota ejecutable, línea exacta 2.5, disponibilidad y desaparición de mercados."
+    },
+    {
+      "id": "SHARP_REFERENCE",
+      "title": "Sharp Market & CLV Lead",
+      "remit": "Pinnacle fresca, CLV y referencias sharp."
+    },
+    {
+      "id": "BOOKMAKER_COVERAGE",
+      "title": "Colombia Sportsbook Coverage Lead",
+      "remit": "Betano/BetPlay/Rushbet y recuperación multibook."
+    },
+    {
+      "id": "TEMPORAL_INTEGRITY",
+      "title": "Point-in-Time Data Architect",
+      "remit": "T−120, kickoff, no-backfill y orden temporal de decisiones."
+    },
+    {
+      "id": "DATA_ENGINEERING",
+      "title": "Principal Data Engineer",
+      "remit": "Integridad de evidence, schemas, persistencia y trazabilidad."
+    },
+    {
+      "id": "IDENTITY_RESOLUTION",
+      "title": "Entity Resolution Lead",
+      "remit": "Fixture/team/provider identity y fallas de matching."
+    },
+    {
+      "id": "OBSERVABILITY",
+      "title": "Principal Observability Engineer",
+      "remit": "Telemetría, contadores LIVE_THIS_RUN vs histórico y watchdog."
+    },
+    {
+      "id": "QA_ADVERSARIAL",
+      "title": "Adversarial QA Lead",
+      "remit": "Pruebas de regresión, fail-closed y escenarios de carrera."
+    },
+    {
+      "id": "SECURITY_SECRETS",
+      "title": "Security & Secrets Reliability Lead",
+      "remit": "Presencia de secretos sin exponerlos y gates de seguridad."
+    },
+    {
+      "id": "PORTFOLIO_RISK",
+      "title": "Portfolio Risk Lead",
+      "remit": "H02, exposición correlacionada y guardrails de stake."
+    },
+    {
+      "id": "STATISTICAL_VALIDATION",
+      "title": "Senior Statistical Validation Scientist",
+      "remit": "Tamaño de muestra, cobertura 18/50 y validez de recomendaciones."
+    },
+    {
+      "id": "FOOTBALL_DOMAIN",
+      "title": "Football Domain Research Lead",
+      "remit": "Calendario, mercados y elegibilidad fútbol."
+    },
+    {
+      "id": "TENNIS_DOMAIN",
+      "title": "Tennis Domain Research Lead",
+      "remit": "Aislamiento de tenis para evitar contaminación del pipeline Telegram fútbol."
+    },
+    {
+      "id": "GOVERNANCE_AUDIT",
+      "title": "Independent Model Governance Auditor",
+      "remit": "Precedencia, evidencia física, no inventar y estados sellados."
+    },
+    {
+      "id": "RED_TEAM",
+      "title": "Independent Red Team Reviewer",
+      "remit": "Busca explicaciones alternativas y contradicciones antes de cerrar causa raíz."
+    },
+    {
+      "id": "RELEASE_ENGINEERING",
+      "title": "Release & Change Management Lead",
+      "remit": "Paridad main/operativa, despliegue y rollback."
+    },
+    {
+      "id": "OPERATIONS",
+      "title": "24x7 Sports Operations Lead",
+      "remit": "Comprueba si la ausencia es esperada por ventana o una brecha operativa."
+    }
+  ]
+}
