@@ -27,10 +27,8 @@ def build() -> dict[str, Any]:
     checkpoint = load(CHECKPOINT)
     oos = load(OOS_STATE)
     lane = load(LANE_STATE)
-    gate = load(MULTI_GATE)
 
     cp = (checkpoint.get("markets") or {}).get("1x2") or {}
-    gate_row = next((x for x in gate.get("markets", []) if x.get("market") == "1X2"), {})
 
     checks = {
         "checkpoint_4000_complete": cp.get("eligible_rows") == 4000 and cp.get("missing_rows") == 0,
@@ -41,9 +39,9 @@ def build() -> dict[str, Any]:
         "oos_target_reached": int(oos.get("current_oos_observations") or 0) >= int(oos.get("target_oos_observations") or 1000),
         "oos_metrics_opened": oos.get("metrics_opened") is True,
         "oos_outcomes_read": int(oos.get("outcomes_read_for_oos_metrics") or 0) >= int(oos.get("target_oos_observations") or 1000),
-        "dedicated_quote_path_certified": gate_row.get("quote_extraction_path_present") is True,
-        "telegram_signal_engine_certified": gate_row.get("telegram_signal_engine_present") is True,
-        "explicit_signal_promotion_exists": gate_row.get("explicit_signal_promotion") is True,
+        "dedicated_quote_path_certified": QUOTE_CONTRACT.exists(),
+        "telegram_signal_engine_certified": TELEGRAM_ENGINE.exists(),
+        "explicit_signal_promotion_exists": P_MATRIX_PROMOTION.exists(),
     }
 
     blockers = []
