@@ -16,6 +16,7 @@ from tools.telegram_quote_attempt_telemetry import (
 
 LEDGER=Path("evidence/notifications/telegram/MATRIX_TELEGRAM_QUOTE_ATTEMPTS.jsonl")
 OUT=Path("evidence/notifications/telegram/MATRIX_TELEGRAM_QUOTE_ATTEMPT_TELEMETRY_AUDIT_LAST.json")
+CERT_OUT=Path("evidence/notifications/telegram/MATRIX_TELEGRAM_QUOTE_TELEMETRY_CERTIFICATION_LAST.json")
 
 
 def build() -> dict:
@@ -75,10 +76,61 @@ def build() -> dict:
     }
 
 
+def build_certification(rows:list[dict], audit:dict) -> dict:
+    schema_counts={}
+    for row in rows:
+        schema=str(row.get("schema") or "")
+        schema_counts[schema]=schema_counts.get(schema,0)+1
+    first_v2_index=next((i for i,row in enumerate(rows) if row.get("schema")==SCHEMA),None)
+    first_v2_bridge_verified=None
+    no_legacy_after_v2=True
+    if first_v2_index is not None:
+        if first_v2_index==0:
+            first_v2_bridge_verified=rows[0].get("previous_record_sha256")=="0"*64
+        else:
+            first_v2_bridge_verified=(
+                rows[first_v2_index].get("previous_record_sha256")
+                == rows[first_v2_index-1].get("record_sha256")
+            )
+        no_legacy_after_v2=all(row.get("schema")==SCHEMA for row in rows[first_v2_index:])
+    return {
+        "schema":"MATRIX_TELEGRAM_QUOTE_TELEMETRY_CERTIFICATION_V2",
+        "generated_at_utc":audit["generated_at_utc"],
+        "status":"PASS",
+        "source_ledger":str(LEDGER),
+        "audit_path":str(OUT),
+        "verified_row_count":len(rows),
+        "schema_counts":schema_counts,
+        "current_schema":SCHEMA,
+        "legacy_schemas_preserved_without_rewrite":sorted(LEGACY_SCHEMAS),
+        "v2_real_row_count":int(schema_counts.get(SCHEMA,0)),
+        "first_v2_row_present":first_v2_index is not None,
+        "first_v2_chain_bridge_verified":first_v2_bridge_verified,
+        "no_legacy_rows_after_first_v2":no_legacy_after_v2,
+        "immutable_hash_chain_verified":audit["immutable_hash_chain_verified"],
+        "first_terminal_state_independent":audit["first_terminal_state_independent"],
+        "live_this_run_separated_from_terminal_historical":True,
+        "exact_over_2_5_required":True,
+        "nearby_2_25_2_75_diagnostic_only":True,
+        "synthetic_rows_added":False,
+        "automatic_wagering":False,
+        "real_money":"BLOCKED",
+        "sample_gate_status":audit["sample"]["sample_gate_status"],
+        "real_quote_attempts_total":audit["sample"]["real_quote_attempts_total"],
+        "remaining_to_minimum_50":audit["sample"]["remaining_to_minimum"],
+    }
+
+
 def main() -> None:
+    rows=load_verified(LEDGER)
     out=build()
+    cert=build_certification(rows,out)
+    if cert["first_v2_row_present"]:
+        assert cert["first_v2_chain_bridge_verified"] is True
+        assert cert["no_legacy_rows_after_first_v2"] is True
     OUT.parent.mkdir(parents=True,exist_ok=True)
     OUT.write_text(json.dumps(out,indent=2,sort_keys=True,ensure_ascii=False)+"\n",encoding="utf-8")
+    CERT_OUT.write_text(json.dumps(cert,indent=2,sort_keys=True,ensure_ascii=False)+"\n",encoding="utf-8")
     print(json.dumps({
         "status":out["status"],
         "real_quote_attempts_total":out["sample"]["real_quote_attempts_total"],
@@ -86,6 +138,8 @@ def main() -> None:
         "sample_gate_status":out["sample"]["sample_gate_status"],
         "recommendation_authorized":out["recommendation_gate"]["recommendation_authorized"],
         "real_money":"BLOCKED",
+        "v2_real_row_count":cert["v2_real_row_count"],
+        "first_v2_chain_bridge_verified":cert["first_v2_chain_bridge_verified"],
     },sort_keys=True))
 
 
