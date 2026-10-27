@@ -135,6 +135,10 @@ jobs:
           assert j["exact_line_policy"]["nearby_lines_never_substitute_for_2_5"] is True
           assert j["protections"]["append_only"] is True
           assert j["protections"]["historical_terminal_state_cannot_overwrite_attempt"] is True
+          assert j["schema_evolution"]["current_schema"]=="MATRIX_TELEGRAM_QUOTE_ATTEMPT_V2"
+          assert "MATRIX_TELEGRAM_QUOTE_ATTEMPT_V1" in j["schema_evolution"]["legacy_schemas_preserved_without_rewrite"]
+          assert j["schema_evolution"]["mixed_version_hash_chain_supported"] is True
+          assert j["schema_evolution"]["historical_rows_rewritten"] is False
           assert j["required_field_contract"]["all_rows_schema_validated"] is True
           assert "provider_event_id" in j["required_field_contract"]["identity_fields"]
           assert "run_token" in j["required_field_contract"]["top_level_fields"]
