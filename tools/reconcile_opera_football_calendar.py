@@ -63,7 +63,8 @@ def _flash_pair(name:str)->tuple[str,str]|None:
 
 
 def _sofa_body(raw:str)->str:
-    x=re.sub(r"^25/10/26\s+(?:Cancelado|\d{1,2}:\d{2})\s+","",raw).strip()
+    # Strip any DD/MM/YY calendar prefix; never pin reconciliation to one day.
+    x=re.sub(r"^\d{1,2}/\d{1,2}/\d{2}\s+(?:(?:Cancelado|Aplazado|FT)|\d{1,2}:\d{2})\s+","",raw).strip()
     x=re.sub(r"\s+1\s+\d+(?:\.\d+)?\s+X\s+\d+(?:\.\d+)?\s+2\s+\d+(?:\.\d+)?\s*$","",x)
     return x.strip()
 
