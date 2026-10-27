@@ -1,0 +1,134 @@
+{
+  "schema": "MATRIX_DIAGNOSTICO_CLV_Y_CASAS_27OCT2026_V1",
+  "generated_at_utc": "2026-10-27T20:54:31+00:00",
+  "committee": {
+    "name": "MATRIX Sindicato Elite — Comité de Diagnóstico Telegram",
+    "role_count": 22
+  },
+  "diagnosis": {
+    "historical_internal_root_cause": "ODDS_API_NET_EVENT_DISCOVERY_SINGLE_PAGE_WAS_DOMINANT_PRE_FIX_FAILURE_MODE",
+    "historical_evidence": {
+      "legacy_quote_attempts": 246,
+      "blocked_event_not_covered": 245,
+      "blocked_event_search_provider_error": 1,
+      "event_not_covered_fraction": 0.9959349593495935
+    },
+    "current_external_root_cause": "ODDS_API_NET_PROVIDER_GATE_HTTP_429_AND_EVENT_SEARCH_PROVIDER_ERROR",
+    "repair_priority": "INTERNAL_DISCOVERY_DEFECT_REPAIRED_NOW_PROVIDER_GATE_IS_PRIMARY_BLOCKER",
+    "interpretation": "The pagination and full-Colombia telemetry defects are repaired. Current physical evidence now fails earlier at the provider gate, so zero returned bookmaker rows must not be interpreted as zero bookmaker support."
+  },
+  "clv": {
+    "closing_odds_count": 11,
+    "target": 300,
+    "remaining": 289,
+    "decision_count": 292,
+    "missed_after_kickoff": 278,
+    "metrics_opened": false,
+    "strict_fresh_gate_seconds": 120,
+    "transport": "odds-api.net preferred; API-Football /odds bookmaker_id=4 fallback",
+    "direct_pinnacle_api_connection": false
+  },
+  "houses": {
+    "execution_book_count": 14,
+    "execution_books": [
+      "betano",
+      "betplay",
+      "betsson",
+      "bwin",
+      "codere",
+      "luckia",
+      "mryoker",
+      "rivalo",
+      "rushbet",
+      "sportium",
+      "stake",
+      "wplay",
+      "yajuego",
+      "zamba"
+    ],
+    "telemetry_schema": "MATRIX_TELEGRAM_QUOTE_ATTEMPT_V3",
+    "current_v3_real_attempts": 2,
+    "current_v3_provider_error_rows": 2,
+    "current_v3_minimum_revalidation_gate": 50,
+    "remaining_v3_to_recommendation_gate": 48,
+    "legacy_three_book_baseline": {
+      "attempts": 246,
+      "exact_over25_coverage": {
+        "betano": 163,
+        "betplay": 0,
+        "rushbet": 0
+      },
+      "book_seen": {
+        "betano": 170,
+        "betplay": 0,
+        "rushbet": 0
+      }
+    }
+  },
+  "provider_gate_physical_proof": {
+    "provider": "odds-api.net",
+    "endpoint": "/bookmakers?country_code=CO",
+    "network_calls_performed": 4,
+    "attempt_http_statuses": [
+      429,
+      429,
+      429,
+      429
+    ],
+    "provider_rows": 0,
+    "portfolio_status": "BLOCKED_PROVIDER_GATE",
+    "conclusion": "PROVIDER_GATE_BLOCKED_AFTER_BOUNDED_RETRY",
+    "zero_rows_interpretation": "NOT_EVIDENCE_OF_ZERO_SUPPORTED_BOOKMAKERS"
+  },
+  "repairs": {
+    "telegram_event_discovery_pagination_commit": "801eea38559469bcb6bf88dfbcdff30524505b6c",
+    "full_colombia_snapshot_request_commit": "ec51e0578445fb52b84edb2db0c548adb6e532ed",
+    "telemetry_v3_all_colombia_commit": "185088d87781513789d650df9dcf5352f868aa33",
+    "legacy_diagnostic_separation_commit": "5741ac78954da10309ad818549219259a82c96af",
+    "telemetry_audit_v3_commit": "e91596c0a149f64d7434a4842d9869a5b94e4769",
+    "clv_event_discovery_pagination_commit": "0f2f8133ce664bd01b98207b38a0d3d5c16820de",
+    "repair_contract_test_commit": "d5d57022f585a2320e7cf9ea2da7713a7425c19a",
+    "catalog_429_retry_commit": "7a6f7c717771c14cb445d6c6c0b383dc038240bb",
+    "catalog_retry_test_commit": "23121f0911d59923eacc5cf0212e96de347075d2",
+    "catalog_workflow_commit": "05b08d7b5549d4168ea8b73479cbeb39555ee87a",
+    "diagnostic_single_file_writer_commit": "652877726bf3d5b2cf6e934bfa2199eaf5f7f04a",
+    "diagnostic_provider_distinction_commit": "1f65592c80d8b4ea6c6a8422199a29876804c1f1"
+  },
+  "verification": {
+    "repair_test_suite_run_id": 40581858235,
+    "repair_test_suite_result": "26 passed in 0.46s",
+    "safety_assertions": "PASS",
+    "catalog_probe_run_id": 40582001645,
+    "catalog_probe_conclusion": "success",
+    "catalog_probe_test_step": "success",
+    "catalog_probe_physical_step": "success",
+    "telemetry_v3_certification": {
+      "status": "PASS",
+      "verified_row_count": 248,
+      "schema_counts": {
+        "MATRIX_TELEGRAM_QUOTE_ATTEMPT_V1": 13,
+        "MATRIX_TELEGRAM_QUOTE_ATTEMPT_V2": 233,
+        "MATRIX_TELEGRAM_QUOTE_ATTEMPT_V3": 2
+      },
+      "immutable_hash_chain_verified": true,
+      "first_current_schema_chain_bridge_verified": true,
+      "no_legacy_rows_after_first_current_schema": true
+    }
+  },
+  "governance": {
+    "probability_gate_changed": false,
+    "ev_gate_changed": false,
+    "freshness_gate_changed": false,
+    "kickoff_gate_changed": false,
+    "no_backfill": true,
+    "automatic_wagering": false,
+    "real_money": "BLOCKED"
+  },
+  "adjudication": {
+    "internal_code_defects_in_scope": "REPAIRED_AND_TESTED",
+    "current_provider_availability": "BLOCKED_EXTERNAL_PROVIDER_GATE",
+    "further_code_changes_required_to_claim_house_support": false,
+    "next_valid_evidence": "NEW_REAL_V3_REVALIDATIONS_AFTER_PROVIDER_RECOVERY",
+    "no_claim_of_supported_bookmakers_until_provider_returns_physical_rows": true
+  }
+}
