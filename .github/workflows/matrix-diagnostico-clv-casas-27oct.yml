@@ -1,0 +1,96 @@
+name: MATRIX Diagnostico CLV y Casas 27OCT2026
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - repair/cor09-world-pipeline
+    paths:
+      - tools/matrix_clv_casas_elite_diagnostic.py
+      - tools/telegram_green_signal_alerts.py
+      - tools/telegram_quote_attempt_telemetry.py
+      - tools/telegram_quote_attempt_telemetry_audit.py
+      - tools/football_clv_odds_api_net_capture.py
+      - tests/test_clv_casas_27oct_repair_contract.py
+      - tests/test_telegram_quote_attempt_telemetry.py
+      - tests/test_telegram_quote_attempt_telemetry_audit.py
+      - .github/workflows/matrix-diagnostico-clv-casas-27oct.yml
+
+permissions:
+  contents: write
+
+concurrency:
+  group: matrix-diagnostico-clv-casas-27oct
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    env:
+      REAL_MONEY: BLOCKED
+      AUTO_BETTING: DISABLED
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: repair/cor09-world-pipeline
+          fetch-depth: 0
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - run: python -m pip install pytest requests
+
+      - name: Verify repair and telemetry contracts
+        run: |
+          set -euo pipefail
+          PYTHONPATH=. python -m pytest -q             tests/test_clv_casas_27oct_repair_contract.py             tests/test_telegram_quote_attempt_telemetry.py             tests/test_telegram_quote_attempt_telemetry_audit.py             tests/test_football_clv_odds_api_net_capture.py
+
+      - name: Rebuild immutable telemetry audit
+        run: PYTHONPATH=. python -m tools.telegram_quote_attempt_telemetry_audit
+
+      - name: Build canonical committee diagnostic
+        run: PYTHONPATH=. python -m tools.matrix_clv_casas_elite_diagnostic
+
+      - name: Assert no safety regression
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          p=Path("evidence/notifications/telegram/MATRIX_DIAGNOSTICO_CLV_Y_CASAS_27OCT2026.json")
+          j=json.loads(p.read_text(encoding="utf-8"))
+          assert j["repair_adjudication"]["internal_code_defects_addressed"] is True
+          assert j["repair_adjudication"]["no_gate_relaxation"] is True
+          assert j["repair_adjudication"]["no_backfill"] is True
+          assert j["repair_adjudication"]["automatic_wagering"] is False
+          assert j["repair_adjudication"]["real_money"]=="BLOCKED"
+          assert j["houses_post_fix_contract"]["execution_book_count"]==14
+          print(json.dumps(j["diagnosis"],sort_keys=True))
+          PY
+
+      - name: Persist diagnostic evidence
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name matrix-clv-casas-elite
+          git config user.email matrix-clv-casas-elite@users.noreply.github.com
+          git add evidence/notifications/telegram/MATRIX_DIAGNOSTICO_CLV_Y_CASAS_27OCT2026.json
+          git add evidence/notifications/telegram/MATRIX_TELEGRAM_QUOTE_ATTEMPT_TELEMETRY_AUDIT_LAST.json
+          git add evidence/notifications/telegram/MATRIX_TELEGRAM_QUOTE_TELEMETRY_CERTIFICATION_LAST.json
+          if git diff --cached --quiet; then
+            echo "NO_DIAGNOSTIC_CHANGE"
+            exit 0
+          fi
+          git commit -m "evidence(audit): persist CLV and Colombia-book diagnosis"
+          for attempt in 1 2 3 4; do
+            git fetch origin repair/cor09-world-pipeline
+            if ! git rebase origin/repair/cor09-world-pipeline; then
+              git rebase --abort || true
+              sleep $((attempt*2))
+              continue
+            fi
+            if git push origin HEAD:repair/cor09-world-pipeline; then exit 0; fi
+            sleep $((attempt*2))
+          done
+          exit 1
