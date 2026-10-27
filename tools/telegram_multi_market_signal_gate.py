@@ -21,6 +21,12 @@ def build()->dict[str,Any]:
     failed=load(ROOT/"governance/MATRIX_FOOTBALL_FAILED_MARKETS_V3_DECISION_20261003.json")
     one_x_two_audit_path=ROOT/"governance/MATRIX_1X2_PROMOTION_READINESS_LAST.json"
     one_x_two_audit=load(one_x_two_audit_path) if one_x_two_audit_path.exists() else {}
+    under25_audit_path=ROOT/"governance/MATRIX_UNDER25_PROMOTION_READINESS_LAST.json"
+    under25_audit=load(under25_audit_path) if under25_audit_path.exists() else {}
+    dc1x_audit_path=ROOT/"governance/MATRIX_DOUBLE_CHANCE_1X_PROMOTION_READINESS_LAST.json"
+    dc1x_audit=load(dc1x_audit_path) if dc1x_audit_path.exists() else {}
+    dcx2_audit_path=ROOT/"governance/MATRIX_DOUBLE_CHANCE_X2_PROMOTION_READINESS_LAST.json"
+    dcx2_audit=load(dcx2_audit_path) if dcx2_audit_path.exists() else {}
 
     rows=[]
     def add(market,status,reason,calibration_rows=None,quote_path=False,signal_engine=False,source=None):
