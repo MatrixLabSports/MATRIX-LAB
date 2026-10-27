@@ -20,11 +20,16 @@ def _load(path:Path)->dict[str,Any]:
     return v
 
 
-def _parse_sofa_time(raw:str)->datetime|None:
-    m=re.match(r"^25/10/26\s+(\d{1,2}):(\d{2})\s+",raw)
+def _parse_sofa_time(raw:str,target_date_bogota:str)->datetime|None:
+    m=re.match(r"^(\d{1,2})/(\d{1,2})/(\d{2})\s+(\d{1,2}):(\d{2})\s+",raw)
     if not m:
         return None
-    return datetime(2026,10,25,int(m.group(1)),int(m.group(2)),tzinfo=BOGOTA)
+    day,month,year2,hour,minute=map(int,m.groups())
+    year=2000+year2
+    parsed=datetime(year,month,day,hour,minute,tzinfo=BOGOTA)
+    if parsed.date().isoformat()!=target_date_bogota:
+        return None
+    return parsed
 
 
 def build(recon:Mapping[str,Any],generated_at:datetime|None=None)->dict[str,Any]:
@@ -35,7 +40,7 @@ def build(recon:Mapping[str,Any],generated_at:datetime|None=None)->dict[str,Any]
         if not isinstance(row,Mapping):
             continue
         raw=str(row.get("sofascore") or "")
-        start=_parse_sofa_time(raw)
+        start=_parse_sofa_time(raw,str(recon.get("target_date_bogota") or ""))
         confirmed.append({
             "event_identity":row.get("flashscore"),
             "sofascore_observation":raw,
@@ -51,7 +56,7 @@ def build(recon:Mapping[str,Any],generated_at:datetime|None=None)->dict[str,Any]
     sofa_only=[]
     for row in recon.get("sofascore_only") or []:
         raw=str(row.get("sofascore") or "")
-        start=_parse_sofa_time(raw)
+        start=_parse_sofa_time(raw,str(recon.get("target_date_bogota") or ""))
         sofa_only.append({
             "sofascore_observation":raw,
             "source_count":1,
