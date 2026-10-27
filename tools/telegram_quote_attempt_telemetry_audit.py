@@ -9,6 +9,7 @@ from tools.telegram_quote_attempt_telemetry import (
     REQUIRED_ATTEMPT_FIELDS,
     REQUIRED_HOUSE_FIELDS,
     REQUIRED_IDENTITY_FIELDS,
+    AUTHORIZED,
     SCHEMA,
     load_verified,
     summarize_cumulative,
@@ -29,7 +30,7 @@ def build() -> dict:
         "ledger_path":str(LEDGER),
         "immutable_hash_chain_verified":True,
         "first_terminal_state_independent":all("first_terminal_state" not in x for x in rows),
-        "required_authorized_books":["betano","betplay","rushbet"],
+        "required_authorized_books":list(AUTHORIZED),
         "schema_evolution":{
             "current_schema":SCHEMA,
             "legacy_schemas_preserved_without_rewrite":sorted(LEGACY_SCHEMAS),
@@ -81,20 +82,20 @@ def build_certification(rows:list[dict], audit:dict) -> dict:
     for row in rows:
         schema=str(row.get("schema") or "")
         schema_counts[schema]=schema_counts.get(schema,0)+1
-    first_v2_index=next((i for i,row in enumerate(rows) if row.get("schema")==SCHEMA),None)
-    first_v2_bridge_verified=None
-    no_legacy_after_v2=True
-    if first_v2_index is not None:
-        if first_v2_index==0:
-            first_v2_bridge_verified=rows[0].get("previous_record_sha256")=="0"*64
+    first_current_index=next((i for i,row in enumerate(rows) if row.get("schema")==SCHEMA),None)
+    first_current_bridge_verified=None
+    no_legacy_after_current=True
+    if first_current_index is not None:
+        if first_current_index==0:
+            first_current_bridge_verified=rows[0].get("previous_record_sha256")=="0"*64
         else:
-            first_v2_bridge_verified=(
-                rows[first_v2_index].get("previous_record_sha256")
-                == rows[first_v2_index-1].get("record_sha256")
+            first_current_bridge_verified=(
+                rows[first_current_index].get("previous_record_sha256")
+                == rows[first_current_index-1].get("record_sha256")
             )
-        no_legacy_after_v2=all(row.get("schema")==SCHEMA for row in rows[first_v2_index:])
+        no_legacy_after_current=all(row.get("schema")==SCHEMA for row in rows[first_current_index:])
     return {
-        "schema":"MATRIX_TELEGRAM_QUOTE_TELEMETRY_CERTIFICATION_V2",
+        "schema":"MATRIX_TELEGRAM_QUOTE_TELEMETRY_CERTIFICATION_V3",
         "generated_at_utc":audit["generated_at_utc"],
         "status":"PASS",
         "source_ledger":str(LEDGER),
@@ -103,10 +104,11 @@ def build_certification(rows:list[dict], audit:dict) -> dict:
         "schema_counts":schema_counts,
         "current_schema":SCHEMA,
         "legacy_schemas_preserved_without_rewrite":sorted(LEGACY_SCHEMAS),
-        "v2_real_row_count":int(schema_counts.get(SCHEMA,0)),
-        "first_v2_row_present":first_v2_index is not None,
-        "first_v2_chain_bridge_verified":first_v2_bridge_verified,
-        "no_legacy_rows_after_first_v2":no_legacy_after_v2,
+        "current_schema_real_row_count":int(schema_counts.get(SCHEMA,0)),
+        "v2_legacy_row_count":int(schema_counts.get("MATRIX_TELEGRAM_QUOTE_ATTEMPT_V2",0)),
+        "first_current_schema_row_present":first_current_index is not None,
+        "first_current_schema_chain_bridge_verified":first_current_bridge_verified,
+        "no_legacy_rows_after_first_current_schema":no_legacy_after_current,
         "immutable_hash_chain_verified":audit["immutable_hash_chain_verified"],
         "first_terminal_state_independent":audit["first_terminal_state_independent"],
         "live_this_run_separated_from_terminal_historical":True,
@@ -125,9 +127,9 @@ def main() -> None:
     rows=load_verified(LEDGER)
     out=build()
     cert=build_certification(rows,out)
-    if cert["first_v2_row_present"]:
-        assert cert["first_v2_chain_bridge_verified"] is True
-        assert cert["no_legacy_rows_after_first_v2"] is True
+    if cert["first_current_schema_row_present"]:
+        assert cert["first_current_schema_chain_bridge_verified"] is True
+        assert cert["no_legacy_rows_after_first_current_schema"] is True
     OUT.parent.mkdir(parents=True,exist_ok=True)
     OUT.write_text(json.dumps(out,indent=2,sort_keys=True,ensure_ascii=False)+"\n",encoding="utf-8")
     CERT_OUT.write_text(json.dumps(cert,indent=2,sort_keys=True,ensure_ascii=False)+"\n",encoding="utf-8")
@@ -138,8 +140,8 @@ def main() -> None:
         "sample_gate_status":out["sample"]["sample_gate_status"],
         "recommendation_authorized":out["recommendation_gate"]["recommendation_authorized"],
         "real_money":"BLOCKED",
-        "v2_real_row_count":cert["v2_real_row_count"],
-        "first_v2_chain_bridge_verified":cert["first_v2_chain_bridge_verified"],
+        "current_schema_real_row_count":cert["current_schema_real_row_count"],
+        "first_current_schema_chain_bridge_verified":cert["first_current_schema_chain_bridge_verified"],
     },sort_keys=True))
 
 
