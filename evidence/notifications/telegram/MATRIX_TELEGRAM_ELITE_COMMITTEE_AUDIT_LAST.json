@@ -2,8 +2,8 @@
   "blocker_state_counts": {
     "BLOCKED_KICKOFF_REACHED_MONITORING_BREACH": 2,
     "BLOCKED_NONPOSITIVE_EV": 1,
-    "BLOCKED_NO_VALID_EXACT_AUTHORIZED_BOOK_OVER25": 2,
-    "WAITING_FINAL_REVALIDATION_WINDOW": 53
+    "BLOCKED_NO_VALID_EXACT_AUTHORIZED_BOOK_OVER25": 3,
+    "WAITING_FINAL_REVALIDATION_WINDOW": 52
   },
   "committee_decision": {
     "continue_t120_revalidation": true,
@@ -42,7 +42,7 @@
     {
       "diagnosis": "Candidates outside the final prematch window must wait; no backfill after kickoff is permitted.",
       "evidence": {
-        "WAITING_FINAL_REVALIDATION_WINDOW": 53
+        "WAITING_FINAL_REVALIDATION_WINDOW": 52
       },
       "id": "F02_FINAL_WINDOW_IS_ACTIVE_PRIMARY_SHORT_TERM_BLOCKER",
       "owners": [
@@ -56,14 +56,14 @@
     {
       "diagnosis": "Exact executable Over 2.5 coverage is concentrated in Betano; BetPlay and Rushbet have zero exact observed coverage in the current immutable sample.",
       "evidence": {
-        "blocked_no_valid_exact_authorized_book_over25": 2,
+        "blocked_no_valid_exact_authorized_book_over25": 3,
         "exact_over25_coverage_by_house": {
           "betano": 15,
           "betplay": 0,
           "rushbet": 0
         },
-        "real_quote_attempts_total": 18,
-        "remaining_to_50": 32
+        "real_quote_attempts_total": 19,
+        "remaining_to_50": 31
       },
       "id": "F03_EXACT_AUTHORIZED_OVER25_QUOTE_COVERAGE_IS_STRUCTURAL_BOTTLENECK",
       "owners": [
@@ -219,7 +219,7 @@
     "workflow": "Telegram Señales Verdes MATRIX"
   },
   "quote_sample": {
-    "all_three_without_exact_over25": 3,
+    "all_three_without_exact_over25": 4,
     "book_seen_by_house": {
       "betano": 15,
       "betplay": 0,
@@ -230,10 +230,10 @@
       "betplay": 0,
       "rushbet": 0
     },
-    "identity_problem_count": 9,
+    "identity_problem_count": 10,
     "nearby_2_25_or_2_75_without_exact_2_5": 0,
-    "real_quote_attempts_total": 18,
-    "remaining_to_minimum": 32,
+    "real_quote_attempts_total": 19,
+    "remaining_to_minimum": 31,
     "sample_gate_status": "ACCUMULATING_REAL_REVALIDATIONS",
     "synthetic_attempts_included": false,
     "target_window_maximum": 100,
