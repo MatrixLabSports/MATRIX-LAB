@@ -17,6 +17,8 @@ on:
       - tools/live_tennis_cumulative_gate.py
       - tools/telegram_live_tennis_progress.py
   workflow_dispatch:
+  schedule:
+    - cron: '12,27,42,57 * * * *'
   workflow_run:
     workflows:
       - "MATRIX Live Tennis Bulk Seed"
