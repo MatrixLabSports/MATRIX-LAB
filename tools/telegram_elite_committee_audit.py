@@ -148,7 +148,7 @@ def build_audit(base: Path, config: dict[str,Any], run_health: dict[str,Any]) ->
       "committee_name":config.get("name"),
       "role_count":len(config.get("roles") or []),
       "roles":config.get("roles"),
-      "status":"ROOT_CAUSES_IDENTIFIED_RELIABILITY_REPAIR_VERIFIED" if repair_verified else "ROOT_CAUSES_IDENTIFIED_ACTION_REQUIRED",
+      "status":"ROOT_CAUSES_IDENTIFIED_RELIABILITY_REPAIR_VERIFIED" if persistence_repaired else "ROOT_CAUSES_IDENTIFIED_ACTION_REQUIRED",
       "latest_green_signal_run":run_health.get("latest_green_signal_run"),
       "direct_causes_of_current_zero":direct_causes,
       "reliability_defects_active":reliability_defects,
