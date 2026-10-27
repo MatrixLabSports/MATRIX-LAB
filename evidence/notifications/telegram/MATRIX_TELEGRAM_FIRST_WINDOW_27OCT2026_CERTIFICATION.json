@@ -1,0 +1,73 @@
+{
+  "schema": "MATRIX_TELEGRAM_FIRST_WINDOW_27OCT2026_CERTIFICATION_V1",
+  "certified_at_utc": "2026-10-27T10:39:16+00:00",
+  "certified_at_bogota": "2026-10-27T05:39:16-05:00",
+  "first_final_window_open_utc": "2026-10-27T10:30:00+00:00",
+  "first_final_window_open_bogota": "2026-10-27T05:30:00-05:00",
+  "workflow_evidence": {
+    "first_post_window_green_run": {
+      "run_number": 1341,
+      "run_id": 40489485381,
+      "conclusion": "success"
+    },
+    "dynamic_count_certification_run": {
+      "run_number": 1342,
+      "run_id": 40490013877,
+      "conclusion": "success",
+      "head_sha": "74fc9c683a5ba65b494e701adff825c18a50c322"
+    }
+  },
+  "first_window_candidate": {
+    "fixture_id": "1647233",
+    "match": "Asia Talas vs OshMU Aldier",
+    "kickoff_utc": "2026-10-27T12:30:00+00:00",
+    "p_matrix": 0.6412005294,
+    "state": "BLOCKED_NO_VALID_EXACT_AUTHORIZED_BOOK_OVER25",
+    "missing_or_failed_variable": "AUTHORIZED_BOOK_PROVIDER_COVERAGE",
+    "provider_status": "BLOCKED_EVENT_NOT_COVERED",
+    "api_football_status": "BLOCKED_NO_AUTHORIZED_BOOK_COVERAGE",
+    "selected_quote_provider": null,
+    "current_odds": null,
+    "current_ev": null,
+    "sources_checked": [
+      "API-Football",
+      "odds-api.net"
+    ],
+    "recoverability": "RECOVERABLE_WHILE_PREMATCH",
+    "final_disposition": "KEEP_RETRYING_UNTIL_KICKOFF_OR_RECOVERED",
+    "signal_sent": false,
+    "delivery_failure": false
+  },
+  "post_window_state": {
+    "football_candidates": 58,
+    "waiting_final_revalidation_window": 52,
+    "pre_send_passed": 0,
+    "latest_live_quote_attempts_this_run": 1,
+    "cumulative_real_quote_attempts": 21,
+    "remaining_to_minimum_50": 29,
+    "exact_over25_coverage_by_house": {
+      "betano": 15,
+      "betplay": 0,
+      "rushbet": 0
+    },
+    "telegram_delivery_direct_root_cause": false
+  },
+  "protections": {
+    "no_backfill_after_kickoff": true,
+    "odds_must_be_gt_1_50": true,
+    "ev_must_be_positive": true,
+    "p_matrix_before_odds": true,
+    "lower_gates_to_force_signals": false,
+    "automatic_wagering": false,
+    "real_money": "BLOCKED"
+  },
+  "coding_fix": {
+    "issue": "ELITE_COMMITTEE_WAITING_COUNT_WAS_HARDCODED_53",
+    "fixed_to": "DYNAMIC_COUNT_FROM_CURRENT_BLOCKER_STATE",
+    "tool_commit": "882e7036fd215399dfb510827885c5fc74c05d61",
+    "test_commit": "30936db612d799da645b51b2f1f01a21042c4be6",
+    "verification_run": 1342,
+    "verification_status": "SUCCESS"
+  },
+  "status": "PASS_PHYSICALLY_VERIFIED_AND_PERSISTED"
+}
