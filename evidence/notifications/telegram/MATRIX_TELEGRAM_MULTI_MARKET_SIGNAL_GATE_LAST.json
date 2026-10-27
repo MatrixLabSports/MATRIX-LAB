@@ -1,0 +1,243 @@
+{
+  "checkpoint_adjudication": {
+    "calibration_checkpoint_status": "OPENED_AND_MEASURED",
+    "market_promotion": "NOT_AUTOMATICALLY_AUTHORIZED",
+    "next_oos_block": {
+      "policy": "NEW_PROSPECTIVE_OOS_NO_PARAMETER_CHANGES",
+      "size": 1000
+    },
+    "real_money_decision": "NO_GO_KEEP_BLOCKED",
+    "reason": "FULL_GO_NO_GO_REQUIRES_PREREGISTERED_MARKET_RULES_PLUS_CLV_RISK_AND_EXECUTION_EVIDENCE"
+  },
+  "generated_at_utc": "2026-10-27T11:31:29+00:00",
+  "markets": [
+    {
+      "calibration_rows": 4000,
+      "explicit_signal_promotion": true,
+      "market": "OVER_2_5",
+      "quote_extraction_path_present": true,
+      "reason": "Explicit governed P_MATRIX signal-only promotion exists and Telegram has exact Over 2.5 quote/revalidation path.",
+      "signal_status": "SIGNAL_AUTHORIZED",
+      "source_evidence": "evidence/api_football/governance/over_2_5_p_matrix_promotion.json",
+      "telegram_signal_engine_present": true
+    },
+    {
+      "calibration_rows": 4000,
+      "explicit_signal_promotion": false,
+      "market": "UNDER_2_5",
+      "quote_extraction_path_present": false,
+      "reason": "4000-row calibration exists, but checkpoint explicitly forbids automatic market promotion; no dedicated Telegram quote/revalidation signal contract is certified.",
+      "signal_status": "RESEARCH_ONLY",
+      "source_evidence": "evidence/api_football/calibration_v2/CHECKPOINT_4000_MARKET_CALIBRATION_20261023.json",
+      "telegram_signal_engine_present": false
+    },
+    {
+      "calibration_rows": 4000,
+      "explicit_signal_promotion": false,
+      "market": "1X2",
+      "quote_extraction_path_present": false,
+      "reason": "4000-row calibration exists, but checkpoint explicitly forbids automatic market promotion; no dedicated Telegram quote/revalidation signal contract is certified.",
+      "signal_status": "RESEARCH_ONLY",
+      "source_evidence": "evidence/api_football/calibration_v2/CHECKPOINT_4000_MARKET_CALIBRATION_20261023.json",
+      "telegram_signal_engine_present": false
+    },
+    {
+      "calibration_rows": 4000,
+      "explicit_signal_promotion": false,
+      "market": "DOUBLE_CHANCE_1X",
+      "quote_extraction_path_present": false,
+      "reason": "4000-row calibration exists, but checkpoint explicitly forbids automatic market promotion; no dedicated Telegram quote/revalidation signal contract is certified.",
+      "signal_status": "RESEARCH_ONLY",
+      "source_evidence": "evidence/api_football/calibration_v2/CHECKPOINT_4000_MARKET_CALIBRATION_20261023.json",
+      "telegram_signal_engine_present": false
+    },
+    {
+      "calibration_rows": 4000,
+      "explicit_signal_promotion": false,
+      "market": "DOUBLE_CHANCE_X2",
+      "quote_extraction_path_present": false,
+      "reason": "4000-row calibration exists, but checkpoint explicitly forbids automatic market promotion; no dedicated Telegram quote/revalidation signal contract is certified.",
+      "signal_status": "RESEARCH_ONLY",
+      "source_evidence": "evidence/api_football/calibration_v2/CHECKPOINT_4000_MARKET_CALIBRATION_20261023.json",
+      "telegram_signal_engine_present": false
+    },
+    {
+      "calibration_rows": 4000,
+      "explicit_signal_promotion": false,
+      "market": "DOUBLE_CHANCE_12",
+      "quote_extraction_path_present": false,
+      "reason": "Closed: challenger not superior to Poisson at the governed checkpoint.",
+      "signal_status": "NO_GO",
+      "source_evidence": "evidence/api_football/calibration_v2/MATRIX_FOOTBALL_ALL_MARKETS_V2_MASTER_CERTIFICATION_20261004.json",
+      "telegram_signal_engine_present": false
+    },
+    {
+      "calibration_rows": null,
+      "explicit_signal_promotion": false,
+      "market": "BTTS",
+      "quote_extraction_path_present": false,
+      "reason": "BTTS V2 and V3 are formally NO_GO; a materially new challenger is required.",
+      "signal_status": "NO_GO",
+      "source_evidence": "evidence/api_football/governance/BTTS_V2_V3_NO_GO_20261003.json",
+      "telegram_signal_engine_present": false
+    },
+    {
+      "calibration_rows": null,
+      "explicit_signal_promotion": false,
+      "market": "CORNERS",
+      "quote_extraction_path_present": false,
+      "reason": "Historical OOS gate failed: FAILED_FINAL_50_OOS_GATE.",
+      "signal_status": "NO_GO",
+      "source_evidence": "evidence/api_football/governance/MATRIX_FOOTBALL_FAILED_MARKETS_V3_DECISION_20261003.json",
+      "telegram_signal_engine_present": false
+    },
+    {
+      "calibration_rows": null,
+      "explicit_signal_promotion": false,
+      "market": "TEAM_SHOTS_ON_TARGET",
+      "quote_extraction_path_present": false,
+      "reason": "Historical OOS gate failed: FAILED_FINAL_50_OOS_GATE.",
+      "signal_status": "NO_GO",
+      "source_evidence": "evidence/api_football/governance/MATRIX_FOOTBALL_FAILED_MARKETS_V3_DECISION_20261003.json",
+      "telegram_signal_engine_present": false
+    },
+    {
+      "calibration_rows": null,
+      "explicit_signal_promotion": false,
+      "market": "TEAM_GOALKEEPER_SAVES",
+      "quote_extraction_path_present": false,
+      "reason": "Historical OOS gate failed: FAILED_FINAL_50_OOS_GATE.",
+      "signal_status": "NO_GO",
+      "source_evidence": "evidence/api_football/governance/MATRIX_FOOTBALL_FAILED_MARKETS_V3_DECISION_20261003.json",
+      "telegram_signal_engine_present": false
+    },
+    {
+      "calibration_rows": null,
+      "explicit_signal_promotion": false,
+      "market": "TEAM_YELLOW_CARDS",
+      "quote_extraction_path_present": false,
+      "reason": "Historical OOS gate failed: FAILED_FINAL_50_OOS_GATE.",
+      "signal_status": "NO_GO",
+      "source_evidence": "evidence/api_football/governance/MATRIX_FOOTBALL_FAILED_MARKETS_V3_DECISION_20261003.json",
+      "telegram_signal_engine_present": false
+    },
+    {
+      "calibration_rows": null,
+      "explicit_signal_promotion": false,
+      "market": "TEAM_TOTAL_SHOTS_HOME",
+      "quote_extraction_path_present": false,
+      "reason": "Prospective research lane exists but is not signal-promoted; current state: ACTIVE_WAITING_CANONICAL_PREMATCH_LINE_AND_CURRENT_PIT_FEATURES.",
+      "signal_status": "RESEARCH_ONLY",
+      "source_evidence": "evidence/api_football/governance/MATRIX_FOOTBALL_MARKET_RESOLUTION_MASTER_20261004.json",
+      "telegram_signal_engine_present": false
+    },
+    {
+      "calibration_rows": null,
+      "explicit_signal_promotion": false,
+      "market": "TEAM_TOTAL_SHOTS_AWAY",
+      "quote_extraction_path_present": false,
+      "reason": "Prospective research lane exists but is not signal-promoted; current state: ACTIVE_WAITING_CANONICAL_PREMATCH_LINE_AND_CURRENT_PIT_FEATURES.",
+      "signal_status": "RESEARCH_ONLY",
+      "source_evidence": "evidence/api_football/governance/MATRIX_FOOTBALL_MARKET_RESOLUTION_MASTER_20261004.json",
+      "telegram_signal_engine_present": false
+    },
+    {
+      "calibration_rows": null,
+      "explicit_signal_promotion": false,
+      "market": "TEAM_FOULS_TOTAL",
+      "quote_extraction_path_present": false,
+      "reason": "Prospective research lane exists but is not signal-promoted; current state: ACTIVE_WAITING_CANONICAL_PREMATCH_LINE_AND_CURRENT_PIT_FEATURES.",
+      "signal_status": "RESEARCH_ONLY",
+      "source_evidence": "evidence/api_football/governance/MATRIX_FOOTBALL_MARKET_RESOLUTION_MASTER_20261004.json",
+      "telegram_signal_engine_present": false
+    },
+    {
+      "calibration_rows": 0,
+      "explicit_signal_promotion": false,
+      "market": "PLAYER_SHOTS_V3",
+      "quote_extraction_path_present": false,
+      "reason": "Prospective research lane exists but is not signal-promoted; current state: ACTIVE.",
+      "signal_status": "RESEARCH_ONLY",
+      "source_evidence": "evidence/api_football/governance/MATRIX_FOOTBALL_MARKET_RESOLUTION_MASTER_20261004.json",
+      "telegram_signal_engine_present": false
+    },
+    {
+      "calibration_rows": null,
+      "explicit_signal_promotion": false,
+      "market": "FIRST_HALF_TOTAL_GOALS_OVER_UNDER",
+      "quote_extraction_path_present": false,
+      "reason": "Period-goals lane is LAB-only; no signal promotion or execution quote contract exists.",
+      "signal_status": "LAB_ONLY",
+      "source_evidence": "evidence/api_football/period_goals_lab/MATRIX_PERIOD_GOALS_LAB_LAST.json",
+      "telegram_signal_engine_present": false
+    },
+    {
+      "calibration_rows": null,
+      "explicit_signal_promotion": false,
+      "market": "SECOND_HALF_TOTAL_GOALS_OVER_UNDER",
+      "quote_extraction_path_present": false,
+      "reason": "Period-goals lane is LAB-only; no signal promotion or execution quote contract exists.",
+      "signal_status": "LAB_ONLY",
+      "source_evidence": "evidence/api_football/period_goals_lab/MATRIX_PERIOD_GOALS_LAB_LAST.json",
+      "telegram_signal_engine_present": false
+    },
+    {
+      "calibration_rows": null,
+      "explicit_signal_promotion": false,
+      "market": "FIRST_HALF_TEAM_TOTAL_GOALS_HOME",
+      "quote_extraction_path_present": false,
+      "reason": "Period-goals lane is LAB-only; no signal promotion or execution quote contract exists.",
+      "signal_status": "LAB_ONLY",
+      "source_evidence": "evidence/api_football/period_goals_lab/MATRIX_PERIOD_GOALS_LAB_LAST.json",
+      "telegram_signal_engine_present": false
+    },
+    {
+      "calibration_rows": null,
+      "explicit_signal_promotion": false,
+      "market": "FIRST_HALF_TEAM_TOTAL_GOALS_AWAY",
+      "quote_extraction_path_present": false,
+      "reason": "Period-goals lane is LAB-only; no signal promotion or execution quote contract exists.",
+      "signal_status": "LAB_ONLY",
+      "source_evidence": "evidence/api_football/period_goals_lab/MATRIX_PERIOD_GOALS_LAB_LAST.json",
+      "telegram_signal_engine_present": false
+    },
+    {
+      "calibration_rows": null,
+      "explicit_signal_promotion": false,
+      "market": "SECOND_HALF_TEAM_TOTAL_GOALS_HOME",
+      "quote_extraction_path_present": false,
+      "reason": "Period-goals lane is LAB-only; no signal promotion or execution quote contract exists.",
+      "signal_status": "LAB_ONLY",
+      "source_evidence": "evidence/api_football/period_goals_lab/MATRIX_PERIOD_GOALS_LAB_LAST.json",
+      "telegram_signal_engine_present": false
+    },
+    {
+      "calibration_rows": null,
+      "explicit_signal_promotion": false,
+      "market": "SECOND_HALF_TEAM_TOTAL_GOALS_AWAY",
+      "quote_extraction_path_present": false,
+      "reason": "Period-goals lane is LAB-only; no signal promotion or execution quote contract exists.",
+      "signal_status": "LAB_ONLY",
+      "source_evidence": "evidence/api_football/period_goals_lab/MATRIX_PERIOD_GOALS_LAB_LAST.json",
+      "telegram_signal_engine_present": false
+    }
+  ],
+  "policy": {
+    "automatic_wagering": false,
+    "minimum_decimal_odds_exclusive": 1.5,
+    "odds_may_not_generate_p_matrix": true,
+    "real_money": "BLOCKED",
+    "signal_requires_explicit_market_promotion": true,
+    "signal_requires_market_specific_quote_path": true,
+    "signal_requires_positive_ev": true,
+    "silent_market_omission_forbidden": true
+  },
+  "schema": "MATRIX_TELEGRAM_MULTI_MARKET_SIGNAL_GATE_V1",
+  "status": "PASS",
+  "summary": {
+    "lab_only": 6,
+    "no_go": 6,
+    "research_only": 8,
+    "signal_authorized": 1
+  }
+}
