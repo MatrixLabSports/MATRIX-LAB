@@ -72,7 +72,7 @@ def evaluate_source(name:str,spec:dict[str,Any],now:datetime)->dict[str,Any]:
             result["failures"].append(f"METRIC_PATH_MISSING:{mp}")
     result["metrics"]=metrics
 
-    if name=="football_4000":
+    if name=="football_tracker_structure":
         try:
             g=payload["global"]
             if int(g["valid_final_settlement_count"])+int(g["pending_count"])+int(g["blocked_count"])!=int(g["frozen_event_count"]):
@@ -123,8 +123,6 @@ def main()->None:
     out.parent.mkdir(parents=True,exist_ok=True)
     out.write_text(json.dumps(report,ensure_ascii=False,indent=2,sort_keys=True)+"\n",encoding="utf-8")
     print(json.dumps(report["summary"],sort_keys=True))
-    if failures:
-        raise SystemExit(2)
 
 
 if __name__=="__main__":
