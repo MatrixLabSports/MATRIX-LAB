@@ -185,3 +185,44 @@ def test_api_football_exact_fixture_identity_prevents_false_not_covered():
     assert row["identity_match"]["score"]==1.0
     assert row["identity_match"]["provider_event_id"]=="999"
     assert row["identity_match"]["provider"]=="API-Football canonical fixture_id"
+
+
+def test_verified_loader_rejects_missing_required_identity_field(tmp_path:Path):
+    path=tmp_path/"attempts.jsonl"
+    row=build_attempt(
+      fixture_id="40",signal_key="identity-contract",
+      query_at_utc=datetime(2026,10,26,1,0,tzinfo=timezone.utc),
+      kickoff="2026-10-26T02:00:00+00:00",odds_diag=_diag(),api_diag={},
+      selected_offer=None,final_discard_reason="BLOCKED",run_token="r4")
+    append_attempt(path,row)
+    stored=path.read_text(encoding="utf-8")
+    data=__import__("json").loads(stored)
+    data["identity_match"].pop("provider_event_id")
+    body=dict(data)
+    body.pop("record_sha256",None)
+    import hashlib,json
+    canonical=lambda value: json.dumps(value,ensure_ascii=False,sort_keys=True,separators=(",",":"),allow_nan=False)
+    data["record_sha256"]=hashlib.sha256(canonical(body).encode("utf-8")).hexdigest()
+    path.write_text(canonical(data)+"\n",encoding="utf-8")
+    with pytest.raises(ValueError,match="QUOTE_ATTEMPT_IDENTITY_FIELDS_INCOMPLETE"):
+        load_verified(path)
+
+
+def test_verified_loader_rejects_terminal_independence_false(tmp_path:Path):
+    path=tmp_path/"attempts.jsonl"
+    row=build_attempt(
+      fixture_id="41",signal_key="terminal-contract",
+      query_at_utc=datetime(2026,10,26,1,0,tzinfo=timezone.utc),
+      kickoff="2026-10-26T02:00:00+00:00",odds_diag=_diag(),api_diag={},
+      selected_offer=None,final_discard_reason="BLOCKED",run_token="r5")
+    append_attempt(path,row)
+    data=__import__("json").loads(path.read_text(encoding="utf-8"))
+    data["terminal_state_independent"]=False
+    body=dict(data)
+    body.pop("record_sha256",None)
+    import hashlib,json
+    canonical=lambda value: json.dumps(value,ensure_ascii=False,sort_keys=True,separators=(",",":"),allow_nan=False)
+    data["record_sha256"]=hashlib.sha256(canonical(body).encode("utf-8")).hexdigest()
+    path.write_text(canonical(data)+"\n",encoding="utf-8")
+    with pytest.raises(ValueError,match="QUOTE_ATTEMPT_TERMINAL_INDEPENDENCE_INVALID"):
+        load_verified(path)
