@@ -1,0 +1,142 @@
+name: MATRIX Football Promotion Readiness Consolidated Gate
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "7,22,37,52 * * * *"
+  push:
+    branches:
+      - repair/cor09-world-pipeline
+    paths:
+      - tools/matrix_1x2_promotion_readiness_audit.py
+      - tools/matrix_under25_promotion_readiness_audit.py
+      - tools/matrix_double_chance_1x_promotion_readiness_audit.py
+      - tools/matrix_double_chance_x2_promotion_readiness_audit.py
+      - tools/telegram_multi_market_signal_gate.py
+      - .github/workflows/api-football-promotion-readiness-consolidated.yml
+      - .github/workflows/api-football-1x2-promotion-readiness.yml
+      - .github/workflows/api-football-under25-promotion-readiness.yml
+      - .github/workflows/api-football-double-chance-1x-promotion-readiness.yml
+      - .github/workflows/api-football-double-chance-x2-promotion-readiness.yml
+      - evidence/api_football/calibration_v2/OOS_4001_5000_STATE.json
+      - evidence/api_football/calibration_v2/lanes/1x2/state.json
+      - evidence/api_football/calibration_v2/lanes/under_2_5/state.json
+      - evidence/api_football/calibration_v2/lanes/double_chance_1x/state.json
+      - evidence/api_football/calibration_v2/lanes/double_chance_x2/state.json
+      - evidence/api_football/calibration_v2/CHECKPOINT_4000_MARKET_CALIBRATION_20261023.json
+
+permissions:
+  contents: write
+
+concurrency:
+  group: matrix-football-promotion-readiness-single-writer
+  cancel-in-progress: false
+
+jobs:
+  consolidate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    env:
+      REAL_MONEY: BLOCKED
+      AUTOMATIC_WAGERING: "false"
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: repair/cor09-world-pipeline
+          fetch-depth: 0
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Build all market readiness artifacts
+        run: |
+          set -euo pipefail
+          PYTHONPATH=. python -m tools.matrix_1x2_promotion_readiness_audit
+          PYTHONPATH=. python -m tools.matrix_under25_promotion_readiness_audit
+          PYTHONPATH=. python -m tools.matrix_double_chance_1x_promotion_readiness_audit
+          PYTHONPATH=. python -m tools.matrix_double_chance_x2_promotion_readiness_audit
+
+      - name: Rebuild canonical Telegram multi-market gate
+        run: PYTHONPATH=. python -m tools.telegram_multi_market_signal_gate
+
+      - name: Verify consolidated fail-closed contract
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          artifacts = {
+            "1X2": Path("evidence/api_football/governance/MATRIX_1X2_PROMOTION_READINESS_LAST.json"),
+            "UNDER_2_5": Path("evidence/api_football/governance/MATRIX_UNDER25_PROMOTION_READINESS_LAST.json"),
+            "DOUBLE_CHANCE_1X": Path("evidence/api_football/governance/MATRIX_DOUBLE_CHANCE_1X_PROMOTION_READINESS_LAST.json"),
+            "DOUBLE_CHANCE_X2": Path("evidence/api_football/governance/MATRIX_DOUBLE_CHANCE_X2_PROMOTION_READINESS_LAST.json"),
+          }
+
+          for market, path in artifacts.items():
+              j=json.loads(path.read_text(encoding="utf-8"))
+              assert j["market"]==market
+              assert j["governance"]["real_money"]=="BLOCKED"
+              assert j["governance"]["automatic_wagering"] is False
+              assert j["governance"]["odds_may_not_generate_probability"] is True
+              assert j["governance"]["p_matrix_must_exist_before_odds"] is True
+              assert j["governance"]["no_backfill"] is True
+              if not j["promotion_allowed"]:
+                  assert j["status"]=="BLOCKED_NOT_PROMOTABLE"
+                  assert j["signal_status"]=="RESEARCH_ONLY"
+                  assert j["blockers"]
+
+          gate=json.loads(Path("evidence/notifications/telegram/MATRIX_TELEGRAM_MULTI_MARKET_SIGNAL_GATE_LAST.json").read_text(encoding="utf-8"))
+          assert gate["status"]=="PASS"
+          assert gate["policy"]["real_money"]=="BLOCKED"
+          assert gate["policy"]["automatic_wagering"] is False
+          assert gate["policy"]["minimum_decimal_odds_exclusive"]==1.5
+          assert gate["policy"]["signal_requires_positive_ev"] is True
+          assert gate["policy"]["odds_may_not_generate_p_matrix"] is True
+
+          rows={x["market"]:x for x in gate["markets"]}
+          for market in artifacts:
+              assert market in rows
+              a=json.loads(artifacts[market].read_text(encoding="utf-8"))
+              if a["promotion_allowed"]:
+                  assert rows[market]["signal_status"]=="SIGNAL_AUTHORIZED"
+              else:
+                  assert rows[market]["signal_status"]=="RESEARCH_ONLY"
+
+          print(json.dumps({
+              "status":"PASS",
+              "markets":{m:json.loads(p.read_text())["status"] for m,p in artifacts.items()},
+              "gate_summary":gate["summary"],
+              "real_money":gate["policy"]["real_money"],
+          },sort_keys=True))
+          PY
+
+      - name: Persist readiness artifacts and canonical gate as single writer
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name matrix-promotion-readiness-single-writer
+          git config user.email matrix-promotion-readiness-single-writer@users.noreply.github.com
+          git add evidence/api_football/governance/MATRIX_1X2_PROMOTION_READINESS_LAST.json
+          git add evidence/api_football/governance/MATRIX_UNDER25_PROMOTION_READINESS_LAST.json
+          git add evidence/api_football/governance/MATRIX_DOUBLE_CHANCE_1X_PROMOTION_READINESS_LAST.json
+          git add evidence/api_football/governance/MATRIX_DOUBLE_CHANCE_X2_PROMOTION_READINESS_LAST.json
+          git add evidence/notifications/telegram/MATRIX_TELEGRAM_MULTI_MARKET_SIGNAL_GATE_LAST.json
+          if git diff --cached --quiet; then
+            echo "NO_PROMOTION_READINESS_CHANGE"
+            exit 0
+          fi
+          git commit -m "evidence(football): refresh consolidated promotion readiness"
+          for attempt in 1 2 3 4; do
+            git fetch origin repair/cor09-world-pipeline
+            if ! git rebase origin/repair/cor09-world-pipeline; then
+              git rebase --abort || true
+              sleep $((attempt*2))
+              continue
+            fi
+            if git push origin HEAD:repair/cor09-world-pipeline; then
+              exit 0
+            fi
+            sleep $((attempt*2))
+          done
+          exit 1
