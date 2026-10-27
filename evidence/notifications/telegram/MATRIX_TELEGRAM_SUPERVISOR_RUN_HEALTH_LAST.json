@@ -1,0 +1,74 @@
+{
+  "schema": "MATRIX_TELEGRAM_SUPERVISOR_RUN_HEALTH_V1",
+  "observed_at_utc": "2026-10-27T04:07:13+00:00",
+  "latest_green_signal_run": {
+    "run_id": 40447860754,
+    "run_number": 1250,
+    "workflow": "Telegram Señales Verdes MATRIX",
+    "conclusion": "success",
+    "started_at_utc": "2026-10-27T04:06:12+00:00",
+    "completed_at_utc": "2026-10-27T04:07:13+00:00",
+    "secrets_validation": "PASS",
+    "supervisor_step": "PASS",
+    "persistence_step": "PASS",
+    "physical_output": {
+      "football_candidates": 128,
+      "pre_send_passed": 0,
+      "pre_send_blocked": 75,
+      "pre_send_waiting_window": 53,
+      "quote_checks": 0,
+      "sent_now": 0,
+      "delivery_failures_now": 0,
+      "total_green_messages": 223,
+      "total_settlements": 187,
+      "paper_bankroll_current_cop": 4859500,
+      "real_money": "BLOCKED"
+    }
+  },
+  "supervisor_15m_recent_runs": [
+    {
+      "run_id": 40428941259,
+      "run_number": 111,
+      "conclusion": "failure",
+      "started_at_utc": "2026-10-27T00:50:43+00:00",
+      "supervisor_step": "PASS",
+      "watchdog": "PASS",
+      "persistence_step": "FAIL"
+    },
+    {
+      "run_id": 40406018618,
+      "run_number": 110,
+      "conclusion": "failure",
+      "started_at_utc": "2026-10-26T21:38:16+00:00",
+      "supervisor_step": "PASS",
+      "persistence_step": "FAIL",
+      "final_gate": "FAIL"
+    },
+    {
+      "run_id": 40365639539,
+      "run_number": 109,
+      "conclusion": "failure",
+      "started_at_utc": "2026-10-26T17:07:24+00:00",
+      "supervisor_step": "PASS",
+      "persistence_step": "FAIL",
+      "final_gate": "FAIL"
+    }
+  ],
+  "run_111_failure": {
+    "step": "Persistir evidencia completa del supervisor",
+    "exact_error": "error: cannot rebase: You have unstaged changes.",
+    "mechanism": "Generated quote telemetry files were left unstaged by the default-branch workflow contract before rebase.",
+    "effect": "The 15-minute supervisor job is marked failed after the signal engine and watchdog already ran.",
+    "direct_delivery_cause_for_latest_zero": false
+  },
+  "scheduler_contract_drift": {
+    "main_and_operational_workflow_equal": false,
+    "main_missing_stage_contract": [
+      "evidence/notifications/telegram/MATRIX_TELEGRAM_QUOTE_ATTEMPTS.jsonl",
+      "evidence/notifications/telegram/MATRIX_TELEGRAM_QUOTE_ATTEMPT_TELEMETRY_AUDIT_LAST.json"
+    ],
+    "schedule_definition_source": "default branch main",
+    "checkout_execution_branch": "repair/cor09-world-pipeline",
+    "severity": "CRITICAL_RELIABILITY_DEFECT"
+  }
+}
