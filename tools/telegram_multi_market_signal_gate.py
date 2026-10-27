@@ -41,12 +41,26 @@ def build()->dict[str,Any]:
         over.get("eligible_rows"),True,True,
         "evidence/api_football/governance/over_2_5_p_matrix_promotion.json")
 
-    for key,name in [("under_2_5","UNDER_2_5"),("double_chance_1x","DOUBLE_CHANCE_1X"),("double_chance_x2","DOUBLE_CHANCE_X2")]:
+    for key,name in [("double_chance_1x","DOUBLE_CHANCE_1X"),("double_chance_x2","DOUBLE_CHANCE_X2")]:
         row=checkpoint.get("markets",{}).get(key,{})
         add(name,"RESEARCH_ONLY",
             "4000-row calibration exists, but checkpoint explicitly forbids automatic market promotion; no dedicated Telegram quote/revalidation signal contract is certified.",
             row.get("eligible_rows"),False,False,
             "evidence/api_football/calibration_v2/CHECKPOINT_4000_MARKET_CALIBRATION_20261023.json")
+
+    under25=checkpoint.get("markets",{}).get("under_2_5",{})
+    under25_ready=under25_audit.get("status")=="PASS_PROMOTION_READY" and under25_audit.get("promotion_allowed") is True
+    if under25_ready:
+        add("UNDER_2_5","SIGNAL_AUTHORIZED",
+            "Dedicated fail-closed Under 2.5 readiness audit passed all OOS, P_MATRIX promotion, quote/revalidation and Telegram engine gates.",
+            under25.get("eligible_rows"),True,True,
+            "evidence/api_football/governance/MATRIX_UNDER25_PROMOTION_READINESS_LAST.json")
+    else:
+        blockers=under25_audit.get("blockers") or ["READINESS_AUDIT_NOT_YET_PERSISTED"]
+        add("UNDER_2_5","RESEARCH_ONLY",
+            "Fail-closed Under 2.5 promotion audit blocks signal authorization: "+",".join(blockers),
+            under25.get("eligible_rows"),False,False,
+            "evidence/api_football/governance/MATRIX_UNDER25_PROMOTION_READINESS_LAST.json")
 
     one_x_two=checkpoint.get("markets",{}).get("1x2",{})
     one_x_two_ready=one_x_two_audit.get("status")=="PASS_PROMOTION_READY" and one_x_two_audit.get("promotion_allowed") is True
