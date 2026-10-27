@@ -6,6 +6,14 @@ on:
   workflow_dispatch:
   schedule:
     - cron: "*/15 * * * *"
+  workflow_run:
+    workflows:
+      - "API-Football prospective FINAL-only settlement now"
+      - "MATRIX Tennis Three-Block Stagnation Audit"
+      - "MATRIX Live Tennis Cumulative Gate Reconcile"
+      - "Telegram MATRIX Supervisor cada 15 minutos"
+    types:
+      - completed
   push:
     branches:
       - repair/cor09-world-pipeline
