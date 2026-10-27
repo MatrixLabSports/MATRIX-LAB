@@ -341,11 +341,23 @@ def summarize_cumulative(rows:list[Mapping[str,Any]],minimum_target:int=50,maxim
     current=[x for x in rows if str(x.get("schema") or "")==SCHEMA]
     legacy=[x for x in rows if str(x.get("schema") or "") in LEGACY_SCHEMAS]
     core=_summary_core(current)
+    legacy_core=_summary_core(legacy)
     timing=_timing_disappearance(current)
     n=int(core["attempt_count"])
+    legacy_house_keys=set(LEGACY_AUTHORIZED)
+    legacy_diagnostic={
+        "attempt_count":int(legacy_core["attempt_count"]),
+        "book_seen_by_house":{k:v for k,v in legacy_core["book_seen_by_house"].items() if k in legacy_house_keys},
+        "totals_market_seen_by_house":{k:v for k,v in legacy_core["totals_market_seen_by_house"].items() if k in legacy_house_keys},
+        "exact_over25_coverage_by_house":{k:v for k,v in legacy_core["exact_over25_coverage_by_house"].items() if k in legacy_house_keys},
+        "all_three_without_exact_over25":legacy_core["all_three_without_exact_over25"],
+        "identity_problem_count":legacy_core["identity_problem_count"],
+        "interpretation":"HISTORICAL_THREE_BOOK_SCHEMA_ONLY_NOT_FULL_COLOMBIA_PORTFOLIO",
+    }
     return {
         "real_quote_attempts_total":n,
         "legacy_quote_attempts_preserved":len(legacy),
+        "legacy_three_book_diagnostic":legacy_diagnostic,
         "coverage_schema":SCHEMA,
         "coverage_house_count":len(AUTHORIZED),
         "coverage_houses":list(AUTHORIZED),
