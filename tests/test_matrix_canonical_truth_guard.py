@@ -42,7 +42,10 @@ def test_current_football_canonical_counter_reconciles():
     assert j["counter_precedence"]["target_4000"]=="global.valid_final_settlement_count"
 
 
-def test_all_registered_sources_fail_closed_after_30_minutes():
+def test_registry_separates_current_football_sync_from_structural_tracker():
     registry=json.loads(Path("evidence/governance/MATRIX_CANONICAL_SOURCE_REGISTRY.json").read_text())
-    assert registry["sources"]
-    assert all(int(spec["max_age_minutes"])==30 for spec in registry["sources"].values())
+    assert registry["sources"]["football_current_settlement"]["canonical_path"].endswith("sync_last.json")
+    assert registry["sources"]["football_current_settlement"]["timestamp_field"]=="synced_at_utc"
+    assert int(registry["sources"]["football_current_settlement"]["max_age_minutes"])==30
+    assert int(registry["sources"]["football_tracker_structure"]["max_age_minutes"])==1440
+    assert registry["response_contract"]["tracker_pending_blocked_must_not_be_inferred_from_sync"] is True
