@@ -70,36 +70,34 @@
     "schedule_definition_source": "default branch main",
     "checkout_execution_branch": "repair/cor09-world-pipeline",
     "severity": "HISTORICAL_CRITICAL_REPAIRED",
-    "current_status": "REPAIRED_VERIFIED_RUN_113"
+    "current_status": "REPAIRED_VERIFIED_RUN_113",
+    "repaired": true,
+    "current_main_and_operational_workflow_equal": true,
+    "current_workflow_sha": "98ac5e1097dc494d3c5bcbde871f28566cae848b"
   },
   "repair_verification": {
-    "status": "PASS_REPAIRED_AND_PHYSICALLY_VERIFIED",
-    "dedicated_supervisor_run": {
-      "run_id": 40448375337,
-      "run_number": 113,
-      "head_branch": "main",
-      "head_sha": "94dba40e000ceff89c029e3ac36b6c3d267bc6af",
-      "conclusion": "success",
-      "completed_at_utc": "2026-10-27T04:13:00+00:00",
-      "signal_engine": "PASS",
-      "committee": "PASS",
+    "verified_at_utc": "2026-10-27T04:07:13+00:00",
+    "workflow_run_id": 40448375337,
+    "workflow_run_number": 113,
+    "conclusion": "success",
+    "steps": {
+      "permanent_15m_contracts": "PASS",
+      "scheduler_source_contract": "PASS",
+      "signal_supervisor": "PASS",
+      "immutable_quote_telemetry_audit": "PASS",
+      "watchdog": "PASS",
+      "elite_committee": "PASS",
       "persistence": "PASS",
-      "evidence_push": "PASS",
       "final_monitoring_gate": "PASS"
     },
-    "green_signal_runtime_run": {
-      "run_id": 40448334443,
-      "run_number": 1253,
-      "head_branch": "main",
-      "head_sha": "165afac1bfdc0070f96c572efef1c2511b6af064",
-      "conclusion": "success",
-      "completed_at_utc": "2026-10-27T04:12:18+00:00",
-      "signal_engine": "PASS",
-      "committee": "PASS",
-      "persistence": "PASS"
-    },
-    "scheduler_contract_main_synced_with_operational": true,
-    "quote_telemetry_certification_in_persistence_allowlist": true,
-    "historical_persistence_regression_active": false
+    "persistence_rebase_regression_reproduced_after_fix": false,
+    "main_operational_workflow_same_sha": true,
+    "workflow_sha": "98ac5e1097dc494d3c5bcbde871f28566cae848b",
+    "historical_failed_runs_closed_as_root_cause_evidence": [
+      109,
+      110,
+      111
+    ],
+    "status": "REPAIR_PHYSICALLY_VERIFIED"
   }
 }
