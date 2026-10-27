@@ -1,0 +1,140 @@
+name: MATRIX Telegram Immutable Quote Telemetry Certification
+
+on:
+  push:
+    branches:
+      - repair/cor09-world-pipeline
+    paths:
+      - .github/workflows/telegram-quote-telemetry-certification.yml
+      - tools/telegram_quote_attempt_telemetry.py
+      - tools/telegram_quote_attempt_telemetry_audit.py
+      - tests/test_telegram_quote_attempt_telemetry.py
+      - tests/test_telegram_quote_attempt_telemetry_audit.py
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: telegram-quote-telemetry-certification
+  cancel-in-progress: false
+
+jobs:
+  certify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      REAL_MONEY: BLOCKED
+      AUTO_BETTING: DISABLED
+    steps:
+      - name: Checkout operative branch
+        uses: actions/checkout@v4
+        with:
+          ref: repair/cor09-world-pipeline
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install test dependency
+        run: python -m pip install pytest
+
+      - name: Run immutable telemetry tests
+        run: |
+          set -euo pipefail
+          PYTHONPATH=. python -m pytest -q \
+            tests/test_telegram_quote_attempt_telemetry.py \
+            tests/test_telegram_quote_attempt_telemetry_audit.py
+
+      - name: Build and verify physical audit
+        run: |
+          set -euo pipefail
+          test "$REAL_MONEY" = "BLOCKED"
+          test "$AUTO_BETTING" = "DISABLED"
+          PYTHONPATH=. python -m tools.telegram_quote_attempt_telemetry_audit
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          from tools.telegram_quote_attempt_telemetry import load_verified
+
+          ledger=Path("evidence/notifications/telegram/MATRIX_TELEGRAM_QUOTE_ATTEMPTS.jsonl")
+          audit_path=Path("evidence/notifications/telegram/MATRIX_TELEGRAM_QUOTE_ATTEMPT_TELEMETRY_AUDIT_LAST.json")
+          rows=load_verified(ledger)
+          audit=json.loads(audit_path.read_text(encoding="utf-8"))
+
+          assert audit["status"]=="PASS"
+          assert audit["immutable_hash_chain_verified"] is True
+          assert audit["first_terminal_state_independent"] is True
+          assert audit["schema_evolution"]["current_schema"]=="MATRIX_TELEGRAM_QUOTE_ATTEMPT_V2"
+          assert "MATRIX_TELEGRAM_QUOTE_ATTEMPT_V1" in audit["schema_evolution"]["legacy_schemas_preserved_without_rewrite"]
+          assert audit["schema_evolution"]["mixed_version_hash_chain_supported"] is True
+          assert audit["schema_evolution"]["historical_rows_rewritten"] is False
+          assert audit["required_field_contract"]["all_rows_schema_validated"] is True
+          assert "provider_event_id" in audit["required_field_contract"]["identity_fields"]
+          assert "run_token" in audit["required_field_contract"]["top_level_fields"]
+          assert audit["reporting_scope_contract"]["LIVE_THIS_RUN"]["historical_terminal_states_included"] is False
+          assert audit["reporting_scope_contract"]["TERMINAL_HISTORICAL"]["may_not_overwrite_immutable_attempt_rows"] is True
+          assert audit["reporting_scope_contract"]["legacy_combined_counts_must_not_be_interpreted_as_live_coverage"] is True
+          assert audit["exact_line_policy"]["required_valid_execution_line"]==2.5
+          assert audit["exact_line_policy"]["nearby_lines_never_substitute_for_2_5"] is True
+          assert audit["protections"]["append_only"] is True
+          assert audit["protections"]["automatic_wagering"] is False
+          assert audit["protections"]["real_money"]=="BLOCKED"
+
+          schemas={}
+          for row in rows:
+              schemas[row["schema"]]=schemas.get(row["schema"],0)+1
+
+          cert={
+              "schema":"MATRIX_TELEGRAM_QUOTE_TELEMETRY_CERTIFICATION_V1",
+              "status":"PASS",
+              "source_ledger":str(ledger),
+              "audit_path":str(audit_path),
+              "verified_row_count":len(rows),
+              "schema_counts":schemas,
+              "immutable_hash_chain_verified":True,
+              "first_terminal_state_independent":True,
+              "v1_preserved_without_rewrite":True,
+              "v2_full_contract_enforced":True,
+              "live_this_run_separated_from_terminal_historical":True,
+              "exact_over_2_5_required":True,
+              "nearby_2_25_2_75_diagnostic_only":True,
+              "synthetic_rows_added":False,
+              "automatic_wagering":False,
+              "real_money":"BLOCKED",
+              "sample_gate_status":audit["sample"]["sample_gate_status"],
+              "real_quote_attempts_total":audit["sample"]["real_quote_attempts_total"],
+              "remaining_to_minimum_50":audit["sample"]["remaining_to_minimum"],
+          }
+          out=Path("evidence/notifications/telegram/MATRIX_TELEGRAM_QUOTE_TELEMETRY_CERTIFICATION_LAST.json")
+          out.write_text(json.dumps(cert,indent=2,sort_keys=True,ensure_ascii=False)+"\n",encoding="utf-8")
+          print(json.dumps(cert,sort_keys=True))
+          PY
+
+      - name: Persist physical certification evidence
+        run: |
+          set -euo pipefail
+          git config user.name matrix-telegram-telemetry-certifier
+          git config user.email matrix-telegram-telemetry-certifier@users.noreply.github.com
+          git add \
+            evidence/notifications/telegram/MATRIX_TELEGRAM_QUOTE_ATTEMPT_TELEMETRY_AUDIT_LAST.json \
+            evidence/notifications/telegram/MATRIX_TELEGRAM_QUOTE_TELEMETRY_CERTIFICATION_LAST.json
+          if git diff --cached --quiet; then
+            echo "CERTIFICATION_EVIDENCE_ALREADY_CURRENT"
+            exit 0
+          fi
+          git commit -m "evidence(telegram): certify immutable quote telemetry"
+          for attempt in 1 2 3 4; do
+            git fetch origin repair/cor09-world-pipeline
+            if ! git rebase origin/repair/cor09-world-pipeline; then
+              git rebase --abort || true
+              exit 1
+            fi
+            if git push origin HEAD:repair/cor09-world-pipeline; then
+              exit 0
+            fi
+            sleep $((attempt*2))
+          done
+          exit 1
