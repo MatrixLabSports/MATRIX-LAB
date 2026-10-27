@@ -11,7 +11,9 @@ OUT = ROOT / "governance/MATRIX_1X2_PROMOTION_READINESS_LAST.json"
 CHECKPOINT = ROOT / "calibration_v2/CHECKPOINT_4000_MARKET_CALIBRATION_20261023.json"
 OOS_STATE = ROOT / "calibration_v2/OOS_4001_5000_STATE.json"
 LANE_STATE = ROOT / "calibration_v2/lanes/1x2/state.json"
-MULTI_GATE = Path("evidence/notifications/telegram/MATRIX_TELEGRAM_MULTI_MARKET_SIGNAL_GATE_LAST.json")
+P_MATRIX_PROMOTION = ROOT / "governance/1x2_p_matrix_promotion.json"
+QUOTE_CONTRACT = ROOT / "governance/1x2_execution_quote_contract.json"
+TELEGRAM_ENGINE = Path("tools/telegram_1x2_signal_engine.py")
 
 
 def load(path: Path) -> dict[str, Any]:
@@ -107,7 +109,9 @@ def build() -> dict[str, Any]:
             "checkpoint": str(CHECKPOINT),
             "oos_state": str(OOS_STATE),
             "lane_state": str(LANE_STATE),
-            "multi_market_signal_gate": str(MULTI_GATE),
+            "p_matrix_promotion": str(P_MATRIX_PROMOTION),
+            "quote_contract": str(QUOTE_CONTRACT),
+            "telegram_engine": str(TELEGRAM_ENGINE),
         },
     }
 
