@@ -55,7 +55,8 @@ jobs:
             tests/test_telegram_paper_bankroll.py \
             tests/test_monitoring_scheduler_contracts.py \
             tests/test_telegram_quote_attempt_telemetry.py tests/test_telegram_quote_attempt_telemetry_audit.py \
-            tests/test_telegram_elite_committee_audit.py
+            tests/test_telegram_elite_committee_audit.py \
+            tests/test_telegram_multi_market_signal_gate.py
 
       - name: Verify scheduler source contract on default branch
         shell: bash
@@ -80,6 +81,9 @@ jobs:
               "MATRIX_TELEGRAM_QUOTE_TELEMETRY_CERTIFICATION_LAST.json",
               "MATRIX_TELEGRAM_ELITE_COMMITTEE_AUDIT_LAST.json",
               "MATRIX_TELEGRAM_FINAL_WINDOW_READINESS_LAST.json",
+              "MATRIX_TELEGRAM_MULTI_MARKET_SIGNAL_GATE_LAST.json",
+              "python -m tools.telegram_multi_market_signal_gate",
+              "tests/test_telegram_multi_market_signal_gate.py",
               "python -m tools.telegram_final_window_readiness",
               "tests/test_telegram_final_window_readiness.py",
               "tests/test_telegram_elite_committee_audit.py",
@@ -120,6 +124,22 @@ jobs:
           test -n "$API_FOOTBALL_KEY"
           test -n "$ODDS_API_NET_KEY"
           echo "TELEGRAM_15M_REQUIRED_SECRETS_PRESENT=PASS"
+
+      - name: Build multi-market signal eligibility gate
+        shell: bash
+        run: |
+          set -euo pipefail
+          PYTHONPATH=. python -m tools.telegram_multi_market_signal_gate
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          j=json.loads(Path("evidence/notifications/telegram/MATRIX_TELEGRAM_MULTI_MARKET_SIGNAL_GATE_LAST.json").read_text(encoding="utf-8"))
+          assert j["status"]=="PASS"
+          assert j["policy"]["silent_market_omission_forbidden"] is True
+          assert j["policy"]["automatic_wagering"] is False
+          assert j["policy"]["real_money"]=="BLOCKED"
+          print(json.dumps(j["summary"],sort_keys=True))
+          PY
 
       - name: Ejecutar supervisor Telegram con recuperación multifuente
         env:
@@ -227,6 +247,7 @@ jobs:
             evidence/notifications/telegram/MATRIX_TELEGRAM_QUOTE_TELEMETRY_CERTIFICATION_LAST.json
             evidence/notifications/telegram/MATRIX_TELEGRAM_ELITE_COMMITTEE_AUDIT_LAST.json
             evidence/notifications/telegram/MATRIX_TELEGRAM_FINAL_WINDOW_READINESS_LAST.json
+            evidence/notifications/telegram/MATRIX_TELEGRAM_MULTI_MARKET_SIGNAL_GATE_LAST.json
           )
           for file in "${allowed[@]}"; do
             if [ -e "$file" ]; then
@@ -250,7 +271,8 @@ jobs:
               evidence/notifications/telegram/MATRIX_TELEGRAM_QUOTE_ATTEMPT_TELEMETRY_AUDIT_LAST.json|\
               evidence/notifications/telegram/MATRIX_TELEGRAM_QUOTE_TELEMETRY_CERTIFICATION_LAST.json|\
               evidence/notifications/telegram/MATRIX_TELEGRAM_ELITE_COMMITTEE_AUDIT_LAST.json|\
-              evidence/notifications/telegram/MATRIX_TELEGRAM_FINAL_WINDOW_READINESS_LAST.json)
+              evidence/notifications/telegram/MATRIX_TELEGRAM_FINAL_WINDOW_READINESS_LAST.json|\
+              evidence/notifications/telegram/MATRIX_TELEGRAM_MULTI_MARKET_SIGNAL_GATE_LAST.json)
                 git add "$file"
                 ;;
               *)
@@ -293,7 +315,8 @@ jobs:
                   evidence/notifications/telegram/MATRIX_TELEGRAM_QUOTE_ATTEMPT_TELEMETRY_AUDIT_LAST.json|\
                   evidence/notifications/telegram/MATRIX_TELEGRAM_QUOTE_TELEMETRY_CERTIFICATION_LAST.json|\
                   evidence/notifications/telegram/MATRIX_TELEGRAM_ELITE_COMMITTEE_AUDIT_LAST.json|\
-                  evidence/notifications/telegram/MATRIX_TELEGRAM_FINAL_WINDOW_READINESS_LAST.json)
+                  evidence/notifications/telegram/MATRIX_TELEGRAM_FINAL_WINDOW_READINESS_LAST.json|\
+                  evidence/notifications/telegram/MATRIX_TELEGRAM_MULTI_MARKET_SIGNAL_GATE_LAST.json)
                     git checkout --theirs -- "$file"
                     git add "$file"
                     ;;
