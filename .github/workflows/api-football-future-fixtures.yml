@@ -12,13 +12,14 @@ on:
       - repair/cor09-world-pipeline
     paths:
       - evidence/calendar_reconciliation/MATRIX_FOOTBALL_WORLD_CALENDAR_RECONCILIATION_LAST.json
+      - .github/workflows/api-football-future-fixtures.yml
 
 permissions:
   contents: write
 
 concurrency:
-  group: api-football-governed-future-fixture-capture
-  cancel-in-progress: false
+  group: api-football-governed-future-fixture-capture-${{ github.event_name }}
+  cancel-in-progress: ${{ github.event_name == 'push' }}
 
 jobs:
   capture:
