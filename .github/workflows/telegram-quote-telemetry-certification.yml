@@ -88,7 +88,7 @@ jobs:
           assert audit["status"]=="PASS"
           assert audit["immutable_hash_chain_verified"] is True
           assert audit["first_terminal_state_independent"] is True
-          assert audit["schema_evolution"]["current_schema"]=="MATRIX_TELEGRAM_QUOTE_ATTEMPT_V2"
+          assert audit["schema_evolution"]["current_schema"]=="MATRIX_TELEGRAM_QUOTE_ATTEMPT_V3"
           assert "MATRIX_TELEGRAM_QUOTE_ATTEMPT_V1" in audit["schema_evolution"]["legacy_schemas_preserved_without_rewrite"]
           assert audit["schema_evolution"]["mixed_version_hash_chain_supported"] is True
           assert audit["schema_evolution"]["historical_rows_rewritten"] is False
@@ -104,16 +104,16 @@ jobs:
           assert audit["protections"]["automatic_wagering"] is False
           assert audit["protections"]["real_money"]=="BLOCKED"
 
-          assert cert["schema"]=="MATRIX_TELEGRAM_QUOTE_TELEMETRY_CERTIFICATION_V2"
+          assert cert["schema"]=="MATRIX_TELEGRAM_QUOTE_TELEMETRY_CERTIFICATION_V3"
           assert cert["status"]=="PASS"
           assert cert["verified_row_count"]==len(rows)
           assert cert["real_quote_attempts_total"]==audit["sample"]["real_quote_attempts_total"]
           assert cert["remaining_to_minimum_50"]==audit["sample"]["remaining_to_minimum"]
           assert cert["immutable_hash_chain_verified"] is True
-          assert cert["first_v2_row_present"] is True
-          assert cert["first_v2_chain_bridge_verified"] is True
+          assert cert["first_current_schema_row_present"] is True
+          assert cert["first_current_schema_chain_bridge_verified"] is True
           assert cert["no_legacy_rows_after_first_v2"] is True
-          assert cert["v2_real_row_count"]>=1
+          assert cert["current_schema_real_row_count"]>=1
           assert cert["synthetic_rows_added"] is False
           assert cert["automatic_wagering"] is False
           assert cert["real_money"]=="BLOCKED"
@@ -122,8 +122,8 @@ jobs:
               "status":"PASS",
               "schema":cert["schema"],
               "verified_row_count":cert["verified_row_count"],
-              "v2_real_row_count":cert["v2_real_row_count"],
-              "first_v2_chain_bridge_verified":cert["first_v2_chain_bridge_verified"],
+              "current_schema_real_row_count":cert["current_schema_real_row_count"],
+              "first_current_schema_chain_bridge_verified":cert["first_current_schema_chain_bridge_verified"],
               "real_quote_attempts_total":cert["real_quote_attempts_total"],
               "remaining_to_minimum_50":cert["remaining_to_minimum_50"],
               "real_money":cert["real_money"],
