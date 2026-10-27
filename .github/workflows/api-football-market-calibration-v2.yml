@@ -15,9 +15,13 @@ on:
       - "tools/api_football_market_calibration_v2_checkpoint_200.py"
       - "tools/api_football_over25_forward_validation_100.py"
       - "tools/api_football_over25_forward_validation_1444_1544.py"
+      - "tools/matrix_football_oos_4001_5000_refresh.py"
+      - "tools/matrix_football_signal_market_eligibility.py"
       - "tests/test_api_football_market_calibration_v2.py"
       - "tests/test_api_football_over25_forward_validation_100.py"
       - "tests/test_api_football_over25_forward_validation_1444_1544.py"
+      - "tests/test_matrix_football_oos_4001_5000_refresh.py"
+      - "tests/test_matrix_football_signal_market_eligibility.py"
       - "evidence/api_football/calibration_v2/OVER25_FORWARD_VALIDATION_PROTOCOL_1444_1544.json"
       - ".github/workflows/api-football-market-calibration-v2.yml"
   workflow_dispatch:
@@ -56,6 +60,36 @@ jobs:
 
       - name: Sync V2 market ledgers
         run: python tools/api_football_market_calibration_v2_sync.py
+
+      - name: Refresh physical OOS 4001 to 5000 and signal eligibility
+        shell: bash
+        run: |
+          set -euo pipefail
+          PYTHONPATH=. python -m pytest -q             tests/test_matrix_football_oos_4001_5000_refresh.py             tests/test_matrix_football_signal_market_eligibility.py
+          PYTHONPATH=. python -m tools.matrix_football_oos_4001_5000_refresh
+          PYTHONPATH=. python -m tools.matrix_football_signal_market_eligibility
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          oos=json.loads(Path("evidence/api_football/calibration_v2/OOS_4001_5000_STATE.json").read_text())
+          reg=json.loads(Path("evidence/api_football/governance/MATRIX_FOOTBALL_SIGNAL_MARKET_ELIGIBILITY_LAST.json").read_text())
+          assert oos["current_oos_observations"] == oos["oos_cohort"]["current_unique_fixture_ids"]
+          assert oos["remaining_to_1000"] == 1000-oos["current_oos_observations"]
+          assert oos["metrics_opened"] is False
+          assert reg["status"] == "PASS"
+          assert reg["signal_eligible_markets"] == ["OVER_2_5"]
+          assert reg["markets"]["1X2"]["oos_progress"] == oos["current_oos_observations"]
+          assert reg["markets"]["UNDER_2_5"]["oos_remaining"] == oos["remaining_to_1000"]
+          assert reg["markets"]["FIRST_HALF_GOALS"]["signal_eligible"] is False
+          assert reg["markets"]["SECOND_HALF_GOALS"]["signal_eligible"] is False
+          assert reg["protections"]["real_money"] == "BLOCKED"
+          print(json.dumps({
+            "status":"PASS",
+            "oos":oos["current_oos_observations"],
+            "remaining":oos["remaining_to_1000"],
+            "signal_eligible_markets":reg["signal_eligible_markets"],
+          },sort_keys=True))
+          PY
 
       - name: Verify immutable closed fixed-prefix checkpoint 200
         shell: bash
@@ -214,6 +248,8 @@ jobs:
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add \
             evidence/api_football/calibration_v2/lanes \
+            evidence/api_football/calibration_v2/OOS_4001_5000_STATE.json \
+            evidence/api_football/governance/MATRIX_FOOTBALL_SIGNAL_MARKET_ELIGIBILITY_LAST.json \
             evidence/api_football/calibration_v2/OVER25_FORWARD_VALIDATION_1444_1544_STATE.json
           if [ -f evidence/api_football/calibration_v2/OVER25_FORWARD_VALIDATION_1444_1544_RESULT.json ]; then
             git add evidence/api_football/calibration_v2/OVER25_FORWARD_VALIDATION_1444_1544_RESULT.json
