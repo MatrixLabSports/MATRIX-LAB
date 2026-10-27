@@ -11,6 +11,11 @@ on:
       - tests/test_telegram_quote_attempt_telemetry.py
       - tests/test_telegram_quote_attempt_telemetry_audit.py
   workflow_dispatch:
+  workflow_run:
+    workflows:
+      - "Telegram Señales Verdes MATRIX"
+    types:
+      - completed
 
 permissions:
   contents: write
@@ -21,6 +26,9 @@ concurrency:
 
 jobs:
   certify:
+    if: >
+      github.event_name != 'workflow_run' ||
+      github.event.workflow_run.conclusion == 'success'
     runs-on: ubuntu-latest
     timeout-minutes: 10
     env:
