@@ -1,16 +1,17 @@
 {
   "checks": {
     "clay": {
-      "age_minutes": 203.43,
+      "age_minutes": 13.26,
       "latest_conclusion": "success",
-      "latest_run_id": 40408460466,
+      "latest_event": "schedule",
+      "latest_run_id": 40432581720,
       "latest_status": "completed",
-      "reason": "LATEST_RUN_STALE",
-      "status": "FAIL",
+      "reason": "RECENT_RUN_PRESENT",
+      "status": "PASS",
       "workflow": "tennis-clay-daily-prospective.yml"
     },
     "hard": {
-      "age_minutes": 6.76,
+      "age_minutes": 27.06,
       "latest_conclusion": "failure",
       "latest_run_id": 40431218759,
       "latest_status": "completed",
@@ -19,19 +20,18 @@
       "workflow": "tennis-hard-governed-day-resolution.yml"
     },
     "live": {
-      "age_minutes": 17.15,
+      "age_minutes": 37.44,
       "latest_conclusion": "success",
-      "latest_event": "schedule",
       "latest_run_id": 40430152301,
       "latest_status": "completed",
-      "reason": "RECENT_RUN_PRESENT",
-      "status": "PASS",
+      "reason": "LATEST_RUN_STALE",
+      "status": "FAIL",
       "workflow": "live-tennis-cumulative-gate-reconcile.yml"
     }
   },
   "failures": [
     {
-      "age_minutes": 6.76,
+      "age_minutes": 27.06,
       "lane": "hard",
       "latest_conclusion": "failure",
       "latest_run_id": 40431218759,
@@ -41,17 +41,17 @@
       "workflow": "tennis-hard-governed-day-resolution.yml"
     },
     {
-      "age_minutes": 203.43,
-      "lane": "clay",
+      "age_minutes": 37.44,
+      "lane": "live",
       "latest_conclusion": "success",
-      "latest_run_id": 40408460466,
+      "latest_run_id": 40430152301,
       "latest_status": "completed",
       "reason": "LATEST_RUN_STALE",
       "status": "FAIL",
-      "workflow": "tennis-clay-daily-prospective.yml"
+      "workflow": "live-tennis-cumulative-gate-reconcile.yml"
     }
   ],
-  "generated_at_utc": "2026-10-27T01:19:29.734739+00:00",
+  "generated_at_utc": "2026-10-27T01:39:47.465220+00:00",
   "policy": {
     "default_branch_scheduler_required": true,
     "expected_cadence_minutes": 15,
