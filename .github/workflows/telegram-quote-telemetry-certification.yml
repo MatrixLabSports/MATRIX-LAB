@@ -79,8 +79,11 @@ jobs:
 
           ledger=Path("evidence/notifications/telegram/MATRIX_TELEGRAM_QUOTE_ATTEMPTS.jsonl")
           audit_path=Path("evidence/notifications/telegram/MATRIX_TELEGRAM_QUOTE_ATTEMPT_TELEMETRY_AUDIT_LAST.json")
+          cert_path=Path("evidence/notifications/telegram/MATRIX_TELEGRAM_QUOTE_TELEMETRY_CERTIFICATION_LAST.json")
+
           rows=load_verified(ledger)
           audit=json.loads(audit_path.read_text(encoding="utf-8"))
+          cert=json.loads(cert_path.read_text(encoding="utf-8"))
 
           assert audit["status"]=="PASS"
           assert audit["immutable_hash_chain_verified"] is True
@@ -101,34 +104,30 @@ jobs:
           assert audit["protections"]["automatic_wagering"] is False
           assert audit["protections"]["real_money"]=="BLOCKED"
 
-          schemas={}
-          for row in rows:
-              schemas[row["schema"]]=schemas.get(row["schema"],0)+1
+          assert cert["schema"]=="MATRIX_TELEGRAM_QUOTE_TELEMETRY_CERTIFICATION_V2"
+          assert cert["status"]=="PASS"
+          assert cert["verified_row_count"]==len(rows)
+          assert cert["real_quote_attempts_total"]==audit["sample"]["real_quote_attempts_total"]
+          assert cert["remaining_to_minimum_50"]==audit["sample"]["remaining_to_minimum"]
+          assert cert["immutable_hash_chain_verified"] is True
+          assert cert["first_v2_row_present"] is True
+          assert cert["first_v2_chain_bridge_verified"] is True
+          assert cert["no_legacy_rows_after_first_v2"] is True
+          assert cert["v2_real_row_count"]>=1
+          assert cert["synthetic_rows_added"] is False
+          assert cert["automatic_wagering"] is False
+          assert cert["real_money"]=="BLOCKED"
 
-          cert={
-              "schema":"MATRIX_TELEGRAM_QUOTE_TELEMETRY_CERTIFICATION_V1",
+          print(json.dumps({
               "status":"PASS",
-              "source_ledger":str(ledger),
-              "audit_path":str(audit_path),
-              "verified_row_count":len(rows),
-              "schema_counts":schemas,
-              "immutable_hash_chain_verified":True,
-              "first_terminal_state_independent":True,
-              "v1_preserved_without_rewrite":True,
-              "v2_full_contract_enforced":True,
-              "live_this_run_separated_from_terminal_historical":True,
-              "exact_over_2_5_required":True,
-              "nearby_2_25_2_75_diagnostic_only":True,
-              "synthetic_rows_added":False,
-              "automatic_wagering":False,
-              "real_money":"BLOCKED",
-              "sample_gate_status":audit["sample"]["sample_gate_status"],
-              "real_quote_attempts_total":audit["sample"]["real_quote_attempts_total"],
-              "remaining_to_minimum_50":audit["sample"]["remaining_to_minimum"],
-          }
-          out=Path("evidence/notifications/telegram/MATRIX_TELEGRAM_QUOTE_TELEMETRY_CERTIFICATION_LAST.json")
-          out.write_text(json.dumps(cert,indent=2,sort_keys=True,ensure_ascii=False)+"\n",encoding="utf-8")
-          print(json.dumps(cert,sort_keys=True))
+              "schema":cert["schema"],
+              "verified_row_count":cert["verified_row_count"],
+              "v2_real_row_count":cert["v2_real_row_count"],
+              "first_v2_chain_bridge_verified":cert["first_v2_chain_bridge_verified"],
+              "real_quote_attempts_total":cert["real_quote_attempts_total"],
+              "remaining_to_minimum_50":cert["remaining_to_minimum_50"],
+              "real_money":cert["real_money"],
+          },sort_keys=True))
           PY
 
       - name: Certification completed
