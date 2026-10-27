@@ -11,6 +11,13 @@ GENESIS="0"*64
 AUTHORIZED=("betano","betplay","rushbet")
 IDENTITY_STATES={"MATCHED","LOW_SCORE","AMBIGUOUS","NOT_COVERED"}
 REQUIRED_HOUSE_FIELDS={"seen","totals_market_seen","available_lines","nearby_lines_2_25_2_75","over_2_5_seen","exact_over_2_5_odds"}
+REQUIRED_IDENTITY_FIELDS={"state","score","provider_event_id","provider"}
+REQUIRED_ATTEMPT_FIELDS=(
+    "fixture_id","signal_key","run_token","query_at_utc","kickoff_utc","seconds_to_kickoff",
+    "identity_match","houses","totals_market_seen_any_authorized","exact_lines_available_any_authorized",
+    "over_2_5_seen_any_authorized","exact_over_2_5_odds_by_house","final_discard_reason",
+    "evidence_sha256","evidence_snapshot","terminal_state_independent","automatic_wagering","real_money",
+)
 
 
 def _canonical(value:Any)->str:
@@ -39,10 +46,7 @@ def _load(path:Path)->list[dict[str,Any]]:
         attempt_id=str(row.get("attempt_id") or "")
         if not attempt_id or attempt_id in seen: raise ValueError(f"QUOTE_ATTEMPT_DUPLICATE_OR_MISSING_ID:{n}")
         if row.get("previous_record_sha256")!=prev: raise ValueError(f"QUOTE_ATTEMPT_CHAIN_BROKEN:{n}")
-        for field in ("fixture_id","query_at_utc","kickoff_utc","seconds_to_kickoff","identity_match","houses",
-                      "totals_market_seen_any_authorized","exact_lines_available_any_authorized",
-                      "over_2_5_seen_any_authorized","exact_over_2_5_odds_by_house",
-                      "final_discard_reason","evidence_sha256","evidence_snapshot"):
+        for field in REQUIRED_ATTEMPT_FIELDS:
             if field not in row:
                 raise ValueError(f"QUOTE_ATTEMPT_REQUIRED_FIELD_MISSING:{n}:{field}")
         _utc(row["query_at_utc"]); _utc(row["kickoff_utc"])
@@ -51,6 +55,8 @@ def _load(path:Path)->list[dict[str,Any]]:
         ident=row.get("identity_match")
         if not isinstance(ident,Mapping) or ident.get("state") not in IDENTITY_STATES:
             raise ValueError(f"QUOTE_ATTEMPT_IDENTITY_INVALID:{n}")
+        if REQUIRED_IDENTITY_FIELDS-set(ident):
+            raise ValueError(f"QUOTE_ATTEMPT_IDENTITY_FIELDS_INCOMPLETE:{n}")
         houses=row.get("houses")
         if not isinstance(houses,Mapping) or set(AUTHORIZED)-set(houses):
             raise ValueError(f"QUOTE_ATTEMPT_HOUSES_INCOMPLETE:{n}")
@@ -63,6 +69,8 @@ def _load(path:Path)->list[dict[str,Any]]:
             raise ValueError(f"QUOTE_ATTEMPT_EVIDENCE_SHA_MISMATCH:{n}")
         if "first_terminal_state" in row:
             raise ValueError(f"QUOTE_ATTEMPT_MUST_BE_INDEPENDENT_OF_TERMINAL_STATE:{n}")
+        if row.get("terminal_state_independent") is not True:
+            raise ValueError(f"QUOTE_ATTEMPT_TERMINAL_INDEPENDENCE_INVALID:{n}")
         if row.get("automatic_wagering") is not False or row.get("real_money")!="BLOCKED":
             raise ValueError(f"QUOTE_ATTEMPT_SAFETY_INVALID:{n}")
         body=dict(row); record_sha=body.pop("record_sha256",None)
