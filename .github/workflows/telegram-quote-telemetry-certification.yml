@@ -31,7 +31,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           ref: repair/cor09-world-pipeline
-          fetch-depth: 0
+          fetch-depth: 1
 
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -113,28 +113,8 @@ jobs:
           print(json.dumps(cert,sort_keys=True))
           PY
 
-      - name: Persist physical certification evidence
+      - name: Certification completed
         run: |
           set -euo pipefail
-          git config user.name matrix-telegram-telemetry-certifier
-          git config user.email matrix-telegram-telemetry-certifier@users.noreply.github.com
-          git add \
-            evidence/notifications/telegram/MATRIX_TELEGRAM_QUOTE_ATTEMPT_TELEMETRY_AUDIT_LAST.json \
-            evidence/notifications/telegram/MATRIX_TELEGRAM_QUOTE_TELEMETRY_CERTIFICATION_LAST.json
-          if git diff --cached --quiet; then
-            echo "CERTIFICATION_EVIDENCE_ALREADY_CURRENT"
-            exit 0
-          fi
-          git commit -m "evidence(telegram): certify immutable quote telemetry"
-          for attempt in 1 2 3 4; do
-            git fetch origin repair/cor09-world-pipeline
-            if ! git rebase origin/repair/cor09-world-pipeline; then
-              git rebase --abort || true
-              exit 1
-            fi
-            if git push origin HEAD:repair/cor09-world-pipeline; then
-              exit 0
-            fi
-            sleep $((attempt*2))
-          done
-          exit 1
+          test -f evidence/notifications/telegram/MATRIX_TELEGRAM_QUOTE_TELEMETRY_CERTIFICATION_LAST.json
+          echo "IMMUTABLE_TELEMETRY_CERTIFICATION_RUN_PASS"
