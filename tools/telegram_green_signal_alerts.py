@@ -616,25 +616,66 @@ def odds_api_net_exact_over25_offer(
     home = str(((row.get("teams") or {}).get("home") or {}).get("name") or "")
     away = str(((row.get("teams") or {}).get("away") or {}).get("name") or "")
     start = int(kickoff_dt.timestamp())
-    er = session.get(
-        ODDS_API_NET_BASE + "/events",
-        headers={"X-API-Key": key, "Accept": "application/json"},
-        params={
-            "sport": "soccer",
-            "start_from": start - ODDS_API_NET_EVENT_SEARCH_WINDOW_SECONDS,
-            "start_to": start + ODDS_API_NET_EVENT_SEARCH_WINDOW_SECONDS,
-            "limit": 100,
-            "include_bookmaker_ids": "true",
-        },
-        timeout=20,
-    )
-    try:
-        ep = er.json()
-    except Exception:
-        return None
+    search_params = {
+        "sport": "soccer",
+        "start_from": start - ODDS_API_NET_EVENT_SEARCH_WINDOW_SECONDS,
+        "start_to": start + ODDS_API_NET_EVENT_SEARCH_WINDOW_SECONDS,
+        "limit": 100,
+        "include_bookmaker_ids": "true",
+    }
+    events: list[dict[str, Any]] = []
+    event_pages: list[dict[str, Any]] = []
+    cursor: str | None = None
+    page_count = 0
+    while True:
+        params = dict(search_params)
+        if cursor:
+            params["cursor"] = cursor
+        er = session.get(
+            ODDS_API_NET_BASE + "/events",
+            headers={"X-API-Key": key, "Accept": "application/json"},
+            params=params,
+            timeout=20,
+        )
+        try:
+            ep = er.json()
+        except Exception:
+            if diagnostic is not None:
+                diagnostic["status"] = "BLOCKED_EVENT_SEARCH_INVALID_JSON"
+                diagnostic["event_search_page_count"] = page_count
+            return None
+        page_count += 1
+        event_pages.append(ep if isinstance(ep, dict) else {"invalid_payload": True})
+        if er.status_code >= 300 or not isinstance(ep, dict):
+            if diagnostic is not None:
+                diagnostic["status"] = "BLOCKED_EVENT_SEARCH_PROVIDER_ERROR"
+                diagnostic["event_search_http_status"] = int(er.status_code)
+                diagnostic["event_search_page_count"] = page_count
+            return None
+        page_items = ep.get("items", [])
+        if isinstance(page_items, list):
+            events.extend(x for x in page_items if isinstance(x, dict))
+        next_cursor = ep.get("next_cursor")
+        if not next_cursor:
+            cursor = None
+            break
+        cursor = str(next_cursor)
+        # Fail closed rather than silently treating a partial global page set as
+        # complete. Ten pages at limit=100 already covers 1,000 events in the
+        # bounded +/-2h window; if the provider still has another cursor, record
+        # the condition explicitly and do not manufacture an identity match.
+        if page_count >= 10:
+            if diagnostic is not None:
+                diagnostic["status"] = "BLOCKED_EVENT_SEARCH_PAGINATION_LIMIT"
+                diagnostic["event_search_page_count"] = page_count
+                diagnostic["event_search_rows_seen"] = len(events)
+                diagnostic["event_search_next_cursor_remaining"] = True
+            return None
     if diagnostic is not None:
-        diagnostic["event_search_payload_sha256"] = hashlib.sha256(json.dumps(ep,sort_keys=True,separators=(",",":"),ensure_ascii=False).encode("utf-8")).hexdigest()
-    events = ep.get("items", []) if isinstance(ep, dict) else []
+        diagnostic["event_search_payload_sha256"] = hashlib.sha256(json.dumps(event_pages,sort_keys=True,separators=(",",":"),ensure_ascii=False).encode("utf-8")).hexdigest()
+        diagnostic["event_search_page_count"] = page_count
+        diagnostic["event_search_rows_seen"] = len(events)
+        diagnostic["event_search_next_cursor_remaining"] = False
     scored: list[tuple[float, bool, dict[str, Any]]] = []
     for event in events or []:
         if not isinstance(event, dict):
