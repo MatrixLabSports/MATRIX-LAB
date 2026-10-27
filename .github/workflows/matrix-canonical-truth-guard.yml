@@ -1,0 +1,72 @@
+name: MATRIX Canonical Truth Guard
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "*/15 * * * *"
+  push:
+    branches:
+      - repair/cor09-world-pipeline
+    paths:
+      - tools/matrix_canonical_truth_guard.py
+      - tests/test_matrix_canonical_truth_guard.py
+      - .github/workflows/matrix-canonical-truth-guard.yml
+      - evidence/api_football/prospective_calibration/sync_last.json
+      - evidence/api_football/governance/MATRIX_FOOTBALL_4000_CANONICAL_TRACKER_LAST.json
+      - evidence/tennis/MATRIX_TENNIS_THREE_BLOCK_STAGNATION_AUDIT_LAST.json
+      - evidence/live_tennis_lab/MATRIX_LIVE_TENNIS_CUMULATIVE_GATE_V1.json
+      - evidence/notifications/telegram/MATRIX_TELEGRAM_DAILY_BANKROLL_CANONICAL_LAST.json
+
+permissions:
+  contents: write
+
+concurrency:
+  group: matrix-canonical-truth-guard
+  cancel-in-progress: false
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      REAL_MONEY: BLOCKED
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: repair/cor09-world-pipeline
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: python -m pip install pytest
+      - name: Verify truth guard regression contract
+        run: PYTHONPATH=. python -m pytest -q tests/test_matrix_canonical_truth_guard.py
+      - name: Build canonical truth guard
+        run: PYTHONPATH=. python -m tools.matrix_canonical_truth_guard
+      - name: Verify fail-closed contract
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          j=json.loads(Path("evidence/governance/MATRIX_CANONICAL_TRUTH_GUARD_LAST.json").read_text())
+          assert j["real_money"]=="BLOCKED"
+          assert j["response_contract"]["tracker_pending_blocked_must_not_be_inferred_from_sync"] is True
+          assert j["summary"]["status"] in {"PASS","FAIL_CLOSED"}
+          print(json.dumps(j["summary"],sort_keys=True))
+          PY
+      - name: Persist truth evidence
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "matrix-canonical-truth-guard"
+          git config user.email "matrix-canonical-truth-guard@users.noreply.github.com"
+          git add evidence/governance/MATRIX_CANONICAL_TRUTH_GUARD_LAST.json
+          if git diff --cached --quiet; then exit 0; fi
+          git commit -m "evidence(governance): refresh canonical truth guard"
+          for attempt in 1 2 3 4; do
+            git fetch origin repair/cor09-world-pipeline
+            if ! git rebase origin/repair/cor09-world-pipeline; then git rebase --abort || true; exit 1; fi
+            if git push origin HEAD:repair/cor09-world-pipeline; then exit 0; fi
+            sleep $((attempt*2))
+          done
+          exit 1
