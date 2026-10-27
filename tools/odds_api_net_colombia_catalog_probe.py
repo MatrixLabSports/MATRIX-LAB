@@ -3,6 +3,7 @@ from __future__ import annotations
 import hashlib
 import json
 import os
+import time
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Mapping
@@ -65,7 +66,7 @@ def _target_presence(bookmaker_keys: list[str]) -> tuple[dict[str, bool], dict[s
     return present, detected
 
 
-def run(api_key: str, out_dir: Path, session: Any | None = None) -> dict[str, Any]:
+def run(api_key: str, out_dir: Path, session: Any | None = None, sleeper: Any | None = None, max_attempts: int = 4) -> dict[str, Any]:
     key = str(api_key or "").strip()
     if not key:
         raise ValueError("ODDS_API_NET_KEY_NOT_CONFIGURED")
@@ -75,12 +76,32 @@ def run(api_key: str, out_dir: Path, session: Any | None = None) -> dict[str, An
     client = session or requests.Session()
     started = datetime.now(timezone.utc).replace(microsecond=0).isoformat()
 
-    response = client.get(
-        BASE_URL + ENDPOINT,
-        headers={"X-API-Key": key, "Accept": "application/json"},
-        params={"country_code": "CO"},
-        timeout=TIMEOUT_SECONDS,
-    )
+    sleep_fn = sleeper or time.sleep
+    response = None
+    attempt_statuses: list[dict[str, Any]] = []
+    for attempt in range(1, max(1, int(max_attempts)) + 1):
+        response = client.get(
+            BASE_URL + ENDPOINT,
+            headers={"X-API-Key": key, "Accept": "application/json"},
+            params={"country_code": "CO"},
+            timeout=TIMEOUT_SECONDS,
+        )
+        attempt_statuses.append({
+            "attempt": attempt,
+            "http_status": int(response.status_code),
+            "rate_limit": _rate(response.headers),
+        })
+        if int(response.status_code) != 429:
+            break
+        if attempt >= max(1, int(max_attempts)):
+            break
+        retry_after = response.headers.get("Retry-After")
+        try:
+            delay = float(retry_after) if retry_after not in (None, "") else float(2 ** (attempt - 1))
+        except (TypeError, ValueError):
+            delay = float(2 ** (attempt - 1))
+        sleep_fn(max(0.0, min(delay, 30.0)))
+    assert response is not None
     body = bytes(response.content)
     raw_path = out_dir / "colombia_bookmakers.bin"
     raw_path.write_bytes(body)
@@ -156,7 +177,8 @@ def run(api_key: str, out_dir: Path, session: Any | None = None) -> dict[str, An
             }
             for key, status in REFERENCE_OR_BLOCKED_BOOKMAKERS.items()
         },
-        "network_calls_performed": 1,
+        "network_calls_performed": len(attempt_statuses),
+        "attempts": attempt_statuses,
         "raw_path": str(raw_path),
         "raw_sha256": hashlib.sha256(body).hexdigest(),
         "raw_bytes": len(body),
