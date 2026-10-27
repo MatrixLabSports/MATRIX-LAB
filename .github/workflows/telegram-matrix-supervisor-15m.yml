@@ -79,6 +79,9 @@ jobs:
               "MATRIX_TELEGRAM_QUOTE_ATTEMPT_TELEMETRY_AUDIT_LAST.json",
               "MATRIX_TELEGRAM_QUOTE_TELEMETRY_CERTIFICATION_LAST.json",
               "MATRIX_TELEGRAM_ELITE_COMMITTEE_AUDIT_LAST.json",
+              "MATRIX_TELEGRAM_FINAL_WINDOW_READINESS_LAST.json",
+              "python -m tools.telegram_final_window_readiness",
+              "tests/test_telegram_final_window_readiness.py",
               "tests/test_telegram_elite_committee_audit.py",
           ]
           missing=[x for x in required if x not in s]
