@@ -1,0 +1,64 @@
+{
+  "schema": "MATRIX_UNDER25_PROMOTION_READINESS_V1",
+  "evidence_basis_generated_at_utc": "2026-10-27T17:45:54+00:00",
+  "market": "UNDER_2_5",
+  "status": "BLOCKED_NOT_PROMOTABLE",
+  "promotion_allowed": false,
+  "signal_status": "RESEARCH_ONLY",
+  "checks": {
+    "checkpoint_4000_complete": true,
+    "checkpoint_not_automatic_promotion": true,
+    "derived_from_over25_declared": true,
+    "lane_no_backfill": true,
+    "lane_parameters_frozen": true,
+    "odds_not_used_for_probability": true,
+    "oos_target_reached": false,
+    "oos_metrics_opened": false,
+    "oos_outcomes_read": false,
+    "dedicated_quote_path_certified": false,
+    "telegram_signal_engine_certified": false,
+    "explicit_signal_promotion_exists": false
+  },
+  "blockers": [
+    "OOS_4001_5000_NOT_COMPLETE",
+    "OOS_1000_METRICS_NOT_OPENED",
+    "NO_EXPLICIT_GOVERNED_UNDER25_P_MATRIX_PROMOTION",
+    "NO_DEDICATED_UNDER25_QUOTE_REVALIDATION_CONTRACT",
+    "NO_UNDER25_TELEGRAM_SIGNAL_ENGINE"
+  ],
+  "physical_state": {
+    "checkpoint_calibration_rows": 4000,
+    "checkpoint_brier_score": 0.23933408295111208,
+    "checkpoint_log_loss": 0.6718171180059201,
+    "checkpoint_ece": 0.0338096915389917,
+    "checkpoint_mean_predicted_probability": 0.445963679961947,
+    "checkpoint_observed_positive_rate": 0.42775,
+    "lane_settlement_count": 4011,
+    "lane_pending_settlement_count": 364,
+    "lane_freeze_observation_count": 4375,
+    "oos_current_observations": 796,
+    "oos_target_observations": 1000,
+    "oos_remaining": 204,
+    "oos_metrics_opened": false
+  },
+  "governance": {
+    "next_required_action": "COMPLETE_PREREGISTERED_OOS_1000_WITHOUT_TUNING_THEN_EVALUATE_UNDER25_SEPARATELY",
+    "minimum_decimal_odds_exclusive": 1.5,
+    "positive_ev_required": true,
+    "p_matrix_must_exist_before_odds": true,
+    "odds_may_not_generate_probability": true,
+    "no_backfill": true,
+    "automatic_wagering": false,
+    "real_money": "BLOCKED",
+    "promotion_before_all_gates": "FORBIDDEN",
+    "derived_probability_note": "UNDER_2_5_CHECKPOINT_IS_COMPLEMENT_DERIVED_FROM_OVER_2_5_BUT_SIGNAL_PROMOTION_REQUIRES_ITS_OWN_GOVERNED_CONTRACT"
+  },
+  "sources": {
+    "checkpoint": "evidence/api_football/calibration_v2/CHECKPOINT_4000_MARKET_CALIBRATION_20261023.json",
+    "oos_state": "evidence/api_football/calibration_v2/OOS_4001_5000_STATE.json",
+    "lane_state": "evidence/api_football/calibration_v2/lanes/under_2_5/state.json",
+    "p_matrix_promotion": "evidence/api_football/governance/under_2_5_p_matrix_promotion.json",
+    "quote_contract": "evidence/api_football/governance/under_2_5_execution_quote_contract.json",
+    "telegram_engine": "tools/telegram_under25_signal_engine.py"
+  }
+}
