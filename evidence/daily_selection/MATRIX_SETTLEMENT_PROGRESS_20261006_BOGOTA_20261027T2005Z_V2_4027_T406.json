@@ -1,0 +1,197 @@
+{
+  "schema": "MATRIX_WORLD_CALIBRATION_SETTLEMENT_PROGRESS_AUDIT_V1",
+  "target_date_bogota": "2026-10-06",
+  "audit_at_utc": "2026-10-27T20:05:00Z",
+  "branch": "repair/cor09-world-pipeline",
+  "observed_branch_head_before_write": "812a8aab2989077f0afe8ebea2bbf4c534d35d68",
+  "previous_snapshot": {
+    "path": "evidence/daily_selection/MATRIX_SETTLEMENT_PROGRESS_20261006_BOGOTA_20261027T192622Z_V2_4021_T406.json",
+    "blob_sha": "ea758dcb8ffc3929f31361d3b47cd2fc18e7552b",
+    "commit": "e72c5d0a4c30bf9c23cb49ab0ef26c7a9e6d8e5d"
+  },
+  "source_blobs": {
+    "candidates": "52e897007840f5bed1a8999edad8ee594fefc767",
+    "football_sync": "84f88c653342a4dea3a3c6a2355d21588048dc08",
+    "football_tracker": "49ae7a3e7a6f4df0c532eb1b280d3bb83b1114f6",
+    "football_uniqueness": "1f863b7140a7c86c4d46bd54d8f118e0d221d633",
+    "football_v2_over": "8a843137f8c066d2aaa648ab580a4fa5ac14ca02",
+    "football_v2_under": "f26baf3b319b3a674530d7236ea32662e5ccb51a",
+    "football_v2_1x2": "02847cfe99b7a8c3be442b5ef4d4f6b2fd3d3754",
+    "tennis_sync": "de46f605d1cd44157394025b3e13614272d20337",
+    "tennis_uniqueness": "39fcca155fb43cdaeb10d64be37c90b89f69fead",
+    "tennis_ledger": "41e2c988d672c3ea0088e93a0dfe7511f3807019"
+  },
+  "football": {
+    "original_6oct": {
+      "candidates": 116,
+      "unique_fixture_ids": 116,
+      "standard_ft_settled": 107,
+      "new_standard_ft": 0,
+      "nonstandard_blocked": [
+        {
+          "fixture_id": "1588817",
+          "status": "PEN"
+        },
+        {
+          "fixture_id": "1588821",
+          "status": "PEN"
+        },
+        {
+          "fixture_id": "1588845",
+          "status": "PEN"
+        },
+        {
+          "fixture_id": "1588863",
+          "status": "PEN"
+        },
+        {
+          "fixture_id": "1588890",
+          "status": "PEN"
+        },
+        {
+          "fixture_id": "1588893",
+          "status": "PEN"
+        },
+        {
+          "fixture_id": "1619499",
+          "status": "PEN"
+        },
+        {
+          "fixture_id": "1644168",
+          "status": "AET"
+        }
+      ],
+      "pending": [
+        {
+          "fixture_id": "1596466",
+          "provider_status": "NS",
+          "reason": "RESULT_NOT_STANDARD_FINAL",
+          "lookup_after_utc": "2026-10-27T20:27:59+00:00"
+        }
+      ],
+      "verification": "Current blocked and pending IDs intersected against 116 exact frozen fixture IDs; 107 prior FT carried from previously verified snapshot; full football ledger chain not independently rehashed."
+    },
+    "global": {
+      "previous_frozen": 5203,
+      "frozen": 5240,
+      "new_frozen": 37,
+      "previous_final": 4824,
+      "final": 4830,
+      "new_final": 6,
+      "previous_pending": 246,
+      "pending": 277,
+      "previous_blocked": 133,
+      "blocked": 133,
+      "reconciles": true,
+      "new_settlements": [
+        {
+          "fixture_id": "1604041",
+          "result": "0-1",
+          "terminal_status": "FT"
+        },
+        {
+          "fixture_id": "1598732",
+          "result": "3-2",
+          "terminal_status": "FT"
+        },
+        {
+          "fixture_id": "1638560",
+          "result": "2-0",
+          "terminal_status": "FT"
+        },
+        {
+          "fixture_id": "1638565",
+          "result": "2-4",
+          "terminal_status": "FT"
+        },
+        {
+          "fixture_id": "1638566",
+          "result": "1-3",
+          "terminal_status": "FT"
+        },
+        {
+          "fixture_id": "1638571",
+          "result": "1-2",
+          "terminal_status": "FT"
+        }
+      ],
+      "governed_commit": "3bf1a00283b761554e9db54ce063dbd335cfa178",
+      "settled_at_utc": "2026-10-27T19:27:59+00:00"
+    },
+    "v2": {
+      "previous_frozen_per_market": 4375,
+      "frozen_per_market": 4412,
+      "previous_settled_per_market": 4021,
+      "settled_per_market": 4027,
+      "previous_pending_per_market": 354,
+      "pending_per_market": 385,
+      "markets": [
+        "1X2",
+        "OVER_2_5",
+        "UNDER_2_5"
+      ],
+      "metrics_opened": false,
+      "parameter_tuning_allowed": false
+    },
+    "canonical_tracker": {
+      "global_final": 4824,
+      "v2_settled": 4021,
+      "stale_by_global": 6,
+      "stale_by_v2": 6,
+      "reconciled": false,
+      "generated_at_utc": "2026-10-27T18:41:04.367853+00:00"
+    },
+    "physical_uniqueness": {
+      "result": "PASS",
+      "global_final_unique_fixture_ids": 4830,
+      "freeze_unique_fixture_ids": 5240
+    }
+  },
+  "tennis": {
+    "original_6oct": {
+      "unique_candidates": 11,
+      "finished": 11,
+      "verification": "All 11 exact frozen event IDs matched FINISHED in full 406-row ledger."
+    },
+    "global": {
+      "previous_ledger_records": 406,
+      "ledger_records": 406,
+      "new_settlements": 0,
+      "blocked_previous": 12,
+      "blocked_current": 13,
+      "new_blocked": [
+        {
+          "event_id": "COR0203-RAPIDAPI-TENNIS-752236-7fd23ca961a0",
+          "reason": "NONSTANDARD_TERMINAL_REQUIRES_ADJUDICATION:RETIRED"
+        }
+      ],
+      "pending_current": 33
+    },
+    "physical_uniqueness": {
+      "result": "PASS",
+      "ledger_records": 406,
+      "settled_unique_canonical_events": 353,
+      "settled_duplicate_alias_records": 53,
+      "unique_event_ids": 406,
+      "unique_settlement_ids": 406,
+      "hash_chain_links_valid": true
+    },
+    "metrics_opened": false,
+    "metrics": "SEALED_UNTIL_600"
+  },
+  "governance": {
+    "settlement_final_only": true,
+    "metrics_opened": false,
+    "parameter_tuning_allowed": false,
+    "odds_to_p": "PROHIBITED_NOT_EXECUTED",
+    "automatic_wagering": false,
+    "real_money": "BLOCKED",
+    "no_backfill": true
+  },
+  "limitations": [
+    "Governed football settlements already present at audit; no duplicate settlements executed.",
+    "Full football ledger hash chain not independently rehashed; 6 new FT records verified from governed commit patch and global uniqueness PASS from repository audit.",
+    "Canonical football tracker is 6 behind governed ledger and V2 states; not manually overwritten.",
+    "The separate prospective checkpoint_200.json has metrics_opened=true from a different scope; this run did not modify it or open any V2 or tennis metrics."
+  ]
+}
