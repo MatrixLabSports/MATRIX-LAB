@@ -135,7 +135,7 @@ def build_audit(base: Path, config: dict[str,Any], run_health: dict[str,Any]) ->
         if missing: raise ValueError("UNKNOWN_COMMITTEE_ROLE:"+repr(missing))
     direct_causes=[
         "NO_CANDIDATE_PASSED_PRE_SEND_IN_LATEST_GREEN_SIGNAL_RUN",
-        "FINAL_PREMATCH_WINDOW_NOT_OPEN_FOR_53_RECORDS",
+        f"FINAL_PREMATCH_WINDOW_NOT_OPEN_FOR_{states.get('WAITING_FINAL_REVALIDATION_WINDOW',0)}_RECORDS",
         "EXACT_AUTHORIZED_OVER25_QUOTE_COVERAGE_LIMITATION",
     ]
     reliability_defects=(
