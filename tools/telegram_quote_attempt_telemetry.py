@@ -6,17 +6,22 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Mapping
 
-SCHEMA="MATRIX_TELEGRAM_QUOTE_ATTEMPT_V1"
+SCHEMA="MATRIX_TELEGRAM_QUOTE_ATTEMPT_V2"
+LEGACY_SCHEMAS={"MATRIX_TELEGRAM_QUOTE_ATTEMPT_V1"}
 GENESIS="0"*64
 AUTHORIZED=("betano","betplay","rushbet")
 IDENTITY_STATES={"MATCHED","LOW_SCORE","AMBIGUOUS","NOT_COVERED"}
 REQUIRED_HOUSE_FIELDS={"seen","totals_market_seen","available_lines","nearby_lines_2_25_2_75","over_2_5_seen","exact_over_2_5_odds"}
 REQUIRED_IDENTITY_FIELDS={"state","score","provider_event_id","provider"}
+LEGACY_REQUIRED_IDENTITY_FIELDS={"state","score","provider_event_id"}
 REQUIRED_ATTEMPT_FIELDS=(
     "fixture_id","signal_key","run_token","query_at_utc","kickoff_utc","seconds_to_kickoff",
     "identity_match","houses","totals_market_seen_any_authorized","exact_lines_available_any_authorized",
     "over_2_5_seen_any_authorized","exact_over_2_5_odds_by_house","final_discard_reason",
     "evidence_sha256","evidence_snapshot","terminal_state_independent","automatic_wagering","real_money",
+)
+LEGACY_REQUIRED_ATTEMPT_FIELDS=tuple(
+    x for x in REQUIRED_ATTEMPT_FIELDS if x!="terminal_state_independent"
 )
 
 
@@ -42,11 +47,14 @@ def _load(path:Path)->list[dict[str,Any]]:
     for n,raw in enumerate(path.read_text(encoding="utf-8").splitlines(),1):
         if not raw.strip(): continue
         row=json.loads(raw)
-        if row.get("schema")!=SCHEMA: raise ValueError(f"QUOTE_ATTEMPT_SCHEMA_INVALID:{n}")
+        schema=str(row.get("schema") or "")
+        if schema!=SCHEMA and schema not in LEGACY_SCHEMAS:
+            raise ValueError(f"QUOTE_ATTEMPT_SCHEMA_INVALID:{n}")
         attempt_id=str(row.get("attempt_id") or "")
         if not attempt_id or attempt_id in seen: raise ValueError(f"QUOTE_ATTEMPT_DUPLICATE_OR_MISSING_ID:{n}")
         if row.get("previous_record_sha256")!=prev: raise ValueError(f"QUOTE_ATTEMPT_CHAIN_BROKEN:{n}")
-        for field in REQUIRED_ATTEMPT_FIELDS:
+        required_fields=REQUIRED_ATTEMPT_FIELDS if schema==SCHEMA else LEGACY_REQUIRED_ATTEMPT_FIELDS
+        for field in required_fields:
             if field not in row:
                 raise ValueError(f"QUOTE_ATTEMPT_REQUIRED_FIELD_MISSING:{n}:{field}")
         _utc(row["query_at_utc"]); _utc(row["kickoff_utc"])
@@ -55,7 +63,8 @@ def _load(path:Path)->list[dict[str,Any]]:
         ident=row.get("identity_match")
         if not isinstance(ident,Mapping) or ident.get("state") not in IDENTITY_STATES:
             raise ValueError(f"QUOTE_ATTEMPT_IDENTITY_INVALID:{n}")
-        if REQUIRED_IDENTITY_FIELDS-set(ident):
+        required_identity=REQUIRED_IDENTITY_FIELDS if schema==SCHEMA else LEGACY_REQUIRED_IDENTITY_FIELDS
+        if required_identity-set(ident):
             raise ValueError(f"QUOTE_ATTEMPT_IDENTITY_FIELDS_INCOMPLETE:{n}")
         houses=row.get("houses")
         if not isinstance(houses,Mapping) or set(AUTHORIZED)-set(houses):
@@ -69,7 +78,7 @@ def _load(path:Path)->list[dict[str,Any]]:
             raise ValueError(f"QUOTE_ATTEMPT_EVIDENCE_SHA_MISMATCH:{n}")
         if "first_terminal_state" in row:
             raise ValueError(f"QUOTE_ATTEMPT_MUST_BE_INDEPENDENT_OF_TERMINAL_STATE:{n}")
-        if row.get("terminal_state_independent") is not True:
+        if schema==SCHEMA and row.get("terminal_state_independent") is not True:
             raise ValueError(f"QUOTE_ATTEMPT_TERMINAL_INDEPENDENCE_INVALID:{n}")
         if row.get("automatic_wagering") is not False or row.get("real_money")!="BLOCKED":
             raise ValueError(f"QUOTE_ATTEMPT_SAFETY_INVALID:{n}")
