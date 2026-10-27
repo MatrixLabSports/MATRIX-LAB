@@ -10,9 +10,9 @@
     "continue_t120_revalidation": true,
     "expand_exact_quote_recovery": true,
     "lower_gates_to_force_signals": false,
-    "repair_15m_persistence_and_branch_parity": false,
-    "telegram_api_is_current_direct_root_cause": false,
-    "15m_persistence_and_branch_parity_repair_verified": true
+    "persistence_and_branch_parity_repair_verified": false,
+    "repair_15m_persistence_and_branch_parity": true,
+    "telegram_api_is_current_direct_root_cause": false
   },
   "committee_name": "MATRIX Sindicato Elite — Comité de Diagnóstico Telegram",
   "direct_causes_of_current_zero": [
@@ -93,17 +93,46 @@
     {
       "diagnosis": "The dedicated 15-minute supervisor has a Git persistence regression caused by unstaged generated telemetry plus default-branch/operational-branch contract drift.",
       "evidence": {
-        "consecutive_recent_failures": 3,
+        "consecutive_recent_failures_before_repair": 3,
+        "repair_verification": {
+          "conclusion": "success",
+          "historical_failed_runs_closed_as_root_cause_evidence": [
+            109,
+            110,
+            111
+          ],
+          "main_operational_workflow_same_sha": true,
+          "persistence_rebase_regression_reproduced_after_fix": false,
+          "status": "REPAIR_PHYSICALLY_VERIFIED",
+          "steps": {
+            "elite_committee": "PASS",
+            "final_monitoring_gate": "PASS",
+            "immutable_quote_telemetry_audit": "PASS",
+            "permanent_15m_contracts": "PASS",
+            "persistence": "PASS",
+            "scheduler_source_contract": "PASS",
+            "signal_supervisor": "PASS",
+            "watchdog": "PASS"
+          },
+          "verified_at_utc": "2026-10-27T04:07:13+00:00",
+          "workflow_run_id": 40448375337,
+          "workflow_run_number": 113,
+          "workflow_sha": "98ac5e1097dc494d3c5bcbde871f28566cae848b"
+        },
         "run_111_error": "error: cannot rebase: You have unstaged changes.",
         "scheduler_contract_drift": {
           "checkout_execution_branch": "repair/cor09-world-pipeline",
-          "main_and_operational_workflow_equal": false,
+          "current_main_and_operational_workflow_equal": true,
+          "current_status": "REPAIRED_VERIFIED_RUN_113",
+          "current_workflow_sha": "98ac5e1097dc494d3c5bcbde871f28566cae848b",
+          "main_and_operational_workflow_equal": true,
           "main_missing_stage_contract": [
             "evidence/notifications/telegram/MATRIX_TELEGRAM_QUOTE_ATTEMPTS.jsonl",
             "evidence/notifications/telegram/MATRIX_TELEGRAM_QUOTE_ATTEMPT_TELEMETRY_AUDIT_LAST.json"
           ],
+          "repaired": true,
           "schedule_definition_source": "default branch main",
-          "severity": "CRITICAL_RELIABILITY_DEFECT"
+          "severity": "HISTORICAL_CRITICAL_REPAIRED"
         }
       },
       "id": "F05_15M_SUPERVISOR_PERSISTENCE_REGRESSION",
@@ -114,7 +143,7 @@
         "QA_ADVERSARIAL"
       ],
       "severity": "CRITICAL",
-      "verdict": "CONFIRMED"
+      "verdict": "CONFIRMED_ACTIVE"
     },
     {
       "diagnosis": "A separate green-signal workflow is still executing the signal engine successfully, so the persistence regression is a resilience defect rather than proof of a total Telegram blackout.",
@@ -218,6 +247,11 @@
       "rushbet": 0
     }
   },
+  "reliability_defects_active": [
+    "DEDICATED_15M_SUPERVISOR_PERSISTENCE_REBASE_FAILURE",
+    "DEFAULT_BRANCH_VS_OPERATIONAL_WORKFLOW_CONTRACT_DRIFT"
+  ],
+  "reliability_defects_repaired_verified": [],
   "role_count": 22,
   "roles": [
     {
@@ -332,40 +366,5 @@
     }
   ],
   "schema": "MATRIX_TELEGRAM_ELITE_COMMITTEE_AUDIT_V1",
-  "status": "ROOT_CAUSES_IDENTIFIED_RELIABILITY_REPAIR_VERIFIED",
-  "historical_reliability_defects": [
-    "DEDICATED_15M_SUPERVISOR_PERSISTENCE_REBASE_FAILURE",
-    "DEFAULT_BRANCH_VS_OPERATIONAL_WORKFLOW_CONTRACT_DRIFT"
-  ],
-  "unresolved_reliability_defects": [],
-  "closed_reliability_defects": [
-    "DEDICATED_15M_SUPERVISOR_PERSISTENCE_REBASE_FAILURE",
-    "DEFAULT_BRANCH_VS_OPERATIONAL_WORKFLOW_CONTRACT_DRIFT"
-  ],
-  "repair_verification": {
-    "verified_at_utc": "2026-10-27T04:07:13+00:00",
-    "workflow_run_id": 40448375337,
-    "workflow_run_number": 113,
-    "conclusion": "success",
-    "steps": {
-      "permanent_15m_contracts": "PASS",
-      "scheduler_source_contract": "PASS",
-      "signal_supervisor": "PASS",
-      "immutable_quote_telemetry_audit": "PASS",
-      "watchdog": "PASS",
-      "elite_committee": "PASS",
-      "persistence": "PASS",
-      "final_monitoring_gate": "PASS"
-    },
-    "persistence_rebase_regression_reproduced_after_fix": false,
-    "main_operational_workflow_same_sha": true,
-    "workflow_sha": "98ac5e1097dc494d3c5bcbde871f28566cae848b",
-    "historical_failed_runs_closed_as_root_cause_evidence": [
-      109,
-      110,
-      111
-    ],
-    "status": "REPAIR_PHYSICALLY_VERIFIED"
-  },
-  "updated_after_physical_repair_run_utc": "2026-10-27T04:07:13+00:00"
+  "status": "ROOT_CAUSES_IDENTIFIED_ACTION_REQUIRED"
 }
