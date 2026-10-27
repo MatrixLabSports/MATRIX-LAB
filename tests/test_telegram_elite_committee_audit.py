@@ -36,7 +36,10 @@ def test_committee_separates_delivery_from_pre_send_and_detects_persistence_regr
     assert out["role_count"]==22
     assert out["committee_decision"]["telegram_api_is_current_direct_root_cause"] is False
     assert out["committee_decision"]["lower_gates_to_force_signals"] is False
-    assert "DEDICATED_15M_SUPERVISOR_PERSISTENCE_REBASE_FAILURE" in out["reliability_defects_active"]
+    assert "DEDICATED_15M_SUPERVISOR_PERSISTENCE_REBASE_FAILURE" not in out["reliability_defects_active"]
+    assert "DEDICATED_15M_SUPERVISOR_PERSISTENCE_REBASE_FAILURE" in out["reliability_defects_repaired_verified"]
+    assert out["status"]=="ROOT_CAUSES_IDENTIFIED_RELIABILITY_REPAIR_VERIFIED"
+    assert out["committee_decision"]["persistence_and_branch_parity_repair_verified"] is True
     ids={x["id"] for x in out["findings"]}
     assert "F01_CURRENT_ZERO_IS_PRE_SEND_SELECTION_NOT_TELEGRAM_DELIVERY" in ids
     assert "F05_15M_SUPERVISOR_PERSISTENCE_REGRESSION" in ids
