@@ -2162,11 +2162,15 @@ def build_blocker_recovery_audit(
         "summary": {
             "records": len(records),
             "counts_by_state": dict(sorted(counts_by_state.items())),
+            "counts_by_state_scope": "LEGACY_COMBINED_LIVE_AND_HISTORICAL_DO_NOT_USE_AS_LIVE_COVERAGE",
             "counts_by_variable": dict(sorted(counts_by_variable.items())),
             "counts_by_recoverability": dict(sorted(counts_by_recoverability.items())),
+            "live_quote_attempt_records_this_run": sum(live_counts_by_state.values()),
             "live_quote_attempts_this_run_by_state": dict(sorted(live_counts_by_state.items())),
+            "historical_terminal_inherited_records": sum(historical_terminal_counts_by_state.values()),
             "historical_terminal_inherited_by_state": dict(sorted(historical_terminal_counts_by_state.items())),
             "reporting_separates_live_attempts_from_historical_terminal_states": True,
+            "legacy_combined_counts_must_not_be_interpreted_as_live_quote_checks": True,
         },
         "records": records,
     }
