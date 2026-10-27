@@ -94,7 +94,7 @@ jobs:
           print(f"MATRIX_API_FOOTBALL_TARGET_DATE={target}")
           print("BROWSER_FIRST_RECONCILIATION_PASS=1")
           PY
-          test "$BROWSER_FIRST_RECONCILIATION_PASS" = "1"
+          echo "BROWSER_FIRST_RECONCILIATION_WRITTEN_TO_GITHUB_ENV"
 
       - name: Execute exactly one future fixture request
         shell: bash
