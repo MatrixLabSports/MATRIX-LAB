@@ -24,3 +24,22 @@ def test_watchlist_monitors_but_does_not_freeze_uncertified_time():
     assert out["confirmed_both"][0]["eligible_for_freeze"] is False
     assert out["policy"]["source_order"]==["SOFASCORE","FLASHSCORE","APIS"]
     assert out["policy"]["real_money"]=="BLOCKED"
+
+
+def test_watchlist_uses_target_date_27oct():
+    recon={
+      "status":"PASS_OPEN_RECONCILIATION",
+      "target_date_bogota":"2026-10-27",
+      "confirmed_both":[{
+        "flashscore":"Cúcuta - Águilas Doradas",
+        "sofascore":"27/10/26 18:00 Cúcuta Deportivo Cúcuta Rionegro Águilas Doradas Águilas Doradas 1 2.55 X 3.20 2 2.80",
+        "identity_score":1.0,
+      }],
+      "sofascore_only":[],
+      "flashscore_only":[],
+      "ambiguous":[],
+    }
+    out=build(recon,datetime(2026,10,27,1,30,tzinfo=timezone.utc))
+    assert out["confirmed_both"][0]["kickoff_display_bogota"]=="2026-10-27T18:00:00-05:00"
+    assert out["counts"]["freeze_eligible"]==0
+    assert out["policy"]["real_money"]=="BLOCKED"
