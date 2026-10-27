@@ -149,9 +149,16 @@ def test_summary_reports_seen_totals_and_exact_per_house():
       kickoff="2026-10-26T02:00:00+00:00",odds_diag=_diag(),api_diag={},
       selected_offer=None,final_discard_reason="BLOCKED",run_token="r3")
     s=summarize_run([row],"r3")
-    assert s["book_seen_by_house"]=={"betano":1,"betplay":1,"rushbet":1}
-    assert s["totals_market_seen_by_house"]=={"betano":1,"betplay":1,"rushbet":0}
-    assert s["exact_over25_coverage_by_house"]=={"betano":0,"betplay":1,"rushbet":0}
+    assert s["book_seen_by_house"]["betano"]==1
+    assert s["book_seen_by_house"]["betplay"]==1
+    assert s["book_seen_by_house"]["rushbet"]==1
+    assert s["totals_market_seen_by_house"]["betano"]==1
+    assert s["totals_market_seen_by_house"]["betplay"]==1
+    assert s["totals_market_seen_by_house"]["rushbet"]==0
+    assert s["exact_over25_coverage_by_house"]["betano"]==0
+    assert s["exact_over25_coverage_by_house"]["betplay"]==1
+    assert s["exact_over25_coverage_by_house"]["rushbet"]==0
+    assert len(s["book_seen_by_house"])==14
 
 
 
@@ -252,12 +259,14 @@ def test_legacy_v1_rows_remain_readable_without_rewrite(tmp_path:Path):
     assert loaded[0]["schema"]=="MATRIX_TELEGRAM_QUOTE_ATTEMPT_V1"
 
 
-def test_new_rows_use_v2_schema_and_full_identity_contract():
+def test_new_rows_use_v3_schema_all_colombia_books_and_full_identity_contract():
     row=build_attempt(
-      fixture_id="43",signal_key="v2",
+      fixture_id="43",signal_key="v3",
       query_at_utc=datetime(2026,10,26,1,0,tzinfo=timezone.utc),
       kickoff="2026-10-26T02:00:00+00:00",odds_diag=_diag(),api_diag={},
-      selected_offer=None,final_discard_reason="BLOCKED",run_token="v2")
-    assert row["schema"]=="MATRIX_TELEGRAM_QUOTE_ATTEMPT_V2"
+      selected_offer=None,final_discard_reason="BLOCKED",run_token="v3")
+    assert row["schema"]=="MATRIX_TELEGRAM_QUOTE_ATTEMPT_V3"
+    assert len(row["houses"])==14
+    assert {"betano","betplay","rushbet","bwin","wplay","stake"} <= set(row["houses"])
     assert row["terminal_state_independent"] is True
     assert {"state","score","provider_event_id","provider"} <= set(row["identity_match"])
