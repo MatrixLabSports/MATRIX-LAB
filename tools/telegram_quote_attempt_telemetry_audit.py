@@ -4,7 +4,13 @@ import json
 from datetime import datetime, timezone
 from pathlib import Path
 
-from tools.telegram_quote_attempt_telemetry import load_verified, summarize_cumulative
+from tools.telegram_quote_attempt_telemetry import (
+    REQUIRED_ATTEMPT_FIELDS,
+    REQUIRED_HOUSE_FIELDS,
+    REQUIRED_IDENTITY_FIELDS,
+    load_verified,
+    summarize_cumulative,
+)
 
 LEDGER=Path("evidence/notifications/telegram/MATRIX_TELEGRAM_QUOTE_ATTEMPTS.jsonl")
 OUT=Path("evidence/notifications/telegram/MATRIX_TELEGRAM_QUOTE_ATTEMPT_TELEMETRY_AUDIT_LAST.json")
@@ -21,6 +27,24 @@ def build() -> dict:
         "immutable_hash_chain_verified":True,
         "first_terminal_state_independent":all("first_terminal_state" not in x for x in rows),
         "required_authorized_books":["betano","betplay","rushbet"],
+        "required_field_contract":{
+            "top_level_fields":list(REQUIRED_ATTEMPT_FIELDS),
+            "identity_fields":sorted(REQUIRED_IDENTITY_FIELDS),
+            "per_house_fields":sorted(REQUIRED_HOUSE_FIELDS),
+            "all_rows_schema_validated":True,
+        },
+        "reporting_scope_contract":{
+            "LIVE_THIS_RUN":{
+                "source":"run_token_scoped_immutable_quote_attempts",
+                "historical_terminal_states_included":False,
+            },
+            "TERMINAL_HISTORICAL":{
+                "source":"candidate_lifecycle.first_terminal_state",
+                "may_describe_prior_runs":True,
+                "may_not_overwrite_immutable_attempt_rows":True,
+            },
+            "legacy_combined_counts_must_not_be_interpreted_as_live_coverage":True,
+        },
         "exact_line_policy":{
             "required_valid_execution_line":2.5,
             "nearby_lines_2_25_2_75_diagnostic_only":True,
