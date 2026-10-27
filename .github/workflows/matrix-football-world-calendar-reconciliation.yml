@@ -12,8 +12,10 @@ on:
       - ".github/workflows/matrix-football-world-calendar-reconciliation.yml"
 
 concurrency:
-  group: matrix-football-world-calendar-reconciliation
-  cancel-in-progress: false
+  group: matrix-football-world-calendar-reconciliation-${{ github.event_name }}
+  # Newer capture pushes supersede older partial-capture pushes.
+  # Scheduled reconciliation is never cancelled.
+  cancel-in-progress: ${{ github.event_name == 'push' }}
 
 permissions:
   contents: write
