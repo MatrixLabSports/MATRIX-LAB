@@ -15,8 +15,10 @@ def test_audit_keeps_recommendation_closed_below_50(tmp_path,monkeypatch):
     assert r["recommendation_gate"]["recommendation_authorized"] is False
     assert r["exact_line_policy"]["nearby_lines_never_substitute_for_2_5"] is True
     assert r["protections"]["historical_terminal_state_cannot_overwrite_attempt"] is True
-    assert r["schema_evolution"]["current_schema"]=="MATRIX_TELEGRAM_QUOTE_ATTEMPT_V2"
+    assert r["schema_evolution"]["current_schema"]=="MATRIX_TELEGRAM_QUOTE_ATTEMPT_V3"
     assert "MATRIX_TELEGRAM_QUOTE_ATTEMPT_V1" in r["schema_evolution"]["legacy_schemas_preserved_without_rewrite"]
+    assert "MATRIX_TELEGRAM_QUOTE_ATTEMPT_V2" in r["schema_evolution"]["legacy_schemas_preserved_without_rewrite"]
+    assert len(r["required_authorized_books"])==14
     assert r["schema_evolution"]["mixed_version_hash_chain_supported"] is True
     assert r["schema_evolution"]["historical_rows_rewritten"] is False
     assert r["required_field_contract"]["all_rows_schema_validated"] is True
@@ -27,7 +29,7 @@ def test_audit_keeps_recommendation_closed_below_50(tmp_path,monkeypatch):
     assert r["reporting_scope_contract"]["legacy_combined_counts_must_not_be_interpreted_as_live_coverage"] is True
 
 
-def test_certification_tracks_v2_rows_and_chain_bridge(tmp_path,monkeypatch):
+def test_certification_tracks_v3_rows_and_chain_bridge(tmp_path,monkeypatch):
     ledger=tmp_path/"attempts.jsonl"
     monkeypatch.setattr(mod,"LEDGER",ledger)
     from datetime import datetime,timezone
@@ -61,8 +63,8 @@ def test_certification_tracks_v2_rows_and_chain_bridge(tmp_path,monkeypatch):
     cert=mod.build_certification(load_verified(ledger),audit)
     assert cert["status"]=="PASS"
     assert cert["verified_row_count"]==2
-    assert cert["v2_real_row_count"]==2
-    assert cert["first_v2_row_present"] is True
-    assert cert["first_v2_chain_bridge_verified"] is True
-    assert cert["no_legacy_rows_after_first_v2"] is True
+    assert cert["current_schema_real_row_count"]==2
+    assert cert["first_current_schema_row_present"] is True
+    assert cert["first_current_schema_chain_bridge_verified"] is True
+    assert cert["no_legacy_rows_after_first_current_schema"] is True
     assert cert["real_money"]=="BLOCKED"
