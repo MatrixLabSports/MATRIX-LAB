@@ -125,6 +125,25 @@ jobs:
           ODDS_API_NET_KEY: ${{ secrets.ODDS_API_NET_KEY }}
         run: PYTHONPATH=. python -m tools.telegram_green_signal_alerts
 
+      - name: Certify final-window readiness for every waiting candidate
+        shell: bash
+        run: |
+          set -euo pipefail
+          PYTHONPATH=. python -m tools.telegram_final_window_readiness
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          p=Path("evidence/notifications/telegram/MATRIX_TELEGRAM_FINAL_WINDOW_READINESS_LAST.json")
+          j=json.loads(p.read_text(encoding="utf-8"))
+          assert j["status"]=="PASS"
+          assert j["summary"]["failures"]==0
+          assert j["summary"]["covered_by_15m_supervisor"]==j["summary"]["waiting_candidates"]
+          assert j["summary"]["source_contract_passed"]==j["summary"]["waiting_candidates"]
+          assert j["contracts"]["automatic_wagering"] is False
+          assert j["contracts"]["real_money"]=="BLOCKED"
+          print(json.dumps(j["summary"],sort_keys=True))
+          PY
+
       - name: Build immutable quote-attempt telemetry audit
         shell: bash
         run: |
@@ -203,6 +222,7 @@ jobs:
             evidence/notifications/telegram/MATRIX_TELEGRAM_QUOTE_ATTEMPT_TELEMETRY_AUDIT_LAST.json
             evidence/notifications/telegram/MATRIX_TELEGRAM_QUOTE_TELEMETRY_CERTIFICATION_LAST.json
             evidence/notifications/telegram/MATRIX_TELEGRAM_ELITE_COMMITTEE_AUDIT_LAST.json
+            evidence/notifications/telegram/MATRIX_TELEGRAM_FINAL_WINDOW_READINESS_LAST.json
           )
           for file in "${allowed[@]}"; do
             if [ -e "$file" ]; then
@@ -225,7 +245,8 @@ jobs:
               evidence/notifications/telegram/MATRIX_TELEGRAM_QUOTE_ATTEMPTS.jsonl|\
               evidence/notifications/telegram/MATRIX_TELEGRAM_QUOTE_ATTEMPT_TELEMETRY_AUDIT_LAST.json|\
               evidence/notifications/telegram/MATRIX_TELEGRAM_QUOTE_TELEMETRY_CERTIFICATION_LAST.json|\
-              evidence/notifications/telegram/MATRIX_TELEGRAM_ELITE_COMMITTEE_AUDIT_LAST.json)
+              evidence/notifications/telegram/MATRIX_TELEGRAM_ELITE_COMMITTEE_AUDIT_LAST.json|\\
+              evidence/notifications/telegram/MATRIX_TELEGRAM_FINAL_WINDOW_READINESS_LAST.json)
                 git add "$file"
                 ;;
               *)
