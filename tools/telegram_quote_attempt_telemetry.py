@@ -138,19 +138,40 @@ def _merge_api_football_house_views(houses:dict[str,dict[str,Any]],api_diag:Mapp
             view["api_football_required_house"]=True
 
 
-def _identity(diag:Mapping[str,Any])->dict[str,Any]:
-    status=str(diag.get("status") or "")
-    scores=diag.get("identity_top_scores") if isinstance(diag.get("identity_top_scores"),list) else []
-    top=diag.get("identity_top_candidates") if isinstance(diag.get("identity_top_candidates"),list) else []
-    if status=="BLOCKED_EVENT_NOT_COVERED": state="NOT_COVERED"
-    elif status=="BLOCKED_IDENTITY_LOW_SCORE": state="LOW_SCORE"
+def _identity(odds_diag:Mapping[str,Any],api_diag:Mapping[str,Any])->dict[str,Any]:
+    # Prefer a proven odds-api identity match when present. Otherwise an
+    # API-Football response row queried by exact canonical fixture_id is itself
+    # a deterministic identity match and must not be mislabeled NOT_COVERED.
+    status=str(odds_diag.get("status") or "")
+    scores=odds_diag.get("identity_top_scores") if isinstance(odds_diag.get("identity_top_scores"),list) else []
+    top=odds_diag.get("identity_top_candidates") if isinstance(odds_diag.get("identity_top_candidates"),list) else []
+    odds_event=str(odds_diag.get("odds_api_event_id") or "") or None
+    if odds_event:
+        return {
+            "state":"MATCHED",
+            "score":float(scores[0]) if scores else None,
+            "provider_event_id":odds_event,
+            "provider":"odds-api.net",
+            "top_candidates":top[:5],
+        }
+    api_rows=int(api_diag.get("response_rows") or 0)
+    api_fixture=str(api_diag.get("fixture_id") or "") or None
+    if api_rows>0 and api_fixture:
+        return {
+            "state":"MATCHED",
+            "score":1.0,
+            "provider_event_id":api_fixture,
+            "provider":"API-Football canonical fixture_id",
+            "top_candidates":[],
+        }
+    if status=="BLOCKED_IDENTITY_LOW_SCORE": state="LOW_SCORE"
     elif status=="BLOCKED_IDENTITY_AMBIGUOUS": state="AMBIGUOUS"
-    elif diag.get("odds_api_event_id"): state="MATCHED"
     else: state="NOT_COVERED"
     return {
         "state":state,
         "score":float(scores[0]) if scores else None,
-        "provider_event_id":str(diag.get("odds_api_event_id") or "") or None,
+        "provider_event_id":None,
+        "provider":"odds-api.net",
         "top_candidates":top[:5],
     }
 
@@ -184,7 +205,7 @@ def build_attempt(*,fixture_id:str,signal_key:str,query_at_utc:datetime,kickoff:
         "query_at_utc":q.isoformat(),
         "kickoff_utc":k.isoformat(),
         "seconds_to_kickoff":int((k-q).total_seconds()),
-        "identity_match":_identity(odds_diag),
+        "identity_match":_identity(odds_diag,api_diag),
         "houses":houses,
         "totals_market_seen_any_authorized":any(v["totals_market_seen"] for v in houses.values()),
         "exact_lines_available_any_authorized":sorted({line for v in houses.values() for line in v["available_lines"]}),
