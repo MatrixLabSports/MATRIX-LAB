@@ -63,6 +63,15 @@ POLICY_BOOKS = {
 SHARP_REFERENCE_BOOKS = {"pinnacle", "circa", "betfair"}
 MARKET_CONTEXT_BOOKS = {"fanduel"}
 REFERENCE_BOOKS = SHARP_REFERENCE_BOOKS | MARKET_CONTEXT_BOOKS
+ODDS_API_NET_EXECUTION_BOOKMAKER_KEYS = tuple(sorted({
+    alias
+    for aliases in EXECUTION_BOOKMAKERS.values()
+    for alias in aliases
+}))
+ODDS_API_NET_SNAPSHOT_BOOKMAKER_KEYS = tuple(sorted(set(
+    ODDS_API_NET_EXECUTION_BOOKMAKER_KEYS
+    + ("pinnacle", "circa", "fanduel")
+)))
 MARKET_KEY = "Goles totales Más/Menos"
 SELECTION_KEY = "Más de 2.5"
 
@@ -725,7 +734,7 @@ def odds_api_net_exact_over25_offer(
         ODDS_API_NET_BASE + f"/events/{event_id}/odds/snapshot",
         headers={"X-API-Key": key, "Accept": "application/json"},
         params={
-            "bookmakers": "betano,betplay,rushbet,pinnacle,circa,fanduel",
+            "bookmakers": ",".join(ODDS_API_NET_SNAPSHOT_BOOKMAKER_KEYS),
             "types": "total",
             "periods": "full time",
             "include_source": "true",
@@ -742,6 +751,8 @@ def odds_api_net_exact_over25_offer(
         diagnostic["snapshot_http_status"] = int(sr.status_code)
         diagnostic["snapshot_complete"] = sp.get("complete") if isinstance(sp, dict) else None
         diagnostic["excluded_bookmakers"] = sp.get("excluded_bookmakers") if isinstance(sp, dict) else None
+        diagnostic["requested_bookmakers"] = list(ODDS_API_NET_SNAPSHOT_BOOKMAKER_KEYS)
+        diagnostic["requested_execution_bookmakers"] = list(ODDS_API_NET_EXECUTION_BOOKMAKER_KEYS)
     if sr.status_code >= 300 or not isinstance(sp, dict):
         if diagnostic is not None:
             diagnostic["status"] = "BLOCKED_SNAPSHOT_PROVIDER_ERROR"
