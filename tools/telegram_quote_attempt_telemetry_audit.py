@@ -5,9 +5,11 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 from tools.telegram_quote_attempt_telemetry import (
+    LEGACY_SCHEMAS,
     REQUIRED_ATTEMPT_FIELDS,
     REQUIRED_HOUSE_FIELDS,
     REQUIRED_IDENTITY_FIELDS,
+    SCHEMA,
     load_verified,
     summarize_cumulative,
 )
@@ -27,6 +29,12 @@ def build() -> dict:
         "immutable_hash_chain_verified":True,
         "first_terminal_state_independent":all("first_terminal_state" not in x for x in rows),
         "required_authorized_books":["betano","betplay","rushbet"],
+        "schema_evolution":{
+            "current_schema":SCHEMA,
+            "legacy_schemas_preserved_without_rewrite":sorted(LEGACY_SCHEMAS),
+            "mixed_version_hash_chain_supported":True,
+            "historical_rows_rewritten":False,
+        },
         "required_field_contract":{
             "top_level_fields":list(REQUIRED_ATTEMPT_FIELDS),
             "identity_fields":sorted(REQUIRED_IDENTITY_FIELDS),
