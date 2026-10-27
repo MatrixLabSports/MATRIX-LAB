@@ -1,41 +1,36 @@
 {
-  "automatic_wagering": false,
-  "calibration": {
-    "basis": "PHYSICAL_PAPER_LEDGER_NO_SYNTHETIC_CORRELATION",
-    "caps": {
-      "daily_cap_fraction": 0.13,
-      "daily_policy_ceiling_fraction": 0.3,
-      "fixture_cap_cop": 25000.0,
-      "tournament_day_cap_cop": 75000.0,
-      "tournament_day_policy_ceiling_cop": 75000.0
-    },
-    "h02_closed": false,
-    "observed_maxima_cop": {
-      "operational_day": 650000.0,
-      "same_fixture_day": 75000.0,
-      "same_tournament_day": 225000.0
-    },
-    "pairwise_cross_market_correlation": {
-      "calibrated": false,
-      "reason": "SINGLE_MARKET_TELEGRAM_LEDGER_NO_ADJUDICABLE_CROSS_MARKET_PAIRS"
-    },
-    "real_money": "BLOCKED",
-    "sample_records": 56,
-    "schema": "MATRIX_EMPIRICAL_CORRELATED_EXPOSURE_CALIBRATION_V1",
-    "status": "READY_FAIL_CLOSED"
-  },
-  "generated_at_utc": "2026-10-27T00:32:08+00:00",
-  "h02_blocker": "PAIRWISE_CROSS_MARKET_CORRELATION_NOT_IDENTIFIABLE_FROM_SINGLE_MARKET_TELEGRAM_LEDGER",
-  "h02_closed": false,
+  "agreement_wilson_upper95": 0.5392085249142078,
+  "generated_at_utc": "2026-10-27T00:55:08+00:00",
   "integration": {
-    "ev_modified": false,
-    "fail_closed_missing_metadata": true,
-    "fixture_tournament_day_daily_caps": true,
-    "flat_1u_preserved": true,
-    "p_matrix_modified": false,
-    "pre_telegram_gate": true
+    "fail_closed": true,
+    "real_money": "BLOCKED",
+    "stage": "FINAL_PREMATCH_BEFORE_TELEGRAM",
+    "stake_basis": "TEMPORARY_FLAT_1U_CAP_17OCT2026"
   },
-  "ledger_path": "evidence/notifications/telegram/MATRIX_TELEGRAM_SIGNAL_LEDGER.json",
-  "real_money": "BLOCKED",
-  "schema": "MATRIX_CORRELATED_RISK_CALIBRATION_PHYSICAL_PROOF_V1"
+  "limits": {
+    "max_day_fraction": 0.3,
+    "max_fixture_fraction": 0.005,
+    "max_tournament_day_fraction": 0.015
+  },
+  "method": {
+    "concentration_quantile": "nearest-rank p95",
+    "day_ceiling": "existing governed daily cap = 30%",
+    "fixture_ceiling": "1u = 0.5% initial bankroll",
+    "historical_overexposure_can_raise_caps": false,
+    "pair_dependence_diagnostic": "same-league/day binary outcome agreement + Wilson 95% upper bound",
+    "sample": "real settled paper bets only",
+    "tournament_day_ceiling": "existing 3-signal league/day policy = 1.5% under flat 1u"
+  },
+  "observed_pair_agreement_rate": 0.5169182717334722,
+  "protections": {
+    "automatic_wagering": false,
+    "ev_modified": false,
+    "odds_used_to_generate_probability": false,
+    "p_matrix_modified": false,
+    "real_money": "BLOCKED"
+  },
+  "same_league_day_outcome_pairs": 1921,
+  "sample_settled": 166,
+  "schema": "MATRIX_CORRELATED_RISK_CALIBRATION_V1",
+  "status": "PASS_EMPIRICAL_CONCENTRATION_CALIBRATION"
 }
