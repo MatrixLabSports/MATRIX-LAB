@@ -41,11 +41,19 @@ def build()->dict[str,Any]:
         over.get("eligible_rows"),True,True,
         "evidence/api_football/governance/over_2_5_p_matrix_promotion.json")
 
-    row=checkpoint.get("markets",{}).get("double_chance_x2",{})
-    add("DOUBLE_CHANCE_X2","RESEARCH_ONLY",
-        "4000-row calibration exists, but checkpoint explicitly forbids automatic market promotion; no dedicated Telegram quote/revalidation signal contract is certified.",
-        row.get("eligible_rows"),False,False,
-        "evidence/api_football/calibration_v2/CHECKPOINT_4000_MARKET_CALIBRATION_20261023.json")
+    dcx2=checkpoint.get("markets",{}).get("double_chance_x2",{})
+    dcx2_ready=dcx2_audit.get("status")=="PASS_PROMOTION_READY" and dcx2_audit.get("promotion_allowed") is True
+    if dcx2_ready:
+        add("DOUBLE_CHANCE_X2","SIGNAL_AUTHORIZED",
+            "Dedicated fail-closed Double Chance X2 readiness audit passed all promotion gates.",
+            dcx2.get("eligible_rows"),True,True,
+            "evidence/api_football/governance/MATRIX_DOUBLE_CHANCE_X2_PROMOTION_READINESS_LAST.json")
+    else:
+        blockers=dcx2_audit.get("blockers") or ["READINESS_AUDIT_NOT_YET_PERSISTED"]
+        add("DOUBLE_CHANCE_X2","RESEARCH_ONLY",
+            "Fail-closed Double Chance X2 audit blocks signal authorization: "+",".join(blockers),
+            dcx2.get("eligible_rows"),False,False,
+            "evidence/api_football/governance/MATRIX_DOUBLE_CHANCE_X2_PROMOTION_READINESS_LAST.json")
 
     dc1x=checkpoint.get("markets",{}).get("double_chance_1x",{})
     dc1x_ready=dc1x_audit.get("status")=="PASS_PROMOTION_READY" and dc1x_audit.get("promotion_allowed") is True
