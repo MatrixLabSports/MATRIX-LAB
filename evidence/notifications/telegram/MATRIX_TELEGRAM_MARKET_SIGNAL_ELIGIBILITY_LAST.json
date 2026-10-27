@@ -1,48 +1,4 @@
 {
-  "schema": "MATRIX_TELEGRAM_MARKET_SIGNAL_ELIGIBILITY_V1",
-  "status": "PASS_PHYSICALLY_DERIVED_FROM_GITHUB",
-  "source_ref": "repair/cor09-world-pipeline",
-  "source_shas": {
-    "promotion": "8e629bed5410d4259c7dd0c47a028baee09f084d",
-    "checkpoint": "4dfe247eb89d748e3ab1a387c9bba5c25aed00f7",
-    "MATCH_RESULT_1X2": "d97810273077d316566c3398bc8e72483052740f",
-    "UNDER_2_5": "d14df83b054a4520f6fd27a915cfa3970482cbb9",
-    "DOUBLE_CHANCE_1X": "61c08c6a66269a648300deeb56fa3e6332655b16",
-    "DOUBLE_CHANCE_X2": "486101de24942bca42ab3f81ded057479f0def36",
-    "DOUBLE_CHANCE_12": "763a3579781c6d87019d8cb9d7712bac9248bfaa",
-    "BTTS": "43599b6d4e49181e4eb64b6172f8e2622d2a1615",
-    "CORNERS_OVER_UNDER": "2b75c70e972a8c67ca1177bd6334ee11e3886acf",
-    "TEAM_TOTAL_SHOTS": "6b0c5e3b5bcd477a12bad5c9ba65073407449bf5",
-    "TEAM_SHOTS_ON_TARGET": "2887a69d751306d673f322fb9fc40cf1d9eef34e",
-    "TEAM_FOULS": "c6d51a58813db225f767b48a49654f7f695d1c79",
-    "TEAM_YELLOW_CARDS": "30dbdd71210b0c0ca7e0095eaf7d5cb14a87f200",
-    "PLAYER_SHOTS": "0f739aa4bf5636d56076b6d04b7c6efd87498f2b",
-    "registry": "e40c188173bf9d31f647127f061a8d2d03905e23",
-    "nine": "d63f4ecb3a58e18f9bc36339692f78337c176201"
-  },
-  "summary": {
-    "signal_active_count": 1,
-    "promotion_required_count": 4,
-    "blocked_count": 14,
-    "signal_active_markets": [
-      "OVER_2_5"
-    ],
-    "promotion_required_markets": [
-      "MATCH_RESULT_1X2",
-      "UNDER_2_5",
-      "DOUBLE_CHANCE_1X",
-      "DOUBLE_CHANCE_X2"
-    ]
-  },
-  "governance": {
-    "no_market_activated_without_explicit_promotion": true,
-    "calibration_does_not_equal_signal_authorization": true,
-    "odds_do_not_generate_p_matrix": true,
-    "minimum_decimal_odds_exclusive": 1.5,
-    "ev_must_be_positive": true,
-    "automatic_wagering": false,
-    "real_money": "BLOCKED"
-  },
   "checkpoint_adjudication": {
     "calibration_checkpoint_status": "OPENED_AND_MEASURED",
     "market_promotion": "NOT_AUTOMATICALLY_AUTHORIZED",
@@ -53,300 +9,334 @@
     "real_money_decision": "NO_GO_KEEP_BLOCKED",
     "reason": "FULL_GO_NO_GO_REQUIRES_PREREGISTERED_MARKET_RULES_PLUS_CLV_RISK_AND_EXECUTION_EVIDENCE"
   },
+  "generated_at_utc": "2026-10-27T20:50:16.707116+00:00",
+  "governance": {
+    "automatic_wagering": false,
+    "calibration_does_not_equal_signal_authorization": true,
+    "ev_must_be_positive": true,
+    "minimum_decimal_odds_exclusive": 1.5,
+    "no_market_activated_without_explicit_promotion": true,
+    "odds_do_not_generate_p_matrix": true,
+    "real_money": "BLOCKED"
+  },
   "rows": [
     {
+      "display_name": "Más de 2.5 goles",
       "market_key": "OVER_2_5",
-      "telegram_signal_state": "SIGNAL_ACTIVE",
-      "reason": "MARKET_SCOPED_PROMOTION_PHYSICALLY_PRESENT",
+      "price_requirement": "EXACT_2_5_AUTHORIZED_BOOK_ODDS_GT_1_50",
+      "production_authorized": true,
       "promotion_status": "PASS_PROMOTED_GOVERNED_P_MATRIX_SIGNAL_ONLY",
-      "checkpoint_eligible_rows": 4000,
-      "production_authorized": true
+      "reason": "MARKET_SCOPED_PROMOTION_PHYSICALLY_PRESENT",
+      "settlement_evidence": 4000,
+      "telegram_signal_state": "SIGNAL_ACTIVE"
     },
     {
+      "checkpoint_eligible_rows": 4000,
+      "display_name": "Resultado 1X2",
+      "lane_status": "ACTIVE_V2",
       "market_key": "MATCH_RESULT_1X2",
-      "telegram_signal_state": "PROMOTION_REQUIRED",
-      "reason": "CALIBRATED_OR_DERIVED_BUT_NO_SEPARATE_TELEGRAM_SIGNAL_PROMOTION",
-      "lane_status": "ACTIVE_V2",
-      "settlement_count": 3989,
-      "checkpoint_eligible_rows": 4000,
       "production_authorized": false,
+      "reason": "CALIBRATED_OR_DERIVED_BUT_NO_SEPARATE_TELEGRAM_SIGNAL_PROMOTION",
       "required_before_activation": [
         "PREREGISTERED_MARKET_SIGNAL_RULE",
         "MARKET_SCOPED_PROMOTION_ARTIFACT",
         "EXACT_EXECUTABLE_PRICE_MAPPING",
         "CLV_RISK_AND_EXECUTION_EVIDENCE"
-      ]
+      ],
+      "settlement_evidence": 4036,
+      "telegram_signal_state": "PROMOTION_REQUIRED"
     },
     {
+      "checkpoint_eligible_rows": 4000,
+      "display_name": "Menos de 2.5 goles",
+      "lane_status": "ACTIVE_V2",
       "market_key": "UNDER_2_5",
-      "telegram_signal_state": "PROMOTION_REQUIRED",
-      "reason": "CALIBRATED_OR_DERIVED_BUT_NO_SEPARATE_TELEGRAM_SIGNAL_PROMOTION",
-      "lane_status": "ACTIVE_V2",
-      "settlement_count": 3989,
-      "checkpoint_eligible_rows": 4000,
       "production_authorized": false,
+      "reason": "CALIBRATED_OR_DERIVED_BUT_NO_SEPARATE_TELEGRAM_SIGNAL_PROMOTION",
       "required_before_activation": [
         "PREREGISTERED_MARKET_SIGNAL_RULE",
         "MARKET_SCOPED_PROMOTION_ARTIFACT",
         "EXACT_EXECUTABLE_PRICE_MAPPING",
         "CLV_RISK_AND_EXECUTION_EVIDENCE"
-      ]
+      ],
+      "settlement_evidence": 4036,
+      "telegram_signal_state": "PROMOTION_REQUIRED"
     },
     {
+      "checkpoint_eligible_rows": 4000,
+      "display_name": "Doble oportunidad 1X",
+      "lane_status": "ACTIVE_V2",
       "market_key": "DOUBLE_CHANCE_1X",
-      "telegram_signal_state": "PROMOTION_REQUIRED",
-      "reason": "CALIBRATED_OR_DERIVED_BUT_NO_SEPARATE_TELEGRAM_SIGNAL_PROMOTION",
-      "lane_status": "ACTIVE_V2",
-      "settlement_count": 3989,
-      "checkpoint_eligible_rows": 4000,
       "production_authorized": false,
+      "reason": "CALIBRATED_OR_DERIVED_BUT_NO_SEPARATE_TELEGRAM_SIGNAL_PROMOTION",
       "required_before_activation": [
         "PREREGISTERED_MARKET_SIGNAL_RULE",
         "MARKET_SCOPED_PROMOTION_ARTIFACT",
         "EXACT_EXECUTABLE_PRICE_MAPPING",
         "CLV_RISK_AND_EXECUTION_EVIDENCE"
-      ]
+      ],
+      "settlement_evidence": 4036,
+      "telegram_signal_state": "PROMOTION_REQUIRED"
     },
     {
+      "checkpoint_eligible_rows": 4000,
+      "display_name": "Doble oportunidad X2",
+      "lane_status": "ACTIVE_V2",
       "market_key": "DOUBLE_CHANCE_X2",
-      "telegram_signal_state": "PROMOTION_REQUIRED",
-      "reason": "CALIBRATED_OR_DERIVED_BUT_NO_SEPARATE_TELEGRAM_SIGNAL_PROMOTION",
-      "lane_status": "ACTIVE_V2",
-      "settlement_count": 3989,
-      "checkpoint_eligible_rows": 4000,
       "production_authorized": false,
+      "reason": "CALIBRATED_OR_DERIVED_BUT_NO_SEPARATE_TELEGRAM_SIGNAL_PROMOTION",
       "required_before_activation": [
         "PREREGISTERED_MARKET_SIGNAL_RULE",
         "MARKET_SCOPED_PROMOTION_ARTIFACT",
         "EXACT_EXECUTABLE_PRICE_MAPPING",
         "CLV_RISK_AND_EXECUTION_EVIDENCE"
-      ]
+      ],
+      "settlement_evidence": 4036,
+      "telegram_signal_state": "PROMOTION_REQUIRED"
     },
     {
-      "market_key": "DOUBLE_CHANCE_12",
-      "telegram_signal_state": "BLOCKED",
-      "reason": "NOT_SUPERIOR_TO_POISSON_AT_N200_AND_FULL_LEDGER_LOG_LOSS_WORSE",
+      "display_name": "Doble oportunidad 12",
       "lane_status": "BLOCKED_NOT_PROMOTED",
-      "settlement_count": 0,
-      "production_authorized": false
+      "market_key": "DOUBLE_CHANCE_12",
+      "production_authorized": false,
+      "reason": "NOT_SUPERIOR_TO_POISSON_AT_N200_AND_FULL_LEDGER_LOG_LOSS_WORSE",
+      "settlement_evidence": 0,
+      "telegram_signal_state": "BLOCKED"
     },
     {
-      "market_key": "BTTS",
-      "telegram_signal_state": "BLOCKED",
-      "reason": "V2_REJECTED_N200_AND_V3_REJECTED_TEMPORAL_OOS",
+      "display_name": "Ambos equipos marcan",
       "lane_status": "BLOCKED_NEW_CHALLENGER_REQUIRED",
-      "settlement_count": 0,
-      "production_authorized": false
+      "market_key": "BTTS",
+      "production_authorized": false,
+      "reason": "V2_REJECTED_N200_AND_V3_REJECTED_TEMPORAL_OOS",
+      "settlement_evidence": 0,
+      "telegram_signal_state": "BLOCKED"
     },
     {
+      "display_name": "Córners Más/Menos",
+      "lane_status": "BLOCKED_NEW_MODEL_REQUIRED",
       "market_key": "CORNERS_OVER_UNDER",
-      "telegram_signal_state": "BLOCKED",
+      "production_authorized": false,
       "reason": "HISTORICAL_OOS_REJECTED",
-      "lane_status": "BLOCKED_NEW_MODEL_REQUIRED",
-      "settlement_count": 0,
-      "production_authorized": false
+      "settlement_evidence": 0,
+      "telegram_signal_state": "BLOCKED"
     },
     {
+      "display_name": "Tiros totales de equipo",
+      "lane_status": "BLOCKED_OPERATIONAL",
       "market_key": "TEAM_TOTAL_SHOTS",
-      "telegram_signal_state": "BLOCKED",
+      "production_authorized": false,
       "reason": "SCOPE_ALIGNMENT_AND_REAL_PREMATCH_LINE",
-      "lane_status": "BLOCKED_OPERATIONAL",
-      "settlement_count": 0,
-      "production_authorized": false
+      "settlement_evidence": 0,
+      "telegram_signal_state": "BLOCKED"
     },
     {
+      "display_name": "Tiros a puerta de equipo",
+      "lane_status": "BLOCKED_NEW_MODEL_REQUIRED",
       "market_key": "TEAM_SHOTS_ON_TARGET",
-      "telegram_signal_state": "BLOCKED",
+      "production_authorized": false,
       "reason": "HISTORICAL_OOS_REJECTED",
-      "lane_status": "BLOCKED_NEW_MODEL_REQUIRED",
-      "settlement_count": 0,
-      "production_authorized": false
+      "settlement_evidence": 0,
+      "telegram_signal_state": "BLOCKED"
     },
     {
+      "display_name": "Faltas de equipo",
+      "lane_status": "BLOCKED_NEW_MODEL_REQUIRED",
       "market_key": "TEAM_FOULS",
-      "telegram_signal_state": "BLOCKED",
+      "production_authorized": false,
       "reason": "HISTORICAL_OOS_REJECTED",
-      "lane_status": "BLOCKED_NEW_MODEL_REQUIRED",
-      "settlement_count": 0,
-      "production_authorized": false
+      "settlement_evidence": 0,
+      "telegram_signal_state": "BLOCKED"
     },
     {
+      "display_name": "Tarjetas amarillas de equipo",
+      "lane_status": "BLOCKED_NEW_MODEL_REQUIRED",
       "market_key": "TEAM_YELLOW_CARDS",
-      "telegram_signal_state": "BLOCKED",
+      "production_authorized": false,
       "reason": "HISTORICAL_OOS_REJECTED",
-      "lane_status": "BLOCKED_NEW_MODEL_REQUIRED",
-      "settlement_count": 0,
-      "production_authorized": false
+      "settlement_evidence": 0,
+      "telegram_signal_state": "BLOCKED"
     },
     {
-      "market_key": "PLAYER_SHOTS",
-      "telegram_signal_state": "BLOCKED",
-      "reason": "PREMATCH_LINEUP_ROLE_AND_EXPECTED_MINUTES_CERTIFICATION",
+      "display_name": "Remates de jugador",
       "lane_status": "BLOCKED_OPERATIONAL",
-      "settlement_count": 0,
-      "production_authorized": false
+      "market_key": "PLAYER_SHOTS",
+      "production_authorized": false,
+      "reason": "PREMATCH_LINEUP_ROLE_AND_EXPECTED_MINUTES_CERTIFICATION",
+      "settlement_evidence": 0,
+      "telegram_signal_state": "BLOCKED"
     },
     {
+      "display_name": "Goles primer tiempo Más/Menos",
+      "gate_100": {
+        "count": 0,
+        "remaining": 100,
+        "status": "SEALED",
+        "threshold": 100
+      },
+      "gate_300": {
+        "count": 0,
+        "remaining": 300,
+        "status": "SEALED",
+        "threshold": 300
+      },
+      "gate_600": {
+        "count": 0,
+        "remaining": 600,
+        "status": "SEALED",
+        "threshold": 600
+      },
       "market_key": "FIRST_HALF_TOTAL_GOALS_OVER_UNDER",
-      "telegram_signal_state": "BLOCKED_LAB",
-      "reason": "LAB_GATE_NOT_PRODUCTION_AUTHORIZED",
+      "production_authorized": false,
       "prospective_unique_count": 0,
-      "gates": {
-        "100": {
-          "count": 0,
-          "remaining": 100,
-          "status": "SEALED",
-          "threshold": 100
-        },
-        "300": {
-          "count": 0,
-          "remaining": 300,
-          "status": "SEALED",
-          "threshold": 300
-        },
-        "600": {
-          "count": 0,
-          "remaining": 600,
-          "status": "SEALED",
-          "threshold": 600
-        }
-      },
-      "production_authorized": false
+      "reason": "LAB_GATE_NOT_PRODUCTION_AUTHORIZED",
+      "telegram_signal_state": "BLOCKED_LAB"
     },
     {
+      "display_name": "Goles segundo tiempo Más/Menos",
+      "gate_100": {
+        "count": 0,
+        "remaining": 100,
+        "status": "SEALED",
+        "threshold": 100
+      },
+      "gate_300": {
+        "count": 0,
+        "remaining": 300,
+        "status": "SEALED",
+        "threshold": 300
+      },
+      "gate_600": {
+        "count": 0,
+        "remaining": 600,
+        "status": "SEALED",
+        "threshold": 600
+      },
       "market_key": "SECOND_HALF_TOTAL_GOALS_OVER_UNDER",
-      "telegram_signal_state": "BLOCKED_LAB",
-      "reason": "LAB_GATE_NOT_PRODUCTION_AUTHORIZED",
+      "production_authorized": false,
       "prospective_unique_count": 0,
-      "gates": {
-        "100": {
-          "count": 0,
-          "remaining": 100,
-          "status": "SEALED",
-          "threshold": 100
-        },
-        "300": {
-          "count": 0,
-          "remaining": 300,
-          "status": "SEALED",
-          "threshold": 300
-        },
-        "600": {
-          "count": 0,
-          "remaining": 600,
-          "status": "SEALED",
-          "threshold": 600
-        }
-      },
-      "production_authorized": false
+      "reason": "LAB_GATE_NOT_PRODUCTION_AUTHORIZED",
+      "telegram_signal_state": "BLOCKED_LAB"
     },
     {
+      "display_name": "Goles local primer tiempo",
+      "gate_100": {
+        "count": 0,
+        "remaining": 100,
+        "status": "SEALED",
+        "threshold": 100
+      },
+      "gate_300": {
+        "count": 0,
+        "remaining": 300,
+        "status": "SEALED",
+        "threshold": 300
+      },
+      "gate_600": {
+        "count": 0,
+        "remaining": 600,
+        "status": "SEALED",
+        "threshold": 600
+      },
       "market_key": "FIRST_HALF_TEAM_TOTAL_GOALS_HOME",
-      "telegram_signal_state": "BLOCKED_LAB",
-      "reason": "LAB_GATE_NOT_PRODUCTION_AUTHORIZED",
+      "production_authorized": false,
       "prospective_unique_count": 0,
-      "gates": {
-        "100": {
-          "count": 0,
-          "remaining": 100,
-          "status": "SEALED",
-          "threshold": 100
-        },
-        "300": {
-          "count": 0,
-          "remaining": 300,
-          "status": "SEALED",
-          "threshold": 300
-        },
-        "600": {
-          "count": 0,
-          "remaining": 600,
-          "status": "SEALED",
-          "threshold": 600
-        }
-      },
-      "production_authorized": false
+      "reason": "LAB_GATE_NOT_PRODUCTION_AUTHORIZED",
+      "telegram_signal_state": "BLOCKED_LAB"
     },
     {
+      "display_name": "Goles visitante primer tiempo",
+      "gate_100": {
+        "count": 0,
+        "remaining": 100,
+        "status": "SEALED",
+        "threshold": 100
+      },
+      "gate_300": {
+        "count": 0,
+        "remaining": 300,
+        "status": "SEALED",
+        "threshold": 300
+      },
+      "gate_600": {
+        "count": 0,
+        "remaining": 600,
+        "status": "SEALED",
+        "threshold": 600
+      },
       "market_key": "FIRST_HALF_TEAM_TOTAL_GOALS_AWAY",
-      "telegram_signal_state": "BLOCKED_LAB",
-      "reason": "LAB_GATE_NOT_PRODUCTION_AUTHORIZED",
+      "production_authorized": false,
       "prospective_unique_count": 0,
-      "gates": {
-        "100": {
-          "count": 0,
-          "remaining": 100,
-          "status": "SEALED",
-          "threshold": 100
-        },
-        "300": {
-          "count": 0,
-          "remaining": 300,
-          "status": "SEALED",
-          "threshold": 300
-        },
-        "600": {
-          "count": 0,
-          "remaining": 600,
-          "status": "SEALED",
-          "threshold": 600
-        }
-      },
-      "production_authorized": false
+      "reason": "LAB_GATE_NOT_PRODUCTION_AUTHORIZED",
+      "telegram_signal_state": "BLOCKED_LAB"
     },
     {
+      "display_name": "Goles local segundo tiempo",
+      "gate_100": {
+        "count": 0,
+        "remaining": 100,
+        "status": "SEALED",
+        "threshold": 100
+      },
+      "gate_300": {
+        "count": 0,
+        "remaining": 300,
+        "status": "SEALED",
+        "threshold": 300
+      },
+      "gate_600": {
+        "count": 0,
+        "remaining": 600,
+        "status": "SEALED",
+        "threshold": 600
+      },
       "market_key": "SECOND_HALF_TEAM_TOTAL_GOALS_HOME",
-      "telegram_signal_state": "BLOCKED_LAB",
-      "reason": "LAB_GATE_NOT_PRODUCTION_AUTHORIZED",
+      "production_authorized": false,
       "prospective_unique_count": 0,
-      "gates": {
-        "100": {
-          "count": 0,
-          "remaining": 100,
-          "status": "SEALED",
-          "threshold": 100
-        },
-        "300": {
-          "count": 0,
-          "remaining": 300,
-          "status": "SEALED",
-          "threshold": 300
-        },
-        "600": {
-          "count": 0,
-          "remaining": 600,
-          "status": "SEALED",
-          "threshold": 600
-        }
-      },
-      "production_authorized": false
+      "reason": "LAB_GATE_NOT_PRODUCTION_AUTHORIZED",
+      "telegram_signal_state": "BLOCKED_LAB"
     },
     {
-      "market_key": "SECOND_HALF_TEAM_TOTAL_GOALS_AWAY",
-      "telegram_signal_state": "BLOCKED_LAB",
-      "reason": "LAB_GATE_NOT_PRODUCTION_AUTHORIZED",
-      "prospective_unique_count": 0,
-      "gates": {
-        "100": {
-          "count": 0,
-          "remaining": 100,
-          "status": "SEALED",
-          "threshold": 100
-        },
-        "300": {
-          "count": 0,
-          "remaining": 300,
-          "status": "SEALED",
-          "threshold": 300
-        },
-        "600": {
-          "count": 0,
-          "remaining": 600,
-          "status": "SEALED",
-          "threshold": 600
-        }
+      "display_name": "Goles visitante segundo tiempo",
+      "gate_100": {
+        "count": 0,
+        "remaining": 100,
+        "status": "SEALED",
+        "threshold": 100
       },
-      "production_authorized": false
+      "gate_300": {
+        "count": 0,
+        "remaining": 300,
+        "status": "SEALED",
+        "threshold": 300
+      },
+      "gate_600": {
+        "count": 0,
+        "remaining": 600,
+        "status": "SEALED",
+        "threshold": 600
+      },
+      "market_key": "SECOND_HALF_TEAM_TOTAL_GOALS_AWAY",
+      "production_authorized": false,
+      "prospective_unique_count": 0,
+      "reason": "LAB_GATE_NOT_PRODUCTION_AUTHORIZED",
+      "telegram_signal_state": "BLOCKED_LAB"
     }
-  ]
+  ],
+  "schema": "MATRIX_TELEGRAM_MARKET_SIGNAL_ELIGIBILITY_V1",
+  "status": "PASS",
+  "summary": {
+    "blocked_count": 14,
+    "promotion_required_count": 4,
+    "promotion_required_markets": [
+      "MATCH_RESULT_1X2",
+      "UNDER_2_5",
+      "DOUBLE_CHANCE_1X",
+      "DOUBLE_CHANCE_X2"
+    ],
+    "signal_active_count": 1,
+    "signal_active_markets": [
+      "OVER_2_5"
+    ]
+  }
 }
