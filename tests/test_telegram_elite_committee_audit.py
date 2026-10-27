@@ -44,3 +44,4 @@ def test_committee_separates_delivery_from_pre_send_and_detects_persistence_regr
     assert "F01_CURRENT_ZERO_IS_PRE_SEND_SELECTION_NOT_TELEGRAM_DELIVERY" in ids
     assert "F05_15M_SUPERVISOR_PERSISTENCE_REGRESSION" in ids
     assert out["governance"]["real_money"]=="BLOCKED"
+    assert "FINAL_PREMATCH_WINDOW_NOT_OPEN_FOR_1_RECORDS" in out["direct_causes_of_current_zero"]
