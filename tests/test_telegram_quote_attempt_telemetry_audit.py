@@ -15,6 +15,10 @@ def test_audit_keeps_recommendation_closed_below_50(tmp_path,monkeypatch):
     assert r["recommendation_gate"]["recommendation_authorized"] is False
     assert r["exact_line_policy"]["nearby_lines_never_substitute_for_2_5"] is True
     assert r["protections"]["historical_terminal_state_cannot_overwrite_attempt"] is True
+    assert r["schema_evolution"]["current_schema"]=="MATRIX_TELEGRAM_QUOTE_ATTEMPT_V2"
+    assert "MATRIX_TELEGRAM_QUOTE_ATTEMPT_V1" in r["schema_evolution"]["legacy_schemas_preserved_without_rewrite"]
+    assert r["schema_evolution"]["mixed_version_hash_chain_supported"] is True
+    assert r["schema_evolution"]["historical_rows_rewritten"] is False
     assert r["required_field_contract"]["all_rows_schema_validated"] is True
     assert "provider_event_id" in r["required_field_contract"]["identity_fields"]
     assert "run_token" in r["required_field_contract"]["top_level_fields"]
