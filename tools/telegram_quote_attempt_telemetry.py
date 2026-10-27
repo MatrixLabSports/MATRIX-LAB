@@ -6,10 +6,13 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Mapping
 
-SCHEMA="MATRIX_TELEGRAM_QUOTE_ATTEMPT_V2"
-LEGACY_SCHEMAS={"MATRIX_TELEGRAM_QUOTE_ATTEMPT_V1"}
+from app.market.colombia_bookmakers import EXECUTION_BOOKMAKERS
+
+SCHEMA="MATRIX_TELEGRAM_QUOTE_ATTEMPT_V3"
+LEGACY_SCHEMAS={"MATRIX_TELEGRAM_QUOTE_ATTEMPT_V1","MATRIX_TELEGRAM_QUOTE_ATTEMPT_V2"}
 GENESIS="0"*64
-AUTHORIZED=("betano","betplay","rushbet")
+LEGACY_AUTHORIZED=("betano","betplay","rushbet")
+AUTHORIZED=tuple(sorted(EXECUTION_BOOKMAKERS))
 IDENTITY_STATES={"MATCHED","LOW_SCORE","AMBIGUOUS","NOT_COVERED"}
 REQUIRED_HOUSE_FIELDS={"seen","totals_market_seen","available_lines","nearby_lines_2_25_2_75","over_2_5_seen","exact_over_2_5_odds"}
 REQUIRED_IDENTITY_FIELDS={"state","score","provider_event_id","provider"}
@@ -67,9 +70,10 @@ def _load(path:Path)->list[dict[str,Any]]:
         if required_identity-set(ident):
             raise ValueError(f"QUOTE_ATTEMPT_IDENTITY_FIELDS_INCOMPLETE:{n}")
         houses=row.get("houses")
-        if not isinstance(houses,Mapping) or set(AUTHORIZED)-set(houses):
+        required_houses=AUTHORIZED if schema==SCHEMA else LEGACY_AUTHORIZED
+        if not isinstance(houses,Mapping) or set(required_houses)-set(houses):
             raise ValueError(f"QUOTE_ATTEMPT_HOUSES_INCOMPLETE:{n}")
-        for house in AUTHORIZED:
+        for house in required_houses:
             view=houses.get(house)
             if not isinstance(view,Mapping) or REQUIRED_HOUSE_FIELDS-set(view):
                 raise ValueError(f"QUOTE_ATTEMPT_HOUSE_VIEW_INCOMPLETE:{n}:{house}")
@@ -334,11 +338,17 @@ def summarize_run(rows:list[Mapping[str,Any]],run_token:str)->dict[str,Any]:
 
 
 def summarize_cumulative(rows:list[Mapping[str,Any]],minimum_target:int=50,maximum_target:int=100)->dict[str,Any]:
-    core=_summary_core(rows)
-    timing=_timing_disappearance(rows)
+    current=[x for x in rows if str(x.get("schema") or "")==SCHEMA]
+    legacy=[x for x in rows if str(x.get("schema") or "") in LEGACY_SCHEMAS]
+    core=_summary_core(current)
+    timing=_timing_disappearance(current)
     n=int(core["attempt_count"])
     return {
         "real_quote_attempts_total":n,
+        "legacy_quote_attempts_preserved":len(legacy),
+        "coverage_schema":SCHEMA,
+        "coverage_house_count":len(AUTHORIZED),
+        "coverage_houses":list(AUTHORIZED),
         "target_window_minimum":int(minimum_target),
         "target_window_maximum":int(maximum_target),
         "sample_gate_status":"READY_FOR_CAUSAL_RECOMMENDATION" if n>=minimum_target else "ACCUMULATING_REAL_REVALIDATIONS",
