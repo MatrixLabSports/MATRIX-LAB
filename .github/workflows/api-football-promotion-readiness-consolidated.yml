@@ -18,6 +18,7 @@ on:
       - .github/workflows/api-football-under25-promotion-readiness.yml
       - .github/workflows/api-football-double-chance-1x-promotion-readiness.yml
       - .github/workflows/api-football-double-chance-x2-promotion-readiness.yml
+      - tests/test_promotion_readiness_single_writer.py
       - evidence/api_football/calibration_v2/OOS_4001_5000_STATE.json
       - evidence/api_football/calibration_v2/lanes/1x2/state.json
       - evidence/api_football/calibration_v2/lanes/under_2_5/state.json
@@ -48,6 +49,12 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.11"
+
+      - name: Install test dependency
+        run: python -m pip install pytest
+
+      - name: Verify single-writer architecture
+        run: PYTHONPATH=. python -m pytest -q tests/test_promotion_readiness_single_writer.py
 
       - name: Build all market readiness artifacts
         run: |
