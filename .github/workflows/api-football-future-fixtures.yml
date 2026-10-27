@@ -11,7 +11,7 @@ on:
     branches:
       - repair/cor09-world-pipeline
     paths:
-      - evidence/football_world_inventory/2026-10-22/MATRIX_DAILY_MULTISOURCE_BROWSER_CROSSCHECK.json
+      - evidence/calendar_reconciliation/MATRIX_FOOTBALL_WORLD_CALENDAR_RECONCILIATION_LAST.json
 
 permissions:
   contents: write
@@ -59,45 +59,47 @@ jobs:
           print("REQUEST_BUDGET_FOR_THIS_WORKFLOW=1")
           PY
 
-      - name: Require daily SofaScore and Flashscore football crosscheck
+      - name: Require physical SofaScore + Flashscore reconciliation first
         shell: bash
         run: |
           set -euo pipefail
-          TODAY="$(TZ=America/Bogota date +%F)"
-          EVIDENCE="evidence/football_world_inventory/${TODAY}/MATRIX_DAILY_MULTISOURCE_BROWSER_CROSSCHECK.json"
-          test -f "${EVIDENCE}" || {
-            echo "DAILY_FOOTBALL_SOFASCORE_FLASHSCORE_CROSSCHECK_MISSING: ${EVIDENCE}"
-            exit 1
-          }
-          python - "${EVIDENCE}" <<'PY'
-          import json, sys
+          python - <<'PY' >> "$GITHUB_ENV"
+          import json
           from pathlib import Path
-          p=Path(sys.argv[1])
-          j=json.loads(p.read_text(encoding="utf-8"))
-          assert j["target_date_bogota"] == p.parent.name
-          assert j["sources"]["sofascore"]["opera_read_status"] == "PASS"
-          assert j["sources"]["flashscore"]["opera_read_status"] == "PASS"
-          assert j["governance_basis"]["sofascore_flashscore_daily_crosscheck_required"] is True
-          assert j["adjudication"]["api_football_counts_are_not_world_complete"] is True
-          assert j["protections"]["metrics_opened"] is False
-          assert j["protections"]["real_money"] == "BLOCKED"
-          print("DAILY_FOOTBALL_MULTISOURCE_BROWSER_CROSSCHECK: PASS")
-          PY
 
-      - name: Require autonomous exact calendar-first source-count report
-        shell: bash
-        run: |
-          set -euo pipefail
-          TODAY="$(TZ=America/Bogota date +%F)"
-          REPORT="evidence/daily_source_counts/${TODAY}/MATRIX_WORLD_CALENDAR_SOURCE_COUNTS.json"
-          test -f "${REPORT}" || exit 1
-          python -m tools.matrix_daily_calendar_baseline_gate --report "${REPORT}"
+          recon_path=Path("evidence/calendar_reconciliation/MATRIX_FOOTBALL_WORLD_CALENDAR_RECONCILIATION_LAST.json")
+          recon=json.loads(recon_path.read_text(encoding="utf-8"))
+          assert recon["status"]=="PASS_OPEN_RECONCILIATION"
+          assert recon["source_order"]==["SOFASCORE","FLASHSCORE","APIS"]
+          assert recon["policy"]["missing_not_zero"] is True
+          assert recon["policy"]["no_silent_imputation"] is True
+          assert recon["policy"]["no_forced_count_equality"] is True
+          assert recon["policy"]["automatic_wagering"] is False
+          assert recon["policy"]["real_money"]=="BLOCKED"
+
+          target=recon["target_date_bogota"]
+          day=Path("evidence/calendar_physical")/target
+          sofa=json.loads((day/"sofascore_opera_capture.json").read_text(encoding="utf-8"))
+          flash=json.loads((day/"flashscore_opera_capture.json").read_text(encoding="utf-8"))
+          assert sofa["target_date_bogota"]==target
+          assert flash["target_date_bogota"]==target
+          assert sofa["source"]=="SOFASCORE"
+          assert flash["source"]=="FLASHSCORE"
+          assert sofa["world_calendar_count"]==len(sofa["observations"])>0
+          assert flash["world_calendar_count"]==len(flash["observations"])>0
+          assert sofa["automatic_wagering"] is False and flash["automatic_wagering"] is False
+          assert sofa["real_money"]=="BLOCKED" and flash["real_money"]=="BLOCKED"
+
+          print(f"MATRIX_API_FOOTBALL_TARGET_DATE={target}")
+          print("BROWSER_FIRST_RECONCILIATION_PASS=1")
+          PY
+          test "$BROWSER_FIRST_RECONCILIATION_PASS" = "1"
 
       - name: Execute exactly one future fixture request
         shell: bash
         env:
           API_FOOTBALL_KEY: ${{ secrets.API_FOOTBALL_KEY }}
-          MATRIX_API_FOOTBALL_TARGET_DATE: ${{ inputs.target_date }}
+          MATRIX_API_FOOTBALL_TARGET_DATE: ${{ env.MATRIX_API_FOOTBALL_TARGET_DATE }}
           MATRIX_API_FOOTBALL_FIXTURE_DIR: evidence/api_football/fixtures
         run: |
           set -euo pipefail
