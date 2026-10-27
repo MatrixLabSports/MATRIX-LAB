@@ -29,9 +29,19 @@ def build_audit(base: Path, config: dict[str,Any], run_health: dict[str,Any]) ->
         else: break
 
     repair_verification=run_health.get("repair_verification") or {}
+    repair_status=str(repair_verification.get("status") or "")
+    legacy_repair_proof=bool(
+        repair_verification.get("persistence_rebase_regression_reproduced_after_fix") is False
+        and repair_verification.get("main_operational_workflow_same_sha") is True
+        and repair_verification.get("conclusion")=="success"
+    )
+    current_repair_proof=bool(
+        repair_verification.get("historical_persistence_regression_active") is False
+        and repair_verification.get("conclusion")=="success"
+    )
     persistence_repaired=bool(
-        repair_verification.get("status")=="PASS_REPAIRED_AND_PHYSICALLY_VERIFIED"
-        and repair_verification.get("historical_persistence_regression_active") is False
+        repair_status in {"REPAIR_PHYSICALLY_VERIFIED","PASS_REPAIRED_AND_PHYSICALLY_VERIFIED"}
+        and (legacy_repair_proof or current_repair_proof)
     )
     findings=[
       {
