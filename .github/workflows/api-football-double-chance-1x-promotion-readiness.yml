@@ -15,7 +15,7 @@ on:
       - evidence/api_football/calibration_v2/lanes/double_chance_1x/state.json
 
 permissions:
-  contents: write
+  contents: read
 
 concurrency:
   group: matrix-double-chance-1x-readiness
@@ -52,13 +52,3 @@ jobs:
           PY
       - name: Rebuild multi-market gate
         run: PYTHONPATH=. python -m tools.telegram_multi_market_signal_gate
-      - name: Persist evidence
-        run: |
-          git config user.name matrix-dc1x-readiness
-          git config user.email matrix-dc1x-readiness@users.noreply.github.com
-          git add evidence/api_football/governance/MATRIX_DOUBLE_CHANCE_1X_PROMOTION_READINESS_LAST.json
-          git add evidence/notifications/telegram/MATRIX_TELEGRAM_MULTI_MARKET_SIGNAL_GATE_LAST.json
-          if git diff --cached --quiet; then exit 0; fi
-          git commit -m "evidence(football): refresh Double Chance 1X readiness"
-          git pull --rebase origin repair/cor09-world-pipeline
-          git push origin HEAD:repair/cor09-world-pipeline
