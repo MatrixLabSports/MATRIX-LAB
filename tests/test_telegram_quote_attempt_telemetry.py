@@ -152,3 +152,36 @@ def test_summary_reports_seen_totals_and_exact_per_house():
     assert s["book_seen_by_house"]=={"betano":1,"betplay":1,"rushbet":1}
     assert s["totals_market_seen_by_house"]=={"betano":1,"betplay":1,"rushbet":0}
     assert s["exact_over25_coverage_by_house"]=={"betano":0,"betplay":1,"rushbet":0}
+
+
+
+def test_api_football_exact_fixture_identity_prevents_false_not_covered():
+    odds_diag={
+      "status":"BLOCKED_EVENT_NOT_COVERED",
+      "identity_top_scores":[],
+      "identity_top_candidates":[],
+      "rows_by_book":{},
+      "candidate_lines_by_book":{},
+    }
+    api_diag={
+      "fixture_id":"999",
+      "response_rows":1,
+      "authorized_books_seen":["betano"],
+      "goals_over_under_books":["betano"],
+      "over25_books":["betano"],
+      "exact_over25_odds_by_book":{"betano":[1.80]},
+      "status":"PASS_EXACT_AUTHORIZED_OVER25_FOUND",
+    }
+    row=build_attempt(
+      fixture_id="999",signal_key="api-match",
+      query_at_utc=datetime(2026,10,26,12,0,tzinfo=timezone.utc),
+      kickoff="2026-10-26T13:00:00+00:00",
+      odds_diag=odds_diag,api_diag=api_diag,
+      selected_offer={"house":"Betano","odds":1.80},
+      final_discard_reason="PASS_FINAL_PREMATCH_REVALIDATION",
+      run_token="r-api",
+    )
+    assert row["identity_match"]["state"]=="MATCHED"
+    assert row["identity_match"]["score"]==1.0
+    assert row["identity_match"]["provider_event_id"]=="999"
+    assert row["identity_match"]["provider"]=="API-Football canonical fixture_id"
