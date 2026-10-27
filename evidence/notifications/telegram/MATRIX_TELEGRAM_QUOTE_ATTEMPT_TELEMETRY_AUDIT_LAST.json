@@ -5,7 +5,7 @@
     "required_valid_execution_line": 2.5
   },
   "first_terminal_state_independent": true,
-  "generated_at_utc": "2026-10-27T00:32:10+00:00",
+  "generated_at_utc": "2026-10-27T00:58:12+00:00",
   "immutable_hash_chain_verified": true,
   "ledger_path": "evidence/notifications/telegram/MATRIX_TELEGRAM_QUOTE_ATTEMPTS.jsonl",
   "protections": {
@@ -21,11 +21,60 @@
     "no_synthetic_rows": true,
     "recommendation_authorized": false
   },
+  "reporting_scope_contract": {
+    "LIVE_THIS_RUN": {
+      "historical_terminal_states_included": false,
+      "source": "run_token_scoped_immutable_quote_attempts"
+    },
+    "TERMINAL_HISTORICAL": {
+      "may_describe_prior_runs": true,
+      "may_not_overwrite_immutable_attempt_rows": true,
+      "source": "candidate_lifecycle.first_terminal_state"
+    },
+    "legacy_combined_counts_must_not_be_interpreted_as_live_coverage": true
+  },
   "required_authorized_books": [
     "betano",
     "betplay",
     "rushbet"
   ],
+  "required_field_contract": {
+    "all_rows_schema_validated": true,
+    "identity_fields": [
+      "provider",
+      "provider_event_id",
+      "score",
+      "state"
+    ],
+    "per_house_fields": [
+      "available_lines",
+      "exact_over_2_5_odds",
+      "nearby_lines_2_25_2_75",
+      "over_2_5_seen",
+      "seen",
+      "totals_market_seen"
+    ],
+    "top_level_fields": [
+      "fixture_id",
+      "signal_key",
+      "run_token",
+      "query_at_utc",
+      "kickoff_utc",
+      "seconds_to_kickoff",
+      "identity_match",
+      "houses",
+      "totals_market_seen_any_authorized",
+      "exact_lines_available_any_authorized",
+      "over_2_5_seen_any_authorized",
+      "exact_over_2_5_odds_by_house",
+      "final_discard_reason",
+      "evidence_sha256",
+      "evidence_snapshot",
+      "terminal_state_independent",
+      "automatic_wagering",
+      "real_money"
+    ]
+  },
   "sample": {
     "all_three_without_exact_over25": 3,
     "book_seen_by_house": {
@@ -55,5 +104,13 @@
     }
   },
   "schema": "MATRIX_TELEGRAM_QUOTE_ATTEMPT_TELEMETRY_AUDIT_V1",
+  "schema_evolution": {
+    "current_schema": "MATRIX_TELEGRAM_QUOTE_ATTEMPT_V2",
+    "historical_rows_rewritten": false,
+    "legacy_schemas_preserved_without_rewrite": [
+      "MATRIX_TELEGRAM_QUOTE_ATTEMPT_V1"
+    ],
+    "mixed_version_hash_chain_supported": true
+  },
   "status": "PASS"
 }
