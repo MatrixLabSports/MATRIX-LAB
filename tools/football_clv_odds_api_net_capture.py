@@ -316,24 +316,48 @@ def capture_due_via_odds_api_net(
         home = str((row.get("teams") or {}).get("home", {}).get("name") or "")
         away = str((row.get("teams") or {}).get("away", {}).get("name") or "")
         start = int(kickoff.timestamp())
-        er, ep = _get_json(
-            client,
-            ODDS_API_BASE + "/events",
-            headers=oa_headers,
-            params={
-                "sport": "soccer",
-                "start_from": start - 900,
-                "start_to": start + 900,
-                "limit": 100,
-                "include_bookmaker_ids": "true",
-            },
-        )
-        result["network_calls"] += 1
+        event_params = {
+            "sport": "soccer",
+            "start_from": start - 900,
+            "start_to": start + 900,
+            "limit": 100,
+            "include_bookmaker_ids": "true",
+        }
+        events: list[Mapping[str, Any]] = []
+        cursor: str | None = None
+        er = None
+        ep: Mapping[str, Any] | dict[str, Any] = {}
+        event_page_count = 0
+        pagination_blocked = False
+        while True:
+            params = dict(event_params)
+            if cursor:
+                params["cursor"] = cursor
+            er, ep = _get_json(
+                client,
+                ODDS_API_BASE + "/events",
+                headers=oa_headers,
+                params=params,
+            )
+            result["network_calls"] += 1
+            event_page_count += 1
+            if er.status_code >= 300 or not isinstance(ep, Mapping):
+                break
+            page_items = ep.get("items")
+            if isinstance(page_items, list):
+                events.extend(x for x in page_items if isinstance(x, Mapping))
+            next_cursor = ep.get("next_cursor")
+            if not next_cursor:
+                cursor = None
+                break
+            cursor = str(next_cursor)
+            if event_page_count >= 10:
+                pagination_blocked = True
+                break
         identity_attempted_raw = clock()
         if identity_attempted_raw.tzinfo is None or identity_attempted_raw.utcoffset() is None:
             raise ValueError("CAPTURE_CLOCK_MUST_BE_TIMEZONE_AWARE")
         identity_attempted_at = identity_attempted_raw.astimezone(timezone.utc).replace(microsecond=0)
-        events = ep.get("items") if isinstance(ep, Mapping) else []
         scored: list[tuple[float, bool, Mapping[str, Any]]] = []
         for event in events or []:
             if not isinstance(event, Mapping):
@@ -345,7 +369,9 @@ def capture_due_via_odds_api_net(
         best = scored[0] if scored else None
         second_score = scored[1][0] if len(scored) > 1 else 0.0
         if (
-            er.status_code >= 300
+            er is None
+            or er.status_code >= 300
+            or pagination_blocked
             or best is None
             or best[0] < 0.85
             or (len(scored) > 1 and best[0] - second_score < 0.05)
@@ -362,6 +388,9 @@ def capture_due_via_odds_api_net(
                 "gate_excess_seconds": None,
                 "best_identity_score": best[0] if best else None,
                 "second_identity_score": second_score if best else None,
+                "event_search_page_count": event_page_count,
+                "event_search_rows_seen": len(events),
+                "event_search_pagination_blocked": pagination_blocked,
             })
             continue
 
