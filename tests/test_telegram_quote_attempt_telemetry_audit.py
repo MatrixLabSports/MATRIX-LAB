@@ -25,3 +25,44 @@ def test_audit_keeps_recommendation_closed_below_50(tmp_path,monkeypatch):
     assert r["reporting_scope_contract"]["LIVE_THIS_RUN"]["historical_terminal_states_included"] is False
     assert r["reporting_scope_contract"]["TERMINAL_HISTORICAL"]["may_not_overwrite_immutable_attempt_rows"] is True
     assert r["reporting_scope_contract"]["legacy_combined_counts_must_not_be_interpreted_as_live_coverage"] is True
+
+
+def test_certification_tracks_v2_rows_and_chain_bridge(tmp_path,monkeypatch):
+    ledger=tmp_path/"attempts.jsonl"
+    monkeypatch.setattr(mod,"LEDGER",ledger)
+    from datetime import datetime,timezone
+    from tools.telegram_quote_attempt_telemetry import build_attempt,append_attempt,load_verified
+
+    def diag(event_id):
+        return {
+          "status":"NO_EXACT_OVER25_FOUND",
+          "identity_top_scores":[0.99],
+          "identity_top_candidates":[{"score":0.99,"event_id":event_id}],
+          "odds_api_event_id":event_id,
+          "rows_by_book":{"betano":1},
+          "candidate_lines_by_book":{
+            "betano":[{"market_key":"total","side":"over","line":2.5,"odds":1.8}],
+          },
+        }
+
+    for i in range(2):
+        row=build_attempt(
+          fixture_id=str(i),signal_key=f"k{i}",
+          query_at_utc=datetime(2026,10,27,1,i,tzinfo=timezone.utc),
+          kickoff="2026-10-27T02:00:00+00:00",
+          odds_diag=diag(f"ev{i}"),api_diag={},
+          selected_offer={"house":"Betano","odds":1.8},
+          final_discard_reason="PASS_FINAL_PREMATCH_ALL_IMMEDIATE_GATES",
+          run_token="r",
+        )
+        append_attempt(ledger,row)
+
+    audit=mod.build()
+    cert=mod.build_certification(load_verified(ledger),audit)
+    assert cert["status"]=="PASS"
+    assert cert["verified_row_count"]==2
+    assert cert["v2_real_row_count"]==2
+    assert cert["first_v2_row_present"] is True
+    assert cert["first_v2_chain_bridge_verified"] is True
+    assert cert["no_legacy_rows_after_first_v2"] is True
+    assert cert["real_money"]=="BLOCKED"
