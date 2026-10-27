@@ -1,0 +1,339 @@
+{
+  "blocker_state_counts": {
+    "BLOCKED_KICKOFF_REACHED_MONITORING_BREACH": 2,
+    "BLOCKED_NONPOSITIVE_EV": 5,
+    "BLOCKED_NO_FRESH_PINNACLE_REFERENCE": 3,
+    "BLOCKED_NO_VALID_EXACT_AUTHORIZED_BOOK_OVER25": 65,
+    "WAITING_FINAL_REVALIDATION_WINDOW": 53
+  },
+  "committee_decision": {
+    "continue_t120_revalidation": true,
+    "expand_exact_quote_recovery": true,
+    "lower_gates_to_force_signals": false,
+    "repair_15m_persistence_and_branch_parity": true,
+    "telegram_api_is_current_direct_root_cause": false
+  },
+  "committee_name": "MATRIX Sindicato Elite — Comité de Diagnóstico Telegram",
+  "direct_causes_of_current_zero": [
+    "NO_CANDIDATE_PASSED_PRE_SEND_IN_LATEST_GREEN_SIGNAL_RUN",
+    "FINAL_PREMATCH_WINDOW_NOT_OPEN_FOR_53_RECORDS",
+    "EXACT_AUTHORIZED_OVER25_QUOTE_COVERAGE_LIMITATION"
+  ],
+  "findings": [
+    {
+      "diagnosis": "The latest green-signal workflow executed successfully but no candidate passed pre-send. Telegram delivery was not the direct blocker in that run.",
+      "evidence": {
+        "delivery_failures_now": 0,
+        "latest_green_signal_run_conclusion": "success",
+        "pre_send_blocked": 75,
+        "pre_send_passed": 0,
+        "pre_send_waiting_window": 53,
+        "sent_now": 0
+      },
+      "id": "F01_CURRENT_ZERO_IS_PRE_SEND_SELECTION_NOT_TELEGRAM_DELIVERY",
+      "owners": [
+        "INCIDENT_COMMANDER",
+        "TELEGRAM_DELIVERY",
+        "OPERATIONS"
+      ],
+      "severity": "HIGH",
+      "verdict": "CONFIRMED"
+    },
+    {
+      "diagnosis": "Candidates outside the final prematch window must wait; no backfill after kickoff is permitted.",
+      "evidence": {
+        "WAITING_FINAL_REVALIDATION_WINDOW": 53
+      },
+      "id": "F02_FINAL_WINDOW_IS_ACTIVE_PRIMARY_SHORT_TERM_BLOCKER",
+      "owners": [
+        "TEMPORAL_INTEGRITY",
+        "OPERATIONS",
+        "FOOTBALL_DOMAIN"
+      ],
+      "severity": "HIGH",
+      "verdict": "CONFIRMED"
+    },
+    {
+      "diagnosis": "Exact executable Over 2.5 coverage is concentrated in Betano; BetPlay and Rushbet have zero exact observed coverage in the current immutable sample.",
+      "evidence": {
+        "blocked_no_valid_exact_authorized_book_over25": 65,
+        "exact_over25_coverage_by_house": {
+          "betano": 15,
+          "betplay": 0,
+          "rushbet": 0
+        },
+        "real_quote_attempts_total": 18,
+        "remaining_to_50": 32
+      },
+      "id": "F03_EXACT_AUTHORIZED_OVER25_QUOTE_COVERAGE_IS_STRUCTURAL_BOTTLENECK",
+      "owners": [
+        "MARKET_MICROSTRUCTURE",
+        "BOOKMAKER_COVERAGE",
+        "DATA_ENGINEERING"
+      ],
+      "severity": "HIGH",
+      "verdict": "CONFIRMED"
+    },
+    {
+      "diagnosis": "Some candidates are correctly rejected by fresh-sharp-reference and positive-EV gates; these gates must not be weakened to manufacture signals.",
+      "evidence": {
+        "blocked_no_fresh_pinnacle": 3,
+        "blocked_nonpositive_ev": 5
+      },
+      "id": "F04_SHARP_AND_EV_GATES_ALSO_REMOVE_CANDIDATES",
+      "owners": [
+        "SHARP_REFERENCE",
+        "QUANT_MODEL",
+        "STATISTICAL_VALIDATION"
+      ],
+      "severity": "MEDIUM",
+      "verdict": "CONFIRMED"
+    },
+    {
+      "diagnosis": "The dedicated 15-minute supervisor has a Git persistence regression caused by unstaged generated telemetry plus default-branch/operational-branch contract drift.",
+      "evidence": {
+        "consecutive_recent_failures": 3,
+        "run_111_error": "error: cannot rebase: You have unstaged changes.",
+        "scheduler_contract_drift": {
+          "checkout_execution_branch": "repair/cor09-world-pipeline",
+          "main_and_operational_workflow_equal": false,
+          "main_missing_stage_contract": [
+            "evidence/notifications/telegram/MATRIX_TELEGRAM_QUOTE_ATTEMPTS.jsonl",
+            "evidence/notifications/telegram/MATRIX_TELEGRAM_QUOTE_ATTEMPT_TELEMETRY_AUDIT_LAST.json"
+          ],
+          "schedule_definition_source": "default branch main",
+          "severity": "CRITICAL_RELIABILITY_DEFECT"
+        }
+      },
+      "id": "F05_15M_SUPERVISOR_PERSISTENCE_REGRESSION",
+      "owners": [
+        "SRE_WORKFLOW",
+        "GITOPS_CONCURRENCY",
+        "RELEASE_ENGINEERING",
+        "QA_ADVERSARIAL"
+      ],
+      "severity": "CRITICAL",
+      "verdict": "CONFIRMED"
+    },
+    {
+      "diagnosis": "A separate green-signal workflow is still executing the signal engine successfully, so the persistence regression is a resilience defect rather than proof of a total Telegram blackout.",
+      "evidence": {
+        "green_signal_conclusion": "success",
+        "green_signal_run": 1250,
+        "watchdog_summary": {
+          "active_future_candidates": 23,
+          "critical_unresolved_candidates": 0,
+          "failures": 0,
+          "last_supervisor_run_age_minutes": 0.03,
+          "monitoring_breaches": 51,
+          "new_monitoring_breaches": 0,
+          "status": "PASS",
+          "warnings": 0
+        }
+      },
+      "id": "F06_REDUNDANT_GREEN_SIGNAL_WORKFLOW_REMAINS_OPERATIONAL",
+      "owners": [
+        "SRE_WORKFLOW",
+        "RED_TEAM",
+        "OBSERVABILITY"
+      ],
+      "severity": "INFO",
+      "verdict": "CONFIRMED"
+    },
+    {
+      "diagnosis": "H02 remains fail-closed research governance. The latest zero occurred before any candidate reached send, so H02 is not established as the direct cause of sent_now=0.",
+      "evidence": {
+        "h02_closed": false,
+        "sample_records": null,
+        "status": null
+      },
+      "id": "F07_H02_IS_OPEN_BUT_NOT_CAUSE_OF_CURRENT_ZERO",
+      "owners": [
+        "PORTFOLIO_RISK",
+        "GOVERNANCE_AUDIT"
+      ],
+      "severity": "INFO",
+      "verdict": "CONFIRMED"
+    }
+  ],
+  "governance": {
+    "automatic_wagering": false,
+    "missing_not_zero": true,
+    "no_backfill_after_kickoff": true,
+    "no_invention": true,
+    "no_silent_imputation": true,
+    "odds_generate_p_matrix": false,
+    "real_money": "BLOCKED"
+  },
+  "latest_green_signal_run": {
+    "completed_at_utc": "2026-10-27T04:07:13+00:00",
+    "conclusion": "success",
+    "persistence_step": "PASS",
+    "physical_output": {
+      "delivery_failures_now": 0,
+      "football_candidates": 128,
+      "paper_bankroll_current_cop": 4859500,
+      "pre_send_blocked": 75,
+      "pre_send_passed": 0,
+      "pre_send_waiting_window": 53,
+      "quote_checks": 0,
+      "real_money": "BLOCKED",
+      "sent_now": 0,
+      "total_green_messages": 223,
+      "total_settlements": 187
+    },
+    "run_id": 40447860754,
+    "run_number": 1250,
+    "secrets_validation": "PASS",
+    "started_at_utc": "2026-10-27T04:06:12+00:00",
+    "supervisor_step": "PASS",
+    "workflow": "Telegram Señales Verdes MATRIX"
+  },
+  "quote_sample": {
+    "all_three_without_exact_over25": 3,
+    "book_seen_by_house": {
+      "betano": 15,
+      "betplay": 0,
+      "rushbet": 0
+    },
+    "exact_over25_coverage_by_house": {
+      "betano": 15,
+      "betplay": 0,
+      "rushbet": 0
+    },
+    "identity_problem_count": 9,
+    "nearby_2_25_or_2_75_without_exact_2_5": 0,
+    "real_quote_attempts_total": 18,
+    "remaining_to_minimum": 32,
+    "sample_gate_status": "ACCUMULATING_REAL_REVALIDATIONS",
+    "synthetic_attempts_included": false,
+    "target_window_maximum": 100,
+    "target_window_minimum": 50,
+    "timing_disappearance_fixture_count": 0,
+    "timing_disappearance_fixtures": [],
+    "totals_market_seen_by_house": {
+      "betano": 15,
+      "betplay": 0,
+      "rushbet": 0
+    }
+  },
+  "reliability_defects": [
+    "DEDICATED_15M_SUPERVISOR_PERSISTENCE_REBASE_FAILURE",
+    "DEFAULT_BRANCH_VS_OPERATIONAL_WORKFLOW_CONTRACT_DRIFT"
+  ],
+  "role_count": 22,
+  "roles": [
+    {
+      "id": "INCIDENT_COMMANDER",
+      "remit": "Integra hallazgos, prioriza causa raíz y separa causa primaria de defectos secundarios.",
+      "title": "Director de incidente / Reliability Lead"
+    },
+    {
+      "id": "SRE_WORKFLOW",
+      "remit": "Cadencia, disponibilidad, runs, fallos, timeouts y recuperación.",
+      "title": "Principal Site Reliability Engineer"
+    },
+    {
+      "id": "GITOPS_CONCURRENCY",
+      "remit": "Rebase, push, dirty worktree, carreras de escritores y persistencia.",
+      "title": "Staff GitOps & Concurrency Engineer"
+    },
+    {
+      "id": "TELEGRAM_DELIVERY",
+      "remit": "Secretos, API Telegram, errores de entrega, duplicados y confirmación de envío.",
+      "title": "Principal Messaging/Telegram Engineer"
+    },
+    {
+      "id": "QUANT_MODEL",
+      "remit": "P_MATRIX, elegibilidad, calibración y separación modelo/cuotas.",
+      "title": "Lead Quantitative Sports Modeler"
+    },
+    {
+      "id": "MARKET_MICROSTRUCTURE",
+      "remit": "Cuota ejecutable, línea exacta 2.5, disponibilidad y desaparición de mercados.",
+      "title": "Sports Betting Market Microstructure Lead"
+    },
+    {
+      "id": "SHARP_REFERENCE",
+      "remit": "Pinnacle fresca, CLV y referencias sharp.",
+      "title": "Sharp Market & CLV Lead"
+    },
+    {
+      "id": "BOOKMAKER_COVERAGE",
+      "remit": "Betano/BetPlay/Rushbet y recuperación multibook.",
+      "title": "Colombia Sportsbook Coverage Lead"
+    },
+    {
+      "id": "TEMPORAL_INTEGRITY",
+      "remit": "T−120, kickoff, no-backfill y orden temporal de decisiones.",
+      "title": "Point-in-Time Data Architect"
+    },
+    {
+      "id": "DATA_ENGINEERING",
+      "remit": "Integridad de evidence, schemas, persistencia y trazabilidad.",
+      "title": "Principal Data Engineer"
+    },
+    {
+      "id": "IDENTITY_RESOLUTION",
+      "remit": "Fixture/team/provider identity y fallas de matching.",
+      "title": "Entity Resolution Lead"
+    },
+    {
+      "id": "OBSERVABILITY",
+      "remit": "Telemetría, contadores LIVE_THIS_RUN vs histórico y watchdog.",
+      "title": "Principal Observability Engineer"
+    },
+    {
+      "id": "QA_ADVERSARIAL",
+      "remit": "Pruebas de regresión, fail-closed y escenarios de carrera.",
+      "title": "Adversarial QA Lead"
+    },
+    {
+      "id": "SECURITY_SECRETS",
+      "remit": "Presencia de secretos sin exponerlos y gates de seguridad.",
+      "title": "Security & Secrets Reliability Lead"
+    },
+    {
+      "id": "PORTFOLIO_RISK",
+      "remit": "H02, exposición correlacionada y guardrails de stake.",
+      "title": "Portfolio Risk Lead"
+    },
+    {
+      "id": "STATISTICAL_VALIDATION",
+      "remit": "Tamaño de muestra, cobertura 18/50 y validez de recomendaciones.",
+      "title": "Senior Statistical Validation Scientist"
+    },
+    {
+      "id": "FOOTBALL_DOMAIN",
+      "remit": "Calendario, mercados y elegibilidad fútbol.",
+      "title": "Football Domain Research Lead"
+    },
+    {
+      "id": "TENNIS_DOMAIN",
+      "remit": "Aislamiento de tenis para evitar contaminación del pipeline Telegram fútbol.",
+      "title": "Tennis Domain Research Lead"
+    },
+    {
+      "id": "GOVERNANCE_AUDIT",
+      "remit": "Precedencia, evidencia física, no inventar y estados sellados.",
+      "title": "Independent Model Governance Auditor"
+    },
+    {
+      "id": "RED_TEAM",
+      "remit": "Busca explicaciones alternativas y contradicciones antes de cerrar causa raíz.",
+      "title": "Independent Red Team Reviewer"
+    },
+    {
+      "id": "RELEASE_ENGINEERING",
+      "remit": "Paridad main/operativa, despliegue y rollback.",
+      "title": "Release & Change Management Lead"
+    },
+    {
+      "id": "OPERATIONS",
+      "remit": "Comprueba si la ausencia es esperada por ventana o una brecha operativa.",
+      "title": "24x7 Sports Operations Lead"
+    }
+  ],
+  "schema": "MATRIX_TELEGRAM_ELITE_COMMITTEE_AUDIT_V1",
+  "status": "ROOT_CAUSES_IDENTIFIED_ACTION_REQUIRED"
+}
