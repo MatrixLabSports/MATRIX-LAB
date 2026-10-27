@@ -52,7 +52,9 @@ concurrency:
   # Separate code-push certification from scheduled/workflow-run supervision so
   # repair commits never queue ahead of the 15-minute operational cadence.
   group: telegram-green-signals-${{ github.event_name }}
-  cancel-in-progress: false
+  # Supersede only obsolete code-push runs. Never cancel schedule/workflow_run
+  # supervision, preserving every operational 15-minute cycle.
+  cancel-in-progress: ${{ github.event_name == 'push' }}
 
 jobs:
   notify:
