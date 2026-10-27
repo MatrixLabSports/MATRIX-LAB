@@ -26,3 +26,20 @@ def test_reconcile_is_conservative_and_does_not_force_counts():
     assert out["policy"]["time_match_certified"] is False
     assert out["policy"]["automatic_wagering"] is False
     assert out["policy"]["real_money"]=="BLOCKED"
+
+
+def test_reconcile_supports_27oct_without_hardcoded_date():
+    sofa={
+      "target_date_bogota":"2026-10-27",
+      "observations":[
+        "27/10/26 18:00 Cúcuta Deportivo Cúcuta Rionegro Águilas Doradas Águilas Doradas 1 2.55 X 3.20 2 2.80",
+      ],
+    }
+    flash={
+      "target_date_bogota":"2026-10-27",
+      "observations":["Cúcuta - Águilas Doradas"],
+    }
+    out=reconcile(sofa,flash,datetime(2026,10,27,1,30,tzinfo=timezone.utc))
+    assert out["reconciliation"]["confirmed_both"]==1
+    assert out["reconciliation"]["sofascore_only"]==0
+    assert out["reconciliation"]["flashscore_only"]==0
