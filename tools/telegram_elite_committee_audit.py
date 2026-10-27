@@ -28,6 +28,11 @@ def build_audit(base: Path, config: dict[str,Any], run_health: dict[str,Any]) ->
         if row.get("conclusion")=="failure": consecutive_failures += 1
         else: break
 
+    repair_verification=run_health.get("repair_verification") or {}
+    persistence_repaired=bool(
+        repair_verification.get("status")=="PASS_REPAIRED_AND_PHYSICALLY_VERIFIED"
+        and repair_verification.get("historical_persistence_regression_active") is False
+    )
     findings=[
       {
         "id":"F01_CURRENT_ZERO_IS_PRE_SEND_SELECTION_NOT_TELEGRAM_DELIVERY",
@@ -80,13 +85,18 @@ def build_audit(base: Path, config: dict[str,Any], run_health: dict[str,Any]) ->
         "id":"F05_15M_SUPERVISOR_PERSISTENCE_REGRESSION",
         "severity":"CRITICAL",
         "owners":["SRE_WORKFLOW","GITOPS_CONCURRENCY","RELEASE_ENGINEERING","QA_ADVERSARIAL"],
-        "verdict":"CONFIRMED",
+        "verdict":"REPAIRED_VERIFIED" if persistence_repaired else "CONFIRMED_ACTIVE",
         "evidence":{
-          "consecutive_recent_failures":consecutive_failures,
+          "consecutive_recent_failures_before_repair":consecutive_failures,
           "run_111_error":(run_health.get("run_111_failure") or {}).get("exact_error"),
           "scheduler_contract_drift":run_health.get("scheduler_contract_drift"),
+          "repair_verification":repair_verification,
         },
-        "diagnosis":"The dedicated 15-minute supervisor has a Git persistence regression caused by unstaged generated telemetry plus default-branch/operational-branch contract drift."
+        "diagnosis":(
+          "The Git persistence regression and branch-contract drift were physically repaired and verified by a successful dedicated 15-minute supervisor run."
+          if persistence_repaired else
+          "The dedicated 15-minute supervisor has a Git persistence regression caused by unstaged generated telemetry plus default-branch/operational-branch contract drift."
+        )
       },
       {
         "id":"F06_REDUNDANT_GREEN_SIGNAL_WORKFLOW_REMAINS_OPERATIONAL",
@@ -118,10 +128,21 @@ def build_audit(base: Path, config: dict[str,Any], run_health: dict[str,Any]) ->
         "FINAL_PREMATCH_WINDOW_NOT_OPEN_FOR_53_RECORDS",
         "EXACT_AUTHORIZED_OVER25_QUOTE_COVERAGE_LIMITATION",
     ]
-    reliability_defects=[
-        "DEDICATED_15M_SUPERVISOR_PERSISTENCE_REBASE_FAILURE",
-        "DEFAULT_BRANCH_VS_OPERATIONAL_WORKFLOW_CONTRACT_DRIFT",
-    ]
+    reliability_defects=(
+        []
+        if persistence_repaired else
+        [
+          "DEDICATED_15M_SUPERVISOR_PERSISTENCE_REBASE_FAILURE",
+          "DEFAULT_BRANCH_VS_OPERATIONAL_WORKFLOW_CONTRACT_DRIFT",
+        ]
+    )
+    repaired_reliability_defects=(
+        [
+          "DEDICATED_15M_SUPERVISOR_PERSISTENCE_REBASE_FAILURE",
+          "DEFAULT_BRANCH_VS_OPERATIONAL_WORKFLOW_CONTRACT_DRIFT",
+        ]
+        if persistence_repaired else []
+    )
     return {
       "schema":"MATRIX_TELEGRAM_ELITE_COMMITTEE_AUDIT_V1",
       "committee_name":config.get("name"),
@@ -130,7 +151,8 @@ def build_audit(base: Path, config: dict[str,Any], run_health: dict[str,Any]) ->
       "status":"ROOT_CAUSES_IDENTIFIED_ACTION_REQUIRED",
       "latest_green_signal_run":run_health.get("latest_green_signal_run"),
       "direct_causes_of_current_zero":direct_causes,
-      "reliability_defects":reliability_defects,
+      "reliability_defects_active":reliability_defects,
+      "reliability_defects_repaired_verified":repaired_reliability_defects,
       "findings":findings,
       "blocker_state_counts":dict(sorted(states.items())),
       "quote_sample":sample,
@@ -146,7 +168,8 @@ def build_audit(base: Path, config: dict[str,Any], run_health: dict[str,Any]) ->
       "committee_decision":{
         "telegram_api_is_current_direct_root_cause":False,
         "lower_gates_to_force_signals":False,
-        "repair_15m_persistence_and_branch_parity":True,
+        "repair_15m_persistence_and_branch_parity":not persistence_repaired,
+        "persistence_and_branch_parity_repair_verified":persistence_repaired,
         "expand_exact_quote_recovery":True,
         "continue_t120_revalidation":True,
       }
@@ -166,7 +189,8 @@ def main():
       "status":result["status"],
       "role_count":result["role_count"],
       "direct_causes":result["direct_causes_of_current_zero"],
-      "reliability_defects":result["reliability_defects"],
+      "reliability_defects_active":result["reliability_defects_active"],
+      "reliability_defects_repaired_verified":result["reliability_defects_repaired_verified"],
       "real_money":"BLOCKED",
     },sort_keys=True))
 
