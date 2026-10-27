@@ -50,7 +50,8 @@ jobs:
             tests/test_telegram_colombia_portfolio_ev_lab.py \
             tests/test_telegram_paper_bankroll.py \
             tests/test_monitoring_scheduler_contracts.py \
-            tests/test_telegram_quote_attempt_telemetry.py tests/test_telegram_quote_attempt_telemetry_audit.py
+            tests/test_telegram_quote_attempt_telemetry.py tests/test_telegram_quote_attempt_telemetry_audit.py \
+            tests/test_telegram_elite_committee_audit.py
 
       - name: Verify scheduler source contract on default branch
         shell: bash
@@ -70,6 +71,10 @@ jobs:
               "MATRIX_TELEGRAM_BLOCKER_RECOVERY_AUDIT_LAST.json",
               "MATRIX_TELEGRAM_MONITORING_WATCHDOG_LAST.json",
               "MATRIX_TELEGRAM_DAILY_BANKROLL_CANONICAL_LAST.json",
+              "MATRIX_TELEGRAM_QUOTE_ATTEMPTS.jsonl",
+              "MATRIX_TELEGRAM_QUOTE_ATTEMPT_TELEMETRY_AUDIT_LAST.json",
+              "MATRIX_TELEGRAM_ELITE_COMMITTEE_AUDIT_LAST.json",
+              "tests/test_telegram_elite_committee_audit.py",
           ]
           missing=[x for x in required if x not in s]
           if missing:
@@ -152,6 +157,28 @@ jobs:
         continue-on-error: true
         run: PYTHONPATH=. python -m tools.telegram_monitoring_watchdog
 
+      - name: Run Sindicato Elite Telegram diagnostic committee
+        shell: bash
+        run: |
+          set -euo pipefail
+          PYTHONPATH=. python -m tools.telegram_elite_committee_audit
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          p=Path("evidence/notifications/telegram/MATRIX_TELEGRAM_ELITE_COMMITTEE_AUDIT_LAST.json")
+          j=json.loads(p.read_text(encoding="utf-8"))
+          assert j["role_count"] >= 20
+          assert j["committee_decision"]["lower_gates_to_force_signals"] is False
+          assert j["governance"]["automatic_wagering"] is False
+          assert j["governance"]["real_money"]=="BLOCKED"
+          print(json.dumps({
+            "status":j["status"],
+            "role_count":j["role_count"],
+            "direct_causes":j["direct_causes_of_current_zero"],
+            "reliability_defects":j["reliability_defects"],
+          },sort_keys=True))
+          PY
+
       - name: Persistir evidencia completa del supervisor
         if: ${{ always() }}
         shell: bash
@@ -169,6 +196,7 @@ jobs:
             evidence/notifications/telegram/MATRIX_CORRELATED_RISK_CALIBRATION_LAST.json
             evidence/notifications/telegram/MATRIX_TELEGRAM_QUOTE_ATTEMPTS.jsonl
             evidence/notifications/telegram/MATRIX_TELEGRAM_QUOTE_ATTEMPT_TELEMETRY_AUDIT_LAST.json
+            evidence/notifications/telegram/MATRIX_TELEGRAM_ELITE_COMMITTEE_AUDIT_LAST.json
           )
           for file in "${allowed[@]}"; do
             if [ -e "$file" ]; then
@@ -176,12 +204,45 @@ jobs:
             fi
           done
 
+          # A generated tracked file must never remain outside the persistence set.
+          # Auto-stage only governed Telegram evidence; fail closed on any other dirty file.
+          unexpected=0
+          while IFS= read -r file; do
+            [ -z "$file" ] && continue
+            case "$file" in
+              evidence/notifications/telegram/MATRIX_TELEGRAM_SIGNAL_LEDGER.json|\
+              evidence/notifications/telegram/MATRIX_TELEGRAM_BLOCKER_RECOVERY_AUDIT_LAST.json|\
+              evidence/notifications/telegram/MATRIX_EV_MARGINAL_SHADOW_LAB_LAST.json|\
+              evidence/notifications/telegram/MATRIX_TELEGRAM_DAILY_BANKROLL_CANONICAL_LAST.json|\
+              evidence/notifications/telegram/MATRIX_TELEGRAM_MONITORING_WATCHDOG_LAST.json|\
+              evidence/notifications/telegram/MATRIX_CORRELATED_RISK_CALIBRATION_LAST.json|\
+              evidence/notifications/telegram/MATRIX_TELEGRAM_QUOTE_ATTEMPTS.jsonl|\
+              evidence/notifications/telegram/MATRIX_TELEGRAM_QUOTE_ATTEMPT_TELEMETRY_AUDIT_LAST.json|\
+              evidence/notifications/telegram/MATRIX_TELEGRAM_ELITE_COMMITTEE_AUDIT_LAST.json)
+                git add "$file"
+                ;;
+              *)
+                echo "TELEGRAM_15M_UNEXPECTED_UNSTAGED_TRACKED_CHANGE:$file"
+                unexpected=1
+                ;;
+            esac
+          done < <(git diff --name-only)
+          if [ "$unexpected" -ne 0 ]; then
+            git status --short
+            exit 1
+          fi
+
           if git diff --cached --quiet; then
             echo "TELEGRAM_15M_NO_EVIDENCE_CHANGE"
             exit 0
           fi
 
           git commit -m "evidence(telegram): persist governed 15m monitoring cycle"
+          if ! git diff --quiet; then
+            echo "TELEGRAM_15M_WORKTREE_DIRTY_AFTER_COMMIT"
+            git status --short
+            exit 1
+          fi
           for attempt in 1 2 3 4; do
             git fetch origin repair/cor09-world-pipeline
             if ! git rebase origin/repair/cor09-world-pipeline; then
@@ -197,7 +258,8 @@ jobs:
                   evidence/notifications/telegram/MATRIX_TELEGRAM_MONITORING_WATCHDOG_LAST.json|\
                   evidence/notifications/telegram/MATRIX_CORRELATED_RISK_CALIBRATION_LAST.json|\
                   evidence/notifications/telegram/MATRIX_TELEGRAM_QUOTE_ATTEMPTS.jsonl|\
-                  evidence/notifications/telegram/MATRIX_TELEGRAM_QUOTE_ATTEMPT_TELEMETRY_AUDIT_LAST.json)
+                  evidence/notifications/telegram/MATRIX_TELEGRAM_QUOTE_ATTEMPT_TELEMETRY_AUDIT_LAST.json|\
+                  evidence/notifications/telegram/MATRIX_TELEGRAM_ELITE_COMMITTEE_AUDIT_LAST.json)
                     git checkout --theirs -- "$file"
                     git add "$file"
                     ;;
