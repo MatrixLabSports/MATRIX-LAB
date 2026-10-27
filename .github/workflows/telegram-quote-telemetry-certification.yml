@@ -27,11 +27,21 @@ jobs:
       REAL_MONEY: BLOCKED
       AUTO_BETTING: DISABLED
     steps:
-      - name: Checkout operative branch
+      - name: Checkout immutable telemetry scope
         uses: actions/checkout@v4
         with:
           ref: repair/cor09-world-pipeline
           fetch-depth: 1
+          sparse-checkout: |
+            tools/__init__.py
+            tools/telegram_quote_attempt_telemetry.py
+            tools/telegram_quote_attempt_telemetry_audit.py
+            tests/test_telegram_quote_attempt_telemetry.py
+            tests/test_telegram_quote_attempt_telemetry_audit.py
+            evidence/notifications/telegram/MATRIX_TELEGRAM_QUOTE_ATTEMPTS.jsonl
+            evidence/notifications/telegram/MATRIX_TELEGRAM_QUOTE_ATTEMPT_TELEMETRY_AUDIT_LAST.json
+            evidence/notifications/telegram/MATRIX_TELEGRAM_QUOTE_TELEMETRY_CERTIFICATION_LAST.json
+          sparse-checkout-cone-mode: false
 
       - name: Set up Python
         uses: actions/setup-python@v5
