@@ -1,0 +1,81 @@
+name: MATRIX Under 2.5 Promotion Readiness Audit
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "11,26,41,56 * * * *"
+  push:
+    branches:
+      - repair/cor09-world-pipeline
+    paths:
+      - tools/matrix_under25_promotion_readiness_audit.py
+      - tests/test_matrix_under25_promotion_readiness_audit.py
+      - tools/telegram_multi_market_signal_gate.py
+      - .github/workflows/api-football-under25-promotion-readiness.yml
+      - evidence/api_football/calibration_v2/OOS_4001_5000_STATE.json
+      - evidence/api_football/calibration_v2/lanes/under_2_5/state.json
+      - evidence/api_football/calibration_v2/CHECKPOINT_4000_MARKET_CALIBRATION_20261023.json
+
+permissions:
+  contents: write
+
+concurrency:
+  group: matrix-under25-promotion-readiness
+  cancel-in-progress: true
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      REAL_MONEY: BLOCKED
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: repair/cor09-world-pipeline
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: python -m pip install pytest
+      - name: Verify Under 2.5 fail-closed regression contract
+        run: PYTHONPATH=. python -m pytest -q tests/test_matrix_under25_promotion_readiness_audit.py
+      - name: Build physical Under 2.5 promotion readiness evidence
+        run: PYTHONPATH=. python -m tools.matrix_under25_promotion_readiness_audit
+      - name: Rebuild multi-market signal gate with Under 2.5 readiness
+        run: PYTHONPATH=. python -m tools.telegram_multi_market_signal_gate
+      - name: Verify no premature promotion
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          p=Path("evidence/api_football/governance/MATRIX_UNDER25_PROMOTION_READINESS_LAST.json")
+          j=json.loads(p.read_text())
+          assert j["governance"]["real_money"]=="BLOCKED"
+          assert j["governance"]["automatic_wagering"] is False
+          if not j["promotion_allowed"]:
+              assert j["signal_status"]=="RESEARCH_ONLY"
+              assert j["blockers"]
+          print(json.dumps({"status":j["status"],"promotion_allowed":j["promotion_allowed"],"blockers":j["blockers"]},sort_keys=True))
+          PY
+      - name: Persist Under 2.5 governance evidence
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name matrix-under25-promotion-audit
+          git config user.email matrix-under25-promotion-audit@users.noreply.github.com
+          git add evidence/api_football/governance/MATRIX_UNDER25_PROMOTION_READINESS_LAST.json
+          git add evidence/notifications/telegram/MATRIX_TELEGRAM_MULTI_MARKET_SIGNAL_GATE_LAST.json
+          if git diff --cached --quiet; then exit 0; fi
+          git commit -m "evidence(football): refresh Under 2.5 promotion readiness"
+          for attempt in 1 2 3 4; do
+            git fetch origin repair/cor09-world-pipeline
+            if ! git rebase origin/repair/cor09-world-pipeline; then
+              git rebase --abort || true
+              sleep $((attempt*2))
+              continue
+            fi
+            if git push origin HEAD:repair/cor09-world-pipeline; then exit 0; fi
+            sleep $((attempt*2))
+          done
+          exit 1
