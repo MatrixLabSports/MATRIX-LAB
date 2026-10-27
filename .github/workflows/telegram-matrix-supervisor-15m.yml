@@ -73,6 +73,7 @@ jobs:
               "MATRIX_TELEGRAM_DAILY_BANKROLL_CANONICAL_LAST.json",
               "MATRIX_TELEGRAM_QUOTE_ATTEMPTS.jsonl",
               "MATRIX_TELEGRAM_QUOTE_ATTEMPT_TELEMETRY_AUDIT_LAST.json",
+              "MATRIX_TELEGRAM_QUOTE_TELEMETRY_CERTIFICATION_LAST.json",
               "MATRIX_TELEGRAM_ELITE_COMMITTEE_AUDIT_LAST.json",
               "tests/test_telegram_elite_committee_audit.py",
           ]
@@ -196,6 +197,7 @@ jobs:
             evidence/notifications/telegram/MATRIX_CORRELATED_RISK_CALIBRATION_LAST.json
             evidence/notifications/telegram/MATRIX_TELEGRAM_QUOTE_ATTEMPTS.jsonl
             evidence/notifications/telegram/MATRIX_TELEGRAM_QUOTE_ATTEMPT_TELEMETRY_AUDIT_LAST.json
+            evidence/notifications/telegram/MATRIX_TELEGRAM_QUOTE_TELEMETRY_CERTIFICATION_LAST.json
             evidence/notifications/telegram/MATRIX_TELEGRAM_ELITE_COMMITTEE_AUDIT_LAST.json
           )
           for file in "${allowed[@]}"; do
@@ -218,6 +220,7 @@ jobs:
               evidence/notifications/telegram/MATRIX_CORRELATED_RISK_CALIBRATION_LAST.json|\
               evidence/notifications/telegram/MATRIX_TELEGRAM_QUOTE_ATTEMPTS.jsonl|\
               evidence/notifications/telegram/MATRIX_TELEGRAM_QUOTE_ATTEMPT_TELEMETRY_AUDIT_LAST.json|\
+              evidence/notifications/telegram/MATRIX_TELEGRAM_QUOTE_TELEMETRY_CERTIFICATION_LAST.json|\
               evidence/notifications/telegram/MATRIX_TELEGRAM_ELITE_COMMITTEE_AUDIT_LAST.json)
                 git add "$file"
                 ;;
@@ -259,6 +262,7 @@ jobs:
                   evidence/notifications/telegram/MATRIX_CORRELATED_RISK_CALIBRATION_LAST.json|\
                   evidence/notifications/telegram/MATRIX_TELEGRAM_QUOTE_ATTEMPTS.jsonl|\
                   evidence/notifications/telegram/MATRIX_TELEGRAM_QUOTE_ATTEMPT_TELEMETRY_AUDIT_LAST.json|\
+                  evidence/notifications/telegram/MATRIX_TELEGRAM_QUOTE_TELEMETRY_CERTIFICATION_LAST.json|\
                   evidence/notifications/telegram/MATRIX_TELEGRAM_ELITE_COMMITTEE_AUDIT_LAST.json)
                     git checkout --theirs -- "$file"
                     git add "$file"
