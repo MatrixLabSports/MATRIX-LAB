@@ -26,7 +26,12 @@ def test_committee_separates_delivery_from_pre_send_and_detects_persistence_regr
       "pre_send_passed":0,"pre_send_blocked":75,"pre_send_waiting_window":53,"sent_now":0,"delivery_failures_now":0}},
       "supervisor_15m_recent_runs":[{"conclusion":"failure"},{"conclusion":"failure"},{"conclusion":"failure"}],
       "run_111_failure":{"exact_error":"error: cannot rebase: You have unstaged changes."},
-      "scheduler_contract_drift":{"main_and_operational_workflow_equal":False}}
+      "scheduler_contract_drift":{"main_and_operational_workflow_equal":False},
+      "repair_verification":{
+        "status":"REPAIR_PHYSICALLY_VERIFIED","conclusion":"success",
+        "persistence_rebase_regression_reproduced_after_fix":False,
+        "main_operational_workflow_same_sha":True
+      }}
     out=build_audit(base,cfg,health)
     assert out["role_count"]==22
     assert out["committee_decision"]["telegram_api_is_current_direct_root_cause"] is False
