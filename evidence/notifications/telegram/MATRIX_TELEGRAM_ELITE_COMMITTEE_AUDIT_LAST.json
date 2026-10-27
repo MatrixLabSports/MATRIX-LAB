@@ -10,8 +10,8 @@
     "continue_t120_revalidation": true,
     "expand_exact_quote_recovery": true,
     "lower_gates_to_force_signals": false,
-    "persistence_and_branch_parity_repair_verified": false,
-    "repair_15m_persistence_and_branch_parity": true,
+    "persistence_and_branch_parity_repair_verified": true,
+    "repair_15m_persistence_and_branch_parity": false,
     "telegram_api_is_current_direct_root_cause": false
   },
   "committee_name": "MATRIX Sindicato Elite — Comité de Diagnóstico Telegram",
@@ -91,7 +91,7 @@
       "verdict": "CONFIRMED"
     },
     {
-      "diagnosis": "The dedicated 15-minute supervisor has a Git persistence regression caused by unstaged generated telemetry plus default-branch/operational-branch contract drift.",
+      "diagnosis": "The Git persistence regression and branch-contract drift were physically repaired and verified by a successful dedicated 15-minute supervisor run.",
       "evidence": {
         "consecutive_recent_failures_before_repair": 3,
         "repair_verification": {
@@ -143,7 +143,7 @@
         "QA_ADVERSARIAL"
       ],
       "severity": "CRITICAL",
-      "verdict": "CONFIRMED_ACTIVE"
+      "verdict": "REPAIRED_VERIFIED"
     },
     {
       "diagnosis": "A separate green-signal workflow is still executing the signal engine successfully, so the persistence regression is a resilience defect rather than proof of a total Telegram blackout.",
@@ -247,11 +247,11 @@
       "rushbet": 0
     }
   },
-  "reliability_defects_active": [
+  "reliability_defects_active": [],
+  "reliability_defects_repaired_verified": [
     "DEDICATED_15M_SUPERVISOR_PERSISTENCE_REBASE_FAILURE",
     "DEFAULT_BRANCH_VS_OPERATIONAL_WORKFLOW_CONTRACT_DRIFT"
   ],
-  "reliability_defects_repaired_verified": [],
   "role_count": 22,
   "roles": [
     {
@@ -366,5 +366,5 @@
     }
   ],
   "schema": "MATRIX_TELEGRAM_ELITE_COMMITTEE_AUDIT_V1",
-  "status": "ROOT_CAUSES_IDENTIFIED_ACTION_REQUIRED"
+  "status": "ROOT_CAUSES_IDENTIFIED_RELIABILITY_REPAIR_VERIFIED"
 }
