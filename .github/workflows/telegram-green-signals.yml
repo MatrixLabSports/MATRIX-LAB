@@ -23,6 +23,9 @@ on:
       - tools/telegram_green_signal_alerts.py
       - tools/telegram_quote_attempt_telemetry.py
       - tools/telegram_quote_attempt_telemetry_audit.py
+      - evidence/notifications/telegram/MATRIX_TELEGRAM_QUOTE_ATTEMPTS.jsonl
+      - evidence/notifications/telegram/MATRIX_TELEGRAM_QUOTE_ATTEMPT_TELEMETRY_AUDIT_LAST.json
+      - evidence/notifications/telegram/MATRIX_TELEGRAM_QUOTE_TELEMETRY_CERTIFICATION_LAST.json
       - tests/test_telegram_quote_attempt_telemetry.py
       - tests/test_telegram_quote_attempt_telemetry_audit.py
       - app/research/football/correlated_exposure.py
@@ -228,6 +231,9 @@ jobs:
           if [ -f evidence/notifications/telegram/MATRIX_TELEGRAM_QUOTE_ATTEMPT_TELEMETRY_AUDIT_LAST.json ]; then
             git add evidence/notifications/telegram/MATRIX_TELEGRAM_QUOTE_ATTEMPT_TELEMETRY_AUDIT_LAST.json
           fi
+          if [ -f evidence/notifications/telegram/MATRIX_TELEGRAM_QUOTE_TELEMETRY_CERTIFICATION_LAST.json ]; then
+            git add evidence/notifications/telegram/MATRIX_TELEGRAM_QUOTE_TELEMETRY_CERTIFICATION_LAST.json
+          fi
           if ! git diff --quiet; then
             echo "TELEGRAM_UNEXPECTED_UNSTAGED_TRACKED_CHANGES"
             git status --short
@@ -258,6 +264,7 @@ jobs:
                   evidence/notifications/telegram/MATRIX_TELEGRAM_DAILY_BANKROLL_CANONICAL_LAST.json|\
                   evidence/notifications/telegram/MATRIX_TELEGRAM_QUOTE_ATTEMPTS.jsonl|\
                   evidence/notifications/telegram/MATRIX_TELEGRAM_QUOTE_ATTEMPT_TELEMETRY_AUDIT_LAST.json|\
+                  evidence/notifications/telegram/MATRIX_TELEGRAM_QUOTE_TELEMETRY_CERTIFICATION_LAST.json|\
                   evidence/notifications/telegram/MATRIX_TELEGRAM_20261022_CLOSURE_AUDIT.json)
                     git checkout --theirs -- "$file"
                     git add "$file"
