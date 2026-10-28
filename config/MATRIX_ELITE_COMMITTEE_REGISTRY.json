@@ -1,0 +1,434 @@
+{
+  "schema": "MATRIX_ELITE_COMMITTEE_REGISTRY_V1",
+  "updated_at_bogota": "2026-10-28",
+  "status": "ACTIVE_CANONICAL",
+  "principles": [
+    "No invented operational data.",
+    "Every operational repair requires code, test/regression, physical evidence and commit.",
+    "SofaScore and Flashscore discovery precedes APIs.",
+    "Missing is not zero; no silent imputation.",
+    "No post-start backfill may count as prospective.",
+    "REAL_MONEY=BLOCKED and automatic_wagering=false.",
+    "No gate may be relaxed to force signal volume.",
+    "End-to-end certification outranks isolated module PASS."
+  ],
+  "escalation": {
+    "pipeline_signal_loss_owner": "PRINCIPAL_REALTIME_RELIABILITY_ODDS_ENGINEER",
+    "exact_quote_mapping_owner": "MARKET_PRICE_MAPPING_ENGINEER",
+    "provider_integration_owner": "MARKET_DATA_INTEGRATION_ENGINEER",
+    "telemetry_incident_owner": "OBSERVABILITY_INCIDENT_ENGINEER",
+    "telegram_delivery_owner": "TELEGRAM_DELIVERY_ENGINEER",
+    "model_probability_owner": "QUANT_DIRECTOR",
+    "evidence_truth_owner": "EVIDENCE_AUDIT_LEAD",
+    "risk_owner": "CHIEF_RISK_OFFICER"
+  },
+  "roles": [
+    {
+      "id": "PRODUCT_DIRECTOR",
+      "name": "Product Director",
+      "domain": "DIRECCION",
+      "owner_of": [
+        "product_architecture",
+        "prioritization",
+        "go_no_go_product"
+      ],
+      "critical": true
+    },
+    {
+      "id": "QUANT_DIRECTOR",
+      "name": "Quant Director",
+      "domain": "MODELOS",
+      "owner_of": [
+        "p_matrix_governance",
+        "modeling_standards",
+        "promotion_policy"
+      ],
+      "critical": true
+    },
+    {
+      "id": "CALIBRATION_MODELING_LEAD",
+      "name": "Calibration & Modeling Lead",
+      "domain": "MODELOS",
+      "owner_of": [
+        "calibration",
+        "brier_logloss_ece",
+        "prospective_gates"
+      ],
+      "critical": true
+    },
+    {
+      "id": "TEMPORAL_INTEGRITY_ENGINEER",
+      "name": "Temporal Integrity Engineer",
+      "domain": "MODELOS",
+      "owner_of": [
+        "prematch_freeze",
+        "kickoff_integrity",
+        "no_backfill"
+      ],
+      "critical": true
+    },
+    {
+      "id": "SPORTS_MARKET_SPECIALIST",
+      "name": "Sports Market Specialist",
+      "domain": "MODELOS",
+      "owner_of": [
+        "market_rules",
+        "market_semantics",
+        "settlement_semantics"
+      ],
+      "critical": true
+    },
+    {
+      "id": "MARKET_PRICE_MAPPING_ENGINEER",
+      "name": "Market Price Mapping Engineer",
+      "domain": "PRODUCCION",
+      "owner_of": [
+        "market_name_normalization",
+        "exact_price_mapping",
+        "bookmaker_market_mapping"
+      ],
+      "critical": true
+    },
+    {
+      "id": "PRINCIPAL_REALTIME_RELIABILITY_ODDS_ENGINEER",
+      "name": "Principal Real-Time Reliability & Odds Infrastructure Engineer",
+      "domain": "PRODUCCION",
+      "owner_of": [
+        "candidate_to_telegram_pipeline",
+        "provider_failover",
+        "pre_kickoff_sla",
+        "zero_infrastructure_loss"
+      ],
+      "critical": true,
+      "kpis": [
+        "eligible_candidates_lost_to_infrastructure_before_kickoff=0",
+        "exhausted_provider_wait_time=0",
+        "scheduler_cadence_minutes=15"
+      ]
+    },
+    {
+      "id": "MARKET_DATA_INTEGRATION_ENGINEER",
+      "name": "Market Data Integration Engineer",
+      "domain": "PRODUCCION",
+      "owner_of": [
+        "bookmaker_integrations",
+        "provider_normalization",
+        "quote_ingestion",
+        "source_failover"
+      ],
+      "critical": true
+    },
+    {
+      "id": "OBSERVABILITY_INCIDENT_ENGINEER",
+      "name": "Observability & Incident Engineer",
+      "domain": "PRODUCCION",
+      "owner_of": [
+        "pipeline_telemetry",
+        "incident_detection",
+        "blocker_attribution",
+        "sla_alerting"
+      ],
+      "critical": true
+    },
+    {
+      "id": "TELEGRAM_DELIVERY_ENGINEER",
+      "name": "Telegram Delivery Engineer",
+      "domain": "PRODUCCION",
+      "owner_of": [
+        "telegram_delivery",
+        "deduplication",
+        "delivery_receipts",
+        "result_messages"
+      ],
+      "critical": true
+    },
+    {
+      "id": "CLV_RISK_ENGINEER",
+      "name": "CLV & Market Risk Engineer",
+      "domain": "RIESGO",
+      "owner_of": [
+        "pinnacle_freshness",
+        "clv_capture",
+        "sharp_reference_integrity"
+      ],
+      "critical": true
+    },
+    {
+      "id": "CORRELATED_RISK_ENGINEER",
+      "name": "Correlated Risk Engineer",
+      "domain": "RIESGO",
+      "owner_of": [
+        "same_match_exposure",
+        "portfolio_correlation",
+        "combination_limits"
+      ],
+      "critical": true
+    },
+    {
+      "id": "CHIEF_RISK_OFFICER",
+      "name": "Chief Risk Officer",
+      "domain": "RIESGO",
+      "owner_of": [
+        "bankroll_guardrails",
+        "risk_limits",
+        "real_money_gate"
+      ],
+      "critical": true
+    },
+    {
+      "id": "QA_REGRESSION_LEAD",
+      "name": "QA & Regression Lead",
+      "domain": "AUDITORIA",
+      "owner_of": [
+        "regression_tests",
+        "release_gates",
+        "failure_reproduction"
+      ],
+      "critical": true
+    },
+    {
+      "id": "EVIDENCE_AUDIT_LEAD",
+      "name": "Evidence & Audit Lead",
+      "domain": "AUDITORIA",
+      "owner_of": [
+        "physical_evidence",
+        "canonical_artifacts",
+        "no_invented_data"
+      ],
+      "critical": true
+    },
+    {
+      "id": "DATA_GOVERNANCE_AUDITOR",
+      "name": "Data Governance & Audit Engineer",
+      "domain": "AUDITORIA",
+      "owner_of": [
+        "data_lineage",
+        "missing_not_zero",
+        "source_provenance"
+      ],
+      "critical": true
+    },
+    {
+      "id": "FINANCE_LEAD",
+      "name": "Finance Lead",
+      "domain": "COMERCIAL",
+      "owner_of": [
+        "unit_economics",
+        "operating_budget",
+        "self_funding_policy"
+      ],
+      "critical": false
+    },
+    {
+      "id": "PRICING_STRATEGIST",
+      "name": "Pricing Strategist",
+      "domain": "COMERCIAL",
+      "owner_of": [
+        "premium_pricing",
+        "stakazo_pricing",
+        "offer_structure"
+      ],
+      "critical": false
+    },
+    {
+      "id": "SUBSCRIPTION_PRODUCT_MANAGER",
+      "name": "Subscription Product Manager",
+      "domain": "COMERCIAL",
+      "owner_of": [
+        "weekly_monthly_membership",
+        "entitlements",
+        "renewal_logic"
+      ],
+      "critical": false
+    },
+    {
+      "id": "CRM_RETENTION_LEAD",
+      "name": "CRM & Retention Lead",
+      "domain": "COMERCIAL",
+      "owner_of": [
+        "retention",
+        "renewal_comms",
+        "churn_monitoring"
+      ],
+      "critical": false
+    },
+    {
+      "id": "CUSTOMER_EXPERIENCE_LEAD",
+      "name": "Customer Experience Lead",
+      "domain": "COMERCIAL",
+      "owner_of": [
+        "subscriber_experience",
+        "support_flows",
+        "complaints"
+      ],
+      "critical": false
+    },
+    {
+      "id": "ANTI_FRAUD_LEAD",
+      "name": "Anti-Fraud Lead",
+      "domain": "SEGURIDAD",
+      "owner_of": [
+        "payment_abuse",
+        "account_sharing_controls",
+        "access_abuse"
+      ],
+      "critical": true
+    },
+    {
+      "id": "PRIVACY_SECURITY_LEAD",
+      "name": "Privacy & Security Lead",
+      "domain": "SEGURIDAD",
+      "owner_of": [
+        "channel_security",
+        "secrets",
+        "pii_minimization",
+        "access_control"
+      ],
+      "critical": true
+    },
+    {
+      "id": "CONSUMER_COMPLIANCE_LEAD",
+      "name": "Consumer Compliance Lead",
+      "domain": "CUMPLIMIENTO",
+      "owner_of": [
+        "consumer_disclosures",
+        "advertising_claims",
+        "terms_visibility"
+      ],
+      "critical": true
+    },
+    {
+      "id": "RESPONSIBLE_GAMBLING_LEAD",
+      "name": "Responsible Gambling Lead",
+      "domain": "CUMPLIMIENTO",
+      "owner_of": [
+        "responsible_gambling",
+        "18_plus",
+        "harm_minimization"
+      ],
+      "critical": true
+    },
+    {
+      "id": "TAX_ACCOUNTING_ADVISOR",
+      "name": "Tax & Accounting Advisor",
+      "domain": "CUMPLIMIENTO",
+      "owner_of": [
+        "tax_review",
+        "accounting_structure",
+        "revenue_records"
+      ],
+      "critical": false
+    },
+    {
+      "id": "BRAND_STRATEGIST",
+      "name": "Brand Strategist",
+      "domain": "MARCA",
+      "owner_of": [
+        "brand_positioning",
+        "brand_architecture",
+        "messaging"
+      ],
+      "critical": false
+    },
+    {
+      "id": "NAMING_SPECIALIST",
+      "name": "Naming Specialist",
+      "domain": "MARCA",
+      "owner_of": [
+        "public_naming",
+        "product_names",
+        "name_consistency"
+      ],
+      "critical": false
+    },
+    {
+      "id": "BRAND_IDENTITY_DESIGNER",
+      "name": "Brand Identity Designer",
+      "domain": "MARCA",
+      "owner_of": [
+        "logo_system",
+        "visual_assets",
+        "brand_consistency"
+      ],
+      "critical": false
+    },
+    {
+      "id": "ART_DIRECTOR",
+      "name": "Art Director",
+      "domain": "MARCA",
+      "owner_of": [
+        "creative_direction",
+        "campaign_visuals",
+        "premium_cards"
+      ],
+      "critical": false
+    },
+    {
+      "id": "COLOR_STRATEGIST",
+      "name": "Color Strategist",
+      "domain": "MARCA",
+      "owner_of": [
+        "color_system",
+        "contrast",
+        "functional_color_usage"
+      ],
+      "critical": false
+    },
+    {
+      "id": "SPORTS_MARKETING_DIRECTOR",
+      "name": "Sports Marketing Director",
+      "domain": "CRECIMIENTO",
+      "owner_of": [
+        "sports_audience_strategy",
+        "campaigns",
+        "channel_growth"
+      ],
+      "critical": false
+    },
+    {
+      "id": "GROWTH_LEAD",
+      "name": "Growth Lead",
+      "domain": "CRECIMIENTO",
+      "owner_of": [
+        "funnel",
+        "acquisition",
+        "conversion"
+      ],
+      "critical": false
+    },
+    {
+      "id": "PAID_MEDIA_STRATEGIST",
+      "name": "Paid Media Strategist",
+      "domain": "CRECIMIENTO",
+      "owner_of": [
+        "paid_campaigns",
+        "cac_tracking",
+        "media_tests"
+      ],
+      "critical": false
+    },
+    {
+      "id": "SPONSORSHIP_RESEARCH_ANALYST",
+      "name": "Sponsorship Research Analyst",
+      "domain": "CRECIMIENTO",
+      "owner_of": [
+        "sponsor_research",
+        "category_mapping",
+        "opportunity_pipeline"
+      ],
+      "critical": false
+    },
+    {
+      "id": "BRAND_PARTNERSHIPS_MANAGER",
+      "name": "Brand Partnerships & Sponsorship Manager",
+      "domain": "CRECIMIENTO",
+      "owner_of": [
+        "partnerships",
+        "sponsorship_sales",
+        "brand_collaborations"
+      ],
+      "critical": false
+    }
+  ],
+  "role_count": 36
+}
