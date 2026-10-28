@@ -63,3 +63,46 @@ def test_reconcile_never_reuses_same_sofascore_event_for_multiple_flashscore_row
     assert out["reconciliation"]["confirmed_both"]==1
     assert out["reconciliation"]["flashscore_only"]==1
     assert out["policy"]["one_to_one_identity_matching"] is True
+
+
+def test_reconcile_rejects_physical_flashscore_broad_link_capture():
+    sofa={
+      "target_date_bogota":"2026-10-28",
+      "observations":["28/10/26 12:00 A A B B"],
+    }
+    flash={
+      "schema":"MATRIX_OPERA_FOOTBALL_CALENDAR_CAPTURE_V1",
+      "source":"FLASHSCORE",
+      "target_date_bogota":"2026-10-28",
+      "observations":["A - B"],
+    }
+    try:
+        reconcile(sofa,flash,datetime(2026,10,28,3,28,tzinfo=timezone.utc))
+    except ValueError as exc:
+        assert str(exc)=="FLASHSCORE_PHYSICAL_CAPTURE_V2_REQUIRED"
+    else:
+        raise AssertionError("broad-link Flashscore physical capture must fail closed")
+
+
+def test_reconcile_accepts_scoped_flashscore_calendar_row_capture():
+    sofa={
+      "target_date_bogota":"2026-10-28",
+      "observations":["28/10/26 12:00 A A B B"],
+    }
+    flash={
+      "schema":"MATRIX_OPERA_FOOTBALL_CALENDAR_CAPTURE_V2",
+      "source":"FLASHSCORE",
+      "target_date_bogota":"2026-10-28",
+      "observed_calendar_row_count":1,
+      "observations":["A - B"],
+      "excluded_non_calendar_links_count":1,
+      "excluded_non_calendar_links":["A - C"],
+      "row_classification":{
+        "calendar_row_link_description":"¡Haga click para detalles del partido!",
+        "excluded_preserved_for_audit":True,
+      },
+    }
+    out=reconcile(sofa,flash,datetime(2026,10,28,3,28,tzinfo=timezone.utc))
+    assert out["status"]=="PASS_OPEN_RECONCILIATION"
+    assert out["source_counts"]["flashscore"]==1
+    assert out["policy"]["flashscore_calendar_row_scope_enforced"] is True
