@@ -278,7 +278,7 @@ def send_telegram_photo(session: requests.Session, token: str, chat_id: str, ima
 
 def premium_pick_caption(c: dict[str, Any]) -> str:
     return "\n".join([
-        "MATRIX PICKS PREMIUM",
+        "OMEGA PICKS PREMIUM",
         f'Partido: {c.get("match")}',
         f'Mercado: {c.get("market")}',
         f'Casa: {c.get("house")}',
