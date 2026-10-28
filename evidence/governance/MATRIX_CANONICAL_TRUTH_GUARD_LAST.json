@@ -1,9 +1,11 @@
 {
   "checks": {
     "football_current_settlement": {
-      "age_minutes": 6.01,
+      "age_minutes": 40.59,
       "canonical_path": "evidence/api_football/prospective_calibration/sync_last.json",
-      "failures": [],
+      "failures": [
+        "CANONICAL_SOURCE_STALE"
+      ],
       "max_age_minutes": 30.0,
       "metrics": {
         "calibration_observation_count": 4958,
@@ -13,10 +15,10 @@
       },
       "name": "football_current_settlement",
       "source_timestamp_utc": "2026-10-28T15:13:28+00:00",
-      "status": "PASS"
+      "status": "FAIL_CLOSED"
     },
     "football_tracker_structure": {
-      "age_minutes": 4.77,
+      "age_minutes": 39.35,
       "canonical_path": "evidence/api_football/governance/MATRIX_FOOTBALL_4000_CANONICAL_TRACKER_LAST.json",
       "failures": [],
       "max_age_minutes": 1440.0,
@@ -31,19 +33,21 @@
       "status": "PASS"
     },
     "live_tennis_cumulative": {
-      "age_minutes": 1.37,
+      "age_minutes": 35.96,
       "canonical_path": "evidence/live_tennis_lab/MATRIX_LIVE_TENNIS_CUMULATIVE_GATE_V1.json",
-      "failures": [],
+      "failures": [
+        "CANONICAL_SOURCE_STALE"
+      ],
       "max_age_minutes": 30.0,
       "metrics": {
         "lanes.itf|women|hard.settled_quality_valid_unique_match_count": 106
       },
       "name": "live_tennis_cumulative",
       "source_timestamp_utc": "2026-10-28T15:18:06+00:00",
-      "status": "PASS"
+      "status": "FAIL_CLOSED"
     },
     "telegram_daily_bankroll": {
-      "age_minutes": 2.36,
+      "age_minutes": 2.62,
       "canonical_path": "evidence/notifications/telegram/MATRIX_TELEGRAM_DAILY_BANKROLL_CANONICAL_LAST.json",
       "failures": [],
       "max_age_minutes": 30.0,
@@ -53,11 +57,11 @@
         "summary.total_profit_cop": -140500
       },
       "name": "telegram_daily_bankroll",
-      "source_timestamp_utc": "2026-10-28T15:17:06.436678+00:00",
+      "source_timestamp_utc": "2026-10-28T15:51:26.495215+00:00",
       "status": "PASS"
     },
     "tennis_three_blocks": {
-      "age_minutes": 49.29,
+      "age_minutes": 83.88,
       "canonical_path": "evidence/tennis/MATRIX_TENNIS_THREE_BLOCK_STAGNATION_AUDIT_LAST.json",
       "failures": [
         "CANONICAL_SOURCE_STALE"
@@ -78,10 +82,22 @@
       "failures": [
         "CANONICAL_SOURCE_STALE"
       ],
+      "source": "football_current_settlement"
+    },
+    {
+      "failures": [
+        "CANONICAL_SOURCE_STALE"
+      ],
       "source": "tennis_three_blocks"
+    },
+    {
+      "failures": [
+        "CANONICAL_SOURCE_STALE"
+      ],
+      "source": "live_tennis_cumulative"
     }
   ],
-  "generated_at_utc": "2026-10-28T15:19:28.304929+00:00",
+  "generated_at_utc": "2026-10-28T15:54:03.424916+00:00",
   "precedence": [
     "LATEST_PHYSICAL_EVIDENCE",
     "HANDOFF",
@@ -99,7 +115,7 @@
   },
   "schema": "MATRIX_CANONICAL_TRUTH_GUARD_V1",
   "summary": {
-    "failed_sources": 1,
+    "failed_sources": 3,
     "registered_sources": 5,
     "status": "FAIL_CLOSED"
   }
