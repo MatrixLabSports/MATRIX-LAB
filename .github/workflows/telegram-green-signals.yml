@@ -1,3 +1,4 @@
+# MATRIX_PUSH_CI_NO_PROVIDER_CALLS 2026-10-28
 # MATRIX_DYNAMIC_WAITING_COUNT_CERTIFICATION 2026-10-27T10:37Z
 # MATRIX_USER_AUTHORIZED_FINAL_VERIFICATION 2026-10-27T04:48Z
 # MATRIX_QUOTE_TELEMETRY_IMMUTABLE_CONTRACT_CERTIFICATION 2026-10-27T00:55Z
@@ -117,6 +118,7 @@ jobs:
           test "$PAPER_BANKROLL" = "ENABLED"
 
       - name: Enforce API-Football subscription deadline before supervisor
+        if: ${{ github.event_name != 'push' }}
         env:
           API_FOOTBALL_KEY: ${{ secrets.API_FOOTBALL_KEY }}
         run: |
@@ -124,6 +126,7 @@ jobs:
           python -m tools.football_subscription_deadline_guard --require-paid-use --require-key
 
       - name: Validate secrets
+        if: ${{ github.event_name != 'push' }}
         env:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
@@ -139,6 +142,7 @@ jobs:
           echo "SECRETOS_TELEGRAM_API_FOOTBALL_Y_ODDS_API_NET_PRESENTES"
 
       - name: Build multi-market signal eligibility gate
+        if: ${{ github.event_name != 'push' }}
         shell: bash
         run: |
           set -euo pipefail
@@ -156,6 +160,7 @@ jobs:
           PY
 
       - name: Build multi-market Telegram signal eligibility registry
+        if: ${{ github.event_name != 'push' }}
         shell: bash
         run: |
           set -euo pipefail
@@ -174,6 +179,7 @@ jobs:
           PY
 
       - name: Supervisor Telegram — señales, cuotas y FINAL
+        if: ${{ github.event_name != 'push' }}
         env:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
@@ -182,6 +188,7 @@ jobs:
         run: python -m tools.telegram_green_signal_alerts
 
       - name: Certify final-window readiness from current blocker audit
+        if: ${{ github.event_name != 'push' }}
         shell: bash
         run: |
           set -euo pipefail
@@ -209,6 +216,7 @@ jobs:
           PY
 
       - name: Build immutable quote-attempt telemetry audit
+        if: ${{ github.event_name != 'push' }}
         shell: bash
         run: |
           set -euo pipefail
@@ -247,6 +255,7 @@ jobs:
           PY
 
       - name: Run Sindicato Elite Telegram diagnostic committee
+        if: ${{ github.event_name != 'push' }}
         shell: bash
         run: |
           set -euo pipefail
@@ -271,9 +280,11 @@ jobs:
           PY
 
       - name: Rebuild canonical daily bankroll table
+        if: ${{ github.event_name != 'push' }}
         run: python -m tools.telegram_daily_bankroll_canonical
 
       - name: Audit 22-OCT closure
+        if: ${{ github.event_name != 'push' }}
         run: |
           python - <<'PY'
           import json
@@ -324,6 +335,7 @@ jobs:
           PY
 
       - name: Persistir ledger gobernado
+        if: ${{ github.event_name != 'push' }}
         if: ${{ always() }}
         shell: bash
         run: |
