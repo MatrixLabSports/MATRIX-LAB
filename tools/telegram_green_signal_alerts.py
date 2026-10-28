@@ -245,7 +245,7 @@ def odd(value: Any) -> float | None:
 def send_telegram(session: requests.Session, token: str, chat_id: str, text: str) -> int:
     response = session.post(
         f"https://api.telegram.org/bot{token}/sendMessage",
-        data={"chat_id": chat_id, "text": text},
+        data={"chat_id": chat_id, "text": text, "protect_content": "true"},
         timeout=(10, 90),
     )
     try:
@@ -262,7 +262,7 @@ def send_telegram_photo(session: requests.Session, token: str, chat_id: str, ima
     with image_path.open("rb") as fh:
         response = session.post(
             f"https://api.telegram.org/bot{token}/sendPhoto",
-            data={"chat_id": chat_id, "caption": caption[:1000]},
+            data={"chat_id": chat_id, "caption": caption[:1000], "protect_content": "true"},
             files={"photo": (image_path.name, fh, "image/png")},
             timeout=(10, 90),
         )
