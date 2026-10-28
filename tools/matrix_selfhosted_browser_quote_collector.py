@@ -5,7 +5,7 @@ from pathlib import Path
 from typing import Any
 from urllib.parse import urlparse
 
-from playwright.sync_api import sync_playwright
+from playwright.sync_api import sync_playwright, Error as PlaywrightError
 
 ROOT=Path(__file__).resolve().parents[1]
 CONFIG=ROOT/"config"/"MATRIX_SELF_HOSTED_BROWSER_AUTOMATION.json"
@@ -87,14 +87,41 @@ def main()->None:
                     continue
                 try:
                     page=ctx.new_page()
-                    page.goto(entry,wait_until="domcontentloaded",timeout=20000)
-                except Exception:
+                    page.goto(entry,wait_until="domcontentloaded",timeout=12000)
+                except PlaywrightError as e:
+                    pages.append({
+                      "bookmaker":book,
+                      "url":entry,
+                      "status":"OPEN_ERROR",
+                      "error":type(e).__name__
+                    })
                     try:
-                        page.close()
+                        if not page.is_closed():
+                            page.close()
                     except Exception:
                         pass
-            for pi,page in enumerate(ctx.pages):
-                url=page.url or ""; book=book_from_url(url)
+                    continue
+                except Exception as e:
+                    pages.append({
+                      "bookmaker":book,
+                      "url":entry,
+                      "status":"OPEN_ERROR",
+                      "error":type(e).__name__
+                    })
+                    try:
+                        if not page.is_closed():
+                            page.close()
+                    except Exception:
+                        pass
+                    continue
+            for pi,page in enumerate(list(ctx.pages)):
+                try:
+                    if page.is_closed():
+                        continue
+                    url=page.url or ""
+                except Exception:
+                    continue
+                book=book_from_url(url)
                 if not book: continue
                 try:
                     title=page.title()
