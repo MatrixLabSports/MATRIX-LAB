@@ -15,7 +15,7 @@ REQUIRED_ROLES={
 "PRIVACY_SECURITY_LEAD","CONSUMER_COMPLIANCE_LEAD","RESPONSIBLE_GAMBLING_LEAD","TAX_ACCOUNTING_ADVISOR",
 "BRAND_STRATEGIST","NAMING_SPECIALIST","BRAND_IDENTITY_DESIGNER","ART_DIRECTOR","COLOR_STRATEGIST",
 "SPORTS_MARKETING_DIRECTOR","GROWTH_LEAD","PAID_MEDIA_STRATEGIST","SPONSORSHIP_RESEARCH_ANALYST",
-"BRAND_PARTNERSHIPS_MANAGER"
+"BRAND_PARTNERSHIPS_MANAGER","BROWSER_AUTOMATION_SELF_HOSTED_RUNNER_ENGINEER"
 }
 
 def load():
@@ -39,6 +39,11 @@ def validate(data):
         raise RuntimeError("REALTIME_OWNER_SCOPE_INCOMPLETE")
     if "eligible_candidates_lost_to_infrastructure_before_kickoff=0" not in realtime.get("kpis",[]):
         raise RuntimeError("REALTIME_KPI_MISSING")
+    if esc.get("browser_automation_owner")!="BROWSER_AUTOMATION_SELF_HOSTED_RUNNER_ENGINEER":
+        raise RuntimeError("BROWSER_AUTOMATION_OWNER_INVALID")
+    browser=next(r for r in roles if r["id"]=="BROWSER_AUTOMATION_SELF_HOSTED_RUNNER_ENGINEER")
+    if "playwright_browser_automation" not in browser.get("owner_of",[]):
+        raise RuntimeError("BROWSER_AUTOMATION_SCOPE_INCOMPLETE")
     return {"status":"PASS","role_count":len(roles),"domains":sorted({r["domain"] for r in roles})}
 
 def main():
