@@ -23,12 +23,12 @@ def _load(path: Path, default: Any) -> Any:
 def _caption(record: dict[str, Any], result: dict[str, Any]) -> str:
     state = "✅ GANADA" if result["won"] else "❌ PERDIDA"
     return "\n".join([
-        f"MATRIX PICKS PREMIUM — {state}",
+        f"OMEGA PICKS PREMIUM — {state}",
         f'Partido: {record.get("match")}',
         f'Resultado final: {result["home_goals"]}-{result["away_goals"]}',
         f'Mercado: {record.get("market")}',
         f'Cuota: {float(record.get("odds") or 0):.2f}',
-        "Resultado registrado por MATRIX.",
+        "Resultado registrado por OMEGA PICKS.",
     ])
 
 def _supported_result(record: dict[str, Any], final: dict[str, Any]) -> dict[str, Any] | None:
