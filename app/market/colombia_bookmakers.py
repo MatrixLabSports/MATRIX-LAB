@@ -9,13 +9,13 @@ EXECUTION_BOOKMAKERS: dict[str, tuple[str, ...]] = {
     "bwin": ("bwin",),
     "codere": ("codere",),
     "luckia": ("luckia",),
-    "mryoker": ("mryoker",),
+    "mryoker": ("mryoker", "mr yoker", "mr. yoker"),
     "rivalo": ("rivalo",),
-    "rushbet": ("rushbet",),
-    "sportium": ("sportiumco",),
+    "rushbet": ("rushbet", "rush bet"),
+    "sportium": ("sportiumco", "sportium"),
     "stake": ("stake", "stakeco"),
-    "wplay": ("wplay",),
-    "yajuego": ("yajuego",),
+    "wplay": ("wplay", "w play"),
+    "yajuego": ("yajuego", "ya juego"),
     "zamba": ("zamba",),
 }
 
