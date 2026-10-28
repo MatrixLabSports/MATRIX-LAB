@@ -1,0 +1,99 @@
+{
+  "schema": "MATRIX_EXTERNAL_NONSTANDARD_STATUS_EVIDENCE_V1",
+  "audit_date_bogota": "2026-10-28",
+  "cohort_date_bogota": "2026-10-06",
+  "branch": "repair/cor09-world-pipeline",
+  "fixture_id": "1596466",
+  "match": "AFC Emley vs Bamber Bridge",
+  "candidate_source": {
+    "path": "evidence/daily_selection/MATRIX_CALIBRATION_CANDIDATES_20261006_BOGOTA.json",
+    "blob_sha": "52e897007840f5bed1a8999edad8ee594fefc767",
+    "football_unique_candidates": 116,
+    "tennis_unique_candidates": 11
+  },
+  "governed_current_state": {
+    "source_path": "evidence/api_football/prospective_market_freeze/settlement_sync_last.json",
+    "blob_sha": "5110f618c3c9996339632715b6d73e295cac4e7e",
+    "fixture_block_reason": "API_FOOTBALL_PROVIDER_ERROR",
+    "settlement_applied": false
+  },
+  "external_evidence": [
+    {
+      "authority": "Northern Premier League (official competition)",
+      "url": "https://www.thenpl.co.uk/match/6a590640ce9ef452b61f338a",
+      "observed": "6 October 2026 fixture recorded A-A, HT 0-3; no standard FT"
+    },
+    {
+      "authority": "Emley AFC (official club)",
+      "url": "https://www.emleyafc.co.uk/teams/80677/match-centre/1-19918441/report",
+      "observed": "Club states first match abandoned at half-time due to fog with Bamber Bridge leading 3-0; replacement fixture listed for 3 November 2026"
+    },
+    {
+      "authority": "SofaScore",
+      "url": "https://www.sofascore.com/football/match/emley-afc-bamber-bridge-fc/mesqxQb",
+      "observed": "Match labeled Abandoned; fog; halftime 0-3"
+    },
+    {
+      "authority": "Flashscore",
+      "url": "https://www.flashscore.com.br/jogo/futebol/afc-emley-Gf1hsxQf/bamber-bridge-pEFC3yK9/",
+      "observed": "Match labeled abandoned due to fog, score at abandonment 0-3"
+    },
+    {
+      "authority": "Football Web Pages (conflicting feed)",
+      "url": "https://www.footballwebpages.co.uk/match/2026-2027/northern-premier-league--premier-division/emley-afc/bamber-bridge/581374",
+      "observed": "Displays Full-time 0-3; conflicts with official league A-A and official club abandonment note; not admissible as standard FT"
+    }
+  ],
+  "evidence_conclusion": {
+    "external_nonstandard_status": "ABANDONED",
+    "evidence_strength": "OFFICIAL_LEAGUE_AND_CLUB_CORROBORATED",
+    "standard_ft_admissible": false,
+    "score_at_abandonment": "0-3",
+    "score_must_not_be_treated_as_standard_final": true,
+    "governed_provider_block_remains_until_governed_reconciliation": true,
+    "requires_governed_adjudication": true
+  },
+  "cohort_status_from_prior_audit": {
+    "football_standard_ft_settled": 107,
+    "football_nonstandard_other": 8,
+    "football_provider_blocked": 1,
+    "tennis_finished": 11,
+    "verification_note": "107 standard FT carried from prior audit; full football ledger not independently recomputed in this audit"
+  },
+  "global_status_from_current_repo": {
+    "football_frozen": 5243,
+    "football_final": 4958,
+    "football_pending": 26,
+    "football_blocked": 259,
+    "football_v2_settled_per_market": 4155,
+    "tennis_ledger_records": 417,
+    "tennis_unique_canonical_settled": 364,
+    "tennis_pending": 29,
+    "tennis_blocked": 12,
+    "canonical_tracker_pending": 55,
+    "canonical_tracker_blocked": 230,
+    "canonical_tracker_difference": 29,
+    "tracker_governed_reconciliation_pending": true
+  },
+  "source_blobs": {
+    "football_tracker": "7ce16d2a0f68ff89f5e4f35bdc652e397bdf4e93",
+    "tennis_ledger": "4f4a2575013fb35ab6cf733e07fcaa9fb2538d49",
+    "tennis_uniqueness": "0c7e418c07a60696fb086f3d88a6b9d285764f04"
+  },
+  "changes_applied": {
+    "new_standard_final_settlements": 0,
+    "football_v2_state_mutated": false,
+    "tennis_ledger_mutated": false,
+    "canonical_tracker_mutated": false,
+    "external_evidence_added_only": true
+  },
+  "governance": {
+    "settlement_final_only": true,
+    "metrics_opened": false,
+    "tuning": false,
+    "odds_to_p": "PROHIBITED",
+    "real_money": "BLOCKED",
+    "automatic_wagering": false,
+    "no_backfill": true
+  }
+}
