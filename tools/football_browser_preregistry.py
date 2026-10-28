@@ -55,7 +55,12 @@ def build_browser_preregistry(watchlist: Mapping[str, Any], *, target_date: str)
             if not isinstance(raw, Mapping):
                 raise ValueError("WATCHLIST_EVENT_MUST_BE_OBJECT")
             kickoff = _parse_dt(str(raw.get("kickoff_display_bogota") or ""))
-            if kickoff is None:
+            status_token=str(raw.get("status") or "")
+            postponed=("POSTPONED" in status_token or raw.get("temporal_crosscheck_status")=="POSTPONED_CONFLICT_BLOCKED")
+            if postponed:
+                temporal_status = "POSTPONED_NO_PROSPECTIVE_KICKOFF"
+                prospective = False
+            elif kickoff is None:
                 temporal_status = "KICKOFF_NOT_CERTIFIED"
                 prospective = False
             elif observed_at < kickoff:
@@ -103,6 +108,7 @@ def build_browser_preregistry(watchlist: Mapping[str, Any], *, target_date: str)
             "missing_not_zero": True,
             "no_silent_imputation": True,
             "post_start_backfill_forbidden": True,
+            "postponed_event_not_prospective": True,
             "preregistration_does_not_equal_freeze": True,
             "preregistration_does_not_create_p_matrix": True,
             "odds_used": False,
