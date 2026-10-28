@@ -81,11 +81,20 @@ jobs:
           # this diagnostic commit/rebase.
           git restore --worktree -- evidence/notifications/telegram/MATRIX_TELEGRAM_QUOTE_ATTEMPT_TELEMETRY_AUDIT_LAST.json || true
 
-          unexpected="$(git diff --name-only | grep -v '^evidence/notifications/telegram/MATRIX_DIAGNOSTICO_CLV_Y_CASAS_27OCT2026.json
- || true)"
-          if [ -n "$unexpected" ]; then
-            echo "DIAGNOSTIC_UNEXPECTED_UNSTAGED_CHANGES"
-            printf '%s\n' "$unexpected"
+          unexpected=0
+          while IFS= read -r file; do
+            [ -z "$file" ] && continue
+            case "$file" in
+              evidence/notifications/telegram/MATRIX_DIAGNOSTICO_CLV_Y_CASAS_27OCT2026.json)
+                ;;
+              *)
+                echo "DIAGNOSTIC_UNEXPECTED_UNSTAGED_CHANGES:$file"
+                unexpected=1
+                ;;
+            esac
+          done < <(git diff --name-only)
+          if [ "$unexpected" -ne 0 ]; then
+            git status --short
             exit 1
           fi
 
