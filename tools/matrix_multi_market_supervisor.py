@@ -59,6 +59,59 @@ TENNIS_IMPLEMENTATION = {
     "BREAKS_OF_SERVE": ("LAB", ["tools/rapidapi_tennis_serve_stats_lab.py"]),
 }
 
+
+CAPABILITY_MODE = {
+    "TOTAL_GOALS_OVER_UNDER": "ACTIVE_PREMATCH_MODEL",
+    "MATCH_RESULT_1X2": "PREMATCH_MODEL_LAB",
+    "DOUBLE_CHANCE_1X": "PREMATCH_MODEL_LAB",
+    "DOUBLE_CHANCE_X2": "PREMATCH_MODEL_LAB",
+    "DOUBLE_CHANCE_12": "PRICE_LAB_DIAGNOSTIC_MODEL_BLOCKED",
+    "TEAM_TOTAL_GOALS_HOME": "PRICE_LAB_MODEL_REQUIRED",
+    "TEAM_TOTAL_GOALS_AWAY": "PRICE_LAB_MODEL_REQUIRED",
+    "FIRST_HALF_TOTAL_GOALS_OVER_UNDER": "PREMATCH_MODEL_LAB",
+    "SECOND_HALF_TOTAL_GOALS_OVER_UNDER": "PREMATCH_MODEL_LAB",
+    "FIRST_HALF_TEAM_TOTAL_GOALS_HOME": "PREMATCH_MODEL_LAB",
+    "FIRST_HALF_TEAM_TOTAL_GOALS_AWAY": "PREMATCH_MODEL_LAB",
+    "SECOND_HALF_TEAM_TOTAL_GOALS_HOME": "PREMATCH_MODEL_LAB",
+    "SECOND_HALF_TEAM_TOTAL_GOALS_AWAY": "PREMATCH_MODEL_LAB",
+    "BTTS": "PREMATCH_MODEL_RESEARCH",
+    "ASIAN_OR_EUROPEAN_HANDICAP": "PRICE_COVERAGE_ONLY_MODEL_REQUIRED",
+    "CORNERS_OVER_UNDER": "DATA_COVERAGE_ONLY_MODEL_REQUIRED",
+    "CARDS_OVER_UNDER": "DATA_COVERAGE_ONLY_MODEL_REQUIRED",
+    "TEAM_TOTAL_SHOTS_HOME": "PREMATCH_MODEL_RESEARCH",
+    "TEAM_TOTAL_SHOTS_AWAY": "PREMATCH_MODEL_RESEARCH",
+    "TEAM_SHOTS_ON_TARGET_HOME": "DATA_COVERAGE_ONLY_MODEL_REQUIRED",
+    "TEAM_SHOTS_ON_TARGET_AWAY": "DATA_COVERAGE_ONLY_MODEL_REQUIRED",
+    "TEAM_FOULS_HOME": "DATA_COVERAGE_ONLY_MODEL_REQUIRED",
+    "TEAM_FOULS_AWAY": "DATA_COVERAGE_ONLY_MODEL_REQUIRED",
+    "GOALKEEPER_SAVES": "DATA_COVERAGE_ONLY_MODEL_REQUIRED",
+    "PLAYER_SHOTS": "PREMATCH_MODEL_RESEARCH",
+    "PLAYER_SHOTS_ON_TARGET": "DATA_COVERAGE_ONLY_MODEL_REQUIRED",
+    "PLAYER_ASSISTS": "DATA_COVERAGE_ONLY_MODEL_REQUIRED",
+    "PLAYER_PASSES": "DATA_COVERAGE_ONLY_MODEL_REQUIRED",
+    "PLAYER_TACKLES": "DATA_COVERAGE_ONLY_MODEL_REQUIRED",
+    "PLAYER_FOULS": "DATA_COVERAGE_ONLY_MODEL_REQUIRED",
+    "MATCH_WINNER": "ACTIVE_PREMATCH_MODEL_PRICE_BINDING_REQUIRED",
+    "SET_WINNER": "LIVE_ONLY_NOT_PREMATCH",
+    "SET_HANDICAP": "LIVE_ONLY_NOT_PREMATCH",
+    "TOTAL_SETS": "LIVE_ONLY_NOT_PREMATCH",
+    "BOTH_PLAYERS_WIN_SET": "LIVE_ONLY_NOT_PREMATCH",
+    "GAME_HANDICAP": "LIVE_ONLY_NOT_PREMATCH",
+    "TOTAL_GAMES": "LIVE_ONLY_NOT_PREMATCH",
+    "PLAYER_TOTAL_GAMES": "LIVE_ONLY_NOT_PREMATCH",
+    "TIEBREAK_YES_NO": "LIVE_ONLY_NOT_PREMATCH",
+    "ACES": "SOURCE_LAB_ONLY_PREMATCH_MODEL_REQUIRED",
+    "DOUBLE_FAULTS": "SOURCE_LAB_ONLY_PREMATCH_MODEL_REQUIRED",
+    "BREAKS_OF_SERVE": "SOURCE_LAB_ONLY_PREMATCH_MODEL_REQUIRED",
+}
+
+PREMATCH_CAPABLE_MODES = {
+    "ACTIVE_PREMATCH_MODEL",
+    "PREMATCH_MODEL_LAB",
+    "PREMATCH_MODEL_RESEARCH",
+    "ACTIVE_PREMATCH_MODEL_PRICE_BINDING_REQUIRED",
+}
+
 FOOTBALL_PRICE_TERMS = {
     "MATCH_RESULT_1X2": ["match winner", "1x2"],
     "DOUBLE_CHANCE_1X": ["double chance"],
@@ -164,6 +217,17 @@ def _row(lane: MarketLane, catalog_names: list[str]) -> dict[str, Any]:
     ):
         blockers.append("BLOCKED_TENNIS_STAT_MARKET_IMPLEMENTATION")
 
+    capability_mode = CAPABILITY_MODE.get(lane.key, "UNCLASSIFIED")
+    prematch_model_capable = capability_mode in PREMATCH_CAPABLE_MODES
+    if capability_mode == "LIVE_ONLY_NOT_PREMATCH":
+        blockers.append("BLOCKED_PREMATCH_MODEL_LIVE_ONLY")
+    elif capability_mode in {"DATA_COVERAGE_ONLY_MODEL_REQUIRED", "PRICE_COVERAGE_ONLY_MODEL_REQUIRED"}:
+        blockers.append("BLOCKED_PREMATCH_MODEL_COVERAGE_ONLY")
+    elif capability_mode == "SOURCE_LAB_ONLY_PREMATCH_MODEL_REQUIRED":
+        blockers.append("BLOCKED_PREMATCH_MODEL_SOURCE_LAB_ONLY")
+    elif capability_mode == "PRICE_LAB_MODEL_REQUIRED":
+        blockers.append("BLOCKED_PREMATCH_MODEL_REQUIRED")
+
     return {
         "sport": lane.sport,
         "market_key": lane.key,
@@ -174,10 +238,12 @@ def _row(lane: MarketLane, catalog_names: list[str]) -> dict[str, Any]:
         "operational_state": state,
         "implementation_paths": paths,
         "implementation_present": implemented,
+        "capability_mode": capability_mode,
+        "prematch_model_capable": prematch_model_capable,
         "price_state": price_state,
-        "blockers": blockers,
+        "blockers": sorted(set(blockers)),
         "must_continue_collecting": True,
-        "production_authorized": state == "ACTIVE",
+        "production_authorized": state == "ACTIVE" and prematch_model_capable,
     }
 
 
@@ -207,6 +273,8 @@ def build(*, football_catalog: Path | None = None, target_date_bogota: str | Non
             "aces_present": any(x["market_key"] == "ACES" for x in rows),
             "first_half_goals_present": any(x["market_key"] == "FIRST_HALF_TOTAL_GOALS_OVER_UNDER" for x in rows),
             "second_half_goals_present": any(x["market_key"] == "SECOND_HALF_TOTAL_GOALS_OVER_UNDER" for x in rows),
+            "live_only_never_counts_as_prematch": all(not x["prematch_model_capable"] for x in rows if x["capability_mode"] == "LIVE_ONLY_NOT_PREMATCH"),
+            "coverage_only_never_counts_as_prematch": all(not x["prematch_model_capable"] for x in rows if "COVERAGE_ONLY" in x["capability_mode"]),
             "odds_do_not_generate_p_matrix": True,
             "automatic_wagering": False,
             "real_money": "BLOCKED",
