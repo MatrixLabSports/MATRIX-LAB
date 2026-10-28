@@ -1,21 +1,10 @@
 {
-  "schema": "MATRIX_ODDS_API_QUOTA_GUARD_V1",
-  "checked_at_utc": "2026-10-28T09:08:06+00:00",
-  "status": "BOOTSTRAP_FROM_PHYSICALLY_VERIFIED_429",
-  "provider": "odds-api.net",
-  "endpoint": "/v1/usage",
-  "http_status": null,
-  "request_id_sent": null,
-  "request_id_returned": null,
+  "checked_at_utc": "2026-10-28T09:17:58+00:00",
   "decision": {
-    "stage": "BLOCKED_EXHAUSTED",
     "api_calls_allowed": false,
-    "max_seconds_to_kickoff_for_odds_api_call": 0,
-    "api_credits_used": null,
     "api_credits_limit": null,
     "api_credits_remaining": null,
-    "usage_pct": 100,
-    "exceeded": true,
+    "api_credits_used": null,
     "crossed_alert_thresholds_pct": [
       50,
       75,
@@ -23,31 +12,42 @@
       95,
       100
     ],
+    "evidence_basis": "Run #1512 persisted HTTP 429 detail Monthly request quota exceeded for three prematch fixtures.",
+    "exceeded": true,
+    "max_seconds_to_kickoff_for_odds_api_call": 0,
+    "period_end_utc": null,
+    "period_start_utc": null,
     "plan": null,
     "pricing_model": null,
-    "period_start_utc": null,
-    "period_end_utc": null,
-    "evidence_basis": "Run #1512 persisted HTTP 429 detail Monthly request quota exceeded for three prematch fixtures."
+    "stage": "BLOCKED_EXHAUSTED",
+    "usage_pct": 100
   },
+  "endpoint": "/v1/usage",
+  "http_status": 429,
   "policy": {
-    "thresholds_pct": [
-      50,
-      75,
-      90,
-      95,
-      100
-    ],
-    "below_50": "NORMAL_T120",
     "50_to_75": "WATCH_T120",
     "75_to_90": "CONSERVE_T90_ONLY",
     "90_to_95": "RESERVE_T60_ONLY",
     "95_to_100": "RESERVE_T30_ONLY",
-    "exhausted": "BLOCKED_EXHAUSTED_ZERO_ODDS_API_RETRIES",
-    "usage_check_once_per_operational_workflow_cycle": true,
-    "missing_is_not_zero": true,
-    "no_silent_imputation": true,
-    "no_gate_relaxation": true,
     "automatic_wagering": false,
-    "real_money": "BLOCKED"
-  }
+    "below_50": "NORMAL_T120",
+    "exhausted": "BLOCKED_EXHAUSTED_ZERO_ODDS_API_RETRIES",
+    "missing_is_not_zero": true,
+    "no_gate_relaxation": true,
+    "no_silent_imputation": true,
+    "real_money": "BLOCKED",
+    "thresholds_pct": [
+      50.0,
+      75.0,
+      90.0,
+      95.0,
+      100.0
+    ],
+    "usage_check_once_per_operational_workflow_cycle": true
+  },
+  "provider": "odds-api.net",
+  "request_id_returned": "matrix-quota-2026-10-28T091758_0000",
+  "request_id_sent": "matrix-quota-2026-10-28T091758_0000",
+  "schema": "MATRIX_ODDS_API_QUOTA_GUARD_V1",
+  "status": "USAGE_ENDPOINT_UNAVAILABLE_USING_LAST_SAFE_DECISION"
 }
