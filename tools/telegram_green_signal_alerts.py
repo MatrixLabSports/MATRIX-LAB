@@ -42,6 +42,7 @@ BLOCKER_AUDIT_EVIDENCE = Path("evidence/notifications/telegram/MATRIX_TELEGRAM_B
 EV_MARGINAL_LAB_EVIDENCE = Path("evidence/notifications/telegram/MATRIX_EV_MARGINAL_SHADOW_LAB_LAST.json")
 QUOTE_ATTEMPT_LEDGER = Path("evidence/notifications/telegram/MATRIX_TELEGRAM_QUOTE_ATTEMPTS.jsonl")
 PHYSICAL_BOOK_QUOTE_ROOT = Path("evidence/football_world_inventory")
+OPERA_BOOKMAKER_COVERAGE = Path("evidence/notifications/telegram/MATRIX_COLOMBIA_BOOKMAKER_OPERA_COVERAGE_20261028.json")
 PHYSICAL_BOOK_QUOTE_MAX_AGE_MINUTES = 30
 
 GREEN_STATUSES = {
@@ -115,6 +116,30 @@ def load_json(path: Path, default: Any) -> Any:
     if not path.exists():
         return default
     return json.loads(path.read_text(encoding="utf-8"))
+
+
+def physical_open_bookmaker_names() -> list[str]:
+    """Return only execution houses physically observed open in Opera.
+
+    Configured execution houses are not equivalent to browser-available houses.
+    Missing/malformed coverage evidence fails closed to an empty browser set.
+    """
+    payload = load_json(OPERA_BOOKMAKER_COVERAGE, {})
+    rows = payload.get("execution_bookmakers") if isinstance(payload, dict) else None
+    if not isinstance(rows, list):
+        return []
+    expected_keys = set(POLICY_BOOKS)
+    row_keys = {str(x.get("key") or "") for x in rows if isinstance(x, dict)}
+    if row_keys != expected_keys:
+        return []
+    names = []
+    for row in rows:
+        if not isinstance(row, dict) or str(row.get("opera_status") or "") != "OPEN":
+            continue
+        name = str(row.get("name") or "").strip()
+        if name:
+            names.append(name)
+    return names
 
 
 def persist_ledger_checkpoint(ledger: dict[str, Any]) -> None:
@@ -2005,7 +2030,7 @@ def blocker_recovery_profile(gate_record: dict[str, Any]) -> dict[str, Any]:
         physical_offer = gate_record.get("physical_browser_offer") if isinstance(gate_record.get("physical_browser_offer"), dict) else None
         variable = "EXACT_AUTHORIZED_BOOK_OVER25_QUOTE" if state.startswith("BLOCKED_NO_VALID") else "POSITIVE_EXPECTED_VALUE"
         sources = ["API-Football", "odds-api.net"]
-        recovery = ["Betano", "BetPlay", "Betsson", "Bwin", "Codere", "Luckia", "MrYoker", "Rivalo", "Rushbet", "Sportium", "Stake", "Wplay", "YaJuego", "Zamba"]
+        recovery = physical_open_bookmaker_names()
 
         # A physically verified authorized-book quote with non-positive EV
         # is an economic block, not a provider-coverage or identity gap.
@@ -2016,7 +2041,7 @@ def blocker_recovery_profile(gate_record: dict[str, Any]) -> dict[str, Any]:
                 "missing_or_failed_variable": "POSITIVE_EXPECTED_VALUE",
                 "recoverability": "RECOVERABLE_WITH_BETTER_AUTHORIZED_QUOTE_WHILE_PREMATCH",
                 "sources_already_checked": sources,
-                "sources_available_for_recovery": ["Betano", "BetPlay", "Betsson", "Bwin", "Codere", "Luckia", "MrYoker", "Rivalo", "Rushbet", "Sportium", "Stake", "Wplay", "YaJuego", "Zamba"],
+                "sources_available_for_recovery": physical_open_bookmaker_names(),
                 "automatic_recovery_attempted": True,
                 "automatic_recovery_exhausted": False,
                 "provider_diagnostic_status": provider_status or None,
@@ -2097,7 +2122,7 @@ def blocker_recovery_profile(gate_record: dict[str, Any]) -> dict[str, Any]:
             "missing_or_failed_variable": "REVALIDATED_EXPECTED_VALUE_THRESHOLD",
             "recoverability": "RECOVERABLE_WITH_BETTER_AUTHORIZED_QUOTE_WHILE_PREMATCH",
             "sources_already_checked": ["API-Football", "odds-api.net"],
-            "sources_available_for_recovery": ["Betano", "BetPlay", "Betsson", "Bwin", "Codere", "Luckia", "MrYoker", "Rivalo", "Rushbet", "Sportium", "Stake", "Wplay", "YaJuego", "Zamba"],
+            "sources_available_for_recovery": physical_open_bookmaker_names(),
             "automatic_recovery_attempted": True,
             "final_disposition": "RETRY_AUTHORIZED_BOOKS_UNTIL_KICKOFF",
         })
@@ -2200,7 +2225,9 @@ def build_blocker_recovery_audit(
             "no_backfill_after_kickoff": True,
             "source_order": ["SofaScore", "Flashscore", "API-Football", "odds-api.net", "Betano", "BetPlay", "Betsson", "Bwin", "Codere", "Luckia", "MrYoker", "Rivalo", "Rushbet", "Sportium", "Stake", "Wplay", "YaJuego", "Zamba"],
             "automatic_quote_recovery": ["API-Football", "odds-api.net"],
-            "browser_or_bookmaker_recovery_when_needed": ["SofaScore", "Flashscore", "Betano", "BetPlay", "Betsson", "Bwin", "Codere", "Luckia", "MrYoker", "Rivalo", "Rushbet", "Sportium", "Stake", "Wplay", "YaJuego", "Zamba"],
+            "browser_or_bookmaker_recovery_when_needed": ["SofaScore", "Flashscore", *physical_open_bookmaker_names()],
+            "configured_execution_books": list(EXECUTION_BOOKMAKERS),
+            "physically_open_execution_books": physical_open_bookmaker_names(),
             "real_money": "BLOCKED",
         },
         "summary": {
