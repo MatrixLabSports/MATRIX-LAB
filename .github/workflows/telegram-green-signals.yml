@@ -335,8 +335,7 @@ jobs:
           PY
 
       - name: Persistir ledger gobernado
-        if: ${{ github.event_name != 'push' }}
-        if: ${{ always() }}
+        if: ${{ always() && github.event_name != 'push' }}
         shell: bash
         run: |
           set -euo pipefail
