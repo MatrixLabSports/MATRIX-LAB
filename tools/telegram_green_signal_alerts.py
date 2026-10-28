@@ -27,6 +27,7 @@ from app.research.football.sharp_consensus import assess_sharp_consensus
 from app.market.colombia_bookmakers import EXECUTION_BOOKMAKERS
 from tools.telegram_quote_attempt_telemetry import build_attempt, append_attempt, load_verified, summarize_run, summarize_cumulative
 from tools.odds_api_quota_guard import should_call_odds_api
+from tools.matrix_premium_cards import render_pick_png
 
 from app.research.football.correlated_exposure import (
     assess_paper_correlated_exposure,
@@ -45,6 +46,7 @@ QUOTE_ATTEMPT_LEDGER = Path("evidence/notifications/telegram/MATRIX_TELEGRAM_QUO
 PHYSICAL_BOOK_QUOTE_ROOT = Path("evidence/football_world_inventory")
 OPERA_BOOKMAKER_COVERAGE = Path("evidence/notifications/telegram/MATRIX_COLOMBIA_BOOKMAKER_OPERA_COVERAGE_20261028.json")
 ODDS_API_QUOTA_GUARD = Path("evidence/notifications/telegram/MATRIX_ODDS_API_QUOTA_GUARD_LAST.json")
+PREMIUM_CARD_ROOT = Path("evidence/notifications/telegram/premium_cards")
 PHYSICAL_BOOK_QUOTE_MAX_AGE_MINUTES = 30
 
 GREEN_STATUSES = {
@@ -254,6 +256,35 @@ def send_telegram(session: requests.Session, token: str, chat_id: str, text: str
         raise RuntimeError(f"TELEGRAM_SEND_FAILED:{response.status_code}:{payload}")
     result = payload.get("result") or {}
     return int(result["message_id"])
+
+
+def send_telegram_photo(session: requests.Session, token: str, chat_id: str, image_path: Path, caption: str) -> int:
+    with image_path.open("rb") as fh:
+        response = session.post(
+            f"https://api.telegram.org/bot{token}/sendPhoto",
+            data={"chat_id": chat_id, "caption": caption[:1000]},
+            files={"photo": (image_path.name, fh, "image/png")},
+            timeout=(10, 90),
+        )
+    try:
+        payload = response.json()
+    except Exception:
+        payload = {}
+    if response.status_code >= 300 or payload.get("ok") is not True:
+        raise RuntimeError(f"TELEGRAM_PHOTO_SEND_FAILED:{response.status_code}:{payload}")
+    result = payload.get("result") or {}
+    return int(result["message_id"])
+
+
+def premium_pick_caption(c: dict[str, Any]) -> str:
+    return "\n".join([
+        "MATRIX PICKS PREMIUM",
+        f'Partido: {c.get("match")}',
+        f'Mercado: {c.get("market")}',
+        f'Casa: {c.get("house")}',
+        f'Cuota: {float(c.get("odds") or 0):.2f}',
+        "Análisis deportivo. No existe garantía de resultado.",
+    ])
 
 
 def execution_from_row(row: dict[str, Any]) -> dict[str, Any] | None:
@@ -2306,6 +2337,7 @@ def main() -> None:
     chat_id = os.environ.get("TELEGRAM_CHAT_ID", "").strip()
     api_key = os.environ.get("API_FOOTBALL_KEY", "").strip()
     odds_api_net_key = os.environ.get("ODDS_API_NET_KEY", "").strip()
+    premium_chat_id = os.environ.get("MATRIX_PREMIUM_TELEGRAM_CHAT_ID", "").strip()
     if not token:
         raise SystemExit("TELEGRAM_BOT_TOKEN_NOT_CONFIGURED")
     if not chat_id:
@@ -2935,9 +2967,31 @@ def main() -> None:
                 "telegram_message_id": mid,
                 "status": "ENVIADO_OK",
                 "matrix_real_money": "BLOQUEADO",
+                "premium_card_version": "MATRIX_PREMIUM_CARD_V1",
+                "premium_pick_delivery_status": "PENDING_RENDER",
             }
             ledger["sent"].append(record)
             sent_by_key[key] = record
+            premium_path = PREMIUM_CARD_ROOT / "picks" / f"{key}.png"
+            premium_candidate = dict(c)
+            premium_candidate["kickoff_display"] = fmt_bogota(c.get("kickoff"))
+            premium_meta = render_pick_png(premium_candidate, key, premium_path)
+            record["premium_pick_image_path"] = premium_meta["path"]
+            record["premium_pick_fingerprint"] = premium_meta["fingerprint"]
+            record["premium_pick_rendered_at_utc"] = now.isoformat()
+            if premium_chat_id:
+                try:
+                    premium_mid = send_telegram_photo(
+                        session, token, premium_chat_id, premium_path, premium_pick_caption(c)
+                    )
+                    record["premium_pick_message_id"] = premium_mid
+                    record["premium_pick_sent_at_utc"] = now.isoformat()
+                    record["premium_pick_delivery_status"] = "PREMIUM_SENT_OK"
+                except Exception as exc:
+                    record["premium_pick_delivery_status"] = "PREMIUM_DELIVERY_FAILED_RETRY_REQUIRED"
+                    record["premium_pick_delivery_error"] = str(exc)[:500]
+            else:
+                record["premium_pick_delivery_status"] = "RENDERED_AWAITING_PREMIUM_CHANNEL"
             # Durability boundary: once Telegram confirms delivery, persist it
             # locally before any later notification, settlement, or audit step.
             persist_ledger_checkpoint(ledger)
