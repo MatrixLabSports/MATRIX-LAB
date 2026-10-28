@@ -51,15 +51,7 @@ GREEN_STATUSES = {
 }
 FINAL_STATUSES = {"FT", "AET", "PEN"}
 VOID_STATUSES = {"PST", "CANC", "ABD"}
-POLICY_BOOKS = {
-    **EXECUTION_BOOKMAKERS,
-    "mryoker": ("mryoker", "mr yoker", "mr. yoker"),
-    "rushbet": ("rushbet", "rush bet"),
-    "sportium": ("sportiumco", "sportium"),
-    "stake": ("stake", "stakeco", "stake colombia"),
-    "wplay": ("wplay", "w play"),
-    "yajuego": ("yajuego", "ya juego"),
-}
+POLICY_BOOKS = dict(EXECUTION_BOOKMAKERS)
 SHARP_REFERENCE_BOOKS = {"pinnacle", "circa", "betfair"}
 MARKET_CONTEXT_BOOKS = {"fanduel"}
 REFERENCE_BOOKS = SHARP_REFERENCE_BOOKS | MARKET_CONTEXT_BOOKS
