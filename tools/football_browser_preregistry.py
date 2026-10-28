@@ -117,3 +117,28 @@ def load_and_build(path: Path, *, target_date: str) -> dict[str, Any]:
     if not isinstance(value, dict):
         raise ValueError("WATCHLIST_ROOT_MUST_BE_OBJECT")
     return build_browser_preregistry(value, target_date=target_date)
+
+
+def main() -> None:
+    import argparse
+    parser=argparse.ArgumentParser()
+    parser.add_argument("--watchlist", default=str(DEFAULT_WATCHLIST))
+    parser.add_argument("--out", default="evidence/calendar_reconciliation/MATRIX_FOOTBALL_BROWSER_PREREGISTRY_LAST.json")
+    parser.add_argument("--target-date", default="")
+    args=parser.parse_args()
+    watch_path=Path(args.watchlist)
+    raw=json.loads(watch_path.read_text(encoding="utf-8"))
+    if not isinstance(raw, dict):
+        raise ValueError("WATCHLIST_ROOT_MUST_BE_OBJECT")
+    target=str(args.target_date or raw.get("target_date_bogota") or "").strip()
+    if not target:
+        raise ValueError("TARGET_DATE_REQUIRED")
+    result=build_browser_preregistry(raw,target_date=target)
+    out=Path(args.out)
+    out.parent.mkdir(parents=True,exist_ok=True)
+    out.write_text(json.dumps(result,indent=2,sort_keys=True,ensure_ascii=False)+"\n",encoding="utf-8")
+    print(json.dumps({"status":result["status"],"target_date_bogota":target,"counts":result["counts"],"real_money":"BLOCKED"},sort_keys=True))
+
+
+if __name__=="__main__":
+    main()
