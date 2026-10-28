@@ -21,6 +21,7 @@ from tools.api_football_group_history_capture import capture_group_history
 from tools.api_football_over25_high_scoring_league_radar import write_outputs as write_over25_league_radar
 from tools.api_football_prospective_market_freeze import persist_incremental_freeze
 from tools.api_football_team_last_fallback import run_capture as capture_team_last
+from tools.football_browser_preregistry import DEFAULT_WATCHLIST, load_and_build as build_browser_preregistry
 
 
 GROUP_HISTORY_MAX_REQUESTS = 40
@@ -150,12 +151,16 @@ def run_daily_cycle(
     if cycle_root.exists():
         raise ValueError("DAILY_CYCLE_PATH_ALREADY_EXISTS:" + cycle_root.as_posix())
 
+    browser_dir = cycle_root / "browser_first"
     fixtures_dir = cycle_root / "fixtures"
     prematch_dir = cycle_root / "prematch"
     history_dir = cycle_root / "history"
     team_last_dir = cycle_root / "team_last_fallback"
     canonical_dir = cycle_root / "canonical_analysis"
     radar_dir = cycle_root / "radar_over25_high_scoring_leagues"
+
+    browser_preregistry = build_browser_preregistry(DEFAULT_WATCHLIST, target_date=target_date)
+    _write(browser_dir / "preregistry.json", browser_preregistry)
 
     fixture_manifest, fixture_recovery = _capture_fixtures_with_retry(
         api_key=key,
@@ -241,6 +246,14 @@ def run_daily_cycle(
         "cycle_root": cycle_root.relative_to(root).as_posix(),
         "provider": "api_football",
         "provider_entitlement_required": "PRO_OR_COMPATIBLE",
+        "browser_first": {
+            "status": browser_preregistry["status"],
+            "total_monitoring_events": browser_preregistry["counts"]["total_monitoring_events"],
+            "prospective_before_displayed_kickoff": browser_preregistry["counts"]["prospective_before_displayed_kickoff"],
+            "kickoff_not_certified": browser_preregistry["counts"]["kickoff_not_certified"],
+            "not_prospective_at_preregistration": browser_preregistry["counts"]["not_prospective_at_preregistration"],
+            "api_absence_does_not_delete_browser_event": True,
+        },
         "fixture_capture": {
             "network_calls": 1,
             "fixtures_received": fixture_manifest["fixtures_received"],
