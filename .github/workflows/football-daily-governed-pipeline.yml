@@ -28,7 +28,9 @@ on:
       - tools/api_football_prospective_daily_cycle.py
       - tests/test_api_football_prospective_daily_cycle_retry.py
       - tools/football_browser_preregistry.py
+      - tools/football_pmatrix_lineage_audit.py
       - tests/test_football_browser_preregistry.py
+      - tests/test_football_pmatrix_lineage_audit.py
       - tools/matrix_multi_market_supervisor.py
       - tools/api_football_market_binding_catalog.py
       - tools/api_football_priority_market_lab.py
@@ -45,6 +47,7 @@ on:
       - tests/test_api_football_team_last_fallback.py
       - tests/test_api_football_market_shadow_p_matrix.py
       - tests/test_football_daily_governed_over25.py
+      - evidence/calendar_reconciliation/MATRIX_FOOTBALL_BROWSER_PREREGISTRY_LAST.json
       - .github/workflows/football-daily-governed-pipeline.yml
 
 permissions:
@@ -80,7 +83,7 @@ jobs:
 
       - name: Run targeted history and P_MATRIX regression tests
         run: |
-          PYTHONPATH=. python -m pytest -q             tests/test_api_football_group_history_capture.py             tests/test_api_football_team_last_fallback.py             tests/test_api_football_market_shadow_p_matrix.py             tests/test_football_daily_governed_over25.py             tests/test_football_subscription_deadline_guard.py             tests/test_api_football_prospective_daily_cycle_retry.py             tests/test_football_browser_preregistry.py             tests/test_api_football_priority_market_lab.py             tests/test_api_football_market_binding_catalog_resilience.py             tests/test_market_portfolio_permanent_mandate.py             tests/test_matrix_multi_market_supervisor.py
+          PYTHONPATH=. python -m pytest -q             tests/test_api_football_group_history_capture.py             tests/test_api_football_team_last_fallback.py             tests/test_api_football_market_shadow_p_matrix.py             tests/test_football_daily_governed_over25.py             tests/test_football_subscription_deadline_guard.py             tests/test_api_football_prospective_daily_cycle_retry.py             tests/test_football_browser_preregistry.py             tests/test_football_pmatrix_lineage_audit.py             tests/test_api_football_priority_market_lab.py             tests/test_api_football_market_binding_catalog_resilience.py             tests/test_market_portfolio_permanent_mandate.py             tests/test_matrix_multi_market_supervisor.py
 
       - name: Enforce API-Football subscription deadline
         env:
@@ -110,6 +113,32 @@ jobs:
           echo "mode=$MODE" >> "$GITHUB_OUTPUT"
           echo "TARGET_DATE_BOGOTA=$D"
           echo "DATE_MODE=$MODE"
+
+      - name: Enforce canonical browser preregistry freshness before API calls
+        shell: bash
+        run: |
+          set -euo pipefail
+          D="${{ steps.date.outputs.target_date }}"
+          P="evidence/calendar_reconciliation/MATRIX_FOOTBALL_BROWSER_PREREGISTRY_LAST.json"
+          test -f "$P"
+          git fetch origin repair/cor09-world-pipeline
+          git show origin/repair/cor09-world-pipeline:"$P" > /tmp/matrix_browser_preregistry_remote.json
+          cmp -s "$P" /tmp/matrix_browser_preregistry_remote.json || {
+            echo "STALE_BROWSER_PREREGISTRY_RESTART_REQUIRED"
+            exit 1
+          }
+          python - "$P" "$D" <<'PY'
+          import json,sys
+          p,d=sys.argv[1:]
+          j=json.load(open(p,encoding="utf-8"))
+          assert j["status"]=="PASS_BROWSER_FIRST_PREREGISTRATION"
+          assert j["target_date_bogota"]==d
+          assert j["policy"]["source_order"]==["SOFASCORE","FLASHSCORE","APIS"]
+          assert j["policy"]["odds_used"] is False
+          assert j["policy"]["automatic_wagering"] is False
+          assert j["policy"]["real_money"]=="BLOCKED"
+          print(json.dumps({"status":"PASS","target_date":d,"counts":j["counts"]},sort_keys=True))
+          PY
 
       - name: Generate and enforce API-Football subscription deadline
         env:
@@ -281,6 +310,28 @@ jobs:
           D="${{ steps.date.outputs.target_date }}"
           python -m tools.football_daily_governed_over25 --target-date "$D"
 
+      - name: Certify browser-to-P_MATRIX pre-odds lineage
+        if: steps.cycle.outputs.status == 'PASS'
+        shell: bash
+        run: |
+          set -euo pipefail
+          D="${{ steps.date.outputs.target_date }}"
+          python -m tools.football_pmatrix_lineage_audit --target-date "$D"
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          j=json.loads(Path("evidence/governance/MATRIX_FOOTBALL_PMATRIX_LINEAGE_AUDIT_LAST.json").read_text())
+          assert j["status"]=="PASS_PMATRIX_PRE_ODDS_ELIGIBILITY"
+          assert j["blockers"]==[]
+          assert j["p_matrix"]["physically_generated"] is True
+          assert j["p_matrix"]["operationally_certified"] is True
+          assert j["protections"]["odds_used_to_generate_probability"] is False
+          assert j["protections"]["target_outcomes_used"] is False
+          assert j["protections"]["automatic_wagering"] is False
+          assert j["protections"]["real_money"]=="BLOCKED"
+          print(json.dumps({"status":j["status"],"p_matrix":j["p_matrix"],"lineage":j["lineage"]},sort_keys=True))
+          PY
+
       # Telegram is intentionally decoupled. The evidence commit below triggers
       # telegram-green-signals.yml, which owns and persists its ledger atomically.
 
@@ -297,6 +348,7 @@ jobs:
           if [ -d "evidence/api_football/daily_prematch_reports/$D" ]; then git add "evidence/api_football/daily_prematch_reports/$D"; fi
           if [ -f "evidence/football_world_inventory/$D/MATRIX_FOOTBALL_CALIBRATION_ELIGIBILITY.json" ]; then git add "evidence/football_world_inventory/$D/MATRIX_FOOTBALL_CALIBRATION_ELIGIBILITY.json"; fi
           git add evidence/governance/MATRIX_FOOTBALL_SUBSCRIPTION_DEADLINE_LAST.json
+          if [ -f evidence/governance/MATRIX_FOOTBALL_PMATRIX_LINEAGE_AUDIT_LAST.json ]; then git add evidence/governance/MATRIX_FOOTBALL_PMATRIX_LINEAGE_AUDIT_LAST.json; fi
           git add evidence/api_football/market_expansion/market_binding_catalog.json
           git add evidence/api_football/market_expansion/priority_market_lab_last.json
           if [ -d evidence/api_football/provider_failures ]; then git add evidence/api_football/provider_failures; fi
