@@ -29,3 +29,25 @@ def test_final_window_readiness_is_persisted_and_rebase_allowlisted():
     assert "covered_by_15m_supervisor" in text
     assert "source_contract_passed" in text
     assert "WAITING_FINAL_REVALIDATION_WINDOW" in text
+
+
+def test_push_ci_does_not_call_live_quote_supervision():
+    text = WORKFLOW.read_text(encoding="utf-8")
+    guarded_steps = [
+        "Enforce API-Football subscription deadline before supervisor",
+        "Validate secrets",
+        "Build multi-market signal eligibility gate",
+        "Build multi-market Telegram signal eligibility registry",
+        "Supervisor Telegram — señales, cuotas y FINAL",
+        "Certify final-window readiness from current blocker audit",
+        "Build immutable quote-attempt telemetry audit",
+        "Run Sindicato Elite Telegram diagnostic committee",
+        "Rebuild canonical daily bankroll table",
+        "Audit 22-OCT closure",
+    ]
+    for step in guarded_steps:
+        block = text.split(f"      - name: {step}\n", 1)[1].split("      - name:", 1)[0]
+        assert "if: ${{ github.event_name != 'push' }}" in block
+    persist = text.split("      - name: Persistir ledger gobernado\n", 1)[1].split("      - name:", 1)[0]
+    assert "if: ${{ always() && github.event_name != 'push' }}" in persist
+    assert text.count("      - name: Persistir ledger gobernado\n") == 1
