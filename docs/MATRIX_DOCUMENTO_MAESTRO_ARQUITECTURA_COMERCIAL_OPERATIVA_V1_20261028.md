@@ -38,7 +38,7 @@ La arquitectura se gobierna con estos roles funcionales:
 
 | Producto | Precio | Entrega | Regla de cantidad |
 | --- | ---: | --- | --- |
-| MATRIX FREE | COP 0 | Canal privado gratuito | Hasta 4 picks/día; mínimo 0 |
+| MATRIX FREE | COP 0 | Canal público gratuito | Hasta 4 picks/día; mínimo 0 |
 | PREMIUM SEMANAL | COP 50.000 | Canal Premium | Objetivo 6–10 picks/día |
 | PREMIUM MENSUAL | COP 150.000 | Canal Premium | Objetivo 6–10 picks/día |
 | STAKAZO MATRIX 3X | COP 15.000 por cupo | Producto independiente | 30 cupos/día máximo |
@@ -148,7 +148,10 @@ Si falta una condición: STAKAZO_3X_NO_DISPONIBLE_HOY.
 ## 7. Seguridad de Telegram — MATRIX ACCESS GUARD
 
 ### Política aprobada
-FREE, PREMIUM y STAKAZO serán privados.
+FREE será público. PREMIUM y STAKAZO serán privados.
+
+- FREE prioriza alcance y adquisición.
+- PREMIUM y STAKAZO priorizan control de acceso y exclusividad.
 
 Todos:
 - solicitud de ingreso o enlace controlado;
@@ -254,11 +257,11 @@ La SIC exige información veraz y suficiente y señala que las condiciones objet
 ## 12. Evidencia física de repositorio — corte 28-OCT-2026
 
 Commits de esta fase:
-- e0878d5e — política comercial de productos.
-- ded045bd — seguridad de canales y bots.
+- e0878d5e — política comercial inicial de productos.\n- 991c44b5 — corrección: MATRIX FREE pasa a canal público de adquisición.
+- ded045bd — seguridad inicial de canales y bots.\n- 4a425073 — corrección: MATRIX FREE pasa a público; Premium/STAKAZO continúan privados.
 - 881e5315 — política de membresías.
 - cc1ac642 — política STAKAZO 3X.
-- 8a91c048 — guard de invariantes comerciales.
+- 8a91c048 — guard de invariantes comerciales.\n- 212fb0ee — guard corregido: FREE público; canales pagos privados.
 - 66bb5bb3 — test del guard.
 - 274c5628 — protect_content en Telegram operativo.
 - 79491b56 — Membership Guard.
@@ -276,7 +279,7 @@ Evidencia Premium previamente existente:
 ## 13. Criterios de lanzamiento comercial
 
 MATRIX no pasa a lanzamiento hasta tener PASS en:
-1. Canal FREE privado creado y protegido.
+1. Canal FREE público creado, con protección de contenido y sin información exclusiva sensible.
 2. Canal PREMIUM privado creado y protegido.
 3. Bot MATRIX administrador con permisos mínimos.
 4. Test real de pick → imagen → Premium.
