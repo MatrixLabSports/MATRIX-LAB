@@ -1,12 +1,14 @@
 {
   "catalog_market_names_observed": 167,
   "football_required_lanes": 30,
-  "generated_at_utc": "2026-10-28T15:13:21+00:00",
+  "generated_at_utc": "2026-10-28T20:26:12+00:00",
   "invariants": {
     "aces_present": true,
     "automatic_wagering": false,
+    "coverage_only_never_counts_as_prematch": true,
     "every_mandated_lane_emitted_each_cycle": true,
     "first_half_goals_present": true,
+    "live_only_never_counts_as_prematch": true,
     "no_go_does_not_stop_research_collection": true,
     "odds_do_not_generate_p_matrix": true,
     "over_2_5_not_single_market_scope": true,
@@ -17,6 +19,7 @@
   "rows": [
     {
       "blockers": [],
+      "capability_mode": "PREMATCH_MODEL_LAB",
       "display_name": "1X2",
       "family": "core",
       "implementation_paths": [
@@ -26,6 +29,7 @@
       "market_key": "MATCH_RESULT_1X2",
       "must_continue_collecting": true,
       "operational_state": "LAB",
+      "prematch_model_capable": true,
       "price_state": "PRICE_FAMILY_OBSERVED",
       "production_authorized": false,
       "required": true,
@@ -34,6 +38,7 @@
     },
     {
       "blockers": [],
+      "capability_mode": "PREMATCH_MODEL_LAB",
       "display_name": "Doble oportunidad 1X",
       "family": "core",
       "implementation_paths": [
@@ -43,6 +48,7 @@
       "market_key": "DOUBLE_CHANCE_1X",
       "must_continue_collecting": true,
       "operational_state": "LAB",
+      "prematch_model_capable": true,
       "price_state": "PRICE_FAMILY_OBSERVED",
       "production_authorized": false,
       "required": true,
@@ -51,6 +57,7 @@
     },
     {
       "blockers": [],
+      "capability_mode": "PREMATCH_MODEL_LAB",
       "display_name": "Doble oportunidad X2",
       "family": "core",
       "implementation_paths": [
@@ -60,6 +67,7 @@
       "market_key": "DOUBLE_CHANCE_X2",
       "must_continue_collecting": true,
       "operational_state": "LAB",
+      "prematch_model_capable": true,
       "price_state": "PRICE_FAMILY_OBSERVED",
       "production_authorized": false,
       "required": true,
@@ -68,6 +76,7 @@
     },
     {
       "blockers": [],
+      "capability_mode": "PRICE_LAB_DIAGNOSTIC_MODEL_BLOCKED",
       "display_name": "Doble oportunidad 12",
       "family": "core",
       "implementation_paths": [
@@ -77,6 +86,7 @@
       "market_key": "DOUBLE_CHANCE_12",
       "must_continue_collecting": true,
       "operational_state": "LAB",
+      "prematch_model_capable": false,
       "price_state": "PRICE_FAMILY_OBSERVED",
       "production_authorized": false,
       "required": true,
@@ -85,6 +95,7 @@
     },
     {
       "blockers": [],
+      "capability_mode": "ACTIVE_PREMATCH_MODEL",
       "display_name": "Over/Under goles",
       "family": "core",
       "implementation_paths": [
@@ -94,6 +105,7 @@
       "market_key": "TOTAL_GOALS_OVER_UNDER",
       "must_continue_collecting": true,
       "operational_state": "ACTIVE",
+      "prematch_model_capable": true,
       "price_state": "PRICE_FAMILY_OBSERVED",
       "production_authorized": true,
       "required": true,
@@ -101,7 +113,10 @@
       "sport": "football"
     },
     {
-      "blockers": [],
+      "blockers": [
+        "BLOCKED_PREMATCH_MODEL_REQUIRED"
+      ],
+      "capability_mode": "PRICE_LAB_MODEL_REQUIRED",
       "display_name": "Goles totales equipo local",
       "family": "goals_team",
       "implementation_paths": [
@@ -111,6 +126,7 @@
       "market_key": "TEAM_TOTAL_GOALS_HOME",
       "must_continue_collecting": true,
       "operational_state": "LAB",
+      "prematch_model_capable": false,
       "price_state": "PRICE_FAMILY_OBSERVED",
       "production_authorized": false,
       "required": true,
@@ -118,7 +134,10 @@
       "sport": "football"
     },
     {
-      "blockers": [],
+      "blockers": [
+        "BLOCKED_PREMATCH_MODEL_REQUIRED"
+      ],
+      "capability_mode": "PRICE_LAB_MODEL_REQUIRED",
       "display_name": "Goles totales equipo visitante",
       "family": "goals_team",
       "implementation_paths": [
@@ -128,6 +147,7 @@
       "market_key": "TEAM_TOTAL_GOALS_AWAY",
       "must_continue_collecting": true,
       "operational_state": "LAB",
+      "prematch_model_capable": false,
       "price_state": "PRICE_FAMILY_OBSERVED",
       "production_authorized": false,
       "required": true,
@@ -138,6 +158,7 @@
       "blockers": [
         "BLOCKED_PRICE_FAMILY"
       ],
+      "capability_mode": "PREMATCH_MODEL_LAB",
       "display_name": "Goles primer tiempo Over/Under",
       "family": "goals_period",
       "implementation_paths": [
@@ -147,6 +168,7 @@
       "market_key": "FIRST_HALF_TOTAL_GOALS_OVER_UNDER",
       "must_continue_collecting": true,
       "operational_state": "LAB",
+      "prematch_model_capable": true,
       "price_state": "PRICE_FAMILY_NOT_OBSERVED",
       "production_authorized": false,
       "required": true,
@@ -157,6 +179,7 @@
       "blockers": [
         "BLOCKED_PRICE_FAMILY"
       ],
+      "capability_mode": "PREMATCH_MODEL_LAB",
       "display_name": "Goles segundo tiempo Over/Under",
       "family": "goals_period",
       "implementation_paths": [
@@ -166,6 +189,7 @@
       "market_key": "SECOND_HALF_TOTAL_GOALS_OVER_UNDER",
       "must_continue_collecting": true,
       "operational_state": "LAB",
+      "prematch_model_capable": true,
       "price_state": "PRICE_FAMILY_NOT_OBSERVED",
       "production_authorized": false,
       "required": true,
@@ -176,6 +200,7 @@
       "blockers": [
         "BLOCKED_PRICE_FAMILY"
       ],
+      "capability_mode": "PREMATCH_MODEL_LAB",
       "display_name": "Goles equipo local primer tiempo",
       "family": "goals_period_team",
       "implementation_paths": [
@@ -185,6 +210,7 @@
       "market_key": "FIRST_HALF_TEAM_TOTAL_GOALS_HOME",
       "must_continue_collecting": true,
       "operational_state": "LAB",
+      "prematch_model_capable": true,
       "price_state": "PRICE_FAMILY_NOT_OBSERVED",
       "production_authorized": false,
       "required": true,
@@ -195,6 +221,7 @@
       "blockers": [
         "BLOCKED_PRICE_FAMILY"
       ],
+      "capability_mode": "PREMATCH_MODEL_LAB",
       "display_name": "Goles equipo visitante primer tiempo",
       "family": "goals_period_team",
       "implementation_paths": [
@@ -204,6 +231,7 @@
       "market_key": "FIRST_HALF_TEAM_TOTAL_GOALS_AWAY",
       "must_continue_collecting": true,
       "operational_state": "LAB",
+      "prematch_model_capable": true,
       "price_state": "PRICE_FAMILY_NOT_OBSERVED",
       "production_authorized": false,
       "required": true,
@@ -214,6 +242,7 @@
       "blockers": [
         "BLOCKED_PRICE_FAMILY"
       ],
+      "capability_mode": "PREMATCH_MODEL_LAB",
       "display_name": "Goles equipo local segundo tiempo",
       "family": "goals_period_team",
       "implementation_paths": [
@@ -223,6 +252,7 @@
       "market_key": "SECOND_HALF_TEAM_TOTAL_GOALS_HOME",
       "must_continue_collecting": true,
       "operational_state": "LAB",
+      "prematch_model_capable": true,
       "price_state": "PRICE_FAMILY_NOT_OBSERVED",
       "production_authorized": false,
       "required": true,
@@ -233,6 +263,7 @@
       "blockers": [
         "BLOCKED_PRICE_FAMILY"
       ],
+      "capability_mode": "PREMATCH_MODEL_LAB",
       "display_name": "Goles equipo visitante segundo tiempo",
       "family": "goals_period_team",
       "implementation_paths": [
@@ -242,6 +273,7 @@
       "market_key": "SECOND_HALF_TEAM_TOTAL_GOALS_AWAY",
       "must_continue_collecting": true,
       "operational_state": "LAB",
+      "prematch_model_capable": true,
       "price_state": "PRICE_FAMILY_NOT_OBSERVED",
       "production_authorized": false,
       "required": true,
@@ -250,6 +282,7 @@
     },
     {
       "blockers": [],
+      "capability_mode": "PREMATCH_MODEL_RESEARCH",
       "display_name": "Ambos equipos marcan",
       "family": "core",
       "implementation_paths": [
@@ -260,6 +293,7 @@
       "market_key": "BTTS",
       "must_continue_collecting": true,
       "operational_state": "LAB",
+      "prematch_model_capable": true,
       "price_state": "PRICE_FAMILY_OBSERVED",
       "production_authorized": false,
       "required": true,
@@ -267,7 +301,10 @@
       "sport": "football"
     },
     {
-      "blockers": [],
+      "blockers": [
+        "BLOCKED_PREMATCH_MODEL_COVERAGE_ONLY"
+      ],
+      "capability_mode": "PRICE_COVERAGE_ONLY_MODEL_REQUIRED",
       "display_name": "Hándicap",
       "family": "core",
       "implementation_paths": [
@@ -277,6 +314,7 @@
       "market_key": "ASIAN_OR_EUROPEAN_HANDICAP",
       "must_continue_collecting": true,
       "operational_state": "LAB",
+      "prematch_model_capable": false,
       "price_state": "PRICE_FAMILY_OBSERVED",
       "production_authorized": false,
       "required": true,
@@ -284,7 +322,10 @@
       "sport": "football"
     },
     {
-      "blockers": [],
+      "blockers": [
+        "BLOCKED_PREMATCH_MODEL_COVERAGE_ONLY"
+      ],
+      "capability_mode": "DATA_COVERAGE_ONLY_MODEL_REQUIRED",
       "display_name": "Corners O/U",
       "family": "team",
       "implementation_paths": [
@@ -294,6 +335,7 @@
       "market_key": "CORNERS_OVER_UNDER",
       "must_continue_collecting": true,
       "operational_state": "LAB",
+      "prematch_model_capable": false,
       "price_state": "PRICE_FAMILY_OBSERVED",
       "production_authorized": false,
       "required": true,
@@ -301,7 +343,10 @@
       "sport": "football"
     },
     {
-      "blockers": [],
+      "blockers": [
+        "BLOCKED_PREMATCH_MODEL_COVERAGE_ONLY"
+      ],
+      "capability_mode": "DATA_COVERAGE_ONLY_MODEL_REQUIRED",
       "display_name": "Tarjetas O/U",
       "family": "team",
       "implementation_paths": [
@@ -311,6 +356,7 @@
       "market_key": "CARDS_OVER_UNDER",
       "must_continue_collecting": true,
       "operational_state": "LAB",
+      "prematch_model_capable": false,
       "price_state": "PRICE_FAMILY_OBSERVED",
       "production_authorized": false,
       "required": true,
@@ -321,6 +367,7 @@
       "blockers": [
         "BLOCKED_PRICE_FAMILY"
       ],
+      "capability_mode": "PREMATCH_MODEL_RESEARCH",
       "display_name": "Tiros totales equipo local",
       "family": "team",
       "implementation_paths": [
@@ -330,6 +377,7 @@
       "market_key": "TEAM_TOTAL_SHOTS_HOME",
       "must_continue_collecting": true,
       "operational_state": "LAB",
+      "prematch_model_capable": true,
       "price_state": "PRICE_FAMILY_NOT_OBSERVED",
       "production_authorized": false,
       "required": true,
@@ -340,6 +388,7 @@
       "blockers": [
         "BLOCKED_PRICE_FAMILY"
       ],
+      "capability_mode": "PREMATCH_MODEL_RESEARCH",
       "display_name": "Tiros totales equipo visitante",
       "family": "team",
       "implementation_paths": [
@@ -349,6 +398,7 @@
       "market_key": "TEAM_TOTAL_SHOTS_AWAY",
       "must_continue_collecting": true,
       "operational_state": "LAB",
+      "prematch_model_capable": true,
       "price_state": "PRICE_FAMILY_NOT_OBSERVED",
       "production_authorized": false,
       "required": true,
@@ -356,7 +406,10 @@
       "sport": "football"
     },
     {
-      "blockers": [],
+      "blockers": [
+        "BLOCKED_PREMATCH_MODEL_COVERAGE_ONLY"
+      ],
+      "capability_mode": "DATA_COVERAGE_ONLY_MODEL_REQUIRED",
       "display_name": "Tiros a puerta equipo local",
       "family": "team",
       "implementation_paths": [
@@ -366,6 +419,7 @@
       "market_key": "TEAM_SHOTS_ON_TARGET_HOME",
       "must_continue_collecting": true,
       "operational_state": "LAB",
+      "prematch_model_capable": false,
       "price_state": "PRICE_FAMILY_OBSERVED",
       "production_authorized": false,
       "required": true,
@@ -373,7 +427,10 @@
       "sport": "football"
     },
     {
-      "blockers": [],
+      "blockers": [
+        "BLOCKED_PREMATCH_MODEL_COVERAGE_ONLY"
+      ],
+      "capability_mode": "DATA_COVERAGE_ONLY_MODEL_REQUIRED",
       "display_name": "Tiros a puerta equipo visitante",
       "family": "team",
       "implementation_paths": [
@@ -383,6 +440,7 @@
       "market_key": "TEAM_SHOTS_ON_TARGET_AWAY",
       "must_continue_collecting": true,
       "operational_state": "LAB",
+      "prematch_model_capable": false,
       "price_state": "PRICE_FAMILY_OBSERVED",
       "production_authorized": false,
       "required": true,
@@ -391,8 +449,10 @@
     },
     {
       "blockers": [
+        "BLOCKED_PREMATCH_MODEL_COVERAGE_ONLY",
         "BLOCKED_PRICE_FAMILY"
       ],
+      "capability_mode": "DATA_COVERAGE_ONLY_MODEL_REQUIRED",
       "display_name": "Faltas equipo local",
       "family": "team",
       "implementation_paths": [
@@ -402,6 +462,7 @@
       "market_key": "TEAM_FOULS_HOME",
       "must_continue_collecting": true,
       "operational_state": "LAB",
+      "prematch_model_capable": false,
       "price_state": "PRICE_FAMILY_NOT_OBSERVED",
       "production_authorized": false,
       "required": true,
@@ -410,8 +471,10 @@
     },
     {
       "blockers": [
+        "BLOCKED_PREMATCH_MODEL_COVERAGE_ONLY",
         "BLOCKED_PRICE_FAMILY"
       ],
+      "capability_mode": "DATA_COVERAGE_ONLY_MODEL_REQUIRED",
       "display_name": "Faltas equipo visitante",
       "family": "team",
       "implementation_paths": [
@@ -421,6 +484,7 @@
       "market_key": "TEAM_FOULS_AWAY",
       "must_continue_collecting": true,
       "operational_state": "LAB",
+      "prematch_model_capable": false,
       "price_state": "PRICE_FAMILY_NOT_OBSERVED",
       "production_authorized": false,
       "required": true,
@@ -428,7 +492,10 @@
       "sport": "football"
     },
     {
-      "blockers": [],
+      "blockers": [
+        "BLOCKED_PREMATCH_MODEL_COVERAGE_ONLY"
+      ],
+      "capability_mode": "DATA_COVERAGE_ONLY_MODEL_REQUIRED",
       "display_name": "Atajadas de portero",
       "family": "player",
       "implementation_paths": [
@@ -438,6 +505,7 @@
       "market_key": "GOALKEEPER_SAVES",
       "must_continue_collecting": true,
       "operational_state": "LAB",
+      "prematch_model_capable": false,
       "price_state": "PRICE_FAMILY_OBSERVED",
       "production_authorized": false,
       "required": true,
@@ -446,6 +514,7 @@
     },
     {
       "blockers": [],
+      "capability_mode": "PREMATCH_MODEL_RESEARCH",
       "display_name": "Remates de jugador",
       "family": "player",
       "implementation_paths": [
@@ -455,6 +524,7 @@
       "market_key": "PLAYER_SHOTS",
       "must_continue_collecting": true,
       "operational_state": "LAB",
+      "prematch_model_capable": true,
       "price_state": "PRICE_FAMILY_OBSERVED",
       "production_authorized": false,
       "required": true,
@@ -462,7 +532,10 @@
       "sport": "football"
     },
     {
-      "blockers": [],
+      "blockers": [
+        "BLOCKED_PREMATCH_MODEL_COVERAGE_ONLY"
+      ],
+      "capability_mode": "DATA_COVERAGE_ONLY_MODEL_REQUIRED",
       "display_name": "Remates a puerta de jugador",
       "family": "player",
       "implementation_paths": [
@@ -472,6 +545,7 @@
       "market_key": "PLAYER_SHOTS_ON_TARGET",
       "must_continue_collecting": true,
       "operational_state": "LAB",
+      "prematch_model_capable": false,
       "price_state": "PRICE_FAMILY_OBSERVED",
       "production_authorized": false,
       "required": true,
@@ -479,7 +553,10 @@
       "sport": "football"
     },
     {
-      "blockers": [],
+      "blockers": [
+        "BLOCKED_PREMATCH_MODEL_COVERAGE_ONLY"
+      ],
+      "capability_mode": "DATA_COVERAGE_ONLY_MODEL_REQUIRED",
       "display_name": "Asistencias de jugador",
       "family": "player",
       "implementation_paths": [
@@ -489,6 +566,7 @@
       "market_key": "PLAYER_ASSISTS",
       "must_continue_collecting": true,
       "operational_state": "LAB",
+      "prematch_model_capable": false,
       "price_state": "PRICE_FAMILY_OBSERVED",
       "production_authorized": false,
       "required": true,
@@ -496,7 +574,10 @@
       "sport": "football"
     },
     {
-      "blockers": [],
+      "blockers": [
+        "BLOCKED_PREMATCH_MODEL_COVERAGE_ONLY"
+      ],
+      "capability_mode": "DATA_COVERAGE_ONLY_MODEL_REQUIRED",
       "display_name": "Pases de jugador",
       "family": "player",
       "implementation_paths": [
@@ -506,6 +587,7 @@
       "market_key": "PLAYER_PASSES",
       "must_continue_collecting": true,
       "operational_state": "LAB",
+      "prematch_model_capable": false,
       "price_state": "PRICE_FAMILY_OBSERVED",
       "production_authorized": false,
       "required": true,
@@ -513,7 +595,10 @@
       "sport": "football"
     },
     {
-      "blockers": [],
+      "blockers": [
+        "BLOCKED_PREMATCH_MODEL_COVERAGE_ONLY"
+      ],
+      "capability_mode": "DATA_COVERAGE_ONLY_MODEL_REQUIRED",
       "display_name": "Tackles de jugador",
       "family": "player",
       "implementation_paths": [
@@ -523,6 +608,7 @@
       "market_key": "PLAYER_TACKLES",
       "must_continue_collecting": true,
       "operational_state": "LAB",
+      "prematch_model_capable": false,
       "price_state": "PRICE_FAMILY_OBSERVED",
       "production_authorized": false,
       "required": true,
@@ -530,7 +616,10 @@
       "sport": "football"
     },
     {
-      "blockers": [],
+      "blockers": [
+        "BLOCKED_PREMATCH_MODEL_COVERAGE_ONLY"
+      ],
+      "capability_mode": "DATA_COVERAGE_ONLY_MODEL_REQUIRED",
       "display_name": "Faltas de jugador",
       "family": "player",
       "implementation_paths": [
@@ -540,6 +629,7 @@
       "market_key": "PLAYER_FOULS",
       "must_continue_collecting": true,
       "operational_state": "LAB",
+      "prematch_model_capable": false,
       "price_state": "PRICE_FAMILY_OBSERVED",
       "production_authorized": false,
       "required": true,
@@ -548,6 +638,7 @@
     },
     {
       "blockers": [],
+      "capability_mode": "ACTIVE_PREMATCH_MODEL_PRICE_BINDING_REQUIRED",
       "display_name": "Ganador del partido",
       "family": "core",
       "implementation_paths": [
@@ -557,6 +648,7 @@
       "market_key": "MATCH_WINNER",
       "must_continue_collecting": true,
       "operational_state": "ACTIVE",
+      "prematch_model_capable": true,
       "price_state": "PRICE_MAPPING_REQUIRES_TENNIS_PROVIDER_OR_BOOK_CATALOG",
       "production_authorized": true,
       "required": true,
@@ -564,7 +656,10 @@
       "sport": "tennis"
     },
     {
-      "blockers": [],
+      "blockers": [
+        "BLOCKED_PREMATCH_MODEL_LIVE_ONLY"
+      ],
+      "capability_mode": "LIVE_ONLY_NOT_PREMATCH",
       "display_name": "Ganador de set",
       "family": "sets",
       "implementation_paths": [
@@ -574,6 +669,7 @@
       "market_key": "SET_WINNER",
       "must_continue_collecting": true,
       "operational_state": "LAB",
+      "prematch_model_capable": false,
       "price_state": "PRICE_MAPPING_REQUIRES_TENNIS_PROVIDER_OR_BOOK_CATALOG",
       "production_authorized": false,
       "required": true,
@@ -581,7 +677,10 @@
       "sport": "tennis"
     },
     {
-      "blockers": [],
+      "blockers": [
+        "BLOCKED_PREMATCH_MODEL_LIVE_ONLY"
+      ],
+      "capability_mode": "LIVE_ONLY_NOT_PREMATCH",
       "display_name": "Hándicap de sets",
       "family": "sets",
       "implementation_paths": [
@@ -591,6 +690,7 @@
       "market_key": "SET_HANDICAP",
       "must_continue_collecting": true,
       "operational_state": "LAB",
+      "prematch_model_capable": false,
       "price_state": "PRICE_MAPPING_REQUIRES_TENNIS_PROVIDER_OR_BOOK_CATALOG",
       "production_authorized": false,
       "required": true,
@@ -598,7 +698,10 @@
       "sport": "tennis"
     },
     {
-      "blockers": [],
+      "blockers": [
+        "BLOCKED_PREMATCH_MODEL_LIVE_ONLY"
+      ],
+      "capability_mode": "LIVE_ONLY_NOT_PREMATCH",
       "display_name": "Total de sets",
       "family": "sets",
       "implementation_paths": [
@@ -608,6 +711,7 @@
       "market_key": "TOTAL_SETS",
       "must_continue_collecting": true,
       "operational_state": "LAB",
+      "prematch_model_capable": false,
       "price_state": "PRICE_MAPPING_REQUIRES_TENNIS_PROVIDER_OR_BOOK_CATALOG",
       "production_authorized": false,
       "required": true,
@@ -615,7 +719,10 @@
       "sport": "tennis"
     },
     {
-      "blockers": [],
+      "blockers": [
+        "BLOCKED_PREMATCH_MODEL_LIVE_ONLY"
+      ],
+      "capability_mode": "LIVE_ONLY_NOT_PREMATCH",
       "display_name": "Ambos jugadores ganan un set",
       "family": "sets",
       "implementation_paths": [
@@ -625,6 +732,7 @@
       "market_key": "BOTH_PLAYERS_WIN_SET",
       "must_continue_collecting": true,
       "operational_state": "LAB",
+      "prematch_model_capable": false,
       "price_state": "PRICE_MAPPING_REQUIRES_TENNIS_PROVIDER_OR_BOOK_CATALOG",
       "production_authorized": false,
       "required": true,
@@ -632,7 +740,10 @@
       "sport": "tennis"
     },
     {
-      "blockers": [],
+      "blockers": [
+        "BLOCKED_PREMATCH_MODEL_LIVE_ONLY"
+      ],
+      "capability_mode": "LIVE_ONLY_NOT_PREMATCH",
       "display_name": "Hándicap de juegos",
       "family": "games",
       "implementation_paths": [
@@ -642,6 +753,7 @@
       "market_key": "GAME_HANDICAP",
       "must_continue_collecting": true,
       "operational_state": "LAB",
+      "prematch_model_capable": false,
       "price_state": "PRICE_MAPPING_REQUIRES_TENNIS_PROVIDER_OR_BOOK_CATALOG",
       "production_authorized": false,
       "required": true,
@@ -649,7 +761,10 @@
       "sport": "tennis"
     },
     {
-      "blockers": [],
+      "blockers": [
+        "BLOCKED_PREMATCH_MODEL_LIVE_ONLY"
+      ],
+      "capability_mode": "LIVE_ONLY_NOT_PREMATCH",
       "display_name": "Total de juegos",
       "family": "games",
       "implementation_paths": [
@@ -659,6 +774,7 @@
       "market_key": "TOTAL_GAMES",
       "must_continue_collecting": true,
       "operational_state": "LAB",
+      "prematch_model_capable": false,
       "price_state": "PRICE_MAPPING_REQUIRES_TENNIS_PROVIDER_OR_BOOK_CATALOG",
       "production_authorized": false,
       "required": true,
@@ -666,7 +782,10 @@
       "sport": "tennis"
     },
     {
-      "blockers": [],
+      "blockers": [
+        "BLOCKED_PREMATCH_MODEL_LIVE_ONLY"
+      ],
+      "capability_mode": "LIVE_ONLY_NOT_PREMATCH",
       "display_name": "Total de juegos por jugador",
       "family": "games",
       "implementation_paths": [
@@ -676,6 +795,7 @@
       "market_key": "PLAYER_TOTAL_GAMES",
       "must_continue_collecting": true,
       "operational_state": "LAB",
+      "prematch_model_capable": false,
       "price_state": "PRICE_MAPPING_REQUIRES_TENNIS_PROVIDER_OR_BOOK_CATALOG",
       "production_authorized": false,
       "required": true,
@@ -683,7 +803,10 @@
       "sport": "tennis"
     },
     {
-      "blockers": [],
+      "blockers": [
+        "BLOCKED_PREMATCH_MODEL_LIVE_ONLY"
+      ],
+      "capability_mode": "LIVE_ONLY_NOT_PREMATCH",
       "display_name": "Tie-break sí/no",
       "family": "serve",
       "implementation_paths": [
@@ -693,6 +816,7 @@
       "market_key": "TIEBREAK_YES_NO",
       "must_continue_collecting": true,
       "operational_state": "LAB",
+      "prematch_model_capable": false,
       "price_state": "PRICE_MAPPING_REQUIRES_TENNIS_PROVIDER_OR_BOOK_CATALOG",
       "production_authorized": false,
       "required": true,
@@ -700,7 +824,10 @@
       "sport": "tennis"
     },
     {
-      "blockers": [],
+      "blockers": [
+        "BLOCKED_PREMATCH_MODEL_SOURCE_LAB_ONLY"
+      ],
+      "capability_mode": "SOURCE_LAB_ONLY_PREMATCH_MODEL_REQUIRED",
       "display_name": "Aces",
       "family": "serve",
       "implementation_paths": [
@@ -710,6 +837,7 @@
       "market_key": "ACES",
       "must_continue_collecting": true,
       "operational_state": "LAB",
+      "prematch_model_capable": false,
       "price_state": "PRICE_MAPPING_REQUIRES_TENNIS_PROVIDER_OR_BOOK_CATALOG",
       "production_authorized": false,
       "required": true,
@@ -717,7 +845,10 @@
       "sport": "tennis"
     },
     {
-      "blockers": [],
+      "blockers": [
+        "BLOCKED_PREMATCH_MODEL_SOURCE_LAB_ONLY"
+      ],
+      "capability_mode": "SOURCE_LAB_ONLY_PREMATCH_MODEL_REQUIRED",
       "display_name": "Dobles faltas",
       "family": "serve",
       "implementation_paths": [
@@ -727,6 +858,7 @@
       "market_key": "DOUBLE_FAULTS",
       "must_continue_collecting": true,
       "operational_state": "LAB",
+      "prematch_model_capable": false,
       "price_state": "PRICE_MAPPING_REQUIRES_TENNIS_PROVIDER_OR_BOOK_CATALOG",
       "production_authorized": false,
       "required": true,
@@ -734,7 +866,10 @@
       "sport": "tennis"
     },
     {
-      "blockers": [],
+      "blockers": [
+        "BLOCKED_PREMATCH_MODEL_SOURCE_LAB_ONLY"
+      ],
+      "capability_mode": "SOURCE_LAB_ONLY_PREMATCH_MODEL_REQUIRED",
       "display_name": "Breaks de servicio",
       "family": "serve",
       "implementation_paths": [
@@ -744,6 +879,7 @@
       "market_key": "BREAKS_OF_SERVE",
       "must_continue_collecting": true,
       "operational_state": "LAB",
+      "prematch_model_capable": false,
       "price_state": "PRICE_MAPPING_REQUIRES_TENNIS_PROVIDER_OR_BOOK_CATALOG",
       "production_authorized": false,
       "required": true,
