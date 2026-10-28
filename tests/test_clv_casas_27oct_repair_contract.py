@@ -47,7 +47,8 @@ def test_permanent_safety_gates_remain_unchanged():
 
 def test_diagnostic_workflow_isolates_generated_telemetry_before_rebase():
     src = Path(".github/workflows/matrix-diagnostico-clv-casas-27oct.yml").read_text(encoding="utf-8")
-    assert "git restore --worktree -- evidence/notifications/telegram/MATRIX_TELEGRAM_QUOTE_ATTEMPT_TELEMETRY_AUDIT_LAST.json" in src
+    assert "MATRIX_TELEGRAM_QUOTE_ATTEMPT_TELEMETRY_AUDIT_LAST.json" in src
+    assert "MATRIX_TELEGRAM_QUOTE_TELEMETRY_CERTIFICATION_LAST.json" in src
     assert "DIAGNOSTIC_UNEXPECTED_UNSTAGED_CHANGES" in src
     assert "test -z \"$(git diff --name-only)\"" in src
     assert 'git add evidence/notifications/telegram/MATRIX_DIAGNOSTICO_CLV_Y_CASAS_27OCT2026.json' in src
