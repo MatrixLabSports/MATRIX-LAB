@@ -413,3 +413,49 @@ Colores funcionales:
 - `tests/test_omega_picks_brand_guard.py`
 
 La identidad no puede cambiar por preferencia aislada sin actualizar el sistema, el guard y la evidencia.
+
+
+## 17. Provisionamiento real de canales Telegram
+
+### Estado físico
+**NO_GO_AWAITING_REAL_TELEGRAM_CHANNELS**
+
+En la verificación del 28-OCT-2026, el Browser Connector de Opera no estaba conectado y no existían en esta sesión `chat_id` verificables para los tres canales objetivo. Por lo tanto, no se afirma que los canales hayan sido creados.
+
+### Contrato codificado
+- **OMEGA PICKS FREE** — público.
+- **OMEGA PICKS PREMIUM** — privado.
+- **OMEGA PICKS 3X** — privado.
+
+### Guard físico
+`tools/omega_picks_channel_readiness.py` verifica los canales reales por Telegram Bot API mediante `getMe`, `getChat` y `getChatMember`.
+
+### Secrets
+- `TELEGRAM_BOT_TOKEN`
+- `OMEGA_FREE_TELEGRAM_CHAT_ID`
+- `MATRIX_PREMIUM_TELEGRAM_CHAT_ID`
+- `OMEGA_STAKAZO_TELEGRAM_CHAT_ID`
+
+### Workflow de certificación
+`.github/workflows/omega-picks-channel-readiness.yml`
+
+### Branding operativo
+Las tarjetas y captions Premium ya fueron migrados públicamente de MATRIX a **OMEGA PICKS**. MATRIX permanece como nombre interno del motor.
+
+### Evidencia
+- `config/OMEGA_PICKS_TELEGRAM_CHANNELS.json`
+- `tools/omega_picks_channel_readiness.py`
+- `tests/test_omega_picks_channel_readiness.py`
+- `tests/test_omega_picks_public_branding.py`
+- `docs/OMEGA_PICKS_TELEGRAM_CHANNEL_SETUP.md`
+- `evidence/governance/OMEGA_PICKS_CHANNEL_LAUNCH_STATE_20261028.json`
+
+### Gate de lanzamiento
+No se habilita publicación comercial hasta certificar:
+1. los tres canales reales;
+2. bot administrador;
+3. FREE público;
+4. PREMIUM/3X privados;
+5. publicación de prueba;
+6. FINAL → resultado;
+7. Membership Guard real.
