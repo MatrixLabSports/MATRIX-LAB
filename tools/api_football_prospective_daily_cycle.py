@@ -251,6 +251,7 @@ def run_daily_cycle(
             "total_monitoring_events": browser_preregistry["counts"]["total_monitoring_events"],
             "prospective_before_displayed_kickoff": browser_preregistry["counts"]["prospective_before_displayed_kickoff"],
             "kickoff_not_certified": browser_preregistry["counts"]["kickoff_not_certified"],
+            "postponed_no_prospective_kickoff": browser_preregistry["counts"].get("postponed_no_prospective_kickoff", 0),
             "not_prospective_at_preregistration": browser_preregistry["counts"]["not_prospective_at_preregistration"],
             "api_absence_does_not_delete_browser_event": True,
         },
