@@ -76,19 +76,56 @@ def main():
         key=json.dumps(x.get("clickable_ancestor"),sort_keys=True,ensure_ascii=False) if x.get("clickable_ancestor") else x["matched_text"]
         if key in seen: continue
         seen.add(key); unique.append(x)
-    out={
+        ancestry=[]
+    with sync_playwright() as p:
+        browser=p.chromium.connect_over_cdp(endpoint,timeout=15000)
+        for ctx in browser.contexts:
+            for page in list(ctx.pages):
+                try:
+                    if page.is_closed() or "betano.co" not in (page.url or "").casefold():
+                        continue
+                    hits=page.locator("text=Inter Miami CF")
+                    for i in range(min(hits.count(),10)):
+                        try:
+                            chain=hits.nth(i).evaluate("""el => {
+                              const out=[]; let cur=el;
+                              for(let d=0; d<10 && cur; d++,cur=cur.parentElement){
+                                out.push({
+                                  depth:d,
+                                  tag:(cur.tagName||'').toLowerCase(),
+                                  id:cur.id||null,
+                                  cls:cur.className||null,
+                                  role:cur.getAttribute?.('role')||null,
+                                  href:cur.getAttribute?.('href')||null,
+                                  tabindex:cur.getAttribute?.('tabindex')||null,
+                                  dataTestId:cur.getAttribute?.('data-testid')||null,
+                                  dataCy:cur.getAttribute?.('data-cy')||null,
+                                  ariaLabel:cur.getAttribute?.('aria-label')||null,
+                                  text:(cur.innerText||'').trim().slice(0,700),
+                                  outer:(cur.outerHTML||'').slice(0,1800)
+                                });
+                              }
+                              return out;
+                            }""")
+                            ancestry.append({"page_url":page.url,"hit_index":i,"chain":chain})
+                        except Exception:
+                            continue
+                except Exception:
+                    continue
+        # Do not close externally managed CDP browser.
+out={
       "schema":"MATRIX_BETANO_EVENT_LINK_PROBE_V2",
       "generated_at_utc":now.isoformat(),
       "target":{"home":target_home_raw,"away":target_away_raw},
-      "matches":unique[:50],
-      "count":len(unique),
+      "matches":unique[:50],\n      "ancestry":ancestry[:20],
+      "count":len(unique),\n      "ancestry_count":len(ancestry),
       "status":"PASS_CLICKABLE_EVENT_CONTEXT_FOUND" if any(x.get("clickable_ancestor") for x in unique) else ("PASS_TEXT_CONTEXT_FOUND" if unique else "NO_EVENT_CONTEXT_FOUND"),
       "automatic_wagering":False,
       "real_money":"BLOCKED"
     }
     OUT.parent.mkdir(parents=True,exist_ok=True)
     OUT.write_text(json.dumps(out,indent=2,ensure_ascii=False,sort_keys=True)+"\n",encoding="utf-8")
-    print(json.dumps({"status":out["status"],"count":out["count"],"matches":out["matches"][:10]},ensure_ascii=False))
+    print(json.dumps({"status":out["status"],"count":out["count"],"ancestry_count":out["ancestry_count"],"ancestry":out["ancestry"][:3]},ensure_ascii=False))
 
 if __name__=="__main__":
     main()
