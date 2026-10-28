@@ -27,6 +27,7 @@ ALIASES={
     "barcelona":"fc barcelona",
     "leverkusen":"bayer leverkusen",
     "real betis":"betis",
+    "napoles":"napoli",
 }
 STOP={"fc","cf","club","sc","afc","ac","cd","fk","ca","de","del","la","el","the","united","city","sporting"}
 
