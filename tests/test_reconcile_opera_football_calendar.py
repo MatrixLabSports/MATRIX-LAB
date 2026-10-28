@@ -43,3 +43,23 @@ def test_reconcile_supports_27oct_without_hardcoded_date():
     assert out["reconciliation"]["confirmed_both"]==1
     assert out["reconciliation"]["sofascore_only"]==0
     assert out["reconciliation"]["flashscore_only"]==0
+
+
+def test_reconcile_never_reuses_same_sofascore_event_for_multiple_flashscore_rows():
+    sofa={
+      "target_date_bogota":"2026-10-28",
+      "observations":[
+        "28/10/26 14:30 Manchester City Man City Brighton & Hove Albion Brighton 1 1.57 X 4.33 2 4.75",
+      ],
+    }
+    flash={
+      "target_date_bogota":"2026-10-28",
+      "observations":[
+        "Manchester City - Brighton",
+        "Man City - Brighton",
+      ],
+    }
+    out=reconcile(sofa,flash,datetime(2026,10,28,2,40,tzinfo=timezone.utc))
+    assert out["reconciliation"]["confirmed_both"]==1
+    assert out["reconciliation"]["flashscore_only"]==1
+    assert out["policy"]["one_to_one_identity_matching"] is True
