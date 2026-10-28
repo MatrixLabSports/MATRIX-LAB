@@ -151,3 +151,51 @@ def test_odds_identity_falls_back_to_preregistered_candidate_when_api_fixture_lo
     assert diagnostic["identity_source"]["home"] == "Shakhtar Donetsk U19"
     assert diagnostic["identity_source"]["away"] == "Livyi Bereh U19"
     assert diagnostic["status"] == "BLOCKED_EVENT_NOT_COVERED"
+
+
+class _RateLimitResponse:
+    def __init__(self, status_code, payload, headers=None):
+        self.status_code = status_code
+        self._payload = payload
+        self.headers = headers or {}
+    def json(self):
+        return self._payload
+
+class _FixtureOkThenRateLimitedEvents:
+    def get(self, url, **kwargs):
+        if "api-sports.io/fixtures" in url:
+            return _RateLimitResponse(200, {
+                "response": [{
+                    "teams": {
+                        "home": {"name": "Shakhtar Donetsk U19"},
+                        "away": {"name": "Livyi Bereh U19"}
+                    }
+                }]
+            })
+        if url.endswith("/events"):
+            return _RateLimitResponse(
+                429,
+                {"detail": "rate limited", "code": "RATE_LIMITED", "request_id": "req-test"},
+                {"Retry-After": "30", "X-RateLimit-Remaining": "0", "X-RateLimit-Bucket": "events"}
+            )
+        raise AssertionError(url)
+
+def test_odds_event_search_429_is_explicit_and_fail_closed():
+    diagnostic = {}
+    offer = odds_api_net_exact_over25_offer(
+        _FixtureOkThenRateLimitedEvents(),
+        "key",
+        "1611788",
+        "2026-10-28T10:00:00+00:00",
+        0.6127141456,
+        "api-key",
+        diagnostic,
+        candidate_match="Shakhtar Donetsk U19 vs Livyi Bereh U19",
+    )
+    assert offer is None
+    assert diagnostic["status"] == "BLOCKED_EVENT_SEARCH_RATE_LIMIT"
+    assert diagnostic["event_search_http_status"] == 429
+    assert diagnostic["event_search_retry_after_seconds"] == "30"
+    assert diagnostic["event_search_rate_limit_remaining"] == "0"
+    assert diagnostic["event_search_rate_limit_bucket"] == "events"
+    assert diagnostic["event_search_request_id"] == "req-test"
