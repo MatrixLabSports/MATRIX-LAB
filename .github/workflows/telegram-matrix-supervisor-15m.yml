@@ -42,7 +42,7 @@ jobs:
           python-version: "3.11"
 
       - name: Install governed dependencies
-        run: python -m pip install requests pytest
+        run: python -m pip install requests pytest pillow
 
       - name: Verify permanent 15m monitoring contracts
         run: |
@@ -60,7 +60,9 @@ jobs:
             tests/test_telegram_multi_market_signal_gate.py \
             tests/test_telegram_signal_recovery_guard.py \
             tests/test_telegram_opera_bookmaker_coverage_contract.py \
-            tests/test_odds_api_quota_guard.py
+            tests/test_odds_api_quota_guard.py \
+            tests/test_matrix_premium_cards.py \
+            tests/test_matrix_premium_result_watcher.py
 
       - name: Verify scheduler source contract on default branch
         shell: bash
