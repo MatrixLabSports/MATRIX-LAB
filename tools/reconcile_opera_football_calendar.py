@@ -103,6 +103,8 @@ def reconcile(sofa:dict[str,Any],flash:dict[str,Any],generated_at:datetime|None=
         home,away=pair
         scored=[]
         for i,body in enumerate(sofa_bodies):
+            if i in used_sofa:
+                continue
             s=_pair_score(home,away,body)
             if s>0:
                 scored.append((s,i))
@@ -153,6 +155,7 @@ def reconcile(sofa:dict[str,Any],flash:dict[str,Any],generated_at:datetime|None=
             "time_match_certified":False,
             "identity_match_threshold":0.55,
             "ambiguous_margin":0.05,
+            "one_to_one_identity_matching":True,
             "api_absence_does_not_delete_open_source_event":True,
             "post_start_backfill_forbidden":True,
             "automatic_wagering":False,
