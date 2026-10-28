@@ -1,0 +1,117 @@
+{
+  "schema": "MATRIX_FOOTBALL_PMATRIX_LINEAGE_AUDIT_V1",
+  "generated_at_utc": "2026-10-28T05:04:30+00:00",
+  "target_date_bogota": "2026-10-28",
+  "status": "PASS_PMATRIX_PRE_ODDS_ELIGIBILITY",
+  "blockers": [],
+  "browser_preregistry_current": {
+    "artifact": "evidence/calendar_reconciliation/MATRIX_FOOTBALL_BROWSER_PREREGISTRY_LAST.json",
+    "blob_sha": "58c98111d68f1aad934013173a9d6f71beea8488",
+    "generated_from_watchlist_at_utc": "2026-10-28T03:33:48+00:00",
+    "counts": {
+      "total_monitoring_events": 662,
+      "prospective_before_displayed_kickoff": 654,
+      "kickoff_not_certified": 0,
+      "postponed_no_prospective_kickoff": 8,
+      "not_prospective_at_preregistration": 0
+    }
+  },
+  "probability_cycle": {
+    "cycle_id": "20261028T050016Z",
+    "artifact": "evidence/api_football/prospective_daily/2026-10-28/20261028T050016Z/cycle_summary.json",
+    "blob_sha": "26a8c80fbfdb07de76dfd7da3093a553b14be5d4",
+    "browser_first_counts": {
+      "total_monitoring_events": 662,
+      "prospective_before_displayed_kickoff": 654,
+      "kickoff_not_certified": 0,
+      "postponed_no_prospective_kickoff": 8,
+      "not_prospective_at_preregistration": 0
+    },
+    "eligible_api_future_fixtures": 514,
+    "canonical_ready_input_count": 112,
+    "canonical_blocked_future_input_count": 402,
+    "group_history_ready_count": 80,
+    "group_history_blocked_count": 434,
+    "team_last_ready_count": 112,
+    "team_last_blocked_count": 402
+  },
+  "p_matrix": {
+    "artifact": "evidence/api_football/daily_prematch_reports/2026-10-28/p_matrix_shadow_current.json",
+    "blob_sha": "5a9d7ecec26ea3e4922499874859ef6545c6ff0e",
+    "generated_at_utc": "2026-10-28T05:00:59+00:00",
+    "model": "calibrated_log_pool_v1",
+    "markets_generated": [
+      "1x2",
+      "over_2_5"
+    ],
+    "source_ready_input_count": 112,
+    "scored_count": 100,
+    "blocked_count": 12,
+    "physically_generated": true,
+    "operationally_certified": true
+  },
+  "lineage": {
+    "browser_counts_exact_match": true,
+    "p_matrix_cycle_path_match": true,
+    "scored_plus_blocked_equals_ready": true,
+    "strictly_prematch_rows": true,
+    "post_kickoff_probability_rows": 0
+  },
+  "history_gate": {
+    "minimum_team_history": 5,
+    "maximum_team_history": 20,
+    "minimum_group_history": 20,
+    "actual_scored_team_history_range": {
+      "home": [
+        6,
+        20
+      ],
+      "away": [
+        6,
+        20
+      ]
+    },
+    "blocked_due_to_missing_raw_group_count": 12
+  },
+  "interpretation": {
+    "api_absence_does_not_delete_browser_event": true,
+    "browser_monitoring_count_is_not_required_to_equal_api_fixture_count": true,
+    "browser_monitoring_total": 662,
+    "api_future_fixture_total": 514,
+    "canonical_ready_for_probability": 112,
+    "p_matrix_scored": 100,
+    "p_matrix_blocked_after_ready": 12,
+    "statement": "Only 100 fixtures are physically scored in the current SHADOW P_MATRIX. The remaining browser-first events are not inferred as ineligible merely because API-Football does not cover them."
+  },
+  "protections": {
+    "source_order": [
+      "SOFASCORE",
+      "FLASHSCORE",
+      "APIS"
+    ],
+    "odds_used_to_generate_probability": false,
+    "target_outcomes_used": false,
+    "parameter_refit": false,
+    "parameter_search": false,
+    "strictly_prior_kickoff_only": true,
+    "no_silent_imputation": true,
+    "post_start_backfill_forbidden": true,
+    "automatic_wagering": false,
+    "real_money": "BLOCKED"
+  },
+  "workflow_proof": {
+    "fresh_cycle_run_id": 40635349223,
+    "fresh_cycle_run_conclusion": "success",
+    "lineage_guard_run_id": 40635371472,
+    "lineage_guard_scientific_steps": {
+      "targeted_tests": "success",
+      "preregistry_freshness": "success",
+      "prospective_daily_cycle": "success",
+      "probability_generation": "success",
+      "pmatrix_lineage_audit": "success"
+    },
+    "lineage_guard_persistence_step": "failure_due_to_shared_market_binding_catalog_rebase_conflict",
+    "persistence_failure_did_not_invalidate_scientific_gate": true,
+    "persistence_repair_commit": "062e568753e797aee09a218c3cac1c97a9a79ad0"
+  }
+}
