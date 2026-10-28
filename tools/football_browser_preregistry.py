@@ -99,6 +99,7 @@ def build_browser_preregistry(watchlist: Mapping[str, Any], *, target_date: str)
             "total_monitoring_events": len(rows),
             "prospective_before_displayed_kickoff": sum(1 for row in rows if row["prospective_observation"]),
             "kickoff_not_certified": sum(1 for row in rows if row["temporal_status"]=="KICKOFF_NOT_CERTIFIED"),
+            "postponed_no_prospective_kickoff": sum(1 for row in rows if row["temporal_status"]=="POSTPONED_NO_PROSPECTIVE_KICKOFF"),
             "not_prospective_at_preregistration": sum(1 for row in rows if row["temporal_status"]=="NOT_PROSPECTIVE_AT_PREREGISTRATION"),
         },
         "events": rows,
