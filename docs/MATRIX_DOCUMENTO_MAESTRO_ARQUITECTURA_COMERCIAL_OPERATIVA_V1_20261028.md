@@ -459,3 +459,46 @@ No se habilita publicación comercial hasta certificar:
 5. publicación de prueba;
 6. FINAL → resultado;
 7. Membership Guard real.
+
+
+## 18. Régimen operativo de 42 mercados — actualización 28-OCT-2026
+
+### Principio
+El portafolio canónico mantiene **42 lanes**: 30 fútbol y 12 tenis. **42/42 significa representación y supervisión; no significa 42 mercados autorizados para Telegram.**
+
+### Estado físico
+- Supervisor: ACTIVE=2 / LAB=40.
+- Registro prospectivo: 8.798 filas.
+- 16 lanes con observación prospectiva válida.
+- 13 lanes con >=600.
+- 26 lanes con 0 prospectivo.
+- REAL_MONEY=BLOCKED.
+- automatic_wagering=false.
+
+### Telegram
+- `TOTAL_GOALS_OVER_UNDER`: solo **OVER_2_5** autorizado actualmente, sujeto a P_MATRIX >=0.60, cuota >1.50, EV revalidado >=0.05 y demás gates.
+- `MATCH_WINNER` tenis: modelo ACTIVE, pero Telegram permanece bloqueado hasta mapeo de precio exacto.
+- Ninguna lane se auto-promueve por alcanzar 600.
+
+### Prioridad de activación
+1. Over 2.5 gobernado.
+2. Match Winner tenis: resolver precio exacto.
+3. 1X2, 1X, X2: revisión de promoción.
+4. Seis lanes de goles por periodos: resolver precio + promoción.
+5. Team Total Goals Home/Away: calibración dedicada.
+6. Team Total Shots Home/Away: continuar colección.
+7. Lanes sin prospectivo: abrir colección válida sin imputar cero.
+8. DOUBLE_CHANCE_12 permanece diagnóstico-only por LogLoss challenger peor que Poisson.
+
+### Automatización
+El estado se reconstruye cada 15 minutos mediante:
+- `tools/matrix_42_market_activation_guard.py`
+- `.github/workflows/matrix-42-market-activation-15m.yml`
+
+Artefactos:
+- `config/MATRIX_42_MARKET_ACTIVATION_POLICY_20261028.json`
+- `evidence/governance/MATRIX_42_MARKET_ACTIVATION_SNAPSHOT_20261028.json`
+- `evidence/governance/MATRIX_42_MARKET_ACTIVATION_LAST.json`
+- `docs/MATRIX_42_MARKET_ACTIVATION_PLAN_20261028.md`
+
+Fuentes de descubrimiento siguen en orden obligatorio: **SofaScore → Flashscore → APIs**.
