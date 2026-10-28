@@ -3,6 +3,7 @@ from datetime import datetime, timezone
 from tools.telegram_green_signal_alerts import (
     ODDS_API_NET_EVENT_SEARCH_WINDOW_SECONDS,
     build_blocker_recovery_audit,
+    physical_open_bookmaker_names,
 )
 
 
@@ -107,3 +108,10 @@ def test_blocker_report_separates_live_quote_checks_from_historical_terminal_sta
         "BLOCKED_NO_VALID_EXACT_AUTHORIZED_BOOK_OVER25": 1
     }
     assert s["legacy_combined_counts_must_not_be_interpreted_as_live_quote_checks"] is True
+
+
+def test_browser_recovery_count_matches_physical_coverage():
+    names = physical_open_bookmaker_names()
+    assert len(names) == 12
+    assert "YaJuego" not in names
+    assert "Zamba" not in names
