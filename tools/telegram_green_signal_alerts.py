@@ -2717,6 +2717,7 @@ def main() -> None:
         candidate["house"] = offer["house"]
         candidate["odds"] = offer["odds"]
         candidate["ev"] = offer["ev"]
+        candidate["odds_api_event_id"] = offer.get("odds_api_event_id")
         candidate["physical_quote_verified"] = True
         candidate["send_gate_status"] = quality_state
         candidate["pre_send_revalidated_at_utc"] = now.isoformat()
@@ -2919,7 +2920,7 @@ def main() -> None:
     for key, c in sorted(candidates.items(), key=lambda kv: (str(kv[1].get("kickoff")), kv[0])):
         if key in sent_by_key:
             record = sent_by_key[key]
-            for field in ("sport", "fixture_id", "match", "league_id", "market", "p_matrix", "house", "odds", "ev", "kickoff", "source", "execution", "paper_bet", "paper_plan", "send_gate_status", "pre_send_revalidated_at_utc"):
+            for field in ("sport", "fixture_id", "match", "league_id", "market", "p_matrix", "house", "odds", "ev", "kickoff", "source", "execution", "paper_bet", "paper_plan", "send_gate_status", "pre_send_revalidated_at_utc", "odds_api_event_id"):
                 if record.get(field) is None:
                     record[field] = c.get(field)
         if c.get("eligible_green") is not True:
@@ -2963,6 +2964,7 @@ def main() -> None:
                 "paper_plan": c.get("paper_plan"),
                 "send_gate_status": c.get("send_gate_status"),
                 "pre_send_revalidated_at_utc": c.get("pre_send_revalidated_at_utc"),
+                "odds_api_event_id": c.get("odds_api_event_id"),
                 "sent_at_utc": now.isoformat(),
                 "telegram_message_id": mid,
                 "status": "ENVIADO_OK",
