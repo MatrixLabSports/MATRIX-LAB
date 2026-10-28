@@ -208,9 +208,11 @@ def main():
         "generated_at_utc": now.isoformat(),
         "target": {"home": target_home_raw, "away": target_away_raw},
         "matches": unique[:50],
-        "ancestry": ancestry[:20],\n        "component_meta": component_meta[:20],
+        "ancestry": ancestry[:20],
+        "component_meta": component_meta[:20],
         "count": len(unique),
-        "ancestry_count": len(ancestry),\n        "component_meta_count": len(component_meta),
+        "ancestry_count": len(ancestry),
+        "component_meta_count": len(component_meta),
         "status": (
             "PASS_CLICKABLE_EVENT_CONTEXT_FOUND"
             if any(item.get("clickable_ancestor") for item in unique)
@@ -232,7 +234,9 @@ def main():
                 "status": out["status"],
                 "count": out["count"],
                 "ancestry_count": out["ancestry_count"],
-                "ancestry": out["ancestry"][:3],\n                "component_meta_count": out["component_meta_count"],\n                "component_meta": out["component_meta"][:3],
+                "ancestry": out["ancestry"][:3],
+                "component_meta_count": out["component_meta_count"],
+                "component_meta": out["component_meta"][:3],
             },
             ensure_ascii=False,
         )
