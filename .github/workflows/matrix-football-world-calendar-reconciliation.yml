@@ -9,8 +9,10 @@ on:
       - "evidence/calendar_physical/**"
       - "tools/reconcile_opera_football_calendar.py"
       - "tools/build_football_world_watchlist.py"
+      - "tools/football_browser_preregistry.py"
       - "tests/test_reconcile_opera_football_calendar.py"
       - "tests/test_build_football_world_watchlist.py"
+      - "tests/test_football_browser_preregistry.py"
       - ".github/workflows/matrix-football-world-calendar-reconciliation.yml"
 
 concurrency:
@@ -44,7 +46,7 @@ jobs:
         run: python -m pip install pytest
 
       - name: Test calendar reconciliation
-        run: PYTHONPATH=. python -m pytest -q tests/test_reconcile_opera_football_calendar.py tests/test_build_football_world_watchlist.py
+        run: PYTHONPATH=. python -m pytest -q tests/test_reconcile_opera_football_calendar.py tests/test_build_football_world_watchlist.py tests/test_football_browser_preregistry.py
 
       - name: Reconcile latest physical football calendar
         run: |
@@ -90,6 +92,26 @@ jobs:
           print(json.dumps({"counts":j["counts"],"target_date_bogota":j["target_date_bogota"]},sort_keys=True))
           PY
 
+      - name: Persist browser-first preregistry
+        run: |
+          set -euo pipefail
+          PYTHONPATH=. python -m tools.football_browser_preregistry
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          p=Path("evidence/calendar_reconciliation/MATRIX_FOOTBALL_BROWSER_PREREGISTRY_LAST.json")
+          j=json.loads(p.read_text(encoding="utf-8"))
+          assert j["status"]=="PASS_BROWSER_FIRST_PREREGISTRATION"
+          assert j["policy"]["source_order"]==["SOFASCORE","FLASHSCORE","APIS"]
+          assert j["policy"]["browser_event_survives_api_absence"] is True
+          assert j["policy"]["preregistration_does_not_equal_freeze"] is True
+          assert j["policy"]["preregistration_does_not_create_p_matrix"] is True
+          assert j["policy"]["odds_used"] is False
+          assert j["policy"]["automatic_wagering"] is False
+          assert j["policy"]["real_money"]=="BLOCKED"
+          print(json.dumps({"status":j["status"],"counts":j["counts"]},sort_keys=True))
+          PY
+
       - name: Persist reconciliation evidence
         shell: bash
         run: |
@@ -98,6 +120,7 @@ jobs:
           git config user.email "matrix-calendar-reconciliation@users.noreply.github.com"
           git add evidence/calendar_reconciliation/MATRIX_FOOTBALL_WORLD_CALENDAR_RECONCILIATION_LAST.json
           git add evidence/calendar_reconciliation/MATRIX_FOOTBALL_WORLD_WATCHLIST_LAST.json
+          git add evidence/calendar_reconciliation/MATRIX_FOOTBALL_BROWSER_PREREGISTRY_LAST.json
           if git diff --cached --quiet; then
             echo "NO_CALENDAR_RECONCILIATION_CHANGE"
             exit 0
