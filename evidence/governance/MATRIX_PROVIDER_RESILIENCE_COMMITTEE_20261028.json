@@ -1,0 +1,135 @@
+{
+  "schema": "MATRIX_PROVIDER_RESILIENCE_PLAN_V1",
+  "generated_at_utc": "2026-10-28T08:35:00+00:00",
+  "objective": "ELIMINATE_SINGLE_PROVIDER_QUOTE_BOTTLENECK_AND_PREMATCH_DELAYS",
+  "evidence_basis": {
+    "current_odds_api_failure": {
+      "http_status": 429,
+      "detail": "Monthly request quota exceeded",
+      "affected_first_window_fixture_ids": [
+        "1611788",
+        "1611786",
+        "1611787"
+      ],
+      "source": "evidence/notifications/telegram/MATRIX_TELEGRAM_BLOCKER_RECOVERY_AUDIT_LAST.json"
+    },
+    "current_execution_books": 14,
+    "physically_open_books": 12
+  },
+  "committee_decision": {
+    "recommended_primary_odds_provider": "odds-api.net",
+    "recommended_plan": "Builder",
+    "public_price_usd_month": 90,
+    "request_allowance_month": 2000000,
+    "requests_per_minute": 300,
+    "concurrent_streams": 8,
+    "stream_hours_month": 1500,
+    "rationale": [
+      "Published Colombia catalogue covers Betano, BetPlay, Betsson, Bwin, Codere, Luckia, MrYoker, Rivalo, Rushbet, Sportium, Stake, Wplay, YaJuego and Zamba.",
+      "Published Colombia catalogue also includes Pinnacle for sharp reference.",
+      "All bookmakers and all markets are included in Builder.",
+      "Streaming can replace repeated polling for hot prematch candidates and lower request consumption.",
+      "Current failure is monthly quota exhaustion, not identity matching."
+    ]
+  },
+  "architecture": {
+    "calendar_discovery_order": [
+      "SofaScore",
+      "Flashscore"
+    ],
+    "odds_execution_plane": {
+      "primary": "odds-api.net Builder",
+      "mode": "REST_COLD_PLUS_STREAM_HOT_T_MINUS_120",
+      "local_execution_books": "14 configured Colombia houses",
+      "sharp_reference": [
+        "Pinnacle",
+        "Circa when physically available"
+      ],
+      "fail_closed_on_provider_outage": true
+    },
+    "football_data_plane": {
+      "preferred_budget_option": "API-Football Pro only if explicitly reauthorized",
+      "public_price_usd_month": 19,
+      "role": [
+        "fixtures",
+        "results",
+        "lineups",
+        "statistics",
+        "settlement_support"
+      ],
+      "prohibited_role": "MUST_NOT_BE_REQUIRED_FOR_ODDS_EVENT_IDENTITY_OR_SIGNAL_QUOTE_PATH",
+      "alternative_if_not_renewed": "SofaScore/Flashscore discovery plus independent structured fallback to be certified before activation"
+    },
+    "fallback_plane": {
+      "physical_browser_books": 12,
+      "use": "EMERGENCY_EXACT_QUOTE_EVIDENCE_ONLY",
+      "synthetic_quotes_forbidden": true
+    }
+  },
+  "alternatives_evaluated": [
+    {
+      "provider": "odds-api.net Starter",
+      "cost": "USD 30/month",
+      "decision": "NO_GO_FOR_PRODUCTION",
+      "reason": "50K monthly requests and 1 stream connection leaves insufficient headroom for governed global 15-minute monitoring."
+    },
+    {
+      "provider": "odds-api.net Builder",
+      "cost": "USD 90/month",
+      "decision": "GO_PRIMARY_ODDS_CANDIDATE",
+      "reason": "2M monthly requests, 300/min, 8 streams, published Colombia coverage."
+    },
+    {
+      "provider": "SoccersAPI Odds",
+      "cost": "EUR 50/month",
+      "decision": "SECONDARY_CANDIDATE_ONLY",
+      "reason": "pre-match and in-play odds plus fixtures/livescores, but Colombian bookmaker coverage must be physically certified before execution use."
+    },
+    {
+      "provider": "BetsAPI Soccer",
+      "cost": "USD 30/month",
+      "decision": "DATA_FALLBACK_CANDIDATE",
+      "reason": "fixtures/inplay/results at 3600 requests/hour; event odds limited and unsuitable as primary Colombia execution quote feed."
+    },
+    {
+      "provider": "Goalserve Soccer Full",
+      "cost": "USD 550/month",
+      "decision": "NO_GO_COST",
+      "reason": "strong integrated feed but materially above current budget."
+    },
+    {
+      "provider": "OpticOdds",
+      "cost": "QUOTE_REQUIRED",
+      "decision": "ENTERPRISE_FUTURE_CANDIDATE",
+      "reason": "100+ sportsbooks, streaming, grading and redundancy guidance; public pricing not established and Colombian local-book coverage not certified."
+    },
+    {
+      "provider": "Sportradar OC Core",
+      "cost": "QUOTE_REQUIRED",
+      "decision": "ENTERPRISE_FUTURE_CANDIDATE",
+      "reason": "140+ global bookmakers, enterprise-grade; cost/Colombia exact coverage not publicly certified for MATRIX."
+    }
+  ],
+  "activation_gates_before_spend": {
+    "user_purchase_authorization_required": true,
+    "no_automatic_subscription": true,
+    "builder_trial_or_first_cycle_validation": {
+      "minimum_real_quote_revalidations": 50,
+      "minimum_colombia_execution_houses_with_real_observation": 6,
+      "pinnacle_freshness_seconds_max": 120,
+      "exact_over25_required": true,
+      "synthetic_rows_allowed": false,
+      "recommendation_if_gate_fails": "DO_NOT_SCALE_PLAN; TEST_SECONDARY_PROVIDER"
+    }
+  },
+  "permanent_controls": [
+    "Provider budget telemetry with monthly quota remaining persisted every operational cycle.",
+    "Alert at 50%, 75%, 90% and 95% monthly quota consumption.",
+    "No push/CI workflow may consume live provider quota.",
+    "Use streaming for candidates inside T-120; REST for discovery/cold refresh.",
+    "No provider may be a mandatory dependency for both event identity and quote retrieval.",
+    "Missing quote remains missing; never impute or backfill after kickoff.",
+    "Real money remains blocked."
+  ],
+  "spending_status": "RECOMMENDATION_ONLY_NOT_AUTHORIZED_NOT_PURCHASED"
+}
