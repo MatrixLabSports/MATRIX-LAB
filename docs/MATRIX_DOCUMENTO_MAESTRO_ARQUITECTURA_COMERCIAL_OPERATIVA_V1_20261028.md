@@ -585,3 +585,40 @@ Este rol tiene escalamiento directo cuando un candidato elegible se pierde por i
 - `.github/workflows/matrix-elite-committee-guard.yml`
 
 El guard impide eliminar, duplicar o cambiar silenciosamente los roles críticos y certifica que la pérdida de señales por infraestructura tenga un dueño canónico.
+
+
+## 20. Resolución élite de 42 mercados — 28-OCT-2026
+
+### Principio
+Resolver 42 mercados NO significa promover 42 mercados a Telegram. Significa que cada lane debe tener implementación física, contrato prospectivo, owner, bloqueo explícito, ruta de calibración/precio/promoción y protección contra regresiones.
+
+### Reparaciones estructurales
+1. El registro prospectivo dejó de depender exclusivamente de un inventario fijo de fútbol y busca primero el ciclo prospectivo del mismo día.
+2. Inventarios de fútbol con más de 6 horas se marcan STALE y no pueden producir nuevos freezes.
+3. Existe productor universal y estricto de freezes prematch:
+   `tools/matrix_42_lane_freeze_producer.py`.
+4. Una implementación live no puede contarse como modelo prematch.
+5. Un coverage probe no puede contarse como predictor prematch.
+6. Toda lane no resuelta tiene owner del Comité Élite y mandatory_action.
+7. El guard de resolución 42/42 corre cada 15 minutos.
+
+### Fuente canónica
+`config/MATRIX_42_MARKET_ELITE_RESOLUTION_MATRIX.json`
+
+### Protección
+- `tools/matrix_42_market_elite_resolution_guard.py`
+- `tests/test_matrix_42_market_elite_resolution_guard.py`
+- `tests/test_matrix_42_lane_freeze_producer.py`
+- `.github/workflows/matrix-42-market-elite-resolution-15m.yml`
+
+### Evidencia
+`evidence/governance/MATRIX_42_MARKET_ELITE_RESOLUTION_SNAPSHOT_20261028.json`
+
+### Verdad de producción
+- 42/42 quedan gobernadas y con ruta ejecutable.
+- No se auto-promueve por superar 600.
+- Live no se convierte en prematch.
+- Coverage no equivale a modelo.
+- En este corte, la familia gobernada para Telegram sigue siendo TOTAL_GOALS_OVER_UNDER con scope autorizado solo OVER_2_5.
+- MATCH_WINNER tenis permanece bloqueado para Telegram hasta mapeo exacto de cuota.
+- REAL_MONEY=BLOCKED.
