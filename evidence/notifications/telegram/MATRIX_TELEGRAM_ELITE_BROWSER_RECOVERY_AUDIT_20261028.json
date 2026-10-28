@@ -1,0 +1,91 @@
+{
+  "schema": "MATRIX_TELEGRAM_ELITE_BROWSER_RECOVERY_AUDIT_V1",
+  "generated_at_utc": "2026-10-28T08:04:15+00:00",
+  "status": "ROOT_CAUSE_CONFIRMED_BROWSER_RECOVERY_SCOPE_REPAIRED",
+  "current_window": {
+    "bogota_time": "2026-10-28T03:04:15-05:00",
+    "opened_at_bogota": "2026-10-28T03:00:00-05:00",
+    "kickoff_bogota": "2026-10-28T05:00:00-05:00",
+    "candidates": [
+      {
+        "fixture_id": "1611788",
+        "match": "Shakhtar Donetsk U19 vs Livyi Bereh U19",
+        "gate_state": "BLOCKED_NO_VALID_EXACT_AUTHORIZED_BOOK_OVER25",
+        "missing_or_failed_variable": "FIXTURE_OR_KICKOFF_BINDING",
+        "provider_diagnostic_status": "BLOCKED_FIXTURE_LOOKUP"
+      },
+      {
+        "fixture_id": "1611786",
+        "match": "Kolos Kovalivka U19 vs Karpaty Lviv U19",
+        "gate_state": "BLOCKED_NO_VALID_EXACT_AUTHORIZED_BOOK_OVER25",
+        "missing_or_failed_variable": "FIXTURE_OR_KICKOFF_BINDING",
+        "provider_diagnostic_status": "BLOCKED_FIXTURE_LOOKUP"
+      },
+      {
+        "fixture_id": "1611787",
+        "match": "LNZ Cherkasy U19 vs Oleksandria U19",
+        "gate_state": "BLOCKED_NO_VALID_EXACT_AUTHORIZED_BOOK_OVER25",
+        "missing_or_failed_variable": "FIXTURE_OR_KICKOFF_BINDING",
+        "provider_diagnostic_status": "BLOCKED_FIXTURE_LOOKUP"
+      }
+    ]
+  },
+  "provider_state": {
+    "automatic_recovery_attempted": true,
+    "api_football_offer_status": "BLOCKED_PROVIDER_ERROR",
+    "odds_api_net_event_status": "BLOCKED_FIXTURE_LOOKUP_OR_NOT_COVERED",
+    "telegram_delivery_is_direct_root_cause": false
+  },
+  "opera_coverage": {
+    "configured_execution_houses": 14,
+    "physically_open_houses": 12,
+    "not_observed_open": [
+      "YaJuego",
+      "Zamba"
+    ],
+    "open": [
+      "Betano",
+      "BetPlay",
+      "Betsson",
+      "bwin",
+      "Codere",
+      "Luckia",
+      "MrYoker",
+      "Rivalo",
+      "Rushbet",
+      "Sportium",
+      "Stake",
+      "Wplay"
+    ]
+  },
+  "physical_browser_observations": [
+    {
+      "house": "Rushbet",
+      "query_terms": "Shakhtar/Livyi/Kolos/Karpaty/Cherkasy/Oleksandria",
+      "observed_text": "Shakhtar Donetsk - Sporting Lisboa",
+      "disposition": "REJECTED_FALSE_IDENTITY_MATCH_NOT_U19_CANDIDATE",
+      "counted_as_exact_quote_evidence": false
+    }
+  ],
+  "repair": {
+    "code": "tools/telegram_green_signal_alerts.py",
+    "behavior": "sources_available_for_recovery now uses only houses physically observed OPEN in Opera",
+    "configured_vs_open_separated": true,
+    "missing_coverage_fails_closed": true,
+    "tests": [
+      "tests/test_telegram_quote_recovery_window.py",
+      "tests/test_telegram_physical_browser_recovery_contract.py"
+    ]
+  },
+  "governance": {
+    "no_silent_imputation": true,
+    "exact_line_required": 2.5,
+    "minimum_decimal_odds_strictly_greater_than": 1.5,
+    "ev_must_be_positive": true,
+    "p_matrix_must_preexist_before_odds": true,
+    "pinnacle_freshness_gate_seconds": 120,
+    "no_backfill_after_kickoff": true,
+    "automatic_wagering": false,
+    "real_money": "BLOCKED"
+  }
+}
