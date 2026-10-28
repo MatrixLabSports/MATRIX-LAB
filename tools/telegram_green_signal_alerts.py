@@ -2063,7 +2063,7 @@ def blocker_recovery_profile(gate_record: dict[str, Any]) -> dict[str, Any]:
                 variable = "AUTHORIZED_BOOK_MIN_ODDS_THRESHOLD"
             else:
                 variable = "ODDS_PROVIDER_EVENT_COVERAGE"
-            recovery = ["API-Football", "odds-api.net", "Betano", "BetPlay", "Betsson", "Bwin", "Codere", "Luckia", "MrYoker", "Rivalo", "Rushbet", "Sportium", "Stake", "Wplay", "YaJuego", "Zamba"]
+            recovery = ["API-Football", "odds-api.net", *physical_open_bookmaker_names()]
         elif provider_status in {"BLOCKED_IDENTITY_LOW_SCORE", "BLOCKED_IDENTITY_AMBIGUOUS", "BLOCKED_EVENT_ID_MISSING"}:
             variable = "EVENT_IDENTITY"
             recovery = ["SofaScore", "Flashscore", "API-Football", "odds-api.net"]
@@ -2072,7 +2072,7 @@ def blocker_recovery_profile(gate_record: dict[str, Any]) -> dict[str, Any]:
             recovery = ["SofaScore", "Flashscore", "API-Football"]
         elif provider_status == "BLOCKED_SNAPSHOT_PROVIDER_ERROR":
             variable = "ODDS_PROVIDER_SNAPSHOT"
-            recovery = ["odds-api.net", "API-Football", "Betano", "BetPlay", "Rushbet"]
+            recovery = ["odds-api.net", "API-Football", *physical_open_bookmaker_names()]
         profile.update({
             "missing_or_failed_variable": variable,
             "recoverability": "RECOVERABLE_WHILE_PREMATCH",
