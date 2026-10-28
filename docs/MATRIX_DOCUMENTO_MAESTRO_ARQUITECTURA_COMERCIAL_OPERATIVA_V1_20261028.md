@@ -622,3 +622,48 @@ Resolver 42 mercados NO significa promover 42 mercados a Telegram. Significa que
 - En este corte, la familia gobernada para Telegram sigue siendo TOTAL_GOALS_OVER_UNDER con scope autorizado solo OVER_2_5.
 - MATCH_WINNER tenis permanece bloqueado para Telegram hasta mapeo exacto de cuota.
 - REAL_MONEY=BLOCKED.
+
+
+## 21. Comité Élite — cierre técnico de 42 mercados
+
+### Objetivo
+Eliminar falsos estados de “implementado” y convertir el portafolio 42/42 en una arquitectura donde cada lane tenga:
+- capacidad prematch real explícita;
+- owner;
+- acción obligatoria;
+- contrato de freeze;
+- estado de precio;
+- estado de calibración/promoción;
+- protección contra regresiones.
+
+### Reparaciones nuevas
+1. `tools/matrix_multi_market_supervisor.py` distingue:
+   - ACTIVE_PREMATCH_MODEL
+   - PREMATCH_MODEL_LAB
+   - PREMATCH_MODEL_RESEARCH
+   - DATA_COVERAGE_ONLY_MODEL_REQUIRED
+   - LIVE_ONLY_NOT_PREMATCH
+   - SOURCE_LAB_ONLY_PREMATCH_MODEL_REQUIRED
+   - PRICE_LAB_MODEL_REQUIRED
+2. Live tennis nunca puede contarse como prematch.
+3. Coverage probe nunca puede contarse como predictor prematch.
+4. `tools/matrix_42_lane_prospective_registry.py` usa primero inventario de fútbol del ciclo prospectivo del mismo día y bloquea inventario stale >6h.
+5. `tools/matrix_42_lane_freeze_producer.py` define un contrato universal y estricto para freezes de las 42 lanes.
+6. `tools/matrix_42_market_elite_backlog.py` mantiene backlog ejecutable por owner y mandatory_action.
+7. El workflow de 15 minutos incluye tests de capability modes, freeze contract, resolution matrix y backlog.
+
+### Protección
+- `tests/test_matrix_multi_market_capability_modes.py`
+- `tests/test_matrix_42_lane_freeze_producer.py`
+- `tests/test_matrix_42_market_elite_resolution_guard.py`
+- `tests/test_matrix_42_market_elite_backlog.py`
+- `.github/workflows/matrix-42-market-elite-resolution-15m.yml`
+
+### Evidencia canónica
+`evidence/governance/MATRIX_42_MARKET_ELITE_COMMITTEE_RESOLUTION_EVIDENCE_20261028.json`
+
+### Estado de certificación
+El código y los artefactos están físicamente presentes en la rama operativa. El conector GitHub disponible en esta sesión no expone workflow_dispatch directo, por lo que no se afirma un run nuevo que no se haya observado. El siguiente run programado debe certificar los tests integrados.
+
+### Regla permanente
+Ninguna lane podrá considerarse resuelta por tener solo un archivo, un extractor live o cobertura de datos. “Resuelta” exige capacidad prematch real y la ruta de validación correspondiente.
