@@ -20,7 +20,8 @@
     "telegram_delivery_owner": "TELEGRAM_DELIVERY_ENGINEER",
     "model_probability_owner": "QUANT_DIRECTOR",
     "evidence_truth_owner": "EVIDENCE_AUDIT_LEAD",
-    "risk_owner": "CHIEF_RISK_OFFICER"
+    "risk_owner": "CHIEF_RISK_OFFICER",
+    "browser_automation_owner": "BROWSER_AUTOMATION_SELF_HOSTED_RUNNER_ENGINEER"
   },
   "roles": [
     {
@@ -129,6 +130,26 @@
         "sla_alerting"
       ],
       "critical": true
+    },
+    {
+      "id": "BROWSER_AUTOMATION_SELF_HOSTED_RUNNER_ENGINEER",
+      "name": "Principal Browser Automation & Self-Hosted Runner Engineer",
+      "domain": "PRODUCCION",
+      "owner_of": [
+        "self_hosted_runner_architecture",
+        "playwright_browser_automation",
+        "cdp_browser_bridge",
+        "persistent_browser_session",
+        "bookmaker_read_only_quote_collection",
+        "runner_health_and_recovery"
+      ],
+      "critical": true,
+      "kpis": [
+        "self_hosted_runner_online=true",
+        "browser_cdp_reachable=true",
+        "quote_collection_cycle_minutes<=5",
+        "automatic_wagering=false"
+      ]
     },
     {
       "id": "TELEGRAM_DELIVERY_ENGINEER",
@@ -430,5 +451,5 @@
       "critical": false
     }
   ],
-  "role_count": 36
+  "role_count": 37
 }
