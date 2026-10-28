@@ -199,3 +199,24 @@ def test_odds_event_search_429_is_explicit_and_fail_closed():
     assert diagnostic["event_search_rate_limit_remaining"] == "0"
     assert diagnostic["event_search_rate_limit_bucket"] == "events"
     assert diagnostic["event_search_request_id"] == "req-test"
+
+
+def test_monthly_quota_exhaustion_is_not_generic_provider_error():
+    gate = {
+        "state": "BLOCKED_NO_VALID_EXACT_AUTHORIZED_BOOK_OVER25",
+        "odds_api_net_diagnostic": {
+            "status": "BLOCKED_EVENT_SEARCH_RATE_LIMIT",
+            "event_search_http_status": 429,
+            "event_search_error_detail": "Monthly request quota exceeded",
+            "event_search_rate_limit_remaining": "249",
+            "event_search_rate_limit_bucket": "v1-general-burst",
+        },
+        "api_football_offer_diagnostic": {"status": "BLOCKED_PROVIDER_ERROR"},
+    }
+    profile = blocker_recovery_profile(gate)
+    assert profile["missing_or_failed_variable"] == "ODDS_PROVIDER_RATE_LIMIT"
+    assert profile["recoverability"] == "RECOVERABLE_WHILE_PREMATCH"
+    assert profile["automatic_recovery_attempted"] is True
+    assert profile["automatic_recovery_exhausted"] is False
+    assert "YaJuego" not in profile["sources_available_for_recovery"]
+    assert "Zamba" not in profile["sources_available_for_recovery"]
