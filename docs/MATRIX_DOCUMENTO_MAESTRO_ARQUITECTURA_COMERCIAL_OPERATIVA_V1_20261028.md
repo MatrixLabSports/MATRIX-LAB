@@ -718,3 +718,45 @@ Observado en el último audit:
 - todavía no existe audit posterior a la época de certificación.
 
 Por tanto, no se declara PASS hasta observar ciclos prospectivos posteriores con 0 pérdidas de infraestructura y evidencia de recuperación/entrega cuando corresponda.
+
+
+## 23. Quote Recovery Actuator — cierre técnico
+
+### Objetivo
+Eliminar el hueco entre detectar un candidato bloqueado por cuota y producir evidencia de recuperación consumible por el gate final de Telegram.
+
+### Implementación
+- `tools/matrix_quote_recovery_actuator.py`
+- `tests/test_matrix_quote_recovery_actuator.py`
+- `tools/matrix_quote_recovery_evidence.py`
+- `tests/test_matrix_quote_recovery_evidence.py`
+- `tests/test_telegram_quote_recovery_actuator_integration.py`
+
+### Flujo
+1. El actuador lee el blocker audit más reciente.
+2. Solo actúa dentro de T-120.
+3. Intenta API-Football para cuota exacta Over 2.5 en casa autorizada.
+4. Si existe evidencia física de navegador, la compara.
+5. Exige P_MATRIX >=0.60, cuota >1.50 y EV revalidado >=0.05.
+6. Registra evidencia validada en `MATRIX_QUOTE_RECOVERY_EXECUTION_LEDGER.jsonl`.
+7. `telegram_green_signal_alerts.py` puede consumir esa evidencia en el mismo ciclo.
+8. No se permite backfill después del kickoff.
+
+### Integración operativa
+`.github/workflows/telegram-matrix-supervisor-15m.yml` ejecuta el actuador antes del supervisor Telegram.
+
+### Seguridad
+- Pinnacle/reference-only no puede ser aceptada como casa de ejecución.
+- Solo casas del allowlist colombiano pasan el ledger.
+- Browser evidence debe ser prematch y fresca.
+- P_MATRIX nunca se recalcula desde la cuota.
+- REAL_MONEY=BLOCKED.
+- automatic_wagering=false.
+
+### Limitación física relevante
+El Browser Connector disponible puede listar pestañas, leer árboles de accesibilidad, tomar capturas y navegar. GitHub Actions no puede usarlo para hacer click/type dentro de casas. Por tanto, el fallback de navegador requiere artefacto físico de cuota; no se presenta como automatización que no existe.
+
+### Evidencia de readiness
+`evidence/governance/MATRIX_QUOTE_RECOVERY_ACTUATOR_PHYSICAL_READINESS_20261028.json`
+
+En el audit de referencia había 10 candidatos esperando abrir T-120. No existía todavía un candidato RECOVERABLE_WHILE_PREMATCH en ese corte, por lo que no se declara ejecución real post-fix ni certificación de cero pérdidas hasta observar un ciclo prospectivo.
