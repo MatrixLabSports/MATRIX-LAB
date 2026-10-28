@@ -355,6 +355,11 @@ jobs:
             exit 0
           fi
           git commit -m "evidence(football): persist autonomous daily governed cycle $D"
+          # Dedicated sibling workflows may have modified shared LAST/catalog files
+          # in this runner. They are intentionally not owned by the daily commit.
+          # After the owned evidence is safely committed, restore all remaining
+          # uncommitted paths before rebase so unrelated mutations cannot block push.
+          git reset --hard HEAD
           for attempt in 1 2 3 4; do
             git fetch origin repair/cor09-world-pipeline
             if ! git rebase origin/repair/cor09-world-pipeline; then
