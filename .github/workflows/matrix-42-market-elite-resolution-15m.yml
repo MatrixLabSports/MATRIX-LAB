@@ -14,6 +14,10 @@ on:
       - tools/matrix_42_lane_prospective_registry.py
       - tests/test_matrix_42_market_elite_resolution_guard.py
       - tests/test_matrix_42_lane_freeze_producer.py
+      - tools/matrix_multi_market_supervisor.py
+      - tests/test_matrix_multi_market_capability_modes.py
+      - tools/matrix_42_market_elite_backlog.py
+      - tests/test_matrix_42_market_elite_backlog.py
 
 jobs:
   certify:
@@ -27,5 +31,17 @@ jobs:
         with:
           python-version: "3.11"
       - run: python -m pip install pytest
-      - run: PYTHONPATH=. python -m pytest -q tests/test_matrix_42_market_elite_resolution_guard.py tests/test_matrix_42_lane_freeze_producer.py
+      - run: PYTHONPATH=. python -m pytest -q tests/test_matrix_42_market_elite_resolution_guard.py tests/test_matrix_42_lane_freeze_producer.py tests/test_matrix_multi_market_capability_modes.py tests/test_matrix_42_market_elite_backlog.py
       - run: PYTHONPATH=. python -m tools.matrix_42_market_elite_resolution_guard
+      - run: PYTHONPATH=. python -m tools.matrix_42_market_elite_backlog
+      - name: Persist elite market backlog
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name matrix-42-market-elite
+          git config user.email matrix-42-market-elite@users.noreply.github.com
+          git add evidence/governance/MATRIX_42_MARKET_ELITE_BACKLOG_LAST.json
+          if git diff --cached --quiet; then exit 0; fi
+          git commit -m "evidence(markets): persist elite 42-market backlog"
+          git pull --rebase origin repair/cor09-world-pipeline
+          git push origin HEAD:repair/cor09-world-pipeline
