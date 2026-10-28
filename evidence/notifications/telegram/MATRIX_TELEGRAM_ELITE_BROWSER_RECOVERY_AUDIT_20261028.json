@@ -65,6 +65,31 @@
       "observed_text": "Shakhtar Donetsk - Sporting Lisboa",
       "disposition": "REJECTED_FALSE_IDENTITY_MATCH_NOT_U19_CANDIDATE",
       "counted_as_exact_quote_evidence": false
+    },
+    {
+      "houses_checked_visible_page": [
+        "Betano",
+        "BetPlay",
+        "Betsson",
+        "bwin",
+        "Codere",
+        "Luckia",
+        "MrYoker",
+        "Rivalo",
+        "Rushbet",
+        "Sportium",
+        "Stake",
+        "Wplay"
+      ],
+      "exact_candidate_identity_hits": 0,
+      "candidates_checked": [
+        "Shakhtar Donetsk U19 vs Livyi Bereh U19",
+        "Kolos Kovalivka U19 vs Karpaty Lviv U19",
+        "LNZ Cherkasy U19 vs Oleksandria U19"
+      ],
+      "scope": "CURRENT_VISIBLE_PAGE_ACCESSIBILITY_TREE_ONLY",
+      "disposition": "NO_EXACT_MATCH_VISIBLE_ON_CURRENT_OPEN_PAGE",
+      "counted_as_exact_quote_evidence": false
     }
   ],
   "repair": {
@@ -75,7 +100,8 @@
     "tests": [
       "tests/test_telegram_quote_recovery_window.py",
       "tests/test_telegram_physical_browser_recovery_contract.py"
-    ]
+    ],
+    "blocker_recovery_paths_use_only_physically_open_houses": true
   },
   "governance": {
     "no_silent_imputation": true,
