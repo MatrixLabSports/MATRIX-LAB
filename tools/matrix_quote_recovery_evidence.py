@@ -3,6 +3,7 @@ import argparse, hashlib, json
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
+from app.market.colombia_bookmakers import classify_bookmaker
 
 ROOT=Path(__file__).resolve().parents[1]
 LEDGER=ROOT/"evidence"/"notifications"/"telegram"/"MATRIX_QUOTE_RECOVERY_EXECUTION_LEDGER.jsonl"
@@ -18,6 +19,9 @@ def validate(row:dict[str,Any])->dict[str,Any]:
     missing=[k for k in required if row.get(k) in (None,"")]
     if missing: raise ValueError("MISSING_FIELDS:"+",".join(missing))
     if row["market"]!="OVER_2_5": raise ValueError("UNSUPPORTED_CERTIFICATION_MARKET")
+    classification=classify_bookmaker(str(row["bookmaker"]).strip().casefold())
+    if classification.execution_eligible is not True:
+        raise ValueError("BOOKMAKER_NOT_AUTHORIZED_FOR_EXECUTION")
     q=float(row["decimal_odds"]); ev=float(row["revalidated_ev"]); p=float(row["p_matrix"])
     if q<=1.50: raise ValueError("ODDS_NOT_STRICTLY_GT_1_50")
     if ev<0.05: raise ValueError("EV_LT_0_05")
