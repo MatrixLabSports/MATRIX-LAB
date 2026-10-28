@@ -220,3 +220,21 @@ def test_monthly_quota_exhaustion_is_not_generic_provider_error():
     assert profile["automatic_recovery_exhausted"] is False
     assert "YaJuego" not in profile["sources_available_for_recovery"]
     assert "Zamba" not in profile["sources_available_for_recovery"]
+
+
+def test_quota_guard_blocks_provider_call_when_exhausted_artifact(monkeypatch):
+    monkeypatch.setattr(
+        "tools.telegram_green_signal_alerts.load_json",
+        lambda path, default: {
+            "decision": {
+                "stage": "BLOCKED_EXHAUSTED",
+                "api_calls_allowed": False,
+                "max_seconds_to_kickoff_for_odds_api_call": 0,
+                "usage_pct": 100.0,
+                "exceeded": True,
+            }
+        } if str(path).endswith("MATRIX_ODDS_API_QUOTA_GUARD_LAST.json") else default,
+    )
+    d = odds_api_quota_decision()
+    assert d["stage"] == "BLOCKED_EXHAUSTED"
+    assert d["api_calls_allowed"] is False
