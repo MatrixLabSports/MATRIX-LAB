@@ -41,6 +41,8 @@ def main():
     out={
       "schema":"MATRIX_BROWSER_QUOTE_RECOVERY_QUEUE_V1",
       "generated_at_utc":datetime.now(timezone.utc).replace(microsecond=0).isoformat(),
+      "generated_from_audit_at_utc":audit.get("generated_at_utc"),
+      "execution_mode":"QUEUE_ONLY_REQUIRES_QUOTE_RECOVERY_ACTUATOR_EVIDENCE",
       "odds_api_exhausted":exhausted,
       "policy":{
         "never_wait_for_exhausted_provider":True,
