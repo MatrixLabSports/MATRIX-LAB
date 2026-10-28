@@ -1,0 +1,233 @@
+{
+  "schema": "MATRIX_WORLD_CALIBRATION_SETTLEMENT_PROGRESS_AUDIT_V1",
+  "target_date_bogota": "2026-10-06",
+  "audit_at_utc": "2026-10-28T00:52:06.867Z",
+  "branch": "repair/cor09-world-pipeline",
+  "observed_branch_head_before_write": "6b5c733d66eb01a2f9bafecc47788a37e51608b3",
+  "previous_snapshot": {
+    "path": "evidence/daily_selection/MATRIX_SETTLEMENT_PROGRESS_20261006_BOGOTA_20261027T225710Z_V2_4141_T409.json",
+    "commit": "a8a6297d8465dc1a0f4a18d5da0804ce9d4182a6"
+  },
+  "source_blobs": {
+    "candidate": {
+      "path": "evidence/daily_selection/MATRIX_CALIBRATION_CANDIDATES_20261006_BOGOTA.json",
+      "blob_sha": "52e897007840f5bed1a8999edad8ee594fefc767"
+    },
+    "prior": {
+      "path": "evidence/daily_selection/MATRIX_SETTLEMENT_PROGRESS_20261006_BOGOTA_20261027T225710Z_V2_4141_T409.json",
+      "blob_sha": "f9fc0c80ea2078dae49a75604fa91e52d44043ad"
+    },
+    "football_sync": {
+      "path": "evidence/api_football/prospective_market_freeze/settlement_sync_last.json",
+      "blob_sha": "e0b96b593fccec8b7d4ffc737cdd45166b0a89e8"
+    },
+    "football_calibration": {
+      "path": "evidence/api_football/prospective_calibration/sync_last.json",
+      "blob_sha": "dd446d252e99ffff6c80b1704eb0f061bd3510ec"
+    },
+    "football_v2_over": {
+      "path": "evidence/api_football/calibration_v2/lanes/over_2_5/state.json",
+      "blob_sha": "363bb1da353c6e16a26fa5cd15385723c28001e5"
+    },
+    "football_v2_under": {
+      "path": "evidence/api_football/calibration_v2/lanes/under_2_5/state.json",
+      "blob_sha": "fe3febb795283201c95fbaee57924350d63b7993"
+    },
+    "football_v2_1x2": {
+      "path": "evidence/api_football/calibration_v2/lanes/1x2/state.json",
+      "blob_sha": "f148b8306d67a1bb42b5b21a021960f9dc0a5af4"
+    },
+    "football_uniqueness": {
+      "path": "evidence/api_football/physical_uniqueness/audit_last.json",
+      "blob_sha": "56f48c55a3c58b88a0bd8e114aec41fd01e1d21c"
+    },
+    "football_tracker": {
+      "path": "evidence/api_football/governance/MATRIX_FOOTBALL_4000_CANONICAL_TRACKER_LAST.json",
+      "blob_sha": "90f8864382932dfc1a3e5b99e6cd500a33c5e9a0"
+    },
+    "tennis_sync": {
+      "path": "evidence/cor0203/runtime/MATRIX_COR0203_SETTLEMENT_SYNC_LAST.json",
+      "blob_sha": "9ed5d27f4bba3e821d96f723eafc66c8ddcefa10"
+    },
+    "tennis_uniqueness": {
+      "path": "evidence/cor0203/runtime/MATRIX_COR0203_SETTLEMENT_UNIQUENESS_LAST.json",
+      "blob_sha": "1e8056e66158358c20a712dc5dc189d0229b23c9"
+    },
+    "tennis_ledger": {
+      "path": "evidence/cor0203/settlement/MATRIX_COR0203_SETTLEMENT_LEDGER.jsonl",
+      "blob_sha": "13380e29de67f466f29bc6e9522208e01366baea"
+    }
+  },
+  "football": {
+    "original_6oct": {
+      "candidates": 116,
+      "unique_fixture_ids": 116,
+      "standard_ft_settled": 107,
+      "new_standard_ft": 0,
+      "nonstandard_blocked": [
+        {
+          "fixture_id": "1588817",
+          "status": "PEN"
+        },
+        {
+          "fixture_id": "1588821",
+          "status": "PEN"
+        },
+        {
+          "fixture_id": "1588845",
+          "status": "PEN"
+        },
+        {
+          "fixture_id": "1588863",
+          "status": "PEN"
+        },
+        {
+          "fixture_id": "1588890",
+          "status": "PEN"
+        },
+        {
+          "fixture_id": "1588893",
+          "status": "PEN"
+        },
+        {
+          "fixture_id": "1619499",
+          "status": "PEN"
+        },
+        {
+          "fixture_id": "1644168",
+          "status": "AET"
+        }
+      ],
+      "pending": [
+        {
+          "fixture_id": "1596466",
+          "lookup_after_utc": "2026-10-28T01:03:29+00:00",
+          "provider_status": "NS",
+          "reason": "RESULT_NOT_STANDARD_FINAL"
+        }
+      ],
+      "verification": "107/116 carried from previous audited snapshot; current 3 new fixture IDs verified disjoint from original 116; 8 nonstandard IDs present in current governed blocked list."
+    },
+    "global": {
+      "previous_frozen": 5240,
+      "frozen": 5243,
+      "previous_final": 4944,
+      "final": 4947,
+      "new_final": 3,
+      "previous_pending": 148,
+      "pending": 148,
+      "previous_blocked": 148,
+      "blocked": 148,
+      "new_standard_ft": [
+        {
+          "fixture_id": "1580256",
+          "fulltime_home_goals": 2,
+          "fulltime_away_goals": 2,
+          "source_commit": "b080704a2e52ae1158558517ec688ff07cb4a513"
+        },
+        {
+          "fixture_id": "1493198",
+          "fulltime_home_goals": 1,
+          "fulltime_away_goals": 0,
+          "source_commit": "b080704a2e52ae1158558517ec688ff07cb4a513"
+        },
+        {
+          "fixture_id": "1644261",
+          "fulltime_home_goals": 3,
+          "fulltime_away_goals": 1,
+          "source_commit": "62c997e89b245653a2d691a27c068ea91fd7f189"
+        }
+      ],
+      "source_status": "FT",
+      "reconciles": true
+    },
+    "v2": {
+      "previous_settled_per_market": 4141,
+      "settled_per_market": 4144,
+      "frozen_per_market": 4415,
+      "pending_per_market": 271,
+      "markets": [
+        "1X2",
+        "OVER_2_5",
+        "UNDER_2_5"
+      ],
+      "metrics_opened": false,
+      "parameter_tuning_allowed": false
+    },
+    "physical_uniqueness": {
+      "result": "PASS",
+      "freeze_rows": 5243,
+      "calibration_rows": 4947,
+      "duplicate_fixture_id_groups": 0
+    },
+    "canonical_tracker": {
+      "tracked_final": 4857,
+      "tracked_v2": 4054,
+      "physical_final": 4947,
+      "physical_v2": 4144,
+      "stale_by": 90,
+      "requires_governed_reconciliation": true
+    }
+  },
+  "tennis": {
+    "original_6oct": {
+      "unique_candidates": 11,
+      "finished": 11,
+      "new_finished": 0,
+      "verified_directly_against_ledger": true
+    },
+    "global": {
+      "previous_ledger_records": 409,
+      "ledger_records": 411,
+      "new_settlements": 2,
+      "new_settlement_records": [
+        {
+          "event_id": "COR0203-RAPIDAPI-TENNIS-715852-4d10a484a0fe",
+          "terminal_status": "FINISHED",
+          "event_final_result": "6-7(3) 7-6(6) 7-6(5)",
+          "winner_canonical_name": "Stefano Travaglia",
+          "settlement_id": "96d132e4aefb68942fd4d309c039ebe6ec0435558a1c4056ef651c7e065fbe4c",
+          "settled_at_utc": "2026-10-28T00:28:25+00:00",
+          "result_source_provider": "rapidapi_tennis",
+          "source_commit": "c3c1acdf13194ecb0137cea6bc7830496f27125a"
+        },
+        {
+          "event_id": "COR0203-RAPIDAPI-TENNIS-884659-13b81a830bd6",
+          "terminal_status": "FINISHED",
+          "event_final_result": "6-3 7-6(6)",
+          "winner_canonical_name": "Valentin Royer",
+          "settlement_id": "327d69e08cbbeb8a06497139d6a5dde6cf46639418b367cca0ddf6e98712c418",
+          "settled_at_utc": "2026-10-28T00:28:25+00:00",
+          "result_source_provider": "rapidapi_tennis",
+          "source_commit": "c3c1acdf13194ecb0137cea6bc7830496f27125a"
+        }
+      ],
+      "blocked_current": 12,
+      "pending_current": 32
+    },
+    "physical_uniqueness": {
+      "result": "PASS",
+      "ledger_records": 411,
+      "settled_unique_canonical_events": 358,
+      "settled_duplicate_alias_records": 53,
+      "duplicate_observations_quarantined": 171,
+      "unique_calibration_observations": 402,
+      "metrics_opened": false
+    }
+  },
+  "governance": {
+    "settlement_final_only": true,
+    "metrics_opened": false,
+    "parameter_tuning_allowed": false,
+    "odds_to_p": "PROHIBITED_NOT_EXECUTED",
+    "automatic_wagering": false,
+    "real_money": "BLOCKED",
+    "no_backfill": true
+  },
+  "limitations": [
+    "New 3 football FT and 2 tennis FINISHED already committed by governed production processes; no duplicate settlement executed.",
+    "107/116 original football closures inherited from previous audited snapshot; current blocked/pending status and disjoint new IDs independently checked.",
+    "Canonical football tracker remains stale and was not overwritten manually.",
+    "No direct live provider API invocation; result evidence originates in governed repository records and commit diffs."
+  ]
+}
