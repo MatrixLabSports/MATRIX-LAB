@@ -75,12 +75,30 @@ jobs:
           set -euo pipefail
           git config user.name matrix-clv-casas-elite
           git config user.email matrix-clv-casas-elite@users.noreply.github.com
+
+          # The telemetry audit is rebuilt for verification only in this workflow.
+          # It has its own canonical writer, so never carry its generated diff into
+          # this diagnostic commit/rebase.
+          git restore --worktree -- evidence/notifications/telegram/MATRIX_TELEGRAM_QUOTE_ATTEMPT_TELEMETRY_AUDIT_LAST.json || true
+
+          unexpected="$(git diff --name-only | grep -v '^evidence/notifications/telegram/MATRIX_DIAGNOSTICO_CLV_Y_CASAS_27OCT2026.json
+ || true)"
+          if [ -n "$unexpected" ]; then
+            echo "DIAGNOSTIC_UNEXPECTED_UNSTAGED_CHANGES"
+            printf '%s\n' "$unexpected"
+            exit 1
+          fi
+
           git add evidence/notifications/telegram/MATRIX_DIAGNOSTICO_CLV_Y_CASAS_27OCT2026.json
           if git diff --cached --quiet; then
             echo "NO_DIAGNOSTIC_CHANGE"
+            test -z "$(git diff --name-only)"
             exit 0
           fi
+
           git commit -m "evidence(audit): persist CLV and Colombia-book diagnosis"
+          test -z "$(git diff --name-only)"
+
           for attempt in 1 2 3 4; do
             git fetch origin repair/cor09-world-pipeline
             if ! git rebase origin/repair/cor09-world-pipeline; then
