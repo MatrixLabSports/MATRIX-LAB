@@ -377,3 +377,39 @@ OMEGA PICKS 3X:
 
 ### Verificación pendiente antes de registro/lanzamiento pago
 La búsqueda web es un filtro preliminar, no una autorización marcaria. Antes de registrar o invertir en publicidad se requiere búsqueda formal de antecedentes marcarios en Colombia (SIC/SIPI), disponibilidad de usuarios sociales y dominio.
+
+
+## 16. Identidad visual oficial congelada — OMEGA PICKS
+
+**Estado:** OFFICIAL_VISUAL_IDENTITY_FREEZE — 28-OCT-2026.
+
+### Logo
+Símbolo Ω metálico integrado con una gráfica estadística ascendente.
+
+### Paleta aprobada
+- Azul Omega: `#007BFF`.
+- Grafito: `#0B0D12`.
+- Plata metálica: `#C0C6D1`.
+- Blanco: `#FFFFFF`.
+- Cian energía: `#00D6FF`.
+
+Colores funcionales:
+- Verde valor: `#00C853` — solo estados positivos/valor.
+- Naranja energía: `#FF8A00` — acción/dinamismo.
+- Rojo alerta: `#FF2D2D` — riesgo/alerta/pérdida.
+
+### Mensajes oficiales
+- **Marca:** Los datos hablan. Tú decides.
+- **Campaña:** El deporte se siente. Las decisiones se calculan.
+- **Técnico/comercial:** Analizamos datos. Buscamos valor.
+
+### Activos canónicos
+- `config/OMEGA_PICKS_BRAND_SYSTEM.json`
+- `docs/OMEGA_PICKS_BRAND_BOOK_V1.md`
+- `assets/brand/omega_picks/omega_picks_primary.svg`
+- `assets/brand/omega_picks/omega_picks_avatar.svg`
+- `assets/brand/omega_picks/omega_picks_monochrome.svg`
+- `tools/omega_picks_brand_guard.py`
+- `tests/test_omega_picks_brand_guard.py`
+
+La identidad no puede cambiar por preferencia aislada sin actualizar el sistema, el guard y la evidencia.
