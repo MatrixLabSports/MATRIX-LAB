@@ -106,3 +106,20 @@ def test_reconcile_accepts_scoped_flashscore_calendar_row_capture():
     assert out["status"]=="PASS_OPEN_RECONCILIATION"
     assert out["source_counts"]["flashscore"]==1
     assert out["policy"]["flashscore_calendar_row_scope_enforced"] is True
+
+
+def test_reconcile_normalizes_napoles_napoli_alias():
+    sofa={
+      "target_date_bogota":"2026-10-28",
+      "observations":[
+        "28/10/26 14:45 Monza Monza SSC Napoli Napoli 1 4.33 X 3.90 2 1.75",
+      ],
+    }
+    flash={
+      "target_date_bogota":"2026-10-28",
+      "observations":["Monza - Nápoles"],
+    }
+    out=reconcile(sofa,flash,datetime(2026,10,28,3,30,tzinfo=timezone.utc))
+    assert out["reconciliation"]["confirmed_both"]==1
+    assert out["reconciliation"]["sofascore_only"]==0
+    assert out["reconciliation"]["flashscore_only"]==0
