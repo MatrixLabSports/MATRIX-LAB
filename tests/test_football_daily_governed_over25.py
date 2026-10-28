@@ -63,3 +63,19 @@ def test_probability_cycle_prefers_governed_league_raw_coverage(tmp_path):
     (governed/"history"/"raw"/"league_78_season_2026.bin").write_text("{}",encoding="utf-8")
     chosen=select_probability_cycle(tmp_path,"2026-10-10",latest)
     assert chosen==governed
+
+
+def test_ev_policy_uses_full_governed_colombia_execution_catalog():
+    from app.market.colombia_bookmakers import EXECUTION_BOOKMAKERS
+    from tools.football_daily_governed_over25 import POLICY, DIAGNOSTIC
+    assert set(POLICY)==set(EXECUTION_BOOKMAKERS)
+    assert len(POLICY)==14
+    assert "pinnacle" not in POLICY
+    assert DIAGNOSTIC=={"pinnacle":["pinnacle"]}
+
+
+def test_ev_policy_preserves_execution_aliases():
+    from app.market.colombia_bookmakers import EXECUTION_BOOKMAKERS
+    from tools.football_daily_governed_over25 import POLICY
+    for key, aliases in EXECUTION_BOOKMAKERS.items():
+        assert tuple(POLICY[key])==tuple(aliases)
