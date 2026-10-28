@@ -760,3 +760,30 @@ El Browser Connector disponible puede listar pestañas, leer árboles de accesib
 `evidence/governance/MATRIX_QUOTE_RECOVERY_ACTUATOR_PHYSICAL_READINESS_20261028.json`
 
 En el audit de referencia había 10 candidatos esperando abrir T-120. No existía todavía un candidato RECOVERABLE_WHILE_PREMATCH en ese corte, por lo que no se declara ejecución real post-fix ni certificación de cero pérdidas hasta observar un ciclo prospectivo.
+
+
+## 24. Automatización browser con GitHub Actions self-hosted
+
+Se incorpora el rol **Principal Browser Automation & Self-Hosted Runner Engineer**. El Comité Élite queda en 37 roles.
+
+Arquitectura aprobada:
+- Windows self-hosted runner;
+- label `matrix-browser-odds`;
+- workflow de captura cada 5 minutos en `main`;
+- checkout de la rama operativa;
+- Opera/Chromium dedicado con CDP;
+- Playwright `connect_over_cdp`;
+- supervisor Telegram mantiene 15 minutos;
+- lectura/captura de cuotas únicamente, sin apuestas automáticas.
+
+Archivos canónicos:
+- `config/MATRIX_SELF_HOSTED_BROWSER_AUTOMATION.json`
+- `config/MATRIX_BROWSER_BOOKMAKER_ADAPTERS.json`
+- `tools/windows/start_matrix_browser_cdp.ps1`
+- `tools/matrix_selfhosted_browser_health.py`
+- `tools/matrix_selfhosted_browser_quote_collector.py`
+- `.github/workflows/matrix-selfhosted-browser-quotes-5m.yml`
+- `docs/MATRIX_SELF_HOSTED_BROWSER_RUNNER_SETUP_20261028.md`
+- `evidence/governance/MATRIX_SELF_HOSTED_BROWSER_AUTOMATION_READINESS_20261028.json`
+
+Estado: código y workflow persistidos; falta la acción administrativa única de registrar el runner Windows y certificar selectores exactos por bookmaker. Raw browser capture nunca equivale a cuota de ejecución sin adaptador certificado.
