@@ -1,0 +1,188 @@
+{
+  "schema": "MATRIX_42_MARKET_ELITE_CALIBRATION_CLOSURE_V1",
+  "source_head": "409cd106711a0b4e54c843f74e278bb81acf996a",
+  "source_head_committer_utc": "2026-10-28T06:15:45Z",
+  "committee_roles": [
+    "CALIBRATION_MODELING",
+    "TEMPORAL_INTEGRITY",
+    "MARKET_PRICE_MAPPING",
+    "CLV_RISK",
+    "QA_REGRESSION",
+    "EVIDENCE_AUDIT"
+  ],
+  "governance": {
+    "parameter_refit": false,
+    "parameter_search": false,
+    "automatic_wagering": false,
+    "real_money": "BLOCKED",
+    "odds_used_to_generate_probability": false,
+    "promotion_is_not_implied_by_calibration": true
+  },
+  "portfolio": {
+    "total_lanes": 42,
+    "football_lanes": 30,
+    "tennis_lanes": 12,
+    "lanes_at_600": 13,
+    "lanes_with_any_valid_prospective": 16,
+    "ledger_rows_total": 8797
+  },
+  "checkpoint_4000": {
+    "MATCH_RESULT_1X2": {
+      "eligible_rows": 4000,
+      "accuracy": 0.5155,
+      "brier_score": 0.602818370280716,
+      "log_loss": 1.0114527963993976,
+      "macro_ece": 0.03560244399113998,
+      "status": "MEASURED_NOT_SIGNAL_PROMOTED"
+    },
+    "DOUBLE_CHANCE_1X": {
+      "eligible_rows": 4000,
+      "brier_score": 0.19847453931124642,
+      "log_loss": 0.5817436339044746,
+      "ece": 0.04397536667546349,
+      "mean_predicted_probability": 0.6406275252938748,
+      "observed_positive_rate": 0.6845,
+      "status": "MEASURED_NOT_SIGNAL_PROMOTED"
+    },
+    "DOUBLE_CHANCE_X2": {
+      "eligible_rows": 4000,
+      "brier_score": 0.22986123296450106,
+      "log_loss": 0.6519000060167605,
+      "ece": 0.019533549449257216,
+      "mean_predicted_probability": 0.5429308229420947,
+      "observed_positive_rate": 0.53925,
+      "status": "MEASURED_NOT_SIGNAL_PROMOTED"
+    },
+    "OVER_2_5": {
+      "eligible_rows": 4000,
+      "brier_score": 0.23933408295111208,
+      "log_loss": 0.6718171180059201,
+      "ece": 0.03380969153899172,
+      "mean_predicted_probability": 0.5540363200380529,
+      "observed_positive_rate": 0.57225,
+      "status": "SIGNAL_AUTHORIZED"
+    },
+    "UNDER_2_5": {
+      "eligible_rows": 4000,
+      "brier_score": 0.23933408295111208,
+      "log_loss": 0.6718171180059201,
+      "ece": 0.0338096915389917,
+      "mean_predicted_probability": 0.445963679961947,
+      "observed_positive_rate": 0.42775,
+      "status": "MEASURED_NOT_SIGNAL_PROMOTED"
+    }
+  },
+  "period_goals_walk_forward": {
+    "model": "PERIOD_TEAM_POISSON_PIT_V1",
+    "mode": "RESEARCH_WALK_FORWARD_SHADOW",
+    "observations": 3177,
+    "production_authorized": false,
+    "metrics": {
+      "first_half_away_team_over_0_5": {
+        "brier": 0.2440335808
+      },
+      "first_half_home_team_over_0_5": {
+        "brier": 0.248141817
+      },
+      "first_half_over_0_5": {
+        "brier": 0.2140348321
+      },
+      "first_half_over_1_5": {
+        "brier": 0.2215163338
+      },
+      "second_half_away_team_over_0_5": {
+        "brier": 0.2485051026
+      },
+      "second_half_home_team_over_0_5": {
+        "brier": 0.2473736465
+      },
+      "second_half_over_0_5": {
+        "brier": 0.1809721408
+      },
+      "second_half_over_1_5": {
+        "brier": 0.2409850694
+      }
+    },
+    "status": "MEASURED_RESEARCH_ONLY_NO_PROMOTION"
+  },
+  "double_chance_12": {
+    "n": 746,
+    "challenger_brier": 0.15350662529754275,
+    "poisson_brier": 0.15352444472342996,
+    "delta_brier": -0.000017819425887216633,
+    "challenger_log_loss": 0.4895897026641347,
+    "poisson_log_loss": 0.4866088588108847,
+    "delta_log_loss": 0.0029808438532499815,
+    "blocker": "CHALLENGER_LOG_LOSS_WORSE_THAN_POISSON",
+    "status": "NOT_PROMOTED_DIAGNOSTIC_ONLY"
+  },
+  "prospective_only_not_yet_dedicated_calibration": {
+    "TEAM_TOTAL_GOALS_HOME": {
+      "prospective_unique_count": 627,
+      "reason": "NO_DEDICATED_OUTCOME_METRIC_ARTIFACT_FOUND"
+    },
+    "TEAM_TOTAL_GOALS_AWAY": {
+      "prospective_unique_count": 627,
+      "reason": "NO_DEDICATED_OUTCOME_METRIC_ARTIFACT_FOUND"
+    }
+  },
+  "oos": {
+    "current": 796,
+    "target": 1000,
+    "remaining": 204,
+    "metrics_opened": false
+  },
+  "over25_promotion_basis": {
+    "final_holdout_357_passed": true,
+    "global_strength_n": 2242,
+    "global_strength_class": "STRONG",
+    "prospective_checkpoint_200_passed": true,
+    "physical_unique_fixture_ids": 2600,
+    "promotion_status": "PASS_PROMOTED_GOVERNED_P_MATRIX_SIGNAL_ONLY"
+  },
+  "adjudication": {
+    "calibrated_or_measured_now": [
+      "MATCH_RESULT_1X2",
+      "OVER_2_5",
+      "UNDER_2_5",
+      "DOUBLE_CHANCE_1X",
+      "DOUBLE_CHANCE_X2",
+      "FIRST_HALF_TOTAL_GOALS_OVER_UNDER",
+      "SECOND_HALF_TOTAL_GOALS_OVER_UNDER",
+      "FIRST_HALF_TEAM_TOTAL_GOALS_HOME",
+      "FIRST_HALF_TEAM_TOTAL_GOALS_AWAY",
+      "SECOND_HALF_TEAM_TOTAL_GOALS_HOME",
+      "SECOND_HALF_TEAM_TOTAL_GOALS_AWAY"
+    ],
+    "signal_authorized": [
+      "OVER_2_5"
+    ],
+    "research_only_due_to_promotion_or_execution_gates": [
+      "MATCH_RESULT_1X2",
+      "UNDER_2_5",
+      "DOUBLE_CHANCE_1X",
+      "DOUBLE_CHANCE_X2",
+      "FIRST_HALF_TOTAL_GOALS_OVER_UNDER",
+      "SECOND_HALF_TOTAL_GOALS_OVER_UNDER",
+      "FIRST_HALF_TEAM_TOTAL_GOALS_HOME",
+      "FIRST_HALF_TEAM_TOTAL_GOALS_AWAY",
+      "SECOND_HALF_TEAM_TOTAL_GOALS_HOME",
+      "SECOND_HALF_TEAM_TOTAL_GOALS_AWAY"
+    ],
+    "not_promotable": [
+      "DOUBLE_CHANCE_12"
+    ],
+    "pending_dedicated_calibration": [
+      "TEAM_TOTAL_GOALS_HOME",
+      "TEAM_TOTAL_GOALS_AWAY"
+    ]
+  },
+  "sources": [
+    "evidence/api_football/calibration_v2/CHECKPOINT_4000_MARKET_CALIBRATION_20261023.json",
+    "evidence/api_football/period_goals_lab/MATRIX_PERIOD_GOALS_LAB_LAST.json",
+    "evidence/api_football/calibration_v2/baseline/double_chance_12.json",
+    "evidence/api_football/governance/over_2_5_p_matrix_promotion.json",
+    "evidence/api_football/calibration_v2/OOS_4001_5000_STATE.json",
+    "evidence/market_portfolio/MATRIX_42_LANE_PROSPECTIVE_REGISTRY_LAST.json"
+  ]
+}
