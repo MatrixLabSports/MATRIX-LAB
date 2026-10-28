@@ -15,7 +15,7 @@ DEFAULT_SUPERVISOR = Path("evidence/market_portfolio/MATRIX_MULTI_MARKET_SUPERVI
 DEFAULT_INBOX = Path("evidence/market_portfolio/MATRIX_42_LANE_FREEZE_INBOX.jsonl")
 DEFAULT_LEDGER = Path("evidence/market_portfolio/MATRIX_42_LANE_PROSPECTIVE_LEDGER.jsonl")
 DEFAULT_STATE = Path("evidence/market_portfolio/MATRIX_42_LANE_PROSPECTIVE_REGISTRY_LAST.json")
-FOOTBALL_FIXTURES = Path("evidence/api_football/fixtures/future_fixture_registry.json")
+LEGACY_FOOTBALL_FIXTURES = Path("evidence/api_football/fixtures/future_fixture_registry.json")
 
 
 def _canonical(value: Any) -> bytes:
@@ -151,10 +151,37 @@ def _gate(count: int) -> dict[str, Any]:
     }
 
 
+def _latest_football_fixture_registry(now_utc: datetime) -> tuple[Path | None, str]:
+    bogota = ZoneInfo("America/Bogota")
+    day = now_utc.astimezone(bogota).date().isoformat()
+    base = Path("evidence/api_football/prospective_daily") / day
+    candidates: list[Path] = []
+    if base.exists():
+        for cycle in sorted(p for p in base.iterdir() if p.is_dir()):
+            path = cycle / "fixtures" / "future_fixture_registry.json"
+            if path.exists():
+                candidates.append(path)
+    if candidates:
+        return candidates[-1], "LATEST_SAME_DAY_PROSPECTIVE_CYCLE"
+    if LEGACY_FOOTBALL_FIXTURES.exists():
+        return LEGACY_FOOTBALL_FIXTURES, "LEGACY_FALLBACK"
+    return None, "MISSING"
+
+
 def _football_inventory(now_utc: datetime) -> dict[str, Any]:
-    if not FOOTBALL_FIXTURES.exists():
-        return {"available": False, "event_count": 0, "future_event_count_now": 0, "captured_at_utc": None}
-    data = _load_json(FOOTBALL_FIXTURES)
+    source, source_mode = _latest_football_fixture_registry(now_utc)
+    if source is None:
+        return {
+            "available": False,
+            "source_path": None,
+            "source_mode": source_mode,
+            "event_count": 0,
+            "future_event_count_now": 0,
+            "captured_at_utc": None,
+            "source_usable_for_new_freeze_now": False,
+            "blocker": "NO_FOOTBALL_FIXTURE_REGISTRY_AVAILABLE",
+        }
+    data = _load_json(source)
     events = [x for x in (data.get("events") or []) if isinstance(x, Mapping)]
     future_now = 0
     latest_start = None
@@ -174,17 +201,25 @@ def _football_inventory(now_utc: datetime) -> dict[str, Any]:
         captured_age_hours = round((now_utc - captured_dt).total_seconds() / 3600.0, 3)
     except (TypeError, ValueError):
         pass
+    stale = captured_age_hours is None or captured_age_hours > 6.0
+    usable = future_now > 0 and not stale
+    blocker = None
+    if stale:
+        blocker = "FOOTBALL_INVENTORY_STALE_GT_6H"
+    elif future_now <= 0:
+        blocker = "NO_FUTURE_EVENTS_IN_PERSISTED_FOOTBALL_INVENTORY"
     return {
         "available": True,
+        "source_path": source.as_posix(),
+        "source_mode": source_mode,
         "event_count": len(events),
         "future_event_count_now": future_now,
         "captured_at_utc": captured,
         "captured_age_hours": captured_age_hours,
         "latest_event_start_utc": latest_start.isoformat() if latest_start else None,
-        "source_usable_for_new_freeze_now": future_now > 0,
-        "blocker": None if future_now > 0 else "NO_FUTURE_EVENTS_IN_PERSISTED_FOOTBALL_INVENTORY",
+        "source_usable_for_new_freeze_now": usable,
+        "blocker": blocker,
     }
-
 
 def _tennis_day_audit(day: str) -> dict[str, Any]:
     path = Path("evidence/tennis_world_inventory") / day / "world_exact_day_dual_audit.json"
