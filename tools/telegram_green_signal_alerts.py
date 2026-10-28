@@ -597,6 +597,8 @@ def odds_api_net_exact_over25_offer(
     api_football_key: str,
     diagnostic: dict[str, Any] | None = None,
     required_house_key: str | None = None,
+    *,
+    candidate_match: Any = None,
 ) -> dict[str, Any] | None:
     key = str(odds_api_key or "").strip()
     kickoff_dt = parse_dt(kickoff)
@@ -634,13 +636,26 @@ def odds_api_net_exact_over25_offer(
     if diagnostic is not None:
         diagnostic["fixture_lookup_payload_sha256"] = hashlib.sha256(json.dumps(fp,sort_keys=True,separators=(",",":"),ensure_ascii=False).encode("utf-8")).hexdigest()
     rows = fp.get("response", []) if isinstance(fp, dict) else []
-    if fr.status_code >= 300 or not rows:
+    home = ""
+    away = ""
+    if fr.status_code < 300 and rows:
+        row = rows[0]
+        home = str(((row.get("teams") or {}).get("home") or {}).get("name") or "")
+        away = str(((row.get("teams") or {}).get("away") or {}).get("name") or "")
         if diagnostic is not None:
-            diagnostic["status"] = "BLOCKED_FIXTURE_LOOKUP"
-        return None
-    row = rows[0]
-    home = str(((row.get("teams") or {}).get("home") or {}).get("name") or "")
-    away = str(((row.get("teams") or {}).get("away") or {}).get("name") or "")
+            diagnostic["fixture_identity_source"] = "API_FOOTBALL"
+    else:
+        parts = re.split(r"\s+vs\.?\s+", str(candidate_match or "").strip(), maxsplit=1, flags=re.IGNORECASE)
+        if len(parts) == 2 and all(x.strip() for x in parts):
+            home, away = parts[0].strip(), parts[1].strip()
+            if diagnostic is not None:
+                diagnostic["fixture_identity_source"] = "CANDIDATE_PREREGISTERED_MATCH_FALLBACK"
+                diagnostic["api_football_fixture_lookup_status"] = "FAILED_FALLBACK_USED"
+        else:
+            if diagnostic is not None:
+                diagnostic["status"] = "BLOCKED_FIXTURE_LOOKUP"
+                diagnostic["api_football_fixture_lookup_status"] = "FAILED_NO_SAFE_FALLBACK"
+            return None
     start = int(kickoff_dt.timestamp())
     search_params = {
         "sport": "soccer",
@@ -2457,6 +2472,7 @@ def main() -> None:
             float(candidate["p_matrix"]),
             api_key,
             odds_api_net_diagnostic,
+            candidate_match=candidate.get("match"),
         )
         physical_offer = physical_book_over25_offer(
             str(candidate["fixture_id"]),
@@ -2946,6 +2962,7 @@ def main() -> None:
             api_key,
             correction_diag,
             required_house_key,
+            candidate_match=c.get("match"),
         )
         comparable = [x for x in (primary_offer, fallback_offer) if isinstance(x, dict)]
         offer = max(comparable, key=lambda x: float(x.get("ev") or -999.0)) if comparable else None
