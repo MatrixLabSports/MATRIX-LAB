@@ -87,6 +87,9 @@ jobs:
           assert j["policy"]["source_order"]==["SOFASCORE","FLASHSCORE","APIS"]
           assert j["policy"]["confirmed_identity_does_not_equal_time_certification"] is True
           assert j["policy"]["no_freeze_from_single_source_time"] is True
+          assert j["policy"]["flashscore_temporal_exact_name_required"] is True
+          assert j["policy"]["flashscore_temporal_single_time_required"] is True
+          assert j["policy"]["postponed_original_time_is_not_active_kickoff"] is True
           assert j["policy"]["automatic_wagering"] is False
           assert j["policy"]["real_money"]=="BLOCKED"
           print(json.dumps({"counts":j["counts"],"target_date_bogota":j["target_date_bogota"]},sort_keys=True))
@@ -106,6 +109,7 @@ jobs:
           assert j["policy"]["browser_event_survives_api_absence"] is True
           assert j["policy"]["preregistration_does_not_equal_freeze"] is True
           assert j["policy"]["preregistration_does_not_create_p_matrix"] is True
+          assert j["policy"]["postponed_event_not_prospective"] is True
           assert j["policy"]["odds_used"] is False
           assert j["policy"]["automatic_wagering"] is False
           assert j["policy"]["real_money"]=="BLOCKED"
