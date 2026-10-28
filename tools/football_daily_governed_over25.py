@@ -14,12 +14,9 @@ import requests
 from tools.api_football_canonicalize_analysis_inputs import load_chunked_canonical_bundle
 from tools.api_football_market_shadow_p_matrix import PARAMS_OVER25, build_shadow_p_matrix
 from tools.api_football_group_history_capture import PRIORITY_LEAGUE_IDS
+from app.market.colombia_bookmakers import EXECUTION_BOOKMAKERS
 
-POLICY = {
-    "betano": ["betano"],
-    "betplay": ["betplay"],
-    "rushbet": ["rushbet", "rush bet"],
-}
+POLICY = {key: list(aliases) for key, aliases in EXECUTION_BOOKMAKERS.items()}
 DIAGNOSTIC = {"pinnacle": ["pinnacle"]}
 
 
@@ -465,7 +462,7 @@ def build(target_date: str, api_key: str, root: Path = Path(".")) -> dict[str, A
         "signal_generation_authorized": governance["signal_generation_authorized"],
         "governance_resolution": governance,
         "exact_market_binding": {"bet_id": 5, "bet_name": "Goals Over/Under", "value": "Over 2.5"},
-        "policy_houses": ["Betano", "BetPlay", "RushBet"],
+        "policy_houses": sorted(POLICY),
         "diagnostic_only": ["Pinnacle"],
         "minimum_decimal_odds_exclusive": 1.50,
         "ev_formula": "P_MATRIX * DECIMAL_ODDS - 1",
@@ -492,7 +489,9 @@ def build(target_date: str, api_key: str, root: Path = Path(".")) -> dict[str, A
             "physical_house_crosscheck_required": True,
             "entry_quote_timestamp_and_hash_required_for_clv": True,
             "historical_rows_without_entry_quote_timestamp_are_not_backfilled_into_clv": True,
-            "house_selection_policy": "COMPARE_BETANO_BETPLAY_RUSHBET_AND_SELECT_BEST_VALID_EXACT_MARKET_OFFER",
+            "house_selection_policy": "COMPARE_ALL_GOVERNED_COLOMBIA_EXECUTION_BOOKS_AND_SELECT_BEST_VALID_EXACT_MARKET_OFFER",
+            "execution_book_catalog_source": "app.market.colombia_bookmakers.EXECUTION_BOOKMAKERS",
+            "execution_book_count": len(POLICY),
             "automatic_wagering": False,
             "real_money": "BLOCKED",
         },
@@ -549,7 +548,7 @@ def main() -> None:
         assert best["bet_id"] == 5
         assert best["bet_name"] == "Goals Over/Under"
         assert best["label"] == "Over 2.5"
-        assert best["house_key"] in {"betano", "betplay", "rushbet"}
+        assert best["house_key"] in set(POLICY)
 
 
 if __name__ == "__main__":
