@@ -302,39 +302,44 @@ MATRIX no pasa a lanzamiento hasta tener PASS en:
 La prioridad técnica inmediata es cerrar el flujo de publicación Premium y luego construir FREE y STAKAZO 3X sobre la misma infraestructura auditada, manteniendo seguridad y membresías como capas transversales.
 
 
-## 15. Marca pública y adquisición — FIERO PICKS
+## 15. Marca pública y adquisición — OMEGA PICKS
 
 ### Decisión de naming
-La marca pública seleccionada por el comité de Naming, Brand Strategy, Sports Marketing, Diseño, Dirección de Arte y Color es **FIERO PICKS**.
+La marca pública seleccionada por el comité de Naming, Brand Strategy, Sports Marketing, Diseño, Dirección de Arte y Color es **OMEGA PICKS**.
 
 MATRIX permanece como nombre interno del motor tecnológico y de gobierno. No se utiliza como marca comercial principal ante el público.
 
 ### Arquitectura de marca
-- TikTok: **FIERO PICKS**.
-- Telegram público: **FIERO PICKS FREE**.
-- Telegram privado: **FIERO PICKS PREMIUM**.
-- Producto 3X: **FIERO PICKS 3X**.
+- TikTok: **OMEGA PICKS**.
+- Telegram público: **OMEGA PICKS FREE**.
+- Telegram privado: **OMEGA PICKS PREMIUM**.
+- Producto 3X: **OMEGA PICKS 3X**.
 
-### Razones de selección
-- Fácil de pronunciar en español.
-- Dos palabras cortas.
-- “Picks” explica inmediatamente la categoría.
-- “Fiero” comunica carácter, intensidad y energía competitiva.
-- Permite un símbolo propio sin depender de balones, trofeos o iconografía genérica de apuestas.
-- Funciona como avatar, watermark, tarjeta y marca audiovisual.
+### Jerarquía de mensajes
+**Slogan principal de marca:**  
+**Los datos hablan. Tú decides.**
+
+**Frase de campaña/publicidad:**  
+**El deporte se siente. Las decisiones se calculan.**
+
+**Mensaje técnico/comercial secundario:**  
+**Analizamos datos. Buscamos valor.**
+
+### Principio de comunicación
+OMEGA PICKS no se posiciona como una marca de intuición o corazonadas. Su propuesta pública se apoya en análisis estadístico, probabilidades, cuotas, valor esperado, calibración y control de riesgo. Ningún mensaje puede prometer resultado favorable, ganancia segura o certeza.
 
 ### Sistema visual
-Dirección principal: monograma **F** angular con sensación de avance/velocidad.
+Dirección principal: símbolo **Ω** angular, fuerte y reconocible, con sensación de movimiento/avance, usable como avatar y watermark.
 
-Paleta:
+Paleta propuesta:
 - Grafito: `#0B0D10`.
-- Naranja eléctrico: `#FF5A1F`.
+- Azul cobalto eléctrico: `#146BFF`.
 - Blanco: `#FFFFFF`.
 
-Criterio de colorimetría: alto contraste para móvil, energía sin usar el verde típico de apuestas, carácter deportivo y lectura fuerte sobre fondos oscuros. El logo debe funcionar también en una sola tinta.
+Criterio de colorimetría: contraste alto, estética sports-tech, precisión y confianza sin depender de los códigos visuales típicos de casas de apuestas. El logo debe funcionar también en una sola tinta.
 
 ### MATRIX ACQUISITION FUNNEL
-**TikTok → FIERO PICKS FREE → FIERO PICKS PREMIUM → FIERO PICKS 3X**
+**TikTok → OMEGA PICKS FREE → OMEGA PICKS PREMIUM → OMEGA PICKS 3X**
 
 TikTok:
 - máximo 1 pick gratuito diario;
@@ -353,7 +358,7 @@ Premium:
 - objetivo 6–10 picks/día sujeto a gates;
 - membresía semanal/mensual.
 
-FIERO PICKS 3X:
+OMEGA PICKS 3X:
 - producto separado;
 - máximo 30 cupos;
 - política A/B/C ya definida.
