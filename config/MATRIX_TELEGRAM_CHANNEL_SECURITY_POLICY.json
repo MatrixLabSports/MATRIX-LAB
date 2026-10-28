@@ -1,0 +1,30 @@
+{
+  "schema": "MATRIX_TELEGRAM_CHANNEL_SECURITY_POLICY_V1",
+  "channels": {
+    "FREE": {"visibility":"PRIVATE","join_request_required":true,"protect_content":true,"external_bots_allowed":false},
+    "PREMIUM": {"visibility":"PRIVATE","join_request_required":true,"protect_content":true,"external_bots_allowed":false},
+    "STAKAZO": {"visibility":"PRIVATE","join_request_required":true,"protect_content":true,"external_bots_allowed":false}
+  },
+  "bot_policy": {
+    "allowlist_only": true,
+    "official_matrix_bot_only_by_default": true,
+    "minimum_admin_permissions": true,
+    "third_party_ai_agents_allowed": false,
+    "third_party_connectors_allowed": false
+  },
+  "delivery": {
+    "bot_api_protect_content_required": true,
+    "watermark_required_for_premium_and_stakazo": true,
+    "opaque_fingerprint_required": true
+  },
+  "access": {
+    "per_customer_or_expiring_invite_links": true,
+    "automatic_expiry_enforcement": true,
+    "membership_ledger_required": true
+  },
+  "technical_limits": [
+    "Telegram content protection reduces forwarding, screenshots and media saving but cannot prevent an authorized viewer from using another device to photograph or manually transcribe content.",
+    "A public FREE channel cannot credibly guarantee exclusion of external scrapers; therefore FREE is private under this policy.",
+    "Bot API cannot enumerate every ordinary channel subscriber for arbitrary bot detection; security is enforced primarily through private access, join approval and administrator allowlisting."
+  ]
+}
