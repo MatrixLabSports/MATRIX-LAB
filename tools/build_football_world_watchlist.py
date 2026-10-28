@@ -78,11 +78,33 @@ def _display_time_dt(target_date_bogota:str,display_time:str)->datetime|None:
         return None
 
 
-def build(recon:Mapping[str,Any],generated_at:datetime|None=None,flashscore_temporal:Mapping[str,Any]|None=None)->dict[str,Any]:
+def _flash_postponed_map(postponed:Mapping[str,Any]|None,target_date_bogota:str)->dict[str,dict[str,Any]]:
+    if postponed is None:
+        return {}
+    if postponed.get("schema")!="MATRIX_OPERA_FLASHSCORE_POSTPONED_DETAIL_CAPTURE_V1":
+        raise ValueError("FLASHSCORE_POSTPONED_SCHEMA_MISMATCH")
+    if str(postponed.get("target_date_bogota") or "")!=target_date_bogota:
+        raise ValueError("FLASHSCORE_POSTPONED_TARGET_DATE_MISMATCH")
+    policy=postponed.get("policy")
+    if not isinstance(policy,Mapping) or policy.get("postponed_original_time_is_not_active_kickoff") is not True:
+        raise ValueError("FLASHSCORE_POSTPONED_POLICY_REQUIRED")
+    out:dict[str,dict[str,Any]]={}
+    for row in postponed.get("observations") or []:
+        if not isinstance(row,Mapping):
+            continue
+        name=str(row.get("flashscore_observation") or "").strip()
+        if not name or str(row.get("status") or "").upper()!="APLAZADO":
+            continue
+        out[name]=dict(row)
+    return out
+
+
+def build(recon:Mapping[str,Any],generated_at:datetime|None=None,flashscore_temporal:Mapping[str,Any]|None=None,flashscore_postponed:Mapping[str,Any]|None=None)->dict[str,Any]:
     if recon.get("status")!="PASS_OPEN_RECONCILIATION":
         raise ValueError("RECONCILIATION_NOT_PASS")
     target_date=str(recon.get("target_date_bogota") or "")
     flash_times=_flash_temporal_map(flashscore_temporal,target_date)
+    flash_postponed=_flash_postponed_map(flashscore_postponed,target_date)
     confirmed=[]
     for row in recon.get("confirmed_both") or []:
         if not isinstance(row,Mapping):
@@ -112,7 +134,7 @@ def build(recon:Mapping[str,Any],generated_at:datetime|None=None,flashscore_temp
             "kickoff_display_bogota":start.isoformat() if start else None,
             "flashscore_display_time_bogota":flash_dt.isoformat() if flash_dt else None,
             "temporal_crosscheck_status":temporal_crosscheck,
-            "status":"CONFIRMED_BOTH_IDENTITY",
+            "status":"CONFIRMED_BOTH_POSTPONED" if postponed else "CONFIRMED_BOTH_IDENTITY",
             "eligible_for_monitoring":True,
             "eligible_for_freeze":False,
             "freeze_blocker":"KICKOFF_TIME_NOT_INDEPENDENTLY_CERTIFIED_BY_BOTH_SOURCES",
@@ -121,14 +143,15 @@ def build(recon:Mapping[str,Any],generated_at:datetime|None=None,flashscore_temp
     for row in recon.get("sofascore_only") or []:
         raw=str(row.get("sofascore") or "")
         start=_parse_sofa_time(raw,str(recon.get("target_date_bogota") or ""))
+        sofa_postponed=("Aplazado" in raw or "Cancelado" in raw)
         sofa_only.append({
             "sofascore_observation":raw,
             "source_count":1,
             "kickoff_display_bogota":start.isoformat() if start else None,
-            "status":"SOFASCORE_ONLY_OPEN_RECONCILIATION",
+            "status":"SOFASCORE_ONLY_POSTPONED" if sofa_postponed else "SOFASCORE_ONLY_OPEN_RECONCILIATION",
             "eligible_for_monitoring":True,
             "eligible_for_freeze":False,
-            "freeze_blocker":"SECOND_SOURCE_IDENTITY_CONFIRMATION_REQUIRED",
+            "freeze_blocker":"POSTPONED_NO_ACTIVE_KICKOFF" if sofa_postponed else "SECOND_SOURCE_IDENTITY_CONFIRMATION_REQUIRED",
         })
     flash_only=[]
     for row in (recon.get("flashscore_only") or []):
@@ -137,15 +160,17 @@ def build(recon:Mapping[str,Any],generated_at:datetime|None=None,flashscore_temp
         name=str(row.get("flashscore") or "")
         display_time=flash_times.get(name)
         display_dt=_display_time_dt(target_date,display_time) if display_time else None
+        postponed_row=flash_postponed.get(name)
         flash_only.append({
             "flashscore_observation":row.get("flashscore"),
             "source_count":1,
-            "kickoff_display_bogota":display_dt.isoformat() if display_dt else None,
-            "temporal_source":"FLASHSCORE_OPERA_EXACT_SINGLE_DISPLAY_TIME" if display_dt else None,
-            "status":"FLASHSCORE_ONLY_OPEN_RECONCILIATION",
+            "kickoff_display_bogota":None if postponed_row else (display_dt.isoformat() if display_dt else None),
+            "temporal_source":"FLASHSCORE_DETAIL_POSTPONED" if postponed_row else ("FLASHSCORE_OPERA_EXACT_SINGLE_DISPLAY_TIME" if display_dt else None),
+            "postponed_original_datetime":postponed_row.get("displayed_original_datetime") if postponed_row else None,
+            "status":"FLASHSCORE_ONLY_POSTPONED" if postponed_row else "FLASHSCORE_ONLY_OPEN_RECONCILIATION",
             "eligible_for_monitoring":True,
             "eligible_for_freeze":False,
-            "freeze_blocker":"SOFASCORE_IDENTITY_OR_API_RECONCILIATION_REQUIRED",
+            "freeze_blocker":"POSTPONED_NO_ACTIVE_KICKOFF" if postponed_row else "SOFASCORE_IDENTITY_OR_API_RECONCILIATION_REQUIRED",
         })
     ambiguous=[
         {
@@ -171,6 +196,7 @@ def build(recon:Mapping[str,Any],generated_at:datetime|None=None,flashscore_temp
             "monitoring_total":len(confirmed)+len(sofa_only)+len(flash_only)+len(ambiguous),
             "freeze_eligible":0,
             "flashscore_exact_single_display_time":sum(1 for x in flash_only if x.get("kickoff_display_bogota")),
+            "postponed_total":sum(1 for x in confirmed+sofa_only+flash_only if "POSTPONED" in str(x.get("status") or "")),
         },
         "confirmed_both":confirmed,
         "sofascore_only":sofa_only,
@@ -183,6 +209,7 @@ def build(recon:Mapping[str,Any],generated_at:datetime|None=None,flashscore_temp
             "flashscore_temporal_exact_name_required":True,
             "flashscore_temporal_single_time_required":True,
             "postponed_conflict_does_not_certify_time":True,
+            "postponed_original_time_is_not_active_kickoff":True,
             "missing_not_zero":True,
             "no_silent_imputation":True,
             "post_start_backfill_forbidden":True,
@@ -198,9 +225,12 @@ def main()->None:
     p.add_argument("--out",default=str(DEFAULT_OUT))
     a=p.parse_args()
     recon=_load(Path(a.reconciliation))
-    temporal_path=DEFAULT_CALENDAR_ROOT/str(recon.get("target_date_bogota") or "")/"flashscore_opera_temporal_capture.json"
+    day=DEFAULT_CALENDAR_ROOT/str(recon.get("target_date_bogota") or "")
+    temporal_path=day/"flashscore_opera_temporal_capture.json"
+    postponed_path=day/"flashscore_postponed_detail_capture.json"
     temporal=_load(temporal_path) if temporal_path.exists() else None
-    result=build(recon,flashscore_temporal=temporal)
+    postponed=_load(postponed_path) if postponed_path.exists() else None
+    result=build(recon,flashscore_temporal=temporal,flashscore_postponed=postponed)
     out=Path(a.out); out.parent.mkdir(parents=True,exist_ok=True)
     out.write_text(json.dumps(result,indent=2,sort_keys=True,ensure_ascii=False)+"\n",encoding="utf-8")
     print(json.dumps({"status":result["status"],"counts":result["counts"],"real_money":"BLOCKED"},sort_keys=True))
