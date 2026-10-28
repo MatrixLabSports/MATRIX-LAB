@@ -79,7 +79,9 @@ jobs:
           # The telemetry audit is rebuilt for verification only in this workflow.
           # It has its own canonical writer, so never carry its generated diff into
           # this diagnostic commit/rebase.
-          git restore --worktree -- evidence/notifications/telegram/MATRIX_TELEGRAM_QUOTE_ATTEMPT_TELEMETRY_AUDIT_LAST.json || true
+          git restore --worktree -- \
+            evidence/notifications/telegram/MATRIX_TELEGRAM_QUOTE_ATTEMPT_TELEMETRY_AUDIT_LAST.json \
+            evidence/notifications/telegram/MATRIX_TELEGRAM_QUOTE_TELEMETRY_CERTIFICATION_LAST.json || true
 
           unexpected=0
           while IFS= read -r file; do
