@@ -4,6 +4,7 @@ from tools.telegram_green_signal_alerts import (
     ODDS_API_NET_EVENT_SEARCH_WINDOW_SECONDS,
     build_blocker_recovery_audit,
     physical_open_bookmaker_names,
+    odds_api_net_exact_over25_offer,
 )
 
 
@@ -115,3 +116,38 @@ def test_browser_recovery_count_matches_physical_coverage():
     assert len(names) == 12
     assert "YaJuego" not in names
     assert "Zamba" not in names
+
+
+class _FakeResponse:
+    def __init__(self, status_code, payload):
+        self.status_code = status_code
+        self._payload = payload
+    def json(self):
+        return self._payload
+
+class _FixtureLookupFailureThenEmptyOdds:
+    def get(self, url, **kwargs):
+        if "api-sports.io/fixtures" in url:
+            return _FakeResponse(429, {"errors": {"rateLimit": "reached"}, "response": []})
+        if url.endswith("/events"):
+            return _FakeResponse(200, {"items": [], "next_cursor": None})
+        raise AssertionError(url)
+
+def test_odds_identity_falls_back_to_preregistered_candidate_when_api_fixture_lookup_fails():
+    diagnostic = {}
+    offer = odds_api_net_exact_over25_offer(
+        _FixtureLookupFailureThenEmptyOdds(),
+        "key",
+        "1611788",
+        "2026-10-28T10:00:00+00:00",
+        0.6127141456,
+        "api-key",
+        diagnostic,
+        candidate_match="Shakhtar Donetsk U19 vs Livyi Bereh U19",
+    )
+    assert offer is None
+    assert diagnostic["fixture_identity_source"] == "CANDIDATE_PREREGISTERED_MATCH_FALLBACK"
+    assert diagnostic["api_football_fixture_lookup_status"] == "FAILED_FALLBACK_USED"
+    assert diagnostic["identity_source"]["home"] == "Shakhtar Donetsk U19"
+    assert diagnostic["identity_source"]["away"] == "Livyi Bereh U19"
+    assert diagnostic["status"] == "BLOCKED_EVENT_NOT_COVERED"
