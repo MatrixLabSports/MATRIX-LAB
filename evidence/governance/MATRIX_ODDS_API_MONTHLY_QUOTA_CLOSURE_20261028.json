@@ -1,0 +1,88 @@
+{
+  "schema": "MATRIX_ODDS_API_MONTHLY_QUOTA_CLOSURE_V1",
+  "generated_at_utc": "2026-10-28T09:12:00+00:00",
+  "status": "CLOSED_PHYSICALLY_VERIFIED",
+  "original_pending_evidence": "A non-push operational run must persist exact odds-api.net HTTP/code/request-id if provider error recurs.",
+  "operational_run": {
+    "workflow": "Telegram Señales Verdes MATRIX",
+    "run_number": 1512,
+    "run_id": 40661717103,
+    "job_id": 122726109641,
+    "conclusion": "SUCCESS",
+    "event_class": "NON_PUSH_OPERATIONAL",
+    "verified_steps": {
+      "validate_secrets": "SUCCESS",
+      "supervisor_telegram": "SUCCESS",
+      "persist_governed_ledger": "SUCCESS"
+    },
+    "run_at_utc": "2026-10-28T09:08:06+00:00"
+  },
+  "persisted_provider_evidence": {
+    "source_path": "evidence/notifications/telegram/MATRIX_TELEGRAM_BLOCKER_RECOVERY_AUDIT_LAST.json",
+    "source_sha": "531c3891b3bc03e424ea046d5a2499c43028e885",
+    "affected_fixture_count": 3,
+    "records": [
+      {
+        "fixture_id": "1611788",
+        "match": "Shakhtar Donetsk U19 vs Livyi Bereh U19",
+        "gate_state": "BLOCKED_NO_VALID_EXACT_AUTHORIZED_BOOK_OVER25",
+        "missing_or_failed_variable": "ODDS_PROVIDER_RATE_LIMIT",
+        "provider_diagnostic_status": "BLOCKED_EVENT_SEARCH_RATE_LIMIT",
+        "provider_event_search_http_status": 429,
+        "provider_event_search_error_code": null,
+        "provider_event_search_error_detail": "Monthly request quota exceeded",
+        "provider_event_search_request_id": null,
+        "provider_event_search_retry_after_seconds": null,
+        "provider_event_search_rate_limit_remaining": "249",
+        "provider_event_search_rate_limit_bucket": "v1-general-burst"
+      },
+      {
+        "fixture_id": "1611786",
+        "match": "Kolos Kovalivka U19 vs Karpaty Lviv U19",
+        "gate_state": "BLOCKED_NO_VALID_EXACT_AUTHORIZED_BOOK_OVER25",
+        "missing_or_failed_variable": "ODDS_PROVIDER_RATE_LIMIT",
+        "provider_diagnostic_status": "BLOCKED_EVENT_SEARCH_RATE_LIMIT",
+        "provider_event_search_http_status": 429,
+        "provider_event_search_error_code": null,
+        "provider_event_search_error_detail": "Monthly request quota exceeded",
+        "provider_event_search_request_id": null,
+        "provider_event_search_retry_after_seconds": null,
+        "provider_event_search_rate_limit_remaining": "249",
+        "provider_event_search_rate_limit_bucket": "v1-general-burst"
+      },
+      {
+        "fixture_id": "1611787",
+        "match": "LNZ Cherkasy U19 vs Oleksandria U19",
+        "gate_state": "BLOCKED_NO_VALID_EXACT_AUTHORIZED_BOOK_OVER25",
+        "missing_or_failed_variable": "ODDS_PROVIDER_RATE_LIMIT",
+        "provider_diagnostic_status": "BLOCKED_EVENT_SEARCH_RATE_LIMIT",
+        "provider_event_search_http_status": 429,
+        "provider_event_search_error_code": null,
+        "provider_event_search_error_detail": "Monthly request quota exceeded",
+        "provider_event_search_request_id": null,
+        "provider_event_search_retry_after_seconds": null,
+        "provider_event_search_rate_limit_remaining": "249",
+        "provider_event_search_rate_limit_bucket": "v1-general-burst"
+      }
+    ],
+    "canonical_interpretation": {
+      "http_status": 429,
+      "classification": "ODDS_PROVIDER_RATE_LIMIT",
+      "detail": "Monthly request quota exceeded",
+      "request_id": "NOT_RETURNED_BY_PROVIDER",
+      "request_id_persisted_value": null,
+      "retry_after": "NOT_RETURNED_BY_PROVIDER",
+      "evidence_complete_for_available_response_fields": true
+    }
+  },
+  "conclusion": {
+    "previous_uncertainty_removed": true,
+    "telegram_root_cause": false,
+    "fixture_identity_root_cause": false,
+    "exact_cause": "ODDS_API_NET_MONTHLY_REQUEST_QUOTA_EXHAUSTED",
+    "permanent_classification_test_commit": "399aeedd7d1f6b0441fa6e9fb56218f04d76c5ad",
+    "no_gate_relaxed": true,
+    "automatic_wagering": false,
+    "real_money": "BLOCKED"
+  }
+}
