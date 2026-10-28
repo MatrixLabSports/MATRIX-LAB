@@ -343,16 +343,13 @@ jobs:
           D="${{ steps.date.outputs.target_date }}"
           git config user.name "matrix-football-daily"
           git config user.email "matrix-football-daily@users.noreply.github.com"
+          # Persist only artifacts owned by this daily cycle. Shared LAST/catalog/freeze
+          # files are owned by their dedicated workflows and are deliberately excluded
+          # here to prevent cross-workflow rebase conflicts from discarding a valid cycle.
           if [ -d "evidence/api_football/prospective_daily/$D" ]; then git add "evidence/api_football/prospective_daily/$D"; fi
-          if [ -d evidence/api_football/prospective_market_freeze ]; then git add evidence/api_football/prospective_market_freeze; fi
           if [ -d "evidence/api_football/daily_prematch_reports/$D" ]; then git add "evidence/api_football/daily_prematch_reports/$D"; fi
           if [ -f "evidence/football_world_inventory/$D/MATRIX_FOOTBALL_CALIBRATION_ELIGIBILITY.json" ]; then git add "evidence/football_world_inventory/$D/MATRIX_FOOTBALL_CALIBRATION_ELIGIBILITY.json"; fi
-          git add evidence/governance/MATRIX_FOOTBALL_SUBSCRIPTION_DEADLINE_LAST.json
           if [ -f evidence/governance/MATRIX_FOOTBALL_PMATRIX_LINEAGE_AUDIT_LAST.json ]; then git add evidence/governance/MATRIX_FOOTBALL_PMATRIX_LINEAGE_AUDIT_LAST.json; fi
-          git add evidence/api_football/market_expansion/market_binding_catalog.json
-          git add evidence/api_football/market_expansion/priority_market_lab_last.json
-          if [ -d evidence/api_football/provider_failures ]; then git add evidence/api_football/provider_failures; fi
-          git add evidence/market_portfolio/MATRIX_MULTI_MARKET_SUPERVISOR_FOOTBALL_LAST.json
           if git diff --cached --quiet; then
             echo "NO_GOVERNED_DAILY_CHANGE"
             exit 0
