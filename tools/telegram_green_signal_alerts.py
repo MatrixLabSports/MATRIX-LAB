@@ -47,6 +47,7 @@ PHYSICAL_BOOK_QUOTE_ROOT = Path("evidence/football_world_inventory")
 OPERA_BOOKMAKER_COVERAGE = Path("evidence/notifications/telegram/MATRIX_COLOMBIA_BOOKMAKER_OPERA_COVERAGE_20261028.json")
 ODDS_API_QUOTA_GUARD = Path("evidence/notifications/telegram/MATRIX_ODDS_API_QUOTA_GUARD_LAST.json")
 PREMIUM_CARD_ROOT = Path("evidence/notifications/telegram/premium_cards")
+QUOTE_RECOVERY_EXECUTION_LEDGER = Path("evidence/notifications/telegram/MATRIX_QUOTE_RECOVERY_EXECUTION_LEDGER.jsonl")
 PHYSICAL_BOOK_QUOTE_MAX_AGE_MINUTES = 30
 
 GREEN_STATUSES = {
@@ -1233,6 +1234,65 @@ def sharp_reference_gate_state(diagnostic: Mapping[str, Any] | None) -> tuple[st
     if status in {"PASS_ALIGNED", "SINGLE_SHARP_REFERENCE_ONLY"}:
         return "PASS_SHARP_REFERENCE_GATE", detail
     return "BLOCKED_INSUFFICIENT_SHARP_COVERAGE", detail
+
+
+def recovery_execution_over25_offer(
+    fixture_id: str,
+    p: float,
+    now: datetime,
+    *,
+    ledger_path: Path = QUOTE_RECOVERY_EXECUTION_LEDGER,
+) -> dict[str, Any] | None:
+    """Load freshest validated quote-recovery execution evidence.
+
+    This is a downstream execution-price cache only. It never mutates P_MATRIX
+    and is accepted only while still prematch and within the same 30-minute
+    freshness ceiling as physical browser evidence.
+    """
+    if not ledger_path.exists():
+        return None
+    best = None
+    for line in ledger_path.read_text(encoding="utf-8").splitlines():
+        if not line.strip():
+            continue
+        try:
+            row = json.loads(line)
+        except Exception:
+            continue
+        if row.get("validated") is not True:
+            continue
+        if str(row.get("fixture_id") or "") != str(fixture_id):
+            continue
+        if str(row.get("market") or "") != "OVER_2_5":
+            continue
+        dec = odd(row.get("decimal_odds"))
+        if dec is None or dec <= 1.50:
+            continue
+        observed = parse_dt(row.get("quote_observed_at_utc"))
+        kickoff = parse_dt(row.get("kickoff_utc"))
+        if observed is None or kickoff is None:
+            continue
+        age_seconds = (now - observed).total_seconds()
+        if age_seconds < 0 or age_seconds > PHYSICAL_BOOK_QUOTE_MAX_AGE_MINUTES * 60:
+            continue
+        if observed >= kickoff or now >= kickoff:
+            continue
+        ev = p * dec - 1.0
+        offer = {
+            "house": str(row.get("bookmaker") or ""),
+            "house_key": bookmaker_key(row.get("bookmaker")),
+            "odds": dec,
+            "ev": ev,
+            "break_even_probability": 1.0 / dec,
+            "provider_quote_updated_at_utc": observed.isoformat(),
+            "provider": "quote-recovery-actuator",
+            "physical_evidence_path": str(row.get("source_evidence") or ""),
+            "recovery_execution_record_sha256": row.get("record_sha256"),
+            "fallback_multi_book": True,
+        }
+        if best is None or observed > parse_dt(best["provider_quote_updated_at_utc"]):
+            best = offer
+    return best
 
 
 def physical_book_over25_offer(
@@ -2568,7 +2628,12 @@ def main() -> None:
             now,
             required_house_key=None,
         )
-        comparable = [x for x in (primary_offer, fallback_offer, physical_offer) if isinstance(x, dict)]
+        recovery_offer = recovery_execution_over25_offer(
+            str(candidate["fixture_id"]),
+            float(candidate["p_matrix"]),
+            now,
+        )
+        comparable = [x for x in (primary_offer, fallback_offer, physical_offer, recovery_offer) if isinstance(x, dict)]
         offer = max(comparable, key=lambda x: float(x.get("ev") or -999.0)) if comparable else None
         pre_send_quote_checks += 1
         lifecycle["final_revalidation_attempts"] = int(lifecycle.get("final_revalidation_attempts") or 0) + 1
@@ -2578,6 +2643,7 @@ def main() -> None:
         gate_record["api_football_offer_diagnostic"] = api_football_offer_diagnostic
         gate_record["odds_api_net_multi_book_offer"] = fallback_offer
         gate_record["physical_browser_offer"] = physical_offer
+        gate_record["quote_recovery_actuator_offer"] = recovery_offer
         gate_record["odds_api_net_diagnostic"] = odds_api_net_diagnostic
         gate_record["offer"] = offer
         gate_record["selected_quote_provider"] = (offer or {}).get("provider") or ("api-football" if offer else None)
