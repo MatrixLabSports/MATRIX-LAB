@@ -52,7 +52,7 @@ def _base(signal_key: str) -> tuple[Image.Image, ImageDraw.ImageDraw, str]:
     # edge frame
     d.rounded_rectangle((34, 34, W-34, H-34), radius=34, outline=GOLD+(220,), width=4)
     # tiled anti-crop watermark
-    wm = f"MATRIX PICKS PREMIUM • {fp}"
+    wm = f"OMEGA PICKS PREMIUM • {fp}"
     wm_font = _font(27, True)
     layer = Image.new("RGBA", (W, H), (0,0,0,0))
     ld = ImageDraw.Draw(layer)
@@ -63,11 +63,11 @@ def _base(signal_key: str) -> tuple[Image.Image, ImageDraw.ImageDraw, str]:
     im = Image.alpha_composite(im.convert("RGBA"), layer).convert("RGB")
     d = ImageDraw.Draw(im, "RGBA")
     # central forensic seal
-    d.text((W//2, H//2), f"MATRIX • {fp}", font=_font(42, True), fill=(238,190,72,30), anchor="mm")
+    d.text((W//2, H//2), f"OMEGA PICKS • {fp}", font=_font(42, True), fill=(238,190,72,30), anchor="mm")
     return im, d, fp
 
 def _header(d, label: str, fp: str, accent: tuple[int,int,int]):
-    d.text((80,78), "MATRIX", font=_font(66, True), fill=TEXT)
+    d.text((80,78), "OMEGA", font=_font(66, True), fill=TEXT)
     d.text((80,150), "PICKS PREMIUM", font=_font(34, True), fill=GOLD)
     d.rounded_rectangle((80,220,1000,305), radius=22, fill=accent+(235,))
     d.text((540,262), label, font=_font(36, True), fill=(255,255,255), anchor="mm")
@@ -120,7 +120,7 @@ def render_result_png(candidate: dict[str, Any], settlement: dict[str, Any], sig
     y=_field(d,y,"Cuota",f'{float(settlement.get("odds") or 0):.2f}')
     d.rounded_rectangle((80,950,1000,1090),radius=28,fill=accent+(220,))
     d.text((540,1020),"PICK FINALIZADO",font=_font(42,True),fill=(255,255,255),anchor="mm")
-    d.text((540,1185),"RESULTADO REGISTRADO POR MATRIX",font=_font(22,True),fill=MUTED,anchor="mm")
+    d.text((540,1185),"RESULTADO REGISTRADO POR OMEGA PICKS",font=_font(22,True),fill=MUTED,anchor="mm")
     d.text((540,1230),f"ID VERIFICABLE {fp}",font=_font(21,True),fill=GOLD,anchor="mm")
     output.parent.mkdir(parents=True,exist_ok=True)
     im.save(output,format="PNG",optimize=True)
