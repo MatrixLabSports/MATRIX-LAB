@@ -84,7 +84,35 @@ def _pair_score(home:str,away:str,sofa_body:str)->float:
     return (h+a)/2.0
 
 
+def _validate_flashscore_calendar_capture(flash:dict[str,Any])->None:
+    # Synthetic/unit-test mappings may omit source metadata. Physical Flashscore
+    # captures must use the calendar-row scoped schema so navigation/recommendation
+    # links cannot silently enter the operational universe.
+    if str(flash.get("source") or "").upper()!="FLASHSCORE":
+        return
+    if flash.get("schema")!="MATRIX_OPERA_FOOTBALL_CALENDAR_CAPTURE_V2":
+        raise ValueError("FLASHSCORE_PHYSICAL_CAPTURE_V2_REQUIRED")
+    observations=flash.get("observations")
+    if not isinstance(observations,list):
+        raise ValueError("FLASHSCORE_OBSERVATIONS_LIST_REQUIRED")
+    if int(flash.get("observed_calendar_row_count") or -1)!=len(observations):
+        raise ValueError("FLASHSCORE_CALENDAR_ROW_COUNT_MISMATCH")
+    excluded=flash.get("excluded_non_calendar_links")
+    if not isinstance(excluded,list):
+        raise ValueError("FLASHSCORE_EXCLUDED_LINK_AUDIT_REQUIRED")
+    if int(flash.get("excluded_non_calendar_links_count") or -1)!=len(excluded):
+        raise ValueError("FLASHSCORE_EXCLUDED_LINK_COUNT_MISMATCH")
+    row_classification=flash.get("row_classification")
+    if not isinstance(row_classification,dict):
+        raise ValueError("FLASHSCORE_ROW_CLASSIFICATION_REQUIRED")
+    if row_classification.get("calendar_row_link_description")!="¡Haga click para detalles del partido!":
+        raise ValueError("FLASHSCORE_CALENDAR_ROW_MARKER_MISMATCH")
+    if row_classification.get("excluded_preserved_for_audit") is not True:
+        raise ValueError("FLASHSCORE_EXCLUDED_LINK_AUDIT_PRESERVATION_REQUIRED")
+
+
 def reconcile(sofa:dict[str,Any],flash:dict[str,Any],generated_at:datetime|None=None)->dict[str,Any]:
+    _validate_flashscore_calendar_capture(flash)
     if sofa.get("target_date_bogota")!=flash.get("target_date_bogota"):
         raise ValueError("TARGET_DATE_MISMATCH")
     target=sofa["target_date_bogota"]
@@ -156,6 +184,7 @@ def reconcile(sofa:dict[str,Any],flash:dict[str,Any],generated_at:datetime|None=
             "identity_match_threshold":0.55,
             "ambiguous_margin":0.05,
             "one_to_one_identity_matching":True,
+            "flashscore_calendar_row_scope_enforced":True,
             "api_absence_does_not_delete_open_source_event":True,
             "post_start_backfill_forbidden":True,
             "automatic_wagering":False,
