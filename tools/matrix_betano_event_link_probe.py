@@ -144,14 +144,73 @@ def main():
         seen.add(key)
         unique.append(item)
 
+    component_meta = []
+
+    with sync_playwright() as p:
+        browser = p.chromium.connect_over_cdp(endpoint, timeout=15000)
+        for ctx in browser.contexts:
+            for page in list(ctx.pages):
+                try:
+                    if page.is_closed() or "betano.co" not in (page.url or "").casefold():
+                        continue
+                    headers = page.locator('[data-qa="smart-picks-event-header"]').filter(has_text=target_home_raw)
+                    for i in range(min(headers.count(), 10)):
+                        try:
+                            meta = headers.nth(i).evaluate("""el => {
+                              const card = el.closest('[data-qa="smart-picks-card"]');
+                              const safe = value => {
+                                try {
+                                  return JSON.parse(JSON.stringify(value, (k,v) => {
+                                    if (typeof v === 'function') return undefined;
+                                    if (typeof v === 'bigint') return String(v);
+                                    return v;
+                                  }));
+                                } catch { return null; }
+                              };
+                              const summarize = obj => {
+                                if (!obj || typeof obj !== 'object') return null;
+                                const out = {};
+                                for (const k of Object.keys(obj).slice(0,100)) {
+                                  if (/event|fixture|match|sport|id|url|route|link|slug/i.test(k)) {
+                                    const v = obj[k];
+                                    if (v == null || ['string','number','boolean'].includes(typeof v)) out[k]=v;
+                                    else out[k]=safe(v);
+                                  }
+                                }
+                                return out;
+                              };
+                              let cur = card;
+                              const chain=[];
+                              for (let d=0; d<8 && cur; d++, cur=cur.parentElement) {
+                                chain.push({
+                                  depth:d,
+                                  tag:(cur.tagName||'').toLowerCase(),
+                                  attrs:Object.fromEntries([...cur.attributes].map(a=>[a.name,a.value])),
+                                  ownKeys:Object.getOwnPropertyNames(cur).filter(k=>/vue|event|route|link|id/i.test(k)).slice(0,50),
+                                  vueProps:summarize(cur.__vueParentComponent?.props),
+                                  vueAttrs:summarize(cur.__vueParentComponent?.attrs),
+                                  vueSetup:summarize(cur.__vueParentComponent?.setupState),
+                                  vueExposed:summarize(cur.__vueParentComponent?.exposed),
+                                  dataset:{...cur.dataset}
+                                });
+                              }
+                              return {card_found:!!card, chain};
+                            }""")
+                            component_meta.append({"page_url": page.url, "hit_index": i, "meta": meta})
+                        except Exception:
+                            continue
+                except Exception:
+                    continue
+        # Never close the externally managed CDP browser.
+
     out = {
         "schema": "MATRIX_BETANO_EVENT_LINK_PROBE_V3",
         "generated_at_utc": now.isoformat(),
         "target": {"home": target_home_raw, "away": target_away_raw},
         "matches": unique[:50],
-        "ancestry": ancestry[:20],
+        "ancestry": ancestry[:20],\n        "component_meta": component_meta[:20],
         "count": len(unique),
-        "ancestry_count": len(ancestry),
+        "ancestry_count": len(ancestry),\n        "component_meta_count": len(component_meta),
         "status": (
             "PASS_CLICKABLE_EVENT_CONTEXT_FOUND"
             if any(item.get("clickable_ancestor") for item in unique)
@@ -173,7 +232,7 @@ def main():
                 "status": out["status"],
                 "count": out["count"],
                 "ancestry_count": out["ancestry_count"],
-                "ancestry": out["ancestry"][:3],
+                "ancestry": out["ancestry"][:3],\n                "component_meta_count": out["component_meta_count"],\n                "component_meta": out["component_meta"][:3],
             },
             ensure_ascii=False,
         )
