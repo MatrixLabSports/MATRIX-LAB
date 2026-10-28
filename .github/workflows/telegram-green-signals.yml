@@ -23,6 +23,7 @@ on:
     paths:
       - .github/workflows/telegram-green-signals.yml
       - tools/telegram_green_signal_alerts.py
+      - app/market/colombia_bookmakers.py
       - tools/telegram_quote_attempt_telemetry.py
       - tools/telegram_quote_attempt_telemetry_audit.py
       - tools/telegram_final_window_readiness.py
@@ -32,7 +33,8 @@ on:
       - tests/test_telegram_quote_attempt_telemetry.py
       - tests/test_telegram_quote_attempt_telemetry_audit.py
       - tests/test_telegram_final_window_readiness.py
-      - tests/test_telegram_green_workflow_contract.py
+      - tests/test_telegram_green_workflow_contract.py tests/test_colombia_bookmaker_policy_sync.py
+      - tests/test_colombia_bookmaker_policy_sync.py
       - app/research/football/correlated_exposure.py
       - app/research/football/correlated_risk_calibration.py
       - app/research/football/correlated_exposure.py
