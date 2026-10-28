@@ -62,7 +62,10 @@ jobs:
             tests/test_telegram_opera_bookmaker_coverage_contract.py \
             tests/test_odds_api_quota_guard.py \
             tests/test_matrix_premium_cards.py \
-            tests/test_matrix_premium_result_watcher.py
+            tests/test_matrix_premium_result_watcher.py \
+            tests/test_matrix_quote_recovery_actuator.py \
+            tests/test_matrix_quote_recovery_evidence.py \
+            tests/test_telegram_quote_recovery_actuator_integration.py
 
       - name: Verify scheduler source contract on default branch
         shell: bash
@@ -171,6 +174,11 @@ jobs:
           assert j["policy"]["real_money"]=="BLOCKED"
           print(json.dumps(j["summary"],sort_keys=True))
           PY
+
+      - name: Ejecutar Quote Recovery Actuator antes del gate Telegram
+        env:
+          API_FOOTBALL_KEY: ${{ secrets.API_FOOTBALL_KEY }}
+        run: PYTHONPATH=. python -m tools.matrix_quote_recovery_actuator
 
       - name: Ejecutar supervisor Telegram con recuperación multifuente
         env:
@@ -307,6 +315,8 @@ jobs:
             evidence/notifications/telegram/MATRIX_TELEGRAM_SIGNAL_RECOVERY_GUARD_LAST.json
             evidence/notifications/telegram/MATRIX_TELEGRAM_MULTI_MARKET_SIGNAL_GATE_LAST.json
             evidence/notifications/telegram/MATRIX_ODDS_API_QUOTA_GUARD_LAST.json
+            evidence/notifications/telegram/MATRIX_QUOTE_RECOVERY_ACTUATOR_LAST.json
+            evidence/notifications/telegram/MATRIX_QUOTE_RECOVERY_EXECUTION_LEDGER.jsonl
           )
           for file in "${allowed[@]}"; do
             if [ -e "$file" ]; then
@@ -332,7 +342,9 @@ jobs:
               evidence/notifications/telegram/MATRIX_TELEGRAM_ELITE_COMMITTEE_AUDIT_LAST.json|\
               evidence/notifications/telegram/MATRIX_TELEGRAM_FINAL_WINDOW_READINESS_LAST.json|\
               evidence/notifications/telegram/MATRIX_TELEGRAM_SIGNAL_RECOVERY_GUARD_LAST.json|\
-              evidence/notifications/telegram/MATRIX_TELEGRAM_MULTI_MARKET_SIGNAL_GATE_LAST.json)
+              evidence/notifications/telegram/MATRIX_TELEGRAM_MULTI_MARKET_SIGNAL_GATE_LAST.json|\
+              evidence/notifications/telegram/MATRIX_QUOTE_RECOVERY_ACTUATOR_LAST.json|\
+              evidence/notifications/telegram/MATRIX_QUOTE_RECOVERY_EXECUTION_LEDGER.jsonl)
                 git add "$file"
                 ;;
               *)
