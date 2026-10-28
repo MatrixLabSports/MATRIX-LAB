@@ -1,0 +1,116 @@
+{
+  "schema": "MATRIX_QUOTE_RECOVERY_ACTUATOR_PHYSICAL_READINESS_V1",
+  "generated_from_audit_at_utc": "2026-10-28T20:09:03+00:00",
+  "status": "READY_AWAITING_FINAL_WINDOW_PROSPECTIVE_EXECUTION",
+  "current_waiting_candidates": 10,
+  "waiting_candidates": [
+    {
+      "fixture_id": "1490571",
+      "match": "Inter Miami vs FC Cincinnati",
+      "kickoff": "2026-10-28T23:30:00+00:00",
+      "p_matrix": 0.7463256952
+    },
+    {
+      "fixture_id": "1490574",
+      "match": "Charlotte vs CF Montreal",
+      "kickoff": "2026-10-28T23:30:00+00:00",
+      "p_matrix": 0.6176031057
+    },
+    {
+      "fixture_id": "1490575",
+      "match": "Toronto FC vs DC United",
+      "kickoff": "2026-10-28T23:30:00+00:00",
+      "p_matrix": 0.6452707152
+    },
+    {
+      "fixture_id": "1490579",
+      "match": "Minnesota United FC vs Sporting Kansas City",
+      "kickoff": "2026-10-29T00:30:00+00:00",
+      "p_matrix": 0.6794336235
+    },
+    {
+      "fixture_id": "1490578",
+      "match": "Chicago Fire vs Orlando City SC",
+      "kickoff": "2026-10-29T00:30:00+00:00",
+      "p_matrix": 0.692817261
+    },
+    {
+      "fixture_id": "1490581",
+      "match": "St. Louis City vs Portland Timbers",
+      "kickoff": "2026-10-29T00:30:00+00:00",
+      "p_matrix": 0.6739430936
+    },
+    {
+      "fixture_id": "1490576",
+      "match": "Nashville SC vs Philadelphia Union",
+      "kickoff": "2026-10-29T00:30:00+00:00",
+      "p_matrix": 0.6739440941
+    },
+    {
+      "fixture_id": "1490580",
+      "match": "Austin vs Real Salt Lake",
+      "kickoff": "2026-10-29T00:30:00+00:00",
+      "p_matrix": 0.6046984716
+    },
+    {
+      "fixture_id": "1490577",
+      "match": "FC Dallas vs Columbus Crew",
+      "kickoff": "2026-10-29T00:30:00+00:00",
+      "p_matrix": 0.6540928769
+    },
+    {
+      "fixture_id": "1490582",
+      "match": "Vancouver Whitecaps vs San Diego",
+      "kickoff": "2026-10-29T02:30:00+00:00",
+      "p_matrix": 0.6511733445
+    }
+  ],
+  "opera_physical_observation": {
+    "connector_connected": true,
+    "readable_tabs_verified": [
+      "Betano",
+      "BetPlay"
+    ],
+    "execution_book_tabs_observed_open": [
+      "Betano",
+      "BetPlay",
+      "Betsson",
+      "bwin",
+      "Codere",
+      "Luckia",
+      "MrYoker",
+      "Rivalo",
+      "Rushbet",
+      "Sportium",
+      "Stake",
+      "Wplay"
+    ],
+    "browser_connector_capabilities_observed": [
+      "list_tabs",
+      "read_accessibility_tree",
+      "screenshot",
+      "navigate"
+    ],
+    "click_type_automation_available_to_github_actions": false,
+    "statement": "Open/readable bookmaker pages are physical source availability evidence; they are not proof of an automated bookmaker quote extraction."
+  },
+  "actuator_contract": {
+    "automatic_primary": "API-Football exact authorized Over 2.5 offer",
+    "physical_fallback": "validated Opera/browser quote evidence artifact",
+    "output": "MATRIX_QUOTE_RECOVERY_EXECUTION_LEDGER.jsonl",
+    "downstream_consumer": "tools/telegram_green_signal_alerts.py",
+    "p_matrix_min": 0.6,
+    "decimal_odds_strictly_greater_than": 1.5,
+    "revalidated_ev_min": 0.05,
+    "max_quote_age_minutes": 30,
+    "no_backfill_after_kickoff": true
+  },
+  "certification_truth": {
+    "prospective_real_execution_observed_after_new_actuator": false,
+    "zero_infrastructure_loss_certified": false,
+    "reason": "No candidate in latest audit was yet marked RECOVERABLE_WHILE_PREMATCH; 10 remain outside the final T-120 window.",
+    "pass_requires_future_real_cycle": true
+  },
+  "automatic_wagering": false,
+  "real_money": "BLOCKED"
+}
