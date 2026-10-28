@@ -667,3 +667,54 @@ El código y los artefactos están físicamente presentes en la rama operativa. 
 
 ### Regla permanente
 Ninguna lane podrá considerarse resuelta por tener solo un archivo, un extractor live o cobertura de datos. “Resuelta” exige capacidad prematch real y la ruta de validación correspondiente.
+
+
+## 22. Certificación del pipeline de cuotas — 28-OCT-2026
+
+### Criterio
+La certificación solo puede dar PASS si, después de la época de certificación, se cumple simultáneamente:
+- 0 candidatos elegibles perdidos por infraestructura antes del kickoff;
+- recovery queue sincronizada con el audit más reciente;
+- proveedor agotado no genera espera;
+- toda recuperación tiene evidencia física de cuota exacta;
+- cuota >1.50;
+- EV revalidado >=0.05;
+- quote prematch;
+- si todos los gates pasan, existe evidencia de entrega Telegram.
+
+### Época prospectiva
+`config/MATRIX_QUOTE_PIPELINE_CERTIFICATION_POLICY.json`
+
+La época se fija en el último blocker audit físicamente observado al crear la política. Las pérdidas históricas previas se conservan y no se borran, pero no contaminan la evaluación prospectiva post-fix.
+
+### Evidencia de ejecución
+`tools/matrix_quote_recovery_evidence.py`
+`evidence/notifications/telegram/MATRIX_QUOTE_RECOVERY_EXECUTION_LEDGER.jsonl`
+
+Una queue por sí sola no cuenta como recuperación.
+
+### Certificador
+`tools/matrix_quote_pipeline_certification.py`
+`tests/test_matrix_quote_pipeline_certification.py`
+`tests/test_matrix_quote_recovery_evidence.py`
+
+### Workflow
+`.github/workflows/matrix-browser-quote-recovery-15m.yml`
+
+El workflow reconstruye la queue, ejecuta el certificador, persiste el diagnóstico y luego falla si la certificación queda NO-GO.
+
+### Certificación física actual
+`evidence/governance/MATRIX_QUOTE_PIPELINE_CERTIFICATION_LAST.json`
+
+Estado actual: **NO_GO_CERTIFICATION_FAILED**.
+
+Observado en el último audit:
+- 56 registros auditados;
+- 45 pérdidas históricas por infraestructura preservadas;
+- 1 candidato recuperable prematch;
+- 10 esperando ventana final;
+- odds-api.net en BLOCKED_EXHAUSTED / HTTP 429;
+- queue de recuperación desfasada respecto al audit más reciente;
+- todavía no existe audit posterior a la época de certificación.
+
+Por tanto, no se declara PASS hasta observar ciclos prospectivos posteriores con 0 pérdidas de infraestructura y evidencia de recuperación/entrega cuando corresponda.
