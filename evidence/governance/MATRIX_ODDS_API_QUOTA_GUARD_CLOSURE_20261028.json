@@ -1,0 +1,74 @@
+{
+  "schema": "MATRIX_ODDS_API_QUOTA_GUARD_CLOSURE_V1",
+  "generated_at_utc": "2026-10-28T09:20:00+00:00",
+  "status": "CLOSED_PHYSICALLY_VERIFIED",
+  "objective": "Prevent monthly odds-api.net quota exhaustion from causing repeated provider calls or prematch delays.",
+  "verified_provider_contract": {
+    "usage_endpoint": "GET /v1/usage",
+    "auth": "X-API-Key",
+    "provider_guidance": [
+      "Treat HTTP 429 as a control signal.",
+      "If monthly API-credit quota is exhausted, stop retry loops and alert the account owner.",
+      "Reduce polling breadth first and reserve hot-event capacity."
+    ]
+  },
+  "implementation": {
+    "quota_guard_tool": "tools/odds_api_quota_guard.py",
+    "quota_guard_test": "tests/test_odds_api_quota_guard.py",
+    "signal_engine": "tools/telegram_green_signal_alerts.py",
+    "quota_state_artifact": "evidence/notifications/telegram/MATRIX_ODDS_API_QUOTA_GUARD_LAST.json",
+    "thresholds": {
+      "below_50": "NORMAL_T120",
+      "50_to_75": "WATCH_T120",
+      "75_to_90": "CONSERVE_T90_ONLY",
+      "90_to_95": "RESERVE_T60_ONLY",
+      "95_to_100": "RESERVE_T30_ONLY",
+      "exhausted": "BLOCKED_EXHAUSTED_ZERO_ODDS_API_RETRIES"
+    },
+    "alerts": "Telegram alert on quota stage change when credentials are available.",
+    "provider_call_precheck": true,
+    "physical_book_fallback_preserved": true,
+    "no_gate_relaxation": true
+  },
+  "commits": {
+    "tool": "986a4ad787ae7649a69f4dfc2c37341be2b5a737",
+    "unit_tests": "50ccda66b71bde2cdfccfd0417e5466f9ee10f86",
+    "signal_engine_guard": "f71176447fecea324b3699cec09c5edbc0ddb2a9",
+    "signal_engine_test_binding": "6dbafc27b9a85a4c4d056f2d54cbe19a8c5567f6",
+    "import_regression_fix": "450d7a1fa1b901571c2342217f4449175dffab22",
+    "bootstrap_evidence": "05542956a3c72454d61e3bf433ac129f681c30fd",
+    "green_workflow_repair": "53bac15a9cef547675ee105fa43cca56a7fea4aa",
+    "green_workflow_main": "4db4c1965cc8ef7bc5892e1bc60db559ae24510a",
+    "supervisor_workflow_repair": "125b8eb9f701976cdb0aa6fbb53db80772777854",
+    "supervisor_workflow_main": "e17ddbec54eb2d2c6262143de8646b6925c888de"
+  },
+  "physical_runtime_proof": {
+    "workflow": "Telegram Señales Verdes MATRIX",
+    "run_number": 1517,
+    "run_id": 40663013194,
+    "job_id": 122730453068,
+    "conclusion": "SUCCESS",
+    "quota_guard_step": "SUCCESS",
+    "quota_guard_tests": "3 passed",
+    "usage_checked_at_utc": "2026-10-28T09:17:58+00:00",
+    "usage_http_status": 429,
+    "usage_request_id": "matrix-quota-2026-10-28T091758_0000",
+    "resulting_stage": "BLOCKED_EXHAUSTED",
+    "api_calls_allowed": false,
+    "signal_engine_step": "SUCCESS",
+    "blocked_by_quota_guard_candidates": 5,
+    "blocker_variable": "ODDS_PROVIDER_QUOTA_GUARD",
+    "persisted_quota_artifact_sha": "0f3fdb32063c76bd41d93596d29eb4d75c8d6414"
+  },
+  "governance": {
+    "p_matrix_must_preexist_before_odds": true,
+    "minimum_decimal_odds_strictly_gt": 1.5,
+    "positive_ev_required": true,
+    "pinnacle_freshness_seconds": 120,
+    "missing_is_not_zero": true,
+    "no_backfill_after_kickoff": true,
+    "automatic_wagering": false,
+    "real_money": "BLOCKED"
+  },
+  "decision": "MONTHLY_QUOTA_EXHAUSTION_IS_NOW_CIRCUIT_BROKEN_AND_AUDITED"
+}
