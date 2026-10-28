@@ -26,6 +26,7 @@ from app.research.football.correlated_risk_calibration import (
 from app.research.football.sharp_consensus import assess_sharp_consensus
 from app.market.colombia_bookmakers import EXECUTION_BOOKMAKERS
 from tools.telegram_quote_attempt_telemetry import build_attempt, append_attempt, load_verified, summarize_run, summarize_cumulative
+from tools.odds_api_quota_guard import should_call_odds_api
 
 from app.research.football.correlated_exposure import (
     assess_paper_correlated_exposure,
@@ -43,6 +44,7 @@ EV_MARGINAL_LAB_EVIDENCE = Path("evidence/notifications/telegram/MATRIX_EV_MARGI
 QUOTE_ATTEMPT_LEDGER = Path("evidence/notifications/telegram/MATRIX_TELEGRAM_QUOTE_ATTEMPTS.jsonl")
 PHYSICAL_BOOK_QUOTE_ROOT = Path("evidence/football_world_inventory")
 OPERA_BOOKMAKER_COVERAGE = Path("evidence/notifications/telegram/MATRIX_COLOMBIA_BOOKMAKER_OPERA_COVERAGE_20261028.json")
+ODDS_API_QUOTA_GUARD = Path("evidence/notifications/telegram/MATRIX_ODDS_API_QUOTA_GUARD_LAST.json")
 PHYSICAL_BOOK_QUOTE_MAX_AGE_MINUTES = 30
 
 GREEN_STATUSES = {
@@ -116,6 +118,20 @@ def load_json(path: Path, default: Any) -> Any:
     if not path.exists():
         return default
     return json.loads(path.read_text(encoding="utf-8"))
+
+
+def odds_api_quota_decision() -> dict[str, Any]:
+    payload = load_json(ODDS_API_QUOTA_GUARD, {})
+    decision = payload.get("decision") if isinstance(payload, dict) else None
+    if isinstance(decision, dict) and decision.get("stage"):
+        return decision
+    return {
+        "stage": "USAGE_UNKNOWN_T60_FAIL_CLOSED",
+        "api_calls_allowed": True,
+        "max_seconds_to_kickoff_for_odds_api_call": 60 * 60,
+        "usage_pct": None,
+        "exceeded": None,
+    }
 
 
 def physical_open_bookmaker_names() -> list[str]:
@@ -2099,6 +2115,9 @@ def blocker_recovery_profile(gate_record: dict[str, Any]) -> dict[str, Any]:
         elif provider_status == "BLOCKED_EVENT_SEARCH_RATE_LIMIT":
             variable = "ODDS_PROVIDER_RATE_LIMIT"
             recovery = physical_open_bookmaker_names()
+        elif provider_status == "BLOCKED_QUOTA_GUARD":
+            variable = "ODDS_PROVIDER_QUOTA_GUARD"
+            recovery = physical_open_bookmaker_names()
         elif provider_status == "BLOCKED_SNAPSHOT_PROVIDER_ERROR":
             variable = "ODDS_PROVIDER_SNAPSHOT"
             recovery = ["odds-api.net", "API-Football", *physical_open_bookmaker_names()]
@@ -2485,16 +2504,32 @@ def main() -> None:
             api_football_offer_diagnostic,
         )
         odds_api_net_diagnostic: dict[str, Any] = {}
-        fallback_offer = odds_api_net_exact_over25_offer(
-            session,
-            odds_api_net_key,
-            str(candidate["fixture_id"]),
-            candidate.get("kickoff"),
-            float(candidate["p_matrix"]),
-            api_key,
-            odds_api_net_diagnostic,
-            candidate_match=candidate.get("match"),
-        )
+        quota_decision = odds_api_quota_decision()
+        kickoff_dt = parse_dt(candidate.get("kickoff"))
+        seconds_to_kickoff = (kickoff_dt - now).total_seconds() if kickoff_dt is not None else -1
+        quota_allows_odds_api = should_call_odds_api(quota_decision, seconds_to_kickoff)
+        if quota_allows_odds_api:
+            fallback_offer = odds_api_net_exact_over25_offer(
+                session,
+                odds_api_net_key,
+                str(candidate["fixture_id"]),
+                candidate.get("kickoff"),
+                float(candidate["p_matrix"]),
+                api_key,
+                odds_api_net_diagnostic,
+                candidate_match=candidate.get("match"),
+            )
+        else:
+            fallback_offer = None
+            odds_api_net_diagnostic.update({
+                "status": "BLOCKED_QUOTA_GUARD",
+                "quota_guard_stage": quota_decision.get("stage"),
+                "quota_usage_pct": quota_decision.get("usage_pct"),
+                "quota_exceeded": quota_decision.get("exceeded"),
+                "seconds_to_kickoff": seconds_to_kickoff,
+                "max_seconds_to_kickoff_for_odds_api_call": quota_decision.get("max_seconds_to_kickoff_for_odds_api_call"),
+                "provider_request_attempted": False,
+            })
         physical_offer = physical_book_over25_offer(
             str(candidate["fixture_id"]),
             float(candidate["p_matrix"]),
