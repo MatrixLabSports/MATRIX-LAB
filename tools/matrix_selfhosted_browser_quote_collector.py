@@ -78,6 +78,21 @@ def main()->None:
         if not contexts:
             raise SystemExit("BROWSER_CDP_NO_CONTEXTS")
         for ci,ctx in enumerate(contexts):
+            existing_books={book_from_url(page.url or "") for page in ctx.pages}
+            for book,adapter in (adapters.get("bookmakers") or {}).items():
+                if book in existing_books:
+                    continue
+                entry=str((adapter or {}).get("entry_url") or "").strip()
+                if not entry:
+                    continue
+                try:
+                    page=ctx.new_page()
+                    page.goto(entry,wait_until="domcontentloaded",timeout=20000)
+                except Exception:
+                    try:
+                        page.close()
+                    except Exception:
+                        pass
             for pi,page in enumerate(ctx.pages):
                 url=page.url or ""; book=book_from_url(url)
                 if not book: continue
