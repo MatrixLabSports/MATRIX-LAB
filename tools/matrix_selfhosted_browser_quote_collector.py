@@ -125,7 +125,8 @@ def main()->None:
                       "execution_quote_emitted":False,
                       "blocker":None if adapter.get("status")=="CERTIFIED_EXACT_OVER25" else "BOOKMAKER_ADAPTER_NOT_CERTIFIED"
                     })
-        browser.close()
+        # IMPORTANT: connected via CDP to an externally managed persistent browser.
+        # Do not call browser.close(); that would terminate the shared Chrome/Opera process.
     out={
       "schema":"MATRIX_BROWSER_CDP_COLLECTION_V1",
       "generated_at_utc":now.isoformat(),
