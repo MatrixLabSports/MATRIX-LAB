@@ -1,7 +1,7 @@
 {
   "schema": "MATRIX_TELEGRAM_CHANNEL_SECURITY_POLICY_V1",
   "channels": {
-    "FREE": {"visibility":"PRIVATE","join_request_required":true,"protect_content":true,"external_bots_allowed":false},
+    "FREE": {"visibility":"PUBLIC","join_request_required":false,"protect_content":true,"external_bots_allowed":false},
     "PREMIUM": {"visibility":"PRIVATE","join_request_required":true,"protect_content":true,"external_bots_allowed":false},
     "STAKAZO": {"visibility":"PRIVATE","join_request_required":true,"protect_content":true,"external_bots_allowed":false}
   },
@@ -24,7 +24,7 @@
   },
   "technical_limits": [
     "Telegram content protection reduces forwarding, screenshots and media saving but cannot prevent an authorized viewer from using another device to photograph or manually transcribe content.",
-    "A public FREE channel cannot credibly guarantee exclusion of external scrapers; therefore FREE is private under this policy.",
+    "FREE is intentionally public for discovery and acquisition. Public visibility means external reading/scraping cannot be technically guaranteed against; therefore no sensitive or exclusive Premium/STAKAZO content may be published there before settlement.",
     "Bot API cannot enumerate every ordinary channel subscriber for arbitrary bot detection; security is enforced primarily through private access, join approval and administrator allowlisting."
   ]
 }
