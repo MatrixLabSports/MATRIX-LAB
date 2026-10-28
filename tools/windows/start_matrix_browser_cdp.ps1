@@ -5,18 +5,23 @@ param(
 
 $ErrorActionPreference = "Stop"
 
-$candidates = @(
+$candidatePaths = @(
   "$env:LOCALAPPDATA\Programs\Opera GX\launcher.exe",
   "$env:LOCALAPPDATA\Programs\Opera\launcher.exe",
   "$env:ProgramFiles\Google\Chrome\Application\chrome.exe",
-  "$env:ProgramFiles(x86)\Microsoft\Edge\Application\msedge.exe"
-) | Where-Object { $_ -and (Test-Path $_) }
+  "${env:ProgramFiles(x86)}\Google\Chrome\Application\chrome.exe",
+  "$env:ProgramFiles\Microsoft\Edge\Application\msedge.exe",
+  "${env:ProgramFiles(x86)}\Microsoft\Edge\Application\msedge.exe"
+)
+
+$candidates = @($candidatePaths | Where-Object { $_ -and (Test-Path -LiteralPath $_) })
 
 if (-not $candidates) {
   throw "MATRIX_BROWSER_NOT_FOUND"
 }
 
-$browser = $candidates[0]
+$browser = [string]$candidates[0]
+Write-Output "MATRIX_BROWSER_DETECTED=$browser"
 New-Item -ItemType Directory -Force -Path $ProfileDir | Out-Null
 
 $already = Get-NetTCPConnection -LocalPort $Port -State Listen -ErrorAction SilentlyContinue
