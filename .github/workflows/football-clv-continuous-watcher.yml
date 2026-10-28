@@ -301,6 +301,7 @@ jobs:
             git fetch origin repair/cor09-world-pipeline
             if ! git rebase --autostash origin/repair/cor09-world-pipeline; then
               git rebase --abort || true
+              echo "CLV_WATCHER_OPERATIONAL_REFRESH=FAIL" >&2
               echo "CLV_WATCHER_OPERATIONAL_REFRESH_FAILED" >&2
               exit 1
             fi
