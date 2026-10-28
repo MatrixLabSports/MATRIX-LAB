@@ -1,9 +1,9 @@
 {
   "blocker_state_counts": {
     "BLOCKED_KICKOFF_REACHED_MONITORING_BREACH": 2,
-    "BLOCKED_NONPOSITIVE_EV": 10,
-    "BLOCKED_NO_FRESH_PINNACLE_REFERENCE": 14,
-    "BLOCKED_NO_VALID_EXACT_AUTHORIZED_BOOK_OVER25": 36
+    "BLOCKED_NONPOSITIVE_EV": 1,
+    "BLOCKED_NO_FRESH_PINNACLE_REFERENCE": 1,
+    "BLOCKED_NO_VALID_EXACT_AUTHORIZED_BOOK_OVER25": 2
   },
   "committee_decision": {
     "continue_t120_revalidation": true,
@@ -56,9 +56,9 @@
     {
       "diagnosis": "Exact executable Over 2.5 coverage is concentrated in Betano; BetPlay and Rushbet have zero exact observed coverage in the current immutable sample.",
       "evidence": {
-        "blocked_no_valid_exact_authorized_book_over25": 36,
+        "blocked_no_valid_exact_authorized_book_over25": 2,
         "exact_over25_coverage_by_house": {
-          "betano": 0,
+          "betano": 1,
           "betplay": 0,
           "betsson": 0,
           "bwin": 0,
@@ -73,8 +73,8 @@
           "yajuego": 0,
           "zamba": 0
         },
-        "real_quote_attempts_total": 3,
-        "remaining_to_50": 47
+        "real_quote_attempts_total": 4,
+        "remaining_to_50": 46
       },
       "id": "F03_EXACT_AUTHORIZED_OVER25_QUOTE_COVERAGE_IS_STRUCTURAL_BOTTLENECK",
       "owners": [
@@ -88,8 +88,8 @@
     {
       "diagnosis": "Some candidates are correctly rejected by fresh-sharp-reference and positive-EV gates; these gates must not be weakened to manufacture signals.",
       "evidence": {
-        "blocked_no_fresh_pinnacle": 14,
-        "blocked_nonpositive_ev": 10
+        "blocked_no_fresh_pinnacle": 1,
+        "blocked_nonpositive_ev": 1
       },
       "id": "F04_SHARP_AND_EV_GATES_ALSO_REMOVE_CANDIDATES",
       "owners": [
@@ -161,10 +161,10 @@
         "green_signal_conclusion": "success",
         "green_signal_run": 1250,
         "watchdog_summary": {
-          "active_future_candidates": 1,
+          "active_future_candidates": 0,
           "critical_unresolved_candidates": 0,
           "failures": 0,
-          "last_supervisor_run_age_minutes": 0.03,
+          "last_supervisor_run_age_minutes": 0.02,
           "monitoring_breaches": 53,
           "new_monitoring_breaches": 0,
           "status": "PASS",
@@ -232,7 +232,7 @@
   "quote_sample": {
     "all_three_without_exact_over25": 3,
     "book_seen_by_house": {
-      "betano": 0,
+      "betano": 1,
       "betplay": 0,
       "betsson": 0,
       "bwin": 0,
@@ -266,7 +266,7 @@
     ],
     "coverage_schema": "MATRIX_TELEGRAM_QUOTE_ATTEMPT_V3",
     "exact_over25_coverage_by_house": {
-      "betano": 0,
+      "betano": 1,
       "betplay": 0,
       "betsson": 0,
       "bwin": 0,
@@ -305,8 +305,8 @@
       }
     },
     "nearby_2_25_or_2_75_without_exact_2_5": 0,
-    "real_quote_attempts_total": 3,
-    "remaining_to_minimum": 47,
+    "real_quote_attempts_total": 4,
+    "remaining_to_minimum": 46,
     "sample_gate_status": "ACCUMULATING_REAL_REVALIDATIONS",
     "synthetic_attempts_included": false,
     "target_window_maximum": 100,
@@ -314,7 +314,7 @@
     "timing_disappearance_fixture_count": 0,
     "timing_disappearance_fixtures": [],
     "totals_market_seen_by_house": {
-      "betano": 0,
+      "betano": 1,
       "betplay": 0,
       "betsson": 0,
       "bwin": 0,
