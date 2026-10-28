@@ -1,0 +1,74 @@
+{
+  "schema": "MATRIX_RAPIDAPI_FREE50_TRANSITION_AUDIT_V1",
+  "audit_bogota_date": "2026-10-28",
+  "scheduled_check_bogota": "2026-10-28T00:15:25-05:00",
+  "repository": "MatrixLabSports/MATRIX-LAB",
+  "branch": "repair/cor09-world-pipeline",
+  "audit_decision": "NO_FREE50_TRANSITION_UNTIL_CURRENT_AUTHENTICATED_PLAN_AND_50_PER_DAY_QUOTA_ARE_VERIFIED",
+  "current_authenticated_plan_verified": false,
+  "current_authenticated_quota_verified": false,
+  "free50_activation": false,
+  "cadence_changes_performed": false,
+  "provider_network_calls_performed_by_this_audit": 0,
+  "rapidapi_account_evidence": {
+    "source": "Opera Browser RapidAPI Console > Billing > Subscriptions & Usage",
+    "url": "https://rapidapi.com/console/12346841/billing/subscriptions-and-usage",
+    "first_existing_tab_accessibility_snapshot": {
+      "plan": "Ultra ($59.00 /mo)",
+      "subscription_status": "Active",
+      "quota_usage_percent": "4.89%",
+      "bandwidth_quota_percent": "29.53%",
+      "subscription_date_display": "28 sept 2026 06:40",
+      "date_of_snapshot_content": "NOT_EXPOSED_BY_PAGE"
+    },
+    "refresh_attempt_result": "REDIRECTED_TO_RAPIDAPI_HUB_AND_LOGIN_FORM",
+    "authentication_state_after_refresh": "NOT_AUTHENTICATED",
+    "conclusion": "ULTRA_ACTIVE_VISIBLE_IN_PREEXISTING_TAB_BUT_FRESH_AUTHENTICATED_RECHECK_UNAVAILABLE; FREE50_NOT_PROVEN"
+  },
+  "prior_repo_evidence": {
+    "evidence/governance/MATRIX_RAPIDAPI_TENNIS_FREE50_CONTINUITY_20OCT2026.json": "PAID_ULTRA_59_USD_THROUGH_2026-10-28; FREE50_50_PER_DAY_DOCUMENTED_AS_FUTURE_TARGET_NOT_ACCOUNT_ACTIVATION",
+    "evidence/governance/MATRIX_PAID_API_QUOTA_LEDGER_LAST.json": "ULTRA_ACTIVE_AT_2026-10-22; NOT_FRESH_ENOUGH_TO_PROVE_2026-10-28_ACCOUNT_STATE",
+    "config/MATRIX_TENNIS_SUBSCRIPTION_DEADLINE.json": "PAID_THROUGH_2026-10-28_INCLUSIVE; NO_RENEWAL; NO_AUTO_FREE50",
+    "evidence/governance/MATRIX_PAID_API_UTILIZATION_WATCHDOG_LAST.json": "TENNIS_HARVEST_STALE_ON_2026-10-27"
+  },
+  "controlled_dry_run": {
+    "method": "LOCAL_EXACT_SOURCE_COPY_FROM_REPO_PLUS_STATIC_REPO_ASSERTIONS; NO_PROVIDER_NETWORK",
+    "test_command": "python -m pytest -q tests/test_tennis_subscription_deadline_guard.py",
+    "test_result": "3 passed in 0.10s",
+    "guard_20261028": "PAID_WINDOW_ACTIVE_MAXIMIZE_EVIDENCE; FREE50_AUTO_ACTIVATION_FALSE; REAL_MONEY_BLOCKED",
+    "guard_20261029_with_require_paid_use": "PAID_API_WINDOW_EXPIRED_NO_RENEWAL_AUTHORIZED",
+    "repository_static_assertions": 10,
+    "repository_static_assertions_passed": 10,
+    "rapidapi_calls": 0,
+    "limitation": "NO_GITHUB_ACTIONS_LIVE_RUN_TRIGGERED; LOCAL_TEST_COPY_AND_STATIC_ASSERTIONS_ONLY; NO_AUTHENTICATED_ACCOUNT_QUOTA_READ"
+  },
+  "existing_workflows_not_modified": {
+    "hard_main_cron": "2,17,32,47 * * * *",
+    "hard_operational_branch_cron": null,
+    "clay_main_cron": "7,22,37,52 * * * *",
+    "clay_operational_branch_cron": "7,22,37,52 * * * *",
+    "note": "NO_CADENCE_CHANGE_ON_UNVERIFIED_FREE50"
+  },
+  "free50_pre_activation_blockers": [
+    "CONFIRM_ACTIVE_ACCOUNT_PLAN_FREE_AND_50_REQUESTS_PER_DAY_ON_AUTHENTICATED_BILLING_PAGE_OR_AUTHORITATIVE_QUOTA_HEADERS",
+    "RECONCILE_INCONSISTENT_FUTURE_BUDGET_ALLOCATION:30_HARD_10_SETTLEMENT_10_CLAY_VERSUS_35_HARD_15_CLAY_IN_PROOF_WORKFLOW",
+    "IMPLEMENT_DURABLE_CROSS_WORKFLOW_ATOMIC_DAILY_QUOTA_COUNTER; CURRENT_ENV_BUDGET_IS_OPTIONAL_AND_DEFAULTS_TO_RUNNER_LOCAL_TMP_FILE",
+    "ACCOUNT_FOR_RETRIES_PAGINATION_LIVE_SHADOW_AND_OTHER_RAPIDAPI_CONSUMERS_IN_SHARED_BUDGET",
+    "REUSE_BROWSER_FIRST_CALENDARS_AND_CACHED_SNAPSHOTS; PRIORITIZE_CHALLENGER_HARD_AND_RESERVE_SETTLEMENT_AND_CLAY",
+    "VALIDATE_DRY_RUN_AND_ONLY_THEN_ENABLE_RATE_LIMITED_REAL_CYCLE_WITH_VERIFIED_QUOTA"
+  ],
+  "protections": {
+    "source_order": [
+      "SofaScore",
+      "Flashscore",
+      "RapidAPI Tennis"
+    ],
+    "no_backfill": true,
+    "missing_not_zero": true,
+    "no_silent_imputation": true,
+    "metrics_opened_before_600": false,
+    "real_money": "BLOCKED",
+    "automatic_wagering": false
+  },
+  "next_transition": "RECHECK_AUTHENTICATED_PLAN_AND_ACTUAL_QUOTA_AFTER_ACCOUNT_SESSION_RECOVERY; IF_ULTRA_REMAINS_ACTIVE_KEEP_PAID_MODE_ONLY_WITHIN_AUTHORIZED_DEADLINE; IF_FREE50_CONFIRMED_IMPLEMENT_GLOBAL_QUOTA_CONTROL_AND_REDUCED_CADENCE_BEFORE_ANY_PROVIDER_CALL"
+}
