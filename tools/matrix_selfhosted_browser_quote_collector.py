@@ -88,26 +88,28 @@ def main()->None:
                     pages.append({"bookmaker":book,"url":url,"status":"READ_ERROR","error":type(e).__name__})
                     continue
                 sha=hashlib.sha256(text.encode("utf-8","ignore")).hexdigest()
-                raw_name=f"{now.strftime('%Y%m%dT%H%M%SZ')}_{book}_{ci}_{pi}_{sha[:12]}.txt"
-                raw_path=RAW_ROOT/raw_name
-                raw_path.write_text(text,encoding="utf-8")
                 adapter=(adapters.get("bookmakers") or {}).get(book) or {}
                 page_rec={
                   "bookmaker":book,"url":url,"title":title,"status":"CAPTURED",
-                  "body_sha256":sha,"raw_evidence_path":str(raw_path.relative_to(ROOT)),
+                  "body_sha256":sha,"raw_evidence_path":None,
                   "adapter_status":adapter.get("status","MISSING")
                 }
+                matching=[c for c in candidates if page_matches_candidate(text,c)]
+                if matching:
+                    raw_name=f"{now.strftime('%Y%m%dT%H%M%SZ')}_{book}_{ci}_{pi}_{sha[:12]}.txt"
+                    raw_path=RAW_ROOT/raw_name
+                    raw_path.write_text(text,encoding="utf-8")
+                    page_rec["raw_evidence_path"]=str(raw_path.relative_to(ROOT))
                 pages.append(page_rec)
-                for c in candidates:
-                    if page_matches_candidate(text,c):
-                        matched.append({
-                          "fixture_id":str(c.get("fixture_id") or ""),"match":c.get("match"),"kickoff":c.get("kickoff"),
-                          "p_matrix":c.get("p_matrix"),"bookmaker":book,"url":url,
-                          "raw_evidence_path":page_rec["raw_evidence_path"],
-                          "adapter_status":adapter.get("status","MISSING"),
-                          "execution_quote_emitted":False,
-                          "blocker":None if adapter.get("status")=="CERTIFIED_EXACT_OVER25" else "BOOKMAKER_ADAPTER_NOT_CERTIFIED"
-                        })
+                for c in matching:
+                    matched.append({
+                      "fixture_id":str(c.get("fixture_id") or ""),"match":c.get("match"),"kickoff":c.get("kickoff"),
+                      "p_matrix":c.get("p_matrix"),"bookmaker":book,"url":url,
+                      "raw_evidence_path":page_rec["raw_evidence_path"],
+                      "adapter_status":adapter.get("status","MISSING"),
+                      "execution_quote_emitted":False,
+                      "blocker":None if adapter.get("status")=="CERTIFIED_EXACT_OVER25" else "BOOKMAKER_ADAPTER_NOT_CERTIFIED"
+                    })
         browser.close()
     out={
       "schema":"MATRIX_BROWSER_CDP_COLLECTION_V1",
