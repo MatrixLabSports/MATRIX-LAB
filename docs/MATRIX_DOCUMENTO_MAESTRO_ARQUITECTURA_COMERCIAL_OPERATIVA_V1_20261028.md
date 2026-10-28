@@ -300,3 +300,75 @@ MATRIX no pasa a lanzamiento hasta tener PASS en:
 **LANZAMIENTO COMERCIAL: NO-GO hasta completar los criterios del punto 13.**
 
 La prioridad técnica inmediata es cerrar el flujo de publicación Premium y luego construir FREE y STAKAZO 3X sobre la misma infraestructura auditada, manteniendo seguridad y membresías como capas transversales.
+
+
+## 15. Marca pública y adquisición — FIERO PICKS
+
+### Decisión de naming
+La marca pública seleccionada por el comité de Naming, Brand Strategy, Sports Marketing, Diseño, Dirección de Arte y Color es **FIERO PICKS**.
+
+MATRIX permanece como nombre interno del motor tecnológico y de gobierno. No se utiliza como marca comercial principal ante el público.
+
+### Arquitectura de marca
+- TikTok: **FIERO PICKS**.
+- Telegram público: **FIERO PICKS FREE**.
+- Telegram privado: **FIERO PICKS PREMIUM**.
+- Producto 3X: **FIERO PICKS 3X**.
+
+### Razones de selección
+- Fácil de pronunciar en español.
+- Dos palabras cortas.
+- “Picks” explica inmediatamente la categoría.
+- “Fiero” comunica carácter, intensidad y energía competitiva.
+- Permite un símbolo propio sin depender de balones, trofeos o iconografía genérica de apuestas.
+- Funciona como avatar, watermark, tarjeta y marca audiovisual.
+
+### Sistema visual
+Dirección principal: monograma **F** angular con sensación de avance/velocidad.
+
+Paleta:
+- Grafito: `#0B0D10`.
+- Naranja eléctrico: `#FF5A1F`.
+- Blanco: `#FFFFFF`.
+
+Criterio de colorimetría: alto contraste para móvil, energía sin usar el verde típico de apuestas, carácter deportivo y lectura fuerte sobre fondos oscuros. El logo debe funcionar también en una sola tinta.
+
+### MATRIX ACQUISITION FUNNEL
+**TikTok → FIERO PICKS FREE → FIERO PICKS PREMIUM → FIERO PICKS 3X**
+
+TikTok:
+- máximo 1 pick gratuito diario;
+- 0 picks permitido si ningún candidato supera los gates;
+- resultados cerrados y contenido educativo sin revelar lógica propietaria;
+- enlace al Telegram FREE.
+
+Telegram FREE:
+- público;
+- hasta 4 picks diarios;
+- resultados verificables;
+- conversión hacia Premium.
+
+Premium:
+- privado;
+- objetivo 6–10 picks/día sujeto a gates;
+- membresía semanal/mensual.
+
+FIERO PICKS 3X:
+- producto separado;
+- máximo 30 cupos;
+- política A/B/C ya definida.
+
+### Roles incorporados
+- Brand Identity Designer.
+- Art Director.
+- Color Strategist / especialista en psicología del color.
+- Naming Specialist.
+- Brand Strategist.
+- Sports Marketing Director.
+- Growth Lead.
+- Sponsorship Research Analyst.
+- Brand Partnerships & Sponsorship Manager.
+- Paid Media Strategist.
+
+### Verificación pendiente antes de registro/lanzamiento pago
+La búsqueda web es un filtro preliminar, no una autorización marcaria. Antes de registrar o invertir en publicidad se requiere búsqueda formal de antecedentes marcarios en Colombia (SIC/SIPI), disponibilidad de usuarios sociales y dominio.
