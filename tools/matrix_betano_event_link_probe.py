@@ -117,8 +117,10 @@ out={
       "schema":"MATRIX_BETANO_EVENT_LINK_PROBE_V2",
       "generated_at_utc":now.isoformat(),
       "target":{"home":target_home_raw,"away":target_away_raw},
-      "matches":unique[:50],\n      "ancestry":ancestry[:20],
-      "count":len(unique),\n      "ancestry_count":len(ancestry),
+      "matches":unique[:50],
+      "ancestry":ancestry[:20],
+      "count":len(unique),
+      "ancestry_count":len(ancestry),
       "status":"PASS_CLICKABLE_EVENT_CONTEXT_FOUND" if any(x.get("clickable_ancestor") for x in unique) else ("PASS_TEXT_CONTEXT_FOUND" if unique else "NO_EVENT_CONTEXT_FOUND"),
       "automatic_wagering":False,
       "real_money":"BLOCKED"
