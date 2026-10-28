@@ -63,3 +63,28 @@ def test_browser_preregistry_never_relabels_post_start_as_prospective():
     row=out["events"][0]
     assert row["prospective_observation"] is False
     assert row["temporal_status"]=="NOT_PROSPECTIVE_AT_PREREGISTRATION"
+
+
+def test_browser_preregistry_classifies_postponed_without_missing_kickoff():
+    w=_base_watchlist()
+    w["confirmed_both"]=[]
+    w["sofascore_only"]=[{
+        "sofascore_observation":"28/10/26 Aplazado FC Noah Noah FC Pyunik Yerevan Pyunik",
+        "source_count":1,
+        "kickoff_display_bogota":None,
+        "status":"SOFASCORE_ONLY_POSTPONED",
+        "freeze_blocker":"POSTPONED_NO_ACTIVE_KICKOFF",
+    }]
+    w["flashscore_only"]=[{
+        "flashscore_observation":"Kitara - BUL",
+        "source_count":1,
+        "kickoff_display_bogota":None,
+        "status":"FLASHSCORE_ONLY_POSTPONED",
+        "freeze_blocker":"POSTPONED_NO_ACTIVE_KICKOFF",
+    }]
+    out=build_browser_preregistry(w,target_date="2026-10-28")
+    assert out["counts"]["postponed_no_prospective_kickoff"]==2
+    assert out["counts"]["kickoff_not_certified"]==0
+    assert all(row["prospective_observation"] is False for row in out["events"])
+    assert all(row["eligible_for_freeze"] is False for row in out["events"])
+    assert out["policy"]["postponed_event_not_prospective"] is True
