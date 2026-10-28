@@ -4,6 +4,8 @@ name: MATRIX odds-api.net Colombia Catalog Probe
 
 on:
   workflow_dispatch:
+  schedule:
+    - cron: "17 */6 * * *"
   push:
     branches:
       - repair/cor09-world-pipeline
