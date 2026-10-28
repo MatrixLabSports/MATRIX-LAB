@@ -1,0 +1,50 @@
+{
+  "schema": "MATRIX_COMMERCIAL_PRODUCT_POLICY_V1",
+  "currency": "COP",
+  "products": {
+    "FREE": {
+      "price_cop": 0,
+      "channel_visibility": "PRIVATE_JOIN_REQUEST",
+      "daily_pick_cap": 4,
+      "daily_pick_minimum": 0,
+      "premium_results_after_final_allowed": true,
+      "force_volume": false
+    },
+    "PREMIUM_WEEKLY": {
+      "price_cop": 50000,
+      "duration_days": 7,
+      "daily_pick_target_min": 6,
+      "daily_pick_target_max": 10,
+      "force_volume": false
+    },
+    "PREMIUM_MONTHLY": {
+      "price_cop": 150000,
+      "duration_days": 30,
+      "daily_pick_target_min": 6,
+      "daily_pick_target_max": 10,
+      "force_volume": false
+    },
+    "STAKAZO_3X": {
+      "price_per_slot_cop": 15000,
+      "daily_slot_cap": 30,
+      "principal_count": 1,
+      "replacement_count_max": 2,
+      "combined_decimal_odds_exclusive_min": 3.0,
+      "separate_from_premium_subscription": true
+    }
+  },
+  "truth_in_advertising": {
+    "profit_guarantee": false,
+    "winning_pick_guarantee": false,
+    "replacement_service_may_be_offered": true,
+    "losses_must_not_be_hidden": true,
+    "essential_conditions_must_be_visible": true
+  },
+  "sports_governance": {
+    "no_pick_created_to_fill_commercial_quota": true,
+    "zero_picks_is_valid": true,
+    "quality_gates_must_not_be_relaxed": true,
+    "real_money": "BLOCKED",
+    "automatic_wagering": false
+  }
+}
