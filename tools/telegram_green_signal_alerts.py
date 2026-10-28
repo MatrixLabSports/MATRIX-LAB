@@ -689,9 +689,20 @@ def odds_api_net_exact_over25_offer(
         event_pages.append(ep if isinstance(ep, dict) else {"invalid_payload": True})
         if er.status_code >= 300 or not isinstance(ep, dict):
             if diagnostic is not None:
-                diagnostic["status"] = "BLOCKED_EVENT_SEARCH_PROVIDER_ERROR"
+                diagnostic["status"] = (
+                    "BLOCKED_EVENT_SEARCH_RATE_LIMIT"
+                    if int(er.status_code) == 429
+                    else "BLOCKED_EVENT_SEARCH_PROVIDER_ERROR"
+                )
                 diagnostic["event_search_http_status"] = int(er.status_code)
                 diagnostic["event_search_page_count"] = page_count
+                diagnostic["event_search_rows_seen"] = len(events)
+                diagnostic["event_search_error_code"] = ep.get("code") if isinstance(ep, dict) else None
+                diagnostic["event_search_error_detail"] = ep.get("detail") if isinstance(ep, dict) else None
+                diagnostic["event_search_request_id"] = ep.get("request_id") if isinstance(ep, dict) else None
+                diagnostic["event_search_retry_after_seconds"] = er.headers.get("Retry-After") if hasattr(er, "headers") else None
+                diagnostic["event_search_rate_limit_remaining"] = er.headers.get("X-RateLimit-Remaining") if hasattr(er, "headers") else None
+                diagnostic["event_search_rate_limit_bucket"] = er.headers.get("X-RateLimit-Bucket") if hasattr(er, "headers") else None
             return None
         page_items = ep.get("items", [])
         if isinstance(page_items, list):
@@ -2085,6 +2096,9 @@ def blocker_recovery_profile(gate_record: dict[str, Any]) -> dict[str, Any]:
         elif provider_status in {"BLOCKED_FIXTURE_LOOKUP", "BLOCKED_CREDENTIAL_OR_KICKOFF"}:
             variable = "FIXTURE_OR_KICKOFF_BINDING"
             recovery = ["SofaScore", "Flashscore", "API-Football"]
+        elif provider_status == "BLOCKED_EVENT_SEARCH_RATE_LIMIT":
+            variable = "ODDS_PROVIDER_RATE_LIMIT"
+            recovery = physical_open_bookmaker_names()
         elif provider_status == "BLOCKED_SNAPSHOT_PROVIDER_ERROR":
             variable = "ODDS_PROVIDER_SNAPSHOT"
             recovery = ["odds-api.net", "API-Football", *physical_open_bookmaker_names()]
@@ -2221,6 +2235,13 @@ def build_blocker_recovery_audit(
             **profile,
             "provider_identity_top_scores": provider_diag.get("identity_top_scores") or [],
             "provider_identity_top_candidates": (provider_diag.get("identity_top_candidates") or [])[:5],
+            "provider_event_search_http_status": provider_diag.get("event_search_http_status"),
+            "provider_event_search_error_code": provider_diag.get("event_search_error_code"),
+            "provider_event_search_error_detail": provider_diag.get("event_search_error_detail"),
+            "provider_event_search_request_id": provider_diag.get("event_search_request_id"),
+            "provider_event_search_retry_after_seconds": provider_diag.get("event_search_retry_after_seconds"),
+            "provider_event_search_rate_limit_remaining": provider_diag.get("event_search_rate_limit_remaining"),
+            "provider_event_search_rate_limit_bucket": provider_diag.get("event_search_rate_limit_bucket"),
             "api_football_offer_diagnostic_status": api_offer_diag.get("status"),
             "api_football_authorized_books_seen": api_offer_diag.get("authorized_books_seen") or [],
             "api_football_goals_over_under_books": api_offer_diag.get("goals_over_under_books") or [],
