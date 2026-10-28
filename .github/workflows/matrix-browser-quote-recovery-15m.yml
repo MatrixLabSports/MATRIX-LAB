@@ -21,7 +21,9 @@ jobs:
       - run: PYTHONPATH=. python -m pytest -q tests/test_matrix_browser_quote_recovery_queue.py tests/test_matrix_quote_recovery_evidence.py tests/test_matrix_quote_pipeline_certification.py
       - run: PYTHONPATH=. python -m tools.matrix_browser_quote_recovery_queue
       - name: Certify quote pipeline fail-closed
-        run: PYTHONPATH=. python -m tools.matrix_quote_pipeline_certification || true
+        id: quote_cert
+        continue-on-error: true
+        run: PYTHONPATH=. python -m tools.matrix_quote_pipeline_certification
       - shell: bash
         run: |
           set -euo pipefail
@@ -32,3 +34,7 @@ jobs:
           git commit -m "evidence(telegram): persist browser quote recovery queue"
           git pull --rebase origin repair/cor09-world-pipeline
           git push origin HEAD:repair/cor09-world-pipeline
+
+      - name: Enforce certification result
+        if: steps.quote_cert.outcome == 'failure'
+        run: exit 1
