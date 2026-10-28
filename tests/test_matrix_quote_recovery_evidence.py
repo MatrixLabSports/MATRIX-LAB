@@ -20,3 +20,8 @@ def test_post_kickoff_is_rejected():
 def test_weak_ev_is_rejected():
     x=base(); x["revalidated_ev"]=0.01
     with pytest.raises(ValueError,match="EV_LT_0_05"): validate(x)
+
+
+def test_unauthorized_bookmaker_is_rejected():
+    x=base(); x["bookmaker"]="Pinnacle"
+    with pytest.raises(ValueError,match="BOOKMAKER_NOT_AUTHORIZED_FOR_EXECUTION"): validate(x)
