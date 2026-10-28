@@ -134,3 +134,39 @@ def test_watchlist_rejects_temporal_capture_wrong_date():
         assert str(exc)=="FLASHSCORE_TEMPORAL_TARGET_DATE_MISMATCH"
     else:
         raise AssertionError("temporal target mismatch must fail closed")
+
+
+def test_watchlist_marks_flashscore_postponed_and_does_not_activate_original_time():
+    recon={
+      "status":"PASS_OPEN_RECONCILIATION",
+      "target_date_bogota":"2026-10-28",
+      "confirmed_both":[],
+      "sofascore_only":[],
+      "flashscore_only":[{"flashscore":"Kitara - BUL"}],
+      "ambiguous":[],
+    }
+    temporal={
+      "schema":"MATRIX_OPERA_FLASHSCORE_TEMPORAL_CAPTURE_V1",
+      "target_date_bogota":"2026-10-28",
+      "observations":[],
+      "policy":{"exact_name_match_required":True,"single_time_required":True},
+    }
+    postponed={
+      "schema":"MATRIX_OPERA_FLASHSCORE_POSTPONED_DETAIL_CAPTURE_V1",
+      "target_date_bogota":"2026-10-28",
+      "observations":[{
+        "flashscore_observation":"Kitara - BUL",
+        "displayed_original_datetime":"28.10.2026 08:00",
+        "status":"APLAZADO",
+      }],
+      "policy":{"postponed_original_time_is_not_active_kickoff":True},
+    }
+    out=build(recon,datetime(2026,10,28,3,27,tzinfo=timezone.utc),flashscore_temporal=temporal,flashscore_postponed=postponed)
+    row=out["flashscore_only"][0]
+    assert row["status"]=="FLASHSCORE_ONLY_POSTPONED"
+    assert row["kickoff_display_bogota"] is None
+    assert row["postponed_original_datetime"]=="28.10.2026 08:00"
+    assert row["freeze_blocker"]=="POSTPONED_NO_ACTIVE_KICKOFF"
+    assert row["eligible_for_freeze"] is False
+    assert out["counts"]["postponed_total"]==1
+    assert out["policy"]["postponed_original_time_is_not_active_kickoff"] is True
