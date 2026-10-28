@@ -502,3 +502,86 @@ Artefactos:
 - `docs/MATRIX_42_MARKET_ACTIVATION_PLAN_20261028.md`
 
 Fuentes de descubrimiento siguen en orden obligatorio: **SofaScore → Flashscore → APIs**.
+
+
+## 19. Comité Élite MATRIX — registro canónico de roles
+
+**Fuente canónica:** `config/MATRIX_ELITE_COMMITTEE_REGISTRY.json`
+
+El Comité Élite queda formalmente compuesto por **36 roles** distribuidos entre dirección, modelos, producción, riesgo, auditoría, comercial, seguridad, cumplimiento, marca y crecimiento.
+
+### Rol incorporado por cuello de botella de señales
+**Principal Real-Time Reliability & Odds Infrastructure Engineer**
+
+Responsable único del tramo:
+**candidato → cuota → failover → revalidación → freshness → kickoff → Telegram**.
+
+Ownership:
+- candidate_to_telegram_pipeline
+- provider_failover
+- pre_kickoff_sla
+- zero_infrastructure_loss
+
+KPI principal:
+`eligible_candidates_lost_to_infrastructure_before_kickoff=0`.
+
+Este rol tiene escalamiento directo cuando un candidato elegible se pierde por infraestructura, proveedor agotado, falta de failover, demora de scheduler, falta de cuota exacta o entrega tardía.
+
+### Roles técnicos/deportivos principales
+- Product Director
+- Quant Director
+- Calibration & Modeling Lead
+- Temporal Integrity Engineer
+- Sports Market Specialist
+- Market Price Mapping Engineer
+- Principal Real-Time Reliability & Odds Infrastructure Engineer
+- Market Data Integration Engineer
+- Observability & Incident Engineer
+- Telegram Delivery Engineer
+- CLV & Market Risk Engineer
+- Correlated Risk Engineer
+- Chief Risk Officer
+- QA & Regression Lead
+- Evidence & Audit Lead
+- Data Governance & Audit Engineer
+
+### Roles comerciales, seguridad y cumplimiento
+- Finance Lead
+- Pricing Strategist
+- Subscription Product Manager
+- CRM & Retention Lead
+- Customer Experience Lead
+- Anti-Fraud Lead
+- Privacy & Security Lead
+- Consumer Compliance Lead
+- Responsible Gambling Lead
+- Tax & Accounting Advisor
+
+### Marca y crecimiento
+- Brand Strategist
+- Naming Specialist
+- Brand Identity Designer
+- Art Director
+- Color Strategist
+- Sports Marketing Director
+- Growth Lead
+- Paid Media Strategist
+- Sponsorship Research Analyst
+- Brand Partnerships & Sponsorship Manager
+
+### Reglas permanentes del comité
+1. Ninguna reparación se considera completa por un PASS aislado de módulo.
+2. La certificación end-to-end tiene prioridad sobre pruebas parciales.
+3. Toda reparación operacional exige código, prueba/regresión, evidencia física y commit.
+4. Ningún rol puede relajar gates para producir señales.
+5. REAL_MONEY permanece BLOCKED.
+6. Missing no significa cero y no se permite imputación silenciosa.
+7. El orden de descubrimiento sigue siendo SofaScore → Flashscore → APIs.
+8. Toda pérdida de candidato por infraestructura se atribuye y escala al dueño correspondiente.
+
+### Protección
+- `tools/matrix_elite_committee_guard.py`
+- `tests/test_matrix_elite_committee_guard.py`
+- `.github/workflows/matrix-elite-committee-guard.yml`
+
+El guard impide eliminar, duplicar o cambiar silenciosamente los roles críticos y certifica que la pérdida de señales por infraestructura tenga un dueño canónico.
