@@ -16,6 +16,8 @@ def test_trace_separates_identity_and_exact_line():
     assert result["current_schema_attempts"] == 2
     assert result["identity_states"] == {"LOW_SCORE": 1, "MATCHED": 1}
     assert result["exact_over_2_5_seen_attempts"] == 2
+    assert result["exact_line_seen_identity_states"] == {"LOW_SCORE": 1, "MATCHED": 1}
+    assert result["exact_line_seen_discard_reasons"] == {"IDENTITY_LOW_SCORE": 1, "UNSPECIFIED": 1}
     assert result["exact_line_seen_but_executable_quote_rejected_attempts"] == 0
     assert result["both_identity_not_flagged_and_exact_line"] == 1
     assert result["telegram_delivery_acknowledgment"] == "NOT_VERIFIED_BY_QUOTE_LEDGER"
@@ -38,5 +40,6 @@ def test_exact_seen_can_still_be_invalid_for_execution():
     report = build(rows)
     assert report["exact_over_2_5_seen_attempts"] == 1
     assert report["exact_line_seen_but_executable_quote_rejected_attempts"] == 1
+    assert report["exact_line_seen_discard_reasons"] == {"BLOCKED_NO_VALID_EXACT_AUTHORIZED_BOOK_OVER25": 1}
     assert report["exact_line_seen_but_executable_quote_rejected_sample_ids"] == ["physical-attempt-1"]
     assert report["telegram_delivery_acknowledgment"] == "NOT_VERIFIED_BY_QUOTE_LEDGER"
