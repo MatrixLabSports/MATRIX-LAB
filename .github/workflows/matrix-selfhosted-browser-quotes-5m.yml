@@ -77,6 +77,13 @@ jobs:
           if (Test-Path "evidence/notifications/telegram/browser_cdp") {
             git add -- "evidence/notifications/telegram/browser_cdp"
           }
+          if (Test-Path "evidence/football_world_inventory") {
+            Get-ChildItem "evidence/football_world_inventory" -Recurse -Filter "MATRIX_BETANO_QUOTE_*.json" |
+              ForEach-Object {
+                $rel = Resolve-Path -Relative $_.FullName
+                git add -- $rel
+              }
+          }
 
           git diff --cached --quiet
           if ($LASTEXITCODE -eq 0) {
