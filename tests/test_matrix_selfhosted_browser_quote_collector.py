@@ -142,7 +142,7 @@ def test_betano_canonical_physical_quote_contract(tmp_path, monkeypatch):
       }
     }
     p=m.persist_betano_physical_quote(rec,datetime(2026,10,29,1,0,tzinfo=timezone.utc))
-    assert p=="evidence/football_world_inventory/20261029/MATRIX_BETANO_QUOTE_1490582.json"
+    assert __import__("pathlib").PurePath(p).parts==("evidence","football_world_inventory","20261029","MATRIX_BETANO_QUOTE_1490582.json")
     data=m.load(tmp_path/p)
     assert data["schema"]=="MATRIX_PHYSICAL_BOOK_QUOTE_V1"
     assert data["house"]=="Betano"
