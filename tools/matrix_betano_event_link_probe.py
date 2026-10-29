@@ -236,6 +236,61 @@ def main():
                     continue
         # Never close the externally managed CDP browser.
 
+    api_matches = []
+
+    with sync_playwright() as p:
+        browser = p.chromium.connect_over_cdp(endpoint, timeout=15000)
+        for ctx in browser.contexts:
+            for page in list(ctx.pages):
+                try:
+                    if page.is_closed() or "betano.co" not in (page.url or "").casefold():
+                        continue
+                    result = page.evaluate("""async ({home, away}) => {
+                      const endpoints = [
+                        '/api/home/top-events-v2/',
+                        '/danae-webapi/api/live/overview/latest?includeVirtuals=true&queryLanguageId=8&queryOperatorId=17'
+                      ];
+                      const out=[];
+                      const walk=(node,path='root',acc=[])=>{
+                        if (node == null) return acc;
+                        if (typeof node === 'string') {
+                          const low=node.toLowerCase();
+                          if (low.includes(home.toLowerCase()) || low.includes(away.toLowerCase())) acc.push({path,value:node});
+                          return acc;
+                        }
+                        if (Array.isArray(node)) {
+                          node.forEach((v,i)=>walk(v, path+'['+i+']', acc));
+                          return acc;
+                        }
+                        if (typeof node === 'object') {
+                          const text=JSON.stringify(node).toLowerCase();
+                          if (text.includes(home.toLowerCase()) && text.includes(away.toLowerCase())) {
+                            acc.push({path,object:node});
+                            return acc;
+                          }
+                          for (const [k,v] of Object.entries(node)) walk(v, path+'.'+k, acc);
+                        }
+                        return acc;
+                      };
+                      for (const endpoint of endpoints) {
+                        try {
+                          const r=await fetch(endpoint,{credentials:'include',cache:'no-store'});
+                          const ct=r.headers.get('content-type')||'';
+                          let body;
+                          if (ct.includes('json')) body=await r.json(); else body=await r.text();
+                          const matches=walk(body).slice(0,20);
+                          out.push({endpoint,status:r.status,contentType:ct,matches});
+                        } catch (e) {
+                          out.push({endpoint,error:String(e)});
+                        }
+                      }
+                      return out;
+                    }""", {"home": target_home_raw, "away": target_away_raw})
+                    api_matches.append({"page_url": page.url, "results": result})
+                except Exception as exc:
+                    api_matches.append({"page_url": page.url, "error": str(exc)})
+        # Never close the externally managed CDP browser.
+
     out = {
         "schema": "MATRIX_BETANO_EVENT_LINK_PROBE_V3",
         "generated_at_utc": now.isoformat(),
@@ -244,10 +299,12 @@ def main():
         "ancestry": ancestry[:20],
         "component_meta": component_meta[:20],
         "network_resources": network_resources[:500],
+        "api_matches": api_matches[:20],
         "count": len(unique),
         "ancestry_count": len(ancestry),
         "component_meta_count": len(component_meta),
         "network_resource_count": len(network_resources),
+        "api_match_context_count": len(api_matches),
         "status": (
             "PASS_CLICKABLE_EVENT_CONTEXT_FOUND"
             if any(item.get("clickable_ancestor") for item in unique)
@@ -274,6 +331,8 @@ def main():
                 "component_meta": out["component_meta"][:3],
                 "network_resource_count": out["network_resource_count"],
                 "network_resources": out["network_resources"][:40],
+                "api_match_context_count": out["api_match_context_count"],
+                "api_matches": out["api_matches"][:5],
             },
             ensure_ascii=False,
         )
