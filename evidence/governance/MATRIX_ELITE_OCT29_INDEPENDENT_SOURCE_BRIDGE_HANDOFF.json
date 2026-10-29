@@ -1,0 +1,35 @@
+{
+  "schema": "MATRIX_ELITE_INDEPENDENT_SOURCE_BRIDGE_HANDOFF_V1",
+  "created_at_bogota": "2026-10-29",
+  "branch": "repair/cor09-world-pipeline",
+  "implementation": {
+    "module": "tools/telegram_independent_source_readiness.py",
+    "commit": "e06315470cda9e9ce13872d9eee648cea86f6990",
+    "tests": "tests/test_telegram_independent_source_readiness.py",
+    "tests_commit": "74d07f6271d74693e90057683fa4838f958f07a9",
+    "workflow_commit": "09fcf79171d9b8305e29a815c557ceb5fc424fd5",
+    "workflow_run_id": 40825829416,
+    "workflow_run_status_at_record": "queued"
+  },
+  "verified_previous_run": {
+    "id": 40825397888,
+    "conclusion": "success",
+    "artifact_id": 12876745897,
+    "digest": "sha256:02ac16dd2da5cbab91cb2890596d3b026bc11202b8fa872b262c4140e0ef115a"
+  },
+  "scope": "Isolated offline JSON readiness assessment. It does not contact independent providers, Telegram, or expired APIs.",
+  "pending": [
+    "New workflow tests success",
+    "Authenticate actual independent source captures and bookmaker quote evidence",
+    "Integrate authorized independent collector and source provenance",
+    "Separate live supervisor execution from expired API gate",
+    "Telegram Bot API delivery acknowledgment",
+    "Default-branch scheduled execution confirmation"
+  ],
+  "controls": {
+    "real_money": "BLOCKED",
+    "automatic_wagering": false,
+    "paid_provider_calls": 0,
+    "telegram_delivery_certified": false
+  }
+}
