@@ -252,7 +252,7 @@ def main()->None:
     }
     OUT.parent.mkdir(parents=True,exist_ok=True)
     OUT.write_text(json.dumps(out,indent=2,ensure_ascii=False,sort_keys=True)+"\n",encoding="utf-8")
-    print(json.dumps({"status":out["status"],"candidates":len(candidates),"pages":len(pages),"matches":len(matched)},sort_keys=True))
+    print(json.dumps({"status":out["status"],"candidates":len(candidates),"pages":len(pages),"matches":len(matched),"betano_exact_quote_count":len(betano_exact_quotes),"betano_exact_quote_first":(betano_exact_quotes[0] if betano_exact_quotes else None)},sort_keys=True,ensure_ascii=False))
 
 if __name__=="__main__":
     main()
