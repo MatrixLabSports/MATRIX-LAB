@@ -262,15 +262,19 @@ def main()->None:
                   "body_sha256":sha,"raw_evidence_path":None,
                   "adapter_status":adapter.get("status","MISSING")
                 }
-                matching=[c for c in candidates if page_matches_candidate(text,c)]
-                if matching:
+                text_matching=[c for c in candidates if page_matches_candidate(text,c)]
+                structured_probe=(book=="betano" and adapter.get("status")=="CERTIFIED_EXACT_OVER25")
+                matching=list(candidates) if structured_probe else text_matching
+                page_rec["candidate_match_basis"]="STRUCTURED_API_PROBE" if structured_probe else "VISIBLE_PAGE_TEXT"
+                page_rec["visible_text_candidate_matches"]=len(text_matching)
+                if text_matching:
                     raw_name=f"{now.strftime('%Y%m%dT%H%M%SZ')}_{book}_{ci}_{pi}_{sha[:12]}.txt"
                     raw_path=RAW_ROOT/raw_name
                     raw_path.write_text(text,encoding="utf-8")
                     page_rec["raw_evidence_path"]=str(raw_path.relative_to(ROOT))
                 pages.append(page_rec)
                 betano_payloads=[]
-                if book=="betano" and adapter.get("status")=="CERTIFIED_EXACT_OVER25" and matching:
+                if structured_probe and matching:
                     try:
                         betano_payloads=page.evaluate("""async()=>{
                           const eps=['/api/home/top-events-v2/','/danae-webapi/api/live/overview/latest?includeVirtuals=true&queryLanguageId=8&queryOperatorId=17'];
