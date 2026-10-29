@@ -9,13 +9,48 @@
   },
   "bookmakers": {
     "betano": {
-      "status": "CAPTURE_ONLY_PENDING_SELECTOR_CERTIFICATION",
+      "status": "CERTIFIED_EXACT_OVER25",
       "market": "OVER_2_5",
       "exact_match_identity_required": true,
       "exact_market_identity_required": true,
       "unique_decimal_quote_required": true,
       "owner": "BROWSER_AUTOMATION_SELF_HOSTED_RUNNER_ENGINEER",
-      "entry_url": "https://www.betano.co/sport/futbol/"
+      "entry_url": "https://www.betano.co/sport/futbol/",
+      "adapter_version": "BETANO_API_EVENT_MARKET_SELECTION_V1",
+      "extraction_mode": "READ_ONLY_PAGE_SESSION_API",
+      "event_source_priority": [
+        "/api/home/top-events-v2/",
+        "/danae-webapi/api/live/overview/latest"
+      ],
+      "exact_chain_required": [
+        "event_identity",
+        "event.marketIdList",
+        "market.HCTG_or_OVUN_handicap_2_5",
+        "market.selectionIdList",
+        "selection.Mas_de_2_5",
+        "selection.price"
+      ],
+      "certification": {
+        "evidence_date_utc": "2026-10-29",
+        "prospective_runtime_filter_required": true,
+        "no_post_kickoff_backfill": true,
+        "examples": [
+          {
+            "match": "Nashville SC vs Philadelphia Union",
+            "event_id": 90298900,
+            "market_id": 3030175141,
+            "selection_id": 10691082472,
+            "price": 1.67
+          },
+          {
+            "match": "Austin FC vs Real Salt Lake",
+            "event_id": 90298901,
+            "market_id": 3030266366,
+            "selection_id": 10691468498,
+            "price": 1.6
+          }
+        ]
+      }
     },
     "betplay": {
       "status": "CAPTURE_ONLY_PENDING_SELECTOR_CERTIFICATION",
