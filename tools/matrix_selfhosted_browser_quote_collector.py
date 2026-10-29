@@ -65,13 +65,60 @@ def page_matches_candidate(text:str,candidate:dict[str,Any])->bool:
     home,away=parts
     return home in t and away in t
 
+def betano_exact_over25_from_payload(payload:dict[str,Any],home:str,away:str)->dict[str,Any]|None:
+    home_n,away_n=norm(home),norm(away)
+    def iter_nodes(node:Any):
+        if isinstance(node,dict):
+            yield node
+            for v in node.values():
+                yield from iter_nodes(v)
+        elif isinstance(node,list):
+            for v in node:
+                yield from iter_nodes(v)
+    id_index={}
+    for node in iter_nodes(payload):
+        if isinstance(node,dict) and node.get("id") is not None:
+            id_index[str(node.get("id"))]=node
+    for ev in iter_nodes(payload):
+        if not isinstance(ev,dict):
+            continue
+        participants=ev.get("participants") or ev.get("competitors") or []
+        names=[norm((p or {}).get("name") or (p or {}).get("shortName")) for p in participants if isinstance(p,dict)]
+        if not names or not any(home_n in n or n in home_n for n in names) or not any(away_n in n or n in away_n for n in names):
+            continue
+        mids=ev.get("marketIdList") or []
+        for mid in mids:
+            market=id_index.get(str(mid))
+            if not isinstance(market,dict):
+                continue
+            mname=norm(market.get("name"))
+            mtype=str(market.get("type") or "")
+            try: mh=float(market.get("handicap"))
+            except Exception: mh=None
+            if mh!=2.5 or not ("goles totales" in mname or mtype in {"HCTG","OVUN"}):
+                continue
+            for sid in market.get("selectionIdList") or []:
+                sel=id_index.get(str(sid))
+                if not isinstance(sel,dict):
+                    continue
+                try: sh=float(sel.get("handicap"))
+                except Exception: sh=None
+                if sh==2.5 and "mas de 2 5" in norm(sel.get("name") or sel.get("fullName")) and sel.get("price") is not None:
+                    return {
+                      "event_id":ev.get("id"),"event_url":ev.get("url"),"event_start_time":ev.get("startTime"),
+                      "market_id":market.get("id"),"market_name":market.get("name"),"market_type":mtype,
+                      "selection_id":sel.get("id"),"selection_name":sel.get("name"),"price":float(sel.get("price")),
+                      "participants":participants,
+                    }
+    return None
+
 def main()->None:
     cfg=load(CONFIG); audit=load(AUDIT); adapters=load(ADAPTERS)
     endpoint=os.environ.get("MATRIX_BROWSER_CDP_ENDPOINT",cfg["browser"]["default_cdp_endpoint"]).strip()
     now=datetime.now(timezone.utc).replace(microsecond=0)
     candidates=candidate_rows(audit,now)
     RAW_ROOT.mkdir(parents=True,exist_ok=True)
-    pages=[]; matched=[]
+    pages=[]; matched=[]; betano_exact_quotes=[]
     with sync_playwright() as p:
         browser=p.chromium.connect_over_cdp(endpoint,timeout=15000)
         contexts=browser.contexts
@@ -143,15 +190,46 @@ def main()->None:
                     raw_path.write_text(text,encoding="utf-8")
                     page_rec["raw_evidence_path"]=str(raw_path.relative_to(ROOT))
                 pages.append(page_rec)
+                betano_payloads=[]
+                if book=="betano" and adapter.get("status")=="CERTIFIED_EXACT_OVER25" and matching:
+                    try:
+                        betano_payloads=page.evaluate("""async()=>{
+                          const eps=['/api/home/top-events-v2/','/danae-webapi/api/live/overview/latest?includeVirtuals=true&queryLanguageId=8&queryOperatorId=17'];
+                          const out=[];
+                          for(const endpoint of eps){
+                            try{ const r=await fetch(endpoint,{credentials:'include',cache:'no-store'}); out.push({endpoint,status:r.status,body:await r.json()}); }
+                            catch(e){ out.push({endpoint,error:String(e)}); }
+                          }
+                          return out;
+                        }""")
+                    except Exception:
+                        betano_payloads=[]
                 for c in matching:
-                    matched.append({
+                    exact=None
+                    if book=="betano" and betano_payloads:
+                        parts=split_match(str(c.get("match") or ""))
+                        if parts:
+                            home_raw,away_raw=[x.strip() for x in re.split(r"\\s+vs\\.?\\s+",str(c.get("match") or ""),maxsplit=1,flags=re.I)]
+                            for payload_rec in betano_payloads:
+                                body=payload_rec.get("body") if isinstance(payload_rec,dict) else None
+                                if isinstance(body,dict):
+                                    exact=betano_exact_over25_from_payload(body,home_raw,away_raw)
+                                    if exact:
+                                        exact["endpoint"]=payload_rec.get("endpoint")
+                                        break
+                    emitted=bool(exact and float(exact.get("price") or 0)>0)
+                    rec={
                       "fixture_id":str(c.get("fixture_id") or ""),"match":c.get("match"),"kickoff":c.get("kickoff"),
                       "p_matrix":c.get("p_matrix"),"bookmaker":book,"url":url,
                       "raw_evidence_path":page_rec["raw_evidence_path"],
                       "adapter_status":adapter.get("status","MISSING"),
-                      "execution_quote_emitted":False,
-                      "blocker":None if adapter.get("status")=="CERTIFIED_EXACT_OVER25" else "BOOKMAKER_ADAPTER_NOT_CERTIFIED"
-                    })
+                      "execution_quote_emitted":emitted,
+                      "blocker":None if emitted else ("EXACT_OVER25_NOT_FOUND" if adapter.get("status")=="CERTIFIED_EXACT_OVER25" else "BOOKMAKER_ADAPTER_NOT_CERTIFIED")
+                    }
+                    if exact:
+                        rec["exact_quote"]=exact
+                        betano_exact_quotes.append({**rec})
+                    matched.append(rec)
         # IMPORTANT: connected via CDP to an externally managed persistent browser.
         # Do not call browser.close(); that would terminate the shared Chrome/Opera process.
     out={
@@ -162,7 +240,8 @@ def main()->None:
       "candidate_count_in_final_window":len(candidates),
       "authorized_book_pages_captured":len([x for x in pages if x.get("status")=="CAPTURED"]),
       "candidate_page_matches":len(matched),
-      "pages":pages,"matches":matched,
+      "betano_exact_quote_count":len(betano_exact_quotes),
+      "pages":pages,"matches":matched,"betano_exact_quotes":betano_exact_quotes,
       "policy":{
         "raw_capture_is_not_execution_quote":True,
         "site_specific_certified_adapter_required":True,
