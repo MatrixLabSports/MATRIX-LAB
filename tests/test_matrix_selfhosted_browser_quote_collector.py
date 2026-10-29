@@ -75,3 +75,13 @@ def test_betano_detail_probe_captures_network_json():
     assert '.on("response"' in source
     assert '"xhr","fetch"' in source
     assert "response.json()" in source
+
+
+def test_betano_dom_exact_over25_binding_contract():
+    import inspect
+    from tools.matrix_selfhosted_browser_quote_collector import betano_dom_exact_over25
+    source=inspect.getsource(betano_dom_exact_over25)
+    assert 'Goles totales Más/Menos' in source
+    assert 'Más de 2.5' in source
+    assert 'EVENT_URL+PAGE_TITLE+MARKET_CONTAINER+SELECTION_ARIA' in source
+    assert 'read_only' in source
