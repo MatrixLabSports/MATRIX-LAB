@@ -48,3 +48,18 @@ def test_quota_exhaustion_stops_calls_and_preserves_ledger(tmp_path):
     ]
     assert result["real_money"] == "BLOCKED"
     assert not (tmp_path / "prospective_market_freeze" / "settlement_ledger.jsonl").exists()
+
+
+def test_quota_resets_on_new_run(tmp_path):
+    """A quota failure must not persist as a permanent cross-run block."""
+    _write_freeze(tmp_path)
+    payload = {"errors": {"requests": "You have reached the request limit for the day"}, "response": []}
+    first = FakeSession(payload)
+    result1 = run(tmp_path, "test-key", datetime(2026, 9, 28, 20, 1, tzinfo=timezone.utc), first)
+    assert result1["quota_exhausted"] is True
+    second = FakeSession({"response": []})
+    result2 = run(tmp_path, "test-key", datetime(2026, 9, 29, 20, 1, tzinfo=timezone.utc), second)
+    assert result2["quota_exhausted"] is False
+    assert result2["network_calls"] == len(second.calls) == 1
+    assert result2["new_settlement_count"] == 0
+    assert result2["real_money"] == "BLOCKED"
