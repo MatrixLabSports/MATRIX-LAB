@@ -112,7 +112,7 @@ class _FakeSession:
         return _FakeResponse()
 
 
-def test_api_football_pinnacle_fallback_can_satisfy_primary_sharp_gate(monkeypatch):
+def test_api_football_pinnacle_fallback_blocks_expired_subscription(monkeypatch):
     from datetime import datetime, timezone
     import tools.telegram_green_signal_alerts as mod
 
@@ -136,11 +136,9 @@ def test_api_football_pinnacle_fallback_can_satisfy_primary_sharp_gate(monkeypat
         p=0.67,
     )
     state, detail = sharp_reference_gate_state(out)
-    assert state == "PASS_SHARP_REFERENCE_GATE"
-    assert detail["pinnacle_present"] is True
-    assert out["api_football_pinnacle_fallback"]["status"] == "PASS_FRESH_PINNACLE_REFERENCE"
-    assert out["api_football_pinnacle_fallback"]["provider_quote_age_seconds"] == 30
-    assert out["sharp_consensus"]["status"] == "SINGLE_SHARP_REFERENCE_ONLY"
+    assert state == "BLOCKED_NO_FRESH_PINNACLE_REFERENCE"
+    assert detail["pinnacle_present"] is False
+    assert out["api_football_pinnacle_fallback"]["status"] == "BLOCKED_PAID_API_SUBSCRIPTION_EXPIRED"
 
 
 def test_api_football_pinnacle_fallback_remains_fail_closed_when_stale(monkeypatch):
@@ -169,4 +167,4 @@ def test_api_football_pinnacle_fallback_remains_fail_closed_when_stale(monkeypat
     state, detail = sharp_reference_gate_state(out)
     assert state == "BLOCKED_NO_FRESH_PINNACLE_REFERENCE"
     assert detail["pinnacle_present"] is False
-    assert out["api_football_pinnacle_fallback"]["status"] == "BLOCKED_STALE_PINNACLE_REFERENCE"
+    assert out["api_football_pinnacle_fallback"]["status"] == "BLOCKED_PAID_API_SUBSCRIPTION_EXPIRED"
