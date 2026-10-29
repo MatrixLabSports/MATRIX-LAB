@@ -5,6 +5,7 @@ This is discovery-only; it cannot certify live quote revalidation or delivery.
 """
 from __future__ import annotations
 
+import argparse
 import json
 import time
 from datetime import timedelta
@@ -29,7 +30,12 @@ def collect() -> dict:
     for row in football.values():
         state = supervisor.prematch_revalidation_state(row, now)
         states[state] = states.get(state, 0) + 1
+    future = states.get("READY_FOR_FINAL_REVALIDATION", 0) + states.get("WAITING_FINAL_REVALIDATION_WINDOW", 0)
+    missing_future_source = not (supervisor.FOOTBALL_ROOT / dates[0]).is_dir()
     return {
+        "readiness_status": "BLOCKED_NO_FUTURE_FOOTBALL_CANDIDATES" if future == 0 else "FUTURE_CANDIDATES_PRESENT_NOT_QUOTE_VERIFIED",
+        "future_football_candidates": future,
+        "tomorrow_football_source_missing": missing_future_source,
         "schema": "MATRIX_TELEGRAM_OFFLINE_DISCOVERY_DIAGNOSTICS_V1",
         "observed_at_utc": now.isoformat(),
         "dates_bogota": dates,
@@ -52,7 +58,15 @@ def collect() -> dict:
 
 
 def main() -> None:
-    print(json.dumps(collect(), ensure_ascii=False, sort_keys=True))
+    parser = argparse.ArgumentParser(description="Read-only local discovery diagnostics")
+    parser.add_argument("--output", type=Path, help="Optional JSON evidence destination")
+    args = parser.parse_args()
+    report = collect()
+    encoded = json.dumps(report, ensure_ascii=False, sort_keys=True)
+    if args.output is not None:
+        args.output.parent.mkdir(parents=True, exist_ok=True)
+        args.output.write_text(json.dumps(report, indent=2, ensure_ascii=False, sort_keys=True) + "\\n", encoding="utf-8")
+    print(encoded)
 
 
 if __name__ == "__main__":
