@@ -299,6 +299,54 @@ def betano_detail_exact_over25(page,event_url:str,home:str,away:str)->tuple[dict
             except Exception:
                 pass
 
+def persist_betano_physical_quote(rec:dict[str,Any],captured_at:datetime)->str|None:
+    exact=rec.get("exact_quote") if isinstance(rec,dict) else None
+    if not isinstance(exact,dict):
+        return None
+    try:
+        price=float(exact.get("price") or 0)
+    except Exception:
+        return None
+    if price<=1.0:
+        return None
+    fixture_id=str(rec.get("fixture_id") or "").strip()
+    kickoff=str(rec.get("kickoff") or "").strip()
+    if not fixture_id or not kickoff:
+        return None
+    try:
+        kickoff_dt=datetime.fromisoformat(kickoff.replace("Z","+00:00")).astimezone(timezone.utc)
+    except Exception:
+        return None
+    if captured_at>=kickoff_dt:
+        return None
+    day=kickoff_dt.strftime("%Y%m%d")
+    root=ROOT/"evidence"/"football_world_inventory"/day
+    root.mkdir(parents=True,exist_ok=True)
+    path=root/f"MATRIX_BETANO_QUOTE_{fixture_id}.json"
+    payload={
+      "schema":"MATRIX_PHYSICAL_BOOK_QUOTE_V1",
+      "fixture_id":fixture_id,
+      "match":rec.get("match"),
+      "market":"Más de 2.5 goles",
+      "house":"Betano",
+      "decimal_odds":price,
+      "captured_at_utc":captured_at.isoformat(),
+      "kickoff_utc":kickoff_dt.isoformat(),
+      "p_matrix":rec.get("p_matrix"),
+      "source":"MATRIX_SELF_HOSTED_BROWSER_QUOTE_COLLECTOR",
+      "source_bookmaker":"betano",
+      "event_id":exact.get("event_id"),
+      "event_url":exact.get("event_url"),
+      "market_name":exact.get("market_name"),
+      "selection_name":exact.get("selection_name"),
+      "binding_evidence":exact.get("binding_evidence"),
+      "read_only":exact.get("read_only") is True,
+      "automatic_wagering":False,
+      "real_money":"BLOCKED"
+    }
+    path.write_text(json.dumps(payload,indent=2,ensure_ascii=False,sort_keys=True)+"\n",encoding="utf-8")
+    return str(path.relative_to(ROOT))
+
 def main()->None:
     cfg=load(CONFIG); audit=load(AUDIT); adapters=load(ADAPTERS)
     endpoint=os.environ.get("MATRIX_BROWSER_CDP_ENDPOINT",cfg["browser"]["default_cdp_endpoint"]).strip()
@@ -443,6 +491,11 @@ def main()->None:
                     matched.append(rec)
         # IMPORTANT: connected via CDP to an externally managed persistent browser.
         # Do not call browser.close(); that would terminate the shared Chrome/Opera process.
+    canonical_betano_quote_paths=[]
+    for rec in betano_exact_quotes:
+        pth=persist_betano_physical_quote(rec,now)
+        if pth:
+            canonical_betano_quote_paths.append(pth)
     out={
       "schema":"MATRIX_BROWSER_CDP_COLLECTION_V1",
       "generated_at_utc":now.isoformat(),
@@ -452,6 +505,7 @@ def main()->None:
       "authorized_book_pages_captured":len([x for x in pages if x.get("status")=="CAPTURED"]),
       "candidate_page_matches":len(matched),
       "betano_exact_quote_count":len(betano_exact_quotes),
+      "canonical_betano_quote_paths":canonical_betano_quote_paths,
       "pages":pages,"matches":matched,"betano_exact_quotes":betano_exact_quotes,
       "policy":{
         "raw_capture_is_not_execution_quote":True,
@@ -479,6 +533,7 @@ def main()->None:
       "status":out["status"],"candidates":len(candidates),"pages":len(pages),"matches":len(matched),
       "betano_exact_quote_count":len(betano_exact_quotes),
       "betano_exact_quote_first":(betano_exact_quotes[0] if betano_exact_quotes else None),
+      "canonical_betano_quote_paths":canonical_betano_quote_paths,
       "betano_zero_diagnostics":zero_diag
     },sort_keys=True,ensure_ascii=False))
 
