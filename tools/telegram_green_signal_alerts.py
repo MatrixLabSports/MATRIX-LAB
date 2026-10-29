@@ -2412,6 +2412,14 @@ def main() -> None:
     football = discover_football(dates)
     tennis = discover_tennis(dates)
     candidates = {**football, **tennis}
+    print(json.dumps({
+        "stage":"SUPERVISOR_START",
+        "football_candidates":len(football),
+        "tennis_candidates":len(tennis),
+        "total_candidates":len(candidates),
+        "real_money":"BLOCKED",
+        "automatic_wagering":False,
+    }, ensure_ascii=False, sort_keys=True), flush=True)
 
     ledger = load_json(LEDGER, {
         "schema": "MATRIX_TELEGRAM_SIGNAL_LEDGER_V2",
@@ -2584,9 +2592,16 @@ def main() -> None:
 
         lifecycle.setdefault("first_ready_for_final_revalidation_utc", now.isoformat())
         lifecycle["last_ready_for_final_revalidation_utc"] = now.isoformat()
+        print(json.dumps({
+            "stage":"FINAL_REVALIDATION_START",
+            "fixture_id":candidate.get("fixture_id"),
+            "match":candidate.get("match"),
+            "kickoff":candidate.get("kickoff"),
+        }, ensure_ascii=False, sort_keys=True), flush=True)
         required_house_key = bookmaker_key(candidate.get("house"))
         quote_query_at_utc = now_utc()
         api_football_offer_diagnostic: dict[str, Any] = {}
+        print(json.dumps({"stage":"API_FOOTBALL_QUOTE_START","fixture_id":candidate.get("fixture_id")},sort_keys=True),flush=True)
         primary_offer = exact_over25_offer(
             session,
             api_key,
@@ -2595,12 +2610,18 @@ def main() -> None:
             required_house_key,
             api_football_offer_diagnostic,
         )
+        print(json.dumps({
+            "stage":"API_FOOTBALL_QUOTE_DONE",
+            "fixture_id":candidate.get("fixture_id"),
+            "offer_found":isinstance(primary_offer,dict),
+        },sort_keys=True),flush=True)
         odds_api_net_diagnostic: dict[str, Any] = {}
         quota_decision = odds_api_quota_decision()
         kickoff_dt = parse_dt(candidate.get("kickoff"))
         seconds_to_kickoff = (kickoff_dt - now).total_seconds() if kickoff_dt is not None else -1
         quota_allows_odds_api = should_call_odds_api(quota_decision, seconds_to_kickoff)
         if quota_allows_odds_api:
+            print(json.dumps({"stage":"ODDS_API_NET_START","fixture_id":candidate.get("fixture_id")},sort_keys=True),flush=True)
             fallback_offer = odds_api_net_exact_over25_offer(
                 session,
                 odds_api_net_key,
@@ -2622,6 +2643,7 @@ def main() -> None:
                 "max_seconds_to_kickoff_for_odds_api_call": quota_decision.get("max_seconds_to_kickoff_for_odds_api_call"),
                 "provider_request_attempted": False,
             })
+        print(json.dumps({"stage":"QUOTE_SOURCES_DONE","fixture_id":candidate.get("fixture_id")},sort_keys=True),flush=True)
         physical_offer = physical_book_over25_offer(
             str(candidate["fixture_id"]),
             float(candidate["p_matrix"]),
@@ -2673,6 +2695,13 @@ def main() -> None:
             quote_attempt_persisted = True
             immutable_quote_attempts_this_run += 1
 
+        print(json.dumps({
+            "stage":"QUOTE_SELECTION_DONE",
+            "fixture_id":candidate.get("fixture_id"),
+            "selected_provider":(offer or {}).get("provider"),
+            "selected_odds":(offer or {}).get("odds"),
+            "selected_ev":(offer or {}).get("ev"),
+        },ensure_ascii=False,sort_keys=True),flush=True)
         final_quote_state = final_prematch_quote_state(offer)
         if final_quote_state != "PASS_FINAL_PREMATCH_REVALIDATION":
             gate_record["state"] = final_quote_state
