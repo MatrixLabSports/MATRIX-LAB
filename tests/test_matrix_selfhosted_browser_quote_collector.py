@@ -91,9 +91,9 @@ def test_betano_dom_scan_contract():
     import inspect
     from tools.matrix_selfhosted_browser_quote_collector import betano_dom_exact_over25
     source=inspect.getsource(betano_dom_exact_over25)
-    assert "document.querySelectorAll('button')" in source
+    assert "get_by_role" in source
     assert "Goles totales" in source
-    assert "EVENT_DETAIL_DOM_BUTTON_SCAN" in source
+    assert "EVENT_DETAIL_ACCESSIBLE_ROLE_BUTTON" in source
     assert "read_only" in source
 
 
