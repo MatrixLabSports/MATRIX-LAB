@@ -134,6 +134,57 @@ def betano_event_from_payload(payload:dict[str,Any],home:str,away:str)->dict[str
                 return node
     return None
 
+def betano_dom_exact_over25(detail_page,event_url:str,home:str,away:str)->dict[str,Any]|None:
+    try:
+        title=norm(detail_page.title())
+        if norm(home) not in title or norm(away) not in title:
+            return None
+        buttons=detail_page.locator('button[aria-label*="Más de 2.5"][aria-label*="odds"]')
+        for i in range(min(buttons.count(),20)):
+            btn=buttons.nth(i)
+            try:
+                info=btn.evaluate("""el=>{
+                  let cur=el;
+                  for(let depth=0;depth<10&&cur;depth++,cur=cur.parentElement){
+                    const text=(cur.innerText||'').trim();
+                    if(text.includes('Goles totales Más/Menos')){
+                      return {
+                        aria:el.getAttribute('aria-label')||'',
+                        text:(el.innerText||'').trim(),
+                        market_text:text.slice(0,2000),
+                        attrs:Object.fromEntries([...el.attributes].map(a=>[a.name,a.value]))
+                      };
+                    }
+                  }
+                  return null;
+                }""")
+            except Exception:
+                info=None
+            if not info:
+                continue
+            aria=str(info.get("aria") or "")
+            m=re.search(r"Más de 2\.5 with odds ([0-9]+(?:\.[0-9]+)?)",aria,re.I)
+            if not m:
+                continue
+            return {
+              "event_id":(re.search(r"/(\d{6,})/?$",str(event_url).rstrip("/")) or [None,None])[1],
+              "event_url":str(event_url),
+              "participants":[home,away],
+              "market_id":None,
+              "market_name":"Goles totales Más/Menos",
+              "market_type":"DOM_EVENT_MARKET",
+              "handicap":2.5,
+              "selection_id":None,
+              "selection_name":"Más de 2.5",
+              "price":float(m.group(1)),
+              "endpoint":"EVENT_DETAIL_DOM_ARIA",
+              "binding_evidence":"EVENT_URL+PAGE_TITLE+MARKET_CONTAINER+SELECTION_ARIA",
+              "read_only":True
+            }
+    except Exception:
+        return None
+    return None
+
 def betano_detail_exact_over25(page,event_url:str,home:str,away:str)->tuple[dict[str,Any]|None,list[str]]:
     ctx=page.context
     diagnostics=[]
@@ -206,6 +257,10 @@ def betano_detail_exact_over25(page,event_url:str,home:str,away:str)->tuple[dict
                     exact["detail_resource_type"]=str((item or {}).get("initiatorType") or "")
                     exact["event_detail_page"]=target
                     return exact,diagnostics
+        dom_exact=betano_dom_exact_over25(detail_page,event_url,home,away)
+        if dom_exact:
+            diagnostics.append("DOM_EVENT_MARKET_OVER25")
+            return dom_exact,diagnostics
         return None,diagnostics
     finally:
         if detail_page is not None:
