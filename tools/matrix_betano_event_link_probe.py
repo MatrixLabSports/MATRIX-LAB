@@ -276,27 +276,83 @@ def main():
                         if page.is_closed() or "betano.co" not in (page.url or "").casefold():
                             continue
                         result = page.evaluate("""async (candidates) => {
-                          const endpoint='/danae-webapi/api/live/overview/latest?includeVirtuals=true&queryLanguageId=8&queryOperatorId=17';
-                          const r=await fetch(endpoint,{credentials:'include',cache:'no-store'});
-                          const body=await r.json();
-                          const events=body?.events || body?.data?.events || {};
-                          const eventList=Array.isArray(events) ? events : Object.values(events);
+                          const endpoints=[
+                            '/api/home/top-events-v2/',
+                            '/danae-webapi/api/live/overview/latest?includeVirtuals=true&queryLanguageId=8&queryOperatorId=17'
+                          ];
                           const norm=s=>String(s||'').toLowerCase().normalize('NFD').replace(/[\\u0300-\\u036f]/g,'');
+                          const containsPair=(obj,home,away)=>{
+                            try {
+                              const t=norm(JSON.stringify(obj));
+                              return t.includes(home) && t.includes(away);
+                            } catch { return false; }
+                          };
+                          const findObjects=(node,home,away,path='root',acc=[])=>{
+                            if (node==null || acc.length>=30) return acc;
+                            if (Array.isArray(node)) {
+                              node.forEach((v,i)=>findObjects(v,home,away,path+'['+i+']',acc));
+                              return acc;
+                            }
+                            if (typeof node==='object') {
+                              if (containsPair(node,home,away)) {
+                                const keys=Object.keys(node);
+                                const eventish=keys.some(k=>/id|event|fixture|match|participant|market|selection|url|start|live/i.test(k));
+                                if (eventish) acc.push({path,object:node});
+                              }
+                              for (const [k,v] of Object.entries(node)) findObjects(v,home,away,path+'.'+k,acc);
+                            }
+                            return acc;
+                          };
+                          const responses=[];
+                          for (const endpoint of endpoints) {
+                            try {
+                              const r=await fetch(endpoint,{credentials:'include',cache:'no-store'});
+                              const body=await r.json();
+                              responses.push({endpoint,status:r.status,body});
+                            } catch(e) {
+                              responses.push({endpoint,error:String(e),body:null});
+                            }
+                          }
                           const out=[];
                           for (const c of candidates) {
                             const ch=norm(c.home), ca=norm(c.away);
-                            const ev=eventList.find(e=>{
-                              const ps=e?.participants||[];
-                              const names=ps.map(p=>norm(p?.name));
-                              return names.some(n=>n.includes(ch)||ch.includes(n)) && names.some(n=>n.includes(ca)||ca.includes(n));
-                            });
-                            if (!ev) { out.push({...c,status:'NO_BETANO_EVENT_MATCH'}); continue; }
-                            const sels=body?.selections?.byId || body?.selections || {};
-                            const vals=Array.isArray(sels)?sels:Object.values(sels);
-                            const over25=vals.filter(x=>norm(x?.name).includes('mas de 2.5') && Number(x?.handicap)===2.5);
-                            out.push({...c,status:'BETANO_EVENT_FOUND',event:{id:ev.id,url:ev.url,isLive:ev.isLive,startTime:ev.startTime,marketIdList:ev.marketIdList,participants:ev.participants},over25:over25.slice(0,20)});
+                            const endpointMatches=[];
+                            for (const resp of responses) {
+                              if (!resp.body) { endpointMatches.push({endpoint:resp.endpoint,status:resp.status,error:resp.error,matches:[]}); continue; }
+                              const matches=findObjects(resp.body,ch,ca).slice(0,10).map(m=>{
+                                const o=m.object||{};
+                                const flat=[];
+                                const collect=x=>{
+                                  if (x==null) return;
+                                  if (Array.isArray(x)) return x.forEach(collect);
+                                  if (typeof x==='object') {
+                                    if ((norm(x.name).includes('mas de 2.5') || (Number(x.handicap)===2.5 && norm(x.fullName).includes('mas'))) && x.price!=null) {
+                                      flat.push({id:x.id,name:x.name,fullName:x.fullName,handicap:x.handicap,price:x.price,typeId:x.typeId});
+                                    }
+                                    Object.values(x).forEach(collect);
+                                  }
+                                };
+                                collect(o);
+                                return {
+                                  path:m.path,
+                                  event:{
+                                    id:o.id ?? o.eventId ?? o.fixtureId ?? o.matchId ?? null,
+                                    url:o.url ?? o.eventUrl ?? o.route ?? null,
+                                    isLive:o.isLive ?? null,
+                                    startTime:o.startTime ?? o.startDate ?? o.kickoff ?? null,
+                                    participants:o.participants ?? o.competitors ?? null,
+                                    marketIdList:o.marketIdList ?? null
+                                  },
+                                  over25:flat.slice(0,20),
+                                  object:o
+                                };
+                              });
+                              endpointMatches.push({endpoint:resp.endpoint,status:resp.status,matches});
+                            }
+                            const any=endpointMatches.some(e=>e.matches.length>0);
+                            out.push({...c,status:any?'BETANO_PREMATCH_CONTEXT_FOUND':'NO_BETANO_EVENT_MATCH',endpoint_matches:endpointMatches});
                           }
-                          return {http_status:r.status,candidates:out};
+                          return {candidates:out};
                         }""", candidates)
                         prematch_candidate_probe.append({"page_url": page.url, "result": result})
                         break
