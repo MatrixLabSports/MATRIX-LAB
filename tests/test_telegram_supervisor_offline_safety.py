@@ -23,6 +23,21 @@ class OfflineSupervisorSafetyTests(unittest.TestCase):
             self.assertIn("raise RuntimeError", ast.unparse(node.body[0]))
         # No function is invoked here: the AST proves the guard precedes transport.
 
+    def test_unverified_paid_api_fails_closed_before_credentials_and_network(self):
+        env = dict(os.environ)
+        env.pop("MATRIX_SUPERVISOR_OFFLINE_PREFLIGHT", None)
+        env.pop("MATRIX_API_FOOTBALL_AUTHORIZED", None)
+        for key in ("TELEGRAM_BOT_TOKEN", "TELEGRAM_CHAT_ID", "API_FOOTBALL_KEY"):
+            env.pop(key, None)
+        result = subprocess.run(
+            [sys.executable, "-u", "-m", "tools.telegram_green_signal_alerts"],
+            cwd=SOURCE.parents[1], env=env, capture_output=True, text=True, timeout=20,
+            check=False,
+        )
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("API_FOOTBALL_SUBSCRIPTION_NOT_VERIFIED_FAIL_CLOSED", result.stderr)
+        self.assertNotIn("DISCOVERY_START", result.stdout)
+
     def test_offline_preflight_no_credentials_or_network(self):
         env = dict(os.environ)
         env["MATRIX_SUPERVISOR_OFFLINE_PREFLIGHT"] = "1"
