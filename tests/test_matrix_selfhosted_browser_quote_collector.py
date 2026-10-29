@@ -55,3 +55,9 @@ def test_betano_event_lookup_requires_both_teams():
     assert ev is not None
     assert ev["id"]==90302907
     assert betano_event_from_payload(payload,"Vancouver Whitecaps","Seattle Sounders") is None
+
+
+def test_betano_structured_probe_does_not_require_visible_text():
+    # Regression guard: Betano certified extraction is payload-driven, not gated by body text.
+    c={"match":"Vancouver Whitecaps vs San Diego"}
+    assert page_matches_candidate("Página Betano sin nombres visibles del partido",c) is False
