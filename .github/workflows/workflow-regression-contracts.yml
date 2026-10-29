@@ -27,7 +27,7 @@ permissions:
 
 concurrency:
   group: matrix-workflow-regression-${{ github.event.pull_request.head.ref || github.ref_name }}
-  cancel-in-progress: true
+  cancel-in-progress: false
 
 jobs:
   contracts:
