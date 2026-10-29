@@ -67,6 +67,17 @@ jobs:
       - name: Generate and validate immutable Telegram causal trace
         run: |
           PYTHONPATH=. python -m tools.telegram_causal_trace
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          report=json.loads(Path("evidence/notifications/telegram/MATRIX_TELEGRAM_CAUSAL_TRACE_LAST.json").read_text())
+          assert report["current_schema_attempts"] == sum(report["identity_states"].values())
+          assert report["current_schema_attempts"] == sum(report["discard_reasons"].values())
+          assert report["exact_over_2_5_seen_attempts"] == sum(report["exact_line_seen_discard_reasons"].values())
+          assert report["exact_over_2_5_seen_attempts"] == sum(report["exact_line_seen_identity_states"].values())
+          assert report["exact_line_seen_but_executable_quote_rejected_attempts"] <= report["exact_over_2_5_seen_attempts"]
+          print("TELEGRAM_CAUSAL_STRATA_CONSISTENT")
+          PY
           python -m json.tool evidence/notifications/telegram/MATRIX_TELEGRAM_CAUSAL_TRACE_LAST.json > /dev/null
           test -z "$(git status --porcelain -- evidence/notifications/telegram/MATRIX_TELEGRAM_QUOTE_ATTEMPTS.jsonl)"
 
