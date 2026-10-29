@@ -733,12 +733,20 @@ def odds_api_net_exact_over25_offer(
                 diagnostic["event_search_rows_seen"]=len(events)
                 diagnostic["total_budget_seconds"]=ODDS_API_NET_TOTAL_BUDGET_SECONDS
             return None
-        er = session.get(
-            ODDS_API_NET_BASE + "/events",
-            headers={"X-API-Key": key, "Accept": "application/json"},
-            params=params,
-            timeout=max(1.0,min(ODDS_API_NET_REQUEST_TIMEOUT_SECONDS,remaining)),
-        )
+        try:
+            er = session.get(
+                ODDS_API_NET_BASE + "/events",
+                headers={"X-API-Key": key, "Accept": "application/json"},
+                params=params,
+                timeout=max(1.0,min(ODDS_API_NET_REQUEST_TIMEOUT_SECONDS,remaining)),
+            )
+        except requests.RequestException as exc:
+            if diagnostic is not None:
+                diagnostic["status"]="BLOCKED_EVENT_SEARCH_TIMEOUT_OR_NETWORK"
+                diagnostic["event_search_page_count"]=page_count
+                diagnostic["event_search_rows_seen"]=len(events)
+                diagnostic["network_error_type"]=type(exc).__name__
+            return None
         try:
             ep = er.json()
         except Exception:
@@ -834,7 +842,15 @@ def odds_api_net_exact_over25_offer(
         return None
     if diagnostic is not None:
         diagnostic["odds_api_event_id"] = event_id
-    sr = session.get(
+    elapsed=time.monotonic()-budget_started
+    remaining=ODDS_API_NET_TOTAL_BUDGET_SECONDS-elapsed
+    if remaining<=0:
+        if diagnostic is not None:
+            diagnostic["status"]="BLOCKED_ODDS_API_NET_TOTAL_TIME_BUDGET"
+            diagnostic["total_budget_seconds"]=ODDS_API_NET_TOTAL_BUDGET_SECONDS
+        return None
+    try:
+        sr = session.get(
         ODDS_API_NET_BASE + f"/events/{event_id}/odds/snapshot",
         headers={"X-API-Key": key, "Accept": "application/json"},
         params={
@@ -844,8 +860,14 @@ def odds_api_net_exact_over25_offer(
             "include_source": "true",
             "include_unavailable": "true",
         },
-        timeout=20,
-    )
+            timeout=max(1.0,min(ODDS_API_NET_REQUEST_TIMEOUT_SECONDS,remaining)),
+        )
+
+    except requests.RequestException as exc:
+        if diagnostic is not None:
+            diagnostic["status"]="BLOCKED_SNAPSHOT_TIMEOUT_OR_NETWORK"
+            diagnostic["network_error_type"]=type(exc).__name__
+        return None
     try:
         sp = sr.json()
     except Exception:
