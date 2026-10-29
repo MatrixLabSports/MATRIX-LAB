@@ -203,6 +203,39 @@ def main():
                     continue
         # Never close the externally managed CDP browser.
 
+    network_resources = []
+
+    with sync_playwright() as p:
+        browser = p.chromium.connect_over_cdp(endpoint, timeout=15000)
+        for ctx in browser.contexts:
+            for page in list(ctx.pages):
+                try:
+                    if page.is_closed() or "betano.co" not in (page.url or "").casefold():
+                        continue
+                    resources = page.evaluate("""() => performance.getEntriesByType('resource').map(r => ({
+                      name:r.name,
+                      initiatorType:r.initiatorType,
+                      duration:r.duration,
+                      transferSize:r.transferSize
+                    }))""")
+                    for item in resources:
+                        url = str(item.get("name") or "")
+                        low = url.casefold()
+                        if any(token in low for token in [
+                            "event", "fixture", "match", "sport", "market", "coupon", "bet",
+                            "prematch", "pre-match", "smart", "selection"
+                        ]):
+                            network_resources.append({
+                                "page_url": page.url,
+                                "url": url,
+                                "initiator_type": item.get("initiatorType"),
+                                "duration": item.get("duration"),
+                                "transfer_size": item.get("transferSize"),
+                            })
+                except Exception:
+                    continue
+        # Never close the externally managed CDP browser.
+
     out = {
         "schema": "MATRIX_BETANO_EVENT_LINK_PROBE_V3",
         "generated_at_utc": now.isoformat(),
@@ -210,9 +243,11 @@ def main():
         "matches": unique[:50],
         "ancestry": ancestry[:20],
         "component_meta": component_meta[:20],
+        "network_resources": network_resources[:500],
         "count": len(unique),
         "ancestry_count": len(ancestry),
         "component_meta_count": len(component_meta),
+        "network_resource_count": len(network_resources),
         "status": (
             "PASS_CLICKABLE_EVENT_CONTEXT_FOUND"
             if any(item.get("clickable_ancestor") for item in unique)
@@ -237,6 +272,8 @@ def main():
                 "ancestry": out["ancestry"][:3],
                 "component_meta_count": out["component_meta_count"],
                 "component_meta": out["component_meta"][:3],
+                "network_resource_count": out["network_resource_count"],
+                "network_resources": out["network_resources"][:40],
             },
             ensure_ascii=False,
         )
