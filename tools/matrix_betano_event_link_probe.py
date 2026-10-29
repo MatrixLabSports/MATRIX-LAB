@@ -319,20 +319,49 @@ def main():
                             const endpointMatches=[];
                             for (const resp of responses) {
                               if (!resp.body) { endpointMatches.push({endpoint:resp.endpoint,status:resp.status,error:resp.error,matches:[]}); continue; }
+                              const buildIdIndex=(root)=>{
+                                const idx=new Map();
+                                const seen=new Set();
+                                const visit=node=>{
+                                  if (node==null || typeof node!=='object' || seen.has(node)) return;
+                                  seen.add(node);
+                                  if (!Array.isArray(node) && node.id!=null) idx.set(String(node.id),node);
+                                  if (Array.isArray(node)) node.forEach(visit);
+                                  else Object.values(node).forEach(visit);
+                                };
+                                visit(root);
+                                return idx;
+                              };
+                              const idIndex=buildIdIndex(resp.body);
                               const matches=findObjects(resp.body,ch,ca).slice(0,10).map(m=>{
                                 const o=m.object||{};
-                                const flat=[];
-                                const collect=x=>{
-                                  if (x==null) return;
-                                  if (Array.isArray(x)) return x.forEach(collect);
-                                  if (typeof x==='object') {
-                                    if ((norm(x.name).includes('mas de 2.5') || (Number(x.handicap)===2.5 && norm(x.fullName).includes('mas'))) && x.price!=null) {
-                                      flat.push({id:x.id,name:x.name,fullName:x.fullName,handicap:x.handicap,price:x.price,typeId:x.typeId});
-                                    }
-                                    Object.values(x).forEach(collect);
-                                  }
-                                };
-                                collect(o);
+                                const marketIds=Array.isArray(o.marketIdList)?o.marketIdList.map(String):[];
+                                const exactMarkets=[];
+                                const exactOver25=[];
+                                for (const mid of marketIds) {
+                                  const market=idIndex.get(mid);
+                                  if (!market) continue;
+                                  const mname=norm(market.name);
+                                  const mh=Number(market.handicap);
+                                  const looksTotal=(mname.includes('goles totales') || market.type==='HCTG' || market.type==='OVUN');
+                                  if (!looksTotal || mh!==2.5) continue;
+                                  const selectionIds=Array.isArray(market.selectionIdList)?market.selectionIdList.map(String):[];
+                                  const selections=selectionIds.map(id=>idIndex.get(id)).filter(Boolean);
+                                  const overs=selections.filter(sel=>{
+                                    const sn=norm(sel.name||sel.fullName||'');
+                                    return Number(sel.handicap)===2.5 && sn.includes('mas de 2.5') && sel.price!=null;
+                                  }).map(sel=>({
+                                    id:sel.id,name:sel.name,fullName:sel.fullName,handicap:sel.handicap,
+                                    price:sel.price,typeId:sel.typeId,market_id:market.id,market_name:market.name,market_type:market.type
+                                  }));
+                                  exactMarkets.push({
+                                    id:market.id,name:market.name,type:market.type,handicap:market.handicap,
+                                    selectionIdList:market.selectionIdList,selections:selections.map(sel=>({
+                                      id:sel.id,name:sel.name,fullName:sel.fullName,handicap:sel.handicap,price:sel.price,typeId:sel.typeId
+                                    }))
+                                  });
+                                  exactOver25.push(...overs);
+                                }
                                 return {
                                   path:m.path,
                                   event:{
@@ -343,7 +372,9 @@ def main():
                                     participants:o.participants ?? o.competitors ?? null,
                                     marketIdList:o.marketIdList ?? null
                                   },
-                                  over25:flat.slice(0,20),
+                                  exact_over25_markets:exactMarkets,
+                                  exact_over25:exactOver25,
+                                  exact_association_certifiable:exactOver25.length>0,
                                   object:o
                                 };
                               });
