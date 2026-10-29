@@ -48,7 +48,7 @@ jobs:
         run: python -m pip install pytest
 
       - name: Test calendar reconciliation
-        run: PYTHONPATH=. python -m pytest -q tests/test_reconcile_opera_football_calendar.py tests/test_matrix_football_clock_string_crosscheck.py tests/test_build_football_world_watchlist.py tests/test_football_browser_preregistry.py
+        run: PYTHONPATH=. python -m pytest -q tests/test_reconcile_opera_football_calendar.py tests/test_matrix_football_clock_string_crosscheck.py tests/test_matrix_football_temporal_quarantine.py tests/test_build_football_world_watchlist.py tests/test_football_browser_preregistry.py
 
       - name: Reconcile latest physical football calendar
         run: |
