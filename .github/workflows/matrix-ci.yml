@@ -15,10 +15,11 @@ on:
 permissions:
   contents: read
 
+# Every run has its own concurrency group: a newer commit cannot replace
+# an older pending run or cancel an in-progress certification in this workflow.
+# This does not prevent manual or repository-level cancellation.
 concurrency:
-  group: matrix-ci-${{ github.event.pull_request.head.ref || github.ref_name }}
-  # Keep an already running quality gate alive when frequent evidence commits arrive.
-  # GitHub may replace a pending run, but must not cancel the active certification.
+  group: matrix-ci-run-${{ github.run_id }}
   cancel-in-progress: false
 
 jobs:
