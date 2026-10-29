@@ -61,3 +61,8 @@ def test_betano_structured_probe_does_not_require_visible_text():
     # Regression guard: Betano certified extraction is payload-driven, not gated by body text.
     c={"match":"Vancouver Whitecaps vs San Diego"}
     assert page_matches_candidate("Página Betano sin nombres visibles del partido",c) is False
+
+
+def test_split_match_vancouver_san_diego_regression():
+    from tools.matrix_selfhosted_browser_quote_collector import split_match
+    assert split_match("Vancouver Whitecaps vs San Diego")==("vancouver whitecaps","san diego")
