@@ -27,3 +27,8 @@ def test_pinnacle_fallback_expired_does_not_call_http():
 def test_paid_window_uses_policy_not_presence_of_key():
     with patch.object(alerts, "football_paid_window_evaluate", return_value={"paid_window_active": False, "post_cutoff_override": False}):
         assert alerts.paid_football_quote_transport_allowed() is False
+
+
+def test_env_only_override_cannot_reopen_paid_transport():
+    with patch.object(alerts, "football_paid_window_evaluate", return_value={"paid_window_active": False, "post_cutoff_override": True}):
+        assert alerts.paid_football_quote_transport_allowed() is False
