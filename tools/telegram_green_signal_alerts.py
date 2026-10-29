@@ -28,6 +28,7 @@ from app.research.football.sharp_consensus import assess_sharp_consensus
 from app.market.colombia_bookmakers import EXECUTION_BOOKMAKERS
 from tools.telegram_quote_attempt_telemetry import build_attempt, append_attempt, load_verified, summarize_run, summarize_cumulative
 from tools.odds_api_quota_guard import should_call_odds_api
+from tools.football_subscription_deadline_guard import evaluate as football_paid_window_evaluate
 from tools.matrix_premium_cards import render_pick_png
 
 from app.research.football.correlated_exposure import (
@@ -1080,6 +1081,12 @@ def _recompute_sharp_consensus(diagnostic: dict[str, Any], p: float) -> None:
     )
 
 
+def paid_football_quote_transport_allowed() -> bool:
+    """Fail closed before paid quote HTTP calls after subscription cutoff."""
+    return bool(football_paid_window_evaluate(datetime.now(BOGOTA).date())["paid_window_active"] or
+                football_paid_window_evaluate(datetime.now(BOGOTA).date())["post_cutoff_override"])
+
+
 def api_football_pinnacle_over25_reference(
     session: requests.Session,
     api_key: str,
@@ -1093,6 +1100,11 @@ def api_football_pinnacle_over25_reference(
     never mutates P_MATRIX, and must be complete and <=120 seconds old.
     """
     key = str(api_key or "").strip()
+    if not paid_football_quote_transport_allowed():
+        if diagnostic is not None:
+            diagnostic.clear()
+            diagnostic.update({"status": "BLOCKED_PAID_API_SUBSCRIPTION_EXPIRED", "real_money": "BLOCKED"})
+        return None
     if diagnostic is not None:
         diagnostic.clear()
         diagnostic.update({
@@ -1419,6 +1431,10 @@ def exact_over25_offer(
             "eligible_offer_count": 0,
             "status": "STARTED",
         })
+    if not paid_football_quote_transport_allowed():
+        if diagnostic is not None:
+            diagnostic["status"] = "BLOCKED_PAID_API_SUBSCRIPTION_EXPIRED"
+        return None
     response = session.get(
         "https://v3.football.api-sports.io/odds",
         headers={"x-apisports-key": api_key},
