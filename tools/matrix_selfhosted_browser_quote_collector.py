@@ -138,26 +138,49 @@ def betano_detail_exact_over25(page,event_url:str,home:str,away:str)->tuple[dict
     ctx=page.context
     diagnostics=[]
     detail_page=None
+    captured_json=[]
     try:
         detail_page=ctx.new_page()
         target=event_url if str(event_url).startswith("http") else "https://www.betano.co"+str(event_url)
+
+        def on_response(response):
+            try:
+                url=str(response.url or "")
+                if "betano.co" not in url.casefold():
+                    return
+                ct=str(response.headers.get("content-type") or "").casefold()
+                rtype=str(response.request.resource_type or "")
+                if "json" not in ct and rtype not in {"xhr","fetch"}:
+                    return
+                body=response.json()
+                if isinstance(body,(dict,list)):
+                    captured_json.append({"url":url,"status":response.status,"resource_type":rtype,"body":body})
+            except Exception:
+                return
+
+        detail_page.on("response",on_response)
         detail_page.goto(target,wait_until="domcontentloaded",timeout=15000)
-        detail_page.wait_for_timeout(1800)
-        resources=detail_page.evaluate("""() => performance.getEntriesByType('resource').map(r=>r.name)""")
-        m=re.search(r"/(\\d{6,})/?$",str(event_url).rstrip("/"))
-        event_id=m.group(1) if m else ""
-        urls=[]
-        for u in resources:
-            low=str(u).casefold()
-            if "betano.co" not in low:
-                continue
-            if event_id and event_id in str(u):
-                urls.append(str(u)); continue
-            if any(tok in low for tok in ["event","prematch","pre-match","market","coupon"]):
-                urls.append(str(u))
-        seen=set()
-        for u in urls[:20]:
-            if u in seen:
+        detail_page.wait_for_timeout(2500)
+
+        for rec in captured_json[:100]:
+            diagnostics.append(str(rec.get("url") or ""))
+            body=rec.get("body")
+            if isinstance(body,(dict,list)):
+                exact=betano_exact_over25_from_payload(body,home,away)
+                if exact:
+                    exact["detail_resource_url"]=str(rec.get("url") or "")
+                    exact["detail_resource_type"]=rec.get("resource_type")
+                    exact["event_detail_page"]=target
+                    return exact,diagnostics
+
+        # Secondary bounded fallback for resources that were loaded before listener processing
+        resources=detail_page.evaluate("""() => performance.getEntriesByType('resource')
+          .filter(r => ['fetch','xmlhttprequest'].includes(String(r.initiatorType||'').toLowerCase()))
+          .map(r=>({url:r.name,initiatorType:r.initiatorType}))""")
+        seen=set(diagnostics)
+        for item in resources[:40]:
+            u=str((item or {}).get("url") or "")
+            if not u or u in seen or "betano.co" not in u.casefold():
                 continue
             seen.add(u)
             try:
@@ -176,10 +199,11 @@ def betano_detail_exact_over25(page,event_url:str,home:str,away:str)->tuple[dict
                 continue
             diagnostics.append(str((res or {}).get("url") or u))
             body=(res or {}).get("body") if isinstance(res,dict) else None
-            if isinstance(body,dict):
+            if isinstance(body,(dict,list)):
                 exact=betano_exact_over25_from_payload(body,home,away)
                 if exact:
                     exact["detail_resource_url"]=str((res or {}).get("url") or u)
+                    exact["detail_resource_type"]=str((item or {}).get("initiatorType") or "")
                     exact["event_detail_page"]=target
                     return exact,diagnostics
         return None,diagnostics
