@@ -120,3 +120,34 @@ def test_betano_execution_quote_requires_odds_above_1_50():
     source=open("tools/matrix_selfhosted_browser_quote_collector.py",encoding="utf-8").read()
     assert "exact_price>1.50" in source
     assert "ODDS_BELOW_MIN_1_50" in source
+
+
+def test_betano_canonical_physical_quote_contract(tmp_path, monkeypatch):
+    from datetime import datetime, timezone
+    import tools.matrix_selfhosted_browser_quote_collector as m
+    monkeypatch.setattr(m,"ROOT",tmp_path)
+    rec={
+      "fixture_id":"1490582",
+      "match":"Vancouver Whitecaps vs San Diego",
+      "kickoff":"2026-10-29T02:30:00+00:00",
+      "p_matrix":0.6511733445,
+      "exact_quote":{
+        "price":1.31,
+        "event_id":"90302907",
+        "event_url":"/cuotas-de-partido/vancouver-whitecaps-fc-san-diego-fc/90302907/",
+        "market_name":"Goles totales Más/Menos",
+        "selection_name":"Más de 2.5",
+        "binding_evidence":"EVENT_URL+PAGE_TITLE+BOTH_TEAMS+MARKET_CONTAINER+ACCESSIBLE_BUTTON_NAME",
+        "read_only":True,
+      }
+    }
+    p=m.persist_betano_physical_quote(rec,datetime(2026,10,29,1,0,tzinfo=timezone.utc))
+    assert p=="evidence/football_world_inventory/20261029/MATRIX_BETANO_QUOTE_1490582.json"
+    data=m.load(tmp_path/p)
+    assert data["schema"]=="MATRIX_PHYSICAL_BOOK_QUOTE_V1"
+    assert data["house"]=="Betano"
+    assert data["decimal_odds"]==1.31
+    assert data["market"]=="Más de 2.5 goles"
+    assert data["read_only"] is True
+    assert data["automatic_wagering"] is False
+    assert data["real_money"]=="BLOCKED"
