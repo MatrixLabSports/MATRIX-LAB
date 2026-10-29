@@ -1,0 +1,29 @@
+{
+  "schema": "MATRIX_ELITE_OCT29_CLOCK_JSON_INTEGRITY_AUDIT_V1",
+  "target_date_bogota": "2026-10-29",
+  "initial_workflow_run": {
+    "id": 40820869632,
+    "conclusion": "success",
+    "issue": "Output ended in literal backslash-n, so JSON.parse failed despite successful workflow"
+  },
+  "repair": {
+    "workflow_commit": "b10410fb412749476fc54577d213163920a645e4",
+    "repaired_artifact_commit": "faab04d5705e21e54ec45ce62dd2948b442b601d",
+    "guard": "json.loads(out.read_text(encoding='utf-8')) == result",
+    "new_workflow_run_id": 40821039459,
+    "new_workflow_run_status_at_check": "in_progress"
+  },
+  "verified_repaired_artifact": {
+    "identity_confirmed": 74,
+    "clock_string_match": 62,
+    "clock_string_mismatch": 2,
+    "not_comparable": 10
+  },
+  "limits": {
+    "timezone_certified": false,
+    "freeze_eligible": 0,
+    "automatic_wagering": false,
+    "real_money": "BLOCKED"
+  },
+  "next_action": "Confirm run 40821039459 success and validate persisted JSON after its execution"
+}
