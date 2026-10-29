@@ -37,6 +37,8 @@ class OfflineDiscoveryDiagnosticsTests(unittest.TestCase):
             report = diagnostic.collect()
         self.assertEqual(report["calendar_to_signal_gap"], "NOT_ESTABLISHED")
         self.assertEqual(report["upstream_calendar_evidence"]["calendar"]["status"], "MISSING")
+        self.assertFalse(report["future_calendar_evidence"]["complete_chain_present"])
+        self.assertEqual(report["future_calendar_evidence"]["target_date_bogota"], report["dates_bogota"][0])
 
     def test_json_output_ends_with_real_newline(self):
         import tempfile
