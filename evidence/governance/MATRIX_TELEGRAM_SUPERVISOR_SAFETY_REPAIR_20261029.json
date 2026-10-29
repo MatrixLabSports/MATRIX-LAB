@@ -1,0 +1,24 @@
+{
+  "schema": "MATRIX_TELEGRAM_SUPERVISOR_SAFETY_REPAIR_V1",
+  "recorded_date": "2026-10-29",
+  "scope": "offline safety guard and tests only",
+  "source_commit": "e7050cc43",
+  "code_commit": "32a00ec0f4dbed0344448cbae9d19650199a34b2",
+  "test_commit": "7b30673ed0f5f38d1fe381b7d878b4118134406b",
+  "modified_file": "tools/telegram_green_signal_alerts.py",
+  "test_file": "tests/test_telegram_supervisor_offline_safety.py",
+  "guards": [
+    "MATRIX_TELEGRAM_NO_SEND=1 blocks send_telegram and send_telegram_photo by raising before network",
+    "MATRIX_SUPERVISOR_OFFLINE_PREFLIGHT=1 returns JSON before token checks and network"
+  ],
+  "physical_verification": {
+    "github_commits": "WRITE_CONFIRMED",
+    "tests_executed": "NOT_YET_VERIFIED",
+    "windows_runtime": "NOT_YET_VERIFIED",
+    "full_supervisor": "NOT_CERTIFIED",
+    "api_football_subscription": "EXPIRED_OR_NOT_VERIFIED",
+    "no_real_money": "REQUIRED"
+  },
+  "next_action": "Run offline tests and preflight on Windows, capture stdout, do not run full supervisor; then address expired API dependency and timeouts.",
+  "caveat": "Offline preflight prints a zero-call claim by design; it is not runtime network telemetry or a full execution certification."
+}
