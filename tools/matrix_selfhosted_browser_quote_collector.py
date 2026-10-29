@@ -419,14 +419,20 @@ def main()->None:
                                 exact,detail_diagnostics=betano_detail_exact_over25(page,str(event_obj.get("url")),home_raw,away_raw)
                                 if exact:
                                     exact["endpoint"]="EVENT_DETAIL_PAGE_NETWORK"
-                    emitted=bool(exact and float(exact.get("price") or 0)>0)
+                    exact_price=float(exact.get("price") or 0) if exact else 0.0
+                    exact_found=bool(exact and exact_price>0)
+                    emitted=bool(exact_found and exact_price>1.50)
                     rec={
                       "fixture_id":str(c.get("fixture_id") or ""),"match":c.get("match"),"kickoff":c.get("kickoff"),
                       "p_matrix":c.get("p_matrix"),"bookmaker":book,"url":url,
                       "raw_evidence_path":page_rec["raw_evidence_path"],
                       "adapter_status":adapter.get("status","MISSING"),
                       "execution_quote_emitted":emitted,
-                      "blocker":None if emitted else ("EXACT_OVER25_NOT_FOUND" if adapter.get("status")=="CERTIFIED_EXACT_OVER25" else "BOOKMAKER_ADAPTER_NOT_CERTIFIED")
+                      "blocker":(
+                        None if emitted else
+                        ("ODDS_BELOW_MIN_1_50" if exact_found and exact_price<=1.50 else
+                         ("EXACT_OVER25_NOT_FOUND" if adapter.get("status")=="CERTIFIED_EXACT_OVER25" else "BOOKMAKER_ADAPTER_NOT_CERTIFIED"))
+                      )
                     }
                     if detail_diagnostics:
                         rec["betano_detail_resources_checked"]=detail_diagnostics[:30]
