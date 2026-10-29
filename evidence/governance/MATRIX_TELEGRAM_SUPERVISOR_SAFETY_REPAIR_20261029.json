@@ -13,12 +13,14 @@
   ],
   "physical_verification": {
     "github_commits": "WRITE_CONFIRMED",
-    "tests_executed": "NOT_YET_VERIFIED",
-    "windows_runtime": "NOT_YET_VERIFIED",
+    "tests_executed": "2_OF_2_WINDOWS_PASS_BEFORE_PAID_API_GATE; THIRD_TEST_PENDING",
+    "windows_runtime": "USER_LOG_CONFIRMED_2_OF_2_TESTS_PASS_AND_OFFLINE_PREFLIGHT_EXIT_ZERO",
     "full_supervisor": "NOT_CERTIFIED",
     "api_football_subscription": "EXPIRED_OR_NOT_VERIFIED",
     "no_real_money": "REQUIRED"
   },
-  "next_action": "Run offline tests and preflight on Windows, capture stdout, do not run full supervisor; then address expired API dependency and timeouts.",
-  "caveat": "Offline preflight prints a zero-call claim by design; it is not runtime network telemetry or a full execution certification."
+  "next_action": "Run 3 offline unit tests on Windows. Then design authorized source-independent supervisor path, verify periodic workflow and full completion without expired API or Telegram send.",
+  "caveat": "Offline preflight prints a zero-call claim by design; it is not runtime network telemetry or a full execution certification.",
+  "paid_api_guard_commit": "1c529277e801a45ffde6a8d74c85c3d9970d1b00",
+  "paid_api_test_commit": "00bf1e968c86d801688552c034d54c5413192852"
 }
