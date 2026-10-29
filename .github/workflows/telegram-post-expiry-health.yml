@@ -39,7 +39,7 @@ jobs:
         with:
           python-version: "3.11"
       - name: Install offline test runner
-        run: python -m pip install pytest
+        run: python -m pip install pytest requests pillow
       - name: Test fail-closed post-expiry diagnosis
         run: PYTHONPATH=. python -m pytest -q tests/test_telegram_post_expiry_health.py tests/test_telegram_paid_quote_expiry_guard.py
       - name: Generate independent offline diagnosis
