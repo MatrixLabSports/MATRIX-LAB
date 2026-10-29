@@ -15,14 +15,18 @@ def build(rows):
     states = Counter(str((r.get("identity_match") or {}).get("state") or "UNKNOWN") for r in current)
     discards = Counter(str(r.get("final_discard_reason") or "UNSPECIFIED") for r in current)
     exact = [r for r in current if r.get("over_2_5_seen_any_authorized")]
-    matched = [r for r in current if (r.get("identity_match") or {}).get("state") not in IDENTITY_BAD]
+    matched = [r for r in current if (r.get("identity_match") or {}).get("state") == "MATCHED"]
     exact_seen_but_invalid = [r for r in exact if r.get("final_discard_reason") == "BLOCKED_NO_VALID_EXACT_AUTHORIZED_BOOK_OVER25"]
+    exact_discard_reasons = Counter(str(r.get("final_discard_reason") or "UNSPECIFIED") for r in exact)
+    exact_identity_states = Counter(str((r.get("identity_match") or {}).get("state") or "UNKNOWN") for r in exact)
     return {
         "exact_line_seen_but_executable_quote_rejected_attempts": len(exact_seen_but_invalid),
         "exact_line_seen_but_executable_quote_rejected_sample_ids": [
             r.get("attempt_id") for r in exact_seen_but_invalid[:5]
         ],
-        "schema": "MATRIX_TELEGRAM_CAUSAL_TRACE_V1",
+        "exact_line_seen_discard_reasons": dict(sorted(exact_discard_reasons.items())),
+        "exact_line_seen_identity_states": dict(sorted(exact_identity_states.items())),
+        "schema": "MATRIX_TELEGRAM_CAUSAL_TRACE_V2",
         "source": str(LEDGER),
         "verified_immutable_chain_required": True,
         "current_schema_attempts": len(current),
