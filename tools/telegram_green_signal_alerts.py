@@ -2446,6 +2446,10 @@ def main() -> None:
             "full_supervisor_certified": False,
         }, sort_keys=True), flush=True)
         return
+    # Paid football API subscription expired on 2026-10-28; do not contact it
+    # without renewed authorization verified outside this script.
+    if os.environ.get("MATRIX_API_FOOTBALL_AUTHORIZED", "").strip() != "1":
+        raise SystemExit("API_FOOTBALL_SUBSCRIPTION_NOT_VERIFIED_FAIL_CLOSED")
     token = os.environ.get("TELEGRAM_BOT_TOKEN", "").strip()
     chat_id = os.environ.get("TELEGRAM_CHAT_ID", "").strip()
     api_key = os.environ.get("API_FOOTBALL_KEY", "").strip()
