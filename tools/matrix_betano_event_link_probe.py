@@ -237,6 +237,76 @@ def main():
         # Never close the externally managed CDP browser.
 
     api_matches = []
+    prematch_candidate_probe = []
+    try:
+        audit_path = Path("evidence/notifications/telegram/MATRIX_TELEGRAM_BLOCKER_RECOVERY_AUDIT_LAST.json")
+        audit = json.loads(audit_path.read_text(encoding="utf-8")) if audit_path.exists() else {}
+        now_utc = datetime.now(timezone.utc)
+        candidates = []
+        for rec in audit.get("records", []):
+            try:
+                kickoff = datetime.fromisoformat(str(rec.get("kickoff")).replace("Z", "+00:00"))
+            except Exception:
+                continue
+            if kickoff <= now_utc:
+                continue
+            if rec.get("recoverability") not in {
+                "RECOVERABLE_WHILE_PREMATCH",
+                "RECOVERABLE_WITH_BETTER_AUTHORIZED_QUOTE_WHILE_PREMATCH",
+                "TEMPORAL_WAIT",
+            }:
+                continue
+            match = str(rec.get("match") or "")
+            if " vs " not in match:
+                continue
+            home, away = match.split(" vs ", 1)
+            candidates.append({
+                "fixture_id": rec.get("fixture_id"),
+                "home": home.strip(),
+                "away": away.strip(),
+                "kickoff": kickoff.isoformat(),
+                "p_matrix": rec.get("p_matrix"),
+                "recoverability": rec.get("recoverability"),
+            })
+        with sync_playwright() as p:
+            browser = p.chromium.connect_over_cdp(endpoint, timeout=15000)
+            for ctx in browser.contexts:
+                for page in list(ctx.pages):
+                    try:
+                        if page.is_closed() or "betano.co" not in (page.url or "").casefold():
+                            continue
+                        result = page.evaluate("""async (candidates) => {
+                          const endpoint='/danae-webapi/api/live/overview/latest?includeVirtuals=true&queryLanguageId=8&queryOperatorId=17';
+                          const r=await fetch(endpoint,{credentials:'include',cache:'no-store'});
+                          const body=await r.json();
+                          const events=body?.events || body?.data?.events || {};
+                          const eventList=Array.isArray(events) ? events : Object.values(events);
+                          const norm=s=>String(s||'').toLowerCase().normalize('NFD').replace(/[\\u0300-\\u036f]/g,'');
+                          const out=[];
+                          for (const c of candidates) {
+                            const ch=norm(c.home), ca=norm(c.away);
+                            const ev=eventList.find(e=>{
+                              const ps=e?.participants||[];
+                              const names=ps.map(p=>norm(p?.name));
+                              return names.some(n=>n.includes(ch)||ch.includes(n)) && names.some(n=>n.includes(ca)||ca.includes(n));
+                            });
+                            if (!ev) { out.push({...c,status:'NO_BETANO_EVENT_MATCH'}); continue; }
+                            const sels=body?.selections?.byId || body?.selections || {};
+                            const vals=Array.isArray(sels)?sels:Object.values(sels);
+                            const over25=vals.filter(x=>norm(x?.name).includes('mas de 2.5') && Number(x?.handicap)===2.5);
+                            out.push({...c,status:'BETANO_EVENT_FOUND',event:{id:ev.id,url:ev.url,isLive:ev.isLive,startTime:ev.startTime,marketIdList:ev.marketIdList,participants:ev.participants},over25:over25.slice(0,20)});
+                          }
+                          return {http_status:r.status,candidates:out};
+                        }""", candidates)
+                        prematch_candidate_probe.append({"page_url": page.url, "result": result})
+                        break
+                    except Exception as exc:
+                        prematch_candidate_probe.append({"page_url": page.url, "error": str(exc)})
+                if prematch_candidate_probe:
+                    break
+    except Exception as exc:
+        prematch_candidate_probe.append({"error": str(exc)})
+
 
     with sync_playwright() as p:
         browser = p.chromium.connect_over_cdp(endpoint, timeout=15000)
@@ -300,11 +370,13 @@ def main():
         "component_meta": component_meta[:20],
         "network_resources": network_resources[:500],
         "api_matches": api_matches[:20],
+        "prematch_candidate_probe": prematch_candidate_probe[:10],
         "count": len(unique),
         "ancestry_count": len(ancestry),
         "component_meta_count": len(component_meta),
         "network_resource_count": len(network_resources),
         "api_match_context_count": len(api_matches),
+        "prematch_candidate_probe_count": len(prematch_candidate_probe),
         "status": (
             "PASS_CLICKABLE_EVENT_CONTEXT_FOUND"
             if any(item.get("clickable_ancestor") for item in unique)
@@ -333,6 +405,8 @@ def main():
                 "network_resources": out["network_resources"][:40],
                 "api_match_context_count": out["api_match_context_count"],
                 "api_matches": out["api_matches"][:5],
+                "prematch_candidate_probe_count": out["prematch_candidate_probe_count"],
+                "prematch_candidate_probe": out["prematch_candidate_probe"][:5],
             },
             ensure_ascii=False,
         )
