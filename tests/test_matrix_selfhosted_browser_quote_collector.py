@@ -66,3 +66,12 @@ def test_betano_structured_probe_does_not_require_visible_text():
 def test_split_match_vancouver_san_diego_regression():
     from tools.matrix_selfhosted_browser_quote_collector import split_match
     assert split_match("Vancouver Whitecaps vs San Diego")==("vancouver whitecaps","san diego")
+
+
+def test_betano_detail_probe_captures_network_json():
+    import inspect
+    from tools.matrix_selfhosted_browser_quote_collector import betano_detail_exact_over25
+    source=inspect.getsource(betano_detail_exact_over25)
+    assert '.on("response"' in source
+    assert '"xhr","fetch"' in source
+    assert "response.json()" in source
