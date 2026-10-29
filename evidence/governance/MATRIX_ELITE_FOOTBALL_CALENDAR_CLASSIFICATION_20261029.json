@@ -1,0 +1,31 @@
+{
+  "schema": "MATRIX_FOOTBALL_OCT29_DUAL_SOURCE_CLASSIFICATION_V1",
+  "target_date_bogota": "2026-10-29",
+  "sources": {
+    "sofascore": {
+      "observed": 143,
+      "explicit_target_date": 119,
+      "other": 24,
+      "classification_path": "evidence/calendar_physical/2026-10-29/football_sofascore_opera_date_classification.json"
+    },
+    "flashscore": {
+      "observed": 232,
+      "calendar_row_marker": 212,
+      "other": 20,
+      "classification_path": "evidence/calendar_physical/2026-10-29/football_flashscore_opera_link_classification.json"
+    }
+  },
+  "reconciliation_status": "NOT_CERTIFIED",
+  "reason": "Flashscore calendar-row links do not include per-row scheduled time; SofaScore 119 date-labeled rows include postponed and other states. Canonical reconciliation and preregistry require validated schema and temporal evidence.",
+  "controls": {
+    "source_priority": [
+      "SOFASCORE",
+      "FLASHSCORE",
+      "AUTHORIZED_APIS"
+    ],
+    "no_model_probabilities_from_calendar": true,
+    "no_real_money": true,
+    "no_telegram_send_without_ev": true
+  },
+  "next": "Capture per-row time/status in Flashscore and certify date/time alignment before canonical V2."
+}
