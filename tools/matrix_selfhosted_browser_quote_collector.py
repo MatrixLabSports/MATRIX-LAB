@@ -112,6 +112,82 @@ def betano_exact_over25_from_payload(payload:dict[str,Any],home:str,away:str)->d
                     }
     return None
 
+def betano_event_from_payload(payload:dict[str,Any],home:str,away:str)->dict[str,Any]|None:
+    home_n,away_n=norm(home),norm(away)
+    def walk(node:Any):
+        if isinstance(node,dict):
+            yield node
+            for v in node.values():
+                yield from walk(v)
+        elif isinstance(node,list):
+            for v in node:
+                yield from walk(v)
+    for node in walk(payload):
+        if not isinstance(node,dict):
+            continue
+        participants=node.get("participants") or node.get("competitors") or []
+        names=[norm((p or {}).get("name") or (p or {}).get("shortName")) for p in participants if isinstance(p,dict)]
+        if not names:
+            continue
+        if any(home_n in n or n in home_n for n in names) and any(away_n in n or n in away_n for n in names):
+            if node.get("id") is not None and node.get("url"):
+                return node
+    return None
+
+def betano_detail_exact_over25(page,event_url:str,home:str,away:str)->tuple[dict[str,Any]|None,list[str]]:
+    ctx=page.context
+    diagnostics=[]
+    detail_page=None
+    try:
+        detail_page=ctx.new_page()
+        target=event_url if str(event_url).startswith("http") else "https://www.betano.co"+str(event_url)
+        detail_page.goto(target,wait_until="domcontentloaded",timeout=15000)
+        detail_page.wait_for_timeout(1800)
+        resources=detail_page.evaluate("""() => performance.getEntriesByType('resource').map(r=>r.name)""")
+        m=re.search(r"/(\\d{6,})/?$",str(event_url).rstrip("/"))
+        event_id=m.group(1) if m else ""
+        urls=[]
+        for u in resources:
+            low=str(u).casefold()
+            if "betano.co" not in low:
+                continue
+            if event_id and event_id in str(u):
+                urls.append(str(u)); continue
+            if any(tok in low for tok in ["event","prematch","pre-match","market","coupon"]):
+                urls.append(str(u))
+        seen=set()
+        for u in urls[:80]:
+            if u in seen:
+                continue
+            seen.add(u)
+            try:
+                res=detail_page.evaluate("""async (url)=>{
+                  try{
+                    const r=await fetch(url,{credentials:'include',cache:'no-store'});
+                    const ct=r.headers.get('content-type')||'';
+                    if(!ct.includes('json')) return {url,status:r.status,contentType:ct,body:null};
+                    return {url,status:r.status,contentType:ct,body:await r.json()};
+                  }catch(e){return {url,error:String(e),body:null};}
+                }""",u)
+            except Exception:
+                continue
+            diagnostics.append(str((res or {}).get("url") or u))
+            body=(res or {}).get("body") if isinstance(res,dict) else None
+            if isinstance(body,dict):
+                exact=betano_exact_over25_from_payload(body,home,away)
+                if exact:
+                    exact["detail_resource_url"]=str((res or {}).get("url") or u)
+                    exact["event_detail_page"]=target
+                    return exact,diagnostics
+        return None,diagnostics
+    finally:
+        if detail_page is not None:
+            try:
+                if not detail_page.is_closed():
+                    detail_page.close()
+            except Exception:
+                pass
+
 def main()->None:
     cfg=load(CONFIG); audit=load(AUDIT); adapters=load(ADAPTERS)
     endpoint=os.environ.get("MATRIX_BROWSER_CDP_ENDPOINT",cfg["browser"]["default_cdp_endpoint"]).strip()
@@ -206,10 +282,12 @@ def main()->None:
                         betano_payloads=[]
                 for c in matching:
                     exact=None
+                    detail_diagnostics=[]
                     if book=="betano" and betano_payloads:
                         parts=split_match(str(c.get("match") or ""))
                         if parts:
                             home_raw,away_raw=[x.strip() for x in re.split(r"\\s+vs\\.?\\s+",str(c.get("match") or ""),maxsplit=1,flags=re.I)]
+                            event_obj=None
                             for payload_rec in betano_payloads:
                                 body=payload_rec.get("body") if isinstance(payload_rec,dict) else None
                                 if isinstance(body,dict):
@@ -217,6 +295,12 @@ def main()->None:
                                     if exact:
                                         exact["endpoint"]=payload_rec.get("endpoint")
                                         break
+                                    if event_obj is None:
+                                        event_obj=betano_event_from_payload(body,home_raw,away_raw)
+                            if exact is None and isinstance(event_obj,dict) and event_obj.get("url"):
+                                exact,detail_diagnostics=betano_detail_exact_over25(page,str(event_obj.get("url")),home_raw,away_raw)
+                                if exact:
+                                    exact["endpoint"]="EVENT_DETAIL_PAGE_NETWORK"
                     emitted=bool(exact and float(exact.get("price") or 0)>0)
                     rec={
                       "fixture_id":str(c.get("fixture_id") or ""),"match":c.get("match"),"kickoff":c.get("kickoff"),
@@ -226,6 +310,8 @@ def main()->None:
                       "execution_quote_emitted":emitted,
                       "blocker":None if emitted else ("EXACT_OVER25_NOT_FOUND" if adapter.get("status")=="CERTIFIED_EXACT_OVER25" else "BOOKMAKER_ADAPTER_NOT_CERTIFIED")
                     }
+                    if detail_diagnostics:
+                        rec["betano_detail_resources_checked"]=detail_diagnostics[:30]
                     if exact:
                         rec["exact_quote"]=exact
                         betano_exact_quotes.append({**rec})
