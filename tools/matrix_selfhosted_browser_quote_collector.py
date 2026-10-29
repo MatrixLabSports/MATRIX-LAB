@@ -139,7 +139,7 @@ def betano_dom_exact_over25(detail_page,event_url:str,home:str,away:str)->dict[s
         title=norm(detail_page.title())
         if norm(home) not in title or norm(away) not in title:
             return None
-        hit=detail_page.evaluate("""() => {
+        hit=detail_page.evaluate(r"""() => {
           const buttons=[...document.querySelectorAll('button')];
           for(const el of buttons){
             const aria=el.getAttribute('aria-label')||'';
@@ -230,7 +230,7 @@ def betano_detail_exact_over25(page,event_url:str,home:str,away:str)->tuple[dict
 
         detail_page.on("response",on_response)
         detail_page.goto(target,wait_until="domcontentloaded",timeout=15000)
-        detail_page.wait_for_timeout(2500)
+        detail_page.wait_for_timeout(1500)
 
         for rec in captured_json[:100]:
             diagnostics.append(str(rec.get("url") or ""))
@@ -276,10 +276,36 @@ def betano_detail_exact_over25(page,event_url:str,home:str,away:str)->tuple[dict
                     exact["detail_resource_type"]=str((item or {}).get("initiatorType") or "")
                     exact["event_detail_page"]=target
                     return exact,diagnostics
+        try:
+            detail_page.wait_for_function(
+                """() => [...document.querySelectorAll('button')].some(el => {
+                  const a=(el.getAttribute('aria-label')||'')+' '+(el.innerText||'');
+                  if(!/M[aá]s de\\s*2[\\.,]5/i.test(a)) return false;
+                  let cur=el;
+                  for(let d=0;d<14&&cur;d++,cur=cur.parentElement){
+                    if(/Goles totales\\s+M[aá]s\\/Menos/i.test((cur.innerText||''))) return true;
+                  }
+                  return false;
+                })""",
+                timeout=8000
+            )
+        except Exception:
+            diagnostics.append("DOM_OVER25_WAIT_TIMEOUT")
         dom_exact=betano_dom_exact_over25(detail_page,event_url,home,away)
         if dom_exact:
             diagnostics.append("DOM_EVENT_MARKET_OVER25")
             return dom_exact,diagnostics
+        try:
+            dom_probe=detail_page.evaluate("""() => ({
+              title:document.title,
+              button_count:document.querySelectorAll('button').length,
+              over25_buttons:[...document.querySelectorAll('button')]
+                .map(el=>({aria:el.getAttribute('aria-label')||'',text:(el.innerText||'').trim()}))
+                .filter(x=>/2[\\.,]5/.test(x.aria+' '+x.text)).slice(0,12)
+            })""")
+            diagnostics.append("DOM_PROBE:"+json.dumps(dom_probe,ensure_ascii=False,separators=(',',':')))
+        except Exception:
+            diagnostics.append("DOM_PROBE_ERROR")
         return None,diagnostics
     finally:
         if detail_page is not None:
