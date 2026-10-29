@@ -1,6 +1,8 @@
 name: MATRIX Telegram Post-Expiry Offline Health
 
 on:
+  schedule:
+    - cron: "12,27,42,57 * * * *"
   workflow_dispatch:
   push:
     branches:
