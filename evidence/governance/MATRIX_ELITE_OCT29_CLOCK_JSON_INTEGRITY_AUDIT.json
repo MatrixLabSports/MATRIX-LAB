@@ -11,14 +11,21 @@
     "repaired_artifact_commit": "faab04d5705e21e54ec45ce62dd2948b442b601d",
     "guard": "json.loads(out.read_text(encoding='utf-8')) == result",
     "new_workflow_run_id": 40821039459,
-    "new_workflow_run_status_at_check": "in_progress",
+    "new_workflow_run_status_at_check": "completed",
     "new_workflow_run_job_id": 123273317501,
     "steps_at_check": {
       "Set up job": "success",
       "Checkout operational branch": "in_progress",
       "Test calendar reconciliation": "pending",
       "Audit independent browser clock strings without timezone certification": "pending"
-    }
+    },
+    "new_workflow_run_conclusion": "success",
+    "new_workflow_completed_at_utc": "2026-10-29T05:03:17Z",
+    "verified_successful_steps": [
+      "Test calendar reconciliation",
+      "Audit independent browser clock strings without timezone certification",
+      "Persist reconciliation evidence"
+    ]
   },
   "verified_repaired_artifact": {
     "identity_confirmed": 74,
@@ -32,7 +39,7 @@
     "automatic_wagering": false,
     "real_money": "BLOCKED"
   },
-  "next_action": "Confirm run 40821039459 success and validate persisted JSON after its execution",
+  "next_action": "Independently certify Flashscore browser timezone; do not infer from 62 matching clocks",
   "latest_verified_artifact": {
     "path": "evidence/calendar_reconciliation/MATRIX_FOOTBALL_CLOCK_STRING_CROSSCHECK_LAST.json",
     "sha": "481919a1c4452c9fd2a6d94c34f02899551115d9",
@@ -41,5 +48,6 @@
     "clock_string_match": 62,
     "clock_string_mismatch": 2,
     "not_comparable": 10
-  }
+  },
+  "certification": "PASS_JSON_PARSE_AND_CI_WORKFLOW"
 }
