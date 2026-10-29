@@ -1332,7 +1332,7 @@ def physical_book_over25_offer(
         if required_house_key is not None and house_key != required_house_key:
             continue
         dec = odd(data.get("decimal_odds"))
-        if dec is None or dec <= 1.50:
+        if dec is None:
             continue
         captured = parse_dt(data.get("captured_at_utc") or data.get("captured_at_bogota"))
         kickoff = parse_dt(data.get("kickoff_utc"))
