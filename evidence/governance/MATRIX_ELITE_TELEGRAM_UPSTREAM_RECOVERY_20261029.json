@@ -34,6 +34,7 @@
   },
   "status": "PARTIAL_REPAIR_MONITORING_ONLY",
   "pending": [
+    "Capture physical SofaScore and Flashscore 2026-10-29 calendar, reconcile, generate governed scored prematch artifacts with valid inputs, then validate quote gates and Telegram supervisor",
     "Verify first actual scheduled GitHub Actions run; workflow installed on default main branch",
     "Confirm current SofaScore and Flashscore future-calendar physical capture",
     "Build independent future evidence ingestion before kickoff without expired API",
@@ -90,5 +91,25 @@
     "tests_windows_executed": true,
     "source_to_scored_bridge_repaired": false,
     "telegram_certified": false
+  },
+  "elite_root_cause_20261029": {
+    "source": "GitHub repository contents API and supervisor source inspection",
+    "prematch_reports_20261029_directory": "NOT_FOUND",
+    "calendar_physical_dates_present": [
+      "2026-10-15",
+      "2026-10-25",
+      "2026-10-27",
+      "2026-10-28"
+    ],
+    "calendar_physical_20261029": "NOT_FOUND",
+    "supervisor_discovery_root": "evidence/api_football/daily_prematch_reports",
+    "required_artifact_patterns": [
+      "browser_physical_verification/*.json",
+      "shadow_quote_freeze/*.json",
+      "over25_shadow_ev/*.json"
+    ],
+    "conclusion": "BLOCKED_MISSING_CURRENT_DATE_SCORED_PREMATCH_ARTIFACTS",
+    "not_equivalent_to": "PROOF_OF_NO_SCHEDULED_MATCHES",
+    "guardrail": "Do not create P_MATRIX or Telegram signals from unscored calendar preregistration; no unauthorized paid API calls."
   }
 }
