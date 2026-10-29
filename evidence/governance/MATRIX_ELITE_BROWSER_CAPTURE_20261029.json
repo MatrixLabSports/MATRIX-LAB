@@ -46,5 +46,11 @@
   "readiness": "DUAL_SOURCE_DUAL_SPORT_LINK_CAPTURED_RECONCILIATION_AND_SCORING_PENDING",
   "real_money": "BLOCKED",
   "automatic_wagering": false,
-  "total_observed_links": 1224
+  "total_observed_links": 1224,
+  "canonical_reconciliation_gate": {
+    "status": "BLOCKED_RAW_LINKS_NOT_CANONICAL",
+    "reason": "tools/reconcile_opera_football_calendar.py explicitly requires FLASHSCORE physical capture schema MATRIX_OPERA_FOOTBALL_CALENDAR_CAPTURE_V2 with row_classification and excluded-link audit. The new links-only evidence has schema MATRIX_OPERA_FOOTBALL_CALENDAR_OBSERVED_LINKS_V1.",
+    "do_not_rename_links_as_validated_calendar": true,
+    "required_next_step": "Capture complete calendar-row-scoped Flashscore accessibility records and matching SofaScore records; validate original canonical schema before reconciliation."
+  }
 }
