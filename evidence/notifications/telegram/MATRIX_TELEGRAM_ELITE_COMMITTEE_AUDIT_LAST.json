@@ -1,9 +1,7 @@
 {
   "blocker_state_counts": {
-    "BLOCKED_NONPOSITIVE_EV": 2,
-    "BLOCKED_NO_FRESH_PINNACLE_REFERENCE": 2,
-    "BLOCKED_NO_VALID_EXACT_AUTHORIZED_BOOK_OVER25": 51,
-    "WAITING_FINAL_REVALIDATION_WINDOW": 1
+    "BLOCKED_NO_FRESH_PINNACLE_REFERENCE": 1,
+    "BLOCKED_NO_VALID_EXACT_AUTHORIZED_BOOK_OVER25": 55
   },
   "committee_decision": {
     "continue_t120_revalidation": true,
@@ -16,7 +14,7 @@
   "committee_name": "MATRIX Sindicato Elite — Comité de Diagnóstico Telegram",
   "direct_causes_of_current_zero": [
     "NO_CANDIDATE_PASSED_PRE_SEND_IN_LATEST_GREEN_SIGNAL_RUN",
-    "FINAL_PREMATCH_WINDOW_NOT_OPEN_FOR_1_RECORDS",
+    "FINAL_PREMATCH_WINDOW_NOT_OPEN_FOR_0_RECORDS",
     "EXACT_AUTHORIZED_OVER25_QUOTE_COVERAGE_LIMITATION"
   ],
   "findings": [
@@ -42,7 +40,7 @@
     {
       "diagnosis": "Candidates outside the final prematch window must wait; no backfill after kickoff is permitted.",
       "evidence": {
-        "WAITING_FINAL_REVALIDATION_WINDOW": 1
+        "WAITING_FINAL_REVALIDATION_WINDOW": 0
       },
       "id": "F02_FINAL_WINDOW_IS_ACTIVE_PRIMARY_SHORT_TERM_BLOCKER",
       "owners": [
@@ -56,7 +54,7 @@
     {
       "diagnosis": "Exact executable Over 2.5 coverage is concentrated in Betano; BetPlay and Rushbet have zero exact observed coverage in the current immutable sample.",
       "evidence": {
-        "blocked_no_valid_exact_authorized_book_over25": 51,
+        "blocked_no_valid_exact_authorized_book_over25": 55,
         "exact_over25_coverage_by_house": {
           "betano": 31,
           "betplay": 0,
@@ -73,7 +71,7 @@
           "yajuego": 0,
           "zamba": 0
         },
-        "real_quote_attempts_total": 1304,
+        "real_quote_attempts_total": 1305,
         "remaining_to_50": 0
       },
       "id": "F03_EXACT_AUTHORIZED_OVER25_QUOTE_COVERAGE_IS_STRUCTURAL_BOTTLENECK",
@@ -88,8 +86,8 @@
     {
       "diagnosis": "Some candidates are correctly rejected by fresh-sharp-reference and positive-EV gates; these gates must not be weakened to manufacture signals.",
       "evidence": {
-        "blocked_no_fresh_pinnacle": 2,
-        "blocked_nonpositive_ev": 2
+        "blocked_no_fresh_pinnacle": 1,
+        "blocked_nonpositive_ev": 0
       },
       "id": "F04_SHARP_AND_EV_GATES_ALSO_REMOVE_CANDIDATES",
       "owners": [
@@ -230,7 +228,7 @@
     "workflow": "Telegram Señales Verdes MATRIX"
   },
   "quote_sample": {
-    "all_three_without_exact_over25": 1273,
+    "all_three_without_exact_over25": 1274,
     "book_seen_by_house": {
       "betano": 31,
       "betplay": 0,
@@ -281,7 +279,7 @@
       "yajuego": 0,
       "zamba": 0
     },
-    "identity_problem_count": 1273,
+    "identity_problem_count": 1274,
     "legacy_quote_attempts_preserved": 246,
     "legacy_three_book_diagnostic": {
       "all_three_without_exact_over25": 83,
@@ -305,7 +303,7 @@
       }
     },
     "nearby_2_25_or_2_75_without_exact_2_5": 0,
-    "real_quote_attempts_total": 1304,
+    "real_quote_attempts_total": 1305,
     "remaining_to_minimum": 0,
     "sample_gate_status": "READY_FOR_CAUSAL_RECOMMENDATION",
     "synthetic_attempts_included": false,
