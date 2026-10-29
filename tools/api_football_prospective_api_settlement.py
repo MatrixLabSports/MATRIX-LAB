@@ -137,6 +137,7 @@ def run(root:Path,api_key:str,now_utc:datetime|None=None,session:Any|None=None)-
     client=session or requests.Session()
     raw_dir=root/"prospective_market_freeze/settlement_raw"; raw_dir.mkdir(parents=True,exist_ok=True)
     settled=[]; pending=[]; blocked=[]; network_calls=0
+    quota_exhausted=False
 
     for row in rows:
         fid=str(row["fixture_id"])
@@ -164,6 +165,9 @@ def run(root:Path,api_key:str,now_utc:datetime|None=None,session:Any|None=None)-
                 pending.append(dict(prior_pending))
                 continue
 
+        if quota_exhausted:
+            blocked.append({"fixture_id":fid,"reason":"API_FOOTBALL_DAILY_QUOTA_EXHAUSTED_DEFERRED"})
+            continue
         if network_calls>=MAX_REQUESTS:
             blocked.append({"fixture_id":fid,"reason":"REQUEST_BUDGET_REACHED"})
             continue
@@ -176,6 +180,12 @@ def run(root:Path,api_key:str,now_utc:datetime|None=None,session:Any|None=None)-
             payload=response.json()
             pf=_exact_fixture(payload,fid)
         except Exception as e:
+            errors=payload.get("errors") if isinstance(payload,dict) else None
+            requests_error=errors.get("requests") if isinstance(errors,dict) else None
+            if isinstance(requests_error,str) and "reached the request limit for the day" in requests_error.lower():
+                quota_exhausted=True
+                blocked.append({"fixture_id":fid,"reason":"API_FOOTBALL_DAILY_QUOTA_EXHAUSTED","raw_sha256":payload_sha})
+                continue
             blocked.append({"fixture_id":fid,"reason":str(e),"raw_sha256":payload_sha})
             continue
 
@@ -243,6 +253,7 @@ def run(root:Path,api_key:str,now_utc:datetime|None=None,session:Any|None=None)-
         "pending_count":len(pending),
         "blocked_count":len(blocked),
         "network_calls":network_calls,
+        "quota_exhausted":quota_exhausted,
         "network_call_policy":"DUE_ONLY_WITH_STICKY_BLOCK_QUARANTINE_AND_NONFINAL_RETRY_WINDOW",
         "nonfinal_retry_minutes":NONFINAL_RETRY_MINUTES,
         "sticky_blocked_carried_without_network":sum(
