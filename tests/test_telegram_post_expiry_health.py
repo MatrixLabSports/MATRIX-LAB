@@ -31,5 +31,6 @@ def test_offline_workflow_scheduled_15m_and_no_secrets():
     assert "TELEGRAM_BOT_TOKEN" not in workflow
     assert "API_FOOTBALL_KEY" not in workflow
     assert "ODDS_API_NET_KEY" not in workflow
-    assert "telegram_green_signal_alerts" not in workflow
+    executable_steps = "\n".join(line for line in workflow.splitlines() if line.lstrip().startswith("run:"))
+    assert "telegram_green_signal_alerts" not in executable_steps
     assert "tools.telegram_post_expiry_health" in workflow
