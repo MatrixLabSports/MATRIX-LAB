@@ -22,6 +22,14 @@ class OfflineDiscoveryDiagnosticsTests(unittest.TestCase):
         self.assertFalse(report["full_supervisor_certified"])
         self.assertFalse(report["network_calls_permitted"])
 
+    def test_no_future_candidates_reported_as_blocked_not_zero_demand(self):
+        with patch.object(diagnostic.supervisor, "discover_football", return_value={}), \\
+             patch.object(diagnostic.supervisor, "discover_tennis", return_value={}):
+            report = diagnostic.collect()
+        self.assertEqual(report["future_football_candidates"], 0)
+        self.assertEqual(report["readiness_status"], "BLOCKED_NO_FUTURE_FOOTBALL_CANDIDATES")
+        self.assertFalse(report["full_supervisor_certified"])
+
     def test_local_discovery_report_is_json_and_no_secrets(self):
         with patch.object(diagnostic.supervisor, "discover_football", return_value={}), \
              patch.object(diagnostic.supervisor, "discover_tennis", return_value={}):
