@@ -1,5 +1,5 @@
 from datetime import datetime,timedelta,timezone
-from tools.matrix_selfhosted_browser_quote_collector import book_from_url,candidate_rows,page_matches_candidate,betano_exact_over25_from_payload
+from tools.matrix_selfhosted_browser_quote_collector import book_from_url,candidate_rows,page_matches_candidate,betano_exact_over25_from_payload,betano_event_from_payload
 
 def test_bookmaker_domain_mapping():
     assert book_from_url("https://www.betano.co/sport/futbol/")=="betano"
@@ -42,3 +42,16 @@ def test_betano_exact_over25_rejects_unbound_global_selection():
       "selections":{"100":{"id":100,"name":"Más de 2.5","handicap":2.5,"price":1.80}}
     }
     assert betano_exact_over25_from_payload(payload,"A","B") is None
+
+
+def test_betano_event_lookup_requires_both_teams():
+    payload={"data":{"events":{"90302907":{
+      "id":90302907,
+      "url":"/cuotas-de-partido/vancouver-whitecaps-fc-san-diego-fc/90302907/",
+      "participants":[{"name":"Vancouver Whitecaps FC"},{"name":"San Diego FC"}],
+      "marketIdList":[123]
+    }}}}
+    ev=betano_event_from_payload(payload,"Vancouver Whitecaps","San Diego")
+    assert ev is not None
+    assert ev["id"]==90302907
+    assert betano_event_from_payload(payload,"Vancouver Whitecaps","Seattle Sounders") is None
