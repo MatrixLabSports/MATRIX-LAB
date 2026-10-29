@@ -53,6 +53,21 @@ def collect() -> dict:
             }
         except (OSError, ValueError, UnicodeError):
             upstream[name] = {"status": "UNREADABLE"}
+    future_calendar_evidence = {
+        "target_date_bogota": dates[0],
+        "physical_source_directory_present": (Path("evidence/calendar_physical") / dates[0]).is_dir(),
+        "canonical_reconciliation_targets_future": upstream["calendar"].get("target_date_bogota") == dates[0],
+        "canonical_watchlist_targets_future": upstream["watchlist"].get("target_date_bogota") == dates[0],
+        "canonical_preregistry_targets_future": upstream["preregistry"].get("target_date_bogota") == dates[0],
+    }
+    future_calendar_evidence["complete_chain_present"] = all(
+        future_calendar_evidence[key] for key in (
+            "physical_source_directory_present",
+            "canonical_reconciliation_targets_future",
+            "canonical_watchlist_targets_future",
+            "canonical_preregistry_targets_future",
+        )
+    )
     calendar_to_signal_gap = (
         "UPSTREAM_CALENDAR_PRESENT_BUT_NO_FUTURE_SCORED_CANDIDATES"
         if future == 0 and upstream["calendar"]["status"] == "TARGET_DATE_CURRENT"
@@ -60,6 +75,7 @@ def collect() -> dict:
     )
     return {
         "upstream_calendar_evidence": upstream,
+        "future_calendar_evidence": future_calendar_evidence,
         "calendar_to_signal_gap": calendar_to_signal_gap,
         "readiness_status": "BLOCKED_NO_FUTURE_FOOTBALL_CANDIDATES" if future == 0 else "FUTURE_CANDIDATES_PRESENT_NOT_QUOTE_VERIFIED",
         "future_football_candidates": future,
