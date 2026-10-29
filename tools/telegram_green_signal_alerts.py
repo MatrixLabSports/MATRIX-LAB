@@ -247,6 +247,8 @@ def odd(value: Any) -> float | None:
 
 
 def send_telegram(session: requests.Session, token: str, chat_id: str, text: str) -> int:
+    if os.environ.get("MATRIX_TELEGRAM_NO_SEND", "").strip() == "1":
+        raise RuntimeError("MATRIX_TELEGRAM_SEND_BLOCKED_BY_DIAGNOSTIC_GATE")
     response = session.post(
         f"https://api.telegram.org/bot{token}/sendMessage",
         data={"chat_id": chat_id, "text": text, "protect_content": "true"},
@@ -263,6 +265,8 @@ def send_telegram(session: requests.Session, token: str, chat_id: str, text: str
 
 
 def send_telegram_photo(session: requests.Session, token: str, chat_id: str, image_path: Path, caption: str) -> int:
+    if os.environ.get("MATRIX_TELEGRAM_NO_SEND", "").strip() == "1":
+        raise RuntimeError("MATRIX_TELEGRAM_PHOTO_BLOCKED_BY_DIAGNOSTIC_GATE")
     with image_path.open("rb") as fh:
         response = session.post(
             f"https://api.telegram.org/bot{token}/sendPhoto",
@@ -2428,6 +2432,20 @@ def build_blocker_recovery_audit(
     }
 
 def main() -> None:
+    # Offline preflight is deliberately before token checks, file writes and HTTP calls.
+    # It is not a substitute for a complete supervisor run.
+    if os.environ.get("MATRIX_SUPERVISOR_OFFLINE_PREFLIGHT", "").strip() == "1":
+        print(json.dumps({
+            "schema": "MATRIX_SUPERVISOR_OFFLINE_PREFLIGHT_V1",
+            "status": "PASS_NO_NETWORK_PREFLIGHT",
+            "telegram_messages_sent": 0,
+            "api_calls_made": 0,
+            "real_money": "BLOCKED",
+            "automatic_wagering": False,
+            "paid_api_status": "NOT_VERIFIED_DO_NOT_CALL",
+            "full_supervisor_certified": False,
+        }, sort_keys=True), flush=True)
+        return
     token = os.environ.get("TELEGRAM_BOT_TOKEN", "").strip()
     chat_id = os.environ.get("TELEGRAM_CHAT_ID", "").strip()
     api_key = os.environ.get("API_FOOTBALL_KEY", "").strip()
