@@ -1,0 +1,70 @@
+name: MATRIX Telegram Offline Source Watchdog 15m
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "*/15 * * * *"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: matrix-telegram-offline-source-watchdog-15m
+  cancel-in-progress: false
+
+jobs:
+  source-readiness:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    env:
+      REAL_MONEY: BLOCKED
+      AUTO_BETTING: DISABLED
+      MATRIX_TELEGRAM_NO_SEND: "1"
+      MATRIX_SUPERVISOR_OFFLINE_PREFLIGHT: "1"
+    steps:
+      - name: Checkout operational branch
+        uses: actions/checkout@v4
+        with:
+          ref: repair/cor09-world-pipeline
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install offline test dependencies
+        run: python -m pip install --disable-pip-version-check requests pillow
+
+      - name: Verify fail-closed offline contracts
+        run: |
+          python -m unittest tests.test_telegram_supervisor_offline_safety tests.test_matrix_telegram_offline_diagnostics -v
+
+      - name: Inspect local candidates and emit evidence (no provider calls)
+        run: |
+          python -m tools.matrix_telegram_offline_diagnostics --output evidence/notifications/telegram/MATRIX_TELEGRAM_OFFLINE_SOURCE_WATCHDOG_LAST.json
+
+      - name: Persist source-readiness evidence without mutating model ledgers
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name matrix-telegram-offline-watchdog
+          git config user.email matrix-telegram-offline-watchdog@users.noreply.github.com
+          git add -- evidence/notifications/telegram/MATRIX_TELEGRAM_OFFLINE_SOURCE_WATCHDOG_LAST.json
+          if git diff --cached --quiet; then
+            echo "MATRIX_OFFLINE_SOURCE_WATCHDOG_NO_CHANGE"
+            exit 0
+          fi
+          git commit -m "evidence(telegram): persist offline source readiness watchdog"
+          for attempt in 1 2 3 4; do
+            git fetch origin repair/cor09-world-pipeline
+            if ! git rebase origin/repair/cor09-world-pipeline; then
+              git rebase --abort || true
+              exit 1
+            fi
+            if git push origin HEAD:repair/cor09-world-pipeline; then
+              exit 0
+            fi
+            sleep "$((attempt * 2))"
+          done
+          exit 1
