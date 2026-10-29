@@ -13,6 +13,8 @@ on:
       - tests/test_telegram_post_expiry_health.py
       - tests/test_telegram_paid_quote_expiry_guard.py
       - tools/telegram_green_signal_alerts.py
+      - tools/telegram_paid_source_static_audit.py
+      - tests/test_telegram_paid_source_static_audit.py
 
 permissions:
   contents: read
@@ -41,9 +43,11 @@ jobs:
       - name: Install offline test runner
         run: python -m pip install pytest requests pillow
       - name: Test fail-closed post-expiry diagnosis
-        run: PYTHONPATH=. python -m pytest -q tests/test_telegram_post_expiry_health.py tests/test_telegram_paid_quote_expiry_guard.py
+        run: PYTHONPATH=. python -m pytest -q tests/test_telegram_post_expiry_health.py tests/test_telegram_paid_quote_expiry_guard.py tests/test_telegram_paid_source_static_audit.py
       - name: Generate independent offline diagnosis
         run: PYTHONPATH=. python -m tools.telegram_post_expiry_health
+      - name: Generate static paid-source blocker audit
+        run: PYTHONPATH=. python -m tools.telegram_paid_source_static_audit
       - name: Certify no calls and safety
         run: |
           python - <<'PY'
@@ -62,6 +66,8 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: matrix-telegram-post-expiry-offline-health
-          path: evidence/notifications/telegram/MATRIX_TELEGRAM_POST_EXPIRY_HEALTH_LAST.json
+          path: |
+            evidence/notifications/telegram/MATRIX_TELEGRAM_POST_EXPIRY_HEALTH_LAST.json
+            evidence/governance/MATRIX_TELEGRAM_PAID_SOURCE_STATIC_AUDIT_LAST.json
           if-no-files-found: warn
           retention-days: 14
