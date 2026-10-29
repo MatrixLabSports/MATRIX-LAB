@@ -1083,8 +1083,8 @@ def _recompute_sharp_consensus(diagnostic: dict[str, Any], p: float) -> None:
 
 def paid_football_quote_transport_allowed() -> bool:
     """Fail closed before paid quote HTTP calls after subscription cutoff."""
-    return bool(football_paid_window_evaluate(datetime.now(BOGOTA).date())["paid_window_active"] or
-                football_paid_window_evaluate(datetime.now(BOGOTA).date())["post_cutoff_override"])
+    policy = football_paid_window_evaluate(datetime.now(BOGOTA).date())
+    return bool(policy["paid_window_active"] or policy["post_cutoff_override"])
 
 
 def api_football_pinnacle_over25_reference(
