@@ -5,6 +5,7 @@ import hashlib
 import json
 import os
 import re
+import time
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any, Mapping
@@ -94,6 +95,8 @@ GREEN_PREMATCH_REVALIDATION_WINDOW_MINUTES = 120
 PAPER_MAX_SIGNALS_PER_LEAGUE_DAY = 3
 ODDS_API_NET_BASE = "https://api.odds-api.net/v1"
 ODDS_API_NET_EVENT_SEARCH_WINDOW_SECONDS = 7200
+ODDS_API_NET_TOTAL_BUDGET_SECONDS = 30.0
+ODDS_API_NET_REQUEST_TIMEOUT_SECONDS = 6.0
 SIGNAL_QUALITY_MIN_P_MATRIX = 0.60
 SIGNAL_QUALITY_MIN_REVALIDATED_EV = 0.05
 SIGNAL_QUALITY_POLICY = "API_COST_RECOVERY_PRECISION_V1"
@@ -648,6 +651,7 @@ def odds_api_net_exact_over25_offer(
     *,
     candidate_match: Any = None,
 ) -> dict[str, Any] | None:
+    budget_started=time.monotonic()
     key = str(odds_api_key or "").strip()
     kickoff_dt = parse_dt(kickoff)
     if diagnostic is not None:
@@ -720,11 +724,20 @@ def odds_api_net_exact_over25_offer(
         params = dict(search_params)
         if cursor:
             params["cursor"] = cursor
+        elapsed=time.monotonic()-budget_started
+        remaining=ODDS_API_NET_TOTAL_BUDGET_SECONDS-elapsed
+        if remaining<=0:
+            if diagnostic is not None:
+                diagnostic["status"]="BLOCKED_ODDS_API_NET_TOTAL_TIME_BUDGET"
+                diagnostic["event_search_page_count"]=page_count
+                diagnostic["event_search_rows_seen"]=len(events)
+                diagnostic["total_budget_seconds"]=ODDS_API_NET_TOTAL_BUDGET_SECONDS
+            return None
         er = session.get(
             ODDS_API_NET_BASE + "/events",
             headers={"X-API-Key": key, "Accept": "application/json"},
             params=params,
-            timeout=20,
+            timeout=max(1.0,min(ODDS_API_NET_REQUEST_TIMEOUT_SECONDS,remaining)),
         )
         try:
             ep = er.json()
@@ -2409,8 +2422,16 @@ def main() -> None:
     quote_attempt_run_token = now.isoformat()
     today = now.astimezone(BOGOTA).date()
     dates = [str(today + timedelta(days=1)), str(today), str(today - timedelta(days=1))]
+    print(json.dumps({
+        "stage":"DISCOVERY_START",
+        "dates":dates,
+        "real_money":"BLOCKED",
+        "automatic_wagering":False,
+    }, ensure_ascii=False, sort_keys=True), flush=True)
     football = discover_football(dates)
+    print(json.dumps({"stage":"FOOTBALL_DISCOVERY_DONE","count":len(football)},sort_keys=True),flush=True)
     tennis = discover_tennis(dates)
+    print(json.dumps({"stage":"TENNIS_DISCOVERY_DONE","count":len(tennis)},sort_keys=True),flush=True)
     candidates = {**football, **tennis}
     print(json.dumps({
         "stage":"SUPERVISOR_START",
