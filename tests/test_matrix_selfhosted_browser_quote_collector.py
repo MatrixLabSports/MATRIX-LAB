@@ -83,7 +83,7 @@ def test_betano_dom_exact_over25_binding_contract():
     source=inspect.getsource(betano_dom_exact_over25)
     assert 'Goles totales Más/Menos' in source
     assert 'Más de 2.5' in source
-    assert 'EVENT_URL+PAGE_TITLE+BOTH_TEAMS+MARKET_CONTAINER+SELECTION_BUTTON' in source
+    assert 'EVENT_URL+PAGE_TITLE+BOTH_TEAMS+MARKET_CONTAINER+ACCESSIBLE_BUTTON_NAME' in source
     assert 'read_only' in source
 
 
@@ -104,3 +104,13 @@ def test_betano_dom_wait_and_probe_guard():
     assert "wait_for_function" in source
     assert "DOM_OVER25_WAIT_TIMEOUT" in source
     assert "DOM_PROBE:" in source
+
+
+def test_betano_accessible_role_binding_guard():
+    import inspect
+    from tools.matrix_selfhosted_browser_quote_collector import betano_dom_exact_over25
+    source=inspect.getsource(betano_dom_exact_over25)
+    assert "get_by_role" in source
+    assert "Bet on M" in source
+    assert "EVENT_DETAIL_ACCESSIBLE_ROLE_BUTTON" in source
+    assert "ACCESSIBLE_BUTTON_NAME" in source
