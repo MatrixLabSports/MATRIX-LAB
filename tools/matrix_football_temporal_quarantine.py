@@ -13,9 +13,15 @@ def build(data):
         state = item["display_clock_comparison"]
         if state not in reasons:
             raise ValueError("UNKNOWN_CLOCK_STATE")
+        postponed = "Aplazado" in item["sofascore"]
+        reason = "POSTPONED_IN_SOFASCORE" if postponed else reasons[state]
         rows.append({"flashscore_observation": item["flashscore"],
                      "sofascore_observation": item["sofascore"],
-                     "clock_status": state, "block_reason": reasons[state],
+                     "clock_status": state, "block_reason": reason,
+                     "flashscore_display_clock": item.get("flashscore_normalized_clock"),
+                     "sofascore_display_clock": item.get("sofascore_normalized_clock"),
+                     "flashscore_clock_visible": item.get("flashscore_normalized_clock") is not None,
+                     "sofascore_postponed": postponed,
                      "eligible_for_freeze": False,
                      "eligible_for_telegram_signal": False})
     return {"schema": "MATRIX_TEMPORAL_QUARANTINE_V1",
