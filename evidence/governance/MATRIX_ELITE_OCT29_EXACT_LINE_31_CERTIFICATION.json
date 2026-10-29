@@ -1,0 +1,34 @@
+{
+  "schema": "MATRIX_ELITE_EXACT_LINE_31_CERTIFICATION_V1",
+  "source": {
+    "run_id": 40823567929,
+    "conclusion": "success",
+    "artifact_id": 12876160398,
+    "artifact_name": "matrix-telegram-causal-trace",
+    "artifact_zip_digest": "sha256:67a5824d8d1aff17d4e25ec44f64c3c68224dcb3f38703ef0412d48bf376824a",
+    "trace_schema": "MATRIX_TELEGRAM_CAUSAL_TRACE_V2"
+  },
+  "verified_counts": {
+    "all_current_attempts": 1306,
+    "exact_line_seen": 31,
+    "identity_of_exact_line_seen": {
+      "MATCHED": 31
+    },
+    "discard_reasons_of_exact_line_seen": {
+      "BLOCKED_NO_VALID_EXACT_AUTHORIZED_BOOK_OVER25": 15,
+      "BLOCKED_NONPOSITIVE_EV": 10,
+      "BLOCKED_NO_FRESH_PINNACLE_REFERENCE": 6
+    },
+    "sum_reconciled": true
+  },
+  "inference": "All 31 exact-line-seen attempts were blocked by pre-send gates; no evidence in quote ledger of Telegram delivery acknowledgment",
+  "unresolved": [
+    "Physical cause of the 15 exact-line-seen but invalid executable quote rejections",
+    "Actual Telegram send API acknowledgments and delivery health",
+    "Whether quote provider coverage improves without paid API renewal"
+  ],
+  "safety": {
+    "real_money": "BLOCKED",
+    "automatic_wagering": false
+  }
+}
