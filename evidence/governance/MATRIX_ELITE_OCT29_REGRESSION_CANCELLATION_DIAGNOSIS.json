@@ -1,0 +1,24 @@
+{
+  "schema": "MATRIX_ELITE_OCT29_REGRESSION_CANCELLATION_DIAGNOSIS_V1",
+  "target_date_bogota": "2026-10-29",
+  "cancelled_run": {
+    "id": 40822255096,
+    "conclusion": "cancelled",
+    "sha": "8af40ae5dd81cd06a7ebec52e37123fba829f714"
+  },
+  "superseding_run": {
+    "id": 40822293340,
+    "status_at_check": "in_progress",
+    "sha": "6fdd5ed88e00bf5ab0d29303f68499244e17219a"
+  },
+  "workflow": ".github/workflows/workflow-regression-contracts.yml",
+  "concurrency_policy": "cancel-in-progress: true",
+  "dependency_fix_present": true,
+  "dependency_fix": "python -m pip install pytest requests Pillow",
+  "interpretation": "Cancellation is not a regression test failure and is not a successful certification; verify newest completed run",
+  "pending": "Await 40822293340 terminal conclusion and examine regression step logs",
+  "safety": {
+    "real_money": "BLOCKED",
+    "auto_betting": "DISABLED"
+  }
+}
