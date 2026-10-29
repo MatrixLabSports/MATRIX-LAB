@@ -296,7 +296,7 @@ def main()->None:
                     if book=="betano" and betano_payloads:
                         parts=split_match(str(c.get("match") or ""))
                         if parts:
-                            home_raw,away_raw=[x.strip() for x in re.split(r"\\s+vs\\.?\\s+",str(c.get("match") or ""),maxsplit=1,flags=re.I)]
+                            home_raw,away_raw=[x.strip() for x in re.split(r"\s+vs\.?\s+",str(c.get("match") or ""),maxsplit=1,flags=re.I)]
                             event_obj=None
                             for payload_rec in betano_payloads:
                                 body=payload_rec.get("body") if isinstance(payload_rec,dict) else None
