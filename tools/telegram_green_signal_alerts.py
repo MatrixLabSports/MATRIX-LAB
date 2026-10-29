@@ -1084,7 +1084,9 @@ def _recompute_sharp_consensus(diagnostic: dict[str, Any], p: float) -> None:
 def paid_football_quote_transport_allowed() -> bool:
     """Fail closed before paid quote HTTP calls after subscription cutoff."""
     policy = football_paid_window_evaluate(datetime.now(BOGOTA).date())
-    return bool(policy["paid_window_active"] or policy["post_cutoff_override"])
+    # A post-cutoff environment flag is not proof of renewed subscription or user consent.
+    # Keep quote transport closed until a separately verified renewal contract exists.
+    return bool(policy["paid_window_active"])
 
 
 def api_football_pinnacle_over25_reference(
