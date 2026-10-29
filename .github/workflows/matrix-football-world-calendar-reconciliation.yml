@@ -143,6 +143,10 @@ jobs:
                                 "timezone_certified": False}, sort_keys=True))
           PY
 
+      - name: Assert postponed versus visible clock semantics
+        run: |
+          python -m pytest -q tests/test_matrix_football_temporal_quarantine.py
+
       - name: Generate temporal quarantine from observed clock crosscheck
         run: |
           if [ -f evidence/calendar_reconciliation/MATRIX_FOOTBALL_CLOCK_STRING_CROSSCHECK_LAST.json ]; then
