@@ -3,23 +3,27 @@
   "workflow_run_id": 40820609589,
   "workflow_run_url": "https://github.com/MatrixLabSports/MATRIX-LAB/actions/runs/40820609589",
   "head_sha": "344a8dcdb2b74bc31df680b8da7d647f09aa8390",
-  "observed_status": "in_progress",
-  "observed_conclusion": null,
+  "observed_status": "completed",
+  "observed_conclusion": "success",
   "job_id": 123271952794,
   "steps_observed": {
     "Set up job": "success",
-    "Checkout operational branch": "in_progress",
-    "Test calendar reconciliation": "pending",
-    "Reconcile latest physical football calendar": "pending",
-    "Build governed world football watchlist": "pending",
-    "Persist browser-first preregistry": "pending"
+    "Checkout operational branch": "success",
+    "Set up Python": "success",
+    "Install test dependency": "success",
+    "Test calendar reconciliation": "success",
+    "Reconcile latest physical football calendar": "success",
+    "Build governed world football watchlist": "success",
+    "Persist browser-first preregistry": "success",
+    "Persist reconciliation evidence": "success"
   },
-  "certification": "PENDING_TEST_EXECUTION",
+  "certification": "PASS_GITHUB_ACTIONS_WORKFLOW_AND_CLOCK_TESTS",
   "safety": {
     "real_money": "BLOCKED",
     "automatic_wagering": false,
     "timezone_certified": false,
     "no_freeze_from_clock_string_match": true
   },
-  "followup": "Re-read run and job steps; certify only after success, otherwise inspect failed step and logs."
+  "followup": "Clock tests pass. Timezone remains unverified and must not be inferred from clock string agreement.",
+  "workflow_completed_at_utc": "2026-10-29T04:58:33Z"
 }
