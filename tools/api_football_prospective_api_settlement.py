@@ -176,6 +176,7 @@ def run(root:Path,api_key:str,now_utc:datetime|None=None,session:Any|None=None)-
         body=bytes(response.content)
         raw_path=raw_dir/f"fixture_{fid}.bin"; raw_path.write_bytes(body)
         payload_sha=hashlib.sha256(body).hexdigest()
+        payload=None
         try:
             payload=response.json()
             pf=_exact_fixture(payload,fid)
