@@ -63,6 +63,12 @@ jobs:
       - name: Verify causal trace without provider calls
         run: PYTHONPATH=. python -m pytest -q tests/test_telegram_causal_trace.py
 
+      - name: Generate and validate immutable Telegram causal trace
+        run: |
+          PYTHONPATH=. python -m tools.telegram_causal_trace
+          python -m json.tool evidence/notifications/telegram/MATRIX_TELEGRAM_CAUSAL_TRACE_LAST.json > /dev/null
+          test -z "$(git status --porcelain -- evidence/notifications/telegram/MATRIX_TELEGRAM_QUOTE_ATTEMPTS.jsonl)"
+
       - name: Final CI gate
         run: |
           test "$REAL_MONEY" = "BLOCKED"
