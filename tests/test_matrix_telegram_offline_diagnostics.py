@@ -31,8 +31,8 @@ class OfflineDiscoveryDiagnosticsTests(unittest.TestCase):
         self.assertFalse(report["full_supervisor_certified"])
 
     def test_upstream_gap_not_established_without_current_calendar(self):
-        with patch.object(diagnostic.supervisor, "discover_football", return_value={}), \\
-             patch.object(diagnostic.supervisor, "discover_tennis", return_value={}), \\
+        with patch.object(diagnostic.supervisor, "discover_football", return_value={}), \
+             patch.object(diagnostic.supervisor, "discover_tennis", return_value={}), \
              patch.object(diagnostic.Path, "is_file", return_value=False):
             report = diagnostic.collect()
         self.assertEqual(report["calendar_to_signal_gap"], "NOT_ESTABLISHED")
@@ -43,12 +43,12 @@ class OfflineDiscoveryDiagnosticsTests(unittest.TestCase):
         from unittest.mock import patch as mock_patch
         with tempfile.TemporaryDirectory() as folder:
             destination = Path(folder) / "result.json"
-            with mock_patch.object(diagnostic, "collect", return_value={"status": "TEST"}), \\
+            with mock_patch.object(diagnostic, "collect", return_value={"status": "TEST"}), \
                  mock_patch.object(sys, "argv", ["diag", "--output", str(destination)]):
                 diagnostic.main()
             raw = destination.read_bytes()
             self.assertTrue(raw.endswith(b"\\n"))
-            self.assertFalse(raw.endswith(b"\\\\n"))
+            self.assertFalse(raw.endswith(b"\\n"))
             self.assertEqual(json.loads(raw), {"status": "TEST"})
 
     def test_local_discovery_report_is_json_and_no_secrets(self):
