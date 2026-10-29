@@ -344,7 +344,24 @@ def main()->None:
     }
     OUT.parent.mkdir(parents=True,exist_ok=True)
     OUT.write_text(json.dumps(out,indent=2,ensure_ascii=False,sort_keys=True)+"\n",encoding="utf-8")
-    print(json.dumps({"status":out["status"],"candidates":len(candidates),"pages":len(pages),"matches":len(matched),"betano_exact_quote_count":len(betano_exact_quotes),"betano_exact_quote_first":(betano_exact_quotes[0] if betano_exact_quotes else None)},sort_keys=True,ensure_ascii=False))
+    zero_diag=[]
+    if not betano_exact_quotes:
+        for rec in matched:
+            if rec.get("bookmaker")=="betano":
+                zero_diag.append({
+                  "fixture_id":rec.get("fixture_id"),
+                  "match":rec.get("match"),
+                  "kickoff":rec.get("kickoff"),
+                  "blocker":rec.get("blocker"),
+                  "url":rec.get("url"),
+                  "betano_detail_resources_checked":rec.get("betano_detail_resources_checked") or []
+                })
+    print(json.dumps({
+      "status":out["status"],"candidates":len(candidates),"pages":len(pages),"matches":len(matched),
+      "betano_exact_quote_count":len(betano_exact_quotes),
+      "betano_exact_quote_first":(betano_exact_quotes[0] if betano_exact_quotes else None),
+      "betano_zero_diagnostics":zero_diag
+    },sort_keys=True,ensure_ascii=False))
 
 if __name__=="__main__":
     main()
