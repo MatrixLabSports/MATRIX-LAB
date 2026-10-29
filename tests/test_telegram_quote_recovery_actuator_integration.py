@@ -1,7 +1,7 @@
 import json
 from datetime import datetime,timedelta,timezone
 from pathlib import Path
-from tools.telegram_green_signal_alerts import recovery_execution_over25_offer
+from tools.telegram_green_signal_alerts import recovery_execution_over25_offer, signal_quality_gate_state
 
 def test_recovery_execution_offer_is_consumable(tmp_path:Path):
     now=datetime.now(timezone.utc)
@@ -39,3 +39,52 @@ def test_stale_recovery_execution_offer_is_rejected(tmp_path:Path):
     }
     ledger.write_text(json.dumps(row)+"\n",encoding="utf-8")
     assert recovery_execution_over25_offer("123",0.65,now,ledger_path=ledger) is None
+
+
+def test_recovery_execution_offer_below_minimum_odds_is_rejected(tmp_path:Path):
+    now=datetime.now(timezone.utc)
+    ledger=tmp_path/"ledger.jsonl"
+    row={
+      "schema":"MATRIX_QUOTE_RECOVERY_EXECUTION_EVIDENCE_V1",
+      "validated":True,
+      "fixture_id":"1490582",
+      "market":"OVER_2_5",
+      "bookmaker":"Betano",
+      "decimal_odds":1.31,
+      "quote_observed_at_utc":(now-timedelta(minutes=2)).isoformat(),
+      "kickoff_utc":(now+timedelta(minutes=60)).isoformat(),
+      "p_matrix":0.6511733445,
+      "revalidated_ev":0.6511733445*1.31-1.0,
+      "source_evidence":"physical-betano-test",
+      "record_sha256":"low-odds",
+      "automatic_wagering":False,
+      "real_money":"BLOCKED"
+    }
+    ledger.write_text(json.dumps(row)+"\n",encoding="utf-8")
+    assert recovery_execution_over25_offer("1490582",0.6511733445,now,ledger_path=ledger) is None
+
+
+def test_valid_recovery_offer_reaches_signal_quality_gate(tmp_path:Path):
+    now=datetime.now(timezone.utc)
+    ledger=tmp_path/"ledger.jsonl"
+    row={
+      "schema":"MATRIX_QUOTE_RECOVERY_EXECUTION_EVIDENCE_V1",
+      "validated":True,
+      "fixture_id":"123",
+      "market":"OVER_2_5",
+      "bookmaker":"Betano",
+      "decimal_odds":1.70,
+      "quote_observed_at_utc":(now-timedelta(minutes=2)).isoformat(),
+      "kickoff_utc":(now+timedelta(minutes=60)).isoformat(),
+      "p_matrix":0.65,
+      "revalidated_ev":0.105,
+      "source_evidence":"physical-betano-test",
+      "record_sha256":"valid-odds",
+      "automatic_wagering":False,
+      "real_money":"BLOCKED"
+    }
+    ledger.write_text(json.dumps(row)+"\n",encoding="utf-8")
+    offer=recovery_execution_over25_offer("123",0.65,now,ledger_path=ledger)
+    assert offer is not None
+    candidate={"p_matrix":0.65}
+    assert signal_quality_gate_state(candidate,offer)=="PASS_API_COST_RECOVERY_PRECISION_GATE"
