@@ -47,7 +47,7 @@ class OfflineDiscoveryDiagnosticsTests(unittest.TestCase):
                  mock_patch.object(sys, "argv", ["diag", "--output", str(destination)]):
                 diagnostic.main()
             raw = destination.read_bytes()
-            self.assertTrue(raw.endswith(b"\\n"))
+            self.assertTrue(raw.endswith(b"\n"))
             self.assertFalse(raw.endswith(b"\\n"))
             self.assertEqual(json.loads(raw), {"status": "TEST"})
 
