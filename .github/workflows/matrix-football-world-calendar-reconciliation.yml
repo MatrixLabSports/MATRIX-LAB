@@ -8,9 +8,11 @@ on:
     paths:
       - "evidence/calendar_physical/**"
       - "tools/reconcile_opera_football_calendar.py"
+      - "tools/matrix_football_clock_string_crosscheck.py"
       - "tools/build_football_world_watchlist.py"
       - "tools/football_browser_preregistry.py"
       - "tests/test_reconcile_opera_football_calendar.py"
+      - "tests/test_matrix_football_clock_string_crosscheck.py"
       - "tests/test_build_football_world_watchlist.py"
       - "tests/test_football_browser_preregistry.py"
       - ".github/workflows/matrix-football-world-calendar-reconciliation.yml"
@@ -46,7 +48,7 @@ jobs:
         run: python -m pip install pytest
 
       - name: Test calendar reconciliation
-        run: PYTHONPATH=. python -m pytest -q tests/test_reconcile_opera_football_calendar.py tests/test_build_football_world_watchlist.py tests/test_football_browser_preregistry.py
+        run: PYTHONPATH=. python -m pytest -q tests/test_reconcile_opera_football_calendar.py tests/test_matrix_football_clock_string_crosscheck.py tests/test_build_football_world_watchlist.py tests/test_football_browser_preregistry.py
 
       - name: Reconcile latest physical football calendar
         run: |
