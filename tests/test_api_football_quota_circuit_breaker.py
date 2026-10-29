@@ -1,7 +1,29 @@
 """Daily API-Football quota circuit-breaker regression test."""
 import json
 from datetime import datetime, timezone
-from tests.test_api_football_prospective_api_settlement import FakeSession, _write_freeze
+class FakeSession:
+    def __init__(self, payload):
+        self.payload = payload
+        self.calls = []
+    def get(self, url, headers, params, timeout):
+        self.calls.append((url, params))
+        class Response:
+            def __init__(self, payload):
+                self.content = json.dumps(payload).encode("utf-8")
+                self.payload = payload
+            def json(self):
+                return self.payload
+        return Response(self.payload)
+
+
+def _write_freeze(root):
+    folder = root / "prospective_market_freeze"
+    folder.mkdir(parents=True, exist_ok=True)
+    freeze = {"rows": [{"fixture_id": "900", "target_key": "api_football:fixture:900",
+        "kickoff_utc": "2026-09-28T18:00:00+00:00", "freeze_at_utc": "2026-09-28T12:00:00+00:00",
+        "input_sha256": "a" * 64, "home_team_id": "40", "away_team_id": "41",
+        "frozen_research_probabilities": {"over_2_5": 0.55}}]}
+    (folder / "freeze.json").write_text(json.dumps(freeze), encoding="utf-8")
 from tools.api_football_prospective_api_settlement import run
 
 
