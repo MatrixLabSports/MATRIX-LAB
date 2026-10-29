@@ -134,7 +134,8 @@ jobs:
               observed = json.loads(evidence.read_text(encoding="utf-8"))
               result = compare(recon, observed)
               out = Path("evidence/calendar_reconciliation/MATRIX_FOOTBALL_CLOCK_STRING_CROSSCHECK_LAST.json")
-              out.write_text(json.dumps(result, indent=2, ensure_ascii=False) + "\\n", encoding="utf-8")
+              out.write_text(json.dumps(result, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
+              assert json.loads(out.read_text(encoding="utf-8")) == result, "INVALID_PERSISTED_CROSSCHECK_JSON"
               assert result["policy"]["no_freeze_from_uncertified_clock"] is True
               assert result["policy"]["automatic_wagering"] is False
               assert all(x["timezone_certified"] is False for x in result["rows"])
