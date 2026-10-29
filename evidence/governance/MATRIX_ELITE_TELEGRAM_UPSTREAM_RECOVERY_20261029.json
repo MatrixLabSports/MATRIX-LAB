@@ -29,10 +29,12 @@
     "workflow_runs_verified": false,
     "new_tests_executed": false,
     "default_branch_workflow_commit": "3e044bbefed09e826fc82857b3be6c84a245f9c1",
-    "default_branch_workflow_content_parity_verified": true
+    "default_branch_workflow_content_parity_verified": true,
+    "syntax_fix_commit": "d0936c1809480027dc29f1bc3683e1fb6cfc20bb"
   },
   "status": "PARTIAL_REPAIR_MONITORING_ONLY",
   "pending": [
+    "Rerun 6 offline unit tests after syntax repair; prior 5/5 success belongs to earlier version",
     "Verify first actual scheduled GitHub Actions run; workflow installed on default main branch",
     "Confirm current SofaScore and Flashscore future-calendar physical capture",
     "Build independent future evidence ingestion before kickoff without expired API",
@@ -44,5 +46,21 @@
     "telegram_send_authorized_in_watchdog": false,
     "real_money": "BLOCKED",
     "automatic_wagering": false
+  },
+  "windows_latest": {
+    "observed_at_utc": "2026-10-29T04:28:29+00:00",
+    "discovery_status": "BLOCKED_NO_FUTURE_FOOTBALL_CANDIDATES",
+    "football_candidates": 56,
+    "football_kickoff_blocked": 56,
+    "future_football_candidates": 0,
+    "tennis_candidates": 0,
+    "source_dates": [
+      "2026-10-28",
+      "2026-10-27"
+    ],
+    "tomorrow_source_missing": true,
+    "diagnostic_command_exit": "SUCCESS",
+    "test_command": "FAILED_SYNTAX_ERROR_BEFORE_TESTS",
+    "test_error": "double backslash line continuation in tests/test_matrix_telegram_offline_diagnostics.py"
   }
 }
