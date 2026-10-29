@@ -139,51 +139,70 @@ def betano_dom_exact_over25(detail_page,event_url:str,home:str,away:str)->dict[s
         title=norm(detail_page.title())
         if norm(home) not in title or norm(away) not in title:
             return None
-        buttons=detail_page.locator('button[aria-label*="Más de 2.5"][aria-label*="odds"]')
-        for i in range(min(buttons.count(),20)):
-            btn=buttons.nth(i)
-            try:
-                info=btn.evaluate("""el=>{
-                  let cur=el;
-                  for(let depth=0;depth<10&&cur;depth++,cur=cur.parentElement){
-                    const text=(cur.innerText||'').trim();
-                    if(text.includes('Goles totales Más/Menos')){
-                      return {
-                        aria:el.getAttribute('aria-label')||'',
-                        text:(el.innerText||'').trim(),
-                        market_text:text.slice(0,2000),
-                        attrs:Object.fromEntries([...el.attributes].map(a=>[a.name,a.value]))
-                      };
-                    }
-                  }
-                  return null;
-                }""")
-            except Exception:
-                info=None
-            if not info:
-                continue
-            aria=str(info.get("aria") or "")
-            m=re.search(r"Más de 2\.5 with odds ([0-9]+(?:\.[0-9]+)?)",aria,re.I)
-            if not m:
-                continue
-            return {
-              "event_id":(re.search(r"/(\d{6,})/?$",str(event_url).rstrip("/")) or [None,None])[1],
-              "event_url":str(event_url),
-              "participants":[home,away],
-              "market_id":None,
-              "market_name":"Goles totales Más/Menos",
-              "market_type":"DOM_EVENT_MARKET",
-              "handicap":2.5,
-              "selection_id":None,
-              "selection_name":"Más de 2.5",
-              "price":float(m.group(1)),
-              "endpoint":"EVENT_DETAIL_DOM_ARIA",
-              "binding_evidence":"EVENT_URL+PAGE_TITLE+MARKET_CONTAINER+SELECTION_ARIA",
-              "read_only":True
+        hit=detail_page.evaluate("""() => {
+          const buttons=[...document.querySelectorAll('button')];
+          for(const el of buttons){
+            const aria=el.getAttribute('aria-label')||'';
+            const txt=(el.innerText||'').trim();
+            const combined=(aria+' '+txt).trim();
+            if(!/M[aá]s de\s*2[\.,]5/i.test(combined)) continue;
+            let cur=el;
+            for(let depth=0;depth<14 && cur;depth++,cur=cur.parentElement){
+              const t=(cur.innerText||'').trim();
+              if(/Goles totales\s+M[aá]s\/Menos/i.test(t)){
+                return {
+                  aria,
+                  text:txt,
+                  market_text:t.slice(0,2500),
+                  tag:(el.tagName||'').toLowerCase(),
+                  attrs:Object.fromEntries([...el.attributes].map(a=>[a.name,a.value]))
+                };
+              }
             }
+          }
+          return null;
+        }""")
+        if not hit:
+            return None
+        combined=(str(hit.get("aria") or "")+" "+str(hit.get("text") or "")).strip()
+        m=re.search(r"(?:odds\s*)?([0-9]+(?:[\.,][0-9]+)?)",combined,re.I)
+        if not m:
+            nums=re.findall(r"[0-9]+(?:[\.,][0-9]+)?",combined)
+            price=None
+            for n in nums:
+                val=float(n.replace(",","."))
+                if val>1.0 and val<100:
+                    price=val
+                    break
+            if price is None:
+                return None
+        else:
+            price=float(m.group(1).replace(",","."))
+            if price==2.5:
+                nums=[float(x.replace(",",".")) for x in re.findall(r"[0-9]+(?:[\.,][0-9]+)?",combined)]
+                price=next((v for v in nums if v>1.0 and abs(v-2.5)>1e-9),None)
+                if price is None:
+                    return None
+        em=re.search(r"/(\d{6,})/?$",str(event_url).rstrip("/"))
+        return {
+          "event_id":em.group(1) if em else None,
+          "event_url":str(event_url),
+          "participants":[home,away],
+          "market_id":None,
+          "market_name":"Goles totales Más/Menos",
+          "market_type":"DOM_EVENT_MARKET",
+          "handicap":2.5,
+          "selection_id":None,
+          "selection_name":"Más de 2.5",
+          "price":float(price),
+          "endpoint":"EVENT_DETAIL_DOM_BUTTON_SCAN",
+          "binding_evidence":"EVENT_URL+PAGE_TITLE+BOTH_TEAMS+MARKET_CONTAINER+SELECTION_BUTTON",
+          "read_only":True,
+          "dom_aria":hit.get("aria"),
+          "dom_text":hit.get("text")
+        }
     except Exception:
         return None
-    return None
 
 def betano_detail_exact_over25(page,event_url:str,home:str,away:str)->tuple[dict[str,Any]|None,list[str]]:
     ctx=page.context
