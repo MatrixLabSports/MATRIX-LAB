@@ -118,6 +118,30 @@ jobs:
           print(json.dumps({"status":j["status"],"counts":j["counts"]},sort_keys=True))
           PY
 
+      - name: Audit independent browser clock strings without timezone certification
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          recon = json.loads(Path("evidence/calendar_reconciliation/MATRIX_FOOTBALL_WORLD_CALENDAR_RECONCILIATION_LAST.json").read_text(encoding="utf-8"))
+          date = recon["target_date_bogota"]
+          evidence = Path("evidence/calendar_physical") / date / "football_flashscore_opera_calendar_rows_with_time.json"
+          if not evidence.exists():
+              print("CLOCK_CROSSCHECK_SKIPPED_NO_OBSERVED_ROW_EVIDENCE")
+          else:
+              from tools.matrix_football_clock_string_crosscheck import compare
+              observed = json.loads(evidence.read_text(encoding="utf-8"))
+              result = compare(recon, observed)
+              out = Path("evidence/calendar_reconciliation/MATRIX_FOOTBALL_CLOCK_STRING_CROSSCHECK_LAST.json")
+              out.write_text(json.dumps(result, indent=2, ensure_ascii=False) + "\\n", encoding="utf-8")
+              assert result["policy"]["no_freeze_from_uncertified_clock"] is True
+              assert result["policy"]["automatic_wagering"] is False
+              assert all(x["timezone_certified"] is False for x in result["rows"])
+              print(json.dumps({"date": date, "counts": result["clock_comparison_counts"],
+                                "timezone_certified": False}, sort_keys=True))
+          PY
+
       - name: Persist reconciliation evidence
         shell: bash
         run: |
@@ -127,6 +151,9 @@ jobs:
           git add evidence/calendar_reconciliation/MATRIX_FOOTBALL_WORLD_CALENDAR_RECONCILIATION_LAST.json
           git add evidence/calendar_reconciliation/MATRIX_FOOTBALL_WORLD_WATCHLIST_LAST.json
           git add evidence/calendar_reconciliation/MATRIX_FOOTBALL_BROWSER_PREREGISTRY_LAST.json
+          if [ -f evidence/calendar_reconciliation/MATRIX_FOOTBALL_CLOCK_STRING_CROSSCHECK_LAST.json ]; then
+            git add evidence/calendar_reconciliation/MATRIX_FOOTBALL_CLOCK_STRING_CROSSCHECK_LAST.json
+          fi
           if git diff --cached --quiet; then
             echo "NO_CALENDAR_RECONCILIATION_CHANGE"
             exit 0
