@@ -156,18 +156,21 @@ def betano_detail_exact_over25(page,event_url:str,home:str,away:str)->tuple[dict
             if any(tok in low for tok in ["event","prematch","pre-match","market","coupon"]):
                 urls.append(str(u))
         seen=set()
-        for u in urls[:80]:
+        for u in urls[:20]:
             if u in seen:
                 continue
             seen.add(u)
             try:
                 res=detail_page.evaluate("""async (url)=>{
+                  const controller=new AbortController();
+                  const timer=setTimeout(()=>controller.abort(),2500);
                   try{
-                    const r=await fetch(url,{credentials:'include',cache:'no-store'});
+                    const r=await fetch(url,{credentials:'include',cache:'no-store',signal:controller.signal});
                     const ct=r.headers.get('content-type')||'';
                     if(!ct.includes('json')) return {url,status:r.status,contentType:ct,body:null};
                     return {url,status:r.status,contentType:ct,body:await r.json()};
                   }catch(e){return {url,error:String(e),body:null};}
+                  finally{clearTimeout(timer);}
                 }""",u)
             except Exception:
                 continue
@@ -273,8 +276,11 @@ def main()->None:
                           const eps=['/api/home/top-events-v2/','/danae-webapi/api/live/overview/latest?includeVirtuals=true&queryLanguageId=8&queryOperatorId=17'];
                           const out=[];
                           for(const endpoint of eps){
-                            try{ const r=await fetch(endpoint,{credentials:'include',cache:'no-store'}); out.push({endpoint,status:r.status,body:await r.json()}); }
+                            const controller=new AbortController();
+                            const timer=setTimeout(()=>controller.abort(),3000);
+                            try{ const r=await fetch(endpoint,{credentials:'include',cache:'no-store',signal:controller.signal}); out.push({endpoint,status:r.status,body:await r.json()}); }
                             catch(e){ out.push({endpoint,error:String(e)}); }
+                            finally{clearTimeout(timer);}
                           }
                           return out;
                         }""")
