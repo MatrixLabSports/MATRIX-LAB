@@ -23,7 +23,7 @@ class OfflineDiscoveryDiagnosticsTests(unittest.TestCase):
         self.assertFalse(report["network_calls_permitted"])
 
     def test_no_future_candidates_reported_as_blocked_not_zero_demand(self):
-        with patch.object(diagnostic.supervisor, "discover_football", return_value={}), \\
+        with patch.object(diagnostic.supervisor, "discover_football", return_value={}), \
              patch.object(diagnostic.supervisor, "discover_tennis", return_value={}):
             report = diagnostic.collect()
         self.assertEqual(report["future_football_candidates"], 0)
