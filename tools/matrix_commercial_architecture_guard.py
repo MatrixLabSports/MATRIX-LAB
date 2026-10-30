@@ -25,7 +25,8 @@ def validate():
     if not all(v["protect_content"] for v in s["channels"].values()): errors.append("PROTECT_CONTENT")
     if m["plans"]["WEEKLY"]["duration_days"]!=7 or m["plans"]["MONTHLY"]["duration_days"]!=30: errors.append("MEMBERSHIP_DURATION")
     if p["truth_in_advertising"]["profit_guarantee"]: errors.append("PROFIT_GUARANTEE")
-    if p["sports_governance"]["force_volume"]: errors.append("FORCE_VOLUME")
+    governance=p["sports_governance"]
+    if governance.get("force_volume") is True or governance.get("no_pick_created_to_fill_commercial_quota") is not True: errors.append("FORCE_VOLUME")
     return errors
 
 if __name__=="__main__":
