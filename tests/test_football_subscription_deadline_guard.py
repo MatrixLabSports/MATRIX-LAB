@@ -91,7 +91,8 @@ def test_expired_paid_fixture_http_transports_never_call_network(monkeypatch):
         session, "configured-odds-key", "123", "2026-10-30T18:00:00Z",
         0.65, "expired", diagnostic=diagnostic,
     ) is None
-    assert diagnostic["status"] == "BLOCKED_PAID_API_SUBSCRIPTION_EXPIRED_FIXTURE_LOOKUP"
+    assert diagnostic["status"] == "BLOCKED_FIXTURE_LOOKUP"
+    assert diagnostic["api_football_fixture_lookup_status"] == "FAILED_NO_SAFE_FALLBACK"
 
 
 def test_all_paid_football_http_endpoints_are_guarded():
@@ -128,3 +129,33 @@ def test_all_paid_football_http_endpoints_are_guarded():
             for call in ast.walk(node)
         ), f"Missing subscription guard in {node.name}"
     assert found == guarded_functions
+
+
+def test_independent_fixture_identity_avoids_expired_api(monkeypatch):
+    from tools import telegram_green_signal_alerts as supervisor
+
+    class EmptyEvents:
+        status_code = 200
+        headers = {}
+        def json(self):
+            return {"items": []}
+
+    class IndependentOnlySession:
+        calls = []
+        def get(self, url, *args, **kwargs):
+            assert "football.api-sports.io" not in url
+            self.calls.append(url)
+            return EmptyEvents()
+
+    monkeypatch.setattr(supervisor, "paid_football_quote_transport_allowed", lambda: False)
+    session = IndependentOnlySession()
+    diagnostic = {}
+    result = supervisor.odds_api_net_exact_over25_offer(
+        session, "configured-odds-key", "123", "2026-10-30T18:00:00Z",
+        0.65, "expired", diagnostic=diagnostic,
+        candidate_match="Equipo local vs Equipo visitante",
+    )
+    assert result is None
+    assert diagnostic["fixture_identity_source"] == "CANDIDATE_PREREGISTERED_MATCH_FALLBACK"
+    assert diagnostic["api_football_fixture_lookup_status"] == "BLOCKED_PAID_API_SUBSCRIPTION_EXPIRED"
+    assert session.calls
