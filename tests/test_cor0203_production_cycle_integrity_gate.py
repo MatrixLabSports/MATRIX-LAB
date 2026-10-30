@@ -20,6 +20,10 @@ def test_cycle_fail_closes_on_holdout_integrity():
     assert 'assert integrity["admissible_observations"] == runner["ending_physical_count"]' in text
 
 
-def test_integrity_tool_is_a_workflow_trigger():
-    text = WORKFLOW.read_text(encoding="utf-8-sig")
-    assert "tools/cor0203_holdout_integrity_audit.py" in text
+def test_manual_only_cycle_keeps_integrity_audit_in_executed_script():
+    workflow = WORKFLOW.read_text(encoding="utf-8-sig")
+    cycle = CYCLE.read_text(encoding="utf-8-sig")
+    assert "workflow_dispatch:" in workflow
+    assert "bash scripts/cor0203_production_cycle.sh --trigger-sha" in workflow
+    assert "python -m tools.cor0203_holdout_integrity_audit" in cycle
+    assert "assert integrity[\"result\"] == \"PASS\"" in cycle
