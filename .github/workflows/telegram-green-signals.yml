@@ -123,6 +123,16 @@ jobs:
           test "$AUTO_BETTING" = "DISABLED"
           test "$PAPER_BANKROLL" = "ENABLED"
 
+      - name: Certify independent-source diagnostic without provider calls
+        if: ${{ github.event_name != 'push' }}
+        shell: bash
+        env:
+          MATRIX_INDEPENDENT_SOURCE_READINESS: '1'
+        run: |
+          set -euo pipefail
+          python -m pytest -q tests/test_football_subscription_deadline_guard.py
+          PYTHONPATH=. python -m tools.telegram_green_signal_alerts
+
       - name: Enforce API-Football subscription deadline before supervisor
         if: ${{ github.event_name != 'push' }}
         env:
