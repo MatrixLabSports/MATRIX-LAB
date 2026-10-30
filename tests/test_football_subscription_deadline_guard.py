@@ -92,3 +92,39 @@ def test_expired_paid_fixture_http_transports_never_call_network(monkeypatch):
         0.65, "expired", diagnostic=diagnostic,
     ) is None
     assert diagnostic["status"] == "BLOCKED_PAID_API_SUBSCRIPTION_EXPIRED_FIXTURE_LOOKUP"
+
+
+def test_all_paid_football_http_endpoints_are_guarded():
+    """Prevent newly introduced paid HTTP calls from bypassing expiry checks."""
+    import ast
+    from pathlib import Path
+
+    source = Path("tools/telegram_green_signal_alerts.py").read_text(encoding="utf-8")
+    tree = ast.parse(source)
+    guarded_functions = {
+        "odds_api_net_exact_over25_offer",
+        "api_football_pinnacle_over25_reference",
+        "exact_over25_offer",
+        "fixture_final",
+    }
+    found = set()
+    for node in ast.walk(tree):
+        if not isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
+            continue
+        calls_paid = any(
+            isinstance(value, ast.Constant)
+            and isinstance(value.value, str)
+            and "v3.football.api-sports.io/" in value.value
+            for value in ast.walk(node)
+        )
+        if not calls_paid:
+            continue
+        found.add(node.name)
+        assert node.name in guarded_functions, f"Unreviewed paid endpoint in {node.name}"
+        assert any(
+            isinstance(call, ast.Call)
+            and isinstance(call.func, ast.Name)
+            and call.func.id == "paid_football_quote_transport_allowed"
+            for call in ast.walk(node)
+        ), f"Missing subscription guard in {node.name}"
+    assert found == guarded_functions
