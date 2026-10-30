@@ -362,7 +362,9 @@ class _MultiBookSession:
         raise AssertionError(url)
 
 
-def test_odds_api_net_fallback_selects_best_authorized_colombia_book():
+def test_odds_api_net_fallback_selects_best_authorized_colombia_book(monkeypatch):
+    # Offline fixture test: simulated transport only; production expiry gate stays enforced.
+    monkeypatch.setattr(telegram_alerts, "paid_football_quote_transport_allowed", lambda: True)
     offer = odds_api_net_exact_over25_offer(
         _MultiBookSession(),
         "secret",
@@ -419,7 +421,9 @@ class _SingleBookSession:
         raise AssertionError(url)
 
 
-def test_multibook_gate_accepts_betplay_when_other_two_are_absent():
+def test_multibook_gate_accepts_betplay_when_other_two_are_absent(monkeypatch):
+    # Offline fixture test: simulated transport only; production expiry gate stays enforced.
+    monkeypatch.setattr(telegram_alerts, "paid_football_quote_transport_allowed", lambda: True)
     offer = odds_api_net_exact_over25_offer(
         _SingleBookSession("betplay", 1.82),
         "secret",
@@ -434,7 +438,9 @@ def test_multibook_gate_accepts_betplay_when_other_two_are_absent():
     assert round(offer["ev"], 4) == 0.1284
 
 
-def test_multibook_gate_accepts_rushbet_when_other_two_are_absent():
+def test_multibook_gate_accepts_rushbet_when_other_two_are_absent(monkeypatch):
+    # Offline fixture test: simulated transport only; production expiry gate stays enforced.
+    monkeypatch.setattr(telegram_alerts, "paid_football_quote_transport_allowed", lambda: True)
     offer = odds_api_net_exact_over25_offer(
         _SingleBookSession("rushbet", 1.77),
         "secret",
@@ -449,7 +455,9 @@ def test_multibook_gate_accepts_rushbet_when_other_two_are_absent():
     assert round(offer["ev"], 4) == 0.1151
 
 
-def test_odds_api_parser_accepts_current_period_str_and_string_line_contract():
+def test_odds_api_parser_accepts_current_period_str_and_string_line_contract(monkeypatch):
+    # Offline fixture test: simulated transport only; production expiry gate stays enforced.
+    monkeypatch.setattr(telegram_alerts, "paid_football_quote_transport_allowed", lambda: True)
     class Session:
         def get(self, url, headers=None, params=None, timeout=None):
             if url.endswith("/fixtures"):
@@ -641,7 +649,9 @@ class _SharpReferenceSession:
         raise AssertionError(url)
 
 
-def test_multibook_snapshot_collects_sharp_references_without_execution_leakage():
+def test_multibook_snapshot_collects_sharp_references_without_execution_leakage(monkeypatch):
+    # Offline fixture test: simulated transport only; production expiry gate stays enforced.
+    monkeypatch.setattr(telegram_alerts, "paid_football_quote_transport_allowed", lambda: True)
     diagnostic = {}
     offer = odds_api_net_exact_over25_offer(
         _SharpReferenceSession(),
