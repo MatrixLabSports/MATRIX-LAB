@@ -48,15 +48,38 @@ def evaluate(as_of_bogota: date, *, require_paid_use: bool = False, require_key:
     }
 
 
+def evaluate_independent_sources(as_of_bogota: date) -> dict:
+    """Offline governance decision; never asserts free-tier coverage or calls providers."""
+    paid = evaluate(as_of_bogota)
+    return {
+        "schema": "MATRIX_FOOTBALL_INDEPENDENT_SOURCE_READINESS_V1",
+        "as_of_bogota_date": as_of_bogota.isoformat(),
+        "paid_api_football_usable": bool(paid["paid_window_active"] or paid["post_cutoff_override"]),
+        "api_football_free_tier_verified": False,
+        "api_football_free_tier_current_season_coverage_verified": False,
+        "independent_source_supervision_allowed": True,
+        "independent_source_network_calls_authorized_by_this_check": False,
+        "required_before_signal": [
+            "PROVIDER_AUTHORIZATION", "CURRENT_FIXTURE_EVIDENCE",
+            "EXACT_BOOKMAKER_QUOTE", "POSITIVE_EV", "MARKET_PROMOTION",
+        ],
+        "source_order": paid["source_order"],
+        "real_money": "BLOCKED",
+        "automatic_wagering": False,
+    }
+
+
 def main() -> None:
     p=argparse.ArgumentParser()
     p.add_argument("--as-of-bogota-date")
     p.add_argument("--require-paid-use",action="store_true")
     p.add_argument("--require-key",action="store_true")
+    p.add_argument("--independent-source-readiness",action="store_true")
     p.add_argument("--out")
     a=p.parse_args()
     d=date.fromisoformat(a.as_of_bogota_date) if a.as_of_bogota_date else datetime.now(BOGOTA).date()
-    result=evaluate(d,require_paid_use=a.require_paid_use,require_key=a.require_key)
+    result=(evaluate_independent_sources(d) if a.independent_source_readiness else
+            evaluate(d,require_paid_use=a.require_paid_use,require_key=a.require_key))
     raw=json.dumps(result,indent=2,sort_keys=True)+"\n"
     if a.out:
         out=Path(a.out); out.parent.mkdir(parents=True,exist_ok=True); out.write_text(raw,encoding="utf-8")
