@@ -680,6 +680,10 @@ def odds_api_net_exact_over25_offer(
         if diagnostic is not None:
             diagnostic["status"] = "BLOCKED_CREDENTIAL_OR_KICKOFF"
         return None
+    if not paid_football_quote_transport_allowed():
+        if diagnostic is not None:
+            diagnostic["status"] = "BLOCKED_PAID_API_SUBSCRIPTION_EXPIRED_FIXTURE_LOOKUP"
+        return None
     fr = session.get(
         "https://v3.football.api-sports.io/fixtures",
         headers={"x-apisports-key": api_football_key},
@@ -1512,6 +1516,8 @@ def exact_over25_offer(
     return max(offers, key=lambda x: x["ev"]) if offers else None
 
 def fixture_final(session: requests.Session, api_key: str, fixture_id: str) -> dict[str, Any] | None:
+    if not paid_football_quote_transport_allowed():
+        return None
     response = session.get(
         "https://v3.football.api-sports.io/fixtures",
         headers={"x-apisports-key": api_key},
