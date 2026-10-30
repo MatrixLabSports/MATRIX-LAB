@@ -2,6 +2,15 @@ name: MATRIX Independent Sources Offline Check
 
 on:
   workflow_dispatch:
+  push:
+    branches:
+      - repair/cor09-world-pipeline
+    paths:
+      - 'tools/football_subscription_deadline_guard.py'
+      - 'tools/telegram_green_signal_alerts.py'
+      - 'tests/test_football_subscription_deadline_guard.py'
+      - 'tests/test_independent_source_readiness_truth.py'
+      - '.github/workflows/matrix-independent-source-offline-check.yml'
 
 permissions:
   contents: read
