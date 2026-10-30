@@ -680,38 +680,37 @@ def odds_api_net_exact_over25_offer(
         if diagnostic is not None:
             diagnostic["status"] = "BLOCKED_CREDENTIAL_OR_KICKOFF"
         return None
-    if not paid_football_quote_transport_allowed():
-        if diagnostic is not None:
-            diagnostic["status"] = "BLOCKED_PAID_API_SUBSCRIPTION_EXPIRED_FIXTURE_LOOKUP"
-        return None
-    fr = session.get(
-        "https://v3.football.api-sports.io/fixtures",
-        headers={"x-apisports-key": api_football_key},
-        params={"id": fixture_id},
-        timeout=20,
-    )
-    try:
-        fp = fr.json()
-    except Exception:
-        return None
-    if diagnostic is not None:
-        diagnostic["fixture_lookup_payload_sha256"] = hashlib.sha256(json.dumps(fp,sort_keys=True,separators=(",",":"),ensure_ascii=False).encode("utf-8")).hexdigest()
-    rows = fp.get("response", []) if isinstance(fp, dict) else []
     home = ""
     away = ""
-    if fr.status_code < 300 and rows:
-        row = rows[0]
-        home = str(((row.get("teams") or {}).get("home") or {}).get("name") or "")
-        away = str(((row.get("teams") or {}).get("away") or {}).get("name") or "")
+    if paid_football_quote_transport_allowed():
+        fr = session.get(
+            "https://v3.football.api-sports.io/fixtures",
+            headers={"x-apisports-key": api_football_key},
+            params={"id": fixture_id},
+            timeout=20,
+        )
+        try:
+            fp = fr.json()
+        except Exception:
+            return None
         if diagnostic is not None:
-            diagnostic["fixture_identity_source"] = "API_FOOTBALL"
+            diagnostic["fixture_lookup_payload_sha256"] = hashlib.sha256(json.dumps(fp,sort_keys=True,separators=(",",":"),ensure_ascii=False).encode("utf-8")).hexdigest()
+        rows = fp.get("response", []) if isinstance(fp, dict) else []
+        if fr.status_code < 300 and rows:
+            row = rows[0]
+            home = str(((row.get("teams") or {}).get("home") or {}).get("name") or "")
+            away = str(((row.get("teams") or {}).get("away") or {}).get("name") or "")
+            if diagnostic is not None:
+                diagnostic["fixture_identity_source"] = "API_FOOTBALL"
     else:
+        if diagnostic is not None:
+            diagnostic["api_football_fixture_lookup_status"] = "BLOCKED_PAID_API_SUBSCRIPTION_EXPIRED"
+    if not home or not away:
         parts = re.split(r"\s+vs\.?\s+", str(candidate_match or "").strip(), maxsplit=1, flags=re.IGNORECASE)
         if len(parts) == 2 and all(x.strip() for x in parts):
             home, away = parts[0].strip(), parts[1].strip()
             if diagnostic is not None:
                 diagnostic["fixture_identity_source"] = "CANDIDATE_PREREGISTERED_MATCH_FALLBACK"
-                diagnostic["api_football_fixture_lookup_status"] = "FAILED_FALLBACK_USED"
         else:
             if diagnostic is not None:
                 diagnostic["status"] = "BLOCKED_FIXTURE_LOOKUP"
