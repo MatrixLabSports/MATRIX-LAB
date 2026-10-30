@@ -121,7 +121,13 @@ class _RouteSession:
         raise AssertionError(url)
 
 
-def test_find_quote_requests_exact_team_total_full_time_market():
+def test_find_quote_requests_exact_team_total_full_time_market(monkeypatch):
+    import tools.telegram_team_total_goals_picks as mod
+    class FrozenDateTime(datetime):
+        @classmethod
+        def now(cls,tz=None):
+            return cls(2026,10,25,7,50,tzinfo=timezone.utc)
+    monkeypatch.setattr(mod,"datetime",FrozenDateTime)
     session=_RouteSession()
     diagnostic={}
     candidate={
@@ -145,7 +151,13 @@ def test_find_quote_requests_exact_team_total_full_time_market():
     assert diagnostic["status"]=="PASS_EXACT_TEAM_TOTAL_QUOTE"
 
 
-def test_find_quote_rejects_wrong_team_subject():
+def test_find_quote_rejects_wrong_team_subject(monkeypatch):
+    import tools.telegram_team_total_goals_picks as mod
+    class FrozenDateTime(datetime):
+        @classmethod
+        def now(cls,tz=None):
+            return cls(2026,10,25,7,50,tzinfo=timezone.utc)
+    monkeypatch.setattr(mod,"datetime",FrozenDateTime)
     session=_RouteSession()
     original_get=session.get
     def wrong_subject(url,headers=None,params=None,timeout=None):
