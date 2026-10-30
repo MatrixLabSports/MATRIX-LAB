@@ -1,3 +1,6 @@
+from pathlib import Path
+import pytest
+
 from tools.api_football_extended_market_history_warmup import (
     _existing_ids,
     _protected_ids_and_cutoff,
@@ -6,6 +9,14 @@ from tools.api_football_extended_market_history_warmup import (
     _utc,
     select_candidates,
 )
+
+
+@pytest.fixture(autouse=True)
+def require_physically_present_raw_history():
+    from tools.api_football_extended_market_history_warmup import RAW_PATHS
+    missing=[str(p) for p in RAW_PATHS if not Path(p).is_file()]
+    if missing:
+        pytest.skip("MISSING_RAW_PROVIDER_HISTORY_NOT_SYNTHESIZED: "+", ".join(missing))
 
 
 def test_raw_final_candidates_are_only_statsrich_source_leagues():
