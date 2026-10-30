@@ -34,3 +34,13 @@ Rama: `repair/cor09-world-pipeline`.
 - Paso `Run MATRIX canonical quality gate`: `in_progress`.
 - No hay evidencia todavía para declarar cero fallos ni cerrar la certificación.
 - No se ha reactivado el workflow manual de tenis ni se han modificado los bloqueos de dinero real.
+
+## Cierre físico de MATRIX CI 22176
+
+- Fuente: GitHub Actions, ejecución `40995257480`, trabajo `123866781738`.
+- Estado final comprobado: `completed`; conclusión: `success`.
+- Resumen extraído de los logs del trabajo: **3975 passed, 2 skipped in 233.81s**.
+- Contratos de regresión: ejecución `40995257562` / número 7420: `completed/success`.
+- Alcance: aprobación de la batería automatizada en la revisión evaluada; **no** certifica señales entregadas, rendimiento de apuestas, disponibilidad de API ni datos posteriores.
+- Controles sin cambio: `REAL_MONEY=BLOCKED`, `automatic_wagering=false`, sin reactivación automática del workflow manual de tenis.
+- Este cierre reemplaza exclusivamente el estado histórico `in_progress` indicado arriba; los registros anteriores se conservan como trazabilidad.
