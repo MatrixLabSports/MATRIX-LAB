@@ -41,3 +41,20 @@ def test_independent_source_readiness_does_not_override_paid_gate(monkeypatch):
     evaluate_independent_sources(date(2026, 10, 29))
     with pytest.raises(SystemExit, match="API_FOOTBALL_PAID_WINDOW_EXPIRED_NO_RENEWAL_AUTHORIZED"):
         evaluate(date(2026, 10, 29), require_paid_use=True)
+
+
+def test_supervisor_independent_source_diagnostic_is_offline(monkeypatch, capsys):
+    import json
+    from tools import telegram_green_signal_alerts as supervisor
+
+    monkeypatch.setenv("MATRIX_INDEPENDENT_SOURCE_READINESS", "1")
+    monkeypatch.delenv("MATRIX_SUPERVISOR_OFFLINE_PREFLIGHT", raising=False)
+    monkeypatch.delenv("MATRIX_API_FOOTBALL_AUTHORIZED", raising=False)
+    supervisor.main()
+    result = json.loads(capsys.readouterr().out.strip())
+    assert result["independent_source_supervision_allowed"] is True
+    assert result["independent_source_network_calls_authorized_by_this_check"] is False
+    assert result["telegram_messages_sent"] == 0
+    assert result["api_calls_made"] == 0
+    assert result["full_supervisor_certified"] is False
+    assert result["real_money"] == "BLOCKED"
