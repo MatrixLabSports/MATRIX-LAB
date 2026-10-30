@@ -74,3 +74,21 @@ def test_telegram_workflow_runs_offline_readiness_before_paid_gate():
     assert "python -m tools.telegram_green_signal_alerts" in section
     assert "tests/test_football_subscription_deadline_guard.py" in section
     assert "--require-paid-use --require-key" in workflow
+
+
+def test_expired_paid_fixture_http_transports_never_call_network(monkeypatch):
+    from tools import telegram_green_signal_alerts as supervisor
+
+    class NoNetwork:
+        def get(self, *args, **kwargs):
+            raise AssertionError("PAID_API_NETWORK_CALL_AFTER_EXPIRY")
+
+    monkeypatch.setattr(supervisor, "paid_football_quote_transport_allowed", lambda: False)
+    session = NoNetwork()
+    assert supervisor.fixture_final(session, "expired", "123") is None
+    diagnostic = {}
+    assert supervisor.odds_api_net_exact_over25_offer(
+        session, "configured-odds-key", "123", "2026-10-30T18:00:00Z",
+        0.65, "expired", diagnostic=diagnostic,
+    ) is None
+    assert diagnostic["status"] == "BLOCKED_PAID_API_SUBSCRIPTION_EXPIRED_FIXTURE_LOOKUP"
