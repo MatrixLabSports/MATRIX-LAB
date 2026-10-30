@@ -25,7 +25,8 @@ concurrency:
 jobs:
   quality-gate:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    # Full pytest suite exceeds 20 minutes on hosted runners; preserve the gate.
+    timeout-minutes: 60
 
     steps:
       - name: Checkout
