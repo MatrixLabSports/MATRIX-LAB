@@ -49,7 +49,7 @@ def test_gate600_lab_lanes_leave_acceleration_queue_and_require_audit():
         assert rows[key]["next_required_action"]=="RUN_GATE600_CALIBRATION_STABILITY_AUDIT_NO_AUTO_PROMOTION"
 
 
-def test_sub600_advanced_lanes_remain_in_300_to_600_queue():
+def test_advanced_lanes_transition_to_gate600_without_auto_promotion():
     r=build()
     rows={x["market_lane"]:x for x in r["rows"]}
     for key in {
@@ -62,8 +62,18 @@ def test_sub600_advanced_lanes_remain_in_300_to_600_queue():
         "SECOND_HALF_TEAM_TOTAL_GOALS_HOME",
         "SECOND_HALF_TEAM_TOTAL_GOALS_AWAY",
     }:
-        assert 300<=rows[key]["prospective_unique_count"]<600
-        assert rows[key]["priority"]=="P1_ADVANCE_300_TO_600"
+        row=rows[key]
+        count=row["prospective_unique_count"]
+        assert count>=300
+        if count<600:
+            assert row["priority"]=="P1_ADVANCE_300_TO_600"
+        else:
+            assert row["priority"]=="P0_GATE600_REACHED_AWAIT_AUDIT"
+            assert row["operational_state"]=="LAB"
+            assert row["next_required_action"] in {
+                "RUN_GATE600_CALIBRATION_STABILITY_AUDIT_NO_AUTO_PROMOTION",
+                "RUN_GATE600_AUDIT_AND_CERTIFY_EXACT_PRICE_FAMILY_NO_AUTO_PROMOTION",
+            }
 
 
 def test_zero_lanes_are_never_silently_marked_complete():
