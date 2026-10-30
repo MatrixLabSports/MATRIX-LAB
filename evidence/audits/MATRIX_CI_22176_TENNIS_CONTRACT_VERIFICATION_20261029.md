@@ -26,3 +26,11 @@ Rama: `repair/cor09-world-pipeline`.
 2. Si CI falla, registrar pruebas y causas exactas y reparar sin debilitar controles.
 3. Verificar fuentes y autorización antes de cualquier ejecución de tenis.
 4. Mantener este documento como fotografía histórica: estados posteriores requieren nueva evidencia.
+
+## Seguimiento físico adicional (misma ejecución)
+
+- Nueva consulta a los trabajos de la ejecución `40995257480`: trabajo `123866781738` en estado `in_progress`, sin conclusión.
+- Pasos `Set up Python` e `Install project test dependencies`: `completed/success`.
+- Paso `Run MATRIX canonical quality gate`: `in_progress`.
+- No hay evidencia todavía para declarar cero fallos ni cerrar la certificación.
+- No se ha reactivado el workflow manual de tenis ni se han modificado los bloqueos de dinero real.
