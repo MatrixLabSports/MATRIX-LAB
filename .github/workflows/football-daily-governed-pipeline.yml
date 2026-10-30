@@ -351,6 +351,8 @@ jobs:
           if [ -d "evidence/api_football/daily_prematch_reports/$D" ]; then git add "evidence/api_football/daily_prematch_reports/$D"; fi
           if [ -f "evidence/football_world_inventory/$D/MATRIX_FOOTBALL_CALIBRATION_ELIGIBILITY.json" ]; then git add "evidence/football_world_inventory/$D/MATRIX_FOOTBALL_CALIBRATION_ELIGIBILITY.json"; fi
           if [ -f evidence/governance/MATRIX_FOOTBALL_PMATRIX_LINEAGE_AUDIT_LAST.json ]; then git add evidence/governance/MATRIX_FOOTBALL_PMATRIX_LINEAGE_AUDIT_LAST.json; fi
+          if [ -f evidence/api_football/market_expansion/priority_market_lab_last.json ]; then git add evidence/api_football/market_expansion/priority_market_lab_last.json; fi
+          if [ -d evidence/api_football/provider_failures ]; then git add evidence/api_football/provider_failures; fi
           if git diff --cached --quiet; then
             echo "NO_GOVERNED_DAILY_CHANGE"
             exit 0
