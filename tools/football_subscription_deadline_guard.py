@@ -59,6 +59,8 @@ def evaluate_independent_sources(as_of_bogota: date) -> dict:
         "api_football_free_tier_current_season_coverage_verified": False,
         "independent_source_supervision_allowed": True,
         "independent_source_network_calls_authorized_by_this_check": False,
+        "operational_telegram_without_paid_api_certified": False,
+        "signal_emission_authorized_by_this_check": False,
         "required_before_signal": [
             "PROVIDER_AUTHORIZATION", "CURRENT_FIXTURE_EVIDENCE",
             "EXACT_BOOKMAKER_QUOTE", "POSITIVE_EV", "MARKET_PROMOTION",
