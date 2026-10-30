@@ -2464,6 +2464,16 @@ def main() -> None:
             "full_supervisor_certified": False,
         }, sort_keys=True), flush=True)
         return
+    # Independent-source readiness is offline and never authorizes paid API calls.
+    # This diagnostic mode must not send Telegram messages or alter the ledger.
+    if os.environ.get("MATRIX_INDEPENDENT_SOURCE_READINESS", "").strip() == "1":
+        from tools.football_subscription_deadline_guard import evaluate_independent_sources
+        readiness = evaluate_independent_sources(datetime.now(BOGOTA).date())
+        readiness["telegram_messages_sent"] = 0
+        readiness["api_calls_made"] = 0
+        readiness["full_supervisor_certified"] = False
+        print(json.dumps(readiness, sort_keys=True), flush=True)
+        return
     # Paid football API subscription expired on 2026-10-28; do not contact it
     # without renewed authorization verified outside this script.
     if os.environ.get("MATRIX_API_FOOTBALL_AUTHORIZED", "").strip() != "1":
