@@ -149,7 +149,7 @@ def test_odds_identity_falls_back_to_preregistered_candidate_when_api_fixture_lo
     )
     assert offer is None
     assert diagnostic["fixture_identity_source"] == "CANDIDATE_PREREGISTERED_MATCH_FALLBACK"
-    assert diagnostic["api_football_fixture_lookup_status"] == "FAILED_FALLBACK_USED"
+    assert diagnostic["api_football_fixture_lookup_status"] == "BLOCKED_PAID_API_SUBSCRIPTION_EXPIRED"
     assert diagnostic["identity_source"]["home"] == "Shakhtar Donetsk U19"
     assert diagnostic["identity_source"]["away"] == "Livyi Bereh U19"
     assert diagnostic["status"] == "BLOCKED_EVENT_NOT_COVERED"
