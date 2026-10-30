@@ -58,3 +58,19 @@ def test_supervisor_independent_source_diagnostic_is_offline(monkeypatch, capsys
     assert result["api_calls_made"] == 0
     assert result["full_supervisor_certified"] is False
     assert result["real_money"] == "BLOCKED"
+
+
+def test_telegram_workflow_runs_offline_readiness_before_paid_gate():
+    from pathlib import Path
+
+    workflow = Path(".github/workflows/telegram-green-signals.yml").read_text(encoding="utf-8")
+    diagnostic = "Certify independent-source diagnostic without provider calls"
+    paid_gate = "Enforce API-Football subscription deadline before supervisor"
+    assert diagnostic in workflow
+    assert paid_gate in workflow
+    assert workflow.index(diagnostic) < workflow.index(paid_gate)
+    section = workflow.split(diagnostic, 1)[1].split("      - name:", 1)[0]
+    assert "MATRIX_INDEPENDENT_SOURCE_READINESS: '1'" in section
+    assert "python -m tools.telegram_green_signal_alerts" in section
+    assert "tests/test_football_subscription_deadline_guard.py" in section
+    assert "--require-paid-use --require-key" in workflow
