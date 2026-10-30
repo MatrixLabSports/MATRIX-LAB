@@ -34,7 +34,9 @@ def build(now_utc:datetime|None=None)->dict[str,Any]:
     lane=(pit.get("lanes") or {}).get("TEAM_TOTAL_SHOTS") or {}
     blocked_reasons=audit.get("blocked_reason_counts") or {}
     insufficient=int(blocked_reasons.get("INSUFFICIENT_PERSISTED_TEAM_SHOTS_PIT_HISTORY") or 0)
-    blocked=int(audit.get("blocked_count") or 0)
+    # Older bridge audits omit blocked_count; derive it only from explicit reason counts.
+    blocked_raw=audit.get("blocked_count")
+    blocked=int(blocked_raw) if blocked_raw is not None else sum(int(v) for v in blocked_reasons.values())
     future=int(audit.get("future_source_fixture_candidates") or 0)
     eligible=int(audit.get("eligible_future_unique_fixtures") or 0)
     stale=age>MAX_AGE_HOURS
