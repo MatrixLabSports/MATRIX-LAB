@@ -135,7 +135,13 @@ def build(generated_at:datetime|None=None)->dict[str,Any]:
     milestone=_json(MILESTONE)
     rows=_jsonl(LEDGER)
     if milestone.get("status")!="PASS": raise ValueError("MILESTONE_NOT_PASS")
-    if len(rows)!=int(milestone["current_settled_count"]): raise ValueError("MILESTONE_LEDGER_COUNT_MISMATCH")
+    if len(rows)!=int(milestone["current_settled_count"]):
+        raise ValueError(
+            "MILESTONE_LEDGER_COUNT_MISMATCH:"
+            f"milestone={int(milestone['current_settled_count'])}:"
+            f"ledger={len(rows)}:"
+            "REBUILD_MILESTONE_FROM_VERIFIED_APPEND_ONLY_LEDGER"
+        )
     if len({str(r["fixture_id"]) for r in rows})!=len(rows): raise ValueError("DUPLICATE_FIXTURE_ID")
     now=(generated_at or datetime.now(timezone.utc)).replace(microsecond=0).isoformat()
 
