@@ -27,7 +27,8 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: repair/cor09-world-pipeline
+          # Test the exact pushed commit; manual dispatch tests the selected ref.
+          ref: ${{ github.sha }}
       - uses: actions/setup-python@v5
         with:
           python-version: '3.11'
