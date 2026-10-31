@@ -2497,6 +2497,17 @@ def main() -> None:
     # Paid football API subscription expired on 2026-10-28; do not contact it
     # without renewed authorization verified outside this script.
     if os.environ.get("MATRIX_API_FOOTBALL_AUTHORIZED", "").strip() != "1":
+        # Do not misrepresent a successful offline diagnostic as live delivery.
+        # Emit a machine-readable operational blocker for Actions and watchdogs.
+        print(json.dumps({
+            "schema": "MATRIX_SUPERVISOR_OPERATIONAL_BLOCKER_V1",
+            "status": "BLOCKED_PAID_API_DEPENDENCY",
+            "reason": "API_FOOTBALL_SUBSCRIPTION_NOT_VERIFIED_FAIL_CLOSED",
+            "independent_operational_path_certified": False,
+            "telegram_messages_sent": 0,
+            "real_money": "BLOCKED",
+            "automatic_wagering": False,
+        }, sort_keys=True), flush=True)
         raise SystemExit("API_FOOTBALL_SUBSCRIPTION_NOT_VERIFIED_FAIL_CLOSED")
     token = os.environ.get("TELEGRAM_BOT_TOKEN", "").strip()
     chat_id = os.environ.get("TELEGRAM_CHAT_ID", "").strip()
