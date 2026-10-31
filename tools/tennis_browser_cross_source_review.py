@@ -16,8 +16,8 @@ REVIEWED = {
 
 
 def review(sofa, flash):
-    sofa_by_id = {str(r["event_id"]): r for r in sofa["events"]}
-    flash_urls = [r["url"] for r in flash["links"]]
+    sofa_by_id = {str(r["event_id"]): r for r in sofa["events"] if str(r.get("event_id", "")).isdigit()}
+    flash_urls = [r["url"] for r in flash["links"] if isinstance(r.get("url"), str)]
     verified = []
     missing = []
     for event_id, players in REVIEWED.items():
@@ -26,8 +26,8 @@ def review(sofa, flash):
         if not sr or not matches:
             missing.append(event_id)
             continue
-        verified.append({"sofascore_event_id": event_id, "sofascore_url": sr["source_url"], "flashscore_url": sorted(matches)[0], "review_scope": "PLAYER_PAIR_LINK_IDENTITY_ONLY"})
-    return {"schema": "MATRIX_TENNIS_CROSS_SOURCE_REVIEW_V1", "status": "LINK_IDENTITY_REVIEW_ONLY", "reviewed_pair_count": len(verified), "missing_reviewed_ids": missing, "reviewed_pairs": verified, "kickoff_verified": False, "match_status_verified": False, "bookmaker_quote_verified": False, "model_probability_verified": False, "candidate_eligible": False, "telegram_send_authorized": False, "real_money": "BLOCKED", "automatic_wagering": False}
+        verified.append({"sofascore_event_id": event_id, "sofascore_url": sr["source_url"], "flashscore_url": sorted(matches)[0], "review_scope": "PLAYER_PAIR_LINK_IDENTITY_ONLY", "same_match_confirmed": False})
+    return {"schema": "MATRIX_TENNIS_CROSS_SOURCE_REVIEW_V1", "status": "LINK_IDENTITY_REVIEW_ONLY", "reviewed_pair_count": len(verified), "confirmed_same_match_count": 0, "missing_reviewed_ids": missing, "reviewed_pairs": verified, "kickoff_verified": False, "match_status_verified": False, "bookmaker_quote_verified": False, "model_probability_verified": False, "candidate_eligible": False, "telegram_send_authorized": False, "real_money": "BLOCKED", "automatic_wagering": False}
 
 
 def main():
