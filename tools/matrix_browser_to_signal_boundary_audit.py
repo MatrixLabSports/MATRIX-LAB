@@ -13,7 +13,12 @@ FOOTBALL_PATTERNS = ("browser_physical_verification/*.json", "shadow_quote_freez
 
 
 def audit(date, browser=BROWSER, football=FOOTBALL, tennis=TENNIS):
-    if len(date) != 10 or date[4] != "-" or date[7] != "-" or not date.replace("-", "").isdigit():
+    from datetime import date as date_type
+    try:
+        parsed_date = date_type.fromisoformat(date)
+    except (TypeError, ValueError):
+        raise ValueError("DATE_FORMAT_YYYY_MM_DD_REQUIRED") from None
+    if parsed_date.isoformat() != date:
         raise ValueError("DATE_FORMAT_YYYY_MM_DD_REQUIRED")
     tennis_discovery = browser / ("MATRIX_SOFASCORE_TENNIS_" + date.replace("-", "") + "_FULL_LINK_DISCOVERY.json")
     sources = {
@@ -28,7 +33,11 @@ def audit(date, browser=BROWSER, football=FOOTBALL, tennis=TENNIS):
         "sources": sources,
         "browser_discovery_is_signal_input": False,
         "auto_promotion_authorized": False,
-        "signals_sent": 0,
+        "signals_sent": None,
+        "telegram_delivery_checked": False,
+        "canonical_generation_checked": False,
+        "root_cause_confirmed": False,
+        "missing_canonical_sources": [key for key in ("tennis_canonical", "football_canonical") if not sources[key]["exists"]],
         "real_money": "BLOCKED",
         "automatic_wagering": False,
     }
