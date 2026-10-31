@@ -9,9 +9,17 @@ def test_review_requires_both_original_links():
     assert result["candidate_eligible"] is False
     assert result["telegram_send_authorized"] is False
     assert result["kickoff_verified"] is False
+    assert result["confirmed_same_match_count"] == 0
+    assert result["reviewed_pairs"][0]["same_match_confirmed"] is False
 
 
 def test_review_never_invents_missing_source():
     result = review({"events": []}, {"links": []})
     assert result["reviewed_pair_count"] == 0
     assert len(result["missing_reviewed_ids"]) == 3
+
+
+def test_review_ignores_nonnumeric_sofa_identifiers():
+    result = review({"events": [{"event_id": "invalid", "source_url": "example"}]}, {"links": []})
+    assert result["reviewed_pair_count"] == 0
+    assert result["confirmed_same_match_count"] == 0
