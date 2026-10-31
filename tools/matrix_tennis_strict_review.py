@@ -27,11 +27,15 @@ def check_option(sofa_url, flash_name):
     side_tokens = [tokens(p) for p in parts]
     if not all(expected & side for side in side_tokens):
         return "PARTIAL"
-    if "/" in flash_name:
-        if not all("/" in p for p in parts):
-            return "MIXED_MODALITY"
-        if len(expected & tokens(flash_name)) < 4:
-            return "PARTIAL_DOUBLES"
+    # A SofaScore slug with four surname tokens indicates doubles.
+    # More complex surnames are deliberately held for manual review.
+    sofa_doubles = len(expected) == 4
+    flash_doubles = all("/" in p for p in parts)
+    flash_mixed = any("/" in p for p in parts) and not flash_doubles
+    if flash_mixed or sofa_doubles != flash_doubles:
+        return "MIXED_MODALITY"
+    if sofa_doubles and len(expected & tokens(flash_name)) < 4:
+        return "PARTIAL_DOUBLES"
     return "REVIEW_IDENTITY_ONLY"
 
 def review(data):
