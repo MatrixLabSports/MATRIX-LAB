@@ -130,10 +130,12 @@ def main()->None:
             rejected.append({"path":p.as_posix(),"reason":"TARGET_CONFLICT"}); continue
         target.write_text(payload,encoding="utf-8")
         accepted.append({"inbox":p.as_posix(),"artifact":target.as_posix(),"status":"CREATED"})
+    # PASS means processing completed, not that an Opera capture arrived.
+    status = "NO_INPUT" if not paths else ("REJECTED_ALL" if not accepted else "PASS")
     audit={
         "schema":"MATRIX_TEAM_TOTAL_PHYSICAL_CAPTURE_BRIDGE_AUDIT_V1",
         "generated_at_utc":datetime.now(timezone.utc).replace(microsecond=0).isoformat(),
-        "status":"PASS",
+        "status":status,
         "input_count":len(paths),
         "accepted_count":len(accepted),
         "rejected_count":len(rejected),
@@ -151,7 +153,7 @@ def main()->None:
     }
     audit_path.parent.mkdir(parents=True,exist_ok=True)
     audit_path.write_text(json.dumps(audit,indent=2,sort_keys=True,ensure_ascii=False)+"\n",encoding="utf-8")
-    print(json.dumps({"status":"PASS","input":len(paths),"accepted":len(accepted),"rejected":len(rejected)},sort_keys=True))
+    print(json.dumps({"status":status,"input":len(paths),"accepted":len(accepted),"rejected":len(rejected)},sort_keys=True))
 
 
 if __name__=="__main__":
