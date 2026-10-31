@@ -19,7 +19,7 @@ def sofa_tokens(url):
     slug = url.split("/match/", 1)[-1].split("/", 1)[0]
     return tokens(slug.replace("-", " "))
 
-def check_option(sofa_url, flash_name):
+def check_option(sofa_url, flash_name, sofa_name=None):
     parts = re.split(r"\s+-\s+", flash_name.strip())
     if len(parts) != 2:
         return "UNPARSEABLE"
@@ -27,9 +27,13 @@ def check_option(sofa_url, flash_name):
     side_tokens = [tokens(p) for p in parts]
     if not all(expected & side for side in side_tokens):
         return "PARTIAL"
-    # A SofaScore slug with four surname tokens indicates doubles.
-    # More complex surnames are deliberately held for manual review.
-    sofa_doubles = len(expected) == 4
+    # URL token count is NOT a reliable doubles indicator: compound names
+    # such as Adolfo Daniel Vallejo and Grigor Dimitrov also yield 4 tokens.
+    # Strip the calendar date before inspecting team separators.
+    if sofa_name is None:
+        return "SOFA_MODALITY_UNVERIFIED"
+    label = re.sub(r"^\\s*\\d{1,2}/\\d{1,2}/\\d{2,4}\\s+", "", sofa_name)
+    sofa_doubles = " / " in label
     flash_doubles = all("/" in p for p in parts)
     flash_mixed = any("/" in p for p in parts) and not flash_doubles
     if flash_mixed or sofa_doubles != flash_doubles:
@@ -45,7 +49,7 @@ def review(data):
     for entry in data["candidates"]:
         options = [{"flashscore_url": opt["flashscore_url"],
                     "flashscore_name": opt["flashscore_name"],
-                    "decision": check_option(entry["sofascore_url"], opt["flashscore_name"]),
+                    "decision": check_option(entry["sofascore_url"], opt["flashscore_name"], entry["sofascore_name"]),
                     "certified": False} for opt in entry["candidates"]]
         rows.append({"sofascore_url": entry["sofascore_url"],
                      "sofascore_name": entry["sofascore_name"],
