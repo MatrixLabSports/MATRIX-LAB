@@ -2494,6 +2494,27 @@ def main() -> None:
         readiness["full_supervisor_certified"] = False
         print(json.dumps(readiness, sort_keys=True), flush=True)
         return
+    # Independently inspect governed local candidate artifacts without network calls.
+    # This is an operational inventory, NOT a live signal supervisor or delivery.
+    if os.environ.get("MATRIX_INDEPENDENT_CANDIDATE_INVENTORY", "").strip() == "1":
+        now = now_utc()
+        day = now.astimezone(BOGOTA).date()
+        dates = [str(day + timedelta(days=1)), str(day)]
+        football = discover_football(dates)
+        tennis = discover_tennis(dates)
+        print(json.dumps({
+            "schema": "MATRIX_INDEPENDENT_CANDIDATE_INVENTORY_V1",
+            "status": "INVENTORY_ONLY_NO_LIVE_QUOTES",
+            "dates": dates,
+            "football_candidates": len(football),
+            "tennis_candidates": len(tennis),
+            "telegram_messages_sent": 0,
+            "api_calls_made": 0,
+            "independent_operational_path_certified": False,
+            "real_money": "BLOCKED",
+            "automatic_wagering": False,
+        }, sort_keys=True), flush=True)
+        return
     # Paid football API subscription expired on 2026-10-28; do not contact it
     # without renewed authorization verified outside this script.
     if os.environ.get("MATRIX_API_FOOTBALL_AUTHORIZED", "").strip() != "1":
