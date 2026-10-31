@@ -108,7 +108,7 @@ jobs:
           test -n "$TELEGRAM_CHAT_ID"
           test -n "$ODDS_API_NET_KEY"
 
-      - name: Rescue prematch supervisor
+      - name: Post-expiry independent-source diagnostic (not live rescue)
         if: steps.stale.outputs.run_rescue == 'true'
         env:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
@@ -121,7 +121,7 @@ jobs:
           MATRIX_INDEPENDENT_SOURCE_READINESS=1 python -m tools.telegram_green_signal_alerts
 
       - name: Persist rescue ledger
-        if: steps.stale.outputs.run_rescue == 'true'
+        if: ${{ false }} # Diagnostic-only mode does not modify the live signal ledger
         shell: bash
         run: |
           set -euo pipefail
