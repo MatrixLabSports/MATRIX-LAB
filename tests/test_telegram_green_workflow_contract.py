@@ -34,7 +34,7 @@ def test_final_window_readiness_is_persisted_and_rebase_allowlisted():
 def test_push_ci_does_not_call_live_quote_supervision():
     text = WORKFLOW.read_text(encoding="utf-8")
     guarded_steps = [
-        "Enforce API-Football subscription deadline before supervisor",
+        "Verify paid API expiry without blocking independent sources",
         "Validate secrets",
         "Build multi-market signal eligibility gate",
         "Build multi-market Telegram signal eligibility registry",
