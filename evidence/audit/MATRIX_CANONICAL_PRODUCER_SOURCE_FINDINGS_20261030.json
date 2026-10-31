@@ -1,0 +1,49 @@
+{
+  "schema": "MATRIX_CANONICAL_PRODUCER_SOURCE_FINDINGS_V1",
+  "audit_date_utc": "2026-10-30",
+  "repository": "MatrixLabSports/MATRIX-LAB",
+  "branch": "repair/cor09-world-pipeline",
+  "status": "STATIC_SOURCE_INSPECTION_ONLY",
+  "observations": [
+    {
+      "lane": "football",
+      "workflow": ".github/workflows/football-daily-governed-pipeline.yml",
+      "gates": [
+        "football_subscription_deadline_guard --require-paid-use --require-key",
+        "Enforce canonical browser preregistry freshness before API calls"
+      ],
+      "inference": "Paid subscription and browser preregistry are prerequisite gates; actual failure point unverified."
+    },
+    {
+      "lane": "tennis",
+      "workflow": ".github/workflows/tennis-world-rolling-horizon.yml",
+      "gates": [
+        "Require daily SofaScore and Flashscore browser crosscheck",
+        "Require autonomous exact calendar-first source-count report",
+        "MATRIX_TENNIS_PROVIDER: rapidapi_tennis"
+      ],
+      "inference": "Browser and source-count evidence plus RapidAPI tennis are dependencies; actual failure point unverified."
+    },
+    {
+      "lane": "telegram",
+      "workflow": ".github/workflows/telegram-matrix-supervisor-15m.yml",
+      "gates": [
+        "cron: \"*/15 * * * *\"",
+        "football_subscription_deadline_guard --independent-source-readiness"
+      ],
+      "inference": "Configured 15-minute schedule does not prove successful execution or delivery."
+    }
+  ],
+  "last_user_verified_boundary": {
+    "date": "2026-10-31",
+    "browser_tennis_discovery_exists": true,
+    "football_canonical_exists": false,
+    "tennis_canonical_exists": false
+  },
+  "workflow_execution_logs_verified": false,
+  "root_cause_confirmed": false,
+  "canonical_production_restored": false,
+  "telegram_delivery_verified": false,
+  "real_money": "BLOCKED",
+  "automatic_wagering": false
+}
