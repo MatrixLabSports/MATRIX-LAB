@@ -181,8 +181,8 @@ def _merged_future_fixture_registry(root:Path,now_utc:datetime)->dict[str,Any]:
             kept+=1
         if kept:
             sources.append({"path":path.as_posix(),"captured_at_utc":captured.isoformat(),"future_rows_seen":kept})
-    if not merged:
-        raise FileNotFoundError("NO_FUTURE_FIXTURE_REGISTRY_AVAILABLE")
+    # Missing or expired registries are a verifiable zero-candidate state,
+    # never permission to fabricate fixtures or send unverified picks.
     events=[]
     for row in merged.values():
         row=dict(row); row.pop("_captured_at_utc",None)
@@ -192,6 +192,7 @@ def _merged_future_fixture_registry(root:Path,now_utc:datetime)->dict[str,Any]:
         "captured_at_utc":now_utc.isoformat(),
         "merged_future_fixture_count":len(events),
         "source_registry_count":len(sources),
+        "fixture_registry_status":"AVAILABLE" if merged else "NO_VERIFIED_FUTURE_FIXTURES",
         "source_registries":sources,
         "events":events,
     }
@@ -638,6 +639,7 @@ def main()->None:
     base["fixture_registry_path"]=fixture_registry_descriptor
     base["merged_future_fixture_count"]=fixture_registry.get("merged_future_fixture_count")
     base["source_registry_count"]=fixture_registry.get("source_registry_count")
+    base["fixture_registry_status"]=fixture_registry.get("fixture_registry_status", "EXPLICIT_REGISTRY")
     ledger_path=Path(a.ledger)
     ledger=_load(ledger_path) if ledger_path.exists() else {"schema":"MATRIX_TELEGRAM_TEAM_TOTAL_GOALS_PICKS_LEDGER_V1","sent":[]}
     sent_keys={str(x.get("candidate_key") or "") for x in ledger.get("sent",[]) if isinstance(x,Mapping)}
