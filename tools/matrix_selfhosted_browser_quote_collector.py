@@ -469,7 +469,19 @@ def main()->None:
                                     exact["endpoint"]="EVENT_DETAIL_PAGE_NETWORK"
                     exact_price=float(exact.get("price") or 0) if exact else 0.0
                     exact_found=bool(exact and exact_price>0)
-                    emitted=bool(exact_found and exact_price>1.50)
+                    # A quote captured by the browser is not automatically eligible.
+                    try:
+                        kickoff_dt=datetime.fromisoformat(str(c.get("kickoff")).replace("Z","+00:00")).astimezone(timezone.utc)
+                    except (ValueError, TypeError):
+                        kickoff_dt=None
+                    try:
+                        p_value=float(c.get("p_matrix"))
+                    except (ValueError, TypeError):
+                        p_value=None
+                    economic_ok=bool(exact_found and exact_price>1.50 and p_value is not None
+                                     and 0.0<p_value<1.0 and p_value*exact_price-1.0>=0.05)
+                    prematch_ok=bool(kickoff_dt is not None and now<kickoff_dt)
+                    emitted=bool(adapter.get("status")=="CERTIFIED_EXACT_OVER25" and economic_ok and prematch_ok)
                     rec={
                       "fixture_id":str(c.get("fixture_id") or ""),"match":c.get("match"),"kickoff":c.get("kickoff"),
                       "p_matrix":c.get("p_matrix"),"bookmaker":book,"url":url,
@@ -478,8 +490,10 @@ def main()->None:
                       "execution_quote_emitted":emitted,
                       "blocker":(
                         None if emitted else
-                        ("ODDS_BELOW_MIN_1_50" if exact_found and exact_price<=1.50 else
-                         ("EXACT_OVER25_NOT_FOUND" if adapter.get("status")=="CERTIFIED_EXACT_OVER25" else "BOOKMAKER_ADAPTER_NOT_CERTIFIED"))
+                        ("BOOKMAKER_ADAPTER_NOT_CERTIFIED" if adapter.get("status")!="CERTIFIED_EXACT_OVER25" else
+                         ("ODDS_BELOW_MIN_1_50" if exact_found and exact_price<=1.50 else
+                          ("NO_SIGNAL_ECONOMIC_GATE" if exact_found and not economic_ok else
+                           ("NO_SIGNAL_KICKOFF" if exact_found and not prematch_ok else "EXACT_OVER25_NOT_FOUND"))))
                       )
                     }
                     if detail_diagnostics:
