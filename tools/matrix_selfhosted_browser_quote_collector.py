@@ -48,12 +48,16 @@ def candidate_rows(audit:dict[str,Any],now:datetime)->list[dict[str,Any]]:
         if not isinstance(r,dict): continue
         kickoff=r.get("kickoff")
         try:
-            kd=datetime.fromisoformat(str(kickoff).replace("Z","+00:00")).astimezone(timezone.utc)
-        except Exception:
+            kd=datetime.fromisoformat(str(kickoff).replace("Z","+00:00"))
+            if kd.tzinfo is None:
+                continue
+            kd=kd.astimezone(timezone.utc)
+            probability=float(r.get("p_matrix"))
+        except (TypeError, ValueError, OverflowError):
             continue
         sec=(kd-now).total_seconds()
-        if sec<=0 or sec>120*60: continue
-        if float(r.get("p_matrix") or 0)<0.60: continue
+        if not (0<sec<=120*60): continue
+        if not (0.60<=probability<1.0): continue
         if split_match(str(r.get("match") or "")) is None: continue
         out.append(r)
     return sorted(out,key=lambda x:x["kickoff"])
