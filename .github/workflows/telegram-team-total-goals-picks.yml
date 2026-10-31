@@ -12,6 +12,7 @@ on:
       - ".github/workflows/telegram-team-total-goals-picks.yml"
       - "tools/telegram_team_total_goals_picks.py"
       - "tests/test_telegram_team_total_goals_picks.py"
+      - "tests/test_matrix_team_total_run_history_contract.py"
       - "tests/test_telegram_team_total_goals_workflow_contract.py"
       - "tools/physical_team_total_browser_capture.py"
       - "tests/test_physical_team_total_browser_capture.py"
@@ -128,6 +129,13 @@ jobs:
               "quote_window_summary":j["quote_window_summary"],
           },sort_keys=True))
           PY
+
+      - name: Verify immutable run archive exists
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -d evidence/notifications/telegram/team_total_goals_run_history
+          test "$(find evidence/notifications/telegram/team_total_goals_run_history -maxdepth 1 -type f -name '*.json' | wc -l)" -ge 1
 
       - name: Persist Team Total Goals Telegram evidence
         shell: bash
