@@ -719,7 +719,16 @@ def main()->None:
       "status":"PASS",
     }
     Path(a.audit).parent.mkdir(parents=True,exist_ok=True)
-    Path(a.audit).write_text(json.dumps(audit,indent=2,sort_keys=True,ensure_ascii=False)+"\n",encoding="utf-8")
+    # Preserve every run separately: LAST is a mutable snapshot, not an archive.
+    # Use UTC timestamp and random UUID to avoid collisions across runners.
+    from uuid import uuid4
+    archive_dir = Path(a.audit).parent / "team_total_goals_run_history"
+    archive_dir.mkdir(parents=True, exist_ok=True)
+    archive_name = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%S%fZ") + "_" + uuid4().hex + ".json"
+    archive_path = archive_dir / archive_name
+    serialized_audit = json.dumps(audit,indent=2,sort_keys=True,ensure_ascii=False)+"\n"
+    archive_path.write_text(serialized_audit,encoding="utf-8")
+    Path(a.audit).write_text(serialized_audit,encoding="utf-8")
     print(json.dumps({"status":"PASS","candidate_count":len(candidates),"eligible_quote_count":eligible,"sent_count":len(sent),"dry_run":bool(a.dry_run),"real_money":"BLOCKED"},sort_keys=True))
 
 
