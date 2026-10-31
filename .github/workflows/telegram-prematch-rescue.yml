@@ -115,7 +115,10 @@ jobs:
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
           API_FOOTBALL_KEY: ${{ secrets.API_FOOTBALL_KEY }}
           ODDS_API_NET_KEY: ${{ secrets.ODDS_API_NET_KEY }}
-        run: python -m tools.telegram_green_signal_alerts
+        run: |
+          # Post-expiry: certify offline readiness, never enter paid-only transport.
+          # A diagnostic pass does NOT imply any Telegram message was delivered.
+          MATRIX_INDEPENDENT_SOURCE_READINESS=1 python -m tools.telegram_green_signal_alerts
 
       - name: Persist rescue ledger
         if: steps.stale.outputs.run_rescue == 'true'
