@@ -1,16 +1,16 @@
 {
   "checks": {
     "clay": {
-      "age_minutes": 360.84,
+      "age_minutes": 1.9,
       "latest_conclusion": "failure",
-      "latest_run_id": 41186240020,
+      "latest_run_id": 41212461908,
       "latest_status": "completed",
-      "reason": "LATEST_RUN_STALE",
+      "reason": "LATEST_TERMINAL_RUN_FAILED",
       "status": "FAIL",
       "workflow": "tennis-clay-daily-prospective.yml"
     },
     "hard": {
-      "age_minutes": 5.59,
+      "age_minutes": 12.65,
       "latest_conclusion": "failure",
       "latest_run_id": 41211638771,
       "latest_status": "completed",
@@ -19,11 +19,11 @@
       "workflow": "tennis-hard-governed-day-resolution.yml"
     },
     "live": {
-      "age_minutes": 0.29,
-      "latest_conclusion": null,
+      "age_minutes": 7.35,
+      "latest_conclusion": "success",
       "latest_event": "workflow_run",
       "latest_run_id": 41212051550,
-      "latest_status": "in_progress",
+      "latest_status": "completed",
       "reason": "RECENT_RUN_PRESENT",
       "status": "PASS",
       "workflow": "live-tennis-cumulative-gate-reconcile.yml"
@@ -31,7 +31,7 @@
   },
   "failures": [
     {
-      "age_minutes": 5.59,
+      "age_minutes": 12.65,
       "lane": "hard",
       "latest_conclusion": "failure",
       "latest_run_id": 41211638771,
@@ -41,17 +41,17 @@
       "workflow": "tennis-hard-governed-day-resolution.yml"
     },
     {
-      "age_minutes": 360.84,
+      "age_minutes": 1.9,
       "lane": "clay",
       "latest_conclusion": "failure",
-      "latest_run_id": 41186240020,
+      "latest_run_id": 41212461908,
       "latest_status": "completed",
-      "reason": "LATEST_RUN_STALE",
+      "reason": "LATEST_TERMINAL_RUN_FAILED",
       "status": "FAIL",
       "workflow": "tennis-clay-daily-prospective.yml"
     }
   ],
-  "generated_at_utc": "2026-10-31T14:51:30.310901+00:00",
+  "generated_at_utc": "2026-10-31T14:58:33.779045+00:00",
   "policy": {
     "default_branch_scheduler_required": true,
     "expected_cadence_minutes": 15,
