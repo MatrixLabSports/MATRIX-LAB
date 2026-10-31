@@ -122,8 +122,10 @@ def run(api_key:str)->dict[str,Any]:
       "results":results,
       "counts":counts,
       "capabilities":{
-        "api_football_automatic":True,
-        "opera_connector_physical_read_available":True,
+        "api_football_automatic":False,
+        "api_football_requires_valid_subscription_and_explicit_authorization":True,
+        "opera_connector_physical_read_available":None,
+        "opera_connector_physical_read_verified_this_run":False,
         "opera_click_type_automation_available_to_github_actions":False,
         "browser_fallback_requires_physical_quote_evidence_artifact":True,
       },
