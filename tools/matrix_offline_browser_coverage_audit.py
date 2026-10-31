@@ -36,6 +36,30 @@ def audit(directory: Path) -> dict:
             if not isinstance(data, dict):
                 raise ValueError("ROOT_NOT_OBJECT")
             result["sources"][label] = {"present": True, **{k: data.get(k) for k in FIELDS[label]}}
+            if label == "cdp":
+                matches = data.get("matches")
+                adapter_counts = {}
+                unique_fixtures = set()
+                if isinstance(matches, list):
+                    for item in matches:
+                        if not isinstance(item, dict):
+                            continue
+                        fixture_id = item.get("fixture_id")
+                        if isinstance(fixture_id, (str, int)) and not isinstance(fixture_id, bool):
+                            unique_fixtures.add(str(fixture_id))
+                        status = item.get("adapter_status")
+                        blocker = item.get("blocker")
+                        if status in ("CERTIFIED_EXACT_OVER25", "CAPTURE_ONLY_PENDING_SELECTOR_CERTIFICATION"):
+                            key = status
+                        else:
+                            key = "OTHER_OR_UNKNOWN"
+                        if blocker in ("BOOKMAKER_ADAPTER_NOT_CERTIFIED", "ODDS_BELOW_MIN_1_50"):
+                            key += ":" + blocker
+                        else:
+                            key += ":OTHER_OR_UNKNOWN"
+                        adapter_counts[key] = adapter_counts.get(key, 0) + 1
+                result["sources"][label]["unique_fixture_count"] = len(unique_fixtures) if isinstance(matches, list) else None
+                result["sources"][label]["adapter_outcome_counts"] = adapter_counts
             if label == "recovery":
                 counts = data.get("counts")
                 result["sources"][label]["counts"] = {
