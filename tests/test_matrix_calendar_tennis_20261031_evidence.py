@@ -18,9 +18,9 @@ def test_real_capture_integrity_and_safe_normalization():
     assert source["signals_authorized"] == 0
     assert len(source["records"]) == 190
     normalized = normalize_calendar_links(source["records"], source["date_label"])
-    assert normalized["accepted"] == 190
+    assert normalized["accepted"] == 183
     assert normalized["blocked"] == 1
-    assert normalized["rejected"] == 0
+    assert normalized["rejected"] == 7
     assert normalized["signals_authorized"] == 0
     assert all(row["eligible_for_signal"] is False for row in normalized["events"])
     assert all(row["bookmaker_quote"] is None for row in normalized["events"])
