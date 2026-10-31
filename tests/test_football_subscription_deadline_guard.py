@@ -65,7 +65,7 @@ def test_telegram_workflow_runs_offline_readiness_before_paid_gate():
 
     workflow = Path(".github/workflows/telegram-green-signals.yml").read_text(encoding="utf-8")
     diagnostic = "Certify independent-source diagnostic without provider calls"
-    paid_gate = "Enforce API-Football subscription deadline before supervisor"
+    paid_gate = "Verify paid API expiry without blocking independent sources"
     assert diagnostic in workflow
     assert paid_gate in workflow
     assert workflow.index(diagnostic) < workflow.index(paid_gate)
@@ -73,7 +73,8 @@ def test_telegram_workflow_runs_offline_readiness_before_paid_gate():
     assert "MATRIX_INDEPENDENT_SOURCE_READINESS: '1'" in section
     assert "python -m tools.telegram_green_signal_alerts" in section
     assert "tests/test_football_subscription_deadline_guard.py" in section
-    assert "--require-paid-use --require-key" in workflow
+    assert "--independent-source-readiness" in workflow
+    assert "--require-paid-use --require-key" not in workflow
 
 
 def test_expired_paid_fixture_http_transports_never_call_network(monkeypatch):
