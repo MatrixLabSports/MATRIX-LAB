@@ -14,8 +14,8 @@ def test_real_123_candidates_remain_uncertified():
 def test_doubles_full_vs_partial():
     sofa="https://www.sofascore.com/es/tennis/match/adeshina-grammatikopoulou-paganetti-urgesi/x#id:1"
     assert check_option(sofa,"Paganetti V./Urgesi F. - Adeshina E./Grammatikopoulou V.")=="REVIEW_IDENTITY_ONLY"
-    assert check_option(sofa,"Urgesi F. - Grammatikopoulou V.")=="REVIEW_IDENTITY_ONLY"
-    # Even apparent surname matches are only review candidates, not certification.
+    assert check_option(sofa,"Urgesi F. - Grammatikopoulou V.")=="MIXED_MODALITY"
+    # Singles cannot masquerade as the corresponding doubles match.
 
 def test_missing_second_side():
     assert check_option("https://www.sofascore.com/es/tennis/match/alpha-beta/x#id:1","Alpha vs Beta")=="UNPARSEABLE"
