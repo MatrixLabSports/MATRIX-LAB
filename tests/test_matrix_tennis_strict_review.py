@@ -13,8 +13,8 @@ def test_real_123_candidates_remain_uncertified():
 
 def test_doubles_full_vs_partial():
     sofa="https://www.sofascore.com/es/tennis/match/adeshina-grammatikopoulou-paganetti-urgesi/x#id:1"
-    assert check_option(sofa,"Paganetti V./Urgesi F. - Adeshina E./Grammatikopoulou V.")=="REVIEW_IDENTITY_ONLY"
-    assert check_option(sofa,"Urgesi F. - Grammatikopoulou V.")=="MIXED_MODALITY"
+    assert check_option(sofa,"Paganetti V./Urgesi F. - Adeshina E./Grammatikopoulou V.","31/10/26 9:30 Paganetti V / Urgesi F Adeshina E / Grammatikopoulou V")=="REVIEW_IDENTITY_ONLY"
+    assert check_option(sofa,"Urgesi F. - Grammatikopoulou V.","31/10/26 9:30 Paganetti V / Urgesi F Adeshina E / Grammatikopoulou V")=="MIXED_MODALITY"
     # Singles cannot masquerade as the corresponding doubles match.
 
 def test_missing_second_side():
@@ -23,3 +23,11 @@ def test_missing_second_side():
 def test_pre_certified_rejected():
     with pytest.raises(ValueError):
         review({"review_only":True,"certified":1,"signals_authorized":0,"candidates":[]})
+
+def test_compound_singles_not_misread_as_doubles():
+    sofa="https://www.sofascore.com/es/tennis/match/adolfo-daniel-vallejo-grigor-dimitrov/x#id:2"
+    assert check_option(sofa,"Vallejo D. - Dimitrov G.","31/10/26 8:30 Paraguay A. Vallejo Bulgaria G. Dimitrov")=="REVIEW_IDENTITY_ONLY"
+
+def test_unknown_sofa_modality_fails_closed():
+    sofa="https://www.sofascore.com/es/tennis/match/adolfo-daniel-vallejo-grigor-dimitrov/x#id:2"
+    assert check_option(sofa,"Vallejo D. - Dimitrov G.")=="SOFA_MODALITY_UNVERIFIED"
