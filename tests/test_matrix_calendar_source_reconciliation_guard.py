@@ -32,5 +32,13 @@ class CalendarGuardTests(unittest.TestCase):
             self.assertEqual(report["sources"]["football_sofascore"]["reasons"]["DUPLICATE_SOURCE_URL"], 1)
             self.assertEqual(report["approved_telegram"], 0)
 
+    def test_malformed_observations_fail_closed(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            folder = Path(tmp)
+            (folder / SOURCES["football_sofascore"]).write_text('{"observations":{}}', encoding="utf-8")
+            report = audit(folder)
+            self.assertEqual(report["sources"]["football_sofascore"]["status"], "INVALID")
+            self.assertEqual(report["approved_telegram"], 0)
+
 if __name__ == "__main__":
     unittest.main()
