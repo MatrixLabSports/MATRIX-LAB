@@ -1087,9 +1087,24 @@ def _recompute_sharp_consensus(diagnostic: dict[str, Any], p: float) -> None:
 def paid_football_quote_transport_allowed() -> bool:
     """Fail closed before paid quote HTTP calls after subscription cutoff."""
     policy = football_paid_window_evaluate(datetime.now(BOGOTA).date())
-    # A post-cutoff environment flag is not proof of renewed subscription or user consent.
-    # Keep quote transport closed until a separately verified renewal contract exists.
-    return bool(policy["paid_window_active"])
+    # Honor an explicit post-cutoff authorization ONLY when backed by
+    # persisted, independently reviewed subscription evidence.
+    if policy["paid_window_active"]:
+        return True
+    if not policy.get("post_cutoff_override"):
+        return False
+    proof_path = Path("config/MATRIX_API_FOOTBALL_RENEWAL_VERIFICATION.json")
+    proof = load_json(proof_path, {})
+    if not isinstance(proof, dict):
+        return False
+    return (
+        proof.get("provider") == "api_football"
+        and proof.get("verified") is True
+        and proof.get("renewal_authorized") is True
+        and isinstance(proof.get("valid_through_bogota_date"), str)
+        and proof["valid_through_bogota_date"] >= datetime.now(BOGOTA).date().isoformat()
+        and bool(str(proof.get("evidence_reference", "")).strip())
+    )
 
 
 def api_football_pinnacle_over25_reference(
