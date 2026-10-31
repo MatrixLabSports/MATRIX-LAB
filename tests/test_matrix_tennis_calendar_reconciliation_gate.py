@@ -30,3 +30,20 @@ def test_invalid_source_fails():
     with pytest.raises(ValueError):
         readiness({"source":"OTHER","date_label":"2026-10-31","records":[]},
                   {"source":"FLASHSCORE","records":[]})
+
+def test_user_supplied_date_allows_candidate_matching_without_certification():
+    sofa = json.loads(SOFA.read_text(encoding="utf-8"))
+    flash = json.loads(FLASH.read_text(encoding="utf-8"))
+    result = readiness(sofa, flash, user_calendar_date="2026-10-31")
+    assert result["capture_date_context_accepted"] is True
+    assert result["cross_source_matching_permitted"] is True
+    assert result["matching_scope"] == "CANDIDATE_ONLY"
+    assert result["flashscore_date_verified"] is False
+    assert result["event_dates_individually_verified"] is False
+    assert result["cross_source_matches_certified"] == 0
+    assert result["signals_authorized"] == 0
+
+def test_conflicting_user_date_rejected():
+    with pytest.raises(ValueError, match="conflicts"):
+        readiness({"source":"SOFASCORE","date_label":"2026-10-31","records":[]},
+                  {"source":"FLASHSCORE","records":[]}, user_calendar_date="2026-11-01")
