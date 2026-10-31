@@ -1,0 +1,32 @@
+{
+  "schema": "MATRIX_ELITE_OCT29_POSTPONED_CLASSIFIER_CERTIFICATION_V1",
+  "target_date_bogota": "2026-10-29",
+  "run_id": 40821968842,
+  "run_conclusion": "success",
+  "verified_steps": [
+    "Test calendar reconciliation",
+    "Assert postponed versus visible clock semantics",
+    "Generate temporal quarantine from observed clock crosscheck",
+    "Persist reconciliation evidence"
+  ],
+  "artifact": "evidence/calendar_reconciliation/MATRIX_FOOTBALL_TEMPORAL_QUARANTINE_LAST.json",
+  "artifact_sha": "0f9a200ba3da5b51f381748545a12ca886e6389a",
+  "artifact_json_parse": "PASS",
+  "counts": {
+    "total": 74,
+    "flashscore_clock_visible": 72,
+    "timezone_not_certified": 62,
+    "cross_source_clock_conflict": 2,
+    "postponed_in_sofascore": 10,
+    "eligible_for_telegram_signal": 0
+  },
+  "outstanding": [
+    "Flashscore timezone independently unverified",
+    "Tennis clock classifier not yet audited or changed",
+    "No proof that football/tennis Telegram delivery is restored"
+  ],
+  "safety": {
+    "real_money": "BLOCKED",
+    "automatic_wagering": false
+  }
+}

@@ -1,0 +1,136 @@
+{
+  "schema": "MATRIX_OVER25_SIGNAL_FILTER_PHYSICAL_ADJUDICATION_V1",
+  "target_date_bogota": "2026-10-06",
+  "adjudicated_at_bogota": "2026-10-06T22:47:00-05:00",
+  "adjudicated_at_utc": "2026-10-07T03:47:00Z",
+  "branch": "repair/cor09-world-pipeline",
+  "source_cycle": "evidence/api_football/prospective_daily/2026-10-06/20261006T120503Z",
+  "physical_reconciliation": {
+    "canonical_ready_inputs": 138,
+    "governed_over25_candidate_rows": 132,
+    "proof": "Exact intersection between the 138 canonical fixture IDs and prospective_market_freeze rows was physically recomputed in this audit."
+  },
+  "over_2_5_governance": {
+    "market": "over_2_5",
+    "approved_market": true,
+    "market_governance_status": "MARKET_CHALLENGER_FROZEN_APPROVED_FOR_NEXT_GATES",
+    "engine_executable_for_p_matrix": false,
+    "governed_engine_promoted": false,
+    "governed_p_matrix_engine_available": false,
+    "p_matrix_status": "NOT_GENERATED",
+    "freeze_p_matrix_generated": false
+  },
+  "policy_gate": {
+    "p_matrix_required_for_bet": true,
+    "physical_odds_required_for_ev": true,
+    "minimum_decimal_odds_exclusive": 1.5,
+    "missing_p_matrix_action": "NO_BET",
+    "approved_bookmaker_context": [
+      "BetPlay",
+      "bwin",
+      "Betano",
+      "RushBet",
+      "Pinnacle"
+    ]
+  },
+  "result": {
+    "legitimate_green_signals": 0,
+    "valid_bets": 0,
+    "decision": "0 BET / TODOS NO BET",
+    "reason": "Research/shadow Over 2.5 probabilities exist, but there is no promoted governed P_MATRIX engine. The permanent daily policy prohibits BET/EV adjudication without P_MATRIX.",
+    "bookmaker_crosscheck_rows": 0,
+    "bookmaker_crosscheck_status": "NOT_EXECUTED_BECAUSE_ZERO_ROWS_PASSED_P_MATRIX_GATE",
+    "odds_used_to_generate_probability": false,
+    "automatic_wagering": false,
+    "real_money": "BLOCKED"
+  },
+  "top_research_probabilities_diagnostic_only": [
+    {
+      "fixture_id": "1497258",
+      "match": "Skjetten - Kongsvinger II",
+      "p_over_2_5": 0.8335535218172774,
+      "decision": "NO_BET",
+      "reason": "P_MATRIX_NOT_GENERATED"
+    },
+    {
+      "fixture_id": "1350209",
+      "match": "Cyprus U21 - San Marino U21",
+      "p_over_2_5": 0.7800024669821972,
+      "decision": "NO_BET",
+      "reason": "P_MATRIX_NOT_GENERATED"
+    },
+    {
+      "fixture_id": "1640471",
+      "match": "Raufoss - Start",
+      "p_over_2_5": 0.777307835037028,
+      "decision": "NO_BET",
+      "reason": "P_MATRIX_NOT_GENERATED"
+    },
+    {
+      "fixture_id": "1619162",
+      "match": "Colchester United U21 - Swansea City U21",
+      "p_over_2_5": 0.7738438422887723,
+      "decision": "NO_BET",
+      "reason": "P_MATRIX_NOT_GENERATED"
+    },
+    {
+      "fixture_id": "1640000",
+      "match": "Saint Martin - Bahamas",
+      "p_over_2_5": 0.7551455898739774,
+      "decision": "NO_BET",
+      "reason": "P_MATRIX_NOT_GENERATED"
+    },
+    {
+      "fixture_id": "1619502",
+      "match": "Tamworth - Leeds United U21",
+      "p_over_2_5": 0.7529419744748943,
+      "decision": "NO_BET",
+      "reason": "P_MATRIX_NOT_GENERATED"
+    },
+    {
+      "fixture_id": "1596008",
+      "match": "Stanway Rovers - Enfield Town",
+      "p_over_2_5": 0.7165836530955887,
+      "decision": "NO_BET",
+      "reason": "P_MATRIX_NOT_GENERATED"
+    },
+    {
+      "fixture_id": "1588884",
+      "match": "Peterborough - Ipswich Town U21",
+      "p_over_2_5": 0.7149865664641265,
+      "decision": "NO_BET",
+      "reason": "P_MATRIX_NOT_GENERATED"
+    },
+    {
+      "fixture_id": "1596006",
+      "match": "Maldon & Tiptree - Welling United",
+      "p_over_2_5": 0.7108502824646233,
+      "decision": "NO_BET",
+      "reason": "P_MATRIX_NOT_GENERATED"
+    },
+    {
+      "fixture_id": "1619499",
+      "match": "AFC Hornchurch - Fulham U21",
+      "p_over_2_5": 0.7016083321173784,
+      "decision": "NO_BET",
+      "reason": "P_MATRIX_NOT_GENERATED"
+    }
+  ],
+  "source_evidence": [
+    "evidence/api_football/prospective_market_freeze/freeze.json",
+    "evidence/api_football/prospective_market_freeze/manifest.json",
+    "evidence/api_football/engine_registry/physical_adjudication.json",
+    "evidence/api_football/market_governance/market_governance.json",
+    "evidence/api_football/governance/MATRIX_DAILY_PREMATCH_REPORT_POLICY_20261004.json"
+  ],
+  "protections": {
+    "no_backfill": true,
+    "no_post_start_prematch_label": true,
+    "missing_not_zero": true,
+    "silent_imputation": false,
+    "odds_to_p_matrix": false,
+    "parameter_tuning": false,
+    "automatic_wagering": false,
+    "real_money": "BLOCKED"
+  }
+}

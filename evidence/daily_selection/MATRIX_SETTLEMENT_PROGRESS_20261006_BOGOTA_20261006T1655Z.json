@@ -1,0 +1,52 @@
+{
+  "schema": "MATRIX_DAILY_SELECTION_SETTLEMENT_PROGRESS_V1",
+  "target_date_bogota": "2026-10-06",
+  "captured_at_utc": "2026-10-06T16:55:05Z",
+  "source_selection": "evidence/daily_selection/MATRIX_CALIBRATION_CANDIDATES_20261006_BOGOTA.json",
+  "previous_snapshot": "evidence/daily_selection/MATRIX_SETTLEMENT_PROGRESS_20261006_BOGOTA_20261006T1510Z.json",
+  "football": {
+    "target_frozen_candidates": 116,
+    "global_v2_1x2": {
+      "freeze_observation_count": 425,
+      "settlement_count": 133,
+      "pending_settlement_count": 292,
+      "metrics_opened": false,
+      "parameter_tuning_allowed": false,
+      "real_money": "BLOCKED",
+      "source": "evidence/api_football/calibration_v2/lanes/1x2/state.json"
+    },
+    "change_since_previous_snapshot": {
+      "previous_global_v2_settlement_count": 125,
+      "current_global_v2_settlement_count": 133,
+      "new_global_v2_settlements": 8,
+      "previous_6oct_physically_closed": 21,
+      "current_6oct_physically_closed": 29,
+      "new_6oct_physically_closed": 8,
+      "remaining_6oct": 87
+    },
+    "new_6oct_fixture_ids": ["1528951", "1558951", "1559383", "1559384", "1598640", "1619162", "1638604", "1643015"],
+    "evidence_commit": "6d728f52e9f42360abf4a08c7ba639aaac21339c",
+    "settlement_sync": {
+      "new_settlement_count": 10,
+      "blocked_count": 19,
+      "source": "evidence/api_football/prospective_market_freeze/settlement_sync_last.json"
+    }
+  },
+  "tennis": {
+    "target_unique_events": 11,
+    "settlement_ledger": "evidence/cor0203/settlement/MATRIX_COR0203_SETTLEMENT_LEDGER.jsonl",
+    "settlement_sync": "evidence/cor0203/runtime/MATRIX_COR0203_SETTLEMENT_SYNC_LAST.json",
+    "ledger_records": 146,
+    "new_settlements_latest_sync": 0,
+    "new_6oct_standard_final_settlements_physically_attributable_in_this_review": 0,
+    "nonstandard_blocked_retired": 4,
+    "note": "No 6-OCT target-event increment asserted without exact physical event/result binding."
+  },
+  "protections": {
+    "final_only": true,
+    "metrics_opened": false,
+    "tuning": false,
+    "odds_to_p": false,
+    "real_money": "BLOCKED"
+  }
+}

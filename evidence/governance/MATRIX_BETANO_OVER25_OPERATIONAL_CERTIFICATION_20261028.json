@@ -1,0 +1,40 @@
+{
+  "schema": "MATRIX_BETANO_OVER25_OPERATIONAL_CERTIFICATION_V1",
+  "status": "CERTIFIED_PHYSICAL_LOCAL_RUNNER",
+  "scope": {
+    "bookmaker": "betano",
+    "market": "Goles totales Más/Menos",
+    "selection": "Más de 2.5",
+    "read_only": true,
+    "automatic_wagering": false,
+    "real_money": "BLOCKED"
+  },
+  "evidence": {
+    "fixture_id": "1490582",
+    "match": "Vancouver Whitecaps vs San Diego",
+    "kickoff_utc": "2026-10-29T02:30:00+00:00",
+    "p_matrix": 0.6511733445,
+    "event_id": "90302907",
+    "event_url": "/cuotas-de-partido/vancouver-whitecaps-fc-san-diego-fc/90302907/",
+    "bookmaker_price": 1.31,
+    "binding_evidence": "EVENT_URL+PAGE_TITLE+BOTH_TEAMS+MARKET_CONTAINER+ACCESSIBLE_BUTTON_NAME",
+    "endpoint": "EVENT_DETAIL_PAGE_NETWORK",
+    "adapter_status": "CERTIFIED_EXACT_OVER25",
+    "betano_exact_quote_count": 1,
+    "collector_status": "PASS_CAPTURED",
+    "tests": "14 passed",
+    "execution_quote_emitted": false,
+    "blocker": "ODDS_BELOW_MIN_1_50"
+  },
+  "policy_validation": {
+    "minimum_odds_strictly_greater_than": 1.5,
+    "price_passes_minimum": false,
+    "signal_green_allowed": false,
+    "reason": "ODDS_BELOW_MIN_1_50"
+  },
+  "notes": [
+    "Physical evidence came from a Windows self-hosted runner execution.",
+    "Exact quote was captured without clicking or submitting a wager.",
+    "Certification covers exact Betano Over 2.5 extraction. Telegram end-to-end recovery remains a separate integration check."
+  ]
+}

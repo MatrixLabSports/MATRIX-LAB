@@ -1,0 +1,67 @@
+{
+  "schema": "MATRIX_42_LANE_FREEZE_EXPLANATION_AND_16_LANE_STATE_V1",
+  "generated_at_utc": "2026-10-24T22:26:10+00:00",
+  "status": "PASS_16_LANES_RUNTIME_CERTIFIED",
+  "terminology": {
+    "frozen_model": "Parameters are locked before future outcomes so prospective validation cannot be tuned after results are known. Frozen does not mean collection is stopped.",
+    "blocked_rejected": "Historical OOS gate failed; no prospective activation until a new independently validated challenger exists.",
+    "blocked_source": "Model may be valid, but a required prematch source or identity field is unavailable.",
+    "lab_only": "Source coverage exists, but no governed prematch predictive freeze exists yet."
+  },
+  "runtime_certification": {
+    "supervisor_run_id": 40138289179,
+    "conclusion": "success"
+  },
+  "current_totals": {
+    "canonical_lanes": 42,
+    "lanes_with_any_valid_prospective": 16,
+    "zero_prospective_lanes": 26,
+    "ledger_rows_total": 5054,
+    "lanes_at_100": 13,
+    "lanes_at_300": 13,
+    "lanes_at_600": 0,
+    "last_cycle_admitted": 754,
+    "last_cycle_rejected": 0
+  },
+  "newly_activated_team_total_goals": {
+    "TEAM_TOTAL_GOALS_HOME": 377,
+    "TEAM_TOTAL_GOALS_AWAY": 377,
+    "source": "tools/matrix_42_lane_period_goals_freeze_bridge.py",
+    "source_commit": "185bcb4f998295a524d99dcefe9de8dfa74bef58",
+    "generic_line_fix_commit": "989bef6a4250a6b072a0a2536b5fc92dae0d22c0",
+    "test_commit": "99d98ff542896178bb5c40cf601b229e6b4b4d09",
+    "model_basis": "PERIOD_TEAM_POISSON_PIT_V1_STRICTLY_PRIOR_HISTORY",
+    "price_used": false,
+    "outcomes_read": 0,
+    "parameter_refit": false,
+    "parameter_search": false
+  },
+  "remaining_blockers": {
+    "inplay_source_only_no_prematch_predictive_freeze": 3,
+    "priority_probability_not_generated": 1,
+    "live_feature_no_governed_prematch_freeze": 8,
+    "btts_rejected": 1,
+    "team_models_rejected_historical_oos_v3": 5,
+    "player_models_rejected_historical_oos": 5,
+    "player_shots_model_valid_but_lineup_missing": 1,
+    "team_fouls_model_valid_but_home_away_freeze_missing": 2
+  },
+  "team_fouls_check": {
+    "existing_model_scope": "TOTAL",
+    "canonical_required_lanes": [
+      "TEAM_FOULS_HOME",
+      "TEAM_FOULS_AWAY"
+    ],
+    "independent_home_away_model_found": false,
+    "action": "KEEP_BLOCKED_NO_DERIVATION_FROM_TOTAL_MODEL",
+    "reason": "A total-fouls model does not physically establish separate home and away distributions."
+  },
+  "protections": {
+    "no_fake_backfill": true,
+    "no_silent_imputation": true,
+    "post_start_backfill_forbidden": true,
+    "odds_used_to_generate_probability": false,
+    "automatic_wagering": false,
+    "real_money": "BLOCKED"
+  }
+}

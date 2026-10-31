@@ -1,0 +1,92 @@
+name: MATRIX Edge Performance Ledger
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - repair/cor09-world-pipeline
+    paths:
+      - tools/matrix_edge_performance_ledger.py
+      - tests/test_matrix_edge_performance_ledger.py
+      - .github/workflows/matrix-edge-performance-ledger.yml
+      - evidence/api_football/edge_attribution/2026-10-16/MATRIX_EDGE_ATTRIBUTION_OVER25_V2.json
+      - evidence/notifications/telegram/MATRIX_TELEGRAM_SIGNAL_LEDGER.json
+      - evidence/clv/football/over_2_5/prospective_clv_ledger.jsonl
+
+permissions:
+  contents: write
+
+concurrency:
+  group: matrix-edge-performance-ledger
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      REAL_MONEY: BLOCKED
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: repair/cor09-world-pipeline
+          fetch-depth: 0
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install pytest
+        run: python -m pip install pytest
+
+      - name: Run tests
+        run: PYTHONPATH=. python -m pytest -q tests/test_matrix_edge_performance_ledger.py
+
+      - name: Build physical performance ledger
+        run: PYTHONPATH=. python -m tools.matrix_edge_performance_ledger
+
+      - name: Enforce governance
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          p=Path("evidence/api_football/edge_attribution/2026-10-16/MATRIX_EDGE_PERFORMANCE_LEDGER_V1.json")
+          x=json.loads(p.read_text())
+          assert x["schema"]=="MATRIX_EDGE_PERFORMANCE_LEDGER_V1"
+          assert x["row_count"]>0
+          assert x["governance"]["driver_superiority_claim_allowed"] is False
+          assert x["governance"]["reason"]=="SEALED_UNTIL_SAMPLE_GATES"
+          assert x["governance"]["real_money"]=="BLOCKED"
+          assert all(v["performance_gate_open"] is False for v in x["driver_groups"].values())
+          assert all(v["clv_gate_open"] is False for v in x["driver_groups"].values())
+          print("MATRIX_EDGE_PERFORMANCE_GATE: PASS")
+          print("row_count=",x["row_count"])
+          print("settled_join_count=",x["settled_join_count"])
+          print("clv_join_count=",x["clv_join_count"])
+          print("artifact_sha256=",x["artifact_sha256"])
+          PY
+
+      - name: Persist evidence
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name matrix-edge-performance
+          git config user.email matrix-edge-performance@users.noreply.github.com
+          git add evidence/api_football/edge_attribution/2026-10-16/MATRIX_EDGE_PERFORMANCE_LEDGER_V1.json
+          if git diff --cached --quiet; then
+            echo "NO_EDGE_PERFORMANCE_CHANGE"
+            exit 0
+          fi
+          git commit -m "evidence(edge): persist driver performance ledger"
+          for attempt in 1 2 3 4; do
+            git fetch origin repair/cor09-world-pipeline
+            if ! git rebase origin/repair/cor09-world-pipeline; then
+              git rebase --abort || true
+              exit 1
+            fi
+            if git push origin HEAD:repair/cor09-world-pipeline; then exit 0; fi
+            sleep $((attempt*2))
+          done
+          exit 1

@@ -1,0 +1,78 @@
+{
+  "schema": "MATRIX_FOOTBALL_WORLD_CALENDAR_25OCT2026_AUDIT_V1",
+  "generated_at_utc": "2026-10-24T22:50:20+00:00",
+  "status": "PASS_RUNTIME_CERTIFIED",
+  "target_date_bogota": "2026-10-25",
+  "physical_sources": {
+    "sofascore": {
+      "opera_tab_id": 2017706577,
+      "url": "https://www.sofascore.com/es/football/2026-10-25",
+      "observation_count": 235,
+      "evidence": "evidence/calendar_physical/2026-10-25/sofascore_opera_capture.json",
+      "commit": "a320830a1f6e1345be7e0bd86bdb248fca810add"
+    },
+    "flashscore": {
+      "opera_tab_id": 2017706904,
+      "url": "https://www.flashscore.co/manana/",
+      "page_date_verified": "domingo, 25 de octubre de 2026",
+      "observation_count": 1303,
+      "evidence": "evidence/calendar_physical/2026-10-25/flashscore_opera_capture.json",
+      "commit": "63b884d5f65895963d591a3af9f28c4d071ceb4d"
+    }
+  },
+  "reconciliation": {
+    "confirmed_both": 190,
+    "sofascore_only": 50,
+    "flashscore_only": 1112,
+    "ambiguous": 1,
+    "evidence": "evidence/calendar_reconciliation/MATRIX_FOOTBALL_WORLD_CALENDAR_RECONCILIATION_LAST.json",
+    "evidence_blob": "9dd34adee609558bbf84e2f1e0c3f80e7f7ab1b9",
+    "code": "tools/reconcile_opera_football_calendar.py",
+    "code_commit": "957f9f16b34025c676dc6088736fc204dc67f4ee",
+    "test": "tests/test_reconcile_opera_football_calendar.py",
+    "test_commit": "70959b080f1b00b2b77ac622c1a96154dca8e966"
+  },
+  "watchlist": {
+    "monitoring_total": 1353,
+    "confirmed_both": 190,
+    "sofascore_only": 50,
+    "flashscore_only": 1112,
+    "ambiguous": 1,
+    "freeze_eligible": 0,
+    "evidence": "evidence/calendar_reconciliation/MATRIX_FOOTBALL_WORLD_WATCHLIST_LAST.json",
+    "evidence_blob": "5dc178040c64c2867bc812cb36ecfd9cffce9c60",
+    "code": "tools/build_football_world_watchlist.py",
+    "code_commit": "d0e2b1c2ddadfc882faceb85af5fd58a5feffad0",
+    "test": "tests/test_build_football_world_watchlist.py",
+    "test_commit": "0b07435b1502fd8a3a1ed181571c2c22a402065e"
+  },
+  "workflow": {
+    "path": ".github/workflows/matrix-football-world-calendar-reconciliation.yml",
+    "cadence": "4,19,34,49 * * * *",
+    "cadence_minutes": 15,
+    "main_commit": "32a4b4203e310720297bf6183838377956465360",
+    "operational_commit": "aec6d7564b39c487882bf59f5cbdf5febaffacd4",
+    "first_reconciliation_success_run": 40139945200,
+    "watchlist_success_run": 40140099158,
+    "watchlist_run_conclusion": "success"
+  },
+  "interpretation": {
+    "source_priority": [
+      "SOFASCORE",
+      "FLASHSCORE",
+      "APIS"
+    ],
+    "no_forced_count_equality": true,
+    "api_absence_does_not_delete_open_source_event": true,
+    "confirmed_identity_does_not_equal_kickoff_time_certification": true,
+    "single_source_events_remain_open_for_reconciliation": true,
+    "freeze_requires_independent_kickoff_certification": true
+  },
+  "protections": {
+    "missing_not_zero": true,
+    "no_silent_imputation": true,
+    "post_start_backfill_forbidden": true,
+    "automatic_wagering": false,
+    "real_money": "BLOCKED"
+  }
+}

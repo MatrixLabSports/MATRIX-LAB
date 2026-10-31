@@ -1,0 +1,104 @@
+{
+  "schema": "MATRIX_SETTLEMENT_PROGRESS_20261006_BOGOTA_V1",
+  "cut_utc": "2026-10-24T09:27:30Z",
+  "branch": "repair/cor09-world-pipeline",
+  "observed_head_before_snapshot": "82eef0f96c523f9a0eec216e27ccf35e0ba3c8bb",
+  "previous_snapshot": "evidence/daily_selection/MATRIX_SETTLEMENT_PROGRESS_20261006_BOGOTA_20261024T045049Z_V2_3276_T341.json",
+  "previous_snapshot_commit": "76842efdc2ccd72c1b9679ec03059f91739f0e6c",
+  "evidence_blobs": {
+    "candidates": "52e897007840f5bed1a8999edad8ee594fefc767",
+    "football_prospective_calibration_ledger": "b3330ddf466f69d440652daf1bae5488a0f2ceed",
+    "football_governed_settlement_sync_last": "987866123acef91f3ef5deeeccdcf3ef81719b55",
+    "football_tracker": "5cc797b53283893f7d2bb21414cea8be2a863115",
+    "tennis_settlement_ledger": "fc548bbff8260ab3ac7507e34f8ec33eff1a248d",
+    "tennis_governed_settlement_sync_last": "447139c6981481ebdf3c5ebe3e9988dc39669c7e",
+    "tennis_uniqueness": "71251a066957ef050f4fc3ba95a0da533b0612f2",
+    "football_v2_state_sha": {
+      "1X2": "bb3eee2a8122ffb90a279acfabd8fca4acbe1fd6",
+      "OVER_2_5": "ee31e615f9227519bec1d29e9772e9482116e277",
+      "UNDER_2_5": "0d23a6d864a7dd22f5d4ca9b92687cddad9eec78",
+      "DOUBLE_CHANCE_1X": "e6e0b915b015e0eb044900e19868647e103ce328",
+      "DOUBLE_CHANCE_X2": "35596c3010454f0e873756a01b37913a7a0e9ae8"
+    }
+  },
+  "football": {
+    "cohort_total": 116,
+    "cohort_standard_ft": 107,
+    "cohort_change_since_previous_snapshot": 0,
+    "global_final_settled": 4078,
+    "global_change_since_previous_snapshot": 0,
+    "v2_frozen_per_market": 3997,
+    "v2_settled_per_market": 3276,
+    "v2_pending_per_market": 721,
+    "v2_market_count": 5,
+    "v2_all_states_metrics_opened": false,
+    "new_cohort_ft_fixture_ids": [],
+    "new_global_ft_fixture_ids": [],
+    "nonstandard": {
+      "PEN": [
+        "1588817",
+        "1588821",
+        "1588845",
+        "1588863",
+        "1588890",
+        "1588893",
+        "1619499"
+      ],
+      "AET": [
+        "1644168"
+      ],
+      "NS": [
+        "1596466"
+      ]
+    },
+    "cohort_method": "Candidate file verified; prospective calibration ledger Git blob unchanged versus prior snapshot according to compare from a6b5c3264a87aeaa92d6a795cece7e6c2e9297d8 to 82eef0f96c523f9a0eec216e27ccf35e0ba3c8bb. Governed sync 2026-10-24T09:27:12Z recorded zero new global settlements. Five V2 state files physically read and unchanged.",
+    "shadow_settlement_distinct_scope": {
+      "new_shadow_records_since_previous_snapshot": 3,
+      "fixture_ids": [
+        "1520949",
+        "1493210",
+        "1549840"
+      ],
+      "note": "Shadow ledger is not global calibration ledger. These must not be added to 4078 or V2 counters."
+    }
+  },
+  "tennis": {
+    "cohort_total": 11,
+    "cohort_finished": 11,
+    "cohort_change_since_previous_snapshot": 0,
+    "global_ledger_records": 342,
+    "global_change_since_previous_snapshot": 1,
+    "unique_events": 342,
+    "unique_settlement_ids": 342,
+    "standard_finished_records": 329,
+    "historical_nonstandard_records": {
+      "RETIRED": 8,
+      "CANCELLED": 4,
+      "WALKOVER": 1
+    },
+    "new_finished_event_id": "COR0203-RAPIDAPI-TENNIS-611294-2151462a9aa5",
+    "new_finished_result": "6-7(4) 6-4 7-6(2)",
+    "new_finished_winner": "Tristan Schoolkate",
+    "new_settlement_commit": "6efd608261920f57f340560fac9e105d404f587c",
+    "new_settled_at_utc": "2026-10-24T09:05:35+00:00",
+    "cohort_ledger_records": 11,
+    "cohort_all_standard_finished": true,
+    "method": "Entire 342-row tennis ledger parsed from current branch; exact eleven candidate event IDs each appear once with FINISHED; 342 unique event IDs and 342 unique settlement IDs. New record appended in governed commit. Current sync after settlement shows zero additional new records."
+  },
+  "governance": {
+    "settlement_final_only": true,
+    "metrics_opened": false,
+    "tuning": false,
+    "odds_to_p": false,
+    "automatic_wagering": false,
+    "real_money": "BLOCKED",
+    "last_truth_guard_status": "FAIL_CLOSED",
+    "last_truth_guard_generated_at_utc": "2026-10-24T09:01:37.876763+00:00",
+    "last_truth_guard_stale_sources": [
+      "football_4000",
+      "tennis_three_blocks",
+      "live_tennis_cumulative"
+    ],
+    "note": "Snapshot-only write; governed tennis settlement already committed. No new 6-OCT cohort settlements. No global football or V2 settlement changes. Historical checkpoint_200 metrics_opened=true file not read for scoring or modified. No tuning or metrics opened by this operation."
+  }
+}

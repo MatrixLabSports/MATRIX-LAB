@@ -1,0 +1,77 @@
+{
+  "schema": "MATRIX_CONTINUITY_AUDIT_V1",
+  "checked_at_utc": "2026-10-10T00:19:02Z",
+  "checked_at_bogota": "2026-10-09T19:19:02-05:00",
+  "branch": "repair/cor09-world-pipeline",
+  "head_sha": "e56454a6b34991aa83ee3e6488e0ddda62149286",
+  "result": "BLOCKED",
+  "actions": {
+    "live_bulk": {
+      "run_id": 38002953086,
+      "status": "PASS",
+      "last_run_at_utc": "2026-10-09T23:09:17Z",
+      "fallback_due": false
+    },
+    "live_final_only": {
+      "run_id": 38002975313,
+      "status": "PASS",
+      "last_run_at_utc": "2026-10-09T23:09:40Z",
+      "fallback_due": false
+    },
+    "live_reconcile": {
+      "run_id": 38002975224,
+      "status": "PASS",
+      "last_run_at_utc": "2026-10-09T23:09:39Z"
+    },
+    "football_final_only": {
+      "run_id": 38000141967,
+      "status": "PASS",
+      "last_run_at_utc": "2026-10-09T22:37:10Z",
+      "fallback_due": false
+    },
+    "tennis_hard": {
+      "run_id": 38006996776,
+      "status": "IN_PROGRESS",
+      "started_at_utc": "2026-10-09T23:58:51Z",
+      "fallback_due": false
+    },
+    "telegram": {
+      "run_id": 38005096967,
+      "status": "BLOCKED",
+      "last_run_at_utc": "2026-10-09T23:34:55Z",
+      "fallback_due": true,
+      "attempt": "COMMENT_ONLY_TRIGGER",
+      "attempt_result": "WRITE_BLOCKED_BY_SAFETY_CHECKS"
+    },
+    "football_daily": {
+      "status": "BLOCKED",
+      "expected_window_bogota": "2026-10-09T18:10:00-05:00",
+      "recent_run_not_confirmed": true,
+      "attempt": "COMMENT_ONLY_TRIGGER",
+      "attempt_result": "WRITE_BLOCKED_BY_SAFETY_CHECKS"
+    },
+    "shanghai": {
+      "status": "BLOCKED",
+      "source_ledger_sha": "8b63449463eba40eaaf7333e6673de68a11cbd78",
+      "index_sha": "edba1f8384ba5b306dd1ed1c696ee46c7c3d1dbb",
+      "source_matches": 3,
+      "source_states": 12,
+      "source_final": 3,
+      "source_pending": 0,
+      "index_final": 2,
+      "index_pending": 1,
+      "attempt_result": "WRITE_BLOCKED_BY_SAFETY_CHECKS"
+    }
+  },
+  "protections": {
+    "real_money": "BLOCKED",
+    "automatic_wagering": false,
+    "model_status": "RESEARCH_ONLY",
+    "metrics": "SEALED",
+    "probability": "SEALED",
+    "no_odds_to_probability": true,
+    "no_backfill": true,
+    "no_tuning": true
+  },
+  "notes": "No new physical runs created by this audit. Never substitute a CI run for a governed pipeline run."
+}

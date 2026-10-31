@@ -1,0 +1,223 @@
+{
+  "schema": "MATRIX_WORLD_CALIBRATION_SETTLEMENT_PROGRESS_AUDIT_V1",
+  "target_date_bogota": "2026-10-06",
+  "audit_at_utc": "2026-10-27T21:16:25.084Z",
+  "branch": "repair/cor09-world-pipeline",
+  "observed_branch_head_before_write": "7f6eff62a83f7341354512ec80417cbead8de6f3",
+  "previous_snapshot": {
+    "path": "evidence/daily_selection/MATRIX_SETTLEMENT_PROGRESS_20261006_BOGOTA_20261027T2005Z_V2_4027_T406.json",
+    "blob_sha": "d579d5d4c2a233f80254774d551bdd4c21bde579",
+    "commit": "b69b4566e6e2e75edfe263f92284889b33395e5f"
+  },
+  "source_blobs": {
+    "candidates": "52e897007840f5bed1a8999edad8ee594fefc767",
+    "football_sync": "b79472acf90dd687652882d2bd5aab8086e1378b",
+    "football_calibration_sync": "b02d88a6572025af40af061500bc8c76896025a1",
+    "football_settlement_ledger": "d45f49a252efe38563b207e26645f637028d4fda",
+    "football_uniqueness_audit": "1f863b7140a7c86c4d46bd54d8f118e0d221d633",
+    "football_v2_over": "7b31cf1dc13fd330fd1253cb4ad1fac2180486f3",
+    "football_v2_under": "b357c55c57b379a3b5130d252e65e3e0579dd836",
+    "football_v2_1x2": "7b4b24b719790e3aba69161e7075d8a56861d3fd",
+    "tennis_sync": "32ee129848153140311aeabcecd1c0b72d152283",
+    "tennis_uniqueness": "677fd52ec0cd918741549a068bda6716207f4c3a",
+    "tennis_ledger": "6d87066f63556453b8d7a557d0445a395b50dc2b"
+  },
+  "football": {
+    "original_6oct": {
+      "candidates": 116,
+      "unique_fixture_ids": 116,
+      "standard_ft_settled": 107,
+      "new_standard_ft": 0,
+      "nonstandard_blocked": [
+        {
+          "fixture_id": "1588817",
+          "status": "PEN"
+        },
+        {
+          "fixture_id": "1588821",
+          "status": "PEN"
+        },
+        {
+          "fixture_id": "1588845",
+          "status": "PEN"
+        },
+        {
+          "fixture_id": "1588863",
+          "status": "PEN"
+        },
+        {
+          "fixture_id": "1588890",
+          "status": "PEN"
+        },
+        {
+          "fixture_id": "1588893",
+          "status": "PEN"
+        },
+        {
+          "fixture_id": "1619499",
+          "status": "PEN"
+        },
+        {
+          "fixture_id": "1644168",
+          "status": "AET"
+        }
+      ],
+      "pending": [
+        {
+          "fixture_id": "1596466",
+          "provider_status": "NS",
+          "reason": "RESULT_NOT_STANDARD_FINAL",
+          "lookup_after_utc": "2026-10-27T21:37:30+00:00"
+        }
+      ],
+      "verification": "Original cohort cross-checked against exact 116 IDs; nine new FT fixture IDs do not intersect original; 107 FT count carried from last audited snapshot, not independently rehashed in this run."
+    },
+    "global": {
+      "previous_frozen": 5240,
+      "frozen": 5240,
+      "new_frozen": 0,
+      "previous_final": 4830,
+      "final": 4839,
+      "new_final": 9,
+      "previous_pending": 277,
+      "pending": 267,
+      "previous_blocked": 133,
+      "blocked": 134,
+      "new_blocked": [
+        {
+          "fixture_id": "1638653",
+          "reason": "NONSTANDARD_TERMINAL_REQUIRES_ADJUDICATION:PEN"
+        }
+      ],
+      "reconciles": true,
+      "new_settlements": [
+        {
+          "fixture_id": "1550174",
+          "result": "2-6",
+          "terminal_status": "FT"
+        },
+        {
+          "fixture_id": "1551124",
+          "result": "1-1",
+          "terminal_status": "FT"
+        },
+        {
+          "fixture_id": "1563671",
+          "result": "2-1",
+          "terminal_status": "FT"
+        },
+        {
+          "fixture_id": "1601574",
+          "result": "1-1",
+          "terminal_status": "FT"
+        },
+        {
+          "fixture_id": "1612127",
+          "result": "2-2",
+          "terminal_status": "FT"
+        },
+        {
+          "fixture_id": "1612137",
+          "result": "4-1",
+          "terminal_status": "FT"
+        },
+        {
+          "fixture_id": "1612139",
+          "result": "1-3",
+          "terminal_status": "FT"
+        },
+        {
+          "fixture_id": "1612141",
+          "result": "0-1",
+          "terminal_status": "FT"
+        },
+        {
+          "fixture_id": "1640476",
+          "result": "1-2",
+          "terminal_status": "FT"
+        }
+      ],
+      "governed_commit": "84cf88ce241462eb7eb9f2d04a2242b5d6aa3812",
+      "settled_at_utc": "2026-10-27T20:37:30+00:00"
+    },
+    "v2": {
+      "previous_frozen_per_market": 4412,
+      "frozen_per_market": 4412,
+      "previous_settled_per_market": 4027,
+      "settled_per_market": 4036,
+      "previous_pending_per_market": 385,
+      "pending_per_market": 376,
+      "markets": [
+        "1X2",
+        "OVER_2_5",
+        "UNDER_2_5"
+      ],
+      "metrics_opened": false,
+      "parameter_tuning_allowed": false
+    },
+    "canonical_tracker": {
+      "global_final": 4839,
+      "v2_settled": 4036,
+      "reconciled": true,
+      "ledger_hash_chain_verified": true
+    },
+    "physical_uniqueness": {
+      "previous_audit_result": "PASS",
+      "previous_audit_global_final_unique_fixture_ids": 4830,
+      "current_settled_global": 4839,
+      "audit_stale_by": 9,
+      "full_current_uniqueness_not_independently_rehashed": true
+    }
+  },
+  "tennis": {
+    "original_6oct": {
+      "unique_candidates": 11,
+      "finished": 11,
+      "new_finished": 0,
+      "verification": "Prior 11/11 audited; one new appended event from 2026-10-27 does not intersect exact-day cohort."
+    },
+    "global": {
+      "previous_ledger_records": 406,
+      "ledger_records": 407,
+      "new_settlements": 1,
+      "new_settlement": {
+        "event_id": "COR0203-RAPIDAPI-TENNIS-715854-b0988ffdcb8c",
+        "winner": "Moise Kouame",
+        "score": "6-4 7-6(1)",
+        "terminal_status": "FINISHED",
+        "settled_at_utc": "2026-10-27T20:56:57+00:00",
+        "settlement_id": "da5c7b2cb4dcdd3db2c7fe5397cdf68098fc7dc2c620a4fc6dd49748c4cc9a32"
+      },
+      "governed_commit": "122c90a41e088ffdb74099b23d315c4c86b45bb5",
+      "blocked_previous": 13,
+      "blocked_current": 13,
+      "pending_current": 33
+    },
+    "physical_uniqueness": {
+      "result": "PASS",
+      "ledger_records": 407,
+      "settled_unique_canonical_events": 354,
+      "settled_duplicate_alias_records": 53,
+      "duplicate_observations_quarantined": 171,
+      "unique_calibration_observations": 400,
+      "ledger_hash_chain_verified": true
+    },
+    "metrics_opened": false,
+    "metrics": "SEALED_UNTIL_600"
+  },
+  "governance": {
+    "settlement_final_only": true,
+    "metrics_opened": false,
+    "parameter_tuning_allowed": false,
+    "odds_to_p": "PROHIBITED_NOT_EXECUTED",
+    "automatic_wagering": false,
+    "real_money": "BLOCKED",
+    "no_backfill": true
+  },
+  "limitations": [
+    "Governed football and tennis settlements already persisted by production commits; no duplicate settlement executed.",
+    "Football physical uniqueness audit artifact remains at 4830 while governed settlement ledger and V2 are at 4839; do not mark current full football uniqueness PASS without re-audit.",
+    "No new FT or FINISHED in exact 6-OCT cohorts.",
+    "Snapshot is an audit record; no metrics, tuning, odds conversion or wagering changed."
+  ]
+}

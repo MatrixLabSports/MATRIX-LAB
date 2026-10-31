@@ -1,0 +1,70 @@
+{
+  "schema": "MATRIX_CLV_SAME_CYCLE_FREEZE_TRIGGER_PROOF_V1",
+  "generated_at_utc": "2026-10-17T08:04:34+00:00",
+  "diagnosis": {
+    "watcher_run_before_fix": 39015584006,
+    "watcher_job_before_fix": 117346924901,
+    "observed_cycle_1": {
+      "odds_api_due_count": 0,
+      "explanation": "odds-api.net executed before Telegram signals were frozen into CLV ledger"
+    },
+    "observed_cycle_2": {
+      "odds_api_due_count": 2,
+      "blocked_identity": 1,
+      "blocked_temporal": 1,
+      "explanation": "90-second artificial delay pushed the second attempt to kickoff"
+    }
+  },
+  "repairs": {
+    "telegram_to_clv_trigger_commit_main": "815f08e670910dd8f3450ebf57bc3170c9e64fda",
+    "telegram_trigger_physical_run": 39015887476,
+    "telegram_trigger_mode": "workflow_run",
+    "freeze_only_code_commit": "280a8e4fbaf4a5b047f3b33bfa62210a1c1b8ce5",
+    "watcher_order_commit_main": "ef6f68fcf24538964f69f583e8f54fd696b1d6dd",
+    "new_order": [
+      "refresh operational branch",
+      "freeze prospective report/Telegram decisions",
+      "odds-api.net preferred sharp capture",
+      "API-Football strict-fresh fallback",
+      "persist evidence"
+    ]
+  },
+  "physical_verification": {
+    "run_id": 39015975645,
+    "job_id": 117348044819,
+    "conclusion": "success",
+    "assertions": [
+      "CLV_WATCHER_STARTUP_COVERAGE_CONTRACT=PASS",
+      "CLV_WATCHER_PER_CYCLE_REFRESH_ORDER=PASS",
+      "FREEZE_ONLY executed before odds-api.net in cycle 1"
+    ],
+    "cycle_1": {
+      "frozen_new": 0,
+      "telegram_skipped_existing": 2,
+      "odds_api_due_count": 0,
+      "decision_count": 81,
+      "closing_odds_count": 2,
+      "remaining_future": 0
+    }
+  },
+  "current_state": {
+    "decision_count": 81,
+    "closing_odds_count": 2,
+    "remaining_to_open_metrics": 298,
+    "note": "Two repaired prospective decisions had already reached kickoff before this verification run; no post-kickoff rescue was attempted."
+  },
+  "alternate_transport": {
+    "provider": "PinnOdds",
+    "status": "REST_KEY_VALID_BUT_FULL_DEMO_SSE_WEBSOCKET_NOT_ENABLED",
+    "production_cutover": false
+  },
+  "protections": {
+    "strict_fresh_gate_seconds": 120,
+    "historical_backfill_without_physical_entry_timestamp": "FORBIDDEN",
+    "post_kickoff_closing_line": "FORBIDDEN",
+    "automatic_wagering": false,
+    "odds_used_to_generate_probability": false,
+    "real_money": "BLOCKED"
+  },
+  "adjudication": "INTERNAL_TIMING_AND_TRIGGER_PATH_RESOLVED_PHYSICALLY; NEXT_VALID_FRESH_SHARP_CLOSE_REQUIRES_A_NEW_PREMATCH_SIGNAL"
+}

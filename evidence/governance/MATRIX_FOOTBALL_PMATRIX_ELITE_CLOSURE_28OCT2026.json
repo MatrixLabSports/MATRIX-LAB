@@ -1,0 +1,184 @@
+{
+  "schema": "MATRIX_FOOTBALL_PMATRIX_ELITE_CLOSURE_28OCT2026_V1",
+  "generated_at_utc": "2026-10-28T05:09:10Z",
+  "target_date_bogota": "2026-10-28",
+  "branch": "repair/cor09-world-pipeline",
+  "head_observed_before_closure": "3d4beeb9f50316760fc43f61ddc9d5a7effeb0d9",
+  "adjudication": "PASS_PMATRIX_PRE_ODDS_LINEAGE_AND_PERSISTENCE_PHYSICALLY_PROVEN",
+  "root_cause": {
+    "defect": "Probability cycle could start from a stale browser preregistry while calendar reconciliation was being updated concurrently.",
+    "before": {
+      "probability_cycle": "20261028T033341Z",
+      "cycle_browser_counts": {
+        "total_monitoring_events": 663,
+        "prospective_before_displayed_kickoff": 655,
+        "kickoff_not_certified": 7,
+        "postponed_no_prospective_kickoff": 0
+      },
+      "canonical_browser_counts": {
+        "total_monitoring_events": 662,
+        "prospective_before_displayed_kickoff": 654,
+        "kickoff_not_certified": 0,
+        "postponed_no_prospective_kickoff": 8
+      }
+    },
+    "resolution": [
+      "Exact browser-preregistry freshness gate before API calls.",
+      "Browser-to-API-history-to-P_MATRIX lineage auditor.",
+      "Postponed count carried into cycle lineage.",
+      "Daily evidence ownership isolated from shared mutable artifacts.",
+      "Unowned working-tree mutations cleared only after owned evidence commit and before rebase."
+    ]
+  },
+  "final_physical_state": {
+    "browser_preregistry": {
+      "artifact": "evidence/calendar_reconciliation/MATRIX_FOOTBALL_BROWSER_PREREGISTRY_LAST.json",
+      "blob_sha": "58c98111d68f1aad934013173a9d6f71beea8488",
+      "total_monitoring_events": 662,
+      "prospective_before_displayed_kickoff": 654,
+      "postponed_no_prospective_kickoff": 8,
+      "kickoff_not_certified": 0,
+      "not_prospective_at_preregistration": 0
+    },
+    "api_cycle": {
+      "artifact": "evidence/api_football/prospective_daily/2026-10-28/20261028T050822Z/cycle_summary.json",
+      "blob_sha": "46ff8d55495e87f59ee1dc9f7c04985b8be975bf",
+      "cycle_id": "20261028T050822Z",
+      "status": "PASS",
+      "fixtures_received": 518,
+      "eligible_future_fixtures": 514,
+      "network_calls_performed": 161,
+      "group_history_ready": 80,
+      "group_history_blocked": 434,
+      "team_last_ready": 112,
+      "team_last_blocked": 402,
+      "canonical_ready_input_count": 112,
+      "canonical_blocked_future_input_count": 402
+    },
+    "p_matrix": {
+      "artifact": "evidence/api_football/daily_prematch_reports/2026-10-28/p_matrix_shadow_current.json",
+      "blob_sha": "1ebac1d6ea99e6d80c92b1aeec2660049a5d36b0",
+      "status": "GENERATED_SHADOW",
+      "generated_at_utc": "2026-10-28T05:08:44+00:00",
+      "model": "calibrated_log_pool_v1",
+      "markets_generated": [
+        "1x2",
+        "over_2_5"
+      ],
+      "source_ready_input_count": 112,
+      "scored_count": 100,
+      "blocked_count": 12,
+      "blocked_reason": "BLOCKED_RAW_GROUP_MISSING",
+      "actual_scored_team_history_range": {
+        "home": [
+          6,
+          20
+        ],
+        "away": [
+          6,
+          20
+        ]
+      },
+      "minimum_team_history": 5,
+      "maximum_team_history": 20,
+      "minimum_group_history": 20,
+      "post_kickoff_probability_rows": 0
+    },
+    "lineage_audit": {
+      "artifact": "evidence/governance/MATRIX_FOOTBALL_PMATRIX_LINEAGE_AUDIT_LAST.json",
+      "blob_sha": "256faa9fde0a545c3285148072f7b183bd12a0a9",
+      "status": "PASS_PMATRIX_PRE_ODDS_ELIGIBILITY",
+      "blockers": [],
+      "browser_counts_exact_match": true,
+      "p_matrix_cycle_path_match": true,
+      "scored_plus_blocked_equals_ready": true,
+      "strictly_prematch_rows": true,
+      "operationally_certified": true
+    }
+  },
+  "workflow_proof": {
+    "final_run_id": 40636123428,
+    "workflow": "MATRIX Football Daily Governed Pipeline",
+    "triggering_head_sha": "c2ac8cdaad2bb82f46bdc1b4184ba44a9fa3eabc",
+    "conclusion": "success",
+    "steps": {
+      "targeted_history_and_pmatrix_tests": "success",
+      "canonical_browser_preregistry_freshness": "success",
+      "api_subscription_deadline": "success",
+      "safety_gates": "success",
+      "market_catalog_and_supervisor": "success",
+      "priority_market_labs": "success",
+      "prospective_daily_cycle": "success",
+      "calibration_eligibility": "success",
+      "probabilities_physical_odds_ev": "success",
+      "browser_to_pmatrix_lineage": "success",
+      "evidence_persistence": "success"
+    }
+  },
+  "repair_commits": [
+    {
+      "sha": "e8d8cf21d59ee407d0c3a7b842462cce3bd987c1",
+      "role": "add browser-to-P_MATRIX lineage auditor"
+    },
+    {
+      "sha": "5e1bb4c35d89385f0974d19133613269a5cae7e9",
+      "role": "add lineage regression tests"
+    },
+    {
+      "sha": "3433f5462e3fb64a7b2245740efe44ec5878f976",
+      "role": "carry postponed count into cycle lineage"
+    },
+    {
+      "sha": "b698aa0982f7ae481d7b56df8abbb0668eac690b",
+      "role": "enforce preregistry freshness and P_MATRIX lineage in daily workflow"
+    },
+    {
+      "sha": "062e568753e797aee09a218c3cac1c97a9a79ad0",
+      "role": "isolate daily evidence ownership from shared mutable artifacts"
+    },
+    {
+      "sha": "c2ac8cdaad2bb82f46bdc1b4184ba44a9fa3eabc",
+      "role": "clean unowned working-tree mutations after owned evidence commit before rebase"
+    }
+  ],
+  "prior_failed_runs_preserved_for_audit": [
+    {
+      "run_id": 40635371472,
+      "scientific_gate": "PASS",
+      "persistence": "FAIL",
+      "cause": "rebase conflict in shared market_binding_catalog.json"
+    },
+    {
+      "run_id": 40635877157,
+      "scientific_gate": "PASS",
+      "persistence": "FAIL",
+      "cause": "unowned modified shared files remained unstaged and blocked git rebase"
+    }
+  ],
+  "governance": {
+    "source_order": [
+      "SOFASCORE",
+      "FLASHSCORE",
+      "APIS"
+    ],
+    "api_absence_does_not_delete_browser_event": true,
+    "browser_count_not_required_to_equal_api_fixture_count": true,
+    "odds_used_to_generate_probability": false,
+    "target_outcomes_used": false,
+    "strictly_prior_kickoff_only": true,
+    "parameter_refit": false,
+    "parameter_search": false,
+    "missing_not_zero": true,
+    "no_silent_imputation": true,
+    "post_start_backfill_forbidden": true,
+    "automatic_wagering": false,
+    "real_money": "BLOCKED"
+  },
+  "interpretation": {
+    "physically_scored_p_matrix_count": 100,
+    "canonical_ready_but_pmatrix_blocked_count": 12,
+    "api_future_but_history_blocked_count": 402,
+    "browser_first_events_not_covered_by_api_are_preserved": true,
+    "note": "Only the 100 physically scored fixtures are certified as current SHADOW P_MATRIX rows. The other browser-first events are not inferred as ineligible or zero merely because API-Football lacks sufficient coverage."
+  }
+}

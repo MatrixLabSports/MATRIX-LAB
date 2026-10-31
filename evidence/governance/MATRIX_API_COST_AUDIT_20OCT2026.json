@@ -1,0 +1,84 @@
+{
+  "schema": "MATRIX_API_COST_AUDIT_V1",
+  "generated_at_utc": "2026-10-21T03:08:00Z",
+  "purpose": "Minimize monthly tooling cost while preserving MATRIX research continuity",
+  "evidence": {
+    "rapidapi_tennis": {
+      "product": "Tennis API - ATP WTA ITF API",
+      "provider": "RapidAPI / Matchstat",
+      "physically_confirmed_charge": {
+        "amount_usd": 59,
+        "charged_at_utc": "2026-09-28T11:51:20Z",
+        "plan": "ULTRA",
+        "source": "Gmail payment confirmation"
+      },
+      "latest_subscription_change_email_found_after_charge": false,
+      "cancellation_or_downgrade_physically_confirmed": false,
+      "recommendation": "DO_NOT_RENEW_UNLESS_USAGE_AUDIT_JUSTIFIES_59_USD",
+      "action_requires_user_approval": true
+    },
+    "api_football": {
+      "product": "API-FOOTBALL",
+      "physically_confirmed_plan": "Pro",
+      "activated_at_utc": "2026-09-28T05:41:47Z",
+      "source": "Gmail activation confirmation",
+      "official_public_price_usd_month": 19,
+      "official_quota_requests_per_day": 7500,
+      "billing_note": "Official pricing page states prepaid, no auto-renewal, returns to free on expiry",
+      "recommendation": "KEEP_AS_PRIMARY_PAID_API_IF_BUDGET_ALLOWS"
+    },
+    "api_tennis_direct": {
+      "product": "API-Tennis",
+      "status": "RETIRED_COST_UTILITY_DECISION",
+      "current_recommended_spend_usd_month": 0,
+      "recommendation": "DO_NOT_RENEW"
+    },
+    "pinnodds": {
+      "product": "Pinnacle Odds API / pinnodds",
+      "trial_expires_utc_date": "2026-10-21",
+      "post_trial_free_tier": "REST_ONLY",
+      "post_trial_free_key_expiry": "NO_EXPIRY",
+      "paid_entry_price_usd_month": 99,
+      "recommendation": "STAY_FREE_DO_NOT_BUY_PAID_PLAN"
+    },
+    "tinyfish": {
+      "available_balance_usd": 0.248,
+      "auto_reload": "unconfigured",
+      "pending_top_up": null,
+      "recommended_new_spend_usd_month": 0,
+      "recommendation": "NO_TOP_UP; USE_OPERA_PRIMARY"
+    }
+  },
+  "monthly_budget_scenarios": {
+    "minimum_paid_stack": {
+      "components": [
+        "API-FOOTBALL Pro"
+      ],
+      "usd_month": 19,
+      "note": "Tennis paid APIs, TinyFish top-ups and PinnOdds paid tier excluded."
+    },
+    "current_if_rapidapi_tennis_ultra_is_kept": {
+      "components": [
+        "API-FOOTBALL Pro",
+        "RapidAPI Tennis ULTRA"
+      ],
+      "usd_month": 78
+    },
+    "avoidable_cost_if_tennis_ultra_not_renewed": {
+      "usd_month": 59,
+      "percent_reduction_vs_78_stack": 75.64
+    }
+  },
+  "governance": {
+    "sofascore_first": true,
+    "flashscore_second": true,
+    "paid_api_only_after_browser_sources": true,
+    "no_new_paid_tool_without_cost_utility_gate": true,
+    "real_money": "BLOCKED"
+  },
+  "unresolved": [
+    "RapidAPI Tennis ULTRA cancellation/downgrade state is NOT physically confirmed.",
+    "Exact next RapidAPI billing date is NOT physically confirmed.",
+    "API-FOOTBALL current dashboard expiry date is NOT physically visible because the saved dashboard tab is at /login/expirate."
+  ]
+}

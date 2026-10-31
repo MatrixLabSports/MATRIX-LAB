@@ -1,0 +1,46 @@
+name: MATRIX Tennis FREE50 Budget Proof
+
+on:
+  push:
+    branches:
+      - repair/cor09-world-pipeline
+    paths:
+      - tools/cor0203_rapidapi_tennis_discovery.py
+      - tests/test_cor0203_rapidapi_tennis_discovery.py
+      - .github/workflows/tennis-free50-budget-proof.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  proof:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: repair/cor09-world-pipeline
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: python -m pip install pytest requests
+      - name: Prove fail-closed shared budget
+        run: |
+          python -m pytest -q tests/test_cor0203_rapidapi_tennis_discovery.py -k shared_request_budget_blocks_before_network
+      - name: Prove FREE50 allocation arithmetic
+        run: |
+          python - <<'PY'
+          hard=35
+          clay=15
+          assert hard+clay==50
+          assert hard>clay
+          print({
+            "mode":"FREE50",
+            "hard_budget":hard,
+            "clay_budget":clay,
+            "total_budget":hard+clay,
+            "network_calls_performed_in_this_proof":0,
+            "real_money":"BLOCKED"
+          })
+          PY

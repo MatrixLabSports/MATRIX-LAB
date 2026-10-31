@@ -1,0 +1,229 @@
+{
+  "schema": "MATRIX_SETTLEMENT_PROGRESS_20261006_BOGOTA_AUDIT_SNAPSHOT_V1",
+  "audit_date_bogota": "2026-10-19",
+  "observed_at_utc": "2026-10-19T06:46:59Z",
+  "source_branch": "repair/cor09-world-pipeline",
+  "source_blobs": {
+    "candidate": {
+      "path": "evidence/daily_selection/MATRIX_CALIBRATION_CANDIDATES_20261006_BOGOTA.json",
+      "blob_sha": "52e897007840f5bed1a8999edad8ee594fefc767"
+    },
+    "tennis": {
+      "path": "evidence/cor0203/settlement/MATRIX_COR0203_SETTLEMENT_LEDGER.jsonl",
+      "blob_sha": "c398b8c5785e803f313a315a36a999ba07b22e12"
+    },
+    "football": {
+      "path": "evidence/api_football/prospective_calibration/sync_last.json",
+      "blob_sha": "e8bb5021d8363b365175dff7af5543d27a87dd19"
+    },
+    "settlement": {
+      "path": "evidence/api_football/prospective_market_freeze/settlement_sync_last.json",
+      "blob_sha": "66805f9513bdfa00632997dd9a723156e0a491c1"
+    }
+  },
+  "football": {
+    "cohort_total": 116,
+    "cohort_ft_last_full_ledger_audit": 107,
+    "cohort_ft_recomputed_this_run": false,
+    "new_global_settlements_vs_prior_report": 0,
+    "global_settlements": 3352,
+    "global_last_sync_utc": "2026-10-19T06:32:25+00:00",
+    "v2_lanes": [
+      {
+        "lane": "1x2",
+        "sha": "f5cc59529aacc98f6638606ca3056fe361b529cd",
+        "freeze_observation_count": 2958,
+        "settlement_count": 2550,
+        "pending_settlement_count": 408,
+        "metrics_opened": false,
+        "parameter_tuning_allowed": false,
+        "real_money": "BLOCKED"
+      },
+      {
+        "lane": "over_2_5",
+        "sha": "af272ca94a1d163805cb15cd07980ac85de4613a",
+        "freeze_observation_count": 2958,
+        "settlement_count": 2550,
+        "pending_settlement_count": 408,
+        "metrics_opened": false,
+        "parameter_tuning_allowed": false,
+        "real_money": "BLOCKED"
+      },
+      {
+        "lane": "under_2_5",
+        "sha": "48177644f148958b035d84bf639f6c01b1c1fcef",
+        "freeze_observation_count": 2958,
+        "settlement_count": 2550,
+        "pending_settlement_count": 408,
+        "metrics_opened": false,
+        "parameter_tuning_allowed": false,
+        "real_money": "BLOCKED"
+      },
+      {
+        "lane": "double_chance_1x",
+        "sha": "c94c8a1656ad97a38894e514942f30b574ee9fce",
+        "freeze_observation_count": 2958,
+        "settlement_count": 2550,
+        "pending_settlement_count": 408,
+        "metrics_opened": false,
+        "parameter_tuning_allowed": false,
+        "real_money": "BLOCKED"
+      },
+      {
+        "lane": "double_chance_x2",
+        "sha": "61f25f2e304f5a8df223cdd2f3a2375d071c5c45",
+        "freeze_observation_count": 2958,
+        "settlement_count": 2550,
+        "pending_settlement_count": 408,
+        "metrics_opened": false,
+        "parameter_tuning_allowed": false,
+        "real_money": "BLOCKED"
+      }
+    ],
+    "blocked_nonstandard": [
+      {
+        "fixture_id": "1588817",
+        "status": "PEN"
+      },
+      {
+        "fixture_id": "1588821",
+        "status": "PEN"
+      },
+      {
+        "fixture_id": "1588845",
+        "status": "PEN"
+      },
+      {
+        "fixture_id": "1588863",
+        "status": "PEN"
+      },
+      {
+        "fixture_id": "1588890",
+        "status": "PEN"
+      },
+      {
+        "fixture_id": "1588893",
+        "status": "PEN"
+      },
+      {
+        "fixture_id": "1619499",
+        "status": "PEN"
+      },
+      {
+        "fixture_id": "1644168",
+        "status": "AET"
+      }
+    ],
+    "pending_not_started": [
+      {
+        "fixture_id": "1596466",
+        "status": "NS"
+      }
+    ],
+    "raw_external_provider_rechecked": false
+  },
+  "tennis": {
+    "cohort_total": 11,
+    "cohort_finished": 11,
+    "global_settlements": 302,
+    "global_unique_event_ids": 302,
+    "global_unique_settlement_ids": 302,
+    "new_settlements_vs_previous_report": 2,
+    "new_global_event_ids": [
+      "COR0203-RAPIDAPI-TENNIS-255120-074ff9c67a7d",
+      "COR0203-RAPIDAPI-TENNIS-265649-c896a443f4ca"
+    ],
+    "cohort_uniqueness": [
+      {
+        "event_id": "COR0203-API-TENNIS-12168338",
+        "count": 1,
+        "statuses": [
+          "FINISHED"
+        ]
+      },
+      {
+        "event_id": "COR0203-API-TENNIS-12168340",
+        "count": 1,
+        "statuses": [
+          "FINISHED"
+        ]
+      },
+      {
+        "event_id": "COR0203-SOFASCORE-3e334e1ea5e9bca56dc55ad3d88461b1d850a3b7c8db8e0e36d1c8daaccbbd79",
+        "count": 1,
+        "statuses": [
+          "FINISHED"
+        ]
+      },
+      {
+        "event_id": "COR0203-RAPIDAPI-TENNIS-1494-812e94625b1c",
+        "count": 1,
+        "statuses": [
+          "FINISHED"
+        ]
+      },
+      {
+        "event_id": "COR0203-RAPIDAPI-TENNIS-1469-2365321ba1b2",
+        "count": 1,
+        "statuses": [
+          "FINISHED"
+        ]
+      },
+      {
+        "event_id": "COR0203-RAPIDAPI-TENNIS-1471-892c1e811617",
+        "count": 1,
+        "statuses": [
+          "FINISHED"
+        ]
+      },
+      {
+        "event_id": "COR0203-RAPIDAPI-TENNIS-1475-1c9d7e44330d",
+        "count": 1,
+        "statuses": [
+          "FINISHED"
+        ]
+      },
+      {
+        "event_id": "COR0203-RAPIDAPI-TENNIS-1488-79b925f69e6e",
+        "count": 1,
+        "statuses": [
+          "FINISHED"
+        ]
+      },
+      {
+        "event_id": "COR0203-RAPIDAPI-TENNIS-1489-6d190d330de1",
+        "count": 1,
+        "statuses": [
+          "FINISHED"
+        ]
+      },
+      {
+        "event_id": "COR0203-RAPIDAPI-TENNIS-1458-538e9ccb1306",
+        "count": 1,
+        "statuses": [
+          "FINISHED"
+        ]
+      },
+      {
+        "event_id": "COR0203-RAPIDAPI-TENNIS-1684-541eadb07a6b",
+        "count": 1,
+        "statuses": [
+          "FINISHED"
+        ]
+      }
+    ],
+    "settlements_already_governed": true
+  },
+  "governance": {
+    "metrics_opened": false,
+    "tuning": false,
+    "odds_to_probability": false,
+    "settlement_final_only": true,
+    "real_money": "BLOCKED"
+  },
+  "limitations": [
+    "107/116 football inherited from last full audit; current global football ledger not independently scanned.",
+    "No provider result recheck performed; nine nonstandard/unstarted statuses taken from current governed settlement sync.",
+    "No new 6-OCT cohort settlements. Two new global tennis FINISHED settlements already persisted. No manual settlement execution."
+  ]
+}

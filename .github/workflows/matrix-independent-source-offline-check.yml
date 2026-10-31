@@ -1,0 +1,64 @@
+name: MATRIX Independent Sources Offline Check
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - repair/cor09-world-pipeline
+    paths:
+      - 'tools/football_subscription_deadline_guard.py'
+      - 'tools/telegram_green_signal_alerts.py'
+      - 'tests/test_football_subscription_deadline_guard.py'
+      - 'tests/test_independent_source_readiness_truth.py'
+      - 'tools/matrix_independent_evidence_bridge.py'
+      - 'tools/telegram_independent_source_readiness.py'
+      - 'tests/test_matrix_independent_evidence_bridge.py'
+      - 'tests/test_matrix_independent_supervisor_contract.py'
+      - 'tests/test_telegram_independent_source_readiness.py'
+      - '.github/workflows/matrix-independent-source-offline-check.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  offline-check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      MATRIX_MODE: SHADOW
+      REAL_MONEY: BLOCKED
+      AUTO_BETTING: DISABLED
+      MATRIX_INDEPENDENT_SOURCE_READINESS: '1'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # Test the exact pushed commit; manual dispatch tests the selected ref.
+          ref: ${{ github.sha }}
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install offline test dependencies
+        run: python -m pip install pytest requests pillow
+      - name: Verify expiry governance and independent source diagnostics
+        run: |
+          set -euo pipefail
+          mkdir -p evidence/ci_offline
+          {
+            echo "GITHUB_SHA=$GITHUB_SHA"
+            echo "GITHUB_RUN_ID=$GITHUB_RUN_ID"
+            echo "GITHUB_RUN_ATTEMPT=$GITHUB_RUN_ATTEMPT"
+            python -m py_compile tools/football_subscription_deadline_guard.py tools/telegram_green_signal_alerts.py tests/test_football_subscription_deadline_guard.py tests/test_independent_source_readiness_truth.py tools/matrix_independent_evidence_bridge.py tools/telegram_independent_source_readiness.py tests/test_matrix_independent_evidence_bridge.py tests/test_matrix_independent_supervisor_contract.py tests/test_telegram_independent_source_readiness.py
+            PYTHONPATH=. python -m pytest -q tests/test_football_subscription_deadline_guard.py tests/test_independent_source_readiness_truth.py tests/test_matrix_independent_evidence_bridge.py tests/test_matrix_independent_supervisor_contract.py tests/test_telegram_independent_source_readiness.py
+            PYTHONPATH=. python -m tools.football_subscription_deadline_guard --independent-source-readiness
+            PYTHONPATH=. python -m tools.telegram_green_signal_alerts
+            test "$REAL_MONEY" = BLOCKED
+            test "$AUTO_BETTING" = DISABLED
+          } 2>&1 | tee evidence/ci_offline/offline_check.log
+      - name: Preserve offline audit logs even on failure
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: matrix-independent-offline-${{ github.run_id }}-${{ github.run_attempt }}
+          path: evidence/ci_offline/offline_check.log
+          if-no-files-found: warn
+          retention-days: 30

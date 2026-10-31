@@ -1,0 +1,37 @@
+{
+  "schema": "MATRIX_COR0203_R708_POSTHOC_STAGE_QUARANTINE_V1",
+  "created_at_utc": "2026-09-26T01:38:00Z",
+  "incident": {
+    "introduced_by_commit": "8e1fc6155f4b7b820feabc337193ceaff8cb49ee",
+    "cause": "AUTO_STAGE_PROCESSED_ALREADY_FROZEN_PREFEATURE_WHEN_STATIC4_WAS_ABSENT",
+    "affected_runtime_artifacts": [
+      "evidence/cor0203/runtime/MATRIX_COR0203_STATIC4_R708.json",
+      "evidence/cor0203/runtime/MATRIX_COR0203_STAGE_BLOCKERS_R708.json"
+    ],
+    "historical_manifest_temporarily_reserialized": "evidence/cor0203/runtime/MATRIX_COR0203_PROSPECTIVE_EVENTS_R708.json"
+  },
+  "integrity_verification": {
+    "r708_holdout_unchanged": true,
+    "r708_holdout_blob_before": "0d0aa55dfe7ae23178e1f8752ed29abcf35d66a5",
+    "r708_holdout_blob_after": "0d0aa55dfe7ae23178e1f8752ed29abcf35d66a5",
+    "r708_original_manifest_blob": "61de788b13d61b7a6f9a37c9f8e9bae3a5a5697c",
+    "r708_current_manifest_blob": "61de788b13d61b7a6f9a37c9f8e9bae3a5a5697c",
+    "original_manifest_restored": true,
+    "probability_rewrite": false,
+    "freeze_rewrite": false,
+    "outcome_read": false,
+    "holdout_count_changed_by_incident": false
+  },
+  "quarantine": {
+    "evidence/cor0203/runtime/MATRIX_COR0203_STATIC4_R708.json": "POSTHOC_DIAGNOSTIC_ONLY_NOT_PROSPECTIVE_ORDERING_EVIDENCE",
+    "evidence/cor0203/runtime/MATRIX_COR0203_STAGE_BLOCKERS_R708.json": "POSTHOC_DIAGNOSTIC_ONLY"
+  },
+  "remediation": {
+    "manifest_restore_commit": "0f462c780e4b8d6841422351ac4f7a154560a207",
+    "frozen_immutability_fix_commit": "a96ea3a47a4af41bdc0c25f9a76808696cf598ed",
+    "regression_test_commit": "330ccbdf86e391d9271d1014f7f4bc7703ef6bb9",
+    "new_rule": "ALREADY_FROZEN_EVENTS_ARE_NEVER_STAGED_OR_REWRITTEN"
+  },
+  "governing_effect": "R708 original prospective manifest and original frozen holdout remain authoritative. Post-hoc R708 stage artifacts must never establish or modify prospectivity.",
+  "real_money": "BLOCKED"
+}

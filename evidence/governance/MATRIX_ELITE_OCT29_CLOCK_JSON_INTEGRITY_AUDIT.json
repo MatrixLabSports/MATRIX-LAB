@@ -1,0 +1,53 @@
+{
+  "schema": "MATRIX_ELITE_OCT29_CLOCK_JSON_INTEGRITY_AUDIT_V1",
+  "target_date_bogota": "2026-10-29",
+  "initial_workflow_run": {
+    "id": 40820869632,
+    "conclusion": "success",
+    "issue": "Output ended in literal backslash-n, so JSON.parse failed despite successful workflow"
+  },
+  "repair": {
+    "workflow_commit": "b10410fb412749476fc54577d213163920a645e4",
+    "repaired_artifact_commit": "faab04d5705e21e54ec45ce62dd2948b442b601d",
+    "guard": "json.loads(out.read_text(encoding='utf-8')) == result",
+    "new_workflow_run_id": 40821039459,
+    "new_workflow_run_status_at_check": "completed",
+    "new_workflow_run_job_id": 123273317501,
+    "steps_at_check": {
+      "Set up job": "success",
+      "Checkout operational branch": "in_progress",
+      "Test calendar reconciliation": "pending",
+      "Audit independent browser clock strings without timezone certification": "pending"
+    },
+    "new_workflow_run_conclusion": "success",
+    "new_workflow_completed_at_utc": "2026-10-29T05:03:17Z",
+    "verified_successful_steps": [
+      "Test calendar reconciliation",
+      "Audit independent browser clock strings without timezone certification",
+      "Persist reconciliation evidence"
+    ]
+  },
+  "verified_repaired_artifact": {
+    "identity_confirmed": 74,
+    "clock_string_match": 62,
+    "clock_string_mismatch": 2,
+    "not_comparable": 10
+  },
+  "limits": {
+    "timezone_certified": false,
+    "freeze_eligible": 0,
+    "automatic_wagering": false,
+    "real_money": "BLOCKED"
+  },
+  "next_action": "Independently certify Flashscore browser timezone; do not infer from 62 matching clocks",
+  "latest_verified_artifact": {
+    "path": "evidence/calendar_reconciliation/MATRIX_FOOTBALL_CLOCK_STRING_CROSSCHECK_LAST.json",
+    "sha": "481919a1c4452c9fd2a6d94c34f02899551115d9",
+    "valid_json": true,
+    "identity_confirmed": 74,
+    "clock_string_match": 62,
+    "clock_string_mismatch": 2,
+    "not_comparable": 10
+  },
+  "certification": "PASS_JSON_PARSE_AND_CI_WORKFLOW"
+}

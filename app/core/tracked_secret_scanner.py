@@ -119,6 +119,8 @@ _TEXT_SUFFIXES = {
 }
 
 _MAX_SCAN_BYTES = 2 * 1024 * 1024
+_STREAM_SCAN_BYTES = 1024 * 1024
+_STREAM_OVERLAP_BYTES = 8192
 
 
 @dataclass(frozen=True)
@@ -353,6 +355,61 @@ def _looks_text_by_name(path: Path) -> bool:
     )
 
 
+def _large_text_has_hardcoded_secret(
+    path: Path,
+    *,
+    fixture_path: bool,
+) -> bool:
+    tail = b""
+
+    with path.open("rb") as handle:
+        while True:
+            block = handle.read(_STREAM_SCAN_BYTES)
+
+            if not block:
+                break
+
+            data = tail + block
+
+            if _looks_binary(data):
+                return False
+
+            text = data.decode(
+                "utf-8-sig",
+                errors="ignore",
+            )
+
+            if fixture_path:
+                leaked = _high_confidence_leak(
+                    text
+                )
+            elif path.suffix.lower() == ".py":
+                leaked = (
+                    _high_confidence_leak(text)
+                    or (
+                        (match := _ASSIGNMENT_PATTERN.search(text))
+                        is not None
+                        and not _is_placeholder(match.group(2))
+                    )
+                    or (
+                        (match := _COLON_PATTERN.search(text))
+                        is not None
+                        and not _is_placeholder(match.group(2))
+                    )
+                )
+            else:
+                leaked = _non_python_has_hardcoded_secret(
+                    text
+                )
+
+            if leaked:
+                return True
+
+            tail = data[-_STREAM_OVERLAP_BYTES:]
+
+    return False
+
+
 def scan_tracked_repository(
     root: str | Path,
     *,
@@ -401,12 +458,29 @@ def scan_tracked_repository(
             size > _MAX_SCAN_BYTES
             and _looks_text_by_name(path)
         ):
-            findings.append(
-                SecretScanFinding(
-                    path=relative,
-                    rule="OVERSIZED_TEXT_NOT_SCANNED",
+            try:
+                leaked = _large_text_has_hardcoded_secret(
+                    path,
+                    fixture_path=_fixture_path(relative),
                 )
-            )
+            except OSError:
+                findings.append(
+                    SecretScanFinding(
+                        path=relative,
+                        rule="UNREADABLE_TRACKED_FILE",
+                    )
+                )
+                continue
+
+            scanned += 1
+
+            if leaked:
+                findings.append(
+                    SecretScanFinding(
+                        path=relative,
+                        rule="LIKELY_EMBEDDED_SECRET",
+                    )
+                )
             continue
 
         if size > _MAX_SCAN_BYTES:

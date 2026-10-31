@@ -1,0 +1,205 @@
+{
+  "schema": "MATRIX_WORLD_CALIBRATION_SETTLEMENT_PROGRESS_AUDIT_V1",
+  "target_date_bogota": "2026-10-06",
+  "branch": "repair/cor09-world-pipeline",
+  "audit_at_utc": "2026-10-27T09:21:22Z",
+  "previous_snapshot": {
+    "path": "evidence/daily_selection/MATRIX_SETTLEMENT_PROGRESS_20261006_BOGOTA_20261027T065011Z_V2_3984_T382.json",
+    "sha": "6cda30e5a14f548bfab25fb82a8c4ebce484a657",
+    "commit": "68bb5d01d15ffdfafba1e9af770f33a85475c3ac"
+  },
+  "observed_branch_head_before_write": "d670c9a557b4ddf809e866b62a67d3e5d5df149f",
+  "source_blobs": {
+    "candidate": {
+      "path": "evidence/daily_selection/MATRIX_CALIBRATION_CANDIDATES_20261006_BOGOTA.json",
+      "sha": "52e897007840f5bed1a8999edad8ee594fefc767"
+    },
+    "football_sync": {
+      "path": "evidence/api_football/prospective_market_freeze/settlement_sync_last.json",
+      "sha": "474fe16c5a8c34fca62bac333d7ef88b86422238"
+    },
+    "tracker": {
+      "path": "evidence/api_football/governance/MATRIX_FOOTBALL_4000_CANONICAL_TRACKER_LAST.json",
+      "sha": "5cea3c1f1f554fd25882d3453cd522331a54a2eb"
+    },
+    "v2_1x2": {
+      "path": "evidence/api_football/calibration_v2/lanes/1x2/state.json",
+      "sha": "7ac91a171cca1d91e72c8cfa995bea76623baeee"
+    },
+    "v2_over": {
+      "path": "evidence/api_football/calibration_v2/lanes/over_2_5/state.json",
+      "sha": "70608b954764e234be008fbc691a3b608065a49b"
+    },
+    "v2_under": {
+      "path": "evidence/api_football/calibration_v2/lanes/under_2_5/state.json",
+      "sha": "0b7a60060a8aa9e63c68e36207edd6f0a4aa3559"
+    },
+    "tennis_ledger": {
+      "path": "evidence/cor0203/settlement/MATRIX_COR0203_SETTLEMENT_LEDGER.jsonl",
+      "sha": "ba67b62aaad868263a0ddd7acc1ef22341651fb0"
+    },
+    "tennis_uniqueness": {
+      "path": "evidence/cor0203/runtime/MATRIX_COR0203_SETTLEMENT_UNIQUENESS_LAST.json",
+      "sha": "2dd83c620fbd49833b483af0a271c1e664664e9e"
+    },
+    "tennis_sync": {
+      "path": "evidence/cor0203/runtime/MATRIX_COR0203_SETTLEMENT_SYNC_LAST.json",
+      "sha": "67ebf8a95d19061fb4366790171d9d246e9c55a2"
+    },
+    "previous_snapshot": {
+      "path": "evidence/daily_selection/MATRIX_SETTLEMENT_PROGRESS_20261006_BOGOTA_20261027T065011Z_V2_3984_T382.json",
+      "sha": "6cda30e5a14f548bfab25fb82a8c4ebce484a657"
+    }
+  },
+  "football": {
+    "original_6oct": {
+      "candidates": 116,
+      "unique_candidate_fixture_ids": 116,
+      "standard_ft_settled": 107,
+      "new_standard_ft": 0,
+      "settled_count_basis": "Prior audited snapshot 107/116; current governed sync reports zero new settlements. Full football ledger was not retrievable (GitHub connector returned empty content for large file).",
+      "blocked_nonstandard": [
+        {
+          "fixture_id": "1588817",
+          "reason": "NONSTANDARD_TERMINAL_REQUIRES_ADJUDICATION:PEN"
+        },
+        {
+          "fixture_id": "1588821",
+          "reason": "NONSTANDARD_TERMINAL_REQUIRES_ADJUDICATION:PEN"
+        },
+        {
+          "fixture_id": "1588845",
+          "reason": "NONSTANDARD_TERMINAL_REQUIRES_ADJUDICATION:PEN"
+        },
+        {
+          "fixture_id": "1588863",
+          "reason": "NONSTANDARD_TERMINAL_REQUIRES_ADJUDICATION:PEN"
+        },
+        {
+          "fixture_id": "1588890",
+          "reason": "NONSTANDARD_TERMINAL_REQUIRES_ADJUDICATION:PEN"
+        },
+        {
+          "fixture_id": "1588893",
+          "reason": "NONSTANDARD_TERMINAL_REQUIRES_ADJUDICATION:PEN"
+        },
+        {
+          "fixture_id": "1619499",
+          "reason": "NONSTANDARD_TERMINAL_REQUIRES_ADJUDICATION:PEN"
+        },
+        {
+          "fixture_id": "1644168",
+          "reason": "NONSTANDARD_TERMINAL_REQUIRES_ADJUDICATION:AET"
+        }
+      ],
+      "pending_provider": [
+        {
+          "fixture_id": "1596466",
+          "provider_status": "NS",
+          "lookup_after_utc": "2026-10-27T09:02:16+00:00",
+          "reason": "RESULT_NOT_STANDARD_FINAL"
+        }
+      ]
+    },
+    "global_sync": {
+      "frozen": 5194,
+      "final": 4787,
+      "pending": 275,
+      "blocked": 132,
+      "reconciles": true,
+      "new_settlements": 0,
+      "network_calls": 28,
+      "run_at_utc": "2026-10-27T08:02:16+00:00"
+    },
+    "v2": {
+      "frozen_per_market": 4366,
+      "settled_per_market": 3984,
+      "pending_per_market": 382,
+      "markets_checked": [
+        "1X2",
+        "OVER_2_5",
+        "UNDER_2_5"
+      ],
+      "metrics_opened": false,
+      "parameter_tuning_allowed": false
+    },
+    "canonical_tracker": {
+      "global_final": 4787,
+      "v2_settled": 3984,
+      "tracker_reconciled": true,
+      "generated_at_utc": "2026-10-27T07:01:44.395005+00:00"
+    }
+  },
+  "tennis": {
+    "original_6oct_unique": 11,
+    "original_6oct_finished": 11,
+    "ledger_records": 386,
+    "unique_event_ids": 386,
+    "unique_settlement_ids": 386,
+    "hash_link_breaks": 0,
+    "new_settlements_since_previous": 4,
+    "new_settlements": [
+      {
+        "event_id": "COR0203-RAPIDAPI-TENNIS-706529-e25a4bc2cba9",
+        "winner": "Yu Hsiou Hsu",
+        "result": "4-6 7-5 7-6(7)",
+        "status": "FINISHED",
+        "settlement_id": "e49d5f5c5bd67102ba7600e55aa8b6bf2180f6ae3a6ed1a960efcbfcf4d1fb46",
+        "settled_at_utc": "2026-10-27T08:03:47+00:00",
+        "result_source_reference": "results-range:2026-10-14/2026-10-27:fixtureMatchId=706529:resultMatchId=141935581"
+      },
+      {
+        "event_id": "COR0203-RAPIDAPI-TENNIS-706542-8f63615f5303",
+        "winner": "Harold Mayot",
+        "result": "6-3 6-4",
+        "status": "FINISHED",
+        "settlement_id": "2d1989577d4099439312fd3f8d925d30ee159e12b93b9b2b9410932617cb6a35",
+        "settled_at_utc": "2026-10-27T08:03:47+00:00",
+        "result_source_reference": "results-range:2026-10-14/2026-10-27:fixtureMatchId=706542:resultMatchId=141935595"
+      },
+      {
+        "event_id": "COR0203-RAPIDAPI-TENNIS-829695-1828e873010b",
+        "winner": "Terence Atmane",
+        "result": "4-6 6-1 6-2",
+        "status": "FINISHED",
+        "settlement_id": "1865fd18bb328fcf404134804edf344150ec36b69ffb2af654344d7df5954dd2",
+        "settled_at_utc": "2026-10-27T08:03:47+00:00",
+        "result_source_reference": "results-range:2026-10-14/2026-10-27:fixtureMatchId=829695:resultMatchId=143341969"
+      },
+      {
+        "event_id": "COR0203-RAPIDAPI-TENNIS-836639-db7c807dba23",
+        "winner": "Petr Bar Biryukov",
+        "result": "6-7(1) 7-6(5) 6-4",
+        "status": "FINISHED",
+        "settlement_id": "8da3369b90a3aa81a43601a817928a1c576381bd584785a46094cf013ef37e0c",
+        "settled_at_utc": "2026-10-27T08:03:47+00:00",
+        "result_source_reference": "results-range:2026-10-14/2026-10-27:fixtureMatchId=836639:resultMatchId=141935582"
+      }
+    ],
+    "uniqueness_result": "PASS",
+    "settled_unique_canonical_events": 333,
+    "settled_duplicate_alias_records": 53,
+    "duplicate_aliases_used_for_metrics": 0,
+    "nonstandard_blocked_count": 12,
+    "metrics_opened": false
+  },
+  "governance": {
+    "settlement_final_only": true,
+    "metrics_opened": false,
+    "no_tuning": true,
+    "no_odds_to_p": true,
+    "automatic_wagering": false,
+    "real_money": "BLOCKED",
+    "executed_governed_settlements_this_audit": 0,
+    "no_duplicate_settlement_execution": true
+  },
+  "change_detection": {
+    "new_standard_football_results": 0,
+    "new_finished_tennis_results": 4,
+    "original_6oct_new_results": 0,
+    "physical_change_since_previous": true,
+    "physical_change_type": "FOUR_PREEXISTING_GOVERNED_TENNIS_SETTLEMENTS",
+    "no_new_football_settlements": true
+  },
+  "method": "Read candidate and previous snapshot, football governed sync, tracker and three V2 states, tennis governed sync, full tennis ledger and uniqueness. Verified 11 original tennis events, 386 unique ledger and settlement IDs, zero adjacent hash-link breaks. Four new FINISHED tennis rows already committed by governed process; no duplicate execution. Football ledger was inaccessible via connector and original 107/116 is carried from prior audit with unchanged governed counts. Snapshot only; no tuning, metrics, odds-to-P or wagering."
+}

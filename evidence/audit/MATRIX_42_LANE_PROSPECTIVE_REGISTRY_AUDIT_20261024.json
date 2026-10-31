@@ -1,0 +1,109 @@
+{
+  "schema": "MATRIX_42_LANE_PROSPECTIVE_REGISTRY_AUDIT_V1",
+  "generated_at_utc": "2026-10-24T20:03:00+00:00",
+  "status": "PASS_CODE_AND_RUNTIME_CERTIFIED",
+  "scope": {
+    "total_lanes": 42,
+    "football_lanes": 30,
+    "tennis_lanes": 12,
+    "cadence_minutes": 15,
+    "gate_thresholds": [
+      100,
+      300,
+      600
+    ]
+  },
+  "implementation": {
+    "registry_tool": "tools/matrix_42_lane_prospective_registry.py",
+    "registry_tool_commit": "0f720787c6dd3a90fea6dc73c627fae94d5b1afb",
+    "strict_source_freshness_commit": "7973f59f41fa50a5372866f01ac40ba00b0b3e2b",
+    "registry_test": "tests/test_matrix_42_lane_prospective_registry.py",
+    "registry_test_commit": "33f6e3fcd53fd8ef90a53bc46b6ce4b3c2549406",
+    "nine_lab_validation_commit": "a69518f9033467ac1450a36b54c5073194f4b8c7",
+    "nine_lab_test_commit": "6f316b14ec0203286992333b468fff12ec84449f",
+    "workflow_main_commit": "45b23e75a88a357943e3143bb5f38ed7f4246e10",
+    "workflow_operational_commit": "f42a0b230ffb267090ba0c8a288484d0508207f1"
+  },
+  "runtime_certification": {
+    "main_run": {
+      "id": 40127809941,
+      "conclusion": "success"
+    },
+    "operational_integration_run": {
+      "id": 40127814945,
+      "conclusion": "success"
+    },
+    "freshness_hardening_run": {
+      "id": 40127958834,
+      "conclusion": "success"
+    },
+    "required_steps_passed": [
+      "Enforce permanent market contracts",
+      "Build canonical 42-lane state",
+      "Build strict 42-lane prospective registry",
+      "Build blocked-lane activation plan",
+      "Persist canonical supervisor evidence"
+    ]
+  },
+  "physical_evidence": {
+    "canonical_supervisor": "evidence/market_portfolio/MATRIX_MULTI_MARKET_SUPERVISOR_LAST.json",
+    "prospective_registry": "evidence/market_portfolio/MATRIX_42_LANE_PROSPECTIVE_REGISTRY_LAST.json",
+    "prospective_ledger": "evidence/market_portfolio/MATRIX_42_LANE_PROSPECTIVE_LEDGER.jsonl",
+    "freeze_inbox": "evidence/market_portfolio/MATRIX_42_LANE_FREEZE_INBOX.jsonl"
+  },
+  "current_state": {
+    "canonical_supervisor_status": "PASS",
+    "state_counts": {
+      "ACTIVE": 2,
+      "LAB": 40
+    },
+    "missing_required_flags": [],
+    "prospective_valid_lanes": 0,
+    "prospective_ledger_rows": 0,
+    "lanes_at_100": 0,
+    "lanes_at_300": 0,
+    "lanes_at_600": 0
+  },
+  "source_findings": {
+    "football": {
+      "persisted_inventory_event_count": 460,
+      "future_event_count_now": 0,
+      "captured_at_utc": "2026-10-23T04:05:00+00:00",
+      "latest_event_start_utc": "2026-10-24T04:00:00+00:00",
+      "blocker": "NO_FUTURE_EVENTS_IN_PERSISTED_FOOTBALL_INVENTORY",
+      "source_usable_for_new_freeze_now": false
+    },
+    "tennis_today": {
+      "date": "2026-10-24",
+      "rapidapi_primary_unique_match_count": 20,
+      "world_inventory_complete": false,
+      "open_reconciliation_required": true
+    },
+    "tennis_tomorrow": {
+      "date": "2026-10-25",
+      "rapidapi_primary_unique_match_count": 0,
+      "world_inventory_complete": false,
+      "open_reconciliation_required": true,
+      "required_open_calendar_reconciliation": [
+        "SofaScore",
+        "Flashscore"
+      ],
+      "authoritative_policy": "SOFASCORE_FIRST_FLASHSCORE_SECOND_RAPIDAPI_STRUCTURED; NO_FORCED_COUNT_EQUALITY"
+    }
+  },
+  "admission_contract": {
+    "required_record_type": "PROSPECTIVE_PREMATCH_FREEZE",
+    "event_identity_required": true,
+    "freeze_strictly_before_event_start": true,
+    "prediction_or_feature_snapshot_required": true,
+    "target_outcome_forbidden_at_freeze": true,
+    "duplicate_observation_key_forbidden": true,
+    "post_start_backfill_forbidden": true,
+    "missing_not_zero": true,
+    "silent_imputation": false,
+    "odds_used_to_generate_probability": false,
+    "automatic_wagering": false,
+    "real_money": "BLOCKED"
+  },
+  "interpretation": "Monitoring and strict prospective admission are physically coded and runtime-certified. Zero prospective rows is intentional until a producer supplies valid prematch freezes; stale football inventory and unreconciled tennis calendar cannot inflate gates."
+}

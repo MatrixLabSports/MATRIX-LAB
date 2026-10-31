@@ -1,0 +1,92 @@
+name: SofaScore Multisport Discovery 2026-10-05
+
+on:
+  push:
+    branches:
+      - repair/cor09-world-pipeline
+    paths:
+      - .github/workflows/sofascore-multisport-20261005.yml
+      - tools/sofascore_multisport_discovery.py
+      - tests/test_sofascore_multisport_discovery.py
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  sofascore-discovery:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout latest operational branch
+        uses: actions/checkout@v4
+        with:
+          ref: repair/cor09-world-pipeline
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install discovery dependencies
+        run: python -m pip install pytest requests curl_cffi
+
+      - name: Verify SofaScore parser protections
+        run: python -m pytest -q tests/test_sofascore_multisport_discovery.py
+
+      - name: Refresh physical branch head
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch origin repair/cor09-world-pipeline
+          git checkout repair/cor09-world-pipeline
+          git reset --hard origin/repair/cor09-world-pipeline
+          echo "CHECKOUT_SHA=$(git rev-parse HEAD)" >> "$GITHUB_ENV"
+
+      - name: Capture SofaScore tennis and football discovery
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m tools.sofascore_multisport_discovery \
+            --target-date-bogota 2026-10-05 \
+            --verify-entity-enrichment \
+            --out evidence/sofascore/2026-10-05/multisport_discovery.json
+
+      - name: Persist physical evidence
+        if: always()
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name matrix-ci
+          git config user.email matrix-ci@users.noreply.github.com
+          git add evidence/sofascore/2026-10-05/multisport_discovery.json
+          if git diff --cached --quiet; then
+            echo "No evidence change"
+            exit 0
+          fi
+          git commit -m "evidence(sofascore): capture 05-Oct tennis and football discovery"
+          for attempt in 1 2 3; do
+            git fetch origin repair/cor09-world-pipeline
+            if git rebase origin/repair/cor09-world-pipeline && git push origin HEAD:repair/cor09-world-pipeline; then
+              exit 0
+            fi
+            git rebase --abort || true
+            sleep $((attempt * 2))
+          done
+          exit 1
+
+      - name: Require physically verified SofaScore PASS
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          p=Path("evidence/sofascore/2026-10-05/multisport_discovery.json")
+          if not p.exists():
+              raise SystemExit("SOFASCORE_EVIDENCE_MISSING")
+          data=json.loads(p.read_text(encoding="utf-8"))
+          if data.get("status") != "PASS":
+              raise SystemExit("SOFASCORE_DISCOVERY_NOT_PASS:"+str(data.get("error")))
+          print("SOFASCORE_PHYSICAL_VERIFICATION_PASS")
+          PY

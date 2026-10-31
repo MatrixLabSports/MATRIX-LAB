@@ -1,0 +1,59 @@
+{
+  "candidates": [],
+  "current_state": {
+    "dual_cadence_covered_candidates": 0,
+    "earliest_window_open_utc": null,
+    "quote_recommendation_authorized": true,
+    "readiness_status": "PASS",
+    "real_quote_attempts_total": 1305,
+    "remaining_to_quote_minimum": 0,
+    "waiting_final_window_candidates": 0
+  },
+  "failures": [],
+  "generated_at_utc": "2026-10-29T02:27:24.059565+00:00",
+  "governance": {
+    "automatic_wagering": false,
+    "ev_must_be_positive": true,
+    "final_prematch_window_minutes": 120,
+    "lower_gates_to_force_signals": false,
+    "no_backfill_after_kickoff": true,
+    "odds_must_be_gt_1_50": true,
+    "p_matrix_must_preexist_before_odds": true,
+    "pinnacle_freshness_gate_seconds": 120,
+    "real_money": "BLOCKED"
+  },
+  "interpretation": {
+    "dual_cadence_is_resilience_not_permission_to_send": true,
+    "quote_coverage_remains_structural_bottleneck": true,
+    "waiting_before_window_is_not_a_delivery_failure": true,
+    "zero_quote_checks_before_window_is_expected": true
+  },
+  "purpose": "Preserve final-window signal recovery without lowering model, EV, price, sharp-reference, or safety gates.",
+  "schedule_contract": {
+    "combined_nominal_gaps_minutes": [
+      7,
+      8,
+      7,
+      8,
+      7,
+      8,
+      7,
+      8
+    ],
+    "combined_nominal_minutes": [
+      0,
+      7,
+      15,
+      22,
+      30,
+      37,
+      45,
+      52
+    ],
+    "green_cron_present": true,
+    "maximum_combined_nominal_gap_minutes": 8,
+    "supervisor_cron_present": true
+  },
+  "schema": "MATRIX_TELEGRAM_SIGNAL_RECOVERY_GUARD_V1",
+  "status": "PASS"
+}

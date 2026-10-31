@@ -1,0 +1,73 @@
+{
+  "schema": "MATRIX_COLOMBIA_ODDS_ARCHITECTURE_READINESS_V1",
+  "as_of_date_bogota": "2026-09-28",
+  "status": "PASS_ARCHITECTURE_PREPARED_PROVIDER_NOT_ACTIVATED",
+  "operational_branch": "repair/cor09-world-pipeline",
+  "verified_code_head": "37c4d623a21acfa195f7dfbbe88b303d054792de",
+  "ci": {
+    "run_id": 36445237535,
+    "result": "PASS",
+    "tests_passed": 3184,
+    "quality_gate": "PASS"
+  },
+  "completed_components": [
+    "14-book Colombia execution-candidate registry",
+    "reference-only and quarantine bookmaker classifications",
+    "credential-gated odds-api.net catalog probe workflow",
+    "canonical cross-sport odds quote contract",
+    "bookmaker/snapshot freshness handling",
+    "provider selection-key provenance handling",
+    "documented provider-market to MATRIX-MARKET-R2 fail-closed mapping",
+    "exact event/market/period/metric/line/side/selection comparison identity",
+    "permanent decimal odds rule > 1.50",
+    "best valid execution-book price selection",
+    "implied probability and expected-value calculation after P_MATRIX",
+    "hard odds-to-P_MATRIX prohibition",
+    "fractional-Kelly stake engine",
+    "calibration reliability and risk stake shrink",
+    "hard bankroll fraction cap",
+    "calibration gate and REAL_MONEY gate",
+    "prematch price freeze invariants",
+    "append-only hash-chained price freeze ledger",
+    "duplicate freeze rejection",
+    "Pinnacle execution rejection / reference-only role",
+    "unmapped market execution rejection",
+    "tests for mapped/unmapped football and tennis markets"
+  ],
+  "activation_pending": {
+    "odds_api_net_key_configured": false,
+    "physical_catalog_probe_completed": false,
+    "bookmaker_live_presence_verified": false,
+    "live_football_snapshot_verified": false,
+    "live_tennis_snapshot_verified": false,
+    "reason": "ODDS_API_NET_KEY_REQUIRED_NOT_CONFIGURED",
+    "prior_credential_probe_run_id": 36442538761
+  },
+  "governance": {
+    "real_money": "BLOCKED",
+    "automatic_wagering": false,
+    "odds_used_to_generate_p_matrix": false,
+    "architecture_ready_does_not_mean_provider_active": true,
+    "provider_visible_does_not_mean_execution_authorized": true,
+    "no_payment_required_now": true
+  },
+  "future_activation_sequence": [
+    "Store ODDS_API_NET_KEY as GitHub Actions secret after purchase.",
+    "Run one governed Colombia catalog probe.",
+    "Persist raw response, SHA-256, timestamp and rate metadata.",
+    "Promote only physically visible and regulator-eligible books.",
+    "Run one governed football snapshot and one governed tennis snapshot.",
+    "Verify provider market mappings against physical rows.",
+    "Run shadow price comparison and freeze end to end while REAL_MONEY remains BLOCKED.",
+    "Open controlled-live only after calibration and audit gates explicitly pass."
+  ],
+  "superseded_intermediate_ci_failures": {
+    "explanation": "Partial commits temporarily failed while market_version was added before dependent adapter/ledger/tests were updated. Later commits reconciled the dependency chain; the verified final code head passes the full canonical gate.",
+    "superseded_heads": [
+      "8ede649d71e7765d68e59635acc4c62eb0faa1f5",
+      "c948eacace4acd5f3c2cadd18dac158158f9b0b1",
+      "2928a7223b44510bd4f6673db45b9a0d3210de66",
+      "3ee2be9ddc95996cdd967176e3747c69cdaf3ef9"
+    ]
+  }
+}

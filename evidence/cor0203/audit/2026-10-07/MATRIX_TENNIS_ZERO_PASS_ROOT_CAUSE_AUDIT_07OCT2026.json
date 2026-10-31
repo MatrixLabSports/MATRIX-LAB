@@ -1,0 +1,362 @@
+{
+  "date_bogota": "2026-10-07",
+  "exact_day_provider_inventory": {
+    "api_tennis_challenger_men_singles": 30,
+    "api_tennis_outside_challenger_men_singles": 457,
+    "api_tennis_total": 487,
+    "rapidapi_atp_challenger_all_formats": 7,
+    "rapidapi_total": 84
+  },
+  "fresh_four_day_governed_discovery": {
+    "api_tennis": {
+      "draw_request_limit": 12,
+      "draw_requests": 5,
+      "eligible_hard_future_fixed_identity": 6,
+      "fixture_rows_challenger_men_singles": 60,
+      "provider_rejected_count": 54,
+      "rejection_reason_counts": {
+        "EVENT_NOT_FUTURE": 29,
+        "SURFACE_OUT_OF_DOMAIN": 50,
+        "TERMINAL_EVENT": 26
+      },
+      "tournaments_seen": 5
+    },
+    "rapidapi": {
+      "eligible_hard_future_with_cut_ranking": 14,
+      "fixture_rows_provider_filtered": 33,
+      "provider_rejected_count": 19,
+      "ranking_players_found": 66,
+      "rejection_reason_counts": {
+        "EVENT_NOT_FUTURE": 3,
+        "SURFACE_OUT_OF_DOMAIN": 19
+      }
+    }
+  },
+  "holdout_state": {
+    "bottleneck": {
+      "cause": "SOURCE_READY_NO_NEW_ELIGIBLE_EVENTS",
+      "stage": "INVENTORY"
+    },
+    "duplicates_quarantined": 101,
+    "integrity": "PASS",
+    "last_cycle_new_blocked": 159,
+    "last_cycle_new_freezes": 0,
+    "metrics_opened": false,
+    "outcomes_read": 0,
+    "physical_frozen_rows": 224,
+    "remaining_to_200": 77,
+    "remaining_to_600": 477,
+    "unique_calibration_observations": 123
+  },
+  "identity_fix_validation": {
+    "eligible_after_fix": 0,
+    "metrics_opened": false,
+    "outcomes_read": 0,
+    "provider_rejected_after_fix": 5,
+    "world_identity_binding_rejection_count": 0,
+    "world_source_event_id_collision_count_detected": 1
+  },
+  "preregistration": {
+    "events_registered": 0,
+    "skipped": [
+      {
+        "blockers": [
+          "ALREADY_PREREGISTERED_OR_FROZEN_PHYSICAL_EVENT"
+        ],
+        "provider": "rapidapi_tennis",
+        "source_event_id": "rapidapi-tennis:match:1360"
+      }
+    ],
+    "status": "NO_NEW_EVENTS"
+  },
+  "production_dual_reconciliation": {
+    "api_tennis_candidates_input": 6,
+    "api_tennis_existing_physical_alias_count": 3,
+    "api_tennis_identity_blocked": [
+      {
+        "blockers": [
+          "PIT_IDENTITY_NOT_RESOLVED:api-tennis:player:38273",
+          "PIT_IDENTITY_NOT_RESOLVED:api-tennis:player:69562"
+        ],
+        "players": [
+          "Dylan Hara Friend Jay",
+          "Kang Leong Mitsuki Wei"
+        ],
+        "source_event_id": "api-tennis:event:12168815"
+      },
+      {
+        "blockers": [
+          "PIT_IDENTITY_NOT_RESOLVED:api-tennis:player:1326"
+        ],
+        "players": [
+          "Keisuke Saitoh",
+          "Akira Santillan"
+        ],
+        "source_event_id": "api-tennis:event:12169120"
+      },
+      {
+        "blockers": [
+          "PIT_IDENTITY_NOT_RESOLVED:api-tennis:player:52054"
+        ],
+        "players": [
+          "Timofei Derepasko",
+          "Omar Jasika"
+        ],
+        "source_event_id": "api-tennis:event:12169124"
+      }
+    ],
+    "api_tennis_identity_blocked_count": 3,
+    "api_tennis_unique_candidates_output": 0,
+    "rapidapi_candidates_input": 14,
+    "rapidapi_candidates_output": 1
+  },
+  "protections": {
+    "automatic_wagering": false,
+    "metrics_opened": false,
+    "missing_not_zero": true,
+    "odds_to_probability": false,
+    "outcomes_read": 0,
+    "real_money": "BLOCKED",
+    "silent_imputation": false
+  },
+  "root_causes": [
+    {
+      "cause": "MOST_WORLD_TENNIS_IS_OUTSIDE_COR0203_DOMAIN",
+      "evidence": "API-Tennis exact-day inventory includes ATP main, WTA, ITF, doubles and women. Only Challenger Men Singles can enter this matrix before surface/future/PIT gates.",
+      "rank": 1
+    },
+    {
+      "cause": "ELIGIBLE_DISCOVERY_IS_MOSTLY_ALREADY_SEEN_PHYSICAL_EVENTS",
+      "evidence": "Dual reconciliation and preregistration deduplicate against existing physical keys; the surviving RapidAPI candidate was already preregistered/frozen.",
+      "rank": 2
+    },
+    {
+      "cause": "PRE_21SEP_IDENTITY_HISTORY_GAPS_BLOCK_NEW_API_TENNIS_PLAYERS",
+      "evidence": "API-Tennis candidates with unresolved identities are rejected rather than silently imputing ranking/history.",
+      "rank": 3
+    },
+    {
+      "cause": "RAPIDAPI_SOURCE_MATCH_ID_IS_NOT_STABLE_UNIQUE_ACROSS_ACCUMULATED_SNAPSHOTS",
+      "evidence": "Multiple distinct physical matches share the same source_event_id in the accumulated world inventory. The world-derived binding previously keyed only by match_id; code is now fixed to bind by tournament+players+start and fail closed if ambiguous.",
+      "rank": 4
+    }
+  ],
+  "schema": "MATRIX_TENNIS_ZERO_PASS_ROOT_CAUSE_AUDIT_07OCT2026_V1",
+  "verdict": "ZERO_NEW_FREEZES_EXPLAINED_BY_DOMAIN_FILTER_PLUS_ALREADY_SEEN_EVENTS_PLUS_PRECUT_IDENTITY_GAPS; ALSO_REAL_WORLD_SOURCE_ID_COLLISION_BUG_FOUND_AND_FIXED",
+  "world_inventory_accumulation": {
+    "cumulative_events": 332,
+    "domain_candidate_count": 5,
+    "duplicate_provider_source_id_collision_count": 10,
+    "provider_source_id_collisions": {
+      "rapidapi-tennis:atp:match:1395": [
+        {
+          "event_start_bogota": "2026-10-07T04:05:00-05:00",
+          "players": [
+            "Hynek Barton",
+            "Toby Samuel"
+          ],
+          "stable_physical_identity_key": "c40368e5c945d83e05fda2f58e0dc022ef4aff6dbe2296126809a042797ca656",
+          "tournament": "Villena Challenger"
+        },
+        {
+          "event_start_bogota": "2026-10-07T07:35:00-05:00",
+          "players": [
+            "Edas Butvilas",
+            "Max Hans Rehberg"
+          ],
+          "stable_physical_identity_key": "ce162a59c254c41b4223904cd0723b7bd50af98f83ee0aeddd207af5ad5f4dc3",
+          "tournament": "Villena Challenger"
+        }
+      ],
+      "rapidapi-tennis:atp:match:1481": [
+        {
+          "event_start_bogota": "2026-10-07T10:00:00-05:00",
+          "players": [
+            "Sumit Nagal",
+            "Luka Mikrut"
+          ],
+          "stable_physical_identity_key": "11ba1788c7caad1823eb12d8edb905c7d43a53e074f8f70678fdf69eb9c76f56",
+          "tournament": "Braga Challenger"
+        },
+        {
+          "event_start_bogota": "2026-10-07T12:20:00-05:00",
+          "players": [
+            "Mackenzie Mcdonald",
+            "Ryan Nijboer"
+          ],
+          "stable_physical_identity_key": "31047707732ae728b26ac264e3531ba8791bf736ef234a67da1f49623a5479bb",
+          "tournament": "Braga Challenger"
+        }
+      ],
+      "rapidapi-tennis:atp:match:2170": [
+        {
+          "event_start_bogota": "2026-10-07T03:35:00-05:00",
+          "players": [
+            "Hugo Car",
+            "Adrien Burdet"
+          ],
+          "stable_physical_identity_key": "a069107b6c363a80f1a9126f421fae98129e886b026b25a6a5a93fe5dc09c774",
+          "tournament": "M15 Pontevedra"
+        },
+        {
+          "event_start_bogota": "2026-10-07T07:47:00-05:00",
+          "players": [
+            "Karim Bennani",
+            "Tanguy Genier"
+          ],
+          "stable_physical_identity_key": "0a4bb67de0eabebf55399ad4c9d1e2daf1a49101e8205998b2eb9fe041401535",
+          "tournament": "M15 Pontevedra"
+        }
+      ],
+      "rapidapi-tennis:atp:match:2386": [
+        {
+          "event_start_bogota": "2026-10-07T02:05:00-05:00",
+          "players": [
+            "Mathieu Scaglia",
+            "Henri Haupt"
+          ],
+          "stable_physical_identity_key": "dc6bc3f57f7b6ae434eac2fae0175d877a0e4b38cf888daf48b09c531182fa73",
+          "tournament": "M15 Heraklion"
+        },
+        {
+          "event_start_bogota": "2026-10-07T07:45:00-05:00",
+          "players": [
+            "Maxence Rivet",
+            "Emile Hudd"
+          ],
+          "stable_physical_identity_key": "cc082a059a3b3aa9a7df54d10b4fec8cabe87ea160dbccb11c349656886ab244",
+          "tournament": "M15 Rodez"
+        }
+      ],
+      "rapidapi-tennis:wta:match:1272": [
+        {
+          "event_start_bogota": "2026-10-07T02:05:00-05:00",
+          "players": [
+            "Anastasiia Sobolieva",
+            "Galena Krastenova"
+          ],
+          "stable_physical_identity_key": "e78b3da4f4fa713a2a87b3a8b5d7296e95ffea37c17d07ee23f2e16fe534bdd1",
+          "tournament": "W50 Burgas"
+        },
+        {
+          "event_start_bogota": "2026-10-07T05:13:00-05:00",
+          "players": [
+            "Lia Karatancheva",
+            "Luisina Giovannini"
+          ],
+          "stable_physical_identity_key": "6e5228c10bfd7cd11f8a6324b2c4f707e7ab3da2f0b6e461661c64ffe41700e1",
+          "tournament": "W50 Burgas"
+        }
+      ],
+      "rapidapi-tennis:wta:match:1275": [
+        {
+          "event_start_bogota": "2026-10-07T05:13:00-05:00",
+          "players": [
+            "Ane Mintegi Del Olmo",
+            "Bianca Elena Barbulescu"
+          ],
+          "stable_physical_identity_key": "ea4fe05eff95647c83140dbe9b14e9f20896f761bb6625c09db332b82502e132",
+          "tournament": "W50 Burgas"
+        },
+        {
+          "event_start_bogota": "2026-10-07T07:45:00-05:00",
+          "players": [
+            "Marie Vogt",
+            "Lidia Encheva"
+          ],
+          "stable_physical_identity_key": "9fd9da58029b12a50d55bea5c27dfaf46644c200e3410d48cf2cca8d092b5143",
+          "tournament": "W50 Burgas"
+        }
+      ],
+      "rapidapi-tennis:wta:match:1702": [
+        {
+          "event_start_bogota": "2026-10-07T03:35:00-05:00",
+          "players": [
+            "Milla Sequeira",
+            "Polina Skliar"
+          ],
+          "stable_physical_identity_key": "65521878adc842e39a86e2d0d004ac83a50fa156e359076423a0492fed9f1d70",
+          "tournament": "W35 Monastir"
+        },
+        {
+          "event_start_bogota": "2026-10-07T05:13:00-05:00",
+          "players": [
+            "Demi Tran",
+            "Tereza Krejcova"
+          ],
+          "stable_physical_identity_key": "94aa0ab11c1e9ee5f8e2eda452518f1f04035fe9fb807e5bf3c5cf4a6f13f8e4",
+          "tournament": "W35 Monastir"
+        }
+      ],
+      "rapidapi-tennis:wta:match:1708": [
+        {
+          "event_start_bogota": "2026-10-07T03:35:00-05:00",
+          "players": [
+            "Isabella Barrera Aguirre",
+            "Jenny Lim"
+          ],
+          "stable_physical_identity_key": "453d72768c1146d7ea497e0a1017d990c9fa4fb9ae71355c339e6479e0dbcb1e",
+          "tournament": "W35 Monastir"
+        },
+        {
+          "event_start_bogota": "2026-10-07T03:35:00-05:00",
+          "players": [
+            "Lan Mi",
+            "Valentina Losciale"
+          ],
+          "stable_physical_identity_key": "e2b05b50b5c29f428231f2e8e9686652533348d2785c5a4db476c899ffe9347b",
+          "tournament": "W35 Monastir"
+        },
+        {
+          "event_start_bogota": "2026-10-07T07:15:00-05:00",
+          "players": [
+            "Matylda Burylo",
+            "Viola Turini"
+          ],
+          "stable_physical_identity_key": "8fcf035c1ec086f988a5d0f42f4a8102de95cbcbb864b26ac8db6d4a9e1068af",
+          "tournament": "W35 Monastir"
+        }
+      ],
+      "rapidapi-tennis:wta:match:1732": [
+        {
+          "event_start_bogota": "2026-10-07T05:50:00-05:00",
+          "players": [
+            "Abigeyle Bhopal",
+            "Weronika Ewald"
+          ],
+          "stable_physical_identity_key": "e9ec0ce58c484a8557cc9b29efac1da9c8f67a1df0deba1a7bb1f95ed601d5ce",
+          "tournament": "W35 Monastir"
+        },
+        {
+          "event_start_bogota": "2026-10-07T07:32:00-05:00",
+          "players": [
+            "Zuzanna Pawlikowska",
+            "Oriana Gniewkowska"
+          ],
+          "stable_physical_identity_key": "bc166ae8b2462d66c9941db7e9d8e09b4d919d750bea170ab1e5afb6cdbd1f60",
+          "tournament": "W35 Monastir"
+        }
+      ],
+      "rapidapi-tennis:wta:match:1926": [
+        {
+          "event_start_bogota": "2026-10-07T04:43:00-05:00",
+          "players": [
+            "Alyssa Reguer",
+            "Victoria Kapcia"
+          ],
+          "stable_physical_identity_key": "edde46ac5952f5f367cf1b44f67f92d2811f7b4c219736dc1bdcffbe844876d4",
+          "tournament": "W15 Sharm ElSheikh"
+        },
+        {
+          "event_start_bogota": "2026-10-07T08:04:00-05:00",
+          "players": [
+            "Andrea Roots",
+            "Iva Marinkovic"
+          ],
+          "stable_physical_identity_key": "82b0b5dd6bf80dd8a238c64c426e7fcf382ab26405449606420cb3a1b4ddc5be",
+          "tournament": "W15 Sharm ElSheikh"
+        }
+      ]
+    }
+  }
+}

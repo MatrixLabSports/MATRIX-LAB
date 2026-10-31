@@ -1,0 +1,36 @@
+{
+  "schema": "MATRIX_TELEGRAM_SETTLEMENT_AUDIT_TRIGGER_V1",
+  "generated_at_utc": "2026-10-18T15:00:00Z",
+  "bogota_date": "2026-10-18",
+  "purpose": "Trigger governed Telegram supervisor reconciliation after physically verified final results.",
+  "verified_finals": [
+    {
+      "match": "Osasuna vs Racing Santander",
+      "final_score": "2-0",
+      "market": "OVER_2_5",
+      "adjudication": "LOST",
+      "telegram_observed_at_bogota": "09:50",
+      "note": "Already observed as PERDIDA in MATRIX-LAB Picks and reflected by prior supervisor settlement."
+    },
+    {
+      "match": "Udinese vs Lecce",
+      "final_score": "0-3",
+      "market": "OVER_2_5",
+      "adjudication": "WON",
+      "verification_sources": [
+        "Udinese official match report",
+        "Flashscore final result"
+      ],
+      "note": "Three total goals satisfy OVER 2.5; supervisor must reconcile only against its canonical open ledger entry."
+    }
+  ],
+  "protections": {
+    "final_only": true,
+    "no_backfill": false,
+    "paper_only": true,
+    "real_money": "BLOCKED",
+    "automatic_wagering": false,
+    "stake_max_level": 1
+  },
+  "instruction": "Supervisor remains source of truth for canonical Telegram ledger mutation; this file is an audit/trigger artifact, not a direct ledger edit."
+}

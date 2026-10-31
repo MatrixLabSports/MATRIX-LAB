@@ -1,0 +1,110 @@
+{
+  "schema": "MATRIX_SETTLEMENT_PROGRESS_20261006_BOGOTA_AUDIT_SNAPSHOT_V1",
+  "cohort": "2026-10-06_BOGOTA",
+  "source_branch": "repair/cor09-world-pipeline",
+  "source_head_observed": "69616de72196033d8e434bf5abc7af6deb8e7d75",
+  "previous_review_head": "a88ef3d4a2f0140a4bcdf91015a73c78e8c8690b",
+  "source_candidate_path": "evidence/daily_selection/MATRIX_CALIBRATION_CANDIDATES_20261006_BOGOTA.json",
+  "source_candidate_blob_sha": "52e897007840f5bed1a8999edad8ee594fefc767",
+  "compared_to_previous_review": {
+    "football_v2_freezes": 2629,
+    "football_v2_settlements": 1881,
+    "football_v2_pending": 748,
+    "tennis_settlement_rows": 274,
+    "tennis_unique_calibration_observations": 244,
+    "tennis_duplicate_quarantined": 171
+  },
+  "football": {
+    "v2_freezes": 2629,
+    "v2_settlements": 1893,
+    "v2_pending": 736,
+    "delta_v2_settlements": 12,
+    "delta_freezes": 0,
+    "delta_pending": -12,
+    "all_five_v2_lanes_consistent": true,
+    "cohort_total": 116,
+    "cohort_ft_last_fully_verified": 107,
+    "cohort_new_ft": 0,
+    "cohort_remaining_nonstandard_or_pending": 9,
+    "cohort_full_ledger_recheck": false,
+    "new_global_ft_fixture_ids": [
+      "1576926",
+      "1576927",
+      "1576929",
+      "1576930",
+      "1507461",
+      "1519173",
+      "1519174",
+      "1519175",
+      "1534876",
+      "1594873",
+      "1594874",
+      "1594875"
+    ],
+    "intersection_with_cohort": [],
+    "blocked_nonstandard": {
+      "PEN": [
+        "1588817",
+        "1588821",
+        "1588845",
+        "1588863",
+        "1588890",
+        "1588893",
+        "1619499"
+      ],
+      "AET": [
+        "1644168"
+      ],
+      "NS_pending": [
+        "1596466"
+      ]
+    },
+    "global_calibration_settlements": 2695,
+    "source_sync_at_utc": "2026-10-16T14:36:48+00:00",
+    "source_sync_path": "evidence/api_football/prospective_market_freeze/settlement_sync_last.json",
+    "source_sync_blob_sha": "762314ae0e0b9f5006407820f1362df8eadfb241",
+    "source_calibration_sync_path": "evidence/api_football/prospective_calibration/sync_last.json",
+    "source_calibration_sync_blob_sha": "564ba611b0a7b3df18ef2eb0c63ed65846b702d9",
+    "v2_state_blob_shas": {
+      "1x2": "24009cbc7b1e28284ffc6463c7fff06eaee85890",
+      "over_2_5": "001145623fedf73b0cc3f628edf87c16a7cc1234",
+      "under_2_5": "6e42ec5148ccb7073b9969b83af2c885218e0504",
+      "double_chance_1x": "d992d0e6b31af3db3ed6f52f97bd9cf96b8662ef",
+      "double_chance_x2": "ec3f0667fa4ca80435b11a8a18b1fea90e5cb8fc"
+    }
+  },
+  "tennis": {
+    "cohort_total": 11,
+    "cohort_finished": 11,
+    "cohort_unique_events": 11,
+    "cohort_unique_settlements": 11,
+    "cohort_duplicate_settlements": 0,
+    "global_settlement_rows": 275,
+    "delta_global_settlements": 1,
+    "global_unique_calibration_observations": 245,
+    "delta_global_unique": 1,
+    "duplicate_quarantined": 171,
+    "uniqueness": "PASS",
+    "new_global_finished_event_id": "COR0203-RAPIDAPI-TENNIS-1494-d9f5721ce26e",
+    "new_global_finished_at_utc": "2026-10-16T14:13:25+00:00",
+    "new_event_in_cohort": false,
+    "source_ledger_path": "evidence/cor0203/settlement/MATRIX_COR0203_SETTLEMENT_LEDGER.jsonl",
+    "source_ledger_blob_sha": "f7fc0dd0954c216519a544e5991bc6f1bab47cb1",
+    "source_uniqueness_path": "evidence/cor0203/runtime/MATRIX_COR0203_SETTLEMENT_UNIQUENESS_LAST.json",
+    "source_uniqueness_blob_sha": "86e8229d4eb0968d6af3a7eadf68e13ef868b9ba"
+  },
+  "governance": {
+    "metrics_opened": false,
+    "parameter_tuning_allowed": false,
+    "odds_to_probability": false,
+    "settlement_final_only": true,
+    "real_money": "BLOCKED",
+    "automated_wagering": false
+  },
+  "limitations": [
+    "Football cohort 107/116 is the last fully verified ledger audit; current V2 ledger full content was not retrievable through connector. New 12 settled fixture IDs have zero intersection with the original cohort.",
+    "Eight PEN/AET and one NS statuses read from current repository sync, not independently revalidated against provider.",
+    "All 275 tennis ledger rows were checked for the original eleven events; eleven distinct FINISHED settlements.",
+    "No models, parameters, odds-to-probability conversion, or metrics were changed."
+  ]
+}

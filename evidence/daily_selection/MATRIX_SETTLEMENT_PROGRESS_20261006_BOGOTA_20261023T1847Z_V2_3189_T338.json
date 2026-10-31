@@ -1,0 +1,101 @@
+{
+  "schema": "MATRIX_SETTLEMENT_PROGRESS_20261006_BOGOTA_V1",
+  "cut_utc": "2026-10-23T18:47:35+00:00",
+  "branch": "repair/cor09-world-pipeline",
+  "source_branch_head_at_read": "93543d5cd29e25a45bda2be2c1061077812957f4",
+  "comparison_previous_snapshot": "evidence/daily_selection/MATRIX_SETTLEMENT_PROGRESS_20261006_BOGOTA_20261023T154820Z_V2_3172_T338.json",
+  "candidate_artifact": "evidence/daily_selection/MATRIX_CALIBRATION_CANDIDATES_20261006_BOGOTA.json",
+  "candidate_blob_sha": "52e897007840f5bed1a8999edad8ee594fefc767",
+  "football": {
+    "cohort_ft": 107,
+    "cohort_total": 116,
+    "cohort_change": 0,
+    "cohort_method": "Previous audited 107/116 carried forward; all 17 new governed FT fixture IDs are disjoint from the 116 candidate fixture IDs; current governed sync still blocks 7 PEN, 1 AET and carries 1 NS.",
+    "global_settled": 3991,
+    "global_change_since_previous_snapshot": 17,
+    "global_frozen": 4825,
+    "v2_frozen_per_market": 3997,
+    "v2_settled_per_market": 3189,
+    "v2_pending_per_market": 808,
+    "v2_markets": [
+      "1X2",
+      "OVER_2_5",
+      "UNDER_2_5",
+      "DOUBLE_CHANCE_1X",
+      "DOUBLE_CHANCE_X2"
+    ],
+    "new_governed_ft_fixture_ids": [
+      "1628014",
+      "1571592",
+      "1571596",
+      "1571597",
+      "1571599",
+      "1628011",
+      "1559816",
+      "1603066",
+      "1519179",
+      "1553892",
+      "1553896",
+      "1553897",
+      "1553898",
+      "1559809",
+      "1559811",
+      "1559813",
+      "1559815"
+    ],
+    "new_governed_ft_count": 17,
+    "source_terminal_status": "FT",
+    "governed_commit": "420359ccbc4a612a4846d224bbbc16180650b2e4",
+    "governed_settled_at_utc": "2026-10-23T18:13:31+00:00",
+    "last_governed_sync_new_settlement_count": 0,
+    "nonstandard": {
+      "PEN": [
+        "1588817",
+        "1588821",
+        "1588845",
+        "1588863",
+        "1588890",
+        "1588893",
+        "1619499"
+      ],
+      "AET": [
+        "1644168"
+      ],
+      "NS": [
+        "1596466"
+      ]
+    },
+    "remaining_valid_finals_to_4000": 9,
+    "source_physical_uniqueness_blob_sha": "5b26af93ccb5a1797afb5ed4d09d270c9377dc11",
+    "source_settlement_sync_blob_sha": "0f2bfe975f23b7a10bdba18e1a5309c0fe7206bb",
+    "source_canonical_tracker_blob_sha": "af3229b3dea2f127b5e4ea4957e759ea6a806a8b",
+    "source_v2_over25_state_blob_sha": "8e5c7d3a94ea1ede64000abbeaeb43c05d15be84",
+    "freeze_precedes_kickoff_for_all_new_ft": true,
+    "all_new_ft_unique": true,
+    "all_new_ft_used_for_parameter_tuning_false": true
+  },
+  "tennis": {
+    "cohort_finished": 11,
+    "cohort_total": 11,
+    "cohort_change": 0,
+    "global_settled": 338,
+    "unique_events": 338,
+    "unique_settlements": 338,
+    "new_finished_since_previous_snapshot": 0,
+    "cohort_method": "Carried forward from previous fully parsed tennis ledger and 6-OCT snapshot; current tennis settlement ledger Git blob SHA is unchanged (5ea3d69e...). Not independently reparsed this review.",
+    "source_ledger_blob_sha": "5ea3d69e4a0d5bed4b0d22884af789f6bbcf8fd5"
+  },
+  "governance": {
+    "settlement_final_only": true,
+    "metrics_opened": false,
+    "tuning": false,
+    "odds_to_p": false,
+    "real_money": "BLOCKED",
+    "canonical_guard_last_observed_status": "PASS",
+    "canonical_guard_generated_at_utc": "2026-10-23T18:44:52.233006+00:00",
+    "canonical_guard_source_blob_sha": "6407900813c809262bfdc0ad9b9d19a56d93d3b8",
+    "physical_uniqueness_audit_result": "PASS",
+    "note": "Guard PASS at recorded source timestamp; later freshness not guaranteed."
+  },
+  "note": "Audit-only append-only snapshot. 17 governed FT were already persisted; no duplicate settlement, metrics opening, tuning, odds-to-P, or wagering authorization."
+}

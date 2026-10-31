@@ -1,0 +1,412 @@
+{
+  "schema": "MATRIX_SETTLEMENT_PROGRESS_20261006_BOGOTA_V3_EVIDENCE_ONLY",
+  "branch": "repair/cor09-world-pipeline",
+  "observed_head_before_snapshot": "d9f6d0857359ca122b0d1df46d5880fdc7e577c3",
+  "observed_at_utc": "2026-10-25T05:18:25.512Z",
+  "previous_snapshot": "evidence/daily_selection/MATRIX_SETTLEMENT_PROGRESS_20261006_BOGOTA_20261025T020944Z_V2_3585_T343.json",
+  "source_blob_shas": {
+    "candidate": "52e897007840f5bed1a8999edad8ee594fefc767",
+    "sync": "f41fa06563a130ff0083e4b2cf1a08f90e0690ed",
+    "tracker": "5bce206bd55c5813c2eb862d3c8a9d690cf7d622",
+    "audit": "6baad1c7ee9f5458b86ad7c3db3e46a83dc3f962",
+    "tennis": "3f7c0059d5faea98b93565880ed3d0d7492a6707",
+    "footballLedger": "d21a833c076990462b0b86f148b6f2d7b88ddbc3",
+    "previous": "636d525c00cdb3d7a57a59fb13eec8d6f074f80c"
+  },
+  "checks": {
+    "football_116_unique": true,
+    "tennis_11_unique": true,
+    "football_17_new_ft": true,
+    "football_6oct_no_new_ft": true,
+    "football_global_increment": true,
+    "football_reconciled": true,
+    "football_unique": true,
+    "football_v2_all_3602": true,
+    "tennis_343_unique": true,
+    "tennis_chain_links_valid": true,
+    "tennis_original_11_finished": true,
+    "tennis_unchanged": true,
+    "safety": true
+  },
+  "football": {
+    "cohort": {
+      "total": 116,
+      "standard_ft_settled": 107,
+      "new_standard_ft": 0,
+      "blocked_nonstandard": [
+        {
+          "fixture_id": "1588817",
+          "reason": "NONSTANDARD_TERMINAL_REQUIRES_ADJUDICATION:PEN"
+        },
+        {
+          "fixture_id": "1588821",
+          "reason": "NONSTANDARD_TERMINAL_REQUIRES_ADJUDICATION:PEN"
+        },
+        {
+          "fixture_id": "1588845",
+          "reason": "NONSTANDARD_TERMINAL_REQUIRES_ADJUDICATION:PEN"
+        },
+        {
+          "fixture_id": "1588863",
+          "reason": "NONSTANDARD_TERMINAL_REQUIRES_ADJUDICATION:PEN"
+        },
+        {
+          "fixture_id": "1588890",
+          "reason": "NONSTANDARD_TERMINAL_REQUIRES_ADJUDICATION:PEN"
+        },
+        {
+          "fixture_id": "1588893",
+          "reason": "NONSTANDARD_TERMINAL_REQUIRES_ADJUDICATION:PEN"
+        },
+        {
+          "fixture_id": "1619499",
+          "reason": "NONSTANDARD_TERMINAL_REQUIRES_ADJUDICATION:PEN"
+        },
+        {
+          "fixture_id": "1644168",
+          "reason": "NONSTANDARD_TERMINAL_REQUIRES_ADJUDICATION:AET"
+        }
+      ],
+      "pending_nonstandard": [
+        {
+          "fixture_id": "1596466",
+          "lookup_after_utc": "2026-10-25T06:13:24+00:00",
+          "provider_status": "NS",
+          "reason": "RESULT_NOT_STANDARD_FINAL"
+        }
+      ],
+      "source_previous_snapshot_verified_107": "evidence/daily_selection/MATRIX_SETTLEMENT_PROGRESS_20261006_BOGOTA_20261025T020944Z_V2_3585_T343.json"
+    },
+    "global": {
+      "previous_final": 4388,
+      "current_final": 4405,
+      "new_final": 17,
+      "new_final_records": [
+        {
+          "fixture_id": "1490559",
+          "status": "FT",
+          "freeze_at_utc": "2026-10-22T10:19:29+00:00",
+          "kickoff_utc": "2026-10-24T23:30:00+00:00",
+          "settled_at_utc": "2026-10-25T03:59:00+00:00",
+          "source_settlement_record_sha256": "e87032a4d97373e71ec2545a13cffc7ebcdee566aa41c5c7c605c75214878adf",
+          "record_sha256": "76579bde92bfa4ad64707701c46015db6734718fc795c72a48ea6df63693856a",
+          "source_commit": "211c2f516157774262e32e5b0f1c7a3b1edf6ec9",
+          "tuning_used": false,
+          "parameters_mutated_after_freeze": false,
+          "p_matrix_status": "NOT_GENERATED",
+          "real_money": "BLOCKED"
+        },
+        {
+          "fixture_id": "1490561",
+          "status": "FT",
+          "freeze_at_utc": "2026-10-22T10:19:29+00:00",
+          "kickoff_utc": "2026-10-24T23:30:00+00:00",
+          "settled_at_utc": "2026-10-25T03:59:00+00:00",
+          "source_settlement_record_sha256": "a401662ba83dff47212a49df27487ad1a550875368883ffe181228414e21ebe0",
+          "record_sha256": "c7a2cc5271bd3ce9bbab014860a8c909f38246c1d1b77383a62fae7f1a8141c1",
+          "source_commit": "211c2f516157774262e32e5b0f1c7a3b1edf6ec9",
+          "tuning_used": false,
+          "parameters_mutated_after_freeze": false,
+          "p_matrix_status": "NOT_GENERATED",
+          "real_money": "BLOCKED"
+        },
+        {
+          "fixture_id": "1493758",
+          "status": "FT",
+          "freeze_at_utc": "2026-10-22T10:19:29+00:00",
+          "kickoff_utc": "2026-10-25T00:00:00+00:00",
+          "settled_at_utc": "2026-10-25T03:59:00+00:00",
+          "source_settlement_record_sha256": "f473f427fc0eced5047ae7f887f4bf4dd5672b6277ce7b34028194016c664d43",
+          "record_sha256": "222ca5c69ff731d0378349bff10df95ba9d69238a096a53535c6616498200533",
+          "source_commit": "211c2f516157774262e32e5b0f1c7a3b1edf6ec9",
+          "tuning_used": false,
+          "parameters_mutated_after_freeze": false,
+          "p_matrix_status": "NOT_GENERATED",
+          "real_money": "BLOCKED"
+        },
+        {
+          "fixture_id": "1493759",
+          "status": "FT",
+          "freeze_at_utc": "2026-10-22T10:19:29+00:00",
+          "kickoff_utc": "2026-10-25T00:00:00+00:00",
+          "settled_at_utc": "2026-10-25T03:59:00+00:00",
+          "source_settlement_record_sha256": "8c0828e210cd01e3f9eb2ebc072e45d71860e8fe5135fc929767ad5a2f0a630d",
+          "record_sha256": "d55a9ff015f7054204618760698b016ff3540f29a7863da21688de60fb1f6561",
+          "source_commit": "211c2f516157774262e32e5b0f1c7a3b1edf6ec9",
+          "tuning_used": false,
+          "parameters_mutated_after_freeze": false,
+          "p_matrix_status": "NOT_GENERATED",
+          "real_money": "BLOCKED"
+        },
+        {
+          "fixture_id": "1549841",
+          "status": "FT",
+          "freeze_at_utc": "2026-10-22T10:19:29+00:00",
+          "kickoff_utc": "2026-10-25T00:15:00+00:00",
+          "settled_at_utc": "2026-10-25T03:59:00+00:00",
+          "source_settlement_record_sha256": "36191b82f25af5048ab3120c8d0ef24fb66e8693c0da588f0f81049d284eab34",
+          "record_sha256": "d8bfc67e5b7ff778eb03d3e4c062949c3a0a30d7b1f720a9b8cc150745d603da",
+          "source_commit": "211c2f516157774262e32e5b0f1c7a3b1edf6ec9",
+          "tuning_used": false,
+          "parameters_mutated_after_freeze": false,
+          "p_matrix_status": "NOT_GENERATED",
+          "real_money": "BLOCKED"
+        },
+        {
+          "fixture_id": "1490563",
+          "status": "FT",
+          "freeze_at_utc": "2026-10-22T10:19:29+00:00",
+          "kickoff_utc": "2026-10-25T00:30:00+00:00",
+          "settled_at_utc": "2026-10-25T03:59:00+00:00",
+          "source_settlement_record_sha256": "dd81fb79ba274dd1bedac8b6d07d9edf06faba120a388ce7cdfc6771afb9a087",
+          "record_sha256": "32aca0e68962c642ddd1099c354038c46c0638736d4850ab5dfb5a785b23d770",
+          "source_commit": "211c2f516157774262e32e5b0f1c7a3b1edf6ec9",
+          "tuning_used": false,
+          "parameters_mutated_after_freeze": false,
+          "p_matrix_status": "NOT_GENERATED",
+          "real_money": "BLOCKED"
+        },
+        {
+          "fixture_id": "1490564",
+          "status": "FT",
+          "freeze_at_utc": "2026-10-22T10:19:29+00:00",
+          "kickoff_utc": "2026-10-25T00:30:00+00:00",
+          "settled_at_utc": "2026-10-25T03:59:00+00:00",
+          "source_settlement_record_sha256": "b314411260111721bbe145ffb710c6903cd9d0f10ffef415debde8345e2537a4",
+          "record_sha256": "9a131c598605fe19b7941b1985db9b441d0b5c1f60e66deea331bdb6d1962946",
+          "source_commit": "211c2f516157774262e32e5b0f1c7a3b1edf6ec9",
+          "tuning_used": false,
+          "parameters_mutated_after_freeze": false,
+          "p_matrix_status": "NOT_GENERATED",
+          "real_money": "BLOCKED"
+        },
+        {
+          "fixture_id": "1490565",
+          "status": "FT",
+          "freeze_at_utc": "2026-10-22T10:19:29+00:00",
+          "kickoff_utc": "2026-10-25T00:30:00+00:00",
+          "settled_at_utc": "2026-10-25T03:59:00+00:00",
+          "source_settlement_record_sha256": "44db221360f5c7a80eff086726a5b1caab4bc109d7a39863c0d18b3d5870089a",
+          "record_sha256": "5f5fa5ca8ead039e04dbd903553f8f5ad2db0f21ecd4f3c4b745d883d0ec737d",
+          "source_commit": "211c2f516157774262e32e5b0f1c7a3b1edf6ec9",
+          "tuning_used": false,
+          "parameters_mutated_after_freeze": false,
+          "p_matrix_status": "NOT_GENERATED",
+          "real_money": "BLOCKED"
+        },
+        {
+          "fixture_id": "1490566",
+          "status": "FT",
+          "freeze_at_utc": "2026-10-22T10:19:29+00:00",
+          "kickoff_utc": "2026-10-25T00:30:00+00:00",
+          "settled_at_utc": "2026-10-25T03:59:00+00:00",
+          "source_settlement_record_sha256": "73936808851fd35e834647a3c02fd416a3c0cb65e2e84c61f4aa5f66cc11fe1e",
+          "record_sha256": "08453c5ef3f8e6d0306136c380c617f6b08799f52ad3e185c3f981bba0507d44",
+          "source_commit": "211c2f516157774262e32e5b0f1c7a3b1edf6ec9",
+          "tuning_used": false,
+          "parameters_mutated_after_freeze": false,
+          "p_matrix_status": "NOT_GENERATED",
+          "real_money": "BLOCKED"
+        },
+        {
+          "fixture_id": "1490567",
+          "status": "FT",
+          "freeze_at_utc": "2026-10-22T10:19:29+00:00",
+          "kickoff_utc": "2026-10-25T00:30:00+00:00",
+          "settled_at_utc": "2026-10-25T03:59:00+00:00",
+          "source_settlement_record_sha256": "f8f0d109cddb7fce7c5ea9fb98df5e3869090d7fead04ca6acdd049718d8118f",
+          "record_sha256": "c9d821d69ff4801afc64150df1ebc3295baa0294acb5c65ffe9a9112f67e3175",
+          "source_commit": "211c2f516157774262e32e5b0f1c7a3b1edf6ec9",
+          "tuning_used": false,
+          "parameters_mutated_after_freeze": false,
+          "p_matrix_status": "NOT_GENERATED",
+          "real_money": "BLOCKED"
+        },
+        {
+          "fixture_id": "1493767",
+          "status": "FT",
+          "freeze_at_utc": "2026-10-22T10:19:29+00:00",
+          "kickoff_utc": "2026-10-25T00:30:00+00:00",
+          "settled_at_utc": "2026-10-25T03:59:00+00:00",
+          "source_settlement_record_sha256": "7a518a3f383e72298dfd4238135a109b06ae0507347cfc022dbbc8a9e52a57ac",
+          "record_sha256": "b0f8cfb93ca5ba2d685f8944fbb02eb608c901ebd2cc4bdf76573d6ef2d2e4e5",
+          "source_commit": "211c2f516157774262e32e5b0f1c7a3b1edf6ec9",
+          "tuning_used": false,
+          "parameters_mutated_after_freeze": false,
+          "p_matrix_status": "NOT_GENERATED",
+          "real_money": "BLOCKED"
+        },
+        {
+          "fixture_id": "1493763",
+          "status": "FT",
+          "freeze_at_utc": "2026-10-22T10:19:29+00:00",
+          "kickoff_utc": "2026-10-25T02:00:00+00:00",
+          "settled_at_utc": "2026-10-25T04:38:45+00:00",
+          "source_settlement_record_sha256": "42e8f1967fff14fbd3c91dd6538f8663decb395655849f409de1ca939de1c146",
+          "record_sha256": "091cb8797e507bdf7f253309ba5cb12d5ea823f70280544a5453796722519c8b",
+          "source_commit": "4da9a9429e0ffadef0f02dadfd9defb6dba04af6",
+          "tuning_used": false,
+          "parameters_mutated_after_freeze": false,
+          "p_matrix_status": "NOT_GENERATED",
+          "real_money": "BLOCKED"
+        },
+        {
+          "fixture_id": "1493764",
+          "status": "FT",
+          "freeze_at_utc": "2026-10-22T10:19:29+00:00",
+          "kickoff_utc": "2026-10-25T02:00:00+00:00",
+          "settled_at_utc": "2026-10-25T04:38:45+00:00",
+          "source_settlement_record_sha256": "04a9a9c878d0b506e59619029e597dae4d08f4dbfc9599c28fe72627964ae606",
+          "record_sha256": "de8bc85ec2f003ca0ac804bcccd4200819565aee02fc9d580faa232f36121918",
+          "source_commit": "4da9a9429e0ffadef0f02dadfd9defb6dba04af6",
+          "tuning_used": false,
+          "parameters_mutated_after_freeze": false,
+          "p_matrix_status": "NOT_GENERATED",
+          "real_money": "BLOCKED"
+        },
+        {
+          "fixture_id": "1493766",
+          "status": "FT",
+          "freeze_at_utc": "2026-10-22T10:19:29+00:00",
+          "kickoff_utc": "2026-10-25T02:00:00+00:00",
+          "settled_at_utc": "2026-10-25T04:38:45+00:00",
+          "source_settlement_record_sha256": "5977889689145b7273a76de863c1011b72f23fb55ad219b5e0566f60f7194c79",
+          "record_sha256": "2eb3143516571e36d01c3a47d0ae4a25adbb1478e263f31f4c2e3b9029f3ad3b",
+          "source_commit": "4da9a9429e0ffadef0f02dadfd9defb6dba04af6",
+          "tuning_used": false,
+          "parameters_mutated_after_freeze": false,
+          "p_matrix_status": "NOT_GENERATED",
+          "real_money": "BLOCKED"
+        },
+        {
+          "fixture_id": "1490568",
+          "status": "FT",
+          "freeze_at_utc": "2026-10-22T10:19:29+00:00",
+          "kickoff_utc": "2026-10-25T02:30:00+00:00",
+          "settled_at_utc": "2026-10-25T04:38:45+00:00",
+          "source_settlement_record_sha256": "92eab92a9217b3b1c12f43d07373314f4ba59e13fa1851b62791e22cc49e4537",
+          "record_sha256": "04ac16c2e6e0c19127ae6edf01d954925923d379eb1949437c0da15a2343cfd8",
+          "source_commit": "4da9a9429e0ffadef0f02dadfd9defb6dba04af6",
+          "tuning_used": false,
+          "parameters_mutated_after_freeze": false,
+          "p_matrix_status": "NOT_GENERATED",
+          "real_money": "BLOCKED"
+        },
+        {
+          "fixture_id": "1490569",
+          "status": "FT",
+          "freeze_at_utc": "2026-10-22T10:19:29+00:00",
+          "kickoff_utc": "2026-10-25T02:30:00+00:00",
+          "settled_at_utc": "2026-10-25T04:38:45+00:00",
+          "source_settlement_record_sha256": "9051fe8177d224299e90419d3bcef9c6ed3f5c13632de90968047747b7fa76dd",
+          "record_sha256": "e0911f22e03609ca75796da5ae5c7d8a8e47400a24f4ea9e0c60963d347b4db1",
+          "source_commit": "4da9a9429e0ffadef0f02dadfd9defb6dba04af6",
+          "tuning_used": false,
+          "parameters_mutated_after_freeze": false,
+          "p_matrix_status": "NOT_GENERATED",
+          "real_money": "BLOCKED"
+        },
+        {
+          "fixture_id": "1494049",
+          "status": "FT",
+          "freeze_at_utc": "2026-10-22T10:19:29+00:00",
+          "kickoff_utc": "2026-10-25T02:30:00+00:00",
+          "settled_at_utc": "2026-10-25T04:38:45+00:00",
+          "source_settlement_record_sha256": "67b5e0d03cd92a3badb1251ce96335e00a89c684883f40cb1707decdf7c56552",
+          "record_sha256": "ab3b3edbc866cf91f3a9e0a5f41fafe1145ced6d0f010200acf188be89eb39b2",
+          "source_commit": "4da9a9429e0ffadef0f02dadfd9defb6dba04af6",
+          "tuning_used": false,
+          "parameters_mutated_after_freeze": false,
+          "p_matrix_status": "NOT_GENERATED",
+          "real_money": "BLOCKED"
+        }
+      ],
+      "previous_frozen": 4903,
+      "current_frozen": 5169,
+      "pending": 640,
+      "blocked": 124,
+      "settlement_sync_run_at_utc": "2026-10-25T05:13:24+00:00"
+    },
+    "v2": {
+      "markets": {
+        "over_2_5": {
+          "freeze_observation_count": 4341,
+          "settlement_count": 3602,
+          "pending_settlement_count": 739,
+          "metrics_opened": false,
+          "parameter_tuning_allowed": false,
+          "real_money": "BLOCKED",
+          "automatic_wagering": false,
+          "blob_sha": "713d7c2a15fecd37555fe785fd2723c1658a4140"
+        },
+        "under_2_5": {
+          "freeze_observation_count": 4341,
+          "settlement_count": 3602,
+          "pending_settlement_count": 739,
+          "metrics_opened": false,
+          "parameter_tuning_allowed": false,
+          "real_money": "BLOCKED",
+          "automatic_wagering": false,
+          "blob_sha": "438546866aa8c84bd3b7e6802d8104df83fce9d1"
+        },
+        "1x2": {
+          "freeze_observation_count": 4341,
+          "settlement_count": 3602,
+          "pending_settlement_count": 739,
+          "metrics_opened": false,
+          "parameter_tuning_allowed": false,
+          "real_money": "BLOCKED",
+          "automatic_wagering": false,
+          "blob_sha": "d12cc30cd2bc17ad977d1196ce037e096d60af00"
+        },
+        "double_chance_1x": {
+          "freeze_observation_count": 4341,
+          "settlement_count": 3602,
+          "pending_settlement_count": 739,
+          "metrics_opened": false,
+          "parameter_tuning_allowed": false,
+          "real_money": "BLOCKED",
+          "automatic_wagering": false,
+          "blob_sha": "a647c92a32063c859cc053a1be0d387dda067c81"
+        },
+        "double_chance_x2": {
+          "freeze_observation_count": 4341,
+          "settlement_count": 3602,
+          "pending_settlement_count": 739,
+          "metrics_opened": false,
+          "parameter_tuning_allowed": false,
+          "real_money": "BLOCKED",
+          "automatic_wagering": false,
+          "blob_sha": "6be1b54ecbcd97a46947100a835e0765cb1555aa"
+        }
+      },
+      "previous_settled_per_market": 3585,
+      "new_per_market": 17,
+      "metrics_opened": false,
+      "parameter_tuning_allowed": false
+    }
+  },
+  "tennis": {
+    "original_cohort_total": 11,
+    "original_cohort_finished": 11,
+    "original_new_settlements": 0,
+    "previous_ledger_records": 343,
+    "current_ledger_records": 343,
+    "new_ledger_records": 0,
+    "unique_event_ids": 343,
+    "unique_settlement_ids": 343,
+    "hash_chain_links_valid": true,
+    "metrics_opened": false
+  },
+  "governance": {
+    "settlement_final_only": true,
+    "metrics_opened": false,
+    "parameter_tuning": false,
+    "odds_to_p_performed": false,
+    "automatic_wagering": false,
+    "real_money": "BLOCKED",
+    "settlements_already_governed_in_repository": true,
+    "no_duplicate_settlement_run": true
+  },
+  "method": "Read pinned GitHub commit and blob SHAs; verify 17 added FT rows from two governed settlement commits, unique and prematch freeze; verify tracker/sync/V2 and tennis ledger. No provider outcomes invented; only evidence snapshot committed."
+}

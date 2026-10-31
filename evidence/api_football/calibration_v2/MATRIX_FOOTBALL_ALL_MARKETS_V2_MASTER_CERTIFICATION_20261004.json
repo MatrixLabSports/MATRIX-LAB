@@ -1,0 +1,174 @@
+{
+  "schema": "MATRIX_FOOTBALL_ALL_MARKETS_V2_MASTER_CERTIFICATION_V1",
+  "certified_at_utc": "2026-10-04T18:51:32Z",
+  "source_head": "da12bb6d3edeac0bde38f8f71d58b5769647a87f",
+  "source_ledger_path": "evidence/api_football/prospective_calibration/ledger.jsonl",
+  "source_ledger_blob_sha": "c405280d6e1cf59c72e547686a698d4951f4f0d9",
+  "source_rows": 746,
+  "cohort_id": "FOOTBALL_ALL_MARKETS_V2_20261004",
+  "cohort_start_utc": "2026-10-04T18:51:32Z",
+  "separation_contract": {
+    "one_ledger_per_market": true,
+    "one_counter_per_market": true,
+    "one_metric_set_per_market": true,
+    "cross_market_score_mixing_forbidden": true,
+    "pre_v2_rows_count_toward_v2": false,
+    "no_backfill": true,
+    "only_freezes_at_or_after_cohort_start": true,
+    "derived_markets_may_inherit_only_parent_frozen_probability_same_fixture": true,
+    "parameter_tuning_after_freeze": false,
+    "final_only_settlement": true
+  },
+  "baseline_diagnostics": {
+    "1X2": {
+      "status": "SUPPORTED_EXISTING_GOVERNANCE_FULL_LEDGER_DIAGNOSTIC",
+      "n": 746,
+      "challenger": {
+        "brier": 0.5973733699064947,
+        "log_loss": 1.0032663066078025,
+        "accuracy": 0.5201072386058981
+      },
+      "poisson": {
+        "brier": 0.6130223526497303,
+        "log_loss": 1.0237278033400978,
+        "accuracy": 0.5053619302949062
+      },
+      "delta_brier": -0.015648982743235562,
+      "delta_log_loss": -0.02046149673229536
+    },
+    "OVER_2_5": {
+      "status": "SUPPORTED_EXISTING_GOVERNANCE_FULL_LEDGER_DIAGNOSTIC",
+      "n": 746,
+      "challenger": {
+        "brier": 0.24235331538127128,
+        "log_loss": 0.6783338826258943,
+        "accuracy": 0.5884718498659517,
+        "ece_10": 0.028954599847369405,
+        "max_cal_error_10": 0.23203169504206456
+      },
+      "poisson": {
+        "brier": 0.24578717656700702,
+        "log_loss": 0.6867133058238952,
+        "accuracy": 0.5777479892761395,
+        "ece_10": 0.049742799168900835,
+        "max_cal_error_10": 0.4510642947619048
+      },
+      "delta_brier": -0.0034338611857357426,
+      "delta_log_loss": -0.00837942319800089
+    },
+    "UNDER_2_5": {
+      "status": "SUPPORTED_DERIVED_COMPLEMENT_FULL_LEDGER_DIAGNOSTIC",
+      "n": 746,
+      "challenger": {
+        "brier": 0.24235331538127128,
+        "log_loss": 0.6783338826258943,
+        "accuracy": 0.5884718498659517,
+        "ece_10": 0.028954599847369207,
+        "max_cal_error_10": 0.23203169504206467
+      },
+      "poisson": {
+        "brier": 0.24578717656700702,
+        "log_loss": 0.6867133058238952,
+        "accuracy": 0.5777479892761395,
+        "ece_10": 0.04974279916890088,
+        "max_cal_error_10": 0.4510642947619047
+      },
+      "delta_brier": -0.0034338611857357426,
+      "delta_log_loss": -0.00837942319800089
+    },
+    "DOUBLE_CHANCE_1X": {
+      "status": "SUPPORTED_DERIVED_FROM_1X2_FULL_LEDGER_DIAGNOSTIC",
+      "n": 746,
+      "challenger": {
+        "brier": 0.2073732840954345,
+        "log_loss": 0.6017838483147389,
+        "accuracy": 0.6796246648793566,
+        "ece_10": 0.03488973426765764,
+        "max_cal_error_10": 0.1795813073556819
+      },
+      "poisson": {
+        "brier": 0.21152352063552113,
+        "log_loss": 0.6115093809616959,
+        "accuracy": 0.6581769436997319,
+        "ece_10": 0.05465157013404819,
+        "max_cal_error_10": 0.33927212
+      },
+      "delta_brier": -0.004150236540086616,
+      "delta_log_loss": -0.00972553264695708
+    },
+    "DOUBLE_CHANCE_X2": {
+      "status": "SUPPORTED_DERIVED_FROM_1X2_FULL_LEDGER_DIAGNOSTIC",
+      "n": 746,
+      "challenger": {
+        "brier": 0.236493460513518,
+        "log_loss": 0.6669933289159679,
+        "accuracy": 0.5951742627345844,
+        "ece_10": 0.04316153151470564,
+        "max_cal_error_10": 0.4476564335912
+      },
+      "poisson": {
+        "brier": 0.24797438729077975,
+        "log_loss": 0.6936346700154918,
+        "accuracy": 0.5697050938337802,
+        "ece_10": 0.10192550182305637,
+        "max_cal_error_10": 0.24492682999999996
+      },
+      "delta_brier": -0.011480926777261757,
+      "delta_log_loss": -0.026641341099523985
+    },
+    "DOUBLE_CHANCE_12": {
+      "status": "NOT_PROMOTED_DIAGNOSTIC_ONLY",
+      "n": 746,
+      "challenger": {
+        "brier": 0.15350662529754275,
+        "log_loss": 0.4895897026641347,
+        "accuracy": 0.8163538873994638,
+        "ece_10": 0.04266337773719494,
+        "max_cal_error_10": 0.24903612528949903
+      },
+      "poisson": {
+        "brier": 0.15352444472342996,
+        "log_loss": 0.4866088588108847,
+        "accuracy": 0.8163538873994638,
+        "ece_10": 0.05019825689008052,
+        "max_cal_error_10": 0.2534918957142859
+      },
+      "delta_brier": -0.000017819425887216633,
+      "delta_log_loss": 0.0029808438532499815,
+      "blocker": "CHALLENGER_LOG_LOSS_WORSE_THAN_POISSON"
+    },
+    "BTTS_V2": {
+      "status": "BLOCKED_GOVERNANCE_DIAGNOSTIC_ONLY",
+      "n": 582,
+      "source_total_n": 746,
+      "coverage_ratio": 0.7801608579088471,
+      "challenger": {
+        "brier": 0.24582534705755468,
+        "log_loss": 0.6847400955550882,
+        "accuracy": 0.5687285223367697,
+        "ece_10": 0.029897240384829254,
+        "max_cal_error_10": 0.12220946143576239
+      },
+      "poisson": {
+        "brier": 0.251067736591522,
+        "log_loss": 0.6962274055816722,
+        "accuracy": 0.5326460481099656,
+        "ece_10": 0.08685898024054975,
+        "max_cal_error_10": 0.17445523200000002
+      },
+      "delta_brier": -0.005242389533967301,
+      "delta_log_loss": -0.011487310026583986,
+      "blocker": "PRIOR_N200_REJECTION_AND_INTERNAL_TEMPORAL_OOS_REJECTION_NOT_OVERRIDDEN_BY_LATER_DIAGNOSTIC"
+    }
+  },
+  "v2_initial_counts": {
+    "1X2": 0,
+    "OVER_2_5": 0,
+    "UNDER_2_5": 0,
+    "DOUBLE_CHANCE_1X": 0,
+    "DOUBLE_CHANCE_X2": 0
+  },
+  "result": "PHYSICALLY_SEPARATED_BASELINE_CERTIFIED_V2_STARTS_AT_ZERO",
+  "real_money": "BLOCKED",
+  "automatic_wagering": false
+}

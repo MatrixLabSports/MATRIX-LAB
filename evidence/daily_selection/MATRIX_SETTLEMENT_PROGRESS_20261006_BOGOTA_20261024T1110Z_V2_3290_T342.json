@@ -1,0 +1,107 @@
+{
+  "schema": "MATRIX_SETTLEMENT_PROGRESS_20261006_BOGOTA_V1",
+  "branch": "repair/cor09-world-pipeline",
+  "observed_head_before_snapshot": "c8b7203937e4b885b7deeacd62e4fb14eacb2219",
+  "observed_head_commit_at_utc": "2026-10-24T11:10:34Z",
+  "previous_snapshot": "evidence/daily_selection/MATRIX_SETTLEMENT_PROGRESS_20261006_BOGOTA_20261024T102321Z_V2_3286_T342.json",
+  "previous_snapshot_commit": "aacc9db59434387dd33180a5e26fc9276ceeae5d",
+  "evidence_blobs": {
+    "candidates": "52e897007840f5bed1a8999edad8ee594fefc767",
+    "football_governed_settlement_sync": "633654036014bfbc9409467e2ae86c8039b8041b",
+    "football_prospective_sync": "d6f21e918608132bc5b70be96ffd8f573f5934b6",
+    "football_v2_over25_state": "910731241487e6461d3e5816d255d551e42004ea",
+    "football_v2_1x2_state": "cfc7f11258ebc4b5723537c1cc2055e997c97f9b",
+    "football_v2_under25_state": "b068f5b999763d75f7294789a3453a1a45184ad2",
+    "football_v2_double_chance_1x_state": "20fd3c6a5bba6afb0c8e547fddd14fa816fa807d",
+    "football_v2_double_chance_x2_state": "2008cc969d1000fae864b05b5f3468bab36a6c00",
+    "football_tracker_stale": "357191bbe1dbef9782cd9524113a67d9b5e5342e",
+    "tennis_settlement_ledger_last_confirmed": "fc548bbff8260ab3ac7507e34f8ec33eff1a248d",
+    "previous_snapshot": "6c46e9180ca2839daf82bb69d2aef3d28cb1718b",
+    "truth_guard": "c163380a11d55885f48bf05cfe9d1099f0549ee1"
+  },
+  "football": {
+    "cohort_total": 116,
+    "cohort_standard_ft": 107,
+    "cohort_change_since_previous_snapshot": 0,
+    "global_final_settled": 4092,
+    "global_change_since_previous_snapshot": 4,
+    "v2_frozen_per_market": 4075,
+    "v2_settled_per_market": 3290,
+    "v2_pending_per_market": 785,
+    "v2_market_count": 5,
+    "v2_all_states_metrics_opened": false,
+    "new_cohort_ft_fixture_ids": [],
+    "new_global_ft_fixture_ids": [
+      "1638482",
+      "1638534",
+      "1638535",
+      "1623622"
+    ],
+    "new_global_ft_commit": "514b9c6161b8b4ec5345db5680f6e2364444c06f",
+    "new_global_ft_source_terminal_status": "FT",
+    "new_global_ft_all_freeze_before_kickoff": true,
+    "new_global_ft_all_used_for_parameter_tuning_false": true,
+    "nonstandard": {
+      "PEN": [
+        "1588817",
+        "1588821",
+        "1588845",
+        "1588863",
+        "1588890",
+        "1588893",
+        "1619499"
+      ],
+      "AET": [
+        "1644168"
+      ],
+      "NS": [
+        "1596466"
+      ]
+    },
+    "governed_sync": {
+      "frozen_event_count": 4903,
+      "ledger_final_count": 4092,
+      "blocked_count": 117,
+      "pending_count": 694,
+      "reconciliation_equation": "4092+117+694=4903",
+      "ledger_hash_chain_verified": true
+    },
+    "canonical_tracker": {
+      "valid_final_settlement_count": 4088,
+      "generated_at_utc": "2026-10-24T09:53:20.219018+00:00",
+      "stale": true,
+      "unreconciled_delta": 4
+    },
+    "method": "All 116 original candidate IDs compared with four new FT fixture IDs; none overlap. Four new records inspected in governed commit 514b9c6. Five V2 states inspected. Cohort 107 and nine blockers reconciled with current governed sync; full 4092-row football ledger not re-read."
+  },
+  "tennis": {
+    "cohort_total": 11,
+    "cohort_finished": 11,
+    "cohort_change_since_previous_snapshot": 0,
+    "global_ledger_records": 342,
+    "global_change_since_previous_snapshot": 0,
+    "unique_events": 342,
+    "unique_settlement_ids": 342,
+    "standard_finished_records": 329,
+    "historical_nonstandard_records": {
+      "RETIRED": 8,
+      "CANCELLED": 4,
+      "WALKOVER": 1
+    },
+    "method": "Previous snapshot certified full 342-row ledger with 342 unique events and settlement IDs and 11 exact-day FINISHED; GitHub compare from prior snapshot commit found no tennis settlement ledger changes. No current full ledger scan performed."
+  },
+  "governance": {
+    "settlement_final_only": true,
+    "metrics_opened": false,
+    "tuning": false,
+    "odds_to_p": false,
+    "automatic_wagering": false,
+    "real_money": "BLOCKED",
+    "last_truth_guard_status": "FAIL_CLOSED",
+    "last_truth_guard_generated_at_utc": "2026-10-24T10:59:54.175685+00:00",
+    "last_truth_guard_stale_sources": [
+      "football_4000"
+    ],
+    "note": "Snapshot-only write. Four governed FT settlements already committed; no duplicate execution. No 6-OCT cohort closures. No scoring, tuning or metrics opened. Canonical football tracker stale at 4088, while governed ledger 4092 and V2 3290."
+  }
+}

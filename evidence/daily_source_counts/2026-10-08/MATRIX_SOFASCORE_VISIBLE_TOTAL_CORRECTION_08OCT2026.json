@@ -1,0 +1,50 @@
+{
+  "schema": "MATRIX_SOFASCORE_VISIBLE_TOTAL_CORRECTION_08OCT2026_V1",
+  "target_date_bogota": "2026-10-08",
+  "status": "PASS_CORRECTION_SUPERSEDES_LAZY_TREE_TOTALS",
+  "evidence": {
+    "type": "USER_PROVIDED_SOFASCORE_SCREENSHOT",
+    "screenshot_sha256": "158e5247a7c171c69710147b80a54c70937bff471bf3fd711c7b23ee0c7cfd82",
+    "visible_rows": {
+      "football": {
+        "display": "32 / 1519",
+        "selected_day_total": 1519
+      },
+      "tennis": {
+        "display": "19 / 541",
+        "selected_day_total": 541
+      }
+    },
+    "numerator_semantics": "NOT_ADJUDICATED; ONLY DENOMINATORS ARE USED AS SELECTED-DAY TOTALS"
+  },
+  "superseded_interpretation": {
+    "football_loaded_accessibility_tree_match_links": 702,
+    "tennis_loaded_accessibility_tree_match_links": 444,
+    "prior_error": "LAZY_LOADED_ACCESSIBILITY_TREE_LINK_COUNTS_WERE_INCORRECTLY_LABELED_AS_EXACT_CALENDAR_TOTALS"
+  },
+  "corrected_interpretation": {
+    "football_sofascore_selected_day_total": 1519,
+    "tennis_sofascore_selected_day_total": 541,
+    "loaded_tree_counts_role": "PARTIAL_TECHNICAL_OBSERVATION_ONLY"
+  },
+  "permanent_rule": {
+    "visible_provider_day_total_has_priority_over_lazy_dom_link_count": true,
+    "never_label_loaded_tree_count_as_world_or_provider_day_total_without_full_load_proof": true,
+    "preserve_partial_count_for_audit_not_as_denominator": true,
+    "no_cross_provider_sum": true
+  },
+  "model_impact": {
+    "tennis_hard_holdout_modified": false,
+    "tennis_clay_holdout_modified": false,
+    "football_model_probabilities_modified": false,
+    "candidate_modeling_recomputed_due_to_count_correction": false,
+    "reason": "Browser calendar totals are discovery/governance denominators; model probabilities were produced from structured governed inputs, not from the mistaken lazy-link counts."
+  },
+  "protections": {
+    "missing_not_zero": true,
+    "silent_imputation": false,
+    "odds_to_probability": false,
+    "automatic_wagering": false,
+    "real_money": "BLOCKED"
+  }
+}

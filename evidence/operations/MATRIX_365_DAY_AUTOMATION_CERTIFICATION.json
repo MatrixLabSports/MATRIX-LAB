@@ -1,0 +1,72 @@
+{
+  "schema": "MATRIX_365_DAY_AUTOMATION_CERTIFICATION_V1",
+  "certified_at_utc": "2026-10-09T01:21:03Z",
+  "repo": "MatrixLabSports/MATRIX-LAB",
+  "operational_branch": "repair/cor09-world-pipeline",
+  "default_branch": "main",
+  "policy": "NO_HARDCODED_OPERATIONAL_DATES",
+  "football_daily_pipeline": {
+    "workflow": ".github/workflows/football-daily-governed-pipeline.yml",
+    "engine": "tools/football_daily_governed_over25.py",
+    "schedule_utc": [
+      "10 5 * * *",
+      "10 23 * * *"
+    ],
+    "schedule_bogota": [
+      "00:10 CURRENT_DAY",
+      "18:10 NEXT_DAY_PREMATCH"
+    ],
+    "first_physical_run": {
+      "run_id": 37869245308,
+      "conclusion": "success",
+      "resolved_target_date_bogota": "2026-10-09",
+      "date_mode": "NEXT_DAY_PREMATCH",
+      "fixtures_received": 477,
+      "eligible_future_fixtures": 467,
+      "canonical_ready_inputs": 204,
+      "freeze_candidate_event_count": 175,
+      "new_freeze_event_count": 1,
+      "p_matrix_scored": 162,
+      "p_matrix_blocked": 42,
+      "over25_decisions": {
+        "BET_SHADOW": 4,
+        "NO_BET": 27,
+        "BLOCKED": 173
+      },
+      "telegram_sent_now": 0,
+      "telegram_duplicate_green_messages_suppressed": 17,
+      "telegram_delivery_failures_now": 0
+    }
+  },
+  "telegram": {
+    "workflow": ".github/workflows/telegram-green-signals.yml",
+    "schedule_utc": "7,22,37,52 * * * *",
+    "cadence_minutes": 15,
+    "scan_window": "tomorrow_today_yesterday",
+    "anti_duplicate": true,
+    "same_house_revalidation": true,
+    "final_only_signal_settlement": true
+  },
+  "football_calibration_settlement": {
+    "workflow": ".github/workflows/api-football-prospective-final-settlement-now.yml",
+    "schedule_utc": "17 */2 * * *",
+    "cadence_hours": 2,
+    "final_only": true
+  },
+  "historical_date_scoped_workflows": {
+    "operational_role": "HISTORICAL_EVIDENCE_OR_MANUAL_RECOVERY_ONLY",
+    "examples": [
+      "football-08oct-governed-over25-shadow-ev.yml",
+      "football-09oct-governed-over25-shadow-ev.yml",
+      "football-calibration-eligibility-20261009.yml"
+    ],
+    "future_operation_must_not_depend_on_them": true
+  },
+  "protections": {
+    "real_money": "BLOCKED",
+    "automatic_wagering": false,
+    "odds_used_to_generate_probability": false,
+    "missing_not_zero": true,
+    "no_silent_imputation": true
+  }
+}

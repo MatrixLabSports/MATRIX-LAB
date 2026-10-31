@@ -1,0 +1,108 @@
+{
+  "schema": "MATRIX_TELEGRAM_TEAM_TOTAL_GOALS_REPAIR_AUDIT_V1",
+  "generated_at_utc": "2026-10-24T23:25:30+00:00",
+  "status": "PASS_PIPELINE_CONNECTED_RUNTIME_CERTIFIED",
+  "issue": {
+    "previous_state": "Team Total Goals model existed in MATRIX but was not connected to Telegram candidate discovery; telegram_green_signal_alerts.py remained Over 2.5-centric.",
+    "consequence": "New Team Total Goals picks shown by the user could not reach Telegram even when model evidence existed."
+  },
+  "repaired_pipeline": {
+    "tool": "tools/telegram_team_total_goals_picks.py",
+    "tool_create_commit": "0a6689299e7d483c15aa760284b08f67e3930efe",
+    "latest_selector_commit": "25dae3079b7a3a0d4f1b113d2a35416802c782a5",
+    "quote_window_commit": "35de8557f3087b793531cd36c4f326fda1d52d3f",
+    "telemetry_commit": "1ec1be33542948cf844cd9d8e6df156d3223f2fd",
+    "test": "tests/test_telegram_team_total_goals_picks.py",
+    "test_commit": "f936f909958958b74f09e2bc841ad8a9c76f0e11",
+    "workflow": ".github/workflows/telegram-team-total-goals-picks.yml",
+    "workflow_main_commit": "15a6f418c6b41c439d0de9e516da46c5b422db7d",
+    "workflow_operational_commit": "7e025991e36207ff22616c2c37f82eaf936a8609",
+    "cadence_minutes": 15,
+    "cron": "5,20,35,50 * * * *"
+  },
+  "model_contract": {
+    "lanes": [
+      "TEAM_TOTAL_GOALS_HOME",
+      "TEAM_TOTAL_GOALS_AWAY"
+    ],
+    "supported_lines": [
+      0.5,
+      1.5,
+      2.5
+    ],
+    "confidence_high_min_p_matrix": 0.7,
+    "confidence_medium_min_p_matrix": 0.6,
+    "minimum_exact_physical_odds_strictly_greater_than": 1.5,
+    "minimum_revalidated_ev": 0.05,
+    "quote_window_minutes": 720,
+    "quote_max_age_seconds": 1800,
+    "recent_history_minimum": 5,
+    "recent_history_maximum": 20,
+    "market_record_role": "INFORMATIONAL_NOT_PROBABILITY",
+    "source_order": [
+      "prospective freeze",
+      "future fixture registries",
+      "strictly prior history",
+      "odds-api.net exact physical quote",
+      "Telegram"
+    ],
+    "bookmakers": "14 canonical Colombia execution books"
+  },
+  "runtime_certification": {
+    "first_workflow_run": 40141898659,
+    "first_workflow_conclusion": "success",
+    "merged_registry_run": 40142014211,
+    "merged_registry_conclusion": "success",
+    "twelve_hour_window_run": 40142159419,
+    "twelve_hour_window_conclusion": "success",
+    "latest_success_with_window_summary": 40142297967,
+    "latest_success_conclusion": "success",
+    "final_blocker_count_run": 40142456597,
+    "final_blocker_count_run_status_at_audit_cut": "QUEUED"
+  },
+  "physical_state": {
+    "candidate_count": 744,
+    "unique_fixtures": 372,
+    "merged_future_fixture_count": 1368,
+    "source_registry_count": 12,
+    "candidates_inside_12h_window": 136,
+    "candidates_outside_12h_window": 608,
+    "eligible_quote_count": 0,
+    "sent_count": 0,
+    "next_candidate": {
+      "fixture_id": "1608339",
+      "match": "Trento vs Juventus U23",
+      "kickoff_utc": "2026-10-25T11:30:00+00:00",
+      "quote_window_opens_utc": "2026-10-24T23:30:00+00:00"
+    }
+  },
+  "telegram_message_contract": {
+    "title": "PICKS NUEVOS MATRIX — SIMULADO",
+    "fields": [
+      "confianza alta/media",
+      "partido",
+      "competicion y hora Colombia",
+      "mercado Team Total Goals",
+      "cuota fisica",
+      "casa",
+      "promedio goleador reciente",
+      "promedio permitido por rival",
+      "record reciente del mercado",
+      "EV revalidado",
+      "stake de papel 1u COP 25.000",
+      "DINERO REAL MATRIX BLOQUEADO"
+    ]
+  },
+  "protections": {
+    "strictly_prior_history_only": true,
+    "future_outcome_read_count": 0,
+    "physical_exact_quote_required": true,
+    "odds_used_to_generate_probability": false,
+    "missing_not_zero": true,
+    "no_silent_imputation": true,
+    "post_start_backfill_forbidden": true,
+    "automatic_wagering": false,
+    "real_money": "BLOCKED"
+  },
+  "interpretation": "The missing Telegram bridge is repaired and scheduled. Zero sent picks at this cut does not mean the model is disconnected: the pipeline has 744 model candidates and 136 inside the 12-hour pricing window, but no row had yet passed exact physical quote >1.50 plus EV >=5%. The final telemetry run will persist the detailed blocker distribution when GitHub concurrency releases it."
+}

@@ -1,0 +1,281 @@
+{
+  "schema": "MATRIX_WORLD_CALIBRATION_SETTLEMENT_PROGRESS_AUDIT_V1",
+  "target_date_bogota": "2026-10-06",
+  "audit_reference_utc": "2026-10-26T14:10:32Z",
+  "branch": "repair/cor09-world-pipeline",
+  "comparison_baseline": {
+    "path": "evidence/daily_selection/MATRIX_SETTLEMENT_PROGRESS_20261006_BOGOTA_20261026T1310Z_V2_3887_T364.json",
+    "commit": "aa00dc7ab173a060a79014fa615b1a5e294d82a7",
+    "blob_sha": "c0a99d6968d4c2262fb03b8cff65c67fbcab7701"
+  },
+  "source_blobs": {
+    "candidate": {
+      "path": "evidence/daily_selection/MATRIX_CALIBRATION_CANDIDATES_20261006_BOGOTA.json",
+      "blob_sha": "52e897007840f5bed1a8999edad8ee594fefc767"
+    },
+    "football_sync": {
+      "path": "evidence/api_football/prospective_market_freeze/settlement_sync_last.json",
+      "blob_sha": "5efb886dc6e31d05ad13c5360874519e322a8a05"
+    },
+    "football_tracker": {
+      "path": "evidence/api_football/governance/MATRIX_FOOTBALL_4000_CANONICAL_TRACKER_LAST.json",
+      "blob_sha": "ee6132bece3f43405a4fb06a1223c0b6381adc94"
+    },
+    "football_v2_over25": {
+      "path": "evidence/api_football/calibration_v2/lanes/over_2_5/state.json",
+      "blob_sha": "47e1214d1383a561d2abcea33d3760f29b72852c"
+    },
+    "football_v2_under25": {
+      "path": "evidence/api_football/calibration_v2/lanes/under_2_5/state.json",
+      "blob_sha": "4b6ce1554fb18ed97143581d5cb4c8c605417799"
+    },
+    "football_v2_1x2": {
+      "path": "evidence/api_football/calibration_v2/lanes/1x2/state.json",
+      "blob_sha": "c6957b0935c67d8f8df30d806c102539a6c19758"
+    },
+    "football_prospective_sync": {
+      "path": "evidence/api_football/prospective_calibration/sync_last.json",
+      "blob_sha": "f810fb5100a29b79ee80744a055ede04aa88a72b"
+    },
+    "tennis_ledger": {
+      "path": "evidence/cor0203/settlement/MATRIX_COR0203_SETTLEMENT_LEDGER.jsonl",
+      "blob_sha": "dc036a72977587025c10ce340259cc42335fb213"
+    },
+    "tennis_uniqueness": {
+      "path": "evidence/cor0203/runtime/MATRIX_COR0203_SETTLEMENT_UNIQUENESS_LAST.json",
+      "blob_sha": "a26f53aac938ae7175ac1974daf87691f1898759"
+    }
+  },
+  "football": {
+    "original_6oct": {
+      "candidates": 116,
+      "standard_ft_settled": 107,
+      "new_standard_ft": 0,
+      "blocked_nonstandard": [
+        {
+          "fixture_id": "1588817",
+          "reason": "NONSTANDARD_TERMINAL_REQUIRES_ADJUDICATION:PEN"
+        },
+        {
+          "fixture_id": "1588821",
+          "reason": "NONSTANDARD_TERMINAL_REQUIRES_ADJUDICATION:PEN"
+        },
+        {
+          "fixture_id": "1588845",
+          "reason": "NONSTANDARD_TERMINAL_REQUIRES_ADJUDICATION:PEN"
+        },
+        {
+          "fixture_id": "1588863",
+          "reason": "NONSTANDARD_TERMINAL_REQUIRES_ADJUDICATION:PEN"
+        },
+        {
+          "fixture_id": "1588890",
+          "reason": "NONSTANDARD_TERMINAL_REQUIRES_ADJUDICATION:PEN"
+        },
+        {
+          "fixture_id": "1588893",
+          "reason": "NONSTANDARD_TERMINAL_REQUIRES_ADJUDICATION:PEN"
+        },
+        {
+          "fixture_id": "1619499",
+          "reason": "NONSTANDARD_TERMINAL_REQUIRES_ADJUDICATION:PEN"
+        },
+        {
+          "fixture_id": "1644168",
+          "reason": "NONSTANDARD_TERMINAL_REQUIRES_ADJUDICATION:AET"
+        }
+      ],
+      "pending_provider": [
+        {
+          "fixture_id": "1596466",
+          "reason": "RESULT_NOT_STANDARD_FINAL",
+          "provider_status": "NS"
+        }
+      ],
+      "basis": "Prior physical audit 107 FT; current sync retains eight original nonstandard and one NS, and new settled_fixture_ids do not intersect original 116."
+    },
+    "global_sync": {
+      "frozen": 5177,
+      "standard_final": 4701,
+      "pending": 349,
+      "blocked": 127,
+      "run_at_utc": "2026-10-26T14:04:44+00:00",
+      "new_settlements_in_latest_sync": 11,
+      "change_since_previous": {
+        "frozen": 0,
+        "standard_final": 11,
+        "pending": -11,
+        "blocked": 0
+      },
+      "reconciles": true
+    },
+    "newly_observed_governed_ft": [
+      {
+        "fixture_id": "1629456",
+        "terminal_status": "FT",
+        "in_original_6oct": false,
+        "source": "football_sync.settled_fixture_ids",
+        "score": "NOT_INCLUDED_IN_SYNC_ARTIFACT"
+      },
+      {
+        "fixture_id": "1629458",
+        "terminal_status": "FT",
+        "in_original_6oct": false,
+        "source": "football_sync.settled_fixture_ids",
+        "score": "NOT_INCLUDED_IN_SYNC_ARTIFACT"
+      },
+      {
+        "fixture_id": "1531118",
+        "terminal_status": "FT",
+        "in_original_6oct": false,
+        "source": "football_sync.settled_fixture_ids",
+        "score": "NOT_INCLUDED_IN_SYNC_ARTIFACT"
+      },
+      {
+        "fixture_id": "1640722",
+        "terminal_status": "FT",
+        "in_original_6oct": false,
+        "source": "football_sync.settled_fixture_ids",
+        "score": "NOT_INCLUDED_IN_SYNC_ARTIFACT"
+      },
+      {
+        "fixture_id": "1640723",
+        "terminal_status": "FT",
+        "in_original_6oct": false,
+        "source": "football_sync.settled_fixture_ids",
+        "score": "NOT_INCLUDED_IN_SYNC_ARTIFACT"
+      },
+      {
+        "fixture_id": "1640724",
+        "terminal_status": "FT",
+        "in_original_6oct": false,
+        "source": "football_sync.settled_fixture_ids",
+        "score": "NOT_INCLUDED_IN_SYNC_ARTIFACT"
+      },
+      {
+        "fixture_id": "1602717",
+        "terminal_status": "FT",
+        "in_original_6oct": false,
+        "source": "football_sync.settled_fixture_ids",
+        "score": "NOT_INCLUDED_IN_SYNC_ARTIFACT"
+      },
+      {
+        "fixture_id": "1622813",
+        "terminal_status": "FT",
+        "in_original_6oct": false,
+        "source": "football_sync.settled_fixture_ids",
+        "score": "NOT_INCLUDED_IN_SYNC_ARTIFACT"
+      },
+      {
+        "fixture_id": "1622814",
+        "terminal_status": "FT",
+        "in_original_6oct": false,
+        "source": "football_sync.settled_fixture_ids",
+        "score": "NOT_INCLUDED_IN_SYNC_ARTIFACT"
+      },
+      {
+        "fixture_id": "1622815",
+        "terminal_status": "FT",
+        "in_original_6oct": false,
+        "source": "football_sync.settled_fixture_ids",
+        "score": "NOT_INCLUDED_IN_SYNC_ARTIFACT"
+      },
+      {
+        "fixture_id": "1640725",
+        "terminal_status": "FT",
+        "in_original_6oct": false,
+        "source": "football_sync.settled_fixture_ids",
+        "score": "NOT_INCLUDED_IN_SYNC_ARTIFACT"
+      }
+    ],
+    "v2": {
+      "frozen": 4349,
+      "settled_per_market": 3898,
+      "pending_per_market": 451,
+      "change_since_previous": {
+        "frozen": 0,
+        "settled_per_market": 11,
+        "pending_per_market": -11
+      },
+      "markets_checked": [
+        "1X2",
+        "OVER_2_5",
+        "UNDER_2_5"
+      ],
+      "metrics_opened": false
+    },
+    "canonical_tracker": {
+      "generated_at_utc": "2026-10-26T12:53:09.665604+00:00",
+      "stale_relative_to_latest_sync": true,
+      "manual_overwrite_performed": false
+    }
+  },
+  "tennis": {
+    "original_6oct_unique": 11,
+    "original_6oct_finished": 11,
+    "ledger_records": 367,
+    "unique_event_ids": 367,
+    "unique_settlement_ids": 367,
+    "new_settlements_since_previous": 3,
+    "newly_observed_governed_finishes": [
+      {
+        "event_id": "COR0203-RAPIDAPI-TENNIS-706526-ac5018c66a97",
+        "settlement_id": "7bb52115a199f3b0242b71844ccca950d99981f8377c79f4cfe37bc366184ad5",
+        "winner_canonical_name": "Mert Alkaya",
+        "terminal_status": "FINISHED",
+        "settled_at_utc": "2026-10-26T14:06:42+00:00",
+        "result_source_reference": "results-range:2026-10-13/2026-10-26:fixtureMatchId=706526:resultMatchId=116621038",
+        "result_payload_sha256": "225fec129f5eba209e38b4eee2668d46e503a0710c0eab82cda3cf980a0980f9"
+      },
+      {
+        "event_id": "COR0203-RAPIDAPI-TENNIS-706537-d4f94429a2aa",
+        "settlement_id": "894be357fb0843411db7d4c420718e2f0c14eb743b1f806505998fdb238a717e",
+        "winner_canonical_name": "Yuta Shimizu",
+        "terminal_status": "FINISHED",
+        "settled_at_utc": "2026-10-26T14:06:42+00:00",
+        "result_source_reference": "results-range:2026-10-13/2026-10-26:fixtureMatchId=706537:resultMatchId=116621048",
+        "result_payload_sha256": "3f533372d5e7a3c8354dc37cd2d05e8344d6ecd55916416e559dfff7cc5d5257"
+      },
+      {
+        "event_id": "COR0203-RAPIDAPI-TENNIS-776002-bd6911fe9e4b",
+        "settlement_id": "1e023c790ca60e8355f8300dbde969cae9f63aa067213957b58ec477edb48310",
+        "winner_canonical_name": "Ugo Blanchet",
+        "terminal_status": "FINISHED",
+        "settled_at_utc": "2026-10-26T14:06:42+00:00",
+        "result_source_reference": "results-range:2026-10-13/2026-10-26:fixtureMatchId=776002:resultMatchId=116621001",
+        "result_payload_sha256": "1e1c658a18be7c4069ab08f81c3edd207b5336ce08e2173a7ddae9c518b42b82"
+      }
+    ],
+    "uniqueness_result": "PASS",
+    "settled_unique_canonical_events": 314,
+    "settled_duplicate_alias_records": 53,
+    "duplicate_aliases_used_for_metrics": 0,
+    "metrics_opened": false
+  },
+  "governance": {
+    "settlement_final_only": true,
+    "metrics_opened": false,
+    "no_tuning": true,
+    "no_odds_to_p": true,
+    "automatic_wagering": false,
+    "real_money": "BLOCKED",
+    "executed_governed_settlements_this_audit": 0,
+    "governed_settlements_already_present_in_sources": {
+      "football": 11,
+      "tennis": 3
+    },
+    "no_duplicate_settlement_execution": true
+  },
+  "checks": {
+    "candidate_116": true,
+    "candidate_11": true,
+    "original_6oct_107_8_1": true,
+    "original_tennis_11_finished": true,
+    "tennis_uniqueness_pass": true,
+    "global_reconciles": true,
+    "v2_consistent": true,
+    "tracker_reconciled": false,
+    "governance": true
+  },
+  "method": "Read current branch source artifacts and compare with last persisted snapshot. New football and tennis settlements already committed by governed processes; no duplicate execution. No manual tracker overwrite, no metrics opening, tuning, odds-to-P, or real-money wagering."
+}

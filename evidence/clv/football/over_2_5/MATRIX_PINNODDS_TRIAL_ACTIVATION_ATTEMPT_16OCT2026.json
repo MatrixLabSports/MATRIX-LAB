@@ -1,0 +1,53 @@
+{
+  "schema": "MATRIX_PINNODDS_TRIAL_ACTIVATION_ATTEMPT_V1",
+  "generated_at_utc": "2026-10-16T03:43:30+00:00",
+  "requested_trial": {
+    "provider": "PinnOdds",
+    "intended_mode": "3-day full demo SSE + WebSocket + REST",
+    "payment_authorized": false,
+    "production_cutover_authorized": false,
+    "parallel_with_current_transport": true,
+    "strict_fresh_gate_seconds": 120
+  },
+  "activation_attempt": {
+    "method": "Official PinnOdds website free trial signup flow",
+    "result": "TRIAL_NOT_STARTED_RATE_LIMITED",
+    "provider_message": "Too many signups from this connection. Please try again in an hour.",
+    "api_key_issued": false,
+    "account_created": false,
+    "verification_email_sent": false,
+    "payment_information_entered": false,
+    "paid_plan_started": false
+  },
+  "trial_window": {
+    "started": false,
+    "starts_only_when": "PinnOdds credential/full demo access is physically confirmed",
+    "duration_hours": 72,
+    "minimum_real_observations": 50
+  },
+  "acceptance_gate": {
+    "market": "football prematch FT O/U 2.5",
+    "provider_quote_age_seconds_max": 120,
+    "stale_gt_120_count": 0,
+    "stream_error_rate_pct_max": 1,
+    "per_attempt_fields": [
+      "attempted_at_utc",
+      "provider_quote_updated_at_utc",
+      "provider_quote_age_seconds",
+      "gate_excess_seconds"
+    ],
+    "post_kickoff_backfill_allowed": false
+  },
+  "current_transport_preservation": {
+    "odds_api_net_preferred": true,
+    "api_football_fallback_if_quote_age_le_120": true,
+    "disable_current_transport": false
+  },
+  "next_action": "Retry official free signup after provider-requested cooldown; do not count cooldown time against 72h trial window.",
+  "protections": {
+    "real_money": "BLOCKED",
+    "automatic_wagering": false,
+    "freshness_gate_relaxed": false,
+    "strict_fresh_gate_seconds": 120
+  }
+}

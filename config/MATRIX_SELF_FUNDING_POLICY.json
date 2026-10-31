@@ -1,0 +1,60 @@
+{
+  "schema": "MATRIX_SELF_FUNDING_POLICY_V1",
+  "currency_policy": {
+    "operating_revenue_currency": "USD",
+    "betting_bankroll_currency": "COP",
+    "automatic_fx_conversion_for_governance": false,
+    "reason": "Do not mix paper betting bankroll with infrastructure cash economics or invent FX."
+  },
+  "separation_rules": {
+    "paper_betting_pnl_is_operating_revenue": false,
+    "paper_bankroll_may_pay_infrastructure": false,
+    "real_money_bankroll_may_pay_infrastructure": false,
+    "infrastructure_expenses_require_verified_cash_source": true,
+    "external_revenue_requires_collected_cash_evidence": true
+  },
+  "target_stack": {
+    "odds_provider": {
+      "provider": "odds-api.net",
+      "plan": "Builder",
+      "projected_monthly_usd": 90,
+      "status": "RECOMMENDED_NOT_PURCHASED"
+    },
+    "football_data_provider": {
+      "provider": "API-Football",
+      "plan": "Pro",
+      "projected_monthly_usd": 19,
+      "status": "OPTIONAL_NOT_REAUTHORIZED"
+    },
+    "projected_monthly_infrastructure_usd": 109,
+    "minimum_reserve_months": 3,
+    "minimum_reserve_target_usd": 327
+  },
+  "self_funding_gate": {
+    "required": [
+      "verified_collected_operating_revenue_usd > 0",
+      "verified_collected_operating_revenue_usd - verified_operating_expenses_usd >= projected_monthly_infrastructure_usd",
+      "verified_cash_reserve_usd >= minimum_reserve_target_usd",
+      "no infrastructure funding from paper betting bankroll",
+      "provider purchase still requires explicit user authorization"
+    ],
+    "on_fail": "BLOCK_NEW_RECURRING_INFRASTRUCTURE_SPEND_UNLESS_USER_EXPLICITLY_OVERRIDES",
+    "real_money": "BLOCKED",
+    "automatic_wagering": false
+  },
+  "allowed_revenue_categories": [
+    "subscription_revenue",
+    "analytics_service_revenue",
+    "licensing_revenue",
+    "consulting_or_custom_analysis_revenue",
+    "other_verified_operating_revenue"
+  ],
+  "prohibited_as_revenue": [
+    "paper_or_shadow_pnl",
+    "unsettled_bets",
+    "hypothetical_ev",
+    "uncollected_invoices",
+    "bankroll_transfers",
+    "synthetic_or_imputed_income"
+  ]
+}

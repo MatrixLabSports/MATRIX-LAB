@@ -1,0 +1,154 @@
+{
+  "schema": "MATRIX_BROWSER_GAP_POST_API_OFFICIAL_ADJUDICATION_V1",
+  "generated_at_utc": "2026-10-06T16:20:00Z",
+  "timezone": "America/Bogota",
+  "status": "PASS_NO_NEW_FREEZE",
+  "api_probe": {
+    "evidence_path": "evidence/daily_source_counts/2026-10-06/MATRIX_API_FOOTBALL_BROWSER_GAP_PROBE.json",
+    "input_gap_count": 6,
+    "network_calls": 14,
+    "bound_fixture_count": 0,
+    "result": "PASS"
+  },
+  "football": [
+    {
+      "match": "JK Tabasalu U21 - Tallinna FC Zealot Sporting",
+      "source_validation": "OFFICIAL_ESTONIAN_FA_CONFIRMED",
+      "official_url": "https://jalgpall.ee/voistlused/52/team/6426",
+      "scheduled_local": "2026-10-06 19:00 Europe/Tallinn",
+      "api_football_binding": "NO_TEAM_IDS",
+      "adjudication": "NO_BACKFILL_POST_START_AT_API_PROBE",
+      "calibration_increment": 0
+    },
+    {
+      "match": "Paide Linnameeskond U19 - JK Narva Trans U19",
+      "source_validation": "OFFICIAL_ESTONIAN_FA_DATE_CORRECTION",
+      "official_url": "https://jalgpall.ee/voistlused/89/liigad/calendar?season=2026",
+      "corrected_schedule_local": "2026-10-07 17:00 Europe/Tallinn",
+      "api_football_binding": "NO_TEAM_IDS",
+      "adjudication": "MOVE_TO_2026_10_07_DISCOVERY_QUEUE_PROVIDER_UNSUPPORTED",
+      "calibration_increment": 0
+    },
+    {
+      "match": "Kjelsas 2 - FK Manglerud Star",
+      "source_validation": "OFFICIAL_NORWEGIAN_FA_CONFIRMED",
+      "official_url": "https://www.fotball.no/fotballdata/lag/hjem/?fiksId=9123&underside=kamper",
+      "scheduled_local": "2026-10-06 20:15 Europe/Oslo",
+      "api_football_binding": "NO_TEAM_IDS",
+      "adjudication": "BLOCKED_PROVIDER_UNSUPPORTED_NO_STRUCTURED_HISTORY_FEATURES",
+      "calibration_increment": 0
+    },
+    {
+      "match": "Hastings United - Sevenoaks Town",
+      "source_validation": "SCHEDULE_CONFLICT_OFFICIAL_CLUB_OVERRIDES_STALE_AGGREGATOR",
+      "official_url": "https://www.hastingsunited.com/",
+      "official_club_schedule": "Hastings United - Burgess Hill Town, Sussex Senior Cup, 2026-10-06 19:45 Europe/London",
+      "api_football_binding": "NOT_APPLICABLE_TO_STALE_PAIR",
+      "adjudication": "QUARANTINED_FALSE_OR_STALE_BROWSER_PAIR",
+      "calibration_increment": 0
+    },
+    {
+      "match": "Seaford Town - Haywards Heath Town",
+      "source_validation": "SCHEDULE_DATE_CONFLICT",
+      "source_urls": [
+        "https://discoverseaford.uk/events/seaford-town-fc-vs-haywards-heath-town-2026-10-06",
+        "https://www.seafordtownfc.com/teams/95944",
+        "https://hhtfc.co.uk/"
+      ],
+      "observed_conflict": "Sources disagree between 2026-10-06 and 2026-10-07",
+      "api_football_binding": "TEAM_IDS_FOUND_BUT_NO_EXACT_FIXTURE_ON_2026_10_06",
+      "adjudication": "BLOCKED_SCHEDULE_CONFLICT_NO_FREEZE",
+      "calibration_increment": 0
+    },
+    {
+      "match": "Altın Kalpler FK - Alpha Çeşme",
+      "source_validation": "SOFASCORE_TORNEO_AMATEUR_CONFIRMED",
+      "source_url": "https://www.sofascore.com/football/match/alpha-cesme-altin-kalpler-fk/fNgksYXgk",
+      "competition": "Pozitif Lig",
+      "scheduled_utc": "2026-10-06T19:00:00Z",
+      "api_football_binding": "NO_TEAM_IDS",
+      "adjudication": "BLOCKED_PROVIDER_UNSUPPORTED_NO_STRUCTURED_HISTORY_FEATURES",
+      "calibration_increment": 0
+    }
+  ],
+  "tennis": [
+    {
+      "match": "Omar Jasika - Martin Borisiouk",
+      "competition": "Wuning 3 Challenger",
+      "surface": "Hard",
+      "source_url": "https://www.flashscore.com/tennis/challenger-men-singles/wuning-3/fixtures/",
+      "rapidapi_world_inventory_present": false,
+      "unique_holdout_present": false,
+      "adjudication": "MISSED_DISCOVERY_POST_START_NO_BACKFILL",
+      "calibration_increment": 0
+    },
+    {
+      "match": "Keisuke Saitoh - Dominik Palan",
+      "competition": "Wuning 3 Challenger",
+      "surface": "Hard",
+      "source_url": "https://www.flashscore.com/tennis/challenger-men-singles/wuning-3/fixtures/",
+      "rapidapi_world_inventory_present": false,
+      "unique_holdout_present": false,
+      "adjudication": "MISSED_DISCOVERY_POST_START_NO_BACKFILL",
+      "calibration_increment": 0
+    },
+    {
+      "match": "Jay Dylan Hara Friend - Yuta Kikuchi",
+      "competition": "Wuning 3 Challenger",
+      "surface": "Hard",
+      "source_url": "https://www.flashscore.com/tennis/challenger-men-singles/wuning-3/fixtures/",
+      "rapidapi_world_inventory_present": false,
+      "unique_holdout_present": false,
+      "adjudication": "MISSED_DISCOVERY_POST_START_NO_BACKFILL",
+      "calibration_increment": 0
+    },
+    {
+      "match": "Carles Hernandez - Petr Nesterov",
+      "competition": "Villena Challenger",
+      "surface": "Hard",
+      "source_urls": [
+        "https://www.tennis.com/tournaments/villena?date=2026-10-06",
+        "https://www.tennisexplorer.com/player/nesterov-34bdf/?annual=2026"
+      ],
+      "rapidapi_world_inventory_present": true,
+      "rapidapi_match_id": "1416",
+      "inventory_event_start_utc": "2026-10-06T12:20:00Z",
+      "model_derivation_domain_candidate": true,
+      "unique_holdout_present": false,
+      "adjudication": "CONVERSION_MISS_DISCOVERED_POST_START_NO_BACKFILL",
+      "calibration_increment": 0
+    }
+  ],
+  "totals": {
+    "tennis_unique_before": 115,
+    "tennis_unique_after": 115,
+    "football_unique_frozen_before": 425,
+    "football_unique_frozen_after": 425,
+    "new_legitimate_freezes": 0,
+    "confirmed_tennis_missed_post_start": 4,
+    "football_gaps_api_bound": 0,
+    "corrected_official_fixture_probes": 1,
+    "api_football_network_calls_total_for_gap_resolution": 17
+  },
+  "protections": {
+    "no_backfill": true,
+    "exact_identity_required": true,
+    "structured_history_features_required": true,
+    "schedule_conflict_blocks": true,
+    "stale_browser_pair_quarantined": true,
+    "metrics_opened": false,
+    "odds_to_probability": false,
+    "real_money": "BLOCKED"
+  },
+  "corrected_official_probe": {
+    "match": "Hastings United - Burgess Hill Town",
+    "evidence_path": "evidence/daily_source_counts/2026-10-06/MATRIX_API_FOOTBALL_HASTINGS_BURGESS_PROBE.json",
+    "generated_at_utc": "2026-10-06T16:20:20Z",
+    "api_status": "TEAM_BINDING_INCOMPLETE",
+    "api_hastings_team_id": 7231,
+    "api_burgess_team_id": null,
+    "api_fixture_id": null,
+    "api_fixture_query_for_hastings_on_date_returned_no_match": true,
+    "adjudication": "BLOCKED_PROVIDER_COVERAGE_NO_FREEZE"
+  }
+}

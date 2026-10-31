@@ -1,0 +1,89 @@
+{
+  "schema": "MATRIX_SETTLEMENT_PROGRESS_20261006_BOGOTA_V1",
+  "cut_utc": "2026-10-24T02:02:54.429Z",
+  "branch": "repair/cor09-world-pipeline",
+  "observed_head_before_snapshot": "1a530b90d0490d8dd6e400672245c31c9cdc2de8",
+  "previous_snapshot": "evidence/daily_selection/MATRIX_SETTLEMENT_PROGRESS_20261006_BOGOTA_20261024T002410Z_V2_3270_T341.json",
+  "previous_snapshot_commit": "4eae361d5a381b96d11a2a93c97ac31553e51691",
+  "evidence_blobs": {
+    "candidates": "52e897007840f5bed1a8999edad8ee594fefc767",
+    "football_settlement_sync": "94ef848b3edfecc9f098d7394bbac022c1825653",
+    "football_calibration_sync": "b664ae1a4d2615fb984c28421a2a5b97be4946d8",
+    "football_physical_uniqueness": "c679bcc803b501d4af5c4222a0346e9433842ad5",
+    "tennis_settlement_ledger": "a28d531520c4ea3461aed022983187046d0e3d65",
+    "tennis_settlement_sync": "3c6c78f1a0623f7dc82d66dd6a9cfac0d9997dba",
+    "tennis_settlement_uniqueness": "96366bff5c0beddd0d94b28726870964062b3e4e",
+    "football_v2_states": {
+      "1X2": "f5861efc9762c0e3c6a253ec4af484661f7a648d",
+      "OVER_2_5": "640b0b5d49d2b7a324e40810d02e5d8986b46349",
+      "UNDER_2_5": "a7b0dd4d2621209e80df53dd0f4234d39baf0e0c",
+      "DOUBLE_CHANCE_1X": "0c15253f433c72f426a60200d7c4db4d4da25d46",
+      "DOUBLE_CHANCE_X2": "a390f35e84c9b00351ed59e1ffce61af0bcb8228"
+    }
+  },
+  "football": {
+    "cohort_total": 116,
+    "cohort_standard_ft": 107,
+    "cohort_change_since_previous_snapshot": 0,
+    "global_final_settled": 4076,
+    "global_change_since_previous_snapshot": 4,
+    "new_ft_fixture_ids": [
+      "1638935",
+      "1638939",
+      "1638940",
+      "1549836"
+    ],
+    "governed_settlement_commit": "cdfc6d922c38ea9361598dc2c2ab49a9dc290d02",
+    "v2_frozen_per_market": 3997,
+    "v2_settled_per_market": 3274,
+    "v2_pending_per_market": 723,
+    "v2_market_count": 5,
+    "v2_all_states_metrics_opened": false,
+    "governed_sync_status": "PASS",
+    "governed_sync_at_utc": "2026-10-24T01:41:57+00:00",
+    "physical_uniqueness_audit": "PASS",
+    "physical_unique_fixture_ids": 4076,
+    "nonstandard": {
+      "PEN": [
+        "1588817",
+        "1588821",
+        "1588845",
+        "1588863",
+        "1588890",
+        "1588893",
+        "1619499"
+      ],
+      "AET": [
+        "1644168"
+      ],
+      "NS": [
+        "1596466"
+      ]
+    },
+    "cohort_method": "Prior audited 107/116; new governed sync adds four FT fixture IDs, all absent from the 116 candidate fixture IDs; nine original exceptions remain blocked or NS in current governed sync."
+  },
+  "tennis": {
+    "cohort_total": 11,
+    "cohort_finished": 11,
+    "cohort_change_since_previous_snapshot": 0,
+    "global_settled": 341,
+    "global_change_since_previous_snapshot": 0,
+    "ledger_records": 341,
+    "unique_events": 341,
+    "unique_settlement_ids": 341,
+    "cohort_ledger_records": 11,
+    "governed_sync_status": "PASS",
+    "governed_sync_new_settlements": 0,
+    "ledger_blob_unchanged_since_previous_snapshot": true,
+    "method": "Full tennis ledger parsed and uniqueness checked; 11 exact canonical candidate IDs matched."
+  },
+  "governance": {
+    "settlement_final_only": true,
+    "metrics_opened": false,
+    "tuning": false,
+    "odds_to_p": false,
+    "automatic_wagering": false,
+    "real_money": "BLOCKED",
+    "note": "Snapshot-only commit. Four football FT settlements and five V2 state updates already persisted by governed process; no metric/model/ledger writes made here. Historical checkpoint metrics files may have pre-existing opened flags and were not modified."
+  }
+}

@@ -1,0 +1,82 @@
+{
+  "schema": "MATRIX_PINNODDS_FREE_KEY_VALIDATION_AND_FULL_DEMO_REQUEST_V2",
+  "generated_at_utc": "2026-10-16T05:24:00Z",
+  "provider": "PinnOdds",
+  "account_email": "yoansanchezlozano@gmail.com",
+  "free_key": {
+    "issued": true,
+    "secret_persisted_in_evidence": false,
+    "validation_endpoint": "GET /health",
+    "validation_result": "PASS",
+    "health_status": "healthy",
+    "prematch_status": "healthy",
+    "source": "ws",
+    "prematch_source": "ws"
+  },
+  "provider_welcome_email": {
+    "gmail_message_id": "1a143217ad7f3d7b",
+    "states_first_3_days_full_demo": true,
+    "stated_entitlements": [
+      "REST",
+      "SSE drops",
+      "WebSocket feed"
+    ],
+    "stated_rate_limit": "10 req/sec",
+    "stated_daily_cap": "none",
+    "stated_activation_requirement": "nothing_to_activate"
+  },
+  "effective_account_state": {
+    "dashboard_plan": "Trial",
+    "dashboard_expiry": "no expiry",
+    "limits": {
+      "requests_per_minute": 20,
+      "requests_per_hour": 100,
+      "requests_per_day": 100
+    },
+    "rest_access": true,
+    "sse_access": false,
+    "websocket_access": false,
+    "sse_physical_test": {
+      "endpoint": "/odds-drop-prematch",
+      "result": "FAIL",
+      "provider_error": "plan_lacks_sse"
+    },
+    "conclusion": "PROVIDER_PROMISE_AND_EFFECTIVE_ENTITLEMENTS_MISMATCH"
+  },
+  "support_escalation": {
+    "initial_request_message_id": "1a1432609fb527e4",
+    "mismatch_escalation_message_id": "1a1432a2572307e3",
+    "recipient": "info@pinnodds.com",
+    "requested_action": "Enable promised 3-day full demo and confirm exact activation timestamp",
+    "payment_authorized": false
+  },
+  "full_demo": {
+    "activated": false,
+    "window_72h_started": false,
+    "start_timestamp_utc": null,
+    "blocker": "PROVIDER_ENTITLEMENT_MISMATCH_PLAN_LACKS_SSE",
+    "start_rule": "Start only after SSE and WebSocket are physically usable and provider/demo entitlement is confirmed"
+  },
+  "matrix_transport_preservation": {
+    "odds_api_net_preferred": true,
+    "api_football_strict_fresh_fallback": true,
+    "pinnodds_cutover": false
+  },
+  "acceptance_gate": {
+    "minimum_real_observations": 50,
+    "market": "football prematch FT O/U 2.5",
+    "provider_quote_age_seconds_max": 120,
+    "stale_gt_120_count_required": 0,
+    "stream_error_rate_pct_max": 1,
+    "post_kickoff_backfill_allowed": false
+  },
+  "protections": {
+    "secret_exposed_in_repo": false,
+    "payment_entered": false,
+    "paid_plan_started": false,
+    "production_cutover_authorized": false,
+    "real_money": "BLOCKED",
+    "automatic_wagering": false
+  },
+  "status": "FREE_KEY_VALID_REST_ONLY_FULL_DEMO_ENTITLEMENT_MISMATCH_ESCALATED"
+}

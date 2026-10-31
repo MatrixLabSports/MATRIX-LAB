@@ -1,0 +1,141 @@
+name: Telegram Confirmacion 11-OCT
+
+on:
+  push:
+    branches:
+      - repair/cor09-world-pipeline
+    paths:
+      - .github/workflows/telegram-confirmation-review-11oct.yml
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  send-confirmation-review:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      REAL_MONEY: BLOCKED
+      AUTO_BETTING: DISABLED
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: repair/cor09-world-pipeline
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install requests
+        run: python -m pip install requests
+
+      - name: Validate safety and secrets
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$REAL_MONEY" = "BLOCKED"
+          test "$AUTO_BETTING" = "DISABLED"
+          test -n "$TELEGRAM_BOT_TOKEN"
+          test -n "$TELEGRAM_CHAT_ID"
+
+      - name: Send curated confirmation review
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json, os
+          from datetime import datetime, timezone
+          from pathlib import Path
+          import requests
+
+          source = Path("evidence/notifications/telegram/MATRIX_TELEGRAM_CONFIRMATION_REVIEW_11OCT2026.json")
+          receipt = Path("evidence/notifications/telegram/MATRIX_TELEGRAM_CONFIRMATION_REVIEW_11OCT2026_RECEIPT.json")
+          data = json.loads(source.read_text(encoding="utf-8"))
+
+          def pct(x):
+              return f"{float(x)*100:.2f}%"
+
+          def line(r):
+              return (
+                  f'• {r["match"]} | Más de 2.5 | {r["house"]} @{float(r["odds"]):.2f} | '
+                  f'P {pct(r["p_matrix"])} | EV {pct(r["ev"])} | Papel S{int(r["stake_level"])}'
+              )
+
+          lines = [
+              "🔵 RECTIFICACIÓN MATRIX — 11-OCT",
+              "",
+              "Revisión prematch del calendario y de las señales ya enviadas.",
+              "Las 27 señales previas quedan preservadas como cohorte SHADOW amplia.",
+              "Para seguimiento operativo de hoy, SOLO estas 10 pasan el filtro adicional de confirmación:",
+              "P_MATRIX 55%-65% + EV >= 4% + cuota > 1.50.",
+              "",
+              "Evidencia del filtro en settlements previos: 21 casos, 18 aciertos y 3 fallos (85,7%).",
+              "Muestra todavía pequeña: NO es garantía y NO modifica P_MATRIX.",
+              "",
+              "🟢 PRIORIDAD A",
+          ]
+          lines += [line(r) for r in data["priority_A_60_65"]]
+          lines += ["", "🟡 PRIORIDAD B"]
+          lines += [line(r) for r in data["priority_B_55_60"]]
+          lines += [
+              "",
+              f'Exposición cartera confirmada de papel: COP {int(data["confirmation_portfolio"]["paper_exposure_cop"]):,}'.replace(",", "."),
+              "No se usa Stake 3 en esta cartera confirmada.",
+              "Las demás señales: NO PRIORIDAD OPERATIVA HOY; permanecen solo para evaluación SHADOW.",
+              "",
+              "DINERO REAL MATRIX: BLOQUEADO",
+          ]
+          message = "\n".join(lines)
+
+          url = f'https://api.telegram.org/bot{os.environ["TELEGRAM_BOT_TOKEN"]}/sendMessage'
+          response = requests.post(
+              url,
+              data={"chat_id": os.environ["TELEGRAM_CHAT_ID"], "text": message},
+              timeout=(10, 90),
+          )
+          payload = response.json()
+          if response.status_code >= 300 or payload.get("ok") is not True:
+              raise SystemExit(f"TELEGRAM_SEND_FAILED:{response.status_code}:{payload}")
+          result = payload["result"]
+          out = {
+              "schema": "MATRIX_TELEGRAM_CONFIRMATION_REVIEW_RECEIPT_V1",
+              "source_artifact": str(source),
+              "sent_at_utc": datetime.now(timezone.utc).replace(microsecond=0).isoformat(),
+              "telegram_message_id": int(result["message_id"]),
+              "telegram_chat_id_present": True,
+              "selected_signal_count": len(data["priority_A_60_65"]) + len(data["priority_B_55_60"]),
+              "paper_exposure_cop": data["confirmation_portfolio"]["paper_exposure_cop"],
+              "real_money": "BLOCKED",
+              "status": "SENT_OK",
+          }
+          receipt.write_text(json.dumps(out, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
+          print(json.dumps(out, ensure_ascii=False, sort_keys=True))
+          PY
+
+      - name: Persist receipt
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name matrix-telegram-confirmation
+          git config user.email matrix-telegram-confirmation@users.noreply.github.com
+          git add evidence/notifications/telegram/MATRIX_TELEGRAM_CONFIRMATION_REVIEW_11OCT2026_RECEIPT.json
+          git commit -m "evidence(telegram): persist 11-OCT confirmation receipt"
+          for attempt in 1 2 3 4; do
+            git fetch origin repair/cor09-world-pipeline
+            git rebase origin/repair/cor09-world-pipeline
+            if git push origin HEAD:repair/cor09-world-pipeline; then
+              exit 0
+            fi
+            sleep $((attempt*2))
+          done
+          exit 1

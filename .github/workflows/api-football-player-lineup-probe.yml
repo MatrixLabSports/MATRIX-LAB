@@ -1,0 +1,89 @@
+name: API-Football prematch player lineup certification probe
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - repair/cor09-world-pipeline
+    paths:
+      - .github/workflows/api-football-player-lineup-probe.yml
+      - tools/api_football_player_lineup_probe.py
+
+permissions:
+  contents: write
+
+concurrency:
+  group: api-football-player-lineup-probe
+  cancel-in-progress: false
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout exact trigger state
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install bounded provider dependency
+        run: python -m pip install requests
+
+      - name: Require configured API-Football secret
+        shell: bash
+        env:
+          API_FOOTBALL_KEY: ${{ secrets.API_FOOTBALL_KEY }}
+        run: |
+          set -euo pipefail
+          test -n "${API_FOOTBALL_KEY:-}"
+          python - <<'PY'
+          import os
+          os.environ["API_FOOTBALL_KEY"].encode("ascii")
+          print("API_FOOTBALL_KEY_PRESENT_AND_ASCII")
+          PY
+
+      - name: Capture bounded prematch lineup evidence
+        shell: bash
+        env:
+          API_FOOTBALL_KEY: ${{ secrets.API_FOOTBALL_KEY }}
+          MATRIX_PLAYER_LINEUP_PROBE_DIR: evidence/api_football/market_expansion/player_lineup_probe
+          MATRIX_LINEUP_WINDOW_MINUTES: "90"
+          MATRIX_LINEUP_MAX_FIXTURES: "6"
+          MATRIX_API_FOOTBALL_DAILY_RESERVE: "5000"
+        run: |
+          set -euo pipefail
+          python -m tools.api_football_player_lineup_probe
+
+      - name: Assert no premature PLAYER_SHOTS unlock
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          p=json.loads(Path("evidence/api_football/market_expansion/player_lineup_probe/last_run.json").read_text())
+          assert p["expected_minutes_certified"] is False
+          assert p["player_shots_prospective_unlocked"] is False
+          assert p["real_money"] == "BLOCKED"
+          print("PLAYER_SHOTS_PREMATURE_UNLOCK_GUARD=PASS")
+          PY
+
+      - name: Persist physical lineup probe evidence
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "matrix-api-football-lineup"
+          git config user.email "matrix-api-football-lineup@users.noreply.github.com"
+          git add evidence/api_football/market_expansion/player_lineup_probe
+          if git diff --cached --quiet; then
+            echo "NO_LINEUP_EVIDENCE_TO_PERSIST"
+            exit 3
+          fi
+          git commit -m "evidence(api-football): persist prematch lineup probe"
+          git pull --rebase origin repair/cor09-world-pipeline
+          git push origin HEAD:repair/cor09-world-pipeline

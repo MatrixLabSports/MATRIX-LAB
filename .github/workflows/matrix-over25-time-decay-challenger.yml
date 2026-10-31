@@ -1,0 +1,65 @@
+name: MATRIX Over2.5 Time-Decay Challenger
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - repair/cor09-world-pipeline
+    paths:
+      - tools/matrix_over25_time_decay_challenger.py
+      - tests/test_matrix_over25_time_decay_challenger.py
+      - .github/workflows/matrix-over25-time-decay-challenger.yml
+
+permissions:
+  contents: write
+
+jobs:
+  research:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      REAL_MONEY: BLOCKED
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: repair/cor09-world-pipeline
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install pytest
+        run: python -m pip install pytest
+      - name: Run tests
+        run: PYTHONPATH=. python -m pytest -q tests/test_matrix_over25_time_decay_challenger.py
+      - name: Run chronological challenger
+        run: PYTHONPATH=. python -m tools.matrix_over25_time_decay_challenger
+      - name: Enforce research-only governance
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          p=Path("evidence/api_football/model_validation/MATRIX_OVER25_TIME_DECAY_CHALLENGER_V1.json")
+          x=json.loads(p.read_text())
+          assert x["row_count"]==2379
+          assert x["metrics"]["development"]["n"]>0
+          assert x["metrics"]["holdout"]["n"]>0
+          assert x["governance"]["research_only"] is True
+          assert x["governance"]["production_engine_modified"] is False
+          assert x["governance"]["holdout_used_for_parameter_selection"] is False
+          assert x["governance"]["odds_used_to_generate_probability"] is False
+          assert x["governance"]["real_money"]=="BLOCKED"
+          print("MATRIX_OVER25_TIME_DECAY_GATE: PASS")
+          print("selected_half_life_days=",x["selected_half_life_days"])
+          print("holdout_beats_frozen_both_metrics=",x["holdout_beats_frozen_both_metrics"])
+          print("delta=",x["holdout_delta_selected_minus_frozen"])
+          print("artifact_sha256=",x["artifact_sha256"])
+          PY
+      - name: Persist evidence
+        run: |
+          git config user.name matrix-time-decay-challenger
+          git config user.email matrix-time-decay-challenger@users.noreply.github.com
+          git add evidence/api_football/model_validation/MATRIX_OVER25_TIME_DECAY_CHALLENGER_V1.json
+          if git diff --cached --quiet; then exit 0; fi
+          git commit -m "evidence(football): persist Over2.5 time-decay challenger"
+          git pull --rebase origin repair/cor09-world-pipeline
+          git push origin HEAD:repair/cor09-world-pipeline

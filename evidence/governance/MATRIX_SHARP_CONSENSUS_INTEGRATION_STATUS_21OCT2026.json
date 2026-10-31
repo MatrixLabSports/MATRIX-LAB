@@ -1,0 +1,49 @@
+{
+  "schema": "MATRIX_SHARP_CONSENSUS_INTEGRATION_STATUS_V1",
+  "generated_at_utc": "2026-10-21T22:20:00Z",
+  "code": {
+    "consensus_module": "app/research/football/sharp_consensus.py",
+    "consensus_commit": "0673b2d911094db0fb8b57d18785260d5d0e5a1f",
+    "unit_test_commit": "1473154d087a6a2898645bb80225ee4deb4a24cb",
+    "telegram_integration_commit": "b6c3efd66eb894f6436a45d9428c74fa263549d4",
+    "reference_filter_fix_commit": "e5f10c3e31070a770e8c809f1ff1912cb4a1efd7",
+    "execution_isolation_test_commit": "e9787f58f9f5a1349f6744db2aa9a997b0c828af"
+  },
+  "policy": {
+    "pinnacle": "SHARP_CONSENSUS_VOTE",
+    "circa": "SHARP_CONSENSUS_VOTE_WHEN_PHYSICALLY_AVAILABLE",
+    "betfair": "SUPPORTED_BY_CONSENSUS_CODE_PENDING_SEPARATE_EXCHANGE_FEED_PHYSICAL_VALIDATION",
+    "fanduel": "MARKET_CONTEXT_ONLY_NO_SHARP_VOTE",
+    "execution_books": [
+      "betano",
+      "betplay",
+      "rushbet"
+    ],
+    "p_matrix_mutated_by_odds": false,
+    "contradiction_action": "REVIEW_ONLY",
+    "mandatory_signal_blocking": false,
+    "real_money": "BLOCKED"
+  },
+  "physical_checks": {
+    "telegram_run_332": {
+      "conclusion": "SUCCESS",
+      "commit": "e5f10c3e31070a770e8c809f1ff1912cb4a1efd7",
+      "statement": "Corrected parser imported and ran in production supervisor without breaking execution flow."
+    },
+    "odds_api_net_colombia_catalog_probe_run_2": {
+      "conclusion": "SUCCESS_WORKFLOW_PROVIDER_GATE_BLOCKED",
+      "endpoint": "/bookmakers",
+      "http_status": 429,
+      "provider_rows": 0,
+      "bookmaker_keys": [],
+      "network_calls": 1,
+      "status": "BLOCKED",
+      "statement": "Cannot certify live account coverage for Pinnacle/Circa/FanDuel/Betfair from this probe."
+    },
+    "execution_isolation_unit_test": {
+      "status": "QUEUED_IN_MATRIX_CI",
+      "statement": "Do not claim passed until CI conclusion is physically observed."
+    }
+  },
+  "conclusion": "CODE_INTEGRATED_REVIEW_ONLY_LIVE_SHARP_COVERAGE_NOT_YET_CERTIFIED"
+}

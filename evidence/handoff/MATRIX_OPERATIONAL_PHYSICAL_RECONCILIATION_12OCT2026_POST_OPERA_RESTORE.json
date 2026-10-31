@@ -1,0 +1,238 @@
+{
+  "schema": "MATRIX_OPERATIONAL_PHYSICAL_RECONCILIATION_V1",
+  "operational_date_bogota": "2026-10-12",
+  "repository": "MatrixLabSports/MATRIX-LAB",
+  "branch": "repair/cor09-world-pipeline",
+  "base_head_verified_before_write": "787bc1bee0cf68db39ec6838ea7e9a1086d8de20",
+  "source_order_executed": [
+    "SOFASCORE_BROWSER",
+    "FLASHSCORE_BROWSER",
+    "STRUCTURED_PAID_API_EVIDENCE",
+    "BOOKMAKER_BROWSER_AND_TELEGRAM_READBACK"
+  ],
+  "browser_first": {
+    "sofascore": {
+      "tennis": {
+        "url": "https://www.sofascore.com/tennis?date=2026-10-12",
+        "browser_loaded_unique_match_links": 91,
+        "authoritative_global_total_claimed": false
+      },
+      "football": {
+        "url": "https://www.sofascore.com/football?date=2026-10-12",
+        "browser_loaded_unique_match_links": 27,
+        "authoritative_global_total_claimed": false
+      }
+    },
+    "flashscore": {
+      "tennis": {
+        "url": "https://www.flashscore.com/tennis/?d=20261012",
+        "browser_loaded_unique_match_links": 164,
+        "authoritative_global_total_claimed": false
+      },
+      "football": {
+        "url": "https://www.flashscore.com/football/?d=20261012",
+        "browser_loaded_unique_match_links": 185,
+        "authoritative_global_total_claimed": false
+      }
+    },
+    "interpretation": "Browser counts are physically loaded/readable unique match links. They are not promoted to worldwide canonical totals because lazy loading and source coverage differ."
+  },
+  "tennis_hard_cor0203": {
+    "unique_calibration_observations": 201,
+    "total_target": 600,
+    "window1": {
+      "count": 200,
+      "target": 200,
+      "status": "CLOSED"
+    },
+    "window2": {
+      "count": 1,
+      "target": 200
+    },
+    "remaining_to_600": 399,
+    "physical_frozen_rows": 342,
+    "duplicates_quarantined": 141,
+    "latest_batch": {
+      "new_freezes": 0,
+      "new_blocked": 289,
+      "ending_physical_count": 342
+    },
+    "operational_state": "IDLE_VALID",
+    "metrics": "SEALED_UNTIL_600",
+    "real_money": "BLOCKED",
+    "evidence": {
+      "milestones_blob": "621a6b1e2c5aa7e72f0d78c02a663a971d58ab90",
+      "observability_blob": "f42c9419a7541542c6b09b294071a0180834b82d",
+      "batch_runner_blob": "2068e8687b39cf72f1be3f7b4646d188b3940053"
+    }
+  },
+  "tennis_discovery_reconciliation": {
+    "world_inventory": {
+      "provider": "rapidapi_tennis",
+      "target_date": "2026-10-12",
+      "world_inventory_total": 187,
+      "world_domain_candidates_input": 26,
+      "eligible_input_events": 12,
+      "status": "DISCOVERY_COMPLETED",
+      "evidence_blob": "30b2f3f78948539419470d68ce702c3847927cf1"
+    },
+    "dual_paid_horizon": {
+      "status": "PASS",
+      "logical_horizon_days": 8,
+      "base_window": {
+        "start": "2026-10-12",
+        "stop": "2026-10-15",
+        "days": 4
+      },
+      "extension_window": {
+        "start": "2026-10-16",
+        "stop": "2026-10-19",
+        "days": 4
+      },
+      "rapidapi_tennis_merged_candidates": 34,
+      "api_tennis_merged_candidates": 22,
+      "dedupe_before_dual_reconciliation": true,
+      "metrics_opened": false,
+      "real_money": "BLOCKED",
+      "evidence_blob": "43bca298ad56019ff20875cae7a9aadfec9e28aa"
+    }
+  },
+  "tennis_clay": {
+    "status": "ACTIVE_PROSPECTIVE",
+    "observation_count": 2,
+    "unique_physical_event_count": 2,
+    "metrics_opened": false,
+    "evidence_blob": "26ef767298def5dafc5f5de3c529381bbbf7cf54"
+  },
+  "tennis_live": {
+    "cumulative": {
+      "unique_matches": 90,
+      "final_standard": 69,
+      "final_quality_valid": 59,
+      "leading_lane": "itf|women|hard",
+      "leading_lane_final_quality_valid": 24,
+      "leading_lane_gate_30_remaining": 6,
+      "model_status": "RESEARCH_ONLY",
+      "metrics_status": "SEALED",
+      "probability_output_status": "SEALED",
+      "evidence_blob": "245e7dcd905dfc78ad0b60bd66df326be5034a7a"
+    },
+    "free_provider": {
+      "provider": "live_tennis_api",
+      "remaining_before_run": 0,
+      "reserve_calls": 20,
+      "status": "BLOCKED_BY_RESERVE",
+      "evidence_blob": "6b79d3fa3f0ee90ef4ee46d04f956ab5a2636764"
+    },
+    "paid_failover": {
+      "provider": "api_tennis",
+      "executed_cycles": 6,
+      "coverage_mode": "PAID_FAILOVER_ONLY",
+      "evidence_blob": "9958ec555a9420472effc96a55413cd2eb6677e0"
+    },
+    "prematch_hard_mutated": false,
+    "prematch_clay_mutated": false,
+    "real_money": "BLOCKED"
+  },
+  "football": {
+    "daily_over25": {
+      "target_date_bogota": "2026-10-12",
+      "decision_counts": {
+        "BET_SHADOW": 21,
+        "BLOCKED": 47,
+        "NO_BET": 64
+      },
+      "network_calls": 124,
+      "market_governance_status": "PASS_PROMOTED_GOVERNED_P_MATRIX_SIGNAL_ONLY",
+      "houses": [
+        "Betano",
+        "BetPlay",
+        "RushBet"
+      ],
+      "bwin_excluded": true,
+      "probability_frozen_before_odds_query": true,
+      "odds_used_to_generate_probability": false,
+      "physical_house_crosscheck_required": true,
+      "automatic_wagering": false,
+      "real_money": "BLOCKED",
+      "evidence_blob": "6b818cff5bc3c36a4185632f0e579c7101320a33"
+    },
+    "over25_active_v2": {
+      "freeze_observation_count": 1635,
+      "observation_count": 1332,
+      "settlement_count": 1332,
+      "pending_settlement_count": 303,
+      "status": "ACTIVE_V2",
+      "evidence_blob": "aff63cfe58a85af86b4dce0db55729d156159437"
+    },
+    "global_strength_refresh": {
+      "head": "787bc1bee0cf68db39ec6838ea7e9a1086d8de20",
+      "football_global_1x2_prospective_n": 2134,
+      "football_global_over25_prospective_n": 2134,
+      "classification": "STRONG",
+      "note": "Global strength ledger is distinct from calibration_v2 lane settlement counts."
+    }
+  },
+  "bookmakers_browser_readback": {
+    "Betano": {
+      "status": "READABLE",
+      "sportsbook_content_detected": true
+    },
+    "BetPlay": {
+      "status": "READABLE",
+      "sportsbook_content_detected": true
+    },
+    "Rushbet": {
+      "status": "READABLE",
+      "sportsbook_content_detected": true
+    },
+    "note": "No retroactive repricing of already-sent 12-OCT paper signals. Persisted signal odds remain the governed freeze evidence."
+  },
+  "telegram_paper": {
+    "ledger_blob": "0094fb0e0dc459c4f40dcb2f3fbbef4b387d6032",
+    "date_bogota": "2026-10-12",
+    "sent_signal_count": 21,
+    "total_paper_stake_cop": 600000,
+    "stake_level_counts": {
+      "1": 19,
+      "2": 1,
+      "3": 1
+    },
+    "physical_web_chat_readback": true,
+    "browser_loaded_signal_headers": 17,
+    "browser_loaded_signal_headers_is_total_claim": false,
+    "live_progress_message_physically_read": {
+      "unique_matches": 90,
+      "final_standard": 69,
+      "final_quality_valid": 59,
+      "leading_lane": "itf|women|hard",
+      "leading_lane_final_quality_valid": 24,
+      "remaining_to_30": 6,
+      "model": "RESEARCH_ONLY",
+      "probabilities": "SEALED",
+      "metrics": "SEALED",
+      "live_betting_status": "SIN_SEÑAL_LIVE_GOBERNADA",
+      "real_money": "BLOCKED"
+    },
+    "duplicate_signal_send_forbidden": true
+  },
+  "protections": {
+    "missing_not_zero": true,
+    "silent_imputation": false,
+    "odds_to_probability": false,
+    "pit_strict": true,
+    "future_leakage_forbidden": true,
+    "final_only_settlement": true,
+    "synthetic_backfill_forbidden": true,
+    "automatic_real_money_execution": false,
+    "secrets_persisted": false
+  },
+  "conclusion": {
+    "status": "PASS_PHYSICALLY_RECONCILED",
+    "hard": "HEALTHY_IDLE_NO_NEW_ELIGIBLE_FREEZE",
+    "clay": "ACTIVE_PROSPECTIVE",
+    "live": "ACTIVE_RESEARCH_ONLY_WITH_PAID_FAILOVER",
+    "football": "DAILY_PIPELINE_ALREADY_EXECUTED_AND_SIGNALS_ALREADY_SENT_PAPER",
+    "action": "DO_NOT_DUPLICATE_SIGNALS; CONTINUE_AUTONOMOUS_VALID_QUEUES_AND_FINAL_ONLY_SETTLEMENTS"
+  }
+}

@@ -1,0 +1,302 @@
+{
+  "schema": "MATRIX_42_MARKET_ACTIVATION_SNAPSHOT_V1",
+  "date_bogota": "2026-10-28",
+  "status": "PASS_GOVERNED_PORTFOLIO_NOT_ALL_SIGNAL_AUTHORIZED",
+  "sources": {
+    "supervisor": {
+      "path": "evidence/market_portfolio/MATRIX_MULTI_MARKET_SUPERVISOR_LAST.json",
+      "blob_sha": "f756ae8b8137f79f4de0ff29016db9e08f483503",
+      "generated_at_utc": "2026-10-28T15:15:06+00:00"
+    },
+    "registry": {
+      "path": "evidence/market_portfolio/MATRIX_42_LANE_PROSPECTIVE_REGISTRY_LAST.json",
+      "blob_sha": "7a676181d4e64b00538521951e03ba0d12fd0edf",
+      "generated_at_utc": "2026-10-28T15:14:37+00:00"
+    },
+    "calibration": {
+      "path": "evidence/governance/MATRIX_42_MARKET_ELITE_CALIBRATION_CLOSURE_28OCT2026.json",
+      "blob_sha": "c2bc3133fd65cd7c7d3c29bd5808e728cfb77e89"
+    },
+    "policy": {
+      "path": "config/MATRIX_42_MARKET_ACTIVATION_POLICY_20261028.json",
+      "blob_sha": "a81b9520fb8810585ac5964b005fa24522122540"
+    }
+  },
+  "counts": {
+    "supervisor_state_counts": {
+      "ACTIVE": 2,
+      "LAB": 40
+    },
+    "lanes_at_600": 13,
+    "lanes_with_any_valid_prospective": 16,
+    "prospective_ledger_rows": 8798,
+    "activation_classes": {
+      "ACTIVE_GOVERNED_SELECTION_ONLY": 1,
+      "ACTIVE_MODEL_PRICE_MAPPING_REQUIRED": 1,
+      "MEASURED_PROMOTION_REQUIRED": 3,
+      "MEASURED_PRICE_AND_PROMOTION_REQUIRED": 6,
+      "DEDICATED_CALIBRATION_REQUIRED": 2,
+      "PROSPECTIVE_COLLECTION_LOW_COUNT": 2,
+      "PROSPECTIVE_COLLECTION_REQUIRED_PRICE_OBSERVED": 13,
+      "PROSPECTIVE_AND_PRICE_MAPPING_REQUIRED": 13,
+      "NOT_PROMOTABLE_DIAGNOSTIC_ONLY": 1
+    }
+  },
+  "telegram_now": {
+    "football": {
+      "market_family": "TOTAL_GOALS_OVER_UNDER",
+      "authorized_selection": "OVER_2_5",
+      "conditions": [
+        "P_MATRIX >= 0.60",
+        "decimal_odds > 1.50",
+        "revalidated_EV >= 0.05",
+        "freshness/risk gates PASS"
+      ]
+    },
+    "tennis": {
+      "market_family": "MATCH_WINNER",
+      "model_state": "ACTIVE",
+      "telegram_state": "BLOCKED_UNTIL_EXACT_PRICE_MAPPING"
+    }
+  },
+  "priority_groups": {
+    "ACTIVE_GOVERNED_SELECTION_ONLY": [
+      {
+        "market_key": "TOTAL_GOALS_OVER_UNDER",
+        "count": 727,
+        "price_state": "PRICE_FAMILY_OBSERVED"
+      }
+    ],
+    "ACTIVE_MODEL_PRICE_MAPPING_REQUIRED": [
+      {
+        "market_key": "MATCH_WINNER",
+        "count": 99,
+        "price_state": "PRICE_MAPPING_REQUIRES_TENNIS_PROVIDER_OR_BOOK_CATALOG"
+      }
+    ],
+    "MEASURED_PROMOTION_REQUIRED": [
+      {
+        "market_key": "DOUBLE_CHANCE_1X",
+        "count": 727,
+        "price_state": "PRICE_FAMILY_OBSERVED"
+      },
+      {
+        "market_key": "DOUBLE_CHANCE_X2",
+        "count": 727,
+        "price_state": "PRICE_FAMILY_OBSERVED"
+      },
+      {
+        "market_key": "MATCH_RESULT_1X2",
+        "count": 727,
+        "price_state": "PRICE_FAMILY_OBSERVED"
+      }
+    ],
+    "MEASURED_PRICE_AND_PROMOTION_REQUIRED": [
+      {
+        "market_key": "FIRST_HALF_TEAM_TOTAL_GOALS_AWAY",
+        "count": 634,
+        "price_state": "PRICE_FAMILY_NOT_OBSERVED"
+      },
+      {
+        "market_key": "FIRST_HALF_TEAM_TOTAL_GOALS_HOME",
+        "count": 634,
+        "price_state": "PRICE_FAMILY_NOT_OBSERVED"
+      },
+      {
+        "market_key": "FIRST_HALF_TOTAL_GOALS_OVER_UNDER",
+        "count": 634,
+        "price_state": "PRICE_FAMILY_NOT_OBSERVED"
+      },
+      {
+        "market_key": "SECOND_HALF_TEAM_TOTAL_GOALS_AWAY",
+        "count": 634,
+        "price_state": "PRICE_FAMILY_NOT_OBSERVED"
+      },
+      {
+        "market_key": "SECOND_HALF_TEAM_TOTAL_GOALS_HOME",
+        "count": 634,
+        "price_state": "PRICE_FAMILY_NOT_OBSERVED"
+      },
+      {
+        "market_key": "SECOND_HALF_TOTAL_GOALS_OVER_UNDER",
+        "count": 634,
+        "price_state": "PRICE_FAMILY_NOT_OBSERVED"
+      }
+    ],
+    "DEDICATED_CALIBRATION_REQUIRED": [
+      {
+        "market_key": "TEAM_TOTAL_GOALS_AWAY",
+        "count": 627,
+        "price_state": "PRICE_FAMILY_OBSERVED"
+      },
+      {
+        "market_key": "TEAM_TOTAL_GOALS_HOME",
+        "count": 627,
+        "price_state": "PRICE_FAMILY_OBSERVED"
+      }
+    ],
+    "PROSPECTIVE_COLLECTION_LOW_COUNT": [
+      {
+        "market_key": "TEAM_TOTAL_SHOTS_AWAY",
+        "count": 3,
+        "price_state": "PRICE_FAMILY_NOT_OBSERVED"
+      },
+      {
+        "market_key": "TEAM_TOTAL_SHOTS_HOME",
+        "count": 3,
+        "price_state": "PRICE_FAMILY_NOT_OBSERVED"
+      }
+    ],
+    "PROSPECTIVE_COLLECTION_REQUIRED_PRICE_OBSERVED": [
+      {
+        "market_key": "ASIAN_OR_EUROPEAN_HANDICAP",
+        "count": 0,
+        "price_state": "PRICE_FAMILY_OBSERVED"
+      },
+      {
+        "market_key": "BTTS",
+        "count": 0,
+        "price_state": "PRICE_FAMILY_OBSERVED"
+      },
+      {
+        "market_key": "CARDS_OVER_UNDER",
+        "count": 0,
+        "price_state": "PRICE_FAMILY_OBSERVED"
+      },
+      {
+        "market_key": "CORNERS_OVER_UNDER",
+        "count": 0,
+        "price_state": "PRICE_FAMILY_OBSERVED"
+      },
+      {
+        "market_key": "GOALKEEPER_SAVES",
+        "count": 0,
+        "price_state": "PRICE_FAMILY_OBSERVED"
+      },
+      {
+        "market_key": "PLAYER_ASSISTS",
+        "count": 0,
+        "price_state": "PRICE_FAMILY_OBSERVED"
+      },
+      {
+        "market_key": "PLAYER_FOULS",
+        "count": 0,
+        "price_state": "PRICE_FAMILY_OBSERVED"
+      },
+      {
+        "market_key": "PLAYER_PASSES",
+        "count": 0,
+        "price_state": "PRICE_FAMILY_OBSERVED"
+      },
+      {
+        "market_key": "PLAYER_SHOTS",
+        "count": 0,
+        "price_state": "PRICE_FAMILY_OBSERVED"
+      },
+      {
+        "market_key": "PLAYER_SHOTS_ON_TARGET",
+        "count": 0,
+        "price_state": "PRICE_FAMILY_OBSERVED"
+      },
+      {
+        "market_key": "PLAYER_TACKLES",
+        "count": 0,
+        "price_state": "PRICE_FAMILY_OBSERVED"
+      },
+      {
+        "market_key": "TEAM_SHOTS_ON_TARGET_AWAY",
+        "count": 0,
+        "price_state": "PRICE_FAMILY_OBSERVED"
+      },
+      {
+        "market_key": "TEAM_SHOTS_ON_TARGET_HOME",
+        "count": 0,
+        "price_state": "PRICE_FAMILY_OBSERVED"
+      }
+    ],
+    "PROSPECTIVE_AND_PRICE_MAPPING_REQUIRED": [
+      {
+        "market_key": "ACES",
+        "count": 0,
+        "price_state": "PRICE_MAPPING_REQUIRES_TENNIS_PROVIDER_OR_BOOK_CATALOG"
+      },
+      {
+        "market_key": "BOTH_PLAYERS_WIN_SET",
+        "count": 0,
+        "price_state": "PRICE_MAPPING_REQUIRES_TENNIS_PROVIDER_OR_BOOK_CATALOG"
+      },
+      {
+        "market_key": "BREAKS_OF_SERVE",
+        "count": 0,
+        "price_state": "PRICE_MAPPING_REQUIRES_TENNIS_PROVIDER_OR_BOOK_CATALOG"
+      },
+      {
+        "market_key": "DOUBLE_FAULTS",
+        "count": 0,
+        "price_state": "PRICE_MAPPING_REQUIRES_TENNIS_PROVIDER_OR_BOOK_CATALOG"
+      },
+      {
+        "market_key": "GAME_HANDICAP",
+        "count": 0,
+        "price_state": "PRICE_MAPPING_REQUIRES_TENNIS_PROVIDER_OR_BOOK_CATALOG"
+      },
+      {
+        "market_key": "PLAYER_TOTAL_GAMES",
+        "count": 0,
+        "price_state": "PRICE_MAPPING_REQUIRES_TENNIS_PROVIDER_OR_BOOK_CATALOG"
+      },
+      {
+        "market_key": "SET_HANDICAP",
+        "count": 0,
+        "price_state": "PRICE_MAPPING_REQUIRES_TENNIS_PROVIDER_OR_BOOK_CATALOG"
+      },
+      {
+        "market_key": "SET_WINNER",
+        "count": 0,
+        "price_state": "PRICE_MAPPING_REQUIRES_TENNIS_PROVIDER_OR_BOOK_CATALOG"
+      },
+      {
+        "market_key": "TEAM_FOULS_AWAY",
+        "count": 0,
+        "price_state": "PRICE_FAMILY_NOT_OBSERVED"
+      },
+      {
+        "market_key": "TEAM_FOULS_HOME",
+        "count": 0,
+        "price_state": "PRICE_FAMILY_NOT_OBSERVED"
+      },
+      {
+        "market_key": "TIEBREAK_YES_NO",
+        "count": 0,
+        "price_state": "PRICE_MAPPING_REQUIRES_TENNIS_PROVIDER_OR_BOOK_CATALOG"
+      },
+      {
+        "market_key": "TOTAL_GAMES",
+        "count": 0,
+        "price_state": "PRICE_MAPPING_REQUIRES_TENNIS_PROVIDER_OR_BOOK_CATALOG"
+      },
+      {
+        "market_key": "TOTAL_SETS",
+        "count": 0,
+        "price_state": "PRICE_MAPPING_REQUIRES_TENNIS_PROVIDER_OR_BOOK_CATALOG"
+      }
+    ],
+    "NOT_PROMOTABLE_DIAGNOSTIC_ONLY": [
+      {
+        "market_key": "DOUBLE_CHANCE_12",
+        "count": 727,
+        "price_state": "PRICE_FAMILY_OBSERVED"
+      }
+    ]
+  },
+  "hard_constraints": [
+    "42/42 means represented and supervised, not 42 productive markets.",
+    "Crossing 600 does not auto-promote.",
+    "Missing is not zero.",
+    "No post-start backfill may count as prospective.",
+    "SofaScore and Flashscore discovery precedes APIs.",
+    "REAL_MONEY=BLOCKED; automatic_wagering=false.",
+    "0 PICKS is valid; gates are never relaxed to force volume."
+  ],
+  "api_cutoff_note": "Paid football/tennis APIs expire 2026-10-28 and renewal is not authorized; no paid-provider availability may be assumed after cutoff without new physical evidence."
+}

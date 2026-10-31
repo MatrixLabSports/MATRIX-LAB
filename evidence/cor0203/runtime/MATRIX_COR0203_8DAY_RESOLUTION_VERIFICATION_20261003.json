@@ -1,0 +1,114 @@
+{
+  "schema": "MATRIX_COR0203_8DAY_RESOLUTION_VERIFICATION_V1",
+  "verified_at_utc": "2026-10-03T23:31:50+00:00",
+  "workflow": {
+    "run_id": 37159570400,
+    "job_id": 111317271680,
+    "conclusion": "success",
+    "scheduler_run_attempt": "4"
+  },
+  "requested_resolution": {
+    "dual_discovery_8_days": {
+      "status": "PASS",
+      "logical_horizon_days": 8,
+      "provider_call_max_days": 4,
+      "base_window": [
+        "2026-10-03",
+        "2026-10-06"
+      ],
+      "extension_window": [
+        "2026-10-07",
+        "2026-10-10"
+      ],
+      "rapidapi_base_candidates": 28,
+      "rapidapi_extension_candidates": 0,
+      "rapidapi_extension_network_calls": 3,
+      "api_tennis_base_candidates": 24,
+      "api_tennis_extension_candidates": 0,
+      "api_tennis_extension_network_calls": 1,
+      "dedupe_before_dual_reconciliation": true,
+      "evidence_path": "evidence/cor0203/runtime/MATRIX_COR0203_DUAL_8DAY_HORIZON_LAST.json",
+      "blob_sha": "595c82b00d8c497dc1015c7f66ee7b41e184cfe7"
+    },
+    "dual_provider_reconciliation": {
+      "status": "PASS",
+      "rapidapi_candidates_input": 28,
+      "rapidapi_candidates_output": 3,
+      "api_tennis_candidates_input": 24,
+      "api_tennis_unique_candidates_output": 1,
+      "api_tennis_existing_physical_alias_count": 7,
+      "cross_provider_identity_aliases_generated": 29,
+      "evidence_path": "evidence/cor0203/runtime/MATRIX_COR0203_DUAL_PROVIDER_RECONCILIATION_LAST.json",
+      "blob_sha": "6b04ce1ae469815c1d7379e8926d912c9ccd9448"
+    },
+    "api_tennis_identity_recovery": {
+      "status": "PASS",
+      "blocked_evaluated": 16,
+      "recovered": 0,
+      "remain_blocked": 16,
+      "provider_network_calls": 20,
+      "ranking_history_calls": 3,
+      "profile_calls": 7,
+      "directory_calls": 10,
+      "policy": "EXACT_IDENTITY_PLUS_PRECUT_CHALLENGER_HISTORY_ONLY",
+      "evidence_path": "evidence/cor0203/runtime/MATRIX_COR0203_API_TENNIS_RANK_HISTORY_RECOVERY_LAST.json",
+      "blob_sha": "46ab0bcf5ce1b9e9c1a880c51348295cefb063ce"
+    },
+    "preregistration": {
+      "events_registered": 0,
+      "status": "NO_NEW_EVENTS",
+      "reason": "All surviving current candidates were already preregistered/frozen; extension produced no new candidates.",
+      "evidence_path": "evidence/cor0203/runtime/MATRIX_COR0203_DISCOVERY_PREREG_LAST.json",
+      "blob_sha": "3beae1e01db0cc225edfd8f3b07a290a9888a81a"
+    },
+    "governed_models": {
+      "elo_identity": "R218_ELO_BOTH",
+      "glicko_identity": "R223_BATCH_GLICKO_RATING_BOTH",
+      "binding": "MATRIX_COR0203_MODEL_BINDING_R707_V1",
+      "binding_blob_sha": "b5cb0d297996e71639d56443e153742732546d62",
+      "bundle_blob_sha": "12690d07938a5e243b2d71c231bd43fecb6ccec6",
+      "domain": "ATP Challenger Hard match-winner"
+    },
+    "holdout": {
+      "unique_calibration_observations": 93,
+      "physical_frozen_rows": 151,
+      "duplicate_observations_quarantined": 58,
+      "new_freezes_latest_cycle": 0,
+      "integrity": "PASS",
+      "remaining_to_100": 7,
+      "remaining_to_150": 57,
+      "remaining_to_200": 107,
+      "remaining_to_600": 507,
+      "evidence_path": "evidence/cor0203/runtime/MATRIX_COR0203_PRODUCTION_OBSERVABILITY_LAST.json",
+      "blob_sha": "cb82d6e4dfd39b3f902ea2831b0e4c14ec6fd4d0"
+    },
+    "milestones": {
+      "m100": "PENDING",
+      "m150": "PENDING",
+      "m200": "PENDING",
+      "metrics_open_allowed_at_milestones": false,
+      "evidence_path": "evidence/cor0203/runtime/MATRIX_COR0203_MILESTONES_LAST.json",
+      "blob_sha": "309a110486d4557160c2d5a5dca7422dd7a7dfc0"
+    }
+  },
+  "protections": {
+    "metrics_policy": "SEALED_UNTIL_600",
+    "metrics_opened": false,
+    "outcomes_read_for_metrics": 0,
+    "parameter_tuning_allowed": false,
+    "odds_to_probability": false,
+    "silent_imputation": false,
+    "automatic_wagering": false,
+    "real_money": "BLOCKED"
+  },
+  "implementation_commits": [
+    "e693866ffce2400325be2aceecb0845f77443894",
+    "a7e4c7077f5c7c4135a0afe2ee5b116a23556cc9",
+    "f59d37feacc1a0309fa8a041003ff9fecc0c68c1",
+    "18572649c013bb2eba9975179bfb63232cecf6d2",
+    "8a115a8bb90eea3597994239f21e1edaa91984df",
+    "89a8ef5f7f371cadb4aa63ede988ae7be9b4523b",
+    "c2a9d1d71705504778f36e2add910e97079a113a",
+    "d93718b8fa5b489a37917baf6f8ad6b191fc2a99"
+  ]
+}

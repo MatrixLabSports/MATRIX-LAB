@@ -1,0 +1,155 @@
+{
+  "schema": "MATRIX_WORLD_CALIBRATION_SETTLEMENT_PROGRESS_AUDIT_V1",
+  "target_date_bogota": "2026-10-06",
+  "audit_reference_utc": "2026-10-26T17:33:17Z",
+  "branch": "repair/cor09-world-pipeline",
+  "comparison_baseline": {
+    "path": "evidence/daily_selection/MATRIX_SETTLEMENT_PROGRESS_20261006_BOGOTA_20261026T161438Z_V2_3907_T369.json",
+    "commit": "3578036550033a792c349b6786ee3ff1dca0ef3a"
+  },
+  "observed_branch_head_before_audit": "8c2a922eda921e79edb4f82b01f89d2ddf6052cd",
+  "source_blobs": {
+    "candidate": {
+      "path": "evidence/daily_selection/MATRIX_CALIBRATION_CANDIDATES_20261006_BOGOTA.json",
+      "blob_sha": "52e897007840f5bed1a8999edad8ee594fefc767",
+      "changed_since_baseline": false
+    },
+    "football_sync": {
+      "path": "evidence/api_football/prospective_market_freeze/settlement_sync_last.json",
+      "blob_sha": "6dd6805700258538d72b699b5a040f1368c6b747",
+      "changed_since_baseline": false
+    },
+    "football_tracker": {
+      "path": "evidence/api_football/governance/MATRIX_FOOTBALL_4000_CANONICAL_TRACKER_LAST.json",
+      "blob_sha": "cc580815fe1d797bfc6a9c0d24b44ac2b1812dfb",
+      "previous_blob_sha": "ee6132bece3f43405a4fb06a1223c0b6381adc94",
+      "changed_since_baseline": true,
+      "source_commit": "4728657f0a2c5850524461f34b85bee497b3bc73"
+    },
+    "football_v2_over25": {
+      "path": "evidence/api_football/calibration_v2/lanes/over_2_5/state.json",
+      "blob_sha": "f9b4870fb488354b39bc0ef7b96b2fcc553b7a5e",
+      "changed_since_baseline": false
+    },
+    "football_v2_under25": {
+      "path": "evidence/api_football/calibration_v2/lanes/under_2_5/state.json",
+      "blob_sha": "c175037519ab47a5d832a18cbf988f13f7314473",
+      "changed_since_baseline": false
+    },
+    "football_v2_1x2": {
+      "path": "evidence/api_football/calibration_v2/lanes/1x2/state.json",
+      "blob_sha": "2215237b6f4984046946b5dca653e9b2a73f7317",
+      "changed_since_baseline": false
+    },
+    "football_prospective_sync": {
+      "path": "evidence/api_football/prospective_calibration/sync_last.json",
+      "blob_sha": "85ea029dc5a266bc87a72393d7591dcb308e7e34",
+      "changed_since_baseline": false
+    },
+    "tennis_ledger": {
+      "path": "evidence/cor0203/settlement/MATRIX_COR0203_SETTLEMENT_LEDGER.jsonl",
+      "blob_sha": "11c91500066993303ac7b0985c31fff6ce261281",
+      "changed_since_baseline": false
+    },
+    "tennis_uniqueness": {
+      "path": "evidence/cor0203/runtime/MATRIX_COR0203_SETTLEMENT_UNIQUENESS_LAST.json",
+      "blob_sha": "cdfd67fa4612e7b76e7369c28e0aa062502d0458",
+      "changed_since_baseline": false
+    }
+  },
+  "football": {
+    "original_6oct": {
+      "candidates": 116,
+      "standard_ft_settled": 107,
+      "new_standard_ft": 0,
+      "blocked_nonstandard": {
+        "PEN": [
+          "1588817",
+          "1588821",
+          "1588845",
+          "1588863",
+          "1588890",
+          "1588893",
+          "1619499"
+        ],
+        "AET": [
+          "1644168"
+        ]
+      },
+      "pending_provider": {
+        "fixture_id": "1596466",
+        "status": "NS",
+        "reason": "RESULT_NOT_STANDARD_FINAL"
+      }
+    },
+    "global_sync": {
+      "frozen": 5177,
+      "standard_final": 4710,
+      "pending": 340,
+      "blocked": 127,
+      "reconciles": true,
+      "change_since_previous": {
+        "frozen": 0,
+        "standard_final": 0,
+        "pending": 0,
+        "blocked": 0
+      }
+    },
+    "v2": {
+      "frozen": 4349,
+      "settled_per_market": 3907,
+      "pending_per_market": 442,
+      "markets_checked": [
+        "1X2",
+        "OVER_2_5",
+        "UNDER_2_5"
+      ],
+      "change_since_previous": {
+        "frozen": 0,
+        "settled_per_market": 0,
+        "pending_per_market": 0
+      },
+      "metrics_opened": false
+    },
+    "canonical_tracker": {
+      "generated_at_utc": "2026-10-26T17:19:25.073886+00:00",
+      "tracker_global_final": 4710,
+      "tracker_v2_settled": 3907,
+      "stale_relative_to_latest_sync": false,
+      "changed_since_previous": true,
+      "change_type": "CANONICAL_TRACKER_RECONCILED_WITH_EXISTING_SETTLEMENTS",
+      "manual_overwrite_performed": false
+    }
+  },
+  "tennis": {
+    "original_6oct_unique": 11,
+    "original_6oct_finished": 11,
+    "ledger_records": 369,
+    "unique_event_ids": 369,
+    "unique_settlement_ids": 369,
+    "new_settlements_since_previous": 0,
+    "uniqueness_result": "PASS",
+    "settled_unique_canonical_events": 316,
+    "settled_duplicate_alias_records": 53,
+    "duplicate_aliases_used_for_metrics": 0,
+    "metrics_opened": false
+  },
+  "governance": {
+    "settlement_final_only": true,
+    "metrics_opened": false,
+    "no_tuning": true,
+    "no_odds_to_p": true,
+    "automatic_wagering": false,
+    "real_money": "BLOCKED",
+    "executed_governed_settlements_this_audit": 0,
+    "no_duplicate_settlement_execution": true
+  },
+  "change_detection": {
+    "new_standard_football_results": 0,
+    "new_finished_tennis_results": 0,
+    "physical_change_since_previous": true,
+    "change": "Previously stale canonical football tracker refreshed to existing counts. No new sports settlements.",
+    "source_commit": "4728657f0a2c5850524461f34b85bee497b3bc73"
+  },
+  "method": "Read current branch files and compare source Git blob SHAs with prior audit; only canonical tracker changed. No live provider result invented, no settlement duplicated, no tuning or metrics opened."
+}

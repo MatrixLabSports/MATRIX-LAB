@@ -1,0 +1,41 @@
+{
+  "schema": "MATRIX_QUOTE_PIPELINE_CERTIFICATION_V1",
+  "generated_at_utc": "2026-10-28T20:03:24+00:00",
+  "status": "NO_GO_CERTIFICATION_FAILED",
+  "criteria": {
+    "post_fix_infrastructure_loss_count_must_equal": 0,
+    "recovery_queue_must_match_latest_audit": true,
+    "exhausted_provider_must_not_be_waited_on": true,
+    "recovery_execution_evidence_required": true,
+    "telegram_delivery_evidence_required_if_all_gates_pass": true
+  },
+  "observed": {
+    "certification_epoch_utc": "2026-10-28T19:58:35+00:00",
+    "audit_generated_at_utc": "2026-10-28T20:03:24+00:00",
+    "audit_record_count": 56,
+    "historic_infrastructure_loss_count_preserved": 46,
+    "post_fix_infrastructure_loss_count": 0,
+    "recoverable_prematch_count": 0,
+    "waiting_final_window_count": 10,
+    "recovery_queue_generated_from_audit_at_utc": "2026-10-28T18:23:37+00:00",
+    "recovery_queue_count": 17,
+    "recovery_queue_synced": false,
+    "recovery_queue_execution_mode": "LEGACY_QUEUE_WITHOUT_EXECUTION_MODE",
+    "valid_recovery_execution_evidence_after_epoch": 0,
+    "odds_api_stage": "BLOCKED_EXHAUSTED",
+    "odds_api_http_status": 429
+  },
+  "failures": [
+    "RECOVERY_QUEUE_NOT_SYNCHRONIZED_WITH_LATEST_AUDIT",
+    "NO_POST_FIX_AUDIT_OBSERVED_YET"
+  ],
+  "owners": {
+    "pipeline": "PRINCIPAL_REALTIME_RELIABILITY_ODDS_ENGINEER",
+    "price_mapping": "MARKET_PRICE_MAPPING_ENGINEER",
+    "provider_failover": "MARKET_DATA_INTEGRATION_ENGINEER",
+    "incident": "OBSERVABILITY_INCIDENT_ENGINEER",
+    "telegram_delivery": "TELEGRAM_DELIVERY_ENGINEER"
+  },
+  "automatic_wagering": false,
+  "real_money": "BLOCKED"
+}

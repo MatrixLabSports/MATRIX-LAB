@@ -1,0 +1,243 @@
+{
+  "schema": "MATRIX_WORLD_CALIBRATION_SETTLEMENT_PROGRESS_AUDIT_V1",
+  "target_date_bogota": "2026-10-06",
+  "audit_at_utc": "2026-10-28T14:10:05.019Z",
+  "branch": "repair/cor09-world-pipeline",
+  "read_head_sha": "4ca66ac328296d541fd91b8c712926ca8ce77a96",
+  "previous_snapshot": {
+    "path": "evidence/daily_selection/MATRIX_SETTLEMENT_PROGRESS_20261006_BOGOTA_20261028T1238Z_V2_4155_T417_B178.json",
+    "commit": "d90e16e38e8180a045e4c8c6308d0eb4c4eb058f"
+  },
+  "source_blobs": {
+    "candidate": {
+      "path": "evidence/daily_selection/MATRIX_CALIBRATION_CANDIDATES_20261006_BOGOTA.json",
+      "blob_sha": "52e897007840f5bed1a8999edad8ee594fefc767"
+    },
+    "football_settlement_sync": {
+      "path": "evidence/api_football/prospective_market_freeze/settlement_sync_last.json",
+      "blob_sha": "355163fc614e54c43181b22beb609e7e7136c877"
+    },
+    "football_calibration_sync": {
+      "path": "evidence/api_football/prospective_calibration/sync_last.json",
+      "blob_sha": "cd092a69d271223f724fd191b7fe2a14a4064d5b"
+    },
+    "football_v2_over": {
+      "path": "evidence/api_football/calibration_v2/lanes/over_2_5/state.json",
+      "blob_sha": "c105b762338678db58766b1ed65ed8e38fc530e1"
+    },
+    "football_v2_under": {
+      "path": "evidence/api_football/calibration_v2/lanes/under_2_5/state.json",
+      "blob_sha": "327034925ab353658301dd2c5f9d66d7169b6576"
+    },
+    "football_v2_1x2": {
+      "path": "evidence/api_football/calibration_v2/lanes/1x2/state.json",
+      "blob_sha": "9a5bae094b910c128045eeab51dae381fd61ccd4"
+    },
+    "football_uniqueness": {
+      "path": "evidence/api_football/physical_uniqueness/audit_last.json",
+      "blob_sha": "d6f69254ae7e707854e0b747803852cd53ea25fa"
+    },
+    "football_tracker": {
+      "path": "evidence/api_football/governance/MATRIX_FOOTBALL_4000_CANONICAL_TRACKER_LAST.json",
+      "blob_sha": "c17ee80c452a0dcfece6a32e635d0adf21eb44f0"
+    },
+    "tennis_sync": {
+      "path": "evidence/cor0203/runtime/MATRIX_COR0203_SETTLEMENT_SYNC_LAST.json",
+      "blob_sha": "fd76a37c61f1d62b89875b33eaf38d9e0ba2925a"
+    },
+    "tennis_uniqueness": {
+      "path": "evidence/cor0203/runtime/MATRIX_COR0203_SETTLEMENT_UNIQUENESS_LAST.json",
+      "blob_sha": "0c7e418c07a60696fb086f3d88a6b9d285764f04"
+    },
+    "tennis_ledger": {
+      "path": "evidence/cor0203/settlement/MATRIX_COR0203_SETTLEMENT_LEDGER.jsonl",
+      "blob_sha": "4f4a2575013fb35ab6cf733e07fcaa9fb2538d49"
+    }
+  },
+  "football": {
+    "original_6oct": {
+      "candidates": 116,
+      "unique_fixture_ids": 116,
+      "standard_ft_settled": 107,
+      "new_standard_ft": 0,
+      "nonstandard_blocked": [
+        {
+          "fixture_id": "1588817",
+          "status": "PEN"
+        },
+        {
+          "fixture_id": "1588821",
+          "status": "PEN"
+        },
+        {
+          "fixture_id": "1588845",
+          "status": "PEN"
+        },
+        {
+          "fixture_id": "1588863",
+          "status": "PEN"
+        },
+        {
+          "fixture_id": "1588890",
+          "status": "PEN"
+        },
+        {
+          "fixture_id": "1588893",
+          "status": "PEN"
+        },
+        {
+          "fixture_id": "1619499",
+          "status": "PEN"
+        },
+        {
+          "fixture_id": "1644168",
+          "status": "AET"
+        }
+      ],
+      "provider_blocked": [
+        {
+          "fixture_id": "1596466",
+          "reason": "API_FOOTBALL_PROVIDER_ERROR"
+        }
+      ],
+      "pending": [],
+      "verification": "107/116 carried from prior audited snapshot; eight nonstandard and one provider-blocked remain in governed sync; no new FINAL/FT."
+    },
+    "global": {
+      "frozen": 5243,
+      "final": 4958,
+      "pending": 102,
+      "blocked": 183,
+      "new_final_since_previous_snapshot": 0,
+      "newly_blocked_since_previous_snapshot": 5,
+      "reconciles": true
+    },
+    "newly_blocked": [
+      {
+        "fixture_id": "1611786",
+        "reason": "API_FOOTBALL_PROVIDER_ERROR",
+        "provider_error": "You have reached the request limit for the day, Go to https://dashboard.api-football.com to upgrade your plan.",
+        "raw_path": "evidence/api_football/prospective_market_freeze/settlement_raw/fixture_1611786.bin",
+        "raw_blob_sha": "8638d1f36bb8903ab13e76a44d3c209cdf04fa63",
+        "raw_sha256": "4fa840e33bdfea069db3f48186cdfe17df790800fbe92cd757815f111c5e3d05",
+        "original_6oct": false
+      },
+      {
+        "fixture_id": "1611787",
+        "reason": "API_FOOTBALL_PROVIDER_ERROR",
+        "provider_error": "You have reached the request limit for the day, Go to https://dashboard.api-football.com to upgrade your plan.",
+        "raw_path": "evidence/api_football/prospective_market_freeze/settlement_raw/fixture_1611787.bin",
+        "raw_blob_sha": "4826e63275533f99251ba9d2c8669fc06986ef87",
+        "raw_sha256": "7a4f01be03604ca503ffbac7c12456a40fb19bef7b78160086e013157d7df4fe",
+        "original_6oct": false
+      },
+      {
+        "fixture_id": "1611788",
+        "reason": "API_FOOTBALL_PROVIDER_ERROR",
+        "provider_error": "You have reached the request limit for the day, Go to https://dashboard.api-football.com to upgrade your plan.",
+        "raw_path": "evidence/api_football/prospective_market_freeze/settlement_raw/fixture_1611788.bin",
+        "raw_blob_sha": "64f8aa1fcfad986d606a23bd8bc46f3d44e63098",
+        "raw_sha256": "bf36e6a098bb88d34b7734f79ca27af75c465310d1f2f9cdc131e071e130693c",
+        "original_6oct": false
+      },
+      {
+        "fixture_id": "1611784",
+        "reason": "API_FOOTBALL_PROVIDER_ERROR",
+        "provider_error": "You have reached the request limit for the day, Go to https://dashboard.api-football.com to upgrade your plan.",
+        "raw_path": "evidence/api_football/prospective_market_freeze/settlement_raw/fixture_1611784.bin",
+        "raw_blob_sha": "fdc1b108ef313527a446510c947b73a565225ca2",
+        "raw_sha256": "c357e43cb32d0e2a7f54651041e8fb34a7f76df63f36572a4523b5c79b51b8dd",
+        "original_6oct": false
+      },
+      {
+        "fixture_id": "1611883",
+        "reason": "API_FOOTBALL_PROVIDER_ERROR",
+        "provider_error": "You have reached the request limit for the day, Go to https://dashboard.api-football.com to upgrade your plan.",
+        "raw_path": "evidence/api_football/prospective_market_freeze/settlement_raw/fixture_1611883.bin",
+        "raw_blob_sha": "a2d7413eae4b4e9b6c38a35eb6babcc6f4f898cd",
+        "raw_sha256": "11ba9a8a0ccbef016f6e6a799aef7e952f5c055a2a4340ee60bdc19cd35833c0",
+        "original_6oct": false
+      }
+    ],
+    "v2": {
+      "settled_per_market": 4155,
+      "frozen_per_market": 4415,
+      "pending_per_market": 260,
+      "markets": [
+        "1X2",
+        "OVER_2_5",
+        "UNDER_2_5"
+      ],
+      "metrics_opened": false,
+      "parameter_tuning_allowed": false
+    },
+    "physical_uniqueness": {
+      "result": "PASS",
+      "audited_calibration_rows": 4958,
+      "current_calibration_rows": 4958
+    },
+    "canonical_tracker": {
+      "tracked_final": 4958,
+      "tracked_v2": 4155,
+      "tracked_pending": 109,
+      "tracked_blocked": 176,
+      "physical_final": 4958,
+      "physical_v2": 4155,
+      "physical_pending": 102,
+      "physical_blocked": 183,
+      "settlement_stale_by": 0,
+      "blocked_status_stale_by": 7,
+      "requires_governed_sync": true
+    }
+  },
+  "tennis": {
+    "original_6oct": {
+      "unique_candidates": 11,
+      "finished": 11,
+      "new_finished": 0,
+      "verification": "Directly matched 11 original event_ids to FINISHED rows in current ledger."
+    },
+    "global": {
+      "ledger_records": 417,
+      "new_settlements_since_previous_snapshot": 0,
+      "blocked_current": 12,
+      "pending_current": 29
+    },
+    "physical_uniqueness": {
+      "result": "PASS",
+      "ledger_records": 417,
+      "settled_unique_canonical_events": 364,
+      "settled_duplicate_alias_records": 53,
+      "duplicate_observations_quarantined": 171,
+      "unique_calibration_observations": 405,
+      "metrics_opened": false,
+      "ledger_hash_chain_verified": true
+    }
+  },
+  "governance": {
+    "settlement_final_only": true,
+    "metrics_opened": false,
+    "parameter_tuning_allowed": false,
+    "odds_to_p": "PROHIBITED_NOT_EXECUTED",
+    "automatic_wagering": false,
+    "real_money": "BLOCKED",
+    "no_backfill": true
+  },
+  "validation": {
+    "candidate_counts": true,
+    "football_global_reconciles": true,
+    "football_v2_reconciles": true,
+    "football_tracker_settlement_reconciles": true,
+    "football_tracker_block_status_reconciles": false,
+    "football_uniqueness": true,
+    "tennis_uniqueness": true,
+    "tennis_original_11_direct_ledger_match": true,
+    "changes": true
+  },
+  "limitations": [
+    "Five new API-Football request-limit errors are not FINAL/FT and were not settled.",
+    "Canonical tracker still shows 176 blocked and 109 pending; current governed sync shows 183 blocked and 102 pending; use governed reconciliation, no manual overwrite.",
+    "Original 107/116 football FT count carried from previous audited snapshot; no full independent ledger recomputation.",
+    "No new settlements, metrics opening, tuning or odds-to-P executed."
+  ]
+}

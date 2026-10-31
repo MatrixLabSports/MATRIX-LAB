@@ -1,0 +1,48 @@
+{
+  "schema": "MATRIX_SETTLEMENT_PROGRESS_SNAPSHOT_V1",
+  "target_date_bogota": "2026-10-06",
+  "observed_at_utc": "2026-10-07T12:24:50Z",
+  "source_candidate_artifact": {
+    "path": "evidence/daily_selection/MATRIX_CALIBRATION_CANDIDATES_20261006_BOGOTA.json",
+    "git_blob_sha": "52e897007840f5bed1a8999edad8ee594fefc767"
+  },
+  "football": {
+    "candidate_count": 116,
+    "v2_1x2": {
+      "freeze_observation_count": 622,
+      "settlement_count": 233,
+      "pending_settlement_count": 389,
+      "state_git_blob_sha": "41947122a3a07692d23ab15db810062eb0e4a4c0"
+    },
+    "exact_day_settled_count": 107,
+    "exact_day_pending_count": 9,
+    "binding_method": "fixture_id intersection: candidate artifact vs V2 1X2 settlement ledger",
+    "ledger_git_blob_sha": "26ef92f156d493d7256c4fb5c5c3409561fee98b",
+    "change_since_prior_review": {
+      "global_v2_settlements": 6,
+      "exact_day_settlements": 0
+    }
+  },
+  "tennis": {
+    "exact_day_unique_frozen_matches": 11,
+    "exact_day_settled_count": 4,
+    "exact_day_unsettled_count": 7,
+    "settlement_ledger_records": 149,
+    "settlement_ledger_git_blob_sha": "668e9c1f8dd8dcf8eef24edd8a9bc666fe620ce7",
+    "settlement_sync_git_blob_sha": "adcb6066ad297f91236008f0d4e4a94e1e4119b1",
+    "uniqueness_git_blob_sha": "b02aeb7780c577e8b3273d8581392b27591628e9",
+    "nonstandard_terminal_blocked_count": 5,
+    "nonstandard_terminal": "RETIRED",
+    "change_since_prior_review": {
+      "exact_day_settlements": 0
+    }
+  },
+  "governance": {
+    "metrics_opened": false,
+    "parameter_tuning_allowed": false,
+    "odds_to_p": false,
+    "real_money": "BLOCKED",
+    "metrics": "SEALED_UNTIL_600"
+  },
+  "note": "Snapshot records only physically bound repository evidence. No inferred results and no metrics opened."
+}

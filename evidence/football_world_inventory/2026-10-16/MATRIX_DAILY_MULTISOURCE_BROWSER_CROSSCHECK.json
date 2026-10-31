@@ -1,0 +1,107 @@
+{
+  "schema": "MATRIX_DAILY_MULTISOURCE_BROWSER_CROSSCHECK_V3",
+  "target_date_bogota": "2026-10-16",
+  "captured_at_utc": "2026-10-16T00:04:02Z",
+  "sources": {
+    "sofascore": {
+      "url": "https://www.sofascore.com/es/football/2026-10-16",
+      "opera_read_status": "PASS",
+      "count": 126,
+      "count_type": "MACHINE_VERIFIED_BROWSER_UI_EXACT",
+      "operator_manual_intervention_required": false,
+      "captured_at_utc": "2026-10-16T00:04:02Z",
+      "nonstandard_total": 6,
+      "scheduled_or_unblocked_browser_rows": 120,
+      "note": "6 nonstandard selected-day rows are blocked from normal admission: 5 postponed and 1 cancelled."
+    },
+    "flashscore": {
+      "url": "https://www.flashscore.com/tomorrow/",
+      "opera_read_status": "PASS",
+      "count": 253,
+      "count_type": "MULTI_RENDER_BROWSER_OBSERVATIONS_DIVERGENT",
+      "operator_manual_intervention_required": false,
+      "captured_at_utc": "2026-10-16T00:04:02Z",
+      "note": "Unique /match/football/ links inside the main region of Flashscore Football tomorrow.",
+      "exact_total_physically_verified": false,
+      "show_more_present": true,
+      "limitation": "Flashscore still exposes a Show more control in Opera; loaded-tree count is retained as a lower-bound observation and is not promoted to exact world total.",
+      "opera_loaded_tree_count": 253,
+      "opera_show_more_present": true,
+      "tinyfish_exhaustive_session": {
+        "run_id": "e146c85d-e7fb-4c7d-b785-c35fe26b24b2",
+        "status": "COMPLETED",
+        "all_visible_show_more_exhausted": true,
+        "visible_total": 212,
+        "promotional_rows_excluded": true,
+        "interpretation": "Independent dynamic-render observation after exhausting visible expansion controls; retained alongside Opera loaded-tree observation."
+      }
+    }
+  },
+  "governance_basis": {
+    "sofascore_flashscore_daily_crosscheck_required": true,
+    "sofascore_first": true,
+    "flashscore_second": true,
+    "paid_apis_after_browser_sources": true,
+    "source_disagreement_requires_event_level_reconciliation": true
+  },
+  "adjudication": {
+    "status": "RESOLVED_PHYSICALLY_WITH_BROWSER_RENDER_DIVERGENCE_RETAINED",
+    "source_count_equality_required": false,
+    "exact_world_total_claimed": false,
+    "admission_basis": "API_FOOTBALL_CANONICAL_EVENT_LEVEL_GATES_AFTER_BROWSER_BASELINE",
+    "nonstandard_sofascore_rows_blocked": 6
+  },
+  "protections": {
+    "metrics_opened": false,
+    "outcomes_read": 0,
+    "automatic_wagering": false,
+    "real_money": "BLOCKED",
+    "odds_to_probability": false,
+    "partial_accessibility_count_is_never_promoted_to_world_total": true
+  },
+  "post_browser_api": {
+    "provider": "API-Football",
+    "workflow_run_id": 38827393095,
+    "conclusion": "success",
+    "cycle_id": "20261016T000518Z",
+    "started_at_utc": "2026-10-16T00:05:18+00:00",
+    "finished_at_utc": "2026-10-16T00:05:51+00:00",
+    "target_date_bogota": "2026-10-16",
+    "fixtures_received": 411,
+    "eligible_future_fixtures": 395,
+    "canonical_ready_input_count": 157,
+    "blocked_future_input_count": 238,
+    "freeze_candidate_event_count": 120,
+    "new_freeze_event_count": 3,
+    "status": "PASS"
+  },
+  "over25_governed": {
+    "generated_at_utc": "2026-10-16T00:05:51+00:00",
+    "probability_status": "FROZEN_GOVERNED_MARKET_SCOPED_SIGNAL_ONLY",
+    "p_matrix_scored_count": 120,
+    "p_matrix_blocked_count": 37,
+    "decision_counts": {
+      "BET_SHADOW": 10,
+      "BLOCKED": 120,
+      "NO_BET": 27
+    },
+    "signal_generation_authorized": true,
+    "policy_houses": [
+      "Betano",
+      "BetPlay",
+      "RushBet"
+    ],
+    "probability_frozen_before_odds_query": true,
+    "odds_used_to_generate_probability": false,
+    "real_money": "BLOCKED"
+  },
+  "telegram_guardrail_live_proof": {
+    "ledger_updated_at_utc": "2026-10-16T00:06:57+00:00",
+    "football_candidates": 47,
+    "pre_send_waiting_window": 10,
+    "pre_send_quote_checks": 0,
+    "sent_now": 0,
+    "tomorrow_sent_count": 0,
+    "interpretation": "All 10 newly eligible tomorrow candidates were held outside the final <=120 minute revalidation window."
+  }
+}

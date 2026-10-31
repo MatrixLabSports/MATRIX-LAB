@@ -1,0 +1,52 @@
+{
+  "schema": "MATRIX_DAILY_SOURCE_RECONCILIATION_V1",
+  "target_date_bogota": "2026-10-14",
+  "generated_context": "POST_FLASHSCORE_EXACT_CLOSE",
+  "sources": {
+    "sofascore": {
+      "artifact": "evidence/daily_source_counts/2026-10-14/MATRIX_SOFASCORE_BROWSER_EVENT_AUDIT.json",
+      "blob_sha": "bc199abfd5529ac403581695f341a9e0b60aa726",
+      "football_exact": 179,
+      "tennis_exact": 530,
+      "status": "PASS_EXACT_CONNECTED_BROWSER"
+    },
+    "flashscore": {
+      "artifact": "evidence/daily_source_counts/2026-10-14/MATRIX_FLASHSCORE_EXACT_DAY_BROWSER_AUDIT.json",
+      "commit": "901766fe8da5ee2cc5e98f2b925a26cce875a76c",
+      "football_exact": 182,
+      "tennis_exact": 104,
+      "football_method": "114 visible + 68 explicitly-declared hidden across 32 expanders",
+      "tennis_method": "full-page exact scan with 0 remaining expanders",
+      "status": "PASS_EXACT"
+    }
+  },
+  "count_deltas": {
+    "football_flashscore_minus_sofascore": 3,
+    "tennis_flashscore_minus_sofascore": -426
+  },
+  "interpretation": {
+    "source_counts_are_independent_exact_day_inventories": true,
+    "equal_totals_required": false,
+    "partial_values_promoted": false,
+    "old_flashscore_partial_66_football_0_tennis_superseded": true,
+    "coverage_union_not_inferred_from_counts": true,
+    "event_level_crosswalk_status": "PENDING_CANDIDATE_LEVEL_RECONCILIATION",
+    "reason": "Exact source closure is complete; differing provider coverage is preserved rather than forced to equality."
+  },
+  "governance": {
+    "source_order": [
+      "SofaScore",
+      "Flashscore",
+      "APIs",
+      "PIT",
+      "P_MATRIX",
+      "freeze",
+      "odds/EV",
+      "signal"
+    ],
+    "real_money": "BLOCKED",
+    "automatic_wagering": false,
+    "no_backfill": true,
+    "no_estimated_counts": true
+  }
+}

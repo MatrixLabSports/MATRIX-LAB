@@ -1,0 +1,96 @@
+{
+  "schema": "MATRIX_OPERA_PHYSICAL_ACCESS_VERIFICATION_V1",
+  "verification_date_bogota": "2026-10-05",
+  "verified_before_utc": "2026-10-06T04:28:00+00:00",
+  "source_mode": "OPERA_BROWSER_CONNECTOR_ACCESSIBILITY_TREE",
+  "opera_connection": "PASS",
+  "readable_tabs": [
+    {
+      "source": "BetPlay",
+      "role": "bookmaker",
+      "url": "https://betplay.com.co/apuestas#home",
+      "status": "READABLE"
+    },
+    {
+      "source": "RushBet",
+      "role": "bookmaker",
+      "url": "https://www.rushbet.co/",
+      "status": "READABLE"
+    },
+    {
+      "source": "bwin",
+      "role": "bookmaker",
+      "url": "https://www.bwin.co/es/sports/f%C3%BAtbol-4",
+      "status": "READABLE"
+    },
+    {
+      "source": "Betano",
+      "role": "bookmaker",
+      "url": "https://www.betano.co/",
+      "status": "READABLE"
+    },
+    {
+      "source": "SofaScore football",
+      "role": "schedule_identity_stats_crosscheck",
+      "url": "https://www.sofascore.com/es/football/2026-10-06",
+      "status": "READABLE"
+    },
+    {
+      "source": "Flashscore football",
+      "role": "schedule_identity_stats_crosscheck",
+      "url": "https://www.flashscore.co/?d=2026-10-06",
+      "status": "READABLE"
+    },
+    {
+      "source": "SofaScore tennis",
+      "role": "schedule_identity_stats_crosscheck",
+      "url": "https://www.sofascore.com/es/tennis/2026-10-06",
+      "status": "READABLE"
+    },
+    {
+      "source": "Flashscore tennis",
+      "role": "schedule_identity_stats_crosscheck",
+      "url": "https://www.flashscore.co/tenis/?d=2026-10-05",
+      "status": "READABLE"
+    },
+    {
+      "source": "ITF",
+      "role": "official_tournament_authority",
+      "url": "https://www.itftennis.com/en/world-tennis-tour-live/",
+      "status": "READABLE"
+    },
+    {
+      "source": "API-Tennis website",
+      "role": "paid_provider_site",
+      "url": "https://api-tennis.com/",
+      "status": "READABLE"
+    },
+    {
+      "source": "GitHub Actions",
+      "role": "physical_ci_trace",
+      "url": "https://github.com/MatrixLabSports/MATRIX-LAB/actions",
+      "status": "READABLE"
+    }
+  ],
+  "special_checks": [
+    {
+      "source": "SofaScore direct scheduled-events API football",
+      "url": "https://api.sofascore.com/api/v1/sport/football/scheduled-events/2026-10-06",
+      "status": "HTTP_403_FORBIDDEN",
+      "interpretation": "Direct endpoint blocked in this browser session; normal SofaScore web pages remain readable."
+    },
+    {
+      "source": "RapidAPI Tennis browser tab",
+      "status": "NOT_SEEN_IN_OPEN_TABS",
+      "interpretation": "Do not claim a RapidAPI browser tab is open. Paid RapidAPI use must be evidenced by CI/API traces and secrets-backed workflows, not by browser-tab presence."
+    }
+  ],
+  "governance": {
+    "open_tab_is_not_proof_of_use": true,
+    "physical_query_trace_required": true,
+    "odds_not_used_to_generate_p_matrix": true,
+    "automatic_wagering": false,
+    "real_money": "BLOCKED"
+  },
+  "result": "PASS_WITH_DIRECT_SOFASCORE_API_403_CAVEAT"
+}

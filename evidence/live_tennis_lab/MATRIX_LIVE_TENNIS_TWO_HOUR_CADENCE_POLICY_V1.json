@@ -1,0 +1,51 @@
+{
+  "schema": "MATRIX_LIVE_TENNIS_TWO_HOUR_CADENCE_POLICY_V1",
+  "effective_from_bogota": "2026-10-07T20:09:00-05:00",
+  "first_scheduled_cycle_bogota": "2026-10-07T22:09:00-05:00",
+  "cadence": "EVERY_2_HOURS",
+  "timezone": "America/Bogota",
+  "scheduler_status": "ACTIVE",
+  "scope": "TENNIS_LIVE_ONLY",
+  "required_cycle_steps": [
+    "CAPTURE_CURRENT_LIVE_STATES",
+    "FINAL_ONLY_SETTLEMENT_PENDING_MATCHES",
+    "EXPLICIT_METADATA_RECONCILIATION_NO_SILENT_IMPUTATION",
+    "REBUILD_CUMULATIVE_LANE_GATES",
+    "COUNT_ONLY_UNIQUE_FINAL_STANDARD_MATCHES_WITH_AT_LEAST_ONE_QUALITY_VALID_LIVE_STATE",
+    "VERIFY_PREMATCH_HARD_UNCHANGED",
+    "VERIFY_PREMATCH_CLAY_UNCHANGED",
+    "PERSIST_PHYSICAL_CYCLE_EVIDENCE"
+  ],
+  "gate_targets": [
+    1,
+    30,
+    50,
+    100,
+    200
+  ],
+  "gate_primary_next_target": 30,
+  "isolation": {
+    "hard_holdout": "A22_POST_AUDIT_VIRGIN_HOLDOUT_V1",
+    "hard_expected_unique_observations_at_policy_creation": 123,
+    "clay_holdout": "ATP_CHALLENGER_CLAY_PROSPECTIVE_V1",
+    "clay_expected_observations_at_policy_creation": 0,
+    "live_may_write_hard": false,
+    "live_may_write_clay": false
+  },
+  "protections": {
+    "final_only_settlement": true,
+    "same_match_train_test_forbidden": true,
+    "states_do_not_substitute_for_matches": true,
+    "no_backfill": true,
+    "missing_not_zero": true,
+    "silent_imputation": false,
+    "odds_to_probability": false,
+    "probability_output_until_gate": "SEALED",
+    "metrics_until_gate": "SEALED",
+    "automatic_wagering": false,
+    "real_money": "BLOCKED"
+  },
+  "no_change_policy": "A cycle with no new states or settlements must still persist a physically timestamped NO_CHANGE record.",
+  "evidence_root": "evidence/live_tennis_lab",
+  "status": "ACTIVE_PHYSICALLY_REGISTERED"
+}

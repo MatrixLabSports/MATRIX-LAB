@@ -1,0 +1,37 @@
+{
+  "schema": "MATRIX_PAID_API_MANDATE_V1",
+  "effective_date": "2026-09-28",
+  "status": "ACTIVE",
+  "permanence": "PERMANENT_ADDITIVE_UNTIL_EXPLICIT_CHANGE",
+  "providers": {
+    "football": {
+      "provider": "API-Football",
+      "paid_tier": "Pro",
+      "role": "PRIMARY_PAID_API_FOOTBALL",
+      "mandatory_attempt_and_evidence": true
+    },
+    "tennis": {
+      "provider": "Tennis API - ATP WTA ITF",
+      "transport": "RapidAPI",
+      "paid_tier": "Ultra",
+      "role": "PRIMARY_PAID_API_TENNIS",
+      "mandatory_attempt_and_evidence": true
+    }
+  },
+  "invariants": {
+    "physical_use_evidence_required": true,
+    "silent_claim_of_usage_prohibited": true,
+    "fail_closed_on_provider_hard_gate_failure": true,
+    "odds_to_p_matrix_prohibited": true,
+    "point_in_time_required": true,
+    "identity_required": true,
+    "anti_leakage_required": true,
+    "final_only_settlement_preserved": true,
+    "automatic_wagering": false,
+    "real_money": "BLOCKED"
+  },
+  "additive_to": [
+    "docs/providers/PROVIDER_PORTFOLIO_GOVERNANCE_POLICY_V20.md",
+    "docs/governance/MATRIX_TRUTHFULNESS_AND_PHYSICAL_EVIDENCE_CONSTITUTION_V1.md"
+  ]
+}

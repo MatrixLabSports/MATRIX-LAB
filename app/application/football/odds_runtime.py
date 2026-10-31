@@ -21,6 +21,7 @@ class FootballOddsSourcePolicy:
     max_prematch_capture_delay_seconds: int = 120
     max_live_capture_delay_seconds: int = 15
     max_closing_distance_seconds: int = 600
+    reference_bookmaker_priority: tuple[str, ...] = ("pinnacle",)
     min_decimal_odds: float = 1.01
     max_decimal_odds: float = 100.0
 
@@ -35,6 +36,8 @@ class FootballOddsSourcePolicy:
             raise ValueError("max_live_capture_delay_seconds must be > 0")
         if self.max_closing_distance_seconds <= 0:
             raise ValueError("max_closing_distance_seconds must be > 0")
+        if not isinstance(self.reference_bookmaker_priority, tuple):
+            raise TypeError("reference_bookmaker_priority must be tuple")
         if not 1.0 < self.min_decimal_odds <= self.max_decimal_odds:
             raise ValueError("invalid governed odds range")
 
@@ -96,7 +99,18 @@ def select_closing_reference_quote(
         candidates.append(quote)
     if not candidates:
         return None
-    return max(candidates, key=lambda item: item.quoted_at)
+
+    priority = {
+        name.casefold(): len(policy.reference_bookmaker_priority) - index
+        for index, name in enumerate(policy.reference_bookmaker_priority)
+    }
+    return max(
+        candidates,
+        key=lambda item: (
+            priority.get(item.bookmaker.casefold(), 0),
+            item.quoted_at,
+        ),
+    )
 
 
 def decimal_clv(entry_odds: float, closing_odds: float) -> float:

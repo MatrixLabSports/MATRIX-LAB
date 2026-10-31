@@ -1,0 +1,125 @@
+{
+  "schema": "MATRIX_FOOTBALL_BROWSER_FIRST_PREREGISTRATION_ELITE_CLOSURE_28OCT2026_V1",
+  "target_date_bogota": "2026-10-28",
+  "branch": "repair/cor09-world-pipeline",
+  "generated_at_utc": "2026-10-28T03:17:19Z",
+  "head_observed_before_closure": "634bebb1bafa88c378a844dee8efecc9c6625800",
+  "adjudication": "PASS_BROWSER_FIRST_PREREGISTRATION_PHYSICALLY_PROVEN",
+  "defect": {
+    "finding": "The governed prospective daily cycle captured API-Football fixtures before consuming the browser-first world watchlist.",
+    "impact": "A browser-observed event could be absent from the API-led prospective universe even though policy requires SofaScore then Flashscore then APIs.",
+    "repair": "Persist the browser-first monitoring universe before API capture, and persist it independently in every world-calendar reconciliation cycle.",
+    "historical_chain_claim_rechecked": true
+  },
+  "repair_commits": [
+    {
+      "sha": "a7a47a4a6a18f4ff920dbe48559afd67314a4f5a",
+      "role": "browser preregistry module"
+    },
+    {
+      "sha": "27cb51678877da4bfbad6b6617854734e01fc7b4",
+      "role": "browser preregistry regression tests"
+    },
+    {
+      "sha": "66661e1841c50412aa16fc43148b6989015cc72a",
+      "role": "daily cycle consumes preregistry before API capture"
+    },
+    {
+      "sha": "121f508f2156ff28a730c0068069e39b114ca571",
+      "role": "daily governed CI contract includes preregistry tests"
+    },
+    {
+      "sha": "f5d9b2f5139a29c665beb7e5a1f82cdf03dbe1cf",
+      "role": "preregistry CLI/persistence"
+    },
+    {
+      "sha": "9f32e6f23a246921294846b420267c1395e40579",
+      "role": "15-minute world-calendar workflow persists preregistry"
+    },
+    {
+      "sha": "9d15d485cd8df226ee7759f44b1610fbcbc049d5",
+      "role": "restore CLV operational refresh failure semantic contract discovered during audit"
+    }
+  ],
+  "physical_evidence": {
+    "reconciliation": {
+      "artifact": "evidence/calendar_reconciliation/MATRIX_FOOTBALL_WORLD_CALENDAR_RECONCILIATION_LAST.json",
+      "source_counts": {
+        "sofascore": 262,
+        "flashscore": 588
+      },
+      "confirmed_both": 172,
+      "sofascore_only": 90,
+      "flashscore_only": 416,
+      "ambiguous": 0,
+      "time_match_certified": false
+    },
+    "canonical_browser_preregistry": {
+      "artifact": "evidence/calendar_reconciliation/MATRIX_FOOTBALL_BROWSER_PREREGISTRY_LAST.json",
+      "blob_sha": "0414002ea97eb372490de3b16b017630c0ddaeef",
+      "persistence_commit": "0858ec884d67466e499cdf87de7b9d43d853063e",
+      "status": "PASS_BROWSER_FIRST_PREREGISTRATION",
+      "total_monitoring_events": 678,
+      "prospective_before_displayed_kickoff": 258,
+      "kickoff_not_certified": 420,
+      "not_prospective_at_preregistration": 0
+    },
+    "governed_daily_cycle": {
+      "run_id": 40625392117,
+      "run_conclusion": "success",
+      "preregistry_artifact": "evidence/api_football/prospective_daily/2026-10-28/20261028T031409Z/browser_first/preregistry.json",
+      "preregistry_blob_sha": "4381b86c8e2851853e208e58506c1750f8ea9d36",
+      "cycle_summary_artifact": "evidence/api_football/prospective_daily/2026-10-28/20261028T031409Z/cycle_summary.json",
+      "cycle_summary_blob_sha": "65a8763a7c4bbe3184fe2d4be37c294b2b455602",
+      "persistence_commit": "add10f09ba03f0a5481cecc3c62bf05919e97e9b",
+      "api_football": {
+        "fixtures_received": 518,
+        "eligible_future_fixtures": 514,
+        "capture_attempts": 1,
+        "recovery_status": "PASS_FIRST_ATTEMPT"
+      },
+      "p_matrix_status": "NOT_GENERATED",
+      "automatic_wagering": false,
+      "real_money": "BLOCKED"
+    },
+    "calendar_workflow": {
+      "run_id": 40625594265,
+      "conclusion": "success",
+      "tests": "success",
+      "reconciliation": "success",
+      "watchlist": "success",
+      "browser_preregistry": "success",
+      "evidence_persistence": "success"
+    },
+    "semantic_contracts": {
+      "discovered_clv_contract_failure_run_id": 40625417220,
+      "repaired_contract_run_id": 40625687149,
+      "repaired_contract_conclusion": "success"
+    }
+  },
+  "governance": {
+    "source_order": [
+      "SOFASCORE",
+      "FLASHSCORE",
+      "APIS"
+    ],
+    "browser_event_survives_api_absence": true,
+    "missing_not_zero": true,
+    "no_silent_imputation": true,
+    "no_forced_count_equality": true,
+    "post_start_backfill_forbidden": true,
+    "preregistration_does_not_equal_freeze": true,
+    "preregistration_does_not_create_p_matrix": true,
+    "odds_used_to_generate_preregistration": false,
+    "automatic_wagering": false,
+    "real_money": "BLOCKED"
+  },
+  "limitations_and_pending": {
+    "world_complete_certified": false,
+    "kickoff_independently_certified_for_all_events": false,
+    "events_without_certified_or_displayed_kickoff": 420,
+    "freeze_eligibility_from_browser_preregistration": 0,
+    "signals_generated_by_this_repair": false,
+    "note": "The 420 rows without a certified/displayed kickoff remain monitored and are not silently assigned a time, marked prospective, frozen, or backfilled."
+  }
+}

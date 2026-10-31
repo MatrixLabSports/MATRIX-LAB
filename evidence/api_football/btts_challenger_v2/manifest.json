@@ -1,0 +1,63 @@
+{
+  "automatic_wagering": false,
+  "baseline_validation": {
+    "brier_score": 0.24296288917286676,
+    "log_loss": 0.6793697739983672,
+    "sample_size": 357
+  },
+  "candidate_name": "btts_logistic_challenger_v2",
+  "candidate_status": "PROSPECTIVE_CHECKPOINT_200_REJECTED_NOT_SUPERIOR_TO_POISSON",
+  "created_at_utc": "2026-09-28T09:53:15+00:00",
+  "development_count": 1665,
+  "exclusion_registry_sha256": "31cc03ec1f293c39e2970d8ae19faba746d222c02f518b0714a3a417f7931dad",
+  "forbidden_final_holdout_count": 357,
+  "forbidden_final_holdout_outcomes_read": false,
+  "forbidden_final_holdout_used_for_training": false,
+  "forbidden_final_holdout_used_for_validation": false,
+  "governed_engine_promoted": false,
+  "next_holdout_policy": "NEW_PROSPECTIVE_UNSEEN_EVENTS_ONLY; ORIGINAL_357_FINAL_HOLDOUT_PERMANENTLY_EXCLUDED",
+  "p_matrix_generated": false,
+  "poisson_validation": {
+    "brier_score": 0.24374956213603283,
+    "log_loss": 0.681131970166502,
+    "sample_size": 357
+  },
+  "real_money": "BLOCKED",
+  "schema": "MATRIX_FOOTBALL_BTTS_CHALLENGER_V2",
+  "selected": {
+    "epochs": 200,
+    "gain_vs_poisson": 0.0018487989908357316,
+    "l2": 0.001,
+    "learning_rate": 0.03,
+    "validation": {
+      "brier_score": 0.243321891055229,
+      "log_loss": 0.67971084225647,
+      "sample_size": 357
+    },
+    "weights": [
+      -0.05189686046452187,
+      0.16331952727108287,
+      0.1347804721505293,
+      0.03769002637665156,
+      0.0313307863053211,
+      -0.00032571645922244846,
+      0.03467326457059754,
+      -0.06938457459365506,
+      -0.06549264167339151
+    ]
+  },
+  "validation_count": 357,
+  "validation_superiority": true,
+  "prospective_adjudication": {
+    "checkpoint": 200,
+    "source_checkpoint_sha256": "96b9293c4ee5e86fe4fe932f9725e494458348c166aaaa1339e89fcd68b790e6",
+    "brier_challenger": 0.24084550502841437,
+    "brier_poisson": 0.23364243419213437,
+    "log_loss_challenger": 0.6747326292415559,
+    "log_loss_poisson": 0.6597718707994109,
+    "beats_poisson_brier": false,
+    "beats_poisson_log_loss": false,
+    "promotion_eligible": false
+  },
+  "next_action": "BUILD_BTTS_V3_INDEPENDENTLY; DO_NOT_TUNE_ON_ORIGINAL_357_OR_PROSPECTIVE_CHECKPOINT_200"
+}

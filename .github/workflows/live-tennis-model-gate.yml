@@ -1,0 +1,97 @@
+name: MATRIX Live Tennis Model Gate
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - repair/cor09-world-pipeline
+    paths:
+      - tools/live_tennis_model_gate.py
+      - evidence/live_tennis_lab/**/MATRIX_LIVE_TENNIS_READINESS_AUDIT_V0_1.json
+      - .github/workflows/live-tennis-model-gate.yml
+  workflow_run:
+    workflows:
+      - "MATRIX Live Tennis Readiness Audit"
+    types:
+      - completed
+
+permissions:
+  contents: write
+
+concurrency:
+  group: live-tennis-model-gate
+  cancel-in-progress: false
+
+jobs:
+  gate:
+    if: >
+      github.event_name != 'workflow_run' ||
+      github.event.workflow_run.conclusion == 'success'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: repair/cor09-world-pipeline
+          fetch-depth: 0
+
+      - name: Resolve Bogota date
+        id: date
+        shell: bash
+        run: echo "d=$(TZ=America/Bogota date +%F)" >> "$GITHUB_OUTPUT"
+
+      - name: Build fail-closed model gate
+        shell: bash
+        run: |
+          D="${{ steps.date.outputs.d }}"
+          R="evidence/live_tennis_lab/$D/MATRIX_LIVE_TENNIS_READINESS_AUDIT_V0_1.json"
+          O="evidence/live_tennis_lab/$D/MATRIX_LIVE_TENNIS_MODEL_GATE_V0_1.json"
+          if [ ! -f "$R" ]; then
+            echo "NO_READINESS_FOR_$D"
+            exit 0
+          fi
+          python -m tools.live_tennis_model_gate --readiness "$R" --out "$O"
+
+      - name: Validate sealed state before gate 30
+        shell: bash
+        run: |
+          D="${{ steps.date.outputs.d }}"
+          P="evidence/live_tennis_lab/$D/MATRIX_LIVE_TENNIS_MODEL_GATE_V0_1.json"
+          if [ ! -f "$P" ]; then
+            exit 0
+          fi
+          python - "$P" <<'PY'
+          import json,sys
+          from pathlib import Path
+          j=json.loads(Path(sys.argv[1]).read_text())
+          assert j["training_executed"] is False
+          assert j["probability_output_status"]=="SEALED"
+          assert j["metrics_status"]=="SEALED"
+          assert j["protections"]["same_match_train_test_forbidden"] is True
+          assert j["protections"]["odds_as_model_feature"] is False
+          assert j["protections"]["real_money"]=="BLOCKED"
+          print(json.dumps({
+            "eligible":j["any_lane_training_eligible"],
+            "probability_output_status":j["probability_output_status"],
+            "training_executed":j["training_executed"]
+          },sort_keys=True))
+          PY
+
+      - name: Persist model gate evidence
+        shell: bash
+        run: |
+          D="${{ steps.date.outputs.d }}"
+          P="evidence/live_tennis_lab/$D/MATRIX_LIVE_TENNIS_MODEL_GATE_V0_1.json"
+          if [ ! -f "$P" ]; then
+            exit 0
+          fi
+          git config user.name "matrix-live-tennis-model-gate"
+          git config user.email "matrix-live-tennis-model-gate@users.noreply.github.com"
+          git add "$P"
+          if git diff --cached --quiet; then
+            echo "NO_MODEL_GATE_CHANGE"
+            exit 0
+          fi
+          git commit -m "evidence(live): update Live Tennis model gate"
+          git pull --rebase origin repair/cor09-world-pipeline
+          git push origin HEAD:repair/cor09-world-pipeline

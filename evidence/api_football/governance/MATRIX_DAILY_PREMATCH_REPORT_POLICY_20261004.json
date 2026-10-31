@@ -1,0 +1,81 @@
+{
+  "schema": "MATRIX_FOOTBALL_DAILY_PREMATCH_REPORT_POLICY_V1",
+  "effective_from_bogota_date": "2026-10-05",
+  "timezone": "America/Bogota",
+  "status": "ACTIVE_PERMANENT_GOVERNANCE",
+  "purpose": "Garantizar una salida diaria físicamente verificable antes del inicio del primer candidato gobernado de fútbol.",
+  "mandatory_daily_output": true,
+  "delivery_rule": {
+    "must_exist_every_bogota_date": true,
+    "must_be_generated_before_first_candidate_kickoff": true,
+    "zero_bet_is_valid_output": true,
+    "no_candidates_is_valid_output": true,
+    "prohibited_retroactive_prematch_label": true,
+    "one_canonical_daily_report_per_bogota_date": true
+  },
+  "required_report_outcomes": [
+    "BET",
+    "NO_BET",
+    "ZERO_BET_ALL_NO_BET",
+    "ZERO_BET_NO_GOVERNED_CANDIDATES"
+  ],
+  "candidate_requirements": {
+    "minimum_markets_per_match": 3,
+    "exception": "Solo señal verde consolidada bajo gobernanza vigente.",
+    "p_matrix_required_for_bet": true,
+    "physical_odds_required_for_ev": true,
+    "minimum_decimal_odds_exclusive": 1.5,
+    "approved_bookmaker_context": [
+      "BetPlay",
+      "bwin",
+      "Betano",
+      "RushBet",
+      "Pinnacle"
+    ],
+    "missing_p_matrix_action": "NO_BET",
+    "missing_physical_odds_action": "NO_BET",
+    "failed_identity_or_pit_action": "BLOCKED_NO_BET"
+  },
+  "required_daily_fields": [
+    "bogota_date",
+    "generated_at_utc",
+    "generated_at_bogota",
+    "earliest_candidate_kickoff_bogota",
+    "fixture_id",
+    "competition",
+    "home_team",
+    "away_team",
+    "kickoff_bogota",
+    "market",
+    "p_matrix",
+    "bookmaker",
+    "decimal_odds",
+    "break_even_probability",
+    "ev",
+    "decision",
+    "block_reason",
+    "source_evidence",
+    "freeze_reference",
+    "report_sha256"
+  ],
+  "evidence_requirements": {
+    "physical_artifact_required": true,
+    "append_only_or_versioned": true,
+    "sha256_required": true,
+    "source_traceability_required": true,
+    "odds_capture_timestamp_required_when_odds_used": true,
+    "no_silent_imputation": true,
+    "no_odds_to_p_matrix": true,
+    "final_only_settlement": true
+  },
+  "safety_and_governance": {
+    "automatic_wagering": false,
+    "real_money": "BLOCKED",
+    "no_model_tuning_from_daily_report": true,
+    "no_backfill": true,
+    "no_post_start_candidate_as_prematch": true
+  },
+  "canonical_interpretation": "La ausencia de una apuesta recomendada no es una falla del sistema. Un reporte diario con 0 BET / TODOS NO BET es una salida gobernada válida y debe quedar físicamente persistida.",
+  "created_at_utc": "2026-10-05T02:10:53Z",
+  "created_from_user_instruction_bogota_date": "2026-10-04"
+}

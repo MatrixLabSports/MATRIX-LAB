@@ -1,0 +1,99 @@
+{
+  "schema": "MATRIX_SETTLEMENT_PROGRESS_20261006_BOGOTA_V1",
+  "cut_utc": "2026-10-24T04:50:49.499Z",
+  "branch": "repair/cor09-world-pipeline",
+  "observed_head_before_snapshot": "7af47ac79fd87363489f1d3055814a04950a4753",
+  "previous_snapshot": "evidence/daily_selection/MATRIX_SETTLEMENT_PROGRESS_20261006_BOGOTA_20261024T020254Z_V2_3274_T341.json",
+  "previous_snapshot_commit": "957a7a7efa7ab2c88a9b465370033ce57c7db2b9",
+  "evidence_blobs": {
+    "candidates": "52e897007840f5bed1a8999edad8ee594fefc767",
+    "football_prospective_calibration_ledger": "b3330ddf466f69d440652daf1bae5488a0f2ceed",
+    "football_settlement_ledger": "6738359b0e9b27e304d7f82d1542e3dc2d921f33",
+    "football_governed_settlement_sync_last": "39310af41d1bd9265a574d08ecea18afa01a04d9",
+    "tennis_settlement_ledger": "a28d531520c4ea3461aed022983187046d0e3d65",
+    "tennis_governed_settlement_sync_last": "3e1d73be6df033f847ed3cadd999850880e19eef",
+    "football_v2_state_sha": {
+      "1X2": "bb3eee2a8122ffb90a279acfabd8fca4acbe1fd6",
+      "OVER_2_5": "ee31e615f9227519bec1d29e9772e9482116e277",
+      "UNDER_2_5": "0d23a6d864a7dd22f5d4ca9b92687cddad9eec78",
+      "DOUBLE_CHANCE_1X": "e6e0b915b015e0eb044900e19868647e103ce328",
+      "DOUBLE_CHANCE_X2": "35596c3010454f0e873756a01b37913a7a0e9ae8"
+    }
+  },
+  "football": {
+    "cohort_total": 116,
+    "cohort_standard_ft": 107,
+    "cohort_change_since_previous_snapshot": 0,
+    "global_final_settled": 4078,
+    "global_change_since_previous_snapshot": 2,
+    "new_ft_fixture_ids": [
+      "1646448",
+      "1549840"
+    ],
+    "governed_settlement_commit": "d4bbf4cd4c9e36269b385638e31bd8f32f5f60b2",
+    "governed_settlement_run_at_utc": "2026-10-24T04:34:18+00:00",
+    "v2_frozen_per_market": 3997,
+    "v2_settled_per_market": 3276,
+    "v2_pending_per_market": 721,
+    "v2_market_count": 5,
+    "v2_all_states_metrics_opened": false,
+    "physical_ledger_rows": 4078,
+    "physical_unique_fixture_ids": 4078,
+    "physical_ledger_all_source_terminal_ft": true,
+    "nonstandard": {
+      "PEN": [
+        "1588817",
+        "1588821",
+        "1588845",
+        "1588863",
+        "1588890",
+        "1588893",
+        "1619499"
+      ],
+      "AET": [
+        "1644168"
+      ],
+      "NS": [
+        "1596466"
+      ]
+    },
+    "cohort_method": "Full candidate file and 4078-row physical prospective calibration ledger parsed; exact fixture-id intersection yielded 107/116; two new FT fixture IDs absent from candidate list. Eight nonstandard are blocked and one NS pending in governed sync."
+  },
+  "tennis": {
+    "cohort_total": 11,
+    "cohort_finished": 11,
+    "cohort_change_since_previous_snapshot": 0,
+    "global_ledger_records": 341,
+    "global_change_since_previous_snapshot": 0,
+    "unique_events": 341,
+    "unique_settlement_ids": 341,
+    "standard_finished_records": 328,
+    "historical_nonstandard_records": {
+      "RETIRED": 8,
+      "CANCELLED": 4,
+      "WALKOVER": 1
+    },
+    "cohort_ledger_records": 11,
+    "cohort_all_standard_finished": true,
+    "governed_sync_new_settlements": 0,
+    "method": "Full 341-row physical tennis settlement ledger parsed by Git blob SHA, 11 exact candidate event IDs each found once and FINISHED. No tennis ledger changes since prior snapshot according to Git commit comparison."
+  },
+  "governance": {
+    "settlement_final_only": true,
+    "metrics_opened": false,
+    "tuning": false,
+    "odds_to_p": false,
+    "automatic_wagering": false,
+    "real_money": "BLOCKED",
+    "tracker_last_observed_global": 4076,
+    "tracker_generated_at_utc": "2026-10-24T03:38:55.265732+00:00",
+    "tracker_status": "STALE_RELATIVE_TO_LEDGER_4078",
+    "last_truth_guard_status": "FAIL_CLOSED",
+    "last_truth_guard_generated_at_utc": "2026-10-24T04:37:18.360434+00:00",
+    "last_truth_guard_stale_sources": [
+      "football_4000",
+      "tennis_three_blocks"
+    ],
+    "note": "Snapshot-only write. The two FT football settlements and five V2 lane state updates were already persisted by the governed supervisor. No ledger, model, metrics or parameter writes in this snapshot commit. Historical tennis nonstandard records were not modified or newly settled."
+  }
+}

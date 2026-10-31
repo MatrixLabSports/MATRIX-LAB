@@ -1,0 +1,46 @@
+{
+  "schema": "MATRIX_FOOTBALL_EXTENDED_MARKET_TRUTH_STATE_V1",
+  "date": "2026-10-02",
+  "finding": "EXTENDED_MARKETS_DECLARED_OR_MAPPED_BUT_NOT_YET_IN_GOVERNED_PROSPECTIVE_MODEL_PIPELINE",
+  "current_prospectively_evaluated_markets": {
+    "1x2": "SUPPORTED_AT_CHECKPOINT_200",
+    "over_2_5": "SUPPORTED_AT_CHECKPOINT_200",
+    "btts_v2": "REJECTED_AT_CHECKPOINT_200"
+  },
+  "existing_canonical_or_price_architecture": {
+    "double_chance": "CANONICAL_R2_RESULT_OR_DOUBLE_CHANCE",
+    "corners_over_under": "CANONICAL_R2_AND_ODDS_MAPPING_EXIST",
+    "cards_over_under": "CANONICAL_R2_AND_ODDS_MAPPING_EXIST",
+    "player_shots": "CANONICAL_R2_AND_ODDS_MAPPING_EXIST",
+    "player_shots_on_target": "CANONICAL_R2_AND_ODDS_MAPPING_EXIST",
+    "player_assists": "CANONICAL_R2_AND_ODDS_MAPPING_EXIST",
+    "player_passes": "CANONICAL_R2_AND_ODDS_MAPPING_EXIST"
+  },
+  "intended_but_not_currently_canonical_r2": {
+    "goalkeeper_saves": "REQUIRES_CANONICAL_MARKET_DEFINITION_AND_PRICE_MAPPING",
+    "player_tackles": "REQUIRES_CANONICAL_MARKET_DEFINITION_AND_PRICE_MAPPING",
+    "player_fouls": "REQUIRES_CANONICAL_MARKET_DEFINITION_AND_PRICE_MAPPING",
+    "team_shots_on_target": "REQUIRES_DISTINCT_CANONICAL_SCOPE_IF_USED_AS_TEAM_MARKET"
+  },
+  "api_football_contracts_already_available": [
+    "/fixtures/statistics",
+    "/fixtures/players",
+    "/teams/statistics",
+    "/players"
+  ],
+  "missing_pipeline_stages_for_extended_markets": [
+    "PHYSICAL_SOURCE_COVERAGE_CERTIFICATION",
+    "HISTORICAL_PIT_DATASET",
+    "MARKET_SPECIFIC_BASELINE",
+    "MARKET_SPECIFIC_CHALLENGER",
+    "OOS_VALIDATION",
+    "PROSPECTIVE_FREEZE",
+    "FINAL_ONLY_SETTLEMENT",
+    "MARKET_SPECIFIC_CALIBRATION"
+  ],
+  "next_action": "RUN_EXTENDED_MARKET_COVERAGE_PROBE_THEN_BUILD_MARKETS_INDEPENDENTLY",
+  "shared_cross_market_model_forbidden": true,
+  "odds_used_to_generate_probability": false,
+  "automatic_wagering": false,
+  "real_money": "BLOCKED"
+}

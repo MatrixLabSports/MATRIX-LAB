@@ -1,0 +1,133 @@
+{
+  "schema": "MATRIX_PAID_API_FINAL_DAY_ELITE_CLOSURE_V1",
+  "generated_at_utc": "2026-10-28T06:37:00+00:00",
+  "source_head": "ac948ce5d6b43c666c1a0c04f88a5ba9805fd4af",
+  "committee_roles": [
+    "PROVIDER_OPERATIONS",
+    "TENNIS_ACQUISITION",
+    "FOOTBALL_CALIBRATION",
+    "CLV_RISK",
+    "TELEGRAM_EXECUTION",
+    "QA_REGRESSION",
+    "EVIDENCE_AUDIT"
+  ],
+  "governance": {
+    "date_bogota": "2026-10-28",
+    "real_money": "BLOCKED",
+    "automatic_wagering": false,
+    "paid_api_renewal_authorized": false,
+    "odds_may_not_generate_p_matrix": true,
+    "no_backfill": true,
+    "missing_not_zero": true,
+    "post_cutoff_paid_api_use": "BLOCKED_UNLESS_NEW_EXPLICIT_USER_AUTHORIZATION"
+  },
+  "api_football": {
+    "provider": "api_football",
+    "status": "STALE_LAST_NONEMPTY_FAIL_CLOSED",
+    "refresh_status": "PROVIDER_EMPTY_LAST_NONEMPTY_PRESERVED",
+    "provider_error_classification": "DAILY_REQUEST_LIMIT_REACHED",
+    "physical_provider_message": "You have reached the request limit for the day.",
+    "adjudication": "EXTERNAL_DAILY_QUOTA_BLOCK_FAIL_CLOSED",
+    "note": "No synthetic zero coverage and no forced retry counted as evidence."
+  },
+  "rapidapi_tennis": {
+    "provider": "rapidapi_tennis",
+    "subscription_paid_through": "2026-10-28",
+    "renewal_authorized": false,
+    "harvest_commit": "ac948ce5d6b43c666c1a0c04f88a5ba9805fd4af",
+    "harvest_generated_at_utc": "2026-10-28T06:36:32+00:00",
+    "network_calls": 2,
+    "unique_match_count": 287,
+    "provider_inventory_complete": true,
+    "families": {
+      "ATP": 33,
+      "WTA": 26,
+      "ITF": 228
+    },
+    "surfaces": {
+      "Hard": 150,
+      "I.hard": 106,
+      "Clay": 31
+    },
+    "canonical": {
+      "browser_observed_unique": 24,
+      "canonical_row_count": 306,
+      "classification_counts": {
+        "ELIGIBLE_CLAY": 28,
+        "ELIGIBLE_HARD": 231,
+        "LIVE_ONLY": 18,
+        "OUT_OF_DOMAIN": 10,
+        "START_NOT_CERTIFIED": 19
+      },
+      "cor0203_preregister_candidate_count": 1,
+      "automatic_model_feed": false
+    },
+    "status": "FINAL_PAID_WINDOW_HARVEST_PHYSICALLY_PERSISTED"
+  },
+  "browser_first": {
+    "target_date_bogota": "2026-10-28",
+    "sofascore_unique_match_urls_observed": 64,
+    "flashscore_unique_match_urls_observed": 544,
+    "persisted_sample_rows": {
+      "sofascore": 12,
+      "flashscore": 12
+    },
+    "world_complete_certified": false,
+    "source_order": [
+      "SofaScore",
+      "Flashscore",
+      "RapidAPI Tennis"
+    ]
+  },
+  "football_oos": {
+    "current": 796,
+    "target": 1000,
+    "remaining": 204,
+    "metrics_opened": false,
+    "status": "ACTIVE_SEALED_PENDING"
+  },
+  "clv": {
+    "closing_odds_count": 11,
+    "target": 300,
+    "remaining": 289,
+    "metrics_opened": false,
+    "status": "ACCUMULATING_SEALED_UNTIL_300"
+  },
+  "portfolio": {
+    "total_lanes": 42,
+    "football_lanes": 30,
+    "tennis_lanes": 12,
+    "lanes_at_600": 13,
+    "lanes_with_any_valid_prospective": 16,
+    "ledger_rows_total": 8797
+  },
+  "signal_authorized": [
+    "OVER_2_5"
+  ],
+  "adjudication": {
+    "resolved_today": [
+      "BROWSER_FIRST_TENNIS_28OCT_PHYSICALLY_PERSISTED",
+      "RAPIDAPI_TENNIS_FINAL_PAID_WINDOW_HARVEST_COMPLETED",
+      "TENNIS_PROVIDER_INVENTORY_PERSISTED_WITH_RECEIPT",
+      "42_LANE_SUPERVISOR_REVALIDATED_AFTER_TENNIS_HARVEST"
+    ],
+    "external_blocks": [
+      "API_FOOTBALL_DAILY_REQUEST_LIMIT_REACHED"
+    ],
+    "still_sealed": [
+      "FOOTBALL_OOS_METRICS_UNTIL_1000",
+      "CLV_METRICS_UNTIL_300",
+      "NON_PROMOTED_MARKETS_REMAIN_RESEARCH_ONLY"
+    ]
+  },
+  "sources": [
+    "evidence/api_football/market_expansion/market_binding_catalog.json",
+    "evidence/api_football/calibration_v2/OOS_4001_5000_STATE.json",
+    "evidence/tennis/paid_window_harvest/2026-10-28/MATRIX_RAPIDAPI_TENNIS_HARVEST_RECEIPT_LAST.json",
+    "evidence/tennis/paid_window_harvest/2026-10-28/MATRIX_RAPIDAPI_TENNIS_INVENTORY_LAST.json",
+    "evidence/tennis/paid_window_harvest/2026-10-28/MATRIX_TENNIS_27OCT_CANONICAL_INVENTORY.json",
+    "evidence/governance/MATRIX_TENNIS_SUBSCRIPTION_DEADLINE_LAST.json",
+    "evidence/clv/football/over_2_5/state.json",
+    "evidence/governance/MATRIX_42_MARKET_ELITE_CALIBRATION_CLOSURE_28OCT2026.json"
+  ]
+}

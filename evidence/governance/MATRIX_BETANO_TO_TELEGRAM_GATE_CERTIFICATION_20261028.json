@@ -1,0 +1,29 @@
+{
+  "schema": "MATRIX_BETANO_TO_TELEGRAM_GATE_CERTIFICATION_V1",
+  "status": "PASS_TESTED",
+  "evidence": {
+    "collector_and_actuator_tests": "17 passed",
+    "telegram_recovery_integration_tests": "4 passed",
+    "total_tests_passed": 21,
+    "physical_actuator_result": {
+      "status": "PASS_ACTUATOR_RAN",
+      "eligible": 1,
+      "counts": {
+        "NO_SIGNAL_ECONOMIC_GATE": 1
+      }
+    }
+  },
+  "contracts": {
+    "betano_exact_over25_capture": true,
+    "canonical_physical_quote_bridge": true,
+    "recovery_actuator_consumes_canonical_quote": true,
+    "below_minimum_odds_rejected": true,
+    "valid_recovery_offer_reaches_signal_quality_gate": true,
+    "p_matrix_min": 0.6,
+    "decimal_odds_strictly_gt": 1.5,
+    "revalidated_ev_min": 0.05,
+    "automatic_wagering": false,
+    "real_money": "BLOCKED"
+  },
+  "next_required_physical_check": "Run Telegram supervisor in SHADOW and inspect pre_send_gate/provider without lowering any gate."
+}

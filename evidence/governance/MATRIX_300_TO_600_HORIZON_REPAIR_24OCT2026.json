@@ -1,0 +1,87 @@
+{
+  "schema": "MATRIX_300_TO_600_HORIZON_REPAIR_24OCT2026_V1",
+  "generated_at_utc": "2026-10-25T03:54:01.518Z",
+  "status": "PASS_WITH_REGISTRY_REFRESH_QUEUED",
+  "root_cause": {
+    "prior_horizon_days": 3,
+    "prior_local_date_bogota": "2026-10-24",
+    "prior_covered_dates": [
+      "2026-10-24",
+      "2026-10-25",
+      "2026-10-26"
+    ],
+    "symptom": "42-lane football bridge had zero new future rows after existing freezes were exhausted",
+    "bridge_last_before_repair": {
+      "eligible_future_lane_rows": 0,
+      "eligible_future_unique_fixtures": 0,
+      "source_frozen_event_count": 4903
+    },
+    "prior_sync": {
+      "candidate_event_count": 284,
+      "skipped_existing_count": 284,
+      "new_event_count": 0,
+      "status": "NO_NEW_ELIGIBLE_EVENTS"
+    }
+  },
+  "repair": {
+    "horizon_max_days": 5,
+    "paid_through_bogota_date": "2026-10-28",
+    "target_cap_enforced": true,
+    "operational_branch_push_trigger_added": true,
+    "prospective_production_workflow": "API-Football daily prospective production",
+    "supervisor_workflow": "MATRIX Multi-Market Canonical Supervisor",
+    "supervisor_workflow_run_dependency_added": true,
+    "no_date_after_paid_cutoff": true
+  },
+  "physical_proof": {
+    "prospective_run_id": 40159506564,
+    "prospective_run_conclusion": "success",
+    "horizon_generated_at_utc": "2026-10-25T03:50:09+00:00",
+    "days_requested": 5,
+    "network_calls_total": 322,
+    "new_freezes_total": 247,
+    "target_2026_10_27": {
+      "status": "PASS",
+      "fixtures_received": 316,
+      "eligible_future_fixtures": 315,
+      "ready_input_count": 154,
+      "new_freezes": 138,
+      "network_calls": 161
+    },
+    "target_2026_10_28": {
+      "status": "PASS",
+      "fixtures_received": 495,
+      "eligible_future_fixtures": 495,
+      "ready_input_count": 121,
+      "new_freezes": 109,
+      "network_calls": 161
+    },
+    "cumulative_freeze_event_count": 5150,
+    "last_incremental_new_event_count": 109,
+    "physical_collision_blocked_count": 0,
+    "existing_rows_unchanged": true
+  },
+  "commits": {
+    "horizon_extension": "7c37af13de1e300e6b46b523db459b4426491aef",
+    "horizon_tests": "37acb411de4e56c4c5c62250ba669754e64c2936",
+    "production_workflow": "1edfd503a53a3122d14a3549d114dec1585d2dd7",
+    "supervisor_link": "7c6cdcb7f74a05f224f9e3d533620451505147d7"
+  },
+  "registry_propagation": {
+    "immediate_supervisor_run_id": 40159709243,
+    "immediate_supervisor_status_at_certificate": "queued",
+    "prior_registry_count_for_1x2_and_double_chance": 393,
+    "rule": "Do not assert the post-ingestion 42-lane counts until MATRIX_42_LANE_PROSPECTIVE_REGISTRY_LAST.json is physically regenerated.",
+    "automatic_future_link": true
+  },
+  "protections": {
+    "historical_backfill": false,
+    "post_start_backfill": false,
+    "duplicate_observation_keys_forbidden": true,
+    "odds_used_to_generate_probability": false,
+    "missing_not_zero": true,
+    "silent_imputation": false,
+    "automatic_wagering": false,
+    "real_money": "BLOCKED"
+  }
+}

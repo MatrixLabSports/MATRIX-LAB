@@ -1,0 +1,120 @@
+{
+  "schema": "MATRIX_SETTLEMENT_PROGRESS_20261006_BOGOTA_AUDIT_SNAPSHOT_V1",
+  "source_branch": "repair/cor09-world-pipeline",
+  "source_head_observed": "41280fb5fc1cb0fb213fbc1735bc1be62f401a50",
+  "baseline_snapshot": "evidence/daily_selection/MATRIX_SETTLEMENT_PROGRESS_20261006_BOGOTA_20261015T1905Z_V2_1806_T268.json",
+  "source_candidate_file": "evidence/daily_selection/MATRIX_CALIBRATION_CANDIDATES_20261006_BOGOTA.json",
+  "source_candidate_blob_sha": "52e897007840f5bed1a8999edad8ee594fefc767",
+  "football": {
+    "v2_freeze": 2348,
+    "v2_settled": 1835,
+    "v2_pending": 513,
+    "delta_settled": 29,
+    "delta_freeze": 0,
+    "v2_state_blob_shas": {
+      "1x2": "02cae4a50aa16ae7e76c67a28c1a320d000dc7f2",
+      "over_2_5": "089847e6f0050d8b0aa48613f916133e810d61bf",
+      "under_2_5": "bd1d23fd379ffd400e7c3435d1eef4c456f60183",
+      "double_chance_1x": "b2dc2f919e4267018c5eca4dd8fec6846e93cc5a",
+      "double_chance_x2": "9bfe593ab45b0938e020004e49e5f0fd41562f7b"
+    },
+    "cohort_total": 116,
+    "cohort_ft_last_verified": 107,
+    "cohort_ft_new": 0,
+    "cohort_pending_or_nonstandard": 9,
+    "cohort_full_ledger_recheck": false,
+    "new_ft_fixture_ids": [
+      "1606543",
+      "1606547",
+      "1636222",
+      "1636239",
+      "1636279",
+      "1636293",
+      "1636328",
+      "1636332",
+      "1636338",
+      "1636350",
+      "1636401",
+      "1636404",
+      "1636414",
+      "1636419",
+      "1636440",
+      "1636445",
+      "1636453",
+      "1636464",
+      "1636468",
+      "1636482",
+      "1585783",
+      "1585785",
+      "1525934",
+      "1563665",
+      "1559672",
+      "1612093",
+      "1612098",
+      "1612104",
+      "1612108"
+    ],
+    "cohort_new_settlement_intersection": [],
+    "blocked_nonstandard": {
+      "PEN": [
+        "1588817",
+        "1588821",
+        "1588845",
+        "1588863",
+        "1588890",
+        "1588893",
+        "1619499"
+      ],
+      "AET": [
+        "1644168"
+      ],
+      "NS_pending": [
+        "1596466"
+      ]
+    },
+    "global_ledger_final_count": 2637,
+    "global_pending_count": 474,
+    "source_calibration_sync_path": "evidence/api_football/prospective_calibration/sync_last.json",
+    "source_calibration_sync_blob_sha": "85be415b7027c1a7adfabccb59a813a7064ffe0f",
+    "source_sync_path": "evidence/api_football/prospective_market_freeze/settlement_sync_last.json",
+    "source_sync_blob_sha": "de37aa3b526b8db4988c488fb68435e01538ab30"
+  },
+  "tennis": {
+    "cohort_total": 11,
+    "cohort_finished": 11,
+    "cohort_unique_events": 11,
+    "cohort_unique_settlements": 11,
+    "cohort_duplicate_settlements": 0,
+    "settlement_rows": 269,
+    "delta_settlement_rows": 1,
+    "unique_calibration_observations": 241,
+    "delta_unique": 2,
+    "duplicate_quarantined": 171,
+    "uniqueness": "PASS",
+    "settled_unique_canonical_events": 216,
+    "settled_duplicate_alias_records": 53,
+    "new_finished_event_ids": [
+      "COR0203-RAPIDAPI-TENNIS-1609-7980eb21c124"
+    ],
+    "cohort_new_settlement_intersection": [],
+    "source_ledger_path": "evidence/cor0203/settlement/MATRIX_COR0203_SETTLEMENT_LEDGER.jsonl",
+    "source_ledger_blob_sha": "af3b5c2a4c2ce0305d9c978740dc9abe7a739559",
+    "source_uniqueness_path": "evidence/cor0203/runtime/MATRIX_COR0203_SETTLEMENT_UNIQUENESS_LAST.json",
+    "source_uniqueness_blob_sha": "9e4dfd1da842b41f68b8810174671ef56d620a11"
+  },
+  "governance": {
+    "metrics_opened": false,
+    "parameter_tuning_allowed": false,
+    "odds_to_probability": false,
+    "real_money": "BLOCKED",
+    "settlement_final_only": true,
+    "automated_wagering": false
+  },
+  "limitations": [
+    "Football 107/116 remains the last complete ledger audit; full V2 ledger read was unavailable through connector, but all 29 new governed FT fixture IDs were compared against the 116 frozen candidate IDs and have zero intersection.",
+    "Nonstandard statuses were read from the repository sync and were not independently revalidated against provider.",
+    "Tennis 11/11 FINISHED and one distinct settlement ID per event were checked directly against all 269 ledger rows.",
+    "All 29 football FT and one tennis FINISHED settlement were already physically present; no duplicate settlement was created.",
+    "No metrics opened, tuning, odds-to-probability conversion, model changes, or wagering."
+  ]
+}

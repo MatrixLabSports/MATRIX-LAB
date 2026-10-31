@@ -1,0 +1,70 @@
+name: API-Football verify Pro entitlement
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: api-football-verify-pro-entitlement
+  cancel-in-progress: false
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout operational branch
+        uses: actions/checkout@v4
+        with:
+          ref: repair/cor09-world-pipeline
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install minimal dependency
+        run: python -m pip install requests
+
+      - name: Run exactly two entitlement probes
+        env:
+          API_FOOTBALL_KEY: ${{ secrets.API_FOOTBALL_KEY }}
+        run: |
+          set -euo pipefail
+          rm -rf evidence/api_football/pro_entitlement_probe
+          python -m tools.api_football_pro_entitlement_probe
+
+      - name: Enforce Pro entitlement gate
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          path = Path("evidence/api_football/pro_entitlement_probe/manifest.json")
+          payload = json.loads(path.read_text(encoding="utf-8"))
+          assert payload["network_calls_performed"] == 2
+          assert payload["season_2026"]["status"] == "PASS"
+          assert payload["team_last_20"]["status"] == "PASS"
+          assert payload["pro_entitlement_verified"] is True
+          assert payload["real_money"] == "BLOCKED"
+          print("API_FOOTBALL_PRO_ENTITLEMENT_GATE: PASS")
+          print("season_2026_rows=", payload["season_2026"]["provider_rows"])
+          print("team_last_20_rows=", payload["team_last_20"]["provider_rows"])
+          PY
+
+      - name: Persist entitlement evidence
+        run: |
+          set -euo pipefail
+          git config user.name "matrix-api-football-pro-probe"
+          git config user.email "matrix-api-football-pro-probe@users.noreply.github.com"
+          git add evidence/api_football/pro_entitlement_probe
+          if git diff --cached --quiet; then
+            echo "NO_PROBE_EVIDENCE_TO_PERSIST"
+            exit 3
+          fi
+          git commit -m "evidence(api-football): verify Pro historical entitlement"
+          git pull --rebase origin repair/cor09-world-pipeline
+          git push origin HEAD:repair/cor09-world-pipeline

@@ -1,0 +1,375 @@
+from __future__ import annotations
+
+import hashlib
+import json
+from datetime import datetime, timezone
+from pathlib import Path
+from typing import Any, Mapping
+
+from app.market.colombia_bookmakers import EXECUTION_BOOKMAKERS
+
+SCHEMA="MATRIX_TELEGRAM_QUOTE_ATTEMPT_V3"
+LEGACY_SCHEMAS={"MATRIX_TELEGRAM_QUOTE_ATTEMPT_V1","MATRIX_TELEGRAM_QUOTE_ATTEMPT_V2"}
+GENESIS="0"*64
+LEGACY_AUTHORIZED=("betano","betplay","rushbet")
+AUTHORIZED=tuple(sorted(EXECUTION_BOOKMAKERS))
+IDENTITY_STATES={"MATCHED","LOW_SCORE","AMBIGUOUS","NOT_COVERED"}
+REQUIRED_HOUSE_FIELDS={"seen","totals_market_seen","available_lines","nearby_lines_2_25_2_75","over_2_5_seen","exact_over_2_5_odds"}
+REQUIRED_IDENTITY_FIELDS={"state","score","provider_event_id","provider"}
+LEGACY_REQUIRED_IDENTITY_FIELDS={"state","score","provider_event_id"}
+REQUIRED_ATTEMPT_FIELDS=(
+    "fixture_id","signal_key","run_token","query_at_utc","kickoff_utc","seconds_to_kickoff",
+    "identity_match","houses","totals_market_seen_any_authorized","exact_lines_available_any_authorized",
+    "over_2_5_seen_any_authorized","exact_over_2_5_odds_by_house","final_discard_reason",
+    "evidence_sha256","evidence_snapshot","terminal_state_independent","automatic_wagering","real_money",
+)
+LEGACY_REQUIRED_ATTEMPT_FIELDS=tuple(
+    x for x in REQUIRED_ATTEMPT_FIELDS if x!="terminal_state_independent"
+)
+
+
+def _canonical(value:Any)->str:
+    return json.dumps(value,ensure_ascii=False,sort_keys=True,separators=(",",":"),allow_nan=False)
+
+
+def _sha(value:Any)->str:
+    return hashlib.sha256(_canonical(value).encode("utf-8")).hexdigest()
+
+
+def _utc(value:Any)->datetime:
+    dt=datetime.fromisoformat(str(value).replace("Z","+00:00"))
+    if dt.tzinfo is None or dt.utcoffset() is None:
+        raise ValueError("TIMESTAMP_NOT_AWARE")
+    return dt.astimezone(timezone.utc)
+
+
+def _load(path:Path)->list[dict[str,Any]]:
+    if not path.exists():
+        return []
+    rows=[]; prev=GENESIS; seen=set()
+    for n,raw in enumerate(path.read_text(encoding="utf-8").splitlines(),1):
+        if not raw.strip(): continue
+        row=json.loads(raw)
+        schema=str(row.get("schema") or "")
+        if schema!=SCHEMA and schema not in LEGACY_SCHEMAS:
+            raise ValueError(f"QUOTE_ATTEMPT_SCHEMA_INVALID:{n}")
+        attempt_id=str(row.get("attempt_id") or "")
+        if not attempt_id or attempt_id in seen: raise ValueError(f"QUOTE_ATTEMPT_DUPLICATE_OR_MISSING_ID:{n}")
+        if row.get("previous_record_sha256")!=prev: raise ValueError(f"QUOTE_ATTEMPT_CHAIN_BROKEN:{n}")
+        required_fields=REQUIRED_ATTEMPT_FIELDS if schema==SCHEMA else LEGACY_REQUIRED_ATTEMPT_FIELDS
+        for field in required_fields:
+            if field not in row:
+                raise ValueError(f"QUOTE_ATTEMPT_REQUIRED_FIELD_MISSING:{n}:{field}")
+        _utc(row["query_at_utc"]); _utc(row["kickoff_utc"])
+        if isinstance(row.get("seconds_to_kickoff"),bool) or not isinstance(row.get("seconds_to_kickoff"),int):
+            raise ValueError(f"QUOTE_ATTEMPT_SECONDS_TO_KICKOFF_INVALID:{n}")
+        ident=row.get("identity_match")
+        if not isinstance(ident,Mapping) or ident.get("state") not in IDENTITY_STATES:
+            raise ValueError(f"QUOTE_ATTEMPT_IDENTITY_INVALID:{n}")
+        required_identity=REQUIRED_IDENTITY_FIELDS if schema==SCHEMA else LEGACY_REQUIRED_IDENTITY_FIELDS
+        if required_identity-set(ident):
+            raise ValueError(f"QUOTE_ATTEMPT_IDENTITY_FIELDS_INCOMPLETE:{n}")
+        houses=row.get("houses")
+        required_houses=AUTHORIZED if schema==SCHEMA else LEGACY_AUTHORIZED
+        if not isinstance(houses,Mapping) or set(required_houses)-set(houses):
+            raise ValueError(f"QUOTE_ATTEMPT_HOUSES_INCOMPLETE:{n}")
+        for house in required_houses:
+            view=houses.get(house)
+            if not isinstance(view,Mapping) or REQUIRED_HOUSE_FIELDS-set(view):
+                raise ValueError(f"QUOTE_ATTEMPT_HOUSE_VIEW_INCOMPLETE:{n}:{house}")
+        snapshot=row.get("evidence_snapshot")
+        if row.get("evidence_sha256")!=_sha(snapshot):
+            raise ValueError(f"QUOTE_ATTEMPT_EVIDENCE_SHA_MISMATCH:{n}")
+        if "first_terminal_state" in row:
+            raise ValueError(f"QUOTE_ATTEMPT_MUST_BE_INDEPENDENT_OF_TERMINAL_STATE:{n}")
+        if schema==SCHEMA and row.get("terminal_state_independent") is not True:
+            raise ValueError(f"QUOTE_ATTEMPT_TERMINAL_INDEPENDENCE_INVALID:{n}")
+        if row.get("automatic_wagering") is not False or row.get("real_money")!="BLOCKED":
+            raise ValueError(f"QUOTE_ATTEMPT_SAFETY_INVALID:{n}")
+        body=dict(row); record_sha=body.pop("record_sha256",None)
+        if record_sha!=_sha(body): raise ValueError(f"QUOTE_ATTEMPT_SHA_MISMATCH:{n}")
+        prev=record_sha; seen.add(attempt_id); rows.append(row)
+    return rows
+
+
+def _market_is_total(item:Mapping[str,Any])->bool:
+    text=" ".join(str(item.get(k) or "").casefold() for k in ("market_key","bet_type","metric"))
+    return "total" in text or "over under" in text
+
+
+def _side_is_over(item:Mapping[str,Any])->bool:
+    text=" ".join(str(item.get(k) or "").casefold() for k in ("side","selection_name","selection_key","market_key"))
+    return "over" in text
+
+
+def _house_view(diag:Mapping[str,Any],house:str)->dict[str,Any]:
+    rows_by_book=diag.get("rows_by_book") if isinstance(diag.get("rows_by_book"),Mapping) else {}
+    line_map=diag.get("candidate_lines_by_book") if isinstance(diag.get("candidate_lines_by_book"),Mapping) else {}
+    items=[dict(x) for x in (line_map.get(house) or []) if isinstance(x,Mapping)]
+    totals=[x for x in items if _market_is_total(x)]
+    exact_lines=sorted({float(x["line"]) for x in totals if isinstance(x.get("line"),(int,float))})
+    over25=[x for x in totals if float(x.get("line") or -999)==2.5 and _side_is_over(x)]
+    exact_odds=sorted({float(x["odds"]) for x in over25 if isinstance(x.get("odds"),(int,float))})
+    return {
+        "seen":int(rows_by_book.get(house) or 0)>0,
+        "row_count":int(rows_by_book.get(house) or 0),
+        "totals_market_seen":bool(totals),
+        "available_lines":exact_lines,
+        "nearby_lines_2_25_2_75":[x for x in exact_lines if x in {2.25,2.75}],
+        "over_2_5_seen":bool(over25),
+        "exact_over_2_5_odds":exact_odds,
+    }
+
+
+def _merge_api_football_house_views(houses:dict[str,dict[str,Any]],api_diag:Mapping[str,Any])->None:
+    seen={str(x or "").strip().casefold() for x in (api_diag.get("authorized_books_seen") or [])}
+    totals={str(x or "").strip().casefold() for x in (api_diag.get("goals_over_under_books") or [])}
+    over25={str(x or "").strip().casefold() for x in (api_diag.get("over25_books") or [])}
+    required=str(api_diag.get("required_house_key") or "").strip().casefold()
+    exact_odds=api_diag.get("exact_over25_odds_by_book")
+    if not isinstance(exact_odds,Mapping):
+        exact_odds={}
+    for house in AUTHORIZED:
+        view=houses[house]
+        if house in seen:
+            view["seen"]=True
+            view["api_football_seen"]=True
+        else:
+            view["api_football_seen"]=False
+        if house in totals:
+            view["totals_market_seen"]=True
+            view["api_football_totals_market_seen"]=True
+        else:
+            view["api_football_totals_market_seen"]=False
+        if house in over25:
+            view["over_2_5_seen"]=True
+            view["api_football_over_2_5_seen"]=True
+            if 2.5 not in view["available_lines"]:
+                view["available_lines"]=sorted(view["available_lines"]+[2.5])
+        else:
+            view["api_football_over_2_5_seen"]=False
+        vals=exact_odds.get(house)
+        if isinstance(vals,list):
+            merged=sorted(set(view["exact_over_2_5_odds"]+[float(x) for x in vals if isinstance(x,(int,float))]))
+            view["exact_over_2_5_odds"]=merged
+        elif isinstance(vals,(int,float)):
+            merged=sorted(set(view["exact_over_2_5_odds"]+[float(vals)]))
+            view["exact_over_2_5_odds"]=merged
+        if required==house:
+            view["api_football_required_house"]=True
+
+
+def _identity(odds_diag:Mapping[str,Any],api_diag:Mapping[str,Any])->dict[str,Any]:
+    # Prefer a proven odds-api identity match when present. Otherwise an
+    # API-Football response row queried by exact canonical fixture_id is itself
+    # a deterministic identity match and must not be mislabeled NOT_COVERED.
+    status=str(odds_diag.get("status") or "")
+    scores=odds_diag.get("identity_top_scores") if isinstance(odds_diag.get("identity_top_scores"),list) else []
+    top=odds_diag.get("identity_top_candidates") if isinstance(odds_diag.get("identity_top_candidates"),list) else []
+    odds_event=str(odds_diag.get("odds_api_event_id") or "") or None
+    if odds_event:
+        return {
+            "state":"MATCHED",
+            "score":float(scores[0]) if scores else None,
+            "provider_event_id":odds_event,
+            "provider":"odds-api.net",
+            "top_candidates":top[:5],
+        }
+    api_rows=int(api_diag.get("response_rows") or 0)
+    api_fixture=str(api_diag.get("fixture_id") or "") or None
+    if api_rows>0 and api_fixture:
+        return {
+            "state":"MATCHED",
+            "score":1.0,
+            "provider_event_id":api_fixture,
+            "provider":"API-Football canonical fixture_id",
+            "top_candidates":[],
+        }
+    if status=="BLOCKED_IDENTITY_LOW_SCORE": state="LOW_SCORE"
+    elif status=="BLOCKED_IDENTITY_AMBIGUOUS": state="AMBIGUOUS"
+    else: state="NOT_COVERED"
+    return {
+        "state":state,
+        "score":float(scores[0]) if scores else None,
+        "provider_event_id":None,
+        "provider":"odds-api.net",
+        "top_candidates":top[:5],
+    }
+
+
+def build_attempt(*,fixture_id:str,signal_key:str,query_at_utc:datetime,kickoff:Any,
+                  odds_diag:Mapping[str,Any],api_diag:Mapping[str,Any],
+                  selected_offer:Mapping[str,Any]|None,final_discard_reason:str,
+                  run_token:str|None=None)->dict[str,Any]:
+    q=query_at_utc.astimezone(timezone.utc).replace(microsecond=0)
+    k=_utc(kickoff)
+    houses={h:_house_view(odds_diag,h) for h in AUTHORIZED}
+    _merge_api_football_house_views(houses,api_diag)
+    evidence={
+        "odds_api_net_diagnostic":dict(odds_diag),
+        "api_football_offer_diagnostic":dict(api_diag),
+        "selected_offer":dict(selected_offer) if isinstance(selected_offer,Mapping) else None,
+    }
+    evidence_sha=_sha(evidence)
+    attempt_id=_sha({
+        "fixture_id":str(fixture_id),
+        "signal_key":str(signal_key),
+        "query_at_utc":q.isoformat(),
+        "evidence_sha256":evidence_sha,
+    })
+    return {
+        "schema":SCHEMA,
+        "attempt_id":attempt_id,
+        "run_token":run_token,
+        "fixture_id":str(fixture_id),
+        "signal_key":str(signal_key),
+        "query_at_utc":q.isoformat(),
+        "kickoff_utc":k.isoformat(),
+        "seconds_to_kickoff":int((k-q).total_seconds()),
+        "identity_match":_identity(odds_diag,api_diag),
+        "houses":houses,
+        "totals_market_seen_any_authorized":any(v["totals_market_seen"] for v in houses.values()),
+        "exact_lines_available_any_authorized":sorted({line for v in houses.values() for line in v["available_lines"]}),
+        "over_2_5_seen_any_authorized":any(v["over_2_5_seen"] for v in houses.values()),
+        "exact_over_2_5_odds_by_house":{h:v["exact_over_2_5_odds"] for h,v in houses.items()},
+        "final_discard_reason":str(final_discard_reason),
+        "evidence_sha256":evidence_sha,
+        "evidence_snapshot":evidence,
+        "terminal_state_independent":True,
+        "automatic_wagering":False,
+        "real_money":"BLOCKED",
+    }
+
+
+def append_attempt(path:Path,row:Mapping[str,Any])->dict[str,Any]:
+    rows=_load(path)
+    item=dict(row)
+    if item.get("schema")!=SCHEMA: raise ValueError("QUOTE_ATTEMPT_SCHEMA_INVALID")
+    if any(x["attempt_id"]==item.get("attempt_id") for x in rows):
+        raise ValueError("QUOTE_ATTEMPT_ALREADY_PERSISTED")
+    item["previous_record_sha256"]=rows[-1]["record_sha256"] if rows else GENESIS
+    item["record_sha256"]=_sha(item)
+    path.parent.mkdir(parents=True,exist_ok=True)
+    with path.open("a",encoding="utf-8",newline="\n") as fh:
+        fh.write(_canonical(item)+"\n")
+    _load(path)
+    return item
+
+
+def _summary_core(rows:list[Mapping[str,Any]])->dict[str,Any]:
+    coverage={h:0 for h in AUTHORIZED}; seen={h:0 for h in AUTHORIZED}; totals={h:0 for h in AUTHORIZED}; all_three_fail=0; identity_problem=0; nearby_without_exact=0
+    for row in rows:
+        ident=(row.get("identity_match") or {}).get("state")
+        if ident in {"LOW_SCORE","AMBIGUOUS","NOT_COVERED"}:
+            identity_problem+=1
+        houses=row.get("houses") or {}
+        exact_any=False; near_any=False
+        for h in AUTHORIZED:
+            hv=houses.get(h) or {}
+            if hv.get("seen"): seen[h]+=1
+            if hv.get("totals_market_seen"): totals[h]+=1
+            if hv.get("over_2_5_seen"):
+                coverage[h]+=1
+                exact_any=True
+            if hv.get("nearby_lines_2_25_2_75"):
+                near_any=True
+        if not exact_any:
+            all_three_fail+=1
+        if near_any and not exact_any:
+            nearby_without_exact+=1
+    return {
+        "attempt_count":len(rows),
+        "book_seen_by_house":seen,
+        "totals_market_seen_by_house":totals,
+        "exact_over25_coverage_by_house":coverage,
+        "all_three_without_exact_over25":all_three_fail,
+        "identity_problem_count":identity_problem,
+        "nearby_2_25_or_2_75_without_exact_2_5":nearby_without_exact,
+    }
+
+
+def _timing_disappearance(rows:list[Mapping[str,Any]])->dict[str,Any]:
+    by_fixture:dict[str,list[Mapping[str,Any]]]={}
+    for row in rows:
+        fid=str(row.get("fixture_id") or "")
+        if fid:
+            by_fixture.setdefault(fid,[]).append(row)
+    affected=[]
+    for fid,attempts in by_fixture.items():
+        ordered=sorted(
+            attempts,
+            key=lambda x:(
+                int(x.get("seconds_to_kickoff") or -10**12),
+                str(x.get("query_at_utc") or ""),
+            ),
+            reverse=True,
+        )
+        seen_exact=False
+        first_exact_seconds=None
+        for row in ordered:
+            exact=bool(row.get("over_2_5_seen_any_authorized"))
+            seconds=int(row.get("seconds_to_kickoff") or 0)
+            if exact:
+                seen_exact=True
+                if first_exact_seconds is None:
+                    first_exact_seconds=seconds
+                continue
+            if seen_exact and seconds>=0:
+                affected.append({
+                    "fixture_id":fid,
+                    "exact_seen_earlier_seconds_to_kickoff":first_exact_seconds,
+                    "missing_later_seconds_to_kickoff":seconds,
+                    "later_attempt_id":row.get("attempt_id"),
+                })
+                break
+    return {
+        "timing_disappearance_fixture_count":len(affected),
+        "timing_disappearance_fixtures":affected,
+    }
+
+
+def summarize_run(rows:list[Mapping[str,Any]],run_token:str)->dict[str,Any]:
+    current=[x for x in rows if str(x.get("run_token") or "")==str(run_token)]
+    core=_summary_core(current)
+    return {
+        "quote_attempts_live_this_run":core.pop("attempt_count"),
+        **core,
+    }
+
+
+def summarize_cumulative(rows:list[Mapping[str,Any]],minimum_target:int=50,maximum_target:int=100)->dict[str,Any]:
+    current=[x for x in rows if str(x.get("schema") or "")==SCHEMA]
+    legacy=[x for x in rows if str(x.get("schema") or "") in LEGACY_SCHEMAS]
+    core=_summary_core(current)
+    legacy_core=_summary_core(legacy)
+    timing=_timing_disappearance(current)
+    n=int(core["attempt_count"])
+    legacy_house_keys=set(LEGACY_AUTHORIZED)
+    legacy_diagnostic={
+        "attempt_count":int(legacy_core["attempt_count"]),
+        "book_seen_by_house":{k:v for k,v in legacy_core["book_seen_by_house"].items() if k in legacy_house_keys},
+        "totals_market_seen_by_house":{k:v for k,v in legacy_core["totals_market_seen_by_house"].items() if k in legacy_house_keys},
+        "exact_over25_coverage_by_house":{k:v for k,v in legacy_core["exact_over25_coverage_by_house"].items() if k in legacy_house_keys},
+        "all_three_without_exact_over25":legacy_core["all_three_without_exact_over25"],
+        "identity_problem_count":legacy_core["identity_problem_count"],
+        "interpretation":"HISTORICAL_THREE_BOOK_SCHEMA_ONLY_NOT_FULL_COLOMBIA_PORTFOLIO",
+    }
+    return {
+        "real_quote_attempts_total":n,
+        "legacy_quote_attempts_preserved":len(legacy),
+        "legacy_three_book_diagnostic":legacy_diagnostic,
+        "coverage_schema":SCHEMA,
+        "coverage_house_count":len(AUTHORIZED),
+        "coverage_houses":list(AUTHORIZED),
+        "target_window_minimum":int(minimum_target),
+        "target_window_maximum":int(maximum_target),
+        "sample_gate_status":"READY_FOR_CAUSAL_RECOMMENDATION" if n>=minimum_target else "ACCUMULATING_REAL_REVALIDATIONS",
+        "remaining_to_minimum":max(0,int(minimum_target)-n),
+        **{k:v for k,v in core.items() if k!="attempt_count"},
+        **timing,
+        "synthetic_attempts_included":False,
+    }
+
+
+def load_verified(path:Path)->list[dict[str,Any]]:
+    return _load(path)

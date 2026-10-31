@@ -1,0 +1,92 @@
+{
+  "schema": "MATRIX_SETTLEMENT_PROGRESS_20261006_BOGOTA_V1",
+  "cut_utc": "2026-10-22T22:15:56Z",
+  "branch": "repair/cor09-world-pipeline",
+  "source_head": "02b03a636cd1abde6895aa4d59dcbfd98516477b",
+  "candidate_artifact": "evidence/daily_selection/MATRIX_CALIBRATION_CANDIDATES_20261006_BOGOTA.json",
+  "candidate_blob_sha": "52e897007840f5bed1a8999edad8ee594fefc767",
+  "football": {
+    "cohort_ft": 107,
+    "cohort_total": 116,
+    "cohort_recount_method": "Prior physical snapshot V2_3027_T332: 107/116, plus exact exclusion of 20 new fixture IDs from candidate set; complete 3918-row ledger not independently reparsed in this run.",
+    "global_settled": 3918,
+    "global_new_ft_count_since_prior_run": 20,
+    "global_new_ft_fixture_ids": [
+      "1636234",
+      "1636235",
+      "1636241",
+      "1636249",
+      "1636267",
+      "1636273",
+      "1636288",
+      "1636308",
+      "1636311",
+      "1636318",
+      "1636378",
+      "1636379",
+      "1636385",
+      "1636388",
+      "1636442",
+      "1636449",
+      "1636454",
+      "1636474",
+      "1645487",
+      "1636711"
+    ],
+    "global_uniqueness_audit_unique_fixture_ids": 3918,
+    "v2_frozen": 3705,
+    "v2_settled": 3116,
+    "v2_pending": 589,
+    "v2_lanes": [
+      "1x2",
+      "over_2_5",
+      "under_2_5",
+      "double_chance_1x",
+      "double_chance_x2"
+    ],
+    "nonstandard": {
+      "PEN": [
+        "1588817",
+        "1588821",
+        "1588845",
+        "1588863",
+        "1588890",
+        "1588893",
+        "1619499"
+      ],
+      "AET": [
+        "1644168"
+      ],
+      "NS": [
+        "1596466"
+      ]
+    },
+    "source_sync_blob_sha": "dc1f558893794ffb339d59b43ee1d7bb0cff1cb9",
+    "source_v2_over25_blob_sha": "a0061ff15de3e34fa41b70ad82613a19f520beef",
+    "source_physical_uniqueness_audit_blob_sha": "7d8377ace9b2c381e8046278113709856074ea29",
+    "canonical_tracker_status": "STALE_3898_VS_LEDGER_3918"
+  },
+  "tennis": {
+    "cohort_finished": 11,
+    "cohort_total": 11,
+    "global_settled": 335,
+    "unique_events": 335,
+    "unique_settlements": 335,
+    "new_finished_since_prior_run": 1,
+    "new_event_ids": [
+      "COR0203-RAPIDAPI-TENNIS-440547-585c2ea1c2d9"
+    ],
+    "source_ledger_blob_sha": "0fc88a6ee8c35f5aac02b3c9fbf5d93baf98a94"
+  },
+  "governance": {
+    "final_only": true,
+    "metrics_opened": false,
+    "tuning": false,
+    "odds_to_p": false,
+    "real_money": "BLOCKED",
+    "canonical_truth_guard_status": "FAIL_CLOSED",
+    "canonical_truth_guard_note": "Three stale registered sources (football_4000, tennis_three_blocks, telegram_daily_bankroll) at 2026-10-22T22:10:32Z; do not treat stale tracker as current."
+  },
+  "prior_snapshot": "evidence/daily_selection/MATRIX_SETTLEMENT_PROGRESS_20261006_BOGOTA_20261022T132131Z_V2_3027_T332.json",
+  "no_manual_settlement": "20 football and 1 tennis closures already incorporated by governed jobs; no duplicate writes."
+}

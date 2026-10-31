@@ -1,0 +1,69 @@
+{
+  "schema": "MATRIX_CONTINUITY_HOURLY_AUDIT_V1",
+  "audit_context_utc": "2026-10-10T21:20:54Z",
+  "target_branch": "repair/cor09-world-pipeline",
+  "head_verified": "e3913cd98dfc2510a9faeae6132dadb47be4f419",
+  "overall_status": "BLOCKED_PARTIAL",
+  "actions": {
+    "tennis_hard": {
+      "run_id": 38086202071,
+      "status": "PASS_NO_NEW_FREEZES",
+      "physical_rows": 275,
+      "unique_count": 149,
+      "duplicates_quarantined": 126,
+      "metrics": "SEALED_UNTIL_600",
+      "source_ready": true
+    },
+    "live_bulk": {
+      "run_id": 38086286687,
+      "status": "BLOCKED_PERSISTENCE",
+      "capture_cycles": 6,
+      "new_states_in_runner": 2,
+      "committed_to_remote": false,
+      "error": "git pull --rebase refused unstaged changes"
+    },
+    "live_final": {
+      "run_id": 38086311911,
+      "status": "SKIPPED"
+    },
+    "live_cumulative": {
+      "run_id": 38086314871,
+      "status": "SKIPPED"
+    },
+    "telegram": {
+      "last_run_id": 38079366024,
+      "status": "OVERDUE_TRIGGER_WRITE_BLOCKED"
+    },
+    "football_supervisor": {
+      "run_id": 38086176320,
+      "status": "SUCCESS"
+    },
+    "football_daily": {
+      "run_id": 38084300569,
+      "status": "SUCCESS"
+    },
+    "ci": {
+      "run_id": 38086307389,
+      "status": "SUCCESS"
+    }
+  },
+  "shanghai": {
+    "source_path": "evidence/live_tennis_lab/2026-10-09/MATRIX_LIVE_TENNIS_STATE_LEDGER_V0_1.json",
+    "source_sha": "135b5425a4c06621a1c66ad6d6b7216858ec3f75",
+    "index_source_sha": "ec59a8362c407c348f10acdc406f8aefd56e9355",
+    "matches": 3,
+    "states": 12,
+    "final": 3,
+    "sports_field_differences": 0,
+    "provenance_update": "BLOCKED_WRITE"
+  },
+  "safety": {
+    "real_money": "BLOCKED",
+    "automatic_wagering": false,
+    "model_status": "RESEARCH_ONLY",
+    "probability_metrics": "SEALED",
+    "no_odds_to_probability": true,
+    "no_backfill": true,
+    "no_tuning": true
+  }
+}

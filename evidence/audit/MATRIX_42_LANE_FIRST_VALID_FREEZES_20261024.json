@@ -1,0 +1,91 @@
+{
+  "schema": "MATRIX_42_LANE_FIRST_VALID_FREEZES_AUDIT_V1",
+  "generated_at_utc": "2026-10-24T20:28:30+00:00",
+  "status": "PASS_RUNTIME_AND_DEDUP_CERTIFIED",
+  "scope": {
+    "portfolio_lanes": 42,
+    "football_lanes": 30,
+    "tennis_lanes": 12,
+    "cadence_minutes": 15,
+    "gate_thresholds": [
+      100,
+      300,
+      600
+    ]
+  },
+  "implementation": {
+    "bridge_tool": "tools/matrix_42_lane_football_freeze_bridge.py",
+    "bridge_commit": "ccda3d0970a568cb43186526e660a5a5ae3ae555",
+    "bridge_test": "tests/test_matrix_42_lane_football_freeze_bridge.py",
+    "bridge_test_commit": "9e4e9d7887b0a330dc5cd59678e0b682a7b8fc22",
+    "workflow_main_commit": "6dc004e35758bf92c2cfc2f0452819a9e00f2dd8",
+    "workflow_operational_commit": "e7d97bc03957e381f0f9b5bca36cf8f66d52bb6a"
+  },
+  "source_freeze": {
+    "path": "evidence/api_football/prospective_market_freeze/freeze.json",
+    "schema": "MATRIX_FOOTBALL_PROSPECTIVE_MARKET_FREEZE_V1",
+    "frozen_event_count": 4903,
+    "sha256": "08d5c8657b8046aede9e4014832a635dfbb35425766a483f7f5e4a6d77261102",
+    "p_matrix_generated": false,
+    "probability_basis": "frozen_research_probabilities",
+    "protections": {
+      "freeze_strictly_before_kickoff": true,
+      "outcomes_read_at_freeze": false,
+      "odds_used_to_generate_probability": false,
+      "missing_feature_imputation": false,
+      "automatic_wagering": false,
+      "real_money": "BLOCKED"
+    }
+  },
+  "first_runtime": {
+    "run_id": 40129793514,
+    "conclusion": "success",
+    "generated_at_utc": "2026-10-24T20:27:23+00:00",
+    "eligible_future_unique_fixtures": 393,
+    "emitted_lane_rows": 1965,
+    "rejected_rows": 0,
+    "lanes": {
+      "MATCH_RESULT_1X2": 393,
+      "DOUBLE_CHANCE_1X": 393,
+      "DOUBLE_CHANCE_X2": 393,
+      "DOUBLE_CHANCE_12": 393,
+      "TOTAL_GOALS_OVER_UNDER": 393
+    },
+    "gates": {
+      "lanes_at_100": 5,
+      "lanes_at_300": 5,
+      "lanes_at_600": 0,
+      "remaining_to_600_each": 207
+    }
+  },
+  "dedup_runtime": {
+    "run_id": 40129797169,
+    "conclusion": "success",
+    "generated_at_utc": "2026-10-24T20:28:17+00:00",
+    "existing_rows_before": 1965,
+    "incoming_rows": 0,
+    "admitted_this_run": 0,
+    "rejected_this_run": 0,
+    "ledger_rows_total": 1965,
+    "duplicate_inflation": false
+  },
+  "derivation": {
+    "MATCH_RESULT_1X2": "direct frozen 1X2 probabilities",
+    "DOUBLE_CHANCE_1X": "H + D from same frozen 1X2 vector",
+    "DOUBLE_CHANCE_X2": "D + A from same frozen 1X2 vector",
+    "DOUBLE_CHANCE_12": "H + A from same frozen 1X2 vector",
+    "TOTAL_GOALS_OVER_UNDER": "direct frozen over_2_5 and complement under_2_5",
+    "refit_performed": false,
+    "odds_used": false,
+    "outcome_used": false
+  },
+  "interpretation": "These are valid prospective research observations admitted from pre-existing governed prematch freezes. They are not P_MATRIX production authorizations. Production remains blocked until each lane satisfies its own governance, calibration and pricing/EV requirements.",
+  "protections": {
+    "post_start_backfill_forbidden": true,
+    "duplicate_observation_key_forbidden": true,
+    "missing_not_zero": true,
+    "silent_imputation": false,
+    "automatic_wagering": false,
+    "real_money": "BLOCKED"
+  }
+}

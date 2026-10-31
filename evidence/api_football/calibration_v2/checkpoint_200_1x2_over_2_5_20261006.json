@@ -1,0 +1,719 @@
+{
+  "checkpoint": 200,
+  "checkpoint_role": "CLOSED_FIXED_PREFIX_200_INFORMATIVE_STABILITY_CHECKPOINT_NOT_PROMOTION_GATE",
+  "cohort_id": "FOOTBALL_ALL_MARKETS_V2_20261004",
+  "generated_at_utc": "2026-10-07T03:33:44+00:00",
+  "governance": {
+    "automatic_wagering": false,
+    "checkpoint_metrics_opened": true,
+    "continuous_lane_metrics_remain_sealed": true,
+    "model_files_modified": false,
+    "model_promotion_performed": false,
+    "odds_used_to_generate_probability": false,
+    "original_357_holdout_reuse_allowed": false,
+    "p_matrix_status": "NOT_GENERATED",
+    "parameter_tuning_allowed": false,
+    "parameters_mutated": false,
+    "promotion_gate": false,
+    "real_money": "BLOCKED"
+  },
+  "lane_audit": {
+    "1x2": {
+      "all_rows_final_ft": true,
+      "available_settlements": 222,
+      "first_fixture_id": "1493152",
+      "first_freeze_at_utc": "2026-10-04T20:41:14+00:00",
+      "fixture_id_count": 200,
+      "lane": "1x2",
+      "lane_prefix_sha256": "b14eaa69a005c2c4b85a7fe40ab7371159457d96ca71a7fff39fbd32ffd322a9",
+      "last_fixture_id": "1640274",
+      "last_prefix_freeze_at_utc": "2026-10-05T12:22:21+00:00",
+      "market": "1X2",
+      "observations_used": 200,
+      "outcome_binding_verified": true,
+      "parameter_tuning_used": false,
+      "parameters_mutated_after_freeze": false,
+      "probability_binding_verified": true,
+      "source_prefix_sha256": "501a90f9578baf123e1210e94a82b72187c8070fcf39e5b77425a8424995e28a",
+      "unique_fixture_id_count": 200
+    },
+    "over_2_5": {
+      "all_rows_final_ft": true,
+      "available_settlements": 222,
+      "first_fixture_id": "1493152",
+      "first_freeze_at_utc": "2026-10-04T20:41:14+00:00",
+      "fixture_id_count": 200,
+      "lane": "over_2_5",
+      "lane_prefix_sha256": "a39e78b3f744f1a843d654aec51a62ac7f5382bbe4ad7d48cd621702a3f6e1d4",
+      "last_fixture_id": "1640274",
+      "last_prefix_freeze_at_utc": "2026-10-05T12:22:21+00:00",
+      "market": "OVER_2_5",
+      "observations_used": 200,
+      "outcome_binding_verified": true,
+      "parameter_tuning_used": false,
+      "parameters_mutated_after_freeze": false,
+      "probability_binding_verified": true,
+      "source_prefix_sha256": "501a90f9578baf123e1210e94a82b72187c8070fcf39e5b77425a8424995e28a",
+      "unique_fixture_id_count": 200
+    },
+    "prefix_fixture_overlap_count": 200
+  },
+  "market_adjudication": {
+    "1x2": {
+      "beats_poisson_brier": true,
+      "beats_poisson_log_loss": false,
+      "challenger": {
+        "accuracy": 0.515,
+        "brier_score": 0.6104751127574783,
+        "calibration": {
+          "macro_ece": 0.08068887256565573,
+          "max_class_calibration_error": 0.5019653906482668,
+          "method": "ONE_VS_REST_EQUAL_WIDTH_10_BINS_DIAGNOSTIC_ONLY",
+          "per_class": {
+            "A": {
+              "bin_count": 10,
+              "ece": 0.10579271184369012,
+              "max_calibration_error": 0.27312288168656185,
+              "nonempty_bins": [
+                {
+                  "absolute_gap": 0.08122923010323924,
+                  "bin": 0,
+                  "count": 2,
+                  "lower": 0.0,
+                  "mean_probability": 0.08122923010323924,
+                  "observed_rate": 0.0,
+                  "upper": 0.1
+                },
+                {
+                  "absolute_gap": 0.11461388535172444,
+                  "bin": 1,
+                  "count": 17,
+                  "lower": 0.1,
+                  "mean_probability": 0.17343741476348914,
+                  "observed_rate": 0.058823529411764705,
+                  "upper": 0.2
+                },
+                {
+                  "absolute_gap": 0.11069712970194051,
+                  "bin": 2,
+                  "count": 46,
+                  "lower": 0.2,
+                  "mean_probability": 0.2628710427454188,
+                  "observed_rate": 0.15217391304347827,
+                  "upper": 0.3
+                },
+                {
+                  "absolute_gap": 0.0801664175304388,
+                  "bin": 3,
+                  "count": 58,
+                  "lower": 0.3,
+                  "mean_probability": 0.35602848649595603,
+                  "observed_rate": 0.27586206896551724,
+                  "upper": 0.4
+                },
+                {
+                  "absolute_gap": 0.14661286048351474,
+                  "bin": 4,
+                  "count": 50,
+                  "lower": 0.4,
+                  "mean_probability": 0.44661286048351473,
+                  "observed_rate": 0.3,
+                  "upper": 0.5
+                },
+                {
+                  "absolute_gap": 0.015183808136092214,
+                  "bin": 5,
+                  "count": 18,
+                  "lower": 0.5,
+                  "mean_probability": 0.5403717474194634,
+                  "observed_rate": 0.5555555555555556,
+                  "upper": 0.6
+                },
+                {
+                  "absolute_gap": 0.1471012431354055,
+                  "bin": 6,
+                  "count": 6,
+                  "lower": 0.6,
+                  "mean_probability": 0.6471012431354055,
+                  "observed_rate": 0.5,
+                  "upper": 0.7
+                },
+                {
+                  "absolute_gap": 0.27312288168656185,
+                  "bin": 7,
+                  "count": 3,
+                  "lower": 0.7,
+                  "mean_probability": 0.7268771183134382,
+                  "observed_rate": 1.0,
+                  "upper": 0.8
+                }
+              ]
+            },
+            "D": {
+              "bin_count": 10,
+              "ece": 0.06877150665327875,
+              "max_calibration_error": 0.5019653906482668,
+              "nonempty_bins": [
+                {
+                  "absolute_gap": 0.18185446658714116,
+                  "bin": 0,
+                  "count": 20,
+                  "lower": 0.0,
+                  "mean_probability": 0.06814553341285882,
+                  "observed_rate": 0.25,
+                  "upper": 0.1
+                },
+                {
+                  "absolute_gap": 0.018467778767071646,
+                  "bin": 1,
+                  "count": 90,
+                  "lower": 0.1,
+                  "mean_probability": 0.15930999901070614,
+                  "observed_rate": 0.17777777777777778,
+                  "upper": 0.2
+                },
+                {
+                  "absolute_gap": 0.07689725874660078,
+                  "bin": 2,
+                  "count": 63,
+                  "lower": 0.2,
+                  "mean_probability": 0.24056305871371667,
+                  "observed_rate": 0.31746031746031744,
+                  "upper": 0.3
+                },
+                {
+                  "absolute_gap": 0.09075191674354788,
+                  "bin": 3,
+                  "count": 24,
+                  "lower": 0.3,
+                  "mean_probability": 0.3259147499231188,
+                  "observed_rate": 0.4166666666666667,
+                  "upper": 0.4
+                },
+                {
+                  "absolute_gap": 0.4286078256989466,
+                  "bin": 4,
+                  "count": 1,
+                  "lower": 0.4,
+                  "mean_probability": 0.4286078256989466,
+                  "observed_rate": 0.0,
+                  "upper": 0.5
+                },
+                {
+                  "absolute_gap": 0.5019653906482668,
+                  "bin": 5,
+                  "count": 2,
+                  "lower": 0.5,
+                  "mean_probability": 0.5019653906482668,
+                  "observed_rate": 0.0,
+                  "upper": 0.6
+                }
+              ]
+            },
+            "H": {
+              "bin_count": 10,
+              "ece": 0.0675023991999983,
+              "max_calibration_error": 0.25423316635633564,
+              "nonempty_bins": [
+                {
+                  "absolute_gap": 0.015228224857134237,
+                  "bin": 1,
+                  "count": 6,
+                  "lower": 0.1,
+                  "mean_probability": 0.1818948915238009,
+                  "observed_rate": 0.16666666666666666,
+                  "upper": 0.2
+                },
+                {
+                  "absolute_gap": 0.0586394856735758,
+                  "bin": 2,
+                  "count": 25,
+                  "lower": 0.2,
+                  "mean_probability": 0.2586394856735758,
+                  "observed_rate": 0.2,
+                  "upper": 0.3
+                },
+                {
+                  "absolute_gap": 0.06546740200868201,
+                  "bin": 3,
+                  "count": 52,
+                  "lower": 0.3,
+                  "mean_probability": 0.35760952106824107,
+                  "observed_rate": 0.4230769230769231,
+                  "upper": 0.4
+                },
+                {
+                  "absolute_gap": 0.06769787347757011,
+                  "bin": 4,
+                  "count": 65,
+                  "lower": 0.4,
+                  "mean_probability": 0.43999443421473755,
+                  "observed_rate": 0.5076923076923077,
+                  "upper": 0.5
+                },
+                {
+                  "absolute_gap": 0.07407738969831323,
+                  "bin": 5,
+                  "count": 32,
+                  "lower": 0.5,
+                  "mean_probability": 0.5509226103016868,
+                  "observed_rate": 0.625,
+                  "upper": 0.6
+                },
+                {
+                  "absolute_gap": 0.06770008791119753,
+                  "bin": 6,
+                  "count": 17,
+                  "lower": 0.6,
+                  "mean_probability": 0.6559353820288446,
+                  "observed_rate": 0.5882352941176471,
+                  "upper": 0.7
+                },
+                {
+                  "absolute_gap": 0.25423316635633564,
+                  "bin": 7,
+                  "count": 2,
+                  "lower": 0.7,
+                  "mean_probability": 0.7457668336436644,
+                  "observed_rate": 1.0,
+                  "upper": 0.8
+                },
+                {
+                  "absolute_gap": 0.10861237097488541,
+                  "bin": 8,
+                  "count": 1,
+                  "lower": 0.8,
+                  "mean_probability": 0.8913876290251146,
+                  "observed_rate": 1.0,
+                  "upper": 0.9
+                }
+              ]
+            }
+          }
+        },
+        "log_loss": 1.0280723331512587,
+        "mean_predicted_probability": {
+          "A": 0.3698659399285965,
+          "D": 0.20055387941667618,
+          "H": 0.42958018065472714
+        },
+        "observed_class_rate": {
+          "A": 0.275,
+          "D": 0.255,
+          "H": 0.47
+        },
+        "sample_size": 200
+      },
+      "delta_brier_challenger_minus_poisson": -0.005678605319122232,
+      "delta_log_loss_challenger_minus_poisson": 0.0012333297481403882,
+      "gate_passed": false,
+      "gate_rule": "delta_brier<0 AND delta_log_loss<0",
+      "poisson": {
+        "accuracy": 0.465,
+        "brier_score": 0.6161537180766006,
+        "calibration": {
+          "macro_ece": 0.0944123142,
+          "max_class_calibration_error": 0.27280077999999996,
+          "method": "ONE_VS_REST_EQUAL_WIDTH_10_BINS_DIAGNOSTIC_ONLY",
+          "per_class": {
+            "A": {
+              "bin_count": 10,
+              "ece": 0.1350456745,
+              "max_calibration_error": 0.27280077999999996,
+              "nonempty_bins": [
+                {
+                  "absolute_gap": 0.086802685,
+                  "bin": 0,
+                  "count": 2,
+                  "lower": 0.0,
+                  "mean_probability": 0.086802685,
+                  "observed_rate": 0.0,
+                  "upper": 0.1
+                },
+                {
+                  "absolute_gap": 0.07015780222222223,
+                  "bin": 1,
+                  "count": 9,
+                  "lower": 0.1,
+                  "mean_probability": 0.18126891333333334,
+                  "observed_rate": 0.1111111111111111,
+                  "upper": 0.2
+                },
+                {
+                  "absolute_gap": 0.0719660072972973,
+                  "bin": 2,
+                  "count": 37,
+                  "lower": 0.2,
+                  "mean_probability": 0.2611551964864865,
+                  "observed_rate": 0.1891891891891892,
+                  "upper": 0.3
+                },
+                {
+                  "absolute_gap": 0.1703467542857143,
+                  "bin": 3,
+                  "count": 56,
+                  "lower": 0.3,
+                  "mean_probability": 0.3489181828571429,
+                  "observed_rate": 0.17857142857142858,
+                  "upper": 0.4
+                },
+                {
+                  "absolute_gap": 0.1644088597101449,
+                  "bin": 4,
+                  "count": 69,
+                  "lower": 0.4,
+                  "mean_probability": 0.4397711785507246,
+                  "observed_rate": 0.2753623188405797,
+                  "upper": 0.5
+                },
+                {
+                  "absolute_gap": 0.061699867499999894,
+                  "bin": 5,
+                  "count": 20,
+                  "lower": 0.5,
+                  "mean_probability": 0.5383001325000001,
+                  "observed_rate": 0.6,
+                  "upper": 0.6
+                },
+                {
+                  "absolute_gap": 0.19182322500000004,
+                  "bin": 6,
+                  "count": 6,
+                  "lower": 0.6,
+                  "mean_probability": 0.6415101083333333,
+                  "observed_rate": 0.8333333333333334,
+                  "upper": 0.7
+                },
+                {
+                  "absolute_gap": 0.27280077999999996,
+                  "bin": 7,
+                  "count": 1,
+                  "lower": 0.7,
+                  "mean_probability": 0.72719922,
+                  "observed_rate": 1.0,
+                  "upper": 0.8
+                }
+              ]
+            },
+            "D": {
+              "bin_count": 10,
+              "ece": 0.016398858400000004,
+              "max_calibration_error": 0.10067988076923076,
+              "nonempty_bins": [
+                {
+                  "absolute_gap": 0.10067988076923076,
+                  "bin": 1,
+                  "count": 13,
+                  "lower": 0.1,
+                  "mean_probability": 0.1776029576923077,
+                  "observed_rate": 0.07692307692307693,
+                  "upper": 0.2
+                },
+                {
+                  "absolute_gap": 0.011359845555555553,
+                  "bin": 2,
+                  "count": 162,
+                  "lower": 0.2,
+                  "mean_probability": 0.2478994137037037,
+                  "observed_rate": 0.25925925925925924,
+                  "upper": 0.3
+                },
+                {
+                  "absolute_gap": 0.005225530000000034,
+                  "bin": 3,
+                  "count": 25,
+                  "lower": 0.3,
+                  "mean_probability": 0.32522553000000004,
+                  "observed_rate": 0.32,
+                  "upper": 0.4
+                }
+              ]
+            },
+            "H": {
+              "bin_count": 10,
+              "ece": 0.1317924097,
+              "max_calibration_error": 0.27057142,
+              "nonempty_bins": [
+                {
+                  "absolute_gap": 0.060234074444444424,
+                  "bin": 1,
+                  "count": 9,
+                  "lower": 0.1,
+                  "mean_probability": 0.16198814777777779,
+                  "observed_rate": 0.2222222222222222,
+                  "upper": 0.2
+                },
+                {
+                  "absolute_gap": 0.047471934375,
+                  "bin": 2,
+                  "count": 48,
+                  "lower": 0.2,
+                  "mean_probability": 0.25580526770833334,
+                  "observed_rate": 0.20833333333333334,
+                  "upper": 0.3
+                },
+                {
+                  "absolute_gap": 0.1773100735365854,
+                  "bin": 3,
+                  "count": 82,
+                  "lower": 0.3,
+                  "mean_probability": 0.34708017036585365,
+                  "observed_rate": 0.524390243902439,
+                  "upper": 0.4
+                },
+                {
+                  "absolute_gap": 0.19315048999999995,
+                  "bin": 4,
+                  "count": 33,
+                  "lower": 0.4,
+                  "mean_probability": 0.4432131463636364,
+                  "observed_rate": 0.6363636363636364,
+                  "upper": 0.5
+                },
+                {
+                  "absolute_gap": 0.07915806958333327,
+                  "bin": 5,
+                  "count": 24,
+                  "lower": 0.5,
+                  "mean_probability": 0.5458419304166667,
+                  "observed_rate": 0.625,
+                  "upper": 0.6
+                },
+                {
+                  "absolute_gap": 0.1270836150000001,
+                  "bin": 6,
+                  "count": 2,
+                  "lower": 0.6,
+                  "mean_probability": 0.6270836150000001,
+                  "observed_rate": 0.5,
+                  "upper": 0.7
+                },
+                {
+                  "absolute_gap": 0.27057142,
+                  "bin": 7,
+                  "count": 1,
+                  "lower": 0.7,
+                  "mean_probability": 0.72942858,
+                  "observed_rate": 1.0,
+                  "upper": 0.8
+                },
+                {
+                  "absolute_gap": 0.19979789999999997,
+                  "bin": 8,
+                  "count": 1,
+                  "lower": 0.8,
+                  "mean_probability": 0.8002021,
+                  "observed_rate": 1.0,
+                  "upper": 0.9
+                }
+              ]
+            }
+          }
+        },
+        "log_loss": 1.0268390034031183,
+        "mean_predicted_probability": {
+          "A": 0.38346829969999996,
+          "D": 0.25299590860000004,
+          "H": 0.3635357911
+        },
+        "observed_class_rate": {
+          "A": 0.275,
+          "D": 0.255,
+          "H": 0.47
+        },
+        "sample_size": 200
+      },
+      "status": "PROSPECTIVE_CHECKPOINT_200_REJECTED_NOT_SUPERIOR_TO_POISSON"
+    },
+    "over_2_5": {
+      "beats_poisson_brier": true,
+      "beats_poisson_log_loss": true,
+      "challenger": {
+        "accuracy_at_0_5": 0.57,
+        "brier_score": 0.23926805424673983,
+        "calibration": {
+          "bin_count": 10,
+          "ece": 0.055461746789134875,
+          "max_calibration_error": 0.8304862792839038,
+          "nonempty_bins": [
+            {
+              "absolute_gap": 0.32770055393972447,
+              "bin": 1,
+              "count": 2,
+              "lower": 0.1,
+              "mean_probability": 0.17229944606027553,
+              "observed_rate": 0.5,
+              "upper": 0.2
+            },
+            {
+              "absolute_gap": 0.074725663668057,
+              "bin": 2,
+              "count": 10,
+              "lower": 0.2,
+              "mean_probability": 0.274725663668057,
+              "observed_rate": 0.2,
+              "upper": 0.3
+            },
+            {
+              "absolute_gap": 0.11083070496972958,
+              "bin": 3,
+              "count": 24,
+              "lower": 0.3,
+              "mean_probability": 0.34750262836360374,
+              "observed_rate": 0.4583333333333333,
+              "upper": 0.4
+            },
+            {
+              "absolute_gap": 0.014891464151181089,
+              "bin": 4,
+              "count": 48,
+              "lower": 0.4,
+              "mean_probability": 0.4523914641511811,
+              "observed_rate": 0.4375,
+              "upper": 0.5
+            },
+            {
+              "absolute_gap": 0.07402642151863059,
+              "bin": 5,
+              "count": 63,
+              "lower": 0.5,
+              "mean_probability": 0.5502168977091068,
+              "observed_rate": 0.47619047619047616,
+              "upper": 0.6
+            },
+            {
+              "absolute_gap": 0.012060711267995017,
+              "bin": 6,
+              "count": 43,
+              "lower": 0.6,
+              "mean_probability": 0.6391020794296794,
+              "observed_rate": 0.6511627906976745,
+              "upper": 0.7
+            },
+            {
+              "absolute_gap": 0.033578110583926235,
+              "bin": 7,
+              "count": 9,
+              "lower": 0.7,
+              "mean_probability": 0.7441996671938516,
+              "observed_rate": 0.7777777777777778,
+              "upper": 0.8
+            },
+            {
+              "absolute_gap": 0.8304862792839038,
+              "bin": 8,
+              "count": 1,
+              "lower": 0.8,
+              "mean_probability": 0.8304862792839038,
+              "observed_rate": 0.0,
+              "upper": 0.9
+            }
+          ]
+        },
+        "log_loss": 0.6721018225369731,
+        "mean_predicted_probability": 0.514100230719814,
+        "observed_positive_rate": 0.5,
+        "sample_size": 200
+      },
+      "delta_brier_challenger_minus_poisson": -0.0015790675679474564,
+      "delta_log_loss_challenger_minus_poisson": -0.0038484472875333076,
+      "gate_passed": true,
+      "gate_rule": "delta_brier<0 AND delta_log_loss<0",
+      "poisson": {
+        "accuracy_at_0_5": 0.55,
+        "brier_score": 0.2408471218146873,
+        "calibration": {
+          "bin_count": 10,
+          "ece": 0.09169209070000003,
+          "max_calibration_error": 0.351880605,
+          "nonempty_bins": [
+            {
+              "absolute_gap": 0.351880605,
+              "bin": 1,
+              "count": 2,
+              "lower": 0.1,
+              "mean_probability": 0.148119395,
+              "observed_rate": 0.5,
+              "upper": 0.2
+            },
+            {
+              "absolute_gap": 0.06513388666666664,
+              "bin": 2,
+              "count": 15,
+              "lower": 0.2,
+              "mean_probability": 0.26513388666666665,
+              "observed_rate": 0.2,
+              "upper": 0.3
+            },
+            {
+              "absolute_gap": 0.14445427076923073,
+              "bin": 3,
+              "count": 26,
+              "lower": 0.3,
+              "mean_probability": 0.35554572923076927,
+              "observed_rate": 0.5,
+              "upper": 0.4
+            },
+            {
+              "absolute_gap": 0.04070733941176469,
+              "bin": 4,
+              "count": 51,
+              "lower": 0.4,
+              "mean_probability": 0.44948873901960784,
+              "observed_rate": 0.49019607843137253,
+              "upper": 0.5
+            },
+            {
+              "absolute_gap": 0.1407570034545455,
+              "bin": 5,
+              "count": 55,
+              "lower": 0.5,
+              "mean_probability": 0.5589388216363637,
+              "observed_rate": 0.41818181818181815,
+              "upper": 0.6
+            },
+            {
+              "absolute_gap": 0.03242721951219518,
+              "bin": 6,
+              "count": 41,
+              "lower": 0.6,
+              "mean_probability": 0.6504996097560976,
+              "observed_rate": 0.6829268292682927,
+              "upper": 0.7
+            },
+            {
+              "absolute_gap": 0.0750306283333333,
+              "bin": 7,
+              "count": 6,
+              "lower": 0.7,
+              "mean_probability": 0.7583027050000001,
+              "observed_rate": 0.8333333333333334,
+              "upper": 0.8
+            },
+            {
+              "absolute_gap": 0.32610708,
+              "bin": 8,
+              "count": 4,
+              "lower": 0.8,
+              "mean_probability": 0.82610708,
+              "observed_rate": 0.5,
+              "upper": 0.9
+            }
+          ]
+        },
+        "log_loss": 0.6759502698245065,
+        "mean_predicted_probability": 0.5085386274,
+        "observed_positive_rate": 0.5,
+        "sample_size": 200
+      },
+      "status": "PROSPECTIVE_SUPPORT_CONFIRMED_AT_200"
+    }
+  },
+  "overall": {
+    "both_markets_pass_proper_scoring_gate": false,
+    "verdict": "PARTIAL_OR_FAIL_KEEP_MODELS_FROZEN_NO_PROMOTION"
+  },
+  "sample_policy": "FIRST_200_SETTLED_OBSERVATIONS_IN_EACH_V2_LANE_ORDERED_BY_FREEZE_AT_UTC_THEN_FIXTURE_ID",
+  "schema": "MATRIX_FOOTBALL_MARKET_CALIBRATION_V2_CLOSED_CHECKPOINT_200_V1",
+  "source_ledger_observation_count": 1019
+}

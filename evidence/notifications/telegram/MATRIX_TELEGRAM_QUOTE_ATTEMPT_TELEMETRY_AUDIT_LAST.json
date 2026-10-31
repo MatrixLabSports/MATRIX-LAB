@@ -1,0 +1,201 @@
+{
+  "exact_line_policy": {
+    "nearby_lines_2_25_2_75_diagnostic_only": true,
+    "nearby_lines_never_substitute_for_2_5": true,
+    "required_valid_execution_line": 2.5
+  },
+  "first_terminal_state_independent": true,
+  "generated_at_utc": "2026-10-29T02:27:24+00:00",
+  "immutable_hash_chain_verified": true,
+  "ledger_path": "evidence/notifications/telegram/MATRIX_TELEGRAM_QUOTE_ATTEMPTS.jsonl",
+  "protections": {
+    "append_only": true,
+    "automatic_wagering": false,
+    "historical_terminal_state_cannot_overwrite_attempt": true,
+    "raw_or_hashed_evidence_per_attempt": true,
+    "real_money": "BLOCKED"
+  },
+  "recommendation_gate": {
+    "maximum_target_revalidations": 100,
+    "minimum_real_revalidations_required": 50,
+    "no_synthetic_rows": true,
+    "recommendation_authorized": true
+  },
+  "reporting_scope_contract": {
+    "LIVE_THIS_RUN": {
+      "historical_terminal_states_included": false,
+      "source": "run_token_scoped_immutable_quote_attempts"
+    },
+    "TERMINAL_HISTORICAL": {
+      "may_describe_prior_runs": true,
+      "may_not_overwrite_immutable_attempt_rows": true,
+      "source": "candidate_lifecycle.first_terminal_state"
+    },
+    "legacy_combined_counts_must_not_be_interpreted_as_live_coverage": true
+  },
+  "required_authorized_books": [
+    "betano",
+    "betplay",
+    "betsson",
+    "bwin",
+    "codere",
+    "luckia",
+    "mryoker",
+    "rivalo",
+    "rushbet",
+    "sportium",
+    "stake",
+    "wplay",
+    "yajuego",
+    "zamba"
+  ],
+  "required_field_contract": {
+    "all_rows_schema_validated": true,
+    "identity_fields": [
+      "provider",
+      "provider_event_id",
+      "score",
+      "state"
+    ],
+    "per_house_fields": [
+      "available_lines",
+      "exact_over_2_5_odds",
+      "nearby_lines_2_25_2_75",
+      "over_2_5_seen",
+      "seen",
+      "totals_market_seen"
+    ],
+    "top_level_fields": [
+      "fixture_id",
+      "signal_key",
+      "run_token",
+      "query_at_utc",
+      "kickoff_utc",
+      "seconds_to_kickoff",
+      "identity_match",
+      "houses",
+      "totals_market_seen_any_authorized",
+      "exact_lines_available_any_authorized",
+      "over_2_5_seen_any_authorized",
+      "exact_over_2_5_odds_by_house",
+      "final_discard_reason",
+      "evidence_sha256",
+      "evidence_snapshot",
+      "terminal_state_independent",
+      "automatic_wagering",
+      "real_money"
+    ]
+  },
+  "sample": {
+    "all_three_without_exact_over25": 1275,
+    "book_seen_by_house": {
+      "betano": 31,
+      "betplay": 0,
+      "betsson": 0,
+      "bwin": 0,
+      "codere": 0,
+      "luckia": 0,
+      "mryoker": 0,
+      "rivalo": 0,
+      "rushbet": 0,
+      "sportium": 0,
+      "stake": 0,
+      "wplay": 0,
+      "yajuego": 0,
+      "zamba": 0
+    },
+    "coverage_house_count": 14,
+    "coverage_houses": [
+      "betano",
+      "betplay",
+      "betsson",
+      "bwin",
+      "codere",
+      "luckia",
+      "mryoker",
+      "rivalo",
+      "rushbet",
+      "sportium",
+      "stake",
+      "wplay",
+      "yajuego",
+      "zamba"
+    ],
+    "coverage_schema": "MATRIX_TELEGRAM_QUOTE_ATTEMPT_V3",
+    "exact_over25_coverage_by_house": {
+      "betano": 31,
+      "betplay": 0,
+      "betsson": 0,
+      "bwin": 0,
+      "codere": 0,
+      "luckia": 0,
+      "mryoker": 0,
+      "rivalo": 0,
+      "rushbet": 0,
+      "sportium": 0,
+      "stake": 0,
+      "wplay": 0,
+      "yajuego": 0,
+      "zamba": 0
+    },
+    "identity_problem_count": 1275,
+    "legacy_quote_attempts_preserved": 246,
+    "legacy_three_book_diagnostic": {
+      "all_three_without_exact_over25": 83,
+      "attempt_count": 246,
+      "book_seen_by_house": {
+        "betano": 170,
+        "betplay": 0,
+        "rushbet": 0
+      },
+      "exact_over25_coverage_by_house": {
+        "betano": 163,
+        "betplay": 0,
+        "rushbet": 0
+      },
+      "identity_problem_count": 81,
+      "interpretation": "HISTORICAL_THREE_BOOK_SCHEMA_ONLY_NOT_FULL_COLOMBIA_PORTFOLIO",
+      "totals_market_seen_by_house": {
+        "betano": 170,
+        "betplay": 0,
+        "rushbet": 0
+      }
+    },
+    "nearby_2_25_or_2_75_without_exact_2_5": 0,
+    "real_quote_attempts_total": 1306,
+    "remaining_to_minimum": 0,
+    "sample_gate_status": "READY_FOR_CAUSAL_RECOMMENDATION",
+    "synthetic_attempts_included": false,
+    "target_window_maximum": 100,
+    "target_window_minimum": 50,
+    "timing_disappearance_fixture_count": 0,
+    "timing_disappearance_fixtures": [],
+    "totals_market_seen_by_house": {
+      "betano": 31,
+      "betplay": 0,
+      "betsson": 0,
+      "bwin": 0,
+      "codere": 0,
+      "luckia": 0,
+      "mryoker": 0,
+      "rivalo": 0,
+      "rushbet": 0,
+      "sportium": 0,
+      "stake": 0,
+      "wplay": 0,
+      "yajuego": 0,
+      "zamba": 0
+    }
+  },
+  "schema": "MATRIX_TELEGRAM_QUOTE_ATTEMPT_TELEMETRY_AUDIT_V1",
+  "schema_evolution": {
+    "current_schema": "MATRIX_TELEGRAM_QUOTE_ATTEMPT_V3",
+    "historical_rows_rewritten": false,
+    "legacy_schemas_preserved_without_rewrite": [
+      "MATRIX_TELEGRAM_QUOTE_ATTEMPT_V1",
+      "MATRIX_TELEGRAM_QUOTE_ATTEMPT_V2"
+    ],
+    "mixed_version_hash_chain_supported": true
+  },
+  "status": "PASS"
+}

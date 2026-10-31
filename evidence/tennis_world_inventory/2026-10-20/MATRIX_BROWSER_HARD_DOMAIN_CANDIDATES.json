@@ -1,0 +1,39 @@
+{
+  "schema": "MATRIX_BROWSER_HARD_DOMAIN_CANDIDATES_V1",
+  "target_date_bogota": "2026-10-20",
+  "generated_at_utc": "2026-10-20T02:20:00Z",
+  "source_order": [
+    "SofaScore",
+    "Flashscore",
+    "RapidAPI Tennis"
+  ],
+  "sofascore": {
+    "url": "https://www.sofascore.com/es/tennis/2026-10-20",
+    "visible_ui_total_count": 13,
+    "count_semantics": "PHYSICAL_MINIMUM_TOP_VIEWPORT_ONLY",
+    "evidence": "Opera screenshot physically showed Almaty ATP 250 hard indoor count=5 and Brussels ATP 250 hard indoor count=8; more competitions existed below the fold and were intentionally not silently counted."
+  },
+  "flashscore": {
+    "browser_url": "https://www.flashscore.com/tennis/?d=2026-10-20",
+    "loaded_tree_unique_tennis_match_links": 2,
+    "count_semantics": "LOWER_BOUND_EXACT_DATE_CONTROL_MATCHES",
+    "note": "Flashscore browser date widget remained on 19/10 despite future-date URL. Exact 20/10 control matches were separately verified on Flashscore: Shimabukuro-Safiullin and Goffin-Bertola. This is not claimed as a full-day count."
+  },
+  "governed_bogota_day_reconciliation": {
+    "hard_domain_candidate_count": 13,
+    "semantics": "LOWER_BOUND_BROWSER_VISIBLE_HARD_INDOOR_CANDIDATES",
+    "complete_world_inventory": false,
+    "reason": "No silent extrapolation beyond physically visible browser rows."
+  },
+  "protections": {
+    "metrics_opened": false,
+    "outcomes_read": false,
+    "odds_used_to_generate_probability": false,
+    "real_money": "BLOCKED",
+    "automatic_wagering": false
+  },
+  "reconciliation": {
+    "browser_first_gate": "PASS_WITH_LOWER_BOUND",
+    "no_silent_imputation": true
+  }
+}

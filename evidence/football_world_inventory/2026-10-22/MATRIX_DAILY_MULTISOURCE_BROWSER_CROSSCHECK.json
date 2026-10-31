@@ -1,0 +1,36 @@
+{
+  "schema": "MATRIX_DAILY_MULTISOURCE_BROWSER_CROSSCHECK_V1",
+  "target_date_bogota": "2026-10-22",
+  "sources": {
+    "sofascore": {
+      "opera_read_status": "PASS",
+      "evidence_path": "evidence/football_world_inventory/2026-10-22/MATRIX_FOOTBALL_BROWSER_FIRST_RECONCILIATION.json",
+      "physically_verified_count": 110,
+      "url": "https://www.sofascore.com/es/football/2026-10-22"
+    },
+    "flashscore": {
+      "opera_read_status": "PASS",
+      "evidence_path": "evidence/football_world_inventory/2026-10-22/MATRIX_FOOTBALL_BROWSER_FIRST_RECONCILIATION.json",
+      "physically_verified_count": 98,
+      "url": "https://www.flashscore.co/manana/"
+    }
+  },
+  "governance_basis": {
+    "sofascore_flashscore_daily_crosscheck_required": true,
+    "browser_first_before_paid_api": true,
+    "source_specific_counts_need_not_be_equal": true
+  },
+  "adjudication": {
+    "date_alignment": "PASS",
+    "browser_first_gate": "PASS",
+    "api_football_counts_are_not_world_complete": true,
+    "parity_claimed": false
+  },
+  "protections": {
+    "metrics_opened": false,
+    "automatic_wagering": false,
+    "real_money": "BLOCKED",
+    "missing_not_zero": true,
+    "silent_imputation": false
+  }
+}

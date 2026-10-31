@@ -1,0 +1,54 @@
+{
+  "schema": "MATRIX_FOOTBALL_5000_SETTLED_MILESTONE_CERTIFICATE_24OCT2026_V1",
+  "generated_at_utc": "2026-10-25T05:29:35.754Z",
+  "status": "PASS",
+  "scope": "FOOTBALL_FINAL_ONLY_SETTLED_5000_MILESTONE",
+  "physical_state": {
+    "current_settled_count": 4405,
+    "target_settled_count": 5000,
+    "remaining_to_5000": 595,
+    "progress_pct": 88.1,
+    "milestone_state": "TRACKING_TO_5000",
+    "next_required_action": "CONTINUE_FINAL_ONLY_SETTLEMENT_UNTIL_5000"
+  },
+  "certified_run": {
+    "workflow": "MATRIX Multi-Market Canonical Supervisor",
+    "run_id": 40165630438,
+    "conclusion": "success",
+    "head_sha": "762b2aac22f1e1ef92c6d705faaa6f3b7fa7b8ba"
+  },
+  "persisted_evidence": "evidence/market_portfolio/MATRIX_FOOTBALL_5000_SETTLED_MILESTONE_LAST.json",
+  "behavior": {
+    "settlement_source": "FINAL_FT_ONLY_APPEND_ONLY_CALIBRATION_LEDGER",
+    "supervisor_visibility_cadence": "15_MINUTES",
+    "settlement_workflow": "API-Football prospective FINAL-only settlement now",
+    "settlement_workflow_cadence": "EVERY_2_HOURS_AT_MINUTE_17",
+    "settlement_success_triggers_supervisor_refresh": true,
+    "fixed_prefix_5000_opens_only_at_or_above_5000": true,
+    "metrics_before_5000_for_milestone_audit_forbidden": true,
+    "automatic_promotion": false
+  },
+  "protections": {
+    "hash_chain_verified": true,
+    "duplicate_fixture_ids_forbidden": true,
+    "historical_backfill": false,
+    "post_start_backfill": false,
+    "parameter_tuning_allowed": false,
+    "refit_allowed": false,
+    "automatic_wagering": false,
+    "real_money": "BLOCKED"
+  },
+  "commits": {
+    "tracker": "7eb34f03b94aa39cd856613da3be7575d55f3c5f",
+    "tests": "a1fbe664c5eff6a41696d5609eac7959dfc1ebef",
+    "settlement_workflow_integration": "0847f879948625d888c2956ca0ef11bb3bb99394",
+    "supervisor_integration": "762b2aac22f1e1ef92c6d705faaa6f3b7fa7b8ba"
+  },
+  "parallel_ci_note": {
+    "workflow": "MATRIX Workflow Regression Contracts",
+    "run_id": 40165641306,
+    "conclusion": "failure",
+    "failing_contract": "CLV_WATCHER_OPERATIONAL_REFRESH",
+    "relationship_to_this_change": "SEPARATE_CLV_CONTRACT_NOT_MODIFIED_BY_5000_SETTLED_MILESTONE_CHANGE"
+  }
+}

@@ -1,0 +1,115 @@
+{
+  "schema": "MATRIX_PAID_API_DEADLINE_ENFORCEMENT_22OCT2026_V1",
+  "generated_at_utc": "2026-10-22T09:33:20Z",
+  "timezone": "America/Bogota",
+  "deadline": {
+    "paid_primary": "rapidapi_tennis",
+    "paid_through_bogota_date": "2026-10-28",
+    "days_remaining_inclusive_on_2026_10_22": 7,
+    "renewal_authorized": false,
+    "auto_renewal_authorized": false,
+    "spending_after_cutoff_authorized": false,
+    "status": "PAID_WINDOW_ACTIVE_MAXIMIZE_EVIDENCE"
+  },
+  "retired_api_tennis": {
+    "status": "EXPIRED_NOT_RENEWED",
+    "network_calls_allowed": false,
+    "renewal_authorized": false
+  },
+  "executable_governance": {
+    "policy_file": "config/MATRIX_TENNIS_SUBSCRIPTION_DEADLINE.json",
+    "guard_file": "tools/tennis_subscription_deadline_guard.py",
+    "test_file": "tests/test_tennis_subscription_deadline_guard.py",
+    "commits": {
+      "policy": "b6c969f4647c096a3a39779933069f729f222e37",
+      "guard": "ca3eeaf15ec8a2543b0076c0547fdaf2c226bf72",
+      "tests": "f95081be4c55ce19069cbf2518123c2120c0db93"
+    },
+    "test_contract": [
+      "active_through_2026_10_28_inclusive",
+      "paid_use_fails_closed_from_2026_10_29",
+      "FREE50_never_auto_activates"
+    ]
+  },
+  "workflow_enforcement": {
+    "main": {
+      "paid_harvest_commit": "dc73f3b1e61a50b7f52fab5f8eb249dad2d38898",
+      "hard_commit": "bfdeb26354d5d5263dbde90801011ece057786d3",
+      "clay_commit": "bf8bbbb3220aecb626c52be4925ecb9ca195dca7",
+      "cor0203_commit": "2d69a14a6d6731806c432b09899886c3d0c3f67"
+    },
+    "operational_mirror": {
+      "paid_harvest_commit": "326b2f8e142ee5a961f6d63b381d42a467778c97",
+      "hard_commit": "3b7376eaaf562ed20486fecd7376cf67e4a47377",
+      "clay_commit": "aacbf144d8ec2e2141a8603ec33bb42d3da6d4c2"
+    }
+  },
+  "physical_runs": {
+    "paid_harvest": {
+      "run_number": 7,
+      "run_id": 39756035141,
+      "conclusion": "success",
+      "deadline_guard": "success",
+      "browser_first": "success",
+      "target_date_bogota": "2026-10-22",
+      "unique_match_count": 211,
+      "network_calls": 2,
+      "provider_inventory_complete": true,
+      "families": {
+        "ATP": 52,
+        "ITF": 154,
+        "WTA": 5
+      },
+      "surfaces": {
+        "Carpet": 8,
+        "Clay": 66,
+        "Hard": 84,
+        "I.hard": 53
+      },
+      "receipt_path": "evidence/tennis/paid_window_harvest/2026-10-22/MATRIX_RAPIDAPI_TENNIS_HARVEST_RECEIPT_LAST.json",
+      "receipt_blob_sha": "941c06e905a25278e6a67c7d1a2ef25631427b40",
+      "inventory_sha256": "15ec3e666847329231cd5b9aab67201112a7f1877509c347a143173e407a5df1"
+    },
+    "hard": {
+      "run_number": 36,
+      "run_id": 39756054903,
+      "conclusion": "success",
+      "deadline_guard_step": "success",
+      "api_tennis_secret_removed_from_paid_capture_steps": true
+    },
+    "clay": {
+      "run_number": 80,
+      "run_id": 39756072943,
+      "conclusion": "success",
+      "deadline_guard_step": "success"
+    }
+  },
+  "harvest_schedule": {
+    "cron_utc": "7 5,11,17,23 * * *",
+    "approximate_bogota_times": [
+      "00:07",
+      "06:07",
+      "12:07",
+      "18:07"
+    ],
+    "strategy": "Four daily reusable snapshots plus normal Hard/Clay governed acquisition; avoid duplicate or low-value calls."
+  },
+  "source_order": [
+    "SofaScore",
+    "Flashscore",
+    "RapidAPI Tennis"
+  ],
+  "post_cutoff": {
+    "paid_api_use": "FAIL_CLOSED",
+    "free50": "NO_AUTO_ACTIVATION_REQUIRES_PHYSICAL_PLAN_CHECK_AND_USER_AUTHORIZATION"
+  },
+  "protections": {
+    "no_backfill_into_holdout": true,
+    "missing_not_zero": true,
+    "no_silent_imputation": true,
+    "metrics_opened": false,
+    "automatic_wagering": false,
+    "real_money": "BLOCKED"
+  },
+  "conclusion": "PASS_PHYSICALLY_VERIFIED_AND_CODE_ENFORCED"
+}

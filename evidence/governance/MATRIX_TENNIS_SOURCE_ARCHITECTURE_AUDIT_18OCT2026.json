@@ -1,0 +1,31 @@
+{
+  "schema": "MATRIX_TENNIS_SOURCE_ARCHITECTURE_AUDIT_V1",
+  "audit_date": "2026-10-18",
+  "audited_commits": [
+    "59fcf8f55afc3c95f7c5a4ed46b301d5095844e2",
+    "180bb453a4b9844ade8f9c191e0e1711dac1a8ef"
+  ],
+  "finding": "NO_API_TENNIS_REACTIVATION_IN_COR02_COR03",
+  "misleading_commit_message": "evidence(tennis): activate retired API-Tennis architecture",
+  "physical_runtime_evidence": {
+    "api_tennis_attempted": false,
+    "api_tennis_required": false,
+    "api_tennis_status": "RETIRED_COST_UTILITY_DECISION",
+    "api_tennis_subscription": "EXPIRED_NOT_RENEWED",
+    "paid_primary": "rapidapi_tennis",
+    "required_open_calendar_reconciliation": [
+      "SofaScore",
+      "Flashscore"
+    ],
+    "two_paid_sources_required": false
+  },
+  "governance": {
+    "cor0203_architecture": "SofaScore -> Flashscore -> RapidAPI Tennis",
+    "api_tennis_cor0203": "RETIRED",
+    "live_tennis_failover_separate": true,
+    "cross_provider_calibration_admission": false,
+    "real_money": "BLOCKED",
+    "automatic_wagering": false
+  },
+  "resolution": "ARCHITECTURE_CONFIRMED_COMPLIANT_NO_ENGINE_CHANGE_REQUIRED"
+}

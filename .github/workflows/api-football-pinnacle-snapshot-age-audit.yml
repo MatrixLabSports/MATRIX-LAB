@@ -1,0 +1,147 @@
+name: API-Football Pinnacle snapshot age audit
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - repair/cor09-world-pipeline
+    paths:
+      - .github/workflows/api-football-pinnacle-snapshot-age-audit.yml
+      - tools/api_football_pinnacle_snapshot_age_audit.py
+      - tools/api_football_compare_shadow_to_pinnacle_nominal_cadence.py
+      - tests/test_api_football_pinnacle_snapshot_age_audit.py
+      - tests/test_api_football_pinnacle_nominal_cadence_comparison.py
+
+permissions:
+  contents: write
+
+concurrency:
+  group: api-football-pinnacle-snapshot-age-audit
+  cancel-in-progress: false
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout operational branch
+        uses: actions/checkout@v4
+        with:
+          ref: repair/cor09-world-pipeline
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install targeted test dependency
+        run: python -m pip install pytest
+
+      - name: Run snapshot-age governance tests
+        run: |
+          python -m pytest -q             tests/test_api_football_pinnacle_snapshot_age_audit.py             tests/test_api_football_pinnacle_nominal_cadence_comparison.py
+
+      - name: Audit physical Pinnacle snapshot ages
+        run: python -m tools.api_football_pinnacle_snapshot_age_audit
+
+      - name: Compare shadow to nominal-cadence Pinnacle snapshots
+        run: python -m tools.api_football_compare_shadow_to_pinnacle_nominal_cadence
+
+      - name: Enforce role separation
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          root = Path("evidence/api_football/pinnacle_snapshot_age_audit")
+          audit = json.loads((root / "audit.json").read_text(encoding="utf-8"))
+          manifest = json.loads((root / "manifest.json").read_text(encoding="utf-8"))
+
+          assert manifest["status"] == "PASS"
+          assert manifest["strict_fresh_gate_seconds"] == 120
+          assert manifest["documented_provider_cadence_seconds"] == 10800
+          assert manifest["strict_120s_gate_changed"] is False
+          assert manifest["closing_reference_status"] == "NOT_ESTABLISHED_FROM_API_FOOTBALL_PREMATCH"
+          assert manifest["p_matrix_status"] == "NOT_GENERATED"
+          assert manifest["model_promotion"] is False
+          assert manifest["automatic_wagering"] is False
+          assert manifest["real_money"] == "BLOCKED"
+
+          assert audit["reference_role"] == "RESEARCH_SNAPSHOT_REFERENCE_ONLY"
+          assert audit["documentation"]["documented_prematch_odds_update_hours"] == 3
+          assert audit["governance"]["strict_120s_gate_changed"] is False
+          assert audit["governance"]["nominal_3h_band_is_closing_reference"] is False
+          assert audit["governance"]["nominal_3h_band_is_execution_reference"] is False
+          assert audit["governance"]["nominal_3h_band_may_generate_model_probability"] is False
+          assert audit["governance"]["real_money"] == "BLOCKED"
+
+          print("PINNACLE_SNAPSHOT_AGE_ROLE_SEPARATION_GATE: PASS")
+          print("strict_fresh_quote_count=", manifest["strict_fresh_quote_count"])
+          print("within_documented_3h_quote_count=", manifest["within_documented_3h_quote_count"])
+          print("older_than_documented_3h_quote_count=", manifest["older_than_documented_3h_quote_count"])
+          print("fixture_count_with_any_reference=", manifest["fixture_count_with_any_reference"])
+          print("fixture_count_with_strict_fresh_reference=", manifest["fixture_count_with_strict_fresh_reference"])
+          print("fixture_count_with_reference_within_documented_3h=", manifest["fixture_count_with_reference_within_documented_3h"])
+          print("snapshot_age_seconds=", manifest["snapshot_age_seconds"])
+          print("real_money=", manifest["real_money"])
+          PY
+
+      - name: Enforce nominal-cadence comparison isolation
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          root = Path("evidence/api_football/pinnacle_nominal_cadence_comparison")
+          manifest = json.loads((root / "manifest.json").read_text(encoding="utf-8"))
+          comparison = json.loads((root / "comparison.json").read_text(encoding="utf-8"))
+
+          assert manifest["status"] == "PASS"
+          assert manifest["comparison_role"] == "RESEARCH_SNAPSHOT_REFERENCE_ONLY"
+          assert manifest["documented_provider_cadence_seconds"] == 10800
+          assert manifest["strict_120s_fresh_gate_changed"] is False
+          assert manifest["closing_reference_status"] == "NOT_ESTABLISHED_FROM_NOMINAL_CADENCE_SNAPSHOTS"
+          assert manifest["execution_reference_status"] == "NOT_ESTABLISHED"
+          assert manifest["clv_status"] == "NOT_ELIGIBLE"
+          assert manifest["p_matrix_status"] == "NOT_GENERATED"
+          assert manifest["odds_used_to_generate_shadow_probability"] is False
+          assert manifest["model_promotion"] is False
+          assert manifest["automatic_wagering"] is False
+          assert manifest["real_money"] == "BLOCKED"
+
+          assert comparison["protections"]["strict_120s_fresh_gate_changed"] is False
+          assert comparison["protections"]["snapshots_are_closing_reference"] is False
+          assert comparison["protections"]["snapshots_are_execution_reference"] is False
+          assert comparison["protections"]["snapshots_are_eligible_for_clv"] is False
+          assert comparison["protections"]["odds_used_to_generate_shadow_probability"] is False
+          assert comparison["protections"]["real_money"] == "BLOCKED"
+          assert len(comparison["rows"]) == manifest["comparison_row_count"]
+          assert all(row["decision"] == "NO_BET" for row in comparison["rows"])
+          assert all(row["source_snapshot_age_seconds"] <= 10800 for row in comparison["rows"])
+
+          print("PINNACLE_NOMINAL_CADENCE_COMPARISON_GATE: PASS")
+          print("matched_fixture_count=", manifest["matched_fixture_count"])
+          print("fixtures_with_at_least_3_mapped_reference_markets=", manifest["fixtures_with_at_least_3_mapped_reference_markets"])
+          print("comparison_row_count=", manifest["comparison_row_count"])
+          print("mapped_markets_per_matched_fixture=", manifest["mapped_markets_per_matched_fixture"])
+          print("real_money=", manifest["real_money"])
+          PY
+
+      - name: Persist snapshot-age audit and research comparison
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "matrix-api-football-pinnacle-audit"
+          git config user.email "matrix-api-football-pinnacle-audit@users.noreply.github.com"
+          git add             evidence/api_football/pinnacle_snapshot_age_audit             evidence/api_football/pinnacle_nominal_cadence_comparison
+          if git diff --cached --quiet; then
+            echo "NO_PINNACLE_SNAPSHOT_AGE_AUDIT_CHANGE"
+            exit 0
+          fi
+          git commit -m "evidence(api-football): audit Pinnacle snapshot age against provider cadence"
+          git pull --rebase origin repair/cor09-world-pipeline
+          git push origin HEAD:repair/cor09-world-pipeline

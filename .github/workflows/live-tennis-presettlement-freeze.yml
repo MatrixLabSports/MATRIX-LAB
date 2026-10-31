@@ -1,0 +1,53 @@
+name: MATRIX Live Tennis Pre-settlement Freeze
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - repair/cor09-world-pipeline
+    paths:
+      - tools/live_tennis_presettlement_builder.py
+      - .github/workflows/live-tennis-presettlement-freeze.yml
+
+permissions:
+  contents: write
+
+jobs:
+  freeze:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: repair/cor09-world-pipeline
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Build pre-settlement grouped dataset
+        run: |
+          python -m tools.live_tennis_presettlement_builder             --ledger evidence/live_tennis_lab/2026-10-06/MATRIX_LIVE_TENNIS_STATE_LEDGER_V0_1.json             --out evidence/live_tennis_lab/2026-10-06/MATRIX_LIVE_TENNIS_PRESETTLEMENT_DATASET_V0_1.json
+      - name: Validate anti-leakage freeze
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          p=Path("evidence/live_tennis_lab/2026-10-06/MATRIX_LIVE_TENNIS_PRESETTLEMENT_DATASET_V0_1.json")
+          j=json.loads(p.read_text())
+          assert j["split_policy"]["frozen_before_outcomes"] is True
+          assert j["split_policy"]["no_match_crosses_split"] is True
+          assert j["protections"]["outcomes_read"]==0
+          assert j["protections"]["labels_present"] is False
+          assert j["metrics_gate"]["opened"] is False
+          assert all(m["outcome"] is None for m in j["matches"])
+          assert j["protections"]["real_money"]=="BLOCKED"
+          print(json.dumps(j["counts"],sort_keys=True))
+          PY
+      - name: Persist physical freeze
+        run: |
+          git config user.name "matrix-live-presettlement"
+          git config user.email "matrix-live-presettlement@users.noreply.github.com"
+          git add evidence/live_tennis_lab/2026-10-06/MATRIX_LIVE_TENNIS_PRESETTLEMENT_DATASET_V0_1.json
+          git commit -m "evidence(live): freeze pre-settlement grouped dataset"
+          git pull --rebase origin repair/cor09-world-pipeline
+          git push origin HEAD:repair/cor09-world-pipeline

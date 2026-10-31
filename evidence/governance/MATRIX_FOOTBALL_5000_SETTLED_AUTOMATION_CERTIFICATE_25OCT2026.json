@@ -1,0 +1,61 @@
+{
+  "schema": "MATRIX_FOOTBALL_5000_SETTLED_AUTOMATION_CERTIFICATE_25OCT2026_V1",
+  "generated_at_utc": "2026-10-25T06:18:30.333Z",
+  "status": "PASS",
+  "physical_run": {
+    "workflow": "API-Football prospective FINAL-only settlement now",
+    "run_id": 40168553015,
+    "conclusion": "success",
+    "head_sha": "ff1f5e02eb5ae65f88a6f9703bd5fc5beb06fdb5"
+  },
+  "current_physical_state": {
+    "current_settled_count": 4405,
+    "target_settled_count": 5000,
+    "remaining_to_5000": 595,
+    "progress_pct": 88.1,
+    "milestone_state": "TRACKING_TO_5000",
+    "fixed_prefix_audit_state": "SEALED_BELOW_5000",
+    "metrics_opened": false,
+    "audit_verdict": "HOLD",
+    "next_required_action": "CONTINUE_FINAL_ONLY_SETTLEMENT_UNTIL_5000"
+  },
+  "automatic_behavior": {
+    "settlement_final_only": true,
+    "milestone_counter_updates_after_each_settlement_sync": true,
+    "fixed_prefix_5000_opens_only_at_or_above_5000": true,
+    "fixed_prefix_size_when_open": 5000,
+    "metrics_before_5000_forbidden": true,
+    "audit_dimensions": [
+      "Brier",
+      "LogLoss",
+      "ECE",
+      "temporal_stability",
+      "competition_concentration",
+      "comparison_vs_poisson"
+    ],
+    "automatic_promotion": false
+  },
+  "protections": {
+    "append_only": true,
+    "duplicate_fixture_ids_forbidden": true,
+    "hash_chain_verified": true,
+    "historical_backfill": false,
+    "post_start_backfill": false,
+    "parameter_tuning_allowed": false,
+    "refit_allowed": false,
+    "odds_used_to_generate_probability": false,
+    "automatic_wagering": false,
+    "real_money": "BLOCKED"
+  },
+  "commits": {
+    "milestone_existing": "physical_existing_before_fixed_audit",
+    "fixed_prefix_auditor": "94f14197768e2d0dae21da70d7408b964875910a",
+    "fixed_prefix_tests": "9da8139a6f1354944398b2110f6b96b0815ac3be",
+    "settlement_workflow_integration": "ff1f5e02eb5ae65f88a6f9703bd5fc5beb06fdb5"
+  },
+  "evidence": {
+    "milestone": "evidence/market_portfolio/MATRIX_FOOTBALL_5000_SETTLED_MILESTONE_LAST.json",
+    "fixed_prefix_audit": "evidence/api_football/calibration_v2/MATRIX_FOOTBALL_FIXED_PREFIX_5000_AUDIT_LAST.json",
+    "calibration_sync": "evidence/api_football/prospective_calibration/sync_last.json"
+  }
+}

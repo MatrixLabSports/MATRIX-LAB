@@ -1,0 +1,52 @@
+{
+  "schema": "MATRIX_EXTERNAL_TIPSTER_LAB_CONFIG_V1",
+  "channel": "GREENHOUSE GRATIS",
+  "platform": "Telegram",
+  "lab_mode": "EXTERNAL_TIPSTER_BENCHMARK_ONLY",
+  "target_consecutive_picks": 100,
+  "initial_valid_pick_count": 0,
+  "source_basis": {
+    "type": "USER_SUPPLIED_SCREENSHOT",
+    "visible_channel_name": "GREENHOUSE GRATIS",
+    "visible_subscriber_count": 32656,
+    "visible_description_claim": "Desde 2021 publicando análisis a diario para nuestra comunidad",
+    "warning": "La captura del perfil no prueba rentabilidad ni resultados completos"
+  },
+  "required_fields_per_pick": [
+    "pick_id",
+    "source_message_id_or_evidence",
+    "published_at_utc",
+    "event_start_utc",
+    "sport",
+    "event_identity",
+    "market",
+    "selection",
+    "decimal_odds",
+    "result",
+    "matrix_relation"
+  ],
+  "matrix_relation_values": [
+    "AGREES",
+    "DISAGREES",
+    "NO_SIGNAL",
+    "NOT_COMPARABLE"
+  ],
+  "metrics": [
+    "accuracy_pct",
+    "average_decimal_odds",
+    "flat_one_unit_profit",
+    "roi_pct",
+    "by_matrix_relation"
+  ],
+  "protections": {
+    "consecutive_sample_required": true,
+    "cherry_picking_forbidden": true,
+    "deleted_or_missing_posts_must_be_flagged": true,
+    "tipster_used_to_generate_p_matrix": false,
+    "tipster_can_auto_promote_market": false,
+    "tipster_can_trigger_bet": false,
+    "automatic_wagering": false,
+    "real_money": "BLOCKED"
+  },
+  "status": "LAB_CREATED_AWAITING_PHYSICAL_CONSECUTIVE_PICKS"
+}

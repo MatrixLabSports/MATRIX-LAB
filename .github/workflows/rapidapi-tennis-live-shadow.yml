@@ -1,0 +1,91 @@
+name: MATRIX RapidAPI Tennis Live Shadow
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "*/15 * * * *"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: rapidapi-tennis-live-shadow
+  cancel-in-progress: false
+
+jobs:
+  shadow:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      REAL_MONEY: BLOCKED
+      AUTO_BETTING: DISABLED
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: repair/cor09-world-pipeline
+          fetch-depth: 0
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - run: python -m pip install requests pytest
+
+      - name: Prove shadow governance
+        run: python -m pytest -q tests/test_rapidapi_tennis_live_shadow.py tests/test_api_tennis_retired_no_network.py
+
+      - name: Capture one targeted live shadow
+        env:
+          RAPIDAPI_TENNIS_KEY: ${{ secrets.RAPIDAPI_TENNIS_KEY }}
+        run: |
+          python -m tools.rapidapi_tennis_live_shadow             --cycles 1             --interval-seconds 1             --out /tmp/MATRIX_RAPIDAPI_TENNIS_LIVE_SHADOW_V1.json
+
+      - name: Validate no calibration admission and detect candidate
+        id: candidate
+        run: |
+          python - <<'PY' >> "$GITHUB_OUTPUT"
+          import json
+          from pathlib import Path
+          p=Path("/tmp/MATRIX_RAPIDAPI_TENNIS_LIVE_SHADOW_V1.json")
+          j=json.loads(p.read_text())
+          assert j["network_calls"] == 1
+          assert j["calibration_admission"]["admitted_to_existing_live_gate"] is False
+          assert j["protections"]["api_tennis_retired_source_used"] is False
+          assert j["protections"]["metrics_opened"] is False
+          assert j["protections"]["real_money"] == "BLOCKED"
+          count=int(j["quality_valid_shadow_candidate_rows"])
+          print(f"count={count}")
+          print("candidate_event_ids="+",".join(j["quality_valid_shadow_event_ids"]))
+          PY
+
+      - name: Stage candidate evidence only
+        if: steps.candidate.outputs.count != '0'
+        run: |
+          D="$(TZ=America/Bogota date +%F)"
+          mkdir -p "evidence/live_tennis_lab/$D"
+          cp /tmp/MATRIX_RAPIDAPI_TENNIS_LIVE_SHADOW_V1.json             "evidence/live_tennis_lab/$D/MATRIX_RAPIDAPI_TENNIS_LIVE_SHADOW_V1.json"
+
+      - name: Persist candidate evidence only
+        if: steps.candidate.outputs.count != '0'
+        run: |
+          D="$(TZ=America/Bogota date +%F)"
+          git config user.name matrix-rapidapi-tennis-live-shadow
+          git config user.email matrix-rapidapi-tennis-live-shadow@users.noreply.github.com
+          git add "evidence/live_tennis_lab/$D/MATRIX_RAPIDAPI_TENNIS_LIVE_SHADOW_V1.json"
+          if git diff --cached --quiet; then
+            echo "NO_CANDIDATE_CHANGE"
+            exit 0
+          fi
+          git commit -m "evidence(live): capture RapidAPI Tennis Challenger Clay shadow candidate"
+          for attempt in 1 2 3 4; do
+            git fetch origin repair/cor09-world-pipeline
+            if ! git rebase origin/repair/cor09-world-pipeline; then
+              git rebase --abort || true
+              exit 1
+            fi
+            if git push origin HEAD:repair/cor09-world-pipeline; then
+              exit 0
+            fi
+            sleep $((attempt*2))
+          done
+          exit 1

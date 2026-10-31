@@ -1,0 +1,56 @@
+{
+  "schema": "MATRIX_POST_FIX_TELEGRAM_CLV_PHYSICAL_PROOF_V2",
+  "audit_cut_github_display": "2026-10-18 06:22 GMT-5",
+  "telegram": {
+    "main_workflow_sync_commit": "49d33e80287f78b3df4de9d699aa68c80261aa73",
+    "verification_run_id": 39121761759,
+    "verification_run_number": 252,
+    "verification_event": "push",
+    "verification_conclusion": "success",
+    "tests_passed": 32,
+    "persistence_step": "success",
+    "automatic_persist_commit": "362f56ac6",
+    "workflow_schedule": "7,22,37,52 * * * *",
+    "scheduled_post_fix_gate": {
+      "required": true,
+      "observed_yet": false,
+      "latest_native_scheduled_run_number": 247,
+      "latest_native_scheduled_run_time": "2026-10-18 04:41 GMT-5",
+      "latest_native_scheduled_run_conclusion": "failure",
+      "latest_visible_run_number": 252,
+      "latest_visible_run_event": "push",
+      "adjudication": "AWAITING_FIRST_NATIVE_SCHEDULE_AFTER_FIX; DO_NOT SUBSTITUTE PUSH_OR_WORKFLOW_RUN"
+    }
+  },
+  "clv": {
+    "target_fixture_id": "1570419",
+    "target": "Osasuna vs Racing Santander",
+    "kickoff_utc": "2026-10-18T12:00:00+00:00",
+    "close_window_opens_utc": "2026-10-18T11:45:00+00:00",
+    "decision_count": 89,
+    "closing_odds_count": 9,
+    "state_generated_at_utc": "2026-10-18T10:15:58+00:00",
+    "closing_cycle_due_count": 0,
+    "closing_cycle_captured_new": 0,
+    "remaining_to_open_metrics": 291,
+    "metrics_opened": false,
+    "watcher": {
+      "run_number": 95,
+      "run_id": 39121851325,
+      "status": "in_progress",
+      "continuous_watch_step": "in_progress",
+      "startup_contracts_all_success": true
+    },
+    "strict_fresh_gate_seconds": 120,
+    "historical_backfill": "FORBIDDEN",
+    "post_kickoff_close": "FORBIDDEN",
+    "odds_used_to_generate_probability": false,
+    "adjudication": "TARGET_NOT_DUE_AT_AUDIT_CUT; CLV_9_OF_300_REMAINS_CANONICAL; WATCHER_95_ACTIVE"
+  },
+  "protections": {
+    "real_money": "BLOCKED",
+    "automatic_wagering": false,
+    "p_matrix_modified": false
+  },
+  "adjudication": "PHYSICAL_CHECK_PERSISTED; TELEGRAM_PUSH_FIX_CERTIFIED; NATIVE_SCHEDULE_GATE_STILL_OPEN; CLV_TARGET_NOT_YET_DUE; NO_FORCED_OR_BACKFILLED_CLOSE"
+}

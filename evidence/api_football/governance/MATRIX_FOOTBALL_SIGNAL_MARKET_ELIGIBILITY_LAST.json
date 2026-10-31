@@ -1,0 +1,136 @@
+{
+  "generated_at_utc": "2026-10-27T15:41:06+00:00",
+  "markets": {
+    "1X2": {
+      "oos_progress": 796,
+      "oos_remaining": 204,
+      "signal_eligible": false,
+      "status": "BLOCKED_UNTIL_OOS1000_ADJUDICATION",
+      "telegram_adapter_status": "PENDING_AFTER_PROMOTION"
+    },
+    "BTTS": {
+      "blocker": "V2_REJECTED_N200_AND_V3_REJECTED_TEMPORAL_OOS",
+      "signal_eligible": false,
+      "status": "BLOCKED_NEW_CHALLENGER_REQUIRED",
+      "telegram_adapter_status": "NOT_AUTHORIZED"
+    },
+    "CORNERS": {
+      "signal_eligible": false,
+      "status": "NO_GO_HISTORICAL_OOS_V3",
+      "telegram_adapter_status": "NOT_AUTHORIZED"
+    },
+    "DOUBLE_CHANCE_12": {
+      "blocker": "NOT_SUPERIOR_TO_POISSON_AT_N200_AND_FULL_LEDGER_LOG_LOSS_WORSE",
+      "signal_eligible": false,
+      "status": "BLOCKED_NOT_PROMOTED",
+      "telegram_adapter_status": "NOT_AUTHORIZED"
+    },
+    "DOUBLE_CHANCE_1X": {
+      "derived_from": "1X2",
+      "oos_progress": 796,
+      "oos_remaining": 204,
+      "signal_eligible": false,
+      "status": "BLOCKED_UNTIL_OOS1000_ADJUDICATION",
+      "telegram_adapter_status": "PENDING_AFTER_PROMOTION"
+    },
+    "DOUBLE_CHANCE_X2": {
+      "derived_from": "1X2",
+      "oos_progress": 796,
+      "oos_remaining": 204,
+      "signal_eligible": false,
+      "status": "BLOCKED_UNTIL_OOS1000_ADJUDICATION",
+      "telegram_adapter_status": "PENDING_AFTER_PROMOTION"
+    },
+    "FIRST_HALF_GOALS": {
+      "signal_eligible": false,
+      "status": "NOT_IMPLEMENTED_NO_CALIBRATED_LANE_FOUND",
+      "telegram_adapter_status": "NOT_IMPLEMENTED"
+    },
+    "OVER_2_5": {
+      "evidence": "evidence/api_football/governance/over_2_5_p_matrix_promotion.json",
+      "signal_eligible": true,
+      "status": "PROMOTED_SIGNAL_ONLY",
+      "telegram_adapter_status": "IMPLEMENTED"
+    },
+    "PLAYER_SHOTS": {
+      "external_dependency": "PREMATCH_LINEUP_AND_CANONICAL_LINE",
+      "prospective_freezes": 0,
+      "remaining_to_first_gate": 30,
+      "signal_eligible": false,
+      "status": "PROSPECTIVE_VALIDATION_NOT_SIGNAL_ELIGIBLE",
+      "telegram_adapter_status": "PENDING_AFTER_PROMOTION"
+    },
+    "SECOND_HALF_GOALS": {
+      "signal_eligible": false,
+      "status": "NOT_IMPLEMENTED_NO_CALIBRATED_LANE_FOUND",
+      "telegram_adapter_status": "NOT_IMPLEMENTED"
+    },
+    "TEAM_FOULS_TOTAL": {
+      "prospective_freezes": 1,
+      "remaining_to_first_gate": 29,
+      "signal_eligible": false,
+      "status": "PROSPECTIVE_VALIDATION_NOT_SIGNAL_ELIGIBLE",
+      "telegram_adapter_status": "PENDING_AFTER_PROMOTION"
+    },
+    "TEAM_GOALKEEPER_SAVES": {
+      "signal_eligible": false,
+      "status": "NO_GO_HISTORICAL_OOS_V3",
+      "telegram_adapter_status": "NOT_AUTHORIZED"
+    },
+    "TEAM_SHOTS_ON_TARGET": {
+      "signal_eligible": false,
+      "status": "NO_GO_HISTORICAL_OOS_V3",
+      "telegram_adapter_status": "NOT_AUTHORIZED"
+    },
+    "TEAM_TOTAL_SHOTS_AWAY": {
+      "prospective_freezes": 2,
+      "remaining_to_first_gate": 28,
+      "signal_eligible": false,
+      "status": "PROSPECTIVE_VALIDATION_NOT_SIGNAL_ELIGIBLE",
+      "telegram_adapter_status": "PENDING_AFTER_PROMOTION"
+    },
+    "TEAM_TOTAL_SHOTS_HOME": {
+      "prospective_freezes": 2,
+      "remaining_to_first_gate": 28,
+      "signal_eligible": false,
+      "status": "PROSPECTIVE_VALIDATION_NOT_SIGNAL_ELIGIBLE",
+      "telegram_adapter_status": "PENDING_AFTER_PROMOTION"
+    },
+    "TEAM_YELLOW_CARDS": {
+      "signal_eligible": false,
+      "status": "NO_GO_HISTORICAL_OOS_V3",
+      "telegram_adapter_status": "NOT_AUTHORIZED"
+    },
+    "UNDER_2_5": {
+      "derived_from": "OVER_2_5",
+      "oos_progress": 796,
+      "oos_remaining": 204,
+      "signal_eligible": false,
+      "status": "BLOCKED_UNTIL_OOS1000_ADJUDICATION",
+      "telegram_adapter_status": "PENDING_AFTER_PROMOTION"
+    }
+  },
+  "protections": {
+    "automatic_wagering": false,
+    "missing_not_zero": true,
+    "no_automatic_promotion": true,
+    "no_silent_imputation": true,
+    "odds_do_not_generate_p_matrix": true,
+    "real_money": "BLOCKED"
+  },
+  "root_cause_of_missing_other_market_signals": {
+    "core_market_promotion_waits_for_oos1000": true,
+    "current_telegram_football_adapter_market": "OVER_2_5_ONLY",
+    "markets_with_no_implemented_calibrated_lane": [
+      "FIRST_HALF_GOALS",
+      "SECOND_HALF_GOALS"
+    ],
+    "other_markets_not_authorized_for_signal_generation": true
+  },
+  "schema": "MATRIX_FOOTBALL_SIGNAL_MARKET_ELIGIBILITY_V1",
+  "signal_eligible_market_count": 1,
+  "signal_eligible_markets": [
+    "OVER_2_5"
+  ],
+  "status": "PASS"
+}
