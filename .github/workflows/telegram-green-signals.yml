@@ -163,13 +163,13 @@ jobs:
           path: evidence/notifications/telegram/MATRIX_POST_EXPIRY_INDEPENDENT_READINESS_LAST.json
           if-no-files-found: warn
 
-      - name: Enforce API-Football subscription deadline before supervisor
+      - name: Verify paid API expiry without blocking independent sources
         if: ${{ github.event_name != 'push' }}
-        env:
-          API_FOOTBALL_KEY: ${{ secrets.API_FOOTBALL_KEY }}
         run: |
           python -m pytest -q tests/test_football_subscription_deadline_guard.py
-          python -m tools.football_subscription_deadline_guard --require-paid-use --require-key
+          python -m tools.football_subscription_deadline_guard --independent-source-readiness
+          # Expired paid access remains blocked inside the API transport.
+          # Independent tennis, browser and odds sources must not be stopped here.
 
       - name: Validate secrets
         if: ${{ github.event_name != 'push' }}
@@ -183,9 +183,8 @@ jobs:
           set -euo pipefail
           test -n "$TELEGRAM_BOT_TOKEN"
           test -n "$TELEGRAM_CHAT_ID"
-          test -n "$API_FOOTBALL_KEY"
           test -n "$ODDS_API_NET_KEY"
-          echo "SECRETOS_TELEGRAM_API_FOOTBALL_Y_ODDS_API_NET_PRESENTES"
+          echo "SECRETOS_TELEGRAM_Y_ODDS_API_NET_PRESENTES_API_FOOTBALL_OPCIONAL"
 
       - name: Evaluate odds-api monthly quota guard
         if: ${{ github.event_name != 'push' }}
