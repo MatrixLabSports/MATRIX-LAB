@@ -58,6 +58,36 @@ def candidate_rows(audit:dict[str,Any],now:datetime)->list[dict[str,Any]]:
         out.append(r)
     return sorted(out,key=lambda x:x["kickoff"])
 
+def quote_eligibility(exact:dict[str,Any]|None, candidate:dict[str,Any], adapter_status:str, now:datetime)->tuple[bool,str|None]:
+    """Pure collector-level guard; does not certify quote freshness or Telegram delivery."""
+    if adapter_status!="CERTIFIED_EXACT_OVER25":
+        return False,"BOOKMAKER_ADAPTER_NOT_CERTIFIED"
+    try:
+        price=float((exact or {}).get("price"))
+    except (TypeError,ValueError,OverflowError):
+        return False,"EXACT_OVER25_NOT_FOUND"
+    if not (0<price<float("inf")):
+        return False,"EXACT_OVER25_NOT_FOUND"
+    if price<=1.50:
+        return False,"ODDS_BELOW_MIN_1_50"
+    try:
+        p=float(candidate.get("p_matrix"))
+    except (TypeError,ValueError,OverflowError):
+        return False,"NO_SIGNAL_ECONOMIC_GATE"
+    if not (0<p<1 and p*price-1.0>=0.05):
+        return False,"NO_SIGNAL_ECONOMIC_GATE"
+    try:
+        kickoff=datetime.fromisoformat(str(candidate.get("kickoff")).replace("Z","+00:00"))
+        if kickoff.tzinfo is None:
+            return False,"NO_SIGNAL_KICKOFF"
+        kickoff=kickoff.astimezone(timezone.utc)
+    except (TypeError,ValueError,OverflowError):
+        return False,"NO_SIGNAL_KICKOFF"
+    if now.tzinfo is None or now.astimezone(timezone.utc)>=kickoff:
+        return False,"NO_SIGNAL_KICKOFF"
+    return True,None
+
+
 def page_matches_candidate(text:str,candidate:dict[str,Any])->bool:
     parts=split_match(str(candidate.get("match") or ""))
     if parts is None: return False
@@ -467,34 +497,14 @@ def main()->None:
                                 exact,detail_diagnostics=betano_detail_exact_over25(page,str(event_obj.get("url")),home_raw,away_raw)
                                 if exact:
                                     exact["endpoint"]="EVENT_DETAIL_PAGE_NETWORK"
-                    exact_price=float(exact.get("price") or 0) if exact else 0.0
-                    exact_found=bool(exact and exact_price>0)
-                    # A quote captured by the browser is not automatically eligible.
-                    try:
-                        kickoff_dt=datetime.fromisoformat(str(c.get("kickoff")).replace("Z","+00:00")).astimezone(timezone.utc)
-                    except (ValueError, TypeError):
-                        kickoff_dt=None
-                    try:
-                        p_value=float(c.get("p_matrix"))
-                    except (ValueError, TypeError):
-                        p_value=None
-                    economic_ok=bool(exact_found and exact_price>1.50 and p_value is not None
-                                     and 0.0<p_value<1.0 and p_value*exact_price-1.0>=0.05)
-                    prematch_ok=bool(kickoff_dt is not None and now<kickoff_dt)
-                    emitted=bool(adapter.get("status")=="CERTIFIED_EXACT_OVER25" and economic_ok and prematch_ok)
+                    emitted,blocker=quote_eligibility(exact,c,adapter.get("status","MISSING"),now)
                     rec={
                       "fixture_id":str(c.get("fixture_id") or ""),"match":c.get("match"),"kickoff":c.get("kickoff"),
                       "p_matrix":c.get("p_matrix"),"bookmaker":book,"url":url,
                       "raw_evidence_path":page_rec["raw_evidence_path"],
                       "adapter_status":adapter.get("status","MISSING"),
                       "execution_quote_emitted":emitted,
-                      "blocker":(
-                        None if emitted else
-                        ("BOOKMAKER_ADAPTER_NOT_CERTIFIED" if adapter.get("status")!="CERTIFIED_EXACT_OVER25" else
-                         ("ODDS_BELOW_MIN_1_50" if exact_found and exact_price<=1.50 else
-                          ("NO_SIGNAL_ECONOMIC_GATE" if exact_found and not economic_ok else
-                           ("NO_SIGNAL_KICKOFF" if exact_found and not prematch_ok else "EXACT_OVER25_NOT_FOUND"))))
-                      )
+                      "blocker":blocker
                     }
                     if detail_diagnostics:
                         rec["betano_detail_resources_checked"]=detail_diagnostics[:30]
