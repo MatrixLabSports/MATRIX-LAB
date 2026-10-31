@@ -2494,6 +2494,39 @@ def main() -> None:
         readiness["full_supervisor_certified"] = False
         print(json.dumps(readiness, sort_keys=True), flush=True)
         return
+    # Explain missing candidates without relaxing governance or reading paid APIs.
+    if os.environ.get("MATRIX_INDEPENDENT_SOURCE_DIAGNOSTIC", "").strip() == "1":
+        now = now_utc()
+        day = now.astimezone(BOGOTA).date()
+        dates = [str(day + timedelta(days=1)), str(day)]
+        governance_ok, _ = over25_signal_governance_authorized()
+        inventory = {"football": [], "tennis": []}
+        for date in dates:
+            root = FOOTBALL_ROOT / date
+            patterns = ("browser_physical_verification/*.json",
+                        "shadow_quote_freeze/*.json", "over25_shadow_ev/*.json")
+            inventory["football"].append({
+                "date": date, "directory_exists": root.is_dir(),
+                "files_by_source": {p: len(list(root.glob(p))) for p in patterns},
+            })
+            tennis_root = TENNIS_ROOT / date
+            inventory["tennis"].append({
+                "date": date, "directory_exists": tennis_root.is_dir(),
+                "json_files": len(list(tennis_root.glob("*.json"))),
+            })
+        print(json.dumps({
+            "schema": "MATRIX_INDEPENDENT_SOURCE_DIAGNOSTIC_V1",
+            "status": "SOURCE_PATH_DIAGNOSTIC_ONLY",
+            "dates": dates,
+            "over25_governance_authorized": governance_ok,
+            "inventory": inventory,
+            "api_calls_made": 0,
+            "telegram_messages_sent": 0,
+            "independent_operational_path_certified": False,
+            "real_money": "BLOCKED",
+            "automatic_wagering": False,
+        }, sort_keys=True), flush=True)
+        return
     # Independently inspect governed local candidate artifacts without network calls.
     # This is an operational inventory, NOT a live signal supervisor or delivery.
     if os.environ.get("MATRIX_INDEPENDENT_CANDIDATE_INVENTORY", "").strip() == "1":
