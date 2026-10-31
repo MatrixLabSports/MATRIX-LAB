@@ -57,9 +57,9 @@ def verify_bundle(bundle: dict, root: Path, now: datetime | None = None) -> dict
                 raise ValueError("CAPTURE_NOT_VERIFIED")
         except (ValueError, OSError, TypeError, json.JSONDecodeError) as exc:
             blockers.append(label.upper() + "_" + str(exc))
-    if captures.get("fixture", {}).get("source") not in ("SOFASCORE", "FLASHSCORE"):
+    if not isinstance(captures.get("fixture"), dict) or captures["fixture"].get("source") not in ("SOFASCORE", "FLASHSCORE"):
         blockers.append("FIXTURE_PROVIDER_NOT_ALLOWLISTED")
-    if captures.get("quote", {}).get("source") in ("API_FOOTBALL", "API-FOOTBALL"):
+    if isinstance(captures.get("quote"), dict) and captures["quote"].get("source") in ("API_FOOTBALL", "API-FOOTBALL"):
         blockers.append("EXPIRED_PROVIDER_NOT_ALLOWED")
     result = assess(payload, now=now)
     blockers.extend(result["blockers"])
