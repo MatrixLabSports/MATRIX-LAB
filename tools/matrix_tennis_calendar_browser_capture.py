@@ -2,6 +2,7 @@
 import argparse
 import hashlib
 import json
+import time
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -33,10 +34,26 @@ def capture(day, output):
                 item = {"requested_url": url, "status": "FAILED"}
                 try:
                     page = browser.new_page(locale="es-CO", timezone_id="America/Bogota")
-                    response = page.goto(url, wait_until="domcontentloaded", timeout=45000)
-                    page.wait_for_timeout(5000)
+                    response = None
+                    attempts = []
+                    for attempt in range(1, 4):
+                        try:
+                            response = page.goto(url, wait_until="domcontentloaded", timeout=45000)
+                            page.wait_for_timeout(5000)
+                            status = response.status if response is not None else None
+                            attempts.append({"attempt": attempt, "http_status": status, "final_url": page.url})
+                            if status is not None and status < 400:
+                                break
+                        except Exception as error:
+                            attempts.append({"attempt": attempt, "error": str(error)[:200]})
+                        if attempt < 3:
+                            time.sleep(attempt * 2)
+                    item["attempts"] = attempts
                     body = page.locator("body").inner_text(timeout=15000)
                     if not body.strip() or response is None or response.status >= 400:
+                        item["http_status"] = response.status if response is not None else None
+                        item["final_url"] = page.url
+                        item["body_excerpt"] = body[:400]
                         raise RuntimeError("HTTP_ERROR_OR_EMPTY_PAGE")
                     html = page.content()
                     (output / (source + ".html")).write_text(html, encoding="utf-8")
