@@ -160,3 +160,26 @@ def test_independent_fixture_identity_avoids_expired_api(monkeypatch):
     assert diagnostic["fixture_identity_source"] == "CANDIDATE_PREREGISTERED_MATCH_FALLBACK"
     assert diagnostic["api_football_fixture_lookup_status"] == "BLOCKED_PAID_API_SUBSCRIPTION_EXPIRED"
     assert session.calls
+
+
+def test_free_tier_cli_is_offline_and_fail_closed(monkeypatch, tmp_path, capsys):
+    import json
+    import sys
+    from tools import football_subscription_deadline_guard as guard
+    monkeypatch.setattr(sys, "argv", ["guard", "--as-of-bogota-date", "2026-10-31", "--free-tier-readiness"])
+    monkeypatch.delenv("MATRIX_API_FOOTBALL_POST_CUTOFF_AUTHORIZED", raising=False)
+    guard.main()
+    report = json.loads(capsys.readouterr().out)
+    assert report["api_football_free_tier_verified"] is False
+    assert report["independent_source_network_calls_authorized_by_this_check"] is False
+    assert report["signal_emission_authorized_by_this_check"] is False
+    assert report["real_money"] == "BLOCKED"
+
+
+def test_free_tier_cli_rejects_paid_gate_combination(monkeypatch):
+    import sys
+    from tools import football_subscription_deadline_guard as guard
+    monkeypatch.setattr(sys, "argv", ["guard", "--free-tier-readiness", "--require-paid-use"])
+    with pytest.raises(SystemExit) as exc:
+        guard.main()
+    assert exc.value.code == 2
