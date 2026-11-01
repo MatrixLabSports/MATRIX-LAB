@@ -19,3 +19,17 @@ def test_success_requires_authenticated_valid_payload():
     result = classify("api_tennis", http_status=200, authenticated=True, payload_valid=True)
     assert result["status"] == "VERIFIED_RESPONSE"
     assert result["automatic_wagering"] is False
+
+
+def test_secret_presence_does_not_expose_values():
+    from tools.matrix_api_connectivity_classifier import secret_presence
+    values = {"API_FOOTBALL_KEY": "private-football-value",
+              "RAPIDAPI_TENNIS_KEY": "private-rapid-value",
+              "API_TENNIS_KEY": "", "ODDS_API_NET_KEY": "private-odds-value"}
+    result = secret_presence(values)
+    assert result["api_football"]["configured"] is True
+    assert result["rapidapi_tennis"]["configured"] is True
+    assert result["api_tennis"]["configured"] is False
+    assert result["odds_api_net"]["configured"] is True
+    assert all(not row["live_connectivity_verified"] for row in result.values())
+    assert not any(secret in str(result) for secret in values.values() if secret)
