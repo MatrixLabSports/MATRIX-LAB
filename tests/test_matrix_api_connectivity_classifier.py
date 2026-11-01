@@ -61,3 +61,15 @@ def test_api_football_probe_denied_and_missing():
             return Response()
     assert probe_api_football("key", session=Session())["status"] == "AUTHENTICATION_OR_ENTITLEMENT_FAILED"
     assert probe_api_football("", session=Session())["status"] == "NOT_TESTED"
+
+
+def test_telegram_supervisor_independent_route_does_not_bypass_paid_transport():
+    from pathlib import Path
+    source = Path("tools/telegram_green_signal_alerts.py").read_text(encoding="utf-8")
+    assert 'paid_transport_available = paid_football_quote_transport_allowed()' in source
+    assert '"INDEPENDENT_SOURCE_SUPERVISOR_STARTED"' in source
+    assert 'if paid_transport_available and not api_key:' in source
+    assert 'raise SystemExit("API_FOOTBALL_SUBSCRIPTION_NOT_VERIFIED_FAIL_CLOSED")' not in source
+    assert 'def physical_book_over25_offer(' in source
+    assert 'def recovery_execution_over25_offer(' in source
+    assert 'if not paid_football_quote_transport_allowed():' in source
