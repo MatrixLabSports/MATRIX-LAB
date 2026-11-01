@@ -193,3 +193,11 @@ def test_free_tier_user_intent_is_persisted_but_network_stays_blocked(monkeypatc
     assert result["independent_source_network_calls_authorized_by_this_check"] is False
     assert result["signal_emission_authorized_by_this_check"] is False
     assert result["real_money"] == "BLOCKED"
+
+
+def test_daily_football_workflow_paid_gate_is_explicitly_detected():
+    """Regression sentinel: do not silently claim free-tier daily workflow is repaired."""
+    from pathlib import Path
+    workflow = Path(".github/workflows/football-daily-governed-pipeline.yml").read_text(encoding="utf-8")
+    paid = "python -m tools.football_subscription_deadline_guard --require-paid-use --require-key"
+    assert workflow.count(paid) == 2, "Review paid preflight changes and certify downstream endpoints"
