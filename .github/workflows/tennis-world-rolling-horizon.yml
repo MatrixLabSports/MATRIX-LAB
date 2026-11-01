@@ -54,6 +54,27 @@ jobs:
           git reset --hard origin/repair/cor09-world-pipeline
           echo "CHECKOUT_SHA=$(git rev-parse HEAD)" >> "$GITHUB_ENV"
 
+      - name: Capture actual tennis calendar pages for forensic evidence
+        continue-on-error: true
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m pip install playwright
+          python -m playwright install --with-deps chromium
+          TODAY="$(TZ=America/Bogota date +%F)"
+          mkdir -p "audit-output/tennis-browser-raw/$TODAY"
+          python -m tools.matrix_tennis_calendar_browser_capture \
+            --target-date-bogota "$TODAY" \
+            --out "audit-output/tennis-browser-raw/$TODAY"
+
+      - name: Upload raw tennis browser capture
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: tennis-calendar-raw-browser
+          path: audit-output/tennis-browser-raw/
+          if-no-files-found: warn
+
       - name: Diagnose missing browser-first calendar evidence without fabrication
         shell: bash
         run: |
