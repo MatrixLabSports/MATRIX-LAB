@@ -55,9 +55,15 @@ def bind(discovery: dict, scores: dict, promotion: dict) -> dict:
             reason = "NO_GOVERNED_SCORE_FOR_FIXTURE"
         elif row.get("market") != "OVER_2_5" or row.get("governance_status") != "FROZEN_GOVERNED_MARKET_SCOPED_SIGNAL_ONLY":
             reason = "SCORE_NOT_GOVERNED"
+        elif row.get("engine_id") != "calibrated_log_pool_v1_over_2_5":
+            reason = "ENGINE_ID_MISMATCH"
+        elif row.get("frozen_parameters") != {"a": 0.6, "b": 0.0, "c": 0.4}:
+            reason = "FROZEN_PARAMETERS_MISMATCH"
+        elif row.get("odds_used_to_generate_probability") is not False or row.get("target_outcome_used") is not False:
+            reason = "PROBABILITY_PROVENANCE_UNSAFE"
         elif not isinstance(row.get("model_evidence_path"), str) or not row["model_evidence_path"].strip():
             reason = "MODEL_EVIDENCE_MISSING"
-        elif not isinstance(row.get("fixture_binding_verified"), bool) or row["fixture_binding_verified"] is not True:
+        elif row.get("fixture_binding_verified") is not True or row.get("source_freeze_verified") is not True:
             reason = "FIXTURE_BINDING_UNVERIFIED"
         else:
             p = row.get("p_matrix")
