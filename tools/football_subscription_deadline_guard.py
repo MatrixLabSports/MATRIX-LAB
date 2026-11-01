@@ -55,6 +55,7 @@ def evaluate_independent_sources(as_of_bogota: date) -> dict:
         "schema": "MATRIX_FOOTBALL_INDEPENDENT_SOURCE_READINESS_V1",
         "as_of_bogota_date": as_of_bogota.isoformat(),
         "paid_api_football_usable": bool(paid["paid_window_active"] or paid["post_cutoff_override"]),
+        "api_football_free_tier_requested": bool(load_policy().get("free_tier", {}).get("requested_by_user", False)),
         "api_football_free_tier_verified": False,
         "api_football_free_tier_current_season_coverage_verified": False,
         "independent_source_supervision_allowed": True,
