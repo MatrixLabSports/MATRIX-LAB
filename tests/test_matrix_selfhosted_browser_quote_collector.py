@@ -118,7 +118,7 @@ def test_betano_accessible_role_binding_guard():
 
 def test_betano_execution_quote_requires_odds_above_1_50():
     source=open("tools/matrix_selfhosted_browser_quote_collector.py",encoding="utf-8").read()
-    assert "exact_price>1.50" in source
+    assert "if price<=1.50:" in source  # actual fail-closed numeric threshold
     assert "ODDS_BELOW_MIN_1_50" in source
 
 
