@@ -183,3 +183,13 @@ def test_free_tier_cli_rejects_paid_gate_combination(monkeypatch):
     with pytest.raises(SystemExit) as exc:
         guard.main()
     assert exc.value.code == 2
+
+
+def test_free_tier_user_intent_is_persisted_but_network_stays_blocked(monkeypatch):
+    monkeypatch.delenv("MATRIX_API_FOOTBALL_POST_CUTOFF_AUTHORIZED", raising=False)
+    result = evaluate_independent_sources(date(2026, 10, 31))
+    assert result["api_football_free_tier_requested"] is True
+    assert result["api_football_free_tier_verified"] is False
+    assert result["independent_source_network_calls_authorized_by_this_check"] is False
+    assert result["signal_emission_authorized_by_this_check"] is False
+    assert result["real_money"] == "BLOCKED"
