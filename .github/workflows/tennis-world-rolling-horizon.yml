@@ -54,6 +54,25 @@ jobs:
           git reset --hard origin/repair/cor09-world-pipeline
           echo "CHECKOUT_SHA=$(git rev-parse HEAD)" >> "$GITHUB_ENV"
 
+      - name: Diagnose missing browser-first calendar evidence without fabrication
+        shell: bash
+        run: |
+          set -euo pipefail
+          TODAY="$(TZ=America/Bogota date +%F)"
+          echo "MATRIX_TENNIS_TARGET_DATE_BOGOTA=$TODAY"
+          echo "BROWSER_CALENDARS_ARE_NOT_EQUIVALENT_TO_REPOSITORY_EVIDENCE"
+          for p in \
+            "evidence/tennis_world_inventory/$TODAY/MATRIX_DAILY_MULTISOURCE_BROWSER_CROSSCHECK.json" \
+            "evidence/tennis/MATRIX_TENNIS_${TODAY//-/}_BROWSER_FIRST_RECONCILIATION.json" \
+            "evidence/daily_source_counts/$TODAY/MATRIX_WORLD_CALENDAR_SOURCE_COUNTS.json"; do
+            if [ -f "$p" ]; then
+              echo "CALENDAR_EVIDENCE_PRESENT=$p"
+            else
+              echo "::warning title=Calendar evidence absent::CALENDAR_EVIDENCE_MISSING=$p"
+            fi
+          done
+          echo "BROWSER_FIRST_GATE_REMAINS_FAIL_CLOSED"
+
       - name: Require daily SofaScore and Flashscore browser crosscheck
         shell: bash
         run: |
