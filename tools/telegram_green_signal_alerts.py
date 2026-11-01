@@ -2588,6 +2588,31 @@ def main() -> None:
     tennis = discover_tennis(dates)
     print(json.dumps({"stage":"TENNIS_DISCOVERY_DONE","count":len(tennis)},sort_keys=True),flush=True)
     candidates = {**football, **tennis}
+    if not candidates:
+        # Explicit zero-candidate provenance. No provider HTTP calls or fabricated
+        # events: operators can distinguish missing files from rejected rows.
+        inventory = []
+        for date in dates:
+            football_dir = FOOTBALL_ROOT / date
+            tennis_dir = TENNIS_ROOT / date
+            inventory.append({
+                "date": date,
+                "football_directory_exists": football_dir.is_dir(),
+                "football_browser_files": len(list(football_dir.glob("browser_physical_verification/*.json"))),
+                "football_freeze_files": len(list(football_dir.glob("shadow_quote_freeze/*.json"))),
+                "football_shadow_files": len(list(football_dir.glob("over25_shadow_ev/*.json"))),
+                "tennis_directory_exists": tennis_dir.is_dir(),
+                "tennis_signal_files": len(list(tennis_dir.glob("*.json"))),
+            })
+        print(json.dumps({
+            "schema": "MATRIX_ZERO_CANDIDATE_SOURCE_INVENTORY_V1",
+            "status": "NO_ELIGIBLE_CANONICAL_CANDIDATES",
+            "source_inventory": inventory,
+            "provider_requests_made_by_inventory": 0,
+            "telegram_messages_sent_by_inventory": 0,
+            "real_money": "BLOCKED",
+            "automatic_wagering": False,
+        }, ensure_ascii=False, sort_keys=True), flush=True)
     print(json.dumps({
         "stage":"SUPERVISOR_START",
         "football_candidates":len(football),
