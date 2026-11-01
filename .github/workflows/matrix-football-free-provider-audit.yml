@@ -1,0 +1,32 @@
+name: MATRIX Football Free Provider Audit
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "51 5 * * *"
+permissions:
+  contents: read
+jobs:
+  documentary-audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout operational branch
+        uses: actions/checkout@v4
+        with:
+          ref: repair/cor09-world-pipeline
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install pytest
+        run: python -m pip install pytest
+      - name: Validate free provider catalog
+        run: python -m pytest -q tests/test_matrix_football_free_provider_catalog.py
+      - name: Write offline audit evidence
+        run: python -m tools.matrix_football_free_provider_catalog
+      - name: Preserve evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: matrix-football-free-provider-catalog
+          path: evidence/governance/MATRIX_FOOTBALL_FREE_PROVIDER_CATALOG_LAST.json
+          if-no-files-found: error
