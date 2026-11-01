@@ -15,6 +15,11 @@ def load_policy(path: Path = POLICY_PATH) -> dict:
     data = json.loads(path.read_text(encoding="utf-8"))
     assert data["paid_primary"]["provider"] == "api_football"
     assert data["paid_primary"]["renewal_authorized"] is False
+    free = data.get("free_tier", {})
+    if free.get("network_calls_authorized"):
+        required = ("plan_verified", "current_season_coverage_verified")
+        if not all(free.get(key) is True for key in required):
+            raise ValueError("FREE_TIER_CALLS_REQUIRE_VERIFIED_PLAN_AND_COVERAGE")
     return data
 
 
