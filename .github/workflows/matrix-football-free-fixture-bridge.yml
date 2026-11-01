@@ -1,0 +1,30 @@
+name: MATRIX Football Free Fixture Research Bridge
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  quarantine:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout operational branch
+        uses: actions/checkout@v4
+        with:
+          ref: repair/cor09-world-pipeline
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install pytest
+        run: python -m pip install pytest
+      - name: Verify research-only boundary
+        run: python -m pytest -q tests/test_matrix_football_free_fixture_bridge.py
+      - name: Produce quarantined research event artifact
+        run: python -m tools.matrix_football_free_fixture_bridge
+      - name: Preserve evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: matrix-football-free-research-events
+          path: evidence/governance/MATRIX_FOOTBALL_FREE_RESEARCH_EVENTS_LAST.json
+          if-no-files-found: error
