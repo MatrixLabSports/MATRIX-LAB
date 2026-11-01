@@ -2,7 +2,8 @@ from tools.matrix_independent_over25_governed_binding import bind
 
 
 def test_governed_score_binding_never_authorizes_signal():
-    discovery = {"schema": "MATRIX_INDEPENDENT_FIXTURE_INTAKE_V1", "fixtures": [
+    discovery = {"schema": "MATRIX_INDEPENDENT_FIXTURE_INTAKE_V1",
+                 "status": "DISCOVERY_ONLY_NO_GOVERNED_PROBABILITY_OR_QUOTES", "fixtures": [
         {"home": "A", "away": "B", "kickoff_utc": "2026-11-01T20:00:00+00:00"}
     ]}
     scores = {"schema": "MATRIX_GOVERNED_OVER25_SCORE_EXPORT_V1", "rows": [
@@ -29,7 +30,8 @@ def test_governed_score_binding_never_authorizes_signal():
 
 
 def test_missing_governed_score_fails_closed():
-    discovery = {"schema": "MATRIX_INDEPENDENT_FIXTURE_INTAKE_V1", "fixtures": [
+    discovery = {"schema": "MATRIX_INDEPENDENT_FIXTURE_INTAKE_V1",
+                 "status": "DISCOVERY_ONLY_NO_GOVERNED_PROBABILITY_OR_QUOTES", "fixtures": [
         {"home": "A", "away": "B", "kickoff_utc": "2026-11-01T20:00:00+00:00"}
     ]}
     scores = {"schema": "MATRIX_GOVERNED_OVER25_SCORE_EXPORT_V1", "rows": []}
@@ -39,7 +41,8 @@ def test_missing_governed_score_fails_closed():
 
 
 def test_rejects_unverified_freeze_and_parameter_change():
-    discovery = {"schema": "MATRIX_INDEPENDENT_FIXTURE_INTAKE_V1", "fixtures": [
+    discovery = {"schema": "MATRIX_INDEPENDENT_FIXTURE_INTAKE_V1",
+                 "status": "DISCOVERY_ONLY_NO_GOVERNED_PROBABILITY_OR_QUOTES", "fixtures": [
         {"home": "A", "away": "B", "kickoff_utc": "2026-11-01T20:00:00+00:00"}]}
     score = {"home": "A", "away": "B", "kickoff_utc": "2026-11-01T20:00:00+00:00",
              "market": "OVER_2_5", "p_matrix": 0.64,
