@@ -105,15 +105,6 @@ jobs:
           echo "TARGET_DATE_BOGOTA=$D"
           echo "DATE_MODE=$MODE"
 
-      - name: Generate and enforce API-Football subscription deadline
-        env:
-          API_FOOTBALL_KEY: ${{ secrets.API_FOOTBALL_KEY }}
-        shell: bash
-        run: |
-          set -euo pipefail
-          python -m pytest -q tests/test_football_subscription_deadline_guard.py             tests/test_api_football_prospective_daily_cycle_retry.py
-          python -m tools.football_subscription_deadline_guard --require-paid-use --require-key --out evidence/governance/MATRIX_FOOTBALL_SUBSCRIPTION_DEADLINE_LAST.json
-
       - name: Enforce safety gates
         shell: bash
         run: |
@@ -174,7 +165,28 @@ jobs:
           },sort_keys=True))
           PY
 
+      - name: Enforce paid API authorization before paid provider access
+        id: subscription
+        env:
+          API_FOOTBALL_KEY: ${{ secrets.API_FOOTBALL_KEY }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m pytest -q tests/test_football_subscription_deadline_guard.py tests/test_api_football_prospective_daily_cycle_retry.py
+          set +e
+          python -m tools.football_subscription_deadline_guard --require-paid-use --require-key --out evidence/governance/MATRIX_FOOTBALL_SUBSCRIPTION_DEADLINE_LAST.json
+          rc=$?
+          set -e
+          if [ "$rc" -ne 0 ]; then
+            echo "status=BLOCKED" >> "$GITHUB_OUTPUT"
+            echo "::warning::API_FOOTBALL_PAID_ACCESS_BLOCKED: governed provider-dependent candidate generation not executed"
+            echo "API_FOOTBALL_PAID_ACCESS_BLOCKED; no signal authorization" >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "status=AUTHORIZED" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Run governed prospective daily cycle
+        if: steps.subscription.outputs.status == 'AUTHORIZED'
         id: cycle
         env:
           API_FOOTBALL_KEY: ${{ secrets.API_FOOTBALL_KEY }}
