@@ -11,6 +11,7 @@ import json
 from datetime import datetime, timezone
 from pathlib import Path
 from zoneinfo import ZoneInfo
+from urllib.parse import urlparse
 
 BOGOTA = ZoneInfo("America/Bogota")
 ALLOWED = ("SofaScore", "Flashscore")
@@ -44,7 +45,13 @@ def ingest(snapshots: list[dict], *, now_utc: datetime | None = None) -> dict:
         if item.get("capture_authorized") is not True or item.get("physical_capture_verified") is not True:
             rejected.append({"index": index, "reason": "CAPTURE_NOT_VERIFIED"})
             continue
-        if not isinstance(item.get("source_url"), str) or not item["source_url"].startswith("https://"):
+        url = item.get("source_url")
+        host = urlparse(url).hostname if isinstance(url, str) else None
+        allowed_hosts = {
+            "SofaScore": {"sofascore.com", "www.sofascore.com"},
+            "Flashscore": {"flashscore.co", "www.flashscore.co", "flashscore.com", "www.flashscore.com"},
+        }
+        if not isinstance(url, str) or urlparse(url).scheme != "https" or host not in allowed_hosts[provider]:
             rejected.append({"index": index, "reason": "SOURCE_URL_REQUIRED"})
             continue
         if not isinstance(item.get("captured_at_utc"), str):
