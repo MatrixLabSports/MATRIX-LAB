@@ -77,10 +77,13 @@ def main() -> None:
     p.add_argument("--require-paid-use",action="store_true")
     p.add_argument("--require-key",action="store_true")
     p.add_argument("--independent-source-readiness",action="store_true")
+    p.add_argument("--free-tier-readiness",action="store_true",help="Offline audit only; never authorizes provider calls")
     p.add_argument("--out")
     a=p.parse_args()
     d=date.fromisoformat(a.as_of_bogota_date) if a.as_of_bogota_date else datetime.now(BOGOTA).date()
-    result=(evaluate_independent_sources(d) if a.independent_source_readiness else
+    if a.free_tier_readiness and (a.require_paid_use or a.require_key):
+        p.error("--free-tier-readiness cannot be combined with paid-access requirements")
+    result=(evaluate_independent_sources(d) if (a.independent_source_readiness or a.free_tier_readiness) else
             evaluate(d,require_paid_use=a.require_paid_use,require_key=a.require_key))
     raw=json.dumps(result,indent=2,sort_keys=True)+"\n"
     if a.out:
