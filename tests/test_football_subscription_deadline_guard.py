@@ -201,3 +201,26 @@ def test_daily_football_workflow_paid_gate_is_explicitly_detected():
     workflow = Path(".github/workflows/football-daily-governed-pipeline.yml").read_text(encoding="utf-8")
     paid = "python -m tools.football_subscription_deadline_guard --require-paid-use --require-key"
     assert workflow.count(paid) == 2, "Review paid preflight changes and certify downstream endpoints"
+
+
+def test_free_tier_rejects_unverified_network_authorization(tmp_path):
+    import json
+    from tools.football_subscription_deadline_guard import load_policy
+    source = json.loads(__import__("pathlib").Path("config/MATRIX_FOOTBALL_SUBSCRIPTION_DEADLINE.json").read_text(encoding="utf-8"))
+    source["free_tier"]["network_calls_authorized"] = True
+    source["free_tier"]["plan_verified"] = False
+    source["free_tier"]["current_season_coverage_verified"] = False
+    path = tmp_path / "policy.json"
+    path.write_text(json.dumps(source), encoding="utf-8")
+    with pytest.raises(ValueError, match="FREE_TIER_CALLS_REQUIRE_VERIFIED_PLAN_AND_COVERAGE"):
+        load_policy(path)
+
+
+def test_free_tier_disabled_remains_valid(tmp_path):
+    import json
+    from tools.football_subscription_deadline_guard import load_policy
+    source = json.loads(__import__("pathlib").Path("config/MATRIX_FOOTBALL_SUBSCRIPTION_DEADLINE.json").read_text(encoding="utf-8"))
+    assert source["free_tier"]["network_calls_authorized"] is False
+    path = tmp_path / "policy.json"
+    path.write_text(json.dumps(source), encoding="utf-8")
+    assert load_policy(path)["free_tier"]["requested_by_user"] is True
