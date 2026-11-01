@@ -27,6 +27,35 @@ def secret_presence(env=None):
                        "live_connectivity_verified": False} for provider, key in mapping.items()}
 
 
+
+
+def probe_api_football(key, *, session=None):
+    """Read-only authenticated probe. Never logs the credential or raw response."""
+    if not key or not key.strip():
+        return classify("api_football")
+    if session is None:
+        import requests
+        session = requests
+    try:
+        response = session.get(
+            "https://v3.football.api-sports.io/status",
+            headers={"x-apisports-key": key}, timeout=12)
+        data = response.json() if response.status_code == 200 else None
+        valid = isinstance(data, dict) and isinstance(data.get("response"), dict)
+        result = classify("api_football", http_status=response.status_code,
+                          authenticated=response.status_code == 200,
+                          payload_valid=valid)
+        result["endpoint"] = "status"
+        return result
+    except (ValueError, Exception) as exc:
+        return {**classify("api_football"), "error_type": type(exc).__name__,
+                "endpoint": "status"}
+
+
+def run_football_probe_from_environment():
+    """Runs only when explicitly invoked; safe to print in GitHub Actions logs."""
+    return probe_api_football(os.environ.get("API_FOOTBALL_KEY", ""))
+
 if __name__ == "__main__":
     print(json.dumps({"schema":"MATRIX_API_CONNECTIVITY_CLASSIFIER_V1",
         "generated_at_utc":datetime.now(timezone.utc).isoformat(),
