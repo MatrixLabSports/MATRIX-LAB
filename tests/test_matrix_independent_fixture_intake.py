@@ -11,7 +11,8 @@ def snapshot(provider="SofaScore", **overrides):
         "provider": provider,
         "capture_authorized": True,
         "physical_capture_verified": True,
-        "source_url": "https://www.sofascore.com/es/football/",
+        "source_url": ("https://www.flashscore.co/" if provider == "Flashscore"
+                       else "https://www.sofascore.com/es/football/"),
         "captured_at_utc": (NOW - timedelta(minutes=5)).isoformat(),
         "fixtures": [{
             "home": "Home FC", "away": "Away FC",
@@ -64,3 +65,9 @@ def test_rejects_naive_kickoff_and_missing_team():
     ])], now_utc=NOW)
     assert result["accepted_count"] == 0
     assert len(result["rejected"]) == 2
+
+
+def test_rejects_mismatched_provider_domain():
+    result = ingest([snapshot(provider="Flashscore", source_url="https://www.sofascore.com/es/football/")], now_utc=NOW)
+    assert result["accepted_count"] == 0
+    assert result["rejected"][0]["reason"] == "SOURCE_URL_REQUIRED"
