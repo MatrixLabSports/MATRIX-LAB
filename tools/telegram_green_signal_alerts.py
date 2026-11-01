@@ -2583,6 +2583,26 @@ def main() -> None:
         "real_money":"BLOCKED",
         "automatic_wagering":False,
     }, ensure_ascii=False, sort_keys=True), flush=True)
+    # Source absence is an upstream pipeline condition, not a Telegram failure.
+    # This evidence is printed on every operational cycle, including when the
+    # other sport has candidates. It never synthesizes fixtures or probabilities.
+    canonical_input_presence = {
+        "schema": "MATRIX_CANONICAL_INPUT_PRESENCE_V1",
+        "dates": dates,
+        "football_dates_present": [d for d in dates if (FOOTBALL_ROOT / d).is_dir()],
+        "tennis_dates_present": [d for d in dates if (TENNIS_ROOT / d).is_dir()],
+        "api_football_transport_authorized": bool(paid_transport_available),
+        "provider_requests_made_by_check": 0,
+        "automatic_wagering": False,
+        "real_money": "BLOCKED",
+    }
+    canonical_input_presence["status"] = (
+        "UPSTREAM_CANONICAL_INPUTS_ABSENT"
+        if not canonical_input_presence["football_dates_present"]
+        and not canonical_input_presence["tennis_dates_present"]
+        else "SOME_CANONICAL_INPUT_DIRECTORIES_PRESENT"
+    )
+    print(json.dumps(canonical_input_presence, sort_keys=True), flush=True)
     football = discover_football(dates)
     print(json.dumps({"stage":"FOOTBALL_DISCOVERY_DONE","count":len(football)},sort_keys=True),flush=True)
     tennis = discover_tennis(dates)
