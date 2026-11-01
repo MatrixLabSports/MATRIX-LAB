@@ -200,7 +200,10 @@ def test_daily_football_workflow_paid_gate_is_explicitly_detected():
     from pathlib import Path
     workflow = Path(".github/workflows/football-daily-governed-pipeline.yml").read_text(encoding="utf-8")
     paid = "python -m tools.football_subscription_deadline_guard --require-paid-use --require-key"
-    assert workflow.count(paid) == 2, "Review paid preflight changes and certify downstream endpoints"
+    assert workflow.count(paid) == 1, "Paid subscription preflight must remain present exactly once"
+    assert "if: steps.subscription.outputs.status == 'AUTHORIZED'" in workflow
+    assert workflow.index(paid) < workflow.index("python -m tools.api_football_prospective_daily_cycle")
+    assert "status=BLOCKED" in workflow
 
 
 def test_free_tier_rejects_unverified_network_authorization(tmp_path):
