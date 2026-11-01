@@ -33,3 +33,31 @@ def test_secret_presence_does_not_expose_values():
     assert result["odds_api_net"]["configured"] is True
     assert all(not row["live_connectivity_verified"] for row in result.values())
     assert not any(secret in str(result) for secret in values.values() if secret)
+
+
+def test_api_football_probe_success_redacts_key():
+    from tools.matrix_api_connectivity_classifier import probe_api_football
+    class Response:
+        status_code = 200
+        def json(self):
+            return {"response": {"account": {"firstname": "Test"}}}
+    class Session:
+        def get(self, url, headers, timeout):
+            assert url.endswith("/status")
+            assert headers["x-apisports-key"] == "secret-test-key"
+            assert timeout == 12
+            return Response()
+    result = probe_api_football("secret-test-key", session=Session())
+    assert result["status"] == "VERIFIED_RESPONSE"
+    assert "secret-test-key" not in str(result)
+
+
+def test_api_football_probe_denied_and_missing():
+    from tools.matrix_api_connectivity_classifier import probe_api_football
+    class Response:
+        status_code = 403
+    class Session:
+        def get(self, url, headers, timeout):
+            return Response()
+    assert probe_api_football("key", session=Session())["status"] == "AUTHENTICATION_OR_ENTITLEMENT_FAILED"
+    assert probe_api_football("", session=Session())["status"] == "NOT_TESTED"
