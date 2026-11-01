@@ -2548,21 +2548,19 @@ def main() -> None:
             "automatic_wagering": False,
         }, sort_keys=True), flush=True)
         return
-    # Paid football API subscription expired on 2026-10-28; do not contact it
-    # without renewed authorization verified outside this script.
-    if os.environ.get("MATRIX_API_FOOTBALL_AUTHORIZED", "").strip() != "1":
-        # Do not misrepresent a successful offline diagnostic as live delivery.
-        # Emit a machine-readable operational blocker for Actions and watchdogs.
+    # An expired paid subscription must disable its transport, not the entire
+    # independent-source supervisor. API-Football HTTP helpers each fail closed
+    # through paid_football_quote_transport_allowed(). All signal gates remain.
+    paid_transport_available = paid_football_quote_transport_allowed()
+    if not paid_transport_available:
         print(json.dumps({
-            "schema": "MATRIX_SUPERVISOR_OPERATIONAL_BLOCKER_V1",
-            "status": "BLOCKED_PAID_API_DEPENDENCY",
-            "reason": "API_FOOTBALL_SUBSCRIPTION_NOT_VERIFIED_FAIL_CLOSED",
-            "independent_operational_path_certified": False,
-            "telegram_messages_sent": 0,
+            "schema": "MATRIX_INDEPENDENT_SUPERVISOR_ROUTE_V1",
+            "status": "INDEPENDENT_SOURCE_SUPERVISOR_STARTED",
+            "paid_api_football_calls_allowed": False,
+            "signal_emission_certified": False,
             "real_money": "BLOCKED",
             "automatic_wagering": False,
         }, sort_keys=True), flush=True)
-        raise SystemExit("API_FOOTBALL_SUBSCRIPTION_NOT_VERIFIED_FAIL_CLOSED")
     token = os.environ.get("TELEGRAM_BOT_TOKEN", "").strip()
     chat_id = os.environ.get("TELEGRAM_CHAT_ID", "").strip()
     api_key = os.environ.get("API_FOOTBALL_KEY", "").strip()
@@ -2572,7 +2570,7 @@ def main() -> None:
         raise SystemExit("TELEGRAM_BOT_TOKEN_NOT_CONFIGURED")
     if not chat_id:
         raise SystemExit("TELEGRAM_CHAT_ID_NOT_CONFIGURED")
-    if not api_key:
+    if paid_transport_available and not api_key:
         raise SystemExit("API_FOOTBALL_KEY_NOT_CONFIGURED")
 
     now = now_utc()
