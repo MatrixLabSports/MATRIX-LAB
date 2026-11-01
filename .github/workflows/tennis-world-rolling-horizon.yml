@@ -73,6 +73,50 @@ jobs:
           done
           echo "BROWSER_FIRST_GATE_REMAINS_FAIL_CLOSED"
 
+      - name: Persist browser-first gate evidence audit
+        if: always()
+        shell: bash
+        run: |
+          python - <<'PY'
+          import json, os
+          from datetime import datetime, timezone
+          from pathlib import Path
+          from zoneinfo import ZoneInfo
+          now = datetime.now(timezone.utc)
+          today = now.astimezone(ZoneInfo("America/Bogota")).date().isoformat()
+          paths = {
+              "legacy_tennis_crosscheck": f"evidence/tennis_world_inventory/{today}/MATRIX_DAILY_MULTISOURCE_BROWSER_CROSSCHECK.json",
+              "canonical_tennis_reconciliation": f"evidence/tennis/MATRIX_TENNIS_{today.replace('-', '')}_BROWSER_FIRST_RECONCILIATION.json",
+              "world_calendar_source_counts": f"evidence/daily_source_counts/{today}/MATRIX_WORLD_CALENDAR_SOURCE_COUNTS.json",
+          }
+          state = {k: {"path": v, "present": Path(v).is_file()} for k, v in paths.items()}
+          out = {
+              "schema": "MATRIX_TENNIS_BROWSER_FIRST_EVIDENCE_AUDIT_V1",
+              "target_date_bogota": today,
+              "checked_at_utc": now.isoformat(),
+              "checkout_sha": os.environ.get("CHECKOUT_SHA"),
+              "github_run_id": os.environ.get("GITHUB_RUN_ID"),
+              "sources_provided_in_opera_are_not_automatically_repository_evidence": True,
+              "files": state,
+              "browser_reconciliation_present": state["legacy_tennis_crosscheck"]["present"] or state["canonical_tennis_reconciliation"]["present"],
+              "world_calendar_source_counts_present": state["world_calendar_source_counts"]["present"],
+              "missing_evidence_never_promoted_to_pass": True,
+              "real_money": "BLOCKED",
+          }
+          dest = Path("audit-output") / f"MATRIX_TENNIS_BROWSER_EVIDENCE_AUDIT_{today}.json"
+          dest.parent.mkdir(parents=True, exist_ok=True)
+          dest.write_text(json.dumps(out, indent=2, sort_keys=True) + "\\n", encoding="utf-8")
+          print(json.dumps(out, sort_keys=True))
+          PY
+
+      - name: Upload tennis calendar evidence audit even on failure
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: tennis-browser-evidence-audit
+          path: audit-output/MATRIX_TENNIS_BROWSER_EVIDENCE_AUDIT_*.json
+          if-no-files-found: error
+
       - name: Require daily SofaScore and Flashscore browser crosscheck
         shell: bash
         run: |
