@@ -1,0 +1,38 @@
+name: MATRIX Football Public Free Probe
+on:
+  workflow_dispatch:
+    inputs:
+      target_date:
+        description: Bogota date YYYY-MM-DD
+        required: true
+        type: string
+permissions:
+  contents: read
+jobs:
+  sample:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - name: Checkout operational branch
+        uses: actions/checkout@v4
+        with:
+          ref: repair/cor09-world-pipeline
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install test runner
+        run: python -m pip install pytest
+      - name: Test free response limitations
+        run: python -m pytest -q tests/test_matrix_football_public_free_probe.py
+      - name: One public read-only probe
+        env:
+          TARGET_DATE: ${{ inputs.target_date }}
+        run: python -m tools.matrix_football_public_free_probe --date "$TARGET_DATE" --allow-one-public-call
+      - name: Preserve response metadata
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: matrix-football-public-free-probe
+          path: evidence/governance/MATRIX_FOOTBALL_PUBLIC_FREE_PROBE_LAST.json
+          if-no-files-found: warn
