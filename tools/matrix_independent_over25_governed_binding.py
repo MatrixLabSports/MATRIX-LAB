@@ -28,6 +28,8 @@ def bind(discovery: dict, scores: dict, promotion: dict) -> dict:
         raise ValueError("UNTRUSTED_DISCOVERY_SCHEMA")
     if scores.get("schema") != "MATRIX_GOVERNED_OVER25_SCORE_EXPORT_V1":
         raise ValueError("UNTRUSTED_SCORE_EXPORT_SCHEMA")
+    if discovery.get("status") != "DISCOVERY_ONLY_NO_GOVERNED_PROBABILITY_OR_QUOTES" or discovery.get("signal_generation_authorized") is True:
+        raise ValueError("UNTRUSTED_DISCOVERY_STATUS")
     fixtures = discovery.get("fixtures")
     rows = scores.get("rows")
     if not isinstance(fixtures, list) or not isinstance(rows, list):
