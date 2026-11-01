@@ -47,7 +47,7 @@ def probe_api_football(key, *, session=None):
                           payload_valid=valid)
         result["endpoint"] = "status"
         return result
-    except (ValueError, Exception) as exc:
+    except Exception as exc:
         return {**classify("api_football"), "error_type": type(exc).__name__,
                 "endpoint": "status"}
 
@@ -57,6 +57,12 @@ def run_football_probe_from_environment():
     return probe_api_football(os.environ.get("API_FOOTBALL_KEY", ""))
 
 if __name__ == "__main__":
+    import sys
+    if "--probe-football" in sys.argv:
+        print(json.dumps({"schema": "MATRIX_API_FOOTBALL_LIVE_PROBE_V1",
+                          "generated_at_utc": datetime.now(timezone.utc).isoformat(),
+                          "result": run_football_probe_from_environment()}, sort_keys=True))
+        sys.exit(0)
     print(json.dumps({"schema":"MATRIX_API_CONNECTIVITY_CLASSIFIER_V1",
         "generated_at_utc":datetime.now(timezone.utc).isoformat(),
         "providers":[classify(x) for x in ("api_football","api_tennis","rapidapi_tennis")],
