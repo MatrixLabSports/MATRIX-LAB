@@ -41,11 +41,16 @@ def probe_api_football(key, *, session=None):
             "https://v3.football.api-sports.io/status",
             headers={"x-apisports-key": key}, timeout=12)
         data = response.json() if response.status_code == 200 else None
-        valid = isinstance(data, dict) and isinstance(data.get("response"), dict)
+        valid = (isinstance(data, dict) and isinstance(data.get("response"), dict)
+                 and bool(data["response"].get("account")))
+        api_errors = data.get("errors") if isinstance(data, dict) else None
+        if api_errors:
+            valid = False
         result = classify("api_football", http_status=response.status_code,
                           authenticated=response.status_code == 200,
                           payload_valid=valid)
         result["endpoint"] = "status"
+        result["provider_errors_present"] = bool(api_errors)
         return result
     except Exception as exc:
         return {**classify("api_football"), "error_type": type(exc).__name__,
