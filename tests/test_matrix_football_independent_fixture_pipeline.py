@@ -21,7 +21,7 @@ def fixtures_payload():
         {"id": 51, "utcDate": "2026-11-02T15:00:00Z", "status": "SCHEDULED",
          "homeTeam": {"id": 1, "name": "Club A"}, "awayTeam": {"id": 2, "name": "Club B"},
          "competition": {"name": "League"}},
-        {"id": 52, "utcDate": "2026-11-03T03:00:00Z", "status": "TIMED",
+        {"id": 52, "utcDate": "2026-11-03T06:00:00Z", "status": "TIMED",
          "homeTeam": {"id": 3, "name": "Club C"}, "awayTeam": {"id": 4, "name": "Club D"}},
         {"id": 53, "utcDate": "2026-11-02T13:00:00Z", "status": "FINISHED",
          "homeTeam": {"id": 5, "name": "Club E"}, "awayTeam": {"id": 6, "name": "Club F"}},
