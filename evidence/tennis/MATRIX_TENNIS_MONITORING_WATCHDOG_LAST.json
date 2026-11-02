@@ -1,17 +1,16 @@
 {
   "checks": {
     "clay": {
-      "age_minutes": 0.72,
-      "latest_conclusion": null,
-      "latest_event": "schedule",
+      "age_minutes": 2.2,
+      "latest_conclusion": "failure",
       "latest_run_id": 41425984293,
-      "latest_status": "in_progress",
-      "reason": "RECENT_RUN_PRESENT",
-      "status": "PASS",
+      "latest_status": "completed",
+      "reason": "LATEST_TERMINAL_RUN_FAILED",
+      "status": "FAIL",
       "workflow": "tennis-clay-daily-prospective.yml"
     },
     "hard": {
-      "age_minutes": 36.22,
+      "age_minutes": 37.7,
       "latest_conclusion": "failure",
       "latest_run_id": 41421194945,
       "latest_status": "completed",
@@ -20,7 +19,7 @@
       "workflow": "tennis-hard-governed-day-resolution.yml"
     },
     "live": {
-      "age_minutes": 8.01,
+      "age_minutes": 9.48,
       "latest_conclusion": "success",
       "latest_event": "schedule",
       "latest_run_id": 41424989928,
@@ -32,7 +31,7 @@
   },
   "failures": [
     {
-      "age_minutes": 36.22,
+      "age_minutes": 37.7,
       "lane": "hard",
       "latest_conclusion": "failure",
       "latest_run_id": 41421194945,
@@ -40,9 +39,19 @@
       "reason": "LATEST_RUN_STALE",
       "status": "FAIL",
       "workflow": "tennis-hard-governed-day-resolution.yml"
+    },
+    {
+      "age_minutes": 2.2,
+      "lane": "clay",
+      "latest_conclusion": "failure",
+      "latest_run_id": 41425984293,
+      "latest_status": "completed",
+      "reason": "LATEST_TERMINAL_RUN_FAILED",
+      "status": "FAIL",
+      "workflow": "tennis-clay-daily-prospective.yml"
     }
   ],
-  "generated_at_utc": "2026-11-02T10:06:32.352108+00:00",
+  "generated_at_utc": "2026-11-02T10:08:00.748146+00:00",
   "policy": {
     "default_branch_scheduler_required": true,
     "expected_cadence_minutes": 15,
@@ -51,7 +60,7 @@
   },
   "schema": "MATRIX_TENNIS_MONITORING_WATCHDOG_V1",
   "summary": {
-    "failures": 1,
+    "failures": 2,
     "lanes_checked": 3,
     "status": "FAIL_CLOSED"
   }
