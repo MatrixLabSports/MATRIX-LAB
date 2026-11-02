@@ -27,10 +27,18 @@ def add(root: Path, date: str, fid: str, utc_kickoff: str, **kw):
                "status":"PASS_SOFA_IDENTITIES_ONLY_NO_DOUBLE_SOURCE_OR_SIGNAL",
                "rejected_count":0,"matched_count":1,
                "matched":[{"fixture_id":fid,"kickoff_utc":utc_kickoff}]}
-    values=[intake,shadow,browser]
+    flash = {"schema":"MATRIX_FLASH_FOOTBALL_CROSSCHECK_V1",
+             "target_date_bogota":date,
+             "source_order":["SOFASCORE","FLASHSCORE","APIS"],
+             "real_money":"BLOCKED","signal_generation_authorized":False,
+             "status":"PASS_THREE_SOURCE_FIXTURE_IDENTITY_ONLY_NO_QUOTES_OR_SIGNALS",
+             "rejected_count":0,"matched_count":1,"flashscore_verified":True,
+             "matched":[{"source_fixture_id":fid,"kickoff_utc":utc_kickoff}]}
+    values=[intake,shadow,browser,flash]
     names=["MATRIX_FOOTBALL_INDEPENDENT_FIXTURE_INTAKE.json",
            "MATRIX_INDEPENDENT_OVER25_HISTORY_SHADOW.json",
-           "MATRIX_SOFA_FOOTBALL_FIXTURE_CROSSCHECK.json"]
+           "MATRIX_SOFA_FOOTBALL_FIXTURE_CROSSCHECK.json",
+           "MATRIX_FLASH_FOOTBALL_CROSSCHECK.json"]
     for name,value in zip(names,values):
         value.update(kw.get(name,{}))
         (folder/name).write_text(json.dumps(value),encoding="utf-8")
@@ -106,3 +114,19 @@ def test_naive_clock_forbidden(tmp_path):
         assert "NOW_REQUIRES_TIMEZONE" in str(exc)
     else:
         raise AssertionError("NAIVE_CLOCK_MUST_NOT_PASS")
+
+def test_missing_flashscore_double_source_fails_closed(tmp_path):
+    add(tmp_path,"2026-11-02","1","2026-11-02T17:30:00Z")
+    (tmp_path/"2026-11-02"/"MATRIX_FLASH_FOOTBALL_CROSSCHECK.json").unlink()
+    r=choose(tmp_path,now=t("2026-11-02T16:15:00Z"))
+    assert r["selected_date"] is None
+    assert r["blocked_dates"]
+
+def test_flashscore_kickoff_identity_mismatch_blocks_quote_attempt(tmp_path):
+    add(tmp_path,"2026-11-02","1","2026-11-02T17:30:00Z")
+    p=tmp_path/"2026-11-02"/"MATRIX_FLASH_FOOTBALL_CROSSCHECK.json"
+    f=json.loads(p.read_text())
+    f["matched"][0]["kickoff_utc"]="2026-11-02T17:31:00+00:00"
+    p.write_text(json.dumps(f))
+    r=choose(tmp_path,now=t("2026-11-02T16:15:00Z"))
+    assert r["selected_date"] is None
