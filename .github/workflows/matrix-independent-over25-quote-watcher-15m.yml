@@ -41,7 +41,7 @@ jobs:
         run: python -m pip install requests pytest Pillow
 
       - name: Certify exact quote audit regression contracts
-        run: PYTHONPATH=. python -m pytest -q tests/test_matrix_independent_over25_quote_audit.py tests/test_matrix_independent_over25_day_selector.py
+        run: PYTHONPATH=. python -m pytest -q tests/test_matrix_independent_over25_quote_audit.py tests/test_matrix_independent_over25_day_selector.py tests/test_matrix_football_flashscore_fixture_crosscheck.py
 
       - name: Select verified 120m fixture across Bogota midnight
         id: preflight
