@@ -41,41 +41,30 @@ jobs:
         run: python -m pip install requests pytest Pillow
 
       - name: Certify exact quote audit regression contracts
-        run: PYTHONPATH=. python -m pytest -q tests/test_matrix_independent_over25_quote_audit.py
+        run: PYTHONPATH=. python -m pytest -q tests/test_matrix_independent_over25_quote_audit.py tests/test_matrix_independent_over25_day_selector.py
 
-      - name: Preflight existing independent source and original model provenance
+      - name: Select verified 120m fixture across Bogota midnight
         id: preflight
         shell: bash
         run: |
           set -euo pipefail
-          D="$(TZ=America/Bogota date +%F)"
-          R="evidence/football_world_inventory/$D"
+          python -m tools.matrix_independent_over25_day_selector --out /tmp/matrix_quote_day_selection.json
+          D="$(python - <<'PY'
+          import json
+          data=json.load(open('/tmp/matrix_quote_day_selection.json',encoding='utf-8'))
+          assert data['real_money']=='BLOCKED'
+          assert data['telegram_authorized'] is False
+          print(data['selected_date'] or '')
+          PY
+          )"
           echo "date=$D" >> "$GITHUB_OUTPUT"
-          if [ ! -f "$R/MATRIX_FOOTBALL_INDEPENDENT_FIXTURE_INTAKE.json" ] ||
-             [ ! -f "$R/MATRIX_INDEPENDENT_OVER25_HISTORY_SHADOW.json" ] ||
-             [ ! -f "$R/MATRIX_SOFA_FOOTBALL_FIXTURE_CROSSCHECK.json" ]; then
+          if [ -z "$D" ]; then
             echo "ready=false" >> "$GITHUB_OUTPUT"
-            echo "WAIT_FOR_PRIMARY_SOURCE_AND_FROZEN_MODEL_PROVENANCE"
+            echo "WAIT_FOR_STRICTLY_PREMATCH_DATED_PRIMARY_SOURCE_AND_FROZEN_MODEL"
             exit 0
           fi
-          python - "$R" <<'PY'
-          import json,sys
-          from pathlib import Path
-          root=Path(sys.argv[1])
-          load=lambda p:json.loads((root/p).read_text(encoding="utf-8"))
-          intake=load("MATRIX_FOOTBALL_INDEPENDENT_FIXTURE_INTAKE.json")
-          shadow=load("MATRIX_INDEPENDENT_OVER25_HISTORY_SHADOW.json")
-          browser=load("MATRIX_SOFA_FOOTBALL_FIXTURE_CROSSCHECK.json")
-          assert intake["real_money"]=="BLOCKED"
-          assert intake["signal_generation_authorized"] is False
-          assert shadow["real_money"]=="BLOCKED"
-          assert shadow["market_signal_authorized"] is False
-          assert shadow["parameter_refit"] is False
-          assert browser["signal_generation_authorized"] is False
-          assert browser["matched_count"] > 0
-          PY
           echo "ready=true" >> "$GITHUB_OUTPUT"
-
+          echo "CERTIFIED_INDEPENDENT_SOURCE_DATE=$D"
       - name: Obtain strictly fresh quotes only inside 120-minute pre-kickoff window
         if: steps.preflight.outputs.ready == 'true'
         env:
