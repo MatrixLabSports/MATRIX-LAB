@@ -197,6 +197,7 @@ jobs:
           set -euo pipefail
           D="${{ steps.date.outputs.target_date }}"
           python -m tools.matrix_football_free_plan_probe \
+            --target-date "$D" \
             --out "evidence/football_world_inventory/$D/MATRIX_FOOTBALL_FREE_PLAN_PROBE.json"
 
       - name: Audit independent football sources after paid cutoff
