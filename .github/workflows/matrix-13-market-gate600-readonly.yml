@@ -200,8 +200,7 @@ jobs:
           assert r["safety"]["real_money"]=="BLOCKED"
           assert all(x["telegram_authorized_by_audit"] is False for x in r["lanes"])
           with open(__import__("os").environ["GITHUB_STEP_SUMMARY"],"a") as f:
-              f.write(f"Recomputed strict cohorts: {r['summary']['markets_with_600_exact_final']}/13 at 600 standard FT; independent source {r['summary']['independent_ledger_final_rows']}.
-")
+              f.write(f"Recomputed strict cohorts: {r['summary']['markets_with_600_exact_final']}/13 at 600 standard FT; independent source {r['summary']['independent_ledger_final_rows']}.\n")
           PY
 
       - name: Run formal proper-scoring decision gate on verified cohorts at 600
