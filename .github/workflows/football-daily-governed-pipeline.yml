@@ -290,6 +290,14 @@ jobs:
           D="${{ steps.date.outputs.target_date }}"
           python -m tools.football_daily_governed_over25 --target-date "$D"
 
+      - name: Report blocked football production truthfully
+        if: always() && steps.subscription.outputs.status == 'BLOCKED'
+        shell: bash
+        run: |
+          echo "::error::FOOTBALL_OVER25_NOT_PRODUCED: paid provider authorization blocked; independent verified data pipeline is not yet certified."
+          echo "OVER25_PRODUCTION=BLOCKED; TELEGRAM_SIGNAL_NOT_AUTHORIZED" >> "$GITHUB_STEP_SUMMARY"
+          exit 1
+
       # Telegram is intentionally decoupled. The evidence commit below triggers
       # telegram-green-signals.yml, which owns and persists its ledger atomically.
 
