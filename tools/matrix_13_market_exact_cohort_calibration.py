@@ -21,6 +21,7 @@ REGISTRY = ROOT / "evidence/market_portfolio/MATRIX_42_LANE_PROSPECTIVE_REGISTRY
 PORTFOLIO = ROOT / "evidence/market_portfolio/MATRIX_42_LANE_PROSPECTIVE_LEDGER.jsonl"
 SETTLEMENT = ROOT / "evidence/api_football/prospective_market_freeze/settlement_ledger.jsonl"
 OUT = ROOT / "evidence/governance/MATRIX_13_MARKET_EXACT_COHORT_CALIBRATION_LAST.json"
+RAW = ROOT / "evidence/api_football/prospective_market_freeze/settlement_raw"
 
 PERIOD_LANES = {
     "FIRST_HALF_TEAM_TOTAL_GOALS_AWAY", "FIRST_HALF_TEAM_TOTAL_GOALS_HOME",
@@ -96,7 +97,50 @@ def statistics(probs: list[Any], outcomes: list[Any], *, multiclass: bool = Fals
     return {"n":len(numbers),"brier":brier,"log_loss":ll,"ece":ece,"observed_positive_rate":sum(ys)/len(ys)}
 
 
-def _prediction_and_targets(lane: str, row: dict, result: dict) -> dict[str, tuple[float | dict, int | str]]:
+
+def verified_half_time(fid: str, settlement: dict, raw_dir: Path) -> tuple[int,int]:
+    """Verify original full match response checksum, identity, status and scores.
+
+    No API request and no inference of halftime from final score. The second
+    half is arithmetically derived only after a genuine halftime is validated.
+    """
+    path = raw_dir / f"fixture_{fid}.bin"
+    if not path.is_file():
+        raise ValueError("MISSING_ORIGINAL_MATCH_RECEIPT")
+    body = path.read_bytes()
+    if hashlib.sha256(body).hexdigest() != settlement.get("result_payload_sha256"):
+        raise ValueError("ORIGINAL_MATCH_RECEIPT_SHA256_MISMATCH")
+    payload = json.loads(body)
+    if payload.get("errors") not in ([], {}, None) or payload.get("results") != 1:
+        raise ValueError("PROVIDER_ERRORS_OR_AMBIGUOUS_RESULT")
+    rows = payload.get("response")
+    if not isinstance(rows, list) or len(rows) != 1:
+        raise ValueError("EXPECTED_ONE_PROVIDER_FIXTURE")
+    match = rows[0]
+    fixture = match.get("fixture") or {}
+    if str(fixture.get("id")) != fid or (fixture.get("status") or {}).get("short") != "FT":
+        raise ValueError("ORIGINAL_FIXTURE_ID_OR_STATUS_MISMATCH")
+    if utc(fixture.get("date")) != utc(settlement["kickoff_utc"]):
+        raise ValueError("ORIGINAL_FIXTURE_DATE_MISMATCH")
+    score = match.get("score") or {}
+    full = score.get("fulltime") or {}
+    half = score.get("halftime") or {}
+    hg, ag = full.get("home"), full.get("away")
+    hh, ah = half.get("home"), half.get("away")
+    values = (hg,ag,hh,ah)
+    if any(type(x) is not int or x < 0 for x in values):
+        raise ValueError("INVALID_RAW_HALF_OR_FINAL_SCORE")
+    if (hg,ag) != (settlement["fulltime_home_goals"],settlement["fulltime_away_goals"]):
+        raise ValueError("ORIGINAL_FINAL_RESULT_MISMATCH")
+    if hh > hg or ah > ag:
+        raise ValueError("HALFTIME_EXCEEDS_FINAL_SCORE")
+    goals = match.get("goals") or {}
+    if goals.get("home") != hg or goals.get("away") != ag:
+        raise ValueError("RAW_FINAL_GOALS_NOT_CONSISTENT")
+    return hh,ah
+
+
+def _prediction_and_targets(lane: str, row: dict, result: dict, halftime: tuple[int,int] | None = None) -> dict[str, tuple[float | dict, int | str]]:
     pred = row["prediction"]
     home, away = result["fulltime_home_goals"], result["fulltime_away_goals"]
     if lane == "MATCH_RESULT_1X2":
@@ -109,10 +153,25 @@ def _prediction_and_targets(lane: str, row: dict, result: dict) -> dict[str, tup
     if lane in TEAM_LANES:
         goals = home if lane.endswith("HOME") else away
         return {key: (pred[key], int(goals >= 1+int(key.split("_")[1]))) for key in ("over_0_5","over_1_5","over_2_5")}
-    raise ValueError("PERIOD_MARKET_HAS_NO_TRUSTED_HALF_TIME_SETTLEMENT")
+    if lane in PERIOD_LANES:
+        if halftime is None:
+            raise ValueError("VERIFIED_HALFTIME_REQUIRED")
+        first_h,first_a = halftime
+        second_h,second_a = home - first_h, away - first_a
+        is_first = lane.startswith("FIRST_HALF_")
+        ph,pa = (first_h,first_a) if is_first else (second_h,second_a)
+        if "_TEAM_TOTAL_GOALS_HOME" in lane:
+            goals = ph
+        elif "_TEAM_TOTAL_GOALS_AWAY" in lane:
+            goals = pa
+        else:
+            goals = ph+pa
+        thresholds = ("over_0_5","over_1_5") if "_TEAM_TOTAL_GOALS_" not in lane else ("over_0_5",)
+        return {key:(pred[key],int(goals >= 1+int(key.split("_")[1]))) for key in thresholds}
+    raise ValueError("UNKNOWN_MARKET_LANE")
 
 
-def build(registry: dict, portfolio: list[dict], settlements: list[dict]) -> dict:
+def build(registry: dict, portfolio: list[dict], settlements: list[dict], *, raw_dir: Path = RAW) -> dict:
     if registry.get("status") != "PASS" or registry.get("total_lanes") != 42:
         raise ValueError("CANONICAL_REGISTRY_REQUIRED")
     guards = registry.get("protections") or {}
@@ -183,10 +242,8 @@ def build(registry: dict, portfolio: list[dict], settlements: list[dict]) -> dic
                 home, away = record["fulltime_home_goals"], record["fulltime_away_goals"]
                 if type(home) is not int or type(away) is not int or home < 0 or away < 0:
                     raise ValueError("RESULT_GOALS_INVALID")
-                if lane in PERIOD_LANES:
-                    issues["NO_VERIFIED_HALF_TIME_GOALS_IN_SETTLEMENT_SCHEMA"] += 1
-                    continue
-                vals = _prediction_and_targets(lane, row, record)
+                half = verified_half_time(fid, record, raw_dir) if lane in PERIOD_LANES else None
+                vals = _prediction_and_targets(lane, row, record, halftime=half)
                 for k, (p, outcome) in vals.items():
                     if isinstance(p,dict):
                         if set(p) != {"H","D","A"} or abs(sum(probability(z) for z in p.values())-1)>1e-6:
@@ -197,14 +254,28 @@ def build(registry: dict, portfolio: list[dict], settlements: list[dict]) -> dic
                         raise ValueError("BAD_OUTCOME")
                     sampled.setdefault(k, []).append((p,outcome))
                 good_ids.append(fid)
-            except (ValueError,TypeError,KeyError):
-                issues["RESULT_OR_PREDICTION_IDENTITY_REJECTED"] += 1
+            except (ValueError,TypeError,KeyError) as exc:
+                reason = str(exc)
+                if lane in PERIOD_LANES and reason in {
+                    "MISSING_ORIGINAL_MATCH_RECEIPT",
+                    "ORIGINAL_MATCH_RECEIPT_SHA256_MISMATCH",
+                    "INVALID_RAW_HALF_OR_FINAL_SCORE",
+                    "HALFTIME_EXCEEDS_FINAL_SCORE",
+                    "ORIGINAL_FINAL_RESULT_MISMATCH",
+                }:
+                    issues[reason] += 1
+                else:
+                    issues["RESULT_OR_PREDICTION_IDENTITY_REJECTED"] += 1
         metrics = {name:statistics([v[0] for v in values],[v[1] for v in values],multiclass=(name=="1x2"))
                    for name,values in sampled.items()}
         n = len(good_ids)
         decision = "RESEARCH_ONLY_NO_PROMOTION"
-        if lane in PERIOD_LANES:
-            decision = "HOLD_REQUIRE_EXPLICIT_PROVENANCE_CHECKED_HALF_TIME_RESULTS"
+        if lane in PERIOD_LANES and n == 0:
+            decision = "HOLD_NO_VALIDATED_HALF_TIME_RECEIPTS"
+        elif lane in PERIOD_LANES and n < 600:
+            decision = "HOLD_HALF_TIME_COHORT_BELOW_600"
+        elif lane in PERIOD_LANES:
+            decision = "REQUIRES_FORMAL_PERIOD_MODEL_CALIBRATION_AND_PRICE_MAPPING"
         elif lane == "DOUBLE_CHANCE_12":
             decision = "NO_GO_DIAGNOSTIC_CURRENT_CHALLENGER"
         elif n < 600:
@@ -245,6 +316,7 @@ def build(registry: dict, portfolio: list[dict], settlements: list[dict]) -> dic
         "safety":{
             "no_paid_api_queries":True,"no_outcome_imputation":True,
             "no_half_time_inference_from_fulltime":True,
+            "halftime_raw_receipt_sha256_and_final_score_match_required":True,
             "no_promotion_from_600_freezes":True,
             "no_parameter_refit":True,"automatic_wagering":False,
             "real_money":"BLOCKED","telegram_messages_sent":0,
