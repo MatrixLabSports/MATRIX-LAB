@@ -114,3 +114,13 @@ def test_triage_is_one_row_per_missing_fixture_and_is_never_auto_settled(tmp_pat
     assert item["prospective_freeze_not_to_be_rewritten"] is True
     assert r["protections"]["no_auto_provider_retry_or_paid_api_calls"] is True
     assert all(x["settlements_appended"]==0 for x in r["lanes"])
+
+
+
+def test_archive_access_suspended_is_reported_explicitly(tmp_path):
+    p=tmp_path/"fixture_fixture-1.bin"
+    p.write_text(json.dumps({"errors":{"access":"Your account is suspended, check your dashboard."},
+                             "results":0,"response":[]}),encoding="utf-8")
+    r=inspect_receipt(p,freeze())
+    assert r["code"]=="API_FOOTBALL_ACCOUNT_SUSPENDED"
+    assert len(r["raw_sha256"])==64
