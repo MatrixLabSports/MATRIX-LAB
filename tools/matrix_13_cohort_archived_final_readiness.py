@@ -129,6 +129,24 @@ def build(freezes: dict, settled: list[dict], registry: dict, portfolio: list[di
             data[fid]=inspect_receipt(raw_dir / f"fixture_{fid}.bin",src)
         except (ValueError,TypeError,KeyError):
             data[fid]={"code":"UNTRUSTED_FREEZE_OR_ARCHIVED_RECEIPT"}
+    triage_queue=[]
+    for fid in sorted(relevant):
+        src=sources.get(fid) or {}
+        row=data.get(fid) or {"code":"UNKNOWN"}
+        triage_queue.append({
+          "fixture_id":fid,
+          "kickoff_utc":src.get("kickoff_utc"),
+          "home_team_id":str(src.get("home_team_id")) if src.get("home_team_id") is not None else None,
+          "away_team_id":str(src.get("away_team_id")) if src.get("away_team_id") is not None else None,
+          "freeze_at_utc":src.get("freeze_at_utc"),
+          "archived_source_status":row.get("code"),
+          "archived_provider_status":row.get("provider_status"),
+          "archived_response_sha256":row.get("raw_sha256"),
+          "affected_gate600_lanes":sorted(k for k,ids in target_to_fixtures.items() if fid in ids),
+          "recovery_policy":"REQUIRE_AUTHENTIC_STANDARD_FT_AND_EXACT_EVENT_TEAM_KICKOFF_MATCH_BEFORE_SETTLEMENT",
+          "safe_to_settle_from_present_archive":row.get("code")=="VERIFIED_ARCHIVED_STANDARD_FT",
+          "prospective_freeze_not_to_be_rewritten":True,
+        })
     lane_rows=[]
     for k in sorted(lanes):
         target=target_to_fixtures[k]
@@ -155,12 +173,16 @@ def build(freezes: dict, settled: list[dict], registry: dict, portfolio: list[di
       "verified_settlement_ledger_rows":len(settled),
       "distinct_missing_market_fixture_ids":len(relevant),
       "target_market_count":len(lane_rows),
+      "unsettled_fixture_triage":triage_queue,
+      "unsettled_fixture_triage_count":len(triage_queue),
       "lanes":lane_rows,
       "protections":{
         "read_only":True,
         "no_api_calls":True,
         "no_post_start_prediction_backfill":True,
         "no_fake_settlements":True,
+        "no_auto_provider_retry_or_paid_api_calls":True,
+        "recoverable_from_archives_requires_verified_receipt":True,
         "ft_only":True,
         "archive_fixture_kickoff_team_identity_required":True,
         "no_telegram_signal_promotion":True,
