@@ -97,6 +97,8 @@ jobs:
           from pathlib import Path
           r=json.loads(Path("evidence/governance/MATRIX_13_COHORT_ARCHIVED_FINAL_READINESS_LAST.json").read_text(encoding="utf-8"))
           assert r["target_market_count"] == 13
+          assert r["unsettled_fixture_triage_count"] == r["distinct_missing_market_fixture_ids"]
+          assert all(x["prospective_freeze_not_to_be_rewritten"] for x in r["unsettled_fixture_triage"])
           assert r["protections"]["real_money"] == "BLOCKED"
           assert r["protections"]["no_api_calls"] and r["protections"]["read_only"]
           assert all(x["settlements_appended"] == 0 and not x["production_authorized"] for x in r["lanes"])
