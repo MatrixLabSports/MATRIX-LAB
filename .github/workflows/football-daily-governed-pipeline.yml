@@ -188,6 +188,17 @@ jobs:
             echo "status=AUTHORIZED" >> "$GITHUB_OUTPUT"
           fi
 
+      - name: Probe current API-Football plan safely
+        if: steps.subscription.outputs.status == 'BLOCKED'
+        env:
+          API_FOOTBALL_KEY: ${{ secrets.API_FOOTBALL_KEY }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          D="${{ steps.date.outputs.target_date }}"
+          python -m tools.matrix_football_free_plan_probe \
+            --out "evidence/football_world_inventory/$D/MATRIX_FOOTBALL_FREE_PLAN_PROBE.json"
+
       - name: Audit independent football sources after paid cutoff
         if: steps.subscription.outputs.status == 'BLOCKED'
         shell: bash
@@ -326,6 +337,7 @@ jobs:
           if [ -d "evidence/api_football/daily_prematch_reports/$D" ]; then git add "evidence/api_football/daily_prematch_reports/$D"; fi
           if [ -f "evidence/football_world_inventory/$D/MATRIX_FOOTBALL_CALIBRATION_ELIGIBILITY.json" ]; then git add "evidence/football_world_inventory/$D/MATRIX_FOOTBALL_CALIBRATION_ELIGIBILITY.json"; fi
           if [ -f "evidence/football_world_inventory/$D/MATRIX_INDEPENDENT_SOURCE_READINESS.json" ]; then git add "evidence/football_world_inventory/$D/MATRIX_INDEPENDENT_SOURCE_READINESS.json"; fi
+          if [ -f "evidence/football_world_inventory/$D/MATRIX_FOOTBALL_FREE_PLAN_PROBE.json" ]; then git add "evidence/football_world_inventory/$D/MATRIX_FOOTBALL_FREE_PLAN_PROBE.json"; fi
           git add evidence/governance/MATRIX_FOOTBALL_SUBSCRIPTION_DEADLINE_LAST.json
           git add evidence/api_football/market_expansion/market_binding_catalog.json
           git add evidence/api_football/market_expansion/priority_market_lab_last.json
