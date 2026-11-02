@@ -127,6 +127,7 @@ def build_candidates(triage,freeze,source_reports,*,root,api_settled,already):
                 "source_raw_path":rel,
                 "source_identity_policy":"EXACT_TEAM_PAIR_KICKOFF_WITH_EXPLICIT_MLS_SYNONYMS_V1",
                 "terminal_status":"FT",
+                "settled_at_utc":datetime.now(timezone.utc).isoformat(),
                 "fulltime_home_goals":hg,
                 "fulltime_away_goals":ag,
                 "halftime_verified":False,
