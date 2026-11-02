@@ -1,16 +1,17 @@
 {
   "checks": {
     "clay": {
-      "age_minutes": 443.27,
-      "latest_conclusion": "failure",
-      "latest_run_id": 41378718397,
-      "latest_status": "completed",
-      "reason": "LATEST_RUN_STALE",
-      "status": "FAIL",
+      "age_minutes": 0.72,
+      "latest_conclusion": null,
+      "latest_event": "schedule",
+      "latest_run_id": 41425984293,
+      "latest_status": "in_progress",
+      "reason": "RECENT_RUN_PRESENT",
+      "status": "PASS",
       "workflow": "tennis-clay-daily-prospective.yml"
     },
     "hard": {
-      "age_minutes": 30.27,
+      "age_minutes": 36.22,
       "latest_conclusion": "failure",
       "latest_run_id": 41421194945,
       "latest_status": "completed",
@@ -19,7 +20,7 @@
       "workflow": "tennis-hard-governed-day-resolution.yml"
     },
     "live": {
-      "age_minutes": 2.05,
+      "age_minutes": 8.01,
       "latest_conclusion": "success",
       "latest_event": "schedule",
       "latest_run_id": 41424989928,
@@ -31,7 +32,7 @@
   },
   "failures": [
     {
-      "age_minutes": 30.27,
+      "age_minutes": 36.22,
       "lane": "hard",
       "latest_conclusion": "failure",
       "latest_run_id": 41421194945,
@@ -39,19 +40,9 @@
       "reason": "LATEST_RUN_STALE",
       "status": "FAIL",
       "workflow": "tennis-hard-governed-day-resolution.yml"
-    },
-    {
-      "age_minutes": 443.27,
-      "lane": "clay",
-      "latest_conclusion": "failure",
-      "latest_run_id": 41378718397,
-      "latest_status": "completed",
-      "reason": "LATEST_RUN_STALE",
-      "status": "FAIL",
-      "workflow": "tennis-clay-daily-prospective.yml"
     }
   ],
-  "generated_at_utc": "2026-11-02T10:00:35.165921+00:00",
+  "generated_at_utc": "2026-11-02T10:06:32.352108+00:00",
   "policy": {
     "default_branch_scheduler_required": true,
     "expected_cadence_minutes": 15,
@@ -60,7 +51,7 @@
   },
   "schema": "MATRIX_TENNIS_MONITORING_WATCHDOG_V1",
   "summary": {
-    "failures": 2,
+    "failures": 1,
     "lanes_checked": 3,
     "status": "FAIL_CLOSED"
   }
