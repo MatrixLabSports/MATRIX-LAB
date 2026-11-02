@@ -179,3 +179,41 @@ def test_original_receipt_checksum_and_score_discrepancy_fail_closed(tmp_path):
     lane=next(x for x in r["lanes"] if x["market_key"]=="FIRST_HALF_TOTAL_GOALS_OVER_UNDER")
     assert lane["exact_cohort_final_verified"] == 0
     assert lane["blockers"]["HALFTIME_EXCEEDS_FINAL_SCORE"] == 1
+
+
+
+def test_independent_espn_settlement_counts_once_for_fulltime_not_halftime():
+    source = {
+        "fixture_id":"real-id-1",
+        "kickoff_utc":"2026-10-25T20:00:00+00:00",
+        "freeze_at_utc":"2026-10-25T19:00:00+00:00",
+        "settled_at_utc":"2026-10-26T01:00:00+00:00",
+        "fulltime_home_goals":2,"fulltime_away_goals":1,
+        "terminal_status":"FT",
+        "source_provider":"ESPN_MLS",
+        "source_raw_sha256":"b"*64,
+        "halftime_verified":False,
+        "real_money":"BLOCKED","automatic_wagering":False,
+    }
+    rows=[
+        freeze("MATCH_RESULT_1X2",{"H":.7,"D":.2,"A":.1}),
+        freeze("FIRST_HALF_TOTAL_GOALS_OVER_UNDER",{"over_0_5":.5,"over_1_5":.2}),
+    ]
+    r=build(registry(),rows,[],secondary_settlements=[source])
+    by={x["market_key"]:x for x in r["lanes"]}
+    assert by["MATCH_RESULT_1X2"]["exact_cohort_final_verified"]==1
+    assert by["FIRST_HALF_TOTAL_GOALS_OVER_UNDER"]["exact_cohort_final_verified"]==0
+    assert by["FIRST_HALF_TOTAL_GOALS_OVER_UNDER"]["blockers"]["INDEPENDENT_FULL_TIME_ONLY_HALFTIME_NOT_VERIFIED"]==1
+    assert r["summary"]["independent_ledger_final_rows"]==1
+    assert r["summary"]["combined_distinct_verified_final_rows"]==1
+    assert r["safety"]["real_money"]=="BLOCKED"
+
+
+def test_second_source_cannot_duplicate_first_source_fixture():
+    row=freeze("MATCH_RESULT_1X2",{"H":.7,"D":.2,"A":.1})
+    independent={
+       **result(),"source_provider":"ESPN_MLS","source_raw_sha256":"b"*64,
+       "terminal_status":"FT","automatic_wagering":False,"halftime_verified":False,
+    }
+    with pytest.raises(ValueError,match="INDEPENDENT_SOURCE_DUPLICATE_OR_NOT_VERIFIED"):
+        build(registry(),[row],[result()],secondary_settlements=[independent])
