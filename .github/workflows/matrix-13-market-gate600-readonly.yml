@@ -45,7 +45,7 @@ jobs:
           set -euo pipefail
           test "$REAL_MONEY" = BLOCKED
           test "$AUTO_BETTING" = DISABLED
-          PYTHONPATH=. python -m pytest -q tests/test_matrix_13_market_gate600_committee.py tests/test_matrix_13_market_exact_cohort_calibration.py tests/test_matrix_13_cohort_archived_final_readiness.py tests/test_api_football_prospective_api_settlement.py tests/test_matrix_13_cohort_independent_results.py tests/test_matrix_13_cohort_espn_mls_results.py tests/test_matrix_13_cohort_espn_cup_results.py
+          PYTHONPATH=. python -m pytest -q tests/test_matrix_13_market_gate600_committee.py tests/test_matrix_13_market_exact_cohort_calibration.py tests/test_matrix_13_cohort_archived_final_readiness.py tests/test_api_football_prospective_api_settlement.py tests/test_matrix_13_cohort_independent_results.py tests/test_matrix_13_cohort_espn_mls_results.py tests/test_matrix_13_cohort_espn_cup_results.py tests/test_matrix_13_cohort_independent_settlement.py
 
       - name: Produce bounded read-only decision report
         run: |
@@ -167,6 +167,43 @@ jobs:
               f.write(f"ESPN Cup finals: {r['exact_final_matches']} exact from {r['target_count']} frozen candidates, without auto-settlement.\n")
           PY
 
+      - name: Append independently cross-validated standard FT to separate hash-chained cohort ledger
+        shell: bash
+        run: |
+          set -euo pipefail
+          PYTHONPATH=. python -m tools.matrix_13_cohort_independent_settlement
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          r=json.loads(Path("evidence/football_cohort_recovery/MATRIX_INDEPENDENT_VERIFIED_FT_SYNC_LAST.json").read_text(encoding="utf-8"))
+          assert r["status"]=="PASS_VERIFIED_INDEPENDENT_FT_RESEARCH_ONLY"
+          assert r["real_money"]=="BLOCKED"
+          assert r["automatic_wagering"] is False
+          assert r["no_poststart_prediction_backfill"] is True
+          assert r["no_automatic_promotion"] is True
+          assert r["verified_independent_ledger"]["canonical_api_football_ledger_unchanged"] is True
+          with open(__import__("os").environ["GITHUB_STEP_SUMMARY"],"a") as f:
+              f.write(f"Independent append-only finals: new {r['verified_independent_ledger']['new']}, total {r['verified_independent_ledger']['total']}; original API-Football immutable {r['original_api_football_settled_count']}.\n")
+          PY
+
+      - name: Recompute original thirteen market cohorts with verified independent finals
+        shell: bash
+        run: |
+          set -euo pipefail
+          PYTHONPATH=. python -m tools.matrix_13_market_exact_cohort_calibration
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          r=json.loads(Path("evidence/governance/MATRIX_13_MARKET_EXACT_COHORT_CALIBRATION_LAST.json").read_text(encoding="utf-8"))
+          assert r["summary"]["markets_targeted"]==13
+          assert r["summary"]["combined_distinct_verified_final_rows"] >= r["summary"]["settlement_source_rows"]
+          assert r["safety"]["real_money"]=="BLOCKED"
+          assert all(x["telegram_authorized_by_audit"] is False for x in r["lanes"])
+          with open(__import__("os").environ["GITHUB_STEP_SUMMARY"],"a") as f:
+              f.write(f"Recomputed strict cohorts: {r['summary']['markets_with_600_exact_final']}/13 at 600 standard FT; independent source {r['summary']['independent_ledger_final_rows']}.
+")
+          PY
+
       - name: Persist only diagnostic evidence to operational branch
         shell: bash
         run: |
@@ -176,6 +213,10 @@ jobs:
           git add evidence/governance/MATRIX_13_MARKET_GATE600_COMMITTEE_LAST.json evidence/governance/MATRIX_13_MARKET_EXACT_COHORT_CALIBRATION_LAST.json evidence/governance/MATRIX_13_COHORT_ARCHIVED_FINAL_READINESS_LAST.json evidence/football_cohort_recovery/MATRIX_INDEPENDENT_FINAL_RECONCILIATION_LAST.json
           git add evidence/football_cohort_recovery/MATRIX_ESPN_MLS_EXACT_FINAL_LAST.json
           git add evidence/football_cohort_recovery/MATRIX_ESPN_CUPS_EXACT_FINAL_LAST.json
+          git add evidence/football_cohort_recovery/MATRIX_INDEPENDENT_VERIFIED_FT_SYNC_LAST.json
+          if [ -f evidence/football_cohort_recovery/MATRIX_INDEPENDENT_VERIFIED_FT_LEDGER.jsonl ]; then
+            git add evidence/football_cohort_recovery/MATRIX_INDEPENDENT_VERIFIED_FT_LEDGER.jsonl
+          fi
           for f in evidence/football_cohort_recovery/ESPN_MLS_*_RAW.json evidence/football_cohort_recovery/ESPN_CUP_*_RAW.json; do
             if [ -f "$f" ]; then git add "$f"; fi
           done
