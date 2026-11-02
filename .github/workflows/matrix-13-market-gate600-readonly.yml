@@ -45,7 +45,7 @@ jobs:
           set -euo pipefail
           test "$REAL_MONEY" = BLOCKED
           test "$AUTO_BETTING" = DISABLED
-          PYTHONPATH=. python -m pytest -q tests/test_matrix_13_market_gate600_committee.py tests/test_matrix_13_market_exact_cohort_calibration.py tests/test_matrix_13_cohort_archived_final_readiness.py tests/test_api_football_prospective_api_settlement.py
+          PYTHONPATH=. python -m pytest -q tests/test_matrix_13_market_gate600_committee.py tests/test_matrix_13_market_exact_cohort_calibration.py tests/test_matrix_13_cohort_archived_final_readiness.py tests/test_api_football_prospective_api_settlement.py tests/test_matrix_13_cohort_independent_results.py
 
       - name: Produce bounded read-only decision report
         run: |
@@ -108,13 +108,38 @@ jobs:
                   f.write(f"- {x['market_key']}: missing {x['missing_settlement_event_count']}; archived standard FT {x['recoverable_archived_standard_ft_events']}; archived valid halftime {x['recoverable_archived_halftime_events']}\n")
           PY
 
+      - name: Capture authenticated independent historical football results in quarantine
+        shell: bash
+        env:
+          FOOTBALL_DATA_ORG_TOKEN: ${{ secrets.FOOTBALL_DATA_ORG_TOKEN }}
+        run: |
+          set -euo pipefail
+          test "$REAL_MONEY" = BLOCKED
+          PYTHONPATH=. python -m tools.matrix_13_cohort_independent_results
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          p=Path("evidence/football_cohort_recovery/MATRIX_INDEPENDENT_FINAL_RECONCILIATION_LAST.json")
+          r=json.loads(p.read_text(encoding="utf-8"))
+          assert r["real_money"]=="BLOCKED"
+          assert r["telegram_signal_authorized"] is False
+          assert r["canonical_ledger_appends"]==0
+          assert r["quota_bounded_provider_calls"]<=1
+          assert all(x["authorized_to_append_canonical_settlement"] is False for x in r["matched"])
+          with open(__import__("os").environ["GITHUB_STEP_SUMMARY"],"a") as f:
+              f.write(f"Independent authenticated finals: {r['status']}; queued {r['eligible_queued_fixtures']}; exact fulltime matches {r['identity_matched_standard_final']}; verified halftime {r['half_time_certified']}; no auto-promotion.\n")
+          PY
+
       - name: Persist only diagnostic evidence to operational branch
         shell: bash
         run: |
           set -euo pipefail
           git config user.name matrix-gate600-audit
           git config user.email matrix-gate600-audit@users.noreply.github.com
-          git add evidence/governance/MATRIX_13_MARKET_GATE600_COMMITTEE_LAST.json evidence/governance/MATRIX_13_MARKET_EXACT_COHORT_CALIBRATION_LAST.json evidence/governance/MATRIX_13_COHORT_ARCHIVED_FINAL_READINESS_LAST.json
+          git add evidence/governance/MATRIX_13_MARKET_GATE600_COMMITTEE_LAST.json evidence/governance/MATRIX_13_MARKET_EXACT_COHORT_CALIBRATION_LAST.json evidence/governance/MATRIX_13_COHORT_ARCHIVED_FINAL_READINESS_LAST.json evidence/football_cohort_recovery/MATRIX_INDEPENDENT_FINAL_RECONCILIATION_LAST.json
+          if [ -f evidence/football_cohort_recovery/FOOTBALL_DATA_ORG_RAW_LAST.json ]; then
+            git add evidence/football_cohort_recovery/FOOTBALL_DATA_ORG_RAW_LAST.json
+          fi
           if git diff --cached --quiet; then
             echo "NO_CHANGED_SOURCE_NO_NEW_EVIDENCE_COMMIT"
             exit 0
