@@ -66,7 +66,7 @@ jobs:
               f.write(f"13-lane gate600 diagnostic: {len(r['lanes'])}/13; no automatic promotion; real money BLOCKED.\n")
           PY
 
-      - name: Join actual frozen probabilities with hash-chained standard final scores
+      - name: Join frozen predictions with FT and SHA256-verified halftime receipts
         shell: bash
         run: |
           set -euo pipefail
