@@ -40,12 +40,12 @@ jobs:
       - name: Install test runner only
         run: python -m pip install pytest requests
 
-      - name: Verify 13-lane research and temporal-safety invariants
+      - name: Verify 13-lane and account-suspension temporal-safety invariants
         run: |
           set -euo pipefail
           test "$REAL_MONEY" = BLOCKED
           test "$AUTO_BETTING" = DISABLED
-          PYTHONPATH=. python -m pytest -q tests/test_matrix_13_market_gate600_committee.py tests/test_matrix_13_market_exact_cohort_calibration.py tests/test_matrix_13_cohort_archived_final_readiness.py
+          PYTHONPATH=. python -m pytest -q tests/test_matrix_13_market_gate600_committee.py tests/test_matrix_13_market_exact_cohort_calibration.py tests/test_matrix_13_cohort_archived_final_readiness.py tests/test_api_football_prospective_api_settlement.py
 
       - name: Produce bounded read-only decision report
         run: |
