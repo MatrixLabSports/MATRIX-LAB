@@ -45,7 +45,7 @@ jobs:
           set -euo pipefail
           test "$REAL_MONEY" = BLOCKED
           test "$AUTO_BETTING" = DISABLED
-          PYTHONPATH=. python -m pytest -q tests/test_matrix_13_market_gate600_committee.py tests/test_matrix_13_market_exact_cohort_calibration.py tests/test_matrix_13_cohort_archived_final_readiness.py tests/test_api_football_prospective_api_settlement.py tests/test_matrix_13_cohort_independent_results.py tests/test_matrix_13_cohort_espn_mls_results.py
+          PYTHONPATH=. python -m pytest -q tests/test_matrix_13_market_gate600_committee.py tests/test_matrix_13_market_exact_cohort_calibration.py tests/test_matrix_13_cohort_archived_final_readiness.py tests/test_api_football_prospective_api_settlement.py tests/test_matrix_13_cohort_independent_results.py tests/test_matrix_13_cohort_espn_mls_results.py tests/test_matrix_13_cohort_espn_cup_results.py
 
       - name: Produce bounded read-only decision report
         run: |
@@ -149,6 +149,24 @@ jobs:
               f.write(f"ESPN MLS authentic FT: queued={r['queue_count']}, exact={r['exact_final_matches']}, calls={r['network_calls']}; no automatic canonical settlement.\n")
           PY
 
+      - name: Reconcile Spanish German English cup results under exact identity gate
+        shell: bash
+        run: |
+          set -euo pipefail
+          PYTHONPATH=. python -m tools.matrix_13_cohort_espn_cup_results
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          r=json.loads(Path("evidence/football_cohort_recovery/MATRIX_ESPN_CUPS_EXACT_FINAL_LAST.json").read_text(encoding="utf-8"))
+          assert r["real_money"]=="BLOCKED"
+          assert r["canonical_ledger_appends"]==0
+          assert r["telegram_authorized"] is False
+          assert r["network_calls"]<=8
+          assert r["exact_final_matches"]==len(r["matched"])
+          with open(__import__("os").environ["GITHUB_STEP_SUMMARY"],"a") as f:
+              f.write(f"ESPN Cup finals: {r['exact_final_matches']} exact from {r['target_count']} frozen candidates, without auto-settlement.\n")
+          PY
+
       - name: Persist only diagnostic evidence to operational branch
         shell: bash
         run: |
@@ -157,7 +175,8 @@ jobs:
           git config user.email matrix-gate600-audit@users.noreply.github.com
           git add evidence/governance/MATRIX_13_MARKET_GATE600_COMMITTEE_LAST.json evidence/governance/MATRIX_13_MARKET_EXACT_COHORT_CALIBRATION_LAST.json evidence/governance/MATRIX_13_COHORT_ARCHIVED_FINAL_READINESS_LAST.json evidence/football_cohort_recovery/MATRIX_INDEPENDENT_FINAL_RECONCILIATION_LAST.json
           git add evidence/football_cohort_recovery/MATRIX_ESPN_MLS_EXACT_FINAL_LAST.json
-          for f in evidence/football_cohort_recovery/ESPN_MLS_*_RAW.json; do
+          git add evidence/football_cohort_recovery/MATRIX_ESPN_CUPS_EXACT_FINAL_LAST.json
+          for f in evidence/football_cohort_recovery/ESPN_MLS_*_RAW.json evidence/football_cohort_recovery/ESPN_CUP_*_RAW.json; do
             if [ -f "$f" ]; then git add "$f"; fi
           done
           if [ -f evidence/football_cohort_recovery/FOOTBALL_DATA_ORG_RAW_LAST.json ]; then
