@@ -1,0 +1,74 @@
+{
+  "schema": "MATRIX_COMITE_ELITE_TELEGRAM_INPUT_DIAGNOSTIC_V1",
+  "target_date_bogota": "2026-11-02",
+  "scope": "READ_ONLY_PROVENANCE_AND_NON_PROMOTING_CANONICAL_INPUT_HEALTH",
+  "committee_roles": [
+    "football_calendar_identity_and_provider_provenance",
+    "tennis_calendar_and_surface_PIT",
+    "frozen_model_parity_and_calibration",
+    "odds_and_quota_integrity",
+    "telegram_pipeline_reliability",
+    "quality_assurance_and_governance"
+  ],
+  "repository": "MatrixLabSports/MATRIX-LAB",
+  "branch": "repair/cor09-world-pipeline",
+  "source_evidence": {
+    "football_independent": "evidence/football_world_inventory/2026-11-02/MATRIX_FOOTBALL_INDEPENDENT_FIXTURE_INTAKE.json",
+    "football_fixtures_observed": 8,
+    "football_provider_authenticated_http_status": 200,
+    "sofa_crosscheck": "evidence/football_world_inventory/2026-11-02/MATRIX_SOFA_FOOTBALL_FIXTURE_CROSSCHECK.json",
+    "sofascore_identity_matches": 8,
+    "flash_crosscheck": "evidence/football_world_inventory/2026-11-02/MATRIX_FLASH_FOOTBALL_CROSSCHECK.json",
+    "flashscore_identity_matches": 8,
+    "research_shadow": "evidence/football_world_inventory/2026-11-02/MATRIX_INDEPENDENT_OVER25_HISTORY_SHADOW.json",
+    "research_scores": 8,
+    "historical_parity": "evidence/football_world_inventory/2026-11-02/MATRIX_INDEPENDENT_OVER25_HISTORICAL_PARITY.json",
+    "historical_parity_only_serie_a": {
+      "match_results": 75,
+      "reference_fixtures": 83,
+      "six_league_equivalence_verified": false
+    },
+    "odds_quote_audit": "evidence/football_world_inventory/2026-11-02/MATRIX_INDEPENDENT_OVER25_QUOTE_AUDIT.json",
+    "bookmaker_exact_quote_verified_count": 0,
+    "quota_status": "BLOCKED_USAGE_HTTP_429",
+    "tennis_browser_handoff": "evidence/tennis_calendar_reconciliation/2026-11-02/MATRIX_TENNIS_OPERA_02NOV_PHYSICAL_HANDOFF.json",
+    "tennis_browser_observation_links": {
+      "sofascore": 424,
+      "flashscore": 184
+    },
+    "tennis_verified_unique_matches": null,
+    "tennis_surface_verified": false,
+    "tennis_utc_kickoff_verified": false,
+    "canonical_football_post_expiry_2026_11_02_exists": false,
+    "canonical_tennis_signals_directory_exists": false,
+    "prior_root_cause": "evidence/notifications/telegram/MATRIX_UPSTREAM_GENERATOR_ROOT_CAUSE_20261101.json"
+  },
+  "change": {
+    "kind": "READ_ONLY_DIAGNOSTIC_NO_SIGNAL_PROMOTION",
+    "commit_code": "5ddc8560a5c3e1762881d611dbe71805828529ac",
+    "commit_tests": "b05f4a5edcad90a8601a84dab1b130535cbf2998",
+    "module": "tools/matrix_telegram_input_health.py",
+    "tests": "tests/test_matrix_telegram_input_health.py",
+    "local_isolated_unit_tests_passed": 6,
+    "github_actions_post_commit_runtime_test": "PENDING_VERIFICATION"
+  },
+  "safety": {
+    "signal_generation_authorized": false,
+    "production_model_feature_equivalence_verified": false,
+    "bookmaker_quote_freshness_verified": false,
+    "sharp_reference_freshness_verified": false,
+    "end_to_end_telegram_delivery_certified": false,
+    "odds_used_to_generate_probability": false,
+    "automatic_wagering": false,
+    "real_money": "BLOCKED"
+  },
+  "blockers": [
+    "MISSING_POST_EXPIRY_CANONICAL_PRODUCTION_INPUTS",
+    "MODEL_PROVIDER_FEATURE_PARITY_NOT_VERIFIED",
+    "ODDS_API_NET_HTTP_429_AND_NO_BOOKMAKER_EXACT_FRESH_PRICE",
+    "NO_FRESH_SHARP_REFERENCE",
+    "TENNIS_IDENTITY_SURFACE_KICKOFF_PENDING",
+    "NO_END_TO_END_DELIVERY_PROOF"
+  ],
+  "status": "PARTIAL_RECOVERY_VERIFIED_TELEGRAM_PRODUCTION_NOT_CERTIFIED"
+}
