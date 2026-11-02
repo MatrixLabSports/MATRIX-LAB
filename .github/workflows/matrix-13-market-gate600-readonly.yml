@@ -47,7 +47,7 @@ jobs:
           set -euo pipefail
           test "$REAL_MONEY" = BLOCKED
           test "$AUTO_BETTING" = DISABLED
-          PYTHONPATH=. python -m pytest -q tests/test_matrix_13_market_gate600_committee.py tests/test_matrix_13_market_exact_cohort_calibration.py tests/test_matrix_13_cohort_archived_final_readiness.py tests/test_api_football_prospective_api_settlement.py tests/test_matrix_13_cohort_independent_results.py tests/test_matrix_13_cohort_espn_mls_results.py tests/test_matrix_13_cohort_espn_cup_results.py tests/test_matrix_13_cohort_independent_settlement.py tests/test_matrix_13_cohort_formal_scoring_gate.py tests/test_matrix_five_market_elite_calibration_stability.py
+          PYTHONPATH=. python -m pytest -q tests/test_matrix_13_market_gate600_committee.py tests/test_matrix_13_market_exact_cohort_calibration.py tests/test_matrix_13_cohort_archived_final_readiness.py tests/test_api_football_prospective_api_settlement.py tests/test_matrix_13_cohort_independent_results.py tests/test_matrix_13_cohort_espn_mls_results.py tests/test_matrix_13_cohort_espn_cup_results.py tests/test_matrix_13_cohort_independent_settlement.py tests/test_matrix_13_cohort_formal_scoring_gate.py tests/test_matrix_five_market_elite_calibration_stability.py tests/test_matrix_five_market_elite_governance_decision.py
 
       - name: Produce bounded read-only decision report
         run: |
@@ -244,6 +244,26 @@ jobs:
                   h.write(f"Exploratory temporal gate: {k}, {m['settled_fixtures']} matched, train {m['chronological_split']['train_n']}, strict future holdout {m['chronological_split']['holdout_n']}, candidate NOT promoted.\\n")
           PY
 
+      - name: Seal five-market elite committee decisions without promoting any market
+        shell: bash
+        run: |
+          set -euo pipefail
+          PYTHONPATH=. python -m tools.matrix_five_market_elite_governance_decision
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          p=Path("evidence/governance/MATRIX_FIVE_MARKET_ELITE_GOVERNANCE_DECISION_LAST.json")
+          r=json.loads(p.read_text(encoding="utf-8"))
+          assert r["status"]=="PASS_FAIL_CLOSED_ELITE_ADJUDICATION"
+          assert r["summary"]["new_market_promotions"]==0
+          assert r["summary"]["historically_governed_over25_scope_maintained"]==1
+          assert r["protections"]["real_money"]=="BLOCKED"
+          assert len(r["markets"])==5
+          assert not any(x["newly_authorized_for_telegram"] or x["parameter_changes"] for x in r["markets"])
+          with open(__import__("os").environ["GITHUB_STEP_SUMMARY"],"a") as f:
+              f.write("Elite committee: 604 exact outcomes x 5; original Over 2.5 only remains historically governed; 1X and other 3 NOT newly promoted.\\n")
+          PY
+
       - name: Persist only diagnostic evidence to operational branch
         shell: bash
         run: |
@@ -254,7 +274,7 @@ jobs:
           git add evidence/football_cohort_recovery/MATRIX_ESPN_MLS_EXACT_FINAL_LAST.json
           git add evidence/football_cohort_recovery/MATRIX_ESPN_CUPS_EXACT_FINAL_LAST.json
           git add evidence/football_cohort_recovery/MATRIX_INDEPENDENT_VERIFIED_FT_SYNC_LAST.json
-          git add evidence/governance/MATRIX_13_MARKET_FORMAL_SCORING_GATE_LAST.json evidence/governance/MATRIX_FIVE_MARKET_ELITE_CALIBRATION_STABILITY_LAST.json
+          git add evidence/governance/MATRIX_13_MARKET_FORMAL_SCORING_GATE_LAST.json evidence/governance/MATRIX_FIVE_MARKET_ELITE_CALIBRATION_STABILITY_LAST.json evidence/governance/MATRIX_FIVE_MARKET_ELITE_GOVERNANCE_DECISION_LAST.json
           if [ -f evidence/football_cohort_recovery/MATRIX_INDEPENDENT_VERIFIED_FT_LEDGER.jsonl ]; then
             git add evidence/football_cohort_recovery/MATRIX_INDEPENDENT_VERIFIED_FT_LEDGER.jsonl
           fi
