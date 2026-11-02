@@ -38,14 +38,14 @@ jobs:
           python-version: "3.11"
 
       - name: Install test runner only
-        run: python -m pip install pytest
+        run: python -m pip install pytest requests
 
       - name: Verify 13-lane research and temporal-safety invariants
         run: |
           set -euo pipefail
           test "$REAL_MONEY" = BLOCKED
           test "$AUTO_BETTING" = DISABLED
-          PYTHONPATH=. python -m pytest -q tests/test_matrix_13_market_gate600_committee.py
+          PYTHONPATH=. python -m pytest -q tests/test_matrix_13_market_gate600_committee.py tests/test_matrix_13_market_exact_cohort_calibration.py
 
       - name: Produce bounded read-only decision report
         run: |
@@ -66,13 +66,34 @@ jobs:
               f.write(f"13-lane gate600 diagnostic: {len(r['lanes'])}/13; no automatic promotion; real money BLOCKED.\n")
           PY
 
+      - name: Join actual frozen probabilities with hash-chained standard final scores
+        shell: bash
+        run: |
+          set -euo pipefail
+          PYTHONPATH=. python -m tools.matrix_13_market_exact_cohort_calibration
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          p=Path("evidence/governance/MATRIX_13_MARKET_EXACT_COHORT_CALIBRATION_LAST.json")
+          data=json.loads(p.read_text(encoding="utf-8"))
+          assert data["summary"]["markets_targeted"] == 13
+          assert len(data["lanes"]) == 13
+          assert data["safety"]["real_money"] == "BLOCKED"
+          assert data["safety"]["telegram_messages_sent"] == 0
+          assert not any(x["telegram_authorized_by_audit"] or x["parameters_refitted"] for x in data["lanes"])
+          with open(__import__("os").environ["GITHUB_STEP_SUMMARY"],"a") as out:
+              out.write("### Exact-cohort calibration (diagnostic only)\n")
+              for row in data["lanes"]:
+                  out.write(f"- {row['market_key']}: {row['exact_cohort_final_verified']} strict FT outcomes; {row['decision']}\n")
+          PY
+
       - name: Persist only diagnostic evidence to operational branch
         shell: bash
         run: |
           set -euo pipefail
           git config user.name matrix-gate600-audit
           git config user.email matrix-gate600-audit@users.noreply.github.com
-          git add evidence/governance/MATRIX_13_MARKET_GATE600_COMMITTEE_LAST.json
+          git add evidence/governance/MATRIX_13_MARKET_GATE600_COMMITTEE_LAST.json evidence/governance/MATRIX_13_MARKET_EXACT_COHORT_CALIBRATION_LAST.json
           if git diff --cached --quiet; then
             echo "NO_CHANGED_SOURCE_NO_NEW_EVIDENCE_COMMIT"
             exit 0
