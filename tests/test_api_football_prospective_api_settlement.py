@@ -147,3 +147,78 @@ def test_new_nonfinal_response_gets_explicit_retry_window(tmp_path):
     assert result["network_calls"]==1
     assert result["new_settlement_count"]==0
     assert result["pending"][0]["lookup_after_utc"]=="2026-09-28T22:01:00+00:00"
+
+
+
+def _suspended_response():
+    return {"errors":{"access":"Your account is suspended, check on https://dashboard.api-football.com."},
+            "results":0,"response":[]}
+
+
+def test_suspension_stops_all_remaining_provider_requests_this_cycle(tmp_path):
+    _write_freeze(tmp_path)
+    p=tmp_path/"prospective_market_freeze"/"freeze.json"
+    frozen=json.loads(p.read_text(encoding="utf-8"))
+    second=dict(frozen["rows"][0])
+    second["fixture_id"]="901"
+    second["target_key"]="api_football:fixture:901"
+    frozen["rows"].append(second)
+    p.write_text(json.dumps(frozen),encoding="utf-8")
+    session=FakeSession(_suspended_response())
+    result=run(tmp_path,"secret",datetime(2026,9,28,22,0,tzinfo=timezone.utc),session)
+    assert result["network_calls"]==1
+    assert len(session.calls)==1
+    assert result["provider_access_suspended"] is True
+    assert result["new_settlement_count"]==0
+    assert result["blocked_count"]==2
+    assert result["blocked"][0]["reason"]=="API_FOOTBALL_ACCESS_SUSPENDED"
+    assert result["blocked"][1]["reason"]=="API_FOOTBALL_ACCESS_SUSPENDED_COOLDOWN"
+    assert result["provider_suspension_next_probe_utc"]=="2026-09-29T22:00:00+00:00"
+
+
+def test_previous_legacy_suspension_receipt_opens_circuit_without_api_call(tmp_path):
+    import hashlib
+    _write_freeze(tmp_path)
+    raw=tmp_path/"prospective_market_freeze"/"settlement_raw"
+    raw.mkdir()
+    payload=json.dumps(_suspended_response()).encode("utf-8")
+    (raw/"fixture_900.bin").write_bytes(payload)
+    sync=tmp_path/"prospective_market_freeze"/"settlement_sync_last.json"
+    sync.write_text(json.dumps({
+        "run_at_utc":"2026-09-28T21:00:00+00:00",
+        "blocked":[{"fixture_id":"900","reason":"API_FOOTBALL_PROVIDER_ERROR",
+                    "raw_sha256":hashlib.sha256(payload).hexdigest()}],
+        "pending":[],
+    }),encoding="utf-8")
+    session=FakeSession(_provider("FT"))
+    result=run(tmp_path,"secret",datetime(2026,9,28,22,0,tzinfo=timezone.utc),session)
+    assert session.calls==[]
+    assert result["network_calls"]==0
+    assert result["provider_access_suspended"] is True
+    assert result["blocked"][0]["reason"]=="API_FOOTBALL_ACCESS_SUSPENDED_COOLDOWN"
+    assert result["provider_suspension_next_probe_utc"]=="2026-09-29T21:00:00+00:00"
+
+
+def test_successful_due_probe_resets_suspension_and_settles(tmp_path):
+    _write_freeze(tmp_path)
+    sync=tmp_path/"prospective_market_freeze"/"settlement_sync_last.json"
+    sync.write_text(json.dumps({
+        "provider_access_suspended":True,
+        "provider_suspension_next_probe_utc":"2026-09-29T18:00:00+00:00",
+        "pending":[],"blocked":[],
+    }),encoding="utf-8")
+    session=FakeSession(_provider("FT"))
+    result=run(tmp_path,"secret",datetime(2026,9,29,20,0,tzinfo=timezone.utc),session)
+    assert result["network_calls"]==1
+    assert result["new_settlement_count"]==1
+    assert result["provider_access_suspended"] is False
+    assert result["provider_suspension_next_probe_utc"] is None
+    assert result["suspension_probe_calls_this_run"]==1
+
+
+def test_suspension_circuit_is_not_triggered_by_ordinary_provider_error(tmp_path):
+    _write_freeze(tmp_path)
+    session=FakeSession({"errors":{"requests":"Temporary rate limit"},"response":[]})
+    result=run(tmp_path,"secret",datetime(2026,9,28,22,0,tzinfo=timezone.utc),session)
+    assert result["provider_access_suspended"] is False
+    assert result["network_calls"]==1
