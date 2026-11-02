@@ -18,6 +18,7 @@ ARTIFACTS = (
     "MATRIX_FOOTBALL_INDEPENDENT_FIXTURE_INTAKE.json",
     "MATRIX_INDEPENDENT_OVER25_HISTORY_SHADOW.json",
     "MATRIX_SOFA_FOOTBALL_FIXTURE_CROSSCHECK.json",
+    "MATRIX_FLASH_FOOTBALL_CROSSCHECK.json",
 )
 
 def parse_utc(value: object) -> datetime:
@@ -54,13 +55,13 @@ def choose(root: Path, *, now: datetime) -> dict:
             result["blocked_dates"].append({"date": date_str, "reason": "SOURCE_ARTIFACT_MISSING"})
             continue
         try:
-            intake, shadow, browser = (
+            intake, shadow, browser, flash = (
                 json.loads((folder / name).read_text(encoding="utf-8")) for name in ARTIFACTS
             )
-            if not all(isinstance(x, dict) for x in (intake, shadow, browser)):
+            if not all(isinstance(x, dict) for x in (intake, shadow, browser, flash)):
                 raise ValueError("NOT_A_DICTIONARY")
             if {intake.get("target_date_bogota"), shadow.get("target_date_bogota"),
-                browser.get("target_date_bogota")} != {date_str}:
+                browser.get("target_date_bogota"), flash.get("target_date_bogota")} != {date_str}:
                 raise ValueError("MISMATCHED_SOURCE_DATES")
             if intake.get("schema") != "MATRIX_INDEPENDENT_FIXTURE_INTAKE_V1":
                 raise ValueError("INVALID_INTAKE_SCHEMA")
@@ -68,13 +69,18 @@ def choose(root: Path, *, now: datetime) -> dict:
                 raise ValueError("INVALID_SHADOW_SCHEMA")
             if browser.get("schema") != "MATRIX_SOFA_FOOTBALL_FIXTURE_CROSSCHECK_V1":
                 raise ValueError("INVALID_BROWSER_SCHEMA")
-            if intake.get("source_order") != ALLOWED_SOURCE_ORDER or browser.get("source_order") != ALLOWED_SOURCE_ORDER:
+            if flash.get("schema") != "MATRIX_FLASH_FOOTBALL_CROSSCHECK_V1":
+                raise ValueError("INVALID_FLASH_SCHEMA")
+            if (intake.get("source_order") != ALLOWED_SOURCE_ORDER or
+                browser.get("source_order") != ALLOWED_SOURCE_ORDER or
+                flash.get("source_order") != ALLOWED_SOURCE_ORDER):
                 raise ValueError("BROWSER_FIRST_SOURCE_ORDER_INVALID")
-            if intake.get("real_money") != "BLOCKED" or shadow.get("real_money") != "BLOCKED" or browser.get("real_money") != "BLOCKED":
+            if intake.get("real_money") != "BLOCKED" or shadow.get("real_money") != "BLOCKED" or browser.get("real_money") != "BLOCKED" or flash.get("real_money") != "BLOCKED":
                 raise ValueError("REAL_MONEY_NOT_BLOCKED")
             if any((intake.get("signal_generation_authorized") is not False,
                     shadow.get("market_signal_authorized") is not False,
                     browser.get("signal_generation_authorized") is not False,
+                    flash.get("signal_generation_authorized") is not False,
                     shadow.get("parameter_refit") is not False,
                     shadow.get("odds_used_to_generate_probability") is not False)):
                 raise ValueError("GOVERNANCE_AUTHORIZATION_INVALID")
@@ -82,10 +88,17 @@ def choose(root: Path, *, now: datetime) -> dict:
                 raise ValueError("PRIMARY_BROWSER_CROSSCHECK_NOT_PASSED")
             if browser.get("rejected_count") != 0:
                 raise ValueError("PRIMARY_BROWSER_CROSSCHECK_HAS_REJECTIONS")
+            if (flash.get("status") != "PASS_THREE_SOURCE_FIXTURE_IDENTITY_ONLY_NO_QUOTES_OR_SIGNALS"
+                or flash.get("flashscore_verified") is not True or flash.get("rejected_count") != 0):
+                raise ValueError("FLASH_BROWSER_CROSSCHECK_NOT_PASSED")
             checked = {str(item["fixture_id"]): str(item["kickoff_utc"])
                        for item in browser.get("matched", []) if isinstance(item, dict)}
             if len(checked) != browser.get("matched_count") or len(checked) != len(browser.get("matched", [])):
                 raise ValueError("DUPLICATE_OR_INVALID_BROWSER_MATCHES")
+            double_checked = {str(item["source_fixture_id"]): str(item["kickoff_utc"])
+                              for item in flash.get("matched", []) if isinstance(item, dict)}
+            if len(double_checked) != flash.get("matched_count") or len(double_checked) != len(flash.get("matched", [])):
+                raise ValueError("DUPLICATE_OR_INVALID_FLASH_MATCHES")
             scored = {str(item["source_fixture_id"]): str(item["kickoff_utc"])
                       for item in shadow.get("scored", []) if isinstance(item, dict)}
             if len(scored) != len(shadow.get("scored", [])):
@@ -95,7 +108,7 @@ def choose(root: Path, *, now: datetime) -> dict:
                     continue
                 fid = str(f.get("source_fixture_id") or "")
                 start = str(f.get("kickoff_utc") or "")
-                if checked.get(fid) != start or scored.get(fid) != start:
+                if checked.get(fid) != start or double_checked.get(fid) != start or scored.get(fid) != start:
                     continue
                 kickoff = parse_utc(start)
                 seconds = (kickoff - clock).total_seconds()
