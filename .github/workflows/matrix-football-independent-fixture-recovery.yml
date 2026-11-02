@@ -1,0 +1,134 @@
+name: MATRIX Football Independent Fixture Recovery
+
+on:
+  schedule:
+    - cron: "15 5 * * *"   # 00:15 Bogota, current day
+    - cron: "15 23 * * *"  # 18:15 Bogota, next day
+  workflow_dispatch:
+    inputs:
+      target_date:
+        description: Optional Bogota date YYYY-MM-DD
+        required: false
+        type: string
+  push:
+    branches:
+      - repair/cor09-world-pipeline
+    paths:
+      - tools/matrix_football_independent_fixture_pipeline.py
+      - tests/test_matrix_football_independent_fixture_pipeline.py
+      - .github/workflows/matrix-football-independent-fixture-recovery.yml
+
+permissions:
+  contents: write
+
+concurrency:
+  group: matrix-football-independent-fixture-recovery
+  cancel-in-progress: false
+
+jobs:
+  independent-fixtures:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      MATRIX_MODE: SHADOW
+      REAL_MONEY: BLOCKED
+      AUTO_BETTING: DISABLED
+    steps:
+      - name: Checkout operative branch
+        uses: actions/checkout@v4
+        with:
+          ref: repair/cor09-world-pipeline
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Test independent fixture adapter and all hard safety gates
+        run: |
+          python -m pip install pytest
+          PYTHONPATH=. python -m pytest -q tests/test_matrix_football_independent_fixture_pipeline.py tests/test_matrix_independent_over25_governed_binding.py
+
+      - name: Resolve Bogota target date
+        id: date
+        shell: bash
+        run: |
+          set -euo pipefail
+          D="${{ inputs.target_date }}"
+          if [ -z "$D" ]; then
+            H="$(TZ=America/Bogota date +%H)"
+            if [ "$H" -ge 18 ]; then
+              D="$(TZ=America/Bogota date -d tomorrow +%F)"
+            else
+              D="$(TZ=America/Bogota date +%F)"
+            fi
+          fi
+          date -d "$D" +%F > /dev/null
+          echo "target_date=$D" >> "$GITHUB_OUTPUT"
+
+      - name: Capture independently authorized current fixtures
+        env:
+          FOOTBALL_DATA_ORG_TOKEN: ${{ secrets.FOOTBALL_DATA_ORG_TOKEN }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$REAL_MONEY" = BLOCKED
+          test "$AUTO_BETTING" = DISABLED
+          D="${{ steps.date.outputs.target_date }}"
+          python -m tools.matrix_football_independent_fixture_pipeline \
+            --date "$D" \
+            --out "evidence/football_world_inventory/$D/MATRIX_FOOTBALL_INDEPENDENT_FIXTURE_INTAKE.json"
+
+      - name: Persist read-only discovery evidence even when provider is unavailable
+        if: always()
+        shell: bash
+        run: |
+          set -euo pipefail
+          D="${{ steps.date.outputs.target_date }}"
+          P="evidence/football_world_inventory/$D/MATRIX_FOOTBALL_INDEPENDENT_FIXTURE_INTAKE.json"
+          if [ ! -f "$P" ]; then
+            echo "::error::Independent fixture capture artifact is missing"
+            exit 1
+          fi
+          git config user.name "matrix-independent-football"
+          git config user.email "matrix-independent-football@users.noreply.github.com"
+          git add "$P"
+          if git diff --cached --quiet; then exit 0; fi
+          git commit -m "evidence(football): independent fixture intake $D"
+          for attempt in 1 2 3 4; do
+            git fetch origin repair/cor09-world-pipeline
+            if ! git rebase origin/repair/cor09-world-pipeline; then
+              git rebase --abort || true
+              exit 1
+            fi
+            if git push origin HEAD:repair/cor09-world-pipeline; then exit 0; fi
+            sleep $((attempt*2))
+          done
+          exit 1
+
+      - name: Certify independent capture status without authorizing betting
+        if: always()
+        shell: bash
+        run: |
+          set -euo pipefail
+          D="${{ steps.date.outputs.target_date }}"
+          python - "$D" <<'PY'
+          import json,sys
+          from pathlib import Path
+          d=sys.argv[1]
+          p=Path(f"evidence/football_world_inventory/{d}/MATRIX_FOOTBALL_INDEPENDENT_FIXTURE_INTAKE.json")
+          j=json.loads(p.read_text(encoding="utf-8"))
+          assert j["target_date_bogota"]==d
+          assert j["signal_generation_authorized"] is False
+          assert j["real_money"]=="BLOCKED"
+          assert j["automatic_wagering"] is False
+          assert j["worldwide_complete"] is False
+          assert j["source_order"]==["SOFASCORE","FLASHSCORE","APIS"]
+          status=j["provider_status"]
+          print(f"PROVIDER_STATUS={status} FUTURE_FIXTURES={j['fixture_count']} SIGNALS_AUTHORIZED=false")
+          with open(__import__("os").environ["GITHUB_STEP_SUMMARY"],"a") as f:
+              f.write(f"Independent football: {status}; future fixtures: {j['fixture_count']}; calibrated production: NOT CERTIFIED; real money: BLOCKED.\\n")
+          if status not in ("AUTHENTICATED_FIXTURE_CAPTURE","AUTHENTICATED_NO_FUTURE_FIXTURES_IN_SCOPE"):
+              raise SystemExit("INDEPENDENT_PROVIDER_UNAVAILABLE_FAIL_CLOSED")
+          PY
