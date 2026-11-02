@@ -16,6 +16,8 @@ on:
     paths:
       - tools/matrix_football_independent_fixture_pipeline.py
       - tests/test_matrix_football_independent_fixture_pipeline.py
+      - tools/matrix_football_independent_over25_shadow.py
+      - tests/test_matrix_football_independent_over25_shadow.py
       - .github/workflows/matrix-football-independent-fixture-recovery.yml
 
 permissions:
@@ -48,7 +50,7 @@ jobs:
       - name: Test independent fixture adapter and all hard safety gates
         run: |
           python -m pip install pytest
-          PYTHONPATH=. python -m pytest -q tests/test_matrix_football_independent_fixture_pipeline.py tests/test_matrix_independent_over25_governed_binding.py
+          PYTHONPATH=. python -m pytest -q tests/test_matrix_football_independent_fixture_pipeline.py tests/test_matrix_independent_over25_governed_binding.py tests/test_matrix_football_independent_over25_shadow.py
 
       - name: Resolve Bogota target date
         id: date
@@ -80,6 +82,17 @@ jobs:
             --date "$D" \
             --out "evidence/football_world_inventory/$D/MATRIX_FOOTBALL_INDEPENDENT_FIXTURE_INTAKE.json"
 
+      - name: Run original frozen Over 2.5 formula on independent historical scores in quarantine
+        env:
+          FOOTBALL_DATA_ORG_TOKEN: ${{ secrets.FOOTBALL_DATA_ORG_TOKEN }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          D="${{ steps.date.outputs.target_date }}"
+          PYTHONPATH=. python -m tools.matrix_football_independent_over25_shadow \
+            --intake "evidence/football_world_inventory/$D/MATRIX_FOOTBALL_INDEPENDENT_FIXTURE_INTAKE.json" \
+            --out "evidence/football_world_inventory/$D/MATRIX_INDEPENDENT_OVER25_HISTORY_SHADOW.json"
+
       - name: Persist read-only discovery evidence even when provider is unavailable
         if: always()
         shell: bash
@@ -94,6 +107,8 @@ jobs:
           git config user.name "matrix-independent-football"
           git config user.email "matrix-independent-football@users.noreply.github.com"
           git add "$P"
+          S="evidence/football_world_inventory/$D/MATRIX_INDEPENDENT_OVER25_HISTORY_SHADOW.json"
+          if [ -f "$S" ]; then git add "$S"; fi
           if git diff --cached --quiet; then exit 0; fi
           git commit -m "evidence(football): independent fixture intake $D"
           for attempt in 1 2 3 4; do
@@ -125,8 +140,14 @@ jobs:
           assert j["automatic_wagering"] is False
           assert j["worldwide_complete"] is False
           assert j["source_order"]==["SOFASCORE","FLASHSCORE","APIS"]
+          shadow_path=Path(f"evidence/football_world_inventory/{d}/MATRIX_INDEPENDENT_OVER25_HISTORY_SHADOW.json")
+          shadow=json.loads(shadow_path.read_text(encoding="utf-8"))
+          assert shadow["real_money"]=="BLOCKED"
+          assert shadow["market_signal_authorized"] is False
+          assert shadow["parameter_refit"] is False
+          assert shadow["odds_used_to_generate_probability"] is False
           status=j["provider_status"]
-          print(f"PROVIDER_STATUS={status} FUTURE_FIXTURES={j['fixture_count']} SIGNALS_AUTHORIZED=false")
+          print(f"PROVIDER_STATUS={status} FUTURE_FIXTURES={j['fixture_count']} SHADOW_SCORED={shadow['scored_count']} SIGNALS_AUTHORIZED=false")
           with open(__import__("os").environ["GITHUB_STEP_SUMMARY"],"a") as f:
               f.write(f"Independent football: {status}; future fixtures: {j['fixture_count']}; calibrated production: NOT CERTIFIED; real money: BLOCKED.\\n")
           if status not in ("AUTHENTICATED_FIXTURE_CAPTURE","AUTHENTICATED_NO_FUTURE_FIXTURES_IN_SCOPE"):
