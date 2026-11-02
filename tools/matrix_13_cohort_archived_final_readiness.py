@@ -50,7 +50,10 @@ def inspect_receipt(archived: Path, freeze: dict) -> dict:
         return {"code":"ARCHIVED_RESPONSE_NOT_JSON","raw_sha256":sha}
     if not isinstance(data,dict):
         return {"code":"INVALID_PROVIDER_RESPONSE","raw_sha256":sha}
-    if data.get("errors") not in (None, [], {}) or data.get("results") != 1:
+    errors=data.get("errors")
+    if isinstance(errors,dict) and isinstance(errors.get("access"),str) and "suspend" in errors["access"].lower():
+        return {"code":"API_FOOTBALL_ACCOUNT_SUSPENDED","raw_sha256":sha}
+    if errors not in (None, [], {}) or data.get("results") != 1:
         return {"code":"PROVIDER_ERROR_OR_NON_EXACT_COUNT","raw_sha256":sha}
     responses=data.get("response")
     if not isinstance(responses,list) or len(responses)!=1:
