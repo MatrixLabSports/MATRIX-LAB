@@ -1,0 +1,98 @@
+name: MATRIX Football Opera SofaScore World Calendar 02NOV
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - repair/cor09-world-pipeline
+    paths:
+      - evidence/football_world_inventory/2026-11-02/MATRIX_SOFASCORE_OPERA_WORLD_VISIBLE_LINK_CAPTURE.json
+      - tools/matrix_football_sofa_expanded_calendar_audit.py
+      - tests/test_matrix_football_sofa_expanded_calendar_audit.py
+      - .github/workflows/matrix-football-opera-02nov-world-calendar.yml
+
+permissions:
+  contents: write
+
+concurrency:
+  group: matrix-football-opera-02nov-world-calendar
+  cancel-in-progress: false
+
+jobs:
+  browser-first-world-coverage:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    env:
+      MATRIX_MODE: SHADOW
+      REAL_MONEY: BLOCKED
+      AUTOMATIC_WAGERING: "false"
+    steps:
+      - name: Checkout operative branch without touching original model
+        uses: actions/checkout@v4
+        with:
+          ref: repair/cor09-world-pipeline
+          fetch-depth: 0
+
+      - name: Install Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Test physical source identities and no-signals governance
+        run: |
+          python -m pip install pytest
+          PYTHONPATH=. python -m pytest -q tests/test_matrix_football_sofa_expanded_calendar_audit.py
+
+      - name: Verify SofaScore expanded calendar against both prior browsers and free provider
+        shell: bash
+        run: |
+          set -euo pipefail
+          ROOT=evidence/football_world_inventory/2026-11-02
+          PYTHONPATH=. python -m tools.matrix_football_sofa_expanded_calendar_audit \
+            --capture "$ROOT/MATRIX_SOFASCORE_OPERA_WORLD_VISIBLE_LINK_CAPTURE.json" \
+            --sofa "$ROOT/MATRIX_SOFA_FOOTBALL_FIXTURE_CROSSCHECK.json" \
+            --independent "$ROOT/MATRIX_FOOTBALL_INDEPENDENT_FIXTURE_INTAKE.json" \
+            --flash "$ROOT/MATRIX_FLASH_FOOTBALL_CROSSCHECK.json" \
+            --out "$ROOT/MATRIX_SOFASCORE_OPERA_EXPANDED_CALENDAR_RECONCILIATION.json"
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          path=Path("evidence/football_world_inventory/2026-11-02/MATRIX_SOFASCORE_OPERA_EXPANDED_CALENDAR_RECONCILIATION.json")
+          j=json.loads(path.read_text(encoding="utf-8"))
+          assert j["status"]=="PASS_8_TRIPLE_SOURCE_MATCHES_ONLY_WIDER_SOFASCORE_BACKLOG"
+          assert j["observed_visible_links"]==751
+          assert j["explicit_date_labeled_links"]==736
+          assert j["without_explicit_date_label"]==15
+          assert j["pre_registered_triple_source_matches"]==8
+          assert not j["pre_registered_rejections"]
+          assert j["review_only_sofascore_links_without_independent_fixture"]==728
+          assert j["full_world_schedule_certified"] is False
+          assert j["probability_generation_authorized"] is False
+          assert j["telegram_signals_authorized"] is False
+          assert j["real_money"]=="BLOCKED"
+          print("PASS_751_VISIBLE_LINKS_736_TARGET_DATE_8_CROSS_PROVIDER_728_DISCOVERY_ONLY")
+          PY
+
+      - name: Preserve physical calendar evidence without changing model
+        shell: bash
+        run: |
+          set -euo pipefail
+          P="evidence/football_world_inventory/2026-11-02/MATRIX_SOFASCORE_OPERA_EXPANDED_CALENDAR_RECONCILIATION.json"
+          git config user.name matrix-football-calendar
+          git config user.email matrix-football-calendar@users.noreply.github.com
+          git add "$P"
+          if git diff --cached --quiet; then
+            echo "EVIDENCE_ALREADY_PERSISTED"
+            exit 0
+          fi
+          git commit -m "evidence(football): certify eight existing identities within 751 Opera links"
+          for attempt in 1 2 3 4; do
+            git fetch origin repair/cor09-world-pipeline
+            if ! git rebase origin/repair/cor09-world-pipeline; then
+              git rebase --abort || true
+              exit 1
+            fi
+            if git push origin HEAD:repair/cor09-world-pipeline; then exit 0; fi
+            sleep $((attempt*2))
+          done
+          exit 1
