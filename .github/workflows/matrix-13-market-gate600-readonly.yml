@@ -1,0 +1,90 @@
+name: MATRIX 13 Market Gate600 Read-Only Certification
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "11,26,41,56 * * * *"
+  push:
+    branches:
+      - main
+    paths:
+      - .github/workflows/matrix-13-market-gate600-readonly.yml
+
+permissions:
+  contents: write
+
+concurrency:
+  group: matrix-13-market-gate600-readonly
+  cancel-in-progress: false
+
+jobs:
+  certify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    env:
+      MATRIX_MODE: SHADOW
+      REAL_MONEY: BLOCKED
+      AUTO_BETTING: DISABLED
+    steps:
+      - name: Checkout canonical operational branch
+        uses: actions/checkout@v4
+        with:
+          ref: repair/cor09-world-pipeline
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install test runner only
+        run: python -m pip install pytest
+
+      - name: Verify 13-lane research and temporal-safety invariants
+        run: |
+          set -euo pipefail
+          test "$REAL_MONEY" = BLOCKED
+          test "$AUTO_BETTING" = DISABLED
+          PYTHONPATH=. python -m pytest -q tests/test_matrix_13_market_gate600_committee.py
+
+      - name: Produce bounded read-only decision report
+        run: |
+          set -euo pipefail
+          PYTHONPATH=. python -m tools.matrix_13_market_gate600_committee
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          p=Path("evidence/governance/MATRIX_13_MARKET_GATE600_COMMITTEE_LAST.json")
+          r=json.loads(p.read_text(encoding="utf-8"))
+          assert r["summary"]["gate600_reached"] == 13
+          assert len(r["lanes"]) == 13
+          assert r["governance"]["real_money"] == "BLOCKED"
+          assert r["governance"]["telegram_messages_sent"] == 0
+          assert r["governance"]["automatic_wagering"] is False
+          assert not any(x["automatically_promoted"] or x["telegram_signal_authorized_by_this_audit"] for x in r["lanes"])
+          with open(__import__("os").environ["GITHUB_STEP_SUMMARY"],"a") as f:
+              f.write(f"13-lane gate600 diagnostic: {len(r['lanes'])}/13; no automatic promotion; real money BLOCKED.\n")
+          PY
+
+      - name: Persist only diagnostic evidence to operational branch
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name matrix-gate600-audit
+          git config user.email matrix-gate600-audit@users.noreply.github.com
+          git add evidence/governance/MATRIX_13_MARKET_GATE600_COMMITTEE_LAST.json
+          if git diff --cached --quiet; then
+            echo "NO_CHANGED_SOURCE_NO_NEW_EVIDENCE_COMMIT"
+            exit 0
+          fi
+          git commit -m "evidence(markets): canonical 13-lane freeze vs settlement gate audit"
+          for attempt in 1 2 3 4; do
+            git fetch origin repair/cor09-world-pipeline
+            if ! git rebase origin/repair/cor09-world-pipeline; then
+              git rebase --abort || true
+              exit 1
+            fi
+            if git push origin HEAD:repair/cor09-world-pipeline; then exit 0; fi
+            sleep $((attempt * 2))
+          done
+          exit 1
