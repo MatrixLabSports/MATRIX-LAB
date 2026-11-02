@@ -1,5 +1,7 @@
 """Synthetic adversarial checks for exact-identity 13-lane frozen-cohort measurement."""
 from copy import deepcopy
+import hashlib
+from pathlib import Path
 
 import pytest
 
@@ -58,7 +60,7 @@ def test_exact_home_goals_and_one_x_two_calibrated_without_promoting():
     assert rows["TOTAL_GOALS_OVER_UNDER"]["calibration_metrics_unpromoted"]["over_2_5"]["observed_positive_rate"] == 1
     half = rows["FIRST_HALF_TOTAL_GOALS_OVER_UNDER"]
     assert half["exact_cohort_final_verified"] == 0
-    assert half["blockers"]["NO_VERIFIED_HALF_TIME_GOALS_IN_SETTLEMENT_SCHEMA"] == 1
+    assert half["blockers"]["MISSING_ORIGINAL_MATCH_RECEIPT"] == 1
     assert not any(x["telegram_authorized_by_audit"] for x in report["lanes"])
     assert report["safety"]["real_money"] == "BLOCKED"
 
@@ -117,3 +119,63 @@ def test_no_old_observations_counted_without_exact_settlements():
     assert r["summary"]["markets_with_600_exact_final"] == 0
     assert len(r["lanes"]) == 13
     assert all(not x["parameters_refitted"] for x in r["lanes"])
+
+
+def original_receipt():
+    return {
+        "errors":[],"results":1,
+        "response":[{
+            "fixture":{"id":"real-id-1","date":"2026-10-25T20:00:00+00:00","status":{"short":"FT"}},
+            "goals":{"home":2,"away":1},
+            "score":{"halftime":{"home":1,"away":0},
+                     "fulltime":{"home":2,"away":1}}
+        }],
+    }
+
+
+def test_original_provenance_verified_halftime_and_second_half(tmp_path):
+    body = json.dumps(original_receipt(),separators=(",",":")).encode()
+    (tmp_path/"fixture_real-id-1.bin").write_bytes(body)
+    settled = result()
+    settled["result_payload_sha256"] = hashlib.sha256(body).hexdigest()
+    inputs = [
+        freeze("FIRST_HALF_TOTAL_GOALS_OVER_UNDER",{"over_0_5":.75,"over_1_5":.25}),
+        freeze("SECOND_HALF_TOTAL_GOALS_OVER_UNDER",{"over_0_5":.75,"over_1_5":.60}),
+        freeze("FIRST_HALF_TEAM_TOTAL_GOALS_AWAY",{"over_0_5":.20}),
+        freeze("SECOND_HALF_TEAM_TOTAL_GOALS_HOME",{"over_0_5":.80}),
+    ]
+    r = build(registry(),inputs,[settled],raw_dir=tmp_path)
+    lanes={x["market_key"]:x for x in r["lanes"]}
+    first=lanes["FIRST_HALF_TOTAL_GOALS_OVER_UNDER"]
+    assert first["exact_cohort_final_verified"] == 1
+    assert first["calibration_metrics_unpromoted"]["over_0_5"]["observed_positive_rate"] == 1
+    assert first["calibration_metrics_unpromoted"]["over_1_5"]["observed_positive_rate"] == 0
+    second=lanes["SECOND_HALF_TOTAL_GOALS_OVER_UNDER"]
+    assert second["exact_cohort_final_verified"] == 1
+    assert second["calibration_metrics_unpromoted"]["over_1_5"]["observed_positive_rate"] == 1
+    assert lanes["FIRST_HALF_TEAM_TOTAL_GOALS_AWAY"]["calibration_metrics_unpromoted"]["over_0_5"]["observed_positive_rate"] == 0
+    assert lanes["SECOND_HALF_TEAM_TOTAL_GOALS_HOME"]["calibration_metrics_unpromoted"]["over_0_5"]["observed_positive_rate"] == 1
+    assert r["safety"]["halftime_raw_receipt_sha256_and_final_score_match_required"] is True
+    assert not any(x["telegram_authorized_by_audit"] for x in r["lanes"])
+
+
+def test_original_receipt_checksum_and_score_discrepancy_fail_closed(tmp_path):
+    body=json.dumps(original_receipt()).encode()
+    (tmp_path/"fixture_real-id-1.bin").write_bytes(body)
+    row=freeze("FIRST_HALF_TOTAL_GOALS_OVER_UNDER",{"over_0_5":.65,"over_1_5":.4})
+    wrong=result()
+    r=build(registry(),[row],[wrong],raw_dir=tmp_path)
+    lane=next(x for x in r["lanes"] if x["market_key"]=="FIRST_HALF_TOTAL_GOALS_OVER_UNDER")
+    assert lane["exact_cohort_final_verified"] == 0
+    assert lane["blockers"]["ORIGINAL_MATCH_RECEIPT_SHA256_MISMATCH"] == 1
+    good=result()
+    good["result_payload_sha256"]=hashlib.sha256(body).hexdigest()
+    data=original_receipt()
+    data["response"][0]["score"]["halftime"]["home"]=3
+    badbody=json.dumps(data).encode()
+    (tmp_path/"fixture_real-id-1.bin").write_bytes(badbody)
+    good["result_payload_sha256"]=hashlib.sha256(badbody).hexdigest()
+    r=build(registry(),[row],[good],raw_dir=tmp_path)
+    lane=next(x for x in r["lanes"] if x["market_key"]=="FIRST_HALF_TOTAL_GOALS_OVER_UNDER")
+    assert lane["exact_cohort_final_verified"] == 0
+    assert lane["blockers"]["HALFTIME_EXCEEDS_FINAL_SCORE"] == 1
