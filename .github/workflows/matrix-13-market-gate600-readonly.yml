@@ -87,7 +87,7 @@ jobs:
                   out.write(f"- {row['market_key']}: {row['exact_cohort_final_verified']} strict FT outcomes; {row['decision']}\n")
           PY
 
-      - name: Audit existing provider archives for legitimately recoverable final cohorts
+      - name: Audit archived FT evidence and classify account-suspended responses
         shell: bash
         run: |
           set -euo pipefail
