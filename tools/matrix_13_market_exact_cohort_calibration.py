@@ -15,11 +15,13 @@ from pathlib import Path
 from typing import Any
 
 from tools.api_football_prospective_api_settlement import _load_ledger as verified_settlements
+from tools.matrix_13_cohort_independent_settlement import validated_ledger as verified_independent_settlements
 
 ROOT = Path(__file__).resolve().parents[1]
 REGISTRY = ROOT / "evidence/market_portfolio/MATRIX_42_LANE_PROSPECTIVE_REGISTRY_LAST.json"
 PORTFOLIO = ROOT / "evidence/market_portfolio/MATRIX_42_LANE_PROSPECTIVE_LEDGER.jsonl"
 SETTLEMENT = ROOT / "evidence/api_football/prospective_market_freeze/settlement_ledger.jsonl"
+INDEPENDENT = ROOT / "evidence/football_cohort_recovery/MATRIX_INDEPENDENT_VERIFIED_FT_LEDGER.jsonl"
 OUT = ROOT / "evidence/governance/MATRIX_13_MARKET_EXACT_COHORT_CALIBRATION_LAST.json"
 RAW = ROOT / "evidence/api_football/prospective_market_freeze/settlement_raw"
 
@@ -171,7 +173,7 @@ def _prediction_and_targets(lane: str, row: dict, result: dict, halftime: tuple[
     raise ValueError("UNKNOWN_MARKET_LANE")
 
 
-def build(registry: dict, portfolio: list[dict], settlements: list[dict], *, raw_dir: Path = RAW) -> dict:
+def build(registry: dict, portfolio: list[dict], settlements: list[dict], *, raw_dir: Path = RAW, secondary_settlements: list[dict] | None = None) -> dict:
     if registry.get("status") != "PASS" or registry.get("total_lanes") != 42:
         raise ValueError("CANONICAL_REGISTRY_REQUIRED")
     guards = registry.get("protections") or {}
@@ -189,6 +191,16 @@ def build(registry: dict, portfolio: list[dict], settlements: list[dict], *, raw
         if not fid or fid in by_fixture:
             raise ValueError("DUPLICATE_SETTLEMENT_ID")
         by_fixture[fid] = item
+    independent = secondary_settlements or []
+    for record in independent:
+        fid=str(record.get("fixture_id") or "")
+        if (not fid or fid in by_fixture or record.get("terminal_status")!="FT"
+            or record.get("real_money")!="BLOCKED"
+            or record.get("automatic_wagering") is not False
+            or record.get("source_provider") not in {"ESPN_MLS","ESPN_CUP"}
+            or not record.get("source_raw_sha256")):
+            raise ValueError("INDEPENDENT_SOURCE_DUPLICATE_OR_NOT_VERIFIED")
+        by_fixture[fid] = record
 
     admitted: dict[str, dict[str, list[dict]]] = {lane: {} for lane in targeted}
     rejections = Counter()
@@ -237,11 +249,20 @@ def build(registry: dict, portfolio: list[dict], settlements: list[dict], *, raw
                     raise ValueError("EVENT_OR_FREEZE_MISMATCH")
                 if utc(record["settled_at_utc"]) < utc(record["kickoff_utc"]):
                     raise ValueError("RESULT_BEFORE_KICKOFF")
-                if record.get("result_source_provider") != "api_football" or not record.get("result_payload_sha256"):
-                    raise ValueError("RESULT_PROVENANCE_MISSING")
+                original_api = record.get("result_source_provider") == "api_football"
+                if original_api:
+                    if not record.get("result_payload_sha256"):
+                        raise ValueError("API_FINAL_RECEIPT_MISSING")
+                elif (record.get("source_provider") not in {"ESPN_MLS","ESPN_CUP"}
+                      or not record.get("source_raw_sha256")
+                      or record.get("halftime_verified") is not False):
+                    raise ValueError("UNVERIFIED_INDEPENDENT_PROVIDER_FINAL")
                 home, away = record["fulltime_home_goals"], record["fulltime_away_goals"]
                 if type(home) is not int or type(away) is not int or home < 0 or away < 0:
                     raise ValueError("RESULT_GOALS_INVALID")
+                if lane in PERIOD_LANES and not original_api:
+                    issues["INDEPENDENT_FULL_TIME_ONLY_HALFTIME_NOT_VERIFIED"] += 1
+                    continue
                 half = verified_half_time(fid, record, raw_dir) if lane in PERIOD_LANES else None
                 vals = _prediction_and_targets(lane, row, record, halftime=half)
                 for k, (p, outcome) in vals.items():
@@ -303,12 +324,15 @@ def build(registry: dict, portfolio: list[dict], settlements: list[dict], *, raw
             "registry_canonical_json_sha256":digest(registry),
             "portfolio_ledger_records_sha256":digest(portfolio),
             "verified_settlement_ledger_records_sha256":digest(settlements),
+            "independent_verified_settlement_records_sha256":digest(independent),
         },
         "summary":{
             "markets_targeted":len(rows_out),
             "market_count_with_any_exact_final":sum(x["exact_cohort_final_verified"]>0 for x in rows_out),
             "markets_with_600_exact_final":sum(x["exact_cohort_final_verified"]>=600 for x in rows_out),
             "settlement_source_rows":len(settlements),
+            "independent_ledger_final_rows":len(independent),
+            "combined_distinct_verified_final_rows":len(by_fixture),
             "portfolio_rows":len(portfolio),
             "invalid_freezes":dict(rejections),
         },
@@ -328,7 +352,8 @@ def main() -> None:
     registry = json.loads(REGISTRY.read_text(encoding="utf-8"))
     portfolio = [json.loads(line) for line in PORTFOLIO.read_text(encoding="utf-8").splitlines() if line.strip()]
     settlement = verified_settlements(SETTLEMENT)
-    report = build(registry,portfolio,settlement)
+    secondary = verified_independent_settlements(INDEPENDENT)
+    report = build(registry,portfolio,settlement,secondary_settlements=secondary)
     OUT.parent.mkdir(parents=True,exist_ok=True)
     OUT.write_text(json.dumps(report,indent=2,ensure_ascii=False,sort_keys=True,allow_nan=False)+"\n",encoding="utf-8")
     print(json.dumps({"status":report["status"],"summary":report["summary"],
