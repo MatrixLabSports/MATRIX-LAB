@@ -1,7 +1,7 @@
 {
   "checks": {
     "clay": {
-      "age_minutes": 203.43,
+      "age_minutes": 341.48,
       "latest_conclusion": "failure",
       "latest_run_id": 41378718397,
       "latest_status": "completed",
@@ -10,7 +10,7 @@
       "workflow": "tennis-clay-daily-prospective.yml"
     },
     "hard": {
-      "age_minutes": 232.35,
+      "age_minutes": 370.4,
       "latest_conclusion": "failure",
       "latest_run_id": 41376086389,
       "latest_status": "completed",
@@ -19,19 +19,18 @@
       "workflow": "tennis-hard-governed-day-resolution.yml"
     },
     "live": {
-      "age_minutes": 2.13,
+      "age_minutes": 140.18,
       "latest_conclusion": "success",
-      "latest_event": "workflow_run",
       "latest_run_id": 41397098709,
       "latest_status": "completed",
-      "reason": "RECENT_RUN_PRESENT",
-      "status": "PASS",
+      "reason": "LATEST_RUN_STALE",
+      "status": "FAIL",
       "workflow": "live-tennis-cumulative-gate-reconcile.yml"
     }
   },
   "failures": [
     {
-      "age_minutes": 232.35,
+      "age_minutes": 370.4,
       "lane": "hard",
       "latest_conclusion": "failure",
       "latest_run_id": 41376086389,
@@ -41,7 +40,7 @@
       "workflow": "tennis-hard-governed-day-resolution.yml"
     },
     {
-      "age_minutes": 203.43,
+      "age_minutes": 341.48,
       "lane": "clay",
       "latest_conclusion": "failure",
       "latest_run_id": 41378718397,
@@ -49,9 +48,19 @@
       "reason": "LATEST_RUN_STALE",
       "status": "FAIL",
       "workflow": "tennis-clay-daily-prospective.yml"
+    },
+    {
+      "age_minutes": 140.18,
+      "lane": "live",
+      "latest_conclusion": "success",
+      "latest_run_id": 41397098709,
+      "latest_status": "completed",
+      "reason": "LATEST_RUN_STALE",
+      "status": "FAIL",
+      "workflow": "live-tennis-cumulative-gate-reconcile.yml"
     }
   ],
-  "generated_at_utc": "2026-11-02T06:00:45.036192+00:00",
+  "generated_at_utc": "2026-11-02T08:18:47.779496+00:00",
   "policy": {
     "default_branch_scheduler_required": true,
     "expected_cadence_minutes": 15,
@@ -60,7 +69,7 @@
   },
   "schema": "MATRIX_TENNIS_MONITORING_WATCHDOG_V1",
   "summary": {
-    "failures": 2,
+    "failures": 3,
     "lanes_checked": 3,
     "status": "FAIL_CLOSED"
   }
