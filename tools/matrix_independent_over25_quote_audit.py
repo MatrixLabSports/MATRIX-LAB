@@ -135,8 +135,12 @@ def audit(intake,shadow,key,*,session=None,now=None,max_matches=MAX_MATCHES_PER_
         result["quota_status"]="SKIPPED_NO_PREMATCH_WINDOW"
         result["status"]="WAITING_FOR_GOVERNED_PREMATCH_WINDOW"
         return result
-    if not key.strip():
+    key = str(key or "").strip()
+    if not key:
         result["quota_status"]="MISSING_ODDS_API_NET_KEY"
+        return result
+    if any(ord(c) < 33 or ord(c) > 126 for c in key):
+        result["quota_status"]="BLOCKED_INVALID_KEY_HEADER_FORMAT"
         return result
     session=session or requests.Session()
     headers={"X-API-Key":key,"Accept":"application/json"}
