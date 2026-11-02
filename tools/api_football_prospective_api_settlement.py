@@ -105,6 +105,53 @@ def _sticky_block_reason(reason:Any)->bool:
     )
 
 
+
+SUSPENSION_COOLDOWN_HOURS=24
+
+
+def _access_suspended(payload:Any)->bool:
+    if not isinstance(payload,Mapping):
+        return False
+    errors=payload.get("errors")
+    if not isinstance(errors,Mapping):
+        return False
+    access=errors.get("access")
+    return isinstance(access,str) and "suspend" in access.lower()
+
+
+def _previous_access_suspension(previous:Mapping[str,Any],raw_dir:Path,now:datetime)->tuple[bool,datetime|None]:
+    """Use only provable prior provider responses; no inference from generic 429."""
+    prior_probe=previous.get("provider_suspension_next_probe_utc")
+    if previous.get("provider_access_suspended") is True and prior_probe:
+        try:
+            until=_utc(prior_probe)
+            return True,until
+        except (TypeError,ValueError):
+            pass
+    for entry in previous.get("blocked") or []:
+        if not isinstance(entry,Mapping) or entry.get("reason")!="API_FOOTBALL_PROVIDER_ERROR":
+            continue
+        fid=str(entry.get("fixture_id") or "")
+        if not fid.isdigit():
+            continue
+        archived=raw_dir / f"fixture_{fid}.bin"
+        if not archived.is_file():
+            continue
+        original=archived.read_bytes()
+        if hashlib.sha256(original).hexdigest()!=entry.get("raw_sha256"):
+            continue
+        try:
+            payload=json.loads(original)
+        except (UnicodeDecodeError,ValueError):
+            continue
+        if _access_suspended(payload):
+            try:
+                anchor=_utc(previous.get("run_at_utc"))
+            except (TypeError,ValueError):
+                anchor=now
+            return True,anchor+timedelta(hours=SUSPENSION_COOLDOWN_HOURS)
+    return False,None
+
 def _exact_fixture(payload:Mapping[str,Any],fixture_id:str)->Mapping[str,Any]:
     if not _provider_errors_empty(payload.get("errors")):
         raise ValueError("API_FOOTBALL_PROVIDER_ERROR")
@@ -138,6 +185,10 @@ def run(root:Path,api_key:str,now_utc:datetime|None=None,session:Any|None=None)-
     raw_dir=root/"prospective_market_freeze/settlement_raw"; raw_dir.mkdir(parents=True,exist_ok=True)
     settled=[]; pending=[]; blocked=[]; network_calls=0
     quota_exhausted=False
+    prior_suspended,next_probe=_previous_access_suspension(previous,raw_dir,now)
+    provider_access_suspended=bool(prior_suspended and next_probe is not None and now<next_probe)
+    suspension_probe_only=bool(prior_suspended and next_probe is not None and now>=next_probe)
+    suspension_probes_this_run=0
 
     for row in rows:
         fid=str(row["fixture_id"])
@@ -165,6 +216,12 @@ def run(root:Path,api_key:str,now_utc:datetime|None=None,session:Any|None=None)-
                 pending.append(dict(prior_pending))
                 continue
 
+        if provider_access_suspended:
+            blocked.append({"fixture_id":fid,"reason":"API_FOOTBALL_ACCESS_SUSPENDED_COOLDOWN"})
+            continue
+        if suspension_probe_only and suspension_probes_this_run>=1:
+            blocked.append({"fixture_id":fid,"reason":"API_FOOTBALL_SUSPENSION_PROBE_LIMIT_REACHED"})
+            continue
         if quota_exhausted:
             blocked.append({"fixture_id":fid,"reason":"API_FOOTBALL_DAILY_QUOTA_EXHAUSTED_DEFERRED"})
             continue
@@ -173,6 +230,8 @@ def run(root:Path,api_key:str,now_utc:datetime|None=None,session:Any|None=None)-
             continue
         response=client.get(BASE_URL+"/fixtures",headers={"x-apisports-key":key},params={"id":fid},timeout=TIMEOUT_SECONDS)
         network_calls+=1
+        if suspension_probe_only:
+            suspension_probes_this_run+=1
         body=bytes(response.content)
         raw_path=raw_dir/f"fixture_{fid}.bin"; raw_path.write_bytes(body)
         payload_sha=hashlib.sha256(body).hexdigest()
@@ -181,6 +240,11 @@ def run(root:Path,api_key:str,now_utc:datetime|None=None,session:Any|None=None)-
             payload=response.json()
             pf=_exact_fixture(payload,fid)
         except Exception as e:
+            if _access_suspended(payload):
+                provider_access_suspended=True
+                next_probe=now+timedelta(hours=SUSPENSION_COOLDOWN_HOURS)
+                blocked.append({"fixture_id":fid,"reason":"API_FOOTBALL_ACCESS_SUSPENDED","raw_sha256":payload_sha})
+                continue
             errors=payload.get("errors") if isinstance(payload,dict) else None
             requests_error=errors.get("requests") if isinstance(errors,dict) else None
             if isinstance(requests_error,str) and "reached the request limit for the day" in requests_error.lower():
@@ -190,6 +254,12 @@ def run(root:Path,api_key:str,now_utc:datetime|None=None,session:Any|None=None)-
             blocked.append({"fixture_id":fid,"reason":str(e),"raw_sha256":payload_sha})
             continue
 
+        if suspension_probe_only:
+            # A successful access probe resets the circuit and permits the normal
+            # due-only, quota-constrained settlement loop in this same run.
+            suspension_probe_only=False
+            provider_access_suspended=False
+            next_probe=None
         fixture=pf.get("fixture"); teams=pf.get("teams"); score=pf.get("score")
         if not all(isinstance(x,Mapping) for x in (fixture,teams,score)):
             blocked.append({"fixture_id":fid,"reason":"FINAL_PAYLOAD_STRUCTURE_INVALID"}); continue
@@ -255,7 +325,11 @@ def run(root:Path,api_key:str,now_utc:datetime|None=None,session:Any|None=None)-
         "blocked_count":len(blocked),
         "network_calls":network_calls,
         "quota_exhausted":quota_exhausted,
-        "network_call_policy":"DUE_ONLY_WITH_STICKY_BLOCK_QUARANTINE_AND_NONFINAL_RETRY_WINDOW",
+        "provider_access_suspended":provider_access_suspended,
+        "provider_suspension_next_probe_utc":next_probe.isoformat() if provider_access_suspended and next_probe else None,
+        "suspension_probe_calls_this_run":suspension_probes_this_run,
+        "suspension_cooldown_hours":SUSPENSION_COOLDOWN_HOURS,
+        "network_call_policy":"DUE_ONLY_WITH_STICKY_BLOCK_NONFINAL_RETRY_AND_PROVIDER_SUSPENSION_CIRCUIT",
         "nonfinal_retry_minutes":NONFINAL_RETRY_MINUTES,
         "sticky_blocked_carried_without_network":sum(
             1 for x in blocked if str(x.get("fixture_id")) in previous_blocked and _sticky_block_reason(x.get("reason"))
