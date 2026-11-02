@@ -126,3 +126,23 @@ def test_embedded_control_characters_block_before_network():
     result=audit(intake(),scores(),"bad\nsecret",session=session,now=NOW)
     assert result["quota_status"] == "BLOCKED_INVALID_KEY_HEADER_FORMAT"
     assert session.calls == []
+
+
+def test_recent_monthly_429_obeys_cooldown_and_makes_no_calls():
+    session=Fake()
+    previous={"target_date_bogota":"2026-11-02", "quota_status":"BLOCKED_USAGE_HTTP_429",
+              "generated_at_utc":(NOW-timedelta(minutes=15)).isoformat()}
+    result=audit(intake(),scores(),"test-secret",session=session,now=NOW,previous=previous)
+    assert result["quota_status"]=="BLOCKED_COOLDOWN_AFTER_429"
+    assert result["network_calls"]==0
+    assert session.calls==[]
+    assert result["signal_generation_authorized"] is False
+
+
+def test_expired_quota_cooldown_allows_one_fresh_usage_check():
+    session=Fake(usage={"api_credits_used":100,"api_credits_limit":100})
+    previous={"target_date_bogota":"2026-11-02", "quota_status":"BLOCKED_USAGE_HTTP_429",
+              "generated_at_utc":(NOW-timedelta(hours=2)).isoformat()}
+    result=audit(intake(),scores(),"test-secret",session=session,now=NOW,previous=previous)
+    assert result["quota_status"]=="BLOCKED_EXHAUSTED"
+    assert session.calls==["https://api.odds-api.net/v1/usage"]
