@@ -115,7 +115,7 @@ def test_out_of_window_never_contacts_pricing_endpoint():
 
 def test_token_outer_whitespace_does_not_corrupt_authorization_header():
     session=Fake()
-    result=audit(intake(),scores(),"\\n test-secret \\r\\n",session=session,now=NOW)
+    result=audit(intake(),scores(),"\n test-secret \r\n",session=session,now=NOW)
     assert result["quota_status"] == "AUTHORIZED_LIVE_USAGE"
     assert result["network_calls"] == 3
     assert result["signal_generation_authorized"] is False
@@ -123,6 +123,6 @@ def test_token_outer_whitespace_does_not_corrupt_authorization_header():
 
 def test_embedded_control_characters_block_before_network():
     session=Fake()
-    result=audit(intake(),scores(),"bad\\nsecret",session=session,now=NOW)
+    result=audit(intake(),scores(),"bad\nsecret",session=session,now=NOW)
     assert result["quota_status"] == "BLOCKED_INVALID_KEY_HEADER_FORMAT"
     assert session.calls == []
