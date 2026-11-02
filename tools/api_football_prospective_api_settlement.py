@@ -121,6 +121,8 @@ def _access_suspended(payload:Any)->bool:
 
 def _previous_access_suspension(previous:Mapping[str,Any],raw_dir:Path,now:datetime)->tuple[bool,datetime|None]:
     """Use only provable prior provider responses; no inference from generic 429."""
+    if previous.get("provider_access_suspended") is False:
+        return False,None
     prior_probe=previous.get("provider_suspension_next_probe_utc")
     if previous.get("provider_access_suspended") is True and prior_probe:
         try:
