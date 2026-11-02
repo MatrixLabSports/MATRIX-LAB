@@ -85,7 +85,7 @@ def _price_rows(snapshot, now):
                     "market":"FULL_TIME_TOTAL_GOALS_OVER_2_5"})
     return out
 
-def audit(intake,shadow,key,*,session=None,now=None,max_matches=MAX_MATCHES_PER_CYCLE):
+def audit(intake,shadow,key,*,session=None,now=None,max_matches=MAX_MATCHES_PER_CYCLE,probe_quota_outside_window=False):
     if intake.get("schema")!="MATRIX_INDEPENDENT_FIXTURE_INTAKE_V1" or shadow.get("schema")!="MATRIX_INDEPENDENT_OVER25_HISTORY_SHADOW_V1":
         raise ValueError("UNTRUSTED_INDEPENDENT_INPUTS")
     if intake.get("target_date_bogota")!=shadow.get("target_date_bogota"):
@@ -131,7 +131,7 @@ def audit(intake,shadow,key,*,session=None,now=None,max_matches=MAX_MATCHES_PER_
     in_window.sort(key=lambda x:(x[0],str(x[1]["source_fixture_id"])))
     result["in_120m_window"]=len(in_window)
     result["eligible_for_price_attempt"]=min(len(in_window),max_matches)
-    if not in_window or max_matches==0:
+    if (not in_window or max_matches==0) and not probe_quota_outside_window:
         result["quota_status"]="SKIPPED_NO_PREMATCH_WINDOW"
         result["status"]="WAITING_FOR_GOVERNED_PREMATCH_WINDOW"
         return result
@@ -158,6 +158,9 @@ def audit(intake,shadow,key,*,session=None,now=None,max_matches=MAX_MATCHES_PER_
         result["quota_status"]="AUTHORIZED_LIVE_USAGE"
     except (requests.RequestException,TypeError,ValueError,KeyError) as exc:
         result["quota_status"]="BLOCKED_USAGE_"+type(exc).__name__
+        return result
+    if not in_window or max_matches==0:
+        result["status"]="WAITING_FOR_GOVERNED_PREMATCH_WINDOW"
         return result
     for kickoff,row,score in in_window[:max_matches]:
         item={"source_fixture_id":row["source_fixture_id"],"home":row["home"],
@@ -201,7 +204,7 @@ def audit(intake,shadow,key,*,session=None,now=None,max_matches=MAX_MATCHES_PER_
                 if sr.status_code==429:break
                 continue
             sp=sr.json()
-            if not isinstance(sp,dict) or not isinstance(sp.get("items"),list):
+            if not isinstance(sp,dict) or not isinstance(sp.get("items"),list) or (sp.get("event_id") not in (None,"",event_id)) :
                 item["identity_status"]="BLOCKED_INVALID_SNAPSHOT"
                 result["audited"].append(item);continue
             item["snapshot_sha256"]=digest(sp)
@@ -236,9 +239,11 @@ def main():
     parser.add_argument("--intake",type=Path,required=True)
     parser.add_argument("--shadow",type=Path,required=True)
     parser.add_argument("--out",type=Path,required=True)
+    parser.add_argument("--probe-quota-outside-window",action="store_true")
     a=parser.parse_args()
     data=lambda p:json.loads(p.read_text(encoding="utf-8"))
-    result=audit(data(a.intake),data(a.shadow),os.environ.get("ODDS_API_NET_KEY",""))
+    result=audit(data(a.intake),data(a.shadow),os.environ.get("ODDS_API_NET_KEY",""),
+                 probe_quota_outside_window=a.probe_quota_outside_window)
     a.out.parent.mkdir(parents=True,exist_ok=True)
     a.out.write_text(json.dumps(result,ensure_ascii=False,sort_keys=True,indent=2)+"\n",encoding="utf-8")
     print(json.dumps({k:result[k] for k in (
