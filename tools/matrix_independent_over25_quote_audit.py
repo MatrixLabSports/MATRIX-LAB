@@ -85,7 +85,7 @@ def _price_rows(snapshot, now):
                     "market":"FULL_TIME_TOTAL_GOALS_OVER_2_5"})
     return out
 
-def audit(intake,shadow,key,*,session=None,now=None,max_matches=MAX_MATCHES_PER_CYCLE,probe_quota_outside_window=False):
+def audit(intake,shadow,key,*,session=None,now=None,max_matches=MAX_MATCHES_PER_CYCLE,probe_quota_outside_window=False,previous=None):
     if intake.get("schema")!="MATRIX_INDEPENDENT_FIXTURE_INTAKE_V1" or shadow.get("schema")!="MATRIX_INDEPENDENT_OVER25_HISTORY_SHADOW_V1":
         raise ValueError("UNTRUSTED_INDEPENDENT_INPUTS")
     if intake.get("target_date_bogota")!=shadow.get("target_date_bogota"):
@@ -135,6 +135,16 @@ def audit(intake,shadow,key,*,session=None,now=None,max_matches=MAX_MATCHES_PER_
         result["quota_status"]="SKIPPED_NO_PREMATCH_WINDOW"
         result["status"]="WAITING_FOR_GOVERNED_PREMATCH_WINDOW"
         return result
+    if in_window and isinstance(previous,dict) and previous.get("target_date_bogota")==result["target_date_bogota"]:
+        if previous.get("quota_status") in ("BLOCKED_USAGE_HTTP_429","BLOCKED_EXHAUSTED","BLOCKED_COOLDOWN_AFTER_429"):
+            try:
+                elapsed=(clock-utc(previous["generated_at_utc"])).total_seconds()
+                if 0 <= elapsed < 3600:
+                    result["quota_status"]="BLOCKED_COOLDOWN_AFTER_429"
+                    result["status"]="WAITING_FOR_PROVIDER_QUOTA_CIRCUIT_BREAKER"
+                    return result
+            except (ValueError,TypeError,KeyError):
+                pass
     key = str(key or "").strip()
     if not key:
         result["quota_status"]="MISSING_ODDS_API_NET_KEY"
@@ -244,10 +254,12 @@ def main():
     parser.add_argument("--shadow",type=Path,required=True)
     parser.add_argument("--out",type=Path,required=True)
     parser.add_argument("--probe-quota-outside-window",action="store_true")
+    parser.add_argument("--previous",type=Path)
     a=parser.parse_args()
     data=lambda p:json.loads(p.read_text(encoding="utf-8"))
+    previous=data(a.previous) if a.previous and a.previous.is_file() else None
     result=audit(data(a.intake),data(a.shadow),os.environ.get("ODDS_API_NET_KEY",""),
-                 probe_quota_outside_window=a.probe_quota_outside_window)
+                 previous=previous,probe_quota_outside_window=a.probe_quota_outside_window)
     a.out.parent.mkdir(parents=True,exist_ok=True)
     a.out.write_text(json.dumps(result,ensure_ascii=False,sort_keys=True,indent=2)+"\n",encoding="utf-8")
     print(json.dumps({k:result[k] for k in (
