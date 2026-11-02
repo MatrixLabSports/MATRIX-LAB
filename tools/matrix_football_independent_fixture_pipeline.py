@@ -63,6 +63,8 @@ def normalize(response: dict, target_day: str, now_utc: datetime) -> list[dict]:
             "away_source_team_id": away_id,
             "kickoff_utc": kickoff.isoformat(),
             "league": str((raw.get("competition") or {}).get("name") or ""),
+            "source_competition_id": (raw.get("competition") or {}).get("id"),
+            "source_competition_code": (raw.get("competition") or {}).get("code"),
             "source_status": raw["status"],
             "api_football_fixture_id": None,
             "browser_identity_verified": False,
