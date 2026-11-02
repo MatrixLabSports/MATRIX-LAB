@@ -1,0 +1,103 @@
+name: MATRIX Tennis Opera 02NOV Browser-First Link Review
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - repair/cor09-world-pipeline
+    paths:
+      - tools/matrix_tennis_opera_dual_source_link_audit.py
+      - tests/test_matrix_tennis_opera_dual_source_link_audit.py
+      - evidence/tennis_calendar_physical/2026-11-02/**
+      - .github/workflows/matrix-tennis-opera-02nov-link-audit.yml
+
+permissions:
+  contents: write
+
+concurrency:
+  group: matrix-tennis-opera-02nov-browser-first
+  cancel-in-progress: false
+
+jobs:
+  cross-source:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    env:
+      MATRIX_MODE: SHADOW
+      REAL_MONEY: BLOCKED
+      AUTOMATIC_WAGERING: "false"
+    steps:
+      - name: Checkout operational branch
+        uses: actions/checkout@v4
+        with:
+          ref: repair/cor09-world-pipeline
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Run strict tennis link review unit tests
+        run: |
+          python -m pip install pytest
+          PYTHONPATH=. python -m pytest -q tests/test_matrix_tennis_opera_dual_source_link_audit.py
+
+      - name: Reconcile physical SofaScore then Flashscore Nov 02 links
+        shell: bash
+        run: |
+          set -euo pipefail
+          D="2026-11-02"
+          ROOT="evidence/tennis_calendar_physical/$D"
+          OUT="evidence/tennis_calendar_reconciliation/$D/MATRIX_TENNIS_OPERA_DUAL_SOURCE_LINK_REVIEW.json"
+          test -f "$ROOT/sofascore_opera_full_link_observations.json"
+          test -f "$ROOT/flashscore_opera_full_link_observations.json"
+          PYTHONPATH=. python -m tools.matrix_tennis_opera_dual_source_link_audit \
+            --sofascore "$ROOT/sofascore_opera_full_link_observations.json" \
+            --flashscore "$ROOT/flashscore_opera_full_link_observations.json" \
+            --out "$OUT"
+          python - "$OUT" <<'PY'
+          import json,sys
+          from pathlib import Path
+          r=json.loads(Path(sys.argv[1]).read_text(encoding="utf-8"))
+          assert r["target_date_bogota"]=="2026-11-02"
+          assert r["source_order"]==["SOFASCORE","FLASHSCORE","APIS"]
+          assert r["source_counts"]["sofascore_visible_links"]==424
+          assert r["source_counts"]["flashscore_visible_links"]==184
+          assert r["source_counts"]["sofascore_explicit_target_date_links"]==416
+          assert r["provider_page_coverage_complete"] is False
+          assert r["same_fixture_date_cross_provider_certified"] is False
+          assert r["utc_kickoff_certified"] is False
+          assert r["surface_certified"] is False
+          assert r["bookmaker_quote_verified"] is False
+          assert r["signal_generation_authorized"] is False
+          assert r["telegram_messages_sent"]==0
+          assert r["calibration_parameters_modified"] is False
+          assert r["automatic_wagering"] is False
+          assert r["real_money"]=="BLOCKED"
+          print("PASS_PHYSICAL_BROWSER_FIRST_LINK_REVIEW_NO_SIGNAL_PROMOTION")
+          PY
+
+      - name: Persist monitored tennis calendar review without touching model
+        shell: bash
+        run: |
+          set -euo pipefail
+          P="evidence/tennis_calendar_reconciliation/2026-11-02/MATRIX_TENNIS_OPERA_DUAL_SOURCE_LINK_REVIEW.json"
+          git config user.name "matrix-tennis-browser-first"
+          git config user.email "matrix-tennis-browser-first@users.noreply.github.com"
+          git add "$P"
+          if git diff --cached --quiet; then
+            echo "REVIEW_EVIDENCE_ALREADY_COMMITTED"
+            exit 0
+          fi
+          git commit -m "evidence(tennis): persist Nov 02 real browser-first link reconciliation"
+          for attempt in 1 2 3 4; do
+            git fetch origin repair/cor09-world-pipeline
+            if ! git rebase origin/repair/cor09-world-pipeline; then
+              git rebase --abort || true
+              exit 1
+            fi
+            if git push origin HEAD:repair/cor09-world-pipeline; then exit 0; fi
+            sleep $((attempt*2))
+          done
+          exit 1
