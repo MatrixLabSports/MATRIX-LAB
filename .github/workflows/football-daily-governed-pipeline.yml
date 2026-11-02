@@ -188,6 +188,18 @@ jobs:
             echo "status=AUTHORIZED" >> "$GITHUB_OUTPUT"
           fi
 
+      - name: Audit independent football sources after paid cutoff
+        if: steps.subscription.outputs.status == 'BLOCKED'
+        shell: bash
+        run: |
+          set -euo pipefail
+          D="${{ steps.date.outputs.target_date }}"
+          mkdir -p "evidence/football_world_inventory/$D"
+          python -m tools.football_subscription_deadline_guard \
+            --as-of-bogota-date "$D" --independent-source-readiness \
+            --out "evidence/football_world_inventory/$D/MATRIX_INDEPENDENT_SOURCE_READINESS.json"
+          echo "Independent sources: readiness audit only; no provider calls or candidate production certified." >> "$GITHUB_STEP_SUMMARY"
+
       - name: Run governed prospective daily cycle
         if: steps.subscription.outputs.status == 'AUTHORIZED'
         id: cycle
@@ -313,6 +325,7 @@ jobs:
           if [ -d evidence/api_football/prospective_market_freeze ]; then git add evidence/api_football/prospective_market_freeze; fi
           if [ -d "evidence/api_football/daily_prematch_reports/$D" ]; then git add "evidence/api_football/daily_prematch_reports/$D"; fi
           if [ -f "evidence/football_world_inventory/$D/MATRIX_FOOTBALL_CALIBRATION_ELIGIBILITY.json" ]; then git add "evidence/football_world_inventory/$D/MATRIX_FOOTBALL_CALIBRATION_ELIGIBILITY.json"; fi
+          if [ -f "evidence/football_world_inventory/$D/MATRIX_INDEPENDENT_SOURCE_READINESS.json" ]; then git add "evidence/football_world_inventory/$D/MATRIX_INDEPENDENT_SOURCE_READINESS.json"; fi
           git add evidence/governance/MATRIX_FOOTBALL_SUBSCRIPTION_DEADLINE_LAST.json
           git add evidence/api_football/market_expansion/market_binding_catalog.json
           git add evidence/api_football/market_expansion/priority_market_lab_last.json
