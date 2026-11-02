@@ -1,0 +1,317 @@
+{
+  "committee_roles": [
+    "QUANT_PROPER_SCORING",
+    "PIT_TEMPORAL_DATA",
+    "EXPLORATORY_RECALIBRATION",
+    "STATISTICAL_UNCERTAINTY",
+    "OOS_COHORT_GOVERNANCE",
+    "MLOPS_REPRODUCIBILITY",
+    "MODEL_RISK",
+    "TELEGRAM_SIGNAL_SAFETY"
+  ],
+  "existing_governance": {
+    "double_chance_1x_oos_current": 796,
+    "double_chance_1x_oos_metrics_opened": false,
+    "double_chance_1x_oos_remaining": 204,
+    "double_chance_1x_oos_target": 1000,
+    "double_chance_1x_promotion_allowed_before_audit": false,
+    "double_chance_1x_promotion_allowed_by_this_audit": false,
+    "historical_over25_market_promotion_status": "PASS_PROMOTED_GOVERNED_P_MATRIX_SIGNAL_ONLY",
+    "over25_promoted_model_unchanged": true
+  },
+  "generated_at_utc": "2026-11-02T15:10:58+00:00",
+  "invariants": {
+    "automatic_wagering": false,
+    "full_cohort_metrics_not_confused_with_new_chronological_holdout": true,
+    "holdout_scores_not_used_to_fit_candidate": true,
+    "no_automatic_market_promotion": true,
+    "no_cross_cohort_604_plus_oos_796_silent_combination": true,
+    "no_new_telegram_signals": true,
+    "no_odds_as_prediction_input": true,
+    "no_parameter_overwrite": true,
+    "real_money": "BLOCKED",
+    "recalibration_candidate_is_exploratory_not_pre_registered": true
+  },
+  "market_results": {
+    "DOUBLE_CHANCE_1X": {
+      "candidate_governance_state": "EXPLORATORY_RECALIBRATION_ONLY_NOT_PREDECLARED_PROSPECTIVE",
+      "candidate_promoted": false,
+      "chronological_split": {
+        "holdout_first_kickoff": "2026-10-27T00:00:00+00:00",
+        "holdout_fixture_ids_sha256": "57ee4f4eeff773914ae57198148cdf40b04d3e9dc2e33105961ef7c357c17ab7",
+        "holdout_n": 186,
+        "no_train_holdout_fixture_overlap": true,
+        "train_end_utc_date": "2026-10-26",
+        "train_last_kickoff": "2026-10-26T23:30:00+00:00",
+        "train_n": 418,
+        "training_fixture_ids_sha256": "2785cda9294b5762a9834d8bb8cf7e1c40c01b21a57df693ea485ce36e2a6473"
+      },
+      "existing_frozen_parameters_modified": false,
+      "experimental_intercept_only_logit_bias": 0.30500678684771476,
+      "full_cohort_paired_uncertainty": {
+        "delta_challenger_minus_reference": {
+          "brier": -0.0014276030899348423,
+          "brier_ci95_percentile": [
+            -0.0073656462844742,
+            0.005188561977856189
+          ],
+          "log_loss": -0.0026479357153993553,
+          "log_loss_ci95_percentile": [
+            -0.016490877525609925,
+            0.012946043185000087
+          ]
+        },
+        "n": 604,
+        "resamples": 1000,
+        "seed": 20261102,
+        "uncertainty_note": "EXPLORATORY_PAIRED_FIXTURE_BOOTSTRAP_NOT_GOVERNED_PROMOTION_GATE"
+      },
+      "holdout_candidate_vs_original": {
+        "delta_challenger_minus_reference": {
+          "brier": -0.0021054195741740857,
+          "brier_ci95_percentile": [
+            -0.010529797248413866,
+            0.005844718815753721
+          ],
+          "log_loss": -0.005247240825484924,
+          "log_loss_ci95_percentile": [
+            -0.025489450809951023,
+            0.01405411188396121
+          ]
+        },
+        "n": 186,
+        "resamples": 1000,
+        "seed": 20261102,
+        "uncertainty_note": "EXPLORATORY_PAIRED_FIXTURE_BOOTSTRAP_NOT_GOVERNED_PROMOTION_GATE"
+      },
+      "holdout_candidate_vs_poisson": {
+        "delta_challenger_minus_reference": {
+          "brier": 0.0017649031378732876,
+          "brier_ci95_percentile": [
+            -0.013273229258288308,
+            0.017416462077216522
+          ],
+          "log_loss": 0.0062362299825339685,
+          "log_loss_ci95_percentile": [
+            -0.029081006335235235,
+            0.04414157771596273
+          ]
+        },
+        "n": 186,
+        "resamples": 1000,
+        "seed": 20261103,
+        "uncertainty_note": "EXPLORATORY_PAIRED_FIXTURE_BOOTSTRAP_NOT_GOVERNED_PROMOTION_GATE"
+      },
+      "holdout_original_vs_poisson": {
+        "delta_challenger_minus_reference": {
+          "brier": 0.0038703227120473727,
+          "brier_ci95_percentile": [
+            -0.012266765507325405,
+            0.019689495860956502
+          ],
+          "log_loss": 0.011483470808018887,
+          "log_loss_ci95_percentile": [
+            -0.025358572555111814,
+            0.047183464072429133
+          ]
+        },
+        "n": 186,
+        "resamples": 1000,
+        "seed": 20261104,
+        "uncertainty_note": "EXPLORATORY_PAIRED_FIXTURE_BOOTSTRAP_NOT_GOVERNED_PROMOTION_GATE"
+      },
+      "proper_scores": {
+        "full_cohort_challenger": {
+          "brier": 0.20440438254347046,
+          "ece_10_bins": 0.06132664052808991,
+          "log_loss": 0.5981129884632551,
+          "mean_forecast": 0.6489928988695604,
+          "n": 604,
+          "observed_rate": 0.7052980132450332
+        },
+        "full_cohort_poisson": {
+          "brier": 0.20583198563340518,
+          "ece_10_bins": 0.08188599591059605,
+          "log_loss": 0.6007609241786538,
+          "mean_forecast": 0.6270790966059603,
+          "n": 604,
+          "observed_rate": 0.7052980132450332
+        },
+        "holdout_intercept_candidate": {
+          "brier": 0.20920912872063524,
+          "ece_10_bins": 0.06280019262062073,
+          "log_loss": 0.6102596809155495,
+          "mean_forecast": 0.6899271763131111,
+          "n": 186,
+          "observed_rate": 0.6774193548387096
+        },
+        "holdout_original": {
+          "brier": 0.21131454829480922,
+          "ece_10_bins": 0.053274850700197815,
+          "log_loss": 0.6155069217410343,
+          "mean_forecast": 0.6296185853612902,
+          "n": 186,
+          "observed_rate": 0.6774193548387096
+        },
+        "holdout_poisson": {
+          "brier": 0.2074442255827618,
+          "ece_10_bins": 0.07366375408602142,
+          "log_loss": 0.6040234509330155,
+          "mean_forecast": 0.6387300666666667,
+          "n": 186,
+          "observed_rate": 0.6774193548387096
+        },
+        "train_original": {
+          "brier": 0.20132952409909485,
+          "ece_10_bins": 0.06490949437495096,
+          "log_loss": 0.5903731042774479,
+          "mean_forecast": 0.657614004880418,
+          "n": 418,
+          "observed_rate": 0.7177033492822966
+        }
+      },
+      "settled_fixtures": 604
+    },
+    "TOTAL_GOALS_OVER_UNDER": {
+      "candidate_governance_state": "EXPLORATORY_RECALIBRATION_ONLY_NOT_PREDECLARED_PROSPECTIVE",
+      "candidate_promoted": false,
+      "chronological_split": {
+        "holdout_first_kickoff": "2026-10-27T00:00:00+00:00",
+        "holdout_fixture_ids_sha256": "57ee4f4eeff773914ae57198148cdf40b04d3e9dc2e33105961ef7c357c17ab7",
+        "holdout_n": 186,
+        "no_train_holdout_fixture_overlap": true,
+        "train_end_utc_date": "2026-10-26",
+        "train_last_kickoff": "2026-10-26T23:30:00+00:00",
+        "train_n": 418,
+        "training_fixture_ids_sha256": "2785cda9294b5762a9834d8bb8cf7e1c40c01b21a57df693ea485ce36e2a6473"
+      },
+      "existing_frozen_parameters_modified": false,
+      "experimental_intercept_only_logit_bias": -0.027803850479844183,
+      "full_cohort_paired_uncertainty": {
+        "delta_challenger_minus_reference": {
+          "brier": -0.0013995859309815187,
+          "brier_ci95_percentile": [
+            -0.004284327720648085,
+            0.0015222111244499131
+          ],
+          "log_loss": -0.003141377326242935,
+          "log_loss_ci95_percentile": [
+            -0.00945240108565915,
+            0.0030924191500428674
+          ]
+        },
+        "n": 604,
+        "resamples": 1000,
+        "seed": 20261102,
+        "uncertainty_note": "EXPLORATORY_PAIRED_FIXTURE_BOOTSTRAP_NOT_GOVERNED_PROMOTION_GATE"
+      },
+      "holdout_candidate_vs_original": {
+        "delta_challenger_minus_reference": {
+          "brier": 0.0002657692344816001,
+          "brier_ci95_percentile": [
+            -0.0006435841629516039,
+            0.0012131108949708764
+          ],
+          "log_loss": 0.0004642786750674264,
+          "log_loss_ci95_percentile": [
+            -0.0015132808549382995,
+            0.002420096727919034
+          ]
+        },
+        "n": 186,
+        "resamples": 1000,
+        "seed": 20261102,
+        "uncertainty_note": "EXPLORATORY_PAIRED_FIXTURE_BOOTSTRAP_NOT_GOVERNED_PROMOTION_GATE"
+      },
+      "holdout_candidate_vs_poisson": {
+        "delta_challenger_minus_reference": {
+          "brier": 0.00014871795847774203,
+          "brier_ci95_percentile": [
+            -0.00439955369398202,
+            0.004665127768657244
+          ],
+          "log_loss": 0.001100608393983813,
+          "log_loss_ci95_percentile": [
+            -0.008641770922770764,
+            0.010783196503626235
+          ]
+        },
+        "n": 186,
+        "resamples": 1000,
+        "seed": 20261103,
+        "uncertainty_note": "EXPLORATORY_PAIRED_FIXTURE_BOOTSTRAP_NOT_GOVERNED_PROMOTION_GATE"
+      },
+      "holdout_original_vs_poisson": {
+        "delta_challenger_minus_reference": {
+          "brier": -0.00011705127600385847,
+          "brier_ci95_percentile": [
+            -0.004757304885548986,
+            0.004402230505248543
+          ],
+          "log_loss": 0.0006363297189163864,
+          "log_loss_ci95_percentile": [
+            -0.009092440925782944,
+            0.010709219724438186
+          ]
+        },
+        "n": 186,
+        "resamples": 1000,
+        "seed": 20261104,
+        "uncertainty_note": "EXPLORATORY_PAIRED_FIXTURE_BOOTSTRAP_NOT_GOVERNED_PROMOTION_GATE"
+      },
+      "proper_scores": {
+        "full_cohort_challenger": {
+          "brier": 0.23830301185424566,
+          "ece_10_bins": 0.039296476108012145,
+          "log_loss": 0.6687192171493196,
+          "mean_forecast": 0.5400779900574546,
+          "n": 604,
+          "observed_rate": 0.5397350993377483
+        },
+        "full_cohort_poisson": {
+          "brier": 0.23970259778522726,
+          "ece_10_bins": 0.06459750504966873,
+          "log_loss": 0.6718605944755618,
+          "mean_forecast": 0.5353718428973514,
+          "n": 604,
+          "observed_rate": 0.5397350993377483
+        },
+        "holdout_intercept_candidate": {
+          "brier": 0.22696161789506814,
+          "ece_10_bins": 0.08267708400994617,
+          "log_loss": 0.6457663056168644,
+          "mean_forecast": 0.5660915999471559,
+          "n": 186,
+          "observed_rate": 0.5860215053763441
+        },
+        "holdout_original": {
+          "brier": 0.22669584866058654,
+          "ece_10_bins": 0.08076126943698278,
+          "log_loss": 0.6453020269417972,
+          "mean_forecast": 0.5725509256684356,
+          "n": 186,
+          "observed_rate": 0.5860215053763441
+        },
+        "holdout_poisson": {
+          "brier": 0.22681289993659043,
+          "ece_10_bins": 0.05853792833333334,
+          "log_loss": 0.6446656972228807,
+          "mean_forecast": 0.5664122624193545,
+          "n": 186,
+          "observed_rate": 0.5860215053763441
+        },
+        "train_original": {
+          "brier": 0.24346792179209414,
+          "ece_10_bins": 0.07804899099306044,
+          "log_loss": 0.679139306571806,
+          "mean_forecast": 0.525628310575056,
+          "n": 418,
+          "observed_rate": 0.5191387559808612
+        }
+      },
+      "settled_fixtures": 604
+    }
+  },
+  "schema": "MATRIX_FIVE_MARKET_ELITE_CALIBRATION_STABILITY_V1",
+  "status": "RESEARCH_EXPERIMENT_DIAGNOSTIC_NO_PROMOTIONS"
+}
