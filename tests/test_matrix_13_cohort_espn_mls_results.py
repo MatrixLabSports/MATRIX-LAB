@@ -72,3 +72,11 @@ def test_mls_historical_public_response_is_one_call():
     assert report["real_money"]=="BLOCKED"
     assert report["canonical_ledger_appends"]==0
     assert calls[0].endswith("dates=20261028")
+
+
+
+def test_only_explicitly_verified_mls_team_aliases_are_allowed():
+    assert club("D.C. United")==club("DC United")
+    assert club("Red Bull New York")==club("New York Red Bulls")
+    assert club("DC Liverpool")!=club("D.C. United")
+    assert club("New York City FC")!=club("New York Red Bulls")
