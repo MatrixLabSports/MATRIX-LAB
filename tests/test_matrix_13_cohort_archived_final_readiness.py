@@ -97,3 +97,20 @@ def test_post_kickoff_freeze_is_not_recoverable(tmp_path):
     target=next(x for x in r["lanes"] if x["market_key"]=="TOTAL_GOALS_OVER_UNDER")
     assert target["recoverable_archived_standard_ft_events"]==0
     assert target["reasons"]["NOT_STRICTLY_PREMATCH_FROZEN"]==1
+
+
+def test_triage_is_one_row_per_missing_fixture_and_is_never_auto_settled(tmp_path):
+    p=tmp_path/"fixture_fixture-1.bin"
+    p.write_text(json.dumps(receipt()),encoding="utf-8")
+    registry={"status":"PASS","total_lanes":42,"protections":{"real_money":"BLOCKED"},
+              "lanes":{k:{"prospective_unique_count":650} for k in LANES}}
+    portfolio=[{"market_lane":k,"fixture_id":"fixture-1","prospective_admitted":True} for k in LANES]
+    r=build({"rows":[freeze()]},[],registry,portfolio,tmp_path)
+    assert r["unsettled_fixture_triage_count"]==1
+    item=r["unsettled_fixture_triage"][0]
+    assert item["fixture_id"]=="fixture-1"
+    assert len(item["affected_gate600_lanes"])==13
+    assert item["safe_to_settle_from_present_archive"] is True
+    assert item["prospective_freeze_not_to_be_rewritten"] is True
+    assert r["protections"]["no_auto_provider_retry_or_paid_api_calls"] is True
+    assert all(x["settlements_appended"]==0 for x in r["lanes"])
