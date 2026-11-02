@@ -51,7 +51,7 @@ jobs:
 
       - name: Test independent fixture adapter and all hard safety gates
         run: |
-          python -m pip install pytest
+          python -m pip install pytest requests Pillow
           PYTHONPATH=. python -m pytest -q tests/test_matrix_football_independent_fixture_pipeline.py tests/test_matrix_independent_over25_governed_binding.py tests/test_matrix_football_independent_over25_shadow.py tests/test_matrix_independent_over25_quote_audit.py
 
       - name: Resolve Bogota target date
