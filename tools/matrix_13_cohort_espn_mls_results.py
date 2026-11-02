@@ -35,7 +35,16 @@ def club(name):
         tokens=tokens[:-1]
     if not tokens:
         raise ValueError("EMPTY_NORMALIZED_CLUB")
-    return " ".join(tokens)
+    raw = " ".join(tokens)
+    # Only explicitly corroborated alternative names from the 28-Oct ESPN MLS
+    # fixture archive. These are not generic fuzzy similarities.
+    aliases = {
+        "d c united": "dc united",
+        "dc united": "dc united",
+        "red bull new york": "new york red bulls",
+        "new york red bulls": "new york red bulls",
+    }
+    return aliases.get(raw,raw)
 
 
 def _event(event):
@@ -111,6 +120,7 @@ def compare(rows,payload,raw_sha):
             "half_time_certified":False,
             "raw_espn_response_sha256":raw_sha,
             "immutable_prematch_prediction":True,
+            "identity_policy":"EXACT_KICKOFF_HOME_AWAY_WITH_EXPLICIT_MLS_SYNONYMS_V1",
             "canonical_ledger_appends":0,
             "telegram_authorized":False,
         })
