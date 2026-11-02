@@ -77,6 +77,7 @@ def score_intake(intake: dict, token: str, *, opener=urlopen) -> dict:
         "odds_used_to_generate_probability": False,
         "source": "FOOTBALL_DATA_ORG",
         "network_calls": 0, "scored": [], "blocked": [],
+        "scored_count": 0, "blocked_count": 0,
         "historical_source_equivalence_verified": False,
         "browser_identity_crosschecked": False,
         "market_signal_authorized": False,
