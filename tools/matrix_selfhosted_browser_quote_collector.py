@@ -622,6 +622,44 @@ def candidate_pipeline_diagnostic(audit:dict[str,Any],now:datetime,root:Path=ROO
         "real_money":"BLOCKED",
     }
 
+def read_visible_book_page(page):
+    """Read ONLY rendered page text; retry a blocked Playwright locator via DOM.
+
+    Some dynamic bookmaker pages report TimeoutError on locator.inner_text()
+    despite having a live DOM. The fallback reads document.body.innerText,
+    not hidden text, cookies, unverified odds or a CAPTCHA bypass.
+    """
+    title=""
+    title_error=None
+    try:
+        title=str(page.title() or "")
+    except Exception as exc:
+        title_error=type(exc).__name__
+    try:
+        body=str(page.locator("body").inner_text(timeout=5000) or "")
+        if body.strip():
+            return title,body,"VISIBLE_PLAYWRIGHT_LOCATOR",title_error
+    except Exception as exc:
+        primary_error=type(exc).__name__
+    else:
+        primary_error="EMPTY_VISIBLE_BODY"
+    try:
+        snap=page.evaluate("""() => ({
+          title: String(document.title || '').slice(0,500),
+          visible_text: String(document.body?.innerText || '').slice(0,400000)
+        })""")
+        if not isinstance(snap,dict) or not str(snap.get("visible_text") or "").strip():
+            raise ValueError("BOOK_PAGE_NO_RENDERED_TEXT")
+        return (title or str(snap.get("title") or ""),
+                str(snap["visible_text"]),
+                "VISIBLE_READONLY_DOM_FALLBACK",primary_error)
+    except Exception as exc:
+        raise ValueError(
+            "BOOK_PAGE_RENDERED_TEXT_UNREADABLE:"
+            + primary_error + ":" + type(exc).__name__
+        ) from exc
+
+
 def main()->None:
     cfg=load(CONFIG); audit=load(AUDIT); adapters=load(ADAPTERS)
     endpoint=os.environ.get("MATRIX_BROWSER_CDP_ENDPOINT",cfg["browser"]["default_cdp_endpoint"]).strip()
@@ -684,8 +722,7 @@ def main()->None:
                 book=book_from_url(url)
                 if not book: continue
                 try:
-                    title=page.title()
-                    text=page.locator("body").inner_text(timeout=10000)
+                    title,text,read_mode,first_read_error=read_visible_book_page(page)
                 except Exception as e:
                     pages.append({"bookmaker":book,"url":url,"status":"READ_ERROR","error":type(e).__name__})
                     continue
@@ -694,6 +731,8 @@ def main()->None:
                 page_rec={
                   "bookmaker":book,"url":url,"title":title,"status":"CAPTURED",
                   "body_sha256":sha,"raw_evidence_path":None,
+                  "capture_mode":read_mode,
+                  "primary_read_error":first_read_error,
                   "adapter_status":adapter.get("status","MISSING")
                 }
                 text_matching=[c for c in browser_targets if page_matches_candidate(text,c)]
