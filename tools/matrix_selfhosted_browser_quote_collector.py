@@ -685,6 +685,23 @@ def read_visible_book_page(page):
         ) from exc
 
 
+def collection_outcome(pages:list[dict[str,Any]],targets:list[dict[str,Any]],
+                       exact_execution_quotes:list[dict[str,Any]])->str:
+    """Distinguish browser connectivity from authenticated quote progress.
+
+    PASS_CAPTURED is reserved for an actual authenticated prematch target
+    with at least one exact execution quote; it does NOT authorize Telegram.
+    Research-only quotes never count as execution quotes.
+    """
+    if not any(p.get("status")=="CAPTURED" for p in pages):
+        return "NO_AUTHORIZED_BOOK_PAGES_VISIBLE"
+    if not targets:
+        return "NO_ELIGIBLE_PREMATCH_TARGETS"
+    if not exact_execution_quotes:
+        return "PREMATCH_TARGETS_WITHOUT_CERTIFIED_EXECUTION_QUOTE"
+    return "EXACT_QUOTES_CAPTURED_PENDING_SHARP_MODEL_TELEGRAM_GATES"
+
+
 def main()->None:
     cfg=load(CONFIG); audit=load(AUDIT); adapters=load(ADAPTERS)
     endpoint=os.environ.get("MATRIX_BROWSER_CDP_ENDPOINT",cfg["browser"]["default_cdp_endpoint"]).strip()
@@ -880,7 +897,7 @@ def main()->None:
         "captcha_or_antibot_bypass_forbidden":True,
         "automatic_wagering":False,"real_money":"BLOCKED"
       },
-      "status":"PASS_CAPTURED" if pages else "NO_AUTHORIZED_BOOK_PAGES_VISIBLE"
+      "status":collection_outcome(pages,browser_targets,betano_exact_quotes)
     }
     OUT.parent.mkdir(parents=True,exist_ok=True)
     OUT.write_text(json.dumps(out,indent=2,ensure_ascii=False,sort_keys=True)+"\n",encoding="utf-8")
