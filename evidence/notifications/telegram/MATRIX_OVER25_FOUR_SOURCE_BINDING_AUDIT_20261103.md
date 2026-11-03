@@ -35,3 +35,12 @@ https://github.com/MatrixLabSports/MATRIX-LAB/actions/runs/41624051642
 
 ## Regla operativa
 No aceptar certificaciones que pertenezcan a otra captura de fuente solo porque son del mismo día. Guardar evidencia por ejecución y exigir igualdad de hashes para cada grupo de fuentes. No convertir una probabilidad de investigación a p_matrix oficial.
+
+## Actualización con prueba física final Windows
+
+- https://github.com/MatrixLabSports/MATRIX-LAB/actions/runs/41624325378: la primera ampliación del contrato detectó tres expectativas obsoletas en pruebas de replay (replay anterior al timestamp de fuente; pretensión de aceptar parte de un snapshot modificado; expectativa de error STALE cuando el hash ya lo rechaza). No se relajaron los controles.
+- `tests/test_matrix_championship_quote_window_scope.py` commit `992b9268`: reloj del replay corregido, cambios de identidad exigen rechazo del conjunto completo, alteración de timestamp falla por enlace SHA-256.
+- `.github/workflows/matrix-championship-prospective-pit-windows.yml` commit `3cf7f35e`: ejecuta también pruebas estrictas de ventana de cuotas y enlaces de las cuatro fuentes en Windows.
+- **Ejecución física final https://github.com/MatrixLabSports/MATRIX-LAB/actions/runs/41624462039: completed/success; 22 pruebas aprobadas; 6 historiales prospectivos auténticos certificados para investigación; `PROSPECTIVE_PIT_REPORT_PERSISTED`.**
+- La nueva ejecución Linux del cron `41624051642` seguía `queued` en la última consulta: no declarar ese ciclo verde aún.
+- Persisten los límites de seguridad: producción `p_matrix` no autorizada con el nuevo proveedor, ninguna cuota/sharp fresca certificada, `0 BET`, dinero real bloqueado.
