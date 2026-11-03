@@ -15,7 +15,7 @@ concurrency:
 jobs:
   collect:
     runs-on: [self-hosted, windows, matrix-browser-odds]
-    timeout-minutes: 4
+    timeout-minutes: 12
     env:
       MATRIX_BROWSER_CDP_ENDPOINT: http://127.0.0.1:9222
       REAL_MONEY: BLOCKED
@@ -28,41 +28,43 @@ jobs:
           ref: repair/cor09-world-pipeline
           fetch-depth: 0
 
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.11"
+      - name: Verify previously installed Windows Python 3.11 without downloading or installer scripts
+        shell: cmd
+        run: |
+          python -c "import sys; assert sys.version_info[:2] == (3,11), 'MATRIX_REQUIRES_LOCAL_PYTHON_311'"
+          python -m pip --version
 
       - name: Install collector dependencies
-        shell: pwsh
+        shell: cmd
         run: python -m pip install --disable-pip-version-check playwright pytest requests pillow tzdata
 
       - name: Enforce safety gates
-        shell: pwsh
+        shell: cmd
         run: |
-          if ($env:REAL_MONEY -ne "BLOCKED") { throw "REAL_MONEY_NOT_BLOCKED" }
-          if ($env:AUTO_BETTING -ne "DISABLED") { throw "AUTO_BETTING_NOT_DISABLED" }
+          if not "%REAL_MONEY%"=="BLOCKED" exit /B 1
+          if not "%AUTO_BETTING%"=="DISABLED" exit /B 1
+          echo REAL_MONEY_BLOCKED_NO_AUTOMATIC_BETTING
 
-      - name: Start or reuse persistent CDP browser
-        shell: pwsh
-        run: ./tools/windows/start_matrix_browser_cdp.ps1 -Port 9222
+      - name: Start or reuse persistent CDP browser (process-only policy, no OS setting changes)
+        shell: powershell.exe -NoProfile -NonInteractive -ExecutionPolicy Bypass -File {0}
+        run: .\\tools\\windows\\start_matrix_browser_cdp.ps1 -Port 9222
 
       - name: Verify browser collector contracts
-        shell: pwsh
+        shell: cmd
         run: |
           python -m pytest -q tests/test_matrix_selfhosted_browser_quote_collector.py tests/test_matrix_quote_recovery_evidence.py
 
       - name: Verify CDP health
-        shell: pwsh
+        shell: cmd
         run: python -m tools.matrix_selfhosted_browser_health
 
       - name: Capture authorized bookmaker browser evidence
-        shell: pwsh
+        shell: cmd
         run: python -m tools.matrix_selfhosted_browser_quote_collector
 
       - name: Persist governed browser evidence
         if: always()
-        shell: pwsh
+        shell: powershell.exe -NoProfile -NonInteractive -ExecutionPolicy Bypass -File {0}
         run: |
           git config user.name "matrix-browser-runner"
           git config user.email "matrix-browser-runner@users.noreply.github.com"
@@ -92,5 +94,16 @@ jobs:
           }
 
           git commit -m "evidence(browser): persist self-hosted quote collection cycle"
-          git pull --rebase origin repair/cor09-world-pipeline
-          git push origin HEAD:repair/cor09-world-pipeline
+          for ($attempt = 1; $attempt -le 4; $attempt++) {
+            git fetch origin repair/cor09-world-pipeline
+            if ($LASTEXITCODE -ne 0) { throw "BROWSER_EVIDENCE_FETCH_FAILED" }
+            git rebase origin/repair/cor09-world-pipeline
+            if ($LASTEXITCODE -ne 0) {
+              git rebase --abort
+              throw "BROWSER_EVIDENCE_REBASE_CONFLICT_FAIL_CLOSED"
+            }
+            git push origin HEAD:repair/cor09-world-pipeline
+            if ($LASTEXITCODE -eq 0) { exit 0 }
+            Start-Sleep -Seconds (2 * $attempt)
+          }
+          throw "BROWSER_EVIDENCE_PUSH_FAILED"
