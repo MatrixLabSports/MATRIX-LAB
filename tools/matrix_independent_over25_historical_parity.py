@@ -140,7 +140,11 @@ def compare_raw_features(archived_payload, free_payload, matched_pairs, cutoff,
     original = {r["fixture_id"]: r for r in archive_rows}
     independent = {r["fixture_id"]: r for r in free_rows}
     results = {
-        "schema": "MATRIX_SERIE_A_RAW_GROUP_PIT_FEATURE_REPLAY_V1",
+        "schema": ("MATRIX_SERIE_A_RAW_GROUP_PIT_FEATURE_REPLAY_V1"
+                   if archived_api_league_id == 135
+                   else "MATRIX_BRAZIL_RAW_GROUP_PIT_FEATURE_REPLAY_V1"
+                   if archived_api_league_id == 71
+                   else "MATRIX_OTHER_LEAGUE_RAW_GROUP_PIT_FEATURE_REPLAY_V1"),
         "source_league": source_league_id,
         "reference_league": archived_api_league_id,
         "pairs_with_matching_full_time_score": len(matched_pairs),
