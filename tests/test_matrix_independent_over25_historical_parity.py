@@ -87,3 +87,75 @@ def test_too_few_matches_fail_not_pretend_full_parity(tmp_path):
     result=inspect("secret",archive=archive,cycle=cycle,opener=lambda *_a,**_kw:Resp(b))
     assert result["history_result_concordance_verified"] is False
     assert result["status"]=="BLOCKED_SOURCE_SCORE_PARITY_INCOMPLETE"
+
+
+def _realistic_pit_payloads(total=36):
+    """Four stable named teams and distinct provider IDs, prior-only chronology."""
+    from datetime import datetime, timedelta, timezone
+    names = ("Atalanta", "Parma", "Torino", "Udinese")
+    api, free = [], []
+    for i in range(total):
+        start = datetime(2026, 9, 1, tzinfo=timezone.utc) + timedelta(hours=14 * i)
+        home, away = i % 4, (i + 1) % 4
+        hg, ag = i % 4, (i // 4) % 3
+        api.append({
+            "fixture": {"id": 1000 + i, "date": start.isoformat(), "status": {"short": "FT"}},
+            "league": {"id": 135, "season": 2026},
+            "teams": {"home": {"id": 100 + home, "name": names[home]},
+                      "away": {"id": 100 + away, "name": names[away]}},
+            "goals": {"home": hg, "away": ag}
+        })
+        free.append({
+            "id": 2000 + i, "utcDate": start.isoformat(), "status": "FINISHED",
+            "competition": {"id": 2019},
+            "homeTeam": {"id": 500 + home, "name": names[home]},
+            "awayTeam": {"id": 500 + away, "name": names[away]},
+            "score": {"fullTime": {"home": hg, "away": ag}}
+        })
+    return {"response": api}, {"matches": free}
+
+
+def test_exact_raw_pit_replay_can_be_proven_without_promoting_model(tmp_path):
+    archive_payload, free_payload = _realistic_pit_payloads()
+    archive, cycle = files(tmp_path, archive_payload)
+    result = inspect("token", archive=archive, cycle=cycle,
+                     opener=lambda *_args, **_kw: Resp(free_payload))
+    trace = result["raw_group_feature_parity"]
+    assert trace["pairs_with_matching_full_time_score"] == 36
+    assert trace["pairs_with_valid_raw_provider_ids"] == 36
+    assert trace["scoreable_both"] > 0
+    assert trace["different_raw_group_feature_or_probability_count"] == 0
+    assert trace["same_raw_group_feature_and_probability_count"] == trace["scoreable_both"]
+    assert trace["max_absolute_model_probability_difference"] == 0
+    assert trace["canonical_enriched_pit_parity_verified"] is False
+    assert trace["all_six_leagues_equivalence_verified"] is False
+    assert result["calibrated_model_feature_equivalence_verified"] is False
+    assert result["signal_generation_authorized"] is False
+
+
+def test_mismatched_historical_goals_detected_in_future_pit_feature_replay(tmp_path):
+    archive_payload, free_payload = _realistic_pit_payloads()
+    free_payload["matches"][4]["score"]["fullTime"]["home"] += 2
+    archive, cycle = files(tmp_path, archive_payload)
+    result = inspect("token", archive=archive, cycle=cycle,
+                     opener=lambda *_args, **_kw: Resp(free_payload))
+    trace = result["raw_group_feature_parity"]
+    assert result["score_disagreement_count"] == 1
+    assert trace["scoreable_both"] > 0
+    assert trace["different_raw_group_feature_or_probability_count"] > 0
+    assert trace["max_absolute_model_probability_difference"] > 0
+    assert result["history_result_concordance_verified"] is False
+    assert result["signal_generation_authorized"] is False
+
+
+def test_missing_raw_team_ids_cannot_be_claimed_as_feature_parity(tmp_path):
+    archived, free = payloads()
+    archive, cycle = files(tmp_path, archived)
+    result = inspect("secret", archive=archive, cycle=cycle,
+                     opener=lambda *_args, **_kw: Resp(free))
+    trace = result["raw_group_feature_parity"]
+    assert result["history_result_concordance_verified"] is True
+    assert trace["scoreable_both"] == 0
+    assert trace["pairs_with_valid_raw_provider_ids"] == 0
+    assert trace["canonical_enriched_pit_parity_verified"] is False
+    assert result["calibrated_model_feature_equivalence_verified"] is False
