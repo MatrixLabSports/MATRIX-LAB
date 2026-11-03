@@ -15,6 +15,21 @@ from zoneinfo import ZoneInfo
 
 BOGOTA=ZoneInfo("America/Bogota")
 ALIASES={
+    # Individually corroborated 2026-11-03 provider/browser names; no fuzzy promotion.
+    "portsmouth fc":"portsmouth",
+    "swansea city afc":"swansea city",
+    "derby county fc":"derby county",
+    "norwich city fc":"norwich city",
+    "blackburn rovers fc":"blackburn rovers",
+    "stoke city fc":"stoke city",
+    "watford fc":"watford",
+    "lincoln city fc":"lincoln city",
+    "charlton athletic fc":"charlton athletic",
+    "bolton wanderers fc":"bolton wanderers",
+    "birmingham city fc":"birmingham city",
+    "millwall fc":"millwall",
+    "chapecoense af":"chapecoense",
+    "mirassol fc":"mirassol",
     "us sassuolo calcio":"sassuolo",
     "acf fiorentina":"fiorentina",
     "atalanta bc":"atalanta",
