@@ -845,6 +845,22 @@ def main()->None:
       "generated_at_utc":now.isoformat(),
       "source_audit_generated_at_utc":audit.get("generated_at_utc"),
       "cdp_endpoint":endpoint,
+      "target_scope_status": (
+        "NO_ELIGIBLE_PREMATCH_TARGETS"
+        if not browser_targets else
+        "RESEARCH_ONLY_TARGETS_NO_PRODUCTION_AUTHORIZATION"
+        if not candidates else
+        "CANONICAL_CANDIDATES_PRESENT_REQUIRE_INDEPENDENT_QUOTE_GATES"
+      ),
+      "target_scope_diagnostic": {
+        "canonical_candidate_count": len(candidates),
+        "research_only_target_count": len(research_targets),
+        "page_capture_alone_never_proves_quote_availability": True,
+        "no_target_is_not_no_quote": True,
+        "source_calendar_priority": ["SofaScore", "Flashscore", "authorized_independent_provider"],
+        "telegram_signal_authorized": False,
+        "real_money": "BLOCKED",
+      },
       "candidate_count_in_final_window":len(candidates),
       "research_only_quote_target_count":len(research_targets),
       "authorized_book_pages_captured":len([x for x in pages if x.get("status")=="CAPTURED"]),
