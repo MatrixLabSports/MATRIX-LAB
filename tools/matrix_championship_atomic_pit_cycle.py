@@ -98,8 +98,24 @@ def main():
         raise SystemExit("ATOMIC_PIT_EVIDENCE_OUTPUT_INVALID")
     folder=a.root/"evidence"/"football_world_inventory"/a.date
     docs={k:json.loads((folder/v).read_text(encoding="utf-8"))
-          for k,v in REQUIRED.items()}
-    b=pack(docs,run_id=a.run_id)
+          for k,v in REQUIRED.items() if k!="attestation"}
+    candidates=[
+        folder/REQUIRED["attestation"],
+        *sorted(folder.glob("MATRIX_CHAMPIONSHIP_PROSPECTIVE_PIT_RUN_*.json")),
+    ]
+    valid=[]
+    for candidate in candidates:
+        if not candidate.is_file():
+            continue
+        try:
+            attestation=json.loads(candidate.read_text(encoding="utf-8"))
+            b=pack({**docs,"attestation":attestation},run_id=a.run_id)
+            valid.append((utc(attestation["observed_at_utc"]),candidate.name,b))
+        except (OSError,ValueError,TypeError,KeyError,json.JSONDecodeError):
+            continue
+    if not valid:
+        raise SystemExit("ATOMIC_PIT_NO_MATCHING_FIVE_DOCUMENT_SOURCE_CYCLE")
+    _,chosen,b=max(valid,key=lambda x:(x[0],x[1]))
     if b["target_date_bogota"]!=a.date:
         raise SystemExit("ATOMIC_PIT_DATE_MISMATCH")
     a.out.parent.mkdir(parents=True,exist_ok=True)
@@ -107,6 +123,7 @@ def main():
                      encoding="utf-8")
     print(json.dumps({"schema":b["schema"],"run_id":a.run_id,
                       "certified_history_count":b["prospective_research_history_certified_count"],
+                      "source_attestation_file":chosen,
                       "telegram_signal_authorized":False,
                       "real_money":"BLOCKED"},sort_keys=True))
 
