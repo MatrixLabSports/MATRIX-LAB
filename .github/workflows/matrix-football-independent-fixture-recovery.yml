@@ -186,7 +186,18 @@ jobs:
           S="evidence/football_world_inventory/$D/MATRIX_INDEPENDENT_OVER25_HISTORY_SHADOW.json"
           if [ -f "$S" ]; then git add "$S"; fi
           PITA="evidence/football_world_inventory/$D/MATRIX_CHAMPIONSHIP_PROSPECTIVE_PIT_ATTESTATION.json"
-          if [ -f "$PITA" ]; then git add "$PITA"; fi
+          if [ -f "$PITA" ]; then
+            # Immutable run-scoped evidence prevents add/add conflicts with
+            # a separate Windows prospective attestation in the same day.
+            PITA_RUN="evidence/football_world_inventory/$D/MATRIX_CHAMPIONSHIP_PROSPECTIVE_PIT_RUN_${{ github.run_id }}.json"
+            cp "$PITA" "$PITA_RUN"
+            git add "$PITA_RUN"
+            if git ls-files --error-unmatch "$PITA" > /dev/null 2>&1; then
+              git restore -- "$PITA"
+            else
+              rm "$PITA"
+            fi
+          fi
           Q="evidence/football_world_inventory/$D/MATRIX_INDEPENDENT_OVER25_QUOTE_AUDIT.json"
           if [ -f "$Q" ]; then git add "$Q"; fi
           B="evidence/football_world_inventory/$D/MATRIX_SOFA_FOOTBALL_FIXTURE_CROSSCHECK.json"
