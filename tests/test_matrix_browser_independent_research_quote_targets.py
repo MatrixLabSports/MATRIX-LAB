@@ -111,3 +111,21 @@ def test_provider_or_governance_mismatch_blocks_research(tmp_path):
 
 def test_missing_source_is_not_synthetic_data(tmp_path):
     assert independent_research_quote_targets(NOW,tmp_path)==[]
+
+
+def test_real_seven_three_source_archive_yields_six_research_only_targets():
+    """Offline replay of immutable 03-Nov evidence; not a live quote or bet."""
+    root=Path(__file__).resolve().parents[1]
+    clock=datetime(2026,11,3,19,0,tzinfo=timezone.utc)
+    rows=independent_research_quote_targets(clock,root)
+    ids={r["fixture_id"] for r in rows}
+    assert ids=={
+      "FOOTBALL_DATA_ORG:561917",
+      "FOOTBALL_DATA_ORG:561918",
+      "FOOTBALL_DATA_ORG:561921",
+      "FOOTBALL_DATA_ORG:561922",
+      "FOOTBALL_DATA_ORG:561924",
+      "FOOTBALL_DATA_ORG:561928",
+    }
+    assert all(r["research_only"] is True and r["p_matrix"] is None
+               and r["telegram_signal_authorized"] is False for r in rows)
