@@ -56,7 +56,7 @@ def report(intake,sofa,flash,shadow,*,now:datetime):
         or shadow.get("frozen_parameters")!={"a":0.6,"b":0.0,"c":0.4}):
         raise ValueError("PROSPECTIVE_MODEL_CONTRACT_CHANGED")
     source_at=utc(intake["generated_at_utc"])
-    scored_at=utc(shadow["generated_at_utc"])
+    scored_at=utc(shadow["completed_at_utc"])
     source_age=(now-source_at).total_seconds()
     if not (0 <= source_age <= 1800 and source_at <= scored_at <= now):
         raise ValueError("PROSPECTIVE_INTAKE_STALE_OR_TIME_ORDER_INVALID")
