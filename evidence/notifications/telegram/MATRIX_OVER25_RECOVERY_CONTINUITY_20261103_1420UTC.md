@@ -44,3 +44,11 @@ Recuperar evidencia prospectiva compatible, asegurar una entrada de cuotas autor
 Continuar desde el paquete atómico real de seis eventos, filtrarlos solamente durante su ventana prematch, leer precios autorizados y referencias sharp de proveedores con disponibilidad acreditada (nunca eludir HTTP 429), verificar en conjunto las características calibradas originales, y solo entonces permitir al supervisor ordinario decidir en modo papel, con 1 unidad máxima. Si falta cualquier componente: NO BET.
 
 No se cambió la calibración, la búsqueda de parámetros, cohortes, capacidad de apuesta, seguridad de Windows ni la autorización de dinero real.
+
+## Adenda física de certificación a 14:24 UTC
+
+- El flujo automático independiente [#41651322786](https://github.com/MatrixLabSports/MATRIX-LAB/actions/runs/41651322786) concluyó **completed/success**. Generó de forma real `MATRIX_CHAMPIONSHIP_ATOMIC_PIT_RUN_41651322786.json` a partir del mismo ciclo de cinco documentos, seis históricos prospectivos válidos y lo persistió mediante GitHub `git push`. Registró cero consultas de precios por estar fuera de ventana.
+- El filtro de 15 minutos [#41652636543](https://github.com/MatrixLabSports/MATRIX-LAB/actions/runs/41652636543) terminó **completed/success, 35 passed**. Ejecutó filtro real `NO_VERIFIED_PREMATCH_SCOPE`, `research_only_eligible_count=0` sin consultas ni señal.
+- El Runner Windows [#41653234038](https://github.com/MatrixLabSports/MATRIX-LAB/actions/runs/41653234038) terminó **completed/success**, `35 passed`, `AUTHENTIC_ATOMIC_PROSPECTIVE_HISTORY=6` y `AUTHENTIC_ATOMIC_QUOTE_WINDOW_RESEARCH_ONLY=NO_VERIFIED_PREMATCH_SCOPE`; persistencia `ATOMIC_PIT_EVIDENCE_PERSISTED`.
+- Evidencia adicional del filtro: `evidence/football_world_inventory/2026-11-03/MATRIX_CHAMPIONSHIP_QUOTE_WINDOW_SCOPE_WINDOWS_41653234038.json` y paquete `MATRIX_CHAMPIONSHIP_ATOMIC_PIT_RUN_41653234038.json`.
+- Para no prometer recuperaciones no logradas: **sigue faltando** paridad prospectiva enriquecida completa para el nuevo proveedor, una probabilidad de producción gobernada, precios exactos actuales y una referencia Pinnacle fresca. `odds-api.net` continúa con decisión `BLOCKED_EXHAUSTED` por HTTP 429. **NO BET**, `REAL_MONEY=BLOCKED`.
