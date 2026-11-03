@@ -76,6 +76,67 @@ def candidate_rows(audit:dict[str,Any],now:datetime)->list[dict[str,Any]]:
         out.append(r)
     return sorted(out,key=lambda x:x["kickoff"])
 
+def atomic_verified_research_quote_targets(now:datetime,folder:Path,date:str)->list[dict[str,Any]]|None:
+    """Prefer immutable, hash-attested five-source Championship PIT snapshots.
+
+    None means no atomic file exists (legacy triple-calendar fallback).
+    [] means atomic evidence exists but is invalid, stale, or outside window;
+    in that case NEVER fall back to mutable daily evidence.
+    """
+    paths=sorted(folder.glob("MATRIX_CHAMPIONSHIP_ATOMIC_PIT_RUN_*.json"))
+    if not paths:
+        return None
+    from tools.matrix_championship_quote_window_scope import atomic_cycles, scope
+    from tools.matrix_championship_atomic_pit_cycle import digest
+    try:
+        verified=atomic_cycles(folder,date,now=now.astimezone(timezone.utc))
+        if not verified:
+            return []
+        _,file,_,docs=max(verified,key=lambda x:(x[0],x[1].name))
+        intake,shadow,att,sofa,flash=(
+            docs[k] for k in ("intake","shadow","attestation","sofa","flash"))
+        selected,_,gate=scope(intake,shadow,att,sofa,flash,now=now)
+        if gate["status"] not in (
+            "PREMATCH_RESEARCH_QUOTE_SCOPE_AVAILABLE","NO_VERIFIED_PREMATCH_SCOPE"):
+            return []
+        if (gate.get("telegram_signal_authorized") is not False
+            or gate.get("production_probability_authorized") is not False):
+            return []
+        by_sofa={str(x["fixture_id"]):x for x in sofa["matched"]}
+        by_flash={str(x["source_fixture_id"]):x for x in flash["matched"]}
+        output=[]
+        for row in selected["fixtures"]:
+            fid=str(row["source_fixture_id"])
+            a,b=by_sofa.get(fid),by_flash.get(fid)
+            if not a or not b:
+                return []
+            kickoff=row["kickoff_utc"]
+            if (kickoff!=a.get("kickoff_utc") or kickoff!=b.get("kickoff_utc")
+                or not a.get("identity_time_and_teams_verified")
+                or b.get("three_source_calendar_identity_verified") is not True
+                or str(a.get("sofascore_event_id"))!=str(b.get("sofascore_event_id"))):
+                return []
+            output.append({
+                "fixture_id":"FOOTBALL_DATA_ORG:"+fid,
+                "match":str(row["home"])+" vs "+str(row["away"]),
+                "kickoff":kickoff,
+                "p_matrix":None,"research_only":True,
+                "triple_source_calendar_identity_verified":True,
+                "original_enriched_model_parity_verified":False,
+                "production_probability_authorized":False,
+                "telegram_signal_authorized":False,
+                "calendar_source_date":date,
+                "sofascore_event_id":str(a["sofascore_event_id"]),
+                "flashscore_mid":str(b["flashscore_mid"]),
+                "atomic_pit_bundle":str(file.relative_to(folder.parent.parent.parent)),
+                "atomic_attestation_sha256":digest(att),
+            })
+        return sorted(output,key=lambda x:(x["kickoff"],x["fixture_id"]))
+    except (OSError,ValueError,TypeError,KeyError,OverflowError,
+            AttributeError,json.JSONDecodeError):
+        return []
+
+
 def independent_research_quote_targets(now:datetime,root:Path=ROOT)->list[dict[str,Any]]:
     """Separate read-only quote lookup for triple-verified fixtures, NEVER signal candidates.
 
@@ -89,6 +150,12 @@ def independent_research_quote_targets(now:datetime,root:Path=ROOT)->list[dict[s
     for offset in (0,1):
         date=(day+timedelta(days=offset)).isoformat()
         folder=root/"evidence"/"football_world_inventory"/date
+        # An immutable authentic PIT bundle overrides mutable daily files.
+        # It may supply research quote lookup ONLY, never canonical signals.
+        atomic=atomic_verified_research_quote_targets(now,folder,date)
+        if atomic is not None:
+            output.extend(atomic)
+            continue
         files={
             "source":folder/"MATRIX_FOOTBALL_INDEPENDENT_FIXTURE_INTAKE.json",
             "sofa":folder/"MATRIX_SOFA_FOOTBALL_FIXTURE_CROSSCHECK.json",
