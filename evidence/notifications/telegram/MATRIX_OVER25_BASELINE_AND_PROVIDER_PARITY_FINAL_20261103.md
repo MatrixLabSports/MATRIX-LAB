@@ -53,7 +53,7 @@ Cotejo contra el archivo original congelado API-Football del ciclo 2026-10-24:
 - Corrigió interferencia entre procesos Windows/Linux: los archivos de evidencia se guardan con ID de corrida GitHub; el auditor no escoge la certificación más reciente sin comprobar primero todos los hashes.
 - `tools/matrix_championship_quote_window_scope.py`, commit `e649fe38`: escoge para cuotas solo una certificación que coincida con cuatro hashes actuales, no una versión posterior de otra captura. Test `37bd681b` comprueba dos versiones del mismo día y rechazo de todas las versiones incompatibles.
 - Runner Windows https://github.com/MatrixLabSports/MATRIX-LAB/actions/runs/41628106845: `completed/success`, **32 pruebas aprobadas** y `AUTHENTIC_PROSPECTIVE_RESEARCH_FIXTURES=6`, evidencia persistida.
-- El cron Linux `*/15 * * * *` en main, `.github/workflows/matrix-championship-quote-research-15m.yml`, commit `150cc981`: nueva ejecución https://github.com/MatrixLabSports/MATRIX-LAB/actions/runs/41628142354, **aún pendiente de resultado al corte de esta nota**; no declarar verde por adelantado.
+- El cron Linux `*/15 * * * *` en main, `.github/workflows/matrix-championship-quote-research-15m.yml`, commit `150cc981`: https://github.com/MatrixLabSports/MATRIX-LAB/actions/runs/41628142354, **completed/success, 24 pruebas aprobadas**. El filtro devolvió `NO_VERIFIED_PREMATCH_SCOPE`, cero partidos en la ventana de 120 minutos, cero solicitudes de cuota, cero señales. Esto certifica funcionamiento y seguridad del filtro, **no precios disponibles**.
 
 ## Controles de producción pendientes
 
