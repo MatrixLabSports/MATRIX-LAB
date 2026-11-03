@@ -36,10 +36,14 @@ def test_real_matching_source_replay_can_be_packed_without_signals():
     assert b["telegram_signal_authorized"] is False
     assert unpack(b)["shadow"]==docs["shadow"]
 
-def test_stale_daily_attestation_cannot_match_new_intake():
+def test_archived_older_real_attestation_cannot_match_new_intake():
     docs=originals()
-    daily=json.loads((FOLDER/"MATRIX_CHAMPIONSHIP_PROSPECTIVE_PIT_ATTESTATION.json").read_text(encoding="utf-8"))
-    docs["attestation"]=daily
+    # This immutable GitHub-run attestation was physically observed at
+    # 11:24 UTC. Unlike the mutable daily file, it CANNOT become the newest
+    # capture when another independent workflow publishes a later cycle.
+    previous=json.loads((FOLDER/"MATRIX_CHAMPIONSHIP_PROSPECTIVE_PIT_RUN_41626481114.json").read_text(encoding="utf-8"))
+    assert previous["source_intake_sha256"]!=docs["attestation"]["source_intake_sha256"]
+    docs["attestation"]=previous
     with pytest.raises(ValueError,match="ATOMIC_PIT_SOURCE_HASH_MISMATCH"):
         pack(docs,run_id="123")
 
