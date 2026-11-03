@@ -5,6 +5,7 @@ authorizes execution, Telegram, or real-money wagering.
 """
 from __future__ import annotations
 import argparse
+import hashlib
 import json
 import math
 from dataclasses import asdict
@@ -21,6 +22,11 @@ def utc(s):
     if stamp.tzinfo is None:
         raise ValueError("PROSPECTIVE_TIMESTAMP_NAIVE")
     return stamp.astimezone(timezone.utc)
+
+def source_digest(payload):
+    return hashlib.sha256(json.dumps(
+        payload, ensure_ascii=False, sort_keys=True, separators=(",", ":")
+    ).encode("utf-8")).hexdigest()
 
 def by_id(rows,key):
     if not isinstance(rows,list): raise ValueError("PROSPECTIVE_ROWS_MISSING")
@@ -177,6 +183,13 @@ def report(intake,sofa,flash,shadow,*,now:datetime):
             row["status"]="BLOCKED_INVALID_PROVENANCE_OR_IDENTITY"
     return {
         "schema":"MATRIX_CHAMPIONSHIP_PROSPECTIVE_PIT_ATTESTATION_V1",
+        "source_binding_schema":"MATRIX_PROSPECTIVE_PIT_EXACT_FOUR_SOURCE_BINDING_V1",
+        "source_intake_sha256":source_digest(intake),
+        "source_shadow_sha256":source_digest(shadow),
+        "source_sofa_sha256":source_digest(sofa),
+        "source_flash_sha256":source_digest(flash),
+        "source_intake_generated_at_utc":source_at.isoformat(),
+        "source_shadow_completed_at_utc":scored_at.isoformat(),
         "target_date_bogota":day,
         "observed_at_utc":now.isoformat(),
         "status":"RESEARCH_ONLY_NO_PRODUCTION_AUTHORIZATION",
