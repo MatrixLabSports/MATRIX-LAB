@@ -1,0 +1,109 @@
+name: MATRIX Football Opera 03NOV Browser-First Link Reconciliation
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - repair/cor09-world-pipeline
+    paths:
+      - evidence/football_world_inventory/2026-11-03/MATRIX_SOFASCORE_OPERA_VISIBLE_LINKS.json
+      - evidence/football_world_inventory/2026-11-03/MATRIX_FLASHSCORE_OPERA_VISIBLE_LINKS.json
+      - tools/matrix_football_opera_03nov_link_reconciliation.py
+      - tests/test_matrix_football_opera_03nov_link_reconciliation.py
+      - .github/workflows/matrix-football-opera-03nov-link-reconciliation.yml
+
+permissions:
+  contents: write
+
+concurrency:
+  group: matrix-football-opera-03nov-link-reconciliation
+  cancel-in-progress: false
+
+jobs:
+  verify-preserve-browser-evidence:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    env:
+      MATRIX_MODE: SHADOW
+      REAL_MONEY: BLOCKED
+      AUTOMATIC_WAGERING: "false"
+    steps:
+      - name: Checkout operational branch only
+        uses: actions/checkout@v4
+        with:
+          ref: repair/cor09-world-pipeline
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Run source-gate and anti-promotion regression tests
+        run: |
+          set -euo pipefail
+          python -m pip install pytest
+          PYTHONPATH=. python -m pytest -q tests/test_matrix_football_opera_03nov_link_reconciliation.py
+
+      - name: Reconcile original Opera links without approving any fixtures or signals
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$REAL_MONEY" = BLOCKED
+          test "$AUTOMATIC_WAGERING" = false
+          ROOT=evidence/football_world_inventory/2026-11-03
+          PYTHONPATH=. python -m tools.matrix_football_opera_03nov_link_reconciliation \
+            --sofascore "$ROOT/MATRIX_SOFASCORE_OPERA_VISIBLE_LINKS.json" \
+            --flashscore "$ROOT/MATRIX_FLASHSCORE_OPERA_VISIBLE_LINKS.json" \
+            --out "$ROOT/MATRIX_OPERA_TWO_SOURCE_LINK_RECONCILIATION.json"
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          p=Path("evidence/football_world_inventory/2026-11-03/MATRIX_OPERA_TWO_SOURCE_LINK_RECONCILIATION.json")
+          r=json.loads(p.read_text(encoding="utf-8"))
+          c=r["sofascore_counts"]
+          assert r["status"]=="LINK_IDENTITY_CANDIDATES_ONLY_NOT_CERTIFIED_FIXTURES"
+          assert (c["observed_urls"],c["explicit_date"],c["date_with_visible_clock"],c["date_without_visible_clock"],c["no_explicit_date"]) == (722,710,687,23,12)
+          assert r["flashscore_visible_links"]==253
+          assert r["candidate_pair_count_before_one_to_one_filter"]==165
+          assert r["one_to_one_link_identity_candidate_count"]==138
+          assert r["ambiguous_link_pair_count"]==27
+          assert len(r["one_to_one_link_identity_candidates"])==138
+          assert len(r["ambiguous_link_pairs"])==27
+          assert r["source_order"]==["SOFASCORE","FLASHSCORE","APIS"]
+          assert r["independent_api_fixture_identity_verified"] is False
+          assert r["flashscore_individual_event_date_certified"] is False
+          assert r["exact_odds_verified"] is False
+          assert r["model_probability_authorized"] is False
+          assert r["telegram_signals_authorized"] is False
+          assert r["calibration_parameters_modified"] is False
+          assert r["automatic_wagering"] is False
+          assert r["real_money"]=="BLOCKED"
+          assert len(r["source_sha256"]["sofascore"])==64
+          assert len(r["source_sha256"]["flashscore"])==64
+          print("PASS_722_SOFA_710_EXPLICIT_DATE_253_FLASH_138_LINK_PAIRS_27_AMBIGUOUS_ZERO_FIXTURE_PROMOTION")
+          PY
+
+      - name: Persist only diagnostic reconciliation, never model probabilities
+        shell: bash
+        run: |
+          set -euo pipefail
+          P=evidence/football_world_inventory/2026-11-03/MATRIX_OPERA_TWO_SOURCE_LINK_RECONCILIATION.json
+          git config user.name matrix-football-calendar
+          git config user.email matrix-football-calendar@users.noreply.github.com
+          git add "$P"
+          if git diff --cached --quiet; then
+            echo EVIDENCE_ALREADY_COMMITTED
+            exit 0
+          fi
+          git commit -m "evidence(football): persist 03nov two-source link-only reconciliation"
+          for attempt in 1 2 3 4; do
+            git fetch origin repair/cor09-world-pipeline
+            if ! git rebase origin/repair/cor09-world-pipeline; then
+              git rebase --abort || true
+              exit 1
+            fi
+            if git push origin HEAD:repair/cor09-world-pipeline; then exit 0; fi
+            sleep $((attempt*2))
+          done
+          exit 1
