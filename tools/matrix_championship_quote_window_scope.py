@@ -120,6 +120,24 @@ def scope(intake,shadow,attestation,sofa,flash,*,now):
     }
     return filtered_intake,filtered_shadow,gate
 
+def atomic_cycles(folder,day,*,now):
+    """Return immutable snapshots only if all five documents hash-match."""
+    from tools.matrix_championship_atomic_pit_cycle import unpack
+    out=[]
+    for path in sorted(folder.glob("MATRIX_CHAMPIONSHIP_ATOMIC_PIT_RUN_*.json")):
+        try:
+            bundle=json.loads(path.read_text(encoding="utf-8"))
+            if bundle.get("target_date_bogota")!=day:
+                continue
+            docs=unpack(bundle)
+            observed=utc(bundle["attested_at_utc"])
+            if (observed>now or not 0<=(now-observed).total_seconds()<=86400):
+                continue
+            out.append((observed,path,docs["attestation"],docs))
+        except (OSError,ValueError,TypeError,KeyError,OverflowError,json.JSONDecodeError):
+            continue
+    return out
+
 def main():
     p=argparse.ArgumentParser()
     p.add_argument("--date",required=True)
@@ -167,11 +185,16 @@ def main():
                 and doc.get("source_binding_schema")=="MATRIX_PROSPECTIVE_PIT_EXACT_FOUR_SOURCE_BINDING_V1"
                 and expected_bindings
                 and all(doc.get(k)==v for k,v in expected_bindings.items())):
-                available.append((observed,candidate,doc))
+                available.append((observed,candidate,doc,None))
         except (ValueError,KeyError,TypeError,json.JSONDecodeError):
             continue
+    # Atomic run-scoped bundles survive independent workflow writes to
+    # daily files. A bundle is never mixed with ANY daily file.
+    available.extend(atomic_cycles(folder,a.date,now=now))
     selected_attestation=max(available,key=lambda x:(x[0],x[1].name)) if available else None
-    missing=[n for n,f in names.items() if n!="attestation" and not (folder/f).is_file()]
+    missing=([n for n,f in names.items()
+              if n!="attestation" and not (folder/f).is_file()]
+             if selected_attestation is None else [])
     if selected_attestation is None:
         missing.append("attestation")
     eligible=False
@@ -186,8 +209,11 @@ def main():
               "telegram_signal_authorized":False,
               "automatic_wagering":False,"real_money":"BLOCKED"}
     else:
-        docs={k:json.loads((folder/f).read_text(encoding="utf-8")) for k,f in names.items() if k!="attestation"}
-        docs["attestation"]=selected_attestation[2]
+        if selected_attestation[3] is not None:
+            docs=selected_attestation[3]
+        else:
+            docs={k:json.loads((folder/f).read_text(encoding="utf-8")) for k,f in names.items() if k!="attestation"}
+            docs["attestation"]=selected_attestation[2]
         try:
             x,y,gate=scope(docs["intake"],docs["shadow"],docs["attestation"],
                            docs["sofa"],docs["flash"],now=now)
