@@ -49,7 +49,7 @@ def test_real_archived_prospective_pre_match_window_has_six_only_research_target
 
 def test_outside_two_hour_window_is_zero_and_never_price_eligible():
     d=originals()
-    x,y,gate=scope(*d,now=datetime(2026,11,3,11,0,tzinfo=timezone.utc))
+    x,y,gate=scope(*d,now=datetime(2026,11,3,14,0,tzinfo=timezone.utc))
     assert gate["research_only_eligible_count"]==0
     assert x["fixtures"]==[]
     assert y["scored"]==[]
@@ -66,10 +66,11 @@ def test_incorrect_browser_kickoff_blocks_target():
     flash=deepcopy(flash)
     match=next(r for r in flash["matched"] if r["source_fixture_id"]=="561918")
     match["kickoff_utc"]="2026-11-03T20:00:00+00:00"
-    _,_,gate=scope(source,shadow,att,sofa,flash,
-                   now=datetime(2026,11,3,18,30,tzinfo=timezone.utc))
-    assert "561918" not in gate["research_only_ids"]
-    assert gate["research_only_eligible_count"]==5
+    # Changing a verified browser kickoff invalidates its four-source hash.
+    # We must block the ENTIRE mixed snapshot, not quietly score five others.
+    with pytest.raises(ValueError,match="EXACT_SOURCE_SNAPSHOT"):
+        scope(source,shadow,att,sofa,flash,
+              now=datetime(2026,11,3,18,30,tzinfo=timezone.utc))
 
 
 def test_source_gov_change_fails_closed():
@@ -83,7 +84,8 @@ def test_source_gov_change_fails_closed():
 def test_stale_source_fails_closed():
     source,shadow,att,sofa,flash=originals()
     source=deepcopy(source);source["generated_at_utc"]="2026-10-29T05:00:00+00:00"
-    with pytest.raises(ValueError,match="STALE"):
+    # An altered timestamp is blocked first by the stronger hash contract.
+    with pytest.raises(ValueError,match="EXACT_SOURCE_SNAPSHOT"):
         scope(source,shadow,att,sofa,flash,
               now=datetime(2026,11,3,18,30,tzinfo=timezone.utc))
 
