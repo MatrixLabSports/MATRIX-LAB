@@ -27,9 +27,19 @@ def main():
         or any(row.get("production_p_matrix_authorized") is not False
                for row in d.get("rows",[]))):
         raise ValueError("BASELINE_EVIDENCE_GOVERNANCE_INVALID")
+    cross=Path("evidence/football_world_inventory/2026-11-03")/f"MATRIX_CHAMPIONSHIP_CROSS_PROVIDER_WINDOWS_{run}.json"
+    x=json.loads(cross.read_text(encoding="utf-8"))
+    if (x.get("schema")!="MATRIX_CHAMPIONSHIP_HISTORICAL_CROSS_PROVIDER_HTTP_REPLAY_V1"
+        or x.get("real_money")!="BLOCKED"
+        or x.get("automatic_wagering") is not False
+        or x.get("telegram_signal_authorized") is not False
+        or x.get("new_production_p_matrix_authorized") is not False
+        or x.get("full_original_calibrated_model_equivalence_verified") is not False
+        or x.get("network_calls")!=0):
+        raise ValueError("CROSS_PROVIDER_EVIDENCE_GOVERNANCE_INVALID")
     git("config","user.name","matrix-baseline-audit")
     git("config","user.email","matrix-baseline-audit@users.noreply.github.com")
-    git("add","--",p.as_posix())
+    git("add","--",p.as_posix(),cross.as_posix())
     if git("diff","--cached","--quiet",allowed=(0,1))==0:
         print("BASELINE_EVIDENCE_UNCHANGED");return
     git("commit","-m","evidence(over25): independently verify authentic Championship group baseline")
