@@ -141,6 +141,19 @@ def main():
         folder/"MATRIX_CHAMPIONSHIP_PROSPECTIVE_PIT_ATTESTATION.json",
         *sorted(folder.glob("MATRIX_CHAMPIONSHIP_PROSPECTIVE_PIT_RUN_*.json")),
     ]
+    # Choose by the FOUR exact authenticated inputs, not by timestamp alone.
+    # Independent and Windows jobs can publish different snapshots during
+    # the same Bogota day; a newer unrelated attestation is never equivalent.
+    necessary={k:v for k,v in names.items() if k!="attestation"}
+    can_bind=all((folder/value).is_file() for value in necessary.values())
+    source_docs=({k:json.loads((folder/value).read_text(encoding="utf-8"))
+                  for k,value in necessary.items()} if can_bind else {})
+    expected_bindings=({
+        "source_intake_sha256":digest(source_docs["intake"]),
+        "source_shadow_sha256":digest(source_docs["shadow"]),
+        "source_sofa_sha256":digest(source_docs["sofa"]),
+        "source_flash_sha256":digest(source_docs["flash"]),
+    } if can_bind else {})
     available=[]
     now=datetime.now(timezone.utc)
     for candidate in attestation_paths:
@@ -149,7 +162,11 @@ def main():
         try:
             doc=json.loads(candidate.read_text(encoding="utf-8"))
             observed=utc(doc["observed_at_utc"])
-            if doc.get("target_date_bogota")==a.date and observed<=now:
+            if (doc.get("target_date_bogota")==a.date
+                and observed<=now
+                and doc.get("source_binding_schema")=="MATRIX_PROSPECTIVE_PIT_EXACT_FOUR_SOURCE_BINDING_V1"
+                and expected_bindings
+                and all(doc.get(k)==v for k,v in expected_bindings.items())):
                 available.append((observed,candidate,doc))
         except (ValueError,KeyError,TypeError,json.JSONDecodeError):
             continue
@@ -160,7 +177,10 @@ def main():
     eligible=False
     if missing:
         gate={"schema":"MATRIX_CHAMPIONSHIP_QUOTE_WINDOW_SCOPE_V1",
-              "target_date_bogota":a.date,"status":"BLOCKED_MISSING_SOURCE_FILES",
+              "target_date_bogota":a.date,
+              "status":("BLOCKED_NO_EXACT_SOURCE_ATTESTATION"
+                        if can_bind and selected_attestation is None
+                        else "BLOCKED_MISSING_SOURCE_FILES"),
               "missing_files":missing,"research_only_eligible_count":0,
               "production_probability_authorized":False,
               "telegram_signal_authorized":False,
