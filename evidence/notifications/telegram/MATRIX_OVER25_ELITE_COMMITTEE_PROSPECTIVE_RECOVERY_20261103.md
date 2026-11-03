@@ -51,3 +51,7 @@ Participan funciones técnicas de auditoría de fuentes, PIT, modelo y calibraci
 3. Para Telegram: exigir exportación canónica verdadera del modelo autorizado, más cuotas, EV y controles del supervisor. Solo después efectuar una verificación de señal shadow con 1u máximo y sin apostar automáticamente.
 
 **Protecciones:** `REAL_MONEY=BLOCKED`, `automatic_wagering=false`, `0 BET` permitido, parámetros `a=0.6,b=0,c=0.4` intactos, sin backfill de resultados posteriores, sin modificación de calibraciones/cohortes, sin integración ficticia de producción.
+
+## Verificación final 33 pruebas
+
+https://github.com/MatrixLabSports/MATRIX-LAB/actions/runs/41629772456: GitHub Actions completed/success, `33 passed`, `REAL_THREE_WAY_ENRICHED_MATCHES=8 BLOCKED=3`, `BASELINE_EVIDENCE_PERSISTED`. Incluye las pruebas negativas de identidad de calendario única y prohibición de utilizar resultados del partido objetivo en el mapeo retrospectivo. Sigue sin certificar equivalencia prospectiva ni autorizar Telegram.
