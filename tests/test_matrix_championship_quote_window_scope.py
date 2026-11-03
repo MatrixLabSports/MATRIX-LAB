@@ -6,18 +6,29 @@ import json
 import pytest
 
 from tools.matrix_championship_quote_window_scope import scope
+from tools.matrix_championship_prospective_pit_attestation import report
 
 ROOT=Path(__file__).resolve().parents[1]/"evidence"/"football_world_inventory"/"2026-11-03"
 FILES=[
     "MATRIX_FOOTBALL_INDEPENDENT_FIXTURE_INTAKE.json",
     "MATRIX_INDEPENDENT_OVER25_HISTORY_SHADOW.json",
-    "MATRIX_CHAMPIONSHIP_PROSPECTIVE_PIT_RUN_41621485245.json",
     "MATRIX_SOFA_FOOTBALL_FIXTURE_CROSSCHECK.json",
     "MATRIX_FLASH_FOOTBALL_CROSSCHECK.json",
 ]
 
 def originals():
-    return [json.loads((ROOT/path).read_text(encoding="utf-8")) for path in FILES]
+    """Replay actual archived provider rows at their original capture timestamp.
+
+    Never reuse a newer intake with an older independent attestation.
+    """
+    intake, shadow, sofa, flash = [
+        json.loads((ROOT/path).read_text(encoding="utf-8")) for path in FILES
+    ]
+    score_completed=datetime.fromisoformat(shadow["completed_at_utc"].replace("Z","+00:00"))
+    attestation=report(intake,sofa,flash,shadow,
+                       now=score_completed)
+    assert attestation["prospective_research_history_certified_count"]==6
+    return intake,shadow,attestation,sofa,flash
 
 def test_real_archived_prospective_pre_match_window_has_six_only_research_targets():
     source,shadow,att,sofa,flash=originals()
@@ -74,4 +85,21 @@ def test_stale_source_fails_closed():
     source=deepcopy(source);source["generated_at_utc"]="2026-10-29T05:00:00+00:00"
     with pytest.raises(ValueError,match="STALE"):
         scope(source,shadow,att,sofa,flash,
+              now=datetime(2026,11,3,18,30,tzinfo=timezone.utc))
+
+
+def test_attestation_from_a_different_source_capture_is_rejected():
+    intake,shadow,att,sofa,flash=originals()
+    intake=deepcopy(intake)
+    intake["generated_at_utc"]="2026-11-03T10:48:00+00:00"
+    with pytest.raises(ValueError,match="EXACT_SOURCE_SNAPSHOT"):
+        scope(intake,shadow,att,sofa,flash,
+              now=datetime(2026,11,3,18,30,tzinfo=timezone.utc))
+
+def test_single_history_probability_mutation_without_new_attestation_blocks():
+    intake,shadow,att,sofa,flash=originals()
+    shadow=deepcopy(shadow)
+    shadow["scored"][0]["p_over25_research"]=0.99
+    with pytest.raises(ValueError,match="EXACT_SOURCE_SNAPSHOT"):
+        scope(intake,shadow,att,sofa,flash,
               now=datetime(2026,11,3,18,30,tzinfo=timezone.utc))
