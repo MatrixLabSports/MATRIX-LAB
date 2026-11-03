@@ -32,3 +32,12 @@ Revisión de roles funcionales: integridad de datos, modelo/calibración, integr
 **NO RESUELTO**: sustitución autenticada y validada de la información PIT enriquecida original; creación de nuevas probabilidades `p_matrix` prospectivas certificadas; exactitud de las cuotas de casas y referencias sharp; ejecución final de señales verdes. Se exige reconstrucción fuente-a-fuente, congelación prospectiva, verificación de paridad de características originales (no solo raw group), evaluación OOS, quote exacta >1.50, EV, CLV fresco, kickoff, correlación y gobierno.
 
 Se preservan todas las cohortes, parámetros y modelos originales sin refit; dinero real permanentemente bloqueado y `0 BET` autorizado mientras falte evidencia.
+
+## Certificación final del segundo test físico Windows
+
+- https://github.com/MatrixLabSports/MATRIX-LAB/actions/runs/41615782501; trabajo `collect` completed/success, 2026-11-03T10:02 UTC.
+- **61 pruebas aprobadas en 3.55 segundos**, incluyendo la reproducción offline de seis fixtures reales, las pruebas de bloqueo de `p_matrix` y fuentes, y las pruebas del recolector preexistentes.
+- CDP `PASS_CDP_REACHABLE`, `MATRIX_BROWSER_EVIDENCE_PUSHED`, `PASS_CAPTURED`.
+- `pages=28` (no confundir con cuotas), `research_only_quote_target_count=0` en la ventana real ejecutada, `research_only_betano_quote_count=0`, `betano_exact_quote_count=0` y `candidates=0`. No había fixtures de tres fuentes dentro de las próximas 2 horas en el instante evaluado. No hubo apuesta ni señal.
+- La auditoría del supervisor tenía antigüedad `4844s`, sin candidatos canónicos; se aplicó `AUDIT_TIMESTAMP_UNVERIFIED_OR_STALE`.
+- RESULTADO: La búsqueda independiente de cuotas quedó codificada y sus contratos pasan; **no se certifica recuperación de la producción canónica ni de Telegram**.
