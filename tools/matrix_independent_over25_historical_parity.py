@@ -45,14 +45,14 @@ def sim(a,b):
                len(ta&tb)/max(1,len(ta|tb)),
                SequenceMatcher(None,a,b).ratio())
 
-def parse_archive(raw,cutoff):
+def parse_archive(raw,cutoff,*,archived_league_id=ARCHIVED_API_LEAGUE_ID,season=2026):
     arr=raw.get("response")
     if not isinstance(arr,list):raise ValueError("ARCHIVED_RAW_GROUP_INVALID")
     rows=[]
     for a in arr:
         if not isinstance(a,dict):continue
         league=a.get("league") or {}
-        if league.get("id")!=ARCHIVED_API_LEAGUE_ID or league.get("season")!=2026:
+        if league.get("id")!=archived_league_id or league.get("season")!=season:
             raise ValueError("ARCHIVED_LEAGUE_SCOPE_MISMATCH")
         fixture=a.get("fixture") or {}
         if (fixture.get("status") or {}).get("short")!="FT":continue
@@ -69,14 +69,14 @@ def parse_archive(raw,cutoff):
         rows.append({"id":str(fixture["id"]),"kickoff":kickoff,"home":home,"away":away,"home_goals":h,"away_goals":a_goals})
     return rows
 
-def parse_free(raw,cutoff):
+def parse_free(raw,cutoff,*,source_league_id=SOURCE_LEAGUE_ID):
     arr=raw.get("matches")
     if not isinstance(arr,list):raise ValueError("FREE_HISTORY_MATCHES_INVALID")
     rows=[]
     for x in arr:
         if not isinstance(x,dict) or x.get("status")!="FINISHED":continue
         comp=x.get("competition") or raw.get("competition") or {}
-        if comp.get("id")!=SOURCE_LEAGUE_ID:
+        if comp.get("id")!=source_league_id:
             raise ValueError("FREE_HISTORICAL_COMPETITION_ID_MISMATCH")
         score=((x.get("score") or {}).get("fullTime") or {})
         h,a=score.get("home"),score.get("away")
@@ -121,7 +121,9 @@ def compare(api_rows,free_rows):
             out["matches"].append(meta)
     return out
 
-def compare_raw_features(archived_payload, free_payload, matched_pairs, cutoff):
+def compare_raw_features(archived_payload, free_payload, matched_pairs, cutoff,
+                         *, source_league_id=SOURCE_LEAGUE_ID,
+                         archived_api_league_id=ARCHIVED_API_LEAGUE_ID):
     """Side-by-side PIT features from real archived and independent score groups.
 
     Research only.  These raw-group features do NOT certify the original
@@ -133,14 +135,14 @@ def compare_raw_features(archived_payload, free_payload, matched_pairs, cutoff):
          and z["kickoff_utc"] < cutoff),
         key=lambda row: (row["kickoff_utc"], row["fixture_id"]),
     )
-    free_rows = [r for r in historic_rows(free_payload, SOURCE_LEAGUE_ID)
+    free_rows = [r for r in historic_rows(free_payload, source_league_id)
                  if r["kickoff_utc"] < cutoff]
     original = {r["fixture_id"]: r for r in archive_rows}
     independent = {r["fixture_id"]: r for r in free_rows}
     results = {
         "schema": "MATRIX_SERIE_A_RAW_GROUP_PIT_FEATURE_REPLAY_V1",
-        "source_league": SOURCE_LEAGUE_ID,
-        "reference_league": ARCHIVED_API_LEAGUE_ID,
+        "source_league": source_league_id,
+        "reference_league": archived_api_league_id,
         "pairs_with_matching_full_time_score": len(matched_pairs),
         "pairs_with_valid_raw_provider_ids": 0,
         "scoreable_both": 0,
