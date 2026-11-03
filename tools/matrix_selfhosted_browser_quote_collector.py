@@ -1,6 +1,6 @@
 from __future__ import annotations
 import hashlib, json, os, re, unicodedata
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 from pathlib import Path
 from typing import Any
 from urllib.parse import urlparse
@@ -381,11 +381,61 @@ def persist_betano_physical_quote(rec:dict[str,Any],captured_at:datetime)->str|N
     path.write_text(json.dumps(payload,indent=2,ensure_ascii=False,sort_keys=True)+"\n",encoding="utf-8")
     return str(path.relative_to(ROOT))
 
+def candidate_pipeline_diagnostic(audit:dict[str,Any],now:datetime,root:Path=ROOT)->dict[str,Any]:
+    """Read-only provenance; zero blocker rows are NOT proof of zero canonical fixtures."""
+    if now.tzinfo is None:
+        raise ValueError("MATRIX_DIAGNOSTIC_REQUIRES_TZ_AWARE_CLOCK")
+    records=audit.get("records")
+    audit_rows=len(records) if isinstance(records,list) else None
+    audit_timestamp=audit.get("generated_at_utc")
+    age_seconds=None
+    try:
+        at=datetime.fromisoformat(str(audit_timestamp).replace("Z","+00:00"))
+        if at.tzinfo is not None:
+            age_seconds=int((now.astimezone(timezone.utc)-at.astimezone(timezone.utc)).total_seconds())
+    except (ValueError,TypeError,OverflowError):
+        pass
+    local_day=now.astimezone(timezone(timedelta(hours=-5))).date()
+    inventory=[]
+    for offset in (0,1):
+        day=(local_day+timedelta(days=offset)).isoformat()
+        football=root/"evidence"/"api_football"/"daily_prematch_reports"/day
+        inventory.append({
+            "date_bogota":day,
+            "football_directory_exists":football.is_dir(),
+            "browser_physical_files":len(list(football.glob("browser_physical_verification/*.json"))),
+            "shadow_quote_freeze_files":len(list(football.glob("shadow_quote_freeze/*.json"))),
+            "over25_shadow_ev_files":len(list(football.glob("over25_shadow_ev/*.json"))),
+        })
+    if audit_rows is None:
+        state="INVALID_AUDIT_RECORDS_FIELD"
+    elif age_seconds is None or age_seconds < -120 or age_seconds > 35*60:
+        state="AUDIT_TIMESTAMP_UNVERIFIED_OR_STALE"
+    elif audit_rows==0:
+        state="NO_BLOCKER_ROWS_NOT_PROOF_OF_ZERO_CANONICAL_FIXTURES"
+    elif not candidate_rows(audit,now):
+        state="BLOCKER_ROWS_FILTERED_BY_PREMATCH_PROBABILITY_OR_IDENTITY"
+    else:
+        state="BLOCKER_ROWS_AVAILABLE_FOR_BROWSER_MATCHING"
+    return {
+        "schema":"MATRIX_BROWSER_CANDIDATE_PIPELINE_DIAGNOSTIC_V1",
+        "status":state,
+        "audit_generated_at_utc":audit_timestamp,
+        "audit_age_seconds":age_seconds,
+        "audit_blocker_record_count":audit_rows,
+        "canonical_source_inventory":inventory,
+        "missing_is_not_zero":True,
+        "audit_is_not_all_candidate_inventory":True,
+        "automatic_wagering":False,
+        "real_money":"BLOCKED",
+    }
+
 def main()->None:
     cfg=load(CONFIG); audit=load(AUDIT); adapters=load(ADAPTERS)
     endpoint=os.environ.get("MATRIX_BROWSER_CDP_ENDPOINT",cfg["browser"]["default_cdp_endpoint"]).strip()
     now=datetime.now(timezone.utc).replace(microsecond=0)
     candidates=candidate_rows(audit,now)
+    pipeline_diagnostic=candidate_pipeline_diagnostic(audit,now)
     RAW_ROOT.mkdir(parents=True,exist_ok=True)
     pages=[]; matched=[]; betano_exact_quotes=[]
     with sync_playwright() as p:
@@ -535,6 +585,7 @@ def main()->None:
       "betano_exact_quote_count":len(betano_exact_quotes),
       "canonical_betano_quote_paths":canonical_betano_quote_paths,
       "pages":pages,"matches":matched,"betano_exact_quotes":betano_exact_quotes,
+      "candidate_pipeline_diagnostic":pipeline_diagnostic,
       "policy":{
         "raw_capture_is_not_execution_quote":True,
         "site_specific_certified_adapter_required":True,
@@ -562,7 +613,8 @@ def main()->None:
       "betano_exact_quote_count":len(betano_exact_quotes),
       "betano_exact_quote_first":(betano_exact_quotes[0] if betano_exact_quotes else None),
       "canonical_betano_quote_paths":canonical_betano_quote_paths,
-      "betano_zero_diagnostics":zero_diag
+      "betano_zero_diagnostics":zero_diag,
+      "candidate_pipeline_diagnostic":pipeline_diagnostic
     },sort_keys=True,ensure_ascii=False))
 
 if __name__=="__main__":
