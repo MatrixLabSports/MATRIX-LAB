@@ -146,3 +146,50 @@ def test_expired_quota_cooldown_allows_one_fresh_usage_check():
     result=audit(intake(),scores(),"test-secret",session=session,now=NOW,previous=previous)
     assert result["quota_status"]=="BLOCKED_EXHAUSTED"
     assert session.calls==["https://api.odds-api.net/v1/usage"]
+
+
+def test_cooldown_anchor_does_not_slide_forever_under_15_minute_schedule():
+    from copy import deepcopy
+    now=NOW
+    future=deepcopy(intake())
+    future["fixtures"][0]["kickoff_utc"]=(now+timedelta(minutes=115)).isoformat()
+    shadow=deepcopy(scores())
+    shadow["scored"][0]["kickoff_utc"]=future["fixtures"][0]["kickoff_utc"]
+    class Usage429(Fake):
+        def get(self,url,headers=None,params=None,timeout=None):
+            self.calls.append(url)
+            return Response({},429)
+    first_session=Usage429()
+    first=audit(future,shadow,"test-secret",session=first_session,now=now)
+    assert first["quota_status"]=="BLOCKED_USAGE_HTTP_429"
+    assert first["quota_cooldown_until_utc"]==(now+timedelta(hours=1)).isoformat()
+    assert len(first_session.calls)==1
+    previous=first
+    for advance in (15,30,45):
+        empty=Fake()
+        previous=audit(future,shadow,"test-secret",session=empty,
+                       now=now+timedelta(minutes=advance),previous=previous)
+        assert previous["quota_status"]=="BLOCKED_COOLDOWN_AFTER_429"
+        assert previous["quota_cooldown_until_utc"]==first["quota_cooldown_until_utc"]
+        assert empty.calls==[]
+    final_session=Fake()
+    final=audit(future,shadow,"test-secret",session=final_session,
+                now=now+timedelta(minutes=61),previous=previous)
+    assert final["quota_status"]=="AUTHORIZED_LIVE_USAGE"
+    assert final_session.calls
+
+
+def test_event_level_http_429_sets_absolute_circuit_breaker():
+    class Event429(Fake):
+        def get(self,url,headers=None,params=None,timeout=None):
+            if url.endswith("/usage"):
+                return Response({"api_credits_used":20,"api_credits_limit":100})
+            if url.endswith("/events"):
+                return Response({},429)
+            raise AssertionError("SNAPSHOT_MUST_NOT_BE_QUERIED_AFTER_429")
+    session=Event429()
+    r=audit(intake(),scores(),"test-secret",session=session,now=NOW)
+    assert r["quota_status"]=="BLOCKED_USAGE_HTTP_429"
+    assert r["status"]=="WAITING_FOR_PROVIDER_QUOTA_CIRCUIT_BREAKER"
+    assert r["quota_cooldown_until_utc"]==(NOW+timedelta(hours=1)).isoformat()
+    assert r["signal_generation_authorized"] is False
