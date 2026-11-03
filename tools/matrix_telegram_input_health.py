@@ -22,6 +22,33 @@ def _read_json(path: Path):
         return None
 
 
+def _independent_gate_detail(intake: dict | None, shadow: dict | None, quote: dict | None) -> dict:
+    """Observed provider-readiness facts only; never certify model parity or authorize a pick."""
+    fixtures = (intake or {}).get("fixtures")
+    scored = (shadow or {}).get("scored")
+    rows = fixtures if isinstance(fixtures, list) else []
+    research = scored if isinstance(scored, list) else []
+    def count_true(key: str) -> int:
+        return sum(row.get(key) is True for row in rows if isinstance(row, dict))
+    def scored_true(key: str) -> int:
+        return sum(row.get(key) is True for row in research if isinstance(row, dict))
+    return {
+        "source_fixture_rows_observed": len(rows) if isinstance(fixtures, list) else None,
+        "research_scored_rows_observed": len(research) if isinstance(scored, list) else None,
+        "provider_crosswalk_verified_rows": count_true("provider_identity_crosswalk_verified"),
+        "browser_identity_verified_rows": count_true("browser_identity_verified"),
+        "historical_features_verified_rows": count_true("historical_features_verified"),
+        "research_source_parity_verified_rows": scored_true("calibrated_source_parity_verified"),
+        "verified_execution_quotes": (quote or {}).get("bookmaker_quote_verified_count"),
+        "provider_entitlement_expired_after_bogota_date": "2026-10-28",
+        "research_probability_not_production_p_matrix": True,
+        "provider_replacement_certified": False,
+        "telegram_signal_authorized": False,
+        "automatic_wagering": False,
+        "real_money": "BLOCKED",
+    }
+
+
 def _independent_status(root: Path, day: str) -> dict:
     folder = root / "evidence/football_world_inventory" / day
     intake = _read_json(folder / "MATRIX_FOOTBALL_INDEPENDENT_FIXTURE_INTAKE.json")
@@ -71,6 +98,7 @@ def _independent_status(root: Path, day: str) -> dict:
                 "football_browser_link_pair_review": pair_count is not None}
     return {
         "source_files_parsed": observed,
+        "independent_gate_detail": _independent_gate_detail(intake, shadow, quote),
         "independent_football_fixtures": intake.get("fixture_count") if intake else None,
         "sofascore_fixture_matches": sofa.get("matched_count") if sofa else None,
         "flashscore_fixture_matches": flash.get("matched_count") if flash else None,
