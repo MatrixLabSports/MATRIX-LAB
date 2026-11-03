@@ -158,3 +158,35 @@ class CanonicalInputHealthTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+def test_independent_gate_detail_counts_real_flags_without_promoting_research():
+    from tools.matrix_telegram_input_health import _independent_gate_detail
+    intake={"fixtures":[
+        {"source_fixture_id":"1","provider_identity_crosswalk_verified":False,
+         "browser_identity_verified":True,"historical_features_verified":False},
+        {"source_fixture_id":"2","provider_identity_crosswalk_verified":False,
+         "browser_identity_verified":False,"historical_features_verified":False},
+    ]}
+    shadow={"scored":[{"source_fixture_id":"1","p_over25_research":0.81,
+                       "calibrated_source_parity_verified":False}]}
+    quote={"bookmaker_quote_verified_count":0}
+    detail=_independent_gate_detail(intake,shadow,quote)
+    assert detail["source_fixture_rows_observed"]==2
+    assert detail["research_scored_rows_observed"]==1
+    assert detail["provider_crosswalk_verified_rows"]==0
+    assert detail["browser_identity_verified_rows"]==1
+    assert detail["historical_features_verified_rows"]==0
+    assert detail["verified_execution_quotes"]==0
+    assert detail["research_probability_not_production_p_matrix"] is True
+    assert detail["telegram_signal_authorized"] is False
+    assert detail["real_money"]=="BLOCKED"
+
+
+def test_independent_gate_detail_missing_sources_are_not_zero():
+    from tools.matrix_telegram_input_health import _independent_gate_detail
+    detail=_independent_gate_detail(None,None,None)
+    assert detail["source_fixture_rows_observed"] is None
+    assert detail["research_scored_rows_observed"] is None
+    assert detail["verified_execution_quotes"] is None
+    assert detail["provider_replacement_certified"] is False
