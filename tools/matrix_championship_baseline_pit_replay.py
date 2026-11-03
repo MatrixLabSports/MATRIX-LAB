@@ -196,13 +196,38 @@ def main():
         raise SystemExit("BASELINE_REPLAY_OUTPUT_NOT_AUTHORIZED_FOR_SIGNAL")
     folder=a.root/"evidence"/"football_world_inventory"/a.date
     get=lambda name:json.loads((folder/name).read_text(encoding="utf-8"))
-    result=replay(
-        get("MATRIX_FOOTBALL_INDEPENDENT_FIXTURE_INTAKE.json"),
-        get("MATRIX_INDEPENDENT_OVER25_HISTORY_SHADOW.json"),
-        get("MATRIX_CHAMPIONSHIP_PROSPECTIVE_PIT_ATTESTATION.json"),
-        get("MATRIX_SOFA_FOOTBALL_FIXTURE_CROSSCHECK.json"),
-        get("MATRIX_FLASH_FOOTBALL_CROSSCHECK.json"),
-        now=datetime.now(timezone.utc))
+    intake=get("MATRIX_FOOTBALL_INDEPENDENT_FIXTURE_INTAKE.json")
+    shadow=get("MATRIX_INDEPENDENT_OVER25_HISTORY_SHADOW.json")
+    sofa=get("MATRIX_SOFA_FOOTBALL_FIXTURE_CROSSCHECK.json")
+    flash=get("MATRIX_FLASH_FOOTBALL_CROSSCHECK.json")
+    snapshots={
+        "source_intake_sha256":source_digest(intake),
+        "source_shadow_sha256":source_digest(shadow),
+        "source_sofa_sha256":source_digest(sofa),
+        "source_flash_sha256":source_digest(flash),
+    }
+    files=[
+        folder/"MATRIX_CHAMPIONSHIP_PROSPECTIVE_PIT_ATTESTATION.json",
+        *sorted(folder.glob("MATRIX_CHAMPIONSHIP_PROSPECTIVE_PIT_RUN_*.json")),
+    ]
+    matching=[]
+    for path in files:
+        if not path.is_file():
+            continue
+        try:
+            candidate=json.loads(path.read_text(encoding="utf-8"))
+            if (candidate.get("source_binding_schema")=="MATRIX_PROSPECTIVE_PIT_EXACT_FOUR_SOURCE_BINDING_V1"
+                and candidate.get("target_date_bogota")==a.date
+                and all(candidate.get(key)==sha for key,sha in snapshots.items())):
+                matching.append((utc(candidate["observed_at_utc"]),path,candidate))
+        except (ValueError,KeyError,TypeError,json.JSONDecodeError):
+            continue
+    if not matching:
+        raise SystemExit("BASELINE_FAIL_CLOSED_NO_EXACT_FOUR_SOURCE_ATTESTATION")
+    latest=max(matching,key=lambda x:(x[0],x[1].name))
+    result=replay(intake,shadow,latest[2],sofa,flash,now=datetime.now(timezone.utc))
+    result["exact_source_attestation_file"]=latest[1].name
+    result["exact_source_attestation_sha256"]=source_digest(latest[2])
     a.out.parent.mkdir(parents=True,exist_ok=True)
     a.out.write_text(json.dumps(result,ensure_ascii=False,sort_keys=True,indent=2)+"\n",encoding="utf-8")
     print(json.dumps({k:result[k] for k in ("verified_research_baseline_count","evaluated_count",
