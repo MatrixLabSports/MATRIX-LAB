@@ -47,14 +47,14 @@ jobs:
           test "$REAL_MONEY" = BLOCKED
           test "$AUTO_BETTING" = DISABLED
           test "$MATRIX_MODE" = SHADOW
-          PYTHONPATH=. python -m pytest -q tests/test_matrix_championship_quote_window_scope.py tests/test_matrix_independent_over25_quote_audit.py
+          PYTHONPATH=. python -m pytest -q tests/test_matrix_championship_quote_window_scope.py tests/test_matrix_championship_atomic_pit_cycle.py tests/test_matrix_independent_over25_quote_audit.py
 
       - name: Resolve current Bogota date
         id: day
         shell: bash
         run: echo "date=$(TZ=America/Bogota date +%F)" >> "$GITHUB_OUTPUT"
 
-      - name: Gate current six certified Championship targets by kickoff
+      - name: Select only same-run immutable attested Championship targets before kickoff
         id: scope
         shell: bash
         run: |
