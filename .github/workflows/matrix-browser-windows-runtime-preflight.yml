@@ -39,8 +39,17 @@ jobs:
           powershell.exe -NoProfile -NonInteractive -Command "Get-ExecutionPolicy -List | Format-Table -AutoSize"
           powershell.exe -NoProfile -NonInteractive -Command "$PSVersionTable.PSVersion.ToString()"
 
+      - name: Verify per-process execution policy bypass without changing Windows
+        shell: cmd
+        run: |
+          echo Write-Output MATRIX_PS1_PROCESS_ONLY_POLICY_BYPASS_PASS> "%RUNNER_TEMP%\matrix_ps1_readonly_probe.ps1"
+          powershell.exe -NoProfile -NonInteractive -ExecutionPolicy Bypass -File "%RUNNER_TEMP%\matrix_ps1_readonly_probe.ps1"
+          if errorlevel 1 exit /B 1
+          echo WINDOWS_EXECUTION_POLICY_LEFT_UNCHANGED
+
       - name: Check TCP port 9222 without credentials or browser automation
         shell: cmd
         run: |
           powershell.exe -NoProfile -NonInteractive -Command "Get-NetTCPConnection -LocalPort 9222 -State Listen -ErrorAction SilentlyContinue | Select-Object LocalAddress,LocalPort,State"
           echo NO_TELEGRAM_MESSAGES_NO_BETTING
+          exit /B 0
