@@ -42,4 +42,6 @@ def test_mismatch_and_betting_flags_fail_closed():
 
 def test_no_old_or_far_future_target():
     assert early_targets_from_docs(*docs(),datetime(2026,11,4,18,tzinfo=timezone.utc))==[]
-    assert early_targets_from_docs(*docs(),datetime(2026,11,3,8,tzinfo=timezone.utc))==[]
+    x=list(docs())
+    x[0]["fixtures"][0]["kickoff_utc"]="2026-11-05T23:45:00Z"
+    assert early_targets_from_docs(*x,NOW)==[]
