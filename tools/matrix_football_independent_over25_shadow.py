@@ -56,6 +56,8 @@ def historic_rows(payload: dict, competition_id: int) -> list[dict]:
         seen.add(fid)
         rows.append({"fixture_id": fid, "kickoff_utc": utc,
                      "home_team_id": home_id, "away_team_id": away_id,
+                     "home_team_name": str(home.get("name") or "").strip(),
+                     "away_team_name": str(away.get("name") or "").strip(),
                      "home_goals": hg, "away_goals": ag})
     return sorted(rows, key=lambda r: (r["kickoff_utc"], r["fixture_id"]))
 
@@ -68,6 +70,7 @@ def score_intake(intake: dict, token: str, *, opener=urlopen) -> dict:
         raise ValueError("INDEPENDENT_DISCOVERY_MUST_NOT_AUTHORIZE_SIGNALS")
     output = {
         "schema": "MATRIX_INDEPENDENT_OVER25_HISTORY_SHADOW_V1",
+        "generated_at_utc": datetime.now(timezone.utc).isoformat(),
         "target_date_bogota": intake.get("target_date_bogota"),
         "status": "RESEARCH_ONLY_PENDING_PROVIDER_EQUIVALENCE_AND_QUOTES",
         "model": "calibrated_log_pool_v1",
@@ -115,10 +118,12 @@ def score_intake(intake: dict, token: str, *, opener=urlopen) -> dict:
             if status != 200 or len(body) > MAX_BODY:
                 groups[key] = {"status": "HTTP_OR_SIZE_BLOCK", "rows": []}
                 continue
+            observed_at = datetime.now(timezone.utc)
             payload = json.loads(body.decode("utf-8"))
             rows = historic_rows(payload, cid)
             groups[key] = {"status": "HISTORY_CAPTURED", "rows": rows,
                            "sha256": hashlib.sha256(body).hexdigest(),
+                           "observed_at_utc": observed_at.isoformat(),
                            "history_count": len(rows)}
         except (HTTPError, URLError, TimeoutError, OSError, ValueError, TypeError, KeyError) as exc:
             groups[key] = {"status": "HISTORY_PROVIDER_BLOCKED", "error_type": type(exc).__name__, "rows": []}
@@ -146,7 +151,53 @@ def score_intake(intake: dict, token: str, *, opener=urlopen) -> dict:
             float(features["poisson"]["over_2_5"]),
             float(features["baseline"]["over_2_5"]),
         )
+        # Retain observable results only when captured before target kickoff.
+        # This remains research evidence, never a production probability.
+        provenance = {"status": "BLOCKED_NOT_PREMATCH_OR_HISTORY_INCOMPLETE",
+                      "home_history": [], "away_history": []}
+        try:
+            as_of = datetime.fromisoformat(str(group["observed_at_utc"]).replace("Z", "+00:00"))
+            target_kickoff = datetime.fromisoformat(str(f["kickoff_utc"]).replace("Z", "+00:00"))
+            if as_of.tzinfo is not None and target_kickoff.tzinfo is not None and as_of < target_kickoff:
+                def observed_side(team_id):
+                    prior = [row for row in group["rows"]
+                             if row["kickoff_utc"] < as_of and row["kickoff_utc"] < target_kickoff
+                             and team_id in (row["home_team_id"], row["away_team_id"])]
+                    selected = prior[-20:]
+                    result = []
+                    for row in reversed(selected):
+                        is_home = row["home_team_id"] == team_id
+                        opponent = row["away_team_name"] if is_home else row["home_team_name"]
+                        if not opponent:
+                            return []
+                        result.append({
+                            "fixture_id": row["fixture_id"], "kickoff_utc": row["kickoff_utc"].isoformat(),
+                            "team_id": str(team_id),
+                            "opponent_id": row["away_team_id"] if is_home else row["home_team_id"],
+                            "opponent_name": opponent, "venue_role": "home" if is_home else "away",
+                            "goals_for": row["home_goals"] if is_home else row["away_goals"],
+                            "goals_against": row["away_goals"] if is_home else row["home_goals"],
+                            "observed_at_utc": as_of.isoformat(),
+                            "source_provider": "FOOTBALL_DATA_ORG",
+                            "source_payload_sha256": group["sha256"],
+                        })
+                    return result
+                home_history = observed_side(str(f["home_source_team_id"]))
+                away_history = observed_side(str(f["away_source_team_id"]))
+                provenance = {
+                    "status": ("PROSPECTIVE_HISTORY_ROWS_OBSERVED" if len(home_history)>=5 and len(away_history)>=5
+                               else "BLOCKED_INSUFFICIENT_PROVENANCE_ROWS"),
+                    "history_observed_at_utc": as_of.isoformat(),
+                    "home_history": home_history,
+                    "away_history": away_history,
+                    "source_payload_sha256": group["sha256"],
+                }
+        except (ValueError, TypeError, KeyError):
+            pass
         output["scored"].append({
+            "prospective_history_provenance": provenance,
+            "poisson_over25_research_component": round(float(features["poisson"]["over_2_5"]),12),
+            "baseline_over25_research_component": round(float(features["baseline"]["over_2_5"]),12),
             "source_fixture_id": fixture_id,
             "competition_id": int(cid),
             "home": f["home"], "away": f["away"],
