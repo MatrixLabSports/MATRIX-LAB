@@ -43,3 +43,10 @@ Se preservan modelos, calibraciones, holdouts, históricos, cuotas y safeguards 
 - **57 de 57** comparaciones evaluables de características y probabilidades de grupo idénticas (diferencias 0, desviación absoluta máxima 0). Los otros 45 emparejamientos bloqueados por insuficiencia de datos anteriores en ambas fuentes.
 - Con esto Brasil, Italia y Championship reúnen **324 de 324** comparaciones de características de grupo idénticas en sus respectivos subconjuntos históricos evaluables (237+30+57). Esta suma NO mide precisión prospectiva ni prueba equivalencia de `CANONICAL_ENRICHED_PIT`; no cambia estado de Telegram.
 - `historical_score_concordance_verified=true`, `original_calibrated_feature_equivalence_verified=false`, `canonical_enriched_pit_parity_verified=false` y `all_six_leagues_equivalence_verified=false`.
+
+## Pruebas finales del código
+
+- Campeonato Championship en runner GitHub hospedado: https://github.com/MatrixLabSports/MATRIX-LAB/actions/runs/41580629419; 7 pruebas aprobadas, replay autenticado, evidencia guardada.
+- Runner Windows: https://github.com/MatrixLabSports/MATRIX-LAB/actions/runs/41580676306; `collect` completed/success y **53 pruebas aprobadas en 1.72s** (incluye los contratos de seguridad del comparador Championship).
+- CDP y recolección de páginas: PASS, 14 páginas; 0 candidatos canónicos y 0 cuotas exactas Betano. Auditoría de candidato previa: obsoleta y bloqueada; datos `2026-11-02` y `2026-11-03` no alimentan aún `daily_prematch_reports`.
+- Esta validación no es recuperación de Telegram ni habilitación de `p_matrix` operativo.
