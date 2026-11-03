@@ -297,6 +297,11 @@ jobs:
           assert shadow["parameter_refit"] is False
           assert shadow["odds_used_to_generate_probability"] is False
           quote_path=Path(f"evidence/football_world_inventory/{d}/MATRIX_INDEPENDENT_OVER25_QUOTE_AUDIT.json")
+          # A missing downstream price audit after a blocked calendar/PIT
+          # stage must be reported as an upstream blocker, not FileNotFoundError.
+          if not quote_path.is_file():
+              print("BLOCKED_NO_QUOTE_AUDIT_UPSTREAM_CALENDAR_OR_PIT_UNVERIFIED")
+              raise SystemExit(2)
           quote=json.loads(quote_path.read_text(encoding="utf-8"))
           assert quote["real_money"]=="BLOCKED"
           assert quote["signal_generation_authorized"] is False
