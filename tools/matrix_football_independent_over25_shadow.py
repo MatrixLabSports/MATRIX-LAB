@@ -213,6 +213,7 @@ def score_intake(intake: dict, token: str, *, opener=urlopen) -> dict:
         })
     output["scored_count"] = len(output["scored"])
     output["blocked_count"] = len(output["blocked"])
+    output["completed_at_utc"] = datetime.now(timezone.utc).isoformat()
     return output
 
 def main() -> None:
