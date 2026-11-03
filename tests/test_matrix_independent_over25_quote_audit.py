@@ -193,3 +193,35 @@ def test_event_level_http_429_sets_absolute_circuit_breaker():
     assert r["status"]=="WAITING_FOR_PROVIDER_QUOTA_CIRCUIT_BREAKER"
     assert r["quota_cooldown_until_utc"]==(NOW+timedelta(hours=1)).isoformat()
     assert r["signal_generation_authorized"] is False
+
+
+def test_global_monthly_429_prevents_even_usage_request_in_prematch_window():
+    session=Fake()
+    guard={"schema":"MATRIX_ODDS_API_QUOTA_GUARD_V1","provider":"odds-api.net",
+           "decision":{"stage":"BLOCKED_EXHAUSTED","api_calls_allowed":False}}
+    r=audit(intake(),scores(),"test-secret",session=session,now=NOW,
+            global_quota_guard=guard)
+    assert r["in_120m_window"]==1
+    assert r["quota_status"]=="BLOCKED_GLOBAL_QUOTA_EXHAUSTED_OR_UNVERIFIED"
+    assert r["network_calls"]==0
+    assert session.calls==[]
+    assert r["telegram_messages_sent"]==0
+    assert r["signal_generation_authorized"] is False
+
+def test_absent_global_guard_file_is_not_an_authorization():
+    session=Fake()
+    r=audit(intake(),scores(),"test-secret",session=session,now=NOW,
+            global_quota_guard={"schema":"BLOCKED_MISSING_GLOBAL_QUOTA_GUARD"})
+    assert r["quota_status"]=="BLOCKED_GLOBAL_QUOTA_EXHAUSTED_OR_UNVERIFIED"
+    assert r["network_calls"]==0
+    assert session.calls==[]
+
+def test_global_guard_authorized_allows_same_local_usage_gate_not_direct_quotes():
+    session=Fake(usage={"api_credits_used":100,"api_credits_limit":100,"exceeded":True})
+    guard={"schema":"MATRIX_ODDS_API_QUOTA_GUARD_V1","provider":"odds-api.net",
+           "decision":{"stage":"WATCH_T120","api_calls_allowed":True}}
+    r=audit(intake(),scores(),"test-secret",session=session,now=NOW,
+            global_quota_guard=guard)
+    assert r["network_calls"]==1
+    assert r["quota_status"]=="BLOCKED_EXHAUSTED"
+    assert session.calls==["https://api.odds-api.net/v1/usage"]
