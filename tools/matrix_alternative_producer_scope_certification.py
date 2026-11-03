@@ -29,7 +29,7 @@ def certify(historical: dict, prospective: dict, historical_hash: str,
                and all(c in "0123456789abcdef" for c in h)
                for h in (historical_hash, prospective_hash)):
         raise ValueError("CERTIFICATION_INVALID_SHA256")
-    if historical.get("schema") != "MATRIX_INDEPENDENT_OVER25_HISTORICAL_PARITY_V1":
+    if historical.get("schema") != "MATRIX_INDEPENDENT_OVER25_SERIE_A_SOURCE_PARITY_V1":
         raise ValueError("CERTIFICATION_HISTORICAL_SCHEMA_UNEXPECTED")
     if prospective.get("schema") != "MATRIX_CHAMPIONSHIP_PROSPECTIVE_PIT_ATTESTATION_V1":
         raise ValueError("CERTIFICATION_PROSPECTIVE_SCHEMA_UNEXPECTED")
