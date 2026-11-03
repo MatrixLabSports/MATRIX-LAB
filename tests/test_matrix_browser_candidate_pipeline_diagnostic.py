@@ -81,3 +81,43 @@ def test_canonical_intake_does_not_override_kickoff_or_probability_gates():
                 "kickoff":(now+timedelta(minutes=150)).isoformat(),"p_matrix":0.85},
              ]}
     assert candidate_rows(payload,now)==[]
+
+
+def test_supervisor_exports_governed_browser_candidate_without_pre_send_gate():
+    from tools.telegram_green_signal_alerts import (
+        build_blocker_recovery_audit, MARKET_KEY, SELECTION_KEY
+    )
+    now=datetime(2026,11,3,4,0,tzinfo=timezone.utc)
+    cand={
+        "sport":"football","fixture_id":"governed-fixture-9",
+        "match":"Home vs Away","kickoff":(now+timedelta(minutes=80)).isoformat(),
+        "p_matrix":0.71,"market":"Más de 2.5 goles",
+        "market_key":MARKET_KEY,"selection_key":SELECTION_KEY,
+        "source":"evidence/api_football/daily_prematch_reports/2026-11-02/over25_shadow_ev/fixture.json",
+    }
+    audit=build_blocker_recovery_audit(
+        {"pre_send_gate":{}}, {"fixture-signal-key":cand},set(),now
+    )
+    assert audit["records"]==[]
+    assert len(audit["browser_prematch_candidate_rows"])==1
+    assert audit["browser_prematch_candidate_rows"][0]["p_matrix"]==0.71
+    assert audit["browser_intake_policy"]["not_a_telegram_send_authorization"] is True
+    from tools.matrix_selfhosted_browser_quote_collector import candidate_rows
+    assert len(candidate_rows(audit,now))==1
+
+
+def test_supervisor_does_not_export_already_sent_or_expired_candidate():
+    from tools.telegram_green_signal_alerts import (
+        build_blocker_recovery_audit, MARKET_KEY, SELECTION_KEY
+    )
+    now=datetime(2026,11,3,4,0,tzinfo=timezone.utc)
+    c={"sport":"football","fixture_id":"fixture-10","match":"Home vs Away",
+       "kickoff":(now+timedelta(minutes=40)).isoformat(),
+       "p_matrix":0.70,"market_key":MARKET_KEY,"selection_key":SELECTION_KEY}
+    audit=build_blocker_recovery_audit(
+        {"pre_send_gate":{}},{"key":c}, {"key"}, now
+    )
+    assert audit["browser_prematch_candidate_rows"]==[]
+    c["kickoff"]=(now-timedelta(minutes=1)).isoformat()
+    audit=build_blocker_recovery_audit({"pre_send_gate":{}},{"key":c},set(),now)
+    assert audit["browser_prematch_candidate_rows"]==[]
