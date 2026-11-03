@@ -94,16 +94,22 @@ def run_horizon(
     days = max(1, min(int(days), MAX_DAYS))
     now = (now_utc or datetime.now(timezone.utc)).astimezone(timezone.utc)
     local_today = now.astimezone(BOGOTA).date()
-    targets = (
-        [target_date]
-        if target_date
-        else [
+    # Paid access is a fixed entitlement, not merely a fixture-date filter.
+    # A manual --target-date must never bypass the cutoff or backfill outcomes.
+    if target_date:
+        requested = datetime.strptime(target_date, "%Y-%m-%d").date()
+        if local_today > PAID_THROUGH_BOGOTA_DATE or requested > PAID_THROUGH_BOGOTA_DATE:
+            raise ValueError("API_FOOTBALL_PAID_WINDOW_CLOSED_NO_CALLS")
+        if requested < local_today:
+            raise ValueError("HISTORICAL_PREMATCH_BACKFILL_FORBIDDEN")
+        targets = [requested.isoformat()]
+    else:
+        targets = [
             d.isoformat()
             for i in range(days)
             for d in [local_today + timedelta(days=i)]
             if d <= PAID_THROUGH_BOGOTA_DATE
         ]
-    )
 
     entries: list[dict[str, Any]] = []
     total_new_freezes = 0
