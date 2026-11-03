@@ -41,7 +41,7 @@ jobs:
       - name: Install tests and governed odds adapter dependencies
         run: python -m pip install --disable-pip-version-check pytest requests pillow
 
-      - name: Verify authenticated snapshots and monthly quota fail-closed before any quote calls
+      - name: Verify immutable run-scoped selection and 429 denial with real PIT source regression
         run: |
           set -euo pipefail
           test "$REAL_MONEY" = BLOCKED
