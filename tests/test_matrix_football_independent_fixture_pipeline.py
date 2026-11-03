@@ -77,3 +77,28 @@ def test_invalid_payload_fails_closed():
     result = capture("2026-11-02", "secret", opener=lambda *_a, **_kw: Reply({"matches": "unexpected"}), now_utc=NOW)
     assert result["provider_status"] == "INVALID_PROVIDER_RESPONSE"
     assert result["fixtures"] == []
+
+
+def test_next_day_free_provider_discovery_is_future_only_never_signal_ready():
+    """Protect the free-source recovery job triggered by the Nov 03 browser capture."""
+    def provider(req, timeout):
+        assert "dateFrom=2026-11-03" in req.full_url
+        assert "dateTo=2026-11-04" in req.full_url
+        assert req.get_header("X-auth-token") == "test-token"
+        return Reply(fixtures_payload())
+    result = capture(
+        "2026-11-03", "test-token", opener=provider,
+        now_utc=datetime(2026, 11, 2, 23, 0, tzinfo=timezone.utc),
+    )
+    assert result["provider_status"] == "AUTHENTICATED_FIXTURE_CAPTURE"
+    assert result["fixture_count"] == 1
+    assert result["fixtures"][0]["source_fixture_id"] == "52"
+    assert result["fixtures"][0]["browser_identity_verified"] is False
+    assert result["fixtures"][0]["provider_identity_crosswalk_verified"] is False
+    assert result["fixtures"][0]["historical_features_verified"] is False
+    assert result["fixtures"][0]["exact_quote_verified"] is False
+    assert result["fixtures"][0]["signal_generation_authorized"] is False
+    assert result["signal_generation_authorized"] is False
+    assert result["worldwide_complete"] is False
+    assert result["real_money"] == "BLOCKED"
+    assert result["automatic_wagering"] is False
