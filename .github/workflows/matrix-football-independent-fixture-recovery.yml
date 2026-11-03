@@ -18,6 +18,13 @@ on:
       - tests/test_matrix_football_independent_fixture_pipeline.py
       - tools/matrix_football_independent_over25_shadow.py
       - tests/test_matrix_football_independent_over25_shadow.py
+      - tools/matrix_championship_prospective_pit_attestation.py
+      - tests/test_matrix_championship_prospective_pit_attestation.py
+      - tools/matrix_championship_atomic_pit_cycle.py
+      - tests/test_matrix_championship_atomic_pit_cycle.py
+      - tools/matrix_championship_quote_window_scope.py
+      - tools/matrix_championship_baseline_pit_replay.py
+      - tests/test_matrix_championship_baseline_pit_replay.py
       - tools/matrix_independent_over25_quote_audit.py
       - tests/test_matrix_independent_over25_quote_audit.py
       - tools/matrix_football_sofa_fixture_crosscheck.py
@@ -58,7 +65,7 @@ jobs:
       - name: Test independent fixture adapter and all hard safety gates
         run: |
           python -m pip install pytest requests Pillow
-          PYTHONPATH=. python -m pytest -q tests/test_matrix_football_independent_fixture_pipeline.py tests/test_matrix_independent_over25_governed_binding.py tests/test_matrix_football_independent_over25_shadow.py tests/test_matrix_independent_over25_quote_audit.py tests/test_matrix_football_sofa_fixture_crosscheck.py tests/test_matrix_independent_over25_historical_parity.py tests/test_matrix_football_flashscore_fixture_crosscheck.py
+          PYTHONPATH=. python -m pytest -q tests/test_matrix_football_independent_fixture_pipeline.py tests/test_matrix_independent_over25_governed_binding.py tests/test_matrix_football_independent_over25_shadow.py tests/test_matrix_championship_prospective_pit_attestation.py tests/test_matrix_championship_baseline_pit_replay.py tests/test_matrix_championship_atomic_pit_cycle.py tests/test_matrix_championship_quote_window_scope.py tests/test_matrix_independent_over25_quote_audit.py tests/test_matrix_football_sofa_fixture_crosscheck.py tests/test_matrix_independent_over25_historical_parity.py tests/test_matrix_football_flashscore_fixture_crosscheck.py
 
       - name: Resolve Bogota target date
         id: date
@@ -120,6 +127,60 @@ jobs:
             --intake "evidence/football_world_inventory/$D/MATRIX_FOOTBALL_INDEPENDENT_FIXTURE_INTAKE.json" \
             --out "evidence/football_world_inventory/$D/MATRIX_INDEPENDENT_OVER25_HISTORY_SHADOW.json"
 
+      - name: Attest current Championship PIT history before kickoff in strict research isolation
+        shell: bash
+        run: |
+          set -euo pipefail
+          D="${{ steps.date.outputs.target_date }}"
+          PYTHONPATH=. python -m tools.matrix_championship_prospective_pit_attestation \
+            --date "$D" \
+            --out "evidence/football_world_inventory/$D/MATRIX_CHAMPIONSHIP_PROSPECTIVE_PIT_ATTESTATION.json"
+          python - "$D" <<'PY'
+          import json,sys
+          from pathlib import Path
+          d=sys.argv[1]
+          p=Path(f"evidence/football_world_inventory/{d}/MATRIX_CHAMPIONSHIP_PROSPECTIVE_PIT_ATTESTATION.json")
+          j=json.loads(p.read_text(encoding="utf-8"))
+          assert j["target_date_bogota"]==d
+          assert j["production_p_matrix_authorized_count"]==0
+          assert j["telegram_signal_authorized"] is False
+          assert j["real_money"]=="BLOCKED"
+          assert j["calibration_untouched"] is True
+          assert all(row["governed_probability_authorized"] is False for row in j["rows"])
+          print("CHAMPIONSHIP_PIT_PROSPECTIVE_RESEARCH_ATTESTED_NO_SIGNALS")
+          PY
+
+      - name: Seal atomic five-document PIT source snapshot from this same provider run
+        shell: bash
+        run: |
+          set -euo pipefail
+          D="${{ steps.date.outputs.target_date }}"
+          PYTHONPATH=. python -m tools.matrix_championship_atomic_pit_cycle \
+            --date "$D" --run-id "${{ github.run_id }}" \
+            --out "evidence/football_world_inventory/$D/MATRIX_CHAMPIONSHIP_ATOMIC_PIT_RUN_${{ github.run_id }}.json"
+
+      - name: Recompute original Over 2.5 baseline from independently authenticated raw history
+        shell: bash
+        run: |
+          set -euo pipefail
+          D="${{ steps.date.outputs.target_date }}"
+          PYTHONPATH=. python -m tools.matrix_championship_baseline_pit_replay \
+            --date "$D" \
+            --out "evidence/football_world_inventory/$D/MATRIX_CHAMPIONSHIP_OVER25_BASELINE_REPLAY.json"
+          python - "$D" <<'PY'
+          import json,sys
+          from pathlib import Path
+          d=sys.argv[1]
+          j=json.loads(Path(f"evidence/football_world_inventory/{d}/MATRIX_CHAMPIONSHIP_OVER25_BASELINE_REPLAY.json").read_text(encoding="utf-8"))
+          assert j["target_date_bogota"]==d
+          assert j["calibrated_model_equivalence_verified"] is False
+          assert j["production_p_matrix_authorized"] is False
+          assert j["telegram_signal_authorized"] is False
+          assert j["real_money"]=="BLOCKED"
+          assert all(row["original_provider_feature_equivalence_verified"] is False for row in j["rows"])
+          print("OVER25_AUTHENTIC_BASELINE_REPLAY_RESEARCH_ONLY",j["verified_research_baseline_count"])
+          PY
+
       - name: Compare real free-provider results to immutable paid-era Serie A 2026 archive
         env:
           FOOTBALL_DATA_ORG_TOKEN: ${{ secrets.FOOTBALL_DATA_ORG_TOKEN }}
@@ -136,12 +197,17 @@ jobs:
         run: |
           set -euo pipefail
           D="${{ steps.date.outputs.target_date }}"
-          EXTRA=""
-          if [ "${{ github.event_name }}" = 'push' ]; then EXTRA='--probe-quota-outside-window'; fi
+          ATOMIC="evidence/football_world_inventory/$D/MATRIX_CHAMPIONSHIP_ATOMIC_PIT_RUN_${{ github.run_id }}.json"
+          if [ -f "$ATOMIC" ]; then git add "$ATOMIC"; fi
+          Q="evidence/football_world_inventory/$D/MATRIX_INDEPENDENT_OVER25_QUOTE_AUDIT.json"
+          # No push-triggered quota probing outside the prematch window.
+          # Read the previous same-day result before safely overwriting it.
           PYTHONPATH=. python -m tools.matrix_independent_over25_quote_audit \
             --intake "evidence/football_world_inventory/$D/MATRIX_FOOTBALL_INDEPENDENT_FIXTURE_INTAKE.json" \
             --shadow "evidence/football_world_inventory/$D/MATRIX_INDEPENDENT_OVER25_HISTORY_SHADOW.json" \
-            --out "evidence/football_world_inventory/$D/MATRIX_INDEPENDENT_OVER25_QUOTE_AUDIT.json" $EXTRA
+            --previous "$Q" \
+            --global-quota-guard "evidence/notifications/telegram/MATRIX_ODDS_API_QUOTA_GUARD_LAST.json" \
+            --out "$Q"
       - name: Persist read-only discovery evidence even when provider is unavailable
         if: always()
         shell: bash
@@ -158,6 +224,30 @@ jobs:
           git add "$P"
           S="evidence/football_world_inventory/$D/MATRIX_INDEPENDENT_OVER25_HISTORY_SHADOW.json"
           if [ -f "$S" ]; then git add "$S"; fi
+          PITA="evidence/football_world_inventory/$D/MATRIX_CHAMPIONSHIP_PROSPECTIVE_PIT_ATTESTATION.json"
+          if [ -f "$PITA" ]; then
+            # Immutable run-scoped evidence prevents add/add conflicts with
+            # a separate Windows prospective attestation in the same day.
+            PITA_RUN="evidence/football_world_inventory/$D/MATRIX_CHAMPIONSHIP_PROSPECTIVE_PIT_RUN_${{ github.run_id }}.json"
+            cp "$PITA" "$PITA_RUN"
+            git add "$PITA_RUN"
+            if git ls-files --error-unmatch "$PITA" > /dev/null 2>&1; then
+              git restore -- "$PITA"
+            else
+              rm "$PITA"
+            fi
+          fi
+          BASELINE="evidence/football_world_inventory/$D/MATRIX_CHAMPIONSHIP_OVER25_BASELINE_REPLAY.json"
+          if [ -f "$BASELINE" ]; then
+            BASELINE_RUN="evidence/football_world_inventory/$D/MATRIX_CHAMPIONSHIP_OVER25_BASELINE_RUN_${{ github.run_id }}.json"
+            cp "$BASELINE" "$BASELINE_RUN"
+            git add "$BASELINE_RUN"
+            if git ls-files --error-unmatch "$BASELINE" > /dev/null 2>&1; then
+              git restore -- "$BASELINE"
+            else
+              rm "$BASELINE"
+            fi
+          fi
           Q="evidence/football_world_inventory/$D/MATRIX_INDEPENDENT_OVER25_QUOTE_AUDIT.json"
           if [ -f "$Q" ]; then git add "$Q"; fi
           B="evidence/football_world_inventory/$D/MATRIX_SOFA_FOOTBALL_FIXTURE_CROSSCHECK.json"
