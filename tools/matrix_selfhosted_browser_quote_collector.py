@@ -702,6 +702,52 @@ def collection_outcome(pages:list[dict[str,Any]],targets:list[dict[str,Any]],
     return "EXACT_QUOTES_CAPTURED_PENDING_SHARP_MODEL_TELEGRAM_GATES"
 
 
+def persist_research_market(rec:dict[str,Any],captured_at:datetime,root:Path=ROOT)->str|None:
+    """Content-addressed factual market evidence, never a canonical execution quote."""
+    if (not isinstance(rec,dict) or rec.get("research_only") is not True
+        or rec.get("execution_quote_emitted") is not False
+        or rec.get("telegram_signal_authorized") is not False
+        or rec.get("p_matrix") is not None):
+        return None
+    exact=rec.get("exact_quote")
+    if not isinstance(exact,dict) or exact.get("market_name")!="Goles totales Más/Menos":
+        return None
+    if exact.get("selection_name")!="Más de 2.5" or exact.get("handicap")!=2.5:
+        return None
+    try:
+        price=float(exact["price"])
+        event_id=str(exact["event_id"])
+        kickoff=datetime.fromisoformat(str(rec["kickoff"]).replace("Z","+00:00"))
+        if (not event_id.isdecimal() or not (1.0<price<1000)
+            or kickoff.utcoffset() is None or captured_at.tzinfo is None
+            or captured_at.astimezone(timezone.utc)>=kickoff.astimezone(timezone.utc)):
+            return None
+        day=kickoff.astimezone(timezone(timedelta(hours=-5))).date().isoformat()
+    except (TypeError,ValueError,KeyError,OverflowError):
+        return None
+    identity={"event_id":event_id,"fixture_id":str(rec["fixture_id"]),
+              "market":"OVER_2_5_FULL_TIME","price":price,"day":day}
+    fingerprint=hashlib.sha256(json.dumps(identity,sort_keys=True).encode("utf-8")).hexdigest()[:16]
+    dest=root/"evidence"/"football_world_inventory"/day
+    name=f"MATRIX_BETANO_RESEARCH_MARKET_{event_id}_{fingerprint}.json"
+    path=dest/name
+    payload={
+        "schema":"MATRIX_BETANO_RESEARCH_MARKET_EVIDENCE_V1",
+        "observed_at_utc":captured_at.astimezone(timezone.utc).isoformat(),
+        "source":"BETANO_VISIBLE_DOM","fixture_id":str(rec["fixture_id"]),
+        "event_id":event_id,"event_url":str(exact.get("event_url") or ""),
+        "market_name":exact["market_name"],"selection":exact["selection_name"],
+        "decimal_price":price,"kickoff_utc":kickoff.astimezone(timezone.utc).isoformat(),
+        "research_only":True,"production_probability_authorized":False,
+        "execution_quote_emitted":False,"telegram_signal_authorized":False,
+        "automatic_wagering":False,"real_money":"BLOCKED"
+    }
+    if not path.exists():
+        dest.mkdir(parents=True,exist_ok=True)
+        path.write_text(json.dumps(payload,ensure_ascii=False,sort_keys=True,indent=2)+"\\n",encoding="utf-8")
+    return str(path.relative_to(root))
+
+
 def main()->None:
     cfg=load(CONFIG); audit=load(AUDIT); adapters=load(ADAPTERS)
     endpoint=os.environ.get("MATRIX_BROWSER_CDP_ENDPOINT",cfg["browser"]["default_cdp_endpoint"]).strip()
@@ -864,6 +910,10 @@ def main()->None:
         pth=persist_betano_physical_quote(rec,now)
         if pth:
             canonical_betano_quote_paths.append(pth)
+    research_market_paths=[]
+    for rec in betano_research_quotes:
+        pth=persist_research_market(rec,now)
+        if pth: research_market_paths.append(pth)
     out={
       "schema":"MATRIX_BROWSER_CDP_COLLECTION_V1",
       "generated_at_utc":now.isoformat(),
@@ -893,6 +943,7 @@ def main()->None:
       "research_only_page_matches":len([r for r in matched if r.get("research_only")]),
       "betano_exact_quote_count":len(betano_exact_quotes),
       "research_only_betano_quote_count":len(betano_research_quotes),
+      "research_only_market_evidence_paths":research_market_paths,
       "canonical_betano_quote_paths":canonical_betano_quote_paths,
       "pages":pages,"matches":matched,"betano_exact_quotes":betano_exact_quotes,
       "research_only_betano_quotes":betano_research_quotes,
