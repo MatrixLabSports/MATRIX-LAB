@@ -19,6 +19,7 @@ SOURCE_ORDER = ["SOFASCORE", "FLASHSCORE", "APIS"]
 SCHEMA = "MATRIX_OPERA_FOOTBALL_FULL_LINK_CAPTURE_V1"
 MATCH_LINK = re.compile(r"^https://www\.sofascore\.com/es/football/match/[^\s#]+#id:(\d+)$")
 DATE_LABEL = re.compile(r"^2/11/26\s+(\d{1,2}):(\d\d)(?:\s|$)")
+VISIBLE_DATE = re.compile(r"^2/11/26(?:\s|$)")
 
 def reconcile(capture: dict, sofa: dict, independent: dict, flash: dict) -> dict:
     if not all(isinstance(x,dict) for x in (capture,sofa,independent,flash)):
@@ -53,6 +54,8 @@ def reconcile(capture: dict, sofa: dict, independent: dict, flash: dict) -> dict
         raise ValueError("PHYSICAL_OBSERVATION_COUNT_MISMATCH")
     by_id = {}
     dated = []
+    dated_without_time = []
+    dated_with_time = []
     not_dated = []
     for item in observations:
         if not isinstance(item,dict):
@@ -67,15 +70,22 @@ def reconcile(capture: dict, sofa: dict, independent: dict, flash: dict) -> dict
         by_id[fid]=item
         name=str(item.get("display_name") or "")
         dm=DATE_LABEL.match(name)
-        if item.get("explicit_target_date_label") is not bool(dm):
+        visible_date=bool(VISIBLE_DATE.match(name))
+        # Capture date flag means a visible calendar date, NOT a verified kickoff.
+        # SofaScore also shows FT/Aplazado/Concedido without a HH:MM label.
+        if item.get("explicit_target_date_label") is not visible_date:
             raise ValueError("EXPLICIT_DATE_FLAG_NOT_PHYSICAL")
-        if dm is None:
+        if not visible_date:
             not_dated.append({"sofascore_event_id":fid,"reason":"EXPLICIT_TARGET_DATE_NOT_VISIBLE"})
         else:
-            hh,mm=map(int,dm.groups())
-            if hh>23 or mm>59:
-                raise ValueError("INVALID_VISIBLE_BOGOTA_TIME")
             dated.append(fid)
+            if dm is None:
+                dated_without_time.append(fid)
+            else:
+                hh,mm=map(int,dm.groups())
+                if hh>23 or mm>59:
+                    raise ValueError("INVALID_VISIBLE_BOGOTA_TIME")
+                dated_with_time.append(fid)
     if (capture.get("explicit_target_date_label_count")!=len(dated)
         or capture.get("without_explicit_target_date_count")!=len(not_dated)):
         raise ValueError("SOURCE_DATE_LABEL_COUNTS_MISMATCH")
@@ -99,6 +109,8 @@ def reconcile(capture: dict, sofa: dict, independent: dict, flash: dict) -> dict
             reason="SOFA_EVENT_NOT_PRESENT_IN_OBSERVED_CALENDAR"
         elif not x["explicit_target_date_label"]:
             reason="SOURCE_EVENT_DATE_NOT_EXPLICIT"
+        elif DATE_LABEL.match(x["display_name"]) is None:
+            reason="SOURCE_EVENT_EXACT_KICKOFF_TIME_NOT_VISIBLE"
         else:
             try:
                 timestamp=datetime.fromisoformat(official_by_id[independent_id]["kickoff_utc"].replace("Z","+00:00"))
@@ -135,6 +147,9 @@ def reconcile(capture: dict, sofa: dict, independent: dict, flash: dict) -> dict
         "observed_visible_links":len(observations),
         "explicit_date_labeled_links":len(dated),
         "without_explicit_date_label":len(not_dated),
+        "date_labeled_with_visible_kickoff_count":len(dated_with_time),
+        "date_labeled_without_visible_kickoff_count":len(dated_without_time),
+        "date_labeled_without_visible_kickoff_ids":dated_without_time,
         "pre_registered_triple_source_matches":len(confirmed),
         "pre_registered_rejections":rejected,
         "review_only_sofascore_links_without_independent_fixture":len(remaining),
