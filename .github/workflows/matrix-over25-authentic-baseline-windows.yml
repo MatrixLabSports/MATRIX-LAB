@@ -10,6 +10,8 @@ on:
       - tests/test_matrix_championship_baseline_pit_replay.py
       - tools/matrix_football_independent_over25_shadow.py
       - tools/matrix_persist_championship_baseline.py
+      - tools/matrix_championship_cross_provider_archived_replay.py
+      - tests/test_matrix_championship_cross_provider_archived_replay.py
       - .github/workflows/matrix-over25-authentic-baseline-windows.yml
 
 permissions:
@@ -43,18 +45,25 @@ jobs:
           python -c "import os,sys; assert sys.version_info[:2]==(3,11); assert os.environ['REAL_MONEY']=='BLOCKED'; assert os.environ['AUTO_BETTING']=='DISABLED'; assert os.environ['MATRIX_MODE']=='SHADOW'"
 
       - name: Test original mathematical baseline replay against raw authenticated HTTP bytes
-        run: python -m pytest -q tests/test_matrix_championship_baseline_pit_replay.py tests/test_matrix_championship_prospective_pit_attestation.py tests/test_matrix_football_independent_over25_shadow.py
+        run: python -m pytest -q tests/test_matrix_championship_baseline_pit_replay.py tests/test_matrix_championship_cross_provider_archived_replay.py tests/test_matrix_championship_prospective_pit_attestation.py tests/test_matrix_football_independent_over25_shadow.py
 
       - name: Verify actual Championship raw HTTP historical baseline independently
         run: |
           python -m tools.matrix_championship_baseline_pit_replay --date 2026-11-03 --out evidence/football_world_inventory/2026-11-03/MATRIX_CHAMPIONSHIP_OVER25_BASELINE_WINDOWS_${{ github.run_id }}.json
           python -c "import json,os,pathlib; p=pathlib.Path('evidence/football_world_inventory/2026-11-03')/('MATRIX_CHAMPIONSHIP_OVER25_BASELINE_WINDOWS_'+os.environ['GITHUB_RUN_ID']+'.json'); d=json.loads(p.read_text(encoding='utf-8')); assert d['verified_research_baseline_count']>=1; assert d['calibrated_model_equivalence_verified'] is False; assert d['telegram_signal_authorized'] is False; assert d['production_p_matrix_authorized'] is False; assert d['real_money']=='BLOCKED'; print('REAL_AUTHENTIC_BASELINE_VERIFIED='+str(d['verified_research_baseline_count']))"
 
+      - name: Compare historical original API-Football to authenticated football-data HTTP
+        run: |
+          python -m tools.matrix_championship_cross_provider_archived_replay --shadow evidence/football_world_inventory/2026-11-03/MATRIX_INDEPENDENT_OVER25_HISTORY_SHADOW.json --out evidence/football_world_inventory/2026-11-03/MATRIX_CHAMPIONSHIP_CROSS_PROVIDER_WINDOWS_${{ github.run_id }}.json
+          python -c "import json,os,pathlib; p=pathlib.Path('evidence/football_world_inventory/2026-11-03')/('MATRIX_CHAMPIONSHIP_CROSS_PROVIDER_WINDOWS_'+os.environ['GITHUB_RUN_ID']+'.json'); d=json.loads(p.read_text(encoding='utf-8')); assert d['matched_historical_result_count']>=20; assert d['historical_result_disagreements']==0; assert d['full_original_calibrated_model_equivalence_verified'] is False; assert d['new_production_p_matrix_authorized'] is False; assert d['telegram_signal_authorized'] is False; print('CROSS_PROVIDER_HISTORICAL_MATCHES='+str(d['matched_historical_result_count'])+' SCOREABLE_BOTH='+str(d['raw_group_feature_parity']['scoreable_both'])+' SAME_RAW_FEATURES='+str(d['raw_group_feature_parity']['same_raw_group_feature_and_probability_count'])+' DIFFERENT_RAW_FEATURES='+str(d['raw_group_feature_parity']['different_raw_group_feature_or_probability_count']))"
+
       - name: Upload actual immutable baseline proof
         uses: actions/upload-artifact@v4
         with:
           name: matrix-over25-authentic-baseline-windows
-          path: evidence/football_world_inventory/2026-11-03/MATRIX_CHAMPIONSHIP_OVER25_BASELINE_WINDOWS_${{ github.run_id }}.json
+          path: |
+            evidence/football_world_inventory/2026-11-03/MATRIX_CHAMPIONSHIP_OVER25_BASELINE_WINDOWS_${{ github.run_id }}.json
+            evidence/football_world_inventory/2026-11-03/MATRIX_CHAMPIONSHIP_CROSS_PROVIDER_WINDOWS_${{ github.run_id }}.json
 
       - name: Persist actual baseline proof in GitHub without changing Windows policies
         run: python -m tools.matrix_persist_championship_baseline
