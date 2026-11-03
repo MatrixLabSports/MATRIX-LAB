@@ -2,6 +2,14 @@ name: MATRIX Self-Hosted Browser Quotes 5m
 
 on:
   workflow_dispatch:
+  push:
+    branches:
+      - repair/cor09-world-pipeline
+    paths:
+      - .github/workflows/matrix-selfhosted-browser-quotes-5m.yml
+      - tools/matrix_selfhosted_browser_quote_collector.py
+      - tools/windows/start_matrix_browser_cdp.ps1
+      - tests/test_matrix_selfhosted_browser_quote_collector.py
   schedule:
     - cron: "*/5 * * * *"
 
