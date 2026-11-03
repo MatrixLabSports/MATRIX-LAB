@@ -1,0 +1,154 @@
+{
+  "schema": "MATRIX_20261102_TELEGRAM_ELITE_GREEN_RECOVERY_V1",
+  "generated_at_utc": "2026-11-03T02:52:37.780Z",
+  "target_next_bogota_date": "2026-11-03",
+  "source_priority": [
+    "SOFASCORE",
+    "FLASHSCORE",
+    "APIS"
+  ],
+  "repository": "MatrixLabSports/MATRIX-LAB",
+  "branch": "repair/cor09-world-pipeline",
+  "cut_type": "VERIFIED_CODE_AND_SOURCE_RECOVERY_WITH_FAIL_CLOSED_UNRESOLVED_DELIVERY",
+  "committee_roles": [
+    "ingenieria_de_fuentes",
+    "modelado_estadistico_y_calibracion",
+    "integridad_de_identidades",
+    "observabilidad_y_operaciones",
+    "calidad_de_software",
+    "cuotas_y_referencias_sharp",
+    "seguridad_telegram",
+    "auditoria_de_evidencias"
+  ],
+  "starting_baseline": {
+    "last_registered_paper_signal_date_bogota": "2026-10-22",
+    "total_recorded_signals": 197,
+    "effective_paper_settlements": 187,
+    "wins": 106,
+    "losses": 81,
+    "paper_profit_cop": -140500,
+    "paper_bankroll_cop": 4859500,
+    "canonical_ledger_summary": "evidence/notifications/telegram/MATRIX_TELEGRAM_DAILY_BANKROLL_CANONICAL_LAST.json",
+    "operational_green_success": "https://github.com/MatrixLabSports/MATRIX-LAB/actions/runs/41456902529",
+    "operational_supervisor_15m_success": "https://github.com/MatrixLabSports/MATRIX-LAB/actions/runs/41560724842",
+    "interpretation": "SUCCESSFUL_EXECUTION_DOES_NOT_PROVE_TELEGRAM_SENT_OR_ELIGIBLE_SIGNAL"
+  },
+  "root_causes_physically_observed": [
+    {
+      "id": "P0_SOURCE_CUTOFF",
+      "evidence": "evidence/notifications/telegram/MATRIX_UPSTREAM_GENERATOR_ROOT_CAUSE_20261101.json",
+      "finding": "Legacy paid API-Football prospective generator expired after Oct 28; no new post-cutoff governed P_MATRIX, despite supervisor pass."
+    },
+    {
+      "id": "P0_CANONICAL_INPUT_GAP",
+      "evidence": "evidence/notifications/telegram/MATRIX_TELEGRAM_FINAL_WINDOW_READINESS_LAST.json",
+      "finding": "0 eligible final-window candidates / 0 verified fresh quotes; Opera links not identical to canonical production freezes."
+    },
+    {
+      "id": "P0_PRICE_DATA",
+      "evidence": "evidence/football_world_inventory/2026-11-03/MATRIX_INDEPENDENT_OVER25_QUOTE_AUDIT.json",
+      "finding": "odds-api.net HTTP429; 0 exact bookmaker Over 2.5 quotes and 0 sharp reference <=120 seconds. Rate limited is not proof of zero quota."
+    },
+    {
+      "id": "P0_FEATURE_PARITY",
+      "evidence": "evidence/football_world_inventory/2026-11-03/MATRIX_INDEPENDENT_OVER25_HISTORICAL_PARITY.json",
+      "finding": "75/83 verified Serie A historical score results; full 6-league calibrated feature equivalence NOT proven; frozen model cannot be promoted from research shadow."
+    },
+    {
+      "id": "P1_FALSE_WORKFLOW_FAILURES",
+      "evidence": "https://github.com/MatrixLabSports/MATRIX-LAB/actions/runs/41562241765",
+      "finding": "After entitlement expiry, horizon empty was wrongly asserted to contain 1-5 targets; obsolete offline watchdog test expected paid-provider message instead of actual fail-closed missing Telegram credentials."
+    }
+  ],
+  "work_completed": [
+    {
+      "scope": "Independent fixtures",
+      "status": "GH_ACTION_SUCCESS_REAL_AUTHENTICATED_API",
+      "fixture_count": 19,
+      "http_status": 200,
+      "source": "FOOTBALL_DATA_ORG",
+      "run": "https://github.com/MatrixLabSports/MATRIX-LAB/actions/runs/41567107542",
+      "canonical_input": "evidence/football_world_inventory/2026-11-03/MATRIX_FOOTBALL_INDEPENDENT_FIXTURE_INTAKE.json",
+      "authorizes_telegram": false
+    },
+    {
+      "scope": "Browser individual fixture identity",
+      "status": "PHYSICAL_OPERA_MATCH_PAGES_CHECKED_AND_CROSSWALK_PERSISTED; FORMAL_CI_QUEUED",
+      "individually_observed": 7,
+      "source_proof": "evidence/football_world_inventory/2026-11-03/MATRIX_FLASH_MATCH_PAGE_PHYSICAL_PROOF_7.json",
+      "sofascore_crosswalk": "evidence/football_world_inventory/2026-11-03/MATRIX_SOFA_BROWSER_OBSERVATIONS.json",
+      "flashscore_crosswalk": "evidence/football_world_inventory/2026-11-03/MATRIX_FLASH_BROWSER_OBSERVATIONS.json",
+      "code": [
+        "tools/matrix_football_sofa_fixture_crosscheck.py",
+        "tools/matrix_football_flashscore_fixture_crosscheck.py"
+      ],
+      "workflow": ".github/workflows/matrix-football-03nov-seven-source-crosscheck.yml",
+      "run": "https://github.com/MatrixLabSports/MATRIX-LAB/actions/runs/41568045555",
+      "run_status_at_handoff": "queued",
+      "production_signal_authorized": false
+    },
+    {
+      "scope": "Legacy paid API and offline watchdog safety repairs",
+      "status": "CHANGES_COMMITTED_GITHUB_PENDING_ISOLATED_TEST_CONFIRMATION",
+      "files": [
+        "tests/test_telegram_supervisor_offline_safety.py",
+        "tools/api_football_prospective_horizon.py",
+        "tests/test_api_football_prospective_horizon.py",
+        ".github/workflows/api-football-prospective-daily-production.yml"
+      ],
+      "commit_refs": [
+        "ba1ec4a47613dcf80f88e768dae6171473a34850",
+        "0d017e10f8ed9de93520deb4cca593d67228f2f6",
+        "5a47f07b1429227efdf8e146f9ecc80b067b536d",
+        "d5ddf848edf27d941c6b47eb6bc962970e3e45b0"
+      ],
+      "guarantee": "Never call expired paid API and never silently create backfilled prematch forecasts."
+    },
+    {
+      "scope": "Source diagnosis without improper signal promotion",
+      "status": "CHANGES_COMMITTED_GITHUB_PENDING_ISOLATED_TEST_CONFIRMATION",
+      "files": [
+        "tools/matrix_telegram_input_health.py",
+        "tests/test_matrix_telegram_input_health.py",
+        ".github/workflows/matrix-telegram-elite-source-recovery-contracts.yml"
+      ],
+      "commits": [
+        "0a43822f1fd3aa78250d58c841c94f59490da3e8",
+        "4c1e16bacc3c3b0636fc867b33ba967499d639c6",
+        "d699d6fca9722642b489b16e332dc4cba076cb56"
+      ],
+      "run": "https://github.com/MatrixLabSports/MATRIX-LAB/actions/runs/41568348390",
+      "run_status_at_handoff": "queued",
+      "expected_diagnostic": "evidence/notifications/telegram/MATRIX_TELEGRAM_GREEN_SOURCE_RECOVERY_LAST.json",
+      "diagnostic_not_yet_verified": true
+    }
+  ],
+  "research_only": {
+    "scored_historical_shadow": 10,
+    "blocked_historical_shadow": 9,
+    "calibration_mutated": false,
+    "source": "evidence/football_world_inventory/2026-11-03/MATRIX_INDEPENDENT_OVER25_HISTORY_SHADOW.json"
+  },
+  "unresolved_obligations": [
+    "Read GitHub Actions outcome for two queued workflows, verify persisted seven-source crosscheck and green-source diagnosis; fix regressions without weakening gates.",
+    "Close remaining browser-source crosswalk or explicitly quarantine unmatched entries; no fuzzy promotion or fabricated source team mapping.",
+    "Establish historical provider-equivalence for all required original frozen model features and league cohorts (Serie A score concordance alone is insufficient).",
+    "Generate original governed P_MATRIX from strictly prior and parity-verified features; never use odds or outcomes to derive model probability.",
+    "Recover valid fresh exact Colombian bookmaker Over 2.5 prices and fresh Pinnacle/sharp quote <=120 seconds without overriding provider rate limit; no blank/nearby 2.25/2.75 substitutes.",
+    "Require odds strictly above 1.50, EV positive, prematch kickoff gate, 1u bankroll safeguards and an end-to-end Telegram delivery record; 0 BET acceptable.",
+    "Do not claim API-Tennis/RapidAPI payment implies Football model entitlement; subscription scopes separate."
+  ],
+  "safeguards": {
+    "real_money": "BLOCKED",
+    "automatic_wagering": false,
+    "telegram_signals_sent_by_this_intervention": 0,
+    "telegram_signal_gate_relaxed": false,
+    "odds_used_for_p_matrix": false,
+    "model_parameters_changed": false,
+    "calibration_refit": false,
+    "post_start_backfill": false,
+    "simulated_bookmaker_quotes": false,
+    "simulated_fixture_results": false
+  },
+  "conclusion": "PARTIAL_RECOVERY_REAL_INDEPENDENT_FIXTURES_AND_SEVEN_PHYSICAL_CLOCK_PROOFS; GREEN_SIGNAL_GENERATION_NOT_RESTORED_NO_AUTHENTIC_ODDS_OR_FEATURE_EQUIVALENCE"
+}
