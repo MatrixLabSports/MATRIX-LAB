@@ -36,3 +36,15 @@ La fuente canónica de fútbol y tenis permanece ausente en el ciclo observado. 
 - Hasta entonces: `0 BET`, `REAL_MONEY=BLOCKED`, `automatic_wagering=false`.
 
 No considerar el número de páginas capturadas como número de cuotas certificadas.
+
+## Certificación física del puente mediante Runner Windows
+
+- Ejecución: https://github.com/MatrixLabSports/MATRIX-LAB/actions/runs/41577892108
+- Trabajo: `collect` (`125725560567`), **completed / success**, terminado alrededor de 2026-11-03T04:24:46Z.
+- Pruebas reales: **28 passed in 1.19s**, incluyendo puente de supervisor sin `pre_send_gate`, exclusión de encuentros enviados/iniciados, auditoría obsoleta, umbral de probabilidad y bloqueo por kickoff.
+- CDP: `PASS_CDP_REACHABLE`, puerto 9222, Chrome 156.0.8078.79.
+- Captura: `PASS_CAPTURED`, 14 páginas, cero candidatos y cero cuotas exactas Betano. Persistencia: `MATRIX_BROWSER_EVIDENCE_PUSHED`.
+- El fichero de auditoría observado era el anterior (03:58:32 UTC) y todavía no contenía el campo `browser_prematch_candidate_rows`. Eso es **ausencia de un nuevo ciclo del supervisor**, no un fallo de las pruebas del puente.
+- Directorios canónicos de fútbol para los días 2026-11-02 y 2026-11-03: ausentes en la sesión operativa verificada.
+
+**Estado final de esta intervención:** puente de código y pruebas RESUELTO; recuperación de datos canónicos y producción certificada de señales verdes PENDIENTE. No alterar calibraciones ni fabricar datos.
