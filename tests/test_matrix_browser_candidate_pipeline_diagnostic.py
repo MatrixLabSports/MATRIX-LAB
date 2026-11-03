@@ -46,3 +46,38 @@ def test_unmatched_blocker_rows_distinguished_from_empty_blocker_audit(tmp_path)
 def test_rejects_naive_clock(tmp_path):
     with pytest.raises(ValueError,match="TZ_AWARE"):
         candidate_pipeline_diagnostic({"records":[]},datetime(2026,11,3),root=tmp_path)
+
+
+def test_browser_uses_fresh_governed_intake_when_blocker_rows_are_empty():
+    from tools.matrix_selfhosted_browser_quote_collector import candidate_rows
+    now=datetime(2026,11,3,4,0,tzinfo=timezone.utc)
+    c={"fixture_id":"fixture-1","match":"Home vs Away",
+       "kickoff":(now+timedelta(minutes=70)).isoformat(),"p_matrix":0.70}
+    audit={"generated_at_utc":now.isoformat(),"records":[],
+           "browser_prematch_candidate_rows":[c]}
+    assert candidate_rows(audit,now)==[c]
+
+
+def test_stale_canonical_intake_is_not_used_for_quotes():
+    from tools.matrix_selfhosted_browser_quote_collector import candidate_rows
+    now=datetime(2026,11,3,4,0,tzinfo=timezone.utc)
+    c={"fixture_id":"fixture-2","match":"Home vs Away",
+       "kickoff":(now+timedelta(minutes=70)).isoformat(),"p_matrix":0.70}
+    audit={"generated_at_utc":(now-timedelta(hours=1)).isoformat(),"records":[c],
+           "browser_prematch_candidate_rows":[c]}
+    assert candidate_rows(audit,now)==[]
+
+
+def test_canonical_intake_does_not_override_kickoff_or_probability_gates():
+    from tools.matrix_selfhosted_browser_quote_collector import candidate_rows
+    now=datetime(2026,11,3,4,0,tzinfo=timezone.utc)
+    payload={"generated_at_utc":now.isoformat(),"records":[],
+             "browser_prematch_candidate_rows":[
+               {"fixture_id":"expired","match":"Home vs Away",
+                "kickoff":(now-timedelta(minutes=1)).isoformat(),"p_matrix":0.85},
+               {"fixture_id":"weak","match":"Home vs Away",
+                "kickoff":(now+timedelta(minutes=40)).isoformat(),"p_matrix":0.59},
+               {"fixture_id":"far","match":"Home vs Away",
+                "kickoff":(now+timedelta(minutes=150)).isoformat(),"p_matrix":0.85},
+             ]}
+    assert candidate_rows(payload,now)==[]
