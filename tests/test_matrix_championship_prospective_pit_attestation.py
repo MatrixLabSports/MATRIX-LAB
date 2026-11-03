@@ -129,3 +129,17 @@ def test_bad_governance_fails_closed():
         assert "GOVERNANCE" in str(e)
     else:
         raise AssertionError("MUST_DENY_ELEVATED_GOVERNANCE")
+
+
+def test_attestation_exact_four_source_snapshots_are_inseparable():
+    from tools.matrix_championship_prospective_pit_attestation import source_digest
+    intake,sofa,flash,shadow=docs()
+    data=report(intake,sofa,flash,shadow,now=NOW)
+    assert data["source_binding_schema"]=="MATRIX_PROSPECTIVE_PIT_EXACT_FOUR_SOURCE_BINDING_V1"
+    assert data["source_intake_sha256"]==source_digest(intake)
+    assert data["source_shadow_sha256"]==source_digest(shadow)
+    assert data["source_sofa_sha256"]==source_digest(sofa)
+    assert data["source_flash_sha256"]==source_digest(flash)
+    assert data["source_intake_generated_at_utc"]=="2026-11-03T10:00:00+00:00"
+    assert data["source_shadow_completed_at_utc"]=="2026-11-03T10:05:00+00:00"
+    assert all(row["telegram_signal_authorized"] is False for row in data["rows"])
