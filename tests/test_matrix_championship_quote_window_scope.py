@@ -11,7 +11,7 @@ ROOT=Path(__file__).resolve().parents[1]/"evidence"/"football_world_inventory"/"
 FILES=[
     "MATRIX_FOOTBALL_INDEPENDENT_FIXTURE_INTAKE.json",
     "MATRIX_INDEPENDENT_OVER25_HISTORY_SHADOW.json",
-    "MATRIX_CHAMPIONSHIP_PROSPECTIVE_PIT_ATTESTATION.json",
+    "MATRIX_CHAMPIONSHIP_PROSPECTIVE_PIT_RUN_41621485245.json",
     "MATRIX_SOFA_FOOTBALL_FIXTURE_CROSSCHECK.json",
     "MATRIX_FLASH_FOOTBALL_CROSSCHECK.json",
 ]
@@ -38,7 +38,7 @@ def test_real_archived_prospective_pre_match_window_has_six_only_research_target
 
 def test_outside_two_hour_window_is_zero_and_never_price_eligible():
     d=originals()
-    x,y,gate=scope(*d,now=datetime(2026,11,3,10,40,tzinfo=timezone.utc))
+    x,y,gate=scope(*d,now=datetime(2026,11,3,11,0,tzinfo=timezone.utc))
     assert gate["research_only_eligible_count"]==0
     assert x["fixtures"]==[]
     assert y["scored"]==[]
