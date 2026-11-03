@@ -49,7 +49,15 @@ def test_real_archived_prospective_pre_match_window_has_six_only_research_target
 
 def test_outside_two_hour_window_is_zero_and_never_price_eligible():
     d=originals()
-    x,y,gate=scope(*d,now=datetime(2026,11,3,14,0,tzinfo=timezone.utc))
+    # This is an archived evidence replay, and the actual provider capture
+    # timestamp changes after each successful independent workflow. A hard-
+    # coded 14:00 UTC can precede that real capture and falsely fail STALE.
+    captured=datetime.fromisoformat(d[0]["generated_at_utc"].replace("Z","+00:00"))
+    observed=datetime.fromisoformat(d[2]["observed_at_utc"].replace("Z","+00:00"))
+    clock=max(captured,observed)+__import__("datetime").timedelta(seconds=30)
+    assert all((datetime.fromisoformat(x["kickoff_utc"].replace("Z","+00:00"))-clock).total_seconds()>7200
+               for x in d[2]["rows"] if x["status"]=="PASS_PROSPECTIVE_RESEARCH_HISTORY_ONLY")
+    x,y,gate=scope(*d,now=clock)
     assert gate["research_only_eligible_count"]==0
     assert x["fixtures"]==[]
     assert y["scored"]==[]
