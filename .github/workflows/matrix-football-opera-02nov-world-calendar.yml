@@ -63,6 +63,9 @@ jobs:
           assert j["observed_visible_links"]==751
           assert j["explicit_date_labeled_links"]==736
           assert j["without_explicit_date_label"]==15
+          assert j["date_labeled_with_visible_kickoff_count"]==680
+          assert j["date_labeled_without_visible_kickoff_count"]==56
+          assert len(j["date_labeled_without_visible_kickoff_ids"])==56
           assert j["pre_registered_triple_source_matches"]==8
           assert not j["pre_registered_rejections"]
           assert j["review_only_sofascore_links_without_independent_fixture"]==728
