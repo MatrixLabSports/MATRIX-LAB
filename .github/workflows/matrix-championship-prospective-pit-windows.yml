@@ -11,7 +11,7 @@ on:
       - tests/test_matrix_championship_prospective_pit_attestation.py
       - tools/matrix_persist_championship_prospective_pit.py
       - tools/matrix_championship_quote_window_scope.py
-      - tests/test_matrix_championship_quote_window_scope.py tests/test_matrix_championship_baseline_pit_replay.py
+      - tests/test_matrix_championship_quote_window_scope.py
       - tools/matrix_championship_baseline_pit_replay.py
       - tests/test_matrix_championship_baseline_pit_replay.py
 
@@ -47,7 +47,7 @@ jobs:
           python -c "import os; assert os.environ['REAL_MONEY']=='BLOCKED' and os.environ['AUTO_BETTING']=='DISABLED' and os.environ['MATRIX_MODE']=='SHADOW'"
 
       - name: Test strict four-source rejection and archived replay after original capture
-        run: python -m pytest -q tests/test_matrix_championship_prospective_pit_attestation.py tests/test_matrix_football_independent_over25_shadow.py tests/test_matrix_championship_quote_window_scope.py
+        run: python -m pytest -q tests/test_matrix_championship_prospective_pit_attestation.py tests/test_matrix_football_independent_over25_shadow.py tests/test_matrix_championship_quote_window_scope.py tests/test_matrix_championship_baseline_pit_replay.py
 
       - name: Audit current real Championship matches from stored authentic provider files
         run: |
