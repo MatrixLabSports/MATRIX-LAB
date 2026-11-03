@@ -28,6 +28,7 @@ on:
       - tools/matrix_independent_over25_quote_audit.py
       - tests/test_matrix_independent_over25_quote_audit.py
       - tools/matrix_football_sofa_fixture_crosscheck.py
+      - tests/test_matrix_real_sofa_nov04_observations.py
       - tests/test_matrix_football_sofa_fixture_crosscheck.py
       - tools/matrix_football_flashscore_fixture_crosscheck.py
       - tests/test_matrix_football_flashscore_fixture_crosscheck.py
@@ -65,7 +66,7 @@ jobs:
       - name: Test independent fixture adapter and all hard safety gates
         run: |
           python -m pip install pytest requests Pillow
-          PYTHONPATH=. python -m pytest -q tests/test_matrix_football_independent_fixture_pipeline.py tests/test_matrix_independent_over25_governed_binding.py tests/test_matrix_football_independent_over25_shadow.py tests/test_matrix_championship_prospective_pit_attestation.py tests/test_matrix_championship_baseline_pit_replay.py tests/test_matrix_championship_atomic_pit_cycle.py tests/test_matrix_championship_quote_window_scope.py tests/test_matrix_independent_over25_quote_audit.py tests/test_matrix_football_sofa_fixture_crosscheck.py tests/test_matrix_independent_over25_historical_parity.py tests/test_matrix_football_flashscore_fixture_crosscheck.py
+          PYTHONPATH=. python -m pytest -q tests/test_matrix_football_independent_fixture_pipeline.py tests/test_matrix_independent_over25_governed_binding.py tests/test_matrix_football_independent_over25_shadow.py tests/test_matrix_championship_prospective_pit_attestation.py tests/test_matrix_championship_baseline_pit_replay.py tests/test_matrix_championship_atomic_pit_cycle.py tests/test_matrix_championship_quote_window_scope.py tests/test_matrix_independent_over25_quote_audit.py tests/test_matrix_football_sofa_fixture_crosscheck.py tests/test_matrix_real_sofa_nov04_observations.py tests/test_matrix_independent_over25_historical_parity.py tests/test_matrix_football_flashscore_fixture_crosscheck.py
 
       - name: Resolve Bogota target date
         id: date
