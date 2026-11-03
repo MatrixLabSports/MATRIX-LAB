@@ -51,6 +51,13 @@ jobs:
           API_FOOTBALL_KEY: ${{ secrets.API_FOOTBALL_KEY }}
         run: |
           set -euo pipefail
+          # Expired entitlement is a clean no-provider state, not a claim that
+          # a historical PRO manifest authorizes continued requests.
+          TODAY="$(TZ=America/Bogota date +%F)"
+          if [[ "$TODAY" > "2026-10-28" ]]; then
+            echo "API_FOOTBALL_PAID_WINDOW_EXPIRED_NO_NETWORK_PRODUCTION"
+            exit 0
+          fi
           if [[ -z "${API_FOOTBALL_KEY:-}" ]]; then
             echo "API_FOOTBALL_KEY_NOT_CONFIGURED"
             exit 2
@@ -135,8 +142,18 @@ jobs:
           pre=int(os.environ["PRE_FREEZE_COUNT"])
 
           assert horizon["status"]=="PASS"
-          assert 1 <= horizon["days_requested"] <= 5
           assert horizon["paid_through_bogota_date"]=="2026-10-28"
+          paid_expired=horizon["local_date_bogota"]>horizon["paid_through_bogota_date"]
+          if paid_expired:
+              # Empty horizon is the ONLY valid outcome after the fixed cutoff.
+              # Explicitly show it is not a healthy production cycle with picks.
+              assert horizon["days_requested"]==0
+              assert horizon["targets"]==[]
+              assert horizon["new_freezes_total"]==0
+              assert horizon["network_calls_total"]==0
+              print("PAID_API_EXPIRED_PROSPECTIVE_PRODUCTION_NOT_GENERATED")
+          else:
+              assert 1 <= horizon["days_requested"] <= 5
           assert horizon["paid_window_target_cap_enforced"] is True
           assert all(x["target_date_bogota"] <= "2026-10-28" for x in horizon["targets"])
           assert horizon["real_money"]=="BLOCKED"
@@ -170,7 +187,7 @@ jobs:
               assert row["p_matrix"] is None
 
           allowed={"PASS","ALREADY_COMPLETED_TODAY","HEALTHY_SKIP_NO_ELIGIBLE_FUTURE_FIXTURES"}
-          assert horizon["targets"]
+          assert horizon["targets"] or paid_expired
           assert all(x["status"] in allowed for x in horizon["targets"])
 
           for entry in horizon["targets"]:
