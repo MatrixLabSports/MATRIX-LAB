@@ -29,11 +29,46 @@ def _independent_status(root: Path, day: str) -> dict:
     flash = _read_json(folder / "MATRIX_FLASH_FOOTBALL_CROSSCHECK.json")
     shadow = _read_json(folder / "MATRIX_INDEPENDENT_OVER25_HISTORY_SHADOW.json")
     quote = _read_json(folder / "MATRIX_INDEPENDENT_OVER25_QUOTE_AUDIT.json")
-    tennis = _read_json(root / "evidence/tennis_calendar_reconciliation" / day /
-                        "MATRIX_TENNIS_OPERA_02NOV_PHYSICAL_HANDOFF.json")
+    tennis_folder = root / "evidence/tennis_calendar_reconciliation" / day
+    tennis = _read_json(tennis_folder / "MATRIX_TENNIS_OPERA_02NOV_PHYSICAL_HANDOFF.json")
+    tennis_review = _read_json(tennis_folder / "MATRIX_TENNIS_OPERA_DUAL_SOURCE_LINK_REVIEW.json")
+    # These sources are only observed browser links. They are NOT the canonical
+    # daily_prematch_reports or authorized Telegram inputs. Never count them as such.
+    browser_sofa = _read_json(folder / "MATRIX_SOFASCORE_OPERA_VISIBLE_LINKS.json")
+    browser_flash = _read_json(folder / "MATRIX_FLASHSCORE_OPERA_VISIBLE_LINKS.json")
+    browser_pairs = _read_json(folder / "MATRIX_OPERA_TWO_SOURCE_LINK_RECONCILIATION.json")
+    def observed_count(payload: dict | None, source: str) -> int | None:
+        if not isinstance(payload, dict) or payload.get("source") != source:
+            return None
+        if payload.get("target_date_bogota") != day:
+            return None
+        governance = payload.get("governance") or {}
+        if governance.get("real_money") != "BLOCKED" or governance.get("telegram_signal_authorized") is not False:
+            return None
+        rows = payload.get("observations")
+        count = payload.get("distinct_observed_match_urls")
+        if not isinstance(rows, list) or not isinstance(count, int) or len(rows) != count:
+            return None
+        return count
+    sofa_links = observed_count(browser_sofa, "SOFASCORE")
+    flash_links = observed_count(browser_flash, "FLASHSCORE")
+    pair_count = None
+    if (sofa_links is not None and flash_links is not None and
+        isinstance(browser_pairs, dict) and
+        browser_pairs.get("target_date_bogota") == day and
+        browser_pairs.get("telegram_signals_authorized") is False and
+        browser_pairs.get("real_money") == "BLOCKED"):
+        n = browser_pairs.get("one_to_one_link_identity_candidate_count")
+        rows = browser_pairs.get("one_to_one_link_identity_candidates")
+        if isinstance(n, int) and isinstance(rows, list) and n == len(rows):
+            pair_count = n
     observed = {"intake": intake is not None, "sofascore": sofa is not None,
                 "flashscore": flash is not None, "shadow": shadow is not None,
-                "quote": quote is not None, "tennis_browser_handoff": tennis is not None}
+                "quote": quote is not None, "tennis_browser_handoff": tennis is not None,
+                "tennis_browser_link_review": tennis_review is not None,
+                "football_sofascore_observed_links": sofa_links is not None,
+                "football_flashscore_observed_links": flash_links is not None,
+                "football_browser_link_pair_review": pair_count is not None}
     return {
         "source_files_parsed": observed,
         "independent_football_fixtures": intake.get("fixture_count") if intake else None,
@@ -44,8 +79,24 @@ def _independent_status(root: Path, day: str) -> dict:
         "quote_quota_status": quote.get("quota_status") if quote else None,
         "historical_feature_equivalence_verified": bool(intake and intake.get("governed_feature_equivalence_verified") is True and shadow and shadow.get("historical_source_equivalence_verified") is True),
         "independent_source_promotes_telegram": False,
-        "tennis_browser_handoff_present": tennis is not None,
+        "tennis_browser_handoff_present": tennis is not None or tennis_review is not None,
+        "tennis_browser_link_candidates": (
+            tennis_review.get("candidate_pair_count")
+            if tennis_review and tennis_review.get("target_date_bogota") == day
+            and tennis_review.get("signal_generation_authorized") is False else None
+        ),
         "tennis_kickoff_and_surface_verified": bool(tennis and tennis.get("utc_kickoff_verified") is True and tennis.get("surface_verified") is True),
+        "football_browser_links_observed_only": {
+            "sofascore": sofa_links, "flashscore": flash_links,
+            "one_to_one_slug_candidates_not_certified_fixtures": pair_count,
+        },
+        "upstream_recovery_state": (
+            "BROWSER_LINKS_OBSERVED_WAITING_INDEPENDENT_PROVIDER_AND_CANONICAL_MODEL"
+            if sofa_links is not None and flash_links is not None and intake is None
+            else "INDEPENDENT_PROVIDER_PRESENT_CANONICAL_EQUIVALENCE_NOT_CERTIFIED"
+            if intake is not None and intake.get("governed_feature_equivalence_verified") is not True
+            else "INSUFFICIENT_BROWSER_AND_PROVIDER_EVIDENCE"
+        ),
         "diagnostic_only": True,
     }
 
