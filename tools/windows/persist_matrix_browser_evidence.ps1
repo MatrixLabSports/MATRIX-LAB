@@ -45,6 +45,14 @@ if (Test-Path -LiteralPath "evidence/football_world_inventory") {
       if ($LASTEXITCODE -ne 0) { throw "BROWSER_GIT_ADD_FAILED" }
     }
 }
+if (Test-Path -LiteralPath "evidence/football_world_inventory") {
+  Get-ChildItem "evidence/football_world_inventory" -Recurse -File -Filter "MATRIX_BETANO_RESEARCH_MARKET_*.json" |
+    ForEach-Object {
+      $rel = $_.FullName.Substring((Get-Location).Path.Length + 1)
+      git add -- $rel
+      if ($LASTEXITCODE -ne 0) { throw "RESEARCH_MARKET_EVIDENCE_ADD_FAILED" }
+    }
+}
 git diff --cached --quiet
 if ($LASTEXITCODE -eq 0) {
   Write-Output "MATRIX_BROWSER_NO_EVIDENCE_CHANGE"
