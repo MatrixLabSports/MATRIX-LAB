@@ -43,8 +43,22 @@ def book_from_url(url:str)->str|None:
     return None
 
 def candidate_rows(audit:dict[str,Any],now:datetime)->list[dict[str,Any]]:
+    # Prefer the governed discovery inventory. Legacy blocker records are NOT
+    # a complete intake: they omit candidates without pre_send_gate entries.
+    intake=audit.get("browser_prematch_candidate_rows")
+    if isinstance(intake,list):
+        try:
+            generated=datetime.fromisoformat(str(audit.get("generated_at_utc")).replace("Z","+00:00"))
+            age=(now.astimezone(timezone.utc)-generated.astimezone(timezone.utc)).total_seconds()
+            if not (-120<=age<=35*60):
+                return []
+        except (ValueError,TypeError,OverflowError,AttributeError):
+            return []
+        rows=intake
+    else:
+        rows=audit.get("records") or []
     out=[]
-    for r in audit.get("records") or []:
+    for r in rows:
         if not isinstance(r,dict): continue
         kickoff=r.get("kickoff")
         try:
@@ -387,6 +401,8 @@ def candidate_pipeline_diagnostic(audit:dict[str,Any],now:datetime,root:Path=ROO
         raise ValueError("MATRIX_DIAGNOSTIC_REQUIRES_TZ_AWARE_CLOCK")
     records=audit.get("records")
     audit_rows=len(records) if isinstance(records,list) else None
+    intake=audit.get("browser_prematch_candidate_rows")
+    intake_rows=len(intake) if isinstance(intake,list) else None
     audit_timestamp=audit.get("generated_at_utc")
     age_seconds=None
     try:
@@ -411,6 +427,8 @@ def candidate_pipeline_diagnostic(audit:dict[str,Any],now:datetime,root:Path=ROO
         state="INVALID_AUDIT_RECORDS_FIELD"
     elif age_seconds is None or age_seconds < -120 or age_seconds > 35*60:
         state="AUDIT_TIMESTAMP_UNVERIFIED_OR_STALE"
+    elif intake_rows is not None and intake_rows>0:
+        state="CANONICAL_BROWSER_INTAKE_PRESENT"
     elif audit_rows==0:
         state="NO_BLOCKER_ROWS_NOT_PROOF_OF_ZERO_CANONICAL_FIXTURES"
     elif not candidate_rows(audit,now):
@@ -423,6 +441,8 @@ def candidate_pipeline_diagnostic(audit:dict[str,Any],now:datetime,root:Path=ROO
         "audit_generated_at_utc":audit_timestamp,
         "audit_age_seconds":age_seconds,
         "audit_blocker_record_count":audit_rows,
+        "canonical_browser_intake_record_count":intake_rows,
+        "browser_intake_present":isinstance(intake,list),
         "canonical_source_inventory":inventory,
         "missing_is_not_zero":True,
         "audit_is_not_all_candidate_inventory":True,
