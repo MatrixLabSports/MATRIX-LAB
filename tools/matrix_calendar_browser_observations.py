@@ -74,7 +74,7 @@ def run(intake_path,endpoint):
         try:
             page.goto(f"https://www.sofascore.com/es/football/{intake['target_date_bogota']}",wait_until="domcontentloaded",timeout=16000)
             page.wait_for_timeout(2000)
-            links=page.evaluate(""""""() => Array.from(document.querySelectorAll('a[href]'))
+            links=page.evaluate("""() => Array.from(document.querySelectorAll('a[href]'))
                 .filter(a=>a.getClientRects().length>0).slice(0,3000)
                 .map(a=>({url:a.href,name:String(a.innerText||a.getAttribute('aria-label')||'').trim().slice(0,400)}))""")
         finally: page.close()
