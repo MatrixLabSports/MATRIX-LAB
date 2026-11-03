@@ -1,0 +1,91 @@
+{
+  "schema": "MATRIX_20261103_FOOTBALL_OPERA_ELITE_CONTINUITY_V1",
+  "generated_at_utc": "2026-11-03T01:52:52.018Z",
+  "local_date": "2026-11-02",
+  "target_calendar_date_bogota": "2026-11-03",
+  "branch": "repair/cor09-world-pipeline",
+  "repository": "MatrixLabSports/MATRIX-LAB",
+  "continuity_anchor_previous_day": "evidence/continuity/MATRIX_20261102_ELITE_CALENDAR_RECOVERY.json",
+  "committee_roles": [
+    "fuentes_deportivas",
+    "integridad_de_datos",
+    "ingenieria",
+    "pruebas_de_regresion",
+    "gobernanza_de_modelos",
+    "seguridad_telegram"
+  ],
+  "source_priority": [
+    "SOFASCORE",
+    "FLASHSCORE",
+    "APIS"
+  ],
+  "source_files": [
+    {
+      "path": "evidence/football_world_inventory/2026-11-03/MATRIX_SOFASCORE_OPERA_VISIBLE_LINKS.json",
+      "github_blob_sha": "4a0869c35402e9cc02b00c57a401b233aa74224a"
+    },
+    {
+      "path": "evidence/football_world_inventory/2026-11-03/MATRIX_FLASHSCORE_OPERA_VISIBLE_LINKS.json",
+      "github_blob_sha": "24943dca3fdf1f94791dc94be6e7a7cf11d28cc7"
+    },
+    {
+      "path": "evidence/football_world_inventory/2026-11-03/MATRIX_OPERA_TWO_SOURCE_LINK_RECONCILIATION.json",
+      "github_blob_sha": "fae4c2ba5916777ffcf2f3c4162b566d4522c911"
+    },
+    {
+      "path": "evidence/football_world_inventory/2026-11-03/MATRIX_OPERA_PREAUDIT_LINK_CANDIDATES.json",
+      "github_blob_sha": "f7192824730790866fc7a69a3b6c2c9b9d2132ac"
+    }
+  ],
+  "captures": {
+    "sofascore": {
+      "raw_visible_occurrences": 726,
+      "distinct_links": 722,
+      "unique_sofascore_event_ids": 722,
+      "target_day_explicit": 710,
+      "explicit_day_and_visible_clock": 687,
+      "explicit_day_no_visible_clock": 23,
+      "no_explicit_day": 12,
+      "full_world_complete": false
+    },
+    "flashscore": {
+      "raw_visible_occurrences": 303,
+      "distinct_links": 253,
+      "date_selector": "martes, 3 de noviembre de 2026",
+      "individual_match_date_certified": false
+    }
+  },
+  "cross_source": {
+    "teams_slugs_nonoverlap_pair_edges": 165,
+    "one_to_one_slug_link_candidate_pairs": 138,
+    "ambiguous_pair_links": 27,
+    "officially_certified_fixture_count": 0,
+    "independent_api_identity_verified": false,
+    "exact_utc_kickoff_verified": false,
+    "exact_bookmaker_quote_verified": false,
+    "unmatched_links_cannot_be_signaled": true
+  },
+  "code": {
+    "reconciliation": "tools/matrix_football_opera_03nov_link_reconciliation.py",
+    "regressions": "tests/test_matrix_football_opera_03nov_link_reconciliation.py",
+    "workflow": ".github/workflows/matrix-football-opera-03nov-link-reconciliation.yml",
+    "successful_run_url": "https://github.com/MatrixLabSports/MATRIX-LAB/actions/runs/41562303089",
+    "workflow_jobs_success": [
+      "verify-preserve-browser-evidence"
+    ],
+    "formal_report": "evidence/football_world_inventory/2026-11-03/MATRIX_OPERA_TWO_SOURCE_LINK_RECONCILIATION.json"
+  },
+  "pending": [
+    "Verify each Flashscore link's actual fixture date, status, teams, competition and kickoff; the date selector alone is not per-fixture certification.",
+    "Compare candidates against independent provider fixtures with exact IDs and timezone-aware kickoff, preserving the original source order.",
+    "Collect comparable history and genuine exact bookmaker market quotes, then apply existing frozen MATRIX probability/EV and kickoff guards.",
+    "Do not promote any fixture, market, staking or Telegram signal solely because browser link slugs resemble each other."
+  ],
+  "safeguards": {
+    "real_money": "BLOCKED",
+    "automatic_wagering": false,
+    "model_calibrations_modified": false,
+    "new_telegram_signals_authorized": false,
+    "bookmaker_odds_authenticated": false
+  }
+}
