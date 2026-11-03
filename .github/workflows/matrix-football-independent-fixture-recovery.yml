@@ -192,6 +192,7 @@ jobs:
             --intake "evidence/football_world_inventory/$D/MATRIX_FOOTBALL_INDEPENDENT_FIXTURE_INTAKE.json" \
             --shadow "evidence/football_world_inventory/$D/MATRIX_INDEPENDENT_OVER25_HISTORY_SHADOW.json" \
             --previous "$Q" \
+            --global-quota-guard "evidence/notifications/telegram/MATRIX_ODDS_API_QUOTA_GUARD_LAST.json" \
             --out "$Q"
       - name: Persist read-only discovery evidence even when provider is unavailable
         if: always()
