@@ -2,7 +2,7 @@
 from copy import deepcopy
 from datetime import datetime, timedelta, timezone
 from hashlib import sha256
-from tools.api_football_market_shadow_p_matrix import _pool_over25
+from tools.api_football_market_shadow_p_matrix import _pool_over25, _score_probs
 from tools.matrix_championship_prospective_pit_attestation import report
 
 NOW=datetime(2026,11,3,10,10,tzinfo=timezone.utc)
@@ -43,7 +43,12 @@ def docs():
                         "source_provider":"FOOTBALL_DATA_ORG",
                         "source_payload_sha256":SOURCE_HASH})
         return ret
-    probability=_pool_over25(0.55,0.60)
+    home=rows("31")
+    away=rows("42")
+    hl=(sum(r["goals_for"] for r in home)/len(home)+sum(r["goals_against"] for r in away)/len(away))/2
+    al=(sum(r["goals_for"] for r in away)/len(away)+sum(r["goals_against"] for r in home)/len(home))/2
+    poisson=_score_probs(hl,al)["over_2_5"]
+    probability=_pool_over25(poisson,0.60)
     shadow={"real_money":"BLOCKED","market_signal_authorized":False,"parameter_refit":False,
             "model":"calibrated_log_pool_v1","frozen_parameters":{"a":0.6,"b":0.0,"c":0.4},
             "target_date_bogota":"2026-11-03","completed_at_utc":"2026-11-03T10:05:00+00:00",
@@ -51,7 +56,7 @@ def docs():
                 "source_fixture_id":"561918","kickoff_utc":KICKOFF,"competition_id":2016,
                 "signal_generation_authorized":False,"history_sha256":SOURCE_HASH,
                 "p_over25_research":round(probability,10),
-                "poisson_over25_research_component":0.55,
+                "poisson_over25_research_component":round(poisson,12),
                 "baseline_over25_research_component":0.60,
                 "prospective_history_provenance":{
                   "status":"PROSPECTIVE_HISTORY_ROWS_OBSERVED",
@@ -143,3 +148,18 @@ def test_attestation_exact_four_source_snapshots_are_inseparable():
     assert data["source_intake_generated_at_utc"]=="2026-11-03T10:00:00+00:00"
     assert data["source_shadow_completed_at_utc"]=="2026-11-03T10:05:00+00:00"
     assert all(row["telegram_signal_authorized"] is False for row in data["rows"])
+
+
+def test_tampered_historical_goals_cannot_reuse_frozen_poisson_value():
+    intake,sofa,flash,shadow=docs()
+    shadow["scored"][0]["prospective_history_provenance"]["home_history"][0]["goals_for"]=9
+    data=report(intake,sofa,flash,shadow,now=NOW)
+    assert data["prospective_research_history_certified_count"]==0
+    assert data["rows"][0]["status"]=="BLOCKED_AUTHENTIC_HISTORY_POISSON_MISMATCH"
+
+def test_poisson_component_mutation_fails_even_if_pool_stays_unchanged():
+    intake,sofa,flash,shadow=docs()
+    shadow["scored"][0]["poisson_over25_research_component"]=0.99
+    data=report(intake,sofa,flash,shadow,now=NOW)
+    assert data["prospective_research_history_certified_count"]==0
+    assert data["rows"][0]["status"]=="BLOCKED_AUTHENTIC_HISTORY_POISSON_MISMATCH"
