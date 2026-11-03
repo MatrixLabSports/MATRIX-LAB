@@ -16,6 +16,10 @@ from zoneinfo import ZoneInfo
 BOGOTA=ZoneInfo("America/Bogota")
 ALIASES={
     # Individually corroborated 2026-11-03 provider/browser names; no fuzzy promotion.
+    # Confirmed 2026-11-04 on connected SofaScore calendar against source UTC.
+    "fenerbahce sk":"fenerbahce",
+    "cardiff city fc":"cardiff city",
+    "west ham united fc":"west ham united",
     "portsmouth fc":"portsmouth",
     "swansea city afc":"swansea city",
     "derby county fc":"derby county",
