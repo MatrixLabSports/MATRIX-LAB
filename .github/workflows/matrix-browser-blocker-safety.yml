@@ -1,0 +1,30 @@
+name: MATRIX Browser Quote Blocker Safety Test
+on:
+  push:
+    branches:
+      - repair/cor09-world-pipeline
+    paths:
+      - tools/matrix_browser_quote_blocker_report.py
+      - .github/workflows/matrix-browser-blocker-safety.yml
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  diagnose:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      REAL_MONEY: BLOCKED
+      AUTO_BETTING: DISABLED
+    steps:
+      - uses: actions/checkout@v4
+      - name: Reject unsafe environment
+        run: |
+          test "$REAL_MONEY" = BLOCKED
+          test "$AUTO_BETTING" = DISABLED
+      - name: Compile and check fail-closed evidence classifier
+        run: |
+          python3 -m py_compile tools/matrix_browser_quote_blocker_report.py
+          python3 tools/matrix_browser_quote_blocker_report.py --self-test
+      - name: Explain evidence versus production
+        run: echo "DIAGNOSTIC_ONLY_NO_ODDS_NO_TELEGRAM_NO_AUTOMATIC_WAGERING"
