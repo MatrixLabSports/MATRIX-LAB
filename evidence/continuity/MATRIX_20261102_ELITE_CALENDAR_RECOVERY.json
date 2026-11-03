@@ -1,0 +1,113 @@
+{
+  "schema": "MATRIX_ELITE_CALENDAR_CONTINUITY_20261102_V1",
+  "record_type": "IMMUTABLE_HANDOFF_BY_NEW_PATH",
+  "generated_at_utc": "2026-11-03T01:34:44.912Z",
+  "target_day_bogota": "2026-11-02",
+  "repository": "MatrixLabSports/MATRIX-LAB",
+  "branch": "repair/cor09-world-pipeline",
+  "committee_roles": [
+    "integridad_de_datos",
+    "verificacion_multifuente",
+    "ingenieria_software",
+    "pruebas_de_regresion",
+    "auditoria_de_gobierno_y_seguridad"
+  ],
+  "trigger": "RECOVERY_FROM_READ_ONLY_CHAT_NO_CHAT_ONLY_CLAIMS",
+  "football": {
+    "observed_links": 751,
+    "explicit_target_date": 736,
+    "visible_kickoff_clock": 680,
+    "dated_without_visible_kickoff_clock": 56,
+    "without_explicit_date": 15,
+    "independent_fixture_cross_matches": 8,
+    "unmatched_discovery_only": 728,
+    "rejections": 0,
+    "cross_validated": [
+      {
+        "fixture_id": "555072",
+        "sofascore_event_id": "15238234",
+        "kickoff_utc": "2026-11-02T23:00:00+00:00",
+        "flashscore_mid": "IFcI8RXg"
+      },
+      {
+        "fixture_id": "558541",
+        "sofascore_event_id": "16285070",
+        "kickoff_utc": "2026-11-02T17:30:00+00:00",
+        "flashscore_mid": "YHemANS7"
+      },
+      {
+        "fixture_id": "558545",
+        "sofascore_event_id": "16285071",
+        "kickoff_utc": "2026-11-02T19:45:00+00:00",
+        "flashscore_mid": "buLL6lMF"
+      },
+      {
+        "fixture_id": "559641",
+        "sofascore_event_id": "16310995",
+        "kickoff_utc": "2026-11-02T19:45:00+00:00",
+        "flashscore_mid": "0KHPEFtR"
+      },
+      {
+        "fixture_id": "560622",
+        "sofascore_event_id": "16363909",
+        "kickoff_utc": "2026-11-02T20:00:00+00:00",
+        "flashscore_mid": "YceoIxQh"
+      },
+      {
+        "fixture_id": "564731",
+        "sofascore_event_id": "16421095",
+        "kickoff_utc": "2026-11-02T20:00:00+00:00",
+        "flashscore_mid": "tGhi4TwP"
+      },
+      {
+        "fixture_id": "567342",
+        "sofascore_event_id": "16450916",
+        "kickoff_utc": "2026-11-02T20:15:00+00:00",
+        "flashscore_mid": "zs2gO75k"
+      },
+      {
+        "fixture_id": "567346",
+        "sofascore_event_id": "16450912",
+        "kickoff_utc": "2026-11-02T20:15:00+00:00",
+        "flashscore_mid": "nq8M98jd"
+      }
+    ],
+    "source_capture_path": "evidence/football_world_inventory/2026-11-02/MATRIX_SOFASCORE_OPERA_WORLD_VISIBLE_LINK_CAPTURE.json",
+    "canonical_reconciliation_path": "evidence/football_world_inventory/2026-11-02/MATRIX_SOFASCORE_OPERA_EXPANDED_CALENDAR_RECONCILIATION.json",
+    "audit_code": "tools/matrix_football_sofa_expanded_calendar_audit.py",
+    "regression_tests": "tests/test_matrix_football_sofa_expanded_calendar_audit.py",
+    "workflow": ".github/workflows/matrix-football-opera-02nov-world-calendar.yml",
+    "verified_success_workflow_run": "https://github.com/MatrixLabSports/MATRIX-LAB/actions/runs/41560388417",
+    "fixed_root_cause": "56 explicit calendar-date labels lacked an HH:MM kickoff; former parser incorrectly treated a missing clock as a missing calendar date.",
+    "scope": "ONLY_8_PREREGISTERED_IDENTITIES_CERTIFIED; 728_DISCOVERY_ONLY_NO_SIGNALS",
+    "odds_verified": false,
+    "model_probabilities_authorized": false
+  },
+  "tennis": {
+    "sofascore_links": 424,
+    "sofascore_explicit_target_date_links": 416,
+    "flashscore_links": 184,
+    "cross_source_player_link_candidates": 96,
+    "certified_unique_matches": false,
+    "surfaces_certified": false,
+    "utc_kickoffs_certified": false,
+    "source_reconciliation_path": "evidence/tennis_calendar_reconciliation/2026-11-02/MATRIX_TENNIS_OPERA_DUAL_SOURCE_LINK_REVIEW.json",
+    "source_capture_primary": "evidence/tennis_calendar_physical/2026-11-02/sofascore_opera_full_link_observations.json",
+    "source_capture_secondary": "evidence/tennis_calendar_physical/2026-11-02/flashscore_opera_full_link_observations.json",
+    "odds_verified": false,
+    "model_probabilities_authorized": false
+  },
+  "protection": {
+    "real_money": "BLOCKED",
+    "automatic_wagering": false,
+    "telegram_signals_authorized": false,
+    "model_calibration_changed_by_this_repair": false
+  },
+  "remaining": [
+    "For the eight verified football fixture identities, still require governed historical equivalence and exact bookmaker quotes before allowing model signals.",
+    "Do not treat the 728 remaining football links or the 96 tennis player-link pairs as certified independent fixtures.",
+    "Keep 56 dated football events without visible clock out of kickoff certification.",
+    "Re-verify all 2026-11-03 calendars independently; 2026-11-02 evidence cannot be re-labelled as tomorrow."
+  ],
+  "truth_rule": "This handoff does not certify worldwide completeness, market promotions, tennis surfaces, Telegram delivery, or future fixtures."
+}
