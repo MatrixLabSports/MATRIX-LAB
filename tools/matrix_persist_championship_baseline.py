@@ -37,9 +37,21 @@ def main():
         or x.get("full_original_calibrated_model_equivalence_verified") is not False
         or x.get("network_calls")!=0):
         raise ValueError("CROSS_PROVIDER_EVIDENCE_GOVERNANCE_INVALID")
+    bridge=Path("evidence/football_world_inventory/2026-11-03")/f"MATRIX_CHAMPIONSHIP_ENRICHED_BRIDGE_WINDOWS_{run}.json"
+    e=json.loads(bridge.read_text(encoding="utf-8"))
+    if (e.get("schema")!="MATRIX_CHAMPIONSHIP_ENRICHED_PROVIDER_HISTORICAL_BRIDGE_V1"
+        or e.get("real_money")!="BLOCKED"
+        or e.get("network_calls")!=0
+        or e.get("automatic_wagering") is not False
+        or e.get("telegram_signal_authorized") is not False
+        or e.get("production_p_matrix_authorized") is not False
+        or e.get("prospective_enriched_provider_equivalence_verified") is not False
+        or e.get("original_canonical_targets")!=11
+        or e.get("historical_three_way_parity_count",0)+e.get("blocked_count",0)!=11):
+        raise ValueError("ENRICHED_BRIDGE_EVIDENCE_GOVERNANCE_INVALID")
     git("config","user.name","matrix-baseline-audit")
     git("config","user.email","matrix-baseline-audit@users.noreply.github.com")
-    git("add","--",p.as_posix(),cross.as_posix())
+    git("add","--",p.as_posix(),cross.as_posix(),bridge.as_posix())
     if git("diff","--cached","--quiet",allowed=(0,1))==0:
         print("BASELINE_EVIDENCE_UNCHANGED");return
     git("commit","-m","evidence(over25): independently verify authentic Championship group baseline")
