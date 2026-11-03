@@ -1,0 +1,75 @@
+{
+  "schema": "MATRIX_20261103_TENNIS_CALENDAR_PHYSICAL_HANDOFF_V1",
+  "generated_at_utc": "2026-11-03T02:05:15.948Z",
+  "target_date_bogota": "2026-11-03",
+  "repository": "MatrixLabSports/MATRIX-LAB",
+  "branch": "repair/cor09-world-pipeline",
+  "previous_frozen_checkpoint": "evidence/continuity/MATRIX_20261102_ELITE_CALENDAR_RECOVERY.json",
+  "source_priority": [
+    "SOFASCORE",
+    "FLASHSCORE",
+    "APIS"
+  ],
+  "physical_sources": [
+    {
+      "path": "evidence/tennis_calendar_physical/2026-11-03/sofascore_opera_full_link_observations.json",
+      "github_blob_sha": "30d70c807157e5d7851ec9eb796d12eb0e53405d"
+    },
+    {
+      "path": "evidence/tennis_calendar_physical/2026-11-03/flashscore_opera_full_link_observations.json",
+      "github_blob_sha": "cf99a8396bfc3741ee208af1776e4954f9f1241a"
+    },
+    {
+      "path": "tools/matrix_tennis_opera_03nov_link_audit.py",
+      "github_blob_sha": "5633094a85c0b61c99467dea6df28a4beddb57d9"
+    },
+    {
+      "path": "tests/test_matrix_tennis_opera_03nov_link_audit.py",
+      "github_blob_sha": "e03cb2ce81d5fc24ec4c44b0a42d5f18f8082910"
+    },
+    {
+      "path": ".github/workflows/matrix-tennis-opera-03nov-link-audit.yml",
+      "github_blob_sha": "24c90ef9ba0c6f6de23ec7be2c12b5c6848c0c33"
+    }
+  ],
+  "source_capture_counts": {
+    "sofascore_visible_url_count": 688,
+    "sofascore_explicit_03nov_date_count": 678,
+    "sofascore_explicit_date_visible_clock_count": 640,
+    "sofascore_explicit_date_no_clock_count": 38,
+    "sofascore_no_explicit_target_date_count": 10,
+    "flashscore_visible_url_count": 423,
+    "flashscore_match_urls_with_mid": 273,
+    "flashscore_date_selector": "martes, 3 de noviembre de 2026",
+    "flashscore_individual_match_date_verified": false
+  },
+  "cross_source_player_link_preliminary": {
+    "with_visible_sofascore_clock_candidate_count": 230,
+    "unsafe_date_only_player_link_candidates_excluded": 2,
+    "method": "BOTH_FULL_PLAYER_NAME_TOKEN_SETS_IN_SOURCE_SLUGS",
+    "candidate_count_formally_ci_certified": false,
+    "unique_fixture_count_certified": false
+  },
+  "workflow": {
+    "name": "MATRIX Tennis Opera 03NOV Physical Dual-Source Link Audit",
+    "run_url": "https://github.com/MatrixLabSports/MATRIX-LAB/actions/runs/41563778004",
+    "status_at_handoff": "PENDING_GITHUB_ACTIONS_CONFIRMATION",
+    "expected_report_path": "evidence/tennis_calendar_reconciliation/2026-11-03/MATRIX_TENNIS_OPERA_DUAL_SOURCE_LINK_REVIEW.json"
+  },
+  "guardrails": {
+    "real_money": "BLOCKED",
+    "automatic_wagering": false,
+    "telegram_signals_authorized": false,
+    "model_calibrations_changed": false,
+    "exact_bookmaker_quotes_verified": false,
+    "player_surface_certified": false,
+    "utc_kickoff_certified": false,
+    "worldwide_schedule_completeness_certified": false
+  },
+  "remaining": [
+    "Confirm formal GitHub Actions regression and generated report before claiming full implementation verified.",
+    "Validate match identities against live individual Flashscore fixture pages and independent event IDs/UTC kickoff.",
+    "Check surface, tournament category, player histories, calibrated model gates and actual book quotes before any signal.",
+    "Do not re-import 2-Nov captured links or alter existing tennis Hard/Clay/Live calibration states."
+  ]
+}
