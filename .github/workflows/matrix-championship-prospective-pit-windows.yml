@@ -1,0 +1,60 @@
+name: MATRIX Championship Prospective PIT Windows Evidence
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - repair/cor09-world-pipeline
+    paths:
+      - .github/workflows/matrix-championship-prospective-pit-windows.yml
+      - tools/matrix_championship_prospective_pit_attestation.py
+      - tests/test_matrix_championship_prospective_pit_attestation.py
+      - tools/matrix_persist_championship_prospective_pit.py
+
+permissions:
+  contents: write
+
+concurrency:
+  group: matrix-championship-prospective-pit-windows
+  cancel-in-progress: false
+
+jobs:
+  attest-prospective:
+    runs-on: [self-hosted, windows, matrix-browser-odds]
+    timeout-minutes: 10
+    env:
+      PYTHONPATH: .
+      REAL_MONEY: BLOCKED
+      AUTO_BETTING: DISABLED
+      MATRIX_MODE: SHADOW
+    defaults:
+      run:
+        shell: cmd
+    steps:
+      - name: Checkout genuine provider evidence and operational contracts
+        uses: actions/checkout@v4
+        with:
+          ref: repair/cor09-world-pipeline
+          fetch-depth: 0
+
+      - name: Require installed Python and hard financial controls
+        run: |
+          python -c "import sys; assert sys.version_info[:2]==(3,11)"
+          python -c "import os; assert os.environ['REAL_MONEY']=='BLOCKED' and os.environ['AUTO_BETTING']=='DISABLED' and os.environ['MATRIX_MODE']=='SHADOW'"
+
+      - name: Test validated immutable research provenance and hard blockers
+        run: python -m pytest -q tests/test_matrix_championship_prospective_pit_attestation.py tests/test_matrix_football_independent_over25_shadow.py
+
+      - name: Audit current real Championship matches from stored authentic provider files
+        run: |
+          python -m tools.matrix_championship_prospective_pit_attestation --date 2026-11-03 --out evidence/football_world_inventory/2026-11-03/MATRIX_CHAMPIONSHIP_PROSPECTIVE_PIT_ATTESTATION.json
+          python -c "import json,pathlib; j=json.loads(pathlib.Path('evidence/football_world_inventory/2026-11-03/MATRIX_CHAMPIONSHIP_PROSPECTIVE_PIT_ATTESTATION.json').read_text(encoding='utf-8')); assert j['real_money']=='BLOCKED' and j['telegram_signal_authorized'] is False and j['production_p_matrix_authorized_count']==0; assert j['prospective_research_history_certified_count']>=1; print('AUTHENTIC_PROSPECTIVE_RESEARCH_FIXTURES='+str(j['prospective_research_history_certified_count']))"
+
+      - name: Upload true prospective-only PIT evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: matrix-championship-prospective-pit-research
+          path: evidence/football_world_inventory/2026-11-03/MATRIX_CHAMPIONSHIP_PROSPECTIVE_PIT_ATTESTATION.json
+
+      - name: Persist read-only research evidence without changing Windows settings
+        run: python -m tools.matrix_persist_championship_prospective_pit
