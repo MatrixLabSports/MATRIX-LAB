@@ -9,6 +9,7 @@ on:
       - .github/workflows/matrix-selfhosted-browser-quotes-5m.yml
       - tools/matrix_selfhosted_browser_quote_collector.py
       - tools/windows/start_matrix_browser_cdp.ps1
+      - tools/windows/persist_matrix_browser_evidence.ps1
       - tests/test_matrix_selfhosted_browser_quote_collector.py
   schedule:
     - cron: "*/5 * * * *"
@@ -54,8 +55,9 @@ jobs:
           echo REAL_MONEY_BLOCKED_NO_AUTOMATIC_BETTING
 
       - name: Start or reuse persistent CDP browser (process-only policy, no OS setting changes)
-        shell: powershell.exe -NoProfile -NonInteractive -ExecutionPolicy Bypass -File {0}
-        run: .\\tools\\windows\\start_matrix_browser_cdp.ps1 -Port 9222
+        shell: cmd
+        run: |
+          powershell.exe -NoProfile -NonInteractive -ExecutionPolicy Bypass -File tools\\windows\\start_matrix_browser_cdp.ps1 -Port 9222
 
       - name: Verify browser collector contracts
         shell: cmd
@@ -72,46 +74,6 @@ jobs:
 
       - name: Persist governed browser evidence
         if: always()
-        shell: powershell.exe -NoProfile -NonInteractive -ExecutionPolicy Bypass -File {0}
+        shell: cmd
         run: |
-          git config user.name "matrix-browser-runner"
-          git config user.email "matrix-browser-runner@users.noreply.github.com"
-
-          $files = @(
-            "evidence/notifications/telegram/MATRIX_SELF_HOSTED_BROWSER_HEALTH_LAST.json",
-            "evidence/notifications/telegram/MATRIX_BROWSER_CDP_COLLECTION_LAST.json"
-          )
-          foreach ($file in $files) {
-            if (Test-Path $file) { git add -- $file }
-          }
-          if (Test-Path "evidence/notifications/telegram/browser_cdp") {
-            git add -- "evidence/notifications/telegram/browser_cdp"
-          }
-          if (Test-Path "evidence/football_world_inventory") {
-            Get-ChildItem "evidence/football_world_inventory" -Recurse -Filter "MATRIX_BETANO_QUOTE_*.json" |
-              ForEach-Object {
-                $rel = Resolve-Path -Relative $_.FullName
-                git add -- $rel
-              }
-          }
-
-          git diff --cached --quiet
-          if ($LASTEXITCODE -eq 0) {
-            Write-Output "MATRIX_BROWSER_NO_EVIDENCE_CHANGE"
-            exit 0
-          }
-
-          git commit -m "evidence(browser): persist self-hosted quote collection cycle"
-          for ($attempt = 1; $attempt -le 4; $attempt++) {
-            git fetch origin repair/cor09-world-pipeline
-            if ($LASTEXITCODE -ne 0) { throw "BROWSER_EVIDENCE_FETCH_FAILED" }
-            git rebase origin/repair/cor09-world-pipeline
-            if ($LASTEXITCODE -ne 0) {
-              git rebase --abort
-              throw "BROWSER_EVIDENCE_REBASE_CONFLICT_FAIL_CLOSED"
-            }
-            git push origin HEAD:repair/cor09-world-pipeline
-            if ($LASTEXITCODE -eq 0) { exit 0 }
-            Start-Sleep -Seconds (2 * $attempt)
-          }
-          throw "BROWSER_EVIDENCE_PUSH_FAILED"
+          powershell.exe -NoProfile -NonInteractive -ExecutionPolicy Bypass -File tools\\windows\\persist_matrix_browser_evidence.ps1
