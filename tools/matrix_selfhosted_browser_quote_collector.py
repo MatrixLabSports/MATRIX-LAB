@@ -128,7 +128,7 @@ def atomic_verified_research_quote_targets(now:datetime,folder:Path,date:str)->l
                 "calendar_source_date":date,
                 "sofascore_event_id":str(a["sofascore_event_id"]),
                 "flashscore_mid":str(b["flashscore_mid"]),
-                "atomic_pit_bundle":str(file.relative_to(folder.parent.parent.parent)),
+                "atomic_pit_bundle":f"evidence/football_world_inventory/{date}/{file.name}",
                 "atomic_attestation_sha256":digest(att),
             })
         return sorted(output,key=lambda x:(x["kickoff"],x["fixture_id"]))
