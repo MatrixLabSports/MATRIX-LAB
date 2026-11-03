@@ -28,6 +28,31 @@ def norm(s:Any)->str:
     x=unicodedata.normalize("NFKD",str(s or "")).encode("ascii","ignore").decode().casefold()
     return re.sub(r"[^a-z0-9]+"," ",x).strip()
 
+def same_team_name(expected:Any, observed:Any)->bool:
+    """Match harmless official FC/AFC suffix differences; never loose token overlap.
+
+    Exact full-team identity remains mandatory after a narrow suffix normalization.
+    This does not resolve ambiguous nicknames or authorize a price.
+    """
+    def canonical(value:Any)->str:
+        tokens=norm(value).split()
+        while len(tokens)>1 and tokens[-1] in {"fc","afc"}:
+            tokens.pop()
+        return " ".join(tokens)
+    a,b=canonical(expected),canonical(observed)
+    return bool(a and b and a==b)
+
+def teams_in_betano_title(title:Any,home:Any,away:Any)->bool:
+    """Read-only event title confirmation with bounded FC/AFC suffix aliases."""
+    title_norm=" "+norm(title)+" "
+    def accepted(n:Any)->bool:
+        n=norm(n).split()
+        if len(n)>1 and n[-1] in {"fc","afc"}:
+            n=n[:-1]
+        candidate=" ".join(n)
+        return len(candidate)>=5 and (" "+candidate+" ") in title_norm
+    return accepted(home) and accepted(away) and norm(home)!=norm(away)
+
 def split_match(name:str)->tuple[str,str]|None:
     parts=re.split(r"\s+vs\.?\s+",str(name or ""),maxsplit=1,flags=re.I)
     if len(parts)!=2: return None
@@ -304,7 +329,7 @@ def betano_exact_over25_from_payload(payload:dict[str,Any],home:str,away:str)->d
             continue
         participants=ev.get("participants") or ev.get("competitors") or []
         names=[norm((p or {}).get("name") or (p or {}).get("shortName")) for p in participants if isinstance(p,dict)]
-        if not names or not any(home_n in n or n in home_n for n in names) or not any(away_n in n or n in away_n for n in names):
+        if not names or not any(same_team_name(home,n) for n in names) or not any(same_team_name(away,n) for n in names):
             continue
         mids=ev.get("marketIdList") or []
         for mid in mids:
@@ -349,7 +374,7 @@ def betano_event_from_payload(payload:dict[str,Any],home:str,away:str)->dict[str
         names=[norm((p or {}).get("name") or (p or {}).get("shortName")) for p in participants if isinstance(p,dict)]
         if not names:
             continue
-        if any(home_n in n or n in home_n for n in names) and any(away_n in n or n in away_n for n in names):
+        if any(same_team_name(home,n) for n in names) and any(same_team_name(away,n) for n in names):
             if node.get("id") is not None and node.get("url"):
                 return node
     return None
@@ -357,7 +382,7 @@ def betano_event_from_payload(payload:dict[str,Any],home:str,away:str)->dict[str
 def betano_dom_exact_over25(detail_page,event_url:str,home:str,away:str)->dict[str,Any]|None:
     try:
         title=norm(detail_page.title())
-        if norm(home) not in title or norm(away) not in title:
+        if not teams_in_betano_title(title,home,away):
             return None
         role_hits=detail_page.get_by_role(
             "button",
