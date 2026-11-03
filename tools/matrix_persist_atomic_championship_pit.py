@@ -28,9 +28,22 @@ def main():
         or bundle["automatic_wagering"] is not False
         or bundle["real_money"]!="BLOCKED"):
         raise ValueError("ATOMIC_PIT_UNSAFE_PERSISTENCE")
+    scope=Path("evidence/football_world_inventory")/day/f"MATRIX_CHAMPIONSHIP_QUOTE_WINDOW_SCOPE_WINDOWS_{run}.json"
+    if scope.is_file():
+        gate=json.loads(scope.read_text(encoding="utf-8"))
+        if (gate.get("schema")!="MATRIX_CHAMPIONSHIP_QUOTE_WINDOW_SCOPE_V1"
+            or gate.get("real_money")!="BLOCKED"
+            or gate.get("automatic_wagering") is not False
+            or gate.get("telegram_signal_authorized") is not False
+            or gate.get("production_probability_authorized") is not False
+            or gate.get("status") not in ("NO_VERIFIED_PREMATCH_SCOPE",
+                                          "PREMATCH_RESEARCH_QUOTE_SCOPE_AVAILABLE")):
+            raise ValueError("ATOMIC_PIT_SCOPE_EVIDENCE_UNSAFE")
     git("config","user.name","matrix-atomic-pit-research")
     git("config","user.email","matrix-atomic-pit-research@users.noreply.github.com")
     git("add","--",p.as_posix())
+    if scope.is_file():
+        git("add","--",scope.as_posix())
     if git("diff","--cached","--quiet",ok=(0,1))==0:
         print("ATOMIC_PIT_ALREADY_PERSISTED");return
     git("commit","-m","evidence(over25): immutable 5-source prospective PIT research snapshot")
