@@ -1,0 +1,135 @@
+name: MATRIX Championship Research Quotes Every 15 Minutes
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+    paths:
+      - .github/workflows/matrix-championship-quote-research-15m.yml
+  schedule:
+    - cron: "*/15 * * * *"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: matrix-championship-quote-research-15m
+  cancel-in-progress: false
+
+jobs:
+  research-quotes:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    env:
+      REAL_MONEY: BLOCKED
+      AUTO_BETTING: DISABLED
+      MATRIX_MODE: SHADOW
+      PYTHONPATH: .
+    steps:
+      - name: Checkout operative research branch
+        uses: actions/checkout@v4
+        with:
+          ref: repair/cor09-world-pipeline
+          fetch-depth: 0
+
+      - name: Set up isolated Python on GitHub Linux runner
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install tests and governed odds adapter dependencies
+        run: python -m pip install --disable-pip-version-check pytest requests pillow
+
+      - name: Certify no wagering and exact premise of price research
+        run: |
+          set -euo pipefail
+          test "$REAL_MONEY" = BLOCKED
+          test "$AUTO_BETTING" = DISABLED
+          test "$MATRIX_MODE" = SHADOW
+          PYTHONPATH=. python -m pytest -q tests/test_matrix_championship_quote_window_scope.py tests/test_matrix_independent_over25_quote_audit.py
+
+      - name: Resolve current Bogota date
+        id: day
+        shell: bash
+        run: echo "date=$(TZ=America/Bogota date +%F)" >> "$GITHUB_OUTPUT"
+
+      - name: Gate current six certified Championship targets by kickoff
+        id: scope
+        shell: bash
+        run: |
+          set -euo pipefail
+          D="${{ steps.day.outputs.date }}"
+          python -m tools.matrix_championship_quote_window_scope \
+            --date "$D" \
+            --outdir "$RUNNER_TEMP/matrix_championship_research_quotes" \
+            --status-out "evidence/football_world_inventory/$D/MATRIX_CHAMPIONSHIP_QUOTE_WINDOW_SCOPE_LAST.json"
+
+      - name: Request exact odds only inside verified two-hour window and allowed quota
+        if: steps.scope.outputs.quote_window == 'true'
+        shell: bash
+        env:
+          ODDS_API_NET_KEY: ${{ secrets.ODDS_API_NET_KEY }}
+        run: |
+          set -euo pipefail
+          D="${{ steps.day.outputs.date }}"
+          Q="evidence/football_world_inventory/$D/MATRIX_INDEPENDENT_OVER25_QUOTE_AUDIT.json"
+          python -m tools.matrix_independent_over25_quote_audit \
+            --intake "$RUNNER_TEMP/matrix_championship_research_quotes/intake.json" \
+            --shadow "$RUNNER_TEMP/matrix_championship_research_quotes/shadow.json" \
+            --previous "$Q" \
+            --out "$Q"
+          python - "$Q" <<'PY'
+          import json,sys
+          j=json.load(open(sys.argv[1],encoding="utf-8"))
+          assert j["real_money"]=="BLOCKED"
+          assert j["automatic_wagering"] is False
+          assert j["signal_generation_authorized"] is False
+          assert j["telegram_messages_sent"]==0
+          assert j["production_calibration_parity_verified"] is False
+          print("QUOTE_RESEARCH_ONLY_NO_TELEGRAM",j["quota_status"])
+          PY
+
+      - name: Upload window decision even if outside window
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: matrix-championship-research-quote-window
+          path: evidence/football_world_inventory/*/MATRIX_CHAMPIONSHIP_QUOTE_WINDOW_SCOPE_LAST.json
+          if-no-files-found: ignore
+
+      - name: Upload exact quote or quota denial evidence
+        if: steps.scope.outputs.quote_window == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: matrix-championship-readonly-exact-quotes
+          path: evidence/football_world_inventory/*/MATRIX_INDEPENDENT_OVER25_QUOTE_AUDIT.json
+
+      - name: Persist only actual quote-window decisions, without modifying model
+        if: steps.scope.outputs.quote_window == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          D="${{ steps.day.outputs.date }}"
+          git config user.name matrix-championship-quote-research
+          git config user.email matrix-championship-quote-research@users.noreply.github.com
+          git add -- "evidence/football_world_inventory/$D/MATRIX_CHAMPIONSHIP_QUOTE_WINDOW_SCOPE_LAST.json" \
+                     "evidence/football_world_inventory/$D/MATRIX_INDEPENDENT_OVER25_QUOTE_AUDIT.json"
+          if git diff --cached --quiet; then
+            echo QUOTE_RESEARCH_EVIDENCE_UNCHANGED
+            exit 0
+          fi
+          git commit -m "evidence(odds): record prematch Championship research-only price and quota"
+          for attempt in 1 2 3 4; do
+            git fetch origin repair/cor09-world-pipeline
+            if ! git rebase origin/repair/cor09-world-pipeline; then
+              git rebase --abort || true
+              exit 1
+            fi
+            if git push origin HEAD:repair/cor09-world-pipeline; then
+              echo QUOTE_RESEARCH_EVIDENCE_PERSISTED
+              exit 0
+            fi
+            sleep $((attempt*2))
+          done
+          exit 1
