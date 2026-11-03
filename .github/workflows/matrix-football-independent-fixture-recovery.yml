@@ -20,6 +20,9 @@ on:
       - tests/test_matrix_football_independent_over25_shadow.py
       - tools/matrix_championship_prospective_pit_attestation.py
       - tests/test_matrix_championship_prospective_pit_attestation.py
+      - tools/matrix_championship_atomic_pit_cycle.py
+      - tests/test_matrix_championship_atomic_pit_cycle.py
+      - tools/matrix_championship_quote_window_scope.py
       - tools/matrix_championship_baseline_pit_replay.py
       - tests/test_matrix_championship_baseline_pit_replay.py
       - tools/matrix_independent_over25_quote_audit.py
@@ -62,7 +65,7 @@ jobs:
       - name: Test independent fixture adapter and all hard safety gates
         run: |
           python -m pip install pytest requests Pillow
-          PYTHONPATH=. python -m pytest -q tests/test_matrix_football_independent_fixture_pipeline.py tests/test_matrix_independent_over25_governed_binding.py tests/test_matrix_football_independent_over25_shadow.py tests/test_matrix_championship_prospective_pit_attestation.py tests/test_matrix_championship_baseline_pit_replay.py tests/test_matrix_independent_over25_quote_audit.py tests/test_matrix_football_sofa_fixture_crosscheck.py tests/test_matrix_independent_over25_historical_parity.py tests/test_matrix_football_flashscore_fixture_crosscheck.py
+          PYTHONPATH=. python -m pytest -q tests/test_matrix_football_independent_fixture_pipeline.py tests/test_matrix_independent_over25_governed_binding.py tests/test_matrix_football_independent_over25_shadow.py tests/test_matrix_championship_prospective_pit_attestation.py tests/test_matrix_championship_baseline_pit_replay.py tests/test_matrix_championship_atomic_pit_cycle.py tests/test_matrix_championship_quote_window_scope.py tests/test_matrix_independent_over25_quote_audit.py tests/test_matrix_football_sofa_fixture_crosscheck.py tests/test_matrix_independent_over25_historical_parity.py tests/test_matrix_football_flashscore_fixture_crosscheck.py
 
       - name: Resolve Bogota target date
         id: date
@@ -147,6 +150,15 @@ jobs:
           print("CHAMPIONSHIP_PIT_PROSPECTIVE_RESEARCH_ATTESTED_NO_SIGNALS")
           PY
 
+      - name: Seal atomic five-document PIT source snapshot from this same provider run
+        shell: bash
+        run: |
+          set -euo pipefail
+          D="${{ steps.date.outputs.target_date }}"
+          PYTHONPATH=. python -m tools.matrix_championship_atomic_pit_cycle \
+            --date "$D" --run-id "${{ github.run_id }}" \
+            --out "evidence/football_world_inventory/$D/MATRIX_CHAMPIONSHIP_ATOMIC_PIT_RUN_${{ github.run_id }}.json"
+
       - name: Recompute original Over 2.5 baseline from independently authenticated raw history
         shell: bash
         run: |
@@ -185,6 +197,8 @@ jobs:
         run: |
           set -euo pipefail
           D="${{ steps.date.outputs.target_date }}"
+          ATOMIC="evidence/football_world_inventory/$D/MATRIX_CHAMPIONSHIP_ATOMIC_PIT_RUN_${{ github.run_id }}.json"
+          if [ -f "$ATOMIC" ]; then git add "$ATOMIC"; fi
           Q="evidence/football_world_inventory/$D/MATRIX_INDEPENDENT_OVER25_QUOTE_AUDIT.json"
           # No push-triggered quota probing outside the prematch window.
           # Read the previous same-day result before safely overwriting it.
