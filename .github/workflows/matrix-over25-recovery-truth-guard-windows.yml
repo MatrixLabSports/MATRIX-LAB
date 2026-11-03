@@ -1,0 +1,59 @@
+name: MATRIX Over25 Telegram Recovery Truth Guard Windows
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - repair/cor09-world-pipeline
+    paths:
+      - .github/workflows/matrix-over25-recovery-truth-guard-windows.yml
+      - tools/matrix_over25_telegram_recovery_truth_guard.py
+      - tests/test_matrix_over25_telegram_recovery_truth_guard.py
+      - tools/matrix_persist_over25_recovery_truth.py
+
+permissions:
+  contents: write
+
+concurrency:
+  group: matrix-over25-recovery-truth-guard-windows
+  cancel-in-progress: false
+
+jobs:
+  recovery-truth:
+    runs-on: [self-hosted, windows, matrix-browser-odds]
+    timeout-minutes: 12
+    env:
+      PYTHONPATH: .
+      MATRIX_MODE: SHADOW
+      REAL_MONEY: BLOCKED
+      AUTO_BETTING: DISABLED
+    defaults:
+      run:
+        shell: cmd
+    steps:
+      - name: Checkout authenticated actual evidence and frozen original promotion
+        uses: actions/checkout@v4
+        with:
+          ref: repair/cor09-world-pipeline
+          fetch-depth: 0
+
+      - name: Verify Windows runner hard safety gates
+        run: |
+          python -c "import os,sys; assert sys.version_info[:2]==(3,11); assert os.environ['MATRIX_MODE']=='SHADOW'; assert os.environ['REAL_MONEY']=='BLOCKED'; assert os.environ['AUTO_BETTING']=='DISABLED'"
+
+      - name: Test all physical blockers and prohibit research-based green signals
+        run: python -m pytest -q tests/test_matrix_over25_telegram_recovery_truth_guard.py tests/test_matrix_championship_enriched_provider_bridge.py tests/test_matrix_championship_baseline_pit_replay.py
+
+      - name: Evaluate actual quota, exact pricing, enriched PIT and governed-p_matrix state
+        run: |
+          python -m tools.matrix_over25_telegram_recovery_truth_guard --enriched evidence/football_world_inventory/2026-11-03/MATRIX_CHAMPIONSHIP_ENRICHED_BRIDGE_WINDOWS_41629729309.json --quotes evidence/football_world_inventory/2026-11-03/MATRIX_INDEPENDENT_OVER25_QUOTE_AUDIT.json --quota evidence/notifications/telegram/MATRIX_ODDS_API_QUOTA_GUARD_LAST.json --promotion evidence/api_football/governance/over_2_5_p_matrix_promotion.json --out evidence/notifications/telegram/MATRIX_OVER25_RECOVERY_TRUTH_${{ github.run_id }}.json
+          python -c "import json,os,pathlib; f=pathlib.Path('evidence/notifications/telegram')/('MATRIX_OVER25_RECOVERY_TRUTH_'+os.environ['GITHUB_RUN_ID']+'.json'); j=json.loads(f.read_text(encoding='utf-8')); assert j['status']=='NO_GO_FAIL_CLOSED'; assert j['telegram_messages_sent']==0; assert j['signal_generation_authorized'] is False; assert j['real_money']=='BLOCKED'; assert j['historical_enriched_three_way_passed']==8; assert j['bookmaker_quote_verified_count']==0; assert j['sharp_120s_verified_count']==0; print('OVER25_RECOVERY_BLOCKED='+','.join(j['blockers']))"
+
+      - name: Upload truth audit with source hashes and exact blockers
+        uses: actions/upload-artifact@v4
+        with:
+          name: matrix-over25-telegram-recovery-truth
+          path: evidence/notifications/telegram/MATRIX_OVER25_RECOVERY_TRUTH_${{ github.run_id }}.json
+
+      - name: Persist actual read-only no-go result without Windows policy changes
+        run: python -m tools.matrix_persist_over25_recovery_truth
