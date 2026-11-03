@@ -187,3 +187,49 @@ def test_horizon_on_oct24_covers_full_remaining_paid_window(tmp_path, monkeypatc
         "2026-10-28",
     ]
     assert d["days_requested"] == 5
+
+
+def test_after_paid_cutoff_automatic_horizon_is_safe_empty_not_failure(tmp_path, monkeypatch):
+    def must_not_call_paid_provider(**kwargs):
+        raise AssertionError("NO_PAID_CALLS_AFTER_CUTOFF")
+    monkeypatch.setattr(horizon, "run_daily_cycle", must_not_call_paid_provider)
+    result = horizon.run_horizon(
+        root=tmp_path, api_key="stale-but-present", days=5,
+        now_utc=datetime(2026, 11, 3, 2, 0, tzinfo=timezone.utc),
+    )
+    assert result["local_date_bogota"] == "2026-11-02"
+    assert result["days_requested"] == 0
+    assert result["targets"] == []
+    assert result["network_calls_total"] == 0
+    assert result["new_freezes_total"] == 0
+    assert result["p_matrix_status"] == "NOT_GENERATED"
+    assert result["real_money"] == "BLOCKED"
+
+
+def test_manual_post_cutoff_target_cannot_override_expired_paid_entitlement(tmp_path, monkeypatch):
+    import pytest
+    def must_not_call_paid_provider(**kwargs):
+        raise AssertionError("MANUAL_TARGET_MUST_NOT_CALL_PAID_PROVIDER")
+    monkeypatch.setattr(horizon, "run_daily_cycle", must_not_call_paid_provider)
+    with pytest.raises(ValueError, match="PAID_WINDOW_CLOSED_NO_CALLS"):
+        horizon.run_horizon(
+            root=tmp_path, api_key="old-key", target_date="2026-11-03",
+            now_utc=datetime(2026, 11, 3, 2, 0, tzinfo=timezone.utc),
+        )
+    with pytest.raises(ValueError, match="PAID_WINDOW_CLOSED_NO_CALLS"):
+        horizon.run_horizon(
+            root=tmp_path, api_key="old-key", target_date="2026-10-28",
+            now_utc=datetime(2026, 11, 3, 2, 0, tzinfo=timezone.utc),
+        )
+
+
+def test_manual_past_target_before_cutoff_is_rejected_as_backfill(tmp_path, monkeypatch):
+    import pytest
+    monkeypatch.setattr(horizon, "run_daily_cycle",
+                        lambda **kwargs: (_ for _ in ()).throw(
+                            AssertionError("BACKFILL_MUST_NOT_CALL_PAID_PROVIDER")))
+    with pytest.raises(ValueError, match="HISTORICAL_PREMATCH_BACKFILL_FORBIDDEN"):
+        horizon.run_horizon(
+            root=tmp_path, api_key="key", target_date="2026-10-25",
+            now_utc=datetime(2026, 10, 27, 12, 0, tzinfo=timezone.utc),
+        )
