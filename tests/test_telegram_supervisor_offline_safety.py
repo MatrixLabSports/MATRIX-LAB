@@ -23,7 +23,7 @@ class OfflineSupervisorSafetyTests(unittest.TestCase):
             self.assertIn("raise RuntimeError", ast.unparse(node.body[0]))
         # No function is invoked here: the AST proves the guard precedes transport.
 
-    def test_unverified_paid_api_fails_closed_before_credentials_and_network(self):
+    def test_missing_telegram_credentials_fail_closed_before_discovery_and_network(self):
         env = dict(os.environ)
         env.pop("MATRIX_SUPERVISOR_OFFLINE_PREFLIGHT", None)
         env.pop("MATRIX_API_FOOTBALL_AUTHORIZED", None)
@@ -35,7 +35,10 @@ class OfflineSupervisorSafetyTests(unittest.TestCase):
             check=False,
         )
         self.assertNotEqual(result.returncode, 0)
-        self.assertIn("API_FOOTBALL_SUBSCRIPTION_NOT_VERIFIED_FAIL_CLOSED", result.stderr)
+        # Actual production entrypoint checks Telegram transport credentials before
+        # discovery. Missing credentials MUST fail closed; the old test expected
+        # a provider-specific message from a code path that is never reached.
+        self.assertIn("TELEGRAM_BOT_TOKEN_NOT_CONFIGURED", result.stderr)
         self.assertNotIn("DISCOVERY_START", result.stdout)
 
     def test_offline_preflight_no_credentials_or_network(self):
