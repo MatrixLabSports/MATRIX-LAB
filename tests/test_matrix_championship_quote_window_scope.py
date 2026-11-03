@@ -179,3 +179,65 @@ def test_main_blocks_all_mismatched_attestations_without_querying_odds(tmp_path,
     assert result["research_only_eligible_count"]==0
     assert result["telegram_signal_authorized"] is False
     assert not (tmp_path/"output"/"intake.json").exists()
+
+
+def test_main_uses_immutable_atomic_snapshot_even_if_current_daily_intake_drifted(tmp_path,monkeypatch):
+    import sys
+    from datetime import timedelta
+    import tools.matrix_championship_quote_window_scope as mod
+    from tools.matrix_championship_atomic_pit_cycle import pack
+    intake,shadow,att,sofa,flash=originals()
+    folder=tmp_path/"evidence"/"football_world_inventory"/"2026-11-03"
+    folder.mkdir(parents=True)
+    docs={"intake":intake,"shadow":shadow,"sofa":sofa,"flash":flash,
+          "attestation":att}
+    bundle=pack(docs,run_id="777")
+    name="MATRIX_CHAMPIONSHIP_ATOMIC_PIT_RUN_777.json"
+    (folder/name).write_text(json.dumps(bundle),encoding="utf-8")
+    # A different independent pipeline has just overwritten ONLY the daily
+    # intake. Mixed daily files are rejected; bundle remains unchanged.
+    daily=deepcopy(intake)
+    daily["fixtures"][0]["home"]="Unverified replacement"
+    names={
+        "MATRIX_FOOTBALL_INDEPENDENT_FIXTURE_INTAKE.json":daily,
+        "MATRIX_INDEPENDENT_OVER25_HISTORY_SHADOW.json":shadow,
+        "MATRIX_SOFA_FOOTBALL_FIXTURE_CROSSCHECK.json":sofa,
+        "MATRIX_FLASH_FOOTBALL_CROSSCHECK.json":flash,
+    }
+    for filename,data in names.items():
+        (folder/filename).write_text(json.dumps(data),encoding="utf-8")
+    at=datetime.fromisoformat(bundle["attested_at_utc"])
+    class ReplayClock(datetime):
+        @classmethod
+        def now(cls,tz=None):
+            t=at+timedelta(minutes=2)
+            return t.astimezone(tz) if tz else t.replace(tzinfo=None)
+    monkeypatch.setattr(mod,"datetime",ReplayClock)
+    monkeypatch.delenv("GITHUB_OUTPUT",raising=False)
+    status=tmp_path/"status.json"
+    monkeypatch.setattr(sys,"argv",["scope","--date","2026-11-03",
+        "--root",str(tmp_path),"--outdir",str(tmp_path/"scope"),
+        "--status-out",str(status)])
+    mod.main()
+    result=json.loads(status.read_text(encoding="utf-8"))
+    assert result["source_attestation_file"]==name
+    assert result["telegram_signal_authorized"] is False
+    assert result["production_probability_authorized"] is False
+    output=json.loads((tmp_path/"scope"/"intake.json").read_text(encoding="utf-8"))
+    assert output["research_quote_scope_only"] is True
+    assert all(row["home"]!="Unverified replacement" for row in output["fixtures"])
+
+def test_atomic_snapshot_rejects_laundered_single_input(tmp_path):
+    from tools.matrix_championship_atomic_pit_cycle import pack
+    from tools.matrix_championship_quote_window_scope import atomic_cycles
+    from datetime import timedelta
+    intake,shadow,att,sofa,flash=originals()
+    b=pack({"intake":intake,"shadow":shadow,"sofa":sofa,"flash":flash,
+            "attestation":att},run_id="111")
+    b["documents"]["shadow"]["scored"][0]["p_over25_research"]=0.999
+    folder=tmp_path/"evidence"/"football_world_inventory"/"2026-11-03"
+    folder.mkdir(parents=True)
+    (folder/"MATRIX_CHAMPIONSHIP_ATOMIC_PIT_RUN_111.json").write_text(
+        json.dumps(b),encoding="utf-8")
+    now=datetime.fromisoformat(b["attested_at_utc"])+timedelta(minutes=5)
+    assert atomic_cycles(folder,"2026-11-03",now=now)==[]
