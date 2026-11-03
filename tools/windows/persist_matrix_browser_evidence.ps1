@@ -24,6 +24,19 @@ if (Test-Path -LiteralPath "evidence/notifications/telegram/browser_cdp") {
   git add -- "evidence/notifications/telegram/browser_cdp"
   if ($LASTEXITCODE -ne 0) { throw "BROWSER_GIT_ADD_FAILED" }
 }
+# Preserve only independently sourced browser calendar evidence and its guarded
+# crosscheck. Never stage model predictions, canonical candidates or credentials.
+if (Test-Path -LiteralPath "evidence/football_world_inventory") {
+  $allowed = @("MATRIX_SOFA_BROWSER_OBSERVATIONS.json", "MATRIX_SOFA_FOOTBALL_FIXTURE_CROSSCHECK.json")
+  foreach ($name in $allowed) {
+    Get-ChildItem "evidence/football_world_inventory" -Recurse -File -Filter $name |
+      ForEach-Object {
+        $rel = $_.FullName.Substring((Get-Location).Path.Length + 1)
+        git add -- $rel
+        if ($LASTEXITCODE -ne 0) { throw "CALENDAR_EVIDENCE_GIT_ADD_FAILED" }
+      }
+  }
+}
 if (Test-Path -LiteralPath "evidence/football_world_inventory") {
   Get-ChildItem "evidence/football_world_inventory" -Recurse -File -Filter "MATRIX_BETANO_QUOTE_*.json" |
     ForEach-Object {
