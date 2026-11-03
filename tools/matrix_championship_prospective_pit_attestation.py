@@ -15,7 +15,7 @@ from pathlib import Path
 from app.research.football.match_analysis_input import (
     FootballHistoryObservation, FootballMatchAnalysisInput, assess_match_analysis_readiness,
 )
-from tools.api_football_market_shadow_p_matrix import _pool_over25
+from tools.api_football_market_shadow_p_matrix import _pool_over25, _score_probs
 
 def utc(s):
     stamp=datetime.fromisoformat(str(s).replace("Z","+00:00"))
@@ -159,6 +159,29 @@ def report(intake,sofa,flash,shadow,*,now:datetime):
             row["research_history_count_away"]=readiness.away_history_count
             if not readiness.ready:
                 row["status"]="BLOCKED_HISTORICAL_READINESS";continue
+            # Independent Poisson re-computation from the *individual*
+            # authenticated observations, not from the already-scored model.
+            # The frozen model averages the last 20 team scores, home and
+            # away oriented, and clips both expected-goal lambdas.
+            home_pairs=history["home"][:20]
+            away_pairs=history["away"][:20]
+            if len(home_pairs)<5 or len(away_pairs)<5:
+                row["status"]="BLOCKED_POISSON_REPLAY_HISTORY_INSUFFICIENT";continue
+            hl=min(5.0,max(0.05,(
+                sum(h.goals_for for h in home_pairs)/len(home_pairs)
+                +sum(h.goals_against for h in away_pairs)/len(away_pairs))/2.0))
+            al=min(5.0,max(0.05,(
+                sum(h.goals_for for h in away_pairs)/len(away_pairs)
+                +sum(h.goals_against for h in home_pairs)/len(home_pairs))/2.0))
+            replay_poisson=_score_probs(hl,al)["over_2_5"]
+            archived_poisson=float(s["poisson_over25_research_component"])
+            if (not math.isfinite(archived_poisson)
+                or abs(replay_poisson-archived_poisson)>1e-9):
+                row["status"]="BLOCKED_AUTHENTIC_HISTORY_POISSON_MISMATCH"
+                continue
+            row["research_poisson_recomputed_from_authenticated_history"]=round(replay_poisson,12)
+            row["research_expected_home_goals_recomputed"]=round(hl,8)
+            row["research_expected_away_goals_recomputed"]=round(al,8)
             raw_prob=float(s["p_over25_research"])
             expected=_pool_over25(
                 float(s["poisson_over25_research_component"]),
