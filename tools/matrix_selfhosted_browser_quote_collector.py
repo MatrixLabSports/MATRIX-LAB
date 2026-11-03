@@ -76,6 +76,111 @@ def candidate_rows(audit:dict[str,Any],now:datetime)->list[dict[str,Any]]:
         out.append(r)
     return sorted(out,key=lambda x:x["kickoff"])
 
+def independent_research_quote_targets(now:datetime,root:Path=ROOT)->list[dict[str,Any]]:
+    """Separate read-only quote lookup for triple-verified fixtures, NEVER signal candidates.
+
+    No research probability is promoted into p_matrix. All three underlying
+    fixtures and browser identity reports must be authentic and date scoped.
+    """
+    if now.tzinfo is None:
+        raise ValueError("RESEARCH_TARGETS_REQUIRE_AWARE_CLOCK")
+    day=now.astimezone(timezone(timedelta(hours=-5))).date()
+    output=[]
+    for offset in (0,1):
+        date=(day+timedelta(days=offset)).isoformat()
+        folder=root/"evidence"/"football_world_inventory"/date
+        files={
+            "source":folder/"MATRIX_FOOTBALL_INDEPENDENT_FIXTURE_INTAKE.json",
+            "sofa":folder/"MATRIX_SOFA_FOOTBALL_FIXTURE_CROSSCHECK.json",
+            "flash":folder/"MATRIX_FLASH_FOOTBALL_CROSSCHECK.json",
+        }
+        if not all(p.is_file() for p in files.values()):
+            continue
+        try:
+            docs={k:load(p) for k,p in files.items()}
+            source,sofa,flash=(docs[k] for k in ("source","sofa","flash"))
+            if any(d.get("real_money")!="BLOCKED" or d.get("signal_generation_authorized") is not False
+                   for d in docs.values()):
+                continue
+            if (source.get("schema")!="MATRIX_INDEPENDENT_FIXTURE_INTAKE_V1"
+                or source.get("provider_status")!="AUTHENTICATED_FIXTURE_CAPTURE"
+                or source.get("source")!="FOOTBALL_DATA_ORG"
+                or source.get("target_date_bogota")!=date
+                or sofa.get("target_date_bogota")!=date
+                or flash.get("target_date_bogota")!=date
+                or flash.get("flashscore_verified") is not True
+                or flash.get("sofascore_verified") is not True):
+                continue
+            generated=datetime.fromisoformat(str(source["generated_at_utc"]).replace("Z","+00:00"))
+            age=(now.astimezone(timezone.utc)-generated.astimezone(timezone.utc)).total_seconds()
+            if not (0<=age<=36*3600):
+                continue
+            sr=source.get("fixtures")
+            so=sofa.get("matched")
+            fl=flash.get("matched")
+            if not all(isinstance(x,list) for x in (sr,so,fl)):
+                continue
+            if (len(sr)!=source.get("fixture_count")
+                or len(so)!=sofa.get("matched_count")
+                or len(fl)!=flash.get("matched_count")):
+                continue
+            def index(rows,key):
+                ids=[str(r.get(key) or "") for r in rows if isinstance(r,dict)]
+                if len(ids)!=len(rows) or not all(ids) or len(set(ids))!=len(ids):
+                    raise ValueError("RESEARCH_DUPLICATE_OR_MISSING_SOURCE_ID")
+                return dict(zip(ids,rows))
+            src=index(sr,"source_fixture_id")
+            sofa_ids=index(so,"fixture_id")
+            flash_ids=index(fl,"source_fixture_id")
+            used_events=set()
+            for fid,fr in sorted(flash_ids.items()):
+                a,b=src.get(fid),sofa_ids.get(fid)
+                if a is None or b is None:
+                    continue
+                if (fr.get("three_source_calendar_identity_verified") is not True
+                    or b.get("identity_time_and_teams_verified") is not True
+                    or a.get("source")!="FOOTBALL_DATA_ORG"
+                    or a.get("signal_generation_authorized") is not False
+                    or a.get("api_football_fixture_id") is not None):
+                    continue
+                sofa_event=str(b.get("sofascore_event_id") or "")
+                flash_event=str(fr.get("flashscore_mid") or "")
+                if (not sofa_event or not flash_event
+                    or sofa_event!=str(fr.get("sofascore_event_id") or "")
+                    or (sofa_event,flash_event) in used_events):
+                    continue
+                used_events.add((sofa_event,flash_event))
+                kickoff=a.get("kickoff_utc")
+                if kickoff!=b.get("kickoff_utc") or kickoff!=fr.get("kickoff_utc"):
+                    continue
+                kd=datetime.fromisoformat(str(kickoff).replace("Z","+00:00"))
+                if kd.tzinfo is None or kd.astimezone(timezone(timedelta(hours=-5))).date().isoformat()!=date:
+                    continue
+                delta=(kd.astimezone(timezone.utc)-now.astimezone(timezone.utc)).total_seconds()
+                if not 0<delta<=120*60:
+                    continue
+                home=str(a.get("home") or "").strip()
+                away=str(a.get("away") or "").strip()
+                if not home or not away or norm(home)==norm(away):
+                    continue
+                output.append({
+                    "fixture_id":"FOOTBALL_DATA_ORG:"+fid,
+                    "match":home+" vs "+away,
+                    "kickoff":kd.isoformat(),
+                    "p_matrix":None,
+                    "research_only":True,
+                    "triple_source_calendar_identity_verified":True,
+                    "production_probability_authorized":False,
+                    "telegram_signal_authorized":False,
+                    "calendar_source_date":date,
+                    "sofascore_event_id":sofa_event,
+                    "flashscore_mid":flash_event,
+                })
+        except (ValueError,TypeError,KeyError,OverflowError,OSError,json.JSONDecodeError):
+            continue
+    return sorted(output,key=lambda x:(x["kickoff"],x["fixture_id"]))
+
+
 def quote_eligibility(exact:dict[str,Any]|None, candidate:dict[str,Any], adapter_status:str, now:datetime)->tuple[bool,str|None]:
     """Pure collector-level guard; does not certify quote freshness or Telegram delivery."""
     if adapter_status!="CERTIFIED_EXACT_OVER25":
@@ -455,9 +560,11 @@ def main()->None:
     endpoint=os.environ.get("MATRIX_BROWSER_CDP_ENDPOINT",cfg["browser"]["default_cdp_endpoint"]).strip()
     now=datetime.now(timezone.utc).replace(microsecond=0)
     candidates=candidate_rows(audit,now)
+    research_targets=independent_research_quote_targets(now)
+    browser_targets=candidates+research_targets
     pipeline_diagnostic=candidate_pipeline_diagnostic(audit,now)
     RAW_ROOT.mkdir(parents=True,exist_ok=True)
-    pages=[]; matched=[]; betano_exact_quotes=[]
+    pages=[]; matched=[]; betano_exact_quotes=[]; betano_research_quotes=[]
     with sync_playwright() as p:
         browser=p.chromium.connect_over_cdp(endpoint,timeout=15000)
         contexts=browser.contexts
@@ -522,9 +629,9 @@ def main()->None:
                   "body_sha256":sha,"raw_evidence_path":None,
                   "adapter_status":adapter.get("status","MISSING")
                 }
-                text_matching=[c for c in candidates if page_matches_candidate(text,c)]
+                text_matching=[c for c in browser_targets if page_matches_candidate(text,c)]
                 structured_probe=(book=="betano" and adapter.get("status")=="CERTIFIED_EXACT_OVER25")
-                matching=list(candidates) if structured_probe else text_matching
+                matching=list(browser_targets) if structured_probe else text_matching
                 page_rec["candidate_match_basis"]="STRUCTURED_API_PROBE" if structured_probe else "VISIBLE_PAGE_TEXT"
                 page_rec["visible_text_candidate_matches"]=len(text_matching)
                 if text_matching:
@@ -572,12 +679,17 @@ def main()->None:
                                 if exact:
                                     exact["endpoint"]="EVENT_DETAIL_PAGE_NETWORK"
                     emitted,blocker=quote_eligibility(exact,c,adapter.get("status","MISSING"),now)
+                    if c.get("research_only") is True:
+                        emitted=False
+                        blocker="RESEARCH_ONLY_NO_GOVERNED_P_MATRIX"
                     rec={
                       "fixture_id":str(c.get("fixture_id") or ""),"match":c.get("match"),"kickoff":c.get("kickoff"),
                       "p_matrix":c.get("p_matrix"),"bookmaker":book,"url":url,
                       "raw_evidence_path":page_rec["raw_evidence_path"],
                       "adapter_status":adapter.get("status","MISSING"),
                       "execution_quote_emitted":emitted,
+                      "research_only":c.get("research_only") is True,
+                      "telegram_signal_authorized":False,
                       "blocker":blocker
                     }
                     if detail_diagnostics:
@@ -585,7 +697,10 @@ def main()->None:
                         rec["betano_detail_diagnostics_tail"]=detail_diagnostics[-8:]
                     if exact:
                         rec["exact_quote"]=exact
-                        betano_exact_quotes.append({**rec})
+                        if c.get("research_only") is True:
+                            betano_research_quotes.append({**rec})
+                        else:
+                            betano_exact_quotes.append({**rec})
                     matched.append(rec)
         # IMPORTANT: connected via CDP to an externally managed persistent browser.
         # Do not call browser.close(); that would terminate the shared Chrome/Opera process.
@@ -600,14 +715,20 @@ def main()->None:
       "source_audit_generated_at_utc":audit.get("generated_at_utc"),
       "cdp_endpoint":endpoint,
       "candidate_count_in_final_window":len(candidates),
+      "research_only_quote_target_count":len(research_targets),
       "authorized_book_pages_captured":len([x for x in pages if x.get("status")=="CAPTURED"]),
-      "candidate_page_matches":len(matched),
+      "candidate_page_matches":len([r for r in matched if not r.get("research_only")]),
+      "research_only_page_matches":len([r for r in matched if r.get("research_only")]),
       "betano_exact_quote_count":len(betano_exact_quotes),
+      "research_only_betano_quote_count":len(betano_research_quotes),
       "canonical_betano_quote_paths":canonical_betano_quote_paths,
       "pages":pages,"matches":matched,"betano_exact_quotes":betano_exact_quotes,
+      "research_only_betano_quotes":betano_research_quotes,
       "candidate_pipeline_diagnostic":pipeline_diagnostic,
       "policy":{
         "raw_capture_is_not_execution_quote":True,
+        "independent_research_never_persists_canonical_quotes":True,
+        "independent_research_never_authorizes_signals":True,
         "site_specific_certified_adapter_required":True,
         "captcha_or_antibot_bypass_forbidden":True,
         "automatic_wagering":False,"real_money":"BLOCKED"
@@ -631,6 +752,8 @@ def main()->None:
     print(json.dumps({
       "status":out["status"],"candidates":len(candidates),"pages":len(pages),"matches":len(matched),
       "betano_exact_quote_count":len(betano_exact_quotes),
+      "research_only_quote_target_count":len(research_targets),
+      "research_only_betano_quote_count":len(betano_research_quotes),
       "betano_exact_quote_first":(betano_exact_quotes[0] if betano_exact_quotes else None),
       "canonical_betano_quote_paths":canonical_betano_quote_paths,
       "betano_zero_diagnostics":zero_diag,
