@@ -16,7 +16,7 @@ from pathlib import Path
 from tools.api_football_canonicalize_analysis_inputs import load_chunked_canonical_bundle
 from tools.api_football_market_shadow_p_matrix import _inputs_for_target, _load_group, _pool_over25
 from tools.matrix_championship_cross_provider_archived_replay import ARCHIVE, CYCLE, audit
-from tools.matrix_independent_over25_historical_parity import parse_archive, parse_free, compare
+from tools.matrix_independent_over25_historical_parity import parse_archive, parse_free, compare, sim
 from tools.matrix_football_independent_over25_shadow import historic_rows
 
 def dt(x):
@@ -49,6 +49,44 @@ def unique_mapping(pairs,orig,indep):
     for k in conflicts:
         forward.pop(k,None)
     return forward,conflicts
+
+def calendar_identity_only(target, free_payload, cutoff, *, min_similarity=0.83):
+    """Retrospective calendar-only link. NEVER fetches or uses match scores.
+
+    The identity was recorded in an authenticated response *after* the
+    original PIT cutoff, so it cannot certify prospective fixture matching.
+    """
+    kickoff=dt(target["kickoff_utc"])
+    if kickoff<=cutoff:
+        return None
+    all_matches=free_payload.get("matches")
+    if not isinstance(all_matches,list):return None
+    choices=[]
+    for m in all_matches:
+        if not isinstance(m,dict):continue
+        try:
+            t=dt(m["utcDate"])
+            if abs((kickoff-t).total_seconds())>600:continue
+            league=(m.get("competition") or free_payload.get("competition") or {})
+            if str(league.get("id"))!="2016":continue
+            h=m.get("homeTeam") or {}
+            a=m.get("awayTeam") or {}
+            hi=str(int(h["id"]));ai=str(int(a["id"]))
+            if hi==ai:continue
+            hs=sim(target["home_team_name"],h["name"])
+            aas=sim(target["away_team_name"],a["name"])
+            swapped=(sim(target["home_team_name"],a["name"])+sim(target["away_team_name"],h["name"]))/2
+            score=(hs+aas)/2
+            if hs>=min_similarity and aas>=min_similarity and score>=swapped+0.12:
+                choices.append((score,hi,ai,str(m["id"])))
+        except (ValueError,TypeError,KeyError):
+            continue
+    choices.sort(key=lambda x:x[0],reverse=True)
+    if len(choices)!=1:
+        return None
+    _,hi,ai,fixture_id=choices[0]
+    return {"home_id":hi,"away_id":ai,"source_fixture_id":fixture_id,
+            "identity_only_from_later_authenticated_calendar":True}
 
 def replay(shadow,*,cycle=CYCLE,archive=ARCHIVE):
     prior=audit(shadow,archive=archive,cycle=cycle)
@@ -108,6 +146,21 @@ def replay(shadow,*,cycle=CYCLE,archive=ARCHIVE):
             row["status"]="BLOCKED_CONFLICTING_TEAM_CROSSWALK";continue
         home_free=mapping.get(home)
         away_free=mapping.get(away)
+        row["identity_source"]="BEFORE_CUTOFF_VERIFIED_RESULT_TEAM_CROSSWALK"
+        # Only historical retrospective analysis may use a calendar record
+        # observed AFTER the archived original cutoff. Do not use the goals,
+        # result or other target outcome even to choose between candidates.
+        if not home_free or not away_free:
+            calendar=calendar_identity_only(t,free_payload,cutoff)
+            if calendar is None:
+                row["status"]="BLOCKED_HISTORICAL_TEAM_CROSSWALK_MISSING";continue
+            home_free=calendar["home_id"]
+            away_free=calendar["away_id"]
+            if ((home in mapping and home_free!=mapping[home])
+                or (away in mapping and away_free!=mapping[away])):
+                row["status"]="BLOCKED_CALENDAR_AND_HISTORY_TEAM_ID_CONFLICT";continue
+            row["identity_source"]="RETROSPECTIVE_CALENDAR_ONLY_NOT_PROSPECTIVE"
+            row["retrospective_source_fixture_id"]=calendar["source_fixture_id"]
         if not home_free or not away_free or home_free==away_free:
             row["status"]="BLOCKED_HISTORICAL_TEAM_CROSSWALK_MISSING";continue
         enhanced,enhanced_reason=_inputs_for_target(original_rows,t)
