@@ -18,3 +18,20 @@ def test_two_observed_sofascore_fixtures_are_source_bound():
     assert checked["over25_exact_quote_verified"] is False
     assert checked["real_money"]=="BLOCKED"
     assert observed["flashscore_corroborated"] is False
+
+def test_one_real_flashscore_triple_source_identity_and_no_price():
+    from tools.matrix_football_flashscore_fixture_crosscheck import check
+    intake=json.loads((FOLDER/"MATRIX_FOOTBALL_INDEPENDENT_FIXTURE_INTAKE.json").read_text(encoding="utf-8"))
+    obs=json.loads((FOLDER/"MATRIX_SOFA_BROWSER_OBSERVATIONS.json").read_text(encoding="utf-8"))
+    flash=json.loads((FOLDER/"MATRIX_FLASH_BROWSER_OBSERVATIONS.json").read_text(encoding="utf-8"))
+    sofa=corroborate(intake,obs)
+    result=check(intake,sofa,flash)
+    assert result["status"]=="PASS_THREE_SOURCE_FIXTURE_IDENTITY_ONLY_NO_QUOTES_OR_SIGNALS"
+    assert result["matched_count"]==1
+    assert result["rejected_count"]==0
+    assert result["matched"][0]["source_fixture_id"]=="575387"
+    assert result["matched"][0]["flashscore_mid"]=="E3VsH66d"
+    assert result["odds_market_verified"] is False
+    assert result["calibration_parity_verified"] is False
+    assert result["signal_generation_authorized"] is False
+    assert result["real_money"]=="BLOCKED"
