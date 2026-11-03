@@ -4,7 +4,7 @@ from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 from tools.matrix_selfhosted_browser_quote_collector import (
-    independent_research_quote_targets, quote_eligibility,
+    independent_research_quote_targets, atomic_verified_research_quote_targets, quote_eligibility,
 )
 
 NOW=datetime(2026,11,3,19,0,tzinfo=timezone.utc)
@@ -129,3 +129,60 @@ def test_real_seven_three_source_archive_yields_six_research_only_targets():
     }
     assert all(r["research_only"] is True and r["p_matrix"] is None
                and r["telegram_signal_authorized"] is False for r in rows)
+
+
+def test_real_six_immutable_pit_fixtures_feed_readonly_browser_lookup():
+    root=Path(__file__).resolve().parents[1]
+    when=datetime(2026,11,3,19,0,tzinfo=timezone.utc)
+    folder=root/"evidence"/"football_world_inventory"/"2026-11-03"
+    rows=atomic_verified_research_quote_targets(when,folder,"2026-11-03")
+    assert rows is not None
+    assert {r["fixture_id"] for r in rows}=={
+      "FOOTBALL_DATA_ORG:561917","FOOTBALL_DATA_ORG:561918",
+      "FOOTBALL_DATA_ORG:561921","FOOTBALL_DATA_ORG:561922",
+      "FOOTBALL_DATA_ORG:561924","FOOTBALL_DATA_ORG:561928"}
+    assert len({r["atomic_attestation_sha256"] for r in rows})==1
+    assert all(r["atomic_pit_bundle"].startswith("evidence/football_world_inventory/")
+               for r in rows)
+    for row in rows:
+        assert row["p_matrix"] is None
+        assert row["research_only"] is True
+        assert row["production_probability_authorized"] is False
+        assert row["telegram_signal_authorized"] is False
+        assert row["original_enriched_model_parity_verified"] is False
+        allowed,reason=quote_eligibility({"price":2.25},row,
+                                         "CERTIFIED_EXACT_OVER25",when)
+        assert not allowed and reason=="NO_SIGNAL_ECONOMIC_GATE"
+
+
+def test_tampered_atomic_bundle_blocks_even_if_daily_triple_sources_look_valid(tmp_path):
+    folder,source,sofa,flash=_fixtures(tmp_path)
+    f=folder/"MATRIX_CHAMPIONSHIP_ATOMIC_PIT_RUN_999.json"
+    f.write_text(json.dumps({"schema":"MATRIX_CHAMPIONSHIP_ATOMIC_PIT_CYCLE_V1",
+                             "documents":{"intake":{"source":"FAKE"}}}),
+                 encoding="utf-8")
+    assert atomic_verified_research_quote_targets(NOW,folder,DAY)==[]
+    assert independent_research_quote_targets(NOW,tmp_path)==[]
+
+
+def test_existing_real_atomic_does_not_use_postkickoff_price_or_probability():
+    root=Path(__file__).resolve().parents[1]
+    time=datetime(2026,11,3,21,0,tzinfo=timezone.utc)
+    rows=independent_research_quote_targets(time,root)
+    assert not any(x["fixture_id"]=="FOOTBALL_DATA_ORG:561918" for x in rows)
+
+
+def test_mutable_daily_file_changes_do_not_mutate_immutable_quote_targets(tmp_path):
+    import shutil
+    folder,source,sofa,flash=_fixtures(tmp_path)
+    root=Path(__file__).resolve().parents[1]
+    proof=root/"evidence"/"football_world_inventory"/DAY/"MATRIX_CHAMPIONSHIP_ATOMIC_PIT_RUN_41652244354.json"
+    assert proof.is_file()
+    shutil.copy2(proof,folder/proof.name)
+    original=independent_research_quote_targets(NOW,tmp_path)
+    assert len(original)==6
+    source["fixtures"][0]["home"]="Invented team"
+    (folder/"MATRIX_FOOTBALL_INDEPENDENT_FIXTURE_INTAKE.json").write_text(
+        json.dumps(source),encoding="utf-8")
+    changed=independent_research_quote_targets(NOW,tmp_path)
+    assert changed==original
