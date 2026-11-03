@@ -50,3 +50,7 @@ Se preservan modelos, calibraciones, holdouts, históricos, cuotas y safeguards 
 - Runner Windows: https://github.com/MatrixLabSports/MATRIX-LAB/actions/runs/41580676306; `collect` completed/success y **53 pruebas aprobadas en 1.72s** (incluye los contratos de seguridad del comparador Championship).
 - CDP y recolección de páginas: PASS, 14 páginas; 0 candidatos canónicos y 0 cuotas exactas Betano. Auditoría de candidato previa: obsoleta y bloqueada; datos `2026-11-02` y `2026-11-03` no alimentan aún `daily_prematch_reports`.
 - Esta validación no es recuperación de Telegram ni habilitación de `p_matrix` operativo.
+
+## Certificación por partido del auditor independiente
+
+El workflow https://github.com/MatrixLabSports/MATRIX-LAB/actions/runs/41579899796 terminó con éxito, publicó y persistió `evidence/football_world_inventory/2026-11-03/MATRIX_INDEPENDENT_FEATURE_PARITY_AUDIT.json` (blob SHA `853406844a7822d7cb3337e2675e1e4922f879ce`). En los 7 partidos con identidad de calendario certificada hay 7 registros de investigación con conteos históricos >=5 por equipo. La comparación enriquecida de producción sigue no certificada para los siete: `model_feature_parity_certified_count=0`, `canonical_inputs_generated=false`, `telegram_signal_authorized=false`. El empate de características de grupo en tres ligas no sustituye la verificación `CANONICAL_ENRICHED_PIT` en cada fixture futuro.
