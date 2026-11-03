@@ -64,6 +64,8 @@ def test_eight_triple_source_fixtures_verified_against_full_calendar():
     assert result["observed_visible_links"]==9
     assert result["explicit_date_labeled_links"]==8
     assert result["without_explicit_date_label"]==1
+    assert result["date_labeled_with_visible_kickoff_count"]==8
+    assert result["date_labeled_without_visible_kickoff_count"]==0
     assert result["review_only_sofascore_links_without_independent_fixture"]==0
     assert result["telegram_signals_authorized"] is False
     assert result["real_money"]=="BLOCKED"
@@ -127,3 +129,34 @@ def test_wrong_source_date_rejected():
     c["target_date_bogota"]="2026-11-03"
     with pytest.raises(ValueError,match="DATE_MISMATCH"):
         reconcile(c,s,i,f)
+
+def test_explicit_date_without_kickoff_is_retained_but_quarantined():
+    # Genuine SofaScore page labels may show 'Aplazado', 'Concedido' or 'FT'.
+    # Preserve the event as dated without assigning an invented kickoff clock.
+    c,s,i,f=fixtures()
+    c["observations"].append({
+        "display_name":"2/11/26 Aplazado Club A Club B",
+        "source_event_id":"7777",
+        "source_url":"https://www.sofascore.com/es/football/match/club-a-club-b/x#id:7777",
+        "explicit_target_date_label":True,
+    })
+    c["observed_link_count"]+=1
+    c["explicit_target_date_label_count"]+=1
+    result=reconcile(c,s,i,f)
+    assert result["explicit_date_labeled_links"]==9
+    assert result["date_labeled_with_visible_kickoff_count"]==8
+    assert result["date_labeled_without_visible_kickoff_count"]==1
+    assert result["date_labeled_without_visible_kickoff_ids"]==["7777"]
+    assert result["pre_registered_triple_source_matches"]==8
+    assert result["review_only_sofascore_links_without_independent_fixture"]==1
+    assert result["telegram_signals_authorized"] is False
+
+
+def test_pre_registered_fixture_without_visible_kickoff_fails_closed():
+    c,s,i,f=fixtures()
+    c["observations"][0]["display_name"]="2/11/26 Concedido Home 0 Away 0"
+    result=reconcile(c,s,i,f)
+    assert result["pre_registered_triple_source_matches"]==7
+    assert result["status"].startswith("BLOCKED_")
+    assert result["pre_registered_rejections"][0]["reason"]=="SOURCE_EVENT_EXACT_KICKOFF_TIME_NOT_VISIBLE"
+    assert result["telegram_signals_authorized"] is False
