@@ -2466,6 +2466,36 @@ def build_blocker_recovery_audit(
             "reporting_separates_live_attempts_from_historical_terminal_states": True,
             "legacy_combined_counts_must_not_be_interpreted_as_live_quote_checks": True,
         },
+        # Canonical read-only browser intake is independent of pre_send_gate.
+        # A candidate that still lacks executable odds must remain discoverable,
+        # but this list never grants permission to send a Telegram signal.
+        "browser_prematch_candidate_rows": [
+            {
+                "fixture_id": c.get("fixture_id"),
+                "match": c.get("match"),
+                "kickoff": c.get("kickoff"),
+                "p_matrix": c.get("p_matrix"),
+                "market": c.get("market"),
+                "source_path": c.get("source"),
+                "signal_key": key,
+            }
+            for key, c in sorted(candidates.items())
+            if key not in existing_sent_keys
+            and c.get("sport") == "football"
+            and c.get("market_key") == MARKET_KEY
+            and c.get("selection_key") == SELECTION_KEY
+            and parse_dt(c.get("kickoff")) is not None
+            and parse_dt(c.get("kickoff")) > now
+            and float(c.get("p_matrix") or 0.0) >= SIGNAL_QUALITY_MIN_P_MATRIX
+        ],
+        "browser_intake_policy": {
+            "canonical_discovery_only": True,
+            "not_a_telegram_send_authorization": True,
+            "pre_send_quote_gate_unchanged": True,
+            "no_p_matrix_recomputation": True,
+            "automatic_wagering": False,
+            "real_money": "BLOCKED",
+        },
         "records": records,
     }
 
