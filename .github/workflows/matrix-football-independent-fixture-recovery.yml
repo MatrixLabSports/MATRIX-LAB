@@ -161,12 +161,14 @@ jobs:
         run: |
           set -euo pipefail
           D="${{ steps.date.outputs.target_date }}"
-          EXTRA=""
-          if [ "${{ github.event_name }}" = 'push' ]; then EXTRA='--probe-quota-outside-window'; fi
+          Q="evidence/football_world_inventory/$D/MATRIX_INDEPENDENT_OVER25_QUOTE_AUDIT.json"
+          # No push-triggered quota probing outside the prematch window.
+          # Read the previous same-day result before safely overwriting it.
           PYTHONPATH=. python -m tools.matrix_independent_over25_quote_audit \
             --intake "evidence/football_world_inventory/$D/MATRIX_FOOTBALL_INDEPENDENT_FIXTURE_INTAKE.json" \
             --shadow "evidence/football_world_inventory/$D/MATRIX_INDEPENDENT_OVER25_HISTORY_SHADOW.json" \
-            --out "evidence/football_world_inventory/$D/MATRIX_INDEPENDENT_OVER25_QUOTE_AUDIT.json" $EXTRA
+            --previous "$Q" \
+            --out "$Q"
       - name: Persist read-only discovery evidence even when provider is unavailable
         if: always()
         shell: bash
