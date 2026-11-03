@@ -7,6 +7,7 @@ No odds or Telegram calls; original MATRIX producer remains unchanged.
 from __future__ import annotations
 
 import argparse
+import base64
 import hashlib
 import json
 import os
@@ -82,6 +83,7 @@ def score_intake(intake: dict, token: str, *, opener=urlopen) -> dict:
         "network_calls": 0, "scored": [], "blocked": [],
         "scored_count": 0, "blocked_count": 0,
         "historical_source_equivalence_verified": False,
+        "authenticated_raw_group_replay_evidence": {},
         "browser_identity_crosschecked": False,
         "market_signal_authorized": False,
         "telegram_sent": False,
@@ -123,11 +125,22 @@ def score_intake(intake: dict, token: str, *, opener=urlopen) -> dict:
             rows = historic_rows(payload, cid)
             groups[key] = {"status": "HISTORY_CAPTURED", "rows": rows,
                            "sha256": hashlib.sha256(body).hexdigest(),
+                           "raw_response_b64": base64.b64encode(body).decode("ascii"),
                            "observed_at_utc": observed_at.isoformat(),
                            "history_count": len(rows)}
         except (HTTPError, URLError, TimeoutError, OSError, ValueError, TypeError, KeyError) as exc:
             groups[key] = {"status": "HISTORY_PROVIDER_BLOCKED", "error_type": type(exc).__name__, "rows": []}
-    output["group_status"] = {k: {z:v for z,v in group.items() if z!="rows"} for k,group in groups.items()}
+    output["group_status"] = {k: {z:v for z,v in group.items() if z not in ("rows","raw_response_b64")} for k,group in groups.items()}
+    # The exact authenticated HTTP response is needed for independent
+    # reconstruction of the original baseline. Never infer this from a
+    # summary count or from the probability previously stored.
+    output["authenticated_raw_group_replay_evidence"] = {
+        k: {"response_base64":group["raw_response_b64"],
+            "source_payload_sha256":group["sha256"],
+            "observed_at_utc":group["observed_at_utc"],
+            "competition_id":int(k)}
+        for k,group in groups.items() if group.get("status")=="HISTORY_CAPTURED"
+    }
     for f in fixtures:
         if not isinstance(f, dict):
             continue
