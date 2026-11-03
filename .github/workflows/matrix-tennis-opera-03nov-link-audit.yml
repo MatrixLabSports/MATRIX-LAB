@@ -74,7 +74,8 @@ jobs:
           assert c["flashscore_visible_links"]==423
           assert c["flashscore_named_player_pair_unique_links"]==276
           assert c["flashscore_unstructured_links"]==133
-          assert r["candidate_pair_count"]==232
+          assert r["candidate_pair_count"]==230
+          assert r["date_without_visible_clock_link_review_eligible"] is False
           assert r["ambiguous_pair_count"]==0
           assert all(x["same_fixture_certified"] is False for x in r["candidate_pairs"])
           assert r["flashscore_date_selector"]=="martes, 3 de noviembre de 2026"
@@ -91,7 +92,7 @@ jobs:
           assert r["automatic_wagering"] is False
           assert r["real_money"]=="BLOCKED"
           assert all(len(v)==64 for v in r["source_sha256"].values())
-          print("PASS_688_SOFA_423_FLASH_232_PLAYER_LINK_CANDIDATES_NO_SIGNAL_PROMOTION")
+          print("PASS_688_SOFA_423_FLASH_230_TIMED_PLAYER_LINK_CANDIDATES_NO_SIGNAL_PROMOTION")
           PY
 
       - name: Store only diagnostic proof in GitHub
