@@ -49,6 +49,14 @@ def scope(intake,shadow,attestation,sofa,flash,*,now):
                 shadow.get("market_signal_authorized") is not False,
                 attestation.get("telegram_signal_authorized") is not False))):
         raise ValueError("QUOTE_SCOPE_SOURCE_NOT_CERTIFIED")
+    if (attestation.get("source_binding_schema") != "MATRIX_PROSPECTIVE_PIT_EXACT_FOUR_SOURCE_BINDING_V1"
+        or attestation.get("source_intake_sha256") != digest(intake)
+        or attestation.get("source_shadow_sha256") != digest(shadow)
+        or attestation.get("source_sofa_sha256") != digest(sofa)
+        or attestation.get("source_flash_sha256") != digest(flash)
+        or attestation.get("source_intake_generated_at_utc") != utc(intake["generated_at_utc"]).isoformat()
+        or attestation.get("source_shadow_completed_at_utc") != utc(shadow["completed_at_utc"]).isoformat()):
+        raise ValueError("QUOTE_SCOPE_ATTESTATION_NOT_BOUND_TO_EXACT_SOURCE_SNAPSHOT")
     source_at=utc(intake["generated_at_utc"])
     attested_at=utc(attestation["observed_at_utc"])
     if not (0 <= (clock-source_at).total_seconds() <= 86400
@@ -89,7 +97,6 @@ def scope(intake,shadow,attestation,sofa,flash,*,now):
             or a.get("research_source_history_sha256")!=score.get("history_sha256")):
             continue
         selected.append(fid)
-    chosen=set(selected)
     filtered_intake={**intake,"fixtures":[fixtures[id] for id in selected],
                      "fixture_count":len(selected),"research_quote_scope_only":True,
                      "signal_generation_authorized":False}
