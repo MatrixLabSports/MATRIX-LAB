@@ -75,7 +75,10 @@ jobs:
           D="${{ inputs.target_date }}"
           if [ -z "$D" ]; then
             H="$(TZ=America/Bogota date +%H)"
-            if [ "$H" -ge 18 ]; then
+            # An authorized workflow repair push preflights TOMORROW rather
+            # than re-collecting today's fixtures after their kickoffs.
+            # Scheduled runs keep their original 18:15 Bogota turnover.
+            if [ "${{ github.event_name }}" = "push" ] || [ "$H" -ge 18 ]; then
               D="$(TZ=America/Bogota date -d tomorrow +%F)"
             else
               D="$(TZ=America/Bogota date +%F)"
