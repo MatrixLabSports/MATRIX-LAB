@@ -127,6 +127,7 @@ def test_genuine_dated_entry_without_time_kept_but_uncertified():
     a["matches"][0]["visible_local_clock"]=False
     r=review(a,b)
     assert r["source_counts"]["sofascore_date_without_visible_clock"]==1
+    assert r["candidate_pair_count"]==0
     assert r["utc_kickoff_certified"] is False
     assert r["signal_generation_authorized"] is False
 
