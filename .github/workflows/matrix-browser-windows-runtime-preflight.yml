@@ -31,6 +31,7 @@ jobs:
           python -m pip --version || echo PIP_NOT_AVAILABLE
           where pwsh || echo POWERSHELL_7_NOT_AVAILABLE
           echo MATRIX_RUNTIME_DIAGNOSTIC_END
+          exit /B 0
 
       - name: Read execution policy and supported PowerShell shell without changing it
         shell: cmd
