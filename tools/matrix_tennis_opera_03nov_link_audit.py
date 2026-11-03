@@ -111,6 +111,7 @@ def review(sofa: dict, flash: dict) -> dict:
         if len(urls)!=len(record["matches"]) or len(urls)!=len(set(urls)):
             raise ValueError("DUPLICATED_SOURCE_URLS")
     dated=[];not_dated=[];sofa_ids=set()
+    dated_with_clock_for_review=[]
     dated_with_visible_clock=0
     dated_without_visible_clock=0
     clock = re.compile(r"^3/11/26\s+(\d{1,2}):([0-5]\d)(?:\s|$)")
@@ -130,6 +131,7 @@ def review(sofa: dict, flash: dict) -> dict:
                 if int(time_match.group(1)) > 23:
                     raise ValueError("SOFA_VISIBLE_CLOCK_INVALID")
                 dated_with_visible_clock += 1
+                dated_with_clock_for_review.append(item)
             else:
                 dated_without_visible_clock += 1
             dated.append(item)
@@ -151,14 +153,14 @@ def review(sofa: dict, flash: dict) -> dict:
     # No same-day certainty can be inferred from Flashscore's 'mañana' page alone.
     potential=defaultdict(list)
     for key,f in unique_flash.items():
-        for s in dated:
+        for s in dated_with_clock_for_review:
             a,b=f["player_tokens"]
             if a <= s["slug_tokens"] and b <= s["slug_tokens"]:
                 potential[s["id"]].append(f)
     eligible=[]
     ambiguous=[]
     used_flash=set()
-    for s in dated:
+    for s in dated_with_clock_for_review:
         possible=potential.get(s["id"],[])
         if len(possible)!=1:
             if possible:
@@ -196,6 +198,7 @@ def review(sofa: dict, flash: dict) -> dict:
         "flashscore_unstructured_examples":flash_links[:20],
         "flashscore_date_selector":"martes, 3 de noviembre de 2026",
         "flashscore_individual_match_date_certified":False,
+        "date_without_visible_clock_link_review_eligible":False,
         "sofascore_visible_clock_is_not_utc_certification":True,
         "provider_page_coverage_complete":False,
         "same_fixture_date_cross_provider_certified":False,
