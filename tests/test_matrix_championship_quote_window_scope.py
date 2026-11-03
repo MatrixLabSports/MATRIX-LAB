@@ -105,3 +105,69 @@ def test_single_history_probability_mutation_without_new_attestation_blocks():
     with pytest.raises(ValueError,match="EXACT_SOURCE_SNAPSHOT"):
         scope(intake,shadow,att,sofa,flash,
               now=datetime(2026,11,3,18,30,tzinfo=timezone.utc))
+
+
+def test_main_selects_older_exact_snapshot_over_newer_mismatched_one(tmp_path,monkeypatch):
+    """Physical candidate inputs can update independently during a day."""
+    from datetime import datetime,timezone
+    import sys
+    from tools.matrix_championship_quote_window_scope import main
+    intake,shadow,att,sofa,flash=originals()
+    folder=tmp_path/"evidence"/"football_world_inventory"/"2026-11-03"
+    folder.mkdir(parents=True)
+    filenames={
+        "MATRIX_FOOTBALL_INDEPENDENT_FIXTURE_INTAKE.json":intake,
+        "MATRIX_INDEPENDENT_OVER25_HISTORY_SHADOW.json":shadow,
+        "MATRIX_SOFA_FOOTBALL_FIXTURE_CROSSCHECK.json":sofa,
+        "MATRIX_FLASH_FOOTBALL_CROSSCHECK.json":flash,
+    }
+    for name,doc in filenames.items():
+        (folder/name).write_text(json.dumps(doc),encoding="utf-8")
+    good=folder/"MATRIX_CHAMPIONSHIP_PROSPECTIVE_PIT_RUN_111.json"
+    good.write_text(json.dumps(att),encoding="utf-8")
+    bad=deepcopy(att)
+    bad["source_shadow_sha256"]="0"*64
+    bad["observed_at_utc"]=datetime.now(timezone.utc).isoformat()
+    (folder/"MATRIX_CHAMPIONSHIP_PROSPECTIVE_PIT_RUN_222.json").write_text(
+        json.dumps(bad),encoding="utf-8")
+    status=tmp_path/"scope.json"
+    monkeypatch.delenv("GITHUB_OUTPUT",raising=False)
+    monkeypatch.setattr(sys,"argv",["quote_scope","--date","2026-11-03",
+        "--root",str(tmp_path),"--outdir",str(tmp_path/"output"),
+        "--status-out",str(status)])
+    main()
+    chosen=json.loads(status.read_text(encoding="utf-8"))
+    assert chosen["source_attestation_file"]==good.name
+    assert chosen["status"] in (
+        "NO_VERIFIED_PREMATCH_SCOPE","PREMATCH_RESEARCH_QUOTE_SCOPE_AVAILABLE")
+    assert chosen["telegram_signal_authorized"] is False
+
+
+def test_main_blocks_all_mismatched_attestations_without_querying_odds(tmp_path,monkeypatch):
+    import sys
+    from tools.matrix_championship_quote_window_scope import main
+    intake,shadow,att,sofa,flash=originals()
+    folder=tmp_path/"evidence"/"football_world_inventory"/"2026-11-03"
+    folder.mkdir(parents=True)
+    for name,doc in {
+        "MATRIX_FOOTBALL_INDEPENDENT_FIXTURE_INTAKE.json":intake,
+        "MATRIX_INDEPENDENT_OVER25_HISTORY_SHADOW.json":shadow,
+        "MATRIX_SOFA_FOOTBALL_FIXTURE_CROSSCHECK.json":sofa,
+        "MATRIX_FLASH_FOOTBALL_CROSSCHECK.json":flash,
+    }.items():
+        (folder/name).write_text(json.dumps(doc),encoding="utf-8")
+    att=deepcopy(att)
+    att["source_shadow_sha256"]="0"*64
+    (folder/"MATRIX_CHAMPIONSHIP_PROSPECTIVE_PIT_RUN_333.json").write_text(
+        json.dumps(att),encoding="utf-8")
+    status=tmp_path/"scope.json"
+    monkeypatch.delenv("GITHUB_OUTPUT",raising=False)
+    monkeypatch.setattr(sys,"argv",["quote_scope","--date","2026-11-03",
+        "--root",str(tmp_path),"--outdir",str(tmp_path/"output"),
+        "--status-out",str(status)])
+    main()
+    result=json.loads(status.read_text(encoding="utf-8"))
+    assert result["status"]=="BLOCKED_NO_EXACT_SOURCE_ATTESTATION"
+    assert result["research_only_eligible_count"]==0
+    assert result["telegram_signal_authorized"] is False
+    assert not (tmp_path/"output"/"intake.json").exists()
