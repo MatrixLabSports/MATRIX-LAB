@@ -34,3 +34,12 @@ Comprobado: identidad calendario 7; Brasil e Italia con identidad/resultado y ca
 Pendiente: resultado autenticado de paridad de Championship, crosswalk de IDs y características `CANONICAL_ENRICHED_PIT` en todos los grupos relevantes, `p_matrix` original prospectivo, cuotas exactas y confirmación de referencia sharp; Telegram continúa `0 BET`.
 
 Se preservan modelos, calibraciones, holdouts, históricos, cuotas y safeguards originales. `REAL_MONEY=BLOCKED`; `automatic_wagering=false`. No backfill pospartido ni probabilidades de investigación promovidas a producción.
+
+## Resultado real de Championship: confirmado tras la primera versión de este informe
+
+- Workflow: https://github.com/MatrixLabSports/MATRIX-LAB/actions/runs/41580629419, job `verify-archived-coverage-no-signal-promotion`, status **completed/success**.
+- Archivo publicado: `evidence/football_world_inventory/2026-11-03/MATRIX_CHAMPIONSHIP_RAW_GROUP_PARITY_LAST.json` (schema `MATRIX_CHAMPIONSHIP_RAW_GROUP_PIT_REPLAY_V1`).
+- Fixture históricos obtenidos: 133 API-Football archivados / 133 football-data.org independientes; 102 resultados emparejados, cero discrepancias y cero ambigüedades.
+- **57 de 57** comparaciones evaluables de características y probabilidades de grupo idénticas (diferencias 0, desviación absoluta máxima 0). Los otros 45 emparejamientos bloqueados por insuficiencia de datos anteriores en ambas fuentes.
+- Con esto Brasil, Italia y Championship reúnen **324 de 324** comparaciones de características de grupo idénticas en sus respectivos subconjuntos históricos evaluables (237+30+57). Esta suma NO mide precisión prospectiva ni prueba equivalencia de `CANONICAL_ENRICHED_PIT`; no cambia estado de Telegram.
+- `historical_score_concordance_verified=true`, `original_calibrated_feature_equivalence_verified=false`, `canonical_enriched_pit_parity_verified=false` y `all_six_leagues_equivalence_verified=false`.
