@@ -18,6 +18,9 @@ BOGOTA=ZoneInfo("America/Bogota")
 # unknown aliases never become fuzzy cross-provider matches.
 ALIASES={
     # Individually corroborated 2026-11-03 provider/browser names; no fuzzy promotion.
+    # Independently observed 04-Nov-2026 exact source-to-Flash names.
+    "fenerbahce sk":"fenerbahce",
+    "liverpool fc":"liverpool",
     "portsmouth fc":"portsmouth",
     "swansea city afc":"swansea",
     "derby county fc":"derby",
