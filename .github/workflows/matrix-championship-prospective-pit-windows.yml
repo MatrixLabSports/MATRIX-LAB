@@ -44,7 +44,7 @@ jobs:
           python -c "import sys; assert sys.version_info[:2]==(3,11)"
           python -c "import os; assert os.environ['REAL_MONEY']=='BLOCKED' and os.environ['AUTO_BETTING']=='DISABLED' and os.environ['MATRIX_MODE']=='SHADOW'"
 
-      - name: Test exact four-source PIT hashes, quote scope and fail-closed contracts
+      - name: Test strict four-source rejection and archived replay after original capture
         run: python -m pytest -q tests/test_matrix_championship_prospective_pit_attestation.py tests/test_matrix_football_independent_over25_shadow.py tests/test_matrix_championship_quote_window_scope.py
 
       - name: Audit current real Championship matches from stored authentic provider files
