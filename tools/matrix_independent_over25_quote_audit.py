@@ -85,7 +85,7 @@ def _price_rows(snapshot, now):
                     "market":"FULL_TIME_TOTAL_GOALS_OVER_2_5"})
     return out
 
-def audit(intake,shadow,key,*,session=None,now=None,max_matches=MAX_MATCHES_PER_CYCLE,probe_quota_outside_window=False,previous=None):
+def audit(intake,shadow,key,*,session=None,now=None,max_matches=MAX_MATCHES_PER_CYCLE,probe_quota_outside_window=False,previous=None,global_quota_guard=None):
     if intake.get("schema")!="MATRIX_INDEPENDENT_FIXTURE_INTAKE_V1" or shadow.get("schema")!="MATRIX_INDEPENDENT_OVER25_HISTORY_SHADOW_V1":
         raise ValueError("UNTRUSTED_INDEPENDENT_INPUTS")
     if intake.get("target_date_bogota")!=shadow.get("target_date_bogota"):
@@ -149,6 +149,25 @@ def audit(intake,shadow,key,*,session=None,now=None,max_matches=MAX_MATCHES_PER_
                     return result
             except (ValueError,TypeError,KeyError):
                 pass
+    # The existing global /usage supervisor is authoritative. If it has
+    # recorded HTTP 429 or exhausted credits, do not retry this endpoint
+    # from a separate recurring research job. Only a separately verified
+    # quota recovery may authorize further requests.
+    if global_quota_guard is not None:
+        if not isinstance(global_quota_guard,dict):
+            result["quota_status"]="BLOCKED_GLOBAL_QUOTA_GUARD_INVALID"
+            result["status"]="WAITING_FOR_GLOBAL_QUOTA_RECOVERY"
+            return result
+        g=global_quota_guard.get("decision") or {}
+        if (global_quota_guard.get("schema")!="MATRIX_ODDS_API_QUOTA_GUARD_V1"
+            or global_quota_guard.get("provider")!="odds-api.net"
+            or not isinstance(g,dict)
+            or g.get("api_calls_allowed") is not True
+            or g.get("stage") in ("BLOCKED_EXHAUSTED",
+                                 "USAGE_UNKNOWN_T60_FAIL_CLOSED")):
+            result["quota_status"]="BLOCKED_GLOBAL_QUOTA_EXHAUSTED_OR_UNVERIFIED"
+            result["status"]="WAITING_FOR_GLOBAL_QUOTA_RECOVERY"
+            return result
     key = str(key or "").strip()
     if not key:
         result["quota_status"]="MISSING_ODDS_API_NET_KEY"
@@ -270,11 +289,18 @@ def main():
     parser.add_argument("--out",type=Path,required=True)
     parser.add_argument("--probe-quota-outside-window",action="store_true")
     parser.add_argument("--previous",type=Path)
+    parser.add_argument("--global-quota-guard",type=Path)
     a=parser.parse_args()
     data=lambda p:json.loads(p.read_text(encoding="utf-8"))
     previous=data(a.previous) if a.previous and a.previous.is_file() else None
+    global_guard=(data(a.global_quota_guard)
+                  if a.global_quota_guard and a.global_quota_guard.is_file()
+                  else None)
+    if a.global_quota_guard and global_guard is None:
+        global_guard={"schema":"BLOCKED_MISSING_GLOBAL_QUOTA_GUARD"}
     result=audit(data(a.intake),data(a.shadow),os.environ.get("ODDS_API_NET_KEY",""),
-                 previous=previous,probe_quota_outside_window=a.probe_quota_outside_window)
+                 previous=previous,probe_quota_outside_window=a.probe_quota_outside_window,
+                 global_quota_guard=global_guard)
     a.out.parent.mkdir(parents=True,exist_ok=True)
     a.out.write_text(json.dumps(result,ensure_ascii=False,sort_keys=True,indent=2)+"\n",encoding="utf-8")
     print(json.dumps({k:result[k] for k in (
