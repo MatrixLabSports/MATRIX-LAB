@@ -50,11 +50,18 @@ jobs:
           python -m tools.matrix_championship_atomic_pit_cycle --date 2026-11-03 --run-id %GITHUB_RUN_ID% --out evidence/football_world_inventory/2026-11-03/MATRIX_CHAMPIONSHIP_ATOMIC_PIT_RUN_%GITHUB_RUN_ID%.json
           python -c "import json,os,pathlib; r=os.environ['GITHUB_RUN_ID']; p=pathlib.Path('evidence/football_world_inventory/2026-11-03')/('MATRIX_CHAMPIONSHIP_ATOMIC_PIT_RUN_'+r+'.json'); b=json.loads(p.read_text(encoding='utf-8')); assert b['prospective_research_history_certified_count']>=1; assert b['production_probability_authorized'] is False; assert b['telegram_signal_authorized'] is False; assert b['real_money']=='BLOCKED'; print('AUTHENTIC_ATOMIC_PROSPECTIVE_HISTORY='+str(b['prospective_research_history_certified_count']))"
 
+      - name: Exercise actual 15-minute research quote scope using immutable PIT, no provider calls
+        run: |
+          python -m tools.matrix_championship_quote_window_scope --date 2026-11-03 --outdir %RUNNER_TEMP%\\matrix-over25-offline-quote-scope --status-out evidence/football_world_inventory/2026-11-03/MATRIX_CHAMPIONSHIP_QUOTE_WINDOW_SCOPE_WINDOWS_%GITHUB_RUN_ID%.json
+          python -c "import json,os,pathlib; r=os.environ['GITHUB_RUN_ID']; f=pathlib.Path('evidence/football_world_inventory/2026-11-03')/('MATRIX_CHAMPIONSHIP_QUOTE_WINDOW_SCOPE_WINDOWS_'+r+'.json'); d=json.loads(f.read_text(encoding='utf-8')); assert d['status'] in ('NO_VERIFIED_PREMATCH_SCOPE','PREMATCH_RESEARCH_QUOTE_SCOPE_AVAILABLE'); assert d['telegram_signal_authorized'] is False; assert d['production_probability_authorized'] is False; assert d['real_money']=='BLOCKED'; assert d['source_attestation_file']; print('AUTHENTIC_ATOMIC_QUOTE_WINDOW_RESEARCH_ONLY='+d['status']+' SOURCE='+d['source_attestation_file'])"
+
       - name: Upload immutable complete provenance evidence
         uses: actions/upload-artifact@v4
         with:
           name: matrix-over25-atomic-verified-pit
-          path: evidence/football_world_inventory/2026-11-03/MATRIX_CHAMPIONSHIP_ATOMIC_PIT_RUN_${{ github.run_id }}.json
+          path: |
+            evidence/football_world_inventory/2026-11-03/MATRIX_CHAMPIONSHIP_ATOMIC_PIT_RUN_${{ github.run_id }}.json
+            evidence/football_world_inventory/2026-11-03/MATRIX_CHAMPIONSHIP_QUOTE_WINDOW_SCOPE_WINDOWS_${{ github.run_id }}.json
 
       - name: Persist verified PIT snapshot without promoting model
         run: python -m tools.matrix_persist_atomic_championship_pit
