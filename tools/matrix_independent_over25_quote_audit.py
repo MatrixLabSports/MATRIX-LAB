@@ -12,7 +12,7 @@ import hashlib
 import json
 import math
 import os
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 from pathlib import Path
 
 import requests
@@ -102,6 +102,7 @@ def audit(intake,shadow,key,*,session=None,now=None,max_matches=MAX_MATCHES_PER_
             "generated_at_utc":clock.isoformat(),
             "status":"BLOCKED_QUOTES_NOT_CERTIFIED",
             "network_calls":0,"quota_status":"NOT_CHECKED",
+            "quota_cooldown_until_utc":None,
             "audited":[],"decisions":[],
             "bookmaker_quote_verified_count":0,
             "sharp_120s_verified_count":0,
@@ -138,8 +139,11 @@ def audit(intake,shadow,key,*,session=None,now=None,max_matches=MAX_MATCHES_PER_
     if in_window and isinstance(previous,dict) and previous.get("target_date_bogota")==result["target_date_bogota"]:
         if previous.get("quota_status") in ("BLOCKED_USAGE_HTTP_429","BLOCKED_EXHAUSTED","BLOCKED_COOLDOWN_AFTER_429"):
             try:
-                elapsed=(clock-utc(previous["generated_at_utc"])).total_seconds()
-                if 0 <= elapsed < 3600:
+                until=(utc(previous["quota_cooldown_until_utc"])
+                       if previous.get("quota_cooldown_until_utc")
+                       else utc(previous["generated_at_utc"])+timedelta(hours=1))
+                if clock < until:
+                    result["quota_cooldown_until_utc"]=until.isoformat()
                     result["quota_status"]="BLOCKED_COOLDOWN_AFTER_429"
                     result["status"]="WAITING_FOR_PROVIDER_QUOTA_CIRCUIT_BREAKER"
                     return result
@@ -159,6 +163,8 @@ def audit(intake,shadow,key,*,session=None,now=None,max_matches=MAX_MATCHES_PER_
         result["network_calls"]+=1
         if int(u.status_code)!=200:
             result["quota_status"]="BLOCKED_USAGE_HTTP_"+str(u.status_code)
+            if int(u.status_code)==429:
+                result["quota_cooldown_until_utc"]=(clock+timedelta(hours=1)).isoformat()
             return result
         usage=u.json()
         if not isinstance(usage,dict):
@@ -168,6 +174,7 @@ def audit(intake,shadow,key,*,session=None,now=None,max_matches=MAX_MATCHES_PER_
         result["quota_stage"]=decision["stage"]
         if not decision["api_calls_allowed"]:
             result["quota_status"]="BLOCKED_EXHAUSTED"
+            result["quota_cooldown_until_utc"]=(clock+timedelta(hours=1)).isoformat()
             return result
         result["quota_status"]="AUTHORIZED_LIVE_USAGE"
     except (requests.RequestException,TypeError,ValueError,KeyError) as exc:
@@ -191,7 +198,11 @@ def audit(intake,shadow,key,*,session=None,now=None,max_matches=MAX_MATCHES_PER_
             if er.status_code!=200:
                 item["identity_status"]="BLOCKED_EVENT_HTTP_"+str(er.status_code)
                 result["audited"].append(item)
-                if er.status_code==429:break
+                if er.status_code==429:
+                    result["quota_status"]="BLOCKED_USAGE_HTTP_429"
+                    result["quota_cooldown_until_utc"]=(clock+timedelta(hours=1)).isoformat()
+                    result["status"]="WAITING_FOR_PROVIDER_QUOTA_CIRCUIT_BREAKER"
+                    return result
                 continue
             ep=er.json()
             if not isinstance(ep,dict) or not isinstance(ep.get("items"),list) or ep.get("next_cursor"):
@@ -215,7 +226,11 @@ def audit(intake,shadow,key,*,session=None,now=None,max_matches=MAX_MATCHES_PER_
             if sr.status_code!=200:
                 item["identity_status"]="BLOCKED_SNAPSHOT_HTTP_"+str(sr.status_code)
                 result["audited"].append(item)
-                if sr.status_code==429:break
+                if sr.status_code==429:
+                    result["quota_status"]="BLOCKED_USAGE_HTTP_429"
+                    result["quota_cooldown_until_utc"]=(clock+timedelta(hours=1)).isoformat()
+                    result["status"]="WAITING_FOR_PROVIDER_QUOTA_CIRCUIT_BREAKER"
+                    return result
                 continue
             sp=sr.json()
             if not isinstance(sp,dict) or not isinstance(sp.get("items"),list) or (sp.get("event_id") not in (None,"",event_id)) :
