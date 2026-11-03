@@ -128,7 +128,28 @@ def main():
         "sofa":"MATRIX_SOFA_FOOTBALL_FIXTURE_CROSSCHECK.json",
         "flash":"MATRIX_FLASH_FOOTBALL_CROSSCHECK.json",
     }
-    missing=[n for n,f in names.items() if not (folder/f).is_file()]
+    # Preserve run-scoped PIT attestations rather than overwrite the same
+    # daily file in competing Windows/Linux GitHub Action jobs.
+    attestation_paths=[
+        folder/"MATRIX_CHAMPIONSHIP_PROSPECTIVE_PIT_ATTESTATION.json",
+        *sorted(folder.glob("MATRIX_CHAMPIONSHIP_PROSPECTIVE_PIT_RUN_*.json")),
+    ]
+    available=[]
+    now=datetime.now(timezone.utc)
+    for candidate in attestation_paths:
+        if not candidate.is_file():
+            continue
+        try:
+            doc=json.loads(candidate.read_text(encoding="utf-8"))
+            observed=utc(doc["observed_at_utc"])
+            if doc.get("target_date_bogota")==a.date and observed<=now:
+                available.append((observed,candidate,doc))
+        except (ValueError,KeyError,TypeError,json.JSONDecodeError):
+            continue
+    selected_attestation=max(available,key=lambda x:(x[0],x[1].name)) if available else None
+    missing=[n for n,f in names.items() if n!="attestation" and not (folder/f).is_file()]
+    if selected_attestation is None:
+        missing.append("attestation")
     eligible=False
     if missing:
         gate={"schema":"MATRIX_CHAMPIONSHIP_QUOTE_WINDOW_SCOPE_V1",
@@ -138,10 +159,12 @@ def main():
               "telegram_signal_authorized":False,
               "automatic_wagering":False,"real_money":"BLOCKED"}
     else:
-        docs={k:json.loads((folder/f).read_text(encoding="utf-8")) for k,f in names.items()}
+        docs={k:json.loads((folder/f).read_text(encoding="utf-8")) for k,f in names.items() if k!="attestation"}
+        docs["attestation"]=selected_attestation[2]
         try:
             x,y,gate=scope(docs["intake"],docs["shadow"],docs["attestation"],
-                           docs["sofa"],docs["flash"],now=datetime.now(timezone.utc))
+                           docs["sofa"],docs["flash"],now=now)
+            gate["source_attestation_file"]=selected_attestation[1].name
             a.outdir.mkdir(parents=True,exist_ok=True)
             (a.outdir/"intake.json").write_text(json.dumps(x,sort_keys=True)+"\n",encoding="utf-8")
             (a.outdir/"shadow.json").write_text(json.dumps(y,sort_keys=True)+"\n",encoding="utf-8")
