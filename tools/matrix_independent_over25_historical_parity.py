@@ -17,6 +17,8 @@ from difflib import SequenceMatcher
 from pathlib import Path
 from urllib.error import HTTPError, URLError
 from urllib.request import Request, urlopen
+from tools.api_football_market_shadow_p_matrix import _fixture, _inputs_for_target, _pool_over25
+from tools.matrix_football_independent_over25_shadow import historic_rows
 
 ARCHIVE=Path("evidence/api_football/prospective_daily/2026-10-28/20261028T054128Z/history/raw/league_135_season_2026.bin")
 CYCLE=Path("evidence/api_football/prospective_daily/2026-10-28/20261028T054128Z/cycle_summary.json")
@@ -119,6 +121,114 @@ def compare(api_rows,free_rows):
             out["matches"].append(meta)
     return out
 
+def compare_raw_features(archived_payload, free_payload, matched_pairs, cutoff):
+    """Side-by-side PIT features from real archived and independent score groups.
+
+    Research only.  These raw-group features do NOT certify the original
+    CANONICAL_ENRICHED_PIT inputs, which are absent from this comparison.
+    No output from this function may become an executable betting candidate.
+    """
+    archive_rows = sorted(
+        (z for raw in archived_payload["response"] if (z := _fixture(raw)) is not None
+         and z["kickoff_utc"] < cutoff),
+        key=lambda row: (row["kickoff_utc"], row["fixture_id"]),
+    )
+    free_rows = [r for r in historic_rows(free_payload, SOURCE_LEAGUE_ID)
+                 if r["kickoff_utc"] < cutoff]
+    original = {r["fixture_id"]: r for r in archive_rows}
+    independent = {r["fixture_id"]: r for r in free_rows}
+    results = {
+        "schema": "MATRIX_SERIE_A_RAW_GROUP_PIT_FEATURE_REPLAY_V1",
+        "source_league": SOURCE_LEAGUE_ID,
+        "reference_league": ARCHIVED_API_LEAGUE_ID,
+        "pairs_with_matching_full_time_score": len(matched_pairs),
+        "pairs_with_valid_raw_provider_ids": 0,
+        "scoreable_both": 0,
+        "same_raw_group_feature_and_probability_count": 0,
+        "different_raw_group_feature_or_probability_count": 0,
+        "blocked_both": 0,
+        "blocked_one_side": 0,
+        "not_found_in_raw_group": 0,
+        "max_absolute_model_probability_difference": 0.0,
+        "feature_differences": [],
+        "blocked_examples": [],
+        "source_data_is_historical_outcomes_for_parity_audit_only": True,
+        "future_target_outcomes_used": False,
+        "original_p_matrix_calibration_refit": False,
+        "canonical_enriched_pit_parity_verified": False,
+        "all_six_leagues_equivalence_verified": False,
+        "signal_generation_authorized": False,
+        "automatic_wagering": False,
+        "real_money": "BLOCKED",
+    }
+    for pair in matched_pairs:
+        arch = original.get(pair["archived_api_id"])
+        free = independent.get(pair["free_id"])
+        if not arch or not free:
+            results["not_found_in_raw_group"] += 1
+            continue
+        results["pairs_with_valid_raw_provider_ids"] += 1
+        af, ar = _inputs_for_target(archive_rows, arch)
+        ff, fr = _inputs_for_target(free_rows, free)
+        if af is None or ff is None:
+            key = "blocked_both" if af is None and ff is None else "blocked_one_side"
+            results[key] += 1
+            if len(results["blocked_examples"]) < 12:
+                results["blocked_examples"].append({
+                    "archived_api_id": pair["archived_api_id"],
+                    "free_id": pair["free_id"],
+                    "archived_reason": ar,
+                    "free_reason": fr,
+                })
+            continue
+        results["scoreable_both"] += 1
+        keys = ("prior_group_fixture_count", "home_history_count",
+                "away_history_count", "home_history_source",
+                "away_history_source", "expected_home_goals",
+                "expected_away_goals")
+        num_keys = ("expected_home_goals", "expected_away_goals")
+        count_equal = all(
+            (abs(af[key] - ff[key]) <= 1e-8 if key in num_keys else af[key] == ff[key])
+            for key in keys
+        )
+        poisson_equal = abs(
+            af["poisson"]["over_2_5"] - ff["poisson"]["over_2_5"]
+        ) <= 1e-8
+        baseline_equal = abs(
+            af["baseline"]["over_2_5"] - ff["baseline"]["over_2_5"]
+        ) <= 1e-8
+        pa = _pool_over25(af["poisson"]["over_2_5"], af["baseline"]["over_2_5"])
+        pf = _pool_over25(ff["poisson"]["over_2_5"], ff["baseline"]["over_2_5"])
+        difference = abs(pa - pf)
+        results["max_absolute_model_probability_difference"] = max(
+            results["max_absolute_model_probability_difference"], difference
+        )
+        if count_equal and poisson_equal and baseline_equal and difference <= 1e-8:
+            results["same_raw_group_feature_and_probability_count"] += 1
+        else:
+            results["different_raw_group_feature_or_probability_count"] += 1
+            if len(results["feature_differences"]) < 12:
+                results["feature_differences"].append({
+                    "archived_api_id": pair["archived_api_id"],
+                    "free_id": pair["free_id"],
+                    "archived_feature_counts": {
+                        k: af[k] for k in keys[:3]
+                    },
+                    "independent_feature_counts": {
+                        k: ff[k] for k in keys[:3]
+                    },
+                    "archived_expected_goals": [
+                        af["expected_home_goals"], af["expected_away_goals"]
+                    ],
+                    "independent_expected_goals": [
+                        ff["expected_home_goals"], ff["expected_away_goals"]
+                    ],
+                    "probability_difference": round(difference, 10),
+                })
+    return results
+
+
+
 def inspect(token,*,archive=ARCHIVE,cycle=CYCLE,opener=urlopen):
     result={"schema":"MATRIX_INDEPENDENT_OVER25_SERIE_A_SOURCE_PARITY_V1",
             "source":"FOOTBALL_DATA_ORG","reference_source":"ARCHIVED_API_FOOTBALL",
@@ -155,6 +265,11 @@ def inspect(token,*,archive=ARCHIVE,cycle=CYCLE,opener=urlopen):
         free=parse_free(json.loads(body.decode("utf-8")),cutoff)
         result["free_fixture_count"]=len(free)
         pairs=compare(api,free)
+        result["raw_group_feature_parity"] = compare_raw_features(
+            json.loads(raw.decode("utf-8")),
+            json.loads(body.decode("utf-8")),
+            pairs["matches"], cutoff,
+        )
         result["matched_exact_result_count"]=len(pairs["matches"])
         result["score_disagreement_count"]=len(pairs["score_disagreements"])
         result["ambiguous_count"]=len(pairs["ambiguous"])
