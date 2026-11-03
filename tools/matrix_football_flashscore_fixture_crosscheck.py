@@ -17,6 +17,21 @@ BOGOTA=ZoneInfo("America/Bogota")
 # Explicit source-name reconciliation for observed league/team aliases;
 # unknown aliases never become fuzzy cross-provider matches.
 ALIASES={
+    # Individually corroborated 2026-11-03 provider/browser names; no fuzzy promotion.
+    "portsmouth fc":"portsmouth",
+    "swansea city afc":"swansea",
+    "derby county fc":"derby",
+    "norwich city fc":"norwich",
+    "blackburn rovers fc":"blackburn",
+    "stoke city fc":"stoke",
+    "watford fc":"watford",
+    "lincoln city fc":"lincoln",
+    "charlton athletic fc":"charlton",
+    "bolton wanderers fc":"bolton",
+    "birmingham city fc":"birmingham",
+    "millwall fc":"millwall",
+    "chapecoense af":"chapecoense",
+    "mirassol fc":"mirassol",
     "us sassuolo calcio":"sassuolo",
     "acf fiorentina":"fiorentina",
     "atalanta bc":"atalanta",
