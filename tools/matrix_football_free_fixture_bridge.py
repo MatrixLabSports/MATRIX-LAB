@@ -5,7 +5,12 @@ import json
 from pathlib import Path
 
 def bridge(observation: dict, target_date: str) -> dict:
-    if observation.get("target_date") != target_date:\n        raise ValueError("OBSERVATION_TARGET_DATE_MISMATCH_FAIL_CLOSED")\n    if observation.get("source") != "TheSportsDB":\n        raise ValueError("OBSERVATION_PROVIDER_MISMATCH_FAIL_CLOSED")\n    rows=[]\n    for event in observation.get("events", []):
+    if observation.get("target_date") != target_date:
+        raise ValueError("OBSERVATION_TARGET_DATE_MISMATCH_FAIL_CLOSED")
+    if observation.get("source") != "TheSportsDB":
+        raise ValueError("OBSERVATION_PROVIDER_MISMATCH_FAIL_CLOSED")
+    rows=[]
+    for event in observation.get("events", []):
         if not isinstance(event, dict) or event.get("status") != "NS":
             continue
         if not all(event.get(k) for k in ("idEvent", "home", "away")):
