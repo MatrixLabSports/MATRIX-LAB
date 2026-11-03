@@ -708,6 +708,13 @@ def main()->None:
     now=datetime.now(timezone.utc).replace(microsecond=0)
     candidates=candidate_rows(audit,now)
     research_targets=independent_research_quote_targets(now)
+    # A separate, non-executable 24h lookup may inspect real bookmaker markets
+    # before the strict 120m production window. It never creates p_matrix.
+    from tools.matrix_early_research_quote_intake import early_targets
+    early_research_targets=early_targets(now,ROOT)
+    existing_ids={str(row.get("fixture_id")) for row in research_targets}
+    research_targets+= [row for row in early_research_targets
+                        if str(row.get("fixture_id")) not in existing_ids]
     browser_targets=candidates+research_targets
     pipeline_diagnostic=candidate_pipeline_diagnostic(audit,now)
     RAW_ROOT.mkdir(parents=True,exist_ok=True)
@@ -880,6 +887,7 @@ def main()->None:
       },
       "candidate_count_in_final_window":len(candidates),
       "research_only_quote_target_count":len(research_targets),
+      "early_24h_research_target_count":len(early_research_targets),
       "authorized_book_pages_captured":len([x for x in pages if x.get("status")=="CAPTURED"]),
       "candidate_page_matches":len([r for r in matched if not r.get("research_only")]),
       "research_only_page_matches":len([r for r in matched if r.get("research_only")]),
