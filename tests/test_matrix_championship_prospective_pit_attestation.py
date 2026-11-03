@@ -74,7 +74,14 @@ def test_authentic_shape_prospective_shadow_stays_not_authorized():
 
 def test_started_target_never_certified():
     intake,sofa,flash,shadow=docs()
-    d=report(intake,sofa,flash,shadow,now=datetime(2026,11,3,20,0,tzinfo=timezone.utc))
+    # Replay an already-started target with otherwise fresh provider evidence.
+    past="2026-11-03T10:05:00+00:00"
+    intake["fixtures"][0]["kickoff_utc"]=past
+    sofa["matched"][0]["kickoff_utc"]=past
+    flash["matched"][0]["kickoff_utc"]=past
+    shadow["scored"][0]["kickoff_utc"]=past
+    d=report(intake,sofa,flash,shadow,now=NOW)
+    assert d["rows"][0]["status"]=="BLOCKED_KICKOFF_OR_SCORE_NOT_PREMATCH"
     assert d["prospective_research_history_certified_count"]==0
 
 def test_mismatched_browser_mid_blocks():
