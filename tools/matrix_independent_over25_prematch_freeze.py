@@ -32,6 +32,20 @@ def canonical(value):
     return (json.dumps(value,ensure_ascii=False,sort_keys=True,
                        separators=(",",":"))+"\n").encode("utf-8")
 
+def seal_source(folder:Path,raw:bytes)->Path:
+    """Content-addressed immutable historical input, never overwritten."""
+    if len(raw)>24_000_000:
+        raise ValueError("AUTHENTIC_RAW_SOURCE_TOO_LARGE")
+    target=folder/"sources"/(digest(raw)+".json")
+    target.parent.mkdir(parents=True,exist_ok=True)
+    if target.exists():
+        if target.read_bytes()!=raw:
+            raise ValueError("SOURCE_SNAPSHOT_MUTATION_FORBIDDEN")
+    else:
+        with target.open("xb") as f:
+            f.write(raw)
+    return target
+
 def freeze(intake:dict,shadow:dict,*,intake_bytes:bytes,shadow_bytes:bytes,
            now:datetime,folder:Path,allow_write=True)->dict:
     now=now.astimezone(timezone.utc)
@@ -107,6 +121,10 @@ def freeze(intake:dict,shadow:dict,*,intake_bytes:bytes,shadow_bytes:bytes,
                 raise ValueError("LIVE_SHADOW_PROBABILITY_MISMATCH")
             # Capture before the game is required for every reported source;
             # the original shadow itself remains a SHA-bound immutable input.
+            # Only after all gates pass, physically preserve the exact
+            # original inputs. These are append-only SHA-named source files.
+            intake_ref=folder/"sources"/(digest(intake_bytes)+".json")
+            shadow_ref=folder/"sources"/(digest(shadow_bytes)+".json")
             row={"schema":SCHEMA,"provider":"FOOTBALL_DATA_ORG",
                 "provider_fixture_id":fid,"provider_competition_id":cid,
                 "kickoff_utc":kickoff.isoformat(),
@@ -117,6 +135,8 @@ def freeze(intake:dict,shadow:dict,*,intake_bytes:bytes,shadow_bytes:bytes,
                 "source_snapshot_sha256":g["source_payload_sha256"],
                 "source_intake_file_sha256":digest(intake_bytes),
                 "source_shadow_file_sha256":digest(shadow_bytes),
+                "source_intake_file_path":str(intake_ref).replace("\\\\","/"),
+                "source_shadow_file_path":str(shadow_ref).replace("\\\\","/"),
                 "source_history_home_count":features["home_history_count"],
                 "source_history_away_count":features["away_history_count"],
                 "research_probability_over25":round(expected,10),
@@ -135,11 +155,14 @@ def freeze(intake:dict,shadow:dict,*,intake_bytes:bytes,shadow_bytes:bytes,
                     raise ValueError("IMMUTABLE_SNAPSHOT_REWRITE_BLOCKED")
                 action="ALREADY_IDENTICAL"
             else:
-                if allow_write:
+                action="FROZEN" if allow_write else "DRY_RUN"
+            if allow_write:
+                seal_source(folder,intake_bytes)
+                seal_source(folder,shadow_bytes)
+                if not dest.exists():
                     folder.mkdir(parents=True,exist_ok=True)
                     # exclusive creation; never overwrite an earlier seal
                     with dest.open("xb") as f:f.write(content)
-                action="FROZEN" if allow_write else "DRY_RUN"
             accepted.append({"fixture_id":fid,"path":str(dest).replace("\\","/"),
                              "snapshot_sha256":digest(content),"status":action})
         except (ValueError,TypeError,KeyError,OverflowError,UnicodeError,
