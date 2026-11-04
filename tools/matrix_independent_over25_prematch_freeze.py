@@ -148,23 +148,32 @@ def freeze(intake:dict,shadow:dict,*,intake_bytes:bytes,shadow_bytes:bytes,
                 "telegram_signal_authorized":False,
                 "automatic_wagering":False,"real_money":"BLOCKED"}
             content=canonical(row)
-            name=f"{fid}_{digest(content)[:20]}.json"
+            # A repeat of the same original network capture must never
+            # create a new fake freeze every five minutes.
+            name=f"{fid}_{digest(shadow_bytes)[:20]}.json"
             dest=folder/name
             if dest.exists():
-                if dest.read_bytes()!=content:
-                    raise ValueError("IMMUTABLE_SNAPSHOT_REWRITE_BLOCKED")
-                action="ALREADY_IDENTICAL"
+                existing=json.loads(dest.read_text(encoding="utf-8"))
+                for key in ("schema","provider_fixture_id","kickoff_utc",
+                            "source_intake_file_sha256","source_shadow_file_sha256",
+                            "research_probability_over25"):
+                    if existing.get(key)!=row.get(key):
+                        raise ValueError("IMMUTABLE_SNAPSHOT_REWRITE_BLOCKED")
+                if stamp(existing["sealed_at_utc"])>=kickoff:
+                    raise ValueError("PREVIOUS_SNAPSHOT_WAS_NOT_PREMATCH")
+                action="ALREADY_FROZEN"
+                saved_hash=digest(dest.read_bytes())
             else:
                 action="FROZEN" if allow_write else "DRY_RUN"
+                saved_hash=digest(content)
             if allow_write:
                 seal_source(folder,intake_bytes)
                 seal_source(folder,shadow_bytes)
                 if not dest.exists():
                     folder.mkdir(parents=True,exist_ok=True)
-                    # exclusive creation; never overwrite an earlier seal
                     with dest.open("xb") as f:f.write(content)
             accepted.append({"fixture_id":fid,"path":str(dest).replace("\\","/"),
-                             "snapshot_sha256":digest(content),"status":action})
+                             "snapshot_sha256":saved_hash,"status":action})
         except (ValueError,TypeError,KeyError,OverflowError,UnicodeError,
                 json.JSONDecodeError,base64.binascii.Error) as exc:
             blocked.append({"fixture_id":fid,"reason":str(exc)[:130]})
