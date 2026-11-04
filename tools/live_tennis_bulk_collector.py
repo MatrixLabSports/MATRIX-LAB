@@ -191,7 +191,7 @@ def main():
         )
         quota_guard_path.parent.mkdir(parents=True,exist_ok=True)
         guard["total_executed_cycles_today"]=verified_prior
-        quota_guard_path.write_text(json.dumps(guard,indent=2,sort_keys=True,ensure_ascii=False)+"\\n",encoding="utf-8")
+        quota_guard_path.write_text(json.dumps(guard,indent=2,sort_keys=True,ensure_ascii=False)+"\n",encoding="utf-8")
         print(json.dumps({"status":status,"executed_cycles":0,"reserve_calls":args.reserve_calls,
                           "remaining_before_run":remaining,"real_money":"BLOCKED"},sort_keys=True))
 
