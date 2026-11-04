@@ -66,17 +66,23 @@ def settle(root:Path,*,now:datetime,token:str,opener=urlopen,
             prob=forecast["research_probability_over25"]
             if (type(prob) not in (int,float) or not math.isfinite(prob) or
                 not 0<prob<1):raise ValueError("FORECAST_PROBABILITY_INVALID")
-            # Verify all original source bytes are present, matching SHA.
+            # Resolve content-addressed sources from the physical forecast
+            # directory, NEVER from archived runner-local absolute paths.
+            # Older Windows snapshots included C:\\... host paths; those
+            # remain auditable via SHA even on Linux without trusting paths.
+            original_sources={}
             for key in ("intake","shadow"):
-                rel=Path(forecast[f"source_{key}_file_path"])
-                if not rel.as_posix().startswith("evidence/football_research_freezes/") or ".." in rel.parts:
-                    raise ValueError("SOURCE_PATH_OUTSIDE_RESEARCH_ARCHIVE")
-                original=root/rel
-                if digest(original.read_bytes())!=forecast[f"source_{key}_file_sha256"]:
+                expected=forecast[f"source_{key}_file_sha256"]
+                if (not isinstance(expected,str) or len(expected)!=64
+                    or any(c not in "0123456789abcdef" for c in expected)):
+                    raise ValueError("SOURCE_HASH_NOT_SHA256")
+                original=path.parent/"sources"/(expected+".json")
+                if not original.is_file() or digest(original.read_bytes())!=expected:
                     raise ValueError("SOURCE_HASH_MISMATCH")
+                original_sources[key]=original
             # Source-native home/away IDs are verified against the immutable
             # original intake, not inferred from current team names.
-            immutable_intake=_read_json(root/forecast["source_intake_file_path"])
+            immutable_intake=_read_json(original_sources["intake"])
             targets=[f for f in immutable_intake.get("fixtures",[])
                      if isinstance(f,dict) and str(f.get("source_fixture_id"))==fid]
             if len(targets)!=1:
