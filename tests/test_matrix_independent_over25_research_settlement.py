@@ -12,7 +12,10 @@ BASE=Path("evidence/football_research_freezes/2026-11-04")
 def setup(root):
     folder=root/BASE
     folder.joinpath("sources").mkdir(parents=True)
-    a=b'{"intake":"untouched"}'
+    a=canonical({"fixtures":[{"source_fixture_id":"555",
+         "source_competition_id":2019,
+         "home_source_team_id":"101","away_source_team_id":"102",
+         "kickoff_utc":"2026-11-04T20:00:00+00:00"}]})
     b=b'{"shadow":"untouched"}'
     ha=hashlib.sha256(a).hexdigest()
     hb=hashlib.sha256(b).hexdigest()
@@ -40,7 +43,9 @@ class Response:
 
 def source(status="FINISHED",home=2,away=1,competition=2019):
     return {"id":555,"status":status,"utcDate":"2026-11-04T20:00:00Z",
-      "competition":{"id":competition},"score":{"fullTime":{"home":home,"away":away}},
+      "competition":{"id":competition},
+      "homeTeam":{"id":101},"awayTeam":{"id":102},
+      "score":{"fullTime":{"home":home,"away":away}},
       "lastUpdated":"2026-11-04T22:00:00Z"}
 
 def test_no_score_before_kickoff(tmp_path):
@@ -100,3 +105,12 @@ def test_finished_result_before_update_is_refused(tmp_path):
              token="configured",opener=lambda *a,**kw:Response(source()))
     assert x["settled_total"]==0
     assert x["decisions"][0]["status"]=="INVALID_RESULT_PROVIDER_UPDATE"
+
+def test_wrong_native_home_away_identity_blocked(tmp_path):
+    setup(tmp_path)
+    fake=source()
+    fake["awayTeam"]["id"]=999
+    x=settle(tmp_path,now=T("2026-11-04T22:30:00Z"),
+       token="configured",opener=lambda *a,**kw:Response(fake))
+    assert x["decisions"][0]["status"]=="RESULT_NOT_FINAL_OR_IDENTITY_MISMATCH"
+    assert x["settled_total"]==0
