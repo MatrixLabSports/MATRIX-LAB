@@ -163,20 +163,41 @@ def main():
     target_date=args.date or datetime.now(BOGOTA).date().isoformat()
     out=Path(f"evidence/live_tennis_lab/{target_date}/MATRIX_LIVE_TENNIS_STATE_LEDGER_V0_1.json")
     key=os.environ.get("LIVE_TENNIS_API_KEY","").strip()
-    if not key:
-        raise SystemExit("LIVE_TENNIS_API_KEY_NOT_CONFIGURED")
-
     operational_date=args.date or datetime.now(BOGOTA).date().isoformat()
     out=Path(f"evidence/live_tennis_lab/{operational_date}/MATRIX_LIVE_TENNIS_STATE_LEDGER_V0_1.json")
+    quota_guard_path=out.parent/"MATRIX_LIVE_TENNIS_QUOTA_GUARD_LAST.json"
 
-    usage,umeta=get_json("/usage",key)
+    def blocked_guard(status: str, remaining: int | None = None, usage: dict | None = None) -> None:
+        guard=quota_guard_payload(
+            operational_date=operational_date,usage=usage or {},
+            remaining=remaining,reserve_calls=args.reserve_calls,
+            requested_cycles=args.cycles,executed_cycles=0,status=status
+        )
+        quota_guard_path.parent.mkdir(parents=True,exist_ok=True)
+        quota_guard_path.write_text(json.dumps(guard,indent=2,sort_keys=True,ensure_ascii=False)+"\\n",encoding="utf-8")
+        print(json.dumps({"status":status,"executed_cycles":0,"reserve_calls":args.reserve_calls,
+                          "remaining_before_run":remaining,"real_money":"BLOCKED"},sort_keys=True))
+
+    if not key:
+        blocked_guard("BLOCKED_MISSING_PROVIDER_KEY")
+        return
+    try:
+        usage,umeta=get_json("/usage",key)
+    except requests.RequestException:
+        blocked_guard("BLOCKED_PROVIDER_USAGE_NETWORK_ERROR")
+        return
+    if umeta.get("http_status") != 200:
+        blocked_guard("BLOCKED_PROVIDER_USAGE_HTTP_"+str(umeta.get("http_status")))
+        return
     today=usage.get("today") if isinstance(usage,dict) and isinstance(usage.get("today"),dict) else {}
     remaining=today.get("remaining_day")
-    if not isinstance(remaining,int):
-        raise SystemExit("USAGE_REMAINING_UNKNOWN")
+    if type(remaining)!=int or remaining<0:
+        blocked_guard("BLOCKED_USAGE_REMAINING_UNVERIFIED")
+        return
+    if args.reserve_calls<1 or args.cycles<0 or args.cycles>24:
+        raise SystemExit("INVALID_QUOTA_RESERVE_OR_CYCLE_REQUEST")
     allowed=max(0,remaining-args.reserve_calls)
     cycles=min(args.cycles,allowed)
-    quota_guard_path=out.parent/"MATRIX_LIVE_TENNIS_QUOTA_GUARD_LAST.json"
     guard=quota_guard_payload(
         operational_date=operational_date,
         usage=usage,
