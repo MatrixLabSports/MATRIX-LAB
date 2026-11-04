@@ -101,3 +101,18 @@ def test_probabilities_must_match_original_math(tmp_path):
             now=T("2026-11-04T12:04:00Z"),folder=tmp_path)
     assert r["immutable_prematch_freeze_count"]==0
     assert r["blocked"][0]["reason"]=="LIVE_SHADOW_PROBABILITY_MISMATCH"
+
+def test_real_provider_cycle_starts_before_http_finishes_and_still_seals(tmp_path):
+    a,b=sample()
+    b["generated_at_utc"]="2026-11-04T12:01:00Z"
+    b["completed_at_utc"]="2026-11-04T12:03:00Z"
+    with patch("tools.matrix_independent_over25_prematch_freeze.historic_rows",return_value=[]),\\
+         patch("tools.matrix_independent_over25_prematch_freeze._inputs_for_target",
+               return_value=({"home_history_count":5,"away_history_count":5,
+                              "poisson":{"over_2_5":0.6},
+                              "baseline":{"over_2_5":0.55}},None)):
+        result=freeze(a,b,intake_bytes=canonical(a),shadow_bytes=canonical(b),
+            now=T("2026-11-04T12:04:00Z"),
+            folder=tmp_path/"evidence/football_research_freezes/2026-11-04")
+    assert result["immutable_prematch_freeze_count"]==1
+    assert result["telegram_signal_authorized"] is False
