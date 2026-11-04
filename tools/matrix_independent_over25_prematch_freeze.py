@@ -60,8 +60,11 @@ def freeze(intake:dict,shadow:dict,*,intake_bytes:bytes,shadow_bytes:bytes,
         or intake.get("target_date_bogota")!=shadow.get("target_date_bogota")):
         raise ValueError("INDEPENDENT_FREEZE_GOVERNANCE_INVALID")
     intake_at=stamp(intake["generated_at_utc"])
-    shadow_at=stamp(shadow["generated_at_utc"])
-    if intake_at>shadow_at or shadow_at>now:
+    shadow_started=stamp(shadow["generated_at_utc"])
+    # The producer starts its report before the authenticated HTTP history
+    # calls; completed_at_utc, not generated_at_utc, bounds calculation time.
+    shadow_at=stamp(shadow.get("completed_at_utc") or shadow["generated_at_utc"])
+    if not (intake_at<=shadow_started<=shadow_at<=now):
         raise ValueError("SHADOW_CAPTURE_ORDER_OR_FUTURE_INVALID")
     allowed={str(r["source_fixture_id"]):r for r in intake.get("fixtures",[])
              if isinstance(r,dict) and r.get("source_fixture_id")}
