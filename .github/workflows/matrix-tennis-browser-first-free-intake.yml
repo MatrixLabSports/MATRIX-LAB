@@ -62,6 +62,8 @@ jobs:
           test "$REAL_MONEY" = "BLOCKED"
           PYTHONPATH=. python -m tools.matrix_tennis_browser_first_free_intake --date "${{ steps.target.outputs.day }}"
       - name: Verify hard clay originals unchanged and zero fake rows
+        env:
+          TARGET_DATE: ${{ steps.target.outputs.day }}
         shell: bash
         run: |
           set -euo pipefail
