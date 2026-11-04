@@ -48,3 +48,20 @@ def test_unrelated_source_not_promoted(tmp_path):
     r=inspect(tmp_path,["evidence/football_world_inventory/other.json"])
     assert r["tracked_report_file_count"]==0
     assert r["strict_original_alternative_result_triplet_certified"]==0
+
+def test_original_shadow_probability_field_is_discovered_without_promotion(tmp_path):
+    source=fixture(tmp_path,[{"fixture_id":"10","league_id":"39",
+                              "p_over_2_5":0.61}])
+    report=inspect(tmp_path,[source])
+    assert report["counts"]["rows_with_numeric_p_over_2_5_field"]==1
+    assert report["counts"].get("rows_with_numeric_p_matrix_field",0)==0
+    assert report["six_original_leagues"]["39"]["rows_with_numeric_probability"]==1
+    assert report["production_p_matrix_authorized"] is False
+
+def test_conflicting_fields_not_silently_equated(tmp_path):
+    source=fixture(tmp_path,[{"fixture_id":"20","league_id":"39",
+                              "p_matrix":0.61,"p_over_2_5":0.70}])
+    report=inspect(tmp_path,[source])
+    assert report["counts"]["rows_with_conflicting_numeric_probability_fields"]==1
+    assert report["numeric_probability_sample_without_values"][0]["two_numeric_fields_consistent"] is False
+    assert report["strict_original_alternative_result_triplet_certified"]==0
