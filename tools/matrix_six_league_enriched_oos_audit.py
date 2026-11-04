@@ -130,8 +130,8 @@ def calculate(rows,expected_leagues):
                 freeze=stamp(r["frozen_at_utc"])
                 kickoff=stamp(r["kickoff_utc"])
                 observed=stamp(r["result_observed_at_utc"])
-                target=int(r["over25_result"])
-                if isinstance(r["over25_result"],bool) or target not in (0,1):
+                target=r["over25_result"]
+                if isinstance(target,bool) or not isinstance(target,int) or target not in (0,1):
                     raise ValueError("OOS_OUTCOME_INVALID")
                 if not (freeze<kickoff<observed):
                     raise ValueError("OOS_LEAKAGE_PREDICTION_OR_RESULT_TIME")
