@@ -30,3 +30,13 @@ La prueba 57/57 se refiere a `RAW_GROUP_PIT`; `tools/matrix_independent_over25_h
 ## Estado
 
 `ENRICHED_11_FIELD_DIFF_NOT_LOCATED`; 3 grupos operativos identificados, 0 de 3 diferencias específicas verificadas. La reconstrucción técnica del historial está implementada como evaluador de viabilidad **no certificado**; falta probar datos nativos PIT reales de cada equipo y liga. `p_matrix` de reemplazo no autorizada. Parámetros congelados, cohortes y protección de Telegram intactos; `REAL_MONEY=BLOCKED` y `automatic_wagering=false`.
+
+## Certificación de ejecución Windows — posterior a la reparación de tests
+
+- GitHub Actions: https://github.com/MatrixLabSports/MATRIX-LAB/actions/runs/41760356062
+- Estado del job `collect`: **completed/success**.
+- Pruebas: **89 passed** de contratos del navegador y análisis (incluyendo las 8 nuevas), **23 passed** del control prospectivo PIT y de cuotas, **112 aprobadas en total**.
+- Resultado del sincronizador: `NO_GOVERNED_CANONICAL_ROWS`, `candidate_count=0`, `telegram_signal_authorized=false`, `real_money=BLOCKED`.
+- `MATRIX_BROWSER_EVIDENCE_PUSHED`: persistencia confirmada.
+- Fallo inicial detectado y reparado: el ejemplo de cinco partidos incluyó fechas futuras, correctamente rechazadas por el auditor. Se corrigió el dato de ensayo a octubre, **sin relajar los controles temporales**; commit `e5f96f6c`.
+- No implica nueva captura nativa de football-data.org, identificación de los tres campos distintos ni aprobación estadística del proveedor alternativo.
