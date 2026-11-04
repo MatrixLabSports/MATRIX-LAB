@@ -12,7 +12,7 @@ def intake():
         "fixtures":[{
             "source_fixture_id":"301","source_competition_id":2019,
             "home_source_team_id":"1","away_source_team_id":"2",
-            "home":"Home","away":"Away","kickoff_utc":"2026-11-02T18:00:00+00:00",
+            "home":"Home","away":"Away","kickoff_utc":"2030-11-02T18:00:00+00:00",
         }],
     }
 
