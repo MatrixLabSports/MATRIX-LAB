@@ -49,6 +49,9 @@ def inspect(root:Path,paths:list[str])->dict:
                  "source_attested_valid_prospective_rows":0} for i in ids}
     examples=[]
     oversized=[]
+    unique_six_fixtures={i:set() for i in ids}
+    globally_scoped_identified=set()
+    globally_unscoped_ids=set()
     for relative in sorted(matches):
         file=root/relative
         try:
@@ -83,10 +86,18 @@ def inspect(root:Path,paths:list[str])->dict:
                     counters["rows_with_conflicting_numeric_probability_fields"]+=1
                 league=str(row.get("league_id") or row.get("competition_id") or
                            row.get("league") or data.get("league_id") or "")
+                fixture_id=str(row.get("fixture_id") or "").strip()
                 if league in by_league:
                     by_league[league]["rows_with_numeric_probability"]+=1
+                    if fixture_id:
+                        unique_six_fixtures[league].add(fixture_id)
+                        globally_scoped_identified.add((league,fixture_id))
+                    else:
+                        counters["recognized_league_rows_missing_fixture_id"]+=1
                 else:
                     counters["numeric_rows_without_recognized_six_league_id"]+=1
+                    if fixture_id:
+                        globally_unscoped_ids.add(fixture_id)
                 if len(examples)<50:
                     examples.append({
                         "source":relative,
@@ -112,6 +123,9 @@ def inspect(root:Path,paths:list[str])->dict:
             reasons[type(exc).__name__+":"+str(exc)[:65]]+=1
             if len(oversized)<30:
                 oversized.append({"path":relative,"failure":str(exc)[:100]})
+    for ident in ids:
+        by_league[ident]["distinct_identified_fixture_ids_with_numeric_probability"]=len(unique_six_fixtures[ident])
+        by_league[ident]["not_prospectively_certified_unique_fixture_count"]=len(unique_six_fixtures[ident])
     return {
        "schema":"MATRIX_OVER25_NONCANONICAL_PROBABILITY_RECOVERY_V1",
        "status":"NONCANONICAL_RESEARCH_AUDIT_ONLY_NO_PROSPECTIVE_CERTIFICATION",
@@ -121,6 +135,10 @@ def inspect(root:Path,paths:list[str])->dict:
        "unreadable_reason_counts":dict(sorted(reasons.items())),
        "unreadable_report_examples":oversized,
        "six_original_leagues":by_league,
+       "distinct_identified_six_league_fixture_keys":len(globally_scoped_identified),
+       "distinct_unscoped_fixture_ids_with_numeric_probability":len(globally_unscoped_ids),
+       "distinct_unscoped_fixture_id_not_equivalent_to_verified_league":True,
+       "deduplication_scope":"PER_ORIGINAL_LEAGUE_ID_AND_FIXTURE_ID_ACROSS_REPORT_SNAPSHOTS",
        "numeric_probability_sample_without_values":examples,
        "strict_original_alternative_result_triplet_certified":0,
        "numeric_value_not_evidence_of_model_or_freeze":True,
