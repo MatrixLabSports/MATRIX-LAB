@@ -67,11 +67,20 @@ def inspect(root:Path,paths:list[str])->dict:
             saw_numeric=False
             for row in rows:
                 if not isinstance(row,dict):continue
-                p=row.get("p_matrix")
-                if not numeric_probability(p):
+                p_matrix=row.get("p_matrix")
+                p_over25=row.get("p_over_2_5")
+                matrix_ok=numeric_probability(p_matrix)
+                over25_ok=numeric_probability(p_over25)
+                if not (matrix_ok or over25_ok):
                     continue
                 saw_numeric=True
                 counters["numeric_probability_rows_unverified"]+=1
+                if matrix_ok:
+                    counters["rows_with_numeric_p_matrix_field"]+=1
+                if over25_ok:
+                    counters["rows_with_numeric_p_over_2_5_field"]+=1
+                if matrix_ok and over25_ok and abs(p_matrix-p_over25)>1e-9:
+                    counters["rows_with_conflicting_numeric_probability_fields"]+=1
                 league=str(row.get("league_id") or row.get("competition_id") or
                            row.get("league") or data.get("league_id") or "")
                 if league in by_league:
@@ -83,7 +92,10 @@ def inspect(root:Path,paths:list[str])->dict:
                         "source":relative,
                         "fixture_id":str(row.get("fixture_id") or ""),
                         "league_id":league,
-                        "p_matrix_present_numeric":True,
+                        "p_matrix_present_numeric":matrix_ok,
+                        "p_over_2_5_present_numeric":over25_ok,
+                        "two_numeric_fields_consistent":(abs(p_matrix-p_over25)<=1e-9
+                                                        if matrix_ok and over25_ok else None),
                         "genuine_pre_kickoff_triplet_source_verified":False,
                         "production_equivalence_authorized":False,
                     })
@@ -112,6 +124,7 @@ def inspect(root:Path,paths:list[str])->dict:
        "numeric_probability_sample_without_values":examples,
        "strict_original_alternative_result_triplet_certified":0,
        "numeric_value_not_evidence_of_model_or_freeze":True,
+       "p_over_2_5_is_original_field_not_automatically_governed_p_matrix":True,
        "report_auth_claim_not_evidence_of_prospective_parity":True,
        "complete_football_production_repository_scan":False,
        "limited_to_daily_prematch_reports_three_lanes":True,
