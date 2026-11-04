@@ -193,14 +193,16 @@ jobs:
           requested_fallback=int(os.environ["FAILOVER_CYCLES"])
           fp=Path(f"evidence/live_tennis_lab/{d}/MATRIX_LIVE_TENNIS_API_TENNIS_FAILOVER_LEDGER_V1.json")
           fallback_executed=0
-          total=free_cycles
-          mode="FREE_PRIMARY_ONLY" if free_cycles else "FAIL_CLOSED_NO_VALID_LIVE_PROVIDER"
+          qp=Path(f"evidence/live_tennis_lab/{d}/MATRIX_LIVE_TENNIS_QUOTA_GUARD_LAST.json")
+          quota=json.loads(qp.read_text()) if qp.is_file() else {}
+          total=int(quota.get("total_executed_cycles_today") or 0)
+          mode="FREE_PRIMARY_ONLY" if free_cycles else "QUOTA_GOVERNED_NO_NEW_CAPTURE"
           receipt={
             "schema":"MATRIX_LIVE_TENNIS_PROVIDER_CONTINUITY_V1",
             "generated_at_utc":datetime.now(timezone.utc).replace(microsecond=0).isoformat(),
             "operational_date_bogota":d,
-            "requested_monitor_cycles":2,
-            "free_provider":{"provider":"live_tennis_api","status":os.environ["FREE_STATUS"],"executed_cycles":free_cycles},
+            "requested_monitor_cycles":6,
+            "free_provider":{"provider":"live_tennis_api","status":os.environ["FREE_STATUS"],"executed_cycles":free_cycles,"cumulative_daily_verified_cycles":total},
             "paid_failover":{"provider":"api_tennis","status":"RETIRED_NO_NETWORK","requested_cycles":0,"executed_cycles":0,"ledger_present":fp.is_file()},
             "coverage_mode":mode,
             "total_monitor_cycles":total,
@@ -375,7 +377,7 @@ jobs:
               if executed_cycles>0:
                   new_states=current["new_states_this_run"]
                   # Preserve the pre-existing six-cycle continuity contract.
-                  calibration_admitted=executed_cycles>=6
+                  calibration_admitted=int(guard.get("total_executed_cycles_today") or 0)>=6
                   cert_status=("PASS_LIVE_REACTIVATED_CUMULATIVE_GATES_ACTIVE"
                                if calibration_admitted else "PARTIAL_CAPTURE_NOT_PROMOTED")
               else:
@@ -393,6 +395,7 @@ jobs:
               "unique_states":unique_states,
               "new_states_this_run":new_states,
               "executed_cycles":executed_cycles,
+              "cumulative_daily_verified_cycles":int(guard.get("total_executed_cycles_today") or 0),
               "remaining_before_run":remaining_before
             },
             "cumulative":{
