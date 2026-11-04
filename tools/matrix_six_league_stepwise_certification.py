@@ -193,6 +193,8 @@ def assess(root:Path,paths:list[str],*,lineage_path:Path=LINEAGE,
         for l in scientific["leagues"]:
             p=per[str(l["league"])]
             p["validated_prospective_rows"]=l["validated_prospective_rows"]
+            p["original_number_independently_frozen_and_attested"]=l["validated_prospective_rows"]
+            p["alternative_genuine_prematch_pair"]=l["validated_prospective_rows"]
             p["three_independent_source_pairs_verified"]=l["validated_prospective_rows"]
             p["missing_valid_prospective_rows"]=max(0,MIN_PER_LEAGUE-l["validated_prospective_rows"])
     blockers=[]
