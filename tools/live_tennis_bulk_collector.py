@@ -159,6 +159,8 @@ def main():
     ap.add_argument("--date",help="Bogota operational date YYYY-MM-DD; defaults to current Bogota date")
     ap.add_argument("--interval-seconds",type=int,default=20)
     ap.add_argument("--reserve-calls",type=int,default=20)
+    ap.add_argument("--max-daily-match-calls",type=int,default=12,
+                    help="Fixed daily research capture budget; never spend provider reserve")
     args=ap.parse_args()
     target_date=args.date or datetime.now(BOGOTA).date().isoformat()
     out=Path(f"evidence/live_tennis_lab/{target_date}/MATRIX_LIVE_TENNIS_STATE_LEDGER_V0_1.json")
@@ -211,10 +213,13 @@ def main():
     if type(remaining)!=int or remaining<0:
         blocked_guard("BLOCKED_USAGE_REMAINING_UNVERIFIED")
         return
+    if args.max_daily_match_calls<1 or args.max_daily_match_calls>48:
+        raise SystemExit("INVALID_DAILY_MATCH_CALL_BUDGET")
     if args.reserve_calls<1 or args.cycles<0 or args.cycles>24:
         raise SystemExit("INVALID_QUOTA_RESERVE_OR_CYCLE_REQUEST")
     allowed=max(0,remaining-args.reserve_calls)
-    cycles=min(args.cycles,allowed)
+    daily_budget_left=max(0,args.max_daily_match_calls-verified_prior)
+    cycles=min(args.cycles,allowed,daily_budget_left)
     guard=quota_guard_payload(
         operational_date=operational_date,
         usage=usage,
@@ -224,12 +229,16 @@ def main():
         executed_cycles=cycles,
         status="CAPTURE_ALLOWED" if cycles>0 else "BLOCKED_BY_RESERVE",
     )
+    guard["daily_match_call_budget"]=args.max_daily_match_calls
+    guard["daily_match_call_budget_remaining"]=daily_budget_left
+    if daily_budget_left==0 and cycles==0:
+        guard["status"]="BLOCKED_DAILY_CAPTURE_BUDGET"
     quota_guard_path.parent.mkdir(parents=True,exist_ok=True)
     guard["total_executed_cycles_today"]=verified_prior
     quota_guard_path.write_text(json.dumps(guard,indent=2,sort_keys=True,ensure_ascii=False)+"\n",encoding="utf-8")
     if cycles<=0:
         print(json.dumps({
-          "status":"PASS_QUOTA_RESERVE_BLOCKED",
+          "status":guard["status"],
           "remaining_before_run":remaining,
           "reserve_calls":args.reserve_calls,
           "requested_cycles":args.cycles,
