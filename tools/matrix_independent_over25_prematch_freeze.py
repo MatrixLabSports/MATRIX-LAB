@@ -32,6 +32,16 @@ def canonical(value):
     return (json.dumps(value,ensure_ascii=False,sort_keys=True,
                        separators=(",",":"))+"\n").encode("utf-8")
 
+def portable(path:Path)->str:
+    value=path.as_posix()
+    prefix="evidence/football_research_freezes/"
+    if value.startswith(prefix):
+        return value
+    needle="/"+prefix
+    if needle not in value:
+        raise ValueError("FREEZE_PATH_OUTSIDE_RESEARCH_DIRECTORY")
+    return prefix+value.split(needle,1)[1]
+
 def seal_source(folder:Path,raw:bytes)->Path:
     """Content-addressed immutable historical input, never overwritten."""
     if len(raw)>24_000_000:
@@ -138,8 +148,8 @@ def freeze(intake:dict,shadow:dict,*,intake_bytes:bytes,shadow_bytes:bytes,
                 "source_snapshot_sha256":g["source_payload_sha256"],
                 "source_intake_file_sha256":digest(intake_bytes),
                 "source_shadow_file_sha256":digest(shadow_bytes),
-                "source_intake_file_path":str(intake_ref).replace("\\\\","/"),
-                "source_shadow_file_path":str(shadow_ref).replace("\\\\","/"),
+                "source_intake_file_path":portable(intake_ref),
+                "source_shadow_file_path":portable(shadow_ref),
                 "source_history_home_count":features["home_history_count"],
                 "source_history_away_count":features["away_history_count"],
                 "research_probability_over25":round(expected,10),
@@ -175,7 +185,7 @@ def freeze(intake:dict,shadow:dict,*,intake_bytes:bytes,shadow_bytes:bytes,
                 if not dest.exists():
                     folder.mkdir(parents=True,exist_ok=True)
                     with dest.open("xb") as f:f.write(content)
-            accepted.append({"fixture_id":fid,"path":str(dest).replace("\\","/"),
+            accepted.append({"fixture_id":fid,"path":portable(dest),
                              "snapshot_sha256":saved_hash,"status":action})
         except (ValueError,TypeError,KeyError,OverflowError,UnicodeError,
                 json.JSONDecodeError,base64.binascii.Error) as exc:
