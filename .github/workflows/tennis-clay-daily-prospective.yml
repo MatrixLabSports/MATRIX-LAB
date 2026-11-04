@@ -7,38 +7,14 @@ name: MATRIX Tennis Clay Daily Prospective
 # MATRIX_MANUAL_CUMULATIVE_RECOVERY_PASS 2026-10-12 P2
 # MATRIX_MANUAL_RECOVERY_PASS 2026-10-12 P2
 
+
+# The legacy paid RapidAPI prospecting path was subscription-limited to
+# 2026-10-28 and must never run automatically after expiration.
+# Daily free source discovery is handled by matrix-tennis-browser-first-free-intake.yml.
+# This old workflow remains manual for controlled historical diagnostics;
+# its deadline guard still prevents expired paid API access.
 on:
-  push:
-    branches:
-      - repair/cor09-world-pipeline
-    paths:
-      - .github/workflows/tennis-clay-daily-prospective.yml
-      - tools/tennis_clay_prefeature_discovery.py
-      - tools/cor0203_world_date_rollover.py
-      - tools/tennis_api_tennis_dual_lane_exact_day.py
-      - tools/tennis_dual_lane_event_reconcile.py
-      - tools/tennis_primary_lane_event_reconcile.py
-      - tools/tennis_clay_parent_state_sync.py
-      - tools/tennis_clay_pit_catchup.py
-      - tools/tennis_clay_identity_recovery_registry.py
-      - tools/tennis_clay_identity_alias_ledger.py
-      - tools/tennis_clay_profile_identity_recovery.py
-      - tests/test_tennis_clay_identity_recovery_registry.py
-      - tests/test_tennis_clay_identity_alias_ledger.py
-      - tests/test_tennis_clay_profile_identity_recovery.py
-      - tests/test_tennis_dual_lane_event_reconcile.py
-      - tests/test_tennis_primary_lane_event_reconcile.py
-      - tests/test_tennis_clay_parent_state_sync.py
-      - tests/test_tennis_clay_pit_catchup.py
-      - tools/tennis_clay_prospective_producer.py
-      - tests/test_tennis_clay_prospective_producer.py
-      - tools/cor0203_expand_identity_authority.py
-      - tools/cor0203_build_identity_crosswalk.py
-      - tests/test_cor0203_build_identity_crosswalk.py
-      - tests/test_tennis_clay_prefeature_discovery.py
   workflow_dispatch:
-  schedule:
-    - cron: '7,22,37,52 * * * *'
 
 permissions:
   contents: write
