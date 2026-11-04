@@ -28,7 +28,7 @@ if (Test-Path -LiteralPath "evidence/notifications/telegram/browser_cdp") {
 # Preserve only independently sourced browser calendar evidence and its guarded
 # crosscheck. Never stage model predictions, canonical candidates or credentials.
 if (Test-Path -LiteralPath "evidence/football_world_inventory") {
-  $allowed = @("MATRIX_SOFA_BROWSER_OBSERVATIONS.json", "MATRIX_SOFA_FOOTBALL_FIXTURE_CROSSCHECK.json", "MATRIX_CHAMPIONSHIP_8_OF_11_IDENTITY_GAP_LAST.json", "MATRIX_SIX_LEAGUE_PROSPECTIVE_PREFLIGHT_LAST.json")
+  $allowed = @("MATRIX_SOFA_BROWSER_OBSERVATIONS.json", "MATRIX_SOFA_FOOTBALL_FIXTURE_CROSSCHECK.json", "MATRIX_CHAMPIONSHIP_8_OF_11_IDENTITY_GAP_LAST.json", "MATRIX_SIX_LEAGUE_PROSPECTIVE_PREFLIGHT_LAST.json", "MATRIX_SIX_LEAGUE_EXISTING_EVIDENCE_RECOVERY_LAST.json")
   foreach ($name in $allowed) {
     Get-ChildItem "evidence/football_world_inventory" -Recurse -File -Filter $name |
       ForEach-Object {
