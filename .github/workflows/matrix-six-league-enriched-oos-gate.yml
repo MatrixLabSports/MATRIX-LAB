@@ -1,0 +1,73 @@
+name: MATRIX Six-League Enriched OOS Gate
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - repair/cor09-world-pipeline
+    paths:
+      - tools/matrix_six_league_enriched_oos_audit.py
+      - tests/test_matrix_six_league_enriched_oos_audit.py
+      - .github/workflows/matrix-six-league-enriched-oos-gate.yml
+
+permissions:
+  contents: write
+
+concurrency:
+  group: matrix-six-league-enriched-oos-gate
+  cancel-in-progress: false
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    env:
+      REAL_MONEY: BLOCKED
+      AUTO_BETTING: DISABLED
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: repair/cor09-world-pipeline
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Block all wagering permissions
+        run: |
+          test "$REAL_MONEY" = BLOCKED
+          test "$AUTO_BETTING" = DISABLED
+      - name: Test enriched feature equality, six-league coverage and leakage prevention
+        run: |
+          python -m pip install --disable-pip-version-check pytest
+          PYTHONPATH=. python -m pytest -q tests/test_matrix_six_league_enriched_oos_audit.py
+      - name: Discover original six-league source references without guessing
+        run: |
+          PYTHONPATH=. python -m tools.matrix_six_league_enriched_oos_audit \
+            --scan-original-root . \
+            --out evidence/football_world_inventory/2026-11-04/MATRIX_ORIGINAL_ARCHIVE_LEAGUE_DISCOVERY.json
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          p=Path("evidence/football_world_inventory/2026-11-04/MATRIX_ORIGINAL_ARCHIVE_LEAGUE_DISCOVERY.json")
+          x=json.loads(p.read_text(encoding="utf-8"))
+          assert x["production_p_matrix_authorized"] is False
+          assert x["telegram_signal_authorized"] is False
+          assert x["real_money"]=="BLOCKED"
+          print("ARCHIVED_REFERENCES=",x["archived_reference_group_count"])
+          print("ORIGINAL_LEAGUES_CONFIRMED=",x["six_original_leagues_confirmed"])
+          PY
+      - name: Preserve physical archive inventory without altering models
+        run: |
+          set -euo pipefail
+          git config user.name matrix-certification-bot
+          git config user.email matrix-certification-bot@users.noreply.github.com
+          git add -- evidence/football_world_inventory/2026-11-04/MATRIX_ORIGINAL_ARCHIVE_LEAGUE_DISCOVERY.json
+          if git diff --cached --quiet; then exit 0; fi
+          git commit -m "evidence(certification): track actual original archived league scope"
+          for attempt in 1 2 3; do
+            git fetch origin repair/cor09-world-pipeline
+            if ! git rebase origin/repair/cor09-world-pipeline; then git rebase --abort || true; exit 1; fi
+            if git push origin HEAD:repair/cor09-world-pipeline; then exit 0; fi
+            sleep $((attempt * 2))
+          done
+          exit 1
