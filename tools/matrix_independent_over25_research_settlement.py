@@ -64,6 +64,18 @@ def settle(root:Path,*,now:datetime,token:str,opener=urlopen,
                 original=root/rel
                 if digest(original.read_bytes())!=forecast[f"source_{key}_file_sha256"]:
                     raise ValueError("SOURCE_HASH_MISMATCH")
+            # Source-native home/away IDs are verified against the immutable
+            # original intake, not inferred from current team names.
+            immutable_intake=_read_json(root/forecast["source_intake_file_path"])
+            targets=[f for f in immutable_intake.get("fixtures",[])
+                     if isinstance(f,dict) and str(f.get("source_fixture_id"))==fid]
+            if len(targets)!=1:
+                raise ValueError("IMMUTABLE_INTAKE_FIXTURE_IDENTITY_MISSING_OR_AMBIGUOUS")
+            original_target=targets[0]
+            if (stamp(original_target["kickoff_utc"])!=kickoff or
+                str(original_target["source_competition_id"])!=
+                str(forecast["provider_competition_id"])):
+                raise ValueError("IMMUTABLE_INTAKE_IDENTITY_MISMATCH")
             base=(root/ROOT)/path.parent.name
             outcomes=list(base.glob(f"{fid}_result_*.json"))
             if outcomes:
@@ -113,7 +125,11 @@ def settle(root:Path,*,now:datetime,token:str,opener=urlopen,
             home,away=score.get("home"),score.get("away")
             identity=(str(source.get("id"))==fid and
                 str((source.get("competition") or {}).get("id"))==
-                str(forecast.get("provider_competition_id")))
+                str(forecast.get("provider_competition_id")) and
+                str((source.get("homeTeam") or {}).get("id"))==
+                str(original_target["home_source_team_id"]) and
+                str((source.get("awayTeam") or {}).get("id"))==
+                str(original_target["away_source_team_id"]))
             try:identity=identity and stamp(source.get("utcDate"))==kickoff
             except (ValueError,TypeError):identity=False
             if (not identity or source.get("status")!="FINISHED" or
