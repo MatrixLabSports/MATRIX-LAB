@@ -243,11 +243,17 @@ def main():
     initial=len(existing)
     call_meta=[]
     capture_summaries=[]
+    capture_error=""
     for i in range(cycles):
         captured=datetime.now(timezone.utc).replace(microsecond=0).isoformat()
-        payload,meta=get_json("/matches",key,{"status":"live","limit":50})
+        try:
+            payload,meta=get_json("/matches",key,{"status":"live","limit":50})
+        except requests.RequestException:
+            capture_error="BLOCKED_LIVE_MATCHES_NETWORK_ERROR"
+            break
         if meta["http_status"]!=200:
-            raise SystemExit(f"LIVE_REQUEST_HTTP_{meta['http_status']}")
+            capture_error="BLOCKED_LIVE_MATCHES_HTTP_"+str(meta["http_status"])
+            break
         rows=payload.get("data") if isinstance(payload,dict) and isinstance(payload.get("data"),list) else []
         added=0
         singles=0
@@ -269,6 +275,12 @@ def main():
         if i<cycles-1:
             time.sleep(max(1,args.interval_seconds))
 
+    if not call_meta:
+        blocked_guard(capture_error or "BLOCKED_NO_VALID_LIVE_RESPONSES",remaining,usage)
+        return
+    actual_cycles=len(call_meta)
+    final_status=("CAPTURE_ALLOWED" if actual_cycles==cycles
+                  else "PARTIAL_CAPTURE_PROVIDER_BLOCKED")
     states=sorted(existing.values(),key=lambda x:(x["captured_at_utc"],x["match_id"],x["sequence"]))
     match_ids=sorted({x["match_id"] for x in states})
     payload={
@@ -281,8 +293,8 @@ def main():
       "quota_guard":{
         "tier":usage.get("tier"),"per_day":(usage.get("limits") or {}).get("per_day"),
         "remaining_before_run":remaining,"reserve_calls":args.reserve_calls,
-        "requested_cycles":args.cycles,"executed_cycles":cycles,
-        "status":"CAPTURE_ALLOWED","reserve_not_bypassed":True
+        "requested_cycles":args.cycles,"executed_cycles":actual_cycles,
+        "status":final_status,"reserve_not_bypassed":True
       },
       "capture_summaries":older_summaries+capture_summaries,
       "network_calls":older_calls+call_meta,
@@ -300,11 +312,14 @@ def main():
     }
     payload["target_date_bogota"]=target_date
     out.parent.mkdir(parents=True,exist_ok=True)
+    guard["executed_cycles"]=actual_cycles
+    guard["status"]=final_status
+    guard["capture_performed"]=actual_cycles>0
     guard["total_executed_cycles_today"]=verified_prior+len(call_meta)
     quota_guard_path.write_text(json.dumps(guard,indent=2,sort_keys=True,ensure_ascii=False)+"\n",encoding="utf-8")
     out.write_text(json.dumps(payload,indent=2,sort_keys=True,ensure_ascii=False)+"\n",encoding="utf-8")
     print(json.dumps({
-      "status":"PASS","executed_cycles":cycles,
+      "status":final_status,"executed_cycles":actual_cycles,
       "unique_match_count":len(match_ids),"unique_state_count":len(states),
       "new_states_this_run":len(states)-initial
     },sort_keys=True))
