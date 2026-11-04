@@ -104,3 +104,13 @@ def test_manufactured_historical_table_without_three_source_hashes_is_rejected(t
     path.write_text(json.dumps(payload),encoding="utf-8")
     with pytest.raises(ValueError,match="OOS_ORIGINAL_SIX_LEAGUES_NOT_GROUNDED_IN_ARCHIVE"):
         audit(path)
+
+def test_actual_archive_file_naming_is_discovered(tmp_path):
+    p=tmp_path/"evidence"/"api_football"/"prospective_daily"/"2026-10-28"/"20261028T054128Z"/"history"/"raw"
+    p.mkdir(parents=True)
+    (p/"league_135_season_2026.bin").write_bytes(b"test-only")
+    (p/"league_40_season_2026.bin").write_bytes(b"test-only")
+    result=scan_archived_references(tmp_path)
+    assert result["archived_reference_group_count"]==2
+    assert {x["original_league_id"] for x in result["reference_groups"]}=={135,40}
+    assert result["six_original_leagues_confirmed"] is False
