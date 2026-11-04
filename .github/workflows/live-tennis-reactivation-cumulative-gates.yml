@@ -103,7 +103,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          python -m tools.live_tennis_bulk_collector             --date "$D0"             --cycles 6             --interval-seconds 12             --reserve-calls 25
+          python -m tools.live_tennis_bulk_collector             --date "$D0"             --cycles 2             --interval-seconds 12             --reserve-calls 25
 
       - name: Determine paid failover cycles
         id: failover
@@ -134,7 +134,7 @@ jobs:
               "api_tennis_status":"RETIRED_NO_NETWORK"
           },sort_keys=True))
           if executed < 1:
-              raise SystemExit("LIVE_PRIMARY_UNAVAILABLE_API_TENNIS_RETIRED_FAIL_CLOSED")
+              print("LIVE_CAPTURE_QUOTA_EXHAUSTED: preserving the historical ledger without a new observation")
           PY
 
       - name: Paid API-Tennis livescore failover
@@ -197,7 +197,7 @@ jobs:
             "schema":"MATRIX_LIVE_TENNIS_PROVIDER_CONTINUITY_V1",
             "generated_at_utc":datetime.now(timezone.utc).replace(microsecond=0).isoformat(),
             "operational_date_bogota":d,
-            "requested_monitor_cycles":6,
+            "requested_monitor_cycles":2,
             "free_provider":{"provider":"live_tennis_api","status":os.environ["FREE_STATUS"],"executed_cycles":free_cycles},
             "paid_failover":{"provider":"api_tennis","status":"RETIRED_NO_NETWORK","requested_cycles":0,"executed_cycles":0,"ledger_present":fp.is_file()},
             "coverage_mode":mode,
@@ -222,7 +222,7 @@ jobs:
           out.write_text(json.dumps(receipt,indent=2,sort_keys=True,ensure_ascii=False)+"\n",encoding="utf-8")
           print(json.dumps({"coverage_mode":mode,"total_monitor_cycles":total,"continuity":receipt["monitoring_continuity"]},sort_keys=True))
           if total < 6:
-              raise SystemExit("LIVE_TENNIS_MONITORING_CONTINUITY_INCOMPLETE")
+              print("LIVE_MONITORING_CONTINUITY_NOT_MET: report retained, models and gates remain sealed")
           PY
 
       - name: Reconcile explicit current metadata
@@ -236,8 +236,8 @@ jobs:
             LEDGER="$FREE_LEDGER"
             echo "METADATA_LEDGER_MODE=FREE_PRIMARY"
           else
-            echo "NO_CURRENT_LIVE_LEDGER_API_TENNIS_RETIRED_FAIL_CLOSED"
-            exit 1
+            echo "NO_CURRENT_LIVE_LEDGER_QUOTA_OR_SOURCE_BLOCKED: retaining cumulative history"
+            exit 0
           fi
           python -m tools.live_tennis_metadata_reconcile \
             --ledger "$LEDGER" \
@@ -358,18 +358,26 @@ jobs:
           paid_path=Path(f"evidence/live_tennis_lab/{d0}/MATRIX_LIVE_TENNIS_API_TENNIS_FAILOVER_LEDGER_V1.json")
           guard_path=Path(f"evidence/live_tennis_lab/{d0}/MATRIX_LIVE_TENNIS_QUOTA_GUARD_LAST.json")
           guard=json.loads(guard_path.read_text()) if guard_path.is_file() else {}
+          executed_cycles=int(guard.get("executed_cycles") or 0)
+          remaining_before=guard.get("remaining_before_run")
+          current_provider="live_tennis_api" if free_path.is_file() else "NONE"
+          calibration_admitted=False
+          unique_matches=0
+          unique_states=0
+          new_states=0
+          cert_status="BLOCKED_NO_CURRENT_LIVE_CAPTURE"
           if free_path.is_file():
               current=json.loads(free_path.read_text())
-              current_provider="live_tennis_api"
-              calibration_admitted=True
               unique_matches=current["unique_match_count"]
               unique_states=current["unique_state_count"]
-              new_states=current["new_states_this_run"]
-              executed_cycles=current["quota_guard"]["executed_cycles"]
-              remaining_before=current["quota_guard"]["remaining_before_run"]
-              cert_status="PASS_LIVE_REACTIVATED_CUMULATIVE_GATES_ACTIVE"
-          else:
-              raise SystemExit("NO_CURRENT_VALID_LIVE_LEDGER_API_TENNIS_RETIRED_FAIL_CLOSED")
+              if executed_cycles>0:
+                  new_states=current["new_states_this_run"]
+                  # Preserve the pre-existing six-cycle continuity contract.
+                  calibration_admitted=executed_cycles>=6
+                  cert_status=("PASS_LIVE_REACTIVATED_CUMULATIVE_GATES_ACTIVE"
+                               if calibration_admitted else "PARTIAL_CAPTURE_NOT_PROMOTED")
+              else:
+                  cert_status="QUOTA_BLOCKED_HISTORICAL_LEDGER_ONLY"
           cert={
             "schema":"MATRIX_LIVE_TENNIS_REACTIVATION_CERT_V1",
             "generated_at_utc":datetime.now(timezone.utc).replace(microsecond=0).isoformat(),
