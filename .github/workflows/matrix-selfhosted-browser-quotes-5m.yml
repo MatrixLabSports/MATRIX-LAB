@@ -151,6 +151,10 @@ jobs:
         shell: cmd
         run: python -m tools.matrix_independent_over25_prematch_fresh_cycle
 
+      - name: Recalculate SHA-verified cumulative independent Over25 research scoreboard
+        shell: cmd
+        run: python -m tools.matrix_independent_over25_research_scorecard
+
       - name: Synchronize original governed Over 2.5 candidates before collecting quotes
         shell: cmd
         run: python -m tools.matrix_browser_governed_intake_sync
