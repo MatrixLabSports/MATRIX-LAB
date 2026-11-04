@@ -183,13 +183,72 @@ def calculate(rows,expected_leagues):
         "automatic_wagering":False,"real_money":"BLOCKED",
     }
 
+def _read_bound_json(root:Path,ref:dict):
+    """Require an independently persisted byte-for-byte SHA-256-bound source."""
+    if not isinstance(ref,dict):raise ValueError("OOS_PROVENANCE_REFERENCE_MISSING")
+    relative=ref.get("path")
+    expected=ref.get("sha256")
+    if (not isinstance(relative,str) or not relative
+        or not isinstance(expected,str) or len(expected)!=64
+        or any(c not in "0123456789abcdef" for c in expected)):
+        raise ValueError("OOS_PROVENANCE_INVALID")
+    base=root.resolve()
+    target=(base/relative).resolve()
+    try:target.relative_to(base)
+    except ValueError as exc:raise ValueError("OOS_SOURCE_PATH_ESCAPE") from exc
+    if "evidence" not in target.relative_to(base).parts or not target.is_file():
+        raise ValueError("OOS_SOURCE_NOT_PHYSICALLY_PRESENT")
+    if sha(target)!=expected:raise ValueError("OOS_SOURCE_SHA_MISMATCH")
+    data=json.loads(target.read_text(encoding="utf-8"))
+    if not isinstance(data,dict):raise ValueError("OOS_SOURCE_NOT_OBJECT")
+    return data
+
+def verify_row_source_provenance(rec:dict,root:Path)->bool:
+    """Unbound results or post-hoc summaries cannot constitute prospective OOS."""
+    try:
+        refs=rec["source_snapshot_refs"]
+        if not isinstance(refs,dict) or set(refs)!={
+            "original_prematch","alternative_prematch","settled_result"
+        }:return False
+        original=_read_bound_json(root,refs["original_prematch"])
+        alternative=_read_bound_json(root,refs["alternative_prematch"])
+        outcome=_read_bound_json(root,refs["settled_result"])
+        if (original.get("input")!=rec.get("original_input")
+            or alternative.get("input")!=rec.get("alternative_input")
+            or original.get("p_over25")!=rec.get("original_p_over25")
+            or alternative.get("p_over25")!=rec.get("alternative_p_over25")
+            or original.get("frozen_at_utc")!=rec.get("frozen_at_utc")
+            or alternative.get("frozen_at_utc")!=rec.get("frozen_at_utc")
+            or outcome.get("over25_result")!=rec.get("over25_result")
+            or outcome.get("result_observed_at_utc")!=rec.get("result_observed_at_utc")
+            or any(d.get("fixture_id")!=rec.get("fixture_id")
+                   for d in (original,alternative,outcome))):
+            return False
+        if original.get("source")!="ORIGINAL_FROZEN_MODEL":
+            return False
+        if alternative.get("source")!="INDEPENDENT_VERIFIED_PROVIDER":
+            return False
+        if outcome.get("source")!="INDEPENDENT_FINAL_SCORE":
+            return False
+        return True
+    except (ValueError,KeyError,TypeError,OSError,json.JSONDecodeError):
+        return False
+
 def audit(path):
     doc=json.loads(path.read_text(encoding="utf-8"))
     if doc.get("schema")!=SOURCE_SCHEMA or doc.get("real_money")!="BLOCKED":
         raise ValueError("OOS_UNTRUSTED_SOURCE_ENVELOPE")
     if doc.get("signal_generation_authorized") is not False:
         raise ValueError("OOS_UNTRUSTED_SIGNAL_AUTHORIZATION")
-    result=calculate(doc.get("rows"),doc.get("original_six_league_ids"))
+    # Claims inside a JSON envelope cannot self-certify historical freezing.
+    # Verify distinct persisted pre-match forecasts and independently settled
+    # results, each byte-hash-bound to the original evidence directory.
+    checked=[]
+    for row in doc.get("rows",[]):
+        if not isinstance(row,dict):raise ValueError("OOS_ROW_NOT_OBJECT")
+        checked.append({**row,"source_verified":
+            verify_row_source_provenance(row,Path.cwd())})
+    result=calculate(checked,doc.get("original_six_league_ids"))
     result["evidence_sha256"]=sha(path)
     return result
 
