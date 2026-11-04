@@ -13,6 +13,7 @@ from tools.matrix_tennis_browser_first_free_intake import ROOT as CAPTURE_ROOT
 
 DETAIL="sofascore_verified_match_details.json"
 CROSS="MATRIX_TENNIS_EXACT_BROWSER_CROSSMATCH.json"
+COUNTRY_IOC={"USA":"USA","Switzerland":"SUI","Peru":"PER","Brazil":"BRA"}
 AUTHORITIES={"Hard":"evidence/cor0203/identity/MATRIX_COR0203_IDENTITY_AUTHORITY_LAST.json",
 "Clay":"evidence/tennis_parallel_lanes/ATP_CHALLENGER_MEN_SINGLES_CLAY/identity/MATRIX_CLAY_IDENTITY_AUTHORITY_LAST.json"}
 OUT=Path("evidence/tennis_calendar_reconciliation")
@@ -111,7 +112,7 @@ def evaluate(root:Path,day:str,now:datetime):
                 rows_n=h.get("rows")
                 iocs=h.get("canonical_iocs") or []
                 history_ids=h.get("canonical_source_ids") or []
-                good=(type(rows_n)==int and rows_n>=5 and len(iocs)==1 and
+                good=(iocs==[COUNTRY_IOC.get(player.get("country"))] and type(rows_n)==int and rows_n>=5 and len(iocs)==1 and
                       len(history_ids)==1 and type(h.get("latest_row_date"))==int
                       and h["latest_row_date"]<int(day.replace("-","")))
                 hist.append({"player":player["name"],"status":"HISTORICAL_PRE_CUT_MATCH_ONLY_NOT_PROVIDER_ID_EQUIVALENCE" if good else "HISTORY_INSUFFICIENT_OR_AMBIGUOUS",
