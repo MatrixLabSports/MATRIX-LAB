@@ -53,6 +53,10 @@ def test_immutable_seal_and_replay(tmp_path):
     assert x["schema"]==SCHEMA
     assert x["sealed_at_utc"]<x["kickoff_utc"]
     assert x["source_shadow_file_sha256"]
+    for label in ("source_shadow_file_path","source_intake_file_path"):
+        src=Path(x[label])
+        assert src.is_file()
+        assert hashlib.sha256(src.read_bytes()).hexdigest()==x[label.replace("_path","_sha256")]
     assert x["source_snapshot_sha256"]
     assert x["production_p_matrix_authorized"] is False
     assert r["telegram_signal_authorized"] is False
