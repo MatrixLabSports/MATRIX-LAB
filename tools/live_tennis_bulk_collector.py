@@ -166,6 +166,22 @@ def main():
     operational_date=args.date or datetime.now(BOGOTA).date().isoformat()
     out=Path(f"evidence/live_tennis_lab/{operational_date}/MATRIX_LIVE_TENNIS_STATE_LEDGER_V0_1.json")
     quota_guard_path=out.parent/"MATRIX_LIVE_TENNIS_QUOTA_GUARD_LAST.json"
+    # Carry forward only successful, same-day authenticated /matches calls.
+    old_payload={}
+    if out.is_file():
+        try:
+            old_payload=json.loads(out.read_text(encoding="utf-8"))
+            if old_payload.get("operational_date_bogota")!=operational_date:
+                old_payload={}
+        except (OSError,ValueError,TypeError):
+            old_payload={}
+    older_calls=list(old_payload.get("network_calls") or [])
+    older_summaries=list(old_payload.get("capture_summaries") or [])
+    verified_prior=sum(
+        1 for x in older_calls
+        if isinstance(x,dict) and x.get("path")=="/matches"
+        and x.get("http_status")==200
+    )
 
     def blocked_guard(status: str, remaining: int | None = None, usage: dict | None = None) -> None:
         guard=quota_guard_payload(
@@ -174,6 +190,7 @@ def main():
             requested_cycles=args.cycles,executed_cycles=0,status=status
         )
         quota_guard_path.parent.mkdir(parents=True,exist_ok=True)
+        guard["total_executed_cycles_today"]=verified_prior
         quota_guard_path.write_text(json.dumps(guard,indent=2,sort_keys=True,ensure_ascii=False)+"\\n",encoding="utf-8")
         print(json.dumps({"status":status,"executed_cycles":0,"reserve_calls":args.reserve_calls,
                           "remaining_before_run":remaining,"real_money":"BLOCKED"},sort_keys=True))
@@ -208,6 +225,7 @@ def main():
         status="CAPTURE_ALLOWED" if cycles>0 else "BLOCKED_BY_RESERVE",
     )
     quota_guard_path.parent.mkdir(parents=True,exist_ok=True)
+    guard["total_executed_cycles_today"]=verified_prior
     quota_guard_path.write_text(json.dumps(guard,indent=2,sort_keys=True,ensure_ascii=False)+"\n",encoding="utf-8")
     if cycles<=0:
         print(json.dumps({
@@ -266,8 +284,9 @@ def main():
         "requested_cycles":args.cycles,"executed_cycles":cycles,
         "status":"CAPTURE_ALLOWED","reserve_not_bypassed":True
       },
-      "capture_summaries":capture_summaries,
-      "network_calls":call_meta,
+      "capture_summaries":older_summaries+capture_summaries,
+      "network_calls":older_calls+call_meta,
+      "total_executed_cycles_today":verified_prior+len(call_meta),
       "unique_match_count":len(match_ids),
       "unique_state_count":len(states),
       "new_states_this_run":len(states)-initial,
@@ -281,6 +300,8 @@ def main():
     }
     payload["target_date_bogota"]=target_date
     out.parent.mkdir(parents=True,exist_ok=True)
+    guard["total_executed_cycles_today"]=verified_prior+len(call_meta)
+    quota_guard_path.write_text(json.dumps(guard,indent=2,sort_keys=True,ensure_ascii=False)+"\n",encoding="utf-8")
     out.write_text(json.dumps(payload,indent=2,sort_keys=True,ensure_ascii=False)+"\n",encoding="utf-8")
     print(json.dumps({
       "status":"PASS","executed_cycles":cycles,
