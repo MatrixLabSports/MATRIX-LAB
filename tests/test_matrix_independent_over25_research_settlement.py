@@ -131,3 +131,26 @@ def test_secondary_live_forecast_not_counted_twice(tmp_path):
     assert x["decisions"][0]["status"]=="AWAITING_KICKOFF"
     assert x["decisions"][1]["status"]=="SECONDARY_FROZEN_SNAPSHOT_EXCLUDED_FROM_PRIMARY_EVALUATION"
     assert x["http_calls"]==0
+
+def test_legacy_windows_snapshot_paths_resolve_only_by_archived_sha(tmp_path):
+    sealed=setup(tmp_path)
+    row=json.loads(sealed.read_text())
+    row["source_intake_file_path"]=r"C:\\actions-runner\\_work\\MATRIX-LAB\\evidence\\old-intake.json"
+    row["source_shadow_file_path"]=r"C:\\actions-runner\\_work\\MATRIX-LAB\\evidence\\old-shadow.json"
+    sealed.write_bytes(canonical(row))
+    x=settle(tmp_path,now=T("2026-11-04T22:30:00Z"),
+       token="configured",opener=lambda *a,**kw:Response(source()))
+    assert x["settled_total"]==1
+    assert x["decisions"][0]["status"]=="SETTLED_RESEARCH_ONLY"
+    assert json.loads(sealed.read_text())["source_intake_file_path"].startswith("C:")
+
+def test_legacy_absolute_paths_do_not_override_archive_hash(tmp_path):
+    sealed=setup(tmp_path)
+    row=json.loads(sealed.read_text())
+    row["source_intake_file_path"]="/tmp/forged.json"
+    row["source_intake_file_sha256"]="f"*64
+    sealed.write_bytes(canonical(row))
+    x=settle(tmp_path,now=T("2026-11-04T22:30:00Z"),
+       token="configured",opener=lambda *a,**kw:(_ for _ in ()).throw(AssertionError()))
+    assert x["http_calls"]==0
+    assert x["decisions"][0]["reason"]=="SOURCE_HASH_MISMATCH"
