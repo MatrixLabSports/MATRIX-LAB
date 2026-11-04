@@ -32,7 +32,8 @@ def test_verified_unique_original_identity_never_promotes(tmp_path):
     x=examine(tmp_path,setup(tmp_path))
     assert x["identity_status_counts"]["ORIGINAL_FIXTURE_IDENTITY_RECOVERED"]==1
     assert x["selected_league_identity_counts"]["39"]["recovered_unique_fixture_ids"]==1
-    assert x["identity_rows"][0]["evidence_registry_sha256"]
+    assert x["identity_rows"][0]["source_sha256"]
+    assert x["identity_rows"][0]["source_sha256"] in x["source_registry_catalog_by_sha256"]
     assert x["strict_original_alternative_result_triplets_certified"]==0
     assert x["telegram_signal_authorized"] is False
 
