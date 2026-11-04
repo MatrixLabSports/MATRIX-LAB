@@ -11,7 +11,7 @@ on:
       - tools/live_tennis_settlement_sync.py
       - .github/workflows/live-tennis-final-settlement.yml
   schedule:
-    - cron: "41 */2 * * *"
+    - cron: "41 4 * * *"  # Once per UTC day, source quota preserved for live capture
   workflow_run:
     workflows:
       - "MATRIX Live Tennis Bulk Seed"
@@ -67,7 +67,7 @@ jobs:
               echo "NO_LEDGER_$D"
               continue
             fi
-            python -m tools.live_tennis_settlement_sync               --ledger "$LEDGER"               --out "$OUT"               --max-detail-queries 10               --reserve-calls 20
+            python -m tools.live_tennis_settlement_sync               --ledger "$LEDGER"               --out "$OUT"               --max-detail-queries 5               --reserve-calls 50
             processed=$((processed+1))
           done
           echo "PROCESSED_LEDGER_DATES=$processed"
