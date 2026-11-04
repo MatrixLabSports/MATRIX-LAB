@@ -20,8 +20,9 @@ def report(root:Path):
     else:
         blockers.append("HISTORICAL_SOURCE_CERTIFICATE_MISSING")
     distinct=sorted({row["original_league_id"] for row in reference["reference_groups"]})
-    if len(distinct)!=6:
-        blockers.append("ORIGINAL_SIX_LEAGUE_SCOPE_NOT_PHYSICALLY_UNIQUE")
+    if len(distinct)<6:
+        blockers.append("FEWER_THAN_SIX_ORIGINAL_ARCHIVED_LEAGUES")
+    blockers.append("SIX_GOVERNED_VALIDATION_COHORTS_NOT_YET_SELECTED")
     blockers.append("ORIGINAL_ENRICHED_VARIABLE_PARITY_NOT_YET_CERTIFIED")
     blockers.append("SIX_LEAGUE_PROSPECTIVE_HOLDOUT_NOT_YET_CERTIFIED")
     prospective_status="NO_SOURCE_EVIDENCE"
