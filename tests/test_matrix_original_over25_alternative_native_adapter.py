@@ -108,3 +108,34 @@ def test_research_probability_mismatch_is_not_promoted(tmp_path):
         r=evaluate(tmp_path)
     assert r["original_engine_verified_rows"]==0
     assert "PROBABILITY_MISMATCH" in r["blocked"][0]["reason"]
+
+def test_future_day_folder_may_be_sealed_day_before_without_fake_source_missing(tmp_path):
+    p=setup(tmp_path)
+    future_folder=tmp_path/ROOT/"2026-11-05"
+    future_folder.mkdir(parents=True)
+    for x in (p.parent/"sources").glob("*.json"):
+        t=future_folder/"sources"/x.name
+        t.parent.mkdir(parents=True,exist_ok=True)
+        t.write_bytes(x.read_bytes())
+    new=future_folder/"555_first.json"
+    row=json.loads(p.read_text())
+    row["kickoff_utc"]="2026-11-05T20:00:00Z"
+    # Input remains immutable and corresponds to its original fixture:
+    original_sha=row["source_intake_file_sha256"]
+    intake_path=future_folder/"sources"/(original_sha+".json")
+    inp=json.loads(intake_path.read_text())
+    inp["fixtures"][0]["kickoff_utc"]=row["kickoff_utc"]
+    old_data=intake_path.read_bytes()
+    import hashlib
+    new_data=canonical(inp)
+    new_sha=hashlib.sha256(new_data).hexdigest()
+    intake_path.unlink()
+    (future_folder/"sources"/(new_sha+".json")).write_bytes(new_data)
+    row["source_intake_file_sha256"]=new_sha
+    new.write_bytes(canonical(row))
+    p.unlink()
+    with patch("tools.matrix_original_over25_alternative_native_adapter._inputs_for_target",
+         return_value=(features(),None)):
+        result=evaluate(tmp_path)
+    assert result["original_engine_verified_rows"]==1
+    assert result["blocked"]==[]
