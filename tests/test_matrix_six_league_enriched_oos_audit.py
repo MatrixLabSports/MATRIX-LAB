@@ -102,8 +102,5 @@ def test_manufactured_historical_table_without_three_source_hashes_is_rejected(t
              "original_six_league_ids":SIX,
              "rows":[sample(l,i) for l in SIX for i in range(30)]}
     path.write_text(json.dumps(payload),encoding="utf-8")
-    result=audit(path)
-    assert result["six_league_scientific_validation_passed"] is False
-    assert result["leagues"][0]["validated_prospective_rows"]==0
-    assert result["leagues"][0]["rejected_reasons"]["OOS_NOT_INDEPENDENTLY_VERIFIED"]==30
-    assert result["telegram_signal_authorized"] is False
+    with pytest.raises(ValueError,match="OOS_ORIGINAL_SIX_LEAGUES_NOT_GROUNDED_IN_ARCHIVE"):
+        audit(path)
