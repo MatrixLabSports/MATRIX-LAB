@@ -182,6 +182,18 @@ def examine(root:Path,paths:list[str])->dict:
             "historical_probability_not_source_triplet_certified":True,
             "production_p_matrix_authorized":False,
         })
+    # Keep all matched and conflicting identities in a compact SHA-keyed
+    # index that GitHub can return through the contents API (<1MB).
+    catalog={x["evidence_registry_sha256"]:x["evidence_registry"]
+             for x in out if x["evidence_registry_sha256"]}
+    compact_rows=[{
+        "fixture_id":x["fixture_id"],"status":x["status"],
+        "claimed_league_ids":x["claimed_league_ids"],"league_id":x["league_id"],
+        "home_team_id":x["home_team_id"],"away_team_id":x["away_team_id"],
+        "original_kickoff_utc":x["original_kickoff_utc"],
+        "source_sha256":x["evidence_registry_sha256"],
+        "probability_source_count":x["probability_source_count"]
+    } for x in out]
     return {
         "schema":"MATRIX_ORIGINAL_FIXTURE_ID_LINEAGE_CROSSWALK_V1",
         "status":"RESEARCH_IDENTITY_RECOVERY_ONLY",
@@ -195,7 +207,8 @@ def examine(root:Path,paths:list[str])->dict:
         "identity_status_counts":dict(statuses),
         "selected_six_league_ids":selected,
         "selected_league_identity_counts":{k:dict(per_league[k]) for k in selected},
-        "identity_rows":out,
+        "source_registry_catalog_by_sha256":catalog,
+        "identity_rows":compact_rows,
         "source_registry_capture_before_kickoff_required":True,
         "source_identity_conflict_fails_closed":True,
         "matches_without_source_are_never_assigned_a_league":True,
@@ -216,7 +229,7 @@ def main():
     value=examine(args.root,relative_paths(args.root))
     target=args.out if args.out.is_absolute() else args.root/args.out
     target.parent.mkdir(parents=True,exist_ok=True)
-    target.write_text(json.dumps(value,indent=2,ensure_ascii=False,sort_keys=True)+"\n",encoding="utf-8")
+    target.write_text(json.dumps(value,ensure_ascii=False,sort_keys=True,separators=(",",":"))+"\n",encoding="utf-8")
     print(json.dumps({
         "status":value["status"],
         "original_fixture_registries_accepted":value["original_fixture_registries_accepted"],
