@@ -1,0 +1,106 @@
+name: MATRIX Tennis Browser First Free Hard Clay Intake
+
+on:
+  schedule:
+    - cron: "13,43 * * * *"
+  workflow_dispatch:
+    inputs:
+      target_date:
+        description: Optional Bogota date YYYY-MM-DD
+        required: false
+        type: string
+  push:
+    branches:
+      - repair/cor09-world-pipeline
+    paths:
+      - tools/matrix_tennis_browser_first_free_intake.py
+      - tests/test_matrix_tennis_browser_first_free_intake.py
+      - .github/workflows/matrix-tennis-browser-first-free-intake.yml
+      - evidence/tennis_calendar_physical/**
+
+permissions:
+  contents: write
+
+concurrency:
+  group: matrix-tennis-browser-first-free-intake
+  cancel-in-progress: false
+
+jobs:
+  governed-free-intake:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      REAL_MONEY: BLOCKED
+      AUTOMATIC_WAGERING: "false"
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: repair/cor09-world-pipeline
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Verify Hard and Clay browser intake against false admissions
+        run: |
+          python -m pip install -q pytest
+          PYTHONPATH=. python -m pytest -q tests/test_matrix_tennis_browser_first_free_intake.py
+      - name: Select target Bogota date with no backfill
+        id: target
+        env:
+          REQUESTED: ${{ inputs.target_date }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          D="${REQUESTED:-}"
+          [ -n "$D" ] || D="$(TZ=America/Bogota date +%F)"
+          [[ "$D" =~ ^[0-9]{4}-[0-9]{2}-[0-9]{2}$ ]]
+          echo "day=$D" >> "$GITHUB_OUTPUT"
+      - name: Consume only authentic browser links and protected model state
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$REAL_MONEY" = "BLOCKED"
+          PYTHONPATH=. python -m tools.matrix_tennis_browser_first_free_intake --date "${{ steps.target.outputs.day }}"
+      - name: Verify hard clay originals unchanged and zero fake rows
+        shell: bash
+        run: |
+          set -euo pipefail
+          git diff --exit-code -- evidence/cor0203 evidence/tennis_parallel_lanes/ATP_CHALLENGER_MEN_SINGLES_CLAY
+          python - <<'PY'
+          import json,os
+          from pathlib import Path
+          d=os.environ.get("TARGET_DATE") or ""
+          if not d:
+              from datetime import datetime
+              from zoneinfo import ZoneInfo
+              d=datetime.now(ZoneInfo("America/Bogota")).date().isoformat()
+          p=Path(f"evidence/tennis_calendar_reconciliation/{d}/MATRIX_TENNIS_FREE_BROWSER_FIRST_INTAKE_LAST.json")
+          # Dispatches of other dates are validated by the previous producer.
+          if p.is_file():
+              j=json.loads(p.read_text())
+              assert j["hard_new_holdout_admissions"]==j["clay_new_holdout_admissions"]==0
+              assert j["paid_api_used"] is False
+              assert j["real_money"]=="BLOCKED"
+          PY
+      - name: Persist authentic browser-first provenance without opening holdouts
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name matrix-tennis-free-browser
+          git config user.email matrix-tennis-free-browser@users.noreply.github.com
+          git add evidence/tennis_calendar_reconciliation
+          if git diff --cached --quiet; then echo "NO_AUTHENTIC_NEW_SOURCE_CHANGE"; exit 0; fi
+          git commit -m "evidence(tennis): current free browser-first intake, no holdout changes"
+          for n in 1 2 3 4 5; do
+            git fetch origin repair/cor09-world-pipeline
+            if ! git rebase origin/repair/cor09-world-pipeline; then
+              git rebase --abort || true
+              exit 1
+            fi
+            if git push origin HEAD:repair/cor09-world-pipeline; then
+              echo "FREE_TENNIS_INTAKE_PHYSICALLY_PERSISTED"
+              exit 0
+            fi
+            sleep "$n"
+          done
+          exit 1
