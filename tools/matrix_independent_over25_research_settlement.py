@@ -31,15 +31,25 @@ def settle(root:Path,*,now:datetime,token:str,opener=urlopen,
     now=now.astimezone(timezone.utc)
     if not 0<=max_calls<=MAX_CALLS:
         raise ValueError("INVALID_MAX_CALLS")
-    docs=sorted(p for p in (root/ROOT).glob("20??-??-??/[0-9]*_*.json")
-                if "_result_" not in p.name)
+    docs=[p for p in (root/ROOT).glob("20??-??-??/[0-9]*_*.json")
+          if "_result_" not in p.name]
+    def chronological_first(path):
+        # Multiple legitimate intraday shadow updates may exist. The
+        # earliest sealed forecast wins before any result is observed.
+        try:
+            start=stamp(_read_json(path)["sealed_at_utc"])
+        except (OSError,ValueError,TypeError,KeyError,json.JSONDecodeError):
+            start=datetime.min.replace(tzinfo=timezone.utc)
+        return (path.name.split("_",1)[0],start,path.as_posix())
+    docs.sort(key=chronological_first)
     cases=[];calls=0;finished=0;seen=set()
     for path in docs:
         fid=path.name.split("_",1)[0]
         if not fid.isdecimal() or fid in seen:
-            # Do not silently settle two independent forecasts for one fixture
-            # under a single outcome; explicit manual review is needed.
-            cases.append({"fixture_id":fid,"status":"DUPLICATE_FORECAST_OR_INVALID_ID"})
+            # A later prediction is preserved as a secondary snapshot, but
+            # cannot inflate sample size or supersede the first preregistration.
+            cases.append({"fixture_id":fid,"status":
+                "SECONDARY_FROZEN_SNAPSHOT_EXCLUDED_FROM_PRIMARY_EVALUATION"})
             continue
         seen.add(fid)
         try:
@@ -175,7 +185,13 @@ def settle(root:Path,*,now:datetime,token:str,opener=urlopen,
                           "reason":str(exc)[:120]})
     return {"schema":"MATRIX_INDEPENDENT_OVER25_SETTLEMENT_CYCLE_V1",
             "checked_at_utc":now.isoformat(),"scanned_forecasts":len(docs),
-            "http_calls":calls,"settled_total":finished,"decisions":cases,
+            "http_calls":calls,"settled_total":finished,
+            "unique_fixture_count":len(seen),
+            "secondary_forecast_count":sum(x["status"]==
+                "SECONDARY_FROZEN_SNAPSHOT_EXCLUDED_FROM_PRIMARY_EVALUATION"
+                for x in cases),
+            "selection_rule":"FIRST_AUTHENTIC_SEALED_FORECAST_WINS",
+            "decisions":cases,
             "original_calibrated_parameters_mutated":False,
             "scientific_six_league_oos_certified":False,
             "telegram_signal_authorized":False,"automatic_wagering":False,
