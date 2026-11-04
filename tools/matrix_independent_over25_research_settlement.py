@@ -31,7 +31,8 @@ def settle(root:Path,*,now:datetime,token:str,opener=urlopen,
     now=now.astimezone(timezone.utc)
     if not 0<=max_calls<=MAX_CALLS:
         raise ValueError("INVALID_MAX_CALLS")
-    docs=sorted((root/ROOT).glob("20??-??-??/[0-9]*_*.json"))
+    docs=sorted(p for p in (root/ROOT).glob("20??-??-??/[0-9]*_*.json")
+                if "_result_" not in p.name)
     cases=[];calls=0;finished=0;seen=set()
     for path in docs:
         fid=path.name.split("_",1)[0]
