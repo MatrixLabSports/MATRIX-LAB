@@ -251,8 +251,12 @@ def audit(path):
     archive_scope=scan_archived_references(Path.cwd())
     archived_ids={str(row["original_league_id"]) for row in archive_scope["reference_groups"]}
     supplied=doc.get("original_six_league_ids")
-    if (len(archived_ids)!=SIX or not isinstance(supplied,list)
-        or set(map(str,supplied))!=archived_ids):
+    # The original archive contains MANY leagues. Only require that the
+    # six declared, unique scopes are physically present; never mistake the
+    # entire worldwide archive for the six selected validation cohorts.
+    if (not isinstance(supplied,list) or len(supplied)!=SIX
+        or len(set(map(str,supplied)))!=SIX
+        or not set(map(str,supplied)).issubset(archived_ids)):
         raise ValueError("OOS_ORIGINAL_SIX_LEAGUES_NOT_GROUNDED_IN_ARCHIVE")
     result=calculate(checked,supplied)
     result["evidence_sha256"]=sha(path)
