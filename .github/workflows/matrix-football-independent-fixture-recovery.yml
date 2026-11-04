@@ -17,6 +17,8 @@ on:
       - tools/matrix_football_independent_fixture_pipeline.py
       - tests/test_matrix_football_independent_fixture_pipeline.py
       - tools/matrix_football_independent_over25_shadow.py
+      - tools/matrix_independent_over25_prematch_freeze.py
+      - tests/test_matrix_independent_over25_prematch_freeze.py
       - tests/test_matrix_football_independent_over25_shadow.py
       - tools/matrix_championship_prospective_pit_attestation.py
       - tests/test_matrix_championship_prospective_pit_attestation.py
@@ -66,7 +68,7 @@ jobs:
       - name: Test independent fixture adapter and all hard safety gates
         run: |
           python -m pip install pytest requests Pillow
-          PYTHONPATH=. python -m pytest -q tests/test_matrix_football_independent_fixture_pipeline.py tests/test_matrix_independent_over25_governed_binding.py tests/test_matrix_football_independent_over25_shadow.py tests/test_matrix_championship_prospective_pit_attestation.py tests/test_matrix_championship_baseline_pit_replay.py tests/test_matrix_championship_atomic_pit_cycle.py tests/test_matrix_championship_quote_window_scope.py tests/test_matrix_independent_over25_quote_audit.py tests/test_matrix_football_sofa_fixture_crosscheck.py tests/test_matrix_real_sofa_nov04_observations.py tests/test_matrix_independent_over25_historical_parity.py tests/test_matrix_football_flashscore_fixture_crosscheck.py
+          PYTHONPATH=. python -m pytest -q tests/test_matrix_football_independent_fixture_pipeline.py tests/test_matrix_independent_over25_governed_binding.py tests/test_matrix_football_independent_over25_shadow.py tests/test_matrix_independent_over25_prematch_freeze.py tests/test_matrix_championship_prospective_pit_attestation.py tests/test_matrix_championship_baseline_pit_replay.py tests/test_matrix_championship_atomic_pit_cycle.py tests/test_matrix_championship_quote_window_scope.py tests/test_matrix_independent_over25_quote_audit.py tests/test_matrix_football_sofa_fixture_crosscheck.py tests/test_matrix_real_sofa_nov04_observations.py tests/test_matrix_independent_over25_historical_parity.py tests/test_matrix_football_flashscore_fixture_crosscheck.py
 
       - name: Resolve Bogota target date
         id: date
@@ -130,6 +132,16 @@ jobs:
           PYTHONPATH=. python -m tools.matrix_football_independent_over25_shadow \
             --intake "evidence/football_world_inventory/$D/MATRIX_FOOTBALL_INDEPENDENT_FIXTURE_INTAKE.json" \
             --out "evidence/football_world_inventory/$D/MATRIX_INDEPENDENT_OVER25_HISTORY_SHADOW.json"
+
+      - name: Permanently seal independent Over25 pre-kickoff research probabilities with raw provider SHA
+        shell: bash
+        run: |
+          set -euo pipefail
+          D="${{ steps.date.outputs.target_date }}"
+          PYTHONPATH=. python -m tools.matrix_independent_over25_prematch_freeze \
+            --intake "evidence/football_world_inventory/$D/MATRIX_FOOTBALL_INDEPENDENT_FIXTURE_INTAKE.json" \
+            --shadow "evidence/football_world_inventory/$D/MATRIX_INDEPENDENT_OVER25_HISTORY_SHADOW.json" \
+            --out "evidence/football_world_inventory/$D/MATRIX_INDEPENDENT_OVER25_PREMATCH_FREEZE_REPORT.json"
 
       - name: Attest current Championship PIT history before kickoff in strict research isolation
         shell: bash
@@ -228,6 +240,11 @@ jobs:
           git add "$P"
           S="evidence/football_world_inventory/$D/MATRIX_INDEPENDENT_OVER25_HISTORY_SHADOW.json"
           if [ -f "$S" ]; then git add "$S"; fi
+          PREMATCH="evidence/football_world_inventory/$D/MATRIX_INDEPENDENT_OVER25_PREMATCH_FREEZE_REPORT.json"
+          if [ -f "$PREMATCH" ]; then git add "$PREMATCH"; fi
+          if [ -d "evidence/football_research_freezes/$D" ]; then
+            git add "evidence/football_research_freezes/$D"
+          fi
           PITA="evidence/football_world_inventory/$D/MATRIX_CHAMPIONSHIP_PROSPECTIVE_PIT_ATTESTATION.json"
           if [ -f "$PITA" ]; then
             # Immutable run-scoped evidence prevents add/add conflicts with
