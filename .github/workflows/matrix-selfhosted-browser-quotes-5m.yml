@@ -29,6 +29,8 @@ on:
       - tests/test_matrix_independent_feature_parity_audit.py
       - tools/matrix_independent_enriched_gap_feasibility.py
       - tools/matrix_six_league_prospective_preflight.py
+      - tools/matrix_six_league_existing_evidence_recovery.py
+      - tests/test_matrix_six_league_existing_evidence_recovery.py
       - tests/test_matrix_six_league_prospective_preflight.py
       - tools/matrix_six_league_enriched_oos_audit.py
       - evidence/api_football/governance/alternative_producer_original_six_league_registry.json
@@ -88,7 +90,7 @@ jobs:
       - name: Verify browser collector contracts
         shell: cmd
         run: |
-          python -m pytest -q tests/test_matrix_selfhosted_browser_quote_collector.py tests/test_matrix_browser_governed_intake_sync.py tests/test_matrix_calendar_browser_observations.py tests/test_matrix_early_research_quote_intake.py tests/test_matrix_betano_research_market_archive.py tests/test_matrix_quote_recovery_evidence.py tests/test_matrix_browser_independent_research_quote_targets.py tests/test_matrix_browser_candidate_pipeline_diagnostic.py tests/test_matrix_telegram_input_health.py tests/test_matrix_independent_triple_source_calendar_certificate.py tests/test_matrix_independent_feature_parity_audit.py tests/test_matrix_independent_enriched_gap_feasibility.py tests/test_matrix_six_league_prospective_preflight.py tests/test_matrix_six_league_enriched_oos_audit.py tests/test_matrix_championship_eight_of_eleven_identity_gap_diagnostic.py tests/test_matrix_independent_over25_championship_raw_feature_parity.py
+          python -m pytest -q tests/test_matrix_selfhosted_browser_quote_collector.py tests/test_matrix_browser_governed_intake_sync.py tests/test_matrix_calendar_browser_observations.py tests/test_matrix_early_research_quote_intake.py tests/test_matrix_betano_research_market_archive.py tests/test_matrix_quote_recovery_evidence.py tests/test_matrix_browser_independent_research_quote_targets.py tests/test_matrix_browser_candidate_pipeline_diagnostic.py tests/test_matrix_telegram_input_health.py tests/test_matrix_independent_triple_source_calendar_certificate.py tests/test_matrix_independent_feature_parity_audit.py tests/test_matrix_independent_enriched_gap_feasibility.py tests/test_matrix_six_league_prospective_preflight.py tests/test_matrix_six_league_existing_evidence_recovery.py tests/test_matrix_six_league_enriched_oos_audit.py tests/test_matrix_championship_eight_of_eleven_identity_gap_diagnostic.py tests/test_matrix_independent_over25_championship_raw_feature_parity.py
 
       - name: Verify immutable 11:24 versus latest PIT cycle and monthly 429 before authorized browser capture
         shell: cmd
@@ -109,6 +111,10 @@ jobs:
       - name: Audit six-league prospectivity with existing original archive and strict source evidence
         shell: cmd
         run: python -m tools.matrix_six_league_prospective_preflight
+
+      - name: Recover inventory of existing original and alternative prospective files for six leagues
+        shell: cmd
+        run: python -m tools.matrix_six_league_existing_evidence_recovery
 
       - name: Synchronize original governed Over 2.5 candidates before collecting quotes
         shell: cmd
