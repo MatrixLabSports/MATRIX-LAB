@@ -101,6 +101,56 @@ def candidate_rows(audit:dict[str,Any],now:datetime)->list[dict[str,Any]]:
         out.append(r)
     return sorted(out,key=lambda x:x["kickoff"])
 
+def synchronized_governed_candidate_rows(now:datetime,root:Path=ROOT)->list[dict[str,Any]]|None:
+    """Use only attested original-model candidates from the immediate pre-capture cycle.
+
+    None means the synchronizer has not been installed. An invalid or stale
+    synchronizer report returns [] and MUST NOT revive a stale supervisor audit.
+    """
+    path=root/"evidence/notifications/telegram/MATRIX_BROWSER_GOVERNED_INTAKE_LAST.json"
+    if not path.is_file():
+        return None
+    try:
+        report=load(path)
+        from tools.matrix_browser_governed_intake_sync import sha256
+        generated=datetime.fromisoformat(str(report["generated_at_utc"]).replace("Z","+00:00"))
+        age=(now.astimezone(timezone.utc)-generated.astimezone(timezone.utc)).total_seconds()
+        if not (-30<=age<=300):
+            return []
+        if (report.get("schema")!="MATRIX_BROWSER_GOVERNED_INTAKE_SYNC_V1"
+            or report.get("market")!="OVER_2_5"
+            or report.get("provenance")!="ORIGINAL_GOVERNED_API_FOOTBALL_ONLY"
+            or report.get("original_p_matrix_only") is not True
+            or report.get("independent_provider_promotion") is not False
+            or report.get("telegram_signal_authorized") is not False
+            or report.get("automatic_wagering") is not False
+            or report.get("real_money")!="BLOCKED"):
+            return []
+        if report.get("status") not in {"NO_GOVERNED_CANONICAL_ROWS","GOVERNED_CANDIDATES_FOUND"}:
+            return []
+        rows=report.get("candidates")
+        if not isinstance(rows,list) or len(rows)!=report.get("candidate_count"):
+            return []
+        promotion=root/"evidence/api_football/governance/over_2_5_p_matrix_promotion.json"
+        if not promotion.is_file() or sha256(promotion)!=report.get("promotion_sha256"):
+            return []
+        original=(root/"evidence/api_football/daily_prematch_reports").resolve()
+        for row in rows:
+            if not isinstance(row,dict) or row.get("research_only") is not False:
+                return []
+            if (row.get("production_probability_authorized") is not True
+                or row.get("telegram_signal_authorized") is not False
+                or row.get("market")!="OVER_2_5"):
+                return []
+            p=(root/str(row.get("source_path") or "")).resolve()
+            if not p.is_relative_to(original) or not p.is_file() or sha256(p)!=row.get("source_sha256"):
+                return []
+        return candidate_rows({"browser_prematch_candidate_rows":rows,
+                               "generated_at_utc":report["generated_at_utc"]},now)
+    except (OSError,ValueError,TypeError,KeyError,OverflowError,AttributeError):
+        return []
+
+
 def atomic_verified_research_quote_targets(now:datetime,folder:Path,date:str)->list[dict[str,Any]]|None:
     """Prefer immutable, hash-attested five-source Championship PIT snapshots.
 
@@ -791,7 +841,8 @@ def main()->None:
     cfg=load(CONFIG); audit=load(AUDIT); adapters=load(ADAPTERS)
     endpoint=os.environ.get("MATRIX_BROWSER_CDP_ENDPOINT",cfg["browser"]["default_cdp_endpoint"]).strip()
     now=datetime.now(timezone.utc).replace(microsecond=0)
-    candidates=candidate_rows(audit,now)
+    synchronized=synchronized_governed_candidate_rows(now)
+    candidates=(candidate_rows(audit,now) if synchronized is None else synchronized)
     research_targets=independent_research_quote_targets(now)
     # A separate, non-executable 24h lookup may inspect real bookmaker markets
     # before the strict 120m production window. It never creates p_matrix.
@@ -992,6 +1043,8 @@ def main()->None:
         "real_money": "BLOCKED",
       },
       "candidate_count_in_final_window":len(candidates),
+      "canonical_candidate_source":"SYNCHRONIZED_ORIGINAL_GOVERNED" if synchronized is not None else "LEGACY_SUPERVISOR_AUDIT",
+      "synchronized_candidate_report_present":synchronized is not None,
       "research_only_quote_target_count":len(research_targets),
       "early_24h_research_target_count":len(early_research_targets),
       "authorized_book_pages_captured":len([x for x in pages if x.get("status")=="CAPTURED"]),
