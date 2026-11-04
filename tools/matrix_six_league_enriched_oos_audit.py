@@ -193,22 +193,51 @@ def audit(path):
     result["evidence_sha256"]=sha(path)
     return result
 
+def scan_archived_references(root:Path):
+    """Inventory actual frozen reference groups, no imagined six-league IDs."""
+    import re
+    pattern=re.compile(r"^league_(\\d+)_season_(\\d+)\\.bin$")
+    source=root/"evidence"/"api_football"/"prospective_daily"
+    seen={}
+    for p in sorted(source.glob("*/**/history/raw/league_*_season_*.bin")):
+        match=pattern.fullmatch(p.name)
+        if not match or not p.is_file():continue
+        league,season=map(int,match.groups())
+        key=(league,season)
+        seen.setdefault(key,[]).append(str(p.relative_to(root)))
+    return {"schema":"MATRIX_ORIGINAL_ARCHIVE_LEAGUE_DISCOVERY_V1",
+       "archived_reference_group_count":len(seen),
+       "reference_groups":[{"original_league_id":k[0],"season":k[1],
+                            "archive_files":v,"source":"ORIGINAL_API_FOOTBALL_ARCHIVE"}
+                           for k,v in sorted(seen.items())],
+       "six_original_leagues_confirmed":len({k[0] for k in seen})==SIX,
+       "enriched_feature_equivalence_certified":False,
+       "prospective_oos_certified":False,
+       "production_p_matrix_authorized":False,
+       "telegram_signal_authorized":False,"automatic_wagering":False,
+       "real_money":"BLOCKED"}
+
 def main():
     parser=argparse.ArgumentParser()
-    parser.add_argument("--evidence",type=Path,required=True)
+    parser.add_argument("--evidence",type=Path)
+    parser.add_argument("--scan-original-root",type=Path)
     parser.add_argument("--out",type=Path,required=True)
     args=parser.parse_args()
+    if (args.evidence is None)==(args.scan_original_root is None):
+        raise SystemExit("CHOOSE_EVIDENCE_OR_ORIGINAL_DISCOVERY")
     if any(x in args.out.parts for x in ("telegram","daily_prematch_reports",
                                           "tennis_signals","governance")):
         raise SystemExit("OOS_AUDIT_MUST_NOT_WRITE_TO_PRODUCTION")
-    result=audit(args.evidence)
+    result=(audit(args.evidence) if args.evidence is not None
+            else scan_archived_references(args.scan_original_root))
     args.out.parent.mkdir(parents=True,exist_ok=True)
     args.out.write_text(json.dumps(result,indent=2,sort_keys=True,ensure_ascii=False)+"\n",encoding="utf-8")
-    print(json.dumps({"status":result["status"],
-                      "six_league_scientific_validation_passed":
-                         result["six_league_scientific_validation_passed"],
-                      "leagues_with_prospective_evidence":sum(x["validated_prospective_rows"]>0 for x in result["leagues"]),
-                      "telegram_signal_authorized":False},sort_keys=True))
+    print(json.dumps({
+        "status":result.get("status","REFERENCE_DISCOVERY_ONLY_NOT_CERTIFICATION"),
+        "archived_reference_group_count":result.get("archived_reference_group_count"),
+        "six_league_scientific_validation_passed":result.get(
+            "six_league_scientific_validation_passed",False),
+        "telegram_signal_authorized":False},sort_keys=True))
 
 if __name__=="__main__":
     main()
