@@ -122,7 +122,26 @@ def score_intake(intake: dict, token: str, *, opener=urlopen) -> dict:
                 continue
             observed_at = datetime.now(timezone.utc)
             payload = json.loads(body.decode("utf-8"))
-            rows = historic_rows(payload, cid)
+            # Retain only results that were already visible at the original
+            # capture time; never score with a later update or future result.
+            available = []
+            for match in payload.get("matches", []):
+                if not isinstance(match, dict):
+                    continue
+                if match.get("status") == "FINISHED" and match.get("lastUpdated"):
+                    try:
+                        updated = datetime.fromisoformat(
+                            str(match["lastUpdated"]).replace("Z", "+00:00")
+                        )
+                        if updated.tzinfo is None or updated.astimezone(timezone.utc) > observed_at:
+                            continue
+                    except (ValueError, TypeError):
+                        continue
+                available.append(match)
+            rows = [
+                row for row in historic_rows({**payload, "matches": available}, cid)
+                if row["kickoff_utc"] < observed_at
+            ]
             groups[key] = {"status": "HISTORY_CAPTURED", "rows": rows,
                            "sha256": hashlib.sha256(body).hexdigest(),
                            "raw_response_b64": base64.b64encode(body).decode("ascii"),
@@ -153,6 +172,19 @@ def score_intake(intake: dict, token: str, *, opener=urlopen) -> dict:
         target = {"kickoff_utc": f.get("kickoff_utc"),
                   "home_team_id": f.get("home_source_team_id"),
                   "away_team_id": f.get("away_source_team_id")}
+        try:
+            target_time = datetime.fromisoformat(str(f["kickoff_utc"]).replace("Z", "+00:00"))
+            group_time = datetime.fromisoformat(str(group["observed_at_utc"]).replace("Z", "+00:00"))
+            if (target_time.tzinfo is None or group_time.tzinfo is None
+                or group_time >= target_time or
+                datetime.now(timezone.utc) >= target_time):
+                output["blocked"].append({"source_fixture_id": fixture_id,
+                                          "reason": "TARGET_NOT_PROSPECTIVE_AT_HISTORY_CAPTURE"})
+                continue
+        except (KeyError, ValueError, TypeError):
+            output["blocked"].append({"source_fixture_id": fixture_id,
+                                      "reason": "INVALID_TARGET_OR_HISTORY_TIME"})
+            continue
         try:
             features, reason = _inputs_for_target(group["rows"], target)
         except (ValueError, TypeError, KeyError) as exc:
