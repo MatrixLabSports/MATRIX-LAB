@@ -93,7 +93,7 @@ jobs:
           LEDGER="evidence/live_tennis_lab/$D1/MATRIX_LIVE_TENNIS_STATE_LEDGER_V0_1.json"
           OUT="evidence/live_tennis_lab/$D1/MATRIX_LIVE_TENNIS_SETTLEMENT_SYNC_V0_1.json"
           if [ -f "$LEDGER" ]; then
-            python -m tools.live_tennis_settlement_sync               --ledger "$LEDGER"               --out "$OUT"               --max-detail-queries 20               --reserve-calls 35
+            python -m tools.live_tennis_settlement_sync               --ledger "$LEDGER"               --out "$OUT"               --max-detail-queries 2               --reserve-calls 50
           else
             echo "NO_YESTERDAY_LEDGER"
           fi
@@ -105,7 +105,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          python -m tools.live_tennis_bulk_collector             --date "$D0"             --cycles 1             --interval-seconds 12             --reserve-calls 35             --max-daily-match-calls 12
+          python -m tools.live_tennis_bulk_collector             --date "$D0"             --cycles 1             --interval-seconds 12             --reserve-calls 50             --max-daily-match-calls 12
 
       - name: Determine paid failover cycles
         id: failover
@@ -259,8 +259,8 @@ jobs:
             python -m tools.live_tennis_settlement_sync \
               --ledger "$FREE_LEDGER" \
               --out "evidence/live_tennis_lab/$D0/MATRIX_LIVE_TENNIS_SETTLEMENT_SYNC_V0_1.json" \
-              --max-detail-queries 10 \
-              --reserve-calls 20
+              --max-detail-queries 2 \
+              --reserve-calls 50
           else
             echo "PAID_FAILOVER_ONLY: FINAL settlement skipped because cross-provider admission is not certified."
             echo "CALIBRATION_ADMISSION=BLOCKED"
