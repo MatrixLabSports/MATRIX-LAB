@@ -42,3 +42,23 @@ Las 0 filas certificables **son el resultado del mecanismo de prueba sobre los m
 Inspeccionar el contenido de los **4614 JSON de análisis canónico original**, buscando predicciones realmente congeladas, timestamps y huellas de origen. Esto debe realizarse sin crear retrospectivamente predicciones que no existieron. Comparar luego con snapshots alternativos igualmente congelados y resultados independientes. Solo la conjunción de las tres fuentes y la evaluación fuera de muestra permite producir un manifiesto real. Si no hay probabilidad original congelada para un encuentro, el productor alternativo permanece en investigación y no puede ser certificado por equiparar sus resultados al resultado final.
 
 El ciclo de captura de casas es independiente del PIT estadístico. `REAL_MONEY=BLOCKED`, `automatic_wagering=false`, `production_p_matrix_authorized=false`, `telegram_signal_authorized=false`. Sin modificación de parámetros, cohortes originales o filtrados de seguridad.
+
+## Adenda decisiva — 189 manifiestos del productor original inspeccionados físicamente
+
+Se añadió `tools/matrix_original_canonical_probability_manifest_audit.py` y `tests/test_matrix_original_canonical_probability_manifest_audit.py` para examinar, en vez de inferir, el estado de producción de probabilidades en manifiestos `canonical_analysis/manifest.json` del productor original API-Football.
+
+**Ejecución Windows corregida**: https://github.com/MatrixLabSports/MATRIX-LAB/actions/runs/41765966598 — `completed/success`, **112 pruebas más 23 pruebas = 135 aprobadas**. Una ejecución previa falló por barras de ruta de la prueba en Windows; corregida sin relajar controles, commit `bb6bd1d0`.
+
+Informe físico persistido: `evidence/football_world_inventory/2026-11-04/MATRIX_ORIGINAL_CANONICAL_PROBABILITY_MANIFEST_AUDIT_LAST.json`.
+
+Resultados exactos:
+- `canonical_manifest_file_count=189`, `verified_manifest_count=189`, `rejected_manifest_count=0`.
+- `manifest_files_with_generated_probability_true=0`, `manifest_files_with_generated_probability_false=189`.
+- `p_matrix_status_counts.NOT_GENERATED=189`.
+- `sum_ready_input_counts_across_snapshots_not_unique_fixtures=33030`, que **NO** son predicciones y pueden repetir partidos a través de cortes.
+- `potential_probability_manifest_count=0`.
+- **Límite del hallazgo:** solo se verificaron los 189 manifiestos de `canonical_analysis`; no se han inspeccionado otros posibles informes de producción `daily_prematch_reports`, `shadow_ev` y `freeze`. Por ello NO se afirma que jamás se generó `p_matrix` en todo MATRIX.
+
+Causa acotada: contar entradas enriquecidas listas no acredita predicciones oficiales producidas y congeladas. Para certificar equivalencia prospectiva hace falta encontrar o crear legítimamente dos pronósticos sellados (original y alternativo) **antes de kickoff**, sus historiales e identidades, y el resultado final independiente **después de kickoff**. Con API-Football pagada expirada, no se debe simular pronósticos originales.
+
+Protecciones: `production_p_matrix_authorized=false`, `telegram_signal_authorized=false`, `automatic_wagering=false`, `real_money=BLOCKED`. Matrices, cohortes originales y parámetros intactos.
