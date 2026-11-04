@@ -12,7 +12,8 @@ if ($LASTEXITCODE -ne 0) { throw "BROWSER_GIT_CONFIG_FAILED" }
 
 $files = @(
   "evidence/notifications/telegram/MATRIX_SELF_HOSTED_BROWSER_HEALTH_LAST.json",
-  "evidence/notifications/telegram/MATRIX_BROWSER_CDP_COLLECTION_LAST.json"
+  "evidence/notifications/telegram/MATRIX_BROWSER_CDP_COLLECTION_LAST.json",
+  "evidence/notifications/telegram/MATRIX_BROWSER_GOVERNED_INTAKE_LAST.json"
 )
 foreach ($file in $files) {
   if (Test-Path -LiteralPath $file -PathType Leaf) {
