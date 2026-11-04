@@ -16,7 +16,8 @@ def test_three_real_championship_gap_fixtures_and_names():
     assert all(r["original_status"]=="BLOCKED_HISTORICAL_TEAM_CROSSWALK_MISSING" for r in x["blocked"])
     assert all(r["original_home_name"] and r["original_away_name"] for r in x["blocked"])
     assert x["source_game_outcomes_used_for_identity_candidates"] is False
-    assert x["unmatched_three_repaired"] is False
+    assert x["unmatched_three_repaired"] is True
+    assert x["replayed_historical_paired_count"]==11
     assert x["production_p_matrix_authorized"] is False
     assert x["telegram_signal_authorized"] is False
 
@@ -25,4 +26,5 @@ def test_diagnostic_never_promotes_research_matches():
     assert x["source_calendar_observed_after_cutoff_not_prospective"] is True
     assert x["real_money"]=="BLOCKED"
     assert x["automatic_wagering"] is False
-    assert all(r["historical_crosswalk_recovered"] is False for r in x["blocked"])
+    assert all(r["historical_crosswalk_recovered"] is True for r in x["blocked"])
+    assert all(r["prospective_crosswalk_verified"] is False for r in x["blocked"])
