@@ -9,7 +9,7 @@ def setup(tmp_path,generated=False,status="NOT_GENERATED"):
     p.write_text(json.dumps({"provider":"api_football","real_money":"BLOCKED",
        "model_probability_generated":generated,"p_matrix_status":status,
        "ready_input_count":344}),encoding="utf-8")
-    return str(p.relative_to(tmp_path))
+    return p.relative_to(tmp_path).as_posix()
 
 def test_archived_inputs_never_count_as_p_matrix(tmp_path):
     name=setup(tmp_path)
