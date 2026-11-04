@@ -28,6 +28,8 @@ on:
       - tools/matrix_independent_feature_parity_audit.py
       - tests/test_matrix_independent_feature_parity_audit.py
       - tools/matrix_independent_enriched_gap_feasibility.py
+      - tools/matrix_championship_eight_of_eleven_identity_gap_diagnostic.py
+      - tests/test_matrix_championship_eight_of_eleven_identity_gap_diagnostic.py
       - tests/test_matrix_independent_enriched_gap_feasibility.py
       - tools/matrix_independent_over25_championship_raw_feature_parity.py
       - tests/test_matrix_independent_over25_championship_raw_feature_parity.py
@@ -82,7 +84,7 @@ jobs:
       - name: Verify browser collector contracts
         shell: cmd
         run: |
-          python -m pytest -q tests/test_matrix_selfhosted_browser_quote_collector.py tests/test_matrix_browser_governed_intake_sync.py tests/test_matrix_calendar_browser_observations.py tests/test_matrix_early_research_quote_intake.py tests/test_matrix_betano_research_market_archive.py tests/test_matrix_quote_recovery_evidence.py tests/test_matrix_browser_independent_research_quote_targets.py tests/test_matrix_browser_candidate_pipeline_diagnostic.py tests/test_matrix_telegram_input_health.py tests/test_matrix_independent_triple_source_calendar_certificate.py tests/test_matrix_independent_feature_parity_audit.py tests/test_matrix_independent_enriched_gap_feasibility.py tests/test_matrix_independent_over25_championship_raw_feature_parity.py
+          python -m pytest -q tests/test_matrix_selfhosted_browser_quote_collector.py tests/test_matrix_browser_governed_intake_sync.py tests/test_matrix_calendar_browser_observations.py tests/test_matrix_early_research_quote_intake.py tests/test_matrix_betano_research_market_archive.py tests/test_matrix_quote_recovery_evidence.py tests/test_matrix_browser_independent_research_quote_targets.py tests/test_matrix_browser_candidate_pipeline_diagnostic.py tests/test_matrix_telegram_input_health.py tests/test_matrix_independent_triple_source_calendar_certificate.py tests/test_matrix_independent_feature_parity_audit.py tests/test_matrix_independent_enriched_gap_feasibility.py tests/test_matrix_championship_eight_of_eleven_identity_gap_diagnostic.py tests/test_matrix_independent_over25_championship_raw_feature_parity.py
 
       - name: Verify immutable 11:24 versus latest PIT cycle and monthly 429 before authorized browser capture
         shell: cmd
@@ -95,6 +97,10 @@ jobs:
       - name: Collect real SofaScore calendar observations from existing CDP before pricing
         shell: cmd
         run: powershell.exe -NoProfile -NonInteractive -ExecutionPolicy Bypass -File tools\\windows\\collect_matrix_sofa_calendar.ps1
+
+      - name: Reproduce historical eight of eleven fixture identity gaps from archived sources
+        shell: cmd
+        run: python -m tools.matrix_championship_eight_of_eleven_identity_gap_diagnostic --out evidence/football_world_inventory/2026-11-03/MATRIX_CHAMPIONSHIP_8_OF_11_IDENTITY_GAP_LAST.json
 
       - name: Synchronize original governed Over 2.5 candidates before collecting quotes
         shell: cmd
