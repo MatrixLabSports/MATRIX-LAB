@@ -143,7 +143,7 @@ def evaluate(root:Path)->dict:
     grouped=defaultdict(list)
     for p in (root/ROOT).glob("20??-??-??/[0-9]*_*.json"):
         if "_result_" not in p.name:
-            grouped(p.name.split("_",1)[0]).append(p)
+            grouped[p.name.split("_",1)[0]].append(p)
     verified=[];blocked=[];secondary=0
     for fid,files in sorted(grouped.items()):
         # Earliest authentic freeze is the preregistered row for a fixture;
