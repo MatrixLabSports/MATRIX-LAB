@@ -114,3 +114,20 @@ def test_wrong_native_home_away_identity_blocked(tmp_path):
        token="configured",opener=lambda *a,**kw:Response(fake))
     assert x["decisions"][0]["status"]=="RESULT_NOT_FINAL_OR_IDENTITY_MISMATCH"
     assert x["settled_total"]==0
+
+def test_secondary_live_forecast_not_counted_twice(tmp_path):
+    original=setup(tmp_path)
+    later=json.loads(original.read_text())
+    later["sealed_at_utc"]="2026-11-04T14:00:00+00:00"
+    later["research_probability_over25"]=0.67
+    other=original.parent/"555_second.json"
+    other.write_bytes(canonical(later))
+    x=settle(tmp_path,now=T("2026-11-04T18:00:00Z"),
+        token="configured",
+        opener=lambda *args,**kwargs:(_ for _ in ()).throw(AssertionError("NO_NETWORK_PRE_KICKOFF")))
+    assert x["scanned_forecasts"]==2
+    assert x["unique_fixture_count"]==1
+    assert x["secondary_forecast_count"]==1
+    assert x["decisions"][0]["status"]=="AWAITING_KICKOFF"
+    assert x["decisions"][1]["status"]=="SECONDARY_FROZEN_SNAPSHOT_EXCLUDED_FROM_PRIMARY_EVALUATION"
+    assert x["http_calls"]==0
