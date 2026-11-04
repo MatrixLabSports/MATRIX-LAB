@@ -23,3 +23,12 @@ Durante la observación del flujo, completaron satisfactoriamente las etapas de 
 El reemplazo `football-data.org` continúa siendo `research_only`. Los resultados históricos 57/57 de grupos y 8/11 enriquecidos no demuestran paridad prospectiva total ni autorizan una nueva probabilidad de producción. En ausencia de datos originales compatibles por encuentro y corte PIT, o una evaluación formal del reemplazo con holdout prospectivo sin fuga temporal, el bloqueo estadístico persiste.
 
 Pinnacle fresca (< =120 segundos), cuotas ejecutables de casas y validación de EV permanecen independientes; capturar una página no equivale a certificar cuotas. No se alteraron parámetros, cohortes originales, ni límites de riesgo. `REAL_MONEY=BLOCKED`, `automatic_wagering=false`, sin envíos verdes automáticos por este cambio.
+
+## Cierre físico confirmado — GitHub Actions #41759311437
+- Job `collect`: `completed/success`, todas las etapas aprobaron.
+- Log de Windows: **81 passed** en contratos recolector/sincronizador y **23 passed** en controles PIT/HTTP429 (total **104 pruebas**).
+- Sincronizador: `2026-11-04T02:14:25Z` → `NO_GOVERNED_CANONICAL_ROWS`, **0** candidatos originales disponibles, no autorización de Telegram.
+- Captura navegador: `2026-11-04T02:14:25Z` → **14** páginas de casas, **1** mercado Betano de investigación, **0** cotizaciones ejecutables, `PREMATCH_TARGETS_WITHOUT_CERTIFIED_EXECUTION_QUOTE`.
+- Persistencia: `MATRIX_BROWSER_EVIDENCE_PUSHED`, con informe `MATRIX_BROWSER_GOVERNED_INTAKE_LAST.json` y captura `MATRIX_BROWSER_CDP_COLLECTION_LAST.json` en la rama.
+- La vieja auditoría del supervisor sigue vencida; el recolector usa explícitamente `SYNCHRONIZED_ORIGINAL_GOVERNED` en lugar de fingir frescura de la auditoría. Si no existen archivos canónicos originales, este cambio **no los crea**.
+- El reemplazo `football-data.org` y Pinnacle permanecen sin certificación. No confundir 104 pruebas de infraestructura con certificación prospectiva del nuevo modelo.
