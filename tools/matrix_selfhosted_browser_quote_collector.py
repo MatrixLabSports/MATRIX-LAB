@@ -900,7 +900,7 @@ def main()->None:
                 for c in matching:
                     exact=None
                     detail_diagnostics=[]
-                    if book=="betano" and betano_payloads:
+                    if book=="betano" and adapter.get("status")=="CERTIFIED_EXACT_OVER25":
                         parts=split_match(str(c.get("match") or ""))
                         if parts:
                             home_raw,away_raw=[x.strip() for x in re.split(r"\s+vs\.?\s+",str(c.get("match") or ""),maxsplit=1,flags=re.I)]
