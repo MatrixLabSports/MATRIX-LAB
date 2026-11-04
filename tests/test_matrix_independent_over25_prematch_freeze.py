@@ -49,12 +49,12 @@ def test_immutable_seal_and_replay(tmp_path):
     r=run(tmp_path)
     assert r["immutable_prematch_freeze_count"]==1
     entry=r["sealed"][0]
-    x=json.loads(Path(entry["path"]).read_text())
+    x=json.loads((tmp_path/entry["path"]).read_text())
     assert x["schema"]==SCHEMA
     assert x["sealed_at_utc"]<x["kickoff_utc"]
     assert x["source_shadow_file_sha256"]
     for label in ("source_shadow_file_path","source_intake_file_path"):
-        src=Path(x[label])
+        src=tmp_path/x[label]
         assert src.is_file()
         assert hashlib.sha256(src.read_bytes()).hexdigest()==x[label.replace("_path","_sha256")]
     assert x["source_snapshot_sha256"]
