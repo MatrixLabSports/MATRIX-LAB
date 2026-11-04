@@ -261,7 +261,7 @@ def audit(path):
 def scan_archived_references(root:Path):
     """Inventory actual frozen reference groups, no imagined six-league IDs."""
     import re
-    pattern=re.compile(r"^league_(\\d+)_season_(\\d+)\\.bin$")
+    pattern=re.compile(r"^league_(\d+)_season_(\d+)\.bin$")
     source=root/"evidence"/"api_football"/"prospective_daily"
     seen={}
     for p in sorted(source.glob("*/**/history/raw/league_*_season_*.bin")):
