@@ -37,6 +37,7 @@ on:
       - tests/test_matrix_six_league_stepwise_certification.py
       - tests/test_matrix_original_fixture_id_lineage_crosswalk.py
       - tools/matrix_independent_over25_prematch_freeze.py
+      - tools/matrix_independent_over25_prematch_fresh_cycle.py
       - tests/test_matrix_independent_over25_prematch_freeze.py
       - tests/test_matrix_over25_noncanonical_probability_recovery.py
       - tests/test_matrix_original_canonical_probability_manifest_audit.py
@@ -141,6 +142,10 @@ jobs:
       - name: Certify five research evidence gates before any model or Telegram authorization
         shell: cmd
         run: python -m tools.matrix_six_league_stepwise_certification
+
+      - name: Seal genuine current and next-day independent prematch research before kickoff
+        shell: cmd
+        run: python -m tools.matrix_independent_over25_prematch_fresh_cycle
 
       - name: Synchronize original governed Over 2.5 candidates before collecting quotes
         shell: cmd
