@@ -65,3 +65,12 @@ def test_conflicting_fields_not_silently_equated(tmp_path):
     assert report["counts"]["rows_with_conflicting_numeric_probability_fields"]==1
     assert report["numeric_probability_sample_without_values"][0]["two_numeric_fields_consistent"] is False
     assert report["strict_original_alternative_result_triplet_certified"]==0
+
+def test_repeated_snapshots_are_not_unique_events(tmp_path):
+    name=fixture(tmp_path,[{"fixture_id":"10","league_id":"39","p_over_2_5":0.61},
+                           {"fixture_id":"10","league_id":"39","p_over_2_5":0.62},
+                           {"fixture_id":"12","league_id":"39","p_over_2_5":0.63}])
+    result=inspect(tmp_path,[name])
+    assert result["six_original_leagues"]["39"]["rows_with_numeric_probability"]==3
+    assert result["six_original_leagues"]["39"]["distinct_identified_fixture_ids_with_numeric_probability"]==2
+    assert result["production_p_matrix_authorized"] is False
