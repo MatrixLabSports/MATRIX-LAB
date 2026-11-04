@@ -13,11 +13,18 @@ from tools.matrix_championship_enriched_provider_bridge import replay, dt
 from tools.matrix_championship_cross_provider_archived_replay import CYCLE
 from tools.api_football_canonicalize_analysis_inputs import load_chunked_canonical_bundle
 from tools.matrix_independent_over25_historical_parity import sim
+from tools.matrix_championship_enriched_provider_bridge import historical_calendar_team_name
 
 ROOT=Path(__file__).resolve().parents[1]
 SOURCE=ROOT/"evidence/football_world_inventory/2026-11-03/MATRIX_INDEPENDENT_OVER25_HISTORY_SHADOW.json"
+BASELINE=ROOT/"evidence/football_world_inventory/2026-11-03/MATRIX_CHAMPIONSHIP_ENRICHED_BRIDGE_WINDOWS_41652604235.json"
 
-def diagnose(shadow:dict, *, cycle:Path=CYCLE)->dict:
+def diagnose(shadow:dict, *, cycle:Path=CYCLE, baseline_path:Path=BASELINE)->dict:
+    original_report=json.loads(baseline_path.read_text(encoding="utf-8"))
+    if (original_report.get("original_canonical_targets")!=11 or
+        original_report.get("historical_three_way_parity_count")!=8 or
+        original_report.get("blocked_count")!=3):
+        raise ValueError("ORIGINAL_EIGHT_OF_ELEVEN_BASELINE_MISMATCH")
     bridge=replay(shadow,cycle=cycle)
     if bridge.get("original_canonical_targets")!=11:
         raise ValueError("HISTORIC_11_TARGET_SCOPE_CHANGED")
@@ -32,7 +39,8 @@ def diagnose(shadow:dict, *, cycle:Path=CYCLE)->dict:
     original={str(x["fixture_id"]):x for x in bundle["inputs"]
               if str(x.get("competition_id"))=="40"}
     blocked=[]
-    for row in bridge["rows"]:
+    replayed_by_id={x["original_api_fixture_id"]:x for x in bridge["rows"]}
+    for row in original_report["rows"]:
         if row["status"]=="PASS_HISTORICAL_THREE_WAY_ENRICHED_BRIDGE_ONLY":
             continue
         ident=row["original_api_fixture_id"]
@@ -47,10 +55,13 @@ def diagnose(shadow:dict, *, cycle:Path=CYCLE)->dict:
                 competition=m.get("competition") or source.get("competition") or {}
                 if str(competition.get("id"))!="2016":continue
                 h=m["homeTeam"];a=m["awayTeam"]
-                home_sim=sim(target["home_team_name"],h["name"])
-                away_sim=sim(target["away_team_name"],a["name"])
-                swapped=(sim(target["home_team_name"],a["name"])+
-                          sim(target["away_team_name"],h["name"]))/2
+                oh=historical_calendar_team_name(target["home_team_name"])
+                oa=historical_calendar_team_name(target["away_team_name"])
+                fh=historical_calendar_team_name(h["name"])
+                fa=historical_calendar_team_name(a["name"])
+                home_sim=sim(oh,fh)
+                away_sim=sim(oa,fa)
+                swapped=(sim(oh,fa)+sim(oa,fh))/2
                 choices.append({
                     "free_fixture_id":str(m["id"]),
                     "free_home_team_id":str(h["id"]), "free_away_team_id":str(a["id"]),
@@ -74,26 +85,29 @@ def diagnose(shadow:dict, *, cycle:Path=CYCLE)->dict:
             "original_away_team_id":str(target["away_team_id"]),
             "kickoff_utc":target["kickoff_utc"],
             "original_status":row["status"],
+            "replayed_status":replayed_by_id[ident]["status"],
             "calendar_candidates_same_kickoff":choices[:10],
             "strict_name_gate_matches":sum(bool(z["matches_strict_historical_name_gate"]) for z in choices),
-            "historical_crosswalk_recovered":False,
+            "historical_crosswalk_recovered":replayed_by_id[ident]["status"]=="PASS_HISTORICAL_THREE_WAY_ENRICHED_BRIDGE_ONLY",
             "prospective_crosswalk_verified":False,
         })
     return {
         "schema":"MATRIX_CHAMPIONSHIP_EIGHT_OF_ELEVEN_IDENTITY_GAP_DIAGNOSTIC_V1",
         "interpretation":"EIGHT_OF_ELEVEN_HISTORICAL_FIXTURES_NOT_FEATURE_DIMENSIONS",
         "historical_fixture_count":bridge["original_canonical_targets"],
-        "historical_paired_count":bridge["historical_three_way_parity_count"],
+        "historical_paired_count":original_report["historical_three_way_parity_count"],
+        "replayed_historical_paired_count":bridge["historical_three_way_parity_count"],
         "historical_blocked_count":len(blocked),
         "blocked_ids":[x["original_api_fixture_id"] for x in blocked],
         "blocked":blocked,
         "original_archive_sha256":bridge["original_archive_sha256"],
+        "original_eight_of_eleven_report_sha256":hashlib.sha256(baseline_path.read_bytes()).hexdigest(),
         "source_provider_sha256":bridge["source_provider_sha256"],
         "original_bundle_sha256":bridge["original_bundle_sha256"],
         "cutoff_utc":bridge["original_analysis_as_of_utc"],
         "source_calendar_observed_after_cutoff_not_prospective":True,
         "source_game_outcomes_used_for_identity_candidates":False,
-        "unmatched_three_repaired":False,
+        "unmatched_three_repaired":len(blocked)==3 and all(x["historical_crosswalk_recovered"] for x in blocked),
         "calibration_parameters_modified":False,
         "production_p_matrix_authorized":False,
         "telegram_signal_authorized":False,
