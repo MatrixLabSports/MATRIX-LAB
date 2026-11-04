@@ -54,3 +54,48 @@ def test_unknown_usage_is_not_interpreted_as_zero_or_spent(monkeypatch,tmp_path)
     guard=run(monkeypatch,tmp_path,200,None)
     assert guard["status"]=="BLOCKED_USAGE_REMAINING_UNVERIFIED"
     assert guard["executed_cycles"]==0
+
+def test_live_matches_http_429_preserves_reserve_and_reports_block(monkeypatch,tmp_path):
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.setenv("LIVE_TENNIS_API_KEY","private-test-key")
+    monkeypatch.setattr(sys,"argv",["collector","--date",D,
+                       "--cycles","2","--reserve-calls","25"])
+    def provider(path,key,params=None):
+        if path=="/usage":
+            return {"tier":"free","limits":{"per_day":100},
+                    "today":{"remaining_day":50}},{"http_status":200}
+        assert path=="/matches"
+        return {},{"http_status":429}
+    monkeypatch.setattr(mod,"get_json",provider)
+    mod.main()
+    guard=json.loads((tmp_path/GUARD).read_text())
+    assert guard["status"]=="BLOCKED_LIVE_MATCHES_HTTP_429"
+    assert guard["executed_cycles"]==0
+    assert guard["total_executed_cycles_today"]==0
+    assert guard["reserve_calls"]==25
+    assert not (tmp_path/LEDGER).exists()
+
+def test_two_separate_cycles_increment_real_daily_count(monkeypatch,tmp_path):
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.setenv("LIVE_TENNIS_API_KEY","private-test-key")
+    monkeypatch.setattr(mod.time,"sleep",lambda _:None)
+    monkeypatch.setattr(sys,"argv",["collector","--date",D,
+                       "--cycles","2","--reserve-calls","25"])
+    def provider(path,key,params=None):
+        if path=="/usage":
+            return {"tier":"free","limits":{"per_day":100},
+                    "today":{"remaining_day":70}},{"http_status":200}
+        assert path=="/matches"
+        return {"data":[]},{"http_status":200,
+                "path":"/matches","response_sha256":"authentic-test-hash"}
+    monkeypatch.setattr(mod,"get_json",provider)
+    mod.main()
+    assert json.loads((tmp_path/GUARD).read_text())["total_executed_cycles_today"]==2
+    mod.main()
+    guard=json.loads((tmp_path/GUARD).read_text())
+    ledger=json.loads((tmp_path/LEDGER).read_text())
+    assert guard["total_executed_cycles_today"]==4
+    assert ledger["total_executed_cycles_today"]==4
+    assert len(ledger["network_calls"])==4
+    assert ledger["unique_state_count"]==0
+    assert ledger["model_status"]=="RESEARCH_ONLY"
