@@ -61,7 +61,7 @@ def test_immutable_seal_and_replay(tmp_path):
     assert x["production_p_matrix_authorized"] is False
     assert r["telegram_signal_authorized"] is False
     again=run(tmp_path)
-    assert again["sealed"][0]["status"]=="ALREADY_IDENTICAL"
+    assert again["sealed"][0]["status"]=="ALREADY_FROZEN"
 
 def test_late_capture_cannot_backfill(tmp_path):
     r=run(tmp_path,now="2026-11-04T20:01:00Z")
