@@ -90,7 +90,7 @@ def evaluate(root:Path,day:str,now:datetime):
                 status.append("PLAYER_NAME_CONFLICT_ACROSS_SOURCES");valid=False
         try:
             kickoff=timestamp(x["kickoff_utc"])
-            expected=datetime.strptime(x["calendar_date_token"],"%Y%m%dT%H%MZ").replace(tzinfo=timezone.utc)
+            expected=datetime.strptime(x["calendar_date_token"],"%Y%m%dT%H%M%SZ").replace(tzinfo=timezone.utc)
             if kickoff!=expected or kickoff.date()!=date.fromisoformat(day):
                 status.append("EXACT_UTC_CALENDAR_IDENTITY_MISMATCH");valid=False
             if observed>=kickoff:
