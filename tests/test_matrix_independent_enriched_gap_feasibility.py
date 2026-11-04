@@ -16,7 +16,7 @@ def run(rows):
        as_of_utc=ASOF,target_kickoff_utc=TARGET)
 
 def test_free_history_feasibility_is_not_model_parity():
-    rows=[event(i,kickoff=f"2026-11-0{i}T20:00:00Z") for i in range(1,6)]
+    rows=[event(i,kickoff=f"2026-10-0{i}T20:00:00Z") for i in range(1,6)]
     result=run(rows)
     assert result["workstreams"]["home_history"]["minimum_count_met"] is True
     assert result["workstreams"]["away_history"]["minimum_count_met"] is True
