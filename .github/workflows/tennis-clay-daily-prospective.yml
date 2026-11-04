@@ -1,50 +1,20 @@
-# MATRIX_USER_AUTHORIZED_RECOVERY 2026-10-22T04:13-05:00 three-block-clay-refresh
-# MATRIX_USER_AUTHORIZED_REFRESH 2026-10-20T20:46-05:00
-# MATRIX_USER_AUTHORIZED_TRIGGER 2026-10-20 prepare-21oct-calendar-physical-audit
-# FINAL_PHYSICAL_CERTIFICATION_REQUEST_CURRENT
-# PHYSICAL_CLAY_RECOVERY_AFTER_CANCEL_CURRENT
-# PHYSICAL_REFRESH_REQUEST_20OCT2026_CURRENT
-# PHYSICAL_WATCHDOG_RECOVERY_20OCT2026_0740_BOGOTA
-# VERIFY_30_MINUTE_CONTROL_RECOVERY_20OCT2026
-# VERIFY_CONTROLS_20OCT2026_1055UTC
-# DEFAULT_BRANCH_SCHEDULER: cron lives on main; operational checkout remains repair/cor09-world-pipeline
+# MATRIX_USER_AUTHORIZED_TRIGGER 2026-10-21T17:45-05:00 browser-first-22oct-refresh
+# MATRIX_PHYSICAL_TRIGGER 2026-10-19T10:20-05:00 targeted-resolution
+# MATRIX_PHYSICAL_TRIGGER 2026-10-19T01:10-05:00 accumulation-cycle
+# MATRIX_PHYSICAL_TRIGGER 2026-10-18T19:56Z clay-pit-recovery-refresh
+# MATRIX_USER_AUTHORIZED_TRIGGER 2026-10-15T19:04-05:00 browser-first-16oct-post-browser-api-refresh
 name: MATRIX Tennis Clay Daily Prospective
 # MATRIX_MANUAL_CUMULATIVE_RECOVERY_PASS 2026-10-12 P2
 # MATRIX_MANUAL_RECOVERY_PASS 2026-10-12 P2
 
+
+# The legacy paid RapidAPI prospecting path was subscription-limited to
+# 2026-10-28 and must never run automatically after expiration.
+# Daily free source discovery is handled by matrix-tennis-browser-first-free-intake.yml.
+# This old workflow remains manual for controlled historical diagnostics;
+# its deadline guard still prevents expired paid API access.
 on:
-  push:
-    branches:
-      - main
-      - repair/cor09-world-pipeline
-    paths:
-      - .github/workflows/tennis-clay-daily-prospective.yml
-      - tools/tennis_clay_prefeature_discovery.py
-      - tools/cor0203_world_date_rollover.py
-      - tools/tennis_api_tennis_dual_lane_exact_day.py
-      - tools/tennis_dual_lane_event_reconcile.py
-      - tools/tennis_primary_lane_event_reconcile.py
-      - tools/tennis_clay_parent_state_sync.py
-      - tools/tennis_clay_pit_catchup.py
-      - tools/tennis_clay_identity_recovery_registry.py
-      - tools/tennis_clay_identity_alias_ledger.py
-      - tools/tennis_clay_profile_identity_recovery.py
-      - tests/test_tennis_clay_identity_recovery_registry.py
-      - tests/test_tennis_clay_identity_alias_ledger.py
-      - tests/test_tennis_clay_profile_identity_recovery.py
-      - tests/test_tennis_dual_lane_event_reconcile.py
-      - tests/test_tennis_primary_lane_event_reconcile.py
-      - tests/test_tennis_clay_parent_state_sync.py
-      - tests/test_tennis_clay_pit_catchup.py
-      - tools/tennis_clay_prospective_producer.py
-      - tests/test_tennis_clay_prospective_producer.py
-      - tools/cor0203_expand_identity_authority.py
-      - tools/cor0203_build_identity_crosswalk.py
-      - tests/test_cor0203_build_identity_crosswalk.py
-      - tests/test_tennis_clay_prefeature_discovery.py
   workflow_dispatch:
-  schedule:
-    - cron: '7,22,37,52 * * * *'
 
 permissions:
   contents: write
@@ -256,7 +226,7 @@ jobs:
             --historical-dataset evidence/tennis_parallel_lanes/ATP_CHALLENGER_MEN_SINGLES_CLAY/bootstrap/historical_pit_dataset.csv \
             --model evidence/tennis_parallel_lanes/ATP_CHALLENGER_MEN_SINGLES_CLAY/bootstrap/elo_candidate_v1.json \
             --out evidence/tennis_parallel_lanes/ATP_CHALLENGER_MEN_SINGLES_CLAY/runtime/MATRIX_CLAY_PROFILE_IDENTITY_RECOVERY_LAST.json \
-            --max-targets 40
+            --max-targets 60
 
       - name: Accumulate certified Clay profile identities
         shell: bash
@@ -407,3 +377,5 @@ jobs:
             sleep $((attempt*2))
           done
           exit 1
+
+# MATRIX_USER_AUTHORIZED_TRIGGER 2026-10-19T20:56-05:00 prepare-20oct-clay-governed-cycle
