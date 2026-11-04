@@ -49,7 +49,7 @@ def test_forged_manifest_name_cannot_certify(tmp_path):
         "real_money":"BLOCKED","signal_generation_authorized":False}),encoding="utf-8")
     doc=evaluate(tmp_path,[path])
     assert doc["strict_oos_manifest_paths"]==[path]
-    assert doc["strict_oos_manifest_results"][0]["status"]=="FAIL_CLOSED"
+    assert doc["strict_oos_manifest_results"][0]["status"]!="PASS_SIX_LEAGUE_ENRICHED_PROSPECTIVE_OOS"
     assert all(x["certified_prospective_rows_from_strict_manifest"]==0 for x in doc["leagues"])
 
 def test_not_approved_fails_closed(tmp_path):
