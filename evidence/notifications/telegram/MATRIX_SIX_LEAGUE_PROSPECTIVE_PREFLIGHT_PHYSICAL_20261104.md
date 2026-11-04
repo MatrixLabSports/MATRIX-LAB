@@ -41,3 +41,26 @@ Comité funcional aplicado: procedencia de datos, ingeniería de integración, i
 ## Protección
 
 Sin cambios a parámetros congelados, evaluaciones históricas originales, fórmulas, cohortes de tenis, apuestas o Telegram. Una captura de SofaScore/Flashscore o Betano no promueve el productor. `REAL_MONEY=BLOCKED`; `automatic_wagering=false`; `production_p_matrix_authorized=false`; `telegram_signal_authorized=false`.
+
+## Adenda verificable — seis ligas originales recuperadas de la decisión del 10 de octubre
+
+**Este estado más reciente sustituye el primer bloqueo del informe previo.** Se recuperó la especificación previa del usuario: seis ligas API-Football `39,61,78,135,140,239` (Premier League, Ligue 1, Bundesliga, Serie A, LaLiga, Primera A Colombia). El inventario original confirmó físicamente la temporada 2026 de las seis, sin escogerlas por su resultado estadístico.
+
+Se codificó el alcance exclusivamente en `evidence/api_football/governance/alternative_producer_original_six_league_registry.json`; la bandera `scope_approved=true` significa que el alcance lo había pedido el usuario, **no** que haya aprobación de paridad de datos o de dinero real.
+
+| Liga | ID | Archivos originales |
+|---|---|---:|
+| Premier League | 39 | 61 |
+| Ligue 1 | 61 | 60 |
+| Bundesliga | 78 | 53 |
+| Serie A | 135 | 86 |
+| LaLiga | 140 | 78 |
+| Primera A Colombia | 239 | 130 |
+
+**Segunda ejecución física en Windows:** https://github.com/MatrixLabSports/MATRIX-LAB/actions/runs/41764574978 — job `completed/success`, **103+23 = 126 pruebas aprobadas**. El informe canónico `evidence/football_world_inventory/2026-11-04/MATRIX_SIX_LEAGUE_PROSPECTIVE_PREFLIGHT_LAST.json` fue guardado físicamente y muestra `six_league_registry_approved=true`, `selected_six_leagues_present_in_original_archive=true`.
+
+**Único bloqueo detectado por el preflight actual:** `PROSPECTIVE_SOURCE_SNAPSHOT_MANIFEST_MISSING`. Su ausencia no demuestra que no haya encuentros o documentos dispersos; significa que **no existe el manifiesto de predicciones original y alternativo con sus pruebas SHA y tiempos pre-partido en la ruta certificable**.
+
+Por liga, `prospective_evidence_present=false` y `valid_prospective_rows=0` significan **cero filas certificables a partir del manifiesto ausente**, no cero partidos disputados ni cero archivos de investigación. Las seis quedan sin certificación OOS; el resultado final es `BLOCKED_PROSPECTIVE_SIX_LEAGUE_EVIDENCE_INCOMPLETE`, `scientific_oos_validation_passed=false`, `production_p_matrix_authorized=false`, `telegram_signal_authorized=false`.
+
+El paso siguiente es generar solo capturas prospectivas originales y alternativas verdaderas, previamente congeladas y enlazadas a sus hashes; prohibido construir retrospectivamente una falsa predicción original desde los marcadores finales o el proveedor alternativo.
