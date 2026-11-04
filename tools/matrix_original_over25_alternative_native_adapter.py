@@ -27,13 +27,18 @@ def read_sha(path:Path,expect:str)->bytes:
         raise ValueError("SOURCE_SHA256_INVALID")
     return raw
 
-def source_path(root:Path,forecast:dict,label:str)->Path:
-    # Both historical Windows absolute paths and newer portable references
-    # must resolve to content-addressed immutable source files INSIDE repo.
+def source_path(root:Path,forecast_file:Path,forecast:dict,label:str)->Path:
+    # Archive partition is the target-day directory of the sealed file, not
+    # the UTC calendar date of its earlier prematch capture. In particular a
+    # 5-Nov fixture may have been sealed on 4-Nov; never change its source hash.
     ident=forecast[f"source_{label}_file_sha256"]
     if not isinstance(ident,str) or len(ident)!=64 or any(c not in "0123456789abcdef" for c in ident):
         raise ValueError("SOURCE_HASH_NOT_SHA256")
-    return root/ROOT/forecast["sealed_at_utc"][:10]/"sources"/(ident+".json")
+    archived_root=(root/ROOT).resolve()
+    parent=forecast_file.parent.resolve()
+    if parent.parent!=archived_root or not parent.name[:4].isdigit():
+        raise ValueError("FROZEN_FORECAST_OUTSIDE_AUTHORIZED_ARCHIVE")
+    return parent/"sources"/(ident+".json")
 
 def verify(root:Path,p:Path,promotion:dict)->dict:
     frozen_bytes=p.read_bytes()
@@ -47,9 +52,9 @@ def verify(root:Path,p:Path,promotion:dict)->dict:
     saved=stamp(snapshot["sealed_at_utc"])
     calculated=stamp(snapshot["model_calculated_at_utc"])
     if not calculated<=saved<kickoff:raise ValueError("PREDICTION_NOT_CAPTURED_PRE_KICKOFF")
-    inp=json.loads(read_sha(source_path(root,snapshot,"intake"),
+    inp=json.loads(read_sha(source_path(root,p,snapshot,"intake"),
                   snapshot["source_intake_file_sha256"]))
-    shadow=json.loads(read_sha(source_path(root,snapshot,"shadow"),
+    shadow=json.loads(read_sha(source_path(root,p,snapshot,"shadow"),
                   snapshot["source_shadow_file_sha256"]))
     if (inp.get("schema")!="MATRIX_INDEPENDENT_FIXTURE_INTAKE_V1"
         or shadow.get("schema")!="MATRIX_INDEPENDENT_OVER25_HISTORY_SHADOW_V1"
