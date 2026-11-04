@@ -50,6 +50,19 @@ def unique_mapping(pairs,orig,indep):
         forward.pop(k,None)
     return forward,conflicts
 
+HISTORICAL_CALENDAR_ALIASES={
+    # Only exact, known club abbreviations; used solely for retrospective
+    # calendar-only crosswalk. No future result or price may influence aliases.
+    "west brom":"west bromwich albion",
+    "qpr":"queens park rangers",
+    "wolves":"wolverhampton wanderers",
+}
+
+def historical_calendar_team_name(name):
+    from tools.matrix_independent_over25_historical_parity import norm
+    n=norm(name)
+    return HISTORICAL_CALENDAR_ALIASES.get(n,n)
+
 def calendar_identity_only(target, free_payload, cutoff, *, min_similarity=0.83):
     """Retrospective calendar-only link. NEVER fetches or uses match scores.
 
@@ -73,9 +86,13 @@ def calendar_identity_only(target, free_payload, cutoff, *, min_similarity=0.83)
             a=m.get("awayTeam") or {}
             hi=str(int(h["id"]));ai=str(int(a["id"]))
             if hi==ai:continue
-            hs=sim(target["home_team_name"],h["name"])
-            aas=sim(target["away_team_name"],a["name"])
-            swapped=(sim(target["home_team_name"],a["name"])+sim(target["away_team_name"],h["name"]))/2
+            oh=historical_calendar_team_name(target["home_team_name"])
+            oa=historical_calendar_team_name(target["away_team_name"])
+            fh=historical_calendar_team_name(h["name"])
+            fa=historical_calendar_team_name(a["name"])
+            hs=sim(oh,fh)
+            aas=sim(oa,fa)
+            swapped=(sim(oh,fa)+sim(oa,fh))/2
             score=(hs+aas)/2
             if hs>=min_similarity and aas>=min_similarity and score>=swapped+0.12:
                 choices.append((score,hi,ai,str(m["id"])))
