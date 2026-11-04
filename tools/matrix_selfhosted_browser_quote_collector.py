@@ -433,6 +433,45 @@ def betano_dom_exact_over25(detail_page,event_url:str,home:str,away:str)->dict[s
         return None
     return None
 
+def betano_visible_event_links(page,home:str,away:str)->list[str]:
+    """Find bounded, read-only Betano event links rendered for both teams.
+
+    Never guess event identifiers or navigate to unverified hosts. The event
+    detail extractor independently verifies the title and the exact market.
+    """
+    try:
+        rows=page.evaluate("""() => [...document.querySelectorAll('a[href]')]
+          .map(a => ({href:a.getAttribute('href')||'',
+                      label:(a.innerText||a.getAttribute('aria-label')||a.title||'').trim()}))
+          .filter(x => x.href && x.label).slice(0,1200)""")
+    except Exception:
+        return []
+    if not isinstance(rows,list):
+        return []
+    result=[]
+    for row in rows:
+        if not isinstance(row,dict):
+            continue
+        href=str(row.get("href") or "")
+        label=str(row.get("label") or "")
+        if not teams_in_betano_title(label,home,away):
+            continue
+        parsed=urlparse(href)
+        host=parsed.netloc.casefold()
+        if parsed.scheme and parsed.scheme!="https":
+            continue
+        if host and host not in {"www.betano.co","betano.co"}:
+            continue
+        if not re.fullmatch(r"/cuotas-de-partido/[a-zA-Z0-9_-]+/\d{6,}/?",parsed.path):
+            continue
+        url="https://www.betano.co"+parsed.path
+        if url not in result:
+            result.append(url)
+        if len(result)>=3:
+            break
+    return result
+
+
 def betano_detail_exact_over25(page,event_url:str,home:str,away:str)->tuple[dict[str,Any]|None,list[str]]:
     ctx=page.context
     diagnostics=[]
@@ -875,10 +914,23 @@ def main()->None:
                                         break
                                     if event_obj is None:
                                         event_obj=betano_event_from_payload(body,home_raw,away_raw)
-                            if exact is None and isinstance(event_obj,dict) and event_obj.get("url"):
-                                exact,detail_diagnostics=betano_detail_exact_over25(page,str(event_obj.get("url")),home_raw,away_raw)
-                                if exact:
+                            event_urls=[]
+                            if isinstance(event_obj,dict) and event_obj.get("url"):
+                                event_urls.append(str(event_obj["url"]))
+                            for visible_url in betano_visible_event_links(page,home_raw,away_raw):
+                                if visible_url not in event_urls:
+                                    event_urls.append(visible_url)
+                            for candidate_url in event_urls[:4]:
+                                if exact is not None:
+                                    break
+                                found,detail_trace=betano_detail_exact_over25(page,candidate_url,home_raw,away_raw)
+                                detail_diagnostics.extend(detail_trace)
+                                if found is not None:
+                                    exact=found
                                     exact["endpoint"]="EVENT_DETAIL_PAGE_NETWORK"
+                                    break
+                            if not event_urls:
+                                detail_diagnostics.append("NO_BOUND_BETANO_EVENT_LINK")
                     emitted,blocker=quote_eligibility(exact,c,adapter.get("status","MISSING"),now)
                     if c.get("research_only") is True:
                         emitted=False
