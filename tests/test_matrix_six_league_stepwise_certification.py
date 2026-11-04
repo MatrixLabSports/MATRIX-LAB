@@ -90,3 +90,23 @@ def test_same_fixture_conflicting_old_probabilities_are_not_selected(tmp_path):
     out=assess(tmp_path,files+[second])
     assert out["fixture_decisions"][0]["status"]=="CONFLICTING_ORIGINAL_PROBABILITIES"
     assert out["counts"]["39"]["original_number_reported_pre_kickoff"]==0
+
+def test_postmatch_raw_independent_source_not_promoted(tmp_path):
+    files=fixture(tmp_path)
+    raw="evidence/football_cohort_recovery/FOOTBALL_DATA_ORG_RAW_LAST.json"
+    put(tmp_path,raw,{"matches":[{"id":100,"status":"FINISHED"}]})
+    out=assess(tmp_path,files+[raw])
+    assert out["alternative_raw_provenance_profile"]["completed_match_rows"]==1
+    assert out["alternative_raw_provenance_profile"]["prospective_frozen_forecasts_certified"]==0
+    assert out["counts"]["39"]["alternative_genuine_prematch_pair"]==0
+
+def test_canonical_intake_empty_remains_telegram_blocked(tmp_path):
+    files=fixture(tmp_path)
+    name="evidence/notifications/telegram/MATRIX_BROWSER_GOVERNED_INTAKE_LAST.json"
+    put(tmp_path,name,{"schema":"MATRIX_BROWSER_GOVERNED_INTAKE_SYNC_V1",
+      "real_money":"BLOCKED","status":"NO_GOVERNED_CANONICAL_ROWS",
+      "candidate_count":0,"telegram_signal_authorized":False})
+    out=assess(tmp_path,files+[name])
+    assert out["telegram_governed_intake_profile"]["governed_candidate_count"]==0
+    assert out["steps"]["step_5_telegram"].startswith("BLOCKED")
+    assert out["telegram_signal_authorized"] is False
