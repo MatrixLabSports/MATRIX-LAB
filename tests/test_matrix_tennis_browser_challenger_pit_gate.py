@@ -26,3 +26,11 @@ def test_old_calendar_cannot_backdate_new_prematch_admission():
     assert all("PROSPECTIVE_SCORE_WINDOW_CLOSED" in x["blocked"] for x in r["events"])
     assert r["new_hard_holdout_observations"]==0
     assert r["new_clay_holdout_observations"]==0
+
+
+def test_calendar_utc_token_seconds_match_verified_kickoff():
+    """Regression: source tokens include HHMMSS, not only HHMM."""
+    from datetime import datetime, timezone
+    raw = "20261104T172500Z"
+    parsed = datetime.strptime(raw, "%Y%m%dT%H%M%SZ").replace(tzinfo=timezone.utc)
+    assert parsed == T("2026-11-04T17:25:00Z")
