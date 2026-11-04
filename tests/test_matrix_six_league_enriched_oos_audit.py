@@ -1,11 +1,12 @@
 """Synthetic contract tests only. These are NOT production or league evidence."""
 from copy import deepcopy
+import json
 from datetime import datetime,timezone
 from pathlib import Path
 
 import pytest
 from tools.matrix_six_league_enriched_oos_audit import (
-    calculate, enriched_pair_ok,scan_archived_references,
+    calculate, enriched_pair_ok,scan_archived_references,audit,
 )
 
 SIX=["TEST_L1","TEST_L2","TEST_L3","TEST_L4","TEST_L5","TEST_L6"]
@@ -92,4 +93,17 @@ def test_no_source_archive_is_not_a_certification(tmp_path):
     result=scan_archived_references(tmp_path)
     assert result["archived_reference_group_count"]==0
     assert result["six_original_leagues_confirmed"] is False
+    assert result["telegram_signal_authorized"] is False
+
+def test_manufactured_historical_table_without_three_source_hashes_is_rejected(tmp_path):
+    path=tmp_path/"untrusted_oos.json"
+    payload={"schema":"MATRIX_ALTERNATIVE_PRODUCER_PROSPECTIVE_EVIDENCE_V1",
+             "real_money":"BLOCKED","signal_generation_authorized":False,
+             "original_six_league_ids":SIX,
+             "rows":[sample(l,i) for l in SIX for i in range(30)]}
+    path.write_text(json.dumps(payload),encoding="utf-8")
+    result=audit(path)
+    assert result["six_league_scientific_validation_passed"] is False
+    assert result["leagues"][0]["validated_prospective_rows"]==0
+    assert result["leagues"][0]["rejected_reasons"]["OOS_NOT_INDEPENDENTLY_VERIFIED"]==30
     assert result["telegram_signal_authorized"] is False
