@@ -923,7 +923,11 @@ def main()->None:
                             for candidate_url in event_urls[:4]:
                                 if exact is not None:
                                     break
-                                found,detail_trace=betano_detail_exact_over25(page,candidate_url,home_raw,away_raw)
+                                try:
+                                    found,detail_trace=betano_detail_exact_over25(page,candidate_url,home_raw,away_raw)
+                                except Exception as exc:
+                                    detail_diagnostics.append("EVENT_DETAIL_READ_FAILED:"+type(exc).__name__)
+                                    continue
                                 detail_diagnostics.extend(detail_trace)
                                 if found is not None:
                                     exact=found
