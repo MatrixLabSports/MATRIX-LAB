@@ -106,7 +106,7 @@ def test_real_provider_cycle_starts_before_http_finishes_and_still_seals(tmp_pat
     a,b=sample()
     b["generated_at_utc"]="2026-11-04T12:01:00Z"
     b["completed_at_utc"]="2026-11-04T12:03:00Z"
-    with patch("tools.matrix_independent_over25_prematch_freeze.historic_rows",return_value=[]),\\
+    with patch("tools.matrix_independent_over25_prematch_freeze.historic_rows",return_value=[]),\
          patch("tools.matrix_independent_over25_prematch_freeze._inputs_for_target",
                return_value=({"home_history_count":5,"away_history_count":5,
                               "poisson":{"over_2_5":0.6},
