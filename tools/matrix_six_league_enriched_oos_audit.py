@@ -79,7 +79,8 @@ def normalized_input(record,fixmap):
                 "team_id":map_id(r.team_id),
                 "opponent_id":map_id(r.opponent_id),
                 "kickoff_utc":stamp(r.kickoff_utc).isoformat(),
-                "observed_at_utc":stamp(r.observed_at_utc).isoformat(),
+                # Capture times are independently validated before the freeze;
+                # providers need not have observed the same match at the same second.
                 "venue_role":r.venue_role,
                 "goals_for":r.goals_for,"goals_against":r.goals_against,
                 "competition":r.competition,
