@@ -26,6 +26,40 @@ from tools.matrix_original_fixture_id_lineage_crosswalk import utc
 LINEAGE=Path("evidence/football_world_inventory/2026-11-04/MATRIX_ORIGINAL_FIXTURE_ID_LINEAGE_CROSSWALK_LAST.json")
 OUTPUT=Path("evidence/football_world_inventory/2026-11-04/MATRIX_SIX_LEAGUE_STEPWISE_CERTIFICATION_LAST.json")
 MIN_PER_LEAGUE=30
+ALTERNATIVE_RAW=Path("evidence/football_cohort_recovery/FOOTBALL_DATA_ORG_RAW_LAST.json")
+GOVERNED_INTAKE=Path("evidence/notifications/telegram/MATRIX_BROWSER_GOVERNED_INTAKE_LAST.json")
+
+def independent_raw_profile(root:Path)->dict:
+    """Never count FINISHED postmatch rows as frozen alternative forecasts."""
+    source=root/ALTERNATIVE_RAW
+    if not source.is_file():
+        return {"status":"NO_AUTHENTIC_ALTERNATIVE_RAW_ARCHIVE_AT_EXPECTED_PATH"}
+    if source.stat().st_size>MAX_BYTES:
+        raise ValueError("ALTERNATIVE_RAW_TOO_LARGE")
+    doc=json.loads(source.read_text(encoding="utf-8-sig"))
+    if not isinstance(doc,dict) or not isinstance(doc.get("matches"),list):
+        raise ValueError("ALTERNATIVE_ARCHIVE_INVALID")
+    completed=sum(x.get("status")=="FINISHED" for x in doc["matches"]
+                  if isinstance(x,dict))
+    # This file is only an API response snapshot, not a per-fixture
+    # original-vs-alternative pair frozen before kickoff.
+    return {"status":"HISTORICAL_RAW_RESULTS_NOT_A_PROSPECTIVE_FORECAST",
+        "path":str(ALTERNATIVE_RAW),"sha256":digest(source),
+        "match_rows":len(doc["matches"]),"completed_match_rows":completed,
+        "prospective_frozen_forecasts_certified":0}
+
+def governed_intake_profile(root:Path)->dict:
+    path=root/GOVERNED_INTAKE
+    if not path.is_file():return {"status":"GOVERNED_INTAKE_EVIDENCE_MISSING"}
+    doc=json.loads(path.read_text(encoding="utf-8-sig"))
+    if (not isinstance(doc,dict)
+        or doc.get("schema")!="MATRIX_BROWSER_GOVERNED_INTAKE_SYNC_V1"
+        or doc.get("real_money")!="BLOCKED"):
+        raise ValueError("GOVERNED_INTAKE_UNTRUSTED")
+    return {"status":doc.get("status"),"path":str(GOVERNED_INTAKE),
+        "sha256":digest(path),"governed_candidate_count":doc.get("candidate_count"),
+        "telegram_signal_authorized":False}
+
 
 def digest(path:Path)->str:
     return hashlib.sha256(path.read_bytes()).hexdigest()
@@ -188,6 +222,8 @@ def assess(root:Path,paths:list[str],*,lineage_path:Path=LINEAGE,
         "alternative_named_source_file_count":len(candidates),
         "alternative_named_source_path_examples":candidates[:30],
         "alternative_filename_not_proof_of_pre_kickoff_forecast":True,
+        "alternative_raw_provenance_profile":independent_raw_profile(root),
+        "telegram_governed_intake_profile":governed_intake_profile(root),
         "existing_strict_manifest":check,
         "blocking_requirements":blockers,
         "fixture_decisions":decisions,
