@@ -248,7 +248,13 @@ def audit(path):
         if not isinstance(row,dict):raise ValueError("OOS_ROW_NOT_OBJECT")
         checked.append({**row,"source_verified":
             verify_row_source_provenance(row,Path.cwd())})
-    result=calculate(checked,doc.get("original_six_league_ids"))
+    archive_scope=scan_archived_references(Path.cwd())
+    archived_ids={str(row["original_league_id"]) for row in archive_scope["reference_groups"]}
+    supplied=doc.get("original_six_league_ids")
+    if (len(archived_ids)!=SIX or not isinstance(supplied,list)
+        or set(map(str,supplied))!=archived_ids):
+        raise ValueError("OOS_ORIGINAL_SIX_LEAGUES_NOT_GROUNDED_IN_ARCHIVE")
+    result=calculate(checked,supplied)
     result["evidence_sha256"]=sha(path)
     return result
 
@@ -269,7 +275,8 @@ def scan_archived_references(root:Path):
        "reference_groups":[{"original_league_id":k[0],"season":k[1],
                             "archive_files":v,"source":"ORIGINAL_API_FOOTBALL_ARCHIVE"}
                            for k,v in sorted(seen.items())],
-       "six_original_leagues_confirmed":len({k[0] for k in seen})==SIX,
+       "six_archived_league_ids_found":len({k[0] for k in seen})==SIX,
+       "six_original_leagues_confirmed":False,  # absence of approved league registry
        "enriched_feature_equivalence_certified":False,
        "prospective_oos_certified":False,
        "production_p_matrix_authorized":False,
