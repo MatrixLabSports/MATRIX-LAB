@@ -99,3 +99,28 @@ def test_two_separate_cycles_increment_real_daily_count(monkeypatch,tmp_path):
     assert len(ledger["network_calls"])==4
     assert ledger["unique_state_count"]==0
     assert ledger["model_status"]=="RESEARCH_ONLY"
+
+def test_daily_budget_blocks_even_when_provider_has_abundant_quota(monkeypatch,tmp_path):
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.setenv("LIVE_TENNIS_API_KEY","private-test-key")
+    monkeypatch.setattr(sys,"argv",["collector","--date",D,
+                       "--cycles","6","--reserve-calls","35",
+                       "--max-daily-match-calls","2"])
+    def provider(path,key,params=None):
+        if path=="/usage":
+            return {"tier":"free","limits":{"per_day":100},
+                    "today":{"remaining_day":95}},{"http_status":200}
+        assert path=="/matches"
+        return {"data":[]},{"http_status":200,
+                    "path":"/matches","response_sha256":"authentic-budget-test-hash"}
+    monkeypatch.setattr(mod,"get_json",provider)
+    monkeypatch.setattr(mod.time,"sleep",lambda _:None)
+    mod.main()
+    assert json.loads((tmp_path/GUARD).read_text())["total_executed_cycles_today"]==2
+    mod.main()
+    guard=json.loads((tmp_path/GUARD).read_text())
+    assert guard["status"]=="BLOCKED_DAILY_CAPTURE_BUDGET"
+    assert guard["executed_cycles"]==0
+    assert guard["daily_match_call_budget_remaining"]==0
+    assert guard["protections"]["reserve_not_bypassed"] is True
+    assert len(json.loads((tmp_path/LEDGER).read_text())["network_calls"])==2
