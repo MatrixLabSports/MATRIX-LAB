@@ -55,7 +55,9 @@ def capture_candidates(root: Path, folder: Path, label: str, expected: str):
 def recover(root: Path, *, write: bool) -> dict:
     root = root.resolve()
     base = root / ROOT
-    required: dict[tuple[str, str], tuple[Path, str, str]] = {}
+    # A SHA-named source file can legitimately serve more than one role.
+    # Deduplicate by physical source path, retaining all legitimate origin roles.
+    required: dict[str, tuple[Path, str, set[str]]] = {}
     failed: list[dict] = []
     for file in sorted(base.glob("20??-??-??/[0-9]*_*.json")):
         if "_result_" in file.name:
@@ -74,14 +76,17 @@ def recover(root: Path, *, write: bool) -> dict:
                     or any(c not in "0123456789abcdef" for c in expected)):
                     raise ValueError("FORECAST_EXPECTED_SOURCE_HASH_INVALID")
                 dest = file.parent / "sources" / (expected + ".json")
-                required[(str(dest.relative_to(root)), label)] = (dest, expected, label)
+                key = dest.relative_to(root).as_posix()
+                if key not in required:
+                    required[key] = (dest, expected, set())
+                required[key][2].add(label)
         except (ValueError, KeyError, TypeError, OSError, json.JSONDecodeError) as exc:
             failed.append({"file": file.relative_to(root).as_posix(),
                            "reason": str(exc)[:120]})
     valid = 0
     restored = []
     blocked = []
-    for dest, expected, label in required.values():
+    for dest, expected, labels in required.values():
         key = dest.relative_to(root).as_posix()
         # A reconstructible JSON object is NOT yet a valid archived source:
         # only on-disk bytes with the committed hash pass the existing check.
@@ -94,7 +99,8 @@ def recover(root: Path, *, write: bool) -> dict:
         found = None
         origin = None
         from itertools import chain
-        for candidate in chain((dest,), capture_candidates(root, dest.parent.parent, label, expected)):
+        for candidate in chain((dest,), *(capture_candidates(root, dest.parent.parent, label, expected)
+                                            for label in sorted(labels))):
             result = verified_variant(candidate, expected)
             if result is not None:
                 found = result
