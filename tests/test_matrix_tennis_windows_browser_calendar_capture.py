@@ -87,3 +87,72 @@ def test_calendar_date_is_not_a_match_kickoff_or_surface_certificate():
     assert x["surface_per_event_verified"] is False
     assert x["probability_generation_authorized"] is False
     assert x["telegram_signals_authorized"] is False
+
+def test_collection_captures_today_and_tomorrow_only_when_rendered_date_is_real(tmp_path,monkeypatch):
+    import sys,types
+    from tools.matrix_tennis_windows_browser_calendar_capture import run
+    class Page:
+        def __init__(self):
+            self.url=""
+            self.closed=False
+        def goto(self,url,**kwargs):
+            self.url=url
+            return types.SimpleNamespace(status=200)
+        def wait_for_timeout(self,ms):
+            assert ms<=2000
+        def evaluate(self,script):
+            day="2026-11-06" if "2026-11-06" in self.url else "2026-11-05"
+            human="6" if day.endswith("06") else "5"
+            if "sofascore.com" in self.url:
+                link="https://www.sofascore.com/es/tennis/match/foo-bar/xyz123#id:12345"
+            else:
+                link="https://www.flashscore.co/partido/tenis/foo/bar/?mid=abc123"
+            return {
+                "text":"Page has tournament news and results",
+                "dateControls":[f"jueves, {human} de noviembre de 2026"],
+                "links":[{"url":link,"name":"Foo vs Bar"}],
+            }
+        def close(self):
+            self.closed=True
+    class Context:
+        def new_page(self):
+            return Page()
+    class Browser:
+        contexts=[Context()]
+    class Playwright:
+        chromium=types.SimpleNamespace(connect_over_cdp=lambda endpoint,timeout:Browser())
+    class Manager:
+        def __enter__(self):
+            return Playwright()
+        def __exit__(self,*args):
+            return False
+    fake=types.ModuleType("playwright.sync_api")
+    fake.sync_playwright=lambda:Manager()
+    fake.Error=RuntimeError
+    monkeypatch.setitem(sys.modules,"playwright.sync_api",fake)
+    x=run(tmp_path,"2026-11-05","http://127.0.0.1:9222")
+    assert x["capture_dates_bogota"]==["2026-11-05","2026-11-06"]
+    assert len(x["provider_results"])==4
+    assert all(r["status"]=="PERSISTED_VISIBLE_BROWSER_LINKS" for r in x["provider_results"])
+    assert x["paid_api_used"] is False
+    assert x["holdout_admitted"]==0
+    for day in x["capture_dates_bogota"]:
+        for filename in ("sofascore_opera_full_link_observations.json",
+                         "flashscore_opera_full_link_observations.json"):
+            p=tmp_path/"evidence/tennis_calendar_physical"/day/filename
+            j=json.loads(p.read_text())
+            assert j["target_date_bogota"]==day
+            assert j["observed_link_count"]==1
+            assert j["individual_match_date_verified"] is False
+
+
+def test_evidence_path_publisher_never_rebases_runner_or_stages_model_state():
+    root=Path(__file__).resolve().parents[1]
+    powershell=(root/"tools/windows/persist_matrix_tennis_browser_evidence.ps1").read_text()
+    assert "git rebase" not in powershell
+    assert "git worktree add --detach" in powershell
+    assert "cherry-pick" in powershell
+    assert "TENNIS_BROWSER_REAL_REMOTE_EVIDENCE_CONFLICT_FAIL_CLOSED" in powershell
+    assert "tennis_calendar_(physical|reconciliation)" in powershell
+    assert 'git add -- evidence/cor0203' not in powershell
+    assert 'git add -- evidence/tennis_parallel_lanes' not in powershell
