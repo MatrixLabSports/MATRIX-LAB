@@ -39,6 +39,30 @@ def _provider_errors(payload:dict)->bool:
     errors=payload.get("errors")
     return bool(errors) and errors not in ({},[])
 
+def _error_category(payload:dict)->str:
+    """Map private vendor errors to a bounded, non-identifying code."""
+    errors=payload.get("errors")
+    if not errors:
+        return "NONE"
+    if isinstance(errors,dict):
+        keys=" ".join(str(k).casefold() for k in errors)
+    else:
+        keys=""
+    txt=str(errors).casefold()[:1200]
+    if "token" in keys or "api-key" in keys or any(
+            term in txt for term in ("invalid api key","invalid application key",
+                                    "missing application key","unauthorized",
+                                    "authentication failed")):
+        return "DIRECT_CREDENTIAL_REJECTED_OR_WRONG_HOST"
+    if any(x in keys for x in ("request","limit","rate","quota")) or (
+            "quota exceeded" in txt):
+        return "PROVIDER_QUOTA_OR_RATE_LIMIT"
+    if any(x in keys for x in ("subscription","plan")) or (
+            "not subscribed" in txt):
+        return "SUBSCRIPTION_OR_PLAN_REJECTED"
+    return "PROVIDER_APPLICATION_ERROR_UNCLASSIFIED"
+
+
 def _active_coverage(payload:dict, league_id:str, year:int)->dict:
     if _provider_errors(payload):
         return {"status":"PROVIDER_APPLICATION_ERROR","season_found":False,
@@ -89,6 +113,8 @@ def probe(key:str, *, opener=urlopen, checked_at=None)->dict:
         code,payload=_response(BASE+"/status",key,opener=opener)
         if code!=200 or _provider_errors(payload):
             out["status"]="BLOCKED_PROVIDER_STATUS_AUTH_OR_QUOTA_ERROR"
+            out["application_error_category"]=_error_category(payload)
+            out["http_status_code"]=code
             return out
         response=payload.get("response") or {}
         if not isinstance(response,dict):
