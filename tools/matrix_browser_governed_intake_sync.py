@@ -39,11 +39,13 @@ def build(now:datetime,root:Path=ROOT,discover=None)->dict:
         (promotion.get("protections") or {}).get("automatic_wagering") is False
     )
     rows=[]
+    discovered_candidate_count=0
     if approved:
         if discover is None:
             from tools.telegram_green_signal_alerts import discover_football
             discover=discover_football
         candidates=discover(dates)
+        discovered_candidate_count=len(candidates)
         source_root=(root/"evidence/api_football/daily_prematch_reports").resolve()
         for c in candidates.values():
             if c.get("sport")!="football" or c.get("market_key")!="Goles totales Más/Menos" or c.get("selection_key")!="Más de 2.5":
@@ -82,6 +84,11 @@ def build(now:datetime,root:Path=ROOT,discover=None)->dict:
         "promotion_sha256":sha256(path) if approved else None,
         "original_p_matrix_only":True,"independent_provider_promotion":False,
         "candidates":rows,"candidate_count":len(rows),
+        "upstream_discovered_candidate_count":discovered_candidate_count,
+        "no_candidates_reason":(
+            "ORIGINAL_PROMOTION_NOT_VERIFIED" if not approved else
+            "ORIGINAL_SUPERVISOR_DISCOVERY_EMPTY" if discovered_candidate_count == 0 else
+            "ORIGINAL_CANDIDATES_FAILED_SCOPE_OR_TIME_GATES" if not rows else None),
         "telegram_signal_authorized":False,"automatic_wagering":False,"real_money":"BLOCKED"
     }
 
