@@ -202,12 +202,23 @@ def evaluate(root:Path, *, manifest:dict | None=None) -> dict:
         raise ValueError("ORIGINAL_SCOPE_OR_GOVERNANCE_INVALID")
     lineage=json.loads(lineage_path.read_bytes())
     stages=json.loads(stage_path.read_bytes())
-    if (stages.get("identity_source_sha256")!=sha(lineage_path.read_bytes())
-        or stages.get("six_league_scope_sha256")!=sha(registry_path.read_bytes())
-        or stages.get("six_league_ids")!=scope
+    scope_link_ok=(stages.get("six_league_scope_sha256")==sha(registry_path.read_bytes()))
+    lineage_link_ok=(stages.get("identity_source_sha256")==sha(lineage_path.read_bytes()))
+    if (stages.get("six_league_ids")!=scope
         or lineage.get("status")!="RESEARCH_IDENTITY_RECOVERY_ONLY"
         or stages.get("scientific_six_league_validation_passed") is not False):
-        raise ValueError("ORIGINAL_SCOPE_OR_IDENTITY_SHA_LINK_INVALID")
+        raise ValueError("ORIGINAL_SCOPE_OR_GOVERNANCE_INVALID")
+    # An out-of-date aggregate SHA must not be silently treated as certified.
+    # It also must not erase individually SHA-verified original registry files.
+    # Report both discrepancies, then independently authenticate each source.
+    linkage_blockers=[]
+    if not scope_link_ok:
+        linkage_blockers.append("HISTORICAL_STEPWISE_SIX_LEAGUE_SCOPE_SHA_LINK_STALE")
+    if not lineage_link_ok:
+        linkage_blockers.append("HISTORICAL_STEPWISE_ORIGINAL_IDENTITY_SHA_LINK_STALE")
+    if manifest is not None and linkage_blockers:
+        # No actual pair can be accepted against a stale original chain.
+        raise ValueError("ORIGINAL_MANIFEST_SHA_LINK_INVALID_FOR_NEW_PAIR")
     original,orig_metrics=original_rows(root,lineage,stages,scope)
     declared=paired_docs(root,manifest)
     promo=json.loads((root/PROMOTION).read_bytes())
@@ -216,7 +227,7 @@ def evaluate(root:Path, *, manifest:dict | None=None) -> dict:
     for p in (root/FREEZES).glob("20??-??-??/[0-9]*_*.json"):
         if "_result_" not in p.name:
             grouped[p.name.split("_",1)[0]].append(p)
-    alt=[]; blockers=Counter(); compared=0
+    alt=[]; blockers=Counter({k:1 for k in linkage_blockers}); compared=0
     verified_engine={v["fixture_id"] for v in engine["verified"]}
     for fid,files in sorted(grouped.items()):
         try:
@@ -269,6 +280,14 @@ def evaluate(root:Path, *, manifest:dict | None=None) -> dict:
             str(ORIGINAL_STAGES):sha(stage_path.read_bytes()),
             str(PROMOTION):sha((root/PROMOTION).read_bytes())},
         "original_six_league_scope":scope,
+        "original_historical_aggregate_sha_link_verification":{
+            "identity_source_sha256_match":lineage_link_ok,
+            "scope_source_sha256_match":scope_link_ok,
+            "status":"AGGREGATE_REFERENCE_STALE_NOT_CERTIFIED" if linkage_blockers
+                     else "HISTORICAL_AGGREGATE_LINKS_MATCH",
+            "linkage_blockers":linkage_blockers,
+            "raw_original_sources_still_checked_individually_by_sha256":True},
+
         "original_fixture_provenance_rows":original,
         "original_fixture_count":len(original),
         "original_metrics":orig_metrics,
