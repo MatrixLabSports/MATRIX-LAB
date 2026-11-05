@@ -65,3 +65,45 @@ def test_actual_connected_opera_detail_file_can_be_read(tmp_path):
     assert result["verified_individual_count"] == 1
     assert result["events"][0]["source_file_sha256"]
     assert result["telegram_signal_authorized"] is False
+
+
+def test_genuine_sofa_and_flashscore_detail_produce_two_source_research_only_pair(tmp_path):
+    from pathlib import Path
+    from tools.matrix_flashscore_individual_detail_certificate import scan_two_source
+    root = Path(__file__).resolve().parents[1]
+    sofa_dir = root / "evidence/browser_capture_inbox/opera_football_sofa_detail" / DAY
+    source = sorted(sofa_dir.glob("*.json"))[-1]
+    assert source.is_file()
+    for p in (root / PATH, source):
+        target = tmp_path / p.relative_to(root)
+        target.parent.mkdir(parents=True, exist_ok=True)
+        target.write_bytes(p.read_bytes())
+    result = scan_two_source(tmp_path, DAY,
+                  now=datetime(2026, 11, 5, 9, 50, tzinfo=timezone.utc))
+    assert result["verified_event_pair_count"] == 1
+    pair = result["matched"][0]
+    assert pair["flashscore_mid"] == "hUC4nhiT"
+    assert pair["sofascore_event_id"] == "16943966"
+    assert pair["third_provider_fixture_identity_verified"] is False
+    assert pair["telegram_signal_authorized"] is False
+
+
+def test_reversed_teams_cannot_be_cross_certified():
+    from tools.matrix_flashscore_individual_detail_certificate import exact_sofa_crosscheck
+    flash = verify(doc(), expected_day=DAY, now=datetime(2026, 11, 5, 9, 45, tzinfo=timezone.utc))
+    sofa = {
+      "schema": "MATRIX_SOFA_OPERA_INDIVIDUAL_DETAIL_CAPTURE_V1",
+      "source": "SOFASCORE",
+      "capture_method": "OPERA_CONNECTOR_ACCESSIBILITY_TREE",
+      "source_page_url": "https://www.sofascore.com/es/football/match/ac-milan-ferencvaros-tc/ANsRdb#id:16943966",
+      "source_event_id": "16943966",
+      "real_money": "BLOCKED", "automatic_wagering": False,
+      "signal_generation_authorized": False,
+      "display_timezone": "America/Bogota",
+      "home": "Ferencváros TC", "away": "AC Milan",
+      "visible_event_date": "5/11/2026", "visible_event_time": "12:45",
+      "observed_at_utc": "2026-11-05T09:49:30.313Z"
+    }
+    with pytest.raises(ValueError, match="TEAM_MISMATCH"):
+        exact_sofa_crosscheck(flash, sofa,
+            now=datetime(2026, 11, 5, 9, 50, tzinfo=timezone.utc))
