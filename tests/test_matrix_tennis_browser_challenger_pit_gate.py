@@ -34,3 +34,17 @@ def test_calendar_utc_token_seconds_match_verified_kickoff():
     raw = "20261104T172500Z"
     parsed = datetime.strptime(raw, "%Y%m%dT%H%M%SZ").replace(tzinfo=timezone.utc)
     assert parsed == T("2026-11-04T17:25:00Z")
+
+
+def test_bogota_evening_match_date_survives_utc_day_rollover():
+    from tools.matrix_tennis_browser_challenger_pit_gate import kickoff_in_bogota_calendar_day
+    evening=T("2026-11-07T02:00:00Z")
+    assert kickoff_in_bogota_calendar_day(evening,"2026-11-06") is True
+    assert kickoff_in_bogota_calendar_day(evening,"2026-11-07") is False
+
+
+def test_never_accept_utc_without_timezone_for_local_calendar():
+    import pytest
+    from tools.matrix_tennis_browser_challenger_pit_gate import kickoff_in_bogota_calendar_day
+    with pytest.raises(ValueError,match="KICKOFF_TIMEZONE_REQUIRED"):
+        kickoff_in_bogota_calendar_day(datetime(2026,11,6,21),"2026-11-06")
