@@ -9,6 +9,8 @@ on:
       - tools/matrix_calendar_browser_observations.py
       - tools/matrix_football_sofa_fixture_crosscheck.py
       - tests/test_matrix_opera_calendar_handoff.py
+      - tests/test_matrix_opera_real_snapshot_replay.py
+      - evidence/browser_capture_inbox/opera_football/2026-11-06/**
       - tests/test_matrix_flashscore_opera_link_handoff.py
       - .github/workflows/matrix-opera-calendar-regression.yml
 permissions:
@@ -32,7 +34,7 @@ jobs:
       - name: Install regression runner
         run: python -m pip install pytest
       - name: Execute strict stale-evidence and Flashscore discovery regressions
-        run: python -m pytest -q tests/test_matrix_opera_calendar_handoff.py tests/test_matrix_flashscore_opera_link_handoff.py
+        run: python -m pytest -q tests/test_matrix_opera_calendar_handoff.py tests/test_matrix_opera_real_snapshot_replay.py tests/test_matrix_flashscore_opera_link_handoff.py
       - name: Verify no tracked production files modified
         run: |
           git diff --exit-code -- evidence/api_football evidence/notifications/telegram
