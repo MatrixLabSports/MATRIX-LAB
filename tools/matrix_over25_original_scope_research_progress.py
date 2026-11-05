@@ -22,7 +22,7 @@ OUT = Path("evidence/football_world_inventory/MATRIX_OVER25_ORIGINAL_SCOPE_RESEA
 # Source-native competition ids; these are COMPETITION crosswalks, NOT
 # authenticated matches or provider fixture-id crosswalks.
 SOURCE_TO_ORIGINAL = {"2021":"39","2015":"61","2002":"78","2019":"135","2014":"140"}
-FIXTURE_NAME = re.compile(r"^[0-9]+_[0-9a-f]{20}\\.json$")
+FIXTURE_NAME = re.compile(r"^[0-9]+_[0-9a-f]{20}\.json$")
 HEX = re.compile(r"^[0-9a-f]{64}$")
 
 def stamp(value):
@@ -191,7 +191,7 @@ def main():
     path=ROOT/OUT
     path.parent.mkdir(parents=True,exist_ok=True)
     path.write_text(json.dumps(output,ensure_ascii=False,sort_keys=True,
-                               indent=2)+"\\n",encoding="utf-8")
+                               indent=2)+"\n",encoding="utf-8")
     print(json.dumps({"status":output["status"],
         "total":output["unique_sha_attested_research_freezes_in_original_scope"],
         "per_league":[{"original_league_id":r["original_league_id"],
