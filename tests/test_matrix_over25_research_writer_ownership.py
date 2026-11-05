@@ -39,3 +39,16 @@ def test_only_cloud_performs_historical_settlement_and_sha_repair():
 def test_no_automatic_text_conversion_of_sha_archives():
     attributes = (ROOT / ".gitattributes").read_text(encoding="utf-8")
     assert "evidence/football_research_freezes/** -text" in attributes
+
+
+def test_windows_browser_publisher_isolated_worktree_preserves_unstaged_evidence():
+    script = WINDOWS_PERSIST.read_text(encoding="utf-8")
+    assert "git worktree add --detach $scratch $remoteCommit" in script
+    assert "git -C $scratch cherry-pick $evidenceCommit" in script
+    assert "git -C $scratch push origin HEAD:repair/cor09-world-pipeline" in script
+    assert "BROWSER_EVIDENCE_PUBLISHED_FROM_ISOLATED_CLEAN_WORKTREE" in script
+    assert "BROWSER_EVIDENCE_CHERRY_PICK_CONFLICT_FAIL_CLOSED" in script
+    assert "git rebase origin/repair/cor09-world-pipeline" not in script
+    for unsafe in ("git stash", "git reset --hard", "git clean -fd", "push --force"):
+        assert unsafe not in script
+    assert "REAL_MONEY" in script and "AUTO_BETTING" in script
