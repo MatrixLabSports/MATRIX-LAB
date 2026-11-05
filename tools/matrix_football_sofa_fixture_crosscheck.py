@@ -50,6 +50,18 @@ ALIASES={
     "vitoria sc":"vitoria sc",
     "rb bragantino":"rb bragantino",
     "santos fc":"santos",
+    # Individually observed in the connected SofaScore 06-Nov-2026 calendar.
+    # Exact official/visible name pairs only; no fuzzy team matching.
+    "ec vitoria":"vitoria",
+    "fluminense fc":"fluminense",
+    "coventry city fc":"coventry city",
+    "sevilla fc":"sevilla",
+    "venezia fc":"venezia",
+    "udinese calcio":"udinese",
+    "borussia monchengladbach":"borussia m gladbach",
+    "toulouse fc":"toulouse",
+    "rc strasbourg alsace":"rc strasbourg",
+    "fc famalicao":"famalicao",
 }
 
 def norm(text):
