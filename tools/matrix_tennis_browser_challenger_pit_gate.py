@@ -7,6 +7,7 @@ identity or historical player features; never writes governed holdouts.
 from __future__ import annotations
 import argparse,hashlib,json,unicodedata,re
 from datetime import datetime,timezone,date
+from zoneinfo import ZoneInfo
 from pathlib import Path
 from tools.matrix_tennis_exact_browser_crossmatch import fingerprint
 from tools.matrix_tennis_browser_first_free_intake import ROOT as CAPTURE_ROOT
@@ -31,6 +32,14 @@ def read(root,p):
     return json.loads(raw),sha(raw)
 def normal(x):
     return " ".join(fingerprint(str(x)))
+
+BOGOTA=ZoneInfo("America/Bogota")
+
+def kickoff_in_bogota_calendar_day(kickoff:datetime,day:str)->bool:
+    """The source is a Bogotá-local calendar; UTC dates may be next day."""
+    if kickoff.tzinfo is None or kickoff.utcoffset() is None:
+        raise ValueError("KICKOFF_TIMEZONE_REQUIRED")
+    return kickoff.astimezone(BOGOTA).date()==date.fromisoformat(day)
 
 def evaluate(root:Path,day:str,now:datetime):
     date.fromisoformat(day);now=now.astimezone(timezone.utc)
@@ -91,7 +100,7 @@ def evaluate(root:Path,day:str,now:datetime):
         try:
             kickoff=timestamp(x["kickoff_utc"])
             expected=datetime.strptime(x["calendar_date_token"],"%Y%m%dT%H%M%SZ").replace(tzinfo=timezone.utc)
-            if kickoff!=expected or kickoff.date()!=date.fromisoformat(day):
+            if kickoff!=expected or not kickoff_in_bogota_calendar_day(kickoff,day):
                 status.append("EXACT_UTC_CALENDAR_IDENTITY_MISMATCH");valid=False
             if observed>=kickoff:
                 status.append("MATCH_PAGE_CAPTURE_AFTER_KICKOFF");valid=False
