@@ -40,7 +40,7 @@ def test_real_recent_opera_evidence_replaces_prior_snapshot_in_isolated_replay(t
     target.write_text(json.dumps(old), encoding="utf-8")
     assert persist(target, obs, receipt, DAY) is True
     saved = json.loads(target.read_text(encoding="utf-8"))
-    assert saved["observed_at_utc"] == fresh["observed_at_utc"]
+    assert datetime.fromisoformat(saved["observed_at_utc"].replace("Z", "+00:00")) == new_time
     assert saved["signal_generation_authorized"] is False
     assert saved["quotes_verified"] is False
     assert saved["flashscore_corroborated"] is False
