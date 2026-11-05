@@ -22,8 +22,6 @@ on:
         required: false
         default: ""
         type: string
-  schedule:
-    - cron: "7 5,11,17,23 * * *"
 
 permissions:
   contents: write
@@ -32,8 +30,11 @@ concurrency:
   group: rapidapi-tennis-paid-window-harvest
   cancel-in-progress: false
 
+# Permanently quarantined under config/MATRIX_FREE_ONLY_API_FINANCING_POLICY.json.
+# Do not restore paid network calls without documented net revenue and new user approval.
 jobs:
   harvest:
+    if: ${{ false }} # USER_FREE_ONLY_2026_11_05; NO_PAID_API_REQUESTS
     runs-on: ubuntu-latest
     timeout-minutes: 20
     env:
