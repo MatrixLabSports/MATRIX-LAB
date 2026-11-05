@@ -91,3 +91,21 @@ def test_independent_source_not_accepted(tmp_path):
 
 def test_synchronizer_refuses_absent_report(tmp_path):
     assert synchronized_governed_candidate_rows(NOW,root=tmp_path) is None
+
+
+def test_empty_original_producer_is_distinguished_from_gate_rejections(tmp_path):
+    make_fixture(tmp_path)
+    report = build(NOW, root=tmp_path, discover=lambda dates: {})
+    assert report["candidate_count"] == 0
+    assert report["upstream_discovered_candidate_count"] == 0
+    assert report["no_candidates_reason"] == "ORIGINAL_SUPERVISOR_DISCOVERY_EMPTY"
+    assert report["telegram_signal_authorized"] is False
+
+
+def test_original_candidate_outside_window_is_not_reported_as_absent(tmp_path):
+    _, candidate, _ = make_fixture(tmp_path)
+    candidate["kickoff"] = (NOW + timedelta(hours=3)).isoformat()
+    report = build(NOW, root=tmp_path, discover=lambda dates: {"fixture": candidate})
+    assert report["upstream_discovered_candidate_count"] == 1
+    assert report["candidate_count"] == 0
+    assert report["no_candidates_reason"] == "ORIGINAL_CANDIDATES_FAILED_SCOPE_OR_TIME_GATES"
