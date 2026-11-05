@@ -332,6 +332,14 @@ def evaluate(root:Path, *, manifest:dict | None=None) -> dict:
             blockers["ALTERNATIVE_SOURCE_OR_REPLAY_FAILURE"]+=1
     for fid in sorted(set(declared)-set(grouped)):
         blockers["PAIR_REFERENCES_MISSING_ALTERNATIVE_FORECAST"]+=1
+    # Date intersection is a scheduling diagnostic, never a fabricated
+    # cross-provider identity match or proof that postponements cannot occur.
+    original_days=sorted({r["kickoff_utc"][:10] for r in original})
+    alternative_days=sorted({r["kickoff_utc"][:10] for r in alt
+                             if isinstance(r.get("kickoff_utc"),str)})
+    overlap=sorted(set(original_days)&set(alternative_days))
+    variable_statuses=Counter(c["status"] for row in alt
+             for c in row.get("variable_comparisons",[]))
     return {"schema":"MATRIX_OVER25_PER_FIXTURE_FEATURE_EQUIVALENCE_V1",
         "status":"RESEARCH_COMPARISON_ONLY_CROSS_PROVIDER_CERTIFICATION_BLOCKED",
         "sources_sha256":{
@@ -356,6 +364,16 @@ def evaluate(root:Path, *, manifest:dict | None=None) -> dict:
         "original_metrics":orig_metrics,
         "alternative_fixture_feature_comparisons":alt,
         "alternative_distinct_fixture_count":len(alt),
+        "variable_comparison_status_totals":dict(variable_statuses),
+        "original_vs_alternative_kickoff_date_scope":{
+            "original_earliest_utc_date":original_days[0] if original_days else None,
+            "original_latest_utc_date":original_days[-1] if original_days else None,
+            "alternative_earliest_utc_date":alternative_days[0] if alternative_days else None,
+            "alternative_latest_utc_date":alternative_days[-1] if alternative_days else None,
+            "overlapping_utc_dates":overlap,
+            "matching_kickoff_date_is_not_proof_of_same_fixture":True,
+            "postponement_cannot_be_assumed_without_source_evidence":True},
+
         "alternative_original_engine_verified_count":len(verified_engine),
         "authentic_sha_pair_manifest_present":manifest is not None,
         "cross_provider_research_comparison_pair_count":compared,
