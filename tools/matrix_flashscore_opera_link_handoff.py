@@ -107,8 +107,11 @@ def main():
     if args.out.resolve() != folder/"MATRIX_FLASH_OPERA_LINK_ONLY_HANDOFF_LAST.json":
         raise SystemExit("FLASH_HANDOFF_CANNOT_WRITE_PRODUCTION")
     result = scan(root,args.day,now=datetime.now(timezone.utc))
-    args.out.parent.mkdir(parents=True, exist_ok=True)
-    args.out.write_text(json.dumps(result,ensure_ascii=False,sort_keys=True,indent=2)+"\n",encoding="utf-8")
+    # Do not create an empty changing report every five minutes. Lack of an
+    # individual event date is a standing research-only blocker, not new data.
+    if result["valid_mid_link_count"]:
+        args.out.parent.mkdir(parents=True, exist_ok=True)
+        args.out.write_text(json.dumps(result,ensure_ascii=False,sort_keys=True,indent=2)+"\\n",encoding="utf-8")
     print(json.dumps({k:result[k] for k in ("status","valid_mid_link_count",
                       "individual_event_date_verified","telegram_signal_authorized")},sort_keys=True))
 
