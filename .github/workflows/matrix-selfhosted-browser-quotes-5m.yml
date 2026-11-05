@@ -167,14 +167,8 @@ jobs:
         shell: cmd
         run: python -m tools.matrix_independent_over25_prematch_fresh_cycle
 
-      - name: Repair only SHA-reconstructible original research source bytes with forensic backup
-        shell: cmd
-        run: python -m tools.matrix_over25_source_hash_exact_repair --restore-verifiable
-
-      - name: Restore only exact-SHA archived research sources from authenticated captures
-        shell: cmd
-        run: python -m tools.matrix_over25_missing_source_exact_restore --restore
-
+      # Historic source-byte repairs and settlement are owned by cloud CI.
+      # Windows only freezes new prospective inputs and captures browser evidence.
       # Research settlement is owned by the separate cloud workflow.
       # Windows persists fresh immutable research snapshots, not result reports.
 
