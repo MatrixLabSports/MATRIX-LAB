@@ -76,10 +76,10 @@ def day_visible(source:str,day:str,text:str):
         rf"{d.day}/{d.month}/{d.year}",
         rf"{d.day:02d}/{d.month:02d}/{str(d.year)[-2:]}",
         rf"{d.day}/{d.month}/{str(d.year)[-2:]}",
-        rf"{d.day:02d}\\.{d.month:02d}\\.{d.year}",
-        rf"{d.day}\\.{d.month}\\.{d.year}",
+        rf"{d.day:02d}\.{d.month:02d}\.{d.year}",
+        rf"{d.day}\.{d.month}\.{d.year}",
         rf"{d.year}-{d.month:02d}-{d.day:02d}",
-        rf"{d.day}\\s+de\\s+{month}\\s+de\\s+{d.year}",
+        rf"{d.day}\s+de\s+{month}\s+de\s+{d.year}",
     )
     return bool(re.search(
         r"(?<![0-9])(?:"+"|".join(variants)+r")(?![0-9])",
