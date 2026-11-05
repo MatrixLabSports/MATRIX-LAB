@@ -102,6 +102,91 @@ def scan(root: Path, day: str, *, now: datetime) -> dict:
     }
 
 
+
+def exact_sofa_crosscheck(flash: dict, sofa: dict, *, now: datetime) -> dict:
+    """Corroborate independent browser details without authorizing production."""
+    from tools.matrix_football_sofa_fixture_crosscheck import norm
+    from urllib.parse import urlparse
+    if (flash.get("schema") != "MATRIX_FLASH_INDIVIDUAL_DETAIL_VERIFIED_V1"
+        or sofa.get("schema") != "MATRIX_SOFA_OPERA_INDIVIDUAL_DETAIL_CAPTURE_V1"
+        or sofa.get("source") != "SOFASCORE"
+        or sofa.get("capture_method") != "OPERA_CONNECTOR_ACCESSIBILITY_TREE"
+        or sofa.get("real_money") != "BLOCKED"
+        or sofa.get("automatic_wagering") is not False
+        or sofa.get("signal_generation_authorized") is not False
+        or sofa.get("display_timezone") != "America/Bogota"):
+        raise ValueError("FLASH_SOFA_CROSSCHECK_UNTRUSTED_PROVENANCE")
+    u = urlparse(str(sofa.get("source_page_url") or ""))
+    sid = str(sofa.get("source_event_id") or "")
+    if (u.scheme != "https" or u.netloc != "www.sofascore.com"
+        or not u.path.startswith("/es/football/match/")
+        or not sid.isdigit() or u.fragment != "id:" + sid):
+        raise ValueError("FLASH_SOFA_CROSSCHECK_BAD_SOFA_EVENT_ID")
+    aliases = {"ferencvaros tc": "ferencvaros"}
+    def official_name(v):
+        n = norm(v)
+        return aliases.get(n, n)
+    if (official_name(sofa.get("home")) != official_name(flash.get("home"))
+        or official_name(sofa.get("away")) != official_name(flash.get("away"))):
+        raise ValueError("FLASH_SOFA_CROSSCHECK_TEAM_MISMATCH")
+    local_date = datetime.strptime(str(sofa.get("visible_event_date") or ""), "%d/%m/%Y").date()
+    local_time = str(sofa.get("visible_event_time") or "")
+    if (local_date.isoformat() != flash["target_date_bogota"]
+        or local_time != datetime.fromisoformat(
+            flash["kickoff_utc_from_declared_display_timezone"]).astimezone(BOGOTA).strftime("%H:%M")):
+        raise ValueError("FLASH_SOFA_CROSSCHECK_DATE_TIME_MISMATCH")
+    observed = utc(sofa.get("observed_at_utc"))
+    kickoff = utc(flash["kickoff_utc_from_declared_display_timezone"])
+    if observed >= kickoff or (now.astimezone(timezone.utc) - observed).total_seconds() not in range(0, 86401):
+        raise ValueError("FLASH_SOFA_CROSSCHECK_STALE_OR_POST_KICKOFF")
+    return {
+        "schema": "MATRIX_FLASH_SOFA_TWO_SOURCE_EVENT_CROSSCHECK_V1",
+        "status": "PASS_TWO_SOURCE_EVENT_DATE_TEAM_TIME_RESEARCH_ONLY",
+        "flashscore_mid": flash["event_mid"], "sofascore_event_id": sid,
+        "target_date_bogota": flash["target_date_bogota"],
+        "local_clock_bogota_declared": local_time,
+        "home": flash["home"], "away": flash["away"],
+        "flashscore_source_sha256": flash["source_sha256"],
+        "sofascore_source_sha256": hashlib.sha256(json.dumps(sofa, sort_keys=True, ensure_ascii=False).encode()).hexdigest(),
+        "third_provider_fixture_identity_verified": False,
+        "official_p_matrix_authorized": False, "telegram_signal_authorized": False,
+        "automatic_wagering": False, "real_money": "BLOCKED",
+    }
+
+
+def scan_two_source(root: Path, day: str, *, now: datetime) -> dict:
+    flash = scan(root, day, now=now)
+    directory = root / "evidence/browser_capture_inbox/opera_football_sofa_detail" / day
+    matched, rejected, seen = [], 0, set()
+    for path in sorted(directory.glob("*.json"))[-64:]:
+        try:
+            raw = path.read_bytes()
+            if not 0 < len(raw) <= 1_000_000:
+                raise ValueError("SOFA_DETAIL_OVERSIZED")
+            sofa = json.loads(raw)
+            for event in flash["events"]:
+                try:
+                    result = exact_sofa_crosscheck(event, sofa, now=now)
+                    key = (result["flashscore_mid"], result["sofascore_event_id"])
+                    if key not in seen:
+                        seen.add(key)
+                        result["sofascore_capture_sha256"] = hashlib.sha256(raw).hexdigest()
+                        matched.append(result)
+                except (ValueError, TypeError, KeyError):
+                    continue
+        except (ValueError, TypeError, OSError, KeyError):
+            rejected += 1
+    return {
+        "schema": "MATRIX_FLASH_SOFA_TWO_SOURCE_REPORT_V1",
+        "status": "TWO_SOURCE_RESEARCH_MATCHES_NO_PRODUCTION_AUTHORIZATION" if matched else "NO_TWO_SOURCE_EVENT_MATCHES",
+        "target_date_bogota": day, "verified_event_pair_count": len(matched),
+        "rejected_snapshot_count": rejected, "matched": matched,
+        "third_provider_fixture_identity_verified": False,
+        "telegram_signal_authorized": False, "automatic_wagering": False,
+        "real_money": "BLOCKED",
+    }
+
+
 def main():
     import argparse
     parser = argparse.ArgumentParser()
