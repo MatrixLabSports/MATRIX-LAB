@@ -15,7 +15,9 @@ on:
       - repair/cor09-world-pipeline
     paths:
       - tools/matrix_football_independent_fixture_pipeline.py
-      - tests/test_matrix_football_independent_fixture_pipeline.py
+      - tools/matrix_football_free_secondary_crosscheck.py
+      - tests/test_matrix_football_free_secondary_crosscheck.py
+      - tests/test_matrix_football_independent_fixture_pipeline.py tests/test_matrix_football_free_secondary_crosscheck.py
       - tools/matrix_football_independent_over25_shadow.py
       - tests/test_matrix_football_independent_over25_shadow.py
       - tools/matrix_championship_prospective_pit_attestation.py
@@ -116,6 +118,29 @@ jobs:
             --sofa "evidence/football_world_inventory/$D/MATRIX_SOFA_FOOTBALL_FIXTURE_CROSSCHECK.json" \
             --flash-observations "evidence/football_world_inventory/$D/MATRIX_FLASH_BROWSER_OBSERVATIONS.json" \
             --out "evidence/football_world_inventory/$D/MATRIX_FLASH_FOOTBALL_CROSSCHECK.json"
+      - name: Query public TheSportsDB as supplementary calendar evidence only
+        shell: bash
+        run: |
+          set -euo pipefail
+          D="${{ steps.date.outputs.target_date }}"
+          PYTHONPATH=. python -m tools.matrix_football_free_secondary_crosscheck \
+            --date "$D" \
+            --intake "evidence/football_world_inventory/$D/MATRIX_FOOTBALL_INDEPENDENT_FIXTURE_INTAKE.json" \
+            --out "evidence/football_world_inventory/$D/MATRIX_THESPORTSDB_CROSSCHECK.json"
+          python - "$D" <<'PY'
+          import json,sys
+          from pathlib import Path
+          d=sys.argv[1]
+          row=json.loads(Path(f"evidence/football_world_inventory/{d}/MATRIX_THESPORTSDB_CROSSCHECK.json").read_text(encoding="utf-8"))
+          assert row["schema"]=="MATRIX_FREE_SECONDARY_FOOTBALL_CROSSCHECK_V1"
+          assert row["source_order"]==["SOFASCORE","FLASHSCORE","APIS"]
+          assert row["telegram_signal_authorized"] is False
+          assert row["production_p_matrix_authorized"] is False
+          assert row["historical_feature_equivalence_verified"] is False
+          assert row["real_money"]=="BLOCKED"
+          print("FREE_SECONDARY_SOURCE_VERIFIED_ONLY", row["verified_identity_hint_count"])
+          PY
+
       - name: Run original frozen Over 2.5 formula on independent historical scores in quarantine
         env:
           FOOTBALL_DATA_ORG_TOKEN: ${{ secrets.FOOTBALL_DATA_ORG_TOKEN }}
@@ -254,6 +279,8 @@ jobs:
           if [ -f "$B" ]; then git add "$B"; fi
           F="evidence/football_world_inventory/$D/MATRIX_FLASH_FOOTBALL_CROSSCHECK.json"
           if [ -f "$F" ]; then git add "$F"; fi
+          SECONDARY="evidence/football_world_inventory/$D/MATRIX_THESPORTSDB_CROSSCHECK.json"
+          if [ -f "$SECONDARY" ]; then git add "$SECONDARY"; fi
           H="evidence/football_world_inventory/$D/MATRIX_INDEPENDENT_OVER25_HISTORICAL_PARITY.json"
           if [ -f "$H" ]; then git add "$H"; fi
           if git diff --cached --quiet; then exit 0; fi
