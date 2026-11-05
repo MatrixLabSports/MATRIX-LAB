@@ -21,6 +21,8 @@ def test_retired_api_tennis_native_lane_has_no_schedule_and_is_disabled():
 def test_reactivation_fails_closed_instead_of_using_retired_api_tennis():
     raw = REACTIVATE.read_text(encoding="utf-8")
     assert raw.count("if: ${{ false }} # API-Tennis retired; NO_NETWORK") >= 2
-    assert "LIVE_PRIMARY_UNAVAILABLE_API_TENNIS_RETIRED_FAIL_CLOSED" in raw
-    assert "NO_CURRENT_LIVE_LEDGER_API_TENNIS_RETIRED_FAIL_CLOSED" in raw
-    assert '"status":"RETIRED_NO_NETWORK"' in raw
+    assert "LIVE_CAPTURE_QUOTA_EXHAUSTED" in raw
+    assert "NO_CURRENT_LIVE_LEDGER_QUOTA_OR_SOURCE_BLOCKED" in raw
+    assert '"api_tennis_status":"RETIRED_NO_NETWORK"' in raw
+    assert '"requested_cycles":0,"executed_cycles":0' in raw
+    assert "reserve-calls 50" in raw
