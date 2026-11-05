@@ -75,6 +75,14 @@ jobs:
           set -euo pipefail
           gh workflow run matrix-selfhosted-browser-quotes-5m.yml --repo "$GITHUB_REPOSITORY" --ref main
           echo "BROWSER_CAPTURE_FAILOVER_DISPATCHED: ${{ steps.freshness.outputs.reason }}"
+      - name: Expose overdue local Windows runner instead of reporting healthy capture
+        if: steps.freshness.outputs.reason == 'BROWSER_RUN_QUEUED_OVERDUE_LOCAL_RUNNER_REQUIRED'
+        shell: bash
+        run: |
+          echo "::error title=MATRIX self-hosted runner offline or unavailable::Browser job has waited longer than 12 minutes for the Windows listener; restart the local runner. No duplicate workflow dispatched and no green signal authorized."
+          echo "## MATRIX BROWSER LOCAL RUNNER RECOVERY REQUIRED" >> "$GITHUB_STEP_SUMMARY"
+          echo "A queued self-hosted Windows job cannot execute bookmaker capture. Start C:\\actions-runner\\run.cmd on the authorized Windows host. Never replace missing prices with fabricated odds." >> "$GITHUB_STEP_SUMMARY"
+          exit 1
       - name: Save read-only run freshness and watchdog decision
         if: always()
         uses: actions/upload-artifact@v4
