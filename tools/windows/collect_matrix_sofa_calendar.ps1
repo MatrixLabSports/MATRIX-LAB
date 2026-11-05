@@ -17,7 +17,13 @@ foreach ($day in @($bogota.ToString("yyyy-MM-dd"), $bogota.AddDays(1).ToString("
   python -m tools.matrix_calendar_browser_observations --intake $intake --out $observed
   if ($LASTEXITCODE -ne 0) {
     Write-Warning "CALENDAR_CAPTURE_FAILED_CLOSED:$day"
-    continue
+  }
+  # Fallback to immutable Opera connector evidence when Chrome has no
+  # individually dated links. No guessing, no expired event, no price promotion.
+  $receipt = "$folder/MATRIX_OPERA_CALENDAR_HANDOFF_RECEIPT_LAST.json"
+  python -m tools.matrix_opera_calendar_handoff --day $day --root . --intake $intake --out $observed --receipt $receipt
+  if ($LASTEXITCODE -ne 0) {
+    Write-Warning "OPERA_CALENDAR_HANDOFF_FAILED_CLOSED:$day"
   }
   if (Test-Path -LiteralPath $observed -PathType Leaf) {
     python -m tools.matrix_football_sofa_fixture_crosscheck --intake $intake --observations $observed --out "$folder/MATRIX_SOFA_FOOTBALL_FIXTURE_CROSSCHECK.json"
