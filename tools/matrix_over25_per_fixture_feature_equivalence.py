@@ -248,8 +248,22 @@ def evaluate(root:Path, *, manifest:dict | None=None) -> dict:
         raise ValueError("ORIGINAL_SCOPE_OR_GOVERNANCE_INVALID")
     lineage=json.loads(lineage_path.read_bytes())
     stages=json.loads(stage_path.read_bytes())
-    scope_link_ok=(stages.get("six_league_scope_sha256")==sha(registry_path.read_bytes()))
-    lineage_link_ok=(stages.get("identity_source_sha256")==sha(lineage_path.read_bytes()))
+    # The legacy stage certificate was SHA-sealed on Windows. Git checked
+    # out the same source JSON with LF on Linux, changing the raw byte SHA.
+    # Reconstruct the pre-existing commitment only if its original SHA matches.
+    # Neither original document nor its frozen SHA is rewritten.
+    def certify_aggregate_link(path:Path,expected:str):
+        if sha(path.read_bytes())==expected:
+            return True,"ORIGINAL_FILE_BYTES_EXACT"
+        try:
+            _,mode=legacy_sha_reconstruction(root,path.relative_to(root).as_posix(),expected)
+            return True,mode
+        except (OSError,ValueError,TypeError,json.JSONDecodeError):
+            return False,"HISTORICAL_AGGREGATE_SOURCE_SHA_NOT_RECONSTRUCTIBLE"
+    scope_link_ok,scope_link_mode=certify_aggregate_link(
+        registry_path,stages.get("six_league_scope_sha256"))
+    lineage_link_ok,lineage_link_mode=certify_aggregate_link(
+        lineage_path,stages.get("identity_source_sha256"))
     if (stages.get("six_league_ids")!=scope
         or lineage.get("status")!="RESEARCH_IDENTITY_RECOVERY_ONLY"
         or stages.get("scientific_six_league_validation_passed") is not False):
@@ -329,6 +343,9 @@ def evaluate(root:Path, *, manifest:dict | None=None) -> dict:
         "original_historical_aggregate_sha_link_verification":{
             "identity_source_sha256_match":lineage_link_ok,
             "scope_source_sha256_match":scope_link_ok,
+            "identity_link_proof_mode":lineage_link_mode,
+            "scope_link_proof_mode":scope_link_mode,
+            "historical_platform_newline_conversion_never_authorizes_equivalence":True,
             "status":"AGGREGATE_REFERENCE_STALE_NOT_CERTIFIED" if linkage_blockers
                      else "HISTORICAL_AGGREGATE_LINKS_MATCH",
             "linkage_blockers":linkage_blockers,
