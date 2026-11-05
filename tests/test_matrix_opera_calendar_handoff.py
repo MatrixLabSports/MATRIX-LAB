@@ -125,3 +125,37 @@ def test_no_writer_to_canonical_signal_path(tmp_path):
     with pytest.raises(ValueError, match="OUTPUT_FORBIDDEN"):
         persist(tmp_path / "daily_prematch_reports" / DAY / "MATRIX_SOFA_BROWSER_OBSERVATIONS.json",
                 obs, report, DAY)
+
+
+def test_newer_equal_size_verified_opera_capture_replaces_stale_observation(tmp_path):
+    prepare(tmp_path)
+    obs, report = discover(tmp_path, intake(), DAY, now=NOW)
+    out = tmp_path / "evidence" / "football_world_inventory" / DAY / "MATRIX_SOFA_BROWSER_OBSERVATIONS.json"
+    out.parent.mkdir(parents=True, exist_ok=True)
+    old = {**obs, "observed_at_utc": (CAPTURED - timedelta(hours=3)).isoformat()}
+    out.write_text(json.dumps(old), encoding="utf-8")
+    assert persist(out, obs, report, DAY) is True
+    stored = json.loads(out.read_text(encoding="utf-8"))
+    assert stored["observed_at_utc"] == CAPTURED.isoformat()
+    assert stored["signal_generation_authorized"] is False
+
+
+def test_same_time_stronger_direct_browser_evidence_is_retained(tmp_path):
+    prepare(tmp_path)
+    obs, report = discover(tmp_path, intake(), DAY, now=NOW)
+    out = tmp_path / "evidence" / "football_world_inventory" / DAY / "MATRIX_SOFA_BROWSER_OBSERVATIONS.json"
+    out.parent.mkdir(parents=True, exist_ok=True)
+    old = {**obs, "capture_method": "CDP_VISIBLE_EXACT_DATE_TIME_TEAMS_EVENT_ID"}
+    out.write_text(json.dumps(old), encoding="utf-8")
+    assert persist(out, obs, report, DAY) is False
+    assert report["status"] == "EXISTING_BROWSER_EVIDENCE_RETAINED"
+
+
+def test_older_observation_cannot_replace_a_newer_capture(tmp_path):
+    prepare(tmp_path)
+    obs, report = discover(tmp_path, intake(), DAY, now=NOW)
+    out = tmp_path / "evidence" / "football_world_inventory" / DAY / "MATRIX_SOFA_BROWSER_OBSERVATIONS.json"
+    out.parent.mkdir(parents=True, exist_ok=True)
+    newer = {**obs, "observed_at_utc": (CAPTURED + timedelta(minutes=5)).isoformat()}
+    out.write_text(json.dumps(newer), encoding="utf-8")
+    assert persist(out, obs, report, DAY) is False
