@@ -117,6 +117,10 @@ def test_live_repo_has_real_fixture_and_native_per_field_evidence():
     assert report["original_fixture_count"]>=174
     assert report["alternative_distinct_fixture_count"]>=12
     assert report["alternative_original_engine_verified_count"]>=12
+    timing=report["original_vs_alternative_kickoff_date_scope"]
+    assert timing["matching_kickoff_date_is_not_proof_of_same_fixture"] is True
+    assert timing["postponement_cannot_be_assumed_without_source_evidence"] is True
+    assert report["variable_comparison_status_totals"]["MISSING_SHA_VERIFIED_ORIGINAL_PIT_VALUE"]>=120
     assert report["cross_provider_certified_pair_count"]==0
     assert report["original_six_league_enriched_pit_equivalence_certified"] is False
     assert report["telegram_signal_authorized"] is False
