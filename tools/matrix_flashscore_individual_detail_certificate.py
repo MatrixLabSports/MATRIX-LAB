@@ -16,7 +16,7 @@ from zoneinfo import ZoneInfo
 
 BOGOTA = ZoneInfo("America/Bogota")
 SCHEMA = "MATRIX_FLASH_OPERA_INDIVIDUAL_DETAIL_CAPTURE_V1"
-DATE_CLOCK = re.compile(r"^([0-3]?\\d)\\.([01]?\\d)\\.(20\\d{2}) ([0-2]\\d):([0-5]\\d)$")
+DATE_CLOCK = re.compile(r"^([0-3]?\d)\.([01]?\d)\.(20\d{2}) ([0-2]\d):([0-5]\d)$")
 
 
 def utc(value):
