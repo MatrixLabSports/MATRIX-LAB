@@ -16,6 +16,15 @@ def build_report():
     clv = load("evidence/clv/football/over_2_5/state.json")
     calibration = load("evidence/governance/MATRIX_42_MARKET_ELITE_CALIBRATION_CLOSURE_28OCT2026.json")
     quotes = load("evidence/notifications/telegram/MATRIX_TELEGRAM_QUOTE_ATTEMPT_TELEMETRY_AUDIT_LAST.json")
+    # This catalog is a mutable CURRENT source, never proof of a 28-Oct response.
+    # Preserve the actual vendor error rather than relabel a suspended account
+    # as an old daily quota limit (which could conceal why production is down).
+    current_provider_errors = football.get("provider_errors") or {}
+    account_suspended = "suspend" in json.dumps(current_provider_errors).casefold()
+    source_adjudication = ("ACCOUNT_SUSPENDED_FAIL_CLOSED" if account_suspended
+                           else "EXTERNAL_PROVIDER_ACCESS_NOT_VERIFIED_FAIL_CLOSED")
+    current_blocker = ("API_FOOTBALL_ACCOUNT_SUSPENDED" if account_suspended
+                       else "API_FOOTBALL_PROVIDER_ACCESS_UNVERIFIED")
 
     return {
         "schema": "MATRIX_PAID_API_FINAL_DAY_ELITE_CLOSURE_V1",
@@ -35,7 +44,8 @@ def build_report():
             "refresh_status": football.get("refresh_status"),
             "provider_error_classification": football.get("provider_error_classification"),
             "provider_errors": football.get("provider_errors"),
-            "adjudication": "EXTERNAL_DAILY_QUOTA_BLOCK_FAIL_CLOSED",
+            "adjudication": source_adjudication,
+            "source_snapshot_temporal_scope": "LATEST_MUTABLE_REPOSITORY_CATALOG_NOT_28OCT_EVIDENCE",
         },
         "rapidapi_tennis": {
             "provider": tennis_receipt["provider"],
@@ -76,9 +86,7 @@ def build_report():
                 "TENNIS_PROVIDER_INVENTORY_PERSISTED_WITH_RECEIPT",
                 "42_LANE_SUPERVISOR_REVALIDATED_AFTER_TENNIS_HARVEST",
             ],
-            "external_blocks": [
-                "API_FOOTBALL_DAILY_REQUEST_LIMIT_REACHED",
-            ],
+            "external_blocks": [current_blocker],
             "still_sealed": [
                 "FOOTBALL_OOS_METRICS_UNTIL_1000",
                 "CLV_METRICS_UNTIL_300",
