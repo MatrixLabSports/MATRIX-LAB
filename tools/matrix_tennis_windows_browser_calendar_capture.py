@@ -6,7 +6,7 @@ Do NOT read odds, calculate probabilities, mutate any models or bet.
 """
 from __future__ import annotations
 import argparse,json,re
-from datetime import date,datetime,timezone
+from datetime import date,datetime,timedelta,timezone
 from pathlib import Path
 from urllib.parse import urlparse,parse_qs
 from zoneinfo import ZoneInfo
@@ -62,15 +62,41 @@ def observed(day:str,source:str,records:list,*,page_url:str,page_date_verified:b
        "matches":matches}
 
 def day_visible(source:str,day:str,text:str):
+    """A rendered, full-year date marker is required, never just a URL query.
+
+    Match exact numeric date tokens or Spanish full-year date labels. Reject
+    substring collisions, e.g. the fifth must not match the fifteenth.
+    """
     d=date.fromisoformat(day)
-    candidates=(f"{d.day}/{d.month}/{d.year}",f"{d.day}/{d.month}/{str(d.year)[-2:]}",
-       f"{d.day:02d}/{d.month:02d}/{d.year}",f"{d.year}-{d.month:02d}-{d.day:02d}",
-       f"{d.day:02d}.{d.month:02d}.{d.year}",f"{d.day}.{d.month}.{d.year}")
-    if source=="FLASHSCORE":
-        months=("enero","febrero","marzo","abril","mayo","junio","julio",
-                "agosto","septiembre","octubre","noviembre","diciembre")
-        candidates+=(f"{d.day} de {months[d.month-1]} de {d.year}",)
-    return any(x.casefold() in text.casefold() for x in candidates)
+    months=("enero","febrero","marzo","abril","mayo","junio","julio",
+            "agosto","septiembre","octubre","noviembre","diciembre")
+    month=months[d.month-1]
+    variants=(
+        rf"{d.day:02d}/{d.month:02d}/{d.year}",
+        rf"{d.day}/{d.month}/{d.year}",
+        rf"{d.day:02d}/{d.month:02d}/{str(d.year)[-2:]}",
+        rf"{d.day}/{d.month}/{str(d.year)[-2:]}",
+        rf"{d.day:02d}\\.{d.month:02d}\\.{d.year}",
+        rf"{d.day}\\.{d.month}\\.{d.year}",
+        rf"{d.year}-{d.month:02d}-{d.day:02d}",
+        rf"{d.day}\\s+de\\s+{month}\\s+de\\s+{d.year}",
+    )
+    return bool(re.search(
+        r"(?<![0-9])(?:"+"|".join(variants)+r")(?![0-9])",
+        str(text),flags=re.IGNORECASE))
+
+
+def date_evidence(source:str,day:str,*,controls:list[str],visible_text:str)->str|None:
+    """Prefer visible calendar controls to avoid dates inside other page news."""
+    if source not in PROVIDERS:raise ValueError("UNKNOWN_PROVIDER")
+    for marker in controls[:800]:
+        if day_visible(source,day,str(marker)):
+            return "VISIBLE_CALENDAR_CONTROL_FULL_YEAR"
+    # The full visible body can contain a date after the old first-12000 cutoff.
+    # It is still link discovery, NOT individual match date certification.
+    if day_visible(source,day,visible_text[:200000]):
+        return "VISIBLE_BODY_FULL_YEAR_DATE"
+    return None
 
 def replace_if_not_regressed(root:Path,day:str,source:str,report:dict):
     path=root/ROOT/day/PROVIDERS[source]["name"]
@@ -89,40 +115,77 @@ def replace_if_not_regressed(root:Path,day:str,source:str,report:dict):
 def run(root:Path,day:str,endpoint:str):
     from playwright.sync_api import sync_playwright,Error
     date.fromisoformat(day)
-    sources=(("SOFASCORE",f"https://www.sofascore.com/es/tennis/{day}"),
-             ("FLASHSCORE",f"https://www.flashscore.co/tenis/?d={day}"))
+    tomorrow=(date.fromisoformat(day)+timedelta(days=1)).isoformat()
+    # Today's and tomorrow's calendars are independently verified against
+    # their rendered dates. Never reuse one page's date evidence for another.
+    calendar_days=(day,tomorrow)
     stats=[]
     with sync_playwright() as p:
         browser=p.chromium.connect_over_cdp(endpoint,timeout=12000)
         if not browser.contexts:raise ValueError("WINDOWS_CDP_NO_CONTEXT")
-        for source,url in sources:
-            page=browser.contexts[0].new_page()
-            try:
-                response=page.goto(url,wait_until="domcontentloaded",timeout=18000)
-                if response is not None and response.status in (401,403,429):
-                    stats.append({"source":source,"status":"PROVIDER_ACCESS_REFUSED","http_status":response.status})
-                    continue
-                page.wait_for_timeout(1000)
-                info=page.evaluate("""() => ({
-                  text:String(document.body?.innerText||'').slice(0,12000),
-                  links:Array.from(document.querySelectorAll('a[href]'))
-                    .filter(a=>a.getClientRects().length>0).slice(0,4500)
-                    .map(a=>({url:a.href,name:String(a.innerText||a.getAttribute('aria-label')||'').trim().slice(0,300)}))
-                })""")
-                if not day_visible(source,day,str(info.get("text") or "")):
-                    stats.append({"source":source,"status":"BROWSER_VISIBLE_CALENDAR_DATE_NOT_VERIFIED"})
-                    continue
-                result=observed(day,source,info.get("links") or [],
-                   page_url=url,page_date_verified=True,now=datetime.now(timezone.utc))
-                stats.append(replace_if_not_regressed(root,day,source,result))
-            except (Error,OSError,ValueError,TypeError) as exc:
-                stats.append({"source":source,"status":"READ_ONLY_BROWSER_CAPTURE_BLOCKED",
-                              "reason_type":type(exc).__name__})
-            finally:
-                page.close()
+        for target_day in calendar_days:
+            sources=(("SOFASCORE",f"https://www.sofascore.com/es/tennis/{target_day}"),
+                     ("FLASHSCORE",f"https://www.flashscore.co/tenis/?d={target_day}"))
+            for source,url in sources:
+                page=browser.contexts[0].new_page()
+                try:
+                    response=page.goto(url,wait_until="domcontentloaded",timeout=18000)
+                    if response is not None and response.status in (401,403,429):
+                        stats.append({"date":target_day,"source":source,
+                                      "status":"PROVIDER_ACCESS_REFUSED","http_status":response.status})
+                        continue
+                    result=None
+                    observed_marker=None
+                    text_size=0
+                    visible_links=0
+                    for attempt in range(3):
+                        page.wait_for_timeout(1200 if attempt==0 else 2000)
+                        info=page.evaluate("""() => ({
+                          text:String(document.body?.innerText||'').slice(0,200000),
+                          dateControls:Array.from(document.querySelectorAll(
+                            'button,[role="button"],[role="combobox"],time,input'
+                          )).filter(a=>a.getClientRects().length>0).slice(0,800).map(
+                            a=>String(a.innerText||a.getAttribute('aria-label')||
+                              a.getAttribute('title')||a.getAttribute('datetime')||'').trim().slice(0,160)
+                          ),
+                          links:Array.from(document.querySelectorAll('a[href]'))
+                            .filter(a=>a.getClientRects().length>0).slice(0,4500)
+                            .map(a=>({url:a.href,name:String(a.innerText||
+                              a.getAttribute('aria-label')||'').trim().slice(0,300)}))
+                        })""")
+                        text_size=len(str(info.get("text") or ""))
+                        visible_links=len(info.get("links") or [])
+                        observed_marker=date_evidence(
+                            source,target_day,controls=info.get("dateControls") or [],
+                            visible_text=str(info.get("text") or ""))
+                        if observed_marker:
+                            result=observed(target_day,source,info.get("links") or [],
+                              page_url=url,page_date_verified=True,now=datetime.now(timezone.utc))
+                            # The date verifies only the rendered calendar context,
+                            # never each match's kickoff, surface or identity.
+                            result["rendered_calendar_date_evidence"]=observed_marker
+                            break
+                    if result is None:
+                        stats.append({"date":target_day,"source":source,
+                          "status":"BROWSER_VISIBLE_CALENDAR_DATE_NOT_VERIFIED",
+                          "bounded_retries":3,"visible_text_characters":text_size,
+                          "visible_anchors":visible_links,
+                          "source_url_date_is_not_admission_proof":True})
+                        continue
+                    receipt=replace_if_not_regressed(root,target_day,source,result)
+                    stats.append({"date":target_day,**receipt,
+                                  "rendered_calendar_date_evidence":observed_marker})
+                except (Error,OSError,ValueError,TypeError) as exc:
+                    stats.append({"date":target_day,"source":source,
+                                  "status":"READ_ONLY_BROWSER_CAPTURE_BLOCKED",
+                                  "reason_type":type(exc).__name__})
+                finally:
+                    page.close()
     return {"schema":"MATRIX_TENNIS_WINDOWS_BROWSER_CAPTURE_CYCLE_V1",
        "checked_at_utc":datetime.now(timezone.utc).isoformat(),
-       "target_date_bogota":day,"provider_results":stats,
+       "target_date_bogota":day,"capture_dates_bogota":list(calendar_days),
+       "provider_results":stats,
+       "source_first_then_free_api_only":True,"paid_api_used":False,
        "provider_direct_api_used":False,"model_parameters_modified":False,
        "holdout_admitted":0,"telegram_signal_authorized":False,
        "automatic_wagering":False,"real_money":"BLOCKED"}
