@@ -71,13 +71,13 @@ jobs:
           $tomorrow=$bogota.AddDays(1).ToString("yyyy-MM-dd")
           $sofaNext="evidence/tennis_calendar_physical/$tomorrow/sofascore_opera_full_link_observations.json"
           $flashNext="evidence/tennis_calendar_physical/$tomorrow/flashscore_opera_full_link_observations.json"
-          if ((Test-Path -LiteralPath $sofaNext) -and (Test-Path -LiteralPath $flashNext)) {
+          if ((Test-Path -LiteralPath $sofaNext) -or (Test-Path -LiteralPath $flashNext)) {
             python -m tools.matrix_tennis_browser_first_free_intake --date $tomorrow
             if ($LASTEXITCODE -ne 0) { throw "TENNIS_NEXT_DAY_INTAKE_FAILED" }
             python -m tools.matrix_tennis_exact_browser_crossmatch --date $tomorrow
             if ($LASTEXITCODE -ne 0) { throw "TENNIS_NEXT_DAY_CROSSMATCH_FAILED" }
           } else {
-            Write-Output "TENNIS_NEXT_DAY_BOTH_SOURCES_NOT_VERIFIED_NO_ADMISSION"
+            Write-Output "TENNIS_NEXT_DAY_NO_DATED_SOURCE_CAPTURE_NO_ADMISSION"
           }
           $details="evidence/tennis_calendar_physical/$day/sofascore_verified_match_details.json"
           if (Test-Path -LiteralPath $details) {
