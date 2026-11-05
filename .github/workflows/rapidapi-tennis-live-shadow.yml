@@ -2,8 +2,6 @@ name: MATRIX RapidAPI Tennis Live Shadow
 
 on:
   workflow_dispatch:
-  schedule:
-    - cron: "*/15 * * * *"
 
 permissions:
   contents: write
@@ -12,8 +10,11 @@ concurrency:
   group: rapidapi-tennis-live-shadow
   cancel-in-progress: false
 
+# Permanently quarantined under config/MATRIX_FREE_ONLY_API_FINANCING_POLICY.json.
+# Do not restore paid network calls without documented net revenue and new user approval.
 jobs:
   shadow:
+    if: ${{ false }} # USER_FREE_ONLY_2026_11_05; NO_PAID_API_REQUESTS
     runs-on: ubuntu-latest
     timeout-minutes: 10
     env:
