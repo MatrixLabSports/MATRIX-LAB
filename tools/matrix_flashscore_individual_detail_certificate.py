@@ -100,3 +100,27 @@ def scan(root: Path, day: str, *, now: datetime) -> dict:
         "events": accepted, "telegram_signal_authorized": False,
         "automatic_wagering": False, "real_money": "BLOCKED",
     }
+
+
+def main():
+    import argparse
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--day", required=True)
+    parser.add_argument("--root", type=Path, default=Path("."))
+    parser.add_argument("--out", type=Path, required=True)
+    args = parser.parse_args()
+    root = args.root.resolve()
+    expected = root / "evidence" / "football_world_inventory" / args.day / "MATRIX_FLASH_INDIVIDUAL_DETAIL_VERIFICATION_LAST.json"
+    if args.out.resolve() != expected:
+        raise SystemExit("FLASH_DETAIL_OUTPUT_SCOPE_FORBIDDEN")
+    report = scan(root, args.day, now=datetime.now(timezone.utc))
+    if report["verified_individual_count"]:
+        expected.parent.mkdir(parents=True, exist_ok=True)
+        expected.write_text(json.dumps(report, ensure_ascii=False, indent=2, sort_keys=True) + "\n",
+                            encoding="utf-8")
+    print(json.dumps({k: report[k] for k in ("status", "verified_individual_count",
+                                           "rejected_snapshot_count", "telegram_signal_authorized")}, sort_keys=True))
+
+
+if __name__ == "__main__":
+    main()
