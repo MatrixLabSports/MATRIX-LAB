@@ -83,13 +83,18 @@ def recover(root: Path, *, write: bool) -> dict:
     blocked = []
     for dest, expected, label in required.values():
         key = dest.relative_to(root).as_posix()
-        content = verified_variant(dest, expected)
-        if content is not None:
+        # A reconstructible JSON object is NOT yet a valid archived source:
+        # only on-disk bytes with the committed hash pass the existing check.
+        if dest.is_file() and dest.stat().st_size <= MAX_BYTES and digest(dest.read_bytes()) == expected:
             valid += 1
+            continue
+        if dest.is_file() and dest.stat().st_size > MAX_BYTES:
+            blocked.append({"path": key, "reason": "CORRUPT_SOURCE_OVERSIZED"})
             continue
         found = None
         origin = None
-        for candidate in capture_candidates(root, dest.parent.parent, label, expected):
+        from itertools import chain
+        for candidate in chain((dest,), capture_candidates(root, dest.parent.parent, label, expected)):
             result = verified_variant(candidate, expected)
             if result is not None:
                 found = result
