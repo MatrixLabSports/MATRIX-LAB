@@ -17,6 +17,13 @@ foreach ($day in @($bogota.ToString("yyyy-MM-dd"), $bogota.AddDays(1).ToString("
   if ($LASTEXITCODE -ne 0) {
     Write-Warning "FLASH_OPERA_LINK_HANDOFF_FAILED_CLOSED:$day"
   }
+  # Individual Flashscore fixture detail is a separate stronger research gate:
+  # page-level dates and undated event links never authorize a match or signal.
+  $flashIndividual = "$folder/MATRIX_FLASH_INDIVIDUAL_DETAIL_VERIFICATION_LAST.json"
+  python -m tools.matrix_flashscore_individual_detail_certificate --day $day --root . --out $flashIndividual
+  if ($LASTEXITCODE -ne 0) {
+    Write-Warning "FLASH_INDIVIDUAL_DETAIL_VERIFICATION_FAILED_CLOSED:$day"
+  }
   if (-not (Test-Path -LiteralPath $intake -PathType Leaf)) {
     Write-Output "CALENDAR_PROVIDER_INTAKE_MISSING:$day"
     continue
