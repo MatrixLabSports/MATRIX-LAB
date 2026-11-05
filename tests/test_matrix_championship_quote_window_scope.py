@@ -138,6 +138,17 @@ def test_main_selects_older_exact_snapshot_over_newer_mismatched_one(tmp_path,mo
     bad["observed_at_utc"]=datetime.now(timezone.utc).isoformat()
     (folder/"MATRIX_CHAMPIONSHIP_PROSPECTIVE_PIT_RUN_222.json").write_text(
         json.dumps(bad),encoding="utf-8")
+    # Replay at the original signed observation time. A live wall clock
+    # after this archived 2026-11-03 match must NOT mark it freshly eligible.
+    from datetime import timedelta
+    import tools.matrix_championship_quote_window_scope as mod
+    captured_at=datetime.fromisoformat(att["observed_at_utc"].replace("Z","+00:00"))
+    class ReplayClock(datetime):
+        @classmethod
+        def now(cls,tz=None):
+            instant=captured_at+timedelta(seconds=30)
+            return instant.astimezone(tz) if tz else instant.replace(tzinfo=None)
+    monkeypatch.setattr(mod,"datetime",ReplayClock)
     status=tmp_path/"scope.json"
     monkeypatch.delenv("GITHUB_OUTPUT",raising=False)
     monkeypatch.setattr(sys,"argv",["quote_scope","--date","2026-11-03",
