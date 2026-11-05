@@ -70,19 +70,65 @@ if ($LASTEXITCODE -eq 0) {
 if ($LASTEXITCODE -ne 1) { throw "BROWSER_GIT_DIFF_FAILED" }
 git commit -m "evidence(browser): persist self-hosted quote collection cycle"
 if ($LASTEXITCODE -ne 0) { throw "BROWSER_GIT_COMMIT_FAILED" }
+# Preserve the runner's working tree exactly as it is. Other verified research
+# stages may leave unstaged reports that this browser-only publisher MUST NOT
+# commit, stash, reset or discard. Rebase of this dirty worktree is unsafe.
+# Replay ONLY the allowlisted evidence commit into a fresh temporary worktree.
+$evidenceCommit = (git rev-parse --verify HEAD).Trim()
+if ($LASTEXITCODE -ne 0 -or $evidenceCommit -notmatch '^[0-9a-f]{40}$') {
+  throw "BROWSER_EVIDENCE_COMMIT_SHA_INVALID"
+}
+if ([string]::IsNullOrWhiteSpace($env:RUNNER_TEMP) -or -not (Test-Path -LiteralPath $env:RUNNER_TEMP -PathType Container)) {
+  throw "BROWSER_EVIDENCE_RUNNER_TEMP_MISSING"
+}
 for ($attempt = 1; $attempt -le 4; $attempt++) {
   git fetch origin repair/cor09-world-pipeline
   if ($LASTEXITCODE -ne 0) { throw "BROWSER_EVIDENCE_FETCH_FAILED" }
-  git rebase origin/repair/cor09-world-pipeline
-  if ($LASTEXITCODE -ne 0) {
-    git rebase --abort
-    throw "BROWSER_EVIDENCE_REBASE_CONFLICT_FAIL_CLOSED"
+  $remoteCommit = (git rev-parse --verify origin/repair/cor09-world-pipeline).Trim()
+  if ($LASTEXITCODE -ne 0 -or $remoteCommit -notmatch '^[0-9a-f]{40}$') {
+    throw "BROWSER_EVIDENCE_REMOTE_SHA_INVALID"
   }
-  git push origin HEAD:repair/cor09-world-pipeline
-  if ($LASTEXITCODE -eq 0) {
+  $scratch = Join-Path $env:RUNNER_TEMP ("matrix-browser-publish-" + [Guid]::NewGuid().ToString("N"))
+  $added = $false
+  $replayConflict = $false
+  $pushed = $false
+  try {
+    git worktree add --detach $scratch $remoteCommit
+    if ($LASTEXITCODE -ne 0) { throw "BROWSER_EVIDENCE_CLEAN_WORKTREE_CREATE_FAILED" }
+    $added = $true
+    git -C $scratch cherry-pick $evidenceCommit
+    if ($LASTEXITCODE -ne 0) {
+      $replayConflict = $true
+      # A real same-file conflict must remain fail-closed; never overwrite
+      # the remote's newer data and never fake a successful publication.
+      git -C $scratch status --short
+      throw "BROWSER_EVIDENCE_CHERRY_PICK_CONFLICT_FAIL_CLOSED"
+    }
+    git -C $scratch push origin HEAD:repair/cor09-world-pipeline
+    $pushed = ($LASTEXITCODE -eq 0)
+  }
+  finally {
+    if ($added) {
+      if ($replayConflict) {
+        git -C $scratch cherry-pick --abort
+        if ($LASTEXITCODE -ne 0) {
+          Write-Warning "BROWSER_EVIDENCE_SCRATCH_CONFLICT_RETAINED: $scratch"
+          throw "BROWSER_EVIDENCE_SCRATCH_ABORT_FAILED"
+        }
+      }
+      git worktree remove $scratch
+      if ($LASTEXITCODE -ne 0) {
+        Write-Warning "BROWSER_EVIDENCE_SCRATCH_RETAINED: $scratch"
+        throw "BROWSER_EVIDENCE_SCRATCH_REMOVE_FAILED"
+      }
+    }
+  }
+  if ($pushed) {
     Write-Output "MATRIX_BROWSER_EVIDENCE_PUSHED"
+    Write-Output "BROWSER_EVIDENCE_PUBLISHED_FROM_ISOLATED_CLEAN_WORKTREE"
     exit 0
   }
+  # Only a remote non-fast-forward race is retried; an actual conflict throws.
   Start-Sleep -Seconds (2 * $attempt)
 }
 throw "BROWSER_EVIDENCE_PUSH_FAILED"
