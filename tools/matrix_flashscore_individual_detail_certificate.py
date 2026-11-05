@@ -137,7 +137,8 @@ def exact_sofa_crosscheck(flash: dict, sofa: dict, *, now: datetime) -> dict:
         raise ValueError("FLASH_SOFA_CROSSCHECK_DATE_TIME_MISMATCH")
     observed = utc(sofa.get("observed_at_utc"))
     kickoff = utc(flash["kickoff_utc_from_declared_display_timezone"])
-    if observed >= kickoff or (now.astimezone(timezone.utc) - observed).total_seconds() not in range(0, 86401):
+    age = (now.astimezone(timezone.utc) - observed).total_seconds()
+    if observed >= kickoff or not 0 <= age <= 86400:
         raise ValueError("FLASH_SOFA_CROSSCHECK_STALE_OR_POST_KICKOFF")
     return {
         "schema": "MATRIX_FLASH_SOFA_TWO_SOURCE_EVENT_CROSSCHECK_V1",
@@ -203,6 +204,11 @@ def main():
         expected.parent.mkdir(parents=True, exist_ok=True)
         expected.write_text(json.dumps(report, ensure_ascii=False, indent=2, sort_keys=True) + "\n",
                             encoding="utf-8")
+    pairs = scan_two_source(root, args.day, now=datetime.now(timezone.utc))
+    pair_output = expected.parent / "MATRIX_FLASH_SOFA_TWO_SOURCE_REPORT_LAST.json"
+    if pairs["verified_event_pair_count"]:
+        pair_output.write_text(json.dumps(pairs, ensure_ascii=False, indent=2, sort_keys=True) + "\\n",
+                               encoding="utf-8")
     print(json.dumps({k: report[k] for k in ("status", "verified_individual_count",
                                            "rejected_snapshot_count", "telegram_signal_authorized")}, sort_keys=True))
 
