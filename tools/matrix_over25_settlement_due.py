@@ -24,6 +24,22 @@ def is_due(root: Path, now: datetime) -> bool:
         last = stamp(doc["checked_at_utc"])
         if last > now.astimezone(timezone.utc):
             raise ValueError("SETTLEMENT_REPORT_FUTURE_TIME")
+        # Recovery exception: zero prior HTTP calls, integrity-blocked
+        # forecasts, and ALL referenced source hashes now physically verified.
+        # This cannot override a previous provider request's rate budget.
+        if doc.get("http_calls") == 0 and any(
+            isinstance(x, dict) and x.get("status") == "BLOCKED_INVALID_SOURCE"
+            for x in doc.get("decisions", [])
+        ):
+            report_path = root / "evidence/football_world_inventory/MATRIX_OVER25_MISSING_SOURCE_EXACT_RESTORE_LAST.json"
+            if report_path.is_file():
+                restored = json.loads(report_path.read_text(encoding="utf-8"))
+                count = restored.get("source_refs_checked")
+                if (restored.get("schema") == "MATRIX_OVER25_MISSING_SOURCE_RESTORE_V1"
+                    and isinstance(count, int) and count > 0
+                    and restored.get("already_verified") == count
+                    and restored.get("unrecoverable_source_count") == 0):
+                    return True
         return now.astimezone(timezone.utc) - last >= INTERVAL
     except (OSError, KeyError, TypeError, json.JSONDecodeError):
         # Stale/unreadable prior report is never usable as proof that a
