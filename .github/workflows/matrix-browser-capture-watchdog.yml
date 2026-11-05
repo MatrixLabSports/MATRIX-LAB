@@ -50,7 +50,28 @@ jobs:
           test "$AUTO_BETTING" = DISABLED
           test "$MATRIX_MODE" = SHADOW
           python -m pip install --disable-pip-version-check pytest
-          python -m pytest -q tests/test_matrix_browser_capture_watchdog.py
+          python -m pytest -q tests/test_matrix_browser_capture_watchdog.py tests/test_matrix_runner_local_watchdog_contract.py
+      - name: Parse local Windows recovery scripts without executing a browser runner
+        shell: bash
+        run: |
+          set -euo pipefail
+          pwsh -NoLogo -NoProfile -Command '
+            $files = @(
+              "tools/windows/matrix_runner_local_watchdog.ps1",
+              "tools/windows/install_matrix_runner_watchdog_task.ps1"
+            )
+            foreach ($path in $files) {
+              $tokens = $null
+              $issues = $null
+              [System.Management.Automation.Language.Parser]::ParseFile($path,[ref]$tokens,[ref]$issues) | Out-Null
+              if ($issues.Count -gt 0) {
+                $issues | ForEach-Object { Write-Error $_.Message }
+                exit 1
+              }
+            }
+            Write-Output "MATRIX_WINDOWS_WATCHDOG_SCRIPTS_PARSE_PASS"
+          '
+
       - name: Inspect actual latest five-minute browser runs without secrets
         id: freshness
         shell: bash
