@@ -23,6 +23,11 @@ def test_real_recent_opera_evidence_replaces_prior_snapshot_in_isolated_replay(t
     old = json.loads(PREVIOUS.read_text(encoding="utf-8"))
     new_time = datetime.fromisoformat(fresh["observed_at_utc"].replace("Z", "+00:00"))
     old_time = datetime.fromisoformat(old["observed_at_utc"].replace("Z", "+00:00"))
+    # The operational snapshot may already have advanced to this very source.
+    # Build a deliberately older isolated fixture to regression-test replacement.
+    if old_time >= new_time:
+        old["observed_at_utc"] = (new_time - timedelta(hours=2)).isoformat()
+        old_time = datetime.fromisoformat(old["observed_at_utc"])
     assert new_time > old_time
     # This is an immutable forensic replay at the authentic capture time,
     # not an assertion that the snapshot remains current at test runtime.
