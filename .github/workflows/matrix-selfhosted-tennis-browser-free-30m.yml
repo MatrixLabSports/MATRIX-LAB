@@ -12,6 +12,7 @@ on:
       - tools/matrix_tennis_windows_browser_calendar_capture.py
       - tests/test_matrix_tennis_windows_browser_calendar_capture.py
       - tools/windows/persist_matrix_tennis_browser_evidence.ps1
+      - tests/test_matrix_tennis_windows_browser_calendar_capture.py
 
 permissions:
   contents: write
@@ -50,6 +51,13 @@ jobs:
       - name: Capture normal visible SofaScore and Flashscore calendars without direct provider API access
         shell: cmd
         run: python -m tools.matrix_tennis_windows_browser_calendar_capture
+      - name: Reject green job if neither date has one authentic visible tennis link
+        shell: powershell
+        run: |
+          $ErrorActionPreference = "Stop"
+          python -c "import json; from pathlib import Path; p=Path('evidence/tennis_calendar_reconciliation/MATRIX_TENNIS_WINDOWS_BROWSER_CAPTURE_CYCLE_LAST.json'); j=json.loads(p.read_text()); good=[x for x in j['provider_results'] if x.get('status')=='PERSISTED_VISIBLE_BROWSER_LINKS' and int(x.get('new') or 0)>0]; print('TENNIS_AUTHENTIC_VISIBLE_CAPTURES='+str(len(good))); assert good, 'NO_AUTHENTIC_DATED_TENNIS_CALENDAR_LINKS'"
+          if ($LASTEXITCODE -ne 0) { throw "TENNIS_ZERO_USEFUL_BROWSER_DATA_FAIL_CLOSED" }
+
       - name: Build exact research-only free identity and PIT metadata admission reports
         shell: powershell
         run: |
@@ -60,6 +68,17 @@ jobs:
           if ($LASTEXITCODE -ne 0) { throw "TENNIS_FREE_INTAKE_FAILED" }
           python -m tools.matrix_tennis_exact_browser_crossmatch --date $day
           if ($LASTEXITCODE -ne 0) { throw "TENNIS_CROSSMATCH_FAILED" }
+          $tomorrow=$bogota.AddDays(1).ToString("yyyy-MM-dd")
+          $sofaNext="evidence/tennis_calendar_physical/$tomorrow/sofascore_opera_full_link_observations.json"
+          $flashNext="evidence/tennis_calendar_physical/$tomorrow/flashscore_opera_full_link_observations.json"
+          if ((Test-Path -LiteralPath $sofaNext) -or (Test-Path -LiteralPath $flashNext)) {
+            python -m tools.matrix_tennis_browser_first_free_intake --date $tomorrow
+            if ($LASTEXITCODE -ne 0) { throw "TENNIS_NEXT_DAY_INTAKE_FAILED" }
+            python -m tools.matrix_tennis_exact_browser_crossmatch --date $tomorrow
+            if ($LASTEXITCODE -ne 0) { throw "TENNIS_NEXT_DAY_CROSSMATCH_FAILED" }
+          } else {
+            Write-Output "TENNIS_NEXT_DAY_NO_DATED_SOURCE_CAPTURE_NO_ADMISSION"
+          }
           $details="evidence/tennis_calendar_physical/$day/sofascore_verified_match_details.json"
           if (Test-Path -LiteralPath $details) {
             python -m tools.matrix_tennis_browser_challenger_pit_gate --date $day
