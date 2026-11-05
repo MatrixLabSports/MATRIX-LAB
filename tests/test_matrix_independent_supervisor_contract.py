@@ -47,5 +47,12 @@ def test_regular_supervisor_cannot_bypass_paid_authorization():
         [sys.executable, "-m", "tools.telegram_green_signal_alerts"],
         env=env, capture_output=True, text=True, timeout=30,
     )
+    # Missing paid entitlement disables only that transport. The independent
+    # supervisor must still require Telegram credentials before any send.
     assert result.returncode != 0
-    assert "API_FOOTBALL_SUBSCRIPTION_NOT_VERIFIED_FAIL_CLOSED" in result.stderr
+    assert "TELEGRAM_BOT_TOKEN_NOT_CONFIGURED" in result.stderr
+    route = json.loads(result.stdout.strip().splitlines()[0])
+    assert route["status"] == "INDEPENDENT_SOURCE_SUPERVISOR_STARTED"
+    assert route["paid_api_football_calls_allowed"] is False
+    assert route["signal_emission_certified"] is False
+    assert route["real_money"] == "BLOCKED"
