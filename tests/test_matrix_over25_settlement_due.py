@@ -50,3 +50,28 @@ def test_money_controls_cannot_be_disabled(tmp_path, monkeypatch):
     monkeypatch.setenv("AUTO_BETTING", "DISABLED")
     with pytest.raises(ValueError, match="MONEY_GUARD"):
         execute(tmp_path, NOW, "token")
+
+
+def test_verified_hash_recovery_allows_one_zero_http_retry(tmp_path):
+    p = write_report(tmp_path, NOW - timedelta(minutes=6))
+    doc = json.loads(p.read_text())
+    doc.update({"http_calls":0,"decisions":[{"status":"BLOCKED_INVALID_SOURCE",
+                                              "reason":"SOURCE_HASH_MISMATCH"}]})
+    p.write_text(json.dumps(doc), encoding="utf-8")
+    proof = tmp_path / "evidence/football_world_inventory/MATRIX_OVER25_MISSING_SOURCE_EXACT_RESTORE_LAST.json"
+    proof.parent.mkdir(parents=True, exist_ok=True)
+    proof.write_text(json.dumps({"schema":"MATRIX_OVER25_MISSING_SOURCE_RESTORE_V1",
+      "source_refs_checked":24,"already_verified":24,
+      "unrecoverable_source_count":0}), encoding="utf-8")
+    assert is_due(tmp_path, NOW) is True
+    doc["http_calls"] = 1
+    p.write_text(json.dumps(doc), encoding="utf-8")
+    assert is_due(tmp_path, NOW) is False
+
+
+def test_missing_integrity_proof_cannot_override_rate_gate(tmp_path):
+    p = write_report(tmp_path, NOW - timedelta(minutes=6))
+    doc = {"checked_at_utc":(NOW - timedelta(minutes=6)).isoformat(),
+           "http_calls":0,"decisions":[{"status":"BLOCKED_INVALID_SOURCE"}]}
+    p.write_text(json.dumps(doc), encoding="utf-8")
+    assert is_due(tmp_path, NOW) is False
