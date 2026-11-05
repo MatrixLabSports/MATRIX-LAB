@@ -175,11 +175,8 @@ jobs:
         shell: cmd
         run: python -m tools.matrix_over25_missing_source_exact_restore --restore
 
-      - name: Settle independent frozen Over25 predictions at most every two hours
-        shell: cmd
-        env:
-          FOOTBALL_DATA_ORG_TOKEN: ${{ secrets.FOOTBALL_DATA_ORG_TOKEN }}
-        run: python -m tools.matrix_over25_settlement_due
+      # Research settlement is owned by the separate cloud workflow.
+      # Windows persists fresh immutable research snapshots, not result reports.
 
       - name: Execute frozen original promoted Over25 engine on verified free-provider raw inputs
         shell: cmd
