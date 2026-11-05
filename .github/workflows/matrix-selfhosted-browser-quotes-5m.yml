@@ -50,7 +50,11 @@ on:
       - tools/matrix_independent_over25_research_scorecard.py
       - tools/matrix_original_over25_alternative_native_adapter.py
       - tools/matrix_over25_source_hash_exact_repair.py
-      - tests/test_matrix_over25_source_hash_exact_repair.py
+      - tools/matrix_over25_missing_source_exact_restore.py
+      - tools/matrix_over25_settlement_due.py
+      - tests/test_matrix_over25_missing_source_exact_restore.py
+      - tests/test_matrix_over25_settlement_due.py
+      - tests/test_matrix_over25_source_hash_exact_repair.py tests/test_matrix_over25_missing_source_exact_restore.py tests/test_matrix_over25_settlement_due.py
       - tests/test_matrix_original_over25_alternative_native_adapter.py
       - tests/test_matrix_independent_over25_research_settlement.py
       - tests/test_matrix_independent_over25_research_scorecard.py
@@ -166,6 +170,16 @@ jobs:
       - name: Repair only SHA-reconstructible original research source bytes with forensic backup
         shell: cmd
         run: python -m tools.matrix_over25_source_hash_exact_repair --restore-verifiable
+
+      - name: Restore only exact-SHA archived research sources from authenticated captures
+        shell: cmd
+        run: python -m tools.matrix_over25_missing_source_exact_restore --restore
+
+      - name: Settle independent frozen Over25 predictions at most every two hours
+        shell: cmd
+        env:
+          FOOTBALL_DATA_ORG_TOKEN: ${{ secrets.FOOTBALL_DATA_ORG_TOKEN }}
+        run: python -m tools.matrix_over25_settlement_due
 
       - name: Execute frozen original promoted Over25 engine on verified free-provider raw inputs
         shell: cmd
