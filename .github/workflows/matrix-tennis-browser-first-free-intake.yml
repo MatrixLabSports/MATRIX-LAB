@@ -13,6 +13,9 @@ on:
     branches:
       - repair/cor09-world-pipeline
     paths:
+      - tools/matrix_tennis_windows_browser_calendar_capture.py
+      - tests/test_matrix_tennis_windows_browser_calendar_capture.py
+      - tools/windows/persist_matrix_tennis_browser_evidence.ps1
       - tools/matrix_tennis_browser_first_free_intake.py
       - tools/matrix_tennis_exact_browser_crossmatch.py
       - tools/matrix_tennis_browser_challenger_pit_gate.py
@@ -47,7 +50,7 @@ jobs:
       - name: Verify Hard and Clay browser intake against false admissions
         run: |
           python -m pip install -q pytest
-          PYTHONPATH=. python -m pytest -q tests/test_matrix_tennis_browser_first_free_intake.py tests/test_matrix_tennis_exact_browser_crossmatch.py
+          PYTHONPATH=. python -m pytest -q tests/test_matrix_tennis_browser_first_free_intake.py tests/test_matrix_tennis_exact_browser_crossmatch.py tests/test_matrix_tennis_windows_browser_calendar_capture.py
       - name: Select target Bogota date with no backfill
         id: target
         env:
@@ -70,6 +73,20 @@ jobs:
         run: |
           set -euo pipefail
           PYTHONPATH=. python -m tools.matrix_tennis_exact_browser_crossmatch --date "${{ steps.target.outputs.day }}"
+
+      - name: Process tomorrow's dated free calendar even with only one real source
+        shell: bash
+        run: |
+          set -euo pipefail
+          D1="$(TZ=America/Bogota date -d tomorrow +%F)"
+          SOFA="evidence/tennis_calendar_physical/$D1/sofascore_opera_full_link_observations.json"
+          FLASH="evidence/tennis_calendar_physical/$D1/flashscore_opera_full_link_observations.json"
+          if [ -f "$SOFA" ] || [ -f "$FLASH" ]; then
+            PYTHONPATH=. python -m tools.matrix_tennis_browser_first_free_intake --date "$D1"
+            PYTHONPATH=. python -m tools.matrix_tennis_exact_browser_crossmatch --date "$D1"
+          else
+            echo TOMORROW_DATED_TENNIS_EVIDENCE_MISSING_NO_ADMISSION
+          fi
 
       - name: Certify exact dated Challenger court and players from authentic Opera match pages
         shell: bash
@@ -127,3 +144,45 @@ jobs:
             sleep "$n"
           done
           exit 1
+
+      - name: Reject green cloud job when both dates lack recent authentic visible links
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json
+          from datetime import datetime,timedelta,timezone
+          from pathlib import Path
+          from zoneinfo import ZoneInfo
+          now=datetime.now(timezone.utc)
+          day=now.astimezone(ZoneInfo("America/Bogota")).date()
+          valid=[]
+          for d in (day,day+timedelta(days=1)):
+              for source,filename in (
+                  ("SOFASCORE","sofascore_opera_full_link_observations.json"),
+                  ("FLASHSCORE","flashscore_opera_full_link_observations.json")):
+                  p=Path("evidence/tennis_calendar_physical")/d.isoformat()/filename
+                  if not p.is_file():
+                      continue
+                  doc=json.loads(p.read_text(encoding="utf-8"))
+                  try:
+                      at=datetime.fromisoformat(doc["collected_at_utc"].replace("Z","+00:00"))
+                  except (KeyError,ValueError,TypeError):
+                      continue
+                  if (doc.get("schema")=="MATRIX_OPERA_TENNIS_EVENT_LINK_CAPTURE_V1"
+                      and doc.get("source")==source
+                      and doc.get("target_date_bogota")==d.isoformat()
+                      and doc.get("real_money")=="BLOCKED"
+                      and doc.get("canonical_fixture_export_authorized") is False
+                      and doc.get("probability_generation_authorized") is False
+                      and isinstance(doc.get("matches"),list)
+                      and len(doc["matches"])>0
+                      and len(doc["matches"])==doc.get("observed_link_count")
+                      and at.tzinfo is not None and timedelta(0)<=now-at<=timedelta(hours=2)):
+                      valid.append({"date":d.isoformat(),"source":source,
+                                    "visible_links":len(doc["matches"])})
+          print(json.dumps({"recent_dated_browser_source_evidence":valid,
+              "holdout_admitted":0,"paid_api_used":False,"real_money":"BLOCKED"}))
+          if not valid:
+              raise SystemExit("TENNIS_NO_RECENT_DATED_SOURCE_ZERO_USEFUL_DATA_FAIL_CLOSED")
+          PY
