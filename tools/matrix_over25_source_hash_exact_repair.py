@@ -34,13 +34,13 @@ def variants(obj:dict):
                             # Windows Git text checkout can change EVERY LF,
                             # not only the last newline. Preserve only bytes
                             # matching the pre-existing frozen SHA256.
-                            if b"\\n" in raw:
-                                yield "compact_all_crlf", raw.replace(b"\\r\\n",b"\\n").replace(b"\\n",b"\\r\\n")
+                            if b"\n" in raw:
+                                yield "compact_all_crlf", raw.replace(b"\r\n",b"\n").replace(b"\n",b"\r\n")
                     else:
                         raw=(json.dumps(obj,indent=indent,**kw)+ending).encode("utf-8")
                         yield "pretty", raw
-                        if b"\\n" in raw:
-                            yield "pretty_all_crlf", raw.replace(b"\\r\\n",b"\\n").replace(b"\\n",b"\\r\\n")
+                        if b"\n" in raw:
+                            yield "pretty_all_crlf", raw.replace(b"\r\n",b"\n").replace(b"\n",b"\r\n")
 
 def restore(root:Path,*,write:bool=False)->dict:
     path_root=root/ROOT
