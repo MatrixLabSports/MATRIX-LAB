@@ -18,8 +18,6 @@ on:
         required: false
         default: ""
         type: string
-  schedule:
-    - cron: "7 5,11,17,23 * * *"
 
 permissions:
   contents: write
@@ -28,8 +26,11 @@ concurrency:
   group: rapidapi-tennis-paid-window-harvest
   cancel-in-progress: false
 
+# USER POLICY 2026-11-05: do not run paid API jobs until verified self-funding
+# and new explicit user authorization. This is the DEFAULT branch schedule.
 jobs:
   harvest:
+    if: ${{ false }} # FREE_ONLY_NO_PAID_API_NETWORK
     runs-on: ubuntu-latest
     timeout-minutes: 20
     env:
