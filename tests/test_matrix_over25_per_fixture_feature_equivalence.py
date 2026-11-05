@@ -7,6 +7,7 @@ import pytest
 
 from tools.matrix_over25_per_fixture_feature_equivalence import (
     OUT, FEATURES, NUMERIC, diff_fields, read_proof, paired_docs, evaluate,
+    legacy_sha_reconstruction,
 )
 
 
@@ -126,3 +127,20 @@ def test_live_repo_has_real_fixture_and_native_per_field_evidence():
         assert all(x["status"]=="MISSING_SHA_VERIFIED_ORIGINAL_PIT_VALUE"
                    for x in row["variable_comparisons"])
         assert row["alternative_history_payload_sha256"]
+
+def test_reconstruct_old_windows_original_sha_without_silently_approving_wrong_bytes(tmp_path):
+    expected_document={"registry":[{"fixture_id":"1557","team":"Bogotá"}],
+                       "captured_at_utc":"2026-10-20T12:00:00Z"}
+    original=(json.dumps(expected_document,ensure_ascii=False,sort_keys=True,indent=2)+"\r\n").encode("utf-8").replace(b"\n",b"\r\n")
+    # Remove duplicated CR caused by generic replacement on the trailing line:
+    original=original.replace(b"\r\r\n",b"\r\n")
+    checked_out=original.replace(b"\r\n",b"\n")
+    item=tmp_path/"registry.json";item.write_bytes(checked_out)
+    digest=hashlib.sha256(original).hexdigest()
+    value,mode=legacy_sha_reconstruction(tmp_path,"registry.json",digest)
+    assert value==expected_document
+    assert mode=="CHECKOUT_LF_TO_ORIGINAL_CRLF"
+    assert item.read_bytes()==checked_out  # Research comparator never mutates bytes
+    with pytest.raises(ValueError,match="ORIGINAL_SOURCE_SHA_NOT_RECONSTRUCTIBLE"):
+        legacy_sha_reconstruction(tmp_path,"registry.json","f"*64)
+
