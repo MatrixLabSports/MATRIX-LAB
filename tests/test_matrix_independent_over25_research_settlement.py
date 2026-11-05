@@ -154,3 +154,28 @@ def test_legacy_absolute_paths_do_not_override_archive_hash(tmp_path):
        token="configured",opener=lambda *a,**kw:(_ for _ in ()).throw(AssertionError()))
     assert x["http_calls"]==0
     assert x["decisions"][0]["reason"]=="SOURCE_HASH_MISMATCH"
+
+
+def test_archived_sha_verified_settlement_survives_later_intake_hash_mismatch(tmp_path):
+    sealed=setup(tmp_path)
+    before=sealed.read_bytes()
+    now=T("2026-11-04T22:30:00Z")
+    first=settle(tmp_path,now=now,token="configured",
+                 opener=lambda *a,**kw:Response(source()))
+    assert first["newly_settled_count"]==1
+    assert first["archived_sha_verified_research_result_count"]==1
+    assert first["input_source_integrity_blocked_count"]==0
+    original=json.loads(before)
+    intake=tmp_path/BASE/"sources"/(original["source_intake_file_sha256"]+".json")
+    intake.write_bytes(b'{"intake_changed_after_settlement":true}')
+    def no_network(*args,**kwargs):
+        raise AssertionError("NO_NETWORK_FROM_CORRUPT_ARCHIVE")
+    second=settle(tmp_path,now=T("2026-11-05T10:20:00Z"),
+                  token="",opener=no_network)
+    assert second["newly_settled_count"]==0
+    assert second["settled_total"]==0
+    assert second["input_source_integrity_blocked_count"]==1
+    assert second["archived_sha_verified_research_result_count"]==1
+    assert second["archive_rejected_result_count"]==0
+    assert second["telegram_signal_authorized"] is False
+    assert sealed.read_bytes()==before
