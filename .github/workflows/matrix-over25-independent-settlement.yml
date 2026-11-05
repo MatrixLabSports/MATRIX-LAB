@@ -1,0 +1,86 @@
+name: MATRIX Over25 Independent Prospective Settlement
+on:
+  workflow_dispatch:
+  push:
+    branches: [repair/cor09-world-pipeline]
+    paths:
+      - .github/workflows/matrix-over25-independent-settlement.yml
+      - tools/matrix_independent_over25_research_settlement.py
+      - tools/matrix_independent_over25_research_scorecard.py
+      - tools/matrix_over25_source_hash_exact_repair.py
+      - tests/test_matrix_independent_over25_research_settlement.py
+      - tests/test_matrix_independent_over25_research_scorecard.py
+      - tests/test_matrix_over25_source_hash_exact_repair.py
+permissions:
+  contents: write
+concurrency:
+  group: matrix-over25-independent-settlement
+  cancel-in-progress: false
+jobs:
+  settle:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    env:
+      REAL_MONEY: BLOCKED
+      AUTO_BETTING: DISABLED
+    steps:
+      - name: Check out approved operational branch
+        uses: actions/checkout@v4
+        with:
+          ref: repair/cor09-world-pipeline
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Enforce research-only safety gates
+        run: test "$REAL_MONEY" = BLOCKED && test "$AUTO_BETTING" = DISABLED
+      - name: Test immutable research result and source verification
+        run: |
+          python -m pip install --disable-pip-version-check pytest
+          python -m pytest -q tests/test_matrix_independent_over25_research_settlement.py tests/test_matrix_independent_over25_research_scorecard.py tests/test_matrix_over25_source_hash_exact_repair.py
+      - name: Verify existing archive source hashes without changing forecasts
+        run: python -m tools.matrix_over25_source_hash_exact_repair
+      - name: Settle only genuine final results against original SHA-locked frozen predictions
+        env:
+          FOOTBALL_DATA_ORG_TOKEN: ${{ secrets.FOOTBALL_DATA_ORG_TOKEN }}
+        run: python -m tools.matrix_independent_over25_research_settlement
+      - name: Recalculate independent prospective scorecard from signed sources
+        run: python -m tools.matrix_independent_over25_research_scorecard
+      - name: Verify nonpromotion and zero automatic wagering
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          a=json.loads(Path("evidence/football_world_inventory/MATRIX_INDEPENDENT_OVER25_SETTLEMENT_LAST.json").read_text())
+          b=json.loads(Path("evidence/football_world_inventory/MATRIX_INDEPENDENT_OVER25_RESEARCH_SCORECARD_LAST.json").read_text())
+          assert a["telegram_signal_authorized"] is False and a["real_money"]=="BLOCKED"
+          assert b["production_p_matrix_authorized"] is False and b["telegram_signal_authorized"] is False
+          assert b["real_money"]=="BLOCKED"
+          print({"scanned":a["unique_fixture_count"],"settled":a["settled_total"],
+                 "rejected":len(b["rejected_settlements"]),
+                 "scorecard_rows":b["total_verified_settled_rows"],
+                 "permitted_production":False})
+          PY
+      - name: Persist only immutable research results and SHA evidence to operational branch
+        run: |
+          git config user.name matrix-over25-research-runner
+          git config user.email matrix-over25-research-runner@users.noreply.github.com
+          git add -- evidence/football_research_freezes
+          git add -- evidence/football_world_inventory/MATRIX_OVER25_RESEARCH_SOURCE_HASH_REPAIR_LAST.json
+          git add -- evidence/football_world_inventory/MATRIX_INDEPENDENT_OVER25_SETTLEMENT_LAST.json
+          git add -- evidence/football_world_inventory/MATRIX_INDEPENDENT_OVER25_RESEARCH_SCORECARD_LAST.json
+          if git diff --cached --quiet; then
+            echo MATRIX_SETTLEMENT_NO_CHANGE
+            exit 0
+          fi
+          git commit -m "evidence(over25): preserve immutable prospective settlements and scorecard"
+          for attempt in 1 2 3 4; do
+            git fetch origin repair/cor09-world-pipeline
+            git rebase origin/repair/cor09-world-pipeline || { git rebase --abort; exit 1; }
+            if git push origin HEAD:repair/cor09-world-pipeline; then
+              echo MATRIX_SETTLEMENT_EVIDENCE_PUSHED
+              exit 0
+            fi
+            sleep "$attempt"
+          done
+          exit 1
