@@ -20,8 +20,8 @@ foreach ($folder in $folders) {
 $staged = @(git diff --cached --name-only)
 if ($LASTEXITCODE -ne 0) { throw "TENNIS_BROWSER_STAGE_INSPECTION_FAILED" }
 foreach ($name in $staged) {
-  $normalized = $name.Replace("\\", "/")
-  if ($normalized -notmatch '^evidence/tennis_calendar_(physical|reconciliation)/[^\r\n]+\\.json$') {
+  $normalized = $name.Replace([char]92, [char]47)
+  if ($normalized -notmatch '^evidence/tennis_calendar_(physical|reconciliation)/[A-Za-z0-9_./-]+[.]json$') {
     throw "TENNIS_BROWSER_UNAUTHORIZED_STAGED_PATH"
   }
 }
