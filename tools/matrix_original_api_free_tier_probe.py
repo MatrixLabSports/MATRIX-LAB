@@ -80,7 +80,7 @@ def probe(key:str, *, opener=urlopen, checked_at=None)->dict:
     key=key.strip()
     if not key:
         return out
-    if "\\r" in key or "\\n" in key:
+    if "\r" in key or "\n" in key:
         out["status"]="BLOCKED_DIRECT_KEY_CONTAINS_CONTROL_CHARACTERS"
         return out
     stage="STATUS"
