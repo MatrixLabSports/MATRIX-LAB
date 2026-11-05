@@ -113,7 +113,9 @@ def discover(root: Path, intake: dict, day: str, *, now: datetime) -> tuple[dict
 
 def persist(out: Path, obs: dict, report: dict, day: str):
     """Never replace a stronger, valid current observation with less evidence."""
-    if out.name != "MATRIX_SOFA_BROWSER_OBSERVATIONS.json" or out.parent.name != day:
+    if (out.name != "MATRIX_SOFA_BROWSER_OBSERVATIONS.json" or out.parent.name != day
+        or out.parent.parent.name != "football_world_inventory"
+        or out.parent.parent.parent.name != "evidence"):
         raise ValueError("OPERA_HANDOFF_PRODUCTION_OUTPUT_FORBIDDEN")
     if not obs or not obs.get("matches"):
         return False
