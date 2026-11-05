@@ -28,6 +28,21 @@ def test_busy_windows_runner_never_cascades_dispatches():
     assert not d["dispatch"]
     assert d["reason"]=="BROWSER_RUN_ALREADY_PENDING"
 
+def test_queued_windows_runner_overdue_is_explicit_blocker_without_duplicate_dispatch():
+    d=check([row(1864,"queued",None,identifier=41977589252)],now=NOW)
+    assert d["dispatch"] is False
+    assert d["runner_recovery_required"] is True
+    assert d["reason"]=="BROWSER_RUN_QUEUED_OVERDUE_LOCAL_RUNNER_REQUIRED"
+    assert d["last_run_id"]==41977589252
+
+
+def test_freshly_queued_windows_job_remains_ordinary_pending():
+    d=check([row(300,"queued",None)],now=NOW)
+    assert d["dispatch"] is False
+    assert d["runner_recovery_required"] is False
+    assert d["reason"]=="BROWSER_RUN_ALREADY_PENDING"
+
+
 def test_most_recent_run_wins_and_no_second_dispatch():
     d=check([row(5000,identifier=20),row(70,identifier=30)],now=NOW)
     assert not d["dispatch"]
