@@ -40,7 +40,7 @@ def source_path(root:Path,forecast_file:Path,forecast:dict,label:str)->Path:
         raise ValueError("FROZEN_FORECAST_OUTSIDE_AUTHORIZED_ARCHIVE")
     return parent/"sources"/(ident+".json")
 
-def verify(root:Path,p:Path,promotion:dict)->dict:
+def verify(root:Path,p:Path,promotion:dict,*,include_feature_trace:bool=False)->dict:
     frozen_bytes=p.read_bytes()
     snapshot=json.loads(frozen_bytes)
     if (snapshot.get("schema")!=SCHEMA or snapshot.get("provider")!="FOOTBALL_DATA_ORG"
@@ -115,7 +115,7 @@ def verify(root:Path,p:Path,promotion:dict)->dict:
         raise ValueError("ORIGINAL_FROZEN_ENGINE_PROBABILITY_MISMATCH")
     if snapshot.get("source_history_home_count")!=features["home_history_count"] or snapshot.get("source_history_away_count")!=features["away_history_count"]:
         raise ValueError("FROZEN_HISTORY_COUNTS_CHANGED")
-    return {
+    report={
       "fixture_id":fid,"provider_competition_id":cid,
       "status":"FROZEN_ORIGINAL_ENGINE_EXECUTION_MATCHES_ALTERNATIVE_NATIVE_INPUT",
       "forecast_sha256":digest(frozen_bytes),
@@ -135,6 +135,34 @@ def verify(root:Path,p:Path,promotion:dict)->dict:
       "prospective_scientific_oos_certified":False,
       "production_p_matrix_authorized":False,"telegram_signal_authorized":False
     }
+    if include_feature_trace:
+        # The original calibrated engine runs on SHA-verified ALTERNATIVE
+        # inputs only. These are not original API-Football feature values.
+        report["alternative_native_features"]={
+            "prior_group_fixture_count":features["prior_group_fixture_count"],
+            "home_history_count":features["home_history_count"],
+            "away_history_count":features["away_history_count"],
+            "home_history_source":features["home_history_source"],
+            "away_history_source":features["away_history_source"],
+            "expected_home_goals":features["expected_home_goals"],
+            "expected_away_goals":features["expected_away_goals"],
+            "poisson_over_2_5":features["poisson"]["over_2_5"],
+            "baseline_over_2_5":features["baseline"]["over_2_5"],
+            "pooled_probability_over25":round(probability,10),
+            "home_source_team_id":str(target["home_source_team_id"]),
+            "away_source_team_id":str(target["away_source_team_id"]),
+            "source_competition_id":cid,
+            "kickoff_utc":kickoff.isoformat(),
+        }
+        report["alternative_native_feature_source_paths"]={
+            "forecast":p.relative_to(root).as_posix(),
+            "intake":source_path(root,p,snapshot,"intake").relative_to(root).as_posix(),
+            "shadow":source_path(root,p,snapshot,"shadow").relative_to(root).as_posix(),
+        }
+        report["alternative_history_observed_at_utc"]=observed.isoformat()
+        report["alternative_prediction_sealed_at_utc"]=saved.isoformat()
+    return report
+
 
 def evaluate(root:Path)->dict:
     promo=json.loads((root/PROMOTION).read_text(encoding="utf-8"))
