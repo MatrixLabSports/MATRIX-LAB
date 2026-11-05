@@ -46,9 +46,11 @@ def test_strict_individual_detail_is_research_only():
     {"observed_at_utc": "2026-11-04T08:00:00Z"},
 ])
 def test_unsafe_missing_or_stale_detail_fails_closed(change):
+    check_time = (datetime(2026, 11, 5, 19, 0, tzinfo=timezone.utc)
+                  if change.get("observed_at_utc") == "2026-11-05T18:00:00Z"
+                  else datetime(2026, 11, 5, 9, 45, tzinfo=timezone.utc))
     with pytest.raises((ValueError, TypeError)):
-        verify({**doc(), **change}, expected_day=DAY,
-               now=datetime(2026, 11, 5, 19, 0, tzinfo=timezone.utc))
+        verify({**doc(), **change}, expected_day=DAY, now=check_time)
 
 
 def test_actual_connected_opera_detail_file_can_be_read(tmp_path):
