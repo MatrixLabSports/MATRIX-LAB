@@ -21,6 +21,10 @@ from tools.api_football_market_shadow_p_matrix import (
 )
 
 MAX_HISTORY_CALLS = 6
+# Correspondence of FREE football-data.org competition scopes to the five
+# European leagues in MATRIX's original approved six-league registry.
+# This is NOT a same-fixture identity crosswalk and never promotes p_matrix.
+ORIGINAL_FIVE_FREE_SOURCE_IDS = frozenset({2002, 2014, 2015, 2019, 2021})
 MAX_BODY = 3_000_000
 BASE = "https://api.football-data.org/v4/competitions"
 
@@ -80,6 +84,8 @@ def score_intake(intake: dict, token: str, *, opener=urlopen) -> dict:
         "target_outcomes_used": False,
         "odds_used_to_generate_probability": False,
         "source": "FOOTBALL_DATA_ORG",
+        "history_group_selection_policy": "ORIGINAL_FIVE_FREE_LEAGUES_FIRST_STABLE_UNDER_SIX_CALL_CAP",
+        "original_scope_free_competition_ids": sorted(ORIGINAL_FIVE_FREE_SOURCE_IDS),
         "network_calls": 0, "scored": [], "blocked": [],
         "scored_count": 0, "blocked_count": 0,
         "historical_source_equivalence_verified": False,
@@ -97,7 +103,16 @@ def score_intake(intake: dict, token: str, *, opener=urlopen) -> dict:
         output["status"] = "BLOCKED_NO_TOKEN_OR_FIXTURES"
         return output
     groups: dict[str, dict] = {}
-    for f in fixtures:
+    # Stable priority ensures a 9-competition discovery cycle cannot spend all
+    # six permitted requests on peripheral leagues before reaching LaLiga.
+    # Do not reorder the original discovery fixture data or increase API calls.
+    priority_fixtures = sorted(
+        fixtures,
+        key=lambda f: 0 if (isinstance(f, dict) and
+                            f.get("source_competition_id") in ORIGINAL_FIVE_FREE_SOURCE_IDS)
+                          else 1,
+    )
+    for f in priority_fixtures:
         cid = f.get("source_competition_id") if isinstance(f, dict) else None
         if isinstance(cid, bool) or not isinstance(cid, int) or cid <= 0:
             output["blocked"].append({"source_fixture_id": f.get("source_fixture_id") if isinstance(f, dict) else None,
@@ -149,6 +164,7 @@ def score_intake(intake: dict, token: str, *, opener=urlopen) -> dict:
                            "history_count": len(rows)}
         except (HTTPError, URLError, TimeoutError, OSError, ValueError, TypeError, KeyError) as exc:
             groups[key] = {"status": "HISTORY_PROVIDER_BLOCKED", "error_type": type(exc).__name__, "rows": []}
+    output["selected_history_competition_ids"] = [int(k) for k in groups]
     output["group_status"] = {k: {z:v for z,v in group.items() if z not in ("rows","raw_response_b64")} for k,group in groups.items()}
     # The exact authenticated HTTP response is needed for independent
     # reconstruction of the original baseline. Never infer this from a
