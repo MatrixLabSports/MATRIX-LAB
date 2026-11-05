@@ -79,3 +79,48 @@ def test_provider_scoring_does_not_accept_wrong_discovery():
         assert "MUST_NOT_AUTHORIZE" in str(exc)
     else:
         raise AssertionError("DISCOVERY_PROMOTION_FORBIDDEN")
+
+
+def test_nine_competition_cycle_preserves_laliga_inside_six_call_limit():
+    original_intake=intake()
+    original_intake["fixtures"]=[]
+    # The actual 2026-11-06 order placed LaLiga after six other competitions.
+    order=[2003,2002,2019,2015,2021,2016,2014,2017,2013]
+    for i,cid in enumerate(order):
+        f=dict(intake()["fixtures"][0])
+        f["source_fixture_id"]=str(9000+i)
+        f["source_competition_id"]=cid
+        original_intake["fixtures"].append(f)
+    requests=[]
+    def opener(req,timeout):
+        cid=int(req.full_url.split("/")[-2])
+        requests.append(cid)
+        return Response({"competition":{"id":cid},"matches":[]})
+    r=score_intake(original_intake,"fake-key",opener=opener)
+    assert r["network_calls"]==6
+    assert len(requests)==6
+    assert set([2002,2019,2015,2021,2014]).issubset(requests)
+    assert 2014 in requests and 2016 not in requests
+    assert r["history_group_selection_policy"].startswith("ORIGINAL_FIVE")
+    assert r["selected_history_competition_ids"]==requests
+    assert r["market_signal_authorized"] is False
+    assert r["real_money"]=="BLOCKED"
+    assert r["parameter_refit"] is False
+
+
+def test_six_group_priority_is_stable_for_same_source_input():
+    x=intake()
+    x["fixtures"]=[]
+    for i,cid in enumerate([2016,2014,2021,2002,2015,2019,2003]):
+        f=dict(intake()["fixtures"][0])
+        f["source_fixture_id"]=str(300+i)
+        f["source_competition_id"]=cid
+        x["fixtures"].append(f)
+    calls=[]
+    def open_(req,timeout):
+        cid=int(req.full_url.split("/")[-2])
+        calls.append(cid)
+        return Response({"competition":{"id":cid},"matches":[]})
+    score_intake(x,"fake-key",opener=open_)
+    assert calls==[2014,2021,2002,2015,2019,2016]
+    assert len(calls)==6
