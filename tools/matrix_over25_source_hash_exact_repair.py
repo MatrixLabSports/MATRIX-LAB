@@ -29,9 +29,18 @@ def variants(obj:dict):
                     kw={"ensure_ascii":ensure_ascii,"sort_keys":sort_keys}
                     if indent is None:
                         for separators in ((",",":"),(", ",": ")):
-                            yield "compact", (json.dumps(obj,separators=separators,**kw)+ending).encode("utf-8")
+                            raw=(json.dumps(obj,separators=separators,**kw)+ending).encode("utf-8")
+                            yield "compact", raw
+                            # Windows Git text checkout can change EVERY LF,
+                            # not only the last newline. Preserve only bytes
+                            # matching the pre-existing frozen SHA256.
+                            if b"\\n" in raw:
+                                yield "compact_all_crlf", raw.replace(b"\\r\\n",b"\\n").replace(b"\\n",b"\\r\\n")
                     else:
-                        yield "pretty", (json.dumps(obj,indent=indent,**kw)+ending).encode("utf-8")
+                        raw=(json.dumps(obj,indent=indent,**kw)+ending).encode("utf-8")
+                        yield "pretty", raw
+                        if b"\\n" in raw:
+                            yield "pretty_all_crlf", raw.replace(b"\\r\\n",b"\\n").replace(b"\\n",b"\\r\\n")
 
 def restore(root:Path,*,write:bool=False)->dict:
     path_root=root/ROOT
