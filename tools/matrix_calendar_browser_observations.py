@@ -20,9 +20,13 @@ def exact_label(label,day,clock,home,away):
     if not re.search(date+rf"\s+{re.escape(clock)}(?!\d)",label): return False
     n=norm(label)
     a,b=norm(home),norm(away)
-    return bool(a and b and a!=b and len(a)>=4 and len(b)>=4
-        and re.search(r"(?<!\w)"+re.escape(a)+r"(?!\w)",n)
-        and re.search(r"(?<!\w)"+re.escape(b)+r"(?!\w)",n))
+    if not (a and b and a!=b and len(a)>=4 and len(b)>=4):
+        return False
+    # Preserve home/away orientation from the visible card label; both names
+    # merely appearing anywhere is not sufficient for fixture identity.
+    homes=list(re.finditer(r"(?<!\\w)"+re.escape(a)+r"(?!\\w)",n))
+    aways=list(re.finditer(r"(?<!\\w)"+re.escape(b)+r"(?!\\w)",n))
+    return bool(homes and aways and min(x.start() for x in homes)<min(y.start() for y in aways))
 
 def extract_sofa(intake,links,observed_at):
     from tools.matrix_football_sofa_fixture_crosscheck import norm,ALIASES
