@@ -81,8 +81,8 @@ def test_cli_persists_valid_json_with_real_newline(tmp_path, monkeypatch):
                                    "--root",str(tmp_path),"--out",str(output)])
     main()
     content = output.read_text(encoding="utf-8")
-    assert content.endswith("\\n")
-    assert not content.endswith("\\\\n")
+    assert content.endswith(chr(10))
+    assert not content.endswith(chr(92) + "n")
     assert json.loads(content)["valid_mid_link_count"] == 1
 
 
