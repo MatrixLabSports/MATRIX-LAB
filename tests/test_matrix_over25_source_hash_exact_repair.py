@@ -43,3 +43,28 @@ def test_dry_run_reports_only_and_cannot_write(tmp_path):
     assert r["verified_sha_restorations"][0]["action"]=="RESTORABLE_NOT_WRITTEN"
     assert f.read_bytes()==modified
     assert not (folder/"corrupted_originals").exists()
+
+
+def test_git_crlf_checkout_conversion_reversible_only_with_exact_frozen_sha(tmp_path):
+    # A Windows-originated multi-line JSON can be checked out with LF on Linux.
+    # We may only reconstruct original CRLF bytes if SHA256 matches the
+    # immutable pre-kickoff source commitment, never by trusting JSON values.
+    folder=tmp_path/ROOT/"2026-11-04"/"sources"
+    folder.mkdir(parents=True)
+    original=(json.dumps({"fixtures":[{"id":555070,"name":"A"}],
+                          "meta":{"provider":"FOOTBALL_DATA_ORG"}},
+                         indent=2,sort_keys=True,ensure_ascii=False)+"\r\n").encode("utf-8")
+    original=original.replace(b"\r\n",b"\n").replace(b"\n",b"\r\n")
+    checked_out=original.replace(b"\r\n",b"\n")
+    assert original!=checked_out
+    f=folder/(sha(original)+".json")
+    f.write_bytes(checked_out)
+    before=f.read_bytes()
+    report=restore(tmp_path,write=True)
+    assert len(report["verified_sha_restorations"])==1
+    assert report["verified_sha_restorations"][0]["verified_encoding_class"]=="pretty_all_crlf"
+    assert f.read_bytes()==original
+    assert sha(f.read_bytes())==f.stem
+    assert (folder/"corrupted_originals"/(sha(before)+".json")).read_bytes()==before
+    assert report["model_parameters_modified"] is False
+    assert report["telegram_signal_authorized"] is False
