@@ -27,7 +27,10 @@ def _response(url: str, key: str, *, opener=urlopen) -> tuple[int, dict]:
         body=handle.read(MAX_BODY+1)
     if len(body)>MAX_BODY:
         raise ValueError("PROVIDER_RESPONSE_TOO_LARGE")
-    payload=json.loads(body)
+    try:
+        payload=json.loads(body)
+    except (ValueError,UnicodeDecodeError):
+        raise ValueError("PROVIDER_BODY_NOT_JSON") from None
     if not isinstance(payload,dict):
         raise ValueError("PROVIDER_RESPONSE_NOT_OBJECT")
     return status,payload
@@ -74,8 +77,13 @@ def probe(key:str, *, opener=urlopen, checked_at=None)->dict:
          "original_p_matrix_promoted":False,
          "telegram_signal_authorized":False,
          "automatic_wagering":False,"real_money":"BLOCKED"}
-    if not key.strip():
+    key=key.strip()
+    if not key:
         return out
+    if "\\r" in key or "\\n" in key:
+        out["status"]="BLOCKED_DIRECT_KEY_CONTAINS_CONTROL_CHARACTERS"
+        return out
+    stage="STATUS"
     try:
         out["http_status_calls"]=1
         code,payload=_response(BASE+"/status",key,opener=opener)
@@ -107,6 +115,7 @@ def probe(key:str, *, opener=urlopen, checked_at=None)->dict:
             out["status"]="BLOCKED_INSUFFICIENT_QUOTA_FOR_TWO_LEAGUES"
             return out
         for lid,name in LEAGUES:
+            stage="LEAGUE_"+lid
             out["quota_consuming_calls"]+=1
             code,body=_response(BASE+"/leagues?id="+lid+"&season=2026",key,opener=opener)
             out["two_league_coverage"][lid]={"league_name":name,
@@ -117,9 +126,19 @@ def probe(key:str, *, opener=urlopen, checked_at=None)->dict:
         out["status"]="PASS_TWO_LEAGUE_ACCESS_ONLY_FULL_SIX_LEAGUE_FEATURE_PARITY_NOT_CERTIFIED"
     except HTTPError as exc:
         out["status"]="BLOCKED_HTTP_"+str(exc.code)
-    except (TimeoutError,URLError,OSError,ValueError,TypeError,
-            json.JSONDecodeError) as exc:
+        out["failed_stage"]=stage
+    except ValueError as exc:
+        # Do not echo exception text unless it is a fixed internal error code;
+        # urllib header errors can embed secret values in their message.
+        safe_codes={"PROVIDER_BODY_NOT_JSON","PROVIDER_RESPONSE_TOO_LARGE",
+                    "PROVIDER_RESPONSE_NOT_OBJECT"}
+        error_code=str(exc)
+        out["status"]="BLOCKED_"+(error_code if error_code in safe_codes
+                                  else "INVALID_DIRECT_HEADER_OR_PROVIDER_VALUE")
+        out["failed_stage"]=stage
+    except (TimeoutError,URLError,OSError,TypeError,UnicodeError) as exc:
         out["status"]="BLOCKED_TRANSPORT_OR_RESPONSE_"+type(exc).__name__
+        out["failed_stage"]=stage
     return out
 
 def main():
