@@ -121,11 +121,33 @@ def persist(out: Path, obs: dict, report: dict, day: str):
         try:
             old = json.loads(out.read_text(encoding="utf-8"))
             old_count = len(old.get("matches") or [])
-            if (old.get("schema") == "MATRIX_SOFA_BROWSER_OBSERVATIONS_V1"
+            old_is_valid = (
+                old.get("schema") == "MATRIX_SOFA_BROWSER_OBSERVATIONS_V1"
                 and old.get("target_date_bogota") == day
-                and old.get("source") == "SOFASCORE" and old_count >= len(obs["matches"])):
-                report["status"] = "EXISTING_BROWSER_EVIDENCE_RETAINED"
-                return False
+                and old.get("source") == "SOFASCORE"
+                and old.get("signal_generation_authorized") is False
+                and old.get("automatic_wagering") is False
+                and old.get("real_money") == "BLOCKED"
+            )
+            if old_is_valid:
+                old_time = aware(old["observed_at_utc"])
+                new_time = aware(obs["observed_at_utc"])
+                # A smaller fresh capture cannot erase a larger trustworthy
+                # identity set; equally sized captures must advance in time.
+                # Prefer direct CDP to Opera only for the same observation
+                # window (15 minutes), not forever.
+                old_direct = old.get("capture_method") == "CDP_VISIBLE_EXACT_DATE_TIME_TEAMS_EVENT_ID"
+                new_opera = obs.get("capture_method") == "OPERA_CONNECTOR_SHA256_PROVENANCE"
+                keep_old = (
+                    old_time >= new_time
+                    or (old_count > len(obs["matches"]) and
+                        (new_time - old_time).total_seconds() <= 3600)
+                    or (old_direct and new_opera and
+                        (new_time - old_time).total_seconds() <= 900)
+                )
+                if keep_old:
+                    report["status"] = "EXISTING_BROWSER_EVIDENCE_RETAINED"
+                    return False
         except (ValueError, TypeError, OSError, json.JSONDecodeError):
             # Do not overwrite corrupted/stale evidence automatically.
             report["status"] = "CORRUPTED_PRIOR_EVIDENCE_REQUIRES_MANUAL_REVIEW"
