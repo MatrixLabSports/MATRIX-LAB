@@ -207,10 +207,12 @@ def main():
     pairs = scan_two_source(root, args.day, now=datetime.now(timezone.utc))
     pair_output = expected.parent / "MATRIX_FLASH_SOFA_TWO_SOURCE_REPORT_LAST.json"
     if pairs["verified_event_pair_count"]:
-        pair_output.write_text(json.dumps(pairs, ensure_ascii=False, indent=2, sort_keys=True) + "\\n",
+        pair_output.write_text(json.dumps(pairs, ensure_ascii=False, indent=2, sort_keys=True) + "\n",
                                encoding="utf-8")
-    print(json.dumps({k: report[k] for k in ("status", "verified_individual_count",
-                                           "rejected_snapshot_count", "telegram_signal_authorized")}, sort_keys=True))
+    print(json.dumps({"status": report["status"],
+                      "verified_individual_count": report["verified_individual_count"],
+                      "verified_two_source_pair_count": pairs["verified_event_pair_count"],
+                      "telegram_signal_authorized": False}, sort_keys=True))
 
 
 if __name__ == "__main__":
