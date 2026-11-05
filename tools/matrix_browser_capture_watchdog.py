@@ -46,8 +46,15 @@ def check(workflow_runs,*,now,max_age_seconds=720):
         age=0
     status=str(entry.get("status") or "")
     conclusion=str(entry.get("conclusion") or "")
+    # An indefinitely queued self-hosted job does not mean healthy capture.
+    # Never dispatch a duplicate: GitHub cannot start a Windows listener.
+    if status in ("queued","waiting","requested","pending") and age>max_age_seconds:
+        return {"dispatch":False,"reason":"BROWSER_RUN_QUEUED_OVERDUE_LOCAL_RUNNER_REQUIRED",
+                "runner_recovery_required":True,
+                "last_run_id":run_id,"last_run_age_seconds":round(age)}
     if status in ("queued","in_progress","waiting","requested","pending"):
         return {"dispatch":False,"reason":"BROWSER_RUN_ALREADY_PENDING",
+                "runner_recovery_required":False,
                 "last_run_id":run_id,"last_run_age_seconds":round(age)}
     if status=="completed" and conclusion=="success" and age<=max_age_seconds:
         return {"dispatch":False,"reason":"RECENT_SUCCESSFUL_BROWSER_RUN",
