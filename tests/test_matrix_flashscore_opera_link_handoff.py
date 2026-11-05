@@ -68,6 +68,24 @@ def test_absent_mid_or_unsafe_domain_never_becomes_event(tmp_path):
     assert r["valid_mid_link_count"] == 0
 
 
+def test_cli_persists_valid_json_with_real_newline(tmp_path, monkeypatch):
+    from datetime import datetime, timezone
+    import sys
+    from tools.matrix_flashscore_opera_link_handoff import main
+    d = item()
+    d["observed_at_utc"] = datetime.now(timezone.utc).isoformat()
+    write(tmp_path, d)
+    output = (tmp_path / "evidence" / "football_world_inventory" /
+              DAY / "MATRIX_FLASH_OPERA_LINK_ONLY_HANDOFF_LAST.json")
+    monkeypatch.setattr(sys,"argv",["flash_link_handoff","--day",DAY,
+                                   "--root",str(tmp_path),"--out",str(output)])
+    main()
+    content = output.read_text(encoding="utf-8")
+    assert content.endswith("\\n")
+    assert not content.endswith("\\\\n")
+    assert json.loads(content)["valid_mid_link_count"] == 1
+
+
 def test_stale_and_future_flashscore_capture_are_not_replayed(tmp_path):
     d = item()
     d["observed_at_utc"] = "2026-11-04T07:00:00+00:00"
