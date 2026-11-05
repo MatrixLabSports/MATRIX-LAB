@@ -106,8 +106,10 @@ def original_rows(root: Path, lineage: dict, stages: dict, scope: list[str]) -> 
                 cache[source_sha]=read_proof(root,source_path,source_sha)
             registry_valid=True
             state="IDENTITY_PROVEN_FROM_SHA_ARCHIVE"
-        except (OSError,ValueError,TypeError,json.JSONDecodeError):
+        except (OSError,ValueError,TypeError,json.JSONDecodeError) as exc:
             counters["original_registry_hash_or_path_blocked"]+=1
+            counters["original_registry_failure:"+str(exc)[:100]]+=1
+            state="ORIGINAL_PROVENANCE_BLOCKED:"+str(exc)[:85]
         item_stage=staged.get((league,fid),{})
         reported=item_stage.get("original_probability_source")
         original_probability=None
