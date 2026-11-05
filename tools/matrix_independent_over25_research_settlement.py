@@ -189,9 +189,25 @@ def settle(root:Path,*,now:datetime,token:str,opener=urlopen,
                 json.JSONDecodeError) as exc:
             cases.append({"fixture_id":fid,"status":"BLOCKED_INVALID_SOURCE",
                           "reason":str(exc)[:120]})
+    # A cycle's newly settled count is NOT the cumulative out-of-sample
+    # cohort. Recompute the latter only from SHA-backed archive documents.
+    # The cumulative scorecard is independent of the current runner's
+    # historical intake/shadow checkout, so source-integrity failures are
+    # exposed separately rather than overwriting archived results.
+    from tools.matrix_independent_over25_research_scorecard import evaluate
+    archive=evaluate(root)
+    new_count=sum(x["status"]=="SETTLED_RESEARCH_ONLY" for x in cases)
+    prior_count=sum(x["status"]=="ALREADY_SETTLED" for x in cases)
+    input_integrity_blocked=sum(x["status"]=="BLOCKED_INVALID_SOURCE" for x in cases)
     return {"schema":"MATRIX_INDEPENDENT_OVER25_SETTLEMENT_CYCLE_V1",
             "checked_at_utc":now.isoformat(),"scanned_forecasts":len(docs),
             "http_calls":calls,"settled_total":finished,
+            "newly_settled_count":new_count,
+            "already_settled_current_cycle_count":prior_count,
+            "archived_sha_verified_research_result_count":archive["total_verified_settled_rows"],
+            "archive_rejected_result_count":len(archive["rejected_settlements"]),
+            "input_source_integrity_blocked_count":input_integrity_blocked,
+            "archived_result_does_not_certify_original_input_parity":True,
             "unique_fixture_count":len(seen),
             "secondary_forecast_count":sum(x["status"]==
                 "SECONDARY_FROZEN_SNAPSHOT_EXCLUDED_FROM_PRIMARY_EVALUATION"
@@ -217,6 +233,9 @@ def main():
     path.write_bytes(canonical(output))
     print(json.dumps({"scanned_forecasts":output["scanned_forecasts"],
         "http_calls":output["http_calls"],"settled_total":output["settled_total"],
+        "newly_settled_count":output["newly_settled_count"],
+        "archived_sha_verified_research_result_count":output["archived_sha_verified_research_result_count"],
+        "input_source_integrity_blocked_count":output["input_source_integrity_blocked_count"],
         "status_counts":{s:sum(x["status"]==s for x in output["decisions"]) for s in
                           sorted({v["status"] for v in output["decisions"]})},
         "telegram_signal_authorized":False},sort_keys=True))
