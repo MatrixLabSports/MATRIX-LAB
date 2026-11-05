@@ -50,7 +50,7 @@ jobs:
       - name: Verify Hard and Clay browser intake against false admissions
         run: |
           python -m pip install -q pytest
-          PYTHONPATH=. python -m pytest -q tests/test_matrix_tennis_browser_first_free_intake.py tests/test_matrix_tennis_exact_browser_crossmatch.py tests/test_matrix_tennis_windows_browser_calendar_capture.py
+          PYTHONPATH=. python -m pytest -q tests/test_matrix_tennis_browser_first_free_intake.py tests/test_matrix_tennis_exact_browser_crossmatch.py tests/test_matrix_tennis_windows_browser_calendar_capture.py tests/test_matrix_tennis_browser_challenger_pit_gate.py
       - name: Select target Bogota date with no backfill
         id: target
         env:
