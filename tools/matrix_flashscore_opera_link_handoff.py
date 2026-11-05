@@ -111,7 +111,7 @@ def main():
     # individual event date is a standing research-only blocker, not new data.
     if result["valid_mid_link_count"]:
         args.out.parent.mkdir(parents=True, exist_ok=True)
-        args.out.write_text(json.dumps(result,ensure_ascii=False,sort_keys=True,indent=2)+"\\n",encoding="utf-8")
+        args.out.write_text(json.dumps(result,ensure_ascii=False,sort_keys=True,indent=2)+"\n",encoding="utf-8")
     print(json.dumps({k:result[k] for k in ("status","valid_mid_link_count",
                       "individual_event_date_verified","telegram_signal_authorized")},sort_keys=True))
 
