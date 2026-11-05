@@ -10,6 +10,13 @@ foreach ($day in @($bogota.ToString("yyyy-MM-dd"), $bogota.AddDays(1).ToString("
   $folder = "evidence/football_world_inventory/$day"
   $intake = "$folder/MATRIX_FOOTBALL_INDEPENDENT_FIXTURE_INTAKE.json"
   $observed = "$folder/MATRIX_SOFA_BROWSER_OBSERVATIONS.json"
+  # Import only Flashscore's dated-PAGE visible links as research.
+  # This is not a per-event timestamp, triple fixture match or betting signal.
+  $flashLinkOnly = "$folder/MATRIX_FLASH_OPERA_LINK_ONLY_HANDOFF_LAST.json"
+  python -m tools.matrix_flashscore_opera_link_handoff --day $day --root . --out $flashLinkOnly
+  if ($LASTEXITCODE -ne 0) {
+    Write-Warning "FLASH_OPERA_LINK_HANDOFF_FAILED_CLOSED:$day"
+  }
   if (-not (Test-Path -LiteralPath $intake -PathType Leaf)) {
     Write-Output "CALENDAR_PROVIDER_INTAKE_MISSING:$day"
     continue
