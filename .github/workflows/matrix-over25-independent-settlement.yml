@@ -5,12 +5,13 @@ on:
     branches: [repair/cor09-world-pipeline]
     paths:
       - .github/workflows/matrix-over25-independent-settlement.yml
+      - .gitattributes
       - tools/matrix_independent_over25_research_settlement.py
       - tools/matrix_independent_over25_research_scorecard.py
       - tools/matrix_over25_source_hash_exact_repair.py
       - tests/test_matrix_independent_over25_research_settlement.py
       - tests/test_matrix_independent_over25_research_scorecard.py
-      - tests/test_matrix_over25_source_hash_exact_repair.py tests/test_matrix_over25_missing_source_exact_restore.py
+      - tests/test_matrix_over25_source_hash_exact_repair.py
       - tools/matrix_over25_missing_source_exact_restore.py
       - tests/test_matrix_over25_missing_source_exact_restore.py
 permissions:
@@ -39,7 +40,7 @@ jobs:
       - name: Test immutable research result and source verification
         run: |
           python -m pip install --disable-pip-version-check pytest
-          python -m pytest -q tests/test_matrix_independent_over25_research_settlement.py tests/test_matrix_independent_over25_research_scorecard.py tests/test_matrix_over25_source_hash_exact_repair.py
+          python -m pytest -q tests/test_matrix_independent_over25_research_settlement.py tests/test_matrix_independent_over25_research_scorecard.py tests/test_matrix_over25_source_hash_exact_repair.py tests/test_matrix_over25_missing_source_exact_restore.py
       - name: Verify existing archive source hashes without changing forecasts
         run: python -m tools.matrix_over25_source_hash_exact_repair
       - name: Recover only exact-SHA-verified archived input bytes without changing frozen forecasts
@@ -60,9 +61,14 @@ jobs:
           assert a["telegram_signal_authorized"] is False and a["real_money"]=="BLOCKED"
           assert b["production_p_matrix_authorized"] is False and b["telegram_signal_authorized"] is False
           assert b["real_money"]=="BLOCKED"
+          assert a["archived_sha_verified_research_result_count"] == b["total_verified_settled_rows"]
+          assert a["newly_settled_count"] <= a["settled_total"]
           print({"scanned":a["unique_fixture_count"],"settled":a["settled_total"],
                  "rejected":len(b["rejected_settlements"]),
                  "scorecard_rows":b["total_verified_settled_rows"],
+                 "archived_sha_verified":a["archived_sha_verified_research_result_count"],
+                 "new_this_cycle":a["newly_settled_count"],
+                 "input_source_integrity_blocked":a["input_source_integrity_blocked_count"],
                  "permitted_production":False})
           PY
       - name: Persist only immutable research results and SHA evidence to operational branch
