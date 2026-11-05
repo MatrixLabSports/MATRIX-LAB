@@ -66,3 +66,13 @@ def test_dry_run_never_writes_even_if_exact_source_exists(tmp_path):
     assert report["exact_sha_restored_count"] == 1
     assert report["exact_sha_restored"][0]["action"] == "EXACT_SHA_AVAILABLE_NOT_WRITTEN"
     assert not target.exists()
+
+def test_original_sha_can_be_recovered_from_reformatted_same_content(tmp_path):
+    _, target, expected = prepare(tmp_path, candidate=None, corrupt=True)
+    altered = b'{\\n  "verified": true\\n}\\n'.decode("unicode_escape").encode("utf-8")
+    target.write_bytes(altered)
+    report = recover(tmp_path, write=True)
+    assert report["exact_sha_restored_count"] == 1
+    assert hashlib.sha256(target.read_bytes()).hexdigest() == expected
+    forensic = target.parent / "corrupted_originals" / (hashlib.sha256(altered).hexdigest() + ".json")
+    assert forensic.read_bytes() == altered
