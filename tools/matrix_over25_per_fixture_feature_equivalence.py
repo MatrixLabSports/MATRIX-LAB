@@ -60,6 +60,41 @@ def read_proof(root: Path, relative: str, expected: str) -> dict:
         raise ValueError("EVIDENCE_ROOT_NOT_JSON_OBJECT")
     return value
 
+def legacy_sha_reconstruction(root: Path, relative: str, expected: str) -> tuple[dict,str]:
+    """Only a byte stream matching the pre-existing SHA can recover Git-normalized JSON.
+
+    A source file with semantically similar but different bytes is NOT accepted.
+    The source itself is never rewritten by this research comparator.
+    """
+    try:
+        return read_proof(root,relative,expected),"RAW_FILE_BYTES_MATCH"
+    except ValueError as exc:
+        if str(exc)!="EVIDENCE_RAW_BYTES_SHA256_MISMATCH":
+            raise
+    source=(root/relative).resolve()
+    if not source.is_relative_to(root.resolve()) or source.stat().st_size>MAX_BYTES:
+        raise ValueError("ORIGINAL_REGISTRY_OUTSIDE_AUTHORIZED_SCOPE")
+    raw=source.read_bytes()
+    normalized_lf=raw.replace(b"\r\n",b"\n")
+    candidates=(("CHECKOUT_LF_TO_ORIGINAL_CRLF",
+                 normalized_lf.replace(b"\n",b"\r\n")),
+                ("CHECKOUT_CRLF_TO_ORIGINAL_LF",normalized_lf))
+    for mode,candidate in candidates:
+        if sha(candidate)==expected:
+            result=json.loads(candidate)
+            if not isinstance(result,dict):
+                raise ValueError("ORIGINAL_RECONSTRUCTED_NOT_OBJECT")
+            return result,mode
+    from tools.matrix_over25_source_hash_exact_repair import variants
+    obj=json.loads(raw)
+    if not isinstance(obj,dict):
+        raise ValueError("ORIGINAL_RECONSTRUCTED_NOT_OBJECT")
+    for mode,candidate in variants(obj):
+        if sha(candidate)==expected:
+            return obj,"ORIGINAL_SHA_REPRODUCED_FROM_JSON_SERIALIZATION_"+mode
+    raise ValueError("ORIGINAL_SOURCE_SHA_NOT_RECONSTRUCTIBLE")
+
+
 def diff_fields(alternative: dict, original: dict | None) -> list[dict]:
     """Differences can be asserted only for physically provided original values."""
     output=[]
@@ -99,13 +134,20 @@ def original_rows(root: Path, lineage: dict, stages: dict, scope: list[str]) -> 
         source_path=catalog.get(source_sha)
         state="ORIGINAL_PROVENANCE_BLOCKED"
         registry_valid=False
+        registry_reconstructed_mode=None
         try:
             if not isinstance(source_path,str):
                 raise ValueError("ORIGINAL_FIXTURE_REGISTRY_PATH_UNKNOWN")
             if source_sha not in cache:
-                cache[source_sha]=read_proof(root,source_path,source_sha)
-            registry_valid=True
-            state="IDENTITY_PROVEN_FROM_SHA_ARCHIVE"
+                cache[source_sha]=legacy_sha_reconstruction(root,source_path,source_sha)
+            _,registry_reconstructed_mode=cache[source_sha]
+            registry_valid=(registry_reconstructed_mode=="RAW_FILE_BYTES_MATCH")
+            if registry_valid:
+                state="IDENTITY_PROVEN_FROM_SHA_ARCHIVE"
+                counters["original_registry_raw_sha_exact"]+=1
+            else:
+                state="IDENTITY_SHA_RECOVERED_IN_MEMORY_NOT_RAW_FILE"
+                counters["original_registry_reconstructed_sha_exact"]+=1
         except (OSError,ValueError,TypeError,json.JSONDecodeError) as exc:
             counters["original_registry_hash_or_path_blocked"]+=1
             counters["original_registry_failure:"+str(exc)[:100]]+=1
@@ -114,13 +156,13 @@ def original_rows(root: Path, lineage: dict, stages: dict, scope: list[str]) -> 
         reported=item_stage.get("original_probability_source")
         original_probability=None
         probability_provenance=None
-        if isinstance(reported,dict) and registry_valid:
+        if isinstance(reported,dict) and registry_reconstructed_mode is not None:
             path=reported.get("path")
             expected=reported.get("sha256")
             try:
                 if (expected,path) not in cache:
-                    cache[(expected,path)]=read_proof(root,path,expected)
-                record=cache[(expected,path)]
+                    cache[(expected,path)]=legacy_sha_reconstruction(root,path,expected)
+                record,report_provenance_mode=cache[(expected,path)]
                 matches=[v for v in rows_from_document(record)
                          if isinstance(v,dict)
                          and str(v.get("fixture_id"))==fid
@@ -133,7 +175,8 @@ def original_rows(root: Path, lineage: dict, stages: dict, scope: list[str]) -> 
                 original_probability=matches[0][reported["field"]]
                 probability_provenance={"path":path,"sha256":expected,
                     "reported_at_utc":reported["reported_at_utc"],
-                    "not_a_frozen_feature_trace":True}
+                    "not_a_frozen_feature_trace":True,
+                    "original_bytes_reconstruction_mode":report_provenance_mode}
                 counters["original_reported_probabilities_sha_verified"]+=1
             except (ValueError,TypeError,OSError,KeyError,json.JSONDecodeError):
                 state="ORIGINAL_REPORTED_PROBABILITY_SOURCE_BLOCKED"
@@ -143,6 +186,7 @@ def original_rows(root: Path, lineage: dict, stages: dict, scope: list[str]) -> 
             "original_registry_source_path":source_path,
             "original_registry_source_sha256":source_sha,
             "original_registry_bytes_verified":registry_valid,
+            "original_registry_sha_reconstruction_mode":registry_reconstructed_mode,
             "original_probability_reported_not_frozen":original_probability,
             "original_probability_report_provenance":probability_provenance,
             "original_enriched_pit_feature_trace_available":False,
