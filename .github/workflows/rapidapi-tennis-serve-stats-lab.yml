@@ -7,8 +7,6 @@ on:
       - main
     paths:
       - .github/workflows/rapidapi-tennis-serve-stats-lab.yml
-  schedule:
-    - cron: "14,29,44,59 * * * *"
 
 permissions:
   contents: write
@@ -17,8 +15,11 @@ concurrency:
   group: rapidapi-tennis-serve-stats-lab
   cancel-in-progress: false
 
+# USER POLICY 2026-11-05: do not run paid API jobs until verified self-funding
+# and new explicit user authorization. This is the DEFAULT branch schedule.
 jobs:
   lab:
+    if: ${{ false }} # FREE_ONLY_NO_PAID_API_NETWORK
     runs-on: ubuntu-latest
     timeout-minutes: 15
     env:
