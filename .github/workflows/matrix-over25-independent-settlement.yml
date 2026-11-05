@@ -19,6 +19,8 @@ on:
       - tools/matrix_over25_missing_source_exact_restore.py
       - tests/test_matrix_over25_missing_source_exact_restore.py
       - tools/matrix_over25_per_fixture_feature_equivalence.py
+      - tools/matrix_over25_original_scope_research_progress.py
+      - tests/test_matrix_over25_original_scope_research_progress.py
       - tools/matrix_original_over25_alternative_native_adapter.py
       - tests/test_matrix_over25_per_fixture_feature_equivalence.py
       - tests/test_matrix_over25_research_writer_ownership.py
@@ -48,7 +50,7 @@ jobs:
       - name: Test immutable research result and source verification
         run: |
           python -m pip install --disable-pip-version-check pytest
-          python -m pytest -q tests/test_matrix_over25_research_writer_ownership.py tests/test_matrix_over25_per_fixture_feature_equivalence.py tests/test_matrix_independent_over25_research_settlement.py tests/test_matrix_independent_over25_research_scorecard.py tests/test_matrix_over25_source_hash_exact_repair.py tests/test_matrix_over25_settlement_due.py tests/test_matrix_over25_missing_source_exact_restore.py
+          python -m pytest -q tests/test_matrix_over25_research_writer_ownership.py tests/test_matrix_over25_per_fixture_feature_equivalence.py tests/test_matrix_over25_original_scope_research_progress.py tests/test_matrix_independent_over25_research_settlement.py tests/test_matrix_independent_over25_research_scorecard.py tests/test_matrix_over25_source_hash_exact_repair.py tests/test_matrix_over25_settlement_due.py tests/test_matrix_over25_missing_source_exact_restore.py
       - name: Verify existing archive source hashes without changing forecasts
         run: python -m tools.matrix_over25_source_hash_exact_repair
       - name: Recover only exact-SHA-verified archived input bytes without changing frozen forecasts
@@ -61,6 +63,8 @@ jobs:
         run: python -m tools.matrix_independent_over25_research_scorecard
       - name: Compare real original and alternative variables per fixture using SHA-linked evidence
         run: python -m tools.matrix_over25_per_fixture_feature_equivalence
+      - name: Audit original six-league independent prematch source and SHA coverage
+        run: python -m tools.matrix_over25_original_scope_research_progress
       - name: Verify nonpromotion and zero automatic wagering
         run: |
           python - <<'PY'
@@ -69,12 +73,16 @@ jobs:
           a=json.loads(Path("evidence/football_world_inventory/MATRIX_INDEPENDENT_OVER25_SETTLEMENT_LAST.json").read_text())
           b=json.loads(Path("evidence/football_world_inventory/MATRIX_INDEPENDENT_OVER25_RESEARCH_SCORECARD_LAST.json").read_text())
           c=json.loads(Path("evidence/football_world_inventory/MATRIX_OVER25_PER_FIXTURE_FEATURE_EQUIVALENCE_LAST.json").read_text())
+          d=json.loads(Path("evidence/football_world_inventory/MATRIX_OVER25_ORIGINAL_SCOPE_RESEARCH_PROGRESS_LAST.json").read_text())
           assert a["telegram_signal_authorized"] is False and a["real_money"]=="BLOCKED"
           assert b["production_p_matrix_authorized"] is False and b["telegram_signal_authorized"] is False
           assert b["real_money"]=="BLOCKED"
           assert c["telegram_signal_authorized"] is False and c["production_p_matrix_authorized"] is False
           assert c["alternative_distinct_fixture_count"] >= 12
           assert c["cross_provider_certified_pair_count"] == 0
+          assert d["telegram_signal_authorized"] is False and d["production_p_matrix_authorized"] is False
+          assert d["same_fixture_cross_provider_pit_pairs"] == 0
+          assert d["real_money"] == "BLOCKED" and len(d["per_league"]) == 6
           assert a["archived_sha_verified_research_result_count"] <= b["total_verified_settled_rows"]
           assert a["newly_settled_count"] <= a["settled_total"]
           print({"scanned":a["unique_fixture_count"],"settled":a["settled_total"],
@@ -95,6 +103,7 @@ jobs:
           git add -- evidence/football_world_inventory/MATRIX_INDEPENDENT_OVER25_SETTLEMENT_LAST.json
           git add -- evidence/football_world_inventory/MATRIX_INDEPENDENT_OVER25_RESEARCH_SCORECARD_LAST.json
           git add -- evidence/football_world_inventory/MATRIX_OVER25_PER_FIXTURE_FEATURE_EQUIVALENCE_LAST.json
+          git add -- evidence/football_world_inventory/MATRIX_OVER25_ORIGINAL_SCOPE_RESEARCH_PROGRESS_LAST.json
           if git diff --cached --quiet; then
             echo MATRIX_SETTLEMENT_NO_CHANGE
             exit 0
