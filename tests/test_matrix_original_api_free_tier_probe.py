@@ -93,3 +93,16 @@ def test_wrong_league_id_fails_closed():
     assert d["status"]=="BLOCKED_LEAGUE_ACCESS_OR_COVERAGE_INCOMPLETE"
     assert d["quota_consuming_calls"]==1
     assert d["all_six_leagues_verified"] is False
+
+
+def test_private_provider_error_is_classified_without_exposing_vendor_message():
+    hidden="private-person@example.com forbidden-secret"
+    def opener(req,timeout):
+        return Response({"errors":{"token":"Invalid API key "+hidden},
+                         "response":[]})
+    d=probe("public-placeholder",opener=opener)
+    assert d["status"]=="BLOCKED_PROVIDER_STATUS_AUTH_OR_QUOTA_ERROR"
+    assert d["application_error_category"]=="DIRECT_CREDENTIAL_REJECTED_OR_WRONG_HOST"
+    assert d["quota_consuming_calls"]==0
+    assert hidden not in str(d)
+    assert d["http_status_calls"]==1
