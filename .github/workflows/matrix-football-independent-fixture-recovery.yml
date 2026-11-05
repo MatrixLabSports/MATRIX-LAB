@@ -15,6 +15,8 @@ on:
       - repair/cor09-world-pipeline
     paths:
       - tools/matrix_football_independent_fixture_pipeline.py
+      - tools/matrix_independent_pit_browser_preflight.py
+      - tests/test_matrix_independent_pit_browser_preflight.py
       - tools/matrix_football_free_secondary_crosscheck.py
       - tests/test_matrix_football_free_secondary_crosscheck.py
       - tests/test_matrix_football_independent_fixture_pipeline.py
@@ -71,7 +73,7 @@ jobs:
       - name: Test independent fixture adapter and all hard safety gates
         run: |
           python -m pip install pytest requests Pillow
-          PYTHONPATH=. python -m pytest -q tests/test_matrix_football_independent_fixture_pipeline.py tests/test_matrix_football_free_secondary_crosscheck.py tests/test_matrix_independent_over25_governed_binding.py tests/test_matrix_football_independent_over25_shadow.py tests/test_matrix_independent_over25_prematch_freeze.py tests/test_matrix_championship_prospective_pit_attestation.py tests/test_matrix_championship_baseline_pit_replay.py tests/test_matrix_championship_atomic_pit_cycle.py tests/test_matrix_championship_quote_window_scope.py tests/test_matrix_independent_over25_quote_audit.py tests/test_matrix_football_sofa_fixture_crosscheck.py tests/test_matrix_real_sofa_nov04_observations.py tests/test_matrix_independent_over25_historical_parity.py tests/test_matrix_football_flashscore_fixture_crosscheck.py
+          PYTHONPATH=. python -m pytest -q tests/test_matrix_football_independent_fixture_pipeline.py tests/test_matrix_football_free_secondary_crosscheck.py tests/test_matrix_independent_pit_browser_preflight.py tests/test_matrix_independent_over25_governed_binding.py tests/test_matrix_football_independent_over25_shadow.py tests/test_matrix_independent_over25_prematch_freeze.py tests/test_matrix_championship_prospective_pit_attestation.py tests/test_matrix_championship_baseline_pit_replay.py tests/test_matrix_championship_atomic_pit_cycle.py tests/test_matrix_championship_quote_window_scope.py tests/test_matrix_independent_over25_quote_audit.py tests/test_matrix_football_sofa_fixture_crosscheck.py tests/test_matrix_real_sofa_nov04_observations.py tests/test_matrix_independent_over25_historical_parity.py tests/test_matrix_football_flashscore_fixture_crosscheck.py
 
       - name: Resolve Bogota target date
         id: date
@@ -169,7 +171,30 @@ jobs:
             --shadow "evidence/football_world_inventory/$D/MATRIX_INDEPENDENT_OVER25_HISTORY_SHADOW.json" \
             --out "evidence/football_world_inventory/$D/MATRIX_INDEPENDENT_OVER25_PREMATCH_FREEZE_REPORT.json"
 
+      - name: Preserve source-bound PIT blocker if authentic triple-browser evidence is missing
+        id: pit_preflight
+        shell: bash
+        run: |
+          set -euo pipefail
+          D="${{ steps.date.outputs.target_date }}"
+          P="evidence/football_world_inventory/$D/MATRIX_CHAMPIONSHIP_PIT_PREFLIGHT_RUN_${{ github.run_id }}.json"
+          PYTHONPATH=. python -m tools.matrix_independent_pit_browser_preflight \
+            --date "$D" --out "$P"
+          python - "$P" <<'PY'
+          import json,sys,os
+          from pathlib import Path
+          obj=json.loads(Path(sys.argv[1]).read_text(encoding="utf-8"))
+          assert obj["real_money"]=="BLOCKED"
+          assert obj["production_p_matrix_authorized"] is False
+          assert obj["telegram_signal_authorized"] is False
+          with open(os.environ["GITHUB_OUTPUT"],"a",encoding="utf-8") as f:
+              f.write("ready="+str(obj["ready_for_strict_attestation"]).lower()+"\n")
+          if not obj["ready_for_strict_attestation"]:
+              print("STRICT_CHAMPIONSHIP_PIT_NOT_EXECUTED:",obj["status"])
+          PY
+
       - name: Attest current Championship PIT history before kickoff in strict research isolation
+        if: steps.pit_preflight.outputs.ready == 'true'
         shell: bash
         run: |
           set -euo pipefail
@@ -193,6 +218,7 @@ jobs:
           PY
 
       - name: Seal atomic five-document PIT source snapshot from this same provider run
+        if: steps.pit_preflight.outputs.ready == 'true'
         shell: bash
         run: |
           set -euo pipefail
@@ -202,6 +228,7 @@ jobs:
             --out "evidence/football_world_inventory/$D/MATRIX_CHAMPIONSHIP_ATOMIC_PIT_RUN_${{ github.run_id }}.json"
 
       - name: Recompute original Over 2.5 baseline from independently authenticated raw history
+        if: steps.pit_preflight.outputs.ready == 'true'
         shell: bash
         run: |
           set -euo pipefail
@@ -303,6 +330,8 @@ jobs:
           if [ -f "$F" ]; then git add "$F"; fi
           SECONDARY="evidence/football_world_inventory/$D/MATRIX_THESPORTSDB_CROSSCHECK.json"
           if [ -f "$SECONDARY" ]; then git add "$SECONDARY"; fi
+          PIT_PREFLIGHT="evidence/football_world_inventory/$D/MATRIX_CHAMPIONSHIP_PIT_PREFLIGHT_RUN_${{ github.run_id }}.json"
+          if [ -f "$PIT_PREFLIGHT" ]; then git add "$PIT_PREFLIGHT"; fi
           H="evidence/football_world_inventory/$D/MATRIX_INDEPENDENT_OVER25_HISTORICAL_PARITY.json"
           if [ -f "$H" ]; then git add "$H"; fi
           if git diff --cached --quiet; then exit 0; fi
