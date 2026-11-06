@@ -14,6 +14,9 @@ def test_four_real_visible_player_bios_match_original_pre_cut_with_schedule_conf
     assert z["biographical_id_triplets_matched"] == 4
     assert z["total_source_metadata_events"] == 2
     assert z["events_with_schedule_conflicts"] == 2
+    assert z["events_with_match_page_clock_conflicts"] == 1
+    assert z["events_with_match_page_clock_display_agreement"] == 1
+    assert {e["sofascore_id"]: e["independent_match_page_clock"]["displayed_clock_agrees"] for e in z["events"]} == {"17427360": False, "17427540": True}
     assert {p["name"] for p in z["players"]} == {
         "Nishesh Basavareddy", "Jerome Kym", "Gonzalo Bueno", "Lautaro Midon"}
     assert {p["lane"] for p in z["players"]} == {"Hard", "Clay"}
@@ -77,4 +80,44 @@ def test_altered_original_history_authority_fails_closed(monkeypatch):
         return obj, digest
     monkeypatch.setattr(mod, "file", corrupt)
     with pytest.raises(ValueError, match="PRE_CUT_AUTHORITY_INVALID"):
+        mod.verify(ROOT, DAY)
+
+def test_falsified_flashscore_event_time_cannot_be_treated_as_agreement(monkeypatch):
+    original = mod.file
+    def corrupt(root, path):
+        obj, digest = original(root, path)
+        if path.name == "MATRIX_TENNIS_FLASHSCORE_MATCH_TIME_VISIBLE_OBSERVATIONS.json":
+            obj = deepcopy(obj)
+            obj["rows"][1]["visible_match_datetime_text"] = "06.11.2026 09:00"
+        return obj, digest
+    monkeypatch.setattr(mod, "file", corrupt)
+    r = mod.verify(ROOT, DAY)
+    assert r["events_with_match_page_clock_conflicts"] == 2
+    assert r["events_with_match_page_clock_display_agreement"] == 0
+    assert r["new_hard_holdout_admissions"] == r["new_clay_holdout_admissions"] == 0
+
+
+def test_flashscore_clock_cannot_be_reassigned_to_wrong_native_fixture(monkeypatch):
+    original = mod.file
+    def corrupt(root, path):
+        obj, digest = original(root, path)
+        if path.name == "MATRIX_TENNIS_FLASHSCORE_MATCH_TIME_VISIBLE_OBSERVATIONS.json":
+            obj = deepcopy(obj)
+            obj["rows"][0]["flashscore_mid"] = "WRONG"
+        return obj, digest
+    monkeypatch.setattr(mod, "file", corrupt)
+    with pytest.raises(ValueError, match="UNTRUSTED_OR_POSTMATCH_FLASHSCORE_CLOCK"):
+        mod.verify(ROOT, DAY)
+
+
+def test_flashscore_visible_calendar_day_not_same_fails_closed(monkeypatch):
+    original = mod.file
+    def corrupt(root, path):
+        obj, digest = original(root, path)
+        if path.name == "MATRIX_TENNIS_FLASHSCORE_MATCH_TIME_VISIBLE_OBSERVATIONS.json":
+            obj = deepcopy(obj)
+            obj["rows"][0]["visible_match_datetime_text"] = "07.11.2026 09:00"
+        return obj, digest
+    monkeypatch.setattr(mod, "file", corrupt)
+    with pytest.raises(ValueError, match="FLASHSCORE_CLOCK_WRONG_TARGET_DAY"):
         mod.verify(ROOT, DAY)
