@@ -156,3 +156,24 @@ def test_evidence_path_publisher_never_rebases_runner_or_stages_model_state():
     assert "tennis_calendar_(physical|reconciliation)" in powershell
     assert 'git add -- evidence/cor0203' not in powershell
     assert 'git add -- evidence/tennis_parallel_lanes' not in powershell
+
+
+def test_flashscore_only_selected_day_control_can_certify_calendar():
+    # Flashscore news and sidebar links may mention tomorrow while the
+    # selected sports calendar is still on today. Never accept body text.
+    assert date_evidence("FLASHSCORE","2026-11-06",
+        controls=["jueves, 5 de noviembre de 2026"],
+        visible_text="Noticias: viernes, 6 de noviembre de 2026") is None
+    assert date_evidence("FLASHSCORE","2026-11-06",
+        controls=["viernes, 6 de noviembre de 2026"],
+        visible_text="Noticias del día anterior")=="VISIBLE_CALENDAR_CONTROL_FULL_YEAR"
+
+
+def test_flashscore_capture_uses_selected_day_attribute_in_browser():
+    from tools.matrix_tennis_windows_browser_calendar_capture import run
+    import inspect
+    code=inspect.getsource(run)
+    assert '[aria-haspopup="listbox"]' in code
+    assert "a.getAttribute('aria-label')" in code
+    assert "www.flashscore.co/tenis/manana/" in code
+    assert "selected_day_control_required" in code
