@@ -52,21 +52,43 @@ def verify(root: Path, target_day: str):
     bio, biosha = file(root, DAYPATH/target_day/"MATRIX_TENNIS_OPERA_BIOGRAPHY_VISIBLE_OBSERVATIONS.json")
     details, detailsha = file(root, DAYPATH/target_day/"sofascore_verified_match_details.json")
     cross, crosssha = file(root, REPORTPATH/target_day/"MATRIX_TENNIS_EXACT_BROWSER_CROSSMATCH.json")
+    flash, flashsha = file(root, DAYPATH/target_day/"MATRIX_TENNIS_FLASHSCORE_MATCH_TIME_VISIBLE_OBSERVATIONS.json")
     if (bio.get("schema") != "MATRIX_TENNIS_OPERA_BIOGRAPHY_VISIBLE_OBSERVATIONS_V1"
         or details.get("schema") != "MATRIX_OPERA_TENNIS_MATCH_DETAIL_OBSERVATION_V1"
         or cross.get("schema") != "MATRIX_TENNIS_EXACT_BROWSER_CROSSMATCH_V1"
+        or flash.get("schema") != "MATRIX_TENNIS_FLASHSCORE_VISIBLE_MATCH_CLOCK_V1"
         or len({bio.get("target_date_bogota"), details.get("target_date_bogota"),
-                cross.get("target_date_bogota"), target_day}) != 1
+                cross.get("target_date_bogota"), flash.get("target_date_bogota"), target_day}) != 1
         or any(x.get("real_money") != "BLOCKED" for x in (bio, details, cross))
         or bio.get("paid_api_used") is not False
         or details.get("telegram_signal_authorized") is not False
         or bio.get("official_holdout_admitted") != 0
+        or flash.get("official_holdout_admitted") != 0
+        or flash.get("paid_api_used") is not False
+        or flash.get("local_timezone_assertion_authorized") is not False
+        or flash.get("real_money") != "BLOCKED"
         or cross.get("source_event_equivalence_certified") is not False):
         raise ValueError("SOURCE_GOVERNANCE_OR_DATE_MISMATCH")
     captured = timestamp(bio["captured_at_utc"])
+    flash_at = timestamp(flash["observed_at_utc"])
     detailed = timestamp(details["observed_at_utc"])
     if captured < detailed:
         raise ValueError("BIOGRAPHY_CAPTURE_BEFORE_DETAIL_SNAPSHOT_UNCONFIRMED")
+    flashrows = {}
+    for row in flash.get("rows") or []:
+        sid = str(row.get("sofascore_id") or "")
+        if sid in flashrows or row.get("visible_text_role") != "staticText":
+            raise ValueError("DUPLICATE_OR_UNTRUSTED_FLASHSCORE_CLOCK")
+        value = str(row.get("visible_match_datetime_text") or "")
+        try:
+            rawclock = datetime.strptime(value, "%d.%m.%Y %H:%M")
+        except ValueError as exc:
+            raise ValueError("FLASHSCORE_CLOCK_MALFORMED") from exc
+        if rawclock.date() != day:
+            raise ValueError("FLASHSCORE_CLOCK_WRONG_TARGET_DAY")
+        flashrows[sid] = (row, rawclock)
+    if len(flashrows) != len(details.get("events") or []):
+        raise ValueError("FLASHSCORE_CLOCK_ROWS_MISSING_OR_EXTRA")
     profiles = bio.get("profiles")
     if not isinstance(profiles, list) or not 1 <= len(profiles) <= 30:
         raise ValueError("BIOGRAPHY_PROFILE_COUNT_INVALID")
@@ -106,6 +128,19 @@ def verify(root: Path, target_day: str):
             or event.get("flashscore_url") != crossrows[sid].get("flashscore_url")
             or len(event.get("players") or []) != 2):
             raise ValueError("NON_PROSPECTIVE_OR_UNTRUSTED_EVENT")
+        if sid not in flashrows:
+            raise ValueError("MISSING_INDEPENDENT_MATCH_PAGE_CLOCK")
+        frow, fclock = flashrows[sid]
+        if (frow.get("flashscore_url") != event["flashscore_url"]
+            or str(frow.get("flashscore_mid")) != str(event.get("flashscore_mid"))
+            or str(frow.get("source_name_token_key"))
+                 != str(crossrows[sid].get("source_name_token_key"))
+            or flash_at >= kickoff):
+            raise ValueError("UNTRUSTED_OR_POSTMATCH_FLASHSCORE_CLOCK")
+        expected_clock = datetime.strptime(
+            str(event["local_visible_date"]) + " " + str(event["local_visible_time"]),
+            "%d/%m/%Y %H:%M")
+        clock_display_agrees = (expected_clock == fclock)
         event_people = []
         quote_conflicts = []
         for player in event["players"]:
@@ -167,9 +202,21 @@ def verify(root: Path, target_day: str):
                        "prematch_detail_sha256": detailsha,
                        "biographical_triplet_matches": len(event_people),
                        "schedule_conflicts": quote_conflicts,
+                       "independent_match_page_clock": {
+                           "sofascore_local_display": expected_clock.strftime("%d.%m.%Y %H:%M"),
+                           "flashscore_local_display": fclock.strftime("%d.%m.%Y %H:%M"),
+                           "displayed_clock_agrees": clock_display_agrees,
+                           "flashscore_timezone_explicitly_attested": False,
+                           "flashscore_visible_capture_sha256": flashsha,
+                           "status": ("MATCH_PAGE_CLOCK_DISPLAY_CONCORDANT_WITHOUT_TZ_ATTESTATION"
+                                      if clock_display_agrees else
+                                      "TWO_PROVIDER_MATCH_PAGE_CLOCK_CONFLICT"),
+                       },
                        "prospective_model_admission_authorized": False,
                        "historical_model_feature_pit_equivalence": False,
-                       "status": ("PROFILE_SCHEDULE_CONFLICT_FAIL_CLOSED"
+                       "status": ("TWO_PROVIDER_MATCH_PAGE_CLOCK_CONFLICT_FAIL_CLOSED"
+                                  if not clock_display_agrees else
+                                  "TWO_MATCH_PAGE_CLOCKS_AGREE_PROFILE_TEXT_STALE_MODEL_PIT_BLOCKED"
                                   if quote_conflicts else
                                   "BIOGRAPHICAL_IDENTITY_MATCH_ONLY_FEATURE_PIT_MISSING")})
     if len(people) != len(profiles):
@@ -177,10 +224,13 @@ def verify(root: Path, target_day: str):
     return {"schema": "MATRIX_TENNIS_RESEARCH_BIOGRAPHY_CROSSWALK_LAST_V1",
             "target_date_bogota":target_day,
             "source_sha256": {"biography":biosha, "prematch_details":detailsha,
-                              "source_crossmatch":crosssha, "original_authorities":authority_shas},
+                              "source_crossmatch":crosssha, "flashscore_match_clock":flashsha,
+                              "original_authorities":authority_shas},
             "biographical_id_triplets_matched":len(people),
             "total_source_metadata_events":len(events),
             "events_with_schedule_conflicts":sum(bool(e["schedule_conflicts"]) for e in events),
+            "events_with_match_page_clock_conflicts":sum(not e["independent_match_page_clock"]["displayed_clock_agrees"] for e in events),
+            "events_with_match_page_clock_display_agreement":sum(e["independent_match_page_clock"]["displayed_clock_agrees"] for e in events),
             "events":events,"players":people,
             "provider_id_equivalence_approved_for_model":False,
             "current_rank_and_pre_cut_feature_parity_certified":False,
@@ -199,7 +249,7 @@ def main():
     path.write_text(json.dumps(result,indent=2,ensure_ascii=False,sort_keys=True)+"\n",encoding="utf-8")
     print(json.dumps({k:result[k] for k in
         ("biographical_id_triplets_matched","total_source_metadata_events",
-         "events_with_schedule_conflicts","new_hard_holdout_admissions","new_clay_holdout_admissions")},sort_keys=True))
+         "events_with_schedule_conflicts","events_with_match_page_clock_conflicts","events_with_match_page_clock_display_agreement","new_hard_holdout_admissions","new_clay_holdout_admissions")},sort_keys=True))
     if not result["biographical_id_triplets_matched"]:
         raise SystemExit("ZERO_AUTHENTIC_RESEARCH_CROSSWALK_PROOFS")
 
