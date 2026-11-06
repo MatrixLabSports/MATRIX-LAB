@@ -16,6 +16,11 @@ def test_four_real_visible_player_bios_match_original_pre_cut_with_schedule_conf
     assert z["events_with_schedule_conflicts"] == 2
     assert z["events_with_match_page_clock_conflicts"] == 1
     assert z["events_with_match_page_clock_display_agreement"] == 1
+    assert z["organizer_official_followed_by_schedule_events"] == 1
+    assert z["organizer_official_exact_start_attested_count"] == 0
+    official=next(e["official_order_of_play"] for e in z["events"] if e["sofascore_id"]=="17427360")
+    assert official["clock_type"]=="FOLLOWED_BY_PREVIOUS_MATCH"
+    assert official["exact_start_from_organizer_attested"] is False
     assert {e["sofascore_id"]: e["independent_match_page_clock"]["displayed_clock_agrees"] for e in z["events"]} == {"17427360": False, "17427540": True}
     assert {p["name"] for p in z["players"]} == {
         "Nishesh Basavareddy", "Jerome Kym", "Gonzalo Bueno", "Lautaro Midon"}
@@ -121,3 +126,28 @@ def test_flashscore_visible_calendar_day_not_same_fails_closed(monkeypatch):
     monkeypatch.setattr(mod, "file", corrupt)
     with pytest.raises(ValueError, match="FLASHSCORE_CLOCK_WRONG_TARGET_DAY"):
         mod.verify(ROOT, DAY)
+
+def test_official_order_of_play_cannot_invent_exact_start(monkeypatch):
+    original=mod.file
+    def corrupt(root,path):
+        obj,digest=original(root,path)
+        if path.name=="MATRIX_TENNIS_BRATISLAVA_OFFICIAL_ORDER_OF_PLAY_RESEARCH.json":
+            obj=deepcopy(obj)
+            obj["official_target_match_exact_clock"]="14:00"
+        return obj,digest
+    monkeypatch.setattr(mod,"file",corrupt)
+    with pytest.raises(ValueError,match="UNTRUSTED_OFFICIAL_ORDER_OF_PLAY_PROOF"):
+        mod.verify(ROOT,DAY)
+
+
+def test_forged_official_participant_list_blocks_match(monkeypatch):
+    original=mod.file
+    def corrupt(root,path):
+        obj,digest=original(root,path)
+        if path.name=="MATRIX_TENNIS_BRATISLAVA_OFFICIAL_ORDER_OF_PLAY_RESEARCH.json":
+            obj=deepcopy(obj)
+            obj["official_names"][0]="Someone Else"
+        return obj,digest
+    monkeypatch.setattr(mod,"file",corrupt)
+    with pytest.raises(ValueError,match="OFFICIAL_ORDER_OF_PLAY_PLAYERS_DISAGREE"):
+        mod.verify(ROOT,DAY)
