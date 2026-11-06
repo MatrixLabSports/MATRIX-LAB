@@ -48,3 +48,30 @@ def test_never_accept_utc_without_timezone_for_local_calendar():
     from tools.matrix_tennis_browser_challenger_pit_gate import kickoff_in_bogota_calendar_day
     with pytest.raises(ValueError,match="KICKOFF_TIMEZONE_REQUIRED"):
         kickoff_in_bogota_calendar_day(datetime(2026,11,6,21),"2026-11-06")
+
+def test_real_nov6_cross_provider_clock_conflict_blocks_hard_only():
+    r=evaluate(ROOT,"2026-11-06",T("2026-11-06T02:00:00Z"))
+    assert r["cross_provider_fixture_start_display_conflict_count"]==1
+    assert r["hard_source_metadata_ready"]==0
+    assert r["clay_source_metadata_ready"]==1
+    by_id={x["sofascore_id"]:x for x in r["events"]}
+    assert "TWO_PROVIDER_FIXTURE_START_DISPLAY_CONFLICT" in by_id["17427360"]["blocked"]
+    assert by_id["17427540"]["source_two_provider_fixture_clock_display_agrees"] is True
+    assert by_id["17427540"]["source_profile_biographical_triplet_research_verified"] is True
+    assert r["new_hard_holdout_observations"]==r["new_clay_holdout_observations"]==0
+
+
+def test_biographical_clock_sha_drift_rejected(monkeypatch):
+    from copy import deepcopy
+    from tools import matrix_tennis_browser_challenger_pit_gate as mod
+    before=mod.read
+    def altered(root,p):
+        doc,h=before(root,p)
+        if str(p).endswith("MATRIX_TENNIS_RESEARCH_BIOGRAPHY_CROSSWALK_LAST.json"):
+            doc=deepcopy(doc)
+            doc["source_sha256"]["prematch_details"]="bad-source-digest"
+        return doc,h
+    monkeypatch.setattr(mod,"read",altered)
+    import pytest
+    with pytest.raises(ValueError,match="TENNIS_BIOGRAPHY_CLOCK_RESEARCH_SOURCE_DRIFT"):
+        mod.evaluate(ROOT,"2026-11-06",T("2026-11-06T02:00:00Z"))
