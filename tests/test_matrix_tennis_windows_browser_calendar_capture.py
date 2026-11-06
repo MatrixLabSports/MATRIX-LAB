@@ -155,7 +155,8 @@ def test_evidence_path_publisher_never_rebases_runner_or_stages_model_state():
     assert "git worktree add --detach" in powershell
     assert "cherry-pick" in powershell
     assert "TENNIS_BROWSER_REAL_REMOTE_EVIDENCE_CONFLICT_FAIL_CLOSED" in powershell
-    assert "tennis_calendar_(physical|reconciliation)" in powershell
+    assert "tennis_calendar_physical" in powershell
+    assert 'git add -- "evidence/tennis_calendar_reconciliation"' not in powershell
     assert 'git add -- evidence/cor0203' not in powershell
     assert 'git add -- evidence/tennis_parallel_lanes' not in powershell
 
