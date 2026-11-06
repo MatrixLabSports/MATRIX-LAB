@@ -85,15 +85,20 @@ def parse_visible(row: dict, ui: dict, day: str, observed_at: datetime) -> dict:
             players.setdefault(m.group(1), []).append(a)
     if len(players) != 2:
         raise ValueError("EXACT_TWO_VISIBLE_SOFA_PLAYER_PROFILES_REQUIRED")
+    pairs = {tuple(sorted(h["original_names"])) for h in row.get("original_history_pair_hints", [])}
+    if len(pairs) != 1:
+        raise ValueError("ORIGINAL_PRE_CUT_PAIR_AMBIGUOUS")
+    originals = next(iter(pairs))
     people = []
     for player_id, nodes in players.items():
-        full = [str(n.get("name") or "").strip() for n in nodes]
-        # The short visible profile link, not the ranking or live-score text.
-        choices = [n for n in full if n and "ATP " not in n and "WTA " not in n
-                   and "\n" not in n and len(n) <= 75]
-        if not choices:
-            raise ValueError("EXACT_PLAYER_NAME_LINK_MISSING")
-        name = min(choices, key=len)
+        slug = urlparse(nodes[0]["url"]).path.split("/es/tennis/player/",1)[1].rsplit("/",1)[0]
+        names = [n for n in originals if fingerprint(n) == fingerprint(slug)]
+        if len(names) != 1:
+            raise ValueError("PROFILE_SLUG_ORIGINAL_NAME_MISMATCH")
+        name = names[0]
+        full = [str(n.get("name") or "")+" "+str(n.get("label") or "")+" "+" ".join(n.get("flag_alts") or []) for n in nodes]
+        if not any(n.get("name") or n.get("label") for n in nodes):
+            raise ValueError("VISIBLE_PLAYER_PROFILE_LABEL_MISSING")
         country_candidates = [c for c in COUNTRIES if any(
             re.search(r"(?<![A-Za-z])"+re.escape(c)+r"(?![A-Za-z])", txt)
             for txt in full)]
