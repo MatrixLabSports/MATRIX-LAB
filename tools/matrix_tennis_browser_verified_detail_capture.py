@@ -207,7 +207,18 @@ def run(root: Path, day: str, endpoint: str, max_events: int = 6) -> dict:
     candidates = eligible_priorities(root, cross)
     events, blocked = [], []
     with sync_playwright() as p:
-        browser = p.chromium.connect_over_cdp(endpoint, timeout=12000)
+        # The CDP browser is shared with the preceding calendar collector.
+        # Bounded local reconnect handles contention; never changes provider
+        # access rules, browser identity, or HTTP rate-limit outcomes.
+        browser = None
+        for attempt in range(3):
+            try:
+                browser = p.chromium.connect_over_cdp(endpoint, timeout=22000)
+                break
+            except Error:
+                if attempt == 2:
+                    raise
+                __import__("time").sleep(2+attempt)
         if not browser.contexts:
             raise ValueError("AUTHORIZED_LOCAL_BROWSER_CONTEXT_MISSING")
         for row in candidates[:max_events]:
