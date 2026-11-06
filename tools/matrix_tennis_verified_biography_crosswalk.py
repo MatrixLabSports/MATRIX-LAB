@@ -53,6 +53,22 @@ def verify(root: Path, target_day: str):
     details, detailsha = file(root, DAYPATH/target_day/"sofascore_verified_match_details.json")
     cross, crosssha = file(root, REPORTPATH/target_day/"MATRIX_TENNIS_EXACT_BROWSER_CROSSMATCH.json")
     flash, flashsha = file(root, DAYPATH/target_day/"MATRIX_TENNIS_FLASHSCORE_MATCH_TIME_VISIBLE_OBSERVATIONS.json")
+    official_path=DAYPATH/target_day/"MATRIX_TENNIS_BRATISLAVA_OFFICIAL_ORDER_OF_PLAY_RESEARCH.json"
+    official=None
+    official_sha=None
+    if (root/official_path).is_file():
+        official,official_sha=file(root,official_path)
+        if (official.get("schema")!="MATRIX_TENNIS_BRATISLAVA_OFFICIAL_ORDER_OF_PLAY_RESEARCH_V1"
+            or official.get("source_url")!="https://www.stz.sk/soubory/op_so26_friday.pdf"
+            or official.get("official_play_date")!=target_day
+            or official.get("court")!="CENTRE COURT"
+            or official.get("official_event_position_on_court")!=3
+            or official.get("official_target_match_clock_type")!="FOLLOWED_BY_PREVIOUS_MATCH"
+            or official.get("official_target_match_exact_clock") is not None
+            or official.get("exact_utc_kickoff_from_organizer_attested") is not False
+            or official.get("no_inference_of_start_time") is not True
+            or official.get("real_money")!="BLOCKED"):
+            raise ValueError("UNTRUSTED_OFFICIAL_ORDER_OF_PLAY_PROOF")
     if (bio.get("schema") != "MATRIX_TENNIS_OPERA_BIOGRAPHY_VISIBLE_OBSERVATIONS_V1"
         or details.get("schema") != "MATRIX_OPERA_TENNIS_MATCH_DETAIL_OBSERVATION_V1"
         or cross.get("schema") != "MATRIX_TENNIS_EXACT_BROWSER_CROSSMATCH_V1"
@@ -198,8 +214,21 @@ def verify(root: Path, target_day: str):
                  "production_feature_equivalence_certified": False}
             event_people.append(p)
             people.append(p)
+        official_event_order=None
+        if official and sid==str(official.get("research_matched_sofascore_id")):
+            official_names=[normal(name) for name in official.get("official_names") or []]
+            actual_names=[normal(p["name"]) for p in event.get("players") or []]
+            if sorted(official_names)!=sorted(actual_names):
+                raise ValueError("OFFICIAL_ORDER_OF_PLAY_PLAYERS_DISAGREE")
+            official_event_order={"organizer_pdf_url":official["source_url"],
+                                  "organizer_source_sha256":official_sha,
+                                  "court":official["court"],
+                                  "court_position":official["official_event_position_on_court"],
+                                  "clock_type":official["official_target_match_clock_type"],
+                                  "exact_start_from_organizer_attested":False}
         events.append({"sofascore_id": sid, "surface": lane,
                        "prematch_detail_sha256": detailsha,
+                       "official_order_of_play":official_event_order,
                        "biographical_triplet_matches": len(event_people),
                        "schedule_conflicts": quote_conflicts,
                        "independent_match_page_clock": {
@@ -225,9 +254,12 @@ def verify(root: Path, target_day: str):
             "target_date_bogota":target_day,
             "source_sha256": {"biography":biosha, "prematch_details":detailsha,
                               "source_crossmatch":crosssha, "flashscore_match_clock":flashsha,
+                              "organizer_official_order_of_play":official_sha,
                               "original_authorities":authority_shas},
             "biographical_id_triplets_matched":len(people),
             "total_source_metadata_events":len(events),
+            "organizer_official_followed_by_schedule_events":sum(bool(e["official_order_of_play"]) for e in events),
+            "organizer_official_exact_start_attested_count":0,
             "events_with_schedule_conflicts":sum(bool(e["schedule_conflicts"]) for e in events),
             "events_with_match_page_clock_conflicts":sum(not e["independent_match_page_clock"]["displayed_clock_agrees"] for e in events),
             "events_with_match_page_clock_display_agreement":sum(e["independent_match_page_clock"]["displayed_clock_agrees"] for e in events),
