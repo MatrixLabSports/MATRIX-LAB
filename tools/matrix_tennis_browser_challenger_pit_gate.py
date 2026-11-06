@@ -58,6 +58,26 @@ def evaluate(root:Path,day:str,now:datetime):
     declared_cross_sha = details.get("source_crossmatch_sha256")
     if declared_cross_sha is not None and declared_cross_sha != crosssha:
         raise ValueError("TENNIS_DETAIL_CROSSMATCH_SHA256_MISMATCH")
+    # Research-only birthday and independently observed Flashscore clocks.
+    # If a snapshot exists it MUST bind to precisely the source bytes frozen
+    # for this match day; stale research must never silently certify a clock.
+    research_path=OUT/day/"MATRIX_TENNIS_RESEARCH_BIOGRAPHY_CROSSWALK_LAST.json"
+    research_by_id={}
+    if (root/research_path).is_file():
+        research,_=read(root,research_path)
+        digests=research.get("source_sha256") or {}
+        if (research.get("schema")!="MATRIX_TENNIS_RESEARCH_BIOGRAPHY_CROSSWALK_LAST_V1"
+            or research.get("target_date_bogota")!=day
+            or digests.get("prematch_details")!=detailsha
+            or digests.get("source_crossmatch")!=crosssha
+            or research.get("real_money")!="BLOCKED"
+            or research.get("provider_id_equivalence_approved_for_model") is not False
+            or research.get("new_hard_holdout_admissions")!=0
+            or research.get("new_clay_holdout_admissions")!=0):
+            raise ValueError("TENNIS_BIOGRAPHY_CLOCK_RESEARCH_SOURCE_DRIFT")
+        research_by_id={str(x["sofascore_id"]):x for x in research.get("events") or []}
+        if len(research_by_id)!=len(research.get("events") or []):
+            raise ValueError("DUPLICATE_RESEARCH_EVENT_ID")
     observed=timestamp(details["observed_at_utc"])
     if observed>now:raise ValueError("DETAIL_CAPTURE_TIMESTAMP_IN_FUTURE")
     crossrows={str(x["sofascore_id"]):x for x in cross.get("matches") or []}
@@ -83,6 +103,17 @@ def evaluate(root:Path,day:str,now:datetime):
         if sid in seen:raise ValueError("DUPLICATE_SOFA_EVENT")
         seen.add(sid)
         status=[];valid=True
+        rec=research_by_id.get(sid)
+        event_clock_display_consistent=None
+        bio_research_triplet_verified=False
+        if rec:
+            clock=rec.get("independent_match_page_clock") or {}
+            event_clock_display_consistent=clock.get("displayed_clock_agrees")
+            bio_research_triplet_verified=(rec.get("biographical_triplet_matches")==2)
+            if event_clock_display_consistent is not True and event_clock_display_consistent is not False:
+                raise ValueError("UNVERIFIED_INDEPENDENT_CLOCK_RESEARCH")
+        if event_clock_display_consistent is False:
+            status.append("TWO_PROVIDER_FIXTURE_START_DISPLAY_CONFLICT");valid=False
         s=x.get("surface")
         if s not in ("Hard","Clay"):status.append("SURFACE_NOT_CANONICAL");valid=False
         expected_court={"Hard":"Dura indoor","Clay":"Tierra batida"}
@@ -143,6 +174,9 @@ def evaluate(root:Path,day:str,now:datetime):
           "competition":x.get("competition_label"),
           "source_metadata_verified_before_kickoff":valid,
           "source_name_crossmatch_only":True,
+          "source_profile_biographical_triplet_research_verified":bio_research_triplet_verified,
+          "source_two_provider_fixture_clock_display_agrees":event_clock_display_consistent,
+          "provider_clock_timezone_attested":False,
           "source_detail_capture_sha256":detailsha,
           "original_historical_authority_sha256":a_shas.get(s),
           "historical_players_found":historical_count,
@@ -161,6 +195,7 @@ def evaluate(root:Path,day:str,now:datetime):
       "original_authorities_sha256":a_shas,
       "source_metadata_verified_before_kickoff":sum(x["source_metadata_verified_before_kickoff"] for x in rows),
       "hard_source_metadata_ready":sum(x["surface"]=="Hard" and x["source_metadata_verified_before_kickoff"] for x in rows),
+      "cross_provider_fixture_start_display_conflict_count":sum(x["source_two_provider_fixture_clock_display_agrees"] is False for x in rows),
       "clay_source_metadata_ready":sum(x["surface"]=="Clay" and x["source_metadata_verified_before_kickoff"] for x in rows),
       "new_hard_holdout_observations":0,"new_clay_holdout_observations":0,
       "original_model_weights_modified":False,"parties_approved_for_telegram":0,
