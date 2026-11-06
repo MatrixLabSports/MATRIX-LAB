@@ -114,7 +114,7 @@ def parse_visible(row: dict, ui: dict, day: str, observed_at: datetime) -> dict:
     tournaments = []
     for link in links:
         z = urlparse(str(link.get("url") or ""))
-        label = str(link.get("name") or "").strip()
+        label = next((str(v).strip() for v in (link.get("label"), link.get("name")) if str(v or "").strip().startswith("Competición Tenis, Challenger")), "")
         if (z.hostname in ("www.sofascore.com", "sofascore.com")
             and z.path.startswith("/es/tennis/tournament/challenger/")
             and label.startswith("Competición Tenis, Challenger")
@@ -147,7 +147,7 @@ def parse_visible(row: dict, ui: dict, day: str, observed_at: datetime) -> dict:
         details = (q.get("details") or [""])[0]
         if details != src:
             continue
-        calendar.append((m.group(1), str(link.get("name") or "")))
+        calendar.append((m.group(1), " ".join(str(v or "") for v in (link.get("name"), link.get("label"))).strip()))
     calendar = list(dict.fromkeys(calendar))
     if len(calendar) != 1:
         raise ValueError("GOOGLE_CALENDAR_EXACT_EVENT_UTC_TOKEN_MISSING")
