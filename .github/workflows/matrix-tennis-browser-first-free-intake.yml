@@ -2,7 +2,8 @@ name: MATRIX Tennis Browser First Free Hard Clay Intake
 
 on:
   schedule:
-    - cron: "13,43 * * * *"
+    # 15-minute intended cadence; GitHub scheduler is best-effort.
+    - cron: "13,28,43,58 * * * *"
   workflow_dispatch:
     inputs:
       target_date:
