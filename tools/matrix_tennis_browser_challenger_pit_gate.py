@@ -53,6 +53,11 @@ def evaluate(root:Path,day:str,now:datetime):
         or details.get("telegram_signal_authorized") is not False
         or cross.get("source_event_equivalence_certified") is not False):
         raise ValueError("UNTRUSTED_OBSERVATION_GOVERNANCE")
+    # New browser captures must bind exactly to the cross-source snapshot.
+    # Archived 2026-11-04 manually observed pages predate this optional field.
+    declared_cross_sha = details.get("source_crossmatch_sha256")
+    if declared_cross_sha is not None and declared_cross_sha != crosssha:
+        raise ValueError("TENNIS_DETAIL_CROSSMATCH_SHA256_MISMATCH")
     observed=timestamp(details["observed_at_utc"])
     if observed>now:raise ValueError("DETAIL_CAPTURE_TIMESTAMP_IN_FUTURE")
     crossrows={str(x["sofascore_id"]):x for x in cross.get("matches") or []}
