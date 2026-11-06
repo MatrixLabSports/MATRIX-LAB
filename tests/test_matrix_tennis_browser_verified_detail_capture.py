@@ -50,3 +50,19 @@ def test_authority_pair_priority_from_original_immutable_sources():
     picks=eligible_priorities(Path.cwd(),cross)
     ids={str(x["sofascore_id"]) for x in picks}
     assert {"17427360","17427339","17427540"}<=ids
+
+
+def test_accessible_aria_label_is_source_of_competition_and_local_calendar_clock():
+    row,ui=inputs()
+    for link in ui["links"]:
+        if "tournament/challenger/" in link["url"]:
+            link["label"]=link["name"]
+            link["name"]="Bratislava"
+        if "calendar.google.com" in link["url"]:
+            link["label"]=link["name"]
+            link["name"]="Añadir al calendario"
+    result=parse_visible(row,ui,DAY,datetime(2026,11,5,23,tzinfo=timezone.utc))
+    assert result["surface"]=="Hard"
+    assert result["local_visible_time"]=="8:20"
+    assert result["round"]=="Cuartos de final"
+    assert result["provider_player_id_equivalence_certified"] is False
