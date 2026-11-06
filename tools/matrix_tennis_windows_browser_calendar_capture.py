@@ -92,8 +92,12 @@ def date_evidence(source:str,day:str,*,controls:list[str],visible_text:str)->str
     for marker in controls[:800]:
         if day_visible(source,day,str(marker)):
             return "VISIBLE_CALENDAR_CONTROL_FULL_YEAR"
-    # The full visible body can contain a date after the old first-12000 cutoff.
-    # It is still link discovery, NOT individual match date certification.
+    # Flashscore's daily view has a dedicated selected-day control. A news
+    # headline for tomorrow must NOT be mistaken for the selected calendar day.
+    if source == "FLASHSCORE":
+        return None
+    # SofaScore renders dates in its actual visible event list. This remains
+    # link discovery, NOT an individual-match kickoff/surface certificate.
     if day_visible(source,day,visible_text[:200000]):
         return "VISIBLE_BODY_FULL_YEAR_DATE"
     return None
@@ -125,7 +129,11 @@ def run(root:Path,day:str,endpoint:str):
         if not browser.contexts:raise ValueError("WINDOWS_CDP_NO_CONTEXT")
         for target_day in calendar_days:
             sources=(("SOFASCORE",f"https://www.sofascore.com/es/tennis/{target_day}"),
-                     ("FLASHSCORE",f"https://www.flashscore.co/tenis/?d={target_day}"))
+                     ("FLASHSCORE",(
+                        "https://www.flashscore.co/tenis/manana/"
+                        if date.fromisoformat(target_day)==datetime.now(BOGOTA).date()+timedelta(days=1)
+                        else f"https://www.flashscore.co/tenis/?d={target_day}"
+                     )))
             for source,url in sources:
                 page=browser.contexts[0].new_page()
                 try:
@@ -143,10 +151,13 @@ def run(root:Path,day:str,endpoint:str):
                         info=page.evaluate("""() => ({
                           text:String(document.body?.innerText||'').slice(0,200000),
                           dateControls:Array.from(document.querySelectorAll(
-                            'button,[role="button"],[role="combobox"],time,input'
-                          )).filter(a=>a.getClientRects().length>0).slice(0,800).map(
-                            a=>String(a.innerText||a.getAttribute('aria-label')||
-                              a.getAttribute('title')||a.getAttribute('datetime')||'').trim().slice(0,160)
+                            '[aria-haspopup="listbox"],[role="combobox"],' +
+                            '[class*="calendar__datepicker"],[class*="calendar__navigation"],' +
+                            'button,[role="button"],time,input,[aria-label],[title]'
+                          )).filter(a=>a.getClientRects().length>0).slice(0,5000).map(
+                            a=>String(a.getAttribute('aria-label')||
+                              a.getAttribute('title')||a.getAttribute('datetime')||
+                              a.getAttribute('data-date')||a.innerText||'').trim().slice(0,180)
                           ),
                           links:Array.from(document.querySelectorAll('a[href]'))
                             .filter(a=>a.getClientRects().length>0).slice(0,4500)
@@ -164,6 +175,7 @@ def run(root:Path,day:str,endpoint:str):
                             # The date verifies only the rendered calendar context,
                             # never each match's kickoff, surface or identity.
                             result["rendered_calendar_date_evidence"]=observed_marker
+                            result["selected_day_control_required"]=(source=="FLASHSCORE")
                             break
                     if result is None:
                         stats.append({"date":target_day,"source":source,
