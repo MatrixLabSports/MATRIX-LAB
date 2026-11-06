@@ -1,6 +1,8 @@
 # MATRIX Windows PowerShell 5.1 — append-only, browser-visible tennis research.
 # Publish from an isolated clean worktree; never rebase a dirty runner checkout.
 # No paid API requests, predictions, quotas, odds, Telegram, or model mutations.
+# Windows owns ONLY browser raw files. Cloud owns reconciliation JSONs.
+# This avoids same-file cherry-pick races with the independent cloud intake.
 $ErrorActionPreference = "Stop"
 if ($env:REAL_MONEY -ne "BLOCKED" -or $env:AUTO_BETTING -ne "DISABLED") {
   throw "TENNIS_BROWSER_SAFETY_GUARD"
@@ -10,7 +12,7 @@ if ($LASTEXITCODE -ne 0) { throw "TENNIS_BROWSER_GIT_CONFIG_FAILED" }
 git config user.email "matrix-tennis-browser-runner@users.noreply.github.com"
 if ($LASTEXITCODE -ne 0) { throw "TENNIS_BROWSER_GIT_CONFIG_FAILED" }
 
-$folders = @("evidence/tennis_calendar_physical", "evidence/tennis_calendar_reconciliation")
+$folders = @("evidence/tennis_calendar_physical")
 foreach ($folder in $folders) {
   if (Test-Path -LiteralPath $folder) {
     git add -- $folder
@@ -21,7 +23,7 @@ $staged = @(git diff --cached --name-only)
 if ($LASTEXITCODE -ne 0) { throw "TENNIS_BROWSER_STAGE_INSPECTION_FAILED" }
 foreach ($name in $staged) {
   $normalized = $name.Replace([char]92, [char]47)
-  if ($normalized -notmatch '^evidence/tennis_calendar_(physical|reconciliation)/[A-Za-z0-9_./-]+[.]json$') {
+  if ($normalized -notmatch '^evidence/tennis_calendar_physical/[A-Za-z0-9_./-]+[.]json$') {
     throw "TENNIS_BROWSER_UNAUTHORIZED_STAGED_PATH"
   }
 }
