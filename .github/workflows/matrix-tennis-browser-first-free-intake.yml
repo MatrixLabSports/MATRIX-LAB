@@ -21,6 +21,8 @@ on:
       - tools/matrix_tennis_browser_challenger_pit_gate.py
       - tests/test_matrix_tennis_browser_challenger_pit_gate.py
       - tools/matrix_tennis_browser_verified_detail_capture.py
+      - tools/matrix_tennis_verified_biography_crosswalk.py
+      - tests/test_matrix_tennis_verified_biography_crosswalk.py
       - tests/test_matrix_tennis_browser_verified_detail_capture.py
       - tests/test_matrix_tennis_exact_browser_crossmatch.py tests/test_matrix_tennis_browser_challenger_pit_gate.py
       - tests/test_matrix_tennis_browser_first_free_intake.py
@@ -52,7 +54,7 @@ jobs:
       - name: Verify Hard and Clay browser intake against false admissions
         run: |
           python -m pip install -q pytest
-          PYTHONPATH=. python -m pytest -q tests/test_matrix_tennis_browser_first_free_intake.py tests/test_matrix_tennis_exact_browser_crossmatch.py tests/test_matrix_tennis_windows_browser_calendar_capture.py tests/test_matrix_tennis_browser_challenger_pit_gate.py tests/test_matrix_tennis_browser_verified_detail_capture.py
+          PYTHONPATH=. python -m pytest -q tests/test_matrix_tennis_browser_first_free_intake.py tests/test_matrix_tennis_exact_browser_crossmatch.py tests/test_matrix_tennis_windows_browser_calendar_capture.py tests/test_matrix_tennis_browser_challenger_pit_gate.py tests/test_matrix_tennis_browser_verified_detail_capture.py tests/test_matrix_tennis_verified_biography_crosswalk.py
       - name: Select target Bogota date with no backfill
         id: target
         env:
@@ -89,6 +91,23 @@ jobs:
           else
             echo TOMORROW_DATED_TENNIS_EVIDENCE_MISSING_NO_ADMISSION
           fi
+
+      - name: Prove unique pre-cut identity biographies and flag source timetable conflicts
+        shell: bash
+        run: |
+          set -euo pipefail
+          NOW_DAY="$(TZ=America/Bogota date +%F)"
+          NEXT_DAY="$(TZ=America/Bogota date -d tomorrow +%F)"
+          VERIFIED=0
+          for D in "$NOW_DAY" "$NEXT_DAY"; do
+            BASE="evidence/tennis_calendar_physical/$D"
+            if [ -f "$BASE/MATRIX_TENNIS_OPERA_BIOGRAPHY_VISIBLE_OBSERVATIONS.json" ] && [ -f "$BASE/sofascore_verified_match_details.json" ]; then
+              PYTHONPATH=. python -m tools.matrix_tennis_verified_biography_crosswalk --date "$D"
+              VERIFIED=$((VERIFIED+1))
+            fi
+          done
+          echo "TENNIS_ACTUAL_PROFILE_BIRTHDATE_CROSSWALK_REPORT_DATES=$VERIFIED"
+          # No silent claim of model admission; report is explicitly research-only.
 
       - name: Certify exact dated Challenger court and players from authentic Opera match pages
         shell: bash
