@@ -181,6 +181,16 @@ def parse_visible(row: dict, ui: dict, day: str, observed_at: datetime) -> dict:
         "source_crossmatch_name_hint_only": True,
         "provider_player_id_equivalence_certified": False,
         "individual_start_and_surface_source_metadata_verified": True,
+        "source_visible_match_fields": {
+            "page_url": ui.get("page_url"),
+            "profile_links": [{"url": a.get("url"), "name": a.get("name"),
+                               "label": a.get("label"), "flag_alts": a.get("flag_alts")}
+                              for a in links if "/es/tennis/player/" in str(a.get("url"))][:12],
+            "tournament_link": tournament_url,
+            "calendar_utc_start_token": utc_token,
+            "calendar_local_visible_label": visible_label,
+            "visible_court_label": court_labels[0],
+        },
         "visible_page_evidence_sha256": hashlib.sha256(
             json.dumps(ui, ensure_ascii=False, sort_keys=True).encode("utf-8")).hexdigest(),
     }
