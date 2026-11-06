@@ -211,8 +211,11 @@ def run(root: Path, day: str, endpoint: str, max_events: int = 6) -> dict:
                         .filter(a => a.getClientRects().length>0)
                         .filter(a => /\\/es\\/tennis\\/(player|tournament)|calendar\\.google\\.com/.test(a.href))
                         .slice(0,2500)
-                        .map(a => ({url:a.href,name:String(a.innerText ||
-                            a.getAttribute('aria-label')||'').trim().slice(0,220)}))
+                        .map(a => ({url:a.href,
+                            name:String(a.innerText||'').trim().slice(0,220),
+                            label:String(a.getAttribute('aria-label')||'').trim().slice(0,220),
+                            flag_alts:Array.from(a.querySelectorAll('img[alt]')).map(i=>String(i.alt||'')).slice(0,6)
+                        }))
                 })""")
                 observed_at = datetime.now(timezone.utc)
                 event = parse_visible(row, ui, day, observed_at)
