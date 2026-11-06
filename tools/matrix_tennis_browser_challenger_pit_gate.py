@@ -14,7 +14,7 @@ from tools.matrix_tennis_browser_first_free_intake import ROOT as CAPTURE_ROOT
 
 DETAIL="sofascore_verified_match_details.json"
 CROSS="MATRIX_TENNIS_EXACT_BROWSER_CROSSMATCH.json"
-COUNTRY_IOC={"USA":"USA","Switzerland":"SUI","Peru":"PER","Brazil":"BRA"}
+COUNTRY_IOC={"USA":"USA","Switzerland":"SUI","Peru":"PER","Brazil":"BRA","Argentina":"ARG"}
 AUTHORITIES={"Hard":"evidence/cor0203/identity/MATRIX_COR0203_IDENTITY_AUTHORITY_LAST.json",
 "Clay":"evidence/tennis_parallel_lanes/ATP_CHALLENGER_MEN_SINGLES_CLAY/identity/MATRIX_CLAY_IDENTITY_AUTHORITY_LAST.json"}
 OUT=Path("evidence/tennis_calendar_reconciliation")
