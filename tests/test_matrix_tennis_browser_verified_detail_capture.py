@@ -10,7 +10,7 @@ P=Path("evidence/tennis_calendar_reconciliation")/DAY/"MATRIX_TENNIS_EXACT_BROWS
 
 def inputs():
     j,_=get(Path.cwd(),P)
-    row=next(x for x in j["matches"] if x["sofascore_id"]=="17427360")
+    row=next(x for x in eligible_priorities(Path.cwd(),j) if x["sofascore_id"]=="17427360")
     src=row["sofascore_url"]
     links=[
         {"url":"https://www.sofascore.com/es/tennis/player/basavareddy-nishesh/407164","name":"Nishesh Basavareddy"},
