@@ -60,8 +60,10 @@ def test_full_year_rendered_calendar_control_is_evidence():
 def test_full_body_date_after_twelve_thousand_characters_is_not_lost():
     body="Other news "*1200+" jueves, 5 de noviembre de 2026"
     assert len(body)>12000
-    assert date_evidence("FLASHSCORE","2026-11-05",
+    assert date_evidence("SOFASCORE","2026-11-05",
         controls=[],visible_text=body)=="VISIBLE_BODY_FULL_YEAR_DATE"
+    assert date_evidence("FLASHSCORE","2026-11-05",
+        controls=[],visible_text=body) is None
 
 
 def test_no_url_only_or_wrong_date_admission():
@@ -101,7 +103,7 @@ def test_collection_captures_today_and_tomorrow_only_when_rendered_date_is_real(
         def wait_for_timeout(self,ms):
             assert ms<=2000
         def evaluate(self,script):
-            day="2026-11-06" if "2026-11-06" in self.url else "2026-11-05"
+            day="2026-11-06" if ("2026-11-06" in self.url or "/tenis/manana/" in self.url) else "2026-11-05"
             human="6" if day.endswith("06") else "5"
             if "sofascore.com" in self.url:
                 link="https://www.sofascore.com/es/tennis/match/foo-bar/xyz123#id:12345"
