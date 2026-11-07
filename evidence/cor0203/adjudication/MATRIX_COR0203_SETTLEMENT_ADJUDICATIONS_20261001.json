@@ -1,0 +1,272 @@
+{
+  "schema": "MATRIX_COR0203_SETTLEMENT_ADJUDICATIONS_20261001_V1",
+  "created_at_utc": "2026-10-12T20:02:00+00:00",
+  "policy": {
+    "completed_match": "append canonical binary settlement",
+    "retired_match": "append official-winner settlement; preserve RETIRED terminal status; metrics remain sealed",
+    "cancelled_match": "append terminal closure with no binary outcome; exclude from calibration metric denominator when metrics open",
+    "suspended_or_rescheduled": "do not invent an outcome; keep waiting for FINAL result",
+    "fuzzy_matching": false,
+    "metrics_opened": false,
+    "real_money": "BLOCKED",
+    "walkover_match": "append terminal WALKOVER closure with official advancement reference; no binary sporting outcome; exclude from calibration metric denominator"
+  },
+  "entries": [
+    {
+      "event_id": "COR0203-R707-SD2-GOMEZ-MARCONDES",
+      "action": "APPEND_SETTLEMENT",
+      "terminal_status": "FINISHED",
+      "event_final_result": "4-6 6-4 6-1",
+      "winner_canonical_name": "Igor Marcondes",
+      "outcome_player_a": false,
+      "metric_eligibility_at_open": "ELIGIBLE_STANDARD_FINAL",
+      "source_provider": "external_multi_source_adjudication",
+      "sources": [
+        "https://www.tennisabstract.com/cgi-bin/tourney.cgi?t=2026-3175%2FSan-Diego-2-CH",
+        "https://www.tennisexplorer.com/player/gomez-e101b/",
+        "https://www.sofascore.com/es-la/tennis/match/federico-agustin-gomez-igor-marcondes/hTHsPvib"
+      ]
+    },
+    {
+      "event_id": "COR0203-R718-STT-MAYOT-CASSONE",
+      "action": "APPEND_SETTLEMENT",
+      "terminal_status": "RETIRED",
+      "event_final_result": "5-7 6-2 4-2 RET",
+      "winner_canonical_name": "Harold Mayot",
+      "outcome_player_a": true,
+      "metric_eligibility_at_open": "ELIGIBLE_OFFICIAL_WINNER_NONSTANDARD_TERMINAL",
+      "source_provider": "external_multi_source_adjudication",
+      "sources": [
+        "https://www.tennisabstract.com/cgi-bin/tourney.cgi?t=2026-9552%2FSaint-Tropez-CH",
+        "https://www.365scores.com/en-us/tennis/match/saint-tropez-7750/harold-mayot-murphy-cassone-57208-69959-7750"
+      ]
+    },
+    {
+      "event_id": "COR0203-RAPIDAPI-TENNIS-1499",
+      "action": "APPEND_SETTLEMENT",
+      "terminal_status": "CANCELLED",
+      "event_final_result": null,
+      "winner_canonical_name": null,
+      "outcome_player_a": null,
+      "metric_eligibility_at_open": "EXCLUDED_CANCELLED_NO_SPORTING_OUTCOME",
+      "source_provider": "external_multi_source_adjudication",
+      "sources": [
+        "https://www.sofascore.com/tennis/match/dino-prizmic-daniel-rincon/QXxcsOGOc",
+        "https://www.forebet.com/en/tennis/matches/challenger-men/porto/d-prizmic-d-rincon/359833"
+      ]
+    },
+    {
+      "event_id": "COR0203-RAPIDAPI-TENNIS-1459",
+      "action": "APPEND_SETTLEMENT",
+      "terminal_status": "RETIRED",
+      "event_final_result": "3-6 2-4 RET",
+      "winner_canonical_name": "Evan Zhu",
+      "outcome_player_a": false,
+      "metric_eligibility_at_open": "ELIGIBLE_OFFICIAL_WINNER_NONSTANDARD_TERMINAL",
+      "source_provider": "external_multi_source_adjudication",
+      "sources": [
+        "https://www.tennislive.net/atp/match/evan-zhu-VS-aleksandar-vukic/jingshan-challenger-2026/",
+        "https://www.365scores.com/tennis/match/jingshan-8855/aleksandar-vukic-evan-zhu-28903-54698-8855"
+      ]
+    },
+    {
+      "event_id": "COR0203-RAPIDAPI-TENNIS-1362",
+      "action": "APPEND_SETTLEMENT",
+      "terminal_status": "FINISHED",
+      "event_final_result": "5-7 6-2 7-6(5)",
+      "winner_canonical_name": "Bernard Tomic",
+      "outcome_player_a": true,
+      "metric_eligibility_at_open": "ELIGIBLE_STANDARD_FINAL",
+      "source_provider": "external_multi_source_adjudication",
+      "sources": [
+        "https://tennistonic.com/stat-tournaments/atp/22038/11522-48871/bernard-tomic-vs-yuta-shimizu/",
+        "https://www.tennislive.it/atp/incontro/bernard-tomic-VS-yuta-shimizu/jingshan-challenger-2026/"
+      ]
+    },
+    {
+      "event_id": "COR0203-RAPIDAPI-TENNIS-1382-6ca27ba46037",
+      "action": "APPEND_SETTLEMENT",
+      "terminal_status": "RETIRED",
+      "event_final_result": "5-7 7-6(2) 0-0 RET",
+      "winner_canonical_name": "Lloyd Harris",
+      "outcome_player_a": false,
+      "metric_eligibility_at_open": "ELIGIBLE_OFFICIAL_WINNER_NONSTANDARD_TERMINAL",
+      "source_provider": "external_multi_source_adjudication",
+      "sources": [
+        "USER_PROVIDED_FLASHSCORE_SCREENSHOT_SHA256:0988609ba7008bcba07622bd20edb2df7ee16713c9fc73ad65f523c0bf0eec3f",
+        "24score Lloyd Harris vs Alex Bolt Jingshan 03-Oct-2026: Harris W 1:1 (5:7,7:6) Retired",
+        "CanalTenis Jingshan 2026 semifinal: Lloyd Harris vs Alex Bolt 5-7,7-6(2),0-0 Ret."
+      ]
+    },
+    {
+      "event_id": "COR0203-RAPIDAPI-TENNIS-1346-5af0075e1c7b",
+      "action": "APPEND_SETTLEMENT",
+      "terminal_status": "WALKOVER",
+      "event_final_result": "WALKOVER - Jerome Kym withdrew before play; Henrique Rocha advanced",
+      "winner_canonical_name": "Henrique Rocha",
+      "outcome_player_a": null,
+      "metric_eligibility_at_open": "EXCLUDED_WALKOVER_NO_SPORTING_OUTCOME",
+      "source_provider": "external_multi_source_adjudication",
+      "sources": [
+        "USER_PROVIDED_SCREENSHOT_SHA256:04dd185d118adf257f6dec2719aab8962d08b8e2a4c3ae8e6097744d8028e638",
+        "https://www.sofascore.com/tennis/match/henrique-rocha-jerome-kym/wGycsvLLc",
+        "https://eupagoportoopen.org/henrique-rocha-e-montes-de-la-torre-decidem-titulo-no-eupago-porto-open/"
+      ]
+    },
+    {
+      "event_id": "COR0203-RAPIDAPI-TENNIS-1581-9ebe68ab67f0",
+      "action": "APPEND_SETTLEMENT",
+      "terminal_status": "RETIRED",
+      "event_final_result": "3-6 6-2 2-0 RET",
+      "winner_canonical_name": "Clement Chidekh",
+      "outcome_player_a": true,
+      "metric_eligibility_at_open": "ELIGIBLE_OFFICIAL_WINNER_NONSTANDARD_TERMINAL",
+      "source_provider": "external_multi_source_adjudication",
+      "sources": [
+        "USER_PROVIDED_SCREENSHOT_SHA256:1f5b25ede20353e0f99075c922e8b2ce0063ce3769098c53209906f9fc5d52a7",
+        "https://www.sofascore.com/tennis/match/harold-mayot-clement-chidekh/vHRbsWBZb",
+        "https://www.tennislive.net/atp/match/clement-chidekh-VS-harold-mayot/mouilleron-le-captif-challenger-2026/"
+      ]
+    },
+    {
+      "event_id": "COR0203-RAPIDAPI-TENNIS-1469-9445ef9db64e",
+      "action": "APPEND_SETTLEMENT",
+      "terminal_status": "RETIRED",
+      "event_final_result": "6-3 1-0 RET",
+      "winner_canonical_name": "Dylan Dietrich",
+      "outcome_player_a": false,
+      "metric_eligibility_at_open": "ELIGIBLE_OFFICIAL_WINNER_NONSTANDARD_TERMINAL",
+      "source_provider": "external_multi_source_adjudication",
+      "sources": [
+        "USER_PROVIDED_SCREENSHOT_SHA256:23895a1215057339e6f0e0a9ea297c0987a054ecacbeb897ced3c69c0ae6b560",
+        "https://www.sofascore.com/tennis/match/dylan-dietrich-andres-andrade/vtrbsNZad",
+        "https://virginiasports.com/news/2026/10/3/092126-challenger-1-1"
+      ]
+    },
+    {
+      "event_id": "COR0203-RAPIDAPI-TENNIS-3009-2bbce7906775",
+      "action": "APPEND_SETTLEMENT",
+      "terminal_status": "CANCELLED",
+      "event_final_result": null,
+      "winner_canonical_name": null,
+      "outcome_player_a": null,
+      "metric_eligibility_at_open": "EXCLUDED_CANCELLED_NO_SPORTING_OUTCOME",
+      "source_provider": "external_multi_source_adjudication",
+      "sources": [
+        "https://www.flashscore.com/match/tennis/dzumhur-damir-hMrlbuuQ/montes-de-la-torre-inaki-4CYXUVX7/",
+        "https://www.tennisstats247.com/tournaments/men/Spain/villena/Challenger-Singles/"
+      ]
+    },
+    {
+      "event_id": "COR0203-RAPIDAPI-TENNIS-3023-204fff9337d7",
+      "action": "APPEND_SETTLEMENT",
+      "terminal_status": "FINISHED",
+      "event_final_result": "6-4 6-3",
+      "winner_canonical_name": "Abdullah Shelbayh",
+      "outcome_player_a": true,
+      "metric_eligibility_at_open": "ELIGIBLE_STANDARD_FINAL",
+      "source_provider": "external_multi_source_adjudication",
+      "sources": [
+        "USER_PROVIDED_SCREENSHOT_SHA256:16f929533a6d7fff21350a2c3b474f8bcd26205ececbfc3132752a17015ec67c",
+        "https://www.tennislive.net/atp/match/abedallah-shelbayh-VS-david-jorda-sanchis/villena-challenger-2026/",
+        "https://www.tennisexplorer.com/match-detail/?id=3339215"
+      ]
+    },
+    {
+      "event_id": "COR0203-RAPIDAPI-TENNIS-3025-15eb62ca56b2",
+      "action": "APPEND_SETTLEMENT",
+      "terminal_status": "CANCELLED",
+      "event_final_result": null,
+      "winner_canonical_name": null,
+      "outcome_player_a": null,
+      "metric_eligibility_at_open": "EXCLUDED_CANCELLED_NO_SPORTING_OUTCOME",
+      "source_provider": "external_multi_source_adjudication",
+      "sources": [
+        "https://www.sofascore.com/es-la/tennis/match/dino-prizmic-jack-pinnington-jones/PKDcsOGOc",
+        "https://www.flashscore.es/partido/tenis/pinnington-jones-jack-jRDvhb4q/prizmic-dino-YcluY2Zi/"
+      ],
+      "adjudication_note": "Fixture existed but was cancelled before play after Dino Prizmic withdrew. MATRIX source event_start_utc=2026-10-04T08:00:00Z differs from public scheduled time 2026-10-05T13:30:00Z; freeze is preserved and no sporting outcome is imputed."
+    },
+    {
+      "event_id": "COR0203-SOFASCORE-eea19bb214f290ab6ec299b2141a863cd35923e447e5b635c4fe222fe1962995",
+      "action": "APPEND_SETTLEMENT",
+      "terminal_status": "RETIRED",
+      "event_final_result": "6-3 1-0 RET",
+      "winner_canonical_name": "Fajing Sun",
+      "outcome_player_a": false,
+      "metric_eligibility_at_open": "ELIGIBLE_OFFICIAL_WINNER_NONSTANDARD_TERMINAL",
+      "source_provider": "external_multi_source_adjudication",
+      "sources": [
+        "USER_PROVIDED_SCREENSHOT_SHA256:5e6fd226cacaadc4e0580ceaf139378011ae146b1082c0059949970076e19ee1",
+        "rapidapi_tennis:match:1298929;event_status=RETIRED"
+      ]
+    },
+    {
+      "event_id": "COR0203-SOFASCORE-3e334e1ea5e9bca56dc55ad3d88461b1d850a3b7c8db8e0e36d1c8daaccbbd79",
+      "action": "APPEND_SETTLEMENT",
+      "terminal_status": "FINISHED",
+      "event_final_result": "6-2 6-7(1) 5-7",
+      "winner_canonical_name": "Pedro Martinez",
+      "outcome_player_a": false,
+      "metric_eligibility_at_open": "ELIGIBLE_STANDARD_FINAL",
+      "source_provider": "external_multi_source_adjudication",
+      "sources": [
+        "USER_PROVIDED_FLASHSCORE_SCREENSHOT_SHA256:ce2591114d101bd65029344188b82302345411a5e86e5127a276823768db6b7d",
+        "https://www.sofascore.com/tennis/match/august-holmgren-pedro-martinez/yUFsOQHb#id:17248068"
+      ],
+      "adjudication_note": "Exact same physical event. MATRIX competition label 'Alicante, Spain' maps to SofaScore unique tournament Alicante, while match breadcrumb is Villena, Spain. Same players, SofaScore event id 17248068, 2026-10-06, Round of 32. Provider match key was missing, so exact multi-source adjudication is used without mutating the prematch freeze."
+    },
+    {
+      "event_id": "COR0203-RAPIDAPI-TENNIS-1616-fc429bff5256",
+      "action": "APPEND_SETTLEMENT",
+      "terminal_status": "RETIRED",
+      "event_final_result": "6-3 3-0 RET",
+      "winner_canonical_name": "Omar Jasika",
+      "outcome_player_a": false,
+      "metric_eligibility_at_open": "ELIGIBLE_OFFICIAL_WINNER_NONSTANDARD_TERMINAL",
+      "source_provider": "external_multi_source_adjudication",
+      "sources": [
+        "USER_PROVIDED_SCREENSHOT_SHA256:4737941c78e6d4b0463bdeb4d12f2c4012d3f2e197a6d804f87b95071b1f155a",
+        "https://www.tennislive.net/atp/match/omar-jasika-VS-marat-sharipov-rus/wuning-3-challenger-2026/",
+        "https://www.tennisexplorer.com/match-detail/?id=3342667"
+      ]
+    },
+    {
+      "event_id": "COR0203-API-TENNIS-12170094",
+      "action": "APPEND_SETTLEMENT",
+      "terminal_status": "CANCELLED",
+      "event_final_result": null,
+      "winner_canonical_name": null,
+      "outcome_player_a": null,
+      "metric_eligibility_at_open": "EXCLUDED_CANCELLED_REPLACED_BEFORE_PLAY",
+      "source_provider": "multi_source_adjudication",
+      "sources": [
+        "API_TENNIS_SETTLEMENT_STATUS:CANCELLED",
+        "USER_PROVIDED_FLASHSCORE_SCREENSHOT_CURRENT_DRAW:Fearnley_vs_Loffhagen",
+        "https://www.tennisexplorer.com/match-detail/?id=3347597",
+        "https://tennistonic.com/tennis-news/1064545/h2h-prediction-of-jacob-fearnley-vs-george-loffhagen-in-olbia-challenger-with-odds-preview-pick-13th-october-2026/"
+      ],
+      "adjudication_note": "Initial Olbia draw listed Jacob Fearnley vs Daniil Glinka. Current Flashscore and current public match pages show Jacob Fearnley vs George Loffhagen instead, while API-Tennis marks the Glinka fixture CANCELLED. Close as not played; no sporting outcome; exclude from metrics."
+    },
+    {
+      "event_id": "COR0203-RAPIDAPI-TENNIS-1665-95b2fed50536",
+      "action": "APPEND_SETTLEMENT",
+      "terminal_status": "RETIRED",
+      "event_final_result": "6-7(5) 6-4 1-0 RET",
+      "winner_canonical_name": "Lorenzo Carboni",
+      "outcome_player_a": true,
+      "metric_eligibility_at_open": "ELIGIBLE_OFFICIAL_WINNER_NONSTANDARD_TERMINAL",
+      "source_provider": "multi_source_adjudication",
+      "sources": [
+        "USER_PROVIDED_FLASHSCORE_SCREENSHOT_SHA256:22778ae0081c01da50119b43b2163ca2ad8bff37846cdefb3cd71f7b208a881b",
+        "https://www.sofascore.com/tennis/match/lorenzo-carboni-mackenzie-mcdonald/NtAsmQJd#id:17305908",
+        "SOFASCORE_EVENT_API:event_id=17305908;status=Retired;winnerCode=1;home=Lorenzo Carboni;away=Mackenzie McDonald",
+        "https://www.flashscore.com/match/tennis/carboni-lorenzo-2yamY2wB/mcdonald-mackenzie-WWi3O0v6/?mid=KthG3Q3U"
+      ],
+      "adjudication_note": "Physical SofaScore and Flashscore both show the Olbia match as retired. SofaScore event 17305908 reports winnerCode=1 with Lorenzo Carboni as home player and Mackenzie McDonald as away player, establishing Carboni as the official winner and McDonald as the retired player. Preserve RETIRED terminal status; do not rewrite the prematch freeze; metrics remain sealed."
+    }
+  ],
+  "metrics_opened": false,
+  "outcomes_used_for_metrics": 0,
+  "real_money": "BLOCKED"
+}

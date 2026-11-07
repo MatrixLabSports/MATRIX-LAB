@@ -1,0 +1,73 @@
+{
+  "schema": "MATRIX_REGIME_WALK_FORWARD_PROTOCOL_V1",
+  "effective_date_bogota": "2026-10-13",
+  "status": "DESIGN_FROZEN_EXECUTION_GATED_BY_SAMPLE_THRESHOLDS",
+  "objective": "Verify that calibration and predictive quality persist across sequential time windows and relevant regimes without leaking future information or tuning the incumbent on its own validation failures.",
+  "activation_gates": {
+    "tennis_cor0203": {
+      "required_unique_observations": 600,
+      "current_unique_observations": 212,
+      "current_metrics_status": "SEALED_UNTIL_600",
+      "source": "evidence/cor0203/runtime/MATRIX_COR0203_PRODUCTION_OBSERVABILITY_LAST.json"
+    },
+    "team_fouls_total": {
+      "first_required_gate": 30,
+      "current_observations": 1,
+      "current_metrics_status": "SEALED"
+    },
+    "team_total_shots_home": {
+      "first_required_gate": 30,
+      "current_observations": 0,
+      "current_metrics_status": "SEALED"
+    },
+    "team_total_shots_away": {
+      "first_required_gate": 30,
+      "current_observations": 0,
+      "current_metrics_status": "SEALED"
+    }
+  },
+  "walk_forward_rules": {
+    "chronological_only": true,
+    "future_to_past_leakage_forbidden": true,
+    "incumbent_refit_on_same_validation_fold_forbidden": true,
+    "fold_parameters_frozen_before_validation": true,
+    "final_holdout_reuse_for_tuning_forbidden": true,
+    "degradation_is_recorded_as_finding_not_silently_repaired": true
+  },
+  "regime_dimensions": {
+    "tennis": [
+      "tour_or_circuit_when_available_and_governed",
+      "tournament_level_when_available_and_governed",
+      "surface",
+      "season_or_time_window"
+    ],
+    "football": [
+      "league",
+      "season",
+      "market",
+      "time_window"
+    ],
+    "missing_dimension_policy": "MISSING_NOT_ZERO_NO_SILENT_IMPUTATION"
+  },
+  "metrics": [
+    "BRIER_SCORE",
+    "LOG_LOSS",
+    "ECE",
+    "MAX_CALIBRATION_ERROR"
+  ],
+  "adjudication": {
+    "aggregate_pass_does_not_override_failed_regime": true,
+    "failed_regime_requires_documented_finding_or_new_challenger": true,
+    "no_model_promotion_from_design_only_protocol": true
+  },
+  "existing_implementation_reference": {
+    "walk_forward_module": "app/research/football/walk_forward.py",
+    "walk_forward_blob_sha": "4486f6df7aba27eaeb235c02b909e207912a0aef"
+  },
+  "protections": {
+    "metrics_opened_early": false,
+    "parameter_tuning_allowed_during_sealed_cohort": false,
+    "automatic_wagering": false,
+    "real_money": "BLOCKED"
+  }
+}

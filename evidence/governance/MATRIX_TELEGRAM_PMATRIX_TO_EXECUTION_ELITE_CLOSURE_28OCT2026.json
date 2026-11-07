@@ -1,0 +1,180 @@
+{
+  "schema": "MATRIX_TELEGRAM_PMATRIX_TO_EXECUTION_ELITE_CLOSURE_28OCT2026_V1",
+  "generated_at_utc": "2026-10-28T05:28:10Z",
+  "target_date_bogota": "2026-10-28",
+  "branch": "repair/cor09-world-pipeline",
+  "adjudication": "PASS_PMATRIX_TO_TELEGRAM_MONITORING_PIPELINE_PHYSICALLY_PROVEN",
+  "root_causes": [
+    {
+      "code": "STALE_TELEMETRY_SCHEMA_ASSERTION",
+      "evidence": "Telegram green workflow asserted MATRIX_TELEGRAM_QUOTE_ATTEMPT_V2 while the physical audit had migrated to V3.",
+      "effect": "Supervisor completed but workflow failed immediately after telemetry audit."
+    },
+    {
+      "code": "MAIN_REPAIR_WORKFLOW_DEFINITION_DRIFT",
+      "evidence": "Scheduled workflow definition on main differed from the operational repair branch.",
+      "effect": "GitHub executed an older contract even while newer operational code was checked out."
+    },
+    {
+      "code": "FINAL_WINDOW_READINESS_STALE",
+      "evidence": "Blocker audit had 55 WAITING_FINAL_REVALIDATION_WINDOW candidates while readiness artifact still reported 0.",
+      "effect": "15-minute coverage certification was stale relative to current candidate discovery."
+    }
+  ],
+  "repairs": [
+    {
+      "commit": "47a33064153e626d6db942bede4d5fbacd9d4a86",
+      "role": "Regression contract for V3 telemetry, workflow parity and final-window certification."
+    },
+    {
+      "commit": "0b911328b20d25b93f40d1f42d527ee35701d193",
+      "role": "Operational branch workflow repair: V3, readiness after supervisor, persistence and parity fail-closed."
+    },
+    {
+      "commit": "1d0d541d6fd043e6087f8c02fb654a4030734f2c",
+      "role": "Main workflow synchronized byte-for-byte with operational branch."
+    }
+  ],
+  "physical_state": {
+    "p_matrix": {
+      "artifact": "evidence/api_football/daily_prematch_reports/2026-10-28/p_matrix_shadow_current.json",
+      "blob_sha": "1ebac1d6ea99e6d80c92b1aeec2660049a5d36b0",
+      "scored_count": 100,
+      "blocked_count": 12,
+      "status": "GENERATED_SHADOW"
+    },
+    "initial_over25_ev": {
+      "artifact": "evidence/api_football/daily_prematch_reports/2026-10-28/over25_shadow_ev/MATRIX_FOOTBALL_DAILY_OVER25_GOVERNED_SHADOW_EV.json",
+      "blob_sha": "d4db8cec037606194da9491d9cc05262a4759758",
+      "scored_count": 100,
+      "bet_shadow": 14,
+      "no_bet": 24,
+      "blocked": 74,
+      "initial_policy_houses": [
+        "Betano",
+        "BetPlay",
+        "RushBet"
+      ],
+      "interpretation": "This early API-Football price pass is not the final Telegram execution portfolio. Telegram later revalidates the full authorized Colombia portfolio inside the governed prematch window."
+    },
+    "telegram_candidate_monitoring": {
+      "total_records": 56,
+      "waiting_final_revalidation_window": 55,
+      "inherited_historical_terminal_blocker": 1,
+      "current_live_quote_attempts_this_run": 0,
+      "blocker_artifact": "evidence/notifications/telegram/MATRIX_TELEGRAM_BLOCKER_RECOVERY_AUDIT_LAST.json",
+      "blocker_blob_sha": "276679152e77a9a32b7ba11e68577b1c6b2addbd"
+    },
+    "final_window_readiness": {
+      "artifact": "evidence/notifications/telegram/MATRIX_TELEGRAM_FINAL_WINDOW_READINESS_LAST.json",
+      "blob_sha": "b30f535d67de1763540c2e5f339c480aa39ea9e7",
+      "status": "PASS",
+      "waiting_candidates": 55,
+      "covered_by_15m_supervisor": 55,
+      "source_contract_passed": 55,
+      "failures": 0,
+      "earliest_window_open_utc": "2026-10-28T08:00:00+00:00",
+      "final_prematch_window_minutes": 120,
+      "supervisor_interval_minutes": 15
+    },
+    "quote_telemetry": {
+      "artifact": "evidence/notifications/telegram/MATRIX_TELEGRAM_QUOTE_ATTEMPT_TELEMETRY_AUDIT_LAST.json",
+      "blob_sha": "f96d2d7c899fefabec83534c01fc892140370329",
+      "status": "PASS",
+      "schema": "MATRIX_TELEGRAM_QUOTE_ATTEMPT_V3",
+      "configured_execution_house_count": 14,
+      "configured_execution_houses": [
+        "betano",
+        "betplay",
+        "betsson",
+        "bwin",
+        "codere",
+        "luckia",
+        "mryoker",
+        "rivalo",
+        "rushbet",
+        "sportium",
+        "stake",
+        "wplay",
+        "yajuego",
+        "zamba"
+      ],
+      "real_quote_attempts_total": 4,
+      "remaining_to_minimum_50": 46,
+      "exact_over25_real_coverage_observed_by_house": {
+        "betano": 1,
+        "betplay": 0,
+        "betsson": 0,
+        "bwin": 0,
+        "codere": 0,
+        "luckia": 0,
+        "mryoker": 0,
+        "rivalo": 0,
+        "rushbet": 0,
+        "sportium": 0,
+        "stake": 0,
+        "wplay": 0,
+        "yajuego": 0,
+        "zamba": 0
+      },
+      "synthetic_attempts_included": false
+    },
+    "market_signal_governance": {
+      "signal_authorized_markets": [
+        "OVER_2_5"
+      ],
+      "promotion_required": [
+        "MATCH_RESULT_1X2",
+        "UNDER_2_5",
+        "DOUBLE_CHANCE_1X",
+        "DOUBLE_CHANCE_X2"
+      ],
+      "no_forced_promotion": true
+    }
+  },
+  "workflow_proof": {
+    "workflow": "Telegram Señales Verdes MATRIX",
+    "main_run_id": 40637936345,
+    "main_head_sha": "1d0d541d6fd043e6087f8c02fb654a4030734f2c",
+    "main_run_status": "completed",
+    "main_run_conclusion": "success",
+    "workflow_blob_main": "881a35c6201eba7c1f911fdf82d76733b0338cc1",
+    "workflow_blob_operational": "881a35c6201eba7c1f911fdf82d76733b0338cc1",
+    "exact_workflow_parity": true,
+    "critical_steps": {
+      "parity": "success",
+      "regression_tests": "success",
+      "safety_gates": "success",
+      "multi_market_signal_gate": "success",
+      "market_signal_registry": "success",
+      "telegram_supervisor": "success",
+      "final_window_readiness": "success",
+      "quote_telemetry_v3": "success",
+      "elite_committee": "success",
+      "bankroll": "success",
+      "persistence": "success"
+    }
+  },
+  "signal_contract": {
+    "p_matrix_must_preexist_before_odds": true,
+    "odds_do_not_generate_or_modify_p_matrix": true,
+    "minimum_decimal_odds_exclusive": 1.5,
+    "ev_must_be_positive": true,
+    "production_quality_minimum_p_matrix": 0.6,
+    "production_quality_minimum_revalidated_ev": 0.05,
+    "fresh_pinnacle_primary_reference_required": true,
+    "no_gate_relaxation_to_force_signals": true,
+    "zero_bet_valid": true,
+    "no_post_kickoff_backfill": true,
+    "automatic_wagering": false,
+    "real_money": "BLOCKED"
+  },
+  "interpretation": {
+    "certified_p_matrix_rows_are_not_equal_to_immediate_telegram_candidates": true,
+    "reason": "Telegram applies additional immutable quality, timing, executable-price, sharp-reference and risk gates.",
+    "current_watch_candidates": 56,
+    "current_waiting_for_future_t120_window": 55,
+    "current_real_v3_quote_attempt_sample": 4,
+    "note": "Four real V3 quote attempts are not represented as 14-book physical coverage. The 14-book figure is the configured execution portfolio; physical per-house coverage remains evidence-driven and sparse at this cut."
+  }
+}

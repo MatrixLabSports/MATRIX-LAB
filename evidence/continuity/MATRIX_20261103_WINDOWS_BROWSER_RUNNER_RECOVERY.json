@@ -1,0 +1,79 @@
+{
+  "schema": "MATRIX_WINDOWS_BROWSER_RUNNER_RECOVERY_20261103_V1",
+  "generated_at_utc": "2026-11-03T03:47:51.195Z",
+  "repo": "MatrixLabSports/MATRIX-LAB",
+  "branch": "repair/cor09-world-pipeline",
+  "source_order": [
+    "SOFASCORE",
+    "FLASHSCORE",
+    "AUTHORIZED_BOOKMAKER_BROWSER",
+    "OTHER_APIS"
+  ],
+  "prior_failed_run": {
+    "url": "https://github.com/MatrixLabSports/MATRIX-LAB/actions/runs/41559804839",
+    "status": "FAILURE",
+    "physically_logged_causes": [
+      "POWERSHELL_SCRIPT_EXECUTION_BLOCKED_DURING_ACTION_SETUP_PYTHON",
+      "POWERSHELL7_PWSH_NOT_FOUND"
+    ]
+  },
+  "successful_runtime_preflight": {
+    "url": "https://github.com/MatrixLabSports/MATRIX-LAB/actions/runs/41573887855",
+    "status": "SUCCESS",
+    "local_python_version": "3.11.9",
+    "local_pip_present": true,
+    "powershell7_present": false,
+    "powershell5_present": true,
+    "per_process_execution_policy_bypass_verified": true,
+    "windows_machine_execution_policy_changed": false
+  },
+  "successful_collector": {
+    "url": "https://github.com/MatrixLabSports/MATRIX-LAB/actions/runs/41574129977",
+    "status": "SUCCESS",
+    "runner": "MATRIX-BROWSER-ODDS",
+    "steps_all_success": true,
+    "physical_source_blob_refs": [
+      {
+        "path": "evidence/notifications/telegram/MATRIX_SELF_HOSTED_BROWSER_HEALTH_LAST.json",
+        "github_blob_sha": "81027ab59ca49c6410e889982be41cdfb1598989"
+      },
+      {
+        "path": "evidence/notifications/telegram/MATRIX_BROWSER_CDP_COLLECTION_LAST.json",
+        "github_blob_sha": "f1519ef71f7a2de74dd85968a4f1d95972eeeba0"
+      }
+    ]
+  },
+  "results": {
+    "browser_connection": "PASS_CDP_REACHABLE",
+    "cdp_endpoint": "http://127.0.0.1:9222",
+    "browser_version": "Chrome/156.0.8078.79",
+    "websocket_present": true,
+    "authorized_book_pages_captured": 14,
+    "exact_betano_quotes_certified": 0,
+    "candidates_in_final_window": 0,
+    "signal_sent": false,
+    "signal_generation_restored": false
+  },
+  "fixes": [
+    ".github/workflows/matrix-browser-windows-runtime-preflight.yml",
+    ".github/workflows/matrix-selfhosted-browser-quotes-5m.yml",
+    "tools/windows/persist_matrix_browser_evidence.ps1"
+  ],
+  "remaining": [
+    "CONTINUOUS_RUNNER_REQUIRES_MANUAL_RUN_CMD_WINDOW_OR_PROPER_SERVICE_INSTALLATION",
+    "GOVERNED_FUTURE_PREMATCH_PROBABILITIES_MISSING_FOR_ELIGIBLE_GAMES",
+    "BOOKMAKER_EVENT_MARKET_SELECTION_EXACT_QUOTES_NOT_YET_CERTIFIED",
+    "PINNACLE_SHARP_FRESHNESS_AND_POSITIVE_EV_MUST_PASS",
+    "NO_SIGNAL_EMISSION_WITHOUT_ALL_GATES"
+  ],
+  "safeguards": {
+    "real_money": "BLOCKED",
+    "automatic_wagering": false,
+    "telegram_signals_sent_by_intervention": 0,
+    "model_parameters_modified": false,
+    "calibration_refit": false,
+    "no_fake_quotes": true,
+    "no_post_kickoff_backfill": true
+  },
+  "status": "BROWSER_COLLECTOR_RECOVERED_GREEN_SIGNALS_STILL_NOT_RECOVERED"
+}

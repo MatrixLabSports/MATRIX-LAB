@@ -1,0 +1,82 @@
+{
+  "schema": "MATRIX_COR0203_WORLD_INVENTORY_R710_V1",
+  "revision": "R710",
+  "targets": [
+    "COR02",
+    "COR03"
+  ],
+  "holdout_id": "A22_POST_AUDIT_VIRGIN_HOLDOUT_V1",
+  "prior_head": "712f7af54fd93d79b4711fa60fe89b39c5d63915",
+  "holdout_before": {
+    "window1": 7,
+    "total": 7,
+    "metrics": "SEALED_UNTIL_600"
+  },
+  "current_week_reconciliation": [
+    {
+      "competition": "ATP Challenger Saint-Tropez",
+      "surface": "Hard",
+      "status": "NO_NEW_ADMISSIBLE_ROW",
+      "reason": "Quarterfinal identities already represented by valid R707 observations 1-4; duplicate counting forbidden."
+    },
+    {
+      "competition": "ATP Challenger San Diego 2",
+      "surface": "Hard",
+      "status": "NO_NEW_ADMISSIBLE_ROW",
+      "reason": "Valid observations 5-7 already cover Gomez-Marcondes, Dietrich-Searle and Boyer-Legout; Basavareddy-Hance remains R709 fail-closed; remaining downstream pairing not yet prospectively identity-fixed."
+    }
+  ],
+  "future_inventory": [
+    {
+      "competition": "Eupago Porto Open",
+      "surface": "Hard",
+      "week_start": "2026-09-28",
+      "status": "WAIT_IDENTITY_FIXED_DRAW"
+    },
+    {
+      "competition": "Jingshan Open",
+      "surface": "Hard",
+      "week_start": "2026-09-28",
+      "status": "WAIT_IDENTITY_FIXED_DRAW"
+    },
+    {
+      "competition": "Columbus Challenger",
+      "surface": "Indoor Hard",
+      "week_start": "2026-09-28",
+      "status": "WAIT_IDENTITY_FIXED_DRAW"
+    },
+    {
+      "competition": "Open de Vendee / Mouilleron-le-Captif",
+      "surface": "Indoor Hard",
+      "week_start": "2026-09-28",
+      "status": "WAIT_IDENTITY_FIXED_DRAW"
+    }
+  ],
+  "discovery_result": {
+    "new_identity_fixed_rows": 0,
+    "new_preregistrations": 0,
+    "features_loaded_for_new_candidates": 0,
+    "new_valid_freezes": 0,
+    "new_blocked_events": 0,
+    "holdout_increment": 0
+  },
+  "protections": {
+    "pit_required": true,
+    "anti_leakage_required": true,
+    "historical_backfill": "FORBIDDEN",
+    "silent_imputation": "FORBIDDEN",
+    "odds_to_p_matrix": "FORBIDDEN",
+    "metrics_opened": false,
+    "outcomes_read": 0,
+    "entry_lists_counted_as_matches": 0,
+    "placeholders_counted_as_matches": 0,
+    "duplicates_counted": 0
+  },
+  "holdout_after": {
+    "window1": 7,
+    "total": 7,
+    "metrics": "SEALED_UNTIL_600"
+  },
+  "real_money": "BLOCKED",
+  "next_trigger": "Preregister only after a new ATP Challenger Hard/Indoor-Hard match has two real players and a sufficiently verifiable future start time, before feature acquisition."
+}

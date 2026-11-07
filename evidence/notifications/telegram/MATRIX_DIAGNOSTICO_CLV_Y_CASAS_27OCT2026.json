@@ -1,0 +1,124 @@
+{
+  "clv": {
+    "closing_odds_count": 11,
+    "decision_count": 308,
+    "direct_pinnacle_api_connection": false,
+    "metrics_opened": false,
+    "missed_after_kickoff": 283,
+    "remaining": 289,
+    "strict_fresh_gate_seconds": 120,
+    "target": 300,
+    "transport": "odds-api.net preferred; API-Football /odds bookmaker_id=4 fallback"
+  },
+  "code_checks": {
+    "all_colombia_execution_books_requested": true,
+    "clv_event_pagination_cursor": true,
+    "immutable_telemetry_all_execution_books": true,
+    "immutable_telemetry_v3": true,
+    "telegram_event_pagination_cursor": true,
+    "telegram_pagination_fail_closed": true
+  },
+  "committee": {
+    "name": "MATRIX Sindicato Elite — Comité de Diagnóstico Telegram",
+    "role_count": 22
+  },
+  "diagnosis": {
+    "current_external_root_cause": "ODDS_API_NET_PROVIDER_GATE_HTTP_429_AND_EVENT_SEARCH_PROVIDER_ERROR",
+    "historical_internal_root_cause": "ODDS_API_NET_EVENT_DISCOVERY_SINGLE_PAGE_WAS_DOMINANT_PRE_FIX_FAILURE_MODE",
+    "priority": "INTERNAL_DISCOVERY_DEFECT_REPAIRED_NOW_PROVIDER_GATE_IS_PRIMARY_BLOCKER",
+    "why_first": "The same event-discovery transport feeds multibook execution recovery and sharp-reference recovery. Fixing it can improve both bookmaker coverage and CLV without relaxing probability, EV, freshness, kickoff, or real-money gates."
+  },
+  "generated_at_utc": "2026-10-28T09:16:00+00:00",
+  "houses_post_fix_contract": {
+    "current_real_quote_attempts": 56,
+    "current_schema": "MATRIX_TELEGRAM_QUOTE_ATTEMPT_V3",
+    "execution_book_count": 14,
+    "execution_books": [
+      "betano",
+      "betplay",
+      "betsson",
+      "bwin",
+      "codere",
+      "luckia",
+      "mryoker",
+      "rivalo",
+      "rushbet",
+      "sportium",
+      "stake",
+      "wplay",
+      "yajuego",
+      "zamba"
+    ],
+    "minimum_new_full_portfolio_revalidations_before_new_coverage_conclusion": 50,
+    "recommendation_authorized_now": true
+  },
+  "houses_pre_fix_baseline": {
+    "api_football_status_counts": {
+      "BLOCKED_AUTHORIZED_BOOK_NO_OVER25_LINE": 7,
+      "BLOCKED_AUTHORIZED_BOOK_OVER25_ODDS_NOT_GT_1_50": 94,
+      "BLOCKED_NO_AUTHORIZED_BOOK_COVERAGE": 74,
+      "PASS_EXACT_AUTHORIZED_OVER25_FOUND": 71
+    },
+    "event_not_covered_count": 245,
+    "event_not_covered_fraction": 0.9959349593495935,
+    "final_discard_reason_counts": {
+      "BLOCKED_NONPOSITIVE_EV": 31,
+      "BLOCKED_NO_FRESH_PINNACLE_REFERENCE": 40,
+      "BLOCKED_NO_VALID_EXACT_AUTHORIZED_BOOK_OVER25": 175
+    },
+    "historical_discovery_defect_dominant": true,
+    "interpretation": "Legacy V1/V2 telemetry covered Betano, BetPlay and Rushbet only. It is preserved for causal diagnosis and must not be represented as full 14-book Colombia coverage.",
+    "legacy_quote_attempts": 246,
+    "legacy_three_book_diagnostic": {
+      "all_three_without_exact_over25": 83,
+      "attempt_count": 246,
+      "book_seen_by_house": {
+        "betano": 170,
+        "betplay": 0,
+        "rushbet": 0
+      },
+      "exact_over25_coverage_by_house": {
+        "betano": 163,
+        "betplay": 0,
+        "rushbet": 0
+      },
+      "identity_problem_count": 81,
+      "interpretation": "HISTORICAL_THREE_BOOK_SCHEMA_ONLY_NOT_FULL_COLOMBIA_PORTFOLIO",
+      "totals_market_seen_by_house": {
+        "betano": 170,
+        "betplay": 0,
+        "rushbet": 0
+      }
+    },
+    "odds_api_net_status_counts": {
+      "BLOCKED_EVENT_NOT_COVERED": 245,
+      "BLOCKED_EVENT_SEARCH_PROVIDER_ERROR": 1
+    },
+    "provider_error_count": 1
+  },
+  "provider_gate_physical_proof": {
+    "catalog_all_attempts_http_429": true,
+    "catalog_attempt_http_statuses": [
+      429,
+      429,
+      429,
+      429
+    ],
+    "catalog_http_status": 429,
+    "catalog_network_calls_performed": 4,
+    "catalog_portfolio_status": "BLOCKED_PROVIDER_GATE",
+    "catalog_provider_rows": 0,
+    "current_v3_provider_error_rows": 13,
+    "interpretation": "HTTP_429_PROVIDER_GATE_PREVENTS_PHYSICAL_BOOK_SUPPORT_ADJUDICATION; ZERO_CATALOG_ROWS_MUST_NOT_BE_INTERPRETED_AS_ZERO_SUPPORTED_BOOKS"
+  },
+  "repair_adjudication": {
+    "automatic_wagering": false,
+    "external_provider_coverage_proven_after_fix": false,
+    "internal_code_defects_addressed": true,
+    "next_measurement": "ACCUMULATE_V3_REAL_REVALIDATIONS_AND_COMPARE_EVENT_MATCH_RATE_BOOK_COVERAGE_AND_FRESH_SHARP_RATE",
+    "no_backfill": true,
+    "no_gate_relaxation": true,
+    "real_money": "BLOCKED"
+  },
+  "schema": "MATRIX_DIAGNOSTICO_CLV_Y_CASAS_27OCT2026_V1"
+}

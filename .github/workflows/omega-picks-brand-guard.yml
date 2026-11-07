@@ -1,0 +1,31 @@
+name: OMEGA PICKS Brand Guard
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - repair/cor09-world-pipeline
+    paths:
+      - "config/OMEGA_PICKS_BRAND_SYSTEM.json"
+      - "config/MATRIX_PUBLIC_BRAND_IDENTITY.json"
+      - "assets/brand/omega_picks/**"
+      - "docs/OMEGA_PICKS_BRAND_BOOK_V1.md"
+      - "tools/omega_picks_brand_guard.py"
+      - "tests/test_omega_picks_brand_guard.py"
+
+permissions:
+  contents: read
+
+jobs:
+  brand-guard:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Validate brand system
+        run: PYTHONPATH=. python -m tools.omega_picks_brand_guard
+      - name: Run brand regression test
+        run: PYTHONPATH=. python -m pytest -q tests/test_omega_picks_brand_guard.py

@@ -1,0 +1,72 @@
+{
+  "schema": "MATRIX_TENNIS_BROWSER_FIRST_RECONCILIATION_V2",
+  "target_date_bogota": "2026-10-23",
+  "generated_at_bogota": "2026-10-22T06:32:00-05:00",
+  "source_order": [
+    "SofaScore",
+    "Flashscore",
+    "RapidAPI Tennis"
+  ],
+  "sofascore": {
+    "status": "PHYSICALLY_VERIFIED",
+    "url": "https://www.sofascore.com/es/tennis/2026-10-23",
+    "visible_match_link_count": 88,
+    "count_basis": "unique accessibility URLs containing /tennis/match/",
+    "challenger_tournaments_observed": [
+      "Fort Worth, USA",
+      "Guangzhou, China",
+      "Lisbon, Portugal"
+    ]
+  },
+  "flashscore": {
+    "status": "PHYSICALLY_VERIFIED",
+    "url": "https://www.flashscore.co/tenis/manana/",
+    "visible_match_url_count": 29,
+    "count_basis": "unique accessibility URLs containing /partido/tenis/",
+    "hard_challenger_tournaments_observed": [
+      "Fort Worth (Estados Unidos), dura",
+      "Guangzhou (China), dura"
+    ]
+  },
+  "surface_reconciliation": {
+    "Fort Worth Challenger": "Hard",
+    "Guangzhou Challenger": "Hard",
+    "Lisbon Challenger": "Clay",
+    "lisbon_authority": "ATP_2026_CHALLENGER_CALENDAR_AND_SOFASCORE",
+    "parity_claimed": false
+  },
+  "rapidapi_structured_inventory": {
+    "source_path": "evidence/tennis/world_inventory/2026-10-23/MATRIX_TENNIS_WORLD_INVENTORY.json",
+    "challenger_hard_domain_candidate_count": 4,
+    "candidate_match_ids": [
+      "472142",
+      "530598",
+      "498292",
+      "504120"
+    ]
+  },
+  "reconciliation": {
+    "browser_first_gate": "PASS",
+    "date_alignment": "PASS",
+    "exact_identity_reconciliation_status": "PARTIAL_PROVIDER_STAGE",
+    "parity_claimed": false,
+    "note": "SofaScore and Flashscore expose different accessibility/link representations; counts are not forced equal."
+  },
+  "protections": {
+    "metrics_opened": false,
+    "automatic_wagering": false,
+    "real_money": "BLOCKED",
+    "missing_not_zero": true,
+    "silent_imputation": false,
+    "api_tennis_retired_no_network": true
+  },
+  "latest_reverification": {
+    "verification_date_bogota": "2026-10-22",
+    "sofascore_operational_page": "https://www.sofascore.com/es/tennis/2026-10-23",
+    "flashscore_operational_page": "https://www.flashscore.co/tenis/manana/",
+    "source_order_reconfirmed": true,
+    "browser_first_gate_reconfirmed": "PASS",
+    "counts_overwritten": false,
+    "note": "Reverification confirms target-date pages and source order; prior captured counts are preserved rather than silently replaced because accessibility exposure can vary during the day."
+  }
+}

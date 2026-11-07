@@ -1,0 +1,111 @@
+{
+  "schema": "MATRIX_TELEGRAM_EXECUTION_GUARDRAILS_PROOF_V1",
+  "generated_at_utc": "2026-10-15T22:58:30Z",
+  "repository": "MatrixLabSports/MATRIX-LAB",
+  "branch": "repair/cor09-world-pipeline",
+  "diagnosis_15oct": {
+    "source_reconciliation": "evidence/notifications/telegram/MATRIX_TELEGRAM_RECONCILIATION_15OCT2026_PARTIAL_15_SETTLED_1_OPEN.json",
+    "settled_effective": 15,
+    "wins": 5,
+    "losses": 10,
+    "hit_rate_pct": 33.33,
+    "profit_cop": -215250,
+    "units": -8.61,
+    "loss_score_pattern": {
+      "losses_ending_1_1": 8,
+      "other_losses": [
+        "1-0",
+        "0-0"
+      ]
+    },
+    "stake_breakdown": {
+      "stake_2": {
+        "wins": 0,
+        "losses": 4,
+        "profit_cop": -200000
+      },
+      "stake_3": {
+        "wins": 1,
+        "losses": 0
+      },
+      "stake_1": {
+        "wins": 4,
+        "losses": 6
+      }
+    },
+    "execution_findings": [
+      {
+        "fixture_id": "1630371",
+        "match": "Kuching FA vs Kitchee",
+        "original_signal_odds": 1.9,
+        "original_signal_ev": 0.10757528095999991,
+        "refreshed_decision": "NO_BET",
+        "refreshed_odds": 1.67,
+        "refreshed_ev": -0.026499621472000134,
+        "final_score": "1-1",
+        "outcome": "LOSS"
+      },
+      {
+        "fixture_id": "1630373",
+        "match": "Svay Rieng vs Shanghai Shenhua",
+        "original_signal_odds": 1.57,
+        "original_signal_ev": 0.027974942543000036,
+        "refreshed_decision": "BLOCKED",
+        "refreshed_reason": "NO_EXACT_POLICY_HOUSE_OVER25_ODDS_ABOVE_1_50",
+        "final_score": "0-0",
+        "outcome": "LOSS"
+      }
+    ],
+    "interpretation": "Do not retune P_MATRIX from one bad day. Repair execution timing, same-house quote validity and correlated exposure."
+  },
+  "code_changes": {
+    "main_fix_commit": "d658bc5a6f594e7264548a2124ee46cbb7ba9d4b",
+    "test_commit": "2152da33733120f396641aa9f2dd90ebd0bb6415",
+    "scope_fix_commit": "39125e560eead572a45d82a83627e2399b057046",
+    "final_test_commit": "1446e47363a3bf6550cb60f178b84333899e3b8d",
+    "script_path": "tools/telegram_green_signal_alerts.py",
+    "test_path": "tests/test_telegram_paper_bankroll.py"
+  },
+  "protections": {
+    "new_green_signal_max_lead_minutes": 120,
+    "exact_same_house_over25_revalidation_required": true,
+    "minimum_decimal_odds_exclusive": 1.5,
+    "positive_ev_required_at_final_revalidation": true,
+    "cancel_open_paper_bet_if_ev_nonpositive": true,
+    "cancel_open_paper_bet_if_exact_same_house_quote_missing": true,
+    "max_paper_signals_per_league_per_bogota_day": 3,
+    "existing_sent_signals_use_continuous_quote_revalidation": true,
+    "no_automatic_stake_upgrade": true,
+    "model_probability_parameters_changed": false,
+    "real_money": "BLOQUEADO",
+    "automatic_wagering": false
+  },
+  "physical_validation": {
+    "workflow": "Telegram Señales Verdes MATRIX",
+    "workflow_run_id": 38820557735,
+    "workflow_run_conclusion": "success",
+    "tests": "11 passed in 0.18s",
+    "secrets_validation": "SUCCESS",
+    "supervisor_step": "SUCCESS",
+    "ledger_persistence_step": "SUCCESS",
+    "ledger_persist_commit": "5375adf6e6cfba1a3157b0db8f851d209c0623e9",
+    "ledger_blob_sha": "95ade80ffdc41cbe0ce74fbc64b401393fbfe78f",
+    "script_blob_sha": "eaf383884c4acb8d0a075ec1e88aedb860948a97",
+    "tests_blob_sha": "0ade4b3951b5ba669cd59cbc7d37ea63d9b23b44",
+    "latest_supervisor_run": {
+      "run_at_utc": "2026-10-15T22:57:58+00:00",
+      "football_candidates": 37,
+      "sent_now": 0,
+      "quote_checks": 1,
+      "corrections_now": 0,
+      "delivery_failures_now": 0,
+      "real_money": "BLOQUEADO"
+    }
+  },
+  "result": {
+    "status": "RESOLVED_PHYSICALLY",
+    "past_15oct_results_changed": false,
+    "future_execution_layer_hardened": true,
+    "declaration": "New green signals are held until the final 120-minute window and must pass exact same-house Over 2.5 >1.50 with positive EV; invalid existing signals are cancelled prematch; league/day paper concentration is capped at three."
+  }
+}

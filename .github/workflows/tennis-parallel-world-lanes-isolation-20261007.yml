@@ -1,0 +1,249 @@
+name: Tennis Parallel World Lanes Isolation 2026-10-07
+
+on:
+  push:
+    branches:
+      - repair/cor09-world-pipeline
+    paths:
+      - .github/workflows/tennis-parallel-world-lanes-isolation-20261007.yml
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: tennis-parallel-world-lanes-isolation-20261007
+  cancel-in-progress: false
+
+jobs:
+  isolate-and-initialize:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout latest operational branch
+        uses: actions/checkout@v4
+        with:
+          ref: repair/cor09-world-pipeline
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install test dependency
+        run: python -m pip install pytest
+
+      - name: Capture protected COR0203 baseline
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/matrix-lane-guard
+          python - <<'PY'
+          import hashlib, json
+          from pathlib import Path
+
+          def tree_hash(root: Path) -> tuple[str,int]:
+              h=hashlib.sha256()
+              count=0
+              for p in sorted(x for x in root.rglob("*") if x.is_file()):
+                  rel=p.relative_to(root).as_posix()
+                  h.update(rel.encode())
+                  h.update(b"\0")
+                  h.update(hashlib.sha256(p.read_bytes()).digest())
+                  count+=1
+              return h.hexdigest(),count
+
+          cor=Path("evidence/cor0203")
+          tree,file_count=tree_hash(cor)
+          binding=json.loads((cor/"runtime/MATRIX_COR0203_MODEL_BINDING_R707.json").read_text())
+          uniq=json.loads((cor/"runtime/MATRIX_COR0203_PHYSICAL_UNIQUENESS_LAST.json").read_text())
+          baseline={
+            "cor0203_tree_sha256":tree,
+            "cor0203_file_count":file_count,
+            "unique_calibration_observations":uniq["unique_calibration_observations"],
+            "physical_frozen_rows":uniq["physical_frozen_rows"],
+            "duplicates_quarantined":uniq["duplicate_observations_quarantined"],
+            "remaining_to_200":uniq["unique_remaining_to_200"],
+            "metrics_opened":uniq["metrics_opened"],
+            "outcomes_read":uniq["outcomes_read"],
+            "integrity_result":uniq["result"],
+            "holdout_id":binding["holdout_id"],
+            "elo_identity":binding["candidates"]["elo"]["identity"],
+            "elo_sha256":binding["candidates"]["elo"]["sha256"],
+            "glicko_identity":binding["candidates"]["glicko"]["identity"],
+            "glicko_sha256":binding["candidates"]["glicko"]["sha256"],
+            "adjudication_sha256":binding["adjudication"]["sha256"],
+          }
+          Path("/tmp/matrix-lane-guard/before.json").write_text(json.dumps(baseline,sort_keys=True))
+          print(json.dumps(baseline,sort_keys=True))
+          PY
+
+      - name: Run lane isolation tests
+        run: |
+          python -m pytest -q tests/test_tennis_parallel_lane_registry.py
+
+      - name: Validate registry
+        run: |
+          python -m tools.tennis_parallel_lane_registry --validate-only
+
+      - name: Initialize 35 isolated research lanes
+        run: |
+          rm -rf evidence/tennis_parallel_lanes
+          python -m tools.tennis_parallel_lane_registry             --initialize-out evidence/tennis_parallel_lanes
+
+      - name: Prove protected COR0203 tree unchanged
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import hashlib, json
+          from pathlib import Path
+
+          def tree_hash(root: Path) -> tuple[str,int]:
+              h=hashlib.sha256()
+              count=0
+              for p in sorted(x for x in root.rglob("*") if x.is_file()):
+                  rel=p.relative_to(root).as_posix()
+                  h.update(rel.encode())
+                  h.update(b"\0")
+                  h.update(hashlib.sha256(p.read_bytes()).digest())
+                  count+=1
+              return h.hexdigest(),count
+
+          before=json.loads(Path("/tmp/matrix-lane-guard/before.json").read_text())
+          cor=Path("evidence/cor0203")
+          after_tree,after_count=tree_hash(cor)
+          binding=json.loads((cor/"runtime/MATRIX_COR0203_MODEL_BINDING_R707.json").read_text())
+          uniq=json.loads((cor/"runtime/MATRIX_COR0203_PHYSICAL_UNIQUENESS_LAST.json").read_text())
+          assert after_tree==before["cor0203_tree_sha256"], (before["cor0203_tree_sha256"],after_tree)
+          assert after_count==before["cor0203_file_count"]
+          assert uniq["unique_calibration_observations"]==before["unique_calibration_observations"]
+          assert uniq["physical_frozen_rows"]==before["physical_frozen_rows"]
+          assert uniq["duplicate_observations_quarantined"]==before["duplicates_quarantined"]
+          assert uniq["metrics_opened"]==before["metrics_opened"] is False
+          assert uniq["outcomes_read"]==before["outcomes_read"]==0
+          assert uniq["result"]==before["integrity_result"]=="PASS"
+          assert binding["holdout_id"]==before["holdout_id"]=="A22_POST_AUDIT_VIRGIN_HOLDOUT_V1"
+          assert binding["candidates"]["elo"]["sha256"]==before["elo_sha256"]
+          assert binding["candidates"]["glicko"]["sha256"]==before["glicko_sha256"]
+          assert binding["adjudication"]["sha256"]==before["adjudication_sha256"]
+          assert not list(Path("evidence/cor0203").glob("**/tennis_parallel_lanes*"))
+          print("COR0203_BYTE_FOR_BYTE_UNCHANGED: PASS")
+          print("COR0203_UNIQUE_OBSERVATIONS:", uniq["unique_calibration_observations"])
+          print("COR0203_TREE_SHA256:", after_tree)
+          PY
+
+      - name: Build physical isolation certificate
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p evidence/tennis_world_model_expansion/2026-10-07
+          python - <<'PY'
+          import hashlib, json
+          from datetime import datetime, timezone
+          from pathlib import Path
+
+          before=json.loads(Path("/tmp/matrix-lane-guard/before.json").read_text())
+          registry=json.loads(Path("config/tennis_model_lane_registry_v1.json").read_text())
+          manifest=json.loads(Path("evidence/tennis_parallel_lanes/manifest.json").read_text())
+          state_files=sorted(Path("evidence/tennis_parallel_lanes").glob("*/state.json"))
+
+          states=[json.loads(p.read_text()) for p in state_files]
+          assert len(states)==35
+          assert all(s["status"]=="RESEARCH_ONLY_NOT_TRAINED" for s in states)
+          assert all(s["prospective_observations"]==0 for s in states)
+          assert all(s["holdout_status"]=="NOT_CREATED" for s in states)
+          assert all(s["candidate_model_status"]=="NOT_TRAINED" for s in states)
+          assert all(s["feeds_cor0203"] is False for s in states)
+          assert all(s["metrics_opened"] is False for s in states)
+
+          cert={
+            "schema":"MATRIX_TENNIS_WORLD_MODEL_EXPANSION_ISOLATION_CERTIFICATE_V1",
+            "generated_at_utc":datetime.now(timezone.utc).replace(microsecond=0).isoformat(),
+            "status":"PASS_PHYSICAL_ISOLATION_VERIFIED",
+            "architecture":{
+              "registered_lane_count":registry["lane_count"],
+              "active_existing_lane_count":registry["active_governed_lane_count"],
+              "new_research_lane_count":registry["research_only_lane_count"],
+              "active_legacy_lane_id":registry["active_legacy_lane_id"],
+              "new_lanes_initialized":manifest["initialized_research_lane_count"],
+              "new_models_trained":0,
+              "new_holdouts_created":0,
+              "new_metrics_opened":0
+            },
+            "protected_cor0203":{
+              **before,
+              "tree_sha256_after":before["cor0203_tree_sha256"],
+              "byte_for_byte_unchanged":True,
+              "holdout_modified":False,
+              "model_binding_modified":False
+            },
+            "isolation_rules":{
+              "new_lanes_write_under":"evidence/tennis_parallel_lanes/<LANE_ID>",
+              "new_lanes_may_write_evidence_cor0203":False,
+              "new_lanes_may_reuse_cor0203_holdout":False,
+              "new_lanes_may_reuse_cor0203_observations":False,
+              "new_lanes_require_independent_historical_dataset":True,
+              "new_lanes_require_independent_candidate_model_adjudication":True,
+              "new_lanes_require_independent_holdout_before_calibration":True,
+              "missing_not_zero":True,
+              "silent_imputation":False,
+              "odds_to_probability":False,
+              "automatic_model_promotion":False,
+              "automatic_wagering":False,
+              "real_money":"BLOCKED"
+            }
+          }
+          blob=json.dumps(cert,sort_keys=True,separators=(",",":"),ensure_ascii=False).encode()
+          cert["sha256_without_self"]=hashlib.sha256(blob).hexdigest()
+          out=Path("evidence/tennis_world_model_expansion/2026-10-07/MATRIX_TENNIS_WORLD_EXPANSION_ISOLATION_CERTIFICATE.json")
+          out.write_text(json.dumps(cert,indent=2,sort_keys=True,ensure_ascii=False)+"\n")
+          print(json.dumps({
+            "status":cert["status"],
+            "registered_lanes":cert["architecture"]["registered_lane_count"],
+            "new_research_lanes":cert["architecture"]["new_research_lane_count"],
+            "legacy_unique":cert["protected_cor0203"]["unique_calibration_observations"],
+            "legacy_tree_sha256":cert["protected_cor0203"]["cor0203_tree_sha256"],
+            "new_models_trained":0,
+            "new_holdouts_created":0
+          },sort_keys=True))
+          PY
+
+      - name: Ensure only parallel architecture evidence is dirty
+        shell: bash
+        run: |
+          set -euo pipefail
+          if ! git diff --quiet -- evidence/cor0203; then
+            echo "PROTECTED_COR0203_DIRTY"
+            git diff --name-only -- evidence/cor0203
+            exit 1
+          fi
+          git status --short
+
+      - name: Persist isolated lane states and certificate
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name matrix-tennis-world-expansion
+          git config user.email matrix-tennis-world-expansion@users.noreply.github.com
+          git add evidence/tennis_parallel_lanes evidence/tennis_world_model_expansion/2026-10-07
+          CHANGED="$(git diff --cached --name-only)"
+          if echo "$CHANGED" | grep -Ev '^(evidence/tennis_parallel_lanes/|evidence/tennis_world_model_expansion/2026-10-07/)' ; then
+            echo "UNAUTHORIZED_STAGED_PATH"
+            echo "$CHANGED"
+            exit 1
+          fi
+          git commit -m "evidence(tennis): initialize 35 isolated world model lanes"
+          for attempt in 1 2 3 4; do
+            git fetch origin repair/cor09-world-pipeline
+            if ! git rebase origin/repair/cor09-world-pipeline; then
+              git rebase --abort || true
+              exit 1
+            fi
+            if git push origin HEAD:repair/cor09-world-pipeline; then
+              exit 0
+            fi
+            sleep $((attempt*2))
+          done
+          exit 1

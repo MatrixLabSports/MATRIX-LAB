@@ -1,0 +1,64 @@
+{
+  "schema": "MATRIX_FOOTBALL_19OCT_CALENDAR_GATE_PREPARATION_V1",
+  "generated_at_utc": "2026-10-18T15:55:00Z",
+  "bogota_date": "2026-10-18",
+  "target_date_bogota": "2026-10-19",
+  "source_order": [
+    "SofaScore",
+    "Flashscore",
+    "API-Football"
+  ],
+  "source_checks": {
+    "sofascore": {
+      "checked": true,
+      "url": "https://www.sofascore.com/es/football/2026-10-19",
+      "page_loaded": true,
+      "note": "Calendar page for 2026-10-19 opened physically in Opera."
+    },
+    "flashscore": {
+      "checked": true,
+      "attempted_urls": [
+        "https://www.flashscore.com/football/?d=1",
+        "https://www.flashscore.com/football/?d=2"
+      ],
+      "observed_date_label": "domingo, 18 de octubre de 2026",
+      "reconciled_to_target_date": false,
+      "note": "Flashscore browser state did not expose a verified 19-OCT date snapshot; fail closed."
+    },
+    "api_football": {
+      "checked": true,
+      "daily_report_present": false,
+      "latest_daily_prematch_report_date": "2026-10-18",
+      "note": "No governed 2026-10-19 prematch report exists yet."
+    }
+  },
+  "workflow": {
+    "name": "MATRIX Football Daily Governed Pipeline",
+    "workflow_file": ".github/workflows/football-daily-governed-pipeline.yml",
+    "latest_seen_run_number": 51,
+    "latest_seen_run_conclusion": "success",
+    "autonomous_next_day_schedule_bogota": "18:10",
+    "backup_next_day_schedule_bogota": "20:10",
+    "explicit_dispatch_supported_by_workflow": true,
+    "connector_dispatch_with_inputs_available": false
+  },
+  "telegram": {
+    "canonical_ledger_blob_sha": "a3685fdfdf8bbaf093eddca1565ead1b5ad911ce",
+    "sent_signals_with_2026_10_19_kickoff": 0
+  },
+  "gates": {
+    "calendar_reconciliation_complete": false,
+    "p_matrix_19oct_present": false,
+    "freeze_19oct_present": false,
+    "physical_odds_ev_19oct_present": false,
+    "telegram_green_signals_19oct": 0
+  },
+  "protections": {
+    "no_forced_volume": true,
+    "no_silent_backfill": true,
+    "odds_used_to_generate_probability": false,
+    "automatic_wagering": false,
+    "real_money": "BLOCKED"
+  },
+  "adjudication": "NO_BET_FAIL_CLOSED_UNTIL_SOFASCORE_FLASHSCORE_RECONCILIATION_AND_GOVERNED_19OCT_PIPELINE_OUTPUT_EXIST"
+}

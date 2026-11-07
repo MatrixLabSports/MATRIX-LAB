@@ -1,0 +1,266 @@
+name: ATP Challenger Clay Lane Bootstrap 2026-10-07
+
+on:
+  push:
+    branches:
+      - repair/cor09-world-pipeline
+    paths:
+      - .github/workflows/tennis-clay-lane-bootstrap-20261007.yml
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: tennis-clay-lane-bootstrap-20261007
+  cancel-in-progress: false
+
+jobs:
+  bootstrap:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - name: Checkout operational branch
+        uses: actions/checkout@v4
+        with:
+          ref: repair/cor09-world-pipeline
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install test dependency
+        run: python -m pip install pytest
+
+      - name: Capture protected COR0203 tree before bootstrap
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/clay-guard
+          python - <<'PY'
+          import hashlib,json
+          from pathlib import Path
+          def tree_hash(root):
+              h=hashlib.sha256(); n=0
+              for p in sorted(x for x in Path(root).rglob("*") if x.is_file()):
+                  h.update(p.relative_to(root).as_posix().encode()); h.update(b"\0")
+                  h.update(hashlib.sha256(p.read_bytes()).digest()); n+=1
+              return h.hexdigest(),n
+          tree,n=tree_hash("evidence/cor0203")
+          uniq=json.loads(Path("evidence/cor0203/runtime/MATRIX_COR0203_PHYSICAL_UNIQUENESS_LAST.json").read_text())
+          bind=json.loads(Path("evidence/cor0203/runtime/MATRIX_COR0203_MODEL_BINDING_R707.json").read_text())
+          before={
+            "tree_sha256":tree,
+            "file_count":n,
+            "unique":uniq["unique_calibration_observations"],
+            "physical":uniq["physical_frozen_rows"],
+            "duplicates":uniq["duplicate_observations_quarantined"],
+            "remaining200":uniq["unique_remaining_to_200"],
+            "metrics_opened":uniq["metrics_opened"],
+            "outcomes_read":uniq["outcomes_read"],
+            "holdout_id":bind["holdout_id"],
+            "elo_sha256":bind["candidates"]["elo"]["sha256"],
+            "glicko_sha256":bind["candidates"]["glicko"]["sha256"]
+          }
+          Path("/tmp/clay-guard/before.json").write_text(json.dumps(before,sort_keys=True))
+          print(json.dumps(before,sort_keys=True))
+          PY
+
+      - name: Run Clay bootstrap regression tests
+        run: python -m pytest -q tests/test_tennis_clay_lane_bootstrap.py tests/test_tennis_parallel_lane_registry.py
+
+      - name: Build isolated historical PIT dataset and ELO candidate
+        run: |
+          python -m tools.tennis_clay_lane_bootstrap             --out-root evidence/tennis_parallel_lanes/ATP_CHALLENGER_MEN_SINGLES_CLAY/bootstrap
+
+      - name: Update only Clay lane state
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import hashlib,json
+          from pathlib import Path
+          lane=Path("evidence/tennis_parallel_lanes/ATP_CHALLENGER_MEN_SINGLES_CLAY")
+          state_path=lane/"state.json"
+          state=json.loads(state_path.read_text())
+          manifest=json.loads((lane/"bootstrap/bootstrap_manifest.json").read_text())
+          elo=json.loads((lane/"bootstrap/elo_candidate_v1.json").read_text())
+          assert state["lane_id"]=="ATP_CHALLENGER_MEN_SINGLES_CLAY"
+          assert state["feeds_cor0203"] is False
+          assert state["cor0203_holdout_reuse"] is False
+          assert state["cor0203_observation_reuse"] is False
+          assert state["prospective_observations"]==0
+          state.update({
+            "status":"RESEARCH_ONLY_HISTORICAL_OOS_EVALUATED",
+            "historical_dataset_status":"PIT_BUILT",
+            "historical_dataset_rows":manifest["audit"]["clean_completed_rows"],
+            "historical_dataset_sha256":manifest["dataset_sha256"],
+            "candidate_model_status":elo["status"],
+            "candidate_model_identity":elo["candidate_identity"],
+            "candidate_model_sha256":manifest["elo_candidate_sha256"],
+            "holdout_status":"NOT_CREATED_PENDING_ADJUDICATION",
+            "prospective_observations":0,
+            "metrics_opened":False,
+            "feeds_cor0203":False,
+            "cor0203_holdout_reuse":False,
+            "cor0203_observation_reuse":False,
+            "automatic_model_promotion":False,
+            "automatic_wagering":False,
+            "real_money":"BLOCKED"
+          })
+          raw=json.dumps({k:v for k,v in state.items() if k!="sha256_without_self"},sort_keys=True,separators=(",",":")).encode()
+          state["sha256_without_self"]=hashlib.sha256(raw).hexdigest()
+          state_path.write_text(json.dumps(state,indent=2,sort_keys=True)+"\n")
+          print(json.dumps({
+            "lane":state["lane_id"],
+            "historical_rows":state["historical_dataset_rows"],
+            "candidate":state["candidate_model_identity"],
+            "candidate_status":state["candidate_model_status"],
+            "holdout_status":state["holdout_status"],
+            "prospective_observations":0
+          },sort_keys=True))
+          PY
+
+      - name: Prove legacy 123/600 untouched
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import hashlib,json
+          from pathlib import Path
+          def tree_hash(root):
+              h=hashlib.sha256(); n=0
+              for p in sorted(x for x in Path(root).rglob("*") if x.is_file()):
+                  h.update(p.relative_to(root).as_posix().encode()); h.update(b"\0")
+                  h.update(hashlib.sha256(p.read_bytes()).digest()); n+=1
+              return h.hexdigest(),n
+          before=json.loads(Path("/tmp/clay-guard/before.json").read_text())
+          after,n=tree_hash("evidence/cor0203")
+          assert after==before["tree_sha256"]
+          assert n==before["file_count"]
+          uniq=json.loads(Path("evidence/cor0203/runtime/MATRIX_COR0203_PHYSICAL_UNIQUENESS_LAST.json").read_text())
+          bind=json.loads(Path("evidence/cor0203/runtime/MATRIX_COR0203_MODEL_BINDING_R707.json").read_text())
+          assert uniq["unique_calibration_observations"]==before["unique"]==123
+          assert uniq["physical_frozen_rows"]==before["physical"]
+          assert uniq["duplicate_observations_quarantined"]==before["duplicates"]
+          assert uniq["metrics_opened"] is False
+          assert uniq["outcomes_read"]==0
+          assert bind["holdout_id"]==before["holdout_id"]=="A22_POST_AUDIT_VIRGIN_HOLDOUT_V1"
+          assert bind["candidates"]["elo"]["sha256"]==before["elo_sha256"]
+          assert bind["candidates"]["glicko"]["sha256"]==before["glicko_sha256"]
+          print("LEGACY_COR0203_BYTE_FOR_BYTE_UNCHANGED: PASS")
+          print("LEGACY_UNIQUE:",uniq["unique_calibration_observations"])
+          print("LEGACY_TREE_SHA256:",after)
+          PY
+
+      - name: Build Clay physical certificate
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p evidence/tennis_world_model_expansion/2026-10-07
+          python - <<'PY'
+          import hashlib,json
+          from datetime import datetime,timezone
+          from pathlib import Path
+          before=json.loads(Path("/tmp/clay-guard/before.json").read_text())
+          lane=Path("evidence/tennis_parallel_lanes/ATP_CHALLENGER_MEN_SINGLES_CLAY")
+          manifest=json.loads((lane/"bootstrap/bootstrap_manifest.json").read_text())
+          elo=json.loads((lane/"bootstrap/elo_candidate_v1.json").read_text())
+          state=json.loads((lane/"state.json").read_text())
+          cert={
+            "schema":"MATRIX_ATP_CHALLENGER_CLAY_LANE_BOOTSTRAP_CERT_V1",
+            "generated_at_utc":datetime.now(timezone.utc).replace(microsecond=0).isoformat(),
+            "status":"PASS_ISOLATED_HISTORICAL_PIT_BOOTSTRAP",
+            "lane_id":"ATP_CHALLENGER_MEN_SINGLES_CLAY",
+            "historical_pit":{
+              "raw_clay_rows":manifest["audit"]["raw_clay_rows"],
+              "clean_completed_rows":manifest["audit"]["clean_completed_rows"],
+              "excluded":manifest["audit"]["excluded"],
+              "unique_tournaments":manifest["audit"]["unique_tournaments"],
+              "unique_players":manifest["audit"]["unique_players"],
+              "duplicate_physical_key_groups":manifest["audit"]["duplicate_physical_key_groups"],
+              "splits":manifest["splits"],
+              "dataset_sha256":manifest["dataset_sha256"],
+              "source_sha256":manifest["source"]["verified_source_sha256"]
+            },
+            "elo_candidate":{
+              "identity":elo["candidate_identity"],
+              "chosen_k":elo["parameter_selection"]["chosen_k"],
+              "validation_candidates":elo["parameter_selection"]["candidates"],
+              "final_historical_oos":elo["final_historical_oos"],
+              "baseline_0_5":elo["baseline_0_5"],
+              "brier_improvement_vs_0_5":elo["brier_improvement_vs_0_5"],
+              "log_loss_improvement_vs_0_5":elo["log_loss_improvement_vs_0_5"],
+              "status":elo["status"],
+              "candidate_sha256":manifest["elo_candidate_sha256"],
+              "automatic_promotion":False
+            },
+            "prospective":{
+              "holdout_status":state["holdout_status"],
+              "prospective_observations":0,
+              "metrics_opened":False
+            },
+            "legacy_cor0203":{
+              **before,
+              "tree_sha256_after":before["tree_sha256"],
+              "byte_for_byte_unchanged":True,
+              "holdout_modified":False,
+              "models_modified":False
+            },
+            "protections":{
+              "historical_backfill_into_prospective_holdout":False,
+              "cor0203_reused":False,
+              "missing_not_zero":True,
+              "silent_imputation":False,
+              "odds_to_probability":False,
+              "automatic_wagering":False,
+              "real_money":"BLOCKED"
+            }
+          }
+          raw=json.dumps(cert,sort_keys=True,separators=(",",":")).encode()
+          cert["sha256_without_self"]=hashlib.sha256(raw).hexdigest()
+          p=Path("evidence/tennis_world_model_expansion/2026-10-07/MATRIX_ATP_CHALLENGER_CLAY_BOOTSTRAP_CERT.json")
+          p.write_text(json.dumps(cert,indent=2,sort_keys=True)+"\n")
+          print(json.dumps({
+            "status":cert["status"],
+            "historical_rows":cert["historical_pit"]["clean_completed_rows"],
+            "oos_n":cert["elo_candidate"]["final_historical_oos"]["n"],
+            "elo_status":cert["elo_candidate"]["status"],
+            "legacy_unique":cert["legacy_cor0203"]["unique"],
+            "prospective_holdout":cert["prospective"]["holdout_status"]
+          },sort_keys=True))
+          PY
+
+      - name: Enforce allowed paths only
+        shell: bash
+        run: |
+          set -euo pipefail
+          if ! git diff --quiet -- evidence/cor0203; then
+            echo "PROTECTED_COR0203_DIRTY"
+            git diff --name-only -- evidence/cor0203
+            exit 1
+          fi
+          git add             evidence/tennis_parallel_lanes/ATP_CHALLENGER_MEN_SINGLES_CLAY             evidence/tennis_world_model_expansion/2026-10-07/MATRIX_ATP_CHALLENGER_CLAY_BOOTSTRAP_CERT.json
+          CHANGED="$(git diff --cached --name-only)"
+          if echo "$CHANGED" | grep -Ev '^(evidence/tennis_parallel_lanes/ATP_CHALLENGER_MEN_SINGLES_CLAY/|evidence/tennis_world_model_expansion/2026-10-07/MATRIX_ATP_CHALLENGER_CLAY_BOOTSTRAP_CERT.json$)' ; then
+            echo "UNAUTHORIZED_PATH"
+            echo "$CHANGED"
+            exit 1
+          fi
+
+      - name: Persist Clay bootstrap evidence
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name matrix-tennis-clay-bootstrap
+          git config user.email matrix-tennis-clay-bootstrap@users.noreply.github.com
+          git commit -m "evidence(tennis): bootstrap isolated ATP Challenger Clay PIT lane"
+          for attempt in 1 2 3 4; do
+            git fetch origin repair/cor09-world-pipeline
+            if ! git rebase origin/repair/cor09-world-pipeline; then git rebase --abort || true; exit 1; fi
+            if git push origin HEAD:repair/cor09-world-pipeline; then exit 0; fi
+            sleep $((attempt*2))
+          done
+          exit 1

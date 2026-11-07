@@ -1,0 +1,107 @@
+{
+  "schema": "MATRIX_10OCT2026_FULL_OPERATIONAL_CERTIFICATE_V1",
+  "target_date_bogota": "2026-10-10",
+  "generated_at_utc": "2026-10-10T01:49:00Z",
+  "browser_first": {
+    "sofascore": {
+      "football_visible_full_day_reference": 1449,
+      "tennis_visible_full_day_reference": 275,
+      "evidence_screenshot_file": "1002210664.jpg",
+      "evidence_screenshot_sha256": "c119842536d81fcdc9059c3f9bb6a42f97dd14de1fbb5892579933436b315ec9"
+    },
+    "flashscore": {
+      "football_status": "DATE_SELECTOR_STALE_BLOCKED",
+      "tennis_status": "DATE_SELECTOR_STALE_BLOCKED",
+      "physically_visible_date_selector": "viernes, 9 de octubre de 2026",
+      "attempted_10oct_and_11oct_urls": true,
+      "guessed_counts": false
+    },
+    "source_order": "SOFASCORE_THEN_FLASHSCORE_THEN_STRUCTURED_APIS",
+    "canonical_multisource_denominator_open": false
+  },
+  "football": {
+    "workflow_run_id": 38014424151,
+    "workflow_name": "MATRIX Football Daily Governed Pipeline",
+    "workflow_conclusion": "success",
+    "cycle_id": "20261010T014609Z",
+    "fixtures_received": 1521,
+    "eligible_future_fixtures": 1506,
+    "canonical_ready_input_count": 379,
+    "freeze_candidate_event_count": 335,
+    "new_freeze_event_count": 7,
+    "p_matrix_scored_count": 335,
+    "p_matrix_blocked_count": 44,
+    "over25": {
+      "market_governance_status": "PASS_PROMOTED_GOVERNED_P_MATRIX_SIGNAL_ONLY",
+      "bet_shadow_count": 45,
+      "no_bet_count": 93,
+      "blocked_count": 241,
+      "diagnostic_only_count": 1,
+      "minimum_decimal_odds_exclusive": 1.5,
+      "positive_ev_required": true,
+      "probability_frozen_before_odds_query": true
+    },
+    "telegram": {
+      "workflow_run_id": 38014568373,
+      "conclusion": "success",
+      "sent_now": 45,
+      "delivery_failures_now": 0,
+      "duplicate_green_messages_suppressed": 19,
+      "quote_checks": 45,
+      "total_green_messages_after_run": 69,
+      "ledger_blob_sha": "200142fd21167b48bf05fb8a6f2ab0f0e2a310a0",
+      "ledger_head_commit": "31172ad5eb72a664b509e98ddcf343fd1635fa2b"
+    }
+  },
+  "tennis": {
+    "workflow_run_id": 38014534834,
+    "workflow_name": "Tennis World Exact Day 2026-10-10 API Audit",
+    "workflow_conclusion": "success",
+    "sofa_visible_reference_count": 275,
+    "paid_providers": {
+      "rapidapi_tennis_unique_match_count": 73,
+      "api_tennis_unique_match_count": 123,
+      "exact_union_count": 196,
+      "neutral_exact_overlap_count": 0,
+      "rapidapi_only_neutral_count": 73,
+      "api_tennis_only_neutral_count": 123
+    },
+    "primary_provider_breakdown": {
+      "ATP": 21,
+      "WTA": 15,
+      "ITF": 37,
+      "singles": 70,
+      "doubles": 3,
+      "ATP_CHALLENGER": 8
+    },
+    "provider_audit_status": "PASS_PROVIDER_CAPTURE_WORLD_UNSEALED",
+    "automatic_model_feed": false,
+    "cor0203_model_admission": "BLOCKED_PENDING_FLASHSCORE_10OCT_PHYSICAL_CROSSCHECK",
+    "cor0203_current_unique_calibration_observations": 130,
+    "cor0203_remaining_to_200": 70,
+    "metrics_opened": false,
+    "real_money": "BLOCKED"
+  },
+  "live_tennis": {
+    "status": "ACTIVE_RESEARCH_MONITORING",
+    "global_unique_match_count": 64,
+    "settled_quality_valid_lane_matches": 43,
+    "latest_cumulative_gate_generated_at_utc": "2026-10-10T00:24:29+00:00",
+    "leading_lane": "itf|women|hard",
+    "leading_lane_settled": 17,
+    "leading_lane_remaining_to_30": 13
+  },
+  "prior_user_block": {
+    "Instituto_Cordoba_vs_Boca_Juniors": "WON_USER_PHYSICAL_AND_PROVIDER_FINAL_CONFIRMED",
+    "Union_Santa_Fe_vs_Defensa_Y_Justicia": "USER_EXECUTION_PENDING_PHYSICAL_SETTLEMENT",
+    "executed_bets_in_prior_block": 18
+  },
+  "protections": {
+    "automatic_wagering": false,
+    "odds_used_to_generate_probability": false,
+    "real_money": "BLOCKED",
+    "no_silent_imputation": true,
+    "missing_not_zero": true
+  },
+  "adjudication": "FOOTBALL_10OCT_PRODUCTION_AND_TELEGRAM_DELIVERY_COMPLETE; TENNIS_DUAL_PAID_PROVIDER_CAPTURE_COMPLETE_BUT_CANONICAL_MODEL_ADMISSION_FAIL_CLOSED_UNTIL_FLASHSCORE_10OCT_IS_PHYSICALLY_READABLE"
+}

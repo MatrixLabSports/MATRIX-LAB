@@ -1,0 +1,101 @@
+{
+  "schema": "MATRIX_CONTINUITY_AUDIT_V1",
+  "audit_at_utc": "2026-10-09T12:25:41Z",
+  "operational_date_bogota": "2026-10-09",
+  "branch": "repair/cor09-world-pipeline",
+  "status": "BLOCKED_PARTIAL_WITH_VERIFIED_SETTLEMENT_ADVANCE",
+  "run_ids": {
+    "tennis_live_bulk_latest_failed": 37929246545,
+    "tennis_live_bulk_latest_success": 37896820419,
+    "tennis_live_final_latest_skipped": 37929287732,
+    "tennis_live_final_latest_success": 37912421282,
+    "tennis_live_cumulative_latest_success": 37912459441,
+    "telegram_latest_success": 37926475107,
+    "football_final_workflow_latest_success": 37908555696,
+    "tennis_hard_scheduler_latest_success": 37927185425
+  },
+  "tennis_live": {
+    "last_physical_capture_at_utc": "2026-10-09T05:38:24+00:00",
+    "last_cumulative_reconcile_at_utc": "2026-10-09T09:37:38+00:00",
+    "global_unique_matches": 53,
+    "final_quality_valid": 41,
+    "itf_women_hard": {
+      "final_quality_valid": 17,
+      "threshold": 30,
+      "remaining": 13
+    },
+    "shanghai": {
+      "source_blob_sha": "7401579e3eb5342c6524d816c30c1d5815ffd90e",
+      "index_blob_sha": "edba1f8384ba5b306dd1ed1c696ee46c7c3d1dbb",
+      "source_tournament": "Shanghai",
+      "source_tour": "atp",
+      "unique_matches": 3,
+      "unique_state_keys": 12,
+      "final_standard": 2,
+      "pending_final": 1,
+      "source_index_state_keys_equal": true,
+      "rebuild_status": "NO_CHANGE_SOURCE_LEDGER_UNCHANGED"
+    },
+    "bulk_failure_reason": "DAILY_QUOTA_RESERVE_GATE_BLOCKED",
+    "model_status": "RESEARCH_ONLY",
+    "probability_output_status": "SEALED",
+    "metrics_status": "SEALED",
+    "final_settlement_fallback": {
+      "attempt": "COMMENT_ONLY_WORKFLOW_PUSH",
+      "result": "BLOCKED_BY_TOOL_SAFETY_CHECKS",
+      "commit_created": false
+    }
+  },
+  "football": {
+    "prospective_final_previous": 1245,
+    "prospective_final_current": 1256,
+    "new_final_only_settlements": 11,
+    "last_physical_settlement_at_utc": "2026-10-09T11:59:28+00:00",
+    "settlement_source": "evidence/api_football/prospective_market_freeze/settlement_sync_last.json",
+    "settlement_source_blob_sha": "e27d98815a2cddbc50672243c65c2952de68d867",
+    "pending": 793,
+    "blocked": 39,
+    "authorized_bets_20261009": 0,
+    "manual_09oct": {
+      "known_registered": 17,
+      "previously_certified": 15,
+      "additional_uncertified": 2,
+      "certification_status": "NOT_RECONCILED",
+      "economic_settlement_change_verified": false
+    },
+    "physical_settlement_fallback": {
+      "attempt": "COMMENT_ONLY_WORKFLOW_PUSH",
+      "result": "BLOCKED_BY_TOOL_SAFETY_CHECKS",
+      "commit_created": false,
+      "note": "Subsequently found physical settlement at 11:59Z; no fallback needed."
+    }
+  },
+  "tennis_hard": {
+    "holdout_valid_unique": 128,
+    "window_target": 200,
+    "remaining": 72,
+    "latest_scheduler_run": 37927185425,
+    "scheduler_status": "PASS",
+    "new_unique_freezes_verified": 0
+  },
+  "telegram": {
+    "latest_successful_run": 37926475107,
+    "latest_ledger_run_at_utc": "2026-10-09T12:06:22+00:00",
+    "historical_signals": 20,
+    "historical_settlements": 2,
+    "new_signals_verified": 0,
+    "market_governance_conflict": "0 BET official report vs SHADOW candidates",
+    "status": "BLOCKED_NEW_SIGNAL_AUTHORIZATION"
+  },
+  "protections": {
+    "real_money": "BLOCKED",
+    "automatic_wagering": false,
+    "missing_not_zero": true,
+    "silent_imputation": false,
+    "odds_to_p": false,
+    "backfill": false,
+    "tuning": false,
+    "settlement_final_only": true
+  },
+  "outcome": "PASS_11_FOOTBALL_FINAL_ONLY;BLOCKED_LIVE_API_QUOTA_AND_WORKFLOW_COMMENT_WRITES;NO_CHANGE_TENNIS_LIVE_HARD_SHANGHAI"
+}

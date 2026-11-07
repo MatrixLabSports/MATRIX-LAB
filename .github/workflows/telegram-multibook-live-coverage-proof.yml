@@ -1,0 +1,199 @@
+name: MATRIX Telegram Multi-Book Live Coverage Proof
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - repair/cor09-world-pipeline
+    paths:
+      - .github/workflows/telegram-multibook-live-coverage-proof.yml
+
+permissions:
+  contents: write
+
+concurrency:
+  group: telegram-multibook-live-coverage-proof
+  cancel-in-progress: false
+
+jobs:
+  prove:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      REAL_MONEY: BLOCKED
+      AUTO_BETTING: DISABLED
+    steps:
+      - name: Checkout operational branch
+        uses: actions/checkout@v4
+        with:
+          ref: repair/cor09-world-pipeline
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: python -m pip install requests
+
+      - name: Run live one-or-more-book coverage proof
+        env:
+          API_FOOTBALL_KEY: ${{ secrets.API_FOOTBALL_KEY }}
+          ODDS_API_NET_KEY: ${{ secrets.ODDS_API_NET_KEY }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -n "$API_FOOTBALL_KEY"
+          test -n "$ODDS_API_NET_KEY"
+          test "$REAL_MONEY" = "BLOCKED"
+          python - <<'PY'
+          import json, os, re, unicodedata
+          from datetime import datetime, timezone
+          from difflib import SequenceMatcher
+          from pathlib import Path
+          import requests
+
+          API_FOOTBALL_KEY=os.environ["API_FOOTBALL_KEY"].strip()
+          ODDS_API_NET_KEY=os.environ["ODDS_API_NET_KEY"].strip()
+          FIXTURES=[
+              "1567924","1607987","1551838","1552785","1564901","1570415"
+          ]
+          BOOKS=("betano","betplay","rushbet")
+          def norm(v):
+              s=unicodedata.normalize("NFKD",str(v or ""))
+              s="".join(ch for ch in s if not unicodedata.combining(ch)).casefold()
+              return re.sub(r"[^a-z0-9]+"," ",s).strip()
+          def sim(a,b):
+              a,b=norm(a),norm(b)
+              if not a or not b: return 0.0
+              if a==b: return 1.0
+              ta,tb=set(a.split()),set(b.split())
+              jac=len(ta&tb)/max(1,len(ta|tb))
+              seq=SequenceMatcher(None,a,b).ratio()
+              subset=1.0 if ta<=tb or tb<=ta else 0.0
+              return max(jac,seq,subset)
+
+          s=requests.Session()
+          rows=[]
+          for fid in FIXTURES:
+              fr=s.get("https://v3.football.api-sports.io/fixtures",
+                       headers={"x-apisports-key":API_FOOTBALL_KEY},
+                       params={"id":fid},timeout=20)
+              fp=fr.json() if fr.content else {}
+              arr=fp.get("response",[]) if isinstance(fp,dict) else []
+              if not arr:
+                  rows.append({"fixture_id":fid,"status":"BLOCKED_FIXTURE_LOOKUP"})
+                  continue
+              r=arr[0]
+              home=str(((r.get("teams") or {}).get("home") or {}).get("name") or "")
+              away=str(((r.get("teams") or {}).get("away") or {}).get("name") or "")
+              ko=str((r.get("fixture") or {}).get("date") or "")
+              try:
+                  start=int(datetime.fromisoformat(ko.replace("Z","+00:00")).timestamp())
+              except Exception:
+                  rows.append({"fixture_id":fid,"match":f"{home} vs {away}","status":"BLOCKED_KICKOFF_PARSE"})
+                  continue
+              er=s.get("https://api.odds-api.net/v1/events",
+                       headers={"X-API-Key":ODDS_API_NET_KEY,"Accept":"application/json"},
+                       params={"sport":"soccer","start_from":start-900,"start_to":start+900,
+                               "limit":100,"include_bookmaker_ids":"true"},timeout=20)
+              ep=er.json() if er.content else {}
+              events=ep.get("items",[]) if isinstance(ep,dict) else []
+              scored=[]
+              for ev in events or []:
+                  if not isinstance(ev,dict): continue
+                  direct=(sim(home,ev.get("home_team"))+sim(away,ev.get("away_team")))/2
+                  swapped=(sim(home,ev.get("away_team"))+sim(away,ev.get("home_team")))/2
+                  scored.append((max(direct,swapped),ev))
+              scored.sort(key=lambda x:x[0],reverse=True)
+              if not scored or scored[0][0] < 0.85 or (len(scored)>1 and scored[0][0]-scored[1][0] < 0.05):
+                  rows.append({"fixture_id":fid,"match":f"{home} vs {away}","kickoff_utc":ko,
+                               "status":"BLOCKED_IDENTITY"})
+                  continue
+              event_id=str(scored[0][1].get("event_id") or "")
+              sr=s.get(f"https://api.odds-api.net/v1/events/{event_id}/odds/snapshot",
+                       headers={"X-API-Key":ODDS_API_NET_KEY,"Accept":"application/json"},
+                       params={"bookmakers":",".join(BOOKS),"types":"total","periods":"full time",
+                               "include_source":"true","include_unavailable":"true"},timeout=20)
+              sp=sr.json() if sr.content else {}
+              exact={b:[] for b in BOOKS}
+              observed=set()
+              for item in sp.get("items",[]) if isinstance(sp,dict) else []:
+                  if not isinstance(item,dict): continue
+                  b=str(item.get("bookmaker") or "").strip().casefold()
+                  if b not in BOOKS: continue
+                  observed.add(b)
+                  try:
+                      line=float(item.get("line")); odd=float(item.get("odds"))
+                  except Exception:
+                      continue
+                  market=" ".join([norm(item.get("market_key")),norm(item.get("bet_type"))])
+                  side=" ".join([norm(item.get("side")),norm(item.get("selection_name"))])
+                  if line==2.5 and odd>1.50 and item.get("is_available") is not False and ("total" in market or "over under" in market) and "over" in side:
+                      exact[b].append(odd)
+              eligible=[b for b in BOOKS if exact[b]]
+              rows.append({
+                  "fixture_id":fid,
+                  "match":f"{home} vs {away}",
+                  "kickoff_utc":ko,
+                  "odds_api_event_id":event_id,
+                  "observed_authorized_books":sorted(observed),
+                  "exact_over25_books":eligible,
+                  "exact_over25_odds":{b:max(exact[b]) if exact[b] else None for b in BOOKS},
+                  "one_or_more_book_is_sufficient":True,
+                  "requires_all_three":False,
+                  "status":"PASS_ONE_OR_MORE_AVAILABLE" if eligible else "NO_EXACT_OVER25_AVAILABLE"
+              })
+
+          proof={
+              "schema":"MATRIX_TELEGRAM_MULTIBOOK_LIVE_COVERAGE_PROOF_V1",
+              "captured_at_utc":datetime.now(timezone.utc).replace(microsecond=0).isoformat(),
+              "authorized_books":list(BOOKS),
+              "policy_logic":"OR_NOT_AND",
+              "rule":"Any one of Betano OR BetPlay OR Rushbet is sufficient if exact Over 2.5 >1.50 and downstream quality gates pass.",
+              "requires_all_three":False,
+              "fixtures":rows,
+              "events_with_exact_over25_any_book":sum(1 for x in rows if x.get("exact_over25_books")),
+              "events_with_exact_over25_single_book_only":sum(1 for x in rows if len(x.get("exact_over25_books",[]))==1),
+              "events_with_exact_over25_two_books_only":sum(1 for x in rows if len(x.get("exact_over25_books",[]))==2),
+              "events_with_exact_over25_three_books":sum(1 for x in rows if len(x.get("exact_over25_books",[]))==3),
+              "real_money":"BLOCKED",
+              "automatic_wagering":False
+          }
+          out=Path("evidence/notifications/telegram/MATRIX_TELEGRAM_MULTIBOOK_LIVE_COVERAGE_PROOF_16OCT2026.json")
+          out.parent.mkdir(parents=True,exist_ok=True)
+          out.write_text(json.dumps(proof,indent=2,ensure_ascii=False,sort_keys=True)+"\n",encoding="utf-8")
+          print(json.dumps({
+              "events_with_exact_over25_any_book":proof["events_with_exact_over25_any_book"],
+              "single_book_only":proof["events_with_exact_over25_single_book_only"],
+              "two_books_only":proof["events_with_exact_over25_two_books_only"],
+              "three_books":proof["events_with_exact_over25_three_books"],
+              "real_money":proof["real_money"]
+          },sort_keys=True))
+          PY
+
+      - name: Persist physical proof
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name matrix-multibook-proof
+          git config user.email matrix-multibook-proof@users.noreply.github.com
+          git add evidence/notifications/telegram/MATRIX_TELEGRAM_MULTIBOOK_LIVE_COVERAGE_PROOF_16OCT2026.json
+          if git diff --cached --quiet; then
+            echo "NO_PROOF_CHANGES"
+            exit 0
+          fi
+          git commit -m "evidence(telegram): persist live multi-book coverage proof"
+          for attempt in 1 2 3 4; do
+            git fetch origin repair/cor09-world-pipeline
+            if ! git rebase origin/repair/cor09-world-pipeline; then
+              git rebase --abort || true
+              exit 1
+            fi
+            if git push origin HEAD:repair/cor09-world-pipeline; then
+              exit 0
+            fi
+            sleep $((attempt*2))
+          done
+          exit 1

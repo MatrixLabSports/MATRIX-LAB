@@ -1,0 +1,201 @@
+name: MATRIX Calibration Catch-Up 2026-10-07
+
+on:
+  push:
+    branches:
+      - repair/cor09-world-pipeline
+    paths:
+      - .github/workflows/matrix-calibration-catchup-20261007.yml
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: matrix-calibration-catchup-20261007
+  cancel-in-progress: false
+
+jobs:
+  catchup:
+    runs-on: ubuntu-latest
+    timeout-minutes: 55
+    steps:
+      - name: Checkout operational branch
+        uses: actions/checkout@v4
+        with:
+          ref: repair/cor09-world-pipeline
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install governed dependencies
+        run: python -m pip install pytest requests
+
+      - name: Football regression gates
+        run: |
+          python -m pytest -q             tests/test_api_football_prospective_api_settlement.py             tests/test_api_football_prospective_supervisor.py             tests/test_api_football_market_calibration_v2.py
+
+      - name: Football FINAL-only settlement
+        env:
+          API_FOOTBALL_KEY: ${{ secrets.API_FOOTBALL_KEY }}
+        run: |
+          set -euo pipefail
+          python -m tools.api_football_prospective_supervisor             --out evidence/api_football/prospective_supervisor/last_run.json
+          python -m tools.api_football_prospective_api_settlement
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          from tools.api_football_prospective_calibration import sync_calibration_ledger
+
+          root=Path("evidence/api_football")
+          sync=sync_calibration_ledger(root)
+          p=root/"prospective_calibration"/"sync_last.json"
+          p.write_text(json.dumps(sync,ensure_ascii=False,indent=2,sort_keys=True)+"\n")
+          assert sync["ledger_hash_chain_verified"] is True
+          assert sync["parameters_mutated"] is False
+          assert sync["real_money"]=="BLOCKED"
+          print(json.dumps(sync,sort_keys=True))
+          PY
+          python tools/api_football_market_calibration_v2_sync.py
+
+      - name: Regenerate global Strength Map after football settlement
+        run: |
+          set -euo pipefail
+          python -m tools.matrix_global_strength_map
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          s=json.loads(Path("evidence/global_strength_map/summary.json").read_text())
+          m=json.loads(Path("evidence/global_strength_map/manifest.json").read_text())
+          settle=json.loads(Path("evidence/api_football/prospective_market_freeze/settlement_sync_last.json").read_text())
+          assert s["status"]=="PASS"
+          assert m["status"]=="PASS"
+          assert m["protections"]["changes_p_matrix"] is False
+          assert m["protections"]["opens_sealed_tennis_metrics"] is False
+          assert m["protections"]["real_money"]=="BLOCKED"
+          assert settle["settlement_final_only"] is True
+          assert settle["metrics_opened"] is False
+          print(json.dumps({
+            "new_settlements":settle["new_settlement_count"],
+            "ledger_final_count":settle["ledger_final_count"],
+            "strength_cells":s["cell_count"],
+            "class_counts":s["class_counts"],
+            "football_global":[
+              {"market":x["market"],"n":x["prospective_n"],"strength":x["strength_class"]}
+              for x in s["football_global_cells"]
+            ]
+          },sort_keys=True))
+          PY
+
+      - name: Persist football catch-up and Strength Map
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name matrix-calibration-catchup
+          git config user.email matrix-calibration-catchup@users.noreply.github.com
+          git add             evidence/api_football/prospective_supervisor/last_run.json             evidence/api_football/prospective_market_freeze/settlement_ledger.jsonl             evidence/api_football/prospective_market_freeze/settlement_sync_last.json             evidence/api_football/prospective_market_freeze/settlement_raw             evidence/api_football/prospective_calibration/ledger.jsonl             evidence/api_football/prospective_calibration/sync_last.json             evidence/api_football/calibration_v2/lanes             evidence/global_strength_map
+          if ! git diff --cached --quiet; then
+            git commit -m "evidence(calibration): refresh football settlement and strength map"
+            for attempt in 1 2 3 4; do
+              git fetch origin repair/cor09-world-pipeline
+              if ! git rebase origin/repair/cor09-world-pipeline; then git rebase --abort || true; exit 1; fi
+              if git push origin HEAD:repair/cor09-world-pipeline; then break; fi
+              sleep $((attempt*2))
+            done
+          else
+            echo "NO_FOOTBALL_CATCHUP_CHANGE"
+          fi
+
+      - name: Reset to latest branch before tennis
+        run: |
+          set -euo pipefail
+          git fetch origin repair/cor09-world-pipeline
+          git reset --hard origin/repair/cor09-world-pipeline
+
+      - name: Verify today's browser-first tennis baseline
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          p=Path("evidence/tennis_world_inventory/2026-10-07/MATRIX_DAILY_MULTISOURCE_BROWSER_CROSSCHECK.json")
+          j=json.loads(p.read_text())
+          assert j["target_date_bogota"]=="2026-10-07"
+          assert j["sources"]["sofascore"]["exact_unique_match_count"]==560
+          assert j["sources"]["flashscore"]["exact_unique_match_count"]==488
+          assert j["sources"]["sofascore"]["machine_verified_exact"] is True
+          assert j["sources"]["flashscore"]["machine_verified_exact"] is True
+          print("TENNIS_BROWSER_BASELINE_PASS 560/488")
+          PY
+
+      - name: Recapture both paid tennis providers and run COR02 COR03
+        shell: bash
+        env:
+          API_TENNIS_KEY: ${{ secrets.API_TENNIS_KEY }}
+          RAPIDAPI_TENNIS_KEY: ${{ secrets.RAPIDAPI_TENNIS_KEY }}
+          MATRIX_TENNIS_PROVIDER: rapidapi_tennis
+          MATRIX_TARGET_BRANCH: repair/cor09-world-pipeline
+          MATRIX_GIT_USER_NAME: matrix-ci
+          MATRIX_GIT_USER_EMAIL: matrix-ci@users.noreply.github.com
+          MATRIX_WORLD_DATE_BOGOTA: "2026-10-07"
+        run: |
+          set -euo pipefail
+          python -m tools.tennis_world_exact_day_dual_audit             --target-date-bogota 2026-10-07             --out evidence/tennis_world_inventory/2026-10-07/world_exact_day_dual_audit.json
+          bash scripts/cor0203_production_cycle.sh --trigger-sha "$(git rev-parse HEAD)"
+
+      - name: Refresh latest branch and regenerate combined Strength Map
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch origin repair/cor09-world-pipeline
+          git reset --hard origin/repair/cor09-world-pipeline
+          python -m tools.matrix_global_strength_map
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          u=json.loads(Path("evidence/cor0203/runtime/MATRIX_COR0203_PHYSICAL_UNIQUENESS_LAST.json").read_text())
+          o=json.loads(Path("evidence/cor0203/runtime/MATRIX_COR0203_PRODUCTION_OBSERVABILITY_LAST.json").read_text())
+          s=json.loads(Path("evidence/global_strength_map/summary.json").read_text())
+          assert u["result"]=="PASS"
+          assert u["metrics_opened"] is False
+          assert u["outcomes_read"]==0
+          assert o["integrity"]["result"]=="PASS"
+          assert o["integrity"]["metrics_opened"] is False
+          assert s["status"]=="PASS"
+          print(json.dumps({
+            "tennis_unique":u["unique_calibration_observations"],
+            "tennis_remaining_200":u["unique_remaining_to_200"],
+            "tennis_remaining_600":u["unique_remaining_to_600"],
+            "physical_frozen_rows":u["physical_frozen_rows"],
+            "duplicates_quarantined":u["duplicate_observations_quarantined"],
+            "cycle_new_freezes":o["cycle"]["new_freezes"],
+            "cycle_new_blocked":o["cycle"]["new_blocked"],
+            "bottleneck":o["bottleneck"],
+            "strength_tennis_domain":[
+              {"n":x["prospective_n"],"remaining":x["remaining_to_600"],"metrics_opened":x["metrics_opened"]}
+              for x in s["tennis_domain_cells"]
+            ]
+          },sort_keys=True))
+          PY
+
+      - name: Persist final combined Strength Map
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name matrix-calibration-catchup
+          git config user.email matrix-calibration-catchup@users.noreply.github.com
+          git add evidence/global_strength_map
+          if git diff --cached --quiet; then
+            echo "NO_FINAL_STRENGTH_MAP_CHANGE"
+            exit 0
+          fi
+          git commit -m "evidence(calibration): refresh combined strength map after tennis"
+          for attempt in 1 2 3 4; do
+            git fetch origin repair/cor09-world-pipeline
+            if ! git rebase origin/repair/cor09-world-pipeline; then git rebase --abort || true; exit 1; fi
+            if git push origin HEAD:repair/cor09-world-pipeline; then exit 0; fi
+            sleep $((attempt*2))
+          done
+          exit 1

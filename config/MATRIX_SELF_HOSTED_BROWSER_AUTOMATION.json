@@ -1,0 +1,73 @@
+{
+  "schema": "MATRIX_SELF_HOSTED_BROWSER_AUTOMATION_V1",
+  "status": "CODED_REQUIRES_RUNNER_REGISTRATION_AND_CDP_BROWSER_START",
+  "owner": "BROWSER_AUTOMATION_SELF_HOSTED_RUNNER_ENGINEER",
+  "runner": {
+    "os": "windows",
+    "labels": [
+      "self-hosted",
+      "windows",
+      "matrix-browser-odds"
+    ],
+    "recommended_host": "dedicated local Windows machine or VM",
+    "schedule_minutes": 5,
+    "main_telegram_supervisor_minutes": 15,
+    "rationale": "auxiliary quote collection cadence; does not alter the canonical 15-minute Telegram supervisor"
+  },
+  "browser": {
+    "engine": "Chromium-compatible browser",
+    "preferred_existing_browser_bridge": "Opera/Chromium via Chrome DevTools Protocol",
+    "cdp_endpoint_env": "MATRIX_BROWSER_CDP_ENDPOINT",
+    "default_cdp_endpoint": "http://127.0.0.1:9222",
+    "persistent_session": true,
+    "read_only_quote_collection": true,
+    "click_allowed_only_for_navigation_and_market_discovery": true,
+    "bet_placement_forbidden": true,
+    "captcha_or_antibot_bypass_forbidden": true
+  },
+  "collection": {
+    "source_order": [
+      "SofaScore",
+      "Flashscore",
+      "authorized bookmaker browser tabs",
+      "APIs as governed fallback/reference"
+    ],
+    "final_window_minutes": 120,
+    "p_matrix_min": 0.6,
+    "market": "OVER_2_5",
+    "exact_quote_required": true,
+    "decimal_odds_strictly_greater_than": 1.5,
+    "revalidated_ev_min": 0.05,
+    "evidence_output": "evidence/notifications/telegram/browser_cdp",
+    "execution_ledger": "evidence/notifications/telegram/MATRIX_QUOTE_RECOVERY_EXECUTION_LEDGER.jsonl"
+  },
+  "adapters": {
+    "policy": "SITE_SPECIFIC_FAIL_CLOSED",
+    "generic_snapshot_only": true,
+    "unsupported_site_behavior": "CAPTURE_RAW_EVIDENCE_NO_EXECUTION_QUOTE",
+    "authorized_books": [
+      "betano",
+      "betplay",
+      "betsson",
+      "bwin",
+      "codere",
+      "luckia",
+      "mryoker",
+      "rivalo",
+      "rushbet",
+      "sportium",
+      "stake",
+      "wplay",
+      "yajuego",
+      "zamba"
+    ]
+  },
+  "security": {
+    "github_hosted_runner_for_browser_session": false,
+    "self_hosted_runner_required": true,
+    "credentials_in_repository_forbidden": true,
+    "browser_profile_not_committed": true,
+    "automatic_wagering": false,
+    "real_money": "BLOCKED"
+  }
+}

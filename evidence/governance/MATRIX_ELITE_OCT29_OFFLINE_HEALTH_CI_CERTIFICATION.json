@@ -1,0 +1,33 @@
+{
+  "schema": "MATRIX_ELITE_OFFLINE_HEALTH_CI_CERTIFICATION_V1",
+  "source": {
+    "run_id": 40824602903,
+    "conclusion": "success",
+    "artifact_id": 12876240810,
+    "artifact_digest": "sha256:69c281469645bd4a94e65937974a7a698cf4bdaf0449a8a2dce260ea0aa0131d",
+    "artifact_name": "matrix-telegram-post-expiry-offline-health"
+  },
+  "verified_steps": [
+    "Test fail-closed post-expiry diagnosis",
+    "Generate independent offline diagnosis",
+    "Certify no calls and safety",
+    "Preserve post-expiry evidence"
+  ],
+  "certification_scope": "Offline health workflow succeeded with no provider/Telegram calls; does not certify signal delivery",
+  "new_schedule": {
+    "workflow": ".github/workflows/telegram-post-expiry-health.yml",
+    "cron": "12,27,42,57 * * * *",
+    "interval_minutes": 15,
+    "physical_scheduled_execution_verified": false
+  },
+  "safety": {
+    "real_money": "BLOCKED",
+    "automatic_wagering": false
+  },
+  "remaining": [
+    "Certify scheduled (not push) offline health execution",
+    "Certify latest workflow tests after cron addition",
+    "Design no-paid-API supervisor mode with all paid HTTP paths guarded",
+    "Telegram send acknowledgment remains unverified"
+  ]
+}

@@ -1,0 +1,122 @@
+{
+  "schema": "MATRIX_TENNIS_22OCT_FULL_GOVERNED_CYCLE_AUDIT_V1",
+  "generated_at_bogota": "2026-10-21T17:55:00-05:00",
+  "target_date_bogota": "2026-10-22",
+  "browser_first": {
+    "artifact": "evidence/tennis/MATRIX_TENNIS_20261022_BROWSER_FIRST_RECONCILIATION.json",
+    "sofascore_visible_unique_rows": 334,
+    "flashscore_unique_tennis_match_urls": 312,
+    "date_alignment": "PASS",
+    "gate": "PASS",
+    "parity_claimed": false,
+    "browser_evidence_commit": "94e6caa710bc68fb597fcb6f72cb955dbe1c8b10"
+  },
+  "hard": {
+    "initial_run": {
+      "run_number": 31,
+      "run_id": 39689138619,
+      "conclusion": "FAILURE_PERSISTENCE_RACE_AFTER_VALID_PRODUCTION"
+    },
+    "retry_run": {
+      "run_number": 32,
+      "run_id": 39689490398,
+      "conclusion": "SUCCESS"
+    },
+    "unique_calibration_observations": 301,
+    "physical_frozen_rows": 472,
+    "duplicate_observations_quarantined": 171,
+    "remaining_to_400": 99,
+    "remaining_to_600": 299,
+    "new_valid_observation": {
+      "canonical_unique_index": 301,
+      "players": [
+        "Darwin Blanch",
+        "Mees Rottgering"
+      ],
+      "competition": "Fort Worth Challenger",
+      "canonical_source_event_id": "rapidapi-tennis:match:498292",
+      "provider_player_ids": [
+        "rapidapi-tennis:player:92243",
+        "rapidapi-tennis:player:96765"
+      ],
+      "round": "QF",
+      "event_start_utc": "2026-10-22T16:00:00+00:00",
+      "freeze_at_utc": "2026-10-21T22:53:37+00:00",
+      "physical_event_key": "6b11d4f67e4346894aa03827d352302f7d37bd694f4163869023c6db9aa02949",
+      "revision": 1000
+    },
+    "integrity": "PASS",
+    "metrics": "SEALED_UNTIL_600",
+    "metrics_opened": false,
+    "outcomes_read_for_metrics": 0,
+    "real_money": "BLOCKED"
+  },
+  "clay": {
+    "run_number": 76,
+    "run_id": 39689149036,
+    "conclusion": "SUCCESS",
+    "observation_count": 3,
+    "new_observations": 0,
+    "discovered_22oct_candidates": 16,
+    "admission_result": "ALL_CURRENT_CANDIDATES_BLOCKED_BY_PIT_OR_IDENTITY_READINESS",
+    "main_blocker": "PIT_CATCHUP_NOT_READY / CATCHUP_COMPONENT_HAS_UNMAPPED_IDENTITIES",
+    "metrics_opened": false,
+    "outcomes_read": 0,
+    "historical_backfill": false,
+    "silent_imputation": false,
+    "real_money": "BLOCKED"
+  },
+  "live": {
+    "run_number": 447,
+    "run_id": 39689163283,
+    "conclusion": "SUCCESS",
+    "generated_at_utc": "2026-10-21T22:49:18+00:00",
+    "global_unique_match_count": 306,
+    "sum_lane_settled_quality_valid_unique_matches": 196,
+    "challenger_men_clay": {
+      "settled_quality_valid": 29,
+      "remaining_to_30": 1
+    },
+    "challenger_men_hard": {
+      "settled_quality_valid": 10,
+      "remaining_to_30": 20
+    },
+    "itf_women_hard": {
+      "settled_quality_valid": 75,
+      "remaining_to_100": 25
+    },
+    "metrics_status": "SEALED",
+    "probability_output_status": "SEALED",
+    "prematch_hard_mutated": false,
+    "prematch_clay_mutated": false,
+    "real_money": "BLOCKED"
+  },
+  "cadence_verification_main": {
+    "hard": "2,17,32,47 * * * *",
+    "clay": "7,22,37,52 * * * *",
+    "live": "12,27,42,57 * * * *",
+    "interpretation": "ALL_THREE_OPERATIONAL_BLOCKS_EVERY_15_MINUTES"
+  },
+  "cleanup": {
+    "hard_one_shot_override_removed": true,
+    "cleanup_commit": "9512e5a45da96eb35e8431b13e3133ec36f13413",
+    "cleanup_commit_skip_ci": true,
+    "normal_bogota_date_resolution_restored": true
+  },
+  "conclusion": {
+    "hard": "301/600_PERSISTED",
+    "clay": "3/600_NO_FORCE",
+    "live": "196_SETTLED_QUALITY_VALID",
+    "browser_calendar": "PHYSICALLY_VERIFIED",
+    "next_hard_checkpoint": 400,
+    "next_live_gate": "challenger|men|clay 29->30",
+    "no_calibration_metrics_before_600": true
+  },
+  "protections": {
+    "missing_not_zero": true,
+    "silent_imputation": false,
+    "odds_to_probability": false,
+    "automatic_wagering": false,
+    "real_money": "BLOCKED"
+  }
+}

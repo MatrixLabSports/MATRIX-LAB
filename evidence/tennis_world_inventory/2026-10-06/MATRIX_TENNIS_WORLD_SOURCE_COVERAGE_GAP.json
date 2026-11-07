@@ -1,0 +1,53 @@
+{
+  "schema": "MATRIX_TENNIS_WORLD_SOURCE_COVERAGE_GAP_V1",
+  "observed_at_utc": "2026-10-06T14:30:00Z",
+  "operational_timezone": "America/Bogota",
+  "target_date_bogota": "2026-10-06",
+  "finding": "PAID_API_ONLY_WORLD_DENOMINATOR_IS_INCOMPLETE",
+  "browser_verification": {
+    "flashscore": {
+      "url": "https://www.flashscore.co/tenis/?d=2026-10-06",
+      "status": "READABLE_IN_OPERA",
+      "note": "User UI reports 410 tennis matches for the day. Opera accessibility confirms a very large multi-circuit calendar, but lazy-loaded accessibility content is not accepted as an exact machine denominator."
+    },
+    "sofascore": {
+      "url": "https://www.sofascore.com/es/tennis/2026-10-06",
+      "status": "READABLE_IN_OPERA",
+      "note": "Normal SofaScore web calendar is readable and materially broader than the current API-derived governed subset. Direct scheduled-events endpoint is not reliable in this browser session."
+    }
+  },
+  "paid_provider_snapshot": {
+    "rapidapi_tennis_registered_matches": 250,
+    "api_tennis_crosscheck_matches": 407,
+    "exact_neutral_union": 657,
+    "exact_neutral_overlap": 0,
+    "interpretation": "Zero exact overlap between large provider inventories is evidence that provider normalization/reconciliation is incomplete; these counts must not be treated as world truth."
+  },
+  "mandatory_discovery_sources": [
+    "rapidapi_tennis",
+    "api_tennis",
+    "flashscore_web",
+    "sofascore_web",
+    "itf_official"
+  ],
+  "world_inventory_policy": {
+    "denominator": "MULTI_SOURCE_RECONCILED_UNIQUE_PHYSICAL_MATCHES",
+    "single_source_authoritative": false,
+    "flashscore_and_sofascore_required_crosscheck": true,
+    "preserve_raw_source_rows": true,
+    "cross_provider_dedup_required": true,
+    "missing_not_zero": true
+  },
+  "calibration_policy": {
+    "cor0203_domain_locked": "ATP_CHALLENGER_HARD_SINGLES",
+    "do_not_mix_other_tours_or_surfaces_into_cor0203_600": true,
+    "all_other_world_events": "DISCOVERY_INVENTORY_ONLY_UNTIL_SEPARATE_GOVERNED_LANE_EXISTS"
+  },
+  "protections": {
+    "metrics_opened": false,
+    "odds_to_probability": false,
+    "automatic_wagering": false,
+    "real_money": "BLOCKED"
+  },
+  "result": "COVERAGE_GAP_CONFIRMED_AND_POLICY_CORRECTED"
+}

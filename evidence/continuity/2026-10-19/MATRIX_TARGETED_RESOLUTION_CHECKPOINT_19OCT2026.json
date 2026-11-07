@@ -1,0 +1,73 @@
+{
+  "schema": "MATRIX_TARGETED_RESOLUTION_CHECKPOINT_19OCT2026_V1",
+  "verified_at_utc": "2026-10-19T15:22:39Z",
+  "repository": "MatrixLabSports/MATRIX-LAB",
+  "branch": "repair/cor09-world-pipeline",
+  "football_over25": {
+    "trigger_commit": "6ebc1b37b890070fd336a8c279e36856156fe7ea",
+    "evidence_commit": "30a6a56deca4251ba94c19c36095869491a7f648",
+    "observation_count": 3393,
+    "unique_fixture_ids": 3393,
+    "duplicates": 0,
+    "ledger_hash_chain_verified": true,
+    "brier_matrix": 0.23907223590338958,
+    "brier_poisson": 0.24193260653680373,
+    "logloss_matrix": 0.6713395708312264,
+    "logloss_poisson": 0.6785846209768113,
+    "ece_matrix": 0.03242130588482174,
+    "mce_matrix": 0.19533386111994927,
+    "delta_brier": -0.002860370633414479,
+    "brier_ci95": [
+      -0.004198360702343392,
+      -0.0015223805644855664
+    ],
+    "delta_logloss": -0.0072450501455863445,
+    "logloss_ci95": [
+      -0.01028363877026828,
+      -0.00420646152090441
+    ],
+    "verdict": "CHALLENGER_SUPERIOR_ON_FULL_CURRENT_SAMPLE_BY_PAIRED_95CI",
+    "remaining_to_4000": 607,
+    "remaining_to_5000": 1607
+  },
+  "tennis_clay": {
+    "trigger_commit": "6715ddd882441b06048b44ed387eac34a3010237",
+    "evidence_commit": "42746294d12c7eea70c074054539e7e1b72b9f74",
+    "observations_before": 3,
+    "observations_after": 3,
+    "new_observations": 0,
+    "blocked_events_before": 22,
+    "blocked_events_after": 16,
+    "blocker_reduction": 6,
+    "blocker_reason_counts": {
+      "CURRENT_PREFEATURE_EVENT_MISSING": 10,
+      "PIT_OR_IDENTITY_BLOCKED": 3,
+      "IDENTITY_CROSSWALK_NOT_PASS": 2,
+      "DUPLICATE_PHYSICAL_EVENT": 1
+    },
+    "pit_ready_targets": 4,
+    "pit_blocked_targets_before": 16,
+    "pit_blocked_targets_after": 8,
+    "pit_blocked_target_reduction": 8,
+    "unmapped_identity_backlog_count": 25,
+    "catchup_standard_clay_matches": 597,
+    "provider_network_calls": 15,
+    "admitted_event_ids": [],
+    "remaining_to_600": 597,
+    "adjudication": "BLOCKERS_REDUCED_WITHOUT_FORCED_ADMISSION"
+  },
+  "governance": {
+    "source_priority": [
+      "SofaScore",
+      "Flashscore",
+      "APIs"
+    ],
+    "historical_backfill": false,
+    "odds_to_probability": false,
+    "outcomes_used_for_tuning": 0,
+    "metrics_opened": false,
+    "silent_imputation": false,
+    "automatic_wagering": false,
+    "real_money": "BLOCKED"
+  }
+}

@@ -1,0 +1,297 @@
+{
+  "schema": "MATRIX_FOOTBALL_EV_TELEGRAM_ELITE_CLOSURE_28OCT2026_V1",
+  "generated_at_utc": "2026-10-28T05:44:10Z",
+  "target_date_bogota": "2026-10-28",
+  "branch": "repair/cor09-world-pipeline",
+  "head_observed_before_closure": "48b091c33b17b978cb38cc19f4f82f92f72fef9a",
+  "adjudication": "PASS_PMATRIX_TO_EV_TO_TELEGRAM_GOVERNANCE_PHYSICALLY_PROVEN",
+  "root_causes": [
+    {
+      "id": "EV_EXECUTION_BOOK_POLICY_DRIFT",
+      "defect": "Daily Over 2.5 EV used a local three-book policy (Betano/BetPlay/RushBet) while the governed Colombia execution catalog and Telegram V3 telemetry used 14 books.",
+      "resolution": "Daily EV and Telegram now consume app.market.colombia_bookmakers.EXECUTION_BOOKMAKERS as the single source of truth."
+    },
+    {
+      "id": "BOOKMAKER_ALIAS_DRIFT",
+      "defect": "Human/provider aliases for Mr Yoker, RushBet, Sportium, Wplay and YaJuego were duplicated inside Telegram rather than canonicalized.",
+      "resolution": "Aliases moved into the canonical Colombia bookmaker catalog; Telegram local overrides removed."
+    },
+    {
+      "id": "TELEGRAM_GREEN_REBASE_ALLOWLIST_GAP",
+      "defect": "Telegram Green generated MATRIX_TELEGRAM_MARKET_SIGNAL_ELIGIBILITY_LAST.json and MATRIX_TELEGRAM_MULTI_MARKET_SIGNAL_GATE_LAST.json, but its rebase conflict allowlist omitted them.",
+      "resolution": "Both generated signal-gate artifacts are now explicitly permitted during governed rebase conflict resolution."
+    },
+    {
+      "id": "DEFAULT_BRANCH_SCHEDULER_PARITY",
+      "defect": "Scheduled Telegram workflows originate from main and can drift from the operational branch.",
+      "resolution": "Relevant workflow definitions were synchronized to main and repair; parity physically verified."
+    }
+  ],
+  "canonical_execution_book_policy": {
+    "source": "app/market/colombia_bookmakers.py::EXECUTION_BOOKMAKERS",
+    "execution_book_count": 14,
+    "execution_books": [
+      "betano",
+      "betplay",
+      "betsson",
+      "bwin",
+      "codere",
+      "luckia",
+      "mryoker",
+      "rivalo",
+      "rushbet",
+      "sportium",
+      "stake",
+      "wplay",
+      "yajuego",
+      "zamba"
+    ],
+    "reference_only": [
+      "pinnacle"
+    ],
+    "policy_scope": "EXECUTION_CANDIDATE",
+    "note": "Configured execution eligibility is not a claim that every provider returned every book in the current physical capture."
+  },
+  "final_physical_state": {
+    "governed_ev": {
+      "artifact": "evidence/api_football/daily_prematch_reports/2026-10-28/over25_shadow_ev/MATRIX_FOOTBALL_DAILY_OVER25_GOVERNED_SHADOW_EV.json",
+      "blob_sha": "ef1e5c0035f1c7ced87c819ccb9279efd5b30864",
+      "generated_at_utc": "2026-10-28T05:41:58+00:00",
+      "source_cycle": "evidence/api_football/prospective_daily/2026-10-28/20261028T054128Z",
+      "p_matrix_scored_count": 100,
+      "p_matrix_blocked_count": 12,
+      "policy_house_count": 14,
+      "policy_houses": [
+        "betano",
+        "betplay",
+        "betsson",
+        "bwin",
+        "codere",
+        "luckia",
+        "mryoker",
+        "rivalo",
+        "rushbet",
+        "sportium",
+        "stake",
+        "wplay",
+        "yajuego",
+        "zamba"
+      ],
+      "provider_observed_exact_policy_offer_house_count": 1,
+      "provider_observed_exact_policy_offers_by_house": {
+        "betano": 59
+      },
+      "bet_shadow_best_house_distribution": {
+        "betano": 14
+      },
+      "decision_counts": {
+        "BET_SHADOW": 14,
+        "NO_BET": 24,
+        "BLOCKED": 74
+      },
+      "interpretation": "The daily provider capture physically returned governed exact Over 2.5 execution offers only for Betano. Zero observations for the other configured books are missing/provider-coverage observations, not proof that those books do not support the market.",
+      "protections": {
+        "probability_frozen_before_odds_query": true,
+        "odds_used_to_generate_probability": false,
+        "target_outcomes_used": false,
+        "minimum_decimal_odds_exclusive": 1.5,
+        "positive_ev_required": true,
+        "broad_market_matching_forbidden": true,
+        "pinnacle_not_executable_house": true,
+        "execution_book_catalog_source": "app.market.colombia_bookmakers.EXECUTION_BOOKMAKERS",
+        "execution_book_count": 14,
+        "automatic_wagering": false,
+        "real_money": "BLOCKED"
+      }
+    },
+    "multi_market_gate": {
+      "artifact": "evidence/notifications/telegram/MATRIX_TELEGRAM_MULTI_MARKET_SIGNAL_GATE_LAST.json",
+      "blob_sha": "0fa3bba3cc9a1917ad7ad11c221c3ae90e2995f6",
+      "generated_at_utc": "2026-10-28T05:43:50+00:00",
+      "status": "PASS",
+      "signal_authorized_markets": 1,
+      "research_only": 8,
+      "lab_only": 6,
+      "no_go": 6,
+      "over_2_5_only_current_signal_authorized": true
+    },
+    "final_window": {
+      "artifact": "evidence/notifications/telegram/MATRIX_TELEGRAM_FINAL_WINDOW_READINESS_LAST.json",
+      "blob_sha": "0f8b0215e71c44472fce527db1521959b5226938",
+      "generated_at_utc": "2026-10-28T05:43:51.774972+00:00",
+      "status": "PASS",
+      "waiting_candidates": 55,
+      "covered_by_15m_supervisor": 55,
+      "source_contract_passed": 55,
+      "failures": 0,
+      "earliest_window_open_utc": "2026-10-28T08:00:00+00:00",
+      "supervisor_interval_minutes": 15,
+      "final_prematch_window_minutes": 120,
+      "p_matrix_must_preexist_before_odds": true,
+      "odds_must_be_gt_1_50": true,
+      "ev_must_be_positive": true
+    },
+    "quote_telemetry": {
+      "audit_artifact": "evidence/notifications/telegram/MATRIX_TELEGRAM_QUOTE_ATTEMPT_TELEMETRY_AUDIT_LAST.json",
+      "audit_blob_sha": "f7aa3b7f941519d673af2cd87923ec967e87f334",
+      "certification_artifact": "evidence/notifications/telegram/MATRIX_TELEGRAM_QUOTE_TELEMETRY_CERTIFICATION_LAST.json",
+      "certification_blob_sha": "59a2c1244922c173eaf085482d502fc4fb5c38f1",
+      "generated_at_utc": "2026-10-28T05:43:52+00:00",
+      "status": "PASS",
+      "coverage_schema": "MATRIX_TELEGRAM_QUOTE_ATTEMPT_V3",
+      "authorized_house_count": 14,
+      "real_quote_attempts_total": 4,
+      "minimum_required": 50,
+      "remaining_to_minimum": 46,
+      "sample_gate_status": "ACCUMULATING_REAL_REVALIDATIONS",
+      "recommendation_authorized": false,
+      "synthetic_attempts_included": false,
+      "exact_over25_coverage_by_house": {
+        "betano": 1,
+        "betplay": 0,
+        "betsson": 0,
+        "bwin": 0,
+        "codere": 0,
+        "luckia": 0,
+        "mryoker": 0,
+        "rivalo": 0,
+        "rushbet": 0,
+        "sportium": 0,
+        "stake": 0,
+        "wplay": 0,
+        "yajuego": 0,
+        "zamba": 0
+      },
+      "interpretation": "The V3 multibook sample is not yet large enough to certify portfolio-wide quote coverage or reliability."
+    }
+  },
+  "workflow_proof": {
+    "daily_pipeline": {
+      "run_id": 40639302581,
+      "triggering_head_sha": "7624796c9759a13d7af5d1d982ab1bbf18eff686",
+      "conclusion": "success",
+      "probability_and_physical_odds_ev": "success",
+      "browser_to_pmatrix_lineage": "success",
+      "evidence_persistence": "success"
+    },
+    "telegram_15m_supervisor": {
+      "run_id": 40639363272,
+      "triggering_main_sha": "f9c9fc4f47ebd3a2f3d76e4fd24934d5841f9afc",
+      "conclusion": "success",
+      "permanent_15m_contracts": "success",
+      "scheduler_source_contract": "success",
+      "signal_supervisor": "success",
+      "final_window_readiness": "success",
+      "quote_telemetry": "success",
+      "watchdog": "success",
+      "persistence": "success",
+      "final_monitoring_gate": "success"
+    },
+    "telegram_green_post_rebase_fix": {
+      "run_id": 40639556650,
+      "triggering_main_sha": "3dcd2e853f913470d57f9cadf356d5fbc52c57ff",
+      "conclusion": "success",
+      "workflow_parity": "success",
+      "signal_gates": "success",
+      "supervisor": "success",
+      "final_window": "success",
+      "quote_telemetry": "success",
+      "elite_committee": "success",
+      "persistence": "success"
+    },
+    "workflow_parity": {
+      "telegram_green_main_blob_sha": "62b616bfb87b17e9894d5f9117b61054aff6cf98",
+      "telegram_green_operational_blob_sha": "62b616bfb87b17e9894d5f9117b61054aff6cf98",
+      "equal": true
+    }
+  },
+  "repair_commits": [
+    {
+      "sha": "997495cb28843ab0665bd18dd2f1c79398320dd5",
+      "role": "Daily EV consumes full canonical Colombia execution-book catalog"
+    },
+    {
+      "sha": "3771812b934ad4dbcd4138db61bfcfea246d26e7",
+      "role": "Regression tests protect 14-book EV policy"
+    },
+    {
+      "sha": "a35398716e9b77345234b650d7ef58284fca9384",
+      "role": "Canonicalize Colombia bookmaker aliases"
+    },
+    {
+      "sha": "e1ac2402f780e572d586abe04a0786aa8fe2eab2",
+      "role": "Telegram consumes canonical bookmaker catalog"
+    },
+    {
+      "sha": "afcc024a531e2eece0dc7393573df723f18f49d3",
+      "role": "Cross-component bookmaker policy synchronization test"
+    },
+    {
+      "sha": "7624796c9759a13d7af5d1d982ab1bbf18eff686",
+      "role": "Daily pipeline enforces bookmaker policy sync"
+    },
+    {
+      "sha": "b83971a29a22f97823ce0d318dc936128c5fac13",
+      "role": "15m supervisor enforces bookmaker policy sync on operational branch"
+    },
+    {
+      "sha": "f9c9fc4f47ebd3a2f3d76e4fd24934d5841f9afc",
+      "role": "15m supervisor policy contract synchronized to main"
+    },
+    {
+      "sha": "cf82e934280461c217dab88392c5f1076bcfc536",
+      "role": "Telegram Green triggers/tests canonical bookmaker policy"
+    },
+    {
+      "sha": "dc9597b169cc24e0d17a5acd731a4e47ce7242ec",
+      "role": "Telegram Green canonical policy contract synchronized to main"
+    },
+    {
+      "sha": "2c0484d95b408e838f0d44f5b90a6ee254465ea2",
+      "role": "Telegram Green rebase allowlist includes generated signal-gate evidence"
+    },
+    {
+      "sha": "3dcd2e853f913470d57f9cadf356d5fbc52c57ff",
+      "role": "Final Telegram Green rebase allowlist synchronized to main"
+    }
+  ],
+  "historical_failed_runs_preserved_for_audit": [
+    {
+      "run_id": 40639335654,
+      "conclusion": "failure",
+      "scientific_signal_steps": "completed before persistence or skipped depending on timing",
+      "root_cause": "Rebase conflict allowlist omitted MATRIX_TELEGRAM_MARKET_SIGNAL_ELIGIBILITY_LAST.json and MATRIX_TELEGRAM_MULTI_MARKET_SIGNAL_GATE_LAST.json"
+    },
+    {
+      "run_id": 40639360081,
+      "conclusion": "failure",
+      "scientific_signal_steps": "success",
+      "root_cause": "Same missing rebase allowlist entries during concurrent evidence persistence"
+    }
+  ],
+  "governance": {
+    "source_order": [
+      "SOFASCORE",
+      "FLASHSCORE",
+      "APIS"
+    ],
+    "p_matrix_preexists_before_odds": true,
+    "odds_may_not_generate_or_modify_p_matrix": true,
+    "decimal_odds_strictly_gt_1_50_required": true,
+    "positive_ev_required": true,
+    "final_revalidation_window_minutes": 120,
+    "supervisor_interval_minutes": 15,
+    "zero_bet_valid": true,
+    "missing_not_zero": true,
+    "no_silent_imputation": true,
+    "no_post_start_backfill": true,
+    "automatic_wagering": false,
+    "real_money": "BLOCKED"
+  },
+  "pending_not_closed": [
+    "V3 multibook quote-attempt sample remains 4/50; 46 real revalidations are still required before coverage/reliability recommendation is authorized.",
+    "In the current API-Football EV capture, only Betano produced governed exact Over 2.5 offers; this is provider evidence, not proof of absence at the other 13 configured execution books.",
+    "55 candidates are monitored but must wait for their final 120-minute prematch window and then independently revalidate exact executable odds and positive EV.",
+    "No signal is forced by this repair; 0 BET remains valid."
+  ]
+}

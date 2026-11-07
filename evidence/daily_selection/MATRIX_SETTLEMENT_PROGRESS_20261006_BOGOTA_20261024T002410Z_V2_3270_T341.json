@@ -1,0 +1,89 @@
+{
+  "schema": "MATRIX_SETTLEMENT_PROGRESS_20261006_BOGOTA_V1",
+  "cut_utc": "2026-10-24T00:24:10Z",
+  "branch": "repair/cor09-world-pipeline",
+  "observed_head_before_snapshot": "48b9d3f1e3a027be746ac5a23ebaaeae242ee4bf",
+  "previous_snapshot": "evidence/daily_selection/MATRIX_SETTLEMENT_PROGRESS_20261006_BOGOTA_20261023T214237Z_V2_3270_T340.json",
+  "previous_snapshot_commit": "628f94065ebd901cf537240b1ec2f1d7cdeddbc7",
+  "evidence_blobs": {
+    "candidates": "52e897007840f5bed1a8999edad8ee594fefc767",
+    "football_settlement_ledger": "f5d1ed387da7ce47cd6add43c6b0e07ebf50082d",
+    "football_settlement_sync": "78aaaf70d3d969d794b793773ff6664f50e1dd84",
+    "football_calibration_sync": "b7de915c676f1691af5ee69bfd99e461f108989f",
+    "football_v2_1x2_state": "b64076eff4c12706bb3803d3e319cf05e59b4da3",
+    "football_v2_over_2_5_state": "7132efedcad7755e33f6d243e1640366af854955",
+    "football_v2_under_2_5_state": "c4a38e36aa5f5af2609cd5c7efbeedd14d826703",
+    "football_v2_double_chance_1x_state": "943074921778de4e3901e96a840eb272aefdc606",
+    "football_v2_double_chance_x2_state": "20bcce1cf3370c8fc514f957fb5372f1a548e45a",
+    "tennis_settlement_ledger": "a28d531520c4ea3461aed022983187046d0e3d65",
+    "tennis_settlement_sync": "3c6c78f1a0623f7dc82d66dd6a9cfac0d9997dba",
+    "tennis_settlement_uniqueness": "96366bff5c0beddd0d94b28726870964062b3e4e",
+    "canonical_guard": "5b3ba51afff607f5f4034eacd1ad9363e1403c5b"
+  },
+  "football": {
+    "cohort_total": 116,
+    "cohort_standard_ft": 107,
+    "cohort_change_since_previous_snapshot": 0,
+    "global_final_settled": 4072,
+    "global_change_since_previous_snapshot": 0,
+    "v2_frozen_per_market": 3997,
+    "v2_settled_per_market": 3270,
+    "v2_pending_per_market": 727,
+    "v2_market_count": 5,
+    "v2_all_states_metrics_opened": false,
+    "governed_sync_status": "PASS",
+    "governed_sync_new_settlements": 0,
+    "governed_sync_at_utc": "2026-10-24T00:20:36+00:00",
+    "cohort_method": "Prior audited 107/116 and identical football settlement ledger blob SHA to previous snapshot; latest governed sync explicitly retains eight nonstandard and one NS.",
+    "nonstandard": {
+      "PEN": [
+        "1588817",
+        "1588821",
+        "1588845",
+        "1588863",
+        "1588890",
+        "1588893",
+        "1619499"
+      ],
+      "AET": [
+        "1644168"
+      ],
+      "NS": [
+        "1596466"
+      ]
+    }
+  },
+  "tennis": {
+    "cohort_total": 11,
+    "cohort_finished": 11,
+    "cohort_change_since_previous_snapshot": 0,
+    "global_settled": 341,
+    "global_change_since_previous_snapshot": 1,
+    "ledger_records": 341,
+    "unique_events": 341,
+    "unique_settlement_ids": 341,
+    "cohort_ledger_records": 11,
+    "cohort_unique_events": 11,
+    "cohort_terminal_status": "FINISHED",
+    "governed_sync_status": "PASS",
+    "governed_sync_new_settlements_at_latest_run": 0,
+    "new_settlement_already_committed_by_governed_process": {
+      "event_id": "COR0203-RAPIDAPI-TENNIS-504120-52694148c988",
+      "terminal_status": "FINISHED",
+      "settled_at_utc": "2026-10-23T23:58:57+00:00",
+      "settlement_id": "365f136fc4793d730822b624d4175be38ab5ffb1f8e84e8babc90236df4e7436",
+      "governed_commit": "2f7ad47f52b0c3bea1f547c7f5adf6a7e9ce040e"
+    },
+    "method": "Full 341-line JSONL ledger parsed, verified event and settlement ID uniqueness and 11 exact candidate IDs; single appended settlement identified in governed commit diff."
+  },
+  "governance": {
+    "canonical_guard_status_at_utc": "PASS at 2026-10-24T00:24:05.863490+00:00",
+    "settlement_final_only": true,
+    "metrics_opened": false,
+    "tuning": false,
+    "odds_to_p": false,
+    "automatic_wagering": false,
+    "real_money": "BLOCKED",
+    "note": "Snapshot only. New tennis settlement already persisted by governed process; no duplicate writes or metric/model changes."
+  }
+}

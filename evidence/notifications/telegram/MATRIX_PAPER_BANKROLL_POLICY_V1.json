@@ -1,0 +1,66 @@
+{
+  "schema": "MATRIX_PAPER_BANKROLL_POLICY_V1",
+  "effective_date_bogota": "2026-10-10",
+  "mode": "PAPER_ONLY",
+  "currency": "COP",
+  "initial_bankroll_cop": 5000000,
+  "unit": {
+    "fraction_of_initial_bankroll": 0.005,
+    "cop": 25000,
+    "fixed_while_calibrating": true
+  },
+  "stake_levels": {
+    "1": {
+      "units": 1,
+      "stake_cop": 25000,
+      "rule": "Eligible green signal with positive EV that does not meet stake 2/3 thresholds"
+    },
+    "2": {
+      "units": 2,
+      "stake_cop": 50000,
+      "rule": "P_MATRIX >= 60% AND EV >= 5%"
+    },
+    "3": {
+      "units": 3,
+      "stake_cop": 75000,
+      "rule": "P_MATRIX >= 65% AND EV >= 10%"
+    }
+  },
+  "risk_controls": {
+    "maximum_open_exposure_fraction_of_current_bankroll": 0.4,
+    "singles_only": true,
+    "no_forced_bet_when_exposure_cap_reached": true,
+    "real_money": "BLOCKED",
+    "automatic_wagering": false,
+    "odds_used_to_generate_probability": false,
+    "final_only_settlement": true,
+    "standard_daily_exposure_fraction_of_current_bankroll": 0.3,
+    "high_conviction_daily_exposure_fraction_of_current_bankroll": 0.4,
+    "high_conviction_day_gate": {
+      "minimum_stake3_signals": 5,
+      "minimum_tier2_or_3_share": 0.4,
+      "both_conditions_required": true
+    }
+  },
+  "governance": {
+    "applies_to_telegram_green_signals": true,
+    "no_research_only_or_no_go_market_admission": true,
+    "purpose": "Evaluate bankroll behavior and stake-tier performance while market calibration continues without authorizing real-money MATRIX execution."
+  },
+  "initial_cohort_exception": {
+    "target_date_bogota": "2026-10-10",
+    "telegram_message_id_first": 68,
+    "telegram_message_id_last": 112,
+    "signal_count": 45,
+    "stake_1_count": 25,
+    "stake_2_count": 13,
+    "stake_3_count": 7,
+    "tier2_or_3_count": 20,
+    "tier2_or_3_share": 0.4444444444444444,
+    "resulting_exposure_cop": 1800000,
+    "resulting_exposure_fraction_of_initial_bankroll": 0.36,
+    "reclassification": "HIGH_CONVICTION_DAY_WITHIN_40PCT_CAP",
+    "exception_required": false,
+    "rationale": "The 10-OCT cohort has 7 Stake-3 signals and 20/45 Stake-2-or-3 signals (44.44%), satisfying the governed 40% high-conviction-day gate. Its 36% exposure is therefore inside policy."
+  }
+}

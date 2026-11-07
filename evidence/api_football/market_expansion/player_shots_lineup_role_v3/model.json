@@ -1,0 +1,69 @@
+{
+  "automatic_wagering": false,
+  "candidate": "lineup_role_expected_minutes_v3",
+  "evaluation_line": 1.5,
+  "expected_minutes_pit_prospective_certified": true,
+  "historical_and_prospective_role_source_identical": true,
+  "internal_selection": {
+    "final_validation_used_for_selection": false,
+    "selected": {
+      "alpha_recent_rate": 0.25,
+      "internal_validation": {
+        "brier_score": 0.20465599955280664,
+        "ece_5bin": 0.08780652387525781,
+        "log_loss": 0.5967489666440241,
+        "max_calibration_error_5bin": 0.23459523312736363,
+        "sample_size": 621
+      }
+    },
+    "trial_count": 5
+  },
+  "lane": "PLAYER_SHOTS",
+  "odds_used_to_generate_probability": false,
+  "prematch_lineup_source_certified": true,
+  "prospective_freeze_allowed": true,
+  "prospective_gates": [
+    30,
+    50,
+    100,
+    200
+  ],
+  "protected_final_holdout_used": false,
+  "real_money": "BLOCKED",
+  "row_count": 1823,
+  "schema": "MATRIX_PLAYER_SHOTS_LINEUP_ROLE_MODEL_V3",
+  "selected_parameters": {
+    "alpha_recent_rate": 0.25,
+    "evaluation_line": 1.5,
+    "expected_minutes_method": "MEAN_PRIOR_SAME_LINEUP_ROLE_MINUTES_ONLY",
+    "historical_role_source": "/fixtures/lineups",
+    "minimum_same_role_history": 3,
+    "prospective_role_source": "/fixtures/lineups"
+  },
+  "selected_parameters_sha256": "36743fef8a0d9c757fdc336214ee13f678238c47ab316735faf5a3926a866f77",
+  "source_dataset": "evidence/api_football/market_expansion/player_shots_lineup_role_v3/player_shots_lineup_role_pit.jsonl",
+  "source_dataset_sha256": "fab1584778b4a5d18519543b437971daefb6f5a56fec5e272f6fcb467f28d289",
+  "status": "FROZEN_FOR_NEW_PROSPECTIVE_VALIDATION_V3",
+  "train_count": 1773,
+  "validation": {
+    "challenger_v3": {
+      "brier_score": 0.18550428710005143,
+      "ece_5bin": 0.03991103433258372,
+      "log_loss": 0.54984743327156,
+      "max_calibration_error_5bin": 0.14580088930047547,
+      "sample_size": 50
+    },
+    "delta_brier": -0.004678884414550555,
+    "delta_log_loss": -0.014712657039817056,
+    "gate_passed": true,
+    "role_agnostic_same_rows": {
+      "brier_score": 0.19018317151460198,
+      "ece_5bin": 0.05081697719838566,
+      "log_loss": 0.5645600903113771,
+      "max_calibration_error_5bin": 0.143325332493729,
+      "sample_size": 50
+    }
+  },
+  "validation_count": 50,
+  "validation_used_for_parameter_tuning": false
+}

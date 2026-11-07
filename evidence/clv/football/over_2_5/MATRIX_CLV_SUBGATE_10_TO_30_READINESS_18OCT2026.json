@@ -1,0 +1,57 @@
+{
+  "schema": "MATRIX_CLV_SUBGATE_10_TO_30_READINESS_V1",
+  "generated_at_utc": "2026-10-18T14:52:00Z",
+  "canonical_clv_state": {
+    "decision_count": 89,
+    "closing_odds_count": 10,
+    "remaining_to_subgate_30": 20,
+    "remaining_to_300": 290,
+    "metrics_opened": false,
+    "state_status": "ACCUMULATING_SEALED_UNTIL_300",
+    "valid_strict_fresh_captures": 10,
+    "valid_capture_rate_pct": 100,
+    "all_quote_ages_within_120": true,
+    "all_captures_prematch": true
+  },
+  "watcher_96": {
+    "run_id": 39132348862,
+    "conclusion": "success",
+    "remaining_future": 0,
+    "terminal_message": "CLV_CONTINUOUS_WATCHER_NO_FUTURE_DECISIONS",
+    "successor_dispatch": "CLV_SUCCESSOR_NOT_NEEDED",
+    "adjudication": "NO_ACTIVE_SUCCESSOR_REQUIRED_UNTIL_NEW_FUTURE_DECISIONS_EXIST"
+  },
+  "football_supervisor": {
+    "completed_at_utc": "2026-10-18T14:41:10+00:00",
+    "status": "PASS",
+    "calibration_observation_count": 3139,
+    "frozen_event_count": 3784,
+    "settled_event_count": 3115,
+    "unresolved_event_count": 669,
+    "new_settlement_count": 24,
+    "pending_count": 432,
+    "automatic_wagering": false,
+    "real_money": "BLOCKED"
+  },
+  "next_day_inventory": {
+    "target_date": "2026-10-19",
+    "daily_prematch_report_directory_present": false,
+    "repository_latest_daily_prematch_report_date": "2026-10-18",
+    "repository_code_search_for_date": "NO_RESULTS",
+    "new_clv_future_decisions_present": false
+  },
+  "governance": {
+    "strict_fresh_gate_seconds": 120,
+    "required_provider": "Pinnacle",
+    "require_complete_market_snapshot": true,
+    "require_prematch_capture": true,
+    "historical_backfill": "FORBIDDEN",
+    "post_kickoff_close": "FORBIDDEN",
+    "tuning_before_300": "FORBIDDEN",
+    "odds_used_to_generate_probability": false,
+    "automatic_wagering": false,
+    "real_money": "BLOCKED"
+  },
+  "blocker": "NO_NEW_FUTURE_CLV_DECISIONS; 19-OCT DAILY_PREMATCH_REPORT_NOT_YET_PRESENT",
+  "adjudication": "SUBGATE_10_TO_30_READY_AND_GOVERNED; CANNOT LEGITIMATELY INCREMENT UNTIL NEW FUTURE DECISIONS ARE PRODUCED; DO_NOT_FORCE_OR_BACKFILL"
+}

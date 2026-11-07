@@ -1,0 +1,115 @@
+{
+  "schema": "MATRIX_SETTLEMENT_PROGRESS_20261006_BOGOTA_V1",
+  "cut_utc": "2026-10-23T20:12:02Z",
+  "branch": "repair/cor09-world-pipeline",
+  "source_branch_head_at_read": "f975289e4b8243868a846d151e98205faa068654",
+  "comparison_previous_snapshot": "evidence/daily_selection/MATRIX_SETTLEMENT_PROGRESS_20261006_BOGOTA_20261023T1847Z_V2_3189_T338.json",
+  "candidate_artifact": "evidence/daily_selection/MATRIX_CALIBRATION_CANDIDATES_20261006_BOGOTA.json",
+  "candidate_blob_sha": "52e897007840f5bed1a8999edad8ee594fefc767",
+  "football": {
+    "cohort_ft": 107,
+    "cohort_total": 116,
+    "cohort_change": 0,
+    "cohort_method": "Previous audited 107/116 carried forward; latest governed sync 20 new FT fixture IDs disjoint from all 116 candidate IDs; latest sync explicitly blocks seven PEN and one AET; one NS remains pending. Full historical football ledger not reparsed.",
+    "global_settled": 4011,
+    "global_change_since_previous_snapshot": 20,
+    "global_frozen": 4825,
+    "v2_frozen_per_market": 3997,
+    "v2_settled_per_market": 3209,
+    "v2_pending_per_market": 788,
+    "v2_markets": [
+      "1X2",
+      "OVER_2_5",
+      "UNDER_2_5",
+      "DOUBLE_CHANCE_1X",
+      "DOUBLE_CHANCE_X2"
+    ],
+    "new_governed_ft_fixture_ids": [
+      "1567104",
+      "1567933",
+      "1567935",
+      "1567936",
+      "1567937",
+      "1567938",
+      "1628015",
+      "1566388",
+      "1566828",
+      "1566829",
+      "1567106",
+      "1567267",
+      "1573887",
+      "1573889",
+      "1574138",
+      "1574139",
+      "1574140",
+      "1574141",
+      "1574143",
+      "1628010"
+    ],
+    "new_governed_ft_count": 20,
+    "source_terminal_status": "FT",
+    "governed_commit": "6ccae61977c2228e578a076eba6c5280fee47e42",
+    "governed_sync_at_utc": "2026-10-23T19:30:21+00:00",
+    "nonstandard": {
+      "PEN": [
+        "1588817",
+        "1588821",
+        "1588845",
+        "1588863",
+        "1588890",
+        "1588893",
+        "1619499"
+      ],
+      "AET": [
+        "1644168"
+      ],
+      "NS": [
+        "1596466"
+      ]
+    },
+    "remaining_valid_finals_to_4000": 0,
+    "source_physical_uniqueness_blob_sha": "432b904368cb9c2c12c6054b61feafca02404783",
+    "source_settlement_sync_blob_sha": "4d3c345bd8f5bf2c5e20f913140a13ec15db1f09",
+    "source_canonical_tracker_blob_sha": "4f78baa4287592356b75d5360c23bf09b1668e21",
+    "v2_state_blob_shas": {
+      "1x2": "254329b359407b223185908922ca9597c4899633",
+      "over_2_5": "ca41be560409bca9df8400198c2e78b28953d83d",
+      "under_2_5": "bbe85ba1ab1ed89f4f62dd3d7e5e77365f9df6ae",
+      "double_chance_1x": "067bc36f24cb95f9f9341df97e48bcc63393aa6d",
+      "double_chance_x2": "09b35abd76fa9a2cf54f17e0f03e6434c0f89f2c"
+    },
+    "physical_uniqueness_audit_result": "PASS",
+    "physical_uniqueness_audit_unique_fixture_ids": 4825,
+    "physical_uniqueness_audit_calibration_unique_fixture_ids": 4011
+  },
+  "tennis": {
+    "cohort_finished": 11,
+    "cohort_total": 11,
+    "cohort_change": 0,
+    "global_settled": 340,
+    "global_change_since_previous_snapshot": 2,
+    "unique_events": 340,
+    "unique_settlements": 340,
+    "new_finished_event_ids": [
+      "COR0203-RAPIDAPI-TENNIS-498292-6b11d4f67e43",
+      "COR0203-RAPIDAPI-TENNIS-572215-0f206dcbd979"
+    ],
+    "new_governed_commit": "a8503161b539054304efa6eae346698231b2f710",
+    "new_settled_at_utc": "2026-10-23T19:32:06+00:00",
+    "cohort_method": "Parsed entire tennis ledger; 11 exact-day candidate event IDs each match exactly one FINISHED settlement; 340 distinct event IDs and 340 distinct settlement IDs; all ledger rows metrics_opened=false and used_for_metrics=false.",
+    "source_ledger_blob_sha": "ef8659198b849bd36dbe056b273b3de530f00572"
+  },
+  "governance": {
+    "settlement_final_only": true,
+    "metrics_opened": false,
+    "metrics_opened_scope": "Football V2 five lanes, governed football settlement sync and tennis settlement ledger; unrelated prospective_calibration/gates.json contains historical metrics_opened=true and is not modified here.",
+    "tuning": false,
+    "odds_to_p": false,
+    "real_money": "BLOCKED",
+    "canonical_guard_last_observed_status": "FAIL_CLOSED",
+    "canonical_guard_generated_at_utc": "2026-10-23T19:57:54.017666+00:00",
+    "canonical_guard_reason": "telegram_daily_bankroll CANONICAL_SOURCE_STALE",
+    "canonical_guard_source_blob_sha": "5f585c8c007bdeb3959b69ddd2f435c93478f540",
+    "note": "Snapshot-only audit of previously governed settlements. No duplicated settlements or model modifications. Threshold 4000 global reached; no calibration metrics opened by this snapshot."
+  }
+}

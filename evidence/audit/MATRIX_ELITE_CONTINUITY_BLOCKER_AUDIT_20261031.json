@@ -1,0 +1,50 @@
+{
+  "schema": "MATRIX_ELITE_CONTINUITY_BLOCKER_AUDIT_V1",
+  "audit_date_bogota": "2026-10-31",
+  "branch": "repair/cor09-world-pipeline",
+  "scope": "Read-only inspection of canonical evidence and workflow source; execution logs not yet verified",
+  "findings": [
+    {
+      "id": "FUTURE_CALENDAR",
+      "status": "BLOCKED",
+      "source": "evidence/notifications/telegram/MATRIX_TELEGRAM_OFFLINE_SOURCE_WATCHDOG_LAST.json",
+      "observed_at_utc": "2026-10-31T08:39:23+00:00",
+      "detail": "Future 2026-11-01 calendar/preregistry/watchlist chain incomplete; 0 local football candidates; upstream evidence targets 2026-10-29."
+    },
+    {
+      "id": "PAID_API_DEPENDENCY",
+      "status": "SOURCE_CONFIRMED_RUNTIME_UNVERIFIED",
+      "source": ".github/workflows/football-daily-governed-pipeline.yml",
+      "detail": "Workflow invokes football_subscription_deadline_guard --require-paid-use --require-key before downstream production; no paid renewal authorized."
+    },
+    {
+      "id": "TELEGRAM_PREMIUM",
+      "status": "NOT_CONFIGURED",
+      "source": "evidence/notifications/telegram/MATRIX_PREMIUM_DELIVERY_LEDGER.json",
+      "detail": "Premium channel run history reports PREMIUM_CHANNEL_NOT_CONFIGURED and sent=0; does not establish primary channel state."
+    },
+    {
+      "id": "CANONICAL_TRUTH_GUARD",
+      "status": "PASS_AS_OF_SOURCE_TIMESTAMP",
+      "source": "evidence/governance/MATRIX_CANONICAL_TRUTH_GUARD_LAST.json",
+      "detail": "5/5 registered checks PASS at 2026-10-31T13:57:16Z; does not prove GitHub Actions delivery."
+    },
+    {
+      "id": "TELEGRAM_SCHEDULE",
+      "status": "CONFIGURED_NOT_RUNTIME_CERTIFIED",
+      "source": ".github/workflows/telegram-matrix-supervisor-15m.yml",
+      "detail": "cron */15 configured; scheduled runtime success not yet verified."
+    }
+  ],
+  "next_required_evidence": [
+    "GitHub Actions failed run job IDs, steps and logs for football daily and Telegram supervisor",
+    "Fresh SofaScore/Flashscore 2026-11-01 canonical source artifacts",
+    "Primary Telegram delivery receipts with timestamp and message id"
+  ],
+  "safety": {
+    "real_money": "BLOCKED",
+    "automatic_wagering": false,
+    "do_not_bypass_gates": true
+  },
+  "conclusion": "PARTIAL_DIAGNOSIS_NOT_OPERATIONAL_RECOVERY"
+}

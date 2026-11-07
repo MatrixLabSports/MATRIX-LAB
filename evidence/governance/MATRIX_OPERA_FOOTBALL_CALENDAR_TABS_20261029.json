@@ -1,0 +1,37 @@
+{
+  "schema": "MATRIX_OPERA_FOOTBALL_CALENDAR_TABS_V1",
+  "target_date_bogota": "2026-10-29",
+  "source_priority": [
+    "sofascore",
+    "flashscore",
+    "authorized_apis"
+  ],
+  "verification": "LIVE_OPERA_ACCESSIBILITY_TREE_READ",
+  "sources": [
+    {
+      "provider": "sofascore",
+      "tab_id": 2017706577,
+      "url": "https://www.sofascore.com/es/football/2026-10-29",
+      "observed_match_example": "FK Vrbas - SK Butmir",
+      "observed_date_label": "29/10/26",
+      "coverage": "PARTIAL_ACCESSIBILITY_PAGES_ONLY"
+    },
+    {
+      "provider": "flashscore",
+      "tab_id": 2017706576,
+      "url": "https://www.flashscore.co/manana/",
+      "observed_match_example": "Al Khaleej - Al Hazem",
+      "observed_time_label": "09:35",
+      "coverage": "PARTIAL_ACCESSIBILITY_PAGES_ONLY",
+      "date_caveat": "Relative tomorrow URL; target date corroborated by user context, not independent embedded absolute date"
+    }
+  ],
+  "certifications": {
+    "both_tabs_read": true,
+    "full_calendar_extracted": false,
+    "physical_calendar_repo_saved": false,
+    "scored_prematch_generated": false,
+    "telegram_signals_certified": false
+  },
+  "next_step": "Run canonical physical browser capture for 2026-10-29 and reconcile; no P_MATRIX inferred from calendar and no expired paid APIs."
+}

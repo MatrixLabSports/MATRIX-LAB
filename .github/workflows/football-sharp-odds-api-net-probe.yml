@@ -1,0 +1,78 @@
+name: MATRIX Football Sharp odds-api.net Probe
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - repair/cor09-world-pipeline
+    paths:
+      - .github/workflows/football-sharp-odds-api-net-probe.yml
+      - tools/football_sharp_odds_api_net_probe.py
+
+permissions:
+  contents: write
+
+concurrency:
+  group: matrix-football-sharp-odds-api-net-probe
+  cancel-in-progress: false
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      REAL_MONEY: BLOCKED
+      AUTO_BETTING: DISABLED
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: repair/cor09-world-pipeline
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: python -m pip install requests pytest
+      - name: Run existing strict odds-api.net parser tests
+        run: PYTHONPATH=. python -m pytest -q tests/test_football_clv_odds_api_net_capture.py
+      - name: Run current PIT-ready Pinnacle freshness probe
+        env:
+          ODDS_API_NET_KEY: ${{ secrets.ODDS_API_NET_KEY }}
+        run: PYTHONPATH=. python -m tools.football_sharp_odds_api_net_probe
+      - name: Enforce sharp-reference protections
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          j=json.loads(Path("evidence/api_football/sharp_odds_api_net_probe/manifest.json").read_text())
+          assert j["status"]=="PASS"
+          assert j["sample_size"] > 0
+          assert j["sample_size"] <= 12
+          assert j["reference_bookmaker"]=="Pinnacle"
+          assert j["transport"]=="odds-api.net"
+          assert j["protections"]["strict_fresh_gate_seconds"]==120
+          assert j["protections"]["odds_used_to_generate_probability"] is False
+          assert j["protections"]["p_matrix_status"]=="NOT_GENERATED"
+          assert j["protections"]["automatic_wagering"] is False
+          assert j["protections"]["real_money"]=="BLOCKED"
+          print("SHARP_ODDS_API_NET_PROBE_GATE: PASS")
+          print("sample_size=",j["sample_size"])
+          print("identity_matched_count=",j["identity_matched_count"])
+          print("strict_fresh_120s_count=",j["strict_fresh_120s_count"])
+          print("strict_fresh_120s_rate=",j["strict_fresh_120s_rate"])
+          PY
+      - name: Persist physical sharp probe evidence
+        run: |
+          git config user.name matrix-sharp-probe
+          git config user.email matrix-sharp-probe@users.noreply.github.com
+          git add evidence/api_football/sharp_odds_api_net_probe
+          git commit -m "evidence(sharp): persist odds-api.net Pinnacle freshness probe"
+          for attempt in 1 2 3 4; do
+            git fetch origin repair/cor09-world-pipeline
+            if ! git rebase origin/repair/cor09-world-pipeline; then
+              git rebase --abort || true
+              exit 1
+            fi
+            if git push origin HEAD:repair/cor09-world-pipeline; then exit 0; fi
+            sleep $((attempt*2))
+          done
+          exit 1

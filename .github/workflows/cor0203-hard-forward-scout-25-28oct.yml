@@ -1,0 +1,106 @@
+name: MATRIX COR02-03 Hard Forward Scout 25-28OCT
+on:
+  push:
+    branches: [repair/cor09-world-pipeline]
+    paths: [.github/workflows/cor0203-hard-forward-scout-25-28oct.yml]
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  scout:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      REAL_MONEY: BLOCKED
+      AUTOMATIC_WAGERING: "false"
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: repair/cor09-world-pipeline
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: python -m pip install requests pytest
+      - name: Enforce paid-window guard
+        env:
+          RAPIDAPI_TENNIS_KEY: ${{ secrets.RAPIDAPI_TENNIS_KEY }}
+        run: |
+          python -m pytest -q tests/test_tennis_subscription_deadline_guard.py
+          python -m tools.tennis_subscription_deadline_guard --require-paid-use --require-key
+      - name: Scout 25-28OCT without holdout admission
+        env:
+          RAPIDAPI_TENNIS_KEY: ${{ secrets.RAPIDAPI_TENNIS_KEY }}
+        run: |
+          set -euo pipefail
+          mkdir -p evidence/cor0203/horizon_scout/2026-10-23-forward
+          : > /tmp/scout.jsonl
+          for D in 2026-10-25 2026-10-26 2026-10-27 2026-10-28; do
+            OUT="evidence/tennis/world_inventory/$D/MATRIX_TENNIS_WORLD_INVENTORY.json"
+            mkdir -p "$(dirname "$OUT")"
+            python -m tools.tennis_world_inventory_rapidapi --target-date-bogota "$D" --out "$OUT" --fail-on-partial
+            python - "$D" "$OUT" <<'PY' >> /tmp/scout.jsonl
+          import json,sys
+          from pathlib import Path
+          d,p=sys.argv[1],Path(sys.argv[2]); j=json.loads(p.read_text())
+          rows=[]
+          for e in j.get("events") or []:
+              md=e.get("model_derivation") or {}
+              if md.get("lane")=="COR02_COR03_ATP_CHALLENGER_HARD" and md.get("domain_candidate") is True:
+                  rows.append({
+                      "match_id":str(e.get("match_id") or ""),
+                      "source_event_id":e.get("source_event_id"),
+                      "tournament":e.get("tournament_name"),
+                      "surface":e.get("surface"),
+                      "round":e.get("round"),
+                      "event_start_bogota":e.get("event_start_bogota"),
+                      "player1":(e.get("player1") or {}).get("name"),
+                      "player2":(e.get("player2") or {}).get("name"),
+                  })
+          print(json.dumps({
+              "target_date_bogota":d,
+              "world_calendar_inventory_count":j.get("world_calendar_inventory_count"),
+              "provider_network_calls":j.get("provider_network_calls"),
+              "hard_challenger_candidate_count":len(rows),
+              "hard_challenger_candidates":rows,
+              "holdout_admitted":False,
+              "admission_reason":"FORWARD_SCOUT_ONLY_REQUIRES_EXACT_BROWSER_FIRST_BEFORE_ADMISSION",
+              "metrics_opened":False,
+              "real_money":"BLOCKED"
+          },ensure_ascii=False,sort_keys=True))
+          PY
+          done
+          python - <<'PY'
+          import json,hashlib
+          from datetime import datetime,timezone
+          from pathlib import Path
+          rows=[json.loads(x) for x in Path("/tmp/scout.jsonl").read_text().splitlines() if x.strip()]
+          allc=[c for r in rows for c in r["hard_challenger_candidates"]]
+          out={
+            "schema":"MATRIX_COR0203_HARD_FORWARD_SCOUT_25_28OCT_V1",
+            "generated_at_utc":datetime.now(timezone.utc).replace(microsecond=0).isoformat(),
+            "days":rows,
+            "total_hard_challenger_candidates":len(allc),
+            "unique_source_event_ids":sorted({str(c.get("source_event_id") or "") for c in allc if c.get("source_event_id")}),
+            "holdout_admitted":False,
+            "browser_first_required_before_admission":True,
+            "metrics_opened":False,
+            "outcomes_read_for_metrics":0,
+            "automatic_wagering":False,
+            "real_money":"BLOCKED"
+          }
+          raw=json.dumps(out,sort_keys=True,separators=(",",":")).encode()
+          out["sha256_without_self"]=hashlib.sha256(raw).hexdigest()
+          p=Path("evidence/cor0203/horizon_scout/2026-10-23-forward/MATRIX_COR0203_HARD_FORWARD_SCOUT_25_28OCT.json")
+          p.write_text(json.dumps(out,indent=2,sort_keys=True,ensure_ascii=False)+"\n")
+          print(json.dumps({"total_hard_challenger_candidates":out["total_hard_challenger_candidates"],"unique_source_event_ids":out["unique_source_event_ids"],"real_money":out["real_money"]},sort_keys=True))
+          PY
+      - name: Persist scout evidence
+        run: |
+          set -euo pipefail
+          git config user.name matrix-tennis-forward-scout
+          git config user.email matrix-tennis-forward-scout@users.noreply.github.com
+          git add evidence/tennis/world_inventory/2026-10-25 evidence/tennis/world_inventory/2026-10-26 evidence/tennis/world_inventory/2026-10-27 evidence/tennis/world_inventory/2026-10-28 evidence/cor0203/horizon_scout/2026-10-23-forward/MATRIX_COR0203_HARD_FORWARD_SCOUT_25_28OCT.json
+          git commit -m "evidence(tennis): scout Hard 25-28oct paid window"
+          git pull --rebase origin repair/cor09-world-pipeline
+          git push origin HEAD:repair/cor09-world-pipeline

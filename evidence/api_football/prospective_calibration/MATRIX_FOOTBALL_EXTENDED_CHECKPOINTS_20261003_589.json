@@ -1,0 +1,631 @@
+{
+  "schema": "MATRIX_FOOTBALL_EXTENDED_CHECKPOINTS_V1",
+  "source_ledger_blob_sha": "d3f59ae6c2c735c532368a76338d400e95004e62",
+  "source_sync_blob_sha": "2d21476d65aff29c7d098b8fc2bc93d849ae54b1",
+  "source_synced_at_utc": "2026-10-03T22:35:39+00:00",
+  "calibration_observation_count": 589,
+  "methodology": "EXACT_EXISTING_COMPUTE_METRICS_SEMANTICS_PLUS_PAIRED_95CI_DIAGNOSTIC",
+  "checkpoints": {
+    "300": {
+      "threshold": 300,
+      "observations_used": 300,
+      "1x2": {
+        "formal_status": "EVALUATED",
+        "metrics": {
+          "challenger": {
+            "sample_size": 300,
+            "brier_score": 0.5978797280188165,
+            "log_loss": 1.010569453916089,
+            "accuracy": 0.5166666666666667
+          },
+          "poisson": {
+            "sample_size": 300,
+            "brier_score": 0.6014750107196273,
+            "log_loss": 1.0056043155386283,
+            "accuracy": 0.52
+          },
+          "delta_brier_challenger_minus_poisson": -0.0035952827008107757,
+          "delta_log_loss_challenger_minus_poisson": 0.004965138377460709,
+          "gate_passed": false,
+          "paired_uncertainty": {
+            "brier": {
+              "mean": -0.0035952827008109006,
+              "se": 0.008759525111917335,
+              "ci95": [
+                -0.020763951920168878,
+                0.013573386518547077
+              ],
+              "n": 300
+            },
+            "log_loss": {
+              "mean": 0.004965138377462462,
+              "se": 0.01675797649588438,
+              "ci95": [
+                -0.027880495554470922,
+                0.03781077230939585
+              ],
+              "n": 300
+            },
+            "accuracy": {
+              "mean": -0.0033333333333333335,
+              "se": 0.016011654989523356,
+              "ci95": [
+                -0.03471617711279911,
+                0.028049510446132443
+              ],
+              "n": 300
+            }
+          }
+        }
+      },
+      "over_2_5": {
+        "formal_status": "EVALUATED",
+        "missing_count": 0,
+        "metrics": {
+          "sample_size": 300,
+          "challenger": {
+            "brier_score": 0.2419822914641902,
+            "log_loss": 0.67755433518359
+          },
+          "poisson": {
+            "brier_score": 0.2475601748504126,
+            "log_loss": 0.6905049865911447
+          },
+          "paired_uncertainty": {
+            "brier": {
+              "mean": -0.005577883386222208,
+              "se": 0.0024130410334681535,
+              "ci95": [
+                -0.010307443811819788,
+                -0.0008483229606246279
+              ],
+              "n": 300
+            },
+            "log_loss": {
+              "mean": -0.012950651407555427,
+              "se": 0.005593931862435252,
+              "ci95": [
+                -0.02391475785792852,
+                -0.001986544957182335
+              ],
+              "n": 300
+            }
+          },
+          "delta_brier_challenger_minus_poisson": -0.005577883386222393,
+          "delta_log_loss_challenger_minus_poisson": -0.012950651407554692,
+          "gate_passed": true
+        }
+      },
+      "btts_v2": {
+        "formal_status": "EVALUATED",
+        "missing_count": 0,
+        "metrics": {
+          "sample_size": 300,
+          "challenger": {
+            "brier_score": 0.24320677521225675,
+            "log_loss": 0.6794651394309372
+          },
+          "poisson": {
+            "brier_score": 0.24201991329411512,
+            "log_loss": 0.6771241227382493
+          },
+          "paired_uncertainty": {
+            "brier": {
+              "mean": 0.0011868619181416025,
+              "se": 0.005300656828186151,
+              "ci95": [
+                -0.009202425465103253,
+                0.011576149301386457
+              ],
+              "n": 300
+            },
+            "log_loss": {
+              "mean": 0.0023410166926875107,
+              "se": 0.011535201656534155,
+              "ci95": [
+                -0.020267978554119433,
+                0.024950011939494452
+              ],
+              "n": 300
+            }
+          },
+          "delta_brier_challenger_minus_poisson": 0.0011868619181416296,
+          "delta_log_loss_challenger_minus_poisson": 0.002341016692687936,
+          "gate_passed": false
+        }
+      },
+      "all_three_markets_formally_evaluable": true,
+      "all_three_markets_pass": false
+    },
+    "400": {
+      "threshold": 400,
+      "observations_used": 400,
+      "1x2": {
+        "formal_status": "EVALUATED",
+        "metrics": {
+          "challenger": {
+            "sample_size": 400,
+            "brier_score": 0.5944411148625295,
+            "log_loss": 1.0028782094063162,
+            "accuracy": 0.52
+          },
+          "poisson": {
+            "sample_size": 400,
+            "brier_score": 0.602163717955374,
+            "log_loss": 1.005939682104671,
+            "accuracy": 0.5175
+          },
+          "delta_brier_challenger_minus_poisson": -0.00772260309284456,
+          "delta_log_loss_challenger_minus_poisson": -0.0030614726983548834,
+          "gate_passed": true,
+          "paired_uncertainty": {
+            "brier": {
+              "mean": -0.007722603092844884,
+              "se": 0.007453430731735549,
+              "ci95": [
+                -0.02233132732704656,
+                0.006886121141356793
+              ],
+              "n": 400
+            },
+            "log_loss": {
+              "mean": -0.003061472698353865,
+              "se": 0.014102197121285163,
+              "ci95": [
+                -0.030701779056072784,
+                0.02457883365936505
+              ],
+              "n": 400
+            },
+            "accuracy": {
+              "mean": 0.0025,
+              "se": 0.01437884742018046,
+              "ci95": [
+                -0.0256825409435537,
+                0.030682540943553698
+              ],
+              "n": 400
+            }
+          }
+        }
+      },
+      "over_2_5": {
+        "formal_status": "EVALUATED",
+        "missing_count": 0,
+        "metrics": {
+          "sample_size": 400,
+          "challenger": {
+            "brier_score": 0.2393746180948594,
+            "log_loss": 0.6713192022490331
+          },
+          "poisson": {
+            "brier_score": 0.24352560165820308,
+            "log_loss": 0.6810972956238004
+          },
+          "paired_uncertainty": {
+            "brier": {
+              "mean": -0.004150983563343447,
+              "se": 0.0019874957727980787,
+              "ci95": [
+                -0.008046475278027682,
+                -0.00025549184865921283
+              ],
+              "n": 400
+            },
+            "log_loss": {
+              "mean": -0.009778093374767791,
+              "se": 0.004584847393455903,
+              "ci95": [
+                -0.018764394265941363,
+                -0.0007917924835942215
+              ],
+              "n": 400
+            }
+          },
+          "delta_brier_challenger_minus_poisson": -0.004150983563343674,
+          "delta_log_loss_challenger_minus_poisson": -0.009778093374767316,
+          "gate_passed": true
+        }
+      },
+      "btts_v2": {
+        "formal_status": "BLOCKED_MISSING_FROZEN_PROBABILITIES",
+        "missing_count": 7,
+        "missing_fixture_ids": [
+          "1643497",
+          "1643502",
+          "1643503",
+          "1643504",
+          "1643505",
+          "1582447",
+          "1582448"
+        ],
+        "metrics": null,
+        "complete_case_diagnostic": {
+          "sample_size": 393,
+          "challenger": {
+            "brier_score": 0.24360195412950447,
+            "log_loss": 0.6802476458311192
+          },
+          "poisson": {
+            "brier_score": 0.2456962509224506,
+            "log_loss": 0.6845673639100028
+          },
+          "paired_uncertainty": {
+            "brier": {
+              "mean": -0.002094296792946007,
+              "se": 0.004725060547470038,
+              "ci95": [
+                -0.01135541546598728,
+                0.007166821880095268
+              ],
+              "n": 393
+            },
+            "log_loss": {
+              "mean": -0.0043197180788835336,
+              "se": 0.010305089385987374,
+              "ci95": [
+                -0.024517693275418785,
+                0.01587825711765172
+              ],
+              "n": 393
+            }
+          },
+          "delta_brier_challenger_minus_poisson": -0.002094296792946121,
+          "delta_log_loss_challenger_minus_poisson": -0.00431971807888365,
+          "gate_passed": true,
+          "governance_role": "DIAGNOSTIC_ONLY_NOT_PROMOTION_GATE"
+        }
+      },
+      "all_three_markets_formally_evaluable": false,
+      "all_three_markets_pass": false
+    },
+    "500": {
+      "threshold": 500,
+      "observations_used": 500,
+      "1x2": {
+        "formal_status": "EVALUATED",
+        "metrics": {
+          "challenger": {
+            "sample_size": 500,
+            "brier_score": 0.596547146179856,
+            "log_loss": 1.0025750532271818,
+            "accuracy": 0.51
+          },
+          "poisson": {
+            "sample_size": 500,
+            "brier_score": 0.6052750734787625,
+            "log_loss": 1.0102519819386229,
+            "accuracy": 0.512
+          },
+          "delta_brier_challenger_minus_poisson": -0.00872792729890648,
+          "delta_log_loss_challenger_minus_poisson": -0.0076769287114411,
+          "gate_passed": true,
+          "paired_uncertainty": {
+            "brier": {
+              "mean": -0.008727927298907178,
+              "se": 0.006465581499612161,
+              "ci95": [
+                -0.021400467038147013,
+                0.003944612440332658
+              ],
+              "n": 500
+            },
+            "log_loss": {
+              "mean": -0.007676928711440171,
+              "se": 0.01214498118581765,
+              "ci95": [
+                -0.031481091835642766,
+                0.016127234412762426
+              ],
+              "n": 500
+            },
+            "accuracy": {
+              "mean": -0.002,
+              "se": 0.01312770632466664,
+              "ci95": [
+                -0.027730304396346613,
+                0.023730304396346616
+              ],
+              "n": 500
+            }
+          }
+        }
+      },
+      "over_2_5": {
+        "formal_status": "EVALUATED",
+        "missing_count": 0,
+        "metrics": {
+          "sample_size": 500,
+          "challenger": {
+            "brier_score": 0.24014064297358506,
+            "log_loss": 0.6732912013331172
+          },
+          "poisson": {
+            "brier_score": 0.24499291275851626,
+            "log_loss": 0.6848642481657579
+          },
+          "paired_uncertainty": {
+            "brier": {
+              "mean": -0.004852269784931005,
+              "se": 0.0017899635437958134,
+              "ci95": [
+                -0.0083605983307708,
+                -0.0013439412390912108
+              ],
+              "n": 500
+            },
+            "log_loss": {
+              "mean": -0.011573046832640724,
+              "se": 0.00414906700619182,
+              "ci95": [
+                -0.01970521816477669,
+                -0.003440875500504757
+              ],
+              "n": 500
+            }
+          },
+          "delta_brier_challenger_minus_poisson": -0.004852269784931196,
+          "delta_log_loss_challenger_minus_poisson": -0.01157304683264071,
+          "gate_passed": true
+        }
+      },
+      "btts_v2": {
+        "formal_status": "BLOCKED_MISSING_FROZEN_PROBABILITIES",
+        "missing_count": 27,
+        "missing_fixture_ids": [
+          "1643497",
+          "1643502",
+          "1643503",
+          "1643504",
+          "1643505",
+          "1582447",
+          "1582448",
+          "1582451",
+          "1643496",
+          "1569121",
+          "1569123",
+          "1569125",
+          "1582449",
+          "1574363",
+          "1574367",
+          "1574370",
+          "1582450",
+          "1582452",
+          "1582453",
+          "1643507",
+          "1564878",
+          "1564879",
+          "1564880",
+          "1564881",
+          "1564882",
+          "1564885",
+          "1569119"
+        ],
+        "metrics": null,
+        "complete_case_diagnostic": {
+          "sample_size": 473,
+          "challenger": {
+            "brier_score": 0.24461128903735582,
+            "log_loss": 0.6822987542105733
+          },
+          "poisson": {
+            "brier_score": 0.250275830640133,
+            "log_loss": 0.6947317350577535
+          },
+          "paired_uncertainty": {
+            "brier": {
+              "mean": -0.00566454160277713,
+              "se": 0.004418244486869392,
+              "ci95": [
+                -0.01432430079704114,
+                0.002995217591486879
+              ],
+              "n": 473
+            },
+            "log_loss": {
+              "mean": -0.012432980847180286,
+              "se": 0.009678716975376988,
+              "ci95": [
+                -0.03140326611891918,
+                0.0065373044245586095
+              ],
+              "n": 473
+            }
+          },
+          "delta_brier_challenger_minus_poisson": -0.005664541602777157,
+          "delta_log_loss_challenger_minus_poisson": -0.012432980847180253,
+          "gate_passed": true,
+          "governance_role": "DIAGNOSTIC_ONLY_NOT_PROMOTION_GATE"
+        }
+      },
+      "all_three_markets_formally_evaluable": false,
+      "all_three_markets_pass": false
+    },
+    "589": {
+      "threshold": 589,
+      "observations_used": 589,
+      "1x2": {
+        "formal_status": "EVALUATED",
+        "metrics": {
+          "challenger": {
+            "sample_size": 589,
+            "brier_score": 0.5916015158743197,
+            "log_loss": 0.9957286690419135,
+            "accuracy": 0.5229202037351444
+          },
+          "poisson": {
+            "sample_size": 589,
+            "brier_score": 0.6004226582506063,
+            "log_loss": 1.003961731253374,
+            "accuracy": 0.5263157894736842
+          },
+          "delta_brier_challenger_minus_poisson": -0.008821142376286506,
+          "delta_log_loss_challenger_minus_poisson": -0.008233062211460473,
+          "gate_passed": true,
+          "paired_uncertainty": {
+            "brier": {
+              "mean": -0.008821142376286761,
+              "se": 0.005784992767175773,
+              "ci95": [
+                -0.020159728199951276,
+                0.002517443447377754
+              ],
+              "n": 589
+            },
+            "log_loss": {
+              "mean": -0.008233062211460276,
+              "se": 0.010828438963151119,
+              "ci95": [
+                -0.02945680257923647,
+                0.012990678156315917
+              ],
+              "n": 589
+            },
+            "accuracy": {
+              "mean": -0.003395585738539898,
+              "se": 0.012014596668091775,
+              "ci95": [
+                -0.026944195207999778,
+                0.02015302373091998
+              ],
+              "n": 589
+            }
+          }
+        }
+      },
+      "over_2_5": {
+        "formal_status": "EVALUATED",
+        "missing_count": 0,
+        "metrics": {
+          "sample_size": 589,
+          "challenger": {
+            "brier_score": 0.24031112804365748,
+            "log_loss": 0.6737263998359939
+          },
+          "poisson": {
+            "brier_score": 0.2445353770326406,
+            "log_loss": 0.6836662034894826
+          },
+          "paired_uncertainty": {
+            "brier": {
+              "mean": -0.004224248988982939,
+              "se": 0.0016204267749091428,
+              "ci95": [
+                -0.007400285467804859,
+                -0.001048212510161019
+              ],
+              "n": 589
+            },
+            "log_loss": {
+              "mean": -0.009939803653488533,
+              "se": 0.003729521471981624,
+              "ci95": [
+                -0.017249665738572516,
+                -0.00262994156840455
+              ],
+              "n": 589
+            }
+          },
+          "delta_brier_challenger_minus_poisson": -0.004224248988983131,
+          "delta_log_loss_challenger_minus_poisson": -0.009939803653488677,
+          "gate_passed": true
+        }
+      },
+      "btts_v2": {
+        "formal_status": "BLOCKED_MISSING_FROZEN_PROBABILITIES",
+        "missing_count": 42,
+        "missing_fixture_ids": [
+          "1643497",
+          "1643502",
+          "1643503",
+          "1643504",
+          "1643505",
+          "1582447",
+          "1582448",
+          "1582451",
+          "1643496",
+          "1569121",
+          "1569123",
+          "1569125",
+          "1582449",
+          "1574363",
+          "1574367",
+          "1574370",
+          "1582450",
+          "1582452",
+          "1582453",
+          "1643507",
+          "1564878",
+          "1564879",
+          "1564880",
+          "1564881",
+          "1564882",
+          "1564885",
+          "1569119",
+          "1574364",
+          "1574368",
+          "1574369",
+          "1596905",
+          "1596906",
+          "1596909",
+          "1596911",
+          "1569122",
+          "1574371",
+          "1599979",
+          "1599986",
+          "1600137",
+          "1643509",
+          "1564883",
+          "1569124"
+        ],
+        "metrics": null,
+        "complete_case_diagnostic": {
+          "sample_size": 547,
+          "challenger": {
+            "brier_score": 0.24581483693409586,
+            "log_loss": 0.6847150999455254
+          },
+          "poisson": {
+            "brier_score": 0.25253331730493356,
+            "log_loss": 0.6992938538779928
+          },
+          "paired_uncertainty": {
+            "brier": {
+              "mean": -0.00671848037083761,
+              "se": 0.004073405126674717,
+              "ci95": [
+                -0.014702354419120055,
+                0.0012653936774448355
+              ],
+              "n": 547
+            },
+            "log_loss": {
+              "mean": -0.014578753932467204,
+              "se": 0.008903846573112613,
+              "ci95": [
+                -0.032030293215767926,
+                0.0028727853508335177
+              ],
+              "n": 547
+            }
+          },
+          "delta_brier_challenger_minus_poisson": -0.006718480370837693,
+          "delta_log_loss_challenger_minus_poisson": -0.014578753932467436,
+          "gate_passed": true,
+          "governance_role": "DIAGNOSTIC_ONLY_NOT_PROMOTION_GATE"
+        }
+      },
+      "all_three_markets_formally_evaluable": false,
+      "all_three_markets_pass": false
+    }
+  },
+  "governance": {
+    "parameter_tuning_allowed": false,
+    "original_357_holdout_reuse_allowed": false,
+    "missing_not_zero": true,
+    "silent_imputation": false,
+    "p_matrix_status": "NOT_GENERATED",
+    "automatic_wagering": false,
+    "real_money": "BLOCKED"
+  }
+}

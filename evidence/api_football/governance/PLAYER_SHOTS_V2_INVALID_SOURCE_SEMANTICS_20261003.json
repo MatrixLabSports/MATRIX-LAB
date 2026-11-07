@@ -1,0 +1,48 @@
+{
+  "schema": "MATRIX_PLAYER_SHOTS_V2_INVALID_SOURCE_SEMANTICS_V1",
+  "decided_at_utc": "2026-10-04T00:32:00Z",
+  "lane": "PLAYER_SHOTS",
+  "generation": "V2_ROLE_AWARE_EXPECTED_MINUTES",
+  "decision": "NO_GO_INVALID_ROLE_SOURCE_SEMANTICS",
+  "prior_historical_oos_gate": "PASS_BUT_NOT_PROMOTABLE",
+  "historical_role_source": "fixtures/players.games.substitute",
+  "required_prospective_role_source": "/fixtures/lineups",
+  "physical_cross_source_audit": {
+    "fixtures_queried": 16,
+    "fixtures_with_comparison": 15,
+    "comparable_player_roles": 307,
+    "matching_player_roles": 224,
+    "mismatch_count": 83,
+    "role_agreement_rate": 0.7296416938110749,
+    "mismatch_directions": {
+      "STARTER_TO_SUBSTITUTE": 83,
+      "SUBSTITUTE_TO_STARTER": 0
+    },
+    "certification_threshold": 0.98,
+    "certification_passed": false,
+    "source_pointer_path": "evidence/api_football/market_expansion/player_shots_role_certification/last_run.json",
+    "source_pointer_blob_sha": "f92e33666fe22c0f851b0f3cfed3d1eb7d618d74"
+  },
+  "raw_counterexample": {
+    "fixture_id": "1520866",
+    "fixtures_players_blob_sha": "d6a1b45ab6ab772b5d4e843afad944950b736158",
+    "fixtures_lineups_blob_sha": "4ab9df20610d28a653d9572cef74c27c0d231884",
+    "examples": [
+      "Douglas Baggio",
+      "Hereda",
+      "Fábio Alemão"
+    ],
+    "observation": "fixtures/players reports games.substitute=false while /fixtures/lineups places these players in substitutes"
+  },
+  "remediation": {
+    "replacement": "PLAYER_SHOTS_LINEUP_ROLE_V3",
+    "historical_role_source": "/fixtures/lineups",
+    "prospective_role_source": "/fixtures/lineups",
+    "reuse_v2_role_labels": false,
+    "reuse_v2_oos_pass_for_promotion": false,
+    "new_pit_required": true,
+    "new_oos_required": true
+  },
+  "automatic_wagering": false,
+  "real_money": "BLOCKED"
+}

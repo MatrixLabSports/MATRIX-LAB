@@ -1,0 +1,142 @@
+{
+  "schema": "MATRIX_COR0203_UNIQUE200_ROOT_CAUSE_RESOLUTION_20261012_V1",
+  "status": "PASS_PHYSICALLY_VERIFIED_WINDOW1_CLOSED",
+  "repository": "MatrixLabSports/MATRIX-LAB",
+  "branch": "repair/cor09-world-pipeline",
+  "before": {
+    "physical_frozen_rows": 340,
+    "unique_calibration_observations": 199,
+    "duplicate_observations_quarantined": 141,
+    "window1_count": 199,
+    "window1_target": 200,
+    "window1_remaining": 1
+  },
+  "root_causes": [
+    {
+      "id": "RC1_HISTORY_PROBE_PRIORITY_DESTROYED_BY_PROVIDER_ID_SORT",
+      "resolution": "Preserve governed insertion order so current-world candidates are probed before wider durable-horizon candidates under the bounded target budget.",
+      "code_commit": "51a3b175c8d54612142208380198d23980a06769",
+      "code_blob": "d2d39a0e59a4e6c96496928df54f70c31f4f1d73",
+      "regression_test_commit": "95d73d60a5d928cebd52908da655cd03fbd6b61a",
+      "regression_test_blob": "aabe778d830bcca51a798e9dcde6cab37bc65736"
+    },
+    {
+      "id": "RC2_PROVIDER_IDENTITY_EVIDENCE_CONFLATED_WITH_MODEL_HISTORY",
+      "resolution": "Permit physical provider rows to prove provider identity only when sealed R706 model history is independently complete; provider rows are explicitly not admitted as competitive/model history.",
+      "code_commit": "4cc580a1b0c3ac7be184855d37fee0273a5cfbfc",
+      "code_blob": "1c996c95495ceec9d979afd4f9075698cd2b1f0a",
+      "regression_test_commit": "229d63e8a35063d95d5d11513d9f8f9ae4cfe964",
+      "regression_test_blob": "e242e124565a276f72248606ceede268bf37aecf"
+    },
+    {
+      "id": "RC3_CROSSWALK_VALIDATOR_DID_NOT_RECOGNIZE_SAFE_R706_IDENTITY_ONLY_AUTHORITY",
+      "resolution": "Extend identity authority resolution with fail-closed validation of exact-cut rank/points, IOC, physical provider rows, identity-only role, sealed R706 components, state SHA, profile DOB/hand and no post-cut competitive admission.",
+      "code_commit": "2163f214a02568a28dac5782e51acfe7cb827d3a",
+      "code_blob": "42c20112a9fa9d47db04f4b9a1006a7a78943308",
+      "regression_test_commit": "dc45ae5fa483d6faa681335aab79403a6af41336",
+      "regression_test_blob": "0e959fb430c2c1e3494d1b98d03d7cb05980cac9"
+    }
+  ],
+  "workflow": {
+    "hardening_commit": "69b9ded4e64079c29da92c3b5490fe40dc230fd6",
+    "workflow_blob": "8efc45cd0e4fd32caec24570f25ec461082803a5",
+    "run_id": 38218216240,
+    "job_id": 114707863951,
+    "conclusion": "SUCCESS",
+    "integrity_regression_suite": "SUCCESS",
+    "governed_production_cycle": "SUCCESS",
+    "autonomous_evidence_commit": "dac0fbb204e1d3bcbc3794120a4adf28fd9606a0"
+  },
+  "new_freezes": [
+    {
+      "canonical_unique_index": 200,
+      "event_id": "COR0203-RAPIDAPI-TENNIS-1730-ecaf8eb966da",
+      "players": [
+        "Alexandre Muller",
+        "Tomas Machac"
+      ],
+      "competition": "Jinan Challenger",
+      "surface": "Hard",
+      "round": "First",
+      "event_start_utc": "2026-10-13T02:00:00+00:00",
+      "freeze_at_utc": "2026-10-12T07:32:53+00:00",
+      "duplicate_alias_count": 0,
+      "outcome": null
+    },
+    {
+      "canonical_unique_index": 201,
+      "event_id": "COR0203-RAPIDAPI-TENNIS-1469-983f64ca65b4",
+      "players": [
+        "Adam Walton",
+        "Marin Cilic"
+      ],
+      "competition": "Jinan Challenger",
+      "surface": "Hard",
+      "round": "First",
+      "event_start_utc": "2026-10-12T10:30:00+00:00",
+      "freeze_at_utc": "2026-10-12T07:32:53+00:00",
+      "duplicate_alias_count": 0,
+      "outcome": null
+    }
+  ],
+  "rejected_restage_events": {
+    "count": 2,
+    "reason": "POST_START_FREEZE_FORBIDDEN",
+    "policy": "REMAIN_BLOCKED_NOT_COUNTED"
+  },
+  "after": {
+    "physical_frozen_rows": 342,
+    "unique_calibration_observations": 201,
+    "duplicate_observations_quarantined": 141,
+    "window1_count": 200,
+    "window1_target": 200,
+    "window1_remaining": 0,
+    "window1_physical_status": "CLOSED_AT_200",
+    "remaining_to_600": 399,
+    "milestone_200": "REACHED"
+  },
+  "evidence": {
+    "holdout_r915": {
+      "path": "evidence/cor0203/holdout/MATRIX_COR0203_HOLDOUT_BATCH_R915.json",
+      "blob": "f4a8602bf0ba656828163fb89f6b1b2b3492e882"
+    },
+    "preflight_r915": {
+      "path": "evidence/cor0203/runtime/MATRIX_COR0203_BATCH_PREFLIGHT_R915.json",
+      "blob": "472f52e529ca581e9734885c4db694bf33578ae2"
+    },
+    "history_gate_r915": {
+      "path": "evidence/cor0203/runtime/MATRIX_COR0203_HISTORY_GATE_R915.json",
+      "blob": "c1120a59c9f456661770859021863a85e678401f"
+    },
+    "crosswalk_r915": {
+      "path": "evidence/cor0203/runtime/MATRIX_COR0203_IDENTITY_CROSSWALK_R915.json",
+      "blob": "44efcc62eddc4fa4d8ae3ae562efb027f30b145c"
+    },
+    "uniqueness": {
+      "path": "evidence/cor0203/runtime/MATRIX_COR0203_PHYSICAL_UNIQUENESS_LAST.json",
+      "blob": "9a50e5d26a7be9cfe091b4a3fb9377d43a5fbbf8"
+    },
+    "milestones": {
+      "path": "evidence/cor0203/runtime/MATRIX_COR0203_MILESTONES_LAST.json",
+      "blob": "621a6b1e2c5aa7e72f0d78c02a663a971d58ab90"
+    },
+    "observability": {
+      "path": "evidence/cor0203/runtime/MATRIX_COR0203_PRODUCTION_OBSERVABILITY_LAST.json",
+      "blob": "f528ad1f7ac74322f0678ab6fda91aefbee8d251"
+    }
+  },
+  "protections": {
+    "no_forced_data": true,
+    "no_synthetic_or_historical_backfill": true,
+    "silent_imputation": false,
+    "same_period_results_used": false,
+    "outcomes_read_for_metrics": 0,
+    "metrics_opened": false,
+    "metrics_policy": "SEALED_UNTIL_600",
+    "parameter_tuning_allowed": false,
+    "odds_used_for_probability": false,
+    "post_start_freeze_forbidden": true,
+    "real_money": "BLOCKED"
+  },
+  "adjudication": "Window 1 is physically closed at 200 unique observations. The total unique holdout is 201 because two legitimate, distinct, future events passed all gates in the same governed cycle. No event was suppressed to force an exact total of 200."
+}

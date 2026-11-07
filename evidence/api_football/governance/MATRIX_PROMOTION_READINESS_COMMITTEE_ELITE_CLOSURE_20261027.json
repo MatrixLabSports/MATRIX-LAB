@@ -1,0 +1,105 @@
+{
+  "schema": "MATRIX_PROMOTION_READINESS_COMMITTEE_ELITE_CLOSURE_V1",
+  "generated_at_utc": "2026-10-27T20:01:21+00:00",
+  "scope": [
+    "1X2",
+    "UNDER_2_5",
+    "DOUBLE_CHANCE_1X",
+    "DOUBLE_CHANCE_X2",
+    "TELEGRAM_MULTI_MARKET_GATE"
+  ],
+  "conclusion": "FUNCTIONAL_CLOSURE_PASS_NO_UNRESOLVED_CODE_DEFECTS",
+  "canonical_success_run": {
+    "workflow": "MATRIX Football Promotion Readiness Consolidated Gate",
+    "run_id": 40574138386,
+    "conclusion": "success"
+  },
+  "root_causes_resolved": [
+    "MULTI_MARKET_GATE_AUDIT_VARIABLES_USED_BEFORE_LOAD",
+    "1X2_CIRCULAR_DEPENDENCY_ON_MULTI_MARKET_GATE_AND_UNDEFINED_MULTI_GATE",
+    "MULTIPLE_WORKFLOWS_WRITING_SAME_TELEGRAM_GATE_CAUSING_REBASE_CONFLICTS",
+    "INDIVIDUAL_MARKET_WORKFLOWS_RUNNING_OR_WRITING_SHARED_GATE"
+  ],
+  "architecture": {
+    "pattern": "SINGLE_WRITER",
+    "single_writer_workflow": ".github/workflows/api-football-promotion-readiness-consolidated.yml",
+    "validator_only_workflows": [
+      ".github/workflows/api-football-1x2-promotion-readiness.yml",
+      ".github/workflows/api-football-under25-promotion-readiness.yml",
+      ".github/workflows/api-football-double-chance-1x-promotion-readiness.yml",
+      ".github/workflows/api-football-double-chance-x2-promotion-readiness.yml"
+    ],
+    "regression_test": "tests/test_promotion_readiness_single_writer.py",
+    "consolidated_schedule_cron": "7,22,37,52 * * * *"
+  },
+  "invariants": {
+    "real_money": "BLOCKED",
+    "automatic_wagering": false,
+    "minimum_decimal_odds_exclusive": 1.5,
+    "positive_ev_required": true,
+    "p_matrix_must_exist_before_odds": true,
+    "odds_may_not_generate_probability": true,
+    "no_backfill": true,
+    "promotion_before_all_gates": "FORBIDDEN"
+  },
+  "current_physical_state": {
+    "oos_current_observations": 796,
+    "oos_target_observations": 1000,
+    "oos_remaining": 204,
+    "oos_metrics_opened": false,
+    "lane_settlement_count": 4027,
+    "lane_pending_settlement_count": 385,
+    "lane_freeze_observation_count": 4412
+  },
+  "market_statuses": {
+    "1X2": {
+      "status": "BLOCKED_NOT_PROMOTABLE",
+      "signal_status": "RESEARCH_ONLY",
+      "promotion_allowed": false
+    },
+    "UNDER_2_5": {
+      "status": "BLOCKED_NOT_PROMOTABLE",
+      "signal_status": "RESEARCH_ONLY",
+      "promotion_allowed": false
+    },
+    "DOUBLE_CHANCE_1X": {
+      "status": "BLOCKED_NOT_PROMOTABLE",
+      "signal_status": "RESEARCH_ONLY",
+      "promotion_allowed": false
+    },
+    "DOUBLE_CHANCE_X2": {
+      "status": "BLOCKED_NOT_PROMOTABLE",
+      "signal_status": "RESEARCH_ONLY",
+      "promotion_allowed": false
+    },
+    "OVER_2_5": {
+      "signal_status": "SIGNAL_AUTHORIZED"
+    }
+  },
+  "telegram_gate": {
+    "status": "PASS",
+    "signal_authorized": 1,
+    "research_only": 8,
+    "no_go": 6,
+    "lab_only": 6
+  },
+  "evidence_paths": [
+    "evidence/api_football/governance/MATRIX_1X2_PROMOTION_READINESS_LAST.json",
+    "evidence/api_football/governance/MATRIX_UNDER25_PROMOTION_READINESS_LAST.json",
+    "evidence/api_football/governance/MATRIX_DOUBLE_CHANCE_1X_PROMOTION_READINESS_LAST.json",
+    "evidence/api_football/governance/MATRIX_DOUBLE_CHANCE_X2_PROMOTION_READINESS_LAST.json",
+    "evidence/notifications/telegram/MATRIX_TELEGRAM_MULTI_MARKET_SIGNAL_GATE_LAST.json"
+  ],
+  "key_commits": [
+    "bde1e1b61cc679ccd71ee08e554b5533bdfe1002",
+    "996fdf571cc0d3c16f946e5726889ae20fe1da5d",
+    "3c4200d1ff695583aaa651ed35c6952efbe46ac7",
+    "e8375baf1e8563b16d65d971dcda7a748f4b6134",
+    "01682c7861388690f6911b0aa9aa646984fa3123",
+    "f29a9a5c7796c81ea0ea95656bdb22f3fe3494e3",
+    "195331e4b6962d74806d5b599072a5b91c34a5ce",
+    "c79f33b1e543b4dad23a0d8d7ef497addb383979",
+    "fb26fcc776c0bfad80c6d5d5bf5800139ccd136b"
+  ],
+  "transient_state_note": "Later workflow runs may remain queued/in-progress because commits triggered serialized revalidations; this is not an unresolved code defect. The canonical consolidated workflow already completed successfully and persisted coherent artifacts."
+}

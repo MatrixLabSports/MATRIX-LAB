@@ -1,0 +1,46 @@
+name: MATRIX Browser Quote Blocker Safety Test
+on:
+  push:
+    branches:
+      - repair/cor09-world-pipeline
+    paths:
+      - tools/matrix_browser_quote_blocker_report.py
+      - tools/matrix_selfhosted_browser_quote_collector.py
+      - tools/matrix_early_research_quote_intake.py
+      - tests/test_matrix_early_research_quote_intake.py
+      - tests/test_matrix_betano_team_identity_suffix.py
+      - tests/test_matrix_browser_target_scope_diagnostic.py
+      - tests/test_matrix_browser_collection_outcome.py
+      - tests/test_matrix_betano_research_market_archive.py
+      - tools/matrix_calendar_browser_observations.py
+      - tests/test_matrix_calendar_browser_observations.py
+      - tests/test_matrix_real_sofa_nov04_observations.py
+      - evidence/football_world_inventory/2026-11-04/MATRIX_SOFA_BROWSER_OBSERVATIONS.json
+      - evidence/football_world_inventory/2026-11-04/MATRIX_FLASH_BROWSER_OBSERVATIONS.json
+      - .github/workflows/matrix-browser-blocker-safety.yml
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  diagnose:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      REAL_MONEY: BLOCKED
+      AUTO_BETTING: DISABLED
+    steps:
+      - uses: actions/checkout@v4
+      - name: Reject unsafe environment
+        run: |
+          test "$REAL_MONEY" = BLOCKED
+          test "$AUTO_BETTING" = DISABLED
+      - name: Compile and check fail-closed evidence classifier
+        run: |
+          python3 -m py_compile tools/matrix_browser_quote_blocker_report.py
+          python3 tools/matrix_browser_quote_blocker_report.py --self-test
+      - name: Install test dependencies
+        run: python3 -m pip install --disable-pip-version-check pytest playwright
+      - name: Regression on exact event identities (never odds)
+        run: python3 -m pytest -q tests/test_matrix_betano_team_identity_suffix.py tests/test_matrix_browser_target_scope_diagnostic.py tests/test_matrix_browser_collection_outcome.py tests/test_matrix_real_sofa_nov04_observations.py tests/test_matrix_calendar_browser_observations.py tests/test_matrix_early_research_quote_intake.py tests/test_matrix_betano_research_market_archive.py
+      - name: Explain evidence versus production
+        run: echo "DIAGNOSTIC_ONLY_NO_ODDS_NO_TELEGRAM_NO_AUTOMATIC_WAGERING"

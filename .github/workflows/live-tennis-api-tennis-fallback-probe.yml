@@ -1,0 +1,131 @@
+name: MATRIX Live Tennis API-Tennis Fallback Probe
+
+on:
+  push:
+    branches:
+      - repair/cor09-world-pipeline
+    paths:
+      - .github/workflows/live-tennis-api-tennis-fallback-probe.yml
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: live-tennis-api-tennis-fallback-probe
+  cancel-in-progress: false
+
+jobs:
+  probe:
+    if: ${{ false }} # API-Tennis retired 2026-10-13; NO_NETWORK unless explicitly reauthorized in governance
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      REAL_MONEY: BLOCKED
+      AUTO_BETTING: DISABLED
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: repair/cor09-world-pipeline
+          fetch-depth: 0
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - run: python -m pip install requests
+
+      - name: Probe paid API-Tennis livescore
+        env:
+          API_TENNIS_KEY: ${{ secrets.API_TENNIS_KEY }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import hashlib, json, os
+          from datetime import datetime, timezone
+          from pathlib import Path
+          import requests
+
+          key=os.environ.get("API_TENNIS_KEY","").strip()
+          if not key:
+              raise SystemExit("API_TENNIS_KEY_NOT_CONFIGURED")
+
+          r=requests.get(
+              "https://api.api-tennis.com/tennis/",
+              params={"method":"get_livescore","APIkey":key,"timezone":"UTC"},
+              timeout=(10,30),
+          )
+          raw=r.content
+          try:
+              payload=r.json()
+          except Exception:
+              payload={}
+          result=payload.get("result") if isinstance(payload,dict) else None
+          rows=result if isinstance(result,list) else []
+
+          def sanitize(row):
+              if not isinstance(row,dict): return {}
+              allow=[
+                "event_key","event_date","event_time","event_first_player","first_player_key",
+                "event_second_player","second_player_key","event_final_result","event_game_result",
+                "event_serve","event_winner","event_status","event_type_type","tournament_name",
+                "tournament_key","tournament_round","tournament_season","event_live",
+                "scores","pointbypoint","statistics"
+              ]
+              return {k:row.get(k) for k in allow if k in row}
+
+          captured=datetime.now(timezone.utc).replace(microsecond=0)
+          outdir=Path("evidence/live_tennis_lab/provider_failover")
+          outdir.mkdir(parents=True,exist_ok=True)
+          evidence={
+              "schema":"MATRIX_LIVE_TENNIS_API_TENNIS_FALLBACK_PROBE_V1",
+              "captured_at_utc":captured.isoformat(),
+              "provider":"api_tennis",
+              "endpoint":"get_livescore",
+              "http_status":r.status_code,
+              "success":payload.get("success") if isinstance(payload,dict) else None,
+              "live_match_count":len(rows),
+              "response_sha256":hashlib.sha256(raw).hexdigest(),
+              "sample":[sanitize(x) for x in rows[:5]],
+              "protections":{
+                  "secret_persisted":False,
+                  "automatic_model_feed":False,
+                  "odds_used":False,
+                  "automatic_wagering":False,
+                  "real_money":"BLOCKED"
+              },
+              "status":"PASS" if r.status_code==200 and isinstance(result,list) else "FAIL"
+          }
+          Path(outdir/"MATRIX_API_TENNIS_LIVESCORE_PROBE_LAST.json").write_text(
+              json.dumps(evidence,ensure_ascii=False,indent=2,sort_keys=True)+"\n",encoding="utf-8"
+          )
+          print(json.dumps({
+              "status":evidence["status"],
+              "http_status":r.status_code,
+              "live_match_count":len(rows),
+              "response_sha256":evidence["response_sha256"]
+          },sort_keys=True))
+          if evidence["status"]!="PASS":
+              raise SystemExit(2)
+          PY
+
+      - name: Persist probe evidence
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name matrix-live-tennis-failover
+          git config user.email matrix-live-tennis-failover@users.noreply.github.com
+          git add evidence/live_tennis_lab/provider_failover/MATRIX_API_TENNIS_LIVESCORE_PROBE_LAST.json
+          if git diff --cached --quiet; then
+            echo "NO_CHANGE"
+            exit 0
+          fi
+          git commit -m "evidence(live): verify API-Tennis paid livescore fallback"
+          for attempt in 1 2 3 4; do
+            git fetch origin repair/cor09-world-pipeline
+            if ! git rebase origin/repair/cor09-world-pipeline; then git rebase --abort || true; exit 1; fi
+            if git push origin HEAD:repair/cor09-world-pipeline; then exit 0; fi
+            sleep $((attempt*2))
+          done
+          exit 1

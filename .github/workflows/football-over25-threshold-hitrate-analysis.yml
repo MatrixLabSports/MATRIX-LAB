@@ -1,0 +1,54 @@
+name: MATRIX Football Over2.5 Threshold Hitrate Analysis
+
+on:
+  push:
+    branches:
+      - repair/cor09-world-pipeline
+    paths:
+      - .github/workflows/football-over25-threshold-hitrate-analysis.yml
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  analyze:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout operational branch
+        uses: actions/checkout@v4
+        with:
+          ref: repair/cor09-world-pipeline
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Run threshold hit-rate analysis
+        run: |
+          PYTHONPATH=. python tools/api_football_over25_threshold_hitrate_analysis.py
+
+      - name: Verify evidence
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          p=Path("evidence/api_football/calibration_v2/MATRIX_OVER25_THRESHOLD_HITRATE_ANALYSIS_CURRENT.json")
+          d=json.loads(p.read_text())
+          assert d["source_sample_size"]==3308
+          assert [x["threshold"] for x in d["threshold_results"]]==[0.6,0.65,0.7,0.75]
+          assert d["governance"]["parameter_tuning_allowed"] is False
+          assert d["governance"]["real_money"]=="BLOCKED"
+          print(json.dumps(d, sort_keys=True))
+          PY
+
+      - name: Persist evidence
+        run: |
+          git config user.name "matrix-over25-threshold-audit"
+          git config user.email "matrix-over25-threshold-audit@users.noreply.github.com"
+          git add evidence/api_football/calibration_v2/MATRIX_OVER25_THRESHOLD_HITRATE_ANALYSIS_CURRENT.json
+          git commit -m "evidence(football): persist Over2.5 threshold hit-rate analysis"
+          git pull --rebase origin repair/cor09-world-pipeline
+          git push origin HEAD:repair/cor09-world-pipeline

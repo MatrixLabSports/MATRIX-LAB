@@ -1,0 +1,70 @@
+from pathlib import Path
+import json
+
+import tools.telegram_quote_attempt_telemetry_audit as mod
+
+
+def test_audit_keeps_recommendation_closed_below_50(tmp_path,monkeypatch):
+    ledger=tmp_path/"attempts.jsonl"
+    ledger.write_text("",encoding="utf-8")
+    monkeypatch.setattr(mod,"LEDGER",ledger)
+    r=mod.build()
+    assert r["status"]=="PASS"
+    assert r["sample"]["real_quote_attempts_total"]==0
+    assert r["sample"]["remaining_to_minimum"]==50
+    assert r["recommendation_gate"]["recommendation_authorized"] is False
+    assert r["exact_line_policy"]["nearby_lines_never_substitute_for_2_5"] is True
+    assert r["protections"]["historical_terminal_state_cannot_overwrite_attempt"] is True
+    assert r["schema_evolution"]["current_schema"]=="MATRIX_TELEGRAM_QUOTE_ATTEMPT_V3"
+    assert "MATRIX_TELEGRAM_QUOTE_ATTEMPT_V1" in r["schema_evolution"]["legacy_schemas_preserved_without_rewrite"]
+    assert "MATRIX_TELEGRAM_QUOTE_ATTEMPT_V2" in r["schema_evolution"]["legacy_schemas_preserved_without_rewrite"]
+    assert len(r["required_authorized_books"])==14
+    assert r["schema_evolution"]["mixed_version_hash_chain_supported"] is True
+    assert r["schema_evolution"]["historical_rows_rewritten"] is False
+    assert r["required_field_contract"]["all_rows_schema_validated"] is True
+    assert "provider_event_id" in r["required_field_contract"]["identity_fields"]
+    assert "run_token" in r["required_field_contract"]["top_level_fields"]
+    assert r["reporting_scope_contract"]["LIVE_THIS_RUN"]["historical_terminal_states_included"] is False
+    assert r["reporting_scope_contract"]["TERMINAL_HISTORICAL"]["may_not_overwrite_immutable_attempt_rows"] is True
+    assert r["reporting_scope_contract"]["legacy_combined_counts_must_not_be_interpreted_as_live_coverage"] is True
+
+
+def test_certification_tracks_v3_rows_and_chain_bridge(tmp_path,monkeypatch):
+    ledger=tmp_path/"attempts.jsonl"
+    monkeypatch.setattr(mod,"LEDGER",ledger)
+    from datetime import datetime,timezone
+    from tools.telegram_quote_attempt_telemetry import build_attempt,append_attempt,load_verified
+
+    def diag(event_id):
+        return {
+          "status":"NO_EXACT_OVER25_FOUND",
+          "identity_top_scores":[0.99],
+          "identity_top_candidates":[{"score":0.99,"event_id":event_id}],
+          "odds_api_event_id":event_id,
+          "rows_by_book":{"betano":1},
+          "candidate_lines_by_book":{
+            "betano":[{"market_key":"total","side":"over","line":2.5,"odds":1.8}],
+          },
+        }
+
+    for i in range(2):
+        row=build_attempt(
+          fixture_id=str(i),signal_key=f"k{i}",
+          query_at_utc=datetime(2026,10,27,1,i,tzinfo=timezone.utc),
+          kickoff="2026-10-27T02:00:00+00:00",
+          odds_diag=diag(f"ev{i}"),api_diag={},
+          selected_offer={"house":"Betano","odds":1.8},
+          final_discard_reason="PASS_FINAL_PREMATCH_ALL_IMMEDIATE_GATES",
+          run_token="r",
+        )
+        append_attempt(ledger,row)
+
+    audit=mod.build()
+    cert=mod.build_certification(load_verified(ledger),audit)
+    assert cert["status"]=="PASS"
+    assert cert["verified_row_count"]==2
+    assert cert["current_schema_real_row_count"]==2
+    assert cert["first_current_schema_row_present"] is True
+    assert cert["first_current_schema_chain_bridge_verified"] is True
+    assert cert["no_legacy_rows_after_first_current_schema"] is True
+    assert cert["real_money"]=="BLOCKED"

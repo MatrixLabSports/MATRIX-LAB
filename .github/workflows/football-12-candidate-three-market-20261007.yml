@@ -1,0 +1,276 @@
+name: Football 12 Candidate Three Market Adjudication 2026-10-07
+
+on:
+  push:
+    branches:
+      - repair/cor09-world-pipeline
+    paths:
+      - .github/workflows/football-12-candidate-three-market-20261007.yml
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: football-12-candidate-three-market-20261007
+  cancel-in-progress: false
+
+jobs:
+  adjudicate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout operational branch
+        uses: actions/checkout@v4
+        with:
+          ref: repair/cor09-world-pipeline
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependency
+        run: python -m pip install requests
+
+      - name: Refresh Betano and adjudicate three markets
+        shell: bash
+        env:
+          API_FOOTBALL_KEY: ${{ secrets.API_FOOTBALL_KEY }}
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json, os, hashlib, re
+          from datetime import datetime, timezone
+          from pathlib import Path
+          from zoneinfo import ZoneInfo
+          import requests
+
+          root=Path(".")
+          src=root/"evidence/football_world_inventory/2026-10-07/MATRIX_FOOTBALL_CURRENT_FUTURE_CANDIDATES.json"
+          adj=root/"evidence/football_world_inventory/2026-10-07/physical_odds_ev/MATRIX_FOOTBALL_PHYSICAL_ODDS_EV_ADJUDICATED_07OCT2026.json"
+          candidates=json.loads(src.read_text())
+          shortlist=json.loads(adj.read_text())["betano_over_2_5_positive_ev"]
+          by_id={str(r["fixture_id"]):r for r in candidates["rows"]}
+          now=datetime.now(timezone.utc).replace(microsecond=0)
+          bog=ZoneInfo("America/Bogota")
+          key=os.environ["API_FOOTBALL_KEY"].strip()
+          session=requests.Session()
+
+          def odd(x):
+              try:
+                  v=float(x)
+                  return v if v>1 else None
+              except Exception:
+                  return None
+
+          def norm(s):
+              return re.sub(r"\s+"," ",str(s or "").strip().casefold())
+
+          def side1x2(label,home,away):
+              s=norm(label)
+              if s in {"home","1"} or s==norm(home): return "H"
+              if s in {"draw","x"}: return "D"
+              if s in {"away","2"} or s==norm(away): return "A"
+              return None
+
+          def side_dc(label):
+              s=norm(label).replace(" ","")
+              if s in {"home/draw","1x","homedraw"}: return "1X"
+              if s in {"draw/away","x2","drawaway"}: return "X2"
+              if s in {"home/away","12","homeaway"}: return "12"
+              return None
+
+          rawdir=root/"evidence/football_world_inventory/2026-10-07/three_market_adjudication/raw"
+          rawdir.mkdir(parents=True,exist_ok=True)
+          outrows=[]
+          calls=0
+          for item in shortlist:
+              fid=str(item["fixture_id"])
+              base=by_id.get(fid)
+              if not base:
+                  outrows.append({"fixture_id":fid,"match":item["match"],"status":"BLOCKED_CANDIDATE_BINDING_MISSING"})
+                  continue
+              kickoff=datetime.fromisoformat(str(base["kickoff_utc"]).replace("Z","+00:00")).astimezone(timezone.utc)
+              row={
+                "fixture_id":fid,
+                "match":item["match"],
+                "competition_name":base["competition_name"],
+                "kickoff_utc":base["kickoff_utc"],
+                "kickoff_bogota":kickoff.astimezone(bog).isoformat(),
+                "freeze_at_utc":base["freeze_at_utc"],
+                "p_1x2":base["p_1x2"],
+                "p_over_2_5":base["p_over_2_5"],
+                "status":None,
+                "markets":{},
+                "green_signal":None
+              }
+              if kickoff <= now:
+                  row["status"]="BLOCKED_ALREADY_STARTED_AT_REFRESH"
+                  row["green_signal"]="NO_BET"
+                  outrows.append(row)
+                  continue
+
+              resp=session.get(
+                "https://v3.football.api-sports.io/odds",
+                headers={"x-apisports-key":key},
+                params={"fixture":fid},
+                timeout=20
+              )
+              calls+=1
+              body=bytes(resp.content)
+              (rawdir/f"fixture_{fid}.bin").write_bytes(body)
+              try: payload=resp.json()
+              except Exception: payload={}
+              row["http_status"]=resp.status_code
+              row["raw_sha256"]=hashlib.sha256(body).hexdigest()
+              if not (200<=resp.status_code<300) or (isinstance(payload,dict) and payload.get("errors") not in ({},[],None)):
+                  row["status"]="BLOCKED_PROVIDER_ERROR"
+                  row["green_signal"]="NO_BET"
+                  outrows.append(row)
+                  continue
+
+              betano=None
+              for fr in payload.get("response",[]) if isinstance(payload,dict) else []:
+                  for b in fr.get("bookmakers",[]) or []:
+                      if norm(b.get("name"))=="betano":
+                          betano=b
+                          break
+                  if betano: break
+
+              if not betano:
+                  row["status"]="BLOCKED_BETANO_NOT_OBSERVED"
+                  row["green_signal"]="NO_BET"
+                  outrows.append(row)
+                  continue
+
+              exact={"1X2":[],"TOTAL_GOALS":[],"DOUBLE_CHANCE":[]}
+              for bet in betano.get("bets",[]) or []:
+                  bname=str(bet.get("name") or "")
+                  bid=bet.get("id")
+                  nb=norm(bname)
+                  if bid==1 and nb=="match winner":
+                      for v in bet.get("values",[]) or []:
+                          s=side1x2(v.get("value"),base["home_team_name"],base["away_team_name"])
+                          od=odd(v.get("odd"))
+                          if s and od:
+                              p=float(base["p_1x2"][s])
+                              exact["1X2"].append({"side":s,"label":v.get("value"),"decimal_odds":od,"p_frozen":p,"break_even":1/od,"ev":p*od-1})
+                  elif bid==5 and nb=="goals over/under":
+                      for v in bet.get("values",[]) or []:
+                          val=norm(v.get("value")).replace(" ","")
+                          od=odd(v.get("odd"))
+                          if not od: continue
+                          if val=="over2.5":
+                              p=float(base["p_over_2_5"])
+                              exact["TOTAL_GOALS"].append({"side":"OVER_2_5","label":v.get("value"),"decimal_odds":od,"p_frozen":p,"break_even":1/od,"ev":p*od-1})
+                          elif val=="under2.5":
+                              p=1-float(base["p_over_2_5"])
+                              exact["TOTAL_GOALS"].append({"side":"UNDER_2_5","label":v.get("value"),"decimal_odds":od,"p_frozen_complement":p,"break_even":1/od,"ev":p*od-1})
+                  elif nb=="double chance":
+                      for v in bet.get("values",[]) or []:
+                          s=side_dc(v.get("value")); od=odd(v.get("odd"))
+                          if not s or not od: continue
+                          p1=base["p_1x2"]
+                          p={"1X":float(p1["H"])+float(p1["D"]),"X2":float(p1["D"])+float(p1["A"]),"12":float(p1["H"])+float(p1["A"])}[s]
+                          exact["DOUBLE_CHANCE"].append({"side":s,"label":v.get("value"),"decimal_odds":od,"p_from_frozen_1x2_sum":p,"break_even":1/od,"ev":p*od-1,"bet_id":bid,"bet_name":bname})
+
+              row["markets"]=exact
+              row["three_market_categories_observed"]=sum(bool(exact[k]) for k in ("1X2","TOTAL_GOALS","DOUBLE_CHANCE"))
+              over=next((x for x in exact["TOTAL_GOALS"] if x["side"]=="OVER_2_5"),None)
+              # Only Over 2.5 is currently market-scoped promoted for governed P_MATRIX signal generation.
+              if row["three_market_categories_observed"]>=3 and over and over["decimal_odds"]>1.50 and over["ev"]>0:
+                  row["status"]="PASS_THREE_MARKETS_OBSERVED"
+                  row["green_signal"]="GREEN_OVER_2_5_GOVERNED"
+              elif over and over["decimal_odds"]>1.50 and over["ev"]>0:
+                  row["status"]="PASS_OVER25_BUT_THREE_MARKET_REQUIREMENT_NOT_CLOSED"
+                  row["green_signal"]="NO_BET"
+              else:
+                  row["status"]="NO_POSITIVE_GOVERNED_OVER25_AT_REFRESH"
+                  row["green_signal"]="NO_BET"
+              row["other_markets_policy"]={
+                "1X2":"ANALYZED_SHADOW_ONLY_NOT_AUTHORIZED_AS_GREEN_SIGNAL",
+                "DOUBLE_CHANCE":"ANALYZED_FROM_FROZEN_1X2_SUM_ONLY_NOT_AUTHORIZED_AS_GREEN_SIGNAL",
+                "UNDER_2_5":"ANALYZED_COMPLEMENT_ONLY_NOT_SEPARATELY_PROMOTED",
+                "BTTS":"NO_GO"
+              }
+              outrows.append(row)
+
+          greens=[r for r in outrows if r.get("green_signal")=="GREEN_OVER_2_5_GOVERNED"]
+          greens.sort(key=lambda r:(-next(x["ev"] for x in r["markets"]["TOTAL_GOALS"] if x["side"]=="OVER_2_5"), r["kickoff_utc"]))
+          result={
+            "schema":"MATRIX_FOOTBALL_12_CANDIDATE_THREE_MARKET_ADJUDICATION_07OCT2026_V1",
+            "refreshed_at_utc":now.isoformat(),
+            "refreshed_at_bogota":now.astimezone(bog).isoformat(),
+            "shortlist_input_count":len(shortlist),
+            "network_calls":calls,
+            "market_requirement":"MINIMUM_3_MARKET_CATEGORIES_PER_MATCH_UNLESS_CONSOLIDATED_GREEN_EXCEPTION",
+            "market_categories":["1X2","TOTAL_GOALS_2_5","DOUBLE_CHANCE"],
+            "green_authority":"OVER_2_5_ONLY_GOVERNED_P_MATRIX_SIGNAL_ENGINE",
+            "green_count":len(greens),
+            "no_bet_count":len(outrows)-len(greens),
+            "rows":outrows,
+            "greens":greens,
+            "protections":{
+              "freeze_before_odds_query":True,
+              "odds_used_to_generate_probability":False,
+              "outcomes_used":False,
+              "minimum_decimal_odds_exclusive":1.50,
+              "btts":"NO_GO",
+              "automatic_wagering":False,
+              "real_money":"BLOCKED"
+            }
+          }
+          target=root/"evidence/football_world_inventory/2026-10-07/three_market_adjudication/MATRIX_FOOTBALL_12_CANDIDATE_THREE_MARKET_ADJUDICATION_07OCT2026.json"
+          target.parent.mkdir(parents=True,exist_ok=True)
+          target.write_text(json.dumps(result,ensure_ascii=False,indent=2,sort_keys=True)+"\n")
+          print(json.dumps({
+            "refreshed_at_bogota":result["refreshed_at_bogota"],
+            "shortlist_input_count":result["shortlist_input_count"],
+            "network_calls":result["network_calls"],
+            "green_count":result["green_count"],
+            "no_bet_count":result["no_bet_count"],
+            "greens":[{"fixture_id":r["fixture_id"],"match":r["match"],"kickoff_bogota":r["kickoff_bogota"]} for r in greens],
+            "real_money":"BLOCKED"
+          },ensure_ascii=False,sort_keys=True))
+          PY
+
+      - name: Validate adjudication
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          p=Path("evidence/football_world_inventory/2026-10-07/three_market_adjudication/MATRIX_FOOTBALL_12_CANDIDATE_THREE_MARKET_ADJUDICATION_07OCT2026.json")
+          j=json.loads(p.read_text())
+          assert j["protections"]["odds_used_to_generate_probability"] is False
+          assert j["protections"]["real_money"]=="BLOCKED"
+          for r in j["greens"]:
+              assert r["three_market_categories_observed"]>=3
+              over=next(x for x in r["markets"]["TOTAL_GOALS"] if x["side"]=="OVER_2_5")
+              assert over["decimal_odds"]>1.50
+              assert over["ev"]>0
+          print("THREE_MARKET_ADJUDICATION_GATE: PASS")
+          PY
+
+      - name: Persist evidence
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name matrix-football-three-market
+          git config user.email matrix-football-three-market@users.noreply.github.com
+          git add evidence/football_world_inventory/2026-10-07/three_market_adjudication
+          if git diff --cached --quiet; then
+            echo "NO_THREE_MARKET_CHANGE"
+            exit 0
+          fi
+          git commit -m "evidence(football): close 07OCT three-market adjudication"
+          for attempt in 1 2 3 4; do
+            git fetch origin repair/cor09-world-pipeline
+            if ! git rebase origin/repair/cor09-world-pipeline; then git rebase --abort || true; exit 1; fi
+            if git push origin HEAD:repair/cor09-world-pipeline; then exit 0; fi
+            sleep $((attempt*2))
+          done
+          exit 1

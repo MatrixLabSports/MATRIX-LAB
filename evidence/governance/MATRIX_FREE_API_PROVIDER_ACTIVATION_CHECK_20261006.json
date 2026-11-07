@@ -1,0 +1,45 @@
+{
+  "schema": "MATRIX_FREE_API_PROVIDER_ACTIVATION_CHECK_V1",
+  "generated_at_utc": "2026-10-06T17:35:00Z",
+  "timezone": "America/Bogota",
+  "providers": {
+    "football_data_org": {
+      "registration_page_status": "REGISTERED_THANK_YOU",
+      "activation_email_received": true,
+      "personal_api_token_issued": true,
+      "token_redacted": true,
+      "auth_header_required": "X-Auth-Token",
+      "public_endpoint_check": {
+        "url": "https://api.football-data.org/v4/competitions",
+        "reachable": true,
+        "competitions_returned": 190
+      },
+      "authenticated_personal_token_probe": "NOT_EXECUTED_WITH_CURRENT_TOOLING",
+      "reason": "Current connected browser/web tools do not provide a safe custom-header request path for a private token; token was not exposed or persisted.",
+      "readiness": "ISSUED_BUT_AUTHENTICATED_PROBE_PENDING"
+    },
+    "live_tennis_api": {
+      "confirmation_email_received": true,
+      "confirmation_link_opened_in_opera": true,
+      "provider_page_after_confirmation": "YOU_ALREADY_HAVE_A_FREE_API_KEY",
+      "key_issued": true,
+      "key_value_exposed_or_persisted": false,
+      "unauthenticated_health_check": {
+        "url": "https://api.livetennisapi.com/api/public/v1/health",
+        "response": {
+          "status": "ok",
+          "version": "v1"
+        },
+        "result": "PASS"
+      },
+      "authenticated_key_probe": "PENDING_KEY_RETRIEVAL_FROM_ACCOUNT",
+      "readiness": "KEY_ISSUED_PROVIDER_HEALTH_PASS_AUTHENTICATED_DATA_PROBE_PENDING"
+    }
+  },
+  "protections": {
+    "secrets_written_to_repository": false,
+    "secrets_echoed_to_chat": false,
+    "real_money": "BLOCKED"
+  },
+  "conclusion": "Both free providers are physically registered/issued. Live Tennis API provider health is physically PASS. Neither provider is yet promoted to governed MATRIX production until an authenticated data request is physically verified with the private key stored safely outside the repository."
+}

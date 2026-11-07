@@ -1,0 +1,81 @@
+{
+  "schema": "MATRIX_SETTLEMENT_PROGRESS_20261006_BOGOTA_V1",
+  "cut_utc": "2026-10-23T11:12:23Z",
+  "branch": "repair/cor09-world-pipeline",
+  "source_head_at_read": "1f753b5fc622173f851a327008ad708ba4eccb94",
+  "candidate_artifact": "evidence/daily_selection/MATRIX_CALIBRATION_CANDIDATES_20261006_BOGOTA.json",
+  "candidate_blob_sha": "52e897007840f5bed1a8999edad8ee594fefc767",
+  "comparison_reference": "Previous review: 2026-10-23 05:04 America/Bogota; football global 3924, V2 freeze 3705, V2 settled 3122, tennis ledger 335; candidate cohorts 107/116 football, 11/11 tennis.",
+  "football": {
+    "cohort_ft": 107,
+    "cohort_total": 116,
+    "cohort_recount_method": "Previously verified 107/116; most recent governed settlement sync (2026-10-23T10:13:34Z) reports new_settlement_count=0, so no new cohort FT. Full global ledger not reparsed this run.",
+    "global_settled": 3924,
+    "global_new_ft_count_since_previous_review": 0,
+    "global_frozen": 4825,
+    "global_new_freezes_in_latest_incremental_sync": 286,
+    "v2_frozen": 3997,
+    "v2_frozen_change_since_previous_review": 292,
+    "v2_settled": 3122,
+    "v2_new_settlements_since_previous_review": 0,
+    "v2_pending": 875,
+    "v2_lanes": [
+      "1x2",
+      "over_2_5",
+      "under_2_5",
+      "double_chance_1x",
+      "double_chance_x2"
+    ],
+    "nonstandard": {
+      "PEN": [
+        "1588817",
+        "1588821",
+        "1588845",
+        "1588863",
+        "1588890",
+        "1588893",
+        "1619499"
+      ],
+      "AET": [
+        "1644168"
+      ],
+      "NS": [
+        "1596466"
+      ]
+    },
+    "source_settlement_sync_blob_sha": "4678003d9c8b4f448d12ca87d243eae521e95cef",
+    "source_incremental_freeze_sync_blob_sha": "5aad267b22a2716b6cee9f4c803459241d75394f",
+    "source_v2_over25_state_blob_sha": "499206e9fd129f74cb9c9ed873a4d9f6ded4cfae",
+    "source_global_calibration_sync_blob_sha": "ef2812bd29e882c8998e1c92c53385e0615fd025"
+  },
+  "tennis": {
+    "cohort_finished": 11,
+    "cohort_total": 11,
+    "global_settled": 338,
+    "unique_events": 338,
+    "unique_settlements": 338,
+    "new_finished_since_previous_review": 3,
+    "new_event_ids": [
+      "COR0203-RAPIDAPI-TENNIS-472142-9540dd3ec5d9",
+      "COR0203-RAPIDAPI-TENNIS-530598-cd7354ff8b7a",
+      "COR0203-RAPIDAPI-TENNIS-548335-0a2c8363c018"
+    ],
+    "new_settled_at_utc": "2026-10-23T10:14:54+00:00",
+    "source_ledger_blob_sha": "5ea3d69e4a0d5bed4b0d22884af789f6bbcf8fd5",
+    "source_governed_commit": "4b72e191bf71ab4794d421c38fbcff4d45ae49e4",
+    "cohort_method": "Exact event-id intersection against 11 candidate IDs, all exactly one terminal_status=FINISHED; full 338-line ledger parsed; unique event and settlement IDs."
+  },
+  "governance": {
+    "settlement_final_only": true,
+    "metrics_opened": false,
+    "tuning": false,
+    "odds_to_p": false,
+    "real_money": "BLOCKED",
+    "no_duplicate_settlement_write": true,
+    "canonical_guard_last_observed_status": "PASS",
+    "canonical_guard_generated_at_utc": "2026-10-23T10:52:04.709577+00:00",
+    "canonical_guard_blob_sha": "931bfc9cc5283a90f7861d0db5e6a5ec8027360e",
+    "guard_is_time_limited": true
+  },
+  "note": "New tennis FINISHED settlements already governed and persisted; no duplicate write. Football newly frozen rows do not imply final settlements. Snapshot only, no model changes."
+}

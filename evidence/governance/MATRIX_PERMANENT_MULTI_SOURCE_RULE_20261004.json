@@ -1,0 +1,22 @@
+{
+  "schema": "MATRIX_PERMANENT_MULTI_SOURCE_RULE_V1",
+  "generated_at_utc": "2026-10-04T16:20:00Z",
+  "effective_date": "2026-10-04",
+  "sports": [
+    "tennis",
+    "football"
+  ],
+  "permanent": true,
+  "user_rule": "Use all managed paid and free/public sources for football and tennis, according to governed roles, with physical reconciliation and no silent omission.",
+  "canonical_registry": "config/matrix_multisource_registry.json",
+  "canonical_document": "docs/MATRIX_MULTI_SOURCE_GOVERNANCE.md",
+  "verification_requirements": [
+    "CI test validates registry structure and permanent safeguards",
+    "Source-specific inventories remain separate until canonical dedupe",
+    "Unavailable/blocked sources are explicitly recorded",
+    "No single source can declare WORLD_COMPLETE",
+    "PIT/model/freeze gates remain unchanged"
+  ],
+  "real_money": "BLOCKED",
+  "automatic_wagering": false
+}

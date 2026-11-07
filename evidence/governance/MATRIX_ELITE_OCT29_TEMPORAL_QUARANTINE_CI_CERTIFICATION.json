@@ -1,0 +1,30 @@
+{
+  "schema": "MATRIX_ELITE_OCT29_TEMPORAL_QUARANTINE_CI_CERTIFICATION_V1",
+  "target_date_bogota": "2026-10-29",
+  "workflow_run_id": 40821407423,
+  "workflow_head_sha": "35cf13eea7cf5519e8a523b479e03ffca8543fe9",
+  "workflow_conclusion": "success",
+  "verified_steps": {
+    "Test calendar reconciliation": "success",
+    "Audit independent browser clock strings without timezone certification": "success",
+    "Generate temporal quarantine from observed clock crosscheck": "success",
+    "Persist reconciliation evidence": "success"
+  },
+  "generated_artifact": "evidence/calendar_reconciliation/MATRIX_FOOTBALL_TEMPORAL_QUARANTINE_LAST.json",
+  "generated_artifact_sha": "09c64ddbd36f73ff2ccba8e028ab2ca6f0e522fb",
+  "generated_artifact_json_parse": "PASS",
+  "counts": {
+    "total": 74,
+    "timezone_not_certified": 62,
+    "cross_source_clock_conflict": 2,
+    "cross_source_clock_unavailable": 10,
+    "eligible_for_freeze": 0,
+    "eligible_for_telegram_signal": 0
+  },
+  "policy": {
+    "timezone_certified": false,
+    "real_money": "BLOCKED",
+    "automatic_wagering": false
+  },
+  "remaining": "Independently certify Flashscore browser timezone; do not infer timezone from matching clock strings"
+}

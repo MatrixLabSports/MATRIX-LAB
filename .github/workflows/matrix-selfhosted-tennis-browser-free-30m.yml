@@ -1,0 +1,116 @@
+name: MATRIX Tennis Free User-Authorized Browser 30m
+
+on:
+  schedule:
+    - cron: "14,44 * * * *"
+  workflow_dispatch:
+  push:
+    branches:
+      - repair/cor09-world-pipeline
+    paths:
+      - .github/workflows/matrix-selfhosted-tennis-browser-free-30m.yml
+      - tools/matrix_tennis_windows_browser_calendar_capture.py
+      - tests/test_matrix_tennis_windows_browser_calendar_capture.py
+      - tools/matrix_tennis_browser_verified_detail_capture.py
+      - tests/test_matrix_tennis_browser_verified_detail_capture.py
+      - tools/windows/persist_matrix_tennis_browser_evidence.ps1
+      - tests/test_matrix_tennis_windows_browser_calendar_capture.py
+
+permissions:
+  contents: write
+
+concurrency:
+  group: matrix-selfhosted-tennis-browser-free-30m
+  cancel-in-progress: false
+
+jobs:
+  read-visible-tennis:
+    runs-on: [self-hosted, windows, matrix-browser-odds]
+    timeout-minutes: 12
+    env:
+      MATRIX_BROWSER_CDP_ENDPOINT: http://127.0.0.1:9222
+      REAL_MONEY: BLOCKED
+      AUTO_BETTING: DISABLED
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: repair/cor09-world-pipeline
+          fetch-depth: 0
+      - name: Enforce local Python and no wagering
+        shell: cmd
+        run: |
+          python -c "import sys; assert sys.version_info[:2]==(3,11)"
+          if not "%REAL_MONEY%"=="BLOCKED" exit /B 1
+          if not "%AUTO_BETTING%"=="DISABLED" exit /B 1
+      - name: Install permitted dependencies and validate source rules
+        shell: cmd
+        run: |
+          python -m pip install --disable-pip-version-check playwright pytest tzdata
+          python -m pytest -q tests/test_matrix_tennis_windows_browser_calendar_capture.py tests/test_matrix_tennis_browser_first_free_intake.py tests/test_matrix_tennis_exact_browser_crossmatch.py tests/test_matrix_tennis_browser_challenger_pit_gate.py tests/test_matrix_tennis_browser_verified_detail_capture.py
+      - name: Reuse ordinary browser CDP without bypassing provider restrictions
+        shell: cmd
+        run: powershell.exe -NoProfile -NonInteractive -ExecutionPolicy Bypass -File tools\\windows\\start_matrix_browser_cdp.ps1 -Port 9222
+      - name: Capture normal visible SofaScore and Flashscore calendars without direct provider API access
+        shell: cmd
+        run: python -m tools.matrix_tennis_windows_browser_calendar_capture
+      - name: Reject green job if neither date has one authentic visible tennis link
+        shell: powershell
+        run: |
+          $ErrorActionPreference = "Stop"
+          python -c "import json; from pathlib import Path; p=Path('evidence/tennis_calendar_reconciliation/MATRIX_TENNIS_WINDOWS_BROWSER_CAPTURE_CYCLE_LAST.json'); j=json.loads(p.read_text()); good=[x for x in j['provider_results'] if x.get('status')=='PERSISTED_VISIBLE_BROWSER_LINKS' and int(x.get('new') or 0)>0]; print('TENNIS_AUTHENTIC_VISIBLE_CAPTURES='+str(len(good))); assert good, 'NO_AUTHENTIC_DATED_TENNIS_CALENDAR_LINKS'"
+          if ($LASTEXITCODE -ne 0) { throw "TENNIS_ZERO_USEFUL_BROWSER_DATA_FAIL_CLOSED" }
+
+      - name: Build exact research-only free identity and PIT metadata admission reports
+        shell: powershell
+        run: |
+          $ErrorActionPreference = "Stop"
+          $bogota=[System.TimeZoneInfo]::ConvertTimeBySystemTimeZoneId([DateTime]::UtcNow,"SA Pacific Standard Time")
+          $day=$bogota.ToString("yyyy-MM-dd")
+          python -m tools.matrix_tennis_browser_first_free_intake --date $day
+          if ($LASTEXITCODE -ne 0) { throw "TENNIS_FREE_INTAKE_FAILED" }
+          python -m tools.matrix_tennis_exact_browser_crossmatch --date $day
+          if ($LASTEXITCODE -ne 0) { throw "TENNIS_CROSSMATCH_FAILED" }
+          $tomorrow=$bogota.AddDays(1).ToString("yyyy-MM-dd")
+          $sofaNext="evidence/tennis_calendar_physical/$tomorrow/sofascore_opera_full_link_observations.json"
+          $flashNext="evidence/tennis_calendar_physical/$tomorrow/flashscore_opera_full_link_observations.json"
+          if ((Test-Path -LiteralPath $sofaNext) -or (Test-Path -LiteralPath $flashNext)) {
+            python -m tools.matrix_tennis_browser_first_free_intake --date $tomorrow
+            if ($LASTEXITCODE -ne 0) { throw "TENNIS_NEXT_DAY_INTAKE_FAILED" }
+            python -m tools.matrix_tennis_exact_browser_crossmatch --date $tomorrow
+            if ($LASTEXITCODE -ne 0) { throw "TENNIS_NEXT_DAY_CROSSMATCH_FAILED" }
+          } else {
+            Write-Output "TENNIS_NEXT_DAY_NO_DATED_SOURCE_CAPTURE_NO_ADMISSION"
+          }
+          $details="evidence/tennis_calendar_physical/$day/sofascore_verified_match_details.json"
+          if (Test-Path -LiteralPath $details) {
+            python -m tools.matrix_tennis_browser_challenger_pit_gate --date $day
+            if ($LASTEXITCODE -ne 0) { throw "TENNIS_PIT_SOURCE_GATE_FAILED" }
+          }
+      - name: Capture source-visible individual Challenger details and run governed PIT gate
+        shell: powershell
+        run: |
+          $ErrorActionPreference = "Stop"
+          $bogota = [System.TimeZoneInfo]::ConvertTimeBySystemTimeZoneId([DateTime]::UtcNow,"SA Pacific Standard Time")
+          $days = @($bogota.ToString("yyyy-MM-dd"),$bogota.AddDays(1).ToString("yyyy-MM-dd"))
+          $verified = 0
+          foreach ($day in $days) {
+            $cross = "evidence/tennis_calendar_reconciliation/$day/MATRIX_TENNIS_EXACT_BROWSER_CROSSMATCH.json"
+            if (-not (Test-Path -LiteralPath $cross)) { continue }
+            $j = Get-Content -LiteralPath $cross -Raw | ConvertFrom-Json
+            if ($j.matched_exact_name_hints -le 0) { continue }
+            python -m tools.matrix_tennis_browser_verified_detail_capture --date $day --max-events 6
+            if ($LASTEXITCODE -ne 0) {
+              Write-Warning "TENNIS_NO_VALID_PREMATCH_DETAILS_FOR_DATE=$day"
+              continue
+            }
+            python -m tools.matrix_tennis_browser_challenger_pit_gate --date $day
+            if ($LASTEXITCODE -ne 0) { throw "TENNIS_CHALLENGER_PIT_SOURCE_GATE_FAILED" }
+            $verified += 1
+          }
+          if ($verified -eq 0) { throw "TENNIS_NO_AUTHENTIC_CHALLENGER_DETAILS_ANY_DATE" }
+          Write-Output "TENNIS_AUTHENTIC_CHALLENGER_DETAIL_DATES=$verified"
+
+      - name: Commit only authentic non-governed research calendar evidence
+        if: always()
+        shell: cmd
+        run: powershell.exe -NoProfile -NonInteractive -ExecutionPolicy Bypass -File tools\\windows\\persist_matrix_tennis_browser_evidence.ps1

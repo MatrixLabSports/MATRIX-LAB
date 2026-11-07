@@ -1,0 +1,97 @@
+{
+  "schema": "MATRIX_FOOTBALL_MARKET_EXPANSION_RESOLUTION_20261003_V1",
+  "generated_at_utc": "2026-10-03T22:54:59+00:00",
+  "markets": {
+    "1X2": {
+      "status": "PROSPECTIVE_ACTIVE",
+      "observations": 589
+    },
+    "OVER_2_5": {
+      "status": "PROSPECTIVE_ACTIVE",
+      "observations": 589,
+      "extended_checkpoint_589": "PASS"
+    },
+    "BTTS_V2": {
+      "status": "PROSPECTIVE_BLOCKED_PARTIAL_COVERAGE",
+      "observations_total": 589,
+      "probabilities_present": 547,
+      "missing": 42
+    },
+    "TEAM_TOTAL_SHOTS": {
+      "status": "BLOCKED_SCOPE_ALIGNMENT",
+      "historical_oos": "PASS",
+      "current_model_scope": "COMBINED_MATCH_TOTAL_SHOTS",
+      "current_model_line": 26.5,
+      "bookmaker_bindings": {
+        "220": "Shots Away Total",
+        "221": "Shots Home Total"
+      },
+      "prospective_freeze_allowed": false
+    },
+    "PLAYER_SHOTS": {
+      "status": "HISTORICAL_OOS_PASS_PROSPECTIVE_BLOCKED",
+      "historical_oos": "PASS",
+      "blocker": "PREMATCH_LINEUP_ROLE_AND_EXPECTED_MINUTES_PROSPECTIVE_CERTIFICATION",
+      "prospective_freeze_allowed": false
+    },
+    "CORNERS": {
+      "status": "REJECTED_HISTORICAL_OOS_V2",
+      "prospective_eligible": false
+    },
+    "TEAM_SHOTS_ON_TARGET": {
+      "status": "REJECTED_HISTORICAL_OOS_V3",
+      "prospective_eligible": false
+    },
+    "TEAM_GOALKEEPER_SAVES": {
+      "status": "REJECTED_HISTORICAL_OOS_V2",
+      "prospective_eligible": false
+    },
+    "TEAM_YELLOW_CARDS": {
+      "status": "REJECTED_HISTORICAL_OOS_V2",
+      "prospective_eligible": false
+    },
+    "TEAM_FOULS": {
+      "status": "REJECTED_HISTORICAL_OOS_V2",
+      "prospective_eligible": false
+    },
+    "PLAYER_SHOTS_ON_TARGET": {
+      "status": "REJECTED_HISTORICAL_OOS",
+      "prospective_eligible": false
+    },
+    "GOALKEEPER_SAVES_PLAYER": {
+      "status": "REJECTED_HISTORICAL_OOS",
+      "prospective_eligible": false
+    },
+    "PLAYER_ASSISTS": {
+      "status": "REJECTED_HISTORICAL_OOS",
+      "prospective_eligible": false
+    },
+    "PLAYER_FOULS": {
+      "status": "REJECTED_HISTORICAL_OOS",
+      "prospective_eligible": false
+    },
+    "PLAYER_PASSES": {
+      "status": "REJECTED_HISTORICAL_OOS",
+      "prospective_eligible": false
+    },
+    "PLAYER_TACKLES": {
+      "status": "REJECTED_HISTORICAL_OOS",
+      "prospective_eligible": false
+    }
+  },
+  "live_probe": {
+    "tool_path": "tools/api_football_market_expansion_live_probe.py",
+    "workflow_path": ".github/workflows/api-football-market-expansion-live-probe.yml",
+    "operational_commit": "0457dd36a52e962ec01e9cca2d96edac853cbda5",
+    "main_workflow_commit": "41b10089df05b0e96a2f5b1db14ca6d4a8af45e2",
+    "purpose": "RECHECK_TEAM_TOTAL_SHOTS_BOOKMAKER_PRICES_AND_PLAYER_SHOTS_PREMATCH_LINEUPS",
+    "schedule_cron": "13,28,43,58 * * * *"
+  },
+  "governance": {
+    "parameter_tuning_on_seen_validation": false,
+    "silent_imputation": false,
+    "odds_to_probability": false,
+    "automatic_wagering": false,
+    "real_money": "BLOCKED"
+  }
+}

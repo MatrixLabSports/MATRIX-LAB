@@ -1,0 +1,49 @@
+{
+  "schema": "MATRIX_SOFASCORE_20261005_SCREENSHOT_AUDIT_V1",
+  "captured_local_context": {
+    "operational_date_bogota": "2026-10-04",
+    "target_calendar_date": "2026-10-05",
+    "source": "SofaScore mobile UI screenshot supplied by user",
+    "screenshot_sha256": "873d3081ad0b0394d31f97d138854a4ef0e9dfecc359bce12de1c401a6677ca2"
+  },
+  "visible_category_counts": {
+    "ATP": 23,
+    "WTA": 14,
+    "Challenger": 55,
+    "WTA_125": 25,
+    "ITF_men": 16,
+    "UTR_men": 27,
+    "UTR_women": 17
+  },
+  "visible_floor_total": 177,
+  "visible_floor_only": true,
+  "final_sofascore_total_status": "NOT_CLOSED_SCREENSHOT_MAY_NOT_INCLUDE_BELOW_FOLD_CATEGORIES",
+  "findings": [
+    "PRIOR_LOW_SOFASCORE_COUNT_WAS_NOT_SUPPORTED_BY_FULL_UI_ENUMERATION",
+    "PROVIDER_API_INVENTORY_COUNTS_MUST_NOT_BE_RELABELED_AS_SOFASCORE_TOTAL",
+    "SOFASCORE_UI_EXPOSES_ADDITIONAL_CATEGORIES_NOT_PRESENT_IN_PAID_PROVIDER_SNAPSHOTS",
+    "SOFASCORE_API_ENDPOINT_ACCESS_CAN_BE_BLOCKED_403_AND_MUST_NOT_BE_TREATED_AS_EMPTY_CALENDAR",
+    "LAZY_LOADED_OR_CATEGORY_COLLAPSED_UI_REQUIRES_FULL_ENUMERATION_BEFORE TOTAL CLAIM"
+  ],
+  "reconciliation_context": {
+    "prior_rapidapi_world_count_claim": 42,
+    "prior_api_tennis_count_claim": 60,
+    "prior_flashscore_localized_visible_count": 78,
+    "current_sofascore_visible_floor": 177,
+    "interpretation": "These are source-specific inventories with different coverage; none alone is WORLD_COMPLETE."
+  },
+  "matrix_implication": {
+    "world_discovery": "SOFASCORE_MUST_BE_TREATED_AS_INDEPENDENT_COVERAGE_SOURCE",
+    "cor0203_domain": "Only ATP Challenger + Hard + Singles + Match Winner may feed COR02/COR03 after identity/PIT/history/freeze/dedupe gates.",
+    "challenger_visible_count": 55,
+    "challenger_count_is_not_direct_holdout_count": true
+  },
+  "governance": {
+    "world_complete": false,
+    "metrics_opened": false,
+    "odds_used_for_p_matrix": false,
+    "automatic_wagering": false,
+    "real_money": "BLOCKED"
+  },
+  "adjudication": "PRIOR_SOFASCORE_UNDERCOUNT_CORRECTED_VISIBLE_FLOOR_177"
+}

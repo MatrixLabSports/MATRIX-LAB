@@ -1,0 +1,31 @@
+{
+  "schema": "MATRIX_ACTIVE_BOOKMAKERS_POLICY_V1",
+  "effective_date_bogota": "2026-10-09",
+  "status": "ACTIVE_UNTIL_USER_CHANGES",
+  "active_execution_houses": [
+    "Betano",
+    "BetPlay",
+    "RushBet"
+  ],
+  "excluded_for_now": [
+    "bwin"
+  ],
+  "application_scope": [
+    "football_physical_quote_search",
+    "telegram_green_signal_house_selection",
+    "prematch_revalidation",
+    "manual_user_execution_tracking"
+  ],
+  "selection_rules": {
+    "exact_market_and_line_required": true,
+    "minimum_decimal_odds_exclusive": 1.5,
+    "positive_ev_required": true,
+    "p_matrix_must_be_frozen_before_odds": true,
+    "do_not_substitute_market_line": true,
+    "prefer_best_valid_physical_price_among_active_houses": true
+  },
+  "protections": {
+    "automatic_wagering": false,
+    "real_money": "BLOCKED"
+  }
+}

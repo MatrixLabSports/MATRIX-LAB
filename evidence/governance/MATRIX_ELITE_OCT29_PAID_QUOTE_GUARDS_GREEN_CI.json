@@ -1,0 +1,33 @@
+{
+  "schema": "MATRIX_ELITE_PAID_QUOTE_GUARDS_GREEN_CI_V1",
+  "certified_run": {
+    "id": 40825150806,
+    "event": "push",
+    "conclusion": "success",
+    "sha": "25109ca0803a59990112747706de6ff69bb1dfe7",
+    "passed_steps": [
+      "Test fail-closed post-expiry diagnosis",
+      "Generate independent offline diagnosis",
+      "Certify no calls and safety",
+      "Preserve post-expiry evidence"
+    ],
+    "artifact": {
+      "id": 12876128158,
+      "name": "matrix-telegram-post-expiry-offline-health",
+      "digest": "sha256:720a7525324f194ccf047a400651357bceb114fcf2d22db103b024dff5b74045"
+    }
+  },
+  "certified_scope": "Both paid quote transport functions blocked by unit tests with mock session HTTP not called; no provider calls in offline diagnostic.",
+  "newer_stricter_override_guard": {
+    "commit": "d469a31738434d4e49f10508b702e1131f921cb4",
+    "run_id": 40825265994,
+    "status": "PENDING_AT_AUDIT"
+  },
+  "not_certified": [
+    "New override guard CI success",
+    "Scheduled event cadence",
+    "Live Telegram delivery",
+    "Independent source-only live signal pipeline"
+  ],
+  "real_money": "BLOCKED"
+}

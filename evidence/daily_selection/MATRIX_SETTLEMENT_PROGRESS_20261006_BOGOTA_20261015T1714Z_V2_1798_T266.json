@@ -1,0 +1,83 @@
+{
+  "schema": "MATRIX_SETTLEMENT_PROGRESS_20261006_BOGOTA_AUDIT_SNAPSHOT_V1",
+  "source_branch": "repair/cor09-world-pipeline",
+  "source_head_observed": "581b7b01fe230358e48c0aaf55d9cbbd8c044431",
+  "baseline_snapshot": "evidence/daily_selection/MATRIX_SETTLEMENT_PROGRESS_20261006_BOGOTA_20261015T1542Z_V2_1790_T266.json",
+  "source_candidate_file": "evidence/daily_selection/MATRIX_CALIBRATION_CANDIDATES_20261006_BOGOTA.json",
+  "source_candidate_blob_sha": "52e897007840f5bed1a8999edad8ee594fefc767",
+  "football": {
+    "v2_freeze": 2348,
+    "v2_settled": 1798,
+    "v2_pending": 550,
+    "delta_settled": 8,
+    "delta_freeze": 0,
+    "cohort_total": 116,
+    "cohort_ft_last_verified": 107,
+    "cohort_ft_new": 0,
+    "cohort_pending_or_nonstandard": 9,
+    "cohort_full_ledger_recheck": false,
+    "new_ft_fixture_ids": [
+      "1603046",
+      "1515897",
+      "1516153",
+      "1516158",
+      "1585784",
+      "1643957",
+      "1606545",
+      "1603049"
+    ],
+    "cohort_new_settlement_intersection": [],
+    "blocked_nonstandard": {
+      "PEN": [
+        "1588817",
+        "1588821",
+        "1588845",
+        "1588863",
+        "1588890",
+        "1588893",
+        "1619499"
+      ],
+      "AET": [
+        "1644168"
+      ],
+      "NS_pending": [
+        "1596466"
+      ]
+    },
+    "sync_run_at_utc": "2026-10-15T16:59:04+00:00",
+    "global_ledger_final_count": 2600,
+    "global_pending_count": 512,
+    "source_sync_path": "evidence/api_football/prospective_market_freeze/settlement_sync_last.json",
+    "source_sync_blob_sha": "e3c24cfc4a869f07d72b968e413e46bfcbdc406b",
+    "governed_commit": "17a5d4a50680155f4d308831a0384d0fd2153caf"
+  },
+  "tennis": {
+    "cohort_total": 11,
+    "cohort_finished": 11,
+    "cohort_duplicate_settlements": 0,
+    "settlement_rows": 266,
+    "delta_settlement_rows": 0,
+    "cohort_new_settlement_intersection": [],
+    "unique_calibration_observations": 239,
+    "delta_unique": 0,
+    "duplicate_quarantined": 171,
+    "uniqueness": "PASS",
+    "source_ledger_path": "evidence/cor0203/settlement/MATRIX_COR0203_SETTLEMENT_LEDGER.jsonl",
+    "source_ledger_blob_sha": "3174d52a1089669d6bc764e45a6f07c54c140c1b",
+    "source_uniqueness_path": "evidence/cor0203/runtime/MATRIX_COR0203_PHYSICAL_UNIQUENESS_LAST.json",
+    "source_uniqueness_blob_sha": "0f4ba58bf7b53a5b3ff4aedddc3cc8921b7a76a9"
+  },
+  "governance": {
+    "metrics_opened": false,
+    "parameter_tuning_allowed": false,
+    "odds_to_probability": false,
+    "real_money": "BLOCKED",
+    "settlement_final_only": true,
+    "automated_wagering": false
+  },
+  "limitations": [
+    "Football 107/116 remains last complete ledger audit; this cycle proved no cohort intersection among eight newly settled FT fixture IDs.",
+    "Nonstandard statuses derive from repository physical sync, not independent provider recheck.",
+    "No model, threshold, metric, or tuning modification was performed by this snapshot."
+  ]
+}

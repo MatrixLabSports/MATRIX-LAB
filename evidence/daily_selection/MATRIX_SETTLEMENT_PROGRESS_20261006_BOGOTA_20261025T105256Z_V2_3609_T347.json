@@ -1,0 +1,157 @@
+{
+  "schema": "MATRIX_SETTLEMENT_PROGRESS_20261006_BOGOTA_V3_EVIDENCE_ONLY",
+  "branch": "repair/cor09-world-pipeline",
+  "observed_at_utc": "2026-10-25T10:52:56.417Z",
+  "observed_head_before_snapshot": "17dae5f1f617d552bc76719cdee1524c70cdb656",
+  "previous_snapshot": "evidence/daily_selection/MATRIX_SETTLEMENT_PROGRESS_20261006_BOGOTA_20261025T080540Z_V2_3602_T344.json",
+  "source_blob_shas": {
+    "candidate": "52e897007840f5bed1a8999edad8ee594fefc767",
+    "previous": "c2387ea79bdac0d40f8987c5d280e70da045c602",
+    "tracker": "173c20c6e4528eb4232a1346c9955b6fbf0062ef",
+    "sync": "77f87aaa5f8efc3089279ac2d31b535c020d6655",
+    "tennis_queue": "21a9cac09b4672b48e9a2b0e44b68833679c9e44",
+    "tennis_unique": "1dd9e9e8a989fe8e46f13266317e033f1bf4bcc8",
+    "tennis_physical": "454bba659609d4d1e2682b88323376781c2a1632",
+    "tennis_sync": "240d81243204744ddd665b7712dd3737fc39bf05",
+    "v2": "f04ee228c3adfa7321e3094d3c9ee44dc8510a8e"
+  },
+  "source_commits": {
+    "football_governed_settlements": "aa3d2c8a9a9ad4b9ac74183646d54c108ef01caf",
+    "tennis_governed_settlement_1": "67f5968ef0e099b523c60eebc22c4d73d9b3d100",
+    "tennis_governed_settlements_2": "98a6e7414dd56b84d96819d3780423683b176ab4"
+  },
+  "checks": {
+    "football_116_unique": true,
+    "tennis_11_unique": true,
+    "football_6oct_107_final_carried_forward": true,
+    "tennis_original_11_finished_carried_forward": true,
+    "new_settlements_outside_original_cohorts": true,
+    "global_reconciled": true,
+    "tennis_ledger_unique": true,
+    "tennis_chain_verified": true,
+    "tennis_uniqueness_audit_pass": true,
+    "metrics_sealed": true,
+    "real_money_blocked": true
+  },
+  "football": {
+    "cohort": {
+      "total": 116,
+      "standard_ft_settled": 107,
+      "new_standard_ft": 0,
+      "blocked_nonstandard": [
+        {
+          "fixture_id": "1588817",
+          "reason": "NONSTANDARD_TERMINAL_REQUIRES_ADJUDICATION:PEN"
+        },
+        {
+          "fixture_id": "1588821",
+          "reason": "NONSTANDARD_TERMINAL_REQUIRES_ADJUDICATION:PEN"
+        },
+        {
+          "fixture_id": "1588845",
+          "reason": "NONSTANDARD_TERMINAL_REQUIRES_ADJUDICATION:PEN"
+        },
+        {
+          "fixture_id": "1588863",
+          "reason": "NONSTANDARD_TERMINAL_REQUIRES_ADJUDICATION:PEN"
+        },
+        {
+          "fixture_id": "1588890",
+          "reason": "NONSTANDARD_TERMINAL_REQUIRES_ADJUDICATION:PEN"
+        },
+        {
+          "fixture_id": "1588893",
+          "reason": "NONSTANDARD_TERMINAL_REQUIRES_ADJUDICATION:PEN"
+        },
+        {
+          "fixture_id": "1619499",
+          "reason": "NONSTANDARD_TERMINAL_REQUIRES_ADJUDICATION:PEN"
+        },
+        {
+          "fixture_id": "1644168",
+          "reason": "NONSTANDARD_TERMINAL_REQUIRES_ADJUDICATION:AET"
+        }
+      ],
+      "pending_nonstandard": [
+        {
+          "fixture_id": "1596466",
+          "lookup_after_utc": "2026-10-25T07:18:01+00:00",
+          "provider_status": "NS",
+          "reason": "RESULT_NOT_STANDARD_FINAL"
+        }
+      ]
+    },
+    "global": {
+      "frozen": 5169,
+      "final": 4412,
+      "pending": 633,
+      "blocked": 124,
+      "new_final_since_previous_snapshot": 7,
+      "new_final_fixture_ids": [
+        "1606718",
+        "1606719",
+        "1606720",
+        "1606721",
+        "1606722",
+        "1606723",
+        "1606724"
+      ],
+      "source_terminal_status": "FT",
+      "source_freeze_pre_kickoff_verified_from_commit": true
+    },
+    "v2": {
+      "verified_tracker_markets": {
+        "1x2": {
+          "frozen": 4341,
+          "settled": 3609,
+          "pending": 732
+        },
+        "over_2_5": {
+          "frozen": 4341,
+          "settled": 3609,
+          "pending": 732
+        },
+        "under_2_5": {
+          "frozen": 4341,
+          "settled": 3609,
+          "pending": 732
+        }
+      },
+      "additional_ledgers_changed": [
+        "double_chance_1x",
+        "double_chance_x2"
+      ],
+      "metrics_opened": false
+    }
+  },
+  "tennis": {
+    "original_cohort_total": 11,
+    "original_cohort_finished": 11,
+    "previous_ledger_records": 344,
+    "current_ledger_records": 347,
+    "new_ledger_records": 3,
+    "new_finished_event_ids": [
+      "COR0203-RAPIDAPI-TENNIS-687504-f8a5570a0287",
+      "COR0203-RAPIDAPI-TENNIS-690646-65a4f8994736",
+      "COR0203-RAPIDAPI-TENNIS-709704-122b6cc80b74"
+    ],
+    "unique_ledger_events": 347,
+    "unique_settlement_ids_reconciled": 347,
+    "hash_chain_verified": true,
+    "settlement_uniqueness_audit_result": "PASS",
+    "physical_unique_calibration_observations": 355,
+    "physical_frozen_rows": 526,
+    "duplicate_observations_quarantined": 171
+  },
+  "governance": {
+    "settlement_final_only": true,
+    "metrics_opened": false,
+    "parameter_tuning": false,
+    "odds_to_p_performed": false,
+    "automatic_wagering": false,
+    "real_money": "BLOCKED",
+    "settlements_already_governed_in_repository": true,
+    "no_duplicate_settlement_run": true
+  },
+  "method": "Compared physical GitHub source blobs, prior snapshot, canonical tracker and settlement/uniqueness artifacts; traced +7 football FT and +3 tennis FINISHED to governed commits; snapshot only; no metrics or parameter tuning."
+}

@@ -1,0 +1,202 @@
+{
+  "schema": "MATRIX_SETTLEMENT_PROGRESS_20261006_BOGOTA_AUDIT_SNAPSHOT_V1",
+  "observed_at_utc": "2026-10-19T14:16:33.233Z",
+  "source_branch": "repair/cor09-world-pipeline",
+  "source_head_before_snapshot": "9226639277d49dd354187847261c16da39f0126f",
+  "source_blobs": {
+    "candidate": {
+      "path": "evidence/daily_selection/MATRIX_CALIBRATION_CANDIDATES_20261006_BOGOTA.json",
+      "sha": "52e897007840f5bed1a8999edad8ee594fefc767"
+    },
+    "tennis_ledger": {
+      "path": "evidence/cor0203/settlement/MATRIX_COR0203_SETTLEMENT_LEDGER.jsonl",
+      "sha": "aae38893151d5d9277d002df5211f281cd35f381"
+    },
+    "football_sync": {
+      "path": "evidence/api_football/prospective_calibration/sync_last.json",
+      "sha": "62d15321561d7ebf6815660aa319f17d2859a8ba"
+    },
+    "football_settlement_sync": {
+      "path": "evidence/api_football/prospective_market_freeze/settlement_sync_last.json",
+      "sha": "a401f7223ad00017adf7eb66bb8ebc9e66255462"
+    },
+    "football_uniqueness": {
+      "path": "evidence/api_football/physical_uniqueness/audit_last.json",
+      "sha": "31cb3b89423848b1ecaf11e83ac369afa17fd44c"
+    }
+  },
+  "football": {
+    "cohort_total": 116,
+    "cohort_standard_ft_last_full_audit": 107,
+    "cohort_ft_recomputed_this_run": false,
+    "new_cohort_ft_since_previous_report": 0,
+    "global_settlements_previous_report": 3366,
+    "global_settlements_current": 3393,
+    "new_global_ft_count": 27,
+    "global_last_sync_utc": "2026-10-19T14:01:13+00:00",
+    "global_ledger_hash_chain_verified": true,
+    "global_unique_settled_fixture_ids": 3393,
+    "v2_lanes": [
+      {
+        "lane": "1x2",
+        "state_blob_sha": "3e2d6a157e5203ff64fa6119b05b4094e73a58bc",
+        "freeze_observation_count": 3100,
+        "settlement_count": 2591,
+        "pending_settlement_count": 509,
+        "metrics_opened": false,
+        "parameter_tuning_allowed": false,
+        "real_money": "BLOCKED"
+      },
+      {
+        "lane": "over_2_5",
+        "state_blob_sha": "dc3bd26fc9a9b80efa5c9e86c7d847130a10588c",
+        "freeze_observation_count": 3100,
+        "settlement_count": 2591,
+        "pending_settlement_count": 509,
+        "metrics_opened": false,
+        "parameter_tuning_allowed": false,
+        "real_money": "BLOCKED"
+      },
+      {
+        "lane": "under_2_5",
+        "state_blob_sha": "3a43021a66e5eeef562c5eda83810576131e763c",
+        "freeze_observation_count": 3100,
+        "settlement_count": 2591,
+        "pending_settlement_count": 509,
+        "metrics_opened": false,
+        "parameter_tuning_allowed": false,
+        "real_money": "BLOCKED"
+      },
+      {
+        "lane": "double_chance_1x",
+        "state_blob_sha": "97ed203fd9d084a17e18ee5b3cc17007de578ea0",
+        "freeze_observation_count": 3100,
+        "settlement_count": 2591,
+        "pending_settlement_count": 509,
+        "metrics_opened": false,
+        "parameter_tuning_allowed": false,
+        "real_money": "BLOCKED"
+      },
+      {
+        "lane": "double_chance_x2",
+        "state_blob_sha": "e4fa6b336f9b98495bd4544b7164781505b2f87d",
+        "freeze_observation_count": 3100,
+        "settlement_count": 2591,
+        "pending_settlement_count": 509,
+        "metrics_opened": false,
+        "parameter_tuning_allowed": false,
+        "real_money": "BLOCKED"
+      }
+    ],
+    "new_global_ft_commits": [
+      {
+        "sha": "9abda1b605ad9e21560c9402f7139b62101d5e0d",
+        "fixture_ids": [
+          "1629454",
+          "1589516",
+          "1589517",
+          "1589518",
+          "1624990",
+          "1625927",
+          "1570414",
+          "1612757",
+          "1617659",
+          "1617660",
+          "1617661",
+          "1613064",
+          "1495983",
+          "1495985"
+        ]
+      },
+      {
+        "sha": "2f3eb17c53e5ef4a11c6b774ba9cab895b396dca",
+        "fixture_ids": [
+          "1495986",
+          "1495987",
+          "1495988",
+          "1495989",
+          "1573003",
+          "1573004",
+          "1573312",
+          "1573314",
+          "1612762",
+          "1612764",
+          "1613981",
+          "1615205",
+          "1615511"
+        ]
+      }
+    ],
+    "new_ft_cohort_overlap": 0,
+    "blocked_or_nonstandard": [
+      {
+        "fixture_id": "1588817",
+        "status": "PEN",
+        "raw_blob_sha": "c6d55a5307784ec872b75fc90209848b8ce4d166"
+      },
+      {
+        "fixture_id": "1588821",
+        "status": "PEN",
+        "raw_blob_sha": "0cfc1104bc7b8114eb119a2fdd61013f8c819c74"
+      },
+      {
+        "fixture_id": "1588845",
+        "status": "PEN",
+        "raw_blob_sha": "2fa4678414c66b787c21b673d70e238e0bdd6810"
+      },
+      {
+        "fixture_id": "1588863",
+        "status": "PEN",
+        "raw_blob_sha": "c66388d26ba8e7ed3c40fad16ff41f753f67155f"
+      },
+      {
+        "fixture_id": "1588890",
+        "status": "PEN",
+        "raw_blob_sha": "9cda79f5308213f67802797648a2cf2e87f675e3"
+      },
+      {
+        "fixture_id": "1588893",
+        "status": "PEN",
+        "raw_blob_sha": "185f066a7106cd83e437773009933cc8347ce75e"
+      },
+      {
+        "fixture_id": "1596466",
+        "status": "NS",
+        "raw_blob_sha": "4b9c48af79dd34339176973dd181fd0a5074948c"
+      },
+      {
+        "fixture_id": "1619499",
+        "status": "PEN",
+        "raw_blob_sha": "7f84e0b64a58c88bf79b7f4d4fae530603ba6a9e"
+      },
+      {
+        "fixture_id": "1644168",
+        "status": "AET",
+        "raw_blob_sha": "334c8f1e10789bda01b71be4d8df3c6f399f34d8"
+      }
+    ]
+  },
+  "tennis": {
+    "cohort_total": 11,
+    "cohort_finished": 11,
+    "global_settlements_previous_report": 307,
+    "global_settlements_current": 307,
+    "global_unique_event_ids": 307,
+    "global_unique_settlement_ids": 307,
+    "new_global_settlements": 0,
+    "cohort_each_exactly_one_finished": true
+  },
+  "governance": {
+    "metrics_opened": false,
+    "tuning": false,
+    "odds_to_probability": false,
+    "settlement_final_only": true,
+    "real_money": "BLOCKED"
+  },
+  "limitations": [
+    "Football 107/116 from last full ledger audit; current global football ledger returned empty for line-range read and was not independently fully recomputed.",
+    "All nine unresolved cohort RAW fixtures re-read from GitHub, not from live external provider.",
+    "27 new global FT records were already persisted by governed workflows; none belongs to the 6-OCT cohort. No duplicate or manual settlement executed.",
+    "This snapshot does not open metrics or tune models."
+  ]
+}

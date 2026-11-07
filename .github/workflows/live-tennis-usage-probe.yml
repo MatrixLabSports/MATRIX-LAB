@@ -1,0 +1,39 @@
+name: Live Tennis Usage Probe
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - repair/cor09-world-pipeline
+    paths:
+      - tools/live_tennis_usage_probe.py
+      - .github/workflows/live-tennis-usage-probe.yml
+
+permissions:
+  contents: write
+
+jobs:
+  usage:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: repair/cor09-world-pipeline
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: python -m pip install requests
+      - name: Capture usage
+        env:
+          LIVE_TENNIS_API_KEY: ${{ secrets.LIVETENNISAPI_KEY }}
+        run: python -m tools.live_tennis_usage_probe
+      - name: Persist usage evidence
+        run: |
+          git config user.name "matrix-live-tennis-usage"
+          git config user.email "matrix-live-tennis-usage@users.noreply.github.com"
+          git add evidence/live_tennis_lab/2026-10-06/MATRIX_LIVE_TENNIS_USAGE.json
+          git commit -m "evidence(live): persist Live Tennis API usage"
+          git pull --rebase origin repair/cor09-world-pipeline
+          git push origin HEAD:repair/cor09-world-pipeline

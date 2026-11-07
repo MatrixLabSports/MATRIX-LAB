@@ -1,0 +1,176 @@
+name: MATRIX COR02-03 Targeted D1 23OCT
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - repair/cor09-world-pipeline
+    paths:
+      - evidence/tennis/MATRIX_TENNIS_20261023_BROWSER_FIRST_RECONCILIATION.json
+      - .github/workflows/cor0203-targeted-d1-20261023.yml
+
+permissions:
+  contents: write
+
+concurrency:
+  group: cor0203-targeted-d1-20261023
+  cancel-in-progress: false
+
+jobs:
+  targeted-d1:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      REAL_MONEY: BLOCKED
+      AUTO_BETTING: DISABLED
+      MATRIX_TENNIS_MODE: rapidapi_primary_open_reconciliation
+      MATRIX_TENNIS_PROVIDER: rapidapi_tennis
+      MATRIX_WORLD_DATE_BOGOTA: "2026-10-23"
+      MATRIX_COR0203_STATS_RICH_PROBE: "0"
+      MATRIX_TARGET_BRANCH: repair/cor09-world-pipeline
+      MATRIX_GIT_USER_NAME: matrix-cor0203-targeted-d1
+      MATRIX_GIT_USER_EMAIL: matrix-cor0203-targeted-d1@users.noreply.github.com
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: repair/cor09-world-pipeline
+          fetch-depth: 0
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - run: python -m pip install requests pytest
+
+      - name: Prove Hard policy and browser-first D1 evidence
+        run: |
+          python -m pytest -q             tests/test_cor0203_hard_302_to_400_policy.py             tests/test_matrix_daily_calendar_baseline_gate.py             tests/test_cor0203_batch_preflight.py             tests/test_cor0203_physical_uniqueness.py
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          p=Path("evidence/tennis/MATRIX_TENNIS_20261023_BROWSER_FIRST_RECONCILIATION.json")
+          j=json.loads(p.read_text())
+          assert j["target_date_bogota"]=="2026-10-23"
+          assert j["source_order"]==["SofaScore","Flashscore","RapidAPI Tennis"]
+          assert j["reconciliation"]["browser_first_gate"]=="PASS"
+          assert j["rapidapi_structured_inventory"]["challenger_hard_domain_candidate_count"]==4
+          assert set(j["rapidapi_structured_inventory"]["candidate_match_ids"])=={"472142","530598","498292","504120"}
+          assert j["protections"]["metrics_opened"] is False
+          assert j["protections"]["real_money"]=="BLOCKED"
+          print("D1_BROWSER_FIRST_PASS")
+          PY
+
+      - name: Enforce paid Tennis subscription guard
+        env:
+          RAPIDAPI_TENNIS_KEY: ${{ secrets.RAPIDAPI_TENNIS_KEY }}
+        run: |
+          python -m tools.tennis_subscription_deadline_guard --require-paid-use --require-key
+
+      - name: Snapshot unique count before D1
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          j=json.loads(Path("evidence/cor0203/runtime/MATRIX_COR0203_PHYSICAL_UNIQUENESS_LAST.json").read_text())
+          Path("/tmp/d1_before.json").write_text(json.dumps({
+            "unique":j["unique_calibration_observations"],
+            "physical":j["physical_frozen_rows"],
+            "duplicates":j["duplicate_observations_quarantined"]
+          }))
+          print(Path("/tmp/d1_before.json").read_text())
+          PY
+
+      - name: Run governed D1 production only
+        env:
+          RAPIDAPI_TENNIS_KEY: ${{ secrets.RAPIDAPI_TENNIS_KEY }}
+        run: |
+          bash scripts/cor0203_production_cycle.sh --trigger-sha "$(git rev-parse HEAD)"
+
+      - name: Refresh branch after governed production
+        run: |
+          git fetch origin repair/cor09-world-pipeline
+          git reset --hard origin/repair/cor09-world-pipeline
+
+      - name: Certify D1 four Hard candidates
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          before=json.loads(Path("/tmp/d1_before.json").read_text())
+          u=json.loads(Path("evidence/cor0203/runtime/MATRIX_COR0203_PHYSICAL_UNIQUENESS_LAST.json").read_text())
+          m=json.loads(Path("evidence/cor0203/runtime/MATRIX_COR0203_MILESTONES_LAST.json").read_text())
+          runtime=Path("evidence/cor0203/runtime")
+          ids=["472142","530598","548335","498292","504120"]
+          discovery=json.loads((runtime/"MATRIX_COR0203_WORLD_DERIVED_DISCOVERY_LAST.json").read_text())
+          evidence={}
+          for mid in ids:
+              rows=[]
+              for p in runtime.glob("MATRIX_COR0203_BATCH_PREFLIGHT_R*.json"):
+                  text=p.read_text(errors="ignore")
+                  if mid in text:
+                      j=json.loads(text)
+                      rows.append({
+                          "path":str(p),
+                          "result":j.get("result"),
+                          "valid_event_ids":j.get("valid_event_ids"),
+                          "blocked":j.get("blocked"),
+                          "freeze_at_utc":j.get("freeze_at_utc"),
+                      })
+              evidence[mid]=rows
+          out={
+              "schema":"MATRIX_COR0203_TARGETED_D1_20261023_CERT_V1",
+              "target_date_bogota":"2026-10-23",
+              "candidate_match_ids":ids,
+              "unique_before":before["unique"],
+              "unique_after":u["unique_calibration_observations"],
+              "unique_increment":u["unique_calibration_observations"]-before["unique"],
+              "physical_after":u["physical_frozen_rows"],
+              "duplicates_after":u["duplicate_observations_quarantined"],
+              "remaining_to_400":max(0,400-u["unique_calibration_observations"]),
+              "candidate_evidence":evidence,
+              "world_discovery":{
+                  "target_date_bogota":discovery.get("world_inventory_target_date"),
+                  "world_domain_candidates_input":discovery.get("world_domain_candidates_input"),
+                  "eligible_input_events":discovery.get("eligible_input_events"),
+                  "eligible_candidate_ids":[
+                      str(x.get("legacy_provider_event_id") or x.get("provider_source_event_id") or x.get("event_id") or "")
+                      for x in (discovery.get("eligible_candidates") or [])
+                  ],
+                  "provider_rejected":discovery.get("provider_rejected") or [],
+                  "certified_exact_cut_rank_override":discovery.get("certified_exact_cut_rank_override") or {}
+              },
+              "metrics_opened":u["metrics_opened"],
+              "outcomes_read":u["outcomes_read"],
+              "integrity_result":u["result"],
+              "real_money":"BLOCKED"
+          }
+          assert out["metrics_opened"] is False
+          assert out["outcomes_read"] == 0
+          assert out["integrity_result"] == "PASS"
+          dest=Path("evidence/governance/MATRIX_COR0203_TARGETED_D1_20261023_CERT.json")
+          dest.write_text(json.dumps(out,indent=2,sort_keys=True)+"\n")
+          print(json.dumps(out,sort_keys=True))
+          PY
+
+      - name: Persist D1 certificate
+        run: |
+          git config user.name matrix-cor0203-targeted-d1
+          git config user.email matrix-cor0203-targeted-d1@users.noreply.github.com
+          git add evidence/governance/MATRIX_COR0203_TARGETED_D1_20261023_CERT.json
+          if git diff --cached --quiet; then
+            echo "NO_D1_CERT_CHANGE"
+            exit 0
+          fi
+          git commit -m "evidence(hard): certify targeted D1 23oct candidates"
+          for attempt in 1 2 3 4; do
+            git fetch origin repair/cor09-world-pipeline
+            if ! git rebase origin/repair/cor09-world-pipeline; then
+              git rebase --abort || true
+              sleep $((attempt*2))
+              continue
+            fi
+            if git push origin HEAD:repair/cor09-world-pipeline; then exit 0; fi
+            sleep $((attempt*2))
+          done
+          exit 1

@@ -1,0 +1,109 @@
+{
+  "schema": "MATRIX_SETTLEMENT_PROGRESS_20261006_BOGOTA_V1",
+  "cut_utc": "2026-10-23T13:33:22.308Z",
+  "branch": "repair/cor09-world-pipeline",
+  "source_head_at_read": "68debcdfe8847a735714a7f0006af85d6c962608",
+  "comparison_previous_snapshot": "evidence/daily_selection/MATRIX_SETTLEMENT_PROGRESS_20261006_BOGOTA_20261023T1112Z_V2_3122_T338.json",
+  "candidate_artifact": "evidence/daily_selection/MATRIX_CALIBRATION_CANDIDATES_20261006_BOGOTA.json",
+  "candidate_blob_sha": "52e897007840f5bed1a8999edad8ee594fefc767",
+  "football": {
+    "cohort_ft": 107,
+    "cohort_total": 116,
+    "cohort_change": 0,
+    "cohort_method": "Previously verified 107/116; all 18 newly appended governed FT fixture IDs from commit eb21aab1 are absent from the exact 116-ID candidate set; latest governed sync preserves 8 nonstandard blocked and 1 NS pending. Full football ledger not independently reparsed (GitHub file connector returned empty content for large JSONL).",
+    "global_settled": 3942,
+    "global_new_ft_count_since_previous_snapshot": 18,
+    "global_frozen": 4825,
+    "v2_frozen_per_market": 3997,
+    "v2_settled_per_market": 3140,
+    "v2_pending_per_market": 857,
+    "v2_markets": [
+      "1x2",
+      "over_2_5",
+      "under_2_5",
+      "double_chance_1x",
+      "double_chance_x2"
+    ],
+    "new_governed_ft_fixture_ids": [
+      "1621371",
+      "1621373",
+      "1621654",
+      "1621649",
+      "1519177",
+      "1519231",
+      "1621375",
+      "1628903",
+      "1621370",
+      "1621369",
+      "1621655",
+      "1621656",
+      "1507467",
+      "1507469",
+      "1507470",
+      "1507471",
+      "1507472",
+      "1621653"
+    ],
+    "new_governed_ft_count": 18,
+    "new_governed_commit": "eb21aab1ce8653e9adc18182b6e8fbceaf330f7d",
+    "new_ft_source_terminal_status": "FT",
+    "new_ft_freeze_before_kickoff_verified": true,
+    "last_governed_sync_utc": "2026-10-23T13:24:58+00:00",
+    "last_governed_sync_new_settlement_count": 0,
+    "nonstandard": {
+      "PEN": [
+        "1588817",
+        "1588821",
+        "1588845",
+        "1588863",
+        "1588890",
+        "1588893",
+        "1619499"
+      ],
+      "AET": [
+        "1644168"
+      ],
+      "NS": [
+        "1596466"
+      ]
+    },
+    "source_ledger_blob_sha": "066a1d95424629425d33efbe7deea0c0fc103d96",
+    "source_v2_state_blob_shas": {
+      "1x2": "fda6ac20b836ae054714d602b64c9b8d475454b6",
+      "over_2_5": "1e702cc0082264a373d8573466c08234c39f0dcd",
+      "under_2_5": "502174d9432c9d9faec8138099f9c14f40dda895",
+      "double_chance_1x": "46825844aaa7861d6c5d6d7e4e3bd5546f31d4e9",
+      "double_chance_x2": "5cb74817927157bb7c492d86079b79494f051460"
+    },
+    "source_physical_uniqueness_blob_sha": "9b5742dc60ac481793405524d796e22b5074f045",
+    "source_settlement_sync_blob_sha": "9eb4870e1252e1582ffef19f1682a97704d30f55"
+  },
+  "tennis": {
+    "cohort_finished": 11,
+    "cohort_total": 11,
+    "global_settled": 338,
+    "unique_events": 338,
+    "unique_settlements": 338,
+    "new_finished_since_previous_snapshot": 0,
+    "cohort_method": "Read complete 338-line governed settlement ledger; exact event_id intersection against 11 candidates yields exactly 11 FINISHED and no duplicates; unique event_id and settlement_id counts both 338.",
+    "source_ledger_blob_sha": "5ea3d69e4a0d5bed4b0d22884af789f6bbcf8fd5"
+  },
+  "governance": {
+    "settlement_final_only": true,
+    "metrics_opened": false,
+    "tuning": false,
+    "odds_to_p": false,
+    "real_money": "BLOCKED",
+    "v2_markets_metrics_opened_false_verified": true,
+    "canonical_guard_last_observed_status": "FAIL_CLOSED",
+    "canonical_guard_generated_at_utc": "2026-10-23T13:28:34.799978+00:00",
+    "canonical_guard_failed_sources": [
+      "football_4000",
+      "tennis_three_blocks"
+    ],
+    "canonical_guard_source_blob_sha": "b2cd82af74481333df822f711f398e692a8af688",
+    "no_duplicate_settlement_write": true,
+    "note": "Canonical guard is stale-source FAIL_CLOSED and global tracker still reports 3924 despite ledger and V2 physical counts 3942. No calibration metrics opened or tuning performed by this snapshot."
+  },
+  "note": "18 new FT already settled in governed GitHub commit; this artifact is an audit-only progress snapshot, not a duplicate settlement, backfill, model change, or real-money authorization."
+}

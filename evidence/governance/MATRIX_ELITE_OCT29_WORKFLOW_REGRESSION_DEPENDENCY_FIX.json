@@ -1,0 +1,21 @@
+{
+  "schema": "MATRIX_ELITE_OCT29_WORKFLOW_REGRESSION_DEPENDENCY_FIX_V1",
+  "date_bogota": "2026-10-29",
+  "failing_run_id": 40821985400,
+  "failing_job_id": 123276338081,
+  "failing_step": "Re-run certified CLV and Telegram regressions",
+  "failure": "ModuleNotFoundError: No module named 'PIL'",
+  "affected_test_modules": [
+    "tests/test_telegram_sharp_reference_gate.py",
+    "tests/test_telegram_quote_recovery_window.py"
+  ],
+  "fix_file": ".github/workflows/workflow-regression-contracts.yml",
+  "fix_commit": "8af40ae5dd81cd06a7ebec52e37123fba829f714",
+  "fix": "Install Pillow alongside pytest and requests before running regression suite",
+  "verification_status": "PENDING_NEW_WORKFLOW_RUN",
+  "safety": {
+    "real_money": "BLOCKED",
+    "auto_betting": "DISABLED"
+  },
+  "limitations": "The original failure was dependency import; test suite passing after fix not yet verified"
+}

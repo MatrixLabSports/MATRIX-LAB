@@ -1,0 +1,32 @@
+{
+  "schema": "MATRIX_ELITE_POST_EXPIRY_CRON_CERTIFICATION_V1",
+  "certified_run": {
+    "run_id": 40824678922,
+    "event": "push",
+    "conclusion": "success",
+    "head_sha": "0a20f0cf03e67cea5e9fe02043c9263dd0db6328",
+    "successful_steps": [
+      "Test fail-closed post-expiry diagnosis",
+      "Generate independent offline diagnosis",
+      "Certify no calls and safety",
+      "Preserve post-expiry evidence"
+    ]
+  },
+  "workflow": ".github/workflows/telegram-post-expiry-health.yml",
+  "schedule_cron": "12,27,42,57 * * * *",
+  "schedule_interval_minutes": 15,
+  "scheduled_event_run_physically_verified": false,
+  "latest_no_secrets_test_run": {
+    "run_id": 40824689170,
+    "conclusion": "PENDING_AT_AUDIT"
+  },
+  "limits": [
+    "Push-triggered success is not proof that scheduled triggers execute",
+    "No Telegram API delivery acknowledgement",
+    "No independent-source operational signal supervisor yet"
+  ],
+  "safety": {
+    "real_money": "BLOCKED",
+    "automatic_wagering": false
+  }
+}

@@ -1,0 +1,163 @@
+{
+  "schema": "MATRIX_OVER25_FORWARD_1444_1544_RECONCILIATION_PROOF_V1",
+  "generated_at_utc": "2026-10-15T22:38:45Z",
+  "repository": "MatrixLabSports/MATRIX-LAB",
+  "branch": "repair/cor09-world-pipeline",
+  "problem": {
+    "stale_state_before": {
+      "forward_current_settlement_count": 1447,
+      "lane_v2_settlement_count": 1855,
+      "forward_status": "SEALED_PENDING"
+    },
+    "first_failed_reconciliation_run": 38818059180,
+    "first_failed_outcome": "BASELINE_LANE_PREFIX_MUTATED",
+    "first_mismatch": {
+      "index_zero_based": 367,
+      "row_one_based": 368,
+      "baseline_fixture_id": "1619714",
+      "current_fixture_id": "1619578",
+      "baseline_hash": "97878c044f75c2885169749624095ddd2810e37a860b6f9c6c36ad849425249a",
+      "current_hash": "9331d28713c3b692f6c5661528bb892d08abd27453e8c2ca543412ffc643f397"
+    }
+  },
+  "root_cause": {
+    "source_baseline_rows": 2246,
+    "source_current_rows": 2657,
+    "source_baseline_prefix_unchanged": true,
+    "late_appended_fixture_id": "1619578",
+    "late_appended_source_position_zero_based": 2349,
+    "existed_in_baseline_source": false,
+    "freeze_at_utc": "2026-10-06T12:06:41+00:00",
+    "settled_at_utc": "2026-10-13T23:02:16+00:00",
+    "cause": "A post-baseline source row was appended later with an older freeze_at_utc. Full-lane sorting by freeze_at_utc inserted it into the immutable historical prefix and changed the chained record hashes.",
+    "governance_interpretation": "Post-baseline Over 2.5 settlements must be append-only in source-ledger order after the verified baseline prefix; late rows must not be inserted retroactively into that prefix."
+  },
+  "set_reconciliation": {
+    "baseline_lane_rows": 1444,
+    "source_rows_after_baseline": 411,
+    "eligible_new_unique_over25": 411,
+    "expected_append_only_lane_rows": 1855,
+    "current_lane_rows_after_repair": 1855,
+    "duplicate_against_baseline": 0,
+    "duplicate_new_rows": 0,
+    "missing_from_current": 0,
+    "extra_in_current": 0
+  },
+  "repair": {
+    "workflow_trigger_commit": "0a3f68a7358b9f9237290b097b7618deda3e84c0",
+    "diagnostic_commit": "6d94cdfaf35eb694b69a79ae1117ba953f718473",
+    "append_only_sync_fix_commit": "ebf0f80bcf863d2fdfbe8124d5743dc88e77b291",
+    "successful_workflow_run_id": 38818393687,
+    "successful_workflow_conclusion": "success",
+    "evidence_persistence_commit": "e40daa4cf9f7218c66692140c24ab4a7414e673f",
+    "persisted_files": [
+      "evidence/api_football/calibration_v2/OVER25_FORWARD_VALIDATION_1444_1544_RESULT.json",
+      "evidence/api_football/calibration_v2/OVER25_FORWARD_VALIDATION_1444_1544_STATE.json",
+      "evidence/api_football/calibration_v2/lanes/over_2_5/ledger.jsonl"
+    ]
+  },
+  "physical_hash_chain_readback": {
+    "baseline_lane_blob_sha": "d565e7b853bd58fb60a773b11324ab04a05c57d5",
+    "repaired_lane_blob_sha": "cccdf93f892a4d52b1d2fb48f0ec797fab5e26b2",
+    "baseline_prefix_rows": 1444,
+    "baseline_prefix_hash_chain_unchanged": true,
+    "last_baseline_fixture_id": "1645464",
+    "last_baseline_record_sha256": "d3b4339110a52b43b2ea77ad32ae190815a75903ca701d743154f8963531076c",
+    "first_fixed_block_fixture_id": "1492402",
+    "first_fixed_block_previous_lane_record_sha256": "d3b4339110a52b43b2ea77ad32ae190815a75903ca701d743154f8963531076c",
+    "fixed_block_rows": 100,
+    "fixed_block_unique_fixture_ids": 100,
+    "result_fixture_ids_match_lane_exact_order": true
+  },
+  "final_state": {
+    "lane_v2": {
+      "settlement_count": 1855,
+      "observation_count": 1855,
+      "freeze_observation_count": 2348,
+      "pending_settlement_count": 493,
+      "metrics_opened": false,
+      "parameter_tuning_allowed": false,
+      "real_money": "BLOCKED"
+    },
+    "fixed_forward_block": {
+      "baseline_settlement_count": 1444,
+      "target_settlement_count": 1544,
+      "current_settlement_count": 1855,
+      "new_settlements_after_baseline": 411,
+      "status": "CLOSED_FIXED_100",
+      "cohort_size_required": 100,
+      "outcomes_read_for_metrics": 100,
+      "metrics_opened": true,
+      "continuous_lane_metrics_remain_sealed": true,
+      "remaining_to_target": 0,
+      "real_money": "BLOCKED"
+    }
+  },
+  "fixed_block_result": {
+    "sample_size": 100,
+    "all_rows_standard_final_ft": true,
+    "baseline_lane_prefix_unchanged": true,
+    "lane_probability_binding_verified": true,
+    "lane_outcome_binding_verified": true,
+    "challenger": {
+      "brier_score": 0.2619121250943012,
+      "log_loss": 0.7233459460053336,
+      "ece": 0.15667276924293685,
+      "max_calibration_error": 0.8189595868421212,
+      "observed_over_2_5_rate": 0.62,
+      "mean_predicted_probability": 0.5259183131178375,
+      "accuracy_at_0_5_diagnostic_only": 0.57
+    },
+    "poisson": {
+      "brier_score": 0.2668426219952041,
+      "log_loss": 0.7391628435109149,
+      "ece": 0.18482425930000007,
+      "max_calibration_error": 0.89209935,
+      "accuracy_at_0_5_diagnostic_only": 0.53
+    },
+    "paired_comparison": {
+      "delta_brier_challenger_minus_poisson": -0.0049304969009029065,
+      "delta_log_loss_challenger_minus_poisson": -0.01581689750558096,
+      "beats_poisson_brier": true,
+      "beats_poisson_log_loss": true,
+      "proper_scoring_directional_pass": true,
+      "brier_ci95": [
+        -0.0125251901606603,
+        0.002664196358854486
+      ],
+      "log_loss_ci95": [
+        -0.03588100306585486,
+        0.0042472080546929435
+      ]
+    },
+    "stability": {
+      "previous_forward_100_ece": 0.15991545213737735,
+      "current_forward_100_ece": 0.15667276924293685,
+      "ece_change_current_minus_previous": -0.0032426828944404906
+    },
+    "adjudication": {
+      "proper_scoring_directional_vs_poisson": "PASS",
+      "formal_model_promotion": "NOT_AUTHORIZED_BY_THIS_MONITORING_BLOCK",
+      "real_money_decision": "KEEP_BLOCKED",
+      "verdict": "REPORT_FOR_GOVERNANCE_REVIEW_NO_AUTOMATIC_PARAMETER_CHANGE"
+    }
+  },
+  "protections": {
+    "continuous_lane_metrics_remain_sealed": true,
+    "fixed_block_metrics_only": true,
+    "parameter_tuning_allowed": false,
+    "refit_allowed": false,
+    "model_files_modified": false,
+    "odds_used_to_generate_probability": false,
+    "target_outcomes_used_to_generate_probability": false,
+    "automatic_wagering": false,
+    "real_money": "BLOCKED"
+  },
+  "resolution": {
+    "counter_divergence_reconciled": true,
+    "missing_or_extra_settlements": false,
+    "historical_prefix_restored": true,
+    "fixed_100_block_closed": true,
+    "status": "RESOLVED_PHYSICALLY"
+  }
+}

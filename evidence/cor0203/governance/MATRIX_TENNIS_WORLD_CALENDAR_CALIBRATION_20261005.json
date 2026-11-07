@@ -1,0 +1,238 @@
+{
+  "schema": "MATRIX_TENNIS_WORLD_CALENDAR_CALIBRATION_20261005_V1",
+  "target_date_bogota": "2026-10-05",
+  "generated_from_physical_run": {
+    "workflow_run_id": 37188484373,
+    "conclusion": "success",
+    "branch": "repair/cor09-world-pipeline",
+    "exact_day_dual_audit_blob": "9b7c5dc645fc40ee87784052441b81e0f161a0cc",
+    "world_inventory_blob": "edcff77b8795213dd0a4da446e81167a8b99cb0f",
+    "world_funnel_blob": "1b43c0d9ff44f220533d3fee202a4d26544d94fe"
+  },
+  "coverage": {
+    "rapidapi_primary": {
+      "registered_matches": 42,
+      "tournament_count": 5,
+      "families": {
+        "ATP": 42,
+        "WTA": 0,
+        "ITF": 0
+      },
+      "details": {
+        "ATP_CHALLENGER": 41,
+        "ATP_MAIN_OR_OTHER": 1
+      },
+      "formats": {
+        "SINGLES": 42
+      },
+      "tournaments": [
+        {
+          "name": "Antofagasta Challenger",
+          "matches": 10
+        },
+        {
+          "name": "Braga Challenger",
+          "matches": 11
+        },
+        {
+          "name": "Palermo Challenger",
+          "matches": 10
+        },
+        {
+          "name": "Villena Challenger",
+          "matches": 10
+        },
+        {
+          "name": "Japan Open Tennis Championships - Tokyo",
+          "matches": 1
+        }
+      ]
+    },
+    "api_tennis_secondary": {
+      "registered_matches": 60,
+      "tournament_groups": 9,
+      "groups": [
+        {
+          "category": "Atp Doubles",
+          "tournament": "Tokyo",
+          "matches": 1
+        },
+        {
+          "category": "Atp Singles",
+          "tournament": "Tokyo",
+          "matches": 1
+        },
+        {
+          "category": "Challenger Men Doubles",
+          "tournament": "Wuning 3 (China)",
+          "matches": 8
+        },
+        {
+          "category": "Challenger Men Singles",
+          "tournament": "Antofagasta",
+          "matches": 10
+        },
+        {
+          "category": "Challenger Men Singles",
+          "tournament": "Braga",
+          "matches": 11
+        },
+        {
+          "category": "Challenger Men Singles",
+          "tournament": "Palermo (Italy) - Qualification",
+          "matches": 10
+        },
+        {
+          "category": "Challenger Men Singles",
+          "tournament": "Villena",
+          "matches": 10
+        },
+        {
+          "category": "Challenger Women Doubles",
+          "tournament": "Suzhou",
+          "matches": 8
+        },
+        {
+          "category": "Wta Singles",
+          "tournament": "Beijing",
+          "matches": 1
+        }
+      ]
+    },
+    "reconciliation": {
+      "neutral_exact_overlap_count": 0,
+      "exact_union_count": 102,
+      "status": "COVERAGE_NOT_FULLY_RECONCILED",
+      "interpretation": "Do not claim 42 or 102 as a fully reconciled exact worldwide total across all categories. RapidAPI primary currently omits WTA/doubles visible in API-Tennis; ITF match rows are not present in this 05-Oct snapshot."
+    }
+  },
+  "matrix_domain": {
+    "domain": "ATP Challenger Hard Singles Match Winner",
+    "domain_candidates": 10,
+    "tournament": "Villena Challenger",
+    "surface": "Hard",
+    "event_start_bogota": "2026-10-05T04:00:00-05:00",
+    "status_counts": {
+      "FROZEN_UNIQUE": 7,
+      "PREREGISTERED_BLOCKED": 2,
+      "DISCOVERY_REJECTED": 1
+    },
+    "frozen_unique": [
+      {
+        "match_id": "3011",
+        "players": [
+          "Damir Dzumhur",
+          "Inaki Montes-De La Torre"
+        ],
+        "observation_index": 132
+      },
+      {
+        "match_id": "3013",
+        "players": [
+          "Moez Echargui",
+          "Raul Brancaccio"
+        ],
+        "observation_index": 136
+      },
+      {
+        "match_id": "3015",
+        "players": [
+          "Daniil Glinka",
+          "Gauthier Onclin"
+        ],
+        "observation_index": 131
+      },
+      {
+        "match_id": "3020",
+        "players": [
+          "Pablo Llamas Ruiz",
+          "Luca Nardi"
+        ],
+        "observation_index": 133
+      },
+      {
+        "match_id": "3025",
+        "players": [
+          "Abedallah Shelbayh",
+          "David Jorda Sanchis"
+        ],
+        "observation_index": 134
+      },
+      {
+        "match_id": "3027",
+        "players": [
+          "Dino Prizmic",
+          "Jack Pinnington Jones"
+        ],
+        "observation_index": 135
+      },
+      {
+        "match_id": "3034",
+        "players": [
+          "Felix Balshaw",
+          "Joel Schwaerzler"
+        ],
+        "observation_index": 137
+      }
+    ],
+    "preregistered_blocked": [
+      {
+        "match_id": "3014",
+        "players": [
+          "August Holmgren",
+          "Pedro Martinez Portero"
+        ],
+        "blockers": [
+          "IDENTITY_CROSSWALK_MISSING:rapidapi-tennis:player:27358",
+          "SEALED_STATIC4_PLAYER_NOT_FOUND:Pedro Martinez Portero"
+        ]
+      },
+      {
+        "match_id": "3026",
+        "players": [
+          "Daniel Rincon",
+          "Alejo Sanchez Quilez"
+        ],
+        "blockers": [
+          "IDENTITY_CROSSWALK_MISSING:rapidapi-tennis:player:98265",
+          "SEALED_STATIC4_PLAYER_NOT_FOUND:Alejo Sanchez Quilez"
+        ]
+      }
+    ],
+    "discovery_rejected": [
+      {
+        "match_id": "3035",
+        "players": [
+          "Maxi Carrascosa Diaz",
+          "Borna Gojo"
+        ],
+        "blockers": [
+          "RANKING_CUT_MISSING_PLAYER1"
+        ],
+        "recovery_checks": [
+          "EXACT_RANKING_CUT_NOT_FOUND:rapidapi-tennis:player:107714",
+          "RANKING_PROFILE_ALIAS_NOT_FOUND:rapidapi-tennis:player:107714"
+        ]
+      }
+    ]
+  },
+  "holdout": {
+    "unique_calibration_observations": 96,
+    "physical_frozen_rows": 155,
+    "duplicate_observations_quarantined": 59,
+    "remaining_to_100": 4,
+    "remaining_to_200": 104,
+    "remaining_to_600": 504,
+    "metrics": "SEALED_UNTIL_600",
+    "note": "The seven 05-Oct FROZEN_UNIQUE events were already frozen/preregistered by the forward-horizon pipeline and are already included in the 96 unique count; this run did not add seven new unique observations."
+  },
+  "protections": {
+    "missing_not_zero": true,
+    "silent_imputation": false,
+    "odds_to_p_matrix": false,
+    "post_cut_competitive_data_used": false,
+    "metrics_opened": false,
+    "real_money": "BLOCKED"
+  },
+  "status": "PASS_WITH_GLOBAL_COVERAGE_RECONCILIATION_WARNING"
+}

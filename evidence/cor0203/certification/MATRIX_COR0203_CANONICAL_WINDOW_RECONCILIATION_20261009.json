@@ -1,0 +1,96 @@
+{
+  "schema": "MATRIX_COR0203_CANONICAL_WINDOW_RECONCILIATION_V1",
+  "operational_date_bogota": "2026-10-09",
+  "branch": "repair/cor09-world-pipeline",
+  "pre_certification_head": "80becafb40672ae3c6aa581da18dc6207fb10af0",
+  "correction": {
+    "prior_claim_rejected": "240/600 = Window1 200 + Window2 40",
+    "reason": "240 is the raw physical frozen-row count. COR02/COR03 window accounting is governed by unique physical matches after duplicate reconciliation.",
+    "canonical_denominator": "UNIQUE_PHYSICAL_MATCHES"
+  },
+  "source_artifacts": [
+    {
+      "path": "evidence/cor0203/holdout/MATRIX_COR0203_HOLDOUT_BATCH_R875.json",
+      "blob_sha": "8ccd88aefe82ccb4e9aa2a429158ee66b0307e0d",
+      "ending_physical_observation_count": 240
+    },
+    {
+      "path": "evidence/cor0203/runtime/MATRIX_COR0203_HOLDOUT_INTEGRITY_LAST.json",
+      "blob_sha": "e3611c93913eb4443d86a63d3c183bc0ebf0ccb9",
+      "result": "PASS",
+      "admissible_observations": 240
+    },
+    {
+      "path": "evidence/cor0203/runtime/MATRIX_COR0203_PHYSICAL_UNIQUENESS_LAST.json",
+      "blob_sha": "42b2f5e66a3a40319a84e2b21e471465fb75b35c",
+      "result": "PASS",
+      "physical_frozen_rows": 240,
+      "unique_calibration_observations": 130,
+      "duplicate_observations_quarantined": 110
+    },
+    {
+      "path": "evidence/cor0203/runtime/MATRIX_COR0203_MILESTONES_LAST.json",
+      "blob_sha": "843e954f50260ec593503ffddb30c82e6fbe7822",
+      "unique_calibration_observations": 130
+    },
+    {
+      "path": "evidence/cor0203/runtime/MATRIX_COR0203_PRODUCTION_OBSERVABILITY_LAST.json",
+      "blob_sha": "95c576ecf13fcbbfd63e39213f6d89a0f6a209d3",
+      "window1_count": 130,
+      "total_count": 130
+    }
+  ],
+  "canonical_state": {
+    "raw_physical_frozen_rows": 240,
+    "unique_calibration_observations": 130,
+    "duplicate_rows_quarantined": 110,
+    "window1": {
+      "count": 130,
+      "target": 200,
+      "remaining": 70,
+      "status": "ACCUMULATING"
+    },
+    "window2": {
+      "count": 0,
+      "target": 200,
+      "remaining": 200,
+      "status": "NOT_STARTED"
+    },
+    "window3": {
+      "count": 0,
+      "target": 200,
+      "remaining": 200,
+      "status": "NOT_STARTED"
+    },
+    "total": {
+      "count": 130,
+      "target": 600,
+      "remaining": 470
+    },
+    "metrics": "SEALED_UNTIL_600",
+    "metrics_opened": false,
+    "outcomes_read_for_metrics": 0,
+    "parameter_tuning_allowed": false,
+    "real_money": "BLOCKED"
+  },
+  "window_authority": {
+    "authoritative_layer": "evidence/cor0203/runtime/MATRIX_COR0203_PHYSICAL_UNIQUENESS_LAST.json canonical_observations[].window",
+    "rule": "canonical_unique_index 1-200 => Window1; 201-400 => Window2; 401-600 => Window3",
+    "current_window2_transition_allowed": false,
+    "transition_condition": "unique_calibration_observations >= 201"
+  },
+  "implementation_review": {
+    "physical_uniqueness_audit": "ALREADY_CORRECT: assigns window only after cross-provider physical deduplication using canonical_unique_index.",
+    "production_observability": "ALREADY_CORRECT: window1_count is bounded by min(unique_calibration_count, 200).",
+    "milestone_status": "ALREADY_CORRECT FOR CURRENT GATE: milestones use unique_calibration_observations, not raw frozen rows.",
+    "prospective_raw_batch_window_field": "LEGACY_RAW_FIELD_NOT_AUTHORIZED_AS_CALIBRATION_WINDOW_DENOMINATOR.",
+    "holdout_integrity_window1_count_check": "LEGACY_RAW_STRUCTURAL_CHAIN_CHECK_ONLY; it does not authorize canonical calibration window transition."
+  },
+  "historical_preservation": {
+    "rewrite_existing_holdout_batches": false,
+    "delete_existing_observations": false,
+    "backfill": false,
+    "r875_blob_sha_preserved": "8ccd88aefe82ccb4e9aa2a429158ee66b0307e0d"
+  },
+  "next_action": "Continue governed acquisition from 130 unique toward 200 unique. Do not open Window2 and do not open metrics until the governed thresholds are reached."
+}
