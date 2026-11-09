@@ -1,16 +1,14 @@
 name: MATRIX Native Original API-Football Bounded Free Recovery
 
+# 2026-11-09 vendor safety gate: API-SPORTS warned that shared outbound IPs
+# may suspend Free Plan accounts. Previous probes also returned an application
+# error: season 2026 is not covered by Free (2022-2024 allowed).
+# Disable all automatic/scheduled requests; no provider call until support
+# confirms the permitted egress and an operator explicitly dispatches a check.
+# See https://github.com/MatrixLabSports/MATRIX-LAB/issues/3
 on:
-  schedule:
-    - cron: "23 11 * * *"
   workflow_dispatch:
-  push:
-    branches:
-      - repair/cor09-world-pipeline
-    paths:
-      - .github/workflows/matrix-original-api-football-free-access-recovery.yml
-      - tools/matrix_original_api_football_free_recovery_probe.py
-      - tests/test_matrix_original_api_football_free_recovery_probe.py
+
 
 permissions:
   contents: write
