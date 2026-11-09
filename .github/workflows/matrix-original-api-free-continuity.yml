@@ -1,12 +1,13 @@
 name: MATRIX Original API Free Continuity (Research Only)
+# Vendor case 2026-11-09: Free access may be suspended from GitHub-hosted
+# shared Azure egress. Never automatically send requests from this runner.
+# Manual launch must remain disabled in practice until the user verifies a
+# dedicated outbound IP and API-SPORTS authorizes the egress. Manual dispatch
+# is preserved solely for controlled diagnostic maintenance.
+# No change to calibrated football models or real-money protections.
+# Tracking: https://github.com/MatrixLabSports/MATRIX-LAB/issues/3
 on:
   workflow_dispatch:
-  push:
-    branches: [repair/cor09-world-pipeline]
-    paths:
-      - tools/matrix_original_api_free_tier_probe.py
-      - tests/test_matrix_original_api_free_tier_probe.py
-      - .github/workflows/matrix-original-api-free-continuity.yml
 
 permissions:
   contents: write
