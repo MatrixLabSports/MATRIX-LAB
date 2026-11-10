@@ -1,7 +1,7 @@
 {
   "checks": {
     "football_current_settlement": {
-      "age_minutes": 153.42,
+      "age_minutes": 201.42,
       "canonical_path": "evidence/api_football/prospective_calibration/sync_last.json",
       "failures": [
         "CANONICAL_SOURCE_STALE"
@@ -18,7 +18,7 @@
       "status": "FAIL_CLOSED"
     },
     "football_tracker_structure": {
-      "age_minutes": 64.19,
+      "age_minutes": 112.2,
       "canonical_path": "evidence/api_football/governance/MATRIX_FOOTBALL_4000_CANONICAL_TRACKER_LAST.json",
       "failures": [],
       "max_age_minutes": 1440.0,
@@ -33,7 +33,7 @@
       "status": "PASS"
     },
     "live_tennis_cumulative": {
-      "age_minutes": 75.73,
+      "age_minutes": 123.74,
       "canonical_path": "evidence/live_tennis_lab/MATRIX_LIVE_TENNIS_CUMULATIVE_GATE_V1.json",
       "failures": [
         "CANONICAL_SOURCE_STALE"
@@ -47,11 +47,9 @@
       "status": "FAIL_CLOSED"
     },
     "telegram_daily_bankroll": {
-      "age_minutes": 153.51,
+      "age_minutes": 1.08,
       "canonical_path": "evidence/notifications/telegram/MATRIX_TELEGRAM_DAILY_BANKROLL_CANONICAL_LAST.json",
-      "failures": [
-        "CANONICAL_SOURCE_STALE"
-      ],
+      "failures": [],
       "max_age_minutes": 30.0,
       "metrics": {
         "summary.current_bankroll_cop": 4859500,
@@ -59,11 +57,11 @@
         "summary.total_profit_cop": -140500
       },
       "name": "telegram_daily_bankroll",
-      "source_timestamp_utc": "2026-11-10T20:00:05.534384+00:00",
-      "status": "FAIL_CLOSED"
+      "source_timestamp_utc": "2026-11-10T23:20:31.518508+00:00",
+      "status": "PASS"
     },
     "tennis_three_blocks": {
-      "age_minutes": 218.44,
+      "age_minutes": 266.44,
       "canonical_path": "evidence/tennis/MATRIX_TENNIS_THREE_BLOCK_STAGNATION_AUDIT_LAST.json",
       "failures": [
         "CANONICAL_SOURCE_STALE"
@@ -97,15 +95,9 @@
         "CANONICAL_SOURCE_STALE"
       ],
       "source": "live_tennis_cumulative"
-    },
-    {
-      "failures": [
-        "CANONICAL_SOURCE_STALE"
-      ],
-      "source": "telegram_daily_bankroll"
     }
   ],
-  "generated_at_utc": "2026-11-10T22:33:36.051757+00:00",
+  "generated_at_utc": "2026-11-10T23:21:36.430210+00:00",
   "precedence": [
     "LATEST_PHYSICAL_EVIDENCE",
     "HANDOFF",
@@ -123,7 +115,7 @@
   },
   "schema": "MATRIX_CANONICAL_TRUTH_GUARD_V1",
   "summary": {
-    "failed_sources": 4,
+    "failed_sources": 3,
     "registered_sources": 5,
     "status": "FAIL_CLOSED"
   }
