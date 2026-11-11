@@ -7,18 +7,11 @@ on:
         description: Optional YYYY-MM-DD in America/Bogota; blank uses governed automatic target selection
         required: false
         default: ""
-  push:
-    branches:
-      - repair/cor09-world-pipeline
-      - main
-    paths:
-      - tools/api_football_prospective_horizon.py
-      - tests/test_api_football_prospective_horizon.py
-      - .github/workflows/api-football-prospective-daily-production.yml
-  schedule:
-    # Multiple retry windows. Idempotence below prevents duplicate paid-API cycles
-    # once the target date has one successful capture on the current Bogota day.
-    - cron: "1,16,31,46 * * * *"
+  # Expired API-FOOTBALL paid entitlement: 2026-10-28.
+  # API-SPORTS warns shared GitHub-hosted outbound IPs can suspend Free.
+  # Scheduled and push production have been removed; manual diagnostics only.
+  # No 2026 season access under Free (only 2022-2024).
+  # No real-money authorization, model recalibration or provider bypass.
 
 permissions:
   contents: write
