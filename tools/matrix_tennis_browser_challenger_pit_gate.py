@@ -93,9 +93,17 @@ def evaluate(root:Path,day:str,now:datetime):
             raise ValueError("TENNIS_DETAIL_CROSSMATCH_SHA256_MISMATCH")
         archive=OUT/day/"archive"/(
             "MATRIX_TENNIS_EXACT_BROWSER_CROSSMATCH_"+declared_cross_sha+".json")
-        if not (root/archive).is_file():
+        frozen_capture=CAPTURE_ROOT/day/("source_crossmatch_bound_"+declared_cross_sha+".json")
+        # The original Windows capture MUST publish this exact byte snapshot
+        # with the match details, or Linux must have sealed it before refresh.
+        # Never substitute the newest crossmatch or trust a filename alone.
+        if (root/frozen_capture).is_file():
+            path=frozen_capture
+        elif (root/archive).is_file():
+            path=archive
+        else:
             raise ValueError("TENNIS_DETAIL_CROSSMATCH_SHA256_MISMATCH")
-        cross,crosssha=read(root,archive)
+        cross,crosssha=read(root,path)
         if crosssha!=declared_cross_sha:
             raise ValueError("TENNIS_ARCHIVED_CROSSMATCH_SHA256_TAMPER")
         archived_crossmatch_used=True
