@@ -162,7 +162,7 @@ def test_source_gate_uses_only_exact_hash_bound_archived_crossmatch(tmp_path,mon
             return cross,latest_sha
         if p==archive:
             return cross,original_sha
-        if str(p) in mod.AUTHORITIES.values():
+        if p.as_posix() in mod.AUTHORITIES.values():
             return authority,"d"*64
         return actual_read(root,p)
     monkeypatch.setattr(mod,"read",fake_read)
@@ -220,7 +220,7 @@ def test_same_capture_sealed_crossmatch_beats_later_reconciled_calendar(tmp_path
         if p==mod.CAPTURE_ROOT/day/mod.DETAIL:return details,"c"*64
         if p==mod.OUT/day/mod.CROSS:return cross,current
         if p==original:return cross,declared
-        if str(p) in mod.AUTHORITIES.values():return auth,"d"*64
+        if p.as_posix() in mod.AUTHORITIES.values():return auth,"d"*64
         raise AssertionError(str(p))
     monkeypatch.setattr(mod,"read",fake_read)
     r=mod.evaluate(tmp_path,day,T("2026-11-11T14:00:00Z"))
