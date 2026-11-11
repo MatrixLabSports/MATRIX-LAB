@@ -141,6 +141,17 @@ def evaluate(root:Path,day:str,now:datetime):
             expected=datetime.strptime(x["calendar_date_token"],"%Y%m%dT%H%M%SZ").replace(tzinfo=timezone.utc)
             if kickoff!=expected or not kickoff_in_bogota_calendar_day(kickoff,day):
                 status.append("EXACT_UTC_CALENDAR_IDENTITY_MISMATCH");valid=False
+            source = x.get("kickoff_clock_source")
+            if source is not None:
+                if source == "VISIBLE_MATCH_DESCRIPTION_EXPLICIT_UTC":
+                    quote = x.get("explicit_visible_utc_match_quote")
+                    expected_quote = x.get("source_visible_match_fields",{}).get(
+                        "explicit_utc_match_description_quote")
+                    # Must be the same explicit UTC quote bound at capture.
+                    if not quote or quote != expected_quote or "UTC" not in quote:
+                        status.append("EXPLICIT_UTC_SOURCE_PROVENANCE_MISSING");valid=False
+                elif source != "GOOGLE_CALENDAR_EXACT_UTC":
+                    status.append("UNAPPROVED_KICKOFF_CLOCK_SOURCE");valid=False
             if observed>=kickoff:
                 status.append("MATCH_PAGE_CAPTURE_AFTER_KICKOFF");valid=False
             if now>=kickoff:
