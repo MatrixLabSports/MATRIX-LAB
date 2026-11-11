@@ -116,8 +116,11 @@ def evaluate(root:Path,day:str,now:datetime):
             status.append("TWO_PROVIDER_FIXTURE_START_DISPLAY_CONFLICT");valid=False
         s=x.get("surface")
         if s not in ("Hard","Clay"):status.append("SURFACE_NOT_CANONICAL");valid=False
-        expected_court={"Hard":"Dura indoor","Clay":"Tierra batida"}
-        if s not in expected_court or x.get("court_label")!=expected_court[s]:
+        # Exact source-readable court labels only: both indoor and outdoor
+        # hard are Hard; "outdoor" alone is not a hard-surface certificate.
+        expected_court={"Hard":{"Dura indoor","Dura outdoor"},
+                        "Clay":{"Tierra batida"}}
+        if s not in expected_court or x.get("court_label") not in expected_court[s]:
             status.append("COURT_NOT_EXACT_MATCH");valid=False
         link=crossrows.get(sid)
         if not link or x.get("sofascore_url")!=link.get("sofascore_url") or x.get("flashscore_url")!=link.get("flashscore_url") or x.get("flashscore_mid")!=link.get("flashscore_mid"):
