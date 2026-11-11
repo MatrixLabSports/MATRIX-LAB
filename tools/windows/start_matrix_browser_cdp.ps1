@@ -29,7 +29,8 @@ function Test-MatrixCdpHealth {
   try {
     $resp=Invoke-RestMethod -Uri $health -TimeoutSec 3
     return ($null -ne $resp -and -not [string]::IsNullOrWhiteSpace($resp.webSocketDebuggerUrl) -and
-      $resp.webSocketDebuggerUrl.StartsWith("ws://127.0.0.1:$Port/"))
+      ($resp.webSocketDebuggerUrl.StartsWith("ws://127.0.0.1:$Port/") -or
+       $resp.webSocketDebuggerUrl.StartsWith("ws://localhost:$Port/")))
   } catch {
     return $false
   }
