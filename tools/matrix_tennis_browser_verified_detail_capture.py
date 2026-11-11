@@ -191,7 +191,7 @@ def parse_visible(row: dict, ui: dict, day: str, observed_at: datetime) -> dict:
             or not z.path.startswith("/es/tennis/tournament/challenger/")):
             continue
         for field in ("label", "name"):
-            candidate = re.sub(r"\\s+", " ", str(link.get(field) or "")).strip()
+            candidate = re.sub(r"\s+", " ", str(link.get(field) or "")).strip()
             parts = [part.strip() for part in candidate.split(",")]
             if len(parts) >= 3 and parts[-1] in rounds and all(parts):
                 prefix = (len(parts) >= 5 and parts[0] == "Competición Tenis"
