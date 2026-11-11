@@ -118,3 +118,44 @@ def test_failed_match_keeps_only_bounded_public_visible_evidence():
     assert all("session=" not in x["url"] for x in result["visible_source_links"])
     assert any(x["label"]=="France" for x in result["visible_source_links"])
     assert public_visible_failure_clues(None) is None
+
+
+def test_current_public_challenger_tournament_label_without_fixed_prefix():
+    row,ui=inputs()
+    for link in ui["links"]:
+        if "/tournament/challenger/" in link["url"]:
+            link["name"]="Bratislava, Slovakia, Cuartos de final"
+            link["label"]=""
+    event=parse_visible(row,ui,DAY,datetime(2026,11,5,23,tzinfo=timezone.utc))
+    assert event["competition_label"]=="Bratislava, Slovakia, Cuartos de final"
+    assert event["tournament_name"]=="Bratislava, Slovakia"
+    assert event["round"]=="Cuartos de final"
+    assert event["challenger_category_evidenced_by_tournament_url"] is True
+    assert event["provider_player_id_equivalence_certified"] is False
+
+
+def test_challenger_category_cannot_come_from_text_without_real_url():
+    row,ui=inputs()
+    for link in ui["links"]:
+        if "/tournament/challenger/" in link["url"]:
+            link["url"]="https://www.sofascore.com/es/tennis/tournament/atp-fake/111"
+            link["name"]="Bratislava, Slovakia, Cuartos de final"
+    with pytest.raises(ValueError,match="EXACT_CHALLENGER_COMPETITION_LINK_REQUIRED"):
+        parse_visible(row,ui,DAY,datetime(2026,11,5,23,tzinfo=timezone.utc))
+
+
+def test_challenger_round_must_be_explicitly_visible_not_guessed():
+    row,ui=inputs()
+    for link in ui["links"]:
+        if "/tournament/challenger/" in link["url"]:
+            link["name"]="Bratislava, Slovakia"
+            link["label"]=""
+    with pytest.raises(ValueError,match="EXACT_CHALLENGER_COMPETITION_LINK_REQUIRED"):
+        parse_visible(row,ui,DAY,datetime(2026,11,5,23,tzinfo=timezone.utc))
+
+
+def test_explicit_china_flag_is_read_without_identity_inference():
+    from tools.matrix_tennis_browser_verified_detail_capture import visible_country_candidates
+    assert visible_country_candidates([
+        {"name":"Y. Zhou","label":"","flag_alts":["Yi Zhou","China"]}
+    ])==["China"]
