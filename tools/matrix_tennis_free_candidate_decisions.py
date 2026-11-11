@@ -114,6 +114,20 @@ def evaluate(root: Path, day: str, now: datetime) -> dict:
             event_clock = utc(item["start_time_utc"]) if item.get("start_time_utc") else None
             match_day = event_clock.astimezone(BOGOTA).date() if event_clock else None
             candidate_day = item.get("bogota_date")
+            # A provider's event_date may mean tournament-local date rather than UTC.
+            # Flag disagreements explicitly; never infer the provider's timezone.
+            provider_event_date = item.get("event_date")
+            utc_calendar_day = event_clock.date().isoformat() if event_clock else None
+            provider_day_disagreement = False
+            if provider_event_date is not None:
+                try:
+                    provider_day = date.fromisoformat(str(provider_event_date))
+                    provider_day_disagreement = (
+                        utc_calendar_day is None or
+                        provider_day.isoformat() != utc_calendar_day
+                    )
+                except (TypeError, ValueError):
+                    provider_day_disagreement = True
             blockers = [
                 "MODEL_PROVIDER_PLAYER_IDENTITY_NOT_CERTIFIED",
                 "INDEPENDENT_PER_EVENT_KICKOFF_NOT_CERTIFIED",
@@ -124,6 +138,8 @@ def evaluate(root: Path, day: str, now: datetime) -> dict:
                 blockers.append("MISSING_OR_REPEATED_PLAYER_NAME")
             if event_clock is None or match_day is None or not (start_day <= match_day <= start_day + timedelta(days=2)) or candidate_day != match_day.isoformat():
                 blockers.append("INVALID_OR_OUT_OF_SCOPE_LOCAL_KICKOFF")
+            if provider_day_disagreement:
+                blockers.append("PROVIDER_EVENT_DATE_VS_UTC_DAY_UNRESOLVED")
             if str(item.get("status", "")).casefold() != "scheduled":
                 blockers.append("PROVIDER_NOT_SCHEDULED_PREMATCH")
             if event_clock and at_api >= event_clock:
@@ -155,6 +171,8 @@ def evaluate(root: Path, day: str, now: datetime) -> dict:
                 "player2": players[1],
                 "provider_kickoff_utc": event_clock.isoformat() if event_clock else None,
                 "bogota_day": candidate_day,
+                "provider_event_date": provider_event_date,
+                "utc_calendar_day": utc_calendar_day,
                 "browser_name_hint_only": {
                     "sofascore_id": hint.get("sofascore_id"),
                     "flashscore_mid": hint.get("flashscore_mid"),
