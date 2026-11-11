@@ -169,7 +169,7 @@ def test_same_challenger_multiple_visible_labels_are_one_verified_tournament():
             link["label"]=""
     ui["links"].append({"url":next(x["url"] for x in ui["links"]
                              if "/tournament/challenger/" in x["url"]),
-                        "name":"Competición\\nTenis, Challenger 125, Bratislava, Slovakia, Cuartos de final",
+                        "name":"Competición\nTenis, Challenger 125, Bratislava, Slovakia, Cuartos de final",
                         "label":"","flag_alts":[]})
     event=parse_visible(row,ui,DAY,datetime(2026,11,5,23,tzinfo=timezone.utc))
     assert event["tournament_name"]=="Bratislava, Slovakia"
