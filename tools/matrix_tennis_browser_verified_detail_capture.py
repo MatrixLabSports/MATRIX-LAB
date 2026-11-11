@@ -301,9 +301,43 @@ def public_visible_failure_clues(ui: dict | None) -> dict | None:
                       "flag_alts":[str(x)[:90] for x in (row.get("flag_alts") or [])[:4]]})
         if len(links) >= 18:
             break
+    # Expose only structured public calendar evidence; no redirect URLs,
+    # no browser session data, no unbounded visible page text. Treat Google
+    # Calendar's time as a candidate, NEVER as an admitted model kickoff.
+    calendars = []
+    for link in (ui.get("links") or [])[:2500]:
+        if not isinstance(link, dict):
+            continue
+        uri = urlparse(str(link.get("url") or ""))
+        if uri.hostname != "calendar.google.com" or uri.path != "/calendar/render":
+            continue
+        query = parse_qs(uri.query)
+        details = (query.get("details") or [""])[0]
+        dates = (query.get("dates") or [""])[0]
+        calendars.append({
+            "action_template":query.get("action")==["TEMPLATE"],
+            "exact_utc_date_range_shape":bool(re.fullmatch(r"\\d{8}T\\d{6}Z/\\d{8}T\\d{6}Z",dates)),
+            "utc_dates":dates[:33],
+            "event_details_match_id":str(urlparse(details).fragment).startswith("id:"),
+            "event_details_path":urlparse(details).path[:180],
+            "label":str(link.get("name") or link.get("label") or "")[:140],
+        })
+        if len(calendars) >= 5:
+            break
+    visible_text = str(ui.get("visible_text") or "")
+    # Bounded, source-visible court terms only. No names/score or general text.
+    court_terms = []
+    for term in ("Dura indoor", "Tierra batida", "Hard", "Clay", "pista dura",
+                 "arcilla", "superficie", "court", "indoor", "outdoor"):
+        if re.search(r"(?<![A-Za-z])"+re.escape(term)+r"(?![A-Za-z])",
+                     visible_text, flags=re.IGNORECASE):
+            court_terms.append(term)
     body = json.dumps(ui, sort_keys=True, ensure_ascii=False).encode("utf-8")
     return {"visible_page_sha256":hashlib.sha256(body).hexdigest(),
             "visible_source_links":links,
+            "public_calendar_link_count":len(calendars),
+            "public_calendar_link_diagnostics":calendars,
+            "visible_court_term_presence_only":court_terms,
             "not_individual_identity_certification":True}
 
 
