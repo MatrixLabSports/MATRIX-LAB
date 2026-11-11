@@ -14,7 +14,14 @@ from tools.matrix_tennis_browser_first_free_intake import ROOT as CAPTURE_ROOT
 
 DETAIL="sofascore_verified_match_details.json"
 CROSS="MATRIX_TENNIS_EXACT_BROWSER_CROSSMATCH.json"
-COUNTRY_IOC={"USA":"USA","Switzerland":"SUI","Peru":"PER","Brazil":"BRA","Argentina":"ARG"}
+# Public country labels are compared with independently frozen original
+# source IOC codes; these are historical consistency checks, not provider IDs.
+COUNTRY_IOC={"USA":"USA","Switzerland":"SUI","Peru":"PER",
+"Brazil":"BRA","Argentina":"ARG","Romania":"ROU","South Africa":"RSA",
+"Czech Republic":"CZE","Finland":"FIN","Denmark":"DEN",
+"Australia":"AUS","France":"FRA","United Kingdom":"GBR",
+"Italy":"ITA","Germany":"GER","Spain":"ESP","Japan":"JPN",
+"China":"CHN","Chile":"CHI","Austria":"AUT"}
 AUTHORITIES={"Hard":"evidence/cor0203/identity/MATRIX_COR0203_IDENTITY_AUTHORITY_LAST.json",
 "Clay":"evidence/tennis_parallel_lanes/ATP_CHALLENGER_MEN_SINGLES_CLAY/identity/MATRIX_CLAY_IDENTITY_AUTHORITY_LAST.json"}
 OUT=Path("evidence/tennis_calendar_reconciliation")
@@ -32,6 +39,35 @@ def read(root,p):
     return json.loads(raw),sha(raw)
 def normal(x):
     return " ".join(fingerprint(str(x)))
+
+def resolve_unique_precut_history(rows):
+    """Resolve multiple provider rows ONLY to an identical pre-cut record.
+
+    This identifies an historical source and is NEVER player-ID equivalence.
+    Missing history rows are disregarded, not used as corroboration. Any
+    distinct nonempty source, IOC, row count, or latest date fails closed.
+    """
+    complete=[]
+    for row in rows:
+        hist=row.get("pre_cut_history") or {}
+        if (type(hist.get("rows")) is int and hist["rows"]>=5
+            and type(hist.get("latest_row_date")) is int
+            and len(hist.get("canonical_source_ids") or [])==1
+            and len(hist.get("canonical_iocs") or [])==1):
+            complete.append((row,hist))
+    if not complete:
+        return None, "PRE_CUT_HISTORY_NOT_FOUND"
+    signatures={
+        (tuple(h["canonical_source_ids"]),tuple(h["canonical_iocs"]),
+         h["rows"],h["latest_row_date"])
+        for _,h in complete
+    }
+    if len(signatures)!=1:
+        return None, "CONFLICTING_PRE_CUT_HISTORICAL_AUTHORITIES"
+    # Deterministic representative: only for a history-source reference.
+    # Never serialize provider ID as an approved identity crosswalk.
+    chosen=sorted(complete,key=lambda x:str(x[0].get("provider_player_id") or ""))[0]
+    return chosen[0], "UNIQUE_PRE_CUT_HISTORICAL_SOURCE"
 
 BOGOTA=ZoneInfo("America/Bogota")
 
@@ -172,9 +208,10 @@ def evaluate(root:Path,day:str,now:datetime):
         if s in authority:
             for player in players:
                 match=authority[s].get(normal(player["name"]),[])
-                if len(match)!=1:
-                    hist.append({"player":player["name"],"status":"PRE_CUT_IDENTITY_ABSENT_OR_AMBIGUOUS"});continue
-                p=match[0];h=p.get("pre_cut_history") or {}
+                p,reason=resolve_unique_precut_history(match)
+                if p is None:
+                    hist.append({"player":player["name"],"status":reason});continue
+                h=p.get("pre_cut_history") or {}
                 rows_n=h.get("rows")
                 iocs=h.get("canonical_iocs") or []
                 history_ids=h.get("canonical_source_ids") or []
@@ -186,6 +223,8 @@ def evaluate(root:Path,day:str,now:datetime):
                    "original_canonical_source_id":history_ids[0] if good else None,
                    "pre_cut_latest_row_date":h.get("latest_row_date"),
                    "historical_provider_id":p.get("provider_player_id") if good else None,
+                   "duplicate_provider_rows_consistent_pre_cut":len(match)>1 if good else False,
+                   "provider_id_equivalence_from_historical_name":False,
                    "native_sofascore_player_id":player["sofascore_player_id"]})
         historical_count=sum(z["status"]=="HISTORICAL_PRE_CUT_MATCH_ONLY_NOT_PROVIDER_ID_EQUIVALENCE" for z in hist)
         readiness="SOURCE_METADATA_VERIFIED_MODEL_PIT_NOT_YET_ADMISSIBLE" if valid else "SOURCE_METADATA_BLOCKED"
