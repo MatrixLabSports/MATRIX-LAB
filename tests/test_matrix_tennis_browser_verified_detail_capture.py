@@ -88,3 +88,18 @@ def test_ambiguous_two_countries_on_same_profile_fail_closed():
             item["label"]="France"
     with pytest.raises(ValueError,match="VISIBLE_PLAYER_COUNTRY_MISSING_OR_AMBIGUOUS"):
         parse_visible(row,ui,DAY,datetime(2026,11,5,23,tzinfo=timezone.utc))
+
+
+def test_windows_workflow_defers_pit_until_current_detail_capture():
+    # A stale detail snapshot must never block new capture merely because
+    # the current calendar crossmatch got refreshed first.
+    workflow=(Path(__file__).resolve().parents[1]/
+              ".github/workflows/matrix-selfhosted-tennis-browser-free-30m.yml").read_text()
+    marker='      - name: Capture source-visible individual Challenger details and run governed PIT gate'
+    assert marker in workflow
+    pre, post = workflow.split(marker,1)
+    assert 'TENNIS_PIT_GATE_DEFERRED_UNTIL_CURRENT_DETAIL_CAPTURE_NO_ADMISSION' in pre
+    assert 'python -m tools.matrix_tennis_browser_challenger_pit_gate --date $day' not in pre
+    assert 'python -m tools.matrix_tennis_browser_verified_detail_capture --date $day' in post
+    assert 'python -m tools.matrix_tennis_browser_challenger_pit_gate --date $day' in post
+    assert 'TENNIS_NO_AUTHENTIC_CHALLENGER_DETAILS_ANY_DATE' in post
