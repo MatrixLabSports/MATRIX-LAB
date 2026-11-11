@@ -20,7 +20,7 @@ MONTH = {"enero":1,"febrero":2,"marzo":3,"abril":4,"mayo":5,
          "junio":6,"julio":7,"agosto":8,"septiembre":9,
          "octubre":10,"noviembre":11,"diciembre":12}
 BIRTH = re.compile(
-    r"(?<!\\d)(\\d{1,2})\\s+de\\s+("+ "|".join(MONTH)+r")\\s+de\\s+(19\\d{2}|20\\d{2})(?!\\d)",
+    r"(?<!\d)(\d{1,2})\s+de\s+("+ "|".join(MONTH)+r")\s+de\s+(19\d{2}|20\d{2})(?!\d)",
     re.IGNORECASE,
 )
 
