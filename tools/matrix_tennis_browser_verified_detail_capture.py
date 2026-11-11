@@ -208,11 +208,15 @@ def parse_visible(row: dict, ui: dict, day: str, observed_at: datetime) -> dict:
     if len(tournaments) != 1:
         raise ValueError("EXACT_CHALLENGER_COMPETITION_LINK_REQUIRED")
     tournament_url, competition_label, tournament_name, tournament_round = next(iter(tournaments.values()))
-    court_labels = [x for x in ("Dura indoor", "Tierra batida")
+    # Current authorized SofaScore accessibility tree exposes the literal
+    # "Dura outdoor" for some Challenger matches (verified live 11-Nov).
+    # Never infer hard from "outdoor" alone: require the full court label.
+    court_labels = [x for x in ("Dura indoor", "Dura outdoor", "Tierra batida")
                     if x in (ui.get("visible_text") or "")]
     if len(court_labels) != 1:
         raise ValueError("EXACT_COURT_SURFACE_MISSING_OR_AMBIGUOUS")
-    surface = {"Dura indoor": "Hard", "Tierra batida": "Clay"}[court_labels[0]]
+    surface = {"Dura indoor": "Hard", "Dura outdoor": "Hard",
+               "Tierra batida": "Clay"}[court_labels[0]]
     calendar = []
     for link in links:
         z = urlparse(str(link.get("url") or ""))
