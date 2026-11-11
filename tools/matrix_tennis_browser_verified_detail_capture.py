@@ -180,25 +180,34 @@ def parse_visible(row: dict, ui: dict, day: str, observed_at: datetime) -> dict:
     rounds = {"Primera ronda", "Segunda ronda", "Ronda de 32",
               "Octavos de final", "Cuartos de final",
               "Semifinal", "Semifinales", "Final"}
-    tournaments = []
+    # Multiple visible anchors can refer to the SAME event tournament:
+    # e.g. "Orleans, France, Octavos de final" and
+    # "Competición\\nTenis, Challenger 125, Orleans, France, Octavos de final".
+    # Collapse only when exact trusted URL, tournament and round all agree.
+    tournaments = {}
     for link in links:
         z = urlparse(str(link.get("url") or ""))
         if (z.scheme != "https" or z.hostname not in ("www.sofascore.com", "sofascore.com")
             or not z.path.startswith("/es/tennis/tournament/challenger/")):
             continue
         for field in ("label", "name"):
-            candidate = str(link.get(field) or "").strip()
+            candidate = re.sub(r"\\s+", " ", str(link.get(field) or "")).strip()
             parts = [part.strip() for part in candidate.split(",")]
             if len(parts) >= 3 and parts[-1] in rounds and all(parts):
-                prefix = len(parts) >= 5 and parts[0] == "Competición Tenis" and parts[1].startswith("Challenger")
+                prefix = (len(parts) >= 5 and parts[0] == "Competición Tenis"
+                          and parts[1].startswith("Challenger"))
                 tournament_name = ", ".join(parts[2:-1] if prefix else parts[:-1])
                 if not tournament_name:
                     continue
-                tournaments.append((link["url"], candidate, tournament_name, parts[-1]))
-    tournaments = list(dict.fromkeys(tournaments))
+                key = (link["url"], tournament_name.casefold(), parts[-1])
+                previous = tournaments.get(key)
+                # Prefer the shorter literal label as human-readable display;
+                # both were on the same page, not synthesized by MATRIX.
+                if previous is None or len(candidate) < len(previous[1]):
+                    tournaments[key] = (link["url"], candidate, tournament_name, parts[-1])
     if len(tournaments) != 1:
         raise ValueError("EXACT_CHALLENGER_COMPETITION_LINK_REQUIRED")
-    tournament_url, competition_label, tournament_name, tournament_round = tournaments[0]
+    tournament_url, competition_label, tournament_name, tournament_round = next(iter(tournaments.values()))
     court_labels = [x for x in ("Dura indoor", "Tierra batida")
                     if x in (ui.get("visible_text") or "")]
     if len(court_labels) != 1:
