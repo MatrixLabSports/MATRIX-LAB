@@ -22,7 +22,71 @@ from tools.matrix_tennis_exact_browser_crossmatch import fingerprint
 ROOT = Path("evidence/tennis_calendar_reconciliation")
 CAPTURE = Path("evidence/tennis_calendar_physical")
 BOGOTA = ZoneInfo("America/Bogota")
-COUNTRIES = ("Switzerland", "Argentina", "Brazil", "Peru", "USA")
+# Visible country labels only: the original five-country subset caused false
+# negatives when a participant's legitimate country was not in this list.
+# This is not an identity crosswalk: the source must display the country text
+# on that exact player profile link; missing or conflicting text fails closed.
+COUNTRY_LABELS = {
+    "Switzerland": ("Switzerland", "Suiza"),
+    "Argentina": ("Argentina",),
+    "Brazil": ("Brazil", "Brasil"),
+    "Peru": ("Peru", "Perú"),
+    "USA": ("USA", "United States", "Estados Unidos"),
+    "France": ("France", "Francia"),
+    "Italy": ("Italy", "Italia"),
+    "Spain": ("Spain", "España"),
+    "Germany": ("Germany", "Alemania"),
+    "United Kingdom": ("United Kingdom", "Great Britain", "Reino Unido"),
+    "Australia": ("Australia",),
+    "Austria": ("Austria",),
+    "Belgium": ("Belgium", "Bélgica"),
+    "Canada": ("Canada", "Canadá"),
+    "Chile": ("Chile",),
+    "Colombia": ("Colombia",),
+    "Croatia": ("Croatia", "Croacia"),
+    "Czech Republic": ("Czech Republic", "Czechia", "Chequia"),
+    "Denmark": ("Denmark", "Dinamarca"),
+    "Ecuador": ("Ecuador",),
+    "Finland": ("Finland", "Finlandia"),
+    "Greece": ("Greece", "Grecia"),
+    "Hungary": ("Hungary", "Hungría"),
+    "India": ("India",),
+    "Ireland": ("Ireland", "Irlanda"),
+    "Israel": ("Israel",),
+    "Japan": ("Japan", "Japón"),
+    "Kazakhstan": ("Kazakhstan", "Kazajistán"),
+    "Mexico": ("Mexico", "México"),
+    "Netherlands": ("Netherlands", "Países Bajos"),
+    "New Zealand": ("New Zealand", "Nueva Zelanda"),
+    "Norway": ("Norway", "Noruega"),
+    "Poland": ("Poland", "Polonia"),
+    "Portugal": ("Portugal",),
+    "Romania": ("Romania", "Rumanía"),
+    "Serbia": ("Serbia",),
+    "Slovakia": ("Slovakia", "Eslovaquia"),
+    "Slovenia": ("Slovenia", "Eslovenia"),
+    "South Africa": ("South Africa", "Sudáfrica"),
+    "South Korea": ("South Korea", "Corea del Sur"),
+    "Sweden": ("Sweden", "Suecia"),
+    "Tunisia": ("Tunisia", "Túnez"),
+    "Turkey": ("Turkey", "Türkiye", "Turquía"),
+    "Ukraine": ("Ukraine", "Ucrania"),
+    "Uruguay": ("Uruguay",),
+    "Uzbekistan": ("Uzbekistan", "Uzbekistán"),
+}
+def visible_country_candidates(nodes: list[dict]) -> list[str]:
+    # No global page text: a country must be attributable to this exact player.
+    snippets = []
+    for n in nodes:
+        snippets.extend(str(n.get(key) or "") for key in ("name", "label"))
+        snippets.extend(str(x) for x in (n.get("flag_alts") or []))
+    result = []
+    for canonical, aliases in COUNTRY_LABELS.items():
+        if any(re.search(r"(?<![A-Za-zÀ-ÿ])" + re.escape(alias) +
+                         r"(?![A-Za-zÀ-ÿ])", text, flags=re.IGNORECASE)
+               for alias in aliases for text in snippets):
+            result.append(canonical)
+    return result
 
 def source(root: Path, path: Path) -> tuple[dict, str]:
     p = root / path
@@ -96,12 +160,9 @@ def parse_visible(row: dict, ui: dict, day: str, observed_at: datetime) -> dict:
         if len(names) != 1:
             raise ValueError("PROFILE_SLUG_ORIGINAL_NAME_MISMATCH")
         name = names[0]
-        full = [str(n.get("name") or "")+" "+str(n.get("label") or "")+" "+" ".join(n.get("flag_alts") or []) for n in nodes]
         if not any(n.get("name") or n.get("label") for n in nodes):
             raise ValueError("VISIBLE_PLAYER_PROFILE_LABEL_MISSING")
-        country_candidates = [c for c in COUNTRIES if any(
-            re.search(r"(?<![A-Za-z])"+re.escape(c)+r"(?![A-Za-z])", txt)
-            for txt in full)]
+        country_candidates = visible_country_candidates(nodes)
         if len(country_candidates) != 1:
             raise ValueError("VISIBLE_PLAYER_COUNTRY_MISSING_OR_AMBIGUOUS")
         people.append({"name": name, "sofascore_player_id": player_id,
