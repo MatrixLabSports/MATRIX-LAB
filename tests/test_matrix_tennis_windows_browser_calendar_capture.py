@@ -32,20 +32,57 @@ def test_date_not_visible_is_never_accepted():
           page_url="https://www.sofascore.com/es/tennis/2026-11-04",
           page_date_verified=False,now=T)
 
-def test_regressed_capture_does_not_delete_previous_authentic_events(tmp_path):
+def test_smaller_fresh_capture_advances_without_losing_prior_bytes(tmp_path):
     day="2026-11-04"
-    report=observed(day,"SOFASCORE",[
-      {"url":"https://www.sofascore.com/es/tennis/match/nishesh-basavareddy-mika-brunold/mcVcsoTmd#id:17427368","name":"Nishesh - Mika"}],
+    first=observed(day,"SOFASCORE",[
+      {"url":"https://www.sofascore.com/es/tennis/match/alpha-beta/abc#id:123","name":"Alpha Beta"},
+      {"url":"https://www.sofascore.com/es/tennis/match/gamma-delta/def#id:456","name":"Gamma Delta"}],
       page_url="https://www.sofascore.com/es/tennis/2026-11-04",
       page_date_verified=True,now=T)
-    first=replace_if_not_regressed(tmp_path,day,"SOFASCORE",report)
-    assert first["status"]=="PERSISTED_VISIBLE_BROWSER_LINKS"
+    assert replace_if_not_regressed(tmp_path,day,"SOFASCORE",first)["status"]=="PERSISTED_VISIBLE_BROWSER_LINKS"
     p=tmp_path/"evidence/tennis_calendar_physical/2026-11-04/sofascore_opera_full_link_observations.json"
-    original=p.read_bytes()
-    smaller={**report,"matches":[],"observed_link_count":0}
-    second=replace_if_not_regressed(tmp_path,day,"SOFASCORE",smaller)
-    assert second["status"]=="REJECTED_EMPTY_OR_REGRESSED_BROWSER_RESULT"
-    assert p.read_bytes()==original
+    old=p.read_bytes()
+    from datetime import timedelta
+    second=observed(day,"SOFASCORE",[
+      {"url":"https://www.sofascore.com/es/tennis/match/alpha-beta/abc#id:123","name":"Alpha Beta"}],
+      page_url="https://www.sofascore.com/es/tennis/2026-11-04",
+      page_date_verified=True,now=T+timedelta(minutes=30))
+    receipt=replace_if_not_regressed(tmp_path,day,"SOFASCORE",second)
+    assert receipt["status"]=="PERSISTED_VISIBLE_BROWSER_LINKS"
+    assert receipt["new"]==1 and receipt["old"]==2
+    assert json.loads(p.read_text())["observed_link_count"]==1
+    archives=list((p.parent/"archive").glob("sofascore_*.json"))
+    assert len(archives)==1 and archives[0].read_bytes()==old
+    assert replace_if_not_regressed(tmp_path,day,"SOFASCORE",first)["status"]=="REJECTED_STALE_BROWSER_RESULT"
+    assert json.loads(p.read_text())["observed_link_count"]==1
+
+
+def test_empty_capture_cannot_overwrite_prior_authentic_source(tmp_path):
+    day="2026-11-04"
+    first=observed(day,"SOFASCORE",[
+      {"url":"https://www.sofascore.com/es/tennis/match/alpha-beta/abc#id:123","name":"Alpha Beta"}],
+      page_url="https://www.sofascore.com/es/tennis/2026-11-04",
+      page_date_verified=True,now=T)
+    replace_if_not_regressed(tmp_path,day,"SOFASCORE",first)
+    p=tmp_path/"evidence/tennis_calendar_physical/2026-11-04/sofascore_opera_full_link_observations.json"
+    old=p.read_bytes()
+    from datetime import timedelta
+    empty={**first,"matches":[],"observed_link_count":0,
+           "collected_at_utc":(T+timedelta(minutes=30)).isoformat()}
+    assert replace_if_not_regressed(tmp_path,day,"SOFASCORE",empty)["status"]=="REJECTED_EMPTY_OR_INVALID_BROWSER_RESULT"
+    assert p.read_bytes()==old
+
+
+def test_wrong_source_or_uncertified_capture_rejected(tmp_path):
+    x=observed("2026-11-04","SOFASCORE",[
+      {"url":"https://www.sofascore.com/es/tennis/match/alpha-beta/abc#id:123","name":"Alpha Beta"}],
+      page_url="https://www.sofascore.com/es/tennis/2026-11-04",
+      page_date_verified=True,now=T)
+    with pytest.raises(ValueError,match="SOURCE_OR_DATE_MISMATCH"):
+        replace_if_not_regressed(tmp_path,"2026-11-04","FLASHSCORE",x)
+    with pytest.raises(ValueError,match="GOVERNANCE_MISMATCH"):
+        replace_if_not_regressed(tmp_path,"2026-11-04","SOFASCORE",
+            {**x,"probability_generation_authorized":True})
 
 
 def test_full_year_rendered_calendar_control_is_evidence():
