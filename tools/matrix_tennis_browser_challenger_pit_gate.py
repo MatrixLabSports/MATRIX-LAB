@@ -145,7 +145,14 @@ def evaluate(root:Path,day:str,now:datetime):
         except (TypeError,ValueError,KeyError):
             status.append("KICKOFF_CALENDAR_INCONSISTENT");valid=False
             kickoff=None
-        if not isinstance(x.get("tournament_url"),str) or "/tennis/tournament/challenger/" not in x["tournament_url"] or not x.get("round") or "Challenger" not in str(x.get("competition_label") or ""):
+        tournament_url = x.get("tournament_url")
+        source_category_proved = (
+            "Challenger" in str(x.get("competition_label") or "")
+            or x.get("challenger_category_evidenced_by_tournament_url") is True
+        )
+        if (not isinstance(tournament_url,str)
+            or not tournament_url.startswith("https://www.sofascore.com/es/tennis/tournament/challenger/")
+            or not x.get("round") or not source_category_proved):
             status.append("ATP_CHALLENGER_TOURNAMENT_NOT_VERIFIED");valid=False
         hist=[]
         if s in authority:
