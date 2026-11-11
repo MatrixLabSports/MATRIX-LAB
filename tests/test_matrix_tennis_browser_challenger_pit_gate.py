@@ -199,3 +199,33 @@ def test_altered_archived_crossmatch_hash_is_rejected(tmp_path,monkeypatch):
     monkeypatch.setattr(mod,"read",fake_read)
     with pytest.raises(ValueError,match="TENNIS_ARCHIVED_CROSSMATCH_SHA256_TAMPER"):
         mod.evaluate(tmp_path,day,T("2026-11-11T14:00:00Z"))
+
+
+def test_same_capture_sealed_crossmatch_beats_later_reconciled_calendar(tmp_path,monkeypatch):
+    from tools import matrix_tennis_browser_challenger_pit_gate as mod
+    day="2026-11-12";declared="a"*64;current="b"*64
+    original=mod.CAPTURE_ROOT/day/("source_crossmatch_bound_"+declared+".json")
+    (tmp_path/original).parent.mkdir(parents=True)
+    (tmp_path/original).write_text("{}")
+    details={"schema":"MATRIX_OPERA_TENNIS_MATCH_DETAIL_OBSERVATION_V1",
+        "target_date_bogota":day,"source_crossmatch_sha256":declared,
+        "real_money":"BLOCKED","telegram_signal_authorized":False,
+        "observed_at_utc":"2026-11-11T13:00:00Z","events":[]}
+    cross={"schema":"MATRIX_TENNIS_EXACT_BROWSER_CROSSMATCH_V1",
+        "target_date_bogota":day,"real_money":"BLOCKED",
+        "source_event_equivalence_certified":False,"matches":[]}
+    auth={"outcomes_used":False,"post_cut_competitive_data_used":False,
+        "silent_imputation":False,"real_money":"BLOCKED","records":[]}
+    def fake_read(root,p):
+        if p==mod.CAPTURE_ROOT/day/mod.DETAIL:return details,"c"*64
+        if p==mod.OUT/day/mod.CROSS:return cross,current
+        if p==original:return cross,declared
+        if str(p) in mod.AUTHORITIES.values():return auth,"d"*64
+        raise AssertionError(str(p))
+    monkeypatch.setattr(mod,"read",fake_read)
+    r=mod.evaluate(tmp_path,day,T("2026-11-11T14:00:00Z"))
+    assert r["sealed_historical_source_crossmatch_used"] is True
+    assert r["name_crossmatch_sha256"]==declared
+    assert r["newest_calendar_crossmatch_sha256"]==current
+    assert r["new_hard_holdout_observations"]==0
+    assert r["new_clay_holdout_observations"]==0
