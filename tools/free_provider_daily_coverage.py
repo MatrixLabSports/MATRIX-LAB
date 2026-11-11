@@ -104,6 +104,8 @@ def main() -> int:
     target_day = []
     hard_horizon = []
     hard_target_day = []
+    clay_horizon = []
+    clay_target_day = []
     for row in tennis_rows:
         if not isinstance(row, dict):
             continue
@@ -132,14 +134,19 @@ def main() -> int:
             "player2_name": row.get("player2_name"),
             "status": row.get("status"),
         }
+        surface = str(row.get("surface") or "").strip().casefold()
         if local_date and target <= local_date <= horizon_end:
             horizon.append(clean)
-            if str(row.get("surface") or "").strip().casefold() == "hard":
+            if surface == "hard":
                 hard_horizon.append(clean)
+            elif surface == "clay":
+                clay_horizon.append(clean)
         if local_date == target:
             target_day.append(clean)
-            if str(row.get("surface") or "").strip().casefold() == "hard":
+            if surface == "hard":
                 hard_target_day.append(clean)
+            elif surface == "clay":
+                clay_target_day.append(clean)
 
     payload = {
         "schema": "MATRIX_FREE_PROVIDER_COVERAGE_SNAPSHOT_V1",
@@ -172,6 +179,9 @@ def main() -> int:
                 "d0_d2_hard_rows": len(hard_horizon),
                 "d0_hard_rows": len(hard_target_day),
                 "d0_d2_hard_candidates": hard_horizon,
+                "d0_d2_clay_rows": len(clay_horizon),
+                "d0_clay_rows": len(clay_target_day),
+                "d0_d2_clay_candidates": clay_horizon,
                 "world_complete": False,
             },
         },
@@ -203,6 +213,8 @@ def main() -> int:
         "tennis_rows_returned": len(tennis_rows),
         "tennis_d0_d2_hard": len(hard_horizon),
         "tennis_d0_hard": len(hard_target_day),
+        "tennis_d0_d2_clay": len(clay_horizon),
+        "tennis_d0_clay": len(clay_target_day),
     }, sort_keys=True))
     return 0 if payload["status"] == "PASS" else 2
 
