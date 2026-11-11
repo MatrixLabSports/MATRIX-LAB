@@ -476,6 +476,24 @@ def run(root: Path, day: str, endpoint: str, max_events: int = 6) -> dict:
             and len(old.get("events") or []) > len(events)):
             report["status"] = "REJECTED_REGRESSED_DETAILS_PRESERVED"
             return report
+    # Publish the frozen, byte-identical crossmatch alongside the actual
+    # match-page observations: the Linux reconciler may refresh its current
+    # name hints later. This is a research provenance binding, never a model
+    # identity certificate. The Windows publisher only stages this physical
+    # evidence folder; no governed history/model files are changed.
+    frozen_source=root/ROOT/day/"MATRIX_TENNIS_EXACT_BROWSER_CROSSMATCH.json"
+    frozen_bytes=frozen_source.read_bytes()
+    if hashlib.sha256(frozen_bytes).hexdigest()!=cross_sha:
+        raise ValueError("CROSSMATCH_CHANGED_DURING_MATCH_PAGE_CAPTURE")
+    frozen_target=target.parent/(
+        "source_crossmatch_bound_"+cross_sha+".json")
+    if frozen_target.exists():
+        if frozen_target.read_bytes()!=frozen_bytes:
+            raise ValueError("BOUND_CROSSMATCH_SOURCE_HASH_COLLISION")
+    else:
+        frozen_target.write_bytes(frozen_bytes)
+        if frozen_target.read_bytes()!=frozen_bytes:
+            raise ValueError("BOUND_CROSSMATCH_SOURCE_WRITE_FAILURE")
     target.write_text(json.dumps(report, ensure_ascii=False, indent=2, sort_keys=True)+"\n",
                       encoding="utf-8")
     report["status"] = ("VERIFIED_VISIBLE_CHALLENGER_METADATA_RESEARCH_ONLY" if events
