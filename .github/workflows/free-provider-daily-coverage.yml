@@ -38,7 +38,10 @@ jobs:
         with:
           python-version: "3.11"
 
-      - run: python -m pip install requests
+      - run: python -m pip install requests pytest
+
+      - name: Verify free Hard and Clay capture contract without network
+        run: PYTHONPATH=. python -m pytest -q tests/test_free_provider_clay_contract.py
 
       - name: Resolve target date
         id: date
