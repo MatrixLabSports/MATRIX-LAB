@@ -208,3 +208,26 @@ def test_public_failure_clues_never_claim_missing_clock_or_court_is_verified():
     assert report["public_calendar_link_count"]==0
     assert report["visible_court_term_presence_only"]==[]
     assert report["not_individual_identity_certification"] is True
+
+
+def test_visible_dura_outdoor_is_hard_without_inference():
+    row,ui=inputs()
+    ui["visible_text"]="Cuartos de final Dura outdoor"
+    event=parse_visible(row,ui,DAY,datetime(2026,11,5,23,tzinfo=timezone.utc))
+    assert event["surface"]=="Hard"
+    assert event["court_label"]=="Dura outdoor"
+    assert event["provider_player_id_equivalence_certified"] is False
+
+
+def test_outdoor_alone_cannot_certify_hard_surface():
+    row,ui=inputs()
+    ui["visible_text"]="Cuartos de final Superficie outdoor"
+    with pytest.raises(ValueError,match="EXACT_COURT_SURFACE_MISSING_OR_AMBIGUOUS"):
+        parse_visible(row,ui,DAY,datetime(2026,11,5,23,tzinfo=timezone.utc))
+
+
+def test_hard_and_clay_visible_simultaneously_block_surface():
+    row,ui=inputs()
+    ui["visible_text"]="Cuartos de final Dura outdoor Tierra batida"
+    with pytest.raises(ValueError,match="EXACT_COURT_SURFACE_MISSING_OR_AMBIGUOUS"):
+        parse_visible(row,ui,DAY,datetime(2026,11,5,23,tzinfo=timezone.utc))
