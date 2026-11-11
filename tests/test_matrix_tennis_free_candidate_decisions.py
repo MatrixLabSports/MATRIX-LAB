@@ -102,3 +102,31 @@ def test_after_kickoff_never_backfills(tmp_path):
     r = evaluate(tmp_path, DAY, datetime(2026, 11, 11, 18, tzinfo=UTC))
     assert all("PROSPECTIVE_WINDOW_CLOSED" in x["blockers"] for x in r["records"])
     assert all(x["official_holdout_admitted"] is False for x in r["records"])
+
+
+def test_provider_event_date_utc_disagreement_is_visible_and_fail_closed(tmp_path):
+    fixture(tmp_path)
+    path = tmp_path / f"evidence/free_providers/{DAY}/MATRIX_FREE_PROVIDER_COVERAGE_SNAPSHOT.json"
+    snapshot = json.loads(path.read_text(encoding="utf-8"))
+    first = snapshot["providers"]["live_tennis_api"]["d0_d2_hard_candidates"][0]
+    first["event_date"] = "2026-11-12"
+    path.write_text(json.dumps(snapshot, sort_keys=True) + "\n", encoding="utf-8")
+    result = evaluate(tmp_path, DAY, datetime(2026, 11, 11, 9, tzinfo=UTC))
+    row = result["records"][0]
+    assert row["provider_event_date"] == "2026-11-12"
+    assert row["utc_calendar_day"] == "2026-11-11"
+    assert "PROVIDER_EVENT_DATE_VS_UTC_DAY_UNRESOLVED" in row["blockers"]
+    assert row["official_holdout_admitted"] is False
+    assert result["hard_new_holdout_admissions"] == result["clay_new_holdout_admissions"] == 0
+
+
+def test_invalid_provider_event_date_is_not_silently_accepted(tmp_path):
+    fixture(tmp_path)
+    path = tmp_path / f"evidence/free_providers/{DAY}/MATRIX_FREE_PROVIDER_COVERAGE_SNAPSHOT.json"
+    snapshot = json.loads(path.read_text(encoding="utf-8"))
+    snapshot["providers"]["live_tennis_api"]["d0_d2_clay_candidates"][0]["event_date"] = "not-a-date"
+    path.write_text(json.dumps(snapshot, sort_keys=True) + "\n", encoding="utf-8")
+    result = evaluate(tmp_path, DAY, datetime(2026, 11, 11, 9, tzinfo=UTC))
+    row = result["records"][1]
+    assert "PROVIDER_EVENT_DATE_VS_UTC_DAY_UNRESOLVED" in row["blockers"]
+    assert row["official_holdout_admitted"] is False
