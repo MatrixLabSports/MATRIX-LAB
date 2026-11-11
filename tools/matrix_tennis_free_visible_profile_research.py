@@ -178,7 +178,7 @@ def capture(root:Path, target_day:str, endpoint:str, max_profiles:int=12):
     }
     output=root/BASE/target_day/"MATRIX_TENNIS_FREE_VISIBLE_PROFILE_BIRTHDATES_RESEARCH.json"
     output.parent.mkdir(parents=True,exist_ok=True)
-    output.write_text(json.dumps(report,indent=2,sort_keys=True,ensure_ascii=False)+"\\n",encoding="utf-8")
+    output.write_text(json.dumps(report,indent=2,sort_keys=True,ensure_ascii=False)+"\n",encoding="utf-8")
     print(json.dumps({k:report[k] for k in (
         "target_date_bogota","profiles_requested",
         "exact_pre_cut_biography_research_count","official_holdout_admitted",
