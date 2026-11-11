@@ -42,7 +42,7 @@ def verify(root: Path, *, restore_safe_newlines: bool = False) -> dict:
         if worktree != trusted:
             # Never replace arbitrary edits, even if JSON parses. Only a
             # reversible newline conversion of the *same* committed bytes.
-            if not restore_safe_newlines or b"\\r\\n" in trusted or worktree.replace(b"\\r\\n", b"\\n") != trusted:
+            if not restore_safe_newlines or b"\r\n" in trusted or worktree.replace(b"\r\n", b"\n") != trusted:
                 raise ValueError("MATRIX_CHECKOUT_SOURCE_DRIFT:" + filename +
                                  ":git=" + digest(trusted) + ":worktree=" + digest(worktree))
             q.write_bytes(trusted)
