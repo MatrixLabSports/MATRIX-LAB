@@ -320,7 +320,7 @@ def public_visible_failure_clues(ui: dict | None) -> dict | None:
         dates = (query.get("dates") or [""])[0]
         calendars.append({
             "action_template":query.get("action")==["TEMPLATE"],
-            "exact_utc_date_range_shape":bool(re.fullmatch(r"\\d{8}T\\d{6}Z/\\d{8}T\\d{6}Z",dates)),
+            "exact_utc_date_range_shape":bool(re.fullmatch(r"\d{8}T\d{6}Z/\d{8}T\d{6}Z",dates)),
             "utc_dates":dates[:33],
             "event_details_match_id":str(urlparse(details).fragment).startswith("id:"),
             "event_details_path":urlparse(details).path[:180],
