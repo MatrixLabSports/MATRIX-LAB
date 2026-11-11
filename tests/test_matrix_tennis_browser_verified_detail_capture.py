@@ -103,3 +103,18 @@ def test_windows_workflow_defers_pit_until_current_detail_capture():
     assert 'python -m tools.matrix_tennis_browser_verified_detail_capture --date $day' in post
     assert 'python -m tools.matrix_tennis_browser_challenger_pit_gate --date $day' in post
     assert 'TENNIS_NO_AUTHENTIC_CHALLENGER_DETAILS_ANY_DATE' in post
+
+
+def test_failed_match_keeps_only_bounded_public_visible_evidence():
+    from tools.matrix_tennis_browser_verified_detail_capture import public_visible_failure_clues
+    row,ui=inputs()
+    ui["links"].append({"url":"https://evil.example/token?secret=1","name":"unsafe"})
+    ui["links"].append({"url":"https://www.sofascore.com/es/tennis/player/example/123?session=private",
+                        "name":"Example","label":"France","flag_alts":["France"]})
+    result=public_visible_failure_clues(ui)
+    assert len(result["visible_page_sha256"])==64
+    assert result["not_individual_identity_certification"] is True
+    assert all("evil.example" not in x["url"] for x in result["visible_source_links"])
+    assert all("session=" not in x["url"] for x in result["visible_source_links"])
+    assert any(x["label"]=="France" for x in result["visible_source_links"])
+    assert public_visible_failure_clues(None) is None
