@@ -24,6 +24,9 @@ concurrency:
 jobs:
   coverage:
     runs-on: ubuntu-latest
+    env:
+      REAL_MONEY: BLOCKED
+      AUTOMATIC_WAGERING: "false"
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
@@ -96,4 +99,4 @@ jobs:
           git commit -m "evidence(providers): persist free provider daily coverage"
           git pull --rebase origin repair/cor09-world-pipeline
           git push origin HEAD:repair/cor09-world-pipeline
-# governed manual retrigger 2026-10-07: refresh football-data.org after browser-first access attempt
+# 2026-11-11 Free coverage validation trigger: authorized free sources only; immutable governance.
