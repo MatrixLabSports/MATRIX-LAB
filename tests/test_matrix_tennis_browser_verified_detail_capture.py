@@ -231,3 +231,51 @@ def test_hard_and_clay_visible_simultaneously_block_surface():
     ui["visible_text"]="Cuartos de final Dura outdoor Tierra batida"
     with pytest.raises(ValueError,match="EXACT_COURT_SURFACE_MISSING_OR_AMBIGUOUS"):
         parse_visible(row,ui,DAY,datetime(2026,11,5,23,tzinfo=timezone.utc))
+
+
+def test_visible_sport_page_explicit_utc_works_without_calendar_button():
+    # This clock shape was directly observed in the authorized public
+    # SofaScore accessibility tree on 11-Nov-2026. Synthetic fixture only.
+    row,ui=inputs()
+    ui["links"]=[x for x in ui["links"] if "calendar.google.com" not in x["url"]]
+    ui["visible_text"]="Cuartos de final Dura indoor. El partido comienza el 6 nov 2026 a las 13:20 UTC en Bratislava."
+    event=parse_visible(row,ui,DAY,datetime(2026,11,5,23,tzinfo=timezone.utc))
+    assert event["kickoff_utc"]=="2026-11-06T13:20:00Z"
+    assert event["calendar_date_token"]=="20261106T132000Z"
+    assert event["kickoff_clock_source"]=="VISIBLE_MATCH_DESCRIPTION_EXPLICIT_UTC"
+    assert event["explicit_visible_utc_match_quote"]=="el 6 nov 2026 a las 13:20 UTC"
+    assert event["provider_player_id_equivalence_certified"] is False
+
+
+def test_visible_utc_without_calendar_does_not_override_kickoff_cutoff():
+    row,ui=inputs()
+    ui["links"]=[x for x in ui["links"] if "calendar.google.com" not in x["url"]]
+    ui["visible_text"]="Cuartos de final Dura indoor. el 6 nov 2026 a las 13:20 UTC"
+    with pytest.raises(ValueError,match="PROSPECTIVE_WINDOW_CLOSED"):
+        parse_visible(row,ui,DAY,datetime(2026,11,6,13,20,tzinfo=timezone.utc))
+
+
+def test_conflicting_explicit_utc_and_calendar_clock_rejected():
+    row,ui=inputs()
+    ui["visible_text"]="Cuartos de final Dura indoor. el 6 nov 2026 a las 14:00 UTC"
+    with pytest.raises(ValueError,match="GOOGLE_CALENDAR_VISIBLE_UTC_CONFLICT"):
+        parse_visible(row,ui,DAY,datetime(2026,11,5,23,tzinfo=timezone.utc))
+
+
+def test_missing_and_ambiguous_visible_utc_clock_fail_closed():
+    row,ui=inputs()
+    ui["links"]=[x for x in ui["links"] if "calendar.google.com" not in x["url"]]
+    ui["visible_text"]="Cuartos de final Dura indoor 6 nov 2026"
+    with pytest.raises(ValueError,match="MATCH_SOURCE_EXPLICIT_UTC_CLOCK_MISSING"):
+        parse_visible(row,ui,DAY,datetime(2026,11,5,23,tzinfo=timezone.utc))
+    ui["visible_text"]="Dura indoor el 6 nov 2026 a las 13:20 UTC; el 6 nov 2026 a las 14:00 UTC"
+    with pytest.raises(ValueError,match="CONFLICTING_VISIBLE_UTC_MATCH_CLOCKS"):
+        parse_visible(row,ui,DAY,datetime(2026,11,5,23,tzinfo=timezone.utc))
+
+
+def test_visible_utc_must_match_bogota_calendar_day():
+    row,ui=inputs()
+    ui["links"]=[x for x in ui["links"] if "calendar.google.com" not in x["url"]]
+    ui["visible_text"]="Cuartos de final Dura indoor el 5 nov 2026 a las 13:20 UTC"
+    with pytest.raises(ValueError,match="KICKOFF_OUTSIDE_BOGOTA_CALENDAR_DAY"):
+        parse_visible(row,ui,DAY,datetime(2026,11,4,23,tzinfo=timezone.utc))
