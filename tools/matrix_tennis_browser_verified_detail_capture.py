@@ -217,6 +217,31 @@ def parse_visible(row: dict, ui: dict, day: str, observed_at: datetime) -> dict:
         raise ValueError("EXACT_COURT_SURFACE_MISSING_OR_AMBIGUOUS")
     surface = {"Dura indoor": "Hard", "Dura outdoor": "Hard",
                "Tierra batida": "Clay"}[court_labels[0]]
+    # An explicit UTC timestamp in the public *visible* match description
+    # is permitted as a clock source even if the Google Calendar button is
+    # absent. No translation from a browser-local clock and no API access.
+    months = {"ene": 1, "feb": 2, "mar": 3, "abr": 4, "may": 5,
+              "jun": 6, "jul": 7, "ago": 8, "sep": 9, "oct": 10,
+              "nov": 11, "dic": 12}
+    visible = str(ui.get("visible_text") or "")
+    utc_match_pattern = (
+        r"\bel\s+(\d{1,2})\s+(ene|feb|mar|abr|may|jun|jul|ago|sep|oct|nov|dic)"
+        r"\s+(20\d{2})\s+a\s+las\s+(\d{1,2}):(\d{2})\s+UTC\b"
+    )
+    visible_utc = []
+    for match in re.finditer(utc_match_pattern, visible, flags=re.IGNORECASE):
+        dd, mm, yyyy, hour, minute = match.groups()
+        try:
+            stamp = datetime(int(yyyy), months[mm.lower()], int(dd),
+                             int(hour), int(minute), tzinfo=timezone.utc)
+        except ValueError:
+            raise ValueError("VISIBLE_UTC_MATCH_CLOCK_MALFORMED")
+        visible_utc.append((stamp, match.group(0)))
+    # Duplicate descriptions with the same exact clock are allowed, a
+    # conflicting schedule is never silently resolved.
+    distinct_visible_utc = {x[0] for x in visible_utc}
+    if len(distinct_visible_utc) > 1:
+        raise ValueError("CONFLICTING_VISIBLE_UTC_MATCH_CLOCKS")
     calendar = []
     for link in links:
         z = urlparse(str(link.get("url") or ""))
@@ -234,15 +259,29 @@ def parse_visible(row: dict, ui: dict, day: str, observed_at: datetime) -> dict:
             continue
         calendar.append((m.group(1), " ".join(str(v or "") for v in (link.get("name"), link.get("label"))).strip()))
     calendar = list(dict.fromkeys(calendar))
-    if len(calendar) != 1:
-        raise ValueError("GOOGLE_CALENDAR_EXACT_EVENT_UTC_TOKEN_MISSING")
-    utc_token, visible_label = calendar[0]
-    kickoff = datetime.strptime(utc_token, "%Y%m%dT%H%M%SZ").replace(tzinfo=timezone.utc)
+    if len({token for token, _ in calendar}) > 1:
+        raise ValueError("CONFLICTING_GOOGLE_CALENDAR_CLOCKS")
+    local_label = ""
+    clock_source = None
+    visible_utc_quote = None
+    if calendar:
+        utc_token, local_label = calendar[0]
+        kickoff = datetime.strptime(utc_token, "%Y%m%dT%H%M%SZ").replace(tzinfo=timezone.utc)
+        clock_source = "GOOGLE_CALENDAR_EXACT_UTC"
+        if distinct_visible_utc and next(iter(distinct_visible_utc)) != kickoff:
+            raise ValueError("GOOGLE_CALENDAR_VISIBLE_UTC_CONFLICT")
+    elif len(distinct_visible_utc) == 1:
+        kickoff = next(iter(distinct_visible_utc))
+        utc_token = kickoff.strftime("%Y%m%dT%H%M%SZ")
+        clock_source = "VISIBLE_MATCH_DESCRIPTION_EXPLICIT_UTC"
+        visible_utc_quote = next(x[1] for x in visible_utc if x[0] == kickoff)
+    else:
+        raise ValueError("MATCH_SOURCE_EXPLICIT_UTC_CLOCK_MISSING")
     local = kickoff.astimezone(BOGOTA)
     if local.date() != date.fromisoformat(day):
         raise ValueError("KICKOFF_OUTSIDE_BOGOTA_CALENDAR_DAY")
     expected_visible = f"{local.day}/{local.month}/{local.year} {local.hour}:{local.minute:02d}"
-    if expected_visible not in visible_label:
+    if local_label and expected_visible not in local_label:
         raise ValueError("UTC_TOKEN_DISAGREES_WITH_VISIBLE_LOCAL_CLOCK")
     if observed_at >= kickoff:
         raise ValueError("PROSPECTIVE_WINDOW_CLOSED")
@@ -252,6 +291,8 @@ def parse_visible(row: dict, ui: dict, day: str, observed_at: datetime) -> dict:
         "flashscore_url": row["flashscore_url"],
         "flashscore_mid": row["flashscore_mid"],
         "calendar_date_token": utc_token,
+        "kickoff_clock_source": clock_source,
+        "explicit_visible_utc_match_quote": visible_utc_quote,
         "local_visible_date": f"{local.day}/{local.month}/{local.year}",
         "local_visible_time": f"{local.hour}:{local.minute:02d}",
         "kickoff_utc": kickoff.isoformat().replace("+00:00", "Z"),
@@ -274,7 +315,8 @@ def parse_visible(row: dict, ui: dict, day: str, observed_at: datetime) -> dict:
                               for a in links if "/es/tennis/player/" in str(a.get("url"))][:12],
             "tournament_link": tournament_url,
             "calendar_utc_start_token": utc_token,
-            "calendar_local_visible_label": visible_label,
+            "calendar_local_visible_label": local_label,
+            "explicit_utc_match_description_quote": visible_utc_quote,
             "visible_court_label": court_labels[0],
         },
         "visible_page_evidence_sha256": hashlib.sha256(
