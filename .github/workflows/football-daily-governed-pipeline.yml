@@ -5,19 +5,11 @@
 # MATRIX_USER_AUTHORIZED_TRIGGER 2026-10-12 backup-next-day-2010-bogota
 name: MATRIX Football Daily Governed Pipeline
 
+# 2026-11-11 subscription expired: automatic paid football jobs retired.
+# Governed FREE fixture recovery runs separately; preserve this workflow only
+# for explicitly requested offline/manual maintenance. Do not reuse an expired
+# provider entitlement or poll shared API-SPORTS egress.
 on:
-  schedule:
-    # 00:10 Bogota: current operational day.
-    - cron: "10 5 * * *"
-    # 18:10 Bogota: prepare next operational day.
-    - cron: "10 23 * * *"
-    # 20:10 Bogota: backup next-day preparation if the primary cron is delayed/skipped.
-    - cron: "10 1 * * *"
-  workflow_run:
-    workflows:
-      - "API-Football daily prospective production"
-    types:
-      - completed
   workflow_dispatch:
     inputs:
       target_date:
@@ -25,25 +17,6 @@ on:
         required: false
         default: ""
         type: string
-  push:
-    branches:
-      - repair/cor09-world-pipeline
-      - main
-    paths:
-      - tools/football_daily_governed_over25.py
-      - tools/api_football_prospective_daily_cycle.py
-      - tests/test_api_football_prospective_daily_cycle_retry.py
-      - tests/test_football_subscription_deadline_guard.py
-      - tools/matrix_multi_market_supervisor.py
-      - tools/api_football_market_binding_catalog.py
-      - tools/api_football_priority_market_lab.py
-      - tests/test_api_football_priority_market_lab.py
-      - tests/test_api_football_market_binding_catalog_resilience.py
-      - app/market/matrix_market_portfolio.py
-      - evidence/audit/MATRIX_MARKET_PORTFOLIO_PERMANENT_MANDATE_V1.json
-      - tests/test_matrix_multi_market_supervisor.py
-      - tests/test_market_portfolio_permanent_mandate.py
-      - .github/workflows/football-daily-governed-pipeline.yml
 
 permissions:
   contents: write
