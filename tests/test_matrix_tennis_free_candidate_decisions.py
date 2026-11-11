@@ -90,8 +90,9 @@ def test_hard_clay_triage_matches_provenance_no_false_holdout(tmp_path):
 def test_tampered_browser_capture_never_passes(tmp_path):
     fixture(tmp_path)
     path = tmp_path / f"evidence/tennis_calendar_physical/{DAY}/sofascore_opera_full_link_observations.json"
-    with path.open("a") as f:
-        f.write("invalid_source_tamper")
+    raw = json.loads(path.read_text(encoding="utf-8"))
+    raw["collected_at_utc"] = "2026-11-11T08:11:00Z"
+    path.write_text(json.dumps(raw, sort_keys=True) + "\\n", encoding="utf-8")
     with pytest.raises(ValueError, match="BROWSER_SOURCE_SHA_OR_GOVERNANCE_MISMATCH"):
         evaluate(tmp_path, DAY, datetime(2026, 11, 11, 9, tzinfo=UTC))
 
