@@ -159,3 +159,29 @@ def test_explicit_china_flag_is_read_without_identity_inference():
     assert visible_country_candidates([
         {"name":"Y. Zhou","label":"","flag_alts":["Yi Zhou","China"]}
     ])==["China"]
+
+
+def test_same_challenger_multiple_visible_labels_are_one_verified_tournament():
+    row,ui=inputs()
+    for link in ui["links"]:
+        if "/tournament/challenger/" in link["url"]:
+            link["name"]="Bratislava, Slovakia, Cuartos de final"
+            link["label"]=""
+    ui["links"].append({"url":next(x["url"] for x in ui["links"]
+                             if "/tournament/challenger/" in x["url"]),
+                        "name":"Competición\\nTenis, Challenger 125, Bratislava, Slovakia, Cuartos de final",
+                        "label":"","flag_alts":[]})
+    event=parse_visible(row,ui,DAY,datetime(2026,11,5,23,tzinfo=timezone.utc))
+    assert event["tournament_name"]=="Bratislava, Slovakia"
+    assert event["round"]=="Cuartos de final"
+    assert event["competition_label"]=="Bratislava, Slovakia, Cuartos de final"
+
+
+def test_two_different_visible_rounds_for_same_tournament_fail_closed():
+    row,ui=inputs()
+    ui["links"].append({"url":next(x["url"] for x in ui["links"]
+                             if "/tournament/challenger/" in x["url"]),
+                        "name":"Bratislava, Slovakia, Semifinal",
+                        "label":"","flag_alts":[]})
+    with pytest.raises(ValueError,match="EXACT_CHALLENGER_COMPETITION_LINK_REQUIRED"):
+        parse_visible(row,ui,DAY,datetime(2026,11,5,23,tzinfo=timezone.utc))
