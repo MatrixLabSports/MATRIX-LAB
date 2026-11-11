@@ -39,7 +39,7 @@ def test_no_false_detail_on_missing_surface_or_calendar_or_late_capture():
         parse_visible(row,ui,DAY,datetime(2026,11,5,23,tzinfo=timezone.utc))
     row,ui=inputs()
     ui["links"]=[a for a in ui["links"] if "calendar.google.com" not in a["url"]]
-    with pytest.raises(ValueError,match="GOOGLE_CALENDAR"):
+    with pytest.raises(ValueError,match="MATCH_SOURCE_EXPLICIT_UTC_CLOCK_MISSING"):
         parse_visible(row,ui,DAY,datetime(2026,11,5,23,tzinfo=timezone.utc))
     row,ui=inputs()
     with pytest.raises(ValueError,match="PROSPECTIVE_WINDOW_CLOSED"):
