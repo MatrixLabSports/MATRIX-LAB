@@ -103,18 +103,54 @@ def date_evidence(source:str,day:str,*,controls:list[str],visible_text:str)->str
     return None
 
 def replace_if_not_regressed(root:Path,day:str,source:str,report:dict):
+    """Keep every real nonempty dated snapshot, even when visible coverage shrinks.
+
+    A lower link count is not proof of tampering: schedules change and sites
+    paginate. Preserve the previous bytes by digest before advancing the
+    current pointer. Empty/older/unauthorized captures still fail closed.
+    """
+    import hashlib
+    if source not in PROVIDERS or report.get("source") != source or report.get("target_date_bogota") != day:
+        raise ValueError("BROWSER_CAPTURE_SOURCE_OR_DATE_MISMATCH")
+    if (report.get("schema") != "MATRIX_OPERA_TENNIS_EVENT_LINK_CAPTURE_V1"
+        or report.get("canonical_fixture_export_authorized") is not False
+        or report.get("probability_generation_authorized") is not False
+        or report.get("real_money") != "BLOCKED"):
+        raise ValueError("BROWSER_CAPTURE_GOVERNANCE_MISMATCH")
     path=root/ROOT/day/PROVIDERS[source]["name"]
     path.parent.mkdir(parents=True,exist_ok=True)
+    matches=report.get("matches")
+    if not isinstance(matches,list) or not matches or len(matches)!=report.get("observed_link_count"):
+        return {"source":source,"status":"REJECTED_EMPTY_OR_INVALID_BROWSER_RESULT",
+                "new":len(matches) if isinstance(matches,list) else 0}
+    incoming=datetime.fromisoformat(str(report["collected_at_utc"]).replace("Z","+00:00"))
+    if incoming.tzinfo is None or incoming.utcoffset() is None:
+        raise ValueError("BROWSER_CAPTURE_CLOCK_WITHOUT_TIMEZONE")
     old_count=0
     if path.is_file():
-        old=json.loads(path.read_text(encoding="utf-8-sig"))
-        if old.get("target_date_bogota")==day and old.get("source")==source:
-            old_count=int(old.get("observed_link_count") or 0)
-    if len(report["matches"])<max(1,old_count):
-        return {"source":source,"status":"REJECTED_EMPTY_OR_REGRESSED_BROWSER_RESULT",
-                "new":len(report["matches"]),"old":old_count}
+        old_bytes=path.read_bytes()
+        old=json.loads(old_bytes.decode("utf-8-sig"))
+        if old.get("target_date_bogota")!=day or old.get("source")!=source:
+            raise ValueError("EXISTING_BROWSER_CAPTURE_IDENTITY_MISMATCH")
+        old_count=int(old.get("observed_link_count") or 0)
+        previous=datetime.fromisoformat(str(old["collected_at_utc"]).replace("Z","+00:00"))
+        if previous.tzinfo is None or previous.utcoffset() is None:
+            raise ValueError("EXISTING_BROWSER_CAPTURE_CLOCK_WITHOUT_TIMEZONE")
+        if incoming<=previous:
+            return {"source":source,"status":"REJECTED_STALE_BROWSER_RESULT",
+                    "new":len(matches),"old":old_count}
+        digest=hashlib.sha256(old_bytes).hexdigest()
+        archive=path.parent/"archive"/(source.lower()+"_"+digest+".json")
+        archive.parent.mkdir(parents=True,exist_ok=True)
+        if archive.exists():
+            if archive.read_bytes()!=old_bytes:
+                raise ValueError("BROWSER_ARCHIVE_HASH_COLLISION")
+        else:
+            archive.write_bytes(old_bytes)
     path.write_text(json.dumps(report,ensure_ascii=False,indent=2,sort_keys=True)+"\n",encoding="utf-8")
-    return {"source":source,"status":"PERSISTED_VISIBLE_BROWSER_LINKS","new":len(report["matches"]),"old":old_count}
+    return {"source":source,"status":"PERSISTED_VISIBLE_BROWSER_LINKS",
+            "new":len(matches),"old":old_count,
+            "previous_snapshot_archived":bool(old_count)}
 
 def run(root:Path,day:str,endpoint:str):
     from playwright.sync_api import sync_playwright,Error
