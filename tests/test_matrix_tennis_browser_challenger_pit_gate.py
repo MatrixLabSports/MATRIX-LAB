@@ -75,3 +75,62 @@ def test_biographical_clock_sha_drift_rejected(monkeypatch):
     import pytest
     with pytest.raises(ValueError,match="TENNIS_BIOGRAPHY_CLOCK_RESEARCH_SOURCE_DRIFT"):
         mod.evaluate(ROOT,"2026-11-06",T("2026-11-06T02:00:00Z"))
+
+
+def test_precut_duplicate_provider_rows_same_original_identity_source_are_safe_for_research():
+    from tools.matrix_tennis_browser_challenger_pit_gate import resolve_unique_precut_history
+    h={"rows":29,"latest_row_date":20260907,
+       "canonical_source_ids":["C0B2"],"canonical_iocs":["ROU"]}
+    x={"provider_player_id":"api-tennis:player:972","pre_cut_history":dict(h)}
+    y={"provider_player_id":"rapidapi-tennis:player:53726","pre_cut_history":dict(h)}
+    p,reason=resolve_unique_precut_history([x,y])
+    assert reason=="UNIQUE_PRE_CUT_HISTORICAL_SOURCE"
+    assert p["pre_cut_history"]["canonical_source_ids"]==["C0B2"]
+    assert p["provider_player_id"]=="api-tennis:player:972"
+
+
+def test_conflicting_original_history_source_or_country_blocks():
+    from tools.matrix_tennis_browser_challenger_pit_gate import resolve_unique_precut_history
+    a={"provider_player_id":"a","pre_cut_history":{"rows":29,"latest_row_date":20260907,
+       "canonical_source_ids":["C0B2"],"canonical_iocs":["ROU"]}}
+    for override in ({"canonical_source_ids":["X999"]},{"canonical_iocs":["USA"]},
+                     {"rows":30},{"latest_row_date":20260908}):
+        b={"provider_player_id":"b","pre_cut_history":dict(a["pre_cut_history"],**override)}
+        p,reason=resolve_unique_precut_history([a,b])
+        assert p is None
+        assert reason=="CONFLICTING_PRE_CUT_HISTORICAL_AUTHORITIES"
+
+
+def test_incomplete_historical_duplicate_not_presented_as_independent_confirmation():
+    from tools.matrix_tennis_browser_challenger_pit_gate import resolve_unique_precut_history
+    a={"provider_player_id":"api-tennis:player:19536",
+       "pre_cut_history":{"rows":42,"latest_row_date":20260907,
+       "canonical_source_ids":["H09N"],"canonical_iocs":["DEN"]}}
+    b={"provider_player_id":"sofascore:player:207089","biographical_candidates":[{"dob":"19980422"}]}
+    p,reason=resolve_unique_precut_history([a,b])
+    assert p["provider_player_id"]=="api-tennis:player:19536"
+    assert reason=="UNIQUE_PRE_CUT_HISTORICAL_SOURCE"
+    p,reason=resolve_unique_precut_history([b])
+    assert p is None and reason=="PRE_CUT_HISTORY_NOT_FOUND"
+
+
+def test_original_nov12_source_players_have_only_historical_candidates_not_authorized_models():
+    from tools.matrix_tennis_browser_challenger_pit_gate import (normal,
+        resolve_unique_precut_history,COUNTRY_IOC)
+    import json
+    root=Path(__file__).resolve().parents[1]
+    details=json.loads((root/"evidence/tennis_calendar_physical/2026-11-12/sofascore_verified_match_details.json").read_bytes())
+    assert details["individual_visible_metadata_verified_count"]==6
+    hard=json.loads((root/"evidence/cor0203/identity/MATRIX_COR0203_IDENTITY_AUTHORITY_LAST.json").read_bytes())
+    clay=json.loads((root/"evidence/tennis_parallel_lanes/ATP_CHALLENGER_MEN_SINGLES_CLAY/identity/MATRIX_CLAY_IDENTITY_AUTHORITY_LAST.json").read_bytes())
+    for event in details["events"]:
+        records=hard["records"] if event["surface"]=="Hard" else clay["records"]
+        for player in event["players"]:
+            matches=[row for row in records if normal(row.get("provider_display_name") or "")==normal(player["name"])]
+            p,reason=resolve_unique_precut_history(matches)
+            assert p is not None, (player["name"],reason)
+            original=p["pre_cut_history"]
+            assert original["canonical_iocs"]==[COUNTRY_IOC[player["country"]]]
+            assert original["latest_row_date"]<20261112
+    assert details["real_money"]=="BLOCKED"
+    assert details["telegram_signal_authorized"] is False
