@@ -89,11 +89,11 @@ jobs:
           } else {
             Write-Output "TENNIS_NEXT_DAY_NO_DATED_SOURCE_CAPTURE_NO_ADMISSION"
           }
-          $details="evidence/tennis_calendar_physical/$day/sofascore_verified_match_details.json"
-          if (Test-Path -LiteralPath $details) {
-            python -m tools.matrix_tennis_browser_challenger_pit_gate --date $day
-            if ($LASTEXITCODE -ne 0) { throw "TENNIS_PIT_SOURCE_GATE_FAILED" }
-          }
+          # Existing detail files may be bound to an earlier crossmatch hash.
+          # Never run the PIT gate against stale details before fresh capture.
+          # The following stage captures current individual match pages and
+          # invokes the same governed PIT gate only when capture succeeds.
+          Write-Output "TENNIS_PIT_GATE_DEFERRED_UNTIL_CURRENT_DETAIL_CAPTURE_NO_ADMISSION"
       - name: Capture source-visible individual Challenger details and run governed PIT gate
         shell: powershell
         run: |
