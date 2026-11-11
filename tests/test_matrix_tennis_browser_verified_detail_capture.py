@@ -66,3 +66,25 @@ def test_accessible_aria_label_is_source_of_competition_and_local_calendar_clock
     assert result["local_visible_time"]=="8:20"
     assert result["round"]=="Cuartos de final"
     assert result["provider_player_id_equivalence_certified"] is False
+
+
+def test_new_visible_countries_are_not_rejected_by_old_five_country_subset():
+    from tools.matrix_tennis_browser_verified_detail_capture import visible_country_candidates
+    assert visible_country_candidates([{"name":"S. Example France","label":"","flag_alts":[]}])==["France"]
+    assert visible_country_candidates([{"name":"S. Example","label":"Nacionalidad España","flag_alts":[]}])==["Spain"]
+    assert visible_country_candidates([{"name":"S. Example","label":"","flag_alts":["Italy"]}])==["Italy"]
+
+
+def test_country_not_inferred_from_global_page_or_last_name():
+    from tools.matrix_tennis_browser_verified_detail_capture import visible_country_candidates
+    assert visible_country_candidates([{"name":"Francesco Test","label":"","flag_alts":[]}])==[]
+    assert visible_country_candidates([{"name":"S. Example","label":"Novak Test","flag_alts":[]}])==[]
+
+
+def test_ambiguous_two_countries_on_same_profile_fail_closed():
+    row,ui=inputs()
+    for item in ui["links"]:
+        if "/player/kym-jerome/" in item["url"] and "Switzerland" in item["name"]:
+            item["label"]="France"
+    with pytest.raises(ValueError,match="VISIBLE_PLAYER_COUNTRY_MISSING_OR_AMBIGUOUS"):
+        parse_visible(row,ui,DAY,datetime(2026,11,5,23,tzinfo=timezone.utc))
