@@ -119,7 +119,32 @@ def main():
     value=reconcile(args.root,args.date)
     output=args.root/OUT/args.date/"MATRIX_TENNIS_EXACT_BROWSER_CROSSMATCH.json"
     output.parent.mkdir(parents=True,exist_ok=True)
-    output.write_text(json.dumps(value,ensure_ascii=False,sort_keys=True,indent=2)+"\n")
+    new_bytes=(json.dumps(value,ensure_ascii=False,sort_keys=True,indent=2)+"\n").encode("utf-8")
+    if output.exists():
+        old_bytes=output.read_bytes()
+        if old_bytes != new_bytes:
+            # Preserve the EXACT research snapshot to which individual
+            # prematch details were cryptographically bound. The archive
+            # never grants identity or model admission and cannot overwrite
+            # a different payload with the same digest.
+            old=json.loads(old_bytes)
+            if (old.get("schema")!="MATRIX_TENNIS_EXACT_BROWSER_CROSSMATCH_V1"
+                or old.get("target_date_bogota")!=args.date
+                or old.get("real_money")!="BLOCKED"
+                or old.get("source_event_equivalence_certified") is not False):
+                raise ValueError("CROSSMATCH_ARCHIVE_OLD_GOVERNANCE_INVALID")
+            digest=hashlib.sha256(old_bytes).hexdigest()
+            archive=output.parent/"archive"/(
+                "MATRIX_TENNIS_EXACT_BROWSER_CROSSMATCH_"+digest+".json")
+            archive.parent.mkdir(parents=True,exist_ok=True)
+            if archive.exists():
+                if archive.read_bytes()!=old_bytes:
+                    raise ValueError("CROSSMATCH_ARCHIVE_SHA256_COLLISION_OR_TAMPER")
+            else:
+                archive.write_bytes(old_bytes)
+                if archive.read_bytes()!=old_bytes:
+                    raise ValueError("CROSSMATCH_ARCHIVE_WRITE_VERIFICATION_FAILED")
+    output.write_bytes(new_bytes)
     print(json.dumps({"exact_name_hints":value["matched_exact_name_hints"],
                      "hard_admitted":0,"clay_admitted":0,
                      "status":value["status"]},sort_keys=True))
