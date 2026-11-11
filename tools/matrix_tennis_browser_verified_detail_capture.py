@@ -256,6 +256,36 @@ def parse_visible(row: dict, ui: dict, day: str, observed_at: datetime) -> dict:
             json.dumps(ui, ensure_ascii=False, sort_keys=True).encode("utf-8")).hexdigest(),
     }
 
+def public_visible_failure_clues(ui: dict | None) -> dict | None:
+    """Small, source-bound evidence for failures; never infer missing fields.
+
+    Only public visible SofaScore tennis player/tournament links are recorded.
+    No page-wide body text, cookies, authorization headers or odds are saved.
+    """
+    if not isinstance(ui, dict):
+        return None
+    links = []
+    for row in (ui.get("links") or [])[:2500]:
+        if not isinstance(row, dict):
+            continue
+        uri = urlparse(str(row.get("url") or ""))
+        if uri.scheme != "https" or uri.hostname not in ("sofascore.com", "www.sofascore.com"):
+            continue
+        if not (uri.path.startswith("/es/tennis/player/") or
+                uri.path.startswith("/es/tennis/tournament/challenger/")):
+            continue
+        links.append({"url":uri.scheme+"://"+uri.netloc+uri.path,
+                      "name":str(row.get("name") or "")[:150],
+                      "label":str(row.get("label") or "")[:150],
+                      "flag_alts":[str(x)[:90] for x in (row.get("flag_alts") or [])[:4]]})
+        if len(links) >= 18:
+            break
+    body = json.dumps(ui, sort_keys=True, ensure_ascii=False).encode("utf-8")
+    return {"visible_page_sha256":hashlib.sha256(body).hexdigest(),
+            "visible_source_links":links,
+            "not_individual_identity_certification":True}
+
+
 def run(root: Path, day: str, endpoint: str, max_events: int = 6) -> dict:
     from playwright.sync_api import Error, sync_playwright
     date.fromisoformat(day)
@@ -284,6 +314,7 @@ def run(root: Path, day: str, endpoint: str, max_events: int = 6) -> dict:
             raise ValueError("AUTHORIZED_LOCAL_BROWSER_CONTEXT_MISSING")
         for row in candidates[:max_events]:
             page = browser.contexts[0].new_page()
+            ui = None
             try:
                 resp = page.goto(row["sofascore_url"], wait_until="domcontentloaded", timeout=18000)
                 if resp and resp.status in (401, 403, 429):
@@ -310,7 +341,8 @@ def run(root: Path, day: str, endpoint: str, max_events: int = 6) -> dict:
             except (ValueError, Error, KeyError, TypeError, OSError) as exc:
                 blocked.append({"sofascore_id": row["sofascore_id"],
                                 "reason": str(exc) if isinstance(exc, ValueError)
-                                          else type(exc).__name__})
+                                          else type(exc).__name__,
+                                "public_visible_failure_clues":public_visible_failure_clues(ui)})
             finally:
                 page.close()
     report = {
