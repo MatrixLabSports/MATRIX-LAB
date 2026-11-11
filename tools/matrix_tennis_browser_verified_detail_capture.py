@@ -42,6 +42,7 @@ COUNTRY_LABELS = {
     "Belgium": ("Belgium", "Bélgica"),
     "Canada": ("Canada", "Canadá"),
     "Chile": ("Chile",),
+    "China": ("China",),
     "Colombia": ("Colombia",),
     "Croatia": ("Croatia", "Croacia"),
     "Czech Republic": ("Czech Republic", "Czechia", "Chequia"),
@@ -172,22 +173,32 @@ def parse_visible(row: dict, ui: dict, day: str, observed_at: datetime) -> dict:
     if tuple(sorted(fingerprint("-".join(p["name"] for p in people)))) != tuple(
             row["source_name_token_key"].split()):
         raise ValueError("EXACT_PLAYER_NAME_CROSSMATCH_DISAGREES")
+    # Real SofaScore match pages may show "Orleans, France, Octavos de final"
+    # rather than the legacy "Competición Tenis, Challenger 125, ...".
+    # Challenger classification MUST come from the exact public tournament
+    # URL, while the tournament and round must be present in the visible link.
+    rounds = {"Primera ronda", "Segunda ronda", "Ronda de 32",
+              "Octavos de final", "Cuartos de final",
+              "Semifinal", "Semifinales", "Final"}
     tournaments = []
     for link in links:
         z = urlparse(str(link.get("url") or ""))
-        label = next((str(v).strip() for v in (link.get("label"), link.get("name")) if str(v or "").strip().startswith("Competición Tenis, Challenger")), "")
-        if (z.hostname in ("www.sofascore.com", "sofascore.com")
-            and z.path.startswith("/es/tennis/tournament/challenger/")
-            and label.startswith("Competición Tenis, Challenger")
-            and "," in label):
-            tournaments.append((link["url"], label))
+        if (z.scheme != "https" or z.hostname not in ("www.sofascore.com", "sofascore.com")
+            or not z.path.startswith("/es/tennis/tournament/challenger/")):
+            continue
+        for field in ("label", "name"):
+            candidate = str(link.get(field) or "").strip()
+            parts = [part.strip() for part in candidate.split(",")]
+            if len(parts) >= 3 and parts[-1] in rounds and all(parts):
+                prefix = len(parts) >= 5 and parts[0] == "Competición Tenis" and parts[1].startswith("Challenger")
+                tournament_name = ", ".join(parts[2:-1] if prefix else parts[:-1])
+                if not tournament_name:
+                    continue
+                tournaments.append((link["url"], candidate, tournament_name, parts[-1]))
     tournaments = list(dict.fromkeys(tournaments))
     if len(tournaments) != 1:
         raise ValueError("EXACT_CHALLENGER_COMPETITION_LINK_REQUIRED")
-    tournament_url, competition_label = tournaments[0]
-    parts = [p.strip() for p in competition_label.split(",")]
-    if len(parts) < 4 or not parts[-1]:
-        raise ValueError("CHALLENGER_ROUND_MISSING")
+    tournament_url, competition_label, tournament_name, tournament_round = tournaments[0]
     court_labels = [x for x in ("Dura indoor", "Tierra batida")
                     if x in (ui.get("visible_text") or "")]
     if len(court_labels) != 1:
@@ -233,8 +244,9 @@ def parse_visible(row: dict, ui: dict, day: str, observed_at: datetime) -> dict:
         "kickoff_utc": kickoff.isoformat().replace("+00:00", "Z"),
         "competition_label": competition_label,
         "tournament_url": tournament_url,
-        "tournament_name": ", ".join(parts[2:-1]),
-        "round": parts[-1],
+        "tournament_name": tournament_name,
+        "round": tournament_round,
+        "challenger_category_evidenced_by_tournament_url": True,
         "court_label": court_labels[0],
         "surface": surface,
         "players": sorted(people, key=lambda x: x["name"]),
