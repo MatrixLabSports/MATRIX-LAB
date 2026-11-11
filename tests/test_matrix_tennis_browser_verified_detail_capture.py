@@ -185,3 +185,26 @@ def test_two_different_visible_rounds_for_same_tournament_fail_closed():
                         "label":"","flag_alts":[]})
     with pytest.raises(ValueError,match="EXACT_CHALLENGER_COMPETITION_LINK_REQUIRED"):
         parse_visible(row,ui,DAY,datetime(2026,11,5,23,tzinfo=timezone.utc))
+
+
+def test_public_failure_clues_show_bounded_calendar_shape_and_court_presence():
+    from tools.matrix_tennis_browser_verified_detail_capture import public_visible_failure_clues
+    row,ui=inputs()
+    report=public_visible_failure_clues(ui)
+    assert report["public_calendar_link_count"]==1
+    assert report["public_calendar_link_diagnostics"][0]["action_template"] is True
+    assert report["public_calendar_link_diagnostics"][0]["exact_utc_date_range_shape"] is True
+    assert "Dura indoor" in report["visible_court_term_presence_only"]
+    assert report["not_individual_identity_certification"] is True
+    assert all("calendar.google.com" not in x["url"] for x in report["visible_source_links"])
+
+
+def test_public_failure_clues_never_claim_missing_clock_or_court_is_verified():
+    from tools.matrix_tennis_browser_verified_detail_capture import public_visible_failure_clues
+    row,ui=inputs()
+    ui["links"]=[v for v in ui["links"] if "calendar.google.com" not in v["url"]]
+    ui["visible_text"]="Players and standings only"
+    report=public_visible_failure_clues(ui)
+    assert report["public_calendar_link_count"]==0
+    assert report["visible_court_term_presence_only"]==[]
+    assert report["not_individual_identity_certification"] is True
