@@ -80,7 +80,25 @@ def kickoff_in_bogota_calendar_day(kickoff:datetime,day:str)->bool:
 def evaluate(root:Path,day:str,now:datetime):
     date.fromisoformat(day);now=now.astimezone(timezone.utc)
     details,detailsha=read(root,CAPTURE_ROOT/day/DETAIL)
-    cross,crosssha=read(root,OUT/day/CROSS)
+    current_cross,current_cross_sha=read(root,OUT/day/CROSS)
+    declared_cross_sha=details.get("source_crossmatch_sha256")
+    cross,crosssha=current_cross,current_cross_sha
+    archived_crossmatch_used=False
+    if declared_cross_sha is not None and declared_cross_sha!=current_cross_sha:
+        # Only an EXACT SHA-256-matching previously sealed snapshot can
+        # supersede a later refreshed research calendar. Never reinterpret
+        # a captured match against another source crossmatch.
+        if not isinstance(declared_cross_sha,str) or not re.fullmatch(
+            r"[0-9a-f]{64}",declared_cross_sha):
+            raise ValueError("TENNIS_DETAIL_CROSSMATCH_SHA256_MISMATCH")
+        archive=OUT/day/"archive"/(
+            "MATRIX_TENNIS_EXACT_BROWSER_CROSSMATCH_"+declared_cross_sha+".json")
+        if not (root/archive).is_file():
+            raise ValueError("TENNIS_DETAIL_CROSSMATCH_SHA256_MISMATCH")
+        cross,crosssha=read(root,archive)
+        if crosssha!=declared_cross_sha:
+            raise ValueError("TENNIS_ARCHIVED_CROSSMATCH_SHA256_TAMPER")
+        archived_crossmatch_used=True
     if (details.get("schema")!="MATRIX_OPERA_TENNIS_MATCH_DETAIL_OBSERVATION_V1"
         or cross.get("schema")!="MATRIX_TENNIS_EXACT_BROWSER_CROSSMATCH_V1"
         or details.get("target_date_bogota")!=day
@@ -91,7 +109,6 @@ def evaluate(root:Path,day:str,now:datetime):
         raise ValueError("UNTRUSTED_OBSERVATION_GOVERNANCE")
     # New browser captures must bind exactly to the cross-source snapshot.
     # Archived 2026-11-04 manually observed pages predate this optional field.
-    declared_cross_sha = details.get("source_crossmatch_sha256")
     if declared_cross_sha is not None and declared_cross_sha != crosssha:
         raise ValueError("TENNIS_DETAIL_CROSSMATCH_SHA256_MISMATCH")
     # Research-only birthday and independently observed Flashscore clocks.
@@ -252,6 +269,8 @@ def evaluate(root:Path,day:str,now:datetime):
     return {"schema":"MATRIX_TENNIS_BROWSER_CHALLENGER_PIT_GATE_V1",
       "target_date_bogota":day,
       "match_detail_sha256":detailsha,"name_crossmatch_sha256":crosssha,
+      "newest_calendar_crossmatch_sha256":current_cross_sha,
+      "sealed_historical_source_crossmatch_used":archived_crossmatch_used,
       "original_authorities_sha256":a_shas,
       "source_metadata_verified_before_kickoff":sum(x["source_metadata_verified_before_kickoff"] for x in rows),
       "hard_source_metadata_ready":sum(x["surface"]=="Hard" and x["source_metadata_verified_before_kickoff"] for x in rows),
