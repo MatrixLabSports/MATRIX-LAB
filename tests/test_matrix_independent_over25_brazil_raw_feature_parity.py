@@ -85,3 +85,31 @@ def test_brazil_archive_wrong_league_never_promoted(tmp_path):
     assert report["status"] == "BLOCKED_BRAZIL_PARITY_PROBE_ERROR"
     assert report["network_calls"] == 0
     assert report["signal_generation_authorized"] is False
+
+
+def test_archived_real_brazil_parity_receipt_stays_research_only():
+    """A genuine matching raw replay cannot certify production PIT inputs."""
+    evidence = Path(
+        "evidence/football_world_inventory/2026-11-03/"
+        "MATRIX_BRAZIL_ORIGINAL_RAW_FEATURE_PARITY_LAST.json"
+    )
+    receipt = json.loads(evidence.read_text(encoding="utf-8"))
+    assert receipt["schema"] == "MATRIX_BRAZIL_ORIGINAL_RAW_FEATURE_PARITY_V1"
+    assert receipt["reference_league_id"] == 71
+    assert receipt["source_league_id"] == 2013
+    assert receipt["reference_raw_sha256"] == (
+        "8a06921704e3c83f0a47d0d5cf4e7400c7cdc41732ed11e0007675297bc0bb7f"
+    )
+    assert receipt["historical_analysis_only"] is True
+    raw = receipt["raw_group_feature_parity"]
+    assert raw["scoreable_both"] == (
+        raw["same_raw_group_feature_and_probability_count"]
+        + raw["different_raw_group_feature_or_probability_count"]
+    )
+    assert receipt["original_calibrated_feature_equivalence_verified"] is False
+    assert receipt["canonical_enriched_pit_equivalence_verified"] is False
+    assert receipt["all_six_leagues_equivalence_verified"] is False
+    assert receipt["model_parameters_mutated"] is False
+    assert receipt["signal_generation_authorized"] is False
+    assert receipt["automatic_wagering"] is False
+    assert receipt["real_money"] == "BLOCKED"
