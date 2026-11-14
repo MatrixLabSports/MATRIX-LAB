@@ -33,12 +33,15 @@ def test_no_keys_is_zero_calls_and_no_false_success():
     assert net.calls==[]
 
 def test_one_working_football_provider_cannot_be_blocked_by_missing_tennis_key():
-    net=Network([Resp(200,{"competitions":[{"id":2021}]})])
+    net=Network([Resp(200,{"competitions":[{"id":2021}]}),Resp(200,{"matches":[{"id":12345,"utcDate":"2026-11-14T18:00:00Z",
+"competition":{"id":2021},"homeTeam":{"name":"Alpha"},"awayTeam":{"name":"Beta"}}]})])
     d=probe("secret-123","",session=net,now=NOW)
     assert d["status"]=="PARTIAL_VERIFIED"
     assert d["providers"]["football_data_org"]["data_verified"] is True
     assert d["providers"]["live_tennis_api"]["data_verified"] is False
-    assert d["network_calls"]==1
+    assert d["network_calls"]==2
+    assert d["football_current_day_fixture_proof"]["verified"] is True
+    assert d["football_current_day_fixture_proof"]["candidate_count"]==1
     assert d["promotion_gate"]["production_feed_authorized"] is False
     assert "secret-123" not in json.dumps(d)
     assert net.calls[0]["headers"]=={"X-Auth-Token":"secret-123"}
@@ -63,9 +66,11 @@ def test_network_error_does_not_request_tennis_or_open_model():
 
 def test_tennis_opt_in_still_cannot_promote_probability_engine():
     net=Network([Resp(200,{"competitions":[{"id":2021}]}),
+                 Resp(200,{"matches":[{"id":12345,"utcDate":"2026-11-14T18:00:00Z",
+"competition":{"id":2021},"homeTeam":{"name":"Alpha"},"awayTeam":{"name":"Beta"}}]}),
                  Resp(200,{"data":[{"id":"test"}]})])
     d=probe("football","tennis",tennis_opt_in=True,session=net,now=NOW)
-    assert d["network_calls"]==2
+    assert d["network_calls"]==3
     assert d["providers"]["live_tennis_api"]["data_verified"] is True
     assert d["promotion_gate"]["production_feed_authorized"] is False
     assert not d["protections"]["paid_api_subscription_authorized"]
@@ -77,3 +82,22 @@ def test_oversized_response_fails_closed_without_saving_body():
     d=probe("foo","",session=net,now=NOW)
     assert d["providers"]["football_data_org"]["data_verified"] is False
     assert d["providers"]["football_data_org"]["status"]=="NETWORK_OR_RESPONSE_BLOCK_ValueError"
+
+
+def test_no_fixture_data_is_not_false_production_readiness():
+    net=Network([Resp(200,{"competitions":[{"id":2021}]}),Resp(200,{"matches":[]})])
+    d=probe("foo","",session=net,now=NOW)
+    assert d["providers"]["football_data_org"]["data_verified"] is True
+    assert d["football_current_day_fixture_proof"]["verified"] is False
+    assert d["football_current_day_fixture_proof"]["candidate_count"]==0
+    assert d["promotion_gate"]["production_feed_authorized"] is False
+
+def test_cross_day_fixture_or_missing_team_does_not_pass():
+    net=Network([Resp(200,{"competitions":[{"id":2021}]}),
+        Resp(200,{"matches":[{"id":12345,"utcDate":"2026-11-15T18:00:00Z",
+        "competition":{"id":2021},"homeTeam":{"name":"Alpha"},"awayTeam":{"name":"Beta"}},
+        {"id":12346,"utcDate":"2026-11-14T18:00:00Z",
+        "competition":{"id":2021},"homeTeam":{},"awayTeam":{"name":"Beta"}}]})])
+    d=probe("foo","",session=net,now=NOW)
+    assert d["football_current_day_fixture_proof"]["candidate_count"]==0
+    assert d["football_current_day_fixture_proof"]["verified"] is False
