@@ -60,3 +60,28 @@ def test_source_has_no_permitted_global_or_model_promotion():
       {"idEvent":"123","dateEvent":"2026-11-14","strLeague":"League",
        "strHomeTeam":"Same","strAwayTeam":"Same"}
     ]},"2026-11-14")==[]
+
+
+def test_repeated_source_event_id_counts_only_once():
+    from tools.matrix_football_public_free_probe import strict_daily_fixture_rows
+    event={"idEvent":"123","dateEvent":"2026-11-14","strLeague":"League",
+           "strHomeTeam":"Alpha","strAwayTeam":"Beta"}
+    assert len(strict_daily_fixture_rows({"events":[event,event.copy()]},"2026-11-14"))==1
+
+
+def test_conflicting_same_source_id_never_counts_as_valid_coverage():
+    from tools.matrix_football_public_free_probe import strict_daily_fixture_rows
+    valid={"idEvent":"123","dateEvent":"2026-11-14","strLeague":"League",
+           "strHomeTeam":"Alpha","strAwayTeam":"Beta"}
+    conflict={**valid,"strAwayTeam":"Gamma"}
+    assert strict_daily_fixture_rows({"events":[valid, conflict]},"2026-11-14")==[]
+    assert strict_daily_fixture_rows({"events":[conflict, valid]},"2026-11-14")==[]
+
+
+def test_unambiguous_distinct_ids_are_preserved():
+    from tools.matrix_football_public_free_probe import strict_daily_fixture_rows
+    first={"idEvent":"123","dateEvent":"2026-11-14","strLeague":"League",
+           "strHomeTeam":"Alpha","strAwayTeam":"Beta"}
+    second={**first,"idEvent":"124","strHomeTeam":"Gamma"}
+    result=strict_daily_fixture_rows({"events":[first,second]},"2026-11-14")
+    assert [row["id"] for row in result]==["123","124"]
