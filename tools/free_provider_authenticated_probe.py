@@ -3,7 +3,7 @@ from __future__ import annotations
 import hashlib
 import json
 import os
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 from pathlib import Path
 from typing import Any
 
@@ -89,6 +89,36 @@ def football_daily_fixture_probe(key:str,day:str,session=None)->dict:
         return {"status":"FIXTURE_QUERY_BLOCK_"+type(exc).__name__,
                 "verified":False,"calls":1,"day":day}
 
+def football_competition_window_probe(key:str,start:str,end:str,session=None)->dict:
+    """At most one PL current-week source query; provider scope may deny it."""
+    try:
+        data,meta=get_json("https://api.football-data.org/v4/competitions/PL/matches",
+            {"X-Auth-Token":key},
+            params={"dateFrom":start,"dateTo":end},session=session)
+        rows=data.get("matches")
+        valid=[]
+        for row in rows if isinstance(rows,list) else []:
+            if not isinstance(row,dict):continue
+            mid=row.get("id");kickoff=row.get("utcDate")
+            comp=row.get("competition") or {}
+            home=row.get("homeTeam") or {};away=row.get("awayTeam") or {}
+            if (type(mid) is int and isinstance(kickoff,str)
+                and start<=kickoff[:10]<=end and kickoff.endswith("Z")
+                and isinstance(comp,dict) and comp.get("code") in ("PL",None)
+                and isinstance(home,dict) and isinstance(away,dict)
+                and (home.get("name") or home.get("shortName"))
+                and (away.get("name") or away.get("shortName"))):
+                valid.append(mid)
+        good=meta["http_status"]==200 and bool(valid)
+        return {"status":"CURRENT_WEEK_PL_FIXTURES_VERIFIED" if good
+                else "PL_WEEK_ENDPOINT_NO_VERIFIABLE_FIXTURES",
+                "verified":good,"calls":1,"start":start,"end":end,
+                "match_count":len(valid),"sample_ids":valid[:5],"response":meta,
+                "model_admission_authorized":False}
+    except (requests.RequestException,ValueError,TimeoutError) as exc:
+        return {"status":"PL_WEEK_QUERY_BLOCK_"+type(exc).__name__,
+                "verified":False,"calls":1,"start":start,"end":end}
+
 def probe(football_key:str,tennis_key:str, *, tennis_opt_in:bool=False,
           session=None, now=None)->dict:
     football=single_provider("football_data_org",football_key,
@@ -100,6 +130,15 @@ def probe(football_key:str,tennis_key:str, *, tennis_opt_in:bool=False,
               if football["data_verified"] else
               {"status":"FOOTBALL_CATALOG_NOT_VERIFIED_NO_QUERY",
                "verified":False,"calls":0,"day":day})
+    # A single matchless day can coincide with an international break.
+    # One more bounded, explicitly named competition query verifies whether
+    # current fixtures are available; it never grants model admission.
+    horizon={"status":"NOT_NEEDED_OR_CATALOG_NOT_VERIFIED",
+             "verified":False,"calls":0}
+    if football["data_verified"] and not fixtures["verified"]:
+        next_week=(clock.astimezone(timezone.utc).date()+timedelta(days=7)).isoformat()
+        horizon=football_competition_window_probe(football_key,day,next_week,
+                                                   session=session)
     # LiveTennisAPI's free entitlement has NOT been established. No speculative
     # consumption of a plan, including usage endpoint, without explicit opt-in.
     tennis=(single_provider("live_tennis_api",tennis_key,
@@ -113,7 +152,8 @@ def probe(football_key:str,tennis_key:str, *, tennis_opt_in:bool=False,
         "generated_at_utc":(now or datetime.now(timezone.utc)).isoformat(),
         "providers":{"football_data_org":football,"live_tennis_api":tennis},
         "football_current_day_fixture_proof":fixtures,
-        "network_calls":football["calls"]+fixtures["calls"]+tennis["calls"],
+        "football_named_competition_week_proof":horizon,
+        "network_calls":football["calls"]+fixtures["calls"]+horizon["calls"]+tennis["calls"],
         "live_tennis_opt_in":tennis_opt_in,
         "status":"PARTIAL_VERIFIED" if any(p["data_verified"]
                       for p in (football,tennis)) else "NO_VERIFIED_LIVE_PROVIDER",
