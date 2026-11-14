@@ -8,6 +8,7 @@ on:
     paths:
       - .github/workflows/free-provider-authenticated-probe.yml
       - tools/free_provider_authenticated_probe.py
+      - tests/test_free_provider_authenticated_probe.py
 
 permissions:
   contents: write
@@ -19,58 +20,67 @@ concurrency:
 jobs:
   probe:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 12
+    env:
+      REAL_MONEY: BLOCKED
+      AUTOMATIC_WAGERING: "false"
     steps:
       - uses: actions/checkout@v4
         with:
           ref: repair/cor09-world-pipeline
           fetch-depth: 0
-
       - uses: actions/setup-python@v5
         with:
           python-version: "3.11"
-
-      - run: python -m pip install requests
-
-      - name: Validate secrets are configured
-        shell: bash
-        env:
-          FOOTBALL_DATA_ORG_KEY: ${{ secrets.FOOTBALL_DATA_ORG_TOKEN }}
-          LIVE_TENNIS_API_KEY: ${{ secrets.LIVETENNISAPI_KEY }}
+      - name: Test independence and redaction contracts
         run: |
-          set -euo pipefail
-          test -n "$FOOTBALL_DATA_ORG_KEY" || { echo "FOOTBALL_DATA_ORG_KEY_NOT_CONFIGURED"; exit 2; }
-          test -n "$LIVE_TENNIS_API_KEY" || { echo "LIVE_TENNIS_API_KEY_NOT_CONFIGURED"; exit 2; }
-          echo "FREE_PROVIDER_SECRETS_PRESENT"
-
-      - name: Run authenticated probes
+          python -m pip install -q pytest requests
+          PYTHONPATH=. python -m pytest -q tests/test_free_provider_authenticated_probe.py
+      - name: Probe existing free football-data.org source without requiring tennis secrets
         env:
           FOOTBALL_DATA_ORG_KEY: ${{ secrets.FOOTBALL_DATA_ORG_TOKEN }}
-          LIVE_TENNIS_API_KEY: ${{ secrets.LIVETENNISAPI_KEY }}
-        run: python -m tools.free_provider_authenticated_probe
-
-      - name: Validate redacted evidence
+          # No request to tennis until its free-plan entitlement is separately authorized.
+          MATRIX_LIVE_TENNIS_PROBE_OPT_IN: "false"
+        run: |
+          test "$REAL_MONEY" = BLOCKED
+          python -m tools.free_provider_authenticated_probe
+      - name: Verify receipt can never certify production or leak secrets
         run: |
           python - <<'PY'
           import json
           from pathlib import Path
-          p=Path("evidence/governance/MATRIX_FREE_API_AUTHENTICATED_PROBE_20261006.json")
-          j=json.loads(p.read_text())
-          assert j["status"] == "PASS"
-          assert j["promotion_gate"]["both_pass"] is True
-          assert j["providers"]["football_data_org"]["token_redacted"] is True
-          assert j["providers"]["live_tennis_api"]["token_redacted"] is True
-          assert j["protections"]["secrets_persisted"] is False
-          assert j["protections"]["secrets_echoed"] is False
-          assert j["protections"]["real_money"] == "BLOCKED"
-          print("FREE_PROVIDER_AUTHENTICATED_PROBE_GATE: PASS")
+          p=Path("evidence/governance/MATRIX_FREE_API_AUTHENTICATED_PROBE_LAST.json")
+          d=json.loads(p.read_text(encoding="utf-8"))
+          assert d["schema"]=="MATRIX_FREE_API_INDEPENDENT_PROBE_V2"
+          assert d["network_calls"]<=1
+          assert d["providers"]["live_tennis_api"]["calls"]==0
+          assert d["promotion_gate"]["production_feed_authorized"] is False
+          assert d["protections"]["real_money"]=="BLOCKED"
+          assert d["protections"]["secrets_persisted"] is False
+          assert d["protections"]["paid_api_subscription_authorized"] is False
+          print("FREE_PROVIDER_EVIDENCE_REDACTED:",d["status"])
           PY
-
-      - name: Persist evidence
+      - name: Preserve sanitized source availability evidence
         run: |
+          set -euo pipefail
           git config user.name "matrix-free-provider-probe"
           git config user.email "matrix-free-provider-probe@users.noreply.github.com"
-          git add evidence/governance/MATRIX_FREE_API_AUTHENTICATED_PROBE_20261006.json
-          git commit -m "evidence(providers): persist authenticated free API probes"
-          git pull --rebase origin repair/cor09-world-pipeline
-          git push origin HEAD:repair/cor09-world-pipeline
+          git add -- evidence/governance/MATRIX_FREE_API_AUTHENTICATED_PROBE_LAST.json
+          if git diff --cached --quiet; then
+            echo "NO_PROVIDER_EVIDENCE_CHANGE"
+            exit 0
+          fi
+          git commit -m "evidence(providers): preserve independent free source access receipt"
+          for attempt in 1 2 3 4; do
+            git fetch origin repair/cor09-world-pipeline
+            if ! git rebase origin/repair/cor09-world-pipeline; then
+              git rebase --abort || true
+              exit 1
+            fi
+            if git push origin HEAD:repair/cor09-world-pipeline; then
+              echo "FREE_PROVIDER_AUTHENTIC_RECEIPT_PERSISTED"
+              exit 0
+            fi
+            sleep "$attempt"
+          done
+          exit 1
