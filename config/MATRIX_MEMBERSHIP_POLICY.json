@@ -1,0 +1,23 @@
+{
+  "schema": "MATRIX_MEMBERSHIP_POLICY_V1",
+  "timezone": "America/Bogota",
+  "plans": {
+    "WEEKLY": {"duration_days":7,"price_cop":50000},
+    "MONTHLY": {"duration_days":30,"price_cop":150000}
+  },
+  "states": ["PENDING_PAYMENT","ACTIVE","EXPIRING_48H","EXPIRING_24H","RENEWED","EXPIRED","REMOVED_FROM_PREMIUM"],
+  "notifications_hours_before_expiry": [48,24],
+  "on_expiry_without_verified_renewal": "REMOVE_FROM_PREMIUM_AUTOMATICALLY",
+  "telegram_removal_method": "BAN_THEN_UNBAN_TO_REMOVE_AND_ALLOW_FUTURE_REJOIN",
+  "invite_policy": {
+    "individual_or_expiring_link": true,
+    "join_request_preferred": true,
+    "revoke_old_link_on_expiry": true
+  },
+  "privacy": {
+    "do_not_store_payment_credentials": true,
+    "do_not_store_full_name_or_phone_in_repository": true,
+    "customer_identifier": "OPAQUE_ID",
+    "telegram_user_id_is_operational_data": true
+  }
+}

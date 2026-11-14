@@ -1,0 +1,88 @@
+name: Free Provider Authenticated Probe
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - repair/cor09-world-pipeline
+    paths:
+      - .github/workflows/free-provider-authenticated-probe.yml
+      - tools/free_provider_authenticated_probe.py
+      - tests/test_free_provider_authenticated_probe.py
+
+permissions:
+  contents: write
+
+concurrency:
+  group: free-provider-authenticated-probe
+  cancel-in-progress: false
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    env:
+      REAL_MONEY: BLOCKED
+      AUTOMATIC_WAGERING: "false"
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: repair/cor09-world-pipeline
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Test independence and redaction contracts
+        run: |
+          python -m pip install -q pytest requests
+          PYTHONPATH=. python -m pytest -q tests/test_free_provider_authenticated_probe.py
+      - name: Probe existing free football-data.org source without requiring tennis secrets
+        env:
+          FOOTBALL_DATA_ORG_KEY: ${{ secrets.FOOTBALL_DATA_ORG_TOKEN }}
+          # No request to tennis until its free-plan entitlement is separately authorized.
+          MATRIX_LIVE_TENNIS_PROBE_OPT_IN: "false"
+        run: |
+          test "$REAL_MONEY" = BLOCKED
+          python -m tools.free_provider_authenticated_probe
+      - name: Verify receipt can never certify production or leak secrets
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          p=Path("evidence/governance/MATRIX_FREE_API_AUTHENTICATED_PROBE_LAST.json")
+          d=json.loads(p.read_text(encoding="utf-8"))
+          assert d["schema"]=="MATRIX_FREE_API_INDEPENDENT_PROBE_V2"
+          assert d["network_calls"]<=3
+          assert d["providers"]["live_tennis_api"]["calls"]==0
+          assert d["football_current_day_fixture_proof"]["day"]==d["generated_at_utc"][:10]
+          assert d["football_named_competition_week_proof"]["calls"]<=1
+          assert d["promotion_gate"]["production_feed_authorized"] is False
+          assert d["protections"]["real_money"]=="BLOCKED"
+          assert d["protections"]["secrets_persisted"] is False
+          assert d["protections"]["paid_api_subscription_authorized"] is False
+          print("FREE_PROVIDER_EVIDENCE_REDACTED:",d["status"])
+          PY
+      - name: Preserve sanitized source availability evidence
+        run: |
+          set -euo pipefail
+          git config user.name "matrix-free-provider-probe"
+          git config user.email "matrix-free-provider-probe@users.noreply.github.com"
+          git add -- evidence/governance/MATRIX_FREE_API_AUTHENTICATED_PROBE_LAST.json
+          if git diff --cached --quiet; then
+            echo "NO_PROVIDER_EVIDENCE_CHANGE"
+            exit 0
+          fi
+          git commit -m "evidence(providers): preserve independent free source access receipt"
+          for attempt in 1 2 3 4; do
+            git fetch origin repair/cor09-world-pipeline
+            if ! git rebase origin/repair/cor09-world-pipeline; then
+              git rebase --abort || true
+              exit 1
+            fi
+            if git push origin HEAD:repair/cor09-world-pipeline; then
+              echo "FREE_PROVIDER_AUTHENTIC_RECEIPT_PERSISTED"
+              exit 0
+            fi
+            sleep "$attempt"
+          done
+          exit 1

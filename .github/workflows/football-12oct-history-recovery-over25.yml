@@ -1,0 +1,236 @@
+name: MATRIX Football 12OCT History Recovery Over25
+
+on:
+  push:
+    branches:
+      - repair/cor09-world-pipeline
+    paths:
+      - .github/workflows/football-12oct-history-recovery-over25.yml
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: football-12oct-history-recovery-over25
+  cancel-in-progress: false
+
+jobs:
+  recover:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    env:
+      MATRIX_MODE: SHADOW
+      REAL_MONEY: BLOCKED
+      AUTO_BETTING: DISABLED
+      TARGET_DATE: "2026-10-12"
+    steps:
+      - name: Checkout governed branch
+        uses: actions/checkout@v4
+        with:
+          ref: repair/cor09-world-pipeline
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: python -m pip install requests pytest
+
+      - name: Enforce safety gates
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$MATRIX_MODE" = "SHADOW"
+          test "$REAL_MONEY" = "BLOCKED"
+          test "$AUTO_BETTING" = "DISABLED"
+
+      - name: Recover missing league-season history from API-Football
+        env:
+          API_FOOTBALL_KEY: ${{ secrets.API_FOOTBALL_KEY }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -n "$API_FOOTBALL_KEY"
+          PYTHONPATH=. python - <<'PY'
+          import hashlib, json, os
+          from datetime import datetime, timezone
+          from pathlib import Path
+          import requests
+          from tools.api_football_canonicalize_analysis_inputs import load_chunked_canonical_bundle
+          from tools.api_football_market_shadow_p_matrix import build_shadow_p_matrix
+
+          root=Path(".")
+          api_key=os.environ["API_FOOTBALL_KEY"].strip()
+          if not api_key:
+              raise SystemExit("API_FOOTBALL_KEY_EMPTY_AFTER_STRIP")
+          api_key.encode("ascii")
+          target=os.environ["TARGET_DATE"]
+          base=root/"evidence"/"api_football"/"prospective_daily"/target
+          cycles=sorted(p for p in base.glob("*") if p.is_dir() and (p/"cycle_summary.json").exists())
+          valid=[]
+          for p in cycles:
+              try:
+                  s=json.loads((p/"cycle_summary.json").read_text(encoding="utf-8"))
+              except Exception:
+                  continue
+              if s.get("status")=="PASS" and s.get("target_date_bogota")==target:
+                  valid.append(p)
+          if not valid:
+              raise SystemExit("NO_VALID_CYCLE")
+          cycle=valid[-1]
+          canonical, manifest=load_chunked_canonical_bundle(cycle/"canonical_analysis")
+          pm=build_shadow_p_matrix(
+              canonical_bundle=canonical,
+              canonical_manifest=manifest,
+              raw_dir=cycle/"history"/"raw",
+              generated_at=datetime.now(timezone.utc),
+          )
+          missing={}
+          for row in pm.get("blocked",[]):
+              if row.get("reason")!="BLOCKED_RAW_GROUP_MISSING":
+                  continue
+              league=str(row.get("league_id") or "")
+              season=row.get("season")
+              if league and isinstance(season,int):
+                  missing[(league,season)]=missing.get((league,season),0)+1
+
+          session=requests.Session()
+          rawdir=cycle/"history"/"raw"
+          rawdir.mkdir(parents=True,exist_ok=True)
+          rows=[]
+          for league,season in sorted(missing):
+              resp=session.get(
+                  "https://v3.football.api-sports.io/fixtures",
+                  headers={"x-apisports-key":api_key},
+                  params={"league":league,"season":season},
+                  timeout=(10,30),
+              )
+              body=bytes(resp.content)
+              sha=hashlib.sha256(body).hexdigest()
+              try: payload=resp.json()
+              except Exception: payload={}
+              errors=payload.get("errors") if isinstance(payload,dict) else None
+              response=payload.get("response") if isinstance(payload,dict) else None
+              ok=200 <= resp.status_code < 300 and errors in ({},[],None) and isinstance(response,list)
+              out=rawdir/f"league_{league}_season_{season}.bin"
+              if ok:
+                  out.write_bytes(body)
+              rows.append({
+                  "league_id":league,
+                  "season":season,
+                  "blocked_fixture_count_before":missing[(league,season)],
+                  "http_status":resp.status_code,
+                  "provider_errors":errors,
+                  "response_fixture_count":len(response) if isinstance(response,list) else None,
+                  "sha256":sha,
+                  "persisted":bool(ok),
+              })
+
+          # Re-evaluate locally after recovery, before querying odds.
+          canonical2, manifest2=load_chunked_canonical_bundle(cycle/"canonical_analysis")
+          after=build_shadow_p_matrix(
+              canonical_bundle=canonical2,
+              canonical_manifest=manifest2,
+              raw_dir=cycle/"history"/"raw",
+              generated_at=datetime.now(timezone.utc),
+          )
+          m={
+              "schema":"MATRIX_FOOTBALL_OVER25_HISTORY_RECOVERY_V1",
+              "generated_at_utc":datetime.now(timezone.utc).replace(microsecond=0).isoformat(),
+              "target_date_bogota":target,
+              "source_cycle":cycle.as_posix(),
+              "provider":"API-Football",
+              "purpose":"RECOVER_PREMATCH_HISTORY_ONLY",
+              "missing_groups_before":len(missing),
+              "blocked_raw_group_missing_before":sum(missing.values()),
+              "network_calls":len(rows),
+              "groups_persisted":sum(1 for x in rows if x["persisted"]),
+              "groups_failed":sum(1 for x in rows if not x["persisted"]),
+              "p_matrix_scored_before":pm.get("scored_count"),
+              "p_matrix_blocked_before":pm.get("blocked_count"),
+              "p_matrix_scored_after":after.get("scored_count"),
+              "p_matrix_blocked_after":after.get("blocked_count"),
+              "remaining_blocker_reasons":{},
+              "groups":rows,
+              "protections":{
+                  "strictly_prior_kickoff_only":True,
+                  "target_outcomes_used":False,
+                  "odds_used_to_generate_probability":False,
+                  "parameter_tuning":False,
+                  "missing_not_zero":True,
+                  "silent_imputation":False,
+                  "real_money":"BLOCKED",
+                  "automatic_wagering":False,
+              }
+          }
+          for x in after.get("blocked",[]):
+              r=str(x.get("reason") or "")
+              m["remaining_blocker_reasons"][r]=m["remaining_blocker_reasons"].get(r,0)+1
+          blob=json.dumps(m,sort_keys=True,separators=(",",":"),ensure_ascii=False).encode()
+          m["sha256_without_self"]=hashlib.sha256(blob).hexdigest()
+          outdir=root/"evidence"/"api_football"/"history_recovery"/target
+          outdir.mkdir(parents=True,exist_ok=True)
+          (outdir/"MATRIX_OVER25_HISTORY_RECOVERY.json").write_text(
+              json.dumps(m,ensure_ascii=False,indent=2,sort_keys=True)+"\n",encoding="utf-8"
+          )
+          print(json.dumps({
+              "cycle":cycle.as_posix(),
+              "missing_groups_before":len(missing),
+              "groups_persisted":m["groups_persisted"],
+              "scored_before":m["p_matrix_scored_before"],
+              "scored_after":m["p_matrix_scored_after"],
+              "blocked_before":m["p_matrix_blocked_before"],
+              "blocked_after":m["p_matrix_blocked_after"],
+              "remaining":m["remaining_blocker_reasons"],
+          },sort_keys=True))
+          PY
+
+      - name: Rebuild governed Over25 report after history recovery
+        env:
+          API_FOOTBALL_KEY: ${{ secrets.API_FOOTBALL_KEY }}
+        run: PYTHONPATH=. python -m tools.football_daily_governed_over25 --target-date 2026-10-12
+
+      - name: Validate no-governance regression
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          r=json.loads(Path("evidence/api_football/history_recovery/2026-10-12/MATRIX_OVER25_HISTORY_RECOVERY.json").read_text())
+          p=json.loads(Path("evidence/api_football/daily_prematch_reports/2026-10-12/over25_shadow_ev/MATRIX_FOOTBALL_DAILY_OVER25_GOVERNED_SHADOW_EV.json").read_text())
+          assert r["protections"]["strictly_prior_kickoff_only"] is True
+          assert r["protections"]["target_outcomes_used"] is False
+          assert r["protections"]["odds_used_to_generate_probability"] is False
+          assert r["protections"]["parameter_tuning"] is False
+          assert r["protections"]["real_money"]=="BLOCKED"
+          assert p["protections"]["odds_used_to_generate_probability"] is False
+          assert p["protections"]["automatic_wagering"] is False
+          assert p["protections"]["real_money"]=="BLOCKED"
+          print(json.dumps({"status":"PASS","decision_counts":p["decision_counts"]},sort_keys=True))
+          PY
+
+      - name: Persist physical evidence
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name matrix-history-recovery
+          git config user.email matrix-history-recovery@users.noreply.github.com
+          git add evidence/api_football/history_recovery/2026-10-12
+          git add evidence/api_football/prospective_daily/2026-10-12/*/history/raw || true
+          git add evidence/api_football/daily_prematch_reports/2026-10-12
+          if git diff --cached --quiet; then
+            echo "NO_CHANGES"
+            exit 0
+          fi
+          git commit -m "evidence(over25): recover 12OCT missing historical groups"
+          for attempt in 1 2 3 4; do
+            git fetch origin repair/cor09-world-pipeline
+            if ! git rebase origin/repair/cor09-world-pipeline; then git rebase --abort || true; exit 1; fi
+            if git push origin HEAD:repair/cor09-world-pipeline; then exit 0; fi
+            sleep $((attempt*2))
+          done
+          exit 1

@@ -1,0 +1,891 @@
+{
+  "schema": "MATRIX_42_MARKET_ELITE_RESOLUTION_MATRIX_V1",
+  "generated_at_utc": "2026-10-28T19:21:14.935Z",
+  "source_supervisor": {
+    "path": "evidence/market_portfolio/MATRIX_MULTI_MARKET_SUPERVISOR_LAST.json",
+    "sha": "bc804f3ed74c506b6b0a58de7dcd4fe861b3832d",
+    "generated_at_utc": "2026-10-28T18:22:45+00:00"
+  },
+  "source_registry": {
+    "path": "evidence/market_portfolio/MATRIX_42_LANE_PROSPECTIVE_REGISTRY_LAST.json",
+    "sha": "27bad0001c8994e446e6470ef026878fc423ea07",
+    "generated_at_utc": "2026-10-28T18:22:47+00:00"
+  },
+  "governance": {
+    "total_lanes": 42,
+    "football_lanes": 30,
+    "tennis_lanes": 12,
+    "all_blockers_must_have_owner": true,
+    "no_auto_promotion_at_600": true,
+    "inplay_cannot_count_as_prematch": true,
+    "universal_freeze_contract": "tools/matrix_42_lane_freeze_producer.py",
+    "source_order": [
+      "SOFASCORE",
+      "FLASHSCORE",
+      "APIS"
+    ],
+    "automatic_wagering": false,
+    "real_money": "BLOCKED"
+  },
+  "summary": {
+    "status_counts": {
+      "MEASURED_PROMOTION_GATE_REQUIRED": 3,
+      "DIAGNOSTIC_NOT_PROMOTABLE_CURRENT_CHALLENGER": 1,
+      "OPERATIVE_GOVERNED_SELECTION_SCOPE": 1,
+      "DEDICATED_PREMATCH_MODEL_AND_CALIBRATION_REQUIRED": 2,
+      "MEASURED_PRICE_AND_PROMOTION_REQUIRED": 6,
+      "RESEARCH_MODEL_NEEDS_PROSPECTIVE_FREEZES": 2,
+      "DATA_COVERAGE_PRESENT_PREMATCH_MODEL_REQUIRED": 13,
+      "RESEARCH_MODEL_PROSPECTIVE_COLLECTION_LOW": 2,
+      "ACTIVE_MODEL_PRICE_BINDING_BLOCKED": 1,
+      "LIVE_FEATURE_PATH_NOT_VALID_AS_PREMATCH_MODEL": 8,
+      "STAT_LAB_PRESENT_PREMATCH_MODEL_REQUIRED": 3
+    },
+    "telegram_authorized_market_families": [
+      "TOTAL_GOALS_OVER_UNDER"
+    ]
+  },
+  "lanes": [
+    {
+      "market_key": "MATCH_RESULT_1X2",
+      "display_name": "1X2",
+      "sport": "football",
+      "current_operational_state": "LAB",
+      "supervisor_production_authorized": false,
+      "implementation_paths": [
+        "tools/api_football_market_shadow_p_matrix.py"
+      ],
+      "price_state": "PRICE_FAMILY_OBSERVED",
+      "prospective_unique_count": 727,
+      "gate_600_reached": true,
+      "prematch_model_capable_now": true,
+      "telegram_authorized_now": false,
+      "elite_resolution_status": "MEASURED_PROMOTION_GATE_REQUIRED",
+      "blocking_owner": "QUANT_DIRECTOR",
+      "mandatory_action": "RUN_FORMAL_PROMOTION_GATE_WITH_PROSPECTIVE_HOLDOUT",
+      "universal_freeze_producer": "tools/matrix_42_lane_freeze_producer.py",
+      "real_money": "BLOCKED"
+    },
+    {
+      "market_key": "DOUBLE_CHANCE_1X",
+      "display_name": "Doble oportunidad 1X",
+      "sport": "football",
+      "current_operational_state": "LAB",
+      "supervisor_production_authorized": false,
+      "implementation_paths": [
+        "tools/api_football_market_shadow_p_matrix.py"
+      ],
+      "price_state": "PRICE_FAMILY_OBSERVED",
+      "prospective_unique_count": 727,
+      "gate_600_reached": true,
+      "prematch_model_capable_now": true,
+      "telegram_authorized_now": false,
+      "elite_resolution_status": "MEASURED_PROMOTION_GATE_REQUIRED",
+      "blocking_owner": "QUANT_DIRECTOR",
+      "mandatory_action": "RUN_FORMAL_PROMOTION_GATE_WITH_PROSPECTIVE_HOLDOUT",
+      "universal_freeze_producer": "tools/matrix_42_lane_freeze_producer.py",
+      "real_money": "BLOCKED"
+    },
+    {
+      "market_key": "DOUBLE_CHANCE_X2",
+      "display_name": "Doble oportunidad X2",
+      "sport": "football",
+      "current_operational_state": "LAB",
+      "supervisor_production_authorized": false,
+      "implementation_paths": [
+        "tools/api_football_market_shadow_p_matrix.py"
+      ],
+      "price_state": "PRICE_FAMILY_OBSERVED",
+      "prospective_unique_count": 727,
+      "gate_600_reached": true,
+      "prematch_model_capable_now": true,
+      "telegram_authorized_now": false,
+      "elite_resolution_status": "MEASURED_PROMOTION_GATE_REQUIRED",
+      "blocking_owner": "QUANT_DIRECTOR",
+      "mandatory_action": "RUN_FORMAL_PROMOTION_GATE_WITH_PROSPECTIVE_HOLDOUT",
+      "universal_freeze_producer": "tools/matrix_42_lane_freeze_producer.py",
+      "real_money": "BLOCKED"
+    },
+    {
+      "market_key": "DOUBLE_CHANCE_12",
+      "display_name": "Doble oportunidad 12",
+      "sport": "football",
+      "current_operational_state": "LAB",
+      "supervisor_production_authorized": false,
+      "implementation_paths": [
+        "tools/api_football_priority_market_lab.py"
+      ],
+      "price_state": "PRICE_FAMILY_OBSERVED",
+      "prospective_unique_count": 727,
+      "gate_600_reached": true,
+      "prematch_model_capable_now": false,
+      "telegram_authorized_now": false,
+      "elite_resolution_status": "DIAGNOSTIC_NOT_PROMOTABLE_CURRENT_CHALLENGER",
+      "blocking_owner": "CALIBRATION_MODELING_LEAD",
+      "mandatory_action": "REBUILD_OR_REJECT_CHALLENGER; DO_NOT_PROMOTE",
+      "universal_freeze_producer": "tools/matrix_42_lane_freeze_producer.py",
+      "real_money": "BLOCKED"
+    },
+    {
+      "market_key": "TOTAL_GOALS_OVER_UNDER",
+      "display_name": "Over/Under goles",
+      "sport": "football",
+      "current_operational_state": "ACTIVE",
+      "supervisor_production_authorized": true,
+      "implementation_paths": [
+        "tools/football_daily_governed_over25.py"
+      ],
+      "price_state": "PRICE_FAMILY_OBSERVED",
+      "prospective_unique_count": 727,
+      "gate_600_reached": true,
+      "prematch_model_capable_now": true,
+      "telegram_authorized_now": true,
+      "elite_resolution_status": "OPERATIVE_GOVERNED_SELECTION_SCOPE",
+      "blocking_owner": "PRINCIPAL_REALTIME_RELIABILITY_ODDS_ENGINEER",
+      "mandatory_action": "KEEP_OVER_2_5_ONLY_UNDER_CURRENT_GATES",
+      "universal_freeze_producer": "tools/matrix_42_lane_freeze_producer.py",
+      "real_money": "BLOCKED"
+    },
+    {
+      "market_key": "TEAM_TOTAL_GOALS_HOME",
+      "display_name": "Goles totales equipo local",
+      "sport": "football",
+      "current_operational_state": "LAB",
+      "supervisor_production_authorized": false,
+      "implementation_paths": [
+        "tools/api_football_priority_market_lab.py"
+      ],
+      "price_state": "PRICE_FAMILY_OBSERVED",
+      "prospective_unique_count": 627,
+      "gate_600_reached": true,
+      "prematch_model_capable_now": false,
+      "telegram_authorized_now": false,
+      "elite_resolution_status": "DEDICATED_PREMATCH_MODEL_AND_CALIBRATION_REQUIRED",
+      "blocking_owner": "CALIBRATION_MODELING_LEAD",
+      "mandatory_action": "BUILD_DEDICATED_TEAM_TOTAL_GOALS_MODEL_FROM_PRIOR_HISTORY_AND_CALIBRATE",
+      "universal_freeze_producer": "tools/matrix_42_lane_freeze_producer.py",
+      "real_money": "BLOCKED"
+    },
+    {
+      "market_key": "TEAM_TOTAL_GOALS_AWAY",
+      "display_name": "Goles totales equipo visitante",
+      "sport": "football",
+      "current_operational_state": "LAB",
+      "supervisor_production_authorized": false,
+      "implementation_paths": [
+        "tools/api_football_priority_market_lab.py"
+      ],
+      "price_state": "PRICE_FAMILY_OBSERVED",
+      "prospective_unique_count": 627,
+      "gate_600_reached": true,
+      "prematch_model_capable_now": false,
+      "telegram_authorized_now": false,
+      "elite_resolution_status": "DEDICATED_PREMATCH_MODEL_AND_CALIBRATION_REQUIRED",
+      "blocking_owner": "CALIBRATION_MODELING_LEAD",
+      "mandatory_action": "BUILD_DEDICATED_TEAM_TOTAL_GOALS_MODEL_FROM_PRIOR_HISTORY_AND_CALIBRATE",
+      "universal_freeze_producer": "tools/matrix_42_lane_freeze_producer.py",
+      "real_money": "BLOCKED"
+    },
+    {
+      "market_key": "FIRST_HALF_TOTAL_GOALS_OVER_UNDER",
+      "display_name": "Goles primer tiempo Over/Under",
+      "sport": "football",
+      "current_operational_state": "LAB",
+      "supervisor_production_authorized": false,
+      "implementation_paths": [
+        "tools/api_football_period_goals_lab.py"
+      ],
+      "price_state": "PRICE_FAMILY_NOT_OBSERVED",
+      "prospective_unique_count": 634,
+      "gate_600_reached": true,
+      "prematch_model_capable_now": true,
+      "telegram_authorized_now": false,
+      "elite_resolution_status": "MEASURED_PRICE_AND_PROMOTION_REQUIRED",
+      "blocking_owner": "MARKET_PRICE_MAPPING_ENGINEER",
+      "mandatory_action": "BIND_EXACT_PRICE_FAMILY_THEN_FORMAL_PROMOTION_GATE",
+      "universal_freeze_producer": "tools/matrix_42_lane_freeze_producer.py",
+      "real_money": "BLOCKED"
+    },
+    {
+      "market_key": "SECOND_HALF_TOTAL_GOALS_OVER_UNDER",
+      "display_name": "Goles segundo tiempo Over/Under",
+      "sport": "football",
+      "current_operational_state": "LAB",
+      "supervisor_production_authorized": false,
+      "implementation_paths": [
+        "tools/api_football_period_goals_lab.py"
+      ],
+      "price_state": "PRICE_FAMILY_NOT_OBSERVED",
+      "prospective_unique_count": 634,
+      "gate_600_reached": true,
+      "prematch_model_capable_now": true,
+      "telegram_authorized_now": false,
+      "elite_resolution_status": "MEASURED_PRICE_AND_PROMOTION_REQUIRED",
+      "blocking_owner": "MARKET_PRICE_MAPPING_ENGINEER",
+      "mandatory_action": "BIND_EXACT_PRICE_FAMILY_THEN_FORMAL_PROMOTION_GATE",
+      "universal_freeze_producer": "tools/matrix_42_lane_freeze_producer.py",
+      "real_money": "BLOCKED"
+    },
+    {
+      "market_key": "FIRST_HALF_TEAM_TOTAL_GOALS_HOME",
+      "display_name": "Goles equipo local primer tiempo",
+      "sport": "football",
+      "current_operational_state": "LAB",
+      "supervisor_production_authorized": false,
+      "implementation_paths": [
+        "tools/api_football_period_goals_lab.py"
+      ],
+      "price_state": "PRICE_FAMILY_NOT_OBSERVED",
+      "prospective_unique_count": 634,
+      "gate_600_reached": true,
+      "prematch_model_capable_now": true,
+      "telegram_authorized_now": false,
+      "elite_resolution_status": "MEASURED_PRICE_AND_PROMOTION_REQUIRED",
+      "blocking_owner": "MARKET_PRICE_MAPPING_ENGINEER",
+      "mandatory_action": "BIND_EXACT_PRICE_FAMILY_THEN_FORMAL_PROMOTION_GATE",
+      "universal_freeze_producer": "tools/matrix_42_lane_freeze_producer.py",
+      "real_money": "BLOCKED"
+    },
+    {
+      "market_key": "FIRST_HALF_TEAM_TOTAL_GOALS_AWAY",
+      "display_name": "Goles equipo visitante primer tiempo",
+      "sport": "football",
+      "current_operational_state": "LAB",
+      "supervisor_production_authorized": false,
+      "implementation_paths": [
+        "tools/api_football_period_goals_lab.py"
+      ],
+      "price_state": "PRICE_FAMILY_NOT_OBSERVED",
+      "prospective_unique_count": 634,
+      "gate_600_reached": true,
+      "prematch_model_capable_now": true,
+      "telegram_authorized_now": false,
+      "elite_resolution_status": "MEASURED_PRICE_AND_PROMOTION_REQUIRED",
+      "blocking_owner": "MARKET_PRICE_MAPPING_ENGINEER",
+      "mandatory_action": "BIND_EXACT_PRICE_FAMILY_THEN_FORMAL_PROMOTION_GATE",
+      "universal_freeze_producer": "tools/matrix_42_lane_freeze_producer.py",
+      "real_money": "BLOCKED"
+    },
+    {
+      "market_key": "SECOND_HALF_TEAM_TOTAL_GOALS_HOME",
+      "display_name": "Goles equipo local segundo tiempo",
+      "sport": "football",
+      "current_operational_state": "LAB",
+      "supervisor_production_authorized": false,
+      "implementation_paths": [
+        "tools/api_football_period_goals_lab.py"
+      ],
+      "price_state": "PRICE_FAMILY_NOT_OBSERVED",
+      "prospective_unique_count": 634,
+      "gate_600_reached": true,
+      "prematch_model_capable_now": true,
+      "telegram_authorized_now": false,
+      "elite_resolution_status": "MEASURED_PRICE_AND_PROMOTION_REQUIRED",
+      "blocking_owner": "MARKET_PRICE_MAPPING_ENGINEER",
+      "mandatory_action": "BIND_EXACT_PRICE_FAMILY_THEN_FORMAL_PROMOTION_GATE",
+      "universal_freeze_producer": "tools/matrix_42_lane_freeze_producer.py",
+      "real_money": "BLOCKED"
+    },
+    {
+      "market_key": "SECOND_HALF_TEAM_TOTAL_GOALS_AWAY",
+      "display_name": "Goles equipo visitante segundo tiempo",
+      "sport": "football",
+      "current_operational_state": "LAB",
+      "supervisor_production_authorized": false,
+      "implementation_paths": [
+        "tools/api_football_period_goals_lab.py"
+      ],
+      "price_state": "PRICE_FAMILY_NOT_OBSERVED",
+      "prospective_unique_count": 634,
+      "gate_600_reached": true,
+      "prematch_model_capable_now": true,
+      "telegram_authorized_now": false,
+      "elite_resolution_status": "MEASURED_PRICE_AND_PROMOTION_REQUIRED",
+      "blocking_owner": "MARKET_PRICE_MAPPING_ENGINEER",
+      "mandatory_action": "BIND_EXACT_PRICE_FAMILY_THEN_FORMAL_PROMOTION_GATE",
+      "universal_freeze_producer": "tools/matrix_42_lane_freeze_producer.py",
+      "real_money": "BLOCKED"
+    },
+    {
+      "market_key": "BTTS",
+      "display_name": "Ambos equipos marcan",
+      "sport": "football",
+      "current_operational_state": "LAB",
+      "supervisor_production_authorized": false,
+      "implementation_paths": [
+        "tools/api_football_btts_challenger_v2.py",
+        "tools/api_football_btts_challenger_v3.py"
+      ],
+      "price_state": "PRICE_FAMILY_OBSERVED",
+      "prospective_unique_count": 0,
+      "gate_600_reached": false,
+      "prematch_model_capable_now": true,
+      "telegram_authorized_now": false,
+      "elite_resolution_status": "RESEARCH_MODEL_NEEDS_PROSPECTIVE_FREEZES",
+      "blocking_owner": "CALIBRATION_MODELING_LEAD",
+      "mandatory_action": "EMIT_STRICT_PREMATCH_FEATURE_FREEZES_AND_ACCUMULATE_100_300_600",
+      "universal_freeze_producer": "tools/matrix_42_lane_freeze_producer.py",
+      "real_money": "BLOCKED"
+    },
+    {
+      "market_key": "ASIAN_OR_EUROPEAN_HANDICAP",
+      "display_name": "Hándicap",
+      "sport": "football",
+      "current_operational_state": "LAB",
+      "supervisor_production_authorized": false,
+      "implementation_paths": [
+        "tools/api_football_priority_market_lab.py"
+      ],
+      "price_state": "PRICE_FAMILY_OBSERVED",
+      "prospective_unique_count": 0,
+      "gate_600_reached": false,
+      "prematch_model_capable_now": false,
+      "telegram_authorized_now": false,
+      "elite_resolution_status": "DATA_COVERAGE_PRESENT_PREMATCH_MODEL_REQUIRED",
+      "blocking_owner": "MARKET_DATA_INTEGRATION_ENGINEER",
+      "mandatory_action": "BUILD_STRICT_PRIOR_HISTORY_PREMATCH_FEATURE_ADAPTER_AND_MODEL; THEN FREEZE",
+      "universal_freeze_producer": "tools/matrix_42_lane_freeze_producer.py",
+      "real_money": "BLOCKED"
+    },
+    {
+      "market_key": "CORNERS_OVER_UNDER",
+      "display_name": "Corners O/U",
+      "sport": "football",
+      "current_operational_state": "LAB",
+      "supervisor_production_authorized": false,
+      "implementation_paths": [
+        "tools/api_football_extended_market_coverage_probe.py"
+      ],
+      "price_state": "PRICE_FAMILY_OBSERVED",
+      "prospective_unique_count": 0,
+      "gate_600_reached": false,
+      "prematch_model_capable_now": false,
+      "telegram_authorized_now": false,
+      "elite_resolution_status": "DATA_COVERAGE_PRESENT_PREMATCH_MODEL_REQUIRED",
+      "blocking_owner": "MARKET_DATA_INTEGRATION_ENGINEER",
+      "mandatory_action": "BUILD_STRICT_PRIOR_HISTORY_PREMATCH_FEATURE_ADAPTER_AND_MODEL; THEN FREEZE",
+      "universal_freeze_producer": "tools/matrix_42_lane_freeze_producer.py",
+      "real_money": "BLOCKED"
+    },
+    {
+      "market_key": "CARDS_OVER_UNDER",
+      "display_name": "Tarjetas O/U",
+      "sport": "football",
+      "current_operational_state": "LAB",
+      "supervisor_production_authorized": false,
+      "implementation_paths": [
+        "tools/api_football_extended_market_coverage_probe.py"
+      ],
+      "price_state": "PRICE_FAMILY_OBSERVED",
+      "prospective_unique_count": 0,
+      "gate_600_reached": false,
+      "prematch_model_capable_now": false,
+      "telegram_authorized_now": false,
+      "elite_resolution_status": "DATA_COVERAGE_PRESENT_PREMATCH_MODEL_REQUIRED",
+      "blocking_owner": "MARKET_DATA_INTEGRATION_ENGINEER",
+      "mandatory_action": "BUILD_STRICT_PRIOR_HISTORY_PREMATCH_FEATURE_ADAPTER_AND_MODEL; THEN FREEZE",
+      "universal_freeze_producer": "tools/matrix_42_lane_freeze_producer.py",
+      "real_money": "BLOCKED"
+    },
+    {
+      "market_key": "TEAM_TOTAL_SHOTS_HOME",
+      "display_name": "Tiros totales equipo local",
+      "sport": "football",
+      "current_operational_state": "LAB",
+      "supervisor_production_authorized": false,
+      "implementation_paths": [
+        "tools/api_football_team_total_shots_side_models.py"
+      ],
+      "price_state": "PRICE_FAMILY_NOT_OBSERVED",
+      "prospective_unique_count": 3,
+      "gate_600_reached": false,
+      "prematch_model_capable_now": true,
+      "telegram_authorized_now": false,
+      "elite_resolution_status": "RESEARCH_MODEL_PROSPECTIVE_COLLECTION_LOW",
+      "blocking_owner": "CALIBRATION_MODELING_LEAD",
+      "mandatory_action": "EMIT_STRICT_PREMATCH_FEATURE_FREEZES_AND_ACCUMULATE_100_300_600",
+      "universal_freeze_producer": "tools/matrix_42_lane_freeze_producer.py",
+      "real_money": "BLOCKED"
+    },
+    {
+      "market_key": "TEAM_TOTAL_SHOTS_AWAY",
+      "display_name": "Tiros totales equipo visitante",
+      "sport": "football",
+      "current_operational_state": "LAB",
+      "supervisor_production_authorized": false,
+      "implementation_paths": [
+        "tools/api_football_team_total_shots_side_models.py"
+      ],
+      "price_state": "PRICE_FAMILY_NOT_OBSERVED",
+      "prospective_unique_count": 3,
+      "gate_600_reached": false,
+      "prematch_model_capable_now": true,
+      "telegram_authorized_now": false,
+      "elite_resolution_status": "RESEARCH_MODEL_PROSPECTIVE_COLLECTION_LOW",
+      "blocking_owner": "CALIBRATION_MODELING_LEAD",
+      "mandatory_action": "EMIT_STRICT_PREMATCH_FEATURE_FREEZES_AND_ACCUMULATE_100_300_600",
+      "universal_freeze_producer": "tools/matrix_42_lane_freeze_producer.py",
+      "real_money": "BLOCKED"
+    },
+    {
+      "market_key": "TEAM_SHOTS_ON_TARGET_HOME",
+      "display_name": "Tiros a puerta equipo local",
+      "sport": "football",
+      "current_operational_state": "LAB",
+      "supervisor_production_authorized": false,
+      "implementation_paths": [
+        "tools/api_football_extended_market_coverage_probe.py"
+      ],
+      "price_state": "PRICE_FAMILY_OBSERVED",
+      "prospective_unique_count": 0,
+      "gate_600_reached": false,
+      "prematch_model_capable_now": false,
+      "telegram_authorized_now": false,
+      "elite_resolution_status": "DATA_COVERAGE_PRESENT_PREMATCH_MODEL_REQUIRED",
+      "blocking_owner": "MARKET_DATA_INTEGRATION_ENGINEER",
+      "mandatory_action": "BUILD_STRICT_PRIOR_HISTORY_PREMATCH_FEATURE_ADAPTER_AND_MODEL; THEN FREEZE",
+      "universal_freeze_producer": "tools/matrix_42_lane_freeze_producer.py",
+      "real_money": "BLOCKED"
+    },
+    {
+      "market_key": "TEAM_SHOTS_ON_TARGET_AWAY",
+      "display_name": "Tiros a puerta equipo visitante",
+      "sport": "football",
+      "current_operational_state": "LAB",
+      "supervisor_production_authorized": false,
+      "implementation_paths": [
+        "tools/api_football_extended_market_coverage_probe.py"
+      ],
+      "price_state": "PRICE_FAMILY_OBSERVED",
+      "prospective_unique_count": 0,
+      "gate_600_reached": false,
+      "prematch_model_capable_now": false,
+      "telegram_authorized_now": false,
+      "elite_resolution_status": "DATA_COVERAGE_PRESENT_PREMATCH_MODEL_REQUIRED",
+      "blocking_owner": "MARKET_DATA_INTEGRATION_ENGINEER",
+      "mandatory_action": "BUILD_STRICT_PRIOR_HISTORY_PREMATCH_FEATURE_ADAPTER_AND_MODEL; THEN FREEZE",
+      "universal_freeze_producer": "tools/matrix_42_lane_freeze_producer.py",
+      "real_money": "BLOCKED"
+    },
+    {
+      "market_key": "TEAM_FOULS_HOME",
+      "display_name": "Faltas equipo local",
+      "sport": "football",
+      "current_operational_state": "LAB",
+      "supervisor_production_authorized": false,
+      "implementation_paths": [
+        "tools/api_football_extended_market_coverage_probe.py"
+      ],
+      "price_state": "PRICE_FAMILY_NOT_OBSERVED",
+      "prospective_unique_count": 0,
+      "gate_600_reached": false,
+      "prematch_model_capable_now": false,
+      "telegram_authorized_now": false,
+      "elite_resolution_status": "DATA_COVERAGE_PRESENT_PREMATCH_MODEL_REQUIRED",
+      "blocking_owner": "MARKET_DATA_INTEGRATION_ENGINEER",
+      "mandatory_action": "BUILD_STRICT_PRIOR_HISTORY_PREMATCH_FEATURE_ADAPTER_AND_MODEL; THEN FREEZE",
+      "universal_freeze_producer": "tools/matrix_42_lane_freeze_producer.py",
+      "real_money": "BLOCKED"
+    },
+    {
+      "market_key": "TEAM_FOULS_AWAY",
+      "display_name": "Faltas equipo visitante",
+      "sport": "football",
+      "current_operational_state": "LAB",
+      "supervisor_production_authorized": false,
+      "implementation_paths": [
+        "tools/api_football_extended_market_coverage_probe.py"
+      ],
+      "price_state": "PRICE_FAMILY_NOT_OBSERVED",
+      "prospective_unique_count": 0,
+      "gate_600_reached": false,
+      "prematch_model_capable_now": false,
+      "telegram_authorized_now": false,
+      "elite_resolution_status": "DATA_COVERAGE_PRESENT_PREMATCH_MODEL_REQUIRED",
+      "blocking_owner": "MARKET_DATA_INTEGRATION_ENGINEER",
+      "mandatory_action": "BUILD_STRICT_PRIOR_HISTORY_PREMATCH_FEATURE_ADAPTER_AND_MODEL; THEN FREEZE",
+      "universal_freeze_producer": "tools/matrix_42_lane_freeze_producer.py",
+      "real_money": "BLOCKED"
+    },
+    {
+      "market_key": "GOALKEEPER_SAVES",
+      "display_name": "Atajadas de portero",
+      "sport": "football",
+      "current_operational_state": "LAB",
+      "supervisor_production_authorized": false,
+      "implementation_paths": [
+        "tools/api_football_extended_market_coverage_probe.py"
+      ],
+      "price_state": "PRICE_FAMILY_OBSERVED",
+      "prospective_unique_count": 0,
+      "gate_600_reached": false,
+      "prematch_model_capable_now": false,
+      "telegram_authorized_now": false,
+      "elite_resolution_status": "DATA_COVERAGE_PRESENT_PREMATCH_MODEL_REQUIRED",
+      "blocking_owner": "MARKET_DATA_INTEGRATION_ENGINEER",
+      "mandatory_action": "BUILD_STRICT_PRIOR_HISTORY_PREMATCH_FEATURE_ADAPTER_AND_MODEL; THEN FREEZE",
+      "universal_freeze_producer": "tools/matrix_42_lane_freeze_producer.py",
+      "real_money": "BLOCKED"
+    },
+    {
+      "market_key": "PLAYER_SHOTS",
+      "display_name": "Remates de jugador",
+      "sport": "football",
+      "current_operational_state": "LAB",
+      "supervisor_production_authorized": false,
+      "implementation_paths": [
+        "tools/api_football_player_shots_v3_supervisor.py"
+      ],
+      "price_state": "PRICE_FAMILY_OBSERVED",
+      "prospective_unique_count": 0,
+      "gate_600_reached": false,
+      "prematch_model_capable_now": true,
+      "telegram_authorized_now": false,
+      "elite_resolution_status": "RESEARCH_MODEL_NEEDS_PROSPECTIVE_FREEZES",
+      "blocking_owner": "CALIBRATION_MODELING_LEAD",
+      "mandatory_action": "EMIT_STRICT_PREMATCH_FEATURE_FREEZES_AND_ACCUMULATE_100_300_600",
+      "universal_freeze_producer": "tools/matrix_42_lane_freeze_producer.py",
+      "real_money": "BLOCKED"
+    },
+    {
+      "market_key": "PLAYER_SHOTS_ON_TARGET",
+      "display_name": "Remates a puerta de jugador",
+      "sport": "football",
+      "current_operational_state": "LAB",
+      "supervisor_production_authorized": false,
+      "implementation_paths": [
+        "tools/api_football_extended_market_coverage_probe.py"
+      ],
+      "price_state": "PRICE_FAMILY_OBSERVED",
+      "prospective_unique_count": 0,
+      "gate_600_reached": false,
+      "prematch_model_capable_now": false,
+      "telegram_authorized_now": false,
+      "elite_resolution_status": "DATA_COVERAGE_PRESENT_PREMATCH_MODEL_REQUIRED",
+      "blocking_owner": "MARKET_DATA_INTEGRATION_ENGINEER",
+      "mandatory_action": "BUILD_STRICT_PRIOR_HISTORY_PREMATCH_FEATURE_ADAPTER_AND_MODEL; THEN FREEZE",
+      "universal_freeze_producer": "tools/matrix_42_lane_freeze_producer.py",
+      "real_money": "BLOCKED"
+    },
+    {
+      "market_key": "PLAYER_ASSISTS",
+      "display_name": "Asistencias de jugador",
+      "sport": "football",
+      "current_operational_state": "LAB",
+      "supervisor_production_authorized": false,
+      "implementation_paths": [
+        "tools/api_football_extended_market_coverage_probe.py"
+      ],
+      "price_state": "PRICE_FAMILY_OBSERVED",
+      "prospective_unique_count": 0,
+      "gate_600_reached": false,
+      "prematch_model_capable_now": false,
+      "telegram_authorized_now": false,
+      "elite_resolution_status": "DATA_COVERAGE_PRESENT_PREMATCH_MODEL_REQUIRED",
+      "blocking_owner": "MARKET_DATA_INTEGRATION_ENGINEER",
+      "mandatory_action": "BUILD_STRICT_PRIOR_HISTORY_PREMATCH_FEATURE_ADAPTER_AND_MODEL; THEN FREEZE",
+      "universal_freeze_producer": "tools/matrix_42_lane_freeze_producer.py",
+      "real_money": "BLOCKED"
+    },
+    {
+      "market_key": "PLAYER_PASSES",
+      "display_name": "Pases de jugador",
+      "sport": "football",
+      "current_operational_state": "LAB",
+      "supervisor_production_authorized": false,
+      "implementation_paths": [
+        "tools/api_football_extended_market_coverage_probe.py"
+      ],
+      "price_state": "PRICE_FAMILY_OBSERVED",
+      "prospective_unique_count": 0,
+      "gate_600_reached": false,
+      "prematch_model_capable_now": false,
+      "telegram_authorized_now": false,
+      "elite_resolution_status": "DATA_COVERAGE_PRESENT_PREMATCH_MODEL_REQUIRED",
+      "blocking_owner": "MARKET_DATA_INTEGRATION_ENGINEER",
+      "mandatory_action": "BUILD_STRICT_PRIOR_HISTORY_PREMATCH_FEATURE_ADAPTER_AND_MODEL; THEN FREEZE",
+      "universal_freeze_producer": "tools/matrix_42_lane_freeze_producer.py",
+      "real_money": "BLOCKED"
+    },
+    {
+      "market_key": "PLAYER_TACKLES",
+      "display_name": "Tackles de jugador",
+      "sport": "football",
+      "current_operational_state": "LAB",
+      "supervisor_production_authorized": false,
+      "implementation_paths": [
+        "tools/api_football_extended_market_coverage_probe.py"
+      ],
+      "price_state": "PRICE_FAMILY_OBSERVED",
+      "prospective_unique_count": 0,
+      "gate_600_reached": false,
+      "prematch_model_capable_now": false,
+      "telegram_authorized_now": false,
+      "elite_resolution_status": "DATA_COVERAGE_PRESENT_PREMATCH_MODEL_REQUIRED",
+      "blocking_owner": "MARKET_DATA_INTEGRATION_ENGINEER",
+      "mandatory_action": "BUILD_STRICT_PRIOR_HISTORY_PREMATCH_FEATURE_ADAPTER_AND_MODEL; THEN FREEZE",
+      "universal_freeze_producer": "tools/matrix_42_lane_freeze_producer.py",
+      "real_money": "BLOCKED"
+    },
+    {
+      "market_key": "PLAYER_FOULS",
+      "display_name": "Faltas de jugador",
+      "sport": "football",
+      "current_operational_state": "LAB",
+      "supervisor_production_authorized": false,
+      "implementation_paths": [
+        "tools/api_football_extended_market_coverage_probe.py"
+      ],
+      "price_state": "PRICE_FAMILY_OBSERVED",
+      "prospective_unique_count": 0,
+      "gate_600_reached": false,
+      "prematch_model_capable_now": false,
+      "telegram_authorized_now": false,
+      "elite_resolution_status": "DATA_COVERAGE_PRESENT_PREMATCH_MODEL_REQUIRED",
+      "blocking_owner": "MARKET_DATA_INTEGRATION_ENGINEER",
+      "mandatory_action": "BUILD_STRICT_PRIOR_HISTORY_PREMATCH_FEATURE_ADAPTER_AND_MODEL; THEN FREEZE",
+      "universal_freeze_producer": "tools/matrix_42_lane_freeze_producer.py",
+      "real_money": "BLOCKED"
+    },
+    {
+      "market_key": "MATCH_WINNER",
+      "display_name": "Ganador del partido",
+      "sport": "tennis",
+      "current_operational_state": "ACTIVE",
+      "supervisor_production_authorized": true,
+      "implementation_paths": [
+        "tools/tennis_world_inventory_rapidapi.py"
+      ],
+      "price_state": "PRICE_MAPPING_REQUIRES_TENNIS_PROVIDER_OR_BOOK_CATALOG",
+      "prospective_unique_count": 99,
+      "gate_600_reached": false,
+      "prematch_model_capable_now": true,
+      "telegram_authorized_now": false,
+      "elite_resolution_status": "ACTIVE_MODEL_PRICE_BINDING_BLOCKED",
+      "blocking_owner": "MARKET_PRICE_MAPPING_ENGINEER",
+      "mandatory_action": "BIND_EXACT_TENNIS_BOOK_PRICE_AND_REVALIDATE_EV",
+      "universal_freeze_producer": "tools/matrix_42_lane_freeze_producer.py",
+      "real_money": "BLOCKED"
+    },
+    {
+      "market_key": "SET_WINNER",
+      "display_name": "Ganador de set",
+      "sport": "tennis",
+      "current_operational_state": "LAB",
+      "supervisor_production_authorized": false,
+      "implementation_paths": [
+        "tools/live_tennis_feature_extractor.py"
+      ],
+      "price_state": "PRICE_MAPPING_REQUIRES_TENNIS_PROVIDER_OR_BOOK_CATALOG",
+      "prospective_unique_count": 0,
+      "gate_600_reached": false,
+      "prematch_model_capable_now": false,
+      "telegram_authorized_now": false,
+      "elite_resolution_status": "LIVE_FEATURE_PATH_NOT_VALID_AS_PREMATCH_MODEL",
+      "blocking_owner": "TEMPORAL_INTEGRITY_ENGINEER",
+      "mandatory_action": "BUILD_SEPARATE_PREMATCH_MODEL; NEVER COUNT INPLAY_FEATURES_AS_PREMATCH",
+      "universal_freeze_producer": "tools/matrix_42_lane_freeze_producer.py",
+      "real_money": "BLOCKED"
+    },
+    {
+      "market_key": "SET_HANDICAP",
+      "display_name": "Hándicap de sets",
+      "sport": "tennis",
+      "current_operational_state": "LAB",
+      "supervisor_production_authorized": false,
+      "implementation_paths": [
+        "tools/live_tennis_feature_extractor.py"
+      ],
+      "price_state": "PRICE_MAPPING_REQUIRES_TENNIS_PROVIDER_OR_BOOK_CATALOG",
+      "prospective_unique_count": 0,
+      "gate_600_reached": false,
+      "prematch_model_capable_now": false,
+      "telegram_authorized_now": false,
+      "elite_resolution_status": "LIVE_FEATURE_PATH_NOT_VALID_AS_PREMATCH_MODEL",
+      "blocking_owner": "TEMPORAL_INTEGRITY_ENGINEER",
+      "mandatory_action": "BUILD_SEPARATE_PREMATCH_MODEL; NEVER COUNT INPLAY_FEATURES_AS_PREMATCH",
+      "universal_freeze_producer": "tools/matrix_42_lane_freeze_producer.py",
+      "real_money": "BLOCKED"
+    },
+    {
+      "market_key": "TOTAL_SETS",
+      "display_name": "Total de sets",
+      "sport": "tennis",
+      "current_operational_state": "LAB",
+      "supervisor_production_authorized": false,
+      "implementation_paths": [
+        "tools/live_tennis_feature_extractor.py"
+      ],
+      "price_state": "PRICE_MAPPING_REQUIRES_TENNIS_PROVIDER_OR_BOOK_CATALOG",
+      "prospective_unique_count": 0,
+      "gate_600_reached": false,
+      "prematch_model_capable_now": false,
+      "telegram_authorized_now": false,
+      "elite_resolution_status": "LIVE_FEATURE_PATH_NOT_VALID_AS_PREMATCH_MODEL",
+      "blocking_owner": "TEMPORAL_INTEGRITY_ENGINEER",
+      "mandatory_action": "BUILD_SEPARATE_PREMATCH_MODEL; NEVER COUNT INPLAY_FEATURES_AS_PREMATCH",
+      "universal_freeze_producer": "tools/matrix_42_lane_freeze_producer.py",
+      "real_money": "BLOCKED"
+    },
+    {
+      "market_key": "BOTH_PLAYERS_WIN_SET",
+      "display_name": "Ambos jugadores ganan un set",
+      "sport": "tennis",
+      "current_operational_state": "LAB",
+      "supervisor_production_authorized": false,
+      "implementation_paths": [
+        "tools/live_tennis_feature_extractor.py"
+      ],
+      "price_state": "PRICE_MAPPING_REQUIRES_TENNIS_PROVIDER_OR_BOOK_CATALOG",
+      "prospective_unique_count": 0,
+      "gate_600_reached": false,
+      "prematch_model_capable_now": false,
+      "telegram_authorized_now": false,
+      "elite_resolution_status": "LIVE_FEATURE_PATH_NOT_VALID_AS_PREMATCH_MODEL",
+      "blocking_owner": "TEMPORAL_INTEGRITY_ENGINEER",
+      "mandatory_action": "BUILD_SEPARATE_PREMATCH_MODEL; NEVER COUNT INPLAY_FEATURES_AS_PREMATCH",
+      "universal_freeze_producer": "tools/matrix_42_lane_freeze_producer.py",
+      "real_money": "BLOCKED"
+    },
+    {
+      "market_key": "GAME_HANDICAP",
+      "display_name": "Hándicap de juegos",
+      "sport": "tennis",
+      "current_operational_state": "LAB",
+      "supervisor_production_authorized": false,
+      "implementation_paths": [
+        "tools/live_tennis_feature_extractor.py"
+      ],
+      "price_state": "PRICE_MAPPING_REQUIRES_TENNIS_PROVIDER_OR_BOOK_CATALOG",
+      "prospective_unique_count": 0,
+      "gate_600_reached": false,
+      "prematch_model_capable_now": false,
+      "telegram_authorized_now": false,
+      "elite_resolution_status": "LIVE_FEATURE_PATH_NOT_VALID_AS_PREMATCH_MODEL",
+      "blocking_owner": "TEMPORAL_INTEGRITY_ENGINEER",
+      "mandatory_action": "BUILD_SEPARATE_PREMATCH_MODEL; NEVER COUNT INPLAY_FEATURES_AS_PREMATCH",
+      "universal_freeze_producer": "tools/matrix_42_lane_freeze_producer.py",
+      "real_money": "BLOCKED"
+    },
+    {
+      "market_key": "TOTAL_GAMES",
+      "display_name": "Total de juegos",
+      "sport": "tennis",
+      "current_operational_state": "LAB",
+      "supervisor_production_authorized": false,
+      "implementation_paths": [
+        "tools/live_tennis_feature_extractor.py"
+      ],
+      "price_state": "PRICE_MAPPING_REQUIRES_TENNIS_PROVIDER_OR_BOOK_CATALOG",
+      "prospective_unique_count": 0,
+      "gate_600_reached": false,
+      "prematch_model_capable_now": false,
+      "telegram_authorized_now": false,
+      "elite_resolution_status": "LIVE_FEATURE_PATH_NOT_VALID_AS_PREMATCH_MODEL",
+      "blocking_owner": "TEMPORAL_INTEGRITY_ENGINEER",
+      "mandatory_action": "BUILD_SEPARATE_PREMATCH_MODEL; NEVER COUNT INPLAY_FEATURES_AS_PREMATCH",
+      "universal_freeze_producer": "tools/matrix_42_lane_freeze_producer.py",
+      "real_money": "BLOCKED"
+    },
+    {
+      "market_key": "PLAYER_TOTAL_GAMES",
+      "display_name": "Total de juegos por jugador",
+      "sport": "tennis",
+      "current_operational_state": "LAB",
+      "supervisor_production_authorized": false,
+      "implementation_paths": [
+        "tools/live_tennis_feature_extractor.py"
+      ],
+      "price_state": "PRICE_MAPPING_REQUIRES_TENNIS_PROVIDER_OR_BOOK_CATALOG",
+      "prospective_unique_count": 0,
+      "gate_600_reached": false,
+      "prematch_model_capable_now": false,
+      "telegram_authorized_now": false,
+      "elite_resolution_status": "LIVE_FEATURE_PATH_NOT_VALID_AS_PREMATCH_MODEL",
+      "blocking_owner": "TEMPORAL_INTEGRITY_ENGINEER",
+      "mandatory_action": "BUILD_SEPARATE_PREMATCH_MODEL; NEVER COUNT INPLAY_FEATURES_AS_PREMATCH",
+      "universal_freeze_producer": "tools/matrix_42_lane_freeze_producer.py",
+      "real_money": "BLOCKED"
+    },
+    {
+      "market_key": "TIEBREAK_YES_NO",
+      "display_name": "Tie-break sí/no",
+      "sport": "tennis",
+      "current_operational_state": "LAB",
+      "supervisor_production_authorized": false,
+      "implementation_paths": [
+        "tools/live_tennis_feature_extractor.py"
+      ],
+      "price_state": "PRICE_MAPPING_REQUIRES_TENNIS_PROVIDER_OR_BOOK_CATALOG",
+      "prospective_unique_count": 0,
+      "gate_600_reached": false,
+      "prematch_model_capable_now": false,
+      "telegram_authorized_now": false,
+      "elite_resolution_status": "LIVE_FEATURE_PATH_NOT_VALID_AS_PREMATCH_MODEL",
+      "blocking_owner": "TEMPORAL_INTEGRITY_ENGINEER",
+      "mandatory_action": "BUILD_SEPARATE_PREMATCH_MODEL; NEVER COUNT INPLAY_FEATURES_AS_PREMATCH",
+      "universal_freeze_producer": "tools/matrix_42_lane_freeze_producer.py",
+      "real_money": "BLOCKED"
+    },
+    {
+      "market_key": "ACES",
+      "display_name": "Aces",
+      "sport": "tennis",
+      "current_operational_state": "LAB",
+      "supervisor_production_authorized": false,
+      "implementation_paths": [
+        "tools/rapidapi_tennis_serve_stats_lab.py"
+      ],
+      "price_state": "PRICE_MAPPING_REQUIRES_TENNIS_PROVIDER_OR_BOOK_CATALOG",
+      "prospective_unique_count": 0,
+      "gate_600_reached": false,
+      "prematch_model_capable_now": false,
+      "telegram_authorized_now": false,
+      "elite_resolution_status": "STAT_LAB_PRESENT_PREMATCH_MODEL_REQUIRED",
+      "blocking_owner": "CALIBRATION_MODELING_LEAD",
+      "mandatory_action": "BUILD_PRIOR_MATCH_SERVE_STAT_PREMATCH_MODEL_AND_FREEZE",
+      "universal_freeze_producer": "tools/matrix_42_lane_freeze_producer.py",
+      "real_money": "BLOCKED"
+    },
+    {
+      "market_key": "DOUBLE_FAULTS",
+      "display_name": "Dobles faltas",
+      "sport": "tennis",
+      "current_operational_state": "LAB",
+      "supervisor_production_authorized": false,
+      "implementation_paths": [
+        "tools/rapidapi_tennis_serve_stats_lab.py"
+      ],
+      "price_state": "PRICE_MAPPING_REQUIRES_TENNIS_PROVIDER_OR_BOOK_CATALOG",
+      "prospective_unique_count": 0,
+      "gate_600_reached": false,
+      "prematch_model_capable_now": false,
+      "telegram_authorized_now": false,
+      "elite_resolution_status": "STAT_LAB_PRESENT_PREMATCH_MODEL_REQUIRED",
+      "blocking_owner": "CALIBRATION_MODELING_LEAD",
+      "mandatory_action": "BUILD_PRIOR_MATCH_SERVE_STAT_PREMATCH_MODEL_AND_FREEZE",
+      "universal_freeze_producer": "tools/matrix_42_lane_freeze_producer.py",
+      "real_money": "BLOCKED"
+    },
+    {
+      "market_key": "BREAKS_OF_SERVE",
+      "display_name": "Breaks de servicio",
+      "sport": "tennis",
+      "current_operational_state": "LAB",
+      "supervisor_production_authorized": false,
+      "implementation_paths": [
+        "tools/rapidapi_tennis_serve_stats_lab.py"
+      ],
+      "price_state": "PRICE_MAPPING_REQUIRES_TENNIS_PROVIDER_OR_BOOK_CATALOG",
+      "prospective_unique_count": 0,
+      "gate_600_reached": false,
+      "prematch_model_capable_now": false,
+      "telegram_authorized_now": false,
+      "elite_resolution_status": "STAT_LAB_PRESENT_PREMATCH_MODEL_REQUIRED",
+      "blocking_owner": "CALIBRATION_MODELING_LEAD",
+      "mandatory_action": "BUILD_PRIOR_MATCH_SERVE_STAT_PREMATCH_MODEL_AND_FREEZE",
+      "universal_freeze_producer": "tools/matrix_42_lane_freeze_producer.py",
+      "real_money": "BLOCKED"
+    }
+  ]
+}

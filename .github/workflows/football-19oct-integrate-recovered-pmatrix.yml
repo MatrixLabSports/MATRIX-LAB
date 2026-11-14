@@ -1,0 +1,128 @@
+name: MATRIX Football 19Oct Integrate Recovered P_MATRIX
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - repair/cor09-world-pipeline
+    paths:
+      - .github/workflows/football-19oct-integrate-recovered-pmatrix.yml
+
+permissions:
+  contents: write
+
+jobs:
+  integrate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      REAL_MONEY: BLOCKED
+      AUTO_BETTING: DISABLED
+      MATRIX_MODE: SHADOW
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: repair/cor09-world-pipeline
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: python -m pip install requests
+      - name: Safety gate
+        run: |
+          test "$REAL_MONEY" = "BLOCKED"
+          test "$AUTO_BETTING" = "DISABLED"
+          test "$MATRIX_MODE" = "SHADOW"
+      - name: Build immutable recovery cycle
+        run: |
+          python - <<'PY'
+          import json, shutil
+          from datetime import datetime, timezone
+          from pathlib import Path
+
+          base=Path("evidence/api_football/prospective_daily/2026-10-19")
+          source=base/"20261019T005952Z"
+          rid=datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")+"_RECOVERY_PASS3"
+          dest=base/rid
+          (dest/"history/raw").mkdir(parents=True,exist_ok=True)
+          shutil.copytree(source/"fixtures",dest/"fixtures")
+          shutil.copytree(source/"canonical_analysis_pass2",dest/"canonical_analysis")
+          for srcdir in [source/"history/raw",source/"group_history_recovery_pass3/raw"]:
+              for p in srcdir.glob("*.bin"):
+                  shutil.copy2(p,dest/"history/raw"/p.name)
+          old=json.loads((source/"cycle_summary.json").read_text())
+          old["cycle_id"]=rid
+          old["generated_from_recovery_pass3"]=True
+          old["supersedes_cycle_id"]="20261019T005952Z"
+          old["status"]="PASS"
+          old["target_date_bogota"]="2026-10-19"
+          old.setdefault("canonical",{})
+          old["canonical"]["ready_input_count"]=191
+          old["canonical"]["blocked_future_input_count"]=6
+          old["canonical"]["p_matrix_status"]="NOT_GENERATED"
+          old["recovery_protections"]={
+              "historical_backfill":False,
+              "odds_used_to_generate_probability":False,
+              "automatic_wagering":False,
+              "real_money":"BLOCKED"
+          }
+          (dest/"cycle_summary.json").write_text(json.dumps(old,ensure_ascii=False,indent=2,sort_keys=True)+"\n")
+          Path("/tmp/matrix_recovery_cycle_id").write_text(rid)
+          print("RECOVERY_CYCLE_ID="+rid)
+          PY
+      - name: Preserve pre-recovery governed report
+        run: |
+          cp             evidence/api_football/daily_prematch_reports/2026-10-19/over25_shadow_ev/MATRIX_FOOTBALL_DAILY_OVER25_GOVERNED_SHADOW_EV.json             evidence/api_football/daily_prematch_reports/2026-10-19/over25_shadow_ev/MATRIX_FOOTBALL_DAILY_OVER25_GOVERNED_SHADOW_EV_PRE_RECOVERY_PASS3.json
+      - name: Rebuild governed Over2.5 odds and EV from recovered cycle
+        env:
+          API_FOOTBALL_KEY: ${{ secrets.API_FOOTBALL_KEY }}
+        run: |
+          python -m tools.football_daily_governed_over25 --target-date 2026-10-19
+      - name: Certify integration
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          p=Path("evidence/api_football/daily_prematch_reports/2026-10-19/over25_shadow_ev/MATRIX_FOOTBALL_DAILY_OVER25_GOVERNED_SHADOW_EV.json")
+          j=json.loads(p.read_text())
+          cert={
+            "schema":"MATRIX_FOOTBALL_19OCT_RECOVERED_INTEGRATION_V1",
+            "source_cycle":j.get("source_cycle"),
+            "inventory_cycle":j.get("inventory_cycle"),
+            "all_rows":len(j.get("all_rows") or []),
+            "p_matrix_scored_count":j.get("p_matrix_scored_count"),
+            "p_matrix_blocked_count":j.get("p_matrix_blocked_count"),
+            "decision_counts":j.get("decision_counts"),
+            "bet_shadow_count":len(j.get("bet_shadow") or []),
+            "real_money":"BLOCKED",
+            "automatic_wagering":False,
+            "historical_backfill":False,
+            "odds_used_to_generate_probability":False
+          }
+          out=Path("evidence/football_world_inventory/2026-10-19/MATRIX_FOOTBALL_19OCT_RECOVERED_INTEGRATION_CERT.json")
+          out.parent.mkdir(parents=True,exist_ok=True)
+          out.write_text(json.dumps(cert,indent=2,sort_keys=True)+"\n")
+          print(json.dumps(cert,sort_keys=True))
+          PY
+      - name: Persist integration evidence
+        run: |
+          set -euo pipefail
+          git config user.name matrix-football-recovery-integration
+          git config user.email matrix-football-recovery-integration@users.noreply.github.com
+          git add evidence/api_football/prospective_daily/2026-10-19
+          git add evidence/api_football/daily_prematch_reports/2026-10-19
+          git add evidence/football_world_inventory/2026-10-19/MATRIX_FOOTBALL_19OCT_RECOVERED_INTEGRATION_CERT.json
+          git commit -m "evidence(football): integrate recovered 19-Oct P_MATRIX into governed odds gate"
+          for attempt in 1 2 3 4; do
+            git fetch origin repair/cor09-world-pipeline
+            if ! git rebase origin/repair/cor09-world-pipeline; then
+              git rebase --abort || true
+              exit 1
+            fi
+            if git push origin HEAD:repair/cor09-world-pipeline; then
+              echo "PUSH_SUCCEEDED_ATTEMPT=$attempt"
+              exit 0
+            fi
+            sleep $((attempt*2))
+          done
+          exit 1

@@ -1,0 +1,238 @@
+name: MATRIX Tennis Browser First Free Hard Clay Intake
+
+on:
+  schedule:
+    # 15-minute intended cadence; GitHub scheduler is best-effort.
+    - cron: "13,28,43,58 * * * *"
+  workflow_dispatch:
+    inputs:
+      target_date:
+        description: Optional Bogota date YYYY-MM-DD
+        required: false
+        type: string
+  push:
+    branches:
+      - repair/cor09-world-pipeline
+    paths:
+      - tools/matrix_tennis_windows_browser_calendar_capture.py
+      - tests/test_matrix_tennis_windows_browser_calendar_capture.py
+      - tools/windows/persist_matrix_tennis_browser_evidence.ps1
+      - tools/matrix_tennis_browser_first_free_intake.py
+      - tools/matrix_tennis_exact_browser_crossmatch.py
+      - tools/matrix_tennis_browser_challenger_pit_gate.py
+      - tests/test_matrix_tennis_browser_challenger_pit_gate.py
+      - tools/matrix_tennis_browser_verified_detail_capture.py
+      - tools/matrix_tennis_free_candidate_decisions.py
+      - tests/test_matrix_tennis_free_candidate_decisions.py
+      - tools/matrix_tennis_verified_biography_crosswalk.py
+      - tests/test_matrix_tennis_verified_biography_crosswalk.py
+      - tests/test_matrix_tennis_browser_verified_detail_capture.py
+      - tests/test_matrix_tennis_exact_browser_crossmatch.py tests/test_matrix_tennis_browser_challenger_pit_gate.py
+      - tests/test_matrix_tennis_browser_first_free_intake.py
+      - .github/workflows/matrix-tennis-browser-first-free-intake.yml
+      - evidence/tennis_calendar_physical/**
+
+permissions:
+  contents: write
+
+concurrency:
+  group: matrix-tennis-browser-first-free-intake
+  cancel-in-progress: false
+
+jobs:
+  governed-free-intake:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      REAL_MONEY: BLOCKED
+      AUTOMATIC_WAGERING: "false"
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: repair/cor09-world-pipeline
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Verify Hard and Clay browser intake against false admissions
+        run: |
+          python -m pip install -q pytest
+          PYTHONPATH=. python -m pytest -q tests/test_matrix_tennis_browser_first_free_intake.py tests/test_matrix_tennis_exact_browser_crossmatch.py tests/test_matrix_tennis_windows_browser_calendar_capture.py tests/test_matrix_tennis_browser_challenger_pit_gate.py tests/test_matrix_tennis_browser_verified_detail_capture.py tests/test_matrix_tennis_verified_biography_crosswalk.py tests/test_matrix_tennis_free_candidate_decisions.py
+      - name: Select target Bogota date with no backfill
+        id: target
+        env:
+          REQUESTED: ${{ inputs.target_date }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          D="${REQUESTED:-}"
+          [ -n "$D" ] || D="$(TZ=America/Bogota date +%F)"
+          [[ "$D" =~ ^[0-9]{4}-[0-9]{2}-[0-9]{2}$ ]]
+          echo "day=$D" >> "$GITHUB_OUTPUT"
+      - name: Consume only authentic browser links and protected model state
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$REAL_MONEY" = "BLOCKED"
+          PYTHONPATH=. python -m tools.matrix_tennis_browser_first_free_intake --date "${{ steps.target.outputs.day }}"
+      - name: Extract exact source-name research identity hints without approving matches
+        shell: bash
+        run: |
+          set -euo pipefail
+          PYTHONPATH=. python -m tools.matrix_tennis_exact_browser_crossmatch --date "${{ steps.target.outputs.day }}"
+
+      - name: Write per-match Hard Clay free-source decisions without holdout admission
+        shell: bash
+        run: |
+          set -euo pipefail
+          D="${{ steps.target.outputs.day }}"
+          SNAP="evidence/free_providers/$D/MATRIX_FREE_PROVIDER_COVERAGE_SNAPSHOT.json"
+          CROSS="evidence/tennis_calendar_reconciliation/$D/MATRIX_TENNIS_EXACT_BROWSER_CROSSMATCH.json"
+          if [ -f "$SNAP" ] && [ -f "$CROSS" ]; then
+            PYTHONPATH=. python -m tools.matrix_tennis_free_candidate_decisions --date "$D"
+            echo "FREE_SOURCE_PER_FIXTURE_DECISIONS_RECORDED_NO_HOLDOUT_ADMISSION"
+          else
+            echo "FREE_PROVIDER_OR_BROWSER_SNAPSHOT_MISSING_NO_MODEL_ADMISSION"
+          fi
+      - name: Process tomorrow's dated free calendar even with only one real source
+        shell: bash
+        run: |
+          set -euo pipefail
+          D1="$(TZ=America/Bogota date -d tomorrow +%F)"
+          SOFA="evidence/tennis_calendar_physical/$D1/sofascore_opera_full_link_observations.json"
+          FLASH="evidence/tennis_calendar_physical/$D1/flashscore_opera_full_link_observations.json"
+          if [ -f "$SOFA" ] || [ -f "$FLASH" ]; then
+            PYTHONPATH=. python -m tools.matrix_tennis_browser_first_free_intake --date "$D1"
+            PYTHONPATH=. python -m tools.matrix_tennis_exact_browser_crossmatch --date "$D1"
+          else
+            echo TOMORROW_DATED_TENNIS_EVIDENCE_MISSING_NO_ADMISSION
+          fi
+
+      - name: Prove unique pre-cut identity biographies and flag source timetable conflicts
+        shell: bash
+        run: |
+          set -euo pipefail
+          NOW_DAY="$(TZ=America/Bogota date +%F)"
+          NEXT_DAY="$(TZ=America/Bogota date -d tomorrow +%F)"
+          VERIFIED=0
+          for D in "$NOW_DAY" "$NEXT_DAY"; do
+            BASE="evidence/tennis_calendar_physical/$D"
+            if [ -f "$BASE/MATRIX_TENNIS_OPERA_BIOGRAPHY_VISIBLE_OBSERVATIONS.json" ] && [ -f "$BASE/sofascore_verified_match_details.json" ]; then
+              PYTHONPATH=. python -m tools.matrix_tennis_verified_biography_crosswalk --date "$D"
+              VERIFIED=$((VERIFIED+1))
+            fi
+          done
+          echo "TENNIS_ACTUAL_PROFILE_BIRTHDATE_CROSSWALK_REPORT_DATES=$VERIFIED"
+          # No silent claim of model admission; report is explicitly research-only.
+
+      - name: Certify exact dated Challenger court and players from authentic Opera match pages
+        shell: bash
+        run: |
+          set -euo pipefail
+          D="${{ steps.target.outputs.day }}"
+          if [ -f "evidence/tennis_calendar_physical/$D/sofascore_verified_match_details.json" ]; then
+            PYTHONPATH=. python -m tools.matrix_tennis_browser_challenger_pit_gate --date "$D"
+          else
+            echo "NO_AUTHENTIC_INDIVIDUAL_MATCH_DETAIL_SNAPSHOT_NO_ADMISSION"
+          fi
+
+      - name: Certify tomorrow's authentic Challenger pages before kickoff without opening holdouts
+        shell: bash
+        run: |
+          set -euo pipefail
+          D1="$(TZ=America/Bogota date -d tomorrow +%F)"
+          DETAIL="evidence/tennis_calendar_physical/$D1/sofascore_verified_match_details.json"
+          if [ -f "$DETAIL" ]; then
+            PYTHONPATH=. python -m tools.matrix_tennis_browser_challenger_pit_gate --date "$D1"
+            echo TOMORROW_CHALLENGER_EXACT_SOURCE_PIT_GATE_EXECUTED_NO_MODEL_ADMISSION
+          else
+            echo TOMORROW_CHALLENGER_SOURCE_PAGES_NOT_YET_CAPTURED
+          fi
+
+      - name: Verify hard clay originals unchanged and zero fake rows
+        env:
+          TARGET_DATE: ${{ steps.target.outputs.day }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          git diff --exit-code -- evidence/cor0203 evidence/tennis_parallel_lanes/ATP_CHALLENGER_MEN_SINGLES_CLAY
+          python - <<'PY'
+          import json,os
+          from pathlib import Path
+          d=os.environ.get("TARGET_DATE") or ""
+          if not d:
+              from datetime import datetime
+              from zoneinfo import ZoneInfo
+              d=datetime.now(ZoneInfo("America/Bogota")).date().isoformat()
+          p=Path(f"evidence/tennis_calendar_reconciliation/{d}/MATRIX_TENNIS_FREE_BROWSER_FIRST_INTAKE_LAST.json")
+          # Dispatches of other dates are validated by the previous producer.
+          if p.is_file():
+              j=json.loads(p.read_text())
+              assert j["hard_new_holdout_admissions"]==j["clay_new_holdout_admissions"]==0
+              assert j["paid_api_used"] is False
+              assert j["real_money"]=="BLOCKED"
+          PY
+      - name: Persist authentic browser-first provenance without opening holdouts
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name matrix-tennis-free-browser
+          git config user.email matrix-tennis-free-browser@users.noreply.github.com
+          git add evidence/tennis_calendar_reconciliation
+          if git diff --cached --quiet; then echo "NO_AUTHENTIC_NEW_SOURCE_CHANGE"; exit 0; fi
+          git commit -m "evidence(tennis): current free browser-first intake, no holdout changes"
+          for n in 1 2 3 4 5; do
+            git fetch origin repair/cor09-world-pipeline
+            if ! git rebase origin/repair/cor09-world-pipeline; then
+              git rebase --abort || true
+              exit 1
+            fi
+            if git push origin HEAD:repair/cor09-world-pipeline; then
+              echo "FREE_TENNIS_INTAKE_PHYSICALLY_PERSISTED"
+              exit 0
+            fi
+            sleep "$n"
+          done
+          exit 1
+
+      - name: Reject green cloud job when both dates lack recent authentic visible links
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json
+          from datetime import datetime,timedelta,timezone
+          from pathlib import Path
+          from zoneinfo import ZoneInfo
+          now=datetime.now(timezone.utc)
+          day=now.astimezone(ZoneInfo("America/Bogota")).date()
+          valid=[]
+          for d in (day,day+timedelta(days=1)):
+              for source,filename in (
+                  ("SOFASCORE","sofascore_opera_full_link_observations.json"),
+                  ("FLASHSCORE","flashscore_opera_full_link_observations.json")):
+                  p=Path("evidence/tennis_calendar_physical")/d.isoformat()/filename
+                  if not p.is_file():
+                      continue
+                  doc=json.loads(p.read_text(encoding="utf-8"))
+                  try:
+                      at=datetime.fromisoformat(doc["collected_at_utc"].replace("Z","+00:00"))
+                  except (KeyError,ValueError,TypeError):
+                      continue
+                  if (doc.get("schema")=="MATRIX_OPERA_TENNIS_EVENT_LINK_CAPTURE_V1"
+                      and doc.get("source")==source
+                      and doc.get("target_date_bogota")==d.isoformat()
+                      and doc.get("real_money")=="BLOCKED"
+                      and doc.get("canonical_fixture_export_authorized") is False
+                      and doc.get("probability_generation_authorized") is False
+                      and isinstance(doc.get("matches"),list)
+                      and len(doc["matches"])>0
+                      and len(doc["matches"])==doc.get("observed_link_count")
+                      and at.tzinfo is not None and timedelta(0)<=now-at<=timedelta(hours=2)):
+                      valid.append({"date":d.isoformat(),"source":source,
+                                    "visible_links":len(doc["matches"])})
+          print(json.dumps({"recent_dated_browser_source_evidence":valid,
+              "holdout_admitted":0,"paid_api_used":False,"real_money":"BLOCKED"}))
+          if not valid:
+              raise SystemExit("TENNIS_NO_RECENT_DATED_SOURCE_ZERO_USEFUL_DATA_FAIL_CLOSED")
+          PY

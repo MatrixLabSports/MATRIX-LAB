@@ -1,0 +1,92 @@
+name: MATRIX Benter Fusion Readiness
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - repair/cor09-world-pipeline
+    paths:
+      - tools/matrix_benter_second_stage_fusion_readiness.py
+      - tests/test_matrix_benter_second_stage_fusion_readiness.py
+      - .github/workflows/matrix-benter-fusion-readiness.yml
+      - evidence/clv/football/over_2_5/prospective_clv_ledger.jsonl
+      - evidence/clv/football/over_2_5/state.json
+
+permissions:
+  contents: write
+
+concurrency:
+  group: matrix-benter-fusion-readiness
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      REAL_MONEY: BLOCKED
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: repair/cor09-world-pipeline
+          fetch-depth: 0
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install pytest
+        run: python -m pip install pytest
+
+      - name: Run tests
+        run: PYTHONPATH=. python -m pytest -q tests/test_matrix_benter_second_stage_fusion_readiness.py
+
+      - name: Build physical readiness audit
+        run: PYTHONPATH=. python -m tools.matrix_benter_second_stage_fusion_readiness
+
+      - name: Enforce governance
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          p=Path("evidence/api_football/model_validation/MATRIX_BENTER_SECOND_STAGE_FUSION_READINESS_V1.json")
+          x=json.loads(p.read_text())
+          assert x["schema"]=="MATRIX_BENTER_SECOND_STAGE_FUSION_READINESS_V1"
+          assert x["fundamental_probability_independence_required"] is True
+          assert x["production_p_matrix_unchanged"] is True
+          assert x["governance"]["second_stage_fusion_enabled"] is False
+          assert x["governance"]["production_engine_modified"] is False
+          assert x["governance"]["real_money"]=="BLOCKED"
+          print("MATRIX_BENTER_FUSION_READINESS_GATE: PASS")
+          print("decision_count=",x["decision_count"])
+          print("closing_odds_count=",x["closing_odds_count"])
+          print("paired_devig_market_probability_count=",x["paired_devig_market_probability_count"])
+          print("remaining_to_readiness=",x["remaining_to_readiness"])
+          print("adjudication=",x["adjudication"])
+          print("artifact_sha256=",x["artifact_sha256"])
+          PY
+
+      - name: Persist evidence
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name matrix-benter-research
+          git config user.email matrix-benter-research@users.noreply.github.com
+          git add evidence/api_football/model_validation/MATRIX_BENTER_SECOND_STAGE_FUSION_READINESS_V1.json
+          if git diff --cached --quiet; then
+            echo "NO_BENTER_READINESS_CHANGE"
+            exit 0
+          fi
+          git commit -m "evidence(research): persist Benter fusion readiness"
+          for attempt in 1 2 3 4; do
+            git fetch origin repair/cor09-world-pipeline
+            if ! git rebase origin/repair/cor09-world-pipeline; then
+              git rebase --abort || true
+              exit 1
+            fi
+            if git push origin HEAD:repair/cor09-world-pipeline; then exit 0; fi
+            sleep $((attempt*2))
+          done
+          exit 1

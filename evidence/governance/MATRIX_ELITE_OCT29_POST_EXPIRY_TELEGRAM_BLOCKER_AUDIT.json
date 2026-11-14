@@ -1,0 +1,35 @@
+{
+  "schema": "MATRIX_ELITE_POST_EXPIRY_TELEGRAM_BLOCKER_AUDIT_V1",
+  "basis": "Inspected operational GitHub workflow and subscription deadline guard source",
+  "workflow": ".github/workflows/telegram-green-signals.yml",
+  "guard": "tools/football_subscription_deadline_guard.py",
+  "policy": "config/MATRIX_FOOTBALL_SUBSCRIPTION_DEADLINE.json",
+  "verified_code_path": {
+    "workflow_trigger": "schedule 7,22,37,52 * * * *",
+    "guard_step": "Enforce API-Football subscription deadline before supervisor",
+    "guard_conditions": "github.event_name != push",
+    "guard_command": "python -m tools.football_subscription_deadline_guard --require-paid-use --require-key",
+    "paid_through_bogota_date": "2026-10-28",
+    "renewal_authorized": false,
+    "post_cutoff_behavior": "raises SystemExit(API_FOOTBALL_PAID_WINDOW_EXPIRED_NO_RENEWAL_AUTHORIZED) unless MATRIX_API_FOOTBALL_POST_CUTOFF_AUTHORIZED=true"
+  },
+  "operational_consequence": "Scheduled and workflow_run Telegram jobs on/after 2026-10-29 fail at the paid-subscription guard when no override is authorized, preventing subsequent workflow steps. This is a deterministic code-path conclusion, not a verified observation of a specific scheduled run.",
+  "recommendation": "Keep API-Football blocked; split expired-paid-source supervision from independent-source and Telegram health checks without requiring paid use; audit every downstream step before implementing fail-safe bypass.",
+  "separate_31_attempt_audit": {
+    "artifact_id": 12876160398,
+    "exact_line_seen": 31,
+    "matched": 31,
+    "invalid_executable_quote": 15,
+    "nonpositive_ev": 10,
+    "stale_pinnacle": 6
+  },
+  "limitations": [
+    "No direct Telegram scheduled run execution logs retrieved",
+    "No Telegram Bot API acknowledgment verified",
+    "No post-cutoff renewal authorized"
+  ],
+  "safety": {
+    "real_money": "BLOCKED",
+    "automatic_wagering": false
+  }
+}

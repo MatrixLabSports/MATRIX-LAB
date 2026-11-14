@@ -1,0 +1,45 @@
+{
+  "schema": "MATRIX_FOOTBALL_FAILED_MARKETS_V3_DECISION_V1",
+  "source_summary_path": "evidence/api_football/market_expansion/failed_team_markets_v3/summary.json",
+  "source_summary_blob_sha": "3bc59c7b2c11f5581d1bbd579a3f871f2ca2ad11",
+  "decisions": {
+    "CORNERS": {
+      "decision": "NO_GO_V3",
+      "prospective_eligible": false,
+      "reason": "FAILED_FINAL_50_OOS_GATE"
+    },
+    "TEAM_SHOTS_ON_TARGET": {
+      "decision": "NO_GO_V3",
+      "prospective_eligible": false,
+      "reason": "FAILED_FINAL_50_OOS_GATE"
+    },
+    "TEAM_GOALKEEPER_SAVES": {
+      "decision": "NO_GO_V3",
+      "prospective_eligible": false,
+      "reason": "FAILED_FINAL_50_OOS_GATE"
+    },
+    "TEAM_YELLOW_CARDS": {
+      "decision": "NO_GO_V3",
+      "prospective_eligible": false,
+      "reason": "FAILED_FINAL_50_OOS_GATE"
+    },
+    "TEAM_FOULS": {
+      "decision": "PROMOTE_TO_NEW_PROSPECTIVE_VALIDATION",
+      "prospective_eligible": true,
+      "market_binding": {
+        "id": 173,
+        "name": "Fouls. Total"
+      },
+      "gates": [
+        30,
+        50,
+        100,
+        200
+      ]
+    }
+  },
+  "validation_policy": "TEMPORAL_INTERNAL_FOLDS_ON_TRAIN_ONLY; FINAL_50_UNTOUCHED_UNTIL_FINAL_EVALUATION",
+  "parameter_tuning_on_final_validation": false,
+  "automatic_wagering": false,
+  "real_money": "BLOCKED"
+}

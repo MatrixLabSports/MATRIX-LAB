@@ -1,0 +1,116 @@
+{
+  "diagnostic_findings": {
+    "new_calibration_candidate_chosen_for_production": false,
+    "one_x_extra_gov_oos_remaining": 204,
+    "one_x_oos_sealed": true,
+    "one_x_strictly_later_holdout_vs_poisson": {
+      "original_brier_delta": 0.0038703227120474304,
+      "original_log_loss_delta": 0.011483470808018814,
+      "recalibrated_brier_delta": 0.001764903137873447,
+      "recalibrated_log_loss_delta": 0.006236229982534036
+    },
+    "over25_experimental_intercept_vs_frozen_existing": {
+      "brier_delta": 0.00026576923448159984,
+      "log_loss_delta": 0.0004642786750672645
+    },
+    "pooled_comparison_not_sufficient_for_new_promotion": true
+  },
+  "generated_at_utc": "2026-11-14T15:29:07+00:00",
+  "markets": [
+    {
+      "automatic_wagering": false,
+      "blockers": [
+        "EXPLORATORY_CALIBRATION_NOT_APPROVED_FOR_PRODUCTION",
+        "EXACT_BOOKMAKER_QUOTE_EV_FRESHNESS_AND_KICKOFF_GATES_STILL_REQUIRED"
+      ],
+      "exact_prospectively_frozen_final_count": 604,
+      "governance_decision": "MAINTAIN_HISTORICALLY_APPROVED_OVER25_ONLY_NO_EXPERIMENTAL_REFIT",
+      "historical_over25_scope_retained": true,
+      "market_key": "TOTAL_GOALS_OVER_UNDER",
+      "newly_authorized_for_telegram": false,
+      "original_formal_verdict": "PASS_SCORING_COMPARISON_NO_PROMOTION",
+      "parameter_changes": false
+    },
+    {
+      "automatic_wagering": false,
+      "blockers": [
+        "OOS_4001_5000_NOT_COMPLETE",
+        "OOS_1000_METRICS_NOT_OPENED",
+        "NO_EXPLICIT_GOVERNED_DOUBLE_CHANCE_1X_P_MATRIX_PROMOTION",
+        "NO_DEDICATED_DOUBLE_CHANCE_1X_QUOTE_REVALIDATION_CONTRACT",
+        "NO_DOUBLE_CHANCE_1X_TELEGRAM_SIGNAL_ENGINE",
+        "CHRONOLOGICAL_1X_EXPERIMENT_HAS_NO_PROVEN_POISSON_SUPERIORITY"
+      ],
+      "exact_prospectively_frozen_final_count": 604,
+      "governance_decision": "NO_GO_NEW_1X_PROMOTION_HOLD_SEPARATE_OOS_AND_PRICE_ENGINE",
+      "historical_over25_scope_retained": false,
+      "market_key": "DOUBLE_CHANCE_1X",
+      "newly_authorized_for_telegram": false,
+      "original_formal_verdict": "PASS_SCORING_COMPARISON_NO_PROMOTION",
+      "parameter_changes": false
+    },
+    {
+      "automatic_wagering": false,
+      "blockers": [
+        "PROPER_SCORING_VS_POISSON_NOT_SUPERIOR"
+      ],
+      "exact_prospectively_frozen_final_count": 604,
+      "governance_decision": "NO_GO_CHALLENGER_PROPER_SCORING",
+      "historical_over25_scope_retained": false,
+      "market_key": "MATCH_RESULT_1X2",
+      "newly_authorized_for_telegram": false,
+      "original_formal_verdict": "NO_GO_PROPER_SCORING_VS_POISSON",
+      "parameter_changes": false
+    },
+    {
+      "automatic_wagering": false,
+      "blockers": [
+        "PROPER_SCORING_VS_POISSON_NOT_SUPERIOR"
+      ],
+      "exact_prospectively_frozen_final_count": 604,
+      "governance_decision": "NO_GO_CHALLENGER_PROPER_SCORING",
+      "historical_over25_scope_retained": false,
+      "market_key": "DOUBLE_CHANCE_X2",
+      "newly_authorized_for_telegram": false,
+      "original_formal_verdict": "NO_GO_PROPER_SCORING_VS_POISSON",
+      "parameter_changes": false
+    },
+    {
+      "automatic_wagering": false,
+      "blockers": [
+        "PROPER_SCORING_VS_POISSON_NOT_SUPERIOR"
+      ],
+      "exact_prospectively_frozen_final_count": 604,
+      "governance_decision": "NO_GO_EXISTING_DIAGNOSTIC_REJECTION_REMAINS",
+      "historical_over25_scope_retained": false,
+      "market_key": "DOUBLE_CHANCE_12",
+      "newly_authorized_for_telegram": false,
+      "original_formal_verdict": "NO_GO_RETAIN_EXISTING_DIAGNOSTIC_BLOCK",
+      "parameter_changes": false
+    }
+  ],
+  "protections": {
+    "new_green_signals_authorized_by_audit": false,
+    "no_automatic_wagering": true,
+    "no_original_parameter_change": true,
+    "preregistered_1000_oos_not_overridden_by_604": true,
+    "real_money": "BLOCKED",
+    "revalidate_real_time_exact_odds_before_any_existing_over25_signal": true
+  },
+  "schema": "MATRIX_FIVE_MARKET_ELITE_GOVERNANCE_DECISION_V1",
+  "source_hashes_sha256": {
+    "1x_readiness": "a3f65b5f8a139adc8bffaa6b68c950d4ec069becd241263f6bcaddfd0d4e609d",
+    "formal": "622ffaf0ffabe150bf9fd305bbac0f57bf60b3575daf103592808ac60c833342",
+    "over25_historical_promotion": "61adf75428141477193dc7537386c6dece8b7156d96499b8af7a7ecdbfe6b970",
+    "stability": "6ca4f58c60927939bf94a280b6852054413bf43e5f46f17e1ff9a00b0e673e60",
+    "supervisor": "e9bd1555741aae5c18cd0625092311ae298f662abf06abc35bddb43a8efa6618"
+  },
+  "status": "PASS_FAIL_CLOSED_ELITE_ADJUDICATION",
+  "summary": {
+    "experimental_recalibrations_promoted": 0,
+    "historically_governed_over25_scope_maintained": 1,
+    "markets_blocked_for_new_promotion": 4,
+    "markets_with_at_least_600_authentic_ft": 5,
+    "new_market_promotions": 0
+  }
+}

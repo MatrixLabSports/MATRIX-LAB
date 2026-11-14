@@ -1,0 +1,30 @@
+{
+  "schema": "MATRIX_CALENDAR_RECONCILIATION_IMPLEMENTATION_AUDIT_V1",
+  "date_bogota": "2026-10-31",
+  "branch": "repair/cor09-world-pipeline",
+  "code": "tools/matrix_calendar_source_reconciliation_guard.py",
+  "tests": "tests/test_matrix_calendar_source_reconciliation_guard.py",
+  "sources_verified_via_github_fetch": {
+    "football_sofascore": 60,
+    "football_flashscore": 50,
+    "tennis_flashscore": 129
+  },
+  "source_tennis_sofascore": "20 records from earlier browser capture; not refetched in this audit",
+  "implemented": [
+    "offline source inventory",
+    "safe URL and sport path validation",
+    "within-source URL duplicate detection",
+    "fail-closed signal and prematch approvals",
+    "missing/invalid source reporting"
+  ],
+  "not_implemented": [
+    "cross-provider entity matching",
+    "per-event exact date/kickoff verification",
+    "automatic production workflow wiring",
+    "live Telegram delivery confirmation"
+  ],
+  "runtime_tests_executed": false,
+  "status": "CODE_AND_TESTS_COMMITTED_EXECUTION_NOT_CERTIFIED",
+  "real_money": "BLOCKED",
+  "automatic_wagering": false
+}

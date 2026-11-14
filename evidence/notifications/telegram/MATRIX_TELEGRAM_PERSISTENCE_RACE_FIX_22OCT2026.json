@@ -1,0 +1,81 @@
+{
+  "schema": "MATRIX_TELEGRAM_PERSISTENCE_RACE_FIX_V1",
+  "generated_at_utc": "2026-10-22T09:07:31Z",
+  "problem": {
+    "date_bogota": "2026-10-21",
+    "classification": "TELEGRAM_DELIVERY_LEDGER_DURABILITY_GAP",
+    "symptom": "A physically delivered green signal could survive in Telegram while later process failure or Git persistence race left no durable canonical delivery record.",
+    "affected_signal": {
+      "match": "Lille vs Galatasaray",
+      "fixture_id": "1635684",
+      "market": "Más de 2.5 goles",
+      "p_matrix": 0.6244,
+      "house": "Betano",
+      "odds": 1.7,
+      "ev": 0.0614,
+      "signal_key": "d4ff8300a7b32b66ad94abd7f3cbcbd2ccd1b2e21b81056273287963e234bfd0",
+      "final_result": "Lille 2-4 Galatasaray",
+      "result": "GANADA",
+      "paper_bet": null,
+      "paper_bankroll_impact_cop": 0,
+      "real_money": "BLOCKED"
+    }
+  },
+  "root_cause": {
+    "before_fix": "MATRIX_TELEGRAM_SIGNAL_LEDGER.json was written at end of supervisor execution; Telegram send confirmation occurred earlier.",
+    "failure_window": "Successful Telegram send followed by later exception/persistence race before final ledger write.",
+    "evidence": "Physical Telegram screenshot plus recovery override and canonical ledger recovery record."
+  },
+  "repairs": [
+    {
+      "file": "tools/telegram_green_signal_alerts.py",
+      "commit": "e5e1eedef14be7c17f2550703e0225784db77e67",
+      "change": "Added atomic persist_ledger_checkpoint() and invoke it immediately after confirmed green-message delivery."
+    },
+    {
+      "file": ".github/workflows/telegram-green-signals.yml",
+      "commit": "e5cf3b75219988c4e53a82b59df03fda4cf36172",
+      "change": "Persistir ledger gobernado now uses if: always() so a local checkpoint is committed even when a later supervisor step fails."
+    },
+    {
+      "file": "tests/test_telegram_paper_bankroll.py",
+      "commit": "5c53c96bd51646b89c0406834746ca74ed4d3b23",
+      "change": "Added regression test proving confirmed-delivery checkpoint survives a later failure scenario."
+    }
+  ],
+  "physical_verification": {
+    "workflow": "Telegram Señales Verdes MATRIX",
+    "run_number": 347,
+    "run_id": 39752583044,
+    "head_sha": "5c53c96bd51646b89c0406834746ca74ed4d3b23",
+    "conclusion": "success",
+    "job_id": 119736831696,
+    "steps": {
+      "tests": "success",
+      "safety_gates": "success",
+      "secrets_validation": "success",
+      "supervisor": "success",
+      "ledger_persistence": "success"
+    },
+    "tests": "44 passed in 0.47s",
+    "recovered_ledger": {
+      "blob_sha": "8e316aa15c11a541aa841f0e1932bb580e7bd9d0",
+      "sent_count": 217,
+      "lille_record_present": true,
+      "lille_status": "RECOVERED_FROM_PHYSICAL_TELEGRAM_SCREENSHOT",
+      "lille_send_gate_status": "RECOVERED_PHYSICAL_TELEGRAM_DELIVERY",
+      "paper_bet": null,
+      "real_money": "BLOQUEADO"
+    }
+  },
+  "governance": {
+    "p_matrix_modified": false,
+    "ev_gate_modified": false,
+    "authorized_books_modified": false,
+    "paper_backfill_performed": false,
+    "real_money": "BLOCKED",
+    "auto_betting": "DISABLED",
+    "settlement_policy": "FINAL_ONLY",
+    "conclusion": "PASS_PHYSICALLY_VERIFIED"
+  }
+}

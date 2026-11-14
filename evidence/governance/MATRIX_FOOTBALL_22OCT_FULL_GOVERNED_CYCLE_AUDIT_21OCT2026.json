@@ -1,0 +1,97 @@
+{
+  "schema": "MATRIX_FOOTBALL_22OCT_FULL_GOVERNED_CYCLE_AUDIT_V1",
+  "generated_at_bogota": "2026-10-21T17:39:00-05:00",
+  "target_date_bogota": "2026-10-22",
+  "browser_first": {
+    "artifact": "evidence/football_world_inventory/2026-10-22/MATRIX_FOOTBALL_BROWSER_FIRST_RECONCILIATION.json",
+    "sofascore_visible_unique_rows": 110,
+    "flashscore_unique_football_match_urls": 98,
+    "date_alignment": "PASS",
+    "gate": "PASS",
+    "parity_claimed": false
+  },
+  "governed_cycle": {
+    "workflow": "MATRIX Football Daily Governed Pipeline",
+    "run_number": 65,
+    "run_id": 39687511983,
+    "conclusion": "SUCCESS",
+    "cycle_id": "20261021T223525Z",
+    "api_football_fixtures_received": 153,
+    "eligible_future_fixtures": 152,
+    "canonical_ready_input_count": 124,
+    "blocked_future_input_count": 28,
+    "freeze_candidate_event_count": 103,
+    "new_freeze_event_count": 1,
+    "new_fixture_ids": [
+      "1645184"
+    ],
+    "cumulative_freeze_event_count": 4199,
+    "physical_collision_blocked_count": 0,
+    "network_calls_performed": 161
+  },
+  "p_matrix_and_ev": {
+    "probability_status": "FROZEN_GOVERNED_MARKET_SCOPED_SIGNAL_ONLY",
+    "signal_generation_authorized": true,
+    "scored_rows": 124,
+    "p_matrix_ge_060_watch_candidates": 31,
+    "decisions": {
+      "BET_SHADOW": 0,
+      "BLOCKED": 119,
+      "NO_BET": 5
+    },
+    "blocked_reason_counts": {
+      "P_MATRIX_BLOCKED:BLOCKED_GROUP_HISTORY_BELOW_20": 13,
+      "P_MATRIX_BLOCKED:BLOCKED_RAW_GROUP_MISSING": 8,
+      "NO_EXACT_POLICY_HOUSE_OVER25_ODDS_ABOVE_1_50": 98
+    },
+    "no_bet_reason": "EXACT_POLICY_HOUSE_ODDS_BUT_EV_NOT_POSITIVE",
+    "no_bet_count": 5,
+    "policy_houses": [
+      "Betano",
+      "BetPlay",
+      "RushBet"
+    ],
+    "odds_used_to_generate_probability": false,
+    "outcomes_used_to_generate_probability": false
+  },
+  "telegram": {
+    "workflow": "Telegram Señales Verdes MATRIX",
+    "run_number": 334,
+    "run_id": 39687680460,
+    "conclusion": "SUCCESS",
+    "football_candidates_all_scanned_dates": 100,
+    "football_unsent_candidates": 97,
+    "pre_send_waiting_window": 33,
+    "pre_send_quote_checks": 1,
+    "pre_send_passed": 0,
+    "sent_now": 0,
+    "settlements_now": 0,
+    "paper_bankroll_current_cop": 4885750,
+    "paper_open_bets": 0,
+    "real_money": "BLOCKED"
+  },
+  "workflow_restore": {
+    "commit": "e319c276e5a7fdf06dcd65b8368bdb1f78d1420e",
+    "one_shot_override_present": false,
+    "date_resolution": "RESTORED_AUTOMATIC_BOGOTA",
+    "schedule": [
+      "10 5 * * *",
+      "10 23 * * *"
+    ]
+  },
+  "conclusion": {
+    "calendar_22oct": "PHYSICALLY_VERIFIED",
+    "api_cycle_22oct": "PASS",
+    "p_matrix_22oct": "GENERATED_AND_FROZEN_MARKET_SCOPED",
+    "green_signals_now": 0,
+    "pending_action": "CONTINUE_15_MIN_TELEGRAM_REVALIDATION_AND_FINAL_WINDOW_QUOTE_RECOVERY",
+    "no_bet_without_evidence": true
+  },
+  "protections": {
+    "missing_not_zero": true,
+    "no_silent_imputation": true,
+    "no_backfill": true,
+    "automatic_wagering": false,
+    "real_money": "BLOCKED"
+  }
+}

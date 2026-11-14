@@ -1,0 +1,141 @@
+name: MATRIX Live Tennis API-Tennis Native Lane
+
+on:
+  push:
+    branches:
+      - repair/cor09-world-pipeline
+    paths:
+      - .github/workflows/live-tennis-paid-native-lane.yml
+      - tools/live_tennis_paid_settlement.py
+      - tools/live_tennis_paid_cumulative_gate.py
+      - tests/test_live_tennis_paid_native_lane.py
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: live-tennis-api-tennis-native-lane
+  cancel-in-progress: false
+
+jobs:
+  paid-native:
+    if: ${{ false }} # API-Tennis retired 2026-10-13; NO_NETWORK unless explicitly reauthorized in governance
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout operational branch
+        uses: actions/checkout@v4
+        with:
+          ref: repair/cor09-world-pipeline
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install test dependency
+        run: python -m pip install pytest requests
+
+      - name: Run provider-native regression tests
+        run: python -m pytest -q tests/test_live_tennis_paid_native_lane.py
+
+      - name: Resolve Bogota dates
+        id: dates
+        shell: bash
+        run: |
+          echo "d0=$(TZ=America/Bogota date +%F)" >> "$GITHUB_OUTPUT"
+          echo "d1=$(TZ=America/Bogota date -d 'yesterday' +%F)" >> "$GITHUB_OUTPUT"
+
+      - name: Settle API-Tennis ledgers FINAL-only
+        env:
+          API_TENNIS_KEY: ${{ secrets.API_TENNIS_KEY }}
+          D0: ${{ steps.dates.outputs.d0 }}
+          D1: ${{ steps.dates.outputs.d1 }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          for D in "$D1" "$D0"; do
+            L="evidence/live_tennis_lab/$D/MATRIX_LIVE_TENNIS_API_TENNIS_FAILOVER_LEDGER_V1.json"
+            [ -f "$L" ] || continue
+            python -m tools.live_tennis_paid_settlement --ledger "$L" --max-requests 20
+          done
+
+      - name: Build provider-native cumulative gate
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m tools.live_tennis_paid_cumulative_gate             --root evidence/live_tennis_lab             --out evidence/live_tennis_lab/MATRIX_LIVE_TENNIS_API_TENNIS_NATIVE_GATE_V1.json
+
+      - name: Build provider-native receipt
+        env:
+          D0: ${{ steps.dates.outputs.d0 }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import hashlib,json,os
+          from datetime import datetime,timezone
+          from pathlib import Path
+          gate_path=Path("evidence/live_tennis_lab/MATRIX_LIVE_TENNIS_API_TENNIS_NATIVE_GATE_V1.json")
+          gate=json.loads(gate_path.read_text())
+          receipt={
+            "schema":"MATRIX_LIVE_TENNIS_API_TENNIS_NATIVE_LANE_RECEIPT_V1",
+            "generated_at_utc":datetime.now(timezone.utc).replace(microsecond=0).isoformat(),
+            "operational_date_bogota":os.environ["D0"],
+            "status":"PASS_PROVIDER_NATIVE_EVIDENCE_LANE_ACTIVE",
+            "provider":"api_tennis",
+            "cross_provider_equivalence_required":False,
+            "free_provider_lane_mutated":False,
+            "global_unique_match_count":gate["global_unique_match_count"],
+            "settled_quality_valid_unique_matches":gate["sum_lane_settled_quality_valid_unique_matches"],
+            "lanes":gate["lanes"],
+            "gate_blob_sha256":hashlib.sha256(gate_path.read_bytes()).hexdigest(),
+            "protections":{
+              "same_provider_exact_event_key_required":True,
+              "final_only":True,
+              "surface_imputed":False,
+              "metrics_opened":False,
+              "probability_output_status":"SEALED",
+              "model_status":"RESEARCH_ONLY",
+              "odds_to_probability":False,
+              "silent_imputation":False,
+              "automatic_wagering":False,
+              "real_money":"BLOCKED"
+            }
+          }
+          raw=json.dumps(receipt,sort_keys=True,separators=(",",":"),ensure_ascii=False).encode()
+          receipt["sha256_without_self"]=hashlib.sha256(raw).hexdigest()
+          out=Path("evidence/live_tennis_lab/MATRIX_LIVE_TENNIS_API_TENNIS_NATIVE_LANE_RECEIPT_V1.json")
+          out.write_text(json.dumps(receipt,indent=2,sort_keys=True,ensure_ascii=False)+"\n")
+          print(json.dumps({
+            "status":receipt["status"],
+            "unique_matches":receipt["global_unique_match_count"],
+            "settled_quality_valid":receipt["settled_quality_valid_unique_matches"],
+            "real_money":"BLOCKED"
+          },sort_keys=True))
+          PY
+
+      - name: Persist paid-native evidence only
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name matrix-live-tennis-paid-native
+          git config user.email matrix-live-tennis-paid-native@users.noreply.github.com
+          git add evidence/live_tennis_lab
+          CHANGED="$(git diff --cached --name-only)"
+          if [ -z "$CHANGED" ]; then exit 0; fi
+          if echo "$CHANGED" | grep -v '^evidence/live_tennis_lab/' ; then
+            echo "UNAUTHORIZED_PATH"; echo "$CHANGED"; exit 1
+          fi
+          git commit -m "evidence(live): advance API-Tennis provider-native lane"
+          for attempt in 1 2 3 4; do
+            git fetch origin repair/cor09-world-pipeline
+            if ! git rebase origin/repair/cor09-world-pipeline; then git rebase --abort || true; exit 1; fi
+            if git push origin HEAD:repair/cor09-world-pipeline; then exit 0; fi
+            sleep $((attempt*2))
+          done
+          exit 1
+
+# MATRIX_USER_AUTHORIZED_TRIGGER 2026-10-12T14:48Z advance-paid-native-live-lane

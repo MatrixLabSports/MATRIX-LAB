@@ -1,0 +1,99 @@
+{
+  "schema": "MATRIX_FOOTBALL_CLV_MISSED_CLOSE_ROOT_CAUSE_V1",
+  "generated_at_utc": "2026-10-15T14:48:00+00:00",
+  "market_key": "over_2_5",
+  "current_state_basis": {
+    "state_path": "evidence/clv/football/over_2_5/state.json",
+    "missed_after_kickoff": 52,
+    "decision_count": 67,
+    "closing_odds_count": 1,
+    "strict_fresh_gate_seconds": 120
+  },
+  "interpretation": {
+    "missed_after_kickoff_semantics": "COUNT_OF_UNCLOSED_FROZEN_DECISIONS_WHOSE_KICKOFF_HAS_PASSED; NOT NECESSARILY A LATE_NETWORK_ATTEMPT",
+    "gate_changed": false,
+    "gate_policy": "KEEP_STRICT_120_SECONDS"
+  },
+  "classification": {
+    "total_current_missed": 52,
+    "PRE_CONTINUOUS_WATCHER_SCHEDULER_GAP": 4,
+    "API_FOOTBALL_PINNACLE_STALE_QUOTE_GT_120S": 46,
+    "PINNACLE_MARKET_INCOMPLETE": 1,
+    "LATE_LEDGER_DISCOVERY_FROM_STALE_LONG_LIVED_CHECKOUT": 1
+  },
+  "evidence": {
+    "pre_watcher": {
+      "path": "evidence/clv/football/over_2_5/continuous_watcher_remediation.json",
+      "observed_problem": "GITHUB_SCHEDULE_NOT_PRECISE_ENOUGH_FOR_15M_CLV_WINDOW",
+      "missed_at_remediation": 4
+    },
+    "post_watcher_state_history": {
+      "method": "Re-read versioned state.json at commits produced by 'evidence(clv): persist continuous watcher cycle' and pair each increase in missed_after_kickoff with the immediately preceding due-cycle blocker.",
+      "observed_blocker_pattern": {
+        "blocked_provider_error": 0,
+        "blocked_temporal": 0,
+        "dominant": "blocked_stale_provider_quote",
+        "secondary": "blocked_market_incomplete"
+      },
+      "examples": [
+        {
+          "due_state_commit": "3edd88133ea77e5d57c78939a32eaeee4b87fc65",
+          "due": 2,
+          "stale": 2,
+          "market_incomplete": 0,
+          "next_missed_state_commit": "a9096b1127a4bc26540cac027c4c656723f88d24",
+          "missed_delta": 2
+        },
+        {
+          "due_state_commit": "b833d2add8edce251de7c110042ebbbad27060de",
+          "due": 15,
+          "stale": 14,
+          "market_incomplete": 1,
+          "next_missed_state_commit": "7de18c0f0dc78d30764237789df33d10fccf4e63",
+          "missed_delta": 15
+        },
+        {
+          "due_state_commit": "ef1f7c34825f0886e6fa68d30823ea30bee2a0b5",
+          "due": 1,
+          "stale": 1,
+          "market_incomplete": 0,
+          "next_missed_state_commit": "8a69c622204c7ed2abe07da5d0eadf38c1b780c7",
+          "missed_delta": 1
+        }
+      ]
+    },
+    "late_checkout_case": {
+      "fixture_id": "1571804",
+      "decision_observed_at_utc": "2026-10-14T13:59:06+00:00",
+      "fixture_kickoff_utc": "2026-10-14T15:00:00+00:00",
+      "first_ledger_persistence_commit": "0bd760f6b5f9c317605728ec33713a9d276779fe",
+      "persistence_commit_time_utc": "2026-10-14T16:46:36Z",
+      "cause": "LONG_LIVED_WATCHER_DID_NOT_REFRESH_OPERATIONAL_BRANCH_BEFORE_EACH_CYCLE"
+    },
+    "rescued_not_counted_as_current_miss": {
+      "fixture_id": "1559670",
+      "automation_result_before_kickoff": "API_FOOTBALL_PINNACLE_STALE_GT_120S",
+      "stale_state_commit": "f5a07ca274a20a2e4fa171c31abe20df1e1ac868",
+      "later_manual_physical_close_transport": "odds-api.net Sandbox",
+      "valid_close_observed_at_utc": "2026-10-15T02:59:21.036000+00:00",
+      "note": "This automation miss was later rescued by a valid prematch manual physical close, so it is not part of the current missed_after_kickoff=52."
+    }
+  },
+  "remediation": {
+    "completed": [
+      "PERSIST_PER_ATTEMPT_CLOSE_TELEMETRY_WITH_OUTCOME_AND_QUOTE_AGE",
+      "REFRESH_OPERATIONAL_BRANCH_BEFORE_EVERY_LONG_LIVED_WATCHER_CYCLE"
+    ],
+    "primary_remaining_transport_action": "PREFER_A_FRESHER_PINNACLE_TRANSPORT_WHEN_CREDENTIALLED; KEEP_API_FOOTBALL_ONLY_IF_QUOTE_AGE_PASSES_120S",
+    "forbidden": [
+      "INCREASE_120S_FRESHNESS_GATE_TO_RESCUE_MISSES",
+      "POST_KICKOFF_BACKFILL",
+      "TREAT_STALE_PINNACLE_AS_VALID_CLOSE"
+    ]
+  },
+  "protections": {
+    "automatic_wagering": false,
+    "real_money": "BLOCKED",
+    "odds_used_to_generate_probability": false
+  }
+}

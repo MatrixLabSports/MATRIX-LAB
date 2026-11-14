@@ -1,0 +1,47 @@
+{
+  "schema": "MATRIX_FOOTBALL_SHARP_REFERENCE_POLICY_V1",
+  "generated_at_utc": "2026-10-21T22:11:00Z",
+  "purpose": "Validate signal price context without mutating P_MATRIX.",
+  "sources": {
+    "pinnacle": {
+      "role": "PRIMARY_SHARP_REFERENCE",
+      "consensus_vote": true,
+      "notes": "Primary benchmark for no-vig price/CLV when market, timestamp and settlement rules match."
+    },
+    "circa": {
+      "role": "SECONDARY_SHARP_REFERENCE",
+      "consensus_vote": true,
+      "notes": "Secondary sharp sportsbook reference when physically available for the exact event/market."
+    },
+    "betfair": {
+      "role": "EXCHANGE_SHARP_REFERENCE",
+      "consensus_vote": true,
+      "notes": "Use only normalized executable back/lay market evidence with liquidity/freshness controls; do not substitute last traded price blindly."
+    },
+    "fanduel": {
+      "role": "MARKET_CONTEXT_ONLY",
+      "consensus_vote": false,
+      "notes": "Large-market comparator; never treated as a sharp consensus vote."
+    }
+  },
+  "integration": {
+    "module": "app/research/football/sharp_consensus.py",
+    "market_phase_1": "OVER_2_5",
+    "p_matrix_probability_source": "MODEL_ONLY",
+    "odds_used_to_generate_p_matrix": false,
+    "status": "DIAGNOSTIC_REVIEW_ONLY_UNTIL_PHYSICAL_SOURCE_COVERAGE_IS_PROVEN",
+    "contradiction_action": "REVIEW_ONLY",
+    "mandatory_signal_blocking": false
+  },
+  "freshness": {
+    "max_quote_age_seconds": 120,
+    "exact_market_identity_required": true,
+    "prematch_only": true
+  },
+  "protections": {
+    "no_silent_imputation": true,
+    "missing_not_zero": true,
+    "automatic_wagering": false,
+    "real_money": "BLOCKED"
+  }
+}

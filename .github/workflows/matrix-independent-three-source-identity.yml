@@ -1,0 +1,122 @@
+name: MATRIX Independent Three-Source Calendar Identity
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - repair/cor09-world-pipeline
+    paths:
+      - .github/workflows/matrix-independent-three-source-identity.yml
+      - tools/matrix_independent_triple_source_calendar_certificate.py
+      - tests/test_matrix_independent_triple_source_calendar_certificate.py
+      - tools/matrix_independent_feature_parity_audit.py
+      - tests/test_matrix_independent_feature_parity_audit.py
+
+permissions:
+  contents: write
+
+concurrency:
+  group: matrix-independent-three-source-identity
+  cancel-in-progress: false
+
+jobs:
+  certificate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      REAL_MONEY: BLOCKED
+      AUTO_BETTING: DISABLED
+      MATRIX_MODE: SHADOW
+    steps:
+      - name: Checkout operational code and original evidence
+        uses: actions/checkout@v4
+        with:
+          ref: repair/cor09-world-pipeline
+          fetch-depth: 0
+
+      - name: Enforce safety and read-only provider policy
+        run: |
+          test "$REAL_MONEY" = "BLOCKED"
+          test "$AUTO_BETTING" = "DISABLED"
+          test "$MATRIX_MODE" = "SHADOW"
+
+      - name: Install tests only
+        run: python -m pip install --disable-pip-version-check pytest
+
+      - name: Test exact identities and failure cases
+        run: PYTHONPATH=. python -m pytest -q tests/test_matrix_independent_triple_source_calendar_certificate.py tests/test_matrix_independent_feature_parity_audit.py
+
+      - name: Certify only the preexisting triple-source calendar matches
+        run: |
+          PYTHONPATH=. python -m tools.matrix_independent_triple_source_calendar_certificate \
+            --day 2026-11-03 \
+            --out evidence/football_world_inventory/2026-11-03/MATRIX_TRIPLE_SOURCE_CALENDAR_IDENTITY_CERTIFICATE.json
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          f=Path("evidence/football_world_inventory/2026-11-03/MATRIX_TRIPLE_SOURCE_CALENDAR_IDENTITY_CERTIFICATE.json")
+          cert=json.loads(f.read_text())
+          assert cert["triple_source_calendar_identities"] == 7
+          assert cert["independent_fixture_total"] == 19
+          assert cert["canonical_model_input_authorized"] is False
+          assert cert["telegram_signal_authorized"] is False
+          assert cert["real_money"] == "BLOCKED"
+          assert cert["model_feature_equivalence_verified"] is False
+          print("THREE_SOURCE_CALENDAR_IDENTITIES=7; MODEL_PARITY_AND_SIGNALS=BLOCKED")
+          PY
+
+      - name: Audit frozen model feature compatibility without emitting probabilities
+        run: |
+          PYTHONPATH=. python -m tools.matrix_independent_feature_parity_audit \
+            --day 2026-11-03 \
+            --out evidence/football_world_inventory/2026-11-03/MATRIX_INDEPENDENT_FEATURE_PARITY_AUDIT.json
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          p=Path("evidence/football_world_inventory/2026-11-03/MATRIX_INDEPENDENT_FEATURE_PARITY_AUDIT.json")
+          d=json.loads(p.read_text(encoding="utf-8"))
+          assert d["calendar_certified_fixture_count"] == 7
+          assert d["model_feature_parity_certified_count"] == 0
+          assert d["canonical_inputs_generated"] is False
+          assert d["telegram_signal_authorized"] is False
+          assert d["real_money"] == "BLOCKED"
+          print("FEATURE_PARITY_GATES_FAIL_CLOSED_ON_AUTHENTIC_SOURCE_EVIDENCE")
+          PY
+
+      - name: Upload historical parity gap evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: matrix-independent-feature-parity
+          path: evidence/football_world_inventory/2026-11-03/MATRIX_INDEPENDENT_FEATURE_PARITY_AUDIT.json
+
+      - name: Upload source-bound identity certificate
+        uses: actions/upload-artifact@v4
+        with:
+          name: matrix-three-source-calendar-identity
+          path: evidence/football_world_inventory/2026-11-03/MATRIX_TRIPLE_SOURCE_CALENDAR_IDENTITY_CERTIFICATE.json
+
+      - name: Preserve certificate without touching model or calibration
+        run: |
+          set -euo pipefail
+          P=evidence/football_world_inventory/2026-11-03/MATRIX_TRIPLE_SOURCE_CALENDAR_IDENTITY_CERTIFICATE.json
+          git config user.name matrix-three-source-identity
+          git config user.email matrix-three-source-identity@users.noreply.github.com
+          git add -- "$P" evidence/football_world_inventory/2026-11-03/MATRIX_INDEPENDENT_FEATURE_PARITY_AUDIT.json
+          if git diff --cached --quiet; then
+            echo THREE_SOURCE_CERTIFICATE_UNCHANGED
+            exit 0
+          fi
+          git commit -m "evidence(identity): certify seven three-provider calendar matches only"
+          for attempt in 1 2 3 4; do
+            git fetch origin repair/cor09-world-pipeline
+            if ! git rebase origin/repair/cor09-world-pipeline; then
+              git rebase --abort || true
+              exit 1
+            fi
+            if git push origin HEAD:repair/cor09-world-pipeline; then
+              echo THREE_SOURCE_CERTIFICATE_PERSISTED
+              exit 0
+            fi
+            sleep "$((attempt * 2))"
+          done
+          exit 1

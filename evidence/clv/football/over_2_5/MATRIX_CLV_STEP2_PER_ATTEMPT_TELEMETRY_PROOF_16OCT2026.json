@@ -1,0 +1,48 @@
+{
+  "schema": "MATRIX_CLV_STEP2_PER_ATTEMPT_TELEMETRY_PROOF_V1",
+  "generated_at_utc": "2026-10-16T03:06:30+00:00",
+  "step": 2,
+  "implementation": {
+    "api_football_code_commit": "4d02d011a3750be5108962d7c1d017f8e9a78c67",
+    "odds_api_net_code_commit": "307c7950a66330116ec6d68a0598331b2d4620e5",
+    "tracking_test_commit": "1ee79b0dd5633963749a6dccb87a57d2a4f07b87",
+    "odds_api_test_commit": "821a9b48b40dcbb2accc2abb6b3d47eecf171e72",
+    "telemetry_fields": [
+      "attempted_at_utc",
+      "provider_quote_updated_at_utc",
+      "provider_quote_age_seconds",
+      "gate_excess_seconds"
+    ],
+    "gate_excess_definition": "max(0, provider_quote_age_seconds - 120)",
+    "null_semantics": "provider timestamp/age/excess remain null when no provider quote exists (provider error, fixture lookup failure, identity failure, market incomplete).",
+    "strict_fresh_gate_seconds": 120,
+    "gate_changed": false
+  },
+  "verification": {
+    "primary_run_id": 38843552785,
+    "clean_isolation_run_id": 38843658396,
+    "clean_job_id": 116789176286,
+    "tests_passed": 9,
+    "test_duration_seconds": 0.23,
+    "assertions": [
+      "CLV_PER_ATTEMPT_TELEMETRY_CONTRACT=PASS",
+      "CLV_TELEMETRY_FIELDS=attempted_at_utc,provider_quote_updated_at_utc,provider_quote_age_seconds,gate_excess_seconds",
+      "CLV_TEST_EVIDENCE_ISOLATION=PASS",
+      "CLV_STRICT_FRESH_GATE_SECONDS=120",
+      "CLV_CONTINUOUS_WATCHER_FINAL_GATE: PASS"
+    ],
+    "stale_unit_case": {
+      "provider_quote_age_seconds": 121,
+      "gate_excess_seconds": 1
+    },
+    "synthetic_artifact_quarantine_path": "evidence/clv/football/over_2_5/MATRIX_CLV_CLOSING_ATTEMPT_TEST_ARTIFACT_QUARANTINE_16OCT2026.json",
+    "quarantined_test_rows": 4
+  },
+  "adjudication": "STEP_2_PHYSICALLY_VERIFIED",
+  "protections": {
+    "automatic_wagering": false,
+    "real_money": "BLOCKED",
+    "strict_fresh_gate_seconds": 120,
+    "freshness_gate_relaxed": false
+  }
+}

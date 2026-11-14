@@ -1,0 +1,44 @@
+{
+  "schema": "MATRIX_BROWSER_CAPTURE_DUPLICATE_AUDIT_V1",
+  "date_bogota": "2026-10-31",
+  "repository": "MatrixLabSports/MATRIX-LAB",
+  "branch": "repair/cor09-world-pipeline",
+  "method": "GitHub fetch of four raw JSON evidence files; normalized URL by removing fragment and query within each file",
+  "sources": {
+    "MATRIX_SOFASCORE_FOOTBALL_LINKS_20261031.json": {
+      "total": 60,
+      "unique_urls": 42,
+      "duplicates": 18
+    },
+    "MATRIX_FLASHSCORE_FOOTBALL_UNFILTERED_SAMPLE_20261031.json": {
+      "total": 50,
+      "unique_urls": 44,
+      "duplicates": 6
+    },
+    "MATRIX_SOFASCORE_OPERA_TENNIS_SAMPLE_20261031.json": {
+      "total": 20,
+      "unique_urls": 18,
+      "duplicates": 2
+    },
+    "MATRIX_FLASHscore_OPERA_TENNIS_DISCOVERY_20261031.json": {
+      "total": 129,
+      "unique_urls": 129,
+      "duplicates": 0
+    }
+  },
+  "totals": {
+    "observations": 259,
+    "within_file_unique_urls": 233,
+    "within_file_duplicate_observations": 26
+  },
+  "limitations": [
+    "233 unique URLs counted within source files, not cross-source unique matches",
+    "No kickoff/date certification",
+    "No real-time or Telegram delivery verification",
+    "CI workflow creation previously blocked"
+  ],
+  "approved_prematch": 0,
+  "approved_telegram": 0,
+  "real_money": "BLOCKED",
+  "automatic_wagering": false
+}

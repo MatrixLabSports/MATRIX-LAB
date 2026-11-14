@@ -1,0 +1,47 @@
+{
+  "schema": "MATRIX_TENNIS_SUBSCRIPTION_DEADLINE_V1",
+  "timezone": "America/Bogota",
+  "paid_primary": {
+    "provider": "rapidapi_tennis",
+    "paid_through_bogota_date": "2026-10-28",
+    "renewal_authorized": false,
+    "auto_renewal_authorized": false,
+    "spending_after_cutoff_authorized": false,
+    "priority_until_cutoff": "MAXIMIZE_USEFUL_EVIDENCE_WITHOUT_DUPLICATE_OR_LOW_VALUE_CALLS",
+    "review_interval_minutes": 15,
+    "review_cadence_policy": "SUPERVISE_EVERY_15_MINUTES_NETWORK_REFRESH_AT_MOST_HOURLY_UNLESS_MANUAL_OR_NEW_DAY",
+    "minimum_network_refresh_minutes": 60
+  },
+  "retired_sources": {
+    "api_tennis": {
+      "status": "EXPIRED_NOT_RENEWED",
+      "allowed_for_network_calls": false,
+      "renewal_authorized": false
+    }
+  },
+  "source_order": [
+    "SofaScore",
+    "Flashscore",
+    "RapidAPI Tennis"
+  ],
+  "before_cutoff": {
+    "hard": "PRIORITIZE_NEW_ELIGIBLE_FREEZES_AND_IDENTITY_HISTORY",
+    "clay": "PRIORITIZE_PIT_AND_IDENTITY_BLOCKER_RECOVERY",
+    "live": "DO_NOT_SPEND_PAID_CALLS_UNLESS_WORKFLOW_EXPLICITLY_REQUIRES_RAPIDAPI",
+    "harvest": "PERSIST_REUSABLE_INVENTORY_SNAPSHOTS_AND_RECEIPTS",
+    "paid_api_review": "EVERY_15_MINUTES_SUPERVISOR; NETWORK_REFRESH_AT_MOST_HOURLY_UNLESS_MANUAL_OR_NEW_DAY; BROWSER_FIRST_GATE_REQUIRED"
+  },
+  "after_cutoff": {
+    "paid_api_use": "BLOCKED_UNLESS_NEW_EXPLICIT_USER_AUTHORIZATION",
+    "free50": "DO_NOT_AUTO_ACTIVATE; REQUIRE_PHYSICAL_PLAN_CHECK_AND_USER_AUTHORIZATION"
+  },
+  "protections": {
+    "no_backfill_into_holdout": true,
+    "missing_not_zero": true,
+    "no_silent_imputation": true,
+    "odds_generate_probability": false,
+    "metrics_opened": false,
+    "automatic_wagering": false,
+    "real_money": "BLOCKED"
+  }
+}

@@ -1,0 +1,74 @@
+{
+  "schema": "MATRIX_CANONICAL_SOURCE_REGISTRY_V2",
+  "precedence": [
+    "LATEST_PHYSICAL_EVIDENCE",
+    "HANDOFF",
+    "MEMORY"
+  ],
+  "response_contract": {
+    "current_status_requires_physical_evidence": true,
+    "stale_source_must_not_be_reported_as_current": true,
+    "missing_evidence_result": "NO_CERTIFICADO",
+    "conflicting_sources_result": "FAIL_CLOSED",
+    "inference_must_be_labeled": true,
+    "current_metric_must_include_source_timestamp": true,
+    "tracker_pending_blocked_must_not_be_inferred_from_sync": true
+  },
+  "sources": {
+    "football_current_settlement": {
+      "canonical_path": "evidence/api_football/prospective_calibration/sync_last.json",
+      "timestamp_field": "synced_at_utc",
+      "max_age_minutes": 30,
+      "required_schema": "MATRIX_FOOTBALL_PROSPECTIVE_CALIBRATION_SYNC_V1",
+      "metric_paths": [
+        "calibration_observation_count",
+        "settlement_record_count",
+        "ledger_hash_chain_verified",
+        "parameters_mutated"
+      ],
+      "meaning": "CURRENT_SETTLED_COUNT_ONLY_NO_PENDING_BLOCKED_INFERENCE"
+    },
+    "football_tracker_structure": {
+      "canonical_path": "evidence/api_football/governance/MATRIX_FOOTBALL_4000_CANONICAL_TRACKER_LAST.json",
+      "timestamp_field": "generated_at_utc",
+      "max_age_minutes": 1440,
+      "required_schema": "MATRIX_FOOTBALL_4000_CANONICAL_TRACKER_V1",
+      "metric_paths": [
+        "global.valid_final_settlement_count",
+        "global.pending_count",
+        "global.blocked_count",
+        "global.frozen_event_count"
+      ],
+      "meaning": "STRUCTURAL_RECONCILIATION_SNAPSHOT_NOT_CURRENT_COUNT_IF_OLDER_THAN_SYNC"
+    },
+    "tennis_three_blocks": {
+      "canonical_path": "evidence/tennis/MATRIX_TENNIS_THREE_BLOCK_STAGNATION_AUDIT_LAST.json",
+      "timestamp_field": "generated_at_utc",
+      "max_age_minutes": 30,
+      "required_schema": "MATRIX_TENNIS_THREE_BLOCK_STAGNATION_AUDIT_V1",
+      "metric_paths": [
+        "blocks.hard.current_counter",
+        "blocks.clay.current_counter",
+        "blocks.live.current_counter"
+      ]
+    },
+    "live_tennis_cumulative": {
+      "canonical_path": "evidence/live_tennis_lab/MATRIX_LIVE_TENNIS_CUMULATIVE_GATE_V1.json",
+      "timestamp_field": "generated_at_utc",
+      "max_age_minutes": 30,
+      "required_schema": "MATRIX_LIVE_TENNIS_CUMULATIVE_GATE_V1",
+      "metric_path": "lanes.itf|women|hard.settled_quality_valid_unique_match_count"
+    },
+    "telegram_daily_bankroll": {
+      "canonical_path": "evidence/notifications/telegram/MATRIX_TELEGRAM_DAILY_BANKROLL_CANONICAL_LAST.json",
+      "timestamp_field": "generated_at_utc",
+      "max_age_minutes": 30,
+      "required_schema": "MATRIX_TELEGRAM_DAILY_BANKROLL_CANONICAL_V1",
+      "metric_paths": [
+        "summary.current_bankroll_cop",
+        "summary.total_profit_cop",
+        "summary.total_effective_settled"
+      ]
+    }
+  }
+}

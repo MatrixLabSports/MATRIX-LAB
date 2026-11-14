@@ -328,6 +328,7 @@ def _provider_http_boundary(
     bootstrap_module = "app.providers.api_football.bootstrap_client"
     governed_http_module = "app.core.governed_provider_http"
     governed_client = "app/providers/api_football/governed_client.py"
+    sportradar_governed_client = "app/providers/sportradar/governed_client.py"
     bootstrap_client = "app/providers/api_football/bootstrap_client.py"
     legacy_client = "app/providers/api_football/client.py"
 
@@ -363,7 +364,7 @@ def _provider_http_boundary(
                         alias.name == "GovernedProviderHttpSession"
                         for alias in item.names
                     )
-                    and relative != governed_client
+                    and relative not in {governed_client, sportradar_governed_client}
                 ):
                     violations.append(
                         f"{relative}:{item.lineno}:"

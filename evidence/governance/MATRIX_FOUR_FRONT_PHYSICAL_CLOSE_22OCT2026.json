@@ -1,0 +1,170 @@
+{
+  "schema": "MATRIX_FOUR_FRONT_PHYSICAL_CLOSE_22OCT2026_V1",
+  "generated_at_bogota": "2026-10-22T04:22:21-05:00",
+  "repository": "MatrixLabSports/MATRIX-LAB",
+  "branch": "repair/cor09-world-pipeline",
+  "browser_first": {
+    "opera_connected": true,
+    "observed_tabs": [
+      "SofaScore tennis 2026-10-22",
+      "Flashscore tennis",
+      "Flashscore football",
+      "Betano football"
+    ],
+    "note": "Browser-first sources physically available; no exact source-parity claim."
+  },
+  "tennis": {
+    "hard": {
+      "workflow_run": {
+        "run_number": 35,
+        "run_id": 39753951754,
+        "conclusion": "success"
+      },
+      "unique_calibration_observations": 302,
+      "physical_frozen_rows": 473,
+      "duplicate_observations_quarantined": 171,
+      "remaining_to_600": 298,
+      "last_increment": {
+        "from": 301,
+        "to": 302,
+        "new_unique": 1
+      },
+      "metrics_opened": false,
+      "outcomes_read_for_metrics": 0,
+      "integrity": "PASS",
+      "real_money": "BLOCKED"
+    },
+    "clay": {
+      "workflow_run": {
+        "run_number": 79,
+        "run_id": 39753960643,
+        "conclusion": "success"
+      },
+      "observation_count": 3,
+      "unique_physical_event_count": 3,
+      "future_clay_candidates_with_cut_ranking": 13,
+      "structured_bound_clay": 17,
+      "pit_ready_targets": 1,
+      "pit_blocked_targets": 25,
+      "pit_identity_backlog_count": 45,
+      "new_observations_this_cycle": 0,
+      "blocker": "PIT_OR_IDENTITY_COMPONENT_BLOCKED",
+      "metrics_opened": false,
+      "outcomes_read": 0,
+      "real_money": "BLOCKED"
+    },
+    "live": {
+      "workflow_runs": [
+        {
+          "run_number": 462,
+          "run_id": 39754054249,
+          "conclusion": "success"
+        },
+        {
+          "run_number": 463,
+          "run_id": 39754414121,
+          "conclusion": "success"
+        },
+        {
+          "run_number": 464,
+          "run_id": 39754511139,
+          "conclusion": "success"
+        },
+        {
+          "run_number": 465,
+          "run_id": 39754578718,
+          "conclusion": "success"
+        }
+      ],
+      "global_unique_match_count": 306,
+      "settled_quality_valid_total": 196,
+      "priority_lanes": {
+        "challenger|men|clay": {
+          "settled_quality_valid": 29,
+          "remaining_to_30": 1
+        },
+        "challenger|men|hard": {
+          "settled_quality_valid": 10,
+          "remaining_to_30": 20
+        },
+        "itf|women|hard": {
+          "settled_quality_valid": 75,
+          "remaining_to_100": 25
+        }
+      },
+      "prematch_hard_and_clay_untouched": "PASS",
+      "metrics_status": "SEALED",
+      "real_money": "BLOCKED"
+    },
+    "scheduler_repair": {
+      "old_failure": {
+        "run_number": 500,
+        "run_id": 39753943665,
+        "reason": "CONCURRENT_REBASE_CONFLICT_ON_TENNIS_WORLD_INVENTORY"
+      },
+      "test_fix_commit": "de32671cac7023eb982f7ecfaf5c7499eaf19cb5",
+      "anti_race_retry_commit": "5223ff7e963c6303cc36630de2f96cfb932a2916",
+      "validation_run": {
+        "run_number": 502,
+        "run_id": 39754473404,
+        "conclusion": "success"
+      }
+    },
+    "watchdog": {
+      "latest_verified_success_run": 122,
+      "run_id": 39754562292,
+      "prior_failure_118_resolved": true
+    }
+  },
+  "football": {
+    "workflow_run": {
+      "run_number": 69,
+      "run_id": 39753979223,
+      "conclusion": "success"
+    },
+    "global_calibration": {
+      "valid_final_settlements": 3820,
+      "target": 4000,
+      "remaining": 180,
+      "frozen_events": 4207,
+      "pending": 279,
+      "blocked": 108
+    },
+    "telegram_supervisor": {
+      "run_number": 348,
+      "run_id": 39754203411,
+      "conclusion": "success",
+      "tests": "44 passed",
+      "candidates": 35,
+      "waiting_final_revalidation_window": 26,
+      "blocked_no_valid_exact_authorized_book_over25": 8,
+      "blocked_ev_below_5pct": 1,
+      "pre_send_passed": 0,
+      "sent_now": 0,
+      "delivery_failures_now": 0,
+      "monitoring_breaches_now": 0,
+      "current_bankroll_cop": 4885750
+    },
+    "interpretation": "No green signal in audited cycle because no candidate passed final prematch gate; not a Telegram transport failure."
+  },
+  "governance": {
+    "source_priority": [
+      "SofaScore",
+      "Flashscore",
+      "APIs",
+      "reconciliation/dedupe",
+      "P_MATRIX",
+      "freeze prematch",
+      "odds/EV",
+      "Telegram"
+    ],
+    "missing_not_zero": true,
+    "no_silent_imputation": true,
+    "no_backfill": true,
+    "odds_generate_p_matrix": false,
+    "hard_metrics_sealed_until_600": true,
+    "automatic_wagering": false,
+    "real_money": "BLOCKED"
+  },
+  "conclusion": "PASS_PHYSICALLY_VERIFIED_WITH_OPEN_DATA_BLOCKERS"
+}

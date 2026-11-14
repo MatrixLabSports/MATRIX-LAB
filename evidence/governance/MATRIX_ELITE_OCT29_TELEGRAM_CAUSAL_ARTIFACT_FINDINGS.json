@@ -1,0 +1,39 @@
+{
+  "schema": "MATRIX_ELITE_TELEGRAM_CAUSAL_ARTIFACT_FINDINGS_V1",
+  "source": {
+    "workflow_run_id": 40823241999,
+    "artifact_id": 12875357877,
+    "artifact_name": "matrix-telegram-causal-trace",
+    "artifact_sha256_zip": "6db4828c08120776f95320dc2a25581fffa8ced2945a4a1de80301575cc475b1",
+    "generated_file": "MATRIX_TELEGRAM_CAUSAL_TRACE_LAST.json"
+  },
+  "verified_counts": {
+    "current_schema_attempts": 1306,
+    "identity_states": {
+      "MATCHED": 31,
+      "NOT_COVERED": 1275
+    },
+    "discard_reasons": {
+      "BLOCKED_NONPOSITIVE_EV": 10,
+      "BLOCKED_NO_FRESH_PINNACLE_REFERENCE": 6,
+      "BLOCKED_NO_VALID_EXACT_AUTHORIZED_BOOK_OVER25": 1290
+    },
+    "exact_over_2_5_seen_attempts": 31,
+    "both_identity_not_flagged_and_exact_line": 31
+  },
+  "key_observation": "Observed exact line and valid executable quote are distinct; some MATCHED and exact-line-seen attempts were still blocked as NO_VALID_EXACT_AUTHORIZED_BOOK_OVER25",
+  "open_questions": [
+    "Which exact odds validity gate rejects seen exact lines?",
+    "Did any candidate reach Telegram send attempt and receive Telegram API acknowledgment?",
+    "Are authorized odds providers still available after paid API expiry 2026-10-28?"
+  ],
+  "safety": {
+    "real_money": "BLOCKED",
+    "automatic_wagering": false
+  },
+  "do_not_claim": [
+    "Delivery restored",
+    "All 1290 discards caused solely by absence of any displayed exact line",
+    "31 eligible bets"
+  ]
+}

@@ -1,0 +1,227 @@
+"""Strict, entirely mocked contract tests for independent quotes (no API spending)."""
+from datetime import datetime,timedelta,timezone
+from tools.matrix_independent_over25_quote_audit import audit,_price_rows,match_event
+
+NOW=datetime(2026,11,2,16,30,tzinfo=timezone.utc)
+
+def intake():
+    return {"schema":"MATRIX_INDEPENDENT_FIXTURE_INTAKE_V1",
+            "target_date_bogota":"2026-11-02","real_money":"BLOCKED",
+            "signal_generation_authorized":False,"fixtures":[{
+                "source_fixture_id":"558541","home":"US Sassuolo Calcio",
+                "away":"ACF Fiorentina","kickoff_utc":"2026-11-02T17:30:00+00:00"}]}
+def scores():
+    return {"schema":"MATRIX_INDEPENDENT_OVER25_HISTORY_SHADOW_V1",
+            "target_date_bogota":"2026-11-02","real_money":"BLOCKED",
+            "market_signal_authorized":False,"scored":[{
+                "source_fixture_id":"558541","kickoff_utc":"2026-11-02T17:30:00+00:00",
+                "p_over25_research":0.68}]}
+class Response:
+    def __init__(self,payload,status=200):
+        self.status_code=status;self.payload=payload
+    def json(self):return self.payload
+class Fake:
+    def __init__(self,usage=None,stale=False,include_sharp=True):
+        self.calls=[];self.usage=usage or {"api_credits_used":20,"api_credits_limit":100}
+        self.stale=stale;self.include_sharp=include_sharp
+    def get(self,url,headers=None,params=None,timeout=None):
+        assert headers["X-API-Key"]=="test-secret"
+        self.calls.append(url)
+        if url.endswith("/usage"):return Response(self.usage)
+        if url.endswith("/events"):
+            return Response({"items":[{"event_id":"match-1","home_team":"US Sassuolo Calcio","away_team":"ACF Fiorentina"}]})
+        if url.endswith("/odds/snapshot"):
+            age=121 if self.stale else 30
+            ts=int((NOW-timedelta(seconds=age)).timestamp()*1000)
+            rows=[{"bookmaker":"betano","market_key":"total","bet_type":"total",
+                   "period_str":"full time","side":"over","line":2.5,
+                   "odds":1.9,"is_available":True}]
+            if self.include_sharp:
+                rows.append({"bookmaker":"pinnacle","market_key":"total","bet_type":"total",
+                             "period_str":"full time","side":"over","line":2.5,
+                             "odds":1.82,"is_available":True})
+            return Response({"bookmaker_as_of_ts_ms":{"betano":ts,"pinnacle":ts},"items":rows})
+        raise AssertionError(url)
+
+def test_verified_exact_quotes_remain_research_only_no_telegram():
+    s=Fake()
+    r=audit(intake(),scores(),"test-secret",session=s,now=NOW)
+    assert len(s.calls)==3
+    assert r["independent_match_count"]==1
+    assert r["bookmaker_quote_verified_count"]==1
+    assert r["sharp_120s_verified_count"]==1
+    assert r["audited"][0]["research_quality_gate_pass"] is True
+    assert r["audited"][0]["research_ev"]>0
+    assert r["signal_generation_authorized"] is False
+    assert r["telegram_messages_sent"]==0
+    assert r["production_calibration_parity_verified"] is False
+    assert r["real_money"]=="BLOCKED"
+
+def test_exhausted_monthly_quota_blocks_events_and_snapshots():
+    s=Fake(usage={"api_credits_used":100,"api_credits_limit":100,"exceeded":True})
+    r=audit(intake(),scores(),"test-secret",session=s,now=NOW)
+    assert r["quota_status"]=="BLOCKED_EXHAUSTED"
+    assert r["network_calls"]==1
+    assert s.calls==["https://api.odds-api.net/v1/usage"]
+    assert r["signal_generation_authorized"] is False
+
+def test_stale_quote_cannot_count_as_fresh():
+    s=Fake(stale=True)
+    r=audit(intake(),scores(),"test-secret",session=s,now=NOW)
+    assert r["bookmaker_quote_verified_count"]==0
+    assert r["sharp_120s_verified_count"]==0
+    assert r["audited"][0]["quotes"]==[]
+
+def test_reference_only_never_counts_as_colombia_quote():
+    s=Fake(include_sharp=False)
+    r=audit(intake(),scores(),"test-secret",session=s,now=NOW)
+    assert r["bookmaker_quote_verified_count"]==1
+    assert r["sharp_120s_verified_count"]==0
+    assert r["audited"][0]["identity_status"]!="RESEARCH_QUOTE_PAIRED_NO_CALIBRATION_PARITY"
+
+def test_rejects_ambiguous_team_pairs():
+    f=intake()["fixtures"][0]
+    e={"event_id":"1","home_team":"US Sassuolo Calcio","away_team":"ACF Fiorentina"}
+    event,status=match_event(f,[e,dict(e,event_id="2")])
+    assert event is None
+    assert status=="AMBIGUOUS_PROVIDER_EVENT_IDENTITY"
+
+def test_rejects_non_full_time_or_non_2_5_and_unavailable():
+    ts=int((NOW-timedelta(seconds=4)).timestamp()*1000)
+    snap={"bookmaker_as_of_ts_ms":{"betano":ts},"items":[
+         {"bookmaker":"betano","market_key":"total","bet_type":"total","period_str":"first half","side":"over","line":2.5,"odds":1.9,"is_available":True},
+         {"bookmaker":"betano","market_key":"total","bet_type":"total","period_str":"full time","side":"over","line":3.5,"odds":1.9,"is_available":True},
+         {"bookmaker":"betano","market_key":"total","bet_type":"total","period_str":"full time","side":"over","line":2.5,"odds":1.9,"is_available":False}]}
+    assert _price_rows(snap,NOW)==[]
+
+def test_no_sharp_or_model_parity_can_authorize_telegram():
+    s=Fake()
+    r=audit(intake(),scores(),"test-secret",session=s,now=NOW)
+    assert r["audited"][0]["identity_status"]=="RESEARCH_QUOTE_PAIRED_NO_CALIBRATION_PARITY"
+    assert all(v is False for v in (
+       r["provider_source_equivalence_verified"],
+       r["browser_first_reconciliation_verified"],
+       r["production_calibration_parity_verified"],
+       r["signal_generation_authorized"]
+    ))
+
+def test_out_of_window_never_contacts_pricing_endpoint():
+    s=Fake()
+    r=audit(intake(),scores(),"test-secret",session=s,now=NOW-timedelta(hours=8))
+    assert r["network_calls"]==0
+    assert r["quota_status"]=="SKIPPED_NO_PREMATCH_WINDOW"
+    assert s.calls==[]
+
+
+def test_token_outer_whitespace_does_not_corrupt_authorization_header():
+    session=Fake()
+    result=audit(intake(),scores(),"\n test-secret \r\n",session=session,now=NOW)
+    assert result["quota_status"] == "AUTHORIZED_LIVE_USAGE"
+    assert result["network_calls"] == 3
+    assert result["signal_generation_authorized"] is False
+
+
+def test_embedded_control_characters_block_before_network():
+    session=Fake()
+    result=audit(intake(),scores(),"bad\nsecret",session=session,now=NOW)
+    assert result["quota_status"] == "BLOCKED_INVALID_KEY_HEADER_FORMAT"
+    assert session.calls == []
+
+
+def test_recent_monthly_429_obeys_cooldown_and_makes_no_calls():
+    session=Fake()
+    previous={"target_date_bogota":"2026-11-02", "quota_status":"BLOCKED_USAGE_HTTP_429",
+              "generated_at_utc":(NOW-timedelta(minutes=15)).isoformat()}
+    result=audit(intake(),scores(),"test-secret",session=session,now=NOW,previous=previous)
+    assert result["quota_status"]=="BLOCKED_COOLDOWN_AFTER_429"
+    assert result["network_calls"]==0
+    assert session.calls==[]
+    assert result["signal_generation_authorized"] is False
+
+
+def test_expired_quota_cooldown_allows_one_fresh_usage_check():
+    session=Fake(usage={"api_credits_used":100,"api_credits_limit":100})
+    previous={"target_date_bogota":"2026-11-02", "quota_status":"BLOCKED_USAGE_HTTP_429",
+              "generated_at_utc":(NOW-timedelta(hours=2)).isoformat()}
+    result=audit(intake(),scores(),"test-secret",session=session,now=NOW,previous=previous)
+    assert result["quota_status"]=="BLOCKED_EXHAUSTED"
+    assert session.calls==["https://api.odds-api.net/v1/usage"]
+
+
+def test_cooldown_anchor_does_not_slide_forever_under_15_minute_schedule():
+    from copy import deepcopy
+    now=NOW
+    future=deepcopy(intake())
+    future["fixtures"][0]["kickoff_utc"]=(now+timedelta(minutes=115)).isoformat()
+    shadow=deepcopy(scores())
+    shadow["scored"][0]["kickoff_utc"]=future["fixtures"][0]["kickoff_utc"]
+    class Usage429(Fake):
+        def get(self,url,headers=None,params=None,timeout=None):
+            self.calls.append(url)
+            return Response({},429)
+    first_session=Usage429()
+    first=audit(future,shadow,"test-secret",session=first_session,now=now)
+    assert first["quota_status"]=="BLOCKED_USAGE_HTTP_429"
+    assert first["quota_cooldown_until_utc"]==(now+timedelta(hours=1)).isoformat()
+    assert len(first_session.calls)==1
+    previous=first
+    for advance in (15,30,45):
+        empty=Fake()
+        previous=audit(future,shadow,"test-secret",session=empty,
+                       now=now+timedelta(minutes=advance),previous=previous)
+        assert previous["quota_status"]=="BLOCKED_COOLDOWN_AFTER_429"
+        assert previous["quota_cooldown_until_utc"]==first["quota_cooldown_until_utc"]
+        assert empty.calls==[]
+    final_session=Fake()
+    final=audit(future,shadow,"test-secret",session=final_session,
+                now=now+timedelta(minutes=61),previous=previous)
+    assert final["quota_status"]=="AUTHORIZED_LIVE_USAGE"
+    assert final_session.calls
+
+
+def test_event_level_http_429_sets_absolute_circuit_breaker():
+    class Event429(Fake):
+        def get(self,url,headers=None,params=None,timeout=None):
+            if url.endswith("/usage"):
+                return Response({"api_credits_used":20,"api_credits_limit":100})
+            if url.endswith("/events"):
+                return Response({},429)
+            raise AssertionError("SNAPSHOT_MUST_NOT_BE_QUERIED_AFTER_429")
+    session=Event429()
+    r=audit(intake(),scores(),"test-secret",session=session,now=NOW)
+    assert r["quota_status"]=="BLOCKED_USAGE_HTTP_429"
+    assert r["status"]=="WAITING_FOR_PROVIDER_QUOTA_CIRCUIT_BREAKER"
+    assert r["quota_cooldown_until_utc"]==(NOW+timedelta(hours=1)).isoformat()
+    assert r["signal_generation_authorized"] is False
+
+
+def test_global_monthly_429_prevents_even_usage_request_in_prematch_window():
+    session=Fake()
+    guard={"schema":"MATRIX_ODDS_API_QUOTA_GUARD_V1","provider":"odds-api.net",
+           "decision":{"stage":"BLOCKED_EXHAUSTED","api_calls_allowed":False}}
+    r=audit(intake(),scores(),"test-secret",session=session,now=NOW,
+            global_quota_guard=guard)
+    assert r["in_120m_window"]==1
+    assert r["quota_status"]=="BLOCKED_GLOBAL_QUOTA_EXHAUSTED_OR_UNVERIFIED"
+    assert r["network_calls"]==0
+    assert session.calls==[]
+    assert r["telegram_messages_sent"]==0
+    assert r["signal_generation_authorized"] is False
+
+def test_absent_global_guard_file_is_not_an_authorization():
+    session=Fake()
+    r=audit(intake(),scores(),"test-secret",session=session,now=NOW,
+            global_quota_guard={"schema":"BLOCKED_MISSING_GLOBAL_QUOTA_GUARD"})
+    assert r["quota_status"]=="BLOCKED_GLOBAL_QUOTA_EXHAUSTED_OR_UNVERIFIED"
+    assert r["network_calls"]==0
+    assert session.calls==[]
+
+def test_global_guard_authorized_allows_same_local_usage_gate_not_direct_quotes():
+    session=Fake(usage={"api_credits_used":100,"api_credits_limit":100,"exceeded":True})
+    guard={"schema":"MATRIX_ODDS_API_QUOTA_GUARD_V1","provider":"odds-api.net",
+           "decision":{"stage":"WATCH_T120","api_calls_allowed":True}}
+    r=audit(intake(),scores(),"test-secret",session=session,now=NOW,
+            global_quota_guard=guard)
+    assert r["network_calls"]==1
+    assert r["quota_status"]=="BLOCKED_EXHAUSTED"
+    assert session.calls==["https://api.odds-api.net/v1/usage"]

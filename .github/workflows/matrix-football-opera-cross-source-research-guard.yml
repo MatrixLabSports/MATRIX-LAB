@@ -1,0 +1,35 @@
+name: MATRIX Football Opera Cross Source Research Guard
+
+on:
+  push:
+    branches:
+      - repair/cor09-world-pipeline
+    paths:
+      - tools/matrix_football_opera_cross_source_guard.py
+      - tests/test_matrix_football_opera_cross_source_guard.py
+      - evidence/football_calendar_reconciliation/2026-11-06/MATRIX_OPERA_CROSS_SOURCE_RESEARCH_MATCHES_20261106.json
+      - .github/workflows/matrix-football-opera-cross-source-research-guard.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  research-link-guard:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      REAL_MONEY: BLOCKED
+      AUTOMATIC_WAGERING: "false"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Run fail-closed real-link regressions
+        run: |
+          python -m pip install -q pytest
+          PYTHONPATH=. python -m pytest -q tests/test_matrix_football_opera_cross_source_guard.py
+      - name: Validate actual six browser research pairs without promoting to production
+        run: |
+          PYTHONPATH=. python -m tools.matrix_football_opera_cross_source_guard --date 2026-11-06 --input evidence/football_calendar_reconciliation/2026-11-06/MATRIX_OPERA_CROSS_SOURCE_RESEARCH_MATCHES_20261106.json

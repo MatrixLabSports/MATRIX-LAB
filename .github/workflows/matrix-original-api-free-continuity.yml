@@ -1,0 +1,86 @@
+name: MATRIX Original API Free Continuity (Research Only)
+# Vendor case 2026-11-09: Free access may be suspended from GitHub-hosted
+# shared Azure egress. Never automatically send requests from this runner.
+# Manual launch must remain disabled in practice until the user verifies a
+# dedicated outbound IP and API-SPORTS authorizes the egress. Manual dispatch
+# is preserved solely for controlled diagnostic maintenance.
+# No change to calibrated football models or real-money protections.
+# Tracking: https://github.com/MatrixLabSports/MATRIX-LAB/issues/3
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: matrix-original-api-free-continuity
+  cancel-in-progress: false
+
+jobs:
+  original-provider-capability:
+    runs-on: ubuntu-latest
+    timeout-minutes: 7
+    env:
+      REAL_MONEY: BLOCKED
+      AUTO_BETTING: DISABLED
+      API_FOOTBALL_DIRECT_KEY: ${{ secrets.API_FOOTBALL_DIRECT_KEY }}
+      API_FOOTBALL_KEY: ${{ secrets.API_FOOTBALL_KEY }}
+      API_FOOTBALL_API_KEY: ${{ secrets.API_FOOTBALL_API_KEY }}
+    steps:
+      - name: Checkout certified operational branch
+        uses: actions/checkout@v4
+        with:
+          ref: repair/cor09-world-pipeline
+          fetch-depth: 0
+      - name: Python for no-dependency original-provider probe
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Enforce unchanged no-betting gates
+        run: test "$REAL_MONEY" = BLOCKED && test "$AUTO_BETTING" = DISABLED
+      - name: Test strict quota, account redaction and nonpromotion contracts
+        run: |
+          python -m pip install --disable-pip-version-check pytest
+          python -m pytest -q tests/test_matrix_original_api_free_tier_probe.py
+      - name: Verify authenticated original provider and two-league access within two quota calls
+        run: python -m tools.matrix_original_api_free_tier_probe
+      - name: Verify proof is research-only and has no secret or account identity
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          p=Path("evidence/football_world_inventory/MATRIX_ORIGINAL_API_FREE_TIER_CAPABILITY_LAST.json")
+          d=json.loads(p.read_text())
+          assert d["real_money"]=="BLOCKED" and d["telegram_signal_authorized"] is False
+          assert d["original_p_matrix_promoted"] is False
+          assert d["all_six_leagues_verified"] is False
+          assert 0<=d["quota_consuming_calls"]<=2
+          assert d["http_status_calls"]<=1
+          assert "account" not in d or "account_status" in d
+          print({"capability_status":d["status"],"quota_calls":d["quota_consuming_calls"],
+                 "proof_preserved":True})
+          PY
+      - name: Persist only sanitized research capability receipt
+        run: |
+          git config user.name "matrix-research-verification"
+          git config user.email "matrix-research-verification@users.noreply.github.com"
+          git add -- evidence/football_world_inventory/MATRIX_ORIGINAL_API_FREE_TIER_CAPABILITY_LAST.json
+          if git diff --cached --quiet; then
+            echo MATRIX_FREE_API_PROBE_UNCHANGED
+            exit 0
+          fi
+          git commit -m "evidence(football): preserve direct API free-tier capability result"
+          for attempt in 1 2 3 4; do
+            git fetch origin repair/cor09-world-pipeline
+            if ! git rebase origin/repair/cor09-world-pipeline; then
+              git rebase --abort || true
+              echo ORIGINAL_API_PROBE_REAL_CONTENT_CONFLICT_FAIL_CLOSED
+              exit 1
+            fi
+            if git push origin HEAD:repair/cor09-world-pipeline; then
+              echo MATRIX_ORIGINAL_API_FREE_PROBE_PERSISTED
+              exit 0
+            fi
+            sleep $((attempt * 2))
+          done
+          exit 1

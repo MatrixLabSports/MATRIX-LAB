@@ -1,0 +1,52 @@
+{
+  "automatic_wagering": false,
+  "lane": "TEAM_GOALKEEPER_SAVES",
+  "line": 6.5,
+  "metrics_opened": true,
+  "minimum_train_required": 200,
+  "minimum_validation_required": 50,
+  "model_parameters": {
+    "baseline_probability": 0.41284403669724773,
+    "count_model": {
+      "scale": 1.007819248761708,
+      "shrinkage_alpha": 0.5,
+      "training_poisson_nll_without_constant": -4.902359681222743,
+      "training_target_mean": 6.08256880733945
+    },
+    "evaluation_line": 6.5
+  },
+  "model_parameters_sha256": "5307dc71b6cf1332af578881665b1a4c013297a84cc141a599dae9b19871bb7d",
+  "odds_used_to_generate_probability": false,
+  "p_matrix_generated": false,
+  "prospective_eligible": false,
+  "prospective_gates": [],
+  "real_money": "BLOCKED",
+  "row_count": 268,
+  "schema": "MATRIX_FOOTBALL_EXTENDED_TEAM_MODEL_V1",
+  "semantic_gate": "TEAM_AGGREGATE_FOUNDATION_NOT_INDIVIDUAL_GOALKEEPER_PROP",
+  "source_dataset": "evidence/api_football/market_expansion/team_pit/team_goalkeeper_saves_pit.jsonl",
+  "source_dataset_sha256": "64c5dd0c216b8878823131d3711932e04cf345671e04646a4f7e7ec3a5e813ad",
+  "status": "REJECTED_HISTORICAL_OOS",
+  "train_count": 218,
+  "validation": {
+    "baseline": {
+      "brier_score": 0.2541099234071208,
+      "ece_5bin": 0.06715596330275225,
+      "log_loss": 0.7015306837923612,
+      "max_calibration_error_5bin": 0.06715596330275225,
+      "sample_size": 50
+    },
+    "challenger": {
+      "brier_score": 0.25601124335024317,
+      "ece_5bin": 0.07070880367035418,
+      "log_loss": 0.7056304427378683,
+      "max_calibration_error_5bin": 0.0945693567803278,
+      "sample_size": 50
+    },
+    "delta_brier_challenger_minus_baseline": 0.0019013199431223704,
+    "delta_log_loss_challenger_minus_baseline": 0.0040997589455071815,
+    "gate_passed": false
+  },
+  "validation_count": 50,
+  "validation_used_for_parameter_tuning": false
+}

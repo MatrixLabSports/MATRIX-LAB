@@ -1,0 +1,125 @@
+{
+  "schema": "MATRIX_POST_MIDNIGHT_PHYSICAL_CHECKPOINT_19OCT2026_V1",
+  "checkpoint_date_bogota": "2026-10-19",
+  "verified_at_utc": "2026-10-19T06:01:36Z",
+  "repository": "MatrixLabSports/MATRIX-LAB",
+  "branch": "repair/cor09-world-pipeline",
+  "football_over25": {
+    "status": "PASS",
+    "calibration_observation_count": 3338,
+    "run_id": 39207129609,
+    "job_id": 117912296847,
+    "commit_sha": "6dfa9f0b78a08918b911903bb3c2df273450aeac",
+    "evidence_path": "evidence/api_football/calibration_v2/MATRIX_OVER25_FULL_CALIBRATION_AUDIT_CURRENT.json",
+    "brier_matrix": 0.23919986692551723,
+    "brier_poisson": 0.24206672097392073,
+    "logloss_matrix": 0.6716243283113652,
+    "logloss_poisson": 0.6788972236018715,
+    "ece_matrix": 0.03232676261317445,
+    "delta_brier": -0.0028668540484039565,
+    "brier_ci95": [
+      -0.004219694883328807,
+      -0.001514013213479106
+    ],
+    "delta_logloss": -0.007272895290507256,
+    "logloss_ci95": [
+      -0.010346889417523621,
+      -0.004198901163490891
+    ],
+    "verdict": "CHALLENGER_SUPERIOR_ON_FULL_CURRENT_SAMPLE_BY_PAIRED_95CI"
+  },
+  "tennis_hard": {
+    "status": "PASS",
+    "run_id": 39207390740,
+    "job_id": 117913102580,
+    "commit_sha": "1c1b433ee610bc5dddac30994ccf8dbb4e498436",
+    "evidence_path": "evidence/tennis_world_inventory/2026-10-19/MATRIX_TENNIS_HARD_DAILY_RESOLUTION.json",
+    "unique_calibration_observations": 282,
+    "remaining_to_600": 318,
+    "physical_frozen_rows": 453,
+    "duplicate_observations_quarantined": 171,
+    "new_unique_this_cycle": 0,
+    "structured_hard_bound_count": 17,
+    "sofascore_visible_total": 426,
+    "flashscore_visible_match_count": 74,
+    "metrics_opened": false,
+    "outcomes_read": 0
+  },
+  "tennis_clay": {
+    "status": "PASS_WITH_GOVERNED_BLOCKERS",
+    "run_id": 39203741546,
+    "job_id": 117901977358,
+    "prospective_observations": 3,
+    "remaining_to_600": 597,
+    "new_observations_this_cycle": 0,
+    "future_clay_candidates_with_cut_ranking": 26,
+    "structured_bound_clay": 30,
+    "pit_ready_targets": 7,
+    "pit_blocked_targets": 45,
+    "blocker": "PIT_OR_IDENTITY_COMPONENT_BLOCKED"
+  },
+  "tennis_live": {
+    "status": "PASS_SETTLEMENT_WORKFLOW_QUOTA_RESERVE_PROTECTED",
+    "run_id": 39204741208,
+    "job_id": 117905014417,
+    "cumulative_gate_path": "evidence/live_tennis_lab/MATRIX_LIVE_TENNIS_CUMULATIVE_GATE_V1.json",
+    "global_unique_match_count": 232,
+    "itf_women_hard_settled_quality_valid_unique_matches": 55,
+    "itf_women_hard_gate_50": "OPEN",
+    "itf_women_hard_remaining_to_100": 45,
+    "settlement_cycle_quota_remaining": 2,
+    "settlement_cycle_status": "BLOCKED_BY_RESERVE"
+  },
+  "telegram": {
+    "status": "PASS",
+    "run_id": 39207471995,
+    "job_id": 117913341740,
+    "commit_sha": "98fb55b827ea464c9f03ce9cd09e674e523f57e7",
+    "run_at_utc": "2026-10-19T06:01:07Z",
+    "bogota_date": "2026-10-19",
+    "football_candidates": 100,
+    "unsent_candidates": 98,
+    "pre_send_blocked": 74,
+    "pre_send_waiting_window": 24,
+    "pre_send_quote_checks": 3,
+    "pre_send_passed": 0,
+    "sent_now": 0,
+    "delivery_failures_now": 0,
+    "paper_bankroll_current_cop": 4836000,
+    "paper_open_bets": 0,
+    "total_green_messages": 211,
+    "total_settlements": 176,
+    "correlated_risk_h02_closed": false,
+    "correlated_risk_sample_records": 45
+  },
+  "clv": {
+    "status": "PASS_ACCUMULATING",
+    "run_id": 39200576250,
+    "job_id": 117892518292,
+    "closing_odds_count": 10,
+    "decision_count": 89,
+    "captured_new": 0,
+    "due_count": 0,
+    "remaining_to_subgate_30": 20,
+    "remaining_to_metrics_300": 290,
+    "metrics_opened": false,
+    "strict_fresh_gate_seconds": 120
+  },
+  "repairs_completed": [
+    "Football full calibration audit gate changed from fixed n=3308 to current synchronized observation count.",
+    "Tennis Hard browser-first gate updated to accept canonical 19-OCT browser-first reconciliation artifact.",
+    "Tennis Hard certification updated to handle API-Tennis retired status without requiring secondary_crosscheck."
+  ],
+  "governance": {
+    "source_priority": [
+      "SofaScore",
+      "Flashscore",
+      "APIs"
+    ],
+    "parameter_tuning_allowed": false,
+    "silent_imputation": false,
+    "missing_not_zero": true,
+    "automatic_wagering": false,
+    "real_money": "BLOCKED"
+  }
+}

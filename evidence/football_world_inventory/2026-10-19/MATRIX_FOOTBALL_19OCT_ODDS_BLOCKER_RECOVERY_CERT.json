@@ -1,0 +1,123 @@
+{
+  "schema": "MATRIX_FOOTBALL_19OCT_ODDS_BLOCKER_RECOVERY_CERT_V1",
+  "generated_at_utc": "2026-10-19T01:25:00Z",
+  "target_date_bogota": "2026-10-19",
+  "initial_state": {
+    "p_matrix_scored_count": 99,
+    "p_matrix_blocked_count": 42,
+    "executable_odds_blocked_count": 99,
+    "p_matrix_blocker": "BLOCKED_RAW_GROUP_MISSING"
+  },
+  "team_history_recovery_pass2": {
+    "workflow": ".github/workflows/football-19oct-history-recovery-pass2.yml",
+    "activation_commit": "9dd5f608a160c1b48e1871e947a1d214ad6ddcd9",
+    "run_id": 39184367871,
+    "job_id": 117843563088,
+    "conclusion": "success",
+    "initial_history_ready": 141,
+    "initial_history_blocked": 56,
+    "final_history_ready": 191,
+    "final_history_blocked": 6,
+    "captured_teams": 92,
+    "provider_errors": 0,
+    "daily_remaining_after": 6876,
+    "adjudication": "TEAM_HISTORY_RECOVERED_BUT_PMATRIX_GROUP_RAW_GATE_REMAINED"
+  },
+  "group_history_recovery_pass3": {
+    "workflow": ".github/workflows/football-19oct-group-recovery-pmatrix-pass3.yml",
+    "activation_commit": "c15983d9bf5010ad65ed1b95077d504523a3c27c",
+    "run_id": 39184742575,
+    "job_id": 117844673054,
+    "conclusion": "success",
+    "target_groups": 38,
+    "captured_groups": 38,
+    "provider_error_groups": 0,
+    "network_calls": 38,
+    "daily_remaining_after": 6680,
+    "original_42_recovered_to_p_matrix": 40,
+    "original_42_still_blocked": 2,
+    "remaining_original_blockers": [
+      {
+        "fixture_id": "1642178",
+        "league_id": "323",
+        "season": 2026,
+        "reason": "BLOCKED_GROUP_HISTORY_BELOW_20"
+      },
+      {
+        "fixture_id": "1645673",
+        "league_id": "425",
+        "season": 2026,
+        "reason": "BLOCKED_GROUP_HISTORY_BELOW_20"
+      }
+    ]
+  },
+  "recovered_integration": {
+    "workflow": ".github/workflows/football-19oct-integrate-recovered-pmatrix.yml",
+    "activation_commit": "1673290fa08ab03271d8235aa60e1f89d5534207",
+    "run_id": 39184876538,
+    "job_id": 117845079820,
+    "conclusion": "success",
+    "immutable_recovery_cycle": "20261019T012035Z_RECOVERY_PASS3",
+    "preserved_pre_recovery_report": "evidence/api_football/daily_prematch_reports/2026-10-19/over25_shadow_ev/MATRIX_FOOTBALL_DAILY_OVER25_GOVERNED_SHADOW_EV_PRE_RECOVERY_PASS3.json",
+    "current_report": "evidence/api_football/daily_prematch_reports/2026-10-19/over25_shadow_ev/MATRIX_FOOTBALL_DAILY_OVER25_GOVERNED_SHADOW_EV.json",
+    "all_rows": 191,
+    "p_matrix_scored_count": 151,
+    "p_matrix_blocked_count": 40,
+    "decision_counts": {
+      "BET_SHADOW": 0,
+      "BLOCKED": 191,
+      "NO_BET": 0
+    },
+    "executable_odds_blocked_count": 151,
+    "executable_odds_blocker": "NO_EXACT_POLICY_HOUSE_OVER25_ODDS_ABOVE_1_50"
+  },
+  "telegram_post_recovery_verification": {
+    "trigger_commit": "b2915c5944cf569065d96048ab23847b0a513877",
+    "run_id": 39185126643,
+    "job_id": 117845839284,
+    "conclusion": "success",
+    "run_at_utc": "2026-10-19T01:24:00+00:00",
+    "dates_scanned": [
+      "2026-10-19",
+      "2026-10-18",
+      "2026-10-17"
+    ],
+    "football_candidates": 242,
+    "football_unsent_candidates": 234,
+    "pre_send_blocked": 206,
+    "pre_send_waiting_window": 28,
+    "pre_send_passed": 0,
+    "pre_send_quote_checks": 0,
+    "sent_now": 0,
+    "bankroll_cop": 4836000,
+    "open_bets": 0,
+    "open_exposure_cop": 0,
+    "total_green_messages": 211,
+    "total_settlements": 176,
+    "correlated_risk_h02_closed": false,
+    "correlated_risk_samples": 45,
+    "correlated_risk_status": "READY_FAIL_CLOSED"
+  },
+  "temporal_quote_gate": {
+    "final_revalidation_window_minutes": 120,
+    "earliest_p_matrix_scored_kickoff_utc": "2026-10-19T05:00:00+00:00",
+    "earliest_p_matrix_scored_kickoff_bogota": "2026-10-19T00:00:00-05:00",
+    "earliest_final_revalidation_open_bogota": "2026-10-18T22:00:00-05:00",
+    "current_check_before_window": true,
+    "adjudication": "NO_FINAL_POLICY_HOUSE_QUOTE_CHECK_BEFORE_120_MINUTE_WINDOW"
+  },
+  "protections": {
+    "policy_houses": [
+      "Betano",
+      "BetPlay",
+      "Rushbet"
+    ],
+    "minimum_decimal_odds_exclusive": 1.5,
+    "odds_used_to_generate_probability": false,
+    "historical_backfill": false,
+    "forced_volume": false,
+    "automatic_wagering": false,
+    "real_money": "BLOCKED"
+  },
+  "final_adjudication": "RECOVERY_PHYSICALLY_VERIFIED_PMATRIX_99_TO_151_FINAL_QUOTES_FAIL_CLOSED_UNTIL_120M_WINDOW"
+}

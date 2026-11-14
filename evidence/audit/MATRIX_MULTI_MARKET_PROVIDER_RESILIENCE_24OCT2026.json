@@ -1,0 +1,71 @@
+{
+  "schema": "MATRIX_MULTI_MARKET_PROVIDER_RESILIENCE_24OCT2026_V1",
+  "generated_at_utc": "2026-10-24T11:52:30+00:00",
+  "objective": "Preserve 42-lane market work and physical evidence when API-Football is transiently unavailable; prevent market/catalog data loss and start priority market labs without inventing probability.",
+  "source_failures": [
+    {
+      "workflow": "MATRIX Football Daily Governed Pipeline",
+      "run_number": 92,
+      "run_id": 40090196800,
+      "conclusion": "failure",
+      "failure": "API_FOOTBALL_FIXTURE_CAPTURE_EXHAUSTED after 3 recoverable provider-error attempts"
+    },
+    {
+      "workflow": "MATRIX Football Daily Governed Pipeline",
+      "run_number": 90,
+      "run_id": 40089136922,
+      "conclusion": "failure",
+      "failure": "API_FOOTBALL_PROVIDER_ERRORS in prospective fixture capture"
+    }
+  ],
+  "physically_verified_before_repair": {
+    "multi_market_supervisor": {
+      "total_required_lanes": 42,
+      "football": 30,
+      "tennis": 12,
+      "aces_present": true,
+      "first_half_goals_present": true,
+      "second_half_goals_present": true
+    },
+    "tennis_paid_harvest_success_run_id": 40089003951,
+    "api_football_catalog_observed_in_run_86": {
+      "catalog_count": 338,
+      "TEAM_TOTAL_GOALS_HOME": 3,
+      "TEAM_TOTAL_GOALS_AWAY": 3,
+      "DOUBLE_CHANCE_12": 15,
+      "ASIAN_OR_EUROPEAN_HANDICAP": 20
+    }
+  },
+  "repairs": {
+    "fixture_retry_code": "tools/api_football_prospective_daily_cycle.py",
+    "provider_fail_closed_workflow": ".github/workflows/football-daily-governed-pipeline.yml",
+    "priority_market_lab": "tools/api_football_priority_market_lab.py",
+    "market_catalog_resilience": "tools/api_football_market_binding_catalog.py",
+    "supervisor": "tools/matrix_multi_market_supervisor.py"
+  },
+  "commits": [
+    "b82276d2e40c4b475ab55856f03eaca4e786d23e",
+    "42ef78427a5f185580f44fc565f3ad3ad02acff5",
+    "9627583073ff9fa8d45def1c26baeeadb86442a7",
+    "71b1536882251717c367264571ec68a361c7749c",
+    "511fdc4bddda92ee0e0f5afeee0e578eb5d6aadb",
+    "8422faa1f5297badfd5fd694153cb92a28432eb5",
+    "9d0d652e0b09a4585eda6b97ddc88091ebaec2b8",
+    "af24f9b6df7b478abe20622fe72023d104b53426"
+  ],
+  "invariants": {
+    "p_matrix_not_generated_from_odds": true,
+    "provider_outage_does_not_authorize_signal": true,
+    "empty_catalog_must_not_erase_last_nonempty_catalog": true,
+    "no_silent_probability_imputation": true,
+    "priority_labs_are_price_coverage_only_until_model_exists": true,
+    "automatic_wagering": false,
+    "real_money": "BLOCKED"
+  },
+  "runtime_certification": {
+    "latest_main_football_run_id": 40091602558,
+    "latest_main_football_run_number": 98,
+    "state_at_freeze": "QUEUED",
+    "final_end_to_end_status": "PENDING_RUNTIME_COMPLETION"
+  }
+}

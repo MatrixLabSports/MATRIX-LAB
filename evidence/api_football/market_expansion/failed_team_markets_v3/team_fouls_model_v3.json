@@ -1,0 +1,82 @@
+{
+  "automatic_wagering": false,
+  "evaluation_line": 28.5,
+  "internal_selection": {
+    "final_validation_used_for_selection": false,
+    "selected": {
+      "alpha": 1.0,
+      "dispersion_r": 100.0,
+      "internal_challenger": {
+        "brier_score": 0.18610958190782423,
+        "ece_5bin": 0.07725847912347894,
+        "log_loss": 0.5496097982352834,
+        "max_calibration_error_5bin": 0.32069359948039616,
+        "sample_size": 84
+      },
+      "internal_raw_expected_poisson_reference": {
+        "brier_score": 0.182365077650561,
+        "ece_5bin": 0.046124441245846186,
+        "log_loss": 0.5380262992103659,
+        "max_calibration_error_5bin": 0.14401967820149097,
+        "sample_size": 84
+      }
+    },
+    "trial_count": 24
+  },
+  "lane": "TEAM_FOULS",
+  "model_parameters": {
+    "alpha": 1.0,
+    "dispersion_r": 100.0,
+    "evaluation_line": 28.5,
+    "family": "NEGATIVE_BINOMIAL_SHRUNK_EXPECTED",
+    "scale": 1.0093870565648246,
+    "target_mean": 27.875
+  },
+  "model_parameters_sha256": "528ecb8abe51b3fe7ec20703cb56cbddacf3e06ab263dd2c0d8224ef8211d9dd",
+  "odds_used_to_generate_probability": false,
+  "p_matrix_generated": false,
+  "prospective_eligible": true,
+  "prospective_gates": [
+    30,
+    50,
+    100,
+    200
+  ],
+  "real_money": "BLOCKED",
+  "row_count": 274,
+  "schema": "MATRIX_FAILED_TEAM_MARKET_CHALLENGER_V3",
+  "source_dataset": "evidence/api_football/market_expansion/team_pit/team_fouls_pit.jsonl",
+  "source_dataset_sha256": "cc419f2e28327ff1fccba8041218095b3b19b7acf75682b872d5c7d519b05ee7",
+  "status": "FROZEN_FOR_NEW_PROSPECTIVE_VALIDATION_V3",
+  "train_count": 224,
+  "validation": {
+    "challenger": {
+      "brier_score": 0.22776909979042018,
+      "ece_5bin": 0.07868948361171048,
+      "log_loss": 0.6658545714130494,
+      "max_calibration_error_5bin": 0.15597570893747548,
+      "sample_size": 50
+    },
+    "constant_train_base_rate": {
+      "brier_score": 0.24603396045918374,
+      "ece_5bin": 0.07767857142857182,
+      "log_loss": 0.6852101571916235,
+      "max_calibration_error_5bin": 0.07767857142857182,
+      "sample_size": 50
+    },
+    "delta_brier_challenger_minus_constant": -0.018264860668763566,
+    "delta_brier_challenger_minus_raw": -0.0026817859464182414,
+    "delta_log_loss_challenger_minus_constant": -0.019355585778574103,
+    "delta_log_loss_challenger_minus_raw": -0.020711648210218758,
+    "gate_passed": true,
+    "raw_expected_poisson_reference": {
+      "brier_score": 0.23045088573683842,
+      "ece_5bin": 0.09243570967756569,
+      "log_loss": 0.6865662196232681,
+      "max_calibration_error_5bin": 0.18311608621536385,
+      "sample_size": 50
+    }
+  },
+  "validation_count": 50,
+  "validation_used_for_parameter_tuning": false
+}

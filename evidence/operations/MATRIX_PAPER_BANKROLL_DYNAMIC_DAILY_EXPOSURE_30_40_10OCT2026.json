@@ -1,0 +1,48 @@
+{
+  "schema": "MATRIX_PAPER_BANKROLL_DYNAMIC_DAILY_EXPOSURE_30_40_V1",
+  "effective_date_bogota": "2026-10-10",
+  "mode": "PAPER_ONLY",
+  "bankroll_cop": 5000000,
+  "policy": {
+    "standard_daily_exposure_fraction": 0.3,
+    "standard_daily_exposure_cop": 1500000,
+    "high_conviction_daily_exposure_fraction": 0.4,
+    "high_conviction_daily_exposure_cop": 2000000,
+    "high_conviction_gate": {
+      "minimum_stake3_signals": 5,
+      "minimum_tier2_or_3_share": 0.4,
+      "both_conditions_required": true
+    }
+  },
+  "current_10oct_cohort": {
+    "signal_count": 45,
+    "stake1_count": 25,
+    "stake2_count": 13,
+    "stake3_count": 7,
+    "tier2_or_3_count": 20,
+    "tier2_or_3_share": 0.4444444444444444,
+    "exposure_cop": 1800000,
+    "exposure_fraction": 0.36,
+    "classification": "HIGH_CONVICTION_DAY",
+    "within_policy": true
+  },
+  "telegram": {
+    "workflow_run_id": 38022756221,
+    "workflow_conclusion": "success",
+    "policy_update_message_id": 120
+  },
+  "commits": {
+    "engine": "7578423731d5f127dcab8094d84366cc1bffe0c0",
+    "tests": "68867fbf4db7de97def8a3a03225a0a1bb3c7dfa",
+    "policy": "2ccb517c92b29c0bbfeb5ee72682d65aa6e3c4f8",
+    "ledger_reclassification": "d577ec662402f940aa19b0c37907de8da0ddfa48"
+  },
+  "protections": {
+    "singles_only": true,
+    "automatic_wagering": false,
+    "real_money": "BLOCKED",
+    "odds_used_to_generate_probability": false,
+    "final_only_settlement": true
+  },
+  "note": "The 10-OCT cohort no longer needs a one-time exposure exception. It satisfies the governed 40% high-conviction-day gate and its 36% paper exposure is within policy."
+}

@@ -1,0 +1,70 @@
+{
+  "adjudication": "NO_PROMOTION_TIME_DECAY_NOT_SUPERIOR_ON_HOLDOUT",
+  "artifact_sha256": "6ecf8719319187b716fe52df9b784345d79df1e4333cac03855577c1b8bd3376",
+  "candidate_development_metrics": [
+    {
+      "dev_brier": 0.23250072960331933,
+      "dev_log_loss": 0.6591135862816363,
+      "half_life_days": 30
+    },
+    {
+      "dev_brier": 0.23031876046276367,
+      "dev_log_loss": 0.6535293716513082,
+      "half_life_days": 60
+    },
+    {
+      "dev_brier": 0.22980824087764223,
+      "dev_log_loss": 0.6523892011722555,
+      "half_life_days": 90
+    },
+    {
+      "dev_brier": 0.22950494213220224,
+      "dev_log_loss": 0.651732844460881,
+      "half_life_days": 180
+    }
+  ],
+  "development_fraction": 0.7,
+  "evaluation_kind": "RETROSPECTIVE_CHRONOLOGICAL_DEVELOPMENT_HOLDOUT_RESEARCH_ONLY",
+  "governance": {
+    "automatic_wagering": false,
+    "holdout_used_for_parameter_selection": false,
+    "odds_used_to_generate_probability": false,
+    "p_matrix_modified": false,
+    "production_engine_modified": false,
+    "real_money": "BLOCKED",
+    "research_only": true,
+    "telegram_modified": false
+  },
+  "holdout_beats_frozen_both_metrics": false,
+  "holdout_delta_selected_minus_frozen": {
+    "brier": 0.0001328678813884432,
+    "log_loss": 0.00038189391112986026
+  },
+  "metrics": {
+    "development": {
+      "frozen_brier": 0.22940020466494407,
+      "frozen_log_loss": 0.6514984470675446,
+      "n": 1665,
+      "selected_brier": 0.22950494213220224,
+      "selected_log_loss": 0.651732844460881
+    },
+    "holdout": {
+      "frozen_brier": 0.23729662805677496,
+      "frozen_log_loss": 0.667474699276034,
+      "n": 714,
+      "selected_brier": 0.2374294959381634,
+      "selected_log_loss": 0.6678565931871638
+    }
+  },
+  "pre_registered_half_lives_days": [
+    30,
+    60,
+    90,
+    180
+  ],
+  "row_count": 2379,
+  "schema": "MATRIX_OVER25_TIME_DECAY_CHALLENGER_V1",
+  "scope_note": "Tests exponential recency weighting inside MATRIX current lambda construction; this is not a full Dixon-Coles attack/defence MLE and does not estimate rho.",
+  "selected_half_life_days": 180,
+  "selection_rule": "MIN_DEVELOPMENT_BRIER_THEN_LOGLOSS_THEN_SHORTEST_HALF_LIFE"
+}

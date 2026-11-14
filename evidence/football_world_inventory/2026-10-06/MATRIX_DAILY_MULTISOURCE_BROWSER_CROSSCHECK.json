@@ -1,0 +1,76 @@
+{
+  "schema": "MATRIX_FOOTBALL_DAILY_MULTISOURCE_BROWSER_CROSSCHECK_V1",
+  "target_date_bogota": "2026-10-06",
+  "timezone": "America/Bogota",
+  "captured_at_utc": "2026-10-06T15:18:00Z",
+  "status": "PASS_WITH_LAZY_ENUMERATION_LIMITS",
+  "governance_basis": {
+    "permanent_source_policy": "docs/providers/MATRIX_AUXILIARY_PIT_FEATURE_SOURCES_V1.json",
+    "sofascore_flashscore_daily_crosscheck_required": true,
+    "api_football_mandatory_structured_source": true,
+    "no_single_source_world_truth": true
+  },
+  "sources": {
+    "sofascore": {
+      "url": "https://www.sofascore.com/es/football/2026-10-06",
+      "opera_read_status": "PASS",
+      "capabilities_observed": [
+        "calendar",
+        "competition",
+        "team identity",
+        "event time"
+      ],
+      "limitation": "The page is visibly broader than the old 75-link accessibility floor. Exact daily total is intentionally left null until physically captured from the visible UI; no invented total.",
+      "count_type": "PENDING_EXACT_UI_TOTAL",
+      "exact_daily_total": null,
+      "previously_observed_partial_accessibility_links": 75,
+      "previous_75_status": "INVALID_AS_DAILY_TOTAL_SUPERSEDED",
+      "partial_ui_live_count_observed": 46,
+      "connector_state_after_partial_read": "UNAVAILABLE"
+    },
+    "flashscore": {
+      "url": "https://www.flashscore.co/?d=2026-10-06",
+      "opera_read_status": "PASS",
+      "capabilities_observed": [
+        "calendar",
+        "competition",
+        "team identity",
+        "event time"
+      ],
+      "limitation": "The exact UI total 209 is physically visible in the user-provided screenshot. Accessibility enumeration remains lazy/partial and must not replace the UI total.",
+      "ui_total_count": 209,
+      "ui_live_count": 13,
+      "count_type": "USER_VISIBLE_UI_SCREENSHOT_VERIFIED",
+      "screenshot_observed_local_time": "2026-10-06T10:13:00-05:00"
+    },
+    "api_football": {
+      "role": "MANDATORY_STRUCTURED_ACQUISITION_IDS_TIMESTAMPS_HISTORY_FEATURES",
+      "horizon_snapshot_path": "evidence/api_football/prospective_horizon/last_run.json",
+      "network_calls_total": 480,
+      "target_day_fixtures_received": 200,
+      "target_day_eligible_future_fixtures": 146,
+      "target_day_ready_input_count": 138,
+      "target_day_new_freezes": 14
+    }
+  },
+  "adjudication": {
+    "browser_sources_must_be_checked_daily": true,
+    "api_football_counts_are_not_world_complete": true,
+    "browser_discovery_can_surface_api_omissions": true,
+    "reconciliation_and_canonical_identity_required_before_merge": true,
+    "physical_dedup_before_counter_increment": true,
+    "api_enrichment_after_discovery": true,
+    "raw_flashscore_vs_api_football_count_gap": 9,
+    "raw_gap_requires_reconciliation": true
+  },
+  "protections": {
+    "point_in_time_required": true,
+    "captured_at_required": true,
+    "missing_not_zero": true,
+    "silent_imputation": false,
+    "odds_to_p_matrix": false,
+    "metrics_opened": false,
+    "automatic_wagering": false,
+    "real_money": "BLOCKED"
+  }
+}

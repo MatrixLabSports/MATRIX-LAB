@@ -1,0 +1,24 @@
+{
+  "schema": "MATRIX_ELITE_OCT29_TELEGRAM_CLV_REGRESSION_PASS_V1",
+  "date_bogota": "2026-10-29",
+  "run_id": 40822448229,
+  "conclusion": "success",
+  "verified_steps": {
+    "Install test dependencies": "success",
+    "Enforce semantic workflow contracts": "success",
+    "Re-run certified CLV and Telegram regressions": "success",
+    "Final CI gate": "success"
+  },
+  "dependency_fix_commit": "8af40ae5dd81cd06a7ebec52e37123fba829f714",
+  "workflow_concurrency_fix_commit": "cc23451dc3cea73fd7acee540d491d0ed6c45c25",
+  "telegram_schedule_observed": "7,22,37,52 * * * *",
+  "limitations": [
+    "Passing regression tests does not establish real Telegram delivery",
+    "Provider subscription validity after October 28 unverified",
+    "Calendar timezone still unverified"
+  ],
+  "safety": {
+    "real_money": "BLOCKED",
+    "automatic_wagering": false
+  }
+}

@@ -1,0 +1,41 @@
+name: OMEGA PICKS Telegram Channel Readiness
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: repair/cor09-world-pipeline
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: python -m pip install requests pytest
+      - name: Verify contract
+        run: PYTHONPATH=. python -m pytest -q tests/test_omega_picks_channel_readiness.py
+      - name: Verify real Telegram channels
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          OMEGA_FREE_TELEGRAM_CHAT_ID: ${{ secrets.OMEGA_FREE_TELEGRAM_CHAT_ID }}
+          MATRIX_PREMIUM_TELEGRAM_CHAT_ID: ${{ secrets.MATRIX_PREMIUM_TELEGRAM_CHAT_ID }}
+          OMEGA_STAKAZO_TELEGRAM_CHAT_ID: ${{ secrets.OMEGA_STAKAZO_TELEGRAM_CHAT_ID }}
+        run: PYTHONPATH=. python -m tools.omega_picks_channel_readiness
+      - name: Persist readiness evidence
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name omega-channel-readiness
+          git config user.email omega-channel-readiness@users.noreply.github.com
+          git add evidence/governance/OMEGA_PICKS_TELEGRAM_CHANNEL_READINESS_LAST.json
+          if git diff --cached --quiet; then exit 0; fi
+          git commit -m "evidence(omega): persist Telegram channel readiness"
+          git pull --rebase origin repair/cor09-world-pipeline
+          git push origin HEAD:repair/cor09-world-pipeline

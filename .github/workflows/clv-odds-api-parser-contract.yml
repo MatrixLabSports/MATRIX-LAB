@@ -1,0 +1,33 @@
+name: MATRIX CLV odds-api Parser Contract
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - repair/cor09-world-pipeline
+    paths:
+      - tools/football_clv_odds_api_net_capture.py
+      - tests/test_football_clv_odds_api_net_capture.py
+      - .github/workflows/clv-odds-api-parser-contract.yml
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      REAL_MONEY: BLOCKED
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: repair/cor09-world-pipeline
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: python -m pip install pytest requests
+      - name: Run strict odds-api CLV parser tests
+        run: PYTHONPATH=. python -m pytest -q tests/test_football_clv_odds_api_net_capture.py
+      - name: Enforce safety
+        run: test "$REAL_MONEY" = "BLOCKED"

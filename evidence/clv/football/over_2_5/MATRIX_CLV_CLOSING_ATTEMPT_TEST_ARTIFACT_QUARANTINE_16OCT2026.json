@@ -1,0 +1,37 @@
+{
+  "schema": "MATRIX_CLV_CLOSING_ATTEMPT_TEST_ARTIFACT_QUARANTINE_V1",
+  "generated_at_utc": "2026-10-16T03:05:30+00:00",
+  "source_path": "evidence/clv/football/over_2_5/closing_attempts.jsonl",
+  "reason": "Historical unit test wrote to DEFAULT_ATTEMPT_LOG before tmp_path isolation was enforced.",
+  "quarantine_rule": {
+    "fixture_id": "fx-1",
+    "decision_id": "clv-over25-e848c5b692b2736a192676317b8a48f9b30c88f2ab925cb730978e20062156df",
+    "exclude_from_production_analysis": true,
+    "delete_from_append_only_log": false
+  },
+  "quarantined_rows": [
+    {
+      "attempt_sha256": "ef9022ae001f0f83e1c5b8c0be579f8d955fdf3462d22eaec2191b04c5209675",
+      "occurrences": 3,
+      "gate_excess_seconds": null
+    },
+    {
+      "attempt_sha256": "dc6bf7c7d8c49be3e5586c61c7869cf38b82f70f26fdab62fea8d31d5d109f97",
+      "occurrences": 1,
+      "gate_excess_seconds": 1
+    }
+  ],
+  "total_quarantined_rows": 4,
+  "remediation": {
+    "test_path": "tests/test_football_clv_tracking_cycle.py",
+    "isolation_commit": "1ee79b0dd5633963749a6dccb87a57d2a4f07b87",
+    "workflow_guard": "CLV_TEST_EVIDENCE_ISOLATION=PASS",
+    "workflow_run_id": 38843658396
+  },
+  "protections": {
+    "strict_fresh_gate_seconds": 120,
+    "gate_changed": false,
+    "automatic_wagering": false,
+    "real_money": "BLOCKED"
+  }
+}

@@ -1,0 +1,430 @@
+# MATRIX_POST_SEMANTIC_FIX_VERIFICATION 2026-10-27T04:59Z
+# MATRIX_POST_BUGFIX_VERIFICATION 2026-10-27T04:55Z
+# MATRIX_USER_AUTHORIZED_FINAL_VERIFICATION 2026-10-27T04:48Z
+name: Telegram MATRIX Supervisor cada 15 minutos
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - .github/workflows/telegram-matrix-supervisor-15m.yml
+  workflow_dispatch:
+  schedule:
+    - cron: "*/15 * * * *"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: telegram-matrix-supervisor-15m
+  cancel-in-progress: false
+
+jobs:
+  supervisor:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      MATRIX_MODE: SHADOW
+      REAL_MONEY: BLOCKED
+      AUTO_BETTING: DISABLED
+      PAPER_BANKROLL: ENABLED
+    steps:
+      - name: Checkout rama operativa
+        uses: actions/checkout@v4
+        with:
+          ref: repair/cor09-world-pipeline
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install governed dependencies
+        run: python -m pip install requests pytest pillow
+
+      - name: Verify permanent 15m monitoring contracts
+        run: |
+          PYTHONPATH=. python -m pytest -q \
+            tests/test_telegram_monitoring_watchdog.py \
+            tests/test_telegram_quote_recovery_window.py \
+            tests/test_telegram_final_window_readiness.py \
+            tests/test_telegram_sharp_reference_gate.py \
+            tests/test_telegram_colombia_portfolio_ev_lab.py \
+            tests/test_colombia_bookmaker_policy_sync.py \
+            tests/test_telegram_paper_bankroll.py \
+            tests/test_monitoring_scheduler_contracts.py \
+            tests/test_telegram_quote_attempt_telemetry.py tests/test_telegram_quote_attempt_telemetry_audit.py \
+            tests/test_telegram_elite_committee_audit.py \
+            tests/test_telegram_multi_market_signal_gate.py \
+            tests/test_telegram_signal_recovery_guard.py \
+            tests/test_telegram_opera_bookmaker_coverage_contract.py \
+            tests/test_odds_api_quota_guard.py \
+            tests/test_matrix_premium_cards.py \
+            tests/test_matrix_premium_result_watcher.py \
+            tests/test_matrix_quote_recovery_actuator.py \
+            tests/test_matrix_quote_recovery_evidence.py \
+            tests/test_telegram_quote_recovery_actuator_integration.py
+
+      - name: Verify scheduler source contract on default branch
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch origin main
+          git show origin/main:.github/workflows/telegram-matrix-supervisor-15m.yml > /tmp/telegram-matrix-supervisor-15m.yml
+          python - <<'PY'
+          from pathlib import Path
+          s=Path("/tmp/telegram-matrix-supervisor-15m.yml").read_text(encoding="utf-8")
+          required=[
+              'cron: "*/15 * * * *"',
+              "cancel-in-progress: false",
+              "ODDS_API_NET_KEY",
+              "python -m tools.telegram_green_signal_alerts",
+              "python -m tools.telegram_monitoring_watchdog",
+              "MATRIX_TELEGRAM_BLOCKER_RECOVERY_AUDIT_LAST.json",
+              "MATRIX_TELEGRAM_MONITORING_WATCHDOG_LAST.json",
+              "MATRIX_TELEGRAM_DAILY_BANKROLL_CANONICAL_LAST.json",
+              "MATRIX_TELEGRAM_QUOTE_ATTEMPTS.jsonl",
+              "MATRIX_TELEGRAM_QUOTE_ATTEMPT_TELEMETRY_AUDIT_LAST.json",
+              "MATRIX_TELEGRAM_QUOTE_TELEMETRY_CERTIFICATION_LAST.json",
+              "MATRIX_TELEGRAM_ELITE_COMMITTEE_AUDIT_LAST.json",
+              "MATRIX_TELEGRAM_FINAL_WINDOW_READINESS_LAST.json",
+              "MATRIX_TELEGRAM_MULTI_MARKET_SIGNAL_GATE_LAST.json",
+              "python -m tools.telegram_multi_market_signal_gate",
+              "tests/test_telegram_multi_market_signal_gate.py",
+              "python -m tools.telegram_final_window_readiness",
+              "tests/test_telegram_final_window_readiness.py",
+              "tests/test_telegram_elite_committee_audit.py",
+              "python -m tools.telegram_signal_recovery_guard",
+              "MATRIX_TELEGRAM_SIGNAL_RECOVERY_GUARD_LAST.json",
+              "tests/test_telegram_signal_recovery_guard.py",
+              "tests/test_telegram_opera_bookmaker_coverage_contract.py",
+              "python -m tools.telegram_opera_bookmaker_coverage_contract",
+              "MATRIX_COLOMBIA_BOOKMAKER_OPERA_COVERAGE_20261028.json",
+              "MATRIX_ODDS_API_QUOTA_GUARD_LAST.json",
+              "python -m tools.odds_api_quota_guard",
+              "tests/test_odds_api_quota_guard.py",
+          ]
+          missing=[x for x in required if x not in s]
+          if missing:
+              raise SystemExit("TELEGRAM_15M_CONTRACT_MISSING="+repr(missing))
+          print("TELEGRAM_15M_SCHEDULER_CONTRACT=PASS")
+          PY
+
+      - name: Enforce safety gates
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$MATRIX_MODE" = "SHADOW"
+          test "$REAL_MONEY" = "BLOCKED"
+          test "$AUTO_BETTING" = "DISABLED"
+          test "$PAPER_BANKROLL" = "ENABLED"
+
+      - name: Verify independent-source readiness without paid API
+        env:
+          API_FOOTBALL_KEY: ${{ secrets.API_FOOTBALL_KEY }}
+        run: |
+          PYTHONPATH=. python -m pytest -q tests/test_football_subscription_deadline_guard.py
+          PYTHONPATH=. python -m tools.football_subscription_deadline_guard --independent-source-readiness
+
+      - name: Validate Telegram and odds secrets
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          API_FOOTBALL_KEY: ${{ secrets.API_FOOTBALL_KEY }}
+          ODDS_API_NET_KEY: ${{ secrets.ODDS_API_NET_KEY }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -n "$TELEGRAM_BOT_TOKEN"
+          test -n "$TELEGRAM_CHAT_ID"
+          test -n "$ODDS_API_NET_KEY"
+          echo "TELEGRAM_15M_REQUIRED_SECRETS_PRESENT=PASS"
+
+      - name: Evaluate odds-api monthly quota guard
+        env:
+          ODDS_API_NET_KEY: ${{ secrets.ODDS_API_NET_KEY }}
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+        run: |
+          PYTHONPATH=. python -m pytest -q tests/test_odds_api_quota_guard.py
+          PYTHONPATH=. python -m tools.odds_api_quota_guard --notify
+
+      - name: Verify physical Opera bookmaker coverage contract
+        shell: bash
+        run: |
+          set -euo pipefail
+          PYTHONPATH=. python -m pytest -q tests/test_telegram_opera_bookmaker_coverage_contract.py
+          PYTHONPATH=. python -m tools.telegram_opera_bookmaker_coverage_contract
+
+      - name: Build multi-market signal eligibility gate
+        shell: bash
+        run: |
+          set -euo pipefail
+          PYTHONPATH=. python -m tools.telegram_multi_market_signal_gate
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          j=json.loads(Path("evidence/notifications/telegram/MATRIX_TELEGRAM_MULTI_MARKET_SIGNAL_GATE_LAST.json").read_text(encoding="utf-8"))
+          assert j["status"]=="PASS"
+          assert j["policy"]["silent_market_omission_forbidden"] is True
+          assert j["policy"]["automatic_wagering"] is False
+          assert j["policy"]["real_money"]=="BLOCKED"
+          print(json.dumps(j["summary"],sort_keys=True))
+          PY
+
+      - name: Ejecutar Quote Recovery Actuator antes del gate Telegram
+        env:
+          API_FOOTBALL_KEY: ${{ secrets.API_FOOTBALL_KEY }}
+        run: PYTHONPATH=. python -m tools.matrix_quote_recovery_actuator
+
+      - name: Ejecutar supervisor Telegram con recuperación multifuente
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          API_FOOTBALL_KEY: ${{ secrets.API_FOOTBALL_KEY }}
+          ODDS_API_NET_KEY: ${{ secrets.ODDS_API_NET_KEY }}
+        run: PYTHONPATH=. python -m tools.telegram_green_signal_alerts
+
+      - name: Certify final-window readiness for every waiting candidate
+        shell: bash
+        run: |
+          set -euo pipefail
+          PYTHONPATH=. python -m tools.telegram_final_window_readiness
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          p=Path("evidence/notifications/telegram/MATRIX_TELEGRAM_FINAL_WINDOW_READINESS_LAST.json")
+          j=json.loads(p.read_text(encoding="utf-8"))
+          assert j["status"]=="PASS"
+          assert j["summary"]["failures"]==0
+          assert j["summary"]["covered_by_15m_supervisor"]==j["summary"]["waiting_candidates"]
+          assert j["summary"]["source_contract_passed"]==j["summary"]["waiting_candidates"]
+          assert j["contracts"]["automatic_wagering"] is False
+          assert j["contracts"]["real_money"]=="BLOCKED"
+          print(json.dumps(j["summary"],sort_keys=True))
+          PY
+
+      - name: Certify dual-cadence signal recovery guard
+        shell: bash
+        run: |
+          set -euo pipefail
+          PYTHONPATH=. python -m pytest -q tests/test_telegram_signal_recovery_guard.py
+          PYTHONPATH=. python -m tools.telegram_signal_recovery_guard
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          p=Path("evidence/notifications/telegram/MATRIX_TELEGRAM_SIGNAL_RECOVERY_GUARD_LAST.json")
+          j=json.loads(p.read_text(encoding="utf-8"))
+          assert j["status"]=="PASS"
+          assert j["schedule_contract"]["maximum_combined_nominal_gap_minutes"]<=8
+          assert j["current_state"]["dual_cadence_covered_candidates"]==j["current_state"]["waiting_final_window_candidates"]
+          assert j["governance"]["lower_gates_to_force_signals"] is False
+          assert j["governance"]["automatic_wagering"] is False
+          assert j["governance"]["real_money"]=="BLOCKED"
+          print(json.dumps({
+            "status":j["status"],
+            "waiting":j["current_state"]["waiting_final_window_candidates"],
+            "covered":j["current_state"]["dual_cadence_covered_candidates"],
+            "earliest_window_open_utc":j["current_state"]["earliest_window_open_utc"],
+            "max_nominal_gap_minutes":j["schedule_contract"]["maximum_combined_nominal_gap_minutes"],
+          },sort_keys=True))
+          PY
+
+      - name: Build immutable quote-attempt telemetry audit
+        shell: bash
+        run: |
+          set -euo pipefail
+          PYTHONPATH=. python -m tools.telegram_quote_attempt_telemetry_audit
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          p=Path("evidence/notifications/telegram/MATRIX_TELEGRAM_QUOTE_ATTEMPT_TELEMETRY_AUDIT_LAST.json")
+          j=json.loads(p.read_text(encoding="utf-8"))
+          assert j["status"]=="PASS"
+          assert j["immutable_hash_chain_verified"] is True
+          assert j["first_terminal_state_independent"] is True
+          assert j["exact_line_policy"]["required_valid_execution_line"]==2.5
+          assert j["exact_line_policy"]["nearby_lines_never_substitute_for_2_5"] is True
+          assert j["protections"]["append_only"] is True
+          assert j["protections"]["historical_terminal_state_cannot_overwrite_attempt"] is True
+          assert j["protections"]["automatic_wagering"] is False
+          assert j["protections"]["real_money"]=="BLOCKED"
+          print(json.dumps({
+            "status":"PASS",
+            "real_quote_attempts_total":j["sample"]["real_quote_attempts_total"],
+            "remaining_to_minimum":j["sample"]["remaining_to_minimum"],
+            "sample_gate_status":j["sample"]["sample_gate_status"],
+            "recommendation_authorized":j["recommendation_gate"]["recommendation_authorized"],
+          },sort_keys=True))
+          PY
+
+      - name: Rebuild canonical daily bankroll
+        run: PYTHONPATH=. python -m tools.telegram_daily_bankroll_canonical
+
+      - name: Evaluate monitoring watchdog
+        id: watchdog
+        continue-on-error: true
+        run: PYTHONPATH=. python -m tools.telegram_monitoring_watchdog
+
+      - name: Run Sindicato Elite Telegram diagnostic committee
+        shell: bash
+        run: |
+          set -euo pipefail
+          PYTHONPATH=. python -m tools.telegram_elite_committee_audit
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          p=Path("evidence/notifications/telegram/MATRIX_TELEGRAM_ELITE_COMMITTEE_AUDIT_LAST.json")
+          j=json.loads(p.read_text(encoding="utf-8"))
+          assert j["role_count"] >= 20
+          assert j["committee_decision"]["lower_gates_to_force_signals"] is False
+          assert j["governance"]["automatic_wagering"] is False
+          assert j["governance"]["real_money"]=="BLOCKED"
+          print(json.dumps({
+            "status":j["status"],
+            "role_count":j["role_count"],
+            "direct_causes":j["direct_causes_of_current_zero"],
+            "reliability_defects_active":j["reliability_defects_active"],
+            "reliability_defects_repaired_verified":j["reliability_defects_repaired_verified"],
+          },sort_keys=True))
+          PY
+
+      - name: Persistir evidencia completa del supervisor
+        if: ${{ always() }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name matrix-telegram-supervisor
+          git config user.email matrix-telegram-supervisor@users.noreply.github.com
+
+          allowed=(
+            evidence/notifications/telegram/MATRIX_TELEGRAM_SIGNAL_LEDGER.json
+            evidence/notifications/telegram/MATRIX_TELEGRAM_BLOCKER_RECOVERY_AUDIT_LAST.json
+            evidence/notifications/telegram/MATRIX_EV_MARGINAL_SHADOW_LAB_LAST.json
+            evidence/notifications/telegram/MATRIX_TELEGRAM_DAILY_BANKROLL_CANONICAL_LAST.json
+            evidence/notifications/telegram/MATRIX_TELEGRAM_MONITORING_WATCHDOG_LAST.json
+            evidence/notifications/telegram/MATRIX_CORRELATED_RISK_CALIBRATION_LAST.json
+            evidence/notifications/telegram/MATRIX_TELEGRAM_QUOTE_ATTEMPTS.jsonl
+            evidence/notifications/telegram/MATRIX_TELEGRAM_QUOTE_ATTEMPT_TELEMETRY_AUDIT_LAST.json
+            evidence/notifications/telegram/MATRIX_TELEGRAM_QUOTE_TELEMETRY_CERTIFICATION_LAST.json
+            evidence/notifications/telegram/MATRIX_TELEGRAM_ELITE_COMMITTEE_AUDIT_LAST.json
+            evidence/notifications/telegram/MATRIX_TELEGRAM_FINAL_WINDOW_READINESS_LAST.json
+            evidence/notifications/telegram/MATRIX_TELEGRAM_SIGNAL_RECOVERY_GUARD_LAST.json
+            evidence/notifications/telegram/MATRIX_TELEGRAM_MULTI_MARKET_SIGNAL_GATE_LAST.json
+            evidence/notifications/telegram/MATRIX_ODDS_API_QUOTA_GUARD_LAST.json
+            evidence/notifications/telegram/MATRIX_QUOTE_RECOVERY_ACTUATOR_LAST.json
+            evidence/notifications/telegram/MATRIX_QUOTE_RECOVERY_EXECUTION_LEDGER.jsonl
+          )
+          for file in "${allowed[@]}"; do
+            if [ -e "$file" ]; then
+              git add "$file"
+            fi
+          done
+
+          # A generated tracked file must never remain outside the persistence set.
+          # Auto-stage only governed Telegram evidence; fail closed on any other dirty file.
+          unexpected=0
+          while IFS= read -r file; do
+            [ -z "$file" ] && continue
+            case "$file" in
+              evidence/notifications/telegram/MATRIX_TELEGRAM_SIGNAL_LEDGER.json|\
+              evidence/notifications/telegram/MATRIX_TELEGRAM_BLOCKER_RECOVERY_AUDIT_LAST.json|\
+              evidence/notifications/telegram/MATRIX_EV_MARGINAL_SHADOW_LAB_LAST.json|\
+              evidence/notifications/telegram/MATRIX_TELEGRAM_DAILY_BANKROLL_CANONICAL_LAST.json|\
+              evidence/notifications/telegram/MATRIX_TELEGRAM_MONITORING_WATCHDOG_LAST.json|\
+              evidence/notifications/telegram/MATRIX_CORRELATED_RISK_CALIBRATION_LAST.json|\
+              evidence/notifications/telegram/MATRIX_TELEGRAM_QUOTE_ATTEMPTS.jsonl|\
+              evidence/notifications/telegram/MATRIX_TELEGRAM_QUOTE_ATTEMPT_TELEMETRY_AUDIT_LAST.json|\
+              evidence/notifications/telegram/MATRIX_TELEGRAM_QUOTE_TELEMETRY_CERTIFICATION_LAST.json|\
+              evidence/notifications/telegram/MATRIX_TELEGRAM_ELITE_COMMITTEE_AUDIT_LAST.json|\
+              evidence/notifications/telegram/MATRIX_TELEGRAM_FINAL_WINDOW_READINESS_LAST.json|\
+              evidence/notifications/telegram/MATRIX_TELEGRAM_SIGNAL_RECOVERY_GUARD_LAST.json|\
+              evidence/notifications/telegram/MATRIX_TELEGRAM_MULTI_MARKET_SIGNAL_GATE_LAST.json|\
+              evidence/notifications/telegram/MATRIX_QUOTE_RECOVERY_ACTUATOR_LAST.json|\
+              evidence/notifications/telegram/MATRIX_QUOTE_RECOVERY_EXECUTION_LEDGER.jsonl)
+                git add "$file"
+                ;;
+              *)
+                echo "TELEGRAM_15M_UNEXPECTED_UNSTAGED_TRACKED_CHANGE:$file"
+                unexpected=1
+                ;;
+            esac
+          done < <(git diff --name-only)
+          if [ "$unexpected" -ne 0 ]; then
+            git status --short
+            exit 1
+          fi
+
+          if git diff --cached --quiet; then
+            echo "TELEGRAM_15M_NO_EVIDENCE_CHANGE"
+            exit 0
+          fi
+
+          git commit -m "evidence(telegram): persist governed 15m monitoring cycle"
+          if ! git diff --quiet; then
+            echo "TELEGRAM_15M_WORKTREE_DIRTY_AFTER_COMMIT"
+            git status --short
+            exit 1
+          fi
+          for attempt in 1 2 3 4; do
+            git fetch origin repair/cor09-world-pipeline
+            if ! git rebase origin/repair/cor09-world-pipeline; then
+              conflicts="$(git diff --name-only --diff-filter=U)"
+              unexpected=0
+              while IFS= read -r file; do
+                [ -z "$file" ] && continue
+                case "$file" in
+                  evidence/notifications/telegram/MATRIX_TELEGRAM_SIGNAL_LEDGER.json|\
+                  evidence/notifications/telegram/MATRIX_TELEGRAM_BLOCKER_RECOVERY_AUDIT_LAST.json|\
+                  evidence/notifications/telegram/MATRIX_EV_MARGINAL_SHADOW_LAB_LAST.json|\
+                  evidence/notifications/telegram/MATRIX_TELEGRAM_DAILY_BANKROLL_CANONICAL_LAST.json|\
+                  evidence/notifications/telegram/MATRIX_TELEGRAM_MONITORING_WATCHDOG_LAST.json|\
+                  evidence/notifications/telegram/MATRIX_CORRELATED_RISK_CALIBRATION_LAST.json|\
+                  evidence/notifications/telegram/MATRIX_TELEGRAM_QUOTE_ATTEMPTS.jsonl|\
+                  evidence/notifications/telegram/MATRIX_TELEGRAM_QUOTE_ATTEMPT_TELEMETRY_AUDIT_LAST.json|\
+                  evidence/notifications/telegram/MATRIX_TELEGRAM_QUOTE_TELEMETRY_CERTIFICATION_LAST.json|\
+                  evidence/notifications/telegram/MATRIX_TELEGRAM_ELITE_COMMITTEE_AUDIT_LAST.json|\
+                  evidence/notifications/telegram/MATRIX_TELEGRAM_FINAL_WINDOW_READINESS_LAST.json|\
+                  evidence/notifications/telegram/MATRIX_TELEGRAM_MULTI_MARKET_SIGNAL_GATE_LAST.json)
+                    git checkout --theirs -- "$file"
+                    git add "$file"
+                    ;;
+                  *)
+                    echo "TELEGRAM_15M_UNEXPECTED_REBASE_CONFLICT:$file"
+                    unexpected=1
+                    ;;
+                esac
+              done <<< "$conflicts"
+              if [ "$unexpected" -ne 0 ] || ! GIT_EDITOR=true git rebase --continue; then
+                git rebase --abort || true
+                exit 1
+              fi
+            fi
+            if git push origin HEAD:repair/cor09-world-pipeline; then
+              echo "TELEGRAM_15M_EVIDENCE_PUSH=PASS"
+              exit 0
+            fi
+            sleep $((attempt*2))
+          done
+          exit 1
+
+      - name: Final monitoring gate
+        if: ${{ always() }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          p=Path("evidence/notifications/telegram/MATRIX_TELEGRAM_MONITORING_WATCHDOG_LAST.json")
+          if not p.exists():
+              raise SystemExit("TELEGRAM_WATCHDOG_REPORT_MISSING")
+          j=json.loads(p.read_text(encoding="utf-8"))
+          summary=j.get("summary") or {}
+          print(json.dumps(summary, sort_keys=True))
+          if summary.get("status") != "PASS":
+              raise SystemExit("TELEGRAM_15M_WATCHDOG_FAIL_CLOSED")
+          print("TELEGRAM_15M_FINAL_GATE=PASS")
+          PY

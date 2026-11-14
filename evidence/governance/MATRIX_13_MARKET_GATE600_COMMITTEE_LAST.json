@@ -1,0 +1,361 @@
+{
+  "committee_roles": [
+    "QUANT_VALIDATION",
+    "PIT_TEMPORAL_INTEGRITY",
+    "SETTLEMENT_COHORT_AUDIT",
+    "PERIOD_GOALS_MODELLING",
+    "ODDS_SHARP_CLV",
+    "TELEGRAM_RELIABILITY",
+    "TEST_ENGINEERING",
+    "EVIDENCE_GOVERNANCE"
+  ],
+  "governance": {
+    "automatic_wagering": false,
+    "historical_4000_not_42_lane_settlement": true,
+    "missing_not_zero": true,
+    "no_automatic_promotion": true,
+    "no_odds_to_probability": true,
+    "period_walk_forward_not_42_lane_settlement": true,
+    "post_start_backfill_forbidden": true,
+    "real_money": "BLOCKED",
+    "stale_post600_snapshot_never_current_proof": true,
+    "telegram_messages_sent": 0
+  },
+  "lanes": [
+    {
+      "automatically_promoted": false,
+      "current_exact_settled_count_verified": null,
+      "decision": "NO_GO_EXISTING_DIAGNOSTIC_CHALLENGER",
+      "display_name": "Doble oportunidad 12",
+      "historical_4000_metrics_separate_cohort": {},
+      "market_key": "DOUBLE_CHANCE_12",
+      "older_audit_at_utc": "2026-10-25T05:28:57+00:00",
+      "older_audit_exact_settled_reference": 42,
+      "period_goals_research_metrics_separate_cohort": {},
+      "prospective_freeze_gate_600_reached": true,
+      "prospective_valid_freezes": 727,
+      "required_next_action": "RETAIN_DIAGNOSTIC_NO_PROMOTION_UNTIL_NEW_PREDECLARED_VALIDATION",
+      "settlement_evidence": "OLDER_AUDIT_REFERENCE_ONLY",
+      "supervisor_state": "LAB",
+      "telegram_signal_authorized_by_this_audit": false
+    },
+    {
+      "automatically_promoted": false,
+      "current_exact_settled_count_verified": null,
+      "decision": "HOLD_FORMAL_PROMOTION_AND_EXACT_COHORT_SETTLEMENT_PENDING",
+      "display_name": "Doble oportunidad 1X",
+      "historical_4000_metrics_separate_cohort": {
+        "DOUBLE_CHANCE_1X": {
+          "brier_score": 0.19847453931124642,
+          "cohort": "HISTORICAL_FINAL_ONLY_4000_NOT_42_LANE_GATE600",
+          "eligible_rows": 4000,
+          "log_loss": 0.5817436339044746,
+          "status": "MEASURED_NOT_SIGNAL_PROMOTED"
+        }
+      },
+      "market_key": "DOUBLE_CHANCE_1X",
+      "older_audit_at_utc": "2026-10-25T05:28:57+00:00",
+      "older_audit_exact_settled_reference": 42,
+      "period_goals_research_metrics_separate_cohort": {},
+      "prospective_freeze_gate_600_reached": true,
+      "prospective_valid_freezes": 727,
+      "required_next_action": "REBUILD_FRESH_GATE600_EXACT_FINAL_SETTLEMENT_AUDIT_WITH_FORMAL_PROMOTION_REVIEW",
+      "settlement_evidence": "OLDER_AUDIT_REFERENCE_ONLY",
+      "supervisor_state": "LAB",
+      "telegram_signal_authorized_by_this_audit": false
+    },
+    {
+      "automatically_promoted": false,
+      "current_exact_settled_count_verified": null,
+      "decision": "HOLD_FORMAL_PROMOTION_AND_EXACT_COHORT_SETTLEMENT_PENDING",
+      "display_name": "Doble oportunidad X2",
+      "historical_4000_metrics_separate_cohort": {
+        "DOUBLE_CHANCE_X2": {
+          "brier_score": 0.22986123296450106,
+          "cohort": "HISTORICAL_FINAL_ONLY_4000_NOT_42_LANE_GATE600",
+          "eligible_rows": 4000,
+          "log_loss": 0.6519000060167605,
+          "status": "MEASURED_NOT_SIGNAL_PROMOTED"
+        }
+      },
+      "market_key": "DOUBLE_CHANCE_X2",
+      "older_audit_at_utc": "2026-10-25T05:28:57+00:00",
+      "older_audit_exact_settled_reference": 42,
+      "period_goals_research_metrics_separate_cohort": {},
+      "prospective_freeze_gate_600_reached": true,
+      "prospective_valid_freezes": 727,
+      "required_next_action": "REBUILD_FRESH_GATE600_EXACT_FINAL_SETTLEMENT_AUDIT_WITH_FORMAL_PROMOTION_REVIEW",
+      "settlement_evidence": "OLDER_AUDIT_REFERENCE_ONLY",
+      "supervisor_state": "LAB",
+      "telegram_signal_authorized_by_this_audit": false
+    },
+    {
+      "automatically_promoted": false,
+      "current_exact_settled_count_verified": null,
+      "decision": "HOLD_FORMAL_PROMOTION_AND_EXACT_COHORT_SETTLEMENT_PENDING",
+      "display_name": "1X2",
+      "historical_4000_metrics_separate_cohort": {
+        "MATCH_RESULT_1X2": {
+          "brier_score": 0.602818370280716,
+          "cohort": "HISTORICAL_FINAL_ONLY_4000_NOT_42_LANE_GATE600",
+          "eligible_rows": 4000,
+          "log_loss": 1.0114527963993976,
+          "status": "MEASURED_NOT_SIGNAL_PROMOTED"
+        }
+      },
+      "market_key": "MATCH_RESULT_1X2",
+      "older_audit_at_utc": "2026-10-25T05:28:57+00:00",
+      "older_audit_exact_settled_reference": 42,
+      "period_goals_research_metrics_separate_cohort": {},
+      "prospective_freeze_gate_600_reached": true,
+      "prospective_valid_freezes": 727,
+      "required_next_action": "REBUILD_FRESH_GATE600_EXACT_FINAL_SETTLEMENT_AUDIT_WITH_FORMAL_PROMOTION_REVIEW",
+      "settlement_evidence": "OLDER_AUDIT_REFERENCE_ONLY",
+      "supervisor_state": "LAB",
+      "telegram_signal_authorized_by_this_audit": false
+    },
+    {
+      "automatically_promoted": false,
+      "current_exact_settled_count_verified": null,
+      "decision": "HISTORICAL_OVER25_ONLY_RUNTIME_GATES_STILL_REQUIRED",
+      "display_name": "Over/Under goles",
+      "historical_4000_metrics_separate_cohort": {
+        "OVER_2_5": {
+          "brier_score": 0.23933408295111208,
+          "cohort": "HISTORICAL_FINAL_ONLY_4000_NOT_42_LANE_GATE600",
+          "eligible_rows": 4000,
+          "log_loss": 0.6718171180059201,
+          "status": "SIGNAL_AUTHORIZED"
+        },
+        "UNDER_2_5": {
+          "brier_score": 0.23933408295111208,
+          "cohort": "HISTORICAL_FINAL_ONLY_4000_NOT_42_LANE_GATE600",
+          "eligible_rows": 4000,
+          "log_loss": 0.6718171180059201,
+          "status": "MEASURED_NOT_SIGNAL_PROMOTED"
+        }
+      },
+      "market_key": "TOTAL_GOALS_OVER_UNDER",
+      "older_audit_at_utc": null,
+      "older_audit_exact_settled_reference": null,
+      "period_goals_research_metrics_separate_cohort": {},
+      "prospective_freeze_gate_600_reached": true,
+      "prospective_valid_freezes": 727,
+      "required_next_action": "CHECK_FRESH_CANONICAL_P_MATRIX_EXACT_BOOK_PRICE_SHARP_EV_AND_PRE_KICKOFF_BEFORE_ANY_SIGNAL",
+      "settlement_evidence": "NO_CURRENT_COHORT_SETTLEMENT_AUDIT",
+      "supervisor_state": "ACTIVE",
+      "telegram_signal_authorized_by_this_audit": false
+    },
+    {
+      "automatically_promoted": false,
+      "current_exact_settled_count_verified": null,
+      "decision": "HOLD_PERIOD_GOALS_RESEARCH_ONLY_PRICE_PROMOTION_REQUIRED",
+      "display_name": "Goles equipo visitante primer tiempo",
+      "historical_4000_metrics_separate_cohort": {},
+      "market_key": "FIRST_HALF_TEAM_TOTAL_GOALS_AWAY",
+      "older_audit_at_utc": null,
+      "older_audit_exact_settled_reference": null,
+      "period_goals_research_metrics_separate_cohort": {
+        "first_half_away_team_over_0_5": {
+          "brier_score": 0.2440335808,
+          "cohort": "PERIOD_GOALS_RESEARCH_WALK_FORWARD_NOT_42_LANE_GATE600",
+          "observations": 3177
+        }
+      },
+      "prospective_freeze_gate_600_reached": true,
+      "prospective_valid_freezes": 634,
+      "required_next_action": "COMPLETE_DEDICATED_PREMATCH_VALIDATION_PRICE_MAPPING_AND_FORMAL_PROMOTION",
+      "settlement_evidence": "NO_CURRENT_COHORT_SETTLEMENT_AUDIT",
+      "supervisor_state": "LAB",
+      "telegram_signal_authorized_by_this_audit": false
+    },
+    {
+      "automatically_promoted": false,
+      "current_exact_settled_count_verified": null,
+      "decision": "HOLD_PERIOD_GOALS_RESEARCH_ONLY_PRICE_PROMOTION_REQUIRED",
+      "display_name": "Goles equipo local primer tiempo",
+      "historical_4000_metrics_separate_cohort": {},
+      "market_key": "FIRST_HALF_TEAM_TOTAL_GOALS_HOME",
+      "older_audit_at_utc": null,
+      "older_audit_exact_settled_reference": null,
+      "period_goals_research_metrics_separate_cohort": {
+        "first_half_home_team_over_0_5": {
+          "brier_score": 0.248141817,
+          "cohort": "PERIOD_GOALS_RESEARCH_WALK_FORWARD_NOT_42_LANE_GATE600",
+          "observations": 3177
+        }
+      },
+      "prospective_freeze_gate_600_reached": true,
+      "prospective_valid_freezes": 634,
+      "required_next_action": "COMPLETE_DEDICATED_PREMATCH_VALIDATION_PRICE_MAPPING_AND_FORMAL_PROMOTION",
+      "settlement_evidence": "NO_CURRENT_COHORT_SETTLEMENT_AUDIT",
+      "supervisor_state": "LAB",
+      "telegram_signal_authorized_by_this_audit": false
+    },
+    {
+      "automatically_promoted": false,
+      "current_exact_settled_count_verified": null,
+      "decision": "HOLD_PERIOD_GOALS_RESEARCH_ONLY_PRICE_PROMOTION_REQUIRED",
+      "display_name": "Goles primer tiempo Over/Under",
+      "historical_4000_metrics_separate_cohort": {},
+      "market_key": "FIRST_HALF_TOTAL_GOALS_OVER_UNDER",
+      "older_audit_at_utc": null,
+      "older_audit_exact_settled_reference": null,
+      "period_goals_research_metrics_separate_cohort": {
+        "first_half_over_0_5": {
+          "brier_score": 0.2140348321,
+          "cohort": "PERIOD_GOALS_RESEARCH_WALK_FORWARD_NOT_42_LANE_GATE600",
+          "observations": 3177
+        },
+        "first_half_over_1_5": {
+          "brier_score": 0.2215163338,
+          "cohort": "PERIOD_GOALS_RESEARCH_WALK_FORWARD_NOT_42_LANE_GATE600",
+          "observations": 3177
+        }
+      },
+      "prospective_freeze_gate_600_reached": true,
+      "prospective_valid_freezes": 634,
+      "required_next_action": "COMPLETE_DEDICATED_PREMATCH_VALIDATION_PRICE_MAPPING_AND_FORMAL_PROMOTION",
+      "settlement_evidence": "NO_CURRENT_COHORT_SETTLEMENT_AUDIT",
+      "supervisor_state": "LAB",
+      "telegram_signal_authorized_by_this_audit": false
+    },
+    {
+      "automatically_promoted": false,
+      "current_exact_settled_count_verified": null,
+      "decision": "HOLD_PERIOD_GOALS_RESEARCH_ONLY_PRICE_PROMOTION_REQUIRED",
+      "display_name": "Goles equipo visitante segundo tiempo",
+      "historical_4000_metrics_separate_cohort": {},
+      "market_key": "SECOND_HALF_TEAM_TOTAL_GOALS_AWAY",
+      "older_audit_at_utc": null,
+      "older_audit_exact_settled_reference": null,
+      "period_goals_research_metrics_separate_cohort": {
+        "second_half_away_team_over_0_5": {
+          "brier_score": 0.2485051026,
+          "cohort": "PERIOD_GOALS_RESEARCH_WALK_FORWARD_NOT_42_LANE_GATE600",
+          "observations": 3177
+        }
+      },
+      "prospective_freeze_gate_600_reached": true,
+      "prospective_valid_freezes": 634,
+      "required_next_action": "COMPLETE_DEDICATED_PREMATCH_VALIDATION_PRICE_MAPPING_AND_FORMAL_PROMOTION",
+      "settlement_evidence": "NO_CURRENT_COHORT_SETTLEMENT_AUDIT",
+      "supervisor_state": "LAB",
+      "telegram_signal_authorized_by_this_audit": false
+    },
+    {
+      "automatically_promoted": false,
+      "current_exact_settled_count_verified": null,
+      "decision": "HOLD_PERIOD_GOALS_RESEARCH_ONLY_PRICE_PROMOTION_REQUIRED",
+      "display_name": "Goles equipo local segundo tiempo",
+      "historical_4000_metrics_separate_cohort": {},
+      "market_key": "SECOND_HALF_TEAM_TOTAL_GOALS_HOME",
+      "older_audit_at_utc": null,
+      "older_audit_exact_settled_reference": null,
+      "period_goals_research_metrics_separate_cohort": {
+        "second_half_home_team_over_0_5": {
+          "brier_score": 0.2473736465,
+          "cohort": "PERIOD_GOALS_RESEARCH_WALK_FORWARD_NOT_42_LANE_GATE600",
+          "observations": 3177
+        }
+      },
+      "prospective_freeze_gate_600_reached": true,
+      "prospective_valid_freezes": 634,
+      "required_next_action": "COMPLETE_DEDICATED_PREMATCH_VALIDATION_PRICE_MAPPING_AND_FORMAL_PROMOTION",
+      "settlement_evidence": "NO_CURRENT_COHORT_SETTLEMENT_AUDIT",
+      "supervisor_state": "LAB",
+      "telegram_signal_authorized_by_this_audit": false
+    },
+    {
+      "automatically_promoted": false,
+      "current_exact_settled_count_verified": null,
+      "decision": "HOLD_PERIOD_GOALS_RESEARCH_ONLY_PRICE_PROMOTION_REQUIRED",
+      "display_name": "Goles segundo tiempo Over/Under",
+      "historical_4000_metrics_separate_cohort": {},
+      "market_key": "SECOND_HALF_TOTAL_GOALS_OVER_UNDER",
+      "older_audit_at_utc": null,
+      "older_audit_exact_settled_reference": null,
+      "period_goals_research_metrics_separate_cohort": {
+        "second_half_over_0_5": {
+          "brier_score": 0.1809721408,
+          "cohort": "PERIOD_GOALS_RESEARCH_WALK_FORWARD_NOT_42_LANE_GATE600",
+          "observations": 3177
+        },
+        "second_half_over_1_5": {
+          "brier_score": 0.2409850694,
+          "cohort": "PERIOD_GOALS_RESEARCH_WALK_FORWARD_NOT_42_LANE_GATE600",
+          "observations": 3177
+        }
+      },
+      "prospective_freeze_gate_600_reached": true,
+      "prospective_valid_freezes": 634,
+      "required_next_action": "COMPLETE_DEDICATED_PREMATCH_VALIDATION_PRICE_MAPPING_AND_FORMAL_PROMOTION",
+      "settlement_evidence": "NO_CURRENT_COHORT_SETTLEMENT_AUDIT",
+      "supervisor_state": "LAB",
+      "telegram_signal_authorized_by_this_audit": false
+    },
+    {
+      "automatically_promoted": false,
+      "current_exact_settled_count_verified": null,
+      "decision": "HOLD_NO_DEDICATED_OUTCOME_METRIC",
+      "display_name": "Goles totales equipo visitante",
+      "historical_4000_metrics_separate_cohort": {},
+      "market_key": "TEAM_TOTAL_GOALS_AWAY",
+      "older_audit_at_utc": null,
+      "older_audit_exact_settled_reference": null,
+      "period_goals_research_metrics_separate_cohort": {},
+      "prospective_freeze_gate_600_reached": true,
+      "prospective_valid_freezes": 627,
+      "required_next_action": "BUILD_SEPARATE_PIT_FINAL_ONLY_CALIBRATION_WITH_EXACT_COHORT_JOIN",
+      "settlement_evidence": "NO_CURRENT_COHORT_SETTLEMENT_AUDIT",
+      "supervisor_state": "LAB",
+      "telegram_signal_authorized_by_this_audit": false
+    },
+    {
+      "automatically_promoted": false,
+      "current_exact_settled_count_verified": null,
+      "decision": "HOLD_NO_DEDICATED_OUTCOME_METRIC",
+      "display_name": "Goles totales equipo local",
+      "historical_4000_metrics_separate_cohort": {},
+      "market_key": "TEAM_TOTAL_GOALS_HOME",
+      "older_audit_at_utc": null,
+      "older_audit_exact_settled_reference": null,
+      "period_goals_research_metrics_separate_cohort": {},
+      "prospective_freeze_gate_600_reached": true,
+      "prospective_valid_freezes": 627,
+      "required_next_action": "BUILD_SEPARATE_PIT_FINAL_ONLY_CALIBRATION_WITH_EXACT_COHORT_JOIN",
+      "settlement_evidence": "NO_CURRENT_COHORT_SETTLEMENT_AUDIT",
+      "supervisor_state": "LAB",
+      "telegram_signal_authorized_by_this_audit": false
+    }
+  ],
+  "schema": "MATRIX_13_MARKET_GATE600_COMMITTEE_V1",
+  "source_hashes_sha256": {
+    "calibration": "7190cd96dd98c02571f574631ea023e80d05865afa07bf65ce37dab9a1146b8c",
+    "fixed_5000": "cb75627e55a4f4cc512da89813bac98e49ee46d2fe7f611f0c691321de0cfec4",
+    "period_lab": "a7d7e07feb619290c15b911a5dc23f3a31f7dab4387d2c2cd62a06edad53b5fd",
+    "registry": "6446d5e5d691eabd969af8c7c499e247e960cec6798c4a31ed134d3fe5953075",
+    "settlement_audit": "614e6c71209699ae8ee9a3529a69c2810a296b1bb880fe711df661f1096e06fb",
+    "supervisor": "e9bd1555741aae5c18cd0625092311ae298f662abf06abc35bddb43a8efa6618"
+  },
+  "source_timestamps_utc": {
+    "fixed5000": "2026-10-30T01:30:43+00:00",
+    "gate600_settlement_audit": "2026-10-25T05:28:57+00:00",
+    "historical_calibration_head": "409cd106711a0b4e54c843f74e278bb81acf996a",
+    "period_lab": "2026-11-14T09:33:17+00:00",
+    "prospective_registry": "2026-11-14T15:04:18+00:00",
+    "supervisor": "2026-11-14T15:04:16+00:00"
+  },
+  "status": "PASS_READ_ONLY_DIAGNOSTIC_NOT_PROMOTION_CERTIFICATION",
+  "summary": {
+    "current_exact_settled_600_certified_by_this_audit": 0,
+    "fixed_prefix_5000_audit_opened": false,
+    "fixed_prefix_5000_last_recorded_settled": 4958,
+    "football_lanes": 30,
+    "gate600_reached": 13,
+    "gate600_settlement_audit_is_at_least_as_recent_as_registry": false,
+    "period_research_observations_not_gate600_settlements": 3177,
+    "portfolio_lanes": 42,
+    "tennis_lanes": 12
+  }
+}

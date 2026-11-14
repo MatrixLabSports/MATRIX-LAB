@@ -1,0 +1,53 @@
+{
+  "automatic_provider_switch": false,
+  "automatic_wagering": false,
+  "both_paid_providers_required": true,
+  "cause": "READY",
+  "fallback_provider": null,
+  "horizon": {
+    "logical_horizon_days": 8,
+    "status": "PASS"
+  },
+  "metrics_opened": false,
+  "network_calls": 31,
+  "outcomes_read": 0,
+  "production_discovery_ready": true,
+  "provider": "dual_paid_tennis",
+  "provider_policy": "PEER_RECONCILIATION_NO_PRIMARY_FALLBACK",
+  "provider_primary": null,
+  "providers": {
+    "api_tennis": {
+      "cause": "READY",
+      "expected_provider": "api_tennis",
+      "network_calls": 12,
+      "provider": "api_tennis",
+      "provider_match": true,
+      "ready": true,
+      "status": "DISCOVERY_COMPLETED"
+    },
+    "rapidapi_tennis": {
+      "cause": "READY",
+      "expected_provider": "rapidapi_tennis",
+      "network_calls": 19,
+      "provider": "rapidapi_tennis",
+      "provider_match": true,
+      "ready": true,
+      "status": "DISCOVERY_COMPLETED"
+    }
+  },
+  "ready": true,
+  "real_money": "BLOCKED",
+  "reconciliation": {
+    "api_tennis_provider_status": "DISCOVERY_COMPLETED",
+    "rapidapi_provider_status": "DISCOVERY_COMPLETED",
+    "status": "PASS"
+  },
+  "required_providers": [
+    "rapidapi_tennis",
+    "api_tennis"
+  ],
+  "schema": "MATRIX_COR0203_DUAL_SOURCE_READINESS_V1",
+  "status": "DUAL_DISCOVERY_COMPLETED",
+  "status_fingerprint": "3417b7ca40f75afed22fa07bb37c47946192f7ab7dd2416bb2f32be36240be84",
+  "symmetric_discovery": true
+}

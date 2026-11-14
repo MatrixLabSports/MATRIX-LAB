@@ -1,0 +1,92 @@
+name: MATRIX Benter All-Candidate Collector
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - repair/cor09-world-pipeline
+    paths:
+      - tools/matrix_benter_all_candidate_collector.py
+      - tests/test_matrix_benter_all_candidate_collector.py
+      - .github/workflows/matrix-benter-all-candidate-collector.yml
+      - evidence/api_football/daily_prematch_reports/2026-10-16/over25_shadow_ev/MATRIX_FOOTBALL_DAILY_OVER25_GOVERNED_SHADOW_EV.json
+      - evidence/api_football/daily_prematch_reports/2026-10-16/over25_shadow_ev/raw/**
+
+permissions:
+  contents: write
+
+concurrency:
+  group: matrix-benter-all-candidate-collector
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      REAL_MONEY: BLOCKED
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: repair/cor09-world-pipeline
+          fetch-depth: 0
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install pytest
+        run: python -m pip install pytest
+
+      - name: Run collector tests
+        run: PYTHONPATH=. python -m pytest -q tests/test_matrix_benter_all_candidate_collector.py
+
+      - name: Build physical all-candidate market snapshot
+        run: PYTHONPATH=. python -m tools.matrix_benter_all_candidate_collector
+
+      - name: Enforce research governance
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          p=Path("evidence/api_football/model_validation/benter_second_stage/2026-10-16/MATRIX_BENTER_ALL_CANDIDATE_MARKET_SNAPSHOT_V1.json")
+          x=json.loads(p.read_text())
+          assert x["schema"]=="MATRIX_BENTER_ALL_CANDIDATE_MARKET_SNAPSHOT_V1"
+          assert x["row_count"]>0
+          assert x["devigged_consensus_count"]>0
+          assert x["governance"]["all_scored_candidates_not_signal_selected_only"] is True
+          assert x["governance"]["market_probability_is_post_model"] is True
+          assert x["governance"]["production_p_matrix_modified"] is False
+          assert x["governance"]["market_probability_fused_into_production"] is False
+          assert x["governance"]["real_money"]=="BLOCKED"
+          assert all(r["outcome_over25"] is None for r in x["rows"])
+          print("MATRIX_BENTER_ALL_CANDIDATE_GATE: PASS")
+          print("row_count=",x["row_count"])
+          print("devigged_consensus_count=",x["devigged_consensus_count"])
+          print("artifact_sha256=",x["artifact_sha256"])
+          PY
+
+      - name: Persist evidence
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name matrix-benter-research
+          git config user.email matrix-benter-research@users.noreply.github.com
+          git add evidence/api_football/model_validation/benter_second_stage/2026-10-16/MATRIX_BENTER_ALL_CANDIDATE_MARKET_SNAPSHOT_V1.json
+          if git diff --cached --quiet; then
+            echo "NO_BENTER_SNAPSHOT_CHANGE"
+            exit 0
+          fi
+          git commit -m "evidence(benter): persist all-candidate devigged market snapshot"
+          for attempt in 1 2 3 4; do
+            git fetch origin repair/cor09-world-pipeline
+            if ! git rebase origin/repair/cor09-world-pipeline; then
+              git rebase --abort || true
+              exit 1
+            fi
+            if git push origin HEAD:repair/cor09-world-pipeline; then exit 0; fi
+            sleep $((attempt*2))
+          done
+          exit 1

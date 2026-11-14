@@ -1,0 +1,246 @@
+{
+  "schema": "MATRIX_SINDICATO_REMEDIATION_STATE_13OCT2026_V1",
+  "generated_at_utc": "2026-10-13T11:51:31.675Z",
+  "source_plan": "USER_PROVIDED_MATRIX_PLAN_ACCION_AUDITORIA_NIVEL_SINDICATO_13OCT2026",
+  "source_named_documents_repository_lookup": {
+    "MATRIX_AUDITORIA_NIVEL_SINDICATO_13OCT2026_md": "NOT_FOUND_IN_CURRENT_REPOSITORY_TREE",
+    "MATRIX_DISENO_CLV_TRACKING_13OCT2026_md": "NOT_FOUND_IN_CURRENT_REPOSITORY_TREE",
+    "implementation_basis": [
+      "user-provided action plan in conversation",
+      "docs/FOOTBALL_PROSPECTIVE_EVIDENCE_LEDGER.md",
+      "docs/elite_remediation/P4_ODDS_LINE_HISTORY_CLV_ACCEPTANCE_CONTRACT_R1.json",
+      "docs/elite_remediation/real_evidence/MATRIX_ELITE_C05_REAL_LINE_HISTORY_CLV_INPUT_CONTRACT_R1.json"
+    ]
+  },
+  "order_of_attack": [
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7
+  ],
+  "global_adjudication": "INFRASTRUCTURE_REMEDIATED_CLV_EVIDENCE_ACCUMULATING_DOWNSTREAM_ACTIVATION_GATED",
+  "gaps": {
+    "1_clv_tracking": {
+      "priority": 1,
+      "status": "IMPLEMENTED_ACTIVE_ACCUMULATING_SEALED",
+      "closing_reference": "PINNACLE_VIA_API_FOOTBALL_BOOKMAKER_ID_4_STRICT_120S_ONLY",
+      "direct_pinnacle_api_connection": false,
+      "entry_capture": {
+        "timestamp_required": true,
+        "deterministic_quote_hash_required": true,
+        "historical_backfill_without_physical_timestamp": "FORBIDDEN"
+      },
+      "closing_capture": {
+        "cadence_minutes": 5,
+        "final_prematch_window_minutes": 15,
+        "complete_over_under_2_5_market_required": true,
+        "devig_method": "MULTIPLICATIVE",
+        "provider_quote_age_bounded": true,
+        "post_kickoff_close": "FORBIDDEN",
+        "max_provider_quote_age_seconds": 120,
+        "nominal_3h_band_counts_as_close": false,
+        "strict_freshness_governance_source": "evidence/api_football/pinnacle_snapshot_age_audit/audit.json"
+      },
+      "clv_measures": [
+        "LOG_ENTRY_ODDS_OVER_CLOSE_ODDS",
+        "PROBABILITY_CLV_VS_DEVIGGED_CLOSING_PROBABILITY",
+        "FAIR_ODDS_CLV_RATIO"
+      ],
+      "minimum_closing_observations": 300,
+      "current_decision_count": 27,
+      "current_closing_count": 0,
+      "metrics_opened": false,
+      "state_path": "evidence/clv/football/over_2_5/state.json",
+      "implementation_paths": [
+        "tools/football_clv_tracking_cycle.py",
+        "tools/football_daily_governed_over25.py",
+        ".github/workflows/football-clv-tracking.yml",
+        "tests/test_football_clv_tracking_cycle.py"
+      ]
+    },
+    "2_bankroll_sizing": {
+      "priority": 2,
+      "status": "DESIGN_EXECUTABLE_ACTIVATION_BLOCKED_UNTIL_CLV",
+      "current_authoritative_paper_policy": "FIXED_UNIT_TIERS_REMAIN_UNCHANGED_WHILE_CLV_ACCUMULATES",
+      "current_policy_path": "evidence/notifications/telegram/MATRIX_PAPER_BANKROLL_POLICY_V1.json",
+      "current_policy_blob_sha": "8e589e593743ce37ee4fd3293b35f00c993c66b7",
+      "future_sizing": {
+        "method": "FRACTIONAL_KELLY",
+        "default_fraction": 0.25,
+        "full_kelly": "FORBIDDEN",
+        "maximum_fractional_kelly_allowed": 0.5,
+        "paper_stake_cap_fraction_bankroll": 0.005,
+        "requires_clv_metrics_opened": true,
+        "requires_positive_clv_confirmed": true,
+        "mode": "PAPER_ONLY",
+        "real_money": "BLOCKED"
+      },
+      "implementation_path": "app/research/football/paper_stake_ledger.py",
+      "test_path": "tests/test_paper_stake_ledger.py",
+      "stake_ledger_activation": "NOT_ACTIVE_UNTIL_CLV_GATE"
+    },
+    "3_sharp_reference": {
+      "priority": 3,
+      "status": "REFERENCE_FOUNDATION_PASS_STRICT_CLOSING_FEED_NOT_YET_PROVEN",
+      "bookmaker": "Pinnacle",
+      "transport": "API-Football /odds",
+      "direct_pinnacle_api_connection": false,
+      "role": "REFERENCE_NOT_EXECUTION",
+      "physical_reference_inventory": {
+        "fixture_count": 48,
+        "reference_quote_count": 4057,
+        "market_count": 17,
+        "manifest_path": "evidence/api_football/pinnacle_reference/manifest.json",
+        "manifest_blob_sha": "993cc9fed7af5f62d43b2e09df5599d80e620237"
+      },
+      "execution_houses_remain": [
+        "BetPlay",
+        "Betano",
+        "Rushbet"
+      ],
+      "source_quality_flag": "SHARP_PINNACLE_VIA_API_FOOTBALL_STRICT_120S",
+      "strict_closing_freshness": {
+        "max_provider_quote_age_seconds": 120,
+        "historical_strict_fresh_quote_count": 0,
+        "nominal_3h_band_is_closing_reference": false,
+        "evidence_path": "evidence/api_football/pinnacle_snapshot_age_audit/audit.json",
+        "evidence_blob_sha": "1c1063ccc52bad44e0d977dab81eb62af95f641a"
+      },
+      "next_requirement": "OBTAIN_STRICT_FRESH_PINNACLE_CLOSES_OR_APPROVED_ALTERNATIVE_SHARP_CLOSE_SOURCE_WITHOUT_RELAXING_120S_GATE"
+    },
+    "4_correlated_risk": {
+      "priority": 4,
+      "status": "ENGINE_IMPLEMENTED_ACTIVATION_BLOCKED_TEAM_LIMITS_UNSET",
+      "correlation_dimensions": [
+        "SAME_FIXTURE_ACROSS_MARKETS",
+        "SAME_TOURNAMENT_AND_OPERATIONAL_DAY",
+        "TOTAL_OPERATIONAL_DAY"
+      ],
+      "implementation_path": "app/research/football/correlated_exposure.py",
+      "test_path": "tests/test_correlated_exposure.py",
+      "default_limits_exist": false,
+      "team_governance_limits_required": true,
+      "automatic_signal_blocking_activation": "PENDING_EXPLICIT_LIMITS_AND_CLV_GATE",
+      "mode": "PAPER_ONLY",
+      "real_money": "BLOCKED"
+    },
+    "5_market_coverage": {
+      "priority": 5,
+      "status": "NO_NEW_MARKETS_CURRENT_LANES_MUST_CLOSE_FIRST",
+      "calendar_prerequisite": {
+        "status": "RESOLVED_PASS",
+        "sofascore_football_exact": 138,
+        "sofascore_tennis_exact": 603,
+        "flashscore_football_exact": 78,
+        "flashscore_tennis_exact": 326,
+        "calendar_baseline_complete": true,
+        "next_stage": "BROWSER_TO_API_RECONCILIATION",
+        "evidence_path": "evidence/daily_source_counts/2026-10-13/MATRIX_WORLD_CALENDAR_SOURCE_COUNTS.json",
+        "evidence_blob_sha": "f148d976e305aeeaccb80c7df5db1d5dcdfaa80b"
+      },
+      "current_lanes": {
+        "team_fouls_total": {
+          "observations": 1,
+          "gate30_remaining": 29,
+          "status": "ACTIVE_SEALED"
+        },
+        "team_total_shots_home": {
+          "observations": 0,
+          "gate30_remaining": 30,
+          "status": "ACTIVE_SEALED"
+        },
+        "team_total_shots_away": {
+          "observations": 0,
+          "gate30_remaining": 30,
+          "status": "ACTIVE_SEALED"
+        },
+        "btts": {
+          "observations": 0,
+          "status": "BLOCKED_NEW_CHALLENGER_REQUIRED",
+          "blocker": "V2_REJECTED_N200_AND_V3_REJECTED_TEMPORAL_OOS"
+        }
+      },
+      "new_market_expansion": "BLOCKED_BY_PLAN_UNTIL_EXISTING_LANES_AND_CLV_FOUNDATION_ADVANCE"
+    },
+    "6_statistical_robustness": {
+      "priority": 6,
+      "status": "PROTOCOL_FROZEN_EXECUTION_GATED",
+      "protocol_path": "docs/governance/MATRIX_REGIME_WALK_FORWARD_PROTOCOL_V1.json",
+      "existing_walk_forward_module": "app/research/football/walk_forward.py",
+      "existing_walk_forward_blob_sha": "4486f6df7aba27eaeb235c02b909e207912a0aef",
+      "tennis_cor0203": {
+        "unique_observations": 212,
+        "target": 600,
+        "remaining": 388,
+        "metrics": "SEALED_UNTIL_600"
+      },
+      "metrics": [
+        "BRIER_SCORE",
+        "LOG_LOSS",
+        "ECE",
+        "MAX_CALIBRATION_ERROR"
+      ],
+      "segmentation": [
+        "TIME_WINDOW",
+        "LEAGUE_OR_TOURNAMENT_LEVEL_WHEN_GOVERNED",
+        "SEASON",
+        "SURFACE_FOR_TENNIS"
+      ],
+      "incumbent_tuning_on_validation_failure": "FORBIDDEN"
+    },
+    "7_execution_speed": {
+      "priority": 7,
+      "status": "DEFERRED_BY_GOVERNANCE",
+      "reason": "NOT_RELEVANT_FOR_REAL_MONEY_EXECUTION_WHILE_MATRIX_IS_SHADOW_PAPER",
+      "latency_measurement_design_allowed": true,
+      "automatic_bet_placement": false,
+      "activation_requires": [
+        "CLV_GATE_VALIDATED",
+        "SIZING_VALIDATED_IN_PAPER",
+        "CORRELATED_RISK_LIMITS_APPROVED",
+        "EXPLICIT_FUTURE_REAL_MONEY_GOVERNANCE"
+      ],
+      "real_money": "BLOCKED"
+    }
+  },
+  "physical_references": {
+    "clv_tool_blob_sha": "2b6ef95f2464b5d42dd0e743a78e597d07af5663",
+    "clv_workflow_blob_sha": "2d27553df29048bf191f9f5bf7c810e2f605d75e",
+    "paper_stake_ledger_blob_sha": "214abf105be83ee8565ded0b7cfe40135403f421",
+    "correlated_exposure_blob_sha": "8f40ff86c4635950fdd6489582d698a0fcb5abb0",
+    "tennis_observability_blob_sha": "f7af825e9b48ba0eef6a16d23d3c143a274f55fe",
+    "clv_state_blob_sha": "76d54d297644acdb9576bfd570e85d89f28e61ae",
+    "clv_ledger_blob_sha": "4b4bc77e838326a1b51e4a3c024424068409d61a",
+    "regime_protocol_blob_sha": "5a6d71d626b597e6f02c92aeef8898de6d2c9a8d",
+    "remediation_doc_blob_sha": "2beffff5a0e81e3b9ea820f5b0a8c08e1c752d14",
+    "main_schedule_workflow_blob_sha": "2d27553df29048bf191f9f5bf7c810e2f605d75e",
+    "main_schedule_commit": "e0c77366520d22fd4770de9b7f36b778176d8289"
+  },
+  "protections": {
+    "no_odds_to_model_probability": true,
+    "no_historical_clv_backfill": true,
+    "no_metrics_before_threshold": true,
+    "no_full_kelly": true,
+    "no_automatic_wagering": true,
+    "real_money": "BLOCKED"
+  },
+  "verification": {
+    "targeted_clv_run_id": 38392843051,
+    "targeted_clv_run_number": 6,
+    "targeted_clv_status": "SUCCESS",
+    "targeted_clv_tests": "24 passed in 0.60s",
+    "targeted_clv_governance_gate": "PASS",
+    "targeted_clv_decision_count": 27,
+    "targeted_clv_closing_odds_count": 0,
+    "targeted_clv_remaining_to_open_metrics": 300,
+    "targeted_clv_metrics_opened": false,
+    "strict_fresh_gate_seconds": 120,
+    "nominal_3h_band_is_closing_reference": false,
+    "main_schedule_installed": true,
+    "main_schedule_cron": "*/5 * * * *",
+    "full_ci_exact_head_status": "PENDING_AFTER_THIS_COMMIT"
+  }
+}
