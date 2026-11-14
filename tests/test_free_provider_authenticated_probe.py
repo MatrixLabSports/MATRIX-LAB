@@ -1,0 +1,79 @@
+"""Strict free-provider independent probing and failure contracts."""
+from datetime import datetime, timezone
+import json
+import requests
+from tools.free_provider_authenticated_probe import probe
+
+class Resp:
+    def __init__(self,status,body):
+        self.status_code=status
+        self.content=json.dumps(body).encode()
+        self.headers={"content-type":"application/json"}
+        self._body=body
+    def json(self):return self._body
+
+class Network:
+    def __init__(self,responses):
+        self.responses=list(responses);self.calls=[]
+    def get(self,url,headers,params,timeout):
+        self.calls.append({"url":url,"headers":headers,"params":params})
+        nextvalue=self.responses.pop(0)
+        if isinstance(nextvalue,Exception):raise nextvalue
+        return nextvalue
+
+NOW=datetime(2026,11,14,12,0,tzinfo=timezone.utc)
+
+def test_no_keys_is_zero_calls_and_no_false_success():
+    net=Network([])
+    d=probe("","",session=net,now=NOW)
+    assert d["network_calls"]==0
+    assert d["status"]=="NO_VERIFIED_LIVE_PROVIDER"
+    assert d["providers"]["football_data_org"]["status"]=="KEY_NOT_CONFIGURED"
+    assert d["providers"]["live_tennis_api"]["calls"]==0
+    assert net.calls==[]
+
+def test_one_working_football_provider_cannot_be_blocked_by_missing_tennis_key():
+    net=Network([Resp(200,{"competitions":[{"id":2021}]})])
+    d=probe("secret-123","",session=net,now=NOW)
+    assert d["status"]=="PARTIAL_VERIFIED"
+    assert d["providers"]["football_data_org"]["data_verified"] is True
+    assert d["providers"]["live_tennis_api"]["data_verified"] is False
+    assert d["network_calls"]==1
+    assert d["promotion_gate"]["production_feed_authorized"] is False
+    assert "secret-123" not in json.dumps(d)
+    assert net.calls[0]["headers"]=={"X-Auth-Token":"secret-123"}
+
+def test_http200_empty_error_or_access_denied_never_certifies_source():
+    for response in (Resp(200,{"competitions":[]}),Resp(200,{"errors":"denied"}),
+                     Resp(401,{"error":"unauthorized"}),Resp(403,{"error":"suspended"}),
+                     Resp(429,{"error":"quota"})):
+        net=Network([response])
+        d=probe("secret","",session=net,now=NOW)
+        assert d["providers"]["football_data_org"]["data_verified"] is False
+        assert d["status"]=="NO_VERIFIED_LIVE_PROVIDER"
+        assert d["network_calls"]==1
+
+def test_network_error_does_not_request_tennis_or_open_model():
+    net=Network([requests.ConnectionError("private secrets must not be saved")])
+    d=probe("foo","bar",session=net,now=NOW)
+    assert d["network_calls"]==1
+    assert d["providers"]["live_tennis_api"]["calls"]==0
+    assert "private secrets must not be saved" not in json.dumps(d)
+    assert d["protections"]["real_money"]=="BLOCKED"
+
+def test_tennis_opt_in_still_cannot_promote_probability_engine():
+    net=Network([Resp(200,{"competitions":[{"id":2021}]}),
+                 Resp(200,{"data":[{"id":"test"}]})])
+    d=probe("football","tennis",tennis_opt_in=True,session=net,now=NOW)
+    assert d["network_calls"]==2
+    assert d["providers"]["live_tennis_api"]["data_verified"] is True
+    assert d["promotion_gate"]["production_feed_authorized"] is False
+    assert not d["protections"]["paid_api_subscription_authorized"]
+
+def test_oversized_response_fails_closed_without_saving_body():
+    response=Resp(200,{"competitions":[{"id":2021}]})
+    response.content=b"x"*250001
+    net=Network([response])
+    d=probe("foo","",session=net,now=NOW)
+    assert d["providers"]["football_data_org"]["data_verified"] is False
+    assert d["providers"]["football_data_org"]["status"]=="NETWORK_OR_RESPONSE_BLOCK_ValueError"
