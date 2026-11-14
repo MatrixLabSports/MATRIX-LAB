@@ -1,29 +1,26 @@
 {
-  "checked_at_utc": "2026-11-14T21:23:05+00:00",
+  "checked_at_utc": "2026-11-14T22:43:15+00:00",
   "decision": {
-    "api_calls_allowed": false,
-    "api_credits_limit": null,
-    "api_credits_remaining": null,
-    "api_credits_used": null,
-    "crossed_alert_thresholds_pct": [
-      50,
-      75,
-      90,
-      95,
-      100
-    ],
-    "evidence_basis": "Run #1512 persisted HTTP 429 detail Monthly request quota exceeded for three prematch fixtures.",
-    "exceeded": true,
-    "max_seconds_to_kickoff_for_odds_api_call": 0,
-    "period_end_utc": null,
-    "period_start_utc": null,
-    "plan": null,
-    "pricing_model": null,
-    "stage": "BLOCKED_EXHAUSTED",
-    "usage_pct": 100
+    "api_calls_allowed": true,
+    "api_credits_limit": 1000.0,
+    "api_credits_remaining": 999.0,
+    "api_credits_used": 1.0,
+    "crossed_alert_thresholds_pct": [],
+    "exceeded": false,
+    "max_seconds_to_kickoff_for_odds_api_call": 7200,
+    "period_end_utc": "2026-12-14T22:24:08Z",
+    "period_start_utc": "2026-11-14T22:24:08Z",
+    "plan": "sandbox",
+    "pricing_model": "odds_api_net_v2",
+    "stage": "NORMAL_T120",
+    "stream_concurrent_units_limit": 1,
+    "stream_concurrent_units_used": 0,
+    "stream_hours_limit": 25,
+    "stream_hours_used": 0.0,
+    "usage_pct": 0.1
   },
   "endpoint": "/v1/usage",
-  "http_status": 429,
+  "http_status": 200,
   "policy": {
     "50_to_75": "WATCH_T120",
     "75_to_90": "CONSERVE_T90_ONLY",
@@ -46,8 +43,8 @@
     "usage_check_once_per_operational_workflow_cycle": true
   },
   "provider": "odds-api.net",
-  "request_id_returned": "matrix-quota-2026-11-14T212305_0000",
-  "request_id_sent": "matrix-quota-2026-11-14T212305_0000",
+  "request_id_returned": "matrix-quota-2026-11-14T224315_0000",
+  "request_id_sent": "matrix-quota-2026-11-14T224315_0000",
   "schema": "MATRIX_ODDS_API_QUOTA_GUARD_V1",
-  "status": "USAGE_ENDPOINT_UNAVAILABLE_USING_LAST_SAFE_DECISION"
+  "status": "PASS"
 }
