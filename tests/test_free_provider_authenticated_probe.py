@@ -85,7 +85,8 @@ def test_oversized_response_fails_closed_without_saving_body():
 
 
 def test_no_fixture_data_is_not_false_production_readiness():
-    net=Network([Resp(200,{"competitions":[{"id":2021}]}),Resp(200,{"matches":[]})])
+    net=Network([Resp(200,{"competitions":[{"id":2021}]}),Resp(200,{"matches":[]}),
+                 Resp(200,{"matches":[]})])
     d=probe("foo","",session=net,now=NOW)
     assert d["providers"]["football_data_org"]["data_verified"] is True
     assert d["football_current_day_fixture_proof"]["verified"] is False
@@ -97,7 +98,32 @@ def test_cross_day_fixture_or_missing_team_does_not_pass():
         Resp(200,{"matches":[{"id":12345,"utcDate":"2026-11-15T18:00:00Z",
         "competition":{"id":2021},"homeTeam":{"name":"Alpha"},"awayTeam":{"name":"Beta"}},
         {"id":12346,"utcDate":"2026-11-14T18:00:00Z",
-        "competition":{"id":2021},"homeTeam":{},"awayTeam":{"name":"Beta"}}]})])
+        "competition":{"id":2021},"homeTeam":{},"awayTeam":{"name":"Beta"}}]}),
+        Resp(200,{"matches":[]})])
     d=probe("foo","",session=net,now=NOW)
     assert d["football_current_day_fixture_proof"]["candidate_count"]==0
     assert d["football_current_day_fixture_proof"]["verified"] is False
+
+
+def test_weekly_fallback_source_fixture_verified_only_with_real_identity():
+    net=Network([Resp(200,{"competitions":[{"id":2021}]}),
+                 Resp(200,{"matches":[]}),
+                 Resp(200,{"matches":[{
+                    "id":44567,"utcDate":"2026-11-21T15:00:00Z",
+                    "competition":{"id":2021,"code":"PL"},
+                    "homeTeam":{"name":"Alpha"},"awayTeam":{"name":"Beta"}
+                 }]})])
+    d=probe("key","",session=net,now=NOW)
+    assert d["network_calls"]==3
+    assert d["football_current_day_fixture_proof"]["verified"] is False
+    assert d["football_named_competition_week_proof"]["verified"] is True
+    assert d["football_named_competition_week_proof"]["sample_ids"]==[44567]
+    assert d["promotion_gate"]["production_feed_authorized"] is False
+
+def test_weekly_fallback_403_never_claims_live_fixtures():
+    net=Network([Resp(200,{"competitions":[{"id":2021}]}),
+                 Resp(200,{"matches":[]}),Resp(403,{"message":"denied"})])
+    d=probe("key","",session=net,now=NOW)
+    assert d["football_named_competition_week_proof"]["verified"] is False
+    assert d["providers"]["football_data_org"]["data_verified"] is True
+    assert d["promotion_gate"]["production_feed_authorized"] is False
