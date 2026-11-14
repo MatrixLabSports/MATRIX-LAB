@@ -97,24 +97,35 @@ def football_competition_window_probe(key:str,start:str,end:str,session=None)->d
             params={"dateFrom":start,"dateTo":end},session=session)
         rows=data.get("matches")
         valid=[]
+        seen=set()
         for row in rows if isinstance(rows,list) else []:
             if not isinstance(row,dict):continue
             mid=row.get("id");kickoff=row.get("utcDate")
             comp=row.get("competition") or {}
             home=row.get("homeTeam") or {};away=row.get("awayTeam") or {}
+            name_home=str(home.get("name") or home.get("shortName") or "").strip() if isinstance(home,dict) else ""
+            name_away=str(away.get("name") or away.get("shortName") or "").strip() if isinstance(away,dict) else ""
             if (type(mid) is int and isinstance(kickoff,str)
                 and start<=kickoff[:10]<=end and kickoff.endswith("Z")
-                and isinstance(comp,dict) and comp.get("code") in ("PL",None)
-                and isinstance(home,dict) and isinstance(away,dict)
-                and (home.get("name") or home.get("shortName"))
-                and (away.get("name") or away.get("shortName"))):
-                valid.append(mid)
+                and isinstance(comp,dict) and
+                (comp.get("code")=="PL" or comp.get("id")==2021)
+                and name_home and name_away and name_home.casefold()!=name_away.casefold()
+                and mid not in seen):
+                seen.add(mid)
+                valid.append({"provider_fixture_id":mid,"kickoff_utc":kickoff,
+                              "competition_id":comp.get("id"),
+                              "competition_code":comp.get("code"),
+                              "home":name_home[:120],"away":name_away[:120]})
         good=meta["http_status"]==200 and bool(valid)
         return {"status":"CURRENT_WEEK_PL_FIXTURES_VERIFIED" if good
                 else "PL_WEEK_ENDPOINT_NO_VERIFIABLE_FIXTURES",
                 "verified":good,"calls":1,"start":start,"end":end,
-                "match_count":len(valid),"sample_ids":valid[:5],"response":meta,
-                "model_admission_authorized":False}
+                "match_count":len(valid),
+                "sample_ids":[x["provider_fixture_id"] for x in valid[:5]],
+                "source_fixtures_research_only":valid[:25],
+                "response":meta,"model_admission_authorized":False,
+                "source_name_crossmatch_certified":False,
+                "historic_provider_id_equivalence_certified":False}
     except (requests.RequestException,ValueError,TimeoutError) as exc:
         return {"status":"PL_WEEK_QUERY_BLOCK_"+type(exc).__name__,
                 "verified":False,"calls":1,"start":start,"end":end}
