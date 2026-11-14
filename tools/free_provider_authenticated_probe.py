@@ -54,11 +54,52 @@ def single_provider(provider_id:str,key:str,url:str,header:str,expected_list:str
                 "authenticated":False,"data_verified":False,"calls":1,
                 "token_redacted":True}
 
+def football_daily_fixture_probe(key:str,day:str,session=None)->dict:
+    """One current-day read-only request; no model, odds or score ingestion."""
+    if not key:
+        return {"status":"KEY_NOT_CONFIGURED","verified":False,"calls":0}
+    try:
+        data,meta=get_json("https://api.football-data.org/v4/matches",
+            {"X-Auth-Token":key},params={"dateFrom":day,"dateTo":day},
+            session=session)
+        matches=data.get("matches")
+        verified=[]
+        for row in matches if isinstance(matches,list) else []:
+            if not isinstance(row,dict):continue
+            utc=row.get("utcDate")
+            competition=row.get("competition")
+            fixture_id=row.get("id")
+            home=row.get("homeTeam");away=row.get("awayTeam")
+            if (type(fixture_id) is int and isinstance(utc,str)
+                and utc[:10]==day and utc.endswith("Z")
+                and isinstance(competition,dict) and type(competition.get("id")) is int
+                and isinstance(home,dict) and isinstance(away,dict)
+                and (home.get("name") or home.get("shortName"))
+                and (away.get("name") or away.get("shortName"))):
+                verified.append({"id":fixture_id,"utcDate":utc,
+                                 "competition_id":competition["id"]})
+        good=meta["http_status"]==200 and len(verified)>0
+        return {"status":"CURRENT_DAY_FIXTURE_IDENTITIES_VERIFIED" if good
+                   else "CURRENT_DAY_FIXTURES_EMPTY_OR_UNVERIFIED",
+                "verified":good,"calls":1,"day":day,
+                "candidate_count":len(verified),"response":meta,
+                "sample_ids":[x["id"] for x in verified[:5]],
+                "no_predictions_or_results_imported":True}
+    except (requests.RequestException,ValueError,TimeoutError) as exc:
+        return {"status":"FIXTURE_QUERY_BLOCK_"+type(exc).__name__,
+                "verified":False,"calls":1,"day":day}
+
 def probe(football_key:str,tennis_key:str, *, tennis_opt_in:bool=False,
           session=None, now=None)->dict:
     football=single_provider("football_data_org",football_key,
         "https://api.football-data.org/v4/competitions","X-Auth-Token",
         "competitions",session=session)
+    clock=now or datetime.now(timezone.utc)
+    day=clock.astimezone(timezone.utc).date().isoformat()
+    fixtures=(football_daily_fixture_probe(football_key,day,session=session)
+              if football["data_verified"] else
+              {"status":"FOOTBALL_CATALOG_NOT_VERIFIED_NO_QUERY",
+               "verified":False,"calls":0,"day":day})
     # LiveTennisAPI's free entitlement has NOT been established. No speculative
     # consumption of a plan, including usage endpoint, without explicit opt-in.
     tennis=(single_provider("live_tennis_api",tennis_key,
@@ -71,7 +112,8 @@ def probe(football_key:str,tennis_key:str, *, tennis_opt_in:bool=False,
     result={"schema":"MATRIX_FREE_API_INDEPENDENT_PROBE_V2",
         "generated_at_utc":(now or datetime.now(timezone.utc)).isoformat(),
         "providers":{"football_data_org":football,"live_tennis_api":tennis},
-        "network_calls":football["calls"]+tennis["calls"],
+        "football_current_day_fixture_proof":fixtures,
+        "network_calls":football["calls"]+fixtures["calls"]+tennis["calls"],
         "live_tennis_opt_in":tennis_opt_in,
         "status":"PARTIAL_VERIFIED" if any(p["data_verified"]
                       for p in (football,tennis)) else "NO_VERIFIED_LIVE_PROVIDER",
