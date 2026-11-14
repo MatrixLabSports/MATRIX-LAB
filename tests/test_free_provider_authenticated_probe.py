@@ -118,6 +118,10 @@ def test_weekly_fallback_source_fixture_verified_only_with_real_identity():
     assert d["football_current_day_fixture_proof"]["verified"] is False
     assert d["football_named_competition_week_proof"]["verified"] is True
     assert d["football_named_competition_week_proof"]["sample_ids"]==[44567]
+    source=d["football_named_competition_week_proof"]["source_fixtures_research_only"]
+    assert source==[{"provider_fixture_id":44567,"kickoff_utc":"2026-11-21T15:00:00Z",
+       "competition_id":2021,"competition_code":"PL","home":"Alpha","away":"Beta"}]
+    assert d["football_named_competition_week_proof"]["historic_provider_id_equivalence_certified"] is False
     assert d["promotion_gate"]["production_feed_authorized"] is False
 
 def test_weekly_fallback_403_never_claims_live_fixtures():
@@ -127,3 +131,26 @@ def test_weekly_fallback_403_never_claims_live_fixtures():
     assert d["football_named_competition_week_proof"]["verified"] is False
     assert d["providers"]["football_data_org"]["data_verified"] is True
     assert d["promotion_gate"]["production_feed_authorized"] is False
+
+
+def test_pl_week_fixtures_wrong_league_and_duplicate_id_cannot_be_ingested():
+    net=Network([Resp(200,{"competitions":[{"id":2021}]}),
+                 Resp(200,{"matches":[]}),
+                 Resp(200,{"matches":[
+                    {"id":44567,"utcDate":"2026-11-21T15:00:00Z",
+                     "competition":{"id":2021,"code":"PL"},
+                     "homeTeam":{"name":"Alpha"},"awayTeam":{"name":"Beta"}},
+                    {"id":44567,"utcDate":"2026-11-21T15:00:00Z",
+                     "competition":{"id":2021,"code":"PL"},
+                     "homeTeam":{"name":"Alpha"},"awayTeam":{"name":"Beta"}},
+                    {"id":44568,"utcDate":"2026-11-21T18:00:00Z",
+                     "competition":{"id":2014,"code":"PD"},
+                     "homeTeam":{"name":"Gamma"},"awayTeam":{"name":"Delta"}}
+                 ]})])
+    report=probe("test","",session=net,now=NOW)
+    proof=report["football_named_competition_week_proof"]
+    assert proof["verified"] is True
+    assert proof["match_count"]==1
+    assert len(proof["source_fixtures_research_only"])==1
+    assert proof["source_name_crossmatch_certified"] is False
+    assert report["promotion_gate"]["production_feed_authorized"] is False
