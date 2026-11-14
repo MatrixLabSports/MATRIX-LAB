@@ -31,17 +31,27 @@ def classify(data: dict, day: str) -> dict:
 def strict_daily_fixture_rows(data:dict,day:str)->list[dict]:
     """Source identification only; do not promote unnamed/incomplete matches."""
     rows=data.get("events") if isinstance(data,dict) else None
-    valid=[]
+    # Only unique, unambiguous identities count as observed coverage.
+    # Conflicting data for one provider ID fails closed regardless of ordering.
+    candidates={}
+    conflicted=set()
     for item in rows if isinstance(rows,list) else []:
-        if not isinstance(item,dict):continue
+        if not isinstance(item,dict):
+            continue
         sid=str(item.get("idEvent") or "")
         league=str(item.get("strLeague") or "").strip()
         home=str(item.get("strHomeTeam") or "").strip()
         away=str(item.get("strAwayTeam") or "").strip()
-        if (sid.isdigit() and item.get("dateEvent")==day and league
+        if not (sid.isdigit() and item.get("dateEvent")==day and league
                 and home and away and home.casefold()!=away.casefold()):
-            valid.append({"id":sid,"date":day,"league":league})
-    return valid
+            continue
+        identity=(league.casefold(),home.casefold(),away.casefold(),day)
+        if sid in candidates and candidates[sid]!=identity:
+            conflicted.add(sid)
+        else:
+            candidates[sid]=identity
+    return [{"id":sid,"date":day,"league":candidates[sid][0]}
+            for sid in candidates if sid not in conflicted]
 
 def one_call(day:str,opener=urlopen,clock=None)->dict:
     date.fromisoformat(day)
