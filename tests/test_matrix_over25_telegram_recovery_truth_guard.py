@@ -24,7 +24,8 @@ def test_real_repo_truth_guard_reports_all_physical_blockers_without_emission():
     assert r["historical_enriched_three_way_passed"]==8
     assert r["historical_enriched_three_way_total"]==11
     assert r["original_over25_promotion_still_intact"] is True
-    assert r["odds_api_quota_status"]=="BLOCKED_EXHAUSTED"
+    # The quota ledger is live and mutable; assert truthful reporting, not a frozen stage.
+    assert r["odds_api_quota_status"]==quota["decision"]["stage"]
     assert r["bookmaker_quote_verified_count"]==0
     assert r["sharp_120s_verified_count"]==0
     assert "CURRENT_CANONICAL_TELEGRAM_CANDIDATES_NOT_VERIFIED" in r["blockers"]
@@ -35,6 +36,20 @@ def test_real_repo_truth_guard_reports_all_physical_blockers_without_emission():
     assert r["signal_generation_authorized"] is False
     assert r["real_money"]=="BLOCKED"
     assert r["source_sha256"]["enriched"]==sha(enriched)
+
+def test_exhausted_quota_is_blocked_without_authorizing_signals():
+    enriched,quotes,quota,promotion=docs()
+    quota=deepcopy(quota)
+    quota["decision"]["stage"]="BLOCKED_EXHAUSTED"
+    quota["decision"]["api_calls_allowed"]=False
+    r=evaluate(enriched,quotes,quota,promotion,observed_at=NOW)
+    assert r["odds_api_quota_status"]=="BLOCKED_EXHAUSTED"
+    assert "ODDS_PROVIDER_QUOTA_NOT_AVAILABLE" in r["blockers"]
+    assert r["status"]=="NO_GO_FAIL_CLOSED"
+    assert r["telegram_messages_sent"]==0
+    assert r["signal_generation_authorized"] is False
+    assert r["real_money"]=="BLOCKED"
+
 
 def test_even_perfect_retrospective_and_fake_price_cannot_promote_to_green():
     enriched,quotes,quota,promotion=docs()
