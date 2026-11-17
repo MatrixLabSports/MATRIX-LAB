@@ -50,6 +50,10 @@ def evaluate_source(name:str,spec:dict[str,Any],now:datetime)->dict[str,Any]:
     timestamp_field=str(spec.get("timestamp_field") or "generated_at_utc")
     try:
         ts=parse_dt(get_path(payload,timestamp_field))
+        # A future-dated artifact is NOT fresh evidence. Never accept it via
+        # clamping a negative age to zero (clock skew or forged timestamps).
+        if ts>now:
+            result["failures"].append("CANONICAL_SOURCE_FUTURE_TIMESTAMP")
         age=max(0.0,(now-ts).total_seconds()/60.0)
         result["source_timestamp_utc"]=ts.isoformat()
         result["age_minutes"]=round(age,2)
