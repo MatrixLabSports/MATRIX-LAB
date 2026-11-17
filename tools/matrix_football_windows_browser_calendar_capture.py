@@ -34,6 +34,19 @@ def displayed_date(day: str, text: str) -> bool:
     return any(re.search(r"(?<!\d)" + re.escape(s) + r"(?!\d)", text) for s in options)
 
 
+def verified_relative_tomorrow_page(target: str, today: date, page_url: str,
+                                    page_title: str, observed_today: date) -> bool:
+    """Research-only Flashscore tomorrow evidence, never exact kickoff proof."""
+    return (
+        observed_today == today
+        and target == (today+timedelta(days=1)).isoformat()
+        and urlparse(page_url).scheme == "https"
+        and urlparse(page_url).hostname == "www.flashscore.co"
+        and urlparse(page_url).path == "/manana/"
+        and bool(re.search(r"\\bmañana\\b", page_title, flags=re.IGNORECASE))
+    )
+
+
 def classify(day: str, source: str, rows: list, *, date_verified: bool,
              page_url: str, collected_at: datetime) -> dict:
     date.fromisoformat(day)
@@ -162,12 +175,21 @@ def capture(root: Path, endpoint: str, *, day: str | None = None) -> dict:
                             date_ok = any(displayed_date(target, str(x.get("name") or ""))
                                           for x in rows)
                         else:
-                            date_ok = any(displayed_date(target, str(x)) for x in info.get("controls") or [])
+                            exact_date = any(displayed_date(target, str(x)) for x in info.get("controls") or [])
+                            relative_date = verified_relative_tomorrow_page(
+                                target, today, page.url, page.title(), datetime.now(BOGOTA).date())
+                            date_ok = exact_date or relative_date
                         if not date_ok:
                             continue
                         report = classify(target, source, rows, date_verified=True,
                                           page_url=page.url,
                                           collected_at=datetime.now(timezone.utc))
+                        report["date_evidence_mode"] = (
+                            "EXPLICIT_EVENT_DATE_LABEL" if source == "SOFASCORE" else
+                            ("EXACT_VISIBLE_CALENDAR_CONTROL" if exact_date else
+                             "RELATIVE_TOMORROW_PAGE_TITLE_ONLY_NOT_ABSOLUTE")
+                        )
+                        report["independent_browser_event_timestamp_certified"] = False
                         break
                     if report is None:
                         results.append({"source": source, "day": target,
