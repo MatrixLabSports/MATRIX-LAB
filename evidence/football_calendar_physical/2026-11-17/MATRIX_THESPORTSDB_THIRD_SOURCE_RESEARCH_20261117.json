@@ -24,7 +24,8 @@
     "strTimestamp returned without timezone suffix; do not treat as independently certified UTC",
     "idAPIfootball metadata is not an independently verified API-Football request",
     "Raw original enriched PIT unavailable; never infer from score or backfill",
-    "Some fixtures may have commenced; do not generate retrospective signals"
+    "Some fixtures may have commenced; do not generate retrospective signals",
+    "All three TheSportsDB returned events show strStatus=FT at retrieval; cannot count as new prospective prematch observations"
   ],
   "provider_snapshot": [
     {
@@ -36,7 +37,12 @@
       "strAwayTeam": "Portugal",
       "strTimestamp": "2026-11-17T19:45:00",
       "dateEvent": "2026-11-17",
-      "strSport": "Soccer"
+      "strSport": "Soccer",
+      "strStatus": "FT",
+      "source_result_at_retrieval": {
+        "home": "2",
+        "away": "3"
+      }
     },
     {
       "idEvent": "2442857",
@@ -47,7 +53,12 @@
       "strAwayTeam": "Norway",
       "strTimestamp": "2026-11-17T19:45:00",
       "dateEvent": "2026-11-17",
-      "strSport": "Soccer"
+      "strSport": "Soccer",
+      "strStatus": "FT",
+      "source_result_at_retrieval": {
+        "home": "2",
+        "away": "3"
+      }
     },
     {
       "idEvent": "2442858",
@@ -58,7 +69,12 @@
       "strAwayTeam": "Georgia",
       "strTimestamp": "2026-11-17T19:45:00",
       "dateEvent": "2026-11-17",
-      "strSport": "Soccer"
+      "strSport": "Soccer",
+      "strStatus": "FT",
+      "source_result_at_retrieval": {
+        "home": "1",
+        "away": "0"
+      }
     }
   ],
   "rows": [
@@ -230,7 +246,9 @@
       "original_enriched_pit_features_verified": false,
       "production_p_matrix_authorized": false,
       "telegram_signal_authorized": false,
-      "reason": "NAME_MATCH_ONLY_TIME_PIT_AND_AUTHORIZATION_UNVERIFIED"
+      "reason": "THIRD_SOURCE_IDENTITY_NAME_MATCH_BUT_PROVIDER_STATUS_FT_AT_RETRIEVAL_NO_PIT_OR_PREMATCH_TIMESTAMP",
+      "provider_status_at_retrieval": "FT",
+      "prospective_input_eligible": false
     },
     {
       "sofascore_event_id": "17305346",
@@ -315,7 +333,9 @@
       "original_enriched_pit_features_verified": false,
       "production_p_matrix_authorized": false,
       "telegram_signal_authorized": false,
-      "reason": "NAME_MATCH_ONLY_TIME_PIT_AND_AUTHORIZATION_UNVERIFIED"
+      "reason": "THIRD_SOURCE_IDENTITY_NAME_MATCH_BUT_PROVIDER_STATUS_FT_AT_RETRIEVAL_NO_PIT_OR_PREMATCH_TIMESTAMP",
+      "provider_status_at_retrieval": "FT",
+      "prospective_input_eligible": false
     },
     {
       "sofascore_event_id": "17364199",
@@ -791,7 +811,9 @@
       "original_enriched_pit_features_verified": false,
       "production_p_matrix_authorized": false,
       "telegram_signal_authorized": false,
-      "reason": "NAME_MATCH_ONLY_TIME_PIT_AND_AUTHORIZATION_UNVERIFIED"
+      "reason": "THIRD_SOURCE_IDENTITY_NAME_MATCH_BUT_PROVIDER_STATUS_FT_AT_RETRIEVAL_NO_PIT_OR_PREMATCH_TIMESTAMP",
+      "provider_status_at_retrieval": "FT",
+      "prospective_input_eligible": false
     },
     {
       "sofascore_event_id": "17502409",
@@ -827,5 +849,6 @@
       "telegram_signal_authorized": false,
       "reason": "NOT_FOUND_IN_RETURNED_THESPORTSDB_EVENTS_DAY_SAMPLE"
     }
-  ]
+  ],
+  "provider_finished_event_count": 3
 }
