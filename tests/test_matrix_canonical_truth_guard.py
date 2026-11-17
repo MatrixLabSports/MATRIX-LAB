@@ -60,3 +60,12 @@ def test_future_dated_source_fails_closed_even_with_valid_metrics(tmp_path):
     assert r["status"]=="FAIL_CLOSED"
     assert "CANONICAL_SOURCE_FUTURE_TIMESTAMP" in r["failures"]
     assert r["metrics"]["value"]==1
+
+
+def test_truth_guard_workflow_does_not_hide_stale_canonical_sources():
+    """A green Actions job cannot substitute for PASS from all registered sources."""
+    workflow=Path(".github/workflows/matrix-canonical-truth-guard.yml").read_text(encoding="utf-8")
+    assert workflow.index("Persist truth evidence")<workflow.index(
+        "Treat stale canonical sources as operational failure after persisting evidence")
+    assert "MATRIX_CANONICAL_TRUTH_GUARD_FAIL_CLOSED" in workflow
+    assert "THIS_IS_NOT_PROOF_OF_NEW_OBSERVATIONS" in workflow
