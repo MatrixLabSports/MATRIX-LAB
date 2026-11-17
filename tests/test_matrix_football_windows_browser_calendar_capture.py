@@ -94,3 +94,29 @@ def test_visible_capture_is_append_only_across_refreshes(tmp_path):
 def test_no_empty_fake_browser_admission(tmp_path):
     assert persist(tmp_path, make("SOFASCORE", []))["status"] == "NO_ADMISSIBLE_VISIBLE_LINKS"
     assert not (tmp_path/"evidence/football_calendar_physical"/DAY/"sofascore_visible_links.json").exists()
+
+
+def test_flashscore_relative_tomorrow_is_research_only_and_bound_to_host_date():
+    from datetime import date
+    from tools.matrix_football_windows_browser_calendar_capture import verified_relative_tomorrow_page
+    today=date(2026,11,16)
+    assert verified_relative_tomorrow_page(
+        "2026-11-17",today,"https://www.flashscore.co/manana/",
+        "Fútbol mañana: partidos y resultados | Flashscore.co",today
+    ) is True
+    assert verified_relative_tomorrow_page(
+        "2026-11-17",today,"https://www.flashscore.co/manana/",
+        "Fútbol mañana: partidos y resultados | Flashscore.co",date(2026,11,17)
+    ) is False
+    assert verified_relative_tomorrow_page(
+        "2026-11-17",today,"https://www.flashscore.co.evil.test/manana/",
+        "Fútbol mañana: partidos y resultados | Flashscore.co",today
+    ) is False
+    assert verified_relative_tomorrow_page(
+        "2026-11-17",today,"https://www.flashscore.co/manana/",
+        "Partidos de fútbol | Flashscore.co",today
+    ) is False
+    assert verified_relative_tomorrow_page(
+        "2026-11-18",today,"https://www.flashscore.co/manana/",
+        "Fútbol mañana: partidos y resultados | Flashscore.co",today
+    ) is False
