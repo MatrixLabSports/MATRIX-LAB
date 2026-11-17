@@ -49,3 +49,14 @@ def test_registry_separates_current_football_sync_from_structural_tracker():
     assert int(registry["sources"]["football_current_settlement"]["max_age_minutes"])==30
     assert int(registry["sources"]["football_tracker_structure"]["max_age_minutes"])==1440
     assert registry["response_contract"]["tracker_pending_blocked_must_not_be_inferred_from_sync"] is True
+
+
+def test_future_dated_source_fails_closed_even_with_valid_metrics(tmp_path):
+    """Future stamps must not be treated as perfectly fresh artifacts."""
+    p=write(tmp_path,{"schema":"X","generated_at_utc":"2026-10-20T07:40:00Z","value":1})
+    r=evaluate_source("x",{"canonical_path":str(p),"required_schema":"X",
+        "timestamp_field":"generated_at_utc","max_age_minutes":45,
+        "metric_path":"value"},NOW)
+    assert r["status"]=="FAIL_CLOSED"
+    assert "CANONICAL_SOURCE_FUTURE_TIMESTAMP" in r["failures"]
+    assert r["metrics"]["value"]==1
