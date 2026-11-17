@@ -80,3 +80,18 @@ jobs:
             sleep $((attempt*2))
           done
           exit 1
+
+      - name: Treat stale canonical sources as operational failure after persisting evidence
+        shell: bash
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          p=Path("evidence/governance/MATRIX_CANONICAL_TRUTH_GUARD_LAST.json")
+          report=json.loads(p.read_text(encoding="utf-8"))
+          status=report["summary"]["status"]
+          if status!="PASS":
+              print("CANONICAL_SOURCE_FRESHNESS_BLOCKERS="+json.dumps(report["failures"],sort_keys=True))
+              raise SystemExit("MATRIX_CANONICAL_TRUTH_GUARD_FAIL_CLOSED")
+          print("CANONICAL_SOURCE_ARTIFACT_FRESHNESS_PASS; THIS_IS_NOT_PROOF_OF_NEW_OBSERVATIONS")
+          PY
