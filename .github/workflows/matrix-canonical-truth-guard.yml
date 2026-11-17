@@ -94,8 +94,15 @@ jobs:
             exit 1
           fi
 
-      - name: Fail closed on stale or conflicting truth
-        if: steps.guard.outputs.exit_code != '0'
+      - name: Fail closed on stale or conflicting canonical sources after persistence
         run: |
-          echo "MATRIX_CANONICAL_TRUTH_GUARD: FAIL_CLOSED"
-          exit 2
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          report=json.loads(Path("evidence/governance/MATRIX_CANONICAL_TRUTH_GUARD_LAST.json").read_text(encoding="utf-8"))
+          status=report["summary"]["status"]
+          if status != "PASS":
+              print("CANONICAL_TRUTH_GUARD_BLOCKERS="+json.dumps(report["failures"],sort_keys=True))
+              raise SystemExit("MATRIX_CANONICAL_TRUTH_GUARD_FAIL_CLOSED")
+          print("CANONICAL_ARTIFACT_FRESHNESS_PASS_NOT_NEW_OBSERVATION_CERTIFICATION")
+          PY
