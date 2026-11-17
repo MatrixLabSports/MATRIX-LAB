@@ -43,7 +43,7 @@ def verified_relative_tomorrow_page(target: str, today: date, page_url: str,
         and urlparse(page_url).scheme == "https"
         and urlparse(page_url).hostname == "www.flashscore.co"
         and urlparse(page_url).path == "/manana/"
-        and bool(re.search(r"\\bmañana\\b", page_title, flags=re.IGNORECASE))
+        and bool(re.search(r"\bmañana\b", page_title, flags=re.IGNORECASE))
     )
 
 
