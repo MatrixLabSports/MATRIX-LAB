@@ -112,3 +112,18 @@ def test_raw_sha_and_archive_survives_two_provider_snapshots(tmp_path):
 def test_only_approved_league_ids_can_be_queried():
     with pytest.raises(ValueError,match="LEAGUE_NOT_IN_APPROVED_SIX"):
         fetch_league(DAY, "99999")
+
+
+def test_public_provider_http_429_is_preserved_as_evidence_and_never_fabricated():
+    from urllib.error import HTTPError
+    def fake_429(req, timeout):
+        raise HTTPError(req.full_url, 429, "quota", {}, None)
+    with pytest.raises(ValueError,match="FREE_PROVIDER_LEAGUE_HTTP_429"):
+        fetch_league(DAY,"4328",opener=fake_429)
+
+def test_public_provider_network_class_is_specific():
+    from urllib.error import URLError
+    def fake_network(req, timeout):
+        raise URLError("offline")
+    with pytest.raises(ValueError,match="FREE_PROVIDER_LEAGUE_NETWORK_URLError"):
+        fetch_league(DAY,"4328",opener=fake_network)
