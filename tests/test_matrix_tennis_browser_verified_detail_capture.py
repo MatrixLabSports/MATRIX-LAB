@@ -296,7 +296,10 @@ def test_real_nov18_all_historical_candidate_ids_are_visible_to_browser_schedule
     assert len(candidates)>=9, "PROSPECTIVE_CHALLENGER_HARD_CLAY_CANDIDATES_MISSING"
     assert any(any(x["surface_history_lane"]=="Clay" for x in c["original_history_pair_hints"])
                for c in candidates[6:]), "CLAY_OUTSIDE_FORMER_SIX_ITEM_CAPTURE_CAP_NOT_PROVED"
-    assert len(candidates)<=12, "SCHEDULED_CAPTURE_STILL_TRUNCATES_WITHOUT_EXPLICIT_BACKLOG"
+    assert len(candidates)<=16, "SCHEDULED_CAPTURE_STILL_TRUNCATES_WITHOUT_EXPLICIT_BACKLOG"
+    workflow=(root/".github/workflows/matrix-selfhosted-tennis-browser-free-30m.yml").read_text(encoding="utf-8")
+    assert "matrix_tennis_browser_verified_detail_capture --date $day --max-events 16" in workflow
+    assert "matrix_tennis_flashscore_visible_clock_research --date $day --max-events 16" in workflow
     assert len({x["sofascore_id"] for x in candidates})==len(candidates)
 
 
