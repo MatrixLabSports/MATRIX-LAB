@@ -67,7 +67,7 @@ def exact_match_page(url: str, mid: str) -> bool:
 def research(root: Path, day: str, endpoint: str, *, max_events: int = 6) -> dict:
     from playwright.sync_api import Error, sync_playwright
     date.fromisoformat(day)
-    if not 1 <= max_events <= 12:
+    if not 1 <= max_events <= 16:
         raise ValueError("MAX_EVENTS_LIMIT_INVALID")
     detail, detail_hash = load(root/BASE/day/"sofascore_verified_match_details.json")
     if (detail.get("schema") != "MATRIX_OPERA_TENNIS_MATCH_DETAIL_OBSERVATION_V1"
