@@ -21,6 +21,8 @@ on:
       - tests/test_matrix_football_free_six_league_crosscheck.py
       - tools/matrix_football_six_league_receipt_audit.py
       - tests/test_matrix_football_six_league_receipt_audit.py
+      - tools/matrix_football_free_browser_provider_research_join.py
+      - tests/test_matrix_football_free_browser_provider_research_join.py
 
 permissions:
   contents: write
@@ -78,7 +80,7 @@ jobs:
       - name: Verify six-league public free-source research never authorizes signals
         shell: cmd
         run: |
-          python -m pytest -q tests/test_matrix_football_free_six_league_crosscheck.py tests/test_matrix_football_six_league_receipt_audit.py
+          python -m pytest -q tests/test_matrix_football_free_six_league_crosscheck.py tests/test_matrix_football_six_league_receipt_audit.py tests/test_matrix_football_free_browser_provider_research_join.py
           if errorlevel 1 exit /B 1
 
       - name: Connect only to user-authorized visible CDP browser
@@ -146,6 +148,23 @@ jobs:
               Write-Output "SIX_LEAGUE_HTTP429_STOP_ALL_PROVIDER_CALLS_THIS_CYCLE"
               break
             }
+          }
+
+      - name: Research-join real browser and free fixture identities without promotion
+        shell: powershell
+        run: |
+          $ErrorActionPreference = "Stop"
+          $cycle=Get-Content -LiteralPath "evidence/football_calendar_physical/MATRIX_BROWSER_CAPTURE_CYCLE_LAST.json" -Raw | ConvertFrom-Json
+          foreach ($day in $cycle.days) {
+            $base="evidence/football_calendar_physical/$day"
+            $intake="evidence/football_world_inventory/$day/MATRIX_FOOTBALL_INDEPENDENT_FIXTURE_INTAKE.json"
+            if (-not (Test-Path "$base/MATRIX_TWO_SOURCE_LINK_RESEARCH_LAST.json")) { continue }
+            if (-not (Test-Path -LiteralPath $intake)) {
+              Write-Output "INDEPENDENT_FREE_INTAKE_MISSING_RESEARCH_ONLY: $day"
+              continue
+            }
+            python -m tools.matrix_football_free_browser_provider_research_join --day $day
+            if ($LASTEXITCODE -ne 0) { throw "FREE_BROWSER_PROVIDER_RESEARCH_JOIN_FAILED" }
           }
 
       - name: Audit actual six-league SHA receipts offline without provider requests
