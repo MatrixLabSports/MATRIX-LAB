@@ -241,3 +241,31 @@ def test_live_original_receipt_cannot_smuggle_later_result(tmp_path):
             item["original_receipt_sha256"]=hashlib.sha256(path.read_bytes()).hexdigest()
     with pytest.raises(ValueError,match="BAYESIAN_ORIGINAL_TARGET_VALUE_CONFLICT"):
         verify_physical_receipts(history,request,history_root=tmp_path,request_root=tmp_path)
+
+
+def test_live_rejects_obscured_future_result_inside_unexpected_metadata():
+    history, request = docs(35, lane="TENNIS_LIVE")
+    row = request["targets"][0]
+    row["prediction_frozen_at_utc"] = (START + timedelta(minutes=20)).isoformat()
+    row["observed_live_state_at_utc"] = (START + timedelta(minutes=19)).isoformat()
+    row["metadata"] = {"final_winner": 2}
+    with pytest.raises(ValueError,match="BAYESIAN_LIVE_FUTURE_FACT_IN_FORECAST_INPUT"):
+        build(history,request)
+
+
+def test_live_canonical_original_receipt_accepts_only_asof_fields(tmp_path):
+    history, request = docs(1, lane="TENNIS_LIVE")
+    row = request["targets"][0]
+    row["prediction_frozen_at_utc"] = (START + timedelta(minutes=20)).isoformat()
+    row["observed_live_state_at_utc"] = (START + timedelta(minutes=19)).isoformat()
+    for kind, items in (("HISTORY",history["rows"]),("REQUEST",request["targets"])):
+        for index,item in enumerate(items):
+            receipt = dict(item, schema="MATRIX_HYBRID_ELITE_BAYESIAN_"
+                           +kind+"_RECEIPT_V1",real_money="BLOCKED")
+            original=tmp_path/f"{kind}_{index}.json"
+            original.write_text(json.dumps(receipt))
+            item["original_receipt_path"]=original.name
+            item["original_receipt_sha256"]=hashlib.sha256(original.read_bytes()).hexdigest()
+    assert verify_physical_receipts(history,request,history_root=tmp_path,
+                                    request_root=tmp_path)["physical_sha_bound_receipts_verified"]==2
+    assert build(history,request)["targets"][0]["p_bayesian_research_only"] is None
