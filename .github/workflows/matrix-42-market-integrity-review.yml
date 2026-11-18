@@ -2,6 +2,8 @@ name: MATRIX 42 Market Read-Only Integrity Review
 
 on:
   workflow_dispatch:
+  schedule:
+    - cron: "20 12 * * *" # Daily 07:20 Bogota; audit only, no betting
   push:
     branches:
       - repair/cor09-world-pipeline
