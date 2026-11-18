@@ -422,6 +422,37 @@ def persist_detail_capture_attempt(parent: Path, report: dict) -> str:
         raise ValueError("CAPTURE_ATTEMPT_WRITE_SHA_MISMATCH")
     return receipt
 
+def persist_versioned_details(target: Path, report: dict) -> str:
+    """Archive the EXACT prior authentic details before any successful update.
+
+    No reconstruction from newer sources: previous bytes must already exist.
+    A later larger/smaller capture never erases earlier genuine PIT evidence.
+    """
+    if (report.get("real_money")!="BLOCKED"
+        or report.get("new_model_observations_admitted")!=0
+        or report.get("telegram_signal_authorized") is not False):
+        raise ValueError("DETAIL_ARCHIVE_MODEL_ADMISSION_FORBIDDEN")
+    data=(json.dumps(report,ensure_ascii=False,indent=2,sort_keys=True)+"\n").encode("utf-8")
+    target.parent.mkdir(parents=True,exist_ok=True)
+    if target.exists():
+        previous=target.read_bytes()
+        if previous!=data:
+            digest=hashlib.sha256(previous).hexdigest()
+            archived=target.parent/"archive"/(
+                "MATRIX_TENNIS_SOURCE_DETAILS_SHA256_"+digest+".json")
+            archived.parent.mkdir(parents=True,exist_ok=True)
+            if archived.exists() and archived.read_bytes()!=previous:
+                raise ValueError("ORIGINAL_CHALLENGER_DETAIL_ARCHIVE_TAMPER")
+            if not archived.exists():
+                archived.write_bytes(previous)
+            if hashlib.sha256(archived.read_bytes()).hexdigest()!=digest:
+                raise ValueError("ORIGINAL_CHALLENGER_DETAIL_ARCHIVE_WRITE_FAILED")
+    target.write_bytes(data)
+    if target.read_bytes()!=data:
+        raise ValueError("NEW_CHALLENGER_DETAILS_WRITE_INTEGRITY_ERROR")
+    return hashlib.sha256(data).hexdigest()
+
+
 def run(root: Path, day: str, endpoint: str, max_events: int = 6) -> dict:
     from playwright.sync_api import Error, sync_playwright
     date.fromisoformat(day)
@@ -539,8 +570,7 @@ def run(root: Path, day: str, endpoint: str, max_events: int = 6) -> dict:
         frozen_target.write_bytes(frozen_bytes)
         if frozen_target.read_bytes()!=frozen_bytes:
             raise ValueError("BOUND_CROSSMATCH_SOURCE_WRITE_FAILURE")
-    target.write_text(json.dumps(report, ensure_ascii=False, indent=2, sort_keys=True)+"\n",
-                      encoding="utf-8")
+    report["saved_detail_sha256"]=persist_versioned_details(target,report)
     return report
 
 def main() -> None:
