@@ -5,7 +5,7 @@ from datetime import datetime, timezone
 import pytest
 
 from tools.matrix_football_free_six_league_crosscheck import (
-    SCHEMA, LEAGUES, assemble, fetch_league, persist_raw, validate_provider
+    SCHEMA, LEAGUES, assemble, fetch_league, permitted_scope, persist_raw, validate_provider
 )
 
 DAY = "2026-11-21"
@@ -127,3 +127,15 @@ def test_public_provider_network_class_is_specific():
         raise URLError("offline")
     with pytest.raises(ValueError,match="FREE_PROVIDER_LEAGUE_NETWORK_URLError"):
         fetch_league(DAY,"4328",opener=fake_network)
+
+
+def test_rate_budget_rotates_every_original_league_without_fabricating_zero():
+    first = set(permitted_scope(datetime(2026,11,18,1,11,tzinfo=timezone.utc)))
+    next_half_hour = set(permitted_scope(datetime(2026,11,18,1,41,tzinfo=timezone.utc)))
+    assert len(first) == len(next_half_hour) == 3
+    assert not first.intersection(next_half_hour)
+    assert first.union(next_half_hour) == {x[1] for x in LEAGUES}
+
+def test_rate_budget_rejects_timestamp_without_timezone():
+    with pytest.raises(ValueError,match="RATE_BUDGET_NEEDS_AWARE_TIME"):
+        permitted_scope(datetime(2026,11,18,1,11))
