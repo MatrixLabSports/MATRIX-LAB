@@ -24,7 +24,8 @@ COUNTRY_IOC={"USA":"USA","Switzerland":"SUI","Peru":"PER",
 "China":"CHN","Chile":"CHI","Austria":"AUT",
 # Verified against the frozen original Hard identity authority on 18-Nov.
 # Mapping COUNTRY -> IOC is NOT a provider-player identity certificate.
-"Canada":"CAN","Poland":"POL","Slovenia":"SLO"}
+"Canada":"CAN","Poland":"POL","Slovenia":"SLO",
+"Estonia":"EST","Lithuania":"LTU","Russia":"RUS"}
 AUTHORITIES={"Hard":"evidence/cor0203/identity/MATRIX_COR0203_IDENTITY_AUTHORITY_LAST.json",
 "Clay":"evidence/tennis_parallel_lanes/ATP_CHALLENGER_MEN_SINGLES_CLAY/identity/MATRIX_CLAY_IDENTITY_AUTHORITY_LAST.json"}
 OUT=Path("evidence/tennis_calendar_reconciliation")
