@@ -86,6 +86,8 @@ def test_source_team_swap_fails_without_string_fuzzy_join(tmp_path):
 
 def test_snapshot_frozen_after_actual_start_is_rejected(tmp_path):
     a,b,c=facts()
+    a["kickoff_utc"]="2026-10-25T21:00:00Z"
+    b["kickoff_utc"]="2026-10-25T21:00:00Z"
     a["freeze_at_utc"]="2026-10-25T19:30:00Z"
     b["freeze_at_utc"]="2026-10-25T19:30:00Z"
     c["response"][0]["fixture"]["date"]="2026-10-25T18:00:00Z"
