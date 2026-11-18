@@ -1,6 +1,6 @@
 """Research-only source clock must never imply actual independent UTC proof."""
 from tools.matrix_tennis_flashscore_visible_clock_research import (
-    SCHEMA, clock_from_visible, exact_match_page,
+    SCHEMA, clock_from_visible, exact_match_page, normalized_visible_clock,
 )
 def test_one_real_style_flashscore_visible_clock_is_not_timezone_attestation():
     raw="""Champaign, Dura - 1/8 de final
@@ -46,3 +46,12 @@ def test_exact_verified_flashscore_match_url_only():
         "https://example.com/partido/tenis/baris-ozan-CI4P8u7o/tarvet-oliver-lYUiygo1/?mid=fHTaO9Is",
         "fHTaO9Is"
     )
+
+def test_single_digit_clock_is_normalized_but_never_claimed_timezone():
+    assert normalized_visible_clock("6:30") == "06:30"
+    assert normalized_visible_clock("06:30") == "06:30"
+    assert normalized_visible_clock("12:30") == "12:30"
+    import pytest
+    for raw in ("26:30","6:77","06:30 UTC","06.30", "bad"):
+        with pytest.raises(ValueError):
+            normalized_visible_clock(raw)
