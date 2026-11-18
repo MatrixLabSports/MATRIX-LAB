@@ -128,10 +128,11 @@ def metrics(rows: list[tuple[float, int]]) -> dict:
 
 def paired_bootstrap_lower_bounds(group: list[dict], name: str,
                                   iterations: int = 600) -> dict:
-    """Deterministic paired 95% bootstrap for Brier and log loss deltas.
+    """Deterministic paired WEEK-BLOCK bootstrap; never certify superiority.
 
-    Same fixture, same outcome and bootstrap indices for MATRIX/challenger.
-    A confidence interval is a screening tool, NOT a guarantee of edge.
+    Match outcomes within the same calendar week can be correlated. Sampling
+    whole week blocks is more conservative than treating every match as
+    independent, though it still does not prove independent future replication.
     """
     if not group:
         raise ValueError("LAB_PAIRED_BOOTSTRAP_EMPTY")
@@ -140,33 +141,38 @@ def paired_bootstrap_lower_bounds(group: list[dict], name: str,
         r["lane"] + ":" + r["physical_event_id"] for r in ordered)
     seed = int.from_bytes(hashlib.sha256(seed_input.encode()).digest()[:8], "big")
     randomizer = random.Random(seed)
-    differences = []
+    blocks = defaultdict(list)
     for r in ordered:
         y = r["outcome"]
         a, b = r["p_matrix"], r["contenders"][name]
-        brier_delta = (a - y)**2 - (b - y)**2
-        log_delta = -(y * math.log(a) + (1-y) * math.log1p(-a)) + (
-            y * math.log(b) + (1-y) * math.log1p(-b))
-        differences.append((brier_delta, log_delta))
-    n = len(differences)
+        brier_delta = (a-y)**2 - (b-y)**2
+        log_delta = -(y*math.log(a) + (1-y)*math.log1p(-a)) + (
+            y*math.log(b) + (1-y)*math.log1p(-b))
+        year, week, _ = r["start"].isocalendar()
+        blocks[(year, week)].append((brier_delta, log_delta))
+    keys = sorted(blocks)
     samples_brier, samples_log = [], []
     for _ in range(iterations):
-        sample = [differences[randomizer.randrange(n)] for _ in range(n)]
-        samples_brier.append(sum(v[0] for v in sample) / n)
-        samples_log.append(sum(v[1] for v in sample) / n)
+        chosen = [blocks[keys[randomizer.randrange(len(keys))]]
+                  for _ in keys]
+        n = sum(len(block) for block in chosen)
+        samples_brier.append(sum(v[0] for block in chosen for v in block) / n)
+        samples_log.append(sum(v[1] for block in chosen for v in block) / n)
     samples_brier.sort()
     samples_log.sort()
     lower = int(0.025 * iterations)
-    upper = min(iterations - 1, int(0.975 * iterations))
+    upper = min(iterations-1, int(0.975 * iterations))
     return {
-        "bootstrap_method": "DETERMINISTIC_PAIRED_RESAMPLE",
+        "bootstrap_method": "DETERMINISTIC_PAIRED_CALENDAR_WEEK_BLOCK_RESAMPLE",
         "bootstrap_iterations": iterations,
+        "calendar_week_blocks": len(keys),
+        "minimum_independent_week_blocks_for_screen": 12,
         "confidence_level": 0.95,
         "brier_delta_lower": round(samples_brier[lower], 8),
         "brier_delta_upper": round(samples_brier[upper], 8),
         "logloss_delta_lower": round(samples_log[lower], 8),
         "logloss_delta_upper": round(samples_log[upper], 8),
-        "temporal_and_cluster_dependence_assessed": False,
+        "temporal_and_cluster_dependence_assessed": "CALENDAR_WEEK_BLOCK_APPROXIMATION",
         "independent_future_replication_verified": False,
     }
 
@@ -197,6 +203,7 @@ def evaluate(document: dict) -> dict:
                 and lower_brier >= MARGIN_BRIER
                 and lower_logloss >= MARGIN_LOGLOSS
                 and lower_ece >= 0
+                and uncertainty["calendar_week_blocks"] >= 12
                 and uncertainty["brier_delta_lower"] > 0
                 and uncertainty["logloss_delta_lower"] > 0
             )
