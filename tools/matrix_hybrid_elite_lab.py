@@ -11,6 +11,7 @@ import argparse
 import hashlib
 import json
 import math
+import random
 from collections import defaultdict
 from datetime import datetime, timezone
 from pathlib import Path
@@ -124,6 +125,52 @@ def metrics(rows: list[tuple[float, int]]) -> dict:
             "logloss": round(logloss, 8), "ece_10": round(ece, 8)}
 
 
+
+def paired_bootstrap_lower_bounds(group: list[dict], name: str,
+                                  iterations: int = 600) -> dict:
+    """Deterministic paired 95% bootstrap for Brier and log loss deltas.
+
+    Same fixture, same outcome and bootstrap indices for MATRIX/challenger.
+    A confidence interval is a screening tool, NOT a guarantee of edge.
+    """
+    if not group:
+        raise ValueError("LAB_PAIRED_BOOTSTRAP_EMPTY")
+    ordered = sorted(group, key=lambda r: (r["start"], r["physical_event_id"]))
+    seed_input = "|".join(
+        r["lane"] + ":" + r["physical_event_id"] for r in ordered)
+    seed = int.from_bytes(hashlib.sha256(seed_input.encode()).digest()[:8], "big")
+    randomizer = random.Random(seed)
+    differences = []
+    for r in ordered:
+        y = r["outcome"]
+        a, b = r["p_matrix"], r["contenders"][name]
+        brier_delta = (a - y)**2 - (b - y)**2
+        log_delta = -(y * math.log(a) + (1-y) * math.log1p(-a)) + (
+            y * math.log(b) + (1-y) * math.log1p(-b))
+        differences.append((brier_delta, log_delta))
+    n = len(differences)
+    samples_brier, samples_log = [], []
+    for _ in range(iterations):
+        sample = [differences[randomizer.randrange(n)] for _ in range(n)]
+        samples_brier.append(sum(v[0] for v in sample) / n)
+        samples_log.append(sum(v[1] for v in sample) / n)
+    samples_brier.sort()
+    samples_log.sort()
+    lower = int(0.025 * iterations)
+    upper = min(iterations - 1, int(0.975 * iterations))
+    return {
+        "bootstrap_method": "DETERMINISTIC_PAIRED_RESAMPLE",
+        "bootstrap_iterations": iterations,
+        "confidence_level": 0.95,
+        "brier_delta_lower": round(samples_brier[lower], 8),
+        "brier_delta_upper": round(samples_brier[upper], 8),
+        "logloss_delta_lower": round(samples_log[lower], 8),
+        "logloss_delta_upper": round(samples_log[upper], 8),
+        "temporal_and_cluster_dependence_assessed": False,
+        "independent_future_replication_verified": False,
+    }
+
+
 def evaluate(document: dict) -> dict:
     rows = validate(document)
     by_lane = defaultdict(list)
@@ -144,9 +191,15 @@ def evaluate(document: dict) -> dict:
             lower_brier = base_common["brier"] - comparison["brier"]
             lower_logloss = base_common["logloss"] - comparison["logloss"]
             lower_ece = base_common["ece_10"] - comparison["ece_10"]
-            candidate_pass = (enough and lower_brier >= MARGIN_BRIER
-                              and lower_logloss >= MARGIN_LOGLOSS
-                              and lower_ece >= 0)
+            uncertainty = paired_bootstrap_lower_bounds(common, name) if enough else None
+            candidate_pass = (
+                enough and uncertainty is not None
+                and lower_brier >= MARGIN_BRIER
+                and lower_logloss >= MARGIN_LOGLOSS
+                and lower_ece >= 0
+                and uncertainty["brier_delta_lower"] > 0
+                and uncertainty["logloss_delta_lower"] > 0
+            )
             challengers.append({
                 "name": name, "common_events": len(common),
                 "matrix_same_events": base_common, "challenger": comparison,
@@ -155,6 +208,7 @@ def evaluate(document: dict) -> dict:
                 "delta_ece_matrix_minus_challenger": round(lower_ece, 8),
                 "sufficient_historical_holdout_to_consider": enough,
                 "metrics_pass_screen_not_authorization": candidate_pass,
+                "paired_uncertainty_screen": uncertainty,
                 "independent_reproducible_prospective_replication_verified": False,
                 "automatically_promoted": False,
             })
