@@ -1,0 +1,53 @@
+{
+  "schema": "MATRIX_LIVE_BAYESIAN_NO_FUTURE_FACT_CONTRACT_V1",
+  "review_date_bogota": "2026-11-18",
+  "status": "FORWARD_LIVE_FORECAST_FUTURE_END_DEPENDENCY_REMOVED_CODE_COMMITTED_CI_PENDING",
+  "issue": "Previous live Bayesian research input required independently_certified_end_at_utc before computing a prediction, which cannot be a source of knowledge at the time of a genuine in-play forecast.",
+  "resolution": {
+    "required_for_live_forecast": [
+      "event_start_at_utc",
+      "observed_live_state_at_utc",
+      "prediction_frozen_at_utc",
+      "physical_event_id",
+      "target_features_pit_certified",
+      "prematch_or_live_identity_certified",
+      "original_receipt_sha256",
+      "original_receipt_path"
+    ],
+    "chronology": "event_start < observed_live_state <= frozen_prediction",
+    "forbidden_from_forecast": [
+      "independently_certified_end_at_utc",
+      "final_winner",
+      "outcome",
+      "any_unexpected_metadata_key"
+    ],
+    "end_time_use": "Only later, in independent outcome evaluation; never in live feature producer.",
+    "source_receipt_validation": "Exact SHA-256 and restricted original LIVE request fields, no post-event result fields.",
+    "model_promoted": false
+  },
+  "code": {
+    "producer": "tools/matrix_hybrid_elite_bayesian_shadow.py",
+    "producer_git_blob_sha1": "b0519289136114b68d8e00e843a88151f6168416",
+    "test_path": "tests/test_matrix_hybrid_elite_bayesian_shadow.py",
+    "test_git_blob_sha1": "12bc1ad20e0777a8d4d3479882381bdce54c7232",
+    "bayesian_test_functions_written": 21,
+    "comparison_test_functions_written": 23,
+    "commits": [
+      "b096053ebeb40bf6e32c8066716998e6509a580b",
+      "9aae21b660c4198f28f3269bff189f44e2186473",
+      "7c5dde42afe27eb51d099c288951dab1e86a5872",
+      "51fcdf290a767c4c07d6e8dd23018eb69e4b97df"
+    ]
+  },
+  "checks": {
+    "source_code_readback_verified": true,
+    "test_source_readback_verified": true,
+    "github_pytest_completed_successfully": false,
+    "live_20261118_independent_real_end_time_certified": false,
+    "authentic_new_paired_live_forecasts_certified": 0,
+    "original_tennis_models_modified": false
+  },
+  "real_money": "BLOCKED",
+  "automatic_wagering": false,
+  "telegram_signal_authorized": false
+}
