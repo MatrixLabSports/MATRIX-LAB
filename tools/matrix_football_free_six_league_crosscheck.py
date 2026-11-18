@@ -31,6 +31,17 @@ LEAGUES = (
 )
 SCHEMA = "MATRIX_FREE_ORIGINAL_SIX_LEAGUE_LINK_RESEARCH_V1"
 
+def permitted_scope(now: datetime) -> tuple[str, ...]:
+    """At most three league-filtered calls per operational day per half-hour.
+
+    Alternates all six across consecutive 30-minute schedule slots, never
+    claims that deferred leagues returned zero events. Handles 429 separately.
+    """
+    if now.tzinfo is None or now.utcoffset() is None:
+        raise ValueError("RATE_BUDGET_NEEDS_AWARE_TIME")
+    bucket = now.astimezone(timezone.utc).minute // 30
+    return tuple(item[1] for idx, item in enumerate(LEAGUES) if idx % 2 == bucket)
+
 def fetch_league(day: str, league_id: str, *, opener=urlopen) -> tuple[dict, bytes]:
     date.fromisoformat(day)
     if league_id not in {row[1] for row in LEAGUES}:
@@ -139,10 +150,13 @@ def assemble(browser: dict, source_rows: dict[str, list[dict]], *,
         "target_date_bogota": day, "observed_at_utc": seen_at.astimezone(timezone.utc).isoformat(),
         "source_order": ["SofaScore", "Flashscore", "TheSportsDB"],
         "source_receipts": receipts,
-        "free_provider_league_filtered_requests": len(receipts),
+        "free_provider_league_filtered_requests": sum(
+            1 for x in receipts.values()
+            if x.get("status") in ("FREE_LEAGUE_SOURCE_BLOCKED",
+                                   "AUTHENTIC_FREE_LEAGUE_CAPTURE_RESEARCH_ONLY")),
         "six_league_sources": [
             {"original_league_id": original, "thesportsdb_league_id": tsdb,
-             "name": label, "response_rows": len(source_rows.get(tsdb, [])),
+             "name": label, "response_rows": len(source_rows[tsdb]) if tsdb in source_rows else None,
              "provider_call_complete": tsdb in source_rows}
             for original, tsdb, label in LEAGUES
         ],
@@ -185,8 +199,16 @@ def main() -> None:
     folder = args.root / ROOT / args.day
     browser, browser_digest = source_research(folder, args.day)
     observations, receipts = {}, {}
+    selected = permitted_scope(datetime.now(timezone.utc))
     provider_rate_limited = False
     for original, league_id, name in LEAGUES:
+        if league_id not in selected:
+            receipts[league_id] = {
+                "status": "DEFERRED_BY_RATE_BUDGET_NEXT_30M_SLOT",
+                "reason": "NOT_QUERIED_IN_THIS_CYCLE",
+                "source_event_count": None,
+            }
+            continue
         if provider_rate_limited:
             receipts[league_id] = {
                 "status": "SKIPPED_AFTER_PROVIDER_HTTP_429",
@@ -214,6 +236,10 @@ def main() -> None:
     report = assemble(browser, observations, seen_at=datetime.now(timezone.utc),
                       receipts=receipts)
     report["browser_research_sha256"] = browser_digest
+    report["free_provider_half_hour_scope"] = list(selected)
+    report["free_provider_calls_budget_per_day_this_cycle"] = 3
+    report["six_original_league_sources_examined_this_cycle"] = len(selected)
+    report["all_six_leagues_queried_in_this_cycle"] = False
     report["free_provider_rate_limit_hit"] = provider_rate_limited
     report["free_provider_error_counts"] = {
         key: sum(1 for x in receipts.values() if x.get("reason") == key)
