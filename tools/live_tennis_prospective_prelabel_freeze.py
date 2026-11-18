@@ -122,7 +122,22 @@ def collect(root:Path,day:str,*,now:datetime|None=None)->dict:
             current.setdefault(key,[]).append(row)
         report["source_current_unique_match_keys"]=len(current)
         newcomers=sorted(set(current)-before)
+        # A label-free file can still be old. Only register a match for which
+        # the authorized live capture actually observed a fresh valid state.
+        # Older records remain explicit unregistered backlog, never backfill.
+        fresh=[]
+        for key in newcomers:
+            if any(
+                row.get("quality_state_valid") is True
+                and row.get("origin")=="observed"
+                and row.get("stale") is False
+                and 0 <= (observed-parse_utc(row["captured_at_utc"])).total_seconds() <= 1800
+                for row in current[key]
+            ):
+                fresh.append(key)
         report["unfrozen_match_keys_in_this_capture"]=len(newcomers)
+        report["source_new_match_keys_with_fresh_valid_state"]=len(fresh)
+        report["source_unfrozen_stale_or_low_quality_match_keys"]=len(newcomers)-len(fresh)
         if not states:
             report["status"]="CURRENT_CAPTURE_HAS_NO_GENUINE_STATES"
         elif potentially_labeled:
@@ -131,9 +146,11 @@ def collect(root:Path,day:str,*,now:datetime|None=None)->dict:
             report["status"]="BLOCKED_LEDGER_ALREADY_CONTAINS_FINAL_LABELS"
         elif not newcomers:
             report["status"]="NO_NEW_UNLABELED_MATCHES_TO_FREEZE"
+        elif not fresh:
+            report["status"]="BLOCKED_NO_NEW_FRESH_QUALITY_VALID_LIVE_STATE"
         else:
             manifests=[]
-            for key in newcomers:
+            for key in fresh:
                 mid=int(key.split(":")[-1])
                 states_for_match=current[key]
                 times=sorted(parse_utc(x["captured_at_utc"]) for x in states_for_match)
@@ -187,7 +204,7 @@ def collect(root:Path,day:str,*,now:datetime|None=None)->dict:
                 batch_path.write_bytes(frozen_bytes)
             report["status"]="FROZEN_NEW_UNLABELED_LIVE_MATCHES_RESEARCH_ONLY"
             report["newly_frozen_unique_match_keys"]=len(manifests)
-            report["unfrozen_match_keys_in_this_capture"]=0
+            report["unfrozen_match_keys_in_this_capture"]=len(newcomers)-len(fresh)
             report["immutable_new_batch_path"]=batch_path.relative_to(root).as_posix()
             report["immutable_new_batch_sha256"]=sha(batch_path.read_bytes())
     receipt=folder/OUT
