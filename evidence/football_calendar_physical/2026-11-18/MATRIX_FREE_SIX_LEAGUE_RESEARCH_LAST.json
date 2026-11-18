@@ -1,11 +1,13 @@
 {
   "all_six_leagues_queried_in_this_cycle": false,
   "automatic_wagering": false,
-  "browser_research_sha256": "0a7897a32376927a62e07fccb292a5561a7ff9bd4e60bab490438f0db4de8809",
+  "browser_research_sha256": "40a6758cc3be08c2fe1ef876891019d0a7e1e3da84b07883e5e9c2e1578bb3f7",
   "events_not_returned_are_not_claimed_absent": true,
   "free_api_results_world_complete": false,
   "free_provider_calls_budget_per_day_this_cycle": 3,
   "free_provider_error_counts": {
+    "FREE_PROVIDER_LEAGUE_HTTP_429": 1,
+    "FREE_PROVIDER_QUOTA_NO_FURTHER_REQUESTS_THIS_CYCLE": 2,
     "NOT_QUERIED_IN_THIS_CYCLE": 3
   },
   "free_provider_half_hour_scope": [
@@ -13,12 +15,12 @@
     "4332",
     "4497"
   ],
-  "free_provider_league_filtered_requests": 3,
-  "free_provider_rate_limit_hit": false,
+  "free_provider_league_filtered_requests": 1,
+  "free_provider_rate_limit_hit": true,
   "future_research_name_matches": 0,
   "kickoff_and_identity_certified": 0,
   "league_scoped_name_matches": 0,
-  "observed_at_utc": "2026-11-18T01:48:29.323433+00:00",
+  "observed_at_utc": "2026-11-18T01:49:15.969578+00:00",
   "pit_certified": 0,
   "production_p_matrix_authorized": false,
   "real_money": "BLOCKED",
@@ -278,8 +280,8 @@
     {
       "name": "French Ligue 1",
       "original_league_id": "61",
-      "provider_call_complete": true,
-      "response_rows": 0,
+      "provider_call_complete": false,
+      "response_rows": null,
       "thesportsdb_league_id": "4334"
     },
     {
@@ -292,8 +294,8 @@
     {
       "name": "Italian Serie A",
       "original_league_id": "135",
-      "provider_call_complete": true,
-      "response_rows": 0,
+      "provider_call_complete": false,
+      "response_rows": null,
       "thesportsdb_league_id": "4332"
     },
     {
@@ -306,8 +308,8 @@
     {
       "name": "Colombian Liga DIMAYOR",
       "original_league_id": "239",
-      "provider_call_complete": true,
-      "response_rows": 0,
+      "provider_call_complete": false,
+      "response_rows": null,
       "thesportsdb_league_id": "4497"
     }
   ],
@@ -330,20 +332,14 @@
       "status": "DEFERRED_BY_RATE_BUDGET_NEXT_30M_SLOT"
     },
     "4332": {
-      "bytes": 15,
-      "null_events_response": true,
-      "path": "evidence/football_calendar_physical/2026-11-18/MATRIX_THESPORTSDB_DAY_LEAGUE_4332_RAW.json",
-      "sha256": "ac165cc3ca836b25ed26ebe6dfb1cff2f68fec04d6ac91ab21201daf29526f15",
-      "source_event_count": 0,
-      "status": "AUTHENTIC_FREE_LEAGUE_CAPTURE_RESEARCH_ONLY"
+      "reason": "FREE_PROVIDER_QUOTA_NO_FURTHER_REQUESTS_THIS_CYCLE",
+      "source_event_count": null,
+      "status": "SKIPPED_AFTER_PROVIDER_HTTP_429"
     },
     "4334": {
-      "bytes": 15,
-      "null_events_response": true,
-      "path": "evidence/football_calendar_physical/2026-11-18/MATRIX_THESPORTSDB_DAY_LEAGUE_4334_RAW.json",
-      "sha256": "ac165cc3ca836b25ed26ebe6dfb1cff2f68fec04d6ac91ab21201daf29526f15",
-      "source_event_count": 0,
-      "status": "AUTHENTIC_FREE_LEAGUE_CAPTURE_RESEARCH_ONLY"
+      "reason": "FREE_PROVIDER_LEAGUE_HTTP_429",
+      "source_event_count": null,
+      "status": "FREE_LEAGUE_SOURCE_BLOCKED"
     },
     "4335": {
       "reason": "NOT_QUERIED_IN_THIS_CYCLE",
@@ -351,12 +347,9 @@
       "status": "DEFERRED_BY_RATE_BUDGET_NEXT_30M_SLOT"
     },
     "4497": {
-      "bytes": 15,
-      "null_events_response": true,
-      "path": "evidence/football_calendar_physical/2026-11-18/MATRIX_THESPORTSDB_DAY_LEAGUE_4497_RAW.json",
-      "sha256": "ac165cc3ca836b25ed26ebe6dfb1cff2f68fec04d6ac91ab21201daf29526f15",
-      "source_event_count": 0,
-      "status": "AUTHENTIC_FREE_LEAGUE_CAPTURE_RESEARCH_ONLY"
+      "reason": "FREE_PROVIDER_QUOTA_NO_FURTHER_REQUESTS_THIS_CYCLE",
+      "source_event_count": null,
+      "status": "SKIPPED_AFTER_PROVIDER_HTTP_429"
     }
   },
   "status": "RESEARCH_ONLY_NO_CALENDAR_OR_MODEL_CERTIFICATION",
