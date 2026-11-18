@@ -46,6 +46,15 @@ def clock_from_visible(text: str, day: str) -> tuple[str | None, str]:
         return None, "AMBIGUOUS_VISIBLE_MATCH_CLOCK"
     return None, "VISIBLE_MATCH_CLOCK_NOT_FOUND"
 
+def normalized_visible_clock(clock: str) -> str:
+    """Normalize strictly visible 6:30 and 06:30 without inferring timezone."""
+    if not re.fullmatch(r"\d{1,2}:\d{2}", str(clock or "")):
+        raise ValueError("LOCAL_VISIBLE_CLOCK_NOT_HH_MM")
+    try:
+        return datetime.strptime(clock, "%H:%M").strftime("%H:%M")
+    except ValueError as exc:
+        raise ValueError("LOCAL_VISIBLE_CLOCK_INVALID") from exc
+
 def exact_match_page(url: str, mid: str) -> bool:
     p = urlparse(url)
     ids = parse_qs(p.query).get("mid") or []
@@ -127,11 +136,13 @@ def research(root: Path, day: str, endpoint: str, *, max_events: int = 6) -> dic
                     if value is not None:
                         flash_clock = datetime.strptime(value,"%d.%m.%Y %H:%M").strftime("%H:%M")
                         sofa_clock = str(event.get("local_visible_time") or "")
-                        if not re.fullmatch(r"\d{2}:\d{2}",sofa_clock):
+                        try:
+                            normalized_sofa = normalized_visible_clock(sofa_clock)
+                        except ValueError:
                             entry["research_status"] = "SOFASCORE_LOCAL_CLOCK_INVALID"
                         else:
-                            entry["flashscore_display_agrees_if_same_timezone"] = flash_clock == sofa_clock
-                            entry["research_status"] = ("VISIBLE_CLOCKS_AGREE_UNVERIFIED_TZ" if flash_clock == sofa_clock
+                            entry["flashscore_display_agrees_if_same_timezone"] = flash_clock == normalized_sofa
+                            entry["research_status"] = ("VISIBLE_CLOCKS_AGREE_UNVERIFIED_TZ" if flash_clock == normalized_sofa
                                                         else "VISIBLE_CLOCKS_DISAGREE_OR_DIFFERENT_TZ")
             except (Error,ValueError,KeyError,TypeError) as e:
                 entry["research_status"] = str(e) if isinstance(e,ValueError) else type(e).__name__
