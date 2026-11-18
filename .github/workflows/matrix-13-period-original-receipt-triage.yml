@@ -9,6 +9,8 @@ on:
       - .github/workflows/matrix-13-period-original-receipt-triage.yml
       - tools/matrix_13_period_original_receipt_research.py
       - tests/test_matrix_13_period_original_receipt_research.py
+      - tools/matrix_13_rescheduled_period_receipt_attestation.py
+      - tests/test_matrix_13_rescheduled_period_receipt_attestation.py
 
 permissions:
   contents: read
@@ -40,6 +42,7 @@ jobs:
           python -m pip install -q requests pytest
           PYTHONPATH=. python -m pytest -q \
             tests/test_matrix_13_period_original_receipt_research.py \
+            tests/test_matrix_13_rescheduled_period_receipt_attestation.py \
             tests/test_matrix_13_market_exact_cohort_calibration.py
       - name: Classify original source SHA-verified half-time defects
         shell: bash
@@ -61,9 +64,32 @@ jobs:
           assert d["reusable_90_minute_result_from_final_only"] is False
           print("MATRIX_ORIGINAL_HALFTIME_SOURCE_RECEIPTS_DIAGNOSED_NO_INFERENCE")
           PY
+      - name: Attest archived event-time drift without rewriting freeze
+        shell: bash
+        run: |
+          set -euo pipefail
+          PYTHONPATH=. python -m tools.matrix_13_rescheduled_period_receipt_attestation \
+            --root . \
+            --output matrix13-period-evidence/MATRIX_RESCHEDULED_PERIOD_SOURCE_ATTESTATIONS.json
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          p=Path("matrix13-period-evidence/MATRIX_RESCHEDULED_PERIOD_SOURCE_ATTESTATIONS.json")
+          d=json.loads(p.read_text())
+          assert d["original_date_mismatch_fixture_count"]==12
+          assert d["original_source_qualified_candidates_not_promoted"]==11
+          assert d["source_blocked"]==1
+          assert d["new_formal_period_labels_written"]==0
+          assert d["real_money"]=="BLOCKED"
+          assert d["telegram_signal_authorized"] is False
+          assert all(x.get("formal_period_cohort_admission") is False for x in d["rows"] if x["status"]!="NOT_ADMITTED")
+          print("MATRIX_11_ORIGINAL_DATE_DRIFT_CANDIDATES_HASH_BOUND_RESEARCH_NOT_PROMOTED")
+          PY
       - name: Preserve read-only diagnostic as immutable CI artifact
         uses: actions/upload-artifact@v4
         with:
           name: matrix-original-halftime-receipt-triage
-          path: matrix13-period-evidence/MATRIX_ORIGINAL_HALFTIME_RECEIPT_TRIAGE.json
+          path: |
+            matrix13-period-evidence/MATRIX_ORIGINAL_HALFTIME_RECEIPT_TRIAGE.json
+            matrix13-period-evidence/MATRIX_RESCHEDULED_PERIOD_SOURCE_ATTESTATIONS.json
           retention-days: 30
