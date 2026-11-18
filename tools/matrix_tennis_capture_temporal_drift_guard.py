@@ -124,7 +124,6 @@ def compare(original:dict, attempt:dict, original_sha:str,
             "provider_identity_equivalence_certified":False,
             "official_holdout_admitted":False,
         })
-    older=newer=len(original.get("events") or []),len(attempt.get("events") or [])
     distinct_affected=[x for x in events if x["temporal_quarantined"]]
     return {
         "schema":SCHEMA,"target_date_bogota":day,
