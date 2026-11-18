@@ -107,15 +107,24 @@ def test_training_after_forecast_rejected():
         validate(d)
 
 
-def test_live_requires_independent_completion_time():
+def test_live_requires_independently_attested_inplay_and_real_end():
     d = example(1, lane="TENNIS_LIVE")
     with pytest.raises(KeyError):
         validate(d)
-    d["rows"][0]["independently_certified_event_end_at_utc"] = (
-        d["rows"][0]["event_start_at_utc"])
+    row = d["rows"][0]
+    kickoff = datetime.fromisoformat(row["event_start_at_utc"])
+    row["prediction_frozen_at_utc"] = (kickoff + timedelta(minutes=15)).isoformat()
+    row["contenders"]["bayesian_shadow"]["training_closed_at_utc"] = (
+        kickoff - timedelta(days=1)).isoformat()
+    row["independently_certified_event_end_at_utc"] = (
+        kickoff + timedelta(hours=2)).isoformat()
     assert len(validate(d)) == 1
-    d["rows"][0]["independently_certified_event_end_at_utc"] = (
-        d["rows"][0]["prediction_frozen_at_utc"])
+    row["independently_certified_event_end_at_utc"] = row["prediction_frozen_at_utc"]
+    with pytest.raises(ValueError, match="LAB_LIVE_END_CHRONOLOGY_NOT_CERTIFIED"):
+        validate(d)
+    row["prediction_frozen_at_utc"] = (kickoff - timedelta(minutes=5)).isoformat()
+    row["independently_certified_event_end_at_utc"] = (
+        kickoff + timedelta(hours=2)).isoformat()
     with pytest.raises(ValueError, match="LAB_LIVE_END_CHRONOLOGY_NOT_CERTIFIED"):
         validate(d)
 
