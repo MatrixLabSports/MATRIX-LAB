@@ -556,7 +556,7 @@ def main() -> None:
     print(json.dumps({k: v for k, v in report.items()
         if k in ("status", "details_examined", "individual_visible_metadata_verified_count",
                  "original_authority_pair_candidates", "blocked_reasons", "real_money")},
-        ensure_ascii=False, sort_keys=True))
+        ensure_ascii=True, sort_keys=True))
     if not report["individual_visible_metadata_verified_count"]:
         raise SystemExit("NO_AUTHENTIC_CHALLENGER_DETAILS_FAIL_CLOSED")
 
