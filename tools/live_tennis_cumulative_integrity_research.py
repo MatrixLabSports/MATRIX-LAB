@@ -162,18 +162,47 @@ def audit(root: Path, *, evidence_root: Path = Path("evidence/live_tennis_lab"))
                           "reported":cumulative.get("global_unique_match_count"),
                           "calculated":len(records)})
     source_ok=(not invalid and not cross_lane and not contradictory and not missing_capture and not mismatches)
+    unsafe_keys=set(cross_lane)|set(contradictory)|set(missing_capture)
+    # A local identity conflict must never contaminate an otherwise
+    # independent lane. Report both physical original and safe-research
+    # counts, without editing any source row or prior cumulative gate.
+    multi_lane_details=[
+        {"physical_match_key":key, "lanes":sorted(records[key]["lanes"]),
+         "quality_valid_lanes":sorted(records[key]["valid_lanes"]),
+         "final_standard_lanes":sorted(records[key]["settled_lanes"]),
+         "final_labels":sorted(records[key]["final_labels"]),
+         "source_ledger_dates":sorted(records[key]["source_dates"]),
+         "first_capture_utc":records[key]["first_capture"],
+         "last_capture_utc":records[key]["last_capture"],
+         "research_quarantine_all_lanes":True}
+        for key in cross_lane
+    ]
+    global_discrepancy=any(x.get("reason") for x in mismatches)
     lanes=[]
     for lane,metrics in sorted(derived.items(), key=lambda x:(-x[1]["settled_quality_valid"],x[0])):
+        unsafe_lane_keys=sorted(key for key in unsafe_keys if lane in records[key]["lanes"])
+        safe_matches=sum(
+            1 for key,rec in records.items()
+            if key not in unsafe_keys
+            and lane in rec["valid_lanes"]
+            and lane in rec["settled_lanes"]
+        )
+        lane_mismatch=any(x.get("lane")==lane for x in mismatches)
+        lane_safe=(not unsafe_lane_keys and not lane_mismatch
+                   and not global_discrepancy and not invalid)
         research_threshold_met = (
-            metrics["settled_quality_valid"] >= THRESHOLD
+            safe_matches >= THRESHOLD
             and all(v not in lane.split("|") for v in ("unknown","none",""))
         )
         lanes.append({
             "lane":lane,
             "settled_quality_valid_unique_match_count":metrics["settled_quality_valid"],
+            "settled_quality_valid_research_count_after_quarantine":safe_matches,
+            "quarantined_physical_match_count":len(unsafe_lane_keys),
+            "quarantined_physical_match_keys":unsafe_lane_keys,
             "research_count_threshold_30_met":research_threshold_met,
-            "remaining_to_30":max(0,THRESHOLD-metrics["settled_quality_valid"]),
-            "research_integrity_clear":source_ok,
+            "remaining_to_30":max(0,THRESHOLD-safe_matches),
+            "research_integrity_clear":lane_safe,
             "model_training_authorized":False,
             "probability_output_authorized":False,
         })
@@ -190,6 +219,9 @@ def audit(root: Path, *, evidence_root: Path = Path("evidence/live_tennis_lab"))
         "reported_physical_unique_matches":cumulative.get("global_unique_match_count"),
         "multi_lane_same_physical_match_count":len(cross_lane),
         "multi_lane_matches":cross_lane,
+        "multi_lane_match_details":multi_lane_details,
+        "quarantined_physical_match_keys":sorted(unsafe_keys),
+        "quarantined_physical_match_count":len(unsafe_keys),
         "contradictory_final_result_count":len(contradictory),
         "contradictory_final_match_keys":contradictory,
         "invalid_row_occurrences":dict(sorted(invalid.items())),
