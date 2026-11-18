@@ -45,14 +45,22 @@ def write_fixture(root, *rows, count_override=None, sha_drift=False):
             "final":x["label_opened"] and x["settlement_status"]=="FINAL_STANDARD"
                      and x["p1_match_win"] in [0,1],
         }
+    by_match={}
+    for lane,matches in lanes.items():
+        for key in matches:
+            by_match.setdefault(key,set()).add(lane)
+    ambiguous=sorted(key for key,ls in by_match.items() if len(ls)>1)
     canonical={}
-    for k,v in lanes.items():
-        v=list(v.values())
+    for k,observed in lanes.items():
+        v=list(observed.values())
         canonical[k]={
             "unique_match_count":len(v),
             "quality_valid_unique_match_count":sum(x["valid"] for x in v),
             "settled_final_standard_unique_match_count":sum(x["final"] for x in v),
-            "settled_quality_valid_unique_match_count":sum(x["valid"] and x["final"] for x in v),
+            "raw_settled_quality_valid_before_multi_lane_quarantine":sum(x["valid"] and x["final"] for x in v),
+            "settled_quality_valid_unique_match_count":sum(
+                x["valid"] and x["final"] for key,x in observed.items()
+                if key not in ambiguous),
         }
     manifest_path=lfile.relative_to(root).as_posix()
     digest=hashlib.sha256(lfile.read_bytes()).hexdigest()
@@ -62,6 +70,7 @@ def write_fixture(root, *rows, count_override=None, sha_drift=False):
         "protections":{"real_money":"BLOCKED","automatic_wagering":False},
         "source_ledgers":[{"path":manifest_path,"sha256":"a"*64 if sha_drift else digest}],
         "lanes":canonical,
+        "multi_lane_ambiguous_match_keys":ambiguous,
         "global_unique_match_count":len(keys) if count_override is None else count_override,
     }
     (root/BASE/"MATRIX_LIVE_TENNIS_CUMULATIVE_GATE_V1.json").write_text(json.dumps(cumulative))
