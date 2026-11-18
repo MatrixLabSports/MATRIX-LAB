@@ -35,8 +35,15 @@ def source_bound_detail(folder: Path, declared_digest: str) -> tuple[dict, bytes
             raise ValueError("PROFILE_AUDIT_OVERSIZED")
         if sha(raw) == declared_digest:
             return json.loads(raw), raw, current, False
-    archive = folder / "archive"
-    if archive.is_dir():
+    # The governed Linux workflow persists reconciliation reports, while
+    # Windows owns physical captures. Search both immutable source archives.
+    archives = (
+        folder / "archive",
+        folder.parents[1] / "tennis_calendar_reconciliation" / folder.name / "archive",
+    )
+    for archive in archives:
+        if not archive.is_dir():
+            continue
         candidates = sorted(
             p for p in archive.glob("*.json")
             if p.name.startswith((
@@ -154,6 +161,23 @@ def main() -> None:
     ap.add_argument("--root",type=Path,default=Path("."))
     args=ap.parse_args()
     report=audit(args.root,args.date)
+    # Seal the exact original matching detail bytes in the reconciled
+    # append-only lane, before Windows can replace its mutable LAST path.
+    # This creates no new holdout and does not authorize provider IDs.
+    evidence_source = args.root / report["source_detail_path"]
+    source_bytes = evidence_source.read_bytes()
+    expected = report["source_sha256"]["verified_match_details"]
+    if sha(source_bytes) != expected:
+        raise ValueError("PROFILE_AUDIT_ORIGINAL_CHANGED_BEFORE_SEAL")
+    archive = args.root / "evidence/tennis_calendar_reconciliation" / args.date / "archive"
+    archive.mkdir(parents=True,exist_ok=True)
+    archive_path = archive / ("MATRIX_TENNIS_SOURCE_DETAILS_SHA256_" + expected + ".json")
+    if archive_path.exists():
+        if archive_path.read_bytes() != source_bytes:
+            raise ValueError("PROFILE_AUDIT_IMMUTABLE_SOURCE_CONFLICT")
+    else:
+        archive_path.write_bytes(source_bytes)
+    report["sealed_original_source_archive"] = str(archive_path.relative_to(args.root)).replace(chr(92),"/")
     # The governed free-intake workflow persists only reconciliation outputs.
     # Keep browser source bytes read-only and archive this independent audit
     # alongside other research reports, never inside Hard/Clay holdouts.
