@@ -29,7 +29,7 @@ def sample(mid=100,label=1,**edits):
 def write_research_inputs(tmp_path, *, flip_holdout=False):
     base=tmp_path/"evidence/live_tennis_lab"
     daily=base/"2026-11-17"
-    daily.mkdir(parents=True)
+    daily.mkdir(parents=True,exist_ok=True)
     selected=[]
     dev=hold=0
     n=1000
