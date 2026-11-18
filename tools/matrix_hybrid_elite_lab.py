@@ -73,14 +73,14 @@ def validate(document: dict) -> list[dict]:
         captured = stamp(row["prediction_frozen_at_utc"])
         kickoff = stamp(row["event_start_at_utc"])
         settled = stamp(row["outcome_certified_at_utc"])
-        if not captured < kickoff < settled:
-            raise ValueError("LAB_PIT_OR_OUTCOME_TIME_LEAKAGE")
         if lane == "TENNIS_LIVE":
-            # Live requires an independently certified prediction-state instant
-            # strictly before an independent event completion timestamp.
+            # Live must be observed AFTER actual start yet BEFORE real end.
+            # Any claim based only on a first-final-observed timestamp fails.
             completed = stamp(row["independently_certified_event_end_at_utc"])
-            if not captured < completed <= settled:
+            if not kickoff < captured < completed <= settled:
                 raise ValueError("LAB_LIVE_END_CHRONOLOGY_NOT_CERTIFIED")
+        elif not captured < kickoff < settled:
+            raise ValueError("LAB_PIT_OR_OUTCOME_TIME_LEAKAGE")
         label = row.get("outcome")
         if type(label) is not int or label not in (0, 1):
             raise ValueError("LAB_BINARY_OUTCOME_REQUIRED")
