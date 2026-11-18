@@ -457,6 +457,11 @@ def run(root: Path, day: str, endpoint: str, max_events: int = 6) -> dict:
         "calendar_backend_api_called": False,
         "original_authority_pair_candidates": len(candidates),
         "details_examined": min(max_events, len(candidates)),
+        "original_authority_pair_candidates_not_examined": max(0, len(candidates)-max_events),
+        "unexamined_source_name_hint_ids_research_only": [
+            str(row["sofascore_id"]) for row in candidates[max_events:]
+        ],
+        "date_coverage_exhaustive_for_original_authority_pair_candidates": len(candidates) <= max_events,
         "individual_visible_metadata_verified_count": len(events),
         "blocked_reasons": blocked,
         "events": events,
