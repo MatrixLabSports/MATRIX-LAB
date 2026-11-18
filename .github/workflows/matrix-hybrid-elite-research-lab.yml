@@ -83,11 +83,48 @@ jobs:
           assert r["real_money"] == "BLOCKED"
           print("EMPTY_REAL_COHORT_EXECUTABLE_PASS_NOT_A_PREDICTIVE_RESULT")
           PY
+      - name: Smoke-test Bayesian physical source gate with zero certified records
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          root=Path("hybrid-elite-check")
+          history={
+              "schema":"MATRIX_HYBRID_ELITE_CERTIFIED_HISTORY_V1",
+              "source":"CERTIFIED_SETTLED_PHYSICAL_LEDGER",
+              "synthetic":False,"real_money":"BLOCKED","rows":[]
+          }
+          target={
+              "schema":"MATRIX_HYBRID_ELITE_BAYESIAN_RESEARCH_REQUEST_V1",
+              "real_money":"BLOCKED","automatic_wagering":False,
+              "synthetic":False,"targets":[]
+          }
+          (root/"empty_history.json").write_text(json.dumps(history)+"\n")
+          (root/"empty_requests.json").write_text(json.dumps(target)+"\n")
+          PY
+          PYTHONPATH=. python -m tools.matrix_hybrid_elite_bayesian_shadow \
+            --history hybrid-elite-check/empty_history.json \
+            --requests hybrid-elite-check/empty_requests.json \
+            --output hybrid-elite-check/bayesian_zero_cohort.json
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          r=json.loads(Path("hybrid-elite-check/bayesian_zero_cohort.json").read_text())
+          assert r["targets"] == []
+          assert r["source_receipt_verification"]["physical_sha_bound_receipts_verified"] == 0
+          assert r["original_matrix_parameters_modified"] is False
+          assert r["real_money"] == "BLOCKED"
+          print("EMPTY_BAYESIAN_EXECUTABLE_PASS_NOT_A_PREDICTIVE_RESULT")
+          PY
       - name: Preserve offline execution report for physical inspection
         uses: actions/upload-artifact@v4
         with:
           name: matrix-hybrid-elite-empty-cohort-guard
-          path: hybrid-elite-check/research_result.json
+          path: |
+            hybrid-elite-check/research_result.json
+            hybrid-elite-check/bayesian_zero_cohort.json
           retention-days: 14
       - name: Confirm original matrix is unchanged
         shell: bash
