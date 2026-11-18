@@ -123,3 +123,92 @@ def test_wrong_history_time_order_fails_closed():
         history["rows"][0]["event_start_at_utc"])
     with pytest.raises(ValueError, match="BAYESIAN_HISTORICAL_FINAL_ORDER"):
         build(history, request)
+
+
+import hashlib
+import json
+from tools.matrix_hybrid_elite_bayesian_shadow import verify_physical_receipts
+
+
+def physical_source_docs(tmp_path):
+    history, request = docs(1)
+    for kind, items in (("HISTORY", history["rows"]), ("REQUEST", request["targets"])):
+        for index, item in enumerate(items):
+            receipt = dict(item, schema="MATRIX_HYBRID_ELITE_BAYESIAN_"
+                           + kind + "_RECEIPT_V1", real_money="BLOCKED")
+            original = tmp_path / f"{kind.lower()}_{index}.json"
+            original.write_text(json.dumps(receipt, sort_keys=True))
+            item["original_receipt_path"] = original.name
+            item["original_receipt_sha256"] = hashlib.sha256(
+                original.read_bytes()).hexdigest()
+    return history, request
+
+
+def test_bayesian_source_receipts_prove_actual_bytes(tmp_path):
+    history, request = physical_source_docs(tmp_path)
+    report = verify_physical_receipts(
+        history, request, history_root=tmp_path, request_root=tmp_path)
+    assert report["physical_sha_bound_receipts_verified"] == 2
+    assert report["automatic_model_promotion"] is False
+    assert build(history, request)["targets"][0]["p_bayesian_research_only"] is None
+
+
+def test_bayesian_history_tampering_is_detected(tmp_path):
+    history, request = physical_source_docs(tmp_path)
+    original = tmp_path / history["rows"][0]["original_receipt_path"]
+    original.write_bytes(original.read_bytes() + b" ")
+    with pytest.raises(ValueError, match="BAYESIAN_ORIGINAL_RECEIPT_HASH_CONFLICT"):
+        verify_physical_receipts(history, request, history_root=tmp_path,
+                                 request_root=tmp_path)
+
+
+def test_bayesian_forged_history_outcome_even_with_rehashed_receipt_is_blocked(tmp_path):
+    history, request = physical_source_docs(tmp_path)
+    path = tmp_path / history["rows"][0]["original_receipt_path"]
+    receipt = json.loads(path.read_text())
+    receipt["outcome"] = 1 - receipt["outcome"]
+    path.write_text(json.dumps(receipt, sort_keys=True))
+    history["rows"][0]["original_receipt_sha256"] = hashlib.sha256(
+        path.read_bytes()).hexdigest()
+    with pytest.raises(ValueError, match="BAYESIAN_ORIGINAL_HISTORY_VALUE_CONFLICT"):
+        verify_physical_receipts(history, request, history_root=tmp_path,
+                                 request_root=tmp_path)
+
+
+def test_bayesian_unbound_training_row_fails_closed(tmp_path):
+    history, request = physical_source_docs(tmp_path)
+    del history["rows"][0]["original_receipt_sha256"]
+    with pytest.raises(ValueError, match="BAYESIAN_ORIGINAL_RECEIPT_REQUIRED"):
+        verify_physical_receipts(history, request, history_root=tmp_path,
+                                 request_root=tmp_path)
+
+
+def test_bayesian_forged_target_freeze_fails_closed(tmp_path):
+    history, request = physical_source_docs(tmp_path)
+    path = tmp_path / request["targets"][0]["original_receipt_path"]
+    receipt = json.loads(path.read_text())
+    receipt["prediction_frozen_at_utc"] = (
+        START + timedelta(minutes=1)).isoformat()
+    path.write_text(json.dumps(receipt, sort_keys=True))
+    request["targets"][0]["original_receipt_sha256"] = hashlib.sha256(
+        path.read_bytes()).hexdigest()
+    with pytest.raises(ValueError, match="BAYESIAN_ORIGINAL_TARGET_VALUE_CONFLICT"):
+        verify_physical_receipts(history, request, history_root=tmp_path,
+                                 request_root=tmp_path)
+
+
+def test_bayesian_receipt_path_traversal_rejected(tmp_path):
+    history, request = physical_source_docs(tmp_path)
+    request["targets"][0]["original_receipt_path"] = "../outside.json"
+    with pytest.raises(ValueError, match="BAYESIAN_RECEIPT_PATH_UNSAFE"):
+        verify_physical_receipts(history, request, history_root=tmp_path,
+                                 request_root=tmp_path)
+
+
+def test_bayesian_zero_rows_does_not_claim_probabilities(tmp_path):
+    history, request = docs(0)
+    request["targets"] = []
+    report = verify_physical_receipts(history, request,
+                                     history_root=tmp_path, request_root=tmp_path)
+    assert report["physical_sha_bound_receipts_verified"] == 0
+    assert build(history, request)["targets"] == []
