@@ -43,6 +43,12 @@ def club(name):
         "dc united": "dc united",
         "red bull new york": "new york red bulls",
         "new york red bulls": "new york red bulls",
+        # Exact 28-Oct archival fixture evidence; NOT generic fuzzy matching.
+        # German transliteration and English club-prefix, with home/away and
+        # UTC kickoff remaining mandatory and unique in the settlement gate.
+        "bayern munchen": "bayern munich",
+        "bayern munich": "bayern munich",
+        "afc bournemouth": "bournemouth",
     }
     return aliases.get(raw,raw)
 
