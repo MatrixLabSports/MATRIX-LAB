@@ -122,6 +122,80 @@ def build(history: dict, requests: dict) -> dict:
     }
 
 
+
+def verify_physical_receipts(history: dict, requests: dict, *,
+                             history_root: Path, request_root: Path) -> dict:
+    """Prove historical labels and target clocks against original SHA-bound bytes.
+
+    This is mandatory for CLI use. The pure build() function remains a
+    synthetic-fixture unit-test helper; it does not authenticate external data.
+    """
+    counter = 0
+    for collection, items, root, kind in (
+        (history, history.get("rows"), history_root, "HISTORY"),
+        (requests, requests.get("targets"), request_root, "REQUEST"),
+    ):
+        if not isinstance(items, list):
+            raise ValueError("BAYESIAN_RECEIPT_SOURCE_ROWS_MISSING")
+        for row in items:
+            if not isinstance(row, dict):
+                raise ValueError("BAYESIAN_RECEIPT_SOURCE_ROW_INVALID")
+            p = row.get("original_receipt_path")
+            expected = row.get("original_receipt_sha256")
+            if (not isinstance(p, str) or not p
+                or not isinstance(expected, str) or len(expected) != 64
+                or any(c not in "0123456789abcdef" for c in expected)):
+                raise ValueError("BAYESIAN_ORIGINAL_RECEIPT_REQUIRED")
+            rel = Path(p)
+            if rel.is_absolute() or ".." in rel.parts:
+                raise ValueError("BAYESIAN_RECEIPT_PATH_UNSAFE")
+            absolute = (root / rel).resolve()
+            if not absolute.is_relative_to(root.resolve()):
+                raise ValueError("BAYESIAN_RECEIPT_PATH_UNSAFE")
+            original = absolute.read_bytes()
+            if (len(original) > 1_000_000
+                or hashlib.sha256(original).hexdigest() != expected):
+                raise ValueError("BAYESIAN_ORIGINAL_RECEIPT_HASH_CONFLICT")
+            evidence = json.loads(original)
+            if (not isinstance(evidence, dict)
+                or evidence.get("schema") !=
+                    "MATRIX_HYBRID_ELITE_BAYESIAN_" + kind + "_RECEIPT_V1"
+                or evidence.get("real_money") != "BLOCKED"
+                or evidence.get("lane") != row.get("lane")
+                or evidence.get("physical_event_id") != row.get("physical_event_id")
+                or evidence.get("group") != row.get("group")):
+                raise ValueError("BAYESIAN_ORIGINAL_RECEIPT_IDENTITY_CONFLICT")
+            if kind == "HISTORY":
+                if (evidence.get("independent_identity_certified") is not True
+                    or evidence.get("independent_outcome_certified") is not True
+                    or evidence.get("pre_event_features_certified") is not True
+                    or evidence.get("source_timestamp_immutable") is not True
+                    or type(evidence.get("outcome")) is not int
+                    or evidence.get("outcome") != row.get("outcome")
+                    or stamp(evidence["event_start_at_utc"]) !=
+                       stamp(row["event_start_at_utc"])
+                    or stamp(evidence["independently_certified_final_at_utc"]) !=
+                       stamp(row["independently_certified_final_at_utc"])):
+                    raise ValueError("BAYESIAN_ORIGINAL_HISTORY_VALUE_CONFLICT")
+            else:
+                if (evidence.get("prematch_or_live_identity_certified") is not True
+                    or evidence.get("target_features_pit_certified") is not True
+                    or stamp(evidence["prediction_frozen_at_utc"]) !=
+                       stamp(row["prediction_frozen_at_utc"])
+                    or stamp(evidence["event_start_at_utc"]) !=
+                       stamp(row["event_start_at_utc"])):
+                    raise ValueError("BAYESIAN_ORIGINAL_TARGET_VALUE_CONFLICT")
+                if row.get("lane") == "TENNIS_LIVE" and (
+                    stamp(evidence["independently_certified_end_at_utc"]) !=
+                    stamp(row["independently_certified_end_at_utc"])):
+                    raise ValueError("BAYESIAN_ORIGINAL_TARGET_VALUE_CONFLICT")
+            counter += 1
+    return {"physical_sha_bound_receipts_verified": counter,
+            "training_row_count": len(history["rows"]),
+            "target_count": len(requests["targets"]),
+            "real_money": "BLOCKED", "automatic_model_promotion": False}
+
+
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--history", type=Path, required=True)
@@ -131,7 +205,12 @@ def main() -> None:
     a, b = args.history.read_bytes(), args.requests.read_bytes()
     if len(a) > 10_000_000 or len(b) > 10_000_000:
         raise ValueError("BAYESIAN_SOURCE_TOO_LARGE")
-    report = build(json.loads(a), json.loads(b))
+    history_doc, request_doc = json.loads(a), json.loads(b)
+    receipt_verification = verify_physical_receipts(
+        history_doc, request_doc,
+        history_root=args.history.parent, request_root=args.requests.parent)
+    report = build(history_doc, request_doc)
+    report["source_receipt_verification"] = receipt_verification
     report["source_sha256"] = {
         "certified_history": hashlib.sha256(a).hexdigest(),
         "requests": hashlib.sha256(b).hexdigest(),
