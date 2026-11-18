@@ -79,3 +79,55 @@ def test_counts_only_valid_unique_rows(tmp_path: Path):
     assert result["append_result"]["admitted_this_run"] == 1
     assert result["append_result"]["rejected_this_run"] == 2
     assert result["protections"]["real_money"] == "BLOCKED"
+
+
+def test_independent_free_football_discovery_visible_but_not_promoted(tmp_path, monkeypatch):
+    from tools import matrix_42_lane_prospective_registry as mod
+    root=tmp_path/"football_world_inventory"
+    p=root/"2026-11-18"/"MATRIX_FOOTBALL_INDEPENDENT_FIXTURE_INTAKE.json"
+    p.parent.mkdir(parents=True)
+    p.write_text(json.dumps({
+        "schema":"MATRIX_INDEPENDENT_FIXTURE_INTAKE_V1",
+        "source":"FOOTBALL_DATA_ORG","real_money":"BLOCKED",
+        "signal_generation_authorized":False,
+        "generated_at_utc":"2026-11-18T11:00:00Z",
+        "provider_status":"AUTHENTICATED_FIXTURE_CAPTURE",
+        "fixtures":[
+            {"kickoff_utc":"2026-11-18T22:30:00Z","source_status":"TIMED"},
+            {"kickoff_utc":"2026-11-18T10:30:00Z","source_status":"TIMED"},
+        ]
+    }), encoding="utf-8")
+    monkeypatch.setattr(mod,"FREE_FOOTBALL_RESEARCH_ROOT",root)
+    monkeypatch.setattr(mod,"TENNIS_RECONCILIATION_ROOT",tmp_path/"tennis")
+    info=mod._independent_research_coverage(
+        datetime(2026,11,18,12,0,tzinfo=timezone.utc))
+    f=info["football"]
+    assert f["available"] is True
+    assert f["source_fixture_count"]==2
+    assert f["future_source_fixture_count"]==1
+    assert f["source_authenticated"] is True
+    assert f["canonical_original_pit_authorized"] is False
+    assert f["prospective_admission_authorized"] is False
+    assert info["production_p_matrix_authorized"] is False
+    assert info["telegram_signal_authorized"] is False
+
+
+def test_future_capture_cannot_be_reused_as_research_coverage(tmp_path,monkeypatch):
+    from tools import matrix_42_lane_prospective_registry as mod
+    root=tmp_path/"football_world_inventory"
+    p=root/"2026-11-18"/"MATRIX_FOOTBALL_INDEPENDENT_FIXTURE_INTAKE.json"
+    p.parent.mkdir(parents=True)
+    p.write_text(json.dumps({
+        "schema":"MATRIX_INDEPENDENT_FIXTURE_INTAKE_V1",
+        "source":"FOOTBALL_DATA_ORG","real_money":"BLOCKED",
+        "signal_generation_authorized":False,
+        "generated_at_utc":"2026-11-18T18:00:00Z",
+        "provider_status":"AUTHENTICATED_FIXTURE_CAPTURE",
+        "fixtures":[{"kickoff_utc":"2026-11-18T22:30:00Z","source_status":"TIMED"}]
+    }), encoding="utf-8")
+    monkeypatch.setattr(mod,"FREE_FOOTBALL_RESEARCH_ROOT",root)
+    info=mod._independent_research_coverage(
+        datetime(2026,11,18,12,0,tzinfo=timezone.utc))
+    assert info["football"]["available"] is False
+    assert info["football"]["source_fixture_count"] == 0
+    assert info["football"]["canonical_original_pit_authorized"] is False
