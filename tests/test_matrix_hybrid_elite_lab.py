@@ -238,3 +238,34 @@ def test_receipt_gate_accepts_empty_cohort_without_fabricating_metrics(tmp_path)
     assert verify_original_receipts(d,tmp_path)["verified_receipt_files"]==0
     assert evaluate(d)["certified_total_events"]==0
 
+
+
+def test_paired_bootstrap_is_reproducible_and_not_a_promotion():
+    d = example(200)
+    first = evaluate(d)
+    second = evaluate(d)
+    a = next(x for x in first["lanes"] if x["lane"] == "FOOTBALL_OVER25")["challengers"][0]
+    b = next(x for x in second["lanes"] if x["lane"] == "FOOTBALL_OVER25")["challengers"][0]
+    assert a["paired_uncertainty_screen"] == b["paired_uncertainty_screen"]
+    assert a["paired_uncertainty_screen"]["brier_delta_lower"] > 0
+    assert a["paired_uncertainty_screen"]["logloss_delta_lower"] > 0
+    assert a["automatically_promoted"] is False
+    assert first["any_model_promoted"] is False
+
+
+def test_same_predictions_cannot_pass_statistical_screen():
+    d = example(200)
+    for row in d["rows"]:
+        row["contenders"]["bayesian_shadow"]["p_frozen"] = row["p_matrix_frozen"]
+    report = evaluate(d)
+    contender = next(x for x in report["lanes"] if x["lane"] == "FOOTBALL_OVER25")["challengers"][0]
+    assert contender["paired_uncertainty_screen"]["brier_delta_lower"] == 0
+    assert contender["paired_uncertainty_screen"]["logloss_delta_lower"] == 0
+    assert contender["metrics_pass_screen_not_authorization"] is False
+
+
+def test_insufficient_samples_have_no_confidence_claim():
+    report = evaluate(example(40))
+    contender = next(x for x in report["lanes"] if x["lane"] == "FOOTBALL_OVER25")["challengers"][0]
+    assert contender["paired_uncertainty_screen"] is None
+    assert contender["metrics_pass_screen_not_authorization"] is False
