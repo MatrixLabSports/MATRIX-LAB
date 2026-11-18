@@ -237,7 +237,12 @@ def test_nov18_country_ioc_repairs_restore_only_history_research_not_model_permi
         "Canada":"CAN","Poland":"POL","Slovenia":"SLO"
     }
     report=evaluate(ROOT,"2026-11-18",T("2026-11-18T04:00:00Z"))
-    assert report["hard_source_metadata_ready"]==4
+    # A later authenticated capture changed two kickoffs and did not
+    # reconfirm a third. Historical pre-cut identity remains separate.
+    assert report["hard_source_metadata_ready"]==1
+    assert report["later_capture_kickoff_drift_count"]==2
+    assert report["later_capture_old_events_quarantined"]==3
+    assert report["later_capture_post_asof_ignored"] is False
     assert report["clay_source_metadata_ready"]==0
     assert len(report["events"])==4
     assert all(x["historical_players_found"]==2 for x in report["events"])
@@ -248,3 +253,22 @@ def test_nov18_country_ioc_repairs_restore_only_history_research_not_model_permi
     assert report["new_hard_holdout_observations"]==0
     assert report["new_clay_holdout_observations"]==0
     assert report["real_money"]=="BLOCKED"
+
+
+def test_latest_nov18_capture_is_not_used_before_its_actual_observed_timestamp():
+    early=evaluate(ROOT,"2026-11-18",T("2026-11-17T21:00:00Z"))
+    assert early["later_capture_post_asof_ignored"] is True
+    assert early["later_capture_kickoff_drift_count"]==0
+    assert early["hard_source_metadata_ready"]==4
+    assert early["new_hard_holdout_observations"]==0
+    assert early["new_clay_holdout_observations"]==0
+
+def test_current_nov18_source_quarantines_exact_changed_and_unobserved_events():
+    current=evaluate(ROOT,"2026-11-18",T("2026-11-18T04:00:00Z"))
+    events={x["sofascore_id"]:x for x in current["events"]}
+    assert "KICKOFF_CHANGED_IN_LATER_AUTHENTIC_CAPTURE" in events["17537274"]["blocked"]
+    assert "KICKOFF_CHANGED_IN_LATER_AUTHENTIC_CAPTURE" in events["17537336"]["blocked"]
+    assert "NOT_REOBSERVED_IN_LATER_AUTHENTIC_CAPTURE" in events["17537333"]["blocked"]
+    assert events["17537873"]["source_metadata_verified_before_kickoff"] is True
+    assert current["later_capture_old_events_quarantined"]==3
+    assert all(x["official_holdout_admitted"] is False for x in events.values())
