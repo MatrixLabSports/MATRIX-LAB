@@ -118,7 +118,7 @@ jobs:
             if (-not (Test-Path -LiteralPath $cross)) { continue }
             $j = Get-Content -LiteralPath $cross -Raw | ConvertFrom-Json
             if ($j.matched_exact_name_hints -le 0) { continue }
-            python -m tools.matrix_tennis_browser_verified_detail_capture --date $day --max-events 12
+            python -m tools.matrix_tennis_browser_verified_detail_capture --date $day --max-events 16
             if ($LASTEXITCODE -ne 0) {
               Write-Warning "TENNIS_NO_VALID_PREMATCH_DETAILS_FOR_DATE=$day"
               continue
@@ -164,7 +164,7 @@ jobs:
           $day=$bogota.AddDays(1).ToString("yyyy-MM-dd")
           $details="evidence/tennis_calendar_physical/$day/sofascore_verified_match_details.json"
           if (Test-Path -LiteralPath $details) {
-            python -m tools.matrix_tennis_flashscore_visible_clock_research --date $day --max-events 12
+            python -m tools.matrix_tennis_flashscore_visible_clock_research --date $day --max-events 16
             if ($LASTEXITCODE -ne 0) { throw "TENNIS_FLASH_VISIBLE_CLOCK_RESEARCH_UNSAFE_OR_FAILED" }
             $report=Get-Content -Raw "evidence/tennis_calendar_physical/$day/MATRIX_TENNIS_FLASHSCORE_VISIBLE_CLOCK_RESEARCH_LAST.json" | ConvertFrom-Json
             Write-Output ("TENNIS_INDEPENDENT_VISIBLE_CLOCK_MATCHES=" + $report.display_agreements_if_same_timezone)
