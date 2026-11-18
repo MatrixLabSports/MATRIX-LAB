@@ -1,5 +1,6 @@
 """Synthetic-unit cases only. They never generate real predictions, odds or alerts."""
 import hashlib
+import json
 from datetime import datetime, timezone
 
 import pytest
@@ -108,6 +109,43 @@ def test_raw_sha_and_archive_survives_two_provider_snapshots(tmp_path):
     assert y["sha256"]==hashlib.sha256(b).hexdigest()
     previous=tmp_path/"archive"/("thesportsdb_league_4328_"+hashlib.sha256(a).hexdigest()+".json")
     assert previous.read_bytes()==a
+
+def test_distinct_free_source_snapshots_preserve_sha_bound_immutable_receipts(tmp_path):
+    """Cover both half-hour source responses without treating missing as zero."""
+    original = b'{"events":null}'
+    subsequent = b'{"events":[]}'
+    first = persist_raw(tmp_path, "4328", original)
+    repeated = persist_raw(tmp_path, "4328", original)
+    assert first == repeated
+    first_receipt = json.loads(
+        (tmp_path / first["immutable_receipt"].split("/")[-1]).read_text()
+    )
+    assert first_receipt["raw_sha256"] == hashlib.sha256(original).hexdigest()
+    assert first_receipt["production_p_matrix_authorized"] is False
+    assert first_receipt["fixture_identity_certified"] is False
+    assert first_receipt["research_only"] is True
+    assert first_receipt["real_money"] == "BLOCKED"
+
+    second = persist_raw(tmp_path, "4328", subsequent)
+    assert second["immutable_receipt"] != first["immutable_receipt"]
+    assert (tmp_path / second["immutable_receipt"].split("/")[-1]).is_file()
+    assert len(list(tmp_path.glob("*_RECEIPT.json"))) == 2
+    first_raw_archive = tmp_path / "archive" / (
+        "thesportsdb_league_4328_" + first["sha256"] + ".json"
+    )
+    assert first_raw_archive.read_bytes() == original
+
+
+def test_immutable_source_receipt_conflict_fails_closed(tmp_path):
+    raw = b'{"events":null}'
+    first = persist_raw(tmp_path, "4328", raw)
+    receipt_path = tmp_path / first["immutable_receipt"].split("/")[-1]
+    tampered = json.loads(receipt_path.read_text())
+    tampered["fixture_identity_certified"] = True
+    receipt_path.write_text(json.dumps(tampered))
+    with pytest.raises(ValueError, match="FREE_PROVIDER_IMMUTABLE_RECEIPT_CONFLICT"):
+        persist_raw(tmp_path, "4328", raw)
+
 
 def test_only_approved_league_ids_can_be_queried():
     with pytest.raises(ValueError,match="LEAGUE_NOT_IN_APPROVED_SIX"):
