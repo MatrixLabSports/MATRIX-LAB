@@ -116,13 +116,18 @@ jobs:
             if (-not (Test-Path -LiteralPath $cross)) { continue }
             $j = Get-Content -LiteralPath $cross -Raw | ConvertFrom-Json
             if ($j.matched_exact_name_hints -le 0) { continue }
-            python -m tools.matrix_tennis_browser_verified_detail_capture --date $day --max-events 6
+            python -m tools.matrix_tennis_browser_verified_detail_capture --date $day --max-events 12
             if ($LASTEXITCODE -ne 0) {
               Write-Warning "TENNIS_NO_VALID_PREMATCH_DETAILS_FOR_DATE=$day"
               continue
             }
             python -m tools.matrix_tennis_browser_challenger_pit_gate --date $day
             if ($LASTEXITCODE -ne 0) { throw "TENNIS_CHALLENGER_PIT_SOURCE_GATE_FAILED" }
+            $result=Get-Content -LiteralPath "evidence/tennis_calendar_physical/$day/sofascore_verified_match_details.json" -Raw | ConvertFrom-Json
+            Write-Output ("TENNIS_ORIGINAL_AUTHORITY_PAIR_CANDIDATES=" + $result.original_authority_pair_candidates)
+            Write-Output ("TENNIS_CANDIDATES_EXAMINED=" + $result.details_examined)
+            Write-Output ("TENNIS_UNEXAMINED_BACKLOG=" + $result.original_authority_pair_candidates_not_examined)
+            Write-Output ("TENNIS_SOURCE_ONLY_INDIVIDUAL_METADATA_VERIFIED=" + $result.individual_visible_metadata_verified_count)
             $verified += 1
           }
           if ($verified -eq 0) { throw "TENNIS_NO_AUTHENTIC_CHALLENGER_DETAILS_ANY_DATE" }
@@ -136,7 +141,7 @@ jobs:
           $day=$bogota.AddDays(1).ToString("yyyy-MM-dd")
           $details="evidence/tennis_calendar_physical/$day/sofascore_verified_match_details.json"
           if (Test-Path -LiteralPath $details) {
-            python -m tools.matrix_tennis_free_visible_profile_research --date $day --max-profiles 12
+            python -m tools.matrix_tennis_free_visible_profile_research --date $day --max-profiles 24
             if ($LASTEXITCODE -ne 0) { throw "TENNIS_VISIBLE_PROFILE_BIOGRAPHY_CAPTURE_FAILED" }
             $report=Get-Content -Raw "evidence/tennis_calendar_physical/$day/MATRIX_TENNIS_FREE_VISIBLE_PROFILE_BIRTHDATES_RESEARCH.json" | ConvertFrom-Json
             Write-Output ("TENNIS_VISIBLE_PRE_CUT_BIOGRAPHY_RESEARCH_MATCHES=" + $report.exact_pre_cut_biography_research_count)
@@ -155,7 +160,7 @@ jobs:
           $day=$bogota.AddDays(1).ToString("yyyy-MM-dd")
           $details="evidence/tennis_calendar_physical/$day/sofascore_verified_match_details.json"
           if (Test-Path -LiteralPath $details) {
-            python -m tools.matrix_tennis_flashscore_visible_clock_research --date $day --max-events 6
+            python -m tools.matrix_tennis_flashscore_visible_clock_research --date $day --max-events 12
             if ($LASTEXITCODE -ne 0) { throw "TENNIS_FLASH_VISIBLE_CLOCK_RESEARCH_UNSAFE_OR_FAILED" }
             $report=Get-Content -Raw "evidence/tennis_calendar_physical/$day/MATRIX_TENNIS_FLASHSCORE_VISIBLE_CLOCK_RESEARCH_LAST.json" | ConvertFrom-Json
             Write-Output ("TENNIS_INDEPENDENT_VISIBLE_CLOCK_MATCHES=" + $report.display_agreements_if_same_timezone)
