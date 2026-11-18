@@ -11,6 +11,7 @@ from zoneinfo import ZoneInfo
 from pathlib import Path
 from tools.matrix_tennis_exact_browser_crossmatch import fingerprint
 from tools.matrix_tennis_browser_first_free_intake import ROOT as CAPTURE_ROOT
+from tools.matrix_tennis_capture_temporal_drift_guard import compare as compare_capture_drift
 
 DETAIL="sofascore_verified_match_details.json"
 CROSS="MATRIX_TENNIS_EXACT_BROWSER_CROSSMATCH.json"
@@ -145,6 +146,23 @@ def evaluate(root:Path,day:str,now:datetime):
             raise ValueError("DUPLICATE_RESEARCH_EVENT_ID")
     observed=timestamp(details["observed_at_utc"])
     if observed>now:raise ValueError("DETAIL_CAPTURE_TIMESTAMP_IN_FUTURE")
+    latest_attempt_path=CAPTURE_ROOT/day/"MATRIX_TENNIS_MATCH_DETAIL_CAPTURE_ATTEMPT_LAST.json"
+    drift_report=None
+    temporal_quarantine={}
+    temporal_attempt_future_of_asof=False
+    if (root/latest_attempt_path).is_file():
+        attempt,attempt_sha=read(root,latest_attempt_path)
+        # Historical replay must not inspect facts captured AFTER its
+        # evaluation timestamp. No ex-post reclassification as prior PIT.
+        if timestamp(attempt["observed_at_utc"])>now:
+            temporal_attempt_future_of_asof=True
+        else:
+            drift_report=compare_capture_drift(details,attempt,detailsha,attempt_sha,now=now)
+            temporal_quarantine={
+                str(rec["sofascore_id"]):rec["blocked_reasons"]
+                for rec in drift_report["events"]
+                if rec["temporal_quarantined"]
+            }
     crossrows={str(x["sofascore_id"]):x for x in cross.get("matches") or []}
     # Original identity histories are from the separate pre-cut-off authority,
     # NOT from postmatch scores or a new unnamed player provider.
@@ -167,7 +185,8 @@ def evaluate(root:Path,day:str,now:datetime):
         sid=str(x.get("sofascore_event_id") or "")
         if sid in seen:raise ValueError("DUPLICATE_SOFA_EVENT")
         seen.add(sid)
-        status=[];valid=True
+        status=list(temporal_quarantine.get(sid,()))
+        valid=not bool(status)
         rec=research_by_id.get(sid)
         event_clock_display_consistent=None
         bio_research_triplet_verified=False
@@ -283,6 +302,13 @@ def evaluate(root:Path,day:str,now:datetime):
       "match_detail_sha256":detailsha,"name_crossmatch_sha256":crosssha,
       "newest_calendar_crossmatch_sha256":current_cross_sha,
       "sealed_historical_source_crossmatch_used":archived_crossmatch_used,
+      "later_authentic_capture_sha256":drift_report.get("later_capture_attempt_sha256") if drift_report else None,
+      "later_capture_asof_temporally_available":drift_report is not None,
+      "later_capture_post_asof_ignored":temporal_attempt_future_of_asof,
+      "later_capture_conflicted_event_ids":sorted(temporal_quarantine),
+      "later_capture_kickoff_drift_count":(
+          drift_report["old_verified_kickoff_changed_count"] if drift_report else 0),
+      "later_capture_old_events_quarantined":len(temporal_quarantine),
       "original_authorities_sha256":a_shas,
       "source_metadata_verified_before_kickoff":sum(x["source_metadata_verified_before_kickoff"] for x in rows),
       "hard_source_metadata_ready":sum(x["surface"]=="Hard" and x["source_metadata_verified_before_kickoff"] for x in rows),
