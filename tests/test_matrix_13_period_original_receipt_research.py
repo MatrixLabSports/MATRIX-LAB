@@ -99,3 +99,21 @@ def test_no_final_does_not_trigger_halftime_guess(monkeypatch, tmp_path):
     assert result["unique_fixture_issue_counts"]["NO_STANDARD_FT"] == 1
     assert result["new_halftime_labels_written"] == 0
     assert result["source_problem_details"] == []
+
+
+def test_archived_kickoff_drift_is_measured_not_auto_corrected(tmp_path):
+    token = write_receipt(tmp_path, [1, 0])
+    token["kickoff_utc"] = "2026-10-25T19:30:00+00:00"
+    result = lab.quality_detail("123", token, tmp_path)
+    assert result["source_sha256_matches"] is True
+    assert result["raw_kickoff_minus_frozen_kickoff_minutes"] == 30
+    assert result["raw_fixture_id_equals_frozen_id"] is True
+    assert result["raw_status_is_standard_ft"] is True
+    assert result["not_a_usable_halftime_label"] is True
+
+
+def test_no_drift_guess_when_original_kickoff_absent(tmp_path):
+    token = write_receipt(tmp_path, [1, 0])
+    result = lab.quality_detail("123", token, tmp_path)
+    assert result["raw_kickoff_minus_frozen_kickoff_minutes"] is None
+    assert result["not_a_usable_halftime_label"] is True
