@@ -390,6 +390,36 @@ def public_visible_failure_clues(ui: dict | None) -> dict | None:
             "not_individual_identity_certification":True}
 
 
+def persist_detail_capture_attempt(parent: Path, report: dict) -> str:
+    """Keep a real capture-attempt receipt even if a stronger old record wins.
+
+    A failed/partial retry may never erase the best previous per-match record,
+    but its actual rejected candidates must remain auditable by hash.
+    """
+    if (report.get("real_money") != "BLOCKED"
+        or report.get("new_model_observations_admitted") != 0
+        or report.get("telegram_signal_authorized") is not False):
+        raise ValueError("CAPTURE_ATTEMPT_MUST_BE_RESEARCH_ONLY")
+    parent.mkdir(parents=True, exist_ok=True)
+    path = parent/"MATRIX_TENNIS_MATCH_DETAIL_CAPTURE_ATTEMPT_LAST.json"
+    raw = (json.dumps(report,sort_keys=True,indent=2,ensure_ascii=False)+"\n").encode("utf-8")
+    if path.exists():
+        previous = path.read_bytes()
+        if previous != raw:
+            previous_hash = hashlib.sha256(previous).hexdigest()
+            archive = parent/"archive"/(
+                "MATRIX_TENNIS_MATCH_DETAIL_CAPTURE_ATTEMPT_"+previous_hash+".json")
+            archive.parent.mkdir(parents=True, exist_ok=True)
+            if archive.exists() and archive.read_bytes() != previous:
+                raise ValueError("CAPTURE_ATTEMPT_ARCHIVE_SHA_CONFLICT")
+            if not archive.exists():
+                archive.write_bytes(previous)
+    path.write_bytes(raw)
+    receipt = hashlib.sha256(raw).hexdigest()
+    if hashlib.sha256(path.read_bytes()).hexdigest() != receipt:
+        raise ValueError("CAPTURE_ATTEMPT_WRITE_SHA_MISMATCH")
+    return receipt
+
 def run(root: Path, day: str, endpoint: str, max_events: int = 6) -> dict:
     from playwright.sync_api import Error, sync_playwright
     date.fromisoformat(day)
@@ -483,7 +513,12 @@ def run(root: Path, day: str, endpoint: str, max_events: int = 6) -> dict:
         if (old.get("target_date_bogota") == day
             and len(old.get("events") or []) > len(events)):
             report["status"] = "REJECTED_REGRESSED_DETAILS_PRESERVED"
+            report["preserved_original_detail_sha256"] = hashlib.sha256(target.read_bytes()).hexdigest()
+            persist_detail_capture_attempt(target.parent, report)
             return report
+    report["status"] = ("VERIFIED_VISIBLE_CHALLENGER_METADATA_RESEARCH_ONLY" if events
+                        else "NO_AUTHENTIC_VISIBLE_CHALLENGER_DETAILS_VERIFIED")
+    persist_detail_capture_attempt(target.parent, report)
     # Publish the frozen, byte-identical crossmatch alongside the actual
     # match-page observations: the Linux reconciler may refresh its current
     # name hints later. This is a research provenance binding, never a model
@@ -504,8 +539,6 @@ def run(root: Path, day: str, endpoint: str, max_events: int = 6) -> dict:
             raise ValueError("BOUND_CROSSMATCH_SOURCE_WRITE_FAILURE")
     target.write_text(json.dumps(report, ensure_ascii=False, indent=2, sort_keys=True)+"\n",
                       encoding="utf-8")
-    report["status"] = ("VERIFIED_VISIBLE_CHALLENGER_METADATA_RESEARCH_ONLY" if events
-                        else "NO_AUTHENTIC_VISIBLE_CHALLENGER_DETAILS_VERIFIED")
     return report
 
 def main() -> None:
