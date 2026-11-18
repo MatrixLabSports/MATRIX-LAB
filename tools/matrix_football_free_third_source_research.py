@@ -76,9 +76,9 @@ def research(browser: dict, provider: dict, *, observed_at_utc: datetime,
              browser_sha256: str, provider_sha256: str) -> dict:
     day = str(browser["target_date_bogota"])
     date.fromisoformat(day)
-    now = observed_at_utc.astimezone(timezone.utc)
     if observed_at_utc.tzinfo is None:
         raise ValueError("PROVIDER_CAPTURE_TIMESTAMP_HAS_NO_ZONE")
+    now = observed_at_utc.astimezone(timezone.utc)
     if not isinstance(provider, dict) or not isinstance(provider.get("events"), list):
         raise ValueError("FREE_PROVIDER_EVENTS_ARRAY_MISSING")
     events = provider["events"]
@@ -108,7 +108,7 @@ def research(browser: dict, provider: dict, *, observed_at_utc: datetime,
                 # TheSportsDB's strTimestamp is documented as UTC but contains no suffix.
                 # SofaScore's display timezone was NOT captured, so equality is a
                 # research comparison, never a certified two-source kickoff.
-                if not re.fullmatch(r"\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}", str(timestamp)):
+                if not re.fullmatch(r"\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}", str(timestamp)):
                     raise ValueError("NO_UNAMBIGUOUS_PROVIDER_TIMESTAMP")
                 ts = datetime.fromisoformat(timestamp).replace(tzinfo=timezone.utc)
                 displayed = str(candidate.get("sofascore_visible_clock_unverified_timezone") or "")
@@ -190,7 +190,7 @@ def main() -> None:
     report = research(browser, provider, observed_at_utc=datetime.now(timezone.utc),
                       browser_sha256=browser_hash, provider_sha256=provider_hash)
     dest = folder / "MATRIX_FREE_THIRD_SOURCE_RESEARCH_LAST.json"
-    dest.write_text(json.dumps(report, indent=2, sort_keys=True, ensure_ascii=False)+"\\n", encoding="utf-8")
+    dest.write_text(json.dumps(report, indent=2, sort_keys=True, ensure_ascii=False)+"\n", encoding="utf-8")
     print(json.dumps({"status": report["status"], "day":args.day,
         "browser_pairs":report["research_browser_candidate_count"],
         "free_provider_name_matches":report["provider_name_match_count"],
