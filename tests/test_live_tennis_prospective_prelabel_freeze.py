@@ -19,6 +19,7 @@ def state(mid=900001, **update):
             "p1_match_win":None,"label_opened":False,
             "settlement_status":"PENDING_FINAL",
             "quality_state_valid":True,"origin":"observed","stale":False,
+            "sets_p1":0,"sets_p2":1,
             **update}
 
 def source(tmp_path, rows):
@@ -73,19 +74,37 @@ def test_second_cycle_never_overwrites_first_frozen_source(tmp_path):
     assert len(list((folder/ARCHIVE).glob("MATRIX_LIVE_PRELABEL_BATCH_*.json")))==2
     assert first.read_bytes()==first_bytes
 
-def test_final_label_in_source_blocks_entire_new_batch_without_backfill(tmp_path):
+def test_mixed_daily_ledger_freezes_only_a_different_never_labeled_match(tmp_path):
     folder=source(tmp_path,[state(),state(900002,p1_match_win=1,label_opened=True,
                                   settlement_status="FINAL_STANDARD")])
     r=collect(tmp_path,DAY,now=NOW)
-    assert r["status"]=="BLOCKED_LEDGER_ALREADY_CONTAINS_FINAL_LABELS"
-    assert r["newly_frozen_unique_match_keys"]==0
-    assert r["unfrozen_match_keys_in_this_capture"]==2
-    assert list((folder/ARCHIVE).glob("MATRIX_LIVE_PRELABEL_BATCH_*.json"))==[]
+    assert r["status"]=="FROZEN_NEW_UNLABELED_LIVE_MATCHES_RESEARCH_ONLY"
+    assert r["newly_frozen_unique_match_keys"]==1
+    assert r["source_labeled_physical_match_keys_quarantined"]==1
+    assert r["source_contains_prior_final_labels"] is True
+    assert r["unfrozen_match_keys_in_this_capture"]==1
+    batches=list((folder/ARCHIVE).glob("MATRIX_LIVE_PRELABEL_BATCH_*.json"))
+    assert len(batches)==1
+    doc=json.loads(batches[0].read_bytes())
+    assert doc["source_contains_other_prior_final_labels"] is True
+    assert doc["no_outcome_values_in_source"] is False
+    assert doc["unlabeled_eligible_matches_have_no_final_labels"] is True
+    assert {x["match_id"] for x in doc["matches"]}=={900001}
+    snapshot=list((folder/ARCHIVE).glob("MATRIX_LIVE_PRELABEL_STATES_*.json"))
+    assert len(snapshot)==1
+    clean=json.loads(snapshot[0].read_bytes())
+    assert {x["match_id"] for x in clean["states"]}=={900001}
+    for row in clean["states"]:
+        assert "p1_match_win" not in row
+        assert "settlement_status" not in row
+        assert "label_opened" not in row
+        assert "result_version" not in row
+    assert doc["frozen_state_snapshot_sha256"]==hashlib.sha256(snapshot[0].read_bytes()).hexdigest()
 
 def test_even_unopened_non_null_outcome_is_rejected(tmp_path):
     source(tmp_path,[state(p1_match_win=0,label_opened=False)])
     r=collect(tmp_path,DAY,now=NOW)
-    assert r["status"]=="BLOCKED_LEDGER_ALREADY_CONTAINS_FINAL_LABELS"
+    assert r["status"]=="BLOCKED_NO_SAFE_UNLABELED_NEW_MATCH_IN_MIXED_LEDGER"
 
 def test_missing_timestamps_and_future_captures_are_not_repaired(tmp_path):
     source(tmp_path,[state(captured_at_utc="2026-11-18T11:30:00")])
@@ -137,3 +156,39 @@ def test_fresh_subset_never_masks_unfrozen_stale_backlog(tmp_path):
     assert r["newly_frozen_unique_match_keys"]==1
     assert r["source_unfrozen_stale_or_low_quality_match_keys"]==1
     assert r["unfrozen_match_keys_in_this_capture"]==1
+
+
+def test_same_physical_match_past_label_quarantines_all_earlier_states(tmp_path):
+    folder=source(tmp_path,[
+        state(900001),
+        state(900001,p1_match_win=0,label_opened=True,
+              settlement_status="FINAL_STANDARD"),
+        state(900002)])
+    r=collect(tmp_path,DAY,now=NOW)
+    assert r["newly_frozen_unique_match_keys"]==1
+    assert r["source_labeled_physical_match_keys_quarantined"]==1
+    doc=json.loads(next((folder/ARCHIVE).glob("MATRIX_LIVE_PRELABEL_BATCH_*.json")).read_bytes())
+    assert {x["match_id"] for x in doc["matches"]}=={900002}
+
+def test_match_complete_score_is_not_prelabel_candidate_even_if_provider_omits_label(tmp_path):
+    source(tmp_path,[state(sets_p1=2,sets_p2=0)])
+    report=collect(tmp_path,DAY,now=NOW)
+    assert report["status"]=="BLOCKED_NO_NEW_FRESH_QUALITY_VALID_LIVE_STATE"
+    assert report["newly_frozen_unique_match_keys"]==0
+
+def test_immutable_clean_state_snapshot_corruption_blocks_reuse(tmp_path):
+    folder=source(tmp_path,[state()])
+    first=collect(tmp_path,DAY,now=NOW)
+    snap=folder/ARCHIVE/(
+        "MATRIX_LIVE_PRELABEL_STATES_"+first["source_raw_sha256"]+".json")
+    snap.write_bytes(snap.read_bytes()+b" ")
+    with pytest.raises(ValueError,match="PRELABEL_IMMUTABLE_LIVE_STATE_SNAPSHOT_CHANGED"):
+        collect(tmp_path,DAY,now=NOW)
+
+def test_new_unexpected_outcome_fields_are_not_carried_into_clean_snapshot(tmp_path):
+    folder=source(tmp_path,[state(winner=2,result_version=7)])
+    result=collect(tmp_path,DAY,now=NOW)
+    assert result["newly_frozen_unique_match_keys"]==1
+    snap=json.loads(next((folder/ARCHIVE).glob("MATRIX_LIVE_PRELABEL_STATES_*.json")).read_bytes())
+    assert all("winner" not in r and "result_version" not in r for r in snap["states"])
+    assert all(r["match_id"]==900001 for r in snap["states"])
