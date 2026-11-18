@@ -131,3 +131,40 @@ def test_unapproved_archive_names_cannot_be_used_for_forged_source(tmp_path):
     dp.write_bytes(dp.read_bytes()+b" ")
     with pytest.raises(ValueError,match="PROFILE_AUDIT_ORIGINAL_DETAIL_SHA_SNAPSHOT_UNAVAILABLE"):
         audit(tmp_path,DAY)
+
+
+def test_main_seals_original_detail_in_reconciliation_archive(tmp_path, monkeypatch):
+    from tools.matrix_tennis_free_profile_source_binding_audit import main
+    import sys
+    dp,_=build(tmp_path)
+    original=dp.read_bytes()
+    digest=hashlib.sha256(original).hexdigest()
+    monkeypatch.setattr(sys,"argv",["profile_audit","--date",DAY,"--root",str(tmp_path)])
+    main()
+    archive=tmp_path/"evidence/tennis_calendar_reconciliation"/DAY/"archive"/(
+        "MATRIX_TENNIS_SOURCE_DETAILS_SHA256_"+digest+".json")
+    assert archive.read_bytes()==original
+    report=tmp_path/"evidence/tennis_calendar_reconciliation"/DAY/(
+        "MATRIX_TENNIS_FREE_PROFILE_SOURCE_BINDING_AUDIT_LAST.json")
+    recorded=json.loads(report.read_text())
+    assert recorded["sealed_original_source_archive"].endswith(archive.name)
+    assert recorded["new_hard_holdout_observations"]==0
+    dp.write_bytes(original+b" ")
+    recovered=audit(tmp_path,DAY)
+    assert recovered["archived_original_detail_used"] is True
+    assert recovered["profiles_verified_against_match_details"]==1
+
+
+def test_original_archive_conflict_is_rejected_without_overwrite(tmp_path,monkeypatch):
+    from tools.matrix_tennis_free_profile_source_binding_audit import main
+    import sys
+    dp,_=build(tmp_path)
+    expected=hashlib.sha256(dp.read_bytes()).hexdigest()
+    archive=tmp_path/"evidence/tennis_calendar_reconciliation"/DAY/"archive"
+    archive.mkdir(parents=True)
+    target=archive/("MATRIX_TENNIS_SOURCE_DETAILS_SHA256_"+expected+".json")
+    target.write_text("tampered")
+    monkeypatch.setattr(sys,"argv",["profile_audit","--date",DAY,"--root",str(tmp_path)])
+    with pytest.raises(ValueError,match="PROFILE_AUDIT_IMMUTABLE_SOURCE_CONFLICT"):
+        main()
+    assert target.read_text()=="tampered"
