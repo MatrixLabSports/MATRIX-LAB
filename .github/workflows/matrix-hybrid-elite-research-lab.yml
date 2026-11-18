@@ -1,0 +1,58 @@
+name: MATRIX Hybrid Elite Isolated Research Laboratory
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - repair/cor09-world-pipeline
+    paths:
+      - tools/matrix_hybrid_elite_lab.py
+      - tools/matrix_hybrid_elite_bayesian_shadow.py
+      - tests/test_matrix_hybrid_elite_lab.py
+      - tests/test_matrix_hybrid_elite_bayesian_shadow.py
+      - .github/workflows/matrix-hybrid-elite-research-lab.yml
+
+permissions:
+  contents: read
+
+concurrency:
+  group: matrix-hybrid-elite-research-tests
+  cancel-in-progress: false
+
+jobs:
+  offline-prospective-gates:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    env:
+      MATRIX_MODE: RESEARCH_ONLY
+      REAL_MONEY: BLOCKED
+      AUTO_BETTING: DISABLED
+      HYBRID_AUTO_PROMOTION: DISABLED
+    steps:
+      - name: Checkout the exact experimental source branch
+        uses: actions/checkout@v4
+        with:
+          ref: repair/cor09-world-pipeline
+      - name: Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Test isolated prospective and Bayesian shadow gates offline
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$REAL_MONEY" = BLOCKED
+          test "$AUTO_BETTING" = DISABLED
+          test "$HYBRID_AUTO_PROMOTION" = DISABLED
+          python -m pip install -q pytest
+          PYTHONPATH=. python -m pytest -q \
+            tests/test_matrix_hybrid_elite_lab.py \
+            tests/test_matrix_hybrid_elite_bayesian_shadow.py
+      - name: Confirm original matrix is unchanged
+        shell: bash
+        run: |
+          set -euo pipefail
+          git diff --exit-code -- evidence/cor0203 \
+            evidence/tennis_parallel_lanes/ATP_CHALLENGER_MEN_SINGLES_CLAY \
+            tools/api_football_market_shadow_p_matrix.py
+          echo "HYBRID_ELITE_TESTS_ONLY_NO_REAL_COHORT_OR_MODEL_PROMOTION"
