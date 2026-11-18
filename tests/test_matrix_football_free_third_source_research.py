@@ -115,6 +115,6 @@ def test_browser_hashes_are_bound_to_actual_capture_bytes(tmp_path):
     (folder/"MATRIX_TWO_SOURCE_LINK_RESEARCH_LAST.json").write_text(json.dumps(d))
     got,_=source_research(folder,"2026-11-18")
     assert got["research_candidate_count"]==1
-    (folder/"flashscore_visible_links.json").write_bytes(b+" ")
+    (folder/"flashscore_visible_links.json").write_bytes(b+b" ")
     with pytest.raises(ValueError,match="HASH_CHANGED"):
         source_research(folder,"2026-11-18")
