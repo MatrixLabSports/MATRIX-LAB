@@ -90,16 +90,18 @@ def test_prematch_forecast_after_start_rejected():
         build(history, request)
 
 
-def test_live_requires_inplay_and_before_real_event_end():
+def test_live_requires_observed_inplay_state_and_forbids_future_end():
     history, request = docs(35, lane="TENNIS_LIVE")
     item = request["targets"][0]
     item["prediction_frozen_at_utc"] = (START + timedelta(minutes=25)).isoformat()
-    item["independently_certified_end_at_utc"] = (
-        START + timedelta(hours=2)).isoformat()
+    item["observed_live_state_at_utc"] = (START + timedelta(minutes=24)).isoformat()
     assert build(history, request)["targets"][0]["p_bayesian_research_only"] is not None
-    item["independently_certified_end_at_utc"] = (
-        START + timedelta(minutes=20)).isoformat()
+    item["observed_live_state_at_utc"] = (START + timedelta(minutes=30)).isoformat()
     with pytest.raises(ValueError, match="BAYESIAN_LIVE_PIT_LEAKAGE"):
+        build(history, request)
+    item["observed_live_state_at_utc"] = (START + timedelta(minutes=24)).isoformat()
+    item["independently_certified_end_at_utc"] = (START + timedelta(hours=2)).isoformat()
+    with pytest.raises(ValueError, match="BAYESIAN_LIVE_FUTURE_FACT_IN_FORECAST_INPUT"):
         build(history, request)
 
 
@@ -212,3 +214,30 @@ def test_bayesian_zero_rows_does_not_claim_probabilities(tmp_path):
                                      history_root=tmp_path, request_root=tmp_path)
     assert report["physical_sha_bound_receipts_verified"] == 0
     assert build(history, request)["targets"] == []
+
+
+def test_live_prestart_state_is_not_live_pit():
+    history, request = docs(35, lane="TENNIS_LIVE")
+    target=request["targets"][0]
+    target["prediction_frozen_at_utc"]=(START+timedelta(minutes=20)).isoformat()
+    target["observed_live_state_at_utc"]=(START-timedelta(minutes=2)).isoformat()
+    with pytest.raises(ValueError,match="BAYESIAN_LIVE_PIT_LEAKAGE"):
+        build(history,request)
+
+
+def test_live_original_receipt_cannot_smuggle_later_result(tmp_path):
+    history, request = docs(1, lane="TENNIS_LIVE")
+    target=request["targets"][0]
+    target["prediction_frozen_at_utc"]=(START+timedelta(minutes=20)).isoformat()
+    target["observed_live_state_at_utc"]=(START+timedelta(minutes=19)).isoformat()
+    for kind, items in (("HISTORY",history["rows"]),("REQUEST",request["targets"])):
+        for index,item in enumerate(items):
+            receipt=dict(item, schema="MATRIX_HYBRID_ELITE_BAYESIAN_"+kind+"_RECEIPT_V1", real_money="BLOCKED")
+            if kind=="REQUEST":
+                receipt["final_winner"]=1
+            path=tmp_path/f"{kind}_{index}.json"
+            path.write_text(json.dumps(receipt))
+            item["original_receipt_path"]=path.name
+            item["original_receipt_sha256"]=hashlib.sha256(path.read_bytes()).hexdigest()
+    with pytest.raises(ValueError,match="BAYESIAN_ORIGINAL_TARGET_VALUE_CONFLICT"):
+        verify_physical_receipts(history,request,history_root=tmp_path,request_root=tmp_path)
