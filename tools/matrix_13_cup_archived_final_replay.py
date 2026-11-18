@@ -8,12 +8,13 @@ from __future__ import annotations
 
 import argparse
 import hashlib
+import os
 import json
 from datetime import datetime, timezone
 from pathlib import Path
 
 from tools.api_football_prospective_api_settlement import _load_ledger as api_final_ledger
-from tools.matrix_13_cohort_independent_settlement import build_candidates, validated_ledger
+from tools.matrix_13_cohort_independent_settlement import build_candidates, validated_ledger, append
 from tools.matrix_13_cohort_espn_mls_results import compare, dt, BOGOTA
 from tools.matrix_13_cohort_espn_cup_results import LEAGUES
 from tools.matrix_13_cohort_independent_settlement import (
@@ -24,7 +25,7 @@ SOURCE_REPORT = SOURCES / "MATRIX_ESPN_CUPS_EXACT_FINAL_LAST.json"
 SCHEMA = "MATRIX_13_ARCHIVED_ESPN_CUP_FT_REPLAY_V1"
 
 
-def replay(*, root: Path = ROOT) -> dict:
+def replay(*, root: Path = ROOT, append_certified: bool = False) -> dict:
     rel = lambda path: root / path.relative_to(ROOT)
     triage = json.loads(rel(TRIAGE).read_text(encoding="utf-8"))
     freeze = json.loads(rel(FREEZE).read_text(encoding="utf-8"))
@@ -81,6 +82,16 @@ def replay(*, root: Path = ROOT) -> dict:
         triage, freeze, [("ESPN_CUP", provider_report)], root=root,
         api_settled=canonical, already=old,
     )
+    ledger_result = None
+    if append_certified:
+        if os.environ.get("MATRIX_APPEND_VERIFIED_ARCHIVED_FT") != "EXPLICIT_PARALLEL_LEDGER_ONLY":
+            raise ValueError("REPLAY_APPEND_EXPLICIT_ENV_REQUIRED")
+        original_sha = hashlib.sha256(rel(API_LEDGER).read_bytes()).hexdigest()
+        original_freeze_sha = hashlib.sha256(rel(FREEZE).read_bytes()).hexdigest()
+        ledger_result = append(rel(LEDGER), candidates)
+        if (hashlib.sha256(rel(API_LEDGER).read_bytes()).hexdigest() != original_sha
+            or hashlib.sha256(rel(FREEZE).read_bytes()).hexdigest() != original_freeze_sha):
+            raise ValueError("REPLAY_ORIGINAL_CANONICAL_BYTES_MUTATED")
     return {
         "schema": SCHEMA,
         "generated_at_utc": datetime.now(timezone.utc).isoformat(),
@@ -106,7 +117,8 @@ def replay(*, root: Path = ROOT) -> dict:
         ],
         "unmatched_source_identities": unmatched,
         "settlement_replay_rejections": rejected,
-        "ledger_mutated": False,
+        "ledger_mutated": bool(append_certified and candidates),
+        "parallel_independent_ledger_append_result": ledger_result,
         "original_parameters_mutated": False,
         "production_p_matrix_promoted": False,
         "telegram_signal_authorized": False,
@@ -118,8 +130,9 @@ def replay(*, root: Path = ROOT) -> dict:
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--output", type=Path, required=True)
+    ap.add_argument("--append-certified", action="store_true")
     a = ap.parse_args()
-    report = replay()
+    report = replay(append_certified=a.append_certified)
     a.output.parent.mkdir(parents=True, exist_ok=True)
     a.output.write_text(
         json.dumps(report, sort_keys=True, ensure_ascii=False, indent=2) + "\n",
