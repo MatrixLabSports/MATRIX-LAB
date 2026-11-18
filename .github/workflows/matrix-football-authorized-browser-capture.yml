@@ -19,6 +19,10 @@ on:
       - tests/test_matrix_football_free_third_source_research.py
       - tools/matrix_football_free_six_league_crosscheck.py
       - tests/test_matrix_football_free_six_league_crosscheck.py
+      - tools/matrix_football_six_league_receipt_audit.py
+      - tests/test_matrix_football_six_league_receipt_audit.py
+      - tools/matrix_football_free_browser_provider_research_join.py
+      - tests/test_matrix_football_free_browser_provider_research_join.py
 
 permissions:
   contents: write
@@ -76,7 +80,7 @@ jobs:
       - name: Verify six-league public free-source research never authorizes signals
         shell: cmd
         run: |
-          python -m pytest -q tests/test_matrix_football_free_six_league_crosscheck.py
+          python -m pytest -q tests/test_matrix_football_free_six_league_crosscheck.py tests/test_matrix_football_six_league_receipt_audit.py tests/test_matrix_football_free_browser_provider_research_join.py
           if errorlevel 1 exit /B 1
 
       - name: Connect only to user-authorized visible CDP browser
@@ -135,7 +139,44 @@ jobs:
             if ($LASTEXITCODE -ne 0) {
               Write-Output "SIX_LEAGUE_RESEARCH_BLOCKED_FAIL_CLOSED: $day"
               Write-Output "BROWSER_SOURCE_BYTES_WILL_REMAIN_PRESERVED"
+              break
             }
+            $report="evidence/football_calendar_physical/$day/MATRIX_FREE_SIX_LEAGUE_RESEARCH_LAST.json"
+            if (-not (Test-Path -LiteralPath $report)) { throw "SIX_LEAGUE_RECEIPT_REPORT_MISSING" }
+            $attempt=Get-Content -LiteralPath $report -Raw | ConvertFrom-Json
+            if ($attempt.free_provider_rate_limit_hit -eq $true) {
+              Write-Output "SIX_LEAGUE_HTTP429_STOP_ALL_PROVIDER_CALLS_THIS_CYCLE"
+              break
+            }
+          }
+
+      - name: Research-join real browser and free fixture identities without promotion
+        shell: powershell
+        run: |
+          $ErrorActionPreference = "Stop"
+          $cycle=Get-Content -LiteralPath "evidence/football_calendar_physical/MATRIX_BROWSER_CAPTURE_CYCLE_LAST.json" -Raw | ConvertFrom-Json
+          foreach ($day in $cycle.days) {
+            $base="evidence/football_calendar_physical/$day"
+            $intake="evidence/football_world_inventory/$day/MATRIX_FOOTBALL_INDEPENDENT_FIXTURE_INTAKE.json"
+            if (-not (Test-Path "$base/MATRIX_TWO_SOURCE_LINK_RESEARCH_LAST.json")) { continue }
+            if (-not (Test-Path -LiteralPath $intake)) {
+              Write-Output "INDEPENDENT_FREE_INTAKE_MISSING_RESEARCH_ONLY: $day"
+              continue
+            }
+            python -m tools.matrix_football_free_browser_provider_research_join --day $day
+            if ($LASTEXITCODE -ne 0) { throw "FREE_BROWSER_PROVIDER_RESEARCH_JOIN_FAILED" }
+          }
+
+      - name: Audit actual six-league SHA receipts offline without provider requests
+        shell: powershell
+        run: |
+          $ErrorActionPreference = "Stop"
+          $cycle=Get-Content -LiteralPath "evidence/football_calendar_physical/MATRIX_BROWSER_CAPTURE_CYCLE_LAST.json" -Raw | ConvertFrom-Json
+          foreach ($day in $cycle.days) {
+            $folder="evidence/football_calendar_physical/$day"
+            if (-not (Test-Path "$folder/MATRIX_TWO_SOURCE_LINK_RESEARCH_LAST.json")) { continue }
+            python -m tools.matrix_football_six_league_receipt_audit --day $day
+            if ($LASTEXITCODE -ne 0) { throw "SIX_LEAGUE_SOURCE_RECEIPT_INTEGRITY_FAILED" }
           }
 
       - name: Persist source receipts and historical capture bytes before adjudicating coverage
