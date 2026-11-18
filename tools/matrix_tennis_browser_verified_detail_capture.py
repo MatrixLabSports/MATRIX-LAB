@@ -180,8 +180,10 @@ def parse_visible(row: dict, ui: dict, day: str, observed_at: datetime) -> dict:
     # rather than the legacy "Competición Tenis, Challenger 125, ...".
     # Challenger classification MUST come from the exact public tournament
     # URL, while the tournament and round must be present in the visible link.
+    # "Dieciseisavos de final" is an actual visible Challenger R32 label,
+    # observed on Metz and Helsinki pages, not an inferred competition.
     rounds = {"Primera ronda", "Segunda ronda", "Ronda de 32",
-              "Octavos de final", "Cuartos de final",
+              "Dieciseisavos de final", "Octavos de final", "Cuartos de final",
               "Semifinal", "Semifinales", "Final"}
     # Multiple visible anchors can refer to the SAME event tournament:
     # e.g. "Orleans, France, Octavos de final" and
