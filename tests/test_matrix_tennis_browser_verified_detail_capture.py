@@ -374,8 +374,10 @@ def test_successful_challenger_capture_preserves_prior_exact_utf8_bytes(tmp_path
     assert persist_versioned_details(path,changed)==b
     assert len(list((tmp_path/"archive").glob("MATRIX_TENNIS_SOURCE_DETAILS_SHA256_*.json")))==1
     previous.write_bytes(original+b" ")
+    # Replaying the same prior version must not silently accept its corrupt archive.
+    path.write_bytes(original)
     with pytest.raises(ValueError,match="ORIGINAL_CHALLENGER_DETAIL_ARCHIVE_TAMPER"):
-        persist_versioned_details(path,old)
+        persist_versioned_details(path,changed)
 
 def test_windows_console_escape_does_not_change_utf8_evidence(tmp_path):
     import json
