@@ -148,3 +148,93 @@ def test_brier_and_logloss_are_proper_scoring_rules():
     bad = metrics([(0.2, 1), (0.8, 0)])
     assert good["brier"] < bad["brier"]
     assert good["logloss"] < bad["logloss"]
+
+import hashlib
+import json
+from tools.matrix_hybrid_elite_lab import verify_original_receipts
+
+def with_sha_receipts(tmp_path):
+    d = example(1)
+    row = d["rows"][0]
+    pred = {
+        "schema": "MATRIX_HYBRID_ELITE_PREDICTION_RECEIPT_V1",
+        "lane": row["lane"],
+        "physical_event_id": row["physical_event_id"],
+        "real_money": "BLOCKED",
+        "frozen_at_utc": row["prediction_frozen_at_utc"],
+        "p_matrix_frozen": row["p_matrix_frozen"],
+        "contenders": {k:v["p_frozen"] for k,v in row["contenders"].items()},
+        "original_feature_pit_certified": True,
+        "prospective_identity_certified": True,
+    }
+    final = {
+        "schema": "MATRIX_HYBRID_ELITE_OUTCOME_RECEIPT_V1",
+        "lane": row["lane"], "physical_event_id": row["physical_event_id"],
+        "real_money": "BLOCKED",
+        "certified_at_utc": row["outcome_certified_at_utc"],
+        "outcome": row["outcome"],
+        "independent_outcome_certified": True,
+    }
+    paths = []
+    for typ, body in (("prediction",pred),("outcome",final)):
+        path=tmp_path/(typ+".json")
+        path.write_text(json.dumps(body))
+        row[typ+"_receipt_path"]=path.name
+        row[typ+"_receipt_sha256"]=hashlib.sha256(path.read_bytes()).hexdigest()
+        paths.append(path)
+    return d, paths
+
+
+def test_real_cli_receipt_gate_rejects_missing_originals(tmp_path):
+    d=example(1)
+    with pytest.raises(ValueError,match="LAB_ORIGINAL_SOURCE_RECEIPT_REQUIRED"):
+        verify_original_receipts(d,tmp_path)
+
+
+def test_hash_bound_prediction_and_outcome_rows_pass_only_source_gate(tmp_path):
+    d,paths=with_sha_receipts(tmp_path)
+    result=verify_original_receipts(d,tmp_path)
+    assert result["verified_receipt_files"]==2
+    assert result["paired_certified_source_rows"]==1
+    assert result["model_promotion_authorized"] is False
+
+
+def test_tampered_prediction_receipt_fails_closed(tmp_path):
+    d,paths=with_sha_receipts(tmp_path)
+    paths[0].write_bytes(paths[0].read_bytes()+b" ")
+    with pytest.raises(ValueError,match="LAB_ORIGINAL_SOURCE_RECEIPT_TAMPERED"):
+        verify_original_receipts(d,tmp_path)
+
+
+def test_forged_prediction_value_under_matching_hash_is_rejected(tmp_path):
+    d,paths=with_sha_receipts(tmp_path)
+    p=json.loads(paths[0].read_text())
+    p["p_matrix_frozen"]=0.01
+    paths[0].write_text(json.dumps(p))
+    d["rows"][0]["prediction_receipt_sha256"]=hashlib.sha256(paths[0].read_bytes()).hexdigest()
+    with pytest.raises(ValueError,match="LAB_PREDICTION_RECEIPT_VALUE_MISMATCH"):
+        verify_original_receipts(d,tmp_path)
+
+
+def test_outcome_from_other_physical_event_rejected(tmp_path):
+    d,paths=with_sha_receipts(tmp_path)
+    p=json.loads(paths[1].read_text())
+    p["physical_event_id"]="different_fixture"
+    paths[1].write_text(json.dumps(p))
+    d["rows"][0]["outcome_receipt_sha256"]=hashlib.sha256(paths[1].read_bytes()).hexdigest()
+    with pytest.raises(ValueError,match="LAB_ORIGINAL_SOURCE_RECEIPT_IDENTITY_MISMATCH"):
+        verify_original_receipts(d,tmp_path)
+
+
+def test_source_path_escape_is_rejected(tmp_path):
+    d,paths=with_sha_receipts(tmp_path)
+    d["rows"][0]["prediction_receipt_path"]="../outside.json"
+    with pytest.raises(ValueError,match="LAB_ORIGINAL_SOURCE_PATH_UNSAFE"):
+        verify_original_receipts(d,tmp_path)
+
+
+def test_receipt_gate_accepts_empty_cohort_without_fabricating_metrics(tmp_path):
+    d=example(0)
+    assert verify_original_receipts(d,tmp_path)["verified_receipt_files"]==0
+    assert evaluate(d)["certified_total_events"]==0
+
