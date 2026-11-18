@@ -16,6 +16,11 @@ def frozen_nov18_asof(monkeypatch,at):
     from tools import matrix_tennis_browser_challenger_pit_gate as mod
     underlying=mod.read
     def pinned(root,p):
+        if (Path(p).name=="sofascore_verified_match_details.json"
+            and "2026-11-18" in Path(p).parts):
+            immutable=mod.CAPTURE_ROOT/"2026-11-18"/"archive"/(
+                "MATRIX_TENNIS_SOURCE_DETAILS_GITBLOB_28a653980b5612d7f6ff0564094f88eff2867080.json")
+            return underlying(root,immutable)
         if Path(p).name=="MATRIX_TENNIS_MATCH_DETAIL_CAPTURE_ATTEMPT_LAST.json":
             immutable=mod.CAPTURE_ROOT/"2026-11-18"/"archive"/NOV18_IMMUTABLE_ATTEMPT
             return underlying(root,immutable)
