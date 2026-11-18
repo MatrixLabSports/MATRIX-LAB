@@ -17,6 +17,8 @@ on:
       - tests/test_matrix_football_authorized_dual_browser_research.py
       - tools/matrix_football_free_third_source_research.py
       - tests/test_matrix_football_free_third_source_research.py
+      - tools/matrix_football_free_six_league_crosscheck.py
+      - tests/test_matrix_football_free_six_league_crosscheck.py
 
 permissions:
   contents: write
@@ -71,6 +73,12 @@ jobs:
           python -m pytest -q tests/test_matrix_football_free_third_source_research.py
           if errorlevel 1 exit /B 1
 
+      - name: Verify six-league public free-source research never authorizes signals
+        shell: cmd
+        run: |
+          python -m pytest -q tests/test_matrix_football_free_six_league_crosscheck.py
+          if errorlevel 1 exit /B 1
+
       - name: Connect only to user-authorized visible CDP browser
         shell: cmd
         run: |
@@ -110,6 +118,23 @@ jobs:
             if ($LASTEXITCODE -ne 0) {
               Write-Output "FREE_THIRD_SOURCE_UNAVAILABLE_FAIL_CLOSED: $day"
               Write-Output "BROWSER_CAPTURE_EVIDENCE_WILL_STILL_BE_PERSISTED"
+            }
+          }
+
+      - name: Read six original leagues from free provider only after dual-browser receipts
+        shell: powershell
+        run: |
+          $ErrorActionPreference = "Stop"
+          $cycle=Get-Content -LiteralPath "evidence/football_calendar_physical/MATRIX_BROWSER_CAPTURE_CYCLE_LAST.json" -Raw | ConvertFrom-Json
+          foreach ($day in $cycle.days) {
+            $file="evidence/football_calendar_physical/$day/MATRIX_TWO_SOURCE_LINK_RESEARCH_LAST.json"
+            if (-not (Test-Path -LiteralPath $file)) { continue }
+            $pairs=Get-Content -LiteralPath $file -Raw | ConvertFrom-Json
+            if ([int]$pairs.research_candidate_count -le 0) { continue }
+            python -m tools.matrix_football_free_six_league_crosscheck --day $day
+            if ($LASTEXITCODE -ne 0) {
+              Write-Output "SIX_LEAGUE_RESEARCH_BLOCKED_FAIL_CLOSED: $day"
+              Write-Output "BROWSER_SOURCE_BYTES_WILL_REMAIN_PRESERVED"
             }
           }
 
