@@ -570,7 +570,7 @@ def run(root: Path, day: str, endpoint: str, max_events: int = 6) -> dict:
         frozen_target.write_bytes(frozen_bytes)
         if frozen_target.read_bytes()!=frozen_bytes:
             raise ValueError("BOUND_CROSSMATCH_SOURCE_WRITE_FAILURE")
-    report["saved_detail_sha256"]=persist_versioned_details(target,report)
+    persist_versioned_details(target,report)
     return report
 
 def main() -> None:
