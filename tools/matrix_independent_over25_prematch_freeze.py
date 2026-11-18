@@ -112,8 +112,13 @@ def freeze(intake:dict,shadow:dict,*,intake_bytes:bytes,shadow_bytes:bytes,
             available=[]
             for m in original.get("matches",[]):
                 if not isinstance(m,dict):continue
-                if m.get("status")=="FINISHED" and m.get("lastUpdated"):
-                    if stamp(m["lastUpdated"])>observed:
+                if m.get("status")=="FINISHED":
+                    if not m.get("lastUpdated"):
+                        continue  # unproven historical label availability
+                    try:
+                        if stamp(m["lastUpdated"])>observed:
+                            continue
+                    except (ValueError,TypeError):
                         continue
                 available.append(m)
             history=historic_rows({**original,"matches":available},int(cid))
