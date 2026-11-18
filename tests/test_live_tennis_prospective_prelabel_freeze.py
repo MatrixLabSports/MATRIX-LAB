@@ -185,10 +185,18 @@ def test_immutable_clean_state_snapshot_corruption_blocks_reuse(tmp_path):
     with pytest.raises(ValueError,match="PRELABEL_IMMUTABLE_LIVE_STATE_SNAPSHOT_CHANGED"):
         collect(tmp_path,DAY,now=NOW)
 
-def test_new_unexpected_outcome_fields_are_not_carried_into_clean_snapshot(tmp_path):
+def test_unexpected_result_fields_quarantine_entire_physical_match(tmp_path):
     folder=source(tmp_path,[state(winner=2,result_version=7)])
     result=collect(tmp_path,DAY,now=NOW)
+    assert result["status"]=="BLOCKED_NO_SAFE_UNLABELED_NEW_MATCH_IN_MIXED_LEDGER"
+    assert result["source_labeled_physical_match_keys_quarantined"]==1
+    assert result["newly_frozen_unique_match_keys"]==0
+    assert not list((folder/ARCHIVE).glob("MATRIX_LIVE_PRELABEL_BATCH_*.json"))
+
+def test_one_labeled_source_row_never_enters_separate_clean_snapshot(tmp_path):
+    folder=source(tmp_path,[state(winner=2,result_version=7),state(900002)])
+    result=collect(tmp_path,DAY,now=NOW)
     assert result["newly_frozen_unique_match_keys"]==1
-    snap=json.loads(next((folder/ARCHIVE).glob("MATRIX_LIVE_PRELABEL_STATES_*.json")).read_bytes())
-    assert all("winner" not in r and "result_version" not in r for r in snap["states"])
-    assert all(r["match_id"]==900001 for r in snap["states"])
+    clean=json.loads(next((folder/ARCHIVE).glob("MATRIX_LIVE_PRELABEL_STATES_*.json")).read_bytes())
+    assert {x["match_id"] for x in clean["states"]}=={900002}
+    assert all("winner" not in x and "result_version" not in x for x in clean["states"])
