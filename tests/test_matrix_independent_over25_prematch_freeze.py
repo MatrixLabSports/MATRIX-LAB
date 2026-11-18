@@ -116,3 +116,40 @@ def test_real_provider_cycle_starts_before_http_finishes_and_still_seals(tmp_pat
             folder=tmp_path/"evidence/football_research_freezes/2026-11-04")
     assert result["immutable_prematch_freeze_count"]==1
     assert result["telegram_signal_authorized"] is False
+
+
+def test_freeze_replay_excludes_missing_final_update_before_model_input(tmp_path):
+    a,b=sample()
+    source={"matches":[
+        {"id":1,"status":"FINISHED","utcDate":"2026-10-01T17:00:00Z",
+         "competition":{"id":2019},"homeTeam":{"id":101},
+         "awayTeam":{"id":102},"score":{"fullTime":{"home":2,"away":1}}},
+        {"id":2,"status":"FINISHED","utcDate":"2026-10-02T17:00:00Z",
+         "lastUpdated":"2026-11-05T13:00:00Z",
+         "competition":{"id":2019},"homeTeam":{"id":101},
+         "awayTeam":{"id":102},"score":{"fullTime":{"home":1,"away":0}}},
+        {"id":3,"status":"FINISHED","utcDate":"2026-10-03T17:00:00Z",
+         "lastUpdated":"2026-10-03T20:00:00Z",
+         "competition":{"id":2019},"homeTeam":{"id":101},
+         "awayTeam":{"id":102},"score":{"fullTime":{"home":1,"away":1}}}
+    ]}
+    raw=json.dumps(source).encode()
+    ref=b["authenticated_raw_group_replay_evidence"]["2019"]
+    ref["response_base64"]=base64.b64encode(raw).decode()
+    ref["source_payload_sha256"]=hashlib.sha256(raw).hexdigest()
+    seen=[]
+    def spy_history(payload,competition_id):
+        seen.extend(z["id"] for z in payload["matches"])
+        return []
+    with patch("tools.matrix_independent_over25_prematch_freeze.historic_rows",
+               side_effect=spy_history),patch(
+                   "tools.matrix_independent_over25_prematch_freeze._inputs_for_target",
+                   return_value=({"home_history_count":5,"away_history_count":5,
+                                  "poisson":{"over_2_5":0.6},
+                                  "baseline":{"over_2_5":0.55}},None)):
+        result=freeze(a,b,intake_bytes=canonical(a),shadow_bytes=canonical(b),
+                      now=T("2026-11-04T12:04:00Z"),
+                      folder=tmp_path/"evidence/football_research_freezes/2026-11-04")
+    assert seen == [3]
+    assert result["immutable_prematch_freeze_count"]==1
+    assert result["telegram_signal_authorized"] is False
