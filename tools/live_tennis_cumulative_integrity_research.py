@@ -145,16 +145,32 @@ def audit(root: Path, *, evidence_root: Path = Path("evidence/live_tennis_lab"))
                 derived[lane]["final_standard"] += 1
             if lane in rec["valid_lanes"] and lane in rec["settled_lanes"]:
                 derived[lane]["settled_quality_valid"] += 1
+    safe_gate_settled=defaultdict(int)
+    for key,rec in records.items():
+        # The governed cumulative gate disqualifies multi-lane identities.
+        if len(rec["lanes"]) != 1:
+            continue
+        for lane in rec["lanes"]:
+            if lane in rec["valid_lanes"] and lane in rec["settled_lanes"]:
+                safe_gate_settled[lane]+=1
     mismatches=[]
     for lane,reported in sorted((cumulative.get("lanes") or {}).items()):
         calculated = derived.get(lane,{})
         for old,new in (("unique_match_count","physical_matches"),
                         ("quality_valid_unique_match_count","quality_valid"),
                         ("settled_final_standard_unique_match_count","final_standard"),
-                        ("settled_quality_valid_unique_match_count","settled_quality_valid")):
+                        ("raw_settled_quality_valid_before_multi_lane_quarantine","settled_quality_valid")):
             if reported.get(old) != calculated.get(new,0):
                 mismatches.append({"lane":lane,"metric":old,
                                    "reported":reported.get(old),"calculated":calculated.get(new,0)})
+        if reported.get("settled_quality_valid_unique_match_count")!=safe_gate_settled[lane]:
+            mismatches.append({"lane":lane,"metric":"settled_quality_valid_unique_match_count",
+                               "reported":reported.get("settled_quality_valid_unique_match_count"),
+                               "calculated":safe_gate_settled[lane]})
+    if cumulative.get("multi_lane_ambiguous_match_keys")!=cross_lane:
+        mismatches.append({"reason":"ORIGINAL_GATE_MULTI_LANE_QUARANTINE_DISAGREES",
+                           "reported":cumulative.get("multi_lane_ambiguous_match_keys"),
+                           "calculated":cross_lane})
     if set(derived) != set(cumulative.get("lanes") or {}):
         mismatches.append({"reason":"SOURCE_LANE_KEYS_DIFFER_FROM_CUMULATIVE_GATE"})
     if len(records) != cumulative.get("global_unique_match_count"):
