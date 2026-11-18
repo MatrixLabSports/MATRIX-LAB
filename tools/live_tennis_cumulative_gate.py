@@ -28,6 +28,7 @@ def build(root: Path, out: Path) -> dict[str,Any]:
     ledgers=sorted(root.glob("*/MATRIX_LIVE_TENNIS_STATE_LEDGER_V0_1.json"))
     lane_matches=defaultdict(dict)
     global_matches={}
+    global_match_lanes=defaultdict(set)
     source_rows=[]
     for lp in ledgers:
         try:
@@ -48,6 +49,7 @@ def build(root: Path, out: Path) -> dict[str,Any]:
             if not key:
                 continue
             lane=lane_key(row)
+            global_match_lanes[key].add(lane)
             rec=lane_matches[lane].setdefault(key,{
                 "provider":row.get("provider"),
                 "match_id":row.get("match_id"),
@@ -70,13 +72,26 @@ def build(root: Path, out: Path) -> dict[str,Any]:
                 rec["labeled_state_count"]+=1
             global_matches[key]=True
 
+    # Quarantine any physical match observed in two lanes. Neither the
+    # higher-quality state nor the later metadata may silently decide its
+    # original cohort. Do NOT modify any frozen daily source ledger.
+    cross_lane_ambiguous=sorted(
+        key for key, lanes_seen in global_match_lanes.items()
+        if len(lanes_seen)>1
+    )
+    excluded_ambiguous=set(cross_lane_ambiguous)
     lanes={}
     for lane,matches in sorted(lane_matches.items()):
         settled_total=sum(1 for x in matches.values() if x["settled_final_standard"])
         valid=sum(1 for x in matches.values() if x["quality_valid"])
-        settled_usable=sum(
+        settled_usable_raw=sum(
             1 for x in matches.values()
             if x["settled_final_standard"] and x["quality_valid"]
+        )
+        settled_usable=sum(
+            1 for key,x in matches.items()
+            if key not in excluded_ambiguous
+            and x["settled_final_standard"] and x["quality_valid"]
         )
         lanes[lane]={
             "unique_match_count":len(matches),
@@ -84,7 +99,12 @@ def build(root: Path, out: Path) -> dict[str,Any]:
             "settled_final_standard_unique_match_count":settled_total,
             "settled_unique_match_count":settled_usable,
             "settled_quality_valid_unique_match_count":settled_usable,
-            "excluded_settled_without_quality_valid_state":settled_total-settled_usable,
+            "raw_settled_quality_valid_before_multi_lane_quarantine":settled_usable_raw,
+            "excluded_multi_lane_ambiguous_settled_matches":settled_usable_raw-settled_usable,
+            "multi_lane_ambiguous_source_keys_in_lane":sum(
+                1 for key in matches if key in excluded_ambiguous
+            ),
+            "excluded_settled_without_quality_valid_state":settled_total-settled_usable_raw,
             "gates":{
                 str(g):{
                     "threshold":g,
@@ -105,6 +125,9 @@ def build(root: Path, out: Path) -> dict[str,Any]:
         "source_ledgers":source_rows,
         "ledger_dates_count":len(source_rows),
         "global_unique_match_count":len(global_matches),
+        "multi_lane_ambiguous_match_count":len(cross_lane_ambiguous),
+        "multi_lane_ambiguous_match_keys":cross_lane_ambiguous,
+        "multi_lane_ambiguity_quarantined_from_all_gate_counts":True,
         "sum_lane_settled_unique_matches":total_settled,
         "sum_lane_final_standard_unique_matches_before_quality_gate":total_final_standard,
         "lanes":lanes,
