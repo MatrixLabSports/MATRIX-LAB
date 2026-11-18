@@ -580,8 +580,8 @@ def main() -> None:
     p.add_argument("--cdp", default="http://127.0.0.1:9222")
     p.add_argument("--max-events", type=int, default=6)
     args = p.parse_args()
-    if not 1 <= args.max_events <= 12:
-        raise SystemExit("DETAIL_CAPTURE_BOUNDED_1_TO_12")
+    if not 1 <= args.max_events <= 16:
+        raise SystemExit("DETAIL_CAPTURE_BOUNDED_1_TO_16")
     report = run(args.root, args.date, args.cdp, args.max_events)
     print(json.dumps({k: v for k, v in report.items()
         if k in ("status", "details_examined", "individual_visible_metadata_verified_count",
