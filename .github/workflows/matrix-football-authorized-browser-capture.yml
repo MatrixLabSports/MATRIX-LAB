@@ -137,6 +137,14 @@ jobs:
             if ($LASTEXITCODE -ne 0) {
               Write-Output "SIX_LEAGUE_RESEARCH_BLOCKED_FAIL_CLOSED: $day"
               Write-Output "BROWSER_SOURCE_BYTES_WILL_REMAIN_PRESERVED"
+              break
+            }
+            $report="evidence/football_calendar_physical/$day/MATRIX_FREE_SIX_LEAGUE_RESEARCH_LAST.json"
+            if (-not (Test-Path -LiteralPath $report)) { throw "SIX_LEAGUE_RECEIPT_REPORT_MISSING" }
+            $attempt=Get-Content -LiteralPath $report -Raw | ConvertFrom-Json
+            if ($attempt.free_provider_rate_limit_hit -eq $true) {
+              Write-Output "SIX_LEAGUE_HTTP429_STOP_ALL_PROVIDER_CALLS_THIS_CYCLE"
+              break
             }
           }
 
