@@ -384,7 +384,7 @@ def build(
             "lanes_at_600": sum(1 for v in counts.values() if v >= 600),
             "ledger_rows_total": len(ledger),
         },
-        "research_coverage_diagnostics": _independent_research_coverage(now_utc),
+        "research_coverage_diagnostics": _independent_research_coverage(datetime.fromisoformat(now)),
         "source_inventory": {
             "football": _football_inventory(datetime.fromisoformat(now)),
             "tennis": _tennis_inventory(datetime.fromisoformat(now)),
