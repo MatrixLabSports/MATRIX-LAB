@@ -269,3 +269,32 @@ def test_insufficient_samples_have_no_confidence_claim():
     contender = next(x for x in report["lanes"] if x["lane"] == "FOOTBALL_OVER25")["challengers"][0]
     assert contender["paired_uncertainty_screen"] is None
     assert contender["metrics_pass_screen_not_authorization"] is False
+
+
+def test_correlated_fixture_week_blocks_cannot_screen_as_independent():
+    d=example(200)
+    same_start="2026-11-18T18:00:00+00:00"
+    for row in d["rows"]:
+        row["event_start_at_utc"]=same_start
+        row["prediction_frozen_at_utc"]="2026-11-18T16:00:00+00:00"
+        row["outcome_certified_at_utc"]="2026-11-18T22:00:00+00:00"
+        row["contenders"]["bayesian_shadow"]["training_closed_at_utc"] = (
+            "2026-11-17T18:00:00+00:00")
+    report=evaluate(d)
+    candidate=next(x for x in report["lanes"]
+                   if x["lane"]=="FOOTBALL_OVER25")["challengers"][0]
+    assert candidate["common_events"]==200
+    assert candidate["paired_uncertainty_screen"]["calendar_week_blocks"]==1
+    assert candidate["metrics_pass_screen_not_authorization"] is False
+    assert candidate["automatically_promoted"] is False
+
+
+def test_temporally_diverse_strong_example_meets_week_block_screen_only():
+    d=example(200)
+    report=evaluate(d)
+    candidate=next(x for x in report["lanes"]
+                   if x["lane"]=="FOOTBALL_OVER25")["challengers"][0]
+    assert candidate["paired_uncertainty_screen"]["calendar_week_blocks"]>=12
+    assert candidate["metrics_pass_screen_not_authorization"] is True
+    assert report["any_model_promoted"] is False
+    assert candidate["independent_reproducible_prospective_replication_verified"] is False
