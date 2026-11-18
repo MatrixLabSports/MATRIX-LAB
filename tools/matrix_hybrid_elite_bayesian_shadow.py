@@ -76,8 +76,14 @@ def build(history: dict, requests: dict) -> dict:
         frozen = stamp(target["prediction_frozen_at_utc"])
         kickoff = stamp(target["event_start_at_utc"])
         if target["lane"] == "TENNIS_LIVE":
-            end = stamp(target["independently_certified_end_at_utc"])
-            if not kickoff < frozen < end:
+            # Research forecast MUST NOT require a future match-end fact at
+            # prediction time. End-time validation belongs to later scoring.
+            # An immutable, separately captured in-play state is required.
+            if ("independently_certified_end_at_utc" in target
+                or "outcome" in target or "final_winner" in target):
+                raise ValueError("BAYESIAN_LIVE_FUTURE_FACT_IN_FORECAST_INPUT")
+            state_at = stamp(target["observed_live_state_at_utc"])
+            if not kickoff < state_at <= frozen:
                 raise ValueError("BAYESIAN_LIVE_PIT_LEAKAGE")
         elif not frozen < kickoff:
             raise ValueError("BAYESIAN_PREMATCH_PIT_LEAKAGE")
@@ -185,10 +191,12 @@ def verify_physical_receipts(history: dict, requests: dict, *,
                     or stamp(evidence["event_start_at_utc"]) !=
                        stamp(row["event_start_at_utc"])):
                     raise ValueError("BAYESIAN_ORIGINAL_TARGET_VALUE_CONFLICT")
-                if row.get("lane") == "TENNIS_LIVE" and (
-                    stamp(evidence["independently_certified_end_at_utc"]) !=
-                    stamp(row["independently_certified_end_at_utc"])):
-                    raise ValueError("BAYESIAN_ORIGINAL_TARGET_VALUE_CONFLICT")
+                if row.get("lane") == "TENNIS_LIVE":
+                    if (stamp(evidence["observed_live_state_at_utc"]) !=
+                        stamp(row["observed_live_state_at_utc"])
+                        or "independently_certified_end_at_utc" in evidence
+                        or "outcome" in evidence or "final_winner" in evidence):
+                        raise ValueError("BAYESIAN_ORIGINAL_TARGET_VALUE_CONFLICT")
             counter += 1
     return {"physical_sha_bound_receipts_verified": counter,
             "training_row_count": len(history["rows"]),
