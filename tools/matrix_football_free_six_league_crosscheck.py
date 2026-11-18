@@ -41,8 +41,10 @@ def fetch_league(day: str, league_id: str, *, opener=urlopen) -> tuple[dict, byt
             if int(response.status) != 200:
                 raise ValueError("FREE_PROVIDER_HTTP_NON_200")
             raw = response.read(MAX_BYTES + 1)
-    except (HTTPError, URLError, OSError, TimeoutError) as exc:
-        raise ValueError("FREE_PROVIDER_LEAGUE_UNAVAILABLE") from exc
+    except HTTPError as exc:
+        raise ValueError("FREE_PROVIDER_LEAGUE_HTTP_" + str(exc.code)) from exc
+    except (URLError, OSError, TimeoutError) as exc:
+        raise ValueError("FREE_PROVIDER_LEAGUE_NETWORK_" + type(exc).__name__) from exc
     if len(raw) > MAX_BYTES:
         raise ValueError("FREE_PROVIDER_RESPONSE_TOO_LARGE")
     try:
@@ -183,7 +185,15 @@ def main() -> None:
     folder = args.root / ROOT / args.day
     browser, browser_digest = source_research(folder, args.day)
     observations, receipts = {}, {}
+    provider_rate_limited = False
     for original, league_id, name in LEAGUES:
+        if provider_rate_limited:
+            receipts[league_id] = {
+                "status": "SKIPPED_AFTER_PROVIDER_HTTP_429",
+                "reason": "FREE_PROVIDER_QUOTA_NO_FURTHER_REQUESTS_THIS_CYCLE",
+                "source_event_count": None,
+            }
+            continue
         try:
             doc, raw = fetch_league(args.day, league_id)
             valid = validate_provider(args.day, league_id, doc)
@@ -194,13 +204,21 @@ def main() -> None:
                 "source_event_count": len(valid), "null_events_response": doc["events"] is None
             }
         except (ValueError, TypeError) as exc:
+            reason = str(exc)[:160]
+            if reason == "FREE_PROVIDER_LEAGUE_HTTP_429":
+                provider_rate_limited = True
             receipts[league_id] = {
                 "status": "FREE_LEAGUE_SOURCE_BLOCKED",
-                "reason": str(exc)[:160], "source_event_count": None,
+                "reason": reason, "source_event_count": None,
             }
     report = assemble(browser, observations, seen_at=datetime.now(timezone.utc),
                       receipts=receipts)
     report["browser_research_sha256"] = browser_digest
+    report["free_provider_rate_limit_hit"] = provider_rate_limited
+    report["free_provider_error_counts"] = {
+        key: sum(1 for x in receipts.values() if x.get("reason") == key)
+        for key in sorted({x.get("reason") for x in receipts.values() if x.get("reason")})
+    }
     dest = folder / "MATRIX_FREE_SIX_LEAGUE_RESEARCH_LAST.json"
     dest.write_text(json.dumps(report, ensure_ascii=False, sort_keys=True, indent=2) + "\n", encoding="utf-8")
     print(json.dumps({
