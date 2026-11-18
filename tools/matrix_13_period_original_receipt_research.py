@@ -41,6 +41,17 @@ def quality_detail(fid: str, receipt: dict, rawdir: Path) -> dict:
         payload = json.loads(raw)
         resp = payload["response"]
         match = resp[0]
+        fixture = match.get("fixture") or {}
+        raw_kickoff = fixture.get("date")
+        frozen_kickoff = receipt.get("kickoff_utc")
+        if (raw_kickoff is not None and frozen_kickoff is not None):
+            source_dt = utc(raw_kickoff)
+            frozen_dt = utc(frozen_kickoff)
+            kickoff_drift_minutes = round((source_dt-frozen_dt).total_seconds()/60.0, 3)
+        else:
+            kickoff_drift_minutes = None
+        fixture_id_in_receipt_matches = str(fixture.get("id")) == fid
+        provider_ft_status_matches = (fixture.get("status") or {}).get("short") == "FT"
         half = (match.get("score") or {}).get("halftime") or {}
         full = (match.get("score") or {}).get("fulltime") or {}
         half_vals = [half.get("home"), half.get("away")]
@@ -63,6 +74,9 @@ def quality_detail(fid: str, receipt: dict, rawdir: Path) -> dict:
         "source_sha256_matches": True,
         "halftime_fields_present_non_null": all(v is not None for v in half_vals),
         "fulltime_fields_present_non_null": all(v is not None for v in full_vals),
+        "raw_fixture_id_equals_frozen_id": fixture_id_in_receipt_matches,
+        "raw_status_is_standard_ft": provider_ft_status_matches,
+        "raw_kickoff_minus_frozen_kickoff_minutes": kickoff_drift_minutes,
         "not_a_usable_halftime_label": True,
     }
 
