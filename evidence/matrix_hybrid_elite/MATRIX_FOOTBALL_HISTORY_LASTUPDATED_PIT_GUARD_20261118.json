@@ -1,0 +1,67 @@
+{
+  "schema": "MATRIX_FOOTBALL_HISTORY_LASTUPDATED_PIT_GUARD_V1",
+  "date_bogota": "2026-11-18",
+  "status": "SOURCE_CODE_PATCHED_AND_GIT_BLOBS_READ_BACK_CI_NOT_YET_CONFIRMED",
+  "issue": "Finished historical score rows without lastUpdated were used when provider response captured. Missing as-of provider update means no evidence the final label was available before forecast capture.",
+  "fix": {
+    "shadow": "Exclude FINISHED results with missing, timezone-naive or future lastUpdated.",
+    "freeze": "Apply same filter while independently replaying immutable prematch prediction and source history.",
+    "production_p_matrix_replaced": false,
+    "provider_equivalence_certified": false,
+    "signal_authorized": false
+  },
+  "code": [
+    {
+      "path": "tools/matrix_football_independent_over25_shadow.py",
+      "git_blob": "56b2c94bb80fea069b1b1bb8f003275c73e16c18",
+      "commit": "bc8438361dcfe6ff2c875f4418be8d8fa1f2091b"
+    },
+    {
+      "path": "tools/matrix_independent_over25_prematch_freeze.py",
+      "git_blob": "c29bfd7f0041f1aec3ea9b6024e4cc8c2ffeb478",
+      "commit": "b34dd19bd693393d010671fee84729370c920a1c"
+    },
+    {
+      "path": "tests/test_matrix_football_independent_over25_shadow.py",
+      "commit": "04d4e43926c9ab41860c7f666166c9bc48623b2d"
+    },
+    {
+      "path": "tests/test_matrix_independent_over25_prematch_freeze.py",
+      "commit": "802fcd55bff556ae0765a017e6e5671e894c2296"
+    }
+  ],
+  "workflow": {
+    "workflow_path": ".github/workflows/matrix-football-independent-fixture-recovery.yml",
+    "matches_modified_test_paths": true,
+    "github_full_pytest_pass_not_yet_observed": true,
+    "runs_observed": [
+      {
+        "id": 44294863841,
+        "name": "MATRIX Workflow Regression Contracts",
+        "state": "pending"
+      },
+      {
+        "id": 44294863900,
+        "name": "MATRIX CI",
+        "state": "queued"
+      }
+    ]
+  },
+  "source_snapshot_evidence": {
+    "footballdata_fixture_intake_blob": "08d5d83faf4e22abbc2b6e23fcf950bf1fdc0806",
+    "fixture_count": 4,
+    "sofascore_flashscore_join_blob": "99fc663585b3a24833b989b02164759394a464f9",
+    "certified_original_enriched_pit": 0
+  },
+  "other_lanes_untouched": {
+    "hard_unique": 405,
+    "clay_prospective": 3,
+    "live_frozen": 41
+  },
+  "governance": {
+    "auto_betting": false,
+    "real_money": "BLOCKED",
+    "telegram_authorization": false,
+    "certified_new_production_probability": false
+  }
+}
