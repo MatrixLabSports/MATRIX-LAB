@@ -60,7 +60,7 @@ def test_precut_profile_and_exact_matching_page_remain_research_only(tmp_path):
 def test_tampered_authentic_match_detail_rejected_by_sha(tmp_path):
     dp,_=build(tmp_path)
     dp.write_bytes(dp.read_bytes()+b" ")
-    with pytest.raises(ValueError,match="PROFILE_AUDIT_ORIGINAL_SOURCE_BINDING_FAILED"):
+    with pytest.raises(ValueError,match="PROFILE_AUDIT_ORIGINAL_DETAIL_SHA_SNAPSHOT_UNAVAILABLE"):
         audit(tmp_path,DAY)
 
 def test_wrong_player_identity_is_rejected(tmp_path):
@@ -93,4 +93,41 @@ def test_pre_cut_history_must_precede_match(tmp_path):
     p["profiles"][0]["original_match_research"]["pre_cut_latest_row_date"]=20261119
     pp.write_text(json.dumps(p))
     with pytest.raises(ValueError,match="PROFILE_AUDIT_PRECUT_HISTORY_NOT_PRECUT"):
+        audit(tmp_path,DAY)
+
+
+def test_legitimate_archived_original_detail_preserves_precut_provenance(tmp_path):
+    dp,_=build(tmp_path)
+    original=dp.read_bytes()
+    archive=dp.parent/"archive"
+    archive.mkdir()
+    (archive/"MATRIX_TENNIS_SOURCE_DETAILS_ORIGINAL.json").write_bytes(original)
+    dp.write_bytes(original+b" ")
+    result=audit(tmp_path,DAY)
+    assert result["archived_original_detail_used"] is True
+    assert result["source_detail_path"].endswith(
+        "archive/MATRIX_TENNIS_SOURCE_DETAILS_ORIGINAL.json")
+    assert result["profiles_verified_against_match_details"]==1
+    assert result["new_hard_holdout_observations"]==0
+    assert result["new_clay_holdout_observations"]==0
+
+
+def test_mismatched_archived_detail_never_substitutes_for_exact_sha(tmp_path):
+    dp,_=build(tmp_path)
+    archive=dp.parent/"archive"
+    archive.mkdir()
+    (archive/"MATRIX_TENNIS_SOURCE_DETAILS_WRONG.json").write_bytes(
+        dp.read_bytes()+b"fake other detail")
+    dp.write_bytes(dp.read_bytes()+b" ")
+    with pytest.raises(ValueError,match="PROFILE_AUDIT_ORIGINAL_DETAIL_SHA_SNAPSHOT_UNAVAILABLE"):
+        audit(tmp_path,DAY)
+
+
+def test_unapproved_archive_names_cannot_be_used_for_forged_source(tmp_path):
+    dp,_=build(tmp_path)
+    archive=dp.parent/"archive"
+    archive.mkdir()
+    (archive/"unrelated_research.json").write_bytes(dp.read_bytes())
+    dp.write_bytes(dp.read_bytes()+b" ")
+    with pytest.raises(ValueError,match="PROFILE_AUDIT_ORIGINAL_DETAIL_SHA_SNAPSHOT_UNAVAILABLE"):
         audit(tmp_path,DAY)
