@@ -114,3 +114,26 @@ def test_source_not_wagering_safe_cannot_be_frozen(tmp_path):
     p.write_text(json.dumps(obj))
     with pytest.raises(ValueError,match="UNSAFE_CURRENT_LIVE_LEDGER_NOT_FROZEN"):
         collect(tmp_path,DAY,now=NOW)
+
+
+def test_old_label_free_records_are_not_retroactively_frozen(tmp_path):
+    folder=source(tmp_path,[state(captured_at_utc="2026-11-18T10:00:00+00:00")])
+    r=collect(tmp_path,DAY,now=NOW)
+    assert r["status"]=="BLOCKED_NO_NEW_FRESH_QUALITY_VALID_LIVE_STATE"
+    assert r["newly_frozen_unique_match_keys"]==0
+    assert r["unfrozen_match_keys_in_this_capture"]==1
+    assert list((folder/ARCHIVE).glob("MATRIX_LIVE_PRELABEL_BATCH_*.json"))==[]
+
+def test_fresh_low_quality_is_not_frozen_as_a_model_observation(tmp_path):
+    source(tmp_path,[state(quality_state_valid=False)])
+    r=collect(tmp_path,DAY,now=NOW)
+    assert r["status"]=="BLOCKED_NO_NEW_FRESH_QUALITY_VALID_LIVE_STATE"
+    assert r["production_model_probability_authorized"] is False
+
+def test_fresh_subset_never_masks_unfrozen_stale_backlog(tmp_path):
+    source(tmp_path,[state(900001),state(900002,captured_at_utc="2026-11-18T09:00:00+00:00")])
+    r=collect(tmp_path,DAY,now=NOW)
+    assert r["status"]=="FROZEN_NEW_UNLABELED_LIVE_MATCHES_RESEARCH_ONLY"
+    assert r["newly_frozen_unique_match_keys"]==1
+    assert r["source_unfrozen_stale_or_low_quality_match_keys"]==1
+    assert r["unfrozen_match_keys_in_this_capture"]==1
