@@ -76,11 +76,17 @@ def build(history: dict, requests: dict) -> dict:
         frozen = stamp(target["prediction_frozen_at_utc"])
         kickoff = stamp(target["event_start_at_utc"])
         if target["lane"] == "TENNIS_LIVE":
-            # Research forecast MUST NOT require a future match-end fact at
-            # prediction time. End-time validation belongs to later scoring.
-            # An immutable, separately captured in-play state is required.
-            if ("independently_certified_end_at_utc" in target
-                or "outcome" in target or "final_winner" in target):
+            # Strict allowlist: prohibit even nested/renamed result fields in
+            # research forecast requests. Match-end belongs to settlement.
+            allowed_live_target_keys = {
+                "lane", "group", "physical_event_id",
+                "prematch_or_live_identity_certified",
+                "target_features_pit_certified",
+                "prediction_frozen_at_utc", "event_start_at_utc",
+                "observed_live_state_at_utc",
+                "original_receipt_path", "original_receipt_sha256"
+            }
+            if set(target) - allowed_live_target_keys:
                 raise ValueError("BAYESIAN_LIVE_FUTURE_FACT_IN_FORECAST_INPUT")
             state_at = stamp(target["observed_live_state_at_utc"])
             if not kickoff < state_at <= frozen:
@@ -192,10 +198,16 @@ def verify_physical_receipts(history: dict, requests: dict, *,
                        stamp(row["event_start_at_utc"])):
                     raise ValueError("BAYESIAN_ORIGINAL_TARGET_VALUE_CONFLICT")
                 if row.get("lane") == "TENNIS_LIVE":
-                    if (stamp(evidence["observed_live_state_at_utc"]) !=
-                        stamp(row["observed_live_state_at_utc"])
-                        or "independently_certified_end_at_utc" in evidence
-                        or "outcome" in evidence or "final_winner" in evidence):
+                    allowed_live_receipt_keys = {
+                        "schema", "real_money", "lane", "group",
+                        "physical_event_id", "prematch_or_live_identity_certified",
+                        "target_features_pit_certified",
+                        "prediction_frozen_at_utc", "event_start_at_utc",
+                        "observed_live_state_at_utc"
+                    }
+                    if (set(evidence) - allowed_live_receipt_keys
+                        or stamp(evidence["observed_live_state_at_utc"]) !=
+                           stamp(row["observed_live_state_at_utc"])):
                         raise ValueError("BAYESIAN_ORIGINAL_TARGET_VALUE_CONFLICT")
             counter += 1
     return {"physical_sha_bound_receipts_verified": counter,
