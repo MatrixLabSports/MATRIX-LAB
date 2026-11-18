@@ -16,6 +16,8 @@ DEFAULT_INBOX = Path("evidence/market_portfolio/MATRIX_42_LANE_FREEZE_INBOX.json
 DEFAULT_LEDGER = Path("evidence/market_portfolio/MATRIX_42_LANE_PROSPECTIVE_LEDGER.jsonl")
 DEFAULT_STATE = Path("evidence/market_portfolio/MATRIX_42_LANE_PROSPECTIVE_REGISTRY_LAST.json")
 LEGACY_FOOTBALL_FIXTURES = Path("evidence/api_football/fixtures/future_fixture_registry.json")
+FREE_FOOTBALL_RESEARCH_ROOT = Path("evidence/football_world_inventory")
+TENNIS_RECONCILIATION_ROOT = Path("evidence/tennis_calendar_reconciliation")
 
 
 def _canonical(value: Any) -> bytes:
@@ -168,6 +170,70 @@ def _latest_football_fixture_registry(now_utc: datetime) -> tuple[Path | None, s
     return None, "MISSING"
 
 
+
+def _independent_research_coverage(now_utc: datetime) -> dict[str, Any]:
+    """Expose free football + tennis coverage without any canonical promotion."""
+    bogota = ZoneInfo("America/Bogota")
+    day = now_utc.astimezone(bogota).date()
+    football_path = (FREE_FOOTBALL_RESEARCH_ROOT / day.isoformat()
+                     / "MATRIX_FOOTBALL_INDEPENDENT_FIXTURE_INTAKE.json")
+    football = {
+        "available": False,
+        "source_path": football_path.as_posix(),
+        "source_fixture_count": 0,
+        "future_source_fixture_count": 0,
+        "source_authenticated": False,
+        "canonical_original_pit_authorized": False,
+        "prospective_admission_authorized": False,
+    }
+    if football_path.is_file():
+        value = _load_json(football_path)
+        if (value.get("schema") == "MATRIX_INDEPENDENT_FIXTURE_INTAKE_V1"
+            and value.get("source") == "FOOTBALL_DATA_ORG"
+            and value.get("real_money") == "BLOCKED"
+            and value.get("signal_generation_authorized") is False):
+            fixtures = value.get("fixtures")
+            if not isinstance(fixtures, list):
+                raise ValueError("RESEARCH_FOOTBALL_FIXTURES_NOT_LIST")
+            cutoff = _aware(value["generated_at_utc"], "FREE_FIXTURE_CAPTURE")
+            if cutoff <= now_utc:
+                future = 0
+                for fixture in fixtures:
+                    if not isinstance(fixture, dict):
+                        continue
+                    try:
+                        start = _aware(fixture["kickoff_utc"], "FREE_SOURCE_KICKOFF")
+                    except (ValueError, TypeError):
+                        continue
+                    if start > now_utc and fixture.get("source_status") in ("TIMED", "SCHEDULED"):
+                        future += 1
+                football.update({
+                    "available": True,
+                    "source_fixture_count": len(fixtures),
+                    "future_source_fixture_count": future,
+                    "source_authenticated": value.get("provider_status") == "AUTHENTICATED_FIXTURE_CAPTURE",
+                    "source_captured_at_utc": value["generated_at_utc"],
+                })
+    tennis = []
+    for t in (day, day + timedelta(days=1)):
+        p = (TENNIS_RECONCILIATION_ROOT / t.isoformat()
+             / "MATRIX_TENNIS_CROSS_DAY_FIXTURE_DRIFT_LAST.json")
+        tennis.append({
+            "day": t.isoformat(), "research_drift_audit_available": p.is_file(),
+            "source_path": p.as_posix(),
+            "canonical_original_pit_authorized": False,
+            "prospective_admission_authorized": False,
+        })
+    return {
+        "separate_research_sources_only": True,
+        "canonical_source_was_replaced": False,
+        "football": football, "tennis": tennis,
+        "production_p_matrix_authorized": False,
+        "telegram_signal_authorized": False,
+        "real_money": "BLOCKED",
+    }
+
+
 def _football_inventory(now_utc: datetime) -> dict[str, Any]:
     source, source_mode = _latest_football_fixture_registry(now_utc)
     if source is None:
@@ -318,6 +384,7 @@ def build(
             "lanes_at_600": sum(1 for v in counts.values() if v >= 600),
             "ledger_rows_total": len(ledger),
         },
+        "research_coverage_diagnostics": _independent_research_coverage(now_utc),
         "source_inventory": {
             "football": _football_inventory(datetime.fromisoformat(now)),
             "tennis": _tennis_inventory(datetime.fromisoformat(now)),
