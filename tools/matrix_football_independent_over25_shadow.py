@@ -143,12 +143,18 @@ def score_intake(intake: dict, token: str, *, opener=urlopen) -> dict:
             for match in payload.get("matches", []):
                 if not isinstance(match, dict):
                     continue
-                if match.get("status") == "FINISHED" and match.get("lastUpdated"):
+                if match.get("status") == "FINISHED":
+                    # A FINISHED score with no authentic provider update time
+                    # is NOT a demonstrable as-of result; reject it.
+                    updated_raw = match.get("lastUpdated")
+                    if not updated_raw:
+                        continue
                     try:
                         updated = datetime.fromisoformat(
-                            str(match["lastUpdated"]).replace("Z", "+00:00")
+                            str(updated_raw).replace("Z", "+00:00")
                         )
-                        if updated.tzinfo is None or updated.astimezone(timezone.utc) > observed_at:
+                        if (updated.utcoffset() is None
+                            or updated.astimezone(timezone.utc) > observed_at):
                             continue
                     except (ValueError, TypeError):
                         continue
