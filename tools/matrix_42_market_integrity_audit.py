@@ -55,7 +55,9 @@ def audit(reg: dict, sup: dict, board: dict, zero: dict, gate: dict) -> dict:
         if type(n) is not int or n < 0:
             raise ValueError("MARKET_INVALID_COUNT")
         g = a["gates"]["600"]["count"]
-        if type(g) is not int or g != n:
+        # Gate counters are capped at their threshold; raw observations
+        # continue growing after a gate is opened.
+        if type(g) is not int or g != min(n, 600):
             raise ValueError("MARKET_COUNT_GATE_DIVERGENCE")
         observations += n
         counts[a["sport"]] += 1
