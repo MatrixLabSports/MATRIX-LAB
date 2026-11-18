@@ -279,3 +279,22 @@ def test_visible_utc_must_match_bogota_calendar_day():
     ui["visible_text"]="Cuartos de final Dura indoor el 5 nov 2026 a las 13:20 UTC"
     with pytest.raises(ValueError,match="KICKOFF_OUTSIDE_BOGOTA_CALENDAR_DAY"):
         parse_visible(row,ui,DAY,datetime(2026,11,4,23,tzinfo=timezone.utc))
+
+
+def test_real_nov18_all_historical_candidate_ids_are_visible_to_browser_schedule():
+    """Detect quietly sampling only six of the actual eligible original history pairs.
+
+    This tests only the prospectively captured browser name-hint calendar.
+    It never calls providers or admits a model row.
+    """
+    from tools.matrix_tennis_browser_verified_detail_capture import (
+        ROOT as RESEARCH_ROOT, eligible_priorities, source
+    )
+    root=Path(__file__).resolve().parents[1]
+    research,_=source(root,RESEARCH_ROOT/"2026-11-18/MATRIX_TENNIS_EXACT_BROWSER_CROSSMATCH.json")
+    candidates=eligible_priorities(root,research)
+    assert len(candidates)>=9, "PROSPECTIVE_CHALLENGER_HARD_CLAY_CANDIDATES_MISSING"
+    assert any(any(x["surface_history_lane"]=="Clay" for x in c["original_history_pair_hints"])
+               for c in candidates[6:]), "CLAY_OUTSIDE_FORMER_SIX_ITEM_CAPTURE_CAP_NOT_PROVED"
+    assert len(candidates)<=12, "SCHEDULED_CAPTURE_STILL_TRUNCATES_WITHOUT_EXPLICIT_BACKLOG"
+    assert len({x["sofascore_id"] for x in candidates})==len(candidates)
