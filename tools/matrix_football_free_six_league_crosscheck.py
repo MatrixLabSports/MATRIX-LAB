@@ -188,7 +188,36 @@ def persist_raw(folder: Path, league_id: str, raw: bytes) -> dict:
     target.write_bytes(raw)
     if sha(target.read_bytes()) != expected:
         raise ValueError("FREE_PROVIDER_RAW_HASH_MISMATCH")
-    return {"path": str(target.as_posix()), "sha256": expected, "bytes": len(raw)}
+    # The _LAST report is overwritten each half-hour: keep an immutable,
+    # SHA-bound receipt for every distinct response, including events=null.
+    # Same raw bytes reuse a single receipt. No new provider call is made.
+    receipt_path = folder / (
+        "MATRIX_THESPORTSDB_DAY_LEAGUE_" + league_id
+        + "_SHA256_" + expected + "_RECEIPT.json"
+    )
+    receipt = {
+        "schema": "MATRIX_TSDB_LEAGUE_SOURCE_HASH_RECEIPT_V1",
+        "target_date_bogota": folder.name,
+        "thesportsdb_league_id": league_id,
+        "raw_sha256": expected,
+        "raw_bytes": len(raw),
+        "research_only": True,
+        "fixture_identity_certified": False,
+        "production_p_matrix_authorized": False,
+        "real_money": "BLOCKED",
+    }
+    if receipt_path.exists():
+        if json.loads(receipt_path.read_text(encoding="utf-8")) != receipt:
+            raise ValueError("FREE_PROVIDER_IMMUTABLE_RECEIPT_CONFLICT")
+    else:
+        receipt_path.write_text(
+            json.dumps(receipt, indent=2, sort_keys=True) + "\n",
+            encoding="utf-8",
+        )
+    return {
+        "path": str(target.as_posix()), "sha256": expected, "bytes": len(raw),
+        "immutable_receipt": str(receipt_path.as_posix()),
+    }
 
 def main() -> None:
     parser = argparse.ArgumentParser()
