@@ -114,7 +114,11 @@ def main() -> None:
     ap.add_argument("--root",type=Path,default=Path("."))
     args=ap.parse_args()
     report=audit(args.root,args.date)
-    path=args.root/BASE/args.date/REPORT
+    # The governed free-intake workflow persists only reconciliation outputs.
+    # Keep browser source bytes read-only and archive this independent audit
+    # alongside other research reports, never inside Hard/Clay holdouts.
+    path=args.root/"evidence/tennis_calendar_reconciliation"/args.date/REPORT
+    path.parent.mkdir(parents=True,exist_ok=True)
     path.write_text(json.dumps(report,sort_keys=True,indent=2,ensure_ascii=False)+"\n",encoding="utf-8")
     print(json.dumps({"day":args.date,"source_bound_profiles":report["profiles_verified_against_match_details"],
                       "admitted":0,"status":report["status"]},sort_keys=True))
