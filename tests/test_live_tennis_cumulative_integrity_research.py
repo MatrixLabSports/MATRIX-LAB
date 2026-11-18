@@ -125,3 +125,36 @@ def test_missing_daily_ledger_in_manifest_fails_closed(tmp_path):
     (tmp_path/BASE/DAY/"MATRIX_LIVE_TENNIS_STATE_LEDGER_V0_1.json").unlink()
     with pytest.raises(ValueError,match="CUMULATIVE_MANIFEST_DOES_NOT_COVER_ALL_DAILY_LEDGERS"):
         audit(tmp_path)
+
+
+def test_contamination_is_localized_without_globally_promoting_any_model(tmp_path):
+    clean=[row(mid=i+1000,lane="itf|women|hard") for i in range(30)]
+    bad_a=row(mid=206910,lane="utr|men|unknown")
+    bad_b=row(mid=206910,lane="unknown|unknown|unknown")
+    r=audit(write_fixture(tmp_path,*clean,bad_a,bad_b))
+    assert r["source_integrity_passed"] is False
+    assert r["multi_lane_same_physical_match_count"] == 1
+    assert r["quarantined_physical_match_count"] == 1
+    assert r["multi_lane_match_details"][0]["lanes"] == [
+        "unknown|unknown|unknown", "utr|men|unknown"
+    ]
+    by_lane={x["lane"]:x for x in r["lane_research_counts"]}
+    clean_lane=by_lane["itf|women|hard"]
+    assert clean_lane["research_integrity_clear"] is True
+    assert clean_lane["research_count_threshold_30_met"] is True
+    assert clean_lane["settled_quality_valid_research_count_after_quarantine"] == 30
+    affected=by_lane["utr|men|unknown"]
+    assert affected["research_integrity_clear"] is False
+    assert affected["settled_quality_valid_unique_match_count"] == 1
+    assert affected["settled_quality_valid_research_count_after_quarantine"] == 0
+    assert affected["quarantined_physical_match_count"] == 1
+    assert r["production_model_training_authorized"] is False
+    assert r["production_p_live_authorized"] is False
+    assert r["telegram_signal_authorized"] is False
+
+def test_conflicting_final_winner_is_removed_from_research_count(tmp_path):
+    r=audit(write_fixture(tmp_path,row(mid=990,label=0),row(mid=990,label=1)))
+    lane=r["lane_research_counts"][0]
+    assert lane["settled_quality_valid_unique_match_count"] == 1
+    assert lane["settled_quality_valid_research_count_after_quarantine"] == 0
+    assert lane["research_integrity_clear"] is False
