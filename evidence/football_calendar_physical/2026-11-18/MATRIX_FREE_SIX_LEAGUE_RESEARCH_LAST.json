@@ -1,18 +1,24 @@
 {
+  "all_six_leagues_queried_in_this_cycle": false,
   "automatic_wagering": false,
-  "browser_research_sha256": "0ca8a0ff3416140809a9aab83fa6489a0f6878bfbff889d637dd90d14f64afb0",
+  "browser_research_sha256": "0a7897a32376927a62e07fccb292a5561a7ff9bd4e60bab490438f0db4de8809",
   "events_not_returned_are_not_claimed_absent": true,
   "free_api_results_world_complete": false,
+  "free_provider_calls_budget_per_day_this_cycle": 3,
   "free_provider_error_counts": {
-    "FREE_PROVIDER_LEAGUE_HTTP_429": 1,
-    "FREE_PROVIDER_QUOTA_NO_FURTHER_REQUESTS_THIS_CYCLE": 3
+    "NOT_QUERIED_IN_THIS_CYCLE": 3
   },
-  "free_provider_league_filtered_requests": 6,
-  "free_provider_rate_limit_hit": true,
+  "free_provider_half_hour_scope": [
+    "4334",
+    "4332",
+    "4497"
+  ],
+  "free_provider_league_filtered_requests": 3,
+  "free_provider_rate_limit_hit": false,
   "future_research_name_matches": 0,
   "kickoff_and_identity_certified": 0,
   "league_scoped_name_matches": 0,
-  "observed_at_utc": "2026-11-18T01:41:52.938351+00:00",
+  "observed_at_utc": "2026-11-18T01:48:29.323433+00:00",
   "pit_certified": 0,
   "production_p_matrix_authorized": false,
   "real_money": "BLOCKED",
@@ -265,8 +271,8 @@
     {
       "name": "English Premier League",
       "original_league_id": "39",
-      "provider_call_complete": true,
-      "response_rows": 0,
+      "provider_call_complete": false,
+      "response_rows": null,
       "thesportsdb_league_id": "4328"
     },
     {
@@ -280,13 +286,13 @@
       "name": "German Bundesliga",
       "original_league_id": "78",
       "provider_call_complete": false,
-      "response_rows": 0,
+      "response_rows": null,
       "thesportsdb_league_id": "4331"
     },
     {
       "name": "Italian Serie A",
       "original_league_id": "135",
-      "provider_call_complete": false,
+      "provider_call_complete": true,
       "response_rows": 0,
       "thesportsdb_league_id": "4332"
     },
@@ -294,17 +300,18 @@
       "name": "Spanish La Liga",
       "original_league_id": "140",
       "provider_call_complete": false,
-      "response_rows": 0,
+      "response_rows": null,
       "thesportsdb_league_id": "4335"
     },
     {
       "name": "Colombian Liga DIMAYOR",
       "original_league_id": "239",
-      "provider_call_complete": false,
+      "provider_call_complete": true,
       "response_rows": 0,
       "thesportsdb_league_id": "4497"
     }
   ],
+  "six_original_league_sources_examined_this_cycle": 3,
   "source_competition_ids_are_not_fixture_ids": true,
   "source_order": [
     "SofaScore",
@@ -313,22 +320,22 @@
   ],
   "source_receipts": {
     "4328": {
+      "reason": "NOT_QUERIED_IN_THIS_CYCLE",
+      "source_event_count": null,
+      "status": "DEFERRED_BY_RATE_BUDGET_NEXT_30M_SLOT"
+    },
+    "4331": {
+      "reason": "NOT_QUERIED_IN_THIS_CYCLE",
+      "source_event_count": null,
+      "status": "DEFERRED_BY_RATE_BUDGET_NEXT_30M_SLOT"
+    },
+    "4332": {
       "bytes": 15,
       "null_events_response": true,
-      "path": "evidence/football_calendar_physical/2026-11-18/MATRIX_THESPORTSDB_DAY_LEAGUE_4328_RAW.json",
+      "path": "evidence/football_calendar_physical/2026-11-18/MATRIX_THESPORTSDB_DAY_LEAGUE_4332_RAW.json",
       "sha256": "ac165cc3ca836b25ed26ebe6dfb1cff2f68fec04d6ac91ab21201daf29526f15",
       "source_event_count": 0,
       "status": "AUTHENTIC_FREE_LEAGUE_CAPTURE_RESEARCH_ONLY"
-    },
-    "4331": {
-      "reason": "FREE_PROVIDER_LEAGUE_HTTP_429",
-      "source_event_count": null,
-      "status": "FREE_LEAGUE_SOURCE_BLOCKED"
-    },
-    "4332": {
-      "reason": "FREE_PROVIDER_QUOTA_NO_FURTHER_REQUESTS_THIS_CYCLE",
-      "source_event_count": null,
-      "status": "SKIPPED_AFTER_PROVIDER_HTTP_429"
     },
     "4334": {
       "bytes": 15,
@@ -339,14 +346,17 @@
       "status": "AUTHENTIC_FREE_LEAGUE_CAPTURE_RESEARCH_ONLY"
     },
     "4335": {
-      "reason": "FREE_PROVIDER_QUOTA_NO_FURTHER_REQUESTS_THIS_CYCLE",
+      "reason": "NOT_QUERIED_IN_THIS_CYCLE",
       "source_event_count": null,
-      "status": "SKIPPED_AFTER_PROVIDER_HTTP_429"
+      "status": "DEFERRED_BY_RATE_BUDGET_NEXT_30M_SLOT"
     },
     "4497": {
-      "reason": "FREE_PROVIDER_QUOTA_NO_FURTHER_REQUESTS_THIS_CYCLE",
-      "source_event_count": null,
-      "status": "SKIPPED_AFTER_PROVIDER_HTTP_429"
+      "bytes": 15,
+      "null_events_response": true,
+      "path": "evidence/football_calendar_physical/2026-11-18/MATRIX_THESPORTSDB_DAY_LEAGUE_4497_RAW.json",
+      "sha256": "ac165cc3ca836b25ed26ebe6dfb1cff2f68fec04d6ac91ab21201daf29526f15",
+      "source_event_count": 0,
+      "status": "AUTHENTIC_FREE_LEAGUE_CAPTURE_RESEARCH_ONLY"
     }
   },
   "status": "RESEARCH_ONLY_NO_CALENDAR_OR_MODEL_CERTIFICATION",
