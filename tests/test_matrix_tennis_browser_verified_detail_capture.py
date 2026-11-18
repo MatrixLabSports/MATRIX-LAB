@@ -334,3 +334,16 @@ def test_rejected_larger_challenger_scan_preserves_exact_attempt_and_old_receipt
     unsafe={**base,"new_model_observations_admitted":1}
     with pytest.raises(ValueError,match="CAPTURE_ATTEMPT_MUST_BE_RESEARCH_ONLY"):
         persist_detail_capture_attempt(tmp_path,unsafe)
+
+
+def test_visible_challenger_r32_dieciseisavos_is_not_silently_rejected():
+    """Source label observed in 18-Nov Metz and Helsinki match-page links."""
+    row,ui=inputs()
+    for entry in ui["links"]:
+        if "/tournament/challenger/" in entry["url"]:
+            entry["name"]=entry["name"].replace("Cuartos de final","Dieciseisavos de final")
+    ui["visible_text"]=ui["visible_text"].replace("Cuartos de final","Dieciseisavos de final")
+    result=parse_visible(row,ui,DAY,datetime(2026,11,5,23,tzinfo=timezone.utc))
+    assert result["round"]=="Dieciseisavos de final"
+    assert result["surface"]=="Hard"
+    assert result["provider_player_id_equivalence_certified"] is False
