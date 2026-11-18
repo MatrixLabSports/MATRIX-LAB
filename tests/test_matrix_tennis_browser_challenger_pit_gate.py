@@ -229,3 +229,22 @@ def test_same_capture_sealed_crossmatch_beats_later_reconciled_calendar(tmp_path
     assert r["newest_calendar_crossmatch_sha256"]==current
     assert r["new_hard_holdout_observations"]==0
     assert r["new_clay_holdout_observations"]==0
+
+def test_nov18_country_ioc_repairs_restore_only_history_research_not_model_permission():
+    """Real frozen native UI and pre-cut authorities: CAN/POL/SLO are not provider ID mappings."""
+    from tools.matrix_tennis_browser_challenger_pit_gate import COUNTRY_IOC
+    assert {k: COUNTRY_IOC[k] for k in ("Canada","Poland","Slovenia")} == {
+        "Canada":"CAN","Poland":"POL","Slovenia":"SLO"
+    }
+    report=evaluate(ROOT,"2026-11-18",T("2026-11-18T04:00:00Z"))
+    assert report["hard_source_metadata_ready"]==4
+    assert report["clay_source_metadata_ready"]==0
+    assert len(report["events"])==4
+    assert all(x["historical_players_found"]==2 for x in report["events"])
+    assert all(x["historical_provider_identity_equivalence_certified"] is False
+               for x in report["events"])
+    assert all(x["model_probability_computed"] is False for x in report["events"])
+    assert all(x["official_holdout_admitted"] is False for x in report["events"])
+    assert report["new_hard_holdout_observations"]==0
+    assert report["new_clay_holdout_observations"]==0
+    assert report["real_money"]=="BLOCKED"
