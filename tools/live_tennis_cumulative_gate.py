@@ -19,10 +19,12 @@ def lane_key(row: dict[str,Any]) -> str:
 
 def physical_match_key(row: dict[str,Any]) -> str | None:
     mid=row.get("match_id")
-    if not isinstance(mid,int):
+    provider=row.get("provider")
+    if (type(mid) is not int or mid<=0
+        or not isinstance(provider,str) or not provider.strip()):
+        # Do not substitute a default provider ID for missing source identity.
         return None
-    provider=str(row.get("provider") or "live_tennis_api").strip().lower()
-    return f"{provider}:{mid}"
+    return provider.strip().lower()+":"+str(mid)
 
 def build(root: Path, out: Path) -> dict[str,Any]:
     ledgers=sorted(root.glob("*/MATRIX_LIVE_TENNIS_STATE_LEDGER_V0_1.json"))
@@ -33,8 +35,10 @@ def build(root: Path, out: Path) -> dict[str,Any]:
     for lp in ledgers:
         try:
             j=json.loads(lp.read_text(encoding="utf-8"))
-        except Exception:
-            continue
+        except (ValueError,UnicodeError,OSError) as exc:
+            raise ValueError("LIVE_SOURCE_LEDGER_UNREADABLE:"+str(lp)) from exc
+        if not isinstance(j,dict) or not isinstance(j.get("states"),list):
+            raise ValueError("LIVE_SOURCE_LEDGER_STATES_INVALID:"+str(lp))
         source_rows.append({
             "path":str(lp),
             "sha256":hashlib.sha256(lp.read_bytes()).hexdigest(),
@@ -66,6 +70,7 @@ def build(root: Path, out: Path) -> dict[str,Any]:
             if (
                 row.get("label_opened") is True
                 and row.get("settlement_status")=="FINAL_STANDARD"
+                and type(row.get("p1_match_win")) is int
                 and row.get("p1_match_win") in {0,1}
             ):
                 rec["settled_final_standard"]=True
