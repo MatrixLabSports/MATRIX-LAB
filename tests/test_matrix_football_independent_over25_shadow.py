@@ -22,6 +22,7 @@ def history(n=30):
         moment=datetime(2026,9,1,tzinfo=timezone.utc)+timedelta(days=i)
         rows.append({
             "id":str(1000+i), "status":"FINISHED","utcDate":moment.isoformat(),
+            "lastUpdated":(moment+timedelta(hours=3)).isoformat(),
             "competition":{"id":2019},
             "homeTeam":{"id":1}, "awayTeam":{"id":2},
             "score":{"fullTime":{"home":i%4,"away":(i+1)%3}},
@@ -124,3 +125,31 @@ def test_six_group_priority_is_stable_for_same_source_input():
     score_intake(x,"fake-key",opener=open_)
     assert calls==[2014,2021,2002,2015,2019,2016]
     assert len(calls)==6
+
+
+def test_history_with_missing_provider_updated_time_cannot_generate_probability():
+    h=history()
+    for row in h["matches"]:
+        row.pop("lastUpdated",None)
+    result=score_intake(intake(),"fake-key",opener=lambda *_a,**_kw:Response(h))
+    assert result["scored_count"]==0
+    assert result["market_signal_authorized"] is False
+    assert result["group_status"]["2019"]["history_count"]==0
+
+
+def test_future_provider_update_excludes_outcome_from_historical_features():
+    h=history()
+    for row in h["matches"]:
+        row["lastUpdated"]="2040-12-01T00:00:00+00:00"
+    result=score_intake(intake(),"fake-key",opener=lambda *_a,**_kw:Response(h))
+    assert result["scored_count"]==0
+    assert result["group_status"]["2019"]["history_count"]==0
+
+
+def test_ambiguous_provider_updated_timestamp_is_not_accepted():
+    h=history()
+    for row in h["matches"]:
+        row["lastUpdated"]="2026-09-01T14:00:00"  # no timezone
+    result=score_intake(intake(),"fake-key",opener=lambda *_a,**_kw:Response(h))
+    assert result["scored_count"]==0
+    assert result["group_status"]["2019"]["history_count"]==0
