@@ -174,6 +174,72 @@ def evaluate(document: dict) -> dict:
             "lanes": reports}
 
 
+
+def verify_original_receipts(document: dict, root: Path) -> dict:
+    """Fail closed unless genuine source files back every comparative row.
+
+    This check operates on bytes, not a self-asserted 'certified' flag.
+    Input records must bind to immutable prediction and later outcome JSON.
+    The returned report is never itself a certificate of original-model PIT.
+    """
+    rows = validate(document)
+    source_rows = document["rows"]
+    checked = 0
+    for source, clean in zip(source_rows, rows):
+        for kind in ("prediction", "outcome"):
+            path_key = kind + "_receipt_path"
+            hash_key = kind + "_receipt_sha256"
+            p = source.get(path_key)
+            digest = source.get(hash_key)
+            if (not isinstance(p, str) or not p
+                or not isinstance(digest, str) or len(digest) != 64
+                or any(c not in "0123456789abcdef" for c in digest)):
+                raise ValueError("LAB_ORIGINAL_SOURCE_RECEIPT_REQUIRED")
+            candidate = Path(p)
+            if candidate.is_absolute() or ".." in candidate.parts:
+                raise ValueError("LAB_ORIGINAL_SOURCE_PATH_UNSAFE")
+            absolute = (root / candidate).resolve()
+            if not absolute.is_relative_to(root.resolve()):
+                raise ValueError("LAB_ORIGINAL_SOURCE_PATH_UNSAFE")
+            raw = absolute.read_bytes()
+            if len(raw) > 1_000_000 or hashlib.sha256(raw).hexdigest() != digest:
+                raise ValueError("LAB_ORIGINAL_SOURCE_RECEIPT_TAMPERED")
+            evidence = json.loads(raw)
+            expected_schema = "MATRIX_HYBRID_ELITE_" + kind.upper() + "_RECEIPT_V1"
+            if (not isinstance(evidence, dict)
+                or evidence.get("schema") != expected_schema
+                or evidence.get("lane") != clean["lane"]
+                or evidence.get("physical_event_id") != clean["physical_event_id"]
+                or evidence.get("real_money") != "BLOCKED"):
+                raise ValueError("LAB_ORIGINAL_SOURCE_RECEIPT_IDENTITY_MISMATCH")
+            if kind == "prediction":
+                if (stamp(evidence["frozen_at_utc"]) != clean["captured"]
+                    or probability(evidence["p_matrix_frozen"]) != clean["p_matrix"]
+                    or evidence.get("original_feature_pit_certified") is not True
+                    or evidence.get("prospective_identity_certified") is not True):
+                    raise ValueError("LAB_PREDICTION_RECEIPT_VALUE_MISMATCH")
+                frozen = evidence.get("contenders")
+                if not isinstance(frozen, dict) or set(frozen) != set(clean["contenders"]):
+                    raise ValueError("LAB_PREDICTION_RECEIPT_VALUE_MISMATCH")
+                for name, pvalue in clean["contenders"].items():
+                    if probability(frozen[name]) != pvalue:
+                        raise ValueError("LAB_PREDICTION_RECEIPT_VALUE_MISMATCH")
+            else:
+                if (stamp(evidence["certified_at_utc"]) != stamp(source["outcome_certified_at_utc"])
+                    or evidence.get("outcome") != clean["outcome"]
+                    or evidence.get("independent_outcome_certified") is not True):
+                    raise ValueError("LAB_OUTCOME_RECEIPT_VALUE_MISMATCH")
+                if clean["lane"] == "TENNIS_LIVE":
+                    if stamp(evidence["independently_certified_event_end_at_utc"]) != stamp(
+                        source["independently_certified_event_end_at_utc"]):
+                        raise ValueError("LAB_LIVE_END_RECEIPT_VALUE_MISMATCH")
+            checked += 1
+    return {"verified_receipt_files": checked,
+            "paired_certified_source_rows": len(rows),
+            "independent_future_replication_verified": False,
+            "model_promotion_authorized": False}
+
+
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--input", type=Path, required=True)
@@ -183,7 +249,9 @@ def main() -> None:
     if len(raw) > 10_000_000:
         raise ValueError("LAB_INPUT_TOO_LARGE")
     document = json.loads(raw)
+    source_verification = verify_original_receipts(document, args.input.parent)
     result = evaluate(document)
+    result["source_receipt_verification"] = source_verification
     result["input_sha256"] = hashlib.sha256(raw).hexdigest()
     args.output.parent.mkdir(parents=True, exist_ok=True)
     args.output.write_text(json.dumps(result, indent=2, sort_keys=True) + "\n",
