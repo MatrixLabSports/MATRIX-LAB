@@ -12,6 +12,8 @@ on:
       - tests/test_matrix_live_tennis_quota_continuity.py
       - tools/live_tennis_prospective_prelabel_freeze.py
       - tests/test_live_tennis_prospective_prelabel_freeze.py
+      - tools/live_tennis_prelabel_final_provenance.py
+      - tests/test_live_tennis_prelabel_final_provenance.py
   workflow_dispatch:
   schedule:
     - cron: '7 */2 * * *'
@@ -42,7 +44,7 @@ jobs:
       - run: python -m pip install requests pytest
 
       - name: Validate cross-provider audit regression tests
-        run: python -m pytest -q tests/test_live_tennis_cross_provider_equivalence.py tests/test_matrix_live_tennis_quota_continuity.py tests/test_live_tennis_prospective_prelabel_freeze.py
+        run: python -m pytest -q tests/test_live_tennis_cross_provider_equivalence.py tests/test_matrix_live_tennis_quota_continuity.py tests/test_live_tennis_prospective_prelabel_freeze.py tests/test_live_tennis_prelabel_final_provenance.py
 
       - name: Resolve Bogota dates
         id: dates
@@ -85,6 +87,15 @@ jobs:
           print(json.dumps(seal,sort_keys=True))
           PY
 
+      - name: Archive preceding authentic FINAL responses before a settlement overwrites the latest file
+        env:
+          D0: ${{ steps.dates.outputs.d0 }}
+          D1: ${{ steps.dates.outputs.d1 }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m tools.live_tennis_prelabel_final_provenance --date "$D1"
+          python -m tools.live_tennis_prelabel_final_provenance --date "$D0"
       - name: Settle yesterday FINAL-only first
         env:
           LIVE_TENNIS_API_KEY: ${{ secrets.LIVETENNISAPI_KEY }}
@@ -100,6 +111,13 @@ jobs:
             echo "NO_YESTERDAY_LEDGER"
           fi
 
+      - name: Archive fresh previous-day authentic FINAL receipts without predictions
+        env:
+          D1: ${{ steps.dates.outputs.d1 }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m tools.live_tennis_prelabel_final_provenance --date "$D1"
       - name: Capture current live tennis states
         env:
           LIVE_TENNIS_API_KEY: ${{ secrets.LIVETENNISAPI_KEY }}
@@ -289,6 +307,25 @@ jobs:
             echo "CALIBRATION_ADMISSION=BLOCKED"
           fi
 
+      - name: Link current FINAL provider reports to immutable prelabel captures, never infer end time
+        env:
+          D0: ${{ steps.dates.outputs.d0 }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m tools.live_tennis_prelabel_final_provenance --date "$D0"
+          python - <<'PY'
+          import json,os
+          from pathlib import Path
+          p=Path('evidence/live_tennis_lab')/os.environ['D0']/'MATRIX_LIVE_TENNIS_PRELABEL_FINAL_LINK_RESEARCH_LAST.json'
+          d=json.loads(p.read_bytes())
+          assert d['real_money']=='BLOCKED'
+          assert d['model_probability_authorized'] is False
+          assert d['telegram_signal_authorized'] is False
+          assert d['independent_real_match_end_time_certified'] is False
+          print(json.dumps({'frozen':d['frozen_physical_matches'],
+            'observed_final_link_status':d['status_counts']},sort_keys=True))
+          PY
       - name: Rebuild daily readiness and gates
         env:
           D0: ${{ steps.dates.outputs.d0 }}
