@@ -154,7 +154,9 @@ def collect(root:Path,day:str,*,now:datetime|None=None)->dict:
             key="live_tennis_api:"+str(mid)
             if (row.get("label_opened") is True
                 or row.get("p1_match_win") is not None
-                or row.get("settlement_status")!="PENDING_FINAL"):
+                or row.get("settlement_status")!="PENDING_FINAL"
+                or any(row.get(k) is not None for k in
+                       ("winner","final_result","result_version","result_restated_at"))):
                 labeled_keys.add(key)
                 source_labeled_rows+=1
             captured=parse_utc(row.get("captured_at_utc"))
