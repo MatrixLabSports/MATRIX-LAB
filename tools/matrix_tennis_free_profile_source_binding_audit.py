@@ -20,15 +20,53 @@ def utc(v: str) -> datetime:
         raise ValueError("PROFILE_AUDIT_TIMESTAMP_HAS_NO_TIMEZONE")
     return dt.astimezone(timezone.utc)
 
+def source_bound_detail(folder: Path, declared_digest: str) -> tuple[dict, bytes, Path, bool]:
+    """Use only exact SHA-matching original capture or its immutable archive.
+
+    A current LAST must never replace a different source used by a previous
+    prematch biography. Missing original bytes fail closed, no guessed match.
+    """
+    if not re.fullmatch(r"[0-9a-f]{64}", str(declared_digest or "")):
+        raise ValueError("PROFILE_AUDIT_DECLARED_DETAIL_SHA_MISSING")
+    current = folder / "sofascore_verified_match_details.json"
+    if current.is_file():
+        raw = current.read_bytes()
+        if len(raw) > 7_000_000:
+            raise ValueError("PROFILE_AUDIT_OVERSIZED")
+        if sha(raw) == declared_digest:
+            return json.loads(raw), raw, current, False
+    archive = folder / "archive"
+    if archive.is_dir():
+        candidates = sorted(
+            p for p in archive.glob("*.json")
+            if p.name.startswith((
+                "MATRIX_TENNIS_SOURCE_DETAILS_",
+                "MATRIX_TENNIS_MATCH_DETAIL_CAPTURE_ATTEMPT_",
+                "sofascore_verified_match_details_",
+            ))
+        )
+        if len(candidates) > 250:
+            raise ValueError("PROFILE_AUDIT_ARCHIVE_TOO_LARGE")
+        for candidate in candidates:
+            if candidate.stat().st_size > 7_000_000:
+                continue
+            raw = candidate.read_bytes()
+            if sha(raw) == declared_digest:
+                return json.loads(raw), raw, candidate, True
+    raise ValueError("PROFILE_AUDIT_ORIGINAL_DETAIL_SHA_SNAPSHOT_UNAVAILABLE")
+
+
 def audit(root: Path, day: str) -> dict:
     date.fromisoformat(day)
     folder = root / BASE / day
     a_path = folder / "MATRIX_TENNIS_FREE_VISIBLE_PROFILE_BIRTHDATES_RESEARCH.json"
-    d_path = folder / "sofascore_verified_match_details.json"
-    a_bytes, d_bytes = a_path.read_bytes(), d_path.read_bytes()
-    if max(len(a_bytes),len(d_bytes)) > 7_000_000:
+    a_bytes = a_path.read_bytes()
+    if len(a_bytes) > 7_000_000:
         raise ValueError("PROFILE_AUDIT_OVERSIZED")
-    profiles, detail = json.loads(a_bytes), json.loads(d_bytes)
+    profiles = json.loads(a_bytes)
+    detail, d_bytes, detail_path, archived_detail_used = source_bound_detail(
+        folder, profiles.get("source_detail_sha256")
+    )
     if (profiles.get("schema") != "MATRIX_TENNIS_FREE_VISIBLE_PROFILE_BIRTHDATES_RESEARCH_V1"
         or detail.get("schema") != "MATRIX_OPERA_TENNIS_MATCH_DETAIL_OBSERVATION_V1"
         or profiles.get("target_date_bogota") != day
@@ -100,6 +138,8 @@ def audit(root: Path, day: str) -> dict:
         "status":"VISIBLE_BIOGRAPHY_SOURCE_BOUND_RESEARCH_ONLY",
         "profiles_verified_against_match_details":len(result),
         "matches_with_verified_profiles":len({r["sofascore_event_id"] for r in result}),
+        "archived_original_detail_used":archived_detail_used,
+        "source_detail_path":str(detail_path.relative_to(root)).replace(chr(92),"/"),
         "source_sha256":{"visible_profiles":sha(a_bytes),"verified_match_details":sha(d_bytes)},
         "independent_provider_player_id_certified":False,
         "original_model_pit_equivalence_certified":False,
