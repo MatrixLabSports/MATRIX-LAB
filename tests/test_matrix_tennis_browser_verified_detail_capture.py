@@ -347,3 +347,44 @@ def test_visible_challenger_r32_dieciseisavos_is_not_silently_rejected():
     assert result["round"]=="Dieciseisavos de final"
     assert result["surface"]=="Hard"
     assert result["provider_player_id_equivalence_certified"] is False
+
+
+def test_successful_challenger_capture_preserves_prior_exact_utf8_bytes(tmp_path):
+    """Never discard the original source clock when a later provider view changes."""
+    import hashlib,json
+    from tools.matrix_tennis_browser_verified_detail_capture import persist_versioned_details
+    path=tmp_path/"sofascore_verified_match_details.json"
+    old={"schema":"MATRIX_OPERA_TENNIS_MATCH_DETAIL_OBSERVATION_V1",
+         "real_money":"BLOCKED","new_model_observations_admitted":0,
+         "telegram_signal_authorized":False,"events":[
+            {"sofascore_event_id":"123","player_name":"Nicoláš",
+             "kickoff_utc":"2026-11-18T15:00:00Z"}]}
+    a=persist_versioned_details(path,old)
+    original=path.read_bytes()
+    assert a==hashlib.sha256(original).hexdigest()
+    assert "Nicoláš".encode("utf-8") in original
+    changed={**old,"events":[{**old["events"][0],
+            "kickoff_utc":"2026-11-18T23:30:00Z"}]}
+    b=persist_versioned_details(path,changed)
+    assert a!=b
+    previous=tmp_path/"archive"/(
+        "MATRIX_TENNIS_SOURCE_DETAILS_SHA256_"+a+".json")
+    assert previous.read_bytes()==original
+    assert json.loads(path.read_bytes())["events"][0]["kickoff_utc"]=="2026-11-18T23:30:00Z"
+    assert persist_versioned_details(path,changed)==b
+    assert len(list((tmp_path/"archive").glob("MATRIX_TENNIS_SOURCE_DETAILS_SHA256_*.json")))==1
+    previous.write_bytes(original+b" ")
+    with pytest.raises(ValueError,match="ORIGINAL_CHALLENGER_DETAIL_ARCHIVE_TAMPER"):
+        persist_versioned_details(path,old)
+
+def test_windows_console_escape_does_not_change_utf8_evidence(tmp_path):
+    import json
+    from tools.matrix_tennis_browser_verified_detail_capture import persist_versioned_details
+    doc={"real_money":"BLOCKED","new_model_observations_admitted":0,
+         "telegram_signal_authorized":False,"events":[
+            {"name":"Miloš Čilić","kickoff_utc":"2026-11-18T15:00:00Z"}]}
+    path=tmp_path/"details.json"
+    persist_versioned_details(path,doc)
+    assert "Čilić".encode("utf-8") in path.read_bytes()
+    # CLI writes escaped representation only on Windows' CP1252 stdout.
+    assert json.dumps(doc,ensure_ascii=True).encode("cp1252")
