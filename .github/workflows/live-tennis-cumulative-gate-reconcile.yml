@@ -17,6 +17,7 @@ on:
       - tools/live_tennis_cumulative_gate.py
       - tools/live_tennis_cumulative_integrity_research.py
       - tests/test_live_tennis_cumulative_integrity_research.py
+      - tests/test_live_tennis_cumulative_gate_multi_lane.py
       - tools/telegram_live_tennis_progress.py
   workflow_dispatch:
   schedule:
@@ -80,7 +81,7 @@ jobs:
         run: |
           set -euo pipefail
           python -m pip install --disable-pip-version-check -q pytest
-          python -m pytest -q tests/test_live_tennis_cumulative_integrity_research.py
+          python -m pytest -q tests/test_live_tennis_cumulative_integrity_research.py tests/test_live_tennis_cumulative_gate_multi_lane.py
           python -m tools.live_tennis_cumulative_integrity_research
           python - <<'PY'
           import json
