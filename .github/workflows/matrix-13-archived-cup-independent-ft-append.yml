@@ -120,4 +120,9 @@ jobs:
             exit 0
           fi
           git commit -m "evidence(13-cohort): append verified archived cup FT without original model changes"
+          # A concurrent independent MATRIX workflow may advance the branch
+          # during archival replay. Rebase safely; NEVER force-push or drop
+          # someone else's commits. A conflict fails closed for inspection.
+          git fetch origin repair/cor09-world-pipeline
+          git rebase origin/repair/cor09-world-pipeline
           git push origin HEAD:repair/cor09-world-pipeline
