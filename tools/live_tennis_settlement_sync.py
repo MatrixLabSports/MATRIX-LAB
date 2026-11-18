@@ -49,6 +49,70 @@ def persist_blocked_state(*, ledger_path:Path, out_path:Path, ledger:dict[str,An
     print(json.dumps({"status":status,"reason":reason,"quota_remaining":remaining,"settled_matches":0,"labeled_state_rows":0},sort_keys=True))
 
 
+
+def historical_query_attempts(out_path:Path)->dict[int,int]:
+    """Count previous genuine detail queries, never interpret them as a result."""
+    import hashlib
+    counts:dict[int,int]={}
+    prior=[out_path]
+    archive=out_path.parent/"settlement_immutable"
+    if archive.is_dir():
+        prior.extend(sorted(archive.glob("MATRIX_LIVE_FINAL_SYNC_*.json")))
+    seen_digests=set()
+    for path in prior:
+        if not path.is_file():
+            continue
+        raw=path.read_bytes()
+        digest=hashlib.sha256(raw).hexdigest()
+        if digest in seen_digests:
+            continue
+        seen_digests.add(digest)
+        try:
+            data=json.loads(raw)
+        except (ValueError,UnicodeError):
+            raise ValueError("SETTLEMENT_QUERY_RECEIPT_UNREADABLE:"+str(path))
+        if not isinstance(data,dict) or data.get("schema")!="MATRIX_LIVE_TENNIS_SETTLEMENT_SYNC_V0_1":
+            raise ValueError("SETTLEMENT_QUERY_RECEIPT_SCHEMA_INVALID:"+str(path))
+        ids=data.get("queried_match_ids")
+        if not isinstance(ids,list) or any(type(mid) is not int or mid<=0 for mid in ids):
+            raise ValueError("SETTLEMENT_QUERY_RECEIPT_IDS_INVALID:"+str(path))
+        for mid in set(ids):
+            counts[mid]=counts.get(mid,0)+1
+    return counts
+
+
+def frozen_match_ids(ledger_path:Path)->set[int]:
+    """Read immutable prelabel manifests only; never infer an outcome."""
+    archive=ledger_path.parent/"prelabel_immutable"
+    matches=set()
+    if not archive.is_dir():
+        return matches
+    for path in sorted(archive.glob("MATRIX_LIVE_PRELABEL_BATCH_*.json")):
+        data=json.loads(path.read_bytes())
+        if (data.get("schema")!="MATRIX_LIVE_TENNIS_PRELABEL_CAPTURE_BATCH_V1"
+            or data.get("real_money")!="BLOCKED"
+            or data.get("model_probability_authorized") is not False):
+            raise ValueError("PRELABEL_BATCH_NOT_SAFE_FOR_SETTLEMENT_PRIORITY")
+        for row in data.get("matches") or []:
+            mid=row.get("match_id")
+            if (type(mid) is not int or mid<=0 or
+                row.get("physical_match_key")!="live_tennis_api:"+str(mid)):
+                raise ValueError("PRELABEL_MATCH_ID_AMBIGUOUS")
+            matches.add(mid)
+    return matches
+
+
+def fair_departed_queue(departed:list[int],query_attempts:dict[int,int],
+                        frozen:set[int])->list[int]:
+    """Least queried first; frozen priority only breaks ties."""
+    if any(type(mid) is not int or mid<=0 for mid in departed):
+        raise ValueError("DEPARTED_MATCH_ID_INVALID")
+    return sorted(set(departed),key=lambda mid:(
+        query_attempts.get(mid,0),
+        0 if mid in frozen else 1,
+        mid
+    ))
+
 def main():
     ap=argparse.ArgumentParser()
     ap.add_argument("--ledger",required=True)
@@ -111,7 +175,10 @@ def main():
     departed=[mid for mid in match_ids if mid not in live_ids and mid not in already_settled_ids]
 
     budget=max(0,remaining-args.reserve_calls-1)
-    query_ids=departed[:min(args.max_detail_queries,budget)]
+    query_attempts=historical_query_attempts(out_path)
+    frozen_priority=frozen_match_ids(ledger_path)
+    ordered_departed=fair_departed_queue(departed,query_attempts,frozen_priority)
+    query_ids=ordered_departed[:min(args.max_detail_queries,budget)]
     settlements=[]
     blocked=[]
     for mid in query_ids:
@@ -167,6 +234,11 @@ def main():
       "already_settled_match_ids":sorted(already_settled_ids),
       "departed_match_ids":departed,
       "queried_match_ids":query_ids,
+      "selection_policy":"LEAST_AUTHENTIC_PAST_QUERIES_THEN_FROZEN_PRIORITY_THEN_MATCH_ID",
+      "previous_query_attempts_for_selected":{str(mid):query_attempts.get(mid,0) for mid in query_ids},
+      "selected_with_immutable_prelabel_freeze":sum(mid in frozen_priority for mid in query_ids),
+      "eligible_departed_not_queried_this_cycle":len(ordered_departed)-len(query_ids),
+      "api_detail_query_budget_unchanged":True,
       "standard_final_settlements":settlements,
       "blocked_or_pending":blocked,
       "labeled_state_rows":updated,
