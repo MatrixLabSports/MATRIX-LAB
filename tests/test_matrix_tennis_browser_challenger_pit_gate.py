@@ -7,6 +7,22 @@ ROOT=Path.cwd()
 DAY="2026-11-04"
 T=lambda s:datetime.fromisoformat(s.replace("Z","+00:00"))
 
+# Do not test mutable *_LAST evidence against an earlier as-of clock.
+# This byte-preserved 18-Nov capture was observed 03:54 UTC and was
+# archived before newer browser sweeps. Dynamic production still reads LAST.
+NOV18_IMMUTABLE_ATTEMPT="MATRIX_TENNIS_MATCH_DETAIL_CAPTURE_ATTEMPT_a188601845673a726e0da70699bc856515397f1063dc1a3ac7c9a8520ffd143e.json"
+
+def frozen_nov18_asof(monkeypatch,at):
+    from tools import matrix_tennis_browser_challenger_pit_gate as mod
+    underlying=mod.read
+    def pinned(root,p):
+        if Path(p).name=="MATRIX_TENNIS_MATCH_DETAIL_CAPTURE_ATTEMPT_LAST.json":
+            immutable=mod.CAPTURE_ROOT/"2026-11-18"/"archive"/NOV18_IMMUTABLE_ATTEMPT
+            return underlying(root,immutable)
+        return underlying(root,p)
+    monkeypatch.setattr(mod,"read",pinned)
+    return mod.evaluate(ROOT,"2026-11-18",T(at))
+
 def test_two_real_4_nov_challenger_source_rows_pre_match():
     r=evaluate(ROOT,DAY,T("2026-11-04T16:00:00Z"))
     assert r["source_metadata_verified_before_kickoff"]==2
@@ -230,13 +246,13 @@ def test_same_capture_sealed_crossmatch_beats_later_reconciled_calendar(tmp_path
     assert r["new_hard_holdout_observations"]==0
     assert r["new_clay_holdout_observations"]==0
 
-def test_nov18_country_ioc_repairs_restore_only_history_research_not_model_permission():
+def test_nov18_country_ioc_repairs_restore_only_history_research_not_model_permission(monkeypatch):
     """Real frozen native UI and pre-cut authorities: CAN/POL/SLO are not provider ID mappings."""
     from tools.matrix_tennis_browser_challenger_pit_gate import COUNTRY_IOC
     assert {k: COUNTRY_IOC[k] for k in ("Canada","Poland","Slovenia")} == {
         "Canada":"CAN","Poland":"POL","Slovenia":"SLO"
     }
-    report=evaluate(ROOT,"2026-11-18",T("2026-11-18T04:00:00Z"))
+    report=frozen_nov18_asof(monkeypatch,"2026-11-18T04:00:00Z")
     # A later authenticated capture changed two kickoffs and did not
     # reconfirm a third. Historical pre-cut identity remains separate.
     assert report["hard_source_metadata_ready"]==1
@@ -255,16 +271,16 @@ def test_nov18_country_ioc_repairs_restore_only_history_research_not_model_permi
     assert report["real_money"]=="BLOCKED"
 
 
-def test_latest_nov18_capture_is_not_used_before_its_actual_observed_timestamp():
-    early=evaluate(ROOT,"2026-11-18",T("2026-11-17T21:00:00Z"))
+def test_latest_nov18_capture_is_not_used_before_its_actual_observed_timestamp(monkeypatch):
+    early=frozen_nov18_asof(monkeypatch,"2026-11-17T21:00:00Z")
     assert early["later_capture_post_asof_ignored"] is True
     assert early["later_capture_kickoff_drift_count"]==0
     assert early["hard_source_metadata_ready"]==4
     assert early["new_hard_holdout_observations"]==0
     assert early["new_clay_holdout_observations"]==0
 
-def test_current_nov18_source_quarantines_exact_changed_and_unobserved_events():
-    current=evaluate(ROOT,"2026-11-18",T("2026-11-18T04:00:00Z"))
+def test_archived_nov18_source_quarantines_exact_changed_and_unobserved_events(monkeypatch):
+    current=frozen_nov18_asof(monkeypatch,"2026-11-18T04:00:00Z")
     events={x["sofascore_id"]:x for x in current["events"]}
     assert "KICKOFF_CHANGED_IN_LATER_AUTHENTIC_CAPTURE" in events["17537274"]["blocked"]
     assert "KICKOFF_CHANGED_IN_LATER_AUTHENTIC_CAPTURE" in events["17537336"]["blocked"]
