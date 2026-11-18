@@ -49,6 +49,46 @@ jobs:
           PYTHONPATH=. python -m pytest -q \
             tests/test_matrix_hybrid_elite_lab.py \
             tests/test_matrix_hybrid_elite_bayesian_shadow.py
+      - name: Smoke-test executable laboratory with zero genuine certified rows
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p hybrid-elite-check
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          src = {
+              "schema": "MATRIX_HYBRID_ELITE_PROSPECTIVE_INPUT_V1",
+              "source": "CERTIFIED_PROSPECTIVE_LEDGER",
+              "synthetic": False,
+              "real_money": "BLOCKED",
+              "automatic_wagering": False,
+              "original_model_parameters_modified": False,
+              "rows": []
+          }
+          Path("hybrid-elite-check/empty_input.json").write_text(
+              json.dumps(src, sort_keys=True) + "\n", encoding="utf-8")
+          PY
+          PYTHONPATH=. python -m tools.matrix_hybrid_elite_lab \
+            --input hybrid-elite-check/empty_input.json \
+            --output hybrid-elite-check/research_result.json
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          r = json.loads(Path("hybrid-elite-check/research_result.json").read_text())
+          assert r["certified_total_events"] == 0
+          assert r["source_receipt_verification"]["verified_receipt_files"] == 0
+          assert r["any_model_promoted"] is False
+          assert r["telegram_signal_authorized"] is False
+          assert r["real_money"] == "BLOCKED"
+          print("EMPTY_REAL_COHORT_EXECUTABLE_PASS_NOT_A_PREDICTIVE_RESULT")
+          PY
+      - name: Preserve offline execution report for physical inspection
+        uses: actions/upload-artifact@v4
+        with:
+          name: matrix-hybrid-elite-empty-cohort-guard
+          path: hybrid-elite-check/research_result.json
+          retention-days: 14
       - name: Confirm original matrix is unchanged
         shell: bash
         run: |
