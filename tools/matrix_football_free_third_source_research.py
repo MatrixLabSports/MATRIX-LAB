@@ -160,7 +160,7 @@ def research(browser: dict, provider: dict, *, observed_at_utc: datetime,
         "rows": rows, "automatic_wagering": False, "real_money": "BLOCKED",
     }
 
-def fetch_free_day(day: str, *, opener=urlopen) -> tuple[dict, str]:
+def fetch_free_day(day: str, *, opener=urlopen) -> tuple[dict, str, bytes]:
     url = ENDPOINT + "?" + urlencode({"d": day, "s": "Soccer"})
     req = Request(url, headers={"Accept": "application/json"})
     try:
@@ -176,7 +176,7 @@ def fetch_free_day(day: str, *, opener=urlopen) -> tuple[dict, str]:
         parsed = json.loads(raw)
     except (json.JSONDecodeError, UnicodeDecodeError) as exc:
         raise ValueError("FREE_PROVIDER_RESPONSE_NOT_JSON") from exc
-    return parsed, sha(raw)
+    return parsed, sha(raw), raw
 
 def main() -> None:
     parser = argparse.ArgumentParser()
@@ -186,9 +186,27 @@ def main() -> None:
     date.fromisoformat(args.day)
     folder = args.root / ROOT / args.day
     browser, browser_hash = source_research(folder, args.day)
-    provider, provider_hash = fetch_free_day(args.day)
+    provider, provider_hash, raw_bytes = fetch_free_day(args.day)
+    # Persist exactly the provider response bytes. Preserve the previous
+    # observation in a hash-named archive when subsequent free results differ.
+    raw_path = folder / "MATRIX_THESPORTSDB_EVENTS_DAY_RAW.json"
+    if raw_path.exists():
+        previous = raw_path.read_bytes()
+        previous_hash = sha(previous)
+        if previous_hash != provider_hash:
+            archive = folder / "archive" / ("thesportsdb_" + previous_hash + ".json")
+            archive.parent.mkdir(parents=True, exist_ok=True)
+            if archive.exists() and archive.read_bytes() != previous:
+                raise ValueError("THIRD_SOURCE_ARCHIVE_HASH_CONFLICT")
+            if not archive.exists():
+                archive.write_bytes(previous)
+    raw_path.write_bytes(raw_bytes)
+    if sha(raw_path.read_bytes()) != provider_hash:
+        raise ValueError("THIRD_SOURCE_RAW_BYTES_HASH_MISMATCH")
     report = research(browser, provider, observed_at_utc=datetime.now(timezone.utc),
                       browser_sha256=browser_hash, provider_sha256=provider_hash)
+    report["provider_raw_path"] = str(raw_path.relative_to(args.root)).replace(chr(92), "/")
+    report["provider_raw_response_bytes"] = len(raw_bytes)
     dest = folder / "MATRIX_FREE_THIRD_SOURCE_RESEARCH_LAST.json"
     dest.write_text(json.dumps(report, indent=2, sort_keys=True, ensure_ascii=False)+"\n", encoding="utf-8")
     print(json.dumps({"status": report["status"], "day":args.day,
