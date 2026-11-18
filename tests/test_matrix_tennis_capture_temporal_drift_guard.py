@@ -4,7 +4,7 @@ from pathlib import Path
 
 import pytest
 
-from tools.matrix_tennis_capture_temporal_drift_guard import compare,run
+from tools.matrix_tennis_capture_temporal_drift_guard import compare,run,_load
 
 ROOT=Path(__file__).resolve().parents[1]
 DAY="2026-11-18"
@@ -31,8 +31,13 @@ def doc(*events,status="VERIFIED_VISIBLE_CHALLENGER_METADATA_RESEARCH_ONLY",
     if orig_sha is not None:d["preserved_original_detail_sha256"]=orig_sha
     return d
 
-def test_authentic_nov18_capture_shows_two_changed_visible_starts_and_one_unreobserved():
-    r=run(ROOT,DAY)
+def test_authentic_archived_nov18_capture_shows_two_changed_visible_starts_and_one_unreobserved():
+    # Immutable real browser evidence, not a mutable LAST report.
+    base=ROOT/"evidence/tennis_calendar_physical"/DAY
+    old,h1=_load(base/"sofascore_verified_match_details.json")
+    later,h2=_load(base/"archive"/(
+        "MATRIX_TENNIS_MATCH_DETAIL_CAPTURE_ATTEMPT_a188601845673a726e0da70699bc856515397f1063dc1a3ac7c9a8520ffd143e.json"))
+    r=compare(old,later,h1,h2,now=datetime(2026,11,18,4,tzinfo=timezone.utc))
     assert r["old_verified_kickoff_changed_count"]==2
     assert r["old_verified_matches_quarantined"]==3
     assert r["original_verified_match_count"]==4
