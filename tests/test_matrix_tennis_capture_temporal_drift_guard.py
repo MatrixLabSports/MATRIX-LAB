@@ -34,7 +34,8 @@ def doc(*events,status="VERIFIED_VISIBLE_CHALLENGER_METADATA_RESEARCH_ONLY",
 def test_authentic_archived_nov18_capture_shows_two_changed_visible_starts_and_one_unreobserved():
     # Immutable real browser evidence, not a mutable LAST report.
     base=ROOT/"evidence/tennis_calendar_physical"/DAY
-    old,h1=_load(base/"sofascore_verified_match_details.json")
+    old,h1=_load(base/"archive"/(
+        "MATRIX_TENNIS_SOURCE_DETAILS_GITBLOB_28a653980b5612d7f6ff0564094f88eff2867080.json"))
     later,h2=_load(base/"archive"/(
         "MATRIX_TENNIS_MATCH_DETAIL_CAPTURE_ATTEMPT_a188601845673a726e0da70699bc856515397f1063dc1a3ac7c9a8520ffd143e.json"))
     r=compare(old,later,h1,h2,now=datetime(2026,11,18,4,tzinfo=timezone.utc))
