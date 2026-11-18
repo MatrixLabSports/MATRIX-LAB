@@ -158,7 +158,11 @@ def main() -> None:
     a = p.parse_args()
     browser = a.root / "evidence/football_calendar_physical" / a.day / "MATRIX_TWO_SOURCE_LINK_RESEARCH_LAST.json"
     intake = a.root / "evidence/football_world_inventory" / a.day / "MATRIX_FOOTBALL_INDEPENDENT_FIXTURE_INTAKE.json"
-    b, bsha = load(browser)
+    # Re-validate that both authorized browser pages still match the SHA-256
+    # recorded by the research crossmatch. A self-consistent JSON crossmatch
+    # alone is not evidence that its original capture bytes still exist.
+    from tools.matrix_football_free_third_source_research import source_research
+    b, bsha = source_research(browser.parent, a.day)
     i, isha = load(intake)
     result = join(b, i, browser_sha256=bsha, intake_sha256=isha)
     output = browser.parent / "MATRIX_FOOTBALL_FREE_BROWSER_PROVIDER_RESEARCH_JOIN_LAST.json"
