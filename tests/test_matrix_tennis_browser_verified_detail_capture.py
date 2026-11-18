@@ -298,3 +298,39 @@ def test_real_nov18_all_historical_candidate_ids_are_visible_to_browser_schedule
                for c in candidates[6:]), "CLAY_OUTSIDE_FORMER_SIX_ITEM_CAPTURE_CAP_NOT_PROVED"
     assert len(candidates)<=12, "SCHEDULED_CAPTURE_STILL_TRUNCATES_WITHOUT_EXPLICIT_BACKLOG"
     assert len({x["sofascore_id"] for x in candidates})==len(candidates)
+
+
+def test_real_visible_est_ltu_rus_flags_are_recognized_without_approving_ids():
+    from tools.matrix_tennis_browser_verified_detail_capture import (
+        visible_country_candidates, COUNTRY_LABELS
+    )
+    from tools.matrix_tennis_browser_challenger_pit_gate import COUNTRY_IOC
+    for country,ioc in (("Estonia","EST"),("Lithuania","LTU"),("Russia","RUS")):
+        nodes=[{"name":"","label":"","flag_alts":["Tennis Player", country]}]
+        assert visible_country_candidates(nodes)==[country]
+        assert country in COUNTRY_LABELS
+        assert COUNTRY_IOC[country]==ioc
+
+def test_rejected_larger_challenger_scan_preserves_exact_attempt_and_old_receipt(tmp_path):
+    import hashlib,json
+    import pytest
+    from tools.matrix_tennis_browser_verified_detail_capture import persist_detail_capture_attempt
+    base={"real_money":"BLOCKED","new_model_observations_admitted":0,
+          "telegram_signal_authorized":False,
+          "details_examined":10,"original_authority_pair_candidates":10,
+          "individual_visible_metadata_verified_count":3,
+          "status":"REJECTED_REGRESSED_DETAILS_PRESERVED",
+          "blocked_reasons":[{"sofascore_id":"17561578","reason":"VISIBLE_PLAYER_COUNTRY_MISSING_OR_AMBIGUOUS"}]}
+    first=persist_detail_capture_attempt(tmp_path,base)
+    original=(tmp_path/"MATRIX_TENNIS_MATCH_DETAIL_CAPTURE_ATTEMPT_LAST.json").read_bytes()
+    assert hashlib.sha256(original).hexdigest()==first
+    changed={**base,"status":"VERIFIED_VISIBLE_CHALLENGER_METADATA_RESEARCH_ONLY",
+             "individual_visible_metadata_verified_count":6,"blocked_reasons":[]}
+    second=persist_detail_capture_attempt(tmp_path,changed)
+    assert second!=first
+    archive=tmp_path/"archive"/("MATRIX_TENNIS_MATCH_DETAIL_CAPTURE_ATTEMPT_"+first+".json")
+    assert archive.read_bytes()==original
+    assert json.loads((tmp_path/"MATRIX_TENNIS_MATCH_DETAIL_CAPTURE_ATTEMPT_LAST.json").read_bytes())==changed
+    unsafe={**base,"new_model_observations_admitted":1}
+    with pytest.raises(ValueError,match="CAPTURE_ATTEMPT_MUST_BE_RESEARCH_ONLY"):
+        persist_detail_capture_attempt(tmp_path,unsafe)
