@@ -22,11 +22,18 @@ PAIR_WORKFLOW = Path(".github/workflows/matrix-hybrid-elite-research-pair-integr
 HISTORY_WORKFLOW = Path(".github/workflows/matrix-independent-d2-authentic-prospective-recovery.yml")
 EVALUATION_WORKFLOW = Path(".github/workflows/matrix-independent-free-poisson-oos.yml")
 BAYES_WORKFLOW = Path(".github/workflows/matrix-hybrid-free-bayesian-prematch-research.yml")
+THREE_WORKFLOW = Path(".github/workflows/matrix-hybrid-three-model-prospective-oos.yml")
+TEAM_V2_WORKFLOW = Path(".github/workflows/matrix-hybrid-team-venue-beta-v2-prematch.yml")
+THREE_REPORT = Path("evidence/matrix_hybrid_elite/MATRIX_HYBRID_THREE_MODEL_OOS_LAST.json")
+TEAM_V2_REPORT = Path("evidence/matrix_hybrid_elite/MATRIX_HYBRID_TEAM_VENUE_BETA_V2_LAST.json")
+BAYES_V1_DIAGNOSTIC = Path("evidence/matrix_hybrid_elite/MATRIX_HYBRID_BAYESIAN_LEAGUE_BASELINE_DIAGNOSTIC_20261119.json")
 PERMANENT_MODULES = (
     Path("tools/matrix_hybrid_elite_lab.py"),
     Path("tools/matrix_hybrid_elite_bayesian_shadow.py"),
     Path("tools/matrix_hybrid_elite_research_pair_bridge.py"),
     Path("tools/matrix_hybrid_free_bayesian_v1.py"),
+    Path("tools/matrix_hybrid_three_model_research_oos.py"),
+    Path("tools/matrix_hybrid_team_venue_beta_v2.py"),
 )
 
 REQUIRED_LANES = ("FOOTBALL_OVER25", "TENNIS_CHALLENGER_HARD",
@@ -94,7 +101,9 @@ def inspect(root: Path) -> dict:
     for label, rel in (("hybrid_pairs", PAIR_WORKFLOW),
                        ("free_D2", HISTORY_WORKFLOW),
                        ("independent_OOS", EVALUATION_WORKFLOW),
-                       ("bayesian_prospective", BAYES_WORKFLOW)):
+                       ("bayesian_prospective", BAYES_WORKFLOW),
+                       ("three_model_prospective_oos", THREE_WORKFLOW),
+                       ("team_aware_bayesian_v2", TEAM_V2_WORKFLOW)):
         p = root / rel
         if not p.is_file():
             issues.append("MISSING_SCHEDULED_WORKFLOW:" + label)
@@ -231,6 +240,61 @@ def inspect(root: Path) -> dict:
                 if b.get(name) != expected:
                     issues.append("BAYESIAN_ILLEGAL_PROMOTION:" + name)
 
+    baseline = doc(BAYES_V1_DIAGNOSTIC)
+    if baseline:
+        if (baseline.get("schema") !=
+                "MATRIX_HYBRID_BAYESIAN_LEAGUE_BASELINE_DIAGNOSTIC_V1"
+            or baseline.get("total_physical_paired_events") != 37
+            or baseline.get("findings", {}).get(
+                "competitions_with_constant_bayesian_v1_probability") != 6
+            or baseline.get("no_model_promotion") is not True):
+            issues.append("BAYESIAN_V1_DIAGNOSTIC_MISSING_OR_CHANGED")
+
+    triple = {"state": "PENDING_FIRST_VERIFIED_CYCLE"}
+    if (root / THREE_REPORT).is_file():
+        t = doc(THREE_REPORT)
+        if t:
+            triple = {
+                "state": t.get("status"),
+                "physically_settled_comparisons":
+                    t.get("three_model_authenticated_settled_count"),
+                "pending_futures": t.get("three_model_pending_fixture_count"),
+                "missing_bayesian_forecast_count":
+                    len(t.get("three_model_missing_bayesian_forecasts") or []),
+                "rejected": len(t.get("three_model_rejected") or []),
+            }
+            if (t.get("schema") !=
+                    "MATRIX_HYBRID_THREE_MODEL_PROSPECTIVE_RESEARCH_OOS_V1"
+                or t.get("model_winner_authorized") is not False
+                or t.get("original_official_p_matrix_present") is not False
+                or t.get("telegram_signal_authorized") is not False
+                or t.get("automatic_wagering") is not False
+                or t.get("real_money") != "BLOCKED"):
+                issues.append("THREE_MODEL_OOS_PROVENANCE_OR_GOVERNANCE_INVALID")
+
+    team_v2 = {"state": "PENDING_FIRST_VERIFIED_CYCLE"}
+    if (root / TEAM_V2_REPORT).is_file():
+        v = doc(TEAM_V2_REPORT)
+        if v:
+            team_v2 = {
+                "state": "RESEARCH_ONLY",
+                "new_forecasts": v.get("new_forecast_count"),
+                "existing_forecasts": v.get("existing_forecast_count"),
+                "blocked": v.get("blocked_count"),
+                "expired_unfrozen": v.get("expired_unfrozen_count"),
+                "unique_p_per_league":
+                    v.get("competition_unique_prediction_counts"),
+            }
+            if (v.get("schema") !=
+                    "MATRIX_HYBRID_TEAM_VENUE_BETA_V2_RESEARCH_CYCLE_V1"
+                or v.get("scientific_improvement_certified") is not False
+                or v.get("original_parameters_mutated") is not False
+                or v.get("automatic_model_promotion") is not False
+                or v.get("telegram_signal_authorized") is not False
+                or v.get("automatic_wagering") is not False
+                or v.get("real_money") != "BLOCKED"):
+                issues.append("TEAM_VENUE_V2_PROVENANCE_OR_GOVERNANCE_INVALID")
+
     # Absence of proven per-sport original p_MATRIX pairs is BLOCKED, not a
     # software failure; a good cron run must never be presented as model GO.
     return {
@@ -252,6 +316,8 @@ def inspect(root: Path) -> dict:
         },
         "independent_poisson_oos": oos,
         "hybrid_bayesian_research": bayesian,
+        "hybrid_three_model_oos": triple,
+        "hybrid_team_venue_v2": team_v2,
         "official_hybrid_p_matrix_comparison_certified": False,
         "all_42_markets_calibrated": False,
         "automatic_model_promotion": False,
