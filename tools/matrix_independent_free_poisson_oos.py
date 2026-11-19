@@ -57,22 +57,11 @@ def safe_row(p: Path, now: datetime):
 
 def final_result(root: Path, po: dict, now: datetime):
     fid = str(po["fixture_id"])
-    day = stamp(po["kickoff_utc"]).date().isoformat()
-    # The score settlement groups files by target-day *UTC* or filesystem day
-    # but the immutable original freeze is grouped by the Bogotá target date.
-    # Search both adjacent day partitions; strict fixture & kickoff equality
-    # rejects all unrelated results.
+    # Result partitions can differ from UTC kickoff date around midnight.
+    # Search immutable research archives by provider ID; then strictly verify
+    # identity, competition, kickoff, source bytes and original forecast.
     target = root / RESULTS
-    candidates = sorted(set(
-        list((target / day).glob(fid + "_result_*.json")) +
-        list((target / (stamp(po["kickoff_utc"]).date().isoformat())).glob(fid + "_result_*.json")) +
-        list((target / (stamp(po["kickoff_utc"]).date().replace(day=stamp(po["kickoff_utc"]).day)).isoformat()).glob(fid + "_result_*.json"))
-    ))
-    # Also index by direct date labels from verified path if source is in
-    # a different Bogotá partition. This does not authorize unrelated IDs.
-    for one in target.glob("20??-??-??/" + fid + "_result_*.json"):
-        if one not in candidates:
-            candidates.append(one)
+    candidates = sorted(target.glob("20??-??-??/" + fid + "_result_*.json"))
     if len(candidates) == 0:
         return None
     if len(candidates) != 1:
@@ -101,6 +90,41 @@ def final_result(root: Path, po: dict, now: datetime):
         raise ValueError("FINAL_SCORE_NOT_AUTHENTIC")
     if final.get("lastUpdated") and stamp(final["lastUpdated"]) > now:
         raise ValueError("RESULT_PROVIDER_LAST_UPDATE_IN_FUTURE")
+    # Require exact sealed original forecast SHA, not an arbitrary result
+    # JSON claiming to be an original model probability.
+    forecasts = [
+        x for x in rp.parent.glob(fid + "_*.json")
+        if "_result_" not in x.name and sha(x) == result.get("forecast_sha256")
+    ]
+    if len(forecasts) != 1:
+        raise ValueError("ORIGINAL_PREMATCH_FORECAST_SHA_MISSING_OR_DUPLICATE")
+    original = json.loads(forecasts[0].read_bytes())
+    if (original.get("schema") != "MATRIX_INDEPENDENT_OVER25_PREMATCH_IMMUTABLE_FREEZE_V1"
+        or original.get("provider") != "FOOTBALL_DATA_ORG"
+        or original.get("real_money") != "BLOCKED"
+        or original.get("telegram_signal_authorized") is not False
+        or str(original.get("provider_fixture_id")) != fid
+        or str(original.get("provider_competition_id")) != str(po["provider_competition_id"])
+        or stamp(original["kickoff_utc"]) != stamp(po["kickoff_utc"])
+        or not stamp(original["sealed_at_utc"]) < stamp(original["kickoff_utc"])
+        or original.get("research_probability_over25") != result.get("research_probability_over25")):
+        raise ValueError("ORIGINAL_FORECAST_IDENTITY_OR_PROBABILITY_INVALID")
+    # The source fixture and team ids are distinct from API-Football ids.
+    source_path = root / str(original["source_intake_file_path"])
+    if not source_path.is_file() or sha(source_path) != original.get("source_intake_file_sha256"):
+        raise ValueError("ORIGINAL_INTAKE_RAW_SHA_INVALID")
+    source_intake = json.loads(source_path.read_bytes())
+    matches = [x for x in source_intake.get("fixtures", [])
+               if str(x.get("source_fixture_id")) == fid]
+    if len(matches) != 1:
+        raise ValueError("ORIGINAL_PROVIDER_EVENT_NOT_UNIQUE")
+    match = matches[0]
+    if (str(match.get("source_competition_id")) != str(po["provider_competition_id"])
+        or stamp(match["kickoff_utc"]) != stamp(po["kickoff_utc"])
+        or str((final.get("homeTeam") or {}).get("id")) != str(match["home_source_team_id"])
+        or str((final.get("awayTeam") or {}).get("id")) != str(match["away_source_team_id"])
+        or str((final.get("competition") or {}).get("id")) != str(po["provider_competition_id"])):
+        raise ValueError("FINAL_TEAM_COMPETITION_OR_START_IDENTITY_MISMATCH")
     original_p = result["research_probability_over25"]
     if type(original_p) not in (float, int) or not 0 < original_p < 1:
         raise ValueError("ORIGINAL_RESEARCH_P_INVALID")
@@ -110,6 +134,9 @@ def final_result(root: Path, po: dict, now: datetime):
         "provider_result_sha256": result["raw_result_sha256"],
         "outcome": int(result["over25_outcome"]),
         "original_research_p": original_p,
+        "original_frozen_forecast_sha256": result["forecast_sha256"],
+        "original_source_history_sha256": original["source_snapshot_sha256"],
+        "identical_authenticated_history_capture": original["source_snapshot_sha256"] == po["history_raw_sha256"],
         "result_observed_at_utc": result["result_observed_at_utc"],
     }
 
