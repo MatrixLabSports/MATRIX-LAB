@@ -11,7 +11,8 @@ from tools import matrix_hybrid_permanent_challenge_guard as guard
 ROOT = Path(__file__).resolve().parents[1]
 REQUIRED = (guard.CONTRACT, guard.PAIR, guard.MARKETS, guard.TENNIS, guard.OOS,
             guard.PAIR_WORKFLOW, guard.HISTORY_WORKFLOW, guard.EVALUATION_WORKFLOW,
-            guard.BAYES_WORKFLOW, *guard.PERMANENT_MODULES)
+            guard.BAYES_WORKFLOW, guard.THREE_WORKFLOW, guard.TEAM_V2_WORKFLOW,
+            guard.BAYES_V1_DIAGNOSTIC, *guard.PERMANENT_MODULES)
 
 
 def copy_subset(tmp_path):
@@ -103,3 +104,33 @@ def test_missing_original_hybrid_lab_fails_closed(tmp_path):
     r = guard.inspect(root)
     assert any("MISSING_PERMANENT_HYBRID_MODEL" in reason
                for reason in r["integrity_failures"])
+
+
+def test_all_physical_continuity_sources_copy_to_isolated_test_root(tmp_path):
+    root = copy_subset(tmp_path)
+    r = guard.inspect(root)
+    assert r["technical_integrity_pass"], r["integrity_failures"]
+    assert set(r["automated_workflows_present"]) == {
+        "hybrid_pairs", "free_D2", "independent_OOS",
+        "bayesian_prospective", "three_model_prospective_oos",
+        "team_aware_bayesian_v2",
+    }
+    assert r["hybrid_three_model_oos"]["state"] in (
+        "PENDING_FIRST_VERIFIED_CYCLE",
+        "THREE_RESEARCH_MODELS_PROSPECTIVE_EVALUATION_NO_PROMOTION")
+    assert r["challenge_completed"] is False
+
+
+def test_missing_three_model_evaluation_schedule_is_caught(tmp_path):
+    root = copy_subset(tmp_path)
+    (root / guard.THREE_WORKFLOW).unlink()
+    r = guard.inspect(root)
+    assert "MISSING_SCHEDULED_WORKFLOW:three_model_prospective_oos" in r["integrity_failures"]
+
+
+def test_missing_team_venue_bayesian_v2_model_is_caught(tmp_path):
+    root = copy_subset(tmp_path)
+    (root / guard.PERMANENT_MODULES[-1]).unlink()
+    r = guard.inspect(root)
+    assert "MISSING_PERMANENT_HYBRID_MODEL:" + (
+        guard.PERMANENT_MODULES[-1].as_posix()) in r["integrity_failures"]
