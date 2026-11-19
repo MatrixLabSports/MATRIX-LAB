@@ -49,7 +49,8 @@ jobs:
           test "$REAL_MONEY" = BLOCKED
           test "$AUTOMATIC_WAGERING" = false
           python -m pip install --disable-pip-version-check pytest
-          PYTHONPATH=. python -m pytest -q             tests/test_matrix_football_three_source_research_gate.py             tests/test_matrix_football_independent_fixture_pipeline.py             tests/test_matrix_football_independent_over25_shadow.py             tests/test_matrix_independent_over25_prematch_freeze.py
+          PYTHONPATH=. python -m pytest -q             tests/test_matrix_football_three_source_research_gate.py             tests/test_matrix_football_independent_fixture_pipeline.py             tests/test_matrix_football_independent_over25_shadow.py             tests/test_matrix_independent_over25_prematch_freeze.py \
+            tests/test_matrix_independent_free_poisson_v1.py
 
       - name: Choose prospective D+2 date (Bogota)
         id: day
@@ -113,6 +114,18 @@ jobs:
           PYTHONPATH=. python -m tools.matrix_football_independent_over25_shadow             --intake "$DIR/MATRIX_FOOTBALL_INDEPENDENT_FIXTURE_INTAKE.json"             --out "$DIR/MATRIX_INDEPENDENT_OVER25_HISTORY_SHADOW.json"
           PYTHONPATH=. python -m tools.matrix_independent_over25_prematch_freeze             --intake "$DIR/MATRIX_FOOTBALL_INDEPENDENT_FIXTURE_INTAKE.json"             --shadow "$DIR/MATRIX_INDEPENDENT_OVER25_HISTORY_SHADOW.json"             --out "$DIR/MATRIX_INDEPENDENT_OVER25_PREMATCH_FREEZE_REPORT.json"
 
+      - name: Independent free-source Poisson V1 (not original MATRIX calibration)
+        if: steps.browser.outputs.ready == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          D="${{ steps.day.outputs.date }}"
+          DIR="evidence/football_world_inventory/$D"
+          PYTHONPATH=. python -m tools.matrix_independent_free_poisson_v1 \
+            --intake "$DIR/MATRIX_FOOTBALL_INDEPENDENT_FIXTURE_INTAKE.json" \
+            --shadow "$DIR/MATRIX_INDEPENDENT_OVER25_HISTORY_SHADOW.json" \
+            --out "$DIR/MATRIX_FREE_POISSON_RESEARCH_LAST.json"
+
       - name: Record physical run metrics and permanent blocked-production guard
         if: always() && steps.day.outputs.date != ''
         shell: bash
@@ -131,6 +144,7 @@ jobs:
              "intake":"MATRIX_FOOTBALL_INDEPENDENT_FIXTURE_INTAKE.json",
              "shadow":"MATRIX_INDEPENDENT_OVER25_HISTORY_SHADOW.json",
              "freeze":"MATRIX_INDEPENDENT_OVER25_PREMATCH_FREEZE_REPORT.json",
+             "free_poisson":"MATRIX_FREE_POISSON_RESEARCH_LAST.json",
           }
           docs={}; proofs={}
           for key,name in names.items():
@@ -148,6 +162,7 @@ jobs:
           intake=docs.get("intake",{})
           shadow=docs.get("shadow",{})
           freeze=docs.get("freeze",{})
+          free_poisson=docs.get("free_poisson",{})
           report={
             "schema":"MATRIX_INDEPENDENT_D2_FREE_ONLY_CYCLE_V1",
             "generated_at_utc":datetime.now(timezone.utc).isoformat(),
@@ -160,6 +175,8 @@ jobs:
             "provider_calls":intake.get("provider_calls",0)+shadow.get("network_calls",0),
             "research_probability_count":shadow.get("scored_count",0),
             "immutable_research_freeze_count":freeze.get("immutable_prematch_freeze_count",0),
+            "new_independent_poisson_probability_count":free_poisson.get("scored_count",0),
+            "new_independent_poisson_immutable_freezes":free_poisson.get("immutable_new_freezes",0),
             "research_only":True,
             "original_parameters_modified":False,
             "canonical_original_pit_certified":False,
