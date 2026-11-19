@@ -51,6 +51,7 @@ def validate_pairs_manifest(doc: dict):
             doc.get("production_p_matrix_authorized") is False and
             doc.get("automatic_model_promotion") is False and
             doc.get("formal_hybrid_elite_lab_rows_admitted") == 0,
+            doc.get("existing_official_original_p_matrix_pairs") == 0,
             "HYBRID_RESEARCH_PAIR_MANIFEST_UNTRUSTED")
     pairs = doc.get("prelabel_research_pairs")
     require(isinstance(pairs, list), "HYBRID_PAIRS_NOT_ARRAY")
