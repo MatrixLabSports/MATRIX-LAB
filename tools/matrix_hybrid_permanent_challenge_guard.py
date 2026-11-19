@@ -21,6 +21,14 @@ BAYES = Path("evidence/matrix_hybrid_elite/MATRIX_HYBRID_FREE_BAYESIAN_LAST.json
 PAIR_WORKFLOW = Path(".github/workflows/matrix-hybrid-elite-research-pair-integration.yml")
 HISTORY_WORKFLOW = Path(".github/workflows/matrix-independent-d2-authentic-prospective-recovery.yml")
 EVALUATION_WORKFLOW = Path(".github/workflows/matrix-independent-free-poisson-oos.yml")
+BAYES_WORKFLOW = Path(".github/workflows/matrix-hybrid-free-bayesian-prematch-research.yml")
+PERMANENT_MODULES = (
+    Path("tools/matrix_hybrid_elite_lab.py"),
+    Path("tools/matrix_hybrid_elite_bayesian_shadow.py"),
+    Path("tools/matrix_hybrid_elite_research_pair_bridge.py"),
+    Path("tools/matrix_hybrid_free_bayesian_v1.py"),
+)
+
 REQUIRED_LANES = ("FOOTBALL_OVER25", "TENNIS_CHALLENGER_HARD",
                   "TENNIS_CHALLENGER_CLAY", "TENNIS_LIVE")
 SCHEMA = "MATRIX_HYBRID_PERMANENT_CHALLENGE_GUARD_V1"
@@ -75,10 +83,18 @@ def inspect(root: Path) -> dict:
             if phrase not in text:
                 issues.append("CONTRACT_CLAUSE_MISSING:" + phrase)
 
+    for module in PERMANENT_MODULES:
+        p = root / module
+        if not p.is_file():
+            issues.append("MISSING_PERMANENT_HYBRID_MODEL:" + module.as_posix())
+        else:
+            sources[module.as_posix()] = fingerprint(p)
+
     scheduled = {}
     for label, rel in (("hybrid_pairs", PAIR_WORKFLOW),
                        ("free_D2", HISTORY_WORKFLOW),
-                       ("independent_OOS", EVALUATION_WORKFLOW)):
+                       ("independent_OOS", EVALUATION_WORKFLOW),
+                       ("bayesian_prospective", BAYES_WORKFLOW)):
         p = root / rel
         if not p.is_file():
             issues.append("MISSING_SCHEDULED_WORKFLOW:" + label)
