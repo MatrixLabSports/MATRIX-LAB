@@ -1,0 +1,110 @@
+name: MATRIX Hybrid Elite Free Bayesian Prematch Research
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - repair/cor09-world-pipeline
+    paths:
+      - tools/matrix_hybrid_free_bayesian_v1.py
+      - tests/test_matrix_hybrid_free_bayesian_v1.py
+      - .github/workflows/matrix-hybrid-free-bayesian-prematch-research.yml
+
+permissions:
+  contents: write
+
+concurrency:
+  group: matrix-hybrid-free-bayesian-prematch-research
+  cancel-in-progress: false
+
+jobs:
+  source-bound-bayesian:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      MATRIX_MODE: SHADOW
+      REAL_MONEY: BLOCKED
+      AUTO_BETTING: DISABLED
+      HYBRID_AUTO_PROMOTION: DISABLED
+    steps:
+      - name: Checkout exact research branch and original source bytes
+        uses: actions/checkout@v4
+        with:
+          ref: repair/cor09-world-pipeline
+          fetch-depth: 0
+
+      - name: Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Confirm original hybrid gates and real source Bayesian tests
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$REAL_MONEY" = BLOCKED
+          test "$AUTO_BETTING" = DISABLED
+          test "$HYBRID_AUTO_PROMOTION" = DISABLED
+          python -m pip install --disable-pip-version-check pytest
+          PYTHONPATH=. python -m pytest -q \
+            tests/test_matrix_hybrid_elite_lab.py \
+            tests/test_matrix_hybrid_elite_bayesian_shadow.py \
+            tests/test_matrix_hybrid_elite_research_pair_bridge.py \
+            tests/test_matrix_hybrid_free_bayesian_v1.py
+
+      - name: Freeze new Bayesian research contender before all 21-Nov kickoffs
+        shell: bash
+        run: |
+          set -euo pipefail
+          # This research workflow is explicitly scoped to the known first
+          # prospective cohort. Later dates require separate preregistration.
+          python - <<'PY'
+          from datetime import datetime
+          from zoneinfo import ZoneInfo
+          day=datetime.now(ZoneInfo("America/Bogota")).date().isoformat()
+          if day > "2026-11-20":
+              print("FIRST_BAYESIAN_COHORT_EXPIRED_NO_RETROACTIVE_FORECASTS")
+              raise SystemExit(0)
+          PY
+          PYTHONPATH=. python -m tools.matrix_hybrid_free_bayesian_v1
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          p=Path("evidence/matrix_hybrid_elite/MATRIX_HYBRID_FREE_BAYESIAN_LAST.json")
+          r=json.loads(p.read_bytes())
+          assert r["schema"]=="MATRIX_HYBRID_FREE_BAYESIAN_RESEARCH_CYCLE_V1"
+          assert r["scored_count"]==37,r["blocked"]
+          assert r["blocked_count"]==0,r["blocked"]
+          assert r["formal_original_matrix_p_comparison_allowed"] is False
+          assert r["automatic_model_promotion"] is False
+          assert r["original_calibrated_parameters_modified"] is False
+          assert r["real_money"]=="BLOCKED"
+          assert r["telegram_signal_authorized"] is False
+          frozen=list(Path("evidence/football_world_inventory/2026-11-21/MATRIX_HYBRID_FREE_BAYESIAN_V1_IMMUTABLE").glob("*.json"))
+          assert len(frozen)==37
+          assert all(json.loads(f.read_bytes())["target_outcome_not_used"] is True for f in frozen)
+          print("HYBRID_FREE_BAYESIAN_PREMATCH_PHYSICAL",len(frozen),"PROMOTION",False)
+          PY
+
+      - name: Persist only research model frozen forecasts and evidence
+        shell: bash
+        run: |
+          set -euo pipefail
+          D="evidence/football_world_inventory/2026-11-21/MATRIX_HYBRID_FREE_BAYESIAN_V1_IMMUTABLE"
+          P="evidence/matrix_hybrid_elite/MATRIX_HYBRID_FREE_BAYESIAN_LAST.json"
+          if [ ! -f "$P" ]; then echo "BAYESIAN_NO_NEW_COHORT"; exit 0; fi
+          git config user.name matrix-hybrid-free-bayes
+          git config user.email matrix-hybrid-free-bayes@users.noreply.github.com
+          git add "$D" "$P"
+          if git diff --cached --quiet; then echo "NO_NEW_BAYESIAN_FORECAST"; exit 0; fi
+          git commit -m "evidence(hybrid): freeze source-bound Bayesian research 21 Nov without promotion"
+          for retry in 1 2 3 4; do
+            git fetch origin repair/cor09-world-pipeline
+            if ! git rebase origin/repair/cor09-world-pipeline; then
+              git rebase --abort || true
+              exit 1
+            fi
+            if git push origin HEAD:repair/cor09-world-pipeline; then exit 0; fi
+            sleep "$retry"
+          done
+          exit 1
