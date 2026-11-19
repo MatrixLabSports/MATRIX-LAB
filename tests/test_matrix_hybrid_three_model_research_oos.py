@@ -105,12 +105,35 @@ def test_post_kickoff_bayesian_forecast_is_rejected(tmp_path):
         m.verify_bayesian(tmp_path, pair, datetime(2026, 11, 22, tzinfo=timezone.utc))
 
 
-def test_tampered_original_p_matrix_sha_is_rejected(tmp_path):
+def test_earliest_and_latest_immutable_formula_freezes_can_differ_without_double_count(tmp_path):
     pair, bayes, row = sample()
     put(tmp_path, pair, bayes)
     bound = m.verify_bayesian(tmp_path, pair, FUTURE)
     row["original_frozen_forecast_sha256"] = "0"*64
+    score = m.compare_one(pair, row, bound)
+    assert score["fixture_id"] == pair["physical_event_id"]
+    assert score["formula_original_captures_distinct_files_same_raw_and_probability"] is True
+    assert score["source_primary_settlement_original_forecast_sha256"] == "0"*64
+    assert score["source_original_forecast_sha256"] == pair["original_freeze_sha256"]
+    assert score["first_original_forecast_wins_for_outcomes"] is True
+
+
+def test_different_original_history_raw_hash_fails_closed(tmp_path):
+    pair, bayes, row = sample()
+    put(tmp_path, pair, bayes)
+    bound = m.verify_bayesian(tmp_path, pair, FUTURE)
+    row["original_source_history_sha256"] = "0"*64
     with pytest.raises(ValueError, match="VERIFIED_OUTCOME_RESEARCH_SOURCE_NOT_IDENTICAL"):
+        m.compare_one(pair, row, bound)
+
+
+def test_different_original_probability_cannot_masquerade_as_same_capture(tmp_path):
+    pair, bayes, row = sample()
+    put(tmp_path, pair, bayes)
+    bound = m.verify_bayesian(tmp_path, pair, FUTURE)
+    row["original_frozen_forecast_sha256"] = "0"*64
+    row["original_research_p"] = 0.72
+    with pytest.raises(ValueError, match="EXISTING_VERIFIED_PROBABILITIES_DISAGREE"):
         m.compare_one(pair, row, bound)
 
 
