@@ -84,7 +84,7 @@ def test_three_model_predictions_share_event_without_winner_promotion(tmp_path):
     assert scored["same_authenticated_input"] is True
     assert scored["outcome_over25"] == 1
     assert abs(scored["predictors"]["hybrid_free_bayesian"]["brier"]-0.45**2)<1e-12
-    assert m.aggregate([scored])["independent_poisson"]["mean_brier"] > 0
+    assert m.aggregate([scored])["independent_free_poisson"]["mean_brier"] > 0
     assert scored["source_bayesian_forecast_sha256"] == m.digest(
         m.bayesian_file(tmp_path, pair))
 
