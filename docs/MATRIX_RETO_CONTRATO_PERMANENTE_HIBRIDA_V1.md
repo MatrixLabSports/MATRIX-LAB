@@ -134,3 +134,35 @@ pequeñas; referencia inicial de 30 resultados auténticos por competición
 y evaluación mayor para conclusiones generales, con análisis de
 calibración, incertidumbre, fuga temporal y robustez.
 
+
+## 6. Productor anticipado D+2 y continuidad cuando falta el navegador
+
+Consultar **primero** los registros/capturas autorizados de SofaScore
+y Flashscore; si faltan, registrar expresamente
+`NO_BOTH_BROWSER_RECEIPTS_FOR_TARGET`. Revisar un expediente local
+**no equivale** a haber consultado una página en vivo.
+
+En ausencia de ambas fuentes, se permite probar luego
+football-data.org **solamente en investigación gratuita**, con
+identidad nativa del proveedor, captura auténtica, sello anterior
+al partido y resultados futuros excluidos. Queda terminantemente
+prohibido:
+- dar por certificada la conciliación de las tres fuentes;
+- etiquetar esas probabilidades como P_MATRIX oficial;
+- emitir señales Telegram desde dicha vía o apuestas reales;
+- inventar la captura de SofaScore/Flashscore o datos históricos;
+- eludir restricciones del navegador, de las APIs o 429.
+
+El registro `MATRIX_D2_FREE_CYCLE_*.json` debe distinguir
+`browser_first_receipt_lookup_attempted`,
+`browser_first_receipt_ready`,
+`fallback_research_only_due_to_missing_browser_receipts`,
+`cross_provider_identity_certified` y
+`canonical_original_pit_certified`.
+
+Los evaluadores híbridos de tres y cuatro modelos utilizan **una
+observación por encuentro**. La primera fórmula original físicamente
+congelada gana la evaluación; las capturas posteriores solo se admiten
+como referencias equivalentes cuando la identidad, la probabilidad
+y el historial SHA sean idénticos y estén probados.
+
