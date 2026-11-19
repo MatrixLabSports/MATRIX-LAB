@@ -50,7 +50,8 @@ jobs:
           test "$AUTOMATIC_WAGERING" = false
           python -m pip install --disable-pip-version-check pytest
           PYTHONPATH=. python -m pytest -q             tests/test_matrix_football_three_source_research_gate.py             tests/test_matrix_football_independent_fixture_pipeline.py             tests/test_matrix_football_independent_over25_shadow.py             tests/test_matrix_independent_over25_prematch_freeze.py \
-            tests/test_matrix_independent_free_poisson_v1.py
+            tests/test_matrix_independent_free_poisson_v1.py \
+            tests/test_matrix_independent_d2_browser_first_research_fallback.py
 
       - name: Choose prospective D+2 date (Bogota)
         id: day
