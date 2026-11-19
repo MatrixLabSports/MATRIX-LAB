@@ -97,3 +97,40 @@ relajar silenciosamente el orden de fuentes, los gates de identidad/PIT,
 la prohibición de uso de resultados futuros, la inmutabilidad de modelos
 originales o las restricciones de dinero real. Un fallo de verificación
 debe conservar su motivo y la información original para su reparación.
+
+
+## 5. Resultado científico de 19-nov-2026 y obligación de comparación
+
+La evidencia
+`evidence/matrix_hybrid_elite/MATRIX_HYBRID_BAYESIAN_LEAGUE_BASELINE_DIAGNOSTIC_20261119.json`
+demuestra que el bayesiano híbrido V1 produjo **una sola probabilidad
+por competición** dentro de las seis competiciones de la cohorte
+prospectiva de 37 eventos. Por eso se conserva como **referencia
+de tasa de liga**, no como prueba de capacidad para discriminar
+partidos por equipos.
+
+No se reemplaza ni recalibra V1. Se abre un candidato independiente
+**MATRIX_HYBRID_TEAM_VENUE_BETA_V2** con coeficientes registrados
+antes de los resultados futuros. Utiliza historiales auténticos por
+equipo/localía, fechas as-of y hashes. Se compara con el resto
+solo sobre encuentros iguales y resultados finales autentificados.
+
+Códigos exigidos para la continuidad:
+- `tools/matrix_hybrid_three_model_research_oos.py`:
+  comparador fuera de muestra de tres modelos de investigación
+  con sellos y fuentes auténticas.
+- `tools/matrix_hybrid_team_venue_beta_v2.py`:
+  candidato adicional, aislado y sin promoción.
+- `.github/workflows/matrix-hybrid-three-model-prospective-oos.yml`
+  y `.github/workflows/matrix-hybrid-team-venue-beta-v2-prematch.yml`:
+  automatizaciones de validación y congelación cuando se
+  encuentren físicamente habilitadas en la rama principal.
+
+Los estados **codificado**, **probado**, **ejecutado**, **datos físicos
+prospectivos**, **métrica OOS** y **aprobación estadística** deben informarse
+por separado. La ausencia de pruebas o de sellado no permite declarar
+«recuperado» ningún candidato. Nunca inferir ganadores por muestras
+pequeñas; referencia inicial de 30 resultados auténticos por competición
+y evaluación mayor para conclusiones generales, con análisis de
+calibración, incertidumbre, fuga temporal y robustez.
+
