@@ -10,7 +10,8 @@ from tools import matrix_hybrid_permanent_challenge_guard as guard
 
 ROOT = Path(__file__).resolve().parents[1]
 REQUIRED = (guard.CONTRACT, guard.PAIR, guard.MARKETS, guard.TENNIS, guard.OOS,
-            guard.PAIR_WORKFLOW, guard.HISTORY_WORKFLOW, guard.EVALUATION_WORKFLOW)
+            guard.PAIR_WORKFLOW, guard.HISTORY_WORKFLOW, guard.EVALUATION_WORKFLOW,
+            guard.BAYES_WORKFLOW, *guard.PERMANENT_MODULES)
 
 
 def copy_subset(tmp_path):
@@ -87,3 +88,18 @@ def test_unapproved_model_promotion_fails_closed(tmp_path):
     p.write_text(json.dumps(j))
     r = guard.inspect(root)
     assert "UNAUTHORIZED_HYBRID_PROMOTION:production_p_matrix_authorized" in r["integrity_failures"]
+
+
+def test_missing_bayesian_schedule_fails_closed(tmp_path):
+    root = copy_subset(tmp_path)
+    (root / guard.BAYES_WORKFLOW).unlink()
+    r = guard.inspect(root)
+    assert "MISSING_SCHEDULED_WORKFLOW:bayesian_prospective" in r["integrity_failures"]
+
+
+def test_missing_original_hybrid_lab_fails_closed(tmp_path):
+    root = copy_subset(tmp_path)
+    (root / guard.PERMANENT_MODULES[0]).unlink()
+    r = guard.inspect(root)
+    assert any("MISSING_PERMANENT_HYBRID_MODEL" in reason
+               for reason in r["integrity_failures"])
