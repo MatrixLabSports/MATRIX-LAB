@@ -84,6 +84,7 @@ def final_result(root: Path, po: dict, now: datetime):
     goals = (final.get("score") or {}).get("fullTime") or {}
     hg, ag = goals.get("home"), goals.get("away")
     if (str(final.get("id")) != fid or final.get("status") != "FINISHED"
+        or stamp(final.get("utcDate")) != stamp(po["kickoff_utc"])
         or type(hg) is not int or type(ag) is not int or hg < 0 or ag < 0
         or (hg, ag) != (result["home_goals"], result["away_goals"])
         or int(hg + ag > 2) != result.get("over25_outcome")):
