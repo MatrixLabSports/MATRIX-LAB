@@ -58,14 +58,10 @@ jobs:
           set -euo pipefail
           # This research workflow is explicitly scoped to the known first
           # prospective cohort. Later dates require separate preregistration.
-          python - <<'PY'
-          from datetime import datetime
-          from zoneinfo import ZoneInfo
-          day=datetime.now(ZoneInfo("America/Bogota")).date().isoformat()
-          if day > "2026-11-20":
-              print("FIRST_BAYESIAN_COHORT_EXPIRED_NO_RETROACTIVE_FORECASTS")
-              raise SystemExit(0)
-          PY
+          if [[ "$(TZ=America/Bogota date +%F)" > "2026-11-20" ]]; then
+            echo "FIRST_BAYESIAN_COHORT_EXPIRED_NO_RETROACTIVE_FORECASTS"
+            exit 0
+          fi
           PYTHONPATH=. python -m tools.matrix_hybrid_free_bayesian_v1
           python - <<'PY'
           import json
