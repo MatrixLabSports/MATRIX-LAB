@@ -50,15 +50,14 @@ def compare(root: Path, pair: dict):
     fid = str(pair["physical_event_id"])
     require(fid.isdecimal(), "PHYSICAL_EVENT_ID_INVALID")
     kickoff = stamp(pair["event_start_at_utc"])
-    day = kickoff.date().isoformat()
-    base = root / "evidence/football_research_freezes" / day
-    if not base.is_dir():
-        # Bogotá date can differ from UTC date; selected paired forecast
-        # carries its physical archive partition, so use that when needed.
-        selected = Path(pair["original_freeze_path"])
-        require(not selected.is_absolute() and ".." not in selected.parts,
-                "SELECTED_FORECAST_PATH_UNSAFE")
-        base = root / selected.parent
+    # A legitimate Bogotá archive partition can differ from UTC kickoff
+    # day, so always use the physically verified selected research path.
+    chosen_rel = Path(pair["original_freeze_path"])
+    require(not chosen_rel.is_absolute() and ".." not in chosen_rel.parts and
+            chosen_rel.parts[:2] == ("evidence", "football_research_freezes") and
+            chosen_rel.name.startswith(fid + "_"),
+            "SELECTED_FORECAST_PATH_UNSAFE")
+    base = root / chosen_rel.parent
     options = sorted(p for p in base.glob(fid + "_*.json")
                      if "_result_" not in p.name)
     require(options, "NO_ORIGINAL_FORMULA_FREEZE_FOUND")
