@@ -183,6 +183,65 @@ def build(root: Path, manifest: dict, now: datetime | None = None) -> dict:
     }
 
 
+def freeze_path(root: Path, entry: dict) -> Path:
+    """Use the event's true Bogotá date, never a one-off hardcoded cohort."""
+    from zoneinfo import ZoneInfo
+    fid = str(entry["physical_event_id"])
+    require(fid.isdecimal(), "HYBRID_BAYESIAN_UNSAFE_EVENT_ID")
+    day = stamp(entry["event_start_at_utc"]).astimezone(
+        ZoneInfo("America/Bogota")).date().isoformat()
+    return (root / "evidence/football_world_inventory" / day /
+            "MATRIX_HYBRID_FREE_BAYESIAN_V1_IMMUTABLE" / (fid + ".json"))
+
+
+def select_new_prospective(root: Path, manifest: dict,
+                           now: datetime):
+    """Never re-score an existing frozen event or backfill after kickoff."""
+    pairs = validate_pairs_manifest(manifest)
+    to_freeze = []
+    preexisting = 0
+    expired_unfrozen = 0
+    ids = set()
+    for entry in pairs:
+        fid = str(entry["physical_event_id"])
+        require(fid not in ids, "HYBRID_BAYESIAN_DUPLICATE_EVENT")
+        ids.add(fid)
+        kickoff = stamp(entry["event_start_at_utc"])
+        dest = freeze_path(root, entry)
+        if dest.is_file():
+            prior = json.loads(dest.read_bytes())
+            frozen = stamp(prior["forecast_frozen_at_utc"])
+            p = prior.get("p_bayesian_research_over25")
+            require(
+                prior.get("schema") == SCHEMA and
+                prior.get("model_id") == MODEL and
+                prior.get("physical_event_id") == fid and
+                prior.get("source_original_research_freeze_sha256") ==
+                    entry["original_freeze_sha256"] and
+                prior.get("source_independent_poisson_freeze_sha256") ==
+                    entry["poisson_freeze_sha256"] and
+                prior.get("same_authenticated_target_history_sha256") ==
+                    entry["common_history_raw_sha256"] and
+                stamp(prior["event_start_at_utc"]) == kickoff and
+                frozen < kickoff and
+                type(p) in (float, int) and math.isfinite(p) and 0 < p < 1 and
+                prior.get("target_outcome_not_used") is True and
+                prior.get("model_promotion_authorized") is False and
+                prior.get("telegram_signal_authorized") is False and
+                prior.get("automatic_wagering") is False and
+                prior.get("real_money") == "BLOCKED",
+                "BAYESIAN_PRIOR_IMMUTABLE_FILE_CONFLICT")
+            preexisting += 1
+        elif now >= kickoff:
+            expired_unfrozen += 1
+        else:
+            to_freeze.append(entry)
+    scoped = {**manifest,
+              "prelabel_research_pairs": to_freeze,
+              "recovered_research_pair_count": len(to_freeze)}
+    return scoped, preexisting, expired_unfrozen
+
+
 def main():
     p = argparse.ArgumentParser()
     p.add_argument("--root", type=Path, default=Path.cwd())
@@ -193,36 +252,44 @@ def main():
     a = p.parse_args()
     require(not ({"telegram", "notifications", "tennis_signals", "daily_prematch_reports"} & set(a.out.parts)),
             "BAYESIAN_SHADOW_CANNOT_WRITE_PRODUCTION")
+    now = datetime.now(timezone.utc)
     manifest = json.loads((a.root / a.pairs).read_bytes())
-    report = build(a.root, manifest)
-    base = a.root / "evidence/football_world_inventory" / "2026-11-21" / "MATRIX_HYBRID_FREE_BAYESIAN_V1_IMMUTABLE"
-    base.mkdir(parents=True, exist_ok=True)
-    stored = 0
+    prospective, existing, expired = select_new_prospective(a.root, manifest, now)
+    report = build(a.root, prospective, now)
+    newly_frozen = 0
     for row in report["scored"]:
-        dest = base / (row["physical_event_id"] + ".json")
-        if dest.is_file():
-            prior = json.loads(dest.read_bytes())
-            require(prior.get("schema") == SCHEMA and
-                    prior.get("model_id") == MODEL and
-                    prior.get("physical_event_id") == row["physical_event_id"] and
-                    prior.get("same_authenticated_target_history_sha256") ==
-                    row["same_authenticated_target_history_sha256"] and
-                    prior.get("real_money") == "BLOCKED" and
-                    prior.get("telegram_signal_authorized") is False,
-                    "BAYESIAN_FROZEN_FORECAST_CANNOT_BE_REWRITTEN")
-        else:
-            with dest.open("x", encoding="utf-8") as fh:
-                json.dump(row, fh, ensure_ascii=False, sort_keys=True)
-                fh.write("\n")
-            stored += 1
-    report["immutable_new_forecasts"] = stored
-    report["immutable_already_existing"] = len(report["scored"]) - stored
+        dest = freeze_path(a.root, row)
+        require(not dest.exists(), "BAYESIAN_NEW_FREEZE_ALREADY_EXISTS")
+        dest.parent.mkdir(parents=True, exist_ok=True)
+        with dest.open("x", encoding="utf-8") as fh:
+            json.dump(row, fh, ensure_ascii=False, sort_keys=True)
+            fh.write("\\n")
+        newly_frozen += 1
+    report["immutable_new_forecasts"] = newly_frozen
+    report["immutable_already_existing"] = existing
+    report["immutable_total_seen"] = newly_frozen + existing
+    report["prospective_unfrozen_target_count"] = len(prospective["prelabel_research_pairs"])
+    report["expired_without_forecast_count"] = expired
+    report["no_postkickoff_backfill"] = True
     dest = a.root / a.out
-    dest.parent.mkdir(parents=True,exist_ok=True)
-    dest.write_text(json.dumps(report, ensure_ascii=False, sort_keys=True, indent=2)+"\n", encoding="utf-8")
-    print(json.dumps({"bayesian_research_forecasts": report["scored_count"],
-                      "new": stored,"blocked": report["blocked_count"],
-                      "signals": False,"real_money":"BLOCKED"}, sort_keys=True))
+    dest.parent.mkdir(parents=True, exist_ok=True)
+    if dest.is_file() and not newly_frozen and not report["blocked"]:
+        before = json.loads(dest.read_bytes())
+        # Do not rewrite a previously sealed cohort just because cron ran.
+        if (before.get("immutable_total_seen", before.get("immutable_new_forecasts", 0)) ==
+            report["immutable_total_seen"] and
+            before.get("expired_without_forecast_count", 0) == expired):
+            print(json.dumps({"unchanged": True, "immutable_total": existing,
+                              "expired_without_forecast": expired,
+                              "real_money": "BLOCKED"}, sort_keys=True))
+            return
+    dest.write_text(json.dumps(report, ensure_ascii=False, sort_keys=True, indent=2) +
+                    "\\n", encoding="utf-8")
+    print(json.dumps({"bayesian_new_research_forecasts": newly_frozen,
+                      "immutable_total": report["immutable_total_seen"],
+                      "expired_without_forecast": expired,
+                      "blocked": report["blocked_count"],
+                      "signals": False, "real_money": "BLOCKED"}, sort_keys=True))
 
 
 if __name__ == "__main__":
