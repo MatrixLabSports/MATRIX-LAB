@@ -2,6 +2,8 @@ name: MATRIX Hybrid Elite Free Bayesian Prematch Research
 
 on:
   workflow_dispatch:
+  schedule:
+    - cron: "41 3,15 * * *"
   push:
     branches:
       - repair/cor09-world-pipeline
@@ -52,16 +54,11 @@ jobs:
             tests/test_matrix_hybrid_elite_research_pair_bridge.py \
             tests/test_matrix_hybrid_free_bayesian_v1.py
 
-      - name: Freeze new Bayesian research contender before all 21-Nov kickoffs
+      - name: Freeze only new, genuine prematch Bayesian contenders from any target date
         shell: bash
         run: |
           set -euo pipefail
-          # This research workflow is explicitly scoped to the known first
-          # prospective cohort. Later dates require separate preregistration.
-          if [[ "$(TZ=America/Bogota date +%F)" > "2026-11-20" ]]; then
-            echo "FIRST_BAYESIAN_COHORT_EXPIRED_NO_RETROACTIVE_FORECASTS"
-            exit 0
-          fi
+          # Entradas nuevas solo antes de kickoff; nunca fabricar predicciones pasadas.
           PYTHONPATH=. python -m tools.matrix_hybrid_free_bayesian_v1
           python - <<'PY'
           import json
@@ -69,31 +66,39 @@ jobs:
           p=Path("evidence/matrix_hybrid_elite/MATRIX_HYBRID_FREE_BAYESIAN_LAST.json")
           r=json.loads(p.read_bytes())
           assert r["schema"]=="MATRIX_HYBRID_FREE_BAYESIAN_RESEARCH_CYCLE_V1"
-          assert r["scored_count"]==37,r["blocked"]
+          assert r["scored_count"]>=0,r["blocked"]
+          assert r["immutable_new_forecasts"]==r["scored_count"]
+          assert r["immutable_total_seen"]>=r["immutable_new_forecasts"]
+          assert r["no_postkickoff_backfill"] is True
           assert r["blocked_count"]==0,r["blocked"]
           assert r["formal_original_matrix_p_comparison_allowed"] is False
           assert r["automatic_model_promotion"] is False
           assert r["original_calibrated_parameters_modified"] is False
           assert r["real_money"]=="BLOCKED"
           assert r["telegram_signal_authorized"] is False
-          frozen=list(Path("evidence/football_world_inventory/2026-11-21/MATRIX_HYBRID_FREE_BAYESIAN_V1_IMMUTABLE").glob("*.json"))
-          assert len(frozen)==37
+          frozen=list(Path("evidence/football_world_inventory").glob(
+              "20??-??-??/MATRIX_HYBRID_FREE_BAYESIAN_V1_IMMUTABLE/*.json"))
+          assert len(frozen)>=r["immutable_total_seen"]
           assert all(json.loads(f.read_bytes())["target_outcome_not_used"] is True for f in frozen)
-          print("HYBRID_FREE_BAYESIAN_PREMATCH_PHYSICAL",len(frozen),"PROMOTION",False)
+          print("HYBRID_FREE_BAYESIAN_PREMATCH_PHYSICAL",len(frozen),
+                "NEW",r["immutable_new_forecasts"],"EXPIRED_WITHOUT_BACKFILL",
+                r["expired_without_forecast_count"],"PROMOTION",False)
           PY
 
       - name: Persist only research model frozen forecasts and evidence
         shell: bash
         run: |
           set -euo pipefail
-          D="evidence/football_world_inventory/2026-11-21/MATRIX_HYBRID_FREE_BAYESIAN_V1_IMMUTABLE"
           P="evidence/matrix_hybrid_elite/MATRIX_HYBRID_FREE_BAYESIAN_LAST.json"
           if [ ! -f "$P" ]; then echo "BAYESIAN_NO_NEW_COHORT"; exit 0; fi
           git config user.name matrix-hybrid-free-bayes
           git config user.email matrix-hybrid-free-bayes@users.noreply.github.com
-          git add "$D" "$P"
+          git add -- "$P"
+          for D in evidence/football_world_inventory/20??-??-??/MATRIX_HYBRID_FREE_BAYESIAN_V1_IMMUTABLE; do
+            if [ -d "$D" ]; then git add -A -- "$D"; fi
+          done
           if git diff --cached --quiet; then echo "NO_NEW_BAYESIAN_FORECAST"; exit 0; fi
-          git commit -m "evidence(hybrid): freeze source-bound Bayesian research 21 Nov without promotion"
+          git commit -m "evidence(hybrid): freeze source-bound Bayesian future research without promotion"
           for retry in 1 2 3 4; do
             git fetch origin repair/cor09-world-pipeline
             if ! git rebase origin/repair/cor09-world-pipeline; then
