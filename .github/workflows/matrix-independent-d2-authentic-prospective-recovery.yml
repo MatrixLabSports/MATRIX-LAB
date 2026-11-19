@@ -73,7 +73,7 @@ jobs:
           PY
           echo "date=$D" >> "$GITHUB_OUTPUT"
 
-      - name: Browser first - require preexisting authentic SofaScore and Flashscore receipts
+      - name: Browser first - try authorized SofaScore and Flashscore receipts before research-only fallback
         id: browser
         shell: bash
         run: |
@@ -81,19 +81,24 @@ jobs:
           D="${{ steps.day.outputs.date }}"
           DIR="evidence/football_world_inventory/$D"
           mkdir -p "$DIR"
+          echo "attempted=true" >> "$GITHUB_OUTPUT"
+          # Browser receipts are not invented or scraped from GitHub runners.
+          # Their absence blocks canonical identity, not independent
+          # AUTHORIZED-FREE-PROVIDER research that never enters production.
           shopt -s nullglob
           old=("$DIR"/MATRIX_OPERA_THREE_SOURCE_RESEARCH_RECEIPT_*.json)
           new=("$DIR"/MATRIX_FLASH_EXACT_MID_PREMATCH_RESEARCH_*.json)
           if [ "${#old[@]}" -eq 0 ] || [ "${#new[@]}" -eq 0 ]; then
             echo "ready=false" >> "$GITHUB_OUTPUT"
-            echo "NO_VERIFIABLE_BROWSER_FIRST_SOURCE_FOR_TARGET; NO_API_CALL"
+            echo "reason=NO_BOTH_BROWSER_RECEIPTS_FOR_TARGET" >> "$GITHUB_OUTPUT"
+            echo "NO_VERIFIABLE_BROWSER_FIRST_SOURCE_FOR_TARGET; FREE_API_RESEARCH_ONLY_WITHOUT_CANONICAL_CROSS_SOURCE_IDENTITY"
             exit 0
           fi
           PYTHONPATH=. python -m tools.matrix_football_three_source_research_gate             --earlier "${old[-1]}"             --new "${new[-1]}"             --provider "evidence/governance/MATRIX_FREE_API_AUTHENTICATED_PROBE_LAST.json"             --out "$DIR/MATRIX_D2_BROWSER_FIRST_RESEARCH_PREFLIGHT.json"
           echo "ready=true" >> "$GITHUB_OUTPUT"
 
       - name: Free-only authenticated football-data.org target day intake
-        if: steps.browser.outputs.ready == 'true'
+        if: steps.browser.outputs.attempted == 'true'
         env:
           FOOTBALL_DATA_ORG_TOKEN: ${{ secrets.FOOTBALL_DATA_ORG_TOKEN }}
         shell: bash
@@ -103,7 +108,7 @@ jobs:
           PYTHONPATH=. python -m tools.matrix_football_independent_fixture_pipeline             --date "$D"             --out "evidence/football_world_inventory/$D/MATRIX_FOOTBALL_INDEPENDENT_FIXTURE_INTAKE.json"
 
       - name: Free-only authentic history and frozen original formula in research
-        if: steps.browser.outputs.ready == 'true'
+        if: steps.browser.outputs.attempted == 'true'
         env:
           FOOTBALL_DATA_ORG_TOKEN: ${{ secrets.FOOTBALL_DATA_ORG_TOKEN }}
         shell: bash
@@ -115,7 +120,7 @@ jobs:
           PYTHONPATH=. python -m tools.matrix_independent_over25_prematch_freeze             --intake "$DIR/MATRIX_FOOTBALL_INDEPENDENT_FIXTURE_INTAKE.json"             --shadow "$DIR/MATRIX_INDEPENDENT_OVER25_HISTORY_SHADOW.json"             --out "$DIR/MATRIX_INDEPENDENT_OVER25_PREMATCH_FREEZE_REPORT.json"
 
       - name: Independent free-source Poisson V1 (not original MATRIX calibration)
-        if: steps.browser.outputs.ready == 'true'
+        if: steps.browser.outputs.attempted == 'true'
         shell: bash
         run: |
           set -euo pipefail
@@ -169,6 +174,11 @@ jobs:
             "target_date_bogota":day,
             "source_order":["SOFASCORE","FLASHSCORE","FOOTBALL_DATA_ORG"],
             "browser_first_receipt_ready":ready=="true",
+            "browser_first_receipt_lookup_attempted":True,
+            "fallback_research_only_due_to_missing_browser_receipts":ready!="true",
+            "cross_provider_identity_certified":False,
+            "browser_missing_reason":"NO_BOTH_BROWSER_RECEIPTS_FOR_TARGET" if ready!="true" else None,
+            "provider_only_scope_if_browser_missing": "RESEARCH_ONLY_NO_OFFICIAL_P_MATRIX" if ready!="true" else "RESEARCH_WITH_BROWSER_RECEIPTS_NOT_FORMAL_PARITY",
             "source_sha256":proofs,
             "authenticated_provider_status":intake.get("provider_status"),
             "authentic_provider_fixture_count":intake.get("fixture_count"),
