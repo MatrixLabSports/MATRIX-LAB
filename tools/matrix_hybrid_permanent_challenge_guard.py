@@ -24,8 +24,11 @@ EVALUATION_WORKFLOW = Path(".github/workflows/matrix-independent-free-poisson-oo
 BAYES_WORKFLOW = Path(".github/workflows/matrix-hybrid-free-bayesian-prematch-research.yml")
 THREE_WORKFLOW = Path(".github/workflows/matrix-hybrid-three-model-prospective-oos.yml")
 TEAM_V2_WORKFLOW = Path(".github/workflows/matrix-hybrid-team-venue-beta-v2-prematch.yml")
+FOUR_WORKFLOW = Path(".github/workflows/matrix-hybrid-four-model-prospective-oos.yml")
 THREE_REPORT = Path("evidence/matrix_hybrid_elite/MATRIX_HYBRID_THREE_MODEL_OOS_LAST.json")
 TEAM_V2_REPORT = Path("evidence/matrix_hybrid_elite/MATRIX_HYBRID_TEAM_VENUE_BETA_V2_LAST.json")
+FOUR_REPORT = Path("evidence/matrix_hybrid_elite/MATRIX_HYBRID_FOUR_MODEL_OOS_LAST.json")
+DUAL_SOURCE_LINEAGE = Path("evidence/matrix_hybrid_elite/MATRIX_HYBRID_ORIGINAL_DUAL_FREEZE_LINEAGE_LAST.json")
 BAYES_V1_DIAGNOSTIC = Path("evidence/matrix_hybrid_elite/MATRIX_HYBRID_BAYESIAN_LEAGUE_BASELINE_DIAGNOSTIC_20261119.json")
 PERMANENT_MODULES = (
     Path("tools/matrix_hybrid_elite_lab.py"),
@@ -34,6 +37,8 @@ PERMANENT_MODULES = (
     Path("tools/matrix_hybrid_free_bayesian_v1.py"),
     Path("tools/matrix_hybrid_three_model_research_oos.py"),
     Path("tools/matrix_hybrid_team_venue_beta_v2.py"),
+    Path("tools/matrix_hybrid_original_dual_freeze_lineage.py"),
+    Path("tools/matrix_hybrid_four_model_research_oos.py"),
 )
 
 REQUIRED_LANES = ("FOOTBALL_OVER25", "TENNIS_CHALLENGER_HARD",
@@ -103,7 +108,8 @@ def inspect(root: Path) -> dict:
                        ("independent_OOS", EVALUATION_WORKFLOW),
                        ("bayesian_prospective", BAYES_WORKFLOW),
                        ("three_model_prospective_oos", THREE_WORKFLOW),
-                       ("team_aware_bayesian_v2", TEAM_V2_WORKFLOW)):
+                       ("team_aware_bayesian_v2", TEAM_V2_WORKFLOW),
+                       ("four_model_prospective_oos", FOUR_WORKFLOW)):
         p = root / rel
         if not p.is_file():
             issues.append("MISSING_SCHEDULED_WORKFLOW:" + label)
@@ -295,6 +301,47 @@ def inspect(root: Path) -> dict:
                 or v.get("real_money") != "BLOCKED"):
                 issues.append("TEAM_VENUE_V2_PROVENANCE_OR_GOVERNANCE_INVALID")
 
+    dual = doc(DUAL_SOURCE_LINEAGE)
+    original_dual_freeze = {"state": "UNVERIFIED"}
+    if dual:
+        original_dual_freeze = {
+            "state": dual.get("status"),
+            "unique_physical_events": dual.get("physical_fixture_count"),
+            "matched": dual.get("lineage_matched_fixture_count"),
+            "two_forecast_snapshots_per_event":
+                dual.get("two_snapshot_fixture_count"),
+            "rejected": dual.get("lineage_rejected_fixture_count"),
+        }
+        if (dual.get("schema") !=
+                "MATRIX_HYBRID_ORIGINAL_DUAL_FREEZE_LINEAGE_V1"
+            or dual.get("lineage_rejected_fixture_count") != 0
+            or dual.get("lineage_matched_fixture_count") !=
+               dual.get("physical_fixture_count")
+            or dual.get("two_snapshot_fixture_count", 0) < 37
+            or dual.get("telegram_signal_authorized") is not False
+            or dual.get("real_money") != "BLOCKED"):
+            issues.append("INVALID_PRIMARY_VS_SECONDARY_FORMULA_SHA_LINEAGE")
+
+    four = {"state": "PENDING_FIRST_VERIFIED_CYCLE"}
+    if (root / FOUR_REPORT).is_file():
+        doc4 = doc(FOUR_REPORT)
+        if doc4:
+            four = {
+                "state": doc4.get("status"),
+                "frozen_future_events": doc4.get("four_model_frozen_future_count"),
+                "verified_settlements": doc4.get("four_model_verified_settled_count"),
+                "rejected": len(doc4.get("four_model_rejected") or []),
+                "v2_unfrozen": len(doc4.get("four_model_missing_v2_forecasts") or []),
+            }
+            if (doc4.get("schema") != "MATRIX_HYBRID_FOUR_MODEL_RESEARCH_OOS_V1"
+                or doc4.get("model_superiority_claim_authorized") is not False
+                or doc4.get("original_p_matrix_official_probability_present") is not False
+                or doc4.get("automatic_model_promotion") is not False
+                or doc4.get("telegram_signal_authorized") is not False
+                or doc4.get("automatic_wagering") is not False
+                or doc4.get("real_money") != "BLOCKED"):
+                issues.append("FOUR_WAY_OOS_GOVERNANCE_OR_SCHEMA_INVALID")
+
     # Absence of proven per-sport original p_MATRIX pairs is BLOCKED, not a
     # software failure; a good cron run must never be presented as model GO.
     return {
@@ -318,6 +365,8 @@ def inspect(root: Path) -> dict:
         "hybrid_bayesian_research": bayesian,
         "hybrid_three_model_oos": triple,
         "hybrid_team_venue_v2": team_v2,
+        "hybrid_original_dual_freeze_lineage": original_dual_freeze,
+        "hybrid_four_model_oos": four,
         "official_hybrid_p_matrix_comparison_certified": False,
         "all_42_markets_calibrated": False,
         "automatic_model_promotion": False,
