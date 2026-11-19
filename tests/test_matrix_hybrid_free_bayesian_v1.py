@@ -82,3 +82,38 @@ def test_empty_manifest_never_creates_fake_observations():
     assert result["scored_count"]==0
     assert result["blocked_count"]==0
     assert result["telegram_signal_authorized"] is False
+
+
+def test_select_new_first_time_and_expired_never_backfills(tmp_path):
+    doc=load()
+    doc["prelabel_research_pairs"]=doc["prelabel_research_pairs"][:1]
+    doc["recovered_research_pair_count"]=1
+    scoped, already, expired=engine.select_new_prospective(tmp_path,doc,NOW)
+    assert len(scoped["prelabel_research_pairs"])==1
+    assert (already,expired)==(0,0)
+    after=datetime(2026,11,23,tzinfo=timezone.utc)
+    scoped, already, expired=engine.select_new_prospective(tmp_path,doc,after)
+    assert len(scoped["prelabel_research_pairs"])==0
+    assert (already,expired)==(0,1)
+
+
+def test_dynamic_bogota_date_for_future_cohorts(tmp_path):
+    entry={"physical_event_id":"999001","event_start_at_utc":"2026-12-05T02:00:00Z"}
+    path=engine.freeze_path(tmp_path,entry)
+    assert "2026-12-04" in str(path)
+    assert path.name=="999001.json"
+
+
+def test_conflicting_existing_bayesian_file_never_overwritten(tmp_path):
+    doc=load()
+    doc["prelabel_research_pairs"]=doc["prelabel_research_pairs"][:1]
+    doc["recovered_research_pair_count"]=1
+    entry=doc["prelabel_research_pairs"][0]
+    path=engine.freeze_path(tmp_path,entry)
+    path.parent.mkdir(parents=True,exist_ok=True)
+    path.write_text(json.dumps({"schema":"bogus","real_money":"BLOCKED"}))
+    try:
+        engine.select_new_prospective(tmp_path,doc,NOW)
+        assert False,"failed to block immutable overwrite"
+    except (ValueError,KeyError) as e:
+        assert str(e) in ("BAYESIAN_PRIOR_IMMUTABLE_FILE_CONFLICT", "'forecast_frozen_at_utc'")
