@@ -263,7 +263,7 @@ def main():
         dest.parent.mkdir(parents=True, exist_ok=True)
         with dest.open("x", encoding="utf-8") as fh:
             json.dump(row, fh, ensure_ascii=False, sort_keys=True)
-            fh.write("\\n")
+            fh.write("\n")
         newly_frozen += 1
     report["immutable_new_forecasts"] = newly_frozen
     report["immutable_already_existing"] = existing
@@ -284,7 +284,7 @@ def main():
                               "real_money": "BLOCKED"}, sort_keys=True))
             return
     dest.write_text(json.dumps(report, ensure_ascii=False, sort_keys=True, indent=2) +
-                    "\\n", encoding="utf-8")
+                    "\n", encoding="utf-8")
     print(json.dumps({"bayesian_new_research_forecasts": newly_frozen,
                       "immutable_total": report["immutable_total_seen"],
                       "expired_without_forecast": expired,
