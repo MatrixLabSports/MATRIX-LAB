@@ -1,0 +1,89 @@
+"""Continuity guard tests: real repo read-only plus tamper-only tmp copies.
+
+The test never mutates the project or credits synthetic rows as observations.
+"""
+import json
+import shutil
+from pathlib import Path
+
+from tools import matrix_hybrid_permanent_challenge_guard as guard
+
+ROOT = Path(__file__).resolve().parents[1]
+REQUIRED = (guard.CONTRACT, guard.PAIR, guard.MARKETS, guard.TENNIS, guard.OOS,
+            guard.PAIR_WORKFLOW, guard.HISTORY_WORKFLOW, guard.EVALUATION_WORKFLOW)
+
+
+def copy_subset(tmp_path):
+    for rel in REQUIRED:
+        src = ROOT / rel
+        dst = tmp_path / rel
+        dst.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copy2(src, dst)
+    manifest = json.loads((tmp_path / guard.PAIR).read_bytes())
+    for row in manifest["prelabel_research_pairs"]:
+        for key in ("original_freeze_path", "poisson_freeze_path"):
+            rel = Path(row[key])
+            target = tmp_path / rel
+            target.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copy2(ROOT / rel, target)
+    return tmp_path
+
+
+def test_real_source_contract_and_four_lanes_remain_present():
+    r = guard.inspect(ROOT)
+    assert r["technical_integrity_pass"], r["integrity_failures"]
+    assert r["status"] == "CONTROLS_VALID_RESEARCH_STILL_BLOCKED"
+    assert r["market_scope"]["total"] == 42
+    assert r["market_scope"]["football"] == 30
+    assert r["market_scope"]["tennis"] == 12
+    assert set(r["all_four_lanes"]) == set(guard.REQUIRED_LANES)
+    assert r["all_four_lanes"]["FOOTBALL_OVER25"]["research_frozen_pairs"] >= 37
+    assert r["official_hybrid_p_matrix_comparison_certified"] is False
+    assert r["challenge_completed"] is False
+    assert r["real_money"] == "BLOCKED"
+    assert r["telegram_signal_authorized"] is False
+
+
+def test_modified_immutable_poisson_freeze_fails_closed(tmp_path):
+    root = copy_subset(tmp_path)
+    j = json.loads((root / guard.PAIR).read_bytes())
+    frozen = root / j["prelabel_research_pairs"][0]["poisson_freeze_path"]
+    frozen.write_bytes(frozen.read_bytes() + b" ")
+    r = guard.inspect(root)
+    assert r["technical_integrity_pass"] is False
+    assert any("PHYSICAL_FREEZE_SHA_MISMATCH_poisson" in x for x in r["integrity_failures"])
+
+
+def test_market_scope_change_fails_closed(tmp_path):
+    root = copy_subset(tmp_path)
+    p = root / guard.MARKETS
+    j = json.loads(p.read_bytes())
+    j["total_lanes"] = 41
+    p.write_text(json.dumps(j))
+    r = guard.inspect(root)
+    assert "MARKET_SCOPE_OR_SCHEMA_NOT_42" in r["integrity_failures"]
+
+
+def test_no_hybrid_contract_fails_closed(tmp_path):
+    root = copy_subset(tmp_path)
+    (root / guard.CONTRACT).unlink()
+    r = guard.inspect(root)
+    assert "MISSING_HYBRID_PERMANENT_CONTRACT" in r["integrity_failures"]
+
+
+def test_loss_of_daily_schedule_fails_closed(tmp_path):
+    root = copy_subset(tmp_path)
+    p = root / guard.PAIR_WORKFLOW
+    p.write_text(p.read_text().replace("schedule:", "manual:"))
+    r = guard.inspect(root)
+    assert "SCHEDULED_WORKFLOW_INCOMPLETE:hybrid_pairs" in r["integrity_failures"]
+
+
+def test_unapproved_model_promotion_fails_closed(tmp_path):
+    root = copy_subset(tmp_path)
+    p = root / guard.PAIR
+    j = json.loads(p.read_bytes())
+    j["production_p_matrix_authorized"] = True
+    p.write_text(json.dumps(j))
+    r = guard.inspect(root)
+    assert "UNAUTHORIZED_HYBRID_PROMOTION:production_p_matrix_authorized" in r["integrity_failures"]
