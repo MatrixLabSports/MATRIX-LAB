@@ -57,3 +57,18 @@ Todos deben estar comprobados en **el mismo candidato** y en secuencia anterior 
 
 ## Salvedad expresa
 Este documento registra la disciplina exigida; por sí solo **no ejecuta los controles automáticamente**, no certifica un productor ni activa Telegram. La conformidad se demuestra al ejecutar el proceso y presentar el expediente físico correspondiente.
+
+## Anexo permanente — MATRIX Híbrida Élite (19 de noviembre de 2026)
+
+El contrato complementario [MATRIX_RETO_CONTRATO_PERMANENTE_HIBRIDA_V1.md](MATRIX_RETO_CONTRATO_PERMANENTE_HIBRIDA_V1.md)
+forma parte obligatoria del mismo reto, no es un proyecto opcional. En cada
+revisión se deben conservar y reportar los cuatro bloques (fútbol Over 2.5;
+Challenger Hard; Challenger Clay; Live Tennis), el inventario completo de
+42 mercados, los motores híbridos de investigación, la evaluación
+prospectiva y los bloqueos hasta cierre legítimo.
+
+El control físico automatizado se define en
+`tools/matrix_hybrid_permanent_challenge_guard.py` y
+`.github/workflows/matrix-hybrid-permanent-challenge-guard.yml`.
+La ejecución exitosa del guardián **no significa** que las probabilidades
+híbridas estén certificadas ni que Telegram pueda emitir señales.
