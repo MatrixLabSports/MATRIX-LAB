@@ -63,6 +63,8 @@ def settle(root: Path, tamper=None):
     if tamper:
         tamper(provider_final)
     result_sha=write(source/"original_final.json",provider_final)
+    # Real settlement sources are content-addressed, not arbitrary filenames.
+    (source/"original_final.json").rename(source/(result_sha+".json"))
     result={
       "schema":"MATRIX_INDEPENDENT_OVER25_SETTLED_RESEARCH_V1",
       "fixture_id":"560643","competition_id":"2021",
