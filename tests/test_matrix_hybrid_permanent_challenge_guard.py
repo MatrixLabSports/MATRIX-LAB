@@ -12,6 +12,7 @@ ROOT = Path(__file__).resolve().parents[1]
 REQUIRED = (guard.CONTRACT, guard.PAIR, guard.MARKETS, guard.TENNIS, guard.OOS,
             guard.PAIR_WORKFLOW, guard.HISTORY_WORKFLOW, guard.EVALUATION_WORKFLOW,
             guard.BAYES_WORKFLOW, guard.THREE_WORKFLOW, guard.TEAM_V2_WORKFLOW,
+            guard.FOUR_WORKFLOW, guard.DUAL_SOURCE_LINEAGE,
             guard.BAYES_V1_DIAGNOSTIC, *guard.PERMANENT_MODULES)
 
 
@@ -113,7 +114,7 @@ def test_all_physical_continuity_sources_copy_to_isolated_test_root(tmp_path):
     assert set(r["automated_workflows_present"]) == {
         "hybrid_pairs", "free_D2", "independent_OOS",
         "bayesian_prospective", "three_model_prospective_oos",
-        "team_aware_bayesian_v2",
+        "team_aware_bayesian_v2", "four_model_prospective_oos",
     }
     assert r["hybrid_three_model_oos"]["state"] in (
         "PENDING_FIRST_VERIFIED_CYCLE",
@@ -134,3 +135,20 @@ def test_missing_team_venue_bayesian_v2_model_is_caught(tmp_path):
     r = guard.inspect(root)
     assert "MISSING_PERMANENT_HYBRID_MODEL:" + (
         guard.PERMANENT_MODULES[-1].as_posix()) in r["integrity_failures"]
+
+
+def test_missing_four_model_prospective_schedule_fails_closed(tmp_path):
+    root=copy_subset(tmp_path)
+    (root / guard.FOUR_WORKFLOW).unlink()
+    state=guard.inspect(root)
+    assert "MISSING_SCHEDULED_WORKFLOW:four_model_prospective_oos" in state["integrity_failures"]
+
+
+def test_modified_dual_capture_attestation_fails_closed(tmp_path):
+    root=copy_subset(tmp_path)
+    p=root / guard.DUAL_SOURCE_LINEAGE
+    j=json.loads(p.read_bytes())
+    j["lineage_matched_fixture_count"]=0
+    p.write_text(json.dumps(j),encoding="utf-8")
+    state=guard.inspect(root)
+    assert "INVALID_PRIMARY_VS_SECONDARY_FORMULA_SHA_LINEAGE" in state["integrity_failures"]
