@@ -199,7 +199,7 @@ def prepare(root: Path, now: datetime | None = None, day: str | None = None) -> 
 def main():
     p = argparse.ArgumentParser()
     p.add_argument("--root", type=Path, default=Path.cwd())
-    p.add_argument("--day", default="2026-11-21")
+    p.add_argument("--day", default=None, help="Optional YYYY-MM-DD; default all prospectively sealed days")
     p.add_argument("--out", type=Path, default=Path(
         "evidence/matrix_hybrid_elite/MATRIX_HYBRID_RESEARCH_PRELABEL_PAIRS_LAST.json"))
     a = p.parse_args()
@@ -208,6 +208,16 @@ def main():
     result = prepare(a.root, day=a.day)
     target = a.out if a.out.is_absolute() else a.root / a.out
     target.parent.mkdir(parents=True, exist_ok=True)
+    # Avoid fresh timestamp-only commits on each scheduled run.
+    if target.is_file():
+        previous = json.loads(target.read_bytes())
+        except_clock = lambda d: {k: v for k, v in d.items() if k != "generated_at_utc"}
+        if except_clock(previous) == except_clock(result):
+            print(json.dumps({"research_pairs": result["recovered_research_pair_count"],
+                              "rejected": result["rejected_research_pair_count"],
+                              "unchanged_research": True, "official_hybrid_rows": 0,
+                              "real_money": "BLOCKED"}, sort_keys=True))
+            return
     target.write_text(json.dumps(result, ensure_ascii=False, sort_keys=True, indent=2) + "\n",
                       encoding="utf-8")
     print(json.dumps({"research_pairs": result["recovered_research_pair_count"],
