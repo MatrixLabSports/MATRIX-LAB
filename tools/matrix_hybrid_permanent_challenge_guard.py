@@ -310,6 +310,16 @@ def inspect(root: Path) -> dict:
             "matched": dual.get("lineage_matched_fixture_count"),
             "two_forecast_snapshots_per_event":
                 dual.get("two_snapshot_fixture_count"),
+            "exactly_two_snapshot_events":
+                dual.get("exactly_two_snapshot_fixture_count"),
+            "more_than_two_snapshot_events":
+                dual.get("more_than_two_snapshot_fixture_count"),
+            "additional_snapshot_files_excluded":
+                dual.get("additional_snapshot_files_excluded_from_observations"),
+            "later_changed_history_sha_snapshots":
+                dual.get("later_snapshots_with_changed_history_sha256"),
+            "later_changed_probability_snapshots":
+                dual.get("later_snapshots_with_changed_probability"),
             "rejected": dual.get("lineage_rejected_fixture_count"),
         }
         if (dual.get("schema") !=
@@ -321,6 +331,18 @@ def inspect(root: Path) -> dict:
             or dual.get("telegram_signal_authorized") is not False
             or dual.get("real_money") != "BLOCKED"):
             issues.append("INVALID_PRIMARY_VS_SECONDARY_FORMULA_SHA_LINEAGE")
+        exactly = dual.get("exactly_two_snapshot_fixture_count")
+        multiple = dual.get("more_than_two_snapshot_fixture_count")
+        extras = dual.get("additional_snapshot_files_excluded_from_observations")
+        later_history = dual.get("later_snapshots_with_changed_history_sha256")
+        later_probability = dual.get("later_snapshots_with_changed_probability")
+        if (not all(type(v) is int and v >= 0 for v in
+                    (exactly, multiple, extras, later_history, later_probability))
+            or exactly + multiple != dual.get("lineage_matched_fixture_count")
+            or extras < multiple
+            or later_history > extras + multiple
+            or later_probability > extras + multiple):
+            issues.append("HYBRID_EXTRA_FROZEN_SNAPSHOT_ACCOUNTING_INVALID")
 
     four = {"state": "PENDING_FIRST_VERIFIED_CYCLE"}
     if (root / FOUR_REPORT).is_file():
