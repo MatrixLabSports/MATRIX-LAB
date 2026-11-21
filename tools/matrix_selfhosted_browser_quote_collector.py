@@ -863,6 +863,12 @@ def main()->None:
         for ci,ctx in enumerate(contexts):
             existing_books={book_from_url(page.url or "") for page in ctx.pages}
             for book,adapter in (adapters.get("bookmakers") or {}).items():
+                # Do not open 14+ new bookmaker tabs when no certified
+                # prospective or independent research event is in scope.
+                # Existing authorized tabs are still read below; no browser
+                # account or user session is closed or manipulated.
+                if not browser_targets:
+                    break
                 if book in existing_books:
                     continue
                 entry=str((adapter or {}).get("entry_url") or "").strip()
@@ -1036,6 +1042,8 @@ def main()->None:
       "target_scope_diagnostic": {
         "canonical_candidate_count": len(candidates),
         "research_only_target_count": len(research_targets),
+        "new_bookmaker_page_opening_allowed": bool(browser_targets),
+        "no_target_does_not_spawn_new_bookmaker_tabs": True,
         "page_capture_alone_never_proves_quote_availability": True,
         "no_target_is_not_no_quote": True,
         "source_calendar_priority": ["SofaScore", "Flashscore", "authorized_independent_provider"],
