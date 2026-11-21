@@ -152,3 +152,25 @@ def test_modified_dual_capture_attestation_fails_closed(tmp_path):
     p.write_text(json.dumps(j),encoding="utf-8")
     state=guard.inspect(root)
     assert "INVALID_PRIMARY_VS_SECONDARY_FORMULA_SHA_LINEAGE" in state["integrity_failures"]
+
+
+def test_multiple_authentic_source_snapshots_do_not_become_extra_market_observations():
+    r=guard.inspect(ROOT)
+    dual=r["hybrid_original_dual_freeze_lineage"]
+    assert dual["matched"] == dual["unique_physical_events"]
+    assert dual["exactly_two_snapshot_events"] + dual["more_than_two_snapshot_events"] == dual["matched"]
+    assert dual["additional_snapshot_files_excluded"] >= dual["more_than_two_snapshot_events"]
+    assert dual["later_changed_history_sha_snapshots"] >= 0
+    assert r["official_hybrid_p_matrix_comparison_certified"] is False
+    assert r["telegram_signal_authorized"] is False
+
+
+def test_fake_snapshot_exclusion_accounting_fails_closed(tmp_path):
+    root=copy_subset(tmp_path)
+    p=root / guard.DUAL_SOURCE_LINEAGE
+    doc=json.loads(p.read_bytes())
+    doc["additional_snapshot_files_excluded_from_observations"]=-1
+    p.write_text(json.dumps(doc),encoding="utf-8")
+    report=guard.inspect(root)
+    assert report["technical_integrity_pass"] is False
+    assert "HYBRID_EXTRA_FROZEN_SNAPSHOT_ACCOUNTING_INVALID" in report["integrity_failures"]
