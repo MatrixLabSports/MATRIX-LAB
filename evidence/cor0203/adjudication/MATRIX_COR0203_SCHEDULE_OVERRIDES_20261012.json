@@ -1,0 +1,675 @@
+{
+  "schema": "MATRIX_COR0203_SCHEDULE_OVERRIDES_V1",
+  "created_at_utc": "2026-10-12T21:20:00+00:00",
+  "policy": {
+    "freeze_mutation": false,
+    "schedule_overlay_only": true,
+    "outcome_imputation": false,
+    "source_priority": [
+      "SOFASCORE_OR_FLASHSCORE_PHYSICAL",
+      "STRUCTURED_PAID_API"
+    ],
+    "settlement_rule": "Use effective_event_start_utc only for settlement timing; never rewrite prematch freeze.",
+    "physical_round_identity_overlay_for_dedupe_only": true,
+    "round_overlay_rule": "Use effective_round only when physical evidence resolves a provider round-label conflict for the same physical event; never rewrite the frozen observation."
+  },
+  "entries": [
+    {
+      "event_id": "COR0203-API-TENNIS-12169900",
+      "players": [
+        "Facundo Diaz Acosta",
+        "Shintaro Mochizuki"
+      ],
+      "competition": "Jinan",
+      "original_frozen_event_start_utc": "2026-10-12T02:00:00+00:00",
+      "effective_event_start_utc": "2026-10-13T07:30:00+00:00",
+      "effective_event_start_local": "2026-10-13T02:30:00-05:00",
+      "operational_timezone": "America/Bogota",
+      "classification": "RESCHEDULED_WAITING_EVENT_START",
+      "sources": [
+        "USER_PROVIDED_FLASHSCORE_SCREENSHOT_SHA256:26fcd81bffb96af971735a043c82441d11bf530bbc13db5b923338aa90758f31"
+      ],
+      "note": "Physical Flashscore screenshot shows 13.10.2026 02:30 on user's device. MATRIX has duplicate records for the same player pair with conflicting provider times. Overlay affects settlement timing only; freeze remains immutable."
+    },
+    {
+      "event_id": "COR0203-API-TENNIS-12169902",
+      "players": [
+        "Alexander Shevchenko",
+        "Miomir Kecmanovic"
+      ],
+      "competition": "Jinan",
+      "original_frozen_event_start_utc": "2026-10-12T02:00:00+00:00",
+      "effective_event_start_utc": "2026-10-13T09:00:00+00:00",
+      "effective_event_start_local": "2026-10-13T04:00:00-05:00",
+      "operational_timezone": "America/Bogota",
+      "classification": "RESCHEDULED_WAITING_EVENT_START",
+      "sources": [
+        "USER_PROVIDED_FLASHSCORE_SCREENSHOT_SHA256:6dc38bcdf2c846a9a08f453659860e32caafbe42dd10865d71947dc896642914"
+      ],
+      "note": "Physical Flashscore screenshot shows 13.10.2026 04:00 on user's device. MATRIX has duplicate records for the same player pair with conflicting provider times. Overlay affects settlement timing only; prematch freeze remains immutable."
+    },
+    {
+      "event_id": "COR0203-API-TENNIS-12170098",
+      "players": [
+        "Laslo Djere",
+        "Michael Mmoh"
+      ],
+      "competition": "Olbia",
+      "original_frozen_event_start_utc": "2026-10-12T09:00:00+00:00",
+      "effective_event_start_utc": "2026-10-13T09:30:00+00:00",
+      "effective_event_start_local": "2026-10-13T04:30:00-05:00",
+      "operational_timezone": "America/Bogota",
+      "classification": "RESCHEDULED_WAITING_EVENT_START",
+      "sources": [
+        "PHYSICAL_FLASHSCORE_SCREENSHOT_USER_PROVIDED_2026-10-12"
+      ],
+      "note": "Physical Flashscore screenshot shows 13.10.2026 04:30. Same Olbia pair also exists as RapidAPI match 1638 on 13-Oct. Overlay changes timing used for settlement/dedupe only; prematch freeze is immutable."
+    },
+    {
+      "event_id": "COR0203-API-TENNIS-12170093",
+      "players": [
+        "Aziz Dougaz",
+        "Damir Dzumhur"
+      ],
+      "competition": "Olbia",
+      "original_frozen_event_start_utc": "2026-10-12T09:00:00+00:00",
+      "effective_event_start_utc": "2026-10-13T12:00:00+00:00",
+      "effective_event_start_local": "2026-10-13T07:00:00-05:00",
+      "operational_timezone": "America/Bogota",
+      "classification": "RESCHEDULED_WAITING_EVENT_START",
+      "sources": [
+        "USER_PROVIDED_FLASHSCORE_SCREENSHOT_SHA256:e2ff763ae9067c5d9ab8146f25ac8225a028297ffc4fa663f8af9764c9ced7d6"
+      ],
+      "note": "Physical Flashscore screenshot shows 13.10.2026 07:00. Same Olbia player pair exists in API-Tennis and RapidAPI with conflicting scheduled times. Overlay changes settlement/dedupe timing only; prematch freezes remain immutable."
+    },
+    {
+      "event_id": "COR0203-RAPIDAPI-TENNIS-1640-e8723c7b51b0",
+      "players": [
+        "Aziz Dougaz",
+        "Damir Dzumhur"
+      ],
+      "competition": "Olbia Challenger",
+      "original_frozen_event_start_utc": "2026-10-13T09:00:00+00:00",
+      "effective_event_start_utc": "2026-10-13T12:00:00+00:00",
+      "effective_event_start_local": "2026-10-13T07:00:00-05:00",
+      "operational_timezone": "America/Bogota",
+      "classification": "RESCHEDULED_WAITING_EVENT_START",
+      "sources": [
+        "USER_PROVIDED_FLASHSCORE_SCREENSHOT_SHA256:e2ff763ae9067c5d9ab8146f25ac8225a028297ffc4fa663f8af9764c9ced7d6"
+      ],
+      "note": "Physical Flashscore screenshot shows 13.10.2026 07:00. Same Olbia player pair exists in API-Tennis and RapidAPI with conflicting scheduled times. Overlay changes settlement/dedupe timing only; prematch freezes remain immutable."
+    },
+    {
+      "event_id": "COR0203-API-TENNIS-12170094",
+      "players": [
+        "Daniil Glinka",
+        "Jacob Fearnley"
+      ],
+      "competition": "Olbia",
+      "original_frozen_event_start_utc": "2026-10-12T09:00:00+00:00",
+      "effective_event_start_utc": "2026-10-13T09:00:00+00:00",
+      "operational_timezone": "America/Bogota",
+      "classification": "STALE_SCHEDULE_CANCELLED_REPLACED_BEFORE_PLAY",
+      "sources": [
+        "API_TENNIS_SETTLEMENT_STATUS:CANCELLED",
+        "USER_PROVIDED_FLASHSCORE_SCREENSHOT_CURRENT_DRAW:Fearnley_vs_Loffhagen"
+      ],
+      "note": "API-Tennis record is CANCELLED. Current Flashscore draw shows Jacob Fearnley vs George Loffhagen, not Daniil Glinka. Effective time is used only to reconcile the stale API-Tennis row with the RapidAPI alias; prematch freeze is immutable and no sporting outcome is imputed."
+    },
+    {
+      "event_id": "COR0203-RAPIDAPI-TENNIS-1652-134c4e431efa",
+      "players": [
+        "Daniil Glinka",
+        "Jacob Fearnley"
+      ],
+      "competition": "Olbia Challenger",
+      "original_frozen_event_start_utc": "2026-10-13T09:00:00+00:00",
+      "effective_event_start_utc": "2026-10-13T09:00:00+00:00",
+      "operational_timezone": "America/Bogota",
+      "classification": "STALE_FIXTURE_ALIAS_CANCELLED_REPLACED_BEFORE_PLAY",
+      "sources": [
+        "USER_PROVIDED_FLASHSCORE_SCREENSHOT_CURRENT_DRAW:Fearnley_vs_Loffhagen"
+      ],
+      "note": "RapidAPI alias represents the same stale Glinka-Fearnley physical fixture. Current Flashscore draw has Fearnley vs Loffhagen. Keep as duplicate alias after physical reconciliation."
+    },
+    {
+      "event_id": "COR0203-API-TENNIS-12170099",
+      "players": [
+        "August Holmgren",
+        "Luca Nardi"
+      ],
+      "competition": "Olbia",
+      "original_frozen_event_start_utc": "2026-10-12T09:00:00+00:00",
+      "effective_event_start_utc": "2026-10-13T13:30:00+00:00",
+      "effective_event_start_local": "2026-10-13T08:30:00-05:00",
+      "operational_timezone": "America/Bogota",
+      "classification": "RESCHEDULED_WAITING_EVENT_START",
+      "sources": [
+        "USER_PROVIDED_FLASHSCORE_SCREENSHOT_SHA256:07604ed2c0f452974e551bb6faa87a587b5ba2f323c71f9baa6c8970559763c5"
+      ],
+      "note": "Physical Flashscore screenshot shows 13.10.2026 08:30. Same Olbia player pair exists in API-Tennis and RapidAPI with conflicting scheduled times. Overlay changes settlement/dedupe timing only; prematch freezes remain immutable."
+    },
+    {
+      "event_id": "COR0203-RAPIDAPI-TENNIS-1653-6a98d1f64c1b",
+      "players": [
+        "August Holmgren",
+        "Luca Nardi"
+      ],
+      "competition": "Olbia Challenger",
+      "original_frozen_event_start_utc": "2026-10-13T09:00:00+00:00",
+      "effective_event_start_utc": "2026-10-13T13:30:00+00:00",
+      "effective_event_start_local": "2026-10-13T08:30:00-05:00",
+      "operational_timezone": "America/Bogota",
+      "classification": "RESCHEDULED_WAITING_EVENT_START",
+      "sources": [
+        "USER_PROVIDED_FLASHSCORE_SCREENSHOT_SHA256:07604ed2c0f452974e551bb6faa87a587b5ba2f323c71f9baa6c8970559763c5"
+      ],
+      "note": "Physical Flashscore screenshot shows 13.10.2026 08:30. Same Olbia player pair exists in API-Tennis and RapidAPI with conflicting scheduled times. Overlay changes settlement/dedupe timing only; prematch freezes remain immutable."
+    },
+    {
+      "event_id": "COR0203-API-TENNIS-12170101",
+      "players": [
+        "Francesco Maestrelli",
+        "Mili Poljicak"
+      ],
+      "competition": "Olbia",
+      "original_frozen_event_start_utc": "2026-10-12T09:00:00+00:00",
+      "effective_event_start_utc": "2026-10-13T15:00:00+00:00",
+      "effective_event_start_local": "2026-10-13T10:00:00-05:00",
+      "operational_timezone": "America/Bogota",
+      "classification": "RESCHEDULED_WAITING_EVENT_START",
+      "sources": [
+        "USER_PROVIDED_FLASHSCORE_SCREENSHOT_2026-10-12"
+      ],
+      "note": "Physical Flashscore screenshot shows 13.10.2026 10:00. Overlay changes settlement/dedupe timing only; prematch freeze remains immutable."
+    },
+    {
+      "event_id": "COR0203-RAPIDAPI-TENNIS-1658-fbfd206fb0bb",
+      "players": [
+        "Francesco Maestrelli",
+        "Mili Poljicak"
+      ],
+      "competition": "Olbia Challenger",
+      "original_frozen_event_start_utc": "2026-10-13T09:00:00+00:00",
+      "effective_event_start_utc": "2026-10-13T15:00:00+00:00",
+      "effective_event_start_local": "2026-10-13T10:00:00-05:00",
+      "operational_timezone": "America/Bogota",
+      "classification": "RESCHEDULED_WAITING_EVENT_START",
+      "sources": [
+        "USER_PROVIDED_FLASHSCORE_SCREENSHOT_2026-10-12"
+      ],
+      "note": "Physical Flashscore screenshot shows 13.10.2026 10:00. Overlay changes settlement/dedupe timing only; prematch freeze remains immutable."
+    },
+    {
+      "event_id": "COR0203-RAPIDAPI-TENNIS-1660-32ed0918982b",
+      "players": [
+        "Hynek Barton",
+        "Maxim Mrva"
+      ],
+      "competition": "Olbia Challenger",
+      "original_frozen_event_start_utc": "2026-10-13T09:00:00+00:00",
+      "effective_event_start_utc": "2026-10-13T12:30:00+00:00",
+      "effective_event_start_local": "2026-10-13T07:30:00-05:00",
+      "operational_timezone": "America/Bogota",
+      "classification": "RESCHEDULED_WAITING_EVENT_START",
+      "sources": [
+        "USER_PROVIDED_FLASHSCORE_SCREENSHOT_SHA256:d60db221c81f385c7218f51f07a3062eb7fa594374887a28abf10e9e348f40ff"
+      ],
+      "note": "Physical Flashscore screenshot shows 13.10.2026 07:30. Override changes settlement timing only; prematch freeze remains immutable."
+    },
+    {
+      "event_id": "COR0203-API-TENNIS-12170097",
+      "players": [
+        "Edas Butvilas",
+        "Jan Kumstat"
+      ],
+      "competition": "Olbia",
+      "original_frozen_event_start_utc": "2026-10-12T09:00:00+00:00",
+      "effective_event_start_utc": "2026-10-13T11:00:00+00:00",
+      "effective_event_start_local": "2026-10-13T06:00:00-05:00",
+      "operational_timezone": "America/Bogota",
+      "classification": "RESCHEDULED_WAITING_EVENT_START",
+      "sources": [
+        "USER_PROVIDED_FLASHSCORE_SCREENSHOT_SHA256:eb8a43bc9a2cd6155257ae83bc0b9b11a5107c9c548214c9746eed5ce511ae7d"
+      ],
+      "note": "Physical Flashscore screenshot shows 13.10.2026 06:00. Same Olbia player pair exists in API-Tennis and RapidAPI with conflicting scheduled times. Overlay changes settlement/dedupe timing only; prematch freezes remain immutable."
+    },
+    {
+      "event_id": "COR0203-RAPIDAPI-TENNIS-1663-4b0196cfaaa2",
+      "players": [
+        "Edas Butvilas",
+        "Jan Kumstat"
+      ],
+      "competition": "Olbia Challenger",
+      "original_frozen_event_start_utc": "2026-10-13T09:00:00+00:00",
+      "effective_event_start_utc": "2026-10-13T11:00:00+00:00",
+      "effective_event_start_local": "2026-10-13T06:00:00-05:00",
+      "operational_timezone": "America/Bogota",
+      "classification": "RESCHEDULED_WAITING_EVENT_START",
+      "sources": [
+        "USER_PROVIDED_FLASHSCORE_SCREENSHOT_SHA256:eb8a43bc9a2cd6155257ae83bc0b9b11a5107c9c548214c9746eed5ce511ae7d"
+      ],
+      "note": "Physical Flashscore screenshot shows 13.10.2026 06:00. Same Olbia player pair exists in API-Tennis and RapidAPI with conflicting scheduled times. Overlay changes settlement/dedupe timing only; prematch freezes remain immutable."
+    },
+    {
+      "event_id": "COR0203-RAPIDAPI-TENNIS-1730-ecaf8eb966da",
+      "players": [
+        "Alexandre Muller",
+        "Tomas Machac"
+      ],
+      "competition": "Jinan Challenger",
+      "original_frozen_event_start_utc": "2026-10-13T02:00:00+00:00",
+      "effective_event_start_utc": "2026-10-13T07:30:00+00:00",
+      "effective_event_start_local": "2026-10-13T02:30:00-05:00",
+      "operational_timezone": "America/Bogota",
+      "classification": "RESCHEDULED_WAITING_EVENT_START",
+      "sources": [
+        "USER_PROVIDED_FLASHSCORE_SCREENSHOT_SHA256:8edcc76fa73727851130c79d2985a7458612a546445ff245171134ec56dc02da"
+      ],
+      "note": "Physical Flashscore screenshot shows 13.10.2026 02:30. Override changes settlement timing only; prematch freeze remains immutable."
+    },
+    {
+      "event_id": "COR0203-RAPIDAPI-TENNIS-1522-f63fcf6bab6d",
+      "players": [
+        "Andrea Guerrieri",
+        "Maks Kasnikowski"
+      ],
+      "competition": "Olbia Challenger",
+      "original_frozen_event_start_utc": "2026-10-14T08:00:00+00:00",
+      "effective_event_start_utc": "2026-10-14T09:00:00+00:00",
+      "effective_event_start_local": "2026-10-14T04:00:00-05:00",
+      "operational_timezone": "America/Bogota",
+      "classification": "RESCHEDULED_WAITING_EVENT_START",
+      "sources": [
+        "USER_PROVIDED_FLASHSCORE_SCREENSHOT_SHA256:6a7ed10275b7e5d4d786fe43361d992d5cd5edc5adb9fccf155e02ea15571369"
+      ],
+      "note": "Physical Flashscore screenshot shows 14.10.2026 04:00. Override changes settlement timing only; prematch freeze remains immutable."
+    },
+    {
+      "event_id": "COR0203-RAPIDAPI-TENNIS-1722-72272e1956dc",
+      "players": [
+        "Facundo Diaz Acosta",
+        "Shintaro Mochizuki"
+      ],
+      "competition": "Jinan Challenger",
+      "original_frozen_event_start_utc": "2026-10-12T04:00:00+00:00",
+      "effective_event_start_utc": "2026-10-13T07:30:00+00:00",
+      "effective_event_start_local": "2026-10-13T02:30:00-05:00",
+      "operational_timezone": "America/Bogota",
+      "classification": "RESCHEDULED_WAITING_EVENT_START",
+      "sources": [
+        "USER_PROVIDED_FLASHSCORE_SCREENSHOT_RECONCILIATION"
+      ],
+      "note": "Stale RapidAPI schedule alias for the same physical Jinan match. Effective start is used only for settlement timing and cross-provider dedupe; prematch freeze remains immutable."
+    },
+    {
+      "event_id": "COR0203-RAPIDAPI-TENNIS-1708-d863c89e5184",
+      "players": [
+        "Alexander Shevchenko",
+        "Miomir Kecmanovic"
+      ],
+      "competition": "Jinan Challenger",
+      "original_frozen_event_start_utc": "2026-10-12T04:00:00+00:00",
+      "effective_event_start_utc": "2026-10-13T09:00:00+00:00",
+      "effective_event_start_local": "2026-10-13T04:00:00-05:00",
+      "operational_timezone": "America/Bogota",
+      "classification": "RESCHEDULED_WAITING_EVENT_START",
+      "sources": [
+        "USER_PROVIDED_FLASHSCORE_SCREENSHOT_RECONCILIATION"
+      ],
+      "note": "Stale RapidAPI schedule alias for the same physical Jinan match. Effective start is used only for settlement timing and cross-provider dedupe; prematch freeze remains immutable."
+    },
+    {
+      "event_id": "COR0203-API-TENNIS-12169903",
+      "players": [
+        "Pavel Kotov",
+        "Vit Kopriva"
+      ],
+      "competition": "Jinan",
+      "original_frozen_event_start_utc": "2026-10-12T02:00:00+00:00",
+      "effective_event_start_utc": "2026-10-13T06:00:00+00:00",
+      "effective_event_start_local": "2026-10-13T01:00:00-05:00",
+      "operational_timezone": "America/Bogota",
+      "classification": "RESCHEDULED_WAITING_EVENT_START",
+      "sources": [
+        "USER_PROVIDED_FLASHSCORE_SCREENSHOT_SHA256:ed30012e2a9fc7dd9d126ce2b96cf414f40d87375d3ce7282dfb1d2a6ab09d8d"
+      ],
+      "note": "Physical Flashscore screenshot shows 13.10.2026 01:00 on the user's device. Overlay changes settlement timing only; prematch freeze remains immutable."
+    },
+    {
+      "event_id": "COR0203-API-TENNIS-12169904",
+      "players": [
+        "Ilia Simakin",
+        "Martin Landaluce"
+      ],
+      "competition": "Jinan",
+      "original_frozen_event_start_utc": "2026-10-12T02:00:00+00:00",
+      "effective_event_start_utc": "2026-10-13T04:30:00+00:00",
+      "effective_event_start_local": "2026-10-12T23:30:00-05:00",
+      "operational_timezone": "America/Bogota",
+      "classification": "RESCHEDULED_WAITING_EVENT_START",
+      "sources": [
+        "USER_PROVIDED_FLASHSCORE_SCREENSHOT_SHA256:e7c249a1bddcd4aed35e59279ccc354a6235e0daceb3e62e2c2a641ebe00fa23"
+      ],
+      "note": "Physical Flashscore screenshot shows 12.10.2026 23:30 on the user's device. Overlay changes settlement timing only; prematch freeze remains immutable."
+    },
+    {
+      "event_id": "COR0203-API-TENNIS-12169907",
+      "players": [
+        "Fajing Sun",
+        "Jie Cui"
+      ],
+      "competition": "Jinan",
+      "original_frozen_event_start_utc": "2026-10-12T02:00:00+00:00",
+      "effective_event_start_utc": "2026-10-13T04:30:00+00:00",
+      "effective_event_start_local": "2026-10-12T23:30:00-05:00",
+      "operational_timezone": "America/Bogota",
+      "classification": "RESCHEDULED_WAITING_EVENT_START",
+      "sources": [
+        "USER_PROVIDED_FLASHSCORE_SCREENSHOT_SHA256:77291ecc2f6d270f1541c033ff187379b7c646d4c03fdb4440cfc3f27e36544c"
+      ],
+      "note": "Physical Flashscore screenshot shows 12.10.2026 23:30 on the user's device. Overlay changes settlement timing only; prematch freeze remains immutable."
+    },
+    {
+      "event_id": "COR0203-API-TENNIS-12169908",
+      "players": [
+        "Bernard Tomic",
+        "Dane Sweeny"
+      ],
+      "competition": "Jinan",
+      "original_frozen_event_start_utc": "2026-10-12T02:00:00+00:00",
+      "effective_event_start_utc": "2026-10-13T06:00:00+00:00",
+      "effective_event_start_local": "2026-10-13T01:00:00-05:00",
+      "operational_timezone": "America/Bogota",
+      "classification": "RESCHEDULED_WAITING_EVENT_START",
+      "sources": [
+        "USER_PROVIDED_FLASHSCORE_SCREENSHOT_SHA256:68631433d5a05404b03c813e83d3e6cc886344e7f704a41afa8a64eb4b799e2b"
+      ],
+      "note": "Physical Flashscore screenshot shows 13.10.2026 01:00 on the user's device. Overlay changes settlement timing only; prematch freeze remains immutable."
+    },
+    {
+      "event_id": "COR0203-API-TENNIS-12169910",
+      "players": [
+        "Elias Ymer",
+        "Mattia Bellucci"
+      ],
+      "competition": "Jinan",
+      "original_frozen_event_start_utc": "2026-10-12T02:00:00+00:00",
+      "effective_event_start_utc": "2026-10-13T07:30:00+00:00",
+      "effective_event_start_local": "2026-10-13T02:30:00-05:00",
+      "operational_timezone": "America/Bogota",
+      "classification": "RESCHEDULED_WAITING_EVENT_START",
+      "sources": [
+        "USER_PROVIDED_FLASHSCORE_SCREENSHOT_SHA256:5ae59f216da71314eca52de02739f23eaaeb721d9c546fb0db7145384be5bd27"
+      ],
+      "note": "Physical Flashscore screenshot shows 13.10.2026 02:30 on the user's device. Overlay changes settlement timing only; prematch freeze remains immutable."
+    },
+    {
+      "event_id": "COR0203-API-TENNIS-12170169",
+      "players": [
+        "Keegan Smith",
+        "Stefanos Sakellaridis"
+      ],
+      "competition": "Jinan",
+      "original_frozen_event_start_utc": "2026-10-12T08:00:00+00:00",
+      "effective_event_start_utc": "2026-10-13T04:30:00+00:00",
+      "effective_event_start_local": "2026-10-12T23:30:00-05:00",
+      "operational_timezone": "America/Bogota",
+      "classification": "RESCHEDULED_WAITING_EVENT_START",
+      "sources": [
+        "USER_PROVIDED_FLASHSCORE_SCREENSHOT_SHA256:f57398c39d192d527a842e071a63974f559d6890591ce6970a060d9da36b1bb6"
+      ],
+      "note": "Physical Flashscore screenshot shows 12.10.2026 23:30 on the user's device. Overlay changes settlement timing only; prematch freeze remains immutable."
+    },
+    {
+      "event_id": "COR0203-RAPIDAPI-TENNIS-1724-41f943caeaf3",
+      "players": [
+        "Liam Draxl",
+        "Omar Jasika"
+      ],
+      "competition": "Jinan Challenger",
+      "original_frozen_event_start_utc": "2026-10-12T05:30:00+00:00",
+      "effective_event_start_utc": "2026-10-13T03:00:00+00:00",
+      "effective_event_start_local": "2026-10-12T22:00:00-05:00",
+      "operational_timezone": "America/Bogota",
+      "classification": "RESCHEDULED_WAITING_EVENT_START",
+      "sources": [
+        "USER_PROVIDED_FLASHSCORE_SCREENSHOT_SHA256:0b797721428b0239463c9fd43aaf8abe57030eca62a70acd68591617f59e1ea6",
+        "https://www.flashscore.com/match/tennis/draxl-liam-IiUa42eG/jasika-omar-lOWZLw6o/?mid=YkiqaVge",
+        "FLASHSCORE_PHYSICAL_HEADING:JINAN - QUALIFICATION, HARD - FINAL"
+      ],
+      "note": "Physical Flashscore screenshot and browser read-back show one Liam Draxl vs Omar Jasika match at 12.10.2026 22:00 Bogota under JINAN - QUALIFICATION, HARD - FINAL. Q3 is the governed equivalent of the qualification final. Overlay changes settlement timing and cross-provider round identity for dedupe only; prematch freezes remain immutable.",
+      "effective_round": "Q3"
+    },
+    {
+      "event_id": "COR0203-API-TENNIS-12170077",
+      "players": [
+        "Liam Draxl",
+        "Omar Jasika"
+      ],
+      "competition": "Jinan",
+      "original_frozen_event_start_utc": "2026-10-12T05:30:00+00:00",
+      "effective_event_start_utc": "2026-10-13T03:00:00+00:00",
+      "effective_event_start_local": "2026-10-12T22:00:00-05:00",
+      "operational_timezone": "America/Bogota",
+      "classification": "RESCHEDULED_WAITING_EVENT_START_CROSS_PROVIDER_ALIAS",
+      "sources": [
+        "USER_PROVIDED_FLASHSCORE_SCREENSHOT_SHA256:0b797721428b0239463c9fd43aaf8abe57030eca62a70acd68591617f59e1ea6",
+        "https://www.flashscore.com/match/tennis/draxl-liam-IiUa42eG/jasika-omar-lOWZLw6o/?mid=YkiqaVge",
+        "FLASHSCORE_PHYSICAL_HEADING:JINAN - QUALIFICATION, HARD - FINAL"
+      ],
+      "note": "Physical Flashscore screenshot and browser read-back show one Liam Draxl vs Omar Jasika match at 12.10.2026 22:00 Bogota under JINAN - QUALIFICATION, HARD - FINAL. Q3 is the governed equivalent of the qualification final. Overlay changes settlement timing and cross-provider round identity for dedupe only; prematch freezes remain immutable.",
+      "effective_round": "Q3"
+    },
+    {
+      "event_id": "COR0203-RAPIDAPI-TENNIS-1735-71458cab06e4",
+      "players": [
+        "Jake Delaney",
+        "Marat Sharipov"
+      ],
+      "competition": "Jinan Challenger",
+      "original_frozen_event_start_utc": "2026-10-12T05:30:00+00:00",
+      "effective_event_start_utc": "2026-10-13T03:00:00+00:00",
+      "effective_event_start_local": "2026-10-12T22:00:00-05:00",
+      "operational_timezone": "America/Bogota",
+      "classification": "RESCHEDULED_WAITING_EVENT_START",
+      "sources": [
+        "USER_PROVIDED_FLASHSCORE_SCREENSHOT_SHA256:63b1e5751d95ada595b40cd849ad7c4366ff476b917eb5cfed546298501c5a1e"
+      ],
+      "note": "Physical Flashscore screenshot shows 12.10.2026 22:00 on the user's device. Overlay changes settlement timing only; prematch freeze remains immutable."
+    },
+    {
+      "event_id": "COR0203-RAPIDAPI-TENNIS-1469-983f64ca65b4",
+      "players": [
+        "Adam Walton",
+        "Marin Cilic"
+      ],
+      "competition": "Jinan Challenger",
+      "original_frozen_event_start_utc": "2026-10-12T10:30:00+00:00",
+      "effective_event_start_utc": "2026-10-13T06:00:00+00:00",
+      "effective_event_start_local": "2026-10-13T01:00:00-05:00",
+      "operational_timezone": "America/Bogota",
+      "classification": "RESCHEDULED_WAITING_EVENT_START",
+      "sources": [
+        "USER_PROVIDED_FLASHSCORE_SCREENSHOT_SHA256:49fec6b234c434341c22da97d3e337df1f2a5a6f1ad050fc4ab75b3383b62c55"
+      ],
+      "note": "Physical Flashscore screenshot shows 13.10.2026 01:00 on the user's device. Overlay changes settlement timing only; prematch freeze remains immutable."
+    },
+    {
+      "event_id": "COR0203-RAPIDAPI-TENNIS-1788-1eec579e9a88",
+      "players": [
+        "Otto Virtanen",
+        "Remy Bertola"
+      ],
+      "competition": "Roanne Challenger",
+      "original_frozen_event_start_utc": "2026-10-12T08:00:00+00:00",
+      "effective_event_start_utc": "2026-10-14T08:00:00+00:00",
+      "effective_event_start_local": "2026-10-14T03:00:00-05:00",
+      "operational_timezone": "America/Bogota",
+      "classification": "RESCHEDULED_WAITING_EVENT_START",
+      "sources": [
+        "USER_PROVIDED_FLASHSCORE_SCREENSHOT_SHA256:365a24ea654ef862e7dc001d4a6eb2805b873495b7cb745344519283da5e6c41"
+      ],
+      "note": "Physical Flashscore screenshot shows 14.10.2026 03:00 on the user's device. Overlay changes settlement timing only; prematch freeze remains immutable."
+    },
+    {
+      "event_id": "COR0203-RAPIDAPI-TENNIS-1789-daed683b936e",
+      "players": [
+        "Matteo Martineau",
+        "Max Schoenhaus"
+      ],
+      "competition": "Roanne Challenger",
+      "original_frozen_event_start_utc": "2026-10-12T08:00:00+00:00",
+      "effective_event_start_utc": "2026-10-13T08:30:00+00:00",
+      "effective_event_start_local": "2026-10-13T03:30:00-05:00",
+      "operational_timezone": "America/Bogota",
+      "classification": "RESCHEDULED_WAITING_EVENT_START",
+      "sources": [
+        "USER_PROVIDED_FLASHSCORE_SCREENSHOT_SHA256:9ad4a36ca86b2fb23b88c520482332bdb616f32d8e5c57215d12a5ee4c3c80fc"
+      ],
+      "note": "Physical Flashscore screenshot shows 13.10.2026 03:30 on the user's device. Overlay changes settlement timing only; prematch freeze remains immutable."
+    },
+    {
+      "event_id": "COR0203-RAPIDAPI-TENNIS-1794-0c1088e6ab78",
+      "players": [
+        "Clement Chidekh",
+        "Jerome Kym"
+      ],
+      "competition": "Roanne Challenger",
+      "original_frozen_event_start_utc": "2026-10-12T08:00:00+00:00",
+      "effective_event_start_utc": "2026-10-14T08:00:00+00:00",
+      "effective_event_start_local": "2026-10-14T03:00:00-05:00",
+      "operational_timezone": "America/Bogota",
+      "classification": "RESCHEDULED_WAITING_EVENT_START",
+      "sources": [
+        "USER_PROVIDED_FLASHSCORE_SCREENSHOT_SHA256:39f8d95b469a130ff16de4bb38c9a919eda024f83ffe418855faaa38cd37e32d"
+      ],
+      "note": "Physical Flashscore screenshot shows 14.10.2026 03:00 on the user's device. Overlay changes settlement timing only; prematch freeze remains immutable."
+    },
+    {
+      "event_id": "COR0203-RAPIDAPI-TENNIS-1795-7e7ef132a26b",
+      "players": [
+        "Felix Balshaw",
+        "Gauthier Onclin"
+      ],
+      "competition": "Roanne Challenger",
+      "original_frozen_event_start_utc": "2026-10-12T08:00:00+00:00",
+      "effective_event_start_utc": "2026-10-13T10:00:00+00:00",
+      "effective_event_start_local": "2026-10-13T05:00:00-05:00",
+      "operational_timezone": "America/Bogota",
+      "classification": "RESCHEDULED_WAITING_EVENT_START",
+      "sources": [
+        "USER_PROVIDED_FLASHSCORE_SCREENSHOT_SHA256:099905a5cbaf61f1dd9e7fc4904a1017cffc4abb81d6e245c1fb0862f2d069ff"
+      ],
+      "note": "Physical Flashscore screenshot shows 13.10.2026 05:00 on the user's device. Overlay changes settlement timing only; prematch freeze remains immutable."
+    },
+    {
+      "event_id": "COR0203-RAPIDAPI-TENNIS-1798-e6bb117bb940",
+      "players": [
+        "Dominic Stricker",
+        "Philip Henning"
+      ],
+      "competition": "Roanne Challenger",
+      "original_frozen_event_start_utc": "2026-10-12T08:00:00+00:00",
+      "effective_event_start_utc": "2026-10-14T08:00:00+00:00",
+      "effective_event_start_local": "2026-10-14T03:00:00-05:00",
+      "operational_timezone": "America/Bogota",
+      "classification": "RESCHEDULED_WAITING_EVENT_START",
+      "sources": [
+        "USER_PROVIDED_FLASHSCORE_SCREENSHOT_SHA256:634f704275666eacfe071b95fc998fa6d5e8961327530b31a9c0d66adedaf18a"
+      ],
+      "note": "Physical Flashscore screenshot shows 14.10.2026 03:00 on the user's device. Overlay changes settlement timing only; prematch freeze remains immutable."
+    },
+    {
+      "event_id": "COR0203-RAPIDAPI-TENNIS-1803-5011af180542",
+      "players": [
+        "Billy Harris",
+        "Matisse Bobichon"
+      ],
+      "competition": "Roanne Challenger",
+      "original_frozen_event_start_utc": "2026-10-12T08:00:00+00:00",
+      "effective_event_start_utc": "2026-10-14T08:00:00+00:00",
+      "effective_event_start_local": "2026-10-14T03:00:00-05:00",
+      "operational_timezone": "America/Bogota",
+      "classification": "RESCHEDULED_WAITING_EVENT_START",
+      "sources": [
+        "USER_PROVIDED_FLASHSCORE_SCREENSHOT_SHA256:1e5ee826411f740824c7148de28c4da9948a5837b1c3e047cb0a788c5516e0f3"
+      ],
+      "note": "Physical Flashscore screenshot shows 14.10.2026 03:00 on the user's device. Overlay changes settlement timing only; prematch freeze remains immutable."
+    },
+    {
+      "event_id": "COR0203-RAPIDAPI-TENNIS-1807-caee7474eb16",
+      "players": [
+        "Diego Dedura",
+        "Moise Kouame"
+      ],
+      "competition": "Roanne Challenger",
+      "original_frozen_event_start_utc": "2026-10-12T08:00:00+00:00",
+      "effective_event_start_utc": "2026-10-13T16:30:00+00:00",
+      "effective_event_start_local": "2026-10-13T11:30:00-05:00",
+      "operational_timezone": "America/Bogota",
+      "classification": "RESCHEDULED_WAITING_EVENT_START",
+      "sources": [
+        "USER_PROVIDED_FLASHSCORE_SCREENSHOT_SHA256:101e126642f8e4ad054603d1cf679da9e2ff2ef5f7a4340ad353aa447e1e61ca"
+      ],
+      "note": "Physical Flashscore screenshot shows 13.10.2026 11:30 on the user's device. Overlay changes settlement timing only; prematch freeze remains immutable."
+    },
+    {
+      "event_id": "COR0203-RAPIDAPI-TENNIS-1705-788a8830c7f2",
+      "players": [
+        "Elias Ymer",
+        "Mattia Bellucci"
+      ],
+      "competition": "Jinan Challenger",
+      "original_frozen_event_start_utc": "2026-10-12T04:00:00+00:00",
+      "effective_event_start_utc": "2026-10-13T07:30:00+00:00",
+      "effective_event_start_local": "2026-10-13T02:30:00-05:00",
+      "operational_timezone": "America/Bogota",
+      "classification": "RESCHEDULED_WAITING_EVENT_START_STALE_PROVIDER_ALIAS",
+      "sources": [
+        "USER_PROVIDED_FLASHSCORE_SCREENSHOT_SHA256:5ae59f216da71314eca52de02739f23eaaeb721d9c546fb0db7145384be5bd27"
+      ],
+      "note": "Stale RapidAPI schedule alias of the same physically verified Jinan match. Apply the physical rescheduled start only for settlement timing and cross-provider dedupe; prematch freeze remains immutable."
+    },
+    {
+      "event_id": "COR0203-RAPIDAPI-TENNIS-1712-121a7b016a86",
+      "players": [
+        "Pavel Kotov",
+        "Vit Kopriva"
+      ],
+      "competition": "Jinan Challenger",
+      "original_frozen_event_start_utc": "2026-10-12T04:00:00+00:00",
+      "effective_event_start_utc": "2026-10-13T06:00:00+00:00",
+      "effective_event_start_local": "2026-10-13T01:00:00-05:00",
+      "operational_timezone": "America/Bogota",
+      "classification": "RESCHEDULED_WAITING_EVENT_START_STALE_PROVIDER_ALIAS",
+      "sources": [
+        "USER_PROVIDED_FLASHSCORE_SCREENSHOT_SHA256:ed30012e2a9fc7dd9d126ce2b96cf414f40d87375d3ce7282dfb1d2a6ab09d8d"
+      ],
+      "note": "Stale RapidAPI schedule alias of the same physically verified Jinan match. Apply the physical rescheduled start only for settlement timing and cross-provider dedupe; prematch freeze remains immutable."
+    },
+    {
+      "event_id": "COR0203-RAPIDAPI-TENNIS-1718-a2398560e520",
+      "players": [
+        "Bernard Tomic",
+        "Dane Sweeny"
+      ],
+      "competition": "Jinan Challenger",
+      "original_frozen_event_start_utc": "2026-10-12T04:00:00+00:00",
+      "effective_event_start_utc": "2026-10-13T06:00:00+00:00",
+      "effective_event_start_local": "2026-10-13T01:00:00-05:00",
+      "operational_timezone": "America/Bogota",
+      "classification": "RESCHEDULED_WAITING_EVENT_START_STALE_PROVIDER_ALIAS",
+      "sources": [
+        "USER_PROVIDED_FLASHSCORE_SCREENSHOT_SHA256:68631433d5a05404b03c813e83d3e6cc886344e7f704a41afa8a64eb4b799e2b"
+      ],
+      "note": "Stale RapidAPI schedule alias of the same physically verified Jinan match. Apply the physical rescheduled start only for settlement timing and cross-provider dedupe; prematch freeze remains immutable."
+    }
+  ],
+  "protections": {
+    "metrics_opened": false,
+    "outcomes_used_for_metrics": 0,
+    "automatic_wagering": false,
+    "real_money": "BLOCKED"
+  }
+}

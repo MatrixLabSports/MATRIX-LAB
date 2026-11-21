@@ -1,0 +1,196 @@
+name: MATRIX Self-Hosted Browser Quotes 5m
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - repair/cor09-world-pipeline
+    paths:
+      - .github/workflows/matrix-selfhosted-browser-quotes-5m.yml
+      - tools/matrix_selfhosted_browser_quote_collector.py
+      - tools/matrix_browser_governed_intake_sync.py
+      - tests/test_matrix_browser_governed_intake_sync.py
+      - tools/matrix_calendar_browser_observations.py
+      - tools/matrix_opera_calendar_handoff.py
+      - tools/matrix_flashscore_opera_link_handoff.py
+      - tests/test_matrix_flashscore_opera_link_handoff.py
+      - tools/matrix_flashscore_individual_detail_certificate.py
+      - tests/test_matrix_flashscore_individual_detail_certificate.py
+      - evidence/browser_capture_inbox/opera_football_flash_detail/**
+      - evidence/browser_capture_inbox/opera_football_sofa_detail/**
+      - tests/test_matrix_opera_calendar_handoff.py
+      - tools/matrix_early_research_quote_intake.py
+      - tests/test_matrix_early_research_quote_intake.py
+      - tests/test_matrix_betano_research_market_archive.py
+      - tools/windows/collect_matrix_sofa_calendar.ps1
+      - tests/test_matrix_calendar_browser_observations.py tests/test_matrix_opera_calendar_handoff.py tests/test_matrix_flashscore_opera_link_handoff.py
+      - tools/windows/start_matrix_browser_cdp.ps1
+      - tools/windows/persist_matrix_browser_evidence.ps1
+      - tests/test_matrix_selfhosted_browser_quote_collector.py
+      - tests/test_matrix_browser_independent_research_quote_targets.py
+      - tests/test_matrix_browser_candidate_pipeline_diagnostic.py
+      - tools/matrix_telegram_input_health.py
+      - tests/test_matrix_telegram_input_health.py
+      - tools/matrix_independent_triple_source_calendar_certificate.py
+      - tests/test_matrix_independent_triple_source_calendar_certificate.py
+      - tools/matrix_independent_feature_parity_audit.py
+      - tests/test_matrix_independent_feature_parity_audit.py
+      - tools/matrix_independent_enriched_gap_feasibility.py
+      - tools/matrix_six_league_prospective_preflight.py
+      - tools/matrix_six_league_existing_evidence_recovery.py
+      - tools/matrix_original_canonical_probability_manifest_audit.py
+      - tools/matrix_over25_noncanonical_probability_recovery.py
+      - tools/matrix_original_fixture_id_lineage_crosswalk.py
+      - tools/matrix_six_league_stepwise_certification.py
+      - tests/test_matrix_six_league_stepwise_certification.py
+      - tests/test_matrix_original_fixture_id_lineage_crosswalk.py
+      - tools/matrix_independent_over25_prematch_freeze.py
+      - tools/matrix_independent_over25_prematch_fresh_cycle.py
+      - tools/matrix_independent_over25_research_settlement.py
+      - tools/matrix_independent_over25_research_scorecard.py
+      - tools/matrix_original_over25_alternative_native_adapter.py
+      - tools/matrix_over25_source_hash_exact_repair.py
+      - tools/matrix_over25_missing_source_exact_restore.py
+      - tools/matrix_over25_settlement_due.py
+      - tests/test_matrix_over25_missing_source_exact_restore.py
+      - tests/test_matrix_over25_settlement_due.py
+      - tests/test_matrix_over25_research_writer_ownership.py
+      - tests/test_matrix_over25_source_hash_exact_repair.py tests/test_matrix_over25_missing_source_exact_restore.py tests/test_matrix_over25_settlement_due.py
+      - tests/test_matrix_original_over25_alternative_native_adapter.py
+      - tests/test_matrix_independent_over25_research_settlement.py
+      - tests/test_matrix_independent_over25_research_scorecard.py
+      - tests/test_matrix_independent_over25_prematch_freeze.py
+      - tests/test_matrix_over25_noncanonical_probability_recovery.py
+      - tests/test_matrix_original_canonical_probability_manifest_audit.py
+      - tests/test_matrix_six_league_existing_evidence_recovery.py
+      - tests/test_matrix_six_league_prospective_preflight.py
+      - tools/matrix_six_league_enriched_oos_audit.py
+      - evidence/api_football/governance/alternative_producer_original_six_league_registry.json
+      - tools/matrix_championship_eight_of_eleven_identity_gap_diagnostic.py
+      - tests/test_matrix_championship_eight_of_eleven_identity_gap_diagnostic.py
+      - tests/test_matrix_independent_enriched_gap_feasibility.py
+      - tools/matrix_independent_over25_championship_raw_feature_parity.py
+      - tests/test_matrix_independent_over25_championship_raw_feature_parity.py
+  schedule:
+    - cron: "2,7,12,17,22,27,32,37,42,47,52,57 * * * *"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: matrix-selfhosted-browser-quotes-5m
+  cancel-in-progress: false
+
+jobs:
+  collect:
+    runs-on: [self-hosted, windows, matrix-browser-odds]
+    timeout-minutes: 12
+    env:
+      MATRIX_BROWSER_CDP_ENDPOINT: http://127.0.0.1:9222
+      REAL_MONEY: BLOCKED
+      AUTO_BETTING: DISABLED
+
+    steps:
+      - name: Checkout operational branch
+        uses: actions/checkout@v4
+        with:
+          ref: repair/cor09-world-pipeline
+          fetch-depth: 0
+
+      - name: Verify previously installed Windows Python 3.11 without downloading or installer scripts
+        shell: cmd
+        run: |
+          python -c "import sys; assert sys.version_info[:2] == (3,11), 'MATRIX_REQUIRES_LOCAL_PYTHON_311'"
+          python -m pip --version
+
+      - name: Install collector dependencies
+        shell: cmd
+        run: python -m pip install --disable-pip-version-check playwright pytest requests pillow tzdata
+
+      - name: Enforce safety gates
+        shell: cmd
+        run: |
+          if not "%REAL_MONEY%"=="BLOCKED" exit /B 1
+          if not "%AUTO_BETTING%"=="DISABLED" exit /B 1
+          echo REAL_MONEY_BLOCKED_NO_AUTOMATIC_BETTING
+
+      - name: Start or reuse persistent CDP browser (process-only policy, no OS setting changes)
+        shell: cmd
+        run: |
+          powershell.exe -NoProfile -NonInteractive -ExecutionPolicy Bypass -File tools\\windows\\start_matrix_browser_cdp.ps1 -Port 9222
+
+      - name: Verify browser collector contracts
+        shell: cmd
+        run: |
+          python -m pytest -q tests/test_matrix_selfhosted_browser_quote_collector.py tests/test_matrix_browser_governed_intake_sync.py tests/test_matrix_calendar_browser_observations.py tests/test_matrix_opera_calendar_handoff.py tests/test_matrix_flashscore_opera_link_handoff.py tests/test_matrix_flashscore_individual_detail_certificate.py tests/test_matrix_early_research_quote_intake.py tests/test_matrix_betano_research_market_archive.py tests/test_matrix_quote_recovery_evidence.py tests/test_matrix_browser_independent_research_quote_targets.py tests/test_matrix_browser_candidate_pipeline_diagnostic.py tests/test_matrix_telegram_input_health.py tests/test_matrix_independent_triple_source_calendar_certificate.py tests/test_matrix_independent_feature_parity_audit.py tests/test_matrix_independent_enriched_gap_feasibility.py tests/test_matrix_six_league_prospective_preflight.py tests/test_matrix_six_league_existing_evidence_recovery.py tests/test_matrix_original_canonical_probability_manifest_audit.py tests/test_matrix_over25_noncanonical_probability_recovery.py tests/test_matrix_original_fixture_id_lineage_crosswalk.py tests/test_matrix_independent_over25_prematch_freeze.py tests/test_matrix_independent_over25_research_settlement.py tests/test_matrix_independent_over25_research_scorecard.py tests/test_matrix_original_over25_alternative_native_adapter.py tests/test_matrix_over25_source_hash_exact_repair.py tests/test_matrix_over25_research_writer_ownership.py tests/test_matrix_six_league_stepwise_certification.py tests/test_matrix_six_league_enriched_oos_audit.py tests/test_matrix_championship_eight_of_eleven_identity_gap_diagnostic.py tests/test_matrix_independent_over25_championship_raw_feature_parity.py
+
+      - name: Verify immutable 11:24 versus latest PIT cycle and monthly 429 before authorized browser capture
+        shell: cmd
+        run: python -m pytest -q tests/test_matrix_championship_atomic_pit_cycle.py tests/test_matrix_independent_over25_quote_audit.py
+
+      - name: Verify CDP health
+        shell: cmd
+        run: python -m tools.matrix_selfhosted_browser_health
+
+      - name: Collect real SofaScore calendar observations from existing CDP before pricing
+        shell: cmd
+        run: powershell.exe -NoProfile -NonInteractive -ExecutionPolicy Bypass -File tools\\windows\\collect_matrix_sofa_calendar.ps1
+
+      - name: Reproduce historical eight of eleven fixture identity gaps from archived sources
+        shell: cmd
+        run: python -m tools.matrix_championship_eight_of_eleven_identity_gap_diagnostic --out evidence/football_world_inventory/2026-11-03/MATRIX_CHAMPIONSHIP_8_OF_11_IDENTITY_GAP_LAST.json
+
+      - name: Audit six-league prospectivity with existing original archive and strict source evidence
+        shell: cmd
+        run: python -m tools.matrix_six_league_prospective_preflight
+
+      - name: Recover inventory of existing original and alternative prospective files for six leagues
+        shell: cmd
+        run: python -m tools.matrix_six_league_existing_evidence_recovery
+
+      - name: Verify original canonical input manifests versus generated p_matrix
+        shell: cmd
+        run: python -m tools.matrix_original_canonical_probability_manifest_audit
+
+      - name: Audit archived Over 2.5 daily production reports outside original canonical analysis
+        shell: cmd
+        run: python -m tools.matrix_over25_noncanonical_probability_recovery
+
+      - name: Reconcile missing original fixture identities using only authentic pre-kickoff registries
+        shell: cmd
+        run: python -m tools.matrix_original_fixture_id_lineage_crosswalk
+
+      - name: Certify five research evidence gates before any model or Telegram authorization
+        shell: cmd
+        run: python -m tools.matrix_six_league_stepwise_certification
+
+      - name: Seal genuine current and next-day independent prematch research before kickoff
+        shell: cmd
+        run: python -m tools.matrix_independent_over25_prematch_fresh_cycle
+
+      # Historic source-byte repairs and settlement are owned by cloud CI.
+      # Windows only freezes new prospective inputs and captures browser evidence.
+      # Research settlement is owned by the separate cloud workflow.
+      # Windows persists fresh immutable research snapshots, not result reports.
+
+      - name: Execute frozen original promoted Over25 engine on verified free-provider raw inputs
+        shell: cmd
+        run: python -m tools.matrix_original_over25_alternative_native_adapter
+
+      - name: Recalculate SHA-verified cumulative independent Over25 research scoreboard
+        shell: cmd
+        run: python -m tools.matrix_independent_over25_research_scorecard
+
+      - name: Synchronize original governed Over 2.5 candidates before collecting quotes
+        shell: cmd
+        run: python -m tools.matrix_browser_governed_intake_sync
+
+      - name: Capture authorized bookmaker browser evidence
+        shell: cmd
+        run: python -m tools.matrix_selfhosted_browser_quote_collector
+
+      - name: Persist governed browser evidence
+        if: always()
+        shell: cmd
+        run: |
+          powershell.exe -NoProfile -NonInteractive -ExecutionPolicy Bypass -File tools\\windows\\persist_matrix_browser_evidence.ps1

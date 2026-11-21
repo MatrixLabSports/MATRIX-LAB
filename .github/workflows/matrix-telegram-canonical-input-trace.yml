@@ -1,0 +1,61 @@
+name: MATRIX Telegram canonical input trace
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '4,19,34,49 * * * *'
+permissions:
+  contents: read
+jobs:
+  trace:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: repair/cor09-world-pipeline
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Trace canonical tennis and football source paths (no network or secrets)
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p evidence/telegram_regression/runtime
+          python - <<'PY'
+          import json
+          from datetime import datetime, timedelta
+          from pathlib import Path
+          from zoneinfo import ZoneInfo
+          from tools.matrix_tennis_telegram_input_diagnostic import inspect
+          day=datetime.now(ZoneInfo("America/Bogota")).date()
+          rows=[]
+          for d in (day, day+timedelta(days=1)):
+              date=d.isoformat()
+              football=Path("evidence/api_football/daily_prematch_reports")/date
+              rows.append({
+                  "date_bogota":date,
+                  "tennis":inspect(Path("evidence/tennis_signals"),date),
+                  "football":{"canonical_path":str(football),"directory_exists":football.is_dir(),
+                      "browser_files":len(list(football.glob("browser_physical_verification/*.json"))),
+                      "shadow_quote_files":len(list(football.glob("shadow_quote_freeze/*.json"))),
+                      "over25_ev_files":len(list(football.glob("over25_shadow_ev/*.json")))}
+              })
+          result={"schema":"MATRIX_TELEGRAM_UPSTREAM_CANONICAL_TRACE_V1",
+              "generated_at_utc":datetime.now(ZoneInfo("UTC")).isoformat(),
+              "scope":"read_only_checkout_inventory_not_provider_connectivity",
+              "provider_calls":0,"telegram_messages_sent":0,
+              "real_money":"BLOCKED","automatic_wagering":False,"rows":rows}
+          p=Path("evidence/telegram_regression/runtime/source_trace.json")
+          p.write_text(json.dumps(result,indent=2,ensure_ascii=False)+"\n",encoding="utf-8")
+          print(json.dumps(result,sort_keys=True))
+          with open(__import__("os").environ["GITHUB_STEP_SUMMARY"],"a",encoding="utf-8") as out:
+              out.write("### Telegram upstream source trace\n\n")
+              for row in rows:
+                  out.write(f"- {row['date_bogota']}: tennis_files={row['tennis']['json_files']}, football_browser={row['football']['browser_files']}, football_shadow={row['football']['shadow_quote_files']}\n")
+              out.write("\nDiagnostic only; not a delivery certification.\n")
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: matrix-telegram-canonical-source-trace
+          path: evidence/telegram_regression/runtime/source_trace.json
+          if-no-files-found: error

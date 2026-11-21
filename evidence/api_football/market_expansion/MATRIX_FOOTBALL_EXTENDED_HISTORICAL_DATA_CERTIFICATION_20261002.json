@@ -1,0 +1,75 @@
+{
+  "schema": "MATRIX_FOOTBALL_EXTENDED_HISTORICAL_DATA_CERTIFICATION_V1",
+  "certified_at_utc": "2026-10-02T22:18:00+00:00",
+  "source_retrospective_rows": 2379,
+  "protected_final_holdout_count": 357,
+  "prospective_exclusion_count_at_latest_verified_cycle": 265,
+  "development_cutoff_utc": "2026-09-13T21:30:00+00:00",
+  "batches": {
+    "broad_bootstrap": {
+      "path": "evidence/api_football/market_expansion/historical_bootstrap/manifest.json",
+      "selected": 100,
+      "captured": 100,
+      "team_statistics_covered": 9,
+      "player_statistics_covered": 9,
+      "role": "COVERAGE_DISCOVERY"
+    },
+    "statsrich_1": {
+      "path": "evidence/api_football/market_expansion/historical_statsrich/manifest.json",
+      "selected": 200,
+      "captured": 200,
+      "team_statistics_covered": 200,
+      "player_statistics_covered": 199,
+      "prior_dataset_exclusion_count": 100,
+      "role": "DEVELOPMENT"
+    },
+    "statsrich_2_duplicate_attempt": {
+      "path": "evidence/api_football/market_expansion/historical_statsrich_2/manifest.json",
+      "selected": 100,
+      "captured": 100,
+      "overlap_with_statsrich_1": 100,
+      "counted_in_unique_development_rows": false,
+      "reason": "WORKFLOW_LOCAL_CLEANUP_REMOVED_EXCLUSION_SOURCE_BEFORE_SELECTION"
+    },
+    "statsrich_3_append_only": {
+      "path": "evidence/api_football/market_expansion/historical_statsrich_3/manifest.json",
+      "selected": 42,
+      "captured": 42,
+      "team_statistics_covered": 42,
+      "player_statistics_covered": 42,
+      "prior_dataset_exclusion_count": 300,
+      "protected_holdout_intersection_count": 0,
+      "prospective_intersection_count": 0,
+      "role": "DEVELOPMENT"
+    }
+  },
+  "unique_useful_rows": {
+    "team_statistics_matches": 251,
+    "player_statistics_matches": 250
+  },
+  "raw_sample_capacity": {
+    "default_minimum_train_n": 200,
+    "default_minimum_validation_n": 50,
+    "team_rows_sufficient_before_pit_feature_filtering": true,
+    "player_match_rows_sufficient_before_pit_feature_filtering": true,
+    "warning": "PIT feature construction and minimum-history gates may reduce final eligible sample size."
+  },
+  "anti_leakage": {
+    "protected_final_holdout_used_for_training": false,
+    "prospective_calibration_rows_used_for_training": false,
+    "duplicate_attempt_counted": false,
+    "odds_used_to_generate_probability": false
+  },
+  "next_action": [
+    "BUILD_CANONICAL_HOME_AWAY_IDENTITY_JOIN",
+    "BUILD_POINT_IN_TIME_TEAM_AND_PLAYER_FEATURES",
+    "TEMPORAL_TRAIN_VALIDATION_SPLIT",
+    "FIT_MARKET_SPECIFIC_EMPIRICAL_BASELINES",
+    "FIT_MARKET_SPECIFIC_CHALLENGERS",
+    "EVALUATE_VALIDATION_WITHOUT_TUNING_ON_VALIDATION"
+  ],
+  "metrics_opened": false,
+  "automatic_wagering": false,
+  "real_money": "BLOCKED",
+  "status": "CERTIFIED_RAW_DEVELOPMENT_CAPACITY_READY_FOR_PIT_FEATURE_ENGINEERING"
+}

@@ -1,0 +1,52 @@
+{
+  "schema": "MATRIX_FOOTBALL_CORE_MARKETS_STATUS_V1",
+  "source_extended_checkpoint_blob_sha": "42f63cff22d0354dc0fe7efabb7731d10c73718a",
+  "calibration_observations": 589,
+  "markets": {
+    "OVER_2_5": {
+      "status": "PRIMARY_PROSPECTIVE_MARKET",
+      "gate_589": "PASS",
+      "challenger_brier": 0.24031112804365748,
+      "poisson_brier": 0.2445353770326406,
+      "challenger_log_loss": 0.6737263998359939,
+      "poisson_log_loss": 0.6836662034894826,
+      "paired_brier_ci95": [
+        -0.007400285467804859,
+        -0.001048212510161019
+      ],
+      "paired_log_loss_ci95": [
+        -0.017249665738572516,
+        -0.00262994156840455
+      ],
+      "interpretation": "POSITIVE_AND_STATISTICALLY_STABLE_RELATIVE_TO_POISSON_AT_589"
+    },
+    "1X2": {
+      "status": "CONTINUE_CHALLENGER_NO_DEFINITIVE_PROMOTION",
+      "gate_589": "PASS",
+      "challenger_brier": 0.5916015158743197,
+      "poisson_brier": 0.6004226582506063,
+      "challenger_log_loss": 0.9957286690419135,
+      "poisson_log_loss": 1.003961731253374,
+      "challenger_accuracy": 0.5229202037351444,
+      "poisson_accuracy": 0.5263157894736842,
+      "paired_brier_ci95": [
+        -0.020159728199951276,
+        0.002517443447377754
+      ],
+      "paired_log_loss_ci95": [
+        -0.02945680257923647,
+        0.012990678156315917
+      ],
+      "interpretation": "POINT_ESTIMATE_POSITIVE_BUT_UNCERTAINTY_INTERVALS_INCLUDE_ZERO"
+    },
+    "BTTS": {
+      "status": "NO_GO_V2_V3",
+      "v2_missing_frozen_probabilities": 42,
+      "v3_status": "REJECTED_INTERNAL_TEMPORAL_OOS",
+      "global_three_market_promotion": false
+    }
+  },
+  "parameter_tuning_on_prospective_rows": false,
+  "automatic_wagering": false,
+  "real_money": "BLOCKED"
+}

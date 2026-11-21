@@ -1,0 +1,116 @@
+name: MATRIX Telegram Elite Source Recovery Contracts
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - repair/cor09-world-pipeline
+    paths:
+      - .github/workflows/matrix-telegram-elite-source-recovery-contracts.yml
+      - tools/matrix_telegram_input_health.py
+      - tests/test_matrix_telegram_input_health.py
+      - tests/test_telegram_supervisor_offline_safety.py
+      - tools/api_football_prospective_horizon.py
+      - tests/test_api_football_prospective_horizon.py
+
+permissions:
+  contents: write
+
+concurrency:
+  group: matrix-telegram-elite-source-recovery-offline
+  cancel-in-progress: false
+
+jobs:
+  certify-no-fabricated-signals:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    env:
+      REAL_MONEY: BLOCKED
+      AUTOMATIC_WAGERING: "false"
+      MATRIX_TELEGRAM_NO_SEND: "1"
+    steps:
+      - name: Checkout operational branch
+        uses: actions/checkout@v4
+        with:
+          ref: repair/cor09-world-pipeline
+          fetch-depth: 0
+
+      - name: Prepare Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Recheck corrected paid window and Telegram no-send contracts
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m pip install pytest requests Pillow
+          PYTHONPATH=. python -m pytest -q \
+            tests/test_telegram_supervisor_offline_safety.py \
+            tests/test_matrix_telegram_input_health.py \
+            tests/test_api_football_prospective_horizon.py
+
+      - name: Build current versus tomorrow source-chain proof without network or Telegram
+        shell: bash
+        run: |
+          set -euo pipefail
+          P=evidence/notifications/telegram/MATRIX_TELEGRAM_GREEN_SOURCE_RECOVERY_LAST.json
+          mkdir -p "$(dirname "$P")"
+          set +e
+          PYTHONPATH=. python -m tools.matrix_telegram_input_health > "$P"
+          rc=$?
+          set -e
+          if [[ "$rc" != 0 && "$rc" != 2 ]]; then
+            echo "CANONICAL_INPUT_HEALTH_UNEXPECTED_EXIT:$rc"
+            exit "$rc"
+          fi
+          python - "$P" "$rc" <<'PY'
+          import json,sys
+          j=json.load(open(sys.argv[1],encoding="utf-8"))
+          assert j["schema"]=="MATRIX_TELEGRAM_CANONICAL_INPUT_HEALTH_V2"
+          assert j["provider_calls"]==0
+          assert j["telegram_messages_sent"]==0
+          assert j["real_money"]=="BLOCKED"
+          assert j["automatic_wagering"] is False
+          assert j["signal_emission_authorized_by_this_check"] is False
+          assert j["independent_evidence_never_counts_as_canonical"] is True
+          expected=0 if j["total_canonical_files"] else 2
+          assert int(sys.argv[2])==expected
+          for d in j["dates_bogota"]:
+            source=j["independent_discovery_diagnostic_only"][d]
+            assert source["independent_source_promotes_telegram"] is False
+            assert source["diagnostic_only"] is True
+          if "2026-11-03" in j["dates_bogota"]:
+            d=j["independent_discovery_diagnostic_only"]["2026-11-03"]
+            links=d["football_browser_links_observed_only"]
+            assert links["sofascore"]==722
+            assert links["flashscore"]==253
+            assert links["one_to_one_slug_candidates_not_certified_fixtures"]==138
+            assert d["independent_football_fixtures"]==19
+            assert d["historical_feature_equivalence_verified"] is False
+            assert d["exact_bookmaker_quotes_verified"]==0
+            assert d["quote_quota_status"]=="BLOCKED_USAGE_HTTP_429"
+            assert d["tennis_browser_link_candidates"]==230
+          print("PASS_SOURCE_OBSERVED_INDEPENDENT_FIXTURES_BUT_NO_CANONICAL_SIGNAL_PROMOTION")
+          PY
+
+      - name: Persist the physical no-signal source-chain audit
+        shell: bash
+        run: |
+          set -euo pipefail
+          P=evidence/notifications/telegram/MATRIX_TELEGRAM_GREEN_SOURCE_RECOVERY_LAST.json
+          git config user.name matrix-telegram-elite-source-recovery
+          git config user.email matrix-telegram-elite-source-recovery@users.noreply.github.com
+          git add "$P"
+          if git diff --cached --quiet; then echo PHYSICAL_AUDIT_ALREADY_PRESENT; exit 0; fi
+          git commit -m "evidence(telegram): persist source-chain discovery without fabricated signals"
+          for attempt in 1 2 3 4; do
+            git fetch origin repair/cor09-world-pipeline
+            if ! git rebase origin/repair/cor09-world-pipeline; then
+              git rebase --abort || true
+              exit 1
+            fi
+            if git push origin HEAD:repair/cor09-world-pipeline; then exit 0; fi
+            sleep $((attempt*2))
+          done
+          exit 1

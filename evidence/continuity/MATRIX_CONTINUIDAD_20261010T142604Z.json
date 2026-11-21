@@ -1,0 +1,53 @@
+{
+  "schema": "MATRIX_CONTINUITY_AUTOMATION_AUDIT_V1",
+  "checked_at_utc": "2026-10-10T14:26:04.624Z",
+  "branch": "repair/cor09-world-pipeline",
+  "head_at_start": "818a33b8add396e4fbbeb3b26587fc8e53a20273",
+  "checks": {
+    "ci": {
+      "status": "BLOCKED",
+      "run_id": 38054027674,
+      "reason": "gate_30.status differs from regression expectation; patch rejected by write safety"
+    },
+    "live_bulk": {
+      "status": "BLOCKED",
+      "run_id": 38053288931,
+      "reason": "provider quota remaining 0 below reserve 20; no new physical ledger"
+    },
+    "live_final": {
+      "status": "BLOCKED",
+      "run_id": 38054206164,
+      "reason": "LIVE_HTTP_429"
+    },
+    "telegram": {
+      "status": "PASS_TRIGGERED_PENDING_RESULT",
+      "run_id": 38052160489,
+      "attempt": 2
+    },
+    "tennis_hard": {
+      "status": "PASS_TRIGGERED_PENDING_RESULT",
+      "run_id": 37890301102,
+      "attempt": 2
+    },
+    "shanghai": {
+      "status": "BLOCKED",
+      "source_blob_sha": "135b5425a4c06621a1c66ad6d6b7216858ec3f75",
+      "matches": 3,
+      "states": 12,
+      "final": 3,
+      "pending": 0,
+      "sports_unchanged": true,
+      "reason": "derived index write rejected"
+    },
+    "football": {
+      "status": "NO_CHANGE",
+      "last_verified_final_run": 38052121522
+    }
+  },
+  "safety": {
+    "model_status": "RESEARCH_ONLY",
+    "probability_metrics": "SEALED",
+    "automatic_wagering": false,
+    "real_money": "BLOCKED"
+  }
+}

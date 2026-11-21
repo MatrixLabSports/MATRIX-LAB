@@ -1,0 +1,106 @@
+name: MATRIX Football Checkpoint 4000
+
+on:
+  push:
+    branches:
+      - repair/cor09-world-pipeline
+    paths:
+      - tools/api_football_checkpoint_4000.py
+      - .github/workflows/api-football-checkpoint-4000.yml
+      - evidence/api_football/prospective_calibration/ledger.jsonl
+      - evidence/api_football/prospective_calibration/sync_last.json
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: api-football-checkpoint-4000
+  cancel-in-progress: false
+
+jobs:
+  checkpoint-4000:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      REAL_MONEY: BLOCKED
+      AUTO_BETTING: DISABLED
+    steps:
+      - name: Checkout operational branch
+        uses: actions/checkout@v4
+        with:
+          ref: repair/cor09-world-pipeline
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Verify safety mode
+        run: |
+          test "$REAL_MONEY" = "BLOCKED"
+          test "$AUTO_BETTING" = "DISABLED"
+
+      - name: Build immutable checkpoint 4000 calibration
+        run: python tools/api_football_checkpoint_4000.py
+
+      - name: Verify checkpoint contract
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          p=Path("evidence/api_football/calibration_v2/CHECKPOINT_4000_MARKET_CALIBRATION_20261023.json")
+          j=json.loads(p.read_text(encoding="utf-8"))
+          assert j["checkpoint"] == 4000
+          assert j["source"]["unique_fixture_ids"] == 4000
+          assert j["source"]["ledger_hash_chain_verified"] is True
+          assert j["governance"]["metrics_opened"] is True
+          assert j["governance"]["outcomes_read_for_checkpoint_metrics"] == 4000
+          assert j["governance"]["parameter_tuning_allowed"] is False
+          assert j["governance"]["parameters_mutated"] is False
+          assert j["governance"]["refit_allowed"] is False
+          assert j["governance"]["model_files_modified"] is False
+          assert j["governance"]["odds_used_to_generate_probability"] is False
+          assert j["governance"]["real_money"] == "BLOCKED"
+          assert j["governance"]["automatic_wagering"] is False
+          assert j["adjudication"]["real_money_decision"] == "NO_GO_KEEP_BLOCKED"
+          for lane in ("1x2","over_2_5","under_2_5","double_chance_1x","double_chance_x2"):
+              assert j["markets"][lane]["eligible_rows"] > 0
+              assert j["markets"][lane]["metrics"]["sample_size"] == j["markets"][lane]["eligible_rows"]
+          print(json.dumps({
+              "checkpoint":j["checkpoint"],
+              "prefix_unique":j["source"]["unique_fixture_ids"],
+              "1x2_n":j["markets"]["1x2"]["eligible_rows"],
+              "over25_n":j["markets"]["over_2_5"]["eligible_rows"],
+              "under25_n":j["markets"]["under_2_5"]["eligible_rows"],
+              "dc1x_n":j["markets"]["double_chance_1x"]["eligible_rows"],
+              "dcx2_n":j["markets"]["double_chance_x2"]["eligible_rows"],
+              "real_money_decision":j["adjudication"]["real_money_decision"],
+          },sort_keys=True))
+          PY
+
+      - name: Persist checkpoint evidence
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add evidence/api_football/calibration_v2/CHECKPOINT_4000_MARKET_CALIBRATION_20261023.json
+          if git diff --cached --quiet; then
+            echo "CHECKPOINT_4000_NO_CHANGE"
+            exit 0
+          fi
+          git commit -m "evidence(football): freeze checkpoint 4000 calibration"
+          for attempt in 1 2 3 4; do
+            git fetch origin repair/cor09-world-pipeline
+            if ! git rebase origin/repair/cor09-world-pipeline; then
+              git rebase --abort || true
+              exit 1
+            fi
+            if git push origin HEAD:repair/cor09-world-pipeline; then
+              exit 0
+            fi
+            sleep $((attempt*2))
+          done
+          exit 1

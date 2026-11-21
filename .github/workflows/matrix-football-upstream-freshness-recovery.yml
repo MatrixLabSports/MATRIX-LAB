@@ -1,0 +1,149 @@
+name: MATRIX Football Upstream Freshness Recovery
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "12 */2 * * *"
+  push:
+    branches:
+      - repair/cor09-world-pipeline
+      - main
+    paths:
+      - "tools/matrix_football_upstream_freshness_guard.py"
+      - "tests/test_matrix_football_upstream_freshness_guard.py"
+      - ".github/workflows/matrix-football-upstream-freshness-recovery.yml"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: matrix-football-upstream-freshness-recovery
+  cancel-in-progress: false
+
+jobs:
+  refresh-if-stale:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      REAL_MONEY: BLOCKED
+      AUTOMATIC_WAGERING: "false"
+    steps:
+      - name: Checkout operational branch
+        uses: actions/checkout@v4
+        with:
+          ref: repair/cor09-world-pipeline
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install governed dependencies
+        run: python -m pip install pytest requests
+
+      - name: Enforce freshness guard tests
+        run: PYTHONPATH=. python -m pytest -q tests/test_matrix_football_upstream_freshness_guard.py
+
+      - name: Build upstream freshness diagnosis
+        id: guard
+        shell: bash
+        run: |
+          set -euo pipefail
+          PYTHONPATH=. python -m tools.matrix_football_upstream_freshness_guard
+          python - <<'PY'
+          import json,os
+          from pathlib import Path
+          j=json.loads(Path("evidence/market_portfolio/MATRIX_FOOTBALL_UPSTREAM_FRESHNESS_GUARD_LAST.json").read_text())
+          assert j["status"]=="PASS"
+          assert j["protections"]["stale_upstream_never_interpreted_as_zero_demand"] is True
+          assert j["protections"]["duplicates_never_recounted"] is True
+          assert j["protections"]["post_start_backfill"] is False
+          assert j["protections"]["automatic_wagering"] is False
+          assert j["protections"]["real_money"]=="BLOCKED"
+          with open(os.environ["GITHUB_OUTPUT"],"a",encoding="utf-8") as fh:
+              fh.write(f"stale={'true' if j['canonical_stale'] else 'false'}\n")
+          print(json.dumps(j,sort_keys=True))
+          PY
+
+      - name: Stop cleanly after paid-window cutoff
+        id: paid
+        shell: bash
+        run: |
+          set -euo pipefail
+          TODAY="$(TZ=America/Bogota date +%F)"
+          if [[ "$TODAY" > "2026-10-28" ]]; then
+            echo "allowed=false" >> "$GITHUB_OUTPUT"
+            echo "PAID_WINDOW_CLOSED_NO_NETWORK_REFRESH"
+          else
+            echo "allowed=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Require SofaScore and Flashscore evidence before API refresh
+        if: steps.guard.outputs.stale == 'true' && steps.paid.outputs.allowed == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          D="$(TZ=America/Bogota date +%F)"
+          FOOTBALL="evidence/football_world_inventory/$D/MATRIX_FOOTBALL_BROWSER_FIRST_RECONCILIATION.json"
+          GENERIC="evidence/daily_source_counts/$D/MATRIX_WORLD_CALENDAR_SOURCE_COUNTS.json"
+          if [ -f "$FOOTBALL" ]; then
+            python - "$FOOTBALL" <<'PY'
+          import json,sys
+          j=json.loads(open(sys.argv[1],encoding="utf-8").read())
+          text=json.dumps(j,ensure_ascii=False).casefold()
+          assert "sofascore" in text and "flashscore" in text
+          assert j.get("protections",{}).get("real_money","BLOCKED")=="BLOCKED"
+          print("FOOTBALL_BROWSER_FIRST_SOURCE_ORDER_PASS")
+          PY
+          elif [ -f "$GENERIC" ]; then
+            python - "$GENERIC" <<'PY'
+          import json,sys
+          j=json.loads(open(sys.argv[1],encoding="utf-8").read())
+          text=json.dumps(j,ensure_ascii=False).casefold()
+          assert "sofascore" in text and "flashscore" in text
+          print("GENERIC_BROWSER_SOURCE_COUNT_PASS")
+          PY
+          else
+            echo "SOFASCORE_FLASHSCORE_DAILY_EVIDENCE_MISSING_FAIL_CLOSED"
+            exit 1
+          fi
+
+      - name: Refresh governed current-day upstream only when stale
+        if: steps.guard.outputs.stale == 'true' && steps.paid.outputs.allowed == 'true'
+        env:
+          API_FOOTBALL_KEY: ${{ secrets.API_FOOTBALL_KEY }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -n "${API_FOOTBALL_KEY:-}"
+          D="$(TZ=America/Bogota date +%F)"
+          python -m tools.api_football_prospective_daily_cycle --target-date "$D"
+          PYTHONPATH=. python -m tools.matrix_football_upstream_freshness_guard || true
+
+      - name: Persist recovery evidence
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name matrix-football-upstream-recovery
+          git config user.email matrix-football-upstream-recovery@users.noreply.github.com
+          git add evidence/market_portfolio/MATRIX_FOOTBALL_UPSTREAM_FRESHNESS_GUARD_LAST.json
+          D="$(TZ=America/Bogota date +%F)"
+          if [ -d "evidence/api_football/prospective_daily/$D" ]; then git add "evidence/api_football/prospective_daily/$D"; fi
+          if [ -d evidence/api_football/prospective_market_freeze ]; then git add evidence/api_football/prospective_market_freeze; fi
+          if git diff --cached --quiet; then
+            echo "NO_UPSTREAM_RECOVERY_CHANGE"
+            exit 0
+          fi
+          git commit -m "evidence(football): persist upstream freshness recovery"
+          for attempt in 1 2 3 4; do
+            git fetch origin repair/cor09-world-pipeline
+            if ! git rebase origin/repair/cor09-world-pipeline; then
+              git rebase --abort || true
+              sleep $((attempt*2))
+              continue
+            fi
+            if git push origin HEAD:repair/cor09-world-pipeline; then exit 0; fi
+            sleep $((attempt*2))
+          done
+          exit 1

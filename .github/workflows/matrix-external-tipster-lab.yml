@@ -1,0 +1,107 @@
+name: MATRIX External Tipster Benchmark Lab
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "*/15 * * * *"
+  push:
+    branches:
+      - repair/cor09-world-pipeline
+      - main
+    paths:
+      - "tools/matrix_external_tipster_lab.py"
+      - "tests/test_matrix_external_tipster_lab.py"
+      - "evidence/external_tipsters/**"
+      - ".github/workflows/matrix-external-tipster-lab.yml"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: matrix-external-tipster-benchmark-lab
+  cancel-in-progress: false
+
+jobs:
+  greenhouse:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      REAL_MONEY: BLOCKED
+      AUTOMATIC_WAGERING: "false"
+    steps:
+      - name: Checkout operational branch
+        uses: actions/checkout@v4
+        with:
+          ref: repair/cor09-world-pipeline
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install tests
+        run: python -m pip install pytest
+
+      - name: Enforce isolated lab contracts
+        run: |
+          set -euo pipefail
+          test "$REAL_MONEY" = "BLOCKED"
+          test "$AUTOMATIC_WAGERING" = "false"
+          PYTHONPATH=. python -m pytest -q tests/test_matrix_external_tipster_lab.py
+
+      - name: Rebuild GREENHOUSE benchmark summary
+        run: |
+          set -euo pipefail
+          PYTHONPATH=. python -m tools.matrix_external_tipster_lab \
+            --ledger evidence/external_tipsters/greenhouse_gratis/picks.jsonl \
+            --out evidence/external_tipsters/greenhouse_gratis/MATRIX_EXTERNAL_TIPSTER_LAB_SUMMARY_LAST.json \
+            --target 100
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          p=Path("evidence/external_tipsters/greenhouse_gratis/MATRIX_EXTERNAL_TIPSTER_LAB_SUMMARY_LAST.json")
+          j=json.loads(p.read_text(encoding="utf-8"))
+          assert j["status"]=="PASS"
+          assert j["target_consecutive_picks"]==100
+          assert j["protections"]["consecutive_sample_required"] is True
+          assert j["protections"]["cherry_picking_forbidden"] is True
+          assert j["protections"]["tipster_used_to_generate_p_matrix"] is False
+          assert j["protections"]["tipster_can_trigger_bet"] is False
+          assert j["protections"]["automatic_wagering"] is False
+          assert j["protections"]["real_money"]=="BLOCKED"
+          print(json.dumps({
+              "status":j["status"],
+              "lab_state":j["lab_state"],
+              "valid_pick_count":j["valid_pick_count"],
+              "remaining_to_target":j["remaining_to_target"],
+              "settled_pick_count":j["settled_pick_count"],
+              "roi_pct":j["roi_pct"],
+          },sort_keys=True))
+          PY
+
+      - name: Persist benchmark evidence
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name matrix-external-tipster-lab
+          git config user.email matrix-external-tipster-lab@users.noreply.github.com
+          git add evidence/external_tipsters/greenhouse_gratis/MATRIX_EXTERNAL_TIPSTER_LAB_SUMMARY_LAST.json
+          if git diff --cached --quiet; then
+            echo "NO_EXTERNAL_TIPSTER_LAB_CHANGE"
+            exit 0
+          fi
+          git commit -m "evidence(lab): persist GREENHOUSE benchmark summary"
+          for attempt in 1 2 3 4; do
+            git fetch origin repair/cor09-world-pipeline
+            if ! git rebase origin/repair/cor09-world-pipeline; then
+              git rebase --abort || true
+              sleep $((attempt*2))
+              continue
+            fi
+            if git push origin HEAD:repair/cor09-world-pipeline; then
+              exit 0
+            fi
+            sleep $((attempt*2))
+          done
+          exit 1

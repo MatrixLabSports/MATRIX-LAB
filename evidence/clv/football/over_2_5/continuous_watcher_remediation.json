@@ -1,0 +1,55 @@
+{
+  "schema": "MATRIX_FOOTBALL_CLV_CONTINUOUS_WATCHER_REMEDIATION_V1",
+  "observed_at_utc": "2026-10-13T16:38:43.497Z",
+  "problem": {
+    "code": "GITHUB_SCHEDULE_NOT_PRECISE_ENOUGH_FOR_15M_CLV_WINDOW",
+    "observed_effect": "Expected schedule-triggered CLV runs did not materialize reliably inside the closing window.",
+    "missed_decisions_after_kickoff": 4
+  },
+  "remediation": {
+    "strategy": "CONTINUOUS_LONG_LIVED_WATCHER",
+    "active_workflow_path": ".github/workflows/football-clv-continuous-watcher.yml",
+    "active_workflow_blob_sha": "fe58cf4090ebf268676dc469962cfd5807b5cf48",
+    "active_run_id": 38431061832,
+    "active_run_status": "IN_PROGRESS_CONTINUOUS_STEP_VERIFIED",
+    "poll_seconds": 90,
+    "max_watch_seconds": 19800,
+    "activation": [
+      "push_on_workflow_creation",
+      "workflow_run_after_governed_daily_pipeline",
+      "manual_dispatch"
+    ],
+    "immediate_persistence": true,
+    "checkout_ref": "repair/cor09-world-pipeline",
+    "self_renewal": true,
+    "self_renewal_transport": "workflow_dispatch_via_GITHUB_TOKEN",
+    "successor_run_id": 38432066469,
+    "successor_run_status": "PENDING_BEHIND_CONCURRENCY_GROUP"
+  },
+  "single_writer_governance": {
+    "automatic_clv_writer": "MATRIX Football CLV Continuous Watcher",
+    "legacy_tracker_mode": "MANUAL_FALLBACK_ONLY",
+    "main_legacy_blob_sha": "16f26ecec827cf9f5d76daae0fdad7bfe2118ef9",
+    "repair_legacy_blob_sha": "16f26ecec827cf9f5d76daae0fdad7bfe2118ef9",
+    "telegram_supervisor_clv_writer": false,
+    "promoted_markets_supervisor_clv_writer": false,
+    "shared_concurrency_group": "matrix-football-clv-continuous-watcher"
+  },
+  "clv_state": {
+    "state_blob_sha": "ae853166dc172d1adcec5042542a55b181c09869",
+    "decision_count": 27,
+    "closing_odds_count": 0,
+    "missed_after_kickoff": 4,
+    "metrics_opened": false,
+    "remaining_to_open_metrics": 300,
+    "max_provider_quote_age_seconds": 120
+  },
+  "protections": {
+    "historical_backfill": "FORBIDDEN",
+    "post_kickoff_close": "FORBIDDEN",
+    "odds_used_to_generate_probability": false,
+    "automatic_wagering": false,
+    "real_money": "BLOCKED"
+  },
+  "adjudication": "REMEDIATION_ACTIVE_CONTINUOUS_AND_SELF_RENEWING_PHYSICALLY_VERIFIED"
+}

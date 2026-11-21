@@ -1,0 +1,110 @@
+name: MATRIX Permanent Hybrid Elite Challenge Guard
+
+on:
+  workflow_dispatch:
+  schedule:
+    # Re-evaluate twice daily. The actual research producers have their own
+    # schedules; success here means only that governance was not bypassed.
+    - cron: "12 3,15 * * *"
+  push:
+    branches:
+      - repair/cor09-world-pipeline
+    paths:
+      - docs/MATRIX_RETO_CONTRATO_PERMANENTE_HIBRIDA_V1.md
+      - tools/matrix_hybrid_permanent_challenge_guard.py
+      - tests/test_matrix_hybrid_permanent_challenge_guard.py
+      - tools/matrix_hybrid_original_dual_freeze_lineage.py
+      - evidence/matrix_hybrid_elite/MATRIX_HYBRID_ORIGINAL_DUAL_FREEZE_LINEAGE_LAST.json
+      - evidence/matrix_hybrid_elite/MATRIX_HYBRID_THREE_MODEL_OOS_LAST.json
+      - evidence/matrix_hybrid_elite/MATRIX_HYBRID_FOUR_MODEL_OOS_LAST.json
+      - .github/workflows/matrix-hybrid-permanent-challenge-guard.yml
+
+permissions:
+  contents: write
+
+concurrency:
+  group: matrix-hybrid-permanent-challenge-guard
+  cancel-in-progress: false
+
+jobs:
+  audit-permanent-hybrid-research:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      MATRIX_MODE: SHADOW
+      REAL_MONEY: BLOCKED
+      AUTOMATIC_WAGERING: "false"
+      HYBRID_AUTO_PROMOTION: "DISABLED"
+    steps:
+      - name: Checkout original live research evidence on operational branch
+        uses: actions/checkout@v4
+        with:
+          ref: repair/cor09-world-pipeline
+          fetch-depth: 0
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Validate permanent challenge contract and real source integrity
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$REAL_MONEY" = "BLOCKED"
+          test "$AUTOMATIC_WAGERING" = "false"
+          test "$HYBRID_AUTO_PROMOTION" = "DISABLED"
+          python -m pip install --disable-pip-version-check pytest
+          PYTHONPATH=. python -m pytest -q tests/test_matrix_hybrid_permanent_challenge_guard.py
+
+      - name: Reconcile 42 markets, three tennis blocks, Hybrid and OOS
+        id: integrity
+        shell: bash
+        run: |
+          set -euo pipefail
+          PYTHONPATH=. python -m tools.matrix_hybrid_permanent_challenge_guard \
+            --out evidence/governance/MATRIX_HYBRID_PERMANENT_CHALLENGE_GUARD_LAST.json
+
+      - name: Preserve the physical evidence even if a source gate fails
+        if: always()
+        shell: bash
+        run: |
+          set -euo pipefail
+          P="evidence/governance/MATRIX_HYBRID_PERMANENT_CHALLENGE_GUARD_LAST.json"
+          if [ ! -f "$P" ]; then echo "MATRIX_HYBRID_GUARD_NO_REPORT"; exit 0; fi
+          git config user.name matrix-permanent-hybrid-guard
+          git config user.email matrix-permanent-hybrid-guard@users.noreply.github.com
+          git add -- "$P"
+          if git diff --cached --quiet; then echo "UNCHANGED_PERMANENT_HYBRID_STATUS"; exit 0; fi
+          git commit -m "evidence(matrix): permanent hybrid challenge four-lane and 42-market status"
+          for retry in 1 2 3 4; do
+            git fetch origin repair/cor09-world-pipeline
+            if ! git rebase origin/repair/cor09-world-pipeline; then
+              git rebase --abort || true
+              exit 1
+            fi
+            if git push origin HEAD:repair/cor09-world-pipeline; then exit 0; fi
+            sleep "$retry"
+          done
+          exit 1
+
+      - name: Keep integrity separate from research and model promotion
+        if: always()
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ -f evidence/governance/MATRIX_HYBRID_PERMANENT_CHALLENGE_GUARD_LAST.json ]; then
+            python - <<'PY'
+          import json
+          from pathlib import Path
+          r=json.loads(Path("evidence/governance/MATRIX_HYBRID_PERMANENT_CHALLENGE_GUARD_LAST.json").read_bytes())
+          assert r["real_money"] == "BLOCKED"
+          assert r["automatic_wagering"] is False
+          assert r["automatic_model_promotion"] is False
+          assert r["production_p_matrix_authorized"] is False
+          assert r["telegram_signal_authorized"] is False
+          assert r["official_hybrid_p_matrix_comparison_certified"] is False
+          assert r["challenge_completed"] is False
+          print("HONEST_CONTINUITY",r["status"], "RESEARCH_PAIRS",r["all_four_lanes"]["FOOTBALL_OVER25"]["research_frozen_pairs"])
+          PY
+          fi

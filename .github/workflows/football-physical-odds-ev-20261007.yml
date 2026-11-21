@@ -1,0 +1,289 @@
+name: Football Physical Odds EV 2026-10-07
+
+on:
+  push:
+    branches:
+      - repair/cor09-world-pipeline
+    paths:
+      - .github/workflows/football-physical-odds-ev-20261007.yml
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: football-physical-odds-ev-20261007
+  cancel-in-progress: false
+
+jobs:
+  odds-ev:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - name: Checkout operational branch
+        uses: actions/checkout@v4
+        with:
+          ref: repair/cor09-world-pipeline
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependency
+        run: python -m pip install requests
+
+      - name: Query physical bookmaker odds and compute EV
+        shell: bash
+        env:
+          API_FOOTBALL_KEY: ${{ secrets.API_FOOTBALL_KEY }}
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json, os, hashlib, re
+          from datetime import datetime, timezone
+          from pathlib import Path
+          import requests
+
+          ROOT=Path(".")
+          src=ROOT/"evidence/football_world_inventory/2026-10-07/MATRIX_FOOTBALL_CURRENT_FUTURE_CANDIDATES.json"
+          data=json.loads(src.read_text())
+          rows=data["rows"]
+          key=os.environ["API_FOOTBALL_KEY"].strip()
+          if not key:
+              raise SystemExit("API_FOOTBALL_KEY_NOT_CONFIGURED")
+
+          now=datetime.now(timezone.utc).replace(microsecond=0)
+          out_root=ROOT/"evidence/football_world_inventory/2026-10-07/physical_odds_ev"
+          raw=out_root/"raw"
+          raw.mkdir(parents=True,exist_ok=True)
+
+          # Policy houses. Pinnacle retained as diagnostic reference only.
+          policy_tokens={
+            "betano":["betano"],
+            "betplay":["betplay"],
+            "bwin":["bwin"],
+            "rushbet":["rushbet","rush bet"],
+            "pinnacle":["pinnacle"]
+          }
+
+          def norm(x):
+              return re.sub(r"[^a-z0-9]+","",str(x or "").casefold())
+
+          def house_match(name):
+              n=norm(name)
+              for key,toks in policy_tokens.items():
+                  if any(norm(t) in n for t in toks):
+                      return key
+              return None
+
+          def parse_odd(v):
+              try:
+                  x=float(v)
+                  return x if x>1 else None
+              except Exception:
+                  return None
+
+          def pick_1x2_value(label, home, away):
+              s=str(label or "").strip().casefold()
+              if s in {"home","1"} or s==str(home).strip().casefold(): return "H"
+              if s in {"draw","x"}: return "D"
+              if s in {"away","2"} or s==str(away).strip().casefold(): return "A"
+              return None
+
+          def is_over25(label, handicap=None):
+              s=(" ".join([str(label or ""),str(handicap or "")])).casefold().replace(" ","")
+              return "over2.5" in s or ("over" in s and "2.5" in s)
+
+          s=requests.Session()
+          observed=[]
+          calls=0
+          for row in rows:
+              ko=datetime.fromisoformat(str(row["kickoff_utc"]).replace("Z","+00:00")).astimezone(timezone.utc)
+              if ko <= now:
+                  continue
+              fid=str(row["fixture_id"])
+              resp=s.get(
+                  "https://v3.football.api-sports.io/odds",
+                  headers={"x-apisports-key":key},
+                  params={"fixture":fid},
+                  timeout=20
+              )
+              calls+=1
+              body=bytes(resp.content)
+              (raw/f"fixture_{fid}.bin").write_bytes(body)
+              try: payload=resp.json()
+              except Exception: payload={}
+              provider_errors=payload.get("errors") if isinstance(payload,dict) else None
+              if not (200 <= resp.status_code < 300) or provider_errors not in ({},[],None):
+                  observed.append({
+                    "fixture_id":fid,"home_team_name":row["home_team_name"],"away_team_name":row["away_team_name"],
+                    "kickoff_utc":row["kickoff_utc"],"http_status":resp.status_code,
+                    "raw_sha256":hashlib.sha256(body).hexdigest(),"status":"PROVIDER_ERROR","offers":[]
+                  })
+                  continue
+
+              offers=[]
+              for fr in payload.get("response",[]) if isinstance(payload,dict) else []:
+                  if not isinstance(fr,dict): continue
+                  for b in fr.get("bookmakers",[]) or []:
+                      if not isinstance(b,dict): continue
+                      bname=str(b.get("name") or "")
+                      hkey=house_match(bname)
+                      if hkey is None:
+                          continue
+                      for bet in b.get("bets",[]) or []:
+                          if not isinstance(bet,dict): continue
+                          bet_name=str(bet.get("name") or "")
+                          bet_norm=bet_name.casefold()
+                          for val in bet.get("values",[]) or []:
+                              if not isinstance(val,dict): continue
+                              odd=parse_odd(val.get("odd"))
+                              if odd is None or odd <= 1.50:
+                                  continue
+                              label=val.get("value")
+                              market=None; outcome=None; p=None
+                              # Over 2.5
+                              if is_over25(label,val.get("handicap")):
+                                  market="OVER_2_5"; outcome="OVER_2_5"; p=float(row["p_over_2_5"])
+                              # 1X2
+                              elif any(tok in bet_norm for tok in ["match winner","1x2","winner","match result"]):
+                                  side=pick_1x2_value(label,row["home_team_name"],row["away_team_name"])
+                                  if side:
+                                      market="1X2"; outcome=side; p=float(row["p_1x2"][side])
+                              if market is None:
+                                  continue
+                              ev=p*odd-1.0
+                              offers.append({
+                                "house_key":hkey,
+                                "bookmaker_id":b.get("id"),
+                                "bookmaker_name":bname,
+                                "bet_id":bet.get("id"),
+                                "bet_name":bet_name,
+                                "market":market,
+                                "outcome":outcome,
+                                "label":label,
+                                "handicap":val.get("handicap"),
+                                "decimal_odds":odd,
+                                "p_matrix_or_frozen_probability":p,
+                                "break_even_probability":1.0/odd,
+                                "ev":ev,
+                                "positive_ev":ev>0,
+                                "odds_used_to_generate_probability":False
+                              })
+              # Deduplicate exact book/market/outcome/odd
+              ded=[]
+              seen=set()
+              for x in offers:
+                  k=(x["house_key"],x["market"],x["outcome"],x["decimal_odds"])
+                  if k in seen: continue
+                  seen.add(k); ded.append(x)
+              observed.append({
+                  "fixture_id":fid,
+                  "home_team_name":row["home_team_name"],
+                  "away_team_name":row["away_team_name"],
+                  "competition_name":row["competition_name"],
+                  "kickoff_utc":row["kickoff_utc"],
+                  "freeze_at_utc":row["freeze_at_utc"],
+                  "p_1x2":row["p_1x2"],
+                  "p_over_2_5":row["p_over_2_5"],
+                  "http_status":resp.status_code,
+                  "raw_sha256":hashlib.sha256(body).hexdigest(),
+                  "status":"PASS",
+                  "offers":ded
+              })
+
+          positive=[]
+          for m in observed:
+              for o in m.get("offers",[]):
+                  if o["positive_ev"]:
+                      positive.append({
+                          "fixture_id":m["fixture_id"],
+                          "match":f'{m["home_team_name"]} vs {m["away_team_name"]}',
+                          "competition_name":m["competition_name"],
+                          "kickoff_utc":m["kickoff_utc"],
+                          **o
+                      })
+          positive.sort(key=lambda x:(-x["ev"],x["kickoff_utc"],x["fixture_id"]))
+
+          out={
+            "schema":"MATRIX_FOOTBALL_PHYSICAL_ODDS_EV_07OCT2026_V1",
+            "observed_at_utc":now.isoformat(),
+            "target_date_bogota":"2026-10-07",
+            "source_candidate_artifact":str(src),
+            "candidate_rows_input":len(rows),
+            "network_calls":calls,
+            "matches_queried":len(observed),
+            "matches_with_policy_house_offer":sum(bool(x.get("offers")) for x in observed),
+            "positive_ev_offer_count":len(positive),
+            "policy_houses":["Betano","BetPlay","bwin","RushBet"],
+            "diagnostic_reference":["Pinnacle"],
+            "minimum_decimal_odds_exclusive":1.50,
+            "markets":["1X2","OVER_2_5"],
+            "offers_by_match":observed,
+            "positive_ev_offers":positive,
+            "protections":{
+              "odds_used_to_generate_probability":False,
+              "probabilities_frozen_before_odds_query":True,
+              "target_outcomes_used":False,
+              "automatic_wagering":False,
+              "real_money":"BLOCKED"
+            }
+          }
+          blob=json.dumps(out,ensure_ascii=False,sort_keys=True,separators=(",",":")).encode()
+          out["sha256_without_self"]=hashlib.sha256(blob).hexdigest()
+          path=out_root/"MATRIX_FOOTBALL_PHYSICAL_ODDS_EV_07OCT2026.json"
+          path.write_text(json.dumps(out,ensure_ascii=False,indent=2,sort_keys=True)+"\n")
+          print(json.dumps({
+            "observed_at_utc":out["observed_at_utc"],
+            "matches_queried":out["matches_queried"],
+            "matches_with_policy_house_offer":out["matches_with_policy_house_offer"],
+            "positive_ev_offer_count":out["positive_ev_offer_count"],
+            "network_calls":out["network_calls"],
+            "real_money":"BLOCKED"
+          },sort_keys=True))
+          PY
+
+      - name: Validate no odds leakage
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          p=Path("evidence/football_world_inventory/2026-10-07/physical_odds_ev/MATRIX_FOOTBALL_PHYSICAL_ODDS_EV_07OCT2026.json")
+          j=json.loads(p.read_text())
+          assert j["protections"]["odds_used_to_generate_probability"] is False
+          assert j["protections"]["probabilities_frozen_before_odds_query"] is True
+          assert j["protections"]["target_outcomes_used"] is False
+          assert j["protections"]["automatic_wagering"] is False
+          assert j["protections"]["real_money"]=="BLOCKED"
+          assert all(o["decimal_odds"]>1.50 for m in j["offers_by_match"] for o in m.get("offers",[]))
+          print("PHYSICAL_ODDS_EV_GATE: PASS")
+          PY
+
+      - name: Persist physical odds evidence
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name matrix-football-odds-ev
+          git config user.email matrix-football-odds-ev@users.noreply.github.com
+          git add evidence/football_world_inventory/2026-10-07/physical_odds_ev
+          if git diff --cached --quiet; then
+            echo "NO_ODDS_EVIDENCE_CHANGE"
+            exit 0
+          fi
+          git commit -m "evidence(football): persist 07OCT physical odds EV"
+          for attempt in 1 2 3 4; do
+            git fetch origin repair/cor09-world-pipeline
+            if ! git rebase origin/repair/cor09-world-pipeline; then
+              git rebase --abort || true
+              exit 1
+            fi
+            if git push origin HEAD:repair/cor09-world-pipeline; then
+              exit 0
+            fi
+            sleep $((attempt*2))
+          done
+          exit 1

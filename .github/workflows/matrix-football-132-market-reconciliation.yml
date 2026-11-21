@@ -1,0 +1,91 @@
+name: MATRIX Football 132 Market Reconciliation
+
+on:
+  push:
+    branches:
+      - repair/cor09-world-pipeline
+    paths:
+      - .github/workflows/matrix-football-132-market-reconciliation.yml
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: matrix-football-132-market-reconciliation
+  cancel-in-progress: false
+
+jobs:
+  reconcile:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout operational branch
+        uses: actions/checkout@v4
+        with:
+          ref: repair/cor09-world-pipeline
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Build 132-fixture market reconciliation
+        run: python -m tools.matrix_football_132_market_reconciliation
+
+      - name: Validate physical output
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json
+          from collections import Counter
+          from pathlib import Path
+
+          root=Path("evidence/football_world_inventory/2026-10-06/canonical_132_market_reconciliation")
+          summary=json.loads((root/"MATRIX_CANONICAL_132_MARKET_RECONCILIATION_SUMMARY.json").read_text())
+          manifest=json.loads((root/"MANIFEST_SHA256.json").read_text())
+          rows=[json.loads(x) for x in (root/"MATRIX_CANONICAL_132_MARKET_RECONCILIATION.jsonl").read_text().splitlines() if x.strip()]
+          blocked=json.loads((root/"MATRIX_PIT_READY_BLOCKED_6.json").read_text())
+
+          assert summary["integrity"]["status"]=="PASS"
+          assert len(rows)==132
+          assert len({r["fixture_id"] for r in rows})==132
+          assert Counter(r["cycle_status"] for r in rows)==Counter({"YA_CONGELADO":118,"PROCESABLE":14})
+          assert len(blocked)==6
+          assert manifest["row_count"]==132
+          assert manifest["unique_fixture_count"]==132
+          assert manifest["blocked_ready_count"]==6
+          assert manifest["real_money"]=="BLOCKED"
+          assert all(r["protections"]["odds_used_to_generate_core_probability"] is False for r in rows)
+          assert all(r["protections"]["p_matrix"] is None for r in rows)
+          assert all(r["protections"]["real_money"]=="BLOCKED" for r in rows)
+          assert all(r["core_markets"]["OVER_2_5"]["frozen_probability"] is not None for r in rows)
+          assert all(len(r["core_markets"]["1X2"]["frozen_probabilities"])==3 for r in rows)
+
+          print("MATRIX_FOOTBALL_132_RECONCILIATION_GATE: PASS")
+          print("rows=132")
+          print("unique_fixture_ids=132")
+          print("procesable=14")
+          print("ya_congelado=118")
+          print("blocked_ready=6")
+          print("real_money=BLOCKED")
+          print("developing_governance_state_counts=", json.dumps(summary["developing_governance_state_counts"], sort_keys=True))
+          print("developing_real_availability_counts=", json.dumps(summary["developing_real_availability_counts"], sort_keys=True))
+          PY
+
+      - name: Persist reconciliation evidence
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "matrix-football-reconciliation"
+          git config user.email "matrix-football-reconciliation@users.noreply.github.com"
+          git add evidence/football_world_inventory/2026-10-06/canonical_132_market_reconciliation
+          if git diff --cached --quiet; then
+            echo "NO_RECONCILIATION_EVIDENCE_CHANGE"
+            exit 0
+          fi
+          git commit -m "evidence(football): persist canonical 132 market reconciliation"
+          git pull --rebase origin repair/cor09-world-pipeline
+          git push origin HEAD:repair/cor09-world-pipeline

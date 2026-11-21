@@ -1,0 +1,136 @@
+name: MATRIX Hybrid Elite Isolated Research Laboratory
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+      - repair/cor09-world-pipeline
+    paths:
+      - tools/matrix_hybrid_elite_lab.py
+      - tools/matrix_hybrid_elite_bayesian_shadow.py
+      - tests/test_matrix_hybrid_elite_lab.py
+      - tests/test_matrix_hybrid_elite_bayesian_shadow.py
+      - .github/workflows/matrix-hybrid-elite-research-lab.yml
+
+permissions:
+  contents: read
+
+concurrency:
+  group: matrix-hybrid-elite-research-tests
+  cancel-in-progress: false
+
+jobs:
+  offline-prospective-gates:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    env:
+      MATRIX_MODE: RESEARCH_ONLY
+      REAL_MONEY: BLOCKED
+      AUTO_BETTING: DISABLED
+      HYBRID_AUTO_PROMOTION: DISABLED
+    steps:
+      - name: Checkout the exact experimental source branch
+        uses: actions/checkout@v4
+        with:
+          ref: repair/cor09-world-pipeline
+      - name: Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Test isolated prospective and Bayesian shadow gates offline
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$REAL_MONEY" = BLOCKED
+          test "$AUTO_BETTING" = DISABLED
+          test "$HYBRID_AUTO_PROMOTION" = DISABLED
+          python -m pip install -q pytest
+          PYTHONPATH=. python -m pytest -q \
+            tests/test_matrix_hybrid_elite_lab.py \
+            tests/test_matrix_hybrid_elite_bayesian_shadow.py
+      - name: Smoke-test executable laboratory with zero genuine certified rows
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p hybrid-elite-check
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          src = {
+              "schema": "MATRIX_HYBRID_ELITE_PROSPECTIVE_INPUT_V1",
+              "source": "CERTIFIED_PROSPECTIVE_LEDGER",
+              "synthetic": False,
+              "real_money": "BLOCKED",
+              "automatic_wagering": False,
+              "original_model_parameters_modified": False,
+              "rows": []
+          }
+          Path("hybrid-elite-check/empty_input.json").write_text(
+              json.dumps(src, sort_keys=True) + "\n", encoding="utf-8")
+          PY
+          PYTHONPATH=. python -m tools.matrix_hybrid_elite_lab \
+            --input hybrid-elite-check/empty_input.json \
+            --output hybrid-elite-check/research_result.json
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          r = json.loads(Path("hybrid-elite-check/research_result.json").read_text())
+          assert r["certified_total_events"] == 0
+          assert r["source_receipt_verification"]["verified_receipt_files"] == 0
+          assert r["any_model_promoted"] is False
+          assert r["telegram_signal_authorized"] is False
+          assert r["real_money"] == "BLOCKED"
+          print("EMPTY_REAL_COHORT_EXECUTABLE_PASS_NOT_A_PREDICTIVE_RESULT")
+          PY
+      - name: Smoke-test Bayesian physical source gate with zero certified records
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          root=Path("hybrid-elite-check")
+          history={
+              "schema":"MATRIX_HYBRID_ELITE_CERTIFIED_HISTORY_V1",
+              "source":"CERTIFIED_SETTLED_PHYSICAL_LEDGER",
+              "synthetic":False,"real_money":"BLOCKED","rows":[]
+          }
+          target={
+              "schema":"MATRIX_HYBRID_ELITE_BAYESIAN_RESEARCH_REQUEST_V1",
+              "real_money":"BLOCKED","automatic_wagering":False,
+              "synthetic":False,"targets":[]
+          }
+          (root/"empty_history.json").write_text(json.dumps(history)+"\n")
+          (root/"empty_requests.json").write_text(json.dumps(target)+"\n")
+          PY
+          PYTHONPATH=. python -m tools.matrix_hybrid_elite_bayesian_shadow \
+            --history hybrid-elite-check/empty_history.json \
+            --requests hybrid-elite-check/empty_requests.json \
+            --output hybrid-elite-check/bayesian_zero_cohort.json
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          r=json.loads(Path("hybrid-elite-check/bayesian_zero_cohort.json").read_text())
+          assert r["targets"] == []
+          assert r["source_receipt_verification"]["physical_sha_bound_receipts_verified"] == 0
+          assert r["original_matrix_parameters_modified"] is False
+          assert r["real_money"] == "BLOCKED"
+          print("EMPTY_BAYESIAN_EXECUTABLE_PASS_NOT_A_PREDICTIVE_RESULT")
+          PY
+      - name: Preserve offline execution report for physical inspection
+        uses: actions/upload-artifact@v4
+        with:
+          name: matrix-hybrid-elite-empty-cohort-guard
+          path: |
+            hybrid-elite-check/research_result.json
+            hybrid-elite-check/bayesian_zero_cohort.json
+          retention-days: 14
+      - name: Confirm original matrix is unchanged
+        shell: bash
+        run: |
+          set -euo pipefail
+          git diff --exit-code -- evidence/cor0203 \
+            evidence/tennis_parallel_lanes/ATP_CHALLENGER_MEN_SINGLES_CLAY \
+            tools/api_football_market_shadow_p_matrix.py
+          echo "HYBRID_ELITE_TESTS_ONLY_NO_REAL_COHORT_OR_MODEL_PROMOTION"

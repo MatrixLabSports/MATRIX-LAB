@@ -1,0 +1,67 @@
+{
+  "automatic_wagering": false,
+  "current_match_minutes_used_as_feature": false,
+  "evaluation_line": 1.5,
+  "historical_candidate_passed": true,
+  "internal_selection": {
+    "final_validation_used_for_selection": false,
+    "selected": {
+      "alpha_recent": 0.0,
+      "beta_prior_minutes_ratio": 1.0,
+      "internal_validation": {
+        "brier_score": 0.18473601478012755,
+        "ece_5bin": 0.1063419849603399,
+        "log_loss": 0.5510741119202391,
+        "max_calibration_error_5bin": 0.1864701919508691,
+        "sample_size": 416
+      }
+    },
+    "selection_rows": 416,
+    "trial_count": 15
+  },
+  "lane": "PLAYER_SHOTS",
+  "lineup_or_expected_minutes_certified": false,
+  "metrics_opened": true,
+  "minimum_train_required": 200,
+  "minimum_validation_required": 50,
+  "model_parameters": {
+    "alpha_recent": 0.0,
+    "baseline_probability": 0.3903846153846154,
+    "beta_prior_minutes_ratio": 1.0,
+    "evaluation_line": 1.5
+  },
+  "model_parameters_sha256": "4aa4d87f5cb35ddb5bbce30bb1ee87accc2409041423325df6a9e1be4b6f4366",
+  "odds_used_to_generate_probability": false,
+  "p_matrix_generated": false,
+  "prospective_blocker": "PIT_LINEUP_AND_EXPECTED_MINUTES_SOURCE_NOT_YET_CERTIFIED",
+  "prospective_freeze_allowed": false,
+  "real_money": "BLOCKED",
+  "row_count": 2130,
+  "sample_scope": "CONDITIONAL_ON_APPEARANCE_RESEARCH_ONLY",
+  "schema": "MATRIX_FOOTBALL_EXTENDED_PLAYER_MODEL_V1",
+  "source_dataset": "evidence/api_football/market_expansion/player_pit/player_shots_pit.jsonl",
+  "source_dataset_sha256": "5464c4c779ef8ac96efd44dcb19469fe00b4a3becebfa6cb6ca9c0ffa949059f",
+  "status": "HISTORICAL_OOS_PASS_PROSPECTIVE_BLOCKED_BY_LINEUP",
+  "train_count": 2080,
+  "validation": {
+    "baseline": {
+      "brier_score": 0.23132322485207094,
+      "ece_5bin": 0.0303846153846154,
+      "log_loss": 0.6553775238389697,
+      "max_calibration_error_5bin": 0.0303846153846154,
+      "sample_size": 50
+    },
+    "challenger": {
+      "brier_score": 0.21234776477022932,
+      "ece_5bin": 0.0841824670817295,
+      "log_loss": 0.6096765586365229,
+      "max_calibration_error_5bin": 0.15442880886993432,
+      "sample_size": 50
+    },
+    "delta_brier_challenger_minus_baseline": -0.018975460081841616,
+    "delta_log_loss_challenger_minus_baseline": -0.04570096520244682,
+    "gate_passed": true
+  },
+  "validation_count": 50,
+  "validation_used_for_parameter_tuning": false
+}

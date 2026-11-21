@@ -1,0 +1,104 @@
+{
+  "schema": "MATRIX_SETTLEMENT_PROGRESS_20261006_BOGOTA_AUDIT_SNAPSHOT_V1",
+  "cohort": "2026-10-06_BOGOTA",
+  "observed_at_utc": "2026-10-16T18:30:19Z",
+  "source_branch": "repair/cor09-world-pipeline",
+  "source_head_observed": "2d345cb48fa9a5c1d19e337d73c10991614f10b3",
+  "previous_review_head": "62cf61a4c36b63f3dac5e939377fecc59e9e4715",
+  "source_candidate_path": "evidence/daily_selection/MATRIX_CALIBRATION_CANDIDATES_20261006_BOGOTA.json",
+  "source_candidate_blob_sha": "52e897007840f5bed1a8999edad8ee594fefc767",
+  "compared_to_previous_review": {
+    "football_v2_freezes": 2668,
+    "football_v2_settlements": 1913,
+    "football_v2_pending": 755,
+    "tennis_settlement_rows": 276,
+    "tennis_unique_calibration_observations": 245,
+    "tennis_duplicate_quarantined": 171
+  },
+  "football": {
+    "v2_freezes": 2668,
+    "v2_settlements": 1913,
+    "v2_pending": 755,
+    "delta_freezes": 0,
+    "delta_v2_settlements": 0,
+    "delta_pending": 0,
+    "all_five_v2_lanes_consistent": true,
+    "cohort_total": 116,
+    "cohort_ft_last_fully_verified": 107,
+    "cohort_new_ft": 0,
+    "cohort_remaining_nonstandard_or_pending": 9,
+    "cohort_full_ledger_recheck": false,
+    "new_global_ft_fixture_ids": [],
+    "global_calibration_settlements": 2715,
+    "blocked_nonstandard": {
+      "PEN": [
+        "1588817",
+        "1588821",
+        "1588845",
+        "1588863",
+        "1588890",
+        "1588893",
+        "1619499"
+      ],
+      "AET": [
+        "1644168"
+      ],
+      "NS_pending": [
+        "1596466"
+      ]
+    },
+    "source_sync_at_utc": "2026-10-16T18:02:34+00:00",
+    "source_sync_path": "evidence/api_football/prospective_market_freeze/settlement_sync_last.json",
+    "source_sync_blob_sha": "31f8e01960140f8a03454b92720e1b549f3f52d9",
+    "source_calibration_sync_path": "evidence/api_football/prospective_calibration/sync_last.json",
+    "source_calibration_sync_blob_sha": "145c884c71d22c0881d4090d779888c6b9754f32",
+    "v2_state_blob_shas": {
+      "1x2": "5edfb3727ae9401f4b5a30ea4913339962957022",
+      "over_2_5": "e16ea87f854756a64c46897f09e81c454f7dcb33",
+      "under_2_5": "0ce579d169fa7e3c7fcb43da6964012f4a9e2fcd",
+      "double_chance_1x": "71952416b21b0bd5a04aec200eeadc01e98c9655",
+      "double_chance_x2": "eae76f04d19eaf60925b4260d4a5747527e00646"
+    }
+  },
+  "tennis": {
+    "cohort_total": 11,
+    "cohort_finished": 11,
+    "cohort_unique_events": 11,
+    "cohort_unique_settlements": 11,
+    "cohort_duplicate_settlements": 0,
+    "global_settlement_rows": 278,
+    "delta_global_settlements": 2,
+    "global_unique_calibration_observations": 247,
+    "delta_global_unique": 2,
+    "duplicate_quarantined": 171,
+    "uniqueness": "PASS",
+    "new_global_finished_event_ids": [
+      "COR0203-RAPIDAPI-TENNIS-1465-f1d07490232c",
+      "COR0203-RAPIDAPI-TENNIS-49700-8a9f58a7edc7"
+    ],
+    "new_global_finished_at_utc": "2026-10-16T18:20:20+00:00",
+    "new_events_in_cohort": false,
+    "source_ledger_path": "evidence/cor0203/settlement/MATRIX_COR0203_SETTLEMENT_LEDGER.jsonl",
+    "source_ledger_blob_sha": "3822d5f3bbbac4afa0a54ab1313654a1e27f8e72",
+    "source_uniqueness_path": "evidence/cor0203/runtime/MATRIX_COR0203_SETTLEMENT_UNIQUENESS_LAST.json",
+    "source_uniqueness_blob_sha": "93acaec8dce6e6ea84c44aa02fd618ac48e7238c",
+    "source_sync_path": "evidence/cor0203/runtime/MATRIX_COR0203_SETTLEMENT_SYNC_LAST.json",
+    "source_sync_blob_sha": "cfef76efd26859431c236786cc73c1429e1fffaa",
+    "source_governed_commit": "9a3c6a76b21b4531e79c0a3dcbd611c2b251fcf8"
+  },
+  "governance": {
+    "metrics_opened": false,
+    "parameter_tuning_allowed": false,
+    "odds_to_probability": false,
+    "settlement_final_only": true,
+    "real_money": "BLOCKED",
+    "automated_wagering": false
+  },
+  "limitations": [
+    "Football 107/116 remains the last fully verified cohort ledger audit; current football ledger full content was not retrievable through connector. No new global football settlement since previous review.",
+    "Eight PEN/AET and one NS states read from repository sync; no independent provider revalidation.",
+    "All 278 tennis ledger rows checked against original 11 candidate event IDs; exactly one FINISHED settlement per candidate.",
+    "No new settlement executed by this review: two new global FINISHED tennis rows were already physically committed by governed pipeline.",
+    "No model, parameter, odds-to-probability, or metric changes."
+  ]
+}

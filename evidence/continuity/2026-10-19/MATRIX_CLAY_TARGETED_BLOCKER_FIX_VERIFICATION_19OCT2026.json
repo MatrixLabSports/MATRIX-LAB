@@ -1,0 +1,80 @@
+{
+  "schema": "MATRIX_CLAY_TARGETED_BLOCKER_FIX_VERIFICATION_V1",
+  "verified_at_utc": "2026-10-19T15:48:00Z",
+  "repository": "MatrixLabSports/MATRIX-LAB",
+  "branch": "repair/cor09-world-pipeline",
+  "fix_commit": "25a0ca957c690905f38a86f9beee3d94f1c3cc90",
+  "code_blob_sha": "7deb2167004a6fa360b2fa8e4209d2b72804fab8",
+  "action": {
+    "run_id": 39280551536,
+    "run_number": 47,
+    "workflow": "MATRIX Tennis Clay Daily Prospective",
+    "state_at_verification": "queued"
+  },
+  "change": "Clay crosswalk builder now consumes only certified supplemental identity aliases when identity_only=true, model_admission_forbidden=true, odds_used=false, outcomes_used=false, post_cut_competitive_data_used=false, and ranking_cut=20260921.",
+  "verified_inputs": {
+    "alias_ledger_blob_sha": "2f21583d1ab419cd8676c053e166edbd21e31565",
+    "alias_mapping_count": 209,
+    "alias_guards": {
+      "identity_only": true,
+      "model_admission_forbidden": true,
+      "odds_used": false,
+      "outcomes_used": false,
+      "post_cut_competitive_data_used": false
+    }
+  },
+  "targeted_events": {
+    "217386": {
+      "players": [
+        "Max Alcala Gurri",
+        "Andres Andrade"
+      ],
+      "status": "REMAINS_LEGITIMATELY_BLOCKED",
+      "blocker": "PIT not ready for current target set"
+    },
+    "255029": {
+      "players": [
+        "Hernan Casanova",
+        "Gonzalo Bueno"
+      ],
+      "status": "REMAINS_LEGITIMATELY_BLOCKED",
+      "blocker": "PIT not ready for both current target components"
+    },
+    "255032": {
+      "players": [
+        "Nicolas Jarry",
+        "Tomas Barrios Vera"
+      ],
+      "status": "REMAINS_LEGITIMATELY_BLOCKED",
+      "blocker": "Tomas Barrios Vera PIT target not ready"
+    },
+    "305481": {
+      "players": [
+        "Felipe Meligeni Alves",
+        "Juan Sebastian Gomez"
+      ],
+      "status": "REMAINS_LEGITIMATELY_BLOCKED",
+      "blocker": "12276 has no certified alias and PIT target is not ready"
+    },
+    "305493": {
+      "players": [
+        "Juan Alejandro Hernandez",
+        "Franco Ribero"
+      ],
+      "identity_fix_condition": "PASSABLE_BY_CERTIFIED_ALIAS_FOR_63018",
+      "alias_63018_canonical_source_id": "RAPIDAPI_CLAY_NEW_63018",
+      "pit_63018_ready": true,
+      "other_player_37735_alias_present": true,
+      "note": "Identity ordering defect corrected in code; full producer admission still depends on both players PIT readiness at rerun time."
+    }
+  },
+  "governance": {
+    "forced_admission": false,
+    "historical_backfill": false,
+    "odds_to_probability": false,
+    "silent_imputation": false,
+    "automatic_wagering": false,
+    "real_money": "BLOCKED"
+  },
+  "adjudication": "CODE_FIX_PHYSICALLY_COMMITTED_AND_INPUTS_VERIFIED; ACTION_RUN_47_QUEUED_FOR_FULL_PIPELINE_CONFIRMATION"
+}

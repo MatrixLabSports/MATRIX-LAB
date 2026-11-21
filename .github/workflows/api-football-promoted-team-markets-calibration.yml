@@ -1,0 +1,122 @@
+name: MATRIX Promoted Team Markets Prospective Calibration
+
+on:
+  schedule:
+    - cron: "33 */2 * * *"
+  workflow_dispatch:
+  workflow_run:
+    workflows:
+      - "MATRIX Football Daily Governed Pipeline"
+      - "API-Football prospective FINAL-only settlement now"
+    types:
+      - completed
+  push:
+    branches:
+      - repair/cor09-world-pipeline
+    paths:
+      - tools/api_football_promoted_team_markets_supervisor.py
+      - tests/test_api_football_promoted_team_markets_supervisor.py
+      - .github/workflows/api-football-promoted-team-markets-calibration.yml
+
+permissions:
+  contents: write
+
+concurrency:
+  group: api-football-promoted-team-markets-calibration
+  cancel-in-progress: false
+
+jobs:
+  calibrate:
+    if: >
+      github.event_name != 'workflow_run' ||
+      github.event.workflow_run.conclusion == 'success'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      REAL_MONEY: BLOCKED
+      AUTO_BETTING: DISABLED
+    steps:
+      - name: Checkout operational branch
+        uses: actions/checkout@v4
+        with:
+          ref: repair/cor09-world-pipeline
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install governed dependencies
+        run: python -m pip install pytest requests
+
+      - name: Regression tests
+        run: PYTHONPATH=. python -m pytest -q tests/test_api_football_promoted_team_markets_supervisor.py
+
+      - name: Safety gates
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$REAL_MONEY" = "BLOCKED"
+          test "$AUTO_BETTING" = "DISABLED"
+
+      - name: Run freeze settlement and threshold calibration
+        env:
+          API_FOOTBALL_KEY: ${{ secrets.API_FOOTBALL_KEY }}
+        run: |
+          set -euo pipefail
+          test -n "$API_FOOTBALL_KEY"
+          python -m tools.api_football_promoted_team_markets_supervisor
+
+      - name: Validate gate discipline
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          root=Path("evidence/api_football/promoted_team_markets")
+          summary=json.loads((root/"summary.json").read_text())
+          assert summary["real_money"]=="BLOCKED"
+          assert summary["automatic_wagering"] is False
+          for lane in ("TEAM_FOULS_TOTAL","TEAM_TOTAL_SHOTS_HOME","TEAM_TOTAL_SHOTS_AWAY"):
+              state=json.loads((root/lane.casefold()/"state.json").read_text())
+              n=int(state["calibration_observation_count"])
+              assert state["parameter_tuning_allowed"] is False
+              assert state["real_money"]=="BLOCKED"
+              for threshold in (30,50,100,200):
+                  gate=state["gates"][str(threshold)]
+                  if n>=threshold:
+                      assert gate["status"]=="OPENED_AT_THRESHOLD"
+                      assert gate["metrics_opened"] is True
+                      assert gate["observations_used"]==threshold
+                  else:
+                      assert gate["status"]=="SEALED"
+                      assert gate["metrics_opened"] is False
+              print(lane,n,state["gates"]["30"]["status"])
+          PY
+
+      - name: Persist prospective calibration evidence
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name matrix-promoted-market-calibration
+          git config user.email matrix-promoted-market-calibration@users.noreply.github.com
+          git add evidence/api_football/promoted_team_markets
+          if git diff --cached --quiet; then
+            echo "NO_PROMOTED_MARKET_CALIBRATION_CHANGE"
+            exit 0
+          fi
+          git commit -m "evidence(football): refresh promoted market calibration gates"
+          for attempt in 1 2 3 4; do
+            git fetch origin repair/cor09-world-pipeline
+            if ! git rebase origin/repair/cor09-world-pipeline; then
+              git rebase --abort || true
+              exit 1
+            fi
+            if git push origin HEAD:repair/cor09-world-pipeline; then
+              exit 0
+            fi
+            sleep $((attempt*2))
+          done
+          exit 1

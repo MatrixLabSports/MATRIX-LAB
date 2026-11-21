@@ -1,0 +1,71 @@
+name: MATRIX Native Original API-Football Bounded Free Recovery
+
+# 2026-11-09 vendor safety gate: API-SPORTS warned that shared outbound IPs
+# may suspend Free Plan accounts. Previous probes also returned an application
+# error: season 2026 is not covered by Free (2022-2024 allowed).
+# Disable all automatic/scheduled requests; no provider call until support
+# confirms the permitted egress and an operator explicitly dispatches a check.
+# See https://github.com/MatrixLabSports/MATRIX-LAB/issues/3
+on:
+  workflow_dispatch:
+
+
+permissions:
+  contents: write
+
+concurrency:
+  group: matrix-original-api-football-free-access-recovery
+  cancel-in-progress: false
+
+jobs:
+  original-native-id-access:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      REAL_MONEY: BLOCKED
+      AUTOMATIC_WAGERING: "false"
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: repair/cor09-world-pipeline
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Validate historical native-ID source and rate controls
+        run: |
+          python -m pip install -q requests pytest
+          PYTHONPATH=. python -m pytest -q tests/test_matrix_original_api_football_free_recovery_probe.py
+      - name: Check authentic legacy provider key under FREE-bounded allowed requests
+        env:
+          API_FOOTBALL_KEY: ${{ secrets.API_FOOTBALL_KEY }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$REAL_MONEY" = BLOCKED
+          PYTHONPATH=. python -m tools.matrix_original_api_football_free_recovery_probe
+      - name: Persist unaltered original native ID source receipts
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name matrix-original-api-free-check
+          git config user.email matrix-original-api-free-check@users.noreply.github.com
+          git add -- evidence/api_football/free_fallback
+          if git diff --cached --quiet; then
+            echo NO_NEW_ORIGINAL_API_EVIDENCE
+            exit 0
+          fi
+          git commit -m "evidence(football): bounded original native-ID entitlement check"
+          for i in 1 2 3 4 5; do
+            git fetch origin repair/cor09-world-pipeline
+            if ! git rebase origin/repair/cor09-world-pipeline; then
+              git rebase --abort || true
+              exit 1
+            fi
+            if git push origin HEAD:repair/cor09-world-pipeline; then
+              echo ORIGINAL_API_FREE_PROBE_PHYSICALLY_PERSISTED
+              exit 0
+            fi
+            sleep "$i"
+          done
+          exit 1

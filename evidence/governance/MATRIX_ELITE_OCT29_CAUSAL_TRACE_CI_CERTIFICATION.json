@@ -1,0 +1,31 @@
+{
+  "schema": "MATRIX_ELITE_OCT29_CAUSAL_TRACE_CI_CERTIFICATION_V1",
+  "run_id": 40823128286,
+  "run_conclusion": "success",
+  "job_id": 123280073145,
+  "verified_steps": [
+    "Re-run certified CLV and Telegram regressions",
+    "Verify causal trace without provider calls",
+    "Generate and validate immutable Telegram causal trace",
+    "Final CI gate"
+  ],
+  "observed_job_log": {
+    "clv_telegram_regression_tests": "33 passed in 0.72s",
+    "causal_trace_tests": "2 passed in 0.06s",
+    "causal_trace_stdout": {
+      "current_schema_attempts": 1306,
+      "exact_over_2_5_seen_attempts": 31,
+      "both_identity_not_flagged_and_exact_line": 31
+    }
+  },
+  "interpretation": "31 attempts have an exact line and an identity state not in LOW_SCORE, AMBIGUOUS, NOT_COVERED; this does not certify bookmaker quote freshness, positive EV, or Telegram delivery",
+  "limitations": [
+    "Full JSON trace is not included in this certification; later artifact-upload workflow must be checked",
+    "The immutable quote ledger does not establish Telegram API message acknowledgment",
+    "The same fixture may occur in multiple attempts"
+  ],
+  "safety": {
+    "real_money": "BLOCKED",
+    "automatic_wagering": false
+  }
+}

@@ -1,0 +1,87 @@
+{
+  "schema": "MATRIX_TELEGRAM_PAPER_BANKROLL_ACTIVATION_CERTIFICATE_V1",
+  "activated_at_utc": "2026-10-10T03:33:54+00:00",
+  "target_operational_date_bogota": "2026-10-10",
+  "mode": "PAPER_ONLY",
+  "telegram": {
+    "workflow_run_id": 38021070166,
+    "workflow_conclusion": "success",
+    "activation_message_id": 116,
+    "portfolio_seed_message_ids": [
+      117
+    ]
+  },
+  "bankroll": {
+    "initial_cop": 5000000,
+    "current_cop": 5000000,
+    "unit_cop": 25000,
+    "stake_1_cop": 25000,
+    "stake_2_cop": 50000,
+    "stake_3_cop": 75000,
+    "max_open_exposure_fraction": 0.25,
+    "max_open_exposure_cop": 1250000,
+    "open_exposure_cop": 1250000,
+    "available_after_open_exposure_cop": 3750000,
+    "realized_profit_cop": 0
+  },
+  "confidence_policy": {
+    "stake_1": "remaining eligible green signals with positive EV",
+    "stake_2": "P_MATRIX >= 60% AND EV >= 5%",
+    "stake_3": "P_MATRIX >= 65% AND EV >= 10%"
+  },
+  "portfolio": {
+    "open_bets": 24,
+    "stake_1_count": 5,
+    "stake_2_count": 12,
+    "stake_3_count": 7,
+    "open_stake_sum_cop": 1250000,
+    "prioritization": "Higher stake tier first, then higher EV, until open-exposure cap."
+  },
+  "ledger": {
+    "path": "evidence/notifications/telegram/MATRIX_TELEGRAM_SIGNAL_LEDGER.json",
+    "blob_sha": "ee181378630eec85418d9f075892abfa63d55640",
+    "latest_run": {
+      "bogota_date": "2026-10-09",
+      "corrections_now": 0,
+      "dates_scanned": [
+        "2026-10-10",
+        "2026-10-09",
+        "2026-10-08"
+      ],
+      "delivery_failures_now": 0,
+      "duplicate_green_messages_suppressed": 59,
+      "economic_updates_now": 0,
+      "football_candidates": 59,
+      "paper_bankroll_current_cop": 5000000,
+      "paper_bankroll_enabled": true,
+      "paper_bets_assigned_now": 0,
+      "paper_open_bets": 24,
+      "paper_open_exposure_cop": 1250000,
+      "quote_checks": 40,
+      "real_money": "BLOQUEADO",
+      "rectifications_now": 0,
+      "run_at_utc": "2026-10-10T03:35:16+00:00",
+      "sent_now": 0,
+      "settlements_now": 0,
+      "tennis_candidates": 0,
+      "total_green_messages": 69,
+      "total_settlements": 19
+    }
+  },
+  "implementation_commits": {
+    "bankroll_engine": "320cc749a83731338642b9e49f920c4b44074750",
+    "workflow_enable": "ce0a35731c93b284686693ba42b6de58a38074b9",
+    "policy": "3c30cfea693e16231d0183fe2f1c735bae2ecad3",
+    "tests": "e72ca5d6e481ce0aa9cb8c001d746f691cff5a46",
+    "portfolio_publish": "a5b77dcf058826156bc024b5417c3a7378543a6e",
+    "ledger_persist": "5a626b30f9fa5ed55f9c905c63f2f573d45371cd"
+  },
+  "protections": {
+    "singles_only": true,
+    "automatic_wagering": false,
+    "real_money": "BLOCKED",
+    "final_only_settlement": true,
+    "no_research_only_market_admission": true,
+    "odds_used_to_generate_probability": false
+  }
+}

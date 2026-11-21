@@ -1,0 +1,205 @@
+{
+  "schema": "MATRIX_TENNIS_ACTIVE_BLOCKS_RESOLUTION_12OCT2026_V1",
+  "status": "PASS_PHYSICALLY_VERIFIED_ACTIVE_TENNIS_BLOCKS_ADJUDICATED",
+  "repository": "MatrixLabSports/MATRIX-LAB",
+  "branch": "repair/cor09-world-pipeline",
+  "as_of_utc": "2026-10-12T08:45:31Z",
+  "inventory": {
+    "prematch_registry_total_lanes": 36,
+    "active_governed_hard": 1,
+    "active_prospective_clay": 1,
+    "research_only_not_trained": 34,
+    "live_tennis_is_separate_lab": true,
+    "registry_path": "config/tennis_model_lane_registry_v1.json",
+    "registry_blob": "76eaf9a7535e626a7fcf9dbc15f132a908680b78"
+  },
+  "hard_cor0203": {
+    "adjudication": "OPERATIONAL_NOT_TECHNICALLY_STALLED",
+    "holdout_id": "A22_POST_AUDIT_VIRGIN_HOLDOUT_V1",
+    "unique_calibration_observations": 201,
+    "physical_frozen_rows": 342,
+    "duplicate_observations_quarantined": 141,
+    "window1": "200/200_CLOSED",
+    "window2": "1/200",
+    "remaining_to_600": 399,
+    "metrics": "SEALED_UNTIL_600_UNIQUE",
+    "outcomes_read_for_metrics": 0,
+    "latest_cycle": {
+      "run_id": 38223440492,
+      "conclusion": "SUCCESS",
+      "new_freezes": 0,
+      "operational_state": "IDLE_VALID",
+      "cause": "SOURCE_READY_NO_NEW_ELIGIBLE_EVENTS",
+      "source_ready": true,
+      "integrity": "PASS"
+    },
+    "evidence": {
+      "uniqueness_path": "evidence/cor0203/runtime/MATRIX_COR0203_PHYSICAL_UNIQUENESS_LAST.json",
+      "uniqueness_blob": "9a50e5d26a7be9cfe091b4a3fb9377d43a5fbbf8",
+      "observability_path": "evidence/cor0203/runtime/MATRIX_COR0203_PRODUCTION_OBSERVABILITY_LAST.json",
+      "observability_blob": "d4128a105c7f58f6465802796538126892e97f10"
+    }
+  },
+  "clay_prospective": {
+    "adjudication": "TECHNICAL_STALL_RESOLVED_AND_PROSPECTIVE_COLLECTION_STARTED",
+    "lane_id": "ATP_CHALLENGER_MEN_SINGLES_CLAY",
+    "holdout_id": "ATP_CHALLENGER_CLAY_PROSPECTIVE_V1",
+    "frozen_model_identity": "ATP_CHALLENGER_CLAY_ELO_V1",
+    "frozen_model_sha256": "70d87ceb808ddd48fd544487724204db51cc8818357aa7081ab868bdebc2a84b",
+    "before_resolution": {
+      "observation_count": 0,
+      "pit_ready_targets": 3,
+      "pit_blocked_targets": 45,
+      "pit_identity_backlog_count": 251
+    },
+    "root_causes": [
+      {
+        "id": "CLAY_RC1_IDENTITY_ONLY_CROSSWALK_REQUIRED_TWO_PLAYERS",
+        "resolution": "Allow one-player identity-only records only when explicitly model_admission_forbidden; ordinary event crosswalks still require two players.",
+        "code_commit": "6032fb9847a6ecd7d8b2a3676254e322464ece66",
+        "regression_test_commit": "7f97ce8d2b97ebd9d3e0e1bd0329a3b4ada0c727"
+      },
+      {
+        "id": "CLAY_RC2_NONCAUSAL_IDENTITY_GRAPH_OVERBLOCKED_PIT",
+        "resolution": "Replace undirected all-time component closure with reverse-time causal closure respecting frozen same-day batch updates.",
+        "code_commit": "85002e08aba6858994d17f25a378e668d462b588",
+        "regression_test_commit": "99d94b99e9419a1d0f6c9f97aae1f89413882023"
+      },
+      {
+        "id": "CLAY_RC3_RECOVERED_IDENTITIES_NOT_MONOTONIC",
+        "resolution": "Persist only PASS identity-only mappings in cumulative collision-checked Clay alias ledger.",
+        "code_commit": "c30d02a3e154f190892422cbe794f324bdc6b711",
+        "regression_test_commit": "5e711257b5bdf427fa2f0017ddf3c86048d6cd9e",
+        "workflow_commit": "91bda3e3a360cb561be5d32a03785a056bcd6557"
+      },
+      {
+        "id": "CLAY_RC4_RESIDUAL_IDENTITY_PROFILE_AND_NEW_PLAYER_PRIOR",
+        "resolution": "Use exact provider ID + name + IOC + profile DOB/hand; for historical players require unique Clay canonical identity and DOB-age consistency; for truly unseen Clay players permit only the model's already-frozen 1500 prior.",
+        "code_commit": "f96de9a516412c54621d4f41926e5b34b032a80b",
+        "regression_test_commit": "8aeb3bc406e2a50a4d5239c34e73f0d735c339bd",
+        "workflow_commit": "f1702a5443f69047b96638ac9a596c8471e07ae4"
+      },
+      {
+        "id": "CLAY_RC5_PROFILE_HAND_OMISSION_OVERBLOCKED_HISTORICAL_PLAYER",
+        "resolution": "For historical players only, accept a unique pre-cut Clay hand when provider profile omits hand and exact provider ID/name/IOC plus DOB-age consistency prove identity; truly new players still require profile hand.",
+        "code_commit": "2a696d7a162171851a84bf9b054223c4b339fa2e",
+        "regression_test_commit": "820d536239d5890c743eb7ad652deb58fd30920a"
+      }
+    ],
+    "after_resolution": {
+      "observation_count": 2,
+      "unique_physical_event_count": 2,
+      "status": "ACTIVE_PROSPECTIVE",
+      "identity_alias_ledger_count": 189,
+      "pit_ready_targets": 8,
+      "pit_blocked_targets": 40,
+      "pit_identity_backlog_count": 39,
+      "dual_paid_provider_bound_clay": 20,
+      "metrics_opened": false,
+      "outcomes_read": 0
+    },
+    "observations": [
+      {
+        "observation_index": 1,
+        "event_id": "CLAY-rapidapi-tennis-atp-match-1677-f37184663c6d",
+        "players": [
+          "Juan Estevez",
+          "Rodrigo Pacheco Mendez"
+        ],
+        "competition": "Santa Cruz de la Sierra 2 Challenger",
+        "surface": "Clay",
+        "event_start_utc": "2026-10-12T21:00:00+00:00",
+        "freeze_at_utc": "2026-10-12T08:44:37+00:00",
+        "p_player_a": 0.35617426197791513,
+        "dual_paid_provider_binding": "PASS",
+        "crosswalk_status": "PASS",
+        "outcome": null,
+        "observation_sha256": "0b164552e06a7416418a9a865dfd52c0902dd27ce6c8f510c8554d6cbf929e5c"
+      },
+      {
+        "observation_index": 2,
+        "event_id": "CLAY-rapidapi-tennis-atp-match-1717-b45c39927afa",
+        "players": [
+          "Izan Almazan Valiente",
+          "Sean Cuenin"
+        ],
+        "competition": "San Gregorio di Catania Challenger",
+        "surface": "Clay",
+        "event_start_utc": "2026-10-12T11:00:00+00:00",
+        "freeze_at_utc": "2026-10-12T08:44:37+00:00",
+        "p_player_a": 0.6137724937602171,
+        "dual_paid_provider_binding": "PASS",
+        "crosswalk_status": "PASS",
+        "outcome": null,
+        "observation_sha256": "fcfb026117afb72783d7a4eaef001e3e557bb35171cbf2aa3794f11a8ab75148"
+      }
+    ],
+    "certification": {
+      "evidence_producing_commit": "1948b6003474d5415537345de01670d215617d18",
+      "idempotent_certification_run_id": 38225346889,
+      "idempotent_certification_conclusion": "SUCCESS",
+      "current_evidence_commit_before_receipt": "5175824865f017b3b588b02cf0865be832306df3"
+    },
+    "evidence": {
+      "state_path": "evidence/tennis_parallel_lanes/ATP_CHALLENGER_MEN_SINGLES_CLAY/prospective/state.json",
+      "state_blob": "26ef767298def5dafc5f5de3c529381bbbf7cf54",
+      "observations_path": "evidence/tennis_parallel_lanes/ATP_CHALLENGER_MEN_SINGLES_CLAY/prospective/observations.jsonl",
+      "observations_blob": "8d3748cdd622fce06748e278ff148d7c55df957d",
+      "bridge_path": "evidence/tennis_parallel_lanes/ATP_CHALLENGER_MEN_SINGLES_CLAY/prospective/world_calendar_bridge_last.json",
+      "bridge_blob": "b4347a6967f9365ceef716442a0331841d5a349f",
+      "alias_ledger_blob": "bcff4fe8fb8757049ad90d1cd7011972b38f44d0"
+    },
+    "residual_legitimate_blockers": {
+      "pit_blocked_targets": 40,
+      "pit_identity_backlog_count": 39,
+      "policy": "REMAIN_BLOCKED_UNTIL_PHYSICAL_IDENTITY_AND_CAUSAL_PIT_ARE_COMPLETE"
+    }
+  },
+  "live_tennis": {
+    "adjudication": "PROVIDER_NATIVE_LANE_ACTIVE_NOT_TECHNICALLY_STALLED",
+    "provider": "api_tennis",
+    "native_unique_matches": 26,
+    "settled_quality_valid_unique_matches": 9,
+    "metrics_status": "SEALED",
+    "model_status": "RESEARCH_ONLY",
+    "probability_output_status": "SEALED",
+    "current_day_failover": {
+      "executed_cycles": 6,
+      "unique_matches": 17,
+      "unique_states": 40,
+      "quality_valid_states": 27
+    },
+    "provider_native_run": {
+      "run_id": 38221552147,
+      "conclusion": "SUCCESS"
+    },
+    "cross_provider_equivalence": {
+      "status": "BLOCKED_INSUFFICIENT_CROSS_PROVIDER_OVERLAP",
+      "adjudicable_overlap_pairs": 0,
+      "policy": "DO_NOT_FORCE_EQUIVALENCE_OR_ADMIT_PAID_STATES_TO_OLD_CALIBRATION"
+    },
+    "evidence": {
+      "native_gate_blob": "ab2f6c28722055e3140d76b6b70a27f0f493b0e0",
+      "native_receipt_blob": "6f63a32874b183453e3adc2a11f5f72edb87adf6",
+      "current_day_failover_ledger_blob": "1327a8a1bb02372bf253f07aa6744ba117ca7f83",
+      "equivalence_audit_blob": "1acc25ec36e65b7a637913866cf875e768c28828"
+    }
+  },
+  "governance": {
+    "no_forced_data": true,
+    "no_synthetic_or_historical_backfill_into_prospective_holdouts": true,
+    "missing_not_zero": true,
+    "silent_imputation": false,
+    "odds_to_probability": false,
+    "metrics_opened": false,
+    "parameter_tuning": false,
+    "real_money": "BLOCKED",
+    "source_priority": [
+      "SOFASCORE_BROWSER",
+      "FLASHSCORE_BROWSER",
+      "RAPIDAPI_TENNIS",
+      "API_TENNIS"
+    ]
+  },
+  "conclusion": "Hard is healthy but had no new eligible event in its latest cycle; Clay's technical stall was removed and it now has two physical prospectives; Live Tennis is collecting in an API-Tennis-native research lane while old cross-provider equivalence remains correctly blocked. The other 34 prematch lanes are initialized RESEARCH_ONLY_NOT_TRAINED, not stalled calibrations."
+}

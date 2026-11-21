@@ -1,0 +1,130 @@
+name: MATRIX 42 Market Read-Only Integrity Review
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "20 12 * * *" # Daily 07:20 Bogota; audit only, no betting
+  push:
+    branches:
+      - repair/cor09-world-pipeline
+      - main
+    paths:
+      - tools/matrix_42_market_integrity_audit.py
+      - tests/test_matrix_42_market_integrity_audit.py
+      - tools/matrix_42_lane_prospective_registry.py
+      - tests/test_matrix_42_lane_prospective_registry.py
+      - tools/matrix_13_market_settlement_gap_reconciliation.py
+      - tests/test_matrix_13_market_settlement_gap_reconciliation.py
+      - tools/matrix_13_cup_archived_final_replay.py
+      - tools/matrix_13_cohort_espn_mls_results.py
+      - tests/test_matrix_13_cohort_espn_cup_archived_aliases.py
+      - .github/workflows/matrix-42-market-integrity-review.yml
+      - evidence/market_portfolio/MATRIX_42_LANE_PROSPECTIVE_REGISTRY_LAST.json
+      - evidence/market_portfolio/MATRIX_MULTI_MARKET_SUPERVISOR_LAST.json
+      - evidence/market_portfolio/MATRIX_42_LANE_ZERO_PROSPECTIVE_BLOCKERS_LAST.json
+      - evidence/market_portfolio/MATRIX_42_LANE_ACTION_BOARD_LAST.json
+      - evidence/market_portfolio/MATRIX_GATE600_POST_AUDIT_LAST.json
+
+permissions:
+  contents: read
+
+concurrency:
+  group: matrix-42-market-integrity-review
+  cancel-in-progress: false
+
+jobs:
+  physical-registry-adjudication:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    env:
+      REAL_MONEY: BLOCKED
+      AUTO_BETTING: DISABLED
+      MATRIX_MODE: RESEARCH_ONLY
+    steps:
+      - name: Checkout operative source branch
+        uses: actions/checkout@v4
+        with:
+          ref: repair/cor09-world-pipeline
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Test no-promotion and 42-market integrity contracts
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$REAL_MONEY" = BLOCKED
+          test "$AUTO_BETTING" = DISABLED
+          python -m pip install -q pytest requests
+          PYTHONPATH=. python -m pytest -q \
+            tests/test_matrix_42_market_integrity_audit.py \
+            tests/test_matrix_42_lane_prospective_registry.py \
+            tests/test_matrix_13_market_settlement_gap_reconciliation.py \
+            tests/test_matrix_13_cohort_espn_cup_archived_aliases.py
+      - name: Physically reconcile original repository evidence
+        shell: bash
+        run: |
+          set -euo pipefail
+          PYTHONPATH=. python -m tools.matrix_42_market_integrity_audit \
+            --root . \
+            --output matrix42-audit/MATRIX_42_MARKETS_INTEGRITY_RESULT.json
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          p=Path("matrix42-audit/MATRIX_42_MARKETS_INTEGRITY_RESULT.json")
+          result=json.loads(p.read_text())
+          assert result["market_counts"]["all"] == 42
+          assert result["market_counts"]["football"] == 30
+          assert result["market_counts"]["tennis"] == 12
+          assert len(result["markets"]) == 42
+          assert result["no_auto_promotion"] is True
+          assert result["telegram_signal_authorized"] is False
+          assert result["real_money"] == "BLOCKED"
+          print("MATRIX_42_MARKET_PHYSICAL_EVIDENCE_RECONCILED_NOT_PRODUCTION_PROMOTION")
+          PY
+      - name: Physically reconcile 13 exact settled market cohorts
+        shell: bash
+        run: |
+          set -euo pipefail
+          PYTHONPATH=. python -m tools.matrix_13_market_settlement_gap_reconciliation \
+            --root . \
+            --output matrix42-audit/MATRIX_13_EXACT_SETTLEMENT_GAPS.json
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          report=json.loads(Path("matrix42-audit/MATRIX_13_EXACT_SETTLEMENT_GAPS.json").read_text())
+          s=report["summary"]
+          assert s["advanced_market_lanes"] == 13
+          assert s["exact_final_600_achieved"] == 5
+          assert s["exact_final_below_600"] == 8
+          assert s["automatically_promoted"] == 0
+          assert report["real_money"] == "BLOCKED"
+          assert report["telegram_authorized"] is False
+          print("MATRIX_13_EXACT_FINAL_5_SETTLED_600_NO_PROMOTION")
+          PY
+      - name: Physically recover archived exact FT candidates without ledger writes
+        shell: bash
+        run: |
+          set -euo pipefail
+          PYTHONPATH=. python -m tools.matrix_13_cup_archived_final_replay \
+            --output matrix42-audit/MATRIX_13_CUP_ARCHIVED_FT_REPLAY.json
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          r=json.loads(Path("matrix42-audit/MATRIX_13_CUP_ARCHIVED_FT_REPLAY.json").read_text())
+          assert r["real_money"] == "BLOCKED"
+          assert r["ledger_mutated"] is False
+          assert r["new_independently_replayed_standard_ft_count"] >= 2
+          recovered={x["canonical_fixture_id"] for x in r["new_candidates"]}
+          assert {"1638558", "1640383"}.issubset(recovered)
+          print("MATRIX_ARCHIVED_CUP_FT_CANDIDATES_REPLAYED_NO_CANONICAL_MUTATION")
+          PY
+      - name: Store original evidence reconciliation as a physical artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: matrix-42-market-readonly-integrity-result
+          path: |
+            matrix42-audit/MATRIX_42_MARKETS_INTEGRITY_RESULT.json
+            matrix42-audit/MATRIX_13_EXACT_SETTLEMENT_GAPS.json
+            matrix42-audit/MATRIX_13_CUP_ARCHIVED_FT_REPLAY.json
+          retention-days: 14

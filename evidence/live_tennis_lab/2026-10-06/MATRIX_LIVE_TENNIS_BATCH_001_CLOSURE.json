@@ -1,0 +1,80 @@
+{
+  "schema": "MATRIX_LIVE_TENNIS_BATCH_CLOSURE_V0_1",
+  "batch_id": "LIVE-TENNIS-20261006-B001",
+  "operational_date_bogota": "2026-10-06",
+  "source_ledger": "evidence/live_tennis_lab/2026-10-06/MATRIX_LIVE_TENNIS_STATE_LEDGER_V0_1.json",
+  "source_ledger_content_sha": "b9debb68f0c90c5873435aa5052bed36cb214bab",
+  "captured_through_utc": "2026-10-06T19:23:31+00:00",
+  "capture_closed": true,
+  "raw_counts": {
+    "unique_matches": 28,
+    "unique_states": 159,
+    "quality_valid_states": 148,
+    "quality_invalid_states_quarantined": 11,
+    "matches_with_at_least_one_valid_state": 21
+  },
+  "domains": {
+    "challenger|men|clay": {
+      "states": 43,
+      "valid_states": 41,
+      "matches": 7,
+      "valid_matches": 5
+    },
+    "challenger|women|hard": {
+      "states": 1,
+      "valid_states": 0,
+      "matches": 1,
+      "valid_matches": 0
+    },
+    "itf|men|hard": {
+      "states": 2,
+      "valid_states": 0,
+      "matches": 1,
+      "valid_matches": 0
+    },
+    "itf|women|hard": {
+      "states": 49,
+      "valid_states": 49,
+      "matches": 7,
+      "valid_matches": 7
+    },
+    "itf|men|clay": {
+      "states": 9,
+      "valid_states": 9,
+      "matches": 2,
+      "valid_matches": 2
+    },
+    "UNKNOWN|UNKNOWN|clay": {
+      "states": 12,
+      "valid_states": 10,
+      "matches": 2,
+      "valid_matches": 1
+    },
+    "UNKNOWN|UNKNOWN|UNKNOWN": {
+      "states": 43,
+      "valid_states": 39,
+      "matches": 8,
+      "valid_matches": 6
+    }
+  },
+  "calibration_rule": {
+    "unit_of_capture": "UNIQUE_MATCH_SEQUENCE_STATE",
+    "unique_state_key": "provider+match_id+sequence",
+    "match_level_independence_key": "match_id",
+    "same_match_must_not_cross_train_test": true,
+    "only_quality_state_valid_rows_may_enter_calibration": true,
+    "final_outcome_may_label_multiple_states_of_same_match_but_counts_as_one_unique_match_outcome": true,
+    "duplicate_transport_snapshots_do_not_count": true
+  },
+  "protections": {
+    "outcomes_opened_at_capture": 0,
+    "final_only_settlement": true,
+    "no_backfill": true,
+    "no_silent_imputation": true,
+    "missing_not_zero": true,
+    "odds_to_probability": false,
+    "automatic_wagering": false,
+    "real_money": "BLOCKED"
+  },
+  "status": "BATCH_CAPTURE_CLOSED_PENDING_FINAL_SETTLEMENT"
+}

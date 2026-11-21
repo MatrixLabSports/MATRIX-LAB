@@ -1,0 +1,65 @@
+{
+  "schema": "MATRIX_FOOTBALL_OCT29_DUAL_SOURCE_CLASSIFICATION_V1",
+  "target_date_bogota": "2026-10-29",
+  "sources": {
+    "sofascore": {
+      "observed": 143,
+      "explicit_target_date": 119,
+      "other": 24,
+      "classification_path": "evidence/calendar_physical/2026-10-29/football_sofascore_opera_date_classification.json"
+    },
+    "flashscore": {
+      "observed": 232,
+      "calendar_row_marker": 212,
+      "other": 20,
+      "classification_path": "evidence/calendar_physical/2026-10-29/football_flashscore_opera_link_classification.json"
+    }
+  },
+  "reconciliation_status": "NOT_CERTIFIED",
+  "reason": "Flashscore calendar-row links do not include per-row scheduled time; SofaScore 119 date-labeled rows include postponed and other states. Canonical reconciliation and preregistry require validated schema and temporal evidence.",
+  "controls": {
+    "source_priority": [
+      "SOFASCORE",
+      "FLASHSCORE",
+      "AUTHORIZED_APIS"
+    ],
+    "no_model_probabilities_from_calendar": true,
+    "no_real_money": true,
+    "no_telegram_send_without_ev": true
+  },
+  "next": "Capture per-row time/status in Flashscore and certify date/time alignment before canonical V2.",
+  "canonical_capture_recovery": {
+    "flashscore": {
+      "path": "evidence/calendar_physical/2026-10-29/flashscore_opera_capture.json",
+      "commit": "0ff33c1ffe88e8e3e572d33567b10cb2deda21fe",
+      "rows": 212,
+      "clock_rows": 209,
+      "non_clock_rows": 3
+    },
+    "sofascore": {
+      "path": "evidence/calendar_physical/2026-10-29/sofascore_opera_capture.json",
+      "commit": "3916ba9fab4b6ea6cdd7625b6838989a6b6bbd86",
+      "explicit_date_rows": 119
+    },
+    "temporal_evidence": {
+      "path": "evidence/calendar_physical/2026-10-29/football_flashscore_opera_calendar_rows_with_time.json",
+      "commit": "b76cab0cbd2506bbbc450ee71edb6e3e2ae0faa3"
+    },
+    "reconciliation_execution": "NOT_VERIFIED",
+    "cross_source_time_certified": false,
+    "scored_candidates_generated": false,
+    "telegram_signals_certified": false
+  },
+  "operational_verification": {
+    "workflow_path": ".github/workflows/matrix-football-world-calendar-reconciliation.yml",
+    "workflow_has_push_trigger_for_physical_calendar": true,
+    "workflow_runs_python_tests_before_reconciliation": true,
+    "latest_canonical_reconciliation_date_observed": "2026-10-28",
+    "latest_canonical_watchlist_date_observed": "2026-10-28",
+    "latest_canonical_preregistry_date_observed": "2026-10-28",
+    "oct29_runtime_execution_verified": false,
+    "flashscore_browser_display_timezone_verified": false,
+    "reason": "Observed 209 displayed clock values but page timezone setting not established; no automatic conversion to displayed_times_bogota. GitHub workflow output not yet observed for Oct29.",
+    "next_step": "Check GitHub Actions job for Oct29 capture push, then inspect LAST files and timezone before temporal certification."
+  }
+}

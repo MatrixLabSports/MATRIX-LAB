@@ -1,0 +1,155 @@
+name: COR02-03 prospective holdout freeze
+
+on:
+  push:
+    branches:
+      - repair/cor09-world-pipeline
+    paths:
+      - .github/workflows/cor0203-prospective-freeze.yml
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  freeze:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: repair/cor09-world-pipeline
+          fetch-depth: 0
+
+      - name: Verify sealed runtime inputs
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -s evidence/cor0203/runtime/MATRIX_COR0203_PRE2026_STATE_R706.json.gz.b64
+          test -s evidence/cor0203/runtime/MATRIX_COR0203_ELO_GLICKO_PROSPECTIVE_BUNDLE_R706.json
+          test -s evidence/cor0203/runtime/MATRIX_COR0203_MODEL_BINDING_R707.json
+          test -s evidence/cor0203/runtime/MATRIX_COR0203_PREFEATURE_REGISTRY_R713.json
+          test -s evidence/cor0203/runtime/MATRIX_COR0203_STATIC4_R713.json
+          test -s evidence/cor0203/runtime/MATRIX_COR0203_PROSPECTIVE_EVENTS_R713.json
+          test -s evidence/cor0203/preholdout/2026_challenger_live_snapshot.csv
+          test "$(sha256sum evidence/cor0203/runtime/MATRIX_COR0203_PRE2026_STATE_R706.json.gz.b64 | awk '{print $1}')" = "384b5537ad9715b552d26464db3d01980021a24e9f6d7e0fcc93ba154efde125"
+          test "$(sha256sum evidence/cor0203/runtime/MATRIX_COR0203_ELO_GLICKO_PROSPECTIVE_BUNDLE_R706.json | awk '{print $1}')" = "ef5788fa4212c67880a52af85359bed1483ba1d59b1655e28390bbfaf0187ec8"
+          test "$(sha256sum evidence/cor0203/preholdout/2026_challenger_live_snapshot.csv | awk '{print $1}')" = "d3f0e7edca273d0e1fcd4700581cf00398e46719f0aaadb62a1c97ec0ffa6ab5"
+
+      - name: Verify R713 preregistration and authorized history
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import csv, json
+          from datetime import datetime, timezone
+          from pathlib import Path
+          from tools.cor0203_prospective_producer import load_state, extend_state
+
+          binding=json.loads(Path('evidence/cor0203/runtime/MATRIX_COR0203_MODEL_BINDING_R707.json').read_text())
+          pre=json.loads(Path('evidence/cor0203/runtime/MATRIX_COR0203_PREFEATURE_REGISTRY_R713.json').read_text())
+          events=json.loads(Path('evidence/cor0203/runtime/MATRIX_COR0203_PROSPECTIVE_EVENTS_R713.json').read_text())
+
+          assert binding['candidates']['elo']['identity']=='R218_ELO_BOTH'
+          assert binding['candidates']['glicko']['identity']=='R223_BATCH_GLICKO_RATING_BOTH'
+          assert pre['created_before_feature_acquisition'] is True
+          assert pre['starting_observation_count']==7
+          assert events['starting_observation_count']==7
+          assert len(events['events'])==1
+          event=events['events'][0]
+          assert event['prior_preregistration_reference']=='MATRIX_COR0203_PREFEATURE_REGISTRY_R713_V1'
+          assert event['canonical_source_event_id']=='SD2-2026-QF-BASAVAREDDY-ANDRADE'
+          assert datetime.now(timezone.utc) < datetime.fromisoformat(event['event_start_utc'])
+
+          state,_=load_state(Path('evidence/cor0203/runtime/MATRIX_COR0203_PRE2026_STATE_R706.json.gz.b64'))
+          annual_rows=list(csv.DictReader(Path('evidence/cor0203/preholdout/2026_challenger_live_snapshot.csv').open(encoding='utf-8-sig',newline='')))
+          state,used_rows,period_count=extend_state(state,annual_rows,int(event['target_period']))
+
+          audit={}
+          for player in ('Nishesh Basavareddy','Andres Andrade'):
+              overall=state['history']['overall'].get(player,[0.0,0.0])
+              matches=state['history']['matches'].get(player,[])
+              n_history=max(int(overall[1]) if len(overall)>1 else 0,len(matches))
+              audit[player]={
+                  'n_history':n_history,
+                  'elo_present':player in state['elo_overall'],
+                  'glicko_present':player in state['glicko_overall'],
+              }
+              assert n_history>0, f'AUTHORIZED_PRE21SEP_HISTORY_MISSING:{player}'
+              assert audit[player]['elo_present'], f'ELO_STATE_MISSING:{player}'
+              assert audit[player]['glicko_present'], f'GLICKO_STATE_MISSING:{player}'
+
+          Path('evidence/cor0203/runtime/MATRIX_COR0203_HISTORY_GATE_R713.json').write_text(
+              json.dumps({
+                  'schema':'MATRIX_COR0203_HISTORY_GATE_R713_V1',
+                  'target_period':event['target_period'],
+                  'annual_rows_used_preperiod':used_rows,
+                  'annual_periods_used_preperiod':period_count,
+                  'players':audit,
+                  'result':'PASS',
+                  'same_period_results_used':False,
+                  'silent_imputation':False,
+              },indent=2,sort_keys=True)+'\n',
+              encoding='utf-8'
+          )
+          print(json.dumps(audit,sort_keys=True))
+          print('R713_PREREG_AND_HISTORY_GATE=PASS')
+          PY
+
+      - name: Freeze R713 ELO Glicko observation
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p evidence/cor0203/holdout
+          FREEZE_AT="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+          python tools/cor0203_prospective_producer.py             --state-b64 evidence/cor0203/runtime/MATRIX_COR0203_PRE2026_STATE_R706.json.gz.b64             --bundle evidence/cor0203/runtime/MATRIX_COR0203_ELO_GLICKO_PROSPECTIVE_BUNDLE_R706.json             --annual-2026 evidence/cor0203/preholdout/2026_challenger_live_snapshot.csv             --events evidence/cor0203/runtime/MATRIX_COR0203_PROSPECTIVE_EVENTS_R713.json             --freeze-at "$FREEZE_AT"             --out evidence/cor0203/holdout/MATRIX_COR0203_HOLDOUT_BATCH_R713.json
+
+      - name: Assert R713 observation and metrics remain sealed
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          x=json.loads(Path('evidence/cor0203/holdout/MATRIX_COR0203_HOLDOUT_BATCH_R713.json').read_text())
+          assert x['starting_observation_count']==7
+          assert x['added_observations']==1
+          assert x['ending_observation_count']==8
+          assert x['window1_count']==8
+          assert x['metrics']=='SEALED_UNTIL_600'
+          assert x['outcomes_read']==0
+          assert len(x['observations'])==1
+          o=x['observations'][0]
+          assert o['observation_index']==8
+          assert o['event_id']=='COR0203-R713-SD2-BASAVAREDDY-ANDRADE'
+          assert o['outcome'] is None
+          assert o['metrics_opened'] is False
+          assert o['freeze_at_utc'] < o['event_start_utc']
+          assert o['elo']['model_id']=='R218_ELO_BOTH'
+          assert o['glicko']['model_id']=='R223_BATCH_GLICKO_RATING_BOTH'
+          print(json.dumps({
+              'observation_index':o['observation_index'],
+              'p_elo_player_a':o['elo']['p_player_a'],
+              'p_glicko_player_a':o['glicko']['p_player_a'],
+              'player_a':o['alphabetical_player_a'],
+              'player_b':o['alphabetical_player_b'],
+              'freeze_at_utc':o['freeze_at_utc'],
+              'event_start_utc':o['event_start_utc'],
+          },sort_keys=True))
+          print('COR0203_BATCH_R713_VALIDATION=PASS')
+          PY
+
+      - name: Commit sealed R713 holdout evidence
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'matrix-ci'
+          git config user.email 'matrix-ci@users.noreply.github.com'
+          git add evidence/cor0203/runtime/MATRIX_COR0203_HISTORY_GATE_R713.json
+          git add evidence/cor0203/holdout/MATRIX_COR0203_HOLDOUT_BATCH_R713.json
+          if git diff --cached --quiet; then
+            echo 'No R713 holdout changes'
+            exit 0
+          fi
+          git commit -m 'evidence(cor02-03): freeze R713 Basavareddy Andrade ELO Glicko observation'
+          git push origin HEAD:repair/cor09-world-pipeline

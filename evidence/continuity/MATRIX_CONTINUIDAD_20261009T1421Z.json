@@ -1,0 +1,118 @@
+{
+  "schema": "MATRIX_CONTINUITY_AUDIT_V1",
+  "observed_at_utc": "2026-10-09T14:21:00Z",
+  "observed_at_bogota": "2026-10-09T09:21:00-05:00",
+  "branch": "repair/cor09-world-pipeline",
+  "branch_head_observed": "639dc968071eaf01141a5c594c7d680d7532dc9d",
+  "status": "BLOCKED_PARTIAL",
+  "actions": {
+    "tennis_live_bulk": {
+      "status": "BLOCKED",
+      "last_physical_capture_at_utc": "2026-10-09T05:38:24Z",
+      "last_failed_run_id": 37938665366,
+      "last_failed_at_utc": "2026-10-09T13:42:01Z",
+      "reason": "DAILY_QUOTA_RESERVE_GATE_BLOCKED",
+      "fallback": "NOT_RETRIGGERED_TO_PRESERVE_API_QUOTA"
+    },
+    "tennis_live_final_only": {
+      "status": "BLOCKED",
+      "last_success_run_id": 37912421282,
+      "last_success_at_utc": "2026-10-09T09:37:22Z",
+      "last_artifact_at_utc": "2026-10-09T09:37:16Z",
+      "fallback": "ATTEMPTED_WORKFLOW_COMMENT_ONLY",
+      "fallback_result": "GITHUB_UPDATE_FILE_BLOCKED_BY_SAFETY_CHECKS",
+      "new_run_certified": false
+    },
+    "tennis_live_cumulative": {
+      "status": "NO_CHANGE",
+      "last_success_run_id": 37912459441,
+      "last_artifact_at_utc": "2026-10-09T09:37:38Z",
+      "trigger_required_after_new_capture": false
+    },
+    "tennis_live_itf_women_hard": {
+      "status": "NO_CHANGE",
+      "unique_quality_valid_final": 17,
+      "gate_30_remaining": 13,
+      "model_status": "RESEARCH_ONLY",
+      "probabilities": "SEALED",
+      "metrics": "SEALED"
+    },
+    "atp_shanghai": {
+      "status": "PASS",
+      "index_matches": 3,
+      "index_states": 12,
+      "final": 2,
+      "pending": 1,
+      "source_sha1": "7401579e3eb5342c6524d816c30c1d5815ffd90e",
+      "state_keys_exact": true,
+      "sequence_server_quality_status_match": true,
+      "index_mutated": false
+    },
+    "telegram": {
+      "status": "BLOCKED",
+      "last_supervisor_run_id": 37927847899,
+      "last_supervisor_success_at_utc": "2026-10-09T12:06:27Z",
+      "last_signal_ledger_at_utc": "2026-10-09T12:06:22Z",
+      "new_green_signals_certified": 0,
+      "reason": "STALE_GT_30_MIN; NEW_SIGNAL_DELIVERY_NOT_FORCED_WHILE_DAILY_0_BET_AND_MARKET_SCOPED_SIGNAL_GOVERNANCE_REQUIRE_RECONCILIATION"
+    },
+    "football_final_only": {
+      "status": "PASS",
+      "last_supervisor_run_id": 37938383751,
+      "last_artifact_at_utc": "2026-10-09T13:39:53Z",
+      "prospective_final_count": 1281,
+      "prior_report_count": 1256,
+      "delta": 25,
+      "ledger_hash_chain_verified": true,
+      "manual_execution_settlements_new_certified": 0
+    },
+    "football_manual": {
+      "status": "BLOCKED",
+      "oct09_executions_known": 17,
+      "certified_execution_sync": 15,
+      "additional_uncertified": 2,
+      "certified_stake_cop": 15000,
+      "allowed_houses": [
+        "Betano",
+        "BetPlay",
+        "RushBet"
+      ],
+      "new_bets": 0
+    },
+    "football_daily": {
+      "status": "NO_CHANGE",
+      "last_run_id": 37926351976,
+      "last_run_at_utc": "2026-10-09T11:53:01Z",
+      "next_bogota_window": "2026-10-09T18:10:00-05:00",
+      "new_run_required": false
+    },
+    "tennis_hard": {
+      "status": "PASS_IN_PROGRESS",
+      "unique_observations": 128,
+      "remaining_to_200": 72,
+      "metrics": "SEALED",
+      "scheduler_run_id": 37943289043,
+      "scheduler_started_at_utc": "2026-10-09T14:19:16Z",
+      "scheduler_status": "in_progress",
+      "paid_sources_ready": true,
+      "new_unique_freezes_certified": 0
+    },
+    "market_governance": {
+      "status": "PASS_SCOPE_SEPARATION_WITH_HISTORICAL_REPORT",
+      "market_scoped_over25_signals_authorized": true,
+      "real_money": "BLOCKED",
+      "automatic_wagering": false,
+      "oct09_historical_report_authorized_bets": 0
+    }
+  },
+  "protections": {
+    "real_money": "BLOCKED",
+    "automatic_wagering": false,
+    "missing_not_zero": true,
+    "silent_imputation": false,
+    "odds_to_probability": false,
+    "backfill": false,
+    "tuning": false,
+    "final_only": true
+  }
+}

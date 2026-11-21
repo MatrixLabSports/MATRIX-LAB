@@ -1,0 +1,405 @@
+name: MATRIX Football Independent Fixture Recovery
+
+on:
+  schedule:
+    - cron: "15 5 * * *"   # 00:15 Bogota, current day
+    - cron: "15 23 * * *"  # 18:15 Bogota, next day
+  workflow_dispatch:
+    inputs:
+      target_date:
+        description: Optional Bogota date YYYY-MM-DD
+        required: false
+        type: string
+  push:
+    branches:
+      - repair/cor09-world-pipeline
+    paths:
+      - tools/matrix_football_independent_fixture_pipeline.py
+      - tools/matrix_independent_pit_browser_preflight.py
+      - tests/test_matrix_independent_pit_browser_preflight.py
+      - tools/matrix_football_free_secondary_crosscheck.py
+      - tests/test_matrix_football_free_secondary_crosscheck.py
+      - tests/test_matrix_football_independent_fixture_pipeline.py
+      - tests/test_matrix_football_free_secondary_crosscheck.py
+      - tools/matrix_football_independent_over25_shadow.py
+      - tools/matrix_independent_over25_prematch_freeze.py
+      - tests/test_matrix_independent_over25_prematch_freeze.py
+      - tests/test_matrix_football_independent_over25_shadow.py
+      - tools/matrix_championship_prospective_pit_attestation.py
+      - tests/test_matrix_championship_prospective_pit_attestation.py
+      - tools/matrix_championship_atomic_pit_cycle.py
+      - tests/test_matrix_championship_atomic_pit_cycle.py
+      - tools/matrix_championship_quote_window_scope.py
+      - tools/matrix_championship_baseline_pit_replay.py
+      - tests/test_matrix_championship_baseline_pit_replay.py
+      - tools/matrix_independent_over25_quote_audit.py
+      - tests/test_matrix_independent_over25_quote_audit.py
+      - tools/matrix_football_sofa_fixture_crosscheck.py
+      - tests/test_matrix_real_sofa_nov04_observations.py
+      - tests/test_matrix_football_sofa_fixture_crosscheck.py
+      - tools/matrix_football_flashscore_fixture_crosscheck.py
+      - tests/test_matrix_football_flashscore_fixture_crosscheck.py
+      - tools/matrix_independent_over25_historical_parity.py
+      - tests/test_matrix_independent_over25_historical_parity.py
+      - .github/workflows/matrix-football-independent-fixture-recovery.yml
+
+permissions:
+  contents: write
+
+concurrency:
+  group: matrix-football-independent-fixture-recovery
+  cancel-in-progress: false
+
+jobs:
+  independent-fixtures:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      MATRIX_MODE: SHADOW
+      REAL_MONEY: BLOCKED
+      AUTO_BETTING: DISABLED
+    steps:
+      - name: Checkout operative branch
+        uses: actions/checkout@v4
+        with:
+          ref: repair/cor09-world-pipeline
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Test independent fixture adapter and all hard safety gates
+        run: |
+          python -m pip install pytest requests Pillow
+          PYTHONPATH=. python -m pytest -q tests/test_matrix_football_independent_fixture_pipeline.py tests/test_matrix_football_free_secondary_crosscheck.py tests/test_matrix_independent_pit_browser_preflight.py tests/test_matrix_independent_over25_governed_binding.py tests/test_matrix_football_independent_over25_shadow.py tests/test_matrix_independent_over25_prematch_freeze.py tests/test_matrix_championship_prospective_pit_attestation.py tests/test_matrix_championship_baseline_pit_replay.py tests/test_matrix_championship_atomic_pit_cycle.py tests/test_matrix_championship_quote_window_scope.py tests/test_matrix_independent_over25_quote_audit.py tests/test_matrix_football_sofa_fixture_crosscheck.py tests/test_matrix_real_sofa_nov04_observations.py tests/test_matrix_independent_over25_historical_parity.py tests/test_matrix_football_flashscore_fixture_crosscheck.py
+
+      - name: Resolve Bogota target date
+        id: date
+        shell: bash
+        run: |
+          set -euo pipefail
+          D="${{ inputs.target_date }}"
+          if [ -z "$D" ]; then
+            H="$(TZ=America/Bogota date +%H)"
+            # An authorized workflow repair push preflights TOMORROW rather
+            # than re-collecting today's fixtures after their kickoffs.
+            # Scheduled runs keep their original 18:15 Bogota turnover.
+            if [ "${{ github.event_name }}" = "push" ] || [ "$H" -ge 18 ]; then
+              D="$(TZ=America/Bogota date -d tomorrow +%F)"
+            else
+              D="$(TZ=America/Bogota date +%F)"
+            fi
+          fi
+          date -d "$D" +%F > /dev/null
+          echo "target_date=$D" >> "$GITHUB_OUTPUT"
+
+      - name: Capture independently authorized current fixtures
+        env:
+          FOOTBALL_DATA_ORG_TOKEN: ${{ secrets.FOOTBALL_DATA_ORG_TOKEN }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$REAL_MONEY" = BLOCKED
+          test "$AUTO_BETTING" = DISABLED
+          D="${{ steps.date.outputs.target_date }}"
+          python -m tools.matrix_football_independent_fixture_pipeline \
+            --date "$D" \
+            --out "evidence/football_world_inventory/$D/MATRIX_FOOTBALL_INDEPENDENT_FIXTURE_INTAKE.json"
+
+      - name: Verify primary SofaScore crosswalk before model scoring
+        shell: bash
+        run: |
+          set -euo pipefail
+          D="${{ steps.date.outputs.target_date }}"
+          PYTHONPATH=. python -m tools.matrix_football_sofa_fixture_crosscheck \
+            --intake "evidence/football_world_inventory/$D/MATRIX_FOOTBALL_INDEPENDENT_FIXTURE_INTAKE.json" \
+            --observations "evidence/football_world_inventory/$D/MATRIX_SOFA_BROWSER_OBSERVATIONS.json" \
+            --out "evidence/football_world_inventory/$D/MATRIX_SOFA_FOOTBALL_FIXTURE_CROSSCHECK.json"
+      - name: Verify independent Flashscore and SofaScore browser identities
+        shell: bash
+        run: |
+          set -euo pipefail
+          D="${{ steps.date.outputs.target_date }}"
+          PYTHONPATH=. python -m tools.matrix_football_flashscore_fixture_crosscheck \
+            --intake "evidence/football_world_inventory/$D/MATRIX_FOOTBALL_INDEPENDENT_FIXTURE_INTAKE.json" \
+            --sofa "evidence/football_world_inventory/$D/MATRIX_SOFA_FOOTBALL_FIXTURE_CROSSCHECK.json" \
+            --flash-observations "evidence/football_world_inventory/$D/MATRIX_FLASH_BROWSER_OBSERVATIONS.json" \
+            --out "evidence/football_world_inventory/$D/MATRIX_FLASH_FOOTBALL_CROSSCHECK.json"
+      - name: Query public TheSportsDB as supplementary calendar evidence only
+        shell: bash
+        run: |
+          set -euo pipefail
+          D="${{ steps.date.outputs.target_date }}"
+          PYTHONPATH=. python -m tools.matrix_football_free_secondary_crosscheck \
+            --date "$D" \
+            --intake "evidence/football_world_inventory/$D/MATRIX_FOOTBALL_INDEPENDENT_FIXTURE_INTAKE.json" \
+            --out "evidence/football_world_inventory/$D/MATRIX_THESPORTSDB_CROSSCHECK.json"
+          python - "$D" <<'PY'
+          import json,sys
+          from pathlib import Path
+          d=sys.argv[1]
+          row=json.loads(Path(f"evidence/football_world_inventory/{d}/MATRIX_THESPORTSDB_CROSSCHECK.json").read_text(encoding="utf-8"))
+          assert row["schema"]=="MATRIX_FREE_SECONDARY_FOOTBALL_CROSSCHECK_V1"
+          assert row["source_order"]==["SOFASCORE","FLASHSCORE","APIS"]
+          assert row["telegram_signal_authorized"] is False
+          assert row["production_p_matrix_authorized"] is False
+          assert row["historical_feature_equivalence_verified"] is False
+          assert row["real_money"]=="BLOCKED"
+          print("FREE_SECONDARY_SOURCE_VERIFIED_ONLY", row["verified_identity_hint_count"])
+          PY
+
+      - name: Run original frozen Over 2.5 formula on independent historical scores in quarantine
+        env:
+          FOOTBALL_DATA_ORG_TOKEN: ${{ secrets.FOOTBALL_DATA_ORG_TOKEN }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          D="${{ steps.date.outputs.target_date }}"
+          PYTHONPATH=. python -m tools.matrix_football_independent_over25_shadow \
+            --intake "evidence/football_world_inventory/$D/MATRIX_FOOTBALL_INDEPENDENT_FIXTURE_INTAKE.json" \
+            --out "evidence/football_world_inventory/$D/MATRIX_INDEPENDENT_OVER25_HISTORY_SHADOW.json"
+
+      - name: Permanently seal independent Over25 pre-kickoff research probabilities with raw provider SHA
+        shell: bash
+        run: |
+          set -euo pipefail
+          D="${{ steps.date.outputs.target_date }}"
+          PYTHONPATH=. python -m tools.matrix_independent_over25_prematch_freeze \
+            --intake "evidence/football_world_inventory/$D/MATRIX_FOOTBALL_INDEPENDENT_FIXTURE_INTAKE.json" \
+            --shadow "evidence/football_world_inventory/$D/MATRIX_INDEPENDENT_OVER25_HISTORY_SHADOW.json" \
+            --out "evidence/football_world_inventory/$D/MATRIX_INDEPENDENT_OVER25_PREMATCH_FREEZE_REPORT.json"
+
+      - name: Preserve source-bound PIT blocker if authentic triple-browser evidence is missing
+        id: pit_preflight
+        shell: bash
+        run: |
+          set -euo pipefail
+          D="${{ steps.date.outputs.target_date }}"
+          P="evidence/football_world_inventory/$D/MATRIX_CHAMPIONSHIP_PIT_PREFLIGHT_RUN_${{ github.run_id }}.json"
+          PYTHONPATH=. python -m tools.matrix_independent_pit_browser_preflight \
+            --date "$D" --out "$P"
+          python - "$P" <<'PY'
+          import json,sys,os
+          from pathlib import Path
+          obj=json.loads(Path(sys.argv[1]).read_text(encoding="utf-8"))
+          assert obj["real_money"]=="BLOCKED"
+          assert obj["production_p_matrix_authorized"] is False
+          assert obj["telegram_signal_authorized"] is False
+          with open(os.environ["GITHUB_OUTPUT"],"a",encoding="utf-8") as f:
+              f.write("ready="+str(obj["ready_for_strict_attestation"]).lower()+"\n")
+          if not obj["ready_for_strict_attestation"]:
+              print("STRICT_CHAMPIONSHIP_PIT_NOT_EXECUTED:",obj["status"])
+          PY
+
+      - name: Attest current Championship PIT history before kickoff in strict research isolation
+        if: steps.pit_preflight.outputs.ready == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          D="${{ steps.date.outputs.target_date }}"
+          PYTHONPATH=. python -m tools.matrix_championship_prospective_pit_attestation \
+            --date "$D" \
+            --out "evidence/football_world_inventory/$D/MATRIX_CHAMPIONSHIP_PROSPECTIVE_PIT_ATTESTATION.json"
+          python - "$D" <<'PY'
+          import json,sys
+          from pathlib import Path
+          d=sys.argv[1]
+          p=Path(f"evidence/football_world_inventory/{d}/MATRIX_CHAMPIONSHIP_PROSPECTIVE_PIT_ATTESTATION.json")
+          j=json.loads(p.read_text(encoding="utf-8"))
+          assert j["target_date_bogota"]==d
+          assert j["production_p_matrix_authorized_count"]==0
+          assert j["telegram_signal_authorized"] is False
+          assert j["real_money"]=="BLOCKED"
+          assert j["calibration_untouched"] is True
+          assert all(row["governed_probability_authorized"] is False for row in j["rows"])
+          print("CHAMPIONSHIP_PIT_PROSPECTIVE_RESEARCH_ATTESTED_NO_SIGNALS")
+          PY
+
+      - name: Seal atomic five-document PIT source snapshot from this same provider run
+        if: steps.pit_preflight.outputs.ready == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          D="${{ steps.date.outputs.target_date }}"
+          PYTHONPATH=. python -m tools.matrix_championship_atomic_pit_cycle \
+            --date "$D" --run-id "${{ github.run_id }}" \
+            --out "evidence/football_world_inventory/$D/MATRIX_CHAMPIONSHIP_ATOMIC_PIT_RUN_${{ github.run_id }}.json"
+
+      - name: Recompute original Over 2.5 baseline from independently authenticated raw history
+        if: steps.pit_preflight.outputs.ready == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          D="${{ steps.date.outputs.target_date }}"
+          PYTHONPATH=. python -m tools.matrix_championship_baseline_pit_replay \
+            --date "$D" \
+            --out "evidence/football_world_inventory/$D/MATRIX_CHAMPIONSHIP_OVER25_BASELINE_REPLAY.json"
+          python - "$D" <<'PY'
+          import json,sys
+          from pathlib import Path
+          d=sys.argv[1]
+          j=json.loads(Path(f"evidence/football_world_inventory/{d}/MATRIX_CHAMPIONSHIP_OVER25_BASELINE_REPLAY.json").read_text(encoding="utf-8"))
+          assert j["target_date_bogota"]==d
+          assert j["calibrated_model_equivalence_verified"] is False
+          assert j["production_p_matrix_authorized"] is False
+          assert j["telegram_signal_authorized"] is False
+          assert j["real_money"]=="BLOCKED"
+          assert all(row["original_provider_feature_equivalence_verified"] is False for row in j["rows"])
+          print("OVER25_AUTHENTIC_BASELINE_REPLAY_RESEARCH_ONLY",j["verified_research_baseline_count"])
+          PY
+
+      - name: Compare real free-provider results to immutable paid-era Serie A 2026 archive
+        env:
+          FOOTBALL_DATA_ORG_TOKEN: ${{ secrets.FOOTBALL_DATA_ORG_TOKEN }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          D="${{ steps.date.outputs.target_date }}"
+          PYTHONPATH=. python -m tools.matrix_independent_over25_historical_parity \
+            --out "evidence/football_world_inventory/$D/MATRIX_INDEPENDENT_OVER25_HISTORICAL_PARITY.json"
+      - name: Audit exact Over 2.5 odds only when quota and 120m window allow
+        env:
+          ODDS_API_NET_KEY: ${{ secrets.ODDS_API_NET_KEY }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          D="${{ steps.date.outputs.target_date }}"
+          ATOMIC="evidence/football_world_inventory/$D/MATRIX_CHAMPIONSHIP_ATOMIC_PIT_RUN_${{ github.run_id }}.json"
+          if [ -f "$ATOMIC" ]; then git add "$ATOMIC"; fi
+          Q="evidence/football_world_inventory/$D/MATRIX_INDEPENDENT_OVER25_QUOTE_AUDIT.json"
+          # No push-triggered quota probing outside the prematch window.
+          # Read the previous same-day result before safely overwriting it.
+          PYTHONPATH=. python -m tools.matrix_independent_over25_quote_audit \
+            --intake "evidence/football_world_inventory/$D/MATRIX_FOOTBALL_INDEPENDENT_FIXTURE_INTAKE.json" \
+            --shadow "evidence/football_world_inventory/$D/MATRIX_INDEPENDENT_OVER25_HISTORY_SHADOW.json" \
+            --previous "$Q" \
+            --global-quota-guard "evidence/notifications/telegram/MATRIX_ODDS_API_QUOTA_GUARD_LAST.json" \
+            --out "$Q"
+      - name: Persist read-only discovery evidence even when provider is unavailable
+        if: always()
+        shell: bash
+        run: |
+          set -euo pipefail
+          D="${{ steps.date.outputs.target_date }}"
+          P="evidence/football_world_inventory/$D/MATRIX_FOOTBALL_INDEPENDENT_FIXTURE_INTAKE.json"
+          if [ ! -f "$P" ]; then
+            echo "::error::Independent fixture capture artifact is missing"
+            exit 1
+          fi
+          git config user.name "matrix-independent-football"
+          git config user.email "matrix-independent-football@users.noreply.github.com"
+          git add "$P"
+          S="evidence/football_world_inventory/$D/MATRIX_INDEPENDENT_OVER25_HISTORY_SHADOW.json"
+          if [ -f "$S" ]; then git add "$S"; fi
+          PREMATCH="evidence/football_world_inventory/$D/MATRIX_INDEPENDENT_OVER25_PREMATCH_FREEZE_REPORT.json"
+          if [ -f "$PREMATCH" ]; then git add "$PREMATCH"; fi
+          if [ -d "evidence/football_research_freezes/$D" ]; then
+            git add "evidence/football_research_freezes/$D"
+          fi
+          PITA="evidence/football_world_inventory/$D/MATRIX_CHAMPIONSHIP_PROSPECTIVE_PIT_ATTESTATION.json"
+          if [ -f "$PITA" ]; then
+            # Immutable run-scoped evidence prevents add/add conflicts with
+            # a separate Windows prospective attestation in the same day.
+            PITA_RUN="evidence/football_world_inventory/$D/MATRIX_CHAMPIONSHIP_PROSPECTIVE_PIT_RUN_${{ github.run_id }}.json"
+            cp "$PITA" "$PITA_RUN"
+            git add "$PITA_RUN"
+            if git ls-files --error-unmatch "$PITA" > /dev/null 2>&1; then
+              git restore -- "$PITA"
+            else
+              rm "$PITA"
+            fi
+          fi
+          BASELINE="evidence/football_world_inventory/$D/MATRIX_CHAMPIONSHIP_OVER25_BASELINE_REPLAY.json"
+          if [ -f "$BASELINE" ]; then
+            BASELINE_RUN="evidence/football_world_inventory/$D/MATRIX_CHAMPIONSHIP_OVER25_BASELINE_RUN_${{ github.run_id }}.json"
+            cp "$BASELINE" "$BASELINE_RUN"
+            git add "$BASELINE_RUN"
+            if git ls-files --error-unmatch "$BASELINE" > /dev/null 2>&1; then
+              git restore -- "$BASELINE"
+            else
+              rm "$BASELINE"
+            fi
+          fi
+          Q="evidence/football_world_inventory/$D/MATRIX_INDEPENDENT_OVER25_QUOTE_AUDIT.json"
+          if [ -f "$Q" ]; then git add "$Q"; fi
+          B="evidence/football_world_inventory/$D/MATRIX_SOFA_FOOTBALL_FIXTURE_CROSSCHECK.json"
+          if [ -f "$B" ]; then git add "$B"; fi
+          F="evidence/football_world_inventory/$D/MATRIX_FLASH_FOOTBALL_CROSSCHECK.json"
+          if [ -f "$F" ]; then git add "$F"; fi
+          SECONDARY="evidence/football_world_inventory/$D/MATRIX_THESPORTSDB_CROSSCHECK.json"
+          if [ -f "$SECONDARY" ]; then git add "$SECONDARY"; fi
+          PIT_PREFLIGHT="evidence/football_world_inventory/$D/MATRIX_CHAMPIONSHIP_PIT_PREFLIGHT_RUN_${{ github.run_id }}.json"
+          if [ -f "$PIT_PREFLIGHT" ]; then git add "$PIT_PREFLIGHT"; fi
+          H="evidence/football_world_inventory/$D/MATRIX_INDEPENDENT_OVER25_HISTORICAL_PARITY.json"
+          if [ -f "$H" ]; then git add "$H"; fi
+          if git diff --cached --quiet; then exit 0; fi
+          git commit -m "evidence(football): independent fixture intake $D"
+          for attempt in 1 2 3 4; do
+            git fetch origin repair/cor09-world-pipeline
+            if ! git rebase origin/repair/cor09-world-pipeline; then
+              git rebase --abort || true
+              exit 1
+            fi
+            if git push origin HEAD:repair/cor09-world-pipeline; then exit 0; fi
+            sleep $((attempt*2))
+          done
+          exit 1
+
+      - name: Certify independent capture status without authorizing betting
+        if: always()
+        shell: bash
+        run: |
+          set -euo pipefail
+          D="${{ steps.date.outputs.target_date }}"
+          python - "$D" <<'PY'
+          import json,sys
+          from pathlib import Path
+          d=sys.argv[1]
+          p=Path(f"evidence/football_world_inventory/{d}/MATRIX_FOOTBALL_INDEPENDENT_FIXTURE_INTAKE.json")
+          j=json.loads(p.read_text(encoding="utf-8"))
+          assert j["target_date_bogota"]==d
+          assert j["signal_generation_authorized"] is False
+          assert j["real_money"]=="BLOCKED"
+          assert j["automatic_wagering"] is False
+          assert j["worldwide_complete"] is False
+          assert j["source_order"]==["SOFASCORE","FLASHSCORE","APIS"]
+          shadow_path=Path(f"evidence/football_world_inventory/{d}/MATRIX_INDEPENDENT_OVER25_HISTORY_SHADOW.json")
+          shadow=json.loads(shadow_path.read_text(encoding="utf-8"))
+          assert shadow["real_money"]=="BLOCKED"
+          assert shadow["market_signal_authorized"] is False
+          assert shadow["parameter_refit"] is False
+          assert shadow["odds_used_to_generate_probability"] is False
+          quote_path=Path(f"evidence/football_world_inventory/{d}/MATRIX_INDEPENDENT_OVER25_QUOTE_AUDIT.json")
+          # A missing downstream price audit after a blocked calendar/PIT
+          # stage must be reported as an upstream blocker, not FileNotFoundError.
+          if not quote_path.is_file():
+              print("BLOCKED_NO_QUOTE_AUDIT_UPSTREAM_CALENDAR_OR_PIT_UNVERIFIED")
+              raise SystemExit(2)
+          quote=json.loads(quote_path.read_text(encoding="utf-8"))
+          assert quote["real_money"]=="BLOCKED"
+          assert quote["signal_generation_authorized"] is False
+          assert quote["telegram_messages_sent"] == 0
+          assert quote["production_calibration_parity_verified"] is False
+          browser_path=Path(f"evidence/football_world_inventory/{d}/MATRIX_SOFA_FOOTBALL_FIXTURE_CROSSCHECK.json")
+          browser=json.loads(browser_path.read_text(encoding="utf-8"))
+          assert browser["signal_generation_authorized"] is False
+          assert browser["real_money"]=="BLOCKED"
+          assert browser["flashscore_verified"] is False
+          parity_path=Path(f"evidence/football_world_inventory/{d}/MATRIX_INDEPENDENT_OVER25_HISTORICAL_PARITY.json")
+          parity=json.loads(parity_path.read_text(encoding="utf-8"))
+          assert parity["signal_generation_authorized"] is False
+          assert parity["real_money"] == "BLOCKED"
+          assert parity["calibrated_model_feature_equivalence_verified"] is False
+          flash_path=Path(f"evidence/football_world_inventory/{d}/MATRIX_FLASH_FOOTBALL_CROSSCHECK.json")
+          flash=json.loads(flash_path.read_text(encoding="utf-8"))
+          assert flash["signal_generation_authorized"] is False
+          assert flash["real_money"] == "BLOCKED"
+          status=j["provider_status"]
+          print(f"PROVIDER_STATUS={status} FUTURE_FIXTURES={j['fixture_count']} SHADOW_SCORED={shadow['scored_count']} SIGNALS_AUTHORIZED=false")
+          with open(__import__("os").environ["GITHUB_STEP_SUMMARY"],"a") as f:
+              f.write(f"Independent football: {status}; future fixtures: {j['fixture_count']}; calibrated production: NOT CERTIFIED; real money: BLOCKED.\\n")
+          if status not in ("AUTHENTICATED_FIXTURE_CAPTURE","AUTHENTICATED_NO_FUTURE_FIXTURES_IN_SCOPE"):
+              raise SystemExit("INDEPENDENT_PROVIDER_UNAVAILABLE_FAIL_CLOSED")
+          PY

@@ -1,0 +1,119 @@
+{
+  "schema": "MATRIX_SETTLEMENT_PROGRESS_20261006_BOGOTA_V1",
+  "cut_utc": "2026-10-23T21:42:37Z",
+  "branch": "repair/cor09-world-pipeline",
+  "previous_snapshot": "evidence/daily_selection/MATRIX_SETTLEMENT_PROGRESS_20261006_BOGOTA_20261023T204915Z_V2_3249_T340.json",
+  "previous_snapshot_commit": "76aad9473b8509a2872d4e834788dcd466aee263",
+  "evidence_blobs": {
+    "candidates": "52e897007840f5bed1a8999edad8ee594fefc767",
+    "football_settlement_sync": "46f0065ec8e77fb6f3549d8a8725147b52ed06f8",
+    "football_calibration_sync": "e9ad1850e99894ee08901a9d073e8bfc4333ecbb",
+    "football_physical_uniqueness": "6c51eb1a826861b7bf8a5fb2e18926cfb06d2124",
+    "football_v2_over_2_5_state": "7132efedcad7755e33f6d243e1640366af854955",
+    "football_v2_1x2_state": "b64076eff4c12706bb3803d3e319cf05e59b4da3",
+    "football_v2_under_2_5_state": "c4a38e36aa5f5af2609cd5c7efbeedd14d826703",
+    "football_v2_double_chance_1x_state": "943074921778de4e3901e96a840eb272aefdc606",
+    "football_v2_double_chance_x2_state": "20bcce1cf3370c8fc514f957fb5372f1a548e45a",
+    "tennis_sync": "695c168943364ad37cd6cd6a293375abbd4b279f",
+    "canonical_tracker": "e8f223663de11bdc8d7f5cd5beb586e65e81a347",
+    "canonical_guard": "d1882d1d66f54da85fffc25d4760c56f0077c25d"
+  },
+  "football": {
+    "cohort_total": 116,
+    "cohort_ft": 107,
+    "cohort_change": 0,
+    "cohort_method": "Prior audited 107/116 plus direct candidate-ID intersection: all 21 new governed FT IDs are disjoint. Eight nonstandard and one NS identified in current governed sync; full historical ledger not reparsed.",
+    "global_settled": 4072,
+    "global_change_since_previous_snapshot": 21,
+    "global_frozen": 4825,
+    "v2_frozen_per_market": 3997,
+    "v2_settled_per_market": 3270,
+    "v2_pending_per_market": 727,
+    "v2_markets": [
+      "1X2",
+      "OVER_2_5",
+      "UNDER_2_5",
+      "DOUBLE_CHANCE_1X",
+      "DOUBLE_CHANCE_X2"
+    ],
+    "new_governed_ft_fixture_ids": [
+      "1566827",
+      "1492786",
+      "1492787",
+      "1492788",
+      "1492789",
+      "1550165",
+      "1552794",
+      "1575989",
+      "1575990",
+      "1575991",
+      "1575994",
+      "1575995",
+      "1580778",
+      "1580782",
+      "1492790",
+      "1557443",
+      "1570423",
+      "1639903",
+      "1639904",
+      "1639905",
+      "1639906"
+    ],
+    "new_governed_ft_count": 21,
+    "governed_sync_at_utc": "2026-10-23T21:42:21Z",
+    "governed_sync_status": "PASS",
+    "physical_uniqueness_audit": "PASS",
+    "physical_uniqueness_audit_calibration_unique_fixture_ids": 4072,
+    "nonstandard": {
+      "PEN": [
+        "1588817",
+        "1588821",
+        "1588845",
+        "1588863",
+        "1588890",
+        "1588893",
+        "1619499"
+      ],
+      "AET": [
+        "1644168"
+      ],
+      "NS": [
+        "1596466"
+      ]
+    },
+    "tracker_reconciliation": {
+      "tracker_global_settled": 4051,
+      "tracker_v2_settled": 3249,
+      "ledger_global_settled": 4072,
+      "v2_state_settled": 3270,
+      "lag": 21,
+      "status": "TRACKER_STALE_RECONCILIATION_PENDING"
+    }
+  },
+  "tennis": {
+    "cohort_total": 11,
+    "cohort_finished": 11,
+    "cohort_change": 0,
+    "global_settled": 340,
+    "global_change_since_previous_snapshot": 0,
+    "unique_events_last_full_audit": 340,
+    "unique_settlements_last_full_audit": 340,
+    "method": "Prior full ledger uniqueness audit retained: compare since prior snapshot showed no tennis settlement ledger modifications; current governed tennis sync reports 340 ledger records and zero new settlements. Ledger not fully reparsed in this review.",
+    "governed_sync_status": "PASS",
+    "governed_sync_new_settlements": 0,
+    "governed_sync_blocked": 12,
+    "governed_sync_pending": 7,
+    "new_finished_event_ids": []
+  },
+  "governance": {
+    "settlement_final_only": true,
+    "metrics_opened": false,
+    "metrics_scope": "five football V2 lanes and governed settlement sync; historical gates excluded",
+    "tuning": false,
+    "odds_to_p": false,
+    "real_money": "BLOCKED",
+    "canonical_guard_last_observed_status": "PASS",
+    "canonical_guard_generated_at_utc": "2026-10-23T21:51:48.319312Z",
+    "note": "21 FT were already appended by governed process; this operation only persists an audited progress snapshot, with no duplicate settlement or model changes."
+  }
+}

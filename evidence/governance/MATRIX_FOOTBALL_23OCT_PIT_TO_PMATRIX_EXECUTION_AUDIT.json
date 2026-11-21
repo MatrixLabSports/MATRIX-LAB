@@ -1,0 +1,90 @@
+{
+  "schema": "MATRIX_FOOTBALL_23OCT_PIT_TO_PMATRIX_EXECUTION_AUDIT_V1",
+  "target_date_bogota": "2026-10-23",
+  "source_order": [
+    "SofaScore",
+    "Flashscore",
+    "API-Football",
+    "odds-api.net"
+  ],
+  "governed_daily_run": {
+    "run_id": 39900001198,
+    "conclusion": "success",
+    "cycle_id": "20261023T042341Z"
+  },
+  "canonical_pit": {
+    "total_fixtures": 460,
+    "ready_inputs": 190,
+    "blocked_future_inputs": 270,
+    "p_matrix_pre_status": "NOT_GENERATED"
+  },
+  "p_matrix": {
+    "source_ready_inputs": 190,
+    "scored": 151,
+    "blocked": 39,
+    "status": "GENERATED_SHADOW",
+    "markets": [
+      "1x2",
+      "over_2_5"
+    ],
+    "parameter_refit": false,
+    "parameter_search": false,
+    "odds_used_to_generate_probability": false,
+    "target_outcomes_used": false
+  },
+  "governed_over25": {
+    "p_matrix_scored": 151,
+    "p_matrix_blocked": 39,
+    "decision_counts": {
+      "BET_SHADOW": 18,
+      "NO_BET": 60,
+      "BLOCKED": 112
+    },
+    "signal_generation_authorized": true,
+    "probability_status": "FROZEN_GOVERNED_MARKET_SCOPED_SIGNAL_ONLY",
+    "policy_houses": [
+      "Betano",
+      "BetPlay",
+      "RushBet"
+    ],
+    "pinnacle_role": "PRIMARY_SHARP_REFERENCE_DIAGNOSTIC_GATE_NOT_EXECUTION_HOUSE"
+  },
+  "sharp_gate": {
+    "primary": "Pinnacle",
+    "max_quote_age_seconds": 120,
+    "api_football_pinnacle_covered_fixtures": 118,
+    "fresh_certified_matches": 0,
+    "odds_api_net_priority_probe_run_id": 39904155351,
+    "odds_api_net_identity_matched": 0,
+    "odds_api_net_fresh_120s": 0,
+    "telegram_gate_proof_run_id": 39907688059,
+    "telegram_gate_proof_conclusion": "success",
+    "action_without_fresh_pinnacle": "BLOCKED_NO_FRESH_PINNACLE_REFERENCE"
+  },
+  "telegram_supervisor": {
+    "run_id": 39905706500,
+    "conclusion": "success",
+    "football_candidates": 100,
+    "football_unsent_candidates": 94,
+    "pre_send_passed": 0,
+    "sent_now": 0,
+    "paper_open_bets": 0,
+    "real_money": "BLOCKED"
+  },
+  "settlement_4000": {
+    "ledger_final_count": 3924,
+    "target": 4000,
+    "remaining": 76,
+    "new_settlement_count_latest": 0,
+    "metrics_opened": false
+  },
+  "protections": {
+    "real_money": "BLOCKED",
+    "automatic_wagering": false,
+    "no_backfill": true,
+    "no_silent_imputation": true,
+    "sharp_odds_never_generate_p_matrix": true,
+    "final_only_settlement": true
+  },
+  "adjudication": "PASS_PHYSICALLY_VERIFIED"
+}

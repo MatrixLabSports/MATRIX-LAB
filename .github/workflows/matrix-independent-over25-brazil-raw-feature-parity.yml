@@ -1,0 +1,100 @@
+name: MATRIX Brazil 2026 Archived Original Raw Feature Parity
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - repair/cor09-world-pipeline
+    paths:
+      - tools/matrix_independent_over25_brazil_raw_feature_parity.py
+      - tests/test_matrix_independent_over25_brazil_raw_feature_parity.py
+      - .github/workflows/matrix-independent-over25-brazil-raw-feature-parity.yml
+
+permissions:
+  contents: write
+
+concurrency:
+  group: matrix-independent-over25-brazil-historical-parity
+  cancel-in-progress: false
+
+jobs:
+  historical-parity-only:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      REAL_MONEY: BLOCKED
+      AUTO_BETTING: DISABLED
+    steps:
+      - name: Checkout immutable archive and research-only source
+        uses: actions/checkout@v4
+        with:
+          ref: repair/cor09-world-pipeline
+          fetch-depth: 0
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Test fail-closed across Brazil and Italian original historical replays
+        run: |
+          set -euo pipefail
+          python -m pip install pytest requests
+          PYTHONPATH=. python -m pytest -q \
+            tests/test_matrix_independent_over25_brazil_raw_feature_parity.py \
+            tests/test_matrix_independent_over25_historical_parity.py
+
+      - name: Replay archived Oct26 Brazilian history and authenticated free source only
+        env:
+          FOOTBALL_DATA_ORG_TOKEN: ${{ secrets.FOOTBALL_DATA_ORG_TOKEN }}
+        run: |
+          set -euo pipefail
+          P=evidence/football_world_inventory/2026-11-03/MATRIX_BRAZIL_ORIGINAL_RAW_FEATURE_PARITY_LAST.json
+          PYTHONPATH=. python -m tools.matrix_independent_over25_brazil_raw_feature_parity --out "$P"
+          python - "$P" <<'PY'
+          import json,sys
+          j=json.load(open(sys.argv[1],encoding="utf-8"))
+          assert j["schema"]=="MATRIX_BRAZIL_ORIGINAL_RAW_FEATURE_PARITY_V1"
+          assert j["reference_league_id"]==71
+          assert j["source_league_id"]==2013
+          assert j["historical_analysis_only"] is True
+          assert j["original_calibrated_feature_equivalence_verified"] is False
+          assert j["canonical_enriched_pit_equivalence_verified"] is False
+          assert j["all_six_leagues_equivalence_verified"] is False
+          assert j["model_parameters_mutated"] is False
+          assert j["signal_generation_authorized"] is False
+          assert j["telegram_messages_sent"]==0
+          assert j["real_money"]=="BLOCKED"
+          assert j["automatic_wagering"] is False
+          assert j["network_calls"]<=1
+          if j["status"]=="PASS_BRAZIL_HISTORICAL_SCORE_CONCORDANCE_ONLY":
+              raw=j["raw_group_feature_parity"]
+              assert raw["scoreable_both"]>=0
+              assert raw["same_raw_group_feature_and_probability_count"] + raw["different_raw_group_feature_or_probability_count"] == raw["scoreable_both"]
+              print(json.dumps({"matched_results":j["matched_exact_result_count"],
+                                "raw_feature_parity":raw,"scope":"HISTORICAL_RESEARCH_ONLY"},
+                               sort_keys=True))
+          else:
+              print("BRAZIL_HISTORICAL_PARITY_FAIL_CLOSED:"+j["status"])
+          PY
+
+      - name: Persist only Brazilian research proof, never model or Telegram signals
+        shell: bash
+        run: |
+          set -euo pipefail
+          P=evidence/football_world_inventory/2026-11-03/MATRIX_BRAZIL_ORIGINAL_RAW_FEATURE_PARITY_LAST.json
+          git config user.name matrix-brazil-original-feature-parity
+          git config user.email matrix-brazil-original-feature-parity@users.noreply.github.com
+          git add "$P"
+          if git diff --cached --quiet; then echo PARITY_PROOF_ALREADY_PRESENT; exit 0; fi
+          git commit -m "evidence(parity): persist Brazil original raw vs free history research"
+          for attempt in 1 2 3 4; do
+            git fetch origin repair/cor09-world-pipeline
+            if ! git rebase origin/repair/cor09-world-pipeline; then
+              git rebase --abort || true
+              exit 1
+            fi
+            if git push origin HEAD:repair/cor09-world-pipeline; then exit 0; fi
+            sleep $((attempt*2))
+          done
+          exit 1

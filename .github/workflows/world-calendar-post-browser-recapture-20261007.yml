@@ -1,0 +1,242 @@
+name: World Calendar Post Browser Recapture 2026-10-07
+
+on:
+  push:
+    branches:
+      - repair/cor09-world-pipeline
+    paths:
+      - .github/workflows/world-calendar-post-browser-recapture-20261007.yml
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: world-calendar-post-browser-recapture-20261007
+  cancel-in-progress: false
+
+jobs:
+  recapture:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - name: Checkout operational branch
+        uses: actions/checkout@v4
+        with:
+          ref: repair/cor09-world-pipeline
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: python -m pip install requests pytest
+
+      - name: Verify exact browser-first baseline
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          t=json.loads(Path("evidence/tennis_world_inventory/2026-10-07/MATRIX_DAILY_MULTISOURCE_BROWSER_CROSSCHECK.json").read_text())
+          f=json.loads(Path("evidence/football_world_inventory/2026-10-07/MATRIX_DAILY_MULTISOURCE_BROWSER_CROSSCHECK.json").read_text())
+
+          assert t["target_date_bogota"]=="2026-10-07"
+          assert f["target_date_bogota"]=="2026-10-07"
+          assert t["sources"]["sofascore"]["exact_unique_match_count"]==560
+          assert t["sources"]["flashscore"]["exact_unique_match_count"]==488
+          assert f["sources"]["sofascore"]["exact_unique_match_count"]==1544
+          assert f["sources"]["flashscore"]["exact_unique_match_count"]==82
+          assert t["sources"]["sofascore"]["machine_verified_exact"] is True
+          assert t["sources"]["flashscore"]["machine_verified_exact"] is True
+          assert f["sources"]["sofascore"]["machine_verified_exact"] is True
+          assert f["sources"]["flashscore"]["machine_verified_exact"] is True
+          print("BROWSER_FIRST_BASELINE_PASS tennis=560/488 football=1544/82")
+          PY
+          echo "BASELINE_AT=2026-10-07T16:59:07Z" >> "$GITHUB_ENV"
+
+      - name: Record checkout SHA
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch origin repair/cor09-world-pipeline
+          git checkout repair/cor09-world-pipeline
+          git reset --hard origin/repair/cor09-world-pipeline
+          echo "CHECKOUT_SHA=$(git rev-parse HEAD)" >> "$GITHUB_ENV"
+
+      - name: Recapture both paid tennis providers after global browser baseline
+        shell: bash
+        env:
+          API_TENNIS_KEY: ${{ secrets.API_TENNIS_KEY }}
+          RAPIDAPI_TENNIS_KEY: ${{ secrets.RAPIDAPI_TENNIS_KEY }}
+        run: |
+          set -euo pipefail
+          DUAL_START="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+          echo "DUAL_START=$DUAL_START" >> "$GITHUB_ENV"
+          python -m tools.tennis_world_exact_day_dual_audit             --target-date-bogota 2026-10-07             --out evidence/tennis_world_inventory/2026-10-07/world_exact_day_dual_audit.json
+
+      - name: Recapture API-Football after global browser baseline
+        shell: bash
+        env:
+          API_FOOTBALL_KEY: ${{ secrets.API_FOOTBALL_KEY }}
+          MATRIX_API_FOOTBALL_TARGET_DATE: "2026-10-07"
+          MATRIX_API_FOOTBALL_FIXTURE_DIR: evidence/api_football/fixtures_post_browser_20261007
+        run: |
+          set -euo pipefail
+          FOOTBALL_START="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+          echo "FOOTBALL_START=$FOOTBALL_START" >> "$GITHUB_ENV"
+          python -m tools.api_football_future_fixture_capture
+
+      - name: Write authoritative calendar-first source-count report
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json, os
+          from pathlib import Path
+
+          dual=json.loads(Path("evidence/tennis_world_inventory/2026-10-07/world_exact_day_dual_audit.json").read_text())
+          football=json.loads(Path("evidence/api_football/fixtures_post_browser_20261007/capture_manifest.json").read_text())
+
+          report={
+            "schema":"MATRIX_DAILY_WORLD_CALENDAR_SOURCE_COUNTS_V2",
+            "target_date_bogota":"2026-10-07",
+            "timezone":"America/Bogota",
+            "calendar_baseline_complete":True,
+            "operator_manual_intervention_required":False,
+            "browser_baseline_completed_at_utc":os.environ["BASELINE_AT"],
+            "task_order":[
+              "CALENDAR_BASELINE_SOFASCORE_FLASHSCORE_FIRST",
+              "PAID_APIS_SECOND",
+              "COVERAGE_COMPARE_AND_GAP_DETECTION_THIRD",
+              "CANONICAL_RECONCILIATION_DEDUP_AND_GOVERNED_PIPELINE_FOURTH"
+            ],
+            "tennis":{
+              "sofascore":{
+                "count":560,
+                "count_type":"MACHINE_VERIFIED_BROWSER_UI_EXACT",
+                "operator_manual_intervention_required":False,
+                "captured_at_utc":"2026-10-07T16:46:32Z",
+                "url":"https://www.sofascore.com/es/tennis"
+              },
+              "flashscore":{
+                "count":488,
+                "count_type":"MACHINE_VERIFIED_BROWSER_UI_EXACT",
+                "operator_manual_intervention_required":False,
+                "captured_at_utc":"2026-10-07T16:46:32Z",
+                "url":"https://www.flashscore.co/tenis/"
+              },
+              "rapidapi_tennis":{
+                "count":dual["primary_world_inventory"]["unique_match_count"],
+                "capture_started_at_utc":os.environ["DUAL_START"]
+              },
+              "api_tennis":{
+                "count":dual["secondary_crosscheck"]["unique_match_count"],
+                "capture_started_at_utc":os.environ["DUAL_START"]
+              }
+            },
+            "football":{
+              "sofascore":{
+                "count":1544,
+                "count_type":"MACHINE_VERIFIED_BROWSER_UI_EXACT",
+                "operator_manual_intervention_required":False,
+                "captured_at_utc":"2026-10-07T16:59:07Z",
+                "url":"https://www.sofascore.com/es"
+              },
+              "flashscore":{
+                "count":82,
+                "count_type":"MACHINE_VERIFIED_BROWSER_UI_EXACT",
+                "operator_manual_intervention_required":False,
+                "captured_at_utc":"2026-10-07T16:59:07Z",
+                "url":"https://www.flashscore.co/"
+              },
+              "api_football":{
+                "count":football["fixtures_received"],
+                "eligible_future_fixtures":football["eligible_future_fixtures"],
+                "capture_started_at_utc":os.environ["FOOTBALL_START"],
+                "evidence_path":"evidence/api_football/fixtures_post_browser_20261007/capture_manifest.json"
+              }
+            },
+            "truth_rules":{
+              "exact_count_requires_physical_source_evidence":True,
+              "partial_accessibility_count_is_never_promoted_to_world_total":True,
+              "missing_not_zero":True,
+              "no_silent_imputation":True,
+              "no_single_source_world_truth":True,
+              "physical_dedup_before_counter_increment":True,
+              "invented_counts_prohibited":True
+            },
+            "protections":{
+              "metrics_opened":False,
+              "odds_to_p_matrix":False,
+              "automatic_wagering":False,
+              "real_money":"BLOCKED"
+            }
+          }
+          p=Path("evidence/daily_source_counts/2026-10-07/MATRIX_WORLD_CALENDAR_SOURCE_COUNTS.json")
+          p.parent.mkdir(parents=True,exist_ok=True)
+          p.write_text(json.dumps(report,indent=2,sort_keys=True)+"\n")
+          print(json.dumps({
+            "tennis_sofascore":560,
+            "tennis_flashscore":488,
+            "rapidapi_tennis":report["tennis"]["rapidapi_tennis"]["count"],
+            "api_tennis":report["tennis"]["api_tennis"]["count"],
+            "football_sofascore":1544,
+            "football_flashscore":82,
+            "api_football":report["football"]["api_football"]["count"],
+            "api_football_future":report["football"]["api_football"]["eligible_future_fixtures"]
+          },sort_keys=True))
+          PY
+
+      - name: Enforce calendar-first gate
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m tools.matrix_daily_calendar_baseline_gate             --report evidence/daily_source_counts/2026-10-07/MATRIX_WORLD_CALENDAR_SOURCE_COUNTS.json
+
+      - name: Persist post-browser paid captures and baseline
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name matrix-calendar-governance
+          git config user.email matrix-calendar-governance@users.noreply.github.com
+          git add evidence/tennis_world_inventory/2026-10-07/world_exact_day_dual_audit.json
+          git add evidence/api_football/fixtures_post_browser_20261007
+          git add evidence/daily_source_counts/2026-10-07/MATRIX_WORLD_CALENDAR_SOURCE_COUNTS.json
+          if git diff --cached --quiet; then
+            echo "NO_POST_BROWSER_CAPTURE_CHANGE"
+            exit 0
+          fi
+          git commit -m "evidence(calendar): close 07OCT browser-first paid recapture"
+          for attempt in 1 2 3 4; do
+            git fetch origin repair/cor09-world-pipeline
+            if ! git rebase origin/repair/cor09-world-pipeline; then
+              git rebase --abort || true
+              exit 1
+            fi
+            if git push origin HEAD:repair/cor09-world-pipeline; then
+              exit 0
+            fi
+            sleep $((attempt * 2))
+          done
+          exit 1
+
+      - name: Run governed tennis COR02/03 after complete global baseline
+        shell: bash
+        env:
+          API_TENNIS_KEY: ${{ secrets.API_TENNIS_KEY }}
+          RAPIDAPI_TENNIS_KEY: ${{ secrets.RAPIDAPI_TENNIS_KEY }}
+          MATRIX_TENNIS_PROVIDER: rapidapi_tennis
+          MATRIX_WORLD_DATE_BOGOTA: "2026-10-07"
+          MATRIX_TARGET_BRANCH: repair/cor09-world-pipeline
+          MATRIX_GIT_USER_NAME: matrix-ci
+          MATRIX_GIT_USER_EMAIL: matrix-ci@users.noreply.github.com
+        run: |
+          set -euo pipefail
+          git fetch origin repair/cor09-world-pipeline
+          git reset --hard origin/repair/cor09-world-pipeline
+          bash scripts/cor0203_production_cycle.sh --trigger-sha "$(git rev-parse HEAD)"

@@ -1,0 +1,55 @@
+{
+  "schema": "MATRIX_FOOTBALL_BROWSER_FIRST_RECONCILIATION_V2",
+  "target_date_bogota": "2026-10-23",
+  "verification_date_bogota": "2026-10-22",
+  "sources": {
+    "sofascore": {
+      "status": "PHYSICALLY_VERIFIED",
+      "opera_read_status": "PASS",
+      "url": "https://www.sofascore.com/es/football/2026-10-23",
+      "exact_accessibility_match_rows_for_target_date": 186,
+      "count_basis": "accessibility objects with /football/match/ URL and visible name containing 23/10/26"
+    },
+    "flashscore": {
+      "status": "PHYSICALLY_VERIFIED",
+      "opera_read_status": "PASS",
+      "url": "https://www.flashscore.co/manana/",
+      "visible_date": "viernes, 23 de octubre de 2026",
+      "exact_accessibility_match_rows": 175,
+      "count_basis": "accessibility objects with /partido/futbol/ URL and description containing detalles del partido"
+    }
+  },
+  "reconciliation": {
+    "browser_first_gate": "PASS",
+    "date_alignment": "PASS",
+    "exact_identity_reconciliation": "PENDING_API_STAGE",
+    "parity_claimed": false,
+    "note": "Source-specific accessibility representations differ; counts are not forced equal and are not promoted to world totals."
+  },
+  "examples_confirmed_on_both_sources": [
+    "Boyacá Chicó vs Atlético Bucaramanga",
+    "Junior vs Águilas Doradas",
+    "Stuttgart vs Borussia M'gladbach",
+    "Alavés vs Málaga"
+  ],
+  "exclusions_observed": [
+    "postponed events are not admitted as standard prematch observations",
+    "cancelled events are not admitted as standard prematch observations"
+  ],
+  "protections": {
+    "source_order": [
+      "SofaScore",
+      "Flashscore",
+      "API-Football",
+      "other APIs",
+      "odds/EV",
+      "Telegram"
+    ],
+    "missing_not_zero": true,
+    "silent_imputation": false,
+    "odds_to_p_matrix": false,
+    "metrics_opened": false,
+    "automatic_wagering": false,
+    "real_money": "BLOCKED"
+  }
+}

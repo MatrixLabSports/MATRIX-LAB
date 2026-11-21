@@ -1,0 +1,150 @@
+name: SofaScore 09OCT Exact Football Count
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - repair/cor09-world-pipeline
+    paths:
+      - .github/workflows/sofascore-09oct-exact-football-count.yml
+
+permissions:
+  contents: write
+
+jobs:
+  exact-count:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: repair/cor09-world-pipeline
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: |
+          python -m pip install requests playwright
+          python -m playwright install --with-deps chromium
+      - name: Fetch complete SofaScore calendar with browser context
+        run: |
+          python - <<'PY'
+          import json, hashlib, re
+          from pathlib import Path
+          from datetime import datetime, timezone
+          from playwright.sync_api import sync_playwright
+
+          date="2026-10-09"
+          inverse=f"https://api.sofascore.com/api/v1/sport/football/scheduled-events/{date}/inverse"
+          out={
+            "schema":"MATRIX_SOFASCORE_EXACT_DAY_COUNT_V2",
+            "target_date":date,
+            "source":"SOFASCORE",
+            "endpoint_mode":"inverse",
+            "real_money":"BLOCKED",
+            "automatic_wagering":False,
+            "status":"BLOCKED",
+          }
+
+          with sync_playwright() as p:
+            browser=p.chromium.launch(headless=True)
+            page=browser.new_page(
+              locale="en-US",
+              timezone_id="America/Bogota",
+              user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/140.0 Safari/537.36"
+            )
+            page.goto(f"https://www.sofascore.com/football/{date}", wait_until="domcontentloaded", timeout=90000)
+            page.wait_for_timeout(8000)
+
+            fetch_result=page.evaluate("""async (url) => {
+              try {
+                const r = await fetch(url, {credentials:'include'});
+                return {status:r.status, text:await r.text()};
+              } catch (e) {
+                return {status:0, text:String(e)};
+              }
+            }""", inverse)
+            out["browser_fetch_status"]=fetch_result["status"]
+            data=None
+            if fetch_result["status"]==200:
+              data=json.loads(fetch_result["text"])
+              out["acquisition"]="BROWSER_CONTEXT_FETCH"
+            else:
+              # Fallback: try the page's own Show all / Mostrar todos control and capture /inverse.
+              captured={"data":None,"status":None,"url":None}
+              def on_response(resp):
+                if f"/scheduled-events/{date}/inverse" in resp.url:
+                  captured["status"]=resp.status
+                  captured["url"]=resp.url
+                  try:
+                    captured["data"]=resp.json()
+                  except Exception:
+                    pass
+              page.on("response", on_response)
+              labels=["Show all","Show All","Mostrar todos","Ver todos"]
+              clicked=False
+              for label in labels:
+                try:
+                  loc=page.get_by_text(label, exact=True)
+                  if loc.count()>0:
+                    loc.first.click(timeout=5000)
+                    clicked=True
+                    break
+                except Exception:
+                  pass
+              out["show_all_clicked"]=clicked
+              page.wait_for_timeout(10000)
+              if captured["data"] is not None:
+                data=captured["data"]
+                out["browser_fetch_status"]=captured["status"]
+                out["acquisition"]="SOFASCORE_SHOW_ALL_NETWORK_RESPONSE"
+
+            if data is not None:
+              events=data.get("events",[])
+              ids=[e.get("id") for e in events if e.get("id") is not None]
+              unique_ids=sorted(set(ids))
+              out.update({
+                "status":"PASS",
+                "raw_event_count":len(events),
+                "unique_event_count":len(unique_ids),
+                "duplicate_event_rows":len(ids)-len(unique_ids),
+                "event_ids_sha256":hashlib.sha256("\n".join(map(str,unique_ids)).encode()).hexdigest(),
+                "fetched_at_utc":datetime.now(timezone.utc).isoformat(),
+              })
+            else:
+              # Record DOM-only lower bound, but never label it exact.
+              hrefs=page.locator('a[href*="/football/match/"]').evaluate_all(
+                "(els)=>els.map(e=>e.href)"
+              )
+              ids=[]
+              for h in hrefs:
+                m=re.search(r"#id:(\d+)",h)
+                if m: ids.append(m.group(1))
+              out.update({
+                "status":"BLOCKED",
+                "reason":"SOFASCORE_FULL_INVERSE_NOT_OBTAINED",
+                "dom_unique_match_links":len(set(ids)),
+                "fetched_at_utc":datetime.now(timezone.utc).isoformat(),
+              })
+            browser.close()
+
+          pth=Path("evidence/football_world_inventory/2026-10-09/MATRIX_SOFASCORE_EXACT_DAY_COUNT.json")
+          pth.parent.mkdir(parents=True, exist_ok=True)
+          pth.write_text(json.dumps(out,ensure_ascii=False,indent=2,sort_keys=True)+"\n",encoding="utf-8")
+          print(json.dumps(out,ensure_ascii=False,sort_keys=True))
+          if out["status"]!="PASS":
+            raise SystemExit(2)
+          PY
+      - name: Persist physical evidence
+        if: always()
+        run: |
+          git config user.name "matrix-sofascore-count"
+          git config user.email "matrix-sofascore-count@users.noreply.github.com"
+          git add evidence/football_world_inventory/2026-10-09/MATRIX_SOFASCORE_EXACT_DAY_COUNT.json || true
+          if git diff --cached --quiet; then
+            echo "NO_EVIDENCE_CHANGE"
+            exit 0
+          fi
+          git commit -m "evidence(sofascore): persist exact 09OCT football count v2"
+          git pull --rebase origin repair/cor09-world-pipeline
+          git push origin HEAD:repair/cor09-world-pipeline

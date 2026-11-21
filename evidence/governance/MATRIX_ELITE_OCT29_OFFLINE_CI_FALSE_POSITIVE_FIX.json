@@ -1,0 +1,18 @@
+{
+  "schema": "MATRIX_ELITE_OFFLINE_CI_FALSE_POSITIVE_FIX_V1",
+  "failed_run": {
+    "id": 40824988044,
+    "conclusion": "failure",
+    "job_id": 123286046622
+  },
+  "observed_error": "test_offline_workflow_scheduled_15m_and_no_secrets asserted supervisor module name absent anywhere in YAML; workflow path filter correctly mentions tools/telegram_green_signal_alerts.py but does not execute it.",
+  "root_cause": "Test false positive: path trigger is not a run command.",
+  "repair": {
+    "commit": "25109ca0803a59990112747706de6ff69bb1dfe7",
+    "test": "tests/test_telegram_post_expiry_health.py",
+    "change": "Check executable run: lines, not trigger path filters."
+  },
+  "certification": "PENDING_NEW_GITHUB_RUN",
+  "scope": "No changes to production signal emission or authorization",
+  "real_money": "BLOCKED"
+}

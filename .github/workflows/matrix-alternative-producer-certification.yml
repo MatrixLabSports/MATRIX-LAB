@@ -1,0 +1,77 @@
+name: MATRIX Alternative Producer Scope Certification
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - repair/cor09-world-pipeline
+    paths:
+      - tools/matrix_alternative_producer_scope_certification.py
+      - tests/test_matrix_alternative_producer_scope_certification.py
+      - .github/workflows/matrix-alternative-producer-certification.yml
+
+permissions:
+  contents: write
+
+concurrency:
+  group: matrix-alternative-producer-scope-certification
+  cancel-in-progress: false
+
+jobs:
+  attest:
+    runs-on: ubuntu-latest
+    timeout-minutes: 6
+    env:
+      REAL_MONEY: BLOCKED
+      AUTO_BETTING: DISABLED
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: repair/cor09-world-pipeline
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Reject any operational privileges
+        run: |
+          test "$REAL_MONEY" = BLOCKED
+          test "$AUTO_BETTING" = DISABLED
+      - name: Validate evidence-grounded scope certification
+        run: |
+          python -m pip install --disable-pip-version-check pytest
+          python -m pytest -q tests/test_matrix_alternative_producer_scope_certification.py
+      - name: Certify bounded historical parity with exact source hashes
+        run: |
+          python -m tools.matrix_alternative_producer_scope_certification \
+            --historical evidence/football_world_inventory/2026-11-04/MATRIX_INDEPENDENT_OVER25_HISTORICAL_PARITY.json \
+            --prospective evidence/football_world_inventory/2026-11-04/MATRIX_CHAMPIONSHIP_PROSPECTIVE_PIT_RUN_41735756927.json \
+            --out evidence/football_world_inventory/2026-11-04/MATRIX_ALTERNATIVE_PRODUCER_SCOPE_CERTIFICATE.json
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          j=json.loads(Path("evidence/football_world_inventory/2026-11-04/MATRIX_ALTERNATIVE_PRODUCER_SCOPE_CERTIFICATE.json").read_text())
+          assert j["status"]=="PASS_SCOPED_HISTORICAL_RAW_GROUP_ONLY_PRODUCTION_BLOCKED"
+          assert j["historical_scope"]["certified"] is True
+          assert j["full_alternative_producer_certified"] is False
+          assert j["production_p_matrix_authorized"] is False
+          assert j["telegram_signal_authorized"] is False
+          assert j["real_money"]=="BLOCKED"
+          PY
+      - name: Persist bounded certificate without touching original matrices
+        run: |
+          set -euo pipefail
+          git config user.name matrix-certification-bot
+          git config user.email matrix-certification-bot@users.noreply.github.com
+          git add -- evidence/football_world_inventory/2026-11-04/MATRIX_ALTERNATIVE_PRODUCER_SCOPE_CERTIFICATE.json
+          if git diff --cached --quiet; then exit 0; fi
+          git commit -m "evidence(certification): freeze bounded alternate raw-group history parity"
+          for attempt in 1 2 3; do
+            git fetch origin repair/cor09-world-pipeline
+            if ! git rebase origin/repair/cor09-world-pipeline; then
+              git rebase --abort || true
+              exit 1
+            fi
+            if git push origin HEAD:repair/cor09-world-pipeline; then exit 0; fi
+            sleep $((attempt*2))
+          done
+          exit 1

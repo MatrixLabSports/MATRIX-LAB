@@ -1,0 +1,57 @@
+{
+  "automatic_wagering": false,
+  "lane": "TEAM_TOTAL_SHOTS",
+  "line": 26.5,
+  "metrics_opened": true,
+  "minimum_train_required": 200,
+  "minimum_validation_required": 50,
+  "model_parameters": {
+    "baseline_probability": 0.4955357142857143,
+    "count_model": {
+      "scale": 1.034380484944283,
+      "shrinkage_alpha": 0.5,
+      "training_poisson_nll_without_constant": -60.109999224398216,
+      "training_target_mean": 26.424107142857142
+    },
+    "evaluation_line": 26.5
+  },
+  "model_parameters_sha256": "6ef51e351be6057f940d83fdc50d118703ec2e9838c6544dbe75fc993f429191",
+  "odds_used_to_generate_probability": false,
+  "p_matrix_generated": false,
+  "prospective_eligible": true,
+  "prospective_gates": [
+    30,
+    50,
+    100,
+    200
+  ],
+  "real_money": "BLOCKED",
+  "row_count": 274,
+  "schema": "MATRIX_FOOTBALL_EXTENDED_TEAM_MODEL_V1",
+  "semantic_gate": "FOUNDATION_LANE_REQUIRES_BOOKMAKER_SCOPE_BINDING",
+  "source_dataset": "evidence/api_football/market_expansion/team_pit/team_total_shots_pit.jsonl",
+  "source_dataset_sha256": "39878bf7bd8b65de3305090d8f5b1b49eef5ca702008d5a7013906987d61eeb1",
+  "status": "FROZEN_FOR_NEW_PROSPECTIVE_VALIDATION",
+  "train_count": 224,
+  "validation": {
+    "baseline": {
+      "brier_score": 0.25019850127551,
+      "ece_5bin": 0.02446428571428555,
+      "log_loss": 0.6935441941907022,
+      "max_calibration_error_5bin": 0.02446428571428555,
+      "sample_size": 50
+    },
+    "challenger": {
+      "brier_score": 0.24709015641409285,
+      "ece_5bin": 0.022701717196305347,
+      "log_loss": 0.6875147868639941,
+      "max_calibration_error_5bin": 0.11360605550994235,
+      "sample_size": 50
+    },
+    "delta_brier_challenger_minus_baseline": -0.0031083448614171727,
+    "delta_log_loss_challenger_minus_baseline": -0.006029407326708092,
+    "gate_passed": true
+  },
+  "validation_count": 50,
+  "validation_used_for_parameter_tuning": false
+}

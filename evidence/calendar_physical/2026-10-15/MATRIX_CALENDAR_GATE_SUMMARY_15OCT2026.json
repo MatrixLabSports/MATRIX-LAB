@@ -1,0 +1,110 @@
+{
+  "schema": "MATRIX_CALENDAR_GATE_SUMMARY_V1",
+  "target_date_bogota": "2026-10-15",
+  "status": "FOOTBALL_READY_AND_SIGNALED_TENNIS_CALENDAR_CAPTURED_MODEL_FEED_BLOCKED",
+  "physical_sources_first": true,
+  "sources": {
+    "sofascore": {
+      "football": 1529,
+      "tennis": 556,
+      "evidence_path": "evidence/calendar_physical/2026-10-15/MATRIX_SOFASCORE_CALENDAR_COUNTS_USER_SCREENSHOT.json",
+      "screenshot_sha256": "237760dac47be751129ce442579d00a302e489c5adc538f7ade1a9b35c0d061c",
+      "commit": "8d413bdfe48c497d40a368833ef6aa0d17429341"
+    },
+    "flashscore": {
+      "football": 126,
+      "tennis": 105,
+      "football_run_id": "5a63d930-a671-47d6-a50b-700523dbf671",
+      "tennis_run_id": "2c4c139f-0dcf-4ddc-a132-c881ffb16c74",
+      "football_commit": "ed916751212dfdc47634cae1410e5a52bef6744a",
+      "tennis_commit": "1130128bf8a46878b4cd00fb84a686526ff301b1"
+    }
+  },
+  "football": {
+    "api_football": {
+      "workflow_run_id": 38680990326,
+      "workflow_status": "SUCCESS",
+      "evidence_commit": "b8336f13eb0901406b8a650b7095057b596db738",
+      "fixtures_received": 144,
+      "eligible_future_fixtures": 139,
+      "ready_input_count": 123,
+      "blocked_future_input_count": 16
+    },
+    "matrix_over25": {
+      "p_matrix_scored_count": 111,
+      "p_matrix_blocked_count": 12,
+      "BET_SHADOW": 19,
+      "NO_BET": 48,
+      "BLOCKED": 56,
+      "minimum_decimal_odds_exclusive": 1.5
+    },
+    "telegram": {
+      "sent_ok": 19,
+      "open": 19,
+      "stake_units_distribution": {
+        "1u": 14,
+        "2u": 4,
+        "3u": 1
+      },
+      "telegram_message_id_range": [
+        357,
+        375
+      ],
+      "market": "Más de 2.5 goles"
+    },
+    "reconciliation_commit": "5fd054130325898d729c0f9860ace500c1716beb",
+    "state": "READY_PAPER_SHADOW"
+  },
+  "tennis": {
+    "rapidapi_tennis": {
+      "status": "PASS",
+      "exact_day_inventory_commit": "b046a4ac0caab9fb8454f2b5d97af84f45652b63",
+      "unique_match_count": 184,
+      "tournament_count": 37,
+      "singles": 179,
+      "doubles": 5,
+      "ATP": 28,
+      "WTA": 21,
+      "ITF": 135
+    },
+    "api_tennis": {
+      "attempted": true,
+      "status": "BLOCKED",
+      "blocker": "API_TENNIS_PROVIDER_FAILURE",
+      "count_is_not_zero_world_truth": true
+    },
+    "matrix": {
+      "automatic_model_feed": false,
+      "metrics_opened": false,
+      "automatic_signal_generation": false,
+      "state": "NO_BET_BLOCKED_UNTIL_SECONDARY_SOURCE_RECOVERS_AND_WORLD_GATE_RECONCILES"
+    },
+    "reconciliation_commit": "2a0a3267accd104616315d8259ab4059c8c41d61"
+  },
+  "provider_count_policy": {
+    "force_equality": false,
+    "missing_not_zero": true,
+    "source_coverage_differences_are_preserved": true
+  },
+  "protections": {
+    "no_odds_to_probability": true,
+    "no_synthetic_backfill": true,
+    "no_silent_imputation": true,
+    "final_only_settlement": true,
+    "automatic_wagering": false,
+    "real_money": "BLOCKED"
+  },
+  "unresolved": [
+    {
+      "id": "TENNIS_API_TENNIS_SECONDARY_PROVIDER",
+      "state": "BLOCKED_EXTERNAL_PROVIDER_RESPONSE",
+      "impact": "TENNIS_WORLD_GATE_UNSEALED; NO_AUTOMATIC_TENNIS_SIGNAL",
+      "prohibited_actions": [
+        "invent zero inventory",
+        "force RapidAPI=SofaScore/Flashscore",
+        "open metrics",
+        "auto wager"
+      ]
+    }
+  ]
+}

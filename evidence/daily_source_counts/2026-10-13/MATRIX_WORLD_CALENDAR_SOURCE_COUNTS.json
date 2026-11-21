@@ -1,0 +1,100 @@
+{
+  "schema": "MATRIX_DAILY_WORLD_CALENDAR_SOURCE_COUNTS_V3",
+  "target_date_bogota": "2026-10-13",
+  "timezone": "America/Bogota",
+  "calendar_baseline_complete": true,
+  "browser_baseline_completed_at_utc": "2026-10-13T11:11:29.312Z",
+  "operator_manual_intervention_required": false,
+  "browser_gate_status": "PASS",
+  "task_order": [
+    "CALENDAR_BASELINE_SOFASCORE_FLASHSCORE_FIRST",
+    "PAID_APIS_SECOND",
+    "COVERAGE_COMPARE_AND_GAP_DETECTION_THIRD",
+    "CANONICAL_RECONCILIATION_DEDUP_AND_GOVERNED_PIPELINE_FOURTH"
+  ],
+  "tennis": {
+    "sofascore": {
+      "count": 603,
+      "count_type": "MACHINE_VERIFIED_BROWSER_UI_EXACT",
+      "url": "https://www.sofascore.com/es/tennis?date=2026-10-13",
+      "provenance": "CONNECTED_OPERA_ACCESSIBILITY_MAIN_UNIQUE_EVENT_IDS",
+      "exact_total_physically_verified": true,
+      "match_list_show_more_present": false,
+      "status": "PASS_EXACT"
+    },
+    "flashscore": {
+      "count": 326,
+      "count_type": "MACHINE_VERIFIED_BROWSER_UI_EXACT",
+      "url": "https://www.flashscore.com/tennis/?d=20261013",
+      "provenance": "LIVE_BROWSER_AUTOMATION_EXHAUSTIVE",
+      "automation_run_id": "7166c28a-4481-4963-9158-2ad83dda1272",
+      "exact_total_physically_verified": true,
+      "competition_show_more_exhausted": true,
+      "status": "PASS_EXACT"
+    },
+    "rapidapi_tennis": {
+      "count": null,
+      "status": "NEXT_STAGE_RECONCILIATION_ALLOWED_BROWSER_BASELINE_COMPLETE"
+    },
+    "api_tennis": {
+      "count": null,
+      "status": "NEXT_STAGE_RECONCILIATION_ALLOWED_BROWSER_BASELINE_COMPLETE"
+    }
+  },
+  "football": {
+    "sofascore": {
+      "count": 138,
+      "count_type": "MACHINE_VERIFIED_BROWSER_CALENDAR_SECTION_EXACT",
+      "url": "https://www.sofascore.com/es/football/2026-10-13",
+      "provenance": "CONNECTED_OPERA_ACCESSIBILITY_CALENDAR_SECTION_UNIQUE_EVENT_IDS",
+      "exact_total_physically_verified": true,
+      "match_list_show_more_present": false,
+      "unrelated_show_more_present": true,
+      "unrelated_show_more_context": "MEJORES_ACTUACIONES_PLAYER_MODULE",
+      "top_navigation_more_context": "ADDITIONAL_SPORTS_MENU",
+      "canonical_audit_path": "evidence/daily_source_counts/2026-10-13/MATRIX_SOFASCORE_BROWSER_EVENT_AUDIT.json",
+      "status": "PASS_EXACT"
+    },
+    "flashscore": {
+      "count": 78,
+      "count_type": "MACHINE_VERIFIED_BROWSER_UI_EXACT",
+      "url": "https://www.flashscore.com/?d=20261013",
+      "provenance": "LIVE_BROWSER_AUTOMATION_EXHAUSTIVE",
+      "automation_run_id": "768dcb49-c655-410f-a2fa-dbf8f3ed892f",
+      "exact_total_physically_verified": true,
+      "competition_show_more_exhausted": true,
+      "status": "PASS_EXACT"
+    },
+    "api_football": {
+      "count": 289,
+      "eligible_future_fixtures": 286,
+      "canonical_ready_input_count": 176,
+      "capture_started_at_utc": "2026-10-13T03:23:44Z",
+      "source_cycle": "evidence/api_football/prospective_daily/2026-10-13/20261013T032344Z/cycle_summary.json",
+      "world_complete": false,
+      "status": "READY_FOR_BROWSER_TO_API_RECONCILIATION"
+    }
+  },
+  "semantic_correction": {
+    "previous_calendar_blocker": "SOFASCORE_FOOTBALL_SHOW_MORE",
+    "blocker_was_false_positive": true,
+    "reason": "The textual 'Mostrar más' control belongs to the 'Mejores actuaciones' player module; the top 'Más' control opens additional sports. Neither expands the match calendar.",
+    "previous_140_value": "NOT_RETAINED_AS_EXACT_TOTAL",
+    "corrected_exact_football_count": 138
+  },
+  "truth_rules": {
+    "invented_counts_prohibited": true,
+    "browser_calendar_section_must_be_delimited": true,
+    "promotional_match_links_must_be_excluded": true,
+    "screenshot_badges_not_used_as_match_totals": true,
+    "source_count_disagreement_requires_reconciliation_not_count_overwrite": true
+  },
+  "paid_api_counts_are_not_world_complete": true,
+  "next_stage": "BROWSER_TO_API_RECONCILIATION",
+  "protections": {
+    "guessed_counts_forbidden": true,
+    "metrics_opened": false,
+    "automatic_wagering": false,
+    "real_money": "BLOCKED"
+  }
+}

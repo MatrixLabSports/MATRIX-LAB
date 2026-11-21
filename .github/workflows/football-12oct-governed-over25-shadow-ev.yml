@@ -1,0 +1,117 @@
+name: MATRIX Football 12OCT Governed Over25 Shadow EV
+
+on:
+  push:
+    branches:
+      - repair/cor09-world-pipeline
+    paths:
+      - .github/workflows/football-12oct-governed-over25-shadow-ev.yml
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: football-12oct-governed-over25-shadow-ev
+  cancel-in-progress: false
+
+jobs:
+  generate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      MATRIX_MODE: SHADOW
+      REAL_MONEY: BLOCKED
+      AUTO_BETTING: DISABLED
+    steps:
+      - name: Checkout governed branch
+        uses: actions/checkout@v4
+        with:
+          ref: repair/cor09-world-pipeline
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: python -m pip install requests pytest
+
+      - name: Enforce safety gates
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$MATRIX_MODE" = "SHADOW"
+          test "$REAL_MONEY" = "BLOCKED"
+          test "$AUTO_BETTING" = "DISABLED"
+
+      - name: Validate API-Football secret
+        env:
+          API_FOOTBALL_KEY: ${{ secrets.API_FOOTBALL_KEY }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -n "$API_FOOTBALL_KEY"
+
+      - name: Verify governed Over25 generator
+        run: PYTHONPATH=. python -m pytest -q tests/test_football_daily_governed_over25.py
+
+      - name: Generate 12OCT governed Over25 SHADOW report
+        env:
+          API_FOOTBALL_KEY: ${{ secrets.API_FOOTBALL_KEY }}
+        run: PYTHONPATH=. python -m tools.football_daily_governed_over25 --target-date 2026-10-12
+
+      - name: Validate generated report
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          p=Path("evidence/api_football/daily_prematch_reports/2026-10-12/over25_shadow_ev/MATRIX_FOOTBALL_DAILY_OVER25_GOVERNED_SHADOW_EV.json")
+          j=json.loads(p.read_text(encoding="utf-8"))
+          assert j["target_date_bogota"]=="2026-10-12"
+          assert j["market"]=="OVER_2_5"
+          assert j["signal_generation_authorized"] is True
+          assert j["minimum_decimal_odds_exclusive"]==1.5
+          assert j["protections"]["odds_used_to_generate_probability"] is False
+          assert j["protections"]["automatic_wagering"] is False
+          assert j["protections"]["real_money"]=="BLOCKED"
+          for x in j["bet_shadow"]:
+              b=x["best_policy_offer"]
+              assert b["decimal_odds"]>1.50
+              assert b["ev"]>0
+          print(json.dumps({
+              "status":"PASS",
+              "signals":len(j["bet_shadow"]),
+              "no_bet":len(j["no_bet"]),
+              "blocked":len(j["blocked"]),
+              "real_money":"BLOCKED"
+          },sort_keys=True))
+          PY
+
+      - name: Persist physical evidence
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name matrix-football-shadow-ev
+          git config user.email matrix-football-shadow-ev@users.noreply.github.com
+          git add evidence/api_football/daily_prematch_reports/2026-10-12
+          if git diff --cached --quiet; then
+            echo "NO_REPORT_CHANGES"
+            exit 0
+          fi
+          git commit -m "evidence(football): 12OCT governed Over25 BET-SHADOW EV"
+          for attempt in 1 2 3 4; do
+            git fetch origin repair/cor09-world-pipeline
+            if ! git rebase origin/repair/cor09-world-pipeline; then
+              git rebase --abort || true
+              exit 1
+            fi
+            if git push origin HEAD:repair/cor09-world-pipeline; then
+              exit 0
+            fi
+            sleep $((attempt*2))
+          done
+          exit 1

@@ -1,0 +1,65 @@
+{
+  "schema": "MATRIX_FOOTBALL_CLV_SHARP_TRANSPORT_ADJUDICATION_V1",
+  "generated_at_utc": "2026-10-15T14:56:00+00:00",
+  "strict_fresh_gate_seconds": 120,
+  "gate_relaxed": false,
+  "candidates": {
+    "api_football_pinnacle": {
+      "bookmaker_id": 4,
+      "status": "RETAIN_AS_STRICT_FRESH_FALLBACK_ONLY",
+      "physical_probe": {
+        "targets": 5,
+        "complete_market_count": 5,
+        "strict_fresh_count": 0,
+        "min_quote_age_seconds": 8997,
+        "max_quote_age_seconds": 9058
+      }
+    },
+    "api_football_betfair": {
+      "bookmaker_id": 3,
+      "status": "REJECT_AS_CLV_FRESHNESS_FALLBACK",
+      "reason": "PHYSICAL_PROBE_SHOWS_SAME_STALE_PROVIDER_TIMESTAMP_CLASS_AS_PINNACLE",
+      "physical_probe": {
+        "targets": 5,
+        "complete_market_count": 5,
+        "strict_fresh_count": 0,
+        "min_quote_age_seconds": 8997,
+        "max_quote_age_seconds": 9058
+      }
+    },
+    "odds_api_net_pinnacle": {
+      "status": "IMPLEMENTED_PREFERRED_TRANSPORT_BUT_RUNTIME_BLOCKED",
+      "blocker": "ODDS_API_NET_KEY_NOT_CONFIGURED_IN_GITHUB",
+      "credential_configured": false,
+      "physical_manual_precedent": {
+        "fixture_id": "1559670",
+        "valid_close": true,
+        "provider_quote_age_seconds": 119.036,
+        "capture_lead_seconds": 38.964,
+        "transport": "odds-api.net Sandbox"
+      }
+    }
+  },
+  "adjudication": {
+    "preferred_when_credentialled": "odds-api.net Pinnacle strict <=120s",
+    "fallback": "API-Football Pinnacle only when provider quote <=120s",
+    "betfair_promoted": false,
+    "no_cost_alternative_found_in_api_football": false,
+    "external_runtime_blocker": "FRESH_SHARP_TRANSPORT_CREDENTIAL_OR_EQUIVALENT_SOURCE_REQUIRED",
+    "internal_capture_pipeline_status": "REPAIRED_AND_TESTED"
+  },
+  "evidence": {
+    "api_football_probe_path": "evidence/clv/football/over_2_5/api_football_sharp_transport_probe_latest.json",
+    "api_football_probe_blob_sha": "34fc9ee1de588efbeb777c6c1657216afa7db9d7",
+    "api_football_probe_run_id": 38755665028,
+    "api_football_probe_run_conclusion": "success",
+    "odds_api_probe_path": "evidence/clv/football/over_2_5/odds_api_net_probe_latest.json",
+    "odds_api_probe_blob_sha": "a1d75c1ac4e15b2ed14a4f41f850db61368a026d"
+  },
+  "protections": {
+    "no_post_kickoff_backfill": true,
+    "no_stale_quote_admission": true,
+    "automatic_wagering": false,
+    "real_money": "BLOCKED"
+  }
+}

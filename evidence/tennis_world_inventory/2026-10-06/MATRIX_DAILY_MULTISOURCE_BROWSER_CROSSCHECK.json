@@ -1,0 +1,69 @@
+{
+  "schema": "MATRIX_DAILY_MULTISOURCE_BROWSER_CROSSCHECK_V1",
+  "target_date_bogota": "2026-10-06",
+  "timezone": "America/Bogota",
+  "captured_at_utc": "2026-10-06T14:40:00Z",
+  "status": "PASS_WITH_LAZY_ENUMERATION_LIMITS",
+  "governance_basis": {
+    "permanent_source_policy": "docs/providers/MATRIX_AUXILIARY_PIT_FEATURE_SOURCES_V1.json",
+    "prior_browser_verification": [
+      "evidence/governance/MATRIX_AUXILIARY_SOURCE_BROWSER_VERIFICATION_20261004.json",
+      "evidence/cor0203/governance/MATRIX_OPERA_BROWSER_CONNECTOR_VERIFICATION_20261004.json"
+    ],
+    "paid_apis_mandatory": true,
+    "sofascore_flashscore_daily_crosscheck_required": true,
+    "no_single_source_world_truth": true
+  },
+  "sources": {
+    "sofascore": {
+      "url": "https://www.sofascore.com/es/tennis/2026-10-06",
+      "opera_read_status": "PASS",
+      "accessibility_unique_match_links_observed_partial": 67,
+      "ui_count_observation": {
+        "value": ">400",
+        "provenance": "USER_VISIBLE_UI_REPORT",
+        "machine_verified_exact": false
+      },
+      "limitation": "SofaScore accessibility tree is lazy/partial; 67 exposed links are not a worldwide denominator."
+    },
+    "flashscore": {
+      "url": "https://www.flashscore.co/tenis/?d=2026-10-06",
+      "opera_read_status": "PASS",
+      "accessibility_tree_loaded": true,
+      "ui_count_observation": {
+        "value": 410,
+        "provenance": "USER_VISIBLE_UI_REPORT",
+        "machine_verified_exact": false
+      },
+      "limitation": "Flashscore accessibility content is paginated/lazy and includes navigation/trending content; exact 410 is retained as user-visible UI evidence, not re-derived from accessibility nodes."
+    },
+    "rapidapi_tennis": {
+      "physical_inventory_count": 250,
+      "role": "MANDATORY_STRUCTURED_ACQUISITION_HISTORY_IDS_TIMESTAMPS"
+    },
+    "api_tennis": {
+      "physical_inventory_count": 407,
+      "role": "MANDATORY_SECONDARY_STRUCTURED_DISCOVERY_STATS_RICH_VALIDATION"
+    },
+    "itf_official": {
+      "browser_available": true,
+      "role": "OFFICIAL_CROSSCHECK"
+    }
+  },
+  "adjudication": {
+    "paid_api_counts_are_not_world_complete": true,
+    "browser_sources_must_be_checked_daily": true,
+    "discovery_union_requires_physical_dedup": true,
+    "api_enrichment_after_browser_discovery": true,
+    "cor0203_domain_remains": "ATP_CHALLENGER_HARD_SINGLES",
+    "non_domain_events": "WORLD_DISCOVERY_ONLY_OR_SEPARATE_GOVERNED_LANES"
+  },
+  "protections": {
+    "missing_not_zero": true,
+    "silent_imputation": false,
+    "odds_to_p_matrix": false,
+    "metrics_opened": false,
+    "automatic_wagering": false,
+    "real_money": "BLOCKED"
+  }
+}

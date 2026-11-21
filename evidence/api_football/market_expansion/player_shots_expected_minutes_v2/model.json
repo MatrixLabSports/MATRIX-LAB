@@ -1,0 +1,68 @@
+{
+  "automatic_wagering": false,
+  "candidate": "role_aware_expected_minutes_v2",
+  "comparison_champion": "player_shots_model_v1_same_rows",
+  "cross_source_role_equivalence_certified": false,
+  "current_match_minutes_used_as_feature": false,
+  "evaluation_line": 1.5,
+  "expected_minutes_algorithm_historical_oos_validated": true,
+  "expected_minutes_pit_prospective_certified": false,
+  "internal_selection": {
+    "final_validation_used_for_selection": false,
+    "selected": {
+      "alpha_recent_rate": 0.0,
+      "internal_validation": {
+        "brier_score": 0.18716187045762164,
+        "ece_5bin": 0.12386466054575532,
+        "log_loss": 0.5577934905588987,
+        "max_calibration_error_5bin": 0.16544426963771885,
+        "sample_size": 383
+      }
+    },
+    "selection_rows": 383,
+    "trial_count": 5
+  },
+  "lane": "PLAYER_SHOTS",
+  "metrics_opened": true,
+  "odds_used_to_generate_probability": false,
+  "prematch_lineup_source_certified": false,
+  "prospective_blocker": "PREMATCH_LINEUP_ROLE_SOURCE_NOT_CERTIFIED_AND_EXPECTED_MINUTES_PROSPECTIVE_GATE_CLOSED",
+  "prospective_calibration_used": false,
+  "prospective_freeze_allowed": false,
+  "protected_final_holdout_used": false,
+  "real_money": "BLOCKED",
+  "row_count": 1965,
+  "schema": "MATRIX_PLAYER_SHOTS_ROLE_EXPECTED_MINUTES_MODEL_V2",
+  "selected_parameters": {
+    "alpha_recent_rate": 0.0,
+    "evaluation_line": 1.5,
+    "expected_minutes_method": "MEAN_PRIOR_SAME_ROLE_MINUTES_ONLY",
+    "minimum_same_role_history": 3
+  },
+  "selected_parameters_sha256": "eb17833d18e691828123176f161c2bbb045b81144063e5538a3a6552e5fdd15e",
+  "source_dataset": "evidence/api_football/market_expansion/player_shots_expected_minutes_v2/player_shots_role_expected_minutes_pit.jsonl",
+  "source_dataset_sha256": "75ae229feb908ab4aa04b74b9fbf2fae83d9b75729fcd42e07c73ff337345f01",
+  "status": "HISTORICAL_OOS_PASS_ROLE_AWARE_PROSPECTIVE_BLOCKED",
+  "train_count": 1915,
+  "validation": {
+    "challenger_v2": {
+      "brier_score": 0.19917585034791532,
+      "ece_5bin": 0.08933632089381532,
+      "log_loss": 0.5841995869353087,
+      "max_calibration_error_5bin": 0.13764308300899225,
+      "sample_size": 50
+    },
+    "champion_v1_same_rows": {
+      "brier_score": 0.2033610093446616,
+      "ece_5bin": 0.06960293866852653,
+      "log_loss": 0.5900927344803457,
+      "max_calibration_error_5bin": 0.15872355196676396,
+      "sample_size": 50
+    },
+    "delta_brier_v2_minus_v1": -0.004185158996746263,
+    "delta_log_loss_v2_minus_v1": -0.005893147545037003,
+    "gate_passed": true
+  },
+  "validation_count": 50,
+  "validation_used_for_parameter_tuning": false
+}

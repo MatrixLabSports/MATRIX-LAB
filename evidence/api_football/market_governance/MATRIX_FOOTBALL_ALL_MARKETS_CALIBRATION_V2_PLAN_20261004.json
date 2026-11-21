@@ -1,0 +1,112 @@
+{
+  "schema": "MATRIX_FOOTBALL_ALL_MARKETS_CALIBRATION_V2_PLAN",
+  "created_at_utc": "2026-10-04T18:45:00Z",
+  "timezone": "America/Bogota",
+  "purpose": "Second independent football calibration by market, preserving market-specific denominators and no cross-market leakage.",
+  "cohort_id": "FOOTBALL_ALL_MARKETS_V2_20261004",
+  "governance": {
+    "market_specific_ledgers": true,
+    "shared_cross_market_model_forbidden": true,
+    "thresholds": [
+      30,
+      50,
+      100,
+      200
+    ],
+    "metrics_sealed_until_threshold": true,
+    "parameter_tuning_after_first_freeze": false,
+    "final_only_settlement": true,
+    "pit_required": true,
+    "silent_imputation": false,
+    "missing_not_zero": true,
+    "odds_to_probability": false,
+    "source_reconciliation_required": true,
+    "real_money": "BLOCKED",
+    "automatic_wagering": false
+  },
+  "lanes": {
+    "1X2": {
+      "status": "READY_FOR_V2_PROSPECTIVE_CALIBRATION",
+      "basis": "SUPPORTED_AT_N200"
+    },
+    "GOAL_TOTALS_OVER_2_5": {
+      "status": "READY_FOR_V2_PROSPECTIVE_CALIBRATION",
+      "basis": "SUPPORTED_AT_N200"
+    },
+    "GOAL_TOTALS_UNDER_2_5": {
+      "status": "READY_DERIVED_FROM_FROZEN_OVER_2_5",
+      "basis": "DERIVED_COMPLEMENT"
+    },
+    "DOUBLE_CHANCE_1X": {
+      "status": "READY_DERIVED_FROM_FROZEN_1X2",
+      "basis": "DERIVED_FROM_1X2"
+    },
+    "DOUBLE_CHANCE_X2": {
+      "status": "READY_DERIVED_FROM_FROZEN_1X2",
+      "basis": "DERIVED_FROM_1X2"
+    },
+    "BTTS": {
+      "status": "BLOCKED_NEW_CHALLENGER_REQUIRED",
+      "basis": "V2_REJECTED_N200_AND_V3_REJECTED_TEMPORAL_OOS"
+    },
+    "TEAM_TOTAL_SHOTS": {
+      "status": "BLOCKED_SCOPE_ALIGNMENT_AND_REAL_PREMATCH_LINE",
+      "basis": "HISTORICAL_OOS_PASS"
+    },
+    "PLAYER_SHOTS": {
+      "status": "BLOCKED_PREMATCH_LINEUP_ROLE_EXPECTED_MINUTES",
+      "basis": "HISTORICAL_OOS_PASS"
+    },
+    "CORNERS_OVER_UNDER": {
+      "status": "BLOCKED_NEW_MODEL_REQUIRED",
+      "basis": "HISTORICAL_OOS_REJECTED"
+    },
+    "TEAM_SHOTS_ON_TARGET": {
+      "status": "BLOCKED_NEW_MODEL_REQUIRED",
+      "basis": "HISTORICAL_OOS_REJECTED"
+    },
+    "TEAM_FOULS": {
+      "status": "BLOCKED_NEW_MODEL_REQUIRED",
+      "basis": "HISTORICAL_OOS_REJECTED"
+    },
+    "TEAM_GOALKEEPER_SAVES": {
+      "status": "BLOCKED_NEW_MODEL_REQUIRED",
+      "basis": "HISTORICAL_OOS_REJECTED"
+    },
+    "TEAM_YELLOW_CARDS": {
+      "status": "BLOCKED_NEW_MODEL_REQUIRED",
+      "basis": "HISTORICAL_OOS_REJECTED"
+    },
+    "PLAYER_SHOTS_ON_TARGET": {
+      "status": "BLOCKED_NEW_MODEL_REQUIRED",
+      "basis": "HISTORICAL_OOS_REJECTED"
+    },
+    "GOALKEEPER_SAVES_PLAYER": {
+      "status": "BLOCKED_NEW_MODEL_REQUIRED",
+      "basis": "HISTORICAL_OOS_REJECTED"
+    },
+    "PLAYER_ASSISTS": {
+      "status": "BLOCKED_NEW_MODEL_REQUIRED",
+      "basis": "HISTORICAL_OOS_REJECTED"
+    },
+    "PLAYER_PASSES": {
+      "status": "BLOCKED_NEW_MODEL_AND_LIVE_PRICE_REQUIRED",
+      "basis": "HISTORICAL_OOS_REJECTED"
+    },
+    "PLAYER_TACKLES": {
+      "status": "BLOCKED_NEW_MODEL_AND_LIVE_PRICE_REQUIRED",
+      "basis": "HISTORICAL_OOS_REJECTED"
+    },
+    "PLAYER_FOULS": {
+      "status": "BLOCKED_NEW_MODEL_REQUIRED",
+      "basis": "HISTORICAL_OOS_REJECTED"
+    }
+  },
+  "activation_policy": {
+    "active_lanes_start_new_independent_prefix": true,
+    "derived_lanes_share_only_their_parent_event_prefix": true,
+    "blocked_lanes_must_not_freeze_until_historical_oos_pass_and_operational_gates_pass": true,
+    "no_backfill": true,
+    "no_retrospective_freeze": true
+  }
+}

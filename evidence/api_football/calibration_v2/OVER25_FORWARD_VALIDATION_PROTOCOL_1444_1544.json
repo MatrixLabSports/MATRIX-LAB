@@ -1,0 +1,74 @@
+{
+  "schema": "MATRIX_OVER25_FORWARD_VALIDATION_PROTOCOL_V2",
+  "market": "OVER_2_5",
+  "purpose": "SECOND_INDEPENDENT_PROSPECTIVE_STABILITY_BLOCK_NO_TUNING_NO_REAL_MONEY",
+  "preregistration": {
+    "baseline_commit": "dcb14d12834e1db463474e11bebe86f26fa1130a",
+    "baseline_source_rows": 2246,
+    "baseline_source_ledger_blob_sha": "d83421194206d7631ee9251e22af9ae1f847678e",
+    "baseline_over_2_5_settlements": 1444,
+    "baseline_over_2_5_lane_blob_sha": "d565e7b853bd58fb60a773b11324ab04a05c57d5",
+    "baseline_over_2_5_state_blob_sha": "aa7df572010cf4feabd34ef26c21754f0016617e",
+    "prior_forward_100_result_blob_sha": "c323e61946fc315109f61658c8c20ed3ba606bd9",
+    "cohort_start_rule": "STRICTLY_AFTER_BASELINE_COMMIT_AND_BASELINE_PREFIX; FIRST_100_NEW_OVER_2_5_STANDARD_FINAL_SETTLEMENTS_ONLY"
+  },
+  "frozen_engine": {
+    "engine_id": "calibrated_log_pool_v1_over_2_5",
+    "parameters": {
+      "a": 0.6,
+      "b": 0,
+      "c": 0.4
+    },
+    "parameter_sha256": "719341a1bdae894a93934f226244f42fe25a2c46277aead13022245ed2bd3616",
+    "promotion_scope": "MARKET_SCOPED_SIGNAL_GENERATION_NOT_REAL_MONEY",
+    "parameter_tuning_allowed": false,
+    "parameter_refit_allowed": false,
+    "parameter_search_allowed": false
+  },
+  "forward_validation": {
+    "baseline_settlement_count": 1444,
+    "target_settlement_count": 1544,
+    "required_new_standard_finals": 100,
+    "exact_cohort_size": 100,
+    "final_only": true,
+    "no_backfill": true,
+    "no_result_based_selection": true,
+    "no_silent_imputation": true,
+    "missing_not_zero": true,
+    "odds_used_to_generate_probability": false,
+    "target_outcomes_used_to_generate_probability": false,
+    "metrics_sealed_until_target": true,
+    "continuous_lane_metrics_remain_sealed": true,
+    "cohort_selection": "OVER_2_5_LANE_ROWS_1445_THROUGH_1544_IN_APPEND_ONLY_LEDGER_ORDER_AFTER_BASELINE_PREFIX_VERIFICATION"
+  },
+  "metrics_to_open_only_at_completion": [
+    "sample_size",
+    "brier_score",
+    "log_loss",
+    "ece",
+    "max_calibration_error",
+    "observed_over_2_5_rate",
+    "mean_predicted_probability",
+    "accuracy_at_0_5_diagnostic_only",
+    "probability_band_reliability",
+    "paired_delta_brier_vs_poisson",
+    "paired_delta_log_loss_vs_poisson",
+    "paired_brier_ci95",
+    "paired_log_loss_ci95"
+  ],
+  "comparison": {
+    "reference_previous_forward_block": "evidence/api_football/calibration_v2/OVER25_FORWARD_VALIDATION_RESULT_20261013.json",
+    "compare_ece_to_previous_forward_100": true,
+    "compare_proper_scores_to_poisson": true,
+    "no_automatic_promotion_or_demotion": true,
+    "no_hit_rate_only_decision": true
+  },
+  "execution": {
+    "monitor_on_each_prospective_calibration_update": true,
+    "close_automatically_at_or_after_1544": true,
+    "result_file": "evidence/api_football/calibration_v2/OVER25_FORWARD_VALIDATION_1444_1544_RESULT.json",
+    "state_file": "evidence/api_football/calibration_v2/OVER25_FORWARD_VALIDATION_1444_1544_STATE.json",
+    "automatic_wagering": false,
+    "real_money": "BLOCKED"
+  }
+}

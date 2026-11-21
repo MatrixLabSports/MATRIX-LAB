@@ -1,0 +1,175 @@
+{
+  "schema": "MATRIX_TELEGRAM_FULL_RECONCILIATION_17OCT2026_V1",
+  "generated_at_utc": "2026-10-17T19:49:00+00:00",
+  "branch": "repair/cor09-world-pipeline",
+  "reconciliation_scope": {
+    "historical_open_before_reconciliation": 19,
+    "resolved_as_settlement": 18,
+    "resolved_as_void": 1,
+    "open_after_reconciliation": 0,
+    "open_exposure_after_cop": 0
+  },
+  "resolved_void": {
+    "fixture_id": "1570410",
+    "match": "Rayo Vallecano vs Athletic Club",
+    "status": "SUSPENDED_PENDING_RESUMPTION",
+    "paper_stake_returned_cop": 25000,
+    "source": "https://www.laliga.com/es-FR/partido/temporada-2026-2027-laliga-ea-sports-rayo-vallecano-athletic-club-8"
+  },
+  "canonical_repairs": {
+    "initial_cohort_date_repair": {
+      "records_repaired": 45,
+      "assigned_operational_date_bogota": "2026-10-10",
+      "basis": "paper_bankroll.initial_cohort.signal_count=45 and cohort activation/sending on 10-OCT-2026"
+    },
+    "thirteen_oct_fus_exclusion": {
+      "fixture_id": "1644212",
+      "match": "FUS Rabat vs Raja Casablanca",
+      "prior_status": "SETTLED",
+      "corrected_status": "EXCLUDED_CANONICAL_AUDIT",
+      "prior_profit_cop": -25000,
+      "corrected_profit_cop": 0,
+      "bankroll_correction_cop": 25000,
+      "basis_artifact": "evidence/notifications/telegram/MATRIX_DAILY_AUDIT_BANKROLL_CANONICAL_13OCT2026.json",
+      "canonical_day_result": {
+        "settled_effective": 29,
+        "wins": 17,
+        "losses": 12,
+        "voids": 1,
+        "cancelled_no_bet": 3,
+        "excluded": 1,
+        "hit_rate_pct": 58.6206896552,
+        "profit_cop": 23000,
+        "units": 0.92
+      }
+    }
+  },
+  "final_global_state": {
+    "telegram_sent_records": 209,
+    "paper_signals": 184,
+    "settlements": 174,
+    "voids": 3,
+    "cancelled_no_bet": 6,
+    "canonical_excluded": 1,
+    "open_bets": 0,
+    "open_exposure_cop": 0,
+    "bankroll_cop": 4833500,
+    "realized_profit_cop": -166500,
+    "realized_units": -6.66,
+    "real_money": "BLOCKED"
+  },
+  "daily_table": [
+    {
+      "date": "2026-10-10",
+      "paper_signals": 51,
+      "settled": 50,
+      "wins": 32,
+      "losses": 18,
+      "voids": 1,
+      "cancelled": 0,
+      "excluded": 0,
+      "open": 0,
+      "hit_rate_pct": 64,
+      "profit_cop": 42250,
+      "units": 1.69,
+      "bankroll_cop": 5042250
+    },
+    {
+      "date": "2026-10-11",
+      "paper_signals": 27,
+      "settled": 27,
+      "wins": 16,
+      "losses": 11,
+      "voids": 0,
+      "cancelled": 0,
+      "excluded": 0,
+      "open": 0,
+      "hit_rate_pct": 59.2592592593,
+      "profit_cop": 171250,
+      "units": 6.85,
+      "bankroll_cop": 5213500
+    },
+    {
+      "date": "2026-10-12",
+      "paper_signals": 22,
+      "settled": 22,
+      "wins": 12,
+      "losses": 10,
+      "voids": 0,
+      "cancelled": 0,
+      "excluded": 0,
+      "open": 0,
+      "hit_rate_pct": 54.5454545455,
+      "profit_cop": -5000,
+      "units": -0.2,
+      "bankroll_cop": 5208500
+    },
+    {
+      "date": "2026-10-13",
+      "paper_signals": 34,
+      "settled": 29,
+      "wins": 17,
+      "losses": 12,
+      "voids": 1,
+      "cancelled": 3,
+      "excluded": 1,
+      "open": 0,
+      "hit_rate_pct": 58.6206896552,
+      "profit_cop": 23000,
+      "units": 0.92,
+      "bankroll_cop": 5231500
+    },
+    {
+      "date": "2026-10-14",
+      "paper_signals": 22,
+      "settled": 22,
+      "wins": 14,
+      "losses": 8,
+      "voids": 0,
+      "cancelled": 0,
+      "excluded": 0,
+      "open": 0,
+      "hit_rate_pct": 63.6363636364,
+      "profit_cop": 101250,
+      "units": 4.05,
+      "bankroll_cop": 5332750
+    },
+    {
+      "date": "2026-10-15",
+      "paper_signals": 20,
+      "settled": 16,
+      "wins": 5,
+      "losses": 11,
+      "voids": 1,
+      "cancelled": 3,
+      "excluded": 0,
+      "open": 0,
+      "hit_rate_pct": 31.25,
+      "profit_cop": -240250,
+      "units": -9.61,
+      "bankroll_cop": 5092500
+    },
+    {
+      "date": "2026-10-17",
+      "paper_signals": 8,
+      "settled": 8,
+      "wins": 2,
+      "losses": 6,
+      "voids": 0,
+      "cancelled": 0,
+      "excluded": 0,
+      "open": 0,
+      "hit_rate_pct": 25,
+      "profit_cop": -259000,
+      "units": -10.36,
+      "bankroll_cop": 4833500
+    }
+  ],
+  "invariants": {
+    "no_open_bets": true,
+    "no_open_exposure": true,
+    "all_paper_signals_accounted": true,
+    "real_money": "BLOCKED"
+  },
+  "adjudication": "HISTORICAL_OPEN_QUEUE_CLOSED_AND_DAILY_TABLE_CANONICALLY_RECONCILED"
+}

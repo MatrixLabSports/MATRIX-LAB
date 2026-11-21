@@ -1,0 +1,83 @@
+# MATRIX_PHYSICAL_TRIGGER 2026-10-19T10:20-05:00 targeted-resolution
+# MATRIX_PHYSICAL_TRIGGER 2026-10-19T01:33-05:00 post-settlement-n3352
+name: MATRIX Football Over2.5 Full Calibration Audit
+
+on:
+  push:
+    branches:
+      - repair/cor09-world-pipeline
+    paths:
+      - .github/workflows/football-over25-full-calibration-audit.yml
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: matrix-football-over25-full-calibration-audit
+  cancel-in-progress: false
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout operational branch
+        uses: actions/checkout@v4
+        with:
+          ref: repair/cor09-world-pipeline
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Run full Over2.5 calibration audit
+        run: |
+          PYTHONPATH=. python tools/api_football_over25_full_calibration_audit.py
+
+      - name: Verify physical audit evidence
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          p=Path("evidence/api_football/calibration_v2/MATRIX_OVER25_FULL_CALIBRATION_AUDIT_CURRENT.json")
+          d=json.loads(p.read_text())
+          assert d["schema"]=="MATRIX_OVER25_FULL_CALIBRATION_AUDIT_V1"
+          sync=json.loads(Path("evidence/api_football/prospective_calibration/sync_last.json").read_text())
+          expected=int(sync["calibration_observation_count"])
+          assert d["physical_sample"]["sample_size"]==expected
+          assert d["physical_sample"]["unique_fixture_ids"]==expected
+          assert d["physical_sample"]["duplicates"]==0
+          assert d["physical_sample"]["ledger_hash_chain_verified"] is True
+          assert d["governance"]["parameter_tuning_allowed"] is False
+          assert d["governance"]["model_files_modified"] is False
+          assert d["governance"]["automatic_wagering"] is False
+          assert d["governance"]["real_money"]=="BLOCKED"
+          print(json.dumps({
+              "verified_sample_size": d["physical_sample"]["sample_size"],
+              "brier": d["challenger"]["brier_score"],
+              "log_loss": d["challenger"]["log_loss"],
+              "ece": d["challenger"]["calibration"]["ece"],
+              "mce": d["challenger"]["calibration"]["max_calibration_error"],
+              "delta_brier": d["paired_comparison"]["delta_brier_challenger_minus_poisson"],
+              "brier_ci95": d["paired_comparison"]["brier_ci95"],
+              "delta_log_loss": d["paired_comparison"]["delta_log_loss_challenger_minus_poisson"],
+              "log_loss_ci95": d["paired_comparison"]["log_loss_ci95"],
+              "verdict": d["adjudication"]["statistical_verdict"],
+              "real_money": d["governance"]["real_money"],
+          }, sort_keys=True))
+          PY
+
+      - name: Persist audit evidence
+        run: |
+          git config user.name "matrix-over25-calibration-audit"
+          git config user.email "matrix-over25-calibration-audit@users.noreply.github.com"
+          git add evidence/api_football/calibration_v2/MATRIX_OVER25_FULL_CALIBRATION_AUDIT_CURRENT.json
+          if git diff --cached --quiet; then
+            echo "NO_AUDIT_MATERIAL_CHANGE"
+            exit 0
+          fi
+          git commit -m "evidence(football): persist full Over2.5 calibration audit"
+          git pull --rebase origin repair/cor09-world-pipeline
+          git push origin HEAD:repair/cor09-world-pipeline

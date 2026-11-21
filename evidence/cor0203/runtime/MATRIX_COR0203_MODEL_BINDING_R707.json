@@ -1,0 +1,45 @@
+{
+  "schema": "MATRIX_COR0203_MODEL_BINDING_R707_V1",
+  "revision": "R707",
+  "holdout_id": "A22_POST_AUDIT_VIRGIN_HOLDOUT_V1",
+  "supersedes": "R683 candidate binding before first admissible observation",
+  "quarantine": {
+    "batch": "evidence/cor0203/holdout/MATRIX_COR0203_HOLDOUT_BATCH_R706.json",
+    "reason": "Glicko execution identity R223 was not the candidate hash bound in R683",
+    "outcomes_read": 0,
+    "metrics_opened": false,
+    "admissible_observations": 0
+  },
+  "candidates": {
+    "elo": {
+      "identity": "R218_ELO_BOTH",
+      "source_file": "MATRIX_LEDGER_R218_CHALLENGER_ELO_INCREMENTAL.md",
+      "sha256": "123b25888e203fba792c9f68ccffd611bb9561cd259f52b92e5a107a3178b4a9"
+    },
+    "glicko": {
+      "identity": "R223_BATCH_GLICKO_RATING_BOTH",
+      "source_file": "MATRIX_CHALLENGER_GLICKO_RATING_PERIOD_BATCH_R223.json",
+      "sha256": "7701aaa009de782ab4485806606d304805c0bee923239ab3ffd511ca82c41ef6",
+      "rationale": "R223 is the correctness-first permanent batch-period implementation that supersedes row-order-dependent R220 execution semantics."
+    }
+  },
+  "adjudication": {
+    "source_file": "MATRIX_CHALLENGER_ADVERSARIAL_STABILITY_R239.py",
+    "sha256": "01999602deb533f41200e8127cfbffa0925e6e30d7f3f5963a46cf3de5861888"
+  },
+  "control_policy": {
+    "type": "contemporaneous training-base-rate predictor",
+    "probability_window1": 0.4967308051559873,
+    "odds_used": false
+  },
+  "contract": {
+    "windows": 3,
+    "n_each": 200,
+    "total": 600,
+    "metrics": "SEALED_UNTIL_600",
+    "historical_backfill": "FORBIDDEN",
+    "tuning": "FORBIDDEN"
+  },
+  "created_before_first_admissible_observation": true,
+  "real_money": "BLOCKED"
+}

@@ -1,0 +1,205 @@
+# MATRIX_PHYSICAL_TRIGGER 2026-10-08T23:11Z current-over25-1x2-funnel
+name: Football Current Governed Funnel 2026-10-08
+
+on:
+  push:
+    branches:
+      - repair/cor09-world-pipeline
+    paths:
+      - .github/workflows/football-current-governed-funnel-20261008.yml
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: football-current-governed-funnel-20261008
+  cancel-in-progress: false
+
+jobs:
+  current-funnel:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - name: Checkout operational branch
+        uses: actions/checkout@v4
+        with:
+          ref: repair/cor09-world-pipeline
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: python -m pip install requests pytest
+
+      - name: Verify completed browser-first football baseline
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          p=Path("evidence/football_world_inventory/2026-10-08/MATRIX_DAILY_MULTISOURCE_BROWSER_CROSSCHECK.json")
+          j=json.loads(p.read_text())
+          assert j["target_date_bogota"]=="2026-10-08"
+          sofa=j["sources"]["sofascore"]
+          flash=j["sources"]["flashscore"]
+          assert sofa["opera_read_status"]=="PASS"
+          assert sofa["user_visible_total_count"]==1519
+          assert sofa["user_visible_screenshot_verified"] is True
+          assert sofa["loaded_tree_unique_match_link_count"]==702
+          assert j["adjudication"]["sofascore_visible_total_supersedes_lazy_tree_count"] is True
+          assert flash["opera_read_status"]=="PASS"
+          assert flash["loaded_tree_unique_match_link_count"]==109
+          assert flash["exact_unique_match_count"] is None
+          assert flash["exact_visible_day_total_status"]=="PENDING_PHYSICAL_VISIBLE_TOTAL"
+          assert j["adjudication"]["lazy_tree_counts_must_not_be_labeled_exact_calendar_total"] is True
+          assert j["adjudication"]["exact_browser_counts_are_not_additive"] is True
+          assert j["protections"]["missing_not_zero"] is True
+          assert j["protections"]["metrics_opened"] is False
+          assert j["protections"]["real_money"]=="BLOCKED"
+          print("BROWSER_FIRST_BASELINE_PASS sofascore_visible=1519 flashscore_exact=PENDING loaded_tree=109")
+          PY
+
+      - name: Run current 08-OCT governed API-Football cycle
+        shell: bash
+        env:
+          API_FOOTBALL_KEY: ${{ secrets.API_FOOTBALL_KEY }}
+        run: |
+          set -euo pipefail
+          python -m tools.api_football_prospective_daily_cycle --target-date 2026-10-08
+
+      - name: Audit current future frozen candidates
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json, hashlib
+          from datetime import datetime, timezone
+          from pathlib import Path
+          from zoneinfo import ZoneInfo
+
+          root=Path(".")
+          freeze=json.loads((root/"evidence/api_football/prospective_market_freeze/freeze.json").read_text())
+          strength=json.loads((root/"evidence/global_strength_map/summary.json").read_text())
+          overpromo=json.loads((root/"evidence/api_football/governance/over_2_5_p_matrix_promotion.json").read_text())
+          uniq=json.loads((root/"evidence/api_football/physical_uniqueness/audit_last.json").read_text())
+          now=datetime.now(timezone.utc).replace(microsecond=0)
+          bog=ZoneInfo("America/Bogota")
+
+          cells={(x["market"],x["competition_id"]):x for x in strength["football_global_cells"] if isinstance(x,dict) and "market" in x}
+          one=cells[("1X2","ALL")]
+          over=cells[("OVER_2_5","ALL")]
+          assert one["strength_class"]=="STRONG"
+          assert over["strength_class"]=="STRONG"
+          assert overpromo["promotion_status"]=="PASS_PROMOTED_GOVERNED_P_MATRIX_SIGNAL_ONLY"
+          assert uniq["result"]=="PASS"
+          assert uniq["duplicate_fixture_id_groups"]==0
+
+          rows=[]
+          seen=set()
+          for r in freeze["rows"]:
+              ko=datetime.fromisoformat(str(r["kickoff_utc"]).replace("Z","+00:00")).astimezone(timezone.utc)
+              if ko <= now or ko.astimezone(bog).date().isoformat()!="2026-10-08":
+                  continue
+              fid=str(r["fixture_id"])
+              if fid in seen:
+                  raise SystemExit("DUPLICATE_FUTURE_FIXTURE_ID:"+fid)
+              seen.add(fid)
+              probs=r["frozen_research_probabilities"]
+              p1=probs["1x2"]
+              pick=max(("H","D","A"),key=lambda k:float(p1[k]))
+              rows.append({
+                "fixture_id":fid,
+                "competition_id":r["competition_id"],
+                "competition_name":r["competition_name"],
+                "home_team_id":r["home_team_id"],
+                "home_team_name":r["home_team_name"],
+                "away_team_id":r["away_team_id"],
+                "away_team_name":r["away_team_name"],
+                "kickoff_utc":r["kickoff_utc"],
+                "kickoff_bogota":ko.astimezone(bog).isoformat(),
+                "freeze_at_utc":r["freeze_at_utc"],
+                "p_1x2":{"H":float(p1["H"]),"D":float(p1["D"]),"A":float(p1["A"])},
+                "one_x_two_direction":pick,
+                "one_x_two_probability":float(p1[pick]),
+                "one_x_two_strength":"STRONG_GLOBAL_EVIDENCE",
+                "one_x_two_signal_status":"FROZEN_RESEARCH_SHADOW_NOT_SEPARATELY_PROMOTED_P_MATRIX",
+                "p_over_2_5":float(probs["over_2_5"]),
+                "over_2_5_strength":"STRONG",
+                "over_2_5_signal_status":"GOVERNED_P_MATRIX_SIGNAL_ENGINE_AVAILABLE",
+                "btts_status":"NO_GO",
+                "odds_used_to_generate_probability":False,
+                "bookmaker_odds":None,
+                "ev_status":"PENDING_PHYSICAL_BOOKMAKER_ODDS",
+                "decision":"PENDING_ODDS_OR_NO_BET"
+              })
+
+          rows.sort(key=lambda x:(x["kickoff_utc"],int(x["fixture_id"])))
+          out={
+            "schema":"MATRIX_FOOTBALL_CURRENT_08OCT_CANDIDATES_V1",
+            "generated_at_utc":now.isoformat(),
+            "target_date_bogota":"2026-10-08",
+            "source_order":["SOFASCORE","FLASHSCORE","API_FOOTBALL","IDENTITY","PIT","PHYSICAL_DEDUP","FROZEN_MODEL","PHYSICAL_ODDS","EV"],
+            "browser_counts":{"sofascore":702,"flashscore":109},
+            "physical_uniqueness_result":"PASS",
+            "current_future_frozen_count":len(rows),
+            "markets":{
+              "1X2":{"strength":"STRONG","signal_scope":"SHADOW_FROZEN_RESEARCH_PROBABILITY"},
+              "OVER_2_5":{"strength":"STRONG","signal_scope":"GOVERNED_P_MATRIX_SIGNAL_ONLY"},
+              "BTTS":{"strength":"NO_GO"}
+            },
+            "rows":rows,
+            "protections":{
+              "missing_not_zero":True,
+              "silent_imputation":False,
+              "odds_to_p_matrix":False,
+              "outcomes_read_at_freeze":False,
+              "physical_odds_required_for_ev":True,
+              "minimum_decimal_odds_exclusive":1.50,
+              "automatic_wagering":False,
+              "real_money":"BLOCKED"
+            }
+          }
+          blob=json.dumps(out,ensure_ascii=False,sort_keys=True,separators=(",",":")).encode()
+          out["sha256_without_self"]=hashlib.sha256(blob).hexdigest()
+          path=root/"evidence/football_world_inventory/2026-10-08/MATRIX_FOOTBALL_CURRENT_FUTURE_CANDIDATES.json"
+          path.write_text(json.dumps(out,ensure_ascii=False,indent=2,sort_keys=True)+"\n")
+          print(json.dumps({
+             "current_future_frozen_count":len(rows),
+             "first_kickoff":rows[0]["kickoff_bogota"] if rows else None,
+             "last_kickoff":rows[-1]["kickoff_bogota"] if rows else None,
+             "status":"PASS",
+             "real_money":"BLOCKED"
+          },sort_keys=True))
+          PY
+
+      - name: Persist current governed funnel evidence
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name matrix-football-current-funnel
+          git config user.email matrix-football-current-funnel@users.noreply.github.com
+          git add evidence/api_football/prospective_daily/2026-10-08
+          git add evidence/api_football/prospective_market_freeze
+          git add evidence/football_world_inventory/2026-10-08/MATRIX_FOOTBALL_CURRENT_FUTURE_CANDIDATES.json
+          if git diff --cached --quiet; then
+            echo "NO_CURRENT_FUNNEL_CHANGE"
+            exit 0
+          fi
+          git commit -m "evidence(football): close current 08OCT governed funnel"
+          for attempt in 1 2 3 4; do
+            git fetch origin repair/cor09-world-pipeline
+            if ! git rebase origin/repair/cor09-world-pipeline; then
+              git rebase --abort || true
+              exit 1
+            fi
+            if git push origin HEAD:repair/cor09-world-pipeline; then
+              exit 0
+            fi
+            sleep $((attempt*2))
+          done
+          exit 1

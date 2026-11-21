@@ -1,0 +1,38 @@
+name: MATRIX Over25 Authentic Pair Identity Regression
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - repair/cor09-world-pipeline
+    paths:
+      - tools/matrix_over25_per_fixture_feature_equivalence.py
+      - tests/test_matrix_over25_per_fixture_feature_equivalence.py
+      - .github/workflows/matrix-over25-authentic-pair-identity-regression.yml
+  schedule:
+    - cron: "11 4 * * *"
+
+permissions:
+  contents: read
+
+jobs:
+  source-identity-fail-closed:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      REAL_MONEY: BLOCKED
+      AUTOMATIC_WAGERING: "false"
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: repair/cor09-world-pipeline
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install offline test dependency
+        run: python -m pip install --disable-pip-version-check pytest
+      - name: Test exact original kickoff, crosswalk and immutable SHA requirements
+        run: |
+          test "$REAL_MONEY" = BLOCKED
+          test "$AUTOMATIC_WAGERING" = false
+          PYTHONPATH=. python -m pytest -q tests/test_matrix_over25_per_fixture_feature_equivalence.py

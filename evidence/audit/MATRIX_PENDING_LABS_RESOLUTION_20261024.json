@@ -1,0 +1,71 @@
+{
+  "schema": "MATRIX_PENDING_LABS_RESOLUTION_V1",
+  "cut_bogota": "2026-10-24T13:33:00-05:00",
+  "football_period_goals": {
+    "status": "RUNTIME_CERTIFIED",
+    "workflow_run_id": 40120989091,
+    "workflow_conclusion": "success",
+    "implementation_path": "tools/api_football_period_goals_lab.py",
+    "test_path": "tests/test_api_football_period_goals_lab.py",
+    "evidence_path": "evidence/api_football/period_goals_lab/MATRIX_PERIOD_GOALS_LAB_LAST.json",
+    "evidence_blob_sha": "191ad20573730049ecf4448584ee3d43d3943430",
+    "eligible_walk_forward_rows": 3177,
+    "lanes": [
+      "FIRST_HALF_TOTAL_GOALS_OVER_UNDER",
+      "SECOND_HALF_TOTAL_GOALS_OVER_UNDER",
+      "FIRST_HALF_TEAM_TOTAL_GOALS_HOME",
+      "FIRST_HALF_TEAM_TOTAL_GOALS_AWAY",
+      "SECOND_HALF_TEAM_TOTAL_GOALS_HOME",
+      "SECOND_HALF_TEAM_TOTAL_GOALS_AWAY"
+    ],
+    "protections": {
+      "strictly_prior_kickoff_only": true,
+      "target_outcome_used_to_generate_probability": false,
+      "odds_used_to_generate_probability": false,
+      "automatic_wagering": false,
+      "real_money": "BLOCKED"
+    },
+    "brier": {
+      "first_half_over_0_5": 0.2140348321,
+      "first_half_over_1_5": 0.2215163338,
+      "second_half_over_0_5": 0.1809721408,
+      "second_half_over_1_5": 0.2409850694,
+      "first_half_home_team_over_0_5": 0.248141817,
+      "first_half_away_team_over_0_5": 0.2440335808,
+      "second_half_home_team_over_0_5": 0.2473736465,
+      "second_half_away_team_over_0_5": 0.2485051026
+    }
+  },
+  "tennis_serve_stats": {
+    "code_status": "CERTIFIED",
+    "runtime_status": "QUEUED",
+    "workflow_run_id": 40121184161,
+    "implementation_path": "tools/rapidapi_tennis_serve_stats_lab.py",
+    "test_path": "tests/test_rapidapi_tennis_serve_stats_lab.py",
+    "lanes": [
+      "ACES",
+      "DOUBLE_FAULTS",
+      "BREAKS_OF_SERVE"
+    ],
+    "provider_contract": {
+      "aces": "statistics.ALL.service.aces",
+      "double_faults": "statistics.ALL.service.doubleFaults",
+      "breaks_of_serve": "statistics.ALL.return.breakPointsScored",
+      "timeline_crosscheck": "event/timeline/{event_id}"
+    },
+    "protections": {
+      "missing_not_zero": true,
+      "silent_imputation": false,
+      "p_matrix_status": "NOT_GENERATED_SOURCE_LAB_ONLY",
+      "automatic_wagering": false,
+      "real_money": "BLOCKED"
+    },
+    "note": "Runtime provider proof cannot be certified until queued GitHub Actions run completes."
+  },
+  "supervisor": {
+    "code_status": "UPDATED_FOR_ALL_9_LABS",
+    "canonical_runtime_status": "FOOTBALL_6_CERTIFIED; TENNIS_3_AWAITING_RUNTIME_REFRESH",
+    "total_required_lanes": 42
+  },
+  "result": "FOOTBALL_6_RESOLVED_AND_CERTIFIED_TENNIS_3_CODED_RUNTIME_QUEUED"
+}

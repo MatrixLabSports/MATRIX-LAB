@@ -1,0 +1,244 @@
+{
+  "schema": "MATRIX_CONTINUITY_GOVERNANCE_REPAIR_V1",
+  "certified_at_utc": "2026-10-09T05:59:00+00:00",
+  "target_date_bogota": "2026-10-09",
+  "overall_status": "PASS_REPAIRED_AND_PHYSICALLY_PROVEN",
+  "over_2_5_governance": {
+    "status": "PASS_SCOPE_CONFLICT_RESOLVED",
+    "signal_generation_scope": "MARKET_SCOPED_SIGNAL_GENERATION_NOT_REAL_MONEY",
+    "authoritative_status": "PASS_PROMOTED_GOVERNED_P_MATRIX_SIGNAL_ONLY",
+    "probability_status": "FROZEN_GOVERNED_MARKET_SCOPED_SIGNAL_ONLY",
+    "signal_generation_authorized": true,
+    "sport_wide_real_money_promotion": false,
+    "automatic_wagering": false,
+    "real_money": "BLOCKED",
+    "one_x_two_promoted_by_this_resolution": false,
+    "btts_promoted_by_this_resolution": false,
+    "latest_decision_counts": {
+      "BET_SHADOW": 9,
+      "NO_BET": 30,
+      "BLOCKED": 163
+    },
+    "resolution_artifact": "evidence/api_football/governance/over_2_5_signal_governance_resolution_20261009.json",
+    "resolution_blob_sha1": "9167b23a2af3f211a3030b343e73a247281cc995",
+    "latest_signal_artifact": "evidence/api_football/daily_prematch_reports/2026-10-09/over25_shadow_ev/MATRIX_FOOTBALL_DAILY_OVER25_GOVERNED_SHADOW_EV.json",
+    "latest_signal_blob_sha1": "d601ede3c591f91f9b947caa3d5aca031820e702",
+    "code_commits": {
+      "governance_resolver": "a60622d7e47f3d8ca592bc97a5807a9ac96074b0",
+      "telegram_fail_closed_gate": "e34ad72bf7d23d71e46b05cb21bfd505f8442145",
+      "precedence_test": "c32149ef43e70faca1f4e8eb1a3e06cdec32e3b5",
+      "resolution_artifact": "d08f06668136c0a5a61564057248cc95ef43d5fb"
+    }
+  },
+  "football_continuity": {
+    "daily_pipeline": {
+      "run_id": 37889473820,
+      "status": "SUCCESS",
+      "concurrency_race_repaired": true,
+      "telegram_ledger_decoupled": true,
+      "operational_commit": "617856e583f91d523c74677d22da57a3771c392c",
+      "main_commit": "05896e60d8e08eabdad23a54d67cd6c1525cfef7"
+    },
+    "final_only_settlement": {
+      "proof_runs": [
+        {
+          "run_id": 37889398018,
+          "status": "SUCCESS"
+        },
+        {
+          "run_id": 37889740270,
+          "status": "SUCCESS"
+        }
+      ],
+      "calibration_observation_count": 1243,
+      "settlement_record_count": 1243,
+      "ledger_hash_chain_verified": true,
+      "parameters_mutated": false,
+      "real_money": "BLOCKED"
+    },
+    "telegram_chain": {
+      "mechanism": "workflow_run",
+      "upstreams": [
+        "MATRIX Football Daily Governed Pipeline",
+        "API-Football prospective FINAL-only settlement now"
+      ],
+      "main_commit": "9434e295fb24708d2e6e85b9c89ff9aa862de7bf",
+      "operational_commit": "6bb27512d1b49a2568ed25c7b09c129d8281c9ee",
+      "physical_proof_runs": [
+        {
+          "run_id": 37889789073,
+          "event": "workflow_run",
+          "status": "SUCCESS"
+        },
+        {
+          "run_id": 37889811110,
+          "event": "workflow_run",
+          "status": "SUCCESS"
+        }
+      ],
+      "telegram_sent_total": 20,
+      "telegram_settlement_total": 2,
+      "new_signals_after_governance_repair": [
+        {
+          "fixture_id": "1557257",
+          "match": "Turkey W vs Slovenia W",
+          "house": "Betano",
+          "odds": 1.95,
+          "p_matrix": 0.5925781131,
+          "ev": 0.15552732054499985,
+          "telegram_message_id": 36
+        },
+        {
+          "fixture_id": "1557244",
+          "match": "Belgium W vs Poland W",
+          "house": "Betano",
+          "odds": 1.57,
+          "p_matrix": 0.6832573488,
+          "ev": 0.07271403761600004,
+          "telegram_message_id": 37
+        },
+        {
+          "fixture_id": "1580527",
+          "match": "Bala Town vs Buckley Town",
+          "house": "Betano",
+          "odds": 1.53,
+          "p_matrix": 0.7105623382,
+          "ev": 0.08716037744600014,
+          "telegram_message_id": 38
+        }
+      ]
+    }
+  },
+  "tennis_live_continuity": {
+    "bulk_proof_run": {
+      "run_id": 37889388179,
+      "status": "SUCCESS"
+    },
+    "final_only_proof_run": {
+      "run_id": 37889545504,
+      "event": "workflow_run",
+      "status": "SUCCESS"
+    },
+    "cumulative_gate_proof_run": {
+      "run_id": 37889545569,
+      "event": "workflow_run",
+      "status": "SUCCESS"
+    },
+    "scheduler_failover": {
+      "source_scheduler": "COR02-03 repo-native hourly scheduler",
+      "freshness_threshold_seconds": 6000,
+      "main_commit": "e7610d354b2446b7d88732c5ca51d115cb3e445c",
+      "operational_commit": "8ae8b942e3a4d21f53c3e2aa0b43b2de52d93314",
+      "local_guard_proof": {
+        "run_id": 37890585321,
+        "status": "SUCCESS",
+        "capture_result": "SKIPPED_FRESH"
+      },
+      "workflow_run_chain_proof": {
+        "run_id": 37890920865,
+        "event": "workflow_run",
+        "status": "SUCCESS",
+        "capture_result": "SKIPPED_FRESH"
+      },
+      "second_workflow_run_chain_proof": {
+        "run_id": 37891148437,
+        "event": "workflow_run",
+        "status": "SUCCESS",
+        "capture_result": "SKIPPED_FRESH"
+      }
+    },
+    "current_state": {
+      "unique_matches": 53,
+      "final_standard": 45,
+      "final_quality_valid": 37,
+      "itf_women_hard_valid": 17,
+      "itf_women_hard_remaining_to_30": 13,
+      "model_status": "RESEARCH_ONLY",
+      "probability_output_status": "SEALED",
+      "metrics_status": "SEALED",
+      "gate_artifact_blob_sha1": "e1a1e5892d6e5fe9c3739378637346ecd38b84d2"
+    }
+  },
+  "tennis_hard_continuity": {
+    "authoritative_production_run": {
+      "run_id": 37890105777,
+      "name": "COR02-03 governed batch freeze",
+      "status": "SUCCESS"
+    },
+    "repaired_daily_resolution_run": {
+      "run_id": 37890301102,
+      "name": "MATRIX Tennis Hard Governed Day Resolution",
+      "status": "SUCCESS"
+    },
+    "certifier_fix_commit": "fe4b99d9f251b6992000751eb83fd4b514902f98",
+    "daily_resolution_artifact": "evidence/tennis_world_inventory/2026-10-09/MATRIX_TENNIS_HARD_DAILY_RESOLUTION.json",
+    "daily_resolution_blob_sha1": "84d8b03a6e8112a51bf6fe55954d36b7de132cdc",
+    "current_state": {
+      "unique_calibration_observations": 128,
+      "physical_frozen_rows": 237,
+      "duplicate_observations_quarantined": 109,
+      "remaining_to_200": 72,
+      "remaining_to_600": 472,
+      "new_unique_observations_last_resolution": 0,
+      "metrics_opened": false,
+      "outcomes_read": 0,
+      "operational_state": "IDLE_VALID",
+      "bottleneck": "SOURCE_READY_NO_NEW_ELIGIBLE_EVENTS"
+    },
+    "scheduler": {
+      "workflow": ".github/workflows/cor0203-hourly-scheduler.yml",
+      "outer_schedule": [
+        "7,37 * * * *"
+      ],
+      "last_physically_observed_schedule_run": {
+        "run_id": 37863994424,
+        "event": "schedule",
+        "status": "SUCCESS"
+      },
+      "dynamic_bogota_date_fix_commit": "ba349c7ed00aa64b7998eea9a143fcf38c4b49d0",
+      "dynamic_date_validation_run": {
+        "run_id": 37890716752,
+        "status": "SUCCESS",
+        "cycles_completed": 2,
+        "integrity_pass": true
+      },
+      "latest_cycle_counts": [
+        {
+          "cycle_index": 1,
+          "unique": 128,
+          "new_freezes": 0,
+          "metrics_opened": false,
+          "outcomes_read": 0
+        },
+        {
+          "cycle_index": 2,
+          "unique": 128,
+          "new_freezes": 0,
+          "metrics_opened": false,
+          "outcomes_read": 0
+        }
+      ],
+      "two_paid_sources_ready": true
+    }
+  },
+  "protections": {
+    "real_money": "BLOCKED",
+    "automatic_wagering": false,
+    "missing_not_zero": true,
+    "silent_imputation": false,
+    "odds_to_probability": false,
+    "final_only_settlement": true,
+    "no_backfill": true,
+    "no_tuning_from_current_outcomes": true,
+    "no_fake_hard_increment": true
+  },
+  "conclusion": {
+    "over_2_5_conflict": "RESOLVED_BY_SCOPE_PRECEDENCE",
+    "football_cycle_continuity": "RESTORED_AND_PROVEN",
+    "telegram_cycle_continuity": "RESTORED_BY_WORKFLOW_RUN_AND_PROVEN",
+    "tennis_live_cycle_continuity": "RESTORED_WITH_SCHEDULER_FAILOVER_AND_QUOTA_GUARD",
+    "tennis_hard_cycle_continuity": "RESTORED_AND_PROVEN",
+    "tennis_live_progress": "17/30_ITF_WOMEN_HARD",
+    "tennis_hard_progress": "128/200"
+  }
+}

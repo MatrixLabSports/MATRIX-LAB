@@ -1,0 +1,106 @@
+name: MATRIX Hybrid Team Venue Bayesian V2 Prematch Research
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "54 3,15 * * *"
+  push:
+    branches:
+      - repair/cor09-world-pipeline
+    paths:
+      - tools/matrix_hybrid_team_venue_beta_v2.py
+      - tests/test_matrix_hybrid_team_venue_beta_v2.py
+      - .github/workflows/matrix-hybrid-team-venue-beta-v2-prematch.yml
+
+permissions:
+  contents: write
+
+concurrency:
+  group: matrix-hybrid-team-venue-beta-v2-prematch
+  cancel-in-progress: false
+
+jobs:
+  research-v2:
+    runs-on: ubuntu-latest
+    timeout-minutes: 18
+    env:
+      MATRIX_MODE: SHADOW
+      REAL_MONEY: BLOCKED
+      AUTOMATIC_WAGERING: "false"
+      HYBRID_AUTO_PROMOTION: DISABLED
+    steps:
+      - name: Checkout frozen research sources without modifying MATRIX
+        uses: actions/checkout@v4
+        with:
+          ref: repair/cor09-world-pipeline
+          fetch-depth: 0
+
+      - name: Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Test team specificity, source authenticity, temporal integrity and no promotions
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$REAL_MONEY" = BLOCKED
+          test "$AUTOMATIC_WAGERING" = false
+          test "$HYBRID_AUTO_PROMOTION" = DISABLED
+          python -m pip install --disable-pip-version-check pytest
+          PYTHONPATH=. python -m pytest -q \
+            tests/test_matrix_hybrid_team_venue_beta_v2.py \
+            tests/test_matrix_hybrid_elite_research_pair_bridge.py
+
+      - name: Preregister and freeze authentic team-venue model V2 before kickoff
+        shell: bash
+        run: |
+          set -euo pipefail
+          PYTHONPATH=. python -m tools.matrix_hybrid_team_venue_beta_v2
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          p=Path("evidence/matrix_hybrid_elite/MATRIX_HYBRID_TEAM_VENUE_BETA_V2_LAST.json")
+          r=json.loads(p.read_bytes())
+          assert r["schema"]=="MATRIX_HYBRID_TEAM_VENUE_BETA_V2_RESEARCH_CYCLE_V1"
+          assert r["real_money"]=="BLOCKED"
+          assert r["automatic_model_promotion"] is False
+          assert r["original_parameters_mutated"] is False
+          assert r["telegram_signal_authorized"] is False
+          assert r["automatic_wagering"] is False
+          assert r["scientific_improvement_certified"] is False
+          for item in r["scored"]:
+              assert item["target_future_result_used"] is False
+              assert item["event_start_at_utc"] > item["forecast_frozen_at_utc"]
+              assert item["original_official_p_matrix_certified"] is False
+          print("V2_TEAM_AWARE_RESEARCH",r["new_forecast_count"],
+                "PREVIOUS",r["existing_forecast_count"],
+                "EXPIRED_UNFROZEN",r["expired_unfrozen_count"],
+                "BLOCKED",r["blocked_count"],"PROMOTION",False)
+          PY
+
+      - name: Preserve V2 physical freezes and detailed failure evidence
+        if: always()
+        shell: bash
+        run: |
+          set -euo pipefail
+          P="evidence/matrix_hybrid_elite/MATRIX_HYBRID_TEAM_VENUE_BETA_V2_LAST.json"
+          if [ ! -f "$P" ]; then echo V2_NO_PRODUCER_EVIDENCE; exit 0; fi
+          git config user.name matrix-hybrid-venue-v2
+          git config user.email matrix-hybrid-venue-v2@users.noreply.github.com
+          git add -- "$P"
+          for D in evidence/football_world_inventory/20??-??-??/MATRIX_HYBRID_TEAM_VENUE_BETA_V2_IMMUTABLE; do
+            if [ -d "$D" ]; then git add -A -- "$D"; fi
+          done
+          if git diff --cached --quiet; then echo V2_NO_NEW_DATA; exit 0; fi
+          git commit -m "evidence(hybrid): immutable team-venue Bayesian V2 prematch research"
+          for retry in 1 2 3 4; do
+            git fetch origin repair/cor09-world-pipeline
+            if ! git rebase origin/repair/cor09-world-pipeline; then
+              git rebase --abort || true
+              exit 1
+            fi
+            if git push origin HEAD:repair/cor09-world-pipeline; then exit 0; fi
+            sleep "$retry"
+          done
+          exit 1

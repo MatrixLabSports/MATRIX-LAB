@@ -1,0 +1,165 @@
+{
+  "schema": "MATRIX_COLOMBIA_BOOKMAKER_PORTFOLIO_V1",
+  "as_of_date_bogota": "2026-09-28",
+  "purpose": "Governed Colombia bookmaker portfolio for prematch price comparison after P_MATRIX exists.",
+  "governance": {
+    "real_money": "BLOCKED",
+    "automatic_wagering": false,
+    "odds_may_generate_p_matrix": false,
+    "odds_allowed_roles": [
+      "PRICE_COMPARISON",
+      "EV_AFTER_P_MATRIX",
+      "REFERENCE",
+      "FREEZE_WITH_TIMESTAMP"
+    ],
+    "execution_requires_live_provider_verification": true,
+    "execution_requires_current_colombia_authorization": true
+  },
+  "sources": {
+    "regulator": {
+      "name": "Coljuegos",
+      "evidence": "Official 26-May-2026 bulletin lists 15 authorized online operators.",
+      "url": "https://cnjsa.coljuegos.gov.co/publicaciones/307328/index.php"
+    },
+    "odds_provider_candidate": {
+      "name": "odds-api.net",
+      "evidence": "Colombia guide documents 15 integrations and prematch football/tennis coverage.",
+      "url": "https://odds-api.net/colombia",
+      "status": "PREACTIVATION_CREDENTIAL_REQUIRED_NOT_YET_VERIFIED_USED"
+    }
+  },
+  "execution_targets": [
+    {
+      "name": "Betano",
+      "matrix_key": "betano",
+      "provider_keys": [
+        "betano"
+      ],
+      "activation": "PENDING_LIVE_CATALOG_PROOF"
+    },
+    {
+      "name": "BetPlay",
+      "matrix_key": "betplay",
+      "provider_keys": [
+        "betplay"
+      ],
+      "activation": "PENDING_LIVE_CATALOG_PROOF"
+    },
+    {
+      "name": "Betsson",
+      "matrix_key": "betsson",
+      "provider_keys": [
+        "betsson"
+      ],
+      "activation": "PENDING_LIVE_CATALOG_PROOF"
+    },
+    {
+      "name": "Bwin",
+      "matrix_key": "bwin",
+      "provider_keys": [
+        "bwin"
+      ],
+      "activation": "PENDING_LIVE_CATALOG_PROOF"
+    },
+    {
+      "name": "Codere",
+      "matrix_key": "codere",
+      "provider_keys": [
+        "codere"
+      ],
+      "activation": "PENDING_LIVE_CATALOG_PROOF"
+    },
+    {
+      "name": "Luckia",
+      "matrix_key": "luckia",
+      "provider_keys": [
+        "luckia"
+      ],
+      "activation": "PENDING_LIVE_CATALOG_PROOF"
+    },
+    {
+      "name": "MrYoker",
+      "matrix_key": "mryoker",
+      "provider_keys": [
+        "mryoker"
+      ],
+      "activation": "PENDING_LIVE_CATALOG_PROOF"
+    },
+    {
+      "name": "Rivalo",
+      "matrix_key": "rivalo",
+      "provider_keys": [
+        "rivalo"
+      ],
+      "activation": "PENDING_LIVE_CATALOG_PROOF"
+    },
+    {
+      "name": "RushBet",
+      "matrix_key": "rushbet",
+      "provider_keys": [
+        "rushbet"
+      ],
+      "activation": "PENDING_LIVE_CATALOG_PROOF"
+    },
+    {
+      "name": "Sportium",
+      "matrix_key": "sportium",
+      "provider_keys": [
+        "sportiumco"
+      ],
+      "activation": "PENDING_LIVE_CATALOG_PROOF"
+    },
+    {
+      "name": "Stake Colombia",
+      "matrix_key": "stake",
+      "provider_keys": [
+        "stake",
+        "stakeco"
+      ],
+      "activation": "PENDING_LIVE_CATALOG_PROOF"
+    },
+    {
+      "name": "Wplay",
+      "matrix_key": "wplay",
+      "provider_keys": [
+        "wplay"
+      ],
+      "activation": "PENDING_LIVE_CATALOG_PROOF"
+    },
+    {
+      "name": "YaJuego",
+      "matrix_key": "yajuego",
+      "provider_keys": [
+        "yajuego"
+      ],
+      "activation": "PENDING_LIVE_CATALOG_PROOF"
+    },
+    {
+      "name": "Zamba",
+      "matrix_key": "zamba",
+      "provider_keys": [
+        "zamba"
+      ],
+      "activation": "PENDING_LIVE_CATALOG_PROOF"
+    }
+  ],
+  "quarantine": [
+    {
+      "name": "Bingo Casino",
+      "reason": "Listed by Coljuegos 26-May-2026 but not documented in the selected odds-api.net Colombia catalog; regulator table inconsistency remains to be reconciled.",
+      "execution_eligible": false
+    },
+    {
+      "name": "Unibet",
+      "reason": "Documented by odds-api.net Colombia catalog but absent from the Coljuegos 26-May-2026 authorized-operator list used by this portfolio.",
+      "execution_eligible": false
+    }
+  ],
+  "reference_only": [
+    {
+      "name": "Pinnacle",
+      "reason": "Market/reference role only; never Colombia execution.",
+      "execution_eligible": false
+    }
+  ]
+}

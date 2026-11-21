@@ -1,0 +1,268 @@
+name: Tennis Zero-Pass Root Cause Audit 2026-10-07
+
+on:
+  push:
+    branches:
+      - repair/cor09-world-pipeline
+    paths:
+      - .github/workflows/tennis-zero-pass-audit-20261007.yml
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: tennis-zero-pass-audit-20261007
+  cancel-in-progress: false
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - name: Checkout operational branch
+        uses: actions/checkout@v4
+        with:
+          ref: repair/cor09-world-pipeline
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: python -m pip install pytest requests
+
+      - name: Regression tests including recycled match id
+        run: |
+          python -m pytest -q             tests/test_cor0203_world_inventory_discovery.py             tests/test_tennis_world_inventory_rapidapi.py             tests/test_cor0203_physical_uniqueness.py
+
+      - name: Fresh API-Tennis governed discovery audit
+        env:
+          API_TENNIS_KEY: ${{ secrets.API_TENNIS_KEY }}
+        run: |
+          mkdir -p evidence/cor0203/audit/2026-10-07
+          python -m tools.cor0203_api_tennis_discovery             --days 4             --out evidence/cor0203/audit/2026-10-07/api_tennis_discovery_fresh.json
+
+      - name: Fresh RapidAPI governed discovery audit
+        env:
+          RAPIDAPI_TENNIS_KEY: ${{ secrets.RAPIDAPI_TENNIS_KEY }}
+        run: |
+          python -m tools.cor0203_rapidapi_durable_discovery             --days 4             --store /tmp/MATRIX_TENNIS_ZERO_PASS_AUDIT.sqlite3             --out evidence/cor0203/audit/2026-10-07/rapidapi_discovery_fresh.json             --summary-out evidence/cor0203/audit/2026-10-07/rapidapi_discovery_summary.json
+
+      - name: Re-run world-derived discovery with physical identity fix
+        env:
+          RAPIDAPI_TENNIS_KEY: ${{ secrets.RAPIDAPI_TENNIS_KEY }}
+        run: |
+          python -m tools.cor0203_world_inventory_discovery             --world-inventory evidence/tennis/world_inventory/2026-10-07/MATRIX_TENNIS_WORLD_INVENTORY.json             --out evidence/cor0203/audit/2026-10-07/world_discovery_after_identity_fix.json
+
+      - name: Build root cause audit
+        run: |
+          python - <<'PY'
+          import json
+          from collections import Counter, defaultdict
+          from pathlib import Path
+
+          root=Path(".")
+          outdir=root/"evidence/cor0203/audit/2026-10-07"
+          dual=json.loads((root/"evidence/tennis_world_inventory/2026-10-07/world_exact_day_dual_audit.json").read_text())
+          world=json.loads((root/"evidence/tennis/world_inventory/2026-10-07/MATRIX_TENNIS_WORLD_INVENTORY.json").read_text())
+          api=json.loads((outdir/"api_tennis_discovery_fresh.json").read_text())
+          rapid=json.loads((outdir/"rapidapi_discovery_fresh.json").read_text())
+          world_after=json.loads((outdir/"world_discovery_after_identity_fix.json").read_text())
+          recon=json.loads((root/"evidence/cor0203/runtime/MATRIX_COR0203_DUAL_PROVIDER_RECONCILIATION_LAST.json").read_text())
+          prereg=json.loads((root/"evidence/cor0203/runtime/MATRIX_COR0203_DISCOVERY_PREREG_LAST.json").read_text())
+          uniq=json.loads((root/"evidence/cor0203/runtime/MATRIX_COR0203_PHYSICAL_UNIQUENESS_LAST.json").read_text())
+          obs=json.loads((root/"evidence/cor0203/runtime/MATRIX_COR0203_PRODUCTION_OBSERVABILITY_LAST.json").read_text())
+
+          secondary=dual["secondary_crosscheck"]
+          challenger_men_singles=sum(
+              int(t.get("match_count") or 0)
+              for t in secondary.get("tournaments",[])
+              if t.get("event_type")=="Challenger Men Singles"
+          )
+          exact_total=int(secondary["unique_match_count"])
+          exact_outside_event_type=exact_total-challenger_men_singles
+
+          api_reasons=Counter()
+          for row in api.get("provider_rejected",[]) or []:
+              for b in row.get("blockers",[]) or []:
+                  api_reasons[str(b)]+=1
+
+          rapid_reasons=Counter()
+          for row in rapid.get("provider_rejected",[]) or []:
+              for b in row.get("blockers",[]) or []:
+                  rapid_reasons[str(b)]+=1
+
+          source_to_physical=defaultdict(set)
+          source_examples=defaultdict(list)
+          for row in world.get("events",[]) or []:
+              sid=str(row.get("source_event_id") or "")
+              stable=str(row.get("stable_physical_identity_key") or row.get("physical_event_key") or "")
+              if sid:
+                  source_to_physical[sid].add(stable)
+                  source_examples[sid].append({
+                      "players":[(row.get("player1") or {}).get("name"),(row.get("player2") or {}).get("name")],
+                      "event_start_bogota":row.get("event_start_bogota"),
+                      "tournament":row.get("tournament_name"),
+                      "stable_physical_identity_key":stable,
+                  })
+          source_collisions={
+              sid:source_examples[sid]
+              for sid,keys in source_to_physical.items()
+              if len(keys)>1
+          }
+
+          report={
+            "schema":"MATRIX_TENNIS_ZERO_PASS_ROOT_CAUSE_AUDIT_07OCT2026_V1",
+            "date_bogota":"2026-10-07",
+            "verdict":"ZERO_NEW_FREEZES_EXPLAINED_BY_DOMAIN_FILTER_PLUS_ALREADY_SEEN_EVENTS_PLUS_PRECUT_IDENTITY_GAPS; ALSO_REAL_WORLD_SOURCE_ID_COLLISION_BUG_FOUND_AND_FIXED",
+            "exact_day_provider_inventory":{
+              "api_tennis_total":exact_total,
+              "api_tennis_challenger_men_singles":challenger_men_singles,
+              "api_tennis_outside_challenger_men_singles":exact_outside_event_type,
+              "rapidapi_total":dual["primary_world_inventory"]["unique_match_count"],
+              "rapidapi_atp_challenger_all_formats":dual["primary_world_inventory"]["events_by_detail"].get("ATP_CHALLENGER"),
+            },
+            "fresh_four_day_governed_discovery":{
+              "api_tennis":{
+                "fixture_rows_challenger_men_singles":api.get("fixture_rows"),
+                "eligible_hard_future_fixed_identity":api.get("eligible_input_events"),
+                "provider_rejected_count":len(api.get("provider_rejected",[]) or []),
+                "rejection_reason_counts":dict(sorted(api_reasons.items())),
+                "tournaments_seen":api.get("tournaments_seen"),
+                "draw_requests":api.get("draw_requests"),
+                "draw_request_limit":api.get("draw_request_limit"),
+              },
+              "rapidapi":{
+                "fixture_rows_provider_filtered":rapid.get("fixture_rows"),
+                "eligible_hard_future_with_cut_ranking":rapid.get("eligible_input_events"),
+                "provider_rejected_count":len(rapid.get("provider_rejected",[]) or []),
+                "rejection_reason_counts":dict(sorted(rapid_reasons.items())),
+                "ranking_players_found":rapid.get("ranking_players_found"),
+              }
+            },
+            "production_dual_reconciliation":{
+              "rapidapi_candidates_input":recon["rapidapi_candidates_input"],
+              "rapidapi_candidates_output":recon["rapidapi_candidates_output"],
+              "api_tennis_candidates_input":recon["api_tennis_candidates_input"],
+              "api_tennis_existing_physical_alias_count":recon["api_tennis_existing_physical_alias_count"],
+              "api_tennis_identity_blocked_count":recon["api_tennis_identity_blocked_count"],
+              "api_tennis_identity_blocked":recon["api_tennis_identity_blocked"],
+              "api_tennis_unique_candidates_output":recon["api_tennis_unique_candidates_output"],
+            },
+            "preregistration":{
+              "status":prereg["status"],
+              "events_registered":prereg["events_registered"],
+              "skipped":prereg["skipped"],
+            },
+            "world_inventory_accumulation":{
+              "cumulative_events":world.get("world_calendar_inventory_count"),
+              "domain_candidate_count":((world.get("derived_lanes") or {}).get("COR02_COR03_ATP_CHALLENGER_HARD") or {}).get("domain_candidate_count"),
+              "duplicate_provider_source_id_collision_count":len(source_collisions),
+              "provider_source_id_collisions":source_collisions,
+            },
+            "identity_fix_validation":{
+              "world_source_event_id_collision_count_detected":world_after.get("world_source_event_id_collision_count"),
+              "world_identity_binding_rejection_count":world_after.get("world_identity_binding_rejection_count"),
+              "eligible_after_fix":world_after.get("eligible_input_events"),
+              "provider_rejected_after_fix":len(world_after.get("provider_rejected",[]) or []),
+              "metrics_opened":world_after.get("metrics_opened"),
+              "outcomes_read":world_after.get("outcomes_read"),
+            },
+            "holdout_state":{
+              "unique_calibration_observations":uniq["unique_calibration_observations"],
+              "physical_frozen_rows":uniq["physical_frozen_rows"],
+              "duplicates_quarantined":uniq["duplicate_observations_quarantined"],
+              "remaining_to_200":uniq["unique_remaining_to_200"],
+              "remaining_to_600":uniq["unique_remaining_to_600"],
+              "metrics_opened":uniq["metrics_opened"],
+              "outcomes_read":uniq["outcomes_read"],
+              "integrity":uniq["result"],
+              "last_cycle_new_freezes":obs["cycle"]["new_freezes"],
+              "last_cycle_new_blocked":obs["cycle"]["new_blocked"],
+              "bottleneck":obs["bottleneck"],
+            },
+            "root_causes":[
+              {
+                "rank":1,
+                "cause":"MOST_WORLD_TENNIS_IS_OUTSIDE_COR0203_DOMAIN",
+                "evidence":"API-Tennis exact-day inventory includes ATP main, WTA, ITF, doubles and women. Only Challenger Men Singles can enter this matrix before surface/future/PIT gates."
+              },
+              {
+                "rank":2,
+                "cause":"ELIGIBLE_DISCOVERY_IS_MOSTLY_ALREADY_SEEN_PHYSICAL_EVENTS",
+                "evidence":"Dual reconciliation and preregistration deduplicate against existing physical keys; the surviving RapidAPI candidate was already preregistered/frozen."
+              },
+              {
+                "rank":3,
+                "cause":"PRE_21SEP_IDENTITY_HISTORY_GAPS_BLOCK_NEW_API_TENNIS_PLAYERS",
+                "evidence":"API-Tennis candidates with unresolved identities are rejected rather than silently imputing ranking/history."
+              },
+              {
+                "rank":4,
+                "cause":"RAPIDAPI_SOURCE_MATCH_ID_IS_NOT_STABLE_UNIQUE_ACROSS_ACCUMULATED_SNAPSHOTS",
+                "evidence":"Multiple distinct physical matches share the same source_event_id in the accumulated world inventory. The world-derived binding previously keyed only by match_id; code is now fixed to bind by tournament+players+start and fail closed if ambiguous."
+              }
+            ],
+            "protections":{
+              "missing_not_zero":True,
+              "silent_imputation":False,
+              "odds_to_probability":False,
+              "metrics_opened":False,
+              "outcomes_read":0,
+              "automatic_wagering":False,
+              "real_money":"BLOCKED"
+            }
+          }
+          p=outdir/"MATRIX_TENNIS_ZERO_PASS_ROOT_CAUSE_AUDIT_07OCT2026.json"
+          p.write_text(json.dumps(report,ensure_ascii=False,indent=2,sort_keys=True)+"\n")
+          print(json.dumps({
+              "api_tennis_total":exact_total,
+              "challenger_men_singles":challenger_men_singles,
+              "fresh_api_fixture_rows":api.get("fixture_rows"),
+              "fresh_api_eligible":api.get("eligible_input_events"),
+              "fresh_rapid_fixture_rows":rapid.get("fixture_rows"),
+              "fresh_rapid_eligible":rapid.get("eligible_input_events"),
+              "source_id_collisions":len(source_collisions),
+              "world_fix_binding_rejections":world_after.get("world_identity_binding_rejection_count"),
+              "holdout_unique":uniq["unique_calibration_observations"]
+          },sort_keys=True))
+          PY
+
+      - name: Validate no leakage
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          p=Path("evidence/cor0203/audit/2026-10-07/MATRIX_TENNIS_ZERO_PASS_ROOT_CAUSE_AUDIT_07OCT2026.json")
+          j=json.loads(p.read_text())
+          assert j["protections"]["metrics_opened"] is False
+          assert j["protections"]["outcomes_read"]==0
+          assert j["protections"]["silent_imputation"] is False
+          assert j["holdout_state"]["integrity"]=="PASS"
+          assert j["identity_fix_validation"]["metrics_opened"] is False
+          assert j["identity_fix_validation"]["outcomes_read"]==0
+          print("ZERO_PASS_ROOT_CAUSE_AUDIT_GATE: PASS")
+          PY
+
+      - name: Persist audit evidence
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name matrix-tennis-audit
+          git config user.email matrix-tennis-audit@users.noreply.github.com
+          git add evidence/cor0203/audit/2026-10-07
+          if git diff --cached --quiet; then
+            echo "NO_AUDIT_CHANGE"
+            exit 0
+          fi
+          git commit -m "evidence(tennis): audit zero-pass root cause 07OCT"
+          for attempt in 1 2 3 4; do
+            git fetch origin repair/cor09-world-pipeline
+            if ! git rebase origin/repair/cor09-world-pipeline; then git rebase --abort || true; exit 1; fi
+            if git push origin HEAD:repair/cor09-world-pipeline; then exit 0; fi
+            sleep $((attempt*2))
+          done
+          exit 1

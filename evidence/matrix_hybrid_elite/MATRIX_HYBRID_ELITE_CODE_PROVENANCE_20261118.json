@@ -1,0 +1,90 @@
+{
+  "schema": "MATRIX_HYBRID_ELITE_CODE_PROVENANCE_V1",
+  "date_bogota": "2026-11-18",
+  "status": "IMPLEMENTED_CODE_AND_SOURCE_GATES_VERIFIED_CI_EXECUTION_NOT_YET_CERTIFIED",
+  "repository": "MatrixLabSports/MATRIX-LAB",
+  "operative_branch": "repair/cor09-world-pipeline",
+  "real_money": "BLOCKED",
+  "automatic_wagering": false,
+  "automatic_model_promotion": false,
+  "original_calibrated_models_modified": false,
+  "files": [
+    {
+      "path": "tools/matrix_hybrid_elite_lab.py",
+      "git_blob_sha1": "0c30dddd60e14aba32c93c0e98267f76c394a7ec",
+      "implemented": [
+        "actual input receipts verified by SHA and event ID",
+        "frozen prediction/outcome comparison",
+        "Brier and LogLoss",
+        "calibration ECE",
+        "deterministic paired bootstrap",
+        "never automatic model promotion"
+      ]
+    },
+    {
+      "path": "tests/test_matrix_hybrid_elite_lab.py",
+      "git_blob_sha1": "2c1039a8de42a1662a47ac8a45ea9d1e03a3d8d5",
+      "test_functions_present": 21
+    },
+    {
+      "path": "tools/matrix_hybrid_elite_bayesian_shadow.py",
+      "git_blob_sha1": "9ac03768779c50e85ab4594dd615b192624303af",
+      "implemented": [
+        "historical results only before frozen forecast",
+        "separate research probability",
+        "minimum certified history"
+      ]
+    },
+    {
+      "path": "tests/test_matrix_hybrid_elite_bayesian_shadow.py",
+      "git_blob_sha1": "a8c46ed425f9400d916dfabba72715415c17c6cf",
+      "test_functions_present": 10
+    },
+    {
+      "path": ".github/workflows/matrix-hybrid-elite-research-lab.yml",
+      "git_blob_sha1": "15d24f063becb86b8c52bbc86ef335e44a23164f",
+      "implemented": [
+        "read-only workflow",
+        "pytest gate",
+        "zero-row executable smoke test",
+        "artifact for physical inspection"
+      ]
+    }
+  ],
+  "physical_reference_status": [
+    {
+      "lane": "FOOTBALL_OVER25",
+      "source_git_blob": "99fc663585b3a24833b989b02164759394a464f9",
+      "source_prematch_research_matches": 3,
+      "certified_comparable_prediction_pairs_verified": 0
+    },
+    {
+      "lane": "TENNIS_CHALLENGER_HARD",
+      "source_git_blob": "4e9c59ce4712619fec8c7b221fa3af725e71615f",
+      "unique_original_observations": 405,
+      "certified_comparable_prediction_pairs_verified": 0
+    },
+    {
+      "lane": "TENNIS_CHALLENGER_CLAY",
+      "source_git_blob": "6a77ca673385b26a320f2b85730f6d777c2a55b9",
+      "original_prospective_observations": 3,
+      "certified_comparable_prediction_pairs_verified": 0
+    },
+    {
+      "lane": "TENNIS_LIVE",
+      "source_git_blob": "8b8bd7f75107545d68122bd7225d8bcea30c1177",
+      "frozen_research_states": 41,
+      "independent_event_end_time_certified": false,
+      "certified_comparable_prediction_pairs_verified": 0
+    }
+  ],
+  "verification_scope": {
+    "git_file_readback": true,
+    "git_immutable_blob_checks": true,
+    "full_python_pytest_run_certified": false,
+    "workflow_run_green_certified": false,
+    "confidence_intervals_validated_against_actual_prospective_cohort": false,
+    "original_model_promotion": false
+  },
+  "next_step": "Physical CI execution and immutable paired predictions for same independently verified event; retain fail-closed gates until replicate improvements on real forward data."
+}

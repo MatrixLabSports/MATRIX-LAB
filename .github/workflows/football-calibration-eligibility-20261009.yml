@@ -1,0 +1,99 @@
+name: Football Calibration Eligibility 2026-10-09
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - repair/cor09-world-pipeline
+    paths:
+      - .github/workflows/football-calibration-eligibility-20261009.yml
+
+permissions:
+  contents: write
+
+jobs:
+  calibration-eligibility:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: repair/cor09-world-pipeline
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: python -m pip install requests pytest
+      - name: Verify SofaScore visible total baseline
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          p=Path("evidence/football_world_inventory/2026-10-09/MATRIX_SOFASCORE_VISIBLE_TOTAL_COUNT.json")
+          j=json.loads(p.read_text())
+          assert j["target_date_bogota"]=="2026-10-09"
+          assert j["visible_ui_total_count"]==763
+          assert j["visible_ui_label"]=="Fútbol 70 / 763"
+          assert j["protections"]["real_money"]=="BLOCKED"
+          print("SOFASCORE_VISIBLE_TOTAL_PASS=763")
+          PY
+      - name: Run governed calibration eligibility cycle
+        env:
+          API_FOOTBALL_KEY: ${{ secrets.API_FOOTBALL_KEY }}
+        run: |
+          set -euo pipefail
+          python -m tools.api_football_prospective_daily_cycle --target-date 2026-10-09
+      - name: Certify calibration eligibility count
+        run: |
+          python - <<'PY'
+          import json, glob, hashlib
+          from pathlib import Path
+          roots=sorted(glob.glob("evidence/api_football/prospective_daily/2026-10-09/*"))
+          if not roots:
+              raise SystemExit("NO_09OCT_CYCLE")
+          root=Path(roots[-1])
+          s=json.loads((root/"cycle_summary.json").read_text())
+          assert s["target_date_bogota"]=="2026-10-09"
+          assert s["status"]=="PASS"
+          calibrable=int(s["canonical"]["ready_input_count"])
+          received=int(s["fixture_capture"]["fixtures_received"])
+          future=int(s["fixture_capture"]["eligible_future_fixtures"])
+          blocked=int(s["canonical"]["blocked_future_input_count"])
+          out={
+            "schema":"MATRIX_FOOTBALL_09OCT_CALIBRATION_ELIGIBILITY_V1",
+            "target_date_bogota":"2026-10-09",
+            "sofascore_visible_total":763,
+            "api_football_fixtures_received":received,
+            "eligible_future_fixtures":future,
+            "calibrable_ready_input_count":calibrable,
+            "blocked_future_input_count":blocked,
+            "freeze_candidate_event_count":int(s["freeze"]["candidate_event_count"]),
+            "new_freeze_event_count":int(s["freeze"]["new_event_count"]),
+            "history_group_ready_count":int(s["history"]["group_ready_minimum_history_count"]),
+            "history_group_blocked_count":int(s["history"]["group_blocked_minimum_history_count"]),
+            "odds_used_to_generate_probability":False,
+            "outcomes_used_to_generate_probability":False,
+            "real_money":"BLOCKED",
+            "automatic_wagering":False,
+            "cycle_id":s["cycle_id"],
+            "cycle_summary_sha256":hashlib.sha256((root/"cycle_summary.json").read_bytes()).hexdigest(),
+            "adjudication":"CALIBRABLE_EQUALS_CANONICAL_READY_INPUT_COUNT"
+          }
+          p=Path("evidence/football_world_inventory/2026-10-09/MATRIX_FOOTBALL_CALIBRATION_ELIGIBILITY.json")
+          p.write_text(json.dumps(out,ensure_ascii=False,indent=2,sort_keys=True)+"\n")
+          print(json.dumps(out,ensure_ascii=False,sort_keys=True))
+          PY
+      - name: Persist evidence
+        run: |
+          git config user.name matrix-football-calibration
+          git config user.email matrix-football-calibration@users.noreply.github.com
+          git add evidence/api_football/prospective_daily/2026-10-09
+          git add evidence/api_football/prospective_market_freeze
+          git add evidence/football_world_inventory/2026-10-09/MATRIX_FOOTBALL_CALIBRATION_ELIGIBILITY.json
+          if git diff --cached --quiet; then
+            echo "NO_CHANGE"
+            exit 0
+          fi
+          git commit -m "evidence(football): certify 09OCT calibration eligibility"
+          git pull --rebase origin repair/cor09-world-pipeline
+          git push origin HEAD:repair/cor09-world-pipeline
