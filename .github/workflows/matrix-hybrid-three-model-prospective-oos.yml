@@ -35,7 +35,16 @@ jobs:
         uses: actions/checkout@v4
         with:
           ref: repair/cor09-world-pipeline
-          fetch-depth: 0
+          fetch-depth: 1
+          filter: blob:none
+          sparse-checkout: |
+            tools
+            app
+            tests
+            evidence/matrix_hybrid_elite
+            evidence/football_research_freezes
+            evidence/football_world_inventory
+            evidence/api_football/governance
 
       - name: Python 3.11
         uses: actions/setup-python@v5
