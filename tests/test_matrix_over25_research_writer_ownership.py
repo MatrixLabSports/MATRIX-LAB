@@ -14,12 +14,19 @@ CLOUD_REPORTS = (
 
 def test_windows_only_stages_browser_owned_reports():
     script = WINDOWS_PERSIST.read_text(encoding="utf-8")
-    allowlist = script.split("$allowed = @(", 1)[1].split(")", 1)[0]
+    assert "$perDayReports = @(" in script
+    assert "$globalReports = @(" in script
+    allowlist = script.split("$perDayReports = @(", 1)[1].split(")", 1)[0]
+    global_list = script.split("$globalReports = @(", 1)[1].split(")", 1)[0]
     for name in CLOUD_REPORTS:
         assert name not in allowlist, "CLOUD_REPORT_STAGED_BY_WINDOWS:" + name
         assert ('git add -- "' + name + '"') not in script
     assert "MATRIX_BROWSER_CDP_COLLECTION_LAST.json" in script
     assert "MATRIX_SOFA_BROWSER_OBSERVATIONS.json" in allowlist
+    assert "MATRIX_SIX_LEAGUE_STEPWISE_CERTIFICATION_LAST.json" in global_list
+    assert "Get-ChildItem \"evidence/football_world_inventory\" -Recurse" not in script
+    assert 'git add -- "evidence/football_research_freezes"' not in script
+    assert 'foreach ($day in $activeDays)' in script
 
 def test_only_cloud_performs_historical_settlement_and_sha_repair():
     cloud = CLOUD.read_text(encoding="utf-8")
