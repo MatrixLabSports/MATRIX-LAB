@@ -254,6 +254,22 @@ def paired_docs(root:Path, manifest:dict | None) -> dict[str,dict]:
             "kickoff_utc":kickoff}
     return verified
 
+def original_provenance_for_pair(original_rows:list[dict], pair:dict)->dict:
+    """A frozen API-Football row must match BOTH provider ID and kickoff.
+
+    An October original fixture can never be paired with a November
+    alternative merely because a crosswalk JSON claims the same ID.
+    """
+    matches=[v for v in original_rows if
+        str(v.get("original_fixture_id"))==str(pair["original_fixture_id"]) and
+        stamp(v["kickoff_utc"])==pair["kickoff_utc"]]
+    if len(matches)!=1:
+        raise ValueError("PAIR_ORIGINAL_PROVENANCE_KICKOFF_NOT_EQUAL")
+    if str(pair["original"].get("competition_id"))!=str(matches[0]["original_league_id"]):
+        raise ValueError("PAIR_ORIGINAL_LEAGUE_PROVENANCE_MISMATCH")
+    return matches[0]
+
+
 def evaluate(root:Path, *, manifest:dict | None=None) -> dict:
     root=root.resolve()
     registry_path=root/ORIGINAL_REGISTRY
@@ -323,15 +339,7 @@ def evaluate(root:Path, *, manifest:dict | None=None) -> dict:
                 # A matching original ID from October cannot be bound to a
                 # November fixture merely by inventing a November crosswalk:
                 # original provenance must carry the identical kickoff.
-                original_matches=[v for v in original if
-                    v["original_fixture_id"]==pair["original_fixture_id"] and
-                    stamp(v["kickoff_utc"])==pair["kickoff_utc"]]
-                if len(original_matches)!=1:
-                    raise ValueError("PAIR_ORIGINAL_PROVENANCE_KICKOFF_NOT_EQUAL")
-                original_scope_id=str(original_matches[0]["original_league_id"])
-                trace_scope_id=str(pair["original"].get("competition_id"))
-                if trace_scope_id!=original_scope_id:
-                    raise ValueError("PAIR_ORIGINAL_LEAGUE_PROVENANCE_MISMATCH")
+                original_provenance_for_pair(original,pair)
             comparisons=diff_fields(feats,original_values)
             counters=Counter(x["status"] for x in comparisons)
             if pair:compared+=1
