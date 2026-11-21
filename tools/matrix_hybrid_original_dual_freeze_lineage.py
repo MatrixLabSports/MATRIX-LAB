@@ -97,10 +97,26 @@ def compare(root: Path, pair: dict):
                          pair["original_formula_research_p"],
                          rel_tol=0.0, abs_tol=1e-12),
             "FIRST_AND_RESEARCH_PROBABILITY_MISMATCH")
+    # Other physically frozen captures remain auditable, including those
+    # with a later changed history. None may replace the earliest preregistered
+    # forecast or inflate the prospective sample. The selected research
+    # freeze is compared with the EARLIEST; later snapshots are excluded.
+    later = candidates[1:]
+    later_changed_history = sum(
+        x[2]["source_snapshot_sha256"] != first[2]["source_snapshot_sha256"]
+        for x in later)
+    later_changed_probability = sum(
+        not math.isclose(x[2]["research_probability_over25"],
+                         first[2]["research_probability_over25"],
+                         rel_tol=0.0, abs_tol=1e-12)
+        for x in later)
     return {
         "fixture_id": fid,
         "competition_id": str(pair["competition_id"]),
         "archive_immutable_original_snapshots": len(options),
+        "later_snapshot_count_excluded_from_observations": len(later),
+        "later_snapshots_with_changed_history_sha256": later_changed_history,
+        "later_snapshots_with_changed_probability": later_changed_probability,
         "earliest_forecast_path": first[1].relative_to(root).as_posix(),
         "earliest_forecast_file_sha256": first[3],
         "earliest_frozen_at_utc": first[0].isoformat(),
@@ -141,8 +157,21 @@ def run(root: Path):
         "physical_fixture_count": len(pairs),
         "lineage_matched_fixture_count": len(matched),
         "lineage_rejected_fixture_count": len(rejected),
+        # "two_snapshot_fixture_count" is a legacy downstream contract:
+        # it means at least two separately frozen files, NOT exactly two.
+        # A third or sixth snapshot must not make a valid pair disappear.
         "two_snapshot_fixture_count": sum(
+            r["archive_immutable_original_snapshots"] >= 2 for r in matched),
+        "exactly_two_snapshot_fixture_count": sum(
             r["archive_immutable_original_snapshots"] == 2 for r in matched),
+        "more_than_two_snapshot_fixture_count": sum(
+            r["archive_immutable_original_snapshots"] > 2 for r in matched),
+        "additional_snapshot_files_excluded_from_observations": sum(
+            max(0, r["archive_immutable_original_snapshots"] - 2) for r in matched),
+        "later_snapshots_with_changed_history_sha256": sum(
+            r["later_snapshots_with_changed_history_sha256"] for r in matched),
+        "later_snapshots_with_changed_probability": sum(
+            r["later_snapshots_with_changed_probability"] for r in matched),
         "matched": matched,
         "rejected": rejected,
         "first_frozen_forecast_wins_settlement": True,
