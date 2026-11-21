@@ -166,3 +166,12 @@ congelada gana la evaluación; las capturas posteriores solo se admiten
 como referencias equivalentes cuando la identidad, la probabilidad
 y el historial SHA sean idénticos y estén probados.
 
+## 7. Evidencia original histórica de seis ligas — 20-nov-2026
+
+El laboratorio histórico `tools/matrix_over25_six_league_original_historical_ablation.py` releyó la captura canónica original API-Football del **24 de octubre de 2026**, sin llamadas a API ni cambios de parámetros. El artefacto físico se conserva en `evidence/football_world_inventory/MATRIX_OVER25_SIX_LEAGUE_CANONICAL_VS_RAW_HISTORICAL_LAST.json`, con hash SHA-256 del manifiesto y de los grupos originales.
+
+Resultado comprobado por GitHub Actions: **21/21** parejas retrospectivas reutilizables, con historia `CANONICAL_ENRICHED_PIT` realmente usada, **0 diferencias** de probabilidad frente a `RAW_GROUP_PIT` sobre esos mismos encuentros de la misma API, distribuidas así: Inglaterra 4, Francia 1, Alemania 6, Italia 4, España 4, Colombia 2. Se aprobaron **7 pruebas** del replay y su gobierno. No extender esta igualdad más allá de los 21 casos ni confundirla con equivalencia entre proveedores.
+
+**Permanece bloqueado** el paso de fuente alternativa independiente a `P_MATRIX` oficial: no hay pares de encuentros auténticos API-Football versus football-data.org con mismo evento y tiempo, huellas SHA originales y características de ambas fuentes antes del partido; tampoco existe certificación prospectiva de las seis ligas. Los 21 resultados son un control histórico de sustitución de características **dentro del productor original**, no un sustituto de la prueba entre proveedores.
+
+Mantener el orden obligatorio SofaScore, Flashscore y demás fuentes gratuitas autorizadas; no generar señales verdes ni habilitar apuestas reales por este hallazgo. La evaluación independiente de MATRIX Híbrida, los 42 mercados y los tres bloques de tenis continúa sin reiniciar ni modificar calibraciones.
