@@ -175,3 +175,21 @@ Resultado comprobado por GitHub Actions: **21/21** parejas retrospectivas reutil
 **Permanece bloqueado** el paso de fuente alternativa independiente a `P_MATRIX` oficial: no hay pares de encuentros auténticos API-Football versus football-data.org con mismo evento y tiempo, huellas SHA originales y características de ambas fuentes antes del partido; tampoco existe certificación prospectiva de las seis ligas. Los 21 resultados son un control histórico de sustitución de características **dentro del productor original**, no un sustituto de la prueba entre proveedores.
 
 Mantener el orden obligatorio SofaScore, Flashscore y demás fuentes gratuitas autorizadas; no generar señales verdes ni habilitar apuestas reales por este hallazgo. La evaluación independiente de MATRIX Híbrida, los 42 mercados y los tres bloques de tenis continúa sin reiniciar ni modificar calibraciones.
+
+## 8. Reparación física de Híbrida Élite — 21-nov-2026
+
+**Fallo identificado mediante GitHub Actions**: la evaluación de cuatro motores fallaba por exigir exactamente dos capturas originales por partido cuando el archivo ya contenía **seis** por encuentro. El primer ciclo observado reportó **5 pruebas fallidas y 15 aprobadas**. No existía justificación para eliminar capturas originales auténticas ni para incrementar por duplicado las observaciones.
+
+**Corrección implementada**: `tools/matrix_hybrid_original_dual_freeze_lineage.py` mantiene la primera congelación válida como única fuente primaria para resultados. Valida que la congelación seleccionada en el laboratorio corresponda al mismo partido, a la misma fuente histórica y a la misma probabilidad, incluso si se registraron capturas posteriores; todas esas capturas quedan auditadas sin aumentar el número de partidos. Se corrigieron pruebas y se conectó el disparo automático de cuatro motores a cambios del guardián de linaje.
+
+**Evidencia física comprobada**:
+- 37 partidos únicos con **6 capturas originales por encuentro**;
+- 37 identidades y linajes admitidos, 0 rechazados;
+- 148 archivos adicionales (más allá de los dos por par) excluidos del conteo de observaciones;
+- 26 capturas posteriores con hash de historial distinto y **0** con probabilidad distinta;
+- **22 de 22 pruebas aprobadas** en la evaluación de cuatro motores, ejecución GitHub Actions `44889442238`;
+- ejecución optimizada de cuatro motores `44889578539`: **SUCCESS**;
+- informe independiente de cuatro motores `evidence/matrix_hybrid_elite/MATRIX_HYBRID_FOUR_MODEL_OOS_LAST.json` generado y guardado, con **37 pendientes, 0 resultados certificados, 0 V2 faltantes y 0 rechazos**;
+- evaluación de tres motores y recálculo del expediente de procedencia también completados correctamente.
+
+**Distinción indispensable**: el resultado demuestra reparación de la evaluación y gobierno de procedencia; no superioridad predictiva, no `P_MATRIX` oficial, no señal Telegram ni permiso para apuestas reales. El programa debe liquidar únicamente cuando los resultados finales provengan de fuente auténtica verificada y cada evento termine. Conservar `REAL_MONEY=BLOCKED`, `automatic_wagering=false` y el orden de búsqueda SofaScore → Flashscore → APIs gratuitas autorizadas.
