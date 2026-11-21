@@ -178,13 +178,26 @@ def main() -> None:
     target_day = datetime.fromisoformat(str(intake["target_date_bogota"])).date()
     season_start = target_day.year if target_day.month >= 7 else target_day.year - 1
     season, raw = fetch(season_start=season_start)
+    sha = hashlib.sha256(raw).hexdigest()
     out = match(intake, season, captured_at=datetime.now(timezone.utc),
-                raw_sha256=hashlib.sha256(raw).hexdigest())
+                raw_sha256=sha)
     # Evidence in a sibling research report; never persist to model manifests
     # or Telegram production archives.
     if args.out.name != "MATRIX_OPENLIGADB_SECONDARY_CROSSCHECK.json":
         raise SystemExit("SECONDARY_OUTPUT_MUST_BE_RESEARCH_ONLY")
     args.out.parent.mkdir(parents=True, exist_ok=True)
+    # Preserve source bytes independently of our parsed assertions so another
+    # auditor can reproduce the match rather than trusting an asserted digest.
+    raw_dir = args.out.parent / "sources"
+    raw_dir.mkdir(parents=True, exist_ok=True)
+    raw_file = raw_dir / ("openligadb_bl1_" + sha + ".json")
+    if raw_file.exists():
+        if raw_file.read_bytes() != raw:
+            raise ValueError("SECONDARY_IMMUTABLE_SOURCE_HASH_CONFLICT")
+    else:
+        with raw_file.open("xb") as handle:
+            handle.write(raw)
+    out["independent_raw_source_path"] = str(raw_file)
     args.out.write_text(json.dumps(out, ensure_ascii=False, indent=2,
                                   sort_keys=True) + "\n", encoding="utf-8")
     print(json.dumps({k: out[k] for k in (
