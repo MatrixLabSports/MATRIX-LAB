@@ -15,7 +15,7 @@ permissions:
 
 concurrency:
   group: matrix-over25-original-six-league-ablation
-  cancel-in-progress: false
+  cancel-in-progress: true
 
 jobs:
   archived-original-six-league-ablation:
@@ -30,7 +30,13 @@ jobs:
         uses: actions/checkout@v4
         with:
           ref: repair/cor09-world-pipeline
-          fetch-depth: 0
+          fetch-depth: 1
+          filter: blob:none
+          sparse-checkout: |
+            tools
+            app
+            tests
+            evidence/api_football/prospective_daily/2026-10-24/20261024T093953Z
       - uses: actions/setup-python@v5
         with:
           python-version: "3.11"
