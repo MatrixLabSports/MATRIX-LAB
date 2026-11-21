@@ -21,8 +21,9 @@ def sample_root(tmp_path):
     p.parent.mkdir(parents=True, exist_ok=True)
     p.write_text(json.dumps(scoped, sort_keys=True) + "\n", encoding="utf-8")
     pairpath = Path(first_pair["original_freeze_path"])
-    sources = list((ROOT / pairpath.parent).glob(fid + "_*.json"))
-    assert len(sources) == 2
+    sources = [p for p in (ROOT / pairpath.parent).glob(fid + "_*.json")
+               if "_result_" not in p.name]
+    assert len(sources) >= 2
     for src in sources:
         dest = tmp_path / src.relative_to(ROOT)
         dest.parent.mkdir(parents=True, exist_ok=True)
@@ -30,12 +31,15 @@ def sample_root(tmp_path):
     return first_pair, sources
 
 
-def test_all_37_real_original_pairs_have_two_individually_verified_freezes():
+def test_all_37_real_original_pairs_keep_first_and_selected_amid_extra_freezes():
     result = lineage.run(ROOT)
     assert result["physical_fixture_count"] == 37
     assert result["lineage_matched_fixture_count"] == 37, result["rejected"]
     assert result["lineage_rejected_fixture_count"] == 0
     assert result["two_snapshot_fixture_count"] == 37
+    assert result["exactly_two_snapshot_fixture_count"] + result[
+        "more_than_two_snapshot_fixture_count"] == 37
+    assert result["additional_snapshot_files_excluded_from_observations"] >= 0
     assert len({r["fixture_id"] for r in result["matched"]}) == 37
     assert all(r["same_authenticated_source_history"] for r in result["matched"])
     assert all(r["same_formula_probability"] for r in result["matched"])
@@ -87,3 +91,33 @@ def test_promoted_snapshot_is_always_rejected(tmp_path):
     r = lineage.run(tmp_path)
     assert r["lineage_matched_fixture_count"] == 0
     assert "UNTRUSTED_FORECAST_GOVERNANCE" in r["rejected"][0]["reason"]
+
+
+def test_additional_late_snapshot_with_changed_history_is_reported_not_counted(tmp_path):
+    first, files = sample_root(tmp_path)
+    original = max(files, key=lambda p: json.loads(p.read_bytes())["sealed_at_utc"])
+    obj = json.loads(original.read_bytes())
+    obj["sealed_at_utc"] = "2026-11-20T08:00:00+00:00"
+    obj["source_snapshot_sha256"] = "1"*64
+    p = tmp_path / Path(first["original_freeze_path"]).parent / (
+        first["physical_event_id"] + "_later_changed_history.json")
+    p.write_text(json.dumps(obj, sort_keys=True) + "\n", encoding="utf-8")
+    report = lineage.run(tmp_path)
+    assert report["lineage_matched_fixture_count"] == 1, report["rejected"]
+    assert report["physical_fixture_count"] == 1
+    assert report["two_snapshot_fixture_count"] == 1
+    assert report["additional_snapshot_files_excluded_from_observations"] == len(files)-1
+    assert report["later_snapshots_with_changed_history_sha256"] >= 1
+    assert report["matched"][0]["one_physical_fixture_count"] == 1
+
+
+def test_changed_primary_history_still_fails_closed_when_secondary_captures_exist(tmp_path):
+    _, files = sample_root(tmp_path)
+    earliest = min(files, key=lambda p: json.loads(p.read_bytes())["sealed_at_utc"])
+    target = tmp_path / earliest.relative_to(ROOT)
+    obj = json.loads(target.read_bytes())
+    obj["source_snapshot_sha256"] = "f"*64
+    target.write_text(json.dumps(obj), encoding="utf-8")
+    r = lineage.run(tmp_path)
+    assert r["lineage_matched_fixture_count"] == 0
+    assert "FIRST_AND_RESEARCH_HISTORY_SHA_MISMATCH" in r["rejected"][0]["reason"]
