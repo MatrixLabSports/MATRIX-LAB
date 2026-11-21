@@ -16,6 +16,7 @@ on:
 
 permissions:
   contents: write
+  actions: write
 
 concurrency:
   group: matrix-independent-free-poisson-oos
@@ -52,6 +53,20 @@ jobs:
             tests/test_matrix_independent_free_poisson_v1.py \
             tests/test_matrix_independent_free_poisson_oos.py
 
+      - name: Record previous independently verified OOS count
+        id: previous_oos
+        shell: bash
+        run: |
+          python - <<'PY'
+          import json, os
+          from pathlib import Path
+          p=Path('evidence/football_world_inventory/MATRIX_FREE_POISSON_OOS_SCORECARD_LAST.json')
+          prev=json.loads(p.read_bytes())['independently_verified_settled_pairs'] if p.is_file() else 0
+          assert type(prev) is int and prev>=0
+          with open(os.environ['GITHUB_OUTPUT'],'a',encoding='utf-8') as f:
+              print(f'count={prev}',file=f)
+          print('PREVIOUS_VERIFIED_POISSON_OOS',prev)
+          PY
       - name: Score only previously frozen independent probabilities with actual final scores
         shell: bash
         run: |
@@ -90,3 +105,32 @@ jobs:
             sleep "$attempt"
           done
           exit 1
+
+      - name: Wake three-model OOS only for newly verified paired results
+        if: success()
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PREVIOUS_VERIFIED_COUNT: ${{ steps.previous_oos.outputs.count }}
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json, os
+          from pathlib import Path
+          j=json.loads(Path('evidence/football_world_inventory/MATRIX_FREE_POISSON_OOS_SCORECARD_LAST.json').read_bytes())
+          assert j['real_money']=='BLOCKED' and j['telegram_signal_authorized'] is False
+          assert j['production_p_matrix_authorized'] is False and j['automatic_wagering'] is False
+          before=int(os.environ['PREVIOUS_VERIFIED_COUNT'])
+          after=j['independently_verified_settled_pairs']
+          assert type(after) is int and after>=before
+          Path('/tmp/matrix_new_verified_poisson_oos.txt').write_text(str(after-before))
+          print('NEW_VERIFIED_POISSON_OOS_PAIRS',after-before)
+          PY
+          new_count="$(cat /tmp/matrix_new_verified_poisson_oos.txt)"
+          if [ "$new_count" -gt 0 ]; then
+            gh workflow run matrix-hybrid-three-model-prospective-oos.yml \
+              --repo "$GITHUB_REPOSITORY" --ref repair/cor09-world-pipeline
+            echo "THREE_MODEL_OOS_DISPATCHED_FROM_NEW_VERIFIED_PAIRS"
+          else
+            echo "NO_NEW_VERIFIED_PAIRS_NO_THREE_MODEL_FANOUT"
+          fi
