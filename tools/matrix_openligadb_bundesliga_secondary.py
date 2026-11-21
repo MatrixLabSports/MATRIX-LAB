@@ -19,7 +19,7 @@ from urllib.request import Request, urlopen
 from zoneinfo import ZoneInfo
 
 BOGOTA = ZoneInfo("America/Bogota")
-SOURCE_URL = "https://api.openligadb.de/getmatchdata/bl1/2026"
+SOURCE_BASE = "https://api.openligadb.de/getmatchdata/bl1"
 MAX_SOURCE_BYTES = 4_000_000
 SCHEMA = "MATRIX_BUNDESLIGA_OPENLIGADB_INDEPENDENT_SECONDARY_V1"
 
@@ -52,6 +52,8 @@ def match(intake: dict, season: list, *, captured_at: datetime,
         raise ValueError("SECONDARY_RAW_SOURCE_SHA_MISSING")
     if not isinstance(season, list):
         raise ValueError("SECONDARY_LEAGUE_RESPONSE_MUST_BE_LIST")
+    date_value = datetime.fromisoformat(str(day)).date()
+    season_start = date_value.year if date_value.month >= 7 else date_value.year - 1
     candidates = [r for r in intake.get("fixtures", []) if
                   isinstance(r, dict) and r.get("source_competition_id") == 2002]
     if len({str(r.get("source_fixture_id")) for r in candidates}) != len(candidates):
@@ -60,7 +62,7 @@ def match(intake: dict, season: list, *, captured_at: datetime,
     for row in season:
         if not isinstance(row, dict):
             continue
-        if row.get("leagueShortcut") != "bl1" or row.get("leagueSeason") != 2026:
+        if row.get("leagueShortcut") != "bl1" or row.get("leagueSeason") != season_start:
             continue
         if not isinstance(row.get("matchID"), int) or row.get("matchID") <= 0:
             continue
@@ -120,8 +122,8 @@ def match(intake: dict, season: list, *, captured_at: datetime,
                   if matched else "NO_EXACT_SECONDARY_MATCHES_FAIL_CLOSED",
         "captured_at_utc": now.isoformat(),
         "target_date_bogota": day,
-        "source": "OPENLIGADB_BUNDESLIGA_BL1_2026",
-        "independent_source_uri": SOURCE_URL,
+        "source": "OPENLIGADB_BUNDESLIGA_BL1_" + str(season_start),
+        "independent_source_uri": SOURCE_BASE + "/" + str(season_start),
         "independent_raw_payload_sha256": raw_sha256,
         "primary_provider": "FOOTBALL_DATA_ORG",
         "source_priority": ["SofaScore", "Flashscore",
@@ -142,8 +144,11 @@ def match(intake: dict, season: list, *, captured_at: datetime,
         "real_money": "BLOCKED",
     }
 
-def fetch(*, opener=urlopen) -> tuple[list, bytes]:
-    req = Request(SOURCE_URL, headers={
+def fetch(*, season_start: int = 2026, opener=urlopen) -> tuple[list, bytes]:
+    if not (2020 <= season_start <= 2100):
+        raise ValueError("SOURCE_SEASON_INVALID")
+    url = SOURCE_BASE + "/" + str(season_start)
+    req = Request(url, headers={
         "Accept": "application/json",
         "User-Agent": "MATRIX-LAB-Research/1.0 (+https://github.com/MatrixLabSports/MATRIX-LAB)",
     })
@@ -170,7 +175,9 @@ def main() -> None:
     arg.add_argument("--out", type=Path, required=True)
     args = arg.parse_args()
     intake = json.loads(args.intake.read_bytes())
-    season, raw = fetch()
+    target_day = datetime.fromisoformat(str(intake["target_date_bogota"])).date()
+    season_start = target_day.year if target_day.month >= 7 else target_day.year - 1
+    season, raw = fetch(season_start=season_start)
     out = match(intake, season, captured_at=datetime.now(timezone.utc),
                 raw_sha256=hashlib.sha256(raw).hexdigest())
     # Evidence in a sibling research report; never persist to model manifests
