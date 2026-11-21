@@ -64,6 +64,14 @@ def evaluate(cycle: Path = DEFAULT_CYCLE) -> dict:
         changed_rows = [x for x in rows if
             x.get("reference_status") == "PAIRED_ARCHIVED_REPLAY_ONLY"
             and not x.get("same_probability_with_group_only")]
+        paired_rows = [x for x in rows if
+            x.get("reference_status") == "PAIRED_ARCHIVED_REPLAY_ONLY"]
+        enriched_rows = [x for x in paired_rows if
+            "CANONICAL_ENRICHED_PIT" in
+            (x.get("enriched_history_source") or {}).values()]
+        group_only_rows = [x for x in paired_rows if
+            set((x.get("enriched_history_source") or {}).values()) ==
+            {"RAW_GROUP_PIT"}]
         six.append({
             "original_league_id": league, "name": NAMES[league],
             "status": "HISTORICAL_SAME_PROVIDER_ABLATION_ONLY" if paired
@@ -73,6 +81,9 @@ def evaluate(cycle: Path = DEFAULT_CYCLE) -> dict:
             "probability_changed_targets": changed,
             "probability_identical_targets": same,
             "blocked_targets": evidence["blocked_targets"],
+            "canonical_enriched_used_pairs": len(enriched_rows),
+            "raw_group_only_pairs": len(group_only_rows),
+            "unknown_history_source_pairs": paired - len(enriched_rows) - len(group_only_rows),
             "maximum_probability_difference": evidence["maximum_probability_difference"],
             "raw_original_group_sha256": digest(raw_group.read_bytes()),
             "reference_canonical_bundle_sha256": evidence["reference_canonical_bundle_sha256"],
@@ -86,6 +97,8 @@ def evaluate(cycle: Path = DEFAULT_CYCLE) -> dict:
     changed_total = sum(x.get("probability_changed_targets") or 0 for x in six)
     missing = [x["original_league_id"] for x in six
                if x["status"] == "MISSING_ORIGINAL_RAW_GROUP"]
+    enriched_total = sum(x.get("canonical_enriched_used_pairs") or 0 for x in six)
+    group_only_total = sum(x.get("raw_group_only_pairs") or 0 for x in six)
     return {
         "schema": "MATRIX_OVER25_SIX_LEAGUE_ORIGINAL_HISTORICAL_ABLATION_V1",
         "source_cycle": cycle.as_posix(),
@@ -95,8 +108,11 @@ def evaluate(cycle: Path = DEFAULT_CYCLE) -> dict:
         "source_group_missing_league_ids": missing,
         "historical_paired_rows": paired_total,
         "historical_probability_changed_rows": changed_total,
+        "historical_canonical_enriched_used_pairs": enriched_total,
+        "historical_raw_group_only_pairs": group_only_total,
         "historical_substitution_equivalent_for_all_replayed": (
-            all(x["paired_targets"] > 0 for x in six)
+            all(x["paired_targets"] > 0 and
+                x.get("canonical_enriched_used_pairs", 0) > 0 for x in six)
             and changed_total == 0 and not missing
         ),
         "historical_same_provider_only": True,
