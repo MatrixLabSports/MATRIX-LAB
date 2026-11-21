@@ -19,6 +19,8 @@ on:
       - tests/test_matrix_independent_pit_browser_preflight.py
       - tools/matrix_football_free_secondary_crosscheck.py
       - tests/test_matrix_football_free_secondary_crosscheck.py
+      - tools/matrix_openligadb_bundesliga_secondary.py
+      - tests/test_matrix_openligadb_bundesliga_secondary.py
       - tests/test_matrix_football_independent_fixture_pipeline.py
       - tests/test_matrix_football_free_secondary_crosscheck.py
       - tools/matrix_football_independent_over25_shadow.py
@@ -144,6 +146,29 @@ jobs:
           assert row["real_money"]=="BLOCKED"
           print("FREE_SECONDARY_SOURCE_VERIFIED_ONLY", row["verified_identity_hint_count"])
           PY
+
+      - name: Independently cross-check Bundesliga with free OpenLigaDB after preferred sources
+        shell: bash
+        run: |
+          set -euo pipefail
+          D="${{ steps.date.outputs.target_date }}"
+          P="evidence/football_world_inventory/$D/MATRIX_FOOTBALL_INDEPENDENT_FIXTURE_INTAKE.json"
+          OUT="evidence/football_world_inventory/$D/MATRIX_OPENLIGADB_SECONDARY_CROSSCHECK.json"
+          if [ ! -f "$P" ]; then
+            echo "OPENLIGADB_NO_PRIMARY_FIXTURE_INTAKE"
+          elif PYTHONPATH=. python -m tools.matrix_openligadb_bundesliga_secondary --intake "$P" --out "$OUT"; then
+            python - "$OUT" <<'PY'
+          import json,sys
+          from pathlib import Path
+          x=json.loads(Path(sys.argv[1]).read_bytes())
+          assert x["production_p_matrix_authorized"] is False
+          assert x["telegram_signal_authorized"] is False
+          assert x["real_money"] == "BLOCKED"
+          print("NEW_FREE_SECONDARY_SOURCE_EXACT_MATCHES_RESEARCH_ONLY",x["exact_prematch_matches"])
+          PY
+          else
+            echo "OPENLIGADB_UNAVAILABLE_RESEARCH_SOURCE_FAIL_CLOSED_NO_PRODUCTION"
+          fi
 
       - name: Run original frozen Over 2.5 formula on independent historical scores in quarantine
         env:
@@ -310,6 +335,8 @@ jobs:
           if [ -f "$F" ]; then git add "$F"; fi
           SECONDARY="evidence/football_world_inventory/$D/MATRIX_THESPORTSDB_CROSSCHECK.json"
           if [ -f "$SECONDARY" ]; then git add "$SECONDARY"; fi
+          OPENLIGADB="evidence/football_world_inventory/$D/MATRIX_OPENLIGADB_SECONDARY_CROSSCHECK.json"
+          if [ -f "$OPENLIGADB" ]; then git add "$OPENLIGADB"; fi
           PIT_PREFLIGHT="evidence/football_world_inventory/$D/MATRIX_CHAMPIONSHIP_PIT_PREFLIGHT_RUN_${{ github.run_id }}.json"
           if [ -f "$PIT_PREFLIGHT" ]; then git add "$PIT_PREFLIGHT"; fi
           H="evidence/football_world_inventory/$D/MATRIX_INDEPENDENT_OVER25_HISTORICAL_PARITY.json"
