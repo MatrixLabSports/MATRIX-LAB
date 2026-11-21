@@ -71,7 +71,7 @@ jobs:
           P=evidence/football_world_inventory/MATRIX_OVER25_SIX_LEAGUE_CANONICAL_VS_RAW_HISTORICAL_LAST.json
           git config user.name matrix-over25-historical-ablation
           git config user.email matrix-over25-historical-ablation@users.noreply.github.com
-          git add -- "$P"
+          git add --sparse -- "$P"
           if git diff --cached --quiet; then
             echo "ARCHIVED_ABLATION_UNCHANGED"
             exit 0
