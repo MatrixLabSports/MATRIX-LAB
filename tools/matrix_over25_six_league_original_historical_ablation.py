@@ -96,7 +96,8 @@ def evaluate(cycle: Path = DEFAULT_CYCLE) -> dict:
         "historical_paired_rows": paired_total,
         "historical_probability_changed_rows": changed_total,
         "historical_substitution_equivalent_for_all_replayed": (
-            paired_total > 0 and changed_total == 0 and not missing
+            all(x["paired_targets"] > 0 for x in six)
+            and changed_total == 0 and not missing
         ),
         "historical_same_provider_only": True,
         "no_cross_provider_fixture_parity_certified": True,
