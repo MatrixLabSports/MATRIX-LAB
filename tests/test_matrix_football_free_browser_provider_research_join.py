@@ -145,6 +145,7 @@ def test_main_fails_closed_if_raw_browser_receipt_missing(tmp_path, monkeypatch)
     folder.mkdir(parents=True)
     provider_folder.mkdir(parents=True)
     b = browser()
+    b["telegram_signal_authorized"] = False
     b["research_candidate_count"] = 1
     b["source_sha256"] = {"sofascore": "a"*64, "flashscore": "b"*64}
     (folder / "MATRIX_TWO_SOURCE_LINK_RESEARCH_LAST.json").write_text(json.dumps(b))
@@ -156,3 +157,16 @@ def test_main_fails_closed_if_raw_browser_receipt_missing(tmp_path, monkeypatch)
     with pytest.raises(FileNotFoundError):
         main()
     assert not (folder / "MATRIX_FOOTBALL_FREE_BROWSER_PROVIDER_RESEARCH_JOIN_LAST.json").exists()
+
+
+def test_missing_explicit_telegram_block_in_browser_receipt_is_rejected_first(tmp_path):
+    """A missing governance field must never be treated as False."""
+    from tools.matrix_football_free_third_source_research import source_research
+    folder=tmp_path/"evidence"/"football_calendar_physical"/"2026-11-18"
+    folder.mkdir(parents=True)
+    b=browser()
+    b["research_candidate_count"]=1
+    b["source_sha256"]={"sofascore":"a"*64,"flashscore":"b"*64}
+    (folder/"MATRIX_TWO_SOURCE_LINK_RESEARCH_LAST.json").write_text(json.dumps(b))
+    with pytest.raises(ValueError,match="TWO_BROWSER_SOURCE_NOT_AUTHORIZED_FOR_RESEARCH"):
+        source_research(folder,"2026-11-18")
