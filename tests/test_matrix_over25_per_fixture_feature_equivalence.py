@@ -58,6 +58,7 @@ def test_sha_bound_identity_and_early_original_feature_comparison_is_research_on
     original_path,osh=make(tmp_path,"proof/original.json",{
         "schema":"MATRIX_ORIGINAL_OVER25_FROZEN_FEATURE_TRACE_V1",
         "provider":"api_football", "fixture_id":"1557418",
+        "kickoff_utc":"2026-11-05T18:00:00Z",
         "captured_at_utc":"2026-11-05T08:00:00Z",
         "features":{"expected_home_goals":1.4,
                     "poisson_over_2_5":0.61}})
@@ -87,6 +88,7 @@ def test_crosswalk_can_never_be_backdated_to_fake_pre_match_capture(tmp_path):
     original_path,osh=make(tmp_path,"original.json",{
         "schema":"MATRIX_ORIGINAL_OVER25_FROZEN_FEATURE_TRACE_V1",
         "provider":"api_football","fixture_id":"1557418",
+        "kickoff_utc":"2026-11-05T18:00:00Z",
         "captured_at_utc":"2026-11-05T18:10:00Z","features":{}})
     crosspath,csh=make(tmp_path,"cross.json",{
         "schema":"MATRIX_INDEPENDENT_FIXTURE_CROSSWALK_V1",
@@ -148,3 +150,54 @@ def test_reconstruct_old_windows_original_sha_without_silently_approving_wrong_b
     with pytest.raises(ValueError,match="ORIGINAL_SOURCE_SHA_NOT_RECONSTRUCTIBLE"):
         legacy_sha_reconstruction(tmp_path,"registry.json","f"*64)
 
+
+
+def _pair_fixture_receipts(tmp_path, *, original_kickoff="2026-11-05T18:00:00Z",
+                           duplicate_original=False, conflicting=False):
+    original, origin_sha = make(tmp_path, "proof/original.json", {
+        "schema": "MATRIX_ORIGINAL_OVER25_FROZEN_FEATURE_TRACE_V1",
+        "provider": "api_football", "fixture_id": "1557418",
+        "kickoff_utc": original_kickoff,
+        "captured_at_utc": "2026-11-05T08:00:00Z",
+        "features": {"expected_home_goals": 1.4}
+    })
+    cross_pairs=[{"original_fixture_id":"1557418",
+        "alternative_fixture_id":"555070", "kickoff_utc":"2026-11-05T18:00:00Z"}]
+    if conflicting:
+        cross_pairs.append({"original_fixture_id":"1557418",
+            "alternative_fixture_id":"555071", "kickoff_utc":"2026-11-05T18:00:00Z"})
+    cross, cross_sha=make(tmp_path, "proof/crosswalk.json", {
+        "schema":"MATRIX_INDEPENDENT_FIXTURE_CROSSWALK_V1",
+        "captured_at_utc":"2026-11-05T08:01:00Z",
+        "pairs":cross_pairs
+    })
+    row={"original_fixture_id":"1557418", "alternative_fixture_id":"555070",
+        "original_feature_file":original, "original_feature_sha256":origin_sha,
+        "independent_crosswalk_file":cross, "independent_crosswalk_sha256":cross_sha,
+        "kickoff_utc":"2026-11-05T18:00:00Z"}
+    rows=[row]
+    if duplicate_original:
+        rows.append({**row, "alternative_fixture_id":"555071"})
+    return {"schema":"MATRIX_OVER25_SHA_BOUND_PIT_FEATURE_PAIR_MANIFEST_V1",
+        "production_p_matrix_authorized":False,
+        "telegram_signal_authorized":False, "real_money":"BLOCKED", "pairs":rows}
+
+
+def test_sha_valid_original_from_other_day_cannot_be_bound_to_november_fixture(tmp_path):
+    # The October original archive and November alternative archive are
+    # temporally disjoint: a backfilled alias must not create a fake pair.
+    doc=_pair_fixture_receipts(tmp_path, original_kickoff="2026-10-20T18:00:00Z")
+    with pytest.raises(ValueError, match="ORIGINAL_FEATURE_TRACE_KICKOFF_MISMATCH"):
+        paired_docs(tmp_path, doc)
+
+
+def test_crosswalk_receipt_cannot_assign_one_original_to_two_alternatives(tmp_path):
+    doc=_pair_fixture_receipts(tmp_path, conflicting=True)
+    with pytest.raises(ValueError, match="CROSSWALK_ORIGINAL_ID_HAS_CONFLICTING_ALTERNATIVES"):
+        paired_docs(tmp_path, doc)
+
+
+def test_pair_manifest_cannot_reuse_original_fixture_twice(tmp_path):
+    doc=_pair_fixture_receipts(tmp_path, duplicate_original=True)
+    with pytest.raises(ValueError, match="ONE_ORIGINAL_FIXTURE_CANNOT_PAIR_TWICE"):
+        paired_docs(tmp_path, doc)
