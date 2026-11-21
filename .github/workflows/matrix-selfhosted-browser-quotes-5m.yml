@@ -75,7 +75,7 @@ concurrency:
 jobs:
   collect:
     runs-on: [self-hosted, windows, matrix-browser-odds]
-    timeout-minutes: 12
+    timeout-minutes: 30
     env:
       MATRIX_BROWSER_CDP_ENDPOINT: http://127.0.0.1:9222
       REAL_MONEY: BLOCKED
@@ -176,11 +176,13 @@ jobs:
         run: python -m tools.matrix_browser_governed_intake_sync
 
       - name: Capture authorized bookmaker browser evidence
+        timeout-minutes: 18
         shell: cmd
         run: python -m tools.matrix_selfhosted_browser_quote_collector
 
       - name: Persist governed browser evidence
         if: always()
+        timeout-minutes: 8
         shell: cmd
         run: |
           powershell.exe -NoProfile -NonInteractive -ExecutionPolicy Bypass -File tools\\windows\\persist_matrix_browser_evidence.ps1
