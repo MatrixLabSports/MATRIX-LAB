@@ -336,7 +336,20 @@ jobs:
           SECONDARY="evidence/football_world_inventory/$D/MATRIX_THESPORTSDB_CROSSCHECK.json"
           if [ -f "$SECONDARY" ]; then git add "$SECONDARY"; fi
           OPENLIGADB="evidence/football_world_inventory/$D/MATRIX_OPENLIGADB_SECONDARY_CROSSCHECK.json"
-          if [ -f "$OPENLIGADB" ]; then git add "$OPENLIGADB"; fi
+          if [ -f "$OPENLIGADB" ]; then
+            git add "$OPENLIGADB"
+            RAW_OPENLIGADB="$(python - "$OPENLIGADB" <<'PY'
+          import json,sys
+          from pathlib import Path
+          j=json.loads(Path(sys.argv[1]).read_bytes())
+          p=Path(j["independent_raw_source_path"])
+          assert p.is_file() and p.parent.name=="sources"
+          assert p.name.startswith("openligadb_bl1_")
+          print(p.as_posix())
+          PY
+          )"
+            git add "$RAW_OPENLIGADB"
+          fi
           PIT_PREFLIGHT="evidence/football_world_inventory/$D/MATRIX_CHAMPIONSHIP_PIT_PREFLIGHT_RUN_${{ github.run_id }}.json"
           if [ -f "$PIT_PREFLIGHT" ]; then git add "$PIT_PREFLIGHT"; fi
           H="evidence/football_world_inventory/$D/MATRIX_INDEPENDENT_OVER25_HISTORICAL_PARITY.json"
