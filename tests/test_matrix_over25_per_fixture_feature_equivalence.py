@@ -7,7 +7,7 @@ import pytest
 
 from tools.matrix_over25_per_fixture_feature_equivalence import (
     OUT, FEATURES, NUMERIC, diff_fields, read_proof, paired_docs, evaluate,
-    legacy_sha_reconstruction,
+    legacy_sha_reconstruction, original_provenance_for_pair,
 )
 
 
@@ -201,3 +201,18 @@ def test_pair_manifest_cannot_reuse_original_fixture_twice(tmp_path):
     doc=_pair_fixture_receipts(tmp_path, duplicate_original=True)
     with pytest.raises(ValueError, match="ONE_ORIGINAL_FIXTURE_CANNOT_PAIR_TWICE"):
         paired_docs(tmp_path, doc)
+
+
+def test_original_provenance_requires_same_kickoff_and_league():
+    original=[{"original_fixture_id":"1557418","original_league_id":"39",
+               "kickoff_utc":"2026-10-20T18:00:00Z"}]
+    pair={"original_fixture_id":"1557418",
+          "kickoff_utc":__import__("datetime").datetime.fromisoformat("2026-11-05T18:00:00+00:00"),
+          "original":{"competition_id":"39"}}
+    with pytest.raises(ValueError, match="PAIR_ORIGINAL_PROVENANCE_KICKOFF_NOT_EQUAL"):
+        original_provenance_for_pair(original,pair)
+    pair["kickoff_utc"]=__import__("datetime").datetime.fromisoformat("2026-10-20T18:00:00+00:00")
+    assert original_provenance_for_pair(original,pair)["original_fixture_id"]=="1557418"
+    pair["original"]["competition_id"]="61"
+    with pytest.raises(ValueError, match="PAIR_ORIGINAL_LEAGUE_PROVENANCE_MISMATCH"):
+        original_provenance_for_pair(original,pair)
