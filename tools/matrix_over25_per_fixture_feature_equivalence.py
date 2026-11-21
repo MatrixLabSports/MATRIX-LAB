@@ -197,6 +197,7 @@ def original_rows(root: Path, lineage: dict, stages: dict, scope: list[str]) -> 
 def paired_docs(root:Path, manifest:dict | None) -> dict[str,dict]:
     """Optional research comparisons; even an exact SHA does not certify PIT."""
     verified={}
+    seen_original_ids=set()
     if manifest is None:return verified
     if (manifest.get("schema")!="MATRIX_OVER25_SHA_BOUND_PIT_FEATURE_PAIR_MANIFEST_V1"
         or manifest.get("production_p_matrix_authorized") is not False
@@ -218,15 +219,33 @@ def paired_docs(root:Path, manifest:dict | None) -> dict[str,dict]:
             or not isinstance(original.get("features"),dict)):
             raise ValueError("PAIR_ORIGINAL_TRACE_OR_CROSSWALK_INVALID")
         kickoff=stamp(pair["kickoff_utc"])
+        # The original frozen feature trace must refer to the same physical
+        # kickoff as the alternative forecast; a SHA-valid document alone
+        # does not prove cross-provider event identity.
+        if stamp(original.get("kickoff_utc"))!=kickoff:
+            raise ValueError("ORIGINAL_FEATURE_TRACE_KICKOFF_MISMATCH")
         if not (stamp(original["captured_at_utc"])<kickoff
             and stamp(cross["captured_at_utc"])<kickoff):
             raise ValueError("PAIR_NOT_OBSERVED_BEFORE_KICKOFF")
+        original_id=str(pair["original_fixture_id"])
+        if original_id in seen_original_ids:
+            raise ValueError("ONE_ORIGINAL_FIXTURE_CANNOT_PAIR_TWICE")
+        seen_original_ids.add(original_id)
         crossmatches=[x for x in cross.get("pairs",[])
             if str(x.get("original_fixture_id"))==str(pair["original_fixture_id"])
             and str(x.get("alternative_fixture_id"))==fid
             and stamp(x["kickoff_utc"])==kickoff]
         if len(crossmatches)!=1:
             raise ValueError("PAIR_EXACT_IDENTITY_MISSING_OR_AMBIGUOUS")
+        # Even if the requested row is unique, the receipt cannot point one
+        # source-native fixture ID at multiple physical fixtures.
+        receipt_rows=cross.get("pairs",[])
+        if any(str(x.get("original_fixture_id"))==original_id and
+               str(x.get("alternative_fixture_id"))!=fid for x in receipt_rows):
+            raise ValueError("CROSSWALK_ORIGINAL_ID_HAS_CONFLICTING_ALTERNATIVES")
+        if any(str(x.get("alternative_fixture_id"))==fid and
+               str(x.get("original_fixture_id"))!=original_id for x in receipt_rows):
+            raise ValueError("CROSSWALK_ALTERNATIVE_ID_HAS_CONFLICTING_ORIGINALS")
         verified[fid]={"original":original,"original_file":pair["original_feature_file"],
             "original_sha256":pair["original_feature_sha256"],
             "crosswalk_file":pair["independent_crosswalk_file"],
@@ -300,8 +319,19 @@ def evaluate(root:Path, *, manifest:dict | None=None) -> dict:
             original_values=pair["original"]["features"] if pair else None
             if pair and pair["kickoff_utc"]!=stamp(feats["kickoff_utc"]):
                 raise ValueError("PAIR_KICKOFF_NOT_EQUAL_TO_NATIVE_FREEZE")
-            if pair and pair["original_fixture_id"] not in {v["original_fixture_id"] for v in original}:
-                raise ValueError("PAIR_ORIGINAL_ID_NOT_IN_SIX_LEAGUES")
+            if pair:
+                # A matching original ID from October cannot be bound to a
+                # November fixture merely by inventing a November crosswalk:
+                # original provenance must carry the identical kickoff.
+                original_matches=[v for v in original if
+                    v["original_fixture_id"]==pair["original_fixture_id"] and
+                    stamp(v["kickoff_utc"])==pair["kickoff_utc"]]
+                if len(original_matches)!=1:
+                    raise ValueError("PAIR_ORIGINAL_PROVENANCE_KICKOFF_NOT_EQUAL")
+                original_scope_id=str(original_matches[0]["original_league_id"])
+                trace_scope_id=str(pair["original"].get("competition_id"))
+                if trace_scope_id!=original_scope_id:
+                    raise ValueError("PAIR_ORIGINAL_LEAGUE_PROVENANCE_MISMATCH")
             comparisons=diff_fields(feats,original_values)
             counters=Counter(x["status"] for x in comparisons)
             if pair:compared+=1
