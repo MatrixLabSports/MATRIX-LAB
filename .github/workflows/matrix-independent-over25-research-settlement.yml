@@ -16,6 +16,7 @@ on:
 
 permissions:
   contents: write
+  actions: write
 
 concurrency:
   group: matrix-independent-over25-research-settlement
@@ -102,3 +103,31 @@ jobs:
             sleep "$retry"
           done
           exit 1
+
+      - name: Wake independent Poisson OOS only after newly certified provider results
+        if: success()
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          doc=json.loads(Path('evidence/football_world_inventory/MATRIX_INDEPENDENT_OVER25_SETTLEMENT_LAST.json').read_bytes())
+          assert doc['real_money']=='BLOCKED'
+          assert doc['telegram_signal_authorized'] is False
+          assert doc['automatic_wagering'] is False
+          count=doc['newly_settled_count']
+          assert type(count) is int and count>=0
+          Path('/tmp/matrix_newly_settled_verified.txt').write_text(str(count))
+          print('AUTHENTIC_NEWLY_SETTLED',count)
+          PY
+          count="$(cat /tmp/matrix_newly_settled_verified.txt)"
+          if [ "$count" -gt 0 ]; then
+            gh workflow run matrix-independent-free-poisson-oos.yml \
+              --repo "$GITHUB_REPOSITORY" --ref repair/cor09-world-pipeline
+            echo "INDEPENDENT_OOS_DISPATCHED_FROM_VERIFIED_RESULTS"
+          else
+            echo "NO_NEW_SETTLEMENT_NO_FANOUT"
+          fi
