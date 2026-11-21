@@ -14,6 +14,7 @@ on:
 
 permissions:
   contents: write
+  actions: write
 
 concurrency:
   group: matrix-hybrid-three-model-prospective-oos
@@ -52,6 +53,20 @@ jobs:
             tests/test_matrix_hybrid_three_model_research_oos.py \
             tests/test_matrix_independent_free_poisson_oos.py
 
+      - name: Preserve previous fully verified three-model outcome count
+        id: previous_three
+        shell: bash
+        run: |
+          python - <<'PY'
+          import json, os
+          from pathlib import Path
+          p=Path('evidence/matrix_hybrid_elite/MATRIX_HYBRID_THREE_MODEL_OOS_LAST.json')
+          previous=json.loads(p.read_bytes())['three_model_authenticated_settled_count'] if p.is_file() else 0
+          assert type(previous) is int and previous>=0
+          with open(os.environ['GITHUB_OUTPUT'],'a',encoding='utf-8') as f:
+              print(f'count={previous}',file=f)
+          print('PREVIOUS_VERIFIED_THREE_MODEL_OUTCOMES',previous)
+          PY
       - name: Reconcile three model predictions only with SHA-proven settled results
         shell: bash
         run: |
@@ -102,3 +117,35 @@ jobs:
             sleep "$retry"
           done
           exit 1
+
+      - name: Wake four-model OOS only after new three-model settled outcomes
+        if: success()
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PREVIOUS_THREE_COUNT: ${{ steps.previous_three.outputs.count }}
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json, os
+          from pathlib import Path
+          j=json.loads(Path('evidence/matrix_hybrid_elite/MATRIX_HYBRID_THREE_MODEL_OOS_LAST.json').read_bytes())
+          assert j['real_money']=='BLOCKED' and j['telegram_signal_authorized'] is False
+          assert j['original_official_p_matrix_present'] is False
+          assert j['model_winner_authorized'] is False
+          assert j['research_automated_model_promotion'] is False
+          assert not j['three_model_rejected'] and j['underlying_two_model_rejected_count']==0
+          before=int(os.environ['PREVIOUS_THREE_COUNT'])
+          after=j['three_model_authenticated_settled_count']
+          assert type(after) is int and after>=before
+          Path('/tmp/matrix_new_verified_three.txt').write_text(str(after-before))
+          print('NEW_VERIFIED_THREE_MODEL_OUTCOMES',after-before)
+          PY
+          new_count="$(cat /tmp/matrix_new_verified_three.txt)"
+          if [ "$new_count" -gt 0 ]; then
+            gh workflow run matrix-hybrid-four-model-prospective-oos.yml \
+              --repo "$GITHUB_REPOSITORY" --ref repair/cor09-world-pipeline
+            echo "FOUR_MODEL_OOS_DISPATCHED_FROM_VERIFIED_THREE_MODEL_RESULTS"
+          else
+            echo "NO_NEW_THREE_MODEL_OUTCOMES_NO_FOUR_MODEL_FANOUT"
+          fi
