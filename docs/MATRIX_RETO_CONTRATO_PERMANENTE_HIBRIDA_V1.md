@@ -193,3 +193,22 @@ Mantener el orden obligatorio SofaScore, Flashscore y demás fuentes gratuitas a
 - evaluación de tres motores y recálculo del expediente de procedencia también completados correctamente.
 
 **Distinción indispensable**: el resultado demuestra reparación de la evaluación y gobierno de procedencia; no superioridad predictiva, no `P_MATRIX` oficial, no señal Telegram ni permiso para apuestas reales. El programa debe liquidar únicamente cuando los resultados finales provengan de fuente auténtica verificada y cada evento termine. Conservar `REAL_MONEY=BLOCKED`, `automatic_wagering=false` y el orden de búsqueda SofaScore → Flashscore → APIs gratuitas autorizadas.
+
+## 9. Nueva ruta gratuita al productor (21-nov-2026): OpenLigaDB, no solo API-Football
+
+La orden primaria de MATRIX es restablecer probabilidades oficiales útiles y señales verdes con datos verdaderos. Las reparaciones de runner, navegador o Telegram no cuentan como solución si no producen candidatos auténticos con valor esperado positivo. Por eso se abre en paralelo una **ruta de certificación independiente por mercado y liga**, preservando intactas las calibraciones originales y el expediente de equivalencia de sus seis ligas.
+
+**Fuente adicional REAL, inspeccionada y ejecutada en GitHub Actions**:
+- OpenLigaDB `https://api.openligadb.de/getmatchdata/bl1/2026`: gratuita, sin clave, datos ODbL; exigir User-Agent identificable, solicitudes contenidas y cumplimiento de atribución/licencia.
+- Comparación del 22-nov-2026 con `football-data.org`: **306 encuentros nativos disponibles, 2 encuentros prospectivos de Bundesliga presentes en ambos con mismo local/visitante y mismo kickoff UTC, 0 rechazados**; ejecuciones `44920345758` y `44920545875` en estado SUCCESS. Identificadores de encuentro alternativo: `83240` y `83243`. Artefacto `evidence/football_world_inventory/2026-11-22/MATRIX_OPENLIGADB_SECONDARY_CROSSCHECK.json`.
+- El código `tools/matrix_openligadb_bundesliga_secondary.py` guarda una huella SHA de fuente, un registro de identidad y una copia inmutable del JSON original con su nombre de hash para futuras comprobaciones; el workflow de recuperación diaria ya invoca esta nueva fuente **después** de SofaScore, Flashscore y TheSportsDB.
+- `football-data.co.uk` es una alternativa histórica para resultados y estadísticas de las cinco principales ligas europeas. Las cuotas históricas no sustituyen las cotizaciones ejecutables actuales. El conjunto `open-matchday` tiene restricciones de uso comercial: **no se incorpora a una plataforma monetizada sin autorización**.
+- Estado del motor gratuito: **112 ejecuciones del motor Over 2.5 original sobre entradas alternativas autenticadas** y **76 resultados prospectivos independientes verificados**, en ocho competiciones, según el último expediente consultado. Ninguna de las ocho competiciones alcanzó 30 resultados OOS en su cohorte individual. La coincidencia entre datos de calendario de 2 partidos no equivale a equivalencia de características enriquecidas originales, a calibración OOS ni a autorización de señales.
+
+**Rutas paralelas**, sin falsear la etiqueta oficial:
+1. Restaurar la fuente original con egress/IP autorizada, conservar la certificación y las cuotas exactas.
+2. Certificar por separado el productor gratuito basado en el motor original y las características básicas de football-data.org, contrastadas con fuentes libres independientes; exigir evaluación prospectiva/calibración y precios auténticos antes de cualquier admisión oficial.
+3. Construir y evaluar un modelo independiente para las ligas cubiertas por fuentes gratuitas; solo podrá competir por promoción formal si supera modelos de referencia y prueba OOS independiente. No declarar equivalentes las dos rutas ni importar certificados históricos sin prueba nueva.
+4. Continuar MATRIX Híbrida, tenis Hard/Clay/Live y 42 mercados sin afectar esta prioridad, sus congelaciones y sus controles.
+
+`REAL_MONEY=BLOCKED`, `automatic_wagering=false` y ausencia de señales verdes hasta aprobar la cadena entera: identidad, historia causally available, modelo certificado, cuota auténtica >1.50, EV positivo, referencia de mercado gobernada y entrega Telegram.
