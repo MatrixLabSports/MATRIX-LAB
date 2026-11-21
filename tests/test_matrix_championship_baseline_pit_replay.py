@@ -38,6 +38,10 @@ def documents():
         dt=now-timedelta(days=31-n)
         matches.append({"id":1000+n,"status":"FINISHED",
              "utcDate":dt.isoformat(),
+             # Each historical score must have an authentic-shaped provider
+             # lastUpdated timestamp that predates the simulated capture.
+             # The production guard must never be relaxed for this fixture.
+             "lastUpdated":(dt+timedelta(hours=4)).isoformat(),
              "competition":{"id":2016},
              "homeTeam":{"id":1,"name":"Home FC"},
              "awayTeam":{"id":2,"name":"Away FC"},
@@ -121,3 +125,31 @@ def test_started_match_never_accepted_even_if_historical_report_was_valid():
     d=replay(intake,shadow,att,sofa,flash,now=now)
     assert d["verified_research_baseline_count"]==0
     assert d["rows"][0]["status"]=="BLOCKED_NOT_PREMATCH"
+
+
+def test_provider_finished_history_without_lastupdated_is_not_admitted():
+    intake,shadow,att,sofa,flash=documents()
+    raw=shadow["authenticated_raw_group_replay_evidence"]["2016"]
+    decoded=json.loads(base64.b64decode(raw["response_base64"]))
+    for match in decoded["matches"]:
+        match.pop("lastUpdated",None)
+    def opener(req,timeout):
+        return Response(decoded)
+    rejected=score_intake(intake,"mock-token",opener=opener)
+    assert rejected["scored_count"]==0
+    assert rejected["market_signal_authorized"] is False
+    assert rejected["real_money"]=="BLOCKED"
+
+
+def test_provider_future_lastupdated_is_not_admitted():
+    intake,shadow,att,sofa,flash=documents()
+    raw=shadow["authenticated_raw_group_replay_evidence"]["2016"]
+    decoded=json.loads(base64.b64decode(raw["response_base64"]))
+    for match in decoded["matches"]:
+        match["lastUpdated"]=(datetime.now(timezone.utc)+timedelta(days=1)).isoformat()
+    def opener(req,timeout):
+        return Response(decoded)
+    rejected=score_intake(intake,"mock-token",opener=opener)
+    assert rejected["scored_count"]==0
+    assert rejected["market_signal_authorized"] is False
+    assert rejected["real_money"]=="BLOCKED"
