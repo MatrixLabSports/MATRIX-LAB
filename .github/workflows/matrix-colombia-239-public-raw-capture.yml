@@ -37,7 +37,9 @@ jobs:
         shell: bash
         env:
           REQUESTED_DAY: ${{ github.event.inputs.day || '2026-11-22' }}
-        run: PYTHONPATH=. python -m tools.matrix_colombia_239_public_raw_capture --day "$REQUESTED_DAY" --out evidence/research/colombia239
+        run: |
+          ESPN_DAY=$(python -c 'import sys; from datetime import date,timedelta; print((date.fromisoformat(sys.argv[1])-timedelta(days=1)).isoformat())' "$REQUESTED_DAY")
+          PYTHONPATH=. python -m tools.matrix_colombia_239_public_raw_capture --day "$REQUESTED_DAY" --espn-day "$ESPN_DAY" --out evidence/research/colombia239
       - name: Check physical SHA evidence and closed gate
         run: |
           python - <<'PY'
