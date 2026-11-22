@@ -43,13 +43,17 @@ def capture(day: str, *, opener=urlopen, observed_at:datetime|None=None):
                     raise ValueError("ESPN_HTTP_NON_200")
                 raw=res.read(MAX_BYTES+1)
             digest=hashlib.sha256(raw).hexdigest()
-            history=extract(raw,raw_sha256=digest,observed_at_utc=observed,
+            # Do NOT stamp a response with the request's start time: data
+            # availability is evidenced only after response bytes arrived.
+            source_received_at=(observed_at or datetime.now(timezone.utc)).astimezone(timezone.utc).isoformat()
+            history=extract(raw,raw_sha256=digest,observed_at_utc=source_received_at,
                             original_league_id=lid)
             raw_files[lid]=raw
             captured[lid]={
                 "provider_competition_id":slug,
                 "status":"PROVIDER_BYTES_AUTHENTICALLY_CAPTURED_RESEARCH_ONLY",
                 "source_url":endpoint,"raw_sha256":digest,"raw_bytes":len(raw),
+                "source_received_at_utc":source_received_at,
                 "provider_final_history_count":history["verified_source_event_count"],
                 "fully_enriched_history_count":history["fully_enriched_event_count"],
                 "rejected_or_not_final_count":len(history["rejected_or_not_final_events"]),
@@ -70,7 +74,9 @@ def capture(day: str, *, opener=urlopen, observed_at:datetime|None=None):
         "day_queried_provider_calendar":day,
         "query_kind":query_kind,
         "backfilled_monthly_results_are_not_prospective_predictions":True,
-        "observed_at_utc":observed,
+        "observed_at_utc":(observed_at or datetime.now(timezone.utc)).astimezone(timezone.utc).isoformat(),
+        "capture_started_at_utc":observed,
+        "point_in_time_receipts_stamped_after_source_response":True,
         "source_priority":["SOFASCORE","FLASHSCORE","ESPN"],
         "browser_first_crossmatch_completed":False,
         "utc_calendar_day_is_not_complete_bogota_day":True,
