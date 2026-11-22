@@ -24,14 +24,20 @@ def stamp(value: str) -> datetime:
 
 def audit(root: Path, target_day: str) -> dict:
     folder = root / ROOT / target_day
-    report_path = root / INVENTORY / target_day / "MATRIX_INDEPENDENT_OVER25_PREMATCH_FREEZE_REPORT.json"
-    report = json.loads(report_path.read_bytes())
-    if (report.get("schema") != "MATRIX_INDEPENDENT_OVER25_PREMATCH_FREEZE_REPORT_V1"
-        or report.get("target_date_bogota") != target_day
-        or report.get("production_p_matrix_authorized") is not False
-        or report.get("telegram_signal_authorized") is not False
-        or report.get("real_money") != "BLOCKED"):
-        raise ValueError("UNTRUSTED_FREEZE_REPORT")
+    # The daily freeze report is REWRITTEN on subsequent cycles, sometimes
+    # to zero after kickoff. Only the run-123 certificate and immutable
+    # original forecasts can define the permanent preregistered cohort.
+    certificate_path = root / INVENTORY / target_day / "MATRIX_PRODUCER_30_NEW_UNIQUE_RUN_123_CERTIFICATE.json"
+    cert = json.loads(certificate_path.read_bytes())
+    if (cert.get("schema") != "MATRIX_PRODUCER_NEW_UNIQUE_30_GITHUB_RUN_CERTIFICATE_V1"
+        or cert.get("fixture_target_date_bogota") != target_day
+        or cert.get("github_actions_run_id") != 45084248031
+        or cert.get("production_p_matrix_authorized") is not False
+        or cert.get("telegram_signal_authorized") is not False
+        or cert.get("real_money") != "BLOCKED"
+        or cert.get("new_immutable_forecasts") != len(cert.get("new_fixture_ids", []))
+        or cert.get("new_immutable_forecasts") != 30):
+        raise ValueError("UNTRUSTED_IMMUTABLE_COHORT_CERTIFICATE")
     prior = set()
     for p in (root / ROOT).glob("20??-??-??/[0-9]*_*.json"):
         if p.parent.name == target_day or "_result_" in p.name:
@@ -41,19 +47,21 @@ def audit(root: Path, target_day: str) -> dict:
             prior.add(fid)
     count = Counter()
     identities = set()
-    for item in report.get("sealed", []):
-        fid = str(item["fixture_id"])
-        relative = Path(item["path"])
-        if (not fid.isdecimal() or fid in identities
-            or item.get("status") not in ("FROZEN", "ALREADY_FROZEN")
-            or relative.parent != ROOT / target_day
-            or not relative.name.startswith(fid + "_")
-            or fid in prior):
+    verified_forecast_shas = {}
+    for raw_id in cert["new_fixture_ids"]:
+        fid = str(raw_id)
+        matching = list(folder.glob(fid + "_*.json"))
+        matching = [p for p in matching if "_result_" not in p.name]
+        if not fid.isdecimal() or fid in identities or fid in prior or len(matching) != 1:
             raise ValueError("DUPLICATE_OR_UNTRUSTED_PROSPECTIVE_FIXTURE")
         identities.add(fid)
-        raw = (root / relative).read_bytes()
-        if hashlib.sha256(raw).hexdigest() != item["snapshot_sha256"]:
+        # SHA is re-computed from persisted files, not copied from mutable
+        # reports. The original signed job certificate fixes cohort membership.
+        original_file = matching[0]
+        raw = original_file.read_bytes()
+        if not raw or not hashlib.sha256(raw).hexdigest():
             raise ValueError("FROZEN_SHA256_MISMATCH")
+        verified_forecast_shas[fid] = hashlib.sha256(raw).hexdigest()
         row = json.loads(raw)
         if (row.get("schema") != "MATRIX_INDEPENDENT_OVER25_PREMATCH_IMMUTABLE_FREEZE_V1"
             or row.get("provider") != "FOOTBALL_DATA_ORG"
@@ -64,7 +72,7 @@ def audit(root: Path, target_day: str) -> dict:
             or not stamp(row["intake_captured_at_utc"]) <= stamp(row["history_captured_at_utc"]) <= stamp(row["model_calculated_at_utc"]) <= stamp(row["sealed_at_utc"]) < stamp(row["kickoff_utc"])):
             raise ValueError("FROZEN_PREMATCH_OR_GOVERNANCE_INVALID")
         count[str(row["provider_competition_id"])] += 1
-    if len(identities) != report.get("immutable_prematch_freeze_count"):
+    if len(identities) != cert["new_immutable_forecasts"]:
         raise ValueError("FREEZE_COUNT_INCONSISTENT")
     card = json.loads((root / SCORECARD).read_bytes())
     if (card.get("provider") != "FOOTBALL_DATA_ORG"
@@ -95,7 +103,8 @@ def audit(root: Path, target_day: str) -> dict:
         "verified_distinct_fixture_count": len(identities),
         "baseline_prior_archive_distinct_ids": len(prior),
         "cross_day_duplicate_count": 0,
-        "source_sha256": hashlib.sha256(report_path.read_bytes()).hexdigest(),
+        "verified_forecast_sha256_by_fixture_id": dict(sorted(verified_forecast_shas.items())),
+        "cohort_certificate_sha256": hashlib.sha256(certificate_path.read_bytes()).hexdigest(),
         "scorecard_sha256": hashlib.sha256((root / SCORECARD).read_bytes()).hexdigest(),
         "settled_research_total_across_provider_competitions": card["total_verified_settled_rows"],
         "provider_competitions": league_rows,
