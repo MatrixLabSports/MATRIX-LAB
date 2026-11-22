@@ -32,6 +32,8 @@ def cycle(root:Path,*,now:datetime)->dict:
             report_path.write_bytes(canonical(report))
             checks.append({"date":date,"status":report["status"],
                 "sealed_count":report["immutable_prematch_freeze_count"],
+                "newly_sealed_count":report["new_immutable_prematch_freeze_count"],
+                "already_frozen_count":report["previously_frozen_count"],
                 "blocked":report["blocked"][:30],"report_path":str(report_path.relative_to(root)).replace("\\","/")})
         except (OSError,ValueError,TypeError,KeyError,UnicodeError,json.JSONDecodeError) as exc:
             checks.append({"date":date,"status":"BLOCKED_INVALID_AUTHENTIC_SOURCES",
@@ -40,6 +42,8 @@ def cycle(root:Path,*,now:datetime)->dict:
     return {"schema":"MATRIX_INDEPENDENT_OVER25_RESEARCH_CYCLE_V1",
       "checked_at_utc":now.astimezone(timezone.utc).isoformat(),
       "checks":checks,"total_immutable_research_freezes_seen":sum(x["sealed_count"] for x in checks),
+      "total_new_prospective_forecasts_this_cycle":sum(x.get("newly_sealed_count",0) for x in checks),
+      "total_previously_frozen_forecasts_this_cycle":sum(x.get("already_frozen_count",0) for x in checks),
       "model_promoted":False,"telegram_signal_authorized":False,
       "automatic_wagering":False,"real_money":"BLOCKED"}
 
@@ -50,6 +54,7 @@ def main():
     out.write_bytes(canonical(result))
     print(json.dumps({"status":[x["status"] for x in result["checks"]],
       "research_freeze_count":result["total_immutable_research_freezes_seen"],
+      "new_prospective_forecasts":result["total_new_prospective_forecasts_this_cycle"],
       "telegram_signal_authorized":False},sort_keys=True))
 
 if __name__=="__main__":main()
