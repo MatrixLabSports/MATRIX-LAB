@@ -9,7 +9,7 @@ ESPN={"events":[{"id":"100","date":"2026-11-23T01:15:00Z","status":{"type":{"nam
                                                 {"homeAway":"away","team":{"displayName":"Visitante"}}]}]}]}
 TSDB={"events":[{"idEvent":"200","idLeague":"4497","strSport":"Soccer",
                  "dateEvent":"2026-11-22","strTimestamp":"2026-11-23T01:15:00+00:00",
-                 "strHomeTeam":"Local","strAwayTeam":"Visitante","strStatus":"NS"}]}
+                 "strHomeTeam":"Local","strAwayTeam":"Visitante","strStatus":"NS","idAPIfootball":"1650176"}]}
 
 class Reply:
     status=200
@@ -58,3 +58,15 @@ def test_missing_tsdb_time_is_not_invented():
         return Reply(ESPN if "espn.com" in req.full_url else doc)
     r,_=capture("2026-11-22",opener=opener2)
     assert r["sources"]["THESPORTSDB"]["provider_native_events"][0]["kickoff_utc"] is None
+
+def test_unzoned_provider_api_football_id_is_hint_only():
+    doc=json.loads(json.dumps(TSDB))
+    doc["events"][0]["strTimestamp"]="2026-11-22T01:15:00"
+    def opener3(req,timeout=20):
+        return Reply(ESPN if "espn.com" in req.full_url else doc)
+    report,_=capture("2026-11-22",opener=opener3)
+    row=report["sources"]["THESPORTSDB"]["provider_native_events"][0]
+    assert row["api_football_fixture_id_unverified_hint"]=="1650176"
+    assert row["timestamp_quality"]=="UNZONED_PROVIDER_TIMESTAMP_NOT_CERTIFIED"
+    assert row["kickoff_utc"] is None
+    assert row["cross_provider_identity_certified"] is False
