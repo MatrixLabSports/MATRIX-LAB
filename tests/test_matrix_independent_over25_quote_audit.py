@@ -29,7 +29,7 @@ class Fake:
         self.calls.append(url)
         if url.endswith("/usage"):return Response(self.usage)
         if url.endswith("/events"):
-            return Response({"items":[{"event_id":"match-1","home_team":"US Sassuolo Calcio","away_team":"ACF Fiorentina"}]})
+            return Response({"items":[{"event_id":"match-1","home_team":"US Sassuolo Calcio","away_team":"ACF Fiorentina","start_time":"2026-11-02T17:30:00Z"}]})
         if url.endswith("/odds/snapshot"):
             age=121 if self.stale else 30
             ts=int((NOW-timedelta(seconds=age)).timestamp()*1000)
@@ -81,7 +81,7 @@ def test_reference_only_never_counts_as_colombia_quote():
 
 def test_rejects_ambiguous_team_pairs():
     f=intake()["fixtures"][0]
-    e={"event_id":"1","home_team":"US Sassuolo Calcio","away_team":"ACF Fiorentina"}
+    e={"event_id":"1","home_team":"US Sassuolo Calcio","away_team":"ACF Fiorentina","start_time":"2026-11-02T17:30:00Z"}
     event,status=match_event(f,[e,dict(e,event_id="2")])
     assert event is None
     assert status=="AMBIGUOUS_PROVIDER_EVENT_IDENTITY"
@@ -225,3 +225,47 @@ def test_global_guard_authorized_allows_same_local_usage_gate_not_direct_quotes(
     assert r["network_calls"]==1
     assert r["quota_status"]=="BLOCKED_EXHAUSTED"
     assert session.calls==["https://api.odds-api.net/v1/usage"]
+
+
+def test_event_with_same_teams_but_wrong_kickoff_is_rejected_before_odds_request():
+    f=intake()["fixtures"][0]
+    event={"event_id":"wrong-day","home_team":f["home"],"away_team":f["away"],
+           "start_time":"2026-11-03T17:30:00Z"}
+    match,status=match_event(f,[event])
+    assert match is None
+    assert status=="NO_MATCHING_ODDS_EVENT_KICKOFF"
+
+def test_event_without_verified_kickoff_is_rejected():
+    f=intake()["fixtures"][0]
+    e={"event_id":"no-time","home_team":f["home"],"away_team":f["away"]}
+    match,status=match_event(f,[e])
+    assert match is None
+    assert status=="NO_MATCHING_ODDS_EVENT_KICKOFF"
+
+def test_event_kickoff_within_fifteen_minutes_is_accepted_but_time_outside_is_rejected():
+    f=intake()["fixtures"][0]
+    match,status=match_event(f,[{"event_id":"within-window","home_team":f["home"],
+      "away_team":f["away"],"start_time":"2026-11-02T17:44:59Z"}])
+    assert match is not None and status=="MATCHED_TEAMS_ODDS_EVENT"
+    match,status=match_event(f,[{"event_id":"outside-window","home_team":f["home"],
+      "away_team":f["away"],"start_time":"2026-11-02T17:45:01Z"}])
+    assert match is None
+    assert status=="NO_MATCHING_ODDS_EVENT_KICKOFF"
+
+def test_wrong_event_start_time_never_reaches_snapshot_http_call():
+    class WrongTime(Fake):
+        def get(self,url,headers=None,params=None,timeout=None):
+            if url.endswith("/events"):
+                self.calls.append(url)
+                return Response({"items":[{"event_id":"wrong-match",
+                  "home_team":"US Sassuolo Calcio","away_team":"ACF Fiorentina",
+                  "start_time":"2026-11-03T17:30:00Z"}]})
+            return super().get(url,headers=headers,params=params,timeout=timeout)
+    session=WrongTime()
+    result=audit(intake(),scores(),"test-secret",session=session,now=NOW)
+    assert result["independent_match_count"]==0
+    assert result["bookmaker_quote_verified_count"]==0
+    assert result["audited"][0]["identity_status"]=="NO_MATCHING_ODDS_EVENT_KICKOFF"
+    assert len(session.calls)==2
+    assert not any("/odds/snapshot" in x for x in session.calls)
+    assert result["telegram_messages_sent"]==0
