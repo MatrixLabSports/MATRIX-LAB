@@ -9,7 +9,7 @@ import argparse
 import hashlib
 import json
 import re
-from datetime import date, datetime, timezone
+from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
 from urllib.error import HTTPError, URLError
 from urllib.request import Request, urlopen
@@ -108,14 +108,17 @@ def parse_tsdb(data: dict, target_date: str) -> list[dict]:
     return rows
 
 
-def capture(day: str, *, opener=urlopen, observed_at_utc: datetime | None = None) -> tuple[dict, dict[str, bytes]]:
-    date.fromisoformat(day)
+def capture(day: str, *, espn_day: str | None = None, opener=urlopen, observed_at_utc: datetime | None = None) -> tuple[dict, dict[str, bytes]]:
+    target = date.fromisoformat(day)
+    espn_date = date.fromisoformat(espn_day) if espn_day else target
+    if espn_date not in (target, target - timedelta(days=1)):
+        raise ValueError("ESPN_DATE_MUST_BE_TARGET_OR_PRIOR_LOCAL_DAY")
     observed = observed_at_utc or datetime.now(timezone.utc)
     if observed.utcoffset() is None:
         raise ValueError("CAPTURE_CLOCK_UNAWARE")
     results, blobs = {}, {}
     for provider, template in PROVIDERS.items():
-        url = template.format(date=day, compact=day.replace("-", ""))
+        url = template.format(date=day, compact=(espn_date.isoformat() if provider == "ESPN" else day).replace("-", ""))
         try:
             req = Request(url, headers={"Accept": "application/json",
                                        "User-Agent": "MATRIX-Research-Capture/1.0"})
@@ -147,6 +150,9 @@ def capture(day: str, *, opener=urlopen, observed_at_utc: datetime | None = None
                                  "provider_event_count": None,
                                  "raw_payload_verified": False}
     report = {"schema": SCHEMA, "date_requested": day,
+              "espn_calendar_date_requested": espn_date.isoformat(),
+              "cross_date_source_query": espn_date != target,
+              "coverage_is_not_complete_for_both_calendar_days": True,
               "observed_at_utc": observed.astimezone(timezone.utc).isoformat(),
               "source_order": ["SOFASCORE", "FLASHSCORE", "ESPN", "THESPORTSDB"],
               "sources": results,
@@ -180,9 +186,10 @@ def persist(out: Path, report: dict, blobs: dict[str, bytes]) -> None:
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--day", required=True)
+    parser.add_argument("--espn-day", default=None, help="Target date or one prior day for UTC/Bogota boundary research")
     parser.add_argument("--out", type=Path, default=Path("evidence/research/colombia239"))
     args = parser.parse_args()
-    report, blobs = capture(args.day)
+    report, blobs = capture(args.day, espn_day=args.espn_day)
     persist(args.out, report, blobs)
     print(json.dumps({"raw_verified": report["raw_verified_source_count"],
                       "provider_statuses": {k:v["status"] for k,v in report["sources"].items()},
