@@ -11,6 +11,8 @@ on:
       - repair/cor09-world-pipeline
     paths:
       - tools/matrix_colombia_239_public_raw_capture.py
+      - tools/matrix_football_espn_enriched_pit_research.py
+      - tests/test_matrix_football_espn_enriched_pit_research.py
       - tests/test_matrix_colombia_239_public_raw_capture.py
       - .github/workflows/matrix-colombia-239-public-raw-capture.yml
 permissions:
@@ -27,12 +29,14 @@ jobs:
           sparse-checkout: |
             tools/matrix_colombia_239_public_raw_capture.py
             tests/test_matrix_colombia_239_public_raw_capture.py
+            tools/matrix_football_espn_enriched_pit_research.py
+            tests/test_matrix_football_espn_enriched_pit_research.py
       - uses: actions/setup-python@v5
         with:
           python-version: "3.11"
       - run: python -m pip install pytest
       - name: Verify raw source safety contracts
-        run: PYTHONPATH=. python -m pytest -q tests/test_matrix_colombia_239_public_raw_capture.py
+        run: PYTHONPATH=. python -m pytest -q tests/test_matrix_colombia_239_public_raw_capture.py tests/test_matrix_football_espn_enriched_pit_research.py
       - name: Capture two public sources without authorizing signals
         shell: bash
         env:
@@ -40,6 +44,13 @@ jobs:
         run: |
           ESPN_DAY=$(python -c 'import sys; from datetime import date,timedelta; print((date.fromisoformat(sys.argv[1])-timedelta(days=1)).isoformat())' "$REQUESTED_DAY")
           PYTHONPATH=. python -m tools.matrix_colombia_239_public_raw_capture --day "$REQUESTED_DAY" --espn-day "$ESPN_DAY" --out evidence/research/colombia239
+      - name: Extract SHA-verified enriched ESPN history for future PIT-only research
+        shell: bash
+        run: |
+          PYTHONPATH=. python -m tools.matrix_football_espn_enriched_pit_research \
+            --capture-report evidence/research/colombia239/MATRIX_COLOMBIA_239_PUBLIC_RAW_CAPTURE_LAST.json \
+            --league-id 239 \
+            --out evidence/research/colombia239/MATRIX_ESPN_ENRICHED_PIT_HISTORY_LAST.json
       - name: Check physical SHA evidence and closed gate
         run: |
           python - <<'PY'
