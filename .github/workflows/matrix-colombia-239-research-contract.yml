@@ -18,6 +18,13 @@ jobs:
       - uses: actions/checkout@v4
         with:
           ref: repair/cor09-world-pipeline
+          sparse-checkout-cone-mode: false
+          sparse-checkout: |
+            tools/matrix_colombia_239_source_route.py
+            tests/test_matrix_colombia_239_source_route.py
+            evidence/api_football/governance/alternative_producer_original_six_league_registry.json
+            evidence/football_world_inventory/2026-11-21/MATRIX_ESPN_PUBLIC_SIX_LEAGUE_DISCOVERY_20261117.json
+            .github/workflows/matrix-colombia-239-research-contract.yml
       - uses: actions/setup-python@v5
         with:
           python-version: "3.11"
