@@ -38,6 +38,18 @@ def audit(root: Path, target_day: str) -> dict:
         or cert.get("new_immutable_forecasts") != len(cert.get("new_fixture_ids", []))
         or cert.get("new_immutable_forecasts") != 30):
         raise ValueError("UNTRUSTED_IMMUTABLE_COHORT_CERTIFICATE")
+    manifest_path = root / INVENTORY / target_day / "MATRIX_PRODUCER_30_IMMUTABLE_SHA_MANIFEST.json"
+    manifest = json.loads(manifest_path.read_bytes())
+    expected_hashes = manifest.get("immutable_forecast_sha256_by_fixture_id", {})
+    if (manifest.get("schema") != "MATRIX_PROSPECTIVE_28NOV_FIXED_SHA_MANIFEST_V1"
+        or manifest.get("target_date_bogota") != target_day
+        or manifest.get("github_run_id") != 45084248031
+        or manifest.get("production_p_matrix_authorized") is not False
+        or manifest.get("telegram_signal_authorized") is not False
+        or manifest.get("real_money") != "BLOCKED"
+        or not isinstance(expected_hashes, dict)
+        or set(expected_hashes) != set(cert["new_fixture_ids"])):
+        raise ValueError("UNTRUSTED_IMMUTABLE_SOURCE_HASH_MANIFEST")
     prior = set()
     for p in (root / ROOT).glob("20??-??-??/[0-9]*_*.json"):
         if p.parent.name == target_day or "_result_" in p.name:
@@ -59,7 +71,7 @@ def audit(root: Path, target_day: str) -> dict:
         # reports. The original signed job certificate fixes cohort membership.
         original_file = matching[0]
         raw = original_file.read_bytes()
-        if not raw or not hashlib.sha256(raw).hexdigest():
+        if hashlib.sha256(raw).hexdigest() != expected_hashes[fid]:
             raise ValueError("FROZEN_SHA256_MISMATCH")
         verified_forecast_shas[fid] = hashlib.sha256(raw).hexdigest()
         row = json.loads(raw)
@@ -105,6 +117,7 @@ def audit(root: Path, target_day: str) -> dict:
         "cross_day_duplicate_count": 0,
         "verified_forecast_sha256_by_fixture_id": dict(sorted(verified_forecast_shas.items())),
         "cohort_certificate_sha256": hashlib.sha256(certificate_path.read_bytes()).hexdigest(),
+        "immutable_sha_manifest_sha256": hashlib.sha256(manifest_path.read_bytes()).hexdigest(),
         "scorecard_sha256": hashlib.sha256((root / SCORECARD).read_bytes()).hexdigest(),
         "settled_research_total_across_provider_competitions": card["total_verified_settled_rows"],
         "provider_competitions": league_rows,
