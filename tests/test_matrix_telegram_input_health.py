@@ -236,3 +236,27 @@ def test_wrong_date_or_unauthorized_tennis_handoff_not_detected():
         observed = report["independent_discovery_diagnostic_only"]["2026-11-22"]
         assert observed["tennis_browser_handoff_present"] is False
         assert report["total_canonical_files"] == 0
+
+
+def test_contradictory_tennis_authorization_flags_fail_closed():
+    import tempfile
+    from pathlib import Path
+    from tools.matrix_telegram_input_health import inspect
+    with tempfile.TemporaryDirectory() as directory:
+        root = Path(directory)
+        folder = root / "evidence/tennis_calendar_reconciliation/2026-11-22"
+        folder.mkdir(parents=True)
+        (folder / "MATRIX_TENNIS_OPERA_22NOV_PHYSICAL_HANDOFF.json").write_text(
+            json.dumps({
+                "target_date_bogota": "2026-11-22",
+                "real_money": "BLOCKED",
+                "telegram_signal_authorized": False,
+                "signal_generation_authorized": True,
+                "surface_verified": True,
+                "utc_kickoff_verified": True
+            }), encoding="utf-8")
+        report = inspect(root, "2026-11-22", "2026-11-23")
+        status = report["independent_discovery_diagnostic_only"]["2026-11-22"]
+        assert status["tennis_browser_handoff_present"] is False
+        assert report["total_canonical_files"] == 0
+        assert report["signal_emission_authorized_by_this_check"] is False
