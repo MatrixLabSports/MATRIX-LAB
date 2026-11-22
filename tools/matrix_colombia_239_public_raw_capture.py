@@ -85,12 +85,22 @@ def parse_tsdb(data: dict, target_date: str) -> list[dict]:
             raise ValueError("TSDB_TEAM_NAMES_INVALID")
         stamp = e.get("strTimestamp")
         kickoff = None
+        time_quality = "MISSING_PROVIDER_TIMESTAMP"
         if stamp:
             try:
                 kickoff = utc(stamp).isoformat()
+                time_quality = "PROVIDER_TIMESTAMP_AWARE"
             except ValueError:
-                kickoff = None
+                time_quality = "UNZONED_PROVIDER_TIMESTAMP_NOT_CERTIFIED"
+        # TheSportsDB may supply an API-Football ID. This is a *hint* until
+        # independently joined to a genuine API-Football fixture document.
+        cross_hint = str(e.get("idAPIfootball") or "")
+        if not re.fullmatch(r"[0-9]+", cross_hint):
+            cross_hint = None
         rows.append({"provider_event_id": ident, "kickoff_utc": kickoff,
+                     "provider_reported_timestamp": stamp,
+                     "timestamp_quality": time_quality,
+                     "api_football_fixture_id_unverified_hint": cross_hint,
                      "home": home, "away": away,
                      "provider_status": e.get("strStatus"),
                      "provider_native_identity_only": True,
