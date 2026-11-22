@@ -36,9 +36,24 @@ def digest(payload):
     return hashlib.sha256(json.dumps(payload,sort_keys=True,ensure_ascii=False,separators=(",",":")).encode()).hexdigest()
 
 def match_event(fixture, event_rows):
+    # Team name similarity is NEVER sufficient to bind an odds market.
+    # The provider-native kickoff must independently match the fixture's
+    # timestamp; otherwise this may price an entirely different meeting.
+    try:
+        target_kickoff=utc(fixture["kickoff_utc"])
+    except (ValueError,KeyError,TypeError):
+        return None,"BLOCKED_UNVERIFIED_FIXTURE_KICKOFF"
     candidates=[]
+    matching_time_rows=0
     for event in event_rows:
         if not isinstance(event,dict) or not event.get("event_id"):continue
+        try:
+            event_kickoff=utc(event["start_time"])
+        except (ValueError,KeyError,TypeError):
+            continue
+        if abs((event_kickoff-target_kickoff).total_seconds())>900:
+            continue
+        matching_time_rows+=1
         direct_home=_sim(fixture["home"],event.get("home_team"))
         direct_away=_sim(fixture["away"],event.get("away_team"))
         swapped=(_sim(fixture["home"],event.get("away_team"))+_sim(fixture["away"],event.get("home_team")))/2
@@ -48,7 +63,9 @@ def match_event(fixture, event_rows):
         if direct<=swapped+0.10:continue
         candidates.append((direct,event))
     candidates.sort(key=lambda x:x[0],reverse=True)
-    if not candidates:return None, "NO_EXACT_DIRECT_TEAM_IDENTITY"
+    if not candidates:
+        return None,("NO_MATCHING_ODDS_EVENT_KICKOFF" if matching_time_rows==0
+                     else "NO_EXACT_DIRECT_TEAM_IDENTITY")
     if len(candidates)>1 and candidates[0][0]-candidates[1][0]<0.10:
         return None,"AMBIGUOUS_PROVIDER_EVENT_IDENTITY"
     return candidates[0][1],"MATCHED_TEAMS_ODDS_EVENT"
