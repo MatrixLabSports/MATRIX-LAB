@@ -10,7 +10,7 @@ on:
     - cron: "23 6 * * *"
 permissions:
   actions: read
-  contents: read
+  contents: write
 jobs:
   settle-sha-bound-prospective:
     runs-on: ubuntu-latest
@@ -103,6 +103,57 @@ jobs:
           print(json.dumps({"scientific_oos_settled":r["verified_prospective_settlements"],
                             "missing_final_is_not_a_loss":r["awaiting_authentic_final"],
                             "official_p_matrix_authorized":False},sort_keys=True))
+          PY
+      - name: Persist exact postmatch SHA evidence into create-only GitHub archive
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          python - <<'PY'
+          import base64, hashlib, json, os, urllib.request, zipfile
+          from pathlib import Path
+          evidence_root=Path("evidence/research")
+          scorecards=list((evidence_root/"oos_scorecards").glob("ESPN_OOS_*.json"))
+          assert len(scorecards)==1
+          score=json.loads(scorecards[0].read_bytes())
+          assert score["schema"]=="MATRIX_ESPN_SHA_PIT_PROSPECTIVE_OVER25_OOS_SETTLEMENT_V1"
+          assert score["telegram_signal_authorized"] is False
+          assert score["production_p_matrix_authorized"] is False
+          assert score["real_money"]=="BLOCKED"
+          source_dir=evidence_root/"espn_november_results"
+          source=json.loads((source_dir/"MATRIX_ESPN_SIX_LEAGUE_RAW_RESEARCH_LAST.json").read_bytes())
+          assert source["source_captured_leagues"]==6
+          for v in source["sources"].values():
+              data=(source_dir/v["raw_archive_file"]).read_bytes()
+              assert hashlib.sha256(data).hexdigest()==v["raw_sha256"]
+          target_name="ESPN_SHA_OOS_RUN_"+os.environ["GITHUB_RUN_ID"]+"_ATTEMPT_"+os.environ["GITHUB_RUN_ATTEMPT"]+".zip"
+          folder="evidence/football_world_inventory/sha_bound_archives/oos"
+          output=Path(target_name)
+          with zipfile.ZipFile(output,"w",compression=zipfile.ZIP_DEFLATED,compresslevel=9) as archive:
+              for p in sorted(evidence_root.glob("oos_scorecards/*.json"))+sorted(source_dir.glob("*.json")):
+                  archive.write(p,p.relative_to(evidence_root).as_posix())
+          raw=output.read_bytes()
+          digest=hashlib.sha256(raw).hexdigest()
+          assert len(raw)<900000, "Archive larger than supported GitHub contents upload"
+          path=folder+"/"+target_name
+          url="https://api.github.com/repos/"+os.environ["GITHUB_REPOSITORY"]+"/contents/"+path
+          headers={"Authorization":"Bearer "+os.environ["GH_TOKEN"],
+                   "Accept":"application/vnd.github+json",
+                   "X-GitHub-Api-Version":"2022-11-28",
+                   "Content-Type":"application/json"}
+          content={"message":"evidence(research): freeze authentic November final scores and exact OOS settlement; no Telegram promotion",
+                   "branch":"repair/cor09-world-pipeline",
+                   "content":base64.b64encode(raw).decode("ascii")}
+          request=urllib.request.Request(url,data=json.dumps(content).encode("utf-8"),headers=headers,method="PUT")
+          with urllib.request.urlopen(request,timeout=50) as response:
+              assert response.status==201
+          with urllib.request.urlopen(urllib.request.Request(url+"?ref=repair%2Fcor09-world-pipeline",headers=headers),timeout=50) as response:
+              stored=json.load(response)
+          assert stored["path"]==path
+          assert stored["size"]==len(raw)
+          print(json.dumps({"archive_path":path,"archive_sha256":digest,
+                            "prospective_settlements":score["verified_prospective_settlements"],
+                            "pending":score["awaiting_authentic_final"],
+                            "telegram_authorized":False},sort_keys=True))
           PY
       - uses: actions/upload-artifact@v4
         if: always()
