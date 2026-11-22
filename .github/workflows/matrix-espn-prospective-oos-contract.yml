@@ -1,0 +1,32 @@
+name: MATRIX ESPN Prospective OOS Settler Safety Contracts
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - repair/cor09-world-pipeline
+    paths:
+      - tools/matrix_espn_sha_bound_prospective_oos_settlement.py
+      - tests/test_matrix_espn_sha_bound_prospective_oos_settlement.py
+      - .github/workflows/matrix-espn-prospective-oos-contract.yml
+permissions:
+  contents: read
+jobs:
+  reject-corrupt-or-early-settlements:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: repair/cor09-world-pipeline
+          sparse-checkout-cone-mode: false
+          sparse-checkout: |
+            tools/matrix_football_espn_enriched_pit_research.py
+            tools/matrix_espn_sha_bound_two_month_over25_research.py
+            tools/matrix_espn_sha_bound_prospective_oos_settlement.py
+            tests/test_matrix_espn_sha_bound_prospective_oos_settlement.py
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: python -m pip install pytest
+      - name: Unit tests — fake final must never count as authentic
+        run: PYTHONPATH=. python -m pytest -q tests/test_matrix_espn_sha_bound_prospective_oos_settlement.py
