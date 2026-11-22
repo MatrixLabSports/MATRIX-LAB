@@ -1,0 +1,158 @@
+name: MATRIX ESPN Rolling Prospective 24 Hour Cohort
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+    paths:
+      - .github/workflows/matrix-espn-rolling-prospective-cohort.yml
+  schedule:
+    - cron: "13 5 * * *"
+permissions:
+  contents: write
+jobs:
+  freeze-next-day-research-only:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: repair/cor09-world-pipeline
+          sparse-checkout-cone-mode: false
+          sparse-checkout: |
+            tools/matrix_football_espn_enriched_pit_research.py
+            tools/matrix_football_espn_six_league_raw_capture.py
+            tools/matrix_espn_sha_bound_two_month_over25_research.py
+            tests/test_matrix_espn_sha_bound_two_month_over25_research.py
+            evidence/football_world_inventory/sha_bound_archives/ESPN_SHA_PIT_PREMATCH_12_SOURCES_71_RESEARCH_20261122T045141Z.zip
+            evidence/football_world_inventory/sha_bound_archives/cohorts/
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Verify month-rollover and no-duplicate research contracts
+        run: |
+          python -m pip install pytest
+          PYTHONPATH=. python -m pytest -q tests/test_matrix_espn_sha_bound_two_month_over25_research.py
+      - name: Reconstruct immutable exclusion list of all previously frozen ESPN fixture IDs
+        run: |
+          python - <<'PY'
+          import json,subprocess,zipfile
+          from pathlib import Path
+          root=Path("evidence/football_world_inventory/sha_bound_archives")
+          pinned=root/"ESPN_SHA_PIT_PREMATCH_12_SOURCES_71_RESEARCH_20261122T045141Z.zip"
+          assert pinned.is_file()
+          sha=subprocess.check_output(["git","hash-object",str(pinned)],text=True).strip()
+          assert sha=="33dc4df6708d67fb28b9f5504b77d7890e9ecc11","FIRST_71_ARCHIVE_SHA_MISMATCH"
+          existing=set()
+          for path in [pinned]+sorted((root/"cohorts").glob("*.zip")):
+              with zipfile.ZipFile(path) as z:
+                  files=[x for x in z.namelist() if x.startswith("output/") and x.endswith(".json")]
+                  assert len(files)==1, "FROZEN_RESEARCH_REPORT_NOT_UNIQUE"
+                  report=json.loads(z.read(files[0]))
+                  assert report["source_sha256_and_point_in_time_receipts_verified"] is True
+                  assert report["telegram_signal_authorized"] is False
+                  assert report["production_p_matrix_authorized"] is False
+                  assert report["real_money"]=="BLOCKED"
+                  for r in report["research_rows"]:
+                      fid=str(r["provider_fixture_id"])
+                      assert fid.isdecimal()
+                      assert fid not in existing,"CROSS_COHORT_DUPLICATE_ESPN_ID"
+                      existing.add(fid)
+          out=Path("evidence/research/espn_rolling")
+          out.mkdir(parents=True,exist_ok=True)
+          (out/"excluded_frozen_ids.json").write_text(json.dumps(sorted(existing)))
+          print(json.dumps({"historical_unique_frozen_fixtures":len(existing),
+                            "duplicate_ids":0,"original_archive_sha_verified":True},sort_keys=True))
+          PY
+      - name: Determine consecutive UTC source months
+        id: months
+        run: |
+          MONTH_CURRENT=$(date -u +%Y-%m)
+          MONTH_PREVIOUS=$(date -u -d "$(date -u +%Y-%m)-01 -1 month" +%Y-%m)
+          echo "current=$MONTH_CURRENT" >> "$GITHUB_OUTPUT"
+          echo "previous=$MONTH_PREVIOUS" >> "$GITHUB_OUTPUT"
+      - name: Archive six prior-month source raw JSON and SHA receipts
+        env:
+          MONTH: ${{ steps.months.outputs.previous }}
+        run: |
+          PYTHONPATH=. python -m tools.matrix_football_espn_six_league_raw_capture \
+            --month "$MONTH" --out evidence/research/espn_rolling/previous
+      - name: Archive six current-month source raw JSON and SHA receipts
+        env:
+          MONTH: ${{ steps.months.outputs.current }}
+        run: |
+          PYTHONPATH=. python -m tools.matrix_football_espn_six_league_raw_capture \
+            --month "$MONTH" --out evidence/research/espn_rolling/current
+      - name: Freeze only newly discovered SHA/PIT-bound future research within 24 hours
+        env:
+          MONTH_A: ${{ steps.months.outputs.previous }}
+          MONTH_B: ${{ steps.months.outputs.current }}
+        run: |
+          mkdir -p evidence/research/espn_rolling/output
+          PYTHONPATH=. python -m tools.matrix_espn_sha_bound_two_month_over25_research \
+            --october evidence/research/espn_rolling/previous \
+            --november evidence/research/espn_rolling/current \
+            --previous-month "$MONTH_A" \
+            --current-month "$MONTH_B" \
+            --exclude-ids evidence/research/espn_rolling/excluded_frozen_ids.json \
+            --max-horizon-hours 24 \
+            --out "evidence/research/espn_rolling/output/ESPN_SHA_ROLLING_$(date -u +%Y%m%dT%H%M%SZ).json"
+      - name: Create-only archive only when there are genuinely new prospective identities
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          python - <<'PY'
+          import base64,hashlib,json,os,urllib.request,zipfile
+          from pathlib import Path
+          root=Path("evidence/research/espn_rolling")
+          files=list((root/"output").glob("*.json"))
+          assert len(files)==1
+          report=json.loads(files[0].read_bytes())
+          assert report["source_sha256_and_point_in_time_receipts_verified"] is True
+          assert report["production_p_matrix_authorized"] is False
+          assert report["telegram_signal_authorized"] is False
+          assert report["real_money"]=="BLOCKED"
+          assert report["maximum_horizon_hours"]==24
+          count=report["research_probability_count"]
+          assert count==len(report["research_rows"])
+          for dirname in ("previous","current"):
+              folder=root/dirname
+              manifest=json.loads((folder/"MATRIX_ESPN_SIX_LEAGUE_RAW_RESEARCH_LAST.json").read_bytes())
+              assert manifest["source_captured_leagues"]==6
+              for row in manifest["sources"].values():
+                  raw=(folder/row["raw_archive_file"]).read_bytes()
+                  assert hashlib.sha256(raw).hexdigest()==row["raw_sha256"]
+          if count==0:
+              print("NO_NEW_PROSPECTIVE_FIXTURES; zero is not model failure or a green signal")
+          else:
+              archive_name="ESPN_ROLLING_SHA_RUN_"+os.environ["GITHUB_RUN_ID"]+".zip"
+              outfile=Path(archive_name)
+              with zipfile.ZipFile(outfile,"w",compression=zipfile.ZIP_DEFLATED,compresslevel=9) as z:
+                  for p in sorted(root.rglob("*")):
+                      if p.is_file():
+                          z.write(p,p.relative_to(root).as_posix())
+              raw=outfile.read_bytes()
+              if len(raw)>900000:
+                  raise ValueError("ROLLING_PROSPECTIVE_ARCHIVE_TOO_LARGE_FOR_GITHUB_API")
+              archive_sha=hashlib.sha256(raw).hexdigest()
+              target="evidence/football_world_inventory/sha_bound_archives/cohorts/"+archive_name
+              url="https://api.github.com/repos/"+os.environ["GITHUB_REPOSITORY"]+"/contents/"+target
+              headers={"Authorization":"Bearer "+os.environ["GH_TOKEN"],
+                       "Accept":"application/vnd.github+json",
+                       "X-GitHub-Api-Version":"2022-11-28","Content-Type":"application/json"}
+              payload={"message":"evidence(research): archive distinct 24h SHA-bound prospective ESPN forecasts",
+                       "branch":"repair/cor09-world-pipeline",
+                       "content":base64.b64encode(raw).decode("ascii")}
+              with urllib.request.urlopen(urllib.request.Request(
+                   url,data=json.dumps(payload).encode(),headers=headers,method="PUT"),timeout=50) as response:
+                  assert response.status==201
+              print(json.dumps({"new_frozen_research":count,"archive":target,
+                                "sha256":archive_sha,"signals":False},sort_keys=True))
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: matrix-espn-rolling-24h-research
+          path: evidence/research/espn_rolling/
+          if-no-files-found: warn
+          retention-days: 30
