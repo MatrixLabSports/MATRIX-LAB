@@ -1,6 +1,11 @@
 name: MATRIX ESPN Prospective OOS Daily Settlement
 on:
   workflow_dispatch:
+  push:
+    branches:
+      - main
+    paths:
+      - .github/workflows/matrix-espn-prospective-oos-daily-settlement.yml
   schedule:
     - cron: "23 6 * * *"
 permissions:
@@ -28,12 +33,22 @@ jobs:
         run: |
           python -m pip install pytest
           PYTHONPATH=. python -m pytest -q tests/test_matrix_espn_sha_bound_prospective_oos_settlement.py
-      - uses: actions/download-artifact@v4
+      - uses: actions/checkout@v4
         with:
-          run-id: 44986315540
-          name: matrix-espn-six-league-monthly-raw-research
-          github-token: ${{ github.token }}
-          path: evidence/frozen/espn_source_provenance
+          ref: repair/cor09-world-pipeline
+          path: pinned_evidence
+          sparse-checkout-cone-mode: false
+          sparse-checkout: |
+            evidence/football_world_inventory/sha_bound_archives/ESPN_SHA_PIT_PREMATCH_12_SOURCES_71_RESEARCH_20261122T045141Z.zip
+      - name: Restore permanent 71 forecast SHA source archive
+        run: |
+          ARCHIVE="pinned_evidence/evidence/football_world_inventory/sha_bound_archives/ESPN_SHA_PIT_PREMATCH_12_SOURCES_71_RESEARCH_20261122T045141Z.zip"
+          test -f "$ARCHIVE"
+          ACTUAL=$(git -C pinned_evidence hash-object evidence/football_world_inventory/sha_bound_archives/ESPN_SHA_PIT_PREMATCH_12_SOURCES_71_RESEARCH_20261122T045141Z.zip)
+          test "$ACTUAL" = "33dc4df6708d67fb28b9f5504b77d7890e9ecc11"
+          mkdir -p evidence/frozen/espn_source_provenance
+          unzip -q "$ARCHIVE" -d evidence/frozen/espn_source_provenance
+          echo "PERMANENT_SOURCE_ARCHIVE_RESTORED_SHA_BOUND"
       - name: Revalidate source freeze against its original 12 raw SHA receipts
         run: |
           python - <<'PY'
