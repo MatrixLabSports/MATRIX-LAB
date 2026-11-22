@@ -855,6 +855,8 @@ def main()->None:
     pipeline_diagnostic=candidate_pipeline_diagnostic(audit,now)
     RAW_ROOT.mkdir(parents=True,exist_ok=True)
     pages=[]; matched=[]; betano_exact_quotes=[]; betano_research_quotes=[]
+    betplay_research_quotes=[]
+    from tools.matrix_betplay_readonly_dom_scout import collect_page as scout_betplay
     with sync_playwright() as p:
         browser=p.chromium.connect_over_cdp(endpoint,timeout=15000)
         contexts=browser.contexts
@@ -867,8 +869,11 @@ def main()->None:
                 # prospective or independent research event is in scope.
                 # Existing authorized tabs are still read below; no browser
                 # account or user session is closed or manipulated.
-                if not browser_targets:
-                    break
+                # With no production candidates, inspect only ONE public BetPlay
+                # page in this isolated CDP session. Never open 14 book tabs,
+                # move user Opera tabs or promote this research to a signal.
+                if not browser_targets and book != "betplay":
+                    continue
                 if book in existing_books:
                     continue
                 entry=str((adapter or {}).get("entry_url") or "").strip()
@@ -936,6 +941,21 @@ def main()->None:
                     raw_path=RAW_ROOT/raw_name
                     raw_path.write_text(text,encoding="utf-8")
                     page_rec["raw_evidence_path"]=str(raw_path.relative_to(ROOT))
+                if book == "betplay":
+                    # Query only visible market-button labels; bookmaker event
+                    # ID, kickoff and calibrated model remain unknown.
+                    try:
+                        betplay_scout=scout_betplay(page,url,ROOT,now)
+                        page_rec["betplay_public_dom_research_scout"]=betplay_scout
+                        if betplay_scout["quote_count"]>0:
+                            betplay_research_quotes.append(betplay_scout)
+                    except Exception as exc:
+                        page_rec["betplay_public_dom_research_scout"]={
+                            "status":"RESEARCH_SCOUT_READ_FAILED",
+                            "reason":type(exc).__name__,
+                            "quote_count":0,
+                            "telegram_signal_authorized":False,
+                        }
                 pages.append(page_rec)
                 betano_payloads=[]
                 if structured_probe and matching:
