@@ -10,7 +10,7 @@ import hashlib
 import json
 import math
 from collections import defaultdict
-from datetime import datetime, timezone
+from datetime import date, datetime, timezone
 from pathlib import Path
 from typing import Any
 from tools.matrix_football_espn_enriched_pit_research import LEAGUES, dt
@@ -139,12 +139,26 @@ def _p_over25(history:list[dict],home:str,away:str)->tuple[float,dict]|None:
                         "home_lambda":round(lh,8),"away_lambda":round(la,8)}
 
 
-def evaluate(october:Path,november:Path,*,frozen_at:datetime|None=None)->dict:
+def evaluate(october:Path,november:Path,*,frozen_at:datetime|None=None,
+             source_months:tuple[str,str]=("2026-10","2026-11"),
+             exclude_event_ids:set[str]|None=None,
+             max_horizon_hours:float|None=None)->dict:
+    if len(source_months)!=2:
+        raise ValueError("TWO_CONSECUTIVE_MONTHS_REQUIRED")
+    try:
+        a,b=(date.fromisoformat(x+"-01") for x in source_months)
+    except (TypeError,ValueError):
+        raise ValueError("INVALID_MONTH_PAIR")
+    if b.year*12+b.month != a.year*12+a.month+1:
+        raise ValueError("SOURCE_MONTHS_MUST_BE_CONSECUTIVE")
+    if max_horizon_hours is not None and not (0<max_horizon_hours<=48):
+        raise ValueError("PREMATCH_HORIZON_OUTSIDE_48H")
+    excluded=set(str(v) for v in (exclude_event_ids or set()))
     now=frozen_at or datetime.now(timezone.utc)
     if now.tzinfo is None or now.utcoffset() is None:
         raise ValueError("FREEZE_TIME_MUST_BE_AWARE")
     now=now.astimezone(timezone.utc)
-    month_dirs=(("2026-10",october),("2026-11",november))
+    month_dirs=((source_months[0],october),(source_months[1],november))
     rows=[];blocked=[];counts={}
     for lid,slug in LEAGUES.items():
         by_id={}
@@ -176,6 +190,13 @@ def evaluate(october:Path,november:Path,*,frozen_at:datetime|None=None)->dict:
         futures=sorted(future,key=lambda r:(r["kickoff"],r["id"]))
         admitted=0
         for target in futures:
+            if target["id"] in excluded:
+                blocked.append({"league":lid,"event_id":target["id"],
+                                "reason":"ALREADY_PREVIOUSLY_FROZEN"})
+                continue
+            if (max_horizon_hours is not None and
+                (target["kickoff"]-now).total_seconds()>max_horizon_hours*3600):
+                continue
             past=[r for r in history if r["kickoff"]<target["kickoff"]
                   and r["received"]<=now]
             calc=_p_over25(past,target["home"],target["away"])
@@ -217,7 +238,10 @@ def evaluate(october:Path,november:Path,*,frozen_at:datetime|None=None)->dict:
             "research_frozen_at_utc":now.isoformat(),
             "frozen_math_parameters":dict(PARAMS),
             "model_frozen_parameters_modified":False,
-            "source_months":["2026-10","2026-11"],
+            "source_months":list(source_months),
+            "excluded_existing_frozen_provider_ids":len(excluded),
+            "maximum_horizon_hours":max_horizon_hours,
+            "duplicate_fixtures_not_reissued":True,
             "source_priority":["SOFASCORE","FLASHSCORE","ESPN"],
             "source_provider":"ESPN_PUBLIC_SCOREBOARD_JSON",
             "source_sha256_and_point_in_time_receipts_verified":True,
@@ -236,10 +260,24 @@ def main()->None:
     p.add_argument("--october",type=Path,required=True)
     p.add_argument("--november",type=Path,required=True)
     p.add_argument("--out",type=Path,required=True)
+    p.add_argument("--previous-month",default="2026-10")
+    p.add_argument("--current-month",default="2026-11")
+    p.add_argument("--exclude-ids",type=Path,default=None,
+                   help="JSON list of ESPN event ids previously frozen prospectively")
+    p.add_argument("--max-horizon-hours",type=float,default=None)
     args=p.parse_args()
     if set(args.out.parts)&{"telegram","notifications","governance","daily_prematch_reports","tennis_signals"}:
         raise SystemExit("RESEARCH_PRODUCER_CANNOT_WRITE_PRODUCTION")
-    report=evaluate(args.october,args.november)
+    exclusions=set()
+    if args.exclude_ids is not None:
+        values=json.loads(args.exclude_ids.read_text(encoding="utf-8"))
+        if not isinstance(values,list) or any(not str(x).isdigit() for x in values):
+            raise SystemExit("EXCLUSIONS_MUST_BE_PROVIDER_EVENT_ID_LIST")
+        exclusions={str(x) for x in values}
+    report=evaluate(args.october,args.november,
+                    source_months=(args.previous_month,args.current_month),
+                    exclude_event_ids=exclusions,
+                    max_horizon_hours=args.max_horizon_hours)
     out=args.out
     if out.exists():
         raise SystemExit("IMMUTABLE_RESEARCH_FREEZE_ALREADY_EXISTS")
