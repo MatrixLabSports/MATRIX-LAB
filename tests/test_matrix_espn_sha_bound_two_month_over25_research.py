@@ -128,3 +128,31 @@ def test_retrospective_raw_does_not_backfill_prospective(tmp_path):
     (nove/"MATRIX_ESPN_SIX_LEAGUE_RAW_RESEARCH_LAST.json").write_text(json.dumps(report))
     with pytest.raises(ValueError,match="SOURCE_RECEIPT_CLOCK_CONFLICT"):
         evaluate(octo,nove,frozen_at=t+timedelta(minutes=1))
+
+def test_one_day_horizon_filters_without_renaming_history(tmp_path):
+    octo,nove,t=make_archives(tmp_path)
+    report=evaluate(octo,nove,frozen_at=t+timedelta(minutes=1),
+                    max_horizon_hours=24)
+    assert report["research_probability_count"]==0
+    assert report["maximum_horizon_hours"]==24
+    assert report["source_months"]==["2026-10","2026-11"]
+
+def test_previously_frozen_fixture_id_cannot_repeat(tmp_path):
+    octo,nove,t=make_archives(tmp_path)
+    existing=evaluate(octo,nove,frozen_at=t+timedelta(minutes=1))
+    ids={row["provider_fixture_id"] for row in existing["research_rows"]}
+    report=evaluate(octo,nove,frozen_at=t+timedelta(minutes=1),
+                    exclude_event_ids=ids)
+    assert report["research_probability_count"]==0
+    assert report["excluded_existing_frozen_provider_ids"]==len(ids)
+    assert all(row["reason"]=="ALREADY_PREVIOUSLY_FROZEN" for row in report["blocked"])
+
+def test_skip_nonlinear_month_pair(tmp_path):
+    octo,nove,t=make_archives(tmp_path)
+    with pytest.raises(ValueError,match="SOURCE_MONTHS_MUST_BE_CONSECUTIVE"):
+        evaluate(octo,nove,source_months=("2026-10","2026-12"),frozen_at=t)
+
+def test_skip_invalid_horizon(tmp_path):
+    octo,nove,t=make_archives(tmp_path)
+    with pytest.raises(ValueError,match="PREMATCH_HORIZON_OUTSIDE_48H"):
+        evaluate(octo,nove,max_horizon_hours=100,frozen_at=t)
