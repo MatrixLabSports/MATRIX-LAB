@@ -82,7 +82,7 @@ def store_readonly(root:Path,document:dict)->Path:
           at.strftime("%Y%m%dT%H%M%S%fZ")+"_"+document["quote_labels_sha256"][:12]+".json")
     path=root/"evidence"/"football_world_inventory"/day/name
     path.parent.mkdir(parents=True,exist_ok=True)
-    raw=json.dumps(document,ensure_ascii=False,sort_keys=True,indent=2).encode("utf-8")+b"\\n"
+    raw=json.dumps(document,ensure_ascii=False,sort_keys=True,indent=2).encode("utf-8")+bytes([10])
     if path.exists() and path.read_bytes()!=raw:
         raise ValueError("IMMUTABLE_BETPLAY_QUOTE_RECORD_CONFLICT")
     path.write_bytes(raw)
