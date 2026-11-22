@@ -1,0 +1,55 @@
+name: MATRIX BetPlay Real Visible Market Capture Contract
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+    paths:
+      - .github/workflows/matrix-betplay-opera-visible-market-contract.yml
+permissions:
+  contents: read
+jobs:
+  validate-real-market:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: repair/cor09-world-pipeline
+          sparse-checkout-cone-mode: false
+          sparse-checkout: |
+            tools/matrix_betplay_readonly_dom_scout.py
+            tests/test_matrix_betplay_readonly_dom_scout.py
+            evidence/browser_capture_inbox/MATRIX_OPERA_BETPLAY_VISIBLE_OVER25_RESEARCH_QUOTES_20261122T222918Z.json
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Verify immutable read-only label parser cannot create green signals
+        run: |
+          python -m pip install pytest
+          PYTHONPATH=. python -m pytest -q tests/test_matrix_betplay_readonly_dom_scout.py
+      - name: Replay actual ten Opera authorized market labels into standalone research parser
+        run: |
+          PYTHONPATH=. python - <<'PY'
+          from pathlib import Path
+          from datetime import datetime
+          import json
+          from tools.matrix_betplay_readonly_dom_scout import parse_labels
+          f=Path("evidence/browser_capture_inbox/MATRIX_OPERA_BETPLAY_VISIBLE_OVER25_RESEARCH_QUOTES_20261122T222918Z.json")
+          evidence=json.loads(f.read_bytes())
+          assert evidence["schema"]=="MATRIX_OPERA_BETPLAY_VISIBLE_OVER25_RESEARCH_QUOTES_V1"
+          assert evidence["match_count"]==10
+          at=datetime.fromisoformat(evidence["observed_no_later_than_utc"])
+          r=parse_labels([x["raw_accessibility_label"] for x in evidence["quotes"]],evidence["source_url"],at)
+          assert r["exact_visible_over25_quote_count"]==10
+          before=sorted((x["home_label"],x["away_label"],x["decimal_price"]) for x in evidence["quotes"])
+          after=sorted((x["home_label"],x["away_label"],x["decimal_price"]) for x in r["quotes"])
+          assert before==after,"BOOKMAKER_QUOTE_LABEL_REPLAY_MISMATCH"
+          assert all(x["bookmaker_event_id"] is None for x in r["quotes"])
+          assert all(x["official_p_matrix"] is None for x in r["quotes"])
+          assert r["telegram_signal_authorized"] is False
+          assert r["real_money"]=="BLOCKED"
+          print(json.dumps({"authentic_browser_labels_replayed":10,
+              "original_p_matrix_certified":False,"sharp_reference_verifiable":False,
+              "green_signals_sent":0},sort_keys=True))
+          PY
