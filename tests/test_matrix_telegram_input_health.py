@@ -203,7 +203,8 @@ def test_current_day_tennis_handoff_is_detected_without_promoting_to_signal():
         (folder / "MATRIX_TENNIS_OPERA_22NOV_PHYSICAL_HANDOFF.json").write_text(
             json.dumps({
                 "target_date_bogota": "2026-11-22",
-                "signal_generation_authorized": False,
+                "telegram_signal_authorized": False,
+                "real_money": "BLOCKED",
                 "utc_kickoff_verified": True,
                 "surface_verified": True,
             }), encoding="utf-8")
@@ -226,7 +227,8 @@ def test_wrong_date_or_unauthorized_tennis_handoff_not_detected():
         (folder / "MATRIX_TENNIS_OPERA_22NOV_PHYSICAL_HANDOFF.json").write_text(
             json.dumps({
                 "target_date_bogota": "2026-11-21",
-                "signal_generation_authorized": False,
+                "telegram_signal_authorized": False,
+                "real_money": "BLOCKED",
                 "utc_kickoff_verified": True,
                 "surface_verified": True,
             }), encoding="utf-8")
