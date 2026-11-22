@@ -57,7 +57,16 @@ def _independent_status(root: Path, day: str) -> dict:
     shadow = _read_json(folder / "MATRIX_INDEPENDENT_OVER25_HISTORY_SHADOW.json")
     quote = _read_json(folder / "MATRIX_INDEPENDENT_OVER25_QUOTE_AUDIT.json")
     tennis_folder = root / "evidence/tennis_calendar_reconciliation" / day
-    tennis = _read_json(tennis_folder / "MATRIX_TENNIS_OPERA_02NOV_PHYSICAL_HANDOFF.json")
+    # A fixed 02NOV name silently loses valid later-day observations.
+    # A handoff is diagnostic ONLY; never a canonical tennis signal.
+    tennis_candidates = []
+    for candidate in sorted(tennis_folder.glob("MATRIX_TENNIS_OPERA_*_PHYSICAL_HANDOFF.json")):
+        payload = _read_json(candidate)
+        if (payload is not None
+            and payload.get("target_date_bogota") == day
+            and payload.get("signal_generation_authorized") is False):
+            tennis_candidates.append(payload)
+    tennis = tennis_candidates[0] if len(tennis_candidates) == 1 else None
     tennis_review = _read_json(tennis_folder / "MATRIX_TENNIS_OPERA_DUAL_SOURCE_LINK_REVIEW.json")
     # These sources are only observed browser links. They are NOT the canonical
     # daily_prematch_reports or authorized Telegram inputs. Never count them as such.
