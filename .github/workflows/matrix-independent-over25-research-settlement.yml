@@ -10,6 +10,8 @@ on:
     paths:
       - tools/matrix_independent_over25_research_settlement.py
       - tools/matrix_independent_over25_research_scorecard.py
+      - tools/matrix_over25_cohort_progression.py
+      - tests/test_matrix_over25_cohort_progression.py
       - tests/test_matrix_independent_over25_research_scorecard.py
       - tests/test_matrix_independent_over25_research_settlement.py
       - .github/workflows/matrix-independent-over25-research-settlement.yml
@@ -46,7 +48,7 @@ jobs:
         run: python -m pip install --disable-pip-version-check pytest
 
       - name: Prove settlement never reuses future scores or modifies forecasts
-        run: PYTHONPATH=. python -m pytest -q tests/test_matrix_independent_over25_research_settlement.py tests/test_matrix_independent_over25_prematch_freeze.py tests/test_matrix_independent_over25_research_scorecard.py
+        run: PYTHONPATH=. python -m pytest -q tests/test_matrix_independent_over25_research_settlement.py tests/test_matrix_independent_over25_prematch_freeze.py tests/test_matrix_independent_over25_research_scorecard.py tests/test_matrix_over25_cohort_progression.py
 
       - name: Capture final independent scores only after kickoff, never betting
         env:
@@ -59,6 +61,24 @@ jobs:
 
       - name: Recalculate cumulative independent prospective Brier and logloss
         run: PYTHONPATH=. python -m tools.matrix_independent_over25_research_scorecard
+
+      - name: Audit 28 Nov genuine unique cohort against latest settlement without future leakage
+        run: |
+          set -euo pipefail
+          PYTHONPATH=. python -m tools.matrix_over25_cohort_progression --date 2026-11-28
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          path=Path("evidence/football_world_inventory/2026-11-28/MATRIX_OVER25_COHORT_PROGRESSION.json")
+          doc=json.loads(path.read_bytes())
+          assert doc["verified_distinct_fixture_count"]==30
+          assert doc["cross_day_duplicate_count"]==0
+          assert doc["no_future_outcomes_used"] is True
+          assert doc["production_p_matrix_authorized"] is False
+          assert doc["telegram_signal_authorized"] is False
+          assert doc["real_money"]=="BLOCKED"
+          print("MATRIX_28NOV_COHORT_UNIQUE_PIT_SHA_CERTIFIED_SETTLEMENT_NOT_PREMATURE")
+          PY
 
       - name: Validate latest settlement has original risk gates closed
         run: |
@@ -82,6 +102,7 @@ jobs:
           git config user.email "matrix-independent-over25-results@users.noreply.github.com"
           git add -- evidence/football_world_inventory/MATRIX_INDEPENDENT_OVER25_SETTLEMENT_LAST.json
           git add -- evidence/football_world_inventory/MATRIX_INDEPENDENT_OVER25_RESEARCH_SCORECARD_LAST.json
+          git add -- evidence/football_world_inventory/2026-11-28/MATRIX_OVER25_COHORT_PROGRESSION.json
           if [ -d evidence/football_research_freezes ]; then
             git add -- evidence/football_research_freezes
           fi
