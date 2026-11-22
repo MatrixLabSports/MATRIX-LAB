@@ -48,6 +48,8 @@ def run(tmp_path,now="2026-11-04T12:04:00Z",**kwargs):
 def test_immutable_seal_and_replay(tmp_path):
     r=run(tmp_path)
     assert r["immutable_prematch_freeze_count"]==1
+    assert r["new_immutable_prematch_freeze_count"]==1
+    assert r["previously_frozen_count"]==0
     entry=r["sealed"][0]
     x=json.loads((tmp_path/entry["path"]).read_text())
     assert x["schema"]==SCHEMA
@@ -62,6 +64,9 @@ def test_immutable_seal_and_replay(tmp_path):
     assert r["telegram_signal_authorized"] is False
     again=run(tmp_path)
     assert again["sealed"][0]["status"]=="ALREADY_FROZEN"
+    assert again["new_immutable_prematch_freeze_count"]==0
+    assert again["previously_frozen_count"]==1
+    assert again["immutable_prematch_freeze_count"]==1
 
 def test_late_capture_cannot_backfill(tmp_path):
     r=run(tmp_path,now="2026-11-04T20:01:00Z")
