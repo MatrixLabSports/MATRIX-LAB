@@ -190,3 +190,47 @@ def test_independent_gate_detail_missing_sources_are_not_zero():
     assert detail["research_scored_rows_observed"] is None
     assert detail["verified_execution_quotes"] is None
     assert detail["provider_replacement_certified"] is False
+
+
+def test_current_day_tennis_handoff_is_detected_without_promoting_to_signal():
+    import tempfile
+    from pathlib import Path
+    from tools.matrix_telegram_input_health import inspect
+    with tempfile.TemporaryDirectory() as directory:
+        root = Path(directory)
+        folder = root / "evidence/tennis_calendar_reconciliation/2026-11-22"
+        folder.mkdir(parents=True)
+        (folder / "MATRIX_TENNIS_OPERA_22NOV_PHYSICAL_HANDOFF.json").write_text(
+            json.dumps({
+                "target_date_bogota": "2026-11-22",
+                "signal_generation_authorized": False,
+                "utc_kickoff_verified": True,
+                "surface_verified": True,
+            }), encoding="utf-8")
+        report = inspect(root, "2026-11-22", "2026-11-23")
+        observed = report["independent_discovery_diagnostic_only"]["2026-11-22"]
+        assert observed["tennis_browser_handoff_present"] is True
+        assert observed["tennis_kickoff_and_surface_verified"] is True
+        assert report["total_canonical_files"] == 0
+        assert report["signal_emission_authorized_by_this_check"] is False
+
+
+def test_wrong_date_or_unauthorized_tennis_handoff_not_detected():
+    import tempfile
+    from pathlib import Path
+    from tools.matrix_telegram_input_health import inspect
+    with tempfile.TemporaryDirectory() as directory:
+        root = Path(directory)
+        folder = root / "evidence/tennis_calendar_reconciliation/2026-11-22"
+        folder.mkdir(parents=True)
+        (folder / "MATRIX_TENNIS_OPERA_22NOV_PHYSICAL_HANDOFF.json").write_text(
+            json.dumps({
+                "target_date_bogota": "2026-11-21",
+                "signal_generation_authorized": False,
+                "utc_kickoff_verified": True,
+                "surface_verified": True,
+            }), encoding="utf-8")
+        report = inspect(root, "2026-11-22", "2026-11-23")
+        observed = report["independent_discovery_diagnostic_only"]["2026-11-22"]
+        assert observed["tennis_browser_handoff_present"] is False
+        assert report["total_canonical_files"] == 0
