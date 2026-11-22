@@ -82,7 +82,7 @@ foreach ($day in $activeDays) {
     }
     # Bookmaker quotations are immutable by filename and must remain attached
     # to their actual source capture date, not reclassified as official P_MATRIX.
-    foreach ($pattern in @("MATRIX_BETANO_QUOTE_*.json", "MATRIX_BETANO_RESEARCH_MARKET_*.json")) {
+    foreach ($pattern in @("MATRIX_BETANO_QUOTE_*.json", "MATRIX_BETANO_RESEARCH_MARKET_*.json", "MATRIX_BETPLAY_RESEARCH_MARKET_*.json")) {
       Get-ChildItem -LiteralPath $folder -Recurse -File -Filter $pattern |
         ForEach-Object {
           $rel = $_.FullName.Substring((Get-Location).Path.Length + 1)
