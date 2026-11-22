@@ -67,6 +67,8 @@ def _independent_status(root: Path, day: str) -> dict:
             and payload.get("real_money") == "BLOCKED"
             and (payload.get("telegram_signal_authorized") is False
                  or payload.get("signal_generation_authorized") is False)
+            and payload.get("telegram_signal_authorized") is not True
+            and payload.get("signal_generation_authorized") is not True
             and payload.get("model_probabilities_authorized") is not True):
             tennis_candidates.append(payload)
     tennis = tennis_candidates[0] if len(tennis_candidates) == 1 else None
