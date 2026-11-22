@@ -70,3 +70,14 @@ def test_unzoned_provider_api_football_id_is_hint_only():
     assert row["timestamp_quality"]=="UNZONED_PROVIDER_TIMESTAMP_NOT_CERTIFIED"
     assert row["kickoff_utc"] is None
     assert row["cross_provider_identity_certified"] is False
+
+def test_utc_bogota_boundary_requires_explicit_espn_day():
+    report,_=capture("2026-11-22",espn_day="2026-11-21",opener=opener)
+    assert report["espn_calendar_date_requested"]=="2026-11-21"
+    assert report["cross_date_source_query"] is True
+    assert report["coverage_is_not_complete_for_both_calendar_days"] is True
+    assert "dates=20261121" in report["sources"]["ESPN"]["url"]
+
+def test_reject_non_adjacent_espn_day():
+    with pytest.raises(ValueError,match="ESPN_DATE_MUST_BE_TARGET_OR_PRIOR_LOCAL_DAY"):
+        capture("2026-11-22",espn_day="2026-11-01",opener=opener)
