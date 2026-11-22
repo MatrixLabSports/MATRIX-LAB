@@ -158,3 +158,42 @@ def test_freeze_replay_excludes_missing_final_update_before_model_input(tmp_path
     assert seen == [3]
     assert result["immutable_prematch_freeze_count"]==1
     assert result["telegram_signal_authorized"] is False
+
+
+def test_changed_shadow_same_fixture_never_counts_as_new_unique_forecast(tmp_path):
+    a,b=sample()
+    frozen_dir=tmp_path/"evidence/football_research_freezes/2026-11-04"
+    def call(shadow):
+        with patch("tools.matrix_independent_over25_prematch_freeze.historic_rows",return_value=[]),\
+             patch("tools.matrix_independent_over25_prematch_freeze._inputs_for_target",
+                   return_value=({"home_history_count":5,"away_history_count":5,
+                                  "poisson":{"over_2_5":0.6},
+                                  "baseline":{"over_2_5":0.55}},None)):
+            return freeze(a,shadow,intake_bytes=canonical(a),shadow_bytes=canonical(shadow),
+                          now=T("2026-11-04T12:04:00Z"),folder=frozen_dir)
+    first=call(b)
+    assert first["new_immutable_prematch_freeze_count"]==1
+    b["unrelated_monitoring_metadata"]="new_receipt_changes_shadow_sha"
+    repeat=call(b)
+    assert repeat["new_immutable_prematch_freeze_count"]==0
+    assert repeat["immutable_prematch_freeze_count"]==0
+    assert repeat["blocked"][0]["reason"]=="PROVIDER_FIXTURE_PREVIOUSLY_FROZEN_NO_NEW_UNIQUE_OBSERVATION"
+    assert len(list(frozen_dir.glob("555_*.json")))==1
+
+
+def test_cross_day_replayed_fixture_cannot_create_new_unique_observation(tmp_path):
+    a,b=sample()
+    folder=tmp_path/"evidence/football_research_freezes"
+    with patch("tools.matrix_independent_over25_prematch_freeze.historic_rows",return_value=[]),\
+         patch("tools.matrix_independent_over25_prematch_freeze._inputs_for_target",
+               return_value=({"home_history_count":5,"away_history_count":5,
+                              "poisson":{"over_2_5":0.6},
+                              "baseline":{"over_2_5":0.55}},None)):
+        first=freeze(a,b,intake_bytes=canonical(a),shadow_bytes=canonical(b),
+                     now=T("2026-11-04T12:04:00Z"),folder=folder/"2026-11-04")
+        assert first["new_immutable_prematch_freeze_count"]==1
+        second=freeze(a,b,intake_bytes=canonical(a),shadow_bytes=canonical(b),
+                      now=T("2026-11-04T12:05:00Z"),folder=folder/"2026-11-05")
+    assert second["new_immutable_prematch_freeze_count"]==0
+    assert second["blocked"][0]["reason"]=="PROVIDER_FIXTURE_PREVIOUSLY_FROZEN_NO_NEW_UNIQUE_OBSERVATION"
+    assert len(list(folder.glob("20??-??-??/555_*.json")))==1
