@@ -3,7 +3,7 @@ on:
   workflow_dispatch:
     inputs:
       month:
-        description: "Historical month YYYY-MM for research-only raw capture"
+        description: "Historical first month YYYY-MM; two month research capture currently fixed to October-November 2026"
         required: true
         default: "2026-10"
   push:
@@ -11,14 +11,18 @@ on:
       - repair/cor09-world-pipeline
     paths:
       - tools/matrix_football_espn_six_league_raw_capture.py
+      - tools/matrix_football_espn_enriched_pit_research.py
+      - tools/matrix_espn_sha_bound_two_month_over25_research.py
       - tests/test_matrix_football_espn_six_league_raw_capture.py
+      - tests/test_matrix_football_espn_enriched_pit_research.py
+      - tests/test_matrix_espn_sha_bound_two_month_over25_research.py
       - .github/workflows/matrix-espn-six-league-monthly-bootstrap.yml
 permissions:
   contents: read
 jobs:
   monthly-history:
     runs-on: ubuntu-latest
-    timeout-minutes: 13
+    timeout-minutes: 18
     steps:
       - uses: actions/checkout@v4
         with:
@@ -27,47 +31,73 @@ jobs:
           sparse-checkout: |
             tools/matrix_football_espn_enriched_pit_research.py
             tools/matrix_football_espn_six_league_raw_capture.py
+            tools/matrix_espn_sha_bound_two_month_over25_research.py
             tests/test_matrix_football_espn_enriched_pit_research.py
             tests/test_matrix_football_espn_six_league_raw_capture.py
+            tests/test_matrix_espn_sha_bound_two_month_over25_research.py
       - uses: actions/setup-python@v5
         with:
           python-version: "3.11"
       - run: python -m pip install pytest
-      - name: Test monthly archive and integrity before source queries
-        run: PYTHONPATH=. python -m pytest -q tests/test_matrix_football_espn_enriched_pit_research.py tests/test_matrix_football_espn_six_league_raw_capture.py
-      - name: Collect six source-native October history responses
-        env:
-          REQUESTED_MONTH: ${{ github.event.inputs.month || '2026-10' }}
-        run: PYTHONPATH=. python -m tools.matrix_football_espn_six_league_raw_capture --month "$REQUESTED_MONTH" --out evidence/research/football_six_league_espn_monthly
-      - name: Verify source bytes and research-only governance
+      - name: Test SHA, source time receipts, formula, and no future leakage
+        run: PYTHONPATH=. python -m pytest -q tests/test_matrix_football_espn_enriched_pit_research.py tests/test_matrix_football_espn_six_league_raw_capture.py tests/test_matrix_espn_sha_bound_two_month_over25_research.py
+      - name: Capture October six-league source bytes
+        run: PYTHONPATH=. python -m tools.matrix_football_espn_six_league_raw_capture --month 2026-10 --out evidence/research/espn_two_month/2026-10
+      - name: Capture November six-league source bytes with current schedule
+        run: PYTHONPATH=. python -m tools.matrix_football_espn_six_league_raw_capture --month 2026-11 --out evidence/research/espn_two_month/2026-11
+      - name: Verify 12 SHA receipts and freeze genuine source-based research before kickoff
         run: |
           python - <<'PY'
-          import json,hashlib
+          import hashlib,json
           from pathlib import Path
-          p=Path("evidence/research/football_six_league_espn_monthly")
-          d=json.loads((p/"MATRIX_ESPN_SIX_LEAGUE_RAW_RESEARCH_LAST.json").read_bytes())
-          assert d["query_kind"]=="MONTH"
-          assert d["source_league_scope"]==6
-          assert d["source_captured_leagues"]==6, "Source did not capture all six leagues"
-          assert d["backfilled_monthly_results_are_not_prospective_predictions"] is True
-          assert d["production_p_matrix_authorized"] is False
-          assert d["telegram_signal_authorized"] is False
-          assert d["real_money"]=="BLOCKED"
-          for lid,source in d["sources"].items():
-              assert source["status"]=="PROVIDER_BYTES_AUTHENTICALLY_CAPTURED_RESEARCH_ONLY",lid
-              raw=(p/source["raw_archive_file"]).read_bytes()
-              assert len(raw)==source["raw_bytes"]
-              assert hashlib.sha256(raw).hexdigest()==source["raw_sha256"]
-              assert source["history"]["production_p_matrix_authorized"] is False
-          print(json.dumps({"raw_verified_six_leagues":6,
-                            "historical_rows":sum(x["provider_final_history_count"] for x in d["sources"].values()),
-                            "monthly_backfill_not_predictions":True,
-                            "telegram_signals":False},sort_keys=True))
+          root=Path("evidence/research/espn_two_month")
+          for month in ("2026-10","2026-11"):
+              folder=root/month
+              report=json.loads((folder/"MATRIX_ESPN_SIX_LEAGUE_RAW_RESEARCH_LAST.json").read_bytes())
+              assert report["source_captured_leagues"]==6
+              assert report["point_in_time_receipts_stamped_after_source_response"] is True
+              assert report["real_money"]=="BLOCKED"
+              for src in report["sources"].values():
+                  assert src["status"]=="PROVIDER_BYTES_AUTHENTICALLY_CAPTURED_RESEARCH_ONLY"
+                  raw=(folder/src["raw_archive_file"]).read_bytes()
+                  assert len(raw)==src["raw_bytes"]
+                  assert hashlib.sha256(raw).hexdigest()==src["raw_sha256"]
+          print("TWELVE_PROVIDER_SOURCE_RECEIPTS_VERIFIED")
+          PY
+          mkdir -p evidence/research/espn_two_month/output
+          NAME="ESPN_SHA_BOUND_RESEARCH_FROZEN_$(date -u +%Y%m%dT%H%M%S%NZ).json"
+          PYTHONPATH=. python -m tools.matrix_espn_sha_bound_two_month_over25_research \
+            --october evidence/research/espn_two_month/2026-10 \
+            --november evidence/research/espn_two_month/2026-11 \
+            --out "evidence/research/espn_two_month/output/$NAME"
+      - name: Validate no official promotion and real pre-kickoff source trace
+        run: |
+          python - <<'PY'
+          import json
+          from datetime import datetime
+          from pathlib import Path
+          files=list(Path("evidence/research/espn_two_month/output").glob("*.json"))
+          assert len(files)==1
+          j=json.loads(files[0].read_bytes())
+          assert j["research_probability_count"]==len(j["research_rows"])
+          assert j["source_sha256_and_point_in_time_receipts_verified"] is True
+          assert j["production_p_matrix_authorized"] is False
+          assert j["telegram_signal_authorized"] is False
+          assert j["real_money"]=="BLOCKED"
+          freeze=datetime.fromisoformat(j["research_frozen_at_utc"])
+          for row in j["research_rows"]:
+              assert datetime.fromisoformat(row["kickoff_utc"])>freeze
+              assert datetime.fromisoformat(row["target_source_received_at_utc"])<=freeze
+              assert row["observed_outcome"] is None
+              assert len(row["historic_source_sha256"])>=20
+          print(json.dumps({"source_frozen_research_rows":len(j["research_rows"]),
+                            "all_six_league_sources_verified":True,
+                            "official_probabilities_authorized":False},sort_keys=True))
           PY
       - uses: actions/upload-artifact@v4
         if: always()
         with:
           name: matrix-espn-six-league-monthly-raw-research
-          path: evidence/research/football_six_league_espn_monthly/
+          path: evidence/research/espn_two_month/
           if-no-files-found: warn
           retention-days: 30
