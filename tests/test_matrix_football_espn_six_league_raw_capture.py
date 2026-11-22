@@ -47,3 +47,24 @@ def test_provider_league_swap_rejected():
 def test_forbid_prod_writes(tmp_path):
     with pytest.raises(ValueError,match="RAW_RESEARCH_NOT_PRODUCTION"):
         persist(tmp_path/"notifications",{"sources":{}},{})
+
+def test_monthly_archive_uses_bounded_six_calls(tmp_path):
+    seen=[]
+    def recorder(req,timeout=20):
+        seen.append(req.full_url)
+        return fake(req,timeout)
+    report,raws=capture("2026-10",opener=recorder,
+        observed_at=datetime(2026,11,22,tzinfo=timezone.utc))
+    assert len(seen)==6
+    assert all("dates=202610&limit=300" in link for link in seen)
+    assert report["query_kind"]=="MONTH"
+    assert report["backfilled_monthly_results_are_not_prospective_predictions"] is True
+    assert report["production_p_matrix_authorized"] is False
+    persist(tmp_path,report,raws)
+    assert len(list(tmp_path.glob("ESPN_*.json")))==6
+
+def test_monthly_source_does_not_admit_invalid_date():
+    with pytest.raises(ValueError):
+        capture("2026-13",opener=fake)
+    with pytest.raises(ValueError):
+        capture("October 2026",opener=fake)
