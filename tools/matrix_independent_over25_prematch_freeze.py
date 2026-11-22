@@ -170,6 +170,14 @@ def freeze(intake:dict,shadow:dict,*,intake_bytes:bytes,shadow_bytes:bytes,
             # create a new fake freeze every five minutes.
             name=f"{fid}_{digest(shadow_bytes)[:20]}.json"
             dest=folder/name
+            # A different shadow receipt must NEVER create a second unique
+            # prospective observation for a fixture already frozen on ANY day.
+            # This is independent of content hash and of report partition.
+            # Reject duplicates before writing source files or the forecast.
+            if not dest.exists():
+                for prior in folder.parent.glob("20??-??-??/" + fid + "_*.json"):
+                    if "_result_" not in prior.name and prior != dest:
+                        raise ValueError("PROVIDER_FIXTURE_PREVIOUSLY_FROZEN_NO_NEW_UNIQUE_OBSERVATION")
             if dest.exists():
                 existing=json.loads(dest.read_text(encoding="utf-8"))
                 for key in ("schema","provider_fixture_id","kickoff_utc",
