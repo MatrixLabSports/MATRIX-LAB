@@ -200,6 +200,52 @@ jobs:
             --shadow "evidence/football_world_inventory/$D/MATRIX_INDEPENDENT_OVER25_HISTORY_SHADOW.json" \
             --out "evidence/football_world_inventory/$D/MATRIX_INDEPENDENT_OVER25_PREMATCH_FREEZE_REPORT.json"
 
+      - name: Verify and report genuinely new immutable prematch research rows
+        shell: bash
+        run: |
+          set -euo pipefail
+          D="${{ steps.date.outputs.target_date }}"
+          python - "$D" <<'PY'
+          import hashlib,json,os,sys
+          from pathlib import Path
+          d=sys.argv[1]
+          report=Path(f"evidence/football_world_inventory/{d}/MATRIX_INDEPENDENT_OVER25_PREMATCH_FREEZE_REPORT.json")
+          x=json.loads(report.read_bytes())
+          assert x["schema"]=="MATRIX_INDEPENDENT_OVER25_PREMATCH_FREEZE_REPORT_V1"
+          assert x["target_date_bogota"]==d
+          assert x["real_money"]=="BLOCKED" and x["telegram_signal_authorized"] is False
+          assert x["production_p_matrix_authorized"] is False
+          rows=x["sealed"]
+          assert x["immutable_prematch_freeze_count"]==len(rows)
+          counts={status:sum(r["status"]==status for r in rows)
+                  for status in ("FROZEN","ALREADY_FROZEN","DRY_RUN")}
+          assert not counts["DRY_RUN"],"PRODUCTION_FREEZE_MUST_NOT_RETURN_DRY_RUN"
+          assert x["new_immutable_prematch_freeze_count"]==counts["FROZEN"]
+          assert x["previously_frozen_count"]==counts["ALREADY_FROZEN"]
+          assert sum(counts.values())==len(rows)
+          seen=set()
+          for row in rows:
+              fid=str(row["fixture_id"])
+              assert fid.isdecimal() and fid not in seen
+              seen.add(fid)
+              p=Path(row["path"])
+              assert p.as_posix().startswith(f"evidence/football_research_freezes/{d}/")
+              assert p.is_file()
+              raw=p.read_bytes()
+              assert hashlib.sha256(raw).hexdigest()==row["snapshot_sha256"]
+              frozen=json.loads(raw)
+              assert frozen["provider_fixture_id"]==fid
+              assert frozen["real_money"]=="BLOCKED"
+              assert frozen["telegram_signal_authorized"] is False
+              assert frozen["sealed_at_utc"]<frozen["kickoff_utc"]
+          summary=("MATRIX prospective freeze: NEW="+str(counts["FROZEN"])+
+                   " PREVIOUSLY_FROZEN="+str(counts["ALREADY_FROZEN"])+
+                   " INVALID=0 official_P_MATRIX=BLOCKED Telegram=BLOCKED")
+          print(summary)
+          with open(os.environ["GITHUB_STEP_SUMMARY"],"a",encoding="utf-8") as output:
+              output.write(summary+"\\n")
+          PY
+
       - name: Preserve source-bound PIT blocker if authentic triple-browser evidence is missing
         id: pit_preflight
         shell: bash
