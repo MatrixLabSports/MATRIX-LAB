@@ -7,25 +7,35 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import re
 from datetime import date, datetime, timezone
 from pathlib import Path
 from urllib.error import HTTPError,URLError
 from urllib.request import Request,urlopen
 from tools.matrix_football_espn_enriched_pit_research import LEAGUES,extract,dt,MAX_BYTES
 
-URL="https://site.api.espn.com/apis/site/v2/sports/soccer/{slug}/scoreboard?dates={day}&limit=30"
+URL="https://site.api.espn.com/apis/site/v2/sports/soccer/{slug}/scoreboard?dates={period}&limit={limit}"
 SCHEMA="MATRIX_ESPN_SIX_LEAGUE_RAW_RESEARCH_CAPTURE_V1"
 
 
 def capture(day: str, *, opener=urlopen, observed_at:datetime|None=None):
-    date.fromisoformat(day)
+    if re.fullmatch(r"[0-9]{4}-[0-9]{2}",day):
+        date.fromisoformat(day+"-01")
+        query_kind="MONTH"
+        limit=300
+    elif re.fullmatch(r"[0-9]{4}-[0-9]{2}-[0-9]{2}",day):
+        date.fromisoformat(day)
+        query_kind="DAY"
+        limit=30
+    else:
+        raise ValueError("ESPN_PERIOD_MUST_BE_ISO_DAY_OR_MONTH")
     when=observed_at or datetime.now(timezone.utc)
     if when.tzinfo is None or when.utcoffset() is None:
         raise ValueError("CAPTURE_CLOCK_REQUIRES_TIMEZONE")
     observed=when.astimezone(timezone.utc).isoformat()
     captured={}; raw_files={}
     for lid,slug in LEAGUES.items():
-        endpoint=URL.format(slug=slug,day=day.replace("-",""))
+        endpoint=URL.format(slug=slug,period=day.replace("-",""),limit=limit)
         try:
             request=Request(endpoint,headers={"Accept":"application/json"})
             with opener(request,timeout=20) as res:
@@ -58,6 +68,8 @@ def capture(day: str, *, opener=urlopen, observed_at:datetime|None=None):
         "schema":SCHEMA,
         "source":"ESPN_PUBLIC_SCOREBOARD_JSON",
         "day_queried_provider_calendar":day,
+        "query_kind":query_kind,
+        "backfilled_monthly_results_are_not_prospective_predictions":True,
         "observed_at_utc":observed,
         "source_priority":["SOFASCORE","FLASHSCORE","ESPN"],
         "browser_first_crossmatch_completed":False,
@@ -97,10 +109,12 @@ def persist(out:Path,report:dict,raws:dict[str,bytes]):
 
 def main():
     p=argparse.ArgumentParser()
-    p.add_argument("--day",required=True)
+    group=p.add_mutually_exclusive_group(required=True)
+    group.add_argument("--day",help="Single provider calendar date YYYY-MM-DD")
+    group.add_argument("--month",help="Historical league month YYYY-MM; results are never backfilled predictions")
     p.add_argument("--out",type=Path,default=Path("evidence/research/football_six_league_espn"))
     a=p.parse_args()
-    report,raws=capture(a.day)
+    report,raws=capture(a.month or a.day)
     persist(a.out,report,raws)
     print(json.dumps({"captured_leagues":report["source_captured_leagues"],
                       "final_historical_rows":sum(x["provider_final_history_count"] or 0
