@@ -12,7 +12,7 @@ from urllib.parse import urlparse
 
 SCHEMA="MATRIX_BETPLAY_READONLY_DOM_RESEARCH_MARKET_V1"
 PATTERN=re.compile(
-    r"^Apuesta sobre (?P<home>[^\\n]+?) vs (?P<away>[^\\n]+?)"
+    r"^Apuesta sobre (?P<home>.+?) vs (?P<away>.+?)"
     r" - Total de goles - Más de 2[.,]5 en (?P<odds>[0-9]{1,3}[.,][0-9]{1,3})$"
 )
 
