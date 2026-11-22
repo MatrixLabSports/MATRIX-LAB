@@ -64,7 +64,10 @@ def _independent_status(root: Path, day: str) -> dict:
         payload = _read_json(candidate)
         if (payload is not None
             and payload.get("target_date_bogota") == day
-            and payload.get("signal_generation_authorized") is False):
+            and payload.get("real_money") == "BLOCKED"
+            and (payload.get("telegram_signal_authorized") is False
+                 or payload.get("signal_generation_authorized") is False)
+            and payload.get("model_probabilities_authorized") is not True):
             tennis_candidates.append(payload)
     tennis = tennis_candidates[0] if len(tennis_candidates) == 1 else None
     tennis_review = _read_json(tennis_folder / "MATRIX_TENNIS_OPERA_DUAL_SOURCE_LINK_REVIEW.json")
