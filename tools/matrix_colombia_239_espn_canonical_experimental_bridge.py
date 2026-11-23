@@ -70,11 +70,20 @@ def build(espn_raw,parity,three,shadow):
                 ownhome=old["home_id"]==team["id"]
                 opponent=sides["away" if side=="home" else "home"]
                 oldopponent=old["away_id"] if ownhome else old["home_id"]
+                historic_native=source_events.get(old["id"])
+                if not historic_native or len(historic_native.get("competitions") or [])!=1:
+                    raise ValueError("NATIVE_HISTORIC_EVENT_NOT_PROVEN")
+                opponent_names=[
+                    x.get("team",{}).get("displayName")
+                    for x in historic_native["competitions"][0].get("competitors") or []
+                    if str(x.get("team",{}).get("id"))==str(oldopponent)]
+                if len(opponent_names)!=1 or not opponent_names[0]:
+                    raise ValueError("AUTHENTIC_OPPONENT_NAME_MISSING")
                 teamhist.append(FootballHistoryObservation(
                   fixture_id=old["id"],
                   kickoff_utc=old["kickoff"].isoformat(),
                   team_id=team["id"],team_name=team["name"],
-                  opponent_id=oldopponent,opponent_name="ESPN_NATIVE_TEAM_"+oldopponent,
+                  opponent_id=oldopponent,opponent_name=str(opponent_names[0]),
                   venue_role="home" if ownhome else "away",
                   goals_for=old["home_goals"] if ownhome else old["away_goals"],
                   goals_against=old["away_goals"] if ownhome else old["home_goals"],
