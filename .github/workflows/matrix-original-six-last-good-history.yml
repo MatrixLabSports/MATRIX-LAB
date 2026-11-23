@@ -70,7 +70,8 @@ jobs:
           P="evidence/football_world_inventory/2026-11-22/MATRIX_SIX_LEAGUES_ORIGINAL_HISTORIC_SHA_RUN_${{ github.run_id }}.json"
           git config user.name matrix-six-history
           git config user.email matrix-six-history@users.noreply.github.com
-          git add "$P"
+          # The run-specific proof is intentionally outside the sparse input set.
+          git add --sparse -- "$P"
           git commit -m "evidence(producer): six original October PIT archive SHA with Colombia"
           for a in 1 2 3 4; do
             git fetch origin repair/cor09-world-pipeline
