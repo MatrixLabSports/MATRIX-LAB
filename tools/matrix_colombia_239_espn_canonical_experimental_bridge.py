@@ -35,6 +35,7 @@ def build(espn_raw,parity,three,shadow):
     scored={str(x["espn_event_id"]):x for x in shadow["research_scores"]}
     source_events={str(x["id"]):x for x in source.get("events") or []}
     history=[x for x in espn_rows(espn_raw) if x["id"] in valid_es_ids]
+    if len(history)!=356:raise ValueError("SOURCE_HISTORICAL_PAIR_SET_INCOMPLETE")
     history.sort(key=lambda x:(x["kickoff"],x["id"]))
     result=[]
     for matched in three["three_source_matches"]:
