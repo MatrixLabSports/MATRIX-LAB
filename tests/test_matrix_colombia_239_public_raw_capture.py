@@ -4,7 +4,7 @@ from datetime import datetime, timezone
 from tools.matrix_colombia_239_public_raw_capture import capture, persist, sha
 import pytest
 
-ESPN={"events":[{"id":"100","date":"2026-11-23T01:15:00Z","status":{"type":{"name":"STATUS_SCHEDULED"}},
+ESPN={"leagues":[{"slug":"col.1"}],"events":[{"id":"100","date":"2026-11-23T01:15:00Z","status":{"type":{"name":"STATUS_SCHEDULED"}},
                  "competitions":[{"competitors":[{"homeAway":"home","team":{"displayName":"Local"}},
                                                 {"homeAway":"away","team":{"displayName":"Visitante"}}]}]}]}
 TSDB={"events":[{"idEvent":"200","idLeague":"4497","strSport":"Soccer",
@@ -33,7 +33,7 @@ def test_raw_observation_not_certification(tmp_path):
 
 def test_duplicate_espn_rejected():
     def bad(req,timeout=20):
-        return Reply({"events":[ESPN["events"][0],ESPN["events"][0]]} if "espn.com" in req.full_url else TSDB)
+        return Reply({"leagues":[{"slug":"col.1"}],"events":[ESPN["events"][0],ESPN["events"][0]]} if "espn.com" in req.full_url else TSDB)
     r,_=capture("2026-11-22",opener=bad)
     assert r["sources"]["ESPN"]["status"]=="SOURCE_UNAVAILABLE_OR_INVALID"
     assert r["raw_verified_source_count"]==1
@@ -81,3 +81,27 @@ def test_utc_bogota_boundary_requires_explicit_espn_day():
 def test_reject_non_adjacent_espn_day():
     with pytest.raises(ValueError,match="ESPN_DATE_MUST_BE_TARGET_OR_PRIOR_LOCAL_DAY"):
         capture("2026-11-22",espn_day="2026-11-01",opener=opener)
+
+def test_wrong_espn_league_namespace_blocks_colombia_before_accepting_events():
+    bad=json.loads(json.dumps(ESPN))
+    bad["leagues"][0]["slug"]="eng.1"
+    def fake(req,timeout=20):
+        return Reply(bad if "espn.com" in req.full_url else TSDB)
+    report,raw=capture("2026-11-22",opener=fake)
+    assert "ESPN" not in raw
+    assert report["sources"]["ESPN"]["status"]=="SOURCE_UNAVAILABLE_OR_INVALID"
+    assert report["sources"]["ESPN"]["provider_event_count"] is None
+    assert report["production_p_matrix_authorized"] is False
+
+def test_missing_espn_league_namespace_is_not_assumed_colombia():
+    bad=json.loads(json.dumps(ESPN));bad.pop("leagues")
+    report,raw=capture("2026-11-22",opener=lambda req,timeout=20:
+      Reply(bad if "espn.com" in req.full_url else TSDB))
+    assert "ESPN" not in raw
+    assert report["sources"]["ESPN"]["status"]=="SOURCE_UNAVAILABLE_OR_INVALID"
+
+def test_response_observation_clock_is_marked_after_receipt():
+    report,raw=capture("2026-11-22",opener=opener)
+    assert report["sources"]["ESPN"]["receipt_stamped_after_source_response"] is True
+    assert report["sources"]["THESPORTSDB"]["receipt_stamped_after_source_response"] is True
+    assert report["telegram_signal_authorized"] is False
