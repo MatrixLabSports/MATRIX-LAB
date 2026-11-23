@@ -19,7 +19,7 @@ INBOX=Path("evidence/market_portfolio/MATRIX_42_LANE_FREEZE_INBOX.jsonl")
 LEDGER=Path("evidence/market_portfolio/MATRIX_42_LANE_PROSPECTIVE_LEDGER.jsonl")
 AUDIT=Path("evidence/market_portfolio/MATRIX_COLOMBIA_AUTHENTIC_GOALS_PROSPECTIVE_INTAKE_LAST.json")
 MODEL="MATRIX_COL239_ESPN_AUTHENTIC_RESEARCH_ONLY_GOALS_V1"
-LANES=("TOTAL_GOALS_OVER_UNDER","TEAM_TOTAL_GOALS_HOME","TEAM_TOTAL_GOALS_AWAY")
+LANES=("TOTAL_GOALS_OVER_UNDER","TEAM_TOTAL_GOALS_HOME","TEAM_TOTAL_GOALS_AWAY","BTTS")
 def aware(value):
     t=datetime.fromisoformat(str(value).replace("Z","+00:00"))
     if t.utcoffset() is None:raise ValueError("TIMESTAMP_NOT_TIMEZONE_AWARE")
@@ -86,7 +86,9 @@ def make_rows(triple,shadow,parity,canon,*,now,source_shas,existing_events):
         ea=float(q["input_comparisons"]["expected_away_goals"]["espn_exact356"])
         prob=float(p["p_over25_research_only"])
         if not 0<prob<1:raise ValueError("NON_FINITE_OR_INVALID_ORIGINAL_FROZEN_SCORE")
+        btts_baseline=(1.0-math.exp(-eh))*(1.0-math.exp(-ea))
         predictions={
+          "BTTS":{"yes":btts_baseline,"no":1.0-btts_baseline},
           "TOTAL_GOALS_OVER_UNDER":{"over_2_5":prob,"under_2_5":1-prob},
           "TEAM_TOTAL_GOALS_HOME":{"over_0_5":poisson_over(eh,0.5),"under_0_5":1-poisson_over(eh,0.5),
               "over_1_5":poisson_over(eh,1.5),"under_1_5":1-poisson_over(eh,1.5)},
@@ -107,7 +109,9 @@ def make_rows(triple,shadow,parity,canon,*,now,source_shas,existing_events):
               "source_schema":MODEL,"source_snapshot_sha256":canonical_sha(source_shas),
               "prediction_snapshot_sha256":canonical_sha(capsule),
               "feature_snapshot_sha256":c["canonical_analysis_input_sha256"],
-              "prediction":prediction,"model_basis":MODEL,
+              "prediction":prediction,"model_basis":(
+                 "BTTS_INDEPENDENT_GOALS_POISSON_BASELINE_CHALLENGER_NO_GO_EXISTING_MODEL_UNCHANGED"
+                 if lane=="BTTS" else MODEL),
               "source_kind":"ESPN_COL_1_RESEARCH_FROZEN_THREE_SOURCE_VERIFIED",
               "source_original_model_params":dict(shadow["original_parameters"]),
               "source_provider_native_event_id":fid,"source_competition_id":"col.1",
@@ -115,6 +119,7 @@ def make_rows(triple,shadow,parity,canon,*,now,source_shas,existing_events):
               "source_goal_histories_strictly_matched":356,
               "history_kickoff_conflicts_quarantined":2,
               "experimental_only":True,"model_enriched_feature_equivalence_certified":False,
+              "btts_existing_no_go_model_unchanged":True,
               "official_p_matrix_authorized":False,"telegram_signal_authorized":False,
               "source_provenance_sha256":source_shas,
               "target_outcome":None,"settlement":None,
