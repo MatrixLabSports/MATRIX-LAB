@@ -1,0 +1,117 @@
+name: MATRIX Champions League CL2001 Free PIT Probe
+on:
+  workflow_dispatch:
+    inputs:
+      target_date:
+        description: "Existing authenticated future CL intake date (Bogota)"
+        type: string
+        required: false
+        default: "2026-11-24"
+  push:
+    branches:
+      - repair/cor09-world-pipeline
+    paths:
+      - .github/workflows/matrix-champions-league-free-pit-probe.yml
+
+permissions:
+  contents: write
+concurrency:
+  group: matrix-champions-league-free-pit-probe
+  cancel-in-progress: false
+
+jobs:
+  champions-cl-2001-audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      REAL_MONEY: BLOCKED
+      AUTO_BETTING: DISABLED
+      MATRIX_MODE: SHADOW
+    steps:
+      - name: Checkout authentic existing CL fixture research evidence
+        uses: actions/checkout@v4
+        with:
+          ref: repair/cor09-world-pipeline
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Run CL history and strict source-time safety regression
+        run: |
+          python -m pip install --disable-pip-version-check pytest
+          PYTHONPATH=. python -m pytest -q tests/test_matrix_champions_league_free_api_pit.py
+      - name: Choose previously observed genuinely prospective CL fixture date
+        id: scope
+        shell: bash
+        run: |
+          set -euo pipefail
+          D="${{ inputs.target_date }}"
+          if [ -z "$D" ]; then D="2026-11-24"; fi
+          date -d "$D" +%F >/dev/null
+          P="evidence/football_world_inventory/$D/MATRIX_FOOTBALL_INDEPENDENT_FIXTURE_INTAKE.json"
+          test -f "$P"
+          python - "$P" <<'PY'
+          import json,sys
+          from datetime import datetime,timezone
+          doc=json.load(open(sys.argv[1],encoding="utf-8"))
+          assert doc["real_money"]=="BLOCKED"
+          assert doc["signal_generation_authorized"] is False
+          assert doc["source"]=="FOOTBALL_DATA_ORG"
+          cl=[r for r in doc["fixtures"] if r.get("source_competition_id")==2001 and r.get("source_competition_code")=="CL"]
+          assert cl,"NO_CHAMPIONS_FIXTURES_IN_EXISTING_AUTHENTIC_CAPTURE"
+          assert all(datetime.fromisoformat(r["kickoff_utc"].replace("Z","+00:00"))>datetime.now(timezone.utc) for r in cl),"NO_FUTURE_CHAMPIONS_FIXTURES"
+          print("CHAMPIONS_AUTHENTIC_FUTURE_INTAKE",len(cl))
+          PY
+          echo "day=$D" >> "$GITHUB_OUTPUT"
+      - name: Query exactly one free CL 2001 native history endpoint and check raw SHA
+        env:
+          FOOTBALL_DATA_ORG_TOKEN: ${{ secrets.FOOTBALL_DATA_ORG_TOKEN }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          D="${{ steps.scope.outputs.day }}"
+          O="evidence/football_world_inventory/$D/MATRIX_CHAMPIONS_LEAGUE_FREE_API_PIT_RUN_${{ github.run_id }}.json"
+          S="evidence/football_world_inventory/$D/sources/champions_league_2001_history_run_${{ github.run_id }}.json"
+          PYTHONPATH=. python -m tools.matrix_champions_league_free_api_pit \
+            --intake "evidence/football_world_inventory/$D/MATRIX_FOOTBALL_INDEPENDENT_FIXTURE_INTAKE.json" \
+            --out "$O" --raw-out "$S"
+          python - "$O" <<'PY'
+          import hashlib,json,sys
+          from pathlib import Path
+          doc=json.loads(Path(sys.argv[1]).read_bytes())
+          assert doc["fixture_count"]>0
+          assert doc["real_money"]=="BLOCKED"
+          assert doc["production_p_matrix_authorized"] is False
+          assert doc["telegram_signal_authorized"] is False
+          assert doc["history_network_calls"]<=1
+          if doc["status"]=="AUTHENTICATED_CHAMPIONS_HISTORY_RESEARCH_ONLY":
+              p=Path(doc["history_raw_source_path"])
+              assert p.is_file()
+              assert hashlib.sha256(p.read_bytes()).hexdigest()==doc["history_sha256"]
+              print("CHAMPIONS_AUTHENTIC_API_SHA_VERIFIED",doc["fixture_count"],doc["provider_history_finished_pit_rows"])
+          else:
+              print("CHAMPIONS_HISTORICAL_SOURCE_NOT_CERTIFIED",doc["status"])
+          PY
+      - name: Persist run-scoped research-only source evidence
+        shell: bash
+        run: |
+          set -euo pipefail
+          D="${{ steps.scope.outputs.day }}"
+          P="evidence/football_world_inventory/$D/MATRIX_CHAMPIONS_LEAGUE_FREE_API_PIT_RUN_${{ github.run_id }}.json"
+          S="evidence/football_world_inventory/$D/sources/champions_league_2001_history_run_${{ github.run_id }}.json"
+          git config user.name matrix-champions-research
+          git config user.email matrix-champions-research@users.noreply.github.com
+          git add "$P"
+          if [ -f "$S" ]; then git add "$S"; fi
+          if git diff --cached --quiet; then exit 0; fi
+          git commit -m "evidence(champions): run-scoped native CL 2001 history and immutable original SHA"
+          for attempt in 1 2 3 4; do
+            git fetch origin repair/cor09-world-pipeline
+            if ! git rebase origin/repair/cor09-world-pipeline; then
+              git rebase --abort || true
+              exit 1
+            fi
+            if git push origin HEAD:repair/cor09-world-pipeline; then exit 0; fi
+            sleep "$attempt"
+          done
+          exit 1
