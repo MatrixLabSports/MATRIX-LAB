@@ -16,7 +16,7 @@ def build(doc=None,now=NOW,seen=None):
         existing_events=seen or set())
 def test_six_authentic_research_market_rows_from_two_triple_verified_futures():
     rows,blocked=build()
-    assert len(rows)==6 and blocked==[]
+    assert len(rows)==8 and blocked==[]
     assert len({r["event_id"] for r in rows})==2
     assert set(r["market_lane"] for r in rows)==set(LANES)
     assert all(validate_freeze(r)[0] for r in rows)
@@ -53,3 +53,15 @@ def test_never_impersonate_api_football_fixture_identity():
     assert all(r["event_id"].startswith("ESPN_COL_1:") for r in rows)
     assert all(r["source_competition_id"]=="col.1" for r in rows)
     assert all(r["model_enriched_feature_equivalence_certified"] is False for r in rows)
+
+def test_btts_poisson_research_baseline_is_preregistered_not_existing_model_promotion():
+    import math
+    rows,_=build()
+    yes=[r for r in rows if r["market_lane"]=="BTTS"]
+    assert len(yes)==2
+    assert all(r["btts_existing_no_go_model_unchanged"] is True for r in yes)
+    assert all("BASELINE_CHALLENGER" in r["model_basis"] for r in yes)
+    assert all(r["official_p_matrix_authorized"] is False for r in yes)
+    assert all(r["telegram_signal_authorized"] is False for r in yes)
+    assert all(0<r["prediction"]["yes"]<1 for r in yes)
+    assert all(abs(r["prediction"]["yes"]+r["prediction"]["no"]-1)<1e-12 for r in yes)
