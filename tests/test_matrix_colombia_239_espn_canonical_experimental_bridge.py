@@ -18,6 +18,7 @@ def test_actual_espn_native_provider_history_maps_into_original_structural_contr
     assert all(x["home_history_count"]==20 and x["away_history_count"]==20 for x in j["inputs"])
     assert all(x["structural_readiness"]=="READY_FOR_EXPERIMENTAL_EVALUATION" for x in j["inputs"])
     assert all(x["canonical_source_namespace"]=="ESPN_COL_1" for x in j["inputs"])
+    assert all(x["source_native_competition_id"]=="col.1" for x in j["inputs"])
     assert all(x["original_api_football_fixture_id"] is None for x in j["inputs"])
     assert j["original_enriched_feature_equivalence_certified"] is False
     assert j["production_p_matrix_authorized"] is False
