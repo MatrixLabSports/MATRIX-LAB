@@ -22,6 +22,8 @@ on:
       - tests/test_matrix_multi_market_supervisor.py
       - tests/test_market_portfolio_permanent_mandate.py
       - tests/test_matrix_42_lane_prospective_registry.py
+      - tools/matrix_colombia_42_authentic_research_freeze_bridge.py
+      - tests/test_matrix_colombia_42_authentic_research_freeze_bridge.py
       - tests/test_matrix_42_lane_football_freeze_bridge.py
       - tests/test_matrix_42_lane_period_goals_freeze_bridge.py
       - tests/test_matrix_42_lane_tennis_match_winner_bridge.py
@@ -77,6 +79,7 @@ jobs:
             tests/test_multi_market_supervisor_single_writer.py \
             tests/test_matrix_blocked_market_activation_plan.py \
             tests/test_matrix_42_lane_prospective_registry.py \
+            tests/test_matrix_colombia_42_authentic_research_freeze_bridge.py \
             tests/test_matrix_42_lane_football_freeze_bridge.py \
             tests/test_matrix_42_lane_period_goals_freeze_bridge.py \
             tests/test_matrix_42_lane_tennis_match_winner_bridge.py \
@@ -261,6 +264,27 @@ jobs:
           },sort_keys=True))
           PY
 
+      - name: Bridge real triple-source Colombia goals research freezes without betting
+        shell: bash
+        run: |
+          set -euo pipefail
+          PYTHONPATH=. python -m tools.matrix_colombia_42_authentic_research_freeze_bridge
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          p=Path("evidence/market_portfolio/MATRIX_COLOMBIA_AUTHENTIC_GOALS_PROSPECTIVE_INTAKE_LAST.json")
+          d=json.loads(p.read_bytes())
+          assert d["status"]=="AUTHENTIC_RESEARCH_PREMATCH_PROSPECTIVE_INTAKE_NOT_PRODUCTION"
+          assert d["no_source_backfill"] is True
+          assert d["duplicate_suppression_by_event_and_lane"] is True
+          assert d["model_enriched_feature_equivalence_certified"] is False
+          assert d["production_p_matrix_authorized"] is False
+          assert d["telegram_signal_authorized"] is False
+          assert d["real_money"]=="BLOCKED"
+          assert d["automatic_wagering"] is False
+          print("COL_239_CROSS_SOURCE_SAFE_GOALS_INTAKE",d["incoming_research_freezes"])
+          PY
+
       - name: Build strict 42-lane prospective registry
         shell: bash
         run: |
@@ -346,6 +370,7 @@ jobs:
           git add evidence/market_portfolio/MATRIX_MULTI_MARKET_SUPERVISOR_LAST.json
           git add evidence/market_portfolio/MATRIX_BLOCKED_MARKET_ACTIVATION_PLAN_LAST.json
           git add evidence/market_portfolio/MATRIX_42_LANE_PROSPECTIVE_REGISTRY_LAST.json
+          git add evidence/market_portfolio/MATRIX_COLOMBIA_AUTHENTIC_GOALS_PROSPECTIVE_INTAKE_LAST.json
           git add evidence/market_portfolio/MATRIX_42_LANE_FOOTBALL_FREEZE_BRIDGE_LAST.json
           git add evidence/market_portfolio/MATRIX_42_LANE_PERIOD_GOALS_FREEZE_BRIDGE_LAST.json
           git add evidence/market_portfolio/MATRIX_42_LANE_TENNIS_MATCH_WINNER_BRIDGE_LAST.json
