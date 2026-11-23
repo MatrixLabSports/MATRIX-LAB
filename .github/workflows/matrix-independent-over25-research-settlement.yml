@@ -10,6 +10,8 @@ on:
     paths:
       - tools/matrix_independent_over25_research_settlement.py
       - tools/matrix_independent_over25_research_scorecard.py
+      - tools/matrix_original_six_league_coverage.py
+      - tests/test_matrix_original_six_league_coverage.py
       - tools/matrix_over25_cohort_progression.py
       - tests/test_matrix_over25_cohort_progression.py
       - tests/test_matrix_independent_over25_research_scorecard.py
@@ -48,7 +50,7 @@ jobs:
         run: python -m pip install --disable-pip-version-check pytest
 
       - name: Prove settlement never reuses future scores or modifies forecasts
-        run: PYTHONPATH=. python -m pytest -q tests/test_matrix_independent_over25_research_settlement.py tests/test_matrix_independent_over25_prematch_freeze.py tests/test_matrix_independent_over25_research_scorecard.py tests/test_matrix_over25_cohort_progression.py
+        run: PYTHONPATH=. python -m pytest -q tests/test_matrix_independent_over25_research_settlement.py tests/test_matrix_independent_over25_prematch_freeze.py tests/test_matrix_independent_over25_research_scorecard.py tests/test_matrix_over25_cohort_progression.py tests/test_matrix_original_six_league_coverage.py
 
       - name: Capture final independent scores only after kickoff, never betting
         env:
@@ -80,6 +82,23 @@ jobs:
           print("MATRIX_28NOV_COHORT_UNIQUE_PIT_SHA_CERTIFIED_SETTLEMENT_NOT_PREMATURE")
           PY
 
+      - name: Preserve original six-league scope and prohibit research-only league substitution
+        run: |
+          set -euo pipefail
+          PYTHONPATH=. python -m tools.matrix_original_six_league_coverage
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          j=json.loads(Path("evidence/football_world_inventory/MATRIX_ORIGINAL_SIX_LEAGUE_FREE_SOURCE_SCOPE_PROGRESS_LAST.json").read_bytes())
+          assert j["original_six_league_count"] == 6
+          assert j["free_source_uncovered_original_leagues"] == ["239"]
+          assert j["original_scope_corresponding_five_league_settlements"] + j["out_of_original_scope_research_settlements"] == j["all_provider_research_settlements"]
+          assert j["match_level_crosswalk_verified"] is False
+          assert j["production_p_matrix_authorized"] is False
+          assert j["telegram_signal_authorized"] is False
+          print("SIX_ORIGINAL_LEAGUES_SCOPE_FAIL_CLOSED_RESEARCH_ONLY")
+          PY
+
       - name: Validate latest settlement has original risk gates closed
         run: |
           python - <<'PY'
@@ -102,6 +121,7 @@ jobs:
           git config user.email "matrix-independent-over25-results@users.noreply.github.com"
           git add -- evidence/football_world_inventory/MATRIX_INDEPENDENT_OVER25_SETTLEMENT_LAST.json
           git add -- evidence/football_world_inventory/MATRIX_INDEPENDENT_OVER25_RESEARCH_SCORECARD_LAST.json
+          git add -- evidence/football_world_inventory/MATRIX_ORIGINAL_SIX_LEAGUE_FREE_SOURCE_SCOPE_PROGRESS_LAST.json
           git add -- evidence/football_world_inventory/2026-11-28/MATRIX_OVER25_COHORT_PROGRESSION.json
           if [ -d evidence/football_research_freezes ]; then
             git add -- evidence/football_research_freezes
