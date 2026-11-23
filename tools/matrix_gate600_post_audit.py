@@ -13,6 +13,11 @@ CALIBRATION_LEDGER=Path("evidence/api_football/prospective_calibration/ledger.js
 FREEZE=Path("evidence/api_football/prospective_market_freeze/freeze.json")
 OUT=Path("evidence/market_portfolio/MATRIX_GATE600_POST_AUDIT_LAST.json")
 EPS=1e-15
+# These four lanes have dedicated 1X2-derived outcomes and proper-scoring math.
+# Other markets require their OWN terminal outcomes and proper-scoring engines;
+# a 1X2 FT result cannot stand in for team goals, period goals or BTTS.
+SUPPORTED_SCORING_LANES=frozenset((
+    "MATCH_RESULT_1X2","DOUBLE_CHANCE_1X","DOUBLE_CHANCE_X2","DOUBLE_CHANCE_12"))
 
 
 def _load_json(path:Path)->dict[str,Any]:
@@ -203,11 +208,18 @@ def build(generated_at:datetime|None=None)->dict[str,Any]:
             comp=str(fr.get("competition_name") or fr.get("competition_id") or "UNKNOWN")
             competitions[comp]=competitions.get(comp,0)+1
 
-        metrics=_metrics_for_rows(settled,lane) if settled else None
-        temporal=_thirds(settled,lane) if settled else []
-        settled_count=len(settled)
+        supported=lane in SUPPORTED_SCORING_LANES
+        # 1X2 terminal FT can only score a market with an explicit 1X2-derived outcome.
+        # Intersecting a team-goals/period-goals freeze with 1X2 final IDs does NOT
+        # certify that the specialised market's settlement was observed.
+        metrics=_metrics_for_rows(settled,lane) if settled and supported else None
+        temporal=_thirds(settled,lane) if settled and supported else []
+        settled_count=len(settled) if supported else 0
         freeze_count=len(event_ids)
-        if settled_count<600:
+        if not supported:
+            verdict="HOLD"
+            reason="LANE_SPECIFIC_OUTCOME_AND_SCORING_ENGINE_NOT_CERTIFIED"
+        elif settled_count<600:
             verdict="HOLD"
             reason="AWAITING_600_EXACT_SETTLED_OBSERVATIONS"
         elif metrics and metrics["proper_scoring_gate_passed"]:
@@ -223,6 +235,8 @@ def build(generated_at:datetime|None=None)->dict[str,Any]:
             "prospective_freeze_count":freeze_count,
             "action_board_count":int(lane_row.get("prospective_unique_count") or 0),
             "exact_settled_count":settled_count,
+            "lane_specific_scoring_supported":supported,
+            "generic_1x2_final_fixture_intersection_diagnostic_only":len(settled) if not supported else None,
             "remaining_settled_to_600":max(0,600-settled_count),
             "missing_or_not_yet_final_fixture_count":len(missing),
             "metrics":metrics,
