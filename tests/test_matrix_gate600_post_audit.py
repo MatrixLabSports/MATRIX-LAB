@@ -4,13 +4,10 @@ from tools.matrix_gate600_post_audit import build
 def test_post600_audit_targets_only_lab_lanes_at_or_above_600():
     r=build()
     assert r["status"]=="PASS"
-    assert r["gate600_lab_lane_count"]==4
-    assert {x["market_lane"] for x in r["lanes"]}=={
-        "MATCH_RESULT_1X2",
-        "DOUBLE_CHANCE_1X",
-        "DOUBLE_CHANCE_X2",
-        "DOUBLE_CHANCE_12",
-    }
+    assert r["gate600_lab_lane_count"]>=4
+    assert {
+        "MATCH_RESULT_1X2","DOUBLE_CHANCE_1X","DOUBLE_CHANCE_X2","DOUBLE_CHANCE_12"
+    }.issubset({x["market_lane"] for x in r["lanes"]})
 
 
 def test_post600_audit_never_auto_promotes_and_requires_settled_600():
@@ -45,6 +42,12 @@ def test_post600_audit_verdict_is_grounded_in_exact_settled_count():
     r=build()
     for lane in r["lanes"]:
         n=lane["exact_settled_count"]
+        if lane.get("lane_specific_scoring_supported") is False:
+            assert lane["verdict"]=="HOLD"
+            assert lane["verdict_reason"]=="LANE_SPECIFIC_OUTCOME_AND_SCORING_ENGINE_NOT_CERTIFIED"
+            assert lane["metrics"] is None
+            assert lane["automatic_promotion"] is False
+            continue
         if n<600:
             assert lane["verdict"]=="HOLD"
             assert lane["remaining_settled_to_600"]==600-n
@@ -61,3 +64,23 @@ def test_diagnostics_do_not_invent_new_gating_thresholds():
     assert p["ece_is_diagnostic_not_a_new_invented_threshold"] is True
     assert p["temporal_stability_is_diagnostic_not_a_new_invented_threshold"] is True
     assert p["competition_concentration_is_diagnostic_not_a_new_invented_threshold"] is True
+
+def test_new_lab_markets_above_600_do_not_inherit_1x2_scoring_or_promotions():
+    # The registry already contains 600+ freezes for team/period goals. No
+    # invented market-specific FT or Brier is allowed from another market.
+    r=build()
+    for lane in r["lanes"]:
+        if lane["market_lane"] in {
+            "TEAM_TOTAL_GOALS_HOME","TEAM_TOTAL_GOALS_AWAY",
+            "FIRST_HALF_TOTAL_GOALS_OVER_UNDER",
+            "SECOND_HALF_TOTAL_GOALS_OVER_UNDER",
+            "FIRST_HALF_TEAM_TOTAL_GOALS_HOME",
+            "FIRST_HALF_TEAM_TOTAL_GOALS_AWAY",
+            "SECOND_HALF_TEAM_TOTAL_GOALS_HOME",
+            "SECOND_HALF_TEAM_TOTAL_GOALS_AWAY",
+            "BTTS"}:
+            assert lane["verdict"]=="HOLD"
+            assert lane["lane_specific_scoring_supported"] is False
+            assert lane["exact_settled_count"]==0
+            assert lane["metrics"] is None
+            assert lane["automatic_promotion"] is False
