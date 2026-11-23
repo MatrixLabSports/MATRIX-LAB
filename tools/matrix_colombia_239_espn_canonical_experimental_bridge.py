@@ -26,8 +26,10 @@ def build(espn_raw,parity,three,shadow):
         or any(x.get("real_money")!="BLOCKED" for x in (parity,three,shadow))):
         raise ValueError("EXPERIMENTAL_CANONICAL_INPUT_SOURCE_UNTRUSTED")
     receipt=utc(parity["espn_received_at_utc"])
-    valid_es_ids={str(x["espn_event_id"]) for x in parity["historical_matched_fixture_ids"]}
-    if len(valid_es_ids)!=356:raise ValueError("DUPLICATE_STRICT_HISTORICAL_MATCH")
+    matches=parity["historical_matched_fixture_ids"]
+    valid_es_ids={str(x["espn_event_id"]) for x in matches}
+    if len(matches)!=356:raise ValueError("SOURCE_HISTORICAL_PAIR_SET_INCOMPLETE")
+    if len(valid_es_ids)!=len(matches):raise ValueError("DUPLICATE_STRICT_HISTORICAL_MATCH")
     source=json.loads(espn_raw)
     competitions=source.get("leagues") or []
     if len(competitions)!=1 or competitions[0].get("slug")!="col.1":
