@@ -1,0 +1,86 @@
+name: MATRIX Colombia Triple Calendar Readiness and Telegram Guard
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - repair/cor09-world-pipeline
+    paths:
+      - .github/workflows/matrix-colombia-239-three-source-readiness.yml
+      - tools/matrix_colombia_three_browser_sources_gate.py
+      - tests/test_matrix_colombia_three_browser_sources_gate.py
+      - evidence/football_world_inventory/2026-11-24/MATRIX_COLOMBIA_BROWSER_THREE_SOURCE_DIRECT_OBSERVATIONS.json
+
+permissions:
+  contents: write
+concurrency:
+  group: matrix-colombia-three-source-readiness
+  cancel-in-progress: false
+jobs:
+  genuine-three-source-calendar:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    env:
+      REAL_MONEY: BLOCKED
+      AUTOMATIC_WAGERING: "false"
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: repair/cor09-world-pipeline
+          fetch-depth: 0
+          sparse-checkout-cone-mode: false
+          sparse-checkout: |
+            tools/matrix_colombia_three_browser_sources_gate.py
+            tests/test_matrix_colombia_three_browser_sources_gate.py
+            evidence/football_world_inventory/2026-11-24/MATRIX_COLOMBIA_BROWSER_THREE_SOURCE_DIRECT_OBSERVATIONS.json
+            evidence/football_world_inventory/2026-11-22/MATRIX_COLOMBIA_239_ORIGINAL_FORMULA_SHADOW_RUN_45089678156.json
+            evidence/football_world_inventory/2026-11-22/MATRIX_COLOMBIA_239_FUTURE_BRIDGE_RUN_45089031372.json
+            evidence/football_world_inventory/2026-11-22/MATRIX_COLOMBIA_239_FULLSEASON_GOAL_PARITY_RUN_45089678156.json
+            evidence/football_world_inventory/2026-11-24/MATRIX_INDEPENDENT_OVER25_QUOTE_AUDIT.json
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Verify actual connected browser source evidence and tamper regressions
+        run: |
+          python -m pip install --disable-pip-version-check pytest
+          PYTHONPATH=. python -m pytest -q tests/test_matrix_colombia_three_browser_sources_gate.py
+      - name: Verify genuine current two-match ESPN SofaScore Flashscore cross-source identity
+        shell: bash
+        run: |
+          set -euo pipefail
+          OUT="evidence/football_world_inventory/2026-11-24/MATRIX_COLOMBIA_THREE_SOURCE_READINESS_RUN_${{ github.run_id }}.json"
+          PYTHONPATH=. python -m tools.matrix_colombia_three_browser_sources_gate \
+            --observations evidence/football_world_inventory/2026-11-24/MATRIX_COLOMBIA_BROWSER_THREE_SOURCE_DIRECT_OBSERVATIONS.json \
+            --shadow evidence/football_world_inventory/2026-11-22/MATRIX_COLOMBIA_239_ORIGINAL_FORMULA_SHADOW_RUN_45089678156.json \
+            --bridge evidence/football_world_inventory/2026-11-22/MATRIX_COLOMBIA_239_FUTURE_BRIDGE_RUN_45089031372.json \
+            --parity evidence/football_world_inventory/2026-11-22/MATRIX_COLOMBIA_239_FULLSEASON_GOAL_PARITY_RUN_45089678156.json \
+            --quotes evidence/football_world_inventory/2026-11-24/MATRIX_INDEPENDENT_OVER25_QUOTE_AUDIT.json \
+            --out "$OUT"
+          python - "$OUT" <<'PY'
+          import json,sys
+          from pathlib import Path
+          j=json.loads(Path(sys.argv[1]).read_bytes())
+          assert j["three_calendar_matches"]==2
+          assert j["strict_historical_goals_matches"]==356
+          assert j["last_quote_audit_bookmaker_verified"]==0
+          assert j["true_official_p_matrix_candidates"]==0
+          assert j["telegram_green_signals_authorized"]==0
+          assert j["real_money"]=="BLOCKED"
+          assert j["automatic_wagering"] is False
+          print("THREE_BROWSER_SOURCES_REAL_FIXTURE_IDS_VERIFIED_TWO; RESEARCH_ONLY_AND_NO_QUOTES")
+          PY
+      - name: Physically persist verified matches and deny ungoverned Telegram
+        shell: bash
+        run: |
+          set -euo pipefail
+          P="evidence/football_world_inventory/2026-11-24/MATRIX_COLOMBIA_THREE_SOURCE_READINESS_RUN_${{ github.run_id }}.json"
+          git config user.name matrix-colombia-three-source
+          git config user.email matrix-colombia-three-source@users.noreply.github.com
+          git add --sparse -- "$P"
+          git commit -m "evidence(colombia): real SofaScore Flashscore ESPN current fixture reconciliation research-only"
+          for attempt in 1 2 3 4; do
+            git fetch origin repair/cor09-world-pipeline
+            if ! git rebase origin/repair/cor09-world-pipeline; then git rebase --abort || true; exit 1; fi
+            if git push origin HEAD:repair/cor09-world-pipeline; then exit 0; fi
+            sleep "$attempt"
+          done
+          exit 1
