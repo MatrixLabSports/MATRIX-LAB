@@ -49,7 +49,10 @@ def test_mismatched_score_does_not_produce_team_crosswalk():
     assert out["distinct_original_team_ids_crosswalked"]==2
 def test_wrong_kickoff_and_reversed_teams_are_rejected():
     e=espn();e["events"][0]["date"]="2026-10-27T23:20:00Z"
-    e["events"][1]["competitions"][0]["competitors"].reverse()
+    # Swapping list order does not change homeAway semantics; swap labels.
+    sides=e["events"][1]["competitions"][0]["competitors"]
+    sides[0]["homeAway"]="away"
+    sides[1]["homeAway"]="home"
     out=audit(e=e)
     assert out["exact_historical_fixture_pairs"]==0
 def test_wrong_original_league_rejected():
