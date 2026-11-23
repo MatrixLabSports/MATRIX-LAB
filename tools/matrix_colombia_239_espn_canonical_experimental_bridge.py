@@ -118,6 +118,7 @@ def build(espn_raw,parity,three,shadow):
           "away_history_count":len(histories["away"]),
           "structural_readiness":ready.status,
           "canonical_source_namespace":"ESPN_COL_1",
+          "source_native_competition_id":"col.1",
           "original_api_football_fixture_id":None,
           "original_feature_equivalence_certified":False,
           "official_p_matrix_authorized":False,
