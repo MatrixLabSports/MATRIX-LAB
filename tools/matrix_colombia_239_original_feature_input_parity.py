@@ -86,10 +86,10 @@ def verify(original_raw:bytes,espn_raw:bytes,parity:dict,crosswalk:dict,shadow:d
         fields={f:{"original_exact356":left[f],"espn_exact356":right[f],
                    "equal":left[f]==right[f]} for f in FIELDS}
         for key in ("poisson","baseline"):
-            fields[key+"_over25"]={"original_exact356":left[key]["over_2.5"],
-              "espn_exact356":right[key]["over_2.5"],
-              "equal":math.isclose(left[key]["over_2.5"],right[key]["over_2.5"],abs_tol=1e-12)}
-        p_a=_pool_over25(left["poisson"]["over_2.5"],left["baseline"]["over_2_5"])
+            fields[key+"_over25"]={"original_exact356":left[key]["over_2_5"],
+              "espn_exact356":right[key]["over_2_5"],
+              "equal":math.isclose(left[key]["over_2_5"],right[key]["over_2_5"],abs_tol=1e-12)}
+        p_a=_pool_over25(left["poisson"]["over_2_5"],left["baseline"]["over_2_5"])
         p_b=_pool_over25(right["poisson"]["over_2_5"],right["baseline"]["over_2_5"])
         p_full=_pool_over25(full_orig["poisson"]["over_2_5"],full_orig["baseline"]["over_2_5"])
         if not all(v["equal"] for v in fields.values()) or not math.isclose(p_a,p_b,abs_tol=1e-12):
