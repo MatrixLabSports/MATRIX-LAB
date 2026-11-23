@@ -1,0 +1,89 @@
+name: MATRIX Colombia 239 Full Season Original ESPN Goal Parity
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - repair/cor09-world-pipeline
+    paths:
+      - .github/workflows/matrix-colombia-239-fullseason-espn-parity.yml
+      - tools/matrix_colombia_239_fullseason_espn_audit.py
+      - tests/test_matrix_colombia_239_fullseason_espn_audit.py
+permissions:
+  contents: write
+concurrency:
+  group: matrix-colombia-fullseason-goals-parity
+  cancel-in-progress: false
+jobs:
+  fullseason-parity:
+    runs-on: ubuntu-latest
+    timeout-minutes: 14
+    env:
+      REAL_MONEY: BLOCKED
+      AUTOMATIC_WAGERING: "false"
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: repair/cor09-world-pipeline
+          fetch-depth: 0
+          sparse-checkout-cone-mode: false
+          sparse-checkout: |
+            tools/matrix_colombia_239_fullseason_espn_audit.py
+            tools/matrix_colombia_239_original_espn_historic_crosswalk.py
+            tests/test_matrix_colombia_239_fullseason_espn_audit.py
+            evidence/api_football/prospective_daily/2026-10-28/20261028T054128Z/history/raw/league_239_season_2026.bin
+            evidence/football_world_inventory/2026-11-22/MATRIX_COLOMBIA_239_HISTORIC_CROSSWALK_RUN_45088819586.json
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Test historical goal parity and PIT/current fixture safety
+        run: |
+          python -m pip install --disable-pip-version-check pytest
+          PYTHONPATH=. python -m pytest -q tests/test_matrix_colombia_239_fullseason_espn_audit.py
+      - name: Verify complete season raw ESPN free source versus original October 239 without promoting any market
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$REAL_MONEY" = BLOCKED
+          test "$AUTOMATIC_WAGERING" = false
+          OUT="evidence/football_world_inventory/2026-11-22/MATRIX_COLOMBIA_239_FULLSEASON_GOAL_PARITY_RUN_${{ github.run_id }}.json"
+          GZ="evidence/football_world_inventory/2026-11-22/sources/ESPN_COL_239_FULLSEASON_RAW_RUN_${{ github.run_id }}.json.gz"
+          PYTHONPATH=. python -m tools.matrix_colombia_239_fullseason_espn_audit \
+            --crosswalk "evidence/football_world_inventory/2026-11-22/MATRIX_COLOMBIA_239_HISTORIC_CROSSWALK_RUN_45088819586.json" \
+            --out "$OUT" --compressed-source "$GZ"
+          python - "$OUT" "$GZ" <<'PY'
+          import hashlib,gzip,json,sys
+          from pathlib import Path
+          j=json.loads(Path(sys.argv[1]).read_bytes())
+          zipped=Path(sys.argv[2]).read_bytes()
+          assert hashlib.sha256(zipped).hexdigest()==j["gzip_archive_sha256"]
+          assert hashlib.sha256(gzip.decompress(zipped)).hexdigest()==j["espn_fullseason_raw_sha256"]
+          assert j["original_october_asof_finished_fixture_count"]==358
+          assert j["exact_original_goals_time_and_team_parity_count"]>=350
+          assert j["historical_team_ids_one_to_one_crosswalked"]==20
+          assert j["future_research_discovery_count"]>=1
+          assert j["original_enriched_feature_equivalence_certified"] is False
+          assert j["production_p_matrix_authorized"] is False
+          assert j["telegram_signal_authorized"] is False
+          assert j["real_money"]=="BLOCKED"
+          print("COLOMBIA_FULLSEASON_RAW_GOAL_HISTORY_SHA_AND_FUTURE_RESEARCH_VERIFIED",
+                j["exact_original_goals_time_and_team_parity_count"],
+                "ORIGINAL_OUTCOMES_NOT_MATCHED",j["original_results_unmatched_count"],
+                "PROSPECTIVE_RESEARCH_ONLY",j["future_research_discovery_count"])
+          PY
+      - name: Persist physical original source SHA and mismatch quarantine
+        shell: bash
+        run: |
+          set -euo pipefail
+          OUT="evidence/football_world_inventory/2026-11-22/MATRIX_COLOMBIA_239_FULLSEASON_GOAL_PARITY_RUN_${{ github.run_id }}.json"
+          GZ="evidence/football_world_inventory/2026-11-22/sources/ESPN_COL_239_FULLSEASON_RAW_RUN_${{ github.run_id }}.json.gz"
+          git config user.name matrix-colombia-fullseason
+          git config user.email matrix-colombia-fullseason@users.noreply.github.com
+          git add --sparse -- "$OUT" "$GZ"
+          git commit -m "evidence(colombia): full 2026 provider-original goals parity 239 with quarantined mismatches and raw source SHA"
+          for try in 1 2 3 4; do
+            git fetch origin repair/cor09-world-pipeline
+            if ! git rebase origin/repair/cor09-world-pipeline; then git rebase --abort || true; exit 1; fi
+            if git push origin HEAD:repair/cor09-world-pipeline; then exit 0; fi
+            sleep "$try"
+          done
+          exit 1
