@@ -63,11 +63,16 @@ def parse_espn(data: dict) -> list[dict]:
             raise ValueError("ESPN_HOME_AWAY_AMBIGUOUS")
         ht, at = home[0].get("team") or {}, away[0].get("team") or {}
         hname = ht.get("displayName"); aname = at.get("displayName")
+        hid=str(ht.get("id") or "");aid=str(at.get("id") or "")
         if not hname or not aname or hname == aname:
             raise ValueError("ESPN_TEAM_NAMES_INVALID")
+        if (not re.fullmatch(r"[0-9]+",hid) or not re.fullmatch(r"[0-9]+",aid)
+            or hid==aid):
+            raise ValueError("ESPN_NATIVE_TEAM_IDS_REQUIRED")
         kickoff = utc(e.get("date"))
         result.append({"provider_event_id": ident, "kickoff_utc": kickoff.isoformat(),
                        "home": str(hname), "away": str(aname),
+                       "home_espn_team_id":hid,"away_espn_team_id":aid,
                        "provider_status": (e.get("status") or {}).get("type", {}).get("name"),
                        "provider_native_identity_only": True,
                        "cross_provider_identity_certified": False})
