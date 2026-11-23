@@ -15,14 +15,22 @@ from urllib.request import Request,urlopen
 from urllib.error import HTTPError,URLError
 
 ARCHIVE=Path("evidence/api_football/prospective_daily/2026-10-28/20261028T054128Z/history/raw/league_239_season_2026.bin")
-URL="https://site.api.espn.com/apis/site/v2/sports/soccer/col.1/scoreboard?dates=20261027&limit=30"
+URL="https://site.api.espn.com/apis/site/v2/sports/soccer/col.1/scoreboard?dates=202610&limit=300"
 MAX_BYTES=2_000_000
 # Only source names actually verified for the two historical 27 Oct games.
 # Never generalize these aliases across countries/leagues or use fuzzy matching.
 VERIFIED_ESPN_NAME_ALIASES={
+    # Individually confirmed on authentic October 2026 ESPN league col.1
+    # and last-good original API-Football Primera A (20 provider-native teams).
     "cucuta deportivo":"cucuta",
     "boyaca chico fc":"chico",
     "atletico junior":"junior",
+    "atletico bucaramanga":"bucaramanga",
+    "alianza fc":"alianza valledupar",
+    "fortaleza ceif":"fortaleza fc",
+    "independiente santa fe":"santa fe",
+    "jaguares de cordoba":"jaguares",
+    "llaneros fc":"llaneros",
 }
 def norm(name):
     s=unicodedata.normalize("NFKD",str(name or "").casefold())
