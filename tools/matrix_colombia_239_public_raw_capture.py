@@ -36,6 +36,14 @@ def utc(token: object) -> datetime:
 
 
 def parse_espn(data: dict) -> list[dict]:
+    # A valid ESPN response from a *different* competition must never be
+    # mislabeled as Colombia. This is provider namespace evidence, not merely
+    # a parameter present in the requested URL.
+    leagues=data.get("leagues")
+    if (not isinstance(leagues,list) or len(leagues)!=1
+        or not isinstance(leagues[0],dict)
+        or leagues[0].get("slug")!="col.1"):
+        raise ValueError("ESPN_COLOMBIA_NAMESPACE_NOT_VERIFIED")
     events = data.get("events")
     if not isinstance(events, list):
         raise ValueError("ESPN_EVENTS_ARRAY_REQUIRED")
@@ -130,13 +138,17 @@ def capture(day: str, *, espn_day: str | None = None, opener=urlopen, observed_a
             data = json.loads(raw)
             if not isinstance(data, dict):
                 raise ValueError("PROVIDER_JSON_OBJECT_REQUIRED")
+            # Source bytes become available only on response completion.
+            # Never borrow the request's earlier timestamp for PIT admission.
+            received_at=(observed_at_utc or datetime.now(timezone.utc)).astimezone(timezone.utc)
             normalized = parse_espn(data) if provider == "ESPN" else parse_tsdb(data, day)
             key = sha(raw)
             blobs[provider] = raw
             results[provider] = {
                 "status": "AUTHENTIC_RAW_CAPTURE_RESEARCH_ONLY",
                 "url": url,
-                "observed_at_utc": observed.astimezone(timezone.utc).isoformat(),
+                "observed_at_utc": received_at.isoformat(),
+                "receipt_stamped_after_source_response": True,
                 "raw_sha256": key,
                 "raw_bytes": len(raw),
                 "provider_native_events": normalized,
