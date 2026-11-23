@@ -103,7 +103,7 @@ def build(espn_raw,parity,three,shadow):
           as_of_utc=as_of.isoformat(),kickoff_utc=kickoff.isoformat(),
           home_team_id=sides["home"]["id"],home_team_name=sides["home"]["name"],
           away_team_id=sides["away"]["id"],away_team_name=sides["away"]["name"],
-          competition_id="239",competition_name="COLOMBIA_PRIMERA_A",season=2026,
+          competition_id="col.1",competition_name="COLOMBIA_PRIMERA_A",season=2026,
           round_name=None,venue_name=None,
           fixture_source_provider="ESPN_COL_1",
           fixture_payload_sha256=parity["espn_fullseason_raw_sha256"],
