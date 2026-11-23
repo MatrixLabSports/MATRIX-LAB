@@ -5,8 +5,8 @@ from tools.matrix_colombia_239_public_raw_capture import capture, persist, sha
 import pytest
 
 ESPN={"leagues":[{"slug":"col.1"}],"events":[{"id":"100","date":"2026-11-23T01:15:00Z","status":{"type":{"name":"STATUS_SCHEDULED"}},
-                 "competitions":[{"competitors":[{"homeAway":"home","team":{"displayName":"Local"}},
-                                                {"homeAway":"away","team":{"displayName":"Visitante"}}]}]}]}
+                 "competitions":[{"competitors":[{"homeAway":"home","team":{"id":"123","displayName":"Local"}},
+                                                {"homeAway":"away","team":{"id":"456","displayName":"Visitante"}}]}]}]}
 TSDB={"events":[{"idEvent":"200","idLeague":"4497","strSport":"Soccer",
                  "dateEvent":"2026-11-22","strTimestamp":"2026-11-23T01:15:00+00:00",
                  "strHomeTeam":"Local","strAwayTeam":"Visitante","strStatus":"NS","idAPIfootball":"1650176"}]}
@@ -105,3 +105,23 @@ def test_response_observation_clock_is_marked_after_receipt():
     assert report["sources"]["ESPN"]["receipt_stamped_after_source_response"] is True
     assert report["sources"]["THESPORTSDB"]["receipt_stamped_after_source_response"] is True
     assert report["telegram_signal_authorized"] is False
+
+def test_espn_native_team_ids_must_be_distinct_and_source_scoped():
+    good,raw=capture("2026-11-22",opener=opener)
+    f=good["sources"]["ESPN"]["provider_native_events"][0]
+    assert f["home_espn_team_id"]=="123" and f["away_espn_team_id"]=="456"
+    assert f["cross_provider_identity_certified"] is False
+    bad=json.loads(json.dumps(ESPN))
+    bad["events"][0]["competitions"][0]["competitors"][0]["team"]["id"]="456"
+    row,src=capture("2026-11-22",opener=lambda req,timeout=20:
+      Reply(bad if "espn.com" in req.full_url else TSDB))
+    assert "ESPN" not in src
+    assert row["sources"]["ESPN"]["status"]=="SOURCE_UNAVAILABLE_OR_INVALID"
+
+def test_espn_missing_team_id_fails_closed_not_zero_imputed():
+    wrong=json.loads(json.dumps(ESPN))
+    del wrong["events"][0]["competitions"][0]["competitors"][0]["team"]["id"]
+    row,raw=capture("2026-11-22",opener=lambda req,timeout=20:
+      Reply(wrong if "espn.com" in req.full_url else TSDB))
+    assert "ESPN" not in raw
+    assert row["sources"]["ESPN"]["provider_event_count"] is None
