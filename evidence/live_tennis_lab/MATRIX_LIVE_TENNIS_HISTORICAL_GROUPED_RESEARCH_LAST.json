@@ -13,7 +13,7 @@
     "corroborated",
     "sources_count"
   ],
-  "generated_at_utc": "2026-11-24T07:55:10+00:00",
+  "generated_at_utc": "2026-11-24T15:17:55+00:00",
   "historical_labeled_observations_not_prospective_holdout": true,
   "independently_pre_registered_prospective_holdout_complete": false,
   "missing_features_are_dropped_not_replaced": true,
@@ -52,34 +52,47 @@
     {
       "development_only_baseline_metrics": {
         "auc": 0.5,
-        "brier": 0.267359,
-        "ece_10_bins": 0.197446,
-        "holdout_outcome_prevalence": 0.352941,
-        "log_loss": 0.727992
+        "brier": 0.262387,
+        "ece_10_bins": 0.146065,
+        "holdout_outcome_prevalence": 0.405405,
+        "log_loss": 0.718018
       },
-      "development_unique_matches": 129,
-      "fixed_research_model_sha256": "b36950da68a0e8112675669435a91d1d1e1bc912b37e54286ca2064802c522ba",
-      "historical_earliest_complete_quality_valid_matches": 163,
+      "development_unique_matches": 136,
+      "fixed_research_model_sha256": "8ff4fe12fb7ad7446b2aced29394df2a67bb2e0477d693c1b578edc0228412b1",
+      "historical_earliest_complete_quality_valid_matches": 173,
       "holdout_metrics": {
-        "auc": 0.890152,
-        "brier": 0.164458,
-        "ece_10_bins": 0.185637,
-        "holdout_outcome_prevalence": 0.352941,
-        "log_loss": 0.499515
+        "auc": 0.878788,
+        "brier": 0.16138,
+        "ece_10_bins": 0.167553,
+        "holdout_outcome_prevalence": 0.405405,
+        "log_loss": 0.491094
       },
-      "holdout_unique_matches": 34,
+      "holdout_unique_matches": 37,
       "lane": "challenger|men|hard",
       "probability_output_authorized": false,
       "production_p_live_authorized": false,
       "prospective_out_of_sample_certified": false,
       "retrospective_grouped_research_training_executed": true,
       "status": "HISTORICAL_GROUP_HELDOUT_RESEARCH_ONLY",
-      "untouched_holdout_unique_matches": 34
+      "untouched_holdout_unique_matches": 37
     },
     {
       "development_only_baseline_metrics": null,
-      "development_unique_matches": 19,
-      "historical_earliest_complete_quality_valid_matches": 22,
+      "development_unique_matches": 27,
+      "historical_earliest_complete_quality_valid_matches": 29,
+      "holdout_metrics": null,
+      "holdout_unique_matches": 2,
+      "lane": "challenger|women|clay",
+      "probability_output_authorized": false,
+      "production_p_live_authorized": false,
+      "prospective_out_of_sample_certified": false,
+      "retrospective_grouped_research_training_executed": false,
+      "status": "INCOMPLETE_LIVE_FEATURES_LESS_THAN_ORIGINAL_GATE30"
+    },
+    {
+      "development_only_baseline_metrics": null,
+      "development_unique_matches": 20,
+      "historical_earliest_complete_quality_valid_matches": 23,
       "holdout_metrics": null,
       "holdout_unique_matches": 3,
       "lane": "itf|men|clay",
@@ -162,16 +175,16 @@
   "real_money": "BLOCKED",
   "rejected_research_matches_by_reason": {
     "CROSS_LANE_IDENTITY_QUARANTINED": 12,
-    "NOT_EXACTLY_ONE_VALID_FINAL_OUTCOME": 778,
-    "NO_COMPLETE_EARLY_LIVE_STATE": 262
+    "NOT_EXACTLY_ONE_VALID_FINAL_OUTCOME": 825,
+    "NO_COMPLETE_EARLY_LIVE_STATE": 269
   },
   "retrospective_research_lanes_with_metrics": 4,
   "schema": "MATRIX_LIVE_TENNIS_HISTORICAL_GROUPED_RESEARCH_V1",
-  "source_cumulative_sha256": "63d403bb2b76af61ae530659bda0e303382808848bdd0abc2f70e6eb3e9662de",
-  "source_daily_ledgers_verified": 49,
-  "source_integrity_sha256": "4537fc387624c8ddf2fd2b7a7b6d51cf5678ccb1410c4866bdf93b8643a77ac8",
+  "source_cumulative_sha256": "8044c5650e80e1fbe6363a7622b130d7f5a46c233f06e421a210aae8b570027d",
+  "source_daily_ledgers_verified": 50,
+  "source_integrity_sha256": "d92c86b7c4b1229f7ff03c07874ee7837b6b43499fd2b4b886f9654d12a4f637",
   "source_quarantined_physical_match_count": 4,
-  "source_research_clear_lanes": 6,
+  "source_research_clear_lanes": 7,
   "split_policy": "EXISTING_SHA256_MATRIX_LIVE_TENNIS_V0_1_MATCH_ID_FOLD_4_HOLDOUT",
   "status": "HISTORICAL_RESEARCH_ONLY_NOT_PROSPECTIVE_CERTIFICATION",
   "telegram_signal_authorized": false
