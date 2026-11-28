@@ -1,0 +1,82 @@
+name: MATRIX Colombia 239 Four-Gate PAPER Telegram Offline Certification
+on:
+  workflow_dispatch:
+  push:
+    branches: [repair/cor09-world-pipeline]
+    paths:
+      - .github/workflows/matrix-colombia-239-paper-four-gate.yml
+      - tools/matrix_colombia_239_four_gate_paper_dryrun.py
+      - tests/test_matrix_colombia_239_four_gate_paper_dryrun.py
+permissions:
+  contents: write
+concurrency:
+  group: matrix-colombia-four-gate-paper-dryrun
+  cancel-in-progress: false
+jobs:
+  paper-no-send-certification:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      REAL_MONEY: BLOCKED
+      AUTOMATIC_WAGERING: "false"
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: repair/cor09-world-pipeline
+          fetch-depth: 0
+          sparse-checkout-cone-mode: false
+          sparse-checkout: |
+            tools/matrix_colombia_239_four_gate_paper_dryrun.py
+            tests/test_matrix_colombia_239_four_gate_paper_dryrun.py
+            evidence/football_world_inventory/2026-11-24/MATRIX_COLOMBIA_THREE_SOURCE_READINESS_RUN_45090559298.json
+            evidence/football_world_inventory/2026-11-22/MATRIX_COLOMBIA_239_ORIGINAL_FORMULA_SHADOW_RUN_45089678156.json
+            evidence/football_world_inventory/2026-11-24/MATRIX_INDEPENDENT_OVER25_QUOTE_AUDIT.json
+            evidence/football_world_inventory/2026-11-22/MATRIX_COLOMBIA_239_FULLSEASON_GOAL_PARITY_RUN_45089678156.json
+            evidence/football_world_inventory/2026-11-22/MATRIX_COLOMBIA_239_TWO_KICKOFF_CONFLICTS_QUARANTINED.json
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Test authentic OOS receipts and malicious quote model Telegram injections without token
+        run: |
+          python -m pip install --disable-pip-version-check pytest
+          PYTHONPATH=. python -m pytest -q tests/test_matrix_colombia_239_four_gate_paper_dryrun.py
+      - name: Run read-only paper admission and prove zero messages sent
+        shell: bash
+        run: |
+          set -euo pipefail
+          OUT="evidence/football_world_inventory/2026-11-22/MATRIX_COL_239_FOUR_GATE_PAPER_NO_SEND_RUN_${{ github.run_id }}.json"
+          PYTHONPATH=. python -m tools.matrix_colombia_239_four_gate_paper_dryrun \
+            --three evidence/football_world_inventory/2026-11-24/MATRIX_COLOMBIA_THREE_SOURCE_READINESS_RUN_45090559298.json \
+            --shadow evidence/football_world_inventory/2026-11-22/MATRIX_COLOMBIA_239_ORIGINAL_FORMULA_SHADOW_RUN_45089678156.json \
+            --quotes evidence/football_world_inventory/2026-11-24/MATRIX_INDEPENDENT_OVER25_QUOTE_AUDIT.json \
+            --parity evidence/football_world_inventory/2026-11-22/MATRIX_COLOMBIA_239_FULLSEASON_GOAL_PARITY_RUN_45089678156.json \
+            --conflicts evidence/football_world_inventory/2026-11-22/MATRIX_COLOMBIA_239_TWO_KICKOFF_CONFLICTS_QUARANTINED.json \
+            --out "$OUT"
+          python - "$OUT" <<'PY'
+          import json,sys
+          d=json.load(open(sys.argv[1],encoding="utf-8"))
+          assert d["candidate_fixture_identity_count"]==2
+          assert d["historical_matched_results"]==356
+          assert d["prospective_oos_gate_passed"] is False
+          assert d["telegram_api_calls"]==0
+          assert d["telegram_messages_sent"]==0
+          assert d["official_green_signals"]==0
+          assert d["real_money"]=="BLOCKED"
+          print("PAPER_END_TO_END_NEGATIVE_TEST_AUTHENTIC_GO_NO_GO_DENIED")
+          PY
+      - name: Persist physical non-sending PAPER integration report
+        shell: bash
+        run: |
+          set -euo pipefail
+          OUT="evidence/football_world_inventory/2026-11-22/MATRIX_COL_239_FOUR_GATE_PAPER_NO_SEND_RUN_${{ github.run_id }}.json"
+          git config user.name matrix-colombia-paper
+          git config user.email matrix-colombia-paper@users.noreply.github.com
+          git add --sparse -- "$OUT"
+          git commit -m "evidence(colombia): offline PAPER Telegram integration rejects unapproved model and mock odds"
+          for n in 1 2 3 4; do
+            git fetch origin repair/cor09-world-pipeline
+            if ! git rebase origin/repair/cor09-world-pipeline; then git rebase --abort || true; exit 1; fi
+            if git push origin HEAD:repair/cor09-world-pipeline; then exit 0; fi
+            sleep "$n"
+          done
+          exit 1

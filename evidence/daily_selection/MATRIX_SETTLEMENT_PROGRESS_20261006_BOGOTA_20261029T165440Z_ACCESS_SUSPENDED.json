@@ -1,0 +1,132 @@
+{
+  "schema": "MATRIX_WORLD_CALIBRATION_SETTLEMENT_PROGRESS_AUDIT_V1",
+  "target_date_bogota": "2026-10-06",
+  "branch": "repair/cor09-world-pipeline",
+  "source_head_before_snapshot": "02c385ff0b0634d9a84f8585ba356ee0b384742a",
+  "compared_to_commit": "b8d08d390a1452dc7e48b0dcf369cea89ca6bb98",
+  "source_sync_run_at_utc": "2026-10-29T16:54:40+00:00",
+  "source_files": [
+    "evidence/daily_selection/MATRIX_CALIBRATION_CANDIDATES_20261006_BOGOTA.json",
+    "evidence/api_football/prospective_market_freeze/settlement_sync_last.json",
+    "evidence/api_football/governance/MATRIX_FOOTBALL_4000_CANONICAL_TRACKER_LAST.json",
+    "evidence/api_football/prospective_calibration/sync_last.json",
+    "evidence/api_football/calibration_v2/lanes/over_2_5/state.json",
+    "evidence/api_football/calibration_v2/lanes/under_2_5/state.json",
+    "evidence/api_football/calibration_v2/lanes/1x2/state.json",
+    "evidence/api_football/physical_uniqueness/audit_last.json",
+    "evidence/cor0203/settlement/MATRIX_COR0203_SETTLEMENT_LEDGER.jsonl",
+    "evidence/cor0203/runtime/MATRIX_COR0203_SETTLEMENT_SYNC_LAST.json",
+    "evidence/cor0203/runtime/MATRIX_COR0203_SETTLEMENT_UNIQUENESS_LAST.json"
+  ],
+  "football": {
+    "original_6oct_unique_fixture_ids": 116,
+    "standard_final_from_prior_audit": 107,
+    "standard_final_independently_recomputed": false,
+    "nonstandard_penalty_fixture_ids": [
+      "1588817",
+      "1588821",
+      "1588845",
+      "1588863",
+      "1588890",
+      "1588893",
+      "1619499"
+    ],
+    "nonstandard_extra_time_fixture_ids": [
+      "1644168"
+    ],
+    "blocked_original_fixture_id": "1596466",
+    "blocked_original_current_sync_reason": "API_FOOTBALL_PROVIDER_ERROR",
+    "blocked_original_raw_error": {
+      "access": "Your account is suspended, check on https://dashboard.api-football.com.",
+      "results": 0,
+      "response": []
+    },
+    "global": {
+      "frozen": 5243,
+      "standard_final": 4958,
+      "pending": 0,
+      "blocked": 285,
+      "reconciles": true,
+      "new_standard_final": 0
+    },
+    "v2": {
+      "over_2_5": {
+        "settled": 4155,
+        "pending": 260,
+        "metrics_opened": false
+      },
+      "under_2_5": {
+        "settled": 4155,
+        "pending": 260,
+        "metrics_opened": false
+      },
+      "1x2": {
+        "settled": 4155,
+        "pending": 260,
+        "metrics_opened": false
+      }
+    },
+    "physical_uniqueness_audit": "PASS",
+    "provider_blocker_change": {
+      "changed_blocked_fixture_records": 135,
+      "raw_response_files_changed": 135,
+      "previously_reason_counts": {
+        "API_FOOTBALL_DAILY_QUOTA_EXHAUSTED": 1,
+        "API_FOOTBALL_DAILY_QUOTA_EXHAUSTED_DEFERRED": 134
+      },
+      "currently_reason_counts": {
+        "API_FOOTBALL_PROVIDER_ERROR": 135
+      },
+      "sample_verified_raw_fixture_ids": [
+        "1596466",
+        "1604159",
+        "1568815",
+        "1596903",
+        "1618364",
+        "1639721",
+        "1549527",
+        "1490584",
+        "1641898",
+        "1628372",
+        "1632448"
+      ],
+      "sample_raw_error": "Your account is suspended, check on https://dashboard.api-football.com.",
+      "sample_raw_results": 0,
+      "sample_raw_response_count": 0,
+      "note": "Only sampled raw files were directly inspected; 135 modified files and changed blocked entries were counted from the GitHub commit comparison and two physical settlement sync JSON files. No result was inferred from error payloads.",
+      "newly_blocked": 0,
+      "unblocked": 0,
+      "settled": 0,
+      "tracker_reason_reconciliation_pending": true,
+      "tracker_reason_note": "Tracker retains 134 DAILY_QUOTA_EXHAUSTED_DEFERRED + 1 DAILY_QUOTA_EXHAUSTED while latest settlement sync has 135 generic provider errors. Aggregate tracker totals match sync, but reason labels differ."
+    }
+  },
+  "tennis": {
+    "original_6oct_unique_event_ids": 11,
+    "original_6oct_finished": 11,
+    "original_6oct_ledger_entries_per_event": 1,
+    "ledger_records": 417,
+    "settled_unique_canonical_events": 364,
+    "settled_duplicate_alias_records": 53,
+    "unsettled_unique_canonical_events": 41,
+    "uniqueness_audit": "PASS",
+    "new_settlements": 0,
+    "metrics_opened": false
+  },
+  "changes_applied": {
+    "new_standard_final_settlements": 0,
+    "football_v2_mutated": false,
+    "tennis_ledger_mutated": false,
+    "progress_snapshot_added": true
+  },
+  "governance": {
+    "settlement_final_only": true,
+    "metrics_opened": false,
+    "parameter_tuning_allowed": false,
+    "odds_to_probability": "PROHIBITED",
+    "real_money": "BLOCKED",
+    "automatic_wagering": false,
+    "no_backfill": true
+  },
+  "audit_note": "Provider responses changed from quota-exhausted/deferred to access-suspended errors for 135 blocked fixtures; no standard FT, no tennis changes. Avoid claiming that account status has been verified outside provider error payloads. No tuning, metrics opening or settlements executed."
+}

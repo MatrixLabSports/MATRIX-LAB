@@ -1,0 +1,60 @@
+{
+  "schema": "MATRIX_06OCT_FINAL_ONLY_PROGRESS_SNAPSHOT_V1",
+  "date_bogota": "2026-10-11",
+  "cohort_date_bogota": "2026-10-06",
+  "branch": "repair/cor09-world-pipeline",
+  "physical_sources": {
+    "cohort_blob": "52e897007840f5bed1a8999edad8ee594fefc767",
+    "football_1x2_state_blob": "95a650fcfcc5a9fd5f30df3b44013bd384036276",
+    "football_1x2_ledger_blob": "89ca866b7755c7d35d13a64fd8a8f1320ecf5b14",
+    "tennis_uniqueness_blob": "5f6c3b4d5afb284a0d8acffaacf2afdfad90da48",
+    "tennis_settlement_ledger_blob": "9f797c19160d71e91bdb9a8a459779221cc00e98"
+  },
+  "cohort_football": {
+    "total": 116,
+    "settled_standard_in_1x2_ledger": 107,
+    "pending": 9,
+    "pending_fixture_ids": [
+      "1588817",
+      "1588821",
+      "1588845",
+      "1588863",
+      "1588890",
+      "1588893",
+      "1619499",
+      "1644168",
+      "1596466"
+    ]
+  },
+  "cohort_tennis": {
+    "total": 11,
+    "settled_finished_in_ledger": 10,
+    "pending": 1,
+    "pending_event_ids": [
+      "COR0203-SOFASCORE-3e334e1ea5e9bca56dc55ad3d88461b1d850a3b7c8db8e0e36d1c8daaccbbd79"
+    ]
+  },
+  "global_football_v2_1x2": {
+    "freezes": 1360,
+    "settlements": 964,
+    "pending": 396,
+    "previous_observed_settlements": 907,
+    "new_since_previous_observation": 57
+  },
+  "global_tennis": {
+    "ledger_records": 173,
+    "settled_unique": 120,
+    "pending_unique": 43,
+    "unique_observations": 163,
+    "duplicate_observations_quarantined": 127,
+    "uniqueness": "PASS"
+  },
+  "governance": {
+    "metrics_opened": false,
+    "parameter_tuning_allowed": false,
+    "odds_to_probability": false,
+    "real_money": "BLOCKED",
+    "tennis_metrics": "SEALED_UNTIL_600"
+  },
+  "scope": "Reconciliation against physically retrieved ledgers. No new 6-OCT FINAL-only settlements, no provider result inference, no modification to model or canonical ledgers. Other global football settlements are already present in source ledger; not executed by this snapshot."
+}

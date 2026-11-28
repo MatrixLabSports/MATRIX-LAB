@@ -1,0 +1,64 @@
+{
+  "schema": "MATRIX_MATCH_TOTAL_SHOTS_GATE30_FREEZE_CERTIFICATE_V1",
+  "certified_at_utc": "2026-10-10T04:58:37+00:00",
+  "target_date_bogota": "2026-10-10",
+  "market_lane": "MATCH_TOTAL_SHOTS",
+  "state": {
+    "path": "evidence/api_football/match_total_shots_lab/2026-10-10/state.json",
+    "blob_sha": "6cb93b69ef3e99e5363be40fdad4352cf3d4ec28",
+    "cumulative_unique_research_freeze_count": 30,
+    "preregistered_fixture_count": 88,
+    "gate_30": {
+      "final_settlement_count": 0,
+      "freeze_count": 30,
+      "metrics_opened": false,
+      "remaining_freezes_to_target": 0,
+      "status": "FREEZE_TARGET_REACHED_AWAIT_FINALS",
+      "threshold": 30
+    }
+  },
+  "freeze_ledger": {
+    "path": "evidence/api_football/match_total_shots_lab/2026-10-10/freeze_ledger.jsonl",
+    "blob_sha": "8fbbf13923ea8c0ee86e3b96a9cfa5d7861a1388",
+    "row_count": 30,
+    "unique_fixture_count": 30,
+    "duplicates": 0
+  },
+  "last_physical_run": {
+    "workflow": "API-Football MATCH_TOTAL_SHOTS exact-day lab",
+    "run_id": 38025902385,
+    "conclusion": "success",
+    "manifest_path": "evidence/api_football/match_total_shots_lab/2026-10-10/runs/20261010T045837Z/manifest.json",
+    "manifest_sha256": "1bfde583d36d71a23ff2f98fa8782820c34287dc2384f03aba1872bb7f4caea3",
+    "provider_offer_rows": 1019,
+    "fixtures_with_market": 88,
+    "persistent_preregistered_fixture_count": 88,
+    "cumulative_unique_research_freeze_count": 30
+  },
+  "implementation": {
+    "persistent_dedupe_commit": "5338216d32c53361a8235098ebecd31aedd12cb7",
+    "latest_state_checkout_commit": "f3ea570cd264963c238660ab8ce0ab108d3f9b6c",
+    "double_count_fix_commit": "fd63f871afc3abc191846b2b6c5008c85a5c213f",
+    "invariant_test_commit": "8b00d6a435446999bc2c47635d1c04a2f3db7984",
+    "final_evidence_commit": "aee980fd06720d9d80c407cc6526115c6264062f"
+  },
+  "adjudication": {
+    "freeze_target_30_reached": true,
+    "final_settlement_count": 0,
+    "metrics_opened": false,
+    "metrics_status": "SEALED_AWAITING_30_FINAL_STANDARD_SETTLEMENTS",
+    "historical_model_gate_passed": false,
+    "telegram_signal_authorized": false,
+    "paper_bankroll_authorized": false,
+    "p_matrix_promoted": false
+  },
+  "protections": {
+    "exact_line_required": true,
+    "no_line_substitution": true,
+    "unique_fixture_required": true,
+    "missing_not_zero": true,
+    "odds_used_to_generate_probability": false,
+    "automatic_wagering": false,
+    "real_money": "BLOCKED"
+  }
+}

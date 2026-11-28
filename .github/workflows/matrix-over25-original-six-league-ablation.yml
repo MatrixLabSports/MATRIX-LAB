@@ -1,0 +1,92 @@
+name: MATRIX Original Six League Historical Feature Ablation
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - repair/cor09-world-pipeline
+    paths:
+      - tools/matrix_over25_six_league_original_historical_ablation.py
+      - tests/test_matrix_over25_six_league_original_historical_ablation.py
+      - .github/workflows/matrix-over25-original-six-league-ablation.yml
+
+permissions:
+  contents: write
+
+concurrency:
+  group: matrix-over25-original-six-league-ablation
+  cancel-in-progress: true
+
+jobs:
+  archived-original-six-league-ablation:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      REAL_MONEY: BLOCKED
+      AUTOMATIC_WAGERING: "false"
+      MATRIX_MODE: RESEARCH_ONLY
+    steps:
+      - name: Checkout original protected operational branch
+        uses: actions/checkout@v4
+        with:
+          ref: repair/cor09-world-pipeline
+          fetch-depth: 1
+          filter: blob:none
+          sparse-checkout: |
+            tools
+            app
+            tests
+            evidence/api_football/prospective_daily/2026-10-24/20261024T093953Z
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install test dependency
+        run: python -m pip install --disable-pip-version-check pytest
+      - name: Prove no history substitution can promote a model
+        run: |
+          set -euo pipefail
+          test "$REAL_MONEY" = BLOCKED
+          test "$AUTOMATIC_WAGERING" = false
+          PYTHONPATH=. python -m pytest -q tests/test_matrix_over25_six_league_original_historical_ablation.py tests/test_matrix_over25_enriched_vs_group_parity.py
+      - name: Replay six original archived leagues using authentic 24 Oct 2026 sources
+        run: |
+          set -euo pipefail
+          PYTHONPATH=. python -m tools.matrix_over25_six_league_original_historical_ablation
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          p=Path("evidence/football_world_inventory/MATRIX_OVER25_SIX_LEAGUE_CANONICAL_VS_RAW_HISTORICAL_LAST.json")
+          j=json.loads(p.read_text())
+          assert len(j["six_original_leagues"]) == 6
+          assert j["production_p_matrix_authorized"] is False
+          assert j["telegram_signal_authorized"] is False
+          assert j["original_official_p_matrix_restored"] is False
+          assert j["historical_reconstruction_is_not_prospective_freeze"] is True
+          assert j["real_money"] == "BLOCKED"
+          print("AUTHENTIC_ARCHIVED_ABLATION_ONLY", j["historical_paired_rows"], j["historical_probability_changed_rows"])
+          PY
+      - name: Preserve original archived-source diagnostic in GitHub
+        run: |
+          set -euo pipefail
+          P=evidence/football_world_inventory/MATRIX_OVER25_SIX_LEAGUE_CANONICAL_VS_RAW_HISTORICAL_LAST.json
+          git config user.name matrix-over25-historical-ablation
+          git config user.email matrix-over25-historical-ablation@users.noreply.github.com
+          git add --sparse -- "$P"
+          if git diff --cached --quiet; then
+            echo "ARCHIVED_ABLATION_UNCHANGED"
+            exit 0
+          fi
+          git commit -m "evidence(over25): attest original six-league enriched versus raw historical ablation"
+          for attempt in 1 2 3 4 5; do
+            git fetch origin repair/cor09-world-pipeline
+            if ! git rebase origin/repair/cor09-world-pipeline; then
+              git rebase --abort || true
+              exit 1
+            fi
+            if git push origin HEAD:repair/cor09-world-pipeline; then
+              echo "HISTORICAL_ABLATION_PERSISTED_NOT_PRODUCTION"
+              exit 0
+            fi
+            sleep "$attempt"
+          done
+          exit 1

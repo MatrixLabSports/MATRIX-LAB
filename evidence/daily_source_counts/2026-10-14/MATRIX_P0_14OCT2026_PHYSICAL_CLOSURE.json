@@ -1,0 +1,141 @@
+{
+  "schema": "MATRIX_P0_14OCT2026_PHYSICAL_CLOSURE_V1",
+  "target_date_bogota": "2026-10-14",
+  "status": "PASS_P0_CLOSED",
+  "source_order_enforced": [
+    "SofaScore",
+    "Flashscore",
+    "APIs",
+    "PIT",
+    "P_MATRIX",
+    "freeze",
+    "odds/EV",
+    "signal"
+  ],
+  "exact_calendar_close": {
+    "sofascore": {
+      "football": 179,
+      "tennis": 530,
+      "status": "PASS_EXACT_CONNECTED_BROWSER",
+      "artifact": "evidence/daily_source_counts/2026-10-14/MATRIX_SOFASCORE_BROWSER_EVENT_AUDIT.json",
+      "blob_sha": "bc199abfd5529ac403581695f341a9e0b60aa726"
+    },
+    "flashscore": {
+      "football": 182,
+      "tennis": 104,
+      "status": "PASS_EXACT",
+      "artifact": "evidence/daily_source_counts/2026-10-14/MATRIX_FLASHSCORE_EXACT_DAY_BROWSER_AUDIT.json",
+      "commit": "901766fe8da5ee2cc5e98f2b925a26cce875a76c",
+      "football_run_id": "d978eb86-f24c-4ae5-88df-8f25c3f9a956",
+      "tennis_run_id": "161f2f92-cb23-4902-a91c-ac32e4913ad9",
+      "football_derivation": "114 visible + 68 explicitly-declared hidden = 182",
+      "tennis_derivation": "104 exact with zero remaining expanders"
+    },
+    "reconciliation": {
+      "artifact": "evidence/daily_source_counts/2026-10-14/MATRIX_SOFASCORE_FLASHSCORE_RECONCILIATION.json",
+      "commit": "20918d7ab196749d162f9bfb3fd6c1e3c8dad372",
+      "football_count_delta_flashscore_minus_sofascore": 3,
+      "tennis_count_delta_flashscore_minus_sofascore": -426,
+      "equal_totals_forced": false,
+      "old_flashscore_partial_66_football_0_tennis_superseded": true
+    }
+  },
+  "governed_post_calendar_rerun": {
+    "trigger_commit": "ce16b88a597e870bdc9174d49ca2f826fe481426",
+    "github_actions_run_id": 38576321673,
+    "github_actions_run_number": 34,
+    "workflow": "MATRIX Football Daily Governed Pipeline",
+    "conclusion": "success",
+    "persisted_commit": "23a5b18177dc329fe17cc2c1ba97978d19ecc0a4",
+    "cycle": "evidence/api_football/prospective_daily/2026-10-14/20261014T135833Z",
+    "governed_over25_artifact": "evidence/api_football/daily_prematch_reports/2026-10-14/over25_shadow_ev/MATRIX_FOOTBALL_DAILY_OVER25_GOVERNED_SHADOW_EV.json",
+    "governed_over25_blob_sha": "b3a6a1654ddff1ba6b3b968d100368ae48bf3168",
+    "generated_at_utc": "2026-10-14T13:59:04+00:00",
+    "p_matrix_scored_count": 107,
+    "p_matrix_blocked_count": 24,
+    "decision_counts": {
+      "BET_SHADOW": 20,
+      "BLOCKED": 78,
+      "NO_BET": 33
+    },
+    "market_governance_status": "PASS_PROMOTED_GOVERNED_P_MATRIX_SIGNAL_ONLY",
+    "signal_generation_authorized": true
+  },
+  "telegram_post_calendar_delivery": {
+    "trigger_commit": "4d148ecb40b2117e1a5d7c517a45d0a6481fd0d5",
+    "github_actions_run_id": 38576736218,
+    "github_actions_run_number": 133,
+    "workflow": "Telegram Señales Verdes MATRIX",
+    "conclusion": "success",
+    "supervisor_ledger_commit": "8541d83a0045d86084b0c7086387ad75180eaba8",
+    "run_at_utc": "2026-10-14T14:00:00+00:00",
+    "sent_now": 6,
+    "delivery_failures_now": 0,
+    "corrections_now": 0,
+    "duplicate_green_messages_suppressed": 40,
+    "new_signals": [
+      {
+        "fixture_id": "1571804",
+        "match": "Mezokovesd-zsory vs Ajka",
+        "market": "Over 2.5",
+        "odds": 1.98,
+        "p_matrix": 0.5134228302,
+        "ev": 0.016577203795999917,
+        "telegram_message_id": 333
+      },
+      {
+        "fixture_id": "1643462",
+        "match": "Sestao River vs Salamanca UDS",
+        "market": "Over 2.5",
+        "odds": 2.15,
+        "p_matrix": 0.5670112551,
+        "ev": 0.21907419846499976,
+        "telegram_message_id": 334
+      },
+      {
+        "fixture_id": "1645473",
+        "match": "Flamengo U20 vs Criciuma U20",
+        "market": "Over 2.5",
+        "odds": 1.57,
+        "p_matrix": 0.6911821996,
+        "ev": 0.08515605337200016,
+        "telegram_message_id": 335
+      },
+      {
+        "fixture_id": "1612107",
+        "match": "Tigre Res. vs Argentinos Juniors Res.",
+        "market": "Over 2.5",
+        "odds": 2.25,
+        "p_matrix": 0.4537643481,
+        "ev": 0.020969783224999983,
+        "telegram_message_id": 336
+      },
+      {
+        "fixture_id": "1643461",
+        "match": "Recreativo Huelva vs Navalcarnero",
+        "market": "Over 2.5",
+        "odds": 1.93,
+        "p_matrix": 0.6089954576,
+        "ev": 0.1753612331679999,
+        "telegram_message_id": 337
+      },
+      {
+        "fixture_id": "1644259",
+        "match": "Atlético Tembetary vs SOL DE America",
+        "market": "Over 2.5",
+        "odds": 1.87,
+        "p_matrix": 0.5658120111,
+        "ev": 0.05806846075700012,
+        "telegram_message_id": 338
+      }
+    ]
+  },
+  "protections": {
+    "real_money": "BLOCKED",
+    "automatic_wagering": false,
+    "odds_used_to_generate_probability": false,
+    "no_estimated_calendar_counts": true,
+    "no_backfill": true,
+    "historical_sent_signals_not_rewritten_retroactively": true
+  }
+}

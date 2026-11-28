@@ -1,0 +1,52 @@
+{
+  "schema": "MATRIX_CLV_TARGET_WATCH_COVERAGE_V2",
+  "generated_at_utc": "2026-10-18T10:35:00Z",
+  "target": {
+    "fixture_id": "1570419",
+    "match": "Osasuna vs Racing Santander",
+    "market": "over_2_5",
+    "decision_id": "clv-over25-bab0ffdca83c005f01578644b39b12497076c514af2301afefe9c06433486ff1",
+    "kickoff_utc": "2026-10-18T12:00:00+00:00",
+    "close_window_minutes": 15,
+    "close_window_opens_utc": "2026-10-18T11:45:00+00:00",
+    "due_at_audit": false
+  },
+  "watcher_replacement": {
+    "prior_run_id": 39118212555,
+    "prior_run_number": 92,
+    "prior_status": "CANCELLED",
+    "replacement_run_id": 39119566570,
+    "replacement_run_number": 93,
+    "replacement_status": "IN_PROGRESS_AT_AUDIT",
+    "created_at_utc": "2026-10-18T10:31:05Z",
+    "replacement_confirmed": true,
+    "startup_contract_steps_success": [
+      "Checkout operational branch",
+      "Set up Python",
+      "Install targeted dependencies",
+      "Verify CLV protections before watch",
+      "Verify CLV tests do not mutate persisted evidence",
+      "Validate watcher safety and secrets",
+      "Verify startup coverage and per-cycle refresh contract",
+      "Verify CLV per-attempt telemetry contract",
+      "Verify CLV incomplete-market diagnostics contract"
+    ],
+    "continuous_watch_step": "IN_PROGRESS"
+  },
+  "current_clv": {
+    "decision_count": 89,
+    "closing_odds_count": 9,
+    "remaining_to_subgate_30": 21,
+    "remaining_to_300": 291,
+    "metrics_opened": false
+  },
+  "protections": {
+    "strict_fresh_gate_seconds": 120,
+    "historical_backfill": "FORBIDDEN",
+    "post_kickoff_close": "FORBIDDEN",
+    "odds_used_to_generate_probability": false,
+    "automatic_wagering": false,
+    "real_money": "BLOCKED"
+  },
+  "adjudication": "WATCHER_92_REPLACED_BY_93; TARGET_NOT_DUE_YET; CONTINUOUS_COVERAGE_ACTIVE"
+}

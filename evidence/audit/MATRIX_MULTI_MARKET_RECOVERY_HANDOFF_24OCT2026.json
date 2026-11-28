@@ -1,0 +1,105 @@
+{
+  "schema": "MATRIX_MULTI_MARKET_RECOVERY_HANDOFF_24OCT2026_V1",
+  "generated_at_utc": "2026-10-24T11:33:25.095Z",
+  "purpose": "Preserve physical status of multi-market expansion, single-writer repair, API-Football retry hardening, and blocked-lane activation plan.",
+  "certified": {
+    "multi_market_supervisor": {
+      "run_id": 40089164654,
+      "run_number": 1,
+      "workflow": "MATRIX Multi-Market Canonical Supervisor",
+      "conclusion": "success",
+      "total_required_lanes": 42,
+      "football_required_lanes": 30,
+      "tennis_required_lanes": 12
+    },
+    "tennis_paid_harvest": {
+      "run_id": 40089140842,
+      "run_number": 22,
+      "workflow": "MATRIX RapidAPI Tennis Paid-Window Harvest",
+      "conclusion": "success"
+    },
+    "previous_tennis_multimarket_proof": {
+      "run_id": 40089003951,
+      "run_number": 18,
+      "conclusion": "success",
+      "state_counts": {
+        "ACTIVE": 2,
+        "LAB": 27,
+        "BLOCKED_MODEL": 13
+      },
+      "aces_present": true,
+      "first_half_goals_present": true,
+      "second_half_goals_present": true
+    }
+  },
+  "repaired_and_coded": {
+    "provider_retry_commits": [
+      "c38a3778a8e5eb1d83d5a4521dcca5e276a9f10c",
+      "737e91e7fa761ce3b23483ada41a2e3a8d9858da",
+      "830007525936f08f671ed4ed656e87f89ddf2160",
+      "ffd516ab1a14f84e84c9bc19f659e63cbd9ad5c1",
+      "f1bcdd2930c0755a57ddee26b66fb1d73279b71d",
+      "34e33762b16b93b2568f5027d4866a06ab4c40a5"
+    ],
+    "provider_retry_policy": {
+      "max_attempts": 3,
+      "retry_seconds": [
+        0,
+        2,
+        5
+      ],
+      "recoverable_errors": [
+        "API_FOOTBALL_PROVIDER_ERRORS",
+        "HTTP_429",
+        "HTTP_500",
+        "HTTP_502",
+        "HTTP_503",
+        "HTTP_504"
+      ],
+      "evidence_file": "provider_recovery.json",
+      "fail_closed_after_exhaustion": true
+    },
+    "single_writer_commits": [
+      "6c5a2df273918f272c4e7c5b44c0ea582d1c56c6",
+      "22db87a569aecb5d3bf4a4ce596a8ecc1ae5fb80",
+      "0ac690a2b2e63c12bf31637a7bc8e5aba8381fae",
+      "38897f56c70d2d762c42ad3268be270732e156d7",
+      "4c8c3c8b7ca711f451abfa7c90469d1f2096ff2a",
+      "00f38d41d5d22c322e730b28defb09dd894906f6"
+    ],
+    "activation_plan_commits": [
+      "877810a2fe214e5236610efad9e0af0d128097ab",
+      "6252200c52436e1c3d7d8968042acb4e7b74723d",
+      "7090716bdf35e009b122e17f33894f680861bddf",
+      "8f8be66ae3a34061f6e104d62e83c025e18311da",
+      "da8ded0ef516b62e4d9c5df570386f435f474335"
+    ]
+  },
+  "pending_runtime_certification": {
+    "football_retry_run": {
+      "run_id": 40090196800,
+      "run_number": 92,
+      "status": "pending"
+    },
+    "canonical_activation_plan_run": {
+      "run_id": 40090347900,
+      "run_number": 8,
+      "status": "pending"
+    },
+    "ci_run": {
+      "run_id": 40090287168,
+      "run_number": 13677,
+      "status": "queued"
+    }
+  },
+  "invariants": {
+    "no_silent_market_drop": true,
+    "over_2_5_not_single_scope": true,
+    "aces_mandatory": true,
+    "first_second_half_goals_mandatory": true,
+    "odds_do_not_generate_p_matrix": true,
+    "automatic_wagering": false,
+    "real_money": "BLOCKED"
+  },
+  "status": "CODED_AND_PARTIALLY_RUNTIME_CERTIFIED_PENDING_LATEST_QUEUE_COMPLETION"
+}

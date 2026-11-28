@@ -1,0 +1,124 @@
+{
+  "schema": "MATRIX_CONTINUIDAD_HOURLY_AUDIT_V2",
+  "observed_at_utc": "2026-10-09T16:29:38.373Z",
+  "branch": "repair/cor09-world-pipeline",
+  "inspection": {
+    "branch_head_at_start": "8d531c5070d1731c76e0d166ce95ce6aea3aca5d",
+    "current_head_at_telegram_finish": "a7648e6816e3f8ba1adf53b13bf31f00399deb90"
+  },
+  "overall_status": "PARTIAL_PASS_WITH_BLOCKERS",
+  "runs": {
+    "telegram": {
+      "run_id": 37893484408,
+      "attempt": 2,
+      "conclusion": "success",
+      "updated_at_utc": "2026-10-09T16:28:46Z",
+      "fallback": "RERUN_EXISTING_GOVERNED_JOB",
+      "ledger_updated_at_utc": "2026-10-09T16:28:38+00:00",
+      "sent_now": 0,
+      "settlements_now": 0,
+      "quote_checks": 12,
+      "duplicate_suppressed": 19,
+      "ledger_sent_total": 24,
+      "ledger_settlements_total": 2,
+      "status": "PASS_NO_CHANGE"
+    },
+    "tennis_live_bulk": {
+      "run_id": 37946400810,
+      "conclusion": "failure",
+      "error": "DAILY_QUOTA_RESERVE_GATE_BLOCKED",
+      "capture_last_physical_at_utc": "2026-10-09T05:38:24+00:00",
+      "status": "BLOCKED_QUOTA_NO_BYPASS"
+    },
+    "tennis_live_final_only": {
+      "last_success_artifact_at_utc": "2026-10-09T14:23:30+00:00",
+      "settlements_new": 0,
+      "status": "NO_CHANGE_NOT_YET_OVER_150_MIN"
+    },
+    "tennis_live_cumulative": {
+      "last_success_run_id": 37943832836,
+      "last_success_at_utc": "2026-10-09T14:23:54+00:00",
+      "status": "NO_CHANGE_NO_NEW_CAPTURE_OR_SETTLEMENT"
+    },
+    "football_final_only": {
+      "last_success_run_id": 37944157281,
+      "last_success_at_utc": "2026-10-09T14:26:58Z",
+      "status": "NO_CHANGE_NOT_YET_OVER_150_MIN"
+    },
+    "football_daily": {
+      "last_success_run_id": 37943795870,
+      "last_success_at_utc": "2026-10-09T14:24:42Z",
+      "status": "NO_CHANGE_OUTSIDE_TARGET_WINDOWS"
+    },
+    "tennis_hard": {
+      "last_repo_native_scheduler_run_id": 37946240507,
+      "last_run_at_utc": "2026-10-09T14:44:06Z",
+      "last_branch_run_id": 37890301102,
+      "fallback_comment_attempt": "BLOCKED_BY_SAFETY_CHECKS_NO_COMMIT",
+      "fallback_job_rerun_attempt": "BLOCKED_BY_SAFETY_CHECKS_NO_RUN",
+      "status": "BLOCKED_OVER_90_MIN"
+    }
+  },
+  "tennis_live": {
+    "global_unique_matches": 53,
+    "quality_valid_final_matches": 41,
+    "itf_women_hard": {
+      "final_quality_valid": 17,
+      "gate_30_remaining": 13
+    },
+    "model_status": "RESEARCH_ONLY",
+    "probabilities": "SEALED",
+    "metrics": "SEALED"
+  },
+  "shanghai": {
+    "source_ledger_sha": "7401579e3eb5342c6524d816c30c1d5815ffd90e",
+    "index_source_sha_match": true,
+    "source_states": 12,
+    "index_states": 12,
+    "state_keys_match": true,
+    "unique_matches": 3,
+    "final": 2,
+    "pending": 1,
+    "index_write": "NO_CHANGE_NO_NEW_CAPTURE",
+    "global_ledger_unchanged": true
+  },
+  "tennis_hard": {
+    "unique": 129,
+    "remaining_to_200": 71,
+    "remaining_to_600": 471,
+    "metrics": "SEALED_UNTIL_600_UNIQUE",
+    "duplicates_quarantined": 110
+  },
+  "football": {
+    "user_executions_09oct": 17,
+    "execution_sync_certified": 15,
+    "uncertified": 2,
+    "executions_unsettled": 17,
+    "economic_settlements_new": 0,
+    "allowed_houses": [
+      "Betano",
+      "BetPlay",
+      "RushBet"
+    ],
+    "historical_prematch_authorized_bets": 0,
+    "market_scoped_over25_resolution": "PASS_SCOPE_CONFLICT_RESOLVED",
+    "market_scoped_signal_only": true,
+    "real_money_execution_authorized": false
+  },
+  "protections": {
+    "real_money": "BLOCKED",
+    "automatic_wagering": false,
+    "missing_not_zero": true,
+    "silent_imputation": false,
+    "odds_to_probability": false,
+    "backfill": false,
+    "tuning": false,
+    "final_only": true
+  },
+  "audit_notes": [
+    "No new Tennis Live capture due to quota; Shanghai index remains consistent without mutation.",
+    "Telegram rerun succeeded and physically updated ledger without new messages or settlements.",
+    "Hard fallback write and rerun blocked; no invented run or freeze.",
+    "Historical 0 BET report is preserved; later explicit Over 2.5 market-scoped signal-only adjudication is authoritative for that limited scope."
+  ]
+}

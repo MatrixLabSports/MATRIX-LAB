@@ -1,0 +1,101 @@
+{
+  "schema": "MATRIX_FOOTBALL_19OCT_FULL_GATE_AND_PIPELINE_CERT_V1",
+  "generated_at_utc": "2026-10-19T01:03:00Z",
+  "target_date_bogota": "2026-10-19",
+  "browser_first": {
+    "source_order": [
+      "SofaScore",
+      "Flashscore",
+      "API-Football"
+    ],
+    "sofascore": {
+      "url": "https://www.sofascore.com/es/football/2026-10-19",
+      "target_date_verified": true,
+      "unique_match_links_with_19oct": 659,
+      "status": "PASS_BROWSER_PHYSICAL"
+    },
+    "flashscore": {
+      "url": "https://www.flashscore.com/tomorrow/",
+      "displayed_date": "lunes, 19 de octubre de 2026",
+      "unique_match_links": 168,
+      "status": "PASS_BROWSER_PHYSICAL"
+    },
+    "equal_raw_counts_required": false,
+    "gate": "PASS"
+  },
+  "governed_pipeline": {
+    "trigger_commit": "7eff4eb500723f7b6b77489c6c56cffc9b972d56",
+    "run_id": 39183230807,
+    "job_id": 117840240824,
+    "conclusion": "success",
+    "steps_completed": 23,
+    "api_football_fixtures_received": 201,
+    "eligible_future_fixtures": 197,
+    "canonical_ready_input_count": 141,
+    "blocked_future_input_count": 56,
+    "freeze_candidate_event_count": 99,
+    "new_freeze_event_count": 0,
+    "history_group_ready_count": 88,
+    "history_group_blocked_count": 109
+  },
+  "over25": {
+    "report_path": "evidence/api_football/daily_prematch_reports/2026-10-19/over25_shadow_ev/MATRIX_FOOTBALL_DAILY_OVER25_GOVERNED_SHADOW_EV.json",
+    "report_blob_sha": "24eaa9727f8b1cd4a533ddbaeb176726d39cfa26",
+    "all_rows": 141,
+    "p_matrix_scored_count": 99,
+    "p_matrix_blocked_count": 42,
+    "decision_counts": {
+      "BET_SHADOW": 0,
+      "BLOCKED": 141,
+      "NO_BET": 0
+    },
+    "blocker_counts": {
+      "P_MATRIX_BLOCKED:BLOCKED_RAW_GROUP_MISSING": 42,
+      "NO_EXACT_POLICY_HOUSE_OVER25_ODDS_ABOVE_1_50": 99
+    },
+    "signal_generation_authorized": true,
+    "bet_shadow_count": 0
+  },
+  "telegram": {
+    "run_id": 39183381924,
+    "job_id": 117840675049,
+    "conclusion": "success",
+    "tests_passed": 32,
+    "sent_now": 0,
+    "pre_send_passed": 0,
+    "pre_send_blocked": 206,
+    "pre_send_waiting_window": 19,
+    "paper_bankroll_current_cop": 4836000,
+    "paper_open_bets": 0,
+    "paper_open_exposure_cop": 0,
+    "total_green_messages": 211,
+    "total_settlements": 176,
+    "ledger_commit": "10e8ced4c",
+    "correlated_risk_h02_closed": false,
+    "correlated_risk_sample_records": 45,
+    "correlated_risk_status": "READY_FAIL_CLOSED"
+  },
+  "clv": {
+    "run_id": 39183438721,
+    "job_id": 117840859461,
+    "conclusion": "success",
+    "closing_odds_count": 10,
+    "decision_count": 89,
+    "captured_new": 0,
+    "due_count": 0,
+    "remaining_to_subgate_30": 20,
+    "remaining_to_open_metrics": 290,
+    "metrics_opened": false,
+    "status": "ACCUMULATING_SEALED_UNTIL_300",
+    "future_decisions_after_watch": 0,
+    "watcher_commit": "cfded7292"
+  },
+  "protections": {
+    "automatic_wagering": false,
+    "real_money": "BLOCKED",
+    "odds_used_to_generate_probability": false,
+    "no_forced_volume": true,
+    "no_backfill": true
+  },
+  "adjudication": "19OCT_BROWSER_GATE_PASS_PIPELINE_SUCCESS_NO_GREEN_SIGNAL_NO_NEW_CLV_DECISION"
+}

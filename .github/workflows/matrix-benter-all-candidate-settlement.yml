@@ -1,0 +1,95 @@
+# MATRIX_USER_AUTHORIZED_TRIGGER 2026-10-16T17:55-05:00 rerun-benter-all-candidate-settlement
+# MATRIX_USER_AUTHORIZED_TRIGGER 2026-10-16T17:47-05:00 settle-benter-all-candidate-cohort
+name: MATRIX Benter All Candidate Settlement
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - repair/cor09-world-pipeline
+    paths:
+      - tools/matrix_benter_all_candidate_settlement.py
+      - tests/test_matrix_benter_all_candidate_settlement.py
+      - .github/workflows/matrix-benter-all-candidate-settlement.yml
+      - evidence/api_football/model_validation/benter_second_stage/2026-10-16/MATRIX_BENTER_ALL_CANDIDATE_MARKET_SNAPSHOT_V1.json
+
+permissions:
+  contents: write
+
+concurrency:
+  group: matrix-benter-all-candidate-settlement
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      REAL_MONEY: BLOCKED
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: repair/cor09-world-pipeline
+          fetch-depth: 0
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: python -m pip install pytest requests
+
+      - name: Run tests
+        run: PYTHONPATH=. python -m pytest -q tests/test_matrix_benter_all_candidate_settlement.py
+
+      - name: Settle all-candidate cohort
+        env:
+          API_FOOTBALL_KEY: ${{ secrets.API_FOOTBALL_KEY }}
+        run: PYTHONPATH=. python -m tools.matrix_benter_all_candidate_settlement
+
+      - name: Enforce research governance
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          p=Path("evidence/api_football/model_validation/benter_second_stage/2026-10-16/MATRIX_BENTER_ALL_CANDIDATE_SETTLED_V1.json")
+          x=json.loads(p.read_text())
+          assert x["schema"]=="MATRIX_BENTER_ALL_CANDIDATE_SETTLED_V1"
+          assert x["row_count"]==79
+          assert x["governance"]["fusion_fit_allowed"] is False
+          assert x["governance"]["production_p_matrix_modified"] is False
+          assert x["governance"]["market_probability_fused_into_production"] is False
+          assert x["governance"]["real_money"]=="BLOCKED"
+          assert x["source_policy"]["operational_priority"]==["SOFASCORE","FLASHSCORE","API_FOOTBALL"]
+          print("MATRIX_BENTER_ALL_CANDIDATE_SETTLEMENT_GATE: PASS")
+          print("row_count=",x["row_count"])
+          print("final_outcome_count=",x["final_outcome_count"])
+          print("devigged_market_plus_final_count=",x["devigged_market_plus_final_count"])
+          print("remaining_to_300_triplets=",x["remaining_to_300_triplets"])
+          print("artifact_sha256=",x["artifact_sha256"])
+          PY
+
+      - name: Persist evidence
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name matrix-benter-settlement
+          git config user.email matrix-benter-settlement@users.noreply.github.com
+          git add evidence/api_football/model_validation/benter_second_stage/2026-10-16/MATRIX_BENTER_ALL_CANDIDATE_SETTLED_V1.json
+          if git diff --cached --quiet; then
+            echo "NO_BENTER_SETTLEMENT_CHANGE"
+            exit 0
+          fi
+          git commit -m "evidence(benter): persist all-candidate outcomes"
+          for attempt in 1 2 3 4; do
+            git fetch origin repair/cor09-world-pipeline
+            if ! git rebase origin/repair/cor09-world-pipeline; then
+              git rebase --abort || true
+              exit 1
+            fi
+            if git push origin HEAD:repair/cor09-world-pipeline; then exit 0; fi
+            sleep $((attempt*2))
+          done
+          exit 1

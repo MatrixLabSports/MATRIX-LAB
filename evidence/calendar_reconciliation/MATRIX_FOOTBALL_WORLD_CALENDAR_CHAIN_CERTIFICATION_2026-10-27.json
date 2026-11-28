@@ -1,0 +1,70 @@
+{
+  "schema": "MATRIX_FOOTBALL_WORLD_CALENDAR_CHAIN_CERTIFICATION_V1",
+  "target_date_bogota": "2026-10-27",
+  "operational_timezone": "America/Bogota",
+  "status": "PASS_BROWSER_FIRST_API_VERIFIED",
+  "source_order": [
+    "SOFASCORE",
+    "FLASHSCORE",
+    "APIS"
+  ],
+  "browser_sources": {
+    "sofascore": {
+      "physical_path": "evidence/calendar_physical/2026-10-27/sofascore_opera_capture.json",
+      "world_calendar_count": 134,
+      "source_url": "https://www.sofascore.com/es/football/2026-10-27"
+    },
+    "flashscore": {
+      "physical_path": "evidence/calendar_physical/2026-10-27/flashscore_opera_capture.json",
+      "world_calendar_count": 336,
+      "source_url": "https://www.flashscore.co/manana/"
+    }
+  },
+  "reconciliation": {
+    "physical_path": "evidence/calendar_reconciliation/MATRIX_FOOTBALL_WORLD_CALENDAR_RECONCILIATION_LAST.json",
+    "status": "PASS_OPEN_RECONCILIATION",
+    "confirmed_both": 100,
+    "sofascore_only": 34,
+    "flashscore_only": 235,
+    "ambiguous": 1,
+    "monitoring_total": 370,
+    "freeze_eligible": 0,
+    "physical_run_id": 40433555339,
+    "physical_run_conclusion": "success",
+    "regression_tests_passed": 4
+  },
+  "api_football": {
+    "cycle_summary_path": "evidence/api_football/prospective_daily/2026-10-27/20261026T112821Z/cycle_summary.json",
+    "status": "PASS",
+    "fixtures_received": 320,
+    "eligible_future_fixtures": 319,
+    "competition_count": 84,
+    "country_count": 59,
+    "unique_team_count": 638,
+    "fixture_capture_network_calls": 1,
+    "total_cycle_network_calls": 161,
+    "response_sha256": "0ecc207e4a0cf6aae97b0fa886f43b90e3afb245ffc8dfed9b438f20949e3579",
+    "p_matrix_status": "NOT_GENERATED",
+    "odds_used_to_generate_probability": false,
+    "outcomes_used_to_generate_probability": false
+  },
+  "protections": {
+    "missing_not_zero": true,
+    "no_silent_imputation": true,
+    "no_forced_count_equality": true,
+    "api_absence_does_not_delete_open_source_event": true,
+    "post_start_backfill_forbidden": true,
+    "confirmed_identity_does_not_equal_time_certification": true,
+    "no_freeze_from_single_source_time": true,
+    "automatic_wagering": false,
+    "real_money": "BLOCKED"
+  },
+  "codified_repairs": [
+    "generic SofaScore DD/MM/YY parsing; no hardcoded 25/10/26",
+    "watchlist kickoff parsing derives date from target_date_bogota",
+    "reconciliation push concurrency supersedes obsolete partial captures only",
+    "watchlist code/tests trigger reconciliation workflow",
+    "API-Football future fixture workflow consumes physical browser-first reconciliation",
+    "API-Football target date inherited from reconciled target date"
+  ]
+}

@@ -1,0 +1,95 @@
+{
+  "schema": "MATRIX_FOOTBALL_28OCT_PREREGISTRATION_CLOSURE_V1",
+  "target_date_bogota": "2026-10-28",
+  "generated_at_utc": "2026-10-28T02:51:50Z",
+  "branch": "repair/cor09-world-pipeline",
+  "head_observed_at_closure": "1019fd947c0f400cd202bc05f7c53b8537229a7d",
+  "source_order": [
+    "SOFASCORE",
+    "FLASHSCORE",
+    "APIS"
+  ],
+  "browser_captures": {
+    "sofascore": {
+      "path": "evidence/calendar_physical/2026-10-28/sofascore_opera_capture.json",
+      "commit": "0a70e08793830a9a1bf59bd0ad66297aac885dcd",
+      "observed_rows": 262,
+      "coverage_claim": "BROWSER_ACCESSIBILITY_TREE_OBSERVED_ONLY"
+    },
+    "flashscore": {
+      "path": "evidence/calendar_physical/2026-10-28/flashscore_opera_capture.json",
+      "commit": "7fbea93a1e9775c7a1980f3ed9d8091b9b99b4f2",
+      "observed_rows": 588,
+      "coverage_claim": "BROWSER_TOMORROW_PAGE_OBSERVED_ONLY"
+    }
+  },
+  "conservative_browser_reconciliation": {
+    "confirmed_both": 172,
+    "sofascore_only": 90,
+    "flashscore_only": 416,
+    "ambiguous": 0,
+    "monitoring_union": 678,
+    "one_to_one_identity_matching": true,
+    "time_match_certified": false,
+    "sofascore_postponed_rows": 4,
+    "sofascore_cancelled_rows": 0,
+    "interpretation": "Identity reconciliation only. Counts are not forced equal and source-only rows remain monitored rather than deleted."
+  },
+  "reconciler_repair": {
+    "defect": "A single SofaScore event could previously be reused by multiple Flashscore rows.",
+    "fixed": true,
+    "code_commit": "b72def1b4687a48eac1c87ad9031cad024efe03f",
+    "regression_test_commit": "30107030afdd1ae287df72c1cc4bf7ecc45a267c",
+    "workflow_contract_commit": "8b337dfc1bca352d0810f2bfc5f87bf399aba448",
+    "invariant": "ONE_SOFASCORE_EVENT_MAX_ONE_FLASHSCORE_MATCH"
+  },
+  "api_football_corroboration": {
+    "source_cycle": "evidence/api_football/prospective_daily/2026-10-28/20261028T021310Z/cycle_summary.json",
+    "provider": "api_football",
+    "cycle_status": "PASS",
+    "fixtures_received": 518,
+    "eligible_future_fixtures": 514,
+    "ready_input_count": 112,
+    "blocked_future_input_count": 402,
+    "network_calls": 161,
+    "first_fixture_capture_attempt_status": "PASS_FIRST_ATTEMPT",
+    "api_identity_reconciliation_to_browser_union_complete": false,
+    "interpretation": "API inventory is secondary corroboration/enrichment. API absence must not delete an event observed in SofaScore or Flashscore."
+  },
+  "p_matrix_shadow_corroboration": {
+    "source": "evidence/api_football/daily_prematch_reports/2026-10-28/p_matrix_shadow_current.json",
+    "generated_at_utc": "2026-10-28T02:13:33+00:00",
+    "rows": 100,
+    "blocked_count": 12,
+    "markets_generated": [
+      "1x2",
+      "over_2_5"
+    ],
+    "odds_used_to_generate_probability": false,
+    "parameter_refit": false,
+    "parameter_search": false,
+    "target_outcomes_used": false,
+    "real_money": "BLOCKED"
+  },
+  "governance": {
+    "browser_first": true,
+    "missing_not_zero": true,
+    "no_silent_imputation": true,
+    "no_forced_count_equality": true,
+    "one_to_one_identity_matching": true,
+    "api_absence_does_not_delete_open_source_event": true,
+    "post_start_backfill_forbidden": true,
+    "odds_generate_p_matrix": false,
+    "automatic_wagering": false,
+    "real_money": "BLOCKED"
+  },
+  "current_operational_status": {
+    "calendar_preregistered": true,
+    "browser_sources_physically_captured": true,
+    "api_secondary_inventory_physically_present": true,
+    "world_complete_certified": false,
+    "signals_generated_by_this_closure": false,
+    "odds_review_started_by_this_closure": false
+  },
+  "next_stage": "Use the preregistered browser-first universe for governed eligibility filtering before quote review; never create or mutate P_MATRIX from odds."
+}

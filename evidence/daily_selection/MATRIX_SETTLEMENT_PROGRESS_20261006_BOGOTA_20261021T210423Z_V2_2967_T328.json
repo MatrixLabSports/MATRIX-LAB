@@ -1,0 +1,47 @@
+{
+  "schema": "MATRIX_SETTLEMENT_PROGRESS_20261006_BOGOTA_V1",
+  "source_branch": "repair/cor09-world-pipeline",
+  "source_commit": "1d9b7641b49699b613e2c961bd589419ec736ea5",
+  "candidate_file": "evidence/daily_selection/MATRIX_CALIBRATION_CANDIDATES_20261006_BOGOTA.json",
+  "football": {
+    "cohort_total": 116,
+    "cohort_prior_full_audit_final": 107,
+    "cohort_new_confirmed": 0,
+    "global_settlements": 3769,
+    "global_delta": 29,
+    "v2_frozen": 3370,
+    "v2_settled_per_market": 2967,
+    "v2_pending_per_market": 403,
+    "nonstandard_pen": 7,
+    "nonstandard_aet": 1,
+    "pending_ns": 1,
+    "uniqueness_audit": "PASS",
+    "uniqueness_rows": 3769
+  },
+  "tennis": {
+    "cohort_total": 11,
+    "cohort_finished_exactly_once": 11,
+    "ledger_rows": 328,
+    "unique_event_ids": 328,
+    "unique_settlement_ids": 328,
+    "delta": 0
+  },
+  "governance": {
+    "metrics_opened": false,
+    "tuning": false,
+    "odds_to_probability": false,
+    "real_money": "BLOCKED",
+    "final_only": true
+  },
+  "source_files": [
+    "evidence/api_football/prospective_calibration/sync_last.json",
+    "evidence/api_football/prospective_market_freeze/settlement_sync_last.json",
+    "evidence/api_football/physical_uniqueness/audit_last.json",
+    "evidence/cor0203/settlement/MATRIX_COR0203_SETTLEMENT_LEDGER.jsonl"
+  ],
+  "notes": [
+    "29 governed football settlements since last snapshot; no 6-OCT candidate in this delta.",
+    "Football 107/116 is carried forward, not independently recounted from full ledger.",
+    "No metrics were opened during this review."
+  ]
+}

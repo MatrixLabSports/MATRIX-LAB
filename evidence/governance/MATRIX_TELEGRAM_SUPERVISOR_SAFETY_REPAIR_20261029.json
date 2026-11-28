@@ -1,0 +1,26 @@
+{
+  "schema": "MATRIX_TELEGRAM_SUPERVISOR_SAFETY_REPAIR_V1",
+  "recorded_date": "2026-10-29",
+  "scope": "offline safety guard and tests only",
+  "source_commit": "e7050cc43",
+  "code_commit": "32a00ec0f4dbed0344448cbae9d19650199a34b2",
+  "test_commit": "7b30673ed0f5f38d1fe381b7d878b4118134406b",
+  "modified_file": "tools/telegram_green_signal_alerts.py",
+  "test_file": "tests/test_telegram_supervisor_offline_safety.py",
+  "guards": [
+    "MATRIX_TELEGRAM_NO_SEND=1 blocks send_telegram and send_telegram_photo by raising before network",
+    "MATRIX_SUPERVISOR_OFFLINE_PREFLIGHT=1 returns JSON before token checks and network"
+  ],
+  "physical_verification": {
+    "github_commits": "WRITE_CONFIRMED",
+    "tests_executed": "2_OF_2_WINDOWS_PASS_BEFORE_PAID_API_GATE; THIRD_TEST_PENDING",
+    "windows_runtime": "USER_LOG_CONFIRMED_2_OF_2_TESTS_PASS_AND_OFFLINE_PREFLIGHT_EXIT_ZERO",
+    "full_supervisor": "NOT_CERTIFIED",
+    "api_football_subscription": "EXPIRED_OR_NOT_VERIFIED",
+    "no_real_money": "REQUIRED"
+  },
+  "next_action": "Run 3 offline unit tests on Windows. Then design authorized source-independent supervisor path, verify periodic workflow and full completion without expired API or Telegram send.",
+  "caveat": "Offline preflight prints a zero-call claim by design; it is not runtime network telemetry or a full execution certification.",
+  "paid_api_guard_commit": "1c529277e801a45ffde6a8d74c85c3d9970d1b00",
+  "paid_api_test_commit": "00bf1e968c86d801688552c034d54c5413192852"
+}

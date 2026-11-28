@@ -1,0 +1,68 @@
+{
+  "schema": "MATRIX_TELEGRAM_ONE_OR_MORE_BOOK_SUFFICIENCY_PROOF_V1",
+  "operational_date_bogota": "2026-10-16",
+  "policy": {
+    "logic": "OR_NOT_AND",
+    "authorized_books": [
+      "Betano",
+      "BetPlay",
+      "Rushbet"
+    ],
+    "requires_all_three": false,
+    "sufficient_condition": "At least one authorized bookmaker provides exact prematch Over 2.5 >1.50 and the frozen P_MATRIX plus final EV/quality gates pass.",
+    "quality_gate": {
+      "p_matrix_min": 0.6,
+      "revalidated_ev_min": 0.05
+    }
+  },
+  "deterministic_proof": {
+    "commit": "b56aa94e24f4d48cec8d324bad4c1e78d59cc856",
+    "workflow_run_id": 38915584373,
+    "conclusion": "success",
+    "tests": "17 passed in 0.20s",
+    "cases": [
+      "BetPlay only present -> accepted as candidate quote",
+      "Rushbet only present -> accepted as candidate quote",
+      "Best of available authorized books -> selected without requiring absent books"
+    ]
+  },
+  "live_provider_proof": {
+    "workflow_run_id": 38915784788,
+    "conclusion": "success",
+    "evidence_path": "evidence/notifications/telegram/MATRIX_TELEGRAM_MULTIBOOK_LIVE_COVERAGE_PROOF_16OCT2026.json",
+    "evidence_blob_sha": "92bc40ec2cda71f7f847fb4d845cc8fdd848931b",
+    "observations": [
+      {
+        "fixture_id": "1567924",
+        "match": "Voitsberg vs First Vienna",
+        "observed_authorized_books": [
+          "betano"
+        ],
+        "requires_all_three": false,
+        "exact_over25_books": [],
+        "interpretation": "Provider physically returned only one authorized book for the event. The gate did not reject because BetPlay/Rushbet were absent; it remained NO BET because no exact Over 2.5 >1.50 was present."
+      },
+      {
+        "fixture_id": "1551838",
+        "match": "FC Eindhoven vs Vitesse",
+        "observed_authorized_books": [
+          "betano",
+          "betplay",
+          "rushbet"
+        ],
+        "exact_over25_books": [],
+        "interpretation": "All three books were visible, but no exact qualifying Over 2.5 offer was present. This independently shows triple presence is not sufficient by itself."
+      }
+    ],
+    "events_with_exact_over25_any_book": 0,
+    "note": "Current live sample did not contain an exact qualifying Over 2.5 offer in the six probed fixtures, so no live Telegram signal was authorized from this proof."
+  },
+  "protections": {
+    "p_matrix_unchanged": true,
+    "odds_used_to_generate_probability": false,
+    "no_forced_signal": true,
+    "real_money": "BLOCKED",
+    "automatic_wagering": false
+  },
+  "status": "PHYSICALLY_PROVEN_ONE_OR_MORE_BOOK_IS_SUFFICIENT_NO_TRIPLE_MATCH_REQUIRED"
+}

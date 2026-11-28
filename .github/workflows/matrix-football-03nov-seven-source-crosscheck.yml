@@ -1,0 +1,122 @@
+name: MATRIX Football 03NOV Seven Authenticated Three-Source Crosschecks
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - repair/cor09-world-pipeline
+    paths:
+      - .github/workflows/matrix-football-03nov-seven-source-crosscheck.yml
+      - tools/matrix_football_sofa_fixture_crosscheck.py
+      - tools/matrix_football_flashscore_fixture_crosscheck.py
+      - evidence/football_world_inventory/2026-11-03/MATRIX_SOFA_BROWSER_OBSERVATIONS.json
+      - evidence/football_world_inventory/2026-11-03/MATRIX_FLASH_BROWSER_OBSERVATIONS.json
+      - evidence/football_world_inventory/2026-11-03/MATRIX_FLASH_MATCH_PAGE_PHYSICAL_PROOF_7.json
+
+permissions:
+  contents: write
+
+concurrency:
+  group: matrix-football-03nov-seven-source-crosscheck
+  cancel-in-progress: false
+
+jobs:
+  verify-seven-without-network:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      REAL_MONEY: BLOCKED
+      AUTOMATIC_WAGERING: "false"
+    steps:
+      - name: Checkout operational source and immutable evidence
+        uses: actions/checkout@v4
+        with:
+          ref: repair/cor09-world-pipeline
+          fetch-depth: 0
+
+      - name: Install Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Test original browser and independent-provider identity contracts
+        run: |
+          set -euo pipefail
+          python -m pip install pytest
+          PYTHONPATH=. python -m pytest -q \
+            tests/test_matrix_football_sofa_fixture_crosscheck.py \
+            tests/test_matrix_football_flashscore_fixture_crosscheck.py
+
+      - name: Reconcile exact independent fixture IDs and individual browser clocks
+        run: |
+          set -euo pipefail
+          test "$REAL_MONEY" = "BLOCKED"
+          test "$AUTOMATIC_WAGERING" = "false"
+          D=evidence/football_world_inventory/2026-11-03
+          PYTHONPATH=. python -m tools.matrix_football_sofa_fixture_crosscheck \
+            --intake "$D/MATRIX_FOOTBALL_INDEPENDENT_FIXTURE_INTAKE.json" \
+            --observations "$D/MATRIX_SOFA_BROWSER_OBSERVATIONS.json" \
+            --out "$D/MATRIX_SOFA_FOOTBALL_FIXTURE_CROSSCHECK.json"
+          PYTHONPATH=. python -m tools.matrix_football_flashscore_fixture_crosscheck \
+            --intake "$D/MATRIX_FOOTBALL_INDEPENDENT_FIXTURE_INTAKE.json" \
+            --sofa "$D/MATRIX_SOFA_FOOTBALL_FIXTURE_CROSSCHECK.json" \
+            --flash-observations "$D/MATRIX_FLASH_BROWSER_OBSERVATIONS.json" \
+            --out "$D/MATRIX_FLASH_FOOTBALL_CROSSCHECK.json"
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          root=Path("evidence/football_world_inventory/2026-11-03")
+          get=lambda name:json.loads((root/name).read_text(encoding="utf-8"))
+          p=get("MATRIX_FLASH_MATCH_PAGE_PHYSICAL_PROOF_7.json")
+          so=get("MATRIX_SOFA_FOOTBALL_FIXTURE_CROSSCHECK.json")
+          fl=get("MATRIX_FLASH_FOOTBALL_CROSSCHECK.json")
+          intake=get("MATRIX_FOOTBALL_INDEPENDENT_FIXTURE_INTAKE.json")
+          assert p["individually_opened_flashscore_match_pages_count"]==7
+          assert len(p["records"])==7
+          assert len({x["source_fixture_id"] for x in p["records"]})==7
+          assert all(x["match_page_observed_individually"] is True for x in p["records"])
+          assert all(x["flashscore_visible_date_and_clock_text"].startswith("03.11.2026 ") for x in p["records"])
+          assert intake["fixture_count"]==19
+          assert intake["http_status"]==200
+          assert so["status"]=="PASS_SOFA_IDENTITIES_ONLY_NO_DOUBLE_SOURCE_OR_SIGNAL"
+          assert so["matched_count"]==7
+          assert so["rejected_count"]==0
+          assert fl["status"]=="PASS_THREE_SOURCE_FIXTURE_IDENTITY_ONLY_NO_QUOTES_OR_SIGNALS"
+          assert fl["matched_count"]==7
+          assert fl["rejected_count"]==0
+          assert fl["flashscore_verified"] is True
+          assert len({str(x["source_fixture_id"]) for x in fl["matched"]})==7
+          assert {str(x["source_fixture_id"]) for x in fl["matched"]} == {str(x["source_fixture_id"]) for x in p["records"]}
+          assert all(x["three_source_calendar_identity_verified"] is True for x in fl["matched"])
+          assert so["historical_source_equivalence_verified"] is False
+          assert so["governed_model_parity_verified"] is False
+          assert fl["calibration_parity_verified"] is False
+          assert fl["odds_market_verified"] is False
+          assert so["signal_generation_authorized"] is False
+          assert fl["signal_generation_authorized"] is False
+          assert so["real_money"]==fl["real_money"]=="BLOCKED"
+          assert so["automatic_wagering"] is False
+          assert fl["automatic_wagering"] is False
+          print("PASS_7_REAL_03NOV_THREE_SOURCE_CALENDAR_IDENTITIES_NO_QUOTES_OR_SIGNAL_PROMOTION")
+          PY
+
+      - name: Persist only exact seven-source identity proof
+        shell: bash
+        run: |
+          set -euo pipefail
+          D=evidence/football_world_inventory/2026-11-03
+          git config user.name matrix-03nov-browser-crosscheck
+          git config user.email matrix-03nov-browser-crosscheck@users.noreply.github.com
+          git add "$D/MATRIX_SOFA_FOOTBALL_FIXTURE_CROSSCHECK.json" "$D/MATRIX_FLASH_FOOTBALL_CROSSCHECK.json"
+          if git diff --cached --quiet; then echo ALREADY_CERTIFIED; exit 0; fi
+          git commit -m "evidence(football): certify seven 03nov cross-provider calendar identities only"
+          for attempt in 1 2 3 4; do
+            git fetch origin repair/cor09-world-pipeline
+            if ! git rebase origin/repair/cor09-world-pipeline; then
+              git rebase --abort || true
+              exit 1
+            fi
+            if git push origin HEAD:repair/cor09-world-pipeline; then exit 0; fi
+            sleep $((attempt*2))
+          done
+          exit 1

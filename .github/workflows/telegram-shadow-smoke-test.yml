@@ -1,0 +1,48 @@
+name: Telegram SHADOW Smoke Test
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  telegram-shadow-smoke-test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      MATRIX_MODE: SHADOW
+      REAL_MONEY: BLOCKED
+      AUTO_BETTING: DISABLED
+    steps:
+      - name: Enforce SHADOW safety gates
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$MATRIX_MODE" = "SHADOW"
+          test "$REAL_MONEY" = "BLOCKED"
+          test "$AUTO_BETTING" = "DISABLED"
+
+      - name: Validate Telegram secrets are present
+        shell: bash
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+        run: |
+          set -euo pipefail
+          test -n "$TELEGRAM_BOT_TOKEN"
+          test -n "$TELEGRAM_CHAT_ID"
+
+      - name: Send governed SHADOW test message
+        shell: bash
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+        run: |
+          set -euo pipefail
+          response="$(curl --fail-with-body --silent --show-error \
+            --request POST \
+            "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage" \
+            --data-urlencode "chat_id=${TELEGRAM_CHAT_ID}" \
+            --data-urlencode $'text=MATRIX-LAB Telegram SHADOW activo.\nModo: SHADOW\nREAL_MONEY: BLOCKED\nAUTO_BETTING: DISABLED\nPrueba de notificacion solamente.')"
+          python -c 'import json,sys; d=json.load(sys.stdin); assert d.get("ok") is True; print("TELEGRAM_SHADOW_SEND_OK")' <<< "$response"

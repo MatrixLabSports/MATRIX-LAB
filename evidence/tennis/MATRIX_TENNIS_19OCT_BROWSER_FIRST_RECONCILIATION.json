@@ -1,0 +1,76 @@
+{
+  "schema": "MATRIX_TENNIS_19OCT_BROWSER_FIRST_RECONCILIATION_V1",
+  "generated_at_utc": "2026-10-19T00:40:00Z",
+  "target_date_bogota": "2026-10-19",
+  "source_order": [
+    "SofaScore",
+    "Flashscore",
+    "RapidAPI Tennis"
+  ],
+  "sofascore": {
+    "opera_tab_id": 1078819036,
+    "url": "https://www.sofascore.com/es/tennis/2026-10-19",
+    "date_ui_label": "Mañana",
+    "target_date_rows_verified": "19/10/26",
+    "visible_event_rows_full_page": 426,
+    "content_readable": true,
+    "examples": [
+      "M. Kecmanović vs J. Duckworth",
+      "M. Čilić vs N. Basilashvili",
+      "C. Wong vs J. Delaney",
+      "J. Brooksby vs M. Krueger",
+      "N. Jarry vs T. Barrios Vera",
+      "D. Galan vs J. Varillas"
+    ],
+    "status": "PASS_BROWSER_FIRST_PHYSICAL"
+  },
+  "flashscore": {
+    "automation_run_id": "1d2c17e3-293a-462d-8eaf-2536e165a4d5",
+    "target_date_verified": "2026-10-19",
+    "visible_match_count": 74,
+    "status": "PASS_BROWSER_PHYSICAL",
+    "note": "Visible Flashscore set is not assumed exhaustive or numerically identical to SofaScore."
+  },
+  "rapidapi_tennis": {
+    "inventory_path": "evidence/tennis/world_inventory/2026-10-19/MATRIX_TENNIS_WORLD_INVENTORY.json",
+    "status": "PASS",
+    "provider_inventory_complete": true,
+    "world_calendar_inventory_count": 76,
+    "events_by_family": {
+      "ATP": 65,
+      "WTA": 6,
+      "ITF": 5
+    },
+    "events_by_detail": {
+      "ATP_CHALLENGER": 47,
+      "ATP_MAIN_OR_OTHER": 18,
+      "ITF_MEN": 3,
+      "ITF_WOMEN": 2,
+      "WTA_MAIN_OR_OTHER": 6
+    },
+    "world_inventory_complete": false,
+    "world_complete_gate": "REQUIRES_MULTI_SOURCE_RECONCILIATION"
+  },
+  "reconciliation": {
+    "source_order_observed": true,
+    "sofascore_reviewed": true,
+    "flashscore_reviewed": true,
+    "rapidapi_reviewed": true,
+    "equal_raw_counts_required": false,
+    "reason_counts_differ": "Sources expose different coverage/visibility universes; identity-level governed lane filtering remains authoritative.",
+    "browser_first_gate": "PASS",
+    "provider_inventory_gate": "PASS",
+    "global_world_complete_flag": "REMAINS_FALSE_UNTIL_IDENTITY_LEVEL_MULTI_SOURCE_RECONCILIATION"
+  },
+  "protections": {
+    "no_forced_volume": true,
+    "no_synthetic_backfill": true,
+    "missing_not_zero": true,
+    "silent_imputation": false,
+    "automatic_model_feed_from_browser_counts": false,
+    "metrics_opened": false,
+    "automatic_wagering": false,
+    "real_money": "BLOCKED"
+  },
+  "adjudication": "BROWSER_FIRST_TENNIS_19OCT_VERIFIED_READY_FOR_GOVERNED_LANE_PROCESSING"
+}

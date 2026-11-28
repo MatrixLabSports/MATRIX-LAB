@@ -1,0 +1,86 @@
+{
+  "automatic_wagering": false,
+  "evaluation_line": 8.5,
+  "frozen_parameters": {
+    "calibration_gamma": 1.15,
+    "evaluation_line": 8.5,
+    "oof_prevalence": 0.4777777777777778,
+    "raw_l2": 0.001,
+    "raw_mode": "EXPECTED_ONLY",
+    "raw_model": {
+      "epochs": 250,
+      "l2": 0.001,
+      "learning_rate": 0.03,
+      "means": [
+        8.13077575084206
+      ],
+      "mode": "EXPECTED_ONLY",
+      "stds": [
+        0.6228685914209231
+      ],
+      "weights": [
+        -0.09866112927800283,
+        0.2502127059207655
+      ]
+    }
+  },
+  "frozen_parameters_sha256": "ada36adbd651cb812b013c4f58e7a2a4cf95e731fd5c815cf5dca94e1719ba0f",
+  "lane": "TEAM_SHOTS_ON_TARGET",
+  "odds_used_to_generate_probability": false,
+  "p_matrix_generated": false,
+  "parameter_tuning_after_freeze": false,
+  "prospective_eligible": false,
+  "prospective_gates": [],
+  "real_money": "BLOCKED",
+  "schema": "MATRIX_FOOTBALL_TEAM_SOT_CHALLENGER_V3",
+  "selection": {
+    "calibrator_selected_on_train_oof_only": true,
+    "final_validation_used_for_selection": false,
+    "raw_model_selected_on_train_oof_only": true,
+    "selected_calibration": {
+      "gamma": 1.15,
+      "metric": {
+        "brier_score": 0.2403292256158481,
+        "ece_5bin": 0.029397389976984243,
+        "log_loss": 0.6737748577748774,
+        "max_calibration_error_5bin": 0.29545192188761954,
+        "sample_size": 90
+      }
+    },
+    "selected_raw": {
+      "internal_metric": {
+        "brier_score": 0.24120692921793385,
+        "ece_5bin": 0.027205459883368047,
+        "log_loss": 0.6755318220573469,
+        "max_calibration_error_5bin": 0.2815523958443068,
+        "sample_size": 90
+      },
+      "l2": 0.001,
+      "mode": "EXPECTED_ONLY"
+    }
+  },
+  "source_dataset": "evidence/api_football/market_expansion/team_pit/team_shots_on_target_pit.jsonl",
+  "source_dataset_sha256": "d3c3656e9e90a1642bd4339ffb816b8982073bbfbb9d44cd4ce0f2846418869a",
+  "status": "REJECTED_HISTORICAL_OOS_V3",
+  "train_count": 225,
+  "validation": {
+    "baseline": {
+      "brier_score": 0.25661234567901214,
+      "ece_5bin": 0.1288888888888889,
+      "log_loss": 0.7063875484925678,
+      "max_calibration_error_5bin": 0.1288888888888889,
+      "sample_size": 50
+    },
+    "challenger": {
+      "brier_score": 0.24620295631714295,
+      "ece_5bin": 0.11441055493284638,
+      "log_loss": 0.6854058347675194,
+      "max_calibration_error_5bin": 0.14335233701979982,
+      "sample_size": 50
+    },
+    "delta_brier_challenger_minus_baseline": -0.010409389361869192,
+    "delta_log_loss_challenger_minus_baseline": -0.020981713725048423,
+    "gate_passed": false
+  },
+  "validation_count": 50
+}

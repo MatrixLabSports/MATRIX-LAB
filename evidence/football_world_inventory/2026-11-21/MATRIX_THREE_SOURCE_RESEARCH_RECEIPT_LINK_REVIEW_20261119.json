@@ -1,0 +1,79 @@
+{
+  "schema": "MATRIX_THREE_SOURCE_RESEARCH_RECEIPT_LINK_REVIEW_V1",
+  "as_of_bogota": "2026-11-19",
+  "target_date_bogota": "2026-11-21",
+  "status": "PASS_RECEIPT_CONSISTENCY_ONLY_RESEARCH_NO_CANONICAL_ADMISSION",
+  "source_order": [
+    "SofaScore",
+    "Flashscore",
+    "football-data.org"
+  ],
+  "evidence_sources": [
+    {
+      "key": "earlier",
+      "path": "evidence/football_world_inventory/2026-11-21/MATRIX_OPERA_THREE_SOURCE_RESEARCH_RECEIPT_20261116.json",
+      "git_blob_sha1": "c553b94b53c4271a638f797dbb8b01a6dd8622c7"
+    },
+    {
+      "key": "later",
+      "path": "evidence/football_world_inventory/2026-11-21/MATRIX_FLASH_EXACT_MID_PREMATCH_RESEARCH_20261119.json",
+      "git_blob_sha1": "4cf29e79516dcde14e7ba8bd3e71477a234c8f4f"
+    },
+    {
+      "key": "provider",
+      "path": "evidence/governance/MATRIX_FREE_API_AUTHENTICATED_PROBE_LAST.json",
+      "git_blob_sha1": "09d2e741633b55642dd4b20ea630cdfd4b951138"
+    }
+  ],
+  "check_count": 20,
+  "passed_count": 20,
+  "checks": {
+    "schemas": true,
+    "source_order": true,
+    "target_date": true,
+    "match_teams": true,
+    "sofa_event_id": true,
+    "sofa_event_url": true,
+    "flash_url": true,
+    "flash_mid": true,
+    "flash_current_date": true,
+    "provider_unique_id": true,
+    "provider_kickoff": true,
+    "provider_teams": true,
+    "provider_prior_http_proof": true,
+    "old_capture_before_kickoff": true,
+    "bogota_numeric_clock": true,
+    "browser_tz_uncertified": true,
+    "original_crosswalk_uncertified": true,
+    "no_production": true,
+    "no_telegram": true,
+    "real_money_blocked": true
+  },
+  "match": {
+    "home": "Manchester City",
+    "away": "Fulham",
+    "sofascore_event_id": "16363661",
+    "flashscore_mid": "MuVKeqEE",
+    "football_data_org_fixture_id": "560643",
+    "kickoff_utc": "2026-11-21T12:30:00Z"
+  },
+  "previous_provider_response_sha256": "4dfdb1965fdf05a94d76be6d1e522bfcae1bc4708a1be52cd6f4e03cfe25053e",
+  "raw_provider_response_replayed_this_run": false,
+  "local_python_unit_tests_passed": 8,
+  "python_source_git_blob_sha1": "310565abe09066c385453f6b9fcfc980531d8608",
+  "python_tests_git_blob_sha1": "714bd9d7a1087344ef5505ad45219a3de57e9cfa",
+  "source_type_note": "SHA hash of JSON in Git is not cryptographic proof of live web page capture",
+  "blockers": {
+    "browser_timezone_independently_attested": false,
+    "new_browser_capture_exact_time_attested": false,
+    "canonical_original_api_football_fixture_crosswalk": false,
+    "enriched_original_pit_feature_equality": false,
+    "six_league_prospective_oos": false,
+    "bookmaker_quote_verified": false,
+    "sharp_reference_verified": false
+  },
+  "production_p_matrix_authorized": false,
+  "telegram_signal_authorized": false,
+  "automatic_wagering": false,
+  "real_money": "BLOCKED"
+}

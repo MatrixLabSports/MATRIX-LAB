@@ -1,0 +1,61 @@
+{
+  "schema": "MATRIX_HYBRID_WEEK_BLOCK_DEPENDENCE_RESEARCH_V1",
+  "review_date_bogota": "2026-11-18",
+  "status": "CODE_VERIFIED_STANDALONE_SYNTHETIC_ALGORITHM_CHECK_DONE_FULL_GITHUB_PYTEST_PENDING",
+  "scope": "MATRIX_HYBRID_ELITE_RESEARCH_ONLY",
+  "model_promotion_authorized": false,
+  "real_money": "BLOCKED",
+  "automatic_wagering": false,
+  "original_models_modified": false,
+  "code": {
+    "path": "tools/matrix_hybrid_elite_lab.py",
+    "git_blob_sha1": "444ca34a4e9108b5880f7d708054551566c6ab36",
+    "commit_sha": "67d69d95bb34b3a4b09ca333f3a8aa5569ff0f17",
+    "method": "DETERMINISTIC_PAIRED_CALENDAR_WEEK_BLOCK_RESAMPLE",
+    "minimum_independent_week_blocks": 12
+  },
+  "tests": {
+    "path": "tests/test_matrix_hybrid_elite_lab.py",
+    "git_blob_sha1": "16d7847e2c63645c1c76a4d1aca50a60d712aa84",
+    "test_functions_written": 23,
+    "commit_sha": "270f3f01c5c43becdf336e7fea91e421cbed9b21"
+  },
+  "local_standalone_synthetic_algorithm_probe": [
+    {
+      "case": "200_DISTINCT_FIXTURES_ONE_CALENDAR_WEEK",
+      "calendar_week_blocks": 1,
+      "brier_delta_lower": 0.12,
+      "logloss_delta_lower": 0.28768207,
+      "preliminary_screen_pass": false
+    },
+    {
+      "case": "200_DISTINCT_FIXTURES_THIRTY_CALENDAR_WEEKS",
+      "calendar_week_blocks": 30,
+      "brier_delta_lower": 0.12,
+      "logloss_delta_lower": 0.28768207,
+      "preliminary_screen_pass": true
+    }
+  ],
+  "limitations": [
+    "This local stand-alone probe exercised the algorithmic formula but did not import the live GitHub repository module.",
+    "Synthetic outcomes are not true sports model accuracy evidence.",
+    "The 95% confidence bounds still do not account for cross-week dependence or the multiple-comparisons selection problem.",
+    "Prospective independent replication remains mandatory.",
+    "No confirmed GitHub pytest pass was observed at review."
+  ],
+  "ci_observed": [
+    {
+      "commit": "270f3f01c5c43becdf336e7fea91e421cbed9b21",
+      "workflow": "MATRIX CI",
+      "run_id": 44288238355,
+      "status": "queued"
+    },
+    {
+      "commit": "270f3f01c5c43becdf336e7fea91e421cbed9b21",
+      "workflow": "MATRIX Workflow Regression Contracts",
+      "run_id": 44288237716,
+      "status": "pending"
+    }
+  ],
+  "certified_real_matched_predictions_available": 0
+}

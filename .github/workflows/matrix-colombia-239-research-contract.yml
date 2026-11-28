@@ -1,0 +1,48 @@
+name: MATRIX Colombia 239 Research Route Contract
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - repair/cor09-world-pipeline
+    paths:
+      - tools/matrix_colombia_239_source_route.py
+      - tests/test_matrix_colombia_239_source_route.py
+      - .github/workflows/matrix-colombia-239-research-contract.yml
+permissions:
+  contents: read
+jobs:
+  verify-research-only:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: repair/cor09-world-pipeline
+          sparse-checkout-cone-mode: false
+          sparse-checkout: |
+            tools/matrix_colombia_239_source_route.py
+            tests/test_matrix_colombia_239_source_route.py
+            evidence/api_football/governance/alternative_producer_original_six_league_registry.json
+            evidence/football_world_inventory/2026-11-21/MATRIX_ESPN_PUBLIC_SIX_LEAGUE_DISCOVERY_20261117.json
+            .github/workflows/matrix-colombia-239-research-contract.yml
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: python -m pip install pytest
+      - name: Verify Colombia source routing never promotes signals
+        run: PYTHONPATH=. python -m pytest -q tests/test_matrix_colombia_239_source_route.py
+      - name: Evaluate archived real source evidence
+        run: PYTHONPATH=. python -m tools.matrix_colombia_239_source_route --out /tmp/matrix_colombia_239_research.json
+      - name: Verify physical report remains fail-closed
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          report=json.loads(Path('/tmp/matrix_colombia_239_research.json').read_text())
+          assert report['research_source_route_exists'] is True
+          assert report['valid_prospective_settled_239_matches_from_these_sources'] == 0
+          assert report['production_p_matrix_authorized'] is False
+          assert report['telegram_signal_authorized'] is False
+          assert report['real_money'] == 'BLOCKED'
+          print(json.dumps({'source_candidates':len(report['source_candidates']),'signal_authorized':False}))
+          PY

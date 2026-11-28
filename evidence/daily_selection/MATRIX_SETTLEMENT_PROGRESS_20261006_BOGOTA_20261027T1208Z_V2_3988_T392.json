@@ -1,0 +1,233 @@
+{
+  "schema": "MATRIX_WORLD_CALIBRATION_SETTLEMENT_PROGRESS_AUDIT_V1",
+  "target_date_bogota": "2026-10-06",
+  "branch": "repair/cor09-world-pipeline",
+  "audit_at_utc": "2026-10-27T12:08:27.351Z",
+  "previous_snapshot": {
+    "path": "evidence/daily_selection/MATRIX_SETTLEMENT_PROGRESS_20261006_BOGOTA_20261027T092122Z_V2_3984_T386.json",
+    "sha": "9552af723b0d83f93703d2d7d16fce34708c9b6c",
+    "commit": "ce810a1bf8ebcabd614585305a45fda881dfaff6"
+  },
+  "observed_branch_head_before_write": "e16591d4b007f1464320d9c58ba57864645ef316",
+  "source_blobs": {
+    "candidate": {
+      "path": "evidence/daily_selection/MATRIX_CALIBRATION_CANDIDATES_20261006_BOGOTA.json",
+      "blob_sha": "52e897007840f5bed1a8999edad8ee594fefc767"
+    },
+    "previous_snapshot": {
+      "path": "evidence/daily_selection/MATRIX_SETTLEMENT_PROGRESS_20261006_BOGOTA_20261027T092122Z_V2_3984_T386.json",
+      "blob_sha": "9552af723b0d83f93703d2d7d16fce34708c9b6c"
+    },
+    "football_sync": {
+      "path": "evidence/api_football/prospective_market_freeze/settlement_sync_last.json",
+      "blob_sha": "53033a3aba29feda4320a05d1b3c753bb8b46565"
+    },
+    "tracker": {
+      "path": "evidence/api_football/governance/MATRIX_FOOTBALL_4000_CANONICAL_TRACKER_LAST.json",
+      "blob_sha": "b756e0b721f4fb30ccdedfba06d4b42e7250dece"
+    },
+    "v2_1x2": {
+      "path": "evidence/api_football/calibration_v2/lanes/1x2/state.json",
+      "blob_sha": "bcd36e411d6f24821f055266356bc6e8e4f7f8a0"
+    },
+    "v2_under": {
+      "path": "evidence/api_football/calibration_v2/lanes/under_2_5/state.json",
+      "blob_sha": "25b77d3f2db2a1e7e717f26260f4fddb053fd6b3"
+    },
+    "v2_over": {
+      "path": "evidence/api_football/calibration_v2/lanes/over_2_5/state.json",
+      "blob_sha": "ae548ce6e127b5ee5def92cd1435dd3e2856d3dc"
+    },
+    "tennis_sync": {
+      "path": "evidence/cor0203/runtime/MATRIX_COR0203_SETTLEMENT_SYNC_LAST.json",
+      "blob_sha": "19b1bf4b4cd0f6d7e434e8c860f1ec72364cd81f"
+    },
+    "tennis_ledger": {
+      "path": "evidence/cor0203/settlement/MATRIX_COR0203_SETTLEMENT_LEDGER.jsonl",
+      "blob_sha": "009a7a5b3bc5f94b054ebd279fa2809b5f1cec38"
+    },
+    "tennis_uniqueness": {
+      "path": "evidence/cor0203/runtime/MATRIX_COR0203_SETTLEMENT_UNIQUENESS_LAST.json",
+      "blob_sha": "3373b3d01b6b17b9d21b1e934b3b8f260bbf0f36"
+    }
+  },
+  "football": {
+    "original_6oct": {
+      "candidates": 116,
+      "unique_candidate_fixture_ids": 116,
+      "standard_ft_settled": 107,
+      "new_standard_ft": 0,
+      "settled_count_basis": "Prior audited 107/116 plus current governed sync: zero new FT among original cohort; full football ledger not independently retrievable through connector.",
+      "blocked_nonstandard": [
+        {
+          "fixture_id": "1588817",
+          "reason": "NONSTANDARD_TERMINAL_REQUIRES_ADJUDICATION:PEN"
+        },
+        {
+          "fixture_id": "1588821",
+          "reason": "NONSTANDARD_TERMINAL_REQUIRES_ADJUDICATION:PEN"
+        },
+        {
+          "fixture_id": "1588845",
+          "reason": "NONSTANDARD_TERMINAL_REQUIRES_ADJUDICATION:PEN"
+        },
+        {
+          "fixture_id": "1588863",
+          "reason": "NONSTANDARD_TERMINAL_REQUIRES_ADJUDICATION:PEN"
+        },
+        {
+          "fixture_id": "1588890",
+          "reason": "NONSTANDARD_TERMINAL_REQUIRES_ADJUDICATION:PEN"
+        },
+        {
+          "fixture_id": "1588893",
+          "reason": "NONSTANDARD_TERMINAL_REQUIRES_ADJUDICATION:PEN"
+        },
+        {
+          "fixture_id": "1619499",
+          "reason": "NONSTANDARD_TERMINAL_REQUIRES_ADJUDICATION:PEN"
+        },
+        {
+          "fixture_id": "1644168",
+          "reason": "NONSTANDARD_TERMINAL_REQUIRES_ADJUDICATION:AET"
+        }
+      ],
+      "pending_provider": [
+        {
+          "fixture_id": "1596466",
+          "lookup_after_utc": "2026-10-27T12:17:38+00:00",
+          "provider_status": "NS",
+          "reason": "RESULT_NOT_STANDARD_FINAL"
+        }
+      ]
+    },
+    "global_sync": {
+      "frozen": 5195,
+      "final": 4791,
+      "pending": 272,
+      "blocked": 132,
+      "reconciles": true,
+      "new_settlements": 4,
+      "new_settled_fixture_ids": [
+        "1507468",
+        "1507466",
+        "1618433",
+        "1645525"
+      ],
+      "network_calls": 28,
+      "run_at_utc": "2026-10-27T11:17:38+00:00",
+      "source_commit": "18e82ba2bb91bc0520a25ed4dcf7c5f3fac7a5aa"
+    },
+    "v2": {
+      "frozen_per_market": 4367,
+      "settled_per_market": 3988,
+      "pending_per_market": 379,
+      "markets_checked": [
+        "1X2",
+        "OVER_2_5",
+        "UNDER_2_5"
+      ],
+      "metrics_opened": false,
+      "parameter_tuning_allowed": false
+    },
+    "canonical_tracker": {
+      "global_final": 4787,
+      "v2_settled": 3984,
+      "tracker_reconciled": false,
+      "lag_global": 4,
+      "lag_v2": 4,
+      "generated_at_utc": "2026-10-27T10:32:58.944887+00:00"
+    }
+  },
+  "tennis": {
+    "original_6oct_unique": 11,
+    "original_6oct_finished": 11,
+    "ledger_records": 392,
+    "unique_event_ids": 392,
+    "unique_settlement_ids": 392,
+    "hash_link_breaks": 0,
+    "new_settlements_since_previous": 6,
+    "new_settlements": [
+      {
+        "event_id": "COR0203-RAPIDAPI-TENNIS-687515-34c8245d011f",
+        "winner": "Stefanos Sakellaridis",
+        "result": "6-2 6-2",
+        "status": "FINISHED",
+        "settlement_id": "89480756bd7ff8c1309ac8c405dad33b413aa0f7053d67ecd4c8e610529c392e",
+        "settled_at_utc": "2026-10-27T10:55:43+00:00",
+        "result_source_reference": "results-range:2026-10-14/2026-10-27:fixtureMatchId=687515:resultMatchId=144748437"
+      },
+      {
+        "event_id": "COR0203-RAPIDAPI-TENNIS-706525-27e09e29f1f9",
+        "winner": "Fajing Sun",
+        "result": "4-6 6-3 7-5",
+        "status": "FINISHED",
+        "settlement_id": "d5aa0e7e13d5270108d10bffb664d192f2be7ca5d45cae9a41821fa0e4fc9d83",
+        "settled_at_utc": "2026-10-27T10:55:43+00:00",
+        "result_source_reference": "results-range:2026-10-14/2026-10-27:fixtureMatchId=706525:resultMatchId=146155019"
+      },
+      {
+        "event_id": "COR0203-RAPIDAPI-TENNIS-715858-8b07b76aa0c3",
+        "winner": "Otto Virtanen",
+        "result": "7-6(4) 6-4",
+        "status": "FINISHED",
+        "settlement_id": "b9427d9f4d7fbc27111e8518b781ce4069f8a808be961fba56a78f4cca4f5c0c",
+        "settled_at_utc": "2026-10-27T10:55:43+00:00",
+        "result_source_reference": "results-range:2026-10-14/2026-10-27:fixtureMatchId=715858:resultMatchId=127871337"
+      },
+      {
+        "event_id": "COR0203-RAPIDAPI-TENNIS-715869-76fb81e0f8f8",
+        "winner": "Federico Cina",
+        "result": "6-0 4-6 6-3",
+        "status": "FINISHED",
+        "settlement_id": "e7ff8e73f7dbf498725c34382ca6bc238ff4360ee9c1f6bba030022bce72a0f6",
+        "settled_at_utc": "2026-10-27T10:55:43+00:00",
+        "result_source_reference": "results-range:2026-10-14/2026-10-27:fixtureMatchId=715869:resultMatchId=126464943"
+      },
+      {
+        "event_id": "COR0203-RAPIDAPI-TENNIS-829697-342a03a1e569",
+        "winner": "Alibek Kachmazov",
+        "result": "6-3 6-1",
+        "status": "FINISHED",
+        "settlement_id": "3cf1953390c25cbaf6f69579ced806ec1541f13252d70b29733b1ace374e4679",
+        "settled_at_utc": "2026-10-27T10:55:43+00:00",
+        "result_source_reference": "results-range:2026-10-14/2026-10-27:fixtureMatchId=829697:resultMatchId=144748435"
+      },
+      {
+        "event_id": "COR0203-RAPIDAPI-TENNIS-836638-4ddadd872352",
+        "winner": "Yaroslav Demin",
+        "result": "6-4 6-4",
+        "status": "FINISHED",
+        "settlement_id": "66a17c3367a9c50cc97a8f7ffede22e5327c410fa71f1e74e200e74a6733adb7",
+        "settled_at_utc": "2026-10-27T10:55:43+00:00",
+        "result_source_reference": "results-range:2026-10-14/2026-10-27:fixtureMatchId=836638:resultMatchId=146155015"
+      }
+    ],
+    "uniqueness_result": "PASS",
+    "settled_unique_canonical_events": 339,
+    "settled_duplicate_alias_records": 53,
+    "duplicate_aliases_used_for_metrics": 0,
+    "nonstandard_blocked_count": 12,
+    "metrics_opened": false,
+    "source_commit": "d6af7a1fd70a98d659c34671bca557da61def2c6"
+  },
+  "governance": {
+    "settlement_final_only": true,
+    "metrics_opened": false,
+    "no_tuning": true,
+    "no_odds_to_p": true,
+    "automatic_wagering": false,
+    "real_money": "BLOCKED",
+    "executed_governed_settlements_this_audit": 0,
+    "no_duplicate_settlement_execution": true
+  },
+  "change_detection": {
+    "new_standard_football_results": 4,
+    "new_finished_tennis_results": 6,
+    "original_6oct_new_results": 0,
+    "physical_change_since_previous": true,
+    "physical_change_type": "FOUR_PREEXISTING_GOVERNED_FOOTBALL_SETTLEMENTS_AND_SIX_PREEXISTING_GOVERNED_TENNIS_SETTLEMENTS",
+    "canonical_tracker_lag": 4
+  },
+  "method": "Read current candidate, previous snapshot, governed football sync, tracker, three V2 lane states, full tennis ledger and uniqueness. Compare previous snapshot and prior ledger; verify 11 original tennis events, 392 unique event/settlement IDs and zero adjacent hash-link breaks. Four FT football and six FINISHED tennis results already committed by governed processes. No duplicate settlement or tuning; football tracker stale by four, not overwritten manually."
+}

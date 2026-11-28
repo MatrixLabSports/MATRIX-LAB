@@ -1,0 +1,228 @@
+{
+  "schema": "MATRIX_FOOTBALL_TEMPORAL_RECONCILIATION_ELITE_CLOSURE_28OCT2026_V1",
+  "target_date_bogota": "2026-10-28",
+  "branch": "repair/cor09-world-pipeline",
+  "generated_at_utc": "2026-10-28T03:34:00Z",
+  "head_observed_before_closure": "5d299e3e06cbf32d4ecade3999b30c7bfcd45afc",
+  "adjudication": "PASS_TEMPORAL_RECONCILIATION_PHYSICALLY_PROVEN",
+  "root_causes": [
+    {
+      "defect": "Flashscore physical capture V1 collected broad /partido/futbol/ links rather than calendar-row links only.",
+      "physical_proof": {
+        "old_observations": 588,
+        "actual_calendar_rows": 572,
+        "excluded_non_calendar_links": 16
+      },
+      "resolution": "Physical capture refined to calendar-row structure and excluded links retained for audit."
+    },
+    {
+      "defect": "Flashscore calendar capture preserved match identity but omitted displayed schedule time.",
+      "physical_proof": {
+        "calendar_rows": 572,
+        "timed_rows": 568,
+        "untimed_rows": 4
+      },
+      "resolution": "Separate exact-name single-time temporal capture persisted and consumed fail-closed."
+    },
+    {
+      "defect": "Postponed rows were being represented as missing kickoff.",
+      "physical_proof": {
+        "sofascore_postponed": 4,
+        "flashscore_detail_postponed": 4,
+        "flashscore_detail_examples": [
+          "Hemmingen - Egestorf-Langreder",
+          "Johnstone Burgh - Pollok",
+          "Kitara - BUL",
+          "Rayon Sport - Mukura Victory Sports"
+        ]
+      },
+      "resolution": "Postponed is now a distinct non-prospective temporal state; original displayed time is not an active kickoff."
+    },
+    {
+      "defect": "Nápoles/Napoli language alias caused Monza - Nápoles identity to fall out after physical capture cleanup.",
+      "resolution": "Alias normalization added and regression-tested.",
+      "physical_proof": "Monza - Nápoles is again confirmed against SofaScore SSC Napoli."
+    }
+  ],
+  "final_physical_state": {
+    "reconciliation": {
+      "artifact": "evidence/calendar_reconciliation/MATRIX_FOOTBALL_WORLD_CALENDAR_RECONCILIATION_LAST.json",
+      "blob_sha": "c33ccf45f3e0c4dc007fa920cbd869906f5a1bf6",
+      "generated_at_utc": "2026-10-28T03:33:48+00:00",
+      "status": "PASS_OPEN_RECONCILIATION",
+      "sofascore": 262,
+      "flashscore_calendar_rows": 572,
+      "confirmed_both": 172,
+      "sofascore_only": 90,
+      "flashscore_only": 400,
+      "ambiguous": 0,
+      "monitoring_union": 662
+    },
+    "watchlist": {
+      "artifact": "evidence/calendar_reconciliation/MATRIX_FOOTBALL_WORLD_WATCHLIST_LAST.json",
+      "blob_sha": "bacc67ddb71bb93fa7775147000d941c9854ae3d",
+      "status": "PASS_MONITORING_ONLY",
+      "monitoring_total": 662,
+      "confirmed_both": 172,
+      "sofascore_only": 90,
+      "flashscore_only": 400,
+      "flashscore_exact_single_display_time": 396,
+      "postponed_total": 8,
+      "freeze_eligible": 0
+    },
+    "browser_preregistry": {
+      "artifact": "evidence/calendar_reconciliation/MATRIX_FOOTBALL_BROWSER_PREREGISTRY_LAST.json",
+      "blob_sha": "58c98111d68f1aad934013173a9d6f71beea8488",
+      "persistence_commit": "3508855853a153f9388af0437a34b76214510f7f",
+      "status": "PASS_BROWSER_FIRST_PREREGISTRATION",
+      "total_monitoring_events": 662,
+      "prospective_before_displayed_kickoff": 654,
+      "postponed_no_prospective_kickoff": 8,
+      "kickoff_not_certified": 0,
+      "not_prospective_at_preregistration": 0
+    },
+    "flashscore_capture": {
+      "artifact": "evidence/calendar_physical/2026-10-28/flashscore_opera_capture.json",
+      "blob_sha": "94206a4d2d400b3515fd81c70a51272744f96f3b",
+      "schema": "MATRIX_OPERA_FOOTBALL_CALENDAR_CAPTURE_V2",
+      "calendar_rows": 572,
+      "excluded_non_calendar_links": 16,
+      "excluded_links_preserved_for_audit": true
+    },
+    "flashscore_temporal": {
+      "artifact": "evidence/calendar_physical/2026-10-28/flashscore_opera_temporal_capture.json",
+      "blob_sha": "095ece3f712ae667353de74aecfd15965964bd49",
+      "timed_calendar_rows": 568,
+      "untimed_calendar_rows": 4
+    },
+    "flashscore_postponed_detail": {
+      "artifact": "evidence/calendar_physical/2026-10-28/flashscore_postponed_detail_capture.json",
+      "blob_sha": "dd54389555a275b313a2d64468c81b14175f64c7",
+      "postponed_rows": 4
+    }
+  },
+  "workflow_proof": {
+    "workflow": "MATRIX Football World Calendar Reconciliation",
+    "run_id": 40627291780,
+    "run_number": 52,
+    "head_sha": "66646028e74dcceb1d23da035f6b9b4eac89257a",
+    "conclusion": "success",
+    "targeted_tests": "success",
+    "reconciliation": "success",
+    "watchlist": "success",
+    "browser_preregistry": "success",
+    "evidence_persistence": "success",
+    "targeted_test_count": 16
+  },
+  "repair_commits": [
+    {
+      "sha": "07fbd396e6fc762f81b64b80921809f110a35b35",
+      "role": "persist Flashscore temporal capture"
+    },
+    {
+      "sha": "c90f8fc097ad3dc44416da17d5f040b2f536aec1",
+      "role": "consume exact Flashscore displayed time fail-closed"
+    },
+    {
+      "sha": "d420e396eee5df22f6923ca2e69094ce877fe8b1",
+      "role": "temporal enrichment regression tests"
+    },
+    {
+      "sha": "6e20f3f8438bd1975ca262a6639771e215707435",
+      "role": "refine Flashscore capture to calendar rows"
+    },
+    {
+      "sha": "08477e5dc69131cabd48083ebe4cd334b27e7495",
+      "role": "classify untimed and excluded Flashscore links"
+    },
+    {
+      "sha": "d4913f1edfa795017de14dd57247dde811ccea73",
+      "role": "persist postponed Flashscore detail proof"
+    },
+    {
+      "sha": "dfecbdef27d6c1f2f67a800c18c2ae2c9af2ea3d",
+      "role": "classify postponed fixtures without active kickoff"
+    },
+    {
+      "sha": "cb0e9f84c78fe1c0f21a3cdb2be3f8c44a35bf37",
+      "role": "distinguish postponed from missing kickoff in preregistry"
+    },
+    {
+      "sha": "10f65c42d20e77b9b02d5d2a08ddf66bd441cf77",
+      "role": "postponed preregistration regression test"
+    },
+    {
+      "sha": "180e39c8f9761036cd64b1673c1b37fffb45010b",
+      "role": "postponed Flashscore detail regression test"
+    },
+    {
+      "sha": "c70880f3d33c7a423b74f5c49530b67ca5dc9a2b",
+      "role": "reject broad-link Flashscore physical captures"
+    },
+    {
+      "sha": "8fadca2b1e27f07c56a5e44a2ce73ccf1cdab388",
+      "role": "capture-scope regression tests"
+    },
+    {
+      "sha": "f1cae73d5a500c1d76ba0e2cc559f5ba38f32819",
+      "role": "normalize Nápoles to Napoli"
+    },
+    {
+      "sha": "bb9805a9ee19b69d9411e8733b82e8565c5caeba",
+      "role": "Nápoles/Napoli regression test"
+    },
+    {
+      "sha": "24ecfc4de01eeecdc43f8a294fee6e3cd4cd052d",
+      "role": "CI enforces postponed temporal governance"
+    },
+    {
+      "sha": "66646028e74dcceb1d23da035f6b9b4eac89257a",
+      "role": "persist postponed preregistration count"
+    }
+  ],
+  "governance": {
+    "source_order": [
+      "SOFASCORE",
+      "FLASHSCORE",
+      "APIS"
+    ],
+    "missing_not_zero": true,
+    "no_silent_imputation": true,
+    "no_forced_count_equality": true,
+    "flashscore_calendar_row_scope_enforced": true,
+    "exact_flashscore_name_required_for_time": true,
+    "single_flashscore_time_required": true,
+    "postponed_original_time_is_not_active_kickoff": true,
+    "postponed_event_not_prospective": true,
+    "no_freeze_from_single_source_time": true,
+    "post_start_backfill_forbidden": true,
+    "odds_used_to_generate_preregistration": false,
+    "preregistration_does_not_create_p_matrix": true,
+    "automatic_wagering": false,
+    "real_money": "BLOCKED"
+  },
+  "before_after": {
+    "before": {
+      "monitoring_total": 678,
+      "kickoff_not_certified": 420,
+      "flashscore_broad_links": 588
+    },
+    "after": {
+      "monitoring_total": 662,
+      "prospective_before_displayed_kickoff": 654,
+      "postponed_no_prospective_kickoff": 8,
+      "kickoff_not_certified": 0,
+      "flashscore_calendar_rows": 572,
+      "excluded_non_calendar_links": 16
+    },
+    "interpretation": "The reduction 678→662 is not API-driven deletion. It is removal from the operational calendar of 16 links physically proven to be outside the Flashscore tomorrow calendar-row structure; all 16 remain preserved in the audit exclusion list."
+  },
+  "limitations_and_pending": {
+    "world_complete_certified": false,
+    "independent_two_source_kickoff_certification_for_all_events": false,
+    "freeze_eligibility_from_browser_preregistration": 0,
+    "signals_generated_by_this_repair": false,
+    "p_matrix_generated_by_this_repair": false,
+    "note": "Displayed single-source time supports prospective monitoring only. It does not independently certify kickoff for freeze or betting."
+  }
+}

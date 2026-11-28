@@ -1,0 +1,312 @@
+name: Tennis World Model Coverage Audit 2026-10-07
+
+on:
+  push:
+    branches:
+      - repair/cor09-world-pipeline
+    paths:
+      - .github/workflows/tennis-world-model-coverage-audit-20261007.yml
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: tennis-world-model-coverage-audit-20261007
+  cancel-in-progress: false
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout operational branch
+        uses: actions/checkout@v4
+        with:
+          ref: repair/cor09-world-pipeline
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Build read-only world coverage audit
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p evidence/tennis_world_coverage/2026-10-07
+          python - <<'PY'
+          import csv, hashlib, json
+          from collections import Counter
+          from datetime import datetime, timezone
+          from pathlib import Path
+
+          root=Path(".")
+          browser=json.loads((root/"evidence/tennis_world_inventory/2026-10-07/MATRIX_DAILY_MULTISOURCE_BROWSER_CROSSCHECK.json").read_text())
+          dual=json.loads((root/"evidence/tennis_world_inventory/2026-10-07/world_exact_day_dual_audit.json").read_text())
+          rapid=json.loads((root/"evidence/tennis/world_inventory/2026-10-07/MATRIX_TENNIS_WORLD_INVENTORY.json").read_text())
+          uniq=json.loads((root/"evidence/cor0203/runtime/MATRIX_COR0203_PHYSICAL_UNIQUENESS_LAST.json").read_text())
+          binding=json.loads((root/"evidence/cor0203/runtime/MATRIX_COR0203_MODEL_BINDING_R707.json").read_text())
+
+          # Physically observed in Opera accessibility tree during this audit.
+          sofa_current={
+            "snapshot_unique_match_count":551,
+            "ATP":16,
+            "WTA":9,
+            "CHALLENGER":61,
+            "WTA_125":23,
+            "ITF_MEN":155,
+            "ITF_WOMEN":281,
+            "UNKNOWN":6,
+          }
+          sofa_baseline=int(browser["sources"]["sofascore"]["exact_unique_match_count"])
+          assert sofa_baseline==560
+          assert sum(v for k,v in sofa_current.items() if k!="snapshot_unique_match_count")==551
+          assert sofa_current["snapshot_unique_match_count"]==551
+          baseline_only=sofa_baseline-sofa_current["snapshot_unique_match_count"]
+          assert baseline_only==9
+
+          # Exact API-Tennis format counts from the structured same-day crosscheck.
+          fmt=Counter()
+          for t in dual["secondary_crosscheck"]["tournaments"]:
+              et=str(t["event_type"])
+              n=int(t["match_count"])
+              fmt[et]+=n
+          assert sum(fmt.values())==int(dual["secondary_crosscheck"]["unique_match_count"])==487
+
+          # RapidAPI accumulated physical same-day inventory: format x surface x circuit.
+          surf=Counter()
+          for e in rapid.get("events",[]):
+              key=(str(e.get("circuit_detail") or "UNKNOWN"),str(e.get("event_format") or "UNKNOWN"),str(e.get("surface") or "UNKNOWN").upper())
+              surf[key]+=1
+          assert sum(surf.values())==int(rapid["world_calendar_inventory_count"])==332
+
+          existing_domain={
+            "circuit":"ATP_CHALLENGER",
+            "gender":"MEN",
+            "format":"SINGLES",
+            "surfaces":["HARD","I.HARD","INDOOR HARD","INDOOR_HARD"],
+            "market":"MATCH_WINNER",
+            "models":[binding["candidates"]["elo"]["identity"],binding["candidates"]["glicko"]["identity"]],
+            "holdout_id":binding["holdout_id"],
+          }
+
+          api_rows=[]
+          mapping={
+            "Atp Singles":("ATP_MAIN","MEN","SINGLES"),
+            "Wta Singles":("WTA_MAIN","WOMEN","SINGLES"),
+            "Wta Doubles":("WTA_MAIN","WOMEN","DOUBLES"),
+            "Challenger Men Singles":("ATP_CHALLENGER","MEN","SINGLES"),
+            "Challenger Men Doubles":("ATP_CHALLENGER","MEN","DOUBLES"),
+            "Challenger Women Singles":("WTA_CHALLENGER_OR_125","WOMEN","SINGLES"),
+            "Challenger Women Doubles":("WTA_CHALLENGER_OR_125","WOMEN","DOUBLES"),
+            "Itf Men Singles":("ITF_MEN","MEN","SINGLES"),
+            "Itf Men Doubles":("ITF_MEN","MEN","DOUBLES"),
+            "Itf Women Singles":("ITF_WOMEN","WOMEN","SINGLES"),
+            "Itf Women Doubles":("ITF_WOMEN","WOMEN","DOUBLES"),
+          }
+          for et,n in sorted(fmt.items()):
+              circuit,gender,form=mapping.get(et,("OTHER","UNKNOWN","UNKNOWN"))
+              domain_family_existing=(circuit=="ATP_CHALLENGER" and gender=="MEN" and form=="SINGLES")
+              api_rows.append({
+                "provider_event_type":et,
+                "circuit":circuit,
+                "gender":gender,
+                "format":form,
+                "exact_day_count":n,
+                "surface_resolved_in_api_tennis_exact_audit":False,
+                "existing_governed_model_family":domain_family_existing,
+                "model_status":"EXISTS_ONLY_IF_HARD_OR_INDOOR_HARD" if domain_family_existing else "MISSING_SEPARATE_GOVERNED_MODEL",
+              })
+
+          rapid_rows=[]
+          for (circuit,form,surface),n in sorted(surf.items()):
+              exists=(circuit=="ATP_CHALLENGER" and form=="SINGLES" and surface in {"HARD","I.HARD","INDOOR HARD","INDOOR_HARD"})
+              rapid_rows.append({
+                "circuit":circuit,
+                "format":form,
+                "surface":surface,
+                "physical_same_day_count":n,
+                "model_status":"EXISTING_R218_R223_COR0203" if exists else "MISSING_SEPARATE_GOVERNED_MODEL",
+                "feeds_current_cor0203":exists,
+              })
+
+          modelable_observed=sum(r["physical_same_day_count"] for r in rapid_rows if r["feeds_current_cor0203"])
+          challenger_ceiling_sofa=sofa_current["CHALLENGER"]/sofa_baseline
+          challenger_men_singles_api=fmt["Challenger Men Singles"]
+          api_category_ceiling=challenger_men_singles_api/487
+
+          missing_lanes=[
+            {"priority":1,"lane":"ATP_CHALLENGER_CLAY_SINGLES","reason":"Closest domain to existing model; 21 clay singles observed in structured RapidAPI accumulated inventory."},
+            {"priority":2,"lane":"ATP_MAIN_HARD_SINGLES","reason":"11 hard ATP-main singles observed in structured RapidAPI accumulated inventory."},
+            {"priority":3,"lane":"WTA_HARD_SINGLES","reason":"11 WTA-main hard singles observed in structured RapidAPI accumulated inventory; separate female model required."},
+            {"priority":4,"lane":"ITF_MEN_HARD_SINGLES","reason":"63 hard + 18 indoor-hard ITF-men singles observed in structured RapidAPI accumulated inventory."},
+            {"priority":5,"lane":"ITF_WOMEN_HARD_SINGLES","reason":"72 hard + 9 indoor-hard ITF-women singles observed in structured RapidAPI accumulated inventory."},
+            {"priority":6,"lane":"ITF_MEN_CLAY_SINGLES","reason":"34 clay ITF-men singles observed."},
+            {"priority":7,"lane":"ITF_WOMEN_CLAY_SINGLES","reason":"60 clay ITF-women singles observed."},
+            {"priority":8,"lane":"WTA_125_OR_CHALLENGER_WOMEN_SINGLES","reason":"12 exact-day Challenger Women singles in API-Tennis; surface requires separate authoritative resolution."},
+            {"priority":9,"lane":"DOUBLES_BY_CIRCUIT_AND_SURFACE","reason":"API-Tennis exact day includes 133 doubles across Challenger/WTA/ITF; doubles must remain independent from singles models."},
+            {"priority":10,"lane":"GRASS_FAMILIES","reason":"No structured grass events observed in today's RapidAPI inventory, but world architecture still needs independent grass lanes before grass events can be modeled."},
+          ]
+
+          report={
+            "schema":"MATRIX_TENNIS_WORLD_MODEL_COVERAGE_AUDIT_07OCT2026_V1",
+            "generated_at_utc":datetime.now(timezone.utc).replace(microsecond=0).isoformat(),
+            "audit_mode":"READ_ONLY_NO_MODEL_MUTATION",
+            "target_date_bogota":"2026-10-07",
+            "verdict":"WORLD_DISCOVERY_EXISTS_BUT_WORLD_MODEL_COVERAGE_IS_INCOMPLETE",
+            "sofascore":{
+              "closed_baseline_exact":sofa_baseline,
+              "current_classifiable_snapshot":sofa_current,
+              "baseline_only_now_unclassified":baseline_only,
+              "classification_scope":"CIRCUIT_CATEGORY_ONLY_FROM_CURRENT_OPERA_ACCESSIBILITY_TREE",
+              "surface_or_format_imputation_performed":False,
+            },
+            "api_tennis_exact_day":{
+              "total":487,
+              "format_rows":api_rows,
+              "challenger_men_singles_count":challenger_men_singles_api,
+              "current_model_family_ceiling_before_surface_pit":api_category_ceiling,
+            },
+            "rapidapi_structured_accumulated_same_day":{
+              "total_physical_events":332,
+              "surface_format_rows":rapid_rows,
+              "current_model_compatible_observed_events":modelable_observed,
+            },
+            "current_governed_model":existing_domain,
+            "coverage_interpretation":{
+              "sofascore_challenger_category_share_of_560":challenger_ceiling_sofa,
+              "note_sofascore":"This is only a category ceiling: Challenger includes formats/surfaces not accepted by COR02/COR03.",
+              "api_tennis_challenger_men_singles_share_of_487":api_category_ceiling,
+              "note_api_tennis":"This is still an upper bound before surface, future, identity, PIT and uniqueness gates.",
+              "new_freezes_today_after_all_current_gates":0,
+              "holdout_unique_observations":uniq["unique_calibration_observations"],
+              "remaining_to_200":uniq["unique_remaining_to_200"],
+            },
+            "missing_model_lanes":missing_lanes,
+            "model_integrity":{
+              "holdout_unique_before_after_audit":uniq["unique_calibration_observations"],
+              "physical_frozen_rows":uniq["physical_frozen_rows"],
+              "duplicates_quarantined":uniq["duplicate_observations_quarantined"],
+              "metrics_opened":uniq["metrics_opened"],
+              "outcomes_read":uniq["outcomes_read"],
+              "elo_identity":binding["candidates"]["elo"]["identity"],
+              "elo_sha256":binding["candidates"]["elo"]["sha256"],
+              "glicko_identity":binding["candidates"]["glicko"]["identity"],
+              "glicko_sha256":binding["candidates"]["glicko"]["sha256"],
+              "model_mutated":False,
+              "holdout_modified_by_audit":False,
+            },
+            "protections":{
+              "no_backfill":True,
+              "missing_not_zero":True,
+              "silent_imputation":False,
+              "odds_to_probability":False,
+              "metrics_opened":False,
+              "automatic_model_promotion":False,
+              "automatic_wagering":False,
+              "real_money":"BLOCKED",
+            }
+          }
+
+          out=Path("evidence/tennis_world_coverage/2026-10-07")
+          jp=out/"MATRIX_TENNIS_WORLD_MODEL_COVERAGE_AUDIT_07OCT2026.json"
+          jp.write_text(json.dumps(report,ensure_ascii=False,indent=2,sort_keys=True)+"\n")
+
+          cp=out/"MATRIX_TENNIS_WORLD_MODEL_COVERAGE_AUDIT_07OCT2026.csv"
+          with cp.open("w",newline="",encoding="utf-8") as fh:
+              fields=["evidence_layer","circuit","gender","format","surface","count","model_status","note"]
+              w=csv.DictWriter(fh,fieldnames=fields); w.writeheader()
+              for r in api_rows:
+                  w.writerow({"evidence_layer":"API_TENNIS_EXACT_DAY_FORMAT","circuit":r["circuit"],"gender":r["gender"],"format":r["format"],"surface":"UNRESOLVED_IN_THIS_AUDIT","count":r["exact_day_count"],"model_status":r["model_status"],"note":r["provider_event_type"]})
+              for r in rapid_rows:
+                  w.writerow({"evidence_layer":"RAPIDAPI_SAME_DAY_SURFACE","circuit":r["circuit"],"gender":"","format":r["format"],"surface":r["surface"],"count":r["physical_same_day_count"],"model_status":r["model_status"],"note":"Structured surface evidence; provider-specific coverage, not world denominator."})
+
+          md=out/"MATRIX_TENNIS_WORLD_MODEL_COVERAGE_AUDIT_07OCT2026.md"
+          lines=[
+            "# MATRIX Tennis World Model Coverage Audit — 07-OCT-2026",
+            "",
+            "## Verdict",
+            "**WORLD DISCOVERY EXISTS, BUT WORLD MODEL COVERAGE IS INCOMPLETE.**",
+            "",
+            f"- SofaScore closed baseline: **{sofa_baseline}**.",
+            f"- Current SofaScore snapshot classifiable: **551**; baseline-only currently unavailable: **{baseline_only}**.",
+            f"- API-Tennis exact day: **487**; Challenger Men Singles: **{challenger_men_singles_api}**.",
+            f"- RapidAPI structured accumulated same-day events: **332**; current-model-compatible ATP Challenger Hard/Indoor-Hard Singles observed: **{modelable_observed}**.",
+            f"- Current holdout remains **{uniq['unique_calibration_observations']}/600**, metrics sealed.",
+            "",
+            "## Current model",
+            "Only ATP Challenger Men Singles on Hard/Indoor-Hard is governed by R218/R223 COR02/COR03.",
+            "",
+            "## Safety",
+            "This audit is read-only. It does not modify models, probabilities, holdout observations, metrics, or wagering state.",
+          ]
+          md.write_text("\n".join(lines)+"\n",encoding="utf-8")
+
+          manifest={
+            "schema":"MATRIX_TENNIS_WORLD_MODEL_COVERAGE_AUDIT_MANIFEST_V1",
+            "generated_at_utc":report["generated_at_utc"],
+            "files":{
+              jp.name:hashlib.sha256(jp.read_bytes()).hexdigest(),
+              cp.name:hashlib.sha256(cp.read_bytes()).hexdigest(),
+              md.name:hashlib.sha256(md.read_bytes()).hexdigest(),
+            },
+            "model_integrity":report["model_integrity"],
+            "status":"PASS_READ_ONLY_AUDIT",
+          }
+          (out/"MANIFEST_SHA256.json").write_text(json.dumps(manifest,ensure_ascii=False,indent=2,sort_keys=True)+"\n")
+          print(json.dumps({
+            "status":manifest["status"],
+            "sofascore_baseline":sofa_baseline,
+            "sofascore_classified_now":551,
+            "api_tennis_total":487,
+            "api_tennis_challenger_men_singles":challenger_men_singles_api,
+            "rapidapi_structured":332,
+            "current_model_compatible_observed":modelable_observed,
+            "holdout_unique":uniq["unique_calibration_observations"],
+            "metrics_opened":uniq["metrics_opened"]
+          },sort_keys=True))
+          PY
+
+      - name: Validate Matrix untouched
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          p=Path("evidence/tennis_world_coverage/2026-10-07/MATRIX_TENNIS_WORLD_MODEL_COVERAGE_AUDIT_07OCT2026.json")
+          j=json.loads(p.read_text())
+          assert j["audit_mode"]=="READ_ONLY_NO_MODEL_MUTATION"
+          assert j["model_integrity"]["holdout_unique_before_after_audit"]==123
+          assert j["model_integrity"]["metrics_opened"] is False
+          assert j["model_integrity"]["outcomes_read"]==0
+          assert j["model_integrity"]["model_mutated"] is False
+          assert j["model_integrity"]["holdout_modified_by_audit"] is False
+          assert j["model_integrity"]["elo_sha256"]=="123b25888e203fba792c9f68ccffd611bb9561cd259f52b92e5a107a3178b4a9"
+          assert j["model_integrity"]["glicko_sha256"]=="7701aaa009de782ab4485806606d304805c0bee923239ab3ffd511ca82c41ef6"
+          print("MATRIX_UNTOUCHED_GATE: PASS")
+          PY
+
+      - name: Persist audit only
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name matrix-tennis-world-coverage
+          git config user.email matrix-tennis-world-coverage@users.noreply.github.com
+          git add evidence/tennis_world_coverage/2026-10-07
+          CHANGED="$(git diff --cached --name-only)"
+          test -n "$CHANGED"
+          if echo "$CHANGED" | grep -v '^evidence/tennis_world_coverage/2026-10-07/' ; then
+            echo "NON_AUDIT_FILE_MUTATION_DETECTED"
+            exit 1
+          fi
+          git commit -m "evidence(tennis): audit world model coverage 07OCT"
+          for attempt in 1 2 3 4; do
+            git fetch origin repair/cor09-world-pipeline
+            if ! git rebase origin/repair/cor09-world-pipeline; then git rebase --abort || true; exit 1; fi
+            if git push origin HEAD:repair/cor09-world-pipeline; then exit 0; fi
+            sleep $((attempt*2))
+          done
+          exit 1

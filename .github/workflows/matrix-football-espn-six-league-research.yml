@@ -1,0 +1,71 @@
+name: MATRIX Six League ESPN Enriched Source Research
+on:
+  workflow_dispatch:
+    inputs:
+      day:
+        description: "Provider calendar day YYYY-MM-DD, not complete Bogota-day coverage"
+        required: true
+        default: "2026-11-21"
+  push:
+    branches:
+      - repair/cor09-world-pipeline
+    paths:
+      - tools/matrix_football_espn_enriched_pit_research.py
+      - tools/matrix_football_espn_six_league_raw_capture.py
+      - tests/test_matrix_football_espn_enriched_pit_research.py
+      - tests/test_matrix_football_espn_six_league_raw_capture.py
+      - .github/workflows/matrix-football-espn-six-league-research.yml
+permissions:
+  contents: read
+jobs:
+  verify-six-league-source:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: repair/cor09-world-pipeline
+          sparse-checkout-cone-mode: false
+          sparse-checkout: |
+            tools/matrix_football_espn_enriched_pit_research.py
+            tools/matrix_football_espn_six_league_raw_capture.py
+            tests/test_matrix_football_espn_enriched_pit_research.py
+            tests/test_matrix_football_espn_six_league_raw_capture.py
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: python -m pip install pytest
+      - name: Regression tests — true SHA and point-in-time, no promotion
+        run: PYTHONPATH=. python -m pytest -q tests/test_matrix_football_espn_enriched_pit_research.py tests/test_matrix_football_espn_six_league_raw_capture.py
+      - name: Capture real six league sources
+        env:
+          REQUESTED_DAY: ${{ github.event.inputs.day || '2026-11-21' }}
+        run: PYTHONPATH=. python -m tools.matrix_football_espn_six_league_raw_capture --day "$REQUESTED_DAY" --out evidence/research/football_six_league_espn
+      - name: Verify hash files and fail-closed research gates
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import json,hashlib
+          root=Path("evidence/research/football_six_league_espn")
+          data=json.loads((root/"MATRIX_ESPN_SIX_LEAGUE_RAW_RESEARCH_LAST.json").read_text())
+          assert data["source_league_scope"]==6
+          assert data["production_p_matrix_authorized"] is False
+          assert data["telegram_signal_authorized"] is False
+          assert data["real_money"]=="BLOCKED"
+          for source in data["sources"].values():
+              if source["status"]!="PROVIDER_BYTES_AUTHENTICALLY_CAPTURED_RESEARCH_ONLY":
+                  continue
+              raw=(root/source["raw_archive_file"]).read_bytes()
+              assert len(raw)==source["raw_bytes"]
+              assert hashlib.sha256(raw).hexdigest()==source["raw_sha256"]
+              assert source["history"]["production_p_matrix_authorized"] is False
+          print(json.dumps({"source_captured_leagues":data["source_captured_leagues"],
+                            "market_signals_authorized":False},sort_keys=True))
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: matrix-espn-six-league-research-raw
+          path: evidence/research/football_six_league_espn/
+          if-no-files-found: warn
+          retention-days: 30

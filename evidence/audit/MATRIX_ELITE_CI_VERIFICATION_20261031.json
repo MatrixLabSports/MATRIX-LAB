@@ -1,0 +1,44 @@
+{
+  "schema": "MATRIX_ELITE_CI_VERIFICATION_20261031_V1",
+  "observed_date_utc": "2026-10-31",
+  "branch": "repair/cor09-world-pipeline",
+  "head_sha_at_trigger": "88b74bce0872407ac6a7c7542623dcefaef9d228",
+  "workflow_regression": {
+    "run_id": 41210251310,
+    "job_id": 124563564525,
+    "status": "completed",
+    "conclusion": "success",
+    "certified_steps": [
+      "Enforce semantic workflow contracts",
+      "Re-run certified CLV and Telegram regressions",
+      "Verify causal trace without provider calls",
+      "Certify post-expiry Telegram health without network",
+      "Generate and validate immutable Telegram causal trace",
+      "Preserve causal trace as downloadable CI evidence",
+      "Final CI gate"
+    ],
+    "artifact": {
+      "id": 13046470226,
+      "name": "matrix-telegram-causal-trace",
+      "sha256": "65395d28373a16248de17e06ed581ea272a20f49584aff2f79a899265b92b2b4",
+      "expires_at": "2026-11-14T14:29:20Z"
+    }
+  },
+  "canonical_ci": {
+    "run_id": 41210251314,
+    "job_id": 124563564753,
+    "status": "in_progress",
+    "conclusion": null,
+    "step": "Run MATRIX canonical quality gate"
+  },
+  "limits": [
+    "Successful regression tests do not certify production Telegram delivery",
+    "Football daily and Telegram supervisor operational workflow run IDs not retrieved",
+    "Current future calendar chain remains unverified"
+  ],
+  "safety": {
+    "real_money": "BLOCKED",
+    "automatic_wagering": false
+  },
+  "overall": "PARTIAL_PASS_PRODUCTION_NOT_CERTIFIED"
+}

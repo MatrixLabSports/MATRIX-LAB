@@ -1,0 +1,128 @@
+name: MATRIX Browser Bounded Publisher Regression
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - repair/cor09-world-pipeline
+    paths:
+      - tools/windows/persist_matrix_browser_evidence.ps1
+      - tools/matrix_selfhosted_browser_quote_collector.py
+      - tests/test_matrix_browser_no_target_fast_path.py
+      - tests/test_matrix_browser_bounded_publisher.py
+      - tests/test_matrix_over25_research_writer_ownership.py
+      - .github/workflows/matrix-browser-bounded-publisher-regression.yml
+
+permissions:
+  contents: read
+
+jobs:
+  prove-five-minute-publisher-safe:
+    runs-on: windows-latest
+    timeout-minutes: 20
+    env:
+      REAL_MONEY: BLOCKED
+      AUTO_BETTING: DISABLED
+    steps:
+      - name: Read-only checkout of publisher and source regression contracts
+        uses: actions/checkout@v4
+        with:
+          ref: repair/cor09-world-pipeline
+          fetch-depth: 1
+          filter: blob:none
+          sparse-checkout: |
+            tools
+            tests
+            .github/workflows
+            .gitattributes
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Verify unbounded historical stages remain forbidden
+        shell: powershell
+        run: |
+          python -m pip install --disable-pip-version-check pytest playwright
+          python -m pytest -q tests/test_matrix_browser_bounded_publisher.py tests/test_matrix_over25_research_writer_ownership.py tests/test_matrix_browser_no_target_fast_path.py
+          if ($LASTEXITCODE -ne 0) { throw "BROWSER_PUBLISH_REGRESSION_FAILED" }
+      - name: Parse actual Windows PowerShell 5.1 publishing script
+        shell: powershell
+        run: |
+          $tokens = $null
+          $issues = $null
+          [System.Management.Automation.Language.Parser]::ParseFile(
+            "tools/windows/persist_matrix_browser_evidence.ps1",
+            [ref]$tokens, [ref]$issues) | Out-Null
+          if ($issues.Count -ne 0) { $issues | ForEach-Object { Write-Error $_.Message }; throw "PUBLISH_SCRIPT_PARSER_FAILED" }
+          Write-Output "BROWSER_PUBLISH_WINDOWS_POWERSHELL_51_PARSE_PASS"
+      - name: Create isolated local Git remote and mixed-dated genuine-shaped evidence fixtures
+        shell: powershell
+        run: |
+          $ErrorActionPreference = "Stop"
+          $root = Join-Path $env:RUNNER_TEMP "matrix-bounded-fixture"
+          $work = Join-Path $root "workspace"
+          $bare = Join-Path $root "target.git"
+          New-Item -ItemType Directory -Force -Path $root,$work | Out-Null
+          git init --bare $bare
+          if ($LASTEXITCODE -ne 0) { throw "BARE_INIT_FAILED" }
+          git init $work
+          if ($LASTEXITCODE -ne 0) { throw "WORK_INIT_FAILED" }
+          git -C $work checkout -b repair/cor09-world-pipeline
+          if ($LASTEXITCODE -ne 0) { throw "BRANCH_INIT_FAILED" }
+          git -C $work config user.name "matrix-browser-publish-test"
+          git -C $work config user.email "matrix-browser-publish-test@users.noreply.github.com"
+          git -C $work commit --allow-empty -m "isolated test seed"
+          if ($LASTEXITCODE -ne 0) { throw "SEED_FAILED" }
+          git -C $work remote add origin $bare
+          git -C $work push origin HEAD:repair/cor09-world-pipeline
+          if ($LASTEXITCODE -ne 0) { throw "SEED_PUSH_FAILED" }
+          $local = [System.TimeZoneInfo]::ConvertTimeBySystemTimeZoneId([DateTime]::UtcNow, "SA Pacific Standard Time")
+          $day = $local.ToString("yyyy-MM-dd")
+          $next = $local.AddDays(1).ToString("yyyy-MM-dd")
+          $dir = Join-Path $work "evidence/football_world_inventory/$day"
+          $nextDir = Join-Path $work "evidence/football_world_inventory/$next"
+          $pastDir = Join-Path $work "evidence/football_world_inventory/2026-10-01"
+          $freezeDir = Join-Path $work "evidence/football_research_freezes/$next"
+          $globalDir = Join-Path $work "evidence/football_world_inventory"
+          foreach ($d in @($dir,$nextDir,$pastDir,$freezeDir)) {
+            New-Item -ItemType Directory -Force -Path $d | Out-Null
+          }
+          '{"schema":"MATRIX_SYNTHETIC_TEST_ONLY","telegram_signal_authorized":false}' | Set-Content -LiteralPath (Join-Path $dir "MATRIX_SOFA_BROWSER_OBSERVATIONS.json") -Encoding UTF8
+          '{"schema":"MATRIX_SYNTHETIC_TEST_ONLY","telegram_signal_authorized":false}' | Set-Content -LiteralPath (Join-Path $nextDir "MATRIX_FLASH_INDIVIDUAL_DETAIL_VERIFICATION_LAST.json") -Encoding UTF8
+          '{"schema":"MATRIX_SYNTHETIC_TEST_ONLY","telegram_signal_authorized":false}' | Set-Content -LiteralPath (Join-Path $dir "MATRIX_BETANO_QUOTE_TEST_ONLY.json") -Encoding UTF8
+          '{"schema":"MATRIX_SYNTHETIC_TEST_ONLY","telegram_signal_authorized":false}' | Set-Content -LiteralPath (Join-Path $freezeDir "frozen_test.json") -Encoding UTF8
+          '{"schema":"MATRIX_SYNTHETIC_TEST_ONLY","telegram_signal_authorized":false}' | Set-Content -LiteralPath (Join-Path $globalDir "MATRIX_SIX_LEAGUE_STEPWISE_CERTIFICATION_LAST.json") -Encoding UTF8
+          '{"schema":"MATRIX_SYNTHETIC_TEST_ONLY","telegram_signal_authorized":false}' | Set-Content -LiteralPath (Join-Path $pastDir "MATRIX_SOFA_BROWSER_OBSERVATIONS.json") -Encoding UTF8
+          '{"schema":"MATRIX_SYNTHETIC_TEST_ONLY","telegram_signal_authorized":false}' | Set-Content -LiteralPath (Join-Path $dir "MATRIX_INDEPENDENT_OVER25_SETTLEMENT_LAST.json") -Encoding UTF8
+          Write-Output "ISOLATED_PUBLISH_FIXTURE_PREPARED"
+      - name: Actually publish source-allowlisted files through Git cherry-pick to local bare remote
+        shell: powershell
+        run: |
+          $ErrorActionPreference = "Stop"
+          $source = Join-Path $env:GITHUB_WORKSPACE "tools/windows/persist_matrix_browser_evidence.ps1"
+          Set-Location (Join-Path $env:RUNNER_TEMP "matrix-bounded-fixture/workspace")
+          & $source
+      - name: Verify newest browser evidence persisted but old and cloud-owned files stayed out
+        shell: powershell
+        run: |
+          $ErrorActionPreference = "Stop"
+          $bare = Join-Path $env:RUNNER_TEMP "matrix-bounded-fixture/target.git"
+          $files = @(git --git-dir=$bare ls-tree -r --name-only repair/cor09-world-pipeline)
+          if ($LASTEXITCODE -ne 0) { throw "PUBLISHED_TREE_MISSING" }
+          $local = [System.TimeZoneInfo]::ConvertTimeBySystemTimeZoneId([DateTime]::UtcNow, "SA Pacific Standard Time")
+          $day = $local.ToString("yyyy-MM-dd")
+          $next = $local.AddDays(1).ToString("yyyy-MM-dd")
+          $expected = @(
+            "evidence/football_world_inventory/$day/MATRIX_SOFA_BROWSER_OBSERVATIONS.json",
+            "evidence/football_world_inventory/$next/MATRIX_FLASH_INDIVIDUAL_DETAIL_VERIFICATION_LAST.json",
+            "evidence/football_world_inventory/$day/MATRIX_BETANO_QUOTE_TEST_ONLY.json",
+            "evidence/football_research_freezes/$next/frozen_test.json",
+            "evidence/football_world_inventory/MATRIX_SIX_LEAGUE_STEPWISE_CERTIFICATION_LAST.json"
+          )
+          foreach ($file in $expected) { if ($files -notcontains $file) { throw "NEW_EVIDENCE_NOT_PUBLISHED: $file" } }
+          $forbidden = @(
+            "evidence/football_world_inventory/2026-10-01/MATRIX_SOFA_BROWSER_OBSERVATIONS.json",
+            "evidence/football_world_inventory/$day/MATRIX_INDEPENDENT_OVER25_SETTLEMENT_LAST.json"
+          )
+          foreach ($file in $forbidden) { if ($files -contains $file) { throw "HISTORIC_OR_CLOUD_DATA_WAS_STAGED: $file" } }
+          Write-Output "REAL_WINDOWS_GIT_PUBLISH_PASS: CURRENT_AND_NEXT_DAY_AND_FORENSICS_ONLY"
+          Write-Output "REAL_MONEY_BLOCKED_NO_TELEGRAM_SYNTHETIC_FIXTURES_ONLY"

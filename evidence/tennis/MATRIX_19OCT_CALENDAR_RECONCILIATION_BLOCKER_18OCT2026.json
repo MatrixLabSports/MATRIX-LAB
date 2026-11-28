@@ -1,0 +1,77 @@
+{
+  "schema": "MATRIX_19OCT_CALENDAR_RECONCILIATION_BLOCKER_V1",
+  "generated_at_utc": "2026-10-18T20:20:00Z",
+  "target_date_bogota": "2026-10-19",
+  "source_order": [
+    "SofaScore",
+    "Flashscore",
+    "Structured APIs"
+  ],
+  "tennis": {
+    "sofascore": {
+      "opera_tab_id": 1078819036,
+      "url": "https://www.sofascore.com/es/tennis/2026-10-19",
+      "url_set": true,
+      "content_verified": false,
+      "blocker": "CLOUDFLARE_VERIFY_YOU_ARE_HUMAN",
+      "automation_run_id": "01693519-793e-4243-ad2e-5038872c756c"
+    },
+    "flashscore": {
+      "automation_run_id": "1d2c17e3-293a-462d-8eaf-2536e165a4d5",
+      "date_verified": "2026-10-19",
+      "visible_match_count": 74,
+      "verified": true
+    },
+    "rapidapi_tennis": {
+      "inventory_path": "evidence/tennis/world_inventory/2026-10-19/MATRIX_TENNIS_WORLD_INVENTORY.json",
+      "status": "PASS",
+      "provider_inventory_complete": true,
+      "world_inventory_complete": false,
+      "world_calendar_inventory_count": 76,
+      "events_by_family": {
+        "ATP": 65,
+        "WTA": 6,
+        "ITF": 5
+      },
+      "events_by_detail": {
+        "ATP_CHALLENGER": 47,
+        "ATP_MAIN_OR_OTHER": 18,
+        "ITF_MEN": 3,
+        "ITF_WOMEN": 2,
+        "WTA_MAIN_OR_OTHER": 6
+      }
+    },
+    "calendar_gate_complete": false,
+    "blocker": "SOFASCORE_19OCT_CONTENT_NOT_VERIFIED_DUE_CLOUDFLARE"
+  },
+  "football": {
+    "sofascore": {
+      "opera_tab_id": 1078819047,
+      "url": "https://www.sofascore.com/es/football/2026-10-19",
+      "url_set": true
+    },
+    "flashscore": {
+      "automation_run_id": "47b73706-b59e-467b-81ad-e461347387f8",
+      "target_date_verified": false,
+      "observed_date": "2026-10-18",
+      "blocker": "NEXT_DAY_INTERACTION_NOT_COMPLETED_WITHIN_AUTOMATION_BUDGET"
+    },
+    "governed_report_19oct_present": false,
+    "calendar_gate_complete": false
+  },
+  "manual_action_required": {
+    "required": true,
+    "action": "Open/refesh SofaScore tennis 19-Oct and Flashscore football 19-Oct in Opera, leaving both tabs on the 19-Oct calendar.",
+    "reason": "Only remaining browser-side blockers preventing full source-order reconciliation."
+  },
+  "protections": {
+    "no_forced_volume": true,
+    "no_backfill": true,
+    "missing_not_zero": true,
+    "silent_imputation": false,
+    "odds_used_to_generate_probability": false,
+    "automatic_wagering": false,
+    "real_money": "BLOCKED"
+  },
+  "adjudication": "PARTIAL_PHYSICAL_VERIFICATION_COMPLETE_MANUAL_BROWSER_DATE_CONFIRMATION_REQUIRED"
+}

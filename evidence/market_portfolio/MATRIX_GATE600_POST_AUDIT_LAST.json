@@ -1,0 +1,3026 @@
+{
+  "adjudication_policy": {
+    "competition_concentration_is_diagnostic_not_a_new_invented_threshold": true,
+    "ece_is_diagnostic_not_a_new_invented_threshold": true,
+    "freeze_gate_threshold": 600,
+    "no_automatic_promotion": true,
+    "pass_requires_brier_better_than_poisson": true,
+    "pass_requires_exact_settled_600": true,
+    "pass_requires_logloss_better_than_poisson": true,
+    "settled_gate_threshold": 600,
+    "temporal_stability_is_diagnostic_not_a_new_invented_threshold": true
+  },
+  "audit_overall_verdict": "HOLD",
+  "gate600_lab_lane_count": 12,
+  "generated_at_utc": "2026-11-23T02:13:47+00:00",
+  "lanes": [
+    {
+      "action_board_count": 727,
+      "automatic_promotion": false,
+      "competition_concentration_diagnostic": {
+        "competition_count": 109,
+        "top_competitions": [
+          {
+            "competition": "Premier League",
+            "count": 26,
+            "share": 0.044444444444444446
+          },
+          {
+            "competition": "Major League Soccer",
+            "count": 12,
+            "share": 0.020512820512820513
+          },
+          {
+            "competition": "Primera Nacional",
+            "count": 12,
+            "share": 0.020512820512820513
+          },
+          {
+            "competition": "U19 Bundesliga",
+            "count": 12,
+            "share": 0.020512820512820513
+          },
+          {
+            "competition": "USL Championship",
+            "count": 12,
+            "share": 0.020512820512820513
+          },
+          {
+            "competition": "National League - South",
+            "count": 11,
+            "share": 0.018803418803418803
+          },
+          {
+            "competition": "National League - North",
+            "count": 10,
+            "share": 0.017094017094017096
+          },
+          {
+            "competition": "Non League Premier - Southern Central",
+            "count": 10,
+            "share": 0.017094017094017096
+          },
+          {
+            "competition": "Primera A",
+            "count": 10,
+            "share": 0.017094017094017096
+          },
+          {
+            "competition": "Serie A",
+            "count": 10,
+            "share": 0.017094017094017096
+          }
+        ]
+      },
+      "display_name": "1X2",
+      "exact_settled_count": 585,
+      "generic_1x2_final_fixture_intersection_diagnostic_only": null,
+      "lane_specific_scoring_supported": true,
+      "market_lane": "MATCH_RESULT_1X2",
+      "metrics": {
+        "beats_poisson_brier": false,
+        "beats_poisson_log_loss": false,
+        "challenger": {
+          "accuracy": 0.48205128205128206,
+          "brier_score": 0.6382737776215983,
+          "confidence_ece": {
+            "ece": 0.04556038122956322,
+            "method": "EQUAL_WIDTH_10_BINS",
+            "nonempty_bins": [
+              {
+                "absolute_gap": 0.02280754698460974,
+                "count": 42,
+                "lower": 0.3,
+                "mean_probability": 0.3799504041274669,
+                "observed_rate": 0.35714285714285715,
+                "upper": 0.4
+              },
+              {
+                "absolute_gap": 0.0007192081724372579,
+                "count": 221,
+                "lower": 0.4,
+                "mean_probability": 0.4532078959552427,
+                "observed_rate": 0.45248868778280543,
+                "upper": 0.5
+              },
+              {
+                "absolute_gap": 0.03291697372549651,
+                "count": 184,
+                "lower": 0.5,
+                "mean_probability": 0.5437865389428879,
+                "observed_rate": 0.5108695652173914,
+                "upper": 0.6
+              },
+              {
+                "absolute_gap": 0.1509212680736754,
+                "count": 104,
+                "lower": 0.6,
+                "mean_probability": 0.6413058834582908,
+                "observed_rate": 0.49038461538461536,
+                "upper": 0.7
+              },
+              {
+                "absolute_gap": 0.08736489577862983,
+                "count": 29,
+                "lower": 0.7,
+                "mean_probability": 0.7425373095717333,
+                "observed_rate": 0.6551724137931034,
+                "upper": 0.8
+              },
+              {
+                "absolute_gap": 0.08594003088929592,
+                "count": 4,
+                "lower": 0.8,
+                "mean_probability": 0.8359400308892959,
+                "observed_rate": 0.75,
+                "upper": 0.9
+              },
+              {
+                "absolute_gap": 0.9060838935411939,
+                "count": 1,
+                "lower": 0.9,
+                "mean_probability": 0.9060838935411939,
+                "observed_rate": 0.0,
+                "upper": 1.0
+              }
+            ]
+          },
+          "log_loss": 1.062637369484886,
+          "sample_size": 585
+        },
+        "delta_brier_challenger_minus_poisson": 0.0008094478638351887,
+        "delta_log_loss_challenger_minus_poisson": 0.008157410987521985,
+        "poisson": {
+          "accuracy": 0.452991452991453,
+          "brier_score": 0.6374643297577631,
+          "confidence_ece": {
+            "ece": 0.03819764336752136,
+            "method": "EQUAL_WIDTH_10_BINS",
+            "nonempty_bins": [
+              {
+                "absolute_gap": 0.037333513760683945,
+                "count": 117,
+                "lower": 0.3,
+                "mean_probability": 0.38146990504273487,
+                "observed_rate": 0.4188034188034188,
+                "upper": 0.4
+              },
+              {
+                "absolute_gap": 0.019003165183823334,
+                "count": 272,
+                "lower": 0.4,
+                "mean_probability": 0.44179728283088215,
+                "observed_rate": 0.4227941176470588,
+                "upper": 0.5
+              },
+              {
+                "absolute_gap": 0.06391758859154945,
+                "count": 142,
+                "lower": 0.5,
+                "mean_probability": 0.5427908280281691,
+                "observed_rate": 0.4788732394366197,
+                "upper": 0.6
+              },
+              {
+                "absolute_gap": 0.05765121191489375,
+                "count": 47,
+                "lower": 0.6,
+                "mean_probability": 0.6321192970212768,
+                "observed_rate": 0.574468085106383,
+                "upper": 0.7
+              },
+              {
+                "absolute_gap": 0.14611925571428563,
+                "count": 7,
+                "lower": 0.7,
+                "mean_probability": 0.7110236014285715,
+                "observed_rate": 0.8571428571428571,
+                "upper": 0.8
+              }
+            ]
+          },
+          "log_loss": 1.054479958497364,
+          "sample_size": 585
+        },
+        "proper_scoring_gate_passed": false
+      },
+      "missing_or_not_yet_final_fixture_count": 142,
+      "prospective_freeze_count": 727,
+      "remaining_settled_to_600": 15,
+      "temporal_stability_diagnostic": {
+        "method": "CHRONOLOGICAL_THIRDS",
+        "segments": [
+          {
+            "beats_poisson_brier": false,
+            "beats_poisson_log_loss": false,
+            "challenger": {
+              "accuracy": 0.4307692307692308,
+              "brier_score": 0.6748952579053018,
+              "confidence_ece": {
+                "ece": 0.08959004525168847,
+                "method": "EQUAL_WIDTH_10_BINS",
+                "nonempty_bins": [
+                  {
+                    "absolute_gap": 0.10708149538012685,
+                    "count": 11,
+                    "lower": 0.3,
+                    "mean_probability": 0.37980876810739955,
+                    "observed_rate": 0.2727272727272727,
+                    "upper": 0.4
+                  },
+                  {
+                    "absolute_gap": 0.056785413819975095,
+                    "count": 84,
+                    "lower": 0.4,
+                    "mean_probability": 0.44964255667711794,
+                    "observed_rate": 0.39285714285714285,
+                    "upper": 0.5
+                  },
+                  {
+                    "absolute_gap": 0.04607384408381854,
+                    "count": 62,
+                    "lower": 0.5,
+                    "mean_probability": 0.5460738440838185,
+                    "observed_rate": 0.5,
+                    "upper": 0.6
+                  },
+                  {
+                    "absolute_gap": 0.21218723760239144,
+                    "count": 30,
+                    "lower": 0.6,
+                    "mean_probability": 0.6455205709357248,
+                    "observed_rate": 0.43333333333333335,
+                    "upper": 0.7
+                  },
+                  {
+                    "absolute_gap": 0.30009204874562284,
+                    "count": 7,
+                    "lower": 0.7,
+                    "mean_probability": 0.7286634773170514,
+                    "observed_rate": 0.42857142857142855,
+                    "upper": 0.8
+                  },
+                  {
+                    "absolute_gap": 0.1993478115320958,
+                    "count": 1,
+                    "lower": 0.8,
+                    "mean_probability": 0.8006521884679042,
+                    "observed_rate": 1.0,
+                    "upper": 0.9
+                  }
+                ]
+              },
+              "log_loss": 1.119903000421924,
+              "sample_size": 195
+            },
+            "delta_brier_challenger_minus_poisson": 0.0042408574777352825,
+            "delta_log_loss_challenger_minus_poisson": 0.01758630914898185,
+            "end_kickoff_utc": "2026-10-25T14:00:00+00:00",
+            "poisson": {
+              "accuracy": 0.40512820512820513,
+              "brier_score": 0.6706544004275665,
+              "confidence_ece": {
+                "ece": 0.07341508010256409,
+                "method": "EQUAL_WIDTH_10_BINS",
+                "nonempty_bins": [
+                  {
+                    "absolute_gap": 0.015566222368420979,
+                    "count": 38,
+                    "lower": 0.3,
+                    "mean_probability": 0.3791706197368422,
+                    "observed_rate": 0.39473684210526316,
+                    "upper": 0.4
+                  },
+                  {
+                    "absolute_gap": 0.03292091373626377,
+                    "count": 91,
+                    "lower": 0.4,
+                    "mean_probability": 0.43951432032967036,
+                    "observed_rate": 0.4065934065934066,
+                    "upper": 0.5
+                  },
+                  {
+                    "absolute_gap": 0.16599897759999993,
+                    "count": 50,
+                    "lower": 0.5,
+                    "mean_probability": 0.5459989775999999,
+                    "observed_rate": 0.38,
+                    "upper": 0.6
+                  },
+                  {
+                    "absolute_gap": 0.1438149442857144,
+                    "count": 14,
+                    "lower": 0.6,
+                    "mean_probability": 0.6438149442857144,
+                    "observed_rate": 0.5,
+                    "upper": 0.7
+                  },
+                  {
+                    "absolute_gap": 0.20763146,
+                    "count": 2,
+                    "lower": 0.7,
+                    "mean_probability": 0.70763146,
+                    "observed_rate": 0.5,
+                    "upper": 0.8
+                  }
+                ]
+              },
+              "log_loss": 1.102316691272942,
+              "sample_size": 195
+            },
+            "proper_scoring_gate_passed": false,
+            "segment": 1,
+            "start_kickoff_utc": "2026-10-24T20:30:00+00:00"
+          },
+          {
+            "beats_poisson_brier": false,
+            "beats_poisson_log_loss": false,
+            "challenger": {
+              "accuracy": 0.46153846153846156,
+              "brier_score": 0.6300462278647577,
+              "confidence_ece": {
+                "ece": 0.08324859493599217,
+                "method": "EQUAL_WIDTH_10_BINS",
+                "nonempty_bins": [
+                  {
+                    "absolute_gap": 0.08251574829859609,
+                    "count": 17,
+                    "lower": 0.3,
+                    "mean_probability": 0.37663339535741963,
+                    "observed_rate": 0.29411764705882354,
+                    "upper": 0.4
+                  },
+                  {
+                    "absolute_gap": 0.011829234511249231,
+                    "count": 65,
+                    "lower": 0.4,
+                    "mean_probability": 0.4579830806650954,
+                    "observed_rate": 0.4461538461538462,
+                    "upper": 0.5
+                  },
+                  {
+                    "absolute_gap": 0.09953024345780254,
+                    "count": 65,
+                    "lower": 0.5,
+                    "mean_probability": 0.5456840896116487,
+                    "observed_rate": 0.4461538461538462,
+                    "upper": 0.6
+                  },
+                  {
+                    "absolute_gap": 0.16209279502203028,
+                    "count": 38,
+                    "lower": 0.6,
+                    "mean_probability": 0.635777005548346,
+                    "observed_rate": 0.47368421052631576,
+                    "upper": 0.7
+                  },
+                  {
+                    "absolute_gap": 0.14328160126168243,
+                    "count": 10,
+                    "lower": 0.7,
+                    "mean_probability": 0.7567183987383176,
+                    "observed_rate": 0.9,
+                    "upper": 0.8
+                  }
+                ]
+              },
+              "log_loss": 1.0443817550572727,
+              "sample_size": 195
+            },
+            "delta_brier_challenger_minus_poisson": 0.0008711757996510139,
+            "delta_log_loss_challenger_minus_poisson": 0.0011641067274572592,
+            "end_kickoff_utc": "2026-10-26T19:00:00+00:00",
+            "poisson": {
+              "accuracy": 0.4461538461538462,
+              "brier_score": 0.6291750520651067,
+              "confidence_ece": {
+                "ece": 0.05392813589743587,
+                "method": "EQUAL_WIDTH_10_BINS",
+                "nonempty_bins": [
+                  {
+                    "absolute_gap": 0.002851964871794843,
+                    "count": 39,
+                    "lower": 0.3,
+                    "mean_probability": 0.3817634197435898,
+                    "observed_rate": 0.38461538461538464,
+                    "upper": 0.4
+                  },
+                  {
+                    "absolute_gap": 0.05858521571428571,
+                    "count": 91,
+                    "lower": 0.4,
+                    "mean_probability": 0.44320060032967035,
+                    "observed_rate": 0.38461538461538464,
+                    "upper": 0.5
+                  },
+                  {
+                    "absolute_gap": 0.0600038761363636,
+                    "count": 44,
+                    "lower": 0.5,
+                    "mean_probability": 0.5372766034090909,
+                    "observed_rate": 0.4772727272727273,
+                    "upper": 0.6
+                  },
+                  {
+                    "absolute_gap": 0.07559181529411763,
+                    "count": 17,
+                    "lower": 0.6,
+                    "mean_probability": 0.6302905376470589,
+                    "observed_rate": 0.7058823529411765,
+                    "upper": 0.7
+                  },
+                  {
+                    "absolute_gap": 0.2870684575,
+                    "count": 4,
+                    "lower": 0.7,
+                    "mean_probability": 0.7129315425,
+                    "observed_rate": 1.0,
+                    "upper": 0.8
+                  }
+                ]
+              },
+              "log_loss": 1.0432176483298155,
+              "sample_size": 195
+            },
+            "proper_scoring_gate_passed": false,
+            "segment": 2,
+            "start_kickoff_utc": "2026-10-25T14:00:00+00:00"
+          },
+          {
+            "beats_poisson_brier": true,
+            "beats_poisson_log_loss": false,
+            "challenger": {
+              "accuracy": 0.5538461538461539,
+              "brier_score": 0.6098798470947356,
+              "confidence_ece": {
+                "ece": 0.08593647284988978,
+                "method": "EQUAL_WIDTH_10_BINS",
+                "nonempty_bins": [
+                  {
+                    "absolute_gap": 0.11591051406456587,
+                    "count": 14,
+                    "lower": 0.3,
+                    "mean_probability": 0.3840894859354341,
+                    "observed_rate": 0.5,
+                    "upper": 0.4
+                  },
+                  {
+                    "absolute_gap": 0.07472124997222895,
+                    "count": 72,
+                    "lower": 0.4,
+                    "mean_probability": 0.45305652780554884,
+                    "observed_rate": 0.5277777777777778,
+                    "upper": 0.5
+                  },
+                  {
+                    "absolute_gap": 0.05735650863969333,
+                    "count": 57,
+                    "lower": 0.5,
+                    "mean_probability": 0.5391347194304821,
+                    "observed_rate": 0.5964912280701754,
+                    "upper": 0.6
+                  },
+                  {
+                    "absolute_gap": 0.08807412613203836,
+                    "count": 36,
+                    "lower": 0.6,
+                    "mean_probability": 0.6436296816875939,
+                    "observed_rate": 0.5555555555555556,
+                    "upper": 0.7
+                  },
+                  {
+                    "absolute_gap": 0.15547947074814394,
+                    "count": 12,
+                    "lower": 0.7,
+                    "mean_probability": 0.7388128040814773,
+                    "observed_rate": 0.5833333333333334,
+                    "upper": 0.8
+                  },
+                  {
+                    "absolute_gap": 0.18103597836309326,
+                    "count": 3,
+                    "lower": 0.8,
+                    "mean_probability": 0.8477026450297599,
+                    "observed_rate": 0.6666666666666666,
+                    "upper": 0.9
+                  },
+                  {
+                    "absolute_gap": 0.9060838935411939,
+                    "count": 1,
+                    "lower": 0.9,
+                    "mean_probability": 0.9060838935411939,
+                    "observed_rate": 0.0,
+                    "upper": 1.0
+                  }
+                ]
+              },
+              "log_loss": 1.023627352975459,
+              "sample_size": 195
+            },
+            "delta_brier_challenger_minus_poisson": -0.0026836896858786208,
+            "delta_log_loss_challenger_minus_poisson": 0.0057218170861255135,
+            "end_kickoff_utc": "2026-10-28T02:00:00+00:00",
+            "poisson": {
+              "accuracy": 0.5076923076923077,
+              "brier_score": 0.6125635367806143,
+              "confidence_ece": {
+                "ece": 0.05619681646153842,
+                "method": "EQUAL_WIDTH_10_BINS",
+                "nonempty_bins": [
+                  {
+                    "absolute_gap": 0.0916319507499998,
+                    "count": 40,
+                    "lower": 0.3,
+                    "mean_probability": 0.3833680492500002,
+                    "observed_rate": 0.475,
+                    "upper": 0.4
+                  },
+                  {
+                    "absolute_gap": 0.03509107611111101,
+                    "count": 90,
+                    "lower": 0.4,
+                    "mean_probability": 0.4426867016666668,
+                    "observed_rate": 0.4777777777777778,
+                    "upper": 0.5
+                  },
+                  {
+                    "absolute_gap": 0.038829621875000164,
+                    "count": 48,
+                    "lower": 0.5,
+                    "mean_probability": 0.5445037114583332,
+                    "observed_rate": 0.5833333333333334,
+                    "upper": 0.6
+                  },
+                  {
+                    "absolute_gap": 0.12382866250000002,
+                    "count": 16,
+                    "lower": 0.6,
+                    "mean_probability": 0.6238286625,
+                    "observed_rate": 0.5,
+                    "upper": 0.7
+                  },
+                  {
+                    "absolute_gap": 0.28982388000000003,
+                    "count": 1,
+                    "lower": 0.7,
+                    "mean_probability": 0.71017612,
+                    "observed_rate": 1.0,
+                    "upper": 0.8
+                  }
+                ]
+              },
+              "log_loss": 1.0179055358893334,
+              "sample_size": 195
+            },
+            "proper_scoring_gate_passed": false,
+            "segment": 3,
+            "start_kickoff_utc": "2026-10-26T19:00:00+00:00"
+          }
+        ]
+      },
+      "verdict": "HOLD",
+      "verdict_reason": "AWAITING_600_EXACT_SETTLED_OBSERVATIONS"
+    },
+    {
+      "action_board_count": 727,
+      "automatic_promotion": false,
+      "competition_concentration_diagnostic": {
+        "competition_count": 109,
+        "top_competitions": [
+          {
+            "competition": "Premier League",
+            "count": 26,
+            "share": 0.044444444444444446
+          },
+          {
+            "competition": "Major League Soccer",
+            "count": 12,
+            "share": 0.020512820512820513
+          },
+          {
+            "competition": "Primera Nacional",
+            "count": 12,
+            "share": 0.020512820512820513
+          },
+          {
+            "competition": "U19 Bundesliga",
+            "count": 12,
+            "share": 0.020512820512820513
+          },
+          {
+            "competition": "USL Championship",
+            "count": 12,
+            "share": 0.020512820512820513
+          },
+          {
+            "competition": "National League - South",
+            "count": 11,
+            "share": 0.018803418803418803
+          },
+          {
+            "competition": "National League - North",
+            "count": 10,
+            "share": 0.017094017094017096
+          },
+          {
+            "competition": "Non League Premier - Southern Central",
+            "count": 10,
+            "share": 0.017094017094017096
+          },
+          {
+            "competition": "Primera A",
+            "count": 10,
+            "share": 0.017094017094017096
+          },
+          {
+            "competition": "Serie A",
+            "count": 10,
+            "share": 0.017094017094017096
+          }
+        ]
+      },
+      "display_name": "Doble oportunidad 1X",
+      "exact_settled_count": 585,
+      "generic_1x2_final_fixture_intersection_diagnostic_only": null,
+      "lane_specific_scoring_supported": true,
+      "market_lane": "DOUBLE_CHANCE_1X",
+      "metrics": {
+        "beats_poisson_brier": true,
+        "beats_poisson_log_loss": true,
+        "challenger": {
+          "brier_score": 0.2029010315296988,
+          "calibration": {
+            "ece": 0.060920028604964066,
+            "method": "EQUAL_WIDTH_10_BINS",
+            "nonempty_bins": [
+              {
+                "absolute_gap": 0.906083893541194,
+                "count": 1,
+                "lower": 0.0,
+                "mean_probability": 0.09391610645880602,
+                "observed_rate": 1.0,
+                "upper": 0.1
+              },
+              {
+                "absolute_gap": 0.18103597836309335,
+                "count": 3,
+                "lower": 0.1,
+                "mean_probability": 0.15229735497023997,
+                "observed_rate": 0.3333333333333333,
+                "upper": 0.2
+              },
+              {
+                "absolute_gap": 0.040122487944733776,
+                "count": 10,
+                "lower": 0.2,
+                "mean_probability": 0.2598775120552662,
+                "observed_rate": 0.3,
+                "upper": 0.3
+              },
+              {
+                "absolute_gap": 0.1104301374293824,
+                "count": 21,
+                "lower": 0.3,
+                "mean_probability": 0.36576033876109376,
+                "observed_rate": 0.47619047619047616,
+                "upper": 0.4
+              },
+              {
+                "absolute_gap": 0.15804459193158665,
+                "count": 52,
+                "lower": 0.4,
+                "mean_probability": 0.45734002345302877,
+                "observed_rate": 0.6153846153846154,
+                "upper": 0.5
+              },
+              {
+                "absolute_gap": 0.05201578771581361,
+                "count": 94,
+                "lower": 0.5,
+                "mean_probability": 0.5543671910075907,
+                "observed_rate": 0.6063829787234043,
+                "upper": 0.6
+              },
+              {
+                "absolute_gap": 0.08912939537264497,
+                "count": 171,
+                "lower": 0.6,
+                "mean_probability": 0.6535606631068872,
+                "observed_rate": 0.7426900584795322,
+                "upper": 0.7
+              },
+              {
+                "absolute_gap": 0.008306176793482889,
+                "count": 148,
+                "lower": 0.7,
+                "mean_probability": 0.7484505799632739,
+                "observed_rate": 0.7567567567567568,
+                "upper": 0.8
+              },
+              {
+                "absolute_gap": 0.02062641412012889,
+                "count": 83,
+                "lower": 0.8,
+                "mean_probability": 0.8399035225538638,
+                "observed_rate": 0.8192771084337349,
+                "upper": 0.9
+              },
+              {
+                "absolute_gap": 0.08926558397584583,
+                "count": 2,
+                "lower": 0.9,
+                "mean_probability": 0.9107344160241542,
+                "observed_rate": 1.0,
+                "upper": 1.0
+              }
+            ]
+          },
+          "log_loss": 0.5948581317155034,
+          "sample_size": 585
+        },
+        "delta_brier_challenger_minus_poisson": -0.00328305288502187,
+        "delta_log_loss_challenger_minus_poisson": -0.006623329879735684,
+        "poisson": {
+          "brier_score": 0.20618408441472066,
+          "calibration": {
+            "ece": 0.08306748500854697,
+            "method": "EQUAL_WIDTH_10_BINS",
+            "nonempty_bins": [
+              {
+                "absolute_gap": 0.038758043333333325,
+                "count": 3,
+                "lower": 0.2,
+                "mean_probability": 0.29457529,
+                "observed_rate": 0.3333333333333333,
+                "upper": 0.3
+              },
+              {
+                "absolute_gap": 0.05830149653846145,
+                "count": 26,
+                "lower": 0.3,
+                "mean_probability": 0.3647754265384616,
+                "observed_rate": 0.4230769230769231,
+                "upper": 0.4
+              },
+              {
+                "absolute_gap": 0.08714192560606066,
+                "count": 66,
+                "lower": 0.4,
+                "mean_probability": 0.45831261984848476,
+                "observed_rate": 0.5454545454545454,
+                "upper": 0.5
+              },
+              {
+                "absolute_gap": 0.16841633379844945,
+                "count": 129,
+                "lower": 0.5,
+                "mean_probability": 0.5602658367441862,
+                "observed_rate": 0.7286821705426356,
+                "upper": 0.6
+              },
+              {
+                "absolute_gap": 0.05759109237373716,
+                "count": 198,
+                "lower": 0.6,
+                "mean_probability": 0.6494796146969699,
+                "observed_rate": 0.7070707070707071,
+                "upper": 0.7
+              },
+              {
+                "absolute_gap": 0.05687550181818213,
+                "count": 121,
+                "lower": 0.7,
+                "mean_probability": 0.7447773907438013,
+                "observed_rate": 0.8016528925619835,
+                "upper": 0.8
+              },
+              {
+                "absolute_gap": 0.027011169268292834,
+                "count": 41,
+                "lower": 0.8,
+                "mean_probability": 0.8318892180487807,
+                "observed_rate": 0.8048780487804879,
+                "upper": 0.9
+              },
+              {
+                "absolute_gap": 0.09286159000000005,
+                "count": 1,
+                "lower": 0.9,
+                "mean_probability": 0.90713841,
+                "observed_rate": 1.0,
+                "upper": 1.0
+              }
+            ]
+          },
+          "log_loss": 0.6014814615952391,
+          "sample_size": 585
+        },
+        "proper_scoring_gate_passed": true
+      },
+      "missing_or_not_yet_final_fixture_count": 142,
+      "prospective_freeze_count": 727,
+      "remaining_settled_to_600": 15,
+      "temporal_stability_diagnostic": {
+        "method": "CHRONOLOGICAL_THIRDS",
+        "segments": [
+          {
+            "beats_poisson_brier": true,
+            "beats_poisson_log_loss": true,
+            "challenger": {
+              "brier_score": 0.19413001990412584,
+              "calibration": {
+                "ece": 0.10704131087666453,
+                "method": "EQUAL_WIDTH_10_BINS",
+                "nonempty_bins": [
+                  {
+                    "absolute_gap": 0.2087609593009459,
+                    "count": 2,
+                    "lower": 0.2,
+                    "mean_probability": 0.2912390406990541,
+                    "observed_rate": 0.5,
+                    "upper": 0.3
+                  },
+                  {
+                    "absolute_gap": 0.30992580030667666,
+                    "count": 6,
+                    "lower": 0.3,
+                    "mean_probability": 0.35674086635998997,
+                    "observed_rate": 0.6666666666666666,
+                    "upper": 0.4
+                  },
+                  {
+                    "absolute_gap": 0.19191791931537538,
+                    "count": 17,
+                    "lower": 0.4,
+                    "mean_probability": 0.4551409042140364,
+                    "observed_rate": 0.6470588235294118,
+                    "upper": 0.5
+                  },
+                  {
+                    "absolute_gap": 0.13621962658652265,
+                    "count": 35,
+                    "lower": 0.5,
+                    "mean_probability": 0.5494946591277631,
+                    "observed_rate": 0.6857142857142857,
+                    "upper": 0.6
+                  },
+                  {
+                    "absolute_gap": 0.06889828444153312,
+                    "count": 61,
+                    "lower": 0.6,
+                    "mean_probability": 0.652413190968303,
+                    "observed_rate": 0.7213114754098361,
+                    "upper": 0.7
+                  },
+                  {
+                    "absolute_gap": 0.1283087925477142,
+                    "count": 46,
+                    "lower": 0.7,
+                    "mean_probability": 0.7412564248435901,
+                    "observed_rate": 0.8695652173913043,
+                    "upper": 0.8
+                  },
+                  {
+                    "absolute_gap": 0.016453126196056544,
+                    "count": 28,
+                    "lower": 0.8,
+                    "mean_probability": 0.8378816976246279,
+                    "observed_rate": 0.8214285714285714,
+                    "upper": 0.9
+                  }
+                ]
+              },
+              "log_loss": 0.5745380263710455,
+              "sample_size": 195
+            },
+            "delta_brier_challenger_minus_poisson": -0.005719296678683511,
+            "delta_log_loss_challenger_minus_poisson": -0.013439588674175273,
+            "end_kickoff_utc": "2026-10-25T14:00:00+00:00",
+            "poisson": {
+              "brier_score": 0.19984931658280936,
+              "calibration": {
+                "ece": 0.13060643302564112,
+                "method": "EQUAL_WIDTH_10_BINS",
+                "nonempty_bins": [
+                  {
+                    "absolute_gap": 0.70364686,
+                    "count": 1,
+                    "lower": 0.2,
+                    "mean_probability": 0.29635314,
+                    "observed_rate": 1.0,
+                    "upper": 0.3
+                  },
+                  {
+                    "absolute_gap": 0.14468103899999996,
+                    "count": 10,
+                    "lower": 0.3,
+                    "mean_probability": 0.35531896100000004,
+                    "observed_rate": 0.5,
+                    "upper": 0.4
+                  },
+                  {
+                    "absolute_gap": 0.2275738063636365,
+                    "count": 22,
+                    "lower": 0.4,
+                    "mean_probability": 0.45424437545454527,
+                    "observed_rate": 0.6818181818181818,
+                    "upper": 0.5
+                  },
+                  {
+                    "absolute_gap": 0.16314091386363638,
+                    "count": 44,
+                    "lower": 0.5,
+                    "mean_probability": 0.5641318134090909,
+                    "observed_rate": 0.7272727272727273,
+                    "upper": 0.6
+                  },
+                  {
+                    "absolute_gap": 0.11230628317460323,
+                    "count": 63,
+                    "lower": 0.6,
+                    "mean_probability": 0.6495984787301586,
+                    "observed_rate": 0.7619047619047619,
+                    "upper": 0.7
+                  },
+                  {
+                    "absolute_gap": 0.09362415906976762,
+                    "count": 43,
+                    "lower": 0.7,
+                    "mean_probability": 0.7435851432558138,
+                    "observed_rate": 0.8372093023255814,
+                    "upper": 0.8
+                  },
+                  {
+                    "absolute_gap": 0.0026532133333334595,
+                    "count": 12,
+                    "lower": 0.8,
+                    "mean_probability": 0.8306801199999999,
+                    "observed_rate": 0.8333333333333334,
+                    "upper": 0.9
+                  }
+                ]
+              },
+              "log_loss": 0.5879776150452207,
+              "sample_size": 195
+            },
+            "proper_scoring_gate_passed": true,
+            "segment": 1,
+            "start_kickoff_utc": "2026-10-24T20:30:00+00:00"
+          },
+          {
+            "beats_poisson_brier": true,
+            "beats_poisson_log_loss": true,
+            "challenger": {
+              "brier_score": 0.20940041425856304,
+              "calibration": {
+                "ece": 0.07697371930675571,
+                "method": "EQUAL_WIDTH_10_BINS",
+                "nonempty_bins": [
+                  {
+                    "absolute_gap": 0.005846842769917815,
+                    "count": 4,
+                    "lower": 0.2,
+                    "mean_probability": 0.2558468427699178,
+                    "observed_rate": 0.25,
+                    "upper": 0.3
+                  },
+                  {
+                    "absolute_gap": 0.007485739461216334,
+                    "count": 8,
+                    "lower": 0.3,
+                    "mean_probability": 0.36751426053878367,
+                    "observed_rate": 0.375,
+                    "upper": 0.4
+                  },
+                  {
+                    "absolute_gap": 0.24348726571597662,
+                    "count": 17,
+                    "lower": 0.4,
+                    "mean_probability": 0.4623950872251999,
+                    "observed_rate": 0.7058823529411765,
+                    "upper": 0.5
+                  },
+                  {
+                    "absolute_gap": 0.02711686640896216,
+                    "count": 32,
+                    "lower": 0.5,
+                    "mean_probability": 0.5583668664089622,
+                    "observed_rate": 0.53125,
+                    "upper": 0.6
+                  },
+                  {
+                    "absolute_gap": 0.1095199404551278,
+                    "count": 46,
+                    "lower": 0.6,
+                    "mean_probability": 0.6513496247622635,
+                    "observed_rate": 0.7608695652173914,
+                    "upper": 0.7
+                  },
+                  {
+                    "absolute_gap": 0.07635965716963733,
+                    "count": 53,
+                    "lower": 0.7,
+                    "mean_probability": 0.7556049401885052,
+                    "observed_rate": 0.6792452830188679,
+                    "upper": 0.8
+                  },
+                  {
+                    "absolute_gap": 0.021709582278804374,
+                    "count": 34,
+                    "lower": 0.8,
+                    "mean_probability": 0.8452389940435102,
+                    "observed_rate": 0.8235294117647058,
+                    "upper": 0.9
+                  },
+                  {
+                    "absolute_gap": 0.09647384738356568,
+                    "count": 1,
+                    "lower": 0.9,
+                    "mean_probability": 0.9035261526164343,
+                    "observed_rate": 1.0,
+                    "upper": 1.0
+                  }
+                ]
+              },
+              "log_loss": 0.607702227752773,
+              "sample_size": 195
+            },
+            "delta_brier_challenger_minus_poisson": -0.0025285644777020277,
+            "delta_log_loss_challenger_minus_poisson": -0.006254090126866507,
+            "end_kickoff_utc": "2026-10-26T19:00:00+00:00",
+            "poisson": {
+              "brier_score": 0.21192897873626507,
+              "calibration": {
+                "ece": 0.07250564282051275,
+                "method": "EQUAL_WIDTH_10_BINS",
+                "nonempty_bins": [
+                  {
+                    "absolute_gap": 0.293686365,
+                    "count": 2,
+                    "lower": 0.2,
+                    "mean_probability": 0.293686365,
+                    "observed_rate": 0.0,
+                    "upper": 0.3
+                  },
+                  {
+                    "absolute_gap": 0.009485005454545392,
+                    "count": 11,
+                    "lower": 0.3,
+                    "mean_probability": 0.37312136909090904,
+                    "observed_rate": 0.36363636363636365,
+                    "upper": 0.4
+                  },
+                  {
+                    "absolute_gap": 0.09943386086956518,
+                    "count": 23,
+                    "lower": 0.4,
+                    "mean_probability": 0.4657835304347826,
+                    "observed_rate": 0.5652173913043478,
+                    "upper": 0.5
+                  },
+                  {
+                    "absolute_gap": 0.2077471346511628,
+                    "count": 43,
+                    "lower": 0.5,
+                    "mean_probability": 0.5596947258139535,
+                    "observed_rate": 0.7674418604651163,
+                    "upper": 0.6
+                  },
+                  {
+                    "absolute_gap": 0.01526259409090891,
+                    "count": 66,
+                    "lower": 0.6,
+                    "mean_probability": 0.6514040725757577,
+                    "observed_rate": 0.6666666666666666,
+                    "upper": 0.7
+                  },
+                  {
+                    "absolute_gap": 0.02430609882352941,
+                    "count": 34,
+                    "lower": 0.7,
+                    "mean_probability": 0.7403997835294117,
+                    "observed_rate": 0.7647058823529411,
+                    "upper": 0.8
+                  },
+                  {
+                    "absolute_gap": 0.024565524999999977,
+                    "count": 16,
+                    "lower": 0.8,
+                    "mean_probability": 0.837065525,
+                    "observed_rate": 0.8125,
+                    "upper": 0.9
+                  }
+                ]
+              },
+              "log_loss": 0.6139563178796396,
+              "sample_size": 195
+            },
+            "proper_scoring_gate_passed": true,
+            "segment": 2,
+            "start_kickoff_utc": "2026-10-25T14:00:00+00:00"
+          },
+          {
+            "beats_poisson_brier": true,
+            "beats_poisson_log_loss": true,
+            "challenger": {
+              "brier_score": 0.20517266042640728,
+              "calibration": {
+                "ece": 0.055811900635839774,
+                "method": "EQUAL_WIDTH_10_BINS",
+                "nonempty_bins": [
+                  {
+                    "absolute_gap": 0.906083893541194,
+                    "count": 1,
+                    "lower": 0.0,
+                    "mean_probability": 0.09391610645880602,
+                    "observed_rate": 1.0,
+                    "upper": 0.1
+                  },
+                  {
+                    "absolute_gap": 0.18103597836309335,
+                    "count": 3,
+                    "lower": 0.1,
+                    "mean_probability": 0.15229735497023997,
+                    "observed_rate": 0.3333333333333333,
+                    "upper": 0.2
+                  },
+                  {
+                    "absolute_gap": 0.0017725829812794691,
+                    "count": 4,
+                    "lower": 0.2,
+                    "mean_probability": 0.24822741701872053,
+                    "observed_rate": 0.25,
+                    "upper": 0.3
+                  },
+                  {
+                    "absolute_gap": 0.057084595498177126,
+                    "count": 7,
+                    "lower": 0.3,
+                    "mean_probability": 0.3714868330732514,
+                    "observed_rate": 0.42857142857142855,
+                    "upper": 0.4
+                  },
+                  {
+                    "absolute_gap": 0.04535725749497349,
+                    "count": 18,
+                    "lower": 0.4,
+                    "mean_probability": 0.4546427425050265,
+                    "observed_rate": 0.5,
+                    "upper": 0.5
+                  },
+                  {
+                    "absolute_gap": 0.036649512586850674,
+                    "count": 27,
+                    "lower": 0.5,
+                    "mean_probability": 0.5559430800057419,
+                    "observed_rate": 0.5925925925925926,
+                    "upper": 0.6
+                  },
+                  {
+                    "absolute_gap": 0.09375646870082655,
+                    "count": 64,
+                    "lower": 0.6,
+                    "mean_probability": 0.6562435312991735,
+                    "observed_rate": 0.75,
+                    "upper": 0.7
+                  },
+                  {
+                    "absolute_gap": 0.012772009423850372,
+                    "count": 49,
+                    "lower": 0.7,
+                    "mean_probability": 0.7474658869748708,
+                    "observed_rate": 0.7346938775510204,
+                    "upper": 0.8
+                  },
+                  {
+                    "absolute_gap": 0.024437097190559087,
+                    "count": 21,
+                    "lower": 0.8,
+                    "mean_probability": 0.8339609067143686,
+                    "observed_rate": 0.8095238095238095,
+                    "upper": 0.9
+                  },
+                  {
+                    "absolute_gap": 0.08205732056812598,
+                    "count": 1,
+                    "lower": 0.9,
+                    "mean_probability": 0.917942679431874,
+                    "observed_rate": 1.0,
+                    "upper": 1.0
+                  }
+                ]
+              },
+              "log_loss": 0.6023341410226905,
+              "sample_size": 195
+            },
+            "delta_brier_challenger_minus_poisson": -0.0016012974986806816,
+            "delta_log_loss_challenger_minus_poisson": -0.00017631083816471715,
+            "end_kickoff_utc": "2026-10-28T02:00:00+00:00",
+            "poisson": {
+              "brier_score": 0.20677395792508796,
+              "calibration": {
+                "ece": 0.06932916687179484,
+                "method": "EQUAL_WIDTH_10_BINS",
+                "nonempty_bins": [
+                  {
+                    "absolute_gap": 0.03467271600000005,
+                    "count": 5,
+                    "lower": 0.3,
+                    "mean_probability": 0.365327284,
+                    "observed_rate": 0.4,
+                    "upper": 0.4
+                  },
+                  {
+                    "absolute_gap": 0.07343978333333334,
+                    "count": 21,
+                    "lower": 0.4,
+                    "mean_probability": 0.4543921642857143,
+                    "observed_rate": 0.38095238095238093,
+                    "upper": 0.5
+                  },
+                  {
+                    "absolute_gap": 0.13367571571428571,
+                    "count": 42,
+                    "lower": 0.5,
+                    "mean_probability": 0.5568004747619048,
+                    "observed_rate": 0.6904761904761905,
+                    "upper": 0.6
+                  },
+                  {
+                    "absolute_gap": 0.04812187304347837,
+                    "count": 69,
+                    "lower": 0.6,
+                    "mean_probability": 0.6475303008695651,
+                    "observed_rate": 0.6956521739130435,
+                    "upper": 0.7
+                  },
+                  {
+                    "absolute_gap": 0.046129307272727016,
+                    "count": 44,
+                    "lower": 0.7,
+                    "mean_probability": 0.7493252381818184,
+                    "observed_rate": 0.7954545454545454,
+                    "upper": 0.8
+                  },
+                  {
+                    "absolute_gap": 0.057403699999999835,
+                    "count": 13,
+                    "lower": 0.8,
+                    "mean_probability": 0.8266344692307691,
+                    "observed_rate": 0.7692307692307693,
+                    "upper": 0.9
+                  },
+                  {
+                    "absolute_gap": 0.09286159000000005,
+                    "count": 1,
+                    "lower": 0.9,
+                    "mean_probability": 0.90713841,
+                    "observed_rate": 1.0,
+                    "upper": 1.0
+                  }
+                ]
+              },
+              "log_loss": 0.6025104518608552,
+              "sample_size": 195
+            },
+            "proper_scoring_gate_passed": true,
+            "segment": 3,
+            "start_kickoff_utc": "2026-10-26T19:00:00+00:00"
+          }
+        ]
+      },
+      "verdict": "HOLD",
+      "verdict_reason": "AWAITING_600_EXACT_SETTLED_OBSERVATIONS"
+    },
+    {
+      "action_board_count": 727,
+      "automatic_promotion": false,
+      "competition_concentration_diagnostic": {
+        "competition_count": 109,
+        "top_competitions": [
+          {
+            "competition": "Premier League",
+            "count": 26,
+            "share": 0.044444444444444446
+          },
+          {
+            "competition": "Major League Soccer",
+            "count": 12,
+            "share": 0.020512820512820513
+          },
+          {
+            "competition": "Primera Nacional",
+            "count": 12,
+            "share": 0.020512820512820513
+          },
+          {
+            "competition": "U19 Bundesliga",
+            "count": 12,
+            "share": 0.020512820512820513
+          },
+          {
+            "competition": "USL Championship",
+            "count": 12,
+            "share": 0.020512820512820513
+          },
+          {
+            "competition": "National League - South",
+            "count": 11,
+            "share": 0.018803418803418803
+          },
+          {
+            "competition": "National League - North",
+            "count": 10,
+            "share": 0.017094017094017096
+          },
+          {
+            "competition": "Non League Premier - Southern Central",
+            "count": 10,
+            "share": 0.017094017094017096
+          },
+          {
+            "competition": "Primera A",
+            "count": 10,
+            "share": 0.017094017094017096
+          },
+          {
+            "competition": "Serie A",
+            "count": 10,
+            "share": 0.017094017094017096
+          }
+        ]
+      },
+      "display_name": "Doble oportunidad X2",
+      "exact_settled_count": 585,
+      "generic_1x2_final_fixture_intersection_diagnostic_only": null,
+      "lane_specific_scoring_supported": true,
+      "market_lane": "DOUBLE_CHANCE_X2",
+      "metrics": {
+        "beats_poisson_brier": true,
+        "beats_poisson_log_loss": false,
+        "challenger": {
+          "brier_score": 0.24409027754147,
+          "calibration": {
+            "ece": 0.05375043171483641,
+            "method": "EQUAL_WIDTH_10_BINS",
+            "nonempty_bins": [
+              {
+                "absolute_gap": 0.19934781153209585,
+                "count": 1,
+                "lower": 0.1,
+                "mean_probability": 0.19934781153209585,
+                "observed_rate": 0.0,
+                "upper": 0.2
+              },
+              {
+                "absolute_gap": 0.1122293209543645,
+                "count": 19,
+                "lower": 0.2,
+                "mean_probability": 0.25619173167721443,
+                "observed_rate": 0.3684210526315789,
+                "upper": 0.3
+              },
+              {
+                "absolute_gap": 0.16116601197162933,
+                "count": 83,
+                "lower": 0.3,
+                "mean_probability": 0.3569062771849972,
+                "observed_rate": 0.5180722891566265,
+                "upper": 0.4
+              },
+              {
+                "absolute_gap": 0.016375724355690235,
+                "count": 132,
+                "lower": 0.4,
+                "mean_probability": 0.4557696637496296,
+                "observed_rate": 0.4393939393939394,
+                "upper": 0.5
+              },
+              {
+                "absolute_gap": 0.004382570284446108,
+                "count": 151,
+                "lower": 0.5,
+                "mean_probability": 0.5474289279003401,
+                "observed_rate": 0.543046357615894,
+                "upper": 0.6
+              },
+              {
+                "absolute_gap": 0.07042101593543926,
+                "count": 118,
+                "lower": 0.6,
+                "mean_probability": 0.6466922023761172,
+                "observed_rate": 0.576271186440678,
+                "upper": 0.7
+              },
+              {
+                "absolute_gap": 0.016052872293422338,
+                "count": 57,
+                "lower": 0.7,
+                "mean_probability": 0.7383330926188584,
+                "observed_rate": 0.7543859649122807,
+                "upper": 0.8
+              },
+              {
+                "absolute_gap": 0.13499563862570385,
+                "count": 21,
+                "lower": 0.8,
+                "mean_probability": 0.8492813529114182,
+                "observed_rate": 0.7142857142857143,
+                "upper": 0.9
+              },
+              {
+                "absolute_gap": 0.28418430323995947,
+                "count": 3,
+                "lower": 0.9,
+                "mean_probability": 0.9508509699066261,
+                "observed_rate": 0.6666666666666666,
+                "upper": 1.0
+              }
+            ]
+          },
+          "log_loss": 0.683452005296821,
+          "sample_size": 585
+        },
+        "delta_brier_challenger_minus_poisson": -0.000669789925410641,
+        "delta_log_loss_challenger_minus_poisson": 0.0014382973389913678,
+        "poisson": {
+          "brier_score": 0.24476006746688064,
+          "calibration": {
+            "ece": 0.09212071719658096,
+            "method": "EQUAL_WIDTH_10_BINS",
+            "nonempty_bins": [
+              {
+                "absolute_gap": 0.284777235,
+                "count": 4,
+                "lower": 0.2,
+                "mean_probability": 0.284777235,
+                "observed_rate": 0.0,
+                "upper": 0.3
+              },
+              {
+                "absolute_gap": 0.056846099999999955,
+                "count": 21,
+                "lower": 0.3,
+                "mean_probability": 0.3717253285714286,
+                "observed_rate": 0.42857142857142855,
+                "upper": 0.4
+              },
+              {
+                "absolute_gap": 0.04374908460526328,
+                "count": 76,
+                "lower": 0.4,
+                "mean_probability": 0.4562509153947367,
+                "observed_rate": 0.5,
+                "upper": 0.5
+              },
+              {
+                "absolute_gap": 0.11578214020978977,
+                "count": 143,
+                "lower": 0.5,
+                "mean_probability": 0.5563415807692303,
+                "observed_rate": 0.4405594405594406,
+                "upper": 0.6
+              },
+              {
+                "absolute_gap": 0.10086698689473672,
+                "count": 190,
+                "lower": 0.6,
+                "mean_probability": 0.6482354079473683,
+                "observed_rate": 0.5473684210526316,
+                "upper": 0.7
+              },
+              {
+                "absolute_gap": 0.10918395981981943,
+                "count": 111,
+                "lower": 0.7,
+                "mean_probability": 0.7398145904504501,
+                "observed_rate": 0.6306306306306306,
+                "upper": 0.8
+              },
+              {
+                "absolute_gap": 0.0075786207692306595,
+                "count": 39,
+                "lower": 0.8,
+                "mean_probability": 0.8385752253846155,
+                "observed_rate": 0.8461538461538461,
+                "upper": 0.9
+              },
+              {
+                "absolute_gap": 0.09625277999999993,
+                "count": 1,
+                "lower": 0.9,
+                "mean_probability": 0.9037472200000001,
+                "observed_rate": 1.0,
+                "upper": 1.0
+              }
+            ]
+          },
+          "log_loss": 0.6820137079578297,
+          "sample_size": 585
+        },
+        "proper_scoring_gate_passed": false
+      },
+      "missing_or_not_yet_final_fixture_count": 142,
+      "prospective_freeze_count": 727,
+      "remaining_settled_to_600": 15,
+      "temporal_stability_diagnostic": {
+        "method": "CHRONOLOGICAL_THIRDS",
+        "segments": [
+          {
+            "beats_poisson_brier": true,
+            "beats_poisson_log_loss": true,
+            "challenger": {
+              "brier_score": 0.24270066618439293,
+              "calibration": {
+                "ece": 0.061600698156758824,
+                "method": "EQUAL_WIDTH_10_BINS",
+                "nonempty_bins": [
+                  {
+                    "absolute_gap": 0.19934781153209585,
+                    "count": 1,
+                    "lower": 0.1,
+                    "mean_probability": 0.19934781153209585,
+                    "observed_rate": 0.0,
+                    "upper": 0.2
+                  },
+                  {
+                    "absolute_gap": 0.33662448452349353,
+                    "count": 5,
+                    "lower": 0.2,
+                    "mean_probability": 0.26337551547650645,
+                    "observed_rate": 0.6,
+                    "upper": 0.3
+                  },
+                  {
+                    "absolute_gap": 0.1877525969263199,
+                    "count": 24,
+                    "lower": 0.3,
+                    "mean_probability": 0.3539140697403467,
+                    "observed_rate": 0.5416666666666666,
+                    "upper": 0.4
+                  },
+                  {
+                    "absolute_gap": 0.00902280655921417,
+                    "count": 45,
+                    "lower": 0.4,
+                    "mean_probability": 0.4534672510036586,
+                    "observed_rate": 0.4444444444444444,
+                    "upper": 0.5
+                  },
+                  {
+                    "absolute_gap": 4.669041529781204e-05,
+                    "count": 49,
+                    "lower": 0.5,
+                    "mean_probability": 0.5509737177479674,
+                    "observed_rate": 0.5510204081632653,
+                    "upper": 0.6
+                  },
+                  {
+                    "absolute_gap": 0.03298015515463626,
+                    "count": 49,
+                    "lower": 0.6,
+                    "mean_probability": 0.64522505311382,
+                    "observed_rate": 0.6122448979591837,
+                    "upper": 0.7
+                  },
+                  {
+                    "absolute_gap": 0.13756445781970417,
+                    "count": 17,
+                    "lower": 0.7,
+                    "mean_probability": 0.7447884833567664,
+                    "observed_rate": 0.8823529411764706,
+                    "upper": 0.8
+                  },
+                  {
+                    "absolute_gap": 0.25213321383207055,
+                    "count": 5,
+                    "lower": 0.8,
+                    "mean_probability": 0.8521332138320705,
+                    "observed_rate": 0.6,
+                    "upper": 0.9
+                  }
+                ]
+              },
+              "log_loss": 0.6790638429095098,
+              "sample_size": 195
+            },
+            "delta_brier_challenger_minus_poisson": -0.002689543080408613,
+            "delta_log_loss_challenger_minus_poisson": -0.0049865929702429534,
+            "end_kickoff_utc": "2026-10-25T14:00:00+00:00",
+            "poisson": {
+              "brier_score": 0.24539020926480154,
+              "calibration": {
+                "ece": 0.09566533492307694,
+                "method": "EQUAL_WIDTH_10_BINS",
+                "nonempty_bins": [
+                  {
+                    "absolute_gap": 0.28838395,
+                    "count": 1,
+                    "lower": 0.2,
+                    "mean_probability": 0.28838395,
+                    "observed_rate": 0.0,
+                    "upper": 0.3
+                  },
+                  {
+                    "absolute_gap": 0.141649715,
+                    "count": 4,
+                    "lower": 0.3,
+                    "mean_probability": 0.358350285,
+                    "observed_rate": 0.5,
+                    "upper": 0.4
+                  },
+                  {
+                    "absolute_gap": 0.11761875357142865,
+                    "count": 28,
+                    "lower": 0.4,
+                    "mean_probability": 0.45380981785714275,
+                    "observed_rate": 0.5714285714285714,
+                    "upper": 0.5
+                  },
+                  {
+                    "absolute_gap": 0.0889871699999999,
+                    "count": 47,
+                    "lower": 0.5,
+                    "mean_probability": 0.5570722763829786,
+                    "observed_rate": 0.46808510638297873,
+                    "upper": 0.6
+                  },
+                  {
+                    "absolute_gap": 0.07969270833333342,
+                    "count": 66,
+                    "lower": 0.6,
+                    "mean_probability": 0.6554502840909092,
+                    "observed_rate": 0.5757575757575758,
+                    "upper": 0.7
+                  },
+                  {
+                    "absolute_gap": 0.14101000914285722,
+                    "count": 35,
+                    "lower": 0.7,
+                    "mean_probability": 0.7410100091428572,
+                    "observed_rate": 0.6,
+                    "upper": 0.8
+                  },
+                  {
+                    "absolute_gap": 0.0025164276923076434,
+                    "count": 13,
+                    "lower": 0.8,
+                    "mean_probability": 0.8436374184615385,
+                    "observed_rate": 0.8461538461538461,
+                    "upper": 0.9
+                  },
+                  {
+                    "absolute_gap": 0.09625277999999993,
+                    "count": 1,
+                    "lower": 0.9,
+                    "mean_probability": 0.9037472200000001,
+                    "observed_rate": 1.0,
+                    "upper": 1.0
+                  }
+                ]
+              },
+              "log_loss": 0.6840504358797528,
+              "sample_size": 195
+            },
+            "proper_scoring_gate_passed": true,
+            "segment": 1,
+            "start_kickoff_utc": "2026-10-24T20:30:00+00:00"
+          },
+          {
+            "beats_poisson_brier": false,
+            "beats_poisson_log_loss": false,
+            "challenger": {
+              "brier_score": 0.23898348934220778,
+              "calibration": {
+                "ece": 0.08461132730042138,
+                "method": "EQUAL_WIDTH_10_BINS",
+                "nonempty_bins": [
+                  {
+                    "absolute_gap": 0.23490477358952547,
+                    "count": 6,
+                    "lower": 0.2,
+                    "mean_probability": 0.23490477358952547,
+                    "observed_rate": 0.0,
+                    "upper": 0.3
+                  },
+                  {
+                    "absolute_gap": 0.2033213431715803,
+                    "count": 30,
+                    "lower": 0.3,
+                    "mean_probability": 0.36334532349508636,
+                    "observed_rate": 0.5666666666666667,
+                    "upper": 0.4
+                  },
+                  {
+                    "absolute_gap": 0.04854546474136612,
+                    "count": 48,
+                    "lower": 0.4,
+                    "mean_probability": 0.4514545352586339,
+                    "observed_rate": 0.5,
+                    "upper": 0.5
+                  },
+                  {
+                    "absolute_gap": 0.04453745065737491,
+                    "count": 46,
+                    "lower": 0.5,
+                    "mean_probability": 0.5424190710817556,
+                    "observed_rate": 0.5869565217391305,
+                    "upper": 0.6
+                  },
+                  {
+                    "absolute_gap": 0.10859697288206782,
+                    "count": 37,
+                    "lower": 0.6,
+                    "mean_probability": 0.6491375134226084,
+                    "observed_rate": 0.5405405405405406,
+                    "upper": 0.7
+                  },
+                  {
+                    "absolute_gap": 0.0021739329566096144,
+                    "count": 19,
+                    "lower": 0.7,
+                    "mean_probability": 0.7390160382197675,
+                    "observed_rate": 0.7368421052631579,
+                    "upper": 0.8
+                  },
+                  {
+                    "absolute_gap": 0.06131579180674429,
+                    "count": 9,
+                    "lower": 0.8,
+                    "mean_probability": 0.8390935695845221,
+                    "observed_rate": 0.7777777777777778,
+                    "upper": 0.9
+                  }
+                ]
+              },
+              "log_loss": 0.668765615069987,
+              "sample_size": 195
+            },
+            "delta_brier_challenger_minus_poisson": 0.0012539378434582027,
+            "delta_log_loss_challenger_minus_poisson": 0.0013859243177966052,
+            "end_kickoff_utc": "2026-10-26T19:00:00+00:00",
+            "poisson": {
+              "brier_score": 0.23772955149874958,
+              "calibration": {
+                "ece": 0.07389055497435902,
+                "method": "EQUAL_WIDTH_10_BINS",
+                "nonempty_bins": [
+                  {
+                    "absolute_gap": 0.28045055500000005,
+                    "count": 2,
+                    "lower": 0.2,
+                    "mean_probability": 0.28045055500000005,
+                    "observed_rate": 0.0,
+                    "upper": 0.3
+                  },
+                  {
+                    "absolute_gap": 0.1967876333333333,
+                    "count": 6,
+                    "lower": 0.3,
+                    "mean_probability": 0.36345429999999995,
+                    "observed_rate": 0.16666666666666666,
+                    "upper": 0.4
+                  },
+                  {
+                    "absolute_gap": 0.016818656190476122,
+                    "count": 21,
+                    "lower": 0.4,
+                    "mean_probability": 0.45937182000000004,
+                    "observed_rate": 0.47619047619047616,
+                    "upper": 0.5
+                  },
+                  {
+                    "absolute_gap": 0.07503900208333342,
+                    "count": 48,
+                    "lower": 0.5,
+                    "mean_probability": 0.5542056687500001,
+                    "observed_rate": 0.4791666666666667,
+                    "upper": 0.6
+                  },
+                  {
+                    "absolute_gap": 0.08318104719298258,
+                    "count": 57,
+                    "lower": 0.6,
+                    "mean_probability": 0.6445845559649124,
+                    "observed_rate": 0.5614035087719298,
+                    "upper": 0.7
+                  },
+                  {
+                    "absolute_gap": 0.09133399761904759,
+                    "count": 42,
+                    "lower": 0.7,
+                    "mean_probability": 0.7341911404761905,
+                    "observed_rate": 0.6428571428571429,
+                    "upper": 0.8
+                  },
+                  {
+                    "absolute_gap": 0.007085254736841962,
+                    "count": 19,
+                    "lower": 0.8,
+                    "mean_probability": 0.8350200084210527,
+                    "observed_rate": 0.8421052631578947,
+                    "upper": 0.9
+                  }
+                ]
+              },
+              "log_loss": 0.6673796907521904,
+              "sample_size": 195
+            },
+            "proper_scoring_gate_passed": false,
+            "segment": 2,
+            "start_kickoff_utc": "2026-10-25T14:00:00+00:00"
+          },
+          {
+            "beats_poisson_brier": true,
+            "beats_poisson_log_loss": false,
+            "challenger": {
+              "brier_score": 0.25058667709781,
+              "calibration": {
+                "ece": 0.08903110119421608,
+                "method": "EQUAL_WIDTH_10_BINS",
+                "nonempty_bins": [
+                  {
+                    "absolute_gap": 0.23233291463157624,
+                    "count": 8,
+                    "lower": 0.2,
+                    "mean_probability": 0.26766708536842376,
+                    "observed_rate": 0.5,
+                    "upper": 0.3
+                  },
+                  {
+                    "absolute_gap": 0.09555435766434955,
+                    "count": 29,
+                    "lower": 0.3,
+                    "mean_probability": 0.35272150440461597,
+                    "observed_rate": 0.4482758620689655,
+                    "upper": 0.4
+                  },
+                  {
+                    "absolute_gap": 0.10476286224030873,
+                    "count": 39,
+                    "lower": 0.4,
+                    "mean_probability": 0.4637372212146677,
+                    "observed_rate": 0.358974358974359,
+                    "upper": 0.5
+                  },
+                  {
+                    "absolute_gap": 0.0484424763132183,
+                    "count": 56,
+                    "lower": 0.5,
+                    "mean_probability": 0.5484424763132183,
+                    "observed_rate": 0.5,
+                    "upper": 0.6
+                  },
+                  {
+                    "absolute_gap": 0.08361138378650568,
+                    "count": 32,
+                    "lower": 0.6,
+                    "mean_probability": 0.6461113837865057,
+                    "observed_rate": 0.5625,
+                    "upper": 0.7
+                  },
+                  {
+                    "absolute_gap": 0.06582273028734897,
+                    "count": 21,
+                    "lower": 0.7,
+                    "mean_probability": 0.7324893969540156,
+                    "observed_rate": 0.6666666666666666,
+                    "upper": 0.8
+                  },
+                  {
+                    "absolute_gap": 0.14605717367410442,
+                    "count": 7,
+                    "lower": 0.8,
+                    "mean_probability": 0.8603428879598187,
+                    "observed_rate": 0.7142857142857143,
+                    "upper": 0.9
+                  },
+                  {
+                    "absolute_gap": 0.28418430323995947,
+                    "count": 3,
+                    "lower": 0.9,
+                    "mean_probability": 0.9508509699066261,
+                    "observed_rate": 0.6666666666666666,
+                    "upper": 1.0
+                  }
+                ]
+              },
+              "log_loss": 0.7025265579109671,
+              "sample_size": 195
+            },
+            "delta_brier_challenger_minus_poisson": -0.0005737645392805413,
+            "delta_log_loss_challenger_minus_poisson": 0.007915560669422117,
+            "end_kickoff_utc": "2026-10-28T02:00:00+00:00",
+            "poisson": {
+              "brier_score": 0.25116044163709056,
+              "calibration": {
+                "ece": 0.12221459246153847,
+                "method": "EQUAL_WIDTH_10_BINS",
+                "nonempty_bins": [
+                  {
+                    "absolute_gap": 0.28982388000000003,
+                    "count": 1,
+                    "lower": 0.2,
+                    "mean_probability": 0.28982388000000003,
+                    "observed_rate": 0.0,
+                    "upper": 0.3
+                  },
+                  {
+                    "absolute_gap": 0.16435409454545452,
+                    "count": 11,
+                    "lower": 0.3,
+                    "mean_probability": 0.3811004509090909,
+                    "observed_rate": 0.5454545454545454,
+                    "upper": 0.4
+                  },
+                  {
+                    "absolute_gap": 0.011910609259259297,
+                    "count": 27,
+                    "lower": 0.4,
+                    "mean_probability": 0.4563550537037037,
+                    "observed_rate": 0.4444444444444444,
+                    "upper": 0.5
+                  },
+                  {
+                    "absolute_gap": 0.18276201999999986,
+                    "count": 48,
+                    "lower": 0.5,
+                    "mean_probability": 0.5577620199999999,
+                    "observed_rate": 0.375,
+                    "upper": 0.6
+                  },
+                  {
+                    "absolute_gap": 0.13677147865671657,
+                    "count": 67,
+                    "lower": 0.6,
+                    "mean_probability": 0.6442341652238808,
+                    "observed_rate": 0.5074626865671642,
+                    "upper": 0.7
+                  },
+                  {
+                    "absolute_gap": 0.09847180352941176,
+                    "count": 34,
+                    "lower": 0.7,
+                    "mean_probability": 0.7455306270588236,
+                    "observed_rate": 0.6470588235294118,
+                    "upper": 0.8
+                  },
+                  {
+                    "absolute_gap": 0.01831897285714279,
+                    "count": 7,
+                    "lower": 0.8,
+                    "mean_probability": 0.8388238842857143,
+                    "observed_rate": 0.8571428571428571,
+                    "upper": 0.9
+                  }
+                ]
+              },
+              "log_loss": 0.694610997241545,
+              "sample_size": 195
+            },
+            "proper_scoring_gate_passed": false,
+            "segment": 3,
+            "start_kickoff_utc": "2026-10-26T19:00:00+00:00"
+          }
+        ]
+      },
+      "verdict": "HOLD",
+      "verdict_reason": "AWAITING_600_EXACT_SETTLED_OBSERVATIONS"
+    },
+    {
+      "action_board_count": 727,
+      "automatic_promotion": false,
+      "competition_concentration_diagnostic": {
+        "competition_count": 109,
+        "top_competitions": [
+          {
+            "competition": "Premier League",
+            "count": 26,
+            "share": 0.044444444444444446
+          },
+          {
+            "competition": "Major League Soccer",
+            "count": 12,
+            "share": 0.020512820512820513
+          },
+          {
+            "competition": "Primera Nacional",
+            "count": 12,
+            "share": 0.020512820512820513
+          },
+          {
+            "competition": "U19 Bundesliga",
+            "count": 12,
+            "share": 0.020512820512820513
+          },
+          {
+            "competition": "USL Championship",
+            "count": 12,
+            "share": 0.020512820512820513
+          },
+          {
+            "competition": "National League - South",
+            "count": 11,
+            "share": 0.018803418803418803
+          },
+          {
+            "competition": "National League - North",
+            "count": 10,
+            "share": 0.017094017094017096
+          },
+          {
+            "competition": "Non League Premier - Southern Central",
+            "count": 10,
+            "share": 0.017094017094017096
+          },
+          {
+            "competition": "Primera A",
+            "count": 10,
+            "share": 0.017094017094017096
+          },
+          {
+            "competition": "Serie A",
+            "count": 10,
+            "share": 0.017094017094017096
+          }
+        ]
+      },
+      "display_name": "Doble oportunidad 12",
+      "exact_settled_count": 585,
+      "generic_1x2_final_fixture_intersection_diagnostic_only": null,
+      "lane_specific_scoring_supported": true,
+      "market_lane": "DOUBLE_CHANCE_12",
+      "metrics": {
+        "beats_poisson_brier": false,
+        "beats_poisson_log_loss": false,
+        "challenger": {
+          "brier_score": 0.1912824685504296,
+          "calibration": {
+            "ece": 0.06566517379024985,
+            "method": "EQUAL_WIDTH_10_BINS",
+            "nonempty_bins": [
+              {
+                "absolute_gap": 0.06309996849350896,
+                "count": 38,
+                "lower": 0.6,
+                "mean_probability": 0.6737421367696489,
+                "observed_rate": 0.7368421052631579,
+                "upper": 0.7
+              },
+              {
+                "absolute_gap": 0.010721882896588264,
+                "count": 204,
+                "lower": 0.7,
+                "mean_probability": 0.7607218828965883,
+                "observed_rate": 0.75,
+                "upper": 0.8
+              },
+              {
+                "absolute_gap": 0.10705534828832863,
+                "count": 307,
+                "lower": 0.8,
+                "mean_probability": 0.8432117000798596,
+                "observed_rate": 0.7361563517915309,
+                "upper": 0.9
+              },
+              {
+                "absolute_gap": 0.026751995253386784,
+                "count": 36,
+                "lower": 0.9,
+                "mean_probability": 0.9156408841422756,
+                "observed_rate": 0.8888888888888888,
+                "upper": 1.0
+              }
+            ]
+          },
+          "log_loss": 0.574339408725364,
+          "sample_size": 585
+        },
+        "delta_brier_challenger_minus_poisson": 0.00476229067426831,
+        "delta_log_loss_challenger_minus_poisson": 0.014885365159739483,
+        "poisson": {
+          "brier_score": 0.1865201778761613,
+          "calibration": {
+            "ece": 0.018726878068375655,
+            "method": "EQUAL_WIDTH_10_BINS",
+            "nonempty_bins": [
+              {
+                "absolute_gap": 0.03988103627906947,
+                "count": 43,
+                "lower": 0.6,
+                "mean_probability": 0.68104919627907,
+                "observed_rate": 0.7209302325581395,
+                "upper": 0.7
+              },
+              {
+                "absolute_gap": 0.013675465793813957,
+                "count": 485,
+                "lower": 0.7,
+                "mean_probability": 0.7538816513608243,
+                "observed_rate": 0.7402061855670103,
+                "upper": 0.8
+              },
+              {
+                "absolute_gap": 0.04574979298245618,
+                "count": 57,
+                "lower": 0.8,
+                "mean_probability": 0.8138993298245614,
+                "observed_rate": 0.8596491228070176,
+                "upper": 0.9
+              }
+            ]
+          },
+          "log_loss": 0.5594540435656246,
+          "sample_size": 585
+        },
+        "proper_scoring_gate_passed": false
+      },
+      "missing_or_not_yet_final_fixture_count": 142,
+      "prospective_freeze_count": 727,
+      "remaining_settled_to_600": 15,
+      "temporal_stability_diagnostic": {
+        "method": "CHRONOLOGICAL_THIRDS",
+        "segments": [
+          {
+            "beats_poisson_brier": false,
+            "beats_poisson_log_loss": false,
+            "challenger": {
+              "brier_score": 0.2380645718167832,
+              "calibration": {
+                "ece": 0.14781230886829122,
+                "method": "EQUAL_WIDTH_10_BINS",
+                "nonempty_bins": [
+                  {
+                    "absolute_gap": 0.3186432576372443,
+                    "count": 6,
+                    "lower": 0.6,
+                    "mean_probability": 0.6813567423627557,
+                    "observed_rate": 1.0,
+                    "upper": 0.7
+                  },
+                  {
+                    "absolute_gap": 0.07821681449592777,
+                    "count": 80,
+                    "lower": 0.7,
+                    "mean_probability": 0.7657168144959278,
+                    "observed_rate": 0.6875,
+                    "upper": 0.8
+                  },
+                  {
+                    "absolute_gap": 0.2043991229710015,
+                    "count": 100,
+                    "lower": 0.8,
+                    "mean_probability": 0.8343991229710015,
+                    "observed_rate": 0.63,
+                    "upper": 0.9
+                  },
+                  {
+                    "absolute_gap": 0.023809247413217438,
+                    "count": 9,
+                    "lower": 0.9,
+                    "mean_probability": 0.9126981363021063,
+                    "observed_rate": 0.8888888888888888,
+                    "upper": 1.0
+                  }
+                ]
+              },
+              "log_loss": 0.685424044592252,
+              "sample_size": 195
+            },
+            "delta_brier_challenger_minus_poisson": 0.012649697236826962,
+            "delta_log_loss_challenger_minus_poisson": 0.03931564186320857,
+            "end_kickoff_utc": "2026-10-25T14:00:00+00:00",
+            "poisson": {
+              "brier_score": 0.22541487457995624,
+              "calibration": {
+                "ece": 0.09879427594871809,
+                "method": "EQUAL_WIDTH_10_BINS",
+                "nonempty_bins": [
+                  {
+                    "absolute_gap": 0.16343117769230764,
+                    "count": 13,
+                    "lower": 0.6,
+                    "mean_probability": 0.6827226684615385,
+                    "observed_rate": 0.8461538461538461,
+                    "upper": 0.7
+                  },
+                  {
+                    "absolute_gap": 0.10320054066666684,
+                    "count": 165,
+                    "lower": 0.7,
+                    "mean_probability": 0.7516853891515153,
+                    "observed_rate": 0.6484848484848484,
+                    "upper": 0.8
+                  },
+                  {
+                    "absolute_gap": 0.006599370000000104,
+                    "count": 17,
+                    "lower": 0.8,
+                    "mean_probability": 0.8169300417647057,
+                    "observed_rate": 0.8235294117647058,
+                    "upper": 0.9
+                  }
+                ]
+              },
+              "log_loss": 0.6461084027290435,
+              "sample_size": 195
+            },
+            "proper_scoring_gate_passed": false,
+            "segment": 1,
+            "start_kickoff_utc": "2026-10-24T20:30:00+00:00"
+          },
+          {
+            "beats_poisson_brier": false,
+            "beats_poisson_log_loss": false,
+            "challenger": {
+              "brier_score": 0.18166232426398696,
+              "calibration": {
+                "ece": 0.04161603928157155,
+                "method": "EQUAL_WIDTH_10_BINS",
+                "nonempty_bins": [
+                  {
+                    "absolute_gap": 0.020482145022431397,
+                    "count": 20,
+                    "lower": 0.6,
+                    "mean_probability": 0.6704821450224314,
+                    "observed_rate": 0.65,
+                    "upper": 0.7
+                  },
+                  {
+                    "absolute_gap": 0.007053453074907012,
+                    "count": 67,
+                    "lower": 0.7,
+                    "mean_probability": 0.753322109791325,
+                    "observed_rate": 0.746268656716418,
+                    "upper": 0.8
+                  },
+                  {
+                    "absolute_gap": 0.07518156567506384,
+                    "count": 96,
+                    "lower": 0.8,
+                    "mean_probability": 0.8460148990083972,
+                    "observed_rate": 0.7708333333333334,
+                    "upper": 0.9
+                  },
+                  {
+                    "absolute_gap": 0.001289424886077195,
+                    "count": 12,
+                    "lower": 0.9,
+                    "mean_probability": 0.9179560915527438,
+                    "observed_rate": 0.9166666666666666,
+                    "upper": 1.0
+                  }
+                ]
+              },
+              "log_loss": 0.5490162025757187,
+              "sample_size": 195
+            },
+            "delta_brier_challenger_minus_poisson": 0.002145802433894839,
+            "delta_log_loss_challenger_minus_poisson": 0.006466034959847433,
+            "end_kickoff_utc": "2026-10-26T19:00:00+00:00",
+            "poisson": {
+              "brier_score": 0.17951652183009212,
+              "calibration": {
+                "ece": 0.027949806102563913,
+                "method": "EQUAL_WIDTH_10_BINS",
+                "nonempty_bins": [
+                  {
+                    "absolute_gap": 0.09059692818181819,
+                    "count": 22,
+                    "lower": 0.6,
+                    "mean_probability": 0.6815060190909091,
+                    "observed_rate": 0.5909090909090909,
+                    "upper": 0.7
+                  },
+                  {
+                    "absolute_gap": 0.0015807933999997248,
+                    "count": 150,
+                    "lower": 0.7,
+                    "mean_probability": 0.7517525399333336,
+                    "observed_rate": 0.7533333333333333,
+                    "upper": 0.8
+                  },
+                  {
+                    "absolute_gap": 0.13999829391304364,
+                    "count": 23,
+                    "lower": 0.8,
+                    "mean_probability": 0.8165234452173912,
+                    "observed_rate": 0.9565217391304348,
+                    "upper": 0.9
+                  }
+                ]
+              },
+              "log_loss": 0.5425501676158713,
+              "sample_size": 195
+            },
+            "proper_scoring_gate_passed": false,
+            "segment": 2,
+            "start_kickoff_utc": "2026-10-25T14:00:00+00:00"
+          },
+          {
+            "beats_poisson_brier": true,
+            "beats_poisson_log_loss": true,
+            "challenger": {
+              "brier_score": 0.15412050957051895,
+              "calibration": {
+                "ece": 0.05836004814640092,
+                "method": "EQUAL_WIDTH_10_BINS",
+                "nonempty_bins": [
+                  {
+                    "absolute_gap": 0.07463184644820886,
+                    "count": 12,
+                    "lower": 0.6,
+                    "mean_probability": 0.6753681535517911,
+                    "observed_rate": 0.75,
+                    "upper": 0.7
+                  },
+                  {
+                    "absolute_gap": 0.07969583166296401,
+                    "count": 57,
+                    "lower": 0.7,
+                    "mean_probability": 0.7624094314949307,
+                    "observed_rate": 0.8421052631578947,
+                    "upper": 0.8
+                  },
+                  {
+                    "absolute_gap": 0.04692476867216844,
+                    "count": 111,
+                    "lower": 0.8,
+                    "mean_probability": 0.8487265704739703,
+                    "observed_rate": 0.8018018018018018,
+                    "upper": 0.9
+                  },
+                  {
+                    "absolute_gap": 0.04888770025133504,
+                    "count": 15,
+                    "lower": 0.9,
+                    "mean_probability": 0.9155543669180017,
+                    "observed_rate": 0.8666666666666667,
+                    "upper": 1.0
+                  }
+                ]
+              },
+              "log_loss": 0.4885779790081195,
+              "sample_size": 195
+            },
+            "delta_brier_challenger_minus_poisson": -0.0005086276479164265,
+            "delta_log_loss_challenger_minus_poisson": -0.0011255813438392215,
+            "end_kickoff_utc": "2026-10-28T02:00:00+00:00",
+            "poisson": {
+              "brier_score": 0.15462913721843538,
+              "calibration": {
+                "ece": 0.06392919389743584,
+                "method": "EQUAL_WIDTH_10_BINS",
+                "nonempty_bins": [
+                  {
+                    "absolute_gap": 0.19792645875000003,
+                    "count": 8,
+                    "lower": 0.6,
+                    "mean_probability": 0.67707354125,
+                    "observed_rate": 0.875,
+                    "upper": 0.7
+                  },
+                  {
+                    "absolute_gap": 0.05975511347058815,
+                    "count": 170,
+                    "lower": 0.7,
+                    "mean_probability": 0.7578919453529412,
+                    "observed_rate": 0.8176470588235294,
+                    "upper": 0.8
+                  },
+                  {
+                    "absolute_gap": 0.04261246176470601,
+                    "count": 17,
+                    "lower": 0.8,
+                    "mean_probability": 0.8073183441176471,
+                    "observed_rate": 0.7647058823529411,
+                    "upper": 0.9
+                  }
+                ]
+              },
+              "log_loss": 0.4897035603519587,
+              "sample_size": 195
+            },
+            "proper_scoring_gate_passed": true,
+            "segment": 3,
+            "start_kickoff_utc": "2026-10-26T19:00:00+00:00"
+          }
+        ]
+      },
+      "verdict": "HOLD",
+      "verdict_reason": "AWAITING_600_EXACT_SETTLED_OBSERVATIONS"
+    },
+    {
+      "action_board_count": 629,
+      "automatic_promotion": false,
+      "competition_concentration_diagnostic": {
+        "competition_count": 96,
+        "top_competitions": [
+          {
+            "competition": "Premier League",
+            "count": 25,
+            "share": 0.0
+          },
+          {
+            "competition": "Primera Nacional",
+            "count": 12,
+            "share": 0.0
+          },
+          {
+            "competition": "U19 Bundesliga",
+            "count": 12,
+            "share": 0.0
+          },
+          {
+            "competition": "Major League Soccer",
+            "count": 11,
+            "share": 0.0
+          },
+          {
+            "competition": "National League - South",
+            "count": 11,
+            "share": 0.0
+          },
+          {
+            "competition": "National League - North",
+            "count": 10,
+            "share": 0.0
+          },
+          {
+            "competition": "Non League Premier - Southern Central",
+            "count": 10,
+            "share": 0.0
+          },
+          {
+            "competition": "Primera A",
+            "count": 10,
+            "share": 0.0
+          },
+          {
+            "competition": "Serie A",
+            "count": 10,
+            "share": 0.0
+          },
+          {
+            "competition": "Serie B",
+            "count": 10,
+            "share": 0.0
+          }
+        ]
+      },
+      "display_name": "Goles totales equipo local",
+      "exact_settled_count": 0,
+      "generic_1x2_final_fixture_intersection_diagnostic_only": 521,
+      "lane_specific_scoring_supported": false,
+      "market_lane": "TEAM_TOTAL_GOALS_HOME",
+      "metrics": null,
+      "missing_or_not_yet_final_fixture_count": 108,
+      "prospective_freeze_count": 629,
+      "remaining_settled_to_600": 600,
+      "temporal_stability_diagnostic": {
+        "method": "CHRONOLOGICAL_THIRDS",
+        "segments": []
+      },
+      "verdict": "HOLD",
+      "verdict_reason": "LANE_SPECIFIC_OUTCOME_AND_SCORING_ENGINE_NOT_CERTIFIED"
+    },
+    {
+      "action_board_count": 629,
+      "automatic_promotion": false,
+      "competition_concentration_diagnostic": {
+        "competition_count": 96,
+        "top_competitions": [
+          {
+            "competition": "Premier League",
+            "count": 25,
+            "share": 0.0
+          },
+          {
+            "competition": "Primera Nacional",
+            "count": 12,
+            "share": 0.0
+          },
+          {
+            "competition": "U19 Bundesliga",
+            "count": 12,
+            "share": 0.0
+          },
+          {
+            "competition": "Major League Soccer",
+            "count": 11,
+            "share": 0.0
+          },
+          {
+            "competition": "National League - South",
+            "count": 11,
+            "share": 0.0
+          },
+          {
+            "competition": "National League - North",
+            "count": 10,
+            "share": 0.0
+          },
+          {
+            "competition": "Non League Premier - Southern Central",
+            "count": 10,
+            "share": 0.0
+          },
+          {
+            "competition": "Primera A",
+            "count": 10,
+            "share": 0.0
+          },
+          {
+            "competition": "Serie A",
+            "count": 10,
+            "share": 0.0
+          },
+          {
+            "competition": "Serie B",
+            "count": 10,
+            "share": 0.0
+          }
+        ]
+      },
+      "display_name": "Goles totales equipo visitante",
+      "exact_settled_count": 0,
+      "generic_1x2_final_fixture_intersection_diagnostic_only": 521,
+      "lane_specific_scoring_supported": false,
+      "market_lane": "TEAM_TOTAL_GOALS_AWAY",
+      "metrics": null,
+      "missing_or_not_yet_final_fixture_count": 108,
+      "prospective_freeze_count": 629,
+      "remaining_settled_to_600": 600,
+      "temporal_stability_diagnostic": {
+        "method": "CHRONOLOGICAL_THIRDS",
+        "segments": []
+      },
+      "verdict": "HOLD",
+      "verdict_reason": "LANE_SPECIFIC_OUTCOME_AND_SCORING_ENGINE_NOT_CERTIFIED"
+    },
+    {
+      "action_board_count": 634,
+      "automatic_promotion": false,
+      "competition_concentration_diagnostic": {
+        "competition_count": 96,
+        "top_competitions": [
+          {
+            "competition": "Premier League",
+            "count": 25,
+            "share": 0.0
+          },
+          {
+            "competition": "Major League Soccer",
+            "count": 12,
+            "share": 0.0
+          },
+          {
+            "competition": "Primera Nacional",
+            "count": 12,
+            "share": 0.0
+          },
+          {
+            "competition": "U19 Bundesliga",
+            "count": 12,
+            "share": 0.0
+          },
+          {
+            "competition": "USL Championship",
+            "count": 12,
+            "share": 0.0
+          },
+          {
+            "competition": "National League - South",
+            "count": 11,
+            "share": 0.0
+          },
+          {
+            "competition": "National League - North",
+            "count": 10,
+            "share": 0.0
+          },
+          {
+            "competition": "Non League Premier - Southern Central",
+            "count": 10,
+            "share": 0.0
+          },
+          {
+            "competition": "Primera A",
+            "count": 10,
+            "share": 0.0
+          },
+          {
+            "competition": "Serie A",
+            "count": 10,
+            "share": 0.0
+          }
+        ]
+      },
+      "display_name": "Goles primer tiempo Over/Under",
+      "exact_settled_count": 0,
+      "generic_1x2_final_fixture_intersection_diagnostic_only": 528,
+      "lane_specific_scoring_supported": false,
+      "market_lane": "FIRST_HALF_TOTAL_GOALS_OVER_UNDER",
+      "metrics": null,
+      "missing_or_not_yet_final_fixture_count": 106,
+      "prospective_freeze_count": 634,
+      "remaining_settled_to_600": 600,
+      "temporal_stability_diagnostic": {
+        "method": "CHRONOLOGICAL_THIRDS",
+        "segments": []
+      },
+      "verdict": "HOLD",
+      "verdict_reason": "LANE_SPECIFIC_OUTCOME_AND_SCORING_ENGINE_NOT_CERTIFIED"
+    },
+    {
+      "action_board_count": 634,
+      "automatic_promotion": false,
+      "competition_concentration_diagnostic": {
+        "competition_count": 96,
+        "top_competitions": [
+          {
+            "competition": "Premier League",
+            "count": 25,
+            "share": 0.0
+          },
+          {
+            "competition": "Major League Soccer",
+            "count": 12,
+            "share": 0.0
+          },
+          {
+            "competition": "Primera Nacional",
+            "count": 12,
+            "share": 0.0
+          },
+          {
+            "competition": "U19 Bundesliga",
+            "count": 12,
+            "share": 0.0
+          },
+          {
+            "competition": "USL Championship",
+            "count": 12,
+            "share": 0.0
+          },
+          {
+            "competition": "National League - South",
+            "count": 11,
+            "share": 0.0
+          },
+          {
+            "competition": "National League - North",
+            "count": 10,
+            "share": 0.0
+          },
+          {
+            "competition": "Non League Premier - Southern Central",
+            "count": 10,
+            "share": 0.0
+          },
+          {
+            "competition": "Primera A",
+            "count": 10,
+            "share": 0.0
+          },
+          {
+            "competition": "Serie A",
+            "count": 10,
+            "share": 0.0
+          }
+        ]
+      },
+      "display_name": "Goles segundo tiempo Over/Under",
+      "exact_settled_count": 0,
+      "generic_1x2_final_fixture_intersection_diagnostic_only": 528,
+      "lane_specific_scoring_supported": false,
+      "market_lane": "SECOND_HALF_TOTAL_GOALS_OVER_UNDER",
+      "metrics": null,
+      "missing_or_not_yet_final_fixture_count": 106,
+      "prospective_freeze_count": 634,
+      "remaining_settled_to_600": 600,
+      "temporal_stability_diagnostic": {
+        "method": "CHRONOLOGICAL_THIRDS",
+        "segments": []
+      },
+      "verdict": "HOLD",
+      "verdict_reason": "LANE_SPECIFIC_OUTCOME_AND_SCORING_ENGINE_NOT_CERTIFIED"
+    },
+    {
+      "action_board_count": 634,
+      "automatic_promotion": false,
+      "competition_concentration_diagnostic": {
+        "competition_count": 96,
+        "top_competitions": [
+          {
+            "competition": "Premier League",
+            "count": 25,
+            "share": 0.0
+          },
+          {
+            "competition": "Major League Soccer",
+            "count": 12,
+            "share": 0.0
+          },
+          {
+            "competition": "Primera Nacional",
+            "count": 12,
+            "share": 0.0
+          },
+          {
+            "competition": "U19 Bundesliga",
+            "count": 12,
+            "share": 0.0
+          },
+          {
+            "competition": "USL Championship",
+            "count": 12,
+            "share": 0.0
+          },
+          {
+            "competition": "National League - South",
+            "count": 11,
+            "share": 0.0
+          },
+          {
+            "competition": "National League - North",
+            "count": 10,
+            "share": 0.0
+          },
+          {
+            "competition": "Non League Premier - Southern Central",
+            "count": 10,
+            "share": 0.0
+          },
+          {
+            "competition": "Primera A",
+            "count": 10,
+            "share": 0.0
+          },
+          {
+            "competition": "Serie A",
+            "count": 10,
+            "share": 0.0
+          }
+        ]
+      },
+      "display_name": "Goles equipo local primer tiempo",
+      "exact_settled_count": 0,
+      "generic_1x2_final_fixture_intersection_diagnostic_only": 528,
+      "lane_specific_scoring_supported": false,
+      "market_lane": "FIRST_HALF_TEAM_TOTAL_GOALS_HOME",
+      "metrics": null,
+      "missing_or_not_yet_final_fixture_count": 106,
+      "prospective_freeze_count": 634,
+      "remaining_settled_to_600": 600,
+      "temporal_stability_diagnostic": {
+        "method": "CHRONOLOGICAL_THIRDS",
+        "segments": []
+      },
+      "verdict": "HOLD",
+      "verdict_reason": "LANE_SPECIFIC_OUTCOME_AND_SCORING_ENGINE_NOT_CERTIFIED"
+    },
+    {
+      "action_board_count": 634,
+      "automatic_promotion": false,
+      "competition_concentration_diagnostic": {
+        "competition_count": 96,
+        "top_competitions": [
+          {
+            "competition": "Premier League",
+            "count": 25,
+            "share": 0.0
+          },
+          {
+            "competition": "Major League Soccer",
+            "count": 12,
+            "share": 0.0
+          },
+          {
+            "competition": "Primera Nacional",
+            "count": 12,
+            "share": 0.0
+          },
+          {
+            "competition": "U19 Bundesliga",
+            "count": 12,
+            "share": 0.0
+          },
+          {
+            "competition": "USL Championship",
+            "count": 12,
+            "share": 0.0
+          },
+          {
+            "competition": "National League - South",
+            "count": 11,
+            "share": 0.0
+          },
+          {
+            "competition": "National League - North",
+            "count": 10,
+            "share": 0.0
+          },
+          {
+            "competition": "Non League Premier - Southern Central",
+            "count": 10,
+            "share": 0.0
+          },
+          {
+            "competition": "Primera A",
+            "count": 10,
+            "share": 0.0
+          },
+          {
+            "competition": "Serie A",
+            "count": 10,
+            "share": 0.0
+          }
+        ]
+      },
+      "display_name": "Goles equipo visitante primer tiempo",
+      "exact_settled_count": 0,
+      "generic_1x2_final_fixture_intersection_diagnostic_only": 528,
+      "lane_specific_scoring_supported": false,
+      "market_lane": "FIRST_HALF_TEAM_TOTAL_GOALS_AWAY",
+      "metrics": null,
+      "missing_or_not_yet_final_fixture_count": 106,
+      "prospective_freeze_count": 634,
+      "remaining_settled_to_600": 600,
+      "temporal_stability_diagnostic": {
+        "method": "CHRONOLOGICAL_THIRDS",
+        "segments": []
+      },
+      "verdict": "HOLD",
+      "verdict_reason": "LANE_SPECIFIC_OUTCOME_AND_SCORING_ENGINE_NOT_CERTIFIED"
+    },
+    {
+      "action_board_count": 634,
+      "automatic_promotion": false,
+      "competition_concentration_diagnostic": {
+        "competition_count": 96,
+        "top_competitions": [
+          {
+            "competition": "Premier League",
+            "count": 25,
+            "share": 0.0
+          },
+          {
+            "competition": "Major League Soccer",
+            "count": 12,
+            "share": 0.0
+          },
+          {
+            "competition": "Primera Nacional",
+            "count": 12,
+            "share": 0.0
+          },
+          {
+            "competition": "U19 Bundesliga",
+            "count": 12,
+            "share": 0.0
+          },
+          {
+            "competition": "USL Championship",
+            "count": 12,
+            "share": 0.0
+          },
+          {
+            "competition": "National League - South",
+            "count": 11,
+            "share": 0.0
+          },
+          {
+            "competition": "National League - North",
+            "count": 10,
+            "share": 0.0
+          },
+          {
+            "competition": "Non League Premier - Southern Central",
+            "count": 10,
+            "share": 0.0
+          },
+          {
+            "competition": "Primera A",
+            "count": 10,
+            "share": 0.0
+          },
+          {
+            "competition": "Serie A",
+            "count": 10,
+            "share": 0.0
+          }
+        ]
+      },
+      "display_name": "Goles equipo local segundo tiempo",
+      "exact_settled_count": 0,
+      "generic_1x2_final_fixture_intersection_diagnostic_only": 528,
+      "lane_specific_scoring_supported": false,
+      "market_lane": "SECOND_HALF_TEAM_TOTAL_GOALS_HOME",
+      "metrics": null,
+      "missing_or_not_yet_final_fixture_count": 106,
+      "prospective_freeze_count": 634,
+      "remaining_settled_to_600": 600,
+      "temporal_stability_diagnostic": {
+        "method": "CHRONOLOGICAL_THIRDS",
+        "segments": []
+      },
+      "verdict": "HOLD",
+      "verdict_reason": "LANE_SPECIFIC_OUTCOME_AND_SCORING_ENGINE_NOT_CERTIFIED"
+    },
+    {
+      "action_board_count": 634,
+      "automatic_promotion": false,
+      "competition_concentration_diagnostic": {
+        "competition_count": 96,
+        "top_competitions": [
+          {
+            "competition": "Premier League",
+            "count": 25,
+            "share": 0.0
+          },
+          {
+            "competition": "Major League Soccer",
+            "count": 12,
+            "share": 0.0
+          },
+          {
+            "competition": "Primera Nacional",
+            "count": 12,
+            "share": 0.0
+          },
+          {
+            "competition": "U19 Bundesliga",
+            "count": 12,
+            "share": 0.0
+          },
+          {
+            "competition": "USL Championship",
+            "count": 12,
+            "share": 0.0
+          },
+          {
+            "competition": "National League - South",
+            "count": 11,
+            "share": 0.0
+          },
+          {
+            "competition": "National League - North",
+            "count": 10,
+            "share": 0.0
+          },
+          {
+            "competition": "Non League Premier - Southern Central",
+            "count": 10,
+            "share": 0.0
+          },
+          {
+            "competition": "Primera A",
+            "count": 10,
+            "share": 0.0
+          },
+          {
+            "competition": "Serie A",
+            "count": 10,
+            "share": 0.0
+          }
+        ]
+      },
+      "display_name": "Goles equipo visitante segundo tiempo",
+      "exact_settled_count": 0,
+      "generic_1x2_final_fixture_intersection_diagnostic_only": 528,
+      "lane_specific_scoring_supported": false,
+      "market_lane": "SECOND_HALF_TEAM_TOTAL_GOALS_AWAY",
+      "metrics": null,
+      "missing_or_not_yet_final_fixture_count": 106,
+      "prospective_freeze_count": 634,
+      "remaining_settled_to_600": 600,
+      "temporal_stability_diagnostic": {
+        "method": "CHRONOLOGICAL_THIRDS",
+        "segments": []
+      },
+      "verdict": "HOLD",
+      "verdict_reason": "LANE_SPECIFIC_OUTCOME_AND_SCORING_ENGINE_NOT_CERTIFIED"
+    }
+  ],
+  "protections": {
+    "automatic_wagering": false,
+    "exact_fixture_intersection_between_42_lane_ledger_and_final_calibration_ledger": true,
+    "final_ft_only": true,
+    "historical_backfill": false,
+    "missing_not_zero": true,
+    "odds_used_to_generate_probability": false,
+    "parameter_tuning_allowed": false,
+    "post_start_backfill": false,
+    "real_money": "BLOCKED",
+    "refit_allowed": false,
+    "silent_imputation": false
+  },
+  "schema": "MATRIX_GATE600_POST_AUDIT_V1",
+  "source_sha256": {
+    "action_board": "59dd29521c697b955088054e9c201840459c6aa0a73966dbccfd7bebc8b730f4",
+    "calibration_ledger": "a9b32bdf98d1820409e31a873d2c6ee0193293751843af33ace0d0e3dfcec3d7",
+    "portfolio_ledger": "c942eff82fc76b07d9434599c874da43abb878edbaa03451305149da1fefb688"
+  },
+  "status": "PASS"
+}

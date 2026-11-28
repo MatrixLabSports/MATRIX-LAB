@@ -1,0 +1,113 @@
+name: API-Football Over 2.5 governed P_MATRIX promotion
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - repair/cor09-world-pipeline
+    paths:
+      - tools/api_football_over25_p_matrix_promotion.py
+      - tests/test_api_football_over25_p_matrix_promotion.py
+      - .github/workflows/api-football-over25-p-matrix-promotion.yml
+      - evidence/api_football/challenger/final_holdout_adjudication.json
+      - evidence/api_football/calibration_v2/checkpoint_200_1x2_over_2_5_20261006.json
+      - evidence/global_strength_map/summary.json
+      - evidence/api_football/market_governance/market_governance.json
+      - evidence/api_football/calibration_v2/lanes/over_2_5/state.json
+      - evidence/api_football/physical_uniqueness/audit_last.json
+
+permissions:
+  contents: write
+
+concurrency:
+  group: api-football-over25-governed-p-matrix-promotion
+  cancel-in-progress: false
+
+jobs:
+  promote:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout operational branch
+        uses: actions/checkout@v4
+        with:
+          ref: repair/cor09-world-pipeline
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install test dependency
+        run: python -m pip install pytest
+
+      - name: Run market-scoped promotion gate tests
+        run: python -m pytest -q tests/test_api_football_over25_p_matrix_promotion.py
+
+      - name: Build governed Over 2.5 P_MATRIX without parameter changes
+        run: python -m tools.api_football_over25_p_matrix_promotion
+
+      - name: Enforce promotion output
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          p = json.loads(Path(
+              "evidence/api_football/governance/over_2_5_p_matrix_promotion.json"
+          ).read_text(encoding="utf-8"))
+          m = json.loads(Path(
+              "evidence/api_football/prospective_daily/2026-10-06/20261006T120503Z/"
+              "p_matrix_governed/over_2_5.json"
+          ).read_text(encoding="utf-8"))
+
+          assert p["promotion_status"] == "PASS_PROMOTED_GOVERNED_P_MATRIX_SIGNAL_ONLY"
+          assert p["engine_executable_for_p_matrix"] is True
+          assert p["governed_p_matrix_engine_available"] is True
+          assert p["frozen_parameters"] == {"a": 0.6, "b": 0.0, "c": 0.4}
+          assert p["parameter_refit_performed"] is False
+          assert p["parameter_search_performed"] is False
+          assert p["other_markets"]["1X2"] == "NOT_PROMOTED_BY_THIS_GATE"
+          assert p["other_markets"]["BTTS"] == "NO_GO"
+          assert p["protections"]["external_audit_closed"] is False
+          assert p["protections"]["automatic_wagering"] is False
+          assert p["protections"]["real_money"] == "BLOCKED"
+
+          assert m["p_matrix_status"] == "GENERATED_GOVERNED_MARKET_SCOPED"
+          assert m["source_ready_input_count"] == 138
+          assert m["scored_count"] == 132
+          assert m["blocked_count"] == 6
+          assert len({row["fixture_id"] for row in m["rows"]}) == 132
+          assert all(
+              row["p_matrix"] == row["source_frozen_probability_over_2_5"]
+              for row in m["rows"]
+          )
+          assert m["protections"]["parameter_refit"] is False
+          assert m["protections"]["odds_used_to_generate_probability"] is False
+          assert m["protections"]["target_outcomes_used"] is False
+          assert m["protections"]["bet_decisions_generated"] is False
+          assert m["protections"]["real_money"] == "BLOCKED"
+
+          print("MATRIX_OVER25_GOVERNED_P_MATRIX_PROMOTION_GATE: PASS")
+          print("scored_count=", m["scored_count"])
+          print("blocked_count=", m["blocked_count"])
+          print("bundle_sha256=", m["bundle_sha256"])
+          PY
+
+      - name: Persist append-only promotion evidence
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "matrix-over25-p-matrix-promoter"
+          git config user.email "matrix-over25-p-matrix-promoter@users.noreply.github.com"
+          git add             evidence/api_football/governance/over_2_5_p_matrix_promotion.json             evidence/api_football/prospective_daily/2026-10-06/20261006T120503Z/p_matrix_governed/over_2_5.json
+          if git diff --cached --quiet; then
+            echo "NO_OVER25_P_MATRIX_PROMOTION_EVIDENCE_CHANGE"
+            exit 0
+          fi
+          git commit -m "governance(football): promote Over 2.5 governed P_MATRIX signal engine"
+          git pull --rebase origin repair/cor09-world-pipeline
+          git push origin HEAD:repair/cor09-world-pipeline

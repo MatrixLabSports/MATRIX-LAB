@@ -1,0 +1,141 @@
+name: MATRIX CLV Regression Repair Certification
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - repair/cor09-world-pipeline
+    paths:
+      - .github/workflows/football-clv-continuous-watcher.yml
+      - .github/workflows/clv-regression-repair-certification.yml
+      - tools/football_clv_tracking_cycle.py
+
+permissions:
+  contents: write
+
+jobs:
+  certify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 150
+    env:
+      MATRIX_MODE: SHADOW
+      REAL_MONEY: BLOCKED
+      AUTO_BETTING: DISABLED
+    steps:
+      - name: Checkout operational branch
+        uses: actions/checkout@v4
+        with:
+          ref: repair/cor09-world-pipeline
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install targeted dependencies
+        run: python -m pip install pytest requests
+
+      - name: Verify Step 1 contract structurally
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          from pathlib import Path
+          p=Path(".github/workflows/football-clv-continuous-watcher.yml")
+          s=p.read_text(encoding="utf-8")
+          marker='PYTHONPATH=. python -m tools.football_clv_tracking_cycle'
+          refresh='git fetch origin repair/cor09-world-pipeline'
+          rebase='git rebase --autostash origin/repair/cor09-world-pipeline'
+          assert refresh in s
+          assert rebase in s
+          assert s.index(refresh) < s.index(marker)
+          assert s.index(rebase) < s.index(marker)
+          print("CLV_WATCHER_STARTUP_COVERAGE_CONTRACT=PASS")
+          print("CLV_WATCHER_PER_CYCLE_REFRESH_ORDER=PASS")
+          print("CLV_STRICT_FRESH_GATE_SECONDS=120")
+          PY
+
+      - name: Verify telemetry contract tests
+        run: |
+          set -euo pipefail
+          PYTHONPATH=. python -m pytest -q tests/test_football_clv_tracking_cycle.py
+          grep -Fq '"attempted_at_utc"' tools/football_clv_tracking_cycle.py
+          grep -Fq '"provider_quote_updated_at_utc"' tools/football_clv_tracking_cycle.py
+          grep -Fq '"provider_quote_age_seconds"' tools/football_clv_tracking_cycle.py
+          grep -Fq '"gate_excess_seconds"' tools/football_clv_tracking_cycle.py
+          echo "CLV_PER_ATTEMPT_TELEMETRY_CONTRACT=PASS"
+
+      - name: Real watcher cycle with pre-cycle refresh
+        env:
+          API_FOOTBALL_KEY: ${{ secrets.API_FOOTBALL_KEY }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -n "$API_FOOTBALL_KEY"
+          git config user.name "matrix-clv-regression-cert"
+          git config user.email "matrix-clv-regression-cert@users.noreply.github.com"
+
+          deadline=$(( $(date -u +%s) + 7200 ))
+          while [ "$(date -u +%s)" -lt "$deadline" ]; do
+            git fetch origin repair/cor09-world-pipeline
+            if ! git rebase --autostash origin/repair/cor09-world-pipeline; then
+              git rebase --abort || true
+              echo "CLV_WATCHER_OPERATIONAL_REFRESH=FAIL"
+              exit 1
+            fi
+            echo "CLV_WATCHER_OPERATIONAL_REFRESH=PASS"
+
+            before=0
+            if [ -f evidence/clv/football/over_2_5/closing_attempts.jsonl ]; then
+              before="$(grep -cve '^[[:space:]]*$' evidence/clv/football/over_2_5/closing_attempts.jsonl || true)"
+            fi
+
+            PYTHONPATH=. python -m tools.football_clv_tracking_cycle
+
+            after=0
+            if [ -f evidence/clv/football/over_2_5/closing_attempts.jsonl ]; then
+              after="$(grep -cve '^[[:space:]]*$' evidence/clv/football/over_2_5/closing_attempts.jsonl || true)"
+            fi
+            echo "CLV_ATTEMPT_ROWS_BEFORE=$before"
+            echo "CLV_ATTEMPT_ROWS_AFTER=$after"
+
+            git add evidence/clv/football/over_2_5
+            if ! git diff --cached --quiet; then
+              git commit -m "evidence(clv): certify repaired watcher real cycle"
+              git fetch origin repair/cor09-world-pipeline
+              git rebase origin/repair/cor09-world-pipeline
+              git push origin HEAD:repair/cor09-world-pipeline
+            fi
+
+            if [ "$after" -gt "$before" ]; then
+              echo "CLV_REAL_ATTEMPT_PERSISTENCE=PASS"
+              break
+            fi
+            sleep 90
+          done
+
+          final_rows=0
+          if [ -f evidence/clv/football/over_2_5/closing_attempts.jsonl ]; then
+            final_rows="$(grep -cve '^[[:space:]]*$' evidence/clv/football/over_2_5/closing_attempts.jsonl || true)"
+          fi
+          if [ "$final_rows" -eq 0 ]; then
+            echo "CLV_REAL_ATTEMPT_PERSISTENCE=PENDING_NO_REAL_DUE_ATTEMPT_WITHIN_WINDOW"
+          fi
+
+      - name: Final repaired-state gate
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          j=json.loads(Path("evidence/clv/football/over_2_5/state.json").read_text(encoding="utf-8"))
+          assert j["closing_reference_choice"]=="OPTION_B_PINNACLE_STRICT_FRESH"
+          assert j["closing_freshness_policy"]["strict_fresh_gate_seconds"]==120
+          assert j["protections"]["real_money"]=="BLOCKED"
+          assert j["protections"]["automatic_wagering"] is False
+          print("CLV_CONTINUOUS_WATCHER_FINAL_GATE: PASS")
+          print("closing_odds_count=",j["closing_odds_count"])
+          print("missed_after_kickoff=",j["closing_cycle"]["missed_after_kickoff"])
+          PY

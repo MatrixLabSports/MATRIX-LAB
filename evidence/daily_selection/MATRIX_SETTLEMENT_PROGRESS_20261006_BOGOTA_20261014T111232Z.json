@@ -1,0 +1,103 @@
+{
+  "schema": "MATRIX_SETTLEMENT_PROGRESS_20261006_BOGOTA_AUDIT_SNAPSHOT_V1",
+  "observed_at_utc": "2026-10-14T11:12:32Z",
+  "source_branch": "repair/cor09-world-pipeline",
+  "baseline_previous_review_commit": "40849b0f10cdf4f3297d7c482f0e2eb1aabddd73",
+  "source_head_observed": "a15b243583d6eb2de8357eaba31a30e3e434603a",
+  "artifact": {
+    "path": "evidence/daily_selection/MATRIX_CALIBRATION_CANDIDATES_20261006_BOGOTA.json",
+    "git_blob_sha": "52e897007840f5bed1a8999edad8ee594fefc767",
+    "football_candidates": 116,
+    "tennis_unique_candidates": 11
+  },
+  "football_v2": {
+    "state_dir": "evidence/api_football/calibration_v2/lanes/",
+    "markets": [
+      "1x2",
+      "over_2_5",
+      "under_2_5",
+      "double_chance_1x",
+      "double_chance_x2"
+    ],
+    "freeze_count": 2024,
+    "settlement_count": 1624,
+    "pending_count": 400,
+    "delta_from_previous_review": {
+      "freeze_count": 134,
+      "settlement_count": 3,
+      "pending_count": 131
+    },
+    "previous_review": {
+      "freeze_count": 1890,
+      "settlement_count": 1621,
+      "pending_count": 269
+    },
+    "state_git_blob_shas": {
+      "1x2": "6fdf164f60050a7fded0d216154e7db859c86269",
+      "over_2_5": "d83e9f4b95f0ba20c29def0a3696a8d49f5ac4e6",
+      "under_2_5": "e43ca2dabaf7483896d4ba35a4214976fa5da2e9",
+      "double_chance_1x": "4d8acfe57823ba2ef9991b00be57364227330c8d",
+      "double_chance_x2": "b3696fd49e9d3ed84069debe9d00cc445d66afbe"
+    },
+    "source_ledger": {
+      "path": "evidence/api_football/prospective_calibration/ledger.jsonl",
+      "git_blob_sha": "6fab2c102e08e2a6613644fbc89cb8b5e3c3dbb5",
+      "source_rows_scanned_from_v2_state": 2426
+    },
+    "new_global_final_settlements_in_v2_count": 3,
+    "new_global_final_fixture_ids": "NOT_INDEPENDENTLY_EXTRACTED_FROM_LARGE_LEDGER",
+    "new_6_oct_final_settlements": "NOT_VERIFIED",
+    "cohort_6_oct": {
+      "last_independently_verified_ft": 107,
+      "last_independently_verified_total": 116,
+      "last_independently_verified_nonstandard_count": 9,
+      "current_full_reconciliation": "NOT_PERFORMED_LARGE_LEDGER_CONTENT_UNAVAILABLE",
+      "last_documented_nonstandard": {
+        "PEN": [
+          "1588817",
+          "1588821",
+          "1588845",
+          "1588863",
+          "1588890",
+          "1588893",
+          "1619499"
+        ],
+        "ABD": [
+          "1596466"
+        ],
+        "AET": [
+          "1644168"
+        ]
+      },
+      "provider_status_revalidated": false
+    }
+  },
+  "tennis": {
+    "settlement_ledger_path": "evidence/cor0203/settlement/MATRIX_COR0203_SETTLEMENT_LEDGER.jsonl",
+    "settlement_ledger_git_blob_sha": "f21e4dd79bf7bbf7ed3b27ca7cd0a852de575202",
+    "ledger_rows": 248,
+    "cohort_6_oct_unique_settled_finished": 11,
+    "cohort_6_oct_unique_candidates": 11,
+    "cohort_6_oct_duplicate_settlement_ids": 0,
+    "settlement_ledger_changed_since_previous_review": false,
+    "uniqueness_path": "evidence/cor0203/runtime/MATRIX_COR0203_PHYSICAL_UNIQUENESS_LAST.json",
+    "uniqueness_git_blob_sha": "2e8f31cb511c4011be975307227d3da194036b8b",
+    "unique_calibration_observations": 227,
+    "duplicate_observations_quarantined": 171,
+    "uniqueness_result": "PASS",
+    "metrics": "SEALED_UNTIL_600_UNIQUE"
+  },
+  "protections": {
+    "metrics_opened": false,
+    "parameter_tuning_allowed": false,
+    "odds_to_probability_allowed": false,
+    "real_money": "BLOCKED",
+    "settlement_policy": "FINAL_ONLY",
+    "snapshot_only": true
+  },
+  "verification_limitations": [
+    "The football prospective ledger content was not returned by the GitHub connector despite successful blob SHA reads. No current full cohort reconciliation or identification of the three new global fixture IDs is asserted.",
+    "The 107/116 football cohort count and nine nonstandard classifications are last independently verified values from the prior review, not a newly recalculated count.",
+    "The new three global V2 settlements are already physically reflected in the governed state; no duplicate settlement write was attempted."
+  ]
+}

@@ -1,0 +1,102 @@
+name: MATRIX OpenLigaDB Bundesliga Free Secondary Source
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - repair/cor09-world-pipeline
+    paths:
+      - tools/matrix_openligadb_bundesliga_secondary.py
+      - tests/test_matrix_openligadb_bundesliga_secondary.py
+      - .github/workflows/matrix-openligadb-bundesliga-secondary.yml
+
+permissions:
+  contents: write
+
+concurrency:
+  group: matrix-openligadb-bundesliga-secondary
+  cancel-in-progress: false
+
+jobs:
+  verify-independent-free-bundesliga-source:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    env:
+      REAL_MONEY: BLOCKED
+      AUTOMATIC_WAGERING: "false"
+      MATRIX_MODE: RESEARCH_ONLY
+    steps:
+      - name: Checkout authorized original branch
+        uses: actions/checkout@v4
+        with:
+          ref: repair/cor09-world-pipeline
+          fetch-depth: 1
+          filter: blob:none
+          sparse-checkout: |
+            tools
+            tests
+            evidence/football_world_inventory/2026-11-22/MATRIX_FOOTBALL_INDEPENDENT_FIXTURE_INTAKE.json
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Prove source and source-mismatch gates before accessing internet
+        run: |
+          set -euo pipefail
+          test "$REAL_MONEY" = BLOCKED
+          test "$AUTOMATIC_WAGERING" = false
+          python -m pip install --disable-pip-version-check pytest
+          PYTHONPATH=. python -m pytest -q tests/test_matrix_openligadb_bundesliga_secondary.py
+      - name: Fetch real OpenLigaDB without keys and independently cross-check 22-Nov Bundesliga
+        run: |
+          set -euo pipefail
+          PYTHONPATH=. python -m tools.matrix_openligadb_bundesliga_secondary \
+            --intake evidence/football_world_inventory/2026-11-22/MATRIX_FOOTBALL_INDEPENDENT_FIXTURE_INTAKE.json \
+            --out evidence/football_world_inventory/2026-11-22/MATRIX_OPENLIGADB_SECONDARY_CROSSCHECK.json
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          p=Path("evidence/football_world_inventory/2026-11-22/MATRIX_OPENLIGADB_SECONDARY_CROSSCHECK.json")
+          j=json.loads(p.read_bytes())
+          assert j["primary_bundesliga_candidates"] == 2
+          assert j["source"] == "OPENLIGADB_BUNDESLIGA_BL1_2026"
+          assert j["telegram_signal_authorized"] is False
+          assert j["production_p_matrix_authorized"] is False
+          assert j["original_enriched_feature_parity_certified"] is False
+          assert j["real_money"] == "BLOCKED"
+          import hashlib
+          raw=Path(j["independent_raw_source_path"]).read_bytes()
+          assert hashlib.sha256(raw).hexdigest() == j["independent_raw_payload_sha256"]
+          print("SECONDARY_RESEARCH_EVIDENCE_MATCHED", j["exact_prematch_matches"])
+          PY
+      - name: Preserve supplementary source report without changing model or Telegram
+        run: |
+          set -euo pipefail
+          file=evidence/football_world_inventory/2026-11-22/MATRIX_OPENLIGADB_SECONDARY_CROSSCHECK.json
+          git config user.name matrix-openligadb-free-research
+          git config user.email matrix-openligadb-free-research@users.noreply.github.com
+          rawfile="$(python - <<'PY'
+          import json
+          from pathlib import Path
+          j=json.loads(Path("evidence/football_world_inventory/2026-11-22/MATRIX_OPENLIGADB_SECONDARY_CROSSCHECK.json").read_bytes())
+          print(j["independent_raw_source_path"])
+          PY
+          )"
+          git add --sparse -- "$file" "$rawfile"
+          if git diff --cached --quiet; then
+            echo NO_NEW_FREE_SOURCE_RESEARCH_EVIDENCE
+            exit 0
+          fi
+          git commit -m "evidence(football): OpenLigaDB free Bundesliga supplemental 22-Nov SHA crosscheck"
+          for attempt in 1 2 3; do
+            git fetch origin repair/cor09-world-pipeline
+            if ! git rebase origin/repair/cor09-world-pipeline; then
+              git rebase --abort || true
+              exit 1
+            fi
+            if git push origin HEAD:repair/cor09-world-pipeline; then
+              echo SOURCE_MATCH_RESEARCH_EVIDENCE_PERSISTED
+              exit 0
+            fi
+            sleep "$attempt"
+          done
+          exit 1

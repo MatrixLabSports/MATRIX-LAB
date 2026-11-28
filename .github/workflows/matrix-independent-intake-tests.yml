@@ -1,0 +1,32 @@
+name: MATRIX Independent Intake and Governed Binding Tests
+on:
+  push:
+    branches: [repair/cor09-world-pipeline]
+    paths:
+      - tools/matrix_independent_fixture_intake.py
+      - tools/matrix_independent_over25_governed_binding.py
+      - tests/test_matrix_independent_fixture_intake.py
+      - tests/test_matrix_independent_over25_governed_binding.py
+      - tools/matrix_tennis_telegram_input_diagnostic.py
+      - tests/test_matrix_tennis_telegram_input_diagnostic.py
+      - tools/matrix_tennis_calendar_evidence_gate.py
+      - tests/test_matrix_tennis_calendar_evidence_gate.py
+      - .github/workflows/matrix-independent-intake-tests.yml
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  independent-intake:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      REAL_MONEY: BLOCKED
+      AUTO_BETTING: DISABLED
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: python -m pip install pytest
+      - name: Verify fail-closed intake and binding
+        run: python -m pytest -q tests/test_matrix_independent_fixture_intake.py tests/test_matrix_independent_over25_governed_binding.py tests/test_matrix_tennis_calendar_evidence_gate.py

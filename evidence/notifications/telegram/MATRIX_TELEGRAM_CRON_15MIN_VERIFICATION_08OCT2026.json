@@ -1,0 +1,77 @@
+{
+  "schema": "MATRIX_TELEGRAM_CRON_15MIN_VERIFICATION_V1",
+  "date_bogota": "2026-10-08",
+  "repo": "MatrixLabSports/MATRIX-LAB",
+  "default_branch": "main",
+  "operational_branch": "repair/cor09-world-pipeline",
+  "workflow_path": ".github/workflows/telegram-green-signals.yml",
+  "schedule": {
+    "cron_utc": "*/15 * * * *",
+    "cadence_minutes": 15,
+    "active_definition_branch": "main",
+    "rationale": "GitHub scheduled workflows execute from the default branch; job checks out the operational branch."
+  },
+  "commits": {
+    "main_schedule_commit": "53fcfaa62e73307318c9e0f419ef9a69e74ccc73",
+    "operational_schedule_mirror_commit": "bf2bc2811fef5f8b9ca42279c643549a8269a2ae"
+  },
+  "validation_runs": [
+    {
+      "run_id": 37857224888,
+      "trigger": "push",
+      "branch": "main",
+      "commit": "53fcfaa62e73307318c9e0f419ef9a69e74ccc73",
+      "job_id": 113584203587,
+      "conclusion": "success",
+      "observed_output": {
+        "bogota_date": "2026-10-08",
+        "football_candidates": 2,
+        "tennis_candidates": 0,
+        "sent_now": 0,
+        "quote_checks": 1,
+        "corrections_now": 0,
+        "rectifications_now": 0,
+        "economic_updates_now": 0,
+        "settlements_now": 0,
+        "duplicate_green_messages_suppressed": 2,
+        "total_green_messages": 2,
+        "total_settlements": 1,
+        "real_money": "BLOQUEADO"
+      }
+    },
+    {
+      "run_id": 37857236280,
+      "trigger": "push",
+      "branch": "repair/cor09-world-pipeline",
+      "commit": "bf2bc2811fef5f8b9ca42279c643549a8269a2ae",
+      "job_id": 113584312373,
+      "conclusion": "success",
+      "observed_output": {
+        "bogota_date": "2026-10-08",
+        "football_candidates": 2,
+        "tennis_candidates": 0,
+        "sent_now": 0,
+        "quote_checks": 1,
+        "corrections_now": 0,
+        "rectifications_now": 0,
+        "economic_updates_now": 0,
+        "settlements_now": 0,
+        "duplicate_green_messages_suppressed": 2,
+        "total_green_messages": 2,
+        "total_settlements": 1,
+        "real_money": "BLOQUEADO"
+      }
+    }
+  ],
+  "protections_verified": {
+    "anti_duplicate_preserved": true,
+    "same_house_quote_revalidation_code_preserved": true,
+    "no_bet_when_ev_non_positive_preserved": true,
+    "silence_when_no_new_signal": true,
+    "final_only_settlement_preserved": true,
+    "automatic_wagering": false,
+    "real_money": "BLOQUEADO",
+    "tennis_fail_closed_until_validated_lane": true
+  },
+  "adjudication": "CRON_15_MIN_CONFIGURED_AND_WORKFLOW_VALIDATED_SUCCESSFULLY"
+}

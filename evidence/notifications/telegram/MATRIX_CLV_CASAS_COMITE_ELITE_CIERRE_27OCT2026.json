@@ -1,0 +1,172 @@
+{
+  "schema": "MATRIX_CLV_CASAS_COMITE_ELITE_CIERRE_27OCT2026_V1",
+  "generated_at_utc": "2026-10-28T01:31:00Z",
+  "branch": "repair/cor09-world-pipeline",
+  "head_at_closure": "7acf3739de06e8a9810048c71217fadd8d0a7f86",
+  "committee": {
+    "name": "MATRIX Sindicato Elite — Comité de Diagnóstico CLV y Casas",
+    "role_count": 22
+  },
+  "final_adjudication": {
+    "internal_code_status": "REPAIRED_AND_TESTED",
+    "current_external_blocker": "ODDS_API_NET_HTTP_429_PROVIDER_GATE",
+    "repair_order_decision": "CASAS_DISCOVERY_FIRST_THEN_CLV_MEASUREMENT",
+    "reason": "The same odds-api.net event-discovery path feeds executable Colombia-book recovery and sharp-reference/CLV recovery. Historical single-page discovery was the dominant internal failure mode; after repair, the current physical blocker moved to the provider gate.",
+    "no_additional_internal_code_repair_required_before_new_provider_data": true,
+    "zero_provider_rows_mean_zero_supported_books": false
+  },
+  "historical_internal_evidence": {
+    "legacy_quote_attempts": 246,
+    "blocked_event_not_covered": 245,
+    "blocked_event_search_provider_error": 1,
+    "event_not_covered_fraction": 0.9959349593495935
+  },
+  "clv_state": {
+    "closing_odds_count": 11,
+    "target": 300,
+    "remaining": 289,
+    "decision_count": 292,
+    "missed_after_kickoff": 278,
+    "metrics_opened": false,
+    "strict_fresh_gate_seconds": 120,
+    "transport": "odds-api.net preferred; API-Football /odds bookmaker_id=4 fallback",
+    "direct_pinnacle_api_connection": false
+  },
+  "houses_state": {
+    "execution_book_count": 14,
+    "execution_books": [
+      "betano",
+      "betplay",
+      "betsson",
+      "bwin",
+      "codere",
+      "luckia",
+      "mryoker",
+      "rivalo",
+      "rushbet",
+      "sportium",
+      "stake",
+      "wplay",
+      "yajuego",
+      "zamba"
+    ],
+    "telemetry_schema": "MATRIX_TELEGRAM_QUOTE_ATTEMPT_V3",
+    "current_v3_real_attempts": 2,
+    "current_v3_provider_error_rows": 2,
+    "minimum_new_v3_revalidations_before_new_coverage_conclusion": 50,
+    "remaining_v3_to_recommendation_gate": 48,
+    "legacy_three_book_exact_over25_coverage": {
+      "betano": 163,
+      "betplay": 0,
+      "rushbet": 0
+    }
+  },
+  "provider_gate_physical_proof": {
+    "provider": "odds-api.net",
+    "endpoint": "/bookmakers?country_code=CO",
+    "network_calls_performed": 4,
+    "attempt_http_statuses": [
+      429,
+      429,
+      429,
+      429
+    ],
+    "provider_rows": 0,
+    "portfolio_status": "BLOCKED_PROVIDER_GATE",
+    "conclusion": "PROVIDER_GATE_BLOCKED_AFTER_BOUNDED_RETRY",
+    "interpretation": "ZERO_ROWS_IS_NOT_EVIDENCE_OF_ZERO_SUPPORTED_BOOKMAKERS"
+  },
+  "repairs_verified": [
+    {
+      "commit": "801eea38559469bcb6bf88dfbcdff30524505b6c",
+      "change": "telegram event discovery pagination"
+    },
+    {
+      "commit": "ec51e0578445fb52b84edb2db0c548adb6e532ed",
+      "change": "full Colombia snapshot request"
+    },
+    {
+      "commit": "185088d87781513789d650df9dcf5352f868aa33",
+      "change": "immutable telemetry V3 for all Colombia execution books"
+    },
+    {
+      "commit": "5741ac78954da10309ad818549219259a82c96af",
+      "change": "legacy diagnostic separation"
+    },
+    {
+      "commit": "e91596c0a149f64d7434a4842d9869a5b94e4769",
+      "change": "telemetry audit V3"
+    },
+    {
+      "commit": "0f2f8133ce664bd01b98207b38a0d3d5c16820de",
+      "change": "CLV event discovery pagination"
+    },
+    {
+      "commit": "d5d57022f585a2320e7cf9ea2da7713a7425c19a",
+      "change": "repair contract tests"
+    },
+    {
+      "commit": "7a6f7c717771c14cb445d6c6c0b383dc038240bb",
+      "change": "catalog 429 bounded retry"
+    },
+    {
+      "commit": "23121f0911d59923eacc5cf0212e96de347075d2",
+      "change": "catalog retry tests"
+    },
+    {
+      "commit": "05b08d7b5549d4168ea8b73479cbeb39555ee87a",
+      "change": "catalog workflow"
+    },
+    {
+      "commit": "b90ed3f6b4592f54336eeb953fab906a3db84ff0",
+      "change": "diagnostic GitOps writer isolation"
+    },
+    {
+      "commit": "7acf3739de06e8a9810048c71217fadd8d0a7f86",
+      "change": "permanent regression test for diagnostic writer isolation"
+    }
+  ],
+  "verification": {
+    "repair_contract_previous_run_id": 40581858235,
+    "repair_contract_test_step": "success",
+    "repair_contract_test_result": "26 passed in 0.46s",
+    "prior_workflow_final_failure_reason": "diagnostic persistence rebase saw generated telemetry audit as unstaged worktree change",
+    "gitops_defect_fixed_by_commit": "b90ed3f6b4592f54336eeb953fab906a3db84ff0",
+    "regression_test_commit": "7acf3739de06e8a9810048c71217fadd8d0a7f86",
+    "catalog_probe_run_id": 40582001645,
+    "catalog_probe_conclusion": "success",
+    "catalog_probe_physical_step": "success",
+    "telemetry_v3_certification": {
+      "status": "PASS",
+      "verified_row_count": 248,
+      "schema_counts": {
+        "MATRIX_TELEGRAM_QUOTE_ATTEMPT_V1": 13,
+        "MATRIX_TELEGRAM_QUOTE_ATTEMPT_V2": 233,
+        "MATRIX_TELEGRAM_QUOTE_ATTEMPT_V3": 2
+      },
+      "immutable_hash_chain_verified": true,
+      "first_current_schema_chain_bridge_verified": true,
+      "no_legacy_rows_after_first_current_schema": true
+    }
+  },
+  "governance": {
+    "probability_gate_changed": false,
+    "ev_gate_changed": false,
+    "freshness_gate_changed": false,
+    "kickoff_gate_changed": false,
+    "minimum_decimal_odds_exclusive": 1.5,
+    "no_backfill": true,
+    "automatic_wagering": false,
+    "real_money": "BLOCKED"
+  },
+  "next_valid_evidence": [
+    "A provider response other than HTTP 429 from odds-api.net Colombia catalog/event discovery",
+    "At least 50 new real V3 revalidations after provider recovery before any new bookmaker-coverage conclusion",
+    "New strict-fresh CLV closings <=120 seconds; no historical backfill"
+  ],
+  "forbidden_interpretations": [
+    "Do not treat HTTP 429 with zero returned rows as evidence that a bookmaker is unsupported.",
+    "Do not reuse the legacy Betano/BetPlay/Rushbet sample as evidence for the full 14-book Colombia portfolio.",
+    "Do not relax EV, probability, freshness, kickoff, or real-money gates to increase signals or CLV counts."
+  ]
+}

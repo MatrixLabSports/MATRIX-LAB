@@ -1,0 +1,85 @@
+{
+  "schema": "MATRIX_LIVE_TENNIS_MODEL_MANIFEST_V0_1",
+  "frozen_at_utc": "2026-10-06T19:55:00Z",
+  "status": "FROZEN_PRE_OUTCOME_RESEARCH_ONLY",
+  "target": "P_LIVE_P1_MATCH_WIN",
+  "observation_unit": "UNIQUE_MATCH_SEQUENCE_STATE",
+  "grouping_unit": "MATCH_ID",
+  "source_dataset": "evidence/live_tennis_lab/2026-10-06/MATRIX_LIVE_TENNIS_PRESETTLEMENT_DATASET_V0_1.json",
+  "split_policy": {
+    "inherited_from_dataset": true,
+    "development_folds": [
+      0,
+      1,
+      2,
+      3
+    ],
+    "untouched_holdout_fold": [
+      4
+    ],
+    "no_match_crosses_split": true
+  },
+  "candidate_models": [
+    {
+      "id": "LIVE_SCORE_STATE_LOGIT_V0_1",
+      "role": "BASELINE",
+      "algorithm": "logistic_regression_l2",
+      "train_scope": "DEVELOPMENT_ONLY",
+      "features": [
+        "set_diff_p1",
+        "total_game_diff_p1",
+        "current_set_game_diff_p1",
+        "point_diff_p1",
+        "server_is_p1",
+        "is_tiebreak"
+      ],
+      "missing_policy": "ROW_BLOCK_IF_REQUIRED_FEATURE_MISSING",
+      "odds_features_allowed": false
+    },
+    {
+      "id": "LIVE_SCORE_PLUS_RANK_LOGIT_V0_1",
+      "role": "CHALLENGER",
+      "algorithm": "logistic_regression_l2",
+      "train_scope": "DEVELOPMENT_ONLY",
+      "features": [
+        "set_diff_p1",
+        "total_game_diff_p1",
+        "current_set_game_diff_p1",
+        "point_diff_p1",
+        "server_is_p1",
+        "is_tiebreak",
+        "ranking_advantage_p1"
+      ],
+      "missing_policy": "ROW_BLOCK_IF_REQUIRED_FEATURE_MISSING",
+      "odds_features_allowed": false
+    }
+  ],
+  "evaluation": {
+    "metrics": [
+      "brier_score",
+      "log_loss",
+      "ece",
+      "accuracy"
+    ],
+    "grouped_by_match_id": true,
+    "per_domain_required": true,
+    "domains_not_silently_pooled": true,
+    "holdout_single_use": true,
+    "metrics_sealed_until_final_labels_exist": true
+  },
+  "settlement": {
+    "final_only": true,
+    "standard_completed_matches_only_initially": true,
+    "retired_walkover_abandoned_separate_adjudication": true
+  },
+  "protections": {
+    "outcomes_read_at_design_time": 0,
+    "labels_present_at_design_time": false,
+    "no_silent_imputation": true,
+    "missing_not_zero": true,
+    "odds_to_probability": false,
+    "prematch_model_untouched": true,
+    "automatic_wagering": false,
+    "real_money": "BLOCKED"
+  }
+}

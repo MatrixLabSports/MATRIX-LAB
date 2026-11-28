@@ -1,0 +1,82 @@
+name: MATRIX Original Six Leagues Last-Good Historical PIT Integrity
+on:
+  push:
+    branches:
+      - repair/cor09-world-pipeline
+    paths:
+      - .github/workflows/matrix-original-six-last-good-history.yml
+      - tools/matrix_original_six_last_good_history_audit.py
+      - tests/test_matrix_original_six_last_good_history_audit.py
+  workflow_dispatch:
+permissions:
+  contents: write
+concurrency:
+  group: matrix-original-six-last-good-history
+  cancel-in-progress: false
+jobs:
+  original-six-pit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    env:
+      REAL_MONEY: BLOCKED
+      AUTOMATIC_WAGERING: "false"
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: repair/cor09-world-pipeline
+          fetch-depth: 0
+          sparse-checkout-cone-mode: false
+          sparse-checkout: |
+            tools/matrix_original_six_last_good_history_audit.py
+            tests/test_matrix_original_six_last_good_history_audit.py
+            evidence/football_world_inventory/2026-11-04/MATRIX_ORIGINAL_ARCHIVE_LEAGUE_DISCOVERY.json
+            evidence/api_football/prospective_daily/2026-10-25/20261025T095327Z/history/raw/league_39_season_2026.bin
+            evidence/api_football/prospective_daily/2026-10-26/20261026T173737Z/history/raw/league_61_season_2026.bin
+            evidence/api_football/prospective_daily/2026-10-25/20261025T095327Z/history/raw/league_78_season_2026.bin
+            evidence/api_football/prospective_daily/2026-10-28/20261028T054128Z/history/raw/league_135_season_2026.bin
+            evidence/api_football/prospective_daily/2026-10-26/20261026T173737Z/history/raw/league_140_season_2026.bin
+            evidence/api_football/prospective_daily/2026-10-28/20261028T054128Z/history/raw/league_239_season_2026.bin
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Verify original six-league exact PIT raw snapshot rules
+        run: |
+          python -m pip install --disable-pip-version-check pytest
+          PYTHONPATH=. python -m pytest -q tests/test_matrix_original_six_last_good_history_audit.py
+      - name: Read original October 2026 snapshots and certify available historical goals
+        run: |
+          set -euo pipefail
+          test "$REAL_MONEY" = BLOCKED
+          test "$AUTOMATIC_WAGERING" = false
+          PYTHONPATH=. python -m tools.matrix_original_six_last_good_history_audit \
+            --out "evidence/football_world_inventory/2026-11-22/MATRIX_SIX_LEAGUES_ORIGINAL_HISTORIC_SHA_RUN_${{ github.run_id }}.json"
+          python - <<'PY'
+          from pathlib import Path
+          import json
+          files=list(Path("evidence/football_world_inventory/2026-11-22").glob("MATRIX_SIX_LEAGUES_ORIGINAL_HISTORIC_SHA_RUN_*.json"))
+          assert len(files)==1
+          j=json.loads(files[0].read_bytes())
+          assert len(j["leagues"])==6
+          assert j["leagues"][-1]["original_league_id"]=="239"
+          assert j["leagues"][-1]["strictly_prior_finished_usable_goals_count"]>0
+          assert j["canonical_p_matrix_authorized"] is False
+          assert j["telegram_signal_authorized"] is False
+          assert j["real_money"]=="BLOCKED"
+          print("ORIGINAL_SIX_LEAGUE_SOURCE_HISTORIES_PIT_SHA_VERIFIED",j["six_league_archived_finished_total"])
+          PY
+      - name: Persist run-specific research SHA proof without modifying original archives
+        run: |
+          set -euo pipefail
+          P="evidence/football_world_inventory/2026-11-22/MATRIX_SIX_LEAGUES_ORIGINAL_HISTORIC_SHA_RUN_${{ github.run_id }}.json"
+          git config user.name matrix-six-history
+          git config user.email matrix-six-history@users.noreply.github.com
+          # The run-specific proof is intentionally outside the sparse input set.
+          git add --sparse -- "$P"
+          git commit -m "evidence(producer): six original October PIT archive SHA with Colombia"
+          for a in 1 2 3 4; do
+            git fetch origin repair/cor09-world-pipeline
+            if ! git rebase origin/repair/cor09-world-pipeline; then git rebase --abort || true; exit 1; fi
+            if git push origin HEAD:repair/cor09-world-pipeline; then exit 0; fi
+            sleep "$a"
+          done
+          exit 1

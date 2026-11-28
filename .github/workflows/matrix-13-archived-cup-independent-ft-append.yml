@@ -1,0 +1,128 @@
+name: MATRIX 13 Exact Archived Cup FT Recovery (No Bets)
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - repair/cor09-world-pipeline
+    paths:
+      - .github/workflows/matrix-13-archived-cup-independent-ft-append.yml
+      - tools/matrix_13_cup_archived_final_replay.py
+      - tools/matrix_13_cohort_espn_mls_results.py
+      - tests/test_matrix_13_cohort_espn_cup_archived_aliases.py
+permissions:
+  contents: write
+concurrency:
+  group: matrix-13-archived-independent-ft-branch
+  cancel-in-progress: false
+jobs:
+  original-source-replay-and-parallel-settlement:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      REAL_MONEY: BLOCKED
+      AUTOMATIC_WAGERING: "false"
+      MATRIX_APPEND_VERIFIED_ARCHIVED_FT: EXPLICIT_PARALLEL_LEDGER_ONLY
+    steps:
+      - name: Checkout current operative branch
+        uses: actions/checkout@v4
+        with:
+          ref: repair/cor09-world-pipeline
+          persist-credentials: true
+      - name: Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Test actual archived source aliases and no-future boundaries
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$REAL_MONEY" = "BLOCKED"
+          test "$AUTOMATIC_WAGERING" = "false"
+          python -m pip install -q pytest requests
+          PYTHONPATH=. python -m pytest -q \
+            tests/test_matrix_13_cohort_espn_cup_archived_aliases.py \
+            tests/test_matrix_13_cohort_independent_settlement.py
+      - name: Reconcile immutable archived source without writes first
+        shell: bash
+        run: |
+          set -euo pipefail
+          PYTHONPATH=. python -m tools.matrix_13_cup_archived_final_replay \
+            --output matrix13-cup-recovery/ARCHIVED_CUP_FT_PREVIEW.json
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          report=json.loads(Path("matrix13-cup-recovery/ARCHIVED_CUP_FT_PREVIEW.json").read_text())
+          assert report["ledger_mutated"] is False
+          assert report["telegram_signal_authorized"] is False
+          assert report["real_money"]=="BLOCKED"
+          from tools.matrix_13_cohort_independent_settlement import validated_ledger, LEDGER
+          old={str(r["fixture_id"]) for r in validated_ledger(LEDGER)}
+          proposed={str(r["canonical_fixture_id"]) for r in report["new_candidates"]}
+          assert {"1638558", "1640383"}.issubset(old|proposed)
+          print("MATRIX_RAW_ARCHIVED_FT_PREVIEW_CERTIFIED_SOURCE_AND_FREEZE")
+          PY
+      - name: Append verified only to parallel independent hash-chain ledger
+        shell: bash
+        run: |
+          set -euo pipefail
+          PYTHONPATH=. python -m tools.matrix_13_cup_archived_final_replay \
+            --append-certified \
+            --output matrix13-cup-recovery/ARCHIVED_CUP_FT_SETTLEMENT_APPEND.json
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          from tools.matrix_13_cohort_independent_settlement import validated_ledger,LEDGER
+          report=json.loads(Path("matrix13-cup-recovery/ARCHIVED_CUP_FT_SETTLEMENT_APPEND.json").read_text())
+          ledger=validated_ledger(LEDGER)
+          ids={str(x["fixture_id"]) for x in ledger}
+          assert {"1638558","1640383"}.issubset(ids)
+          assert report["real_money"]=="BLOCKED"
+          assert report["telegram_signal_authorized"] is False
+          assert report["original_parameters_mutated"] is False
+          assert len(ledger)>=21
+          print("MATRIX_TWO_NEW_ARCHIVED_CUP_FINALS_INDEPENDENT_HASHCHAIN_VERIFIED")
+          PY
+      - name: Recompute 13-cohort exact final and proper scoring read-only
+        shell: bash
+        run: |
+          set -euo pipefail
+          PYTHONPATH=. python -m tools.matrix_13_market_exact_cohort_calibration
+          PYTHONPATH=. python -m tools.matrix_13_cohort_formal_scoring_gate
+          PYTHONPATH=. python -m tools.matrix_13_market_settlement_gap_reconciliation \
+            --output matrix13-cup-recovery/MATRIX_13_SETTLEMENT_GAPS_AFTER_APPEND.json
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          j=json.loads(Path("matrix13-cup-recovery/MATRIX_13_SETTLEMENT_GAPS_AFTER_APPEND.json").read_text())
+          assert j["summary"]["advanced_market_lanes"]==13
+          assert j["summary"]["automatically_promoted"]==0
+          assert j["real_money"]=="BLOCKED"
+          print("MATRIX_13_SETTLEMENT_COUNTS_RECONCILED_AFTER_ARCHIVED_FT")
+          PY
+      - name: Archive authentic evidence before attempting git commit
+        uses: actions/upload-artifact@v4
+        with:
+          name: matrix-13-archived-cup-ft-verified-results
+          path: matrix13-cup-recovery/
+          retention-days: 30
+      - name: Commit only independent final ledger and research scoring receipts
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "matrix-evidence-bot"
+          git config user.email "matrix-evidence-bot@users.noreply.github.com"
+          git add \
+            evidence/football_cohort_recovery/MATRIX_INDEPENDENT_VERIFIED_FT_LEDGER.jsonl \
+            evidence/governance/MATRIX_13_MARKET_EXACT_COHORT_CALIBRATION_LAST.json \
+            evidence/governance/MATRIX_13_MARKET_FORMAL_SCORING_GATE_LAST.json
+          if git diff --cached --quiet; then
+            echo "MATRIX_ARCHIVED_FT_ALREADY_PRESENT_NO_COMMIT_NEEDED"
+            exit 0
+          fi
+          git commit -m "evidence(13-cohort): append verified archived cup FT without original model changes"
+          # A concurrent independent MATRIX workflow may advance the branch
+          # during archival replay. Rebase safely; NEVER force-push or drop
+          # someone else's commits. A conflict fails closed for inspection.
+          git fetch origin repair/cor09-world-pipeline
+          git rebase origin/repair/cor09-world-pipeline
+          git push origin HEAD:repair/cor09-world-pipeline

@@ -1,0 +1,94 @@
+name: MATRIX Colombia Real 42 Lane Counter Reactivation
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - repair/cor09-world-pipeline
+    paths:
+      - .github/workflows/matrix-colombia-42-real-counter-reactivation.yml
+      - tools/matrix_colombia_42_authentic_research_freeze_bridge.py
+      - tests/test_matrix_colombia_42_authentic_research_freeze_bridge.py
+permissions:
+  contents: write
+concurrency:
+  group: matrix-multi-market-canonical-supervisor
+  cancel-in-progress: false
+jobs:
+  admit-physical-colombia-research-freezes:
+    runs-on: ubuntu-latest
+    timeout-minutes: 18
+    env:
+      REAL_MONEY: BLOCKED
+      AUTOMATIC_WAGERING: "false"
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: repair/cor09-world-pipeline
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Test authentic triply reconciled prematch goals, idempotency and fail-closed
+        run: |
+          python -m pip install --disable-pip-version-check pytest
+          PYTHONPATH=. python -m pytest -q \
+            tests/test_matrix_colombia_42_authentic_research_freeze_bridge.py \
+            tests/test_matrix_42_lane_prospective_registry.py
+      - name: Record source-authenticated real research freezes before kickoff
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$REAL_MONEY" = BLOCKED
+          test "$AUTOMATIC_WAGERING" = false
+          PYTHONPATH=. python -m tools.matrix_colombia_42_authentic_research_freeze_bridge
+          PYTHONPATH=. python -m tools.matrix_42_lane_prospective_registry
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          p=Path("evidence/market_portfolio/MATRIX_42_LANE_PROSPECTIVE_REGISTRY_LAST.json")
+          d=json.loads(p.read_bytes())
+          audit=json.loads(Path("evidence/market_portfolio/MATRIX_COLOMBIA_AUTHENTIC_GOALS_PROSPECTIVE_INTAKE_LAST.json").read_bytes())
+          admitted=d["append_result"]["admitted_this_run"]
+          n=d["counts"]["ledger_rows_total"]
+          assert d["total_lanes"]==42 and d["football_lanes"]==30 and d["tennis_lanes"]==12
+          assert audit["production_p_matrix_authorized"] is False
+          assert audit["telegram_signal_authorized"] is False
+          assert audit["real_money"]=="BLOCKED"
+          assert d["protections"]["real_money"]=="BLOCKED"
+          if audit["incoming_research_freezes"]:
+            assert 0<admitted<=audit["incoming_research_freezes"]
+          assert d["lanes"]["TOTAL_GOALS_OVER_UNDER"]["prospective_unique_count"]>=727
+          print("REAL_42_MARKET_COUNTER_MOVEMENT",json.dumps({
+            "new_research_rows_this_cycle":admitted,
+            "new_authentic_producer_freezes":audit["incoming_research_freezes"],
+            "42_lane_total_ledger":n,
+            "over_under_research_freezes":d["lanes"]["TOTAL_GOALS_OVER_UNDER"]["prospective_unique_count"],
+            "team_home_research_freezes":d["lanes"]["TEAM_TOTAL_GOALS_HOME"]["prospective_unique_count"],
+            "team_away_research_freezes":d["lanes"]["TEAM_TOTAL_GOALS_AWAY"]["prospective_unique_count"],
+            "official_p_matrix_authorized":False,"telegram_green_authorized":False},sort_keys=True))
+          PY
+      - name: Commit actual historical ledger movement and no-green source evidence
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name matrix-colombia-42-counter
+          git config user.email matrix-colombia-42-counter@users.noreply.github.com
+          git add evidence/market_portfolio/MATRIX_42_LANE_FREEZE_INBOX.jsonl
+          git add evidence/market_portfolio/MATRIX_42_LANE_PROSPECTIVE_LEDGER.jsonl
+          git add evidence/market_portfolio/MATRIX_42_LANE_PROSPECTIVE_REGISTRY_LAST.json
+          git add evidence/market_portfolio/MATRIX_COLOMBIA_AUTHENTIC_GOALS_PROSPECTIVE_INTAKE_LAST.json
+          if git diff --cached --quiet; then
+            echo "NO_NEW_ROWS_ALREADY_ADMITTED_OR_KICKOFF_PASSED"
+            exit 0
+          fi
+          git commit -m "evidence(markets): real triple-authenticated Colombia prematch research goals freeze count increment"
+          for try in 1 2 3 4; do
+            git fetch origin repair/cor09-world-pipeline
+            if ! git rebase origin/repair/cor09-world-pipeline; then
+              git rebase --abort || true
+              exit 1
+            fi
+            if git push origin HEAD:repair/cor09-world-pipeline; then exit 0; fi
+            sleep "$try"
+          done
+          exit 1

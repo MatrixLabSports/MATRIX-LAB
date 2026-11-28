@@ -1,0 +1,105 @@
+{
+  "schema": "MATRIX_NEXT_STEP_EXECUTION_AUDIT_21OCT2026_V1",
+  "generated_at_utc": "2026-10-21T23:18:00+00:00",
+  "clay": {
+    "workflow_run": {
+      "run_number": 76,
+      "run_id": 39689149036,
+      "conclusion": "SUCCESS"
+    },
+    "observation_count": 3,
+    "new_observations": 0,
+    "candidate_events_checked": 16,
+    "primary_blocker": "PIT_CATCHUP_NOT_READY",
+    "structural_blocker": "CATCHUP_COMPONENT_HAS_UNMAPPED_IDENTITIES",
+    "profile_recovery": {
+      "status": "PASS_WITH_BLOCKERS",
+      "passed_events": 1,
+      "blocked_events": 47,
+      "cached_deterministic_blocks": 40,
+      "provider_network_calls": 8,
+      "safe_mapping_added": "rapidapi-tennis:player:10231 -> Gastao Elias"
+    },
+    "authority_expansion": {
+      "candidate_count": 13,
+      "new_records": 0,
+      "blockers": {
+        "NO_PRE_CUT_CHALLENGER_HISTORY": 11,
+        "PRE_CUT_HAND_NOT_FIXED": 2
+      }
+    },
+    "external_evidence_search": {
+      "queried_ids": [
+        "rapidapi-tennis:player:12276",
+        "rapidapi-tennis:player:105210",
+        "rapidapi-tennis:player:131440",
+        "rapidapi-tennis:player:106915",
+        "rapidapi-tennis:player:105480"
+      ],
+      "result": "NO_UNEQUIVOCAL_PUBLIC_MAPPING_FOUND",
+      "promotion_performed": false
+    },
+    "protections": {
+      "historical_backfill": false,
+      "silent_imputation": false,
+      "metrics_opened": false,
+      "outcomes_read": 0,
+      "real_money": "BLOCKED"
+    },
+    "conclusion": "NO_SAFE_ADDITIONAL_CLAY_FREEZE_AVAILABLE"
+  },
+  "football_22oct": {
+    "telegram_refresh": {
+      "run_number": 336,
+      "run_id": 39692143782,
+      "conclusion": "SUCCESS",
+      "run_at_utc": "2026-10-21T23:15:27+00:00"
+    },
+    "football_candidates": 75,
+    "existing_sent_candidates": 3,
+    "unsent_candidates": 72,
+    "pre_send_waiting_window": 32,
+    "pre_send_blocked": 40,
+    "pre_send_quote_checks": 4,
+    "pre_send_passed": 0,
+    "sent_now": 0,
+    "settlements_now": 0,
+    "blocker_counts_by_state": {
+      "WAITING_FINAL_REVALIDATION_WINDOW": 32,
+      "BLOCKED_NO_VALID_EXACT_AUTHORIZED_BOOK_OVER25": 20,
+      "BLOCKED_QUALITY_REVALIDATED_EV_BELOW_5PCT": 5,
+      "BLOCKED_NONPOSITIVE_EV": 4,
+      "BLOCKED_KICKOFF_REACHED_MONITORING_BREACH": 10,
+      "BLOCKED_KICKOFF_REACHED_LEGACY_UNOBSERVABLE": 1
+    },
+    "blocker_counts_by_recoverability": {
+      "TEMPORAL_WAIT": 32,
+      "RECOVERABLE_WHILE_PREMATCH": 24,
+      "RECOVERABLE_WITH_BETTER_AUTHORIZED_QUOTE_WHILE_PREMATCH": 5,
+      "NOT_RECOVERABLE_NO_BACKFILL": 11
+    },
+    "paper_bankroll_current_cop": 4885750,
+    "paper_open_bets": 0,
+    "real_money": "BLOCKED",
+    "conclusion": "NO_GREEN_SIGNAL_PHYSICALLY_PASSING_ALL_GATES"
+  },
+  "unchanged_parallel_blocks": {
+    "hard": {
+      "unique_calibration_observations": 301,
+      "remaining_to_600": 299,
+      "metrics": "SEALED_UNTIL_600"
+    },
+    "live": {
+      "settled_quality_valid_unique_matches": 196,
+      "global_unique_match_count": 306,
+      "challenger_men_clay": "29/30",
+      "itf_women_hard": "75/100"
+    }
+  },
+  "cadence_verification": {
+    "football_main": "*/15 * * * *",
+    "clay_main": "7,22,37,52 * * * *",
+    "one_shot_markers_removed": true
+  },
+  "decision": "CONTINUE_15_MIN_AUTOMATION_FAIL_CLOSED_NO_FORCE"
+}

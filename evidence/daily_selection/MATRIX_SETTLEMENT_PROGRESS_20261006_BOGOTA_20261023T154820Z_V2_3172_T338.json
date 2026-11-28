@@ -1,0 +1,96 @@
+{
+  "schema": "MATRIX_SETTLEMENT_PROGRESS_20261006_BOGOTA_V1",
+  "cut_utc": "2026-10-23T15:48:20+00:00",
+  "branch": "repair/cor09-world-pipeline",
+  "comparison_previous_snapshot": "evidence/daily_selection/MATRIX_SETTLEMENT_PROGRESS_20261006_BOGOTA_20261023T153100Z_V2_3167_T338.json",
+  "candidate_artifact": "evidence/daily_selection/MATRIX_CALIBRATION_CANDIDATES_20261006_BOGOTA.json",
+  "candidate_blob_sha": "52e897007840f5bed1a8999edad8ee594fefc767",
+  "football": {
+    "cohort_ft": 107,
+    "cohort_total": 116,
+    "cohort_change": 0,
+    "cohort_method": "Previous audited 107/116 carried forward; exact intersection of 5 new governed FT IDs with 116 original fixture IDs is empty; 8 nonstandard and 1 NS still present in current governed sync. Full football global ledger not independently reparsed; uniqueness audit reports 3974 unique rows.",
+    "global_settled": 3974,
+    "global_change_since_previous_snapshot": 5,
+    "global_frozen": 4825,
+    "v2_frozen_per_market": 3997,
+    "v2_settled_per_market": 3172,
+    "v2_pending_per_market": 825,
+    "v2_markets": [
+      "1X2",
+      "OVER_2_5",
+      "UNDER_2_5",
+      "DOUBLE_CHANCE_1X",
+      "DOUBLE_CHANCE_X2"
+    ],
+    "new_governed_ft_fixture_ids": [
+      "1603063",
+      "1607459",
+      "1607460",
+      "1607461",
+      "1607464"
+    ],
+    "new_governed_ft_count": 5,
+    "source_terminal_status": "FT",
+    "last_governed_sync_utc": "2026-10-23T15:48:20+00:00",
+    "last_governed_sync_new_settlement_count": 5,
+    "nonstandard": {
+      "PEN": [
+        "1588817",
+        "1588821",
+        "1588845",
+        "1588863",
+        "1588890",
+        "1588893",
+        "1619499"
+      ],
+      "AET": [
+        "1644168"
+      ],
+      "NS": [
+        "1596466"
+      ]
+    },
+    "source_v2_state_blob_shas": {
+      "1X2": "491165e3794c7fa79465fc140220f26ca14c1a3c",
+      "OVER_2_5": "c4c21b398d6bfefc019af6b6b7e4f5d9006e17f0",
+      "UNDER_2_5": "2b699f0c74a0871d19952d50262b682f78173f47",
+      "DOUBLE_CHANCE_1X": "32f184918f79a27c1e444d1eee130bcb89f557a2",
+      "DOUBLE_CHANCE_X2": "eaebeac40287ed63bbd1912d3f5a37d83f28d0e9"
+    },
+    "source_physical_uniqueness_blob_sha": "de141b51ec3a288676c6ce5f412f1fec5a5ba2d0",
+    "source_settlement_sync_blob_sha": "edebc2d5349744e10af283bc0ba211e764c5db38"
+  },
+  "tennis": {
+    "cohort_finished": 11,
+    "cohort_total": 11,
+    "cohort_change": 0,
+    "global_settled": 338,
+    "unique_events": 338,
+    "unique_settlements": 338,
+    "new_finished_since_previous_snapshot": 0,
+    "cohort_method": "Carried forward from previous fully parsed 338-row tennis settlement ledger. GitHub compare 6d6696d3... to current branch lists no changes to tennis settlement ledger; not independently reparsed in this review.",
+    "source_ledger_blob_sha": "5ea3d69e4a0d5bed4b0d22884af789f6bbcf8fd5",
+    "source_previous_snapshot_blob_sha": "77fce8e0575f384c9261afd0bfc51d5577309b6e"
+  },
+  "governance": {
+    "settlement_final_only": true,
+    "metrics_opened": false,
+    "tuning": false,
+    "odds_to_p": false,
+    "real_money": "BLOCKED",
+    "v2_markets_metrics_opened_false_verified": true,
+    "canonical_guard_last_observed_status": "PASS",
+    "canonical_guard_generated_at_utc": "2026-10-23T15:36:37.758789+00:00",
+    "canonical_guard_source_blob_sha": "d69f35bccef5d0b24964e34189e547430694c1ec",
+    "canonical_tracker_stale_vs_ledger": true,
+    "canonical_tracker_reported_global_settled": 3942,
+    "physical_ledger_audit_global_settled": 3974,
+    "canonical_tracker_reported_v2_settled": 3140,
+    "physical_v2_state_settled": 3172,
+    "canonical_tracker_blob_sha": "0e3c5c31177068e7bf0ed326fb20183ab362584d",
+    "canonical_tracker_reconciliation_required": true,
+    "note": "Guard PASS only checks freshness of its registered sources and does not certify agreement between stale canonical tracker and governed ledger."
+  },
+  "note": "Audit-only append-only snapshot. Five new FT were already governed and persisted in settlement ledgers; no duplicate settlement, no metrics opening, no tuning, no odds-to-P, no wagering authorization."
+}

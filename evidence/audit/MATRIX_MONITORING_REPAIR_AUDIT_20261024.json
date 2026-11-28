@@ -1,0 +1,73 @@
+{
+  "schema": "MATRIX_MONITORING_REPAIR_AUDIT_V1",
+  "cut_bogota": "2026-10-24",
+  "repository": "MatrixLabSports/MATRIX-LAB",
+  "operational_branch": "repair/cor09-world-pipeline",
+  "protections": {
+    "real_money": "BLOCKED",
+    "automatic_wagering": false,
+    "no_backfill": true
+  },
+  "telegram": {
+    "code_status": "CERTIFIED",
+    "runtime_status": "CERTIFIED",
+    "scheduler": "*/15 * * * *",
+    "odds_api_net_injected": true,
+    "watchdog_each_cycle": true,
+    "latest_watchdog": {
+      "generated_at_utc": "2026-10-24T17:28:46.377163+00:00",
+      "status": "PASS",
+      "active_future_candidates": 18,
+      "critical_unresolved_candidates": 0,
+      "new_monitoring_breaches": 0,
+      "historical_monitoring_breaches": 51
+    },
+    "runtime_evidence_commit": "4635aa1ac0b172f74d15dcb9645c3a747a1a4a69",
+    "main_code_commits": [
+      "20fa0b88f8b1943377aae72142db6eb224147f74",
+      "6fe21b356d405556233501b1fb4d4adc2f13292c"
+    ],
+    "operational_code_commits": [
+      "ca309e6f254311a5545becb3d14931f18ec2dd5c",
+      "cc8398109363abd52cf144102bab2f211df6441c"
+    ]
+  },
+  "clv": {
+    "code_status": "CERTIFIED",
+    "runtime_new_heartbeat_status": "NOT_YET_MATERIALIZED",
+    "reason": "PREVIOUS_LONG_RUNNING_WATCHER_IS_PROTECTED_BY_CANCEL_IN_PROGRESS_FALSE; NEW RUNS QUEUE INSTEAD OF KILLING THE ACTIVE WATCHER",
+    "historical_missed_after_kickoff_baseline": 202,
+    "closing_odds_count": 11,
+    "remaining_to_300": 289,
+    "cancel_in_progress": false,
+    "no_new_miss_fail_closed_guard": true,
+    "heartbeat_contract": true,
+    "odds_api_net_preferred": true,
+    "api_football_fallback": true,
+    "strict_fresh_gate_seconds": 120,
+    "main_code_commits": [
+      "6ae6d2a8dd23d4753553ccd39affcc4592ef830c",
+      "809c3ca8f8549e2ce929776d30de8dcbaf297c8f",
+      "33f3817b1af7e0a86e6bd3c820b9ba8262be123c",
+      "47280b88223fc31eb55fd3b798a057dd20f36726"
+    ],
+    "operational_code_commits": [
+      "5790ddefe7a14d47cd3332f6b177251ac0fd5f96",
+      "1e54be5de16726b448fab7d3cb7fcf0be71f96e0",
+      "cf64470e841be339acae19a6f193c3418127f7d2",
+      "d4cbe13b5645aee15009fb202c382b5e17fcc294"
+    ]
+  },
+  "permanent_regression_test": {
+    "path": "tests/test_monitoring_scheduler_contracts.py",
+    "commit": "1a5732826e67b7017caf98da75b15d956b020cc1"
+  },
+  "independent_proof_workflow": {
+    "path": ".github/workflows/matrix-monitoring-repair-proof.yml",
+    "main_create_commit": "3b2d6ad7b5a84af7a62545bfc8b237c4c20e8f46",
+    "main_trigger_commit": "493d3e4a176321d6436cc5faae4f62e63dbb6acb",
+    "operational_mirror_commit": "a97b848a8ce04817562607503ef187135180ad7f",
+    "artifact_status": "NOT_YET_MATERIALIZED_AT_AUDIT_CUT"
+  },
+  "result": "TELEGRAM_RUNTIME_CERTIFIED_CLV_CODE_CERTIFIED_RUNTIME_HEARTBEAT_PENDING"
+}

@@ -1,0 +1,36 @@
+{
+  "schema": "MATRIX_TELEGRAM_BLOCKER_EVIDENCE_V1",
+  "source": {
+    "workflow": "telegram-green-signals.yml",
+    "run_id": 41264796123,
+    "job_id": 124725239544,
+    "workflow_number": 1797
+  },
+  "observed_at_utc": "2026-11-01T02:21:56Z",
+  "findings": [
+    {
+      "provider": "api_football",
+      "status": "NOT_AUTHORIZED_VERIFIED",
+      "reason": "API_FOOTBALL_SUBSCRIPTION_NOT_VERIFIED_FAIL_CLOSED"
+    },
+    {
+      "provider": "odds_api_net",
+      "status": "QUOTA_GUARD_BLOCKED",
+      "http_status": 429,
+      "detail": "Usage endpoint unavailable; last safe decision retained after prior monthly quota exceeded."
+    },
+    {
+      "component": "telegram",
+      "status": "SUPERVISOR_EXIT_1",
+      "messages_sent": 0,
+      "credentials_presence_check": "PASS"
+    }
+  ],
+  "certification": {
+    "live_signals_restored": false,
+    "api_connectivity_verified": false,
+    "real_money": "BLOCKED",
+    "automatic_wagering": false
+  },
+  "next_required": "Certify authorized independent odds transport and valid live quotes; do not override quota or subscription gates."
+}

@@ -1,0 +1,99 @@
+name: MATRIX ESPN Immutable 12 Source Evidence Archive
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - repair/cor09-world-pipeline
+    paths:
+      - .github/workflows/matrix-espn-immutable-evidence-archive.yml
+permissions:
+  actions: read
+  contents: write
+jobs:
+  persist-verified-source-evidence:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: repair/cor09-world-pipeline
+          sparse-checkout-cone-mode: false
+          sparse-checkout: |
+            .github/workflows/matrix-espn-immutable-evidence-archive.yml
+      - uses: actions/download-artifact@v4
+        with:
+          run-id: 44986315540
+          name: matrix-espn-six-league-monthly-raw-research
+          github-token: ${{ github.token }}
+          path: evidence_input
+      - name: Verify the archived genuine SHA receipts and candidate temporal gates
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import hashlib,json
+          root=Path("evidence_input")
+          total=0
+          for month in ("2026-10","2026-11"):
+              folder=root/month
+              report=json.loads((folder/"MATRIX_ESPN_SIX_LEAGUE_RAW_RESEARCH_LAST.json").read_bytes())
+              assert report["source_captured_leagues"]==6
+              assert report["point_in_time_receipts_stamped_after_source_response"] is True
+              assert report["production_p_matrix_authorized"] is False
+              for row in report["sources"].values():
+                  raw=(folder/row["raw_archive_file"]).read_bytes()
+                  assert hashlib.sha256(raw).hexdigest()==row["raw_sha256"]
+                  assert len(raw)==row["raw_bytes"]
+                  total+=1
+          predicts=list((root/"output").glob("ESPN_SHA_BOUND_RESEARCH_FROZEN_*.json"))
+          assert len(predicts)==1
+          forecast=json.loads(predicts[0].read_bytes())
+          assert forecast["source_sha256_and_point_in_time_receipts_verified"] is True
+          assert forecast["research_probability_count"]==71
+          assert forecast["telegram_signal_authorized"] is False
+          assert forecast["real_money"]=="BLOCKED"
+          assert total==12
+          print("TWELVE_SHA_RECEIPTS_AND_71_RESEARCH_FREEZES_CONFIRMED")
+          PY
+      - name: Create-only immutable GitHub research archive
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          python - <<'PY'
+          import base64,hashlib,json,os,urllib.error,urllib.request,zipfile
+          from pathlib import Path
+          folder=Path("evidence_input")
+          outfile=Path("ESPN_SHA_PIT_PREMATCH_12_SOURCES_71_RESEARCH_20261122T045141Z.zip")
+          with zipfile.ZipFile(outfile,"w",compression=zipfile.ZIP_DEFLATED,compresslevel=9) as z:
+              for p in sorted(folder.rglob("*")):
+                  if p.is_file():
+                      z.write(p,p.relative_to(folder).as_posix())
+          raw=outfile.read_bytes()
+          digest=hashlib.sha256(raw).hexdigest()
+          target="evidence/football_world_inventory/sha_bound_archives/"+outfile.name
+          url="https://api.github.com/repos/"+os.environ["GITHUB_REPOSITORY"]+"/contents/"+target
+          headers={"Authorization":"Bearer "+os.environ["GH_TOKEN"],
+                   "Accept":"application/vnd.github+json",
+                   "X-GitHub-Api-Version":"2022-11-28",
+                   "Content-Type":"application/json"}
+          payload={"message":"evidence(research): archive exact 12 ESPN source bytes and 71 immutable shadow freezes",
+                   "branch":"repair/cor09-world-pipeline",
+                   "content":base64.b64encode(raw).decode("ascii")}
+          request=urllib.request.Request(url,data=json.dumps(payload).encode("utf-8"),
+                                         headers=headers,method="PUT")
+          with urllib.request.urlopen(request,timeout=45) as response:
+              saved=json.load(response)
+              assert response.status==201
+          with urllib.request.urlopen(urllib.request.Request(url+"?ref=repair%2Fcor09-world-pipeline",
+                                             headers=headers),timeout=45) as response:
+              checked=json.load(response)
+          recovered=base64.b64decode(checked["content"])
+          assert recovered==raw and hashlib.sha256(recovered).hexdigest()==digest
+          assert checked["path"]==target
+          print(json.dumps({"research_archive_saved":target,
+                            "archive_zip_sha256":digest,
+                            "bytes":len(raw),
+                            "github_blob_sha":checked["sha"],
+                            "original_source_receipts":12,
+                            "pregame_research_probabilities":71,
+                            "telegram_authorized":False},sort_keys=True))
+          PY

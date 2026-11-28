@@ -1,0 +1,34 @@
+{
+  "schema": "MATRIX_TENNIS_SOURCE_ARCHITECTURE_V2",
+  "effective_date_bogota": "2026-10-15",
+  "decision": "RETIRE_API_TENNIS_COST_UTILITY",
+  "rationale": {
+    "api_tennis_subscription": "EXPIRED_NOT_RENEWED",
+    "api_tennis_status": "RETIRED_COST_UTILITY_DECISION",
+    "reason": "Paid secondary source is not economically justified while current tennis inventory is not yet being converted efficiently into governed calibration observations or profitable signals.",
+    "renewal_policy": "DO_NOT_RENEW_UNTIL_INCREMENTAL_VALUE_EXCEEDS_COST_WITH_PHYSICAL_EVIDENCE"
+  },
+  "active_architecture": {
+    "calendar_discovery_order": [
+      "SofaScore",
+      "Flashscore"
+    ],
+    "paid_structured_primary": "RapidAPI Tennis - ATP WTA ITF",
+    "paid_structured_secondary": null,
+    "api_tennis_required": false,
+    "two_paid_sources_required": false
+  },
+  "governance": {
+    "provider_count_equality_required": false,
+    "missing_not_zero": true,
+    "silent_imputation": false,
+    "synthetic_backfill": false,
+    "odds_to_probability": false,
+    "pit_required": true,
+    "freeze_prestart_required": true,
+    "metrics_policy": "SEALED_UNTIL_GOVERNED_GATE",
+    "automatic_wagering": false,
+    "real_money": "BLOCKED"
+  },
+  "operating_rule": "Exploit existing RapidAPI + SofaScore + Flashscore coverage before approving any additional paid tennis source."
+}

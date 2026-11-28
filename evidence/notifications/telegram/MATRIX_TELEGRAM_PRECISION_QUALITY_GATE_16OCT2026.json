@@ -1,0 +1,63 @@
+{
+  "schema": "MATRIX_TELEGRAM_PRECISION_QUALITY_GATE_V1",
+  "generated_at_utc": "2026-10-16T05:35:00Z",
+  "objective": "Reduce low-quality Telegram signals while preserving frozen P_MATRIX and existing engines; support future API-cost recovery with higher selectivity.",
+  "policy": {
+    "name": "API_COST_RECOVERY_PRECISION_V1",
+    "applies_at": "FINAL_PREMATCH_REVALIDATION_ONLY",
+    "p_matrix_min": 0.6,
+    "revalidated_ev_min": 0.05,
+    "decimal_odds_rule": ">1.50 remains unchanged",
+    "same_house_exact_market_revalidation": true,
+    "no_engine_change": true,
+    "no_odds_to_probability": true,
+    "real_money": "BLOCKED",
+    "automatic_wagering": false
+  },
+  "implementation": {
+    "tool": "tools/telegram_green_signal_alerts.py",
+    "implementation_commit": "5b0dd68c53c7701aaa64dd942d5b1574cefacbe2",
+    "test_commit": "f6bf8cd13400b4f134d3a6251aa1a1943e08a87f",
+    "workflow_run_id": 38856408682,
+    "workflow_conclusion": "success",
+    "pytest_result": "13 passed in 0.12s",
+    "supervisor_step": "success",
+    "ledger_persist_step": "success"
+  },
+  "physical_run": {
+    "run_at_utc": "2026-10-16T05:34:07+00:00",
+    "football_candidates": 27,
+    "telegram_16oct_waiting_final_120m": 10,
+    "pre_send_quote_checks": 0,
+    "pre_send_passed": 0,
+    "pre_send_blocked": 0,
+    "sent_now": 0,
+    "real_money": "BLOQUEADO",
+    "paper_bankroll_current_cop": 5230250,
+    "paper_open_bets": 19,
+    "paper_open_exposure_cop": 575000
+  },
+  "snapshot_projection": {
+    "source_report": "evidence/api_football/daily_prematch_reports/2026-10-16/over25_shadow_ev/MATRIX_FOOTBALL_DAILY_OVER25_GOVERNED_SHADOW_EV.json",
+    "source_blob_sha": "eb67cccd3a5b51184e04de0889fcf5414e0da12b",
+    "note": "Projection only. Final eligibility must be recalculated inside the last 120 minutes using the revalidated same-house quote; this does not authorize sending.",
+    "candidates_total": 10,
+    "projected_pass": 4,
+    "projected_block": 6,
+    "projected_pass_matches": [
+      "Deportivo La Coruna vs Levante",
+      "Le Mans vs Toulouse",
+      "SV Lafnitz vs Gleisdorf 09",
+      "Kiryat Yam SC vs Kafr Qasim"
+    ],
+    "projected_block_matches": [
+      "Voitsberg vs First Vienna",
+      "Strabane Athletic vs Loughgall",
+      "Hapoel Afula vs Maccabi Herzliya",
+      "Karviná vs Dukla Praha",
+      "Maccabi Ahi Nazareth vs Hapoel Kfar Saba",
+      "FC Eindhoven vs Vitesse"
+    ]
+  },
+  "status": "PHYSICALLY_IMPLEMENTED_TESTED_AND_DEPLOYED_WAITING_FINAL_120M_REVALIDATION"
+}

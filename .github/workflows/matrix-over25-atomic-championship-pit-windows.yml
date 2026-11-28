@@ -1,0 +1,67 @@
+name: MATRIX Over25 Atomic Championship PIT Windows
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - repair/cor09-world-pipeline
+    paths:
+      - .github/workflows/matrix-over25-atomic-championship-pit-windows.yml
+      - tools/matrix_championship_atomic_pit_cycle.py
+      - tests/test_matrix_championship_atomic_pit_cycle.py
+      - tools/matrix_persist_atomic_championship_pit.py
+
+permissions:
+  contents: write
+
+concurrency:
+  group: matrix-over25-atomic-pit-windows
+  cancel-in-progress: false
+
+jobs:
+  seal-atomic-pit:
+    runs-on: [self-hosted, windows, matrix-browser-odds]
+    timeout-minutes: 12
+    env:
+      PYTHONPATH: .
+      MATRIX_MODE: SHADOW
+      REAL_MONEY: BLOCKED
+      AUTO_BETTING: DISABLED
+      MATRIX_TARGET_BOGOTA_DATE: "2026-11-03"
+    defaults:
+      run:
+        shell: cmd
+    steps:
+      - name: Checkout current research branch and immutable raw provider evidence
+        uses: actions/checkout@v4
+        with:
+          ref: repair/cor09-world-pipeline
+          fetch-depth: 0
+
+      - name: Verify locked Windows research environment
+        run: |
+          python -c "import os,sys; assert sys.version_info[:2]==(3,11); assert os.environ['REAL_MONEY']=='BLOCKED'; assert os.environ['AUTO_BETTING']=='DISABLED'; assert os.environ['MATRIX_MODE']=='SHADOW'"
+
+      - name: Test true PIT source hashes and no pricing during exhausted quota
+        run: python -m pytest -q tests/test_matrix_championship_atomic_pit_cycle.py tests/test_matrix_championship_quote_window_scope.py tests/test_matrix_independent_over25_quote_audit.py
+
+      - name: Seal one authentic complete verified five-source cycle
+        run: |
+          python -m tools.matrix_championship_atomic_pit_cycle --date 2026-11-03 --run-id %GITHUB_RUN_ID% --out evidence/football_world_inventory/2026-11-03/MATRIX_CHAMPIONSHIP_ATOMIC_PIT_RUN_%GITHUB_RUN_ID%.json
+          python -c "import json,os,pathlib; r=os.environ['GITHUB_RUN_ID']; p=pathlib.Path('evidence/football_world_inventory/2026-11-03')/('MATRIX_CHAMPIONSHIP_ATOMIC_PIT_RUN_'+r+'.json'); b=json.loads(p.read_text(encoding='utf-8')); assert b['prospective_research_history_certified_count']>=1; assert b['production_probability_authorized'] is False; assert b['telegram_signal_authorized'] is False; assert b['real_money']=='BLOCKED'; print('AUTHENTIC_ATOMIC_PROSPECTIVE_HISTORY='+str(b['prospective_research_history_certified_count']))"
+
+      - name: Exercise actual 15-minute research quote scope using immutable PIT, no provider calls
+        run: |
+          python -m tools.matrix_championship_quote_window_scope --date 2026-11-03 --outdir %RUNNER_TEMP%\\matrix-over25-offline-quote-scope --status-out evidence/football_world_inventory/2026-11-03/MATRIX_CHAMPIONSHIP_QUOTE_WINDOW_SCOPE_WINDOWS_%GITHUB_RUN_ID%.json
+          python -c "import json,os,pathlib; r=os.environ['GITHUB_RUN_ID']; f=pathlib.Path('evidence/football_world_inventory/2026-11-03')/('MATRIX_CHAMPIONSHIP_QUOTE_WINDOW_SCOPE_WINDOWS_'+r+'.json'); d=json.loads(f.read_text(encoding='utf-8')); assert d['status'] in ('NO_VERIFIED_PREMATCH_SCOPE','PREMATCH_RESEARCH_QUOTE_SCOPE_AVAILABLE'); assert d['telegram_signal_authorized'] is False; assert d['production_probability_authorized'] is False; assert d['real_money']=='BLOCKED'; assert d['source_attestation_file']; print('AUTHENTIC_ATOMIC_QUOTE_WINDOW_RESEARCH_ONLY='+d['status']+' SOURCE='+d['source_attestation_file'])"
+
+      - name: Upload immutable complete provenance evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: matrix-over25-atomic-verified-pit
+          path: |
+            evidence/football_world_inventory/2026-11-03/MATRIX_CHAMPIONSHIP_ATOMIC_PIT_RUN_${{ github.run_id }}.json
+            evidence/football_world_inventory/2026-11-03/MATRIX_CHAMPIONSHIP_QUOTE_WINDOW_SCOPE_WINDOWS_${{ github.run_id }}.json
+
+      - name: Persist verified PIT snapshot without promoting model
+        run: python -m tools.matrix_persist_atomic_championship_pit

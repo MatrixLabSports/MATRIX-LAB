@@ -1,0 +1,200 @@
+{
+  "schema": "MATRIX_COR0203_IDENTITY_EXPANSION_CERTIFICATION_V1",
+  "certified_at_utc": "2026-10-02T15:54:00+00:00",
+  "scope": "COR02_COR03_IDENTITY_AND_PRECUT_HISTORY_BLOCKER_REDUCTION",
+  "result": "CERTIFIED_PASS",
+  "scope_status": "ROOT_CAUSE_FIX_CERTIFIED",
+  "overall_cor0203_status": "IN_PROGRESS",
+  "holdout_id": "A22_POST_AUDIT_VIRGIN_HOLDOUT_V1",
+  "binding": "MATRIX_COR0203_MODEL_BINDING_R707_V1",
+  "final_success_run": {
+    "run_id": 37029934539,
+    "workflow": "COR02-03 repo-native hourly scheduler",
+    "workflow_head_sha": "0a9627ba27cfda7b3832a2b6a59d44d93739fcc5",
+    "conclusion": "success",
+    "tests_passed": 65,
+    "tests_failed": 0,
+    "production_commit": "9ed69edd965207491f70ce5d5bcbc46b37efa259"
+  },
+  "precertification_attempts": [
+    {
+      "run_id": 37029489761,
+      "accepted": false,
+      "reason": "PRODUCTION_INTEGRATION_FAILURE:IDENTITY_AUTHORITY_LAST_UNBOUND"
+    },
+    {
+      "run_id": 37029621880,
+      "accepted": false,
+      "reason": "PRODUCTION_INTEGRATION_FAILURE:LITERAL_SHELL_NEWLINE_BINDING"
+    },
+    {
+      "run_id": 37029743023,
+      "accepted": false,
+      "reason": "PRODUCTION_RAN_PRE_NORMALIZED_BINDING_HEAD"
+    }
+  ],
+  "implementation": {
+    "authority_expander": {
+      "path": "tools/cor0203_expand_identity_authority.py",
+      "blob_sha": "3dad9c31b178b74f41829bbbf8fe26821dec0ef6"
+    },
+    "regression_tests": {
+      "path": "tests/test_cor0203_expand_identity_authority.py",
+      "blob_sha": "c900ef1cbf445f1e680218f8efc5a65a74f6bae0"
+    },
+    "crosswalk": {
+      "path": "tools/cor0203_build_identity_crosswalk.py",
+      "blob_sha": "f48a551adf9a2877a3122bcfeeb410ba6121fef8"
+    },
+    "production_cycle": {
+      "path": "scripts/cor0203_production_cycle.sh",
+      "blob_sha": "510e4329854008e222b6d17544c4ddf03dafb9e1"
+    },
+    "authority_last": {
+      "path": "evidence/cor0203/identity/MATRIX_COR0203_IDENTITY_AUTHORITY_LAST.json",
+      "blob_sha": "12dd7bd3ce4e7d0fe81d86990751f1e6b26e0cbc"
+    }
+  },
+  "identity_expansion": {
+    "candidate_count": 11,
+    "new_records": 9,
+    "authority_record_count": 83,
+    "profile_requests": 9,
+    "provider_network_calls": 9,
+    "strict_before_period": 20260921,
+    "new_provider_player_ids": [
+      "rapidapi-tennis:player:17123",
+      "rapidapi-tennis:player:56211",
+      "rapidapi-tennis:player:96765",
+      "rapidapi-tennis:player:76333",
+      "rapidapi-tennis:player:92243",
+      "rapidapi-tennis:player:85859",
+      "rapidapi-tennis:player:101158",
+      "rapidapi-tennis:player:106767",
+      "rapidapi-tennis:player:55828"
+    ],
+    "correctly_blocked": [
+      {
+        "provider_player_id": "rapidapi-tennis:player:37492",
+        "player": "Andres Andrade",
+        "reason": "NO_PRE_CUT_CHALLENGER_HISTORY"
+      },
+      {
+        "provider_player_id": "rapidapi-tennis:player:76009",
+        "player": "Abedallah Shelbayh",
+        "reason": "NO_PRE_CUT_CHALLENGER_HISTORY"
+      }
+    ],
+    "post_cut_competitive_data_used": false,
+    "outcomes_used": false,
+    "odds_used": false
+  },
+  "restage": {
+    "revision": 770,
+    "events": 4,
+    "crosswalk_status": "PASS",
+    "stage_status": "PASS",
+    "staged_events": 4,
+    "event_ids": [
+      "COR0203-RAPIDAPI-TENNIS-1437-8a1fa2797e1b",
+      "COR0203-RAPIDAPI-TENNIS-1473-0a6a50b2035b",
+      "COR0203-RAPIDAPI-TENNIS-1606-31c30b7c6388",
+      "COR0203-RAPIDAPI-TENNIS-1581-9ebe68ab67f0"
+    ]
+  },
+  "prematch_gate": {
+    "freeze_at_utc": "2026-10-02T15:52:16+00:00",
+    "blocked_post_start": [
+      {
+        "event_id": "COR0203-RAPIDAPI-TENNIS-1437-8a1fa2797e1b",
+        "players": [
+          "Mitchell Krueger",
+          "Keegan Smith"
+        ],
+        "event_start_utc": "2026-10-02T15:00:00+00:00",
+        "blocker": "POST_START_FREEZE_FORBIDDEN",
+        "correctly_rejected": true
+      }
+    ],
+    "valid_freezes": [
+      {
+        "event_id": "COR0203-RAPIDAPI-TENNIS-1473-0a6a50b2035b",
+        "players": [
+          "Darwin Blanch",
+          "Dylan Dietrich"
+        ],
+        "event_start_utc": "2026-10-02T16:30:00+00:00",
+        "freeze_at_utc": "2026-10-02T15:52:16+00:00",
+        "lead_seconds": 2264,
+        "observation_index": 109
+      },
+      {
+        "event_id": "COR0203-RAPIDAPI-TENNIS-1606-31c30b7c6388",
+        "players": [
+          "Felix Balshaw",
+          "Henry Bernet"
+        ],
+        "event_start_utc": "2026-10-02T16:30:00+00:00",
+        "freeze_at_utc": "2026-10-02T15:52:16+00:00",
+        "lead_seconds": 2264,
+        "observation_index": 110
+      },
+      {
+        "event_id": "COR0203-RAPIDAPI-TENNIS-1581-9ebe68ab67f0",
+        "players": [
+          "Clement Chidekh",
+          "Harold Mayot"
+        ],
+        "event_start_utc": "2026-10-02T18:00:00+00:00",
+        "freeze_at_utc": "2026-10-02T15:52:16+00:00",
+        "lead_seconds": 7664,
+        "observation_index": 111
+      }
+    ]
+  },
+  "same_run_additional_governed_freeze": {
+    "event_id": "COR0203-RAPIDAPI-TENNIS-1312-ea65c9c71e19",
+    "players": [
+      "David Jorda Sanchis",
+      "Inaki Montes-De La Torre"
+    ],
+    "revision": 769,
+    "freeze_at_utc": "2026-10-02T15:51:48+00:00",
+    "event_start_utc": "2026-10-03T10:00:00+00:00",
+    "observation_index": 108,
+    "cause": "NORMAL_PROSPECTIVE_DISCOVERY_NOT_IDENTITY_EXPANSION"
+  },
+  "holdout_progress": {
+    "previous_unique_calibration_count": 54,
+    "final_unique_calibration_count": 58,
+    "net_gain_same_success_run": 4,
+    "directly_from_identity_expansion": 3,
+    "from_normal_prospective_discovery": 1,
+    "window1_count": 58,
+    "window1_target": 200,
+    "window1_remaining": 142,
+    "total_target": 600,
+    "total_remaining": 542
+  },
+  "integrity": {
+    "physical_frozen_rows": 111,
+    "audited_observations": 111,
+    "passed_observations": 111,
+    "failed_observations": 0,
+    "holdout_integrity": "PASS",
+    "metrics": "SEALED_UNTIL_600",
+    "metrics_opened": false,
+    "outcomes_read": 0,
+    "silent_imputation_detected": false,
+    "historical_backfill": "FORBIDDEN",
+    "automatic_wagering": false,
+    "real_money": "BLOCKED"
+  },
+  "settlement_state": {
+    "settled_unique_canonical_events": 51,
+    "unsettled_unique_canonical_events": 7,
+    "duplicate_aliases_used_for_metrics": 0,
+    "reconciliation_result": "PASS"
+  },
+  "certification_statement": "The exact pre-cut identity-authority expansion is certified: only identities with unique strict-pre-21SEP Challenger history plus exact provider biography were admitted; two unsupported identities remained blocked; one already-started event was rejected by the prematch gate; three newly unblocked events were frozen before start; all holdout, anti-leakage, sealed-metric, no-imputation and real-money protections remained intact."
+}

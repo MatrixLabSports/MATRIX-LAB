@@ -1,20 +1,47 @@
-﻿name: MATRIX CI
+name: MATRIX CI
 
 on:
   push:
+    paths-ignore:
+      - 'evidence/**'
   pull_request:
+  workflow_dispatch:
+    inputs:
+      expected_sha:
+        description: "Exact operational commit SHA to validate"
+        required: false
+        type: string
 
 permissions:
   contents: read
 
+# Every run has its own concurrency group: a newer commit cannot replace
+# an older pending run or cancel an in-progress certification in this workflow.
+# This does not prevent manual or repository-level cancellation.
+concurrency:
+  group: matrix-ci-run-${{ github.run_id }}
+  cancel-in-progress: false
+
 jobs:
   quality-gate:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    # Full pytest suite exceeds 20 minutes on hosted runners; preserve the gate.
+    timeout-minutes: 60
 
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.expected_sha || github.sha }}
+
+      - name: Verify requested SHA
+        if: ${{ github.event_name == 'workflow_dispatch' && inputs.expected_sha != '' }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          ACTUAL_SHA="$(git rev-parse HEAD)"
+          test "$ACTUAL_SHA" = "${{ inputs.expected_sha }}"
+          echo "MATRIX_CI_EXACT_SHA: PASS $ACTUAL_SHA"
 
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -29,6 +56,7 @@ jobs:
             python -m pip install -r requirements.txt
           fi
           python -m pip install pytest
+          python -m pip install -r infra/aws/r8_3r6/authority_service/requirements.txt
 
       - name: Run MATRIX canonical quality gate
         run: python scripts/matrix_ci_gate.py

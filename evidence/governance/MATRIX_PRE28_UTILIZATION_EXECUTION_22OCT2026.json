@@ -1,0 +1,147 @@
+{
+  "schema": "MATRIX_PRE28_UTILIZATION_EXECUTION_22OCT2026_V1",
+  "generated_at_utc": "2026-10-22T09:48:10Z",
+  "objective": "MAXIMIZE_PAID_API_VALUE_BEFORE_2026-10-28_WITHOUT_BREAKING_GOVERNANCE",
+  "completed": {
+    "tennis_paid_harvest": {
+      "run_number": 8,
+      "run_id": 39756269763,
+      "conclusion": "success",
+      "unique_matches": 211,
+      "provider_inventory_complete": true,
+      "prior_verified_network_calls": 2
+    },
+    "hard": {
+      "run_number": 38,
+      "run_id": 39757270905,
+      "conclusion": "success",
+      "unique_calibration_observations": 302,
+      "physical_frozen_rows": 473,
+      "remaining_to_600": 298,
+      "new_unique_this_run": 0,
+      "reason": "NO_NEW_ELIGIBLE_EVENTS",
+      "metrics_opened": false
+    },
+    "clay": {
+      "run_number": 81,
+      "run_id": 39756280390,
+      "conclusion": "success",
+      "observation_count": 3,
+      "future_clay_candidates_with_cut_ranking": 12,
+      "pit_ready_targets": 1,
+      "pit_blocked_targets": 23,
+      "identity_backlog": 45,
+      "profile_identity_passed": 0,
+      "profile_identity_blocked": 45,
+      "deterministic_cached_blocks": 40,
+      "policy": "DO_NOT_RELAX_IDENTITY_OR_PIT_TO_FORCE_OBSERVATIONS"
+    },
+    "live": {
+      "run_number": 470,
+      "run_id": 39756881789,
+      "conclusion": "success",
+      "global_unique_matches": 306,
+      "quality_valid_settled_total": 196,
+      "challenger_men_clay": {
+        "count": 29,
+        "remaining_to_30": 1
+      },
+      "challenger_men_hard": {
+        "count": 10,
+        "remaining_to_30": 20
+      },
+      "itf_women_hard": {
+        "count": 75,
+        "remaining_to_100": 25
+      }
+    },
+    "football": {
+      "repaired_failure_run": 70,
+      "repaired_failure_reason": "DEADLINE_EVIDENCE_FILE_WAS_ADDED_TO_GIT_WITHOUT_BEING_GENERATED_IN_RUN",
+      "repaired_workflow_commits": {
+        "main": "4c16011a609a1eb4e852d368e6032ea1a79e0f5e",
+        "operational": "ea851ed103a15ff1527cd837c1da076a52e3bfe5"
+      },
+      "successful_validation_run": {
+        "run_number": 71,
+        "run_id": 39756735589,
+        "conclusion": "success",
+        "cycle_id": "20261022T094523Z",
+        "fixtures_received": 153,
+        "eligible_future_fixtures": 138,
+        "ready_inputs": 118,
+        "blocked_future_inputs": 20,
+        "candidate_events": 97,
+        "new_freezes": 0,
+        "network_calls": 161,
+        "provider": "api_football",
+        "deadline_guard": "PASS"
+      }
+    },
+    "telegram": {
+      "run_number": 350,
+      "run_id": 39756762537,
+      "conclusion": "success",
+      "deadline_guard": "PASS",
+      "candidates": 35,
+      "waiting_window": 26,
+      "blocked_no_exact_quote": 8,
+      "blocked_ev_below_5pct": 1,
+      "pre_send_passed": 0,
+      "sent_now": 0,
+      "delivery_failures": 0,
+      "monitoring_breaches": 0
+    },
+    "utilization_watchdog": {
+      "tool_commit": "22f2b211664580c26b800f0b94b9b4dc4b76b18a",
+      "test_commit": "be82e4bfd12c5970635ff3b0323d8ac8c1f700cf",
+      "workflow_commit": "ac49e2a7248a9ab4e06a9c69c90077b148581120",
+      "cadence": "EVERY_6_HOURS",
+      "tennis_max_age_hours": 8.5,
+      "football_max_age_hours": 20.5,
+      "post_cutoff_behavior": "PASS_WINDOW_CLOSED_NO_RENEWAL"
+    }
+  },
+  "physically_open_validations": {
+    "utilization_watchdog_run": {
+      "run_number": 1,
+      "run_id": 39758015091,
+      "status": "queued"
+    },
+    "football_latest_retrigger": {
+      "run_number": 73,
+      "run_id": 39757541775,
+      "status": "in_progress"
+    },
+    "telegram_post_football": {
+      "run_number": 353,
+      "run_id": 39757998217,
+      "status": "queued"
+    }
+  },
+  "browser_first": {
+    "opera_connected": true,
+    "sources_observed": [
+      "SofaScore",
+      "Flashscore",
+      "Betano"
+    ],
+    "subscription_panels_present": [
+      "RapidAPI",
+      "API-Football"
+    ]
+  },
+  "subscriptions": {
+    "tennis_paid_through": "2026-10-28",
+    "football_paid_through": "2026-10-28",
+    "renewal_authorized": false
+  },
+  "governance": {
+    "missing_not_zero": true,
+    "silent_imputation": false,
+    "hard_metrics_sealed_until_600": true,
+    "real_money": "BLOCKED",
+    "automatic_wagering": false
+  },
+  "conclusion": "PASS_CORE_EXECUTION_PHYSICALLY_VERIFIED; EXTRA_WATCHDOG_AND_RETRIGGER_RUNS_QUEUED_IN_GITHUB_ACTIONS"
+}

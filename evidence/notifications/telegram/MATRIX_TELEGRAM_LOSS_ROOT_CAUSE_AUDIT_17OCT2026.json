@@ -1,0 +1,180 @@
+{
+  "schema": "MATRIX_TELEGRAM_LOSS_ROOT_CAUSE_AUDIT_17OCT2026_V1",
+  "generated_at_utc": "2026-10-17T19:55:00+00:00",
+  "branch": "repair/cor09-world-pipeline",
+  "ledger": {
+    "path": "evidence/notifications/telegram/MATRIX_TELEGRAM_SIGNAL_LEDGER.json",
+    "blob_sha": "278ebe6913e0dec200bba92340815a97e523f50f",
+    "global_bankroll_cop": 4833500,
+    "global_realized_profit_cop": -166500,
+    "global_units": -6.66,
+    "open_bets": 0,
+    "open_exposure_cop": 0
+  },
+  "diagnostic_cohort": {
+    "description": "Settlements with nonzero governed paper stake and linked signal P_MATRIX/EV",
+    "n": 154,
+    "wins": 87,
+    "losses": 67,
+    "hit_rate_pct": 56.4935064935,
+    "actual_profit_cop": -337750,
+    "actual_units": -13.51,
+    "avg_odds": 1.8100649351,
+    "avg_p_matrix": 0.6091932499,
+    "avg_ev": 0.0874103419,
+    "note": "This comparable staking cohort is not identical to the global canonical bankroll because the latter includes historical zero-stake records, VOID/exclusions and reconciliation adjustments."
+  },
+  "by_stake": {
+    "stake_1": {
+      "n": 95,
+      "wins": 56,
+      "losses": 39,
+      "hit_rate_pct": 58.9473684211,
+      "avg_odds": 1.8812631579,
+      "avg_p_matrix": 0.5702315756,
+      "calibration_gap_pp": 1.9242108637,
+      "profit_cop": 138500,
+      "units": 5.54
+    },
+    "stake_2": {
+      "n": 37,
+      "wins": 20,
+      "losses": 17,
+      "hit_rate_pct": 54.0540540541,
+      "avg_odds": 1.7097297297,
+      "avg_p_matrix": 0.6521463785,
+      "calibration_gap_pp": -11.1605837981,
+      "profit_cop": -165000,
+      "units": -6.6
+    },
+    "stake_3": {
+      "n": 22,
+      "wins": 11,
+      "losses": 11,
+      "hit_rate_pct": 50,
+      "avg_odds": 1.6713636364,
+      "avg_p_matrix": 0.705197491,
+      "calibration_gap_pp": -20.5197491023,
+      "profit_cop": -311250,
+      "units": -12.45
+    }
+  },
+  "by_ev": {
+    "ev_5_to_10_pct": {
+      "n": 36,
+      "wins": 22,
+      "losses": 14,
+      "hit_rate_pct": 61.1111111111,
+      "avg_p_matrix": 0.6122452412,
+      "avg_ev": 0.0797695262,
+      "profit_cop": 102500,
+      "flat_1u_profit_cop": 64000
+    },
+    "ev_ge_10_pct": {
+      "n": 53,
+      "wins": 22,
+      "losses": 31,
+      "hit_rate_pct": 41.5094339623,
+      "avg_p_matrix": 0.6365990791,
+      "avg_ev": 0.1632782094,
+      "profit_cop": -629000,
+      "flat_1u_profit_cop": -300500
+    }
+  },
+  "counterfactual": {
+    "same_154_bets_actual_variable_staking_profit_cop": -337750,
+    "same_154_bets_flat_1u_profit_cop": -47750,
+    "sizing_amplification_damage_cop": -290000,
+    "interpretation": "Variable 2u/3u sizing materially amplified losses; it did not create the underlying forecast error."
+  },
+  "concentration": {
+    "bookmaker": {
+      "Betano": {
+        "n": 154,
+        "share_pct": 100
+      }
+    },
+    "finding": "The diagnostic cohort is fully concentrated in Betano, so bookmaker diversification rules were not reflected in executed paper exposure."
+  },
+  "recent_drawdown": {
+    "2026-10-15": {
+      "hit_rate_pct": 31.25,
+      "profit_cop": -240250,
+      "units": -9.61
+    },
+    "2026-10-17": {
+      "hit_rate_pct": 25,
+      "profit_cop": -259000,
+      "units": -10.36
+    }
+  },
+  "root_causes_ranked": [
+    {
+      "rank": 1,
+      "cause": "HIGH_P_HIGH_EV_OVERCONFIDENCE",
+      "evidence": "Stake 3 average P_MATRIX 70.52% vs actual hit rate 50.00%; EV>=10% cohort hit 41.51% despite avg model P 63.66%.",
+      "status": "PHYSICALLY_SUPPORTED"
+    },
+    {
+      "rank": 2,
+      "cause": "VARIABLE_STAKING_AMPLIFIED_MODEL_ERROR",
+      "evidence": "2u+3u cohorts lost COP 476,250 while 1u cohort gained COP 138,500; flat-1u counterfactual improves same cohort by COP 290,000.",
+      "status": "PHYSICALLY_SUPPORTED"
+    },
+    {
+      "rank": 3,
+      "cause": "BOOKMAKER_CONCENTRATION",
+      "evidence": "154/154 comparable settled paper bets used Betano.",
+      "status": "PHYSICALLY_SUPPORTED"
+    },
+    {
+      "rank": 4,
+      "cause": "RECENT_REGIME_OR_CALIBRATION_DEGRADATION",
+      "evidence": "15-OCT and 17-OCT combined produced severe drawdown; more diagnosis by league/competition is still required before modifying P_MATRIX.",
+      "status": "SUPPORTED_BUT_REQUIRES_FURTHER_STRATIFICATION"
+    }
+  ],
+  "corrective_action": {
+    "code_commit": "96ca4c83461b130a34ab4d5ffd0647afce588858",
+    "test_commit": "f73587a9e27d012aaed9f8223b4009dfdf636317",
+    "action": "TEMPORARY_FLAT_1U_CAP",
+    "scope": "PAPER_STAKING_ONLY",
+    "preserves": [
+      "P_MATRIX unchanged",
+      "signal quality gates unchanged",
+      "EV calculation unchanged",
+      "CLV strict 120s unchanged",
+      "REAL_MONEY=BLOCKED"
+    ],
+    "retirement_gate": "Do not restore 2u/3u until calibration/CLV evidence shows high-P/high-EV bins are no longer materially overconfident."
+  },
+  "next_diagnostic": "Stratify losses by league/competition and compare closing-line movement before any P_MATRIX tuning.",
+  "adjudication": "ROOT_CAUSE_IDENTIFIED; VARIABLE_STAKING_RISK_AMPLIFIER_CAPPED_AT_1U; WORKFLOW_AND_LEDGER_POLICY_VERIFIED_PHYSICALLY; NO_MODEL_TUNING",
+  "physical_verification": {
+    "effective_policy_commit": "9ba8e4f9315cc716ec3a4cd0259ca53ed22aa10b",
+    "workflow_run_id": 39068148168,
+    "workflow_job_id": 117499989704,
+    "workflow_conclusion": "success",
+    "tests": "20 passed in 0.32s",
+    "persisted_ledger_commit": "64792b9df",
+    "persisted_ledger_blob": "4b978c6eda8b96f08cc03f78deb4d1c3c3772eea",
+    "effective_policy": {
+      "stake_1": "ACTIVE: all eligible paper signals capped at 1u / COP 25,000",
+      "stake_2": "TEMPORARILY_DISABLED_BY_RISK_OVERRIDE",
+      "stake_3": "TEMPORARILY_DISABLED_BY_RISK_OVERRIDE",
+      "max_stake_level": 1,
+      "max_stake_cop": 25000,
+      "effective_daily_cap_fraction": 0.3
+    },
+    "runtime_readback": {
+      "bankroll_cop": 4833500,
+      "open_bets": 0,
+      "open_exposure_cop": 0,
+      "real_money": "BLOCKED",
+      "sent_now": 0,
+      "total_green_messages": 209,
+      "total_settlements": 174
+    },
+    "limitation": "No new signal passed the send gate in Run 217, so the 1u cap is physically proven by code, tests, workflow success and ledger policy readback; a new live assignment at 1u has not yet occurred in this verification run."
+  }
+}

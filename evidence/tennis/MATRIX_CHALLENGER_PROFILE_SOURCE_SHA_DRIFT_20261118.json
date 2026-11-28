@@ -1,0 +1,44 @@
+{
+  "schema": "MATRIX_CHALLENGER_PROFILE_SOURCE_SHA_DRIFT_REVIEW_V1",
+  "review_date": "2026-11-18",
+  "status": "SOURCE_SHA_DRIFT_DETECTED_EXACT_ARCHIVE_REQUIRED",
+  "scope": "Compare profile source SHA to independently published latest gate detail SHA, not proof of missing archived source",
+  "real_money": "BLOCKED",
+  "automatic_wagering": false,
+  "new_hard_holdout_observations": 0,
+  "new_clay_holdout_observations": 0,
+  "model_parameters_modified": false,
+  "records": [
+    {
+      "date": "2026-11-18",
+      "profile_source_sha256": "05db36d5854ba8846d21b327810e2750512558d1c44f5096c082d27a5a9a14a0",
+      "latest_gate_detail_sha256": "d0b66b1209ece355353dd9c3c5d173d23957fb45010dd8e9245691a289c89ab1",
+      "biography_profiles": 8,
+      "latest_gate_hard_metadata_ready": 4,
+      "source_blob_git_sha": {
+        "biographies": "21ed0b678e2d9390e4abfe9fdf67a41fa0706a37",
+        "pit_gate": "39368482d93e3dea5bf731333b5a74f7ea1c226d"
+      },
+      "sha_values_differ": true
+    },
+    {
+      "date": "2026-11-19",
+      "profile_source_sha256": "b3b4ab67533020bb7c5a71709177023a17e1424f40f58ce17c2cc53ffa2b1173",
+      "latest_gate_detail_sha256": "08d983b1e64418c637e8a26d6395139174392f4ed0a8ceab0699d53cc5f9eb5d",
+      "biography_profiles": 4,
+      "latest_gate_hard_metadata_ready": 2,
+      "source_blob_git_sha": {
+        "biographies": "83ca0251ffdbeadcded2ca8718c9c645f4e51314",
+        "pit_gate": "20c544d7c0e99a38d82dc335add505d49bb6392d"
+      },
+      "sha_values_differ": true
+    }
+  ],
+  "interpretation": "Visible biography files were SHA-bound to older match-details snapshots than the last gate detail snapshots. Both are pre-match research only. No same-fixture source equivalence claimed; exact SHA archival source required before reusing biographies.",
+  "remediation": {
+    "script": "tools/matrix_tennis_free_profile_source_binding_audit.py",
+    "test": "tests/test_matrix_tennis_free_profile_source_binding_audit.py",
+    "allowed": "Use exact-byte original current source or a restricted archived detail with SHA-256 equal to the biography's declared source.",
+    "fail_closed": "If exact source is unavailable, throw PROFILE_AUDIT_ORIGINAL_DETAIL_SHA_SNAPSHOT_UNAVAILABLE; never silently match latest LAST."
+  }
+}

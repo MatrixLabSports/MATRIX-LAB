@@ -1,0 +1,78 @@
+{
+  "schema": "MATRIX_DAILY_WORLD_CALENDAR_SOURCE_COUNTS_V2",
+  "target_date_bogota": "2026-10-22",
+  "calendar_baseline_complete": true,
+  "operator_manual_intervention_required": false,
+  "browser_baseline_completed_at_utc": "2026-10-21T22:43:00+00:00",
+  "task_order": [
+    "CALENDAR_BASELINE_SOFASCORE_FLASHSCORE_FIRST",
+    "PAID_APIS_SECOND",
+    "COVERAGE_COMPARE_AND_GAP_DETECTION_THIRD",
+    "CANONICAL_RECONCILIATION_DEDUP_AND_GOVERNED_PIPELINE_FOURTH"
+  ],
+  "tennis": {
+    "sofascore": {
+      "count": 334,
+      "count_type": "MACHINE_VERIFIED_BROWSER_UI_EXACT",
+      "operator_manual_intervention_required": false,
+      "captured_at_utc": "2026-10-21T22:43:00+00:00",
+      "url": "https://www.sofascore.com/es/tennis/2026-10-22",
+      "evidence_path": "evidence/tennis/MATRIX_TENNIS_20261022_BROWSER_FIRST_RECONCILIATION.json"
+    },
+    "flashscore": {
+      "count": 312,
+      "count_type": "MACHINE_VERIFIED_BROWSER_UI_EXACT",
+      "operator_manual_intervention_required": false,
+      "captured_at_utc": "2026-10-21T22:43:00+00:00",
+      "url": "https://www.flashscore.co/tenis/manana/",
+      "evidence_path": "evidence/tennis/MATRIX_TENNIS_20261022_BROWSER_FIRST_RECONCILIATION.json"
+    },
+    "rapidapi_tennis": {
+      "count": 204,
+      "capture_started_at_utc": "2026-10-22T10:17:45+00:00",
+      "network_calls": 2,
+      "evidence_path": "evidence/governance/MATRIX_PAID_API_15MIN_REVIEW_LAST.json"
+    },
+    "api_tennis": {
+      "status": "RETIRED_NO_NETWORK",
+      "attempted": false,
+      "count": null,
+      "evidence_path": "config/MATRIX_TENNIS_SUBSCRIPTION_DEADLINE.json"
+    }
+  },
+  "football": {
+    "sofascore": {
+      "count": 110,
+      "count_type": "MACHINE_VERIFIED_BROWSER_UI_EXACT",
+      "operator_manual_intervention_required": false,
+      "captured_at_utc": "2026-10-21T22:35:00+00:00",
+      "url": "https://www.sofascore.com/es/football/2026-10-22",
+      "evidence_path": "evidence/football_world_inventory/2026-10-22/MATRIX_FOOTBALL_BROWSER_FIRST_RECONCILIATION.json"
+    },
+    "flashscore": {
+      "count": 98,
+      "count_type": "MACHINE_VERIFIED_BROWSER_UI_EXACT",
+      "operator_manual_intervention_required": false,
+      "captured_at_utc": "2026-10-21T22:35:00+00:00",
+      "url": "https://www.flashscore.co/manana/",
+      "evidence_path": "evidence/football_world_inventory/2026-10-22/MATRIX_FOOTBALL_BROWSER_FIRST_RECONCILIATION.json"
+    },
+    "api_football": {
+      "count": 153,
+      "capture_started_at_utc": "2026-10-22T10:17:45+00:00",
+      "network_calls": 1,
+      "evidence_path": "evidence/governance/MATRIX_PAID_API_15MIN_REVIEW_LAST.json"
+    }
+  },
+  "truth_rules": {
+    "invented_counts_prohibited": true,
+    "partial_accessibility_count_is_never_promoted_to_world_total": true,
+    "source_specific_counts_need_not_be_equal": true,
+    "missing_not_zero": true
+  },
+  "protections": {
+    "metrics_opened": false,
+    "automatic_wagering": false,
+    "real_money": "BLOCKED"
+  }
+}

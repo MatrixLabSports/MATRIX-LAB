@@ -1,0 +1,38 @@
+{
+  "schema": "MATRIX_FUKUSHIMA_AUTHORIZED_BOOK_SWEEP_V1",
+  "generated_at_bogota": "2026-10-20T21:59:00-05:00",
+  "fixture_id": "1555752",
+  "match": "Fukushima United FC vs Giravanz Kitakyushu",
+  "market": "Más de 2.5 goles",
+  "p_matrix": 0.6471259148,
+  "books": {
+    "Rushbet": {
+      "status": "VERIFIED_QUOTE",
+      "decimal_odds": 1.53,
+      "ev": -0.009897350356,
+      "source": "Opera Browser Connector",
+      "evidence_path": "evidence/football_world_inventory/2026-10-21/MATRIX_FUKUSHIMA_KITAKYUSHU_RUSHBET_QUOTE_215249_BOG.json",
+      "decision": "NO_BET_NEGATIVE_EV"
+    },
+    "Betano": {
+      "status": "NO_EVENT_FOUND_ON_BETANO_CO",
+      "source": "TinyFish live browser automation",
+      "observed": "Fukushima United FC vs Giravanz Kitakyushu was not listed; no Over 2.5 quote available",
+      "decision": "NO_VERIFIED_QUOTE"
+    },
+    "BetPlay": {
+      "status": "NO_VERIFIED_QUOTE_FOUND",
+      "source": "Opera Browser Connector + public domain search",
+      "observed": "No Fukushima/Kitakyushu match was found in the visible BetPlay content or public search results",
+      "caution": "This is not proof that BetPlay never offers the event; it means no current executable quote was physically verified.",
+      "decision": "NO_VERIFIED_QUOTE"
+    }
+  },
+  "canonical_decision": "NO_BET",
+  "reason": "No authorized book has a physically verified positive-EV Over 2.5 quote.",
+  "protections": {
+    "real_money": "BLOCKED",
+    "no_inference_from_other_books": true,
+    "no_silent_imputation": true
+  }
+}

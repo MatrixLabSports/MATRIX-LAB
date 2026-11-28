@@ -1,0 +1,124 @@
+{
+  "schema": "MATRIX_TENNIS_THREE_BLOCKS_CALIBRATION_REFRESH_18OCT2026_V1",
+  "generated_at_utc": "2026-10-18T20:07:00Z",
+  "repository": "MatrixLabSports/MATRIX-LAB",
+  "branch": "repair/cor09-world-pipeline",
+  "source_governance": {
+    "priority": [
+      "SofaScore",
+      "Flashscore",
+      "RapidAPI Tennis"
+    ],
+    "api_tennis": "RETIRED_COST_UTILITY_DECISION",
+    "no_forced_admission": true,
+    "no_synthetic_backfill": true,
+    "missing_not_zero": true,
+    "silent_imputation": false,
+    "odds_to_probability": false,
+    "real_money": "BLOCKED",
+    "automatic_wagering": false
+  },
+  "hard_cor0203": {
+    "target": 600,
+    "before_refresh_unique": 280,
+    "after_refresh_unique": 280,
+    "remaining": 320,
+    "physical_frozen_rows": 451,
+    "duplicate_observations_quarantined": 171,
+    "metrics_opened": false,
+    "outcomes_read": 0,
+    "recovery_workflow": {
+      "file": ".github/workflows/cor0203-governed-recovery-refresh.yml",
+      "activation_commit": "e49ec449775337dfa3c0ce6f18ee5cbfe1f99d23",
+      "run_id": 39161652402,
+      "job_id": 117776027857,
+      "conclusion": "success"
+    },
+    "target_date_bogota": "2026-10-19",
+    "provider_inventory": {
+      "status": "PASS",
+      "provider": "rapidapi_tennis",
+      "provider_inventory_complete": true,
+      "world_inventory_complete": false,
+      "singles": 76,
+      "atp_challenger": 47,
+      "hard_domain_candidates": 17
+    },
+    "funnel": {
+      "world_domain_candidates": 17,
+      "status_counts": {
+        "DISCOVERY_REJECTED": 2,
+        "FROZEN_UNIQUE": 10,
+        "PREREGISTERED_BLOCKED": 5
+      },
+      "new_freezes": 0,
+      "new_blocked": 401,
+      "operational_state": "IDLE_VALID",
+      "bottleneck": "SOURCE_READY_NO_NEW_ELIGIBLE_EVENTS"
+    },
+    "adjudication": "VALID_280_OF_600_NO_NEW_UNIQUE_ADMISSIBLE_FREEZE"
+  },
+  "clay_atp_challenger_singles": {
+    "target": 600,
+    "before_refresh": 2,
+    "after_refresh": 3,
+    "new_observations": 1,
+    "remaining": 597,
+    "metrics_opened": false,
+    "outcomes_read": 0,
+    "workflow_run_id": 39161449815,
+    "workflow_job_id": 117775434547,
+    "trigger_commit": "7bd6f6ac5a4be26a77e28ff9bdb02ddb14cc9369",
+    "conclusion": "success",
+    "target_date_bogota": "2026-10-19",
+    "pit_ready_targets": 8,
+    "pit_blocked_targets": 46,
+    "pit_identity_backlog_count": 44,
+    "identity_alias_ledger_count": 203,
+    "adjudication": "ADVANCED_BY_ONE_LEGITIMATE_PROSPECTIVE_FREEZE"
+  },
+  "live_tennis": {
+    "lane_focus": "itf|women|hard",
+    "settled_quality_valid_unique_matches": 49,
+    "gate30": {
+      "status": "OPEN",
+      "remaining": 0
+    },
+    "gate50": {
+      "status": "SEALED",
+      "remaining": 1
+    },
+    "gate100": {
+      "status": "SEALED",
+      "remaining": 51
+    },
+    "all_lanes_settled_quality_valid_sum": 138,
+    "bulk_seed": {
+      "trigger_commit": "5a4b471c06e16e51e8161fd82e10022d1e265ce7",
+      "run_id": 39161456029,
+      "job_id": 117775451796,
+      "conclusion": "success",
+      "executed_cycles": 0,
+      "provider_remaining_before_run": 0,
+      "reserve_calls": 20,
+      "status": "PASS_QUOTA_RESERVE_BLOCKED"
+    },
+    "final_settlement": {
+      "run_id": 39161509931,
+      "job_id": 117775604909,
+      "conclusion": "success"
+    },
+    "api_tennis_reactivation": false,
+    "blocker": "LIVE_PROVIDER_DAILY_QUOTA_EXHAUSTED",
+    "adjudication": "VALID_49_OF_50_FAIL_CLOSED_NO_SUBSTITUTE_DATA"
+  },
+  "final_adjudication": {
+    "hard": "280/600",
+    "clay": "3/600",
+    "live_itf_women_hard": "49/50",
+    "metrics_remain_sealed": true,
+    "tuning_performed": false,
+    "real_money": "BLOCKED",
+    "result": "PHYSICALLY_VERIFIED_NO_FORCED_DATA"
+  }
+}

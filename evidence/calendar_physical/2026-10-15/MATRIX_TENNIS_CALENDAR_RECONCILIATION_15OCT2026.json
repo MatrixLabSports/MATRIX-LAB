@@ -1,0 +1,75 @@
+{
+  "schema": "MATRIX_TENNIS_CALENDAR_RECONCILIATION_V1",
+  "target_date_bogota": "2026-10-15",
+  "operational_timezone": "America/Bogota",
+  "source_order": [
+    "SofaScore",
+    "Flashscore",
+    "RapidAPI Tennis ATP/WTA/ITF",
+    "API-Tennis"
+  ],
+  "sofascore": {
+    "physical_count": 556,
+    "evidence_path": "evidence/calendar_physical/2026-10-15/MATRIX_SOFASCORE_CALENDAR_COUNTS_USER_SCREENSHOT.json",
+    "screenshot_sha256": "237760dac47be751129ce442579d00a302e489c5adc538f7ade1a9b35c0d061c"
+  },
+  "flashscore": {
+    "physical_unique_main_calendar_count": 105,
+    "evidence_path": "evidence/calendar_physical/2026-10-15/MATRIX_FLASHSCORE_TENNIS_CALENDAR_15OCT2026.json",
+    "browser_automation_run_id": "2c4c139f-0dcf-4ddc-a132-c881ffb16c74"
+  },
+  "rapidapi_tennis": {
+    "audit_path": "evidence/tennis_world_inventory/2026-10-15/world_exact_day_dual_audit.json",
+    "audit_blob_sha": "012ae204764c86d8692507e931ae82044396ff39",
+    "provider_inventory_complete": true,
+    "unique_match_count": 184,
+    "tournament_count": 37,
+    "events_by_family": {
+      "ATP": 28,
+      "ITF": 135,
+      "WTA": 21
+    },
+    "events_by_format": {
+      "SINGLES": 179,
+      "DOUBLES": 5
+    },
+    "status": "PASS",
+    "network_calls": 2
+  },
+  "api_tennis": {
+    "attempted": true,
+    "status": "BLOCKED",
+    "blocker": "API_TENNIS_PROVIDER_FAILURE",
+    "unique_match_count": 0,
+    "network_calls": 1,
+    "interpretation": "SECOND_PAID_SOURCE_TEMPORARILY_UNAVAILABLE; ZERO_IS_NOT_WORLD_COUNT"
+  },
+  "cross_provider_reconciliation": {
+    "exact_union_count": 184,
+    "neutral_exact_overlap_count": 0,
+    "rapidapi_only_neutral_count": 184,
+    "api_tennis_only_neutral_count": 0,
+    "world_inventory_complete": false,
+    "world_complete_gate": "REQUIRES_MULTI_SOURCE_RECONCILIATION"
+  },
+  "coverage_differences": {
+    "flashscore_minus_sofascore": -451,
+    "rapidapi_minus_sofascore": -372,
+    "rapidapi_minus_flashscore": 79,
+    "interpretation": "SOURCE_SCOPE_AND_COVERAGE_DIFFERENCES; NO_FORCED_EQUALITY"
+  },
+  "matrix_admission": {
+    "automatic_model_feed": false,
+    "metrics_opened": false,
+    "reason": "WORLD_GATE_UNSEALED_AND_SECOND_PAID_SOURCE_BLOCKED",
+    "no_bet_policy": "INSUFFICIENT_GOVERNED_EVIDENCE_FOR_AUTOMATIC_TENNIS_SIGNAL"
+  },
+  "protections": {
+    "missing_not_zero": true,
+    "no_synthetic_backfill": true,
+    "no_silent_imputation": true,
+    "outcomes_read": 0,
+    "automatic_wagering": false,
+    "real_money": "BLOCKED"
+  }
+}

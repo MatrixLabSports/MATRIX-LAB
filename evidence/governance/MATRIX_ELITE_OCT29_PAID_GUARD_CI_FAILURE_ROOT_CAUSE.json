@@ -1,0 +1,26 @@
+{
+  "schema": "MATRIX_ELITE_PAID_GUARD_CI_FAILURE_ROOT_CAUSE_V1",
+  "failed_run": {
+    "id": 40824975104,
+    "conclusion": "failure",
+    "sha": "c599fc7ba841c86f8a70de80d8e0db81ebadf044",
+    "job_id": 123285824618
+  },
+  "physical_log_error": "ModuleNotFoundError: No module named 'requests' during collection of tests/test_telegram_paid_quote_expiry_guard.py",
+  "root_cause": "The original offline workflow installed pytest only, while newly added tests import tools.telegram_green_signal_alerts, which imports requests.",
+  "repair": {
+    "commit": "66b4631b84647eef5ee3b344b90a9dd15d570cbb",
+    "workflow": ".github/workflows/telegram-post-expiry-health.yml",
+    "new_install_command": "python -m pip install pytest requests pillow"
+  },
+  "retest": {
+    "run_id": 40824988044,
+    "status": "IN_PROGRESS_AT_AUDIT"
+  },
+  "restrictions": {
+    "paid_api_calls_authorized": false,
+    "real_money": "BLOCKED",
+    "automatic_wagering": false
+  },
+  "notes": "Failure in test collection is not evidence of any paid provider HTTP call or Telegram delivery. New workflow result required before declaring guard tests certified."
+}

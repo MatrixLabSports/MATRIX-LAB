@@ -1,0 +1,122 @@
+name: MATRIX Football CLV Tracking
+
+on:
+  # Manual fallback only. Automatic CLV ownership belongs exclusively to
+  # MATRIX Football CLV Continuous Watcher.
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: matrix-football-clv-continuous-watcher
+  cancel-in-progress: false
+
+jobs:
+  clv:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      MATRIX_MODE: SHADOW
+      REAL_MONEY: BLOCKED
+      AUTO_BETTING: DISABLED
+
+    steps:
+      - name: Checkout operational branch
+        uses: actions/checkout@v4
+        with:
+          ref: repair/cor09-world-pipeline
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install governed dependencies
+        run: python -m pip install -r requirements.txt
+
+      - name: Enforce SHADOW safety
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$MATRIX_MODE" = "SHADOW"
+          test "$REAL_MONEY" = "BLOCKED"
+          test "$AUTO_BETTING" = "DISABLED"
+
+      - name: Run CLV integrity regression tests
+        run: |
+          PYTHONPATH=. python -m pytest -q \
+            tests/test_football_clv_tracking_cycle.py \
+            tests/test_football_prospective_evidence.py \
+            tests/test_api_football_pinnacle_reference.py \
+            tests/test_paper_stake_ledger.py \
+            tests/test_correlated_exposure.py
+
+      - name: Run governed CLV cycle
+        env:
+          API_FOOTBALL_KEY: ${{ secrets.API_FOOTBALL_KEY }}
+        run: PYTHONPATH=. python -m tools.football_clv_tracking_cycle
+
+      - name: Enforce CLV state protections
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          p=Path("evidence/clv/football/over_2_5/state.json")
+          if not p.is_file():
+              raise SystemExit("CLV_STATE_MISSING")
+          j=json.loads(p.read_text(encoding="utf-8"))
+          assert j["market_key"] == "over_2_5"
+          assert j["closing_reference_choice"] == "OPTION_B_PINNACLE_STRICT_FRESH"
+          assert j["source_quality_flag"] == "SHARP_PINNACLE_VIA_API_FOOTBALL_STRICT_120S"
+          assert j["minimum_clv_closing_observations"] == 300
+          assert j["closing_freshness_policy"]["max_provider_quote_age_seconds"] == 120
+          assert j["closing_freshness_policy"]["nominal_3h_band_is_closing_reference"] is False
+          assert j["protections"]["historical_backfill_without_physical_entry_timestamp"] == "FORBIDDEN"
+          assert j["protections"]["post_kickoff_closing_line"] == "FORBIDDEN"
+          assert j["protections"]["incomplete_market_devig"] == "FORBIDDEN"
+          assert j["protections"]["clv_from_raw_overround_probability"] == "FORBIDDEN"
+          assert j["protections"]["odds_used_to_generate_probability"] is False
+          assert j["protections"]["automatic_wagering"] is False
+          assert j["protections"]["real_money"] == "BLOCKED"
+          if j["closing_odds_count"] < 300:
+              assert j["metrics_opened"] is False
+              assert j["metrics"] is None
+              assert j["status"] == "ACCUMULATING_SEALED_UNTIL_300"
+          print("MATRIX_CLV_GOVERNANCE_GATE: PASS")
+          print("decision_count=",j["decision_count"])
+          print("closing_odds_count=",j["closing_odds_count"])
+          print("remaining_to_open_metrics=",j["remaining_to_open_metrics"])
+          print("metrics_opened=",j["metrics_opened"])
+          print("real_money=",j["protections"]["real_money"])
+          PY
+
+      - name: Persist CLV evidence atomically
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "matrix-clv-tracking"
+          git config user.email "matrix-clv-tracking@users.noreply.github.com"
+          git add evidence/clv/football/over_2_5
+          if git diff --cached --quiet; then
+            echo "NO_CLV_STATE_CHANGE"
+            exit 0
+          fi
+          git commit -m "evidence(clv): persist governed closing-line cycle"
+          for attempt in 1 2 3 4; do
+            git fetch origin repair/cor09-world-pipeline
+            if ! git rebase origin/repair/cor09-world-pipeline; then
+              git rebase --abort || true
+              exit 1
+            fi
+            if git push origin HEAD:repair/cor09-world-pipeline; then
+              echo "CLV_PUSH_SUCCEEDED_ATTEMPT=$attempt"
+              exit 0
+            fi
+            sleep $((attempt*2))
+          done
+          exit 1

@@ -1,0 +1,174 @@
+name: MATRIX Independent Over25 Prospectively Frozen Results
+
+on:
+  schedule:
+    - cron: "17,47 * * * *"
+  workflow_dispatch:
+  push:
+    branches:
+      - repair/cor09-world-pipeline
+    paths:
+      - tools/matrix_independent_over25_research_settlement.py
+      - tools/matrix_independent_over25_research_scorecard.py
+      - tools/matrix_original_six_league_coverage.py
+      - tests/test_matrix_original_six_league_coverage.py
+      - tools/matrix_over25_cohort_progression.py
+      - tests/test_matrix_over25_cohort_progression.py
+      - tests/test_matrix_independent_over25_research_scorecard.py
+      - tests/test_matrix_independent_over25_research_settlement.py
+      - .github/workflows/matrix-independent-over25-research-settlement.yml
+
+permissions:
+  contents: write
+  actions: write
+
+concurrency:
+  group: matrix-independent-over25-research-settlement
+  cancel-in-progress: false
+
+jobs:
+  independent-research-settlement:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      REAL_MONEY: BLOCKED
+      AUTO_BETTING: DISABLED
+      MATRIX_MODE: SHADOW
+    steps:
+      - name: Checkout original research branch
+        uses: actions/checkout@v4
+        with:
+          ref: repair/cor09-world-pipeline
+          fetch-depth: 0
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install independent tests
+        run: python -m pip install --disable-pip-version-check pytest
+
+      - name: Prove settlement never reuses future scores or modifies forecasts
+        run: PYTHONPATH=. python -m pytest -q tests/test_matrix_independent_over25_research_settlement.py tests/test_matrix_independent_over25_prematch_freeze.py tests/test_matrix_independent_over25_research_scorecard.py tests/test_matrix_over25_cohort_progression.py tests/test_matrix_original_six_league_coverage.py
+
+      - name: Capture final independent scores only after kickoff, never betting
+        env:
+          FOOTBALL_DATA_ORG_TOKEN: ${{ secrets.FOOTBALL_DATA_ORG_TOKEN }}
+        run: |
+          set -euo pipefail
+          test "$REAL_MONEY" = BLOCKED
+          test "$AUTO_BETTING" = DISABLED
+          PYTHONPATH=. python -m tools.matrix_independent_over25_research_settlement
+
+      - name: Recalculate cumulative independent prospective Brier and logloss
+        run: PYTHONPATH=. python -m tools.matrix_independent_over25_research_scorecard
+
+      - name: Audit 28 Nov genuine unique cohort against latest settlement without future leakage
+        run: |
+          set -euo pipefail
+          PYTHONPATH=. python -m tools.matrix_over25_cohort_progression --date 2026-11-28
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          path=Path("evidence/football_world_inventory/2026-11-28/MATRIX_OVER25_COHORT_PROGRESSION.json")
+          doc=json.loads(path.read_bytes())
+          assert doc["verified_distinct_fixture_count"]==30
+          assert doc["cross_day_duplicate_count"]==0
+          assert doc["no_future_outcomes_used"] is True
+          assert doc["production_p_matrix_authorized"] is False
+          assert doc["telegram_signal_authorized"] is False
+          assert doc["real_money"]=="BLOCKED"
+          print("MATRIX_28NOV_COHORT_UNIQUE_PIT_SHA_CERTIFIED_SETTLEMENT_NOT_PREMATURE")
+          PY
+
+      - name: Preserve original six-league scope and prohibit research-only league substitution
+        run: |
+          set -euo pipefail
+          PYTHONPATH=. python -m tools.matrix_original_six_league_coverage
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          j=json.loads(Path("evidence/football_world_inventory/MATRIX_ORIGINAL_SIX_LEAGUE_FREE_SOURCE_SCOPE_PROGRESS_LAST.json").read_bytes())
+          assert j["original_six_league_count"] == 6
+          assert j["free_source_uncovered_original_leagues"] == ["239"]
+          assert j["original_scope_corresponding_five_league_settlements"] + j["out_of_original_scope_research_settlements"] == j["all_provider_research_settlements"]
+          assert j["match_level_crosswalk_verified"] is False
+          assert j["production_p_matrix_authorized"] is False
+          assert j["telegram_signal_authorized"] is False
+          print("SIX_ORIGINAL_LEAGUES_SCOPE_FAIL_CLOSED_RESEARCH_ONLY")
+          PY
+
+      - name: Validate latest settlement has original risk gates closed
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          j=json.loads(Path("evidence/football_world_inventory/MATRIX_INDEPENDENT_OVER25_SETTLEMENT_LAST.json").read_text(encoding="utf-8"))
+          assert j["real_money"]=="BLOCKED"
+          assert j["telegram_signal_authorized"] is False
+          assert j["automatic_wagering"] is False
+          assert j["original_calibrated_parameters_mutated"] is False
+          assert j["scientific_six_league_oos_certified"] is False
+          assert j["http_calls"]<=6
+          print("AUTHENTIC_RESEARCH_SETTLEMENT_ONLY",j["scanned_forecasts"],j["settled_total"],j["http_calls"])
+          PY
+
+      - name: Persist settled original source bytes and freeze ledger immutably
+        run: |
+          set -euo pipefail
+          git config user.name "matrix-independent-over25-results"
+          git config user.email "matrix-independent-over25-results@users.noreply.github.com"
+          git add -- evidence/football_world_inventory/MATRIX_INDEPENDENT_OVER25_SETTLEMENT_LAST.json
+          git add -- evidence/football_world_inventory/MATRIX_INDEPENDENT_OVER25_RESEARCH_SCORECARD_LAST.json
+          git add -- evidence/football_world_inventory/MATRIX_ORIGINAL_SIX_LEAGUE_FREE_SOURCE_SCOPE_PROGRESS_LAST.json
+          git add -- evidence/football_world_inventory/2026-11-28/MATRIX_OVER25_COHORT_PROGRESSION.json
+          if [ -d evidence/football_research_freezes ]; then
+            git add -- evidence/football_research_freezes
+          fi
+          if git diff --cached --quiet; then
+            echo "NO_RESEARCH_RESULT_CHANGE"
+            exit 0
+          fi
+          git commit -m "evidence(over25): persist independently observed settled frozen forecast"
+          for retry in 1 2 3 4 5; do
+            git fetch origin repair/cor09-world-pipeline
+            if ! git rebase origin/repair/cor09-world-pipeline; then
+              git rebase --abort || true
+              exit 1
+            fi
+            if git push origin HEAD:repair/cor09-world-pipeline; then
+              echo "PROSPECTIVE_RESULTS_PHYSICALLY_PERSISTED"
+              exit 0
+            fi
+            sleep "$retry"
+          done
+          exit 1
+
+      - name: Wake independent Poisson OOS only after newly certified provider results
+        if: success()
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          doc=json.loads(Path('evidence/football_world_inventory/MATRIX_INDEPENDENT_OVER25_SETTLEMENT_LAST.json').read_bytes())
+          assert doc['real_money']=='BLOCKED'
+          assert doc['telegram_signal_authorized'] is False
+          assert doc['automatic_wagering'] is False
+          count=doc['newly_settled_count']
+          assert type(count) is int and count>=0
+          Path('/tmp/matrix_newly_settled_verified.txt').write_text(str(count))
+          print('AUTHENTIC_NEWLY_SETTLED',count)
+          PY
+          count="$(cat /tmp/matrix_newly_settled_verified.txt)"
+          if [ "$count" -gt 0 ]; then
+            gh workflow run matrix-independent-free-poisson-oos.yml \
+              --repo "$GITHUB_REPOSITORY" --ref repair/cor09-world-pipeline
+            echo "INDEPENDENT_OOS_DISPATCHED_FROM_VERIFIED_RESULTS"
+          else
+            echo "NO_NEW_SETTLEMENT_NO_FANOUT"
+          fi

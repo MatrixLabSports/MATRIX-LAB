@@ -1,0 +1,54 @@
+{
+  "schema": "OMEGA_PICKS_TELEGRAM_CHANNELS_V1",
+  "status": "PREPARED_AWAITING_REAL_CHANNEL_IDS",
+  "channels": {
+    "FREE": {
+      "name": "OMEGA PICKS FREE",
+      "visibility": "PUBLIC",
+      "env_chat_id": "OMEGA_FREE_TELEGRAM_CHAT_ID",
+      "expected_type": "channel",
+      "requires_public_username": true,
+      "bot_must_be_admin": true,
+      "protect_content": true
+    },
+    "PREMIUM": {
+      "name": "OMEGA PICKS PREMIUM",
+      "visibility": "PRIVATE",
+      "env_chat_id": "MATRIX_PREMIUM_TELEGRAM_CHAT_ID",
+      "expected_type": "channel",
+      "requires_public_username": false,
+      "bot_must_be_admin": true,
+      "protect_content": true
+    },
+    "STAKAZO_3X": {
+      "name": "OMEGA PICKS 3X",
+      "visibility": "PRIVATE",
+      "env_chat_id": "OMEGA_STAKAZO_TELEGRAM_CHAT_ID",
+      "expected_type": "channel",
+      "requires_public_username": false,
+      "bot_must_be_admin": true,
+      "protect_content": true
+    }
+  },
+  "bot": {
+    "token_env": "TELEGRAM_BOT_TOKEN",
+    "allowlist_only": true,
+    "minimum_permissions": ["post_messages"],
+    "premium_membership_permissions": ["ban_users","invite_users"],
+    "external_bots_allowed": false
+  },
+  "commercial_launch_gate": {
+    "required": [
+      "FREE getChat PASS",
+      "PREMIUM getChat PASS",
+      "STAKAZO_3X getChat PASS",
+      "bot getChatMember administrator PASS for all channels",
+      "FREE public username present",
+      "PREMIUM private",
+      "STAKAZO_3X private",
+      "test publication PASS",
+      "result publication PASS"
+    ],
+    "on_fail": "NO_GO"
+  }
+}

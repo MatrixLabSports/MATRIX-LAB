@@ -1,0 +1,51 @@
+{
+  "schema": "MATRIX_ELITE_TELEGRAM_CAUSAL_AUDIT_V1",
+  "date_bogota": "2026-10-29",
+  "source": {
+    "path": "evidence/notifications/telegram/MATRIX_TELEGRAM_QUOTE_ATTEMPT_TELEMETRY_AUDIT_LAST.json",
+    "sha": "3f89ac5e854f0d1f3a3de79702f6308e0a4ce540",
+    "generated_at_utc": "2026-10-29T02:27:24+00:00"
+  },
+  "scope": "MATRIX_TELEGRAM_QUOTE_ATTEMPT_V3 only; legacy attempts not merged",
+  "counts": {
+    "real_quote_attempts": 1306,
+    "identity_problem_count": 1275,
+    "exact_over25_coverage_by_house": {
+      "betano": 31,
+      "betplay": 0,
+      "betsson": 0,
+      "bwin": 0,
+      "codere": 0,
+      "luckia": 0,
+      "mryoker": 0,
+      "rivalo": 0,
+      "rushbet": 0,
+      "sportium": 0,
+      "stake": 0,
+      "wplay": 0,
+      "yajuego": 0,
+      "zamba": 0
+    },
+    "authorized_house_count": 14
+  },
+  "diagnosis": "Recorded identity matching and exact-line bookmaker coverage are primary observed constraints; not proof of sole root cause of missing Telegram deliveries",
+  "verified_regression": {
+    "run_id": 40822448229,
+    "conclusion": "success"
+  },
+  "next_verifications": [
+    "Inspect per-attempt fixture/provider event identifiers for mismatch mechanism without rewriting immutable ledger",
+    "Check latest Telegram workflow runs, dispatch decisions, API response codes and send acknowledgments",
+    "Independently confirm provider/API access after 2026-10-28 before attempting refresh",
+    "Verify match timezones and odds timestamp freshness before any release"
+  ],
+  "prohibited_inferences": [
+    "Do not treat 1275 attempts as 1275 distinct fixtures",
+    "Do not claim Telegram delivery restored",
+    "Do not fabricate quotes, identifiers, or provider availability"
+  ],
+  "safety": {
+    "real_money": "BLOCKED",
+    "automatic_wagering": false
+  }
+}
